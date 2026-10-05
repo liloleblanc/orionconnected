@@ -81,19 +81,23 @@ function board({ now, dep, hist = {}, langs = ['en', 'fr'], ap = 'YQM', extra = 
     _cityForIata: (ia) => CITY[ia] || ia,
     normalizeDisplayCity: (c) => titleCase(c),
     getAirlineAccent: (c) => ({ AC: '#D82F2E', WS: '#00B2A9' }[c] || '#0033A1'),
-    _airlineOrbEmblem: (c) => `/logos/${c}.svg`
+    _airlineOrbEmblem: (c) => `/logos/${c}.svg`,
+    // the shared airport names (_cityAp): the stub's own casing
+    tc: titleCase, CITY_FR: {}
   };
   Object.assign(ctx, extra);
   Object.assign(ctx.window, win);
   const names = ['_gcGate', 'getGateHistory', 'setGateHistory', '_gateLegacyRecord', 'trackGateChanges', 'getInboundGateRedirect',
     '_gateRowKey', 'fidsEscHtml', 'frFirstAirport', '_stripCityCode', '_dispIata', '_realIata', '_gateDayWords', '_gateLbl',
     '_gateMovedAway', '_gateLaterTz', '_gateLaterDay', '_gateLaterModel', '_gateLaterHHMM', '_gateLaterTs',
-    '_gateLaterClock', '_gateLaterTwinCity', '_gateLaterPlace', '_gateLaterDayWords', '_gateLaterKey',
+    '_gateLaterClock', '_gateLaterPlace', '_gateLaterPlaceHtml', '_gateLaterDayWords', '_gateLaterKey',
+    '_apSublineForms', '_apSublineNames', '_apQcBoard', '_apSubLang', '_apSubline', '_apCitySpelling', '_cityAp', '_cityApHtml',
     '_gateLaterPairHtml', '_gateLaterSlotHtml', '_gateLaterStripHtml', '_gateChangeAccent', '_gateChangeAccent3', '_gateChangeOrbHtml',
     '_gateChangeNoticeHtml', '_gateLaterFitBox', '_gateLaterScale', '_gateLaterInkOver', '_gateLaterAlign',
     '_gateChangeSoloHtml'];
   const code = [CORE.match(/^var _GATE_HISTORY_KEY = .*;$/m)[0], CORE.match(/^var _CITY_CODE_TAIL = .*;$/m)[0], src('var _GATE_LBL = {'),
-    'var GATE_LATER_MAX = 3; var _GATE_TWIN_CITY = null;']
+    'var GATE_LATER_MAX = 3;', src('var AIRPORT_SUBLINE = {'),
+    CORE.match(/^var AIRPORT_SUBLINE_PERSON = .*;$/m)[0], 'var _AP_SUB_ALL = null;']
     .concat(names.map(fnSrc)).join('\n')
     + '\nreturn {' + names.join(',') + ', store: localStorageRef };';
   const keys = Object.keys(ctx);
@@ -132,7 +136,7 @@ test('the strip lists the next departures from this gate after the one on screen
   assert.match(html, /^<div class="gl-strip" data-gl-n="3">/);
   assert.equal(text(html.match(/<div class="gl-title">[\s\S]*?<\/div>/)[0]), 'Later at this gate | Plus tard à cette porte');
   const slots = html.split('<div class="gl-slot').slice(1).map((s) => text(s.slice(s.indexOf('>') + 1)));
-  assert.deepEqual(slots, ['6:35amAC2037 · Montreal · YUL', '7:10amAC7753 · Ottawa', '11:20amAC659 · Montreal · YUL']);
+  assert.deepEqual(slots, ['6:35amAC2037 · Montreal ·\u00a0Trudeau', '7:10amAC7753 · Ottawa', '11:20amAC659 · Montreal ·\u00a0Trudeau']);
 });
 
 test('nothing later at this gate: no strip, the window keeps its height, and no "no other departures" claim', () => {
@@ -237,7 +241,7 @@ test('(B) a flight moved away shows "now Gate 2 | maintenant porte 2", never a t
   assert.match(slot, /^ gl-moved" data-gl-to="2">/);
   assert.match(slot, /<span class="gl-arrow">→<\/span><span class="gl-now"><span class="gl-now-w">now Gate<\/span><span class="gl-now-w">maintenant porte<\/span><\/span><span class="gl-pill">2<\/span>/);
   assert.doesNotMatch(slot, /gl-time/, 'a moved flight shows where it went, not when');
-  assert.equal(text(slot.slice(slot.indexOf('<div class="gl-sub">'))), 'AC1987 · Toronto · YYZ');
+  assert.equal(text(slot.slice(slot.indexOf('<div class="gl-sub">'))), 'AC1987 · Toronto ·\u00a0Pearson');
   // Shown at the old door for as long as it would have stayed on its own screen: gone once it leaves.
   ac1987.status = 'departed';
   assert.deepEqual(b._gateLaterModel('4', ADT(5, 11, 0), 'YQM').entries.map((e) => e.f.flight), ['AC647']);
@@ -260,7 +264,7 @@ test('(C) the moved flight was the one on screen and nothing else leaves from he
   const html = b._gateChangeNoticeHtml(m);
   assert.match(html, /^<div class="gl-gc" data-gl-gc="AC1987&gt;2" style="--airline-accent:#D82F2E;--airline-accent3:#D82F2E;--gl-pill:#D82F2E;">/);
   const t = text(html);
-  for (const w of ['Gate change | Changement de porte', 'AC1987', 'Toronto · YYZ', 'Gate', 'Porte', 'Please proceed to Gate 2',
+  for (const w of ['Gate change | Changement de porte', 'AC1987', 'Toronto ·\u00a0Pearson', 'Gate', 'Porte', 'Please proceed to Gate 2',
     'Veuillez vous diriger vers la porte 2', 'Departure | Départ', '6:15pm']) assert.ok(t.includes(w), `notice says "${w}": ${t}`);
   // The carrier's mark leads the flight (rule 1 is in the CSS test below).
   assert.match(html, /<div class="gl-gc-flight"><span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap"/);
@@ -308,38 +312,36 @@ test('a time that is not today carries its day; a delay with a new time shows th
   assert.doesNotMatch(html, /delayed|retard/i, 'the strip carries no status, in words or colour');
 });
 
-test('a city with two airports says which one; MET for Saint-Hubert', () => {
+test('a city with two airports names the airport, in the same words as the rest of the gate', () => {
+  // v23997 — the strip took its own twin test and wrote the code ('Montreal ·
+  // MET') where the rail, the map and the caption said 'Montréal ·
+  // Métropolitain'. It now takes the shared table (_cityAp, AIRPORT_SUBLINE).
   const b = board({ now: ADT(5, 5, 0), dep: [] });
   const p = (ia) => b._gateLaterPlace({ _locIata: ia });
-  assert.deepEqual(p('YUL'), { city: 'Montreal', code: 'YUL' });
-  assert.deepEqual(p('YHU'), { city: 'Montreal', code: 'MET' });
-  assert.deepEqual(p('YYZ'), { city: 'Toronto', code: 'YYZ' });
-  assert.deepEqual(p('YTZ'), { city: 'Toronto', code: 'YTZ' });
-  assert.deepEqual(p('YOW'), { city: 'Ottawa', code: '' });
-  // The board's whole city table decides, so a new twin needs no list here.
-  assert.match(fnSrc('_gateLaterTwinCity'), /Object\.keys\(CITY\)/);
+  assert.deepEqual(p('YUL'), { city: 'Montreal · Trudeau', ia: 'YUL' });
+  assert.deepEqual(p('YHU'), { city: 'Montreal · Métropolitain', ia: 'YHU' });
+  assert.deepEqual(p('YYZ'), { city: 'Toronto · Pearson', ia: 'YYZ' });
+  assert.deepEqual(p('YTZ'), { city: 'Toronto · Billy Bishop', ia: 'YTZ' });
+  assert.deepEqual(p('YOW'), { city: 'Ottawa', ia: 'YOW' });
+  // as markup: the airport's name in its own span, with its code for the fitter
+  assert.equal(b._gateLaterPlaceHtml(p('YHU')),
+    'Montreal <span class="ap-sub" data-ap="YHU"><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">Métropolitain</span></span>');
+  // no test of its own, no code where a name is due
+  assert.doesNotMatch(CORE, /_gateLaterTwinCity|_GATE_TWIN_CITY/);
+  assert.match(fnSrc('_gateLaterPlace'), /city = _cityAp\(city, ia\);/);
+  assert.match(fnSrc('_gateLaterSlotHtml'), /'<span class="gl-place"><span class="gl-city">' \+ _gateLaterPlaceHtml\(pl\) \+ '<\/span>'/);
+  assert.match(fnSrc('_gateChangeNoticeHtml'), /'<span class="gl-gc-city">' \+ _gateLaterPlaceHtml\(pl\) \+ '<\/span>'/);
 });
 
-test('only passenger airports make a city a twin: Atlanta and Denver read as the city alone', () => {
-  // The board's own passenger-airport table (the departures board's country
-  // classifier), as fids-core.js builds it.
-  const _IATA_CC = new Function(src('const _IATA_CC_GROUPS = {').replace(/^const /, 'var ')
-    + '\n' + src('const _IATA_CC = (function () {').replace(/^const /, 'var ') + ')();\nreturn _IATA_CC;')();
-  for (const c of ['YUL', 'YHU', 'YYZ', 'YTZ', 'ATL', 'DEN', 'CDG', 'ORY', 'DCA', 'IAD']) assert.ok(_IATA_CC[c], c + ' is a passenger airport');
-  for (const c of ['PDK', 'BJC', 'LUK', 'MRI']) assert.equal(_IATA_CC[c], undefined, c + ' has no airline service');
-  const CITY2 = Object.assign({}, CITY, { ATL: 'ATLANTA', PDK: 'ATLANTA', DEN: 'DENVER', BJC: 'DENVER', CDG: 'PARIS', ORY: 'PARIS', IAD: 'WASHINGTON', DCA: 'WASHINGTON' });
+test('a city with one airport we show reads as the city alone: Atlanta, Denver, Victoria', () => {
+  const CITY2 = Object.assign({}, CITY, { ATL: 'ATLANTA', PDK: 'ATLANTA', DEN: 'DENVER', BJC: 'DENVER', YYJ: 'VICTORIA', VCT: 'VICTORIA' });
   const city2 = (ia) => CITY2[ia] || ia;
-  const b = board({ now: ADT(5, 5, 0), dep: [], extra: { CITY: CITY2, _cityForIata: city2, _IATA_CC } });
-  const p = (ia) => b._gateLaterPlace({ _locIata: ia });
-  assert.deepEqual(p('ATL'), { city: 'Atlanta', code: '' });
-  assert.deepEqual(p('DEN'), { city: 'Denver', code: '' });
-  assert.deepEqual(p('YHU'), { city: 'Montreal', code: 'MET' });
-  assert.deepEqual(p('YTZ'), { city: 'Toronto', code: 'YTZ' });
-  assert.deepEqual(p('ORY'), { city: 'Paris', code: 'ORY' });
-  assert.deepEqual(p('DCA'), { city: 'Washington', code: 'DCA' });
-  // Without the table (a stub board) every code in the city table counts.
-  const b2 = board({ now: ADT(5, 5, 0), dep: [], extra: { CITY: CITY2, _cityForIata: city2 } });
-  assert.deepEqual(b2._gateLaterPlace({ _locIata: 'ATL' }), { city: 'Atlanta', code: 'ATL' });
+  const b = board({ now: ADT(5, 5, 0), dep: [], extra: { CITY: CITY2, _cityForIata: city2 } });
+  const p = (ia) => b._gateLaterPlace({ _locIata: ia }).city;
+  assert.equal(p('ATL'), 'Atlanta');
+  assert.equal(p('DEN'), 'Denver');
+  assert.equal(p('YYJ'), 'Victoria');
+  assert.equal(p('YHU'), 'Montreal · Métropolitain');
 });
 
 test('every new word ships in all nine board languages, French first in Québec', () => {
@@ -401,8 +403,10 @@ test('no cut words: the type steps down to a floor, then the lines may wrap betw
   assert.equal(host.k, 0.72, 'never below the floor');
   // Without a measure of its own it reads the ink (_gateLaterInkOver).
   assert.match(fnSrc('_gateLaterFitBox'), /var ow = \(typeof overW === 'function'\) \? overW : _gateLaterInkOver;/);
+  // v23997 — the scale holds the clock row only; the words are the shared fitter's
   const fit = fnSrc('_gateLaterFit');
-  assert.match(fit, /if \(!_gateLaterFitBox\(st, '--gl-k', wide, slots, 0\.72\)\) \{\s*st\.classList\.add\('gl-wrap'\);\s*_gateLaterFitBox\(st, '--gl-k', wide, slots, 0\.5\);/);
+  assert.match(fit, /_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\);\s*(?:\/\/[^\n]*\n\s*)*fidsFitAll\(st\);/);
+  assert.doesNotMatch(fit, /gl-wrap/);
   // The rail's title fitters leave the notice's headline alone.
   assert.equal((CORE.match(/\.g8-bir-shelves (?:\.v2-flightinfo-block )?\.v2-fi-title:not\(\.gl-gc-title\)/g) || []).length, 3);
 });
@@ -454,8 +458,9 @@ test('no cut words, measured on the ink: a word in the slot\'s end padding does 
   const sp = slot(1200); sp.texts.push({ nodeValue: '   ', rects: [{ left: 0, right: 2000, width: 2000 }] });
   assert.equal(b._gateLaterInkOver(sp), false);
   assert.equal(b._gateLaterInkOver(slot(1200, { pills: [{ left: 1200, right: 1272 }] })), true);
-  // The strip's fitter uses it for the slots and the title.
-  assert.match(fnSrc('_gateLaterFit'), /if \(!_gateLaterFitBox\(st, '--gl-k', wide, slots, 0\.72\)\)/);
+  // The strip's fitter uses it for the clock row.
+  assert.match(fnSrc('_gateLaterFit'), /_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\);/);
+  assert.match(fnSrc('_gateLaterSlotOver'), /if \(t && _gateLaterInkOver\(t\)\) return true;/);
 });
 
 test('the strip and the glass are measured onto the rail\'s cards, so a 2px Delta frame lines up too', () => {

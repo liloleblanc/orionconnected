@@ -90,7 +90,7 @@ function cityHelpers(langNow, frFirst) {
     'var _UPPER_TOKENS = ' + CORE.slice(CORE.indexOf('const _UPPER_TOKENS = ') + 'const _UPPER_TOKENS = '.length, CORE.indexOf(';', CORE.indexOf('const _UPPER_TOKENS = '))) + ';',
     'function _dispIata(c) { return c === "YHU" ? "MET" : c; }',
     'var CITY = ' + JSON.stringify(CITY) + '; var CITY_FR = ' + JSON.stringify(CITY_FR) + ';',
-    fnSource('_apSublineNames'), fnSource('_apQcBoard'), fnSource('_apSubLang'), fnSource('_apSubline'),
+    fnSource('_apSublineForms'), fnSource('_apSublineNames'), fnSource('_apQcBoard'), fnSource('_apSubLang'), fnSource('_apSubline'),
     fnSource('_apCitySpelling'), fnSource('_cityAp'), fnSource('_cityApHtml'), fnSource('tc'),
     'return { _cityAp, _cityApHtml, _apSubline, tc };'
   ].join('\n');
@@ -256,7 +256,19 @@ test('the 20 longest names in our city tables and every airport under-name fit e
     const fontW = MODEL.fonts[s.font];
     for (const nm of NAMES) {
       const parts = partsFor(s.shape, nm);
-      const fits = (px, wrap, loose, sub) => {
+      const fits = (px, wrap, loose, sub, under) => {
+        // v23997 — the airport forced under its city: the city's line, then
+        // the airport's (with what follows it), each measured as one line
+        if (under) {
+          const at = parts.findIndex((p) => p.ap);
+          if (at < 0) return false;
+          const one = (ps) => layout(ps, px, false, false, s, fontW, sub).widths[0];
+          const ap = Object.assign({}, parts[at], { text: parts[at].text.replace(/^·\u00a0/, '') });
+          if (one(parts.slice(0, at)) > s.w + 0.5 || one([ap, ...parts.slice(at + 1)]) > s.w + 0.5) return false;
+          if (s.lines < 2) return false;
+          if (s.h && (1.08 + 1.3) * px > s.h + 0.5) return false;
+          return true;
+        }
         const L = layout(parts, px, wrap, loose, s, fontW, sub);
         if (L.widths.some((w) => w > s.w + 0.5)) return false;
         if (L.lines > (wrap ? (loose ? s.lines * 2 : s.lines) : 1)) return false;
@@ -266,11 +278,19 @@ test('the 20 longest names in our city tables and every airport under-name fit e
       };
       const r = _fxPlan(s.base, s.floor, s.lines, !!nm.sub, !!s.units, fits);
       checked++;
-      if (r.over || r.px < s.floor - 1e-9 || (r.sub && r.sub < s.floor - 1e-9) || !fits(r.px, r.wrap, r.loose, r.sub)) fails.push(`${s.surface} @${s.size}: "${nm.name}" (${r.over ? 'over at the floor' : r.px})`);
+      if (r.over || r.px < s.floor - 1e-9 || (r.sub && r.sub < s.floor - 1e-9) || !fits(r.px, r.wrap, r.loose, r.sub, r.under)) fails.push(`${s.surface} @${s.size}: "${nm.name}" (${r.over ? 'over at the floor' : r.px})`);
       // the airport's name never costs its city its size where the airport,
       // at the floor, has room beside the city or under it; only where even
       // that does not fit does the city come down, and then no further than
       // it must (a 1280 board's narrow destination column)
+      // v23997 — an airport that would sit at the floor beside its city goes
+      // under it instead, at its own step, where that keeps the city at 85%
+      // of its size beside and the airport reads at least 15% bigger: the
+      // checks below are for the layout it would otherwise have had
+      const beside = _fxPlan(s.base, s.floor, 1, !!nm.sub, !!s.units, fits);
+      const underInstead = nm.sub && r.under && !r.sub && !beside.over && (beside.sub || beside.px * 0.8) <= s.floor + 0.25
+        && r.px >= beside.px * 0.85 - 1e-9 && r.px * 0.8 >= (beside.sub || s.floor) * 1.15;
+      if (underInstead) continue;
       if (nm.sub) {
         const room = fits(s.base, false, false, s.floor) || (s.lines > 1 && fits(s.base, true, false, s.floor));
         const alone = { px: room ? s.base : 0 };
@@ -398,15 +418,15 @@ test('the board row, the gate, the belts, the inbound line, the map label and th
   // the Your Aircraft line and the inbound cards, the map label, the weather
   assert.match(CORE, /_destCityName = _cityAp\(_destCityName, _dIata\);/);
   assert.match(CORE, /if \(typeof _cityAp === 'function'\) _origCity = _cityAp\(_origCity, _origIata\);/);
-  assert.match(CORE, /\(\(typeof _cityApHtml === 'function'\) \? _cityApHtml\(_origCity\) : _origCity\)/);
+  assert.match(CORE, /\(\(typeof _cityApHtml === 'function'\) \? _cityApHtml\(_origCity, _origIata\) : _origCity\)/);
   assert.equal((CORE.match(/if \(typeof _cityAp === 'function'\) _fromCity = _cityAp\(_fromCity, _fromIata\);/g) || []).length, 2);
   assert.match(CORE, /if \(city\) return _cityAp\(tc\(city\), iataCode\) \+ ' ' \+ _dispIata\(iataCode\);/);
   assert.match(fnSource('_gateMapCity'), /_cityAp\(c, iata, lg\)/);
   assert.match(CORE, /try \{ c = _cityAp\(c, iata\); \} catch \(eC3\) \{\}/);
   // as markup, the airport a step smaller and in one piece with its "·"
-  assert.match(CORE, /<span class="b3-city">\$\{_cityApHtml\(_b3City\)\}<\/span>/);
-  assert.match(CORE, /_label = _cityApHtml\(_cityPlain\) \+ _tailHtml\(_tailCode\.toUpperCase\(\)\);/);
-  assert.match(CORE, /var _destCityHtml = _destCityName \? _cityApHtml\(_destCityName\) : _destCityName;/);
+  assert.match(CORE, /<span class="b3-city">\$\{_cityApHtml\(_b3City, _b3Code\)\}<\/span>/);
+  assert.match(CORE, /_label = _cityApHtml\(_cityPlain, _tailCode\) \+ _tailHtml\(_tailCode\.toUpperCase\(\)\);/);
+  assert.match(CORE, /var _destCityHtml = _destCityName \? _cityApHtml\(_destCityName, _dIata\) : _destCityName;/);
   assert.match(CORE, /var _destValue = _dfCity \|\| _destCityHtml \|\| _destIataDisp;/);
   assert.match(OVR, /\.ap-sub \{ white-space: nowrap !important; font-size: max\(0\.8em, var\(--fx-floor, 12px\)\); \}/);
   // v23986 — a separator the line broke at goes, and its break stays: the
@@ -481,7 +501,7 @@ test('the boarding row\'s Destination is the rail\'s: the airport, the casing, t
   assert.match(row, /_bDest = \(typeof _cityForIata === 'function' \? _cityForIata\(_bdIata\) : ''\)/);
   assert.match(row, /_bDest = normalizeDisplayCity\(_bDest, _bdIata\);/);
   assert.match(row, /_bDest = _cityAp\(_bDest, _bdIata\);/);
-  assert.match(row, /_bDest = _cityApHtml\(_bDest\);/);
+  assert.match(row, /_bDest = _cityApHtml\(_bDest, _bdIata\);/);
   assert.doesNotMatch(row, /CITY\[locIata\]/, 'no table read of its own');
   assert.match(row, /'<div class="v2-fi-value' \+ \(icon === 'ac-ico-dest' \? ' v2-fi-dest' : ''\) \+ '">'/);
 });
@@ -576,7 +596,7 @@ test('a separator dropped at a break keeps the break, and is measured at the siz
   // search's last, larger probe
   const box = CORE.slice(CORE.indexOf('function _boxAssign('), CORE.indexOf('function _plateInset('));
   assert.match(box, /_fxBrkClear\(el\);\s*var _wrapOk = /);
-  assert.match(box, /&& _twoAt\(_wPx\)\) \{\s*_finPx = _wPx;\s*el\.style\.setProperty\('font-size', _finPx \+ 'px', 'important'\);\s*_fxBreakSeps\(el, true\);/);
+  assert.match(box, /&& _twoAt\(_wPx\)\) \{\s*_finPx = _wPx;\s*_cityTwo = true;\s*el\.style\.setProperty\('font-size', _finPx \+ 'px', 'important'\);\s*_fxBreakSeps\(el, true\);/);
   assert.match(box, /el\.style\.setProperty\('font-size', _finPx \+ 'px', 'important'\);\s*_fxBreakSeps\(el, false\);/);
 });
 
@@ -616,4 +636,140 @@ test('the pending words are never under the floor, and the big map names the air
   assert.match(CORE, /'<span class="bigcraft-cap-plc" data-ap-city="' \+ _capEsc\(_capCity\) \+ '" data-ap-code="' \+ _capEsc\(_capCode\) \+ '">' \+ _capEsc\(_fxApPlace\(_capCity, _capCode\)\) \+ '<\/span>'/);
   assert.match(fnSource('_fxApPlace'), /c = _cityAp\(c, k\);/);
   assert.match(fnSource('_fxApRelang'), /if \(els\[i\]\.textContent !== t\) els\[i\]\.textContent = t;/);
+});
+
+// ── 6. THE FOURTH PASS (v23997) ────────────────────────────────────────────
+//
+// What the review of v23986 found, measured on the boards: the 1280 weather
+// card's five day panels cut under a title that had wrapped with its airport
+// on it; the airport's name shrinking the gate's Destination (79px to 43px at
+// 1920) and the Your Aircraft block; the Later-at-this-gate strip naming the
+// same airports by code with its own twin test and its own fitter, its title
+// under the floor; twin cities on the live boards with no airport named; and
+// a belt row changing layout between its language phases.
+
+test('the gate\'s Destination is fitted alone; its airport takes what is left, or gives way', () => {
+  const box = CORE.slice(CORE.indexOf('function _boxAssign('), CORE.indexOf('function _plateInset('));
+  assert.match(box, /var _apSub = _wrapOk \? el\.querySelector\('\.ap-sub'\) : null;\s*if \(_apSub\) \{ _apSub\.classList\.add\('ap-sub-off'\); _apSub\.style\.removeProperty\('font-size'\); \}/);
+  assert.match(box, /var _hasSub = false;/);
+  assert.match(box, /if \(_apSub\) _gateApSubPlace\(el, _apSub, _finPx, _cityTwo, availH, colR, skipH, _flo\);/);
+  const place = fnSource('_gateApSubPlace');
+  assert.match(place, /var top = Math\.max\(flo, Math\.floor\(cityPx \* 0\.8 \* 4\) \/ 4\);/);
+  assert.match(place, /var b1 = _fxSearch\(flo, top, function \(q\) \{ return fitsAt\(q, false\); \}\);/);
+  assert.match(place, /var b2 = _fxSearch\(flo, top, function \(q\) \{ return fitsAt\(q, true\); \}\);/);
+  assert.match(place, /sub\.classList\.add\('ap-sub-off'\);/);
+  assert.doesNotMatch(place, /el\.style\.setProperty\('font-size'/, 'the city\'s size is never touched');
+  assert.match(OVR, /:root:not\(#_\) \.ap-sub\.ap-sub-off \{ display: none !important; \}/);
+  // the Your Aircraft lines: sized without the airport, then it is set in
+  // what its own line has left, a step under the line down to the floor
+  assert.match(CORE, /_ibSubs\.forEach\(function \(sb\) \{\s*sb\.classList\.add\('ap-sub-off'\); sb\.style\.removeProperty\('font-size'\);/);
+  assert.match(CORE, /var ok = function \(q\) \{\s*sb\.style\.setProperty\('font-size', q \+ 'px', 'important'\);\s*if \(!vars\) return _measure\(ln\) <= availW \+ 0\.5;/);
+  // both in every board language's words (_fxApVariants), so each phase takes the same place
+  assert.match(fnSource('_gateApSubPlace'), /var vars = _fxApVariants\(el, sub\);/);
+  assert.match(CORE, /var vars = _fxApVariants\(ln, sb\);/);
+});
+
+test('the decision: the bigger city, then the bigger airport, then one line', () => {
+  // the city at its size either way: beside it only at its own step
+  const fits = (oneMax, twoOk) => (px, wrap, loose, sub) => px <= 23.5 && (wrap ? twoOk : (sub || px * 0.8) <= oneMax);
+  assert.deepEqual(_fxPlan(23.5, 12, 2, true, false, fits(18.8, true)), { px: 23.5, wrap: false });
+  const hair = _fxPlan(23.5, 12, 2, true, false, fits(18.7, true));
+  assert.ok(!hair.wrap && hair.px === 23.5 && hair.sub >= 18.5, 'a hair under its step: still beside ' + JSON.stringify(hair));
+  assert.deepEqual(_fxPlan(23.5, 12, 2, true, false, fits(15.5, true)), { px: 23.5, wrap: true });
+  // a belt row (YQM PD2293, 1280x720) whose airport held 15.5px of 23.5 beside
+  // its city in English and 15.2px in French took one layout in each
+  // language; it takes the same one in both now
+  const en = _fxPlan(23.5, 12, 2, true, false, fits(15.5, true)), fr = _fxPlan(23.5, 12, 2, true, false, fits(15.2, true));
+  assert.deepEqual(en, fr);
+  // an airport that would sit at the floor beside its city goes under it
+  // (a forced second line), at its own step, when that keeps the city at 85%
+  // of its size beside and the airport reads at least 15% bigger; a 1280x720
+  // board's 36px row cannot (14.5px over 12px against 21.25px beside 12px)
+  const row = (px, wrap, loose, sub) => (wrap ? px <= 19.25 : (px <= 21.25 && (sub || px * 0.8) <= 12));
+  const lon = _fxPlan(21.76, 12, 2, true, false, row);
+  assert.ok(lon.wrap && lon.under && !lon.sub && lon.px >= 19 && lon.px <= 19.25, JSON.stringify(lon));
+  const tight = (px, wrap, loose, sub) => (wrap ? px <= 17 : (px <= 21.25 && (sub || px * 0.8) <= 12));
+  assert.equal(_fxPlan(21.76, 12, 2, true, false, tight).wrap, false, 'not at more than 15% of the city');
+  const small = (px, wrap, loose, sub) => (wrap ? px <= 15.5 : (px <= 16.25 && (sub || px * 0.8) <= 12));
+  assert.equal(_fxPlan(21.76, 12, 2, true, false, small).wrap, false, 'not for an airport hardly bigger under it');
+  // and every board language's words are tried in place, so all of them hold
+  const v = fnSource('_fxApVariants');
+  assert.match(v, /var code = sub && sub\.getAttribute\('data-ap'\);/);
+  assert.match(v, /var name = _apSubline\(code, lgs\[b\]\);/);
+  assert.match(fnSource('fidsFitText'), /var vars = subs\.length === 1 \? _fxApVariants\(el, subs\[0\]\) : null;/);
+  assert.match(fnSource('fidsFitText'), /for \(var vi = 0; vi < vars\.n && ok; vi\+\+\) \{ vars\.apply\(vi\); ok = at1\(px, wrap, loose, sub, under\); \}\s*vars\.restore\(\);/);
+  // the code rides on the airport's span for it
+  assert.equal(helpers._cityApHtml('Toronto · Billy Bishop', 'YTZ'),
+    'Toronto <span class="ap-sub" data-ap="YTZ"><span class="ap-sep fx-brk">· </span><span class="ap-name">Billy Bishop</span></span>');
+  assert.equal(helpers._cityApHtml('Montréal · Métropolitain', 'MET'),
+    'Montréal <span class="ap-sub" data-ap="YHU"><span class="ap-sep fx-brk">· </span><span class="ap-name">Métropolitain</span></span>');
+  assert.doesNotMatch(helpers._cityApHtml('Ottawa', 'YOW'), /data-ap/);
+});
+
+test('twin cities from the live boards say which airport, in every board language', () => {
+  const fold = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  for (const [a, b] of [['IST', 'SAW'], ['BFS', 'BHD'], ['DXB', 'DWC'], ['SEA', 'BFI'], ['CDG', 'LBG']]) {
+    assert.ok(SUB[a] && SUB[b], a + '/' + b);
+    assert.equal(fold(CITY[a]), fold(CITY[b]), a + '/' + b + ' are one city');
+  }
+  // a name that is a description is written in each language; a proper name as written
+  for (const code of ['IST', 'BFS', 'DXB']) {
+    for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.ok(SUB[code][l] && SUB[code][l].trim(), code + '.' + l);
+    for (const l of ['es', 'it', 'pt', 'ja', 'zh', 'ar']) assert.notEqual(SUB[code][l], SUB[code].en, code + '.' + l + ' is not the English');
+  }
+  assert.equal(helpers._apSubline('IST', 'de'), 'Flughafen Istanbul');
+  assert.equal(helpers._apSubline('BFS', 'it'), 'Internazionale');
+  assert.equal(helpersFr._apSubline('SAW', 'fr'), 'Sabiha-Gökçen');
+  assert.equal(helpersFr._apSubline('DWC', 'fr'), 'Al-Maktoum');
+  assert.equal(helpers._apSubline('LBG', 'ja'), 'Le Bourget');
+  assert.equal(helpers._cityAp('Istanbul', 'SAW', 'en'), 'Istanbul · Sabiha Gökçen');
+  assert.equal(helpers._cityAp('Belfast', 'BHD', 'en'), 'Belfast · City');
+  // once, in the language asked for, from any language's form
+  assert.equal(helpers._cityAp('Istanbul · Istanbul Airport', 'IST', 'fr'), "Istanbul · Aéroport d'Istanbul");
+  assert.equal(helpers.tc('ISTANBUL · Flughafen Istanbul'), 'Istanbul · Flughafen Istanbul');
+  // one city, one spelling: Dubaï for both of its airports in French
+  assert.equal(CITY_FR.DWC, CITY_FR.DXB);
+  // Santiago de Cuba is not Chile's Santiago
+  assert.equal(CITY.SCU, 'SANTIAGO DE CUBA');
+  assert.equal(CITY_FR.SCU, 'SANTIAGO DE CUBA');
+  assert.match(read('js/shared-names.js'), /SCU:'SANTIAGO DE CUBA'/);
+});
+
+test('the weather screens\' title keeps one line, its airport giving way first; the day panels are never cut', () => {
+  const t = fnSource('_wxFitTitle');
+  const steps = ['// 1. the airport, down to the floor', '// 2. the place, down to the words beside it',
+    '// 3. the airport left to its code', '// 4. the place, then the words, to the floor'].map((x) => t.indexOf(x));
+  for (const i of steps) assert.ok(i > 0);
+  assert.deepEqual(steps, [...steps].sort((a, b) => a - b), 'in that order');
+  assert.match(t, /sub\.classList\.add\('ap-sub-off'\);/);
+  // a row of the title is told by where its pieces are laid out (the screens
+  // slide in turned and scaled), not by where they are drawn
+  assert.match(fnSource('_wxTitleOneLine'), /k\.offsetTop >= minTop \+ maxH \* 0\.6/);
+  // the icon gives up the height the words need, measured on the words
+  const room = fnSource('_wxDayRoom');
+  assert.match(room, /var o = _wxDayOver\(d, body, ic\);/);
+  assert.match(room, /ic\.style\.setProperty\('height', nw \+ 'px', 'important'\);/);
+  assert.match(fnSource('_wxDayOver'), /rg\.selectNodeContents\(n\);/);
+  // after every fit pass and every plate fit
+  assert.match(fnSource('fidsFitAll'), /try \{ _wxFitTitles\(scope\); \} catch \(eW\) \{\}/);
+  assert.match(fnSource('_wxFitPlateCities'), /try \{ _wxFitTitles\(root\); \} catch \(e2\) \{\}/);
+});
+
+test('the Later-at-this-gate strip\'s words are the shared fitter\'s, never under the floor', () => {
+  const r = rulesSrc();
+  assert.match(r, /\{ sel: '\.gl-strip \.gl-title', lines: 1 \}/);
+  assert.match(r, /\{ sel: '\.gl-strip \.gl-sub', box: '\.gl-slot', lines: 2, group: '\.gl-list', h: function \(el\) \{ return _GL_FIT_SUB\.h\(el\); \} \}/);
+  // the clock row comes down while a slot's time and line are taller than
+  // the slot; the line then has the height the row leaves it
+  assert.match(fnSource('_gateLaterFit'), /_fxUnfit\(lns\[li\]\);\s*lns\[li\]\.style\.setProperty\('font-size', fidsFitFloor\(\) \+ 'px', 'important'\);\s*\}\s*_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\);/);
+  // its title and lines are sized by the screen, floored, not by the clock row's scale
+  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), min\(1\.92vh, 1\.2vw\)\) !important;/);
+  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--gl-v\) \* \.27\)\) !important;/);
+  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--gl-v\) \* \.2 \* var\(--gl-k\)\)\) !important;/);
+  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--gl-v\) \* \.22 \* var\(--gl-k\)\)\) !important;/);
+  assert.doesNotMatch(OVR, /\.gl-strip\.gl-wrap/);
+  // the board's gate cell is fitted too (MCO 'NHGR' ended in an ellipsis at 1280x720)
+  assert.match(r, /\{ sel: '#fidsTable tbody td\.td-gate', lines: 1 \}/);
+  // a group's airport stays a step under the size the group gives its line
+  assert.match(fnSource('fidsFitAll'), /var gTop = Math\.max\(fidsFitFloor\(\), Math\.floor\(mn \* 0\.8 \* 4\) \/ 4\);/);
 });
