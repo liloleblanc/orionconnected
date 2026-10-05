@@ -144,11 +144,11 @@ test('the belt sign is built to the mock: band, disc, number in the suitcase', (
     'the numeral ceiling must come down to fit inside the suitcase, via the var the fitter reads');
   // Both languages in the band, one under the other.
   assert.match(RULES, /\.bidsv2-carousel-label \{[^}]*grid-row: 1 !important;/);
-  assert.match(RULES, /\.bidsv2-carousel-block::after \{[^}]*grid-row: 2 !important;/);
+  assert.match(RULES, /\.bidsv2-carousel-block > \.bidsv2-carousel-l2 \{[^}]*grid-row: 2 !important;/);
   // A single-language board must still be able to drop the FR bar: the
   // display MUST stay routed through --crsl-l2-disp, or every EN/ES airport
   // grows a phantom second line.
-  assert.match(RULES, /\.bidsv2-carousel-block::after \{[^}]*display: var\(--crsl-l2-disp, block\) !important;/,
+  assert.match(RULES, /\.bidsv2-carousel-block > \.bidsv2-carousel-l2 \{[^}]*display: var\(--crsl-l2-disp, block\) !important;/,
     'the second-language bar must keep honouring --crsl-l2-disp');
   assert.match(RULES, /\[style\*="--crsl-l2-disp:none"\] \.bidsv2-carousel-label \{[^}]*padding-bottom/,
     'and the label must close the band when that bar is gone');
@@ -165,7 +165,7 @@ test('the armour comes off with the artwork', () => {
   // carried a black stroke; the ::after's was NOT !important, so a weaker
   // rule here would beat one and miss the other.
   assert.match(BLOCK, /\.bidsv2-carousel-label,/);
-  assert.match(BLOCK, /\.bidsv2-carousel-block::after,/);
+  assert.match(BLOCK, /\.bidsv2-carousel-block > \.bidsv2-carousel-l2,/);
   assert.match(BLOCK, /\.bidsv2-carousel-number \{\s*-webkit-text-stroke: 0 !important;\s*text-shadow: none !important;/);
 });
 

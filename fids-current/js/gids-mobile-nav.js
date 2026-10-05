@@ -28,19 +28,24 @@
     var wrap = document.querySelector('.g8-wrap');
     if (!wrap) return;
 
+    // v23970 — the phone's own language (one, fids_mobile_lang or the phone's),
+    // from the store; these were English on every phone.
+    var S = window.BoardStrings;
+    var esc = S.esc;
+    var _l = (typeof lang !== 'undefined' && lang) || 'en';
     var nav = document.createElement('div');
     nav.id = 'gidsMobileNav';
     nav.innerHTML =
       '<div class="gmn-options">' +
         '<button class="gmn-back" type="button">' +
-          '<span style="font-size:24px;line-height:1;margin-top:-2px">\u2039</span> Back</button>' +
+          '<span style="font-size:24px;line-height:1;margin-top:-2px">\u2039</span> ' + esc(S.bs('back', _l)) + '</button>' +
         '<div class="gmn-search">' +
-          '<input type="text" inputmode="text" placeholder="Go to gate # or flight #">' +
-          '<button class="gmn-go" type="button">Go</button>' +
+          '<input type="text" inputmode="text" placeholder="' + esc(typeof TL === 'function' ? TL('gateOrFlight') : '') + '">' +
+          '<button class="gmn-go" type="button">' + esc(S.bs('go', _l)) + '</button>' +
         '</div>' +
       '</div>' +
       '<button class="gmn-tab" type="button">' +
-        '<span class="gmn-grip"></span><span>MENU</span></button>';
+        '<span class="gmn-grip"></span><span>' + esc(S.bs('menu', _l).toLocaleUpperCase(S.META[_l].intl)) + '</span></button>';
     wrap.appendChild(nav);
 
     // toggle open/close

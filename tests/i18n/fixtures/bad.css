@@ -1,0 +1,9 @@
+/* Self-test fixture */
+.lbl::before { content: "Aircraft"; }
+.ok::before { content: "\2022"; }
+.attr::after { content: attr(data-baremsg); }
+/* round 5: text drawn without content: text */
+.gcv::after { content: var(--gcv); }
+.gq { quotes: 'Gate closes' ''; }
+.gl { display: list-item; list-style-type: 'Gate closes '; }
+@counter-style gcx { system: cyclic; symbols: 'Gate closes'; suffix: ' '; }

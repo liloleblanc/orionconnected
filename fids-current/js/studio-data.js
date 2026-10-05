@@ -5,16 +5,20 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
+  // v23970 — statuses travel as these canonical English codes ('On time',
+  // 'Boarding'…): the scene rules compare them, and studio-render.js turns
+  // them into the screen's language (statusText) only when it draws them.
+  // The preview flights, weather and times below are sample data.
   const PREVIEW_FLIGHTS = Object.freeze({
     departures: Object.freeze([
-      { flight: 'AC 1983', airline: 'AC', city: 'Toronto', airport: 'YYZ', gate: '4', time: '5:30 AM', status: 'On time' },
-      { flight: 'PD 2294', airline: 'PD', city: 'Toronto', airport: 'YTZ', gate: '3', time: '6:15 AM', status: 'On time' },
-      { flight: 'AC 7753', airline: 'AC', city: 'Ottawa', airport: 'YOW', gate: '4', time: '7:10 AM', status: 'Boarding' },
-      { flight: 'AC 7995', airline: 'AC', city: 'Montréal', airport: 'YUL', gate: '4', time: '11:05 AM', status: 'Delayed' },
-      { flight: 'PB 923', airline: 'PB', city: 'Mont-Joli', airport: 'YYY', gate: '2', time: '11:25 AM', status: 'On time' }
+      { flight: 'AC 1983', airline: 'AC', city: 'Toronto', airport: 'YYZ', gate: '4', time: '5:30 AM', status: 'On time' }, // i18n-ok: data
+      { flight: 'PD 2294', airline: 'PD', city: 'Toronto', airport: 'YTZ', gate: '3', time: '6:15 AM', status: 'On time' }, // i18n-ok: data
+      { flight: 'AC 7753', airline: 'AC', city: 'Ottawa', airport: 'YOW', gate: '4', time: '7:10 AM', status: 'Boarding' }, // i18n-ok: data
+      { flight: 'AC 7995', airline: 'AC', city: 'Montréal', airport: 'YUL', gate: '4', time: '11:05 AM', status: 'Delayed' }, // i18n-ok: data
+      { flight: 'PB 923', airline: 'PB', city: 'Mont-Joli', airport: 'YYY', gate: '2', time: '11:25 AM', status: 'On time' } // i18n-ok: data
     ]),
     arrivals: Object.freeze([
-      { flight: 'AC 1983', airline: 'AC', city: 'Toronto', airport: 'YYZ', belt: '1', time: '9:08 PM', status: 'Arrived' }
+      { flight: 'AC 1983', airline: 'AC', city: 'Toronto', airport: 'YYZ', belt: '1', time: '9:08 PM', status: 'Arrived' } // i18n-ok: data
     ])
   });
 
@@ -35,7 +39,7 @@
     const hour = Number(match[1]);
     const minute = match[2];
     if (!Number.isFinite(hour)) return String(value || '');
-    return String((hour % 12) || 12) + ':' + minute + ' ' + (hour >= 12 ? 'PM' : 'AM');
+    return String((hour % 12) || 12) + ':' + minute + ' ' + (hour >= 12 ? 'PM' : 'AM'); // i18n-ok: code (studio-render reads it back as a 24-hour time)
   }
 
   function readableStatus(value) {
@@ -47,11 +51,11 @@
       // feed's own 'ontime' fell through to the raw code.
       ontime: 'On time', scheduled: 'Scheduled', expected: 'Expected', active: 'En route', enroute: 'En route', // i18n-ok: data
       // v23925 — the shared router passes a final call through as 'final'.
-      boarding: 'Boarding', final: 'Final call', finalcall: 'Final call', gateclosed: 'Gate closed', departed: 'Departed',
-      arrived: 'Arrived', landed: 'Arrived', delayed: 'Delayed', cancelled: 'Cancelled',
-      canceled: 'Cancelled', diverted: 'Diverted'
+      boarding: 'Boarding', final: 'Final call', finalcall: 'Final call', gateclosed: 'Gate closed', departed: 'Departed', // i18n-ok: data
+      arrived: 'Arrived', landed: 'Arrived', delayed: 'Delayed', cancelled: 'Cancelled', // i18n-ok: data
+      canceled: 'Cancelled', diverted: 'Diverted' // i18n-ok: data
     };
-    return labels[status] || String(value || 'Scheduled');
+    return labels[status] || String(value || 'Scheduled'); // i18n-ok: data
   }
 
   function normalizeFlight(value) {
@@ -94,9 +98,9 @@
       id: 'preview',
       mode: 'preview',
       async flights(direction) { return clone(direction === 'arrivals' ? PREVIEW_FLIGHTS.arrivals : PREVIEW_FLIGHTS.departures); },
-      async weather() { return { temperature: 22, unit: 'C', condition: 'Clear', icon: '../logos/weather/animated/clear-day.svg' }; },
-      async checkin() { return { counters: ['01', '02', '03', '04'], airline: 'Air Canada', state: 'Open' }; },
-      async baggage() { return { belt: '1', unloaded: 98, expected: 146, transfers: 12, priority: 4, health: 'Online' }; },
+      async weather() { return { temperature: 22, unit: 'C', condition: 'Clear', icon: '../logos/weather/animated/clear-day.svg' }; }, // i18n-ok: data
+      async checkin() { return { counters: ['01', '02', '03', '04'], airline: 'Air Canada', state: 'Open' }; }, // i18n-ok: data
+      async baggage() { return { belt: '1', unloaded: 98, expected: 146, transfers: 12, priority: 4, health: 'Online' }; }, // i18n-ok: data
       async health() { return { ok: true, source: 'preview', checkedAt: new Date().toISOString() }; }
     };
   }
@@ -127,13 +131,13 @@
       async flights(direction) {
         const requestedDirection = direction === 'arrivals' ? 'arrivals' : 'departures';
         try {
-          const data = await routerFetch(context.iata || '', requestedDirection === 'arrivals' ? 'Arrival' : 'Departure');
+          const data = await routerFetch(context.iata || '', requestedDirection === 'arrivals' ? 'Arrival' : 'Departure'); // i18n-ok: data
           const values = requestedDirection === 'arrivals' ? data && data.arrivals : data && data.departures;
           if (!Array.isArray(values)) throw new Error('The airport flight router returned an invalid response.');
           lastHealth = { ok: true, source: 'operational-read-only', fallback: false, count: values.length, checkedAt: new Date().toISOString() };
           return values.map(function (flight) { return normalizeOperationalFlight(flight, requestedDirection); });
         } catch (error) {
-          lastHealth = { ok: false, source: 'operational-read-only', fallback: false, reason: error && error.message || 'Airport data unavailable.', checkedAt: new Date().toISOString() };
+          lastHealth = { ok: false, source: 'operational-read-only', fallback: false, reason: error && error.message || 'Airport data unavailable.', checkedAt: new Date().toISOString() }; // i18n-ok: debug
           throw error;
         }
       },
@@ -160,7 +164,7 @@
           source: backup.id,
           primarySource: primary.id,
           fallback: true,
-          reason: error && error.message || 'Airport data unavailable.',
+          reason: error && error.message || 'Airport data unavailable.', // i18n-ok: debug
           checkedAt: new Date().toISOString()
         };
         return value;

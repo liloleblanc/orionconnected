@@ -32,10 +32,15 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
 
+// The captions live in the one store (board-strings.js) as 'heritage:<key>',
+// in all nine languages; each record carries its art and facts. en/fr are
+// joined back onto the record here so the date checks read as before.
+const STORE = require('../fids-current/js/board-strings.js');
 function marks() {
   const m = /var HERITAGE_MARKS = (\[[\s\S]*?\n\]);/.exec(SRC);
   assert.ok(m, 'the heritage set must be declared');
-  return new Function('return ' + m[1] + ';')();
+  return new Function('return ' + m[1] + ';')().map((mk) => Object.assign({}, mk,
+    { en: STORE.bs('heritage:' + mk.key, 'en'), fr: STORE.bs('heritage:' + mk.key, 'fr'), caption: STORE.entry('heritage:' + mk.key) }));
 }
 
 test('every mark in the set is on disk', () => {
@@ -78,16 +83,19 @@ test('no card claims a date its sources disagree on', () => {
   for (const k of ['air-canada', 'air-canada-caps']) {
     const acm = byKey[k];
     assert.ok(acm, k + ': the Air Canada DC-9 card exists');
-    for (const cap of [acm.en, acm.fr]) {
-      assert.match(cap, /DC-9 · 1966–2002$/, 'the checked DC-9 years print');
+    for (const l of STORE.LANGS) {
+      const cap = acm.caption[l];
+      assert.match(cap, /DC-9 · 1966–2002$/, 'the checked DC-9 years print, in ' + l);
       assert.doesNotMatch(cap, /19(6[5-9]|7\d|8\d|9[0-4])(?!–2002)/, 'no disputed livery or logo year appears');
     }
     assert.match(acm.fr, /^Montréal/, 'the French caption spells Montréal');
   }
   // Founding year reported as 1985 in one source and 1986 in another.
-  assert.doesNotMatch(byKey['air-atlantic'].en, /198[56]\s*[–-]/,
-    'Air Atlantic must not print a founding year — the sources disagree');
-  assert.match(byKey['air-atlantic'].en, /1998/, 'the ceasing year is solid and is printed');
+  for (const l of STORE.LANGS) {
+    assert.doesNotMatch(byKey['air-atlantic'].caption[l], /198[56]\s*[–-]/,
+      'Air Atlantic must not print a founding year — the sources disagree (' + l + ')');
+    assert.match(byKey['air-atlantic'].caption[l], /1998/, 'the ceasing year is solid and is printed (' + l + ')');
+  }
   // Canadian Airlines may have a card, but ONLY on its own wordmark. The
   // partner endorsement is the mark a feeder carried, not this carrier's
   // identity, and an earlier version captioned it as the mainline airline.
@@ -98,7 +106,7 @@ test('no card claims a date its sources disagree on', () => {
     assert.doesNotMatch(ca.file, /partner/i,
       'the partner endorsement must never stand in for the mainline carrier');
     // Formed 27 March 1987; Air Canada subsidiary 1 January 2001.
-    assert.match(ca.en, /1987–2001/, 'both ends are confirmed, so both print');
+    for (const l of STORE.LANGS) assert.match(ca.caption[l], /1987–2001/, 'both ends are confirmed, so both print (' + l + ')');
   }
 });
 
@@ -199,12 +207,15 @@ test('the card does not set the carrier name under its own wordmark', () => {
     'the name still rides on alt, for anything that cannot render the image');
 });
 
-test('both languages are shown, in the airport s own order', () => {
+test('the board\'s two languages are shown, in the airport\'s own order', () => {
+  // It printed English and French whatever the board spoke. Now it is the
+  // board's own pair, French first at a French-first airport, one line each.
   const body = renderBody();
-  assert.match(body, /frF \? mark\.fr : mark\.en/, 'French first at French-first airports');
-  assert.match(body, /frF \? mark\.en : mark\.fr/, 'and the other language under it');
-  assert.match(body, /l2 !== l1/,
+  assert.match(body, /var _hLangs = BoardStrings\.pairLangs\(langs, frF\);/, 'the board\'s pair, French first in Québec');
+  assert.match(body, /BoardStrings\.bs\(_capKey, lg\)/, 'each line from the store');
+  assert.match(body, /if \(!w \|\| _seenL\[w\]\) return;/,
     'a caption identical in both languages must not be printed twice');
+  assert.match(body, /BoardStrings\.pair\('heritageKicker'/, 'and the kicker too');
 });
 
 test('the card is registered, dispatched and given a dwell', () => {

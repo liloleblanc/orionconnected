@@ -1,0 +1,13 @@
+# The board-languages guard, its policy and approvals, the rendered check, the
+# CI that runs them and the scripts that start them. A change to any of these
+# changes what every other pull request is held to, so it is reviewed on its
+# own: with "Require review from Code Owners" on in the "Protect main"
+# ruleset, none of them merges without that review (docs/BOARD-LANGUAGES.md,
+# section 7).
+/tests/i18n/                       @liloleblanc
+/tests/render/                     @liloleblanc
+/tests/board-languages*.test.js    @liloleblanc
+/.github/                          @liloleblanc
+/package.json                      @liloleblanc
+/package-lock.json                 @liloleblanc
+/docs/BOARD-LANGUAGES.md           @liloleblanc

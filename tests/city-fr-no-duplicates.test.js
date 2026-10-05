@@ -25,8 +25,12 @@ function literal(name) {
   assert.ok(at >= 0, `${name} must exist`);
   return SRC.slice(at, SRC.indexOf('\n};', at)).replace(/\/\/.*$/gm, '');
 }
+// Either quote: YYT is written "ST. JOHN'S", and a single-quote-only match
+// missed its second declaration in both tables. (Every object literal in the
+// repository is also held to one declaration per key by the board-languages
+// guard, tests/board-languages.test.js check B4, which uses a tokenizer.)
 function keysOf(lit) {
-  return [...lit.matchAll(/([A-Z0-9]{3}):\s*'/g)].map(m => m[1]);
+  return [...lit.matchAll(/([A-Z0-9]{3}):\s*['"]/g)].map(m => m[1]);
 }
 
 for (const name of ['CITY_FR', 'CITY']) {

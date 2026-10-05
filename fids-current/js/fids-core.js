@@ -1481,7 +1481,8 @@ function getAirlineBgSlideLabel(slide, idx) {
 }
 
 function changeFont(f) {
-  const fam = "'" + f + "', sans-serif";
+  // v23970 — with the Japanese, Chinese and Arabic web fonts before the generic.
+  const fam = BoardStrings.withScripts("'" + f + "', sans-serif");
   document.body.style.fontFamily = fam;
   // v23386 — DRIVE --font-primary, not just the universal rule.
   //
@@ -1667,6 +1668,7 @@ function restoreFontChoice(defaultFont) {
         // AC Nord rule in display-overrides.css. v23950 removed that rule, so
         // the stream now shows this same configured font; non-important still
         // beats the :root default, which is all it has to do.
+        _stack = BoardStrings.withScripts(_stack);
         document.body.style.setProperty('--font-primary', _stack);
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
@@ -1678,7 +1680,7 @@ function restoreFontChoice(defaultFont) {
   } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
-  changeFont(f || defaultFont || 'Bricolage Grotesque');  // the board default
+  changeFont(f || defaultFont || 'Bricolage Grotesque');  // the board default // i18n-ok: code
 }
 
 // Start / stop the airline background rotation timer. Runs only when
@@ -1941,9 +1943,58 @@ window.setDedicatedBgMode = setDedicatedBgMode;
 //
 // Cheap on purpose — two reads per pair, no writes unless the state changed,
 // and only over containers that actually hold a pair.
+// v23995 — THE NUMBER YIELDS FIRST. 'Zones | Zone  3 • 4 • 5 • 6' on the
+// final call: at its stylesheet size the number filled the column, the word
+// had no room left and was drawn under the 3 (in two languages, its halves
+// over each other; in English and French, 'Zones' alone under the 3). In a
+// sign row the number now comes down, to 55% of its size at most, until the
+// word fits beside it (a pair at 85% of its own); the pair pass then fits the
+// word into what is left. The stylesheet's size is kept in data-g8-vbase,
+// cleared on a resize like the pairs' data-g8-base.
+function _fidsSignRowFit(scope) {
+  var rows = scope.querySelectorAll('.g8-sign .g8-sign-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i], col = row.parentElement;
+    var lbl = row.querySelector('.g8-sign-label'), val = row.querySelector('.g8-sign-value');
+    if (!col || !lbl || !val || val.classList.contains('g8-grp-txt')) continue;
+    var vbase = parseFloat(val.getAttribute('data-g8-vbase')) || 0;
+    if (!vbase) {
+      val.style.removeProperty('font-size');
+      vbase = parseFloat(getComputedStyle(val).fontSize) || 0;
+      if (!vbase) continue;
+      val.setAttribute('data-g8-vbase', String(vbase));
+    }
+    var vcur = parseFloat(getComputedStyle(val).fontSize) || vbase;
+    var cs = getComputedStyle(col);
+    var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    var gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+    // the word's own width at its stylesheet size, whatever it is squeezed to
+    var lbase = parseFloat(lbl.getAttribute('data-g8-base')) || parseFloat(getComputedStyle(lbl).fontSize) || 0;
+    var lcur = parseFloat(getComputedStyle(lbl).fontSize) || lbase;
+    // (measured by its text, not its box: a squeezed half's box is narrower
+    // than the words in it)
+    var lw = 0, kids = lbl.children, rg = document.createRange();
+    if (kids.length) {
+      for (var k = 0; k < kids.length; k++) {
+        var ks = getComputedStyle(kids[k]);
+        rg.selectNodeContents(kids[k]);
+        lw += Math.max(rg.getBoundingClientRect().width, kids[k].getBoundingClientRect().width) + (parseFloat(ks.marginLeft) || 0) + (parseFloat(ks.marginRight) || 0);
+      }
+    } else {
+      rg.selectNodeContents(lbl); lw = rg.getBoundingClientRect().width;
+    }
+    if (lcur && lbase) lw = lw * lbase / lcur;
+    var vw = val.getBoundingClientRect().width * (vbase / vcur);
+    // (a pair can still shrink in the pass below; a single word cannot)
+    var room = avail - gap - lw * (kids.length >= 2 ? 0.85 : 1);
+    var vt = vw > room ? Math.max(vbase * 0.55, vbase * room / vw * 0.985) : vbase;
+    if (Math.abs(vt - vcur) > 0.5) val.style.setProperty('font-size', vt + 'px', 'important');
+  }
+}
 function _fidsPairSeparators(root) {
   try {
     var scope = root || document;
+    try { _fidsSignRowFit(scope); } catch (eR) {}
     var SEL = '.v2-rc-fi-stline, .v2-fi-mlbl, .v2-rc-fi-tlbl, .wxc-title, .g8-pair';
     var nodes = scope.querySelectorAll(SEL);
     for (var i = 0; i < nodes.length; i++) {
@@ -1981,15 +2032,15 @@ function _fidsPairSeparators(root) {
           var cur = parseFloat(getComputedStyle(el).fontSize) || base;
           var cs = getComputedStyle(col);
           var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
-          if (rowEl) {
-            var sib = rowEl.querySelector('.g8-sign-value');
-            if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
-          }
           var need = 0, kids = el.children;
           for (var k = 0; k < kids.length; k++) {
             // the separator's room is its margins (0 .22em), which a rect leaves out
             var ks = getComputedStyle(kids[k]);
             need += kids[k].getBoundingClientRect().width + (parseFloat(ks.marginLeft) || 0) + (parseFloat(ks.marginRight) || 0);
+          }
+          if (rowEl) {
+            var sib = rowEl.querySelector('.g8-sign-value');
+            if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
           }
           var ratio = need ? avail / (need * base / cur) : 1;
           var target = ratio >= 1 ? base : Math.max(base * 0.68, base * ratio * 0.985);
@@ -2037,6 +2088,8 @@ try {
       try {
         var _sp = document.querySelectorAll('.g8-sign .g8-pair[data-g8-base]');
         for (var _i = 0; _i < _sp.length; _i++) { _sp[_i].removeAttribute('data-g8-base'); _sp[_i].style.removeProperty('font-size'); }
+        var _sv = document.querySelectorAll('.g8-sign .g8-sign-value[data-g8-vbase]');
+        for (var _j = 0; _j < _sv.length; _j++) { _sv[_j].removeAttribute('data-g8-vbase'); _sv[_j].style.removeProperty('font-size'); }
       } catch (e) {}
       _fidsSchedulePairPass();
     });
@@ -2176,10 +2229,10 @@ if (_fidsAuthToken()) {
       const m = document.getElementById('modeBadge');
       if (m) {
         m.className = 'mode-badge live';
-        m.textContent = 'LIVE';
+        m.textContent = 'LIVE'; // i18n-ok: operator
       }
       const ll = document.getElementById('liveLabel');
-      if (ll) ll.textContent = 'LIVE';
+      if (ll) ll.textContent = 'LIVE'; // i18n-ok: operator
       try { _paintFeedSource(typeof _apNow !== 'undefined' ? _apNow : (document.getElementById('apSel') || {}).value); } catch (e) {}
       const ld = document.querySelector('.live-dot');
       if (ld) ld.style.background = '#10b981';
@@ -2263,9 +2316,9 @@ function cancelLogin() {
 
 if (!LIVE_MODE) {
   document.getElementById('modeBadge').className  = 'mode-badge demo';
-  document.getElementById('modeBadge').textContent = 'DEMO';
-  document.getElementById('liveLabel').textContent = 'DEMO';
-  document.getElementById('apiLabel').textContent  = 'DEMO MODE';
+  document.getElementById('modeBadge').textContent = 'DEMO'; // i18n-ok: operator
+  document.getElementById('liveLabel').textContent = 'DEMO'; // i18n-ok: operator
+  document.getElementById('apiLabel').textContent  = 'DEMO MODE'; // i18n-ok: operator
   document.querySelector('.live-dot').style.background = '#eab308';
 }
 
@@ -2452,19 +2505,26 @@ function _fidsSyncUrl(t, s) {
 // — gids.html/bids.html call it directly on URL-param boots, and the saved
 // screen-state restore calls it too. Idempotent: applies only when a saved
 // set exists and differs from what is showing.
+// v23970 — through the one resolver, so the URL keeps its precedence: a
+// screen pinned with ?langs= is no longer overridden by a saved choice when
+// this re-runs on a screen-type change.
 function _restoreApLangs() {
   try {
     var _apL = (document.getElementById('apSel') || {}).value || '';
     if (!_apL) return;
-    var _savedL = localStorage.getItem('fids_langs_' + _apL.toUpperCase());
-    if (!_savedL) return;
-    var _arrL = _savedL.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 9);
+    var _savedL = null;
+    try { _savedL = localStorage.getItem('fids_langs_' + _apL.toUpperCase()); } catch (eS) {}
+    var _r = BoardStrings.resolveLangs({ iata: _apL, search: window.location.search, saved: _savedL });
+    if (_r.source !== 'url' && _r.source !== 'saved') return;
+    var _arrL = _r.langs;
     if (!_arrL.length || _arrL.join(',') === langs.join(',')) return;
     langs = _arrL;
     langIdx = 0;
     lang = langs[0];
     if (typeof updateLangButtons === 'function') updateLangButtons();
     if (typeof updateTicker === 'function') updateTicker();
+    // v23995 — the boot loader and the static page words follow (BoardStrings.onLangs)
+    try { BoardStrings.langsChanged(); } catch (eL) {}
   } catch (e) {}
 }
 function changeScreenType(val) {
@@ -3400,9 +3460,9 @@ function openTestFlight() {
   const later = new Date(now.getTime() + 3600000);
   const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
-  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
-                   : {hour:'2-digit', minute:'2-digit', hour12:true};
-  document.getElementById('tfTime').value = later.toLocaleTimeString('en-CA', tOpt);
+  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true} // i18n-ok: operator
+                   : {hour:'2-digit', minute:'2-digit', hour12:true}; // i18n-ok: operator
+  document.getElementById('tfTime').value = later.toLocaleTimeString('en-CA', tOpt); // i18n-ok: operator
 }
 
 function closeTestFlight() {
@@ -3434,9 +3494,11 @@ function submitTestFlight() {
 
   const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
-  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
-                   : {hour:'2-digit', minute:'2-digit', hour12:true};
-  const timeStr = schedDate.toLocaleTimeString('en-CA', tOpt);
+  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true} // i18n-ok: operator
+                   : {hour:'2-digit', minute:'2-digit', hour12:true}; // i18n-ok: operator
+  // the row's time in the feed's shape (24-hour HH:MM): en-CA's '10:07 p.m.'
+  // was read as 10:07 in the morning
+  const timeStr = schedDate.toLocaleTimeString('en-GB', Object.assign({}, tOpt, { hour12: undefined, hourCycle: 'h23' })); // i18n-ok: code
 
   const testFlight = {
     time: timeStr,
@@ -3670,7 +3732,7 @@ function getDestTod(locIata) {
   var tz = AP[locIata] && AP[locIata].tz;
   if (!tz) return 'day';
   try {
-    var h = parseInt(new Date().toLocaleString('en-CA', { timeZone: tz, hour: '2-digit', hour12: false }));
+    var h = parseInt(new Date().toLocaleString('en-CA', { timeZone: tz, hour: '2-digit', hour12: false })); // i18n-ok: code
     if (h >= 5 && h < 7) return 'dawn'; if (h >= 7 && h < 10) return 'morning';
     if (h >= 10 && h < 17) return 'day'; if (h >= 17 && h < 19) return 'golden';
     if (h >= 19 && h < 21) return 'dusk'; return 'night';
@@ -4363,7 +4425,7 @@ function _writeGateTelemDom() {
     if (kind === 'spd-kt') v = spdKt;
     else if (kind === 'spd-kph') v = spdKph;
     else if (kind === 'alt-ft') v = altFt;
-    if (v !== null) els[i].textContent = v.toLocaleString();
+    if (v !== null) els[i].textContent = BoardStrings.num(v);
   }
 }
 
@@ -4621,6 +4683,27 @@ function _fidsNoStatusClip(tbl) {
       while (guard-- > 0 && td.scrollWidth > td.clientWidth + 1 && f > 9) {
         f -= 1;
         td.style.setProperty('font-size', f + 'px', 'important');
+      }
+    });
+  } catch (e) {}
+  // v23995 — NOR A FLIGHT NUMBER, A TIME OR A GATE. 'WS3340' measured 2px
+  // wider than its column ('W' is the widest capital) and read 'WS33…', and
+  // an English '12:07 PM' read '12:07 PM…'. These columns step down
+  // TOGETHER, one pixel at a time, until every cell fits, so the rows keep
+  // one size; a code or a time cut short is a wrong one.
+  try {
+    ['td-flight', 'td-time', 'td-time-rev', 'td-gate'].forEach(function (c) {
+      var tds = Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c));
+      if (!tds.length) return;
+      var over = function () { return tds.some(function (td) { return td.scrollWidth > td.clientWidth + 1; }); };
+      var guard = 26;
+      while (guard-- > 0 && over()) {
+        var smaller = false;
+        tds.forEach(function (td) {
+          var f = parseFloat(getComputedStyle(td).fontSize) || 16;
+          if (f > 9) { td.style.setProperty('font-size', (f - 1) + 'px', 'important'); smaller = true; }
+        });
+        if (!smaller) break;
       }
     });
   } catch (e) {}
@@ -5103,15 +5186,18 @@ function updateDedicatedTimeOnly() {
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = now.toLocaleTimeString('en-US', { ...tzOpts, hour:'2-digit', minute:'2-digit', hour12:true });
-  // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
-  const _localeMap = { en:'en-CA', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt', ja:'ja', zh:'zh', ar:'ar' };
-  const _loc = _localeMap[lang] || 'en-CA';
+  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
   // Weekday, month, day number and year all come from the AIRPORT's clock —
-  // see _airportDateLine for the mixed-clock bug this replaces.
-  const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
+  // see _airportDateLine for the mixed-clock bug this replaces — in the
+  // language on screen (the store's locale for it).
+  const dateDisplay = _airportDateLine(now, tzOpts, lang, timeStr);
   const footer = document.getElementById('dedicatedFooterRight');
-  if (footer) footer.textContent = dateDisplay;
+  if (footer) {
+    footer.textContent = dateDisplay;
+    // v23995 — the date is in the language on screen; say which (and an
+    // Arabic one's direction): the page itself is lang="en"
+    try { if (BoardStrings.isLang(lang)) BoardStrings.setLang(footer, lang); } catch (eL) {}
+  }
   const banClock = document.getElementById('dedicatedBannerClock');
   const bidsDate = document.getElementById('bidsBannerDate');
   if (screenType === 'baggage') {
@@ -5122,7 +5208,8 @@ function updateDedicatedTimeOnly() {
     if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
   } else {
     if (banClock) banClock.textContent = timeStr;
-    if (bidsDate) bidsDate.textContent = _bilingualDate(now, tz);
+    // v23970 — the board's two languages (it was French · English always)
+    if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
   }
   const emptyTime = document.getElementById('dedicatedEmptyTime');
   // v23973 — the gate-change screen's band (_gateChangeSoloHtml) reads 5:00 PM, not 05:00 PM.
@@ -5189,7 +5276,7 @@ function updateDedicatedTimeOnly() {
 function getTzAbbr(tz) {
   if (!tz) return '';
   try {
-    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date());
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date()); // i18n-ok: code
     const tzPart = parts.find(p => p.type === 'timeZoneName');
     return tzPart ? tzPart.value : '';
   } catch(e) { return ''; }
@@ -5198,7 +5285,7 @@ function getTzAbbr(tz) {
 function getTimeInTz(ts, tz) {
   if (!ts || !tz) return '';
   try {
-    return new Date(ts).toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true });
+    return BoardStrings.boardTime(ts, tz, { hour: '2-digit' });
   } catch(e) { return ''; }
 }
 
@@ -6188,7 +6275,7 @@ var ACCOR_BRAND_NAMES = {
   'SOF': 'Sofitel',
   'RAF': 'Raffles',
   'RAH': 'Raffles',
-  'EMB': 'Emblems Collection',
+  'EMB': 'Emblème',
   'BAN': 'Banyan Tree',
   'FAE': 'Faena',
   'FAENA': 'Faena',
@@ -6221,12 +6308,14 @@ var ACCOR_BRAND_NAMES = {
   'GRT': 'greet',
   '25H': '25Hours Hotels',
   // Economy
-  'IBS': 'ibis Styles',
+  'IBS': 'ibis',
   'IBI': 'ibis Styles',
   'IBH': 'ibis',
   'IBB': 'ibis budget',
   'BRK': 'BreakFree',
-  'JOJ': 'JO&JOE'
+  'JOJ': 'JO&JOE',
+  // the codes the later list (v23046) added
+  'SEQ': 'SO/', 'DEL': 'Delano', 'RIX': 'Rixos', 'HB': 'Hoxton', 'JO': 'JO&JOE', 'N25': '25hours'
 };
 
 var ACCOR_BRAND_LOGOS = {
@@ -6491,7 +6580,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
 
     // Fairmont Pacific Rim, Vancouver/YVR.
     if (/\bpacific\s*rim\b/.test(hay) || /\bfairmont\s+pacific\s+rim\b/.test(hay)) {
-      out.hotelName = 'Fairmont Pacific Rim';
+      out.hotelName = 'Fairmont Pacific Rim'; // i18n-ok: data
       out.brand = 'FAI';
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
@@ -6504,7 +6593,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
     // YVR/Vancouver should prefer Fairmont Pacific Rim when the feed gives a generic
     // Fairmont/Accor Vancouver hotel ad without a specific lockup.
     if ((/\byvr\b|\bvancouver\b/.test(hay)) && /\bfairmont\b/.test(hay) && !/\bwaterfront\b|\bairport\b/.test(hay)) {
-      out.hotelName = 'Fairmont Pacific Rim';
+      out.hotelName = 'Fairmont Pacific Rim'; // i18n-ok: data
       out.brand = 'FAI';
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
@@ -7275,7 +7364,6 @@ var LOGO_TREATMENT = {
   'econo-lodge':'color_card',
   'embassy-suites':'color_card',
   'emblems_logo_gradient2':'color_card',
-  'encore':'no_filter',
   'envoy':'white_card',
   'extended-stay-america':'color_card',
   'fairfield':'white_bg_invert',
@@ -7775,16 +7863,16 @@ const AIRLINE_ACCENT = {
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#00B3F0',
-  'HA':'#4B2D89','XP':'#502E90','LL':'#00B7C8',
+  'LL':'#00B7C8',
   // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
   // operator at Miami
   // Navy taken from their aircraft titles; swap in the exact hex when
   // an official kit turns up, same arc Avelo followed.
   'WL':'#004280',
-  'AF':'#051039','BA':'#2E5DA4','LH':'#0A1D3D','KL':'#00A2DF',
-  'QR':'#5C0632','EK':'#D71A21','SQ':'#FCB130','CX':'#006564',
-  'JL':'#CC0000','NH':'#0B318F','KE':'#00256C','OZ':'#008FD5',
-  'TK':'#C8102E','LX':'#E60005','OS':'#E20A17','SK':'#000066',
+  'BA':'#2E5DA4','KL':'#00A2DF',
+  'QR':'#5C0632','CX':'#006564',
+  'KE':'#00256C','OZ':'#008FD5',
+  'TK':'#C8102E','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
   // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
   // default: a generic blue that belongs to no airline, sitting on a navy
@@ -7794,7 +7882,6 @@ const AIRLINE_ACCENT = {
   'FR':'#073590','RK':'#073590',
   // v23365 - El Al had no accent, so its orbs fell to the generic default.
   'LY':'#1b358f',
-  'EY':'#C4921B',   // Etihad gold
   'I2':'#D71920',   // Iberia Express takes Iberia's red
   'DE':'#F08200',   // Condor orange, taken from its own emblem
   'CS':'#FF0000',   // Chair red, from its own wordmark
@@ -7905,10 +7992,12 @@ function g8LogoFail(img) {
 }
 
 // Operating carrier for regional flights
-// Québec-province airports show FRENCH FIRST on every bilingual pair
-//
+// Québec-province airports show FRENCH FIRST on every bilingual pair.
+// The list lives in board-strings.js (BoardStrings.FR_FIRST), the only copy:
+// the per-airport defaults are derived from the same list, so a Québec
+// airport cannot lead in French on its gate and in English on its board.
 function frFirstAirport(iata) {
-  return /^(YUL|YQB|YHU|YMX|YMY|YBG|YVO|YZV|YUY|YGP|YGL|YGW|YKQ|YPX|YVP|YHR|YNA|YBC|YTF|AKV|YIK|YZG|YQC|YHA|YKG|XGR)$/.test(String(iata || '').toUpperCase());
+  return BoardStrings.isFrFirst(iata);
 }
 
 // Legible ink for a LIGHT carrier accent, without muddying it. Prefers the
@@ -7959,7 +8048,7 @@ function getAirlineAccent(code) {
 //               blocks there is no operator line without evidence.
 // The gate reads the row's own fields and the same shared store, so it can
 // never say something the departures board does not.
-var AC_EXPRESS_OP = 'ACEX';
+var AC_EXPRESS_OP = 'ACEX'; // i18n-ok: code
 var _OP_LADDER_NAMES = { QK: 'Jazz Aviation', PB: 'PAL Airlines', RV: 'Air Canada Rouge',
                          WR: 'WestJet Encore', ACEX: 'Air Canada Express' };
 // Air Canada blocks, checked 2026-10-04 against Montréal's prefixes (1,021
@@ -8059,7 +8148,7 @@ function fidsResolveOperator(f, home) {
   if (band) {
     var fits = (typeof _regionalOpFitsRoute !== 'function')
       || _regionalOpFitsRoute(band === AC_EXPRESS_OP ? 'QK' : band, home, f._locIata);
-    if (fits && (r = hit(band, band === AC_EXPRESS_OP ? 'brand' : 'band', mkt + ' ' + fn))) return r;
+    if (fits && (r = hit(band, band === AC_EXPRESS_OP ? 'brand' : 'band', mkt + ' ' + fn))) return r; // i18n-ok: debug
   }
   return none;
 }
@@ -8349,35 +8438,36 @@ function darkenHex(hex, factor) {
 }
 
 const AIRLINE_ZONES = {
-  // { zones, label: 'Group'|'Zone', method }
-  'AA': { narrowbody: 9, widebody: 9, regional: 9, label: 'Group' },     // American: 9 Groups
-  'DL': { narrowbody: 8, widebody: 8, regional: 8, label: 'Zone' },      // Delta: 8 Zones
-  'UA': { narrowbody: 6, widebody: 6, regional: 6, label: 'Group' },     // United: WILMA 6 Groups
-  'WN': { narrowbody: 3, widebody: 3, regional: 3, label: 'Group' },     // Southwest: A/B/C
-  'AC': { narrowbody: 5, widebody: 5, regional: 4, label: 'Zone' },      // Air Canada: 5 Zones
-  'WS': { narrowbody: 5, widebody: 5, regional: 3, label: 'Zone' },      // WestJet: 5 Zones
-  'B6': { narrowbody: 6, widebody: 6, regional: 6, label: 'Group' },     // JetBlue: Groups A-F
-  'AS': { narrowbody: 6, widebody: 6, regional: 6, label: 'Group' },     // Alaska: Groups A-F
+  // { zones, call: 'group'|'zone' } — how the carrier calls its passengers
+  // (a code: the words are _GATE_LBL.groupLabel / .zones, in every language)
+  'AA': { narrowbody: 9, widebody: 9, regional: 9, call: 'group' },     // American: 9 Groups
+  'DL': { narrowbody: 8, widebody: 8, regional: 8, call: 'zone' },      // Delta: 8 Zones
+  'UA': { narrowbody: 6, widebody: 6, regional: 6, call: 'group' },     // United: WILMA 6 Groups
+  'WN': { narrowbody: 3, widebody: 3, regional: 3, call: 'group' },     // Southwest: A/B/C
+  'AC': { narrowbody: 5, widebody: 5, regional: 4, call: 'zone' },      // Air Canada: 5 Zones
+  'WS': { narrowbody: 5, widebody: 5, regional: 3, call: 'zone' },      // WestJet: 5 Zones
+  'B6': { narrowbody: 6, widebody: 6, regional: 6, call: 'group' },     // JetBlue: Groups A-F
+  'AS': { narrowbody: 6, widebody: 6, regional: 6, call: 'group' },     // Alaska: Groups A-F
   // NK (Spirit) — ceased operations May 2 2026
-  'F9': { narrowbody: 4, widebody: 4, regional: 4, label: 'Zone' },      // Frontier: 4 Zones
-  'HA': { narrowbody: 7, widebody: 7, regional: 7, label: 'Zone' },      // Hawaiian: 7 Zones
-  'AM': { narrowbody: 5, widebody: 5, regional: 5, label: 'Zone' },      // Aeromexico: 5 Zones
-  'PD': { narrowbody: 5, widebody: 5, regional: 3, label: 'Group' },     // Porter: Groups 1-5
-  'G4': { narrowbody: 5, widebody: 5, regional: 5, label: 'Zone' },      // Allegiant: 4-5 Zones
-  'SY': { narrowbody: 4, widebody: 4, regional: 4, label: 'Group' },     // Sun Country: Groups 1-4
-  'Y4': { narrowbody: 3, widebody: 3, regional: 3, label: 'Group' },     // Volaris: Groups 1-3
-  'XP': { narrowbody: 3, widebody: 3, regional: 3, label: 'Group' },     // Avelo: Numbered Groups
-  'MX': { narrowbody: 4, widebody: 4, regional: 4, label: 'Group' },     // Breeze: Groups 1-4
-  'WL': { narrowbody: 2, widebody: 2, regional: 2, label: 'Group' },     // World Atlantic: charter, two calls
-  'F8': { narrowbody: 3, widebody: 3, regional: 3, label: 'Zone' },      // Flair: Zones 1-3
-  '3M': { narrowbody: 2, widebody: 2, regional: 2, label: 'Zone' },      // Silver: 1-2 Zones
-  'TS': { narrowbody: 4, widebody: 4, regional: 4, label: 'Zone' },      // Air Transat: 4 Zones
-  '4N': { narrowbody: 3, widebody: 3, regional: 3, label: 'Zone' },      // Air North: 3 Zones
-  'BA': { narrowbody: 5, widebody: 5, regional: 5, label: 'Group' },     // British Airways
-  'AF': { narrowbody: 5, widebody: 5, regional: 5, label: 'Group' },     // Air France
-  'LH': { narrowbody: 5, widebody: 5, regional: 5, label: 'Group' },     // Lufthansa
-  'EK': { narrowbody: 3, widebody: 3, regional: 3, label: 'Zone' },      // Emirates
-  'QR': { narrowbody: 3, widebody: 3, regional: 3, label: 'Zone' },      // Qatar
+  'F9': { narrowbody: 4, widebody: 4, regional: 4, call: 'zone' },      // Frontier: 4 Zones
+  'HA': { narrowbody: 7, widebody: 7, regional: 7, call: 'zone' },      // Hawaiian: 7 Zones
+  'AM': { narrowbody: 5, widebody: 5, regional: 5, call: 'zone' },      // Aeromexico: 5 Zones
+  'PD': { narrowbody: 5, widebody: 5, regional: 3, call: 'group' },     // Porter: Groups 1-5
+  'G4': { narrowbody: 5, widebody: 5, regional: 5, call: 'zone' },      // Allegiant: 4-5 Zones
+  'SY': { narrowbody: 4, widebody: 4, regional: 4, call: 'group' },     // Sun Country: Groups 1-4
+  'Y4': { narrowbody: 3, widebody: 3, regional: 3, call: 'group' },     // Volaris: Groups 1-3
+  'XP': { narrowbody: 3, widebody: 3, regional: 3, call: 'group' },     // Avelo: Numbered Groups
+  'MX': { narrowbody: 4, widebody: 4, regional: 4, call: 'group' },     // Breeze: Groups 1-4
+  'WL': { narrowbody: 2, widebody: 2, regional: 2, call: 'group' },     // World Atlantic: charter, two calls
+  'F8': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Flair: Zones 1-3
+  '3M': { narrowbody: 2, widebody: 2, regional: 2, call: 'zone' },      // Silver: 1-2 Zones
+  'TS': { narrowbody: 4, widebody: 4, regional: 4, call: 'zone' },      // Air Transat: 4 Zones
+  '4N': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Air North: 3 Zones
+  'BA': { narrowbody: 5, widebody: 5, regional: 5, call: 'group' },     // British Airways
+  'AF': { narrowbody: 5, widebody: 5, regional: 5, call: 'group' },     // Air France
+  'LH': { narrowbody: 5, widebody: 5, regional: 5, call: 'group' },     // Lufthansa
+  'EK': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Emirates
+  'QR': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Qatar
 };
 // Aircraft category classification
 const AIRCRAFT_CATEGORY = {
@@ -8419,7 +8509,7 @@ function getBoardingLeadMins(aircraftCode) {
 
 function getZoneCount(airlineCode, aircraftCode) {
   var cat = getAircraftCategory(aircraftCode);
-  var config = AIRLINE_ZONES[airlineCode] || { narrowbody:4, widebody:4, regional:3, label:'Zone' };
+  var config = AIRLINE_ZONES[airlineCode] || { narrowbody:4, widebody:4, regional:3, call:'zone' };
   return config[cat] || config.narrowbody || 4;
 }
 // ── AIRCRAFT NAME FORMATTER ──────────────────────────────────────────────
@@ -8466,7 +8556,7 @@ const IATA_AIRCRAFT = {
   '339':'Airbus A330-900neo','350':'Airbus A350','359':'Airbus A350-900',
   '351':'Airbus A350-1000','380':'Airbus A380','388':'Airbus A380-800',
   '732':'Boeing 737-200','733':'Boeing 737-300','734':'Boeing 737-400','735':'Boeing 737-500','736':'Boeing 737-600','737':'Boeing 737 MAX 8','738':'Boeing 737-800','739':'Boeing 737-900',
-  '717':'Boeing 717-200','221':'Airbus A220-100','223':'Airbus A220-300','AT4':'ATR 42','AT5':'ATR 42-500',
+  '717':'Boeing 717-200','221':'Airbus A220-100','AT4':'ATR 42','AT5':'ATR 42-500',
   '73G':'Boeing 737-700','73H':'Boeing 737-800','73J':'Boeing 737-900ER',
   '7M7':'Boeing 737 MAX 7','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9',
   '744':'Boeing 747-400','748':'Boeing 747-8',
@@ -8500,7 +8590,7 @@ const IATA_AIRCRAFT = {
   // v23934 — YQB's feed sends the IATA type code alone for Pascan ('SF3'),
   // which the caption printed raw.
   'SF3':'Saab 340',
-  '338':'Airbus A330-800neo','32Q':'Airbus A321neo','31N':'Airbus A319neo',
+  '338':'Airbus A330-800neo',
   '342':'Airbus A340-200','343':'Airbus A340-300','345':'Airbus A340-500','346':'Airbus A340-600',
   '146':'BAe 146','730':'Boeing 737','73S':'Boeing 737','E45':'Embraer EMB 145',
   '74H':'Boeing 747-400','74N':'Boeing 747-400','74Y':'Boeing 747-400',
@@ -8688,7 +8778,7 @@ function randomGate(terminal, flightNum) {
 
 
 function uxgLocaleCode() {
-  return ({fr:'fr-CA',en:'en-CA',es:'es-ES',de:'de-DE',it:'it-IT',pt:'pt-PT',ja:'ja-JP',zh:'zh-CN',ar:'ar-EG'})[lang] || 'en-CA';
+  return (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23970 — the store's locale
 }
 // ── BUNDLED AIRCRAFT LIVERY IMAGES ───────────────────────────────────────
 // Local PNGs at /aircraft/{AL}/{EQUIP}.png with fallback to /aircraft/{EQUIP}.png
@@ -9341,7 +9431,7 @@ function renderMobileBaggageHtml(ctx) {
              // status as plain coloured text — no pill
              +     '<div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform: none;color:' + stColorFor(f.status) + ';">' + fidsEscHtml(stTxt) + '</div>'
              +   '</div>'
-             +   '<div style="font-size:11px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;margin-bottom:2px;">' + (TL('destArr')||'FROM').toUpperCase() + '</div>'
+             +   '<div style="font-size:11px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;margin-bottom:2px;">' + TL('destArr').toLocaleUpperCase(BoardStrings.META[lang].intl) + '</div>'
              +   '<div style="font-size:19px;color:' + T.ink + ';font-weight:800;margin-bottom:10px;">' + fidsEscHtml(cityDisplay) + '</div>'
              +   '<div style="display:flex;justify-content:space-between;font-size:14px;color:' + T.muted2 + ';">'
              +     '<span style="font-weight:700;">' + fidsEscHtml(f.flight || '') + '</span>'
@@ -9351,7 +9441,7 @@ function renderMobileBaggageHtml(ctx) {
       }).join('')
     : '<div style="text-align:center;padding:48px 20px;color:' + T.muted + ';font-size:14px;letter-spacing:2px;">' + TL('noAssigned') + '</div>';
 
-  return '<div class="gids-m2" style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:Inter,system-ui,sans-serif;padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
     // header: airport + belt
     + '<div style="background:' + T.header + ';padding:16px 18px 14px;border-bottom:1px solid ' + T.line + ';display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">'
     +   '<div style="flex:1;min-width:0;">'
@@ -9359,7 +9449,7 @@ function renderMobileBaggageHtml(ctx) {
     +     '<div style="font-size:16px;color:' + T.ink + ';font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + fidsEscHtml((apName || '').replace(/\s+International Airport$/i,'').replace(/\s+Airport$/i,'')) + '</div>'
     +   '</div>'
     +   '<div style="flex:0 0 auto;text-align:right;">'
-    +     '<div style="font-size:10px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;">' + (TL('carousel') || 'BELT') + '</div>'
+    +     '<div style="font-size:10px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;">' + TL('carousel') + '</div>'
     +     '<div style="font-size:30px;color:' + T.ink + ';font-weight:900;line-height:1;">' + fidsEscHtml(beltVal) + '</div>'
     +   '</div>'
     + '</div>'
@@ -9398,7 +9488,7 @@ function renderMobileGateHtml(ctx) {
   try { _mDoor = _gateDoorFor(currentFlight, Date.now(), iata).word || ''; } catch (eM) { _mDoor = ''; }
   try { window._gatePaintedDoor = { k: _gateRowKey(currentFlight), w: _mDoor }; } catch (eP) {}
   const stKey = _mDoor || currentFlight.status || 'scheduled';
-  const stLabel = SL(stKey) || stKey.toUpperCase();
+  const stLabel = _statusWord(stKey);
   const depTime = currentFlight.upd || currentFlight.time || '';
   const schedTime = currentFlight.time || '—';
   const isRevised = !!(currentFlight.upd && currentFlight.upd !== currentFlight.time);
@@ -9427,8 +9517,7 @@ function renderMobileGateHtml(ctx) {
       const _icon = (typeof tioIcon === 'function') ? tioIcon(_twx.current.code, 28) : '';
       destWxHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;font-size:13px;color:rgba(255,255,255,0.75);">'
                  +   _icon
-                 +   '<span style="font-weight:700;">' + _temp + '</span>'
-                 +   '<span style="opacity:0.6;">in ' + dest + '</span>'
+                 +   BoardStrings.fmt('tempIn', lang, { TEMP: '<span style="font-weight:700;">' + _temp + '</span>', CITY: '<span style="opacity:0.6;">' + dest + '</span>' }, true)
                  + '</div>';
     }
   } catch (e) {}
@@ -9511,7 +9600,7 @@ function renderMobileGateHtml(ctx) {
     const _opName = (_resM && _resM.op === _opCode && _resM.name) || currentFlight._opName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode;
     var _opBadgeBg = _lt ? 'rgba(13,22,38,0.05)' : 'rgba(255,255,255,0.05)';
     _opBadgeHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:' + _opBadgeBg + ';border-radius:8px;">'
-      + '<span style="font-size:11px;color:' + T.muted2 + ';letter-spacing:1.5px;font-weight:700;text-transform:none;">Operated by</span>';
+      + '<span style="font-size:11px;color:' + T.muted2 + ';letter-spacing:1.5px;font-weight:700;text-transform:none;">' + TL('operatedBy') + '</span>';
     if (_opLogoUrl) {
       _opBadgeHtml += '<img src="' + _opLogoUrl + '" alt="' + _opName + '" '
         + 'style="height:24px;max-width:120px;width:auto;object-fit:contain;display:inline-block;vertical-align:middle;" '
@@ -9626,8 +9715,8 @@ function renderMobileGateHtml(ctx) {
         var _mAltFt = (typeof _inb._liveAlt === 'number') ? Math.round(_inb._liveAlt) : null;
         _mTelem =
             '<div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px;">'
-          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mSpdKph !== null ? ('<span data-gtelem="spd-kph">' + _mSpdKph.toLocaleString() + '</span> kph') : '—') + '</span>'
-          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mAltFt !== null ? ('<span data-gtelem="alt-ft">' + _mAltFt.toLocaleString() + '</span> ft') : '—') + '</span>'
+          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mSpdKph !== null ? ('<span data-gtelem="spd-kph">' + BoardStrings.num(_mSpdKph) + '</span> kph') : '—') + '</span>'
+          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mAltFt !== null ? ('<span data-gtelem="alt-ft">' + BoardStrings.num(_mAltFt) + '</span> ft') : '—') + '</span>'
           + '</div>';
       }
       _inbBlock =
@@ -9645,7 +9734,7 @@ function renderMobileGateHtml(ctx) {
     }
   } catch (e) { _inbBlock = ''; }
 
-  return '<div class="gids-m2" style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:Inter,system-ui,sans-serif;padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
 
     // ── HEADER: compact, clears the gear icon, no dead space ──
     + '<div style="background:' + T.header + ';padding:54px 20px 18px;border-bottom:1px solid ' + T.line + ';">'
@@ -9653,7 +9742,7 @@ function renderMobileGateHtml(ctx) {
     +   '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">'
     +     '<div style="flex:1;min-width:0;">'
     +       '<div style="' + FS.title + 'color:' + T.accent + ';">' + _homeCity + ' ' + TL('toLbl') + ' ' + _cityUnit(_destCity) + '</div>'
-    +       '<div style="' + FS.value + 'color:' + T.muted2 + ';margin-top:6px;">' + flightNum + (terminalVal ? '   \u00b7   ' + TL('terminal') + ' ' + terminalVal : '') + '</div>'
+    +       '<div style="' + FS.value + 'color:' + T.muted2 + ';margin-top:6px;">' + flightNum + (terminalVal ? '   \u00b7   ' + TL('termDep') + ' ' + terminalVal : '') + '</div>'
     +     '</div>'
     +     '<div style="flex:0 0 auto;text-align:right;">'
     +       '<div style="' + FS.label + 'color:' + T.muted + ';">' + TL('gateDep') + '</div>'
@@ -9695,7 +9784,7 @@ function renderMobileGateHtml(ctx) {
     +   '<div style="' + FS.label + 'color:' + T.muted + ';margin-bottom:10px;">' + TL('aircraftLbl') + '</div>'
     +   ((_acType || _acCode) ? '<div style="' + FS.value + 'color:' + T.ink + ';">' + (_acType || _acCode) + '</div>' : '')
     +   (_acReg ? '<div style="margin-top:10px;"><div style="' + FS.label + 'color:' + T.muted + ';">' + TL('reg') + '</div><div style="' + FS.body + 'color:' + T.muted2 + ';margin-top:2px;">' + _acReg
-          + (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="display:block;font-size:0.6em;font-weight:600;opacity:0.7;white-space:nowrap;">expected | prévu</span>' : '') + '</div></div>' : '')
+          + (/^history/.test(String(currentFlight._regSource || '')) ? _acExpectedHtml(false, 'display:block;font-size:0.6em;font-weight:600;opacity:0.7;white-space:nowrap;') : '') + '</div></div>' : '')
     +   (_acImgHtml ? '<div style="text-align:center;margin-top:14px;">' + _acImgHtml.replace(/max-height:120px/g, 'max-height:170px') + '</div>' : '')
     + '</div>'
     + (_opBadgeHtml ? '<div style="background:' + T.panel + ';padding:0 20px 14px;">' + _opBadgeHtml + '</div>' : '')
@@ -9761,10 +9850,10 @@ function _mobileNavHtml(T) {
     +     '<button type="button" onclick="gidsNavBack()" style="position:relative;z-index:2;width:100%;text-align:left;border:1px solid ' + T.line + ';background:rgba(127,140,160,0.10);color:' + T.ink + ';border-radius:11px;padding:14px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:24px;line-height:1;">\u2039</span> ' + TL('backToPicker') + '</button>'
     +     '<div style="position:relative;z-index:2;display:flex;gap:8px;">'
     +       '<input id="gmnSearch" type="text" inputmode="text" autocapitalize="characters" placeholder="' + TL('gateOrFlight') + '" onkeydown="if(event.key===\'Enter\')gidsNavSearch()" style="flex:1;min-width:0;border:1px solid ' + T.line + ';background:rgba(127,140,160,0.10);color:' + T.ink + ';border-radius:11px;padding:14px;font-size:16px;font-family:inherit;">'
-    +       '<button type="button" onclick="gidsNavSearch()" style="flex:0 0 auto;border:none;background:#0d8a8a;color:#fff;border-radius:11px;padding:0 22px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;">Go</button>'
+    +       '<button type="button" onclick="gidsNavSearch()" style="flex:0 0 auto;border:none;background:#0d8a8a;color:#fff;border-radius:11px;padding:0 22px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;">' + BoardStrings.bs('go', lang) + '</button>'
     +     '</div>'
     +   '</div>'
-    +   '<button type="button" onclick="gidsNavToggle(this)" style="order:2;width:100%;border:none;background:transparent;cursor:pointer;padding:11px 0 13px;color:' + T.muted2 + ';display:flex;flex-direction:column;align-items:center;gap:6px;font-family:inherit;letter-spacing:2px;font-size:12px;font-weight:800;"><span style="width:40px;height:4px;border-radius:3px;background:rgba(127,140,160,0.5);"></span>MENU</button>'
+    +   '<button type="button" onclick="gidsNavToggle(this)" style="order:2;width:100%;border:none;background:transparent;cursor:pointer;padding:11px 0 13px;color:' + T.muted2 + ';display:flex;flex-direction:column;align-items:center;gap:6px;font-family:inherit;letter-spacing:2px;font-size:12px;font-weight:800;"><span style="width:40px;height:4px;border-radius:3px;background:rgba(127,140,160,0.5);"></span>' + BoardStrings.bs('menu', lang).toLocaleUpperCase(BoardStrings.META[lang].intl) + '</button>'
     + '</div>';
 }
 
@@ -10044,9 +10133,14 @@ function _gateLaterSlotHtml(x, m, frF) {
       + sub + '</div>';
   }
   var dw = _gateLaterDayWords(f, m);
+  // v23995 — each day word carries its language (and an Arabic one its
+  // direction), as the gate's own day line does (_gateDayLineHtml): '明日'
+  // under a Japanese board is lang="ja", 'غدًا' reads right to left.
+  var _dl = (dw && dw.languages) || [];
   var day = (dw && dw.words && dw.words.length)
-    ? '<span class="gl-day" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w) {
-        return '<span class="gl-day-w">' + fidsEscHtml(w) + '</span>';
+    ? '<span class="gl-day" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w, i) {
+        var _w = '<span class="gl-day-w">' + fidsEscHtml(w) + '</span>';
+        return _dl[i] ? BoardStrings.markHalf(_w, _dl[i]) : _w;
       }).join('') + '</span>'
     : '';
   return '<div class="gl-slot">'
@@ -11189,7 +11283,7 @@ function _buildV2AircraftCol(ctx, vars) {
   if (_equipNm || _equipCd) {
     _eqBlock =
         '<div class="v2-eq-block">'
-      +   '<div class="v2-eq-lbl">Aircraft&nbsp;Type</div>'
+      +   '<div class="v2-eq-lbl">' + _gateLbl('aircraft', _frF, function (w) { return '<span>' + w + '</span>'; }, ' | ') + '</div>'
       +   '<div class="v2-eq-val">' + gateAircraftShortname(_equipNm || _equipCd) + '</div>'
       + '</div>';
   }
@@ -11202,8 +11296,8 @@ function _buildV2AircraftCol(ctx, vars) {
     var _regHist = (_reg === currentFlight._reg) && /^history/.test(String(currentFlight._regSource || ''));
     _regBlock =
         '<div class="v2-reg-block">'
-      +   '<div class="v2-reg-lbl">' + (TL('reg') || 'Registration') + '</div>'
-      +   '<div class="v2-reg-val">' + _reg + (_regHist ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> prévu</span>' : '') + '</div>'
+      +   '<div class="v2-reg-lbl">' + TL('reg') + '</div>'
+      +   '<div class="v2-reg-val">' + _reg + (_regHist ? _acExpectedHtml(_frF) : '') + '</div>'
       + '</div>';
   }
 
@@ -11288,11 +11382,12 @@ function _buildV2AircraftCol(ctx, vars) {
       var _ah = window._adbHealth || null;
       var _bsSub = '';
       if (_ah && _ah.failStatus && (!_ah.okTs || (_ah.failTs || 0) > _ah.okTs)) {
-        _bsSub = (_ah.failStatus === 429)
-          ? ' · Data service busy — retrying | Service occupé'
-          : ' · Data service unavailable (' + _ah.failStatus + ') | Service indisponible';
+        // v23970 — in the board's pair, from the store
+        _bsSub = ' · ' + ((_ah.failStatus === 429)
+          ? BoardStrings.pair('dataBusy', { frFirst: _frF, plain: true })
+          : BoardStrings.pair('dataDown', { frFirst: _frF, plain: true, raw: true, fields: { N: String(_ah.failStatus) } }));
       }
-      var _bmsg = ('Aircraft details pending | Détails de l’appareil à venir' + _bsSub)
+      var _bmsg = (_gateLbl('acPending', _frF, null, ' | ') + _bsSub)
         .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
       _bareAttr = ' data-baremsg="' + _bmsg + '"';
     } catch (e) {}
@@ -11343,7 +11438,7 @@ function _buildV2AircraftCol(ctx, vars) {
       var _wxRowHtml = ''
         + '<div class="v2-wx-cell">' + _todayIcon
         +   '<div class="v2-wx-text">'
-        +     '<div class="v2-wx-when">' + (TL('currentWx') || 'Current') + '</div>'
+        +     '<div class="v2-wx-when">' + TL('currentWx') + '</div>'
         +     '<div class="v2-wx-temp">' + _todayTemp + '</div>'
         +     '<div class="v2-wx-cond">' + _todayLabel + '</div>'
         +   '</div>'
@@ -11352,7 +11447,7 @@ function _buildV2AircraftCol(ctx, vars) {
       if (_tomorrowTemp) {
         _wxRowHtml += '<div class="v2-wx-cell">' + _tomorrowIcon
           +   '<div class="v2-wx-text">'
-          +     '<div class="v2-wx-when">' + (TL('tomorrow') || 'Tomorrow') + '</div>'
+          +     '<div class="v2-wx-when">' + TL('tomorrow') + '</div>'
           +     '<div class="v2-wx-temp">' + _tomorrowTemp + '</div>'
           +     '<div class="v2-wx-cond">' + _tomorrowLabel + '</div>'
           +   '</div>'
@@ -11361,7 +11456,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _wxBlock =
           '<div class="v2-wx-block">'
-        +   '<div class="v2-wx-lbl">' + (locIata ? _dispIata(locIata) + ' ' : '') + (TL('weatherShort') || 'Weather') + '</div>'
+        +   '<div class="v2-wx-lbl">' + (locIata ? _dispIata(locIata) + ' ' : '') + TL('weatherShort') + '</div>'
         +   '<div class="v2-wx-2col">' + _wxRowHtml + '</div>'
         + '</div>';
     }
@@ -11374,7 +11469,7 @@ function _buildV2AircraftCol(ctx, vars) {
     if (_gateNum || _term) {
       _gateInfoBlock =
           '<div class="v2-gateinfo-block">'
-        +   '<div class="v2-gateinfo-lbl">Gate</div>'
+        +   '<div class="v2-gateinfo-lbl">' + _gateLbl('gate', _frF, function (w) { return '<span>' + w + '</span>'; }, ' | ') + '</div>'
         +   '<div class="v2-gateinfo-val">' + (_gateNum || '—') + (_term ? '<span class="v2-gateinfo-term"> · T' + _term + '</span>' : '') + '</div>'
         + '</div>';
     }
@@ -11549,12 +11644,6 @@ function _buildV2AircraftCol(ctx, vars) {
       }
       var _emblemHtml = _fnCarrier ? _emblemImg(_fnCarrier) : '';
 
-      // v218.99.26 — Detect "revised" times: if the time HTML carries the
-      // .g8-r2-revised marker (set by upstream formatter when actual ≠
-      // scheduled), the label switches to "REVISED" instead of "EST.".
-      function _label(baseEst, baseRevised, html) {
-        return (html && html.indexOf('g8-r2-revised') !== -1) ? baseRevised : baseEst;
-      }
       // For revised display: only show the new time, strip the strike-through scheduled
       //
       // PARSED, NOT REGEXED. The old form was one non-greedy pass —
@@ -11594,9 +11683,6 @@ function _buildV2AircraftCol(ctx, vars) {
         return s.indexOf('g8-rev-early') !== -1 ? 'v2-fi-rowrev-early' : 'v2-fi-rowrev-delayed';
       }
 
-      var _depLabel = _label('Scheduled Departure', 'Revised Departure', _fiDep);
-      // (v23946 — the unused 'Estimated Arrival' label that stood here is gone:
-      // the Arrival shelf prints the destination airport's own time.)
       var _depShow  = _stripScheduledStrike(_fiDep);
       var _arrShow  = _stripScheduledStrike(_fiArr);
 
@@ -11626,11 +11712,6 @@ function _buildV2AircraftCol(ctx, vars) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
 
-      // v221 — bilingual SHELF rows: icon (centred) + EN label / VALUE / 2nd-lang label.
-      // Second language is per-airport (French default, Spanish for La Paz).
-      var _li2 = 'fr';
-      try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
-      function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       // v22956 — the left rail follows `langs` like every other surface.
       // _L2 picked French-or-Spanish BY AIRPORT and never consulted the
       // user's selection — a fourth parallel label system (after the right
@@ -11676,16 +11757,6 @@ function _buildV2AircraftCol(ctx, vars) {
       } catch (e) {}
 
       var _depRev = !!(_fiDep && String(_fiDep).indexOf('g8-r2-revised') !== -1);
-      var _arrRev = !!(_fiArr && String(_fiArr).indexOf('g8-r2-revised') !== -1);
-      var _brdRev = !!(_fiBrd && String(_fiBrd).indexOf('g8-r2-revised') !== -1);
-      // When a time is revised, the LABEL itself becomes "Revised - <X>"
-      // (no separate pill/badge). Second language gets its own prefix.
-      var _depEnL = _depRev ? 'Revised - Departure' : 'Departure Time';
-      var _arrEnL = _arrRev ? 'Revised - Arrival'   : 'Arrival Time';
-      var _brdEnL = _brdRev ? 'Revised - Boarding'  : 'Boarding Time';
-      var _depL2L = _depRev ? _L2('Révisé - Départ','Revisado - Salida')       : _L2('Heure de départ','Hora de salida');
-      var _arrL2L = _arrRev ? _L2('Révisé - Arrivée','Revisado - Llegada')      : _L2('Heure d’arrivée','Hora de llegada');
-      var _brdL2L = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Heure d’embarquement','Hora de embarque');
 
       // v222 — the specified 6 equal panels (top→bottom):
       //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
@@ -11779,17 +11850,11 @@ function _buildV2AircraftCol(ctx, vars) {
       // still use that shape.
       var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true);
       var _destValue = _dfCity || _destCityName || _destIataDisp;
-      // Label stays "Boarding | Embarquement" even when the time is revised —
-      // the orange/amber revised time already signals the change, and prefixing
-      // "Revised -" to BOTH languages overflows the shelf. (Same rule as Departure.)
-      var _brdShortEn = 'Boarding';
-      var _brdShortL2 = _L2('Embarquement','Embarque');
-      // Label stays "Departure | Départ" even when the time is revised.
-      var _depShortEn = 'Departure';
-      var _depShortL2 = _L2('Départ','Salida');
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
       // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
-      function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
+      // '5:46 PM' → '5:46pm' on a board that leads in English; '17:46' on
+      // any other (the board reads one clock)
+      function _amPm(h) { return BoardStrings.boardClockText(String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; })); }
       // A REVISED (later) departure means the flight is delayed — reflect that
       // in the status label AND colour even if the raw feed still says
       // "scheduled" (that's why the departure time already shows orange).
@@ -11818,21 +11883,21 @@ function _buildV2AircraftCol(ctx, vars) {
         else if (_stk === '') _stk = 'scheduled';
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
-          var _enTC = _fidsTitleCase(_ss.en); // Title Case the EN
-          // Status STACKED — EN over FR.
-          // v22956 — stacked in the SELECTED languages, not hard EN/FR.
-          var _stPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-          if (_frF) { var _sfi = _stPick.indexOf('fr'); if (_sfi > 0) { _stPick.splice(_sfi, 1); _stPick.unshift('fr'); } }
-          var _stW = [], _stSeen = {};
+          // Status STACKED, in the SELECTED languages (v22956), each word
+          // marked with its language (v23970: an Arabic status read left to
+          // right under lang="en", a Chinese one took Japanese glyphs). Title
+          // Case is English's; other languages keep their own capitals.
+          var _stPick = BoardStrings.pairLangs(langs, _frF);   // v23970 — the one chooser
+          var _stW = [], _stL = [], _stSeen = {};
           for (var _swi = 0; _swi < _stPick.length && _stW.length < 2; _swi++) {
             var _sw = _ss[_stPick[_swi]];
             if (!_sw) continue;
-            _sw = _fidsTitleCase(_sw);
+            _sw = _fidsTitleCaseIn(_sw, _stPick[_swi]);
             if (_stSeen[_sw.toLowerCase()]) continue;
             _stSeen[_sw.toLowerCase()] = 1;
-            _stW.push(_sw);
+            _stW.push(_sw); _stL.push(_stPick[_swi]);
           }
-          _stBiling = _stW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('') || ('<span class="v2-fi-st2">' + _enTC + '</span>');
+          _stBiling = _stW.map(function (w, i) { return BoardStrings.markHalf('<span class="v2-fi-st2">' + w + '</span>', _stL[i]); }).join('');
         }
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
@@ -12058,28 +12123,21 @@ function _buildV2MapCol(ctx, vars) {
       } catch (e) {}
       if (!_ibAirlineName) _ibAirlineName = _ibAirlineCode || '';
 
-      // "WestJet Flight 812"
       var _ibFlightNum = String(_ib.flight || '').replace(/^[A-Z]{2,3}\s*/i, '');
-      var _ibTitle = (_ibAirlineName + ' Flight ' + _ibFlightNum).trim();
 
       // Status sentence — localized to the current display language so it
       // matches the rest of the panel (was hardcoded English → "Avion à
       // l'arrivée" kicker over "Awaiting Departure" status, etc.).
       var _rawSt = String(_ib.status || '').toLowerCase().trim();
-      var _ibLang = (typeof lang !== 'undefined' && lang) ? lang : 'en';
-      var _ST_I18N = {
-        enroute:   { en:'En route', fr:'En vol', es:'En vuelo', de:'Im Flug', it:'In volo', pt:'Em voo', ja:'飛行中', zh:'飞行中', ar:'في الجو' },
-        scheduled: { en:'Awaiting departure', fr:'En attente de départ', es:'En espera de salida', de:'Wartet auf Abflug', it:'In attesa di partenza', pt:'A aguardar partida', ja:'出発待ち', zh:'等待起飞', ar:'في انتظار المغادرة' },
-        boarding:  { en:'Boarding', fr:'Embarquement', es:'Embarcando', de:'Boarding', it:'Imbarco', pt:'Embarque', ja:'搭乗中', zh:'登机中', ar:'الصعود' },
-        delayed:   { en:'Delayed', fr:'En retard', es:'Retrasado', de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误', ar:'متأخر' },
-        early:     { en:'Early', fr:'En avance', es:'Adelantado', de:'Früher', it:'In anticipo', pt:'Adiantado', ja:'早着', zh:'提前', ar:'مبكر' },
-        cancelled: { en:'Cancelled', fr:'Annulé', es:'Cancelado', de:'Annulliert', it:'Cancellato', pt:'Cancelado', ja:'欠航', zh:'取消', ar:'ملغى' },
-        arrived:   { en:'Arrived', fr:'Arrivé', es:'Aterrizado', de:'Angekommen', it:'Arrivato', pt:'Chegou', ja:'到着', zh:'已到达', ar:'وصل' },
-        ontime:    { en:'On time', fr:"À l'heure", es:'A tiempo', de:'Pünktlich', it:'In orario', pt:'No horário', ja:'定刻', zh:'准点', ar:'في الموعد' },
-        // v23968 — the airport's own "Expected", kept by the adapters
-        // (fidsNeutralWord); the same words as SS.expected.
-        expected:  { en:'Expected', fr:'Attendu', es:'Esperado', de:'Erwartet', it:'Atteso', pt:'Esperado', ja:'見込み', zh:'预计', ar:'متوقع' }
-      };
+      // v23970 — the status words are the board's own (SS), in the board's
+      // pair. This card kept two private tables: _ST_SHORT (en/fr/es) and
+      // _ST_I18N, whose German 'Früher' sat beside the board's 'Verfrüht' on
+      // the same gate and whose 'Wartet auf Abflug' translated a word the
+      // English half did not say ('Scheduled').
+      var _ST_SS = { enroute:'active', scheduled:'scheduled', boarding:'boarding', delayed:'delayed',
+                     early:'early', cancelled:'cancelled', arrived:'arrived', ontime:'ontime',
+                     // v23968 — the airport's own "Expected", kept by the adapters (fidsNeutralWord)
+                     expected:'expected' };
       var _stKey = '';
       if (_rawSt === 'active' || _rawSt === 'en-route' || _rawSt === 'enroute' || _rawSt === 'departed') _stKey = 'enroute';
       else if (_rawSt === 'scheduled') _stKey = 'scheduled';
@@ -12116,16 +12174,7 @@ function _buildV2MapCol(ctx, vars) {
           else if (_ib._sortTs - _ib._revTs > 5 * 60000) _stKey = 'early';
         }
       } catch (e) {}
-      var _stWord = (_ST_I18N[_stKey] && (_ST_I18N[_stKey][_ibLang] || _ST_I18N[_stKey].en)) || 'Scheduled';
-      var _ST_SHORT = {
-        enroute:{en:'En route',fr:'En vol',es:'En vuelo'}, scheduled:{en:'Scheduled',fr:'Prévu',es:'Programado'},
-        boarding:{en:'Boarding',fr:'Embarquement',es:'Embarcando'}, delayed:{en:'Delayed',fr:'En retard',es:'Retrasado'},
-        early:{en:'Early',fr:'En avance',es:'Adelantado'}, cancelled:{en:'Cancelled',fr:'Annulé',es:'Cancelado'},
-        arrived:{en:'Arrived',fr:'Arrivé',es:'Aterrizado'}, ontime:{en:'On time',fr:"À l'heure",es:'A tiempo'}
-      };
-      // A language the short table doesn't carry (ja/zh/ar/de/it/pt) falls
-      // through to the full nine-language word, not to English.
-      var _stShort = (_ST_SHORT[_stKey] && _ST_SHORT[_stKey][_ibLang]) || _stWord;
+
 
       // Origin display: "Calgary (YYC)"
       var _origCity = '';
@@ -12156,46 +12205,10 @@ function _buildV2MapCol(ctx, vars) {
         if (_ib._depSchedLocal) {
           var _ibDepTs = (typeof adbTs === 'function') ? adbTs(_ib._depSchedLocal) : 0;
           if (_ibDepTs) {
-            _ibDepStr = new Date(_ibDepTs).toLocaleTimeString('en-US', { timeZone: _tz, hour: '2-digit', minute: '2-digit', hour12: true });
+            _ibDepStr = BoardStrings.boardTime(_ibDepTs, _tz, { hour: '2-digit' });
           }
         }
       } catch (e) {}
-
-      // Inbound arr time
-      var _ibArrStr = '';
-      try {
-        if (_ib._sortTs) {
-          _ibArrStr = new Date(_ib._sortTs).toLocaleTimeString('en-US', { timeZone: _tz, hour: '2-digit', minute: '2-digit', hour12: true });
-        }
-      } catch (e) {}
-
-      // SPD/ALT inline pills (only when telemetry is live)
-      var _telem = '';
-      if (_liveSpd !== null || _liveAlt !== null) {
-        var _telemBits = [];
-        if (_showSpd && _liveSpd !== null) _telemBits.push('<span class="v2-rc-telem-k">SPD</span> <span class="v2-rc-telem-v" data-gtelem="spd-kt">' + _liveSpdD + '</span>');
-        if (_showAlt && _liveAlt !== null) _telemBits.push('<span class="v2-rc-telem-k">ALT</span> <span class="v2-rc-telem-v" data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>');
-        if (_telemBits.length) _telem = '<div class="v2-rc-telem">' + _telemBits.join('<span class="v2-rc-telem-sep">·</span>') + '</div>';
-      }
-
-      // Speed + Altitude — ALWAYS shown for the inbound airframe.
-      // Live values from AeroDataBox when the plane is airborne; an em-dash
-      // while it's still on the ground (so the panel is consistent and the
-      // numbers light up the moment it's in the air).
-      var _isAirborne = (_liveSpd !== null || _liveAlt !== null);
-      var _spdLbl = ({en:'Speed',fr:'Vitesse',es:'Velocidad',de:'Geschw.',it:'Velocità',pt:'Velocidade',ja:'速度',zh:'速度',ar:'السرعة'})[_ibLang] || 'Speed';
-      var _altLbl = ({en:'Altitude',fr:'Altitude',es:'Altitud',de:'Höhe',it:'Altitudine',pt:'Altitude',ja:'高度',zh:'高度',ar:'الارتفاع'})[_ibLang] || 'Altitude';
-      var _keystatsHtml =
-            '<div class="v2-rc-keystats">'
-          +   '<div class="v2-rc-keystat">'
-          +     '<div class="v2-rc-keystat-lbl">' + _spdLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? ('<span data-gtelem="spd-kt">' + _liveSpdD.toLocaleString() + '</span> kt') : '—') + '</div>'
-          +   '</div>'
-          +   '<div class="v2-rc-keystat">'
-          +     '<div class="v2-rc-keystat-lbl">' + _altLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span> ft') : '—') + '</div>'
-          +   '</div>'
-          + '</div>';
 
       // v218.99.68 — Compact, readable right-column header as specified.
       // ONE block instead of duplicated info top + bottom. No truncated labels.
@@ -12211,12 +12224,6 @@ function _buildV2MapCol(ctx, vars) {
       var _ibRevTs = _ib._revTs || 0;
       var _ibEffArrTs = (_ibRevTs && _ibRevTs > _ibArrTs) ? _ibRevTs : _ibArrTs;
       var _ibMinsToArr = _ibEffArrTs ? Math.round((_ibEffArrTs - Date.now()) / 60000) : 0;
-      var _ibEtaStr = '';
-      if (_ibMinsToArr > 0 && _ibMinsToArr < 1440) {
-        _ibEtaStr = _ibMinsToArr >= 60
-          ? Math.floor(_ibMinsToArr / 60) + 'h ' + (_ibMinsToArr % 60) + 'm'
-          : _ibMinsToArr + ' min';
-      }
 
       // Status class for color — the SAME key as the shown word. It used to
       // re-derive from the raw feed status while the text upgraded to
@@ -12230,48 +12237,6 @@ function _buildV2MapCol(ctx, vars) {
       // feed or the by-number fetch). When there is no live fix, we show "—" —
       // we do NOT fabricate a value. No estimates.
       var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpdD * 1.852) : null;
-      var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
-      var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
-      var _ICO_SPD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-5.5"/></svg>';
-      var _ICO_ALT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 19l6-9 3.5 4.5L15 11l6 8z"/></svg>';
-      var _ICO_PLANE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 16v-1.7l-7.5-4.6V4.6a1.6 1.6 0 0 0-3.2 0v5.1L2.8 14.3V16l7.5-2.3v4.7l-2 1.4V21l3.6-1 3.6 1v-1.2l-2-1.4v-4.7z"/></svg>';
-
-      // 2nd language: French everywhere, Spanish for La Paz (per-airport).
-      var _lang2 = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
-      function _t2(o){ return o[_lang2] || o.fr || o.en || ''; }
-      var _L = {
-        status:   {en:'Status',      fr:'Statut',       es:'Estado'},
-        flight:   {en:'Flight',      fr:'Vol',          es:'Vuelo'},
-        arriving: {en:'Arriving in', fr:'Arrive dans',  es:'Llega en'},
-        departure:{en:'Departure',   fr:'Départ',       es:'Salida'},
-        departed: {en:'Departed',    fr:'Parti',        es:'Salió'},
-        arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
-        arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
-        delayed:  {en:'Delayed',     fr:'En retard',      es:'Retrasado'},
-        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre avion entrant', es:'Información de su avión entrante'}
-      };
-      // Status-adaptive Departure / Arrival labels
-      // ETD/ETA → ATD/ATA once actually departed / arrived (status-adaptive)
-      var _departed = (_stKey === 'enroute' || _stKey === 'arrived');
-      var _arrived  = (_stKey === 'arrived');
-      var _delayedSt = (_stKey === 'delayed');
-      // Departure / Arrival labels adapt to status (Departed / Arrived / Delayed)
-      var _depAbbr = _departed ? 'Departed At' : 'Departure Time';
-      var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival Time');
-      var _depWordObj = _departed ? {fr:'Parti à',es:'Salió a'} : {fr:'Heure de départ',es:'Hora de salida'};
-      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'En retard',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
-      function _i3(en, val, l2, cls){
-        return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
-             + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
-             + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
-      }
-      // r2 cell: ABBR on top · "IATA  time" value · 2nd-lang word under
-      function _r2(abbr, valStr, wordObj){
-        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
-             + '<div class="v2-rc-r2val">' + valStr + '</div>'
-             + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
-      }
-
       // ── v22945 — THE INBOUND CARD'S STATUS FOLLOWS THE SELECTED LANGUAGES.
       // The old comment here read "bilingual inline (EN | FR), never
       // switches", and it meant it: this cell took .en and .fr off the status
@@ -12286,32 +12251,7 @@ function _buildV2MapCol(ctx, vars) {
       // asked to render, and its 270px column is already sized for exactly
       // that. Four selected languages would otherwise build a string nothing
       // could fit, and the fitter would shrink the status into illegibility.
-      var _stWords = (typeof _ST_SHORT !== 'undefined' && _ST_SHORT[_stKey]) || null;
-      var _stEn = (_stWords && _stWords.en) || _stShort;
-      var _stFr = (_stWords && _stWords.fr) || _stEn;
-      var _stShow = (function () {
-        var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-          ? langs.slice(0, 2) : ['en', 'fr'];
-        var seen = Object.create(null), parts = [];
-        for (var _li = 0; _li < picked.length && parts.length < 2; _li++) {
-          // _ST_SHORT only carries en/fr/es — for every other selected
-          // language (ja/zh/ar/de/it/pt) fall through to the full
-          // nine-language table instead of dropping the word, which was
-          // what forced Japanese/Arabic screens back to 'Scheduled | Prévu'.
-          var w = (_stWords && _stWords[picked[_li]])
-               || (_ST_I18N[_stKey] && _ST_I18N[_stKey][picked[_li]]);
-          if (!w) continue;
-          var k = String(w).toLowerCase();
-          if (seen[k]) continue;          // never print 'Delayed | Delayed'
-          seen[k] = 1;
-          parts.push(w);
-        }
-        if (parts.length) return parts.join(' <span class="v2-rc-fi-sep">|</span> ');
-        // No table entry for the selected languages — keep the old pair rather
-        // than rendering an empty status cell.
-        return (_stFr && _stFr !== _stEn)
-          ? (_stEn + ' <span class="v2-rc-fi-sep">|</span> ' + _stFr) : _stEn;
-      })();
+      var _stShow = SLpair(_ST_SS[_stKey] || 'scheduled', ' <span class="v2-rc-fi-sep">|</span> ', _frF);
       // ONE flight-info shelf: Flight·From + Status (bilingual). No ETA row —
       // that lives on the left/departure side.
       // The approved reference (Jul 2026): a clean 3-row LABEL | VALUE
@@ -12327,7 +12267,7 @@ function _buildV2MapCol(ctx, vars) {
       // strike + revised time when the ETA moved: green when earlier (early
       // is good), amber when later. Label flips to Arrived once it's in.
       var _ibFmtT = function (ts) {
-        try { return new Date(ts).toLocaleTimeString('en-US', { timeZone: _tz || 'UTC', hour: 'numeric', minute: '2-digit', hour12: true }); }
+        try { return BoardStrings.boardTime(ts, _tz || 'UTC'); }
         catch (e) { return ''; }
       };
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
@@ -12708,13 +12648,13 @@ function _buildV2MapCol(ctx, vars) {
         _telemBar =
             '<div class="v2-rc-mapstats">'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('speed') + '</div>'
-          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">km/h</span></div></div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + BoardStrings.num(_spdKph) + '</span>') : '—') + ' <span class="v2-rc-ms-unit">km/h</span></div></div>'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('altitude') + '</div>'
-          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + '</div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + BoardStrings.num(_liveAltD) + '</span>') : '—') + '</div>'
           +     '<div class="v2-rc-ms-unitline">' + _msL('feetUnit') + '</div></div>'
           +   (_distKm !== null
               ? '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('distance') + '</div>'
-                + '<div class="v2-rc-ms-val">' + _distKm.toLocaleString() + ' <span class="v2-rc-ms-unit">km</span></div></div>'
+                + '<div class="v2-rc-ms-val">' + BoardStrings.num(_distKm) + ' <span class="v2-rc-ms-unit">km</span></div></div>'
               : '')
           + '</div>';
       }
@@ -12905,9 +12845,7 @@ function _buildV2MapCol(ctx, vars) {
       var _niTimeStr = '';
       if (_niTs) {
         try {
-          _niTimeStr = new Date(_niTs).toLocaleTimeString('en-US', {
-            timeZone: vars.tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: true
-          });
+          _niTimeStr = BoardStrings.boardTime(_niTs, vars.tz || 'UTC', { hour: '2-digit' });
         } catch (e) { _niTimeStr = ''; }
       }
       var _niStatusLine = '';
@@ -13422,7 +13360,6 @@ function _buildV2MapCol(ctx, vars) {
       // Shelf 6 — Aircraft type (+reg). FULL manufacturer name as specified
       // ("De Havilland Dash 8-300", not "Dash 8-300") — the auto-fit
       // shrinks the line if it runs long.
-      var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
       // v23168 — THE TYPE IS PRINTED UNDER ITS CURRENT NAME.
       // gateAircraftShortname() has been in this file the whole time, turning
       // "Bombardier Dash 8 Q400" into "De Havilland Dash 8-400" and "CRJ900"
@@ -13456,10 +13393,7 @@ function _buildV2MapCol(ctx, vars) {
       // confirmed assignment — qualify it, and drop the qualifier the moment
       // the enrichment retry lands today's reg (regSource flips off history).
       var _acRegSrc = String((vars.currentFlight && vars.currentFlight._regSource) || '');
-      var _acRegTag = (/^history/.test(_acRegSrc) && _acReg)
-        ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
-        : '';
+      var _acRegTag = (/^history/.test(_acRegSrc) && _acReg) ? _acExpectedHtml(_frF) : '';
       // TYPE WITHOUT A TAIL IS A PLAN, NOT A FACT
       // — a Delta flight 10 h out with no assigned airframe).
       // Airlines swap A320/A321 on these routes right up to assignment, so
@@ -13480,17 +13414,13 @@ function _buildV2MapCol(ctx, vars) {
       // whole line the moment the registry answers.
       var _regConfirmed = !!(typeof _regTrue !== 'undefined' && _regTrue);
       if (_acModel && !_acReg) {
-        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>';
+        _acTypeVal = _nbw(_acModel) + _acExpectedHtml(_frF, 'white-space:nowrap;');
       } else if (_acModel && _acReg && !_regConfirmed) {
-        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
+        _acTypeVal = _nbw(_acModel) + _acExpectedHtml(_frF, 'white-space:nowrap;')
           + ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag);
       } else {
         _acTypeVal = _nbw(_acModel) + (_acReg ? ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag) : '');
       }
-      // Shorter label per (was "Aircraft type").
-      var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
       // Operated by — when the operating carrier differs from the marketing
       // carrier, the bottom shelf splits into two cells:
       //   Operated By            |  Aircraft
@@ -13882,9 +13812,12 @@ function _gateDayWords(ts, tz, frF, boardTz) {
 function _gateDayLineHtml(dw) {
   if (!dw || !dw.words || !dw.words.length) return '';
   // Each language is one unbreakable unit; the only break offered is the one
-  // between them (the board's rule against severed phrases).
+  // between them (the board's rule against severed phrases). v23970 — and
+  // each carries its language (and an Arabic one its direction).
+  var _dl = dw.languages || [];
   return '<span class="v2-fi-dayline" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w, i) {
-    return (i ? '<span class="v2-fi-day-sep"> | </span>' : '') + '<span class="v2-fi-day-w">' + fidsEscHtml(w) + '</span>';
+    var _w = '<span class="v2-fi-day-w">' + fidsEscHtml(w) + '</span>';
+    return (i ? '<span class="v2-fi-day-sep"> | </span>' : '') + (_dl[i] ? BoardStrings.markHalf(_w, _dl[i]) : _w);
   }).join('') + '</span>';
 }
 // Which instant the Your Aircraft card's day line is read from: the time the
@@ -13971,26 +13904,29 @@ function _gateArrRevisedHtml(o) {
 function _gateArrPlaceHtml(term, gate, frF) {
   term = String(term || '').trim(); gate = String(gate || '').trim();
   if (!term && !gate) return '';
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-  if (frF) { var fi = picked.indexOf('fr'); if (fi > 0) { picked.splice(fi, 1); picked.unshift('fr'); } }
-  var T = _GATE_LBL.arrTerminal || {}, G = _GATE_LBL.gate || {};
+  // v23995 — the board's pair through the one chooser (the Québec rule
+  // included), and each language's own words from the store: it sliced
+  // `langs` itself and fell back to English ('Terminal', 'Gate').
+  var picked = BoardStrings.pairLangs(langs, !!frF);
+  var T = _lblEntry('arrTerminal'), G = _lblEntry('gate');
   var seen = Object.create(null), units = [];
   picked.forEach(function (l) {
-    var t = term ? (T[l] || T.en || 'Terminal') + '\u00a0' + term : '';
-    var g = gate ? (G[l] || G.en || 'Gate') + '\u00a0' + gate : '';
+    var t = (term && T[l]) ? T[l] + '\u00a0' + term : '';
+    var g = (gate && G[l]) ? G[l] + '\u00a0' + gate : '';
     var s = (t && g) ? t + ' \u00b7 ' + g : (t || g);
     if (!s || seen[s]) return;
-    seen[s] = 1; units.push({ t: t, g: g, s: s });
+    seen[s] = 1; units.push({ t: t, g: g, s: s, l: l });
   });
   if (!units.length) return '';
   var one = units.length > 1 && units.map(function (u) { return u.s; }).join(' | ').length <= 22;
   return '<span class="v2-fi-arrplace' + (one ? ' v2-fi-arrplace-one' : '') + '"' + ((term && gate) ? ' data-both="1"' : '') + '>'
     + units.map(function (u, i) {
+      // each unit marked with its language (and an Arabic one its direction)
       return (i ? '<span class="v2-fi-arrplace-sep"> | </span>' : '')
-        + '<span class="v2-fi-arrplace-w">'
+        + BoardStrings.markHalf('<span class="v2-fi-arrplace-w">'
         + (u.t ? '<span class="v2-fi-arrplace-t">' + fidsEscHtml(u.t) + (u.g ? ' \u00b7 ' : '') + '</span>' : '')
         + (u.g ? fidsEscHtml(u.g) : '')
-        + '</span>';
+        + '</span>', u.l, 'arrTerminal');
     }).join('') + '</span>';
 }
 // v23946 — THE TERMINAL-AND-GATE LINE TAKES ONLY THE ROOM THE TIME LEAVES.
@@ -14117,11 +14053,6 @@ function _gateNotePaintedDay(tz) {
 function uxgGateHtml(ctx) {
   const { currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs } = ctx;
   const gateVal = currentFlight.gate && currentFlight.gate !== '\u2014' ? currentFlight.gate : randomGate(currentFlight.terminal, currentFlight.flight);
-  // v221 \u2014 bilingual SIDE-BY-SIDE header labels (English / second language).
-  // Second language is per-airport: French everywhere, Spanish for La Paz.
-  const _hdr2nd = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : 'fr');
-  const _flightLbl2 = ({fr:'Vol', es:'Vuelo', en:'Flight', de:'Flug', it:'Volo', pt:'Voo'})[_hdr2nd] || 'Vol';
-  const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
   // Québec airports: French first on every bilingual pair.
   const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
@@ -14195,7 +14126,7 @@ function uxgGateHtml(ctx) {
   // gate-stability.test.js pins.)
   stKey = _depState.stKey;
   if (!stKey) stKey = 'scheduled';   // v23968 — the airport's word: Scheduled is never turned into On time
-  var stLabel = SL(stKey) || stKey.toUpperCase();
+  var stLabel = _statusWord(stKey);
   var airlineCode = (currentFlight.airline || '').trim().toUpperCase();
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
   // the Pualani livery — display them as HA so all downstream brand assets follow suit.
@@ -14222,7 +14153,7 @@ function uxgGateHtml(ctx) {
     if (!m) return s;
     var h24 = parseInt(m[1], 10);
     var mm = m[2];
-    var period = h24 >= 12 ? 'PM' : 'AM';
+    var period = h24 >= 12 ? 'PM' : 'AM'; // i18n-ok: code (the gate passes it through BoardStrings.boardClockText at render)
     var h12 = h24 % 12;
     if (h12 === 0) h12 = 12;
     return h12 + ':' + mm + ' ' + period;
@@ -14237,8 +14168,8 @@ function uxgGateHtml(ctx) {
     var _revDepHHMM = currentFlight.upd;
     if (!_revDepHHMM && currentFlight._revTs) {
       try {
-        _revDepHHMM = new Date(currentFlight._revTs).toLocaleTimeString('en-US',
-          { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+        _revDepHHMM = new Date(currentFlight._revTs).toLocaleTimeString('en-US', // i18n-ok: code
+          { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }); // i18n-ok: code
       } catch (e) {}
     }
     // v23099 \u2014 the revised time carries the DIRECTION of the change so the
@@ -14300,14 +14231,14 @@ function uxgGateHtml(ctx) {
   if (_effDepForBoard) {
     var boardTs = _bt.boardTs;
     var bd = new Date(boardTs);
-    boardTimeHtml = bd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
+    boardTimeHtml = BoardStrings.boardTime(bd, tz || 'UTC');
     // If delayed, show original boarding time struck through + new boarding time
     // (v23925 — "delayed" as the boarding time's own row has it: on a kept
     // sign that is the row from before the delay, so nothing is struck.)
     if (_bt.depDelayed && currentFlight._sortTs) {
       var origBoardTs = currentFlight._sortTs - boardLeadMins*60000;
       var origBd = new Date(origBoardTs);
-      var origBoardStr = origBd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
+      var origBoardStr = BoardStrings.boardTime(origBd, tz || 'UTC');
       if (origBoardStr !== boardTimeHtml) {
         boardTimeHtml = '<span class="g8-r2-strike">' + origBoardStr + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + boardTimeHtml + '</span>';
       }
@@ -14322,7 +14253,7 @@ function uxgGateHtml(ctx) {
   var _signDepTs = effectiveDepTs;
   if (_door.word) {
     stKey = _door.word;
-    stLabel = SL(stKey) || stKey.toUpperCase();
+    stLabel = _statusWord(stKey);
     if (_door.kept) {
       _signDepTs = _door.basis._revTs || _door.basis._sortTs || effectiveDepTs;
       if (_signDepTs) minsToDep = Math.round((_signDepTs - Date.now()) / 60000);
@@ -14338,8 +14269,8 @@ function uxgGateHtml(ctx) {
     var _pushHM = currentFlight.upd;
     if (!_pushHM && currentFlight._revTs) {
       try {
-        _pushHM = new Date(currentFlight._revTs).toLocaleTimeString('en-US',
-          { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+        _pushHM = new Date(currentFlight._revTs).toLocaleTimeString('en-US', // i18n-ok: code
+          { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false }); // i18n-ok: code
       } catch (eH) {}
     }
     var _pushDisp = _to12h(_pushHM);
@@ -14455,7 +14386,7 @@ function uxgGateHtml(ctx) {
   }
   if (equipName || currentFlight._reg) {
     var _regHistT = /^history/.test(String(currentFlight._regSource || ''));
-    var regStr = currentFlight._reg ? ' · ' + currentFlight._reg + (_regHistT ? ' (expected | prévu)' : '') : '';
+    var regStr = currentFlight._reg ? ' · ' + currentFlight._reg + (_regHistT ? ' (' + BoardStrings.pair('expected', { frFirst: _frF, plain: true }) + ')' : '') : '';
     r3Right = TL('equipToday')+' ' + (equipName || '') + regStr;
     // Reset aircraft image when flight changes
     if (window._gateLastFlight !== currentFlight.flight) {
@@ -14528,7 +14459,7 @@ function uxgGateHtml(ctx) {
     if (inboundFlight._depSchedLocal) {
       var depTs = adbTs(inboundFlight._depSchedLocal);
       if (depTs) {
-        inDepTime = new Date(depTs).toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'2-digit', minute:'2-digit', hour12:true });
+        inDepTime = BoardStrings.boardTime(depTs, tz || 'UTC', { hour: '2-digit' });
       } else {
         inDepTime = adbHHMM(inboundFlight._depSchedLocal) || inboundFlight.time || '';
       }
@@ -14536,7 +14467,7 @@ function uxgGateHtml(ctx) {
     // Get timezone abbreviation for display
     var tzAbbr = '';
     try {
-      var tzParts = new Intl.DateTimeFormat('en', { timeZone: tz||'UTC', timeZoneName:'short' }).formatToParts(new Date());
+      var tzParts = new Intl.DateTimeFormat('en', { timeZone: tz||'UTC', timeZoneName:'short' }).formatToParts(new Date()); // i18n-ok: code
       var tzPart = tzParts.find(function(p){return p.type==='timeZoneName';});
       if (tzPart) tzAbbr = ' <span style="font-size:14px;color:rgba(255,255,255,0.6);font-weight:600;">' + tzPart.value + '</span>';
     } catch(e) {}
@@ -14553,7 +14484,7 @@ function uxgGateHtml(ctx) {
     var inSchedArr = '';
     if (inboundFlight._sortTs) {
       var iad = new Date(inboundFlight._sortTs);
-      inSchedArr = iad.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'2-digit', minute:'2-digit', hour12:true });
+      inSchedArr = BoardStrings.boardTime(iad, tz || 'UTC', { hour: '2-digit' });
     }
     var inArrHtml = '';
     if (inArrived) {
@@ -14571,7 +14502,7 @@ function uxgGateHtml(ctx) {
     else if (inDelayed) inStBadge = '<div class="g8-inb-status delayed">' + SL('delayed') + '</div>';
     else if (inboundFlight.status === 'active' || inboundFlight.status === 'en-route' || inboundFlight.status === 'ontime' || inboundFlight.status === 'early') inStBadge = '<div class="g8-inb-status enroute">' + SL('active') + '</div>';
     else if (inboundFlight.status === 'scheduled' || inboundFlight.status === 'expected') inStBadge = '<div class="g8-inb-status scheduled">' + SL(inboundFlight.status) + '</div>';
-    else inStBadge = '<div class="g8-inb-status">' + (inboundFlight.status || 'Scheduled').charAt(0).toUpperCase() + (inboundFlight.status || 'scheduled').slice(1) + '</div>';
+    else { var _inW = _statusWord(inboundFlight.status); inStBadge = _inW ? '<div class="g8-inb-status">' + _inW + '</div>' : ''; }
 
     var _apNameInb = (AP[iata]||{}).name || iata;
     inbPanelHtml = '<div class="g8-inb" style="flex-direction:column;overflow:hidden;"><div class="g8-inb-left" style="flex:1;width:100%;overflow:hidden;">'
@@ -14625,7 +14556,7 @@ function uxgGateHtml(ctx) {
   var ALLIANCE_MAP = {
     // Star Alliance members
     'AC':'star','LH':'star','UA':'star','SQ':'star','NH':'star','TK':'star',
-    'SK':'star','OS':'star','LX':'star','AY':'star','TP':'star','SN':'star',
+    'SK':'star','OS':'star','LX':'star','TP':'star','SN':'star',
     'LO':'star','MS':'star','ET':'star','SA':'star','A3':'star','OZ':'star',
     'TG':'star','CA':'star','ZH':'star','AI':'star','JP':'star','OU':'star',
     'HR':'star','NZ':'star','CM':'star','EW':'star',
@@ -14646,6 +14577,9 @@ function uxgGateHtml(ctx) {
   // Dark-banner-safe variants — the colored lockups (black Star Alliance
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
+  // The alliances' own names, as each writes it (brands, the same in every
+  // language): the alt text of the alliance mark.
+  var ALLIANCE_NAMES = { star: 'Star Alliance', skyteam: 'SkyTeam', oneworld: 'oneworld' };
   var ALLIANCE_LOGOS = {
     // Star Alliance MEMBER TILE — the metallic 'STAR ALLIANCE' chip
     // (brushed-metal square, chrome 3D star + wordmark) sat after the airline
@@ -14681,7 +14615,7 @@ function uxgGateHtml(ctx) {
     // global kill switch: one transient 404 disabled alliance logos for the
     // rest of the session.
     var _allianceSrc = _ALLIANCE_MARK_OVERRIDE[airlineCode] || ALLIANCE_LOGOS[_allianceKey];
-    starHtml = '<img class="' + _allianceCls + '" src="' + _allianceSrc + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+    starHtml = '<img class="' + _allianceCls + '" src="' + _allianceSrc + '" alt="' + (ALLIANCE_NAMES[_allianceKey] || '') + '" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
 
   // Clean diagonal lane arrow (plain stroke SVG — the unicode arrows render
@@ -14786,8 +14720,8 @@ function uxgGateHtml(ctx) {
     var _bwClock = '';
     try {
       var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
-      var _bwLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-      if (_frF) { var _bfi = _bwLangs.indexOf('fr'); if (_bfi > 0) { _bwLangs.splice(_bfi, 1); _bwLangs.unshift('fr'); } }
+      // v23970 — the board's pair through the one chooser (BoardStrings).
+      var _bwLangs = BoardStrings.pairLangs(langs, _frF);
       var _bwL1 = _bwLangs[0] || 'en';
       var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
       // Status word for the strip: the same normalized vocabulary the plates
@@ -14810,10 +14744,11 @@ function uxgGateHtml(ctx) {
       var _bwStWord = function (lang) {
         try {
           var _o = (typeof SS !== 'undefined') ? (SS[_bwStKey] || SS[_bwStKey.replace(/ /g, '')]) : null;
-          var w = (_o && (_o[lang] || _o.en)) || _bwStKey;
-          w = String(w);
-          return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-        } catch (e) { return _bwStKey; }
+          var w = String((_o && _o[lang]) || BoardStrings.bs(_bwStKey.replace(/ /g, ''), lang) || '');
+          // a capital first letter, the rest as the store writes it (German
+          // nouns keep theirs: 'Letzter Aufruf', never 'Letzter aufruf')
+          return w ? w.charAt(0).toLocaleUpperCase(BoardStrings.META[lang] ? BoardStrings.META[lang].intl : 'en') + w.slice(1) : '';
+        } catch (e) { return ''; }
       };
       var _bwSide = function (lang, cls) {
         // v23211 — NO CLOCK IN THE STRIP
@@ -14823,11 +14758,11 @@ function uxgGateHtml(ctx) {
         // banner (the takeover's no-clock CSS is lifted alongside).
         var _stHtml = '';
         if (_bwAbn) {
-          var _stLbl = (_GATE_LBL.status && _GATE_LBL.status[lang]) || 'Status';
-          _stHtml = '<div class="g8-bw-status g8-bw-st-' + _bwStKey.replace(/[^a-z]/g, '') + '">'
+          var _stLbl = _lblEntry('status')[lang] || '';
+          _stHtml = BoardStrings.markHalf('<div class="g8-bw-status g8-bw-st-' + _bwStKey.replace(/[^a-z]/g, '') + '">'
             + '<span class="g8-bw-clk-lbl">' + _stLbl + '</span>'
             + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
-            + '</div>';
+            + '</div>', lang);
         }
         return '<div class="g8-bw-end ' + cls + '">' + _stHtml + '</div>';
       };
@@ -14840,12 +14775,12 @@ function uxgGateHtml(ctx) {
       // not the dedup'd label helper — one selected language shows TWICE
       // ('Now Boarding | Now Boarding') for symmetry. Quebec airports
       // put French first via the same pair.
-      var _bwNB = _GATE_LBL.nowBoarding || {};
+      var _bwNB = _lblEntry('nowBoarding');
       var _bwNBl1 = (typeof _bwL1 === 'string' && _bwL1) ? _bwL1 : 'en';
       var _bwNBl2 = (typeof _bwL2 === 'string' && _bwL2) ? _bwL2 : _bwNBl1;
-      var _bwNB1 = _bwNB[_bwNBl1] || _bwNB.en || 'Now Boarding';
+      var _bwNB1 = _bwNB[_bwNBl1] || '';
       var _bwNB2 = _bwNB[_bwNBl2] || _bwNB1;
-      _bwMidWords = _bwNB1 + ' <span class="g8-bw-sep">|</span> ' + _bwNB2;
+      _bwMidWords = BoardStrings.markHalf(_bwNB1, _bwNBl1) + ' <span class="g8-bw-sep">|</span> ' + BoardStrings.markHalf(_bwNB2, _bwNBl2);
     } else {
       _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
     }
@@ -14968,17 +14903,15 @@ function uxgGateHtml(ctx) {
     // stack, words from the selected languages, de-duplicated.
     var _stTxt = '';
     if (_stP) {
-      var _svPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-      if (_frF) { var _svf = _svPick.indexOf('fr'); if (_svf > 0) { _svPick.splice(_svf, 1); _svPick.unshift('fr'); } }
-      var _svW = [], _svSeen = {};
+      var _svPick = BoardStrings.pairLangs(langs, _frF);   // v23970 — the one chooser
+      var _svW = [], _svL = [], _svSeen = {};
       for (var _svi = 0; _svi < _svPick.length && _svW.length < 2; _svi++) {
         var _svw = _stP[_svPick[_svi]];
         if (!_svw || _svSeen[String(_svw).toLowerCase()]) continue;
         _svSeen[String(_svw).toLowerCase()] = 1;
-        _svW.push(_svw);
+        _svW.push(_svw); _svL.push(_svPick[_svi]);
       }
-      if (!_svW.length && _stP.en) _svW.push(_stP.en);
-      _stTxt = _svW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('');
+      _stTxt = _svW.map(function (w, i) { return BoardStrings.markHalf('<span class="v2-fi-st2">' + w + '</span>', _svL[i]); }).join('');
     }
     // Flair brand palette: airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
@@ -15099,6 +15032,11 @@ function uxgGateHtml(ctx) {
     // onto a second line. Lowercase, no space, no wrap.
     function _birMerid(html) {
       if (!html) return html;
+      // v23995 — the board's clock first: on a board led by a 24-hour
+      // language the time is 17:40, and there is no meridiem to wrap (the
+      // revised departure read '5:40pm' on a French or German gate, because
+      // the wrapping hid the time from the board-clock pass that runs later).
+      html = BoardStrings.boardClockText(String(html));
       // ONE pass — a second .replace() over the first's output re-matched the
       // 'am' it had just wrapped and nested the span inside itself.
       return String(html).replace(/\s*\b([AaPp])\.?\s*[Mm]\.?\b/g, function (_, p) {
@@ -15284,21 +15222,40 @@ function uxgGateHtml(ctx) {
   // show for the whole boarding window, not five minutes of it.
   function _pdPrioMarksHtml() {
     var hdr = '<div class="g8-pd-marks-hdr">'
-      + (_gateLbl1('avidTraveller', _frF) || 'AvidTraveller') + '</div>';
-    var FR = { passport: 'Passeport', venture: 'Horizon', ascent: 'Essor', first: 'Première' };
-    function mark(tier, label) {
-      var fr = _frF && FR[tier];
-      return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
-        + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="VIPorter '
-        + (fr || label) + '"></span>';
-    }
-    return hdr + '<div class="g8-pd-preboard-marks">'
-      + mark('passport', 'Passport')
-      + mark('venture', 'Venture')
-      + mark('ascent', 'Ascent')
-      + mark('first', 'First')
+      + _gateLbl1Html('avidTraveller', _frF) + '</div>';
+    return hdr + _pdMarksRow();
+  }
+  // One VIPorter tier as Porter's own artwork. The files key on the ENGLISH
+  // tier with a language suffix, so the tier is the identity and the language
+  // is a swap: Porter RENAMES the tiers in French (Passeport, Horizon, Essor,
+  // Première), so the French files are different artwork. FR_ART names the
+  // tiers whose French file exists; a tier missing from it draws its English
+  // file — the wrong language but PRESENT, whereas a constructed path pointing
+  // at nothing draws nothing and the tier silently vanishes (that is how Ascent
+  // went unnoticed). The tier's NAME, in every board language, is the store's
+  // pdTier* entry: the alt text a failed image falls back to.
+  function _pdMark(tier, key) {
+    var FR_ART = { passport: 1, venture: 1, ascent: 1, first: 1 };
+    var fr = _gateLang1(_frF) === 'fr' && FR_ART[tier];
+    return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
+      + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="' + _gateLbl1(key, _frF) + '"></span>';
+  }
+  // The priority marks: all four elite tiers, then PorterReserve. Porter's
+  // pre-boarding list says "Premium VIPorter members", which tells a passenger
+  // nothing about whether their own card qualifies; naming every tier says it
+  // exactly, and excludes nobody. PorterReserve is the FIFTH entry in Porter's
+  // published list, after the four tiers, so its mark belongs in this row as
+  // an entitlement, not as the column heading. One copy, shared by the
+  // unified sign (_pdPrioMarksHtml) and the lanes panel (_pdLanesBodyHtml).
+  function _pdMarksRow() {
+    var _artFr = _gateLang1(_frF) === 'fr';
+    return '<div class="g8-pd-preboard-marks">'
+      + _pdMark('passport', 'pdTierPassport')
+      + _pdMark('venture', 'pdTierVenture')
+      + _pdMark('ascent', 'pdTierAscent')
+      + _pdMark('first', 'pdTierFirst')
       + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo'
-        + (_frF ? '_fr' : '') + '.svg" alt="PorterReserve"></span>'
+        + (_artFr ? '_fr' : '') + '.svg" alt="' + _gateLbl1('pdReserve', _frF) + '"></span>'
       + '</div>';
   }
   function _pdLanesBodyHtml(rowsVal, comingVal, preActive) {
@@ -15312,7 +15269,11 @@ function uxgGateHtml(ctx) {
     // panel and the paired form does not fit. The board already rotates its
     // language, so each pass shows it in one of them — the same reason the
     // roster below uses TL().
-    var _prioVal = preActive ? (_gateLbl1('preboard', _frF) || 'Pre-boarding') : 'Porter Reserve';
+    // v23995 — the cabin by Porter's own name in the sign's language
+    // (PorterReserve / PorterRéserve), never the spaced English 'Porter
+    // Reserve', which Porter writes nowhere and which read English on a
+    // French sign.
+    var _prioVal = preActive ? _gateLbl1Html('preboard', _frF) : _gateLbl1Html('pdReserve', _frF);
     // v23524 — the two product names in Porter's list get their marks.
     // sent the artwork; every file in it is DARK INK (porter_reserve_logo.svg
     // is #222223, the VIPorter tier marks are black or #153993) and this sign's
@@ -15365,55 +15326,18 @@ function uxgGateHtml(ctx) {
     // Passeport, Horizon, Essor et Première" — so a hardcoded 'AvidTraveller'
     // would print English on the French half of a bilingual sign.
     var _prioMarksHdr = '<div class="g8-pd-marks-hdr">'
-      + (_gateLbl1('avidTraveller', _frF) || 'AvidTraveller') + '</div>';
+      + _gateLbl1Html('avidTraveller', _frF) + '</div>';
     // v23749 — THE MARKS FOLLOW THE LANGUAGE.
     //
     // Porter does not translate the tier names, it RENAMES them, so the French
     // marks are different artwork rather than colour variants:
     //   Passport → Passeport    Venture → Horizon
     //   Ascent   → Essor        First   → Première
-    // A French sign showing "Ascent" is wrong, not merely untranslated.
-    //
-    // The files key on the ENGLISH tier with a language suffix, so the tier is
-    // the identity and the language is a swap. _PD_MARK_FR names the tiers whose
-    // French artwork actually exists, and names them with the word Porter itself
-    // uses. All four are covered today; the table stays because the fallback it
-    // drives is the safe direction — a tier missing from it draws its English
-    // file, which is the wrong language but PRESENT, whereas a constructed path
-    // pointing at nothing draws nothing and the tier silently vanishes from the
-    // sign. That is exactly how Ascent went unnoticed for so long.
-    var _PD_MARK_FR = {
-      passport: 'Passeport', venture: 'Horizon', ascent: 'Essor', first: 'Première',
-    };
-    function _pdMark(tier, label) {
-      // The French name doubles as the alt text, so a file that fails to load
-      // falls back to the word on Porter's own French card rather than to a
-      // tier name their French members have never seen.
-      var fr = _frF && _PD_MARK_FR[tier];
-      return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
-        + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="VIPorter '
-        + (fr || label) + '"></span>';
-    }
-    // All four elite tiers. Porter's pre-boarding list says "Premium VIPorter
-    // members", which tells a passenger nothing about whether their own card
-    // qualifies; naming every tier says it exactly, and excludes nobody.
-    var _prioMarks = _prioMarksHdr + '<div class="g8-pd-preboard-marks">'
-        + _pdMark('passport', 'Passport')
-        + _pdMark('venture', 'Venture')
-        + _pdMark('ascent', 'Ascent')
-        + _pdMark('first', 'First')
-        // PorterReserve is the FIFTH entry in Porter's published pre-boarding
-        // list, after the four elite tiers — "Premium VIPorter members,
-        // PorterReserve passengers" — so its mark belongs in this row as an
-        // entitlement, not as the column heading. (The heading above names the
-        // cabin; this says the fare pre-boards.) It has both languages, so it
-        // follows the sign like the tiers do.
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo'
-          + (_frF ? '_fr' : '') + '.svg" alt="PorterReserve"></span>'
-        + '</div>';
+    // The tier artwork row is _pdMarksRow (one copy, shared with the sign).
+    var _prioMarks = _prioMarksHdr + _pdMarksRow();
     // The roster is pre-boarding only; the marks are not.
     var _prioSub = preActive
-      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
+      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1Html('preboardList', _frF) + '</span></div>' + _prioMarks
       : _prioMarks;
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio">'
@@ -15465,7 +15389,7 @@ function uxgGateHtml(ctx) {
   // PorterClassic reads "boarding will begin shortly" until general boarding
   // commences.
   function _pdCabinHdr(key, live) {
-    var name = _gateLbl1(key, _frF) || (key === 'pdReserve' ? 'PorterReserve' : 'PorterClassic');
+    var name = _gateLbl1Html(key, _frF);
     var st = live
       ? _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ')
       : _gateLbl('boardSoon', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
@@ -15500,7 +15424,7 @@ function uxgGateHtml(ctx) {
   function _pdClassicMark() {
     return '<div class="g8-pd-preboard-marks g8-pd-marks-classic">'
       + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_'
-        + (_frF ? 'fr' : 'en') + '.svg" alt="VIPorter"></span>'
+        + (_gateLang1(_frF) === 'fr' ? 'fr' : 'en') + '.svg" alt="VIPorter"></span>'
       + '</div>';
   }
 
@@ -15560,15 +15484,18 @@ function uxgGateHtml(ctx) {
     // The mock writes 'PorterReserve | Réserve': when the second half repeats
     // the first half's brand prefix, it drops it, so a cabin pair holds one
     // line. Only asked for on cabin names; every other pair is left whole.
+    var cut = -1;
     if (short && halves.length === 2) {
       var m = /^([A-Z][a-z]+)(?=[A-Z])/.exec(halves[0]);
-      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) halves[1] = halves[1].slice(m[1].length);
+      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) { halves[1] = halves[1].slice(m[1].length); cut = 1; }
     }
     // v23773 — each half carries its language, so the French half can be
     // coloured wherever it sits: second at most airports, FIRST at the
     // French-first ones (YUL, YQB…). Position says nothing about language.
+    // v23995 — a half cut from a brand ('Réserve' of PorterRéserve, 'Reserve'
+    // of PorterReserve) is the brand's own word, never translated: marked so.
     var html = halves.map(function (w, i) {
-      return '<span class="g8-pair-h"' + (langsOf[i] ? ' lang="' + langsOf[i] + '"' : '') + '>' + w + '</span>';
+      return BoardStrings.markHalf('<span class="g8-pair-h"' + (i === cut ? ' translate="no"' : '') + '>' + w + '</span>', langsOf[i], key);
     }).join('<span class="g8-pair-sep">|</span>');
     return html;
   }
@@ -15600,27 +15527,29 @@ function uxgGateHtml(ctx) {
     return (c && c[which]) ? _g8SignPair(c[which]) : '';
   }
   function _g8SignLines(key) {
-    return _gateLbl(key, _frF, function (w) { return '<span class="g8-sign-line">' + w + '</span>'; }, '');
+    // a list's ' · ' keeps its dot with the item before it (a no-break space
+    // in front), so a wrapped line never opens with '·'
+    return _gateLbl(key, _frF, function (w) { return '<span class="g8-sign-line">' + String(w).replace(/ \u00B7 /g, '\u00A0\u00B7 ') + '</span>'; }, '');
   }
   // 'Next: Rows 8-16' / 'Prochain : Rangées 8-16' — each language a whole
   // line, the group word in that language, French with its space before the
   // colon.
   function _g8SignNext(groupKey, value, valueKey) {
     if (!value && !valueKey) return '';
-    var L = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-    if (_frF) { var fi = L.indexOf('fr'); if (fi > 0) { L.splice(fi, 1); L.unshift('fr'); } }
-    var T = (typeof _GATE_LBL !== 'undefined') ? _GATE_LBL : {};
+    // v23970 — the board's pair through the one chooser (it sliced `langs`
+    // itself), and each language's own colon: 'Prochain : …', '次：…'.
+    var L = BoardStrings.pairLangs(langs, _frF);
     // 'Next: Zone 6', not 'Next: Zones 6' — a single number takes the singular.
-    if (groupKey === 'zones' && value && !/[\u2022,\u2013\-]/.test(String(value)) && T.zone) groupKey = 'zone';
-    var nx = T.nextUp || { en: 'Next' }, grp = groupKey ? (T[groupKey] || {}) : {}, vk = valueKey ? (T[valueKey] || {}) : null;
+    if (groupKey === 'zones' && value && !/[\u2022,\u2013\-]/.test(String(value)) && _lblEntry('zone')) groupKey = 'zone';
+    var nx = _lblEntry('nextUp') || {}, grp = groupKey ? (_lblEntry(groupKey) || {}) : {}, vk = valueKey ? (_lblEntry(valueKey) || {}) : null;
     var seen = {}, out = '';
     for (var i = 0; i < L.length; i++) {
-      var lg = L[i], gw = grp[lg] || grp.en || '';
-      var v = vk ? (vk[lg] || vk.en || '') : value;
-      var line = (nx[lg] || nx.en) + (lg === 'fr' ? ' : ' : ': ') + (gw ? gw + ' ' : '') + v;
+      var lg = L[i], gw = grp[lg] || '';
+      var v = vk ? (vk[lg] || '') : value;
+      var line = (nx[lg] || '') + BoardStrings.META[lg].colon + (gw ? gw + ' ' : '') + v;
       if (seen[line]) continue;
       seen[line] = 1;
-      out += '<span class="g8-sign-line">' + line + '</span>';
+      out += BoardStrings.markHalf('<span class="g8-sign-line">' + line + '</span>', lg);
     }
     return out;
   }
@@ -15702,7 +15631,7 @@ function uxgGateHtml(ctx) {
       var _acExpress = (airlineCode === 'QK')
         || (typeof acExpressOperated === 'function' && typeof fidsResolveOperator === 'function'
             && acExpressOperated(fidsResolveOperator(currentFlight, iata).op));
-      _grpLbl = 'Zone';
+      _grpLbl = _gateLbl('zones', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
       // Lane model per the physical AC gate signs: priority Zones 1
       // (black, Lane 1) and 2 (red, Lane 2) get their own quarter panels AT
       // ALL TIMES; the right half is the called-zones sign (3, then up to
@@ -15731,7 +15660,7 @@ function uxgGateHtml(ctx) {
       // are never a now/next step. The right half calls Zones 3-8 ONE AT A
       // TIME through Lanes 3\u20224 as departure approaches. Zone 9 (UltraBasic)
       // rides the final call, not the zones sign.
-      _grpLbl = 'Zone';
+      _grpLbl = _gateLbl('zones', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
       nowVal = '1'; nextVal = '2';
       var _wzStep;
       if (minsToDep > 18) _wzStep = 3;
@@ -15813,8 +15742,6 @@ function uxgGateHtml(ctx) {
     // banner-bg/accent vars.
     var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK'
                     || airlineCode === 'WS' || airlineCode === 'WR');
-    var _nowLbl = _acLanes ? '' : _grpLbl;
-    var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
     // v23706 — same pairing for the two column headers. See the note at
     // _grpLbl: these were the other half of the monolingual generic panel.
     var _hdrNow = _gateLbl('boardNow', _frF, function (w) { return w; },
@@ -15851,7 +15778,7 @@ function uxgGateHtml(ctx) {
             // tier marks are off the sign — the reference picture has neither.
             _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true),
                    note: _pdPre ? _g8SignLines('preboard') : _g8SignLines('boardConv'),
-                   roster: _pdPre ? (_gateLbl1('preboardList', _frF) || '') : '',
+                   roster: _pdPre ? (_gateLbl1Html('preboardList', _frF) || '') : '',
                    lanes: _g8SignLanes('1 \u2022 2', true) };
             // During pre-boarding the Classic panel is not being called yet;
             // it says so. Once general boarding is on, the panel is titled
@@ -15883,7 +15810,7 @@ function uxgGateHtml(ctx) {
             // called group on the right, the next group as the Next line.
             // A carrier that boards by ZONE (AIRLINE_ZONES says so) is titled
             // Zones, not Group — Air North, for one.
-            var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).label === 'Zone') ? 'zones' : 'groupLabel';
+            var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).call === 'zone') ? 'zones' : 'groupLabel';
             _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
             _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair(_gkey), value: String(nowVal),
                    lanes: _g8SignLanes('3 \u2022 4', true),
@@ -15964,7 +15891,7 @@ function uxgGateHtml(ctx) {
             _R = { title: _g8SignPair('boarding'), value: _g8SignPair('genboard'), note: _g8SignLines('allPax'),
                    lanes: _g8SignLanes('1', false) };
           } else {
-            var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).label === 'Zone') ? 'zones' : 'groupLabel';
+            var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).call === 'zone') ? 'zones' : 'groupLabel';
             _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
             _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair(_gkey), value: _g8SignPair('all'),
                    lanes: _g8SignLanes('3 \u2022 4', true) };
@@ -15993,7 +15920,8 @@ function uxgGateHtml(ctx) {
       + '<div class="g8-cd-body g8-cd-mock">'
       + (function () {
           var _cdL = ['', ''];
-          _gateLbl('boardSoon', _frF, function (w, i) { _cdL[i ? 1 : 0] = w; return ''; }, '');
+          // each headline carries its language (an Arabic one its direction)
+          _gateLbl('boardSoon', _frF, function (w, i, l) { _cdL[i ? 1 : 0] = BoardStrings.markHalf(w, l, 'boardSoon'); return ''; }, '');
           return '<div class="g8-cd-label">' + (_cdL[0] || TL('boardSoon')) + '</div>'
             + '<div class="g8-cd-line">' + (_cdRondelleHtml() || '') + '</div>'
             + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2">' + _cdL[1] + '</div>' : '');
@@ -16020,7 +15948,7 @@ function uxgGateHtml(ctx) {
     // v218.99.55 — Force IATA codes in parens to uppercase: "(yhz)" → "(YHZ)"
     nLoc = nLoc.replace(/\(([a-z]{3})\)/gi, function(m, code) { return '(' + code.toUpperCase() + ')'; });
     var nDelay = '';
-    if (nextFlight.upd && nextFlight.status === 'delayed') nDelay = ' → Now ' + nextFlight.upd;
+    if (nextFlight.upd && nextFlight.status === 'delayed') nDelay = ' → ' + TL('nowRevised') + ' ' + nextFlight.upd;
     nextHtml = '<span class="g8-r5-next">' + TL('nextDep') + ': ' + nLoc + ' · ' + nextFlight.flight + ' · ' + nextFlight.time + nDelay + '</span>';
   }
 
@@ -17271,7 +17199,7 @@ function uxgGateHtml(ctx) {
             // (rounded top, soft border/shadow separation).
             var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
             var _tbNow1 = '—';
-            try { _tbNow1 = new Date().toLocaleTimeString('en-US', _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
+            try { _tbNow1 = BoardStrings.boardTime(new Date(), _tbTz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
             var _tbDate1 = '', _tbDay1 = '';
             try { _tbDate1 = _ocClockDate(new Date(), _tbTz || null); } catch (e) {}
             try { _tbDay1 = _ocLocalDayKey(_tbTz || null); } catch (e) {}
@@ -19321,13 +19249,26 @@ function _fitFlightCells() {
       // width with the same number, so a text+width key scored a hit and the
       // cell was never re-fitted — which is why 'F929…' and 'WN49…' were still
       // clipped on the delayed rows while every on-time row fitted fine.
+      // (the size this pass fitted earlier is put back when the memo says
+      // nothing changed: removing it to read the base size and then returning
+      // on the memo un-fitted every number on every pass)
+      var fitted = cell.style.getPropertyValue('font-size');
       cell.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
-      var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base);
-      if (cell.dataset.fnFit === key) return;
+      // v23995 — and the fonts' state: a number fitted before the board's
+      // web font arrived was measured in the narrower fallback, memoised, and
+      // left 2px too wide once the real face drew it ('WS33…' on every board,
+      // in every language). Any overflow at all draws the ellipsis, so there
+      // is no slack either.
+      var fontsUp = (document.fonts && document.fonts.status === 'loaded') ? 'F' : 'f';
+      var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base) + '|' + fontsUp;
+      if (cell.dataset.fnFit === key) {
+        if (fitted) cell.style.setProperty('font-size', fitted, 'important');
+        if (!(cell.scrollWidth > cell.clientWidth)) return;
+      }
       var size = base, guard = 16;
       var floorPx = Math.max(18, base * 0.68);
-      while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
+      while (cell.scrollWidth > cell.clientWidth && size > floorPx && guard-- > 0) {
         size = Math.max(floorPx, size - 1);
         cell.style.setProperty('font-size', size + 'px', 'important');
       }
@@ -19335,6 +19276,8 @@ function _fitFlightCells() {
     });
   } catch (e) {}
 }
+// Re-fit once the fonts have loaded (the memo above keys on it as well).
+try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', function () { _fitFlightCells(); }); } catch (eFF) {}
 // Re-fit the moment the board's rows change. A MutationObserver covers every
 // render path without having to find and patch each one.
 try {
@@ -19805,6 +19748,27 @@ function boardAutofit(full) {
                 });
                 maxW = Math.max(maxW, _w0);
               });
+              // v23970 — THE STATUS COLUMN IS SIZED FOR EVERY STATUS ITS
+              // LANGUAGE HAS, not only the ones on screen when the widths were
+              // taken: the geometry is cached per flight set, so a row that
+              // turned to 'Embarquement' after a board of 'Prévu' was cut to
+              // 'Embarqueme…' on a French-only board and at Montréal.
+              if (td0.classList.contains('td-status')) {
+                try {
+                  var _scs = getComputedStyle(td0);
+                  probe.style.fontFamily = _scs.fontFamily;
+                  probe.style.fontWeight = _scs.fontWeight;
+                  probe.style.letterSpacing = _scs.letterSpacing;
+                  probe.style.fontSize = _probePx + 'px';
+                  Object.keys(SS).forEach(function (k) {
+                    if (k === 'atbelt') return;           // the baggage hall's, not a flight board's
+                    var _sw = SL(k);                       // the page's language
+                    if (!_sw) return;
+                    probe.textContent = String(_sw);
+                    if (probe.offsetWidth > maxW) maxW = probe.offsetWidth;
+                  });
+                } catch (eSt) {}
+              }
               // The HEADER label needs room too — 'AIRSIDE' was clipping to
               // 'AIRSID' over a column whose cells only hold one letter.
               try {
@@ -19923,7 +19887,12 @@ function boardAutofit(full) {
 }
 // Standing refit — covers the BAGS render, destination flips changing text
 // lengths, and window resizes, same rhythm as the gate's fit heartbeat.
-try { _ocEvery(function () { boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
+// v23995 — the no-cut pass rides the heartbeat too: with the fitter off
+// (BOARD_AUTOFIT_ENABLED) it ran only beside a row swap, which can land
+// before the board is laid out or its fonts have arrived; a board whose rows
+// do not change was then never measured again. It only ever shrinks a cell
+// that is cut, so on a board that fits it changes nothing.
+try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
 // The logo's natural size is only known once it decodes, and the banner may
 // still be revealing — fit on load as well as on the heartbeat.
 try {
@@ -20530,18 +20499,19 @@ function renderDedicatedScreen() {
 
 const gView = document.getElementById('gateView');
   const bView = document.getElementById('baggageView');
+  // v23970 — the baggage board speaks one language at a time (`lang`); say so,
+  // so its Japanese, Chinese or Arabic takes that script's font and breaking.
+  try { if (bView && BoardStrings.isLang(lang)) bView.setAttribute('lang', lang); } catch (eL) {}
   const contentArea = document.querySelector('.content-area');
   const iata = (document.getElementById('apSel').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = now.toLocaleTimeString('en-US', { ...tzOpts, hour:'2-digit', minute:'2-digit', hour12:true });
-  // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
-  const _localeMap = { en:'en-CA', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt', ja:'ja', zh:'zh', ar:'ar' };
-  const _loc = _localeMap[lang] || 'en-CA';
+  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
   // Weekday, month, day number and year all come from the AIRPORT's clock —
-  // see _airportDateLine for the mixed-clock bug this replaces.
-  const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
+  // see _airportDateLine for the mixed-clock bug this replaces — in the
+  // language on screen (the store's locale for it).
+  const dateDisplay = _airportDateLine(now, tzOpts, lang, timeStr);
 
   contentArea.style.display = 'none';
   // .hdr no longer exists (replaced by v2 banner); hide both legacy and v2.
@@ -20578,7 +20548,6 @@ const gView = document.getElementById('gateView');
 
     if (currentFlight) {
       const stKey = currentFlight.status || 'scheduled';
-      const stEn = (SS[stKey] || {}).en || stKey.toUpperCase();
       const locIata = currentFlight._locIata || '';
       // Prefer CITY lookup, then dest field, then locIata code
       const _rawDest = currentFlight.dest || '';
@@ -20588,7 +20557,7 @@ const gView = document.getElementById('gateView');
       let timeDisplay = currentFlight.time;
       let updHtml = '';
       if (currentFlight.upd && (stKey === 'delayed' || stKey === 'early')) {
-        updHtml = `<div class="gate-time-upd">Now ${currentFlight.upd}</div>`;
+        updHtml = `<div class="gate-time-upd">${BoardStrings.fmt('nowAt', lang, { TIME: currentFlight.upd })}</div>`;
       }
 
       // Logo — HUGE high-res for banner
@@ -20632,7 +20601,7 @@ const gView = document.getElementById('gateView');
         const nLoc = tc(nextFlight.dest || '—');
         let nDelay = '';
         if (nextFlight.upd && nextFlight.status === 'delayed') {
-          nDelay = `<span class="gate-footer-next-delayed">Now ${nextFlight.upd}</span>`;
+          nDelay = `<span class="gate-footer-next-delayed">${BoardStrings.fmt('nowAt', lang, { TIME: nextFlight.upd })}</span>`;
         }
         nextHtml = `<div class="gate-footer-next">
           <span class="gate-footer-next-lbl">${TL('upcoming')}</span>
@@ -20865,9 +20834,9 @@ const gView = document.getElementById('gateView');
         const inFlight = inboundFlight.flight || '';
         const inTime = inboundFlight.time || '';
         const inStatus = inboundFlight.status || 'scheduled';
-        // Status word in the current rotation language (same source TL()
-        // reads) — was pinned to English regardless of the picked languages.
-        const inStEn = (SS[inStatus] || {})[lang] || (SS[inStatus] || {}).en || inStatus.toUpperCase();
+        // Status word in the language on screen (v23995: an unknown code
+        // shows nothing, never the feed's English upper-cased).
+        const inStEn = _statusWord(inStatus);
         // Estimate minutes until arrival
         let etaStr = '';
         if (inboundFlight._sortTs) {
@@ -20985,13 +20954,13 @@ const gView = document.getElementById('gateView');
           if (currentFlight) {
             var _nLoc = tc(currentFlight.dest || currentFlight._locCity || '');
             _nextInfo = '<div style="font-size:clamp(20px,2.2vw,30px);font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:0.04em;margin-top:8px;">'
-              + currentFlight.flight + ' to ' + _nLoc + ' · ' + (currentFlight.time||'') + '</div>';
+              + BoardStrings.fmt('flightToCity', lang, { FLIGHT: currentFlight.flight, CITY: _nLoc }) + ' · ' + (currentFlight.time||'') + '</div>';
           }
           gView.innerHTML = '<div style="width:100%;height:100vh;display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(15,23,42,0.6) 0%,rgba(30,41,59,0.4) 35%,rgba(15,23,42,0.6) 70%,rgba(2,6,23,0.7) 100%);overflow:hidden;">'
             // Top bar with gate number
             + '<div style="display:flex;align-items:center;justify-content:space-between;padding:28px 48px;">'
             +   '<div style="font-size:22px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.04em;">' + _apName + '</div>'
-            +   '<div style="font-size:clamp(36px,4vw,56px);font-weight:900;color:rgba(255,255,255,0.15);letter-spacing:-0.02em;">Gate ' + _gateNum + '</div>'
+            +   '<div style="font-size:clamp(36px,4vw,56px);font-weight:900;color:rgba(255,255,255,0.15);letter-spacing:-0.02em;">' + TL('gateDep') + ' ' + _gateNum + '</div>'
             + '</div>'
             // Center welcome
             + '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;">'
@@ -20999,7 +20968,7 @@ const gView = document.getElementById('gateView');
             +   '<div style="font-size:clamp(72px,10vw,140px);font-weight:900;color:#fff;letter-spacing:-0.03em;line-height:1;text-align:center;">' + _apCity + '</div>'
             +   '<div style="width:80px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:28px 0;"></div>'
             +   _welcomeWx
-            +   '<div style="font-size:clamp(18px,2vw,26px);font-weight:600;color:rgba(255,255,255,0.25);letter-spacing:0.06em;margin-bottom:24px;margin-top:28px;">Next departure from this gate</div>'
+            +   '<div style="font-size:clamp(18px,2vw,26px);font-weight:600;color:rgba(255,255,255,0.25);letter-spacing:0.06em;margin-bottom:24px;margin-top:28px;">' + BoardStrings.bs('nextDepGate', lang) + '</div>'
             +   _nextInfo
             + '</div>'
             // Bottom clock
@@ -21950,7 +21919,7 @@ const gView = document.getElementById('gateView');
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
               <div style="background:rgba(0,0,0,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:0;padding:clamp(12px,2vw,20px) clamp(16px,3vw,28px);border:1px solid rgba(100,160,250,0.35);">
                 <div style="font-size:clamp(40px,10vw,80px);font-weight:900;color:#fff;line-height:1;">${subScreenVal || '—'}</div>
-                <div style="font-size:clamp(10px,1.5vw,13px);font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-top:4px;">GATE</div>
+                <div style="font-size:clamp(10px,1.5vw,13px);font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-top:4px;text-transform:uppercase;">${_gateLbl('gate', frFirstAirport(iata), function (w) { return '<span>' + w + '</span>'; }, ' | ')}</div>
               </div>
               <div style="text-align:right;">
                 <div style="font-size:clamp(28px,7vw,64px);font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.4);line-height:1;">${apCity}</div>
@@ -21964,14 +21933,14 @@ const gView = document.getElementById('gateView');
               </div>
               <div style="text-align:right;">
                 <div id="dedicatedEmptyTime" style="font-size:clamp(36px,9vw,72px);font-weight:900;color:#fff;font-variant-numeric:tabular-nums;line-height:1;text-shadow:0 4px 20px rgba(0,0,0,0.4);">${timeStr}</div>
-                <div style="font-size:clamp(12px,2vw,20px);font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:clamp(1px,0.3vw,3px);margin-top:8px;">${TL('awaitingNextFlight')}</div>
+                <div${_screenLangAttrs()} style="font-size:clamp(12px,2vw,20px);font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:clamp(1px,0.3vw,3px);margin-top:8px;">${TL('awaitingNextFlight')}</div>
               </div>
             </div>
           </div>
         </div>
         <div class="gate-footer">
           <div class="gate-footer-left"><span>${apName}</span></div>
-          <div class="gate-footer-right" id="dedicatedFooterRight">${dateDisplay}</div>
+          <div class="gate-footer-right" id="dedicatedFooterRight"${_screenLangAttrs()}>${dateDisplay}</div>
         </div>`;
 
       // Load airport's own city photo
@@ -22099,15 +22068,17 @@ const gView = document.getElementById('gateView');
     // found; the reported board had EN/FR headers over Spanish values).
     function _bidsHdr(key) {
       var o = (typeof LS !== 'undefined' && LS[key]) || {};
-      var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+      // v23970 — the one chooser, French first in Québec like every other pair
+      var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
       var out = [], seen = {};
       for (var i = 0; i < picked.length; i++) {
-        var w = String(o[picked[i]] || (i === 0 ? (o.en || key) : '')).replace(/\s*#\s*$/, '');
+        var w = String(o[picked[i]] || '').replace(/\s*#\s*$/, '');
         if (!w || seen[w.toLowerCase()]) continue;
         seen[w.toLowerCase()] = 1;
-        out.push(w);
+        // each half carries its language (and an Arabic one its direction)
+        out.push(BoardStrings.half(picked[i], w, 'bidsv2-hh'));
       }
-      return out.join(' <span class="bidsv2-hsep">|</span> ') || String(o.en || key);
+      return out.join(' <span class="bidsv2-hsep">|</span> ');
     }
     // MCO: remind travellers which terminal this carousel sits in. The belt
     // key is "A-9"-style, so the prefix is the terminal letter; fall back to
@@ -22239,11 +22210,6 @@ const gView = document.getElementById('gateView');
         ${(function () {
           var _lg = '';
           try { _lg = window._fidsResolvedAirportLogo || localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
-          // Single language, rotating with the board's language cycle —
-          // exactly like the FIDS board label ('Departures' / 'Départs').
-          var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
-                          de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
-          var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
           // Clock matches the GATE exactly
           // : the time over
           // the bilingual date, via the shared helpers.
@@ -22289,14 +22255,15 @@ const gView = document.getElementById('gateView');
             // headers: bar 1 = langs[0], bar 2 = langs[1], static across the
             // language slides; no second language (or same word) → no second
             // bar. The words reach the ::after through --crsl-l2.
-            var _crslO = (typeof LS !== 'undefined' && (LS['bagClaim'] || LS['carousel'])) || {};
-            var _crslLs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'];
-            var _crslW1 = String(_crslO[_crslLs[0]] || _crslO.en || 'Carousel');
-            var _crslW2 = _crslLs.length > 1 ? String(_crslO[_crslLs[1]] || '') : '';
+            var _crslLs = BoardStrings.pairLangs(langs, iata);
+            var _crslW1 = String(TLin('bagClaim', _crslLs[0]));
+            var _crslW2 = _crslLs.length > 1 ? String(TLin('bagClaim', _crslLs[1])) : '';
             if (_crslW2 && _crslW2.toLowerCase() === _crslW1.toLowerCase()) _crslW2 = '';
-            var _crslVars = _crslW2
-              ? "--crsl-l2:'" + (_bidsV3On ? _crslW2 : _crslW2.toUpperCase()).replace(/'/g, '') + "';"
-              : '--crsl-l2-disp:none;';
+            // v23995 — the second bar is an element of its own, marked with
+            // its language: drawn as the block's ::after (through --crsl-l2)
+            // it took the FIRST language's lang, so Chinese under a Spanish
+            // first bar was set with the Japanese glyph forms.
+            var _crslVars = _crslW2 ? '' : '--crsl-l2-disp:none;';
             // v23514 — NO EM-DASH IN THE NUMBER. When a hall has no belt to
             // show, subScreenVal is the '—' placeholder from updateSubScreens.
             // Painted through .bidsv2-carousel-number that glyph is ~44vh of
@@ -22340,13 +22307,14 @@ const gView = document.getElementById('gateView');
                 + '</g></svg>'
               : '';
             return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
-              + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
+              + BoardStrings.markHalf('<div class="bidsv2-carousel-label">' + _crslW1 + '</div>', _crslLs[0], 'bagClaim')
               + _crslArt
               // subScreenVal is a belt key the feed supplied (updateSubScreens
               // builds the list from f._belt / f.gate / f.flight), and only the
               // ?belt= URL form passes through _fidsSafeSub — this one does not.
               + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + fidsEscHtml(_crslNum) + '</div>'
-              + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">Terminal ' + _mcoBagTerm + '</div>' : '')
+              + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">' + TL('termArr') + ' ' + _mcoBagTerm + '</div>' : '')
+              + (_crslW2 ? BoardStrings.markHalf('<div class="bidsv2-carousel-l2">' + fidsEscHtml(_bidsV3On ? _crslW2 : _crslW2.toLocaleUpperCase(BoardStrings.intl(_crslLs[1]))) + '</div>', _crslLs[1], 'bagClaim') : '')
               + '</div>';
           })()}
 
@@ -22445,7 +22413,7 @@ const gView = document.getElementById('gateView');
                 <div class="bidsv2-col-status ${statusClass}">${fidsEscHtml(stTxt)}</div>
               </div>`;
             }).join('') : `<div class="bidsv2-empty">${TL('noAssigned')}</div>`}
-            ${_totalPages > 1 ? `<div class="bidsv2-page-indicator">Page ${bView._bidsPage + 1} / ${_totalPages}</div>` : ''}
+            ${_totalPages > 1 ? `<div class="bidsv2-page-indicator">${TL('pageLbl')} ${bView._bidsPage + 1} / ${_totalPages}</div>` : ''}
           </div>
         </div>
 
@@ -22454,13 +22422,8 @@ Bilingual baggage-hall messages loop in a
              marquee; the track is doubled so the wrap is seamless. -->
         <div class="bidsv2-bottom-band bidsv2-ticker" aria-hidden="true">
           ${(function(){
-            const _a = BAGS_TICKER_MSG[langs[0]] || BAGS_TICKER_MSG.en;
-            const _b = (langs[1] && BAGS_TICKER_MSG[langs[1]] && langs[1] !== langs[0]) ? BAGS_TICKER_MSG[langs[1]] : null;
-            const _txt = _a.map(function(m, i){
-              return '✈︎  ' + m + (_b ? '  ·  ' + _b[i] : '');
-            }).join('   ·   ') + '   ·   ';
-            const _esc = _txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-            return '<div class="bidsv2-ticker-track"><span>' + _esc + '</span><span>' + _esc + '</span></div>';
+            const _html = _tickerHtml('bagsTicker', '✈︎', '   ·   ') + '   ·   ';
+            return '<div class="bidsv2-ticker-track"><span>' + _html + '</span><span>' + _html + '</span></div>';
           })()}
         </div>
 
@@ -22771,21 +22734,16 @@ const AP = {
   LPB:{ name:'El Alto International Airport — La Paz',              tz:'America/La_Paz'     },
   EZE:{ name:'Ministro Pistarini International Airport — Buenos Aires', tz:'America/Argentina/Buenos_Aires'},
   YFC:{ name:'Fredericton International Airport',                    tz:'America/Moncton'    },
-  YQY:{ name:'J.A. Douglas McCurdy Sydney Airport',                  tz:'America/Halifax'    },
   YRJ:{ name:'Roberval Airport',                                     tz:'America/Toronto'    },
   YXE:{ name:'Saskatoon John G. Diefenbaker International Airport',  tz:'America/Regina'     },
   YYG:{ name:'Charlottetown Airport',                                tz:'America/Halifax'    },
   YYT:{ name:"St. John's International Airport",                     tz:'America/St_Johns'   },
   YQT:{ name:'Thunder Bay International Airport',                       tz:'America/Toronto'     },
   YSJ:{ name:'Saint John Airport',                                    tz:'America/Moncton'    },
-  YYG:{ name:'Charlottetown Airport',                                 tz:'America/Halifax'    },
-  YFC:{ name:'Fredericton International Airport',                     tz:'America/Moncton'    },
   YYR:{ name:'Goose Bay Airport',                                     tz:'America/Goose_Bay'  },
   YDF:{ name:'Deer Lake Regional Airport',                            tz:'America/St_Johns'   },
   YQX:{ name:'Gander International Airport',                          tz:'America/St_Johns'   },
   YQY:{ name:'Sydney / J.A. Douglas McCurdy Airport',                 tz:'America/Halifax'    },
-  YYT:{ name:"St. John's International Airport",                     tz:'America/St_Johns'   },
-  YQT:{ name:'Thunder Bay International Airport',                       tz:'America/Toronto'     },
   YZF:{ name:'Yellowknife Airport',                                  tz:'America/Yellowknife'},
   YKA:{ name:'Kamloops Airport',                                     tz:'America/Vancouver'  },   // v23334 — wave 5 authority feeds
   YXS:{ name:'Prince George Airport',                                tz:'America/Vancouver'  },
@@ -23058,7 +23016,7 @@ const CITY = {
   TVC:'TRAVERSE CITY',  PLN:'PELLSTON',         CIU:'SAULT STE. MARIE MI',
   // ── ADDITIONAL ───────────────────────────────────────────────────────────
   KIX:'OSAKA',           KWI:'KUWAIT CITY',      LCY:'LONDON',
-  YYT:"ST. JOHN'S",     YRJ:'ROBERVAL',
+  YRJ:'ROBERVAL',
   BHM:'BIRMINGHAM',  CZM:'COZUMEL',           MTY:'MONTERREY',
   SAW:'ISTANBUL',TIJ:'TIJUANA',
   YBR:'BRANDON',        YCB:'CAMBRIDGE BAY',     YCG:'CASTLEGAR',
@@ -23879,7 +23837,7 @@ const CITY_FR = {
   DPS:'BALI',
   // ── ADDITIONAL ───────────────────────────────────────────────────────────
   KIX:'OSAKA',           KWI:'KOWEÏT',           LCY:'LONDRES',
-  YYT:"ST. JOHN'S",     SAW:'ISTANBUL',  TIJ:'TIJUANA',
+  SAW:'ISTANBUL',  TIJ:'TIJUANA',
   MTY:'MONTERREY',      CZM:'COZUMEL',
   YQT:'THUNDER BAY',    YQU:'GRANDE PRAIRIE',   YEV:'INUVIK',
   YRT:'RANKIN INLET',   YCB:'BAIE DE CAMBRIDGE',YDA:'DAWSON CITY',
@@ -24621,7 +24579,7 @@ const COORDS = {
   YYT:[47.62,-52.75], YYG:[46.29,-63.12], YFC:[45.87,-66.54], YQY:[46.16,-60.05],
   YTZ:[43.63,-79.40], YHM:[43.17,-79.93], YKF:[43.46,-80.38], YTS:[48.57,-81.38],
   YZF:[62.46,-114.44], YXY:[60.71,-135.07],YXJ:[56.24,-120.74],YDQ:[55.74,-120.18],YPW:[49.83,-124.50],YCD:[49.05,-123.87],YKA:[50.70,-120.44], YFB:[63.76,-68.56], YMM:[56.65,-111.22],
-  YQR:[50.43,-104.67], YXS:[53.89,-122.68], YLW:[49.96,-119.38], YKA:[50.70,-120.44],
+  YQR:[50.43,-104.67], YXS:[53.89,-122.68], YLW:[49.96,-119.38],
   JFK:[40.64,-73.78], LGA:[40.77,-73.87], EWR:[40.69,-74.17], BOS:[42.36,-71.01],
   LAX:[33.94,-118.41], ORD:[41.97,-87.91], ATL:[33.64,-84.43], MIA:[25.79,-80.29],
   DFW:[32.90,-97.04], DEN:[39.86,-104.67], SEA:[47.45,-122.31], LAS:[36.08,-115.15],
@@ -24662,13 +24620,13 @@ const COORDS = {
   RIB:[-10.96,-66.10], GYA:[-10.82,-65.35], BVL:[-13.95,-65.46],
   SJO:[9.99,-84.21], TLS:[43.63,1.37], RDU:[35.88,-78.79],
   YQT:[48.37,-89.32], YAM:[46.49,-84.51], YSB:[46.63,-80.80],
-  YYB:[46.36,-79.42], YPQ:[44.23,-78.36], YGP:[48.78,-64.48],YGR:[47.42,-61.78],
-  YBG:[48.33,-71.00], YUY:[48.21,-78.84], YMT:[49.77,-74.53],
+  YYB:[46.36,-79.42], YPQ:[44.23,-78.36], YGP:[48.78,-64.48],
+  YBG:[48.33,-71.00], YUY:[48.21,-78.84],
   YRI:[47.76,-69.58], YBC:[49.13,-68.20], YZV:[50.22,-66.27],
-  YVO:[48.05,-77.79], YGL:[53.63,-77.70], YPR:[54.29,-130.45],
-  YXT:[54.47,-128.58], YYD:[54.82,-127.18], YDQ:[55.74,-120.18],
-  YXS:[53.89,-122.68], YKA:[50.70,-120.44], YAZ:[49.08,-125.77],
-  YCD:[49.05,-123.87], YBL:[49.95,-125.27], YZP:[53.25,-131.81],
+  YGL:[53.63,-77.70], YPR:[54.29,-130.45],
+  YXT:[54.47,-128.58], YYD:[54.82,-127.18],
+  YAZ:[49.08,-125.77],
+  YBL:[49.95,-125.27], YZP:[53.25,-131.81],
   YXH:[50.02,-110.72], YQL:[49.63,-112.80], YQF:[52.18,-113.89],
   YYN:[50.29,-107.69], OGG:[20.90,-156.43], SAN:[32.73,-117.19],
   // Hawaiian airports — full set added v189 so weather, AI city backgrounds,
@@ -24696,24 +24654,24 @@ const COORDS = {
   JAX:[30.49,-81.69], PIT:[40.50,-80.23], STL:[38.75,-90.37],
   CLE:[41.41,-81.85], CVG:[39.05,-84.67], DSM:[41.53,-93.66],
   RIC:[37.51,-77.32], SAV:[32.13,-81.20],
-  CHS:[32.90,-80.04], SAV:[32.13,-81.20], MYR:[33.68,-78.93],
+  CHS:[32.90,-80.04], MYR:[33.68,-78.93],
   STN:[51.89,0.26], LTN:[51.87,-0.37], ORY:[48.73,2.37],
   // ── Canadian regional codes synced from GATE_AP (v73) ───────────────
   // These exist in GATE_AP for the flight-path map but were absent from
   // COORDS, so Tomorrow.io weather couldn't fetch for these destinations
   // and the gate panel logged "[TIO] No coords for {code}".
-  YYY:[48.61,-68.21], YGP:[48.78,-64.48],YGR:[47.42,-61.78], YBG:[48.33,-71.00],
+  YYY:[48.61,-68.21],
   YVO:[48.05,-77.78], YKL:[54.80,-66.81], YNA:[50.19,-61.79],
   YGW:[55.28,-77.77], YVP:[58.10,-68.43], YPX:[60.05,-77.29],
   YFS:[61.76,-121.24], YHY:[60.84,-115.78], YDA:[64.04,-139.13],
   YEV:[68.30,-133.48], YOJ:[58.62,-117.16], YPE:[56.23,-117.45],
-  YBL:[49.95,-125.27], YKZ:[43.86,-79.37], YHU:[45.52,-73.42],
+  YKZ:[43.86,-79.37], YHU:[45.52,-73.42],
   YBR:[49.91,-99.95], YQU:[50.27,-108.76], YMJ:[50.33,-105.56],
   YLL:[53.31,-110.07], YOC:[67.57,-139.84], YEK:[61.09,-94.07],
-  YPA:[53.21,-105.67], YQT:[48.37,-89.32], YQG:[42.28,-82.96],
+  YPA:[53.21,-105.67], YQG:[42.28,-82.96],
   YWK:[52.92,-66.86], YTH:[55.80,-97.86], YRT:[62.81,-92.12],
   YCB:[69.11,-105.14], YSM:[60.02,-111.96], YCH:[47.01,-65.45],
-  YMT:[49.78,-74.53], YGL:[50.28,-63.61],
+  YMT:[49.78,-74.53],
   // ── US AIRPORTS (Part 139 + scheduled service) — added v207 from OurAirports CSV
   // Covers all US airports with regular passenger service. Source: OurAirports.
   // Used by Tomorrow.io weather, AI city backgrounds, and destination panels.
@@ -25262,20 +25220,6 @@ const COORDS = {
 };
 
 // ── WEATHER SYSTEM (Tomorrow.io only) ────────────────────────────────────
-const WX_LABELS = {
-  clear:{en:'CLEAR',fr:'DÉGAGÉ'},partcloud:{en:'PARTLY CLOUDY',fr:'SEMI-COUVERT'},
-  cloudy:{en:'CLOUDY',fr:'NUAGEUX'},fog:{en:'FOG',fr:'BROUILLARD'},
-  drizzle:{en:'DRIZZLE',fr:'BRUINE'},fzdrizzle:{en:'FZ. DRIZZLE',fr:'BRUINE VERGL.'},
-  rain:{en:'RAIN',fr:'PLUIE'},hvyrain:{en:'HEAVY RAIN',fr:'FORTE PLUIE'},
-  fzrain:{en:'FZ. RAIN',fr:'PLUIE VERGL.'},snow:{en:'SNOW',fr:'NEIGE'},
-  hvysnow:{en:'HEAVY SNOW',fr:'FORTE NEIGE'},showers:{en:'SHOWERS',fr:'AVERSES'},
-  snowshow:{en:'SNOW SHOWERS',fr:'AVERSES NEIGE'},tstorm:{en:'T-STORM',fr:'ORAGE'},
-};
-const wxLabel = (key) => (WX_LABELS[key]||{})[lang] || key;
-const WX_KEY_CODE = {
-  clear:0,partcloud:1,cloudy:3,fog:45,drizzle:51,fzdrizzle:56,
-  rain:61,hvyrain:65,fzrain:66,snow:71,hvysnow:75,showers:80,snowshow:85,tstorm:95,
-};
 
 // All destination IATAs a flight's board row can display — the primary dest
 // PLUS every through-flight leg (multi-city rows did not give us
@@ -25342,54 +25286,31 @@ const TIO_ICON = {
   7000:'hail',             7101:'hail',            7102:'hail',
   8000:'thunderstorms-rain',
 };
-// weatherCode → human label
-const TIO_LABEL = {
-  // WMO codes
-  0:'Clear',         1:'Mostly Clear',    2:'Partly Cloudy',   3:'Cloudy',
-  45:'Fog',          48:'Rime Fog',
-  51:'Light Drizzle',53:'Drizzle',        55:'Heavy Drizzle',
-  56:'Fz. Drizzle',  57:'Hvy. Fz. Drizzle',
-  61:'Light Rain',   63:'Rain',           65:'Heavy Rain',
-  66:'Fz. Rain',     67:'Hvy. Fz. Rain',
-  71:'Light Snow',   73:'Snow',           75:'Heavy Snow',
-  77:'Snow Grains',
-  80:'Light Showers',81:'Showers',        82:'Heavy Showers',
-  85:'Snow Showers', 86:'Hvy. Snow Showers',
-  95:'Thunderstorm', 96:'Thunderstorm + Hail', 99:'Hvy. Thunderstorm',
-  // Tomorrow.io codes
-  1000:'Clear',      1001:'Cloudy',       1100:'Mostly Clear',   1101:'Partly Cloudy',
-  1102:'Mostly Cloudy', 1103:'Partly Cloudy',
-  2000:'Fog',        2100:'Light Fog',
-  3000:'Light Wind', 3001:'Windy',        3002:'Strong Wind',
-  4000:'Drizzle',    4001:'Rain',         4200:'Light Rain',     4201:'Heavy Rain',
-  5000:'Snow',       5001:'Flurries',     5100:'Light Snow',     5101:'Heavy Snow',
-  6000:'Fz. Drizzle',6001:'Fz. Rain',    6200:'Lt. Fz. Rain',  6201:'Hvy. Fz. Rain',
-  7000:'Ice Pellets', 7101:'Heavy Ice',   7102:'Lt. Ice Pellets',
-  8000:'Thunderstorm',
-};
-const TIO_LABEL_FR = {
-  // WMO codes
-  0:'Dégagé',        1:'Généralement dégagé', 2:'Semi-couvert', 3:'Nuageux',
-  45:'Brouillard',   48:'Brouillard givrant',
-  51:'Bruine légère',53:'Bruine',         55:'Forte bruine',
-  56:'Bruine verg.', 57:'Forte bruine verg.',
-  61:'Pluie légère', 63:'Pluie',          65:'Forte pluie',
-  66:'Pluie verg.',  67:'Forte pluie verg.',
-  71:'Neige légère', 73:'Neige',          75:'Forte neige',
-  77:'Grains de neige',
-  80:'Averses légères',81:'Averses',      82:'Fortes averses',
-  85:'Averses neige',86:'Fortes averses neige',
-  95:'Orage',        96:'Orage avec grêle', 99:'Fort orage',
-  // Tomorrow.io codes
-  1000:'Dégagé',     1001:'Nuageux',      1100:'Généralement dégagé', 1101:'Semi-couvert',
-  1102:'Généralement nuageux', 1103:'Semi-couvert',
-  2000:'Brouillard', 2100:'Brume légère',
-  3000:'Vent léger', 3001:'Venteux',      3002:'Vent fort',
-  4000:'Bruine',     4001:'Pluie',        4200:'Pluie légère',   4201:'Forte pluie',
-  5000:'Neige',      5001:'Averses neige',5100:'Neige légère',   5101:'Forte neige',
-  6000:'Bruine verg.', 6001:'Pluie verg.',6200:'Pluie verg. lég.',6201:'Forte pluie verg.',
-  7000:'Grésil',     7101:'Fort grésil',  7102:'Grésil léger',
-  8000:'Orage',
+// weatherCode → the store key of its words (WMO, then Tomorrow.io codes).
+// v23970 — the words live in board-strings.js (wxClear … wxLtIcePellets), all
+// nine languages; TIO_LABEL and its _FR/_ES/_DE tables stopped at four, so
+// an Italian, Portuguese, Japanese, Chinese or Arabic strip read English.
+const TIO_KEY = {
+  0:'wxClear', 1:'wxMostlyClear', 2:'wxPartlyCloudy', 3:'wxCloudy',
+  45:'wxFog', 48:'wxRimeFog',
+  51:'wxLightDrizzle', 53:'wxDrizzle', 55:'wxHeavyDrizzle',
+  56:'wxFzDrizzle', 57:'wxHvyFzDrizzle',
+  61:'wxLightRain', 63:'wxRain', 65:'wxHeavyRain',
+  66:'wxFzRain', 67:'wxHvyFzRain',
+  71:'wxLightSnow', 73:'wxSnow', 75:'wxHeavySnow',
+  77:'wxSnowGrains',
+  80:'wxLightShowers', 81:'wxShowers', 82:'wxHeavyShowers',
+  85:'wxSnowShowers', 86:'wxHvySnowShowers',
+  95:'wxThunderstorm', 96:'wxThunderHail', 99:'wxHvyThunderstorm',
+  1000:'wxClear', 1001:'wxCloudy', 1100:'wxMostlyClear', 1101:'wxPartlyCloudy',
+  1102:'wxMostlyCloudy', 1103:'wxPartlyCloudy',
+  2000:'wxFog', 2100:'wxLightFog',
+  3000:'wxLightWind', 3001:'wxWindy', 3002:'wxStrongWind',
+  4000:'wxDrizzle', 4001:'wxRain', 4200:'wxLightRain', 4201:'wxHeavyRain',
+  5000:'wxSnow', 5001:'wxFlurries', 5100:'wxLightSnow', 5101:'wxHeavySnow',
+  6000:'wxFzDrizzle', 6001:'wxFzRain', 6200:'wxLtFzRain', 6201:'wxHvyFzRain',
+  7000:'wxIcePellets', 7101:'wxHeavyIce', 7102:'wxLtIcePellets',
+  8000:'wxThunderstorm'
 };
 
 function tioIcon(weatherCode, size) {
@@ -25409,62 +25330,14 @@ function tioIcon(weatherCode, size) {
 // into our flat-icon sprite cell names.
 if (typeof window !== 'undefined') window.TIO_ICON = TIO_ICON;
 
-// v22959 — weather labels follow the FIRST selected language
-// The old resolver was `lang === 'fr' ? FR : EN` — nothing else
-// existed and nothing else was consulted. Spanish and German tables added;
-// Italian/Portuguese/Japanese/Chinese/Arabic fall back to English until their
-// tables are written, which is stated here rather than pretended otherwise.
-const TIO_LABEL_ES = {
-  0:'Despejado', 1:'Mayormente despejado', 2:'Parcialmente nublado', 3:'Nublado',
-  45:'Niebla', 48:'Niebla helada',
-  51:'Llovizna ligera', 53:'Llovizna', 55:'Llovizna fuerte',
-  56:'Llovizna helada', 57:'Llovizna helada fuerte',
-  61:'Lluvia ligera', 63:'Lluvia', 65:'Lluvia fuerte',
-  66:'Lluvia helada', 67:'Lluvia helada fuerte',
-  71:'Nieve ligera', 73:'Nieve', 75:'Nieve fuerte',
-  77:'Granos de nieve',
-  80:'Chubascos ligeros', 81:'Chubascos', 82:'Chubascos fuertes',
-  85:'Chubascos de nieve', 86:'Chubascos de nieve fuertes',
-  95:'Tormenta', 96:'Tormenta con granizo', 99:'Tormenta fuerte',
-  1000:'Despejado', 1001:'Nublado', 1100:'Mayormente despejado', 1101:'Parcialmente nublado',
-  1102:'Mayormente nublado', 1103:'Parcialmente nublado',
-  2000:'Niebla', 2100:'Niebla ligera',
-  3000:'Viento ligero', 3001:'Ventoso', 3002:'Viento fuerte',
-  4000:'Llovizna', 4001:'Lluvia', 4200:'Lluvia ligera', 4201:'Lluvia fuerte',
-  5000:'Nieve', 5001:'Copos', 5100:'Nieve ligera', 5101:'Nieve fuerte',
-  6000:'Llovizna helada', 6001:'Lluvia helada', 6200:'Lluvia helada ligera', 6201:'Lluvia helada fuerte',
-  7000:'Granizo', 7101:'Granizo fuerte', 7102:'Granizo ligero',
-  8000:'Tormenta'
-};
-const TIO_LABEL_DE = {
-  0:'Klar', 1:'Überwiegend klar', 2:'Teilweise bewölkt', 3:'Bewölkt',
-  45:'Nebel', 48:'Raureifnebel',
-  51:'Leichter Nieselregen', 53:'Nieselregen', 55:'Starker Nieselregen',
-  56:'Gefrierender Nieselregen', 57:'Starker gefr. Nieselregen',
-  61:'Leichter Regen', 63:'Regen', 65:'Starker Regen',
-  66:'Gefrierender Regen', 67:'Starker gefr. Regen',
-  71:'Leichter Schneefall', 73:'Schneefall', 75:'Starker Schneefall',
-  77:'Schneegriesel',
-  80:'Leichte Schauer', 81:'Schauer', 82:'Starke Schauer',
-  85:'Schneeschauer', 86:'Starke Schneeschauer',
-  95:'Gewitter', 96:'Gewitter mit Hagel', 99:'Schweres Gewitter',
-  1000:'Klar', 1001:'Bewölkt', 1100:'Überwiegend klar', 1101:'Teilweise bewölkt',
-  1102:'Überwiegend bewölkt', 1103:'Teilweise bewölkt',
-  2000:'Nebel', 2100:'Leichter Nebel',
-  3000:'Leichter Wind', 3001:'Windig', 3002:'Starker Wind',
-  4000:'Nieselregen', 4001:'Regen', 4200:'Leichter Regen', 4201:'Starker Regen',
-  5000:'Schneefall', 5001:'Schneeflocken', 5100:'Leichter Schneefall', 5101:'Starker Schneefall',
-  6000:'Gefr. Nieselregen', 6001:'Gefrierender Regen', 6200:'Leichter gefr. Regen', 6201:'Starker gefr. Regen',
-  7000:'Hagel', 7101:'Starker Hagel', 7102:'Leichter Hagel',
-  8000:'Gewitter'
-};
+// v22959 — weather labels follow the FIRST selected language (French first
+// in Québec). v23970 — in all nine, from the store.
 function tioLabel(weatherCode) {
-  var _first = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs[0] : 'en';
-  var _byLang = { fr: TIO_LABEL_FR, es: TIO_LABEL_ES, de: TIO_LABEL_DE };
-  var labels = _byLang[_first] || TIO_LABEL;
-  if (labels[weatherCode]) return labels[weatherCode];
-  if (TIO_LABEL[weatherCode]) return TIO_LABEL[weatherCode];
-  return '';
+  var _key = TIO_KEY[weatherCode];
+  if (!_key) return '';
+  var _ap = '';
+  try { _ap = (document.getElementById('apSel') || {}).value || ''; } catch (e) {}
+  return BoardStrings.bs(_key, BoardStrings.pairLangs(langs, _ap)[0]);
 }
 
 // ── Open-Meteo fallback (keyless, no quota) ────────────────────────────
@@ -25536,7 +25409,7 @@ function _fidsWallTsToUtc(iso, tz) {
     if (!tz) return Date.parse(s);                             // best effort
     var guess = Date.parse(s.length === 16 ? s + ':00Z' : s + 'Z');
     if (isNaN(guess)) return Date.parse(s);
-    var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false,
+    var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, // i18n-ok: code
       year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     var p = {};
     f.formatToParts(new Date(guess)).forEach(function (x) { p[x.type] = x.value; });
@@ -25712,7 +25585,7 @@ function gateWeatherWidget(depIata, destIata, arrivalTs) {
     const arr = tioArrivalWeather(destIata, arrivalTs);
     if (arr && arr.temp !== undefined) {
       hasAny = true;
-      const arrTime = new Date(arr.ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true });
+      const arrTime = BoardStrings.boardTime(arr.ts, null, { hour: '2-digit' });
       html += tioPanelHtml(destIata, '@ ' + arrTime, arr);
     } else if (destWx.current && destWx.current.temp !== undefined) {
       hasAny = true;
@@ -25725,7 +25598,7 @@ function gateWeatherWidget(depIata, destIata, arrivalTs) {
 
   // If no data from either source, show loading placeholder
   if (!hasAny) {
-    html = '<div class="g8-wx-panel" style="opacity:0.3;justify-content:center;width:100%;"><div class="g8-wx-info" style="align-items:center;"><div class="g8-wx-label" style="letter-spacing:2px;">WEATHER</div><div class="g8-wx-detail" style="font-size:11px;">Loading...</div></div></div>';
+    html = '<div class="g8-wx-panel" style="opacity:0.3;justify-content:center;width:100%;"><div class="g8-wx-info" style="align-items:center;"><div class="g8-wx-label" style="letter-spacing:2px;">' + BoardStrings.pair('weather', { frFirst: _frF, upper: true }) + '</div><div class="g8-wx-detail" style="font-size:11px;">' + BoardStrings.pair('loading', { frFirst: _frF }) + '…</div></div></div>';
   }
 
   return html;
@@ -25941,13 +25814,12 @@ const AIRLINE_NAME = {
   'RK': 'Ryanair UK',          'EC': 'easyJet Europe',
   'EJU': 'easyJet Europe',     'EZS': 'easyJet Switzerland',
   'LM': 'Loganair',            'W4': 'Wizz Air Malta',
-  'I2': 'Iberia Express',      'D8': 'Norwegian Air Sweden',
+  'I2': 'Iberia Express',
   // Regionals/internationals the map lacked — without an entry here the
   // prefix-first branding can't recognize the code and a feed row marked
   // AC carrying 3H802 branded as Air Canada.
-  '3H':'Air Inuit', 'YN':'Air Creebec', 'S4':'Azores Airlines',
-  'JV':'Bearskin Airlines', 'WT':'Wasaya Airways', 'YP':'Perimeter Aviation',
-  'MO':'Calm Air', '5T':'Canadian North', '4N':'Air North', 'BQ':'Pascan',
+  'YN':'Air Creebec', 'S4':'Azores Airlines',
+  '5T':'Canadian North', '4N':'Air North',
   '8P':'Pacific Coastal',
   'AC':'AIR CANADA',  'WS':'WESTJET', 'WG':'SUNWING',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
@@ -25995,10 +25867,10 @@ const AIRLINE_NAME = {
   '2T':'BERMUDAIR',   'KX':'CAYMAN',       'BW':'CARIBBEAN',
   'JJ':'LATAM BRASIL','AD':'AZUL',         'LA':'LATAM',       'JA':'JETSMART',    'AR':'AEROLINEAS',
   'CM':'COPA',        'AV':'AVIANCA',      'MX':'BREEZE',      'AM':'AEROMEXICO',  'XN':'MEXICANA',  'G3':'GOL',
-  'Y4':'VOLARIS',     '2T':'BERMUDAIR',    'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
+  'Y4':'VOLARIS',     'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
   'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows that rendered as raw codes in the app */
   '4T':'BEOND',       'LR':'LACSA',        'BM':'BMI',
-  'UP':'BAHAMASAIR',  'BG':'BIMAN',        'DO':'SKY HIGH',
+  'BG':'BIMAN',        'DO':'SKY HIGH',
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
   'PX':'AIR NIUGINI', 'KO':'ACE CARGO',
 };
@@ -26955,52 +26827,51 @@ function mkLogo(code, faName) {
 // ── LANGUAGE STRINGS & THEME SYSTEM ──────────────────────────────────────
 const LS = {
   dep:     { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
-  bagClaim:{ en:'Baggage claim',fr:'Retrait des bagages',es:'Recogida de equipaje',de:'Gepäckausgabe',it:'Ritiro bagagli',pt:'Recolha de bagagem',ja:'手荷物受取所',zh:'行李提取',ar:'استلام الأمتعة' },
+  bagClaim:{ en:'Baggage claim',fr:'Retrait des bagages',es:'Recogida de equipaje',de:'Gepäckausgabe',it:'Ritiro bagagli',pt:'Retirada de bagagem',ja:'手荷物受取所',zh:'行李提取',ar:'استلام الأمتعة' },
   arr:     { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sdep:    { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sarr:    { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
   date:    { en:'Date',fr:'Date',es:'Fecha',de:'Datum',it:'Data',pt:'Data',ja:'日付',zh:'日期',ar:'التاريخ' },
   time:    { en:'Time',fr:'Heure',es:'Hora',de:'Zeit',it:'Ora',pt:'Hora',ja:'時刻',zh:'时间',ar:'الوقت' },
   destDep: { en:'Destination',fr:'Destination',es:'Destino',de:'Ziel',it:'Destinazione',pt:'Destino',ja:'目的地',zh:'目的地',ar:'الوجهة' },
-  destArr: { en:'From',fr:'De',es:'Desde',de:'Von',it:'Da',pt:'De',ja:'出発地',zh:'始发',ar:'من' },
+  destArr: { en:'From',fr:'De',es:'Desde',de:'Von',it:'Da',pt:'De',ja:'出発地',zh:'出发地',ar:'من' },
   flight:  { en:'Flight #',fr:'Vol #',es:'Vuelo #',de:'Flug #',it:'Volo #',pt:'Voo #',ja:'便名 #',zh:'航班 #',ar:'# رحلة' },
-  airline: { en:'Airline',fr:'Ligne aérienne',es:'Aerolínea',de:'Airline',it:'Compagnia',pt:'Companhia',ja:'航空会社',zh:'航空公司',ar:'شركة الطيران' },
+  airline: { en:'Airline',fr:'Compagnie',es:'Aerolínea',de:'Fluggesellschaft',it:'Compagnia',pt:'Companhia',ja:'航空会社',zh:'航空公司',ar:'شركة الطيران' },
   wx:      { en:'Weather',fr:'Météo',es:'Clima',de:'Wetter',it:'Meteo',pt:'Clima',ja:'天気',zh:'天气',ar:'الطقس' },
   now:     { en:'NOW',fr:'ACTUELLEMENT',es:'AHORA',de:'JETZT',it:'ORA',pt:'AGORA',ja:'現在',zh:'现在',ar:'الآن' },
-  feelsLike:{ en:'Feels',fr:'Ressenti',es:'Sensación',de:'Gefühlt',it:'Percepita',pt:'Sensação',ja:'体感',zh:'体感',ar:'يشعر' },
+  feelsLike:{ en:'Feels',fr:'Ressenti',es:'Sensación',de:'Gefühlt',it:'Percepita',pt:'Sensação',ja:'体感',zh:'体感',ar:'الحرارة المحسوسة' },
   gateDep: { en:'Gate',fr:'Porte',es:'Puerta',de:'Gate',it:'Gate',pt:'Portão',ja:'ゲート',zh:'登机口',ar:'البوابة' },
-  gateArr: { en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'الحزام' },
-  termDep: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'الصالة' },
-  termArr: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'الصالة' },
-  status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Status',ja:'状態',zh:'状态',ar:'الحالة' },
+  gateArr: { en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'سير الأمتعة' },
+  termDep: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'المبنى' },
+  termArr: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'المبنى' },
+  status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Situação',ja:'状況',zh:'状态',ar:'الحالة' },
   boardsIn: { en:'BOARDS IN',fr:'EMBARQUEMENT DANS',es:'EMBARQUE EN',de:'BOARDING IN',it:'IMBARCO TRA',pt:'EMBARQUE EM',ja:'搭乗まで',zh:'登机倒计时',ar:'الصعود خلال' },
   depBoards: { en:'Departs in',fr:'Départ dans',es:'Sale en',de:'Abflug in',it:'Parte tra',pt:'Sai em',ja:'出発まで',zh:'出发倒计时',ar:'يغادر خلال' },
   nowBoarding:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
   arrivesAt: { en:'Arrives',fr:'Arrivée',es:'Llega',de:'Ankunft',it:'Arrivo',pt:'Chega',ja:'到着',zh:'到达',ar:'وصول' },
-  flightDur: { en:'flight',fr:'de vol',es:'de vuelo',de:'Flug',it:'di volo',pt:'de voo',ja:'飛行',zh:'飞行',ar:'الرحلة' },
+  flightDur: { en:'flight',fr:'de vol',es:'de vuelo',de:'Flug',it:'di volo',pt:'de voo',ja:'飛行',zh:'飞行',ar:'الرحلة', $ctx: 'duration' },
   duration:  { en:'Duration',fr:'Durée',es:'Duración',de:'Dauer',it:'Durata',pt:'Duração',ja:'所要時間',zh:'飞行时间',ar:'المدة' },
   arrivesFrom:{en:'THIS FLIGHT ARRIVES FROM',fr:'CE VOL ARRIVE DE',es:'ESTE VUELO LLEGA DESDE',de:'DIESER FLUG KOMMT AUS',it:'QUESTO VOLO ARRIVA DA',pt:'ESTE VOO CHEGA DE',ja:'この便の出発地',zh:'此航班来自',ar:'هذه الرحلة قادمة من' },
-  arrivesIn: { en:'ARRIVES IN',fr:'ARRIVE DANS',es:'LLEGA EN',de:'ANKUNFT IN',it:'ARRIVA TRA',pt:'CHEGA EM',ja:'到着まで',zh:'到达还有',ar:'يصل خلال' },
-  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prev.',ja:'予定',zh:'计划',ar:'مجدول' },
+  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prog.',ja:'予定',zh:'计划',ar:'مجدول' },
   minutes:   { en:'MINUTES',fr:'MINUTES',es:'MINUTOS',de:'MINUTEN',it:'MINUTI',pt:'MINUTOS',ja:'分',zh:'分钟',ar:'دقيقة' },
   minute:    { en:'MINUTE',fr:'MINUTE',es:'MINUTO',de:'MINUTE',it:'MINUTO',pt:'MINUTO',ja:'分',zh:'分钟',ar:'دقيقة' },
-  depTime: { en:'Departure',fr:'Départ',es:'Salida',de:'Abflug',it:'Partenza',pt:'Partida',ja:'出発',zh:'起飞',ar:'مغادرة' },
-  arrTime: { en:'Arrival',fr:'Arrivée',es:'Llegada',de:'Ankunft',it:'Arrivo',pt:'Chegada',ja:'到着',zh:'到达',ar:'وصول' },
+  depTime: { en:'Departure',fr:'Départ',es:'Salida',de:'Abflug',it:'Partenza',pt:'Partida',ja:'出発',zh:'出发',ar:'المغادرة' },
+  arrTime: { en:'Arrival',fr:'Arrivée',es:'Llegada',de:'Ankunft',it:'Arrivo',pt:'Chegada',ja:'到着',zh:'到达',ar:'الوصول' },
   flightN: { en:'Flight #',fr:'Vol #',es:'Vuelo #',de:'Flug #',it:'Volo #',pt:'Voo #',ja:'便名 #',zh:'航班 #',ar:'# رحلة' },
   upcoming:{ en:'Upcoming',fr:'Prochain vol',es:'Próximo vuelo',de:'Nächster Flug',it:'Prossimo volo',pt:'Próximo voo',ja:'次の便',zh:'下一航班',ar:'الرحلة التالية' },
   equipType:{ en:'Equipment',fr:'Appareil',es:'Aeronave',de:'Flugzeug',it:'Aeromobile',pt:'Aeronave',ja:'機材',zh:'机型',ar:'الطائرة' },
-  nowBoardingZone:{ en:'NOW BOARDING',fr:'EMBARQUEMENT EN COURS',es:'EMBARCANDO',de:'JETZT BOARDING',it:'IMBARCO',pt:'EMBARQUE',ja:'搭乗中',zh:'登机中',ar:'الصعود' },
+  nowBoardingZone:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
   allZones:{ en:'ALL ZONES',fr:'TOUTES LES ZONES',es:'TODAS LAS ZONAS',de:'ALLE ZONEN',it:'TUTTE LE ZONE',pt:'TODAS AS ZONAS',ja:'全ゾーン',zh:'所有区域',ar:'جميع المناطق' },
-  zone:{ en:'Zone',fr:'Zone',es:'Zona',de:'Zone',it:'Zona',pt:'Zona',ja:'ゾーン',zh:'区域',ar:'المنطقة' },
+  zone:{ en:'Zone',fr:'Zone',es:'Zona',de:'Zone',it:'Zona',pt:'Zona',ja:'ゾーン',zh:'区',ar:'المنطقة' },
   groupLabel:{ en:'Group',fr:'Groupe',es:'Grupo',de:'Gruppe',it:'Gruppo',pt:'Grupo',ja:'グループ',zh:'组',ar:'المجموعة' },
   inboundArrived:{ en:'The incoming flight from',fr:'Le vol en provenance de',es:'El vuelo procedente de',de:'Der Flug aus',it:'Il volo da',pt:'O voo de',ja:'到着便',zh:'来自',ar:'الرحلة من' },
   hasArrivedAtGate:{ en:'has arrived at the gate',fr:'est arrivé à la porte',es:'ha llegado a la puerta',de:'ist am Gate angekommen',it:'è arrivato al gate',pt:'chegou ao portão',ja:'がゲートに到着しました',zh:'已到达登机口',ar:'وصلت إلى البوابة' },
   noFlights:{ en:'No Flights',fr:'Aucun vol',es:'Sin vuelos',de:'Keine Flüge',it:'Nessun volo',pt:'Sem voos',ja:'フライトなし',zh:'无航班',ar:'لا رحلات' },
-  noAssigned:{ en:'No Assigned Arrivals',fr:'Aucune arrivée assignée',es:'Sin llegadas asignadas',de:'Keine zugewiesenen Ankünfte',it:'Nessun arrivo assegnato',pt:'Sem chegadas atribuídas',ja:'到着便なし',zh:'无分配到达',ar:'لا وصولات مخصصة' },
-  enterBoard:{ en:'Enter Board',fr:'Accéder au tableau',es:'Entrar al tablero' },
-  goLive:  { en:'⚡ Go Live',fr:'⚡ En direct',es:'⚡ En vivo' },
-  addFlight:{ en:'✚ Add Flight',fr:'✚ Ajouter vol',es:'✚ Agregar vuelo' },
-  carousel:{ en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'الحزام' },
+  noAssigned:{ en:'No Assigned Arrivals',fr:'Aucune arrivée assignée',es:'Sin llegadas asignadas',de:'Keine zugewiesenen Ankünfte',it:'Nessun arrivo assegnato',pt:'Sem chegadas atribuídas',ja:'到着便なし',zh:'暂无指定到达航班',ar:'لا وصولات مخصصة' },
+  enterBoard:{ en:'Enter Board',fr:'Accéder au tableau',es:'Entrar al tablero',de:'Zur Anzeige',it:'Apri il tabellone',pt:'Abrir o painel',ja:'ボードを開く',zh:'进入显示屏',ar:'الدخول إلى اللوحة' },
+  goLive:  { en:'⚡ Go Live',fr:'⚡ En direct',es:'⚡ En vivo',de:'⚡ Live schalten',it:'⚡ In diretta',pt:'⚡ Ao vivo',ja:'⚡ ライブ',zh:'⚡ 实时',ar:'⚡ مباشر' },
+  addFlight:{ en:'✚ Add Flight',fr:'✚ Ajouter vol',es:'✚ Agregar vuelo',de:'✚ Flug hinzufügen',it:'✚ Aggiungi volo',pt:'✚ Adicionar voo',ja:'✚ 便を追加',zh:'✚ 添加航班',ar:'✚ إضافة رحلة' },
+  carousel:{ en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'سير الأمتعة' },
 
   estDep:    { en:'Est. departure',fr:'Départ prévu',es:'Salida est.',de:'Abflug (gesch.)',it:'Part. stimata',pt:'Partida est.',ja:'出発予定',zh:'预计起飞',ar:'المغادرة المقدرة' },
   estArr:    { en:'Est. arrival',fr:'Arrivée prévue',es:'Llegada est.',de:'Ankunft (gesch.)',it:'Arr. stimato',pt:'Chegada est.',ja:'到着予定',zh:'预计到达',ar:'الوصول المقدر' },
@@ -27015,9 +26886,6 @@ const LS = {
   acArrived:     { en:'Your aircraft has arrived',fr:'Votre avion est arrivé',es:'Su avión ha llegado',de:'Ihr Flugzeug ist angekommen',it:'Il vostro aereo è arrivato',pt:'O seu avião chegou',ja:'ご搭乗機が到着しました',zh:'您的飞机已到达',ar:'وصلت طائرتكم' },
   acArrivedGate: { en:'Your aircraft has arrived at the gate',fr:'Votre avion est arrivé à la porte',es:'Su avión ha llegado a la puerta',de:'Ihr Flugzeug ist am Gate angekommen',it:'Il vostro aereo è arrivato al gate',pt:'O seu avião chegou ao portão',ja:'ご搭乗機がゲートに到着しました',zh:'您的飞机已抵达登机口',ar:'وصلت طائرتكم إلى البوابة' },
   welcomeTo: { en:'Welcome to',fr:'Bienvenue à',es:'Bienvenido a',de:'Willkommen in',it:'Benvenuti a',pt:'Bem-vindo a',ja:'ようこそ',zh:'欢迎来到',ar:'مرحباً بكم في' },
-  nextDep:   { en:'Next departure from this gate',fr:'Prochain départ de cette porte',es:'Próxima salida desde esta puerta',de:'Nächster Abflug von diesem Gate',it:'Prossima partenza da questo gate',pt:'Próxima partida deste portão',ja:'このゲートからの次の出発',zh:'本登机口下一航班',ar:'المغادرة التالية من هذه البوابة' },
-  boardNow:  { en:'Boarding now',fr:'Embarquement en cours',es:'Embarcando ahora',de:'Jetzt Boarding',it:'Imbarco in corso',pt:'Embarque agora',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
-  boardNext: { en:'Boarding next',fr:'Prochain embarquement',es:'Próximo embarque',de:'Nächstes Boarding',it:'Prossimo imbarco',pt:'Próximo embarque',ja:'次の搭乗',zh:'下一组登机',ar:'الصعود التالي' },
   group:     { en:'Group',fr:'Groupe',es:'Grupo',de:'Gruppe',it:'Gruppo',pt:'Grupo',ja:'グループ',zh:'组',ar:'المجموعة' },
   useLanes:  { en:'Use Lanes',fr:'Utilisez les voies',es:'Use carriles',de:'Spuren nutzen',it:'Usa corsie',pt:'Use faixas',ja:'\u30ec\u30fc\u30f3',zh:'\u901a\u9053',ar:'\u0645\u0645\u0631\u0627\u062a' },
   useLane:   { en:'Use Lane',fr:'Utilisez la voie',es:'Use carril',de:'Spur nutzen',it:'Usa corsia',pt:'Use faixa',ja:'レーン',zh:'通道',ar:'استخدم الممر' },
@@ -27031,7 +26899,7 @@ const LS = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
  // own gate signage says. Title Case kept as specified's design.
-  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:'L’embarquement débutera sous peu', es:'El embarque comenzará en breve', de:'Das Boarding beginnt in Kürze', it:'L’imbarco inizierà a breve', pt:'O embarque começará em breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // v23202 — the altimeter's labels follow the CHOSEN languages like every
   // other label on the board
   // ; they were hard-coded English with a hard-coded French unit.
@@ -27042,14 +26910,13 @@ const LS = {
   estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
-  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minsShort: { en:'mins', fr:'min', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   remainSeated:{ en:'Please remain seated until your zone is called',fr:'Veuillez rester assis jusqu\'à l\'appel de votre zone',es:'Por favor permanezca sentado hasta que llamen su zona',de:'Bitte bleiben Sie sitzen bis Ihre Zone aufgerufen wird',it:'Si prega di restare seduti fino alla chiamata della zona',pt:'Por favor permaneça sentado até sua zona ser chamada',ja:'ゾーンが呼ばれるまでお待ちください',zh:'请在座位上等待登机区域呼叫',ar:'يرجى البقاء جالساً حتى يتم استدعاء منطقتك' },
 
-  operatedBy:{ en:'Operated by',fr:'Opéré par',es:'Operado por',de:'Durchgeführt von',it:'Operato da',pt:'Operado por',ja:'運航',zh:'执飞',ar:'بواسطة' },
+  operatedBy:{ en:'Operated by',fr:'Exploité par',es:'Operado por',de:'Durchgeführt von',it:'Operato da',pt:'Operado por',ja:'運航',zh:'执飞',ar:'تُشغّل بواسطة' },
   aircraftLbl:{ en:'Aircraft',fr:'Appareil',es:'Aeronave',de:'Flugzeug',it:'Aeromobile',pt:'Aeronave',ja:'機材',zh:'机型',ar:'الطائرة' },
-  registrationLbl:{ en:'Registration',fr:'Immatriculation',es:'Matrícula',de:'Kennung',it:'Immatricolazione',pt:'Matrícula',ja:'登録番号',zh:'注册号',ar:'التسجيل' },
-  groupLabel:{ en:'Group',fr:'Groupe',es:'Grupo',de:'Gruppe',it:'Gruppo',pt:'Grupo',ja:'グループ',zh:'组',ar:'مجموعة' },
+  registrationLbl:{ en:'Registration',fr:'Immatriculation',es:'Matrícula',de:'Kennzeichen',it:'Immatricolazione',pt:'Matrícula',ja:'登録番号',zh:'注册号',ar:'رقم التسجيل' },
   allGroups: { en:'All groups',fr:'Tous les groupes',es:'Todos los grupos',de:'Alle Gruppen',it:'Tutti i gruppi',pt:'Todos os grupos',ja:'全グループ',zh:'所有组',ar:'جميع المجموعات' },
   proceedGate:{ en:'Please proceed to gate immediately',fr:'Veuillez vous diriger immédiatement vers la porte',es:'Diríjase a la puerta inmediatamente',de:'Bitte begeben Sie sich sofort zum Gate',it:'Procedere immediatamente al gate',pt:'Dirija-se ao portão imediatamente',ja:'直ちにゲートへお進みください',zh:'请立即前往登机口',ar:'يرجى التوجه إلى البوابة فوراً' },
   gateNowClosed:{ en:'This gate is now closed',fr:'Cette porte est maintenant fermée',es:'Esta puerta está cerrada',de:'Dieses Gate ist geschlossen',it:'Questo gate è chiuso',pt:'Este portão está fechado',ja:'このゲートは閉まりました',zh:'本登机口已关闭',ar:'هذه البوابة مغلقة الآن' },
@@ -27057,12 +26924,11 @@ const LS = {
   // v218.99.65 — Aircraft block + hotel labels
   incomingAircraft: { en:'Incoming aircraft', fr:'Appareil entrant', es:'Aeronave entrante', de:'Eintreffendes Flugzeug', it:'Aeromobile in arrivo', pt:'Aeronave a chegar', ja:'到着機', zh:'到达航班', ar:'الطائرة القادمة' },
   aircraftType:     { en:'Aircraft type',     fr:"Type d'appareil",  es:'Tipo de aeronave', de:'Flugzeugtyp',           it:'Tipo di aeromobile', pt:'Tipo de aeronave', ja:'機種',     zh:'机型',     ar:'نوع الطائرة' },
-  inboundAircraft:  { en:'Inbound aircraft',  fr:"Avion à l'arrivée",es:'Avión entrante',   de:'Ankommendes Flugzeug',  it:'Aereo in arrivo',    pt:'Avião a chegar',   ja:'到着機',   zh:'抵达航班',  ar:'الطائرة القادمة' },
+  inboundAircraft:  { en:'Inbound aircraft',  fr:'Avion à l\'arrivée',es:'Aeronave entrante',   de:'Ankommendes Flugzeug',  it:'Aereo in arrivo',    pt:'Aeronave de chegada',   ja:'到着機',   zh:'到达飞机',  ar:'الطائرة القادمة' },
   tailNumber:       { en:'Tail number',       fr:'Immatriculation',  es:'Matrícula',        de:'Kennzeichen',           it:'Immatricolazione',   pt:'Matrícula',        ja:'機体番号', zh:'机尾号',   ar:'رقم الذيل' },
-  arrivesIn:        { en:'Arrives in',        fr:'Arrive dans',      es:'Llega en',         de:'Ankunft in',            it:'Arriva tra',         pt:'Chega em',         ja:'到着まで', zh:'到达',     ar:'يصل خلال' },
+  arrivesIn:        { en:'Arrives in',        fr:'Arrive dans',      es:'Llega en',         de:'Ankunft in',            it:'Arriva tra',         pt:'Chega em',         ja:'到着まで', zh:'到达还有', ar:'يصل خلال' },
   departsLbl:       { en:'Departs',           fr:'Départ',           es:'Sale',             de:'Abflug',                it:'Partenza',           pt:'Parte',            ja:'出発',     zh:'出发',     ar:'يغادر' },
-  aircraftLbl:      { en:'Aircraft',          fr:'Appareil',         es:'Aeronave',         de:'Flugzeug',              it:'Aeromobile',         pt:'Aeronave',         ja:'機材',     zh:'机型',     ar:'الطائرة' },
-  toLbl:            { en:'to',                fr:'à',                es:'a',                de:'nach',                  it:'a',                  pt:'para',             ja:'→',       zh:'飞往',     ar:'إلى' },
+  toLbl:            { en:'to',                fr:'à',                es:'a',                de:'nach',                  it:'a',                  pt:'para',             ja:'→',       zh:'飞往',     ar:'إلى', $ctx: 'connective' },
   atGateLbl:        { en:'At the gate',       fr:'À la porte',       es:'En la puerta',     de:'Am Gate',               it:'Al gate',            pt:'No portão',        ja:'到着済み', zh:'已到登机口', ar:'عند البوابة' },
   backToPicker:     { en:'Back to picker',    fr:'Retour au menu',   es:'Volver al menú',   de:'Zurück zur Auswahl',    it:'Torna al menu',      pt:'Voltar ao menu',   ja:'メニューに戻る', zh:'返回选择', ar:'العودة للقائمة' },
   gateOrFlight:     { en:'Gate # or flight #',fr:'Porte ou vol',     es:'Puerta o vuelo',   de:'Gate oder Flug',        it:'Gate o volo',        pt:'Portão ou voo',    ja:'ゲートまたは便名', zh:'登机口或航班', ar:'البوابة أو الرحلة' },
@@ -27083,12 +26949,11 @@ const LS = {
   accorTagline:     { en:'ACCOR · LIVE LIMITLESS', fr:'ACCOR · VIVRE SANS LIMITES', es:'ACCOR · LIVE LIMITLESS', de:'ACCOR · LIVE LIMITLESS', it:'ACCOR · LIVE LIMITLESS', pt:'ACCOR · LIVE LIMITLESS', ja:'ACCOR · LIVE LIMITLESS', zh:'ACCOR · LIVE LIMITLESS', ar:'ACCOR · LIVE LIMITLESS' },
   facilities:       { en:'Facilities',        fr:'Installations',    es:'Instalaciones',    de:'Einrichtungen',         it:'Strutture',          pt:'Instalações',      ja:'施設',     zh:'设施',     ar:'مرافق' },
   today:            { en:'Today',              fr:"Aujourd'hui",      es:'Hoy',              de:'Heute',                 it:'Oggi',               pt:'Hoje',             ja:'今日',     zh:'今天',     ar:'اليوم' },
-  tomorrow:         { en:'Tomorrow',           fr:'Demain',           es:'Mañana',           de:'Morgen',                it:'Domani',             pt:'Amanhã',           ja:'明日',     zh:'明天',     ar:'غدًا' },
   currentWx:        { en:'Current',            fr:'Actuel',           es:'Actual',           de:'Aktuell',               it:'Attuale',            pt:'Atual',            ja:'現在',     zh:'当前',     ar:'الحالي' },
   departureTime:    { en:'Departure Time',     fr:"Heure de départ",  es:'Hora de salida',   de:'Abflugzeit',            it:'Orario di partenza', pt:'Hora de partida',  ja:'出発時刻', zh:'出发时间', ar:'وقت المغادرة' },
   arrivalTime:      { en:'Arrival Time',       fr:"Heure d'arrivée",  es:'Hora de llegada',  de:'Ankunftszeit',          it:'Orario di arrivo',   pt:'Hora de chegada',  ja:'到着時刻', zh:'到达时间', ar:'وقت الوصول' },
   boardingTime:     { en:'Boarding Time',      fr:"Heure d'embarquement", es:'Hora de embarque', de:'Boardingzeit',      it:'Orario di imbarco',  pt:'Hora de embarque', ja:'搭乗時刻', zh:'登机时间', ar:'وقت الصعود' },
-  flightNo:         { en:'Flight #',           fr:'Vol nº',           es:'Vuelo nº',         de:'Flug-Nr.',              it:'Volo nº',            pt:'Voo nº',           ja:'便名',     zh:'航班号',   ar:'رقم الرحلة' },
+  flightNo:         { en:'Flight #',           fr:'Vol #',           es:'Vuelo #',         de:'Flug #',              it:'Volo #',            pt:'Voo #',           ja:'便名 #',     zh:'航班 #',   ar:'# رحلة' },
   weatherAtDest:    { en:'Weather at destination', fr:'Météo à destination', es:'Clima en destino', de:'Wetter am Ziel',    it:'Meteo a destinazione', pt:'Clima no destino', ja:'目的地の天気', zh:'目的地天气', ar:'الطقس في الوجهة' },
   weatherShort:     { en:'Weather',            fr:'Météo',            es:'Clima',            de:'Wetter',                it:'Meteo',              pt:'Clima',            ja:'天気',     zh:'天气',     ar:'الطقس' },
   inbDelayed:{ en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est en retard. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
@@ -27096,9 +26961,9 @@ const LS = {
   nowBoardMsg:{ en:'Now boarding. Please proceed to gate',fr:'Embarquement en cours. Veuillez vous diriger vers la porte',es:'Embarcando ahora. Diríjase a la puerta',de:'Jetzt Boarding. Bitte begeben Sie sich zum Gate',it:'Imbarco in corso. Procedere al gate',pt:'Embarque em curso. Dirija-se ao portão',ja:'搭乗中です。ゲートにお進みください',zh:'正在登机，请前往登机口',ar:'الصعود الآن. يرجى التوجه إلى البوابة' },
   boardApprox:{ en:'Your flight will board in approximately',fr:"L'embarquement de votre vol commencera dans environ",es:'Su vuelo embarcará en aproximadamente',de:'Das Boarding Ihres Fluges beginnt in ca.',it:"L'imbarco del vostro volo inizierà tra circa",pt:'O embarque do seu voo começará em aproximadamente',ja:'搭乗は約',zh:'您的航班将在约',ar:'سيبدأ صعود رحلتك خلال حوالي' },
   finalCall: { en:'FINAL BOARDING CALL',fr:'DERNIER APPEL',es:'ÚLTIMA LLAMADA',de:'LETZTER AUFRUF',it:'ULTIMA CHIAMATA',pt:'ÚLTIMA CHAMADA',ja:'最終搭乗案内',zh:'最后登机广播',ar:'النداء الأخير للصعود' },
-  gateClosed:{ en:'GATE CLOSED',fr:'PORTE FERMÉE',es:'PUERTA CERRADA',de:'GATE GESCHLOSSEN',it:'GATE CHIUSO',pt:'PORTÃO FECHADO',ja:'ゲート閉鎖',zh:'登机口已关闭',ar:'البوابة مغلقة' },
+  gateClosed:{ en:'GATE CLOSED',fr:'PORTE FERMÉE',es:'PUERTA CERRADA',de:'GATE GESCHLOSSEN',it:'GATE CHIUSO',pt:'PORTÃO FECHADO',ja:'搭乗終了',zh:'登机口已关闭',ar:'البوابة مغلقة' },
   next3days:{ en:'Next 3 Days',fr:'3 prochains jours',es:'Próximos 3 días',de:'Nächste 3 Tage',it:'Prossimi 3 giorni',pt:'Próximos 3 dias',ja:'3日間',zh:'未来3天',ar:'الأيام الثلاثة القادمة' },
-  search:  { en:'Flight · City · Airline',fr:'Vol · Ville · Compagnie',es:'Vuelo · Ciudad · Aerolínea' },
+  search:  { en:'Flight · City · Airline',fr:'Vol · Ville · Compagnie',es:'Vuelo · Ciudad · Aerolínea',de:'Flug · Stadt · Fluggesellschaft',it:'Volo · Città · Compagnia',pt:'Voo · Cidade · Companhia',ja:'便名 · 都市 · 航空会社',zh:'航班 · 城市 · 航空公司',ar:'رحلة · مدينة · شركة طيران' },
 
   // ── AIRCRAFT PENDING STATE (no reg assigned yet) ──
   acPendingTitle:{ en:'Aircraft Assignment Pending',fr:'Attribution d\'appareil en cours',es:'Asignación de aeronave pendiente',de:'Flugzeugzuweisung ausstehend',it:'Assegnazione aeromobile in corso',pt:'Atribuição de aeronave pendente',ja:'機材割当て待ち',zh:'飞机分配待定',ar:'في انتظار تحديد الطائرة' },
@@ -27114,48 +26979,45 @@ const LS = {
   attentionMsg:{ en:'ATTENTION',fr:'ATTENTION',es:'ATENCIÓN',de:'ACHTUNG',it:'ATTENZIONE',pt:'ATENÇÃO',ja:'お知らせ',zh:'请注意',ar:'تنبيه' },
 
   // ── INBOUND PANEL LABELS ── (used by TL(), not SL())
-  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
-  revised:         { en:'Revised',fr:'Révisé',es:'Revisado',de:'Geändert',it:'Modificato',pt:'Revisado',ja:'修正',zh:'修订',ar:'مُعدَّل' },
-  arrivingFrom:    { en:'Arriving from',fr:'Provenant de',es:'Procedente de',de:'Aus',it:'Proveniente da',pt:'Proveniente de',ja:'到着便',zh:'来自',ar:'قادم من' },
-  yourAircraftLbl: { en:'YOUR AIRCRAFT',fr:'VOTRE APPAREIL',es:'SU AERONAVE',de:'IHR FLUGZEUG',it:'IL VOSTRO AEREO',pt:'A SUA AERONAVE',ja:'ご搭乗機',zh:'您的飞机',ar:'طائرتكم' },
+  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدولة' },
+  revised:         { en:'Revised',fr:'Révisé',es:'Revisado',de:'Geändert',it:'Rivisto',pt:'Revisado',ja:'変更',zh:'更新',ar:'الوقت المعدَّل' },
+  arrivingFrom:    { en:'Arriving from',fr:'Provenant de',es:'Procedente de',de:'Ankommend aus',it:'In arrivo da',pt:'Proveniente de',ja:'到着予定・出発地',zh:'来自',ar:'قادمة من' },
+  yourAircraftLbl: { en:'YOUR AIRCRAFT',fr:'Votre avion',es:'Su avión',de:'IHR FLUGZEUG',it:'Il tuo aereo',pt:'Seu avião',ja:'ご搭乗機',zh:'您的飞机',ar:'طائرتك' },
   willBoardIn:     { en:'Your flight will begin boarding in approximately',fr:'Votre vol commencera l\'embarquement dans environ',es:'Su vuelo iniciará el embarque en aproximadamente',de:'Ihr Flug beginnt mit dem Boarding in etwa',it:'L\'imbarco del vostro volo inizierà tra circa',pt:'O seu voo iniciará o embarque em aproximadamente',ja:'ご搭乗開始まで約',zh:'您的航班将在大约',ar:'سيبدأ صعود رحلتكم خلال حوالي' },
-  arrivedAtGate:   { en:'Arrived at the gate',fr:'Arrivé à la porte',es:'Llegó a la puerta',de:'Am Gate angekommen',it:'Arrivato al gate',pt:'Chegou ao portão',ja:'ゲート到着',zh:'已到达登机口',ar:'وصل إلى البوابة' },
+  arrivedAtGate:   { en:'Arrived at the gate',fr:'Arrivé à la porte',es:'Llegó a la puerta',de:'Am Gate angekommen',it:'Arrivato al gate',pt:'Chegou ao portão',ja:'ゲートに到着',zh:'已到达登机口',ar:'وصلت إلى البوابة' },
   inMin:           { en:'Arriving in',fr:'Arrive dans',es:'Llega en',de:'Ankunft in',it:'Arrivo tra',pt:'Chega em',ja:'到着まで',zh:'到达还有',ar:'يصل خلال' },
 
   // ── V2 GATE LAYOUT LABELS (aircraft column) ──
   type:            { en:'Type',fr:'Type',es:'Tipo',de:'Typ',it:'Tipo',pt:'Tipo',ja:'機種',zh:'机型',ar:'النوع' },
   equipmentType:   { en:'Equipment Type',fr:'Type d\'appareil',es:'Tipo de aeronave',de:'Flugzeugtyp',it:'Tipo di aeromobile',pt:'Tipo de aeronave',ja:'機材タイプ',zh:'机型',ar:'نوع الطائرة' },
-  reg:             { en:'Registration',fr:'Immatriculation',es:'Matrícula',de:'Kennzeichen',it:'Immatricolazione',pt:'Registo',ja:'登録番号',zh:'注册号',ar:'رقم التسجيل' },
-  inbound:         { en:'Inbound Aircraft',fr:'Appareil entrant',es:'Aeronave entrante',de:'Eingehendes Flugzeug',it:'Aereo in arrivo',pt:'Aeronave de chegada',ja:'到着機材',zh:'到达飞机',ar:'الطائرة القادمة' },
-  from:            { en:'from',fr:'de',es:'desde',de:'aus',it:'da',pt:'de',ja:'発',zh:'来自',ar:'من' },
+  reg:             { en:'Registration',fr:'Immatriculation',es:'Matrícula',de:'Kennzeichen',it:'Immatricolazione',pt:'Matrícula',ja:'登録番号',zh:'注册号',ar:'رقم التسجيل' },
+  inbound:         { en:'Inbound Aircraft',fr:'Avion à l\'arrivée',es:'Aeronave entrante',de:'Ankommendes Flugzeug',it:'Aereo in arrivo',pt:'Aeronave de chegada',ja:'到着機',zh:'到达飞机',ar:'الطائرة القادمة' },
+  from:            { en:'from',fr:'de',es:'desde',de:'aus',it:'da',pt:'de',ja:'出発地',zh:'来自',ar:'من', $ctx: 'connective' },
   flightPath:      { en:'FLIGHT PATH',fr:'TRAJECTOIRE',es:'RUTA DE VUELO',de:'FLUGROUTE',it:'ROTTA',pt:'ROTA DE VOO',ja:'飛行ルート',zh:'飞行路线',ar:'مسار الرحلة' },
   featuredLbl:     { en:'FEATURED',fr:'À LA UNE',es:'DESTACADO',de:'EMPFOHLEN',it:'IN EVIDENZA',pt:'EM DESTAQUE',ja:'おすすめ',zh:'精选',ar:'مميز' },
 
   // ── BOARD / DEDICATED SCREEN LABELS ──
   awaitingNextFlight: { en:'Awaiting Next Flight',fr:'En attente du prochain vol',es:'Esperando el próximo vuelo',de:'Warten auf den nächsten Flug',it:'In attesa del prossimo volo',pt:'Aguardando o próximo voo',ja:'次の便をお待ちしています',zh:'等待下一航班',ar:'في انتظار الرحلة التالية' },
-  nowLbl:             { en:'Now',fr:'Actuellement',es:'Ahora',de:'Jetzt',it:'Ora',pt:'Agora',ja:'現在',zh:'当前',ar:'الآن' },
+  nowLbl:             { en:'Now',fr:'Actuellement',es:'Ahora',de:'Jetzt',it:'Ora',pt:'Agora',ja:'現在',zh:'现在',ar:'الآن' },
   pageLbl:            { en:'Page',fr:'Page',es:'Página',de:'Seite',it:'Pagina',pt:'Página',ja:'ページ',zh:'页',ar:'صفحة' },
 };
 const SS = {
   ontime:    { en:'On time',fr:"À l'heure",es:'A tiempo',de:'Pünktlich',it:'In orario',pt:'No horário',ja:'定刻',zh:'准点',ar:'في الموعد' },
-  boarding:  { en:'Boarding',fr:'Embarquement',es:'Abordando',de:'Boarding',it:'Imbarco',pt:'Embarque',ja:'搭乗中',zh:'登机中',ar:'الصعود' },
-  delayed:   { en:'Delayed',fr:'En retard',es:'Retrasado',de:'Verspätet',it:'In ritardo',pt:'Atrasado',ja:'遅延',zh:'延误',ar:'متأخر' },
-  cancelled: { en:'Cancelled',fr:'Annulé',es:'Cancelado',de:'Annulliert',it:'Cancellato',pt:'Cancelado',ja:'欠航',zh:'取消',ar:'ملغى' },
-  departed:  { en:'Departed',fr:'Parti',es:'Despegó',de:'Gestartet',it:'Partito',pt:'Partiu',ja:'出発済',zh:'已起飞',ar:'غادر' },
-  arrived:   { en:'Arrived',fr:'Arrivé',es:'Llegó',de:'Gelandet',it:'Arrivato',pt:'Chegou',ja:'到着済',zh:'已到达',ar:'وصل' },
-  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
-  // v23968 — an airport feed's own "Expected", kept by the adapters
-  // (fidsNeutralWord in feed-router.js) and printed as itself on the gate, the
-  // departures board and the inbound cards. It used to be folded into
-  // Scheduled and then shown as On time by the clock.
-  expected:  { en:'Expected',fr:'Attendu',es:'Esperado',de:'Erwartet',it:'Atteso',pt:'Esperado',ja:'見込み',zh:'预计',ar:'متوقع' },
+  boarding:  { en:'Boarding',fr:'Embarquement',es:'Embarcando',de:'Boarding',it:'Imbarco',pt:'Embarque',ja:'搭乗中',zh:'登机中',ar:'الصعود', $ctx: 'status' },
+  delayed:   { en:'Delayed',fr:'En retard',es:'Retrasado',de:'Verspätet',it:'In ritardo',pt:'Atrasado',ja:'遅延',zh:'延误',ar:'متأخرة' },
+  cancelled: { en:'Cancelled',fr:'Annulé',es:'Cancelado',de:'Annulliert',it:'Cancellato',pt:'Cancelado',ja:'欠航',zh:'取消',ar:'ملغاة' },
+  departed:  { en:'Departed',fr:'Parti',es:'Despegó',de:'Gestartet',it:'Partito',pt:'Partiu',ja:'出発済',zh:'已起飞',ar:'غادرت' },
+  arrived:   { en:'Arrived',fr:'Arrivé',es:'Llegó',de:'Angekommen',it:'Arrivato',pt:'Chegou',ja:'到着済',zh:'已到达',ar:'وصلت' },
+  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدولة' },
+  // v23968 — an airport feed's own "Expected" is the store's stExpected
+  // (board-strings.js; SS is frozen): SL('expected') finds it there.
   final:     { en:'Final call',fr:'Dernier appel',es:'Última llamada',de:'Letzter Aufruf',it:'Ultima chiamata',pt:'Última chamada',ja:'最終案内',zh:'最后登机',ar:'النداء الأخير' },
-  gateclosed:{ en:'Gate closed',fr:'Porte fermée',es:'Puerta cerrada',de:'Gate geschlossen',it:'Gate chiuso',pt:'Portão fechado',ja:'ゲート閉鎖',zh:'登机口关闭',ar:'البوابة مغلقة' },
+  gateclosed:{ en:'Gate closed',fr:'Porte fermée',es:'Puerta cerrada',de:'Gate geschlossen',it:'Gate chiuso',pt:'Portão fechado',ja:'搭乗終了',zh:'登机口已关闭',ar:'البوابة مغلقة' },
   landed:    { en:'Landed',fr:'Atterri',es:'Aterrizó',de:'Gelandet',it:'Atterrato',pt:'Pousou',ja:'着陸',zh:'已着陆',ar:'هبط' },
-  diverted:  { en:'Diverted',fr:'Dérouté',es:'Desviado',de:'Umgeleitet',it:'Dirottato',pt:'Desviado',ja:'行先変更',zh:'备降',ar:'محوّل' },
+  diverted:  { en:'Diverted',fr:'Dérouté',es:'Desviado',de:'Umgeleitet',it:'Dirottato',pt:'Desviado',ja:'目的地変更',zh:'备降',ar:'محوّلة' },
   active:    { en:'En route',fr:'En vol',es:'En vuelo',de:'Unterwegs',it:'In volo',pt:'Em voo',ja:'飛行中',zh:'飞行中',ar:'في الطريق' },
   early:     { en:'Early',fr:'En avance',es:'Adelantado',de:'Verfrüht',it:'In anticipo',pt:'Adiantado',ja:'早着',zh:'提前',ar:'مبكر' },
-  atbelt:    { en:'At belt',fr:'Au tapis roulant',es:'En banda',de:'Am Band',it:'Al nastro',pt:'Na esteira',ja:'受取可',zh:'在行李带',ar:'عند الحزام' },
+  atbelt:    { en:'At belt',fr:'Au tapis roulant',es:'En banda',de:'Am Band',it:'Al nastro',pt:'Na esteira',ja:'受取可',zh:'在行李带',ar:'عند سير الأمتعة' },
 };
 const PILLCLS = {
   ontime:'p-ontime', boarding:'p-boarding', delayed:'p-delayed',
@@ -27178,9 +27040,7 @@ let lang = 'en';
 // Spanish-speaking airports rotate English + Spanish (and use Celsius)
 // instead of the Canada default of English + French. Add IATA codes here
 // to switch a station's displays to ES. (Bolivia network for now.)
-const ES_BOARD_AIRPORTS = new Set([
-  'LPB','VVI','CBB','SRZ','UYU','TJA','SRE','POI','TDD','CIJ','RIB','GYA','BVL'
-]);
+const ES_BOARD_AIRPORTS = new Set(BoardStrings.ES_AIRPORTS);
 // v23076 — per-airport language DEFAULT, baked into the code.
 //
 // Orlando is meant to run English+Spanish. Until now that only happened via
@@ -27196,58 +27056,17 @@ const ES_BOARD_AIRPORTS = new Set([
 //
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
-const BOARD_LANG_DEFAULTS = {
-  // v23767 — QUÉBEC BOARDS LEAD IN FRENCH.
-  //
-  // Everything else in this table picks WHICH two languages a board speaks.
-  // These two pick the ORDER, and the order is the point: in Québec French is
-  // not the translation, it is the first language a passenger reads. The
-  // en/fr fallback below put English first on a Montréal board, which is the
-  // wrong way round for the province it is standing in.
-  //
-  // Both live Québec airports are named rather than derived, because there is
-  // no province field to derive from — the board knows IATA codes, not
-  // jurisdictions. Add a code here when a Québec airport goes live; YMX
-  // (Mirabel) and YRJ (Roberval) are deliberately absent, being referenced as
-  // destinations only and served by no feed.
-  //
-  // The saved per-airport choice and ?langs= still sit above this, so an
-  // operator can still put English first on a specific screen.
-  YUL: ['fr', 'en'],
-  YQB: ['fr', 'en'],
-
-  MCO: ['en', 'es'],
- // v23247 — Miami runs English+Spanish (those boards are assigned en/es;
-  // without a baked default a profile-wiped display fell back to the Canada
-  // en/fr pair — French 'Carrousel' on a Miami baggage screen).
-  MIA: ['en', 'es'],
-
-  // v23317 — the rest of the multi-airport tour (stream 2 now travels). The
-  // en/fr fallback below made sense when every board was Canadian and put
-  // French on a San Juan board the moment one wasn't (measured live: SJU
-  // served 'Départs / Heure à San Juan'). US + Caribbean stops are en/es.
-  // The Canadian stops (YYZ/YUL/YYC/YVR) are deliberately ABSENT — en/fr is
-  // already their answer. OGG is also absent, deliberately: en/ja was tried
-  // and the stream host has no CJK font (tofu), and the gate board's label
-  // maps carry no 'ja' and fall through to French — so Maui keeps the plain
-  // default until both of those are fixed.
-  FLL: ['en', 'es'],
-  TPA: ['en', 'es'],
-  ATL: ['en', 'es'],
-  JFK: ['en', 'es'],
-  BOS: ['en', 'es'],
-  ORD: ['en', 'es'],
-  DFW: ['en', 'es'],
-  LAX: ['en', 'es'],
-  SFO: ['en', 'es'],
-  SEA: ['en', 'es'],
-  CUN: ['en', 'es'],
-  SJU: ['en', 'es']
-};
+//
+// v23970 — THE TABLE MOVED TO board-strings.js (BoardStrings.LANG_DEFAULTS),
+// beside the one Québec list it is now derived from. v23767 named YUL and YQB
+// here by hand while frFirstAirport() listed twenty-six Québec codes, so
+// Saint-Hubert's gate led in French and its departures board in English. Every
+// FR_FIRST airport now defaults to French then English. The US and Caribbean
+// tour rows (v23247, v23317) moved unchanged; OGG still keeps the plain
+// default (no CJK face on the stream host when it was tried, see v23317).
+const BOARD_LANG_DEFAULTS = BoardStrings.LANG_DEFAULTS;
 function boardLangsFor(iata) {
-  var _k = String(iata || '').toUpperCase();
-  if (BOARD_LANG_DEFAULTS[_k]) return BOARD_LANG_DEFAULTS[_k].slice();
-  return ES_BOARD_AIRPORTS.has(_k) ? ['en','es'] : ['en','fr'];
+  return BoardStrings.defaultLangs(iata);
 }
 // v23317 — EXPORTED for the same reason as AP (v23265): tour.html captions its
 // arrival card in the arriving airport's own second language, and resolving it
@@ -27271,14 +27090,9 @@ try { if (typeof window !== 'undefined') window.boardLangsFor = boardLangsFor; }
 // URL param, the saved set and the per-airport config, so it is read first
 // and boardLangsFor() is only the floor.
 function _boardLangPair() {
-  try {
-    if (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) {
-      // A board pinned to ONE language keeps one — a monolingual board should
-      // render a monolingual card, not have a second language invented for it.
-      return langs.slice(0, 2);
-    }
-  } catch (e) {}
-  return ['en', 'fr'];
+  // A board pinned to ONE language keeps one — a monolingual board should
+  // render a monolingual card, not have a second language invented for it.
+  return BoardStrings.pairLangs(langs);
 }
 // Metric (Celsius) for Spanish-language stations; Canada keeps the C/F flip.
 function boardMetricFor(iata) {
@@ -27552,6 +27366,14 @@ function formatCityIata(raw, iata, langOverride) {
   if (code && (!rawStr || rawStr.replace(/[^A-Za-z]/g, '').toUpperCase() === code)) {
     rawStr = airportCityNameSafe_v21877(code, langOverride) || rawStr;
   }
+  // v23970 — a city has its own name in a language when the board keeps one
+  // (CITY_FR: 'Montréal'), and a board showing that language uses it rather
+  // than the feed's English spelling ('Montreal' on a French board).
+  if (code && langOverride && langOverride !== 'en') {
+    var _locName = airportCityNameSafe_v21877(code, langOverride);
+    var _enName = airportCityNameSafe_v21877(code, 'en');
+    if (_locName && _enName && _locName !== _enName) rawStr = _locName;
+  }
 
   var city = normalizeDisplayCity(rawStr, code);
   // v22736 — last resort: the feed gave a city but no code. Resolve it from
@@ -27669,10 +27491,15 @@ function cityCode(iata, overrideCity, langOverride) {
   return _cityHasCode(_nd, _dispIata(code)) ? _nd : (_stripCityCode(_nd) + ' | ' + _dispIata(code));
 }
 
-// TL() returns current rotation language only
+// TL() returns current rotation language only.
+// v23970 — a key that is not in LS falls through to the one store
+// (board-strings.js), where every new word lives; LS is frozen. A key that is
+// in neither gives '' — never the key itself, which put 'greenKey' and
+// 'petFriendly' on an Accor badge and made every `TL(k) || 'fallback'` dead.
 const TL = k => {
-  const obj = LS[k] || {};
-  return obj[lang] || obj.en || k;
+  const obj = LS[k];
+  if (obj) return obj[lang] || '';
+  return BoardStrings.bs(k, lang);
 };
 // TLF() — TL with field interpolation. Pass an object with values for
 // placeholders like {FLIGHT}, {GATE}, etc. in the translation string.
@@ -27687,14 +27514,77 @@ const TLF = (k, fields) => {
 };
 // SL() returns current rotation language status (sentence case preserved)
 const SL = k => {
-  const obj = SS[k] || {};
-  return obj[lang] || obj.en || k;
+  const obj = _ssEntry(k);
+  return obj ? (obj[lang] || '') : BoardStrings.bs(k, lang);
 };
-// Bilingual variants — always show English · French together. The web cards
-// (mobile) otherwise show only the single rotation language; the boards are
-// already bilingual, so these bring the cards in line.
-const SLbi = k => { const o = SS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
-const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
+// A status's words: the frozen SS first, then the store's status entry for
+// the code ('expected' -> stExpected), then the store's own key. A status
+// code may share its name with another word ('expected', the qualifier).
+function _ssEntry(k) {
+  if (SS[k]) return SS[k];
+  var c = String(k || '');
+  return BoardStrings.entry('st' + c.charAt(0).toUpperCase() + c.slice(1)) || BoardStrings.entry(c);
+}
+// Pair variants for the web cards — the board's own one or two languages
+// joined with ' · '. v23970: these were English · French by construction, so a
+// phone set to Japanese (one language, fids_mobile_lang) read 'On time · À
+// l'heure'. They now follow `langs` like every other pair.
+function _legacyPair(table, k) {
+  const o = table === SS ? _ssEntry(k) : (table[k] || BoardStrings.entry(k));
+  if (!o) return '';
+  const seen = Object.create(null), out = [];
+  BoardStrings.pairLangs(langs).forEach(function (l) {
+    const w = o[l] || '';
+    if (!w || seen[w.toLowerCase()]) return;
+    seen[w.toLowerCase()] = 1; out.push(w);
+  });
+  return out.join(' · ');
+}
+const SLbi = k => _legacyPair(SS, k);
+// Markup in the one language on screen (the phone's gate and baggage views,
+// the empty gate's line and its date): say which, and its direction, so
+// Japanese, Chinese and Arabic take their own fonts and line breaking and
+// Arabic reads right to left. v23995 — they sat under the page's lang="en".
+function _screenLangAttrs() {
+  var l = BoardStrings.isLang(lang) ? lang : 'en';
+  return ' lang="' + l + '"' + (BoardStrings.META[l].dir === 'rtl' ? ' dir="rtl"' : '');
+}
+// A status code as the board's word, in the language on screen. Feeds spell
+// a code several ways ('final-call', 'Final Call', 'gate_closed', 'en-route');
+// they are folded onto the status table's keys. v23995 — an unknown code
+// shows nothing: the gate and the phone printed it upper-cased (the feed's
+// English, 'BOARDING CLOSED', on a board in any language).
+function _statusWord(k) {
+  var raw = String(k || '').toLowerCase().replace(/[\s_-]+/g, '');
+  var same = { finalcall: 'final', enroute: 'active', inair: 'active', airborne: 'active', closed: 'gateclosed' };
+  return SL(SS[raw] ? raw : (same[raw] || raw)) || '';
+}
+// One legacy-table word in a given language: what a direct LS[k][l] read did,
+// through the helper, falling through to the store.
+const TLin = (k, l) => { const o = LS[k]; if (o) return o[l] || ''; return BoardStrings.bs(k, l); };
+// v23970 — the qualifier on a registration or type taken from the aircraft's
+// usual rotation rather than confirmed: 'C-GWJO expected | prévu'. It was
+// written into markup six times as English plus French or Spanish, picked by
+// the airport's DEFAULT second language, never the board's own.
+function _acExpectedHtml(frFirst, style) {
+  return ' <span class="v2-rc-reg-expected"' + (style ? ' style="' + style + '"' : '') + '>'
+    + BoardStrings.pair('expected', { frFirst: !!frFirst, sep: ' <span class="v2-rc-fi-sep">|</span> ' }) + '</span>';
+}
+// A status as the board's pair, each half marked with its language and
+// direction: 'Delayed | En retard'. `sep` is the separator markup.
+function SLpair(k, sep, frFirst) {
+  const o = _ssEntry(k);
+  if (!o) return '';
+  const seen = Object.create(null), out = [];
+  BoardStrings.pairLangs(langs, !!frFirst).forEach(function (l) {
+    const w = o[l] || '';
+    if (!w || seen[w.toLowerCase()]) return;
+    seen[w.toLowerCase()] = 1;
+    out.push(BoardStrings.half(l, w));
+  });
+  return out.join(sep == null ? BoardStrings.SEP_HTML : sep);
+}
+const TLbi = k => _legacyPair(LS, k);
 
 // ── LANGUAGE ROTATION — flips between selected languages ─────────────────
 // ── v22949 — LANGUAGE ROTATION REMOVED (
@@ -27797,9 +27687,12 @@ function toggleLang(l) {
     // themselves to the first two selected, so the assignment itself can
     // carry the full set and the slide clock walks every one of them.
     langs.push(l);
-    while (langs.length > 9) langs.shift();
+    while (langs.length > BoardStrings.LANGS.length) langs.shift();
     if (langIdx >= langs.length) langIdx = 0;
   }
+  // v23970 — the Québec rule holds through a toggle too: French leads at a
+  // French-first airport whenever it is selected (BoardStrings.frenchFirst).
+  try { langs = BoardStrings.frenchFirst(langs, (document.getElementById('apSel') || {}).value || ''); } catch (eF) {}
   lang = langs[langIdx];
   // v22961 — REMEMBER THE CHOICE PER AIRPORT
   //
@@ -27810,9 +27703,27 @@ function toggleLang(l) {
     var _lsAp = (document.getElementById('apSel') || {}).value || '';
     if (_lsAp) localStorage.setItem('fids_langs_' + _lsAp.toUpperCase(), langs.join(','));
   } catch (e) {}
+  _applyBoardLangs();
+}
+// v23970 — everything that follows a change of the board's languages, in one
+// place: toggleLang (the operator's button) runs it, and so does
+// setBoardLangs (the rendered language check, tests/render/words.mjs, which
+// puts every board into each of the nine languages in turn).
+function setBoardLangs(list) {
+  var L = BoardStrings.frenchFirst(BoardStrings.parseList(Array.isArray(list) ? list.join(',') : list), (document.getElementById('apSel') || {}).value || '');
+  if (!L.length) return;
+  langs = L;
+  langIdx = 0;
+  lang = langs[langIdx];
+  _applyBoardLangs();
+}
+function _applyBoardLangs() {
   updateLangButtons();
   updateTicker();
   startLangRotation();
+  // v23970 — static page words (data-i18n) follow the new languages too;
+  // v23995 — and so does the boot loader, still up or fading (BoardStrings.onLangs)
+  try { BoardStrings.langsChanged(); } catch (eS) {}
   const testBtn = document.getElementById('testFlightBtn');
   if (testBtn) testBtn.textContent = TL('addFlight');
   // v22957 — the v22955 double-render workaround is WITHDRAWN. It forced two
@@ -27831,10 +27742,24 @@ function toggleLang(l) {
   try {
     var _wxC = document.getElementById('gateAdCarousel');
     if (_wxC && _wxC.querySelector('.wxcard-wrap') && typeof _renderWxCard === 'function') _renderWxCard(_wxC);
+    // v23970 — and so does the slide on screen: a text ad, the Welcome slide
+    // or the map takeover was painted in the languages of the moment it
+    // arrived and kept them until its dwell ran out (measured: 'Welcome
+    // aboard | Bienvenue à bord' on a German gate). It is painted again in
+    // place; an operator's own image or video carries no board words and is
+    // left playing.
+    else if (_wxC && _wxC.firstChild && typeof _getGateAdSlideAt === 'function') {
+      var _adS = _getGateAdSlideAt(_gateAdIndex);
+      if (_adS && _adS.type !== 'custom') {
+        window._gateAdAuthChange = true;
+        try { renderGateAd(_gateAdIndex); } catch (eAd) {}
+        window._gateAdAuthChange = false;
+      }
+    }
   } catch (eWx) {}
 }
 function updateLangButtons() {
-  ['en','fr','es','de','it','pt','ja','zh','ar'].forEach(l => {
+  BoardStrings.LANGS.forEach(l => {
     const btn = document.getElementById('lLang' + l.charAt(0).toUpperCase() + l.slice(1));
     if (btn) btn.classList.toggle('active', langs.includes(l));
   });
@@ -27861,29 +27786,34 @@ function updateLangButtons() {
 function _fidsTitleCase(s) {
   return String(s == null ? '' : s).replace(/(^|[\s\-'’])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); });
 }
+// v23970 — Title Case is English's convention, not French, Spanish, Italian,
+// Portuguese or German typography ('À L'Heure', 'Das Boarding Beginnt In
+// Kürze'): a word in another language keeps the capitals the store gives it,
+// with only its first letter raised.
+function _fidsTitleCaseIn(s, l) {
+  if (!l || l === 'en') return _fidsTitleCase(s);
+  var t = String(s == null ? '' : s);
+  return t ? t.charAt(0).toLocaleUpperCase((BoardStrings.META[l] || BoardStrings.META.en).intl) + t.slice(1) : t;
+}
 // One table, one helper, and the call sites stop hard-coding a language pair.
 var _GATE_LBL = {
   flight:    { en:'Flight',        fr:'Vol',            es:'Vuelo',        de:'Flug',        it:'Volo',        pt:'Voo',        ja:'便',        zh:'航班',   ar:'رحلة' },
   from:      { en:'From',          fr:'De',             es:'Desde',        de:'Von',         it:'Da',          pt:'De',         ja:'出発地',    zh:'出发地', ar:'من' },
   to:        { en:'To',            fr:'À',              es:'A',            de:'Nach',        it:'A',           pt:'Para',       ja:'行き先',    zh:'目的地', ar:'إلى' },
   dest:      { en:'Destination',   fr:'Destination',    es:'Destino',      de:'Ziel',        it:'Destinazione',pt:'Destino',    ja:'目的地',    zh:'目的地', ar:'الوجهة' },
-  status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Estado',     ja:'状況',      zh:'状态',   ar:'الحالة' },
+  status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Situação',     ja:'状況',      zh:'状态',   ar:'الحالة' },
   departure: { en:'Departure',     fr:'Départ',         es:'Salida',       de:'Abflug',      it:'Partenza',    pt:'Partida',    ja:'出発',      zh:'出发',   ar:'المغادرة' },
   arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
-  arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Angekommen',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصل' },
-  // v23994 — the middle screen's Welcome card: one phrase above the airline,
-  // one below, picked by _gateLbl like every other gate label. These are the
-  // nine strings the card's own table carried before (v22971), unchanged.
-  welcomeAboard: { en:'Welcome aboard', fr:'Bienvenue à bord', es:'Bienvenido a bordo', de:'Willkommen an Bord', it:'Benvenuti a bordo', pt:'Bem-vindo a bordo', ja:'ご搭乗ありがとうございます', zh:'欢迎登机', ar:'أهلاً بكم على متن الرحلة' },
+  arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Angekommen',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصلت' },
   // v23257 — the inbound card's banner names the movement, airport-PA style
   //
   // The en-route and landed variants.
-  arrivingFrom: { en:'Arriving From', fr:'Provenant de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
+  arrivingFrom: { en:'Arriving From', fr:'Provenant de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'到着予定・出発地',zh:'来自',    ar:'قادمة من' },
   // v23295 — _gateLbl() reads _GATE_LBL, NOT LS; a key added to LS resolves to
   // an empty string and the line silently vanishes, which is what happened on
   // the first two attempts at this card. It belongs here, beside arrivingFrom,
   // because the bottom-right panel pairs the two when no inbound is tracked.
-  arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
+  arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'到着済み・出発地',zh:'已到达，来自', ar:'وصل من' },
   // v23925 — the neutral inbound label: the arrivals board has let the flight
   // go and nothing says it landed, so it is neither "Arriving" nor "Arrived"
   // (_gateInbCaptionKey). It names where the aeroplane comes from, no more.
@@ -27938,18 +27868,15 @@ var _GATE_LBL = {
   // line 1 ('PD2381 from | de Montreal | MET'). Distinct from `from` below,
   // which is the capitalised FIELD LABEL used in the rail's From/De column;
   // this one is mid-phrase and must not be capitalised.
-  fromConn: { en:'from', fr:'de', es:'desde', de:'aus', it:'da', pt:'de', ja:'発', zh:'来自', ar:'من' },
+  fromConn: { en:'from', fr:'de', es:'desde', de:'aus', it:'da', pt:'de', ja:'出発地', zh:'来自', ar:'من', $ctx: 'connective' },
   // Was hardcoded English ('Time left for arrival:') in the v2 inbound block,
   // on a board whose every other label is bilingual.
   timeToArr: { en:'Time to arrival', fr:'Temps avant l’arrivée', es:'Tiempo hasta la llegada', de:'Zeit bis zur Ankunft', it:'Tempo all’arrivo', pt:'Tempo até à chegada', ja:'到着まで', zh:'距到达时间', ar:'الوقت حتى الوصول' },
   boarding:  { en:'Boarding',      fr:'Embarquement',   es:'Embarque',     de:'Boarding',    it:'Imbarco',     pt:'Embarque',   ja:'搭乗',      zh:'登机',   ar:'الصعود' },
-  revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'مُعدل' },
+  revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'الوقت المعدَّل' },
   gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
-  // v23946 — the destination's terminal, on the line under the Arrival time
-  // (_gateArrPlaceHtml). "Aérogare" is the word Canada's airports use in French.
-  arrTerminal: { en:'Terminal',    fr:'Aérogare',       es:'Terminal',     de:'Terminal',    it:'Terminal',    pt:'Terminal',   ja:'ターミナル', zh:'航站楼', ar:'مبنى الركاب' },
-  yourAc:   { en:'Your Aircraft', fr:'Votre Avion',    es:'Su Aeronave',  de:'Ihr Flugzeug',it:'Il Tuo Aereo',pt:'Sua Aeronave',ja:'ご搭乗機', zh:'您的航机', ar:'طائرتك' },
-  acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Detalhes da aeronave pendentes', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
+  yourAc:    { en:'Your Aircraft', fr:'Votre avion',    es:'Su avión',  de:'Ihr Flugzeug',it:'Il tuo aereo',pt:'Seu avião',ja:'ご搭乗機', zh:'您的飞机', ar:'طائرتك' },
+  acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Aeronave a confirmar', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
   acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
   acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
@@ -27963,7 +27890,7 @@ var _GATE_LBL = {
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
   // v23223 — the boarding sign says what is still to come
   // 
-  comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'即将',   ar:'قادم' },
+  comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'接下来',   ar:'قادم' },
   // v23224 — PAL Airlines boards OPEN-FLOW (their published process: no
   // zones, no rows — pre-boarding, then one general call).
   // v23538 — the inbound shelf's PERMANENT header.
@@ -27973,66 +27900,12 @@ var _GATE_LBL = {
   // have printed the raw key, exactly as `preboard` and `preboardList` did on
   // air until v23530), and its text is "Your Aircraft Is Arriving From", which
   // is a sentence about a state. This is a label about a panel.
-  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre Avion', es:'Su Avión', de:'Ihr Flugzeug', it:'Il tuo Aereo', pt:'Seu Avião', ja:'\u3054\u642d\u4e57\u6a5f', zh:'\u60a8\u7684\u98de\u673a', ar:'\u0637\u0627\u0626\u0631\u062a\u0643' },
-  preboard:  { en:'Pre-boarding',  fr:'Pré-embarquement', es:'Preembarque', de:'Vorab-Einstieg', it:'Preimbarco', pt:'Pré-embarque', ja:'優先搭乗', zh:'优先登机', ar:'صعود مسبق' },
-  genboard:  { en:'General boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'صعود عام' },
-  // v23522 — Porter's published pre-boarding list, verbatim from flyporter.com
- // Shown as the
-  // priority column's sub-line during the pre-boarding phase. Rendered with
-  // TL(), not the bilingual _gateLbl pairing — five categories side by side in
-  // two languages would not fit a gate sign, and the board already rotates its
-  // language, so each pass shows the whole list in one of them.
-  // v23746 — the cabin names, which Porter LOCALISES. The English forms are
-  // closed up with an internal capital ('PorterReserve', not 'Porter Reserve')
-  // and every one of the 17 instances on flyporter.com agrees. The French side
-  // is NOT the same string: Porter writes 'PorterRéserve' and 'PorterClassique'
-  // on its fr-ca pages, so a bilingual sign has to swap the brand name with the
-  // language rather than print the English one twice.
-  pdReserve: {
-    en:'PorterReserve', fr:'PorterRéserve',
-    es:'PorterReserve', de:'PorterReserve', it:'PorterReserve', pt:'PorterReserve'
-  },
-  pdClassic: {
-    en:'PorterClassic', fr:'PorterClassique',
-    es:'PorterClassic', de:'PorterClassic', it:'PorterClassic', pt:'PorterClassic'
-  },
-  // The collective name for the VIPorter elite tiers, which heads their marks.
-  // Porter RENAMES it in French rather than translating it: their footnote
-  // reads "Grand Voyageur fait référence aux niveaux d'adhésion Passeport,
-  // Horizon, Essor et Première". The English is closed up to match Porter's
-  // own press usage ("VIPorter AvidTraveller") and the house pattern the rest
-  // of this sign follows; flyporter.com spaces it, so if the spaced form is
-  // ever preferred, this is the one string.
-  //
-  // Other languages fall back to the English: it is a brand name, and no
-  // Porter rendering exists for them to be wrong against.
-  avidTraveller: {
-    en:'AvidTraveller', fr:'Grand Voyageur',
-    es:'AvidTraveller', de:'AvidTraveller', it:'AvidTraveller', pt:'AvidTraveller'
-  },
-  // The ID reminder. Kept generic rather than Porter-branded: it is an airport
-  // instruction, not a product, and it applies at every gate the sign serves.
-  photoId: {
-    en:'Have your ID ready for presentation',
-    fr:'Veuillez avoir votre pièce d’identité prête',
-    es:'Tenga su identificación con foto lista',
-    de:'Halten Sie Ihren Lichtbildausweis bereit',
-    it:'Tenete pronto un documento con foto',
-    pt:'Tenha sua identificação com foto pronta',
-    ja:'写真付き身分証明書をご用意ください',
-    zh:'请准备好带照片的身份证件',
-    ar:'يرجى تجهيز بطاقة هوية تحمل صورة'
-  },
-  preboardList: {
-    en:'Passengers with disabilities \u00b7 Unaccompanied minors \u00b7 Families with children 2 and under \u00b7 Premium VIPorter \u00b7 PorterReserve',
-    fr:'Passagers handicap\u00e9s \u00b7 Mineurs non accompagn\u00e9s \u00b7 Familles avec enfants de 2 ans et moins \u00b7 VIPorter Premium \u00b7 PorterReserve',
-    es:'Pasajeros con discapacidad \u00b7 Menores no acompa\u00f1ados \u00b7 Familias con ni\u00f1os de 2 a\u00f1os o menos \u00b7 VIPorter Premium \u00b7 PorterReserve',
-    de:'Passagiere mit Behinderung \u00b7 Alleinreisende Kinder \u00b7 Familien mit Kindern bis 2 Jahre \u00b7 Premium VIPorter \u00b7 PorterReserve',
-    it:'Passeggeri con disabilit\u00e0 \u00b7 Minori non accompagnati \u00b7 Famiglie con bambini fino a 2 anni \u00b7 Premium VIPorter \u00b7 PorterReserve',
-    pt:'Passageiros com defici\u00eancia \u00b7 Menores desacompanhados \u00b7 Fam\u00edlias com crian\u00e7as at\u00e9 2 anos \u00b7 Premium VIPorter \u00b7 PorterReserve',
-    ja:'\u304a\u624b\u4f1d\u3044\u304c\u5fc5\u8981\u306a\u304a\u5ba2\u69d8 \u00b7 \u304a\u5b50\u69d8\u306e\u3072\u3068\u308a\u65c5 \u00b7 2\u6b73\u4ee5\u4e0b\u306e\u304a\u5b50\u69d8\u9023\u308c \u00b7 \u30d7\u30ec\u30df\u30a2\u30e0VIPorter \u00b7 PorterReserve',
-    zh:'\u9700\u534f\u52a9\u65c5\u5ba2 \u00b7 \u65e0\u4eba\u966a\u4f34\u513f\u7ae5 \u00b7 \u643a2\u5c81\u53ca\u4ee5\u4e0b\u513f\u7ae5\u7684\u5bb6\u5ead \u00b7 \u9ad8\u7ea7VIPorter \u00b7 PorterReserve',
-    ar:'\u0627\u0644\u0631\u0643\u0627\u0628 \u0630\u0648\u0648 \u0627\u0644\u0625\u0639\u0627\u0642\u0629 \u00b7 \u0627\u0644\u0642\u0627\u0635\u0631\u0648\u0646 \u063a\u064a\u0631 \u0627\u0644\u0645\u0635\u062d\u0648\u0628\u064a\u0646 \u00b7 \u0627\u0644\u0639\u0627\u0626\u0644\u0627\u062a \u0645\u0639 \u0623\u0637\u0641\u0627\u0644 \u062d\u062a\u0649 \u0633\u0646\u062a\u064a\u0646 \u00b7 VIPorter \u0628\u0631\u064a\u0645\u064a\u0648\u0645 \u00b7 PorterReserve' },
+  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre avion', es:'Su avión', de:'Ihr Flugzeug', it:'Il tuo aereo', pt:'Seu avião', ja:'\u3054\u642d\u4e57\u6a5f', zh:'您的飞机', ar:'طائرتك' },
+  // v23970 — preboard, genboard, pdReserve, pdClassic, avidTraveller, photoId
+  // and preboardList moved to the one store (board-strings.js), each with
+  // where its words come from ($src): Porter's own names in English and
+  // French, careful translations marked as such in the other languages.
+  // _gateLbl and _gateLbl1 fall through to it, so every caller is unchanged.
   // v23769 — two words the unified boarding sign needs. 'Next' heads the
   // second-language lines under the called group ('Next: Rows 8-16' /
   // 'Prochain : Rangées 8-16'); 'boardConv' is the standing note on the
@@ -28043,25 +27916,14 @@ var _GATE_LBL = {
   // 6 was. Same values as LS, here where _gateLbl looks. 'zone' is the
   // singular for a Next line naming one zone.
   groupLabel:{ en:'Group', fr:'Groupe', es:'Grupo', de:'Gruppe', it:'Gruppo', pt:'Grupo', ja:'グループ', zh:'组', ar:'المجموعة' },
-  // v23771 — the cabins, named the way each airline names them, so the
-  // priority panel can say who it is for (Porter's PorterReserve line, for
-  // everyone). Brand terms (Premium Rouge, United First) are the same in every
-  // language on purpose.
-  cabinBiz:       { en:'Business Class', fr:'Classe affaires', es:'Clase Ejecutiva', de:'Business Class', it:'Business Class', pt:'Classe Executiva', ja:'ビジネスクラス', zh:'商务舱', ar:'درجة رجال الأعمال' },
-  cabinFirst:     { en:'First Class', fr:'Première classe', es:'Primera Clase', de:'First Class', it:'Prima Classe', pt:'Primeira Classe', ja:'ファーストクラス', zh:'头等舱', ar:'الدرجة الأولى' },
-  cabinClub:      { en:'Club Class', fr:'Classe Club', es:'Clase Club', de:'Club Class', it:'Classe Club', pt:'Classe Club', ja:'クラブクラス', zh:'俱乐部舱', ar:'درجة كلوب' },
-  cabinEcon:      { en:'Economy Class', fr:'Classe économique', es:'Clase Económica', de:'Economy Class', it:'Classe Economica', pt:'Classe Económica', ja:'エコノミークラス', zh:'经济舱', ar:'الدرجة السياحية' },
-  cabinPremiumWS: { en:'Premium', fr:'Premium', es:'Premium', de:'Premium', it:'Premium', pt:'Premium', ja:'プレミアム', zh:'高级舱', ar:'بريميوم' },
-  cabinEconWS:    { en:'Economy', fr:'Économie', es:'Económica', de:'Economy', it:'Economica', pt:'Económica', ja:'エコノミー', zh:'经济舱', ar:'اقتصادي' },
-  cabinPremRouge: { en:'Premium Rouge', fr:'Premium Rouge', es:'Premium Rouge', de:'Premium Rouge', it:'Premium Rouge', pt:'Premium Rouge', ja:'Premium Rouge', zh:'Premium Rouge', ar:'Premium Rouge' },
-  cabinUnitedFirst:{ en:'United First', fr:'United First', es:'United First', de:'United First', it:'United First', pt:'United First', ja:'United First', zh:'United First', ar:'United First' },
-  cabinUnitedEcon:{ en:'United Economy', fr:'United Economy', es:'United Economy', de:'United Economy', it:'United Economy', pt:'United Economy', ja:'United Economy', zh:'United Economy', ar:'United Economy' },
+  // v23970 — the cabin names (cabinBiz … cabinUnitedEcon, v23771) moved to the
+  // one store with their sources, beside the pre-boarding words.
   zone:      { en:'Zone', fr:'Zone', es:'Zona', de:'Zone', it:'Zona', pt:'Zona', ja:'ゾーン', zh:'区', ar:'المنطقة' },
   nextUp:    { en:'Next', fr:'Prochain', es:'Siguiente', de:'Nächste', it:'Prossimo', pt:'Próximo', ja:'次', zh:'下一个', ar:'التالي' },
   boardConv: { en:'Board at your convenience', fr:'Embarquez à votre convenance', es:'Embarque cuando desee', de:'Boarding jederzeit möglich', it:'Imbarco quando preferisce', pt:'Embarque quando quiser', ja:'ご都合の良い時にご搭乗ください', zh:'随时登机', ar:'اصعد في الوقت المناسب لك' },
   allPax:    { en:'All passengers', fr:'Tous les passagers', es:'Todos los pasajeros', de:'Alle Passagiere', it:'Tutti i passeggeri', pt:'Todos os passageiros', ja:'全てのお客様', zh:'所有乘客', ar:'جميع الركاب' },
   finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
-  gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'ゲート閉鎖', zh:'登机口已关闭', ar:'البوابة مغلقة' },
+  gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'搭乗終了', zh:'登机口已关闭', ar:'البوابة مغلقة' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
   useLanes:  { en:'Use Lanes',     fr:'Utilisez les voies', es:'Use carriles', de:'Spuren nutzen', it:'Usa corsie', pt:'Use faixas', ja:'レーン',  zh:'通道',   ar:'ممرات' },
   all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' },
@@ -28073,7 +27935,7 @@ var _GATE_LBL = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
  // own gate signage says. Title Case kept as specified's design.
-  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:'L’embarquement débutera sous peu', es:'El embarque comenzará en breve', de:'Das Boarding beginnt in Kürze', it:'L’imbarco inizierà a breve', pt:'O embarque começará em breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // v23202 — the altimeter's labels follow the CHOSEN languages like every
   // other label on the board
   // ; they were hard-coded English with a hard-coded French unit.
@@ -28083,7 +27945,7 @@ var _GATE_LBL = {
   feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
   estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
-  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minsShort: { en:'mins', fr:'min', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
  // Clock label for the boarding screen's white strip. The concept wrote
   // 'Heure Actuelle'; corrected to French sentence capitalisation, which is
@@ -28095,42 +27957,6 @@ var _GATE_LBL = {
   // a whole sentence on its own line, French first in Québec; TL() reads LS
   // and gives one language only.
   inbDelayed: { en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est en retard. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
-  // ── v23968 — EACH AIRLINE'S GATE-CLOSE DEADLINE ──────────────────────────
-  // The line at the foot of the gate's Boarding card before boarding starts
-  // (_gateCloseLineHtml): the airline's PUBLISHED minutes and the clock time
-  // they make before the airport's departure time. {MIN} is the minutes,
-  // {TIME} the clock in that language's own convention (_fidsClockForLang).
-  // One entry per kind of rule, in the airline's own word for it
-  // (GATE_CLOSE_POLICY):
-  //   gateCloses      its boarding gate closes (Air Canada, WestJet, Porter,
-  //                   Air Transat; AC's French page: « Fermeture de la porte
-  //                   d'embarquement »)
-  //   boardingCloses  its boarding closes (Flair)
-  //   boardingEnds    its boarding ends (American)
-  //   gateBeAt        only a deadline to be AT the gate, no close time (PAL,
-  //                   Delta, United), so the card never says "closes" for them
-  // English and French follow the airlines' own pages; the other seven are
-  // careful translations.
-  gateCloses:     { en:'Gate closes {MIN} min before departure · {TIME}', fr:'Fermeture de la porte {MIN} min avant le départ · {TIME}', es:'La puerta cierra {MIN} min antes de la salida · {TIME}', de:'Gate schließt {MIN} Min. vor Abflug · {TIME}', it:'Il gate chiude {MIN} min prima della partenza · {TIME}', pt:'O portão fecha {MIN} min antes da partida · {TIME}', ja:'搭乗口は出発{MIN}分前に締切 · {TIME}', zh:'登机口于起飞前{MIN}分钟关闭 · {TIME}', ar:'تُغلق البوابة قبل {MIN} دقيقة من المغادرة · {TIME}' },
-  boardingCloses: { en:'Boarding closes {MIN} min before departure · {TIME}', fr:'Fin de l’embarquement {MIN} min avant le départ · {TIME}', es:'El embarque cierra {MIN} min antes de la salida · {TIME}', de:'Boarding endet {MIN} Min. vor Abflug · {TIME}', it:'L’imbarco chiude {MIN} min prima della partenza · {TIME}', pt:'O embarque encerra {MIN} min antes da partida · {TIME}', ja:'搭乗は出発{MIN}分前に締切 · {TIME}', zh:'登机于起飞前{MIN}分钟截止 · {TIME}', ar:'ينتهي الصعود قبل {MIN} دقيقة من المغادرة · {TIME}' },
-  boardingEnds:   { en:'Boarding ends {MIN} min before departure · {TIME}', fr:'Fin de l’embarquement {MIN} min avant le départ · {TIME}', es:'El embarque termina {MIN} min antes de la salida · {TIME}', de:'Boarding endet {MIN} Min. vor Abflug · {TIME}', it:'L’imbarco termina {MIN} min prima della partenza · {TIME}', pt:'O embarque termina {MIN} min antes da partida · {TIME}', ja:'搭乗は出発{MIN}分前に終了 · {TIME}', zh:'登机于起飞前{MIN}分钟结束 · {TIME}', ar:'ينتهي الصعود قبل {MIN} دقيقة من المغادرة · {TIME}' },
-  gateBeAt:       { en:'Be at the gate {MIN} min before departure · {TIME}', fr:'Présentez-vous à la porte {MIN} min avant le départ · {TIME}', es:'Esté en la puerta {MIN} min antes de la salida · {TIME}', de:'{MIN} Min. vor Abflug am Gate sein · {TIME}', it:'Presentarsi al gate {MIN} min prima della partenza · {TIME}', pt:'Esteja no portão {MIN} min antes da partida · {TIME}', ja:'出発{MIN}分前までに搭乗口へ · {TIME}', zh:'请于起飞前{MIN}分钟到达登机口 · {TIME}', ar:'كونوا عند البوابة قبل {MIN} دقيقة من المغادرة · {TIME}' },
-  // The same rules as one ticker line, on a board showing one airline only
-  // (?airline=): {AIRLINE} is the airline's name (_tickerCloseLine).
-  tickerGateCloses:     { en:'{AIRLINE}: BOARDING GATE CLOSES {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FERMETURE DE LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: LA PUERTA DE EMBARQUE CIERRA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS GATE SCHLIESST {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: IL GATE CHIUDE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O PORTÃO DE EMBARQUE FECHA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗口は出発{MIN}分前に締め切ります', zh:'{AIRLINE}：登机口于起飞前{MIN}分钟关闭', ar:'{AIRLINE}: تُغلق بوابة الصعود قبل {MIN} دقيقة من المغادرة' },
-  tickerBoardingCloses: { en:'{AIRLINE}: BOARDING CLOSES {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FIN DE L’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: EL EMBARQUE CIERRA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS BOARDING ENDET {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: L’IMBARCO CHIUDE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O EMBARQUE ENCERRA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗は出発{MIN}分前に締め切ります', zh:'{AIRLINE}：登机于起飞前{MIN}分钟截止', ar:'{AIRLINE}: ينتهي الصعود قبل {MIN} دقيقة من المغادرة' },
-  tickerBoardingEnds:   { en:'{AIRLINE}: BOARDING ENDS {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FIN DE L’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: EL EMBARQUE TERMINA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS BOARDING ENDET {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: L’IMBARCO TERMINA {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O EMBARQUE TERMINA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗は出発{MIN}分前に終了します', zh:'{AIRLINE}：登机于起飞前{MIN}分钟结束', ar:'{AIRLINE}: ينتهي الصعود قبل {MIN} دقيقة من المغادرة' },
-  tickerGateBeAt:       { en:'{AIRLINE}: BE AT THE BOARDING GATE {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : PRÉSENTEZ-VOUS À LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: PRESÉNTESE EN LA PUERTA DE EMBARQUE {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: SEIEN SIE {MIN} MINUTEN VOR ABFLUG AM GATE', it:'{AIRLINE}: PRESENTARSI AL GATE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: ESTEJA NO PORTÃO DE EMBARQUE {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：出発{MIN}分前までに搭乗口へお越しください', zh:'{AIRLINE}：请于起飞前{MIN}分钟到达登机口', ar:'{AIRLINE}: يرجى التواجد عند بوابة الصعود قبل {MIN} دقيقة من المغادرة' },
-  // v23973 — LATER AT THIS GATE (_gateLaterStripHtml, _gateChangeNoticeHtml).
-  // The strip's title; the label before a moved flight's new gate number
-  // ("now Gate 2 | maintenant porte 2", the number in its own pill); the
-  // full-screen notice's title and its sentence. gateMovedProceed is LS's
-  // gateChangeProceed word for word, here so _gateLbl can show the board's
-  // two languages, each sentence whole on its own line ({GATE} is the gate).
-  laterAtGate: { en:'Later at this gate', fr:'Plus tard à cette porte', es:'Más tarde en esta puerta', de:'Später an diesem Gate', it:'Più tardi a questo gate', pt:'Mais tarde neste portão', ja:'このゲートのこの後の便', zh:'本登机口稍后航班', ar:'لاحقًا من هذه البوابة' },
-  nowGate:     { en:'now Gate', fr:'maintenant porte', es:'ahora puerta', de:'jetzt Gate', it:'ora gate', pt:'agora portão', ja:'変更後のゲート', zh:'现登机口', ar:'البوابة الجديدة' },
-  gateChange:  { en:'Gate change', fr:'Changement de porte', es:'Cambio de puerta', de:'Gate-Wechsel', it:'Cambio gate', pt:'Mudança de portão', ja:'ゲート変更', zh:'登机口变更', ar:'تغيير البوابة' },
-  gateMovedProceed: { en:'Please proceed to Gate {GATE}', fr:'Veuillez vous diriger vers la porte {GATE}', es:'Diríjase a la puerta {GATE}', de:'Bitte begeben Sie sich zu Gate {GATE}', it:'Procedere al gate {GATE}', pt:'Dirija-se ao portão {GATE}', ja:'ゲート {GATE} へお進みください', zh:'请前往 {GATE} 登机口', ar:'يرجى التوجه إلى البوابة {GATE}' }
 };
 
 // Clock string in ONE language's own convention (v23115). English and the
@@ -28138,18 +27964,12 @@ var _GATE_LBL = {
 // get '17:35'. Used by the boarding screen's white strip, which shows the
 // same instant twice — once per board language — and would read as a mistake
 // if both halves used the same format.
+// v23970 — the convention per language now lives in BoardStrings.META
+// (clock24), the one place a locale or hour12 is chosen. Arabic joined the
+// 24-hour languages: it was the one language left out of this list and the
+// baggage list below, so an Arabic half read 5:07pm beside a Japanese 17:07.
 function _fidsClockForLang(now, tz, lang) {
-  var _24 = { fr: 1, de: 1, it: 1, pt: 1, es: 1, ja: 1, zh: 1 };
-  var o = { hour: 'numeric', minute: '2-digit', hour12: !_24[lang] };
-  if (tz) o.timeZone = tz;
-  try {
-    if (_24[lang]) {
-      o.hour = '2-digit';
-      return now.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-GB', o).replace(/\s*h\s*/i, ':');
-    }
-    return now.toLocaleTimeString('en-US', o)
-      .replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
-  } catch (e) { return ''; }
+  return BoardStrings.time(now, lang, tz);
 }
 
 // v23218 — the flight TIMES follow the chosen language on the BAGGAGE board
@@ -28163,19 +27983,12 @@ function _bidsTimeForLang(t) {
     var s = String(t || '').trim();
     var m = s.match(/^(\d{1,2}):(\d{2})$/);
     if (!m) return t;
-    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-    try {
-      var _ap = (document.getElementById('apSel') || {}).value || '';
-      if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
-        var _fi = picked.indexOf('fr');
-        if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
-      }
-    } catch (e0) {}
-    var _24 = { fr: 1, de: 1, it: 1, pt: 1, es: 1, ja: 1, zh: 1 };
-    if (_24[picked[0]]) return s;
-    var h = +m[1], mm = m[2], mer = h >= 12 ? 'pm' : 'am';
-    h = h % 12; if (h === 0) h = 12;
-    return h + ':' + mm + mer;
+    var _ap = '';
+    try { _ap = (document.getElementById('apSel') || {}).value || ''; } catch (e0) {}
+    var picked = BoardStrings.pairLangs(langs, _ap);
+    // The feed's own HH:MM is kept as written for a 24-hour language.
+    if (BoardStrings.META[picked[0]] && BoardStrings.META[picked[0]].clock24) return s;
+    return BoardStrings.clockText(s, picked[0]);
   } catch (e) { return t; }
 }
 
@@ -28188,6 +28001,9 @@ function _bidsTimeForLang(t) {
 // bilingual pair was written in CSS for this class too, but never reached it:
 // gateLanguageLayout() did not look at .g8-board-grp-label, and the two halves
 // were bare text with nothing for CSS to stack. This names them.
+function _lblEntry(key) {
+  return ((typeof _GATE_LBL !== 'undefined') && _GATE_LBL[key]) || BoardStrings.entry(key) || { en: '' };
+}
 function _gateLblHalf(w, i) {
   return '<span class="g8-bir-l' + (i + 1) + '">' + w + '</span>';
 }
@@ -28201,26 +28017,50 @@ function _gateLblHalf(w, i) {
 // long for the biggest line on the panel or for a five-item list. This returns
 // ONE language from the same table the pairs come from, following the board's
 // own language rotation so each pass shows it in one of them.
+// v23970 — the French-first flag only REORDERS. It returned French whenever
+// the airport was in Québec, even on a board whose languages did not include
+// French; it now returns the first of the pair the board actually shows
+// (BoardStrings.pairLangs: French leads in Québec only when it is selected).
+// A key that is not in _GATE_LBL falls through to the one store.
+// The language _gateLbl1 shows: the first of the board's pair. Artwork that
+// exists per language (Porter's VIPorter tiers, PorterReserve) follows it,
+// so French art appears exactly when the sign's words are French — not at
+// every Québec gate whatever the board speaks.
+function _gateLang1(frF) {
+  try { return BoardStrings.pairLangs(langs, !!frF)[0] || 'en'; } catch (e) { return 'en'; }
+}
 function _gateLbl1(key, frF) {
+  var p = _gateLbl1Pick(key, frF);
+  return p ? p.w : '';
+}
+// The word and the language it is in (null when the label has none).
+function _gateLbl1Pick(key, frF) {
   try {
-    var t = (typeof _GATE_LBL !== 'undefined') && _GATE_LBL[key];
-    if (!t) return '';
-    if (frF && t.fr) return t.fr;
-    var L = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en'];
-    for (var i = 0; i < L.length; i++) { if (t[L[i]]) return t[L[i]]; }
-    return t.en || '';
-  } catch (e) { return ''; }
+    var t = ((typeof _GATE_LBL !== 'undefined') && _GATE_LBL[key]) || BoardStrings.entry(key);
+    if (!t) return null;
+    var L = BoardStrings.pairLangs(langs, !!frF);
+    for (var i = 0; i < L.length; i++) { if (t[L[i]]) return { w: t[L[i]], l: L[i] }; }
+    return null;
+  } catch (e) { return null; }
+}
+// v23995 — the same one-language label, as markup marked with its language
+// (and an Arabic one with its direction). The gate's page is lang="en"; a
+// Japanese roster dropped in bare inherited it and drew with whatever glyphs
+// the stack found first, and an Arabic one ran left to right.
+function _gateLbl1Html(key, frF) {
+  var p = _gateLbl1Pick(key, frF);
+  // a list's ' · ' keeps its dot with the item before it (a no-break space in
+  // front), so a wrapped line never opens with '·' (Porter's pre-boarding list)
+  return p ? BoardStrings.markHalf('<span class="g8-lbl1">' + String(p.w).replace(/ \u00B7 /g, '\u00A0\u00B7 ') + '</span>', p.l, key) : '';
 }
 
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
-  var o = _GATE_LBL[key];
+  // v23970 — _GATE_LBL is frozen; a new key lives in the one store
+  // (board-strings.js) and is found here by falling through. The languages
+  // come from BoardStrings.pairLangs, the one picker every pair uses.
+  var o = _GATE_LBL[key] || BoardStrings.entry(key);
   if (!o) return '';
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-    ? langs.slice(0, 2) : ['en', 'fr'];
-  if (frFirst) {
-    var _fi = picked.indexOf('fr');
-    if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
-  }
+  var picked = BoardStrings.pairLangs(langs, !!frFirst);
   var seen = Object.create(null), parts = [], partLangs = [];
   for (var i = 0; i < picked.length && parts.length < 2; i++) {
     var w = o[picked[i]];
@@ -28234,14 +28074,17 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     seen[k] = 1;
     parts.push(w); partLangs.push(picked[i]);
   }
-  if (!parts.length) { parts.push(o.en); partLangs.push('en'); }
+  if (!parts.length) return '';
   // v23161 — wrap() now receives the index. The lane labels need their two
   // halves in addressable spans so they can STACK when they cannot share a
   // line; without that the pair is bare text and CSS has nothing to move.
   // Existing callers that ignore the second argument are unaffected.
   // v23773 — and the language of the half (third argument), so a rule can
   // find the French half wherever the airport puts it.
-  if (typeof wrap === 'function') return parts.map(function (w, i) { return wrap(w, i, partLangs[i]); }).join(sep || '');
+  // v23970 — each half carries its language (and an Arabic half its
+  // direction), so a half holding a Latin city reads right to left and two
+  // halves never reorder each other (BoardStrings.markHalf).
+  if (typeof wrap === 'function') return parts.map(function (w, i) { return BoardStrings.markHalf(wrap(w, i, partLangs[i]), partLangs[i], key); }).join(sep || '');
   return parts.join(sep || ' ');
 }
 // Lane line as a bilingual pair with the lane number in BOTH halves
@@ -28252,29 +28095,24 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
 function _gateLaneLbl(nums, plural, frFirst) {
   var o = _GATE_LBL[plural ? 'useLanes' : 'useLane'];
   if (!o) return '';
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-    ? langs.slice(0, 2) : ['en', 'fr'];
-  if (frFirst) {
-    var _fi = picked.indexOf('fr');
-    if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
-  }
-  var seen = Object.create(null), parts = [];
+  var picked = BoardStrings.pairLangs(langs, !!frFirst);
+  var seen = Object.create(null), parts = [], partLangs = [];
   for (var i = 0; i < picked.length && parts.length < 2; i++) {
     var w = o[picked[i]];
     if (!w) continue;
     var k = String(w).toLowerCase();
     if (seen[k]) continue;
     seen[k] = 1;
-    parts.push(w + ' ' + nums);
+    parts.push(w + ' ' + nums); partLangs.push(picked[i]);
   }
-  if (!parts.length) parts.push(o.en + ' ' + nums);
+  if (!parts.length) return '';
   // v23116 — A SENTENCE NEVER BREAKS
   // Each language's line is one nowrap
   // unit; when both don't fit side by side the sign STACKS them whole —
   // 'Use Lane 2' over 'Utilisez la voie 2' — and the pipe disappears. The
   // stacking decision is made by the lane-line guard in the gate fitter,
   // which measures the rendered box; this just gives it the units.
-  return parts.map(function (w) { return '<span class="g8-lane-p">' + w + '</span>'; })
+  return parts.map(function (w, i) { return BoardStrings.markHalf('<span class="g8-lane-p">' + w + '</span>', partLangs[i]); })
     .join('<span class="g8-lane-sep"> <span class="g8-bir-sep">|</span> </span>');
 }
 try { if (typeof window !== 'undefined') window._gateLaneLbl = _gateLaneLbl; } catch (e) {}
@@ -28327,9 +28165,9 @@ function _acSkyIsNight() {
     if (ia && typeof _wxNightAt === 'function') return !!_wxNightAt(ia);
     var tz = '';
     try { tz = (typeof AP !== 'undefined' && AP[ia] && AP[ia].tz) || ''; } catch (eT) {}
-    var hh = Number(new Date().toLocaleTimeString('en-GB', tz
-      ? { timeZone: tz, hour12: false, hour: '2-digit' }
-      : { hour12: false, hour: '2-digit' }).slice(0, 2));
+    var hh = Number(new Date().toLocaleTimeString('en-GB', tz // i18n-ok: code
+      ? { timeZone: tz, hour12: false, hour: '2-digit' } // i18n-ok: code
+      : { hour12: false, hour: '2-digit' }).slice(0, 2)); // i18n-ok: code
     if (!isFinite(hh)) return false;
     return hh < 6 || hh >= 21;
   } catch (e) { return false; }
@@ -28414,7 +28252,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23994';
+var FIDS_BUILD_TAG = 'v23995';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -28673,35 +28511,32 @@ var _BIDSV3_ON = true; //
   } catch (e) {}
 })();
 
-const BAGS_TICKER_MSG = {
-  en: ['MANY BAGS LOOK ALIKE — PLEASE CHECK YOUR BAG TAG','LUGGAGE CARTS ARE AVAILABLE NEAR THE EXIT','REPORT DAMAGED OR MISSING BAGGAGE TO YOUR AIRLINE','PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','THANK YOU FOR FLYING WITH US — WELCOME'],
-  fr: ['PLUSIEURS VALISES SE RESSEMBLENT — VÉRIFIEZ VOTRE ÉTIQUETTE','DES CHARIOTS À BAGAGES SONT DISPONIBLES PRÈS DE LA SORTIE','SIGNALEZ TOUT BAGAGE ENDOMMAGÉ OU MANQUANT À VOTRE TRANSPORTEUR','VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS','SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL','MERCI D\'AVOIR VOYAGÉ AVEC NOUS — BIENVENUE'],
-  es: ['MUCHAS MALETAS SON PARECIDAS — VERIFIQUE SU ETIQUETA','HAY CARRITOS DE EQUIPAJE CERCA DE LA SALIDA','REPORTE EQUIPAJE DAÑADO O FALTANTE A SU AEROLÍNEA','MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO','REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL','GRACIAS POR VOLAR CON NOSOTROS — BIENVENIDOS']
-};
 
+// v23970 — the ticker lines live in the store (BoardStrings.LISTS.ticker and
+// .bagsTicker), nine languages each. The pair is the board's own two
+// languages, French first in Québec, through BoardStrings.pairLangs.
+// The same lines as markup, each message marked with its language (and an
+// Arabic one its direction): one text node holding Arabic beside Japanese
+// read left to right in the board's language, and drew the Chinese with
+// Japanese glyphs. `plane` is the line's lead glyph.
 // v23968 — ONE DEADLINE LINE, NO AIRPORT-WIDE NUMBER. Lines 3 and 4 used to
 // say "PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE" and "BOARDING GATES
 // CLOSE 15 MINUTES PRIOR TO DEPARTURE" for every airline. Each airline sets
-// its own (GATE_CLOSE_POLICY): WestJet wants passengers at the gate 40
-// minutes out, Air Canada 45 on international flights, Flair closes boarding
-// at 20 and Porter its gate at 10, so one number was wrong for someone on
-// every multi-airline board. They are one neutral line now (index 2,
-// TICKER_DEADLINE_LINE), and a board showing one airline's flights only
-// (?airline=) says that airline's own published rule in that line's place
-// (_tickerCloseLine). The gate screen shows no ticker: its Boarding card says
-// the airline's own rule for the flight at the gate.
-const TICKER_MSG = {
-  en: ['PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY','CHECK YOUR AIRLINE’S BOARDING GATE DEADLINE','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','CHECK MONITORS FOR UPDATED GATE INFORMATION'],
-  fr: ["VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS","LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS","VÉRIFIEZ L’HEURE LIMITE À LA PORTE D’EMBARQUEMENT DE VOTRE TRANSPORTEUR","SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL","CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR"],
-  es: ['MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO','ARTÍCULOS DESATENDIDOS SERÁN CONFISCADOS','CONSULTE LA HORA LÍMITE EN LA PUERTA DE EMBARQUE DE SU AEROLÍNEA','REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL','CONSULTE LOS MONITORES PARA INFORMACIÓN ACTUALIZADA'],
-  de: ['BEHALTEN SIE IHR GEPÄCK STETS BEI SICH','UNBEAUFSICHTIGTE GEGENSTÄNDE WERDEN KONFISZIERT','BEACHTEN SIE DIE GATE-FRIST IHRER FLUGGESELLSCHAFT','MELDEN SIE VERDÄCHTIGE AKTIVITÄTEN','PRÜFEN SIE DIE MONITORE FÜR AKTUELLE INFORMATIONEN'],
-  it: ["TENERE SEMPRE CON SÉ IL BAGAGLIO","OGGETTI INCUSTODITI SARANNO CONFISCATI","VERIFICATE L’ORARIO LIMITE AL GATE DELLA VOSTRA COMPAGNIA AEREA","SEGNALARE ATTIVITÀ SOSPETTE AL PERSONALE","CONTROLLARE I MONITOR PER AGGIORNAMENTI"],
-  pt: ['MANTENHA SUA BAGAGEM CONSIGO EM TODOS OS MOMENTOS','ITENS ABANDONADOS SERÃO CONFISCADOS','VERIFIQUE O HORÁRIO LIMITE NO PORTÃO DE EMBARQUE DA SUA COMPANHIA AÉREA','REPORTE ATIVIDADE SUSPEITA AO PESSOAL','CONSULTE OS MONITORES PARA ATUALIZAÇÕES'],
-  ja: ['手荷物は常にお手元にお持ちください','放置された荷物は撤去されます','ご利用の航空会社の搭乗口締切時刻をご確認ください','不審な行動は職員にお知らせください','ゲート情報の更新はモニターをご確認ください'],
-  zh: ['请随时看管好您的行李','无人看管的物品将被没收','请确认您所乘航空公司的登机口截止时间','如发现可疑活动请报告工作人员','请查看显示屏获取最新登机口信息'],
-  ar: ['يرجى الاحتفاظ بأمتعتكم معكم في جميع الأوقات','سيتم مصادرة الأغراض المتروكة','يرجى التحقق من الموعد النهائي لبوابة الصعود لدى شركة الطيران','أبلغوا عن أي نشاط مشبوه لموظفي المطار','تحققوا من الشاشات للحصول على أحدث المعلومات']
-};
+// its own (GATE_CLOSE_POLICY), so one number was wrong for someone on every
+// multi-airline board: the ticker's line TICKER_DEADLINE_LINE is one neutral
+// line, and a board showing one airline's flights only (?airline=) says that
+// airline's own published rule in its place (_tickerCloseLine).
 const TICKER_DEADLINE_LINE = 2;
+function _tickerHtml(listKey, plane, sep) {
+  const _ap = (document.getElementById('apSel') || {}).value || '';
+  const pair = BoardStrings.pairLangs(langs, _ap);
+  const a = BoardStrings.list(listKey, pair[0]);
+  const b = pair[1] ? BoardStrings.list(listKey, pair[1]) : null;
+  const esc = BoardStrings.esc;
+  const line = (lg, list, i) => (listKey === 'ticker' && i === TICKER_DEADLINE_LINE && _tickerCloseLine(lg)) || list[i];
+  return a.map((msg, i) => plane + '  ' + BoardStrings.half(pair[0], esc(line(pair[0], a, i)), 'tk-h')
+    + (b && b[i] ? '  ·  ' + BoardStrings.half(pair[1], esc(line(pair[1], b, i)), 'tk-h') : '')).join(sep);
+}
 // v23968 — THE DEPARTURES BOARD'S "+1" NEXT-DAY MARKER (render()'s time
 // cell): bold white in a dark pill with a white ring, 0.72em of the time (a
 // "+1" about 20px tall at 1680x1050, where the old superscript was a speck),
@@ -28726,19 +28561,7 @@ const FIDS_DAYPLUS_STYLE = 'position:absolute !important;left:100% !important;to
 function updateTicker() {
   const ticker = document.querySelector('.ticker span');
   if (!ticker) return;
-  let parts = [];
-  const l0 = TICKER_MSG[langs[0]] ? langs[0] : 'en';
-  // v23968 — the deadline line (TICKER_DEADLINE_LINE) is the airline's own
-  // rule on a board showing one airline only, the neutral line elsewhere.
-  const line = (lg, i) => (i === TICKER_DEADLINE_LINE && _tickerCloseLine(lg)) || TICKER_MSG[lg][i];
-  TICKER_MSG[l0].forEach((msg, i) => {
-    let combined = '✈  ' + line(l0, i);
-    if (langs[1] && TICKER_MSG[langs[1]]) {
-      combined += '  ·  ' + line(langs[1], i);
-    }
-    parts.push(combined);
-  });
-  ticker.textContent = parts.join('  ·  ') + '  ·  ✈';
+  ticker.innerHTML = _tickerHtml('ticker', '✈', '  ·  ') + '  ·  ✈';
 }
 
 // ── THEME PRESETS ────────────────────────────────────────────────────────
@@ -29147,6 +28970,8 @@ function render() {
   // Arrivals columns:   Airline | From     |         | Flight | Carousel | Time | Status
   // We rewrite the entire <thead> so column order matches the row template.
   document.getElementById('hdrBoard').innerHTML = _boardLabelBilingual(mode);
+  // v23970 — the table speaks the language the page is showing (`lang`)
+  try { var _ftL = document.getElementById('fidsTable'); if (_ftL && BoardStrings.isLang(lang)) _ftL.setAttribute('lang', lang); } catch (eL) {}
   // v2 banner: set body[data-fids-mode] so the plane icon flips down for
   // arrivals (CSS rotates the SVG 180deg when data-fids-mode="arr").
   document.body.dataset.fidsMode = mode;
@@ -29157,7 +28982,7 @@ function render() {
   // LGA/JFK/EWR (Port Authority feed) carry a real terminal per row, so they
   // join the terminal-column club (LGA/EWR letters, JFK numbers).
   const _isMcoBoard = ['MCO', 'TPA', 'YYZ', 'LGA', 'JFK', 'EWR'].indexOf(_apUpBoard) !== -1;
-  const _airsideLabel = _apUpBoard === 'TPA' ? 'Airside' : 'Terminal';
+  const _airsideLabel = TL(_apUpBoard === 'TPA' ? 'airside' : 'terminal');
   const _theadRow = document.querySelector('#fidsTable thead tr');
   if (_theadRow) {
     const _T = (k) => (typeof window.fidsT === 'function') ? window.fidsT(k, lang) : TL(k);
@@ -29169,7 +28994,7 @@ function render() {
       ...(_isMcoBoard ? [{ cls: 'col-term', txt: _airsideLabel }] : []),
       { cls: 'col-gate',     txt: _T('gate')     },
       { cls: 'col-time',     txt: _T('time')     },
-      { cls: 'col-time-rev', txt: (TL('revised') || 'Revised') }, // TL map: proper case + FR 'Révisé' (fidsT's key is lowercase; the old literal sat untranslated on the French board)
+      { cls: 'col-time-rev', txt: TL('revised') }, // TL map: proper case + FR 'Révisé' (fidsT's key is lowercase; the old literal sat untranslated on the French board)
       { cls: 'col-status',   txt: _T('status')   }
     ];
     const _arrHeaders = [
@@ -29179,7 +29004,7 @@ function render() {
       ...(_isMcoBoard ? [{ cls: 'col-term', txt: _airsideLabel }] : []),
       { cls: 'col-gate',     txt: _T('carousel') },
       { cls: 'col-time',     txt: _T('time')     },
-      { cls: 'col-time-rev', txt: (TL('revised') || 'Revised') }, // TL map: proper case + FR 'Révisé' (fidsT's key is lowercase; the old literal sat untranslated on the French board)
+      { cls: 'col-time-rev', txt: TL('revised') }, // TL map: proper case + FR 'Révisé' (fidsT's key is lowercase; the old literal sat untranslated on the French board)
       { cls: 'col-status',   txt: _T('status')   }
     ];
     const _heads = isDep ? _depHeaders : _arrHeaders;
@@ -29431,11 +29256,11 @@ function render() {
       const iata      = document.getElementById('apSel').value;
       const tz        = (AP[iata] || {}).tz;
       const tzOpt     = tz ? { timeZone: tz } : {};
-      const fDay = flightDay.toLocaleDateString('en-CA', { ...tzOpt, month:'short', day:'numeric' });
-      const tDay = today.toLocaleDateString('en-CA', { ...tzOpt, month:'short', day:'numeric' });
+      const fDay = flightDay.toLocaleDateString('en-CA', { ...tzOpt, month:'short', day:'numeric' }); // i18n-ok: code
+      const tDay = today.toLocaleDateString('en-CA', { ...tzOpt, month:'short', day:'numeric' }); // i18n-ok: code
       if (fDay !== tDay) {
-        const fDate = new Date(flightDay.toLocaleDateString('en-CA', tzOpt));
-        const tDate = new Date(today.toLocaleDateString('en-CA', tzOpt));
+        const fDate = new Date(flightDay.toLocaleDateString('en-CA', tzOpt)); // i18n-ok: code
+        const tDate = new Date(today.toLocaleDateString('en-CA', tzOpt)); // i18n-ok: code
         const diffDays = Math.round((fDate - tDate) / 86400000);
         if (diffDays > 0) {
           // v23935 — the day marker takes the row's own ink. It was amber
@@ -29813,8 +29638,18 @@ function render() {
     // later, so every slide (°C/°F, language, poll, page) flashed every row's
     // code and the history rows' text between two colours. See _fidsBoardInk.
     try { _fidsBoardInk(); } catch (e) {}
+    // v23970 — and no status is ever cut: on a board whose columns keep the
+    // stylesheet's widths (no geometry pass), 'Embarquement' overflowed the
+    // French status column to 'Embarqueme…'. Each status cell steps its own
+    // size down until its word fits, whatever language the page is in.
+    try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e) {}
     // settle pass for late layout (web fonts, images shifting metrics)
-    try { setTimeout(function () { boardAutofit(false); }, 350); } catch (e) {}
+    try { setTimeout(function () { boardAutofit(false); try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e2) {} }, 350); } catch (e) {}
+    // v23995 — and once the board's web fonts have loaded: the first render
+    // measured with the fallback face, narrower, so a cell that fit then
+    // was cut once Bricolage arrived ('WS33…') and nothing measured again
+    // until the rows changed.
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e3) {} }); } catch (e) {}
   }
   // Phase 4: expose flight lists to the Search tab
   try {
@@ -29891,13 +29726,15 @@ function setState(which, show) {
         // The half that carries the code is built as nodes and set as text, so
         // there is no string for a URL to be markup in.
         if (_fidsAirportHasFeed(ap)) {
-          el.innerHTML = 'NO FLIGHTS IN WINDOW<div class="sub">NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW</div>';
+          // v23970 — the board's own pair, from the store
+          el.innerHTML = BoardStrings.pair('noFlightsWindow', { iata: ap, upper: true })
+            + '<div class="sub">' + BoardStrings.pair('noFlightsWindowSub', { iata: ap, upper: true }) + '</div>';
         } else {
-          el.textContent = 'NO LIVE DATA FOR THIS AIRPORT';
+          var _apTxt = String(ap).toUpperCase();
+          el.innerHTML = BoardStrings.pair('noLiveData', { iata: ap, upper: true });
           var _sub = document.createElement('div');
           _sub.className = 'sub';
-          _sub.textContent = String(ap).toUpperCase()
-            + ' HAS NO FLIGHT FEED YET · SIN DATOS EN VIVO PARA ESTE AEROPUERTO';
+          _sub.textContent = BoardStrings.pair('noFeedYet', { iata: ap, upper: true, plain: true, raw: true, fields: { AIRPORT: _apTxt } });
           el.appendChild(_sub);
         }
       }
@@ -30714,8 +30551,10 @@ function _heritageMarkBoard() {
     var car = HERITAGE_CARRIERS[code];
     var el = document.createElement('div');
     el.id = 'heritageStamp';
-    el.innerHTML = '<b>DEMONSTRATION</b> · DÉMONSTRATION'
-      + '<span>' + car.name + ' · ' + car.era + ' · not a live flight / vol fictif</span>';
+    // v23970 — in the board's pair, from the store
+    var _hdL = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
+    el.innerHTML = '<b>' + BoardStrings.pair('demoStamp', { langs: _hdL, upper: true, sep: ' · ' }) + '</b>'
+      + '<span>' + car.name + ' · ' + car.era + ' · ' + BoardStrings.pair('notLiveFlight', { langs: _hdL, sep: ' / ' }) + '</span>';
     (document.body || document.documentElement).appendChild(el);
   } catch (e) {}
 }
@@ -30728,9 +30567,12 @@ function buildDemoFlights(iata) {
   if (!sched) return buildRandomFlights(iata);   // ← rich random generator for all others
   const now = Date.now();
   const tz  = (AP[iata] || {}).tz;
-  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
-                  : {hour:'2-digit', minute:'2-digit', hour12:true};
-  const fmtTime = ts => new Date(ts).toLocaleTimeString('en-CA', tOpt);
+  // v23995 — the feed's own shape, 24-hour HH:MM, which every board formats
+  // in its own clock. It was en-CA's '10:07 p.m.', which the boards read as
+  // 10:07 in the morning: every demo time was twelve hours out.
+  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hourCycle:'h23'} // i18n-ok: data
+                  : {hour:'2-digit', minute:'2-digit', hourCycle:'h23'}; // i18n-ok: data
+  const fmtTime = ts => new Date(ts).toLocaleTimeString('en-GB', tOpt); // i18n-ok: data
 
   const build = (list, isDep) => list.map(s => {
     const schedTs = now + s.m * 60000;
@@ -30891,8 +30733,9 @@ function rfgGate(terminal, seed) {
 function buildRandomFlights(iata) {
   const now = Date.now();
   const tz  = (AP[iata] || {}).tz;
-  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true}
-                  : {hour:'2-digit', minute:'2-digit', hour12:true};
+  // v23995 — 24-hour HH:MM, the feed's own shape (see buildDemoFlights)
+  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hourCycle:'h23'} // i18n-ok: data
+                  : {hour:'2-digit', minute:'2-digit', hourCycle:'h23'}; // i18n-ok: data
 
   // Determine airport "type" from its region pool mix
   const isCA  = /^Y/.test(iata);
@@ -30971,11 +30814,11 @@ function buildRandomFlights(iata) {
     const term = rfgPick(terminals, seed + i * 3);
     const gate = rfgGate(term, seed + i * 19);
     const schedTs = now + minsOffset * 60000;
-    const time = new Date(schedTs).toLocaleTimeString('en-CA', tOpt);
+    const time = new Date(schedTs).toLocaleTimeString('en-GB', tOpt); // i18n-ok: data
     const hasDelay = (seed % 7 === 0) && minsOffset > 30;
     const delayMins = hasDelay ? 15 + (Math.abs(seed) % 45) : 0;
     const delayTs = hasDelay ? schedTs + delayMins * 60000 : null;
-    const upd = delayTs ? new Date(delayTs).toLocaleTimeString('en-CA', tOpt) : null;
+    const upd = delayTs ? new Date(delayTs).toLocaleTimeString('en-GB', tOpt) : null; // i18n-ok: data
     const status = buildDemoStatus(minsOffset, isDep, hasDelay, delayMins);
     // Extract the numeric portion of the flight number for operator detection
     var _flNumForOp = parseInt((flight || '').replace(/\D/g, ''), 10) || 0;
@@ -31276,13 +31119,14 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
 // The numerals stay Western regardless of the board's language: the accessors
 // this replaces always produced them, and switching Arabic boards to
 // Arabic-Indic digits would be a design change riding in on a bug fix.
-function _airportDateLine(now, tzOpts, locale, timeStr) {
+function _airportDateLine(now, tzOpts, l, timeStr) {
   var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
-  var dayName = now.toLocaleDateString(locale, Object.assign({}, tzOpts, { weekday: 'long' }));
-  var monthName = now.toLocaleDateString(locale, Object.assign({}, tzOpts, { month: 'long' }));
-  var dayNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { day: 'numeric' }));
-  var yearNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { year: 'numeric' }));
-  return cap(dayName) + '  ' + cap(monthName) + ' ' + dayNum + ', ' + yearNum + '  ' + timeStr;
+  // v23995 — weekday, day, month and year from the AIRPORT's clock, in the
+  // language's own order (BoardStrings.longDate): 'Friday  September 18,
+  // 2026', 'Vendredi 18 septembre 2026', '2026年9月18日星期五'. The English
+  // pattern it replaces put a Chinese weekday and month into 'Sunday October
+  // 4, 2026'.
+  return cap(BoardStrings.longDate(now, l, tzOpts && tzOpts.timeZone)) + '  ' + timeStr;
 }
 if (typeof window !== 'undefined') window._airportDateLine = _airportDateLine;
 
@@ -31304,7 +31148,7 @@ function adbTs(str) { if(!str)return null; return new Date(str.replace(' ','T'))
 function adbHHMM(str) { if(!str)return null; const m=str.match(/(\d{2}):(\d{2})/); return m?`${m[1]}:${m[2]}`:null; }
 function fidsLocalDateKey(ts, timeZone) {
   try {
-    return new Date(ts || Date.now()).toLocaleDateString('en-CA', {
+    return new Date(ts || Date.now()).toLocaleDateString('en-CA', { // i18n-ok: code
       timeZone: timeZone || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit'
     });
   } catch (e) {
@@ -31590,7 +31434,8 @@ function _gateCloseLineHtml(info, tz, frF) {
     // the minutes never leave their unit ("20 min").
     var txt = String(w).split('{MIN}').join(String(info.min)).split('{TIME}').join(clock)
       .replace(/ · /g, '\u00a0·\u00a0').replace(/(\d) /g, '$1\u00a0');
-    return '<span class="v2-fi-close-w" lang="' + (lg || 'en') + '"' + (lg === 'ar' ? ' dir="rtl"' : '') + '>' + txt + '</span>';
+    // its language and direction by the store's own marks (BoardStrings.markHalf)
+    return BoardStrings.markHalf('<span class="v2-fi-close-w">' + txt + '</span>', lg || 'en', key);
   }, '');
   if (!out) return '';
   return '<div class="v2-fi-closefoot"><div class="v2-fi-closeline" data-close-kind="' + info.kind + '" data-close-min="' + info.min + '">' + out + '</div></div>';
@@ -31614,12 +31459,12 @@ function _tickerCloseLine(lg) {
       var _home = _ap && typeof airportCountry === 'function' ? airportCountry(_ap) : '';
       if (!(p.route === 'notUsDomestic' && _home && _home !== 'US' && !(p.notFrom && p.notFrom.indexOf(_home) >= 0))) return '';
     }
-    var t = _GATE_LBL[GATE_CLOSE_WORDS[p.kind].ticker];
-    var w = t && t[lg];
+    // the words are the store's (board-strings.js), in the line's language
+    var w = BoardStrings.bs(GATE_CLOSE_WORDS[p.kind].ticker, lg);
     if (!w) return '';
     var name = String((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code);
     var up;
-    try { up = name.toLocaleUpperCase(lg || 'en'); } catch (e1) { up = name.toUpperCase(); }
+    try { up = name.toLocaleUpperCase(BoardStrings.intl(lg)); } catch (e1) { up = name.toUpperCase(); }
     return w.split('{AIRLINE}').join(up).split('{MIN}').join(String(p.min));
   } catch (e) { return ''; }
 }
@@ -31745,8 +31590,8 @@ function _gateBoardingTimes(cf, equip, gi, arrRows, tz) {
     var _gShownDep = (depDelayed && cf.upd) ? cf.upd : cf.time;
     var _gDepHM = String(_gShownDep || '').match(/^(\d{1,2}):(\d{2})/);
     if (_gDepHM) {
-      var _gTz = { timeZone: tz || 'UTC', hour12: false, hour: '2-digit', minute: '2-digit' };
-      var _gBoardHM = new Date(boardTs).toLocaleTimeString('en-GB', _gTz).match(/^(\d{1,2}):(\d{2})/);
+      var _gTz = { timeZone: tz || 'UTC', hour12: false, hour: '2-digit', minute: '2-digit' }; // i18n-ok: code
+      var _gBoardHM = new Date(boardTs).toLocaleTimeString('en-GB', _gTz).match(/^(\d{1,2}):(\d{2})/); // i18n-ok: code
       if (_gBoardHM) {
         var _gDepMin = parseInt(_gDepHM[1], 10) * 60 + parseInt(_gDepHM[2], 10);
         var _gBoardMin = parseInt(_gBoardHM[1], 10) * 60 + parseInt(_gBoardHM[2], 10);
@@ -33767,7 +33612,7 @@ function mapADB(raw, mode, kept) {
     // not share.
     var _ownEv = (f._opEv && f._opEv.op) ? f._opEv
       : (f._opCode ? { op: String(f._opCode).trim().toUpperCase(), src: 'own', basis: 'operator field' }
-      : ((_opIata && _opIata !== airline && _opIata !== code) ? { op: _opIata, src: 'own', basis: (_opApiName || 'leg airline') } : null));
+      : ((_opIata && _opIata !== airline && _opIata !== code) ? { op: _opIata, src: 'own', basis: (_opApiName || 'leg airline') } : null)); // i18n-ok: debug
     var _opCode = _ownEv ? _ownEv.op : null;
     const _timeLeg=mode==='dep'?(f.departure||{}):(f.arrival||{});
     const _actualL=(_timeLeg.runwayTime&&(_timeLeg.runwayTime.local||_timeLeg.runwayTime.utc))||null;
@@ -33867,9 +33712,9 @@ function mapADB(raw, mode, kept) {
     const apIata=document.getElementById('apSel').value;
     const tz=(AP[apIata]||{}).tz; const tzOpt=tz?{timeZone:tz}:{};
     const flightDay=new Date(schedTs);
-    const fDay=flightDay.toLocaleDateString('en-CA',{...tzOpt,month:'short',day:'numeric'});
-    const fDate=new Date(flightDay.toLocaleDateString('en-CA',tzOpt));
-    const nDate=new Date(new Date().toLocaleDateString('en-CA',tzOpt));
+    const fDay=flightDay.toLocaleDateString('en-CA',{...tzOpt,month:'short',day:'numeric'}); // i18n-ok: code
+    const fDate=new Date(flightDay.toLocaleDateString('en-CA',tzOpt)); // i18n-ok: code
+    const nDate=new Date(new Date().toLocaleDateString('en-CA',tzOpt)); // i18n-ok: code
     const dayDiff=Math.round((fDate-nDate)/86400000);
     const dateTag=dayDiff>0?fDay+'+'+dayDiff:fDay;
     // Extract callsign to identify actual operating carrier
@@ -34126,7 +33971,7 @@ async function fetchLive() {
     document.getElementById('fidsTable').style.display = 'none';
     setState('loading', true);
   }
-  document.getElementById('liveLabel').textContent = 'LIVE';
+  document.getElementById('liveLabel').textContent = 'LIVE'; // i18n-ok: operator
 
   try {
     // ── DATA SOURCE: OAG (opt-in via ?src=oag) with AeroDataBox fallback ──
@@ -34142,18 +33987,18 @@ async function fetchLive() {
         arrRaw = await oagFetch(iata, 'arr');
         if (!((depRaw && depRaw.departures) || []).length) {
           console.warn('[FIDS] OAG departures empty → ADB fallback');
-          depRaw = await adbFetch(iata, 'Departure');
+          depRaw = await adbFetch(iata, 'Departure'); // i18n-ok: data
         }
         if (!((arrRaw && arrRaw.arrivals) || []).length) {
           console.warn('[FIDS] OAG arrivals empty → ADB fallback');
           await new Promise(r => setTimeout(r, 1200));
-          arrRaw = await adbFetch(iata, 'Arrival');
+          arrRaw = await adbFetch(iata, 'Arrival'); // i18n-ok: data
         }
       } catch (e) {
         console.warn('[FIDS] OAG failed → ADB fallback:', e && e.message);
-        depRaw = await adbFetch(iata, 'Departure');
+        depRaw = await adbFetch(iata, 'Departure'); // i18n-ok: data
         await new Promise(r => setTimeout(r, 1500));
-        arrRaw = await adbFetch(iata, 'Arrival');
+        arrRaw = await adbFetch(iata, 'Arrival'); // i18n-ok: data
       }
     } else {
       // AeroDataBox — sequential to stay within rate limits.
@@ -34165,9 +34010,9 @@ async function fetchLive() {
       // Now a failed leg yields null, its partner is still used, and only a
       // double failure raises — so the cold-start error panel still means
       // what it says.
-      depRaw = await _fidsFetchLeg('departures', () => adbFetch(iata, 'Departure'));
+      depRaw = await _fidsFetchLeg('departures', () => adbFetch(iata, 'Departure')); // i18n-ok: data
       await new Promise(r => setTimeout(r, 1500));
-      arrRaw = await _fidsFetchLeg('arrivals',   () => adbFetch(iata, 'Arrival'));
+      arrRaw = await _fidsFetchLeg('arrivals',   () => adbFetch(iata, 'Arrival')); // i18n-ok: data
       if (!depRaw && !arrRaw) throw new Error('both direction fetches failed');
     }
     // Settle the lookahead BEFORE the cut, not after it — mapADB is what
@@ -34236,7 +34081,7 @@ async function fetchLive() {
     setState('loading', false);
     window._initialFetchDone = true;
     document.getElementById('lastUp').textContent =
-      'LIVE · ' + new Date().toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' });
+      'LIVE · ' + new Date().toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' }); // i18n-ok: operator
     render();
 
     if (COORDS[iata]) fetchTomorrowWeather(iata).then(() => render());
@@ -34256,9 +34101,15 @@ async function fetchLive() {
       const p = document.getElementById('panelError');
       // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
       // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
-      p.innerHTML = 'LIVE DATA ERROR<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
+      // v23970 — the exception's own words ('both direction fetches failed')
+      // are an operator's diagnosis in English, not a passenger's message:
+      // they show only to a signed-in operator or with ?debug, in a line
+      // marked data-operator. A passenger reads the store's message alone.
+      p.innerHTML = BoardStrings.pair('liveDataError', { upper: true }) + '<div class="sub" data-operator style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
       var _pSub = p.querySelector('.sub');
-      if (_pSub) _pSub.textContent = String((e && e.message) || '');
+      var _pOp = false;
+      try { _pOp = !!(localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token')) || /[?&]debug=/.test(location.search); } catch (eOp) {}
+      if (_pSub && _pOp) _pSub.textContent = String((e && e.message) || '');
       p.style.display = 'block';
     }
     // v23514 — ARM IT EVEN WHEN THE COLD START IS WHAT FAILED. This guard used
@@ -34425,38 +34276,34 @@ function applyAirportConfigToBoard(iata) {
   // transform what it keeps; taint analysis is right not to treat that as a
   // sanitizer, and `langs` does reach rendered markup. Matching to a constant
   // means only these nine two-letter literals can ever enter, whatever the
-  // URL says. Keep in sync with the language keys in _GATE_LBL.
-  var _URL_LANG_OK = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-  var _urlLangs = null;
-  try {
-    var _lq = new URLSearchParams(window.location.search);
-    var _lraw = _lq.get('langs') || _lq.get('lang') || '';
-    if (_lraw) {
-      var _picked = [];
-      String(_lraw).toLowerCase().split(/[,+\s]+/).forEach(function (tok) {
-        if (_picked.length >= 9) return;
-        var _i = _URL_LANG_OK.indexOf(tok);
-        if (_i >= 0 && _picked.indexOf(_URL_LANG_OK[_i]) < 0) _picked.push(_URL_LANG_OK[_i]);
-      });
-      if (_picked.length) _urlLangs = _picked;
-    }
-  } catch (e3) {}
+  // URL says.
+  //
+  // v23970 — ONE RESOLVER. The URL, saved, configured and default layers and
+  // the constant-matching above now live in BoardStrings.resolveLangs
+  // (board-strings.js), which the boot loader and _restoreApLangs also call,
+  // so the three can no longer disagree; it also applies the Québec rule
+  // (French leads at a FR_FIRST airport when it is selected).
   try {
     var _cfgLangs = _pref('langs');
     var _savedSet = null;
-    try {
-      var _sv = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase());
-      if (_sv) {
-        _savedSet = _sv.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 9);
-        if (!_savedSet.length) _savedSet = null;
-      }
-    } catch (e2) {}
-    langs = _urlLangs ? _urlLangs.slice()
-      : _savedSet ? _savedSet
-      : (Array.isArray(_cfgLangs) && _cfgLangs.length) ? _cfgLangs.slice()
-      : boardLangsFor(iata);
+    try { _savedSet = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase()); } catch (e2) {}
+    // v23995 — a phone keeps the one language its passenger picked
+    // (fids_mobile_lang, else the browser's): the airport's configured pair
+    // replaced it here at boot, so every phone read English.
+    var _phoneSaved = null;
+    try { _phoneSaved = localStorage.getItem('fids_mobile_lang'); } catch (e3) {}
+    langs = BoardStrings.resolveLangs({
+      iata: iata, search: window.location.search, saved: _savedSet,
+      configured: Array.isArray(_cfgLangs) ? _cfgLangs : null,
+      phone: (window.innerWidth || document.documentElement.clientWidth) < 700, phoneSaved: _phoneSaved
+    }).langs;
     if (langIdx >= langs.length) langIdx = 0;
     lang = langs[langIdx] || langs[0] || 'en';
+    // v23995 — the config lands while the boot loader is still up (and on
+    // every airport switch): what was painted from the languages known at
+    // boot follows the board's (BoardStrings.onLangs). A Spanish gate's
+    // loader read 'GATE 4 · LOADING' and greeted in French as it faded.
+    try { BoardStrings.langsChanged(); } catch (eL) {}
   } catch (e) {}
 
   // Display name (pill sub-label)
@@ -34604,7 +34451,7 @@ function applyAirportConfigToBoard(iata) {
       'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
     };
     if (_fontStacks[_font]) {
-      var _stack = _fontStacks[_font];
+      var _stack = BoardStrings.withScripts(_fontStacks[_font]);
       // v23386 made this non-important so it would yield to a stream-only
       // AC Nord rule in display-overrides.css. v23950 removed that rule, so
       // a stream board shows the airport's font exactly as the wall board
@@ -35192,28 +35039,14 @@ function loadDemo() {
     data.dep.sort((a,b) => a._sortTs - b._sortTs);
   }
   if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
-  document.getElementById('liveLabel').textContent = 'DEMO';
-  document.getElementById('lastUp').textContent    = 'DEMO MODE';
+  document.getElementById('liveLabel').textContent = 'DEMO'; // i18n-ok: operator
+  document.getElementById('lastUp').textContent    = 'DEMO MODE'; // i18n-ok: operator
   setState('loading', false);
   setState('error',   false);
   render();
   if (COORDS[iata]) fetchTomorrowWeather(iata).then(() => render());
   const allCodes = [...new Set([...d.dep, ...d.arr].flatMap(_flightWxCodes).filter(c => c && COORDS[c]))];
   _fetchBoardWeather(allCodes);
-}
-
-// Bilingual date line
-// French first (capitalised), then English,
-// e.g. "Mardi 21 juillet · Tuesday, Jul 21". Used by the FIDS clock and the
-// BIDS banner alike.
-function _bilingualDate(now, tz) {
-  var fo = { weekday: 'long', day: 'numeric', month: 'long' };
-  var eo = { weekday: 'long', month: 'short', day: 'numeric' };
-  if (tz) { fo.timeZone = tz; eo.timeZone = tz; }
-  var fr = now.toLocaleDateString('fr-CA', fo);
-  var en = now.toLocaleDateString('en-CA', eo);
-  fr = fr.charAt(0).toUpperCase() + fr.slice(1);
-  return fr + '  ·  ' + en;
 }
 
 // Bilingual board label. English
@@ -35226,15 +35059,17 @@ function _bilingualDate(now, tz) {
 function _boardLabelBilingual(key) {
   var _k = (key === 'baggage') ? 'bagClaim' : (key === 'arr' ? 'arr' : 'dep');
   var o = (typeof LS !== 'undefined' && LS[_k]) || {};
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+  // v23970 — the one chooser, French first in Québec like every other pair
+  var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
   var out = [], seen = {};
   for (var i = 0; i < picked.length; i++) {
-    var w = o[picked[i]] || (i === 0 ? o.en : '');
+    var w = o[picked[i]] || '';
     if (!w || seen[w]) continue;
     seen[w] = 1;
-    out.push('<span class="' + (out.length ? 'fbl-fr' : 'fbl-en') + '">' + w + '</span>');
+    // the slot classes are positions (first, second), not languages: each
+    // half carries its own language and, for Arabic, its direction
+    out.push(BoardStrings.markHalf('<span class="' + (out.length ? 'fbl-fr' : 'fbl-en') + '">' + w + '</span>', picked[i]));
   }
-  if (!out.length) out.push('<span class="fbl-en">' + (o.en || key) + '</span>');
   return out.join('') + _boardFilterChipHtml();
 }
 
@@ -35248,6 +35083,15 @@ function _boardLabelBilingual(key) {
 // hardcoded EN/FR pair, which also keeps it to a single line — the stacked
 // version was two extra lines in a banner sized for two.
 var _BOARD_REGION_KEY = { DOM: 'f-domestic', TRANS: 'f-transborder', INTL: 'f-international' };
+// The terminal and the airline arrive verbatim from the URL (?terminal= /
+// ?term= / ?airline= / ?al=, which the Screen Setup menu writes too), and
+// this chip is markup: it goes into the departures board's #hdrBoard header
+// and the baggage board's screen template as innerHTML. Both values are
+// escaped here, the one place they become markup, so ?terminal=<img …>
+// is shown as text on either board (CodeQL js/xss). A real terminal or
+// carrier code has no &, <, >, " or ' in it, so the chip reads as before.
+// A region needs nothing: it is shown only when it is one of the three
+// keys above, and what is shown is the board's own word for it.
 function _boardFilterChipHtml() {
   try {
     var _tr = function (k, fb) {
@@ -35256,20 +35100,22 @@ function _boardFilterChipHtml() {
     };
     var parts = [];
     if (filterTerminal) {
-      parts.push(_tr('terminal', 'Terminal') + ' '
-               + String(filterTerminal).trim().toUpperCase().replace(/^T/, ''));
+      parts.push(_tr('terminal', TL('terminal')) + ' '
+               + fidsEscHtml(String(filterTerminal).trim().toUpperCase().replace(/^T/, '')));
     }
     if (filterRegion) {
       String(filterRegion).toUpperCase().split(',').forEach(function (r) {
         var k = _BOARD_REGION_KEY[r.trim()];
-        if (k) parts.push(_tr(k, r.trim()));
+        // the untranslated fallback is the matched key itself (DOM, TRANS,
+        // INTL), escaped all the same so no URL text reaches markup raw
+        if (k) parts.push(_tr(k, fidsEscHtml(r.trim())));
       });
     }
     // An airline's own name is its brand — it is not translated on a board
     // any more than 'Air Canada' becomes 'Canada Air' in French.
     if (filterAirline) {
       var code = String(filterAirline).trim().toUpperCase();
-      parts.push((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code);
+      parts.push(fidsEscHtml((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code));
     }
     try { document.body.classList.toggle('has-board-filter', parts.length > 0); } catch (e2) {}
     if (!parts.length) return '';
@@ -35287,20 +35133,25 @@ function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s
 // Single 12h time '10:29PM' — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
 function _ocClockTime1(now, tz) {
-  var o = { hour: 'numeric', minute: '2-digit', hour12: true }; if (tz) o.timeZone = tz;
-  return now.toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
+  return BoardStrings.boardTime(now, tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 }
-// Dual time '6:26PM | 18 h 26' — PLAIN text (used in textContent contexts too).
+// Dual time '6:26PM | 18h 26' — PLAIN text (used in textContent contexts too).
+// v23995 — the board's own pair (BoardStrings.pairLangs), each half in its
+// language's clock: English 6:26PM, French 18h 26 (META.fr.hourMark), every
+// other 18:26. A board that does not lead in English reads its own clock
+// once. (It was always English | French, so an English-only board showed a
+// French clock and a German board read '18h 26'.)
 function _ocClockTime(now, tz) {
-  var eo = { hour: 'numeric', minute: '2-digit', hour12: true }; if (tz) eo.timeZone = tz;
-  var en = now.toLocaleTimeString('en-US', eo).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
-  var po = { hour: '2-digit', minute: '2-digit', hour12: false }; if (tz) po.timeZone = tz;
-  var H = '0', M = '00';
-  new Intl.DateTimeFormat('en-GB', po).formatToParts(now).forEach(function (p) {
-    if (p.type === 'hour') H = p.value; else if (p.type === 'minute') M = p.value;
-  });
-  //
-  return en + ' | ' + String(parseInt(H, 10)) + 'h ' + M;
+  var L = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
+  var out = [];
+  for (var i = 0; i < L.length; i++) {
+    var l = L[i], M = BoardStrings.META[l], t = BoardStrings.time(now, l, tz);
+    if (!M.clock24) t = t.replace(/([ap])m$/i, function (_, p) { return p.toUpperCase() + 'M'; });
+    else if (M.hourMark) { var m = /^(\d{2}):(\d{2})$/.exec(t); if (m) t = String(parseInt(m[1], 10)) + M.hourMark + m[2]; }
+    if (out.indexOf(t) < 0) out.push(t);
+    if (i === 0 && M.clock24) break;
+  }
+  return out.join(' | ');
 }
 function _ocClockDate(now, tz) {
   // v22959 — the banner date follows the SELECTED languages
@@ -35312,34 +35163,28 @@ function _ocClockDate(now, tz) {
   var eo = { weekday: 'long', month: 'long', day: 'numeric' };
   var wo = { weekday: 'long' }, dd = { day: 'numeric' }, mo = { month: 'long' };
   if (tz) { eo.timeZone = tz; wo.timeZone = tz; dd.timeZone = tz; mo.timeZone = tz; }
-  var _locale = { en:'en-US', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt', ja:'ja', zh:'zh', ar:'ar' };
+  // v23970 — the locale is the store's (BoardStrings.intl), not a private map
   function _one(l) {
     try {
       if (l === 'fr') {
-        var fw = now.toLocaleDateString('fr-CA', wo);
+        var fw = now.toLocaleDateString(BoardStrings.intl(l), wo);
         return (fw.charAt(0).toUpperCase() + fw.slice(1)) + ' '
-             + now.toLocaleDateString('fr-CA', dd) + ' ' + now.toLocaleDateString('fr-CA', mo);
+             + now.toLocaleDateString(BoardStrings.intl(l), dd) + ' ' + now.toLocaleDateString(BoardStrings.intl(l), mo);
       }
-      var d = now.toLocaleDateString(_locale[l] || 'en-US', eo);
+      var d = now.toLocaleDateString(BoardStrings.intl(l), eo);
       return d.charAt(0).toUpperCase() + d.slice(1);
-    } catch (e) { return now.toLocaleDateString('en-US', eo); }
+    } catch (e) { return ''; }
   }
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-  try {
-    var _ap = (document.getElementById('apSel') || {}).value || '';
-    if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
-      var _fi = picked.indexOf('fr');
-      if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
-    }
-  } catch (e) {}
+  // v23970 — the one chooser (BoardStrings.pairLangs)
+  var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
   var out = [], seen = {};
   for (var i = 0; i < picked.length && out.length < 2; i++) {
     var w = _one(picked[i]);
     if (!w || seen[w]) continue;
     seen[w] = 1;
-    out.push(w);
+    out.push(BoardStrings.markHalf(w, picked[i]));
   }
-  return out.join(' <span class="cl-sep">|</span> ') || _one('en');
+  return out.join(' <span class="cl-sep">|</span> ') || _one(lang);
 }
 // v23474 — the calendar day _ocClockDate is currently showing, as 'YYYY-MM-DD'.
 // It has to follow _ocClockDate's timezone rule EXACTLY, which is why this is
@@ -35350,7 +35195,7 @@ function _ocClockDate(now, tz) {
 function _ocLocalDayKey(tz) {
   var o = { year: 'numeric', month: '2-digit', day: '2-digit' };
   if (tz) o.timeZone = tz;
-  try { return new Date().toLocaleDateString('en-CA', o); } catch (e) { return ''; }
+  try { return new Date().toLocaleDateString('en-CA', o); } catch (e) { return ''; } // i18n-ok: code
 }
 
 // ── CLOCK — airport local time ────────────────────────────────────────────
@@ -36052,7 +35897,7 @@ function applySearch(flights) {
   if (filterRegion) {
     const _rWant = new Set(String(filterRegion).toUpperCase().split(',')
       .map(s => s.trim())
-      .map(s => (s === 'DOMESTIC' ? 'DOM' : s === 'TRANSBORDER' ? 'TRANS' : s === 'INTERNATIONAL' ? 'INTL' : s))
+      .map(s => (s === 'DOMESTIC' ? 'DOM' : s === 'TRANSBORDER' ? 'TRANS' : s === 'INTERNATIONAL' ? 'INTL' : s)) // i18n-ok: code
       .filter(Boolean));
     const _home = (document.getElementById('apSel') || {}).value || '';
     list = list.filter(f => _rWant.has(flightRegionKey(f, _home).toUpperCase()));
@@ -36078,8 +35923,8 @@ function applySearch(flights) {
     const fromMin = toMinutes(filterTimeFrom);
     const toMin = toMinutes(filterTimeTo);
     const timePartsFmt = tz
-      ? new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true })
-      : new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      ? new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true }) // i18n-ok: code
+      : new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); // i18n-ok: code
 
     list = list.filter(f => {
       if (!f._sortTs) return true;
@@ -36123,7 +35968,7 @@ const prevFlightStates = {};
 function trackChanges(allFlights) {
   const now = new Date();
   const tz  = (AP[document.getElementById('apSel').value] || {}).tz;
-  const tStr = now.toLocaleTimeString('en-CA', { ...(tz?{timeZone:tz}:{}), hour:'2-digit', minute:'2-digit', hour12:true });
+  const tStr = now.toLocaleTimeString('en-CA', { ...(tz?{timeZone:tz}:{}), hour:'2-digit', minute:'2-digit', hour12:true }); // i18n-ok: data
 
   allFlights.forEach(f => {
     const key = f._flightKey;
@@ -36224,6 +36069,10 @@ function mkCardLogo(code, airlineName) {
 }
 
 function renderMobile() {
+  // v23970 — a phone shows one language: the phone list is in it
+  // v23995 — its language AND its direction: an Arabic phone reads right to
+  // left (it carried lang="ar" and ran left to right)
+  try { var _mv = document.getElementById('mobileView'); if (_mv && BoardStrings.isLang(lang)) BoardStrings.setLang(_mv, lang); } catch (eL) {}
   const nowTs   = Date.now();
   const isDep   = mobileMode === 'dep';
   const allRaw  = data[mobileMode] || [];
@@ -36265,7 +36114,7 @@ function renderMobile() {
       return;
     }
     document.getElementById('mobileCards').innerHTML =
-      `<div class="mobile-empty">${searchQuery ? 'NO RESULTS FOR "'+searchQuery.toUpperCase()+'"' : 'NO FLIGHTS IN WINDOW'}</div>`;
+      `<div class="mobile-empty">${searchQuery ? BoardStrings.fmt('noResultsFor', lang, { Q: searchQuery.toUpperCase() }).toLocaleUpperCase(BoardStrings.META[lang].intl) : BoardStrings.bs('noFlightsWindow', lang).toLocaleUpperCase(BoardStrings.META[lang].intl)}</div>`;
     return;
   }
 
@@ -36403,35 +36252,35 @@ function toggleCardExpand(card) {
 
   // Gate / Terminal
   if (f.gate && f.gate !== '—') {
-    var gateLabel = isDep ? (TLs('gateDep') || 'Gate') : (TLs('gateArr') || 'Carousel');
+    var gateLabel = isDep ? TLs('gateDep') : TLs('gateArr');
     rows.push({ label: gateLabel, value: f.gate });
   }
   if (f.terminal && f.terminal !== '—') {
-    rows.push({ label: TLs('termDep') || 'Terminal', value: f.terminal });
+    rows.push({ label: TLs('termDep'), value: f.terminal });
   }
   // Time
   if (f.time) {
-    var timeLabel = isDep ? 'Departure' : 'Arrival';
+    var timeLabel = isDep ? TLs('depTime') : TLs('arrTime');
     var timeVal = f.upd && (f.status === 'delayed' || f.status === 'early')
       ? (f.time + ' → ' + f.upd)
       : f.time;
     rows.push({ label: timeLabel, value: timeVal });
   }
   // Status
-  rows.push({ label: TLs('status') || 'Status', value: SL(f.status) });
+  rows.push({ label: TLs('status'), value: SL(f.status) });
   // Aircraft
   var equipName = f._aircraft || (f._aircraftCode ? (typeof formatAircraft === 'function' ? formatAircraft(f._aircraftCode) : f._aircraftCode) : '');
   if (!equipName) {
     var _acR3 = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f) : null;
     if (_acR3) equipName = _acR3.nm || _acR3.cd || '';
   }
-  if (equipName) rows.push({ label: 'Aircraft', value: equipName });
-  if (f._reg) rows.push({ label: 'Registration', value: f._reg });
+  if (equipName) rows.push({ label: TLs('aircraftLbl'), value: equipName });
+  if (f._reg) rows.push({ label: TLs('registrationLbl'), value: f._reg });
   // Route — use cityCode() which produces properly-cased "Toronto-YYZ"
   // strings the rest of the app uses. Don't reglue the IATA after.
   var loc = isDep ? f.dest : f.origin;
   if (loc || f._locIata) {
-    var routeLabel = isDep ? 'To' : 'From';
+    var routeLabel = isDep ? TLs('destDep') : TLs('destArr');
     var locDisplay;
     if (f._locIata && typeof cityCode === 'function') {
       locDisplay = cityCode(f._locIata, null, (typeof lang !== 'undefined' ? lang : 'en'));
@@ -36443,17 +36292,17 @@ function toggleCardExpand(card) {
   // Operator (if codeshare)
   var opName = f._opName || (f._opCode && (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[f._opCode]));
   if (opName && f._opCode && f._opCode !== f.airline) {
-    rows.push({ label: 'Operated by', value: opName });
+    rows.push({ label: TLs('operatedBy'), value: opName });
   }
   // Weather at the other end
   var twx = (typeof TOMORROW_WX !== 'undefined') ? TOMORROW_WX[f._locIata] : null;
   if (twx && twx.current && twx.current.temp !== undefined) {
     var t = (typeof displayTemp === 'function') ? displayTemp(Math.round(twx.current.temp)) : (Math.round(twx.current.temp) + '°');
-    rows.push({ label: 'Weather', value: t });
+    rows.push({ label: TLs('wx'), value: t });
   }
 
   if (!rows.length) {
-    rows.push({ label: 'Flight', value: f.flight || '—' });
+    rows.push({ label: TLs('flightN'), value: f.flight || '—' });
   }
 
   // Action button — for departures with a gate, link to the gate screen.
@@ -36465,10 +36314,10 @@ function toggleCardExpand(card) {
     var screenUrl, btnLabel;
     if (isDep) {
       screenUrl = 'gids.html?ap=' + encodeURIComponent(homeIata) + '&gate=' + encodeURIComponent(f.gate);
-      btnLabel = 'Open gate ' + f.gate + ' screen';
+      btnLabel = BoardStrings.fmt('openGateScreen', lang, { GATE: f.gate });
     } else {
       screenUrl = 'bids.html?ap=' + encodeURIComponent(homeIata) + '&belt=' + encodeURIComponent(f.gate);
-      btnLabel = 'Open carousel ' + f.gate + ' screen';
+      btnLabel = BoardStrings.fmt('openCarouselScreen', lang, { GATE: f.gate });
     }
     actionBtn = '<a class="cep-action" href="' + screenUrl + '" onclick="event.stopPropagation();">' +
       '<span class="ti ti-external-link"></span> ' + btnLabel +
@@ -36510,14 +36359,14 @@ function toggleHeroSection(btn, section, flightKey) {
   // Find the flight by flightKey from the currently rendered page
   const f = (window._mobilePageFlights || []).find(x => (x.flight || '').replace(/\s/g, '') === flightKey);
   if (!f) {
-    target.innerHTML = '<div class="hero-section-empty">No data</div>';
+    target.innerHTML = '<div class="hero-section-empty">' + BoardStrings.bs('noData', lang) + '</div>';
     return;
   }
 
   if (section === 'aircraft') target.innerHTML = renderHeroAircraft(f);
   else if (section === 'flight') target.innerHTML = renderHeroFlight(f);
   else if (section === 'hotels') {
-    target.innerHTML = '<div class="hero-section-loading">Loading stays...</div>';
+    target.innerHTML = '<div class="hero-section-loading">' + BoardStrings.bs('loadingStays', lang) + '…</div>';
     renderHeroHotelsAsync(f, target);
   }
   else if (section === 'map') {
@@ -36563,16 +36412,16 @@ function renderHeroAircraft(f) {
 
   // Operator line — only if different from marketing carrier
   const opLine = (opCode && opCode !== airlineCode && opName)
-    ? `<div class="hero-meta-row"><span class="hero-meta-k">Operator</span><span class="hero-meta-v">${opName}</span></div>`
+    ? `<div class="hero-meta-row"><span class="hero-meta-k">${BoardStrings.bs('operator', lang)}</span><span class="hero-meta-v">${opName}</span></div>`
     : '';
   const manufLine = manufacturer
-    ? `<div class="hero-meta-row"><span class="hero-meta-k">Manufacturer</span><span class="hero-meta-v">${manufacturer}</span></div>`
+    ? `<div class="hero-meta-row"><span class="hero-meta-k">${BoardStrings.bs('manufacturer', lang)}</span><span class="hero-meta-v">${manufacturer}</span></div>`
     : '';
   const regLine = reg
-    ? `<div class="hero-meta-row"><span class="hero-meta-k">Registration</span><span class="hero-meta-v">${reg}</span></div>`
+    ? `<div class="hero-meta-row"><span class="hero-meta-k">${TL('registrationLbl')}</span><span class="hero-meta-v">${reg}</span></div>`
     : '';
   const rangeLine = range
-    ? `<div class="hero-meta-row"><span class="hero-meta-k">Range</span><span class="hero-meta-v">${range}</span></div>`
+    ? `<div class="hero-meta-row"><span class="hero-meta-k">${BoardStrings.bs('range', lang)}</span><span class="hero-meta-v">${range}</span></div>`
     : '';
 
   // Plane photo — only real aircraft photo, no fake SVG silhouette.
@@ -36590,11 +36439,11 @@ function renderHeroAircraft(f) {
   return `<div class="hero-detail">
     <div class="hero-detail-head">
       <span class="ti ti-plane"></span>
-      <span>${TL('aircraft') || 'Aircraft'}</span>
+      <span>${TL('aircraftLbl')}</span>
     </div>
     ${planeArt}
     <div class="hero-meta">
-      <div class="hero-meta-row"><span class="hero-meta-k">Type</span><span class="hero-meta-v">${modelOnly}</span></div>
+      <div class="hero-meta-row"><span class="hero-meta-k">${TL('type')}</span><span class="hero-meta-v">${modelOnly}</span></div>
       ${manufLine}
       ${regLine}
       ${rangeLine}
@@ -36634,32 +36483,32 @@ function renderHeroFlight(f) {
       const dLon = (lng2 - lng1) * Math.PI / 180;
       const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      dist = `${Math.round(R * c).toLocaleString()} km`;
+      dist = `${BoardStrings.num(Math.round(R * c))} km`;
     }
   }
 
   return `<div class="hero-detail">
     <div class="hero-detail-head">
       <span class="ti ti-route"></span>
-      <span>${TL('flight') || 'Flight'}</span>
+      <span>${TL('flightN')}</span>
     </div>
     <div class="hero-meta">
-      <div class="hero-meta-row"><span class="hero-meta-k">Scheduled</span><span class="hero-meta-v">${sched}</span></div>
-      <div class="hero-meta-row"><span class="hero-meta-k">Estimated</span><span class="hero-meta-v">${est}</span></div>
-      <div class="hero-meta-row"><span class="hero-meta-k">Duration</span><span class="hero-meta-v">${dur}</span></div>
-      <div class="hero-meta-row"><span class="hero-meta-k">Distance</span><span class="hero-meta-v">${dist}</span></div>
-      <div class="hero-meta-row"><span class="hero-meta-k">Flight</span><span class="hero-meta-v">${f.flight || '—'}</span></div>
+      <div class="hero-meta-row"><span class="hero-meta-k">${TL('scheduled')}</span><span class="hero-meta-v">${sched}</span></div>
+      <div class="hero-meta-row"><span class="hero-meta-k">${BoardStrings.bs('estimated', lang)}</span><span class="hero-meta-v">${est}</span></div>
+      <div class="hero-meta-row"><span class="hero-meta-k">${TL('duration')}</span><span class="hero-meta-v">${dur}</span></div>
+      <div class="hero-meta-row"><span class="hero-meta-k">${TL('distance')}</span><span class="hero-meta-v">${dist}</span></div>
+      <div class="hero-meta-row"><span class="hero-meta-k">${TL('flight')}</span><span class="hero-meta-v">${f.flight || '—'}</span></div>
     </div>
   </div>`;
 }
 
 function renderHeroHotelsAsync(f, target) {
   if (!f._locIata) {
-    target.innerHTML = '<div class="hero-section-empty">No destination data</div>';
+    target.innerHTML = '<div class="hero-section-empty">' + BoardStrings.bs('noDestData', lang) + '</div>';
     return;
   }
   if (typeof fetchAccorHotels !== 'function') {
-    target.innerHTML = '<div class="hero-section-empty">Hotels unavailable</div>';
+    target.innerHTML = '<div class="hero-section-empty">' + BoardStrings.bs('hotelsUnavailable', lang) + '</div>';
     return;
   }
   // Prefer the current board language; fall back to any loaded language.
@@ -36668,7 +36517,7 @@ function renderHeroHotelsAsync(f, target) {
     const cacheEntry = (typeof _accorCacheFor === 'function') ? _accorCacheFor(f._locIata) : null;
     const list = (cacheEntry && cacheEntry.hotels) || [];
     if (!list.length) {
-      target.innerHTML = '<div class="hero-section-empty">No stays found for ' + _dispIata(f._locIata) + '</div>';
+      target.innerHTML = '<div class="hero-section-empty">' + BoardStrings.fmt('noStaysFor', lang, { CITY: _dispIata(f._locIata) }) + '</div>';
       return;
     }
     const cityName = (CITY[f._locIata] || f._locIata);
@@ -36684,7 +36533,7 @@ function renderHeroHotelsAsync(f, target) {
       </div>`;
     }).join('');
     target.innerHTML = `<div class="hero-detail">
-      <div class="hero-detail-head"><span class="ti ti-bed"></span><span>${TL('hotels') || 'Stays in'} ${tc(cityName)}</span></div>
+      <div class="hero-detail-head"><span class="ti ti-bed"></span><span>${BoardStrings.fmt('staysIn', lang, { CITY: tc(cityName) })}</span></div>
       <div class="hero-hotel-scroll">${cards}</div>
     </div>`;
   };
@@ -36761,7 +36610,7 @@ function renderHeroMap(f) {
   return `<div class="hero-detail hero-detail-map">
     <div class="hero-detail-head">
       <span class="ti ti-map-pin"></span>
-      <span>${TL('map') || 'Map'}</span>
+      <span>${BoardStrings.bs('map', lang)}</span>
     </div>
     <div class="hero-map-box" id="heroMapBox-${(f.flight || '').replace(/\s/g, '')}"></div>
   </div>`;
@@ -36773,7 +36622,7 @@ function initHeroMap(f, flightKey) {
   if (!mb) return;
   const apIata = document.getElementById('apSel').value;
   if (!COORDS[apIata] || !COORDS[f._locIata]) {
-    mb.innerHTML = '<div class="hero-section-empty">Coordinates unavailable</div>';
+    mb.innerHTML = '<div class="hero-section-empty">' + BoardStrings.bs('coordsUnavailable', lang) + '</div>';
     return;
   }
   try {
@@ -36799,7 +36648,7 @@ function initHeroMap(f, flightKey) {
     m.fitBounds([orig, dest], { padding: [30, 30] });
     setTimeout(() => m.invalidateSize(), 100);
   } catch (e) {
-    mb.innerHTML = '<div class="hero-section-empty">Map unavailable</div>';
+    mb.innerHTML = '<div class="hero-section-empty">' + BoardStrings.bs('mapUnavailable', lang) + '</div>';
   }
 }
 window.initHeroMap = initHeroMap;
@@ -36840,20 +36689,16 @@ try {
   try {
     var _isMobile = (window.innerWidth || document.documentElement.clientWidth) < 700;
     if (!_isMobile) return;
-    var _validLangs = ['en','fr','es','de','it','pt','ja','zh','ar'];
     var _saved = null;
     try { _saved = localStorage.getItem('fids_mobile_lang'); } catch(e) {}
-    var _chosen = null;
-    if (_saved && _validLangs.indexOf(_saved) >= 0) {
-      _chosen = _saved;
-    } else {
-      // Auto-detect from browser. navigator.language returns "en-CA", "fr-FR", etc.
-      var _br = (navigator.language || navigator.userLanguage || 'en').toLowerCase().split('-')[0];
-      _chosen = (_validLangs.indexOf(_br) >= 0) ? _br : 'en';
-    }
+    // Saved choice, else the browser's own language ("en-CA", "fr-FR", …,
+    // read by the resolver itself), else English — through the one resolver.
+    var _chosen = BoardStrings.resolveLangs({ phone: true, phoneSaved: _saved }).langs[0];
     langs = [_chosen];
     langIdx = 0;
     lang = _chosen;
+    // v23995 — the boot loader greets in that one language too
+    try { BoardStrings.langsChanged(); } catch (eL) {}
   } catch(e) {
     console.error('[FIDS Mobile Lang Lock] error:', e);
   }
@@ -37280,7 +37125,7 @@ if (document.readyState === 'loading') {
 window.addEventListener('DOMContentLoaded', () => {
   // RocGrotesk is only the DEFAULT — a font the user picked (and which
   // changeFont persisted) must never be stomped on reload.
-  try { restoreFontChoice('Bricolage Grotesque'); } catch (e) {}
+  try { restoreFontChoice('Bricolage Grotesque'); } catch (e) {} // i18n-ok: code
   const bgCtrls = document.getElementById('ctrlBgGroup');
   if (bgCtrls && screenType === 'gate') bgCtrls.style.display = 'flex';
   // If airline mode was restored from localStorage, kick off rotation.
@@ -37307,7 +37152,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 var gateMap=null;
-var GATE_AP={GEO:[6.50,-58.25],YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YGR:[47.42,-61.78],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXX:[49.03,-122.36],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[50.28,-63.61],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[50.27,-108.76],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],MCI:[39.30,-94.71],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.27,120.37],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],GRU:[-23.43,-46.47],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],BSB:[-15.87,-47.92],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[18.45,-66.10],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],PVR:[20.68,-105.25],LIH:[21.98,-159.34],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,11.99],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-29.14,167.94],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
+var GATE_AP={GEO:[6.50,-58.25],YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YGR:[47.42,-61.78],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXX:[49.03,-122.36],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[50.28,-63.61],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[50.27,-108.76],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],MCI:[39.30,-94.71],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.27,120.37],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[18.45,-66.10],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,11.99],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-29.14,167.94],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
 
 // ───────────────────────────────────────────────────────────────────────
 // AIRPORT COORDINATE LOOKUP
@@ -39212,7 +39057,7 @@ function _gateHereTz() {
   } catch (e) { return ''; }
 }
 function _gateLocalHour(ts, tz) {
-  try { return +new Date(ts).toLocaleString('en-GB', { timeZone: tz || 'UTC', hour: '2-digit', hourCycle: 'h23' }); } catch (e) { return -1; }
+  try { return +new Date(ts).toLocaleString('en-GB', { timeZone: tz || 'UTC', hour: '2-digit', hourCycle: 'h23' }); } catch (e) { return -1; } // i18n-ok: code
 }
 // Down in the evening or the small hours (19:00 on, or before 05:00 — AC1986
 // is due at 00:03): an aeroplane that stays the night.
@@ -39933,12 +39778,8 @@ function _gateMapNote(res) {
     if (!res || !res.other) return '';
     var tbl = (typeof _GATE_LBL !== 'undefined') ? _GATE_LBL[res.leg === 'out' ? 'to' : 'from'] : null;
     if (!tbl) return '';
-    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
     var ap = String(window._gateIata || '').toUpperCase();
-    if (typeof frFirstAirport === 'function' && frFirstAirport(ap)) {
-      var fi = picked.indexOf('fr');
-      if (fi > 0) { picked.splice(fi, 1); picked.unshift('fr'); }
-    }
+    var picked = BoardStrings.pairLangs(langs, ap);   // v23970 — the one chooser
     var tz = '';
     try { tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
     var parts = [], seen = {};
@@ -39958,9 +39799,13 @@ function _gateMapNote(res) {
       var s = w + ' ' + _gateMapCity(res.other, picked[i]) + (tm ? ' · ' + tm : '');
       if (seen[s.toLowerCase()]) continue;
       seen[s.toLowerCase()] = 1;
-      parts.push(s);
+      // v23970 — each half is markup marked with its language (and an Arabic
+      // one its direction): one plain line under lang="en" drew 'إلى Toronto
+      // · 18:15' left to right, so an Arabic reader met the time, then the
+      // city, then 'to'.
+      parts.push(BoardStrings.half(picked[i], BoardStrings.esc(s)));
     }
-    return parts.join(' | ');
+    return parts.join(' <span class="bs-sep">|</span> ');
   } catch (e) { return ''; }
 }
 // Draw the answer on the small map. Both controllers (tryInitMap and the 10 s
@@ -40262,10 +40107,11 @@ function _gateDrawEmptyStand(map, spot, d, note) {
     }
     out.push(L.circleMarker(s, { radius: 5, color: '#60a5fa', weight: 2, fill: false, interactive: false }).addTo(map));
     if (note) {
-      var esc = String(note).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      // `note` is markup from _gateMapNote: each half escaped and marked
+      // with its language there
       out.push(L.marker(s, { interactive: false, keyboard: false, zIndexOffset: 900,
         icon: L.divIcon({ className: 'gate-map-note-pin', iconSize: [0, 0], iconAnchor: [0, 0],
-                          html: '<div class="gate-map-note">' + esc + '</div>' }) }).addTo(map));
+                          html: '<div class="gate-map-note">' + note + '</div>' }) }).addTo(map));
     }
     var c = s;
     try { var pl = _gateParkPlace(spot, d); if (isFinite(pl.lat) && isFinite(pl.lng)) c = [pl.lat, pl.lng]; } catch (eP) { c = s; }
@@ -41674,7 +41520,7 @@ var AC_VIDEO_PLAYLISTS = {
 };
 var AC_VIDEO_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes — must be longer than play interval to ensure variety
 // Kept for backward-compat / logs
-var AC_VIDEO_PLAYLIST_ID = AC_VIDEO_PLAYLISTS.fr;
+var AC_VIDEO_PLAYLIST_ID = AC_VIDEO_PLAYLISTS.fr; // i18n-ok: code (a playlist id, kept for the logs)
 var AC_VIDEO_DEST_MAP = {
   // ── Europe ──────────────────────────────────────────────────────────
   'CDG': ['Paris'],            'ORY': ['Paris'],
@@ -42883,7 +42729,7 @@ var GATE_ADS_BY_AIRLINE = {
   'PD': [
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'VIPorter', sub:'Earn points on every flight \u00b7 Free snacks & beverages on board', logo:'/logos/airlines/canadian/viporter.svg' },
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Fly Porter', sub:'Elevated economy \u00b7 Complimentary snacks & beverages on board', logo:'/logos/airlines/canadian/porter.svg' },
-    { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Porter Reserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
+    { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'PorterReserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
   ],
   'UA': [
     { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn award miles \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
@@ -43125,27 +42971,12 @@ var ACCOR_BRAND_COLORS = {
   'RIX':'#B88D5B','HB':'#0057b8','JO':'#2E4057','N25':'#050033','EMB':'#B88D5B'
 };
 
-// v23046 — this used to be a second `var ACCOR_BRAND_NAMES = {…}`, which
-// silently REPLACED the fuller map declared earlier in the file. Everything
-// only the first map knew — Faena, Orient Express, Mama Shelter, TRIBE, Art
-// Series, 21c, Angsana, MGallery's MGA alias — resolved to '' from here on.
-// That is why 'Faena New York' printed as 'Faena Faena': the de-duplication
-// code looks the brand up by code, got nothing back, and never recognised
-// that the name it had trimmed down WAS the brand.
-// Merged instead of replaced: these entries still win for the codes they
-// define, and the earlier map's extra codes survive.
-(function () {
-  var _later = {
-    'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
-    'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
-    'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
-    'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
-    'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
-    'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
-  };
-  if (typeof ACCOR_BRAND_NAMES === 'undefined' || !ACCOR_BRAND_NAMES) ACCOR_BRAND_NAMES = {};
-  for (var _k in _later) { if (Object.prototype.hasOwnProperty.call(_later, _k)) ACCOR_BRAND_NAMES[_k] = _later[_k]; }
-})();
+// v23046 — a second `var ACCOR_BRAND_NAMES = {…}` here once silently
+// REPLACED the fuller map declared earlier in the file ('Faena New York'
+// printed as 'Faena Faena'); it then became a run-time merge over it, which
+// is the same overwrite where no duplicate-key check can see it. v23995:
+// its entries are in the one declaration above, with the values the merge
+// gave them (IBS 'ibis', EMB 'Emblème'), so a key is declared once.
 
 // Brand Corner API cache
 var ACCOR_BRAND_CACHE = {};
@@ -43173,7 +43004,7 @@ function fetchAccorBrand(brandCode) {
 
 // Strip garbled prefixes from Accor hotel names
 function cleanAccorName(name) {
-  if (!name) return 'Accor Hotel';
+  if (!name) return 'Accor';
   // Remove known CRS/system prefixes (may be chained: "FX - ROTW Novotel...")
   var prev = '';
   while (prev !== name) {
@@ -43185,8 +43016,8 @@ function cleanAccorName(name) {
   name = name.replace(/^-\s*/, '');
   name = name.replace(/\s{2,}/g, ' ').trim();
   // Fix abbreviations
-  name = name.replace(/\bCntr\b/g, 'Centre');
-  return name || 'Accor Hotel';
+  name = name.replace(/\bCntr\b/g, 'Centre'); // i18n-ok: data
+  return name || 'Accor';
 }
 
 // Ensure hotel name includes brand name
@@ -43521,7 +43352,7 @@ function fetchAccorHotelText(hotelId, langWanted) {
         ts: Date.now(),
         hotelId: hotelId,
         _adLang: langWanted,
-        description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
+        description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'), // i18n-ok: data
         destinationDescription: h.destinationDescription || '',
         advantages: Array.isArray(h.advantages) ? h.advantages : []
       };
@@ -43714,14 +43545,14 @@ function fetchAccorHotelDetail(hotelId, langWanted) {
       accs.forEach(function(acc) {
         var rn = String(acc.name || acc.label || acc.title || (acc.room && (acc.room.name || acc.room.label)) || '').replace(/\s+/g, ' ').trim();
         // Accor bed codes read like fare buckets ('DBL/DBL') — spell them
-        // out.
-        rn = rn.replace(/\bDBL\s*\/\s*DBL\b/gi, '2 Double Beds')
-               .replace(/\bTWN\s*\/\s*TWN\b/gi, '2 Twin Beds')
-               .replace(/\bQUE\s*\/\s*QUE\b/gi, '2 Queen Beds')
-               .replace(/\bKNG\b/gi, 'King Bed')
-               .replace(/\bQUE\b/gi, 'Queen Bed')
-               .replace(/\bDBL\b/gi, 'Double Bed')
-               .replace(/\bTWN\b/gi, 'Twin Beds');
+        // out, in the language the room was fetched in (the store's words).
+        rn = rn.replace(/\bDBL\s*\/\s*DBL\b/gi, BoardStrings.bs('bedTwoDouble', curLang))
+               .replace(/\bTWN\s*\/\s*TWN\b/gi, BoardStrings.bs('bedTwoTwin', curLang))
+               .replace(/\bQUE\s*\/\s*QUE\b/gi, BoardStrings.bs('bedTwoQueen', curLang))
+               .replace(/\bKNG\b/gi, BoardStrings.bs('bedKing', curLang))
+               .replace(/\bQUE\b/gi, BoardStrings.bs('bedQueen', curLang))
+               .replace(/\bDBL\b/gi, BoardStrings.bs('bedDouble', curLang))
+               .replace(/\bTWN\b/gi, BoardStrings.bs('bedTwin', curLang));
         if (!rn || roomsSeen[rn.toLowerCase()]) return;
         roomsSeen[rn.toLowerCase()] = 1;
         var rp = '';
@@ -43928,7 +43759,7 @@ function _processAccorData(data, destIata, langKey) {
   });
   // Filter: only OPEN hotels, skip PRE_OPENING/CLOSED/RENOVATION
   var openResults = data.results.filter(function(r) {
-    var status = (r.hotel && r.hotel.status) ? r.hotel.status.toUpperCase() : 'OPEN';
+    var status = (r.hotel && r.hotel.status) ? r.hotel.status.toUpperCase() : 'OPEN'; // i18n-ok: data
     return status === 'OPEN';
   });
   // v218.99.54 — Build initial hotel list, then filter to within 100km
@@ -43983,7 +43814,7 @@ function _processAccorData(data, destIata, langKey) {
     }
     var trustScore = (h.rating && h.rating.trustyou) ? h.rating.trustyou.score : 0;
     var trustReviews = (h.rating && h.rating.trustyou) ? h.rating.trustyou.nbReviews : 0;
-    var ratingStr = trustScore > 0 ? '\u2605 ' + trustScore + '/5' + (trustReviews ? ' (' + trustReviews.toLocaleString() + ')' : '') : '';
+    var ratingStr = trustScore > 0 ? '\u2605 ' + trustScore + '/5' + (trustReviews ? ' (' + BoardStrings.num(trustReviews) + ')' : '') : '';
     // Decide hotel display name:
     //   • If we have a local brand LOGO, show ONLY the property name (strip the brand prefix)
     //   • If NOT, include the brand name in the headline so the carrier isn't anonymous
@@ -44175,7 +44006,7 @@ function _processAccorData(data, destIata, langKey) {
       // Accor's own FR copy for Royal York ships a literal 'Vene z savourer'
       // Their typo, our display —
       // repaired narrowly: exactly this broken word, nothing else touched.
-      description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
+      description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'), // i18n-ok: data
       destinationDescription: h.destinationDescription || '',
       // v218.99.41 — address + distance + rating for the new bottom strip layout
       // Short address (city/district only) — used on the compact mini-line
@@ -44208,7 +44039,6 @@ function _processAccorData(data, destIata, langKey) {
       distance: dist || '',
       distanceCity: _accorHotelDowntownDistance(h, destIata),
       distanceAirport: _accorHotelAirportDistance(h, destIata),
-      _destIata: destIata,
       // Rating — trustyou score + review count
       rating: trustScore > 0 ? trustScore + '/5' : '',
       reviewCount: trustReviews || 0,
@@ -44286,7 +44116,7 @@ function _processAccorData(data, destIata, langKey) {
   // English, that is Accor's feed missing French — not a bug on our side.
   try {
     var _ph = hotels[0] || {};
-    var _pdesc = String(_ph.description || _ph.destinationDescription || _ph.shortDescription || '(no description field)');
+    var _pdesc = String(_ph.description || _ph.destinationDescription || _ph.shortDescription || '(no description field)'); // i18n-ok: debug
     console.log('%c[ACCOR-LANG PROOF] requested=' + _ckLang + ' for ' + destIata
       + ' | hotel=' + (_ph.name || _ph.hotelName || _ph.propertyName || '?')
       + '\n  description returned (first 200 chars): ' + _pdesc.slice(0, 200),
@@ -44310,10 +44140,13 @@ function _processAccorData(data, destIata, langKey) {
 // Falls back to the English string when no translation is present.
 // ─────────────────────────────────────────────────────────────────
 var AD_I18N = {
+  // ── Porter's cabin, by Porter's own name in each language it publishes
+  // (flyporter.com: PorterReserve, and PorterRéserve in French) ──
+  'PorterReserve':                    { fr:'PorterRéserve', es:'PorterReserve', de:'PorterReserve', it:'PorterReserve', pt:'PorterReserve', ja:'PorterReserve', zh:'PorterReserve', ar:'PorterReserve' },
   // ── AC headlines & subs ──
   'More to Travel':                   { fr:'Plus à voyager', es:'Más para viajar', de:'Mehr zum Reisen', it:'Più da viaggiare', pt:'Mais para viajar', ja:'もっと旅を', zh:'尽享旅行', ar:'المزيد من السفر' },
   'Discover expanded services and rewards with Aeroplan': { fr:'Découvrez les services et récompenses Aeroplan', es:'Descubra servicios y recompensas con Aeroplan', de:'Entdecken Sie Services und Prämien mit Aeroplan', it:'Scopri servizi e premi con Aeroplan', pt:'Descubra serviços e recompensas com Aeroplan', ja:'Aeroplanのサービスと特典を発見', zh:'探索 Aeroplan 服务与奖励', ar:'اكتشف خدمات ومكافآت Aeroplan' },
-  'Your Ticket to Travelling Better': { fr:'Votre billet pour mieux voyager', es:'Su boleto para viajar mejor', de:'Ihr Ticket für besseres Reisen', it:'Il tuo biglietto per viaggiare meglio', pt:'Seu bilhete para viajar melhor', ja:'より良い旅へのチケット', zh:'更好旅行的通行证', ar:'تذكرتك للسفر بشكل أفضل' },
+  'Your Ticket to Travelling Better': { fr:'Votre billet pour mieux voyager', es:'Su boleto para viajar mejor', de:'Ihr Ticket für besseres Reisen', it:'Il tuo biglietto per viaggiare meglio', pt:'Sua passagem para viajar melhor', ja:'より良い旅へのチケット', zh:'更好旅行的通行证', ar:'تذكرتك للسفر بشكل أفضل' },
   'Unlock Elite Status perks and premium card benefits': { fr:'Débloquez les avantages Statut Élite et carte premium', es:'Desbloquee beneficios Estatus Élite y tarjeta premium', de:'Entdecken Sie Elite-Status-Vorteile und Premium-Karten', it:'Sblocca i vantaggi Elite Status e carta premium', pt:'Desbloqueie benefícios Status Elite e cartão premium', ja:'エリートステータスとプレミアムカード特典', zh:'解锁精英会员与高级卡权益', ar:'افتح مزايا النخبة والبطاقة المميزة' },
   'Everyday Rewards, Extraordinary Journeys': { fr:'Récompenses quotidiennes, voyages extraordinaires', es:'Recompensas diarias, viajes extraordinarios', de:'Tägliche Prämien, außergewöhnliche Reisen', it:'Premi quotidiani, viaggi straordinari', pt:'Recompensas diárias, viagens extraordinárias', ja:'毎日のリワード、特別な旅', zh:'每日奖励，非凡旅程', ar:'مكافآت يومية، رحلات استثنائية' },
   'Turn your daily routines into your next getaway': { fr:'Transformez votre quotidien en prochaine escapade', es:'Convierta su rutina en su próxima escapada', de:'Verwandeln Sie Ihren Alltag in Ihre nächste Reise', it:'Trasforma la routine nella prossima fuga', pt:'Transforme a rotina na próxima escapada', ja:'日常を次の旅へ', zh:'把日常变成下次度假', ar:'حوّل روتينك إلى عطلتك القادمة' },
@@ -44329,7 +44162,7 @@ var AD_I18N = {
   // ── WS ──
   'Earn WestJet dollars on every flight': { fr:'Accumulez des dollars WestJet à chaque vol', es:'Gane dólares WestJet en cada vuelo', de:'WestJet-Dollars bei jedem Flug verdienen', it:'Guadagna dollari WestJet ad ogni volo', pt:'Ganhe dólares WestJet em cada voo', ja:'毎フライトでWestJetドル獲得', zh:'每次飞行赚取 WestJet 美元', ar:'اكسب دولارات WestJet مع كل رحلة' },
   'Free Starlink Wi-Fi':              { fr:'Wi-Fi Starlink gratuit', es:'Wi-Fi Starlink gratis', de:'Kostenloses Starlink-WLAN', it:'Wi-Fi Starlink gratuito', pt:'Wi-Fi Starlink grátis', ja:'無料Starlink Wi-Fi', zh:'免费 Starlink Wi-Fi', ar:'واي فاي Starlink مجاني' },
-  'Stream & browse \u00b7 Powered by Starlink': { fr:'Streaming et navigation · Propulsé par Starlink', es:'Streaming y navegación · Con Starlink', de:'Streamen & surfen · Mit Starlink', it:'Streaming e navigazione · Powered by Starlink', pt:'Streaming e navegação · Com Starlink', ja:'ストリーミング・ブラウジング · Starlink', zh:'流媒体与浏览 · Starlink 提供', ar:'البث والتصفح · بدعم من Starlink' },
+  'Stream & browse \u00b7 Powered by Starlink': { fr:'Streaming et navigation · Propulsé par Starlink', es:'Streaming y navegación · Con Starlink', de:'Streamen & surfen · Mit Starlink', it:'Streaming e navigazione · Con Starlink', pt:'Streaming e navegação · Com Starlink', ja:'ストリーミング・ブラウジング · Starlink', zh:'流媒体与浏览 · Starlink 提供', ar:'البث والتصفح · بدعم من Starlink' },
 
   // ── PD ──
   'Earn points on every flight \u00b7 Free snacks & beverages on board': { fr:'Points à chaque vol · Collations et boissons gratuites à bord', es:'Puntos en cada vuelo · Snacks y bebidas gratis a bordo', de:'Punkte bei jedem Flug · Snacks & Getränke gratis an Bord', it:'Punti ad ogni volo · Snack e bevande gratis a bordo', pt:'Pontos em cada voo · Snacks e bebidas grátis a bordo', ja:'毎フライトでポイント · 軽食と飲み物無料', zh:'每次飞行赚积分 · 机上免费小食与饮品', ar:'نقاط مع كل رحلة · وجبات ومشروبات مجانية على متن الطائرة' },
@@ -44425,7 +44258,13 @@ var AD_I18N = {
   'Currency':                         { fr:'Monnaie', es:'Moneda', de:'Währung', it:'Valuta', pt:'Moeda', ja:'通貨', zh:'货币', ar:'العملة' },
   'Language':                         { fr:'Langue', es:'Idioma', de:'Sprache', it:'Lingua', pt:'Idioma', ja:'言語', zh:'语言', ar:'اللغة' },
   'Time Zone':                        { fr:'Fuseau horaire', es:'Zona horaria', de:'Zeitzone', it:'Fuso orario', pt:'Fuso horário', ja:'時間帯', zh:'时区', ar:'المنطقة الزمنية' },
-  'Typical Temp':                     { fr:'Temp. typique', es:'Temp. típica', de:'Typ. Temperatur', it:'Temp. tipica', pt:'Temp. típica', ja:'平均気温', zh:'平均气温', ar:'درجة الحرارة' }
+  'Typical Temp':                     { fr:'Temp. typique', es:'Temp. típica', de:'Typ. Temperatur', it:'Temp. tipica', pt:'Temp. típica', ja:'平均気温', zh:'平均气温', ar:'درجة الحرارة' },
+  // v23970 — the three ad lines that had no row (Porter, British Airways).
+  // Careful translations: Porter's and BA's own wording in these languages
+  // is not on file. The sentence pattern copies the rows above.
+  'Elevated economy \u00b7 Complimentary snacks & beverages on board': { fr:'Économie rehaussée · Collations et boissons offertes à bord', es:'Clase económica superior · Snacks y bebidas de cortesía a bordo', de:'Gehobene Economy · Kostenlose Snacks & Getränke an Bord', it:'Economy di livello superiore · Snack e bevande offerti a bordo', pt:'Classe econômica superior · Snacks e bebidas de cortesia a bordo', ja:'ワンランク上のエコノミー · 機内で軽食と飲み物を無料提供', zh:'升级经济舱 · 机上免费小食和饮料', ar:'درجة اقتصادية مميّزة · وجبات خفيفة ومشروبات مجانية على متن الطائرة' },
+  'Extra legroom \u00b7 Priority services on select fares': { fr:'Plus d’espace pour les jambes · Services prioritaires sur certains tarifs', es:'Más espacio para las piernas · Servicios prioritarios en tarifas seleccionadas', de:'Mehr Beinfreiheit · Priority-Services bei ausgewählten Tarifen', it:'Più spazio per le gambe · Servizi prioritari su tariffe selezionate', pt:'Mais espaço para as pernas · Serviços prioritários em tarifas selecionadas', ja:'ゆったりした足元 · 対象運賃で優先サービス', zh:'更宽敞的腿部空间 · 部分票价享优先服务', ar:'مساحة أكبر للساقين · خدمات ذات أولوية على أسعار مختارة' },
+  'Earn Avios points \u00b7 Oneworld Alliance': { fr:'Accumulez des points Avios · Alliance Oneworld', es:'Gane puntos Avios · Alianza Oneworld', de:'Avios-Punkte sammeln · Oneworld-Allianz', it:'Guadagna punti Avios · Alleanza Oneworld', pt:'Ganhe pontos Avios · Aliança Oneworld', ja:'Aviosポイントを獲得 · ワンワールド', zh:'赚取 Avios 积分 · 寰宇一家', ar:'اكسب نقاط Avios · تحالف ون وورلد' },
 };
 
 function adTL(s) {
@@ -44561,8 +44400,8 @@ function getGateAds() {
   var generic = GATE_ADS_GENERIC.map(function(ad) {
     return {
       bg: ad.bg,
-      headline: adTL(ad.headline).replace('{CITY}', destCity || 'your destination'),
-      sub: adTL(ad.sub).replace('{CITY}', destCity || 'your destination'),
+      headline: adTL(ad.headline).replace('{CITY}', destCity || TL('yourDestination')),
+      sub: adTL(ad.sub).replace('{CITY}', destCity || TL('yourDestination')),
       logo: ad.logo || null,
       brand: ad.brand || '',
       gicon: ad.gicon || null,
@@ -44609,6 +44448,9 @@ function buildGateAmenities() {
 }
 
 function buildGateAdHtml(ad) {
+  // a slot whose ad has gone (the deck was rebuilt between the pick and the
+  // paint) draws nothing rather than throwing
+  if (!ad) return '';
   // v23994 — the Welcome card: phrase / emblem + airline / phrase.
   if (ad && ad.adLayout === 'welcome-card') return _welcomeCardHtml(ad);
   // ── HELPER: render a logo using the per-brand treatment map ────────────
@@ -44921,7 +44763,7 @@ function buildGateAdHtml(ad) {
         +       'font-family:var(--font-accor-body);font-weight:500;'
         +       'font-size:clamp(12px,1.4vh,16px);line-height:1.3;color:' + _bubbleFg + ';'
         +       'letter-spacing:0.01em;">'
-        +       (TL('scanToUnlockAll') || 'Scan to unlock<br>limitless experiences<br>with ALL.')
+        +       TL('scanToUnlockAll')
         +     '</div>'
         +     _tailSvg
         +   '</div>'
@@ -44982,15 +44824,14 @@ function buildGateAdHtml(ad) {
     // When property logo has the name, SKIP this line entirely (kills duplicate)
     var _miniLine = [];
     // Distance needs CONTEXT — "0.9 km" from what? It's from downtown.
-    var _kmCtx = ({ en:' from downtown', fr:' du centre-ville', es:' del centro' })[
-      (typeof accorLang === 'function' ? accorLang() : 'en')] || ' from downtown';
+    var _kmL = (typeof accorLang === 'function' ? accorLang() : lang);
     if (!_logoHasName) {
       var _miniCity = (ad.distanceCity && ad.distanceCity.cityName) ? ad.distanceCity.cityName : (ad.address || '');
       if (_miniCity) _miniLine.push(_esc(_miniCity));
-      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(_esc(ad.distanceCity.kmStr) + _kmCtx);
+      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(BoardStrings.fmt('kmFromDowntown', _kmL, { KM: ad.distanceCity.kmStr }));
     } else if (ad.distanceCity && ad.distanceCity.kmStr) {
       // Logo has the name → just show distance, no city duplicate
-      _miniLine.push(_esc(ad.distanceCity.kmStr) + _kmCtx);
+      _miniLine.push(BoardStrings.fmt('kmFromDowntown', _kmL, { KM: ad.distanceCity.kmStr }));
     }
     if (ad.rating) {
       var _ratingNum = parseFloat(String(ad.rating).split('/')[0]);
@@ -45045,28 +44886,26 @@ function buildGateAdHtml(ad) {
     // a separate source from the list aggregation and still returns it for
     // hotels that don't include it (Fairmont). No card advertises breakfast.
     var _noBkfst = function (arr) { return (arr || []).filter(function (x) { return !/breakfast|d[ée]jeuner/i.test(String(x)); }); };
-    var _detAmen = _detail ? _noBkfst(_detail.topAmenities) : [];
+    // v23970 — and only lines in the language being shown: the language-less
+    // cache entry, or Accor's English answer to a request in another
+    // language, is not printed under a Japanese or German heading.
+    var _inCur = function (arr) { return (arr || []).filter(function (x) { return BoardStrings.looksLike(x, _curLang); }); };
+    var _detAmen = _detail ? _inCur(_noBkfst(_detail.topAmenities)) : [];
     if (_detAmen.length) {
       _topics.push({ title: TL('amenities'), items: _detAmen.slice(0, 5) });
     }
     var _detResto = _detail ? _noBkfst(_detail.restaurants) : [];
     if (_detResto.length) {
-      _topics.push({ title: TL('restaurants') || 'Restaurants', items: _detResto });
+      _topics.push({ title: TL('restaurants'), items: _detResto });
     }
-    var _detFac = _detail ? _noBkfst(_detail.facilities) : [];
+    var _detFac = _detail ? _inCur(_noBkfst(_detail.facilities)) : [];
     if (_detFac.length) {
-      _topics.push({ title: TL('facilities') || 'Facilities', items: _detFac });
+      _topics.push({ title: TL('facilities'), items: _detFac });
     }
     // Long-form description / destinationDescription INTENTIONALLY NOT
     // added as a bullet topic — they're marketing paragraphs that read
     // as word salad once chip-truncated. We only surface clean structured
     // data (topAmenities / restaurants / facilities) as specified's feedback.
-    if (false && ad.description && ad.description.length > 20) {
-      _topics.push({ title: 'About', items: [ad.description.slice(0, 200) + (ad.description.length > 200 ? '…' : '')] });
-    }
-    if (false && ad.destinationDescription && ad.destinationDescription.length > 20) {
-      _topics.push({ title: 'The destination', items: [ad.destinationDescription.slice(0, 200) + (ad.destinationDescription.length > 200 ? '…' : '')] });
-    }
 
     var _bullets = '';
     if (_topics.length) {
@@ -45280,7 +45119,7 @@ function buildGateAdHtml(ad) {
     for (var _sci = 0; _sci < _starsClassNum; _sci++) _starsTxt += '★';
     _panelStarClass = '<div style="display:flex;align-items:center;gap:10px;margin:0 0 14px 0;font-family:var(--font-accor-body);">'
       + '<span style="color:' + _gold2 + ';font-size:18px;line-height:1;letter-spacing:2px;">' + _starsTxt + '</span>'
-      + '<span style="font-size:12px;font-weight:600;color:#fff;letter-spacing:0.18em;text-transform: none;line-height:1;">' + _starsClassNum + ' ' + (_starsClassNum === 1 ? 'Star' : 'Stars') + '</span>'
+      + '<span style="font-size:12px;font-weight:600;color:#fff;letter-spacing:0.18em;text-transform: none;line-height:1;">' + (_starsClassNum === 1 ? BoardStrings.bs('starN1', lang) : BoardStrings.fmt('starsN', lang, { N: _starsClassNum })) + '</span>'
       + '</div>';
 
     // Star rating — UI/UX best practice: filled vs hollow stars, single gold,
@@ -45316,14 +45155,14 @@ function buildGateAdHtml(ad) {
         var _reviewCountTxt = '';
         if (ad.reviewCount && ad.reviewCount > 0) {
           _reviewCountTxt = '<span style="font-size:14px;font-weight:400;color:#fff;line-height:1;letter-spacing:0.02em;opacity:0.85;">'
-            + ad.reviewCount.toLocaleString() + ' '
-            + (TL('reviews') || 'reviews')
+            + BoardStrings.num(ad.reviewCount) + ' '
+            + TL('reviews')
             + '</span>';
         }
         _panelRating = '<div style="margin-top:4px;font-family:var(--font-accor-body);">'
           + '<div style="font-size:12px;font-weight:600;color:#fff;letter-spacing:0.16em;text-transform: none;line-height:1.2;margin-bottom:10px;">'
-          +   (TL('customerReviewRating') || 'Customer review rating')
-          +   ' <span style="text-transform:none;font-weight:400;letter-spacing:0.02em;opacity:0.85;">(ALL Rating)</span>'
+          +   TL('customerReviewRating')
+          +   ' <span style="text-transform:none;font-weight:400;letter-spacing:0.02em;opacity:0.85;">' + BoardStrings.bs('allRating', lang) + '</span>'
           + '</div>'
           + '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
           +   '<div style="display:flex;align-items:center;gap:2px;">' + _starsHtml + '</div>'
@@ -45346,12 +45185,12 @@ function buildGateAdHtml(ad) {
         if (!s) return '';
         var norm = s.toUpperCase().replace(/[\s_-]+/g, '_');
         var MAP = {
-          'FAMILY_FRIENDLY':  TL('familyFriendly')  || 'Family-friendly',
-          'FAMILYFRIENDLY':   TL('familyFriendly')  || 'Family-friendly',
-          'ECO_CERTIFIED':    TL('ecoCertified')    || 'Ecocertified',
-          'ECOCERTIFIED':     TL('ecoCertified')    || 'Ecocertified',
-          'GREEN_KEY':        TL('greenKey')        || 'Green Key',
-          'PET_FRIENDLY':     TL('petFriendly')     || 'Pet-friendly'
+          'FAMILY_FRIENDLY':  TL('familyFriendly'),
+          'FAMILYFRIENDLY':   TL('familyFriendly'),
+          'ECO_CERTIFIED':    TL('ecoCertified'),
+          'ECOCERTIFIED':     TL('ecoCertified'),
+          'GREEN_KEY':        TL('greenKey'),
+          'PET_FRIENDLY':     TL('petFriendly')
         };
         if (MAP[norm]) return MAP[norm];
         // Title-case fallback: 'BUSINESS_TRAVEL' → 'Business Travel'
@@ -45500,7 +45339,7 @@ function buildGateAdHtml(ad) {
       +     '<span style="font-size:clamp(10px,1.1vh,13px);font-weight:500;color:rgba(255,255,255,0.85);'
       +       'letter-spacing:0.18em;text-transform: none;line-height:1;'
       +       'font-family:var(--font-accor-body);">'
-      +       (TL('memberOf') || 'Member of')
+      +       TL('memberOf')
       +     '</span>'
       +     '<img src="' + _allLockupSrc + '" alt="ALL" '
       +       'style="height:clamp(22px,2.6vh,32px);width:auto;display:block;" '
@@ -45511,7 +45350,7 @@ function buildGateAdHtml(ad) {
       +   '<div style="font-size:clamp(9px,0.95vh,11px);font-weight:500;color:rgba(255,255,255,0.7);'
       +     'letter-spacing:0.18em;text-transform: none;line-height:1.15;'
       +     'font-family:var(--font-accor-body);text-align:' + (_logoAlign === 'center' ? 'center' : 'left') + ';">'
-      +     (TL('limitlessLoyaltyProgramme') || 'The Limitless Loyalty Programme')
+      +     TL('limitlessLoyaltyProgramme')
       +   '</div>'
       + '</div>';
 
@@ -45741,7 +45580,7 @@ function _accorFrName(name) {
   return String(name || '')
     .replace(/\bMontreal\b/g, 'Montréal')
     .replace(/\bQuebec\b/g, 'Québec')
-    .replace(/\bAirport\b/g, 'Aéroport');
+    .replace(/\bAirport\b/g, 'Aéroport'); // i18n-ok: data
 }
 
 function buildAccorAdOnlyV6(ad) {
@@ -45752,13 +45591,6 @@ function buildAccorAdOnlyV6(ad) {
   // chose for this slide), NOT the global board `lang` — TL() reads the board
   // lang, which is what split the card into half-French/half-English labels vs
   // content. Same source as the content now.
-  function safeTL(k,f){
-    try {
-      var o = (typeof LS !== 'undefined' && LS[k]) ? LS[k] : null;
-      if (o) { var l = accorLang(); return o[l] || o.en || f; }
-    } catch(e){}
-    return f;
-  }
   // Use the SAME language the ad deck forced for this slide (_accorLangNow),
   // not the raw board language. The deck flips EN/FR per slide via
   // _accorAdForcedLang; this builder used to read the board `lang` instead, so
@@ -45840,7 +45672,7 @@ function buildAccorAdOnlyV6(ad) {
   }
 
   var brandRaw   = first(ad.brandLabel, ad.brandName, ad.hotelBrand, ad.chain, ad.brand, ad.logoBrand, '');
-  var hotelName  = first(ad.headline, ad.name, ad.hotelName, ad.propertyName, 'Accor Hotel');
+  var hotelName  = first(ad.headline, ad.name, ad.hotelName, ad.propertyName, 'Accor');
   var brandLower = lower(brandRaw + ' ' + hotelName);
   var address    = first(localized(ad,'address'), localized(ad,'city'), localized(ad,'location'), localized(ad,'destinationName'), '');
   var factsheetUrl = first(ad.factsheetUrl, ad.url, ad.bookingUrl, ad.link, '#');
@@ -45852,7 +45684,7 @@ function buildAccorAdOnlyV6(ad) {
 
   var tier = lower(first(ad.segment, ad.category, ad.tier, ''));
   var luxury=['sofitel','sofitel legend','raffles','fairmont','orient express','banyan tree','emblems','delano'];
-  var premium=['pullman','swissotel','movenpick','mövenpick','mgallery','grand mercure','the sebel','peppers','art series'];
+  var premium=['pullman','swissotel','movenpick','mövenpick','mgallery','grand mercure','the sebel','peppers','art series']; // i18n-ok: brand
   for(var li=0;li<luxury.length;li++) if(brandLower.indexOf(luxury[li])!==-1) tier='luxury';
   if(!tier||tier==='unknown'||tier==='hotel'){ tier='midscale'; for(var pi=0;pi<premium.length;pi++) if(brandLower.indexOf(premium[pi])!==-1) tier='premium'; }
 
@@ -45973,19 +45805,19 @@ function buildAccorAdOnlyV6(ad) {
     else if(Array.isArray(adX.features)) a=adX.features;
     else if(Array.isArray(adX.advantages)) a=adX.advantages;
     a=a.map(function(x){ if(typeof x==='string') return x; return first(x&&x.label,x&&x.name,x&&x.title,x&&x.code,''); }).filter(Boolean).slice(0,4);
-    if(!a.length){ var fb={ en:['Restaurant','Wi‑Fi','Comfort rooms'],fr:['Restaurant','Wi‑Fi','Chambres confortables'],es:['Restaurante','Wi‑Fi','Habitaciones confortables'],de:['Restaurant','WLAN','Komfortzimmer'],it:['Ristorante','Wi‑Fi','Camere confortevoli'],pt:['Restaurante','Wi‑Fi','Quartos confortáveis'],ja:['レストラン','Wi‑Fi','快適な客室'],zh:['餐厅','Wi‑Fi','舒适客房'],ar:['مطعم','واي فاي','غرف مريحة'] }; a=fb[L]||fb.en; }
+    if(!a.length){ a=BoardStrings.list('amenFallback', L).slice(); }
     return a;
   }
   var amenities=_amenOf(ad, accorLang());
 
   var starCount=Math.max(0,Math.min(5,Math.round(stars||0)));
   var starsHtml=starCount>0?'<span class="axr-stars">'+Array(starCount+1).join('★')+'</span>':'';
-  var _REVIEWS_W={en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'};
-  function _reviewsW(L){ return _REVIEWS_W[L] || _REVIEWS_W.en; }
+  // the board's own word for reviews (LS.reviews), in the card's language
+  function _reviewsW(L){ return TLin('reviews', L); }
   // The score is a number in any language; only the word after it changes, so
   // the two words share one row rather than duplicating the figure.
-  var reviewsLabel=_reviewsW(accorLang());
-  if (_L2 && _reviewsW(_L2) !== reviewsLabel) reviewsLabel += ' · ' + _reviewsW(_L2);
+  var reviewsLabel = '<span' + _biAttr(accorLang()) + '>' + _reviewsW(accorLang()) + '</span>';
+  if (_L2 && _reviewsW(_L2) !== _reviewsW(accorLang())) reviewsLabel += ' · <span' + _biAttr(_L2) + '>' + _reviewsW(_L2) + '</span>';
   // Never let an object reach the card: an upstream shape change would print
   // '[object Object]/5' on a paying advertiser's slide.
   if (rating && typeof rating === 'object') {
@@ -46010,7 +45842,7 @@ function buildAccorAdOnlyV6(ad) {
   var logoHtml=haveLogo
     ? (_inlineLockup
         ? '<div class="axr-logo">'+_inlineLockup+'</div>'   // inline so the property-name font actually renders
-        : '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>')
+        : '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'')+'"></div>')
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
   // QR caption — always invite discovery of the property by its FULL name
@@ -46030,8 +45862,7 @@ function buildAccorAdOnlyV6(ad) {
   // Fairmont-style accent: first word italic sentence-case, the rest
   // renders CAPS via the brand's bubble CSS — like 'SAVOR SAN JUAN flavor'.
   function _scanFor(L){
-    try { var o = (typeof LS !== 'undefined' && LS.scanToDiscover) ? LS.scanToDiscover : null; if (o && o[L]) return o[L]; } catch(e){}
-    return 'Scan to discover';
+    return TLin('scanToDiscover', L);
   }
   function _scanMark(t){
     var sp = String(t).indexOf(' ');
@@ -46043,11 +45874,13 @@ function buildAccorAdOnlyV6(ad) {
   var _scanT2 = _L2 ? _scanFor(_L2) : '';
   // The property name is the same words in both languages — it is printed once,
   // under the two invitations, not duplicated.
-  var _scanHtml = _scanMark(_scanT1)
-    + ((_scanT2 && _scanT2 !== _scanT1) ? '<span class="axr-bi-line">' + _scanMark(_scanT2) + '</span>' : '');
-  var _qrCaption = _scanHtml + '<br><span class="axr-bub-name">' + esc(_fullName) + '</span>';
+  // each invitation marked with its language (and an Arabic one its
+  // direction), so a Japanese one is not set under the page's English
+  var _scanHtml = '<span' + _biAttr(accorLang()) + '>' + _scanMark(_scanT1) + '</span>'
+    + ((_scanT2 && _scanT2 !== _scanT1) ? '<span class="axr-bi-line"' + _biAttr(_L2) + '>' + _scanMark(_scanT2) + '</span>' : '');
+  var _qrCaption = _scanHtml + '<br><span class="axr-bub-name" translate="no">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
-  var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
+  var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en'); // i18n-ok: data
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
   // Other languages → localized ALL lockup with a 'Member of' lead-in.
   var _endorseOfficial = (_ll==='en');
@@ -46060,7 +45893,10 @@ function buildAccorAdOnlyV6(ad) {
   var _allxBrand=_ALL_X_BRAND[String(ad.brand||'').toUpperCase()]||'';
 
   var _fullAddr = first(ad.fullAddress, '');
-  var _addrLineHtml = _fullAddr ? '<div class="axr-addr-line">' + esc(_fullAddr) + '</div>' : '';
+  // The street address is the hotel's own (data, never translated: 'Front
+  // Street' is its name), in the language Accor sent it in — marked with that
+  // language, so the country it names in Arabic reads right to left.
+  var _addrLineHtml = _fullAddr ? '<div class="axr-addr-line" translate="no"' + _biAttr(accorLang()) + '>' + esc(_fullAddr) + '</div>' : '';
   // Location distance lines — distance from the destination AIRPORT and from
   // DOWNTOWN, localized. Each shown only when we have the figure.
   var _lgD = accorLang();
@@ -46083,13 +45919,15 @@ function buildAccorAdOnlyV6(ad) {
   // One row per FACT, both languages inside it. A second .axr-loc-line per
   // language would be read by the stylesheet as the next fact and get the
   // city-centre glyph, so the languages share the row and the pin.
+  // v23970 — each language's line carries its language (and an Arabic one
+  // its direction): '1 km من وسط المدينة' read left to right under lang="en".
   function _locRow(t1, t2){
-    return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span><span>' + esc(t1) + '</span>'
-      + ((t2 && t2 !== t1) ? '<b class="axr-bi-sep"></b><span>' + esc(t2) + '</span>' : '')
+    return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span><span' + _biAttr(_lgD) + '>' + esc(t1) + '</span>'
+      + ((t2 && t2 !== t1) ? '<b class="axr-bi-sep"></b><span' + _biAttr(_L2) + '>' + esc(t2) + '</span>' : '')
       + '</div>';
   }
   function _tpl(map, L, km, city){
-    var s = map[L] || map.en;
+    var s = map[L] || '';
     return s.replace('%k', km).replace('%c', city || '');
   }
   var _locLineHtml = '';
@@ -46167,15 +46005,9 @@ function buildAccorAdOnlyV6(ad) {
   // language that is not French got the ENGLISH string: a Miami board printed
   // 'On-site restaurant' and 'Room service' in its Spanish column. Same
   // standing rule as every other string on the boards — all nine languages.
+  var _DINE_KEY = { restaurant: 'dineRestaurant', bar: 'dineBar', roomService: 'dineRoomService', diningOffer: 'dineOffer' };
   var _dineT = function (key) {
-    var T = {
-      restaurant:  { en:'On-site restaurant', fr:'Restaurant sur place', es:'Restaurante en el hotel', de:'Restaurant im Haus', it:'Ristorante interno', pt:'Restaurante no local', ja:'館内レストラン', zh:'酒店餐厅', ar:'مطعم داخل الفندق' },
-      bar:         { en:'Bar & lounge', fr:'Bar-salon', es:'Bar y salón', de:'Bar & Lounge', it:'Bar e lounge', pt:'Bar e lounge', ja:'バー・ラウンジ', zh:'酒吧及休息室', ar:'بار وصالة' },
-      roomService: { en:'Room service', fr:'Service aux chambres', es:'Servicio de habitaciones', de:'Zimmerservice', it:'Servizio in camera', pt:'Serviço de quartos', ja:'ルームサービス', zh:'客房服务', ar:'خدمة الغرف' },
-      diningOffer: { en:'Dining offers for guests', fr:'Offres restauration pour les clients', es:'Ofertas gastronómicas para huéspedes', de:'Gastronomie-Angebote für Gäste', it:'Offerte ristorazione per gli ospiti', pt:'Ofertas de restauração para hóspedes', ja:'ご宿泊者向けダイニング特典', zh:'住客餐饮优惠', ar:'عروض المطاعم للنزلاء' }
-    }[key] || {};
-    var L = accorLang();
-    return T[L] || T.en || '';
+    return _DINE_KEY[key] ? BoardStrings.bs(_DINE_KEY[key], accorLang()) : '';
   };
   var _dineAmen = [];
   if (_amenFree.indexOf('restaurant') !== -1) _dineAmen.push(_dineT('restaurant'));
@@ -46273,6 +46105,12 @@ function buildAccorAdOnlyV6(ad) {
   }
   var _blurb  = _mkBlurb(ad);
   var _blurbB = _ad2 ? _mkBlurb(_ad2) : '';
+  // v23970 — a feed's text is shown in a language only when it IS that
+  // language (BoardStrings.looksLike): Accor answers a Japanese or Arabic
+  // request with its English copy, which then sat in the Japanese column
+  // ('Welcome to a new era of luxury.' on a Japanese gate, marked lang="ja").
+  if (_blurb && !BoardStrings.looksLike(_blurb, _lgD)) _blurb = '';
+  if (_blurbB && !BoardStrings.looksLike(_blurbB, _L2)) _blurbB = '';
   // A SECOND paragraph for page 3, from a different source than page 2's — the
   // destination text (what's around the hotel), or the next sentence of the
   // hotel's own copy. Without it page 3 was a logo, a name and a QR code and
@@ -46317,10 +46155,12 @@ function buildAccorAdOnlyV6(ad) {
     && String(ad.destinationDescription).trim() !== String(_ad2.destinationDescription).trim());
   var _blurb2  = _mkBlurb2(ad,  _blurb,  _destTranslated);
   var _blurb2B = _ad2 ? _mkBlurb2(_ad2, _blurbB, _destTranslated) : '';
+  if (_blurb2 && !BoardStrings.looksLike(_blurb2, _lgD)) _blurb2 = '';
+  if (_blurb2B && !BoardStrings.looksLike(_blurb2B, _L2)) _blurb2B = '';
 
   var _acL = accorLang();
-  var _kHotel  = ({en:'The hotel',fr:"L'hôtel",es:'El hotel',de:'Das Hotel',it:"L'hotel",pt:'O hotel',ja:'ホテル',zh:'酒店',ar:'الفندق'})[_acL] || 'The hotel';
-  var _kDining = ({en:'Dining & reviews',fr:'Restauration & avis',es:'Gastronomía y reseñas',de:'Gastronomie & Bewertungen',it:'Ristorazione e recensioni',pt:'Restauração e avaliações',ja:'ダイニング＆レビュー',zh:'餐饮与评价',ar:'المطاعم والتقييمات'})[_acL] || 'Dining & reviews';
+  var _kHotel  = BoardStrings.bs('theHotel', _acL);
+  var _kDining = BoardStrings.bs('diningReviews', _acL);
 
   function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
   // Official Accor ALL pictograms for amenity lines — matched by
@@ -46377,14 +46217,14 @@ function buildAccorAdOnlyV6(ad) {
     if (!_useTextId) {
       var art = logoHtml;
       if (_qcPair) {
-        var src = ((pageIdx || 0) % 2 === 0) ? _qcPair.fr : _qcPair.en;
+        var src = ((pageIdx || 0) % 2 === 0) ? _qcPair.fr : _qcPair.en; // i18n-ok: brand
         var alt = ((pageIdx || 0) % 2 === 0) ? _qcPair.nameFr : _qcPair.nameEn;
         art = '<div class="axr-logo"><img class="axr-hotel-svg" src="' + esc(src)
             + '" data-crop="" alt="' + esc(alt) + '"></div>';
       }
       return art + (nameHtml || '');
     }
-    return '<div class="axr-idtext">' + esc(_fullName) + '</div>';
+    return '<div class="axr-idtext" translate="no">' + esc(_fullName) + '</div>';
   }
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
@@ -46464,8 +46304,22 @@ function buildAccorAdOnlyV6(ad) {
       : '';
   }
   var _amenRank2 = _ad2 ? _rankAmen(_ad2, _detail2, _L2) : null;
-  var _advsAll  = _mkAdvs(ad, _amenSell);
-  var _advsAllB = _ad2 ? _mkAdvs(_ad2, _amenRank2 ? _amenRank2.sell : []) : [];
+  // Each language's lines only when they are in it (no English standing in
+  // for Japanese), and one fact once: Accor lists 'Home to Library Bar,
+  // ranked 23 on Canada's 50 Best Bars' AND 'Home to Library Bar, one of
+  // North America's 50 Best Bars', which printed the same fact twice.
+  function _advFilter(list, L) {
+    var seenLead = {};
+    return list.filter(function (o) {
+      if (!BoardStrings.looksLike(o.t, L)) return false;
+      var lead = String(o.t).toLowerCase().split(/[\s,]+/).slice(0, 4).join(' ');
+      if (seenLead[lead]) return false;
+      seenLead[lead] = 1;
+      return true;
+    });
+  }
+  var _advsAll  = _advFilter(_mkAdvs(ad, _amenSell), _lgD);
+  var _advsAllB = _ad2 ? _advFilter(_mkAdvs(_ad2, _amenRank2 ? _amenRank2.sell : []), _L2) : [];
   var _advs = [], _advsB = [];
   if (_ad2) {
     var _bByIdx = {};
@@ -46491,7 +46345,7 @@ function buildAccorAdOnlyV6(ad) {
   // Falls back to a single full-width column when the second
   // language hasn't loaded yet or the two records carry the same words, so
   // the card is never half empty.
-  function _biAttr(L){ return ' lang="' + esc(L) + '"' + ((L === 'ar') ? ' dir="rtl"' : ''); }
+  function _biAttr(L){ var m = BoardStrings.META[L]; return ' lang="' + esc(m ? L : 'en') + '"' + ((m && m.dir === 'rtl') ? ' dir="rtl"' : ''); }
   // v23299 — TWO COLUMNS ONLY WHEN THEY ARE THE SAME THING IN TWO LANGUAGES.
   // Accor does not return matched pairs: for Fairmont Royal York the English
   // field carries a one-line tagline ('Welcome to a new era of luxury.') while
@@ -46545,14 +46399,16 @@ function buildAccorAdOnlyV6(ad) {
       // when the deck's side is effectively empty, which beats blank.
       var _keep = (_visibleLen(a) >= 24) ? a : b;
       var _lang = (_keep === a) ? _lgD : _L2;
-      return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lang) + '>' + _keep + '</div></div>';
+      return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col" data-i18n-feed' + _biAttr(_lang) + '>' + _keep + '</div></div>';
     }
-    if (!a) { return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div></div>'; }
-    if (!b || b === a) return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div></div>';
+    // data-i18n-feed: the hotel's own words, in the language the column is
+    // marked with (looksLike already turned away any that are not)
+    if (!a) { return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col" data-i18n-feed' + _biAttr(_L2) + '>' + b + '</div></div>'; }
+    if (!b || b === a) return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col" data-i18n-feed' + _biAttr(_lgD) + '>' + a + '</div></div>';
     return '<div class="axr-bi">'
-      + '<div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div>'
+      + '<div class="axr-bi-col" data-i18n-feed' + _biAttr(_lgD) + '>' + a + '</div>'
       + '<div class="axr-bi-rule"></div>'
-      + '<div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div>'
+      + '<div class="axr-bi-col" data-i18n-feed' + _biAttr(_L2) + '>' + b + '</div>'
       + '</div>';
   }
   // No advantages AND no prose → there is nothing to say on this page, so it
@@ -46581,7 +46437,7 @@ function buildAccorAdOnlyV6(ad) {
   // Restaurants flow inline in the advantages treatment — caps, gold middots —
   // never as a bulleted list.
   var _restInline = _restList.length
-    ? '<div class="axr-fai-feats">' + _restList.slice(0, 3).map(function (r) {
+    ? '<div class="axr-fai-feats" translate="no">' + _restList.slice(0, 3).map(function (r) {
         return '<span>' + esc(r) + '</span>';
       }).join('') + '</div>'
     : '';
@@ -46623,7 +46479,7 @@ function buildAccorAdOnlyV6(ad) {
   try { _brandCrop = _accorBrandMarkCrop(brandWord, brandRaw, ad.brand); } catch (e) {}
   var _footerBrand = _brandMark
     ? '<span class="axr-all-brand"><img class="axr-all-svg" src="' + esc(_brandMark)
-      + '" data-crop="' + esc(_brandCrop) + '" alt="' + esc(brandWord || brandRaw || 'Hotel') + '"></span>'
+      + '" data-crop="' + esc(_brandCrop) + '" alt="' + esc(brandWord || brandRaw || '') + '"></span>'
       + '<span class="axr-all-sep"></span>'
     : '';
   var _footerHtml = '<footer class="axr-all axr-all-simple' + (_footerBrand ? ' axr-all-cobrand' : '') + '">'
@@ -47529,6 +47385,78 @@ function renderGateAd(index) {
 // into an ad-like object so it can ride the regular hotel rendering path
 // (logo on the left, photo in the middle). Returns null if we can't
 // resolve a usable logo file for the brand.
+// v23970 — HOTEL BRAND NORMALISATION, ONE COPY. A hotel feed's brand field
+// often names the parent group (Hilton, Marriott, IHG, Accor, Ennismore) or a
+// long form; the property's own name says which brand it is. Each rule is
+// [brand as sent, test on the property's name (null: always), brand to use],
+// applied in order, each to the result of the one before. These are brand
+// names — data, the same in every language. _buildDestHotelAdObj and
+// buildDestInfoSlide each carried the same 52 rules as inline ifs.
+var HOTEL_BRAND_RULES = [
+  ['Holiday Inn', /express/i, 'Holiday Inn Express'],
+  ['Hilton', /garden/i, 'Hilton Garden Inn'],
+  ['Hilton', /doubletree/i, 'DoubleTree'],
+  ['Hilton', /hampton/i, 'Hampton'],
+  ['Hilton', /embassy/i, 'Embassy Suites'],
+  ['Hilton', /homewood/i, 'Homewood Suites'],
+  ['Marriott', /courtyard/i, 'Courtyard'],
+  ['Marriott', /fairfield/i, 'Fairfield Inn'],
+  ['Marriott', /residence inn/i, 'Residence Inn'],
+  ['Marriott', /springhill/i, 'SpringHill Suites'],
+  ['Marriott', /westin/i, 'Westin'],
+  ['Marriott', /sheraton/i, 'Sheraton'],
+  ['Marriott', /ritz/i, 'Ritz-Carlton'],
+  ['IHG', /holiday inn express/i, 'Holiday Inn Express'],
+  ['IHG', /holiday inn/i, 'Holiday Inn'],
+  ['IHG', /crowne/i, 'Crowne Plaza'],
+  ['IHG', /intercontinental/i, 'InterContinental'],
+  ['Marriott', /delta hotels?/i, 'Delta Hotels'],
+  ['Delta', null, 'Delta Hotels'],
+  ['Delta Hotels and Resorts', null, 'Delta Hotels'],
+  ['Accor', /orient express/i, 'Orient Express'],
+  ['Accor', /faena/i, 'Faena'],
+  ['Accor', /raffles/i, 'Raffles'],
+  ['Accor', /sofitel/i, 'Sofitel'],
+  ['Accor', /fairmont/i, 'Fairmont'],
+  ['Accor', /pullman/i, 'Pullman'],
+  ['Accor', /swiss(o|ô)tel/i, 'Swissotel'],
+  ['Accor', /ibis budget/i, 'ibis budget'],
+  ['Accor', /ibis styles/i, 'ibis Styles'],
+  ['Accor', /\bibis\b/i, 'ibis'],
+  ['Accor', /novotel/i, 'Novotel'],
+  ['Accor', /mercure/i, 'Mercure'],
+  ['Accor', /m(ö|o)venpick/i, 'Movenpick'],
+  ['Ennismore', /mondrian/i, 'Mondrian'],
+  ['Ennismore', /hyde/i, 'Hyde'],
+  ['Ennismore', /sls/i, 'SLS'],
+  ['Ennismore', /delano/i, 'Delano'],
+  ['Ennismore', /the hoxton/i, 'The Hoxton'],
+  ['Ennismore', /mama shelter/i, 'Mama Shelter'],
+  ['Ennismore', /25hours/i, '25hours'],
+  ['Ennismore', /rixos/i, 'Rixos'],
+  ['Ennismore', /morgans/i, 'Morgans Originals'],
+  ['Ennismore', /21c/i, '21c Museum Hotel'],
+  ['Mövenpick', null, 'Movenpick'],
+  ['Swissôtel', null, 'Swissotel'],
+  ['SO/', null, 'so'],
+  ['SO', null, 'so'],
+  ['21c Museum Hotels', null, '21c Museum Hotel'],
+  ['Emblems', null, 'Emblems Collection'],
+  ['Emblems Collection by Accor', null, 'Emblems Collection'],
+  ['Hoxton', null, 'The Hoxton']
+];
+function _normHotelBrand(brand, name) {
+  var b = String(brand || '').trim(), n = String(name || '').toLowerCase();
+  for (var i = 0; i < HOTEL_BRAND_RULES.length; i++) {
+    var r = HOTEL_BRAND_RULES[i];
+    if (b === r[0] && (!r[1] || r[1].test(n))) b = r[2];
+  }
+  // Hard Rock — a partner brand Accor distributes in some markets: every
+  // variant ("Hard Rock Hotel", "Seminole Hard Rock" …) is the one slug.
+  if (/^hard.rock\b/i.test(b) || /^seminole hard rock/i.test(b)) b = 'Hard Rock'; // i18n-ok: data
+  return b;
+}
+
 function _buildDestHotelAdObj(info, cityName) {
   var hotels = info.hotels || [];
   if (!hotels.length) return null;
@@ -47536,68 +47464,8 @@ function _buildDestHotelAdObj(info, cityName) {
   window._destHotelIdx = ((window._destHotelIdx || 0) + 1) % hotels.length;
   var h = hotels[window._destHotelIdx];
   if (!h) return null;
-  // Brand normalization (same logic as buildDestInfoSlide)
-  var brandKey = (h.brand || '').trim();
-  var hName = (h.name || '').toLowerCase();
-  if (brandKey === 'Holiday Inn' && /express/i.test(hName)) brandKey = 'Holiday Inn Express';
-  if (brandKey === 'Hilton' && /garden/i.test(hName)) brandKey = 'Hilton Garden Inn';
-  if (brandKey === 'Hilton' && /doubletree/i.test(hName)) brandKey = 'DoubleTree';
-  if (brandKey === 'Hilton' && /hampton/i.test(hName)) brandKey = 'Hampton';
-  if (brandKey === 'Hilton' && /embassy/i.test(hName)) brandKey = 'Embassy Suites';
-  if (brandKey === 'Hilton' && /homewood/i.test(hName)) brandKey = 'Homewood Suites';
-  if (brandKey === 'Marriott' && /courtyard/i.test(hName)) brandKey = 'Courtyard';
-  if (brandKey === 'Marriott' && /fairfield/i.test(hName)) brandKey = 'Fairfield Inn';
-  if (brandKey === 'Marriott' && /residence inn/i.test(hName)) brandKey = 'Residence Inn';
-  if (brandKey === 'Marriott' && /springhill/i.test(hName)) brandKey = 'SpringHill Suites';
-  if (brandKey === 'Marriott' && /westin/i.test(hName)) brandKey = 'Westin';
-  if (brandKey === 'Marriott' && /sheraton/i.test(hName)) brandKey = 'Sheraton';
-  if (brandKey === 'Marriott' && /ritz/i.test(hName)) brandKey = 'Ritz-Carlton';
-  if (brandKey === 'IHG' && /holiday inn express/i.test(hName)) brandKey = 'Holiday Inn Express';
-  if (brandKey === 'IHG' && /holiday inn/i.test(hName)) brandKey = 'Holiday Inn';
-  if (brandKey === 'IHG' && /crowne/i.test(hName)) brandKey = 'Crowne Plaza';
-  if (brandKey === 'IHG' && /intercontinental/i.test(hName)) brandKey = 'InterContinental';
-  // Delta Hotels (Marriott family) — keep separate from "Delta" airline.
-  // AI may return brand as "Marriott" for a Delta property, or as "Delta"
-  // alone (which would otherwise slug to /logos/delta.svg = the airline).
-  if (brandKey === 'Marriott' && /delta hotels?/i.test(hName)) brandKey = 'Delta Hotels';
-  if (brandKey === 'Delta' || brandKey === 'Delta Hotels and Resorts') brandKey = 'Delta Hotels';
-  // Accor family — AI can return long-form names that don't slug cleanly,
-  // or sub-brands attributed to the parent ("Ennismore" instead of the actual brand).
-  if (brandKey === 'Accor' && /orient express/i.test(hName)) brandKey = 'Orient Express';
-  if (brandKey === 'Accor' && /faena/i.test(hName)) brandKey = 'Faena';
-  if (brandKey === 'Accor' && /raffles/i.test(hName)) brandKey = 'Raffles';
-  if (brandKey === 'Accor' && /sofitel/i.test(hName)) brandKey = 'Sofitel';
-  if (brandKey === 'Accor' && /fairmont/i.test(hName)) brandKey = 'Fairmont';
-  if (brandKey === 'Accor' && /pullman/i.test(hName)) brandKey = 'Pullman';
-  if (brandKey === 'Accor' && /swiss(o|ô)tel/i.test(hName)) brandKey = 'Swissotel';
-  if (brandKey === 'Accor' && /ibis budget/i.test(hName)) brandKey = 'ibis budget';
-  if (brandKey === 'Accor' && /ibis styles/i.test(hName)) brandKey = 'ibis Styles';
-  if (brandKey === 'Accor' && /\bibis\b/i.test(hName)) brandKey = 'ibis';
-  if (brandKey === 'Accor' && /novotel/i.test(hName)) brandKey = 'Novotel';
-  if (brandKey === 'Accor' && /mercure/i.test(hName)) brandKey = 'Mercure';
-  if (brandKey === 'Accor' && /m(ö|o)venpick/i.test(hName)) brandKey = 'Movenpick';
-  // Ennismore brand attribution → real brand
-  if (brandKey === 'Ennismore' && /mondrian/i.test(hName)) brandKey = 'Mondrian';
-  if (brandKey === 'Ennismore' && /hyde/i.test(hName)) brandKey = 'Hyde';
-  if (brandKey === 'Ennismore' && /sls/i.test(hName)) brandKey = 'SLS';
-  if (brandKey === 'Ennismore' && /delano/i.test(hName)) brandKey = 'Delano';
-  if (brandKey === 'Ennismore' && /the hoxton/i.test(hName)) brandKey = 'The Hoxton';
-  if (brandKey === 'Ennismore' && /mama shelter/i.test(hName)) brandKey = 'Mama Shelter';
-  if (brandKey === 'Ennismore' && /25hours/i.test(hName)) brandKey = '25hours';
-  if (brandKey === 'Ennismore' && /rixos/i.test(hName)) brandKey = 'Rixos';
-  if (brandKey === 'Ennismore' && /morgans/i.test(hName)) brandKey = 'Morgans Originals';
-  if (brandKey === 'Ennismore' && /21c/i.test(hName)) brandKey = '21c Museum Hotel';
-  // Long-form / variant brand names → canonical slug match
-  if (brandKey === 'Mövenpick') brandKey = 'Movenpick';
-  if (brandKey === 'Swissôtel') brandKey = 'Swissotel';
-  if (brandKey === 'SO/' || brandKey === 'SO') brandKey = 'so';
-  if (brandKey === '21c Museum Hotels') brandKey = '21c Museum Hotel';
-  if (brandKey === 'Emblems' || brandKey === 'Emblems Collection by Accor') brandKey = 'Emblems Collection';
-  if (brandKey === 'Hoxton') brandKey = 'The Hoxton';
-  // Hard Rock — partner brand distributed by Accor in some markets.
-  // Collapse all variants ("Hard Rock Hotel", "Hard Rock Hotels & Casinos",
-  // "Seminole Hard Rock", etc.) to the single "Hard Rock" slug.
-  if (/^hard.rock\b/i.test(brandKey) || /^seminole hard rock/i.test(brandKey)) brandKey = 'Hard Rock';
+  // Brand normalization: _normHotelBrand (one copy, shared with buildDestInfoSlide)
+  var brandKey = _normHotelBrand(h.brand, h.name);
   // Logo slug + path - use KNOWN_LOGO_EXT to pick the right format
   var logoSlug = brandKey.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   if (!logoSlug || !LOGO_TREATMENT[logoSlug]) return null; // skip if no logo treatment
@@ -48158,7 +48026,7 @@ function _welcomeCardLines(frFirst) {
       return '';
     });
   } catch (e) {}
-  if (!out.length) out.push({ text: 'Welcome aboard', lang: 'en' });
+  // (the key is in the store, in all nine languages: no English stand-in)
   return out.slice(0, 2);
 }
 
@@ -48197,8 +48065,11 @@ function _welcomeCardHtml(ad) {
   var lines = (ad && ad.lines) || [];
   function phrase(l, pos) {
     if (!l || !l.text) return '';
+    // its language, and its direction from the store's settings (Arabic
+    // right to left), never a comparison with one language
+    var rtl = !!(l.lang && BoardStrings.META[l.lang] && BoardStrings.META[l.lang].dir === 'rtl');
     return '<div class="gwc-ph gwc-ph-' + pos + '"' + (l.lang ? ' lang="' + esc(l.lang) + '"' : '')
-      + (l.lang === 'ar' ? ' dir="rtl"' : '') + '>' + esc(l.text) + '</div>';
+      + (rtl ? ' dir="rtl"' : '') + '>' + esc(l.text) + '</div>';
   }
   var kind = (ad.emblem && (ad.emblemKind === 'own' || ad.emblemKind === 'tile')) ? ad.emblemKind : 'none';
   // gad-ad-logo is the hook display-overrides.css has always written its
@@ -49056,68 +48927,8 @@ function buildDestInfoSlide(info, type, cityName) {
     if (!h) return '';
     var starStr = '';
     for (var si = 0; si < (h.stars || 0); si++) starStr += '\u2605';
-    // Normalize brand — AI sometimes strips sub-brands from the brand field
-    var brandKey = (h.brand || '').trim();
-    var hName = (h.name || '').toLowerCase();
-    if (brandKey === 'Holiday Inn' && /express/i.test(hName)) brandKey = 'Holiday Inn Express';
-    if (brandKey === 'Hilton' && /garden/i.test(hName)) brandKey = 'Hilton Garden Inn';
-    if (brandKey === 'Hilton' && /doubletree/i.test(hName)) brandKey = 'DoubleTree';
-    if (brandKey === 'Hilton' && /hampton/i.test(hName)) brandKey = 'Hampton';
-    if (brandKey === 'Hilton' && /embassy/i.test(hName)) brandKey = 'Embassy Suites';
-    if (brandKey === 'Hilton' && /homewood/i.test(hName)) brandKey = 'Homewood Suites';
-    if (brandKey === 'Marriott' && /courtyard/i.test(hName)) brandKey = 'Courtyard';
-    if (brandKey === 'Marriott' && /fairfield/i.test(hName)) brandKey = 'Fairfield Inn';
-    if (brandKey === 'Marriott' && /residence inn/i.test(hName)) brandKey = 'Residence Inn';
-    if (brandKey === 'Marriott' && /springhill/i.test(hName)) brandKey = 'SpringHill Suites';
-    if (brandKey === 'Marriott' && /westin/i.test(hName)) brandKey = 'Westin';
-    if (brandKey === 'Marriott' && /sheraton/i.test(hName)) brandKey = 'Sheraton';
-    if (brandKey === 'Marriott' && /ritz/i.test(hName)) brandKey = 'Ritz-Carlton';
-    if (brandKey === 'IHG' && /holiday inn express/i.test(hName)) brandKey = 'Holiday Inn Express';
-    if (brandKey === 'IHG' && /holiday inn/i.test(hName)) brandKey = 'Holiday Inn';
-    if (brandKey === 'IHG' && /crowne/i.test(hName)) brandKey = 'Crowne Plaza';
-    if (brandKey === 'IHG' && /intercontinental/i.test(hName)) brandKey = 'InterContinental';
-    // Delta Hotels (Marriott family) — keep separate from "Delta" airline.
-    // AI may return brand as "Marriott" for a Delta property, or as "Delta"
-    // alone (which would otherwise slug to /logos/delta.svg = the airline).
-    if (brandKey === 'Marriott' && /delta hotels?/i.test(hName)) brandKey = 'Delta Hotels';
-    if (brandKey === 'Delta' || brandKey === 'Delta Hotels and Resorts') brandKey = 'Delta Hotels';
-    // Accor family — AI can return long-form names that don't slug cleanly,
-    // or sub-brands attributed to the parent ("Ennismore" instead of the actual brand).
-    if (brandKey === 'Accor' && /orient express/i.test(hName)) brandKey = 'Orient Express';
-    if (brandKey === 'Accor' && /faena/i.test(hName)) brandKey = 'Faena';
-    if (brandKey === 'Accor' && /raffles/i.test(hName)) brandKey = 'Raffles';
-    if (brandKey === 'Accor' && /sofitel/i.test(hName)) brandKey = 'Sofitel';
-    if (brandKey === 'Accor' && /fairmont/i.test(hName)) brandKey = 'Fairmont';
-    if (brandKey === 'Accor' && /pullman/i.test(hName)) brandKey = 'Pullman';
-    if (brandKey === 'Accor' && /swiss(o|ô)tel/i.test(hName)) brandKey = 'Swissotel';
-    if (brandKey === 'Accor' && /ibis budget/i.test(hName)) brandKey = 'ibis budget';
-    if (brandKey === 'Accor' && /ibis styles/i.test(hName)) brandKey = 'ibis Styles';
-    if (brandKey === 'Accor' && /\bibis\b/i.test(hName)) brandKey = 'ibis';
-    if (brandKey === 'Accor' && /novotel/i.test(hName)) brandKey = 'Novotel';
-    if (brandKey === 'Accor' && /mercure/i.test(hName)) brandKey = 'Mercure';
-    if (brandKey === 'Accor' && /m(ö|o)venpick/i.test(hName)) brandKey = 'Movenpick';
-    // Ennismore brand attribution → real brand
-    if (brandKey === 'Ennismore' && /mondrian/i.test(hName)) brandKey = 'Mondrian';
-    if (brandKey === 'Ennismore' && /hyde/i.test(hName)) brandKey = 'Hyde';
-    if (brandKey === 'Ennismore' && /sls/i.test(hName)) brandKey = 'SLS';
-    if (brandKey === 'Ennismore' && /delano/i.test(hName)) brandKey = 'Delano';
-    if (brandKey === 'Ennismore' && /the hoxton/i.test(hName)) brandKey = 'The Hoxton';
-    if (brandKey === 'Ennismore' && /mama shelter/i.test(hName)) brandKey = 'Mama Shelter';
-    if (brandKey === 'Ennismore' && /25hours/i.test(hName)) brandKey = '25hours';
-    if (brandKey === 'Ennismore' && /rixos/i.test(hName)) brandKey = 'Rixos';
-    if (brandKey === 'Ennismore' && /morgans/i.test(hName)) brandKey = 'Morgans Originals';
-    if (brandKey === 'Ennismore' && /21c/i.test(hName)) brandKey = '21c Museum Hotel';
-    // Long-form / variant brand names → canonical slug match
-    if (brandKey === 'Mövenpick') brandKey = 'Movenpick';
-    if (brandKey === 'Swissôtel') brandKey = 'Swissotel';
-    if (brandKey === 'SO/' || brandKey === 'SO') brandKey = 'so';
-    if (brandKey === '21c Museum Hotels') brandKey = '21c Museum Hotel';
-    if (brandKey === 'Emblems' || brandKey === 'Emblems Collection by Accor') brandKey = 'Emblems Collection';
-    if (brandKey === 'Hoxton') brandKey = 'The Hoxton';
-    // Hard Rock — partner brand distributed by Accor in some markets.
-    // Collapse all variants ("Hard Rock Hotel", "Hard Rock Hotels & Casinos",
-    // "Seminole Hard Rock", etc.) to the single "Hard Rock" slug.
-    if (/^hard.rock\b/i.test(brandKey) || /^seminole hard rock/i.test(brandKey)) brandKey = 'Hard Rock';
+    // Brand normalization: _normHotelBrand (one copy, shared with _buildDestHotelAdObj)
+    var brandKey = _normHotelBrand(h.brand, h.name);
     // Hotel logo — local file in /logos/ folder, slug from brand name
     var logoSlug = brandKey.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     // Try PNG first (transparent bg works with filter), then SVG, then webp
@@ -49842,11 +49653,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         } else if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
           s = _ocClockTime(new Date(), tz || null);
         } else {
-          var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
           // data-mer="up" → uppercase 'PM' (silk banner clock); default stays
           // lowercase 'pm' for the rail shelf clocks.
           var _up = els[i].getAttribute('data-mer') === 'up';
-          s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
+          s = BoardStrings.boardTime(new Date(), tz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
         }
         if (s && els[i].textContent !== s) els[i].textContent = s;
       } catch (e) {}
@@ -49966,49 +49776,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 })();
 
 
-/* V9 bilingual label repair: visual labels only, no operational logic changes */
-(function(){
-  function t(map){ 
-    var l = (typeof lang !== 'undefined' && lang) ? lang : 'en';
-    return map[l] || map.en;
-  }
-  function fixVisibleGateLabels(){
-    try {
-      var pairs = [
-        [/^Scheduled Departure:$/i, {en:'Scheduled Departure:', fr:'Départ prévu:'}],
-        [/^Estimated Arrival:$/i, {en:'Estimated Arrival:', fr:'Arrivée prévue:'}],
-        [/^Estimated Boarding:$/i, {en:'Estimated Boarding:', fr:'Embarquement prévu:'}],
-        [/^Weather at destination$/i, {en:'Weather at destination', fr:'Météo à destination'}],
-        [/^Today$/i, {en:'Today', fr:"Aujourd'hui"}],
-        [/^Tomorrow$/i, {en:'Tomorrow', fr:'Demain'}],
-        [/^Aircraft type$/i, {en:'Aircraft type', fr:"Type d’appareil"}],
-        [/^Tail number:$/i, {en:'Tail number:', fr:'Immatriculation:'}]
-      ];
-      document.querySelectorAll('body *').forEach(function(el){
-        if (!el || el.children.length) return;
-        // The v2 right panel is bilingual BY LAYOUT (English label on top,
-        // second language underneath) — rewriting its English labels to the
-        // rotating language produced "Type d'appareil" twice (no English).
-        if (el.closest && el.closest('.gad-map-col-v2')) return;
-        // v23935 — nor the day line under a gate time (_gateDayLineHtml): it is
-        // already in the board's languages, one word per language. Rewriting
-        // its English "Tomorrow" to the rotating language printed
-        // "Demain | Demain" on a French-first Montréal gate.
-        if (el.closest && el.closest('.v2-fi-dayline')) return;
-        // v23973 — nor Later at this gate and the gate-change notice: their
-        // day words are one language per span too, so a Québec board's
-        // "Demain | Tomorrow" read "Demain | Demain".
-        if (el.closest && el.closest('.gl-strip, .gl-gc')) return;
-        var s = (el.textContent || '').trim();
-        for (var i=0;i<pairs.length;i++){
-          if (pairs[i][0].test(s)) { el.textContent = t(pairs[i][1]); break; }
-        }
-      });
-    } catch(e) {}
-  }
-  document.addEventListener('DOMContentLoaded', fixVisibleGateLabels);
-  _ocEvery(fixVisibleGateLabels, 1000);
-})();
+/* v23970 — the V9 "bilingual label repair" pass is gone. Every second it swept
+   the page and rewrote any leaf whose text was exactly an English label
+   ('Today', 'Tomorrow', 'Aircraft type'…) into the rotating language, from an
+   English/French-only map: it printed "Demain | Demain" on a French-first gate
+   (v23935 had to fence the day line off from it), and it would have done the
+   same to any new element that happened to carry one of those words. None of
+   the labels it repaired is rendered in English any more; every one comes
+   from the store in the board's own languages. The board-languages guard
+   (B13) fails any timer that sweeps and rewrites the page's text. */
 
 /* V16 Accor layout safety net: keep ad text inside panel bounds. */
 (function(){
@@ -50086,73 +49862,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   _ocEvery(run,1000);
 })();
 
-/* V21 Accor layout hard-lock: prevents legacy rescue patches from re-expanding text/logos. */
-(function(){
-  const shortCopy = {
-    en: 'A refined stay close to your destination.',
-    fr: 'Un séjour raffiné près de votre destination.'
-  };
-  function lockAccor(){
-    const ad = document.querySelector('#adPanel.ad-accor6, .ad-accor6');
-    if(!ad) return;
-    ad.style.display = 'grid';
-    ad.style.gridTemplateColumns = '52% 48%';
-    ad.style.overflow = 'hidden';
-    const panel = ad.querySelector('.accor6-panel, .accor-panel');
-    if(panel){
-      panel.style.overflow = 'hidden';
-      panel.style.padding = '56px 54px 42px 44px';
-    }
-    const brand = ad.querySelector('.accor6-brand, .accor6-logo, .accor-brand, .accor-logo, .accor6-wordmark, .accor-wordmark');
-    if(brand){
-      brand.style.maxWidth = '318px';
-      brand.style.width = '100%';
-      brand.style.margin = '0 auto 32px auto';
-      brand.style.overflow = 'visible';
-    }
-    const name = ad.querySelector('.accor6-name, .accor6-title, .accor-hotel-name');
-    if(name){
-      name.style.fontSize = 'clamp(30px, 2.35vw, 46px)';
-      name.style.lineHeight = '1.04';
-      name.style.whiteSpace = 'normal';
-      name.style.overflow = 'visible';
-      name.style.textOverflow = 'clip';
-      name.style.maxHeight = '100px';
-    }
-    const desc = ad.querySelector('.accor6-description, .accor-description, .accor6-blurb');
-    if(desc){
-      const t = (desc.textContent || '').trim();
-      if(t.length > 110 || /Novotel Toronto Vaughan|complimentary|water filling|Restaurant & Lounge|business and leisure/i.test(t)){
-        desc.textContent = /[àéèêôûç]|séjour|destination/i.test(t) ? shortCopy.fr : shortCopy.en;
-      }
-      desc.style.overflow = 'hidden';
-      desc.style.display = '-webkit-box';
-      desc.style.webkitLineClamp = '3';
-      desc.style.webkitBoxOrient = 'vertical';
-      desc.style.maxHeight = '108px';
-    }
-    const qrBox = ad.querySelector('.accor6-qr-bubble, .accor-qr-bubble, .accor6-qrBox, .accor-qrBox');
-    if(qrBox){
-      qrBox.style.width = '424px';
-      qrBox.style.height = '128px';
-      qrBox.style.display = 'grid';
-      qrBox.style.gridTemplateColumns = '1fr 98px';
-      qrBox.style.columnGap = '18px';
-      qrBox.style.overflow = 'visible';
-      qrBox.style.padding = '20px 18px 20px 22px';
-    }
-    const qr = ad.querySelector('.accor6-qr, .accor-qr');
-    if(qr){
-      qr.style.width = '98px'; qr.style.height = '98px'; qr.style.overflow = 'hidden';
-      Array.from(qr.children).forEach((child, i) => {
-        if(i > 0 && !/canvas|img|svg/i.test(child.tagName)) child.style.display = 'none';
-        child.style.width = '98px'; child.style.height = '98px'; child.style.maxWidth = '98px'; child.style.maxHeight = '98px';
-      });
-    }
-  }
-  window.addEventListener('load', lockAccor);
-  _ocEvery(lockAccor, 500);
-})();
+/* v23970 — the V21 Accor "hard-lock" is gone. It looked every half second for
+   .ad-accor6 markup that no Accor card has produced since the V6 cards, and
+   on finding it replaced a long description with an English or French line
+   ("A refined stay close to your destination."), whatever the board's
+   language. */
 
 // ── SELF-UPDATE ─────────────────────────────────────────────────────────
 // Kiosk pages run for days and never re-fetch their HTML, so deploys only
@@ -50636,26 +50350,25 @@ function _renderBigCraft(el, ctx) {
   // Japanese/Arabic screens. Same two-word cap as the rail cards.
   var stShow = (function () {
     if (!ss) return inb.status || '—';
-    var _cap = _fidsTitleCase;
-    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+    var _cap = _fidsTitleCaseIn;
+    var picked = BoardStrings.pairLangs(langs, String(window._gateIata || ''));   // v23970
     var seen = Object.create(null), parts = [];
     for (var i = 0; i < picked.length && parts.length < 2; i++) {
       var w = ss[picked[i]];
       if (!w) continue;
-      w = _cap(w);
+      w = _cap(w, picked[i]);
       var k = w.toLowerCase();
       if (seen[k]) continue;
       seen[k] = 1;
-      parts.push(w);
+      parts.push(BoardStrings.half(picked[i], w));
     }
-    if (!parts.length) parts.push(_cap(ss.en));
     return parts.join(' <span class="v2-rc-fi-sep">|</span> ');
   })();
   var stCls = /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled');
   var acImg = '';
   try { var im = document.querySelector('.v2-rc-shelf-illus img, .g8-aircraft-img'); if (im && im.src) acImg = im.src; } catch (e) {}
   var reg = inb._reg ? '  |  ' + String(inb._reg).toUpperCase()
-    + (/^history/.test(String(inb._regSource || '')) ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> prévu</span>' : '') : '';
+    + (/^history/.test(String(inb._regSource || '')) ? _acExpectedHtml(frFirstAirport(window._gateIata || '')) : '') : '';
   function row(l1, l2, val, cls) {
     return '<div class="v2-rc-fi-trow"><div class="v2-rc-fi-tlbl"><span>' + l1 + '</span><span>' + l2 + '</span></div>'
          + '<div class="v2-rc-fi-tval' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
@@ -50715,9 +50428,16 @@ function _renderBigCraft(el, ctx) {
                 return (iC ? '<span class="bigcraft-cap-sep"> | </span>' : '') + '<span>' + w + '</span>';
               }, '');
               var _capEsc = function (v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
-              return '<div class="bigcraft-flightcap">' + _capLbl
-                + (_capFlt ? ' <span class="bigcraft-cap-flt">' + _capEsc(_capFlt) + '</span>' : '')
-                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> ' + _capEsc(_capPlc) : '')
+              // v23995 — the caption reads in the direction of its lead
+              // language: on a board led by Arabic the whole line is right to
+              // left, so the Arabic label comes first (at the right) and the
+              // flight and the place follow it; each is isolated (<bdi>) so
+              // 'AC1960' and 'NEW YORK' keep their own order inside it.
+              var _capLead = BoardStrings.pairLangs(langs, false)[0];
+              var _capRtl = BoardStrings.META[_capLead] && BoardStrings.META[_capLead].dir === 'rtl';
+              return '<div class="bigcraft-flightcap"' + (_capRtl ? ' dir="rtl"' : '') + '>' + _capLbl
+                + (_capFlt ? ' <bdi class="bigcraft-cap-flt">' + _capEsc(_capFlt) + '</bdi>' : '')
+                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> <bdi class="bigcraft-cap-plc">' + _capEsc(_capPlc) + '</bdi>' : '')
                 + '</div>';
             } catch (eCap) { return ''; }
           })()
@@ -50726,7 +50446,7 @@ function _renderBigCraft(el, ctx) {
             // else; it was hard-coded EN/FR and read 'Position estimée' on an
             // en,es board.
             try { return _gateLbl('estPos', false, function(w){return w;}, ' \u00b7 ', true); }
-            catch(e){ return 'Estimated position'; }
+            catch(e){ return ''; }
           })() + '</div>' : '')
     +   '</div>'
     + '</div>';
@@ -51179,7 +50899,7 @@ function _wxLocalDate(iata, ts) {
   try {
     var z = (typeof AP !== 'undefined' && AP[iata] || {}).tz;
     var d = ts ? new Date(ts) : new Date();
-    return d.toLocaleDateString('en-CA', z ? { timeZone: z } : undefined);
+    return d.toLocaleDateString('en-CA', z ? { timeZone: z } : undefined); // i18n-ok: code
   } catch (e) { return ''; }
 }
 function _wxFetchSun(iata, ts) {
@@ -51238,7 +50958,7 @@ function _wxNightAt(iata, ts) {
     }
     var z = (AP[iata] || {}).tz;
     var d = ts ? new Date(ts) : new Date();
-    var h = Number(d.toLocaleTimeString('en-GB', z ? { timeZone: z, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }).slice(0, 2));
+    var h = Number(d.toLocaleTimeString('en-GB', z ? { timeZone: z, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }).slice(0, 2)); // i18n-ok: code
     return h < 6 || h >= 21;
   } catch (eN) { return false; }
 }
@@ -51252,12 +50972,12 @@ function _wxNightAt(iata, ts) {
 var _WXLBL = {
   'clear-day':   { en:'Sunny', fr:'Ensoleillé', es:'Soleado', de:'Sonnig', it:'Soleggiato', pt:'Ensolarado', ja:'晴れ', zh:'晴', ar:'مشمس' },
   'clear-night': { en:'Clear', fr:'Dégagé', es:'Despejado', de:'Klar', it:'Sereno', pt:'Limpo', ja:'快晴', zh:'晴朗', ar:'صافٍ' },
-  'partly-cloudy-day':   { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'多云', ar:'غائم جزئياً' },
-  'partly-cloudy-night': { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'多云', ar:'غائم جزئياً' },
+  'partly-cloudy-day':   { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'局部多云', ar:'غائم جزئياً' },
+  'partly-cloudy-night': { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'局部多云', ar:'غائم جزئياً' },
   'overcast-day': { en:'Overcast', fr:'Couvert', es:'Cubierto', de:'Bedeckt', it:'Coperto', pt:'Encoberto', ja:'曇天', zh:'阴天', ar:'ملبد بالغيوم' },
   'overcast':     { en:'Overcast', fr:'Couvert', es:'Cubierto', de:'Bedeckt', it:'Coperto', pt:'Encoberto', ja:'曇天', zh:'阴天', ar:'ملبد بالغيوم' },
   'cloudy': { en:'Cloudy', fr:'Nuageux', es:'Nublado', de:'Bewölkt', it:'Nuvoloso', pt:'Nublado', ja:'曇り', zh:'阴', ar:'غائم' },
-  'fog':    { en:'Fog', fr:'Brouillard', es:'Niebla', de:'Nebel', it:'Nebbia', pt:'Nevoeiro', ja:'霧', zh:'雾', ar:'ضباب' },
+  'fog':    { en:'Fog', fr:'Brouillard', es:'Niebla', de:'Nebel', it:'Nebbia', pt:'Neblina', ja:'霧', zh:'雾', ar:'ضباب' },
   'mist':   { en:'Mist', fr:'Brume', es:'Neblina', de:'Dunst', it:'Foschia', pt:'Névoa', ja:'もや', zh:'薄雾', ar:'سديم' },
   'drizzle': { en:'Drizzle', fr:'Bruine', es:'Llovizna', de:'Nieselregen', it:'Pioviggine', pt:'Chuvisco', ja:'霧雨', zh:'毛毛雨', ar:'رذاذ' },
   'rain':    { en:'Rain', fr:'Pluie', es:'Lluvia', de:'Regen', it:'Pioggia', pt:'Chuva', ja:'雨', zh:'雨', ar:'مطر' },
@@ -51265,7 +50985,7 @@ var _WXLBL = {
   'snow':         { en:'Snow', fr:'Neige', es:'Nieve', de:'Schnee', it:'Neve', pt:'Neve', ja:'雪', zh:'雪', ar:'ثلج' },
   'extreme-snow': { en:'Heavy snow', fr:'Neige forte', es:'Nieve intensa', de:'Starker Schneefall', it:'Neve intensa', pt:'Neve forte', ja:'大雪', zh:'大雪', ar:'ثلوج كثيفة' },
   'sleet': { en:'Freezing rain', fr:'Pluie verglaçante', es:'Lluvia helada', de:'Gefrierender Regen', it:'Pioggia gelata', pt:'Chuva congelante', ja:'着氷性の雨', zh:'冻雨', ar:'مطر متجمد' },
-  'hail':  { en:'Ice pellets', fr:'Grésil', es:'Granizo', de:'Graupel', it:'Grandine', pt:'Granizo', ja:'ひょう', zh:'冰雹', ar:'برد' },
+  'hail':  { en:'Ice pellets', fr:'Grésil', es:'Gránulos de hielo', de:'Eiskörner', it:'Granuli di ghiaccio', pt:'Pelotas de gelo', ja:'凍雨', zh:'冰粒', ar:'حبيبات جليدية' },
   'thunderstorms-day-rain': { en:'Thunderstorm', fr:'Orage', es:'Tormenta', de:'Gewitter', it:'Temporale', pt:'Trovoada', ja:'雷雨', zh:'雷暴', ar:'عاصفة رعدية' },
   'thunderstorms-rain':     { en:'Thunderstorm', fr:'Orage', es:'Tormenta', de:'Gewitter', it:'Temporale', pt:'Trovoada', ja:'雷雨', zh:'雷暴', ar:'عاصفة رعدية' },
   'wind': { en:'Windy', fr:'Venteux', es:'Ventoso', de:'Windig', it:'Ventoso', pt:'Ventoso', ja:'強風', zh:'大风', ar:'عاصف' }
@@ -51292,6 +51012,8 @@ var _WXLBL = {
 // It is scoped to airports the carrier actually served. A heritage card for
 // an Atlantic Canada feeder at a European gate would be a non sequitur, and
 // worse, would read as a data error.
+// v23970 — each mark's caption lives in the store as 'heritage:<key>', in all
+// nine languages (board-strings.js); the records carry the art and facts only.
 var HERITAGE_MARKS = [
   {
     key: 'air-atlantic',
@@ -51315,8 +51037,6 @@ var HERITAGE_MARKS = [
     // A card for Canadian itself would need Canadian's OWN wordmark, which
     // this folder does not have.
     endorsement: '/logos/airlines/canadian/heritage/canadian-airlines-partner.svg',
-    en: 'St. John’s, Newfoundland · a Canadian Partner · until 1998',
-    fr: 'St. John’s (Terre-Neuve) · partenaire de Canadien · jusqu’en 1998',
     // The Atlantic network, plus the three central-Canada cities it reached.
     airports: ['YYT', 'YHZ', 'YQX', 'YQM', 'YSJ', 'YFC', 'YDF', 'YQY', 'YYG', 'YYZ', 'YOW', 'YUL']
   },
@@ -51346,8 +51066,6 @@ var HERITAGE_MARKS = [
     // 1987 stacked lockup (roundel over the wordmark), from the supplied
     // artwork, in place of the modern horizontal logo.
     endorsement: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
-    en: 'Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001',
-    fr: 'Halifax (Nouvelle-Écosse) · premier Connecteur Air Canada · 1986–2001',
     // The Atlantic network it fed Air Canada from, plus the two central-Canada
     // cities it reached. Sources also put it into the United States, but name
     // no city, so no US airport is listed.
@@ -51370,8 +51088,6 @@ var HERITAGE_MARKS = [
     // artwork. Nose left like the other two, so the card's sky runs the same
     // way; until now this card had no aircraft and so showed no sky at all.
     aircraft: '/logos/advertisements/retro-airlines/CDNDC10.svg',
-    en: 'Calgary · 1987–2001',
-    fr: 'Calgary · 1987–2001',
     airports: '*CA'
   },
   {
@@ -51399,8 +51115,6 @@ var HERITAGE_MARKS = [
     // The supplied AC87 drawing: mixed-case 'Air Canada' titles over the
     // double cheatline, the livery that went with this stacked mark.
     aircraft: '/aircraft/heritage/air-canada-dc9-ac87.svg',
-    en: 'Montreal · DC-9 · 1966–2002',
-    fr: 'Montréal · DC-9 · 1966–2002',
     // The DC-9 was the domestic workhorse; Canadian airports only, the same
     // scope as the Canadian Airlines card.
     airports: '*CA'
@@ -51419,8 +51133,6 @@ var HERITAGE_MARKS = [
     file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc9-ac80.svg',
-    en: 'Montreal · DC-9 · 1966–2002',
-    fr: 'Montréal · DC-9 · 1966–2002',
     airports: '*CA'
   }
 ];
@@ -51464,12 +51176,20 @@ function _renderHeritageCard(el) {
       return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     };
-    // Both lines, French first at the French-first airports — the same order
-    // every other bilingual surface on this board uses.
-    var l1 = frF ? mark.fr : mark.en;
-    var l2 = frF ? mark.en : mark.fr;
-    var kicker = frF ? 'Depuis les archives &nbsp;|&nbsp; From the archive'
-                     : 'From the archive &nbsp;|&nbsp; Depuis les archives';
+    // One line per language of the board's pair, French first at the
+    // French-first airports — the same order every other pair on this board
+    // uses. v23970 — the kicker and the captions come from the store in all
+    // nine languages; they were English and French whatever the board spoke.
+    var _hLangs = BoardStrings.pairLangs(langs, frF);
+    var _capKey = 'heritage:' + mark.key;
+    var _lines = [], _seenL = Object.create(null);
+    _hLangs.forEach(function (lg) {
+      var w = BoardStrings.bs(_capKey, lg);
+      if (!w || _seenL[w]) return;
+      _seenL[w] = 1;
+      _lines.push(BoardStrings.half(lg, esc(w)));
+    });
+    var kicker = BoardStrings.pair('heritageKicker', { langs: _hLangs, sep: ' &nbsp;|&nbsp; ' });
     // v23883 — THE AEROPLANE ITSELF, AND NOTHING ELSE ADDED.
     //
     // The first attempt at this put the mark on a white plate over a drawn sky
@@ -51559,8 +51279,8 @@ function _renderHeritageCard(el) {
       // the label carries the facts. `alt` keeps the name for anything that
       // cannot render the image.
       +   '<div class="hcard-rule" aria-hidden="true"></div>'
-      +   '<div class="hcard-line">' + esc(l1) + '</div>'
-      +   (l2 && l2 !== l1 ? '<div class="hcard-line hcard-line-2">' + esc(l2) + '</div>' : '')
+      +   (_lines[0] ? '<div class="hcard-line">' + _lines[0] + '</div>' : '')
+      +   (_lines[1] ? '<div class="hcard-line hcard-line-2">' + _lines[1] + '</div>' : '')
       + '</div>';
     if (el.innerHTML !== html) el.innerHTML = html;
     return true;
@@ -51945,12 +51665,12 @@ function _wxIntroHasGlyphs(s) {
 function _wxIntroPaintHtml(frFirst) {
   var rows = _WX_INTRO_LINES.filter(function (r) { return _wxIntroHasGlyphs(r.t); });
   if (!rows.length) return '';
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-  if (frFirst) { var _fi = picked.indexOf('fr'); if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); } }
+  var picked = BoardStrings.pairLangs(langs, !!frFirst);   // v23970 — the one chooser
   var byLang = {}; rows.forEach(function (r) { byLang[r.l] = r; });
   var hero = [], seen = {};
   picked.forEach(function (l) { var r = byLang[l]; if (r && !seen[l]) { seen[l] = 1; hero.push(r); } });
-  if (!hero.length) { hero.push(byLang.en || rows[0]); seen[hero[0].l] = 1; }
+  // (no line of the board's own languages can be drawn here: the others
+  // still settle under, and no English stands in for them)
   var rank = rows.filter(function (r) { return !seen[r.l]; });
   var h = '<div class="wxc-paint"><i class="wxc-pk" aria-hidden="true"><b></b><b></b></i>';
   hero.forEach(function (r, i) {
@@ -51971,7 +51691,9 @@ function _wxIntroPaintHtml(frFirst) {
     h += '</div>';
   }
   h += '</div>';
-  return '<div class="wxc-intro wxc-intro-paint" aria-hidden="true">' + _wxIntroBackdropHtml() + h + '</div>';
+  // data-i18n-all: this title shows every board language by design, each
+  // line marked with its own (tests/render/words.mjs reads it that way)
+  return '<div class="wxc-intro wxc-intro-paint" data-i18n-all aria-hidden="true">' + _wxIntroBackdropHtml() + h + '</div>';
 }
 
 // The two hero lines share ONE size, the way the film set them: the size is
@@ -52040,7 +51762,7 @@ function _wxIntroHtml(frFirst) {
   // A drawn sky needs far less knocking back than footage does, so the
   // overlay says which it got and the scrim and the plate soften to match.
   var _sky = (_WX_INTRO_BACKDROP === 'sky');
-  return '<div class="wxc-intro' + (_sky ? ' wxc-intro-drawn' : '') + '" aria-hidden="true">'
+  return '<div class="wxc-intro' + (_sky ? ' wxc-intro-drawn' : '') + '" data-i18n-all aria-hidden="true">'
        + _wxIntroBackdropHtml()
        + '<i class="wxc-intro-scrim"></i>'
        + '<i class="wxc-intro-panel"></i>'
@@ -52166,15 +51888,16 @@ function _renderWxCard(el) {
     // condition pair, day/month name arrays, _mlbl(en,fr) — one more retired
     // language picker. Everything now resolves from `langs` (≤2, de-duped,
     // fr-first at the French-first airports) like the rest of the build.
-    var _wxLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-    if (_wxFrF) { var _wf = _wxLangs.indexOf('fr'); if (_wf > 0) { _wxLangs.splice(_wf, 1); _wxLangs.unshift('fr'); } }
+    var _wxLangs = BoardStrings.pairLangs(langs, _wxFrF);   // v23970 — the one chooser
     var _wxSep = ' <span class="v2-rc-fi-sep">|</span> ';
     var _wxPair = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
-        seen[String(t).toLowerCase()] = 1; w.push(t);
+        // v23970 — each word carries its language (an Arabic condition read
+        // left to right under lang="en", a Chinese one took Japanese glyphs)
+        seen[String(t).toLowerCase()] = 1; w.push(BoardStrings.markHalf(t, _wxLangs[_wi]));
       }
       return w.join(_wxSep);
     };
@@ -52193,10 +51916,10 @@ function _renderWxCard(el) {
     var _wxPairT = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
-        w.push('<span class="wxc-t-part">' + t + '</span>');
+        w.push(BoardStrings.markHalf('<span class="wxc-t-part">' + t + '</span>', _wxLangs[_wi]));
       }
       return w.join(_wxSep);
     };
@@ -52204,17 +51927,22 @@ function _renderWxCard(el) {
     // Day cells keep the approved layout — first language's day + date
     // ABOVE the icon, second language's BELOW — via each language's own
     // locale (single language selected → no bottom line).
-    var _WX_LOCALE = { en:'en-US', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt-BR', ja:'ja', zh:'zh-CN', ar:'ar' };
+    // v23970 — the store's locale for each language (BoardStrings.META)
     // The three-letter day as TEXT — what the chips on the days screen use
     // directly, and what _dayLine wraps for a tile. Kept as text so no caller
     // ever has to un-make markup to get at the word.
     var _dayName = function (d, lg) {
-      var loc = _WX_LOCALE[lg] || 'en-US';
-      var day = d.toLocaleDateString(loc, { weekday: 'short' });
+      var day = d.toLocaleDateString(BoardStrings.intl(lg), { weekday: 'short' });
+      // Three capital letters is a Latin-script convention. Japanese and
+      // Chinese short forms are a glyph or two already, and Arabic has no
+      // short form: cutting its name to three letters made Sunday, Monday
+      // and Tuesday read الأ / الا / الث — the store's own rule
+      // (BoardStrings.weekday never slices a weekday).
+      var m = BoardStrings.META[lg];
+      if (m && m.script !== 'latin') return day.replace(/[.\s]+$/, '');
       return day.replace(/[^\p{L}]/gu, '').slice(0, 3).toUpperCase();
     };
     var _dayLine = function (d, lg, extraCls) {
-      var loc = _WX_LOCALE[lg] || 'en-US';
       // v23558 — THREE LETTERS, STILL IN BOTH LANGUAGES
       // The short form is
       // locale-correct but punctuated in several of them — fr 'mer.', de
@@ -52229,23 +51957,23 @@ function _renderWxCard(el) {
       // Short form caps every supported locale at
       // 9 chars — es '7 sept', en 'Sep 7', pt '7 de set.', de '7. Sept.'.
       var date = (lg === 'en')
-        ? d.toLocaleDateString(loc, { month: 'short' }) + ' ' + d.getDate()
-        : d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
+        ? d.toLocaleDateString(BoardStrings.intl(lg), { month: 'short' }) + ' ' + d.getDate()
+        : d.toLocaleDateString(BoardStrings.intl(lg), { day: 'numeric', month: 'short' });
       // v23558 — NO DATES. The day
       // name alone fills the tile header band, which is what the reference
       // layout shows. `date` is left computed but unused so the abbreviated-
       // month logic above stays available if dates are ever wanted back.
       void date;
-      return '<div class="wxc-d' + extraCls + '">' + day + '</div>';
+      return BoardStrings.markHalf('<div class="wxc-d' + extraCls + '">' + day + '</div>', lg);
     };
     var _dayAbbr = _dayName;
     var _mlbl = function (key) {
       var M = {
-        feels: { en:'Feels like', fr:'Ressenti', es:'Sensación', de:'Gefühlt', it:'Percepita', pt:'Sensação', ja:'体感', zh:'体感', ar:'الإحساس' },
-        wind:  { en:'Wind', fr:'Vent', es:'Viento', de:'Wind', it:'Vento', pt:'Vento', ja:'風', zh:'风', ar:'الرياح' },
-        hum:   { en:'Humidity', fr:'Humidité', es:'Humedad', de:'Luftfeuchte', it:'Umidità', pt:'Umidade', ja:'湿度', zh:'湿度', ar:'الرطوبة' }
+        feels: BoardStrings.entry('wxFeels'),
+        wind:  BoardStrings.entry('wxWind'),
+        hum:   BoardStrings.entry('wxHumidity')
       };
-      return _wxPair(M[key] || { en: key });
+      return _wxPair(M[key] || {});
     };
 
     // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
@@ -52297,18 +52025,18 @@ function _renderWxCard(el) {
     try {
       var _hTz = (AP[dest] || {}).tz;
       var _hNow = Date.now();
-      var _hFmt = _hTz ? { timeZone: _hTz, hour: 'numeric', hour12: true } : { hour: 'numeric', hour12: true };
-      var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' };
+      var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }; // i18n-ok: code
       (wx.hourly || [])
         .filter(function (h) { return h && typeof h.temp === 'number' && h.ts && h.ts >= _hNow - 1800000; })
         .sort(function (a, b) { return a.ts - b.ts; })
         .slice(0, 8)
         .forEach(function (h) {
           var hd = new Date(h.ts);
-          var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
+          // "3 PM" on a card led by English, "15:00" on any other
+          var lbl = BoardStrings.boardTime(hd, _hTz || null, { hourOnly: true, list: _wxLangs }).replace(/\s/g, ' ');
           var hNight = false;
           try { hNight = !!_wxNightAt(dest, h.ts); } catch (eHN) {
-            var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
+            var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2)); // i18n-ok: code
             hNight = h24 < 6 || h24 >= 21;
           }
           _wxHours.push({ ts: h.ts, temp: h.temp, ic: _wxAnimIcon(h.code, hNight), lbl: lbl, night: hNight });
@@ -52416,8 +52144,7 @@ function _renderWxCard(el) {
       try {
         var z = (AP[iata] || {}).tz;
         if (!z) return '';
-        return new Date(ts).toLocaleTimeString('en-US',
-          { timeZone: z, hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
+        return BoardStrings.boardTime(ts, z, { list: _wxLangs }).replace(/\s/g, ' ');
       } catch (eK) { return ''; }
     };
 
@@ -52570,18 +52297,19 @@ function _renderWxCard(el) {
     // The short label sits beside the clock: "Departure | Départ 6:15 PM".
     // Both are COMPLETE words either side of the bar — nothing here is a
     // phrase cut in half.
-    var _depShort = _wxPair({ en:'Departure', fr:'Départ', es:'Salida', de:'Abflug', it:'Partenza', pt:'Partida', ja:'出発', zh:'出发', ar:'المغادرة' });
-    var _arrShort = _wxPair({ en:'Arrival', fr:'Arrivée', es:'Llegada', de:'Ankunft', it:'Arrivo', pt:'Chegada', ja:'到着', zh:'到达', ar:'الوصول' });
+    // the gate's own Departure / Arrival labels
+    var _depShort = _wxPair(_lblEntry('departure'));
+    var _arrShort = _wxPair(_lblEntry('arrival'));
     // Titles join their languages with the set's amber lozenge rather than
     // the board's bar; each language stays one unbreakable unit (v23767).
     var _wxDia = ' <i class="wxc-dia" aria-hidden="true"></i> ';
     var _wxPairD = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
-        w.push('<span class="wxc-t-part">' + t + '</span>');
+        w.push(BoardStrings.markHalf('<span class="wxc-t-part">' + t + '</span>', _wxLangs[_wi]));
       }
       return w.join(_wxDia);
     };
@@ -52589,15 +52317,15 @@ function _renderWxCard(el) {
     var _wxPairS = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
-        w.push('<span class="wxc-l' + (w.length + 1) + '">' + t + '</span>');
+        w.push(BoardStrings.markHalf('<span class="wxc-l' + (w.length + 1) + '">' + t + '</span>', _wxLangs[_wi]));
       }
       return w.join('');
     };
     var _wxBar = '<div class="wxc-bar-head"><i class="wxc-bar-tick" aria-hidden="true"></i><span class="wxc-bar-txt">'
-      + _wxPairD({ en:'WEATHER REPORT', fr:'BULLETIN MÉTÉO', es:'INFORME DEL CLIMA', de:'WETTERBERICHT', it:'BOLLETTINO METEO', pt:'BOLETIM METEOROLÓGICO', ja:'天気予報', zh:'天气预报', ar:'نشرة الطقس' })
+      + _wxPairD(BoardStrings.entry('wxReport'))
       + '</span></div>';
     var _wxDots = function (n) {
       var d = '';
@@ -52655,8 +52383,9 @@ function _renderWxCard(el) {
       // own title carries both languages, so the column takes the board's
       // first one.
       var _wxNowLbl = (function () {
-        var o = { en:'Now', fr:'Maint.', es:'Ahora', de:'Jetzt', it:'Ora', pt:'Agora', ja:'今', zh:'现在', ar:'الآن' };
-        return o[_wxLangs[0]] || o.en;
+        // the first language's word, marked with it (an Arabic 'now' reads
+        // right to left; a Chinese one takes the simplified-Chinese glyphs)
+        return BoardStrings.markHalf(BoardStrings.bs('wxNowCol', _wxLangs[0]), _wxLangs[0]);
       })();
       var _cols = _pts.map(function (p, i) {
         return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
@@ -52720,7 +52449,7 @@ function _renderWxCard(el) {
           var t = _wxClock(dest, Date.now());
           if (!t) return '';
           return '<div class="wxc-facts-when">'
-            + _wxPairD({ en:'NOW', fr:'MAINTENANT', es:'AHORA', de:'JETZT', it:'ORA', pt:'AGORA', ja:'現在', zh:'现在', ar:'الآن' })
+            + _wxPairD(BoardStrings.entry('wxNowTitle'))
             + '<b>' + t + '</b></div>';
         } catch (eFW) { return ''; }
       })();
@@ -52732,23 +52461,23 @@ function _renderWxCard(el) {
           var _arrow = _num(_c2.windDir)
             ? '<svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(' + Math.round(_c2.windDir + 180) + 'deg)"><path d="M12 3v18M12 3l-5 5M12 3l5 5"/></svg>'
             : _WX_F_WIND;
-          _s2facts += _wxFact(_arrow, _wxPairS({ en:'Wind', fr:'Vent', es:'Viento', de:'Wind', it:'Vento', pt:'Vento', ja:'風', zh:'风', ar:'الرياح' }), Math.round(_c2.windSpeed) + ' km/h');
+          _s2facts += _wxFact(_arrow, _wxPairS(BoardStrings.entry('wxWind')), Math.round(_c2.windSpeed) + ' km/h');
         }
         if (_c2 && _num(_c2.windGust)) {
-          _s2facts += _wxFact(_WX_F_GUST, _wxPairS({ en:'Gusts', fr:'Rafales', es:'Ráfagas', de:'Böen', it:'Raffiche', pt:'Rajadas', ja:'突風', zh:'阵风', ar:'هبات' }), Math.round(_c2.windGust) + ' km/h');
+          _s2facts += _wxFact(_WX_F_GUST, _wxPairS(BoardStrings.entry('wxGusts')), Math.round(_c2.windGust) + ' km/h');
         }
         if (_c2 && _num(_c2.visibility)) {
-          _s2facts += _wxFact(_WX_F_VIS, _wxPairS({ en:'Visibility', fr:'Visibilité', es:'Visibilidad', de:'Sicht', it:'Visibilità', pt:'Visibilidade', ja:'視程', zh:'能见度', ar:'الرؤية' }), Math.round(_c2.visibility / 1000) + ' km');
+          _s2facts += _wxFact(_WX_F_VIS, _wxPairS(BoardStrings.entry('wxVisibility')), Math.round(_c2.visibility / 1000) + ' km');
         }
         if (_c2 && _num(_c2.cloudCover)) {
-          _s2facts += _wxFact(_WX_F_CLOUD, _wxPairS({ en:'Cloud', fr:'Nuages', es:'Nubes', de:'Wolken', it:'Nuvole', pt:'Nuvens', ja:'雲量', zh:'云量', ar:'الغيوم' }), Math.round(_c2.cloudCover) + '%');
+          _s2facts += _wxFact(_WX_F_CLOUD, _wxPairS(BoardStrings.entry('wxCloud')), Math.round(_c2.cloudCover) + '%');
         }
         if (_c2 && _num(_c2.pressure)) {
-          _s2facts += _wxFact(_WX_F_PRESS, _wxPairS({ en:'Pressure', fr:'Pression', es:'Presión', de:'Druck', it:'Pressione', pt:'Pressão', ja:'気圧', zh:'气压', ar:'الضغط' }), Math.round(_c2.pressure) + ' hPa');
+          _s2facts += _wxFact(_WX_F_PRESS, _wxPairS(BoardStrings.entry('wxPressure')), Math.round(_c2.pressure) + ' hPa');
         }
       } catch (eS2) { _s2facts = ''; }
       _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar
-        + '<div class="wxc-sc-title">' + _wxPairD({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxPlace + '</div>'
+        + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.entry('wxNextHours')) + _wxPlace + '</div>'
         + '<div class="wxc-chart wxc-hgrid">' + _cols + '</div>'
         + _hnote
         + (_s2facts ? _factsWhen + '<div class="wxc-facts wxc-facts2">' + _s2facts + '</div>' : '')
@@ -52772,29 +52501,27 @@ function _renderWxCard(el) {
         if (!iso) return '';
         try {
           var z = (AP[iata] || {}).tz;
-          return new Date(iso).toLocaleTimeString('en-US',
-            z ? { timeZone: z, hour: 'numeric', minute: '2-digit', hour12: true }
-              : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
+          return BoardStrings.boardTime(iso, z || null, { list: _wxLangs }).replace(/\s/g, ' ');
         } catch (eH) { return ''; }
       };
       var _facts = '';
       try {
         var _fc = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[dest] && TOMORROW_WX[dest].current) || null;
         if (_fc && typeof _fc.feelsLike === 'number' && isFinite(_fc.feelsLike)) {
-          _facts += _wxFact(_WX_F_FEEL, _wxPairS({ en:'Feels like', fr:'Ressenti', es:'Sensación', de:'Gefühlt', it:'Percepita', pt:'Sensação', ja:'体感', zh:'体感', ar:'الإحساس' }), _wxDeg(_fc.feelsLike));
+          _facts += _wxFact(_WX_F_FEEL, _wxPairS(BoardStrings.entry('wxFeels')), _wxDeg(_fc.feelsLike));
         }
         if (_fc && typeof _fc.humidity === 'number' && isFinite(_fc.humidity)) {
-          _facts += _wxFact(_WX_F_DROP, _wxPairS({ en:'Humidity', fr:'Humidité', es:'Humedad', de:'Feuchte', it:'Umidità', pt:'Humidade', ja:'湿度', zh:'湿度', ar:'الرطوبة' }), Math.round(_fc.humidity) + '%');
+          _facts += _wxFact(_WX_F_DROP, _wxPairS(BoardStrings.entry('wxHumidity')), Math.round(_fc.humidity) + '%');
         }
         if (_fc && typeof _fc.windSpeed === 'number' && isFinite(_fc.windSpeed)) {
-          _facts += _wxFact(_WX_F_WIND, _wxPairS({ en:'Wind', fr:'Vent', es:'Viento', de:'Wind', it:'Vento', pt:'Vento', ja:'風', zh:'风', ar:'الرياح' }), Math.round(_fc.windSpeed) + ' km/h');
+          _facts += _wxFact(_WX_F_WIND, _wxPairS(BoardStrings.entry('wxWind')), Math.round(_fc.windSpeed) + ' km/h');
         }
         var _sn = _wxSun2(dest);
         if (_sn && _sn.sunrise) {
-          _facts += _wxFact(_WX_F_RISE, _wxPairS({ en:'Sunrise', fr:'Lever', es:'Amanecer', de:'Aufgang', it:'Alba', pt:'Nascer', ja:'日の出', zh:'日出', ar:'الشروق' }), _wxHm(_sn.sunrise, dest));
+          _facts += _wxFact(_WX_F_RISE, _wxPairS(BoardStrings.entry('wxSunrise')), _wxHm(_sn.sunrise, dest));
         }
         if (_sn && _sn.sunset) {
-          _facts += _wxFact(_WX_F_SET, _wxPairS({ en:'Sunset', fr:'Coucher', es:'Atardecer', de:'Untergang', it:'Tramonto', pt:'Pôr', ja:'日の入', zh:'日落', ar:'الغروب' }), _wxHm(_sn.sunset, dest));
+          _facts += _wxFact(_WX_F_SET, _wxPairS(BoardStrings.entry('wxSunset')), _wxHm(_sn.sunset, dest));
         }
       } catch (eF) { _facts = ''; }
       // v23855 — THE DAY PANEL, TO THE SEVEN-DAY FORECAST REFERENCE: a band
@@ -52806,7 +52533,7 @@ function _renderWxCard(el) {
       var _dayCols = _wxDays.map(function (d, i) {
         var _dSlot = _wxSceneKindOf(d.ic) + '-day';
         return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
-          + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
+          + '<div class="wxc-dchip">' + BoardStrings.markHalf(_dayAbbr(d.dt, _wxLangs[0]), _wxLangs[0]) + (_wxLangs[1] ? _wxDia + BoardStrings.markHalf(_dayAbbr(d.dt, _wxLangs[1]), _wxLangs[1]) : '') + '</div>'
           + '<div class="wxc-dbody">'
           +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg' + _wxIconQ() + '" alt="">'
           +   '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
@@ -52817,9 +52544,7 @@ function _renderWxCard(el) {
           + '</div>';
       }).join('');
       _wxS3 = '<div class="wxc-screen wxc-s3">' + _wxBar
-        + '<div class="wxc-sc-title">' + _wxPairD({
-            en: nDays + '-DAY FORECAST', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE-VORHERSAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
-          }) + _wxPlace + '</div>'
+        + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.filled('wxForecastN', { N: nDays })) + _wxPlace + '</div>'
         + '<div class="wxc-days wxc-days-' + nDays + '">' + _dayCols + '</div>'
         + (_facts ? _factsWhen + '<div class="wxc-facts">' + _facts + '</div>' : '')
         + _wxDots(3) + '</div>';
@@ -52837,7 +52562,8 @@ function _renderWxCard(el) {
     // rather than 'weather by': it is MET's open DATA the boards render, the
     // week's highs and lows are derived from it (CC BY asks that be indicated),
     // and nothing implies MET endorses or produced these boards.
-    var _wxCredit = '<div class="wxc-credit">Weather data generously provided by MET Norway</div>';
+    // v23970 — the credit in the card's own pair (it was English in every language)
+    var _wxCredit = '<div class="wxc-credit">' + BoardStrings.pair('wxCredit', { frFirst: _wxFrF, sep: ' <span class="wxc-credit-sep">|</span> ' }) + '</div>';
     // v23724 — THE BACKGROUND MOVES.
     //
     // A 16s 1920x1080 H.264 loop of sunny grass, layered OVER the still in
@@ -52941,7 +52667,7 @@ function _renderWxCard(el) {
     var _wxSceneMonth = 0;
     try {
       var _apS = _wxOrig || dest, _tzS = (AP[_apS] || {}).tz;
-      var _mo = Number(new Date().toLocaleDateString('en-US', _tzS ? { timeZone: _tzS, month: 'numeric' } : { month: 'numeric' }));
+      var _mo = Number(new Date().toLocaleDateString('en-US', _tzS ? { timeZone: _tzS, month: 'numeric' } : { month: 'numeric' })); // i18n-ok: code
       var _cS = (typeof COORDS !== 'undefined' && COORDS[_apS]) || null;
       if (_mo >= 1 && _mo <= 12) _wxSceneMonth = (_cS && _cS[0] < 0) ? ((_mo + 5) % 12) + 1 : _mo;
     } catch (eMo) { _wxSceneMonth = 0; }
@@ -53570,7 +53296,7 @@ function _fidsDayNightPeriod(dn, iata) {
   try { tz = (typeof AP !== 'undefined' && AP[iata] && AP[iata].tz) || undefined; } catch (e) {}
   var cur;
   try {
-    cur = new Date().toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).slice(0, 5);
+    cur = new Date().toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).slice(0, 5); // i18n-ok: code
   } catch (e) {
     var _d = new Date();
     cur = ('0' + _d.getHours()).slice(-2) + ':' + ('0' + _d.getMinutes()).slice(-2);

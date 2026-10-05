@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the board-languages ledger is compared with main's (it may only
+          # shrink), so the job needs main's history, not a shallow clone
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -21,3 +25,17 @@ jobs:
           python-version: "3.x"
       - run: npm test
       - run: npm run assets:check
+      # main's own board-languages guard on this change, from a worktree of
+      # origin/main: never this checkout's copy of it.
+      - name: Board languages, as main enforces them
+        if: github.event_name == 'pull_request'
+        env:
+          # npm test above already read the screens; the deciding run reads them with main's check
+          I18N_AS_MAIN_RENDER: '0'
+        run: |
+          if git cat-file -e origin/main:tests/i18n/as-main.js 2>/dev/null; then
+            git worktree add --detach "$RUNNER_TEMP/main-guard" origin/main
+            node "$RUNNER_TEMP/main-guard/tests/i18n/as-main.js" --change "$GITHUB_WORKSPACE"
+          else
+            echo "main has no board-languages guard yet: this change introduces it"
+          fi
