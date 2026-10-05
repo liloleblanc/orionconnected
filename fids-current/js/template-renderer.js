@@ -303,7 +303,9 @@
           flight: f.flight || f.number || '',
           destination: f.destination || f.dest || f.city || f.origin || '',
           time: f.time || f.sched || f.scheduled || '',
-          status: f.status || f.state || '',
+          // the status in the board's language (the feed's code, through
+          // the board's status table), never the feed's English
+          status: (typeof SL === 'function' && (f.status || f.state)) ? SL(f.status || f.state) : '',
           gate: f.gate || '',
           terminal: f.terminal || '',
           airline: f.airline || (f.flight || '').slice(0, 2),
@@ -330,8 +332,10 @@
       if (window.FIDS_AIRPORT && typeof window.FIDS_AIRPORT === 'object') apName = window.FIDS_AIRPORT.name || '';
     } catch (e) {}
     return {
-      time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      date: d.toLocaleDateString(),
+      // the board's clock and the date in the board's language (the browser's
+      // own locale was English on every stream host, whatever the board spoke)
+      time: BoardStrings.boardTime(d, null, { hour: '2-digit' }),
+      date: BoardStrings.date(d, BoardStrings.isLang(typeof lang !== 'undefined' ? lang : '') ? lang : (BoardStrings.bootLangs()[0] || 'en'), { year: 'numeric', month: 'short', day: 'numeric' }),
       gate, flight, airport: { code: apCode, name: apName }
     };
   }

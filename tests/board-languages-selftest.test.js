@@ -28,11 +28,15 @@ const policy = Object.assign({}, real, {
   KEY_HELPERS: { TL: ['LS', 'STR'], TLin: ['LS', 'STR'], bs: ['STR'], bsPair: ['STR'], bsList: ['LISTS'] },
   KEY_HELPERS_BY_FILE: { [FX + 'attacks.js']: { T: ['STR'], TU: ['STR'] } },
   NONTEXT_TABLES: [],
-  DATA_TABLES: { [FX + 'datafile.js']: { FX_CITY: 'data: fixture city names' } },
+  DATA_TABLES: { [FX + 'datafile.js']: { FX_CITY: 'data: fixture city names', FX_NOTES: 'debug: notes on what each feed says, never rendered', FX_HOTELS: 'data: fixture hotel names' } },
+  PAGE_ROOT: 'tests/i18n/fixtures',
+  SAME_JA_ZH: {},
+  NATIVE_WORDS: {},
+  DATA_WRITERS: {},
   DATA_KEYS: {},
   LANG_RECORD_TABLES: {},
   DECISION_FILES: {},
-  BRAND_TERMS: {},
+  BRAND_TERMS: { 'Baggage Arrival Gateway Screen': 'brand: fixture (its words are not data one by one)' },
   SAME_AS_ENGLISH: { Gate: { langs: ['de', 'it'], why: 'fixture' } },
   OPERATOR_FUNCTIONS: {},
   TEXT_REWRITERS: {},
@@ -109,6 +113,14 @@ const STORE_ATTACKS = [
   ['B3', /Today de/, 'German copied from Spanish'],
   ['B3', /Departure zh/, 'Japanese kana in the Chinese'],
   ['B1', /atkFrList/, 'a ticker list with only French'],
+  ['B3', /Tomorrow de/, "the Japanese '明日' in the German"],
+  ['B3', /U\+0627|U\+063A|Arabic|does not write/, "the Arabic 'غدًا' in the German"],
+  ['B3', /U\+043E/, "a Cyrillic 'о' inside 'Tomоrrow'"],
+  ['B3', /English word 'Today'/, "the English of another key ('Today') in the German"],
+  ['B3', /is the Chinese, character for character/, "the Chinese '明天' in the Japanese"],
+  ['B3', /simplified Chinese/, 'simplified-Chinese characters in the Japanese'],
+  ['B3', /English word 'closes'/, "an English paraphrase in the German ('Gate closes shortly')"],
+  ['B17', /'On time' and 'Scheduled'/, 'two statuses with one word (定刻)'],
   ['B16', /STR/, 'the store rewriting itself at run time']
 ];
 for (const [check, re, what] of STORE_ATTACKS) {
@@ -120,6 +132,35 @@ for (const [check, re, what] of STORE_ATTACKS) {
 test('self-test: B15 catches a label added to a data file (shared-names.js)', () => {
   assert.ok(F.some((f) => f.check === 'B15' && f.file === FX + 'datafile.js' && /Gate closes/.test(f.text)));
   assert.ok(!F.some((f) => f.file === FX + 'datafile.js' && /MONCTON|HALIFAX/.test(f.text)), 'the data table itself is data');
+});
+test('self-test: static text inside <svg>, <template> and <noscript> is page text (B10)', () => {
+  for (const w of ['Gate closes soon', 'Gate closing now', 'Gate closed already'])
+    assert.ok(F.some((f) => f.check === 'B10' && f.text === w), w + ' was not reported');
+});
+test('self-test: a page no list names fails (C3), and so does one an iframe shows (C1)', () => {
+  assert.ok(F.some((f) => f.check === 'C3' && /unlisted\.html/.test(f.text)), 'C3 did not report unlisted.html');
+  assert.ok(F.some((f) => f.check === 'C1' && /unlisted\.html/.test(f.text)), 'C1 did not report the iframe');
+});
+test('self-test: a word written into a notes table, or into a name table in the same change, is not data', () => {
+  // words of a 'debug:' table never count; with main's name words given
+  // (dataVocabBase) and the hotel table absent from it, its words do not either
+  const r2 = checks.run({ policy, frozen: { LS: ['dep', 'gate'] }, dataVocabBase: new Set(['moncton', 'halifax']) });
+  assert.ok(r2.findings.some((f) => f.file === FX + 'attacks.js' && f.fn === 'atk_N2c_nameWordsViaVariable'));
+  assert.ok(!R.dataVocab.includes('flight') && !R.dataVocab.includes('status'), 'a notes table\'s words are not data');
+  assert.ok(!R.dataVocab.includes('baggage'), 'a brand\'s words are not data one by one');
+  assert.ok(!R.dataVocab.includes('hotel'), 'a word the store\'s English uses as a label is not data');
+});
+test('self-test: a pragma moved onto a new line is a new exception, whatever the count', () => {
+  const before = { 'a.js': "var x = 'LIVE'; // i18n-ok: operator\nvar y = 1;\n" };
+  const now = { 'a.js': "var x = 'LIVE';\nvar y = 'Gate closes'; // i18n-ok: operator\n" };
+  const added = ratchet.pragmasAdded(ratchet.pragmaIds(['a.js'], (f) => before[f]), ratchet.pragmaIds(['a.js'], (f) => now[f]));
+  assert.equal(added.length, 1);
+  assert.match(added[0].entry, /Gate closes/);
+  assert.equal(ratchet.pragmaCounts(['a.js'], (f) => now[f])['a.js operator'], 1, 'the per-file count did not change');
+});
+test('self-test: approvals are main\'s, and well formed', () => {
+  assert.deepEqual(ratchet.parseApprovals(null), [], 'no approvals file on main: nothing approved');
+  assert.throws(() => ratchet.parseApprovals('[{ "list": "BRAND_TERMS", "entry": "x" }]'), /where it was approved/);
 });
 test('self-test: C2 catches a script injected at run time', () => {
   assert.ok(F.some((f) => f.check === 'C2' && /injected\.js/.test(f.text)));

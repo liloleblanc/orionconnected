@@ -68,7 +68,7 @@
       + 'center indoor outdoor pool free room rooms breakfast meeting meetings space located steps away walk minutes downtown near new home '
       + 'welcome luxury best heart city view views guest guests stay family friendly shopping nearby perfect ideal comfortable spacious world '
       + 'hot tub gym laundry kids offers enjoy discover experience modern contemporary situated' },
-    fr: { dir: 'ltr', intl: 'fr-CA', clock24: true,  colon: ' : ', script: 'latin', name: 'Français',
+    fr: { dir: 'ltr', intl: 'fr-CA', clock24: true,  colon: ' : ', hourMark: 'h ', script: 'latin', name: 'Français',
       stop: 'le la les des du de et à au aux pour avec dans est une un nos votre vos sur par en ce cette qui que où son sa ses' },
     es: { dir: 'ltr', intl: 'es',    clock24: true,  colon: ': ',  script: 'latin', name: 'Español',
       stop: 'el la los las de del y en con para su sus un una es al por que nuestro nuestra este esta' },
@@ -380,18 +380,18 @@
     stFinalCall: { en: 'Final call', fr: 'Dernier appel', es: 'Última llamada', de: 'Letzter Aufruf', it: 'Ultima chiamata', pt: 'Última chamada', ja: '最終案内', zh: '最后登机', ar: 'النداء الأخير' },
     stGateClosed: { en: 'Gate closed', fr: 'Porte fermée', es: 'Puerta cerrada', de: 'Gate geschlossen', it: 'Gate chiuso', pt: 'Portão fechado', ja: '搭乗終了', zh: '登机口已关闭', ar: 'البوابة مغلقة' },
     stDeparted: { en: 'Departed', fr: 'Parti', es: 'Despegó', de: 'Gestartet', it: 'Partito', pt: 'Partiu', ja: '出発済', zh: '已起飞', ar: 'غادرت' },
-    stArrived: { en: 'Arrived', fr: 'Arrivé', es: 'Llegó', de: 'Gelandet', it: 'Arrivato', pt: 'Chegou', ja: '到着済', zh: '已到达', ar: 'وصلت' },
+    stArrived: { en: 'Arrived', fr: 'Arrivé', es: 'Llegó', de: 'Angekommen', it: 'Arrivato', pt: 'Chegou', ja: '到着済', zh: '已到达', ar: 'وصلت' },
     stDelayed: { en: 'Delayed', fr: 'En retard', es: 'Retrasado', de: 'Verspätet', it: 'In ritardo', pt: 'Atrasado', ja: '遅延', zh: '延误', ar: 'متأخرة' },
     stCancelled: { en: 'Cancelled', fr: 'Annulé', es: 'Cancelado', de: 'Annulliert', it: 'Cancellato', pt: 'Cancelado', ja: '欠航', zh: '取消', ar: 'ملغاة' },
     stDiverted: { en: 'Diverted', fr: 'Dérouté', es: 'Desviado', de: 'Umgeleitet', it: 'Dirottato', pt: 'Desviado', ja: '目的地変更', zh: '备降', ar: 'محوّلة' },
-    stScheduled: { en: 'Scheduled', fr: 'Prévu', es: 'Programado', de: 'Geplant', it: 'Previsto', pt: 'Programado', ja: '定刻', zh: '计划', ar: 'مجدول' },
+    stScheduled: { en: 'Scheduled', fr: 'Prévu', es: 'Programado', de: 'Geplant', it: 'Previsto', pt: 'Programado', ja: '予定', zh: '计划', ar: 'مجدول' },
     // The Studio flight table's column heads, in the boards' words.
     colAirline: { en: 'Airline', fr: 'Compagnie', es: 'Aerolínea', de: 'Fluggesellschaft', it: 'Compagnia', pt: 'Companhia', ja: '航空会社', zh: '航空公司', ar: 'شركة الطيران' },
     colFrom: { en: 'From', fr: 'De', es: 'Desde', de: 'Von', it: 'Da', pt: 'De', ja: '出発地', zh: '出发地', ar: 'من' },
     colTo: { en: 'To', fr: 'À', es: 'A', de: 'Nach', it: 'A', pt: 'Para', ja: '行き先', zh: '目的地', ar: 'إلى' },
     colFlight: { en: 'Flight', fr: 'Vol', es: 'Vuelo', de: 'Flug', it: 'Volo', pt: 'Voo', ja: '便', zh: '航班', ar: 'رحلة' },
     colTime: { en: 'Time', fr: 'Heure', es: 'Hora', de: 'Zeit', it: 'Ora', pt: 'Hora', ja: '時刻', zh: '时间', ar: 'الوقت' },
-    colStatus: { en: 'Status', fr: 'Statut', es: 'Estado', de: 'Status', it: 'Stato', pt: 'Status', ja: '状況', zh: '状态', ar: 'الحالة' },
+    colStatus: { en: 'Status', fr: 'Statut', es: 'Estado', de: 'Status', it: 'Stato', pt: 'Situação', ja: '状況', zh: '状态', ar: 'الحالة' },
     colBelt: { en: 'Carousel', fr: 'Carrousel', es: 'Carrusel', de: 'Band', it: 'Nastro', pt: 'Esteira', ja: 'ターンテーブル', zh: '行李转盘', ar: 'سير الأمتعة' },
     colPage: { en: 'Page', fr: 'Page', es: 'Página', de: 'Seite', it: 'Pagina', pt: 'Página', ja: 'ページ', zh: '页', ar: 'صفحة' },
     noScheduled: { en: 'No scheduled flights', fr: 'Aucun vol prévu', es: 'No hay vuelos programados', de: 'Keine geplanten Flüge', it: 'Nessun volo previsto', pt: 'Nenhum voo programado', ja: '予定便はありません', zh: '暂无计划航班', ar: 'لا توجد رحلات مجدولة' },
@@ -545,16 +545,19 @@
     return L ? L[0] : 'en';
   }
 
+  // A key or a language the store does not have renders nothing — and is
+  // recorded, every time, in BoardStrings.misses: the rendered check
+  // (tests/render/words.mjs) reads it after every screen, so a key that
+  // only exists in a variable (bs(k)), or a helper copied under another
+  // name, cannot go blank on a board unseen.
   function miss(key, lang) {
     var id = key + '/' + lang;
-    if (api.strict) {
-      api.misses.push(id);
-      throw new Error('board-strings: no "' + lang + '" for "' + key + '"');
-    }
     if (!_warned[id]) {
       _warned[id] = true;
+      if (api.misses.length < 200) api.misses.push(id);
       try { console.warn('[board-strings] missing ' + id); } catch (e) {}
     }
+    if (api.strict) throw new Error('board-strings: no "' + lang + '" for "' + key + '"');
   }
 
   function entry(key) {
@@ -843,6 +846,17 @@
     h = h % 12; if (h === 0) h = 12;
     return h + ':' + m[2] + mer;
   }
+  // The locale a language formats with (Intl), the only one: a call that
+  // formats by locale outside this file takes BoardStrings.intl(lang).
+  function intl(lang) { return (META[isLang(lang) ? lang : boardLang()] || META.en).intl; }
+  // A number in the board's language: 1,234 in English, 1 234 in French,
+  // 1.234 in German. The digits stay Western in every language (Arabic
+  // boards have always shown them; changing that is a design decision).
+  function num(n, lang) {
+    var v = Number(n);
+    if (!isFinite(v)) return '';
+    try { return v.toLocaleString(intl(lang) + '-u-nu-latn'); } catch (e) { return String(v); }
+  }
   function date(d, lang, opts, tz) {
     var l = isLang(lang) ? lang : 'en';
     var o = {};
@@ -893,7 +907,10 @@
     o = o || {};
     if (o.phone) {
       var one = parseList(o.phoneSaved, 1);
-      if (!one.length) one = parseList(String(o.navigatorLang || '').split('-')[0], 1);
+      // the browser's own language, read here and nowhere else
+      var nav = o.navigatorLang;
+      if (nav == null) { try { nav = (navigator.languages && navigator.languages[0]) || navigator.language || ''; } catch (e) { nav = ''; } }
+      if (!one.length) one = parseList(String(nav || '').split('-')[0], 1);
       return { langs: one.length ? one : ['en'], source: 'phone' };
     }
     var list = null, source = 'default';
@@ -1005,6 +1022,8 @@
   api.boardClockText = boardClockText;
   api.looksLike = looksLike;
   api.date = date;
+  api.intl = intl;
+  api.num = num;
   api.weekday = weekday;
   api.defaultLangs = defaultLangs;
   api.parseList = parseList;

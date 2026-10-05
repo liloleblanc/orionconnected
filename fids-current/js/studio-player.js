@@ -110,7 +110,8 @@
     try {
       time = BoardStrings.time(now, lang, timezone);
       date = BoardStrings.date(now, lang, { weekday: 'long', month: 'long', day: 'numeric' }, timezone);
-      const parts = BoardStrings.time(now, 'fr', timezone).split(':');
+      // minutes since midnight at the airport: any language's 24-hour clock
+      const parts = BoardStrings.time(now, lang, timezone, { clock24: true }).split(':');
       minutes = Number(parts[0]) * 60 + Number(parts[1]);
     } catch (error) {
       time = BoardStrings.time(now, lang);

@@ -9,9 +9,10 @@
 //
 //   { "list": "BRAND_TERMS", "entry": "The Ritz", "approved": "PR #990, approved in review on 2026-10-06" }
 //
+// The approvals are MAIN's (parseApprovals): a change cannot approve itself.
 // The test prints every new exception into the CI summary whether it is
-// approved or not, so no addition is ever silent. Pragmas are counted per file
-// and reason; an approval for one carries the new count.
+// approved or not, so no addition is ever silent. A pragma is identified by
+// the line of code it excuses, so moving one onto a new label is new.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -31,6 +32,9 @@ function listEntries(P) {
     return (e.langs || e).map((l) => en + ' ' + l);
   }));
   out.UNIT_TERMS = (P.UNIT_TERMS || []).slice();
+  out.SAME_JA_ZH = keys(P.SAME_JA_ZH);
+  out.NATIVE_WORDS = perFile(P.NATIVE_WORDS);
+  out.DATA_WRITERS = [].concat(...keys(P.DATA_WRITERS).map((f) => keys(P.DATA_WRITERS[f]).map((fn) => f + ' ' + fn + ' ' + ((P.DATA_WRITERS[f][fn] || {}).tables || []).join(','))));
   out.OPERATOR_FUNCTIONS = perFile(P.OPERATOR_FUNCTIONS);
   out.NON_PASSENGER = keys(P.NON_PASSENGER);
   out.NON_PASSENGER_PAGES = keys(P.NON_PASSENGER_PAGES);
@@ -69,28 +73,44 @@ function loosenersAdded(before, now) {
   return out;
 }
 
-// `i18n-ok: reason` pragmas per file and reason: { "file reason": n }
-function pragmaCounts(files, read) {
+// Every exception written into the code — an `i18n-ok: reason` pragma, a
+// translate="no", data-i18n-all or data-i18n-feed marker — by WHAT it
+// excuses: the file, the kind, and the code of the line it sits on (or the
+// line after a pragma on a line of its own). { id: count }. A pragma moved
+// onto a new label is a new id even when the file's count is unchanged, so
+// deleting one pragma to make room for another is still a new exception.
+function codeOf(lines, k) {
+  const strip = (l) => String(l || '').replace(/\/\/\s*i18n-ok:.*$/, '').replace(/\/\*\s*i18n-ok:[\s\S]*?\*\//, '').replace(/\s+/g, ' ').trim();
+  let c = strip(lines[k]);
+  if (!c || /^(\/\/|\/\*|\*)/.test(c)) c = strip(lines[k + 1]);
+  return c.slice(0, 200);
+}
+function pragmaIds(files, read) {
   const out = {};
+  const bump = (k) => { out[k] = (out[k] || 0) + 1; };
   for (const f of files) {
     let src = null;
     try { src = read(f); } catch (e) { src = null; }
     if (src == null) continue;
-    for (const m of src.matchAll(/i18n-ok:\s*([a-z]+)/g)) {
-      const k = f + ' ' + m[1];
-      out[k] = (out[k] || 0) + 1;
-    }
-    // translate="no" tells the rendered check (tests/render/words.mjs) that
-    // an element's words are data: an exception like any other
-    for (const m of src.matchAll(/translate=\\?["']no\\?["']/g)) {
-      const k = f + ' translate="no"';
-      out[k] = (out[k] || 0) + 1;
-    }
-    // data-i18n-all: a piece that shows every board language by design
-    for (const m of src.matchAll(/data-i18n-(all|feed)\b/g)) {
-      const k = f + ' data-i18n-' + m[1];
-      out[k] = (out[k] || 0) + 1;
-    }
+    const lines = src.split('\n');
+    lines.forEach((l, k) => {
+      for (const m of l.matchAll(/i18n-ok:\s*([a-z]+)/g)) bump(f + ' ' + m[1] + ': ' + codeOf(lines, k));
+      // translate="no" tells the rendered check (tests/render/words.mjs)
+      // that an element's words are data: an exception like any other
+      for (const m of l.matchAll(/translate=\\?["']no\\?["']/g)) bump(f + ' translate="no": ' + codeOf(lines, k));
+      // data-i18n-all / data-i18n-feed: a piece that shows every board
+      // language by design, or a feed's own sentences
+      for (const m of l.matchAll(/data-i18n-(all|feed)\b/g)) bump(f + ' data-i18n-' + m[1] + ': ' + codeOf(lines, k));
+    });
+  }
+  return out;
+}
+// kept for the per-reason summary line
+function pragmaCounts(files, read) {
+  const out = {};
+  for (const [id, n] of Object.entries(pragmaIds(files, read))) {
+    const k = id.slice(0, id.indexOf(': '));
+    out[k] = (out[k] || 0) + n;
   }
   return out;
 }
@@ -103,6 +123,21 @@ function pragmasAdded(before, now) {
   return out;
 }
 
+// Approvals are read from MAIN's copy of approved-exceptions.json, never
+// from the change being checked: a pull request cannot approve its own
+// exception. An approval lands first, in a pull request that changes that
+// file and nothing else (the test enforces it), where it is reviewed on its
+// own; the change that uses it comes after.
+function parseApprovals(text) {
+  if (text == null) return [];
+  const list = JSON.parse(text);
+  if (!Array.isArray(list)) throw new Error('approved-exceptions.json must be a list');
+  for (const a of list) {
+    if (!a || typeof a.list !== 'string' || typeof a.entry !== 'string' || typeof a.approved !== 'string' || !a.approved.trim())
+      throw new Error('every approval names its list, its entry, and where it was approved: ' + JSON.stringify(a));
+  }
+  return list;
+}
 function loadApprovals(file) {
   const f = file || APPROVALS;
   if (!fs.existsSync(f)) return [];
@@ -116,7 +151,7 @@ function loadApprovals(file) {
 }
 function unapproved(added, approvals) {
   return added.filter((x) => !approvals.some((a) => a.list === x.list && a.entry === x.entry
-    && (x.count == null || (typeof a.count === 'number' && a.count >= x.count))));
+    && (x.count == null || (typeof a.count === 'number' ? a.count >= x.count : x.count <= (x.was || 0) + 1))));
 }
 
 // Evaluate a module's source as it was at another commit, with its requires
@@ -128,4 +163,4 @@ function evalModule(src, req) {
   return m.exports;
 }
 
-module.exports = { ROOT, APPROVALS, listEntries, exceptionsAdded, loosenersAdded, pragmaCounts, pragmasAdded, loadApprovals, unapproved, evalModule };
+module.exports = { ROOT, APPROVALS, listEntries, exceptionsAdded, loosenersAdded, pragmaIds, pragmaCounts, pragmasAdded, parseApprovals, loadApprovals, unapproved, evalModule };

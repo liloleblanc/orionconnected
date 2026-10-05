@@ -67,6 +67,38 @@ const RE_SCRIPT = {
 const LATIN_ALPHABET = {
   fr: 'àâæçéèêëîïôœùûüÿ', es: 'áéíóúüñ', de: 'äöüßé', it: 'àèéìíîòóùú', pt: 'áâãàçéêíóôõú'
 };
+// Letters each language does not write (any script but its own; Latin
+// letters stay allowed in ja/zh/ar for brands, codes and units).
+const S_CYR = '\\u0400-\\u04FF', S_GRK = '\\u0370-\\u03FF', S_ARB = '\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF',
+  S_HEB = '\\u0590-\\u05FF', S_KANA = '\\u3040-\\u30FF\\uFF66-\\uFF9F', S_HAN = '\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF',
+  S_HANGUL = '\\u1100-\\u11FF\\uAC00-\\uD7AF', S_INDIC = '\\u0900-\\u0DFF\\u0E00-\\u0E7F';
+const notLatin = new RegExp('[' + S_CYR + S_GRK + S_ARB + S_HEB + S_KANA + S_HAN + S_HANGUL + S_INDIC + ']', 'u');
+const FOREIGN_SCRIPT = {
+  en: notLatin, fr: notLatin, es: notLatin, de: notLatin, it: notLatin, pt: notLatin,
+  ja: new RegExp('[' + S_CYR + S_GRK + S_ARB + S_HEB + S_HANGUL + S_INDIC + ']', 'u'),
+  zh: new RegExp('[' + S_CYR + S_GRK + S_ARB + S_HEB + S_HANGUL + S_INDIC + S_KANA + ']', 'u'),
+  ar: new RegExp('[' + S_CYR + S_GRK + S_HEB + S_KANA + S_HAN + S_HANGUL + S_INDIC + ']', 'u')
+};
+// Characters only simplified Chinese writes (Japanese has its own forms:
+// 门 is 門, 时 is 時, 东 is 東): one in a Japanese value is pasted Chinese.
+const SIMPLIFIED_ONLY = new Set([...'们这说时么开关门场发达对过还进车东飞间问题从让习书长电话报乐动应该张钟预计离气风阴转载务验证护闸运输盘带换线终队观览馆层请误华为际见没给办网页贵钱买卖备总统团园业专单币岁兴处级红约纸经结绿维编缩罗联节药获营蓝规视觉订认讨训议讯记讲许论设访评识词译试诗询详语读课谁调谈谢负财责败账货质购费资赛赶跃轨轮软轻较辆辑迁远违连迟选递邮释针钢钥铁铃银链销锁错镜闪闭闲闻阅阳阵阶陆陈险随隐难顶项顺须顾顿领频颜额饭饮驶驾鱼鲜鸟鸡齐龙广厅']);
+// Common English signage words, so an English word is recognised even when
+// the store's own English never uses it ('shortly').
+const ENGLISH_COMMON = ('the to for of your our now next please this that and not no is are will be has have until with by at from in on '
+  + 'before after into all any more see here soon shortly closes closed closing opens open opening gate gates boarding board boards flight flights '
+  + 'departure departures departing arrival arrivals arriving delayed delay cancelled canceled landed arrived departed time times today tomorrow '
+  + 'yesterday minute minutes hour hours check baggage bags bag belt claim welcome thank thanks you go proceed wait waiting final last call '
+  + 'expected estimated scheduled early late new changed change moved information status connection connections weather sunny cloudy rain '
+  + 'snow showers clear partly mostly wind temperature feels like high low lounge shops food drink coffee free passengers passenger seat '
+  + 'seats group priority members member families children assistance economy business first class premium travel traveller traveler '
+  + 'documents passport ready keep follow signs please only also every each other while when where which who what why how about over under '
+  + 'between during without within near far left right up down back away again still just very much many some most few less least').split(' ');
+// rel words of a value, as written (case kept)
+function rawWordsOf(s) {
+  return (stripEntities(stripTags(String(s).replace(RE_INVISIBLE_G, ''))).replace(/\{[A-Za-z0-9_]+\}|%[a-z]\b/g, ' ').match(/\p{L}[\p{L}'\u2019-]*/gu) || [])
+    .map((w) => w.replace(/[-'\u2019]+$/, ''));
+}
+let ENGLISH_WORDS = new Set(), TRANSLATED_WORDS = new Map();
 const LANG_NAME = { en: 'English', fr: 'French', es: 'Spanish', de: 'German', it: 'Italian', pt: 'Portuguese', ja: 'Japanese', zh: 'Chinese', ar: 'Arabic' };
 const RE_LETTER = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u0600-\u06FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/;
 const RE_WORD = /[A-Za-z\u00C0-\u024F]{2,}|[\u0600-\u06FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/;
@@ -105,7 +137,7 @@ function run(options) {
   const exists = options.exists || ((rel) => fs.existsSync(path.join(ROOT, rel)));
   const load = (rel) => scan.load(rel, options.read ? read(rel) : undefined);
   const findings = [];
-  const used = { brand: new Set(), same: new Set(), op: new Set(), rewriters: new Set(), nontext: new Set(), storage: new Set(), data: new Set(), records: new Set(), position: new Set(), pages: new Set() };
+  const used = { brand: new Set(), same: new Set(), op: new Set(), rewriters: new Set(), nontext: new Set(), storage: new Set(), data: new Set(), records: new Set(), position: new Set(), pages: new Set(), jazh: new Set(), native: new Set(), writers: new Set(), statusSame: new Set() };
   const pragmaHits = new Map();        // "file:line" -> reason
   const pragmaUsed = new Set();
   const add = (f) => {
@@ -118,7 +150,9 @@ function run(options) {
       }
     }
     findings.push(f);
+    REPORTED.add(f.file + ':' + f.line + ':' + String(f.text).trim());
   };
+  const REPORTED = new Set();
 
   const passengerScripts = P.PASSENGER_SCRIPTS.filter(exists);
   const passengerPages = P.PASSENGER_PAGES.filter(exists);
@@ -158,6 +192,32 @@ function run(options) {
       const clean = r.split('?')[0].split('#')[0];
       const rel = clean.startsWith('/') ? (clean.startsWith('/mapcdn/') ? clean : 'fids-current' + clean) : path.posix.normalize(base + '/' + clean);
       if (!classified.has(rel)) add({ check: 'C1', file: page, line: lineOf(html, r), fn: null, text: rel, msg: `${rel} is loaded by a passenger page and is in neither PASSENGER_SCRIPTS/PASSENGER_STYLES nor NON_PASSENGER (tests/i18n/policy.js)` });
+    }
+    // a page a passenger page puts on screen (an iframe, an object, an
+    // embed) or opens (a link): classified like the page itself
+    const pageRefs = [];
+    for (const m of html.matchAll(/<(iframe|frame|embed)\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi)) pageRefs.push(m[2]);
+    for (const m of html.matchAll(/<object\b[^>]*\bdata\s*=\s*["']([^"']+)["']/gi)) pageRefs.push(m[1]);
+    for (const m of html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"'#?]+\.html?)(?:[?#][^"']*)?["']/gi)) pageRefs.push(m[1]);
+    for (const r of pageRefs) {
+      if (/^(https?:)?\/\//i.test(r) || /^(about|data|javascript):/i.test(r)) continue;
+      const clean = r.split('?')[0].split('#')[0];
+      const rel = clean.startsWith('/') ? 'fids-current' + clean : path.posix.normalize(base + '/' + clean);
+      if (!/\.html?$/i.test(rel) && !exists(rel)) continue;
+      const known = P.PASSENGER_PAGES.includes(rel) || Object.prototype.hasOwnProperty.call(P.NON_PASSENGER_PAGES || {}, rel);
+      if (!known) add({ check: 'C1', file: page, line: lineOf(html, r), fn: null, text: rel, msg: `${rel} is shown or opened by a passenger page and is in neither PASSENGER_PAGES nor NON_PASSENGER_PAGES (tests/i18n/policy.js)` });
+    }
+  }
+
+  // ── C3: every page is classified ──
+  // A new page is a passenger page (scanned by every check) or a reviewed
+  // non-passenger page; it cannot stand outside the guard by being new.
+  {
+    const root = P.PAGE_ROOT || 'fids-current';
+    const pages = options.listPages ? options.listPages(root) : listHtml(path.join(ROOT, root)).map((f) => path.posix.join(root, f));
+    for (const pg of pages) {
+      if (P.PASSENGER_PAGES.includes(pg) || Object.prototype.hasOwnProperty.call(P.NON_PASSENGER_PAGES || {}, pg)) continue;
+      add({ check: 'C3', file: pg, line: 1, fn: null, text: pg, msg: `${pg} is a page in neither PASSENGER_PAGES nor NON_PASSENGER_PAGES (tests/i18n/policy.js): a page a passenger can see is a passenger page, scanned like every other` });
     }
   }
 
@@ -404,6 +464,31 @@ function run(options) {
   for (const li of listObjects) for (const item of li.items) for (const w of wordsOf(item)) { if (!VOCAB.has(w)) VOCAB.set(w, new Set()); VOCAB.get(w).add(li.lang); }
 
   // ── B3: not left in English ──
+  // English words: every word of the store's English, and the common
+  // signage words; translated words: every word of every non-English value,
+  // with the entries that use it.
+  ENGLISH_WORDS = new Set(ENGLISH_COMMON);
+  TRANSLATED_WORDS = new Map();
+  for (const o of allTextObjects) {
+    if (o.langs.en != null) for (const w of rawWordsOf(o.langs.en)) ENGLISH_WORDS.add(w.toLowerCase().replace(/['\u2019-]+$/, ''));
+    for (const l of ['fr', 'es', 'de', 'it', 'pt']) {
+      if (o.langs[l] == null) continue;
+      for (const raw of rawWordsOf(o.langs[l])) {
+        const w = raw.toLowerCase().replace(/['\u2019-]+$/, '');
+        if (!TRANSLATED_WORDS.has(w)) TRANSLATED_WORDS.set(w, new Set());
+        TRANSLATED_WORDS.get(w).add(o);
+      }
+    }
+  }
+  const sameJaZh = (en) => {
+    if (Object.prototype.hasOwnProperty.call(P.SAME_JA_ZH || {}, en)) { used.jazh.add(en); return true; }
+    return false;
+  };
+  const nativeWord = (l, w) => {
+    const list = (P.NATIVE_WORDS || {})[l] || {};
+    if (Object.prototype.hasOwnProperty.call(list, w)) { used.native.add(l + ':' + w); return true; }
+    return false;
+  };
   const sameAllowed = (en, l) => {
     const e = P.SAME_AS_ENGLISH[en];
     if (e && (e.langs || e).includes(l)) { used.same.add(en); return true; }
@@ -453,6 +538,42 @@ function run(options) {
     // Chinese with Japanese kana in it is Japanese
     if (o.langs.zh != null && /[\u3040-\u30ff]/.test(o.langs.zh))
       add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' zh', msg: `zh '${o.langs.zh}' has Japanese kana \u2014 the Japanese was pasted in` });
+    // a script the language does not write: '明日' or 'غدًا' in German, a
+    // Cyrillic 'о' inside 'Tomоrrow', Arabic in the Japanese
+    for (const l of LANGS) {
+      const v = o.langs[l];
+      if (v == null || brand(v)) continue;
+      const bad = FOREIGN_SCRIPT[l] && FOREIGN_SCRIPT[l].exec(String(v));
+      if (bad) add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + l, msg: `${l} '${shortText(v)}' has '${bad[0]}' (U+${bad[0].codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}), a letter ${LANG_NAME[l]} does not write \u2014 another language's word, or a look-alike letter, was pasted in` });
+    }
+    // Japanese written with simplified-Chinese characters, or the Chinese
+    // pasted in whole ('明天' for 明日)
+    if (o.langs.ja != null) {
+      const simp = [...String(o.langs.ja)].filter((ch) => SIMPLIFIED_ONLY.has(ch));
+      if (simp.length) add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ja', msg: `ja '${o.langs.ja}' has ${[...new Set(simp)].join('')}, simplified Chinese \u2014 the Chinese was pasted in` });
+      else if (o.langs.zh != null && norm(o.langs.ja) === norm(o.langs.zh) && !/[\u3040-\u30ff]/.test(o.langs.ja) && RE_SCRIPT.zh.test(o.langs.ja) && !sameJaZh(en))
+        add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ja', msg: `ja '${o.langs.ja}' is the Chinese, character for character \u2014 if Japanese really writes it the same, list '${en}' in SAME_JA_ZH (tests/i18n/policy.js)` });
+    }
+    // English words inside a translation: 'Gate closes shortly' for German,
+    // 'Today' for German 'Morgen'. A word counts as English when the store's
+    // English or the common signage words use it and no other entry's
+    // translation (in any language) does; a capitalised name the English
+    // also carries ('Air France') stays as it is.
+    for (const l of ['fr', 'es', 'de', 'it', 'pt']) {
+      const v = o.langs[l];
+      if (v == null || brand(v)) continue;
+      const ownEn = new Set(rawWordsOf(en));
+      for (const raw of rawWordsOf(v)) {
+        const w = raw.toLowerCase().replace(/['\u2019-]+$/, '');
+        if (w.length < 3 || !ENGLISH_WORDS.has(w)) continue;
+        if (/^\p{Lu}/u.test(raw) && ownEn.has(raw)) continue;                  // a name kept as written
+        if (new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(com|ca|org|net)\\b', 'iu').test(v)) continue;   // a web address
+        const users = TRANSLATED_WORDS.get(w);
+        if (users && [...users].some((x) => x !== o)) continue;              // another entry's translation uses it
+        if (nativeWord(l, w)) continue;
+        add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + l, msg: `${l} '${shortText(v)}' has the English word '${raw}' \u2014 translate it; if it really is ${LANG_NAME[l]}, list it in NATIVE_WORDS (tests/i18n/policy.js)` });
+      }
+    }
   }
   // the ticker lists: the same per item
   for (const li of listObjects) {
@@ -517,26 +638,75 @@ function run(options) {
   }
 
   // ── B6: keys exist ──
+  // Every key a helper is given must be in the tables it reads — through
+  // whatever name the helper is reached by (BoardStrings.bs, S.bs, a copy
+  // var f = BoardStrings.bs, var b2 = bs) and whatever the key is written as
+  // (a literal, either branch of a ternary, a variable holding a literal).
+  // A key only known at run time is caught on screen: the store records
+  // every miss in BoardStrings.misses, which the rendered check reads.
   const helperTables = P.KEY_HELPERS;
   for (const { rel, unit, isStore } of jsUnits) {
     if (isStore) continue;
     const t = unit.toks;
+    const al = storeAliases(unit);
     for (let i = 0; i < t.length - 2; i++) {
-      if (t[i].t !== 'id' || !t[i + 1] || t[i + 1].v !== '(' || !t[i + 2] || t[i + 2].t !== 'str') continue;
+      if (t[i].t !== 'id' || !t[i + 1] || t[i + 1].v !== '(') continue;
       if (t[i - 1] && t[i - 1].v === 'function') continue;
-      // BoardStrings.fmt('k'), window.bs('k'): the store's own methods
-      const viaStore = t[i - 1] && t[i - 1].v === '.' && t[i - 2] && /^(BoardStrings|Strings|window|self|globalThis|root)$/.test(t[i - 2].v);
-      if (t[i - 1] && t[i - 1].v === '.' && !viaStore) continue;
-      // T/TU/TF are different helpers in different files: the policy names
-      // the file a helper belongs to when the name is shared
-      const scoped = (P.KEY_HELPERS_BY_FILE || {})[rel] || {};
-      const tbls = (!viaStore && scoped[t[i].v]) || (viaStore ? STORE_METHODS[t[i].v] : helperTables[t[i].v]);
+      const name = t[i].v;
+      const recv = t[i - 1] && (t[i - 1].v === '.' || t[i - 1].v === '?.') ? t[i - 2] : null;
+      let tbls = null;
+      if (recv) {
+        if (recv.t === 'id' && (al.objects.has(recv.v) || /^(window|self|globalThis|root)$/.test(recv.v))) tbls = STORE_METHODS[name] || null;
+        else if (name === 'bs') tbls = STORE_METHODS.bs;                  // X.bs('k'), whatever X is
+      } else {
+        // T/TU/TF are different helpers in different files: the policy names
+        // the file a helper belongs to when the name is shared
+        const scoped = (P.KEY_HELPERS_BY_FILE || {})[rel] || {};
+        const real = al.fns.get(name);
+        tbls = scoped[name] || helperTables[name] || (real ? (helperTables[real] || STORE_METHODS[real]) : null);
+      }
       if (!tbls) continue;
-      if (t[i + 3] && t[i + 3].v === '+') continue;          // a computed key: 'st-' + state
-      const key = t[i + 2].v;
-      const ok = tbls.some((name) => (entries[name] && entries[name].has(key)) || (majorKeys[name] && majorKeys[name].has(key)));
-      if (!ok && !brand(key)) add({ check: 'B6', file: rel, line: t[i].line, fn: unit.fnAt[i], text: t[i].v + "('" + key + "')", msg: `'${key}' is not in ${tbls.join(' or ')} \u2014 it renders blank (or, before, its raw key name)` });
+      for (const k of keyLiterals(unit, i + 1)) {
+        const key = k.v;
+        const ok = tbls.some((tn) => (entries[tn] && entries[tn].has(key)) || (majorKeys[tn] && majorKeys[tn].has(key)));
+        if (!ok && !brand(key)) add({ check: 'B6', file: rel, line: k.line, fn: unit.fnAt[i], text: name + "('" + key + "')", msg: `'${key}' is not in ${tbls.join(' or ')} \u2014 it renders blank (or, before, its raw key name)` });
+      }
     }
+  }
+  // The literals a call's first argument can be: itself, either branch of a
+  // ternary or a logical, or what a variable named there was assigned. A
+  // computed key ('st-' + state) is left to the rendered check.
+  function keyLiterals(unit, open) {
+    const t = unit.toks, close = unit.closeOf[open];
+    if (close == null) return [];
+    let end = open + 1, d = 0;
+    for (; end < close; end++) { const x = t[end]; if (x.v === '(' || x.v === '[' || x.v === '{' || x.v === '${') d++; else if (x.v === ')' || x.v === ']' || x.v === '}' || x.v === '}$') d--; else if (d === 0 && x.v === ',') break; }
+    const arg = [];
+    for (let j = open + 1; j < end; j++) arg.push(j);
+    if (!arg.length) return [];
+    if (arg.some((j) => t[j].v === '+' || t[j].t === 'tpl')) return [];
+    if (arg.length === 1 && t[arg[0]].t === 'str') return [t[arg[0]]];
+    if (arg.length === 1 && t[arg[0]].t === 'id') {
+      const nm = t[arg[0]].v, sc = scopeOf(unit, arg[0], nm), out = [];
+      for (let j = 0; j < t.length - 2; j++) {
+        if (t[j].t === 'id' && t[j].v === nm && t[j + 1] && t[j + 1].v === '=' && t[j + 2] && t[j + 2].t === 'str' && t[j + 3] && /^[;,)}]$/.test(t[j + 3].v)
+            && !(t[j - 1] && t[j - 1].v === '.') && scopeOf(unit, j, nm) === sc) out.push(t[j + 2]);
+      }
+      return out;
+    }
+    const out = [];
+    for (const j of arg) {
+      if (t[j].t !== 'str') continue;
+      const p = t[j - 1], n = t[j + 1];
+      if ((p && /^[!=]==?$/.test(p.v)) || (n && /^[!=]==?$/.test(n.v))) continue;           // a condition
+      if (p && !/^(\?|:|\|\||&&|\?\?|\()$/.test(p.v) && j !== open + 1) continue;
+      // inside a call within the argument: that call's business
+      let k = unit.frameOf[j];
+      let nested = false;
+      for (; k != null && k > open; k = unit.frameOf[k]) if (t[k].v !== '(' || (t[k - 1] && (t[k - 1].t === 'id' || t[k - 1].v === ')' || t[k - 1].v === ']'))) nested = true;
+      if (!nested) out.push(t[j]);
+    }
+    return out;
   }
   // ad copy: every GATE_ADS headline/sub is translated
   if (entries.AD_I18N) {
@@ -580,19 +750,84 @@ function run(options) {
     }
   }
 
-  // ── the data vocabulary (B15): every word of a data table's values ──
+  // ── B17: two statuses never read the same ──
+  // A board shows statuses side by side: 'On time' and 'Scheduled' both
+  // reading 定刻 makes two flights look alike that are not. Within each
+  // status table (SS, the store's st* keys, fids-v2's st-* keys), two
+  // different English statuses have two different words in every language.
+  {
+    const groups = new Map();
+    for (const o of allTextObjects) {
+      const g = o.table === 'SS' ? 'SS' : (o.table === 'STR' && /^st[A-Z]/.test(o.key || '')) ? 'STR st*' : (o.table === 'TX' && /^st-/.test(o.key || '')) ? 'TX st-*' : null;
+      if (!g || o.langs.en == null) continue;
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(o);
+    }
+    for (const [g, list] of groups) for (const l of LANGS) {
+      if (l === 'en') continue;
+      const by = new Map();
+      for (const o of list) {
+        const v = o.langs[l];
+        if (v == null) continue;
+        const k = norm(v);
+        if (!by.has(k)) by.set(k, new Map());
+        by.get(k).set(norm(o.langs.en), o);
+      }
+      for (const [v, ens] of by) {
+        if (ens.size < 2) continue;
+        const os = [...ens.values()];
+        const allowed = os.every((o) => ((P.SAME_STATUS_WORD || {})[o.langs.en] || []).includes(l));
+        if (allowed) { for (const o of os) used.statusSame.add(o.langs.en); continue; }
+        add({ check: 'B17', file: os[0].file, line: os[0].line, fn: null, text: g + ' ' + l + ' ' + v, msg: `${os.map((o) => "'" + o.langs.en + "'").join(' and ')} both read '${os[0].langs[l]}' in ${LANG_NAME[l]} (${g}) \u2014 two statuses on one board must read differently` });
+      }
+    }
+  }
+
+  // ── the data vocabulary (B15): the words of the NAME tables ──
+  // A literal whose every word is data (a city, an airline, an aircraft, a
+  // hotel brand) is not a label. Three things keep that from becoming a way
+  // round the guard:
+  //   - only tables of names count ('data:' or 'brand:' reasons): a table of
+  //     notes ('debug:', 'operator:') is never vocabulary, so a word written
+  //     into a debug note is not made data by it;
+  //   - a brand counts as its whole phrase, never word by word ('Baggage
+  //     Arrival Gateway Screen' does not make 'baggage' data);
+  //   - a word the store translates as a label ('gate', 'boarding', 'final',
+  //     'status', 'flight', 'information') is never data, whatever table it
+  //     also appears in;
+  // and, in CI, a word is data only if it was data on main as well
+  // (options.dataVocabBase): a word added to a name table in the same change
+  // cannot carry a label past the guard.
   DATA_VOCAB = new Set();
-  const addData = (str) => { for (const w of wordsOf(str)) DATA_VOCAB.add(w); };
+  DATA_PHRASES = new Set();
+  const nameTable = (why) => /^(data|brand):/.test(String(why || ''));
+  const addData = (str) => {
+    for (const w of wordsOf(str)) DATA_VOCAB.add(w);
+    const np = norm(str);
+    if (np) DATA_PHRASES.add(np);
+  };
   for (const { rel, unit } of jsUnits) {
-    const names = Object.keys((P.DATA_TABLES || {})[rel] || {}).concat(P.NONTEXT_TABLES.filter((n) => n.file === rel && n.name).map((n) => n.name));
+    const names = Object.entries((P.DATA_TABLES || {})[rel] || {}).filter(([, why]) => nameTable(why)).map(([n]) => n)
+      .concat(P.NONTEXT_TABLES.filter((n) => n.file === rel && n.name && nameTable(n.reason)).map((n) => n.name));
     for (const name of names) {
       const r = dataRange(unit, name);
       if (!r) continue;
       for (let j = r[0]; j < r[1]; j++) if (unit.toks[j].t === 'str' || unit.toks[j].t === 'tpl') addData(unit.toks[j].v);
     }
   }
-  for (const k of Object.keys(P.BRAND_TERMS)) addData(k);
+  for (const k of Object.keys(P.BRAND_TERMS)) DATA_PHRASES.add(norm(k));
   for (const k of (P.DATA_WORDS || [])) addData(k);
+  // a label word: one the store's English writes in lower case somewhere
+  // ('the hotel', 'your gate', 'boarding pass'). A name word (Air, Canada,
+  // Airlines) is capitalised wherever the store's English uses it.
+  const enLower = new Set();
+  const addLower = (v) => { for (const m of String(v).replace(/<[^>]*>/g, ' ').replace(/\{[A-Za-z0-9_]+\}/g, ' ').matchAll(/\p{L}[\p{L}'\u2019-]*/gu)) if (m[0] === m[0].toLowerCase() && /\p{Ll}/u.test(m[0])) enLower.add(m[0].toLowerCase()); };
+  for (const o of allTextObjects) if (o.langs.en != null) addLower(o.langs.en);
+  for (const li of listObjects) if (li.lang === 'en') for (const it of li.items) addLower(it);
+  for (const w of [...DATA_VOCAB]) if (enLower.has(w)) DATA_VOCAB.delete(w);
+  LABEL_WORDS = enLower;
+  RENDERED = new Map();
+  if (options.dataVocabBase) for (const w of [...DATA_VOCAB]) if (!options.dataVocabBase.has(w)) DATA_VOCAB.delete(w);
 
   // ── B5, B8, B9 (attr), B11, B13, B15: token walks ──
   const knownPhrases = new Map();      // norm(en) -> en, from the stores
@@ -633,6 +868,8 @@ function run(options) {
     walkMarkup(rel, unit);
     walkLanguageChoice(rel, unit);
   }
+  // what reaches the screen through a name (pass 2 of RENDERED, below)
+  for (const { rel, unit, isStore } of jsUnits) if (!isStore) walkDestinations(rel, unit);
 
   function walkMarkup(rel, unit) {
     const t = unit.toks;
@@ -755,9 +992,27 @@ function run(options) {
         continue;
       }
       if (tk.t === 'id' && (tk.v === 'return' || tk.v === 'case')) { reset(top()); continue; }
+      // RENDERED, pass 1: a name whose value is put on screen as text — an
+      // operand of a markup chain in its text state, or of a text sink
+      if (tk.t === 'id' && !(t[i - 1] && (t[i - 1].v === '.' || t[i - 1].v === '?.')) && !JS_WORDS.has(tk.v)) {
+        const f0 = top();
+        const sk0 = sinkAt(i);
+        const inText = (f0.tag && f0.st && f0.st.st === ST_TEXT)
+          || (sk0 && (TEXT_SINK_NAMES.has(sk0.name) || (HTML_SINKS.has(sk0.name) && (!f0.st || f0.st.st === ST_TEXT))));
+        // an index (X[k]) or a call's argument (f(x)) is not what is shown,
+        // unless the call shows its argument as it is (esc(x))
+        const fk = unit.frameOf[i], fo = fk >= 0 ? t[fk] : null, fp = fk > 0 ? t[fk - 1] : null;
+        const sub = fo && (fo.v === '[' || fo.v === '(') && fp && (fp.t === 'id' || fp.v === ')' || fp.v === ']') && !(fo.v === '(' && fp.t === 'id' && PASS_THROUGH.test(fp.v));
+        if (inText && !sub && !fnIsOperator(rel, unit.fnAt[i], unit.fnPathAt[i])) recordRendered(rel, unit, i);
+        continue;
+      }
       if (tk.t !== 'str' && tk.t !== 'tpl') continue;
       const f = top();
       let ctx = literalContext(t, i, unit);
+      // code-shaped (a URL, a selector, a CSS declaration) is code, except a
+      // capitalised word inside markup text, which is a word whatever its
+      // punctuation: '<span>' + 'Status: Delayed' + '</span>'
+      if (ctx === 'codeish') ctx = (f.tag && f.st && f.st.st === ST_TEXT && /\p{Lu}\p{Ll}/u.test(tk.v)) ? 'plain' : 'excluded';
       if (t[i - 1] && t[i - 1].v === ':' && t[i - 2] && t[i - 2].v === 't' && unit.langRecordObjs && unit.langRecordObjs.has(unit.frameOf[i])) ctx = 'langvalue';
       if (dataKeyOf(t, i, unit)) ctx = 'excluded';
       const fn = unit.fnAt[i];
@@ -772,6 +1027,19 @@ function run(options) {
             add({ check: contentAttrs.has(an) ? 'B9' : 'B5', file: rel, line: tk.line, fn, text: an + '=' + plainS, msg: contentAttrs.has(an)
               ? `${an} is drawn by CSS content: attr(), so its words are passenger text \u2014 put them in the store and render them as markup`
               : `'${shortText(plainS)}' is put into a ${an} attribute \u2014 render it from the store` });
+        }
+      }
+      // CSS written from code: a stylesheet's text, insertRule(), cssText, or
+      // a custom property a stylesheet draws with content: var(--x)
+      if (!isOp && !inTable(i) && ctx !== 'compare') {
+        for (const m of String(tk.v).matchAll(/content\s*:\s*(["'])((?:\\.|(?!\1).)*)\1/g)) {
+          const v = m[2].replace(/\\[0-9a-fA-F]{1,6}\s?/g, ' ').replace(/\\(.)/g, '$1');
+          if (countsAsWords(v)) add({ check: 'B9', file: rel, line: tk.line, fn, text: v, msg: `CSS content '${shortText(v)}' written from code is passenger text in one language \u2014 render it from the store as markup` });
+        }
+        const fr0 = unit.frameOf[i];
+        if (fr0 >= 0 && t[fr0].v === '(' && t[fr0 - 1] && t[fr0 - 1].v === 'setProperty' && argIndex(t, i, unit) === 1) {
+          const q = /^\s*(["'])(.*)\1\s*$/.exec(String(tk.v));
+          if (q && countsAsWords(q[2])) add({ check: 'B9', file: rel, line: tk.line, fn, text: q[2], msg: `'${shortText(q[2])}' is a CSS string set from code (setProperty), drawn by content: var() \u2014 render the words from the store as markup` });
         }
       }
       // object keys and table values are not markup
@@ -791,6 +1059,7 @@ function run(options) {
       // lex this literal from the frame's state (CSS text in a style element
       // or attribute keeps the chain's state but is never reported)
       const res = lexHtml(tk.v, f.st);
+      if (f.tag || res.tag || f.st) (unit.markupToks = unit.markupToks || new Set()).add(i);
       if (sk && !HTML_SINKS.has(sk.name) && !adKey) {
         const plainS = stripEntities(stripTags(tk.v)).trim();
         const ok = sk.arg === undefined ? countsAsWords(plainS) : (isLabel(plainS) || isSentence(plainS));
@@ -858,6 +1127,238 @@ function run(options) {
     }
   }
 
+  // ── RENDERED: a word that reaches the screen through a name ──────────
+  // Pass 1 (walkMarkup) records each name whose value is put on screen as
+  // text; pass 2 (walkDestinations) finds every literal stored under such a
+  // name — in a variable, a property, an array, an object's keys or a
+  // function's return — and holds it to the store like a literal written
+  // into the markup itself. That covers what a label-shaped test cannot: a
+  // lower-case word shown in capitals by CSS ({ late: 'delayed' }), a phrase
+  // of words that are also names, and a label kept as an object key.
+  //   v:<scope>:<name>   a variable           e:<scope>:<name>  its elements
+  //   p:<prop>           a property           k:<scope>:<name>  its keys
+  //   r:<function>       a function's return value
+  // Lexical scope, near enough: the function body that declares a name
+  // (var/let/const, a parameter, a function declaration), or '' for a global.
+  function bodies(unit) {
+    if (unit._bodies) return unit._bodies;
+    const t = unit.toks, n = t.length;
+    const openOf = new Map();
+    for (let o = 0; o < n; o++) if (unit.closeOf[o] != null) openOf.set(unit.closeOf[o], o);
+    const isBody = new Set(), decl = new Map();
+    const bodyOf = (i) => { for (let k = unit.frameOf[i]; k != null && k >= 0; k = unit.frameOf[k]) if (isBody.has(k)) return k; return null; };
+    for (let i = 0; i < n; i++) {
+      if (t[i].v !== '{' || unit.isObj[i]) continue;
+      const p = t[i - 1];
+      if (!p) continue;
+      if (p.v === '=>') { isBody.add(i); continue; }
+      if (p.v !== ')') continue;
+      const o = openOf.get(i - 1);
+      if (o == null) continue;
+      const b = t[o - 1];
+      if (b && b.t === 'id' && /^(if|for|while|switch|catch|with)$/.test(b.v)) continue;
+      isBody.add(i);
+      // its parameters
+      const ps = new Set();
+      for (let j = o + 1; j < i - 1; j++) if (unit.frameOf[j] === o && t[j].t === 'id' && t[j + 1] && /^[,)=]$/.test(t[j + 1].v) && !(t[j - 1] && t[j - 1].v === '=')) ps.add(t[j].v);
+      decl.set(i, ps);
+    }
+    for (let i = 0; i < n; i++) {
+      if (t[i].t !== 'id') continue;
+      let name = null;
+      if (/^(var|let|const)$/.test(t[i].v) && t[i + 1] && t[i + 1].t === 'id') name = t[i + 1].v;
+      else if (t[i].v === 'function' && t[i + 1] && t[i + 1].t === 'id') name = t[i + 1].v;
+      else if (t[i].v === ',' ) name = null;
+      if (!name) continue;
+      // `var a = 1, b = 2`: the later names of one declaration
+      const b = bodyOf(i);
+      const key = b == null ? -1 : b;
+      if (!decl.has(key)) decl.set(key, new Set());
+      decl.get(key).add(name);
+      if (/^(var|let|const)$/.test(t[i].v)) {
+        let d = 0;
+        for (let j = i + 2; j < n; j++) {
+          const x = t[j];
+          if (x.v === '(' || x.v === '[' || x.v === '{' || x.v === '${') d++;
+          else if (x.v === ')' || x.v === ']' || x.v === '}' || x.v === '}$') { if (d === 0) break; d--; }
+          else if (d === 0 && x.v === ';') break;
+          else if (d === 0 && x.v === ',' && t[j + 1] && t[j + 1].t === 'id' && t[j + 2] && /^[=,;]$/.test(t[j + 2].v)) decl.get(key).add(t[j + 1].v);
+        }
+      }
+    }
+    unit._bodies = { bodyOf, decl };
+    return unit._bodies;
+  }
+  function scopeOf(unit, i, name) {
+    const { bodyOf, decl } = bodies(unit);
+    for (let b = bodyOf(i); b != null; b = bodyOf(b)) if ((decl.get(b) || new Set()).has(name)) return String(b);
+    return '';
+  }
+  function recordRendered(rel, unit, i) {
+    const t = unit.toks;
+    if (!RENDERED.has(rel)) RENDERED.set(rel, new Set());
+    const R = RENDERED.get(rel);
+    // a condition, not a value: x === 'a' ? …, !x, x && …
+    const before = t[i - 1];
+    if (before && /^(!|===|!==|==|!=|<|>|<=|>=|typeof|instanceof|in|void|delete)$/.test(before.v)) return;
+    // Object.keys(X) / Object.entries(X): X's keys reach the screen
+    if (t[i].v === 'Object' && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && /^(keys|entries)$/.test(t[i + 2].v) && t[i + 3] && t[i + 3].v === '(' && t[i + 4] && t[i + 4].t === 'id') {
+      R.add('k:' + scopeOf(unit, i + 4, t[i + 4].v) + ':' + t[i + 4].v);
+      return;
+    }
+    let k = i + 1, last = { kind: 'v', name: t[i].v };
+    for (;;) {
+      const x = t[k];
+      if (!x) break;
+      if ((x.v === '.' || x.v === '?.') && t[k + 1] && t[k + 1].t === 'id') {
+        const name = t[k + 1].v;
+        if (STRING_METHODS.has(name) && t[k + 2] && t[k + 2].v === '(') { k = (unit.closeOf[k + 2] || k + 2) + 1; continue; }   // 'x'.toUpperCase()
+        last = { kind: 'p', name };
+        k += 2; continue;
+      }
+      if (x.v === '[' && unit.closeOf[k] != null) { last = { kind: last.kind === 'v' ? 'e' : 'pe', name: last.name }; k = unit.closeOf[k] + 1; continue; }
+      if (x.v === '(' && unit.closeOf[k] != null) {
+        const callee = last.name;
+        // esc(x), String(x): the argument is what is shown
+        if (PASS_THROUGH.test(callee) && t[k + 1] && t[k + 1].t === 'id') recordRendered(rel, unit, k + 1);
+        last = { kind: 'r', name: callee };
+        k = unit.closeOf[k] + 1; continue;
+      }
+      break;
+    }
+    const after = t[k];
+    if (after && /^(===|!==|==|!=|<|>|<=|>=|\?|&&|instanceof|in)$/.test(after.v)) return;
+    const scope = scopeOf(unit, i, t[i].v);
+    if (last.kind === 'v') R.add('v:' + scope + ':' + last.name);
+    else if (last.kind === 'e') R.add('e:' + scope + ':' + last.name);
+    else if (last.kind === 'p') R.add('p:' + last.name);
+    else if (last.kind === 'pe') R.add('pe:' + last.name);
+    else if (last.kind === 'r') R.add('r:' + last.name);
+  }
+  // for (k in X) … k on screen: X's keys are on screen
+  function forInKeys(rel, unit) {
+    const t = unit.toks, R = RENDERED.get(rel);
+    if (!R) return;
+    for (let i = 0; i < t.length - 6; i++) {
+      if (t[i].v !== 'for' || !t[i + 1] || t[i + 1].v !== '(') continue;
+      let j = i + 2;
+      if (/^(var|let|const)$/.test(t[j].v)) j++;
+      if (t[j] && t[j].t === 'id' && t[j + 1] && t[j + 1].v === 'in' && t[j + 2] && t[j + 2].t === 'id') {
+        if (R.has('v:' + scopeOf(unit, j, t[j].v) + ':' + t[j].v)) R.add('k:' + scopeOf(unit, j + 2, t[j + 2].v) + ':' + t[j + 2].v);
+      }
+    }
+  }
+  // A literal is a passenger word when it reads as one: a label (isLabel),
+  // a sentence, or a word the store's English uses as a label ('delayed',
+  // 'boarding'), whatever its case.
+  function renderedWord(v) {
+    const x = stripEntities(stripTags(String(v).replace(RE_INVISIBLE_G, ''))).trim();
+    if (!x || x.length > 400 || CSS_LIKE.test(x) || CODE_LIKE.test(x) || CODE_LIKE2.test(x) || codeShaped(x)) return false;
+    if (brand(x) || DATA_PHRASES.has(norm(x))) return false;
+    if (/^[a-z]+([A-Z][a-z0-9]*)+$|^[a-z0-9]+([_-][a-z0-9]+)+$|^[\w-]+\.[\w.-]+$/.test(x)) return false;   // an identifier
+    if (isLabel(x) || isSentence(x)) return true;
+    return wordsOf(x).some((w) => w.length >= 2 && (ENGLISH_WORDS.has(w) || LABEL_WORDS.has(w) || ((VOCAB.get(w) || new Set()).size > 0))
+      && !DATA_VOCAB.has(w) && !P.UNIT_TERMS.includes(w));
+  }
+  function walkDestinations(rel, unit) {
+    const R = RENDERED.get(rel);
+    if (!R || !R.size) return;
+    forInKeys(rel, unit);
+    const t = unit.toks;
+    const ranges = Object.values(tables).filter((x) => x.unit === unit).map((x) => [x.obj.open, x.obj.close]);
+    for (const name of Object.keys((P.DATA_TABLES || {})[rel] || {})) { const r = dataRange(unit, name); if (r) ranges.push(r); }
+    const inTable = (i) => ranges.some((r) => i > r[0] && i < r[1]);
+    const has = (scope, kind, name) => R.has(kind + ':' + scope + ':' + name);
+    // each bracket carries where a value written in it ends up
+    const frames = [{ dest: null }];
+    const top = () => frames[frames.length - 1];
+    const report = (i, why) => {
+      const v = t[i].v;
+      const plain = stripEntities(stripTags(v)).trim();
+      if (REPORTED.has(rel + ':' + t[i].line + ':' + plain)) return;
+      add({ check: 'B15', file: rel, line: t[i].line, fn: unit.fnAt[i], text: plain, msg: `'${shortText(plain)}' reaches the screen through ${why} — a word a passenger reads comes from the store: add it to BOARD_STR (board-strings.js) with all nine languages and render it with bs()/bsPair()` });
+    };
+    for (let i = 0; i < t.length; i++) {
+      const tk = t[i];
+      if (tk.t === 'punc' && (tk.v === '(' || tk.v === '[' || tk.v === '{' || tk.v === '${')) {
+        const parent = top();
+        let dest = null;
+        if (tk.v === '[' && !(t[i - 1] && (t[i - 1].t === 'id' || t[i - 1].v === ')' || t[i - 1].v === ']'))) {
+          // an array literal: its elements end up as the parent's elements
+          if (parent.dest && parent.dest.kind === 'v') dest = { kind: 'e', name: parent.dest.name, scope: parent.dest.scope };
+          else if (parent.dest && parent.dest.kind === 'p') dest = { kind: 'pe', name: parent.dest.name };
+          else if (parent.dest && parent.dest.kind === 'r') dest = { kind: 're', name: parent.dest.name };
+        } else if (tk.v === '{' && unit.isObj[i]) {
+          dest = { kind: 'obj', of: parent.dest };
+        } else if (tk.v === '(' && !(t[i - 1] && (t[i - 1].t === 'id' || t[i - 1].v === ')' || t[i - 1].v === ']'))) {
+          dest = parent.dest;                                     // grouping
+        }
+        frames.push({ dest, obj: tk.v === '{' && unit.isObj[i] ? dest : null });
+        continue;
+      }
+      if (tk.t === 'punc' && (tk.v === ')' || tk.v === ']' || tk.v === '}' || tk.v === '}$')) { if (frames.length > 1) frames.pop(); continue; }
+      if (tk.t === 'punc' && (tk.v === ';' || tk.v === ',')) {
+        const f = top();
+        f.dest = f.obj ? null : (tk.v === ',' && f.dest && /^(e|pe|re)$/.test(f.dest.kind) ? f.dest : null);
+        continue;
+      }
+      if (tk.t === 'punc' && tk.v === '=' && t[i - 1]) {
+        const p = t[i - 1];
+        if (p.t === 'id') {
+          if (t[i - 2] && (t[i - 2].v === '.' || t[i - 2].v === '?.')) top().dest = { kind: 'p', name: p.v };
+          else top().dest = { kind: 'v', name: p.v, scope: scopeOf(unit, i - 1, p.v) };
+        } else if (p.v === ']' ) {
+          // X[k] = '…' / X.y[k] = '…'
+          let k = i - 1, d = 0;
+          for (; k >= 0; k--) { if (t[k].v === ']') d++; else if (t[k].v === '[') { d--; if (d === 0) break; } }
+          const b = t[k - 1];
+          if (b && b.t === 'id') top().dest = (t[k - 2] && t[k - 2].v === '.') ? { kind: 'pe', name: b.v } : { kind: 'e', name: b.v, scope: scopeOf(unit, k - 1, b.v) };
+        }
+        continue;
+      }
+      if (tk.t === 'id' && tk.v === 'return') { const fn = unit.fnAt[i]; top().dest = fn ? { kind: 'r', name: fn } : null; continue; }
+      // an object literal's key: its value goes to that property, and to
+      // the object's own destination (M[k] reads any value of M)
+      if ((tk.t === 'id' || tk.t === 'str') && top().obj !== null && frames.length > 1 && unit.isObj[unit.frameOf[i]] && t[i + 1] && t[i + 1].v === ':' && t[i - 1] && (t[i - 1].v === '{' || t[i - 1].v === ',')) {
+        const of = top().obj && top().obj.of;
+        top().dest = { kind: 'prop', name: String(tk.v), of };
+        // a quoted key shown through Object.keys(X)
+        if (tk.t === 'str' && of && of.kind === 'v' && has(of.scope, 'k', of.name) && renderedWord(tk.v) && !inTable(i) && !fnIsOperator(rel, unit.fnAt[i], unit.fnPathAt[i]))
+          report(i, `the keys of ${of.name} (Object.keys/for…in)`);
+        i++;
+        continue;
+      }
+      if (tk.t !== 'str' && tk.t !== 'tpl') continue;
+      const d = top().dest;
+      if (!d) continue;
+      if (inTable(i) || fnIsOperator(rel, unit.fnAt[i], unit.fnPathAt[i])) continue;
+      // a piece of a markup chain: B5 read it with the chain's state
+      if (unit.markupToks && unit.markupToks.has(i)) continue;
+      if (/[<>]|=["']|^["']|["']$/.test(tk.v)) continue;
+      if (t[i - 1] && t[i - 1].v === ':' && t[i - 2] && (LSET.has(String(t[i - 2].v)) || (t[i - 2].v === 't' && unit.langRecordObjs && unit.langRecordObjs.has(unit.frameOf[i])))) continue;
+      const ctx = literalContext(t, i, unit);
+      if (ctx !== 'plain' || dataKeyOf(t, i, unit)) continue;
+      if (entries.AD_I18N && entries.AD_I18N.has(tk.v.trim())) continue;
+      // a call's argument is the callee's business (bs('k'), esc('…') are
+      // read as keys or by the sinks)
+      const fr = unit.frameOf[i];
+      if (fr >= 0 && t[fr].v === '(' && t[fr - 1] && (t[fr - 1].t === 'id' || t[fr - 1].v === ')' || t[fr - 1].v === ']')) continue;
+      if (!renderedWord(tk.v)) continue;
+      let why = null;
+      if (d.kind === 'v' && has(d.scope, 'v', d.name)) why = 'the variable ' + d.name;
+      else if (d.kind === 'e' && has(d.scope, 'e', d.name)) why = 'an element of ' + d.name;
+      else if (d.kind === 'p' && R.has('p:' + d.name)) why = 'the property .' + d.name;
+      else if (d.kind === 'pe' && R.has('pe:' + d.name)) why = 'an element of .' + d.name;
+      else if (d.kind === 'r' && R.has('r:' + d.name)) why = 'the return value of ' + d.name + '()';
+      else if (d.kind === 'prop') {
+        if (R.has('p:' + d.name)) why = 'the property .' + d.name;
+        else if (d.of && d.of.kind === 'v' && has(d.of.scope, 'e', d.of.name)) why = 'a value of ' + d.of.name + '[…]';
+        else if (d.of && d.of.kind === 'e' && R.has('p:' + d.name)) why = 'the property .' + d.name;
+      }
+      if (why) report(i, why);
+    }
+  }
+
   function countsAsWords(r) {
     if (!r) return false;
     const s = stripEntities(r).replace(/\{[A-Za-z0-9_]+\}/g, ' ').trim();
@@ -916,6 +1417,7 @@ function run(options) {
     if (!x || x.length > 600) return false;
     if (CSS_LIKE.test(x) || CODE_LIKE.test(x) || CODE_LIKE2.test(x)) return false;
     if (brand(x)) return false;
+    if (DATA_PHRASES.has(norm(x))) return false;
     if (/[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\u0600-\u06FF]/.test(x)) return true;
     const raw = x.split(/[\s\u00A0\u202F]+/).map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')).filter((w) => /\p{L}{2,}/u.test(w));
     if (!raw.length) return false;
@@ -954,22 +1456,40 @@ function run(options) {
     for (let i = 0; i < n; i++) {
       const tk = t[i];
       const fn = unit.fnAt[i];
-      // lang === 'xx' ? …   /  'xx' === lang ? …
+      // a language fixed in a call to the store: bs(k, 'fr'), S.bs(k, 'fr'),
+      // bsPair(k, { langs: ['en', 'fr'] }), BoardStrings.time(d, 'fr'). The
+      // board's languages choose; a literal code chooses for them. (A literal
+      // 'en' as the fallback after a language variable — isLang(l) ? l :
+      // 'en', l || 'en' — is a default, not a choice.)
       if (tk.t === 'str' && LSET.has(tk.v)) {
-        const p = t[i - 1], nx = t[i + 1];
+        const call = storeCallAround(unit, i, rel);
+        if (call && !fallbackDefault(unit, i, call.open))
+          add({ check: 'B11', file: rel, line: tk.line, fn, text: call.name + "(…'" + tk.v + "'…)", msg: `${call.name}() is given the language '${tk.v}' \u2014 the board's languages decide (bsPairLangs(langs, iata) for the pair, \`lang\` for the language on screen), never a literal` });
+      }
+      // lang === 'xx' ? …   /  'xx' === lang ? …   /  lang.indexOf('xx') === 0 ? …
+      if (tk.t === 'str' && LSET.has(tk.v)) {
+        const p = t[i - 1];
+        let nx = t[i + 1];
+        let iAfter = i;
+        const fr0 = unit.frameOf[i];
+        if (fr0 >= 0 && t[fr0].v === '(' && t[fr0 - 1] && /^(indexOf|lastIndexOf|startsWith|endsWith|includes|test|match|search)$/.test(t[fr0 - 1].v) && unit.closeOf[fr0] === i + 1) {
+          iAfter = i + 1; nx = t[i + 2];
+        }
         const cmpBefore = p && /^[!=]==?$/.test(p.v);
-        const cmpAfter = nx && /^[!=]==?$/.test(nx.v);
+        const cmpAfter = nx && (/^[!=]==?$/.test(nx.v) || (iAfter !== i && /^(\?|&&|>|<|>=|<=)$/.test(nx.v)));
         if (cmpBefore || cmpAfter) {
           // within the next few tokens, a ? (or &&) choosing a string — out
           // through any parentheses: (lang === 'fr') ? 'Fermeture' : …
-          let j = i + (cmpAfter ? 2 : 1), d = 0;
-          for (; j < Math.min(n, i + 12); j++) {
+          let j = iAfter + (cmpAfter ? 2 : 1), d = 0;
+          if (iAfter !== i && nx && /^(\?|&&)$/.test(nx.v)) j = iAfter + 1;
+          for (; j < Math.min(n, i + 14); j++) {
             if (t[j].v === '(' || t[j].v === '[') d++;
             else if (t[j].v === ')' || t[j].v === ']') { if (d > 0) d--; }
             else if (d === 0 && (t[j].v === '?' || t[j].v === '&&')) break;
             else if (t[j].v === ';' || t[j].v === '{' || (d === 0 && t[j].v === ',')) { j = n; break; }
           }
-          if (j < n && (t[j].v === '?' || t[j].v === '&&') && t[j + 1] && (t[j + 1].t === 'str' || t[j + 1].t === 'tpl') && RE_WORD.test(t[j + 1].v) && !LANG_CODE_RE.test(t[j + 1].v.trim()))
+          if (j < n && (t[j].v === '?' || t[j].v === '&&') && t[j + 1] && (((t[j + 1].t === 'str' || t[j + 1].t === 'tpl') && RE_WORD.test(t[j + 1].v) && !LANG_CODE_RE.test(t[j + 1].v.trim()))
+              || (t[j + 1].t === 'id' && t[j + 2] && (t[j + 2].v === '(' || t[j + 2].v === '.') && /^(bs|bsFmt|bsPair|TL|SL|TLin|_gateLbl\w*|BoardStrings|Strings|S)$/.test(t[j + 1].v))))
             add({ check: 'B11', file: rel, line: tk.line, fn, text: "=== '" + tk.v + "' ?", msg: `a word chosen by comparing the language; per-language words live in the store (bs/bsPair) and per-language settings in BoardStrings.META` });
           // … or an if-statement whose body picks a word: if (lang === 'fr') x = 'Fermeture'
           if (j >= n) {
@@ -979,7 +1499,7 @@ function run(options) {
               const c = unit.closeOf[k];
               for (let m = c + 1; m < Math.min(n, c + 8); m++) {
                 if (t[m].v === ';' || t[m].v === '}') break;
-                if ((t[m].t === 'str' || t[m].t === 'tpl') && (isLabel(t[m].v) || isSentence(t[m].v)) && literalContext(t, m, unit) === 'plain') {
+                if ((t[m].t === 'str' || t[m].t === 'tpl') && (isLabel(t[m].v) || isSentence(t[m].v)) && /^(plain|codeish)$/.test(literalContext(t, m, unit)) && !codeShaped(t[m].v)) {
                   add({ check: 'B11', file: rel, line: tk.line, fn, text: "if (=== '" + tk.v + "')", msg: 'a word chosen by comparing the language; per-language words live in the store (bs/bsPair)' });
                   break;
                 }
@@ -1012,13 +1532,24 @@ function run(options) {
       // any read of a word table's English outside the store's helpers:
       // x.en standing in for the language on screen (a fallback, or a fixed
       // English half). META.en (settings) is not words.
-      if (tk.t === 'id' && tk.v === 'en' && t[i - 1] && t[i - 1].v === '.' && t[i - 2] && t[i - 2].t === 'id' && t[i - 2].v !== 'META'
+      if (tk.t === 'id' && tk.v === 'en' && t[i - 1] && (t[i - 1].v === '.' || t[i - 1].v === '?.') && t[i - 2] && (t[i - 2].t === 'id' || t[i - 2].v === ')' || t[i - 2].v === ']') && t[i - 2].v !== 'META'
           && !(t[i + 1] && /^(\(|=|\+=|\|\|=|\?\?=)$/.test(t[i + 1].v)) && !(t[i - 3] && t[i - 3].v === '.' && t[i - 4] && t[i - 4].v === 'META')
           && !(t[i - 3] && t[i - 3].v === '||')) {
-        add({ check: 'B11', file: rel, line: tk.line, fn, text: t[i - 2].v + '.en', msg: 'the English read directly — a fallback, or a half fixed in English. Read the language the board is showing (every entry has all nine)' });
+        add({ check: 'B11', file: rel, line: tk.line, fn, text: (t[i - 2].t === 'id' ? t[i - 2].v : '(…)') + '.en', msg: 'the English read directly — a fallback, or a half fixed in English. Read the language the board is showing (every entry has all nine)' });
       }
       if (tk.t === 'punc' && (tk.v === '||' || tk.v === '??') && t[i + 1] && t[i + 1].t === 'id' && t[i + 2] && t[i + 2].v === '[' && t[i + 3] && t[i + 3].t === 'str' && t[i + 3].v === 'en' && t[i + 4] && t[i + 4].v === ']') {
         add({ check: 'B11', file: rel, line: tk.line, fn, text: "|| " + t[i + 1].v + "['en']", msg: 'an English fallback: a missing language shows English' });
+      }
+      // a label helper falling back to the raw value: SL(k) || k.toUpperCase(),
+      // TL(k) || f.status — a key the table lacks shows the feed's English
+      // code instead of nothing (the key must exist; the rendered check
+      // reads BoardStrings.misses for keys only known at run time)
+      if (tk.t === 'punc' && (tk.v === '||' || tk.v === '??') && t[i - 1] && t[i - 1].v === ')' && t[i + 1] && t[i + 1].t === 'id') {
+        const callee = calleeOfClose(t, i - 1);
+        const nx = t[i + 1];
+        const isHelperNext = (STORE_LANG_FUNCS.has(nx.v) || /^(TL|TLF|SL|SLbi|TLbi|adTL|fidsT|tioLabel|BoardStrings|Strings)$/.test(nx.v));
+        if (callee && /^(TL|TLF|SL|TLin|_gateLbl\w*|_g8Sign\w*|adTL|fidsT|tioLabel|bs|bsPair|bsFmt)$/.test(callee) && !isHelperNext && !/^(undefined|null)$/.test(nx.v))
+          add({ check: 'B5', file: rel, line: tk.line, fn, text: callee + '(…) ' + tk.v + ' ' + nx.v, msg: `${callee}() falls back to the raw value (${nx.v}) when its key is missing \u2014 that is the feed's English code on a board in any language; the key must exist, and an unknown one shows nothing` });
       }
       // _frF ? 'x' : 'y'
       if (tk.t === 'id' && /^_?fr(F|First|Fst)\d*$|^_?frF\w*$/.test(tk.v) && t[i + 1] && t[i + 1].v === '?' && t[i + 2] && (t[i + 2].t === 'str' || t[i + 2].t === 'tpl') && RE_WORD.test(t[i + 2].v))
@@ -1031,6 +1562,50 @@ function run(options) {
       // langs.slice(0, 2)
       if (tk.t === 'id' && /^langs$/.test(tk.v) && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && t[i + 2].v === 'slice' && t[i + 4] && t[i + 4].v === '0' && t[i + 6] && t[i + 6].v === '2')
         add({ check: 'B11', file: rel, line: tk.line, fn, text: 'langs.slice(0, 2)', msg: 'the pair\'s languages come from bsPairLangs(langs, iata), which also applies the Qu\u00E9bec rule' });
+      // a language picked by its position through a method: langs.filter(…)[0],
+      // langs.slice(1, 2), langs.at(-1), langs.shift(), LANGS[3]
+      if (tk.t === 'id' && LANG_LIST_NAME.test(tk.v) && !(t[i - 1] && t[i - 1].v === '.' && !(t[i - 2] && /^(BoardStrings|Strings|api)$/.test(t[i - 2].v)))) {
+        let k = i + 1, picked = null;
+        while (t[k] && t[k].v === '.' && t[k + 1] && t[k + 1].t === 'id' && t[k + 2] && t[k + 2].v === '(' && unit.closeOf[k + 2] != null) {
+          const m = t[k + 1].v, a = k + 3, close = unit.closeOf[k + 2];
+          if (m === 'slice' && t[a] && (t[a].t === 'num' || (t[a].v === '-' && t[a + 1] && t[a + 1].t === 'num')) && !(t[a].v === '0' && t[a + 1] && t[a + 1].v === ')')) { picked = 'slice'; break; }
+          if (/^(at|shift|pop)$/.test(m)) {
+            // langs.shift(); as a statement keeps the list short; a pick uses it
+            const pv = t[i - 1];
+            if (m === 'at' || (pv && /^(=|\(|,|return|:|\?|\+|\[|&&|\|\|)$/.test(pv.v))) picked = m;
+            break;
+          }
+          k = close + 1;
+        }
+        if (!picked && k > i + 1 && t[k] && t[k].v === '[' && t[k + 1] && t[k + 1].t === 'num') picked = '[' + t[k + 1].v + ']';
+        if (!picked && tk.v === 'LANGS' && t[i + 1] && t[i + 1].v === '[' && t[i + 2] && t[i + 2].t === 'num') picked = '[' + t[i + 2].v + ']';
+        const owners = P.LANG_POSITION_FUNCTIONS && P.LANG_POSITION_FUNCTIONS[rel] || {};
+        if (picked && !(picked === 'slice' && t[k + 3] && t[k + 3].v === '0' && t[k + 5] && t[k + 5].v === '2')) {
+          if (fn && Object.prototype.hasOwnProperty.call(owners, fn)) used.position.add(rel + ':' + fn);
+          else add({ check: 'B11', file: rel, line: tk.line, fn, text: tk.v + '…' + picked, msg: 'a language picked by its position; the pair is bsPairLangs(langs, iata) (the Québec rule), the language on screen is `lang`' });
+        }
+      }
+      // a locale chosen outside the store: toLocaleTimeString([], …),
+      // Intl.DateTimeFormat(navigator.language), toLocaleString() — the
+      // browser's language, or any locale not the store's own
+      // (BoardStrings.intl(lang), BoardStrings.META[lang].intl)
+      if (tk.t === 'id' && LOCALE_CALLS.test(tk.v) && t[i + 1] && t[i + 1].v === '(' && unit.closeOf[i + 1] != null) {
+        const isIntl = t[i - 1] && t[i - 1].v === '.' && t[i - 2] && t[i - 2].v === 'Intl';
+        const isMethod = t[i - 1] && t[i - 1].v === '.' && !isIntl;
+        if (isIntl || (isMethod && /^toLocale/.test(tk.v))) {
+          const close = unit.closeOf[i + 1];
+          let a0 = i + 2, a1 = a0, d = 0;
+          for (; a1 < close; a1++) { const x = t[a1]; if (x.v === '(' || x.v === '[' || x.v === '{') d++; else if (x.v === ')' || x.v === ']' || x.v === '}') d--; else if (d === 0 && x.v === ',') break; }
+          const arg = t.slice(a0, a1);
+          const literal = arg.length === 1 && arg[0].t === 'str';           // reported by the literal-locale check below
+          const viaStore = arg.some((x) => x.v === 'intl') && arg.some((x) => /^(META|BoardStrings|Strings|S|intl)$/.test(x.v));
+          if (!literal && !viaStore && !inLogCall(unit, i))
+            add({ check: 'B11', file: rel, line: tk.line, fn, text: (isIntl ? 'Intl.' : '') + tk.v + '(' + (arg.length ? arg.map((x) => x.t === 'str' ? JSON.stringify(x.v) : x.v).join('').slice(0, 40) : '') + ')', msg: 'a locale chosen outside the store \u2014 the browser\'s language or a private choice; times, dates and numbers go through BoardStrings.time/date/weekday/num, or take BoardStrings.intl(lang)' });
+        }
+      }
+      // the browser's language: only the store's resolver reads it
+      if (tk.t === 'id' && tk.v === 'navigator' && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && /^(language|languages|userLanguage|browserLanguage)$/.test(t[i + 2].v))
+        add({ check: 'B11', file: rel, line: tk.line, fn, text: 'navigator.' + t[i + 2].v, msg: 'the browser\'s language is read by the store\'s resolver only (BoardStrings.resolveLangs); a board speaks its own languages' });
       // a literal locale or hour12
       if (tk.t === 'id' && /^(toLocaleTimeString|toLocaleDateString|toLocaleString|DateTimeFormat)$/.test(tk.v) && t[i + 1] && t[i + 1].v === '(' && t[i + 2] && t[i + 2].t === 'str' && /^[a-z]{2}(-[A-Z]{2})?$/.test(t[i + 2].v))
         add({ check: 'B11', file: rel, line: tk.line, fn, text: tk.v + "('" + t[i + 2].v + "')", msg: 'a locale chosen in place; times and dates go through bsTime/bsDate/bsWeekday (BoardStrings.META)' });
@@ -1088,6 +1663,74 @@ function run(options) {
     }
   }
 
+  // The store's helpers a language can be given to, by name; and the
+  // store's methods, on BoardStrings or any name it is copied to.
+  function storeAliases(unit) {
+    if (unit._storeAliases) return unit._storeAliases;
+    const t = unit.toks, out = new Set(['BoardStrings', 'Strings']), fns = new Map();
+    for (let i = 0; i < t.length - 2; i++) {
+      if (t[i].t !== 'id' || !t[i + 1] || t[i + 1].v !== '=' ) continue;
+      // X = BoardStrings / window.BoardStrings / (… && window.BoardStrings) || require(…)
+      let j = i + 2, d = 0, hit = false, end = i + 2;
+      for (; j < Math.min(t.length, i + 40); j++) {
+        const x = t[j];
+        if (x.v === '(' || x.v === '[' || x.v === '{') d++;
+        else if (x.v === ')' || x.v === ']' || x.v === '}') { if (d === 0) break; d--; }
+        else if (d === 0 && (x.v === ';' || x.v === ',')) break;
+        if (x.t === 'id' && x.v === 'BoardStrings' && !(t[j + 1] && t[j + 1].v === '.' && t[j + 2] && t[j + 2].t === 'id' && !/^(bs|fmt|pair|half|markHalf|list|time|date|weekday|pairLangs|frenchFirst|intl|num)$/.test(t[j + 2].v))) hit = true;
+        end = j;
+      }
+      if (!hit) continue;
+      // f = BoardStrings.bs  → a helper copied under another name
+      const last = t[end], before = t[end - 1];
+      if (last && last.t === 'id' && before && before.v === '.' && STORE_LANG_METHODS.has(last.v) && end === i + 4) fns.set(t[i].v, last.v);
+      else out.add(t[i].v);
+    }
+    // b2 = bs  → a helper copied under another name
+    for (let i = 0; i < t.length - 3; i++) {
+      if (t[i].t === 'id' && t[i + 1] && t[i + 1].v === '=' && t[i + 2] && t[i + 2].t === 'id' && STORE_LANG_FUNCS.has(t[i + 2].v) && t[i + 3] && /^[;,)]$/.test(t[i + 3].v)) fns.set(t[i].v, t[i + 2].v);
+    }
+    unit._storeAliases = { objects: out, fns };
+    return unit._storeAliases;
+  }
+  // The store call whose arguments token i sits in (directly, or inside an
+  // option object or array of one of them): { name, open } or null.
+  function storeCallAround(unit, i, rel) {
+    const t = unit.toks;
+    const al = storeAliases(unit);
+    for (let k = unit.frameOf[i], hops = 0; k != null && k >= 0 && hops < 4; k = unit.frameOf[k], hops++) {
+      if (t[k].v === '{' && !unit.isObj[k]) return null;            // a function body: its own code
+      if (t[k].v !== '(') continue;
+      const c = t[k - 1];
+      if (!c || c.t !== 'id') return null;
+      const recv = t[k - 2] && t[k - 2].v === '.' ? t[k - 3] : null;
+      if (recv && recv.t === 'id' && (al.objects.has(recv.v) || (recv.v === 'window' && STORE_LANG_FUNCS.has(c.v))) && STORE_LANG_METHODS.has(c.v)) return { name: recv.v + '.' + c.v, open: k };
+      if (recv && STORE_DISTINCT_METHODS.has(c.v)) return { name: '.' + c.v, open: k };
+      if (!recv && (STORE_LANG_FUNCS.has(c.v) || al.fns.has(c.v) || Object.prototype.hasOwnProperty.call(P.KEY_HELPERS, c.v) || Object.prototype.hasOwnProperty.call((P.KEY_HELPERS_BY_FILE || {})[rel] || {}, c.v))) return { name: c.v, open: k };
+      return null;
+    }
+    return null;
+  }
+  // 'en' as the fallback after a language variable: l || 'en',
+  // isLang(l) ? l : 'en'
+  function fallbackDefault(unit, i, open) {
+    const t = unit.toks;
+    if (t[i].v !== 'en') return false;
+    const p = t[i - 1];
+    if (p && (p.v === '||' || p.v === '??') && t[i - 2] && (t[i - 2].t === 'id' || t[i - 2].v === ')' || t[i - 2].v === ']')) return true;
+    if (p && p.v === ':' && unit.frameOf[i] === unit.frameOf[i - 1]) {
+      // the consequent of the ternary is not a literal
+      let d = 0;
+      for (let k = i - 2; k > open; k--) {
+        const x = t[k];
+        if (x.v === ')' || x.v === ']' || x.v === '}') d++;
+        else if (x.v === '(' || x.v === '[' || x.v === '{') { if (d === 0) break; d--; }
+        else if (d === 0 && x.v === '?') return !(t[k + 1] && t[k + 1].t === 'str' && t[k + 2] && t[k + 2].v === ':');
+      }
+    }
+    return false;
+  }
+
   function functionBody(unit, name) {
     const t = unit.toks;
     for (let i = 0; i < t.length; i++) {
@@ -1130,17 +1773,33 @@ function run(options) {
     const STORE_ROOTS = new Set(['BOARD_STR'].concat(P.LEGACY_STORES.map((x) => x.name)));
     const STORE_PARTS = /^(STR|LISTS|META|LANGS|FR_FIRST|LANG_DEFAULTS|ES_AIRPORTS)$/;
     const MUTATORS = /^(push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin)$/;
+    // the name tables too (CITY_FR, CITY, AIRLINE_NAME, FIDS_SHARED_CITY…):
+    // the collapse was French city names overwritten by English, and a
+    // run-time CITY_FR.YUL = 'MONTREAL' is the same thing where a duplicate-key
+    // check cannot see it. Written from any file, bare or through window.
+    const DATA_ROOTS = new Set();
+    for (const list of Object.values(P.DATA_TABLES || {})) for (const name of Object.keys(list)) DATA_ROOTS.add(name);
+    for (const n of P.NONTEXT_TABLES) if (n.name) DATA_ROOTS.add(n.name);
     for (const { rel, unit, isStore } of jsUnits) {
       const t = unit.toks;
       for (let i = 0; i < t.length; i++) {
         const tk = t[i];
-        if (tk.t !== 'id' || (t[i - 1] && t[i - 1].v === '.')) continue;
+        if (tk.t !== 'id') continue;
+        const viaGlobal = t[i - 1] && t[i - 1].v === '.' && t[i - 2] && /^(window|self|globalThis|root)$/.test(t[i - 2].v) && !(t[i - 3] && t[i - 3].v === '.');
+        if (t[i - 1] && t[i - 1].v === '.' && !viaGlobal) continue;
         let root = null, j = i;
         const ownTable = tables[tk.v] && tables[tk.v].file === rel;
-        if ((STORE_ROOTS.has(tk.v) && (ownTable || tk.v === 'BOARD_STR')) || (isStore && STORE_PARTS.test(tk.v))) root = tk.v;
+        if ((STORE_ROOTS.has(tk.v) && (ownTable || tk.v === 'BOARD_STR' || viaGlobal)) || (isStore && STORE_PARTS.test(tk.v))) root = tk.v;
+        else if (DATA_ROOTS.has(tk.v) && !dataWriterFor(rel, unit.fnAt[i], tk.v)) root = tk.v;
         else if (/^(BoardStrings|api|Strings)$/.test(tk.v) && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && STORE_PARTS.test(t[i + 2].v)) { root = tk.v + '.' + t[i + 2].v; j = i + 2; }
         if (!root) continue;
         if (t[i - 1] && /^(var|let|const)$/.test(t[i - 1].v)) continue;          // its declaration
+        // window.X = X: the table published under its own name, not changed
+        if (viaGlobal && t[i + 1] && t[i + 1].v === '=' && t[i + 2] && t[i + 2].v === tk.v && t[i + 3] && /^[;,)]$/.test(t[i + 3].v)) continue;
+        // the store publishing itself (root.BOARD_STR = api.STR)
+        if (isStore && viaGlobal && t[i + 1] && t[i + 1].v === '=' && t[i + 2] && t[i + 2].v === 'api') continue;
+        // window.CITY = window.CITY || { … }: the table's own declaration
+        if (viaGlobal && DATA_ROOTS.has(tk.v) && t[i + 1] && t[i + 1].v === '=' && scan.findTable(unit, tk.v)) continue;
         let k = j + 1, depth = 0;
         while (k < t.length) {
           if (t[k].v === '.' && t[k + 1] && t[k + 1].t === 'id') { k += 2; depth++; continue; }
@@ -1162,11 +1821,21 @@ function run(options) {
         if (t[i].v !== 'Object' || !t[i + 1] || t[i + 1].v !== '.' || !t[i + 2] || !/^(assign|defineProperty|defineProperties|setPrototypeOf)$/.test(t[i + 2].v) || !t[i + 3] || t[i + 3].v !== '(') continue;
         const a = t[i + 4];
         const b = t[i + 6];
-        const hit = a && a.t === 'id' && ((STORE_ROOTS.has(a.v) && ((tables[a.v] && tables[a.v].file === rel) || a.v === 'BOARD_STR')) || (isStore && STORE_PARTS.test(a.v))
+        const hit = a && a.t === 'id' && ((STORE_ROOTS.has(a.v) && ((tables[a.v] && tables[a.v].file === rel) || a.v === 'BOARD_STR')) || (isStore && STORE_PARTS.test(a.v)) || DATA_ROOTS.has(a.v)
           || (/^(BoardStrings|api|Strings)$/.test(a.v) && t[i + 5] && t[i + 5].v === '.' && b && STORE_PARTS.test(b.v)));
         if (hit) add({ check: 'B16', file: rel, line: t[i].line, fn: unit.fnAt[i], text: 'Object.' + t[i + 2].v + '(' + a.v + '…)', msg: `Object.${t[i + 2].v} writes into the store at run time \u2014 its words are fixed where they are declared` });
       }
     }
+  }
+
+  // A function registered to fill a name table at run time (a heritage gate
+  // taking its carrier's historic name, the app building its city map from
+  // the airport catalogue): { file: { fn or '-' (top level): { tables, why } } }
+  function dataWriterFor(rel, fn, name) {
+    const w = ((P.DATA_WRITERS || {})[rel] || {})[fn || '-'];
+    if (!w || !(w.tables || []).includes(name)) return false;
+    used.writers.add(rel + ':' + (fn || '-'));
+    return true;
   }
 
   // ── C2: what a passenger script loads at run time is classified too ──
@@ -1240,6 +1909,12 @@ function run(options) {
 
   // ── P1: stale policy entries ──
   for (const k of Object.keys(P.BRAND_TERMS)) if (!used.brand.has(k)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'BRAND_TERMS ' + k, msg: `BRAND_TERMS '${k}' matches nothing \u2014 remove it` });
+  for (const [rel, list] of Object.entries(P.DATA_WRITERS || {})) for (const fn of Object.keys(list)) {
+    if (!used.writers.has(rel + ':' + fn)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'DATA_WRITERS ' + rel + ' ' + fn, msg: `${fn} no longer writes a name table in ${rel} \u2014 remove it` });
+    if (!P.REASONS.includes(String(list[fn].why).split(':')[0])) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'DATA_WRITERS reason ' + fn, msg: `'${list[fn].why}' does not start with a reason from: ${P.REASONS.join(', ')}` });
+  }
+  for (const k of Object.keys(P.SAME_JA_ZH || {})) if (!used.jazh.has(k)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'SAME_JA_ZH ' + k, msg: `SAME_JA_ZH '${k}' matches nothing \u2014 remove it` });
+  for (const [l, list] of Object.entries(P.NATIVE_WORDS || {})) for (const w of Object.keys(list)) if (!used.native.has(l + ':' + w)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NATIVE_WORDS ' + l + ' ' + w, msg: `NATIVE_WORDS ${l} '${w}' matches nothing \u2014 remove it` });
   for (const k of Object.keys(P.SAME_AS_ENGLISH)) if (!used.same.has(k)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'SAME_AS_ENGLISH ' + k, msg: `SAME_AS_ENGLISH '${k}' matches nothing \u2014 remove it` });
   for (const [rel, list] of Object.entries(P.OPERATOR_FUNCTIONS)) for (const fn of Object.keys(list)) {
     const seenFns = fnSeen.get(rel) || new Set();
@@ -1253,7 +1928,7 @@ function run(options) {
   for (const n of P.NONTEXT_TABLES) if (!used.nontext.has(n.file + ':' + (n.name || n.fn))) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NONTEXT_TABLES ' + (n.name || n.fn), msg: 'matches nothing \u2014 remove it' });
   for (const [rel, list] of Object.entries(P.LANG_POSITION_FUNCTIONS || {})) for (const fn of Object.keys(list)) if (!used.position.has(rel + ':' + fn)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'LANG_POSITION_FUNCTIONS ' + fn, msg: `${fn} no longer picks a language by position in ${rel} \u2014 remove it` });
   for (const [pg, why] of Object.entries(P.NON_PASSENGER_PAGES || {})) {
-    if (!used.pages.has(pg)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NON_PASSENGER_PAGES ' + pg, msg: `no passenger script opens ${pg} any more \u2014 remove it` });
+    if (!exists(pg)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NON_PASSENGER_PAGES ' + pg, msg: `${pg} no longer exists \u2014 remove it` });
     if (!P.REASONS.includes(String(why).split(':')[0])) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NON_PASSENGER_PAGES reason ' + pg, msg: `reason '${why}' must start with one of: ${P.REASONS.join(', ')}` });
   }
   for (const [rel, why] of Object.entries(P.NON_PASSENGER)) if (!P.REASONS.includes(String(why).split(':')[0])) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NON_PASSENGER ' + rel, msg: `reason '${why}' must start with one of: ${P.REASONS.join(', ')}` });
@@ -1271,7 +1946,7 @@ function run(options) {
   }
   const pragmaCounts = {};
   for (const r of pragmaHits.values()) pragmaCounts[r] = (pragmaCounts[r] || 0) + 1;
-  return { findings, pragmaCounts, entries, tables, textObjects: allTextObjects, listObjects, dataVocab: [...DATA_VOCAB] };
+  return { findings, pragmaCounts, entries, tables, textObjects: allTextObjects, listObjects, dataVocab: [...DATA_VOCAB], dataPhrases: [...DATA_PHRASES] };
 }
 
 // ── markup lexing ─────────────────────────────────────────────────────────
@@ -1377,6 +2052,29 @@ const STORE_METHODS = { bs: ['STR'], fmt: ['STR'], pair: ['STR'], filled: ['STR'
 // screen. Every argument of the other EXCLUDED_CALLS is code.
 const LOG_CALLS = new Set(['log', 'warn', 'error', 'info', 'debug', 'trace', 'Error', 'TypeError', 'RangeError', 'assert',
   'fidsLog', '_fidsLog', '_dbg', 'dbg', '_log', '_diag', 'reportError', 'alert', 'confirm', 'prompt', 'groupCollapsed', 'group']);
+// inside the arguments of a logging call or an error
+function inLogCall(unit, i) {
+  const t = unit.toks;
+  for (let k = unit.frameOf[i]; k != null && k >= 0; k = unit.frameOf[k]) {
+    if (t[k].v === '{' && !unit.isObj[k]) return false;
+    if (t[k].v !== '(') continue;
+    const c = t[k - 1];
+    if (c && c.t === 'id' && LOG_CALLS.has(c.v)) return true;
+    if (c && c.t === 'id' && t[k - 2] && t[k - 2].v === '.' && t[k - 3] && t[k - 3].v === 'console') return true;
+  }
+  return false;
+}
+// the store's helper functions a language is passed to, and its methods
+const STORE_LANG_FUNCS = new Set(['bs', 'bsFmt', 'bsPair', 'bsHalf', 'bsList', 'bsTime', 'bsDate', 'bsWeekday', 'bsPairLangs', 'bsResolveLangs',
+  'TLin', '_gateLbl', '_gateLbl1', '_gateLblSpans', '_g8SignPair', '_g8SignLines', '_g8SignNext', 'SLpair', '_wxPair', 'fidsT']);
+const STORE_LANG_METHODS = new Set(['bs', 'fmt', 'pair', 'half', 'markHalf', 'list', 'time', 'date', 'weekday', 'pairLangs', 'frenchFirst',
+  'intl', 'num', 'clockText', 'boardTime', 'boardClockText', 'setLang', 'loaderLine', 'entry', 'filled', 'looksLike', 'withScripts']);
+// methods whose names no other object here uses: checked on any receiver
+const STORE_DISTINCT_METHODS = new Set(['bs', 'markHalf', 'pairLangs', 'frenchFirst', 'clockText', 'boardTime', 'boardClockText', 'looksLike']);
+// a list of the board's languages, by name
+const LANG_LIST_NAME = /^_?(langs|boardLangs|selLangs|selectedLangs|LANGS)$/;
+// calls that format by locale
+const LOCALE_CALLS = /^(toLocaleTimeString|toLocaleDateString|toLocaleString|DateTimeFormat|NumberFormat|RelativeTimeFormat|ListFormat|PluralRules|DisplayNames)$/;
 const LANG_CODE_RE = /^[a-z]{2,3}([-_][A-Za-z]{2,4})?(\s*,\s*[a-z]{2,3}([-_][A-Za-z]{2,4})?(;q=[\d.]+)?)*$/;
 const FIRST_ARG_ONLY = new Set(['replace', 'replaceAll', 'set']);
 // Calls that put an argument on screen as text: the index of that argument,
@@ -1425,8 +2123,30 @@ function literalContext(t, i, unit) {
     const close = unit.closeOf[fr];
     if (close && t[close + 1] && t[close + 1].v === '.' && t[close + 2] && /^(includes|indexOf|some|every|find|filter)$/.test(t[close + 2].v)) return 'compare';
   }
-  if (/^\s*(https?:|\/|\.\/|data:|#[\w-]+$|[.#]?[a-z][\w-]*\s*[.#\[>:]|[a-z-]+:\s)/i.test(t[i].v) && !/\s[a-z]{3,}\s[a-z]{3,}/i.test(t[i].v.slice(0, 40))) return 'excluded';
+  if (codeShaped(t[i].v)) return 'codeish';
   return 'plain';
+}
+
+// A URL, a path, an element id, a CSS selector or a CSS declaration — code,
+// not words. Each shape is matched on the WHOLE literal and case by case:
+// 'Gate: ' and 'Delayed.' are words with punctuation, never a selector
+// ('Gate' does not start one, and a selector has something after its '.'),
+// and 'status: delayed' is not a CSS declaration ('status' is no property).
+const CSS_PROPERTY = /^(-(webkit|moz|ms)-)?(align|animation|appearance|aspect|backdrop|backface|background|block|border|bottom|box|break|caret|clear|clip|color|column|columns|contain|content|counter|cursor|direction|display|fill|filter|flex|float|font|gap|grid|height|hyphens|image|inline|inset|isolation|justify|left|letter|line|list|margin|mask|max|min|mix|object|offset|opacity|order|outline|overflow|overscroll|padding|page|perspective|place|pointer|position|quotes|resize|right|rotate|row|scale|scroll|shape|stroke|tab|table|text|top|touch|transform|transition|translate|unicode|user|vertical|visibility|white|width|will|word|writing|z)(-[a-z]+)*$/;
+function codeShaped(v) {
+  const s = String(v);
+  if (/^\s*(https?:|\/\/|data:|blob:|mailto:|tel:)/i.test(s)) return true;
+  if (/^\s*\.{0,2}\/[\w.~%\-\/?=&#]*\s*$/.test(s)) return true;                 // a path
+  if (/^\s*#[A-Za-z][\w-]*\s*$/.test(s)) return true;                           // #id
+  // a selector: lower-case element or .class/#id start, then selector
+  // punctuation with a name right after it, and no free-standing word
+  if (/^\s*([.#]?[a-z_][\w-]*|\*)((\s*[>+~]\s*|\s+|[.#:]{1,2}|\[)[a-z_*\-\[][\w\-="'()\]^$|*~:.]*)*\s*[{,]?\s*$/.test(s)
+      && /[.#\[>:]/.test(s) && !/[.:]\s*$/.test(s) && !/\p{Lu}/u.test(s.replace(/[.#][\w-]+/g, ''))) return true;
+  // a CSS declaration: a real property (or a custom one) and a value
+  const d = /^\s*(--[\w-]+|[a-z]+(?:-[a-z]+)*)\s*:\s*(.+?)\s*;?\s*$/.exec(s);
+  if (d && (d[1].startsWith('--') || CSS_PROPERTY.test(d[1])) && !/\p{Lu}\p{Ll}{2,}\s+\p{Ll}{3,}/u.test(d[2])
+      && !/^\p{Lu}\p{Ll}+([\s\u00A0]+\p{L}+)*[.!]?$/u.test(d[2])) return true;
+  return false;
 }
 
 // Code, not words: font stacks, CSS declarations and values, SVG attribute
@@ -1446,6 +2166,24 @@ let DATA_KEYS_SET = new Set();
 let VOCAB = new Map();
 // words that are data: cities, airports, airlines, aircraft, brands (built each run)
 let DATA_VOCAB = new Set();
+// whole values of the name tables, normalised (a literal that IS one is data)
+let DATA_PHRASES = new Set();
+// words the store's English uses as labels, in lower case (built each run)
+let LABEL_WORDS = new Set();
+// rel -> names whose value is put on screen as text (built each run)
+let RENDERED = new Map();
+// JavaScript's own words: never a name whose value is shown
+const JS_WORDS = new Set(['var', 'let', 'const', 'function', 'return', 'typeof', 'new', 'delete', 'void', 'in', 'of', 'instanceof',
+  'this', 'null', 'undefined', 'true', 'false', 'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'default',
+  'try', 'catch', 'finally', 'throw', 'class', 'extends', 'super', 'import', 'export', 'await', 'async', 'yield', 'NaN', 'Infinity']);
+// String methods that pass their receiver on: 'x'.toUpperCase() shows x
+const STRING_METHODS = new Set(['toUpperCase', 'toLowerCase', 'toLocaleUpperCase', 'toLocaleLowerCase', 'trim', 'trimStart', 'trimEnd',
+  'normalize', 'padStart', 'padEnd', 'concat', 'repeat', 'toString', 'valueOf']);
+// Calls that show their first argument as it is (escaped, stringified)
+const PASS_THROUGH = /^(esc|_esc|escHtml|escapeHtml|_escHtml|_escapeHtml|htmlEsc|_htmlEsc|_niEsc|escAttr|_e|e|h|String|_upper|upper|_fidsTitleCaseIn|titleCase|_titleCase)$/;
+// Sinks whose value is text (not markup)
+const TEXT_SINK_NAMES = new Set(['textContent', 'innerText', 'nodeValue', 'append()', 'prepend()', 'before()', 'after()', 'replaceWith()',
+  'replaceChildren()', 'createTextNode()', 'insertAdjacentText()', 'fillText()', 'strokeText()', 'placeholder', 'title', 'alt', 'ariaLabel']);
 function dataKeyOf(t, i, unit) {
   let k = i;
   const fr = unit.frameOf[i];
@@ -1503,6 +2241,19 @@ function dataRange(unit, name) {
   return null;
 }
 
+// every .html file under a directory, relative to it
+function listHtml(dir, sub) {
+  const out = [];
+  let ents = [];
+  try { ents = fs.readdirSync(path.join(dir, sub || ''), { withFileTypes: true }); } catch (e) { return out; }
+  for (const e of ents) {
+    const rel = sub ? sub + '/' + e.name : e.name;
+    if (e.isDirectory()) { if (!/^(node_modules|\.git)$/.test(e.name)) out.push(...listHtml(dir, rel)); }
+    else if (/\.html?$/i.test(e.name)) out.push(rel);
+  }
+  return out;
+}
+
 function lineOf(text, needle, at) {
   const idx = at != null ? at : text.indexOf(needle);
   if (idx < 0) return 1;
@@ -1523,7 +2274,10 @@ function staticText(html) {
   const re = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>|([^<]+)/g;
   re.lastIndex = bodyAt;
   let m;
-  const skipTags = new Set(['script', 'style', 'template', 'svg', 'noscript', 'textarea', 'select', 'option']);
+  // svg <text>, <template> and <noscript> content is text a passenger can
+  // read (a template is cloned onto the screen); only code and form
+  // controls' option lists are skipped
+  const skipTags = new Set(['script', 'style', 'textarea']);
   while ((m = re.exec(html))) {
     if (m[0].startsWith('<!--')) continue;
     if (m[5] != null) {
@@ -1559,4 +2313,29 @@ function staticText(html) {
 // exception in policy.js.
 const LOOSENERS = { EXCLUDED_CALLS, LOG_CALLS, FIRST_ARG_ONLY, CODE_KEYS };
 
-module.exports = { run, id, norm, lexHtml, staticText, shortText, LOOSENERS };
+// The words of the name tables (cities, airports, airlines, aircraft,
+// hotel brands), from any version of the files: the test passes main's as
+// options.dataVocabBase, so a word added to a name table in the same change
+// cannot carry a label past B15.
+function nameTableWords(P, read) {
+  const out = new Set();
+  const nameTable = (why) => /^(data|brand):/.test(String(why || ''));
+  const files = new Set(Object.keys(P.DATA_TABLES || {}).concat(P.NONTEXT_TABLES.map((n) => n.file)));
+  for (const rel of files) {
+    let src = null;
+    try { src = read(rel); } catch (e) { src = null; }
+    if (src == null) continue;
+    let L;
+    try { L = scan.load(rel, src); } catch (e) { continue; }
+    const names = Object.entries((P.DATA_TABLES || {})[rel] || {}).filter(([, why]) => nameTable(why)).map(([n]) => n)
+      .concat(P.NONTEXT_TABLES.filter((n) => n.file === rel && n.name && nameTable(n.reason)).map((n) => n.name));
+    for (const unit of L.units) for (const name of names) {
+      const r = dataRange(unit, name);
+      if (!r) continue;
+      for (let j = r[0]; j < r[1]; j++) if (unit.toks[j].t === 'str' || unit.toks[j].t === 'tpl') for (const w of wordsOf(unit.toks[j].v)) out.add(w);
+    }
+  }
+  return out;
+}
+
+module.exports = { run, id, norm, lexHtml, staticText, shortText, nameTableWords, LOOSENERS };

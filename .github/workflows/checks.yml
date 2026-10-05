@@ -25,3 +25,7 @@ jobs:
           python-version: "3.x"
       - run: npm test
       - run: npm run assets:check
+      # main's own board-languages guard on this change: a pull request cannot
+      # pass by loosening its copy of the guard (tests/i18n/as-main.js)
+      - name: Board languages, as main enforces them
+        run: node tests/i18n/as-main.js

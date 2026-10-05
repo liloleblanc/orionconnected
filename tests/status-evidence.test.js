@@ -1327,7 +1327,7 @@ test('(D) Moncton AC1983 delayed while boarding: the sign keeps running, the dep
   // The Departure field moves to 05:50: it reads the real row.
   assert.deepEqual(g._gateDepDisplayState(r1), { stKey: 'delayed', depDelayed: true, revTsLater: true });
   assert.ok(UXG.indexOf('var depTimeHtml = _to12h(currentFlight.time)') < UXG.indexOf('var _door = _gateDoor('));
-  assert.match(UXG, /if \(_door\.word\) \{\s*stKey = _door\.word;\s*stLabel = SL\(stKey\) \|\| stKey\.toUpperCase\(\);\s*if \(_door\.kept\) \{\s*_signDepTs = _door\.basis\._revTs \|\| _door\.basis\._sortTs \|\| effectiveDepTs;\s*if \(_signDepTs\) minsToDep = Math\.round\(\(_signDepTs - Date\.now\(\)\) \/ 60000\);/);
+  assert.match(UXG, /if \(_door\.word\) \{\s*stKey = _door\.word;\s*stLabel = _statusWord\(stKey\);\s*if \(_door\.kept\) \{\s*_signDepTs = _door\.basis\._revTs \|\| _door\.basis\._sortTs \|\| effectiveDepTs;\s*if \(_signDepTs\) minsToDep = Math\.round\(\(_signDepTs - Date\.now\(\)\) \/ 60000\);/);
   assert.match(UXG, /\} else if \(depDelayed && !showBoarding\) \{/);
   // The departures board prints the airport's own Delayed and its new time.
   assert.equal(g._fidsShownRow(r1, t1, 'YQM'), r1);

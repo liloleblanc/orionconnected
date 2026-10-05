@@ -172,7 +172,7 @@ const DATA_TABLES = {
     AP: 'data: airport names (decision D2)',
     CITY_FR: 'data: French city names (decision D2)',
     FEED_SAYS_GATE_WORDS: 'debug: notes on which feeds publish gate words, never rendered',
-    AIRLINE_AMENITIES: 'data: operator notes on each airline, never rendered',
+    AIRLINE_AMENITIES: 'operator: notes on each airline, never rendered',
     AIRLINE_NAME: 'data: airline names',
     CITY: 'data: city names (decision D2)',
     IATA_AIRCRAFT: 'data: aircraft type names by IATA code',
@@ -180,7 +180,6 @@ const DATA_TABLES = {
     ACCOR_BRAND_NAMES: 'data: Accor brand names',
     BRAND_WORDS: 'data: hotel brand names matched in a hotel\'s name',
     _known: 'data: hotel brand names matched in a hotel\'s name',
-    _later: 'data: hotel brand names',
     luxury: 'data: hotel brand names that take the luxury layout',
     _NON_PASSENGER_PATTERNS: 'data: feed operator names that mark a non-passenger flight',
     _CITY_DISAMBIGUATION: 'data: place names sent to the geocoder',
@@ -317,7 +316,7 @@ const SAME_AS_ENGLISH = {
   'From': { langs: ['pt'], why: 'Portuguese De is also the French' },
   'Airside': { langs: ['it'], why: 'the Italian word, Satellite, is also the French' },
   'from': { langs: ['pt'], why: 'Portuguese de is also the French' },
-  'Status': { langs: ['de', 'pt'], why: 'German and Brazilian Portuguese use Status' },
+  'Status': { langs: ['de'], why: 'German airports use Status' },
   'Live': { langs: ['de'], why: 'German boards say Live' },
   'Hotels': { langs: ['de'], why: 'the German word' },
   'Menu': { langs: ['fr', 'it', 'pt'], why: 'the French, Italian and Portuguese word' },
@@ -325,6 +324,38 @@ const SAME_AS_ENGLISH = {
   '{TEMP} in {CITY}': { langs: ['de'], why: 'German in' },
   'Calgary · 1987–2001': { langs: ['fr', 'es', 'de', 'it', 'pt'], why: 'data: a city and two years' },
   'Montreal · DC-9 · 1966–2002': { langs: ['es', 'de', 'it', 'pt'], why: 'data: a city, a type and two years (Italian writes Montréal)' }
+};
+
+// Japanese written with exactly the characters Chinese uses, keyed by the
+// English. Each was checked: both languages write the word this way (雨 is
+// rain in both). Any other ja value equal to the zh one fails B3, so a
+// Chinese row pasted into the Japanese ('明天' for 明日) is caught.
+const SAME_JA_ZH = {
+  'Rain': 'code: 雨 in both', 'Light Rain': 'code: 小雨 in both', 'Heavy Rain': 'code: 大雨 in both', 'Heavy rain': 'code: 大雨 in both',
+  'Snow': 'code: 雪 in both', 'Light Snow': 'code: 小雪 in both', 'Heavy Snow': 'code: 大雪 in both', 'Heavy snow': 'code: 大雪 in both',
+  'Feels like': 'code: 体感 in both', 'Feels': 'code: 体感 in both', 'Humidity': 'code: 湿度 in both',
+  'Destination': 'code: 目的地 in both', 'your destination': 'code: 目的地 in both',
+  'Speed': 'code: 速度 in both', 'Altitude': 'code: 高度 in both'
+};
+
+// A word of one of the Latin-script languages that is also an English word,
+// and that no other translation in the store happens to use. Each is that
+// language's own word (French 'destinations', Spanish 'general'), or the
+// loanword its airports and hotels write ('check-in'). Any other English
+// word inside a translation fails B3 ('Gate closes shortly' in German).
+const NATIVE_WORDS = {
+  es: { error: 'code: the Spanish word', general: 'code: the Spanish word (Embarque general)' },
+  fr: {
+    restaurant: 'code: the French word', site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
+    programme: 'code: the French word', image: 'code: the French word', unique: 'code: the French word',
+    dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word', centre: 'code: the French word (centre-ville)'
+  },
+  de: { restaurant: 'code: the German word' },
+  it: { 'check-in': 'code: the word Italian airports use', king: 'code: the bed size as Italian hotels write it (king size)' },
+  pt: {
+    'check-in': 'code: the word Brazilian airports use', site: 'code: the Brazilian word for a website', king: 'code: the bed size as Brazilian hotels write it',
+    transfers: 'code: the word Brazilian airports use for airport transfers', resorts: 'code: the word Brazilian Portuguese uses'
+  }
 };
 
 // Functions that only build operator UI. B5 and B8 skip them; each must
@@ -366,6 +397,22 @@ const OPERATOR_FUNCTIONS = {
   }
 };
 
+// Code allowed to write into a name table at run time (B16 otherwise
+// refuses it: a run-time CITY_FR.YUL = … is the CITY_FR collapse again,
+// where no duplicate-key check can see it). '-' is a page's top-level code.
+// { file: { fn: { tables: [names], why } } }
+const DATA_WRITERS = {
+  'fids-current/js/fids-core.js': {
+    _heritageInstallBranding: { tables: ['AIRLINE_NAME'], why: 'data: a heritage gate takes its carrier\'s historic name' }
+  },
+  'fids-current/js/studio-player.js': {
+    ensurePilotRouter: { tables: ['AP'], why: 'data: publishes the airport\'s time zone where the shared feed router reads it' }
+  },
+  'fids-current/app.html': {
+    '-': { tables: ['AP', 'CITY'], why: 'data: the app builds its time-zone and city maps from its airport catalogue and the shared names at load' }
+  }
+};
+
 // Functions allowed to rewrite text nodes on a timer (B13). They handle
 // data (city names, airport codes), and may not hold a language table.
 const TEXT_REWRITERS = {};
@@ -397,11 +444,15 @@ const LANG_POSITION_FUNCTIONS = {
 // reason (C2). A new one needs a recorded approval, like every exception.
 const NON_PASSENGER_PAGES = {
   'fids-current/picker.html': 'operator: the airport and screen picker',
-  'fids-current/screen.html': 'operator: the pairing screen an unclaimed display shows to its installer'
+  'fids-current/screen.html': 'operator: the pairing screen an unclaimed display shows to its installer',
+  'fids-current/designer.html': 'operator: the board designer',
+  'fids-current/menu.html': 'operator: the operator menu page',
+  'fids-current/studio/index.html': 'operator: the Studio editor',
+  'fids-current/assets/asset-library.html': 'operator: the asset library'
 };
 
 module.exports = {
   REASONS, PASSENGER_PAGES, PASSENGER_SCRIPTS, PASSENGER_STYLES, NON_PASSENGER, STORE_FILE, LANGS, DATA_TABLES, DATA_KEYS, LANG_RECORD_TABLES,
-  LEGACY_STORES, KEY_HELPERS, KEY_HELPERS_BY_FILE, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH, DECISION_FILES,
-  OPERATOR_FUNCTIONS, TEXT_REWRITERS, LANG_STORAGE_FUNCTIONS, LANG_POSITION_FUNCTIONS, NON_PASSENGER_PAGES
+  LEGACY_STORES, KEY_HELPERS, KEY_HELPERS_BY_FILE, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH, SAME_JA_ZH, NATIVE_WORDS, DECISION_FILES,
+  OPERATOR_FUNCTIONS, TEXT_REWRITERS, LANG_STORAGE_FUNCTIONS, LANG_POSITION_FUNCTIONS, NON_PASSENGER_PAGES, DATA_WRITERS
 };

@@ -57,3 +57,48 @@ function atk_H5_langsByPosition(langs) { return bs('dep', langs[1]); }
 function atk_H6_switch(lang) { var w; switch (lang) { case 'fr': w = 'Fermeture'; break; default: w = 'Gate closes'; } return w; }
 function atk_H7_includes(lang) { return ['fr', 'es'].includes(lang) ? 'Cierre' : 'Gate closes'; }
 function atk_H8_englishFallback(o, lang) { return o[lang] || o.en; }
+
+// ── round 3 (2026-10-04): shapes that reached the screen past round 2 ──
+// a word with punctuation read as code ('Gate: ', 'Delayed.')
+function atk_N1_wordColonText(el, g) { el.textContent = 'Gate: ' + g; }
+function atk_N1b_statusColonInChain(h) { return h + '<span class="m">' + 'Status: Delayed' + '</span>'; }
+function atk_N1c_wordFullStopInChain(h) { return h + '<span class="m">' + 'Delayed.' + '</span>'; }
+function atk_N1d_colonIntoTextContent(el) { el.textContent = 'Boarding: Now'; }
+function atk_BL2_colonPair(el) { el.textContent = 'Boarding: Embarquement'; }
+// a label of words a notes table, a brand or a name table also uses
+function atk_N2_notesWordsViaVariable(h) { var v = 'Flight status'; return h + '<span class="m">' + v + '</span>'; }
+function atk_N2b_brandWordsViaVariable(h) { var v = 'Baggage information'; return h + '<span class="m">' + v + '</span>'; }
+function atk_N2c_nameWordsViaVariable(h) { var v = 'Hotel shuttle'; return h + '<span class="m">' + v + '</span>'; }
+// a lower-case word shown in capitals, a key, a keyless list
+function atk_N3_lowercaseMapUppercased(h) { var m = { late: 'delayed', early: 'early' }; return h + '<span style="text-transform:uppercase">' + m.late + '</span>'; }
+function atk_N4_labelAsObjectKey(h) { var k = { 'Gate closes': 1 }; return h + '<span>' + Object.keys(k)[0] + '</span>'; }
+function atk_N9_keylessArray(h) { var rows = ['delayed', 'boarding', 'closed']; return h + '<span>' + rows[0] + '</span>'; }
+// CSS content written from code
+function atk_N5_styleText() { var st = document.createElement('style'); st.textContent = '.m::after{content:"Gate closes"}'; document.head.appendChild(st); }
+function atk_N5b_insertRule() { document.styleSheets[0].insertRule('.m::after{content:"Gate closes"}', 0); }
+function atk_N5c_customProperty() { document.documentElement.style.setProperty('--gc-label', '"Gate closes"'); }
+// a fixed language through the store's own helpers
+function atk_F2c_fixedLangArg(h) { return h + bs('gate', 'fr'); }
+function atk_F3c_aliasFixedLang(S) { return S.bs('gate', 'fr'); }
+function atk_BL3_fixedPairLangs(h) { return h + bsPair('gate', { langs: ['en', 'fr'] }); }
+function atk_BL4_twoFixedHalves(h) { return h + bs('gate', 'en') + ' | ' + bs('gate', 'fr'); }
+function atk_L1_browserLocale(h) { return h + '<span>' + new Date().toLocaleTimeString([], { hour: 'numeric' }) + '</span>'; }
+function atk_L2_ternaryLocale(lang) { return new Date().toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { weekday: 'long' }); }
+function atk_L3_navigatorLocale() { return new Intl.DateTimeFormat(navigator.language, { hour: 'numeric' }).format(new Date()); }
+function atk_L4_filterPick(langs) { return bs('gate', langs.filter(function (l) { return l !== 'en'; })[0]); }
+function atk_L5_sliceOneTwo(langs) { return langs.slice(1, 2); }
+function atk_L6_indexOfChoice(lang) { return lang.indexOf('fr') === 0 ? bs('gate', 'fr') : bs('gate', 'en'); }
+function atk_L7_numberInBrowserLocale(el, n) { el.textContent = n.toLocaleString(); }
+// a name table overwritten at run time (the CITY_FR collapse)
+function atk_K1_nameTableOverwrite() { FX_CITY.YUL = 'MONTREAL'; }
+function atk_K2_nameTableBracket() { FX_CITY['YUL'] = 'MONTREAL'; }
+function atk_K6_nameTableViaWindow() { window.FX_CITY.YUL = 'MONTREAL'; }
+// a missing key through another name for the helper
+function atk_H1_aliasMissingKey(S) { return S.bs('backToGates'); }
+function atk_H2_helperCopied() { var f = BoardStrings.bs; return f('gateClosesNew'); }
+function atk_H3_ternaryKey(k) { return bs(k ? 'gate' : 'gateClosesNew'); }
+function atk_H4_keyInVariable() { var key = 'gateClosesNew'; return bs(key); }
+function atk_H6_localCopy() { var b2 = bs; return b2('gateClosesNew'); }
+// a helper falling back to the raw value, or to the English of a call
+function atk_R1_rawFallback(k) { return TL(k) || k.toUpperCase(); }
+function atk_R2_englishOfACall(k, lang) { return lbl(k)[lang] || lbl(k).en; }

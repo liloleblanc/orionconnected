@@ -31,7 +31,18 @@ const policy = require('./i18n/policy');
 
 const ROOT = path.resolve(__dirname, '..');
 let RESULT = null;
-const result = () => (RESULT = RESULT || checks.run());
+// In CI the name tables' words are main's too: a word is data only if it was
+// data before this change (checks.nameTableWords), so a label cannot be made
+// "data" by writing its words into a name table in the same change.
+function baseNameWords() {
+  let base = null;
+  try { base = execFileSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch (e) { return null; }
+  if (!base) return null;
+  return checks.nameTableWords(policy, (f) => {
+    try { return execFileSync('git', ['show', `${base}:${f}`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }); } catch (e) { return null; }
+  });
+}
+const result = () => (RESULT = RESULT || checks.run({ dataVocabBase: baseNameWords() || undefined }));
 
 function describe(list) {
   return list.slice(0, 40).map((f) => `  ${f.check} ${f.file}:${f.line}${f.fn ? ' ' + f.fn + '()' : ''}  ${f.msg}`).join('\n')
@@ -44,8 +55,14 @@ test('the guard reads every passenger file without losing its place', () => {
   assert.ok(r.tables.LS && r.tables._GATE_LBL && r.tables.STR, 'the store and the legacy tables are found');
 });
 
+// Run as main's guard over a pull request (tests/i18n/as-main.js), the
+// tidiness checks — a policy entry or a ledger line that matches nothing —
+// are the change's own guard's business: an older guard may not recognise
+// what a newer one matches. Every check on the passenger words still runs.
+const AS_MAIN = process.env.I18N_AS_MAIN === '1';
 for (const check of [...ledger.NEVER_LEDGERED]) {
-  test(`${check}: passes outright (never ledgered)`, () => {
+  test(`${check}: passes outright (never ledgered)`, (t) => {
+    if (AS_MAIN && (check === 'P1' || check === 'P2')) { t.skip('tidiness is the change\'s own guard\'s check'); return; }
     const bad = result().findings.filter((f) => f.check === check);
     assert.equal(bad.length, 0, `\n${describe(bad)}\n`);
   });
@@ -63,7 +80,8 @@ test('no NEW passenger-language gap: every finding is already in the debt ledger
     + 'data and debug output only, each with a reason (tests/i18n/policy.js).\n');
 });
 
-test('the ledger claims no debt that is already fixed', () => {
+test('the ledger claims no debt that is already fixed', (t) => {
+  if (AS_MAIN) { t.skip('tidiness is the change\'s own guard\'s check'); return; }
   const entries = ledger.load();
   const { stale } = ledger.compare(result().findings.filter((f) => !ledger.NEVER_LEDGERED.has(f.check)), entries, checks.id);
   assert.equal(stale.length, 0,
@@ -153,10 +171,11 @@ test('no exception grows against main without a recorded approval', (t) => {
   try { beforeLoose = checksSrc ? ratchet.evalModule(checksSrc, req).LOOSENERS : null; } catch (e) { beforeLoose = null; }
   added.push(...ratchet.loosenersAdded(beforeLoose, checks.LOOSENERS));
   const files = [...new Set(policy.PASSENGER_SCRIPTS.concat(policy.PASSENGER_PAGES, before.PASSENGER_SCRIPTS || [], before.PASSENGER_PAGES || []))];
-  const prBefore = ratchet.pragmaCounts(files, (f) => show(f));
-  const prNow = ratchet.pragmaCounts(files, (f) => fs.readFileSync(path.join(ROOT, f), 'utf8'));
+  const prBefore = ratchet.pragmaIds(files, (f) => show(f));
+  const prNow = ratchet.pragmaIds(files, (f) => fs.readFileSync(path.join(ROOT, f), 'utf8'));
   added.push(...ratchet.pragmasAdded(prBefore, prNow));
-  const approvals = ratchet.loadApprovals();
+  // the approvals are main's: a change cannot approve its own exception
+  const approvals = ratchet.parseApprovals(show('tests/i18n/approved-exceptions.json'));
   const bad = ratchet.unapproved(added, approvals);
   const line = (x) => `  ${x.list}: ${x.entry}${x.count != null ? ` (${x.was} → ${x.count})` : ''}`;
   if (added.length) {
@@ -166,10 +185,37 @@ test('no exception grows against main without a recorded approval', (t) => {
       try { fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n**New exceptions in this change: ${added.length}, ${added.length - bad.length} approved**\n\n` + added.map((x) => '-' + line(x).slice(1)).join('\n') + '\n'); } catch (e) {}
     }
   }
-  assert.equal(bad.length, 0, '\nThese exceptions are new against main and have no approval:\n' + bad.map(line).join('\n')
+  assert.equal(bad.length, 0, '\nThese exceptions are new against main and have no approval on main:\n' + bad.map(line).join('\n')
     + '\n\nA passenger word goes in the store (board-strings.js) instead. If this really is operator UI, a brand,\n'
-    + 'a unit, a code, data or debug output, it needs an approval in review, recorded in\n'
-    + 'tests/i18n/approved-exceptions.json as { "list", "entry", "approved": "the PR it was approved in" }.\n');
+    + 'a unit, a code, data or debug output, it needs an approval reviewed on its own FIRST: a pull request that\n'
+    + 'changes tests/i18n/approved-exceptions.json and nothing else, recorded as\n'
+    + '{ "list", "entry", "approved": "the PR it was approved in" }. This change can use it once that is on main.\n');
+});
+
+// An approval is reviewed on its own. A change to approved-exceptions.json
+// may not travel with anything else, so no approval rides in unseen beside
+// the code it excuses (and the code reading it reads main's copy anyway).
+test('an approval lands on its own, never beside the change it excuses', (t) => {
+  let base = null;
+  try {
+    base = execFileSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch (e) { /* no origin/main here */ }
+  if (!base) {
+    if (process.env.CI) assert.fail('no origin/main to compare with — checks.yml must fetch with fetch-depth: 0');
+    t.skip('no origin/main in this checkout; the comparison runs in CI');
+    return;
+  }
+  let before = null;
+  try { before = execFileSync('git', ['show', `${base}:tests/i18n/approved-exceptions.json`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { before = null; }
+  if (before == null) { t.skip('main has no approvals file yet: this change introduces it'); return; }
+  const now = fs.readFileSync(ratchet.APPROVALS, 'utf8');
+  if (JSON.stringify(JSON.parse(now)) === JSON.stringify(JSON.parse(before))) return;
+  ratchet.parseApprovals(now);       // well formed
+  const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').filter(Boolean);
+  const changed = [...new Set(git(['diff', '--name-only', base]).concat(git(['ls-files', '--others', '--exclude-standard'])))];
+  const others = changed.filter((f) => f !== 'tests/i18n/approved-exceptions.json');
+  assert.deepEqual(others, [], '\ntests/i18n/approved-exceptions.json changed together with other files. An approval is a pull\n'
+    + 'request of its own (that file only), reviewed on its own; the change that uses it follows once it is on main.\n');
 });
 
 test('summary', () => {

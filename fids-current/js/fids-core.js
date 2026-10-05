@@ -4316,7 +4316,7 @@ function _writeGateTelemDom() {
     if (kind === 'spd-kt') v = spdKt;
     else if (kind === 'spd-kph') v = spdKph;
     else if (kind === 'alt-ft') v = altFt;
-    if (v !== null) els[i].textContent = v.toLocaleString();
+    if (v !== null) els[i].textContent = BoardStrings.num(v);
   }
 }
 
@@ -5067,11 +5067,10 @@ function updateDedicatedTimeOnly() {
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
   const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
-  // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
-  const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23970 — the store's locale
   // Weekday, month, day number and year all come from the AIRPORT's clock —
-  // see _airportDateLine for the mixed-clock bug this replaces.
-  const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
+  // see _airportDateLine for the mixed-clock bug this replaces — in the
+  // language on screen (the store's locale for it).
+  const dateDisplay = _airportDateLine(now, tzOpts, lang, timeStr);
   const footer = document.getElementById('dedicatedFooterRight');
   if (footer) footer.textContent = dateDisplay;
   const banClock = document.getElementById('dedicatedBannerClock');
@@ -6032,7 +6031,7 @@ var ACCOR_BRAND_NAMES = {
   'SOF': 'Sofitel',
   'RAF': 'Raffles',
   'RAH': 'Raffles',
-  'EMB': 'Emblems Collection',
+  'EMB': 'Emblème',
   'BAN': 'Banyan Tree',
   'FAE': 'Faena',
   'FAENA': 'Faena',
@@ -6065,12 +6064,14 @@ var ACCOR_BRAND_NAMES = {
   'GRT': 'greet',
   '25H': '25Hours Hotels',
   // Economy
-  'IBS': 'ibis Styles',
+  'IBS': 'ibis',
   'IBI': 'ibis Styles',
   'IBH': 'ibis',
   'IBB': 'ibis budget',
   'BRK': 'BreakFree',
-  'JOJ': 'JO&JOE'
+  'JOJ': 'JO&JOE',
+  // the codes the later list (v23046) added
+  'SEQ': 'SO/', 'DEL': 'Delano', 'RIX': 'Rixos', 'HB': 'Hoxton', 'JO': 'JO&JOE', 'N25': '25hours'
 };
 
 var ACCOR_BRAND_LOGOS = {
@@ -9243,7 +9244,7 @@ function renderMobileGateHtml(ctx) {
   try { _mDoor = _gateDoorFor(currentFlight, Date.now(), iata).word || ''; } catch (eM) { _mDoor = ''; }
   try { window._gatePaintedDoor = { k: _gateRowKey(currentFlight), w: _mDoor }; } catch (eP) {}
   const stKey = _mDoor || currentFlight.status || 'scheduled';
-  const stLabel = SL(stKey) || stKey.toUpperCase();
+  const stLabel = _statusWord(stKey);
   const depTime = currentFlight.upd || currentFlight.time || '';
   const schedTime = currentFlight.time || '—';
   const isRevised = !!(currentFlight.upd && currentFlight.upd !== currentFlight.time);
@@ -9470,8 +9471,8 @@ function renderMobileGateHtml(ctx) {
         var _mAltFt = (typeof _inb._liveAlt === 'number') ? Math.round(_inb._liveAlt) : null;
         _mTelem =
             '<div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px;">'
-          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mSpdKph !== null ? ('<span data-gtelem="spd-kph">' + _mSpdKph.toLocaleString() + '</span> kph') : '—') + '</span>'
-          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mAltFt !== null ? ('<span data-gtelem="alt-ft">' + _mAltFt.toLocaleString() + '</span> ft') : '—') + '</span>'
+          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mSpdKph !== null ? ('<span data-gtelem="spd-kph">' + BoardStrings.num(_mSpdKph) + '</span> kph') : '—') + '</span>'
+          +   '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_mAltFt !== null ? ('<span data-gtelem="alt-ft">' + BoardStrings.num(_mAltFt) + '</span> ft') : '—') + '</span>'
           + '</div>';
       }
       _inbBlock =
@@ -11783,13 +11784,13 @@ function _buildV2MapCol(ctx, vars) {
         _telemBar =
             '<div class="v2-rc-mapstats">'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('speed') + '</div>'
-          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">km/h</span></div></div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + BoardStrings.num(_spdKph) + '</span>') : '—') + ' <span class="v2-rc-ms-unit">km/h</span></div></div>'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('altitude') + '</div>'
-          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + '</div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + BoardStrings.num(_liveAltD) + '</span>') : '—') + '</div>'
           +     '<div class="v2-rc-ms-unitline">' + _msL('feetUnit') + '</div></div>'
           +   (_distKm !== null
               ? '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('distance') + '</div>'
-                + '<div class="v2-rc-ms-val">' + _distKm.toLocaleString() + ' <span class="v2-rc-ms-unit">km</span></div></div>'
+                + '<div class="v2-rc-ms-val">' + BoardStrings.num(_distKm) + ' <span class="v2-rc-ms-unit">km</span></div></div>'
               : '')
           + '</div>';
       }
@@ -13075,7 +13076,7 @@ function uxgGateHtml(ctx) {
   // gate-stability.test.js pins.)
   stKey = _depState.stKey;
   if (stKey === 'scheduled' || !stKey) stKey = 'ontime';
-  var stLabel = SL(stKey) || stKey.toUpperCase();
+  var stLabel = _statusWord(stKey);
   var airlineCode = (currentFlight.airline || '').trim().toUpperCase();
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
   // the Pualani livery — display them as HA so all downstream brand assets follow suit.
@@ -13204,7 +13205,7 @@ function uxgGateHtml(ctx) {
   var _signDepTs = effectiveDepTs;
   if (_door.word) {
     stKey = _door.word;
-    stLabel = SL(stKey) || stKey.toUpperCase();
+    stLabel = _statusWord(stKey);
     if (_door.kept) {
       _signDepTs = _door.basis._revTs || _door.basis._sortTs || effectiveDepTs;
       if (_signDepTs) minsToDep = Math.round((_signDepTs - Date.now()) / 60000);
@@ -13699,7 +13700,7 @@ function uxgGateHtml(ctx) {
         // banner (the takeover's no-clock CSS is lifted alongside).
         var _stHtml = '';
         if (_bwAbn) {
-          var _stLbl = _lblEntry('status')[lang] || _lblEntry('status').en;
+          var _stLbl = _lblEntry('status')[lang] || '';
           _stHtml = BoardStrings.markHalf('<div class="g8-bw-status g8-bw-st-' + _bwStKey.replace(/[^a-z]/g, '') + '">'
             + '<span class="g8-bw-clk-lbl">' + _stLbl + '</span>'
             + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
@@ -19307,11 +19308,10 @@ const gView = document.getElementById('gateView');
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
   const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
-  // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
-  const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23970 — the store's locale
   // Weekday, month, day number and year all come from the AIRPORT's clock —
-  // see _airportDateLine for the mixed-clock bug this replaces.
-  const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
+  // see _airportDateLine for the mixed-clock bug this replaces — in the
+  // language on screen (the store's locale for it).
+  const dateDisplay = _airportDateLine(now, tzOpts, lang, timeStr);
 
   contentArea.style.display = 'none';
   // .hdr no longer exists (replaced by v2 banner); hide both legacy and v2.
@@ -19348,7 +19348,6 @@ const gView = document.getElementById('gateView');
 
     if (currentFlight) {
       const stKey = currentFlight.status || 'scheduled';
-      const stEn = (SS[stKey] || {}).en || stKey.toUpperCase();
       const locIata = currentFlight._locIata || '';
       // Prefer CITY lookup, then dest field, then locIata code
       const _rawDest = currentFlight.dest || '';
@@ -19679,9 +19678,9 @@ const gView = document.getElementById('gateView');
         const inFlight = inboundFlight.flight || '';
         const inTime = inboundFlight.time || '';
         const inStatus = inboundFlight.status || 'scheduled';
-        // Status word in the current rotation language (same source TL()
-        // reads) — was pinned to English regardless of the picked languages.
-        const inStEn = (SS[inStatus] || {})[lang] || (SS[inStatus] || {}).en || inStatus.toUpperCase();
+        // Status word in the language on screen (v23971: an unknown code
+        // shows nothing, never the feed's English upper-cased).
+        const inStEn = _statusWord(inStatus);
         // Estimate minutes until arrival
         let etaStr = '';
         if (inboundFlight._sortTs) {
@@ -25667,7 +25666,7 @@ const LS = {
   gateArr: { en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'سير الأمتعة' },
   termDep: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'المبنى' },
   termArr: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'المبنى' },
-  status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Status',ja:'状況',zh:'状态',ar:'الحالة' },
+  status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Situação',ja:'状況',zh:'状态',ar:'الحالة' },
   boardsIn: { en:'BOARDS IN',fr:'EMBARQUEMENT DANS',es:'EMBARQUE EN',de:'BOARDING IN',it:'IMBARCO TRA',pt:'EMBARQUE EM',ja:'搭乗まで',zh:'登机倒计时',ar:'الصعود خلال' },
   depBoards: { en:'Departs in',fr:'Départ dans',es:'Sale en',de:'Abflug in',it:'Parte tra',pt:'Sai em',ja:'出発まで',zh:'出发倒计时',ar:'يغادر خلال' },
   nowBoarding:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
@@ -25675,7 +25674,7 @@ const LS = {
   flightDur: { en:'flight',fr:'de vol',es:'de vuelo',de:'Flug',it:'di volo',pt:'de voo',ja:'飛行',zh:'飞行',ar:'الرحلة', $ctx: 'duration' },
   duration:  { en:'Duration',fr:'Durée',es:'Duración',de:'Dauer',it:'Durata',pt:'Duração',ja:'所要時間',zh:'飞行时间',ar:'المدة' },
   arrivesFrom:{en:'THIS FLIGHT ARRIVES FROM',fr:'CE VOL ARRIVE DE',es:'ESTE VUELO LLEGA DESDE',de:'DIESER FLUG KOMMT AUS',it:'QUESTO VOLO ARRIVA DA',pt:'ESTE VOO CHEGA DE',ja:'この便の出発地',zh:'此航班来自',ar:'هذه الرحلة قادمة من' },
-  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prev.',ja:'定刻',zh:'计划',ar:'مجدول' },
+  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prev.',ja:'予定',zh:'计划',ar:'مجدول' },
   minutes:   { en:'MINUTES',fr:'MINUTES',es:'MINUTOS',de:'MINUTEN',it:'MINUTI',pt:'MINUTOS',ja:'分',zh:'分钟',ar:'دقيقة' },
   minute:    { en:'MINUTE',fr:'MINUTE',es:'MINUTO',de:'MINUTE',it:'MINUTO',pt:'MINUTO',ja:'分',zh:'分钟',ar:'دقيقة' },
   depTime: { en:'Departure',fr:'Départ',es:'Salida',de:'Abflug',it:'Partenza',pt:'Partida',ja:'出発',zh:'出发',ar:'المغادرة' },
@@ -25802,7 +25801,7 @@ const LS = {
   attentionMsg:{ en:'ATTENTION',fr:'ATTENTION',es:'ATENCIÓN',de:'ACHTUNG',it:'ATTENZIONE',pt:'ATENÇÃO',ja:'お知らせ',zh:'请注意',ar:'تنبيه' },
 
   // ── INBOUND PANEL LABELS ── (used by TL(), not SL())
-  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'定刻',zh:'计划',ar:'مجدول' },
+  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
   revised:         { en:'Revised',fr:'Révisé',es:'Revisado',de:'Geändert',it:'Rivisto',pt:'Revisado',ja:'変更',zh:'更新',ar:'الوقت المعدَّل' },
   arrivingFrom:    { en:'Arriving from',fr:'Provenant de',es:'Procedente de',de:'Ankommend aus',it:'In arrivo da',pt:'Proveniente de',ja:'出発地',zh:'来自',ar:'قادمة من' },
   yourAircraftLbl: { en:'YOUR AIRCRAFT',fr:'Votre avion',es:'Su avión',de:'IHR FLUGZEUG',it:'Il tuo aereo',pt:'Seu avião',ja:'ご搭乗機',zh:'您的飞机',ar:'طائرتك' },
@@ -25830,8 +25829,8 @@ const SS = {
   delayed:   { en:'Delayed',fr:'En retard',es:'Retrasado',de:'Verspätet',it:'In ritardo',pt:'Atrasado',ja:'遅延',zh:'延误',ar:'متأخرة' },
   cancelled: { en:'Cancelled',fr:'Annulé',es:'Cancelado',de:'Annulliert',it:'Cancellato',pt:'Cancelado',ja:'欠航',zh:'取消',ar:'ملغاة' },
   departed:  { en:'Departed',fr:'Parti',es:'Despegó',de:'Gestartet',it:'Partito',pt:'Partiu',ja:'出発済',zh:'已起飞',ar:'غادرت' },
-  arrived:   { en:'Arrived',fr:'Arrivé',es:'Llegó',de:'Gelandet',it:'Arrivato',pt:'Chegou',ja:'到着済',zh:'已到达',ar:'وصلت' },
-  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'定刻',zh:'计划',ar:'مجدول' },
+  arrived:   { en:'Arrived',fr:'Arrivé',es:'Llegó',de:'Angekommen',it:'Arrivato',pt:'Chegou',ja:'到着済',zh:'已到达',ar:'وصلت' },
+  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
   final:     { en:'Final call',fr:'Dernier appel',es:'Última llamada',de:'Letzter Aufruf',it:'Ultima chiamata',pt:'Última chamada',ja:'最終案内',zh:'最后登机',ar:'النداء الأخير' },
   gateclosed:{ en:'Gate closed',fr:'Porte fermée',es:'Puerta cerrada',de:'Gate geschlossen',it:'Gate chiuso',pt:'Portão fechado',ja:'搭乗終了',zh:'登机口已关闭',ar:'البوابة مغلقة' },
   landed:    { en:'Landed',fr:'Atterri',es:'Aterrizó',de:'Gelandet',it:'Atterrato',pt:'Pousou',ja:'着陸',zh:'已着陆',ar:'هبط' },
@@ -26355,6 +26354,16 @@ function _legacyPair(table, k) {
   return out.join(' · ');
 }
 const SLbi = k => _legacyPair(SS, k);
+// A status code as the board's word, in the language on screen. Feeds spell
+// a code several ways ('final-call', 'Final Call', 'gate_closed', 'en-route');
+// they are folded onto the status table's keys. v23971 — an unknown code
+// shows nothing: the gate and the phone printed it upper-cased (the feed's
+// English, 'BOARDING CLOSED', on a board in any language).
+function _statusWord(k) {
+  var raw = String(k || '').toLowerCase().replace(/[\s_-]+/g, '');
+  var same = { finalcall: 'final', enroute: 'active', inair: 'active', airborne: 'active', closed: 'gateclosed' };
+  return SL(SS[raw] ? raw : (same[raw] || raw)) || '';
+}
 // One legacy-table word in a given language: what a direct LS[k][l] read did,
 // through the helper, falling through to the store.
 const TLin = (k, l) => { const o = LS[k]; if (o) return o[l] || ''; return BoardStrings.bs(k, l); };
@@ -26596,10 +26605,10 @@ var _GATE_LBL = {
   from:      { en:'From',          fr:'De',             es:'Desde',        de:'Von',         it:'Da',          pt:'De',         ja:'出発地',    zh:'出发地', ar:'من' },
   to:        { en:'To',            fr:'À',              es:'A',            de:'Nach',        it:'A',           pt:'Para',       ja:'行き先',    zh:'目的地', ar:'إلى' },
   dest:      { en:'Destination',   fr:'Destination',    es:'Destino',      de:'Ziel',        it:'Destinazione',pt:'Destino',    ja:'目的地',    zh:'目的地', ar:'الوجهة' },
-  status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Status',     ja:'状況',      zh:'状态',   ar:'الحالة' },
+  status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Situação',     ja:'状況',      zh:'状态',   ar:'الحالة' },
   departure: { en:'Departure',     fr:'Départ',         es:'Salida',       de:'Abflug',      it:'Partenza',    pt:'Partida',    ja:'出発',      zh:'出发',   ar:'المغادرة' },
   arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
-  arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Gelandet',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصلت' },
+  arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Angekommen',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصلت' },
   // v23257 — the inbound card's banner names the movement, airport-PA style
   //
   // The en-route and landed variants.
@@ -29857,10 +29866,10 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
 // The numerals stay Western regardless of the board's language: the accessors
 // this replaces always produced them, and switching Arabic boards to
 // Arabic-Indic digits would be a design change riding in on a bug fix.
-function _airportDateLine(now, tzOpts, locale, timeStr) {
+function _airportDateLine(now, tzOpts, l, timeStr) {
   var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
-  var dayName = now.toLocaleDateString(locale, Object.assign({}, tzOpts, { weekday: 'long' }));
-  var monthName = now.toLocaleDateString(locale, Object.assign({}, tzOpts, { month: 'long' }));
+  var dayName = now.toLocaleDateString(BoardStrings.intl(l), Object.assign({}, tzOpts, { weekday: 'long' }));
+  var monthName = now.toLocaleDateString(BoardStrings.intl(l), Object.assign({}, tzOpts, { month: 'long' }));
   var dayNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { day: 'numeric' })); // i18n-ok: code
   var yearNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { year: 'numeric' })); // i18n-ok: code
   return cap(dayName) + '  ' + cap(monthName) + ' ' + dayNum + ', ' + yearNum + '  ' + timeStr;
@@ -33639,16 +33648,23 @@ function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s
 function _ocClockTime1(now, tz) {
   return BoardStrings.boardTime(now, tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 }
-// Dual time '6:26PM | 18 h 26' — PLAIN text (used in textContent contexts too).
-// v23970 — each half in its own language's clock (BoardStrings.time): the
-// English 12-hour, the other 24-hour; on a board that does not lead in
-// English the 12-hour half is not there.
+// Dual time '6:26PM | 18h 26' — PLAIN text (used in textContent contexts too).
+// v23971 — the board's own pair (BoardStrings.pairLangs), each half in its
+// language's clock: English 6:26PM, French 18h 26 (META.fr.hourMark), every
+// other 18:26. A board that does not lead in English reads its own clock
+// once. (It was always English | French, so an English-only board showed a
+// French clock and a German board read '18h 26'.)
 function _ocClockTime(now, tz) {
-  var en = BoardStrings.time(now, 'en', tz).replace(/([ap])m$/i, function (_, p) { return p.toUpperCase() + 'M'; });
-  var h24 = BoardStrings.time(now, 'fr', tz);
-  var m = /^(\d{2}):(\d{2})$/.exec(h24);
-  var fr = m ? String(parseInt(m[1], 10)) + 'h ' + m[2] : h24;
-  return BoardStrings.boardClock24() ? fr : en + ' | ' + fr;
+  var L = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
+  var out = [];
+  for (var i = 0; i < L.length; i++) {
+    var l = L[i], M = BoardStrings.META[l], t = BoardStrings.time(now, l, tz);
+    if (!M.clock24) t = t.replace(/([ap])m$/i, function (_, p) { return p.toUpperCase() + 'M'; });
+    else if (M.hourMark) { var m = /^(\d{2}):(\d{2})$/.exec(t); if (m) t = String(parseInt(m[1], 10)) + M.hourMark + m[2]; }
+    if (out.indexOf(t) < 0) out.push(t);
+    if (i === 0 && M.clock24) break;
+  }
+  return out.join(' | ');
 }
 function _ocClockDate(now, tz) {
   // v22959 — the banner date follows the SELECTED languages
@@ -33660,18 +33676,17 @@ function _ocClockDate(now, tz) {
   var eo = { weekday: 'long', month: 'long', day: 'numeric' };
   var wo = { weekday: 'long' }, dd = { day: 'numeric' }, mo = { month: 'long' };
   if (tz) { eo.timeZone = tz; wo.timeZone = tz; dd.timeZone = tz; mo.timeZone = tz; }
-  // v23970 — the locale is the store's (BoardStrings.META), not a private map
-  var _loc = function (l) { return (BoardStrings.META[l] || BoardStrings.META.en).intl; };
+  // v23970 — the locale is the store's (BoardStrings.intl), not a private map
   function _one(l) {
     try {
       if (l === 'fr') {
-        var fw = now.toLocaleDateString(_loc('fr'), wo);
+        var fw = now.toLocaleDateString(BoardStrings.intl(l), wo);
         return (fw.charAt(0).toUpperCase() + fw.slice(1)) + ' '
-             + now.toLocaleDateString(_loc('fr'), dd) + ' ' + now.toLocaleDateString(_loc('fr'), mo);
+             + now.toLocaleDateString(BoardStrings.intl(l), dd) + ' ' + now.toLocaleDateString(BoardStrings.intl(l), mo);
       }
-      var d = now.toLocaleDateString(_loc(l), eo);
+      var d = now.toLocaleDateString(BoardStrings.intl(l), eo);
       return d.charAt(0).toUpperCase() + d.slice(1);
-    } catch (e) { return now.toLocaleDateString(_loc('en'), eo); }
+    } catch (e) { return ''; }
   }
   // v23970 — the one chooser (BoardStrings.pairLangs)
   var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
@@ -33682,7 +33697,7 @@ function _ocClockDate(now, tz) {
     seen[w] = 1;
     out.push(BoardStrings.markHalf(w, picked[i]));
   }
-  return out.join(' <span class="cl-sep">|</span> ') || _one('en');
+  return out.join(' <span class="cl-sep">|</span> ') || _one(lang);
 }
 // v23474 — the calendar day _ocClockDate is currently showing, as 'YYYY-MM-DD'.
 // It has to follow _ocClockDate's timezone rule EXACTLY, which is why this is
@@ -34979,7 +34994,7 @@ function renderHeroFlight(f) {
       const dLon = (lng2 - lng1) * Math.PI / 180;
       const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      dist = `${Math.round(R * c).toLocaleString()} km`;
+      dist = `${BoardStrings.num(Math.round(R * c))} km`;
     }
   }
 
@@ -35187,12 +35202,9 @@ try {
     if (!_isMobile) return;
     var _saved = null;
     try { _saved = localStorage.getItem('fids_mobile_lang'); } catch(e) {}
-    // Saved choice, else the browser's own language (navigator.language is
-    // "en-CA", "fr-FR", …), else English — through the one resolver.
-    var _chosen = BoardStrings.resolveLangs({
-      phone: true, phoneSaved: _saved,
-      navigatorLang: navigator.language || navigator.userLanguage || 'en'
-    }).langs[0];
+    // Saved choice, else the browser's own language ("en-CA", "fr-FR", …,
+    // read by the resolver itself), else English — through the one resolver.
+    var _chosen = BoardStrings.resolveLangs({ phone: true, phoneSaved: _saved }).langs[0];
     langs = [_chosen];
     langIdx = 0;
     lang = _chosen;
@@ -41468,27 +41480,12 @@ var ACCOR_BRAND_COLORS = {
   'RIX':'#B88D5B','HB':'#0057b8','JO':'#2E4057','N25':'#050033','EMB':'#B88D5B'
 };
 
-// v23046 — this used to be a second `var ACCOR_BRAND_NAMES = {…}`, which
-// silently REPLACED the fuller map declared earlier in the file. Everything
-// only the first map knew — Faena, Orient Express, Mama Shelter, TRIBE, Art
-// Series, 21c, Angsana, MGallery's MGA alias — resolved to '' from here on.
-// That is why 'Faena New York' printed as 'Faena Faena': the de-duplication
-// code looks the brand up by code, got nothing back, and never recognised
-// that the name it had trimmed down WAS the brand.
-// Merged instead of replaced: these entries still win for the codes they
-// define, and the earlier map's extra codes survive.
-(function () {
-  var _later = {
-    'FAI':'Fairmont','SOF':'Sofitel','PUL':'Pullman','MGH':'MGallery','NOV':'Novotel',
-    'MER':'Mercure','SWI':'Swissôtel','MOV':'Mövenpick','IBS':'ibis','IBB':'ibis budget',
-    'IBI':'ibis Styles','IBH':'ibis','HOF':'Handwritten Collection','SOU':'Handwritten Collection','ADA':'Adagio',
-    'GRA':'Grand Mercure','BAN':'Banyan Tree','MAN':'Mantis','SEQ':'SO/','RAH':'Raffles',
-    'RAF':'Raffles','SO':'SO/','HYD':'Hyde','SLS':'SLS','DEL':'Delano','MON':'Mondrian',
-    'RIX':'Rixos','HB':'Hoxton','JO':'JO&JOE','N25':'25hours','EMB':'Emblème'
-  };
-  if (typeof ACCOR_BRAND_NAMES === 'undefined' || !ACCOR_BRAND_NAMES) ACCOR_BRAND_NAMES = {};
-  for (var _k in _later) { if (Object.prototype.hasOwnProperty.call(_later, _k)) ACCOR_BRAND_NAMES[_k] = _later[_k]; }
-})();
+// v23046 — a second `var ACCOR_BRAND_NAMES = {…}` here once silently
+// REPLACED the fuller map declared earlier in the file ('Faena New York'
+// printed as 'Faena Faena'); it then became a run-time merge over it, which
+// is the same overwrite where no duplicate-key check can see it. v23971:
+// its entries are in the one declaration above, with the values the merge
+// gave them (IBS 'ibis', EMB 'Emblème'), so a key is declared once.
 
 // Brand Corner API cache
 var ACCOR_BRAND_CACHE = {};
@@ -41528,7 +41525,7 @@ function cleanAccorName(name) {
   name = name.replace(/^-\s*/, '');
   name = name.replace(/\s{2,}/g, ' ').trim();
   // Fix abbreviations
-  name = name.replace(/\bCntr\b/g, 'Centre');
+  name = name.replace(/\bCntr\b/g, 'Centre'); // i18n-ok: data
   return name || 'Accor';
 }
 
@@ -42326,7 +42323,7 @@ function _processAccorData(data, destIata, langKey) {
     }
     var trustScore = (h.rating && h.rating.trustyou) ? h.rating.trustyou.score : 0;
     var trustReviews = (h.rating && h.rating.trustyou) ? h.rating.trustyou.nbReviews : 0;
-    var ratingStr = trustScore > 0 ? '\u2605 ' + trustScore + '/5' + (trustReviews ? ' (' + trustReviews.toLocaleString() + ')' : '') : '';
+    var ratingStr = trustScore > 0 ? '\u2605 ' + trustScore + '/5' + (trustReviews ? ' (' + BoardStrings.num(trustReviews) + ')' : '') : '';
     // Decide hotel display name:
     //   • If we have a local brand LOGO, show ONLY the property name (strip the brand prefix)
     //   • If NOT, include the brand name in the headline so the carrier isn't anonymous
@@ -43662,7 +43659,7 @@ function buildGateAdHtml(ad) {
         var _reviewCountTxt = '';
         if (ad.reviewCount && ad.reviewCount > 0) {
           _reviewCountTxt = '<span style="font-size:14px;font-weight:400;color:#fff;line-height:1;letter-spacing:0.02em;opacity:0.85;">'
-            + ad.reviewCount.toLocaleString() + ' '
+            + BoardStrings.num(ad.reviewCount) + ' '
             + TL('reviews')
             + '</span>';
         }
@@ -50071,13 +50068,11 @@ function _renderWxCard(el) {
     // ABOVE the icon, second language's BELOW — via each language's own
     // locale (single language selected → no bottom line).
     // v23970 — the store's locale for each language (BoardStrings.META)
-    var _WX_LOCALE = function (lg) { return (BoardStrings.META[lg] || BoardStrings.META.en).intl; };
     // The three-letter day as TEXT — what the chips on the days screen use
     // directly, and what _dayLine wraps for a tile. Kept as text so no caller
     // ever has to un-make markup to get at the word.
     var _dayName = function (d, lg) {
-      var loc = _WX_LOCALE(lg);
-      var day = d.toLocaleDateString(loc, { weekday: 'short' });
+      var day = d.toLocaleDateString(BoardStrings.intl(lg), { weekday: 'short' });
       // Three capital letters is a Latin-script convention. Japanese and
       // Chinese short forms are a glyph or two already, and Arabic has no
       // short form: cutting its name to three letters made Sunday, Monday
@@ -50088,7 +50083,6 @@ function _renderWxCard(el) {
       return day.replace(/[^\p{L}]/gu, '').slice(0, 3).toUpperCase();
     };
     var _dayLine = function (d, lg, extraCls) {
-      var loc = _WX_LOCALE(lg);
       // v23558 — THREE LETTERS, STILL IN BOTH LANGUAGES
       // The short form is
       // locale-correct but punctuated in several of them — fr 'mer.', de
@@ -50103,8 +50097,8 @@ function _renderWxCard(el) {
       // Short form caps every supported locale at
       // 9 chars — es '7 sept', en 'Sep 7', pt '7 de set.', de '7. Sept.'.
       var date = (lg === 'en')
-        ? d.toLocaleDateString(loc, { month: 'short' }) + ' ' + d.getDate()
-        : d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
+        ? d.toLocaleDateString(BoardStrings.intl(lg), { month: 'short' }) + ' ' + d.getDate()
+        : d.toLocaleDateString(BoardStrings.intl(lg), { day: 'numeric', month: 'short' });
       // v23558 — NO DATES. The day
       // name alone fills the tile header band, which is what the reference
       // layout shows. `date` is left computed but unused so the abbreviated-

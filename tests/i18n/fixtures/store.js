@@ -20,7 +20,20 @@
     atkZeroWidth: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Tomor\u200Brow', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
     atkEnglishInside: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Tomorrow (morgen)', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
     atkSpanishInGerman: { en: 'Today', fr: 'Aujourd’hui', es: 'Mañana', de: 'Mañana', it: 'Oggi', pt: 'Hoje', ja: '今日', zh: '今天', ar: 'اليوم' },
-    atkKanaInChinese: { en: 'Departure', fr: 'Départ', es: 'Salida', de: 'Abflug', it: 'Partenza', pt: 'Partida', ja: '出発', zh: 'しゅっぱつ', ar: 'المغادرة' }
+    atkKanaInChinese: { en: 'Departure', fr: 'Départ', es: 'Salida', de: 'Abflug', it: 'Partenza', pt: 'Partida', ja: '出発', zh: 'しゅっぱつ', ar: 'المغادرة' },
+    // round 3: another language's word, or a look-alike letter, in a value
+    atkJapaneseInGerman: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: '明日', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+    atkArabicInGerman: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'غدًا', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+    atkCyrillicLetter: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Tom\u043errow', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+    atkEnglishOfAnotherKey: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Today', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+    atkChineseInJapanese: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Morgen', it: 'Domani', pt: 'Amanhã', ja: '明天', zh: '明天', ar: 'غدًا' },
+    atkSimplifiedInJapanese: { en: 'Open', fr: 'Ouvert', es: 'Abierto', de: 'Geöffnet', it: 'Aperto', pt: 'Aberto', ja: '开放', zh: '开放', ar: 'مفتوح' },
+    atkEnglishParaphrase: { en: 'Gate closing soon', fr: 'Fermeture de la porte sous peu', es: 'La puerta cerrará pronto', de: 'Gate closes shortly', it: 'Il gate chiude a breve', pt: 'O portão fecha em breve', ja: 'まもなく搭乗口締切', zh: '登机口即将关闭', ar: 'ستُغلق البوابة قريبًا' },
+    // two statuses, one word
+    stOnTime: { en: 'On time', fr: 'À l\'heure', es: 'A tiempo', de: 'Pünktlich', it: 'In orario', pt: 'No horário', ja: '定刻', zh: '准点', ar: 'في الموعد' },
+    stScheduled: { en: 'Scheduled', fr: 'Prévu', es: 'Programado', de: 'Geplant', it: 'Previsto', pt: 'Programado', ja: '定刻', zh: '计划', ar: 'مجدول' },
+    // the store's English writes 'hotel' in lower case: a label word
+    theHotel: { en: 'The hotel', fr: "L'hôtel", es: 'El hotel', de: 'Das Hotel', it: "L'hotel", pt: 'O hotel', ja: 'ホテル', zh: '酒店', ar: 'الفندق' }
   };
   var LISTS = {
     atkFrList: { fr: ['FERMETURE DE LA PORTE'] }
