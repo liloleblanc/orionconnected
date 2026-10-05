@@ -377,8 +377,14 @@
         var pair = langsFor(code);
         var l1 = CARD_LABELS[pair[0]] || ['', ''];
         var l2 = (pair[1] && pair[1] !== pair[0]) ? CARD_LABELS[pair[1]] : null;
+        // v23995 — each half is marked with the language it is in: the page
+        // is lang="en", so a Japanese card's '到着' and '現地時間' sat under
+        // English (drawn with whichever CJK forms the font stack fell on, and
+        // read by a screen reader as English).
         elK1.textContent = l1[0];
+        BoardStrings.setLang(elK1, pair[0]);
         elK2.textContent = l2 ? l2[0] : '';
+        if (l2) BoardStrings.setLang(elK2, pair[1]);
         var kSep = elK2.previousElementSibling;
         if (kSep && kSep.classList.contains('tc-sep')) kSep.style.display = l2 ? '' : 'none';
 
@@ -390,7 +396,11 @@
             t = BoardStrings.time(new Date(), pair[0], tz);
           } catch (e) { t = ''; }
           elTime.textContent = t;
-          elTz.textContent = t ? (l2 ? (l1[1] + ' | ' + l2[1]) : l1[1]) : '';
+          BoardStrings.setLang(elTime, pair[0]);
+          // 'Local time' in each language, each half marked (BoardStrings.half)
+          var E = BoardStrings.esc;
+          elTz.innerHTML = t ? (l2 ? (BoardStrings.half(pair[0], E(l1[1])) + ' | ' + BoardStrings.half(pair[1], E(l2[1])))
+            : BoardStrings.half(pair[0], E(l1[1]))) : '';
           elSep.textContent = t ? '|' : '';
         } else {
           elTime.textContent = ''; elTz.textContent = ''; elSep.textContent = '';

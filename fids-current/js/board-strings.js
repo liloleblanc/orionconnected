@@ -1042,11 +1042,15 @@
   // ── BEFORE THE BOARD HAS RESOLVED ITS LANGUAGES ─────────────────────────
   // The boot loader and the page's static text run before fids-core.js has
   // decided `langs`. They ask the same resolver with what a page knows at
-  // that point: the URL, the saved choice and the airport's default.
+  // that point: the URL, the saved choice and the airport's default — and,
+  // on a phone, the one language its passenger picked, decided the way
+  // fids-core.js decides it (narrower than 700px; fids_mobile_lang once the
+  // board's one-time recovery has run, else the phone's own language). A
+  // phone's loader greeted in English and French before the board had loaded.
   function bootLangs() {
     var L = boardLangs();
     if (L) return cleanList(L);
-    var iata = '', search = '', saved = null;
+    var iata = '', search = '', saved = null, phone = false, phoneSaved = null;
     try {
       search = String(location.search || '');
       var q = new URLSearchParams(search);
@@ -1054,8 +1058,12 @@
       if (!iata) { try { iata = sessionStorage.getItem('fids_airport') || ''; } catch (e1) {} }
       iata = iata.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
       try { saved = localStorage.getItem('fids_langs_' + iata); } catch (e2) {}
+      phone = (window.innerWidth || document.documentElement.clientWidth) < 700;
+      if (phone) {
+        try { if (localStorage.getItem('fids_lang_recovery_v27_done')) phoneSaved = localStorage.getItem('fids_mobile_lang'); } catch (e3) {}
+      }
     } catch (e) {}
-    return resolveLangs({ iata: iata, search: search, saved: saved }).langs;
+    return resolveLangs({ iata: iata, search: search, saved: saved, phone: phone, phoneSaved: phoneSaved }).langs;
   }
   // A loader status line: the board's first language, in capitals, trailing
   // ellipsis ('CHARGEMENT…'); `bare` leaves the ellipsis off ('PORTE 4').
@@ -1096,6 +1104,27 @@
     document.addEventListener('DOMContentLoaded', function () { applyStatic(); });
   }
 
+  // ── WHEN THE BOARD'S LANGUAGES ARE DECIDED OR CHANGED ───────────────────
+  // Words painted once — the boot loader, the page's static text — are
+  // painted again in the board's languages. fids-core.js calls langsChanged()
+  // from every path that sets `langs`: toggleLang and setBoardLangs
+  // (_applyBoardLangs), the saved choice restored on a screen-type change,
+  // the airport's config (which lands while the loader is still up, and can
+  // name languages the loader did not know at boot) and a phone's one
+  // language. A piece that paints its own words registers with onLangs(fn)
+  // and is called with the board's languages; it repaints only what differs.
+  // onLangs returns the function that unregisters it.
+  var langSubs = [];
+  function onLangs(fn) {
+    if (typeof fn === 'function' && langSubs.indexOf(fn) < 0) langSubs.push(fn);
+    return function () { var i = langSubs.indexOf(fn); if (i >= 0) langSubs.splice(i, 1); };
+  }
+  function langsChanged() {
+    var L = bootLangs();
+    applyStatic();
+    langSubs.slice().forEach(function (fn) { try { fn(L.slice()); } catch (e) {} });
+  }
+
   // ── PROVENANCE (localhost only) ─────────────────────────────────────────
   // ?i18n=provenance outlines every careful translation on screen with a ≈,
   // so the pictures show which words are ours rather than the airline's or
@@ -1111,6 +1140,8 @@
   api.loaderLine = loaderLine;
   api.setLang = setLang;
   api.applyStatic = applyStatic;
+  api.onLangs = onLangs;
+  api.langsChanged = langsChanged;
   api.isLang = isLang;
   api.bs = bs;
   api.fmt = fmt;

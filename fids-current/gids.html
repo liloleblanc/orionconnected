@@ -409,64 +409,86 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
   </style>
 
   <script>
-  /* Self-contained: language rotation (EN first) + live %. Guards against
-     double-init and stops itself when the loader is hidden. */
+  /* Self-contained: language rotation (the board's first language first) +
+     live %. Guards against double-init and stops itself when the loader is
+     hidden. */
   (function(){
     var root = document.currentScript.closest('#fidsLoader');
     if(!root || root._ocbInit) return; root._ocbInit = true;
 
     /* Sub-label from the page's real context (?ap= / ?gate=), not a demo value. */
+    var ap = '', gate = '';
     try {
       var q = new URLSearchParams(window.location.search);
-      var ap = (q.get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase();
-      var gate = (q.get('gate') || '').toUpperCase();
+      ap = (q.get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase();
+      gate = (q.get('gate') || '').toUpperCase();
       // The code as passengers see it (host-airport.js: MET for YHU).
       if (ap && window.fidsDisplayIata) ap = String(window.fidsDisplayIata(ap));
-      // v23970 — in the board's first language (board-strings.js).
-      var _lbl = (gate ? BoardStrings.loaderLine('gateWord', true) + ' ' + gate + ' · ' : (ap ? ap + ' · ' : ''))
-        + BoardStrings.loaderLine('loading', true);
-      var bootEl = root.querySelector('.ocb-boot');
-      if (bootEl) {
-        while (bootEl.childNodes.length > 1) bootEl.removeChild(bootEl.lastChild);
-        bootEl.appendChild(document.createTextNode(_lbl));
-        BoardStrings.setLang(bootEl, BoardStrings.bootLangs()[0]);
-      }
     } catch(e) {}
 
-
-    // v23970 — the greeting in the board's own languages, from the store; it
-    // was a fixed list of six (no Italian, Japanese or Arabic) whatever the
-    // board spoke.
-    var GREET = BoardStrings.bootLangs().map(function (l) {
-      var M = BoardStrings.META[l];
-      return [M.script === 'latin' ? l.toUpperCase() : M.name, BoardStrings.bs('greetGate', l), l];
-    });
+    var bootEl = root.querySelector('.ocb-boot');
     var heroEl = root.querySelector('#ocbHero');
     var langsEl = root.querySelector('#ocbLangs');
     var pctEl = root.querySelector('#ocbPct');
     var fillEl = root.querySelector('#ocbFill');
 
-    /* Build the language ticker chips once. */
-    GREET.forEach(function(g){
-      var s = document.createElement('span');
-      s.className = 'ocb-lang'; s.textContent = g[0];
-      BoardStrings.setLang(s, g[2]);
-      langsEl.appendChild(s);
-    });
-    var chips = langsEl.children;
-
-    var i = 0;
+    // v23970 — the status line in the board's first language and the
+    // greeting in the board's own languages, from the store (board-strings.js);
+    // the greeting was a fixed list of six (no Italian, Japanese or Arabic)
+    // whatever the board spoke.
+    // v23995 — and they FOLLOW the board's languages. They were written once,
+    // from the languages known when this script ran; the airport's config, a
+    // saved choice or a phone's one language lands a moment later, so a
+    // Spanish gate's loader read 'GATE 4 · LOADING' and greeted in French as
+    // it faded, and a phone set to English greeted in French. words() paints
+    // them again whenever the board's languages change (BoardStrings.onLangs),
+    // through the fade, until the loader is gone.
+    var GREET = [], shown = '', i = 0, swapT = 0;
+    function words(){
+      var L = BoardStrings.bootLangs();
+      if (!L.length || L.join(',') === shown) return;
+      shown = L.join(',');
+      try {
+        var _lbl = (gate ? BoardStrings.loaderLine('gateWord', true) + ' ' + gate + ' · ' : (ap ? ap + ' · ' : ''))
+          + BoardStrings.loaderLine('loading', true);
+        if (bootEl) {
+          while (bootEl.childNodes.length > 1) bootEl.removeChild(bootEl.lastChild);
+          bootEl.appendChild(document.createTextNode(_lbl));
+          BoardStrings.setLang(bootEl, BoardStrings.bootLangs()[0]);
+        }
+      } catch(e) {}
+      GREET = L.map(function (l) {
+        var M = BoardStrings.META[l];
+        return [M.script === 'latin' ? l.toUpperCase() : M.name, BoardStrings.bs('greetGate', l), l];
+      });
+      /* The language ticker chips: the languages this screen greets in. */
+      while (langsEl.firstChild) langsEl.removeChild(langsEl.firstChild);
+      GREET.forEach(function(g){
+        var s = document.createElement('span');
+        s.className = 'ocb-lang'; s.textContent = g[0];
+        BoardStrings.setLang(s, g[2]);
+        langsEl.appendChild(s);
+      });
+      /* The greeting starts again from the first language, whole: a swap
+         caught half way would leave the outgoing word on screen. */
+      clearTimeout(swapT);
+      i = 0;
+      heroEl.textContent = GREET[0][1];
+      BoardStrings.setLang(heroEl, GREET[0][2]);
+      heroEl.classList.remove('is-swap');
+    }
     function paint(){
       heroEl.classList.add('is-swap');
-      setTimeout(function(){
+      clearTimeout(swapT);
+      swapT = setTimeout(function(){
         heroEl.textContent = GREET[i][1];
         BoardStrings.setLang(heroEl, GREET[i][2]);
         heroEl.classList.remove('is-swap');
       }, 260);
     }
-    /* First paint (English) immediately, no fade. */
-    heroEl.textContent = GREET[0][1];
-    BoardStrings.setLang(heroEl, GREET[0][2]);
+    /* First paint (the board's first language) immediately, no fade. */
+    words();
+    var offLangs = BoardStrings.onLangs(words);
 
     var langTimer = setInterval(function(){ i=(i+1)%GREET.length; paint(); }, 2800);
 
@@ -480,12 +502,15 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
       fillEl.style.width = pct + '%';
     }, 60);
 
-    /* When the page adds .is-hidden (data loaded), snap to 100 and stop. */
+    /* When the page adds .is-hidden (data loaded), snap to 100 and stop.
+       The words keep following the board's languages while the loader
+       fades, and stop once it is gone (.is-gone, display:none). */
     var obs = new MutationObserver(function(){
       if(root.classList.contains('is-hidden') || root.classList.contains('is-gone')){
         pctEl.textContent = '100'; fillEl.style.width = '100%';
-        clearInterval(langTimer); clearInterval(pctTimer); obs.disconnect();
+        clearInterval(langTimer); clearInterval(pctTimer);
       }
+      if(root.classList.contains('is-gone')){ offLangs(); obs.disconnect(); }
     });
     obs.observe(root, {attributes:true, attributeFilter:['class']});
   })();
