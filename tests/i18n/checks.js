@@ -639,6 +639,8 @@ function run(options) {
   for (const li of listObjects) {
     const alpha = LATIN_ALPHABET[li.lang];
     for (const item of li.items) {
+      const fx = FOREIGN_SCRIPT[li.lang] && !brand(item) && FOREIGN_SCRIPT[li.lang].exec(String(item));
+      if (fx) add({ check: 'B3', file: li.file, line: li.line, fn: li.fn, text: li.key + ' ' + li.lang + ' ' + shortText(item), msg: `${li.lang} item '${shortText(item)}' has '${fx[0]}' (U+${fx[0].codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}), a letter ${LANG_NAME[li.lang]} does not write \u2014 another language's word, or a look-alike letter, was pasted in` });
       if (RE_SCRIPT[li.lang] && RE_LETTER.test(item) && !RE_SCRIPT[li.lang].test(item) && !brand(item))
         add({ check: 'B3', file: li.file, line: li.line, fn: li.fn, text: li.key + ' ' + li.lang + ' ' + shortText(item), msg: `${li.lang} item '${shortText(item)}' has no characters of its own script` });
       if (alpha) {

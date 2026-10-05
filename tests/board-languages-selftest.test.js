@@ -134,7 +134,8 @@ const STORE_ATTACKS = [
   ['B3', /U\+1D21/, "a small capital ('Tomorroᴡ')"],
   ['B1', /U\+034F/, 'a combining grapheme joiner hiding a copied word'],
   ['B3', /de item 1 .*English words? 'PLEASE'/, 'an English line in the German ticker'],
-  ['B3', /de item 2 'TODO' is a placeholder/, "a 'TODO' line in the German ticker"]
+  ['B3', /de item 2 'TODO' is a placeholder/, "a 'TODO' line in the German ticker"],
+  ['B3', /de item 'ＰＲÜＦＥＮ.*U\+FF30/, 'fullwidth letters in a ticker line']
 ];
 for (const [check, re, what] of STORE_ATTACKS) {
   test(`self-test: ${check} catches ${what}`, () => {
