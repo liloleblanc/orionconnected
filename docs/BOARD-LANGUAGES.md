@@ -145,25 +145,26 @@ passenger script, inline script, stylesheet and page:
 |---|---|
 | B1 | a table entry missing a language, empty, an expression, or an unknown code |
 | B2 | a language table outside the store and the registered tables; `[code, text]` lists; `X_FR` parallel tables |
-| B3 | a translation equal to the English or holding an English word ('Gate closes shortly' in German, 'Today' for German), a letter of a script the language does not write ('明日' or a Cyrillic 'о' in German), ja/zh/ar without their own script, simplified Chinese in the Japanese or the Chinese pasted into it, French pasted into es/de/it/pt (reviewed lists: `SAME_AS_ENGLISH`, `NATIVE_WORDS`, `SAME_JA_ZH`) |
+| B3 | a translation equal to the English or holding an English word ('Gate closes shortly' or 'Doors shut momentarily' in German, 'Today' for German; everyday English too, not only the store's; the ticker lists line by line, at any index), a placeholder ('XXX', '???', '…', '—', 'N/A', 'TBD', 'TODO', 'FIXME', 'Lorem ipsum'), a letter of a script the language does not write ('明日' or a Cyrillic 'о' in German), a look-alike letter (fullwidth 'Ｔｏｍｏｒｒｏｗ', a small capital 'ᴡ'), Persian or Urdu for Arabic ('فردا', 'کل'), ja/zh/ar without their own script, simplified Chinese in the Japanese or the Chinese pasted into it, French pasted into es/de/it/pt, Spanish, Italian or Portuguese pasted into another of the three ('Tramo', 'Domani') (reviewed lists: `SAME_AS_ENGLISH`, `SAME_ACROSS`, `NATIVE_WORDS`, `SAME_JA_ZH`) |
 | B4 | any object key declared twice (the CITY_FR collapse); a key in two tables one helper reads |
-| B5 | words in markup, in a text sink, after a helper, in an `X \| Y` literal, or an English sentence literal |
-| B6 | a key passed to a helper that does not exist — by any name the helper is reached by (`S.bs`, a copy `var f = BoardStrings.bs`), as either branch of a ternary, or in a variable holding a literal; ad copy with no translation row |
+| B5 | words in markup, in a text sink, after a helper, in an `X \| Y` literal, or an English sentence literal; text hidden from the literals (`String.fromCharCode(…)`, `atob('…')`, letters joined, a literal reversed) |
+| B6 | a key passed to a helper that does not exist — by any name the helper is reached by (`S.bs`, a copy `var f = BoardStrings.bs`, `var t = TL`, `var { bs: f } = BoardStrings`), as either branch of a ternary, or in a variable holding a literal; ad copy with no translation row |
 | B7 | one English phrase translated two ways |
 | B8 | a label the store translates, written as a literal |
-| B9 | CSS `content:` text (a `var()` fallback too); `data-*` text drawn by `content: attr()`; CSS content written from code (a stylesheet's text, `insertRule`, `setProperty('--x', '"…"')`) |
-| B10 | static page text not marked `data-i18n` or `data-operator`, including inside `<svg>`, `<template>` and `<noscript>` |
-| B11 | a language chosen outside the store (see the "Never" list): a literal language given to any of the store's helpers (`bs(k, 'fr')`, `bsPair(k, { langs: ['en', 'fr'] })`), a language picked by position (`langs[1]`, `langs.filter(…)[0]`, `langs.slice(1, 2)`), a locale not the store's (`toLocaleTimeString([])`, `toLocaleString()`, `Intl.DateTimeFormat(navigator.language)`), the browser's language read outside the resolver, an English fallback (`x.en`, `f(k).en`) |
+| B9 | CSS `content:` text (a `var()` fallback too); `data-*` text drawn by `content: attr()`; CSS content written from code (a stylesheet's text, `insertRule`, `setProperty('--x', '"…"')`); text CSS draws without `content:` (`quotes`, a `list-style-type` string, a `@counter-style`'s symbols, prefix and suffix) and a custom property drawn by `content: var(--x)`, in a stylesheet, a `style=""` attribute or CSS written from code |
+| B10 | static page text not marked `data-i18n` or `data-operator`, including inside `<svg>`, `<template>`, `<noscript>` and `<script type="text/template">` |
+| B11 | a language chosen outside the store (see the "Never" list): a literal language given to any of the store's helpers (`bs(k, 'fr')`, `bsPair(k, { langs: ['en', 'fr'] })`), a language picked by position (`langs[1]`, `langs.filter(…)[0]`, `langs.slice(1, 2)`), a locale not the store's (`toLocaleTimeString([])`, `toLocaleString()`, `Intl.DateTimeFormat(navigator.language)`), the browser's language read outside the resolver, an English fallback (`x.en`, `f(k).en`); a language held in a name (`var L = 'fr'; bs(k, L)`, `'f' + 'r'`, `{ l: 'fr' }.l`), read by name (`BOARD_STR.k['fr']`, `BoardStrings.entry(k).fr`, `var { en } = STR.k`) or by position (`Object.values(entry)[0]`, `pairLangs(langs)[1]`), a helper called another way (`bs.call`, `bs.apply`, `BoardStrings['bs']`, `bs?.()`), the board's languages overwritten (`lang = 'en'`, `langs = ['en', 'fr']`, `langs.splice(…, 'en', 'fr')`), an English date (`toDateString()`, `toUTCString()`, `String(new Date())`, `META.en` as a locale, a locale call borrowed through `.call`), a hand-written am/pm |
 | B12 | a second list of Québec airports |
 | B13 | a timer that sweeps the page and rewrites its text |
 | B14 | `board-strings.js` and `fids-core.js` served from different builds |
 | B15 | a passenger word kept outside the store: a label-shaped literal in a variable, a property, a list, a return value or a helper's argument, unless every word in it is data; and any literal word (whatever its case: `{ late: 'delayed' }` shown in capitals) stored under a name that reaches markup text — a variable, a property, an array, an object's keys, a return value. Data is the name tables only (cities, airports, airlines, aircraft, hotel brands): never a notes table, never a brand's separate words, never a word the store's English uses as a label, and in CI never a word added to a name table in the same change |
-| B16 | the store or a name table changed at run time: an assignment, `delete`, mutating call or `Object.assign` into `BOARD_STR`, `STR`, `LISTS`, `META`, a registered table, or a name table (`CITY_FR`, `CITY`, `AIRLINE_NAME`, the shared names), bare or through `window` — the CITY_FR collapse where no duplicate-key check can see it; reviewed writers only (`DATA_WRITERS`) |
+| B16 | the store or a name table changed at run time: an assignment, `delete`, mutating call or `Object.assign` into `BOARD_STR`, `STR`, `LISTS`, `META`, a registered table, or a name table (`CITY_FR`, `CITY`, `AIRLINE_NAME`, the shared names), bare, through `window`, through another name for it (`var c = CITY_FR; c.YUL = …`) or a global name built from literals (`globalThis['CITY_' + 'FR']`) — the CITY_FR collapse where no duplicate-key check can see it; reviewed writers only (`DATA_WRITERS`) |
 | B17 | two statuses, or two weather conditions, reading the same in one language ('On time' and 'Scheduled' both 定刻) |
 | C1 | a script or stylesheet on a passenger page that is not classified |
-| C2 | a script, stylesheet or page a passenger script loads at run time that is not classified |
+| C2 | a script, stylesheet, page or data file (`.json`) a passenger script loads at run time that is not classified, its URL written whole or in literal parts |
 | C3 | a page in neither `PASSENGER_PAGES` nor the reviewed `NON_PASSENGER_PAGES` (a new page is a passenger page until reviewed otherwise); C1 also follows a passenger page's iframes, objects, embeds and links |
-| W1 | a word a feed worker writes into a row's text fields (status, remark, label…) or a text-making function's return: the worker sends a code, the board says it |
+| C4 | a `.js` or `.css` file under `fids-current/` in neither the passenger lists nor the reviewed `NON_PASSENGER`, however it is loaded |
+| W1 | a word a feed worker writes into a row's text fields (status, remark, label…) or a text-making function's return, written there or held in a name first: the worker sends a code, the board says it |
 | P1, P2 | a policy exception or `i18n-ok` pragma that matches nothing, or has no valid reason |
 | L1 | a new key in a frozen table |
 
@@ -188,8 +189,11 @@ map takeover, the weather card's three screens), the gate's departure
 delayed, cancelled, boarding, on final call, closed, at Porter's
 pre-boarding and moved to another gate, the gate with no flight left, its
 "Later at this gate" strip, the phone layout of the gate and
-the departures board in each language, the Studio player (a departures, a
-gate and a baggage document) in each language, and the stream tour. It
+the departures board in each language, the arrivals board, a Québec
+airport (Montréal's departures, arrivals and a gate, French first, its
+deck and its states), the Studio player (a departures, a gate and a baggage
+document) in each language, the stream's rotation page and the stream
+tour. It
 reads every visible text node, the text CSS draws (`::before`/`::after`),
 placeholders, text drawn on a canvas, and the boards inside same-origin
 iframes. It fails on any word that is not one of the board's languages or
@@ -197,10 +201,14 @@ data, a 12-hour clock on a board not led by English, feed text marked with
 a language it is not in, Arabic, Japanese or Chinese not marked with its
 language and direction, and any key the store was asked for and does not
 have (`BoardStrings.misses`: a key held in a variable renders blank). A
-language's words are the store's — but a word of the store's English counts
-as another language's only when the store's translations use it in two
-entries or a reviewed list says so, so an English word slipped into one
-translation is not vouched for by the store itself. It runs on
+language's words are the store's — but an English word (the store's
+English, or everyday English) counts as another language's only when the
+store's translations use it in two entries or a reviewed list says so, so an
+English word slipped into one translation is not vouched for by the store
+itself. A word in capitals is a code only when it is a known airport or
+airline code or no language's word: 'LATE', 'OPEN' or 'TODO' on a German
+board, or 'GATE' on a Japanese one, is read as a word. Placeholders ('???',
+'TODO') and Persian or Urdu shown for Arabic fail too. It runs on
 the boards' demonstration data with the network shut off; `LIVE=1 node
 tests/render/words.mjs` reads the live site's data (feed text, weather,
 hotels). Three markers tell it what a passenger reads as written:
@@ -224,7 +232,10 @@ Only for text a passenger does not read as words, each with a reason from
 * `tests/i18n/policy.js`: `OPERATOR_FUNCTIONS`, `BRAND_TERMS`, `UNIT_TERMS`,
   `SAME_AS_ENGLISH` (the language's own word, like German *Terminal*),
   `NONTEXT_TABLES`, `DATA_TABLES`, `TEXT_REWRITERS`;
-* on one line: `el.textContent = 'LIVE'; // i18n-ok: operator`;
+* in the code: at the end of the line it excuses,
+  `el.textContent = 'LIVE'; // i18n-ok: operator`, or on a line of its own
+  just above it. A pragma at the end of a line of code never reaches the line
+  below it;
 * in markup: `data-operator` on an operator-only container.
 
 "passenger" is never a reason. An exception that matches nothing fails.
@@ -245,11 +256,36 @@ approval is a pull request of its own, reviewed on its own, and the change
 that uses it follows once it is merged. Every new exception is printed in
 the CI summary, approved or not.
 
-**Main's guard runs too.** A pull request carries its own copy of the
-guard, so CI also runs main's: `node tests/i18n/as-main.js` checks out the
-merge base, lays this change's `fids-current/` and policy, ledger and frozen
-keys over it, and runs main's board-languages tests there. A change cannot
-pass by loosening its own copy of the checks.
+**Main's guard decides.** A pull request carries its own copy of the guard,
+and the "Repository checks" workflow runs from the pull request too, so a
+change could loosen a check, make a script exit early or drop a step. The
+run that decides is `.github/workflows/board-languages.yml` (job
+"board-languages (main's guard)"). It runs on `pull_request_target`, so
+GitHub takes the workflow from **main**, never from the pull request. It
+checks out main and, beside it, the pull request merged into main, and runs
+**main's** `tests/i18n/as-main.js --change <the merge>`, which:
+
+* runs main's board-languages tests on main itself, for a baseline count;
+* lays the change's `fids-current/`, `workers/`, `worker-entry.js`, ledger,
+  frozen keys and approvals file over a worktree of main. The change's
+  `policy.js` is code, so it is never run there: a separate node with no
+  permission to write, spawn or load a native module reads it as data, and
+  it is written back as a plain object for main's ratchet to compare;
+* runs main's tests again, main's `npm run guard` and main's rendered check;
+* fails on any failure, and on any static test file that runs fewer tests
+  than it does on main (a file that stops early with `process.exit(0)`).
+
+`checks.yml` runs the same from a worktree of `origin/main`, and locally
+`node tests/i18n/as-main.js` runs main's copy on your checkout.
+`.github/CODEOWNERS` names the guard's files (`tests/i18n/`,
+`tests/render/`, `tests/board-languages*`, `.github/`, `package.json`, this
+page) for the code-owner review in section 7.
+
+What this does not stop: page code written to attack the test run (main's
+tests load the change's `board-strings.js` and render its pages), and two
+pull requests in turn, an approval and then its use, if nobody reviews the
+first. Both are plain to see in a diff; the review in section 7 is what
+holds them.
 
 ### The debt ledger
 
@@ -294,18 +330,22 @@ holds until it is answered; the ledger tags the items that wait on one.
 | D6 | The companion app: translate now, or leave to its replacement | ledgered |
 | D8 | May an operator put English first on a Québec screen? | no: the Québec rule wins |
 | D11 | The archive pages (a 1991 board, the heritage index) in nine languages or their period's two | unchanged (ledgered) |
+| D13 | The reading order of a pair on a board led by Arabic ('رحلة \| Flight', Arabic on the left) | unchanged: the halves are each marked and isolated, the pair runs left to right. The map caption already reads right to left on an Arabic-led board. Open: whether every pair on such a board should start from the right |
 | D12 | The inbound line's connector pair ('PD2381 from \| de Montreal', v23720) | kept as asked for; its Japanese half now reads 出発地 before the city (発 after a city is a suffix, and 'AC1984 発 Toronto' read backwards) |
-| — | Making a red guard stop a merge and a deploy | **two settings outside the repository (section 7), not on yet.** Until they are, the guard reports in every pull request and in the manual deploy, but a red check can still be merged, and Workers Builds ships every merge |
+| — | Making a red guard stop a merge and a deploy | **three settings outside the repository (section 7), not on yet.** Until they are, the guard reports in every pull request and in the manual deploy, but a red check can still be merged, and Workers Builds ships every merge |
 
-## 7. Making it binding: the two settings outside the repository
+## 7. Making it binding: the settings outside the repository
 
 Everything above runs on every pull request, and the manual "Deploy display
-site" workflow runs `npm test` before it ships. Two things can only be
-switched on outside the repository, in GitHub's and Cloudflare's settings:
+site" workflow runs `npm test` before it ships. Three things can only be
+switched on outside the repository, in GitHub's and Cloudflare's settings.
+None of them is on yet; until they are, a red check is a report, not a gate.
 
 1. **A red check stops a merge.** The ruleset "Protect main" (id 17189099)
-   requires a pull request but no status check. Add the `test` job of
-   "Repository checks" as a required status check, from GitHub Actions:
+   requires a pull request but no status check. Add two required status
+   checks, both from GitHub Actions (`integration_id` 15368, so neither can
+   be satisfied by a status posted by hand): `test` ("Repository checks")
+   and `board-languages (main's guard)` (the workflow main defines):
 
    ```
    gh api -X PUT repos/<owner>/<repo>/rulesets/17189099 --input ruleset.json
@@ -316,23 +356,32 @@ switched on outside the repository, in GitHub's and Cloudflare's settings:
 
    ```json
    { "type": "required_status_checks",
-     "parameters": { "strict_required_status_checks_policy": false,
-       "required_status_checks": [ { "context": "test", "integration_id": 15368 } ] } }
+     "parameters": { "strict_required_status_checks_policy": true,
+       "required_status_checks": [
+         { "context": "test", "integration_id": 15368 },
+         { "context": "board-languages (main's guard)", "integration_id": 15368 } ] } }
    ```
 
-   (`integration_id` 15368 is GitHub Actions, so the check cannot be
-   satisfied by a status posted by hand.) Or: Settings → Rules → Protect main
-   → Require status checks to pass → add `test`.
+   (`strict` makes a pull request be up to date with main before it merges,
+   so the guard that passed it is the one it merges into.) Or: Settings →
+   Rules → Protect main → Require status checks to pass → add both.
 
-2. **A red guard stops a deploy.** Workers Builds deploys every merge to
+2. **A change to the guard is reviewed.** In the same ruleset's
+   pull-request rule, set "Require review from Code Owners" (and at least
+   one approval). `.github/CODEOWNERS` names the guard's files, so a pull
+   request that touches `tests/i18n/`, `tests/render/`,
+   `tests/board-languages*`, `.github/` or `package.json` (an approval in
+   `approved-exceptions.json` included) cannot merge on its own author's
+   say. Every pull request here is opened by the same account, and GitHub
+   does not let an author approve their own pull request, so such a change
+   then needs a deliberate bypass of the ruleset by an administrator (or a
+   second account as code owner): that is the point, a guard change is a
+   decision, not a side effect.
+
+3. **A red guard stops a deploy.** Workers Builds deploys every merge to
    `main` and does not read `wrangler.jsonc`'s build settings. In the
    Cloudflare dashboard (Workers & Pages → `fids` → Settings → Build), set
    the **Build command** to `npm run guard`. It runs the guard's checks in
-   about two seconds with no dependencies and fails the build — so nothing
+   a few seconds with no dependencies and fails the build — so nothing
    ships — on any passenger word outside the nine-language store that the
    ledger does not already list.
-
-A review of every exception rests on the approvals file being reviewed on
-its own (section 4). Every pull request here is opened and merged by the
-same account, so GitHub's required reviews cannot hold it; the two settings
-above are what turn the guard from a report into a gate.

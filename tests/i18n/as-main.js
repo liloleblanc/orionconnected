@@ -132,7 +132,8 @@ function runAsGuard(change) {
       const b = baseline[t];
       if (r.status !== 0) problems.push(`${t} fails`);
       if (r.c.fail !== 0 || r.c.cancelled !== 0) problems.push(`${t}: ${r.c.fail} failed, ${r.c.cancelled} cancelled`);
-      if (r.c.tests == null || r.c.tests < b.tests || r.c.pass < b.pass) problems.push(`${t} ran ${r.c.tests} tests (${r.c.pass} passed) where main runs ${b.tests} (${b.pass} passed): it stopped early`);
+      if (r.c.tests == null || r.c.tests < b.tests) problems.push(`${t} ran ${r.c.tests} tests where main runs ${b.tests}: it stopped early`);
+      else if (r.c.skipped > b.skipped) problems.push(`${t} skipped ${r.c.skipped} tests where main skips ${b.skipped}`);
     }
     const g = spawnSync(process.execPath, ['tests/i18n/gate.js'], { cwd: wt, encoding: 'utf8', env, maxBuffer: 64 << 20 });
     show((g.stdout || '') + (g.stderr || ''));
@@ -168,7 +169,8 @@ function policyAsData(change) {
   const r = spawnSync(process.execPath, [flag, '--allow-fs-read=' + change, '--disallow-code-generation-from-strings', '-e', code],
     { cwd: change, encoding: 'utf8', timeout: 20000, maxBuffer: 16 << 20, env: { PATH: process.env.PATH || '' } });
   if (r.status !== 0) throw new Error('the change\'s policy.js could not be read as data: ' + ((r.stderr || '').split('\n').slice(0, 3).join(' ')));
-  const data = JSON.parse(r.stdout);
+  let data = null;
+  try { data = JSON.parse(r.stdout); } catch (e) { throw new Error('the change\'s policy.js gave back no policy (it printed ' + JSON.stringify(String(r.stdout).slice(0, 60)) + '): it must export one object'); }
   if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.LANGS) || !Array.isArray(data.PASSENGER_SCRIPTS))
     throw new Error('the change\'s policy.js does not export a policy');
   return data;
