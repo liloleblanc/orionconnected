@@ -444,9 +444,9 @@ const STUDIO_SEED = `(function () {
 })()`;
 
 export const SURFACES = {
-  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&langs=en,fr&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, chunk: 2, alarm: 200, parallel: 2 },
-  departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}&langs=en,fr`, ready: BOARD_UP, setLangs: true, chunk: 5 },
-  baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}&langs=en,fr`, ready: BOARD_UP, setLangs: true, chunk: 5 },
+  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, chunk: 2, alarm: 200, parallel: 2 },
+  departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, chunk: 5 },
+  baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, chunk: 5 },
   // the phone: one language, the one the passenger picked (fids_mobile_lang)
   'phone-gate': { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
   'phone-departures': { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
@@ -454,14 +454,14 @@ export const SURFACES = {
   studio: { url: (port, set, fam) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM&doc=lang-check-${fam}&lang=${set[0]}`,
     seed: (port) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM`, families: ['fids', 'gids', 'bids'], ready: PLAYER_UP, sets: SINGLES, chunk: 2, perSet: true, alarm: 240 },
   // the arrivals board (the departures board's other side)
-  arrivals: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}&langs=en,fr`, ready: BOARD_UP, setLangs: true, prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`,
+  arrivals: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`,
     sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh'], ['it']], chunk: 6 },
   // a Québec airport: French leads whenever it is chosen (BoardStrings.FR_FIRST)
-  'quebec-departures': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}&langs=fr,en`, ready: BOARD_UP, setLangs: true,
+  'quebec-departures': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true,
     sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja']], chunk: 4 },
-  'quebec-arrivals': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}&langs=fr,en`, ready: BOARD_UP, setLangs: true,
+  'quebec-arrivals': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true,
     prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`, sets: [['en', 'fr'], ['es', 'zh']], chunk: 2 },
-  'quebec-gate': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YUL&mode=${MODE}&gate=72&langs=fr,en&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true,
+  'quebec-gate': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YUL&mode=${MODE}&gate=72&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true,
     sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['en']], chunk: 2, alarm: 220, parallel: 2 },
   // the stream's rotation page: the boards it rotates, in its frames
   rotate: { url: (port, set) => `http://127.0.0.1:${port}/rotate.html?ap=YQM&mode=${MODE}&rotate=fids,gids,bids&dwell=9&langs=${set.join(',')}`, ready: SETTLE(15000),
@@ -527,7 +527,10 @@ async function runChunk(port, name, spec, sets) {
           for (const wait of (spec.waits || [800, 2500])) { await evalv(SETTLE(wait)); problems.push(...await read(set, fam)); }
         }
       } else if (spec.setLangs) {
-        await evalv(`setBoardLangs(${JSON.stringify(set)})`);
+        // the saved choice, as toggleLang writes it: the airport config is re-applied
+        // every 10 s (refreshAirportConfig) and keeps a saved choice, but not one
+        // that was only set in memory
+        await evalv(`(function () { try { var ap = ((document.getElementById('apSel') || {}).value || '').toUpperCase(); if (ap) localStorage.setItem('fids_langs_' + ap, ${JSON.stringify(set.join(','))}); } catch (e) {} setBoardLangs(${JSON.stringify(set)}); })()`);
         if (spec.prep) {
           await evalv(spec.prep);
           if (/'arr'/.test(spec.prep) && (await evalv(`(function () { try { return mode; } catch (e) { return ''; } })()`)) !== 'arr') problems.push('the board did not turn to its arrivals');
