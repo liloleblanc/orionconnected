@@ -435,8 +435,10 @@ test('the board row, the gate, the belts, the inbound line, the map label and th
   assert.match(fnSource('_gateMapCity'), /_cityAp\(c, iata, lg\)/);
   assert.match(CORE, /try \{ c = _cityAp\(c, iata\); \} catch \(eC3\) \{\}/);
   // as markup, the airport a step smaller and in one piece with its "·"
-  assert.match(CORE, /<span class="b3-city">\$\{_cityApHtml\(_b3City, _b3Code\)\}<\/span>/);
-  assert.match(CORE, /_label = _cityApHtml\(_cityPlain, _tailCode\) \+ _tailHtml\(_tailCode\.toUpperCase\(\)\);/);
+  assert.match(CORE, /<span class="b3-city">\$\{_cityApHtml\(_b3City, _b3Code, false, !!_b3Code\)\}<\/span>/);
+  assert.match(CORE, /_label = _cityApHtml\(_cityPlain, _tailCode, false, true\) \+ _tailHtml\(_tailCode\.toUpperCase\(\)\);/);
+  assert.match(CORE, /_label = _cityApHtml\(cityDisp, _iataUp, false, true\) \+ _tailHtml\(_iataUp\);/);
+  assert.match(CORE, /'<div class="wxc-mon-city"><span class="wxc-mon-name">' \+ _cityApHtml\(_wxCityOf\(iata\), iata, false, true\) \+ '<\/span>\\u00a0<span class="wxc-mon-iata">'/);
   assert.match(CORE, /var _destCityHtml = _destCityName \? _cityApHtml\(_destCityName, _dIata\) : _destCityName;/);
   assert.match(CORE, /var _destValue = _dfCity \|\| _destCityHtml \|\| _destIataDisp;/);
   assert.match(OVR, /\.ap-sub \{ white-space: nowrap !important; font-size: max\(0\.8em, var\(--fx-floor, 12px\)\); \}/);
@@ -447,6 +449,22 @@ test('the board row, the gate, the belts, the inbound line, the map label and th
   assert.match(OVR, /:root:not\(#_\) \.fx-brk\.fx-brk-off \+ :is\(\.ap-name, \.fx-unit\)::before \{ content: "\\A"; white-space: pre; \}/);
   const html = helpers._cityApHtml('Toronto · Billy Bishop');
   assert.equal(html, 'Toronto <span class="ap-sub"><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">Billy Bishop</span></span>');
+  // v23999 — where a code is tied on after the city with a no-break space
+  // (tied), the space before the airport is its own span and goes with the
+  // airport when the airport gives way: left behind, it stood beside the
+  // no-break space ('Toronto  | YTZ'), and the line could break there,
+  // before the code. Everywhere else the markup is as it was.
+  assert.equal(helpers._cityApHtml('Toronto · Billy Bishop', 'YTZ', false, true),
+    'Toronto<span class="ap-gap"> </span><span class="ap-sub" data-ap="YTZ"><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">Billy Bishop</span></span>');
+  assert.equal(helpers._cityApHtml('Ottawa', 'YOW', false, true), 'Ottawa', 'no airport: no span');
+  assert.match(OVR, /:root:not\(#_\) \.ap-gap\.ap-gap-off \{ display: none !important; \}/);
+  const off = fnSource('_apSubOff');
+  assert.match(off, /sub\.classList\.toggle\('ap-sub-off', !!off\);/);
+  assert.match(off, /var g = sub\.previousElementSibling;\s*if \(g && g\.classList && g\.classList\.contains\('ap-gap'\)\) g\.classList\.toggle\('ap-gap-off', !!off\);/);
+  // every place that gives an airport's name way goes through it, so the
+  // space never stays behind
+  assert.doesNotMatch(CORE, /classList\.(add|remove)\('ap-sub-off'\)/);
+  assert.equal((CORE.match(/classList\.toggle\('ap-sub-off'/g) || []).length, 1);
   assert.equal(helpers._cityApHtml('From <b> · 4:33pm'), 'From &lt;b&gt; · 4:33pm', 'not an airport: escaped, left alone');
   assert.equal(helpers._cityApHtml('Saint John\'s'), 'Saint John&#39;s');
 });
@@ -663,7 +681,7 @@ test('the pending words are never under the floor, and the big map names the air
 
 test('the gate\'s Destination is fitted alone; its airport takes what is left, or gives way', () => {
   const box = CORE.slice(CORE.indexOf('function _boxAssign('), CORE.indexOf('function _plateInset('));
-  assert.match(box, /var _apSub = _wrapOk \? el\.querySelector\('\.ap-sub'\) : null;\s*if \(_apSub\) \{ _apSub\.classList\.add\('ap-sub-off'\); _apSub\.style\.removeProperty\('font-size'\); \}/);
+  assert.match(box, /var _apSub = _wrapOk \? el\.querySelector\('\.ap-sub'\) : null;\s*if \(_apSub\) \{ _apSubOff\(_apSub, true\); _apSub\.style\.removeProperty\('font-size'\); \}/);
   assert.match(box, /var _hasSub = false;/);
   assert.match(box, /if \(_apSub\) _gateApSubPlace\(el, _apSub, _finPx, _cityTwo, availH, colR, skipH, _flo\);/);
   const place = fnSource('_gateApSubPlace');
@@ -672,12 +690,12 @@ test('the gate\'s Destination is fitted alone; its airport takes what is left, o
   assert.match(place, /var lo = _fxApMin\(cityPx, flo\);/);
   assert.match(place, /var b1 = _fxSearch\(lo, top, function \(q\) \{ return fitsAt\(q, false\); \}\);/);
   assert.match(place, /var b2 = _fxSearch\(lo, top, function \(q\) \{ return fitsAt\(q, true\); \}\);/);
-  assert.match(place, /sub\.classList\.add\('ap-sub-off'\);/);
+  assert.match(place, /_apSubOff\(sub, true\);/);
   assert.doesNotMatch(place, /el\.style\.setProperty\('font-size'/, 'the city\'s size is never touched');
   assert.match(OVR, /:root:not\(#_\) \.ap-sub\.ap-sub-off \{ display: none !important; \}/);
   // the Your Aircraft lines: sized without the airport, then it is set in
   // what its own line has left, a step under the line down to the floor
-  assert.match(CORE, /_ibSubs\.forEach\(function \(sb\) \{\s*sb\.classList\.add\('ap-sub-off'\); sb\.style\.removeProperty\('font-size'\);/);
+  assert.match(CORE, /_ibSubs\.forEach\(function \(sb\) \{\s*_apSubOff\(sb, true\); sb\.style\.removeProperty\('font-size'\);/);
   assert.match(CORE, /var ok = function \(q\) \{\s*sb\.style\.setProperty\('font-size', q \+ 'px', 'important'\);\s*if \(!vars\) return _measure\(ln\) <= availW \+ 0\.5;/);
   // both in every board language's words (_fxApVariants), so each phase takes the same place
   assert.match(fnSource('_gateApSubPlace'), /var vars = _fxApVariants\(el, sub\);/);
@@ -711,6 +729,8 @@ test('the decision: the bigger city, then the bigger airport, then one line', ()
   // and every board language's words are tried in place, so all of them hold
   const v = fnSource('_fxApVariants');
   assert.match(v, /var code = sub && sub\.getAttribute\('data-ap'\);/);
+  // the city is the text before the airport's space (.ap-gap, v23999)
+  assert.match(v, /if \(tn && tn\.nodeType === 1 && tn\.classList && tn\.classList\.contains\('ap-gap'\)\) tn = tn\.previousSibling;/);
   assert.match(v, /var name = _apSubline\(code, lgs\[b\]\);/);
   assert.match(fnSource('fidsFitText'), /var vars = subs\.length === 1 \? _fxApVariants\(el, subs\[0\]\) : null;/);
   assert.match(fnSource('fidsFitText'), /for \(var vi = 0; vi < vars\.n && ok; vi\+\+\) \{ vars\.apply\(vi\); ok = at1\(px, wrap, loose, sub, under\); \}\s*vars\.restore\(\);/);
@@ -760,7 +780,7 @@ test('the weather screens\' title keeps one line, its airport giving way first; 
   for (const i of steps) assert.ok(i > 0);
   assert.deepEqual(steps, [...steps].sort((a, b) => a - b), 'in that order');
   assert.match(t, /var q1 = _fxSearch\(_fxApMin\(pPx, flo\), Math\.max\(flo, pPx \* 0\.8\), setSub\);/);
-  assert.match(t, /sub\.classList\.add\('ap-sub-off'\);\s*if \(_wxTitleOneLine\(t\)\) return done\(\);/);
+  assert.match(t, /_apSubOff\(sub, true\);\s*if \(_wxTitleOneLine\(t\)\) return done\(\);/);
   // a row of the title is told by where its pieces are laid out (the screens
   // slide in turned and scaled), not by where they are drawn
   assert.match(fnSource('_wxTitleOneLine'), /k\.offsetTop >= minTop \+ maxH \* 0\.6/);

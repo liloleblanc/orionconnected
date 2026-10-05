@@ -24749,6 +24749,11 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      fitter gives it the slot's second line (.fx-wrap): the flight over the
      place, the "·" between them gone, the city and its airport one piece. */
 :root:not(#_) .ap-sub.ap-sub-off { display: none !important; }
+/* v23999 — and the space before it goes with it (.ap-gap-off, set with
+   .ap-sub-off by _apSubOff): left behind, it stood beside the no-break space
+   that ties a row's code on ('Toronto  | YTZ'), and was a place for the line
+   to break before the code. A class, not :has() (the kiosk browsers drop it). */
+:root:not(#_) .ap-gap.ap-gap-off { display: none !important; }
 /* v23998 — or to its code, where its line has none of its own (the
    Later-at-this-gate strip): the code takes the name's place at the city's
    size, 'Montréal · MET' (.ap-sub-code, the fitter's choice). The code rides

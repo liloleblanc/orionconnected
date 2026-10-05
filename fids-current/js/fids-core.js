@@ -2411,6 +2411,7 @@ function _fxApVariants(el, sub) {
     // the city: the text just before the airport, when it is our table's
     // city in some language (a feed's own wording is left as it is)
     var tn = sub.previousSibling;
+    if (tn && tn.nodeType === 1 && tn.classList && tn.classList.contains('ap-gap')) tn = tn.previousSibling;
     if (tn && tn.nodeType !== 3) tn = null;
     var cur = tn ? tn.nodeValue : '';
     var fold = function (v) { try { return String(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); } catch (e) { return String(v).toUpperCase().trim(); } };
@@ -2459,13 +2460,27 @@ function _fxApVariants(el, sub) {
     };
   } catch (e) { return null; }
 }
+// v23999 — an airport's name given way (true) or drawn again (false), and
+// the space before it with it (.ap-gap, _cityApHtml): left behind, that space
+// stood beside the no-break space that ties a row's code on, two spaces wide
+// ('Toronto  | YTZ' on the 1280 boards), and it was a place for a wrapped
+// line to break, leaving the code to start the next line alone. Every place
+// that gives an airport's name way goes through here. (A class, not :has():
+// the kiosk browsers drop :has().)
+function _apSubOff(sub, off) {
+  try {
+    sub.classList.toggle('ap-sub-off', !!off);
+    var g = sub.previousElementSibling;
+    if (g && g.classList && g.classList.contains('ap-gap')) g.classList.toggle('ap-gap-off', !!off);
+  } catch (e) {}
+}
 // v23998 — an airport's name in the form the fitter chose: px > 0 at that
 // size, 0 at its own step (0.8em), -1 given way whole (not drawn; the code
 // already on its line names the airport), -2 given way to its code (shown
 // in its place, at its city's size: the strip's 'Montréal · MET').
 function _fxApForm(sub, px) {
   try {
-    sub.classList.toggle('ap-sub-off', px === -1);
+    _apSubOff(sub, px === -1);
     sub.classList.toggle('ap-sub-code', px === -2);
     if (px > 0) sub.style.setProperty('font-size', px + 'px', 'important');
     else sub.style.removeProperty('font-size');
@@ -2924,7 +2939,7 @@ function _wxFitTitle(t) {
     + '|' + (_fxFontsEpoch || 0) + '|' + parts.map(function (p) { return p.style.getPropertyValue('font-size'); }).join(',');
   if (t.__wxtKey === key) return;
   place.style.removeProperty('font-size');
-  if (sub) { sub.style.removeProperty('font-size'); sub.classList.remove('ap-sub-off'); }
+  if (sub) { sub.style.removeProperty('font-size'); _apSubOff(sub, false); }
   var flo = fidsFitFloor();
   var done = function () {
     t.__wxtKey = (t.textContent || '').replace(/\s+/g, ' ').trim() + '|' + t.clientWidth + '|' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0)
@@ -2941,7 +2956,7 @@ function _wxFitTitle(t) {
     if (q1) { setSub(q1); return done(); }
     // 2. the airport left to its code, the place at its size
     sub.style.removeProperty('font-size');
-    sub.classList.add('ap-sub-off');
+    _apSubOff(sub, true);
     if (_wxTitleOneLine(t)) return done();
   }
   // 3. the place, down to the words beside it
@@ -18858,7 +18873,7 @@ function gateAutofit(root) {
         vars.restore();
         return ok;
       };
-      sub.classList.remove('ap-sub-off');
+      _apSubOff(sub, false);
       var best = 0, bestUnder = false;
       // v23998 — no smaller than its smallest beside or under a city
       // (_fxApMin, the shared fitter's rule): under that it gives way
@@ -18872,7 +18887,7 @@ function gateAutofit(root) {
       if (!best) {
         if (sep) sep.classList.remove('fx-brk-off');
         sub.style.removeProperty('font-size');
-        sub.classList.add('ap-sub-off');
+        _apSubOff(sub, true);
         return;
       }
       fitsAt(best, bestUnder);
@@ -18957,7 +18972,7 @@ function gateAutofit(root) {
     // nearly its width at every screen size — the airport gives way: it is
     // not drawn here, and the code beside the city (the badge) names it.
     var _apSub = _wrapOk ? el.querySelector('.ap-sub') : null;
-    if (_apSub) { _apSub.classList.add('ap-sub-off'); _apSub.style.removeProperty('font-size'); }
+    if (_apSub) { _apSubOff(_apSub, true); _apSub.style.removeProperty('font-size'); }
     if (_wrapOk) { el.style.setProperty('white-space', 'nowrap', 'important'); el.style.removeProperty('line-height'); el.classList.remove('fx-wrap'); }
     var lo = _flo, hi = Math.min(140, Math.floor(availH));
     if (hi < lo) hi = lo;
@@ -19424,7 +19439,7 @@ function gateAutofit(root) {
       // the room its line has left (below), or gives way.
       var _ibSubs = [].slice.call(val.querySelectorAll('.ap-sub'));
       _ibSubs.forEach(function (sb) {
-        sb.classList.add('ap-sub-off'); sb.style.removeProperty('font-size');
+        _apSubOff(sb, true); sb.style.removeProperty('font-size');
         var sp = sb.querySelector('.ap-sep'); if (sp) sp.classList.remove('fx-brk-off');
       });
       // v23256 — the budget is the VALUE CELL's own content width: it is the
@@ -19555,7 +19570,7 @@ function gateAutofit(root) {
         var lpx = parseFloat(getComputedStyle(ln).fontSize) || 0;
         var flo = fidsFitFloor();
         var top = Math.max(flo, Math.floor(lpx * 0.8 * 4) / 4);
-        sb.classList.remove('ap-sub-off');
+        _apSubOff(sb, false);
         var vars = _fxApVariants(ln, sb);
         var ok = function (q) {
           sb.style.setProperty('font-size', q + 'px', 'important');
@@ -19568,7 +19583,7 @@ function gateAutofit(root) {
         // (no smaller than its smallest beside the line, _fxApMin; v23998)
         var q = _fxSearch(_fxApMin(lpx, flo), top, ok);
         if (q) ok(q);
-        else { sb.style.removeProperty('font-size'); sb.classList.add('ap-sub-off'); }
+        else { sb.style.removeProperty('font-size'); _apSubOff(sb, true); }
       });
     });
     // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL
@@ -23809,7 +23824,7 @@ const gView = document.getElementById('gateView');
                 return `<div class="b3-row${_b3RowCls}">
                   <div class="b3-tile">${logoHtml}</div>
                   <div class="b3-flight">${_b3Wm}<div class="b3-num">${fidsEscHtml(_flightDisp)}</div></div>
-                  <div class="b3-from"><span class="b3-city">${_cityApHtml(_b3City, _b3Code)}</span>${_b3Code ? '<span class="b3-tail">\u00a0<span class="b3-sep">|</span>\u00a0<span class="b3-code">' + fidsEscHtml(_b3Code) + '</span></span>' : ''}</div>
+                  <div class="b3-from"><span class="b3-city">${_cityApHtml(_b3City, _b3Code, false, !!_b3Code)}</span>${_b3Code ? '<span class="b3-tail">\u00a0<span class="b3-sep">|</span>\u00a0<span class="b3-code">' + fidsEscHtml(_b3Code) + '</span></span>' : ''}</div>
                   <div class="b3-time">${fidsEscHtml(_bidsTimeForLang(f.time))}</div>
                   <div class="b3-status ${_b3StCls}">${fidsEscHtml(stTxt)}</div>
                 </div>`;
@@ -29215,7 +29230,7 @@ function _cityAp(city, code, langOverride) {
 // try the name in every board language, so a row takes one layout that
 // holds in all of them (v23997 — a belt row was one line in English and two
 // in French, 'Billy Bishop' against 'Billy-Bishop').
-function _cityApHtml(text, code, withCode) {
+function _cityApHtml(text, code, withCode, tied) {
   var s = String(text == null ? '' : text);
   var esc = (typeof fidsEscHtml === 'function') ? fidsEscHtml : function (v) { return String(v); };
   var i = s.lastIndexOf(' · ');
@@ -29230,7 +29245,16 @@ function _cityApHtml(text, code, withCode) {
   // ('| YTZ') and the name gives way to that.
   var cd = '';
   try { cd = (withCode && c && typeof _dispIata === 'function') ? String(_dispIata(c)) : ''; } catch (eD) { cd = ''; }
-  return esc(s.slice(0, i)) + ' <span class="ap-sub"' + (c ? ' data-ap="' + esc(c) + '"' : '') + '><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">'
+  // v23999 — tied: the caller ties its code on after this with a no-break
+  // space (the board row's '\u00a0| YTZ', the belt's, the weather card's
+  // city and code). There the space between the city and its airport is a
+  // span of its own (.ap-gap), drawn only while the airport is (_apSubOff):
+  // an airport that gave way took its name and left that space, so the row
+  // read 'Toronto  | YTZ' (two spaces, on the 1280 boards), and a wrapped
+  // line could break there and start the next line with the code alone.
+  // Every other line follows the city with an ordinary space, which the
+  // left-over one collapses into, so it keeps its markup as it was.
+  return esc(s.slice(0, i)) + (tied ? '<span class="ap-gap"> </span>' : ' ') + '<span class="ap-sub"' + (c ? ' data-ap="' + esc(c) + '"' : '') + '><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">'
     + esc(s.slice(i + 3).trim()) + '</span>' + (cd ? '<span class="ap-code">' + esc(cd) + '</span>' : '') + '</span>';
 }
 try { if (typeof window !== 'undefined') { window._cityAp = _cityAp; window._cityApHtml = _cityApHtml; window._apSubline = _apSubline; } } catch (e) {}
@@ -30046,7 +30070,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23998';
+var FIDS_BUILD_TAG = 'v23999';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -31255,11 +31279,11 @@ function render() {
       let _label;
       if (_tailCode) {
         // Split the code off and style it — as a separator, never parentheses
-        _label = _cityApHtml(_cityPlain, _tailCode) + _tailHtml(_tailCode.toUpperCase());
+        _label = _cityApHtml(_cityPlain, _tailCode, false, true) + _tailHtml(_tailCode.toUpperCase());
       } else if (_iataUp && _iataUp.length >= 2 && _iataUp.length <= 4
                  && !cityDisp.toUpperCase().includes(_iataUp)) {
         // No code on the string yet and we have a valid IATA to append
-        _label = _cityApHtml(cityDisp, _iataUp) + _tailHtml(_iataUp);
+        _label = _cityApHtml(cityDisp, _iataUp, false, true) + _tailHtml(_iataUp);
       } else {
         // City name only (no IATA to add, or IATA already inline)
         _label = _cityApHtml(cityDisp, _iataUp);
@@ -54228,7 +54252,7 @@ function _renderWxCard(el) {
         +     '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
         +   '</div>'
         +   '<div class="wxc-mon-info">'
-        +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _cityApHtml(_wxCityOf(iata), iata) + '</span>\u00a0<span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
+        +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _cityApHtml(_wxCityOf(iata), iata, false, true) + '</span>\u00a0<span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +     '<div class="wxc-mon-now">'
         +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg' + _wxIconQ() + '" alt="">'
         +       '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
