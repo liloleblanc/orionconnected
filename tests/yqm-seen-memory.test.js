@@ -183,7 +183,7 @@ test('a KV failure still answers with the upstream list, and writes nothing', as
   assert.equal((await w2(flaky, ctx(), 'arrivals', '<html>blocked</html>', T(9, 28, 22, 22))).text, '<html>blocked</html>');
 });
 
-test('the /yqm/flights route answers the feed plus what it dropped; an upstream failure is still a 503', async () => {
+test('the /yqm/flights route answers the feed plus what it dropped; an upstream failure is a 503, and the last good answer only for the last try', async () => {
   const mod = await worker();
   // Rows timed against the real clock: one landed two hours ago and dropped, one due later.
   const wall = Math.floor(Date.now() / 1000) + (() => {
@@ -207,7 +207,7 @@ test('the /yqm/flights route answers the feed plus what it dropped; an upstream 
   };
   try {
     const env = { FIDS_USERS: { async get() { return JSON.stringify({ username: 'admin' }); }, async put() {} }, FIDS_LIVE_FLIGHTS: kv() };
-    const call = () => mod.default.fetch(new Request('https://fids-proxy.example/yqm/flights/arrivals'), env, { waitUntil() {} });
+    const call = (q) => mod.default.fetch(new Request('https://fids-proxy.example/yqm/flights/arrivals' + (q || '')), env, { waitUntil() {} });
     const r1 = await call();
     assert.equal(r1.status, 200);
     assert.equal(r1.headers.get('X-Feed-Remembered'), '0');
@@ -219,11 +219,33 @@ test('the /yqm/flights route answers the feed plus what it dropped; an upstream 
     const rows = await r2.json();
     assert.equal(r2.headers.get('X-Feed-Remembered'), '1');
     assert.deepEqual(rows.map((r) => [r.flightId, !!r.remembered]), [['PD2373', false], ['PD2381', true]]);
-    // Upstream refusing: the 503 the client falls back on, not a list made of memory.
+    // Upstream refusing: still the 503 the board's three tries run on…
     edge.clear();
     ok = false;
-    const r3 = await call();
-    assert.equal(r3.status, 503);
+    const r3a = await call();
+    assert.equal(r3a.status, 503, 'a refusal is not answered with a copy: the board tries again');
+    assert.equal(r3a.headers.get('X-Feed-State'), 'blocked');
+    // …and on its last try (v23996), Moncton's own last answer from the
+    // worker's last-good copy, marked stale with its time — never a list made
+    // of memory…
+    edge.clear();
+    const r3 = await call('?lastgood=1');
+    assert.equal(r3.status, 200);
+    assert.equal(r3.headers.get('X-Feed-State'), 'stale');
+    assert.equal(r3.headers.get('X-Feed-Stale'), '1');
+    assert.ok(r3.headers.get('X-Feed-As-Of'));
+    const r3rows = await r3.json();
+    assert.ok(r3rows.length >= 1 && r3rows.every((r) => !r.remembered), 'cyqm.ca\'s own rows, no remembered ones');
+    // …and with no copy at all, still the 503 the client falls back on.
+    edge.clear();
+    const bare = { FIDS_USERS: env.FIDS_USERS, FIDS_LIVE_FLIGHTS: kv() };
+    const r4 = await mod.default.fetch(new Request('https://fids-proxy.example/yqm/flights/arrivals?lastgood=1'), bare, { waitUntil() {} });
+    assert.equal(r4.status, 503);
+    // v23996 — the 503 every guarded route gives: {error:"blocked"|"error"};
+    // the old name rides along as detail.
+    const b4 = await r4.json();
+    assert.equal(b4.error, 'blocked', 'a 403 from cyqm.ca is a refusal');
+    assert.equal(b4.detail, 'yqm-upstream-unavailable');
   } finally {
     globalThis.fetch = realFetch;
     delete globalThis.caches;

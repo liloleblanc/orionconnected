@@ -177,6 +177,20 @@
     noLiveData: { en: 'No live data for this airport', fr: 'Aucune donnée en direct pour cet aéroport', es: 'Sin datos en vivo para este aeropuerto', de: 'Keine Live-Daten für diesen Flughafen', it: 'Nessun dato in tempo reale per questo aeroporto', pt: 'Sem dados ao vivo para este aeroporto', ja: 'この空港のライブデータはありません', zh: '本机场暂无实时数据', ar: 'لا توجد بيانات مباشرة لهذا المطار' },
     noFeedYet: { en: '{AIRPORT} has no flight feed yet', fr: '{AIRPORT} n’a pas encore de flux de vols', es: '{AIRPORT} aún no tiene fuente de vuelos', de: '{AIRPORT} hat noch keinen Flugdaten-Feed', it: '{AIRPORT} non ha ancora un flusso di voli', pt: '{AIRPORT} ainda não tem fonte de voos', ja: '{AIRPORT}のフライト情報はまだありません', zh: '{AIRPORT} 暂无航班数据源', ar: 'لا يتوفر بعد مصدر بيانات رحلات لـ {AIRPORT}' },
     liveDataError: { en: 'Live data error', fr: 'Erreur des données en direct', es: 'Error en los datos en vivo', de: 'Fehler bei den Live-Daten', it: 'Errore nei dati in tempo reale', pt: 'Erro nos dados ao vivo', ja: 'ライブデータのエラー', zh: '实时数据错误', ar: 'خطأ في البيانات المباشرة' },
+    // v23996 — WHEN THE AIRPORT'S OWN FEED IS DOWN (fids-core.js
+    // _fidsFeedPairHtml). feedUnavailable: the feed answered nothing usable and
+    // there is no recent list to show; it replaces "No flights in window", and
+    // on the gate and the belt "Awaiting Next Flight" and "No Assigned
+    // Arrivals". feedStale: the board is showing the last list it had, {TIME}
+    // being when that list is from (the strip along the bottom).
+    // feedLastUpdate: the same time under feedUnavailable, when the last list
+    // had nothing in this direction. Not in capitals: the strip is calm.
+    feedUnavailable: { en: 'Live data unavailable', fr: 'Données en direct indisponibles', es: 'Datos en tiempo real no disponibles', de: 'Live-Daten nicht verfügbar', it: 'Dati in tempo reale non disponibili', pt: 'Dados em tempo real indisponíveis', ja: 'リアルタイム情報を取得できません', zh: '实时数据暂不可用', ar: 'البيانات المباشرة غير متاحة',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    feedStale: { en: 'Live data unavailable · last update {TIME}', fr: 'Données en direct indisponibles · dernière mise à jour {TIME}', es: 'Datos en tiempo real no disponibles · última actualización {TIME}', de: 'Live-Daten nicht verfügbar · letzte Aktualisierung {TIME}', it: 'Dati in tempo reale non disponibili · ultimo aggiornamento {TIME}', pt: 'Dados em tempo real indisponíveis · última atualização {TIME}', ja: 'リアルタイム情報を取得できません · 最終更新 {TIME}', zh: '实时数据暂不可用 · 最后更新 {TIME}', ar: 'البيانات المباشرة غير متاحة · آخر تحديث {TIME}',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    feedLastUpdate: { en: 'Last update {TIME}', fr: 'Dernière mise à jour {TIME}', es: 'Última actualización {TIME}', de: 'Letzte Aktualisierung {TIME}', it: 'Ultimo aggiornamento {TIME}', pt: 'Última atualização {TIME}', ja: '最終更新 {TIME}', zh: '最后更新 {TIME}', ar: 'آخر تحديث {TIME}',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     noResultsFor: { en: 'No results for “{Q}”', fr: 'Aucun résultat pour « {Q} »', es: 'Sin resultados para «{Q}»', de: 'Keine Ergebnisse für „{Q}“', it: 'Nessun risultato per «{Q}»', pt: 'Nenhum resultado para “{Q}”', ja: '「{Q}」に一致する結果はありません', zh: '没有与“{Q}”匹配的结果', ar: 'لا توجد نتائج لـ «{Q}»' },
     noData: { en: 'No data', fr: 'Aucune donnée', es: 'Sin datos', de: 'Keine Daten', it: 'Nessun dato', pt: 'Sem dados', ja: 'データなし', zh: '无数据', ar: 'لا توجد بيانات' },
 

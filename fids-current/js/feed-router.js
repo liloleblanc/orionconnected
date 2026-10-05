@@ -16,6 +16,214 @@
 // Shim: plain fetch when the board's paced ADB queue isn't loaded. Every
 // in-router call already targets the proxy URL, so no rewriting is needed.
 window.adbPacedFetch = window.adbPacedFetch || function (url, opts) { return fetch(url, opts); };
+
+// ── FEED STATUS AND LAST-GOOD, FOR EVERY AIRPORT (v23996) ──────────────────
+// What the last fetch for an airport and direction actually produced: rows
+// from the live feed, the airport's last good list (stale, with the time it
+// is from), or nothing. The board reads fidsFeedStatus() to say so in its own
+// languages instead of drawing "NO FLIGHTS IN WINDOW" under a LIVE stamp.
+//
+// The worker now answers a failed feed with 503 {error:"blocked"|"error"}, or
+// with its own last good copy (up to 3 h) marked X-Feed-State: stale. This
+// side keeps one more copy, per screen, for 180 minutes — the rule Moncton and
+// Orlando already follow (their own chains below are untouched) — so a screen
+// that loses the worker as well still shows the last list it had, marked.
+//
+// Storage is shared by every board this browser runs (the stream's rotator
+// runs dozens) and by everything else on this origin — the dock list, Moncton's
+// and Orlando's own last-good copies — inside a quota of about five million
+// characters. So these copies are held to a budget: FEED_LG_MAX_KEYS most
+// recent, none larger than FEED_LG_MAX_BYTES, all of them together within
+// FEED_LG_TOTAL_BYTES (the oldest go first), and a full localStorage gives up
+// quietly rather than pushing out anything else. They are rewritten at most
+// every FEED_LG_WRITE_EVERY_MS: the copy in memory is always current, and the
+// stored one is only for a screen that reboots into an outage.
+var FEED_LG_MAX_MS = 180 * 60000;
+var FEED_LG_PREFIX = 'fids_feed_lastgood_';
+var FEED_LG_INDEX = 'fids_feed_lastgood_index';
+var FEED_LG_MAX_KEYS = 6;
+var FEED_LG_MAX_BYTES = 900000;
+var FEED_LG_TOTAL_BYTES = 1200000;
+var FEED_LG_WRITE_EVERY_MS = 3 * 60000;
+// A list this young is not "old data". The worker itself serves its shared
+// copy as live for three to five minutes, and Moncton's firewall refuses about
+// a third of requests at random, so a board that showed the strip the moment
+// one answer failed would put it up and take it down all day. Under this age
+// the board shows the list as it does a live one; past it, it says how old.
+var FEED_STALE_QUIET_MS = 5 * 60000;
+// Their own last-good chains already exist (YQM: fids_yqm_lastgood_*, MCO:
+// fids_mco_lastgood_*); they report into the status, and are not copied twice.
+var FEED_OWN_LASTGOOD = { YQM: 1, MCO: 1 };
+try { window.__fidsFeedStatus = window.__fidsFeedStatus || {}; window._feedLgMem = window._feedLgMem || {}; } catch (e) {}
+var _feedCallNote = {};
+function _feedDirOf(direction) { return direction === 'Departure' ? 'dep' : 'arr'; }
+function _feedListKey(direction) { return direction === 'Departure' ? 'departures' : 'arrivals'; }
+// Record what the worker said about this answer: the body's _feed, or the
+// X-Feed-* headers (Moncton's body is a bare array), or a 503's error.
+function _feedNote(iata, dir, r, body) {
+  try {
+    var st = null, asOf = null;
+    var meta = body && !Array.isArray(body) && body._feed;
+    if (meta && meta.state) { st = meta.state; asOf = meta.asOf ? Date.parse(meta.asOf) : null; }
+    else if (r && r.headers && typeof r.headers.get === 'function') {
+      st = r.headers.get('X-Feed-State');
+      var a = r.headers.get('X-Feed-As-Of');
+      asOf = a ? Date.parse(a) : null;
+    }
+    if (!st && r && r.status === 503 && body && (body.error === 'blocked' || body.error === 'error')) st = body.error;
+    if (st) _feedCallNote[iata + '|' + dir] = { state: st, asOf: isNaN(asOf) ? null : asOf };
+  } catch (e) {}
+}
+// A worker answer that says the feed itself failed (not a network blip).
+function _feedIsDown(r, body) {
+  return !!(r && r.status === 503 && body && (body.error === 'blocked' || body.error === 'error'));
+}
+function _feedDownError(iata, body) {
+  var e = new Error(iata + ' feed ' + ((body && body.error) || 'unavailable'));
+  e.feedDown = (body && body.error) || 'error';
+  return e;
+}
+function _feedLgKey(iata, dir) { return FEED_LG_PREFIX + iata + '_' + dir; }
+var _feedLgBigAt = {};
+// The index: { key: [savedAt, length] } for every copy of ours in storage.
+function _feedLgIndex() {
+  var idx = {};
+  try { idx = JSON.parse(localStorage.getItem(FEED_LG_INDEX) || '{}') || {}; } catch (e) { idx = {}; }
+  Object.keys(idx).forEach(function (k) {
+    var v = idx[k];
+    if (!Array.isArray(v) || typeof v[0] !== 'number') delete idx[k];
+  });
+  return idx;
+}
+function _feedLgSave(iata, dir, out, asOf) {
+  if (FEED_OWN_LASTGOOD[iata]) return;
+  var k = _feedLgKey(iata, dir);
+  try { window._feedLgMem[k] = { asOf: asOf, out: out }; } catch (e) {}
+  try {
+    var now = Date.now();
+    var idx = _feedLgIndex();
+    // Stored recently enough (or found too big recently): the memory copy
+    // carries the rest, and the list is not serialised on every poll.
+    if (idx[k] && now - idx[k][0] < FEED_LG_WRITE_EVERY_MS) return;
+    if (_feedLgBigAt[k] && now - _feedLgBigAt[k] < FEED_LG_WRITE_EVERY_MS) return;
+    var txt = JSON.stringify({ ts: now, asOf: asOf, out: out });
+    var drop = function (old) { try { localStorage.removeItem(old); } catch (e2) {} delete idx[old]; };
+    if (txt.length > FEED_LG_MAX_BYTES) {
+      // Too big to keep here (a very large airport): not stored, and an older
+      // stored copy of it is not left to be shown in its place.
+      _feedLgBigAt[k] = now;
+      if (idx[k]) { drop(k); try { localStorage.setItem(FEED_LG_INDEX, JSON.stringify(idx)); } catch (e4) {} }
+      return;
+    }
+    delete idx[k];
+    // Newest first; keep what fits in the key count and the budget beside this one.
+    var keys = Object.keys(idx).sort(function (a, b) { return idx[b][0] - idx[a][0]; });
+    var used = txt.length;
+    keys.forEach(function (old, i) {
+      if (i >= FEED_LG_MAX_KEYS - 1 || used + (idx[old][1] || 0) > FEED_LG_TOTAL_BYTES) drop(old);
+      else used += idx[old][1] || 0;
+    });
+    try {
+      localStorage.setItem(k, txt);
+      idx[k] = [now, txt.length];
+    } catch (eQ) {
+      // Full: drop every copy of ours and try once more; if that fails too,
+      // keep the copy in memory only.
+      Object.keys(idx).forEach(drop);
+      try { localStorage.removeItem(k); } catch (e5) {}
+      try { localStorage.setItem(k, txt); idx[k] = [now, txt.length]; } catch (eQ2) {}
+    }
+    localStorage.setItem(FEED_LG_INDEX, JSON.stringify(idx));
+  } catch (e) {}
+}
+function _feedLgLoad(iata, dir, now) {
+  var k = _feedLgKey(iata, dir);
+  var best = null;
+  try {
+    var m = window._feedLgMem[k];
+    if (m && m.out && m.asOf && now - m.asOf < FEED_LG_MAX_MS) best = m;
+  } catch (e) {}
+  try {
+    var ls = JSON.parse(localStorage.getItem(k) || 'null');
+    var at = ls && (ls.asOf || ls.ts);
+    if (ls && ls.out && at && now - at < FEED_LG_MAX_MS && (!best || at > best.asOf)) best = { asOf: at, out: ls.out };
+  } catch (e) {}
+  return best;
+}
+function _feedSetStatus(iata, dir, state, asOf, why) {
+  try {
+    var s = window.__fidsFeedStatus;
+    s[iata] = s[iata] || {};
+    var prev = s[iata][dir];
+    s[iata][dir] = { state: state, asOf: asOf || null, why: why || null, at: Date.now() };
+    if (!prev || prev.state !== state || prev.asOf !== (asOf || null)) {
+      try { window.dispatchEvent(new CustomEvent('fids-feed-status', { detail: { iata: iata, dir: dir, state: state, asOf: asOf || null } })); } catch (e2) {}
+    }
+  } catch (e) {}
+}
+/**
+ * The board's view of one airport's feed.
+ *   fidsFeedStatus('YYZ', 'dep') → { state: 'live'|'stale'|'unavailable', asOf }
+ *     ('stale' only once the list shown is FEED_STALE_QUIET_MS old)
+ *   fidsFeedStatus('YYZ')        → both directions: 'live' when both are live,
+ *     'unavailable' when neither has anything, otherwise 'stale' with the
+ *     OLDEST time any shown list is from (asOf null when one side has nothing).
+ */
+// A stale list younger than FEED_STALE_QUIET_MS reads as live (quiet: true).
+function _feedQuiet(x, now) {
+  if (x && x.state === 'stale' && x.asOf && now - x.asOf < FEED_STALE_QUIET_MS) {
+    return { state: 'live', asOf: x.asOf, quiet: true };
+  }
+  return x;
+}
+function fidsFeedStatus(iata, dir) {
+  try {
+    var s = (window.__fidsFeedStatus || {})[String(iata || '').toUpperCase()] || {};
+    var now = Date.now();
+    if (dir) return _feedQuiet(s[dir], now) || { state: 'live', asOf: null };
+    var d = _feedQuiet(s.dep, now) || { state: 'live' }, a = _feedQuiet(s.arr, now) || { state: 'live' };
+    if (d.state === 'live' && a.state === 'live') return { state: 'live', asOf: null };
+    if (d.state === 'unavailable' && a.state === 'unavailable') return { state: 'unavailable', asOf: null };
+    var times = [d, a].filter(function (x) { return x.state === 'stale' && x.asOf; }).map(function (x) { return x.asOf; });
+    return { state: 'stale', asOf: times.length ? Math.min.apply(null, times) : null,
+      partial: d.state === 'unavailable' || a.state === 'unavailable' };
+  } catch (e) { return { state: 'live', asOf: null }; }
+}
+try { window.fidsFeedStatus = fidsFeedStatus; } catch (e) {}
+// After one fetch: decide what it means and remember it.
+function _feedSettle(iata, direction, out, err) {
+  var dir = _feedDirOf(direction), lk = _feedListKey(direction);
+  var note = _feedCallNote[iata + '|' + dir] || null;
+  var rows = (out && Array.isArray(out[lk])) ? out[lk].length : 0;
+  var now = Date.now();
+  var failed = !!err || (!!note && (note.state === 'blocked' || note.state === 'error') && !rows);
+  if (!failed && out) {
+    if (note && (note.state === 'stale' || note.state === 'stale-local')) {
+      _feedSetStatus(iata, dir, 'stale', note.asOf);
+      if (note.state === 'stale' && note.asOf) {
+        var have = _feedLgLoad(iata, dir, now);
+        if (!have || have.asOf < note.asOf) _feedLgSave(iata, dir, out, note.asOf);
+      }
+    } else if (note && note.state === 'unavailable-local') {
+      _feedSetStatus(iata, dir, 'unavailable', null, 'error');
+    } else {
+      _feedSetStatus(iata, dir, 'live', now);
+      _feedLgSave(iata, dir, out, now);
+    }
+    return out;
+  }
+  var lg = _feedLgLoad(iata, dir, now);
+  if (lg) {
+    try { console.warn('[FIDS] ' + iata + ' ' + direction + ' feed down (' + ((err && (err.feedDown || err.message)) || (note && note.state)) + ') — showing the last good list from ' + new Date(lg.asOf).toISOString()); } catch (e) {}
+    _feedSetStatus(iata, dir, 'stale', lg.asOf);
+    return lg.out;
+  }
+  try { console.warn('[FIDS] ' + iata + ' ' + direction + ' feed down, no last good list — live data unavailable'); } catch (e) {}
+  _feedSetStatus(iata, dir, 'unavailable', null, (err && err.feedDown) || (note && note.state) || 'error');
+  var empty = {};
+  empty[lk] = [];
+  return empty;
+}
 // ── AERODATABOX ──────────────────────────────────────────────────────────
 // v23823 — TWO DEAD CONSTANTS REMOVED.
 // A base URL and a host for the banned provider were declared here and never
@@ -66,6 +274,13 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
       }
       if (!r.ok) {
         let body = ''; try { body = await r.text(); } catch(e) {}
+        // v23996 — the worker's "this feed is blocked / failing" is an answer,
+        // not a blip: note it and stop, rather than ask twice more.
+        let _fj = null; try { _fj = JSON.parse(body); } catch (e) {}
+        if (_feedIsDown(r, _fj)) {
+          _feedNote(iata, _feedDirOf(direction), r, _fj);
+          throw Object.assign(_feedDownError(iata, _fj), { noRetry: true });
+        }
         lastErr = `HTTP ${r.status} for ${iata} ${direction} [${fromStr} → ${toStr}]\n${body.slice(0,300)}`; // i18n-ok: debug
         console.error('[FIDS] ADB error:', lastErr);
         // Note: useProxy reference removed (no longer in scope; was throwing
@@ -74,11 +289,13 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
         throw new Error(lastErr);
       }
       const json = await r.json();
+      _feedNote(iata, _feedDirOf(direction), r, json);
       const count = direction === 'Departure' ? (json.departures||[]).length : (json.arrivals||[]).length;
       console.log(`[FIDS] ADB ${iata} ${direction} ${fromStr}→${toStr}: ${count} flights`);
       return json;
     } catch(e) {
       lastErr = e.message;
+      if (e && e.noRetry) throw e;
       if (attempt < 2) { await new Promise(r=>setTimeout(r,1000)); continue; }
       throw e;
     }
@@ -923,11 +1140,24 @@ function miaToAdbFlight(f, direction) {
   return out;
 }
 
+// v23996 — every board's fetch goes through _feedSettle: a failed feed shows
+// its last good list (marked stale) or nothing (unavailable), never an empty
+// list that reads as a quiet hour. A failure no longer throws out of here.
 async function adbFetch(iata, direction) {
+  const dir = _feedDirOf(direction);
+  delete _feedCallNote[iata + '|' + dir];
+  let out = null, err = null;
+  try { out = await _adbFetchRaw(iata, direction); } catch (e) { err = e; }
+  return _feedSettle(iata, direction, out, err);
+}
+async function _adbFetchRaw(iata, direction) {
   // ── MIA: Miami's own WebFIDS board via our worker ───────────────────
   // Same-origin (/miafids), so no CORS and no third-party dependency at
   // display time. The worker caches, so screens polling together cost MIA
   // one request. Carries real gate + terminal + aircraft type + tail.
+  // v23996 — a /miafids failure (a 502, never an empty list) falls through to
+  // Miami's registry feed on the window URL below, which is the guarded path:
+  // its last good list, or "unavailable", is what the board then shows.
   if (iata === 'MIA') {
     const wantDep = direction === 'Departure';
     const miaUrl = '/miafids?direction=' + (wantDep ? 'dep' : 'arr');
@@ -952,28 +1182,31 @@ async function adbFetch(iata, direction) {
   // directly ("Failed to fetch"). The fids-proxy worker fetches it
   // server-side (today + tomorrow merged) and returns { list:[...] } with
   // CORS, which we map here with yyzToAdbFlight().
+  // v23996 — AND IT ENDS HERE. The window URL below has nothing for Toronto
+  // (no registry feed: an empty 200, "none-nonroster"), so falling through to
+  // it turned every failure into "no flights". A failure throws, and
+  // adbFetch() shows the last good list or says the data is unavailable; a
+  // valid empty answer is returned as one.
   if (iata === 'YYZ') {
     const wantDep = direction === 'Departure';
     const dir = wantDep ? 'dep' : 'arr';
     const yyzUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/yyz?direction=${dir}`;
-    try {
-      const r = await fetch(yyzUrl, { headers: { 'Accept': 'application/json' } });
-      if (r.ok) {
-        const j = await r.json();
-        const rows = Array.isArray(j && j.list) ? j.list : [];
-        const list = rows
-          .filter(f => (String(f.type || '').toUpperCase() === 'DEP') === wantDep)
-          .map(yyzToAdbFlight).filter(Boolean);
-        console.log(`[FIDS] YYZ feed ${direction}: ${list.length} flights`);
-        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
-        console.warn('[FIDS] YYZ feed empty — falling back to ADB scrape');
-      } else {
-        const _b = await r.text().catch(() => '');
-        console.warn(`[FIDS] YYZ proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
-      }
-    } catch (e) {
-      console.warn(`[FIDS] YYZ feed: ${e.message} — falling back to ADB scrape`);
+    const r = await fetch(yyzUrl, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) {
+      const _b = await r.text().catch(() => '');
+      let _j = null; try { _j = JSON.parse(_b); } catch (e) {}
+      _feedNote('YYZ', dir, r, _j);
+      console.warn(`[FIDS] YYZ proxy HTTP ${r.status} — ${_b.slice(0, 200)}`);
+      throw _feedDownError('YYZ', _j);
     }
+    const j = await r.json();
+    _feedNote('YYZ', dir, r, j);
+    const rows = Array.isArray(j && j.list) ? j.list : [];
+    const list = rows
+      .filter(f => (String(f.type || '').toUpperCase() === 'DEP') === wantDep)
+      .map(yyzToAdbFlight).filter(Boolean);
+    console.log(`[FIDS] YYZ feed ${direction}: ${list.length} flights`);
+    return wantDep ? { departures: list } : { arrivals: list };
   }
   // ── YUL: Montréal-Trudeau's ADM apex feed via the worker proxy ──────
   // ADM's Salesforce endpoint has no CORS and a WAF that rejects browser
@@ -983,25 +1216,24 @@ async function adbFetch(iata, direction) {
     const wantDep = direction === 'Departure';
     const dir = wantDep ? 'dep' : 'arr';
     const yulUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/yul?direction=${dir}`;
-    try {
-      const r = await fetch(yulUrl, { headers: { 'Accept': 'application/json' } });
-      if (r.ok) {
-        const j = await r.json();
-        const rows = Array.isArray(j && j.list) ? j.list : [];
-        const opEv = yulOperatorEvidence(rows);
-        const list = rows
-          .filter(f => (String(f.ArrivalOrDeparture || '').toUpperCase() !== 'A') === wantDep)
-          .map(f => yulToAdbFlight(f, opEv)).filter(Boolean);
-        console.log(`[FIDS] YUL feed ${direction}: ${list.length} flights`);
-        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
-        console.warn('[FIDS] YUL feed empty — falling back to ADB scrape');
-      } else {
-        const _b = await r.text().catch(() => '');
-        console.warn(`[FIDS] YUL proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
-      }
-    } catch (e) {
-      console.warn(`[FIDS] YUL feed: ${e.message} — falling back to ADB scrape`);
+    // v23996 — no window fallback exists for Montréal either (see YYZ).
+    const r = await fetch(yulUrl, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) {
+      const _b = await r.text().catch(() => '');
+      let _j = null; try { _j = JSON.parse(_b); } catch (e) {}
+      _feedNote('YUL', dir, r, _j);
+      console.warn(`[FIDS] YUL proxy HTTP ${r.status} — ${_b.slice(0, 200)}`);
+      throw _feedDownError('YUL', _j);
     }
+    const j = await r.json();
+    _feedNote('YUL', dir, r, j);
+    const rows = Array.isArray(j && j.list) ? j.list : [];
+    const opEv = yulOperatorEvidence(rows);
+    const list = rows
+      .filter(f => (String(f.ArrivalOrDeparture || '').toUpperCase() !== 'A') === wantDep)
+      .map(f => yulToAdbFlight(f, opEv)).filter(Boolean);
+    console.log(`[FIDS] YUL feed ${direction}: ${list.length} flights`);
+    return wantDep ? { departures: list } : { arrivals: list };
   }
   // ── YHU: Saint-Hubert's MET terminal API via the worker proxy ───────
   // Clean JSON upstream but no CORS; /flights/yhu flattens flightsByDate
@@ -1011,24 +1243,23 @@ async function adbFetch(iata, direction) {
     const wantDep = direction === 'Departure';
     const dir = wantDep ? 'dep' : 'arr';
     const yhuUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/yhu?direction=${dir}`;
-    try {
-      const r = await fetch(yhuUrl, { headers: { 'Accept': 'application/json' } });
-      if (r.ok) {
-        const j = await r.json();
-        const rows = Array.isArray(j && j.list) ? j.list : [];
-        const list = rows
-          .filter(f => (String(((f || {}).flightId || {}).flightKind || '').toLowerCase() !== 'arrival') === wantDep)
-          .map(yhuToAdbFlight).filter(Boolean);
-        console.log(`[FIDS] YHU feed ${direction}: ${list.length} flights`);
-        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
-        console.warn('[FIDS] YHU feed empty — falling back to ADB scrape');
-      } else {
-        const _b = await r.text().catch(() => '');
-        console.warn(`[FIDS] YHU proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
-      }
-    } catch (e) {
-      console.warn(`[FIDS] YHU feed: ${e.message} — falling back to ADB scrape`);
+    // v23996 — no window fallback exists for Saint-Hubert (see YYZ).
+    const r = await fetch(yhuUrl, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) {
+      const _b = await r.text().catch(() => '');
+      let _j = null; try { _j = JSON.parse(_b); } catch (e) {}
+      _feedNote('YHU', dir, r, _j);
+      console.warn(`[FIDS] YHU proxy HTTP ${r.status} — ${_b.slice(0, 200)}`);
+      throw _feedDownError('YHU', _j);
     }
+    const j = await r.json();
+    _feedNote('YHU', dir, r, j);
+    const rows = Array.isArray(j && j.list) ? j.list : [];
+    const list = rows
+      .filter(f => (String(((f || {}).flightId || {}).flightKind || '').toLowerCase() !== 'arrival') === wantDep)
+      .map(yhuToAdbFlight).filter(Boolean);
+    console.log(`[FIDS] YHU feed ${direction}: ${list.length} flights`);
+    return wantDep ? { departures: list } : { arrivals: list };
   }
   // ── YTZ: Billy Bishop's server-rendered board via the worker proxy ──
   // No JSON API upstream; /flights/ytz parses the page rows server-side
@@ -1037,22 +1268,21 @@ async function adbFetch(iata, direction) {
     const wantDep = direction === 'Departure';
     const dir = wantDep ? 'dep' : 'arr';
     const ytzUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/ytz?direction=${dir}`;
-    try {
-      const r = await fetch(ytzUrl, { headers: { 'Accept': 'application/json' } });
-      if (r.ok) {
-        const j = await r.json();
-        const rows = Array.isArray(j && j.list) ? j.list : [];
-        const list = rows.map(ytzToAdbFlight).filter(Boolean);
-        console.log(`[FIDS] YTZ feed ${direction}: ${list.length} flights`);
-        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
-        console.warn('[FIDS] YTZ feed empty — falling back to ADB scrape');
-      } else {
-        const _b = await r.text().catch(() => '');
-        console.warn(`[FIDS] YTZ proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
-      }
-    } catch (e) {
-      console.warn(`[FIDS] YTZ feed: ${e.message} — falling back to ADB scrape`);
+    // v23996 — no window fallback exists for Billy Bishop (see YYZ).
+    const r = await fetch(ytzUrl, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) {
+      const _b = await r.text().catch(() => '');
+      let _j = null; try { _j = JSON.parse(_b); } catch (e) {}
+      _feedNote('YTZ', dir, r, _j);
+      console.warn(`[FIDS] YTZ proxy HTTP ${r.status} — ${_b.slice(0, 200)}`);
+      throw _feedDownError('YTZ', _j);
     }
+    const j = await r.json();
+    _feedNote('YTZ', dir, r, j);
+    const rows = Array.isArray(j && j.list) ? j.list : [];
+    const list = rows.map(ytzToAdbFlight).filter(Boolean);
+    console.log(`[FIDS] YTZ feed ${direction}: ${list.length} flights`);
+    return wantDep ? { departures: list } : { arrivals: list };
   }
   // ── LGA / JFK / EWR: Port Authority boards via the worker proxy ─────
   // Their GraphQL API sends no CORS header and wants an LZ-compressed
@@ -1062,10 +1292,14 @@ async function adbFetch(iata, direction) {
     const wantDep = direction === 'Departure';
     const dir = wantDep ? 'dep' : 'arr';
     const pjUrl = `https://fids-proxy.n-leblanc1984.workers.dev/flights/panynj?ap=${iata}&direction=${dir}`;
+    // v23996 — LaGuardia and Newark have no window fallback (see YYZ): a
+    // failure there throws. JFK still falls through to its registry feed.
+    let _pjDown = null;
     try {
       const r = await fetch(pjUrl, { headers: { 'Accept': 'application/json' } });
       if (r.ok) {
         const j = await r.json();
+        _feedNote(iata, dir, r, j);
         const rows = Array.isArray(j && j.list) ? j.list : [];
         // The feed lists EVERY codeshare as its own row (a JFK Wednesday
         // measured 2,646 departure rows). Physically-same movements share
@@ -1199,17 +1433,29 @@ async function adbFetch(iata, direction) {
         }
         const list = kept.map(f => panynjToAdbFlight(f, direction, iata)).filter(Boolean);
         console.log(`[FIDS] ${iata} PANYNJ feed ${direction}: ${list.length} flights (${rows.length} raw rows)`);
-        if (list.length) return wantDep ? { departures: list } : { arrivals: list };
+        if (list.length || iata !== 'JFK') return wantDep ? { departures: list } : { arrivals: list };
         console.warn(`[FIDS] ${iata} PANYNJ feed empty — falling back to ADB scrape`);
       } else {
         const _b = await r.text().catch(() => '');
-        console.warn(`[FIDS] ${iata} PANYNJ proxy HTTP ${r.status} — ${_b.slice(0, 200)} — falling back to ADB scrape`);
+        let _j = null; try { _j = JSON.parse(_b); } catch (e) {}
+        _feedNote(iata, dir, r, _j);
+        console.warn(`[FIDS] ${iata} PANYNJ proxy HTTP ${r.status} — ${_b.slice(0, 200)}`);
+        _pjDown = _feedDownError(iata, _j);
       }
     } catch (e) {
-      console.warn(`[FIDS] ${iata} PANYNJ feed: ${e.message} — falling back to ADB scrape`);
+      console.warn(`[FIDS] ${iata} PANYNJ feed: ${e.message}`);
+      _pjDown = e;
     }
+    if (_pjDown && iata !== 'JFK') throw _pjDown;
+    if (_pjDown) delete _feedCallNote[iata + '|' + dir];   // JFK: the registry answers next
   }
   // ── TPA: Tampa's own flight-status feed instead of AeroDataBox ──────
+  // v23996 — Tampa is the one feed every screen fetches itself, straight from
+  // the browser, so the worker never sees it: it gets the board's own half of
+  // the protection (a failure throws, adbFetch() shows this screen's last
+  // good list for 180 minutes or says the data is unavailable) but no shared
+  // copy, no feed health and no automatic dock. Moving it behind the worker
+  // needs Cloudflare's egress to Tampa's Acquia host checked first.
   if (iata === 'TPA') {
     const wantDep = direction === 'Departure';
     // Tampa's Acquia edge caches this endpoint hard, keyed on the `cache=`
@@ -1234,12 +1480,16 @@ async function adbFetch(iata, direction) {
           try { await _yqmCacheAircraftMerge(list, direction, 'KTPA'); } catch (e2) {} // i18n-ok: code
           return wantDep ? { departures: list } : { arrivals: list };
         }
-        console.warn('[FIDS] TPA feed empty — falling back to ADB scrape');
-      } else {
-        console.warn(`[FIDS] TPA feed HTTP ${r.status} — falling back to ADB scrape`);
+        // v23996 — a valid empty list is an answer: the window URL has
+        // nothing for Tampa (no registry feed), so falling through only
+        // swapped "empty" for "empty", and a failure for "empty" too.
+        return wantDep ? { departures: [] } : { arrivals: [] };
       }
+      console.warn(`[FIDS] TPA feed HTTP ${r.status}`);
+      throw _feedDownError('TPA', { error: (r.status === 403 || r.status === 429) ? 'blocked' : 'error' });
     } catch (e) {
-      console.warn(`[FIDS] TPA feed: ${e.message} — falling back to ADB scrape`);
+      console.warn(`[FIDS] TPA feed: ${e.message}`);
+      throw e;
     }
   }
   // ── YQM: Moncton's own cyqm.ca feed instead of AeroDataBox ──────────
@@ -1278,24 +1528,62 @@ async function adbFetch(iata, direction) {
     // One origin asks now. The last-good cache below is untouched and still
     // covers an outage; this only changes who does the asking.
     const yqmUrl = `https://fids-proxy.n-leblanc1984.workers.dev/yqm/flights/${seg}`;
+    const _yqmDir = direction === 'Departure' ? 'dep' : 'arr';
     const _yqmLastGood = () => {
-      if (window._yqmLastGood && window._yqmLastGood[seg]) return window._yqmLastGood[seg];
+      // v23996 — and say how old it is, so the board can say so too.
+      if (window._yqmLastGood && window._yqmLastGood[seg]) {
+        const _t = (window._yqmLastGoodTs || {})[seg] || null;
+        if (!_t || (Date.now() - _t) < 180 * 60000) {
+          _feedCallNote['YQM|' + _yqmDir] = { state: 'stale-local', asOf: _t };
+          return window._yqmLastGood[seg];
+        }
+      }
       try {
         const ls = JSON.parse(localStorage.getItem('fids_yqm_lastgood_' + seg) || 'null');
         if (ls && ls.out && (Date.now() - ls.ts) < 180 * 60000) {
           console.warn(`[FIDS] YQM cyqm.ca blocked — serving last-good ${seg} (${Math.round((Date.now() - ls.ts) / 60000)}min old)`);
+          _feedCallNote['YQM|' + _yqmDir] = { state: 'stale-local', asOf: ls.ts };
           return ls.out;
         }
       } catch (e) {}
       return null;
     };
+    // When this screen's own last good list is from (0 when it has none).
+    const _yqmLocalAt = () => {
+      try {
+        if (window._yqmLastGood && window._yqmLastGood[seg]) return (window._yqmLastGoodTs || {})[seg] || 0;
+        const ls = JSON.parse(localStorage.getItem('fids_yqm_lastgood_' + seg) || 'null');
+        return (ls && ls.out && ls.ts) || 0;
+      } catch (e) { return 0; }
+    };
     let _lastWhy = '';
+    // What the worker called the last refusal ("blocked" or "error").
+    let _yqmFail = '';
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const r = await fetch(yqmUrl, { headers: { 'Accept': 'application/json' } });
+        // v23996 — a refusal still answers 503, so these three tries run as
+        // they always have. Only the LAST try asks the worker for its last
+        // good copy (?lastgood=1), for a screen that has none of its own.
+        const r = await fetch(attempt === 3 ? yqmUrl + '?lastgood=1' : yqmUrl, { headers: { 'Accept': 'application/json' } });
         if (!r.ok) { _lastWhy = `HTTP ${r.status}`; } // i18n-ok: debug
+        if (!r.ok) {
+          try { _yqmFail = String((r.headers && r.headers.get('X-Feed-State')) || '') || 'error'; } catch (eH) { _yqmFail = 'error'; }
+        }
         else {
           const raw = await r.json();
+          // v23996 — the worker's own last good copy (cyqm.ca refused it) is
+          // marked in the headers; it is shown, and said to be, from then —
+          // unless this screen's own list is as new or newer.
+          _feedNote('YQM', _yqmDir, r, raw);
+          const _yqmNote = _feedCallNote['YQM|' + _yqmDir];
+          if (_yqmNote && _yqmNote.state === 'stale') {
+            const _mine = _yqmLocalAt();
+            if (_mine && (!_yqmNote.asOf || _mine >= _yqmNote.asOf)) {
+              const _own = _yqmLastGood();
+              if (_own) return _own;
+            }
+          }
+          const _yqmAsOf = (_yqmNote && _yqmNote.state === 'stale' && _yqmNote.asOf) ? _yqmNote.asOf : Date.now();
           const rowsAll = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
           // v23918 — the rows the worker remembered go to the gate maps'
           // evidence only (yqmSplitRemembered); the board lists the rest.
@@ -1317,9 +1605,11 @@ async function adbFetch(iata, direction) {
             const out = direction === 'Departure' ? { departures: list } : { arrivals: list };
             window._yqmLastGood = window._yqmLastGood || {};
             window._yqmLastGood[seg] = out;
+            window._yqmLastGoodTs = window._yqmLastGoodTs || {};
+            window._yqmLastGoodTs[seg] = _yqmAsOf;
             // Persist so a display that reboots into a blocked cycle still
             // opens on Moncton's own list rather than a different source.
-            try { localStorage.setItem('fids_yqm_lastgood_' + seg, JSON.stringify({ ts: Date.now(), out })); } catch (e3) {}
+            try { localStorage.setItem('fids_yqm_lastgood_' + seg, JSON.stringify({ ts: _yqmAsOf, out })); } catch (e3) {}
             return out;
           }
           _lastWhy = 'empty';
@@ -1334,6 +1624,13 @@ async function adbFetch(iata, direction) {
     console.warn(`[FIDS] YQM cyqm.ca feed ${direction}: ${_lastWhy} after 3 attempts`);
     const _stale = _yqmLastGood();
     if (_stale) return _stale;
+    // v23996 — cyqm.ca refused all three tries and no list of its own is left
+    // anywhere. The window URL below is Moncton's second source (the webhook
+    // cache): rows from it are live, but an empty answer from it is not "no
+    // flights" — the board says the live data is unavailable (_feedSettle).
+    if (_lastWhy !== 'empty') {
+      _feedCallNote['YQM|' + _yqmDir] = { state: _yqmFail === 'blocked' ? 'blocked' : 'error', asOf: null };
+    }
     console.warn('[FIDS] YQM: no cyqm.ca list ever seen — falling back to ADB scrape');
   }
   // ── MCO: native GOAA feed instead of the ADB scrape ─────────────────
@@ -1358,6 +1655,14 @@ async function adbFetch(iata, direction) {
       }
       if (r.ok) {
         const json = await r.json();
+        _feedNote('MCO', dir, r, json);
+        // v23996 — what the worker said about GOAA's list, kept aside: the
+        // ADB enrichment below asks the window URL for MCO, and its answer
+        // (also GOAA, so also failing in a block) would otherwise replace it
+        // and turn a stale list into "live". The copy kept here is dated from
+        // when the worker had it good, not from when this screen received it.
+        const _mcoNote = _feedCallNote['MCO|' + dir] || null;
+        const _mcoAsOf = (_mcoNote && _mcoNote.state === 'stale' && _mcoNote.asOf) ? _mcoNote.asOf : Date.now();
         let list = direction === 'Departure' ? (json.departures || []) : (json.arrivals || []);
         const homeKey = direction === 'Departure' ? 'departure' : 'arrival';
         // ── Collapse multi-leg "via" rows into one, reconstruct routing ────
@@ -1460,9 +1765,12 @@ async function adbFetch(iata, direction) {
         const _mcoOut = direction === 'Departure' ? { departures: list } : { arrivals: list };
         window._mcoLastGood = window._mcoLastGood || {};
         window._mcoLastGood[dir] = _mcoOut;
+        window._mcoLastGoodTs = window._mcoLastGoodTs || {};
+        window._mcoLastGoodTs[dir] = _mcoAsOf;
         // Persist across page loads: a fresh load with GOAA momentarily down
         // must serve GOAA's OWN recent list, never a different source.
-        try { localStorage.setItem('fids_mco_lastgood_' + dir, JSON.stringify({ ts: Date.now(), out: _mcoOut })); } catch (e) {}
+        try { localStorage.setItem('fids_mco_lastgood_' + dir, JSON.stringify({ ts: _mcoAsOf, out: _mcoOut })); } catch (e) {}
+        if (_mcoNote) _feedCallNote['MCO|' + dir] = _mcoNote; else delete _feedCallNote['MCO|' + dir];
         return _mcoOut;
       }
       // Non-OK — NEVER fall through to the ADB scrape
@@ -1477,7 +1785,13 @@ async function adbFetch(iata, direction) {
       return _mcoFallback(direction, dir);
     }
     function _mcoFallback(direction, dir) {
-      if (window._mcoLastGood && window._mcoLastGood[dir]) return window._mcoLastGood[dir];
+      // v23996 — each answer here says what it is (stale since when, or none).
+      // The copy in memory keeps the same 3-hour ceiling as the stored one.
+      var _mcoMemTs = (window._mcoLastGoodTs || {})[dir] || null;
+      if (window._mcoLastGood && window._mcoLastGood[dir] && (!_mcoMemTs || (Date.now() - _mcoMemTs) < 180 * 60000)) {
+        _feedCallNote['MCO|' + dir] = { state: 'stale-local', asOf: _mcoMemTs };
+        return window._mcoLastGood[dir];
+      }
       try {
         var _ls = JSON.parse(localStorage.getItem('fids_mco_lastgood_' + dir) || 'null');
         // v23099 — the cap was 15 minutes, after which an outage flipped the
@@ -1487,10 +1801,12 @@ async function adbFetch(iata, direction) {
         // the list) is preserved. 3-hour ceiling so a day-old list can't show.
         if (_ls && _ls.out && (Date.now() - _ls.ts) < 180 * 60000) {
           console.warn('[FIDS] MCO: GOAA down — serving localStorage last-good (' + Math.round((Date.now() - _ls.ts) / 60000) + 'min old)');
+          _feedCallNote['MCO|' + dir] = { state: 'stale-local', asOf: _ls.ts };
           return _ls.out;
         }
       } catch (e2) {}
       console.warn('[FIDS] MCO: GOAA down, no usable cache — EMPTY list this cycle (never ADB for the list)');
+      _feedCallNote['MCO|' + dir] = { state: 'unavailable-local', asOf: null };
       return direction === 'Departure' ? { departures: [] } : { arrivals: [] };
     }
   }

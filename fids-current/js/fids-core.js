@@ -625,9 +625,17 @@ var _dryDockCache = null;
 var _dryDockInflight = null;
 var FIDS_DRY_DOCK_POLL_MS = 60000;
 
-/** The docked codes, upper-case. Empty until the first load answers. */
+/** The docked codes, upper-case. Empty until the first load answers.
+ *  v23996 — the admin's list AND the airports whose own feed has been blocked
+ *  for 30 minutes or more (`auto`, from the worker's feed health). Both mean
+ *  "do not offer this"; only the first is ever written by a person. */
 function fidsDryDock() {
-  return (_dryDockCache && Array.isArray(_dryDockCache.docked)) ? _dryDockCache.docked : [];
+  var d = (_dryDockCache && Array.isArray(_dryDockCache.docked)) ? _dryDockCache.docked : [];
+  var a = (_dryDockCache && Array.isArray(_dryDockCache.auto)) ? _dryDockCache.auto : [];
+  if (!a.length) return d;
+  var out = d.slice();
+  a.forEach(function (c) { c = String(c || '').toUpperCase(); if (c && out.indexOf(c) === -1) out.push(c); });
+  return out;
 }
 function fidsIsDocked(code) {
   var c = String(code || '').trim().toUpperCase();
@@ -723,7 +731,8 @@ function _fidsScreenDrift(doc, id) {
 // It goes to the tour rather than to a blank page, so the television shows
 // working airports instead of a message about one that is out of service. The
 // tour already filters the dock out of its own run, so it will not land back
-// on the same airport.
+// on the same airport — and it carries the screen's id, so the screen goes
+// back to its own board when the airport is undocked (v23996).
 var FIDS_DOCK_SELFCHECK_MS = 60000;
 
 /** The airport this board is actually showing. */
@@ -749,7 +758,12 @@ function _fidsDockedSelfCheck() {
     // The dock is only trusted once it has actually loaded; fidsIsDocked reads
     // an empty list before that, which cannot say anything is docked anyway.
     try { console.warn('[DOCK] ' + ap + ' is in dry dock — this screen is joining the tour'); } catch (e) {}
-    window.location.replace('/rotate?tour=1');
+    // v23996 — WITH ITS ID, SO IT CAN COME BACK. An airport can now dock
+    // itself (its feed blocked for 30 minutes) and undock itself (two good
+    // answers), with nobody there to send the screens home. The tour reads
+    // this screen's assignment and the dock every minute, and returns it to
+    // its own board once its airport is undocked (rotate.html, checkHome).
+    window.location.replace('/rotate?tour=1&screen=' + encodeURIComponent(_fidsScreenId()));
   } catch (e) {}
 }
 
@@ -5378,14 +5392,17 @@ function getDedicatedRenderKey() {
       first: first ? { flight:first.flight, status:first.status, upd:first.upd, time:first.time, gate:first.gate, airline:first.airline, loc:first._locIata, sort:first._sortTs, door:_gateDoorFor(first, _nowMs2, iata).word } : null,
       second: second ? { flight:second.flight, status:second.status, upd:second.upd, time:second.time, gate:second.gate, airline:second.airline, loc:second._locIata, sort:second._sortTs } : null,
       // v23973 — what Later at this gate and the gate-change notice show.
-      later: _gateLaterKeyNow(iata)
+      later: _gateLaterKeyNow(iata),
+      // v23998 — whether the departures feed is down (the empty gate says so).
+      feed: _fidsFeedDownKey(iata, 'dep')
     });
   }
   if (screenType === 'baggage') {
     const arrFlights = (data.arr || []).filter(f => (f._belt === subScreenVal || f.flight === subScreenVal) && (typeof _bidsInWindow !== 'function' || _bidsInWindow(f, Date.now()))).map(f => ({
       flight:f.flight, status:f.status, time:f.time, airline:f.airline, loc:f._locIata, sort:f._sortTs
     }));
-    return JSON.stringify({screenType, subScreenVal, iata, lang, langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '', flights:arrFlights});
+    return JSON.stringify({screenType, subScreenVal, iata, lang, langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '', flights:arrFlights,
+      feed: _fidsFeedDownKey(iata, 'arr')});   // v23998 — the empty belt says when the arrivals feed is down
   }
   return JSON.stringify({screenType:'main'});
 }
@@ -10554,7 +10571,10 @@ function renderMobileBaggageHtml(ctx) {
              +   '</div>'
              + '</div>';
       }).join('')
-    : '<div style="text-align:center;padding:48px 20px;color:' + T.muted + ';font-size:14px;letter-spacing:2px;">' + TL('noAssigned') + '</div>';
+    : (_fidsFeedDownInView(iata, 'arr')
+      // v23998 — the arrivals feed down: not "No Assigned Arrivals".
+      ? '<div class="ffn-inview ffn-inview--phone" role="status" style="text-align:center;padding:48px 20px;color:' + T.ink + ';font-size:15px;">' + _fidsFeedDownInView(iata, 'arr') + '</div>'
+      : '<div style="text-align:center;padding:48px 20px;color:' + T.muted + ';font-size:14px;letter-spacing:2px;">' + TL('noAssigned') + '</div>');
 
   return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
     // header: airport + belt
@@ -23406,6 +23426,9 @@ const gView = document.getElementById('gateView');
           + '</div></div>';
       }
       if (!localTio && COORDS[iata]) fetchTomorrowWeather(iata);
+      // v23998 — with the departures feed down, the empty gate does not say
+      // "Awaiting Next Flight": it says the live data is unavailable.
+      const _gateFeedDown = _fidsFeedDownInView(iata, 'dep');
 
       gView.innerHTML = `
         <div class="gate-screen" style="position:relative;">
@@ -23429,7 +23452,7 @@ const gView = document.getElementById('gateView');
               </div>
               <div style="text-align:right;">
                 <div id="dedicatedEmptyTime" style="font-size:clamp(36px,9vw,72px);font-weight:900;color:#fff;font-variant-numeric:tabular-nums;line-height:1;text-shadow:0 4px 20px rgba(0,0,0,0.4);">${timeStr}</div>
-                <div${_screenLangAttrs()} style="font-size:max(var(--fx-floor,12px),clamp(12px,2vw,20px));font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:clamp(1px,0.3vw,3px);margin-top:8px;">${TL('awaitingNextFlight')}</div>
+                ${_gateFeedDown ? `<div class="ffn-inview ffn-inview--gate" role="status">${_gateFeedDown}</div>` : `<div${_screenLangAttrs()} style="font-size:max(var(--fx-floor,12px),clamp(12px,2vw,20px));font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:clamp(1px,0.3vw,3px);margin-top:8px;">${TL('awaitingNextFlight')}</div>`}
               </div>
             </div>
           </div>
@@ -23926,7 +23949,10 @@ const gView = document.getElementById('gateView');
                 <div class="bidsv2-col-time">${fidsEscHtml(_bidsTimeForLang(f.time))}</div>
                 <div class="bidsv2-col-status ${statusClass}">${fidsEscHtml(stTxt)}</div>
               </div>`;
-            }).join('') : `<div class="bidsv2-empty">${TL('noAssigned')}</div>`}
+            }).join('') : (_fidsFeedDownInView(iata, 'arr')
+              // v23998 — the arrivals feed down: not "No Assigned Arrivals".
+              ? `<div class="bidsv2-empty ffn-inview ffn-inview--belt" role="status">${_fidsFeedDownInView(iata, 'arr')}</div>`
+              : `<div class="bidsv2-empty">${TL('noAssigned')}</div>`)}
             ${_totalPages > 1 ? `<div class="bidsv2-page-indicator">${TL('pageLbl')} ${bView._bidsPage + 1} / ${_totalPages}</div>` : ''}
           </div>
         </div>
@@ -29740,6 +29766,202 @@ function _fidsClockForLang(now, tz, lang) {
   return BoardStrings.time(now, lang, tz);
 }
 
+// ── v23996 — WHEN THE AIRPORT'S FEED IS DOWN, THE BOARD SAYS SO ─────────────
+// fidsFeedStatus() (feed-router.js) knows, per airport and direction, whether
+// the rows came from the live feed, from the last good list (and from when),
+// or from nowhere. The board used to draw all three the same way, so a feed
+// blocked by the airport's bot manager read "NO FLIGHTS IN WINDOW" under LIVE.
+//
+// One pair on one line in the board's languages, French first in Québec, each
+// half's time in that language's own clock (_fidsFeedPairHtml).
+// Calm by rule: no flashing, no red or amber — the notice is neutral ink on a
+// neutral strip, and only the status words keep their status colours.
+function _fidsFeedStatusFor(ap, dir) {
+  try {
+    if (typeof fidsFeedStatus === 'function') return fidsFeedStatus(ap, dir) || { state: 'live' };
+  } catch (e) {}
+  return { state: 'live', asOf: null };
+}
+// The words are the store's (board-strings.js: feedUnavailable, feedStale,
+// feedLastUpdate), as one pair in the board's languages, French first in
+// Québec (_gateLbl: BoardStrings.pairLangs, each half marked with its
+// language and an Arabic half right to left), each half's time in that
+// language's own clock (_fidsClockForLang: BoardStrings.time), as the gate's
+// close line does it.
+function _fidsFeedPairHtml(key, asOf) {
+  try {
+    var ap = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
+    var tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || undefined;
+    var when = asOf ? new Date(asOf) : null;
+    return _gateLbl(key, frFirstAirport(ap), function (w, i, lg) {
+      var txt = String(w).split('{TIME}').join(when ? _fidsClockForLang(when, tz, lg) : '');
+      return '<span class="ffn-half">' + fidsEscHtml(txt) + '</span>';
+    }, '<span class="bs-sep" aria-hidden="true">|</span>');
+  } catch (e) { return ''; }
+}
+// The empty panel when this page's direction has nothing because the airport's
+// feed failed and no recent list is left: "Live data unavailable", with the
+// time of the last list when there was one. Returns false (and leaves the
+// panel to its other messages) when the feed is fine — a quiet hour is still
+// "no flights in window". Built from the store's own words only.
+function _fidsFeedDownPanel(el, ap) {
+  var code = String(ap || '').toUpperCase();
+  var fd = (code && _fidsAirportHasFeed(code))
+    ? _fidsFeedStatusFor(code, (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep') : null;
+  var down = !!(fd && (fd.state === 'unavailable' || fd.state === 'stale'));
+  el.classList.toggle('fids-feed-down', down);
+  if (!down) return false;
+  el.innerHTML = '<div class="ffn-box">' + _fidsFeedPairHtml('feedUnavailable')
+    + (fd.asOf ? '<div class="sub">' + _fidsFeedPairHtml('feedLastUpdate', fd.asOf) + '</div>' : '') + '</div>';
+  return true;
+}
+// The phone layout's one line for the same case ('' when the feed is fine).
+function _fidsFeedDownLine() {
+  try {
+    var code = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
+    var fd = _fidsFeedStatusFor(code, (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep');
+    if (!fd || (fd.state !== 'unavailable' && fd.state !== 'stale')) return '';
+    return _fidsFeedPairHtml(fd.asOf ? 'feedStale' : 'feedUnavailable', fd.asOf);
+  } catch (e) { return ''; }
+}
+// v23998 — THE GATE AND THE BELT SAY IT TOO. Their own "nothing here" lines
+// ("Awaiting Next Flight" under the gate's clock, "No Assigned Arrivals" on
+// the belt) make the same claim as "NO FLIGHTS IN WINDOW", so while the feed
+// they read is down they give way to "Live data unavailable", with the last
+// list's time when there was one — the gate reads departures, the belt
+// arrivals. The strip along the bottom stands aside while this speaks
+// (_fidsFeedNoticeUpdate), as it does for the board's own empty panel, so the
+// screen says it once. '' when the feed is fine.
+function _fidsFeedDownFor(ap, dir) {
+  try {
+    var code = String(ap || '').toUpperCase();
+    if (!code || !LIVE_MODE || !_fidsAirportHasFeed(code)) return null;
+    var fd = _fidsFeedStatusFor(code, dir);
+    return (fd && (fd.state === 'unavailable' || fd.state === 'stale')) ? fd : null;
+  } catch (e) { return null; }
+}
+function _fidsFeedDownInView(ap, dir) {
+  var fd = _fidsFeedDownFor(ap, dir);
+  if (!fd) return '';
+  return '<span class="ffn-inview-line">' + _fidsFeedPairHtml('feedUnavailable') + '</span>'
+    + (fd.asOf ? '<span class="ffn-inview-line ffn-inview-sub">' + _fidsFeedPairHtml('feedLastUpdate', fd.asOf) + '</span>' : '');
+}
+// What the gate and belt render keys need to know: the screen repaints when
+// its feed goes down or comes back.
+function _fidsFeedDownKey(ap, dir) {
+  var fd = _fidsFeedDownFor(ap, dir);
+  return fd ? fd.state + ':' + (fd.asOf || '') : 'live';
+}
+// The operator toolbar (not a passenger surface): no LIVE stamp unless live.
+// The stamp is hidden, never reworded, so the toolbar gains no words of its
+// own; the last-update slot says when the list on screen is from in the
+// store's words (feedLastUpdate, or feedUnavailable with nothing at all), and
+// gets back what it said before once the feed is live again.
+function _fidsFeedStamp(st, tz) {
+  try {
+    if (!LIVE_MODE) return;
+    var ll = document.getElementById('liveLabel');
+    var lu = document.getElementById('lastUp');
+    var mb = document.getElementById('modeBadge');
+    var dot = document.querySelector('.live-dot');
+    var pill = ll && ll.parentNode;
+    var live = !st || st.state === 'live';
+    if (pill) pill.style.visibility = live ? '' : 'hidden';
+    if (mb) mb.style.visibility = live ? '' : 'hidden';
+    if (live) {
+      if (lu && lu._fidsFeedStamped) { lu.textContent = lu._fidsFeedWas || ''; lu._fidsFeedStamped = false; }
+      if (dot && dot.style.background) dot.style.background = '#10b981';
+      return;
+    }
+    var t = st.asOf ? BoardStrings.boardTime(st.asOf, tz) : '';
+    if (lu) {
+      if (!lu._fidsFeedStamped) { lu._fidsFeedWas = lu.textContent; lu._fidsFeedStamped = true; }
+      lu.textContent = (st.state === 'unavailable' || !t) ? BoardStrings.bs('feedUnavailable', lang) : BoardStrings.fmt('feedLastUpdate', lang, { TIME: t });
+    }
+    if (dot) dot.style.background = '#9ca3af';
+  } catch (e) {}
+}
+// The strip that says the board is showing a last good list, and from when.
+// On the departures/arrivals board it sits above the ticker (and the empty
+// panel speaks instead when there is nothing on the page). On the gate and
+// baggage screens — their own full-screen layouts, rebuilt on every render —
+// it is fixed to the bottom edge and the view gives up exactly its height
+// (body.fids-feed-notice-fixed-on, --ffn-h), so it covers nothing; there it
+// also says "Live data unavailable" when there is no list at all — unless the
+// screen's own empty line already says it (v23998, _fidsFeedDownInView), as
+// the board's empty panel does. The gate reads the departures feed, the belt
+// the arrivals feed.
+function _fidsFeedNoticeUpdate() {
+  try {
+    var ap = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
+    var st = _fidsFeedStatusFor(ap);
+    var sType = (typeof screenType === 'undefined') ? 'main' : screenType;
+    var dedicated = (sType === 'gate' || sType === 'baggage');
+    var onBoard = (sType === 'main');
+    // The strip speaks for the page on screen: departures pages for the
+    // departures feed, arrivals pages for the arrivals feed.
+    var dirOn = dedicated ? (sType === 'baggage' ? 'arr' : 'dep')
+      : ((typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep');
+    var stDir = _fidsFeedStatusFor(ap, dirOn);
+    var tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || undefined;
+    var panel = document.getElementById('panelEmpty');
+    var panelUp = !!(panel && panel.style.display !== 'none' && panel.classList.contains('fids-feed-down'));
+    // v23998 — the gate's or the belt's own empty line already says it.
+    var inView = dedicated ? document.querySelector(sType === 'baggage' ? '#baggageView .ffn-inview' : '#gateView .ffn-inview') : null;
+    // Only when it can actually be seen: a layout that clips it (the empty
+    // gate at phone width) leaves the strip to say it.
+    var inViewUp = false;
+    if (inView) {
+      var _ivr = inView.getBoundingClientRect();
+      inViewUp = _ivr.width > 0 && _ivr.height > 0 && _ivr.left >= -1 && _ivr.right <= (window.innerWidth || 0) + 1 && _ivr.top < (window.innerHeight || 0);
+    }
+    var tk = document.querySelector('.ticker');
+    var show = !!(LIVE_MODE && (
+      (onBoard && !panelUp && stDir.state === 'stale')
+      || (dedicated && !inViewUp && (stDir.state === 'stale' || stDir.state === 'unavailable'))));
+    var bar = document.getElementById('fidsFeedNotice');
+    if (!bar && show) {
+      bar = document.createElement('div');
+      bar.id = 'fidsFeedNotice';
+      bar.className = 'fids-feed-notice';
+      bar.setAttribute('role', 'status');
+      try { if (window._fidsChromeRO) window._fidsChromeRO.observe(bar); } catch (e2) {}
+    }
+    if (bar && show) {
+      // Where it belongs for this screen (a board can switch screen type).
+      if (dedicated) {
+        if (bar.parentNode !== document.body) document.body.appendChild(bar);
+      } else if (tk && tk.parentNode) {
+        if (bar.nextSibling !== tk) tk.parentNode.insertBefore(bar, tk);
+      } else if (!bar.parentNode) document.body.appendChild(bar);
+      bar.classList.toggle('fids-feed-notice--fixed', dedicated);
+    }
+    if (bar) {
+      var html = show ? (stDir.asOf ? _fidsFeedPairHtml('feedStale', stDir.asOf) : _fidsFeedPairHtml('feedUnavailable')) : '';
+      if (bar._fidsHtml !== html) { bar.innerHTML = html; bar._fidsHtml = html; }
+      var want = show ? '' : 'none';
+      if (bar.style.display !== want) bar.style.display = want;
+    }
+    var fixedOn = !!(show && dedicated && bar);
+    if (fixedOn) {
+      var hgt = Math.ceil(bar.getBoundingClientRect().height || bar.offsetHeight || 46);
+      document.documentElement.style.setProperty('--ffn-h', hgt + 'px');
+    }
+    if (document.body.classList.contains('fids-feed-notice-fixed-on') !== fixedOn) {
+      document.body.classList.toggle('fids-feed-notice-fixed-on', fixedOn);
+      // The gate and belt layouts measure themselves: let them re-measure.
+      try { window.dispatchEvent(new Event('resize')); } catch (e3) {}
+    }
+    _fidsFeedStamp(st, tz);
+  } catch (e) {}
+}
+try {
+  if (typeof window !== 'undefined') {
+    window._fidsFeedNoticeUpdate = _fidsFeedNoticeUpdate;
+    window.addEventListener('fids-feed-status', function () { try { _fidsFeedNoticeUpdate(); } catch (e) {} });
+  }
+} catch (e) {}
+
 // v23218 — the flight TIMES follow the chosen language on the BAGGAGE board
 // too
 // Same split _fidsClockForLang uses: English
@@ -30043,7 +30265,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24000';
+var FIDS_BUILD_TAG = 'v24001';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -30718,6 +30940,11 @@ function _fidsRowsAvail() {
       var ca = document.querySelector('.content-area');
       bottom = ca ? ca.getBoundingClientRect().bottom : window.innerHeight;
     }
+    // v23996 — the stale-data strip sits above the ticker: rows stop above it.
+    var fn = document.getElementById('fidsFeedNotice');
+    if (fn && fn.offsetHeight && fn.style.display !== 'none') {
+      bottom = Math.min(bottom, fn.getBoundingClientRect().top);
+    }
     var avail = bottom - top - theadH - 2; // 2px slack — never split a row
     return (avail > 100) ? avail : _fallback;
   } catch (e) { return _fallback; }
@@ -30861,12 +31088,14 @@ function render() {
 
   // ── DEDICATED SCREEN INTERCEPT ──────────────────────────────────
   if (screenType !== 'main') {
+    _fidsFeedNoticeUpdate();   // v23996 — the gate/belt strip, fixed to the bottom edge
     trackChanges([...data.dep, ...data.arr]);
     renderMobile();
     const nextDedicatedKey = getDedicatedRenderKey();
     if (nextDedicatedKey !== dedicatedRenderKey) {
       dedicatedRenderKey = nextDedicatedKey;
       renderDedicatedScreen();
+      _fidsFeedNoticeUpdate();   // v23998 — after the paint: the empty line may now be the one speaking
     } else {
       updateDedicatedTimeOnly();
     }
@@ -30907,6 +31136,7 @@ function render() {
   // wording rather than "no flights in window".
   var _apNow = (document.getElementById('apSel') || {}).value || '';
   setState('empty',   !allFiltered.length && (window._initialFetchDone === true || !_fidsAirportHasFeed(_apNow)));
+  _fidsFeedNoticeUpdate();   // v23996 — the stale strip follows what is on screen
   // Until the first fetch resolves, the empty array is just "still loading",
   // not "no flights". Don't flash "No Flights" prematurely. The loading
   // panel stays visible (set by the caller) until data arrives.
@@ -31512,6 +31742,7 @@ function setState(which, show) {
     document.getElementById('panel'+id.charAt(0).toUpperCase()+id.slice(1)).style.display =
       (id === which && show) ? 'block' : 'none';
   });
+  if (which === 'empty' && !show) { try { document.getElementById('panelEmpty').classList.remove('fids-feed-down'); } catch (e) {} }
   if (which === 'empty' && show) {
     try {
       var el = document.getElementById('panelEmpty');
@@ -31530,7 +31761,8 @@ function setState(which, show) {
         // The fixed half stays markup because it IS markup, ours, constant.
         // The half that carries the code is built as nodes and set as text, so
         // there is no string for a URL to be markup in.
-        if (_fidsAirportHasFeed(ap)) {
+        if (_fidsFeedDownPanel(el, ap)) { /* v23996: a feed that is down is not a quiet hour */ }
+        else if (_fidsAirportHasFeed(ap)) {
           // v23970 — the board's own pair, from the store
           el.innerHTML = BoardStrings.pair('noFlightsWindow', { iata: ap, upper: true })
             + '<div class="sub">' + BoardStrings.pair('noFlightsWindowSub', { iata: ap, upper: true }) + '</div>';
@@ -35894,6 +36126,12 @@ async function fetchLive() {
     window._initialFetchDone = true;
     document.getElementById('lastUp').textContent =
       'LIVE · ' + new Date().toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' }); // i18n-ok: operator
+    // v23996 — …unless the feed is not live: then the toolbar says so too,
+    // and when it is live again its stamp and dot come back (_fidsFeedStamp).
+    try {
+      var _fsIata = String(iata || '').toUpperCase();
+      _fidsFeedStamp(_fidsFeedStatusFor(_fsIata), (AP[_fsIata] || {}).tz);
+    } catch (e) {}
     render();
 
     if (COORDS[iata]) fetchTomorrowWeather(iata).then(() => render());
@@ -37933,7 +38171,7 @@ function renderMobile() {
       return;
     }
     document.getElementById('mobileCards').innerHTML =
-      `<div class="mobile-empty">${searchQuery ? BoardStrings.fmt('noResultsFor', lang, { Q: searchQuery.toUpperCase() }).toLocaleUpperCase(BoardStrings.META[lang].intl) : BoardStrings.bs('noFlightsWindow', lang).toLocaleUpperCase(BoardStrings.META[lang].intl)}</div>`;
+      `<div class="mobile-empty">${searchQuery ? BoardStrings.fmt('noResultsFor', lang, { Q: searchQuery.toUpperCase() }).toLocaleUpperCase(BoardStrings.META[lang].intl) : (_fidsFeedDownLine() || BoardStrings.bs('noFlightsWindow', lang).toLocaleUpperCase(BoardStrings.META[lang].intl))}</div>`;
     return;
   }
 
