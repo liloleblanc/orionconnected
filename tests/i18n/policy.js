@@ -178,6 +178,7 @@ const DATA_TABLES = {
     _CACHED_AIRPORTS: 'data: airport codes'
   },
   'fids-current/js/fids-core.js': {
+    WELCOME_CARD_NO_EMBLEM: 'debug: why each carrier\'s Welcome card shows no emblem; read as yes or no, never rendered',
     AP: 'data: airport names (decision D2)',
     CITY_FR: 'data: French city names (decision D2)',
     FEED_SAYS_GATE_WORDS: 'debug: notes on which feeds publish gate words, never rendered',

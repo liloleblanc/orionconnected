@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2859,
+    "total": 2860,
     "by_category": {
       "ad": 12,
-      "airline": 1456,
+      "airline": 1457,
       "background": 193,
       "brand": 4,
       "hotel": 888,
@@ -5141,6 +5141,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/airlines/canadian/rouge-wordmark-light.svg",
+      "file": "rouge-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "rouge wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/airlines/canadian/rouge.svg",
