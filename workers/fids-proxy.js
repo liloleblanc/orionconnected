@@ -594,6 +594,296 @@ async function handleDeleteAirport(env, payload, origin, code) {
 }
 __name(handleDeleteAirport, "handleDeleteAirport");
 
+// ── ONE FONT FOR MANY AIRPORTS (v23985) ───────────────────────────────────
+// Sets the board font for a list of airports in one request. It writes the
+// SAME `font` field the Customize panel's per-airport PUT writes, so boards
+// and streams take it through the path they already use: the airport config
+// poll in fids-core (refreshAirportConfig, every 10 s), with no restart.
+//
+// What this code guarantees (tests/bulk-font.test.js runs each case):
+//  - ADMIN ONLY, decided HERE. The routes sit below the /api/ gate, and every
+//    handler refuses a non-admin itself. The gate only proves a token is
+//    valid, and every "is this an admin" check in the browser is forgeable.
+//  - MERGE, NEVER REPLACE. Each airport's document is read, its `font`
+//    changed, and written back with every other field as it was. A document
+//    that does not parse is reported and left alone, never overwritten.
+//  - NEWER THAN ANY DEVICE COPY. A board keeps a device-local Customize copy
+//    and lets it win while its savedAt is newer than the cloud's updatedAt
+//    (applyAirportConfigToBoard). Every write here stamps updatedAt with the
+//    server clock, and never below the document's previous stamp + 1, so a
+//    screen holding an older local copy drops it and shows this choice. That
+//    rule covers the whole look, so a theme a device saved while signed out
+//    is superseded at the same moment, exactly as any per-airport cloud save
+//    already does.
+//
+// Font keys are the Customize picker's list (menu.html #cuFontSelect). ""
+// is Default: it clears the airport's font, the same value the picker's
+// Default writes (v23950), and the board falls back to Bricolage Grotesque.
+// A device-uploaded "custom:" face is refused: its file lives in one
+// browser's storage, so no other screen could draw it.
+//
+// UNDO: the airports' previous fonts go into one KV document BEFORE any
+// airport is touched, so a run that dies half way can still be undone. Only
+// the last bulk change is kept. Undo restores an airport only while it still
+// shows the bulk font; one that was changed since is left alone and reported.
+const BULK_FONT_KEYS = new Set([
+  "possibility", "tr-tahoma", "ac-nord-display", "ac-nord-text",
+  "ac-nord-display-regular", "ac-nord-display-medium", "ac-nord-display-bold",
+  "ac-nord-display-heavy", "ac-nord-text-light", "ac-nord-text-regular",
+  "ac-nord-text-italic", "ac-nord-text-medium", "ac-nord-text-bold",
+  "ac-nord-text-heavy", "ginto-nord", "ginto-nord-thin", "ginto-nord-light",
+  "ginto-nord-regular", "ginto-nord-medium", "ginto-nord-bold",
+  "ginto-nord-black", "ginto-nord-ultra", "ginto-nord-hairline", "bricolage",
+  "bricolage-semicond", "bricolage-cond", "cabinet", "cabinet-light",
+  "cabinet-medium", "cabinet-bold", "cabinet-extrabold", "cabinet-black",
+  "abc-areal", "abc-areal-regular", "abc-areal-medium", "abc-areal-bold",
+  "abc-areal-semi-mono", "abc-areal-semi-mono-bold", "abc-areal-mono",
+  "abc-areal-mono-bold", "abc-ginto-rounded", "abc-ginto-rounded-bold",
+  "abc-ginto-rounded-black", "abc-ginto-rounded-ultra",
+  "abc-ginto-rounded-nord", "abc-ginto-rounded-nord-bold",
+  "abc-ginto-rounded-nord-black", "abc-ginto-rounded-nord-ultra",
+  "abc-ginto-rounded-nord-condensed", "abc-gravity", "abc-gravity-bold",
+  "abc-gravity-black", "abc-gravity-ultra", "abc-gravity-compressed",
+  "abc-gravity-condensed", "abc-gravity-expanded",
+  "abc-gravity-extra-condensed", "abc-gravity-wide",
+  "abc-gravity-xx-compressed", "abc-gravity-xxxx-compressed", "airport",
+  "airport-x"
+]);
+const BULK_FONT_MAX = 300;                  // the roster is ~65; this is a typo guard
+const BULK_FONT_UNDO_DOC = "font-bulk-last";
+const BULK_FONT_PARALLEL = 8;               // KV reads/writes in flight at once
+
+// Absent, null and "" all mean Default to a board (_pref + `if (_font)`).
+function _bfFont(v) { return (v === undefined || v === null) ? "" : String(v); }
+__name(_bfFont, "_bfFont");
+
+// The cloud stamp a bulk write leaves: the server clock, and never at or
+// below the stamp already there, so the board's "did updatedAt move" check
+// always sees it.
+function _bfStamp(prev, now) { return Math.max(now, (+prev || 0) + 1); }
+__name(_bfStamp, "_bfStamp");
+
+async function _bfEach(items, fn) {
+  const out = [];
+  for (let i = 0; i < items.length; i += BULK_FONT_PARALLEL) {
+    const part = await Promise.all(items.slice(i, i + BULK_FONT_PARALLEL).map(fn));
+    for (const r of part) out.push(r);
+  }
+  return out;
+}
+__name(_bfEach, "_bfEach");
+
+// One airport document, read for a merge. `error` means: do not write it.
+async function _bfReadAirport(env, code) {
+  let raw;
+  try { raw = await env.FIDS_USERS.get(`airport:${code}`); }
+  catch (e) { return { code, error: "Read failed: " + (e && e.message || e) }; }
+  if (!raw) return { code, cfg: {}, existed: false };
+  try {
+    const cfg = JSON.parse(raw);
+    if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) {
+      return { code, error: "Config is not an object — left alone" };
+    }
+    return { code, cfg, existed: true };
+  } catch (e) {
+    return { code, error: "Config unreadable — left alone" };
+  }
+}
+__name(_bfReadAirport, "_bfReadAirport");
+
+async function _bfReadUndo(env) {
+  const raw = await env.FIDS_USERS.get(BULK_FONT_UNDO_DOC);
+  if (!raw) return { doc: null };
+  try {
+    const doc = JSON.parse(raw);
+    if (!doc || typeof doc !== "object" || !Array.isArray(doc.changes)) return { corrupt: true };
+    return { doc };
+  } catch (e) { return { corrupt: true }; }
+}
+__name(_bfReadUndo, "_bfReadUndo");
+
+function _bfUndoSummary(doc) {
+  if (!doc) return null;
+  return {
+    id: doc.id, at: doc.at, by: doc.by, font: _bfFont(doc.font),
+    count: doc.changes.length,
+    changes: doc.changes.map((c) => ({ code: c.code, prev: _bfFont(c.prev) })),
+    undone: !!doc.undone, undoneAt: doc.undoneAt || null, undoneBy: doc.undoneBy || null
+  };
+}
+__name(_bfUndoSummary, "_bfUndoSummary");
+
+// ADMIN. Every configured airport's current font, and the last bulk change.
+async function handleGetBulkFont(env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const names = [];
+  let cursor;
+  do {
+    const page = await env.FIDS_USERS.list(cursor ? { prefix: "airport:", cursor } : { prefix: "airport:" });
+    for (const k of page.keys) names.push(k.name);
+    cursor = page.list_complete === false ? page.cursor : null;
+  } while (cursor);
+  const airports = {};
+  const rows = await _bfEach(names, (name) => _bfReadAirport(env, name.slice("airport:".length)));
+  for (const r of rows) {
+    airports[r.code] = r.error
+      ? { error: r.error }
+      : { font: _bfFont(r.cfg.font), updatedAt: r.cfg.updatedAt || null };
+  }
+  const u = await _bfReadUndo(env);
+  return jsonResponse({
+    v: 1,
+    airports,
+    fonts: Array.from(BULK_FONT_KEYS),
+    last: u.corrupt ? { corrupt: true } : _bfUndoSummary(u.doc)
+  }, 200, origin);
+}
+__name(handleGetBulkFont, "handleGetBulkFont");
+
+// ADMIN. { font: "<key>" | "", airports: ["YQM", …] }
+async function handlePostBulkFont(request, env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") return jsonResponse({ error: "Body must be an object" }, 400, origin);
+  if (typeof body.font !== "string") {
+    return jsonResponse({ error: 'font must be a string ("" for Default)' }, 400, origin);
+  }
+  const font = body.font.trim();
+  if (font.indexOf("custom:") === 0) {
+    return jsonResponse({ error: "A custom font lives on one device and cannot be applied to other airports" }, 400, origin);
+  }
+  if (font !== "" && !BULK_FONT_KEYS.has(font)) {
+    return jsonResponse({ error: "Unknown font", font }, 400, origin);
+  }
+  if (!Array.isArray(body.airports) || !body.airports.length) {
+    return jsonResponse({ error: "airports must be a non-empty array of IATA codes" }, 400, origin);
+  }
+  if (body.airports.length > BULK_FONT_MAX) {
+    return jsonResponse({ error: `At most ${BULK_FONT_MAX} airports per change` }, 400, origin);
+  }
+  // Every code is checked before anything is written: a typo in the list
+  // refuses the whole change rather than applying the part that parsed.
+  const seen = Object.create(null);
+  const codes = [];
+  const bad = [];
+  for (const raw of body.airports) {
+    const c = String(raw == null ? "" : raw).trim().toUpperCase();
+    if (!/^[A-Z0-9]{3,4}$/.test(c)) { bad.push(String(raw)); continue; }
+    if (seen[c]) continue;
+    seen[c] = 1;
+    codes.push(c);
+  }
+  if (bad.length) return jsonResponse({ error: "Not airport codes — nothing was changed", bad }, 400, origin);
+
+  const reads = await _bfEach(codes, (code) => _bfReadAirport(env, code));
+  const writable = reads.filter((r) => !r.error);
+  const now = Date.now();
+  const id = now.toString(36) + "-" + crypto.randomUUID().slice(0, 8);
+  const by = payload.sub || "admin";
+  if (writable.length) {
+    const undo = {
+      v: 1, id, at: now, by, font, undone: false,
+      changes: writable.map((r) => {
+        const had = Object.prototype.hasOwnProperty.call(r.cfg, "font");
+        return { code: r.code, had, prev: had ? r.cfg.font : null, existed: r.existed };
+      })
+    };
+    // Written first: a change that cannot be undone is not started.
+    try { await env.FIDS_USERS.put(BULK_FONT_UNDO_DOC, JSON.stringify(undo)); }
+    catch (e) {
+      return jsonResponse({ error: "Could not record the undo — nothing was changed" }, 500, origin);
+    }
+  }
+  const results = await _bfEach(reads, async (r) => {
+    if (r.error) return { code: r.code, ok: false, error: r.error };
+    const cfg = r.cfg;
+    const from = _bfFont(cfg.font);
+    cfg.font = font;
+    cfg.updatedAt = _bfStamp(cfg.updatedAt, now);
+    cfg.updatedBy = by;
+    try {
+      await env.FIDS_USERS.put(`airport:${r.code}`, JSON.stringify(cfg));
+      return { code: r.code, ok: true, from, to: font, created: !r.existed, updatedAt: cfg.updatedAt };
+    } catch (e) {
+      return { code: r.code, ok: false, error: "Write failed: " + (e && e.message || e) };
+    }
+  });
+  const failed = results.filter((x) => !x.ok).length;
+  return jsonResponse({
+    success: failed === 0,
+    font,
+    changed: results.length - failed,
+    failed,
+    results,
+    undo: writable.length ? { id, at: now, count: writable.length } : null
+  }, 200, origin);
+}
+__name(handlePostBulkFont, "handlePostBulkFont");
+
+// ADMIN. { id } — the id of the change the operator is looking at, so an
+// undo never lands on a newer change someone else made in the meantime.
+async function handleUndoBulkFont(request, env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const body = await request.json().catch(() => ({})) || {};
+  const u = await _bfReadUndo(env);
+  if (u.corrupt) return jsonResponse({ error: "The undo record is unreadable — nothing was changed" }, 500, origin);
+  const doc = u.doc;
+  if (!doc) return jsonResponse({ error: "There is no bulk font change to undo" }, 404, origin);
+  if (body.id && body.id !== doc.id) {
+    return jsonResponse({ error: "A newer bulk change was made — reload before undoing", current: doc.id }, 409, origin);
+  }
+  if (doc.undone) return jsonResponse({ error: "That change was already undone" }, 409, origin);
+  const bulkFont = _bfFont(doc.font);
+  const now = Date.now();
+  const by = payload.sub || "admin";
+  const results = await _bfEach(doc.changes, async (ch) => {
+    const code = String(ch && ch.code || "").toUpperCase();
+    if (!/^[A-Z0-9]{3,4}$/.test(code)) return { code, ok: false, status: "failed", error: "Bad code in the undo record" };
+    const r = await _bfReadAirport(env, code);
+    if (r.error) return { code, ok: false, status: "failed", error: r.error };
+    const cur = _bfFont(r.cfg.font);
+    const prev = _bfFont(ch.prev);
+    if (cur === prev) return { code, ok: true, status: "unchanged", font: cur };
+    if (cur !== bulkFont) {
+      // Someone chose another font for this airport after the bulk change.
+      // Their choice is newer than both, so it stays.
+      return { code, ok: true, status: "kept", font: cur };
+    }
+    // Restored exactly: a font field that did not exist is removed again.
+    // The document itself stays even if the bulk change created it — a board
+    // keeps its cached config on a 404, so deleting it would leave every
+    // running screen on the bulk font.
+    if (ch.had) r.cfg.font = ch.prev; else delete r.cfg.font;
+    r.cfg.updatedAt = _bfStamp(r.cfg.updatedAt, now);
+    r.cfg.updatedBy = by;
+    try {
+      await env.FIDS_USERS.put(`airport:${code}`, JSON.stringify(r.cfg));
+      return { code, ok: true, status: "restored", from: cur, to: prev };
+    } catch (e) {
+      return { code, ok: false, status: "failed", error: "Write failed: " + (e && e.message || e) };
+    }
+  });
+  const failed = results.filter((x) => !x.ok).length;
+  // Only a complete undo closes the record; after a partial one the button
+  // stays, and running it again restores the rest (the done ones read back
+  // as unchanged).
+  if (!failed) {
+    doc.undone = true;
+    doc.undoneAt = now;
+    doc.undoneBy = by;
+    try { await env.FIDS_USERS.put(BULK_FONT_UNDO_DOC, JSON.stringify(doc)); } catch (e) {}
+  }
+  return jsonResponse({
+    success: failed === 0,
+    restored: results.filter((x) => x.status === "restored").length,
+    kept: results.filter((x) => x.status === "kept").length,
+    unchanged: results.filter((x) => x.status === "unchanged").length,
+    failed,
+    results
+  }, 200, origin);
+}
+__name(handleUndoBulkFont, "handleUndoBulkFont");
+
 // ── Media config: airline videos, ads, photos. Single global doc keyed by
 // "media-config". Schema: { airlines: {AC: {videos:[], adImages:[]}, ...},
 // global: {...}, updatedAt, updatedBy }. Public read (no auth), admin write.
@@ -9541,6 +9831,11 @@ var fids_proxy_default = {
       const apMatch = path.match(/^\/api\/airport-config\/([A-Za-z0-9]+)$/);
       if (apMatch && request.method === "PUT") return handlePutAirport(request, env, payload, origin, apMatch[1]);
       if (apMatch && request.method === "DELETE") return handleDeleteAirport(env, payload, origin, apMatch[1]);
+      // ── One font for many airports (v23985) — admin only, enforced in each
+      // handler; see handlePostBulkFont.
+      if (path === "/api/bulk-font" && request.method === "GET") return handleGetBulkFont(env, payload, origin);
+      if (path === "/api/bulk-font" && request.method === "POST") return handlePostBulkFont(request, env, payload, origin);
+      if (path === "/api/bulk-font/undo" && request.method === "POST") return handleUndoBulkFont(request, env, payload, origin);
 
       const apLogoMatch = path.match(/^\/api\/airport-config\/([A-Za-z0-9]+)\/logo$/);
       if (apLogoMatch && request.method === "POST") return handleUploadAirportLogo(request, env, payload, origin, apLogoMatch[1]);
@@ -11640,5 +11935,6 @@ export {
   farArrAnswer,
   acTrackAddPoint,
   acTrackAppend,
-  _authorityRosterHas
+  _authorityRosterHas,
+  BULK_FONT_KEYS as _bulkFontKeys
 };

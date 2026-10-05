@@ -321,6 +321,11 @@
         <button class="sm-btn sm-btn-secondary sm-btn-sm" onclick="cuOpenFontUpload()" style="flex:1;">+ Upload custom font…</button>
         <button class="sm-btn sm-btn-secondary sm-btn-sm" id="cuFontDeleteBtn" onclick="cuDeleteCurrentFont()" style="display:none;" title="Delete the currently selected custom font">Delete</button>
       </div>
+      <!-- v23985 — the same font, many airports at once (Airport tab). Shown
+           only while the Airport tab is (menu.js, _bfSyncLink). -->
+      <div id="cuBulkFontLink" style="display:none;margin:-6px 0 14px;font-size:12px;">
+        <a href="#" onclick="bfOpenFromCustomize(event);return false;" style="color:#f0b429;text-decoration:none;">Apply a font to many airports… · Une police pour plusieurs aéroports…</a>
+      </div>
       <div id="cuFontUploadPanel" style="display:none;background:var(--console-surface);border:1px solid var(--console-border);padding:12px;border-radius:8px;margin-bottom:14px;">
         <div class="sm-label">Font file</div>
         <input type="file" id="cuFontFile" accept=".woff,.woff2,.ttf,.otf" style="margin-bottom:10px;font-size:12px;color:var(--console-text-2);">
@@ -630,6 +635,47 @@
         </div>
         <div id="scStatus" style="font-size:11px;color:#9ca3af;margin-top:6px;"></div>
         <div id="scList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+      <!-- ── ONE FONT FOR MANY AIRPORTS (v23985) ─────────────────────────
+           Sets the board font at every live airport, at a group of them, or
+           at a hand-picked list, through the same airport config field the
+           Customize font picker writes. Boards and streams take it on their
+           next config check.
+
+           Same posture as the dry dock and the screens above: this panel is
+           not what enforces admin. The worker refuses a non-admin with a 403,
+           and the panel reports that refusal rather than showing a change
+           that did not happen. -->
+      <div class="sm-label" id="bfSection">Font for many airports <span style="font-weight:400;opacity:.75;">· Police pour plusieurs aéroports</span></div>
+      <div class="sm-field" id="bfPanel" style="margin-bottom:14px;">
+        <div class="bf-sub" style="margin-bottom:10px;">
+          Sets the board font at many airports at once. Every screen and stream at those airports switches on its next config check (every 10&nbsp;s), usually within a minute.
+        </div>
+        <div class="bf-step">1 · Font <span>· Police</span></div>
+        <select class="sm-select" id="bfFont" onchange="bfFormChanged()" style="margin-bottom:12px;"></select>
+        <div class="bf-step">2 · Airports <span>· Aéroports</span></div>
+        <div class="sm-pills" id="bfModePills" style="margin-bottom:8px;">
+          <button class="sm-pill active" id="bfMode_all" onclick="bfSetMode('all')">All live airports</button>
+          <button class="sm-pill" id="bfMode_group" onclick="bfSetMode('group')">A group</button>
+          <button class="sm-pill" id="bfMode_custom" onclick="bfSetMode('custom')">Pick airports</button>
+        </div>
+        <div id="bfGroupWrap" style="display:none;margin-bottom:8px;">
+          <select class="sm-select" id="bfGroup" onchange="bfFormChanged()" style="margin:0;"></select>
+        </div>
+        <div id="bfCustomWrap" style="display:none;margin-bottom:8px;">
+          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+            <select class="sm-select" id="bfCustomAdd" onchange="bfCustomAddGroup(this.value)" style="margin:0;flex:1;min-width:150px;"></select>
+            <button class="sm-btn bf-btn2 sm-btn-sm" onclick="bfCustomAll(false)">Clear · Effacer</button>
+          </div>
+          <div id="bfCustomList" class="bf-grid"></div>
+        </div>
+        <div id="bfTargetNote" class="bf-sub" style="margin-bottom:10px;"></div>
+        <button class="sm-btn sm-btn-primary sm-btn-sm" id="bfPreviewBtn" onclick="bfPreview()">Preview the change · Aperçu</button>
+        <div id="bfPreviewBox" class="bf-box" style="display:none;"></div>
+        <div id="bfResultBox" class="bf-box" style="display:none;"></div>
+        <div id="bfStatus" class="bf-sub" style="margin-top:8px;"></div>
+        <div id="bfUndoBox" class="bf-box" style="display:none;"></div>
       </div>
 
       <div class="sm-label">Current Airport</div>

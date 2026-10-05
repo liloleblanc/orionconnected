@@ -28346,7 +28346,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23976';
+var FIDS_BUILD_TAG = 'v23985';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -34558,10 +34558,24 @@ function applyAirportConfigToBoard(iata) {
     // No board-pref font — but NEVER nuke a font the user picked via the
     // FONT dropdown (fids_font_choice). This remove ran right after page
     // load and was wiping the restored font until the user re-picked one.
+    //
+    // v23985 — AN AIRPORT FONT THAT WAS CLEARED LEAVES THE RUNNING BOARD.
+    // This branch is also where a board lands when its airport's font is
+    // cleared (the Customize picker's Default, or a bulk change to Default)
+    // while the board is showing it. It used to restore the manual pick only
+    // when no override existed, and changeFont() saves a fids_font_choice on
+    // every boot, so the old airport face stayed in #fids-font-override (and
+    // in data-fids-font) until the board was reloaded. Measured in a local
+    // harness: the cleared config arrived on the 10-second poll, the
+    // device's own copy was shed, and the board still drew AC Nord. Now the
+    // airport key is dropped and the fall-through runs: the control-bar pick,
+    // else the default. restoreFontChoice() is idempotent for a board whose
+    // pick is already on screen.
+    delete document.body.dataset.fidsFont;
     var _manualFont = null;
     try { _manualFont = localStorage.getItem('fids_font_choice'); } catch (e) {}
     if (_manualFont) {
-      if (typeof restoreFontChoice === 'function' && !document.getElementById('fids-font-override')) restoreFontChoice();
+      if (typeof restoreFontChoice === 'function') restoreFontChoice();
     } else {
       document.body.style.removeProperty('--font-primary');
       delete document.body.dataset.fidsFont;
