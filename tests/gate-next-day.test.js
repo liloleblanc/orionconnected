@@ -84,7 +84,9 @@ test('the three rail times each carry their own day line, inside the value the f
   assert.match(CORE, /'<div class="v2-fi-value ' \+ \(valCls \|\| ''\) \+ '">' \+ val \+ \(under \|\| ''\) \+ '<\/div>'/);
   assert.match(CORE, /_shelf\(_badge\(_svgBoarding\)[^\n]*_gateDayLineHtml\(vars && vars\.dayBoard\)\)/);
   assert.match(CORE, /_shelf\(_badge\(_svgDepart\)[^\n]*_gateDayLineHtml\(vars && vars\.dayDepart\)\)/);
-  assert.match(CORE, /_shelf\(_badge\(_svgArrive\)[^\n]*_gateDayLineHtml\(vars && vars\.dayArrive\)\)/);
+  // v23946 — the Arrival's day line is followed by the destination's terminal
+  // and arrival gate (tests/gate-arrival-from-destination.test.js).
+  assert.match(CORE, /_shelf\(_badge\(_svgArrive\)[^\n]*_gateDayLineHtml\(vars && vars\.dayArrive\) \+ \(\(vars && vars\.arrPlace\) \|\| ''\)\)/);
   const uxg = fnSource('uxgGateHtml');
   assert.match(uxg, /dayBoard: _dayBoard, dayDepart: _dayDepart, dayArrive: _dayArrive/);
   // Each is the time AS PRINTED: the boarding time, the airport's revised
@@ -92,8 +94,8 @@ test('the three rail times each carry their own day line, inside the value the f
   assert.match(uxg, /var _dayBoard = _gateDayWords\(\(typeof boardTs === 'number'\) \? boardTs : 0, tz, _frF\);/);
   assert.match(uxg, /var _dayDepart = _gateDayWords\(\(String\(depTimeHtml\)\.indexOf\('g8-r2-revised'\) !== -1 && currentFlight\._revTs\) \|\| currentFlight\._sortTs, tz, _frF\);/);
   assert.match(uxg, /var _dayArrive = _gateDayWords\(_arrShownTs, ctx\.arrTz \|\| tz, _frF, tz\);/);
-  // The printed arrival is moved by a delay once, in renderDedicatedScreen,
-  // and arrInstant is moved with it there (tests/gate-arrival-moved-once.test.js).
+  // The printed arrival is the destination airport's own time, worked out in
+  // renderDedicatedScreen with its instant (tests/gate-arrival-from-destination.test.js).
   assert.match(uxg, /var _arrShownTs = Number\(ctx\.arrInstant\) \|\| 0;/);
   assert.doesNotMatch(uxg, /_arrShownTs\s*\+=/, 'the arrival\'s day is the printed time\'s, moved once');
   // The arrival's instant comes from where its time is worked out, on both

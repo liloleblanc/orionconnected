@@ -2579,6 +2579,344 @@ function opevAttachOwn(row) {
 }
 __name(opevAttachOwn, "opevAttachOwn");
 
+// ── THE ARRIVAL THE DESTINATION AIRPORT PUBLISHES (v23946) ─────────────────
+// The gate's Arrival card printed a distance guess (great-circle distance at
+// 850 km/h plus 25 minutes). On 2 October it was early on every Moncton
+// departure checked, by 19 to 42 minutes: AC1983 read 6:15 where Pearson
+// said 6:47, PD2382 5:33 PM where Montréal-Métropolitain said 6:15 PM. A time
+// no airport and no airline had published.
+//
+// Our departure is a row in the destination's own ARRIVALS list, and the
+// worker already reads that list for most of the places Moncton flies to.
+// /fararr answers with that row: the destination's scheduled time, its revised
+// time, and the terminal and arrival gate it publishes. No new upstream: each
+// far end is the same feed its own board reads, edge-cached.
+//
+// Every far end is reduced to one compact row per flight number:
+//   n   the flight number, normalised (farArrNorm)
+//   o   the origin the far end names (null when it names none)
+//   s   the scheduled arrival, epoch ms;  sl  its wall clock there, "YYYY-MM-DD HH:MM"
+//   r   the revised arrival, epoch ms;    rl  its wall clock (both null when none)
+//   t   the terminal, g  the arrival gate (null when not published, or when
+//       the gate is one this worker derived: Billy Bishop and Saint-Hubert
+//       publish none, and synthGateFor's stands are never shown as theirs)
+//   st  the far end's status, in the board's words
+const FARARR_NO_RE = /^([A-Z]{2}|[A-Z]\d|\d[A-Z])0*(\d{1,4}[A-Z]?)$/;
+// "AC0659" and "AC659" are one flight; a code that is not an IATA flight
+// number is kept as written, and matches nothing.
+function farArrNorm(no) {
+  const s = String(no || "").toUpperCase().replace(/\s+/g, "");
+  const m = s.match(FARARR_NO_RE);
+  return m ? m[1] + m[2] : s;
+}
+__name(farArrNorm, "farArrNorm");
+// The wall clock a feed printed, "YYYY-MM-DD HH:MM", from a local string with
+// or without its offset. Never re-derived through a time zone: it is the
+// clock the destination airport itself shows.
+function farArrWall(s) {
+  const m = String(s || "").match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/);
+  return m ? `${m[1]} ${m[2]}:${m[3]}` : null;
+}
+__name(farArrWall, "farArrWall");
+// An ADB-shape time object ({local, utc}) as epoch ms.
+function farArrTsOf(t) {
+  if (!t) return NaN;
+  const u = t.utc || t.local;
+  if (!u) return NaN;
+  return Date.parse(String(u).trim().replace(" ", "T"));
+}
+__name(farArrTsOf, "farArrTsOf");
+// "T1" is Terminal 1. A terminal that is only the first letter of the gate is
+// a pier, not a terminal (Calgary prints terminal "A" beside gate "A12"), so
+// it is left out rather than printed twice.
+function farArrTerminal(term, gate) {
+  let t = String(term || "").trim().toUpperCase();
+  if (!t) return null;
+  if (/^T\d+$/.test(t)) t = t.slice(1);
+  if (/^[A-Z]$/.test(t) && String(gate || "").trim().toUpperCase().charAt(0) === t) return null;
+  return t;
+}
+__name(farArrTerminal, "farArrTerminal");
+function farArrRow(n, o, sched, revised, term, gate, st) {
+  const s = sched && sched.ts;
+  const sl = sched && sched.wall;
+  if (!n || !Number.isFinite(s) || !sl) return null;
+  const r = revised && Number.isFinite(revised.ts) && revised.wall ? revised : null;
+  const g = String(gate || "").trim() || null;
+  return {
+    n: farArrNorm(n), o: String(o || "").trim().toUpperCase() || null,
+    s, sl, r: r ? r.ts : null, rl: r ? r.wall : null,
+    t: farArrTerminal(term, g), g, st: st || "scheduled"
+  };
+}
+__name(farArrRow, "farArrRow");
+// The registry feeds (AUTHORITY_HANDLERS) and Halifax already come back in the
+// ADB shape: the far end's own side is `arrival`, our side is `departure`.
+function farArrFromAdb(rows) {
+  const out = [];
+  for (const fl of (Array.isArray(rows) ? rows : [])) {
+    const a = fl && fl.arrival;
+    if (!a || !fl.number) continue;
+    const sT = a.scheduledTime || {};
+    const sTs = Number(fl._authTs || fl._yhzTs) || farArrTsOf(sT);
+    const rT = a.revisedTime || null;
+    const e = farArrRow(fl.number, fl.departure && fl.departure.airport && fl.departure.airport.iata,
+      { ts: sTs, wall: farArrWall(sT.local) },
+      rT ? { ts: farArrTsOf(rT), wall: farArrWall(rT.local) } : null,
+      a.terminal, a.gateSynth ? null : a.gate, fl.status);
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrFromAdb, "farArrFromAdb");
+// Toronto Pearson: ISO times with their offset; codeshares ride in ids[] on the
+// operating row, so each marketing number gets the operating row's times.
+const FARARR_YYZ_STATUS = { CAN: "cancelled", DIV: "diverted", DEL: "delayed", ARR: "arrived", LDD: "arrived", LND: "arrived", BAG: "arrived", ONB: "arrived" };
+function farArrYyzRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || String(f.type || "").toUpperCase() !== "ARR" || !f.schTime) continue;
+    const sched = { ts: Date.parse(f.schTime), wall: farArrWall(f.schTime) };
+    const revised = (f.latestTm && f.latestTm !== f.schTime) ? { ts: Date.parse(f.latestTm), wall: farArrWall(f.latestTm) } : null;
+    const routes = Array.isArray(f.routes) ? f.routes : [];
+    const origin = routes[0] && routes[0].code;
+    const st = FARARR_YYZ_STATUS[String(f.status || "").toUpperCase()] || "scheduled";
+    const nums = [f.id2 || f.id].concat((Array.isArray(f.ids) ? f.ids : []).map((x) => x && x.id2));
+    for (const n of nums) {
+      const e = n && farArrRow(n, origin, sched, revised, f.term, f.gate, st);
+      if (e) out.push(e);
+    }
+  }
+  return out;
+}
+__name(farArrYyzRows, "farArrYyzRows");
+function farArrWordStatus(s) {
+  const t = String(s || "").trim().toLowerCase();
+  if (t.includes("cancel")) return "cancelled";
+  if (t.includes("divert")) return "diverted";
+  if (t.includes("delay") || t.includes("late")) return "delayed";
+  if (t.includes("early")) return "early";
+  if (t.includes("arriv") || t.includes("land")) return "arrived";
+  return "scheduled";
+}
+__name(farArrWordStatus, "farArrWordStatus");
+// Montréal-Trudeau: Montréal wall clocks with no offset. The revised clock is
+// an HH:MM on the scheduled date (actual block, then the estimate the feed
+// spells "Formated", then its updated time); settleRevised moves it across
+// midnight when it lands more than 12 h from the schedule.
+function farArrYulRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || String(f.ArrivalOrDeparture || "").toUpperCase() !== "A" || !f.ScheduledTime) continue;
+    const so = localIsoObj("America/Toronto", f.ScheduledTime);
+    if (!so) continue;
+    let revised = null;
+    const revHm = String(f.FormattedActualBlockTime || f.FormatedEstimatedBlockTime || f.FormattedUpdatedTime || "").trim();
+    const schHm = String(f.FormattedScheduledTime || "").trim();
+    const hm = revHm.match(/^(\d{1,2}):(\d{2})$/);
+    if (hm && revHm !== schHm) {
+      const d = String(f.ScheduledTime).slice(0, 10).split("-").map(Number);
+      const ro = settleRevised(localTimeObjIn("America/Toronto", d[0], d[1], d[2], Number(hm[1]), Number(hm[2])), so, "America/Toronto");
+      if (ro) revised = { ts: ro.ts, wall: farArrWall(ro.local) };
+    }
+    const e = farArrRow(f.PublicDisplayFlightNumber, f.AirportIataCode,
+      { ts: so.ts, wall: farArrWall(so.local) }, revised, null, f.TerminalGate,
+      farArrWordStatus(f.OperationalStatusDescription));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYulRows, "farArrYulRows");
+// Montréal-Métropolitain: the terminal's own JSON. mostConfidentTime is its
+// pick of actual over estimate over schedule. MET publishes no gate; the stand
+// /flights/yhu carries is derived here (synthGateFor) and is never shown.
+function farArrYhuRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    const id = f && f.flightId, st = f && f.flightState;
+    if (!id || !st || String(id.flightKind || "").toLowerCase() !== "arrival" || !st.scheduledTime) continue;
+    const props = st.properties || {};
+    const so = localIsoObj("America/Toronto", st.scheduledTime);
+    if (!so) continue;
+    const mct = props.mostConfidentTime || props.actualTime || props.estimatedTime || null;
+    const ro = (mct && mct !== st.scheduledTime) ? localIsoObj("America/Toronto", mct) : null;
+    const stops = Array.isArray((st.route || {}).stops) ? st.route.stops : [];
+    const n = String((id.airlineDesignator || {}).iata || "") + String(id.flightNumber == null ? "" : id.flightNumber);
+    const e = farArrRow(n, stops[0] && stops[0].iata,
+      { ts: so.ts, wall: farArrWall(so.local) }, ro ? { ts: ro.ts, wall: farArrWall(ro.local) } : null,
+      null, f.gateSynth ? null : f.gate, farArrWordStatus(props.status || props.remarkDescription));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYhuRows, "farArrYhuRows");
+// Billy Bishop: the page's rows, a Toronto date and a scheduled HH:MM, city
+// names and no codes, no revised clock, no gates (the stand /flights/ytz
+// carries is derived and never shown). A row whose number disagrees with the
+// operator's logo is a codeshare mirror, dropped as the board drops it.
+function farArrYtzRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || String(f.kind || "") !== "arr" || !f.date) continue;
+    const hm = String(f.time || "").match(/^(\d{1,2}):(\d{2})$/);
+    const n = String(f.flightNo || "").trim().toUpperCase();
+    const al = (n.match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d/) || [])[1] || "";
+    if (!hm || !n || (f.operatorLogo && al && f.operatorLogo !== al)) continue;
+    const d = String(f.date).split("-").map(Number);
+    const so = localTimeObjIn("America/Toronto", d[0], d[1], d[2], Number(hm[1]), Number(hm[2]));
+    const e = farArrRow(n, null, { ts: so.ts, wall: farArrWall(so.local) }, null, null,
+      f.gateSynth ? null : f.gate, farArrWordStatus(f.status));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYtzRows, "farArrYtzRows");
+// cyqm.ca's list for one direction ("arrivals" | "departures"), edge-cached
+// 60 s: the one fetch /yqm/flights/* and /fararr share, so Moncton is asked
+// once a minute however many screens and far ends read it. Their firewall
+// answers a plain client differently from a browser, so it asks the way a
+// browser asks. null when cyqm.ca answered nothing.
+function yqmCyqmText(seg) {
+  return fetchAuthorityText(
+    "yqm/" + seg,
+    "https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/" + seg,
+    null,
+    60,
+    { headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Language": "en-CA,en;q=0.9",
+      "Referer": "https://www.cyqm.ca/"
+    } }
+  );
+}
+__name(yqmCyqmText, "yqmCyqmText");
+// Moncton: cyqm.ca's own list, the one Moncton's boards read through
+// /yqm/flights/arrivals (yqmCyqmText, the same fetch and edge cache).
+// localTimestamp is Moncton's WALL CLOCK written as a UTC epoch
+// (feed-router.js yqmTimeObj), so its UTC parts are the clock Moncton prints.
+// The revised clock is actualTime ("5:07 PM") when it differs from
+// scheduledTime, moved across midnight the way the board moves it. The gate
+// is Moncton's real arrival gate (Air Canada arrives at 4, leaves from 1).
+function farArrYqmRows(list) {
+  const out = [];
+  const tz = "America/Moncton";
+  const toMin = (t) => {
+    const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!m) return null;
+    let h = Number(m[1]) % 12;
+    if (String(m[3] || "").toUpperCase() === "PM") h += 12;
+    else if (!m[3]) h = Number(m[1]);
+    return h * 60 + Number(m[2]);
+  };
+  const wallAt = (epochS) => {
+    const d = new Date(epochS * 1000);
+    if (isNaN(d.getTime())) return null;
+    return localTimeObjIn(tz, d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes());
+  };
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || typeof f.localTimestamp !== "number") continue;
+    const so = wallAt(f.localTimestamp);
+    if (!so) continue;
+    let revised = null;
+    const sm = toMin(f.scheduledTime), am = toMin(f.actualTime);
+    if (sm != null && am != null && am !== sm) {
+      let delta = am - sm;
+      if (delta < -720) delta += 1440;
+      else if (delta > 720) delta -= 1440;
+      const ro = wallAt(f.localTimestamp + delta * 60);
+      if (ro) revised = { ts: ro.ts, wall: farArrWall(ro.local) };
+    }
+    const n = String(f.flightId || (String(f.airlineCode || "") + String(f.flightNumber || ""))).trim();
+    const e = farArrRow(n, f.airportCode, { ts: so.ts, wall: farArrWall(so.local) }, revised,
+      f.terminal, f.gate, farArrWordStatus(f.status));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYqmRows, "farArrYqmRows");
+// The airports whose arrivals /fararr can read: every registry feed, Halifax,
+// Moncton, and the four that have their own /flights/ routes.
+const FARARR_OWN_ROUTES = ["yyz", "yul", "yhu", "ytz"];
+function farArrHas(code) {
+  const k = String(code || "").toLowerCase();
+  return k === "yhz" || k === "yqm" || FARARR_OWN_ROUTES.indexOf(k) !== -1 || Object.prototype.hasOwnProperty.call(AUTHORITY_HANDLERS, k);
+}
+__name(farArrHas, "farArrHas");
+// One far end's arrivals as compact rows, or null when its feed answered
+// nothing: a failed fetch, a challenge page, an error from its handler, or an
+// empty list. No airport we read publishes an empty arrivals list, so an
+// empty one is the far end being down, never "no such flight"; /fararr then
+// says so (unavailable) and the gate keeps the time it last printed.
+// The four own routes are read through their own handlers (same fetch, same
+// edge cache); Montréal-Trudeau without the per-flight belt calls its arrivals
+// board makes, which an arrival time does not need.
+async function farArrList(code, env) {
+  const k = String(code || "").toLowerCase();
+  const own = async (fn, ...rest) => {
+    const r = await fn(null, env, null, "arr", ...rest);
+    if (!r || !r.ok) return null;
+    const j = await r.json().catch(() => null);
+    return (j && Array.isArray(j.list)) ? j.list : null;
+  };
+  const some = (rows) => (Array.isArray(rows) && rows.length) ? rows : null;
+  if (k === "yyz") return some(farArrYyzRows(await own(handleYyzFids)));
+  if (k === "yul") return some(farArrYulRows(await own(handleYulFids, { noBelts: true })));
+  if (k === "yhu") return some(farArrYhuRows(await own(handleYhuFids)));
+  if (k === "ytz") return some(farArrYtzRows(await own(handleYtzFids)));
+  if (k === "yhz") {
+    const html = await yhzFetchPage("arr");
+    return html ? some(farArrFromAdb(yhzParseBoard(html, false, Date.now()))) : null;
+  }
+  if (k === "yqm") {
+    const txt = await yqmCyqmText("arrivals");
+    let rows = null;
+    try { rows = txt ? JSON.parse(txt) : null; } catch (e) { rows = null; }
+    return some(farArrYqmRows(rows));
+  }
+  const h = AUTHORITY_HANDLERS[k];
+  if (!h) return null;
+  return some(farArrFromAdb(await h.list("arr", env)));
+}
+__name(farArrList, "farArrList");
+// The far end's row for our departure: the same number, from our airport (when
+// the far end names an origin), and the FIRST arrival at least 20 minutes after
+// our scheduled departure and within 20 hours of it. So a daily flight takes
+// today's instance, never yesterday's or tomorrow's, and no arrival that lands
+// before we take off can be ours. Montréal-Trudeau lists some flights twice
+// (an ACA and a JZA row); the row that publishes more wins a tie.
+function farArrPick(index, flightNo, fromIata, depTs) {
+  const f = farArrNorm(flightNo);
+  const from = String(fromIata || "").toUpperCase();
+  const dep = Number(depTs) || 0;
+  if (!dep) return null;
+  const score = (e) => (e.r ? 4 : 0) + (e.g ? 2 : 0) + (e.t ? 1 : 0);
+  let best = null;
+  for (const e of (Array.isArray(index) ? index : [])) {
+    if (!e || e.n !== f) continue;
+    if (from && e.o && e.o !== from) continue;
+    if (!(e.s >= dep + 20 * 60000) || e.s > dep + 20 * 3600000) continue;
+    if (!best || e.s < best.s || (e.s === best.s && score(e) > score(best))) best = e;
+  }
+  return best;
+}
+__name(farArrPick, "farArrPick");
+// The answer /fararr sends for one pick (or none). `unavailable` says the far
+// end's list could not be read this time (farArrList answered null): not "no
+// such flight", so the gate keeps the time it last printed instead of a dash.
+function farArrAnswer(f, to, from, pick, unavailable) {
+  if (!pick) return unavailable ? { f, to, from, found: false, unavailable: true } : { f, to, from, found: false };
+  return {
+    f, to, from, found: true,
+    sched: pick.sl, schedTs: pick.s,
+    rev: pick.rl || null, revTs: pick.r || null,
+    term: pick.t || null, gate: pick.g || null,
+    status: pick.st || "scheduled",
+    cancelled: pick.st === "cancelled"
+  };
+}
+__name(farArrAnswer, "farArrAnswer");
+
 // ── THE TRACK A FLIGHT HAS ACTUALLY FLOWN (v23906) ─────────────────────────
 // The maps drew the "flown" half of the route as a straight great-circle arc
 // from the airport to the aeroplane, which no aeroplane flies: it leaves along
@@ -8401,7 +8739,9 @@ async function yulApexRows(page) {
 __name(yulApexRows, "yulApexRows");
 
 // GET /flights/yul?direction=dep|arr  (or Departure|Arrival)
-async function handleYulFids(request, env, origin, direction) {
+// opts.noBelts skips the per-arrival belt calls below (/fararr reads only the
+// times and gates, so it never needs them).
+async function handleYulFids(request, env, origin, direction, opts) {
   const page = /^arr/i.test(direction || "") ? "arrivals" : "departures";
   try {
     let merged;
@@ -8419,7 +8759,7 @@ async function handleYulFids(request, env, origin, direction) {
     // baggage-hall window is enriched: arrivals scheduled within the last
     // 5h or next 3h (what a carousel screen actually shows), nearest first,
     // capped at 40 to stay under the Workers subrequest budget.
-    if (page === "arrivals" && merged.length) {
+    if (page === "arrivals" && merged.length && !(opts && opts.noBelts)) {
       const now = Date.now();
       const cand = merged
         .map((f) => {
@@ -9715,6 +10055,61 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       return new Response(_acBody, { status: 200, headers: {
         "Content-Type": "application/json", "Cache-Control": `public, max-age=${_acAge}`, "X-Acinfo-Cache": "miss", ...corsHeaders(origin) } });
     }
+    // ── /fararr — THE ARRIVAL THE DESTINATION AIRPORT PUBLISHES (v23946) ─────
+    // GET /fararr?f=AC1983&to=YYZ&from=YQM&dep=<our scheduled departure, epoch ms>
+    // Answers { found:false } or { found:true, sched, schedTs, rev, revTs, term,
+    // gate, status, cancelled } from the destination's own arrivals list
+    // (farArrList / farArrPick). Always a 200: "no row" is an answer, and the
+    // gate then prints a dash, never a guess. Public like /acinfo,
+    // pattern-checked, no upstream beyond the feeds the boards already read.
+    // The index of a far end is edge-cached for 150 s, an answer for 120 s, so a
+    // revised time reaches the gate within a few minutes.
+    // When the far end's list could not be read (its fetch failed, or it came
+    // back empty) the answer is { found:false, unavailable:true }, cached 30 s
+    // and its index 60 s: the far end being down is not "no such flight", and
+    // the gate keeps the time it last printed (_farArrKick) instead of a dash.
+    if (path === "/fararr") {
+      const f = farArrNorm(url.searchParams.get("f"));
+      const to = String(url.searchParams.get("to") || "").toLowerCase();
+      const from = String(url.searchParams.get("from") || "").toUpperCase();
+      const dep = Number(url.searchParams.get("dep")) || 0;
+      if (!AC_FLIGHT_RE.test(f) || !/^[a-z]{3}$/.test(to) || (from && !/^[A-Z]{3}$/.test(from)) || !(dep > 0)) {
+        return jsonResponse({ error: "Use /fararr?f=AC1983&to=YYZ&from=YQM&dep=<ms>" }, 400, origin);
+      }
+      const _faCache = caches.default;
+      const _faKey = new Request(`https://fararr-cache/v1/${f}/${to}/${from || "-"}/${Math.floor(dep / 60000)}`);
+      try {
+        const hit = await _faCache.match(_faKey);
+        if (hit) {
+          const _hb = await hit.text();
+          const _ha = /"unavailable":true/.test(_hb) ? 30 : 120;
+          return new Response(_hb, { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${_ha}`, "X-Fararr-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+      let pick = null, unavailable = false;
+      if (farArrHas(to)) {
+        try {
+          const _ixKey = new Request(`https://fararr-index/v1/${to}`);
+          let index = null;
+          const ih = await _faCache.match(_ixKey).catch(() => null);
+          if (ih) index = await ih.json().catch(() => null);
+          if (!Array.isArray(index)) {
+            index = (await farArrList(to, env)) || [];
+            await _faCache.put(_ixKey, new Response(JSON.stringify(index), { headers: {
+              "Content-Type": "application/json", "Cache-Control": `public, max-age=${index.length ? 150 : 60}` } })).catch(() => {});
+          }
+          if (index.length) pick = farArrPick(index, f, from, dep);
+          else unavailable = true;
+        } catch (e) { pick = null; unavailable = true; }
+      }
+      const _faBody = JSON.stringify(farArrAnswer(f, to.toUpperCase(), from || null, pick, unavailable));
+      const _faAge = unavailable ? 30 : 120;
+      try { await _faCache.put(_faKey, new Response(_faBody, { headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_faAge}` } })); } catch (e) {}
+      return new Response(_faBody, { status: 200, headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_faAge}`, "X-Fararr-Cache": "miss", ...corsHeaders(origin) } });
+    }
     // ── ADS-B LIVE POSITIONS (proxied + cached) ───────────────────────────
     // GET /adsb/flight/{AC7754} | /adsb/callsign/{cs} | /adsb/reg/{tail} | /adsb/hex/{icao24}
     //
@@ -10613,20 +11008,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // through to that cache instead of caching an error as data.
     if (path === "/yqm/flights/departures" || path === "/yqm/flights/arrivals") {
       const _seg = path.endsWith("arrivals") ? "arrivals" : "departures";
-      const _txt = await fetchAuthorityText(
-        "yqm/" + _seg,
-        "https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/" + _seg,
-        null,
-        60,
-        { headers: {
-          // Their firewall answers a plain client differently from a browser,
-          // so ask the way a browser asks.
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Language": "en-CA,en;q=0.9",
-          "Referer": "https://www.cyqm.ca/"
-        } }
-      );
+      const _txt = await yqmCyqmText(_seg);
       if (_txt) {
         // v23918 — the rows the feed has dropped but said landed / left come
         // back on the end of the answer, marked "remembered" (yqmWithMemory).
@@ -11210,6 +11592,20 @@ export {
   opevForLegs,
   opevAttachOwn,
   yulApexRows,
+
+  farArrNorm,
+  farArrWall,
+  farArrTerminal,
+  farArrFromAdb,
+  farArrYyzRows,
+  farArrYulRows,
+  farArrYhuRows,
+  farArrYtzRows,
+  farArrYqmRows,
+  farArrList,
+  farArrHas,
+  farArrPick,
+  farArrAnswer,
   acTrackAddPoint,
   acTrackAppend,
   _authorityRosterHas

@@ -1,0 +1,409 @@
+{
+ "captured": "2026-10-04T16:41Z via fids-proxy /flights/airports/iata/YOW/...?direction=Arrival, X-Feed-Source yow-authority (179 rows; these kept)",
+ "arrivals": [
+  {
+   "number": "AC7753",
+   "callSign": null,
+   "status": "arrived",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 08:09:00-04:00",
+     "utc": "2026-10-04 12:09:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "30",
+    "scheduledTime": {
+     "local": "2026-10-04 08:09:00-04:00",
+     "utc": "2026-10-04 12:09:00+00:00"
+    },
+    "revisedTime": {
+     "local": "2026-10-04 11:58:00-04:00",
+     "utc": "2026-10-04 15:58:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "3"
+   },
+   "_authTs": 1791115740000
+  },
+  {
+   "number": "PD2370",
+   "callSign": null,
+   "status": "scheduled",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 12:52:00-04:00",
+     "utc": "2026-10-04 16:52:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "20",
+    "scheduledTime": {
+     "local": "2026-10-04 12:52:00-04:00",
+     "utc": "2026-10-04 16:52:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "5"
+   },
+   "_authTs": 1791132720000
+  },
+  {
+   "number": "PD274",
+   "callSign": null,
+   "status": "delayed",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YYC",
+     "icao": null,
+     "name": "Calgary"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 12:55:00-04:00",
+     "utc": "2026-10-04 16:55:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "24",
+    "scheduledTime": {
+     "local": "2026-10-04 12:55:00-04:00",
+     "utc": "2026-10-04 16:55:00+00:00"
+    },
+    "revisedTime": {
+     "local": "2026-10-04 13:08:00-04:00",
+     "utc": "2026-10-04 17:08:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "5"
+   },
+   "_authTs": 1791132900000
+  },
+  {
+   "number": "PD2446",
+   "callSign": null,
+   "status": "delayed",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YHM",
+     "icao": null,
+     "name": "Hamilton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 12:49:00-04:00",
+     "utc": "2026-10-04 16:49:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "22",
+    "scheduledTime": {
+     "local": "2026-10-04 12:49:00-04:00",
+     "utc": "2026-10-04 16:49:00+00:00"
+    },
+    "revisedTime": {
+     "local": "2026-10-04 13:26:00-04:00",
+     "utc": "2026-10-04 17:26:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "5"
+   },
+   "_authTs": 1791132540000
+  },
+  {
+   "number": "AC477",
+   "callSign": null,
+   "status": "delayed",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YUL",
+     "icao": null,
+     "name": "Montreal"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 13:58:00-04:00",
+     "utc": "2026-10-04 17:58:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "18",
+    "scheduledTime": {
+     "local": "2026-10-04 13:58:00-04:00",
+     "utc": "2026-10-04 17:58:00+00:00"
+    },
+    "revisedTime": {
+     "local": "2026-10-04 14:11:00-04:00",
+     "utc": "2026-10-04 18:11:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "4"
+   },
+   "_authTs": 1791136680000
+  },
+  {
+   "number": "AC7689",
+   "callSign": null,
+   "status": "delayed",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YHZ",
+     "icao": null,
+     "name": "Halifax"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 14:45:00-04:00",
+     "utc": "2026-10-04 18:45:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "23",
+    "scheduledTime": {
+     "local": "2026-10-04 14:45:00-04:00",
+     "utc": "2026-10-04 18:45:00+00:00"
+    },
+    "revisedTime": {
+     "local": "2026-10-04 15:10:00-04:00",
+     "utc": "2026-10-04 19:10:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "3"
+   },
+   "_authTs": 1791139500000
+  },
+  {
+   "number": "AC7753",
+   "callSign": null,
+   "status": "scheduled",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-05 08:09:00-04:00",
+     "utc": "2026-10-05 12:09:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "25",
+    "scheduledTime": {
+     "local": "2026-10-05 08:09:00-04:00",
+     "utc": "2026-10-05 12:09:00+00:00"
+    },
+    "airline": {
+     "iata": "AC",
+     "icao": null,
+     "name": "Air Canada"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "3"
+   },
+   "_authTs": 1791202140000
+  },
+  {
+   "number": "PD2370",
+   "callSign": null,
+   "status": "scheduled",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-05 12:52:00-04:00",
+     "utc": "2026-10-05 16:52:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YOW",
+     "icao": "CYOW",
+     "name": "Ottawa"
+    },
+    "gate": "19",
+    "scheduledTime": {
+     "local": "2026-10-05 12:52:00-04:00",
+     "utc": "2026-10-05 16:52:00+00:00"
+    },
+    "airline": {
+     "iata": "PD",
+     "icao": null,
+     "name": "Porter Airlines"
+    },
+    "quality": [
+     "Live"
+    ],
+    "baggageBelt": "5"
+   },
+   "_authTs": 1791219120000
+  }
+ ]
+}
