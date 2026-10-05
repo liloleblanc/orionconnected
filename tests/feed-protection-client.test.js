@@ -237,7 +237,12 @@ test('the board: the empty panel says it before "no flights", the strip sits abo
   assert.ok(st.indexOf('_fidsFeedDownPanel(el, ap)') > 0 && st.indexOf('_fidsFeedDownPanel(el, ap)') < st.indexOf("BoardStrings.pair('noFlightsWindow'"),
     'a feed that is down is asked about first');
   const panel = CORE.slice(CORE.indexOf('function _fidsFeedDownPanel('), CORE.indexOf('\n}\n', CORE.indexOf('function _fidsFeedDownPanel(')));
-  assert.match(panel, /fd\.state === 'unavailable' \|\| fd\.state === 'stale'/);
+  // v23998 — through the same test as the gate and the belt: a live board
+  // with a feed, its feed unavailable or stale.
+  assert.match(panel, /var fd = _fidsFeedDownFor\(ap, /);
+  const downFor = CORE.slice(CORE.indexOf('function _fidsFeedDownFor('), CORE.indexOf('\n}\n', CORE.indexOf('function _fidsFeedDownFor(')));
+  assert.match(downFor, /if \(!code \|\| !LIVE_MODE \|\| !_fidsAirportHasFeed\(code\)\) return null;/);
+  assert.match(downFor, /fd\.state === 'unavailable' \|\| fd\.state === 'stale'/);
   assert.match(panel, /_fidsFeedPairHtml\('feedUnavailable'\)/);
   const avail = CORE.slice(CORE.indexOf('function _fidsRowsAvail('), CORE.indexOf('\n}\n', CORE.indexOf('function _fidsRowsAvail(')));
   assert.match(avail, /getElementById\('fidsFeedNotice'\)/, 'rows stop above the strip');
@@ -367,6 +372,78 @@ test('Moncton: three refusals and no list anywhere — an empty second source sa
   const out2 = await B.win.adbFetch('YQM', 'Departure');
   assert.ok(out2.departures.length >= 1, 'the second source\'s rows are shown');
   assert.equal(B.win.fidsFeedStatus('YQM', 'dep').state, 'live', 'and they are live');
+});
+
+test("Moncton: a list from the second source is this screen's last good list too — the next failure keeps it, with its time", async () => {
+  // cyqm.ca refused and the webhook cache answered: those rows are on screen.
+  // Moncton's own chain only keeps cyqm.ca's lists, so without a copy here
+  // the next poll that failed everywhere emptied the board.
+  let mood = 'second';
+  const second = (now) => [{ number: 'PD 2373', airline: { name: 'Porter', iata: 'PD' }, departure: { scheduledTime: { utc: new Date(now + 3600000).toISOString().replace('T', ' ').slice(0, 16) + 'Z' } }, arrival: { airport: { iata: 'YYZ' } } }];
+  const B = board((u, i, now) => {
+    if (u.startsWith(PROXY + '/yqm/')) {
+      return json({ error: 'blocked', state: 'blocked', airport: 'YQM', detail: 'yqm-upstream-unavailable' }, 503, { 'X-Feed-State': 'blocked' });
+    }
+    if (u.startsWith(PROXY + '/flights/airports/iata/YQM/')) return mood === 'second' ? json({ departures: second(now) }) : json({ error: 'error', state: 'error', airport: 'YQM' }, 503, { 'X-Feed-State': 'error' });
+    if (u.startsWith(PROXY + '/flights/cached/')) return json({ flights: [] });
+    throw new Error('unexpected ' + u);
+  });
+  B.ctx.AP.YQM = { tz: 'America/Moncton' };
+  const t0 = B.now;
+  const good = await B.win.adbFetch('YQM', 'Departure');
+  assert.ok(good.departures.length >= 1);
+  assert.equal(B.win.fidsFeedStatus('YQM', 'dep').state, 'live');
+  mood = 'down';
+  B.tick(20 * MIN);
+  const kept = await B.win.adbFetch('YQM', 'Departure');
+  assert.equal(kept.departures.length, good.departures.length, 'the rows on screen stay');
+  const st = B.win.fidsFeedStatus('YQM', 'dep');
+  assert.equal(st.state, 'stale', 'and the board says how old they are');
+  assert.equal(st.asOf, t0, 'dated from when the second source answered');
+  assert.equal(B.ls.getItem('fids_feed_lastgood_YQM_dep'), null, 'Moncton stores its own copies: this one stays in memory');
+});
+
+test('a board talking to the worker as it is deployed today (before feed protection) reads its answers as it always did', async () => {
+  // The board (fids) and the proxy (fids-proxy) deploy separately, and a
+  // screen can hold a cached board for hours: the new board must read the old
+  // worker. Moncton's answer, as the live worker sent it (2026-10-05): a bare
+  // array, X-Feed-Source and X-Feed-Remembered, no X-Feed-State, no _feed.
+  const at = (now, h) => Math.floor(now / 1000) + h * 3600;
+  const cyqm = (now) => [
+    { flightId: 'AC659', flightNumber: '659', airlineName: 'Air Canada', airlineCode: 'AC', airportCity: 'Montreal', airportCode: 'YUL',
+      localTimestamp: at(now, 1), displayDate: 'Oct 5', scheduledTime: '1:20 PM', terminal: '', gate: '2', status: 'On Time', actualTime: '' },
+    { flightId: 'PD2374', flightNumber: '2374', airlineName: 'Porter', airlineCode: 'PD', airportCity: 'Toronto', airportCode: 'YYZ',
+      localTimestamp: at(now, 3), displayDate: 'Oct 5', scheduledTime: '3:40 PM', terminal: '', gate: '4', status: 'On Time', actualTime: '' }];
+  const OLD = { 'Content-Type': 'application/json', 'X-Feed-Source': 'yqm-cyqm-proxy', 'X-Feed-Remembered': '0' };
+  let mood = 'ok';
+  const B = board((u, i, now) => {
+    if (u.startsWith(PROXY + '/yqm/')) {
+      return mood === 'ok' ? new Response(JSON.stringify(cyqm(now)), { status: 200, headers: OLD })
+        // the old worker's refusal: a 503 with its own error word, no X-Feed-State
+        : new Response(JSON.stringify({ error: 'yqm-upstream-unavailable' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (u.startsWith(PROXY + '/flights/airports/iata/YQM/')) return new Response(JSON.stringify({ error: 'adb-disconnected' }), { status: 503, headers: { 'Content-Type': 'application/json', 'X-Feed-Source': 'adb-disconnected' } });
+    if (u.startsWith(PROXY + '/flights/cached/')) return json({ flights: [] });
+    if (u.startsWith(PROXY + '/flights/yyz')) return json({ list: pearsonRows(now) });
+    throw new Error('unexpected ' + u);
+  });
+  B.ctx.AP.YQM = { tz: 'America/Moncton' };
+  const t0 = B.now;
+  const out = await B.win.adbFetch('YQM', 'Departure');
+  assert.equal(out.departures.length, 2, "Moncton's rows");
+  assert.equal(B.win.fidsFeedStatus('YQM', 'dep').state, 'live', 'an answer with no X-Feed-State is live');
+  assert.equal(B.calls.filter((c) => c.includes('/yqm/')).length, 1, 'asked once');
+  const yyz = await B.win.adbFetch('YYZ', 'Departure');
+  assert.equal(yyz.departures.length, 3);
+  assert.equal(B.win.fidsFeedStatus('YYZ', 'dep').state, 'live', '{ list } with no _feed is live');
+  // The old worker refuses: Moncton's own list is kept and said to be from then.
+  mood = 'down'; B.calls.length = 0; B.tick(40 * MIN);
+  const kept = await B.win.adbFetch('YQM', 'Departure');
+  assert.equal(kept.departures.length, 2, 'the last good list, not nothing');
+  assert.equal(B.win.fidsFeedStatus('YQM', 'dep').state, 'stale');
+  assert.equal(B.win.fidsFeedStatus('YQM', 'dep').asOf, t0);
+  assert.deepEqual(plain(B.calls.filter((c) => c.includes('/yqm/'))), [PROXY + '/yqm/flights/departures', PROXY + '/yqm/flights/departures', PROXY + '/yqm/flights/departures?lastgood=1'],
+    'three tries as before; the old worker ignores ?lastgood=1 and answers as it always has');
 });
 
 test('the stored copies keep to a budget: too big is not stored, the oldest go first, and a live list is stored at most every three minutes', async () => {

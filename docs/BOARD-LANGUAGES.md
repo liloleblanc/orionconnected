@@ -91,7 +91,7 @@ a new key goes in `STR`, and their helpers (`TL`, `SL`, `_gateLbl`,
 | a font stack set from code | `BoardStrings.withScripts(stack)` |
 | a loader or status line | `BoardStrings.loaderLine('loading')` |
 | static page text | `<span data-i18n="key">` (`data-i18n-one`, `data-i18n-upper`), filled by `BoardStrings.applyStatic()` |
-| words painted once that must follow the board's languages (the boot loader) | `BoardStrings.onLangs(fn)`: `fn` runs whenever `fids-core.js` sets `langs` (it calls `BoardStrings.langsChanged()`, which also re-runs `applyStatic`) |
+| words painted once that must follow the board's languages (the boot loader; the board's header and its empty, feed-down and error panels) | `BoardStrings.onLangs(fn)`: `fn` runs whenever `fids-core.js` sets `langs` (it calls `BoardStrings.langsChanged()`, which also re-runs `applyStatic`) |
 
 Each half of a pair is a `<span class="bs-h" lang="…">`, with `dir="rtl"` on
 an Arabic half and bidi isolation on every half, so `من Calgary` reads right to
@@ -194,7 +194,9 @@ the departures board in each language, the arrivals board, a Québec
 airport (Montréal's departures, arrivals and a gate, French first, its
 deck and its states), the Studio player (a departures, a gate and a baggage
 document) in each language, the stream's rotation page and the stream
-tour. It
+tour; and, on the boards and the gates, the airport's feed down (no list,
+the last update's time, the last good list with its age), each reached in
+other languages and read after a change to the set's, mid-visit. It
 reads every visible text node, the text CSS draws (`::before`/`::after`),
 placeholders, text drawn on a canvas, and the boards inside same-origin
 iframes. It fails on any word that is not one of the board's languages or

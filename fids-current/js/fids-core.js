@@ -29804,13 +29804,13 @@ function _fidsFeedPairHtml(key, asOf) {
 // time of the last list when there was one. Returns false (and leaves the
 // panel to its other messages) when the feed is fine — a quiet hour is still
 // "no flights in window". Built from the store's own words only.
+// v23998 — through _fidsFeedDownFor, as the gate and the belt are: only a live
+// board with a feed says its feed is down. A demonstration board (LIVE_MODE
+// off) shows its own rows and makes no claim about the live data.
 function _fidsFeedDownPanel(el, ap) {
-  var code = String(ap || '').toUpperCase();
-  var fd = (code && _fidsAirportHasFeed(code))
-    ? _fidsFeedStatusFor(code, (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep') : null;
-  var down = !!(fd && (fd.state === 'unavailable' || fd.state === 'stale'));
-  el.classList.toggle('fids-feed-down', down);
-  if (!down) return false;
+  var fd = _fidsFeedDownFor(ap, (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep');
+  el.classList.toggle('fids-feed-down', !!fd);
+  if (!fd) return false;
   el.innerHTML = '<div class="ffn-box">' + _fidsFeedPairHtml('feedUnavailable')
     + (fd.asOf ? '<div class="sub">' + _fidsFeedPairHtml('feedLastUpdate', fd.asOf) + '</div>' : '') + '</div>';
   return true;
@@ -29818,9 +29818,8 @@ function _fidsFeedDownPanel(el, ap) {
 // The phone layout's one line for the same case ('' when the feed is fine).
 function _fidsFeedDownLine() {
   try {
-    var code = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
-    var fd = _fidsFeedStatusFor(code, (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep');
-    if (!fd || (fd.state !== 'unavailable' && fd.state !== 'stale')) return '';
+    var fd = _fidsFeedDownFor((document.getElementById('apSel') || {}).value, (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep');
+    if (!fd) return '';
     return _fidsFeedPairHtml(fd.asOf ? 'feedStale' : 'feedUnavailable', fd.asOf);
   } catch (e) { return ''; }
 }
@@ -29961,6 +29960,56 @@ try {
     window.addEventListener('fids-feed-status', function () { try { _fidsFeedNoticeUpdate(); } catch (e) {} });
   }
 } catch (e) {}
+
+// v23998 — A LANGUAGE CHANGE REPAINTS THE BOARD IN EVERY STATE, NOT ONLY WITH
+// ROWS. _applyBoardLangs repaints through render() only while the board holds
+// flights. With none — the feed-down panel ("Live data unavailable", with the
+// time of the last list), "No flights in window", the cold-start error panel
+// — and the departures/arrivals header above them, nothing painted them again,
+// so a change mid-visit left them in the languages of the minute they were
+// painted until the next poll (measured on a Spanish board: 'Départs' over
+// 'Données en direct indisponibles'). BoardStrings.langsChanged() runs this
+// from every path that sets `langs` (the toggle and setBoardLangs, the saved
+// choice on a screen-type change, the airport's config, the phone's one
+// language); it acts only when the languages or the airport differ from the
+// last time it ran, so the config's ten-second refresh repaints nothing.
+//   Always: the clock's date, now (tick()).
+//   No rows, first answer in: render() itself (the header, the empty or
+//   feed-down panel, the strip, the phone list, the empty gate and belt).
+//   Otherwise (render() follows on a toggle, not on the other paths; or the
+//   first answer is not in): each piece painted once, in place.
+var _fidsLangsPaintedKey = null;
+function _fidsBoardWordsFollowLangs() {
+  try {
+    if (typeof langs === 'undefined' || !Array.isArray(langs) || !langs.length) return;
+    var ap = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
+    var key = ap + '|' + langs.join(',');
+    if (key === _fidsLangsPaintedKey) return;
+    _fidsLangsPaintedKey = key;
+    // The banner's date (and the gate's) at once, not on the clock's next
+    // second: its weekday and month are words too.
+    try { tick(); } catch (eT) {}
+    var rows = !!(typeof data !== 'undefined' && data && ((data.dep && data.dep.length) || (data.arr && data.arr.length)));
+    if (!rows && window._initialFetchDone === true) {
+      try { dedicatedRenderKey = null; } catch (eK) {}
+      render();
+      return;
+    }
+    var hb = document.getElementById('hdrBoard');
+    if (hb && hb.firstChild && typeof mode !== 'undefined') hb.innerHTML = _boardLabelBilingual(mode);
+    var pe = document.getElementById('panelEmpty');
+    if (pe && pe.style.display === 'block') setState('empty', true);
+    // The cold-start error panel: its pair again, the operator's line kept.
+    var px = document.getElementById('panelError');
+    var pxOp = px && px.querySelector('.sub[data-operator]');
+    if (px && pxOp && px.style.display === 'block') {
+      px.innerHTML = BoardStrings.pair('liveDataError', { upper: true });
+      px.appendChild(pxOp);
+    }
+    _fidsFeedNoticeUpdate();
+  } catch (e) {}
+}
+try { if (typeof BoardStrings !== 'undefined' && BoardStrings.onLangs) BoardStrings.onLangs(_fidsBoardWordsFollowLangs); } catch (e) {}
 
 // v23218 — the flight TIMES follow the chosen language on the BAGGAGE board
 // too
@@ -49414,7 +49463,13 @@ function renderGateAd(index) {
   // two-page deck from a three-page one, and one hotel from another — it also
   // separates a card built in one language alone from the same card once the
   // board's second language has landed and both columns can be drawn.
-  var newKey = slot + '|' + (html ? (html.length + '|' + html.substring(0, 220)) : '');
+  // v23998 — and the board's languages: the Welcome card's words come after
+  // the first 220 characters, and 'Bienvenido a bordo' and 'Willkommen an
+  // Bord' (or 'Benvenuti a bordo' and 'Bem-vindo a bordo') are the same
+  // length, so a change from Spanish to German mid-visit was discarded as a
+  // no-op and the German gate kept greeting in Spanish until the slide came
+  // round again.
+  var newKey = slot + '|' + langs.join(',') + '|' + (html ? (html.length + '|' + html.substring(0, 220)) : '');
   // `&& el.firstChild` — the memo says "this slide is already painted", so
   // skipping is only safe while something is actually ON the panel. The
   // bigcraft takeover empties this element under its overlay; when the

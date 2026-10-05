@@ -96,9 +96,15 @@ function _feedLgIndex() {
   return idx;
 }
 function _feedLgSave(iata, dir, out, asOf) {
-  if (FEED_OWN_LASTGOOD[iata]) return;
   var k = _feedLgKey(iata, dir);
   try { window._feedLgMem[k] = { asOf: asOf, out: out }; } catch (e) {}
+  // v23998 — Moncton and Orlando store their own copies (their chains below),
+  // so only the others are written to storage here. The copy in memory is kept
+  // for them too — the same object the board already holds, so it costs
+  // nothing: a Moncton list from its second source (the webhook cache, after
+  // cyqm.ca refused) has no copy in Moncton's own chain, and without this one
+  // a failure on the next poll emptied a board that had been showing it.
+  if (FEED_OWN_LASTGOOD[iata]) return;
   try {
     var now = Date.now();
     var idx = _feedLgIndex();
