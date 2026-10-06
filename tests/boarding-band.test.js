@@ -13,13 +13,20 @@
 //     Flair's "Boarding closes", American's "Boarding ends"), counted back
 //     from the departure the board prints, in each language's own clock.
 // An airline that publishes no close time (PAL, Pascan; Delta and United
-// publish only a deadline to be AT the gate) shows nothing on the right.
+// publish only a deadline to be AT the gate) has no right half: the
+// documents take the whole band (an empty half read as a missing value).
 // The documents follow the route: boarding pass and ID inside Canada; the
 // passport to the U.S., "passport or NEXUS card" only from the ten Canadian
 // U.S.-preclearance airports (never Porter at Billy Bishop); the passport and
-// "visa or travel authorization if required" abroad; the boarding pass only
-// on a domestic flight outside Canada. Porter's photo-ID note moved off the
-// strip into the band, and "photo ID" is gone from every language.
+// "visa or travel authorization if required" from Canada abroad. Outside
+// Canada nothing is guessed: the boarding pass only, and on a flight TO
+// Canada, IRCC's own line instead (a Schengen flight from Zurich or one from
+// Heathrow to Dublin asks no passport of its own citizens; v24006 first
+// showed them the passport and visa line). Every phrase is whole: a line is
+// made smaller, or breaks only between two whole phrases, and each half has
+// its own size (the close time is not shrunk by the documents beside it).
+// Porter's photo-ID note moved off the strip into the band, and "photo ID"
+// is gone from every language.
 //
 // Everything below runs the shipped code: functions and tables are lifted
 // out of fids-core.js by brace matching; the words are the store's.
@@ -109,7 +116,8 @@ function lines(html) {
   for (const half of ['docs', 'close']) {
     const a = html.indexOf('g8-band-half g8-band-' + half);
     if (a < 0) continue;
-    const b = half === 'docs' ? html.indexOf('g8-band-half g8-band-close') : html.length;
+    const c = html.indexOf('g8-band-half g8-band-close');
+    const b = half === 'docs' && c >= 0 ? c : html.length;
     const seg = html.slice(a, b);
     for (const m of seg.matchAll(/<div class="g8-band-ln"([^>]*)>([\s\S]*?)<\/div>/g)) {
       const lang = (/\slang="([^"]+)"/.exec(m[1]) || [])[1] || '';
@@ -172,9 +180,11 @@ test('no close time where the airline publishes none: PAL, Pascan, a be-at-the-g
   for (const code of ['PB', 'SP', 'PVL', 'P6', 'DL', 'UA', 'B6', 'XX', '']) {
     const r = row({ airline: code, _locIata: code === 'DL' ? 'ATL' : 'YYZ' });
     assert.equal(E._gateCloseBandInfo(r, code, DEP, now, code === 'DL' ? 'MSP' : 'YQM', 0, false), null, code || '(none)');
-    // the band still shows the documents, and its right half is empty
+    // the band still shows the documents, across its whole width: no right
+    // half at all, never an empty block in the second colour
     const html = E._gateBandHtml('D', E._gateCloseBandInfo(r, code, DEP, now, 'YQM', 0, false), TZ, false);
-    assert.match(html, /<div class="g8-band-half g8-band-close"><\/div><\/div>$/, code + ': nothing on the right');
+    assert.match(html, /^<div class="g8-band g8-band-solo"/, code + ': the documents alone');
+    assert.doesNotMatch(html, /g8-band-close/, code + ': no right half');
     assert.doesNotMatch(html, /data-close-/, code);
     assert.equal(lines(html).filter((l) => l.half === 'docs').length, 2, code + ': the documents in both languages');
   }
@@ -234,14 +244,32 @@ test('the documents line follows the flight: domestic, transborder (preclearance
   assert.equal(v('YUL', 'CDG'), 'I');
   assert.equal(v('YQM', 'CUN'), 'I');
   assert.equal(v('YHZ', 'LHR', 'WS'), 'I');
-  // outside Canada a Canadian rule is never said: a domestic flight shows the
-  // boarding pass only (the TSA's ID rule is at the checkpoint, not the gate)
+  // outside Canada a Canadian rule is never said and the variant is never
+  // guessed: the boarding pass only. A domestic flight (the TSA's ID rule is
+  // at the checkpoint, not the gate), and a cross-border one whose rules were
+  // not researched: inside Schengen an EU or Swiss citizen flies on a
+  // national ID card, and the UK and Ireland share a travel area with no
+  // passport rule. v24006 first put the passport and visa line on both.
   assert.equal(v('MSP', 'ATL', 'DL'), 'B');
   assert.equal(v('AUS', 'DFW', 'AA'), 'B');
-  assert.equal(v('MSP', 'YYZ', 'DL'), 'I');
-  assert.equal(v('LHR', 'YYZ', 'AC'), 'I');
+  assert.equal(v('ZRH', 'CDG', 'LX'), 'B', 'Zurich to Paris, inside Schengen');
+  assert.equal(v('LHR', 'DUB', 'EI'), 'B', 'Heathrow to Dublin, the Common Travel Area');
+  assert.equal(v('EDI', 'AMS', 'KL'), 'B');
+  assert.equal(v('SYD', 'AKL', 'NZ'), 'B');
+  assert.equal(v('MSP', 'CUN', 'DL'), 'B');
+  for (const [home, to] of [['ZRH', 'CDG'], ['LHR', 'DUB'], ['MSP', 'CUN'], ['SYD', 'AKL']]) {
+    assert.notEqual(v(home, to), 'I', home + ' to ' + to + ': never the passport and visa line outside Canada');
+  }
+  // a flight TO Canada from a board outside Canada: IRCC's own line, the one
+  // the research gives a board outside Canada
+  assert.equal(v('MSP', 'YYZ', 'DL'), 'C');
+  assert.equal(v('LHR', 'YYZ', 'AC'), 'C');
+  assert.equal(v('ZRH', 'YUL', 'LX'), 'C');
+  assert.equal(v('SYD', 'YVR', 'AC'), 'C');
   assert.equal(v('', 'YYZ'), 'B', 'an unknown home airport');
   assert.equal(v('MSP', 'ZZZ', 'DL'), 'B', 'an unknown destination outside Canada');
+  // a Canadian gate never shows the line for a flight to Canada
+  for (const ap of ['YQM', 'YUL', 'YYZ', 'YHZ']) for (const to of ['YYZ', 'BOS', 'CDG', '']) assert.notEqual(v(ap, to), 'C', ap + ' to ' + to);
 });
 
 test('each variant prints its own lines and pictograms, every language marked, French first in Québec', () => {
@@ -252,41 +280,63 @@ test('each variant prints its own lines and pictograms, every language marked, F
   assert.deepEqual(docs('N').map((l) => l.text), ['Have your passport or NEXUS card ready', 'Ayez votre passeport ou carte NEXUS à portée de main']);
   assert.deepEqual(docs('B').map((l) => l.text), ['Have your boarding pass ready', 'Ayez votre carte d’embarquement à portée de main']);
   // international: both facts in each language, one language per line, the
-  // two phrases whole round a dot a line break drops
+  // two phrases whole round a dot a line break drops. The research's own
+  // words: the singular « Visa » and "Visa" in French and Spanish.
   assert.deepEqual(docs('I').map((l) => l.text), [
     'Have your passport ready · Visa or travel authorization if required',
-    'Ayez votre passeport à portée de main · Visas ou autorisations de voyage, s’il y a lieu'
+    'Ayez votre passeport à portée de main · Visa ou autorisation de voyage, s’il y a lieu'
   ]);
   const intl = E._gateBandHtml('I', null, TZ, false);
   assert.match(intl, /<span class="fx-unit" lang="en"[^>]*>Have your passport ready<\/span> <span class="g8-band-sep fx-brk">·<\/span> <span class="fx-unit" lang="en"[^>]*>Visa or travel authorization if required<\/span>/);
-  assert.match(intl, /class="g8-band g8-band-tall"/);
+  assert.match(intl, /class="g8-band g8-band-tall g8-band-solo"/);
+  // a flight to Canada from a board outside Canada: IRCC's line, on its own
+  // (after the boarding pass it ran under the floor at 1280x720 in German
+  // and Spanish), French with a no-break space before its colon
+  assert.deepEqual(docs('C').map((l) => l.text), [
+    'Flying to Canada? Visa or eTA may apply',
+    'Vol vers le Canada : visa ou AVE, s’il y a lieu'
+  ]);
+  assert.match(E._gateBandHtml('C', null, TZ, false), /Vol vers le Canada\u00A0: visa ou AVE/);
+  // EVERY PHRASE IS WHOLE: each fact in each language is one .fx-unit, a
+  // lone phrase included, and so is each close line with its time, so the
+  // fitter can break only between two whole phrases (display rule 2)
+  const info = { carrier: 'AC', min: 15, kind: 'gateCloses', ts: DEP - 15 * MIN };
+  for (const variant of ['D', 'B', 'P', 'N', 'I', 'C']) {
+    const html = E._gateBandHtml(variant, info, TZ, false);
+    for (const m of html.matchAll(/<div class="g8-band-ln"[^>]*>([\s\S]*?)<\/div>/g)) {
+      const bare = m[1].replace(/<span class="fx-unit"[^>]*>[\s\S]*?<\/span>(?=$| <span class="g8-band-sep)/g, '').replace(/ <span class="g8-band-sep fx-brk">·<\/span> /g, '');
+      assert.equal(bare, '', variant + ': every word of the line sits in a whole phrase: ' + m[1].slice(0, 120));
+    }
+  }
+  assert.match(E._gateBandHtml('D', info, TZ, false), /<div class="g8-band-ln"[^>]*><span class="fx-unit">Gate closes <b class="g8-band-time"><bdi>6:00pm<\/bdi><\/b><\/span><\/div>/);
   // French first in Québec
   assert.deepEqual(docs('I', true).map((l) => l.lang), ['fr', 'en']);
   assert.deepEqual(docs('D', true).map((l) => l.lang), ['fr', 'en']);
   // pictograms: a boarding pass and an ID card, a passport, a passport and a
   // card, a passport and a visa page; never a programme's mark
   const glyphs = (variant) => (E._gateBandHtml(variant, null, TZ, false).split('g8-band-close')[0].match(/<svg class="g8-band-glyph"/g) || []).length;
-  assert.deepEqual(['D', 'B', 'P', 'N', 'I'].map(glyphs), [2, 1, 1, 2, 2]);
-  assert.deepEqual(['D', 'B', 'P', 'N', 'I'].map((k) => E._GATE_DOCS[k].glyphs), ['ti', 't', 'p', 'pi', 'pv']);
+  assert.deepEqual(['D', 'B', 'P', 'N', 'I', 'C'].map(glyphs), [2, 1, 1, 2, 2, 1]);
+  assert.deepEqual(['D', 'B', 'P', 'N', 'I', 'C'].map((k) => E._GATE_DOCS[k].glyphs), ['ti', 't', 'p', 'pi', 'pv', 'v']);
   assert.doesNotMatch(CORE.slice(CORE.indexOf('var _GATE_BAND_GLYPH'), CORE.indexOf('function _gateCloseBandInfo(')), /<image|<text|href=|url\(/i, 'drawn shapes only: no artwork, no words');
   // every language of the board, each its own line and marked (Arabic right to left)
   for (const lg of LANGS) {
     const other = lg === 'en' ? 'fr' : 'en';
     const El = engine([lg, other]);
-    for (const variant of ['D', 'B', 'P', 'N', 'I']) {
+    for (const variant of ['D', 'B', 'P', 'N', 'I', 'C']) {
       const ls = docs(variant, false, El);
       assert.equal(ls.length, 2, lg + ' ' + variant);
       assert.equal(ls[0].lang, lg, lg + ' ' + variant + ' is marked');
       if (lg === 'ar') assert.equal(ls[0].dir, 'rtl');
-      for (const key of El._GATE_DOCS[variant].keys) assert.ok(ls[0].text.includes(BS.bs(key, lg)), lg + ' ' + key);
+      for (const key of El._GATE_DOCS[variant].keys) assert.ok(ls[0].text.includes(BS.bs(key, lg).replace(/\u00A0/g, ' ')), lg + ' ' + key);
     }
   }
   // the light ground takes its rule
-  assert.match(E._gateBandHtml('D', null, TZ, false, true), /^<div class="g8-band g8-band-light"/);
+  assert.match(E._gateBandHtml('D', null, TZ, false, true), /^<div class="g8-band g8-band-solo g8-band-light"/);
+  assert.match(E._gateBandHtml('D', { carrier: 'PD', min: 10, kind: 'gateCloses', ts: DEP - 10 * MIN }, TZ, false, true), /^<div class="g8-band g8-band-light"/);
 });
 
 test('the band\'s words are in the store, all nine languages, their sources recorded, the clock words with their time', () => {
-  for (const key of ['docsDomestic', 'docsPassOnly', 'docsPassport', 'docsPassportNexus', 'docsVisa', 'closeAtGate', 'closeAtCutoff', 'closeAtBoarding', 'closeAtEnds', 'boardingCutoff', 'tickerBoardingCutoff']) {
+  for (const key of ['docsDomestic', 'docsPassOnly', 'docsPassport', 'docsPassportNexus', 'docsVisa', 'docsToCanada', 'closeAtGate', 'closeAtCutoff', 'closeAtBoarding', 'closeAtEnds', 'boardingCutoff', 'tickerBoardingCutoff']) {
     const e = BS.STR[key];
     assert.ok(e, key + ' is in the store');
     assert.deepEqual(LANGS.filter((l) => !e[l]), [], key + ' in all nine');
@@ -305,6 +355,24 @@ test('the band\'s words are in the store, all nine languages, their sources reco
   for (const key of ['docsDomestic', 'docsPassOnly', 'docsPassport', 'docsVisa']) {
     for (const lg of LANGS) assert.doesNotMatch(BS.bs(key, lg), /ESTA|ETIAS|eTA|AVE|NEXUS/, key + ' ' + lg);
   }
+  // the visa line in the research's own words, every language (U2, B3 line 3)
+  assert.deepEqual(LANGS.map((lg) => BS.bs('docsVisa', lg)), [
+    'Visa or travel authorization if required', 'Visa ou autorisation de voyage, s’il y a lieu',
+    'Visa o autorización de viaje, si corresponde', 'Visum oder Reisegenehmigung, falls erforderlich',
+    'Visto o autorizzazione di viaggio, se richiesti', 'Visto ou autorização de viagem, se exigidos',
+    '必要な方はビザまたは渡航認証', '如有需要：签证或电子旅行许可', 'تأشيرة أو تصريح سفر إلكتروني عند الاقتضاء'
+  ]);
+  // a flight to Canada: IRCC's line, in IRCC's name for the eTA in each
+  // language (AVE in French and Portuguese; Spanish, German and Italian its
+  // full name, as IRCC's own pages in those languages write it)
+  assert.equal(BS.bs('docsToCanada', 'en'), 'Flying to Canada? Visa or eTA may apply');
+  assert.equal(BS.bs('docsToCanada', 'fr'), 'Vol vers le Canada\u00A0: visa ou AVE, s’il y a lieu');
+  assert.match(BS.bs('docsToCanada', 'pt'), /\bAVE\b/);
+  assert.match(BS.bs('docsToCanada', 'es'), /Autorización Electrónica de Viaje/);
+  assert.match(BS.bs('docsToCanada', 'de'), /elektronische Reisegenehmigung/);
+  assert.match(BS.bs('docsToCanada', 'it'), /Autorizzazione elettronica di viaggio/);
+  for (const lg of ['ja', 'zh', 'ar']) assert.match(BS.bs('docsToCanada', lg), /eTA/, lg);
+  for (const lg of LANGS) assert.doesNotMatch(BS.bs('docsToCanada', lg), /ESTA|ETIAS|NEXUS/, 'docsToCanada ' + lg);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -368,11 +436,36 @@ test('the band takes only the room the sign leaves, and the sign keeps every siz
   // the sign's top padding gives up to 2.4vh first; no font on the sign changes
   assert.match(room, /var give = Math\.max\(0, Math\.min\(want - base, \(pad0 < Infinity \? pad0 : 3\.2 \* vh\) - 0\.8 \* vh\)\);/);
   assert.doesNotMatch(room, /font-size|fontSize/, 'the sign keeps every size');
-  assert.match(fn('_g8BandLineRoom'), /return Math\.max\(1, \(room - padV - breath\) \/ Math\.max\(1, lns\.length\)\);/);
-  // the band's lines are the shared fitter's, to that room, one size for the band
+  const lineRoom = fn('_g8BandLineRoom');
+  assert.match(lineRoom, /return Math\.max\(1, \(room - padV - breath\) \/ Math\.max\(1, lns\.length\)\);/);
+  // a portrait board's stacked halves share the room by their lines
+  assert.match(lineRoom, /if \(_g8BandStacked\(band\)\) room = room \* lns\.length \/ Math\.max\(1, band\.querySelectorAll\('\.g8-band-ln'\)\.length\);/);
+  assert.match(fn('_g8BandStacked'), /getComputedStyle\(band\)\.flexDirection === 'column'/);
+  // the band's lines are the shared fitter's, to that room, each HALF at one
+  // size of its own: the documents never make the close time smaller (v24006
+  // grouped the whole band, and an international flight at 1280x720 put the
+  // close time at the 12px floor beside 470px of its own half left empty)
   const rules = CORE.slice(CORE.indexOf('var FIDS_FIT_RULES = ['), CORE.indexOf('\n];', CORE.indexOf('var FIDS_FIT_RULES = [')));
-  assert.match(rules, /\{ sel: '\.g8-band \.g8-band-ln', box: '\.g8-band-tx', lines: 2, units: true, group: '\.g8-band', h: function \(el\) \{ return _g8BandLineRoom\(el\); \} \},/);
+  assert.match(rules, /\{ sel: '\.g8-band \.g8-band-ln', box: '\.g8-band-tx', lines: 2, units: true, group: '\.g8-band-half', h: function \(el\) \{ return _g8BandLineRoom\(el\); \} \},/);
+  assert.doesNotMatch(rules, /group: '\.g8-band'[,\s]/, 'never one size across the two halves');
   assert.doesNotMatch(rules, /g8-bw-note/);
+  // and the group is taken per element the rule names (fidsFitAll: the
+  // smallest of one group's lines, one group per half)
+  const fitAll = fn('fidsFitAll');
+  assert.match(fitAll, /var g = els\[j\]\.closest\(r\.group\);/);
+  // ONE LAYOUT FOR EVERY LANGUAGE: where one language's two facts take two
+  // lines, every language's do, broken at the same place (between the facts)
+  assert.match(fitAll, /try \{ _g8BandOneLayout\(scope\); \} catch \(eB\) \{\}/);
+  assert.ok(fitAll.indexOf('_g8BandOneLayout(scope)') > fitAll.indexOf('groups[gk].els'), 'after the group has its one size');
+  const one = fn('_g8BandOneLayout');
+  assert.match(one, /querySelectorAll\('\.g8-band\.g8-band-tall \.g8-band-docs'\)/);
+  assert.match(one, /if \(ln\.classList\.contains\('fx-wrap'\)\) \{ if \(mine\) ln\.classList\.remove\('g8-band-brk'\); continue; \}/, "a line the fitter broke keeps the fitter's marks");
+  assert.match(one, /seps\[k\]\.classList\.add\('fx-brk-off'\)/, 'the break is at the dot between two whole facts');
+  assert.doesNotMatch(one, /fx-loose|white-space', 'normal/, 'never inside a phrase');
+  // the forced break is the shared one (.fx-brk-off: the dot hidden, the next
+  // whole phrase on a new line)
+  const ALL = fs.readFileSync(path.join(root, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
+  assert.match(ALL, /\.fx-brk\.fx-brk-off \+ :is\(\.ap-name, \.fx-unit\)::before \{ content: "\\A"; white-space: pre; \}/);
 });
 
 test('the colours: the lower panel\'s pair, every word on it at 4.5:1 or better, nothing that moves', () => {
@@ -384,6 +477,13 @@ test('the colours: the lower panel\'s pair, every word on it at 4.5:1 or better,
   assert.match(rulesOnly, /\.g8-band \.g8-band-docs \{\s*background: var\(--rc2-a, #0c1119\) !important;\s*color: var\(--rc2-a-ink, #ffffff\) !important;/);
   assert.match(rulesOnly, /\.g8-band \.g8-band-close \{\s*background: var\(--rc2-b, #0c1119\) !important;\s*color: #ffffff !important;/);
   assert.match(rulesOnly, /\.g8-band \{[^}]*min-height: min\(9\.5vh, 8\.8vw, var\(--g8-band-room, 9\.5vh\)\) !important;/, "the mockup's 9.5vh where the sign leaves it");
+  // a portrait board stacks the halves, each across the band's whole width
+  const portrait = rulesOnly.slice(rulesOnly.indexOf('@media (orientation: portrait) {'));
+  assert.ok(rulesOnly.indexOf('@media (orientation: portrait) {') > 0, 'the portrait block');
+  assert.match(portrait, /\.g8-band \{\s*flex-direction: column !important;/);
+  assert.match(portrait, /\.g8-band \.g8-band-half \{\s*flex: 0 0 auto !important;\s*min-height: min\(9\.5vh, 8\.8vw\) !important;/);
+  // a band with no close time is the documents alone: one half, which fills it
+  assert.match(rulesOnly, /\.g8-band \.g8-band-half \{[^}]*flex: 1 1 0 !important;/);
   assert.doesNotMatch(rulesOnly, /animation|transition|@keyframes|opacity: 0[;\s]/, 'static');
   assert.doesNotMatch(rulesOnly, /#c2410c|#f59e0b|#fbbf24|#dc2626|#ef4444|#22c55e|#16a34a|#34d399/i, 'no status colour');
   // the house rule: a vh length always beside a width term

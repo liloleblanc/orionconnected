@@ -268,9 +268,12 @@
     //                      the government's and CATSA's word (Air Canada's own
     //                      page says « carte d'accès à bord »; one word for
     //                      every airline, the screening authority's).
-    //   docsPassOnly       a domestic flight outside Canada: the boarding
-    //                      pass only (the U.S. ID rule is the TSA's, at the
-    //                      checkpoint, not the gate); CATSA's own words.
+    //   docsPassOnly       a departure from an airport outside Canada: the
+    //                      boarding pass only, the one thing every route
+    //                      asks (the U.S. ID rule is the TSA's, at the
+    //                      checkpoint, not the gate; a Schengen or UK-Ireland
+    //                      route asks no passport of its own citizens, so
+    //                      none is claimed); CATSA's own words.
     //   docsPassport       a flight from Canada to the U.S. from an airport
     //                      without U.S. preclearance, and every international
     //                      flight (SOR/2015-181 s.4; travel.gc.ca).
@@ -279,13 +282,31 @@
     //                      travel.gc.ca/destinations/united-states: "a valid
     //                      NEXUS card"). Never Porter at Billy Bishop: Porter's
     //                      own NEXUS page names Pearson and Ottawa only.
-    //   docsVisa           an international flight, under the passport line
-    //                      (travel.gc.ca/travelling/documents/visas; "travel
-    //                      authorization" covers every scheme, so no scheme's
-    //                      name can go stale). French and Spanish say it in
-    //                      the plural, as a notice to everyone at the gate:
-    //                      the singular « Visa » / "Visa" spells the English
-    //                      word, which the guard reads as one left untranslated.
+    //   docsVisa           an international flight from Canada, under the
+    //                      passport line (travel.gc.ca/travelling/documents/
+    //                      visas; "travel authorization" covers every scheme,
+    //                      so no scheme's name can go stale). The research's
+    //                      own words in every language, the singular « Visa »
+    //                      and "Visa" included: French and Spanish spell it as
+    //                      English does, and docsToCanada's French and Spanish
+    //                      use the same word.
+    //   docsToCanada       a flight TO Canada from a board outside Canada,
+    //                      on its own: IRCC's own line ("Most
+    //                      travellers need a visa or an electronic travel
+    //                      authorization (eTA) to fly to or transit through a
+    //                      Canadian airport", canada.ca …/visit-canada/eta/
+    //                      facts.html and its language versions, read
+    //                      2026-10-05), in IRCC's name for the eTA in each
+    //                      language: AVE in French and Portuguese, eTA in
+    //                      English, Japanese, Chinese and Arabic. Spanish,
+    //                      German and Italian write IRCC's full name for it
+    //                      (facts-es: « Autorización Electrónica de Viaje »,
+    //                      facts-de: « elektronische Reisegenehmigung »,
+    //                      facts-it: « Autorizzazione elettronica di viaggio »,
+    //                      read 2026-10-06), not the bare acronym, which the
+    //                      language guard reads as an English word in those
+    //                      three. French keeps a no-break space before its
+    //                      colon. Never at a Canadian gate.
     docsDomestic: { en: 'Boarding pass and ID ready', fr: 'Carte d’embarquement et pièce d’identité en main', es: 'Tarjeta de embarque e identificación a mano', de: 'Bordkarte und Ausweis bereithalten', it: 'Carta d’imbarco e documento pronti', pt: 'Cartão de embarque e documento em mãos', ja: '搭乗券と身分証明書をご用意ください', zh: '请备好登机牌和身份证件', ar: 'جهّز بطاقة الصعود والهوية',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     docsPassOnly: { en: 'Have your boarding pass ready', fr: 'Ayez votre carte d’embarquement à portée de main', es: 'Tenga lista su tarjeta de embarque', de: 'Halten Sie Ihre Bordkarte bereit', it: 'Tenete pronta la carta d’imbarco', pt: 'Tenha seu cartão de embarque em mãos', ja: '搭乗券をご用意ください', zh: '请准备好登机牌', ar: 'يرجى تجهيز بطاقة الصعود إلى الطائرة',
@@ -294,7 +315,9 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     docsPassportNexus: { en: 'Have your passport or NEXUS card ready', fr: 'Ayez votre passeport ou carte NEXUS à portée de main', es: 'Tenga listo su pasaporte o tarjeta NEXUS', de: 'Halten Sie Reisepass oder NEXUS-Karte bereit', it: 'Tenete pronto il passaporto o la carta NEXUS', pt: 'Tenha seu passaporte ou cartão NEXUS em mãos', ja: 'パスポートまたはNEXUSカードをご用意ください', zh: '请准备好护照或NEXUS卡', ar: 'يرجى تجهيز جواز السفر أو بطاقة NEXUS',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    docsVisa: { en: 'Visa or travel authorization if required', fr: 'Visas ou autorisations de voyage, s’il y a lieu', es: 'Visas o autorizaciones de viaje, si corresponde', de: 'Visum oder Reisegenehmigung, falls erforderlich', it: 'Visto o autorizzazione di viaggio, se richiesti', pt: 'Visto ou autorização de viagem, se exigidos', ja: '必要な方はビザまたは渡航認証', zh: '如有需要：签证或电子旅行许可', ar: 'تأشيرة أو تصريح سفر إلكتروني عند الاقتضاء',
+    docsVisa: { en: 'Visa or travel authorization if required', fr: 'Visa ou autorisation de voyage, s’il y a lieu', es: 'Visa o autorización de viaje, si corresponde', de: 'Visum oder Reisegenehmigung, falls erforderlich', it: 'Visto o autorizzazione di viaggio, se richiesti', pt: 'Visto ou autorização de viagem, se exigidos', ja: '必要な方はビザまたは渡航認証', zh: '如有需要：签证或电子旅行许可', ar: 'تأشيرة أو تصريح سفر إلكتروني عند الاقتضاء',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    docsToCanada: { en: 'Flying to Canada? Visa or eTA may apply', fr: 'Vol vers le Canada\u00A0: visa ou AVE, s’il y a lieu', es: '¿Vuela a Canadá? Puede necesitar visa o Autorización Electrónica de Viaje', de: 'Flug nach Kanada? Ggf. Visum oder elektronische Reisegenehmigung nötig', it: 'Volo per il Canada? Può servire visto o Autorizzazione elettronica di viaggio', pt: 'Voo para o Canadá? Pode exigir visto ou AVE', ja: 'カナダ行き：ビザまたはeTAが必要な場合があります', zh: '飞往加拿大：可能需要签证或电子旅行证（eTA）', ar: 'السفر إلى كندا: قد تحتاج إلى تأشيرة أو تصريح سفر إلكتروني (eTA)',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // Porter's own pre-boarding list, as Porter publishes it in English and
     // French (flyporter.com, Boarding process, "Boarding order" / « Ordre

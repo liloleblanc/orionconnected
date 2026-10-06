@@ -2930,10 +2930,12 @@ var FIDS_FIT_RULES = [
   // the destination's code in the left rail's round badge (YMM, MET)
   { sel: '.v2-fi-orbcode', box: '.v2-fi-icon-badge', lines: 1 },
   // v24006 — the boarding screen's band (_gateBandHtml): each language's
-  // line in its half, beside its pictograms, every line of the band at one
-  // size, in the room the sign leaves it (_g8BandLineRoom); smaller, or a
-  // second line between its phrases or at a space, never cut
-  { sel: '.g8-band .g8-band-ln', box: '.g8-band-tx', lines: 2, units: true, group: '.g8-band', h: function (el) { return _g8BandLineRoom(el); } },
+  // line in its half, beside its pictograms, in the room the sign leaves it
+  // (_g8BandLineRoom); each half's lines at one size of their own (the
+  // documents' length never makes the close time smaller); smaller, or a
+  // second line between two whole phrases (.fx-unit), never inside one and
+  // never cut
+  { sel: '.g8-band .g8-band-ln', box: '.g8-band-tx', lines: 2, units: true, group: '.g8-band-half', h: function (el) { return _g8BandLineRoom(el); } },
   // ── guards: sized by their own fitters, held to the floor and never cut ──
   // the gate's Your Aircraft lines (PD2373 from | de Îles-de-la-Madeleine | YGR)
   { sel: '.gad-map-col-v2 .v2-fi-value > .v2-fi-mline1, .gad-map-col-v2 .v2-fi-value > .v2-fi-mline2, .gad-map-col-v2 .v2-fi-value > .v2-fi-mline3', box: '.v2-fi-value', lines: 2, guard: true },
@@ -3074,6 +3076,9 @@ function fidsFitAll(root) {
   // the weather screens' titles, after their words have their sizes, and
   // the day panels under them (v23997)
   try { _wxFitTitles(scope); } catch (eW) {}
+  // the boarding screen's band: one layout for every language of its
+  // documents (v24006, _g8BandOneLayout)
+  try { _g8BandOneLayout(scope); } catch (eB) {}
 }
 // v23997 — THE WEATHER SCREENS' TITLE KEEPS ONE LINE. '5-DAY FORECAST |
 // PRÉVISIONS 5 JOURS' and the place ('TORONTO · BILLY BISHOP | YTZ') share
@@ -34031,7 +34036,8 @@ function _gateCloseLineHtml(info, tz, frF) {
 //   RIGHT, on the airline's second colour (`b`) in white: the airline's own
 //     close time, in its own word, with a clock. An airline that publishes no
 //     close time (PAL and Pascan publish none; Delta and United only a
-//     deadline to be AT the gate) has nothing there: the half stays, empty.
+//     deadline to be AT the gate), or whose close time has passed, has no
+//     right half: the documents take the band's whole width.
 // The band takes its height from the sign's empty gaps (the space round the
 // value row): nothing on the sign shrinks, and the frame is the same on every
 // airline. Static: no colour moves or flashes, and no status colour is used
@@ -34048,12 +34054,23 @@ function _gateCloseLineHtml(info, tz, frF) {
 //   'N' from one of the ten Canadian preclearance airports to the U.S.: the
 //       passport or NEXUS card. Never Porter at Billy Bishop: Porter's own
 //       NEXUS page names Pearson and Ottawa only;
-//   'I' anywhere else abroad: the passport, then a visa or travel
-//       authorization if required;
-//   'B' a domestic departure outside Canada, or one whose countries are not
-//       known: the boarding pass only (in the U.S. the ID rule is the TSA's,
-//       at the checkpoint, never the gate; a Canadian rule is never said at
-//       an airport outside Canada).
+//   'I' from Canada to anywhere else abroad: the passport, then a visa or
+//       travel authorization if required (the rule the documents research
+//       read for a Canadian departure, SOR/2015-181 s.4 and travel.gc.ca);
+//   'C' from an airport outside Canada to Canada: IRCC's own line for a
+//       flight to Canada ("Flying to Canada? Visa or eTA may apply",
+//       canada.ca eTA facts page, in each language's own name for the eTA),
+//       alone: the one line the research gives a board outside Canada (with
+//       the boarding pass before it, a German or Spanish line ran under the
+//       readable floor in a 1280x720 board's half);
+//   'B' every other departure outside Canada, and one whose countries are
+//       not known: the boarding pass only. The rules there are not Canada's
+//       and were not researched, so nothing more is said: inside Schengen an
+//       EU or Swiss citizen flies on a national ID card (ZRH to Paris), the
+//       UK and Ireland share a travel area with no passport rule (LHR to
+//       Dublin), and in the U.S. the ID rule is the TSA's, at the checkpoint,
+//       never the gate. A Canadian rule is never said at an airport outside
+//       Canada, and the variant is never guessed.
 // CBP's preclearance list (cbp.gov/travel/preclearance, read 2026-10-05).
 var _GATE_PRECLEARANCE = ['YTZ', 'YYC', 'YEG', 'YHZ', 'YUL', 'YOW', 'YYZ', 'YVR', 'YYJ', 'YWG'];
 function _gateDocsVariant(cf, homeIata, carrier) {
@@ -34075,8 +34092,8 @@ function _gateDocsVariant(cf, homeIata, carrier) {
     }
     return 'I';
   }
-  if (!hc || !dc || hc === dc) return 'B';
-  return 'I';
+  if (hc && dc === 'CA') return 'C';
+  return 'B';
 }
 // Each variant's lines (store keys, in this order for each language) and its
 // pictograms (_GATE_BAND_GLYPH: t boarding pass, i ID card, p passport, v visa
@@ -34088,7 +34105,8 @@ var _GATE_DOCS = {
   B: { keys: ['docsPassOnly'], glyphs: 't' },
   P: { keys: ['docsPassport'], glyphs: 'p' },
   N: { keys: ['docsPassportNexus'], glyphs: 'pi' },
-  I: { keys: ['docsPassport', 'docsVisa'], glyphs: 'pv' }
+  I: { keys: ['docsPassport', 'docsVisa'], glyphs: 'pv' },
+  C: { keys: ['docsToCanada'], glyphs: 'v' }
 };
 // Drawn in currentColor, so each takes the ink of the half it sits on: the
 // airline's ink on its first colour, white on its second.
@@ -34148,27 +34166,40 @@ function _gateCloseBandInfo(cf, carrier, effDepTs, nowMs, homeIata, boardTs, kep
 // (French first in Québec), each language its own line and marked with its
 // language (an Arabic line right to left); the clock is each language's own
 // (_fidsClockForLang: 8:25pm in English, 20:25 in French and the 24-hour
-// languages), set bold. An international flight's two facts stay together
-// in each language: one line, two whole phrases (.fx-unit) round a dot that
-// a break drops (.fx-brk), so where the band has the height each language
-// takes two lines, the passport over the visa, and where it has not, one.
+// languages), set bold.
+// EVERY PHRASE IS WHOLE (display rule 2: two lines are fine, a severed phrase
+// is not). Each fact in each language is one unbreakable phrase (.fx-unit),
+// the close time's words with their time included, so the fitter never
+// breaks inside one: a line that is too wide is made smaller, and the only
+// break it may take is BETWEEN two whole phrases. An international flight's
+// two facts sit in each language round a dot that a break drops (.fx-brk):
+// where the half has the height, each language takes two lines, the passport
+// over the visa; where it has not, one. (v24006 first let a lone phrase open
+// at its spaces: « Carte d'embarquement et / pièce d'identité en main » on a
+// portrait board, its English on one line.)
 // The lines are fitted by the one shared fitter (FIDS_FIT_RULES, '.g8-band
-// .g8-band-ln') to the room the sign leaves (_g8BandRoom), all at one size:
-// smaller, or a second line at a space, never cut.
+// .g8-band-ln') to the room the sign leaves (_g8BandRoom), each half's lines
+// at one size of their own: the close time is not made smaller because the
+// documents beside it are long (v24006 held the whole band to one size, and
+// an international flight at 1280x720 put « Fermeture de la porte 23:49 » at
+// the 12px floor with 470px of its half empty).
+// AN AIRLINE WITH NO CLOSE TIME (PAL, Pascan; Delta and United publish only a
+// deadline to be AT the gate), and a close time that has passed: the band is
+// the documents alone, across its whole width (.g8-band-solo). An empty half
+// in the second colour read as a value that had gone missing.
 function _gateBandHtml(variant, info, tz, frF, light) {
   var d = _GATE_DOCS[variant] || _GATE_DOCS.B;
   var byLang = [], langOf = [];
   d.keys.forEach(function (k) {
     _gateLbl(k, !!frF, function (w, i, lg) {
-      (byLang[i] = byLang[i] || []).push(d.keys.length > 1 ? BoardStrings.markHalf('<span class="fx-unit">' + w + '</span>', lg, k) : w);
+      (byLang[i] = byLang[i] || []).push(d.keys.length > 1 ? BoardStrings.markHalf('<span class="fx-unit">' + w + '</span>', lg, k) : '<span class="fx-unit">' + w + '</span>');
       langOf[i] = lg;
       return '';
     }, '');
   });
-  var docs = '', n = 0;
+  var docs = '';
   for (var i = 0; i < byLang.length; i++) {
     if (!byLang[i]) continue;
-    n++;
     docs += BoardStrings.markHalf('<div class="g8-band-ln">' + byLang[i].join(' <span class="g8-band-sep fx-brk">\u00b7</span> ') + '</div>', langOf[i], d.keys.length > 1 ? '' : d.keys[0]);
   }
   if (!docs) return '';
@@ -34182,17 +34213,17 @@ function _gateBandHtml(variant, info, tz, frF, light) {
       var clock = _fidsClockForLang(when, tz, lg);
       var t = String(w), at = t.indexOf('{TIME}');
       if (!clock || at < 0) return '';
-      return '<div class="g8-band-ln">' + t.slice(0, at) + '<b class="g8-band-time"><bdi>' + clock + '</bdi></b>' + t.slice(at + 6) + '</div>';
+      return '<div class="g8-band-ln"><span class="fx-unit">' + t.slice(0, at) + '<b class="g8-band-time"><bdi>' + clock + '</bdi></b>' + t.slice(at + 6) + '</span></div>';
     }, '');
     if (lines) {
-      close = '<span class="g8-band-ico">' + _GATE_BAND_GLYPH.c + '</span><div class="g8-band-tx">' + lines + '</div>';
+      close = '<div class="g8-band-half g8-band-close"><span class="g8-band-ico">' + _GATE_BAND_GLYPH.c + '</span><div class="g8-band-tx">' + lines + '</div></div>';
       attrs = ' data-close-kind="' + info.kind + '" data-close-min="' + info.min + '" data-close-ts="' + info.ts + '"';
     }
   }
-  return '<div class="g8-band' + (d.keys.length > 1 ? ' g8-band-tall' : '') + (light ? ' g8-band-light' : '') + '" data-doc="' + (_GATE_DOCS[variant] ? variant : 'B') + '"' + attrs + '>'
+  return '<div class="g8-band' + (d.keys.length > 1 ? ' g8-band-tall' : '') + (close ? '' : ' g8-band-solo') + (light ? ' g8-band-light' : '') + '" data-doc="' + (_GATE_DOCS[variant] ? variant : 'B') + '"' + attrs + '>'
     + '<div class="g8-band-half g8-band-docs"><span class="g8-band-ico' + (d.glyphs.length > 1 ? ' is-pair' : '') + '">' + glyphs + '</span>'
     + '<div class="g8-band-tx">' + docs + '</div></div>'
-    + '<div class="g8-band-half g8-band-close">' + close + '</div>'
+    + close
     + '</div>';
 }
 // v24006 — THE ROOM THE SIGN LEAVES THE BAND. The band sits between the strip
@@ -34246,6 +34277,9 @@ function _g8BandRoom(band) {
     if (!(minFree < Infinity)) return 0;
     var base = band.getBoundingClientRect().height + minFree - given;
     var want = (band.classList.contains('g8-band-tall') ? 12.4 : 9.5) * vh;
+    // a portrait board stacks the two halves (display-overrides.css): the
+    // close time's half is a second row of the band
+    if (_g8BandStacked(band) && band.querySelector('.g8-band-close')) want += 9.5 * vh;
     var give = Math.max(0, Math.min(want - base, (pad0 < Infinity ? pad0 : 3.2 * vh) - 0.8 * vh));
     if (Math.abs(give - given) > 0.5) {
       for (var j = 0; j < cols.length; j++) {
@@ -34265,6 +34299,13 @@ function _g8BandRoom(band) {
 // shared by the half's lines (one per language). 0 = no limit (no sign to
 // measure); never 0 when there is a sign, so a band with no room at all is
 // fitted to the floor and reported rather than left at its designed size.
+// On a portrait board the halves are stacked (each takes the band's whole
+// width: side by side, a 540px half held an international flight's documents
+// and the close time beside them to 16.75px with 870px of room unused), and
+// the room is shared between the two rows by their lines.
+function _g8BandStacked(band) {
+  try { return getComputedStyle(band).flexDirection === 'column'; } catch (e) { return false; }
+}
 function _g8BandLineRoom(el) {
   try {
     var band = el.closest('.g8-band'), half = el.closest('.g8-band-half');
@@ -34274,10 +34315,49 @@ function _g8BandLineRoom(el) {
     var hcs = getComputedStyle(half);
     var padV = (parseFloat(hcs.paddingTop) || 0) + (parseFloat(hcs.paddingBottom) || 0);
     var lns = half.querySelectorAll('.g8-band-ln');
+    if (_g8BandStacked(band)) room = room * lns.length / Math.max(1, band.querySelectorAll('.g8-band-ln').length);
     var breath = 0;
     for (var i = 1; i < lns.length; i++) breath += parseFloat(getComputedStyle(lns[i]).marginTop) || 0;
     return Math.max(1, (room - padV - breath) / Math.max(1, lns.length));
   } catch (e) { return 0; }
+}
+// v24006 — ONE LAYOUT FOR EVERY LANGUAGE OF THE DOCUMENTS. Where a line
+// holds two facts (an international flight's passport, then its visa), the
+// fitter takes each language's line on its own: one
+// line where it fits, two (broken between the facts, never inside one) where
+// it does not. A French line on two lines over its English on one (YUL,
+// 1920x1080) read as two different notices. So, once the half's lines have
+// their one size (the group), if any of them has taken two lines, every other
+// line of the half breaks at the same place: its dot is dropped and its
+// second fact starts a line (.fx-brk-off), at the wrapped line's line height.
+// The lines are already sized for that: the half's room is shared by its
+// lines, and each fact fits on its own line at the size the group gave.
+// Run after every fit (fidsFitAll): a refit clears the marks first.
+function _g8BandOneLayout(scope) {
+  var halves = (scope || document).querySelectorAll('.g8-band.g8-band-tall .g8-band-docs');
+  for (var i = 0; i < halves.length; i++) {
+    var lns = halves[i].querySelectorAll('.g8-band-ln');
+    var two = false;
+    for (var a = 0; a < lns.length; a++) if (lns[a].classList.contains('fx-wrap')) two = true;
+    for (var b = 0; b < lns.length; b++) {
+      var ln = lns[b], seps = ln.querySelectorAll('.g8-band-sep.fx-brk');
+      var mine = ln.classList.contains('g8-band-brk');
+      // a line the fitter broke itself keeps its own marks
+      if (ln.classList.contains('fx-wrap')) { if (mine) ln.classList.remove('g8-band-brk'); continue; }
+      var force = two && seps.length > 0;
+      // (a refit clears the separators' marks, not this class: look at both)
+      var on = mine && seps.length > 0 && seps[0].classList.contains('fx-brk-off');
+      if (force && !on) {
+        ln.classList.add('g8-band-brk');
+        for (var k = 0; k < seps.length; k++) seps[k].classList.add('fx-brk-off');
+        ln.style.setProperty('line-height', '1.08', 'important');
+      } else if (!force && mine) {
+        ln.classList.remove('g8-band-brk');
+        for (var k2 = 0; k2 < seps.length; k2++) seps[k2].classList.remove('fx-brk-off');
+        ln.style.removeProperty('line-height');
+      }
+    }
+  }
 }
 // The one-airline ticker's deadline line (updateTicker): on a board filtered
 // to one airline (?airline=AC), that airline's own published rule in its own

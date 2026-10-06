@@ -25058,7 +25058,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    padding gives some of itself first where it is short (1280x720, Porter's
    roster, an international flight), and the shared fitter (FIDS_FIT_RULES,
    '.g8-band .g8-band-ln') holds every line to its half and to that room,
-   all at one size: smaller, or a second line, never cut.
+   each half's lines at one size of their own: smaller, or a second line
+   between two whole phrases, never inside one and never cut.
+
+   An airline with no close time (PAL, Pascan, Delta, United), or one whose
+   close time has passed, has no right half: the documents take the whole
+   band (.g8-band-solo, one half that fills it). A portrait board stacks the
+   two halves, each across the band's whole width (the block at the end).
 
    Static: no colour moves or flashes. The pictograms are drawn in
    currentColor: white on a dark half, the airline's ink on a light one,
@@ -25142,9 +25148,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-close .g8-band-ln { font-weight: 600 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-time { font-weight: 800 !important; }
 /* an international flight's two facts in each language: a breath between
-   the languages, and the dot between the passport and the visa quieter
-   than the words (it goes when the two take a line each) */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-tall .g8-band-ln + .g8-band-ln { margin-top: min(.5vh, .35vw) !important; }
+   the languages (in the documents' half only: the close time's two lines
+   keep the room for their size), and the dot between the passport and the
+   visa quieter than the words (it goes when the two take a line each) */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-tall .g8-band-docs .g8-band-ln + .g8-band-ln { margin-top: min(.5vh, .35vw) !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-sep { opacity: .7 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-tall .g8-band-ico { height: min(5.6vh, 4.8vw) !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-tall .g8-band-glyph { height: min(5.6vh, 4.8vw) !important; width: min(5.6vh, 4.8vw) !important; }
+/* v24006 — A PORTRAIT BOARD STACKS THE HALVES. Side by side, each half of a
+   1080-wide board is 540px, and an international flight's documents and
+   the close time beside them were held to 16.75px with 870px of the sign's
+   room unused. Stacked, each takes the band's whole width at its designed
+   size, the documents over the close time, in the room the sign leaves
+   (_g8BandLineRoom shares it between the two rows). */
+@media (orientation: portrait) {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band {
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-half {
+  flex: 0 0 auto !important;
+  min-height: min(9.5vh, 8.8vw) !important;
+}
+}
