@@ -78,6 +78,10 @@ var _ddBusy = false;
 var _ddAuto = [];
 var _ddAutoInfo = {};
 var _ddWatch = {};
+// v24002 — `partial` is airports whose today is live with a later day missing
+// (tomorrow failed or refused for three minutes or more). Never docked; shown
+// so it is never invisible.
+var _ddPartial = {};
 
 function _ddApi() {
   try { if (typeof FIDS_API_BASE !== 'undefined') return FIDS_API_BASE; } catch (e) {}
@@ -137,6 +141,19 @@ function _ddRender() {
          + 'border-radius:12px;padding:3px 10px;font-size:12px;color:#9ca3af;letter-spacing:.5px;">' + c
          + '<span style="letter-spacing:0;">' + what + (since ? ' since ' + since : '') + tail + '</span></span>';
   }).join('');
+  html += Object.keys(_ddPartial || {}).map(function (c) {
+    c = _ddCodeSafe(c);
+    if (!c) return '';
+    var p = _ddPartial[c] || {};
+    var since = _ddHhmm(p.since);
+    var day = /^\d{4}-\d{2}-\d{2}$/.test(String(p.day || '')) ? ' (' + p.day + ')' : '';
+    var what = 'tomorrow' + day + ' ' + (p.failure === 'blocked' ? 'blocked' : 'failing');
+    return '<span title="Today\'s flights answer and are shown live. The airport\'s next day did not come back whole, '
+         + 'so it is left off the board until it does. Never docked: only a blocked today docks." '
+         + 'style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px dotted #52525b;'
+         + 'border-radius:12px;padding:3px 10px;font-size:12px;color:#9ca3af;letter-spacing:.5px;">' + c
+         + '<span style="letter-spacing:0;">' + what + (since ? ' since ' + since : '') + ' — today live, not docked</span></span>';
+  }).join('');
   box.innerHTML = html || '<span style="font-size:11px;color:#6b7280;">nothing docked</span>';
 }
 
@@ -157,6 +174,7 @@ async function ddLoad() {
     _ddAuto = Array.isArray(doc.auto) ? doc.auto.slice() : [];
     _ddAutoInfo = (doc.autoInfo && typeof doc.autoInfo === 'object') ? doc.autoInfo : {};
     _ddWatch = (doc.watch && typeof doc.watch === 'object') ? doc.watch : {};
+    _ddPartial = (doc.partial && typeof doc.partial === 'object') ? doc.partial : {};
     _ddRender();
     _ddSay(doc.seeded ? 'Showing the starting list — no admin has saved one yet.' : '');
   } catch (e) {
