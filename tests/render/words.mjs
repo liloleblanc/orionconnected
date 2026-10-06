@@ -25,9 +25,11 @@
 //   blank on that screen.
 //
 //   What is shown: the gate (its whole centre deck, and its departure
-//   delayed, cancelled, boarding, on final call, closed, at Porter's
-//   pre-boarding, and moved to another gate; and the gate with no flight
-//   left), the departures board, the
+//   delayed, cancelled, boarding (with the band under NOW BOARDING on a
+//   U.S., an international and a domestic flight, checked to be on the
+//   screen with every line fitted), on final call, closed, at
+//   Porter's pre-boarding, and moved to another gate; and the gate with no
+//   flight left), the departures board, the
 //   baggage board, the phone layout of the gate and of the departures board
 //   in each language, the Studio player (a departures, a gate and a baggage
 //   document) in each language, and the stream tour. On the boards and the
@@ -465,7 +467,13 @@ const SETTLE = (ms) => `new Promise(function (res) { setTimeout(function () { re
 // the flight row the gate is showing, changed and repainted.
 // 'empty' is the gate with no flight left: its own screen (the gate number,
 // "Awaiting next flight", the date).
-const GATE_STATES = ['delayed', 'cancelled', 'boarding', 'final', 'gateclosed', 'porter-preboarding', 'gate-change', 'empty'];
+// v24006 — and the boarding screen's band under NOW BOARDING (the documents
+// and the airline's close time) on the routes that change its words: an
+// international flight on WestJet (passport and visa; "Boarding cut-off"), a
+// domestic one on Flair (boarding pass and ID; "Boarding closes"), and one
+// to the U.S. on WestJet (the passport at Moncton; passport or NEXUS card at
+// Montréal, a preclearance airport).
+const GATE_STATES = ['delayed', 'cancelled', 'boarding', 'boarding-intl', 'boarding-domestic', 'boarding-us', 'final', 'gateclosed', 'porter-preboarding', 'gate-change', 'empty'];
 const GATE_STATE = (st) => `(function (st) {
   try {
     if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; }
@@ -490,11 +498,42 @@ const GATE_STATE = (st) => `(function (st) {
     else if (st === 'final') { at(8); f.status = 'final'; }
     else if (st === 'gateclosed') { at(3); f.status = 'gateclosed'; }
     else if (st === 'porter-preboarding') { at(34); f.status = 'boarding'; f.airline = 'PD'; f.flight = 'PD2381'; f._flightKey = 'PD2381'; f._airlineName = 'PORTER'; }
+    else if (st === 'boarding-intl') { at(24); f.status = 'boarding'; f.airline = 'WS'; f.flight = 'WS2604'; f._flightKey = 'WS2604'; f._airlineName = 'WESTJET'; f._locIata = 'CDG'; f.dest = 'Paris'; }
+    else if (st === 'boarding-domestic') { at(30); f.status = 'boarding'; f.airline = 'F8'; f.flight = 'F8902'; f._flightKey = 'F8902'; f._airlineName = 'FLAIR AIRLINES'; f._locIata = 'YYZ'; f.dest = 'Toronto'; }
+    else if (st === 'boarding-us') { at(24); f.status = 'boarding'; f.airline = 'WS'; f.flight = 'WS1272'; f._flightKey = 'WS1272'; f._airlineName = 'WESTJET'; f._locIata = 'BOS'; f.dest = 'Boston'; }
     else if (st === 'gate-change') { var h = {}; h[f.flight] = { previousGate: '4', currentGate: '7', changedAt: Date.now() - 60000 }; setGateHistory(h); }
     renderDedicatedScreen();
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
 })(${jsWord(st)})`;
+// v24006 — and the band is ON THE SCREEN, not only in the markup: under the
+// sign's strip, inside the screen, every line fitted (none reported over
+// the floor), the documents line the route asks for, and the close time
+// where the airline publishes one and it has not passed ('any' route; the
+// variants in lowercase, as page code takes only plain words: 'pn' is the
+// passport, or the passport or NEXUS card at a preclearance airport).
+const BAND_STATES = { boarding: ['any', false], final: ['any', false], 'boarding-intl': ['i', true], 'boarding-domestic': ['d', true], 'boarding-us': ['pn', true] };
+const BAND_CHECK = (want, close) => `(function (want, close) {
+  try {
+    var band = document.querySelector('.g8-board.active .g8-band, .g8-final.active .g8-band');
+    if (!band) return 'no band under the sign';
+    var r = band.getBoundingClientRect();
+    if (!(r.width > 50 && r.height > 20) || r.top < 0 || r.bottom > innerHeight + 1 || r.left < -1 || r.right > innerWidth + 1) return 'the band is not on the screen (' + [r.left, r.top, r.width, r.height].map(Math.round).join(',') + ')';
+    var doc = (band.getAttribute('data-doc') || '').toLowerCase();
+    if (want !== 'any' && (!doc || want.indexOf(doc) < 0)) return 'the documents line is ' + doc + ', the route asks for ' + want;
+    var lns = band.querySelectorAll('.g8-band-ln');
+    if (!band.querySelector('.g8-band-docs .g8-band-ln')) return 'no documents line';
+    for (var i = 0; i < lns.length; i++) {
+      var lr = lns[i].getBoundingClientRect();
+      if (!(lr.height > 4 && lr.width > 4)) return 'a band line is not drawn: ' + lns[i].textContent;
+      if (lns[i].hasAttribute('data-fx-over')) return 'a band line does not fit at the floor: ' + lns[i].textContent;
+      if (lr.top < r.top - 1 || lr.bottom > r.bottom + 1) return 'a band line runs out of the band: ' + lns[i].textContent;
+    }
+    if (close && !band.querySelector('.g8-band-close .g8-band-ln')) return 'no close time';
+    if (band.querySelector('.g8-band-close') && !band.querySelector('.g8-band-close .g8-band-ln')) return 'an empty close half';
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})(${jsWord(want)}, ${close ? 'true' : 'false'})`;
 const GATE_RESET = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
 
 // When the airport's feed is down (v23996, fidsFeedStatus): 'unavailable' —
@@ -701,6 +740,10 @@ async function runChunk(port, name, spec, sets) {
           if (r !== 'ok') { problems.push(`state ${st} did not render: ${r}`); continue; }
           await evalv(SETTLE(1200));
           problems.push(...await read(set, st));
+          if (BAND_STATES[st]) {
+            const b = await evalv(BAND_CHECK(BAND_STATES[st][0], BAND_STATES[st][1]));
+            if (b !== 'ok') problems.push(`state ${st}: ${b}`);
+          }
         }
         await evalv(GATE_RESET);
       }

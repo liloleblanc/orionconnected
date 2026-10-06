@@ -110,7 +110,8 @@ function engine(langs) {
     'const _IATA_CC = ' + braceFrom(CORE, CORE.indexOf('(function () {', CORE.indexOf('const _IATA_CC = ')), '_IATA_CC') + ')();',
     CORE.match(/^const _CC_PARENT = [^;]+;/m)[0],
     CORE.match(/^const _US_Y_IATA = [^;]+;/m)[0],
-    ...['_gateDelayHasTime', 'airportCountry', 'flightRegionKey', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseInfo', '_gateCloseLineHtml'].map(fn),
+    block('var _GATE_CLOSE_ALIAS = {'),
+    ...['_gateDelayHasTime', 'airportCountry', 'flightRegionKey', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseCarrier', '_gateCloseInfo', '_gateCloseLineHtml'].map(fn),
     'return { GATE_CLOSE_POLICY, GATE_CLOSE_WORDS, _GATE_LBL, _gateCloseInfo, _gateCloseLineHtml };'
   ].join('\n'));
   const E = new Function('langs', 'window', 'BoardStrings', src)(langs || ['en', 'fr'], {}, BS);
@@ -132,7 +133,7 @@ const text = (html) => [...String(html).matchAll(/<span class="v2-fi-close-w"[^>
 test('(1) every airline\'s minutes are the ones it publishes, in its own word, each with its page and the date it was read', () => {
   const { GATE_CLOSE_POLICY: P, GATE_CLOSE_WORDS: Wd, _GATE_LBL: L } = engine();
   const want = {
-    AC: [15, 'gateCloses', 'aircanada.com'], WS: [15, 'gateCloses', 'westjet.com'], PD: [10, 'gateCloses', 'flyporter.com'],
+    AC: [15, 'gateCloses', 'aircanada.com'], WS: [15, 'boardingCutoff', 'westjet.com'], PD: [10, 'gateCloses', 'flyporter.com'],
     F8: [20, 'boardingCloses', 'flyflair.com'], TS: [15, 'gateCloses', 'airtransat.com'], AA: [15, 'boardingEnds', 'aa.com'],
     PB: [20, 'gateBeAt', 'palairlines.ca'], DL: [15, 'gateBeAt', 'delta.com'], UA: [30, 'gateBeAt', 'united.com']
   };
@@ -176,6 +177,13 @@ test('(1) the close time is the airline\'s minutes before the airport\'s departu
   assert.equal(E._gateCloseInfo(row({ status: 'delayed', upd: '19:00' }), 'AC', later, now, 'YQM').ts, later - 15 * MIN);
   // Keyed on the carrier the gate is branded for, not the operator.
   assert.equal(E._gateCloseInfo(row({ airline: 'QK' }), 'AC', DEP, now, 'YQM').carrier, 'AC');
+  // v24006 — and a row that reaches the gate under Rouge's, Jazz's or
+  // Encore's own code, or an ICAO designator, is the airline it flies as.
+  for (const [code, as] of [['RV', 'AC'], ['QK', 'AC'], ['ACA', 'AC'], ['JZA', 'AC'], ['ROU', 'AC'], ['WR', 'WS'], ['WJA', 'WS'], ['POE', 'PD'], ['FLE', 'F8'], ['TSC', 'TS']]) {
+    assert.equal(E._gateCloseInfo(row({ airline: code }), code, DEP, now, 'YQM').carrier, as, code);
+  }
+  // WestJet's word is its own: a boarding cut-off.
+  assert.equal(E._gateCloseInfo(row({ airline: 'WS' }), 'WS', DEP, now, 'YQM').kind, 'boardingCutoff');
 });
 
 test('(1) nothing is said when nothing can be: unknown airline, no time, a sign\'s word, Delayed with no new time, past the close', () => {
@@ -397,7 +405,8 @@ test('(1) the ticker states no airport-wide number; a one-airline board says tha
   assert.match(span.textContent, /CHECK YOUR AIRLINE’S BOARDING GATE DEADLINE  ·  VÉRIFIEZ L’HEURE LIMITE À LA PORTE D’EMBARQUEMENT DE VOTRE TRANSPORTEUR/);
   assert.doesNotMatch(span.textContent, /MINUTES/);
   T.set('WS'); T.updateTicker();
-  assert.match(span.textContent, /WESTJET: BOARDING GATE CLOSES 15 MINUTES BEFORE DEPARTURE  ·  WESTJET : FERMETURE DE LA PORTE D’EMBARQUEMENT 15 MINUTES AVANT LE DÉPART/);
+  // v24006 — WestJet in its own words: "Boarding cut-off" / « Heure limite pour l'embarquement ».
+  assert.match(span.textContent, /WESTJET: BOARDING CUT-OFF 15 MINUTES BEFORE DEPARTURE  ·  WESTJET : HEURE LIMITE POUR L’EMBARQUEMENT 15 MINUTES AVANT LE DÉPART/);
   T.set('PD'); assert.equal(T._tickerCloseLine('en'), 'PORTER: BOARDING GATE CLOSES 10 MINUTES BEFORE DEPARTURE');
   T.set('PB'); assert.equal(T._tickerCloseLine('fr'), 'PAL AIRLINES : PRÉSENTEZ-VOUS À LA PORTE D’EMBARQUEMENT 20 MINUTES AVANT LE DÉPART');
   T.set('F8'); assert.equal(T._tickerCloseLine('en'), 'FLAIR AIRLINES: BOARDING CLOSES 20 MINUTES BEFORE DEPARTURE');

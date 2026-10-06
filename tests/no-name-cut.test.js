@@ -117,7 +117,8 @@ test('one fitter: every surface hands its names to fidsFitText through FIDS_FIT_
     '.wxc-mon-city',                                                                         // the weather plates
     '.gate-map-note',                                                                        // the maps' stand label
     '.v2-fi-orbcode', '.bigcraft-flightcap',                                                 // the gate's badge, the big map
-    '.v2-fi-mline1', '.v2-rc-fi-tval', '.octb-date', '.g8-bw-note'                           // held to the floor
+    '.v2-fi-mline1', '.v2-rc-fi-tval', '.octb-date',                                         // held to the floor
+    '.g8-band .g8-band-ln'                                                                    // the boarding screen's band (v24006)
   ]) assert.ok(rules.includes(sel), `${sel} is not in FIDS_FIT_RULES`);
   // one pass fits them all, after every render, language change, resize and font load
   assert.match(CORE, /_fidsPairT = requestAnimationFrame\(function \(\) \{\s*_fidsPairT = null; try \{ fidsFitAll\(document\); \} catch \(e\) \{\}\s*_fidsPairSeparators\(document\);/);

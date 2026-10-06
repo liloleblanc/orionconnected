@@ -511,7 +511,9 @@ async function boardPass(t, chrome, palette) {
   try {
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     let port = null;
-    for (let i = 0; i < 100 && !port; i++) {
+    // up to 45 s: on a busy CI runner, with the other Chrome tests starting
+    // beside it, Chrome took more than the old 10 s to write its port file
+    for (let i = 0; i < 450 && !port; i++) {
       try { port = fs.readFileSync(path.join(prof, 'DevToolsActivePort'), 'utf8').split('\n')[0].trim(); } catch (e) { await sleep(100); }
     }
     assert.ok(port, 'Chrome did not open a debugging port');

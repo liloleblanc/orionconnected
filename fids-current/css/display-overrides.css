@@ -20006,36 +20006,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* Porter: the FRENCH half of the cabin name in Porter blue, as drawn — by
    language, not position: a French-first airport puts it first */
 html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-sub .g8-pair-h[lang="fr"] { color: #2e86de !important; }
-/* the strip's reminder: under the phase words, smaller, attention-coloured */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-text .g8-bw-note {
-  display: block !important;
-  font-size: .58em !important;
-  font-weight: 700 !important;
-  line-height: 1.15 !important;
-  margin-top: .12em !important;
-  color: #c2410c !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: clip !important;
-  max-width: 100% !important;
-}
-/* the final-call header carries the same reminder under FINAL CALL */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-final-hdr .g8-bw-note {
-  display: block !important;
-  font-size: .42em !important;
-  font-weight: 700 !important;
-  line-height: 1.15 !important;
-  margin-top: .15em !important;
-  color: #c2410c !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: clip !important;
-  max-width: 100% !important;
-}
+/* v24006 — the strip's reminder (Porter's ID note under NOW BOARDING and
+   under FINAL CALL) moved to the band under the strip, in every airline's
+   own colours and words (the v24006 block at the end of this file): the
+   strip holds its headline alone, at full size. */
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -25061,4 +25035,139 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap .v2-rc-acb-opby b {
   font-size: max(var(--fx-floor, 12px), calc(var(--acb-h) * 0.34)) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v24006 — THE BOARDING SCREEN'S BAND, IN THE AIRLINE'S OWN COLOURS.
+
+   Under NOW BOARDING (and under FINAL CALL), for the whole of boarding: the
+   travel documents this flight asks for on the left, on the airline's first
+   colour in its ink, and the airline's own close time on the right, on its
+   second colour in white (_gateBandHtml). The pair is the lower right
+   panel's (_rc2Pair, written on .g8-wrap as --rc2-a / --rc2-a-ink / --rc2-b):
+   Air Canada's deeper red over its black, Porter's cream with navy type over
+   its navy, WestJet's teal with navy type (white on the teal is 2.64:1) over
+   its navy, Flair's white with black type over its black. Every pair holds
+   4.5:1 or better.
+
+   The band takes its height from the sign's gaps: it is a fixed row of the
+   board's column, and the sign under it gives up the empty space round its
+   value row; no size on the sign changes. Two lines (one per language) make
+   the mockup's 9.5vh where the sign leaves that much; the room it leaves is
+   measured (_g8BandRoom, written here as --g8-band-room), the sign's top
+   padding gives some of itself first where it is short (1280x720, Porter's
+   roster, an international flight), and the shared fitter (FIDS_FIT_RULES,
+   '.g8-band .g8-band-ln') holds every line to its half and to that room,
+   each half's lines at one size of their own: smaller, or a second line
+   between two whole phrases, never inside one and never cut.
+
+   An airline with no close time (PAL, Pascan, Delta, United), or one whose
+   close time has passed, has no right half: the documents take the whole
+   band (.g8-band-solo, one half that fills it). A portrait board stacks the
+   two halves, each across the band's whole width (the block at the end).
+
+   Static: no colour moves or flashes. The pictograms are drawn in
+   currentColor: white on a dark half, the airline's ink on a light one,
+   never on a box of their own.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  min-height: min(9.5vh, 8.8vw, var(--g8-band-room, 9.5vh)) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-half {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: min(1.7vh, 1.6vw) !important;
+  padding: min(.9vh, .6vw) min(2.9vh, 2.4vw) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-docs {
+  background: var(--rc2-a, #0c1119) !important;
+  color: var(--rc2-a-ink, #ffffff) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-close {
+  background: var(--rc2-b, #0c1119) !important;
+  color: #ffffff !important;
+}
+/* a light first colour (Porter's cream, WestJet's teal, Flair's white) is
+   kept off the white strip above it by a rule in the second colour */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-light .g8-band-docs {
+  box-shadow: inset 0 min(.3vh, .2vw) 0 var(--rc2-b, #0c1119) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-ico {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: min(.3vh, .3vw) !important;
+  height: min(4.8vh, 4.4vw) !important;
+  color: inherit !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-glyph {
+  display: block !important;
+  height: min(4.8vh, 4.4vw) !important;
+  width: min(4.8vh, 4.4vw) !important;
+  flex: 0 0 auto !important;
+  color: inherit !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-tx {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-ln {
+  display: block !important;
+  font-size: min(2.75vh, 2.4vw) !important;
+  font-weight: 700 !important;
+  line-height: 1.16 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  text-align: start !important;
+  max-width: 100% !important;
+  color: inherit !important;
+  text-shadow: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-close .g8-band-ln { font-weight: 600 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-time { font-weight: 800 !important; }
+/* an international flight's two facts in each language: a breath between
+   the languages (in the documents' half only: the close time's two lines
+   keep the room for their size), and the dot between the passport and the
+   visa quieter than the words (it goes when the two take a line each) */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-tall .g8-band-docs .g8-band-ln + .g8-band-ln { margin-top: min(.5vh, .35vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-sep { opacity: .7 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-tall .g8-band-ico { height: min(5.6vh, 4.8vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band.g8-band-tall .g8-band-glyph { height: min(5.6vh, 4.8vw) !important; width: min(5.6vh, 4.8vw) !important; }
+/* v24006 — A PORTRAIT BOARD STACKS THE HALVES. Side by side, each half of a
+   1080-wide board is 540px, and an international flight's documents and
+   the close time beside them were held to 16.75px with 870px of the sign's
+   room unused. Stacked, each takes the band's whole width at its designed
+   size, the documents over the close time, in the room the sign leaves
+   (_g8BandLineRoom shares it between the two rows). */
+@media (orientation: portrait) {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band {
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-band .g8-band-half {
+  flex: 0 0 auto !important;
+  min-height: min(9.5vh, 8.8vw) !important;
+}
 }
