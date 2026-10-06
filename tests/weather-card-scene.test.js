@@ -300,12 +300,19 @@ test('no malformed percentages reached the stylesheet', () => {
 
 // ── v23843: the footage is the whole picture; the screens are translucent ─
 
-test('the hours and the days are translucent over the footage, dark enough for white type', () => {
+test('the hours and the days sit over the footage, dimmed by one near-black layer, dark enough for white type', () => {
+  // v24014 — the footage still plays behind every screen, but the dimming is
+  // no longer each screen's own background (two of those crossfading let the
+  // clip through brighter at every handover): ONE layer, the wrap's ::after,
+  // lies over every clip and under every screen, the airline's near-black at
+  // 70 %, and the screens themselves are transparent.
   const rules = [...CSS.matchAll(/\.wxcard-wrap > \.wxc-screen \{[^}]*\}/g)].map(m => m[0]);
   const live = rules[rules.length - 1];
-  const alphas = [...live.matchAll(/rgba\(\d+,\d+,\d+,(\.\d+|\d\.\d+)\)/g)].map(m => Number(m[1]));
-  assert.ok(alphas.length >= 2, 'the live screen background is a translucent gradient');
-  for (const a of alphas) assert.ok(a >= 0.45 && a <= 0.8, `stop alpha ${a}: the footage must show through, and the type must still read`);
+  assert.match(live, /background: transparent !important/, 'the screens carry no ground of their own');
+  const scrim = [...CSS.matchAll(/\.wxcard-wrap::after \{[^}]*\}/g)].map(m => m[0]).pop();
+  assert.ok(scrim, 'the dimming layer exists');
+  const a = Number((scrim.match(/background: rgba\(var\(--wxc-g, [\d,]+\), (\.\d+|\d\.\d+)\)/) || [])[1]);
+  assert.ok(a >= 0.45 && a <= 0.8, `layer alpha ${a}: the footage must show through, and the type must still read`);
   assert.match(CSS, /\.wxcard-wrap > \.wxc-s1 \{ background: transparent !important; \}/, 'screen one shows the footage plain, its plates carry their own ground');
   assert.match(CSS, /\.wxcard-wrap > \.wxc-plate, [^{]*\.wxcard-wrap > video\.wxc-set \{ display: none !important; \}/, 'the plate and the set are retired in the stylesheet as well');
 });

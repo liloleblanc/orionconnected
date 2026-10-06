@@ -326,9 +326,12 @@ test('the caption is never stacked: no step puts the operator under the aircraft
   }
   // what goes into two tiers is INSIDE a half: the operator's labels over
   // its mark, a model's labels over the model; never the halves themselves
-  const tail = CSS.slice(CSS.indexOf('v24004 — THE CAPTION IS ONE ROW, AND THE ART SITS IN THE SKY IT LEAVES'));
   // the caption's own rules only: blocks appended after this one (the
-  // boarding band, v24010) are other screens' and lay their own text out
+  // boarding band, v24010; the weather card, v24014) are other screens' and
+  // lay their own text out
+  const capAt = CSS.indexOf('v24004 — THE CAPTION IS ONE ROW, AND THE ART SITS IN THE SKY IT LEAVES');
+  const capEnd = CSS.indexOf('\n/* ══ ', capAt);
+  const tail = CSS.slice(capAt, capEnd > capAt ? capEnd : undefined);
   const tiers = tail.replace(/\/\*[\s\S]*?\*\//g, '').split('}').filter((r) => /flex-direction: column/.test(r) && /\.v2-rc-acb/.test(r.split('{')[0])).map((r) => r.split('{')[0].trim().split(' ').slice(-2).join(' '));
   assert.deepEqual(tiers, ['.v2-rc-acb-cap.acb-opstack .v2-rc-acb-opby', '.v2-rc-acb-cap.acb-acstack .v2-rc-acb-ac']);
   // the condensed width (75%) is gone: the words read visibly smaller in it

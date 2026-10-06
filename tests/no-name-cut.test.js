@@ -447,7 +447,14 @@ test('the board row, the gate, the belts, the inbound line, the map label and th
   assert.match(CORE, /<span class="b3-city">\$\{_cityApHtml\(_b3City, _b3Code, false, !!_b3Code\)\}<\/span>/);
   assert.match(CORE, /_label = _cityApHtml\(_cityPlain, _tailCode, false, true\) \+ _tailHtml\(_tailCode\.toUpperCase\(\)\);/);
   assert.match(CORE, /_label = _cityApHtml\(cityDisp, _iataUp, false, true\) \+ _tailHtml\(_iataUp\);/);
-  assert.match(CORE, /'<div class="wxc-mon-city"><span class="wxc-mon-name">' \+ _cityApHtml\(_wxCityOf\(iata\), iata, false, true\) \+ '<\/span>\\u00a0<span class="wxc-mon-iata">'/);
+  // v24014 — the weather card: the destination's band ties its code on, and
+  // each plate writes its city and, on the line under it, its airport, cut
+  // from the same words at the same ' · ' _cityApHtml splits at
+  assert.match(CORE, /'<div class="wxc-sc-city"><span class="wxc-sc-name">' \+ _cityApHtml\(_wxCityOf\(dest\), dest, false, true\) \+ '<\/span>\\u00a0<span class="wxc-sc-chip">'/);
+  assert.match(CORE, /var s = String\(_wxCityOf\(iata\) \|\| ''\), i = s\.lastIndexOf\(' · '\);/);
+  assert.match(CORE, /try \{ names = _apSublineNames\(\) \|\| \{\}; \}/);
+  assert.match(CORE, /'<div class="wxc-mon-city"><span class="wxc-mon-name">' \+ cp\.city \+ '<\/span><\/div>'/);
+  assert.match(CORE, /'<div class="wxc-mon-subl">' \+ \(cp\.ap \? '<span class="wxc-mon-ap">' \+ cp\.ap \+ '<\/span>' : ''\) \+ '<span class="wxc-mon-iata">'/);
   assert.match(CORE, /var _destCityHtml = _destCityName \? _cityApHtml\(_destCityName, _dIata\) : _destCityName;/);
   assert.match(CORE, /var _destValue = _dfCity \|\| _destCityHtml \|\| _destIataDisp;/);
   assert.match(OVR, /\.ap-sub \{ white-space: nowrap !important; font-size: max\(0\.8em, var\(--fx-floor, 12px\)\); \}/);
