@@ -199,13 +199,16 @@ async function browser(alarm) {
   const prof = fs.mkdtempSync(path.join(base, 'prof-words-'));
   const args = ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--user-data-dir=${prof}`, `--window-size=${W},${H}`,
     '--remote-debugging-pipe', '--autoplay-policy=no-user-gesture-required', '--mute-audio', '--no-first-run', '--no-default-browser-check'];
-  if (process.env.CI) args.push('--no-sandbox');
+  // CI runners give Chrome a small /dev/shm; without this a long run can lose
+  // its renderer, which reads as 'the browser went away'
+  if (process.env.CI) args.push('--no-sandbox', '--disable-dev-shm-usage');
   // Without LIVE the page reaches nothing but this checkout: no feed, no
   // weather, no hotel — the same screens on every run, in CI and here.
   if (!LIVE) args.push('--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1');
   // perl's alarm puts a hard ceiling on every browser even if this script dies
   // before it can kill it; each one serves a few language sets, well inside it
-  const chrome = spawn('perl', ['-e', 'alarm ' + (alarm || +process.env.CHROME_ALARM || 120) + '; exec @ARGV', CHROME, ...args, 'about:blank'], { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] });
+  const alarmS = alarm || +process.env.CHROME_ALARM || 120, born = Date.now();
+  const chrome = spawn('perl', ['-e', 'alarm ' + alarmS + '; exec @ARGV', CHROME, ...args, 'about:blank'], { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] });
   const out = chrome.stdio[3], inp = chrome.stdio[4];
   let id = 0, buf = '';
   const pend = new Map();
@@ -220,7 +223,14 @@ async function browser(alarm) {
       else if (msg.method === 'Runtime.consoleAPICalled' && msg.params.type === 'error') errors.push(msg.params.args.map((a) => a.value || a.description || '').join(' ').split('\n').slice(0, 3).join(' | '));
     }
   });
-  inp.on('close', () => { for (const f of pend.values()) f({ error: { message: 'the browser went away' } }); pend.clear(); });
+  // a browser that lived to its alarm was stopped by it: a chunk too long for
+  // its ceiling (give the surface a smaller chunk or a longer alarm), not a
+  // fault in the page
+  inp.on('close', () => {
+    const lived = (Date.now() - born) / 1000;
+    const why = lived >= alarmS - 2 ? 'the browser was stopped by its ' + alarmS + ' s alarm after ' + Math.round(lived) + ' s (this surface needs a smaller chunk or a longer alarm)' : 'the browser went away after ' + Math.round(lived) + ' s';
+    for (const f of pend.values()) f({ error: { message: why } }); pend.clear();
+  });
   const send = (method, params = {}, sessionId, ms = 60000) => new Promise((ok, no) => {
     const i = ++id;
     const t = setTimeout(() => { pend.delete(i); no(new Error(method + ' timed out')); }, ms);
@@ -565,9 +575,9 @@ const STUDIO_SEED = `(function () {
 })()`;
 
 export const SURFACES = {
-  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, feed: true, chunk: 2, alarm: 200, parallel: 2 },
-  departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 5 },
-  baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 5 },
+  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, feed: true, chunk: 2, alarm: 280, parallel: 2 },
+  departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
+  baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
   // the phone: one language, the one the passenger picked (fids_mobile_lang)
   'phone-gate': { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
   'phone-departures': { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
@@ -576,14 +586,14 @@ export const SURFACES = {
     seed: (port) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM`, families: ['fids', 'gids', 'bids'], ready: PLAYER_UP, sets: SINGLES, chunk: 2, perSet: true, alarm: 240 },
   // the arrivals board (the departures board's other side)
   arrivals: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`,
-    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh'], ['it']], chunk: 6 },
+    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh'], ['it']], chunk: 3, alarm: 240 },
   // a Québec airport: French leads whenever it is chosen (BoardStrings.FR_FIRST)
   'quebec-departures': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true,
-    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja']], chunk: 4 },
+    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja']], chunk: 2, alarm: 240 },
   'quebec-arrivals': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true,
-    prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`, sets: [['en', 'fr'], ['es', 'zh']], chunk: 2 },
+    prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`, sets: [['en', 'fr'], ['es', 'zh']], chunk: 2, alarm: 240 },
   'quebec-gate': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YUL&mode=${MODE}&gate=72&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, feed: true,
-    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['en']], chunk: 2, alarm: 220, parallel: 2 },
+    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['en']], chunk: 2, alarm: 280, parallel: 2 },
   // the stream's rotation page: the boards it rotates, in its frames
   rotate: { url: (port, set) => `http://127.0.0.1:${port}/rotate.html?ap=YQM&mode=${MODE}&rotate=fids,gids,bids&dwell=9&langs=${set.join(',')}`, ready: SETTLE(15000),
     sets: [['de'], ['ar', 'ja'], ['fr', 'en']], perSet: true, waits: [0, 9000, 9000], chunk: 3, alarm: 200 },
