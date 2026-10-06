@@ -82,11 +82,11 @@ test('the arrival is read in the zone it is printed in, against the board\'s tod
 });
 
 test('the three rail times each carry their own day line, inside the value the fitter sizes', () => {
-  assert.match(CORE, /function _shelf\(icon, en, second, val, valCls, rowCls, under, foot\)/);
+  assert.match(CORE, /function _shelf\(icon, en, second, val, valCls, rowCls, under\)/);
   assert.match(CORE, /'<div class="v2-fi-value ' \+ \(valCls \|\| ''\) \+ '">' \+ val \+ \(under \|\| ''\) \+ '<\/div>'/);
-  // v23968 — the airline's gate-close line is the card's footer, outside the
-  // value (gate-close-time.test.js); the day line stays inside it.
-  assert.match(CORE, /_shelf\(_badge\(_svgBoarding\)[^\n]*_gateDayLineHtml\(vars && vars\.dayBoard\), _gcl\)/);
+  // v24012 — the Boarding card's day line, and nothing after it: the
+  // gate-close footer (v23968) is gone (gate-close-time.test.js).
+  assert.match(CORE, /_shelf\(_badge\(_svgBoarding\)[^\n]*_gateDayLineHtml\(vars && vars\.dayBoard\)\)/);
   assert.match(CORE, /_shelf\(_badge\(_svgDepart\)[^\n]*_gateDayLineHtml\(vars && vars\.dayDepart\)\)/);
   // v23946 — the Arrival's day line is followed by the destination's terminal
   // and arrival gate (tests/gate-arrival-from-destination.test.js).

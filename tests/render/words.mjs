@@ -24,7 +24,8 @@
 //   variable, a helper copied under another name) fails too: it rendered
 //   blank on that screen.
 //
-//   What is shown: the gate (its whole centre deck, and its departure
+//   What is shown: the gate (its whole centre deck, its three information
+//   cards each through its own ?scene=, and its departure
 //   delayed, cancelled, boarding (with the band under NOW BOARDING on a
 //   U.S., an international and a domestic flight, checked to be on the
 //   screen with every line fitted), on final call, closed, at
@@ -534,6 +535,60 @@ const BAND_CHECK = (want, close) => `(function (want, close) {
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
 })(${jsWord(want)}, ${close ? 'true' : 'false'})`;
+// v24012 — and the centre deck's three cards (gate-centre-cards.test.js),
+// each reached through its own ?scene= pin (written into the address, as a
+// reviewer would load it), with the gate's departure 50 minutes out and
+// Scheduled so all three are due (the gate-closes card shows only in the last
+// 45 minutes before the close): the card on the screen, inside the centre
+// panel, and every one of its lines fitted and inside it.
+const CARD_SCENES = ['ovcard', 'docscard', 'closecard'];
+const CARD_PREP = `(function () {
+  try {
+    var f = window._gateCurrentFlight;
+    if (!f) return 'no flight on the gate';
+    if (!window.__wsOrig) window.__wsOrig = JSON.stringify(f);
+    var o = JSON.parse(window.__wsOrig);
+    Object.keys(o).forEach(function (k) { f[k] = o[k]; });
+    var tz = (AP[(document.getElementById('apSel') || {}).value] || AP.YQM || {}).tz;
+    f._sortTs = Date.now() + 50 * 60000;
+    f.time = new Date(f._sortTs).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    f.upd = null; f._revTs = null; f.status = 'scheduled';
+    try { setGateHistory({}); } catch (e) {}
+    renderDedicatedScreen();
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const CARD_SCENE = (t) => `(function (t) {
+  try {
+    var u = new URL(location.href); u.searchParams.set('scene', t); history.replaceState(null, '', u.toString());
+    var sl = _buildGateAdSlideList(), i = -1;
+    for (var k = 0; k < sl.length; k++) if (sl[k] && sl[k].type === t) { i = k; break; }
+    if (i < 0) return 'the deck has no ' + t + ' (' + sl.map(function (x) { return x && x.type; }).join(',') + ')';
+    _gateAdIndex = i;
+    window._gateAdAuthChange = true; renderGateAd(i); window._gateAdAuthChange = false;
+    return 'ok';
+  } catch (e) { window._gateAdAuthChange = false; return 'error ' + e.message; }
+})(${jsWord(t)})`;
+const CARD_CHECK = (t) => `(function (t) {
+  try {
+    var screen = document.getElementById('gateAdCarousel');
+    var card = screen && screen.querySelector(':scope > .gcard[data-gcard="' + t + '"]');
+    if (!card) return 'the ' + t + ' card is not on the screen';
+    var r = card.getBoundingClientRect(), s = screen.getBoundingClientRect();
+    if (!(r.width > 100 && r.height > 100) || r.left < s.left - 1 || r.right > s.right + 1 || r.top < s.top - 1 || r.bottom > s.bottom + 1) return 'the ' + t + ' card is not inside the centre panel';
+    var over = card.querySelector('[data-fx-over]');
+    if (over) return 'a line does not fit at the floor: ' + over.textContent;
+    var els = card.querySelectorAll('.gc-ttl, .gc-lbl, .gc-sub, .gc-t, .gc-stw, .gc-day, .gc-dtitle, .gc-hl, .gc-dl, .gc-gtl, .gc-bigt, .gc-bday, .gc-rule, .gc-dlbl, .gc-dt');
+    if (!els.length) return 'the ' + t + ' card has no words';
+    for (var i = 0; i < els.length; i++) {
+      var b = els[i].getBoundingClientRect();
+      if (b.width < 1) continue;
+      if (b.left < r.left - 1 || b.right > r.right + 1 || b.top < r.top - 1 || b.bottom > r.bottom + 1) return 'a line runs out of the card: ' + els[i].textContent;
+    }
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})(${jsWord(t)})`;
+const CARD_RESET = `(function () { try { var u = new URL(location.href); u.searchParams.delete('scene'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`;
 const GATE_RESET = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
 
 // When the airport's feed is down (v23996, fidsFeedStatus): 'unavailable' —
@@ -614,7 +669,7 @@ const STUDIO_SEED = `(function () {
 })()`;
 
 export const SURFACES = {
-  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, feed: true, chunk: 2, alarm: 280, parallel: 2 },
+  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, cards: true, states: true, feed: true, chunk: 2, alarm: 280, parallel: 2 },
   departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
   baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
   // the phone: one language, the one the passenger picked (fids_mobile_lang)
@@ -732,6 +787,22 @@ async function runChunk(port, name, spec, sets) {
             }
           }
         }
+      }
+      // the centre deck's three cards, each through its own ?scene= (v24012)
+      if (spec.cards) {
+        const prep = await evalv(CARD_PREP);
+        if (prep !== 'ok') problems.push(`the centre cards: ${prep}`);
+        else {
+          for (const t of CARD_SCENES) {
+            const r = await evalv(CARD_SCENE(t));
+            if (r !== 'ok') { problems.push(`scene ${t}: ${r}`); continue; }
+            await evalv(SETTLE(1500));
+            problems.push(...await read(set, t));
+            const c = await evalv(CARD_CHECK(t));
+            if (c !== 'ok') problems.push(`scene ${t}: ${c}`);
+          }
+        }
+        await evalv(CARD_RESET);
       }
       // the gate's departure, through every state a passenger meets
       if (spec.states) {
@@ -854,7 +925,7 @@ async function main() {
         const out = new Array(chunks.length);
         let next = 0;
         const lane = async () => { while (next < chunks.length) { const k = next++; out[k] = await runChunk(port, name, spec, chunks[k]); } };
-        await Promise.all(Array.from({ length: Math.max(1, spec.parallel || 1) }, lane));
+        await Promise.all(Array.from({ length: Math.max(1, Number(process.env.WORDS_PARALLEL) || spec.parallel || 1) }, lane));
         return out;
       })());
     }

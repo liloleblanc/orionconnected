@@ -20,6 +20,8 @@
 //     to 15px at 1280x720). The ticker's airport-wide "30 minutes" and "15 minutes"
 //     lines, wrong for WestJet, Porter and Flair, are gone. Every word is in
 //     the gate's label table (_GATE_LBL), all nine languages.
+//     v24012 — the footer itself is gone: the centre deck's overview and
+//     gate-closes cards say the close time now (gate-centre-cards.test.js).
 // (2) "SCHEDULED" STAYS SCHEDULED. The adapters folded "On Time", "Expected",
 //     "Scheduled" and a blank into one 'scheduled', and the board turned that
 //     into "On time" by the clock — so a gate whose feed said only "Scheduled"
@@ -111,8 +113,8 @@ function engine(langs) {
     CORE.match(/^const _CC_PARENT = [^;]+;/m)[0],
     CORE.match(/^const _US_Y_IATA = [^;]+;/m)[0],
     block('var _GATE_CLOSE_ALIAS = {'),
-    ...['_gateDelayHasTime', 'airportCountry', 'flightRegionKey', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseCarrier', '_gateCloseInfo', '_gateCloseLineHtml'].map(fn),
-    'return { GATE_CLOSE_POLICY, GATE_CLOSE_WORDS, _GATE_LBL, _gateCloseInfo, _gateCloseLineHtml };'
+    ...['_gateDelayHasTime', 'airportCountry', 'flightRegionKey', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseCarrier', '_gateCloseInfo'].map(fn),
+    'return { GATE_CLOSE_POLICY, GATE_CLOSE_WORDS, _GATE_LBL, _gateCloseInfo };'
   ].join('\n'));
   const E = new Function('langs', 'window', 'BoardStrings', src)(langs || ['en', 'fr'], {}, BS);
   // the words: the frozen gate table, and the one store new words live in
@@ -124,7 +126,6 @@ function engine(langs) {
 const DEP = Date.parse('2026-10-04T21:15:00Z');
 const TZ = 'America/Moncton';
 const row = (o) => Object.assign({ flight: 'AC1987', airline: 'AC', status: 'ontime', _sortTs: DEP, _locIata: 'YYZ', time: '18:15' }, o || {});
-const text = (html) => [...String(html).matchAll(/<span class="v2-fi-close-w"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1].replace(/\u00a0/g, ' '));
 
 // ════════════════════════════════════════════════════════════════════════════
 // (1) THE GATE-CLOSE TIME
@@ -254,36 +255,14 @@ test('(1) United\'s deadline is its international one: every flight to or from C
   assert.equal(E._gateCloseInfo(ua('ZZZ'), 'UA', DEP, now, 'EWR'), null, 'unknown destination');
 });
 
-test('(1) the line reads the airline\'s minutes and each language\'s own clock, in its own word, French first in Québec', () => {
-  const E = engine(['en', 'fr']);
-  const info = { carrier: 'AC', min: 15, kind: 'gateCloses', ts: Date.parse('2026-10-04T20:05:00Z') };
-  const html = E._gateCloseLineHtml(info, TZ, false);
-  assert.deepEqual(text(html), [
-    'Gate closes 15 min before departure · 5:05pm',
-    'Fermeture de la porte 15 min avant le départ · 17:05'
-  ]);
-  assert.match(html, /^<div class="v2-fi-closefoot"><div class="v2-fi-closeline" data-close-kind="gateCloses" data-close-min="15">/);
-  assert.deepEqual(text(E._gateCloseLineHtml(info, TZ, true)), [
-    'Fermeture de la porte 15 min avant le départ · 17:05',
-    'Gate closes 15 min before departure · 5:05pm'
-  ], 'French first in Québec');
-  // Each airline's own word for its rule.
-  const as = (kind, min) => text(E._gateCloseLineHtml(Object.assign({}, info, { kind, min }), TZ, false));
-  assert.deepEqual(as('gateBeAt', 20), ['Be at the gate 20 min before departure · 5:05pm', 'Présentez-vous à la porte 20 min avant le départ · 17:05']);
-  assert.equal(as('boardingCloses', 20)[0], 'Boarding closes 20 min before departure · 5:05pm', 'Flair: "Boarding closes"');
-  assert.equal(as('boardingEnds', 15)[0], 'Boarding ends 15 min before departure · 5:05pm', 'American: "Boarding ends"');
-  // Morning: no leading zero in English, two digits in the 24-hour languages.
-  const am = Object.assign({}, info, { ts: Date.parse('2026-10-05T09:10:00Z') });   // 06:10 ADT
-  assert.deepEqual(text(E._gateCloseLineHtml(am, TZ, false)).map((t) => t.split(' · ')[1]), ['6:10am', '06:10']);
-  assert.equal(E._gateCloseLineHtml(null, TZ, false), '');
-  // The clock is glued to its words, so a wrapped line never strands it.
-  assert.match(html, /départ\u00a0·\u00a017:05</);
-  assert.match(html, /15\u00a0min avant/, 'the minutes keep their unit');
-  assert.equal(E._gateCloseLineHtml(Object.assign({}, info, { kind: 'close' }), TZ, false), '', 'an unknown kind says nothing');
-});
+// v24012 — THE RAIL'S LINE IS GONE. The close time the airline publishes
+// is said by the centre deck's overview and gate-closes cards
+// (tests/gate-centre-cards.test.js), at a size it can be read at; the line
+// that sat under the Boarding time as a footer (v23968), its fitter and its
+// styles are removed, and the Boarding card is the boarding time alone.
+// What stays here is the rule itself (_gateCloseInfo, above) and its words.
 
-test('(1) the line\'s words are in the gate\'s label table, all nine board languages, each its own words, with no placeholder left', () => {
-  const info = { carrier: 'AC', min: 15, kind: 'gateCloses', ts: Date.parse('2026-10-04T20:05:00Z') };
+test('(1) the airline\'s sentence for each kind: its minutes and the clock, in all nine board languages, each its own words, no placeholder left', () => {
   const E0 = engine();
   for (const w of Object.values(E0.GATE_CLOSE_WORDS)) {
     for (const key of [w.card, w.ticker]) {
@@ -295,80 +274,37 @@ test('(1) the line\'s words are in the gate\'s label table, all nine board langu
         if (key === w.card) assert.ok(o[lg].includes('{TIME}'), key + ' ' + lg + ' says the clock time');
         else assert.ok(o[lg].includes('{AIRLINE}'), key + ' ' + lg + ' names the airline');
         if (lg !== 'en') assert.notEqual(o[lg], o.en, key + ' ' + lg + ' is not English copied');
+        const t = o[lg].split('{MIN}').join('15').split('{TIME}').join('17:05').split('{AIRLINE}').join('AC');
+        assert.doesNotMatch(t, /\{[A-Z]+\}/, key + ' ' + lg + ': ' + t);
       }
     }
   }
   // German word order: the infinitive last.
   assert.equal(E0._GATE_LBL.gateBeAt.de, '{MIN} Min. vor Abflug am Gate sein · {TIME}');
-  for (const lg of LANGS) {
-    for (const kind of Object.keys(E0.GATE_CLOSE_WORDS)) {
-      const E = engine([lg, lg === 'en' ? 'fr' : 'en']);
-      const lines = text(E._gateCloseLineHtml(Object.assign({}, info, { kind }), TZ, false));
-      assert.equal(lines.length, 2, lg + ' ' + kind);
-      for (const t of lines) {
-        assert.doesNotMatch(t, /\{MIN\}|\{TIME\}/, lg + ' ' + kind + ': ' + t);
-        assert.match(t, /15/, lg + ' ' + kind + ' says the minutes');
-        assert.match(t, /5:05pm|17:05/, lg + ' ' + kind + ' says the clock time');
-      }
-    }
-  }
-  // Each half carries its language; Arabic reads right to left.
-  const ar = engine(['ar', 'en'])._gateCloseLineHtml(info, TZ, false);
-  assert.match(ar, /<span class="v2-fi-close-w" lang="ar" dir="rtl"/);
-  assert.match(ar, /<span class="v2-fi-close-w" lang="en">/);
+  assert.equal(E0._GATE_LBL.gateCloses.en, 'Gate closes {MIN} min before departure · {TIME}');
+  assert.equal(E0._GATE_LBL.gateCloses.fr, 'Fermeture de la porte {MIN} min avant le départ · {TIME}');
 });
 
-test('(1) the gate shows it only in the idle layout: never under a sign or "Updated boarding time to follow"', () => {
+test('(1) the gate works it out only in the idle layout: never under a sign or "Updated boarding time to follow"', () => {
   const uxg = fn('uxgGateHtml');
   // The printed boarding time goes in too: the close is never at or before it.
   assert.match(uxg, /if \(!showBoarding && !showCountdown && !isFinalCallStatus && !isGateClosedStatus && !inbDelayed && !_door\.word\) \{\s*try \{ _gateClose = _gateCloseInfo\(currentFlight, airlineCode, _bt\.effDepForBoard, Date\.now\(\), iata, _bt\.boardTs\); \}/);
   // ...and it is the very boarding time the card prints.
   assert.match(uxg, /var boardTs = _bt\.boardTs;\s*var bd = new Date\(boardTs\);/);
-  assert.match(uxg, /gateClose: _gateClose\s*\}\);/);
+  // v24012 — and it goes to the centre cards, not to the rail.
+  assert.match(uxg, /window\._gateCardsModel = _gateCardsBuild\(\{[\s\S]{0,400}close: _gateClose,/);
+  assert.doesNotMatch(uxg, /gateClose: _gateClose/);
 });
 
-test('(1) the line is a footer across the card that grows the card, so the boarding time keeps the rail\'s size', () => {
-  // The rail's shelf takes it as its footer, below the icon and the text,
-  // outside the value the box fitter sizes.
-  assert.match(CORE, /function _shelf\(icon, en, second, val, valCls, rowCls, under, foot\) \{/);
-  assert.match(CORE, /'<div class="v2-fi-value ' \+ \(valCls \|\| ''\) \+ '">' \+ val \+ \(under \|\| ''\) \+ '<\/div>'\s*\+ '<\/div>'[\s\S]{0,200}\+ \(foot \|\| ''\)/);
-  assert.match(CORE, /_revRowCls\(_fiBrd\) \+ \(_gcl \? ' v2-fi-row-close' : ''\), _gateDayLineHtml\(vars && vars\.dayBoard\), _gcl\)/);
-  const fit = fn('gateAutofit');
-  const at = fit.indexOf(".v2-fi-row-close').forEach(function (row) {");
-  const rail = fit.indexOf('// LEFT RAIL shelves.');
-  assert.ok(at > 0 && at < rail, 'the footer is fitted before the rail\'s values');
-  const seg = fit.slice(at, rail);
-  // The one shared fitter, not a private one.
-  assert.match(seg, /_boxAssign\(line, line\.clientWidth, capH, colRf\);/);
-  assert.doesNotMatch(CORE, /function _fitGateCloseLines/);
-  // Never cut: still too wide at the floor, it wraps at its words.
-  assert.match(seg, /if \(line\.scrollWidth > line\.clientWidth \+ 0\.5\) \{\s*line\.classList\.add\('v2-fi-closeline-wrap'\);/);
-  // The card grows by the footer's height, and the value's budget loses it.
-  assert.match(seg, /row\.style\.setProperty\('flex-basis', fh \+ 'px', 'important'\)/);
-  // And by its title's extra line over the rail's other times (Departure,
-  // Arrival): at 1024x768 "Boarding | Embarquement" breaks onto two lines and
-  // the time was fitted at 32px against the departure's 47 (42 before the
-  // footer); with the difference added it is 47 against 46.
-  assert.match(seg, /if \(r2 === row \|\| !r2\.querySelector\('\.v2-fi-value\.v2-fi-time'\)\) return;/);
-  assert.match(seg, /if \(isFinite\(_tMin\) && _tSelf\.offsetHeight > _tMin\) fh \+= Math\.ceil\(_tSelf\.offsetHeight - _tMin\);\s*\}\s*if \(Math\.abs\(\(parseFloat\(row\.style\.flexBasis\) \|\| 0\) - fh\) > 0\.5\)/);
-  assert.match(fit.slice(rail), /var _cf = row\.querySelector\(':scope > \.v2-fi-closefoot'\);\s*if \(_cf\) availH -= _cf\.offsetHeight;/);
-});
-
-test('(1) the close line is static and wears the plate\'s ink: no status colour, no animation', () => {
+test('(1) v24012: the small line under the Boarding time is gone, with its fitter and its styles', () => {
   const css = fs.readFileSync(path.join(root, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
-  const at = css.indexOf("v23968 — THE AIRLINE'S GATE-CLOSE LINE: A FOOTER ACROSS THE BOARDING CARD");
-  assert.ok(at > 0);
-  const seg = css.slice(at);
-  assert.doesNotMatch(css, /\.v2-fi-value\.v2-fi-time \.v2-fi-closeline/, 'the line is not inside the time\'s box');
-  assert.match(seg, /\.v2-fi-row\.v2-fi-row-close \{\s*grid-template-rows: minmax\(0, 1fr\) auto !important;/);
-  assert.match(seg, /\.v2-fi-closefoot \{[^}]*grid-column: 1 \/ -1 !important;/);
-  assert.match(seg, /\.v2-fi-close-w \{[^}]*color: var\(--plate-ink, #ffffff\) !important;/, 'white on dark plates, near-black on the bright ones');
-  assert.match(seg, /\.v2-fi-closeline \{[^}]*flex-direction: column !important;/, 'one language per line');
-  assert.match(seg, /\.v2-fi-closeline \{[^}]*white-space: nowrap !important;/, 'each language one unbreakable unit');
-  assert.doesNotMatch(seg, /animation|transition|#fbbf24|#f59e0b|#d82f2e|#22c55e|#16a34a/i);
-  assert.match(seg, /font-family: 'Bricolage Grotesque Cond'[^;]*var\(--fids-script-fonts/, 'the board\'s fitting face, then the script faces');
-  // Sixteen guards: this file's floor for a rule after the boarding sign's block.
-  for (const sel of seg.match(/^html body[^{]+\{/gm)) assert.ok((sel.match(/:not\(#_\)/g) || []).length >= 16, sel.slice(0, 60));
+  assert.doesNotMatch(CORE, /function _gateCloseLineHtml\(/);
+  assert.doesNotMatch(CORE, /v2-fi-closefoot|v2-fi-closeline|v2-fi-row-close|v2-fi-close-w/);
+  assert.doesNotMatch(css, /v2-fi-closefoot|v2-fi-closeline|v2-fi-row-close|v2-fi-close-w/);
+  // the rail's shelf takes no footer, and the Boarding card is its time and its day line
+  assert.match(CORE, /function _shelf\(icon, en, second, val, valCls, rowCls, under\) \{/);
+  assert.match(CORE, /\+ _shelf\(_badge\(_svgBoarding\), _railPair\('boarding'\)\[0\], _railPair\('boarding'\)\[1\], \(_amPm\(_stripScheduledStrike\(_fiBrd\)\) \|\| '—'\), 'v2-fi-time', _revRowCls\(_fiBrd\), _gateDayLineHtml\(vars && vars\.dayBoard\)\)/);
+  assert.doesNotMatch(fn('gateAutofit'), /closefoot|row-close/);
 });
 
 test('(1) the ticker states no airport-wide number; a one-airline board says that airline\'s own', () => {

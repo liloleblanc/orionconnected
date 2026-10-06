@@ -2846,6 +2846,28 @@ function _fxBoardCellH(el) {
     return Math.max(0, rowH - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - 2);
   } catch (e) { return 0; }
 }
+// v24012 — the room a centre card's line may take (FIDS_FIT_RULES' `h`), in
+// CSS px: a share of its row, its header or its plate, so the card's words
+// never run out of the card (with "Later at this gate" up, the card has 705px
+// of the 849 at 1680x1050). 0 = no limit.
+function _gcLineRoom(el, part) {
+  try {
+    var row = el.closest('.gc-row');
+    var sub = row && row.querySelector('.gc-sub');
+    var rh = row ? row.clientHeight : 0;
+    if (part === 'lbl') return rh * (sub ? 0.5 : 0.82);
+    if (part === 'sub') return rh * 0.36;
+    if (part === 't') return rh * 0.52;
+    if (part === 'tsub') {
+      var n = row ? row.querySelectorAll('.gc-tcol > .gc-stw, .gc-tcol > .gc-day').length : 1;
+      return rh * (n > 1 ? 0.2 : 0.36);
+    }
+    if (part === 'hd') { var c = el.closest('.gcard'); return c ? c.clientHeight * 0.11 : 0; }
+    if (part === 'gtl') { var c2 = el.closest('.gcard'); return c2 ? c2.clientHeight * 0.08 : 0; }
+    if (part === 'big') { var b = el.closest('.gc-big'); return b ? b.clientHeight * 0.66 : 0; }
+    return 0;
+  } catch (e) { return 0; }
+}
 // Every name on every surface, and the room its box has. A selector here is
 // fitted by fidsFitText and by nothing else.
 var FIDS_FIT_RULES = [
@@ -2936,6 +2958,24 @@ var FIDS_FIT_RULES = [
   // second line between two whole phrases (.fx-unit), never inside one and
   // never cut
   { sel: '.g8-band .g8-band-ln', box: '.g8-band-tx', lines: 2, units: true, group: '.g8-band-half', h: function (el) { return _g8BandLineRoom(el); } },
+  // v24012 — the gate's centre cards (_gateCardHtml): every line in its box,
+  // smaller first, then a second line between two whole phrases (.fx-unit),
+  // never inside one and never cut. A row's words are held to its height
+  // (_gcLineRoom), the timeline's labels at one size (group), and so are the
+  // documents' lines and the close card's title.
+  { sel: '.gcard .gc-ttl', box: '.gc-grow', lines: 2, units: true, h: function (el) { return _gcLineRoom(el, 'hd'); } },
+  { sel: '.gcard .gc-lbl', box: '.gc-txt', lines: 2, units: true, group: '.gc-tl', h: function (el) { return _gcLineRoom(el, 'lbl'); } },
+  { sel: '.gcard .gc-sub', box: '.gc-txt', lines: 2, units: true, group: '.gc-tl', h: function (el) { return _gcLineRoom(el, 'sub'); } },
+  { sel: '.gcard .gc-t', box: '.gc-tcol', lines: 1, h: function (el) { return _gcLineRoom(el, 't'); } },
+  { sel: '.gcard .gc-stw, .gcard .gc-day', box: '.gc-tcol', lines: 2, units: true, h: function (el) { return _gcLineRoom(el, 'tsub'); } },
+  { sel: '.gcard .gc-dtitle', box: '.gc-grow', lines: 2, units: true, h: function (el) { return _gcLineRoom(el, 'hd'); } },
+  { sel: '.gcard .gc-hl', box: '.gc-heads', lines: 2, units: true, group: '.gc-heads' },
+  { sel: '.gcard .gc-dl', box: '.gc-dls', lines: 2, units: true, group: '.gc-rules' },
+  { sel: '.gcard .gc-gtl', box: '.gc-gtls', lines: 2, units: true, group: '.gc-gtls', h: function (el) { return _gcLineRoom(el, 'gtl'); } },
+  { sel: '.gcard .gc-bigt', box: '.gc-big', lines: 1, h: function (el) { return _gcLineRoom(el, 'big'); } },
+  { sel: '.gcard .gc-bday', box: '.gc-big', lines: 2, units: true },
+  { sel: '.gcard .gc-rule', box: '.gc-ft', lines: 2, units: true },
+  { sel: '.gcard .gc-dlbl', box: '.gc-dep', lines: 2, units: true },
   // ── guards: sized by their own fitters, held to the floor and never cut ──
   // the gate's Your Aircraft lines (PD2373 from | de Îles-de-la-Madeleine | YGR)
   { sel: '.gad-map-col-v2 .v2-fi-value > .v2-fi-mline1, .gad-map-col-v2 .v2-fi-value > .v2-fi-mline2, .gad-map-col-v2 .v2-fi-value > .v2-fi-mline3', box: '.v2-fi-value', lines: 2, guard: true },
@@ -11808,6 +11848,9 @@ try {
 //   .g8-r3           — message strip (now always present, height auto)
 // ════════════════════════════════════════════════════════════════════════════
 function buildV2GateLayout(ctx, vars) {
+  // v24012 — the Your Aircraft card's facts for the centre cards, set again
+  // below when this paint has an inbound to show
+  try { window._gateInbFacts = null; } catch (eIF0) {}
   var iata = vars.iata, accent = vars.accent;
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
   var _ovMsg = vars._ovMsg;
@@ -13060,7 +13103,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _a = _s.split('\u0001');
         return [_a[0] || '', _a[1] || ''];
       }
-      function _shelf(icon, en, second, val, valCls, rowCls, under, foot) {
+      function _shelf(icon, en, second, val, valCls, rowCls, under) {
         // v223 — the exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         // Québec airports: French first on every pair.
@@ -13078,9 +13121,6 @@ function _buildV2AircraftCol(ctx, vars) {
           // value so the box fitter sizes the time and its day together.
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + (under || '') + '</div>'
           + '</div>'
-          // v23968 — `foot` is the gate-close line (_gateCloseLineHtml): a
-          // footer across the whole card, below the icon and the text.
-          + (foot || '')
           + '</div>';
       }
       // Destination city (was in the header; now the first shelf).
@@ -13260,11 +13300,11 @@ function _buildV2AircraftCol(ctx, vars) {
         // selected from its sibling's class without :has(), which the kiosk
         // browsers drop silently.
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls, 'v2-fi-rowst-' + (_fiStCls || '').trim())
-        + (function () {
-            // v23968 — the airline's gate-close line, a footer across the card.
-            var _gcl = _gateCloseLineHtml(vars && vars.gateClose, vars && vars.tz, _frF);
-            return _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd) + (_gcl ? ' v2-fi-row-close' : ''), _gateDayLineHtml(vars && vars.dayBoard), _gcl);
-          })()
+        // v24012 — the Boarding card is the boarding time alone again. The
+        // airline's gate-close line that sat under it as a footer (v23968) is
+        // gone: the centre deck's overview and gate-closes cards say it
+        // (_gateCardHtml), at a size it can be read at.
+        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd), _gateDayLineHtml(vars && vars.dayBoard))
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time', _revRowCls(_fiDep), _gateDayLineHtml(vars && vars.dayDepart))
         + (function () {
             // v23240 — the code rides once at the END, accent-coloured
@@ -13797,6 +13837,13 @@ function _buildV2MapCol(ctx, vars) {
         sched: _ibArrTs, rev: _ibRevTs,
         revShown: (_stKey === 'arrived') ? !!_ibArrRevStr : !!(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr)
       });
+      // v24012 — the same facts for the centre deck's overview card
+      // (_gateCardHtml): the flight, where it comes from, the time this card
+      // prints first and the word it prints, so the two never disagree.
+      try {
+        window._gateInbFacts = { flight: String(_ibFltCompact || ''), city: String(_origCity || ''),
+          code: _origIata ? String(_dispIata(_origIata)) : '', ts: Number(_ibShownTs) || 0, st: String(_stKey || '') };
+      } catch (eIF) { window._gateInbFacts = null; }
       // v23720 — THE EVENT LEADS, AND EACH LANGUAGE CARRIES ITS OWN CLOCK.
       //
       // v23544 put the time in front of a single shared sentence:
@@ -15704,15 +15751,30 @@ function uxgGateHtml(ctx) {
   var isGateClosedStatus = _gateSign.isGateClosedStatus;
   var isFinalCallStatus = _gateSign.isFinalCallStatus;
   var showCountdown = _gateSign.showCountdown;
-  // v23968 — the airline's gate-close time for the Boarding card
-  // (_gateCloseInfo): only in the idle layout before any sign, never while
-  // "Updated boarding time to follow" is up, counted back from the same
-  // departure the printed boarding time uses, and never at or before that
-  // printed boarding time (_bt.boardTs).
+  // v23968 — the airline's gate-close time (_gateCloseInfo): only in the
+  // idle layout before any sign, never while "Updated boarding time to
+  // follow" is up, counted back from the same departure the printed boarding
+  // time uses, and never at or before that printed boarding time
+  // (_bt.boardTs). v24012 — for the centre deck's cards (the rail's line
+  // under the Boarding time is gone).
   var _gateClose = null;
   if (!showBoarding && !showCountdown && !isFinalCallStatus && !isGateClosedStatus && !inbDelayed && !_door.word) {
     try { _gateClose = _gateCloseInfo(currentFlight, airlineCode, _bt.effDepForBoard, Date.now(), iata, _bt.boardTs); } catch (eGC) { _gateClose = null; }
   }
+  // v24012 — THE CENTRE CARDS' FACTS (_gateCardsBuild): the times this
+  // paint prints, published for the deck; null under any sign, countdown or
+  // door word, so before boarding only.
+  try {
+    window._gateCardsModel = _gateCardsBuild({
+      cf: currentFlight,
+      idle: !showBoarding && !showCountdown && !isFinalCallStatus && !isGateClosedStatus && !_door.word,
+      stKey: stKey, inbLate: !!inbDelayed,
+      depTs: _bt.effDepForBoard || 0, boardTs: _bt.boardTs || 0, close: _gateClose,
+      arr: arrTimeStr ? { ts: ctx.arrInstant, tz: ctx.arrTz || tz, revised: !!ctx.arrRevised, early: !!ctx.arrEarly } : null,
+      iata: iata, airline: airlineCode, tz: tz, frF: _frF, city: displayLoc, code: _dispIata(locIata || ''), flight: currentFlight.flight
+    });
+  } catch (eCM) { window._gateCardsModel = null; }
+  _gateCardsRefreshSoon();
   var _inbNoticeHtml = inbDelayed
     ? ('<span class="g8-msg-pair">' + _gateLbl('inbDelayed', _frF, function (w, i) { return '<span class="g8-msg-l g8-msg-l' + (i + 1) + '">' + w + '</span>'; }, '') + '</span>')
     : '';
@@ -18747,9 +18809,7 @@ function uxgGateHtml(ctx) {
                 // v23935 — the day lines under the three rail times.
                 dayBoard: _dayBoard, dayDepart: _dayDepart, dayArrive: _dayArrive,
                 // v23946 — the destination's terminal and arrival gate.
-                arrPlace: _arrPlaceHtml,
-                // v23968 — the airline's gate-close line under the boarding time.
-                gateClose: _gateClose
+                arrPlace: _arrPlaceHtml
               });
             })()
       ) // end gate idle layout
@@ -19514,62 +19574,6 @@ function gateAutofit(root) {
         });
       }
     } catch (e) {}
-    // v23968 — THE GATE-CLOSE LINE, BEFORE THE RAIL'S VALUES. A footer across
-    // the whole Boarding card (_gateCloseLineHtml), sized by the same box
-    // fitter as every rail value: as large as its width allows, up to a
-    // height of 30% of one card, never below the fitter's 12px floor. Only if
-    // a language is still wider than the card at 12px does it wrap, at its
-    // words (never cut). The card then grows by exactly the footer's height
-    // (flex-basis; the other cards are flex-basis 0, so they share what is
-    // left equally), and the value fit below takes the footer off this card's
-    // budget, so the boarding time lands on the size every other time on the
-    // rail has, instead of shrinking under the line (the first draft squeezed
-    // it from 54 to 15px at 1280x720). The price: while the line is up, every
-    // card gives up an equal share of the footer's height, so every value on
-    // the rail is about a tenth smaller than without it.
-    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block > .v2-fi-row-close').forEach(function (row) {
-      var foot = row.querySelector('.v2-fi-closefoot');
-      var line = foot && foot.querySelector('.v2-fi-closeline');
-      if (!line) return;
-      var blk = row.parentElement;
-      var nRows = blk ? blk.querySelectorAll(':scope > .v2-fi-row').length : 6;
-      var cardH = blk ? blk.clientHeight / Math.max(1, nRows) : row.clientHeight;
-      var _pf = _plateInset(row) || { t: 0, b: 0, l: 0, r: 0 };
-      foot.style.setProperty('padding', '2px ' + Math.round(_pf.r + 10) + 'px ' + Math.round(_pf.b + 3) + 'px ' + Math.round(_pf.l + 10) + 'px', 'important');
-      var colRf = Infinity;
-      var colF = row.closest('.gad-aircraft-col');
-      if (colF) colRf = colF.getBoundingClientRect().right - (parseFloat(window.getComputedStyle(colF).paddingRight) || 0);
-      var capH = Math.max(16, Math.round(cardH * 0.30));
-      var wasWrap = line.classList.contains('v2-fi-closeline-wrap');
-      line.classList.remove('v2-fi-closeline-wrap');
-      if (wasWrap) { line.style.removeProperty('font-size'); delete line.dataset.faKey; }
-      _boxAssign(line, line.clientWidth, capH, colRf);
-      // Still wider than the card at the floor: wrap at words, at the floor.
-      if (line.scrollWidth > line.clientWidth + 0.5) {
-        line.classList.add('v2-fi-closeline-wrap');
-        line.style.setProperty('font-size', '12px', 'important');
-      }
-      var fh = Math.ceil(foot.offsetHeight);
-      // And by its title's extra line, where it has one. On a narrow rail
-      // (1024x768) "Boarding | Embarquement" breaks onto two lines while
-      // "Departure | Départ" keeps one, and the boarding time was fitted
-      // under the taller title: 32px against the departure's 47 (42 before
-      // the footer). The card also takes the difference between its title
-      // and the shortest title on the rail's other times (Departure,
-      // Arrival), so its time gets the same room theirs do. Titles are fitted
-      // to their width only (above), so this never feeds back into them.
-      var _tSelf = row.querySelector('.v2-fi-title');
-      if (_tSelf && blk) {
-        var _tMin = Infinity;
-        blk.querySelectorAll(':scope > .v2-fi-row').forEach(function (r2) {
-          if (r2 === row || !r2.querySelector('.v2-fi-value.v2-fi-time')) return;
-          var t2 = r2.querySelector('.v2-fi-title');
-          if (t2 && t2.offsetHeight) _tMin = Math.min(_tMin, t2.offsetHeight);
-        });
-        if (isFinite(_tMin) && _tSelf.offsetHeight > _tMin) fh += Math.ceil(_tSelf.offsetHeight - _tMin);
-      }
-      if (Math.abs((parseFloat(row.style.flexBasis) || 0) - fh) > 0.5) row.style.setProperty('flex-basis', fh + 'px', 'important');
-    });
     // LEFT RAIL shelves.
     // Status value included since v22359 — its two stacked bilingual lines
     // are handled by the height check (offsetHeight measures both lines).
@@ -19582,10 +19586,6 @@ function gateAutofit(root) {
       var title = row.querySelector('.v2-fi-title');
       var _pi2 = _plateInset(row);
       var availH = row.clientHeight - (_pi2 ? (_pi2.t + _pi2.b) : 0) - (title ? title.offsetHeight : 0) - 6;
-      // v23968 — the gate-close footer is this card's extra height, not its
-      // value's: the time is fitted to what every other card's value gets.
-      var _cf = row.querySelector(':scope > .v2-fi-closefoot');
-      if (_cf) availH -= _cf.offsetHeight;
       var colR = Infinity;
       var col = el.closest('.gad-aircraft-col');
       if (col) {
@@ -30793,7 +30793,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24010';
+var FIDS_BUILD_TAG = 'v24011';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -33997,34 +33997,6 @@ function _gateCloseInfo(cf, carrier, effDepTs, nowMs, homeIata, boardTs) {
   if (p.kind !== 'gateBeAt' && brd > 0 && Math.floor(brd / 60000) >= Math.floor(ts / 60000)) return null;
   return { carrier: code, min: p.min, kind: p.kind, ts: ts };
 }
-// The line itself: a footer across the whole Boarding card (_shelf's `foot`),
-// in the board's two languages (_gateLbl's pick: the board's own pair, French
-// first in Québec), one language per line and each an unbreakable unit, so the
-// only break is the one between the languages (the board's rule against a
-// severed phrase). The words are _GATE_LBL's, the clock each language's own
-// (_fidsClockForLang: 6:00pm in English, 18:00 in French and the 24-hour
-// languages, the same clocks the boarding sign's strip prints), in the
-// airport's own zone. Sized by the rail's box fitter (gateAutofit), which also
-// makes the card that much taller, so the boarding time keeps the size every
-// other time on the rail has.
-function _gateCloseLineHtml(info, tz, frF) {
-  if (!info || !info.ts || !GATE_CLOSE_WORDS[info.kind]) return '';
-  var key = GATE_CLOSE_WORDS[info.kind].card;
-  var when = new Date(info.ts);
-  var out = _gateLbl(key, !!frF, function (w, i, lg) {
-    var clock = _fidsClockForLang(when, tz, lg);
-    if (!clock) return '';
-    // Where a narrow card has to wrap a sentence (gateAutofit), the clock
-    // never wraps away from its words (" · 17:55" stays on the last line) and
-    // the minutes never leave their unit ("20 min").
-    var txt = String(w).split('{MIN}').join(String(info.min)).split('{TIME}').join(clock)
-      .replace(/ · /g, '\u00a0·\u00a0').replace(/(\d) /g, '$1\u00a0');
-    // its language and direction by the store's own marks (BoardStrings.markHalf)
-    return BoardStrings.markHalf('<span class="v2-fi-close-w">' + txt + '</span>', lg || 'en', key);
-  }, '');
-  if (!out) return '';
-  return '<div class="v2-fi-closefoot"><div class="v2-fi-closeline" data-close-kind="' + info.kind + '" data-close-min="' + info.min + '">' + out + '</div></div>';
-}
 // v24006 — THE BOARDING SCREEN'S BAND: THE DOCUMENTS AND THE CLOSE TIME.
 //
 // For the whole time boarding lasts (the NOW BOARDING sign and the final
@@ -34124,7 +34096,17 @@ var _GATE_BAND_GLYPH = (function () {
       + '<ellipse cx="32" cy="27" rx="4.4" ry="10.5" stroke-width="3"/><path d="M21.5 27h21" stroke-width="3"/><path d="M24 47h16" stroke-width="3.4"/></g>'),
     v: svg('<g ' + S + '><rect x="9" y="6" width="46" height="52" rx="4.5"/><circle cx="27" cy="25" r="9.5"/>'
       + '<path d="M22.5 25h9M27 20.5v9" stroke-width="2.8"/><path d="M34 44.5l5.2 5.2 10.8-12.8" stroke-width="4.6"/></g>'),
-    c: svg('<g ' + S + '><circle cx="32" cy="32" r="24"/><path d="M32 17v15l10 7"/></g>')
+    c: svg('<g ' + S + '><circle cx="32" cy="32" r="24"/><path d="M32 17v15l10 7"/></g>'),
+    // v24012 — the centre cards' timeline (_gateCardHtml), in the same
+    // manner and the same aeroplane: a: your aircraft, level over its stand
+    // and the jet bridge; d: the departure, climbing; l: the arrival,
+    // descending.
+    a: svg('<path d="' + plane + '" fill="currentColor" transform="translate(5 4) scale(.66)"/>'
+      + '<g ' + S + '><path d="M6 56H58"/><path d="M40 56V46H58" stroke-width="3.6"/></g>'),
+    d: svg('<path d="' + plane + '" fill="currentColor" transform="translate(32 27) rotate(-22) scale(.8) translate(-33 -32)"/>'
+      + '<g ' + S + '><path d="M8 57H56"/></g>'),
+    l: svg('<path d="' + plane + '" fill="currentColor" transform="translate(32 26) rotate(22) scale(.8) translate(-33 -32)"/>'
+      + '<g ' + S + '><path d="M8 57H56"/></g>')
   };
 })();
 // The close time for the band: _gateCloseInfo's rule, for the boarding
@@ -34388,6 +34370,391 @@ function _tickerCloseLine(lg) {
   } catch (e) { return ''; }
 }
 try { if (typeof window !== 'undefined') { window._gateCloseInfo = _gateCloseInfo; window.GATE_CLOSE_POLICY = GATE_CLOSE_POLICY; window._tickerCloseLine = _tickerCloseLine; window._gateDocsVariant = _gateDocsVariant; window._gateCloseBandInfo = _gateCloseBandInfo; } } catch (e) {}
+// ═══════════════════════════════════════════════════════════════════════════
+// v24012 — THREE INFORMATION CARDS IN THE GATE'S CENTRE DECK.
+//
+// Before boarding, the centre panel's deck (#gateAdCarousel,
+// _buildGateAdSlideList) carries three cards beside the ads, the map and the
+// weather, each held for a minute (_getGateAdDwellMs):
+//   ovcard     GATE OVERVIEW: one timeline. Your aircraft (the inbound flight
+//              and its time, when it is known), Boarding, Gate closes,
+//              Departure, Arrival (the destination's own time, or a dash);
+//   docscard   BEFORE YOU BOARD: this flight's documents, the boarding band's
+//              own lines (_gateDocsVariant, _GATE_DOCS, the docs* keys), with
+//              its pictograms drawn large;
+//   closecard  GATE CLOSES: one huge time and the airline's rule ("15 min
+//              before departure"), in the last 45 minutes before the close,
+//              and only for an airline that publishes a close time
+//              (GATE_CLOSE_WORDS[kind].band: a deadline to be AT the gate is
+//              not one).
+// They replace the small gate-close line that sat under the Boarding time on
+// the left rail (v23968's _gateCloseLineHtml, removed here with its fitter
+// and its styles). The boarding screen keeps its band (v24006).
+//
+// BEFORE BOARDING ONLY. The facts are published by uxgGateHtml on every gate
+// paint (window._gateCardsModel), and only while the gate is in its idle
+// layout: no NOW BOARDING sign, no countdown, no final call, no gate closed,
+// no door word, and a departure that is still to go (not cancelled, diverted
+// or gone). Under the boarding takeover the deck is not on the screen at all,
+// and the model is null, so the deck carries no card either.
+//
+// STATUS ONLY ON EVIDENCE, NO INVENTED TIMES. Every time on a card is one the
+// gate already prints, from the same answer: the boarding time and the
+// departure it is counted from (_gateBoardingTimes through _gateDoor), the
+// close time (_gateCloseInfo), the destination's own arrival
+// (_gateFarArrival), the inbound's time and word as the Your Aircraft card
+// prints them (window._gateInbFacts, buildV2GateLayout). A status word is
+// printed only where the airport or the feed said it: "On time" only where it
+// said On time, never for Scheduled. When the gate itself has no firm times
+// ("Updated boarding time to follow", or Delayed with no new time), the
+// overview and the close card are not shown; the documents still are.
+//
+// THE LOOK (approved: look C, "wayfinding signage"). By day, BLEND-2: a dark
+// frame in the airline's own deep tint holding light tiles (#F3F2EE, type
+// #10151D), the big times on the light tiles. At night, NIGHT: the same card
+// fully dark. The day-night engine (js/fids-sun.js) puts html.fids-day or
+// html.fids-night on the page at the airport's sunrise and sunset; the card's
+// geometry is the same in both, so the change is colour only, a 2 s crossfade
+// (.fids-dn-fade, css/shared.css). Amber, red and green are status words only
+// (darkened on the light tiles), and nothing moves or flashes.
+var _GATE_CARD_TYPES = ['ovcard', 'docscard', 'closecard'];
+var _GATE_CARD_DWELL_MS = 60000;
+// The close card's window: from 45 minutes before the close until it.
+var _GATE_CARD_CLOSE_WINDOW_MS = 45 * 60000;
+// A card is not shown again within four minutes of its last turn (a short
+// deck, the Welcome card alone, would otherwise be two thirds cards).
+// Skipped, not removed, the way the weather card's floor is (_wxTurnDue), so
+// the deck and every index stay what they were. ?cardgap=<minutes> for review.
+var _GATE_CARD_GAP_MS = 4 * 60000;
+try {
+  var _gcgRaw = new URLSearchParams(location.search).get('cardgap');
+  if (_gcgRaw !== null && String(_gcgRaw).trim() !== '') {
+    var _gcg = Number(_gcgRaw);
+    if (isFinite(_gcg) && _gcg >= 0) _GATE_CARD_GAP_MS = _gcg * 60000;
+  }
+} catch (eGCG) {}
+
+// The facts the cards are drawn from, or null when no card may show. Pure:
+//   o.cf        the departure's row
+//   o.idle      the gate is in its idle layout (no sign, countdown or door word)
+//   o.stKey     the departure's own word (_gateDepDisplayState)
+//   o.inbLate   "Updated boarding time to follow" is up (_gateInbLateNotice)
+//   o.depTs     the departure the boarding time is counted from (its revised
+//               time when the airport published one)
+//   o.boardTs   the boarding time the gate prints
+//   o.close     _gateCloseInfo's answer (or null)
+//   o.arr       { ts, tz, revised, early } the destination's own arrival, or null
+//   o.iata, o.airline, o.tz, o.frF, o.city, o.code, o.flight
+function _gateCardsBuild(o) {
+  if (!o || !o.cf || !o.idle) return null;
+  var w = String(o.stKey || o.cf.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (/^(cancelled|canceled|diverted|departed|arrived|landed|active|enroute|boarding|final|finalcall|gateclosed)$/.test(w)) return null;
+  var hasTime = true;
+  if (w === 'delayed') { try { hasTime = !!_gateDelayHasTime(o.cf); } catch (e) { hasTime = false; } }
+  // the gate's own times hold: no late-inbound notice, no Delayed without a time
+  var firm = !o.inbLate && hasTime && Number(o.depTs) > 0;
+  var docs = 'B';
+  try { docs = _gateDocsVariant(o.cf, o.iata, o.airline); } catch (eD) { docs = 'B'; }
+  var arr = (o.arr && Number(o.arr.ts) > 0) ? { ts: Number(o.arr.ts), tz: o.arr.tz || o.tz, revised: !!o.arr.revised, early: !!o.arr.early } : null;
+  return {
+    flight: String(o.flight || o.cf.flight || ''),
+    airline: String(o.airline || o.cf.airline || '').toUpperCase(),
+    iata: String(o.iata || '').toUpperCase(),
+    tz: o.tz || 'UTC',
+    frF: !!o.frF,
+    city: String(o.city || ''),
+    code: String(o.code || ''),
+    stKey: w,
+    firm: firm,
+    // the departure as printed, firm or not: no card once it has passed
+    depAt: Number(o.depTs) || 0,
+    depTs: firm ? Number(o.depTs) : 0,
+    boardTs: firm ? (Number(o.boardTs) || 0) : 0,
+    close: firm && o.close && o.close.ts ? o.close : null,
+    arr: arr,
+    docs: docs
+  };
+}
+// Which cards are due now. Pure: the deck builder and the renderer both ask.
+function _gateCardsDue(m, nowMs) {
+  var due = { ovcard: false, docscard: false, closecard: false };
+  if (!m) return due;
+  var now = Number(nowMs) || Date.now();
+  if (m.depAt && m.depAt <= now) return due;
+  due.docscard = !!(_GATE_DOCS[m.docs]);
+  due.ovcard = !!(m.firm && m.depTs > 0 && m.boardTs > 0 && m.depTs > now);
+  var c = m.close;
+  due.closecard = !!(c && c.ts && GATE_CLOSE_WORDS[c.kind] && GATE_CLOSE_WORDS[c.kind].band
+    && now >= c.ts - _GATE_CARD_CLOSE_WINDOW_MS && now < c.ts);
+  return due;
+}
+
+// The card's two colours on its dark frame: the airline's deep tint and the
+// accent its rules and its timeline are drawn in. Air Canada, Porter and
+// WestJet are the approved mockup's; any other airline takes its accent over
+// near-black, the accent kept to 3:1 on the frame, and never a colour that
+// reads as a status (_rc2StatusLike): such an accent draws in neutral grey.
+var _GATE_CARD_TINT = {
+  AC: { frame: '#1D1B20', acc: '#F01428' },
+  PD: { frame: '#0F2142', acc: '#4F86D6' },
+  WS: { frame: '#08303A', acc: '#00B2A9' }
+};
+var _GATE_CARD_ALIAS = { RV: 'AC', QK: 'AC', ACA: 'AC', JZA: 'AC', ROU: 'AC', POE: 'PD', WR: 'WS', WJA: 'WS', WEN: 'WS' };
+function _gateCardTint(code) {
+  var c = String(code || '').toUpperCase();
+  if (_GATE_CARD_ALIAS[c]) c = _GATE_CARD_ALIAS[c];
+  if (_GATE_CARD_TINT[c]) return _GATE_CARD_TINT[c];
+  var acc = '';
+  try { acc = String(getAirlineAccent(c) || ''); } catch (e) { acc = ''; }
+  var rgb = (typeof _rc2Rgb === 'function') ? _rc2Rgb(acc) : null;
+  if (!rgb) return { frame: '#151a22', acc: '#C9D0D8' };
+  var hex = function (a) { return '#' + a.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16); return h.length < 2 ? '0' + h : h; }).join(''); };
+  var base = [13, 17, 23];
+  var frame = hex(base.map(function (v, k) { return v * 0.84 + rgb[k] * 0.16; }));
+  var a = rgb.slice(), out = hex(a);
+  for (var i = 0; i < 8 && _rc2Contrast(out, frame) < 3; i++) { a = a.map(function (v) { return v + (255 - v) * 0.22; }); out = hex(a); }
+  if (_rc2StatusLike(out)) out = '#C9D0D8';
+  return { frame: frame, acc: out };
+}
+
+// The airline's emblem on the dark frame, never on a disc or a box of its
+// own, and never whitened (the orb rule: an emblem keeps its colours). The
+// approved mockup's three marks, as drawn: the Air Canada roundel in its red,
+// the WestJet leaf in its colours, Porter's "p" in its white lettering. Any
+// other airline's emblem is the gate orb's own art (_gateOrbParts): a finished
+// disc or tile and art that keeps its colours as they are; a flat silhouette
+// in the white the orbs already draw it in (it is drawn to be lettering on a
+// colour). '' when the airline has no emblem.
+var _GATE_CARD_EMBLEM = {
+  AC: '/logos/airlines/canadian/AC.TO.svg',
+  WS: '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  PD: '/logos/airlines/canadian/porter-p.svg'
+};
+function _gateCardEmblem(code) {
+  try {
+    var c = String(code || '').toUpperCase();
+    if (_GATE_CARD_ALIAS[c]) c = _GATE_CARD_ALIAS[c];
+    var path = _GATE_CARD_EMBLEM[c] || '', white = false, disc = false;
+    if (!path) {
+      if (typeof window._gateOrbParts !== 'function') return '';
+      var P = window._gateOrbParts(code);
+      if (!P || !P.path) return '';
+      path = String(P.path);
+      disc = !!P.native;
+      white = !P.native && !P.keepsColour && !/\.png(\?|$)/i.test(path);
+    }
+    return '<img class="gc-emb' + (white ? ' gc-emb-white' : '') + (disc ? ' gc-emb-disc' : '') + '" src="' + fidsEscHtml(path) + '" alt=""'
+      + ' onerror="this.remove()">';
+  } catch (e) { return ''; }
+}
+
+// The card's pairs: each language one unbreakable phrase (.fx-unit), the only
+// break offered the one between them (display rule 2), in the board's own two
+// languages, French first in Québec (_gateLbl / BoardStrings.pairLangs).
+var _GC_SEP = ' <span class="gc-sep fx-brk">|</span> ';
+function _gcPair(key, frF, fmt) {
+  return _gateLbl(key, frF, function (w, i, lg) {
+    var t = fmt ? fmt(String(w), lg) : String(w);
+    return '<span class="fx-unit gc-h">' + t + '</span>';
+  }, _GC_SEP);
+}
+// a status word, in the words the gate's other cards print it in (SLpair)
+function _gcStatusPair(k, frF) {
+  try {
+    return String(SLpair(k, _GC_SEP, frF) || '').replace(/class="bs-h"/g, 'class="bs-h fx-unit gc-h"');
+  } catch (e) { return ''; }
+}
+// a day line (_gateDayWords: Tomorrow | Demain), only when it is not today
+function _gcDayPair(dw) {
+  if (!dw || !dw.words || !dw.words.length) return '';
+  var L = dw.languages || [];
+  return dw.words.map(function (w, i) {
+    var u = '<span class="fx-unit gc-h">' + fidsEscHtml(w) + '</span>';
+    return L[i] ? BoardStrings.markHalf(u, L[i]) : u;
+  }).join(_GC_SEP);
+}
+// The big time, in the first language of the board's pair: its digits, and
+// an English am/pm smaller beside them.
+function _gcTime(ts, tz, frF) {
+  if (!(Number(ts) > 0)) return '';
+  var lg = 'en';
+  try { lg = BoardStrings.pairLangs(langs, !!frF)[0] || 'en'; } catch (e) {}
+  var s = '';
+  try { s = String(_fidsClockForLang(new Date(Number(ts)), tz || 'UTC', lg) || ''); } catch (e2) { s = ''; }
+  if (!s) return '';
+  var m = /^(.*?\d)\s*([^\d\s:.]+\.?)$/.exec(s);
+  var body = m ? fidsEscHtml(m[1]) + '<small>' + fidsEscHtml(m[2]) + '</small>' : fidsEscHtml(s);
+  return BoardStrings.markHalf('<span class="gc-clock">' + body + '</span>', lg);
+}
+// The word for a close time: the band's own line without its clock ("Gate
+// closes {TIME}" -> "Gate closes"), every language's {TIME} at its end
+// (tests/gate-centre-cards.test.js holds that). A be-at-the-gate deadline has
+// no band line: the overview says it in the card's own sentence instead, its
+// minutes in ("Be at the gate 20 min before departure").
+function _gcCloseLabel(info, frF) {
+  if (!info || !GATE_CLOSE_WORDS[info.kind]) return '';
+  var w = GATE_CLOSE_WORDS[info.kind];
+  if (w.band) return _gcPair(w.band, frF, function (t) { return t.replace('{TIME}', '').replace(/\s+$/, ''); });
+  return _gcPair(w.card, frF, function (t) {
+    return t.replace(/\s*·\s*\{TIME\}\s*$/, '').split('{MIN}').join(String(info.min)).replace(/(\d) /g, '$1 ');
+  });
+}
+
+// The status a time carries, from the word its source gave, or '' (none):
+// ok = On time / Early / Arrived, amb = Delayed, red = Cancelled. En route is
+// a status too, in the plain ink. Scheduled and Expected say nothing.
+var _GC_STATUS = { ontime: ['ontime', 'ok'], early: ['early', 'ok'], arrived: ['arrived', 'ok'],
+  delayed: ['delayed', 'amb'], cancelled: ['cancelled', 'red'], enroute: ['active', 'plain'] };
+
+function _gcRow(kind, glyph, label, sub, ts, tz, st, dw, frF) {
+  var tm = Number(ts) > 0 ? _gcTime(ts, tz, frF) : '';
+  var stw = '';
+  if (st && _GC_STATUS[st]) {
+    var sp = _gcStatusPair(_GC_STATUS[st][0], frF);
+    if (sp) stw = '<div class="gc-stw gc-st-' + _GC_STATUS[st][1] + ' fids-dn-fade">' + sp + '</div>';
+  }
+  var day = dw ? _gcDayPair(dw) : '';
+  return '<div class="gc-row" data-row="' + kind + '">'
+    + '<div class="gc-ncol"><div class="gc-node fids-dn-fade">' + (_GATE_BAND_GLYPH[glyph] || '') + '</div></div>'
+    + '<div class="gc-rb gc-zone fids-dn-fade">'
+    +   '<div class="gc-txt"><div class="gc-lbl">' + label + '</div>' + (sub ? '<div class="gc-sub fids-dn-fade">' + sub + '</div>' : '') + '</div>'
+    +   '<div class="gc-tcol"><div class="gc-t' + (tm ? '' : ' gc-t-dash') + '">' + (tm || '—') + '</div>' + stw
+    +     (day ? '<div class="gc-day fids-dn-fade">' + day + '</div>' : '') + '</div>'
+    + '</div></div>';
+}
+
+// The card's markup ('' when it has nothing true to show). `inb` is the Your
+// Aircraft card's own facts (window._gateInbFacts), or null.
+function _gateCardHtml(type, m, nowMs, inb) {
+  if (!m) return '';
+  var now = Number(nowMs) || Date.now();
+  var due = _gateCardsDue(m, now);
+  if (!due[type]) return '';
+  var frF = m.frF, tz = m.tz;
+  var tint = _gateCardTint(m.airline);
+  var emb = _gateCardEmblem(m.airline);
+  var solo = type === 'docscard' && !((_GATE_DOCS[m.docs] || _GATE_DOCS.B).keys.length > 1);
+  var open = '<div class="gcard gcard-' + type + (solo ? ' gcard-docs-solo' : '') + ' fids-dn-fade" data-gcard="' + type + '" data-gcard-air="' + fidsEscHtml(m.airline) + '"'
+    + ' style="--gc-frame:' + tint.frame + ';--gc-acc:' + tint.acc + '">';
+  var embw = emb ? '<div class="gc-embw">' + emb + '</div>' : '';
+  var day = function (ts, dtz) { return _gateDayWords(ts, dtz || tz, frF, tz); };
+  if (type === 'ovcard') {
+    var city = fidsEscHtml(m.city);
+    var hd = '<div class="gc-hd">' + embw + '<div class="gc-grow"><div class="gc-ttl">'
+      + '<span class="fx-unit gc-fl">' + fidsEscHtml(m.flight) + '</span> '
+      + '<span class="fx-unit gc-city">' + city + (m.code ? '<span class="gc-code">' + fidsEscHtml(m.code) + '</span>' : '') + '</span>'
+      + '</div></div></div>';
+    var rows = '';
+    if (inb && Number(inb.ts) > 0 && inb.flight) {
+      var isub = '<span class="fx-unit gc-h">' + fidsEscHtml(inb.flight) + (inb.city ? ' · ' + fidsEscHtml(inb.city) : '') + (inb.code ? ' · ' + fidsEscHtml(inb.code) : '') + '</span>';
+      rows += _gcRow('inbound', 'a', _gcPair('yourAc', frF), isub, inb.ts, tz, inb.st, day(inb.ts), frF);
+    }
+    rows += _gcRow('boarding', 't', _gcPair('boarding', frF), '', m.boardTs, tz, '', day(m.boardTs), frF);
+    if (m.close && m.close.ts > now) rows += _gcRow('close', 'c', _gcCloseLabel(m.close, frF), '', m.close.ts, tz, '', day(m.close.ts), frF);
+    var dst = (m.stKey === 'ontime' || m.stKey === 'early' || m.stKey === 'delayed') ? m.stKey : '';
+    rows += _gcRow('departure', 'd', _gcPair('departure', frF), '', m.depTs, tz, dst, day(m.depTs), frF);
+    var asub = m.city ? _gcPair('timeIn', frF, function (t) { return t + ' ' + city; }) : '';
+    var ast = m.arr && m.arr.revised ? (m.arr.early ? 'early' : 'delayed') : '';
+    rows += _gcRow('arrival', 'l', _gcPair('arrival', frF), asub, m.arr ? m.arr.ts : 0, m.arr ? m.arr.tz : tz, ast, m.arr ? day(m.arr.ts, m.arr.tz) : null, frF);
+    return open + hd + '<div class="gc-tl">' + rows + '</div></div>';
+  }
+  if (type === 'docscard') {
+    var d = _GATE_DOCS[m.docs] || _GATE_DOCS.B;
+    var hdD = '<div class="gc-hd">' + embw + '<div class="gc-grow"><div class="gc-dtitle">' + _gcPair('cardBeforeBoard', frF) + '</div></div></div>';
+    // each line's pictograms: with two lines, one each (the passport, then
+    // the visa page); with one, all of the variant's
+    var gl = d.glyphs.split('');
+    var heroG = d.keys.length > 1 ? gl.slice(0, 1) : gl;
+    var hero = heroG.map(function (g) { return '<div class="gc-hero-pic">' + (_GATE_BAND_GLYPH[g] || '') + '</div>'; }).join('');
+    // the headline: each language its own line (French first in Québec)
+    var heads = _gateLbl(d.keys[0], frF, function (w) { return '<div class="gc-hl"><span class="fx-unit gc-h">' + w + '</span></div>'; }, '');
+    var rules = '';
+    for (var k = 1; k < d.keys.length; k++) {
+      var lines = _gateLbl(d.keys[k], frF, function (w) { return '<div class="gc-dl"><span class="fx-unit gc-h">' + w + '</span></div>'; }, '');
+      rules += '<div class="gc-drow"><div class="gc-spic">' + (_GATE_BAND_GLYPH[gl[k]] || '') + '</div><div class="gc-dls">' + lines + '</div></div>';
+    }
+    return open + hdD
+      + '<div class="gc-plate gc-zone fids-dn-fade" data-doc="' + (_GATE_DOCS[m.docs] ? m.docs : 'B') + '"><div class="gc-hero">' + hero + '</div><div class="gc-heads">' + heads + '</div></div>'
+      + '<div class="gc-rules fids-dn-fade' + (rules ? '' : ' gc-rules-none') + '">' + rules + '</div>'
+      + '</div>';
+  }
+  if (type === 'closecard') {
+    var c = m.close;
+    var w = GATE_CLOSE_WORDS[c.kind];
+    var title = _gateLbl(w.band, frF, function (t) { return '<div class="gc-gtl"><span class="fx-unit gc-h">' + t.replace('{TIME}', '').replace(/\s+$/, '') + '</span></div>'; }, '');
+    var hdC = '<div class="gc-hd"><div class="gc-gpic">' + _GATE_BAND_GLYPH.c + '</div><div class="gc-grow"><div class="gc-gtls">' + title + '</div></div>' + embw + '</div>';
+    var cday = _gcDayPair(day(c.ts));
+    var rule = _gcPair('closeMinBefore', frF, function (t) { return t.split('{MIN}').join(String(c.min)).replace(/(\d) /g, '$1 '); });
+    return open + hdC
+      + '<div class="gc-big gc-zone fids-dn-fade" data-close-kind="' + c.kind + '" data-close-min="' + c.min + '" data-close-ts="' + c.ts + '">'
+      +   '<div class="gc-bigt">' + _gcTime(c.ts, tz, frF) + '</div>'
+      +   (cday ? '<div class="gc-bday fids-dn-fade">' + cday + '</div>' : '')
+      + '</div>'
+      + '<div class="gc-ft fids-dn-fade"><div class="gc-rule">' + rule + '</div>'
+      +   '<div class="gc-dep"><div class="gc-dlbl fids-dn-fade">' + _gcPair('departure', frF) + '</div><div class="gc-dt">' + _gcTime(m.depTs, tz, frF) + '</div></div>'
+      + '</div></div>';
+  }
+  return '';
+}
+
+// The facts, while they are this gate's flight's (a gate that has moved on to
+// its next flight, or to none, shows no card from the last one).
+function _gateCardsLive() {
+  try {
+    var m = window._gateCardsModel || null, cf = window._gateCurrentFlight;
+    if (!m || !cf || String(cf.flight || '') !== m.flight) return null;
+    return m;
+  } catch (e) { return null; }
+}
+// Whether a card may take this turn: always on a repaint of the visit it is
+// already showing, and under ?scene= (the review pin); otherwise not within
+// _GATE_CARD_GAP_MS of its last turn.
+function _gateCardTurnDue(type) {
+  try {
+    if (new URLSearchParams(location.search).get('scene')) return true;
+    var seq = window._gateAdVisitSeq || 0;
+    var rec = (window._gateCardTurns = window._gateCardTurns || {});
+    var r = rec[type];
+    if (r && r.seq === seq) return true;
+    if (r && (Date.now() - r.at) < _GATE_CARD_GAP_MS) return false;
+    rec[type] = { seq: seq, at: Date.now() };
+    return true;
+  } catch (e) { return true; }
+}
+// Draw a card into the carousel; false when it has nothing true to show, or
+// (with `turn`, the deck's own call) when its turn has not come round (the
+// deck then skips it, as it skips a weather card without data).
+function _renderGateCard(el, type, turn) {
+  try {
+    if (!el) return false;
+    var html = _gateCardHtml(type, _gateCardsLive(), Date.now(), window._gateInbFacts || null);
+    if (!html) return false;
+    if (turn && !_gateCardTurnDue(type)) return false;
+    if (el.__gcardHtml !== html || !el.querySelector(':scope > .gcard')) { el.innerHTML = html; el.__gcardHtml = html; }
+    return true;
+  } catch (e) { return false; }
+}
+// A card already on the screen follows its facts (a word or a time the feed
+// changed): repainted in place after each gate paint, only when its markup
+// changed; one that has nothing left to show stays until the deck moves on.
+function _gateCardsRefreshSoon() {
+  try {
+    setTimeout(function () {
+      try {
+        var el = document.getElementById('gateAdCarousel');
+        var card = el && el.querySelector(':scope > .gcard');
+        if (!card) return;
+        // the type comes from the card list itself, never from the page's
+        // text (CodeQL js/xss-through-dom): an unknown attribute repaints nothing
+        var type = _GATE_CARD_TYPES[_GATE_CARD_TYPES.indexOf(card.getAttribute('data-gcard'))];
+        if (!type) return;
+        var html = _gateCardHtml(type, _gateCardsLive(), Date.now(), window._gateInbFacts || null);
+        if (html && el.__gcardHtml !== html) { el.innerHTML = html; el.__gcardHtml = html; }
+      } catch (e2) {}
+    }, 0);
+  } catch (e) {}
+}
+try { if (typeof window !== 'undefined') { window._gateCardsModel = window._gateCardsModel || null; window._gateCardsDue = _gateCardsDue; window._gateCardHtml = _gateCardHtml; window._renderGateCard = _renderGateCard; } } catch (e) {}
 // v23925 — THE DEPARTURE'S OWN STATUS AT THE GATE, FROM ITS OWN ROW ONLY.
 // uxgGateHtml's status key (the plate, the classes, the signs) and its
 // depDelayed flag (the struck-through times, the revised Departure, the
@@ -50170,6 +50537,17 @@ function renderGateAd(index) {
   }
   // Any non-bigcraft slide: tear the takeover down (overlay + map + class).
   try { if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown(); } catch (e) {}
+  // v24012 — THE CENTRE CARDS (overview, documents, gate closes). Drawn when
+  // due and their turn has come (_gateCardTurnDue); otherwise skipped onto
+  // the next slide, as the weather card is, and a run of cards is skipped
+  // whole.
+  for (var _gcN = 0; _gcN < totalSlots && slide && _GATE_CARD_TYPES.indexOf(slide.type) >= 0; _gcN++) {
+    if (_renderGateCard(el, slide.type, true)) return;
+    slot = (slot + 1) % totalSlots;
+    _gateAdIndex = slot;
+    window._gateAdCurrentIdx = slot;
+    slide = slides[slot] || slide;
+  }
   // FROM THE ARCHIVE — heritage mark. Skips itself the same way the weather
   // card does when there is nothing true to show for this airport.
   if (slide && slide.type === 'heritage') {
@@ -50727,6 +51105,8 @@ function _getGateAdDwellMs(slide) {
   // it. The crossing takes 20s; at 14s the card left while the aircraft was
   // still over the middle of it, which is the one moment it must not.
   if (slide.type === 'heritage') return 22000;
+  // v24012 — the centre cards: a minute each, as the weather card.
+  if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) return _GATE_CARD_DWELL_MS;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
@@ -51415,6 +51795,16 @@ function _buildGateAdSlideList() {
       });
       if (_hHas) deck.push({ type: 'heritage' });
     }
+  } catch (e) {}
+  // ── 9. v24012 — THE CENTRE CARDS, before boarding only (_gateCardsModel,
+  // _gateCardsDue): the overview after the map, the documents after the
+  // weather, the close time last, each only while it is due. Under a sign
+  // the facts are null and no card is in the deck.
+  try {
+    var _gcDue = _gateCardsDue(_gateCardsLive(), Date.now());
+    if (_gcDue.ovcard) deck.splice(Math.min(2, deck.length), 0, { type: 'ovcard' });
+    if (_gcDue.docscard) deck.splice(Math.min(6, deck.length), 0, { type: 'docscard' });
+    if (_gcDue.closecard) deck.push({ type: 'closecard' });
   } catch (e) {}
 
   return deck;

@@ -636,6 +636,18 @@
         $src: { en: 'airline:F8', fr: 'airline:F8', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     closeAtEnds: { en:'Boarding ends {TIME}', fr:'Fin de l’embarquement {TIME}', es:'Fin del embarque {TIME}', de:'Boarding-Ende {TIME}', it:'Fine dell’imbarco {TIME}', pt:'Fim do embarque {TIME}', ja:'搭乗終了 {TIME}', zh:'登机结束 {TIME}', ar:'انتهاء الصعود {TIME}',
         $src: { en: 'airline:AA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // v24012 — THE GATE'S CENTRE CARDS (_gateCardHtml in fids-core.js).
+    //   cardBeforeBoard  the documents card's title, over the boarding band's
+    //                    own lines (docsDomestic…): the documents research's
+    //                    title (U2: house English, careful translations).
+    //   closeMinBefore   the gate-closes card's rule under its big time: the
+    //                    airline's published minutes, in the very phrase its
+    //                    close line has always said them in (gateCloses
+    //                    above: "Gate closes {MIN} min before departure").
+    cardBeforeBoard: { en: 'Before you board', fr: 'Avant l’embarquement', es: 'Antes de embarcar', de: 'Vor dem Einsteigen', it: 'Prima dell’imbarco', pt: 'Antes do embarque', ja: 'ご搭乗の前に', zh: '登机前须知', ar: 'قبل الصعود إلى الطائرة',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    closeMinBefore: { en:'{MIN} min before departure', fr:'{MIN} min avant le départ', es:'{MIN} min antes de la salida', de:'{MIN} Min. vor Abflug', it:'{MIN} min prima della partenza', pt:'{MIN} min antes da partida', ja:'出発{MIN}分前', zh:'起飞前{MIN}分钟', ar:'قبل {MIN} دقيقة من المغادرة',
+        $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v23973 — LATER AT THIS GATE (_gateLaterStripHtml, _gateChangeNoticeHtml).
     // The strip's title; the label before a moved flight's new gate number
     // ("now Gate 2 | maintenant porte 2", the number in its own pill); the
