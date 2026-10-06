@@ -36,6 +36,7 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/fids-core.js',
   'fids-current/js/fids-v2.js',
   'fids-current/js/gate-date-context.js',
+  'fids-current/js/fids-sun.js',
   'fids-current/js/gate-visual-integrity.js',
   'fids-current/js/feed-router.js',
   'fids-current/js/gids-layout.js',
