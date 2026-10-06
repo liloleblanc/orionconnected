@@ -217,7 +217,7 @@ test('the "to be announced" screen claims no number: no sign, the store\'s words
   assert.match(SRC, /var _bidsTbaHtml = _bidsTba\n\s*\? BoardStrings\.pair\('beltTba', \{ langs: langs, frFirst: iata, cls: 'fx-unit', sep: ' <span class="bs-sep fx-brk">\|<\/span> ' \}\)/,
     "the cell is the store's pair, French first in Québec");
   assert.match(SRC, /\$\{_bidsTba \? '<div class="b3-belt">' \+ _bidsTbaHtml \+ '<\/div>' : ''\}/);
-  assert.match(SRC, /<div class="b3-h-belt">\$\{_bidsHdr\('carousel'\)\}<\/div>/, 'its column is titled in both languages');
+  assert.match(SRC, /<div class="b3-h-belt">\$\{_bidsHdr\('carousel', true\)\}<\/div>/, 'its column is titled in both languages');
   // the store holds the words in all nine languages
   const e = BS.STR.beltTba;
   assert.ok(e, 'the store must hold beltTba');
@@ -404,4 +404,64 @@ test('a Delayed pill with its time keeps the word at full size: stacked, not shr
   assert.equal(tight.wrap, false, 'a row too short to stack keeps the larger single line');
   // and every other fit keeps the old 80% rule
   assert.deepEqual([plan(28, 14, 2, false, false, fits(24, 27)).wrap, plan(28, 14, 2, false, false, fits(18, 27)).wrap], [false, true]);
+});
+
+test('the phone card says until when by the wall\'s rule: Delayed, and the feed\'s own time differs', () => {
+  // Under 700px the belt is a list of cards (renderMobileBaggageHtml). It
+  // printed the word alone over the old scheduled time: Halifax's AC2048 read
+  // "Delayed" and 19:10 while its row's f.upd was 19:29. Run as it is, with
+  // the page around it stubbed.
+  const render = new Function('window', 'AP', 'BoardStrings', 'lang', 'BIDS_UNASSIGNED',
+    lift('fidsEscHtml') + '\n' + lift('renderMobileBaggageHtml') + `
+    function _gateDayNightTheme() { return 'dark'; }
+    function SL(s) { return ({ delayed: 'Delayed', landed: 'Landed', arrived: 'Arrived', ontime: 'On time' })[s] || s; }
+    function TL(k) { return k; }
+    function formatCityIata(c) { return c; }
+    function mkLogo() { return ''; }
+    function _fidsFeedDownInView() { return ''; }
+    function _screenLangAttrs() { return ''; }
+    function _dispIata(x) { return x; }
+    function _mobileNavHtml() { return ''; }
+    return renderMobileBaggageHtml;`)(
+    { fidsNormStatus: (s) => String(s || '').toLowerCase().replace(/\s+/g, '') },
+    {}, { META: { en: { intl: 'en' } }, withScripts: (x) => x, bs: () => 'To be announced' }, 'en', '—');
+  const card = (f) => render({ arrFlights: [Object.assign({ flight: 'AC2048', origin: 'Toronto', time: '19:10' }, f)], iata: 'YHZ', subScreenVal: '—', timeStr: '18:00' });
+  const delayed = card({ status: 'delayed', upd: '19:29' });
+  assert.match(delayed, /<span style="white-space:nowrap;">Delayed<\/span> <span style="white-space:nowrap;font-variant-numeric:tabular-nums;">· 19:29<\/span>/,
+    'the word, then the feed\'s time, written as the card writes its scheduled time');
+  assert.match(delayed, />19:10<\/span>/, 'the scheduled time stays where it was');
+  // the feed's own word for it, as the wall reads it (fidsNormStatus)
+  assert.match(card({ status: 'Delayed', upd: '19:29' }), /· 19:29/);
+  // no time from the feed, or the same time: the word alone
+  for (const f of [{ status: 'delayed' }, { status: 'delayed', upd: '19:10' }]) {
+    const h = card(f);
+    assert.match(h, /;">Delayed<\/div>/); assert.doesNotMatch(h, /·/);
+  }
+  // no other status is given a time, even when the row has one
+  for (const status of ['landed', 'arrived', 'ontime']) assert.doesNotMatch(card({ status, upd: '19:29' }), /19:29/, status);
+  // and the feed's time is text, never markup
+  const hostile = card({ status: 'delayed', upd: '<img src=x onerror=alert(1)>' });
+  assert.ok(!hostile.includes('<img src=x') && hostile.includes('&lt;img src=x'), 'escaped');
+});
+
+test('a "to be announced" column title too wide for its column stacks, one language per line, never runs past it', () => {
+  // Portrait 1080x1920 in de,pt: 'Status | Situação' at the readable floor
+  // ran 2px past its 215-unit column on one line (lines: 1 could only report it).
+  assert.match(SRC, /\{ sel: '\.bidsv3 \.b3-head > div', lines: 2, units: true \}/);
+  for (const [cls, key] of [['flight', 'flight'], ['from', 'destArr'], ['time', 'time'], ['belt', 'carousel'], ['status', 'status']]) {
+    assert.ok(SRC.includes(`<div class="b3-h-${cls}">\${_bidsHdr('${key}', true)}</div>`), `the ${cls} title is written as whole phrases`);
+  }
+  // the halves are whole phrases round a separator the break drops
+  const hdr = new Function('LS', 'langs', 'BoardStrings', 'document', lift('_bidsHdr') + '\nreturn _bidsHdr;')(
+    { status: { en: 'Status', de: 'Status', pt: 'Situação' } }, ['de', 'pt'], BS, { getElementById: () => ({ value: 'YHZ' }) });
+  assert.equal(hdr('status', true), '<span class="bs-h bidsv2-hh fx-unit" lang="de">Status</span> <span class="bidsv2-hsep fx-brk">|</span> <span class="bs-h bidsv2-hh fx-unit" lang="pt">Situação</span>');
+  assert.equal(hdr('status'), '<span class="bs-h bidsv2-hh" lang="de">Status</span> <span class="bidsv2-hsep">|</span> <span class="bs-h bidsv2-hh" lang="pt">Situação</span>', 'the other belt header is unchanged');
+  // the planner: at the floor and wider than its column on one line, a
+  // two-line title stacks where a one-line title could only be reported
+  const plan = new Function(lift('_fxSearch') + '\n' + lift('_fxApMin') + '\n' + lift('_fxPlan') + '\nreturn _fxPlan;')();
+  const fitsStacked = (px, wrap) => !!wrap && px <= 14.25 + 1e-9;
+  assert.equal(plan(11, 14.25, 1, false, false, fitsStacked).over, true, 'was: over the column');
+  assert.deepEqual(plan(11, 14.25, 2, false, true, fitsStacked), { px: 14.25, wrap: true }, 'now: stacked at the floor');
+  // and a title that fits on one line stays on one line
+  assert.deepEqual(plan(20, 14.25, 2, false, true, () => true), { px: 20, wrap: false });
 });

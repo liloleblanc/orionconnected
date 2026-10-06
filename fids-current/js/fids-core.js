@@ -2889,7 +2889,9 @@ var FIDS_FIT_RULES = [
   // and the hall's "to be announced" list: its carousel cell (the store's
   // words in both languages, a whole phrase each) and its column titles
   { sel: '.bidsv3 .b3-belt', lines: 2, units: true, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.8 : 0; } },
-  { sel: '.bidsv3 .b3-head > div', lines: 1 },
+  // (a title is one line while it fits; at the floor and still too wide for
+  // its column it stacks one language per line, the "|" dropped)
+  { sel: '.bidsv3 .b3-head > div', lines: 2, units: true },
   // the belt sign's band: each language is its own line of the band, inside
   // the band's own padding, and the two share one size (group). The second
   // language was a CSS ::after no script can measure, cut at the card's edge
@@ -10630,6 +10632,18 @@ function renderMobileBaggageHtml(ctx) {
   const flightCards = (arrFlights && arrFlights.length)
     ? arrFlights.map(f => {
         const stTxt = SL(f.status);
+        // v24005 — A DELAYED CARD SAYS UNTIL WHEN, by the wall board's rule
+        // (_b3StTimed): Delayed, and the feed's own revised / landed time
+        // (f.upd) differs from the schedule. The phone card printed the word
+        // alone over the old scheduled time, so Halifax's AC2048 read
+        // "Delayed" and 19:10 while its feed said 19:29. The time is written
+        // as this card writes its scheduled time (the feed's HH:MM), so one
+        // card never mixes two clocks. No time in the feed: the word alone.
+        const _mStKey = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus(f.status) : String(f.status || '');
+        const _mStTimed = !!(_mStKey === 'delayed' && f.upd && f.upd !== f.time);
+        const _mStHtml = _mStTimed
+          ? '<span style="white-space:nowrap;">' + fidsEscHtml(stTxt) + '</span> <span style="white-space:nowrap;font-variant-numeric:tabular-nums;">· ' + fidsEscHtml(f.upd) + '</span>'
+          : fidsEscHtml(stTxt);
         // (a row with no code: formatCityIata as on the board's rows, see render())
         const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : formatCityIata(f.origin || '—', '', lang);
         const _logoHtml = (mkLogo(f.airline, f._airlineName) || '').replace(/<img /g, '<img style="max-width:84px;max-height:34px;height:auto;width:auto;object-fit:contain;" ');
@@ -10637,7 +10651,7 @@ function renderMobileBaggageHtml(ctx) {
              +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
              +     '<div style="height:34px;display:flex;align-items:center;">' + _logoHtml + '</div>'
              // status as plain coloured text — no pill
-             +     '<div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform: none;color:' + stColorFor(f.status) + ';">' + fidsEscHtml(stTxt) + '</div>'
+             +     '<div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform: none;text-align:end;color:' + stColorFor(f.status) + ';">' + _mStHtml + '</div>'
              +   '</div>'
              +   '<div style="font-size:11px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;margin-bottom:2px;">' + TL('destArr').toLocaleUpperCase(BoardStrings.META[lang].intl) + '</div>'
              +   '<div style="font-size:19px;color:' + T.ink + ';font-weight:800;margin-bottom:10px;">' + fidsEscHtml(cityDisplay) + '</div>'
@@ -23672,7 +23686,12 @@ const gView = document.getElementById('gateView');
     // v22962 — headers follow `langs` (the airport picker chose the second
     // language and English was pinned first — the SIXTH airport-keyed picker
     // found; the reported board had EN/FR headers over Spanish values).
-    function _bidsHdr(key) {
+    // v24005 — units: the hall's "to be announced" list titles its columns
+    // as whole phrases (.fx-unit) round a separator the break may drop
+    // (.fx-brk), so a title wider than its column at the readable floor is
+    // stacked one language per line (FIDS_FIT_RULES: .b3-head > div) rather
+    // than run past it: 'Status | Situação' ran 2px past a portrait column.
+    function _bidsHdr(key, units) {
       var o = (typeof LS !== 'undefined' && LS[key]) || {};
       // v23970 — the one chooser, French first in Québec like every other pair
       var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
@@ -23682,9 +23701,9 @@ const gView = document.getElementById('gateView');
         if (!w || seen[w.toLowerCase()]) continue;
         seen[w.toLowerCase()] = 1;
         // each half carries its language (and an Arabic one its direction)
-        out.push(BoardStrings.half(picked[i], w, 'bidsv2-hh'));
+        out.push(BoardStrings.half(picked[i], w, units ? 'bidsv2-hh fx-unit' : 'bidsv2-hh'));
       }
-      return out.join(' <span class="bidsv2-hsep">|</span> ');
+      return out.join(units ? ' <span class="bidsv2-hsep fx-brk">|</span> ' : ' <span class="bidsv2-hsep">|</span> ');
     }
     // MCO: remind travellers which terminal this carousel sits in. The belt
     // key is "A-9"-style, so the prefix is the terminal letter; fall back to
@@ -23985,11 +24004,11 @@ const gView = document.getElementById('gateView');
               <div class="bidsv2-col-status">${_bidsHdr('status')}</div>
             </div>
             ${(_bidsTba && _bidsV3On && _pageFlights.length) ? `<div class="b3-head">
-              <div class="b3-h-flight">${_bidsHdr('flight')}</div>
-              <div class="b3-h-from">${_bidsHdr('destArr')}</div>
-              <div class="b3-h-time">${_bidsHdr('time')}</div>
-              <div class="b3-h-belt">${_bidsHdr('carousel')}</div>
-              <div class="b3-h-status">${_bidsHdr('status')}</div>
+              <div class="b3-h-flight">${_bidsHdr('flight', true)}</div>
+              <div class="b3-h-from">${_bidsHdr('destArr', true)}</div>
+              <div class="b3-h-time">${_bidsHdr('time', true)}</div>
+              <div class="b3-h-belt">${_bidsHdr('carousel', true)}</div>
+              <div class="b3-h-status">${_bidsHdr('status', true)}</div>
             </div>` : ''}
             ${_pageFlights.length ? _pageFlights.map((f) => {
               const stTxt = SL(f.status);
