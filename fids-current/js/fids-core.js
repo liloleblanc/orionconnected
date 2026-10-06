@@ -34744,7 +34744,10 @@ function _gateCardsRefreshSoon() {
         var el = document.getElementById('gateAdCarousel');
         var card = el && el.querySelector(':scope > .gcard');
         if (!card) return;
-        var type = card.getAttribute('data-gcard');
+        // the type comes from the card list itself, never from the page's
+        // text (CodeQL js/xss-through-dom): an unknown attribute repaints nothing
+        var type = _GATE_CARD_TYPES[_GATE_CARD_TYPES.indexOf(card.getAttribute('data-gcard'))];
+        if (!type) return;
         var html = _gateCardHtml(type, _gateCardsLive(), Date.now(), window._gateInbFacts || null);
         if (html && el.__gcardHtml !== html) { el.innerHTML = html; el.__gcardHtml = html; }
       } catch (e2) {}
