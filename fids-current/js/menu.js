@@ -147,7 +147,11 @@ function _ddRender() {
     var p = _ddPartial[c] || {};
     var since = _ddHhmm(p.since);
     var day = /^\d{4}-\d{2}-\d{2}$/.test(String(p.day || '')) ? ' (' + p.day + ')' : '';
-    var what = 'tomorrow' + day + ' ' + (p.failure === 'blocked' ? 'blocked' : 'failing');
+    // Which side: the worker keeps it per direction (a refused departures'
+    // tomorrow beside arrivals answering whole). Both sides: no prefix.
+    var dk = Object.keys((p.dirs && typeof p.dirs === 'object') ? p.dirs : {}).filter(function (k) { return k === 'dep' || k === 'arr'; });
+    var side = dk.length === 1 ? (dk[0] === 'dep' ? 'departures: ' : 'arrivals: ') : '';
+    var what = side + 'tomorrow' + day + ' ' + (p.failure === 'blocked' ? 'blocked' : 'failing');
     return '<span title="Today\'s flights answer and are shown live. The airport\'s next day did not come back whole, '
          + 'so it is left off the board until it does. Never docked: only a blocked today docks." '
          + 'style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px dotted #52525b;'

@@ -76,7 +76,9 @@ function upstream(state) {
     calls.push(u.hostname + u.pathname + u.search);
     if (u.hostname === 'www.torontopearson.com') {
       const type = u.searchParams.get('type') || 'DEP';
-      const mood = (state.yyzDay && state.yyzDay[u.searchParams.get('day')]) || state.yyz;
+      // A mood per direction and day (yyzMood), per day (yyzDay), or for every ask (yyz).
+      const mood = (state.yyzMood && state.yyzMood(type, u.searchParams.get('day')))
+        || (state.yyzDay && state.yyzDay[u.searchParams.get('day')]) || state.yyz;
       if (mood === 'radware') {
         return new Response('', { status: 302, headers: { Location: 'https://validate.perfdrive.com/x?ssk=support@shieldsquare.com' } });
       }
@@ -237,10 +239,27 @@ test('a later day that failed or was refused leaves today live; a failed or refu
   assert.equal(feedVerdict(40, [T, { state: 'blocked' }, TOMORROW_OK], null), 'blocked', "today's second page refused");
   assert.equal(feedVerdict(40, [T, { state: 'blocked' }, TOMORROW_BLOCKED], null), 'blocked', "today's domestic slice refused, tomorrow too");
   assert.equal(feedVerdict(40, [{ state: 'blocked' }, T, TOMORROW_OK], null), 'blocked', "yesterday's file refused");
-  assert.equal(feedVerdict(40, [T, { state: 'error' }, TOMORROW_BLOCKED], null), 'error', 'a lost page of today is not forgiven by a refused tomorrow');
-  // a producer that threw is an error, whatever the notes say
+  // a producer that threw fails the answer, whatever the notes say
   assert.equal(feedVerdict(40, [T, TOMORROW_ERR], new Error('x')), 'error');
-  assert.equal(feedVerdict(40, [T, TOMORROW_BLOCKED], new Error('x')), 'error');
+});
+
+// When today FAILED, the kind of failure is as it was before v24002: a refusal
+// anywhere in the answer, a later day's included, makes it "blocked" — what
+// the health and the 30-minute dock count. Salt Lake City, Zurich and Fort
+// McMurray still ask tomorrow after today failed, so this happens for real.
+test('a failed today keeps its kind as before: a refusal anywhere, tomorrow included, makes the failure "blocked"', () => {
+  const T = { state: 'ok' }, TOMORROW_OK = { state: 'ok', later: true };
+  const TOMORROW_ERR = { state: 'error', later: true }, TOMORROW_BLOCKED = { state: 'blocked', later: true };
+  assert.equal(feedVerdict(5, [{ state: 'error' }, TOMORROW_BLOCKED], null), 'blocked', 'today a 5xx, tomorrow refused: blocked, as under v23998');
+  assert.equal(feedVerdict(40, [T, { state: 'error' }, TOMORROW_BLOCKED], null), 'blocked', "today's second page lost, tomorrow refused");
+  assert.equal(feedVerdict(40, [{ state: 'error' }, T, TOMORROW_BLOCKED], null), 'blocked', "yesterday's file lost, tomorrow refused");
+  assert.equal(feedVerdict(40, [T, TOMORROW_BLOCKED], new Error('x')), 'blocked', 'a producer that threw beside a refusal');
+  // …and without a refusal anywhere, still "error"
+  assert.equal(feedVerdict(5, [{ state: 'error' }, TOMORROW_ERR], null), 'error');
+  assert.equal(feedVerdict(5, [{ state: 'error' }, TOMORROW_OK], null), 'error');
+  assert.equal(feedVerdict(5, [T, TOMORROW_ERR], new Error('x')), 'error');
+  // the later day is forgiven only when today answered: it never softens today's failure
+  assert.equal(feedVerdict(40, [T, TOMORROW_BLOCKED], null), 'ok');
 });
 
 test('what a partial answer left out: the later day, when it begins, and whether it was refused', async () => {
@@ -1132,6 +1151,7 @@ function partsUpstream(bad) {
       if (b === 'slc-tomorrow' && !today) return refuse();
       if (b === 'slc-today-blocked' && today) return refuse();
       if (b === 'slc-tomorrow-500' && !today) return new Response('err', { status: 500 });
+      if (b === 'slc-today-500-tomorrow-blocked') return today ? new Response('err', { status: 500 }) : refuse();
       // Tomorrow's page: the same board, dated the next day.
       const page = fx(u.searchParams.get('query_leg') === 'A' ? 'slc-arr-sample.html' : 'slc-dep-sample.html');
       return new Response(today ? page : page.replace('Sat, Sep 05', 'Sun, Sep 06'), { status: 200, headers: { 'Content-Type': 'text/html' } });
@@ -1140,10 +1160,13 @@ function partsUpstream(bad) {
       if (b === 'zrh-tomorrow' && u.searchParams.get('date') === '2026-09-07') return new Response('', { status: 502 });
       if (b === 'zrh-tomorrow-blocked' && u.searchParams.get('date') === '2026-09-07') return refuse();
       if (b === 'zrh-yesterday-blocked' && u.searchParams.get('date') === '2026-09-06') return refuse();
+      if (b === 'zrh-today-502-tomorrow-blocked' && u.searchParams.get('date') === '2026-09-06') return new Response('', { status: 502 });
+      if (b === 'zrh-today-502-tomorrow-blocked' && u.searchParams.get('date') === '2026-09-07') return refuse();
       return new Response(fx('zrh-sample-2026-09-06.json'), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     if (u.hostname === 'flyymm.com') {
       if (b === 'ymm-today' && u.searchParams.get('dt') === '2026-09-06') return refuse();
+      if (b === 'ymm-today-500-tomorrow-blocked') return u.searchParams.get('dt') === '2026-09-06' ? new Response('err', { status: 500 }) : refuse();
       if ((b === 'ymm-tomorrow-500' || b === 'ymm-evening') && u.searchParams.get('dt') === '2026-09-07') return new Response('err', { status: 500 });
       if ((b === 'ymm-tomorrow-blocked' || b === 'ymm-evening-blocked') && u.searchParams.get('dt') === '2026-09-07') return refuse();
       if (b === 'ymm-evening' || b === 'ymm-evening-blocked') return new Response(fx('ymm-empty-sample.json'), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -1230,6 +1253,38 @@ test('a feed asked in parts is live only when every part answered: a refused par
       const r3 = await W.get(fresh, makeCtx(), wideWin(code, dir));
       assert.equal(r3.status, 503, what + ': 503 with no last good list');
     }, clock || PARTS_CLOCK[code] || Date.parse('2026-09-05T17:00:00Z'));
+  }
+});
+
+// v24002 — a failed today keeps the kind it had under v23998: Salt Lake
+// City, Zurich and Fort McMurray still ask tomorrow after today failed, and a
+// refused tomorrow beside it makes the failure "blocked", which the health and
+// the 30-minute dock count — the later day is forgiven only when today answered.
+test('today failed and tomorrow refused: the failure is "blocked", as before — Salt Lake City, Zurich, Fort McMurray', async () => {
+  const cases = [
+    ['SLC', 'dep', 'slc-today-500-tomorrow-blocked', "Salt Lake City: today's page a 500, tomorrow's refused"],
+    ['ZRH', 'dep', 'zrh-today-502-tomorrow-blocked', "Zurich: today's day file a 502, tomorrow's refused"],
+    ['YMM', 'dep', 'ymm-today-500-tomorrow-blocked', "Fort McMurray: today's file a 500, tomorrow's refused"]
+  ];
+  for (const [code, dir, part, what] of cases) {
+    await world(async (W) => {
+      const { env } = makeEnv();
+      const bad = { v: null };
+      globalThis.fetch = partsUpstream(bad);
+      const r1 = await W.get(env, makeCtx(), wideWin(code, dir));
+      assert.equal(r1.headers.get('X-Feed-State'), 'live', what + ': every part answered');
+      bad.v = part; bad.answered = 0; bad.failed = 0;
+      W.tick(10 * MIN); W.colo();
+      const r2 = await W.get(env, makeCtx(), wideWin(code, dir));
+      assert.ok(bad.failed >= 2, `${what}: today failed and tomorrow was asked and refused (${bad.failed} failed)`);
+      assert.equal(r2.headers.get('X-Feed-State'), 'stale', what + ': not live');
+      assert.equal(r2.headers.get('X-Feed-Partial'), null, what + ': and not partial');
+      assert.equal((await r2.json())._feed.failure, 'blocked', what + ': blocked, as under v23998');
+      W.colo();
+      const r3 = await W.get(makeEnv().env, makeCtx(), wideWin(code, dir));
+      assert.equal(r3.status, 503, what);
+      assert.equal((await r3.json()).error, 'blocked', what + ': 503 blocked with no last good list');
+    }, PARTS_CLOCK[code] || Date.parse('2026-09-05T17:00:00Z'));
   }
 });
 
@@ -1438,37 +1493,62 @@ test('the menu says when an airport was docked, not when its block began', () =>
 });
 
 // ── v24002 — a partial answer is visible, and /fararr reads the same rule ────
-test('feed health "partial": written once it has lasted, again only when another day goes missing or an outage turns into a refusal, gone with the first whole answer', () => {
+test('feed health "partial": per direction, written once it has lasted, again only when another day goes missing or an outage turns into a refusal, gone with the first whole answer FOR THAT DIRECTION', () => {
   const t = 1e12;
   const tmw = { day: '2026-10-06', from: t + 3 * 3600e3, failure: 'error' };
   const refused = { ...tmw, failure: 'blocked' };
-  assert.equal(feedHealthNext(null, 'partial', t, { since: t, last: t }, tmw), undefined, 'one partial answer is not written');
-  assert.equal(feedHealthNext(null, 'partial', t + FEED_FAIL_CONFIRM_MS - 1, { since: t, last: t + FEED_FAIL_CONFIRM_MS - 1 }, tmw), undefined);
-  const p = feedHealthNext(null, 'partial', t + FEED_FAIL_CONFIRM_MS, { since: t, last: t + FEED_FAIL_CONFIRM_MS }, tmw);
-  assert.deepEqual(p, { state: 'partial', since: t, oks: 0, okAt: null, day: '2026-10-06', failure: 'error' }, 'lasting, it is written, dated from its start');
+  const part = (since, day, failure, why) => ({ since, day, failure, ...(why ? { why } : {}) });
+  assert.equal(feedHealthNext(null, 'partial', t, { since: t, last: t }, tmw, 'dep'), undefined, 'one partial answer is not written');
+  assert.equal(feedHealthNext(null, 'partial', t + FEED_FAIL_CONFIRM_MS - 1, { since: t, last: t + FEED_FAIL_CONFIRM_MS - 1 }, tmw, 'dep'), undefined);
+  const p = feedHealthNext(null, 'partial', t + FEED_FAIL_CONFIRM_MS, { since: t, last: t + FEED_FAIL_CONFIRM_MS }, tmw, 'dep');
+  assert.deepEqual(p, { state: 'partial', since: t, oks: 0, okAt: null, day: '2026-10-06', failure: 'error', dirs: { dep: part(t, '2026-10-06', 'error') } },
+    'lasting, it is written, dated from its start, under its direction');
   // A run seen only through other colos' copies is dated by when the airport was asked, not by now.
-  assert.equal(feedHealthNext(null, 'partial', t + 20 * MIN, { since: t, last: t }, tmw), undefined, 'one copy served for twenty minutes is still one answer');
-  assert.equal(feedHealthNext(p, 'partial', t + 20 * MIN, { since: t, last: t + 20 * MIN }, tmw), undefined, 'still partial: nothing to write');
-  assert.deepEqual(feedHealthNext(p, 'partial', t + 21 * MIN, { since: t, last: t + 21 * MIN }, refused), { ...p, failure: 'blocked' }, 'an outage turned into a refusal');
-  assert.equal(feedHealthNext({ ...p, failure: 'blocked' }, 'partial', t + 22 * MIN, { since: t }, tmw), undefined, 'a refusal is never downgraded');
-  assert.deepEqual(feedHealthNext(p, 'partial', t + 25 * MIN, { since: t }, { ...tmw, day: '2026-10-07' }), { ...p, day: '2026-10-07' }, 'another day missing');
-  assert.equal(feedHealthNext(p, 'ok', t + 30 * MIN), null, 'the first whole answer: the entry goes');
+  assert.equal(feedHealthNext(null, 'partial', t + 20 * MIN, { since: t, last: t }, tmw, 'dep'), undefined, 'one copy served for twenty minutes is still one answer');
+  assert.equal(feedHealthNext(p, 'partial', t + 20 * MIN, { since: t, last: t + 20 * MIN }, tmw, 'dep'), undefined, 'still partial: nothing to write');
+  const pb = feedHealthNext(p, 'partial', t + 21 * MIN, { since: t, last: t + 21 * MIN }, refused, 'dep');
+  assert.deepEqual(pb, { ...p, failure: 'blocked', dirs: { dep: part(t, '2026-10-06', 'blocked') } }, 'an outage turned into a refusal');
+  assert.equal(feedHealthNext(pb, 'partial', t + 22 * MIN, { since: t }, tmw, 'dep'), undefined, 'a refusal is never downgraded');
+  assert.deepEqual(feedHealthNext(p, 'partial', t + 25 * MIN, { since: t }, { ...tmw, day: '2026-10-07' }, 'dep'),
+    { ...p, day: '2026-10-07', dirs: { dep: part(t, '2026-10-07', 'error') } }, 'another day missing');
+  // THE OTHER DIRECTION answering whole says nothing about this one…
+  assert.equal(feedHealthNext(p, 'ok', t + 30 * MIN, null, null, 'arr'), undefined, 'arrivals whole: departures are still partial');
+  assert.equal(feedHealthNext(p, 'ok', t + 30 * MIN, null, null, 'arrivals'), undefined, "Moncton's names for the directions read the same");
+  // …only a whole answer for the same direction ends it.
+  assert.equal(feedHealthNext(p, 'ok', t + 30 * MIN, null, null, 'dep'), null, 'departures whole: the entry goes');
+  assert.equal(feedHealthNext(p, 'ok', t + 30 * MIN, null, null, 'departures'), null);
+  // The other direction partial too: it joins once its own run has lasted, and the entry sums them up.
+  assert.equal(feedHealthNext(p, 'partial', t + 31 * MIN, { since: t + 30 * MIN, last: t + 31 * MIN }, refused, 'arr'), undefined, "arrivals' run has not lasted");
+  const both = feedHealthNext(p, 'partial', t + 33 * MIN, { since: t + 30 * MIN, last: t + 33 * MIN }, refused, 'arr');
+  assert.deepEqual(both, { state: 'partial', since: t, oks: 0, okAt: null, day: '2026-10-06', failure: 'blocked',
+    dirs: { dep: part(t, '2026-10-06', 'error'), arr: part(t + 30 * MIN, '2026-10-06', 'blocked') } }, 'the earliest start, the earliest day, refused if either was');
+  // One direction whole again: the other stays, and the summary is its own.
+  assert.deepEqual(feedHealthNext(both, 'ok', t + 40 * MIN, null, null, 'dep'),
+    { state: 'partial', since: t + 30 * MIN, oks: 0, okAt: null, day: '2026-10-06', failure: 'blocked', dirs: { arr: part(t + 30 * MIN, '2026-10-06', 'blocked') } });
+  assert.equal(feedHealthNext(feedHealthNext(both, 'ok', t + 40 * MIN, null, null, 'dep'), 'ok', t + 41 * MIN, null, null, 'arr'), null, 'both whole: healthy');
+  // An entry with no directions recorded, or an answer naming none, ends it whole.
+  const { dirs: _d, ...bare } = p;
+  assert.equal(feedHealthNext(bare, 'ok', t + 30 * MIN, null, null, 'arr'), null);
+  assert.equal(feedHealthNext(p, 'ok', t + 30 * MIN), null);
   // Never towards a block: a failing airport whose today answers again counts it as a good answer…
   const blocked = { state: 'blocked', since: t, oks: 0, okAt: null };
-  assert.deepEqual(feedHealthNext(blocked, 'partial', t + 40 * MIN, { since: t + 40 * MIN }, refused), { ...blocked, oks: 1, okAt: t + 40 * MIN });
+  assert.deepEqual(feedHealthNext(blocked, 'partial', t + 40 * MIN, { since: t + 40 * MIN }, refused, 'dep'), { ...blocked, oks: 1, okAt: t + 40 * MIN });
   const one = { ...blocked, oks: 1, okAt: t + 40 * MIN };
-  assert.equal(feedHealthNext(one, 'partial', t + 45 * MIN, { since: t + 44 * MIN, last: t + 45 * MIN }, refused), null, '…two of them: healthy');
-  assert.deepEqual(feedHealthNext(one, 'partial', t + 45 * MIN, { since: t + 40 * MIN, last: t + 45 * MIN }, refused),
-    { state: 'partial', since: t + 40 * MIN, oks: 0, okAt: null, day: '2026-10-06', failure: 'blocked' }, '…or partial, once that has lasted');
+  assert.equal(feedHealthNext(one, 'partial', t + 45 * MIN, { since: t + 44 * MIN, last: t + 45 * MIN }, refused, 'dep'), null, '…two of them: healthy');
+  assert.deepEqual(feedHealthNext(one, 'partial', t + 45 * MIN, { since: t + 40 * MIN, last: t + 45 * MIN }, refused, 'dep'),
+    { state: 'partial', since: t + 40 * MIN, oks: 0, okAt: null, day: '2026-10-06', failure: 'blocked', dirs: { dep: part(t + 40 * MIN, '2026-10-06', 'blocked') } },
+    '…or partial, once that has lasted');
   // …and today itself failing replaces a partial entry only once that failure has lasted.
-  assert.equal(feedHealthNext(p, 'blocked', t + 50 * MIN, { since: t + 50 * MIN }), undefined);
-  assert.deepEqual(feedHealthNext(p, 'blocked', t + 53 * MIN, { since: t + 50 * MIN }), { state: 'blocked', since: t + 50 * MIN, oks: 0, okAt: null });
-  // The dock lists it apart, never docked, never as failing.
+  assert.equal(feedHealthNext(p, 'blocked', t + 50 * MIN, { since: t + 50 * MIN }, null, 'arr'), undefined);
+  assert.deepEqual(feedHealthNext(p, 'blocked', t + 53 * MIN, { since: t + 50 * MIN }, null, 'arr'), { state: 'blocked', since: t + 50 * MIN, oks: 0, okAt: null });
+  // The dock lists it apart, never docked, never as failing, with its directions.
   const now = t + 60 * MIN;
-  const r = feedAutoDocked({ feeds: { YYZ: { ...p, failure: 'blocked', why: 'HTTP 302' }, YOW: { state: 'blocked', since: t } } }, now);
+  const withWhy = { ...pb, why: 'HTTP 302', dirs: { dep: part(t, '2026-10-06', 'blocked', 'HTTP 302') } };
+  const r = feedAutoDocked({ feeds: { YYZ: withWhy, YOW: { state: 'blocked', since: t } } }, now);
   assert.deepEqual(r.auto, ['YOW']);
   assert.deepEqual(Object.keys(r.watch), []);
-  assert.deepEqual(r.partial, { YYZ: { state: 'partial', since: new Date(t).toISOString(), day: '2026-10-06', failure: 'blocked', why: 'HTTP 302' } });
+  assert.deepEqual(r.partial, { YYZ: { state: 'partial', since: new Date(t).toISOString(), day: '2026-10-06', failure: 'blocked', why: 'HTTP 302',
+    dirs: { dep: { since: new Date(t).toISOString(), day: '2026-10-06', failure: 'blocked' } } } });
 });
 
 test('a tomorrow that keeps being refused is not invisible: today stays live, feed health says "partial" with the day and since when, and it never docks or backs off', async () => {
@@ -1512,6 +1592,93 @@ test('a tomorrow that keeps being refused is not invisible: today stays live, fe
   });
 });
 
+// v24002 — health is kept per airport, answers per direction. Pearson,
+// Chicago, Dublin, Salt Lake City, Sydney and Fort McMurray ask tomorrow once
+// per direction, and a bot manager can refuse one ask and pass the next: the
+// direction answering whole must not hide the one left partial.
+test('one direction left partial while the other answers whole is still not invisible: feed health and the menu say which side, and only that side answering whole clears it', async () => {
+  const { feedLocalDay } = await import('../workers/fids-proxy.js');
+  const runs = [
+    // [what, Pearson's answer to the departures' tomorrow, minutes between polls, which direction a poll asks first, when a poll lands in another colo]
+    ['refused (302), polled every 2 minutes', 'radware', 2, ['dep', 'arr'], (m) => m % 10 === 8, 'blocked', /HTTP 302/],
+    ['timed out (504), polled every minute', 'timeout', 1, ['arr', 'dep'], (m) => m % 7 === 3, 'error', /HTTP 504/]
+  ];
+  for (const [what, mood, every, order, colo, failure, why] of runs) {
+    await world(async (W) => {
+      const { env, writes } = makeEnv();
+      const up = { yyz: 'ok', yyzMood: (type, day) => (type === 'DEP' && day === 'tomorrow' ? mood : null) };
+      globalThis.fetch = upstream(up);
+      const t0 = W.now;
+      let depPartial = 0, arrPartial = 0, polls = 0;
+      for (let m = 0; m <= 60; m += every) {
+        if (colo(m)) W.colo();
+        for (const dir of order) {
+          const r = await W.get(env, makeCtx(), '/flights/yyz?direction=' + dir);
+          assert.equal(r.headers.get('X-Feed-State'), 'live', `${what}, minute ${m}, ${dir}: today is live`);
+          if (r.headers.get('X-Feed-Partial')) { if (dir === 'dep') depPartial++; else arrPartial++; }
+        }
+        polls++;
+        W.tick(every * MIN);
+      }
+      assert.equal(depPartial, polls, what + ': every departures answer is marked partial');
+      assert.equal(arrPartial, 0, what + ': no arrivals answer is');
+      assert.ok(!writes.some((w) => w.k.startsWith(FEED_FAIL_PREFIX)), what + ': no backoff is written');
+      assert.equal(writes.filter((w) => w.k === 'feed-health').length, 1, what + ': feed health written once, when it had lasted, and never undone by the arrivals');
+      const e = JSON.parse(env.FIDS_USERS.m.get('feed-health').v).feeds.YYZ;
+      const tmw = feedLocalDay('America/Toronto', t0, 1);
+      assert.deepEqual([e.state, e.since, e.day, e.failure, Object.keys(e.dirs)], ['partial', t0, tmw, failure, ['dep']], what);
+      assert.match(e.why, why, what + ": the later day's own words");
+      const dd = await (await W.get(env, makeCtx(), '/api/dry-dock')).json();
+      assert.deepEqual(dd.auto, [], what + ': never docked');
+      assert.deepEqual(dd.watch, {}, what + ': never read as failing');
+      assert.deepEqual(Object.keys(dd.partial), ['YYZ'], what + ': listed as partial');
+      assert.deepEqual(Object.keys(dd.partial.YYZ.dirs), ['dep'], what + ': the departures side');
+      assert.deepEqual([Date.parse(dd.partial.YYZ.dirs.dep.since), dd.partial.YYZ.dirs.dep.day, dd.partial.YYZ.dirs.dep.failure], [t0, tmw, failure], what);
+      // Tomorrow's departures answer again: the next whole DEPARTURES answer clears it.
+      up.yyzMood = null;
+      W.tick(6 * MIN); W.colo();
+      await W.get(env, makeCtx(), '/flights/yyz?direction=arr');
+      assert.ok('YYZ' in JSON.parse(env.FIDS_USERS.m.get('feed-health').v).feeds, what + ': an arrivals answer does not clear it');
+      const r = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+      assert.equal(r.headers.get('X-Feed-Partial'), null, what);
+      assert.ok(!('YYZ' in JSON.parse(env.FIDS_USERS.m.get('feed-health').v).feeds), what + ': the departures answer does: healthy again');
+      assert.deepEqual((await (await W.get(env, makeCtx(), '/api/dry-dock')).json()).partial, {}, what);
+    });
+  }
+});
+
+test('both directions partial: each side is its own, and the airport is healthy only when both answer whole', async () => {
+  await world(async (W) => {
+    const { env } = makeEnv();
+    const up = { yyz: 'ok', yyzDay: { today: 'ok', tomorrow: 'radware' } };
+    globalThis.fetch = upstream(up);
+    const t0 = W.now;
+    for (let m = 0; m <= 20; m += 2) {
+      await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+      await W.get(env, makeCtx(), '/flights/yyz?direction=arr');
+      W.tick(2 * MIN);
+    }
+    const health = () => JSON.parse(env.FIDS_USERS.m.get('feed-health').v).feeds.YYZ;
+    assert.deepEqual(Object.keys(health().dirs).sort(), ['arr', 'dep'], 'both sides recorded');
+    assert.equal(health().since, t0);
+    // The departures' tomorrow answers again; the arrivals' is still refused.
+    up.yyzDay = null;
+    up.yyzMood = (type, day) => (type === 'ARR' && day === 'tomorrow' ? 'radware' : null);
+    W.tick(6 * MIN); W.colo();
+    await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    await W.get(env, makeCtx(), '/flights/yyz?direction=arr');
+    assert.deepEqual(Object.keys(health().dirs), ['arr'], 'departures whole: only the arrivals side is left');
+    assert.equal(health().state, 'partial');
+    const dd = await (await W.get(env, makeCtx(), '/api/dry-dock')).json();
+    assert.deepEqual(Object.keys(dd.partial.YYZ.dirs), ['arr']);
+    // …and the arrivals' too.
+    up.yyzMood = null;
+    W.tick(6 * MIN); W.colo();
+    await W.get(env, makeCtx(), '/flights/yyz?direction=arr');
+    assert.ok(!('YYZ' in JSON.parse(env.FIDS_USERS.m.get('feed-health').v).feeds), 'both whole: healthy');
+  });
+});
+
 test('the menu shows an airport served partial: which day, refused or failing, since when, and that today is live and nothing is docked', () => {
   const MENU = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'menu.js'), 'utf8');
   const src = (name) => {
@@ -1529,6 +1696,15 @@ test('the menu shows an airport served partial: which day, refused or failing, s
   render(doc, [], { YYZ: { state: 'partial', since: '2026-10-05T23:10:00Z', day: '2026-10-06', failure: 'blocked' } }, {})();
   assert.match(box.innerHTML, /YYZ<span[^>]*>tomorrow \(2026-10-06\) blocked since \d\d:\d\d — today live, not docked<\/span>/);
   assert.doesNotMatch(box.innerHTML, /feed failing|feed blocked|docks itself/, 'never read as a failing feed');
+  // Which side, when only one is partial; no prefix when both are, or the worker names none.
+  render(doc, [], { YYZ: { state: 'partial', since: '2026-10-05T23:10:00Z', day: '2026-10-06', failure: 'blocked', dirs: { dep: {} } } }, {})();
+  assert.match(box.innerHTML, /YYZ<span[^>]*>departures: tomorrow \(2026-10-06\) blocked since/);
+  render(doc, [], { YYZ: { state: 'partial', since: '2026-10-05T23:10:00Z', day: '2026-10-06', failure: 'error', dirs: { arr: {} } } }, {})();
+  assert.match(box.innerHTML, /YYZ<span[^>]*>arrivals: tomorrow \(2026-10-06\) failing since/);
+  render(doc, [], { YYZ: { state: 'partial', since: '2026-10-05T23:10:00Z', day: '2026-10-06', failure: 'error', dirs: { arr: {}, dep: {} } } }, {})();
+  assert.match(box.innerHTML, /YYZ<span[^>]*>tomorrow \(2026-10-06\) failing since/);
+  render(doc, [], { YYZ: { state: 'partial', day: '2026-10-06', failure: 'error', dirs: { '<b>': {} } } }, {})();
+  assert.doesNotMatch(box.innerHTML, /<b>/, 'a direction is one of two words, never printed as given');
   render(doc, [], { 'X"><b>': { day: '<i>', failure: 'error' } }, {})();
   assert.doesNotMatch(box.innerHTML, /<b>|<i>/, 'codes and days are checked before they are printed');
   assert.match(MENU, /_ddPartial = \(doc\.partial && typeof doc\.partial === 'object'\) \? doc\.partial : \{\};/, 'read from the dock answer');

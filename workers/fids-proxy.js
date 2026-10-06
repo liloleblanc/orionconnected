@@ -3831,6 +3831,13 @@ __name(feedFetch, "feedFetch");
  * today, a failed or refused page or slice of today, and a failed or refused
  * yesterday fail the whole answer, and a refusal there is "blocked", which is
  * what the health and the dock count.
+ * WHEN TODAY FAILED, THE KIND OF FAILURE IS AS IT WAS BEFORE (v23998): a
+ * refusal ANYWHERE in the answer makes it "blocked", a later day's included.
+ * Salt Lake City, Zurich and Fort McMurray still ask tomorrow after today
+ * failed, so a today that timed out beside a refused tomorrow is "blocked",
+ * not "error": the refusal is evidence a bot manager is turning us away, and
+ * it counts towards the 30-minute dock exactly as it did. The later day is
+ * forgiven only when today answered; it never softens today's failure.
  * TODAY MUST HAVE BROUGHT ROWS, and they are counted over today's WHOLE list
  * as the airport answered it for the date, departed flights included — not
  * over the rows inside the board's window. A today that answered empty, or
@@ -3848,8 +3855,9 @@ __name(feedFetch, "feedFetch");
  * evening.
  * A partial answer is never invisible: it is marked (feedPartial →
  * X-Feed-Partial, _feed.partial), and a later day that keeps failing is
- * recorded in feed health as "partial", with the day and since when
- * (feedHealthNext), which the operator menu shows. It never counts as a
+ * recorded in feed health as "partial", with the day, since when and which
+ * direction (feedHealthNext: kept per direction, so the other direction
+ * answering whole never hides it), which the operator menu shows. It never counts as a
  * block for the dock, and it writes no backoff: today is still asked once per
  * share interval, as for any good answer.
  */
@@ -3858,7 +3866,8 @@ function feedVerdict(rows, notes, threw) {
   const live = (notes || []).filter((n) => n && !n.superseded);
   const has = (k, later) => live.some((n) => n.state === k && (later === undefined || !!n.later === later));
   if (has("blocked", false)) return "blocked";
-  if (has("error", false) || threw) return "error";
+  // Today failed: the kind is as it always was, a refusal anywhere "blocked".
+  if (has("error", false) || threw) return has("blocked") ? "blocked" : "error";
   // Only a later day failed, by an outage or a refusal: today's rows are live
   // when today brought any; otherwise the later day's failure is the answer's.
   const laterBlocked = has("blocked", true);
@@ -3931,18 +3940,18 @@ const _feedProbeAt = new Map();
  * shared copy between two blips half an hour apart counted them as one
  * 35-minute outage, wrote the airport blocked since the first, and docked it.)
  */
-function _feedSawGood(code, at, partial) {
+function _feedSawGood(code, at, partial, dir) {
   const s = _feedFailSeen.get(code);
   if (s && typeof at === "number" && at >= s.since) _feedFailSeen.delete(code);
-  // v24002 — a copy with a later day left out ("pt") is more of a partial
-  // run (feedPartialRun), dated when the airport was asked; a whole one newer
-  // than the run's start ends it.
+  // v24002 — a copy with a later day left out ("pt") is more of that
+  // DIRECTION's partial run (feedPartialRun), dated when the airport was
+  // asked; a whole copy of the same direction newer than the run's start ends
+  // it. The other direction's copies say nothing about this one: Pearson,
+  // Chicago, Dublin, Salt Lake City, Sydney and Fort McMurray ask tomorrow
+  // once per direction, and a bot manager can refuse one ask and pass the next.
   if (typeof at !== "number") return;
-  if (partial) feedPartialRun(code, at);
-  else {
-    const p = _feedPartialSeen.get(code);
-    if (p && at >= p.since) _feedPartialSeen.delete(code);
-  }
+  if (partial) feedPartialRun(code, at, dir);
+  else feedPartialEnd(code, dir, at);
 }
 function _feedMemoGet(k, now) {
   const m = _feedMemo.get(k);
@@ -3983,11 +3992,11 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
   if (!opts.force && !fast) {
     const m = _feedMemoGet(key, now);
     if (m) {
-      if (m.state === "ok") _feedSawGood(code, m.asOf, !!m.partial);
+      if (m.state === "ok") _feedSawGood(code, m.asOf, !!m.partial, dir);
       // v23998 — a failure held here is still this isolate seeing the feed
       // fail: it keeps the run of failures going (feedHealthNote writes only
       // on a change), so a longer hold does not hide an outage from the health.
-      else if (m.failure) feedHealthNote(env, ctx, code, m.failure, now, [{ state: m.failure, why: "recent failure (held)" }], m.asOf || null);
+      else if (m.failure) feedHealthNote(env, ctx, code, m.failure, now, [{ state: m.failure, why: "recent failure (held)" }], m.asOf || null, null, dir);
       return m;
     }
   }
@@ -3996,7 +4005,7 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
   try { doc = kv ? await kv.get(key, { type: "json", cacheTtl: 60 }) : null; } catch (e) { doc = null; }
   if (!doc || typeof doc !== "object" || typeof doc.at !== "number" || !("p" in doc)) doc = null;
   if (doc && !opts.force && !fast && now - doc.at < shareS * 1000) {
-    _feedSawGood(code, doc.at, !!doc.pt);
+    _feedSawGood(code, doc.at, !!doc.pt, dir);
     const res = { state: "ok", failure: null, payload: doc.p, rows: doc.n || 0, asOf: doc.at, via: "shared", ...(doc.pt ? { partial: true } : {}) };
     _feedMemoSet(key, res, Math.min(FEED_MEMO_OK_S, shareS - Math.floor((now - doc.at) / 1000)), now);
     return res;
@@ -4020,7 +4029,7 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
     lastFail = fl;
     const holdMs = fl ? feedBackoffS(code, fl.state) * 1000 - (now - fl.at) : 0;
     if (fl && (fl.n || 1) >= 2 && holdMs > 0) {
-      feedHealthNote(env, ctx, code, fl.state, now, [{ state: fl.state, why: fl.why || "recent failure (shared)" }], doc ? doc.at : null);
+      feedHealthNote(env, ctx, code, fl.state, now, [{ state: fl.state, why: fl.why || "recent failure (shared)" }], doc ? doc.at : null, null, dir);
       const res = feedFailedResult(doc, fl.state, now);
       _feedMemoSet(key, res, Math.ceil(holdMs / 1000), now);
       return res;
@@ -4050,7 +4059,8 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
     // are left out, and come back with the first ask that gets tomorrow whole.
     // It is no failure (no backoff, nothing towards a dock), but it is not
     // hidden either: a later day that keeps failing is written to feed health
-    // as "partial", with the day and since when (feedHealthNext).
+    // as "partial", with the day, since when and which direction
+    // (feedHealthNext); only a whole answer for the same direction ends it.
     const pinfo = feedPartialInfo(store.notes);
     const partial = !!pinfo;
     let text = null;
@@ -4068,14 +4078,14 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
         if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(w); else await w;
       }
     }
-    if (partial) feedHealthNote(env, ctx, code, "partial", now, store.notes, null, pinfo);
-    else feedHealthNote(env, ctx, code, "ok", now, null, null);
+    if (partial) feedHealthNote(env, ctx, code, "partial", now, store.notes, null, pinfo, dir);
+    else feedHealthNote(env, ctx, code, "ok", now, null, null, null, dir);
     const res = { state: "ok", failure: null, payload, rows: n, asOf: now, via: "live", ...(partial ? { partial: true } : {}) };
     if (!fast) _feedMemoSet(key, res, Math.min(FEED_MEMO_OK_S, shareS), now);
     return res;
   }
   // The shared copy's time is the latest good answer any isolate has had.
-  feedHealthNote(env, ctx, code, state, now, store.notes, doc ? doc.at : null);
+  feedHealthNote(env, ctx, code, state, now, store.notes, doc ? doc.at : null, null, dir);
   const res = feedFailedResult(doc, state, now);
   if (!fast && !opts.force) {
     // The count of failures in a row, any colo's: a good answer since (a newer
@@ -4175,11 +4185,19 @@ __name(feedDownResponse, "feedDownResponse");
 // it has lasted FEED_FAIL_CONFIRM_MS unbroken (the same rule as a failure,
 // counted over this isolate's own answers and the shared copies it served,
 // each dated when the airport was asked: feedPartialRun), it is written as
-// { state: "partial", since, day, failure } — the airport's date that is
-// missing and whether it was an outage ("error") or a refusal ("blocked").
-// It is written again only when another day goes missing or an outage turns
-// into a refusal, and it goes with the first whole answer. It never docks
-// (feedAutoDocked lists it apart, under `partial`) and writes no backoff.
+// { state: "partial", since, day, failure, dirs } — the airport's date that
+// is missing and whether it was an outage ("error") or a refusal ("blocked").
+// IT IS KEPT PER DIRECTION (dirs: { dep: { since, day, failure, why } }),
+// because the answers are: Pearson, Chicago, Dublin, Salt Lake City, Sydney
+// and Fort McMurray ask tomorrow once per direction, and a bot manager can
+// refuse the departures' ask and pass the arrivals'. A run, its entry and its
+// end belong to one direction: only a whole answer FOR THAT DIRECTION ends
+// it, so arrivals answering whole every few minutes never hide departures
+// left partial. The top-level since, day and failure sum the directions up
+// (the earliest start, the earliest missing day, "blocked" if any was
+// refused). A direction's part is written again only when another day goes
+// missing or an outage turns into a refusal. It never docks (feedAutoDocked
+// lists it apart, under `partial`) and writes no backoff.
 const FEED_PROBE_PREFIX = "fp:v1:";
 async function feedHealthRead(env, fresh) {
   try {
@@ -4192,20 +4210,61 @@ async function feedHealthRead(env, fresh) {
 }
 __name(feedHealthRead, "feedHealthRead");
 
+/** v24002 — the direction an answer is about: "dep", "arr", or "all" when it names none. */
+function feedHealthDir(dir) {
+  const d = String(dir || "");
+  return /^arr/i.test(d) ? "arr" : /^dep/i.test(d) ? "dep" : "all";
+}
+__name(feedHealthDir, "feedHealthDir");
+
+/**
+ * v24002 — a "partial" health entry from its directions' parts
+ * ({ dep: { since, day, failure, why } }): the earliest start, the earliest
+ * missing day, "blocked" when any direction was refused, and the words of the
+ * direction that has been partial longest.
+ */
+function feedPartialEntry(dirs) {
+  let since = null, day = null, failure = "error", first = null;
+  for (const k of Object.keys(dirs).sort()) {
+    const p = dirs[k] || {};
+    if (typeof p.since === "number" && (since == null || p.since < since)) { since = p.since; first = p; }
+    if (p.day && (!day || p.day < day)) day = p.day;
+    if (p.failure === "blocked") failure = "blocked";
+  }
+  const why = (first && first.why) || Object.keys(dirs).sort().map((k) => dirs[k] && dirs[k].why).filter(Boolean)[0] || null;
+  return { state: "partial", since, oks: 0, okAt: null, day, failure, ...(why ? { why } : {}), dirs };
+}
+__name(feedPartialEntry, "feedPartialEntry");
+
 /**
  * The next health entry for one airport after one answer, or undefined when
  * nothing changes. Pure, so the rules are tested without a KV.
  *   cur   the stored entry, or null when the airport is healthy
- *   kind  "ok" | "blocked" | "error"
+ *   kind  "ok" | "blocked" | "error" | "partial"
  *   seen  { since } — when this isolate's current, unbroken run of failures
- *         began (feedHealthNote keeps it honest)
+ *         began (feedHealthNote keeps it honest); for "partial", the run of
+ *         partial answers of this direction
+ *   info  for "partial": feedPartialInfo, the day left out
+ *   dir   the direction the answer is about (a "partial" entry is kept per
+ *         direction; failures and undocking stay per airport)
  * Returns null to delete the entry (healthy again).
  */
-function feedHealthNext(cur, kind, now, seen, info) {
+function feedHealthNext(cur, kind, now, seen, info, dir) {
+  const d = feedHealthDir(dir);
   if (kind === "ok") {
     if (!cur) return undefined;
-    // v24002 — the missing later day came back whole: nothing to count.
-    if (cur.state === "partial") return null;
+    if (cur.state === "partial") {
+      // v24002 — this direction's missing later day came back whole: its part
+      // goes, and with the last part the entry. A whole answer for the OTHER
+      // direction says nothing about this one. (An entry with no directions
+      // recorded, or an answer naming none, ends it whole.)
+      const dirs = cur.dirs && typeof cur.dirs === "object" ? cur.dirs : null;
+      if (!dirs || d === "all") return null;
+      if (!(d in dirs)) return undefined;
+      const rest = { ...dirs };
+      delete rest[d];
+      return Object.keys(rest).length ? feedPartialEntry(rest) : null;
+    }
     if (cur.okAt && now - cur.okAt < FEED_OK_SPACING_MS) return undefined;
     const oks = (cur.oks || 0) + 1;
     if (oks >= FEED_UNDOCK_OKS) return null;
@@ -4213,22 +4272,27 @@ function feedHealthNext(cur, kind, now, seen, info) {
   }
   if (kind === "partial") {
     // v24002 — today answered whole; only a later day is missing (`info`:
-    // feedPartialInfo). Written once the run has lasted, like a failure.
+    // feedPartialInfo). Written once this direction's run has lasted, like a
+    // failure.
     const lasted = !!seen && (seen.last != null ? seen.last : now) - seen.since >= FEED_FAIL_CONFIRM_MS;
-    const entry = () => ({ state: "partial", since: seen.since, oks: 0, okAt: null,
-      day: (info && info.day) || null, failure: info && info.failure === "blocked" ? "blocked" : "error" });
+    const part = () => ({ since: seen.since, day: (info && info.day) || null,
+      failure: info && info.failure === "blocked" ? "blocked" : "error" });
     if (cur && cur.state !== "partial") {
       // A failing airport whose today answers again: that counts towards it
       // being healthy exactly as a whole answer does, never towards a block.
       const next = feedHealthNext(cur, "ok", now);
-      return next === null && lasted ? entry() : next;
+      return next === null && lasted ? feedPartialEntry({ [d]: part() }) : next;
     }
-    if (!cur) return lasted ? entry() : undefined;
+    if (!cur) return lasted ? feedPartialEntry({ [d]: part() }) : undefined;
+    const dirs = cur.dirs && typeof cur.dirs === "object" ? cur.dirs : {};
+    const had = dirs[d];
+    // Partial in the other direction only: this one joins once it has lasted.
+    if (!had) return lasted ? feedPartialEntry({ ...dirs, [d]: part() }) : undefined;
     // Already partial: written again only when another day is missing, or an
     // outage of it turns into a refusal (a refusal is never downgraded).
-    const day = (info && info.day) || cur.day || null;
-    const failure = cur.failure === "blocked" || (info && info.failure === "blocked") ? "blocked" : "error";
-    return day !== cur.day || failure !== cur.failure ? { ...cur, day, failure } : undefined;
+    const day = (info && info.day) || had.day || null;
+    const failure = had.failure === "blocked" || (info && info.failure === "blocked") ? "blocked" : "error";
+    return day !== had.day || failure !== had.failure ? feedPartialEntry({ ...dirs, [d]: { ...had, day, failure } }) : undefined;
   }
   // v24002 — today itself failing where only a later day was missing: a
   // failure like any other, written once it has lasted; until then the
@@ -4267,46 +4331,67 @@ __name(feedFailRun, "feedFailRun");
 
 /**
  * v24002 — the run of partial answers (a later day left out, feedVerdict)
- * this isolate has seen for one airport, by any road: its own answer, or the
- * shared copy another isolate wrote ("pt"), dated `at`, when the airport was
- * asked. Like a run of failures it is one stretch only while unbroken: a whole
- * answer seen since it began (_feedSawGood) or a silence longer than
- * FEED_FAIL_GAP_MS ends it. Returns { since, last }.
+ * this isolate has seen for one airport IN ONE DIRECTION, by any road: its own
+ * answer, or the shared copy another isolate wrote ("pt"), dated `at`, when
+ * the airport was asked. Like a run of failures it is one stretch only while
+ * unbroken: a whole answer for the same direction seen since it began
+ * (feedPartialEnd) or a silence longer than FEED_FAIL_GAP_MS ends it. The
+ * other direction's answers never touch it. Returns { since, last }.
  */
-function feedPartialRun(code, at) {
-  let seen = _feedPartialSeen.get(code) || null;
+function feedPartialRun(code, at, dir) {
+  const k = `${code}:${feedHealthDir(dir)}`;
+  let seen = _feedPartialSeen.get(k) || null;
   if (seen && at - seen.last > FEED_FAIL_GAP_MS) seen = null;
-  if (!seen) { seen = { since: at, last: at }; _feedPartialSeen.set(code, seen); }
+  if (!seen) { seen = { since: at, last: at }; _feedPartialSeen.set(k, seen); }
   else if (at > seen.last) seen.last = at;
   return seen;
 }
 __name(feedPartialRun, "feedPartialRun");
 
-function feedHealthNote(env, ctx, code, kind, now, notes, lastGoodAt, info) {
+/**
+ * v24002 — a whole answer for one direction, dated `at` (now, or a shared
+ * copy's time): that direction's partial run is over if it began no later.
+ * An answer naming no direction ("all") ends every direction's run.
+ */
+function feedPartialEnd(code, dir, at) {
+  const d = feedHealthDir(dir);
+  for (const k of d === "all" ? [..._feedPartialSeen.keys()].filter((x) => x.startsWith(code + ":")) : [`${code}:${d}`]) {
+    const p = _feedPartialSeen.get(k);
+    if (p && (typeof at !== "number" || at >= p.since)) _feedPartialSeen.delete(k);
+  }
+}
+__name(feedPartialEnd, "feedPartialEnd");
+
+function feedHealthNote(env, ctx, code, kind, now, notes, lastGoodAt, info, dir) {
   let seen = null;
-  if (kind === "ok") { _feedFailSeen.delete(code); _feedPartialSeen.delete(code); }
+  // v24002 — a whole answer ends only ITS direction's partial run; failures
+  // and their runs stay per airport, as they were.
+  if (kind === "ok") { _feedFailSeen.delete(code); feedPartialEnd(code, dir); }
   // A partial answer is today answering: any run of failures is over.
-  else if (kind === "partial") { _feedFailSeen.delete(code); seen = feedPartialRun(code, now); }
+  else if (kind === "partial") { _feedFailSeen.delete(code); seen = feedPartialRun(code, now, dir); }
   else seen = feedFailRun(code, now, lastGoodAt);
   if (!env || !env.FIDS_USERS) return;
+  const d = feedHealthDir(dir);
   const work = (async () => {
     try {
       const doc = await feedHealthRead(env, false);
       const cur = doc.feeds[code] || null;
-      if (feedHealthNext(cur, kind, now, seen, info) === undefined) return;
+      if (feedHealthNext(cur, kind, now, seen, info, dir) === undefined) return;
       // Read again uncached right before writing, and change only this
       // airport, so two colos noting two airports rarely undo each other.
       const fresh = await feedHealthRead(env, true);
-      const next = feedHealthNext(fresh.feeds[code] || null, kind, now, seen, info);
+      let next = feedHealthNext(fresh.feeds[code] || null, kind, now, seen, info, dir);
       if (next === undefined) return;
       if (next === null) delete fresh.feeds[code];
       else {
         // The first failed answer's words; for a partial entry, the later
-        // day's (never written over a failure entry it only counted towards).
+        // day's, kept with its direction (never written over a failure entry
+        // it only counted towards).
         if (kind !== "ok" && notes && notes.length && (kind !== "partial" || next.state === "partial")) {
           const failed = kind === "partial" ? (n) => n.later && n.state !== "ok" : (n) => n.state === kind;
           const why = notes.filter((n) => n && failed(n) && !n.superseded).map((n) => n.why).filter(Boolean)[0];
-          if (why) next.why = why;
+          if (why && kind === "partial" && next.dirs && next.dirs[d]) next = feedPartialEntry({ ...next.dirs, [d]: { ...next.dirs[d], why: String(why).slice(0, 120) } });
+          else if (why) next.why = why;
         }
         fresh.feeds[code] = next;
       }
@@ -4336,8 +4421,16 @@ function feedAutoDocked(doc, now) {
     const e = feeds[code];
     if (!e || typeof e.since !== "number") continue;
     if (e.state === "partial") {
+      // v24002 — and which directions, each with its own day and start.
+      const dirs = {};
+      for (const k of Object.keys(e.dirs && typeof e.dirs === "object" ? e.dirs : {}).sort()) {
+        const p = e.dirs[k];
+        if (!p || typeof p.since !== "number" || !/^(dep|arr|all)$/.test(k)) continue;
+        dirs[k] = { since: new Date(p.since).toISOString(), day: p.day || null, failure: p.failure === "blocked" ? "blocked" : "error" };
+      }
       partial[code] = { state: "partial", since: new Date(e.since).toISOString(), day: e.day || null,
-        failure: e.failure === "blocked" ? "blocked" : "error", ...(e.why ? { why: String(e.why).slice(0, 120) } : {}) };
+        failure: e.failure === "blocked" ? "blocked" : "error", ...(e.why ? { why: String(e.why).slice(0, 120) } : {}),
+        ...(Object.keys(dirs).length ? { dirs } : {}) };
       continue;
     }
     const entry = { state: e.state, since: new Date(e.since).toISOString() };
