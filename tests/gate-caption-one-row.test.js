@@ -89,7 +89,19 @@ test('the model is twice its label, the operator mark never smaller than the tex
   // its own height on the one row: the operator goes under the aircraft
   assert.match(CORE, /if \(_k\) _setLh\(Math\.max\(_mk\(px\), Math\.min\(_lh, px \* _k\)\)\);/);
   assert.match(CORE, /while \(_lh > _up64\(_mk\(_fs\)\) && !_fits\(\)\) _setLh\(Math\.max\(_mk\(_fs\), _lh - 1\)\);/);
-  assert.match(CORE, /var _mk = function \(px\) \{\s*var m = Math\.max\(px, _opLbl\(\)\);\s*return \(_capEl\.classList\.contains\('is-pending'\) && !_stacked\) \? Math\.max\(m, _lh0\) : m;/);
+  // v24004 — with no model yet the mark is held (_hold) until the words
+  // and the row's spacing have given what they can, then comes down to this
+  // same floor: it never goes under the words or its label. And the floor is
+  // read on the mark's LETTERS (OPBY_MARK_LETTER_H): a lockup's letters (Air
+  // Canada Express: AIR CANADA over EXPRESS, a third of its file each) stand
+  // as tall as the capitals beside them (0.7 of the type), as well as its box
+  // being no smaller than the type. tests/gate-caption-render.test.js holds
+  // the screen to it, measuring the letters off the drawn file.
+  assert.match(CORE, /var _mk = function \(px\) \{\s*var ref = Math\.max\(px, _opLbl\(\)\), need = Math\.max\(ref, _hold\);/);
+  assert.match(CORE, /need = Math\.max\(need, padV \+ _CAP \* ref \/ _frac\);/);
+  assert.match(CORE, /var _CAP = 0\.7;/);
+  assert.match(CORE, /var _frac = \(_logoEl && typeof _opbyLetterH === 'function'\) \? _opbyLetterH\(_logoEl\.getAttribute\('src'\)\) : 1;/);
+  assert.match(CORE, /_hold = _capEl\.classList\.contains\('is-pending'\) \? _lh0 : 0;/);
   assert.doesNotMatch(CORE, /_setLh\(Math\.max\(_fs, /, 'every floor of the mark goes through _mk');
   assert.match(CORE, /var _up64 = function \(v\) \{ return Math\.ceil\(v \* 64 - 1e-6\) \/ 64; \};/);
 });
@@ -170,7 +182,7 @@ test('an operator shown by name is drawn on the row\'s scale, on one line', () =
   // The fitter finds it, clears its own write before each pass, brings it
   // down after the model, never below the model's size, and with the row.
   assert.match(CORE, /var _nameEl = _logoEl \? null : _capEl\.querySelector\('\.v2-rc-acb-opby b'\);/);
-  assert.match(CORE, /if \(_nameEl\) _nameEl\.style\.removeProperty\('font-size'\);/);
+  assert.match(CORE, /if \(_nameEl\) \['font-size', 'white-space', 'display', 'text-wrap', 'line-height', 'max-width'\]\.forEach\(function \(p\) \{ _nameEl\.style\.removeProperty\(p\); \}\);/);
   assert.match(CORE, /while \(_nm > _fs && !_fits\(\)\) \{\s*_nm = Math\.max\(_fs, _nm - 1\);/);
   assert.match(CORE, /_nm = Math\.min\(_nm, Math\.max\(_fs, _nm - 1\)\);/);
 });
@@ -186,7 +198,8 @@ function fitCaption({ model, reg, op, nameFixedPx }) {
   const src = CORE.slice(at, end);
   const style = () => ({ p: {}, setProperty(n, v) { this.p[n] = parseFloat(v); }, removeProperty(n) { delete this.p[n]; } });
   const W = 380, H = 60;
-  const capEl = { style: style(), classList: { contains: () => false }, clientWidth: W, clientHeight: H, offsetHeight: H };
+  const capCls = new Set();
+  const capEl = { style: style(), classList: { add: (c) => capCls.add(c), remove: (c) => capCls.delete(c), contains: (c) => capCls.has(c) }, clientWidth: W, clientHeight: H, offsetHeight: H };
   const u = () => capEl.style.p['--acb-h'] || H;
   const lblEl = { fs: () => 0.24 * u() };
   const nameEl = { style: style(), fs() { return nameFixedPx || this.style.p['font-size'] || 0.34 * u(); } };
@@ -281,4 +294,121 @@ test('an operator under the marketing carrier\'s own name, with no mark of its o
   assert.match(CORE, /var _opSameName6 = !_opLogo6 && !!_mktNm6 && String\(_opNm6\)\.trim\(\)\.toUpperCase\(\) === _mktNm6;/);
   assert.match(CORE, /if \(!_opSameName6\) \{\s*_opByVal = _opLogo6/);
   assert.match(CORE, /'9M':'AIR CANADA'/, 'the board names 9M Air Canada on purpose');
+});
+
+// ── v24004: ONE ROW, ALWAYS, AND THE ART IN THE SKY THE BAND LEAVES ─────────
+//
+// YOW gate 25, 1680x1050, en+fr, Air Canada Express with no aircraft yet: the
+// fitter's step 7a put the operator under the aircraft whenever the row could
+// not hold the operator's mark at its full height. The band went to two
+// full-width rows (121px over 60) and covered the foot of the roundel above
+// it. The caption is one row now in every language, and the art's box ends
+// on the band's real top.
+
+const fitSrc = () => {
+  const at = CORE.indexOf('function _fitTypePanel(el) {');
+  return CORE.slice(at, CORE.indexOf("root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach", at));
+};
+
+test('the caption is never stacked: no step puts the operator under the aircraft', () => {
+  const src = fitSrc();
+  assert.doesNotMatch(src, /acb-stack/, 'step 7a is gone');
+  assert.doesNotMatch(src, /setProperty\('flex-direction'/);
+  assert.doesNotMatch(CSS, /\.acb-stack/, 'and so is its layout');
+  // nothing lays the band out as a column, or wraps it onto a second row
+  // (the rules that draw it: v23926 and after; an older :has() rule that
+  // stacked it, v23790, is out-ranked by them and dropped on the kiosks)
+  const capRules = drawn.split('}').filter((r) => /\.v2-rc-acb-cap(\.[\w-]+|:not\([^)]*\))* \{/.test(r));
+  assert.ok(capRules.length >= 3, 'the band\'s own rules: ' + capRules.length);
+  for (const r of capRules) {
+    assert.doesNotMatch(r, /flex-direction: column/, 'no rule stacks the band: ' + r.split('{')[0].slice(-80));
+    assert.doesNotMatch(r, /flex-wrap: wrap/, 'no rule wraps the band: ' + r.split('{')[0].slice(-80));
+  }
+  // what goes into two tiers is INSIDE a half: the operator's labels over
+  // its mark, a model's labels over the model; never the halves themselves
+  const tail = CSS.slice(CSS.indexOf('v24004 — THE CAPTION IS ONE ROW, AND THE ART SITS IN THE SKY IT LEAVES'));
+  const tiers = tail.replace(/\/\*[\s\S]*?\*\//g, '').split('}').filter((r) => /flex-direction: column/.test(r)).map((r) => r.split('{')[0].trim().split(' ').slice(-2).join(' '));
+  assert.deepEqual(tiers, ['.v2-rc-acb-cap.acb-opstack .v2-rc-acb-opby', '.v2-rc-acb-cap.acb-acstack .v2-rc-acb-ac']);
+  // the condensed width (75%) is gone: the words read visibly smaller in it
+  assert.doesNotMatch(src + tail, /acb-cond/);
+  // the order after the sizes: with no model yet the held mark comes down
+  // to rule 1's floor and then the row narrows; with a model the row
+  // narrows and the model opens between maker and type; then the operator's
+  // labels stand over its mark, a model's labels over the model, the
+  // pending words open, an operator's name opens, and only then the mark
+  // under rule 1 (reported), and a word broken (reported)
+  const order = [
+    "if (_pending && !_fits() && _logoEl) {\n                _hold = 0;",
+    "if (_pending && !_fits()) _capEl.classList.add('acb-narrow');",
+    "if (!_pending && !_fits()) {\n                _capEl.classList.add('acb-narrow');",
+    "el.style.setProperty('white-space', 'normal', 'important');",
+    "_capEl.classList.add('acb-opstack');",
+    "_capEl.classList.add('acb-acstack');",
+    "el.classList.add('acb-open');",
+    "_nameEl.style.setProperty('text-wrap', 'balance', 'important');",
+    "_capEl.setAttribute('data-acb-r1', 'short');",
+    "el.setAttribute('data-fx-over', '1');",
+  ].map((t) => src.indexOf(t));
+  assert.ok(order.every((i) => i > 0) && order.every((i, k) => !k || i > order[k - 1]), 'S1 to S6 in that order: ' + order);
+  // nothing is ever left drawn over the other half
+  assert.doesNotMatch(src, /setProperty\('overflow', 'visible', 'important'\);\s*try \{ console\.warn\('\[fit\] aircraft caption/);
+  // each is cleared before the next pass
+  assert.match(src, /el\.classList\.remove\('acb-open'\);/);
+  assert.match(src, /\['acb-narrow', 'acb-opstack', 'acb-acstack', 'acb-grown'\]\.forEach\(function \(c\) \{ _capEl\.classList\.remove\(c\); \}\);/);
+  assert.match(src, /_capEl\.removeAttribute\('data-acb-r1'\)/);
+});
+
+test('every mark\'s lettering share is a share, and the lockups are on file', () => {
+  const at = CORE.indexOf('var OPBY_MARK_LETTER_H = {');
+  assert.ok(at > 0, 'the table exists');
+  const body = CORE.slice(at, CORE.indexOf('};', at));
+  const rows = [...body.matchAll(/'([^']+)':\s*([\d.]+)/g)].map((m) => [m[1], +m[2]]);
+  for (const [f, k] of rows) {
+    assert.ok(k > 0 && k < 1, f + ': ' + k);
+    assert.ok(fs.existsSync(path.join(root, 'fids-current', f)), f + ' is on disk');
+  }
+  const has = new Map(rows);
+  // the reported lockup and the others measured under 0.7 of their files
+  assert.ok(has.get('/logos/airlines/canadian-regional/aircanada-express-wordmark-light.svg') <= 0.35);
+  assert.ok(has.get('/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg') <= 0.66);
+  assert.ok(has.get('/logos/airlines/us-regional/endeavor-air-monochrome-white.svg') <= 0.23);
+  // every caption mark on file (both halves of every pair, and the base
+  // wordmarks) that the table names is one the caption can draw
+  const caption = new Set();
+  for (const name of ['OPERATOR_WORDMARKS', 'OPBY_WORDMARKS_THEMED']) {
+    const a = CORE.indexOf('var ' + name + ' = {');
+    (CORE.slice(a, CORE.indexOf('\n};', a)).match(/\/logos\/[^'"]+\.(svg|png)/g) || []).forEach((x) => caption.add(x));
+  }
+  for (const [f] of rows) assert.ok(caption.has(f), f + ' is a caption mark');
+  // and the fitter reads it
+  const fn = CORE.slice(CORE.indexOf('function _opbyLetterH(src) {'), CORE.indexOf('function _opbyLetterH(src) {') + 300);
+  assert.match(fn, /OPBY_MARK_LETTER_H\[p\]/);
+});
+
+test('the art ends on the band\'s real top, so a taller band never covers it', () => {
+  const tail = CSS.slice(CSS.indexOf('v24004 — THE CAPTION IS ONE ROW, AND THE ART SITS IN THE SKY IT LEAVES'));
+  assert.ok(tail.length > 100, 'the v24004 block exists');
+  const rule = (sel) => {
+    const at = tail.indexOf(sel + ' {');
+    assert.ok(at >= 0, 'no v24004 rule for ' + sel);
+    const line = tail.slice(tail.lastIndexOf('\n', at) + 1, at);
+    // it out-ranks every earlier rule on these elements (255 ids, then classes)
+    assert.ok((line.match(/:not\(\._\)/g) || []).length >= 13 && (line.match(/:not\(#_\)/g) || []).length >= 255, sel);
+    return tail.slice(at, tail.indexOf('}', at));
+  };
+  assert.match(rule('.gad-map-col-v2 > .v2-rc-shelf-illus > .v2-rc-aircraft-hold'),
+    /height: calc\(100% - var\(--rcp-cap-live, var\(--rcp-cap\)\) - var\(--rcp-sheet\)\) !important;/);
+  assert.match(rule('.gad-map-col-v2 > .v2-rc-shelf-illus > .v2-rc-aircraft-img'),
+    /bottom: calc\(var\(--rcp-cap-live, var\(--rcp-cap\)\) \+ var\(--rcp-sheet\)\) !important;/);
+  // the emblem is held inside its box, whatever its own height asks for
+  assert.match(rule('.gad-map-col-v2 > .v2-rc-shelf-illus > .v2-rc-aircraft-hold > .v2-rc-aircraft-hold-logo'), /max-height: 100% !important;/);
+  // the fitter writes the band's real height after every pass, after the fit
+  const src = fitSrc();
+  assert.match(src, /var _liveH = _capEl\.getBoundingClientRect\(\)\.height;\s*if \(_liveH > 0\) _illusEl\.style\.setProperty\('--rcp-cap-live', \(Math\.ceil\(_liveH \* 64\) \/ 64\) \+ 'px'\);/);
+  assert.ok(src.indexOf("'--rcp-cap-live'") > src.indexOf("console.warn('[fit] aircraft caption does not fit"));
+  // (Where the art lands is judged on the screen: the emblem drawn between
+  // the panel's top and the band's top, and the aircraft at every point of
+  // its float, by tests/gate-caption-render.test.js, which fails on a band
+  // the art does not follow.)
+  assert.ok(fs.existsSync(path.join(__dirname, 'gate-caption-render.test.js')));
 });
