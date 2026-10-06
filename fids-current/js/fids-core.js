@@ -24374,8 +24374,13 @@ const gView = document.getElementById('gateView');
                 const _b3WmOne = '';   // v23350 — lockups are not wordmarks; see the note on the main board
                 // v23967 — the Delayed bar is yellow with navy lettering, so its
                 // wordmark takes the dark artwork, as the bidsv2 row below does.
+                // v24003 — a lockup set on two lines (Air Inuit) is read once
+                // and drawn taller, so its tallest line matches a one-line
+                // wordmark: _wmStackOnLoad / _wmStackAttrs, next to wordmarkSrc.
+                const _b3Src = _bWmBase ? wordmarkSrc(_bWmBase, isDelayed ? 'dark' : 'light') : '';
+                const _b3Stack = _wmStackAttrs(_b3Src);
                 const _b3Wm = _bidsEmblemOnly ? '' : (_bWmBase
-                  ? '<img class="b3-wordmark" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : 'light') + '" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                  ? '<img class="b3-wordmark' + _b3Stack.cls + '"' + _b3Stack.style + ' alt="' + _bSafeName + '" src="' + _b3Src + '" onload="_wmStackOnLoad(this)" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
                   : _b3WmOne
                   ? '<img class="b3-wordmark fids-wm-mono" alt="' + _bSafeName + '" src="' + _b3WmOne + '">'
                   : '<div class="b3-airline-name">' + fidsEscHtml(airlineName) + '</div>');
@@ -28661,6 +28666,121 @@ function wordmarkSrc(base, forceVariant) {
   return logoPath(fname) + '?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : (typeof FIDS_BUILD !== 'undefined' ? encodeURIComponent(FIDS_BUILD) : '1'));
 }
 
+// v24003 — A LOCKUP SET ON TWO LINES GETS A TALLER SLOT ON THE BELT.
+//
+// The belt's bar (.b3-wordmark) draws every carrier's lettering 22 units
+// tall. For a one-line wordmark (AIR CANADA, porter, WESTJET) that is the
+// height of its letters. Air Inuit's lockup is two lines, its syllabics over
+// "Air Inuit", so each line got about half of the 22 and the carrier's name
+// read at half the size of every other carrier's on the same belt.
+//
+// The rule reads the artwork, not a list of carriers. The first time a file
+// is drawn, its rows are read off a canvas (_wmLineProfile) and its lines of
+// lettering are counted (_wmLinesK). A file with two lines or more is drawn so
+// that its TALLEST line is as tall as the slot a one-line wordmark gets, up to
+// twice the slot, the room the bar has beside the flight number. The answer is
+// kept per file, so every later render writes it into the markup and nothing
+// moves; only the very first draw of a file, on a board's first render, can
+// show it at the one-line height for a frame.
+//
+// Only compact art is read (narrower than WM_STACK_MAX_AR): two lines take
+// about half the width of one, and the widest two-line lockup the belt draws
+// is Pacific Coastal's, 3.75:1, while one-line wordmarks mostly run from 4.5:1
+// (WESTJET) to 11:1 (AIR CANADA). The shape alone cannot decide, though:
+// flair (2.44:1) and LOT (2.46:1) are one line, between ITA Airways (2.39:1)
+// and the American Airlines lockup (2.61:1), which are two. So inside that
+// gate the lines themselves decide:
+//   - a GAP row has ink over less than a tenth of the width, spanning less
+//     than 40% of it: nothing at all, or a narrow mark (an i's dot, an
+//     ascender, one stroke between the lines);
+//   - a LINE is a run of rows between gaps, at least 8% of the art tall, whose
+//     widest row spans 40% of the width and whose densest row covers a
+//     quarter of it. The bands that are not lines cover at most 18% of a row
+//     (the h and the i's dot over "chair" 14%, the arc of North Star's
+//     roundel 18%); a lockup's second line covers 33% (discover's
+//     "airlines") to 64% (GOL's line under its name).
+// On the belt's catalogue this marks Air Inuit, ITA Airways, Discover, Qatar
+// Airways, Pacific Coastal, GOL and the American Airlines lockup, and no
+// one-line wordmark. helvetic's small "airways" (30% of the width, 23% of a
+// row) is a tag under one line, not a second line. tests/belt-stacked-
+// lockup.test.js holds every belt file's rows, as this reads them, and pins
+// all of that.
+var WM_STACK_MAX_AR = 4;   // only art narrower than 4:1 is read
+var WM_STACK_MAX_K = 2;    // never more than twice the one-line slot
+var _WM_STACK_K = {};      // artwork path (no query) -> slot multiplier; 1 = one line
+function _wmArtKey(src) {
+  return String(src || '').split('#')[0].split('?')[0];
+}
+// Each of the art's rows, drawn 100 rows tall: how many pixels carry ink (n)
+// and how far the ink runs from its first pixel to its last (s), on a canvas
+// w pixels wide. Art as wide as WM_STACK_MAX_AR is not drawn at all: its size
+// alone answers. Null when the file cannot be read (no size yet, no 2D
+// canvas, a file from another origin).
+function _wmLineProfile(img) {
+  try {
+    var nw = img.naturalWidth, nh = img.naturalHeight;
+    if (!(nw > 0 && nh > 0)) return null;
+    var h = 100, w = Math.max(1, Math.round(h * nw / nh));
+    if (w / h >= WM_STACK_MAX_AR) return { w: w, h: h, n: [], s: [] };
+    var cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    var g = cv.getContext('2d');
+    if (!g) return null;
+    g.drawImage(img, 0, 0, w, h);
+    var d = g.getImageData(0, 0, w, h).data, n = [], s = [];
+    for (var y = 0; y < h; y++) {
+      var c = 0, x0 = -1, x1 = -1;
+      for (var x = 0; x < w; x++) {
+        if (d[(y * w + x) * 4 + 3] > 64) { c++; if (x0 < 0) x0 = x; x1 = x; }
+      }
+      n.push(c); s.push(c ? x1 - x0 + 1 : 0);
+    }
+    return { w: w, h: h, n: n, s: s };
+  } catch (e) { return null; }
+}
+// The slot multiplier for a profile: 1 for one line of lettering; for two or
+// more, the art's height over its tallest line, at most WM_STACK_MAX_K.
+function _wmLinesK(p) {
+  if (!p || !(p.w > 0) || !(p.h > 0)) return 1;
+  if (p.w / p.h >= WM_STACK_MAX_AR) return 1;
+  var lines = [], start = -1, wide = 0, dense = 0;
+  for (var y = 0; y <= p.h; y++) {
+    var ink = y < p.h && !(p.n[y] < 0.1 * p.w && p.s[y] < 0.4 * p.w);
+    if (ink) {
+      if (start < 0) { start = y; wide = 0; dense = 0; }
+      if (p.s[y] > wide) wide = p.s[y];
+      if (p.n[y] > dense) dense = p.n[y];
+    } else if (start >= 0) {
+      if (y - start >= 0.08 * p.h && wide >= 0.4 * p.w && dense >= 0.25 * p.w) lines.push(y - start);
+      start = -1;
+    }
+  }
+  if (lines.length < 2) return 1;
+  return Math.min(WM_STACK_MAX_K, Math.max(1, p.h / Math.max.apply(null, lines)));
+}
+// The class and custom property a belt wordmark is written with: the file's
+// multiplier once it has been read, nothing before that or for one line.
+function _wmStackAttrs(src) {
+  var k = _WM_STACK_K[_wmArtKey(src)];
+  return (typeof k === 'number' && k > 1)
+    ? { cls: ' wm-stacked', style: ' style="--wm-k:' + k.toFixed(3) + '"' }
+    : { cls: '', style: '' };
+}
+// A belt wordmark's onload: read its file the first time, then size it.
+function _wmStackOnLoad(img) {
+  try {
+    var key = _wmArtKey(img.getAttribute('src'));
+    var k = _WM_STACK_K[key];
+    if (typeof k !== 'number') {
+      var p = _wmLineProfile(img);
+      if (!p) return;   // not readable: one line, and asked again next time
+      k = _WM_STACK_K[key] = _wmLinesK(p);
+    }
+    if (k > 1) { img.style.setProperty('--wm-k', k.toFixed(3)); img.classList.add('wm-stacked'); }
+    else { img.style.removeProperty('--wm-k'); img.classList.remove('wm-stacked'); }
+  } catch (e) {}
+}
+
 // WCAG relative luminance of a #hex colour (0 = black … 1 = white). Used to
 // decide whether a carrier's brand accent is legible as the TEXT name on the
 // dark board — a deep maroon/navy (Qatar #5c0931, Emirates crimson) reads as
@@ -30793,7 +30913,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24011';
+var FIDS_BUILD_TAG = 'v24012';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

@@ -233,8 +233,12 @@ test('the Delayed belt bar takes navy lettering on a yellow ramp', () => {
   const pill = /\.bidsv3 \.b3-status\.s-delayed \{ color: (#[0-9A-Fa-f]{6});/g;
   let last = null, mm; while ((mm = pill.exec(css))) last = mm[1];
   assert.ok(last && ratio(hex(last), [244, 241, 236]) >= 4.5, `the pill word ${last} reads on the pill`);
-  assert.match(code(CORE), /class="b3-wordmark" alt="' \+ _bSafeName \+ '" src="' \+ wordmarkSrc\(_bWmBase, isDelayed \? 'dark' : 'light'\)/,
+  // (v24003: the bar's wordmark URL is held in _b3Src, so the two-line lockup
+  // rule reads the same file the bar draws; tests/belt-stacked-lockup.test.js)
+  assert.match(code(CORE), /const _b3Src = _bWmBase \? wordmarkSrc\(_bWmBase, isDelayed \? 'dark' : 'light'\) : '';/,
     'the wordmark on the yellow bar is the dark artwork');
+  assert.match(code(CORE), /class="b3-wordmark' \+ _b3Stack\.cls \+ '"' \+ _b3Stack\.style \+ ' alt="' \+ _bSafeName \+ '" src="' \+ _b3Src \+ '"/,
+    'the bar draws that artwork');
 });
 
 // ── Part 2: the real board in headless Chrome ──────────────────────────────

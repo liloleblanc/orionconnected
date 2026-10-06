@@ -15291,6 +15291,19 @@ Centring them left a deep empty band above a short belt —
 .bidsv3 .b3-tile img, .bidsv3 .b3-tile > * { width: 100% !important; height: 100% !important; object-fit: contain; margin: 0 !important; }
 .bidsv3 .b3-flight { flex: 0 0 calc(205 * var(--b3u, 1px)); min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 .bidsv3 .b3-wordmark { height: calc(22 * var(--b3u, 1px)); width: auto; align-self: flex-start; max-width: calc(200 * var(--b3u, 1px)); object-fit: contain; object-position: left center; }
+/* v24003 — A LOCKUP ON TWO LINES GETS UP TO TWICE THE SLOT. The 22 units
+   above are the height of a one-line wordmark's letters; Air Inuit's
+   syllabics over "Air Inuit" put two lines in them, each about half as tall
+   as AIR CANADA's or WESTJET's. fids-core.js reads each file's lines once
+   (_wmLinesK) and marks a lockup of two lines or more with --wm-k, the art's
+   height over its tallest line (at most 2), so that line is drawn as tall as
+   a one-line wordmark. At its largest, 44 units over the 42-unit flight
+   number fit inside the bar's inset rule (112 units, less 9 at each edge);
+   the bar keeps its height. tests/belt-stacked-lockup.test.js. */
+.bidsv3 .b3-wordmark.wm-stacked {
+  height: calc(22 * var(--wm-k, 1) * var(--b3u, 1px));
+  max-height: calc(44 * var(--b3u, 1px));
+}
 /* v23962 — the typed airline name (no wordmark) is fitted, not ellipsised:
    'AIR SAINT-PIERRE' was 'AIR SAINT-PIE…' at 1280 (FIDS_FIT_RULES). */
 .bidsv3 .b3-airline-name { font-size: max(var(--fx-floor, 12px), calc(16 * var(--b3u, 1px))); font-weight: 800; letter-spacing: calc(1.5 * var(--b3u, 1px)); color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,.45); white-space: nowrap; line-height: 1.1; }
