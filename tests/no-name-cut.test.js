@@ -578,18 +578,27 @@ test('the header date is two whole phrases, one language each, when it must stac
   assert.match(d, /\.join\(' <span class="cl-sep fx-brk">\|<\/span> '\)/);
 });
 
-test('the aircraft caption puts its operator under the aircraft before it opens the model', () => {
+test('the aircraft caption stays one row: it narrows, then opens the model, never stacks', () => {
+  // v24004 — step 7a (v23972) put the operator under the aircraft, two
+  // full-width rows; the gate caption is one row (v23904), so it is gone. A
+  // known model's row narrows its type (87.5%) before the model opens at its
+  // own spaces; then the operator's labels stand over its mark inside its
+  // own half, the model's labels over the model inside its, and an operator
+  // shown by name opens at its spaces last; the band grows for that, never
+  // into two rows.
   const at = CORE.indexOf('function _fitTypePanel(el) {');
   const src = CORE.slice(at, CORE.indexOf("root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach", at));
-  const stack = src.indexOf("_capEl.classList.add('acb-stack');"), open = src.indexOf('// 7b. A model that still does not fit');
-  assert.ok(stack > 0 && open > stack, 'step 7a (stack) comes before 7b (open)');
-  assert.ok(src.indexOf("_capEl.classList.remove('acb-stack')") > 0, 'and is cleared before each pass');
-  const capRule = OVR.slice(OVR.indexOf('.v2-rc-acb-cap.acb-stack {'), OVR.indexOf('}', OVR.indexOf('.v2-rc-acb-cap.acb-stack {')));
-  assert.match(capRule, /flex-direction: column !important;/);
-  // past 255 ids Chrome counts no more: the classes decide, and these carry
-  // more of them than the row rules they override
-  const line = OVR.split('\n').find((l) => l.includes('.v2-rc-acb-cap.acb-stack {'));
-  assert.ok((line.match(/:not\(\._\)/g) || []).length >= 12, 'the stacked caption out-ranks the ×255 + 6 row rules');
+  assert.doesNotMatch(src, /acb-stack/, 'no stacked caption');
+  assert.doesNotMatch(OVR, /\.v2-rc-acb-cap\.acb-stack/, 'and no stacked layout');
+  const narrow = src.indexOf("if (!_pending && !_fits()) {\n                _capEl.classList.add('acb-narrow');"),
+    open = src.indexOf("el.style.setProperty('white-space', 'normal', 'important');", narrow),
+    opstack = src.indexOf("_capEl.classList.add('acb-opstack');"), acstack = src.indexOf("_capEl.classList.add('acb-acstack');"),
+    name = src.indexOf("_nameEl.style.setProperty('text-wrap', 'balance', 'important');");
+  assert.ok(narrow > 0 && open > narrow && opstack > open && acstack > opstack && name > acstack, 'narrow, open, the two tiers, the name, in that order');
+  // past 255 ids Chrome counts no more: the classes decide, and the widths
+  // carry more of them than the row rules they override
+  const line = OVR.split('\n').find((l) => l.includes('.v2-rc-acb-cap.acb-narrow :is(div, span, b) {'));
+  assert.ok(line && (line.match(/:not\(\._\)/g) || []).length >= 13, 'the narrowed caption out-ranks the ×255 + 12 row rules');
   // the model is written as its unbreakable parts: never inside 'Dash 8-400'
   const groups = new Function('return (' + fnSource('_acbModelGroups') + ');')();
   assert.deepEqual(groups('De Havilland Dash 8-400'), ['De Havilland', 'Dash 8-400']);

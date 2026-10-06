@@ -7163,6 +7163,56 @@ function _opbyBarPick(pair, src, bar, dark, ink) {
   }
   return { src: best };
 }
+// v24004 — RULE 1 IS READ ON THE LETTERS. The caption's fitter held an
+// operator's mark no smaller than the type beside it by its box: right for a
+// mark drawn as one line of lettering, wrong for a lockup. Air Canada Express
+// is AIR CANADA over EXPRESS, each line a third of the file's height, so at
+// YOW gate 25 (1280x720) a mark as tall as its 12px words had 6px letters
+// beside 8px capitals. This is each caption mark's lettering as a share of
+// its file's height: the capitals of its name (PAL's capitals under the
+// ascenders of 'airlines'; WESTJET over 'encore'; ENDEAVOR AIR under its
+// swoosh), measured on the files at 400px tall (the ink rows of each line,
+// and of each capital). A mark drawn as one line of lettering, or in
+// lowercase or script only (Jazz, Rouge's 'rouge', Porter, Envoy, Horizon's
+// white file, SkyWest, Republic, Piedmont: 0.7 of the file or more, where the
+// box rule already decides), is not listed and counts as 1.
+// tests/gate-caption-render.test.js holds every caption mark whose lettering
+// is under 0.7 of its file to this table, and the fitter to it on screen.
+var OPBY_MARK_LETTER_H = {
+  '/logos/airlines/canadian-regional/aircanada-express-wordmark-light.svg': 0.34,
+  '/logos/airlines/canadian-regional/aircanada-express.svg': 0.32,
+  '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg': 0.65,
+  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg': 0.65,
+  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg': 0.57,
+  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg': 0.57,
+  '/logos/airlines/canadian/encore-wordmark-navy.svg': 0.65,
+  '/logos/airlines/canadian-regional/airinuit-wordmark-light.svg': 0.39,
+  '/logos/airlines/canadian-regional/airinuit.svg': 0.39,
+  '/logos/airlines/canadian-regional/pascan-wordmark-light.svg': 0.66,
+  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg': 0.66,
+  '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg': 0.46,
+  '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg': 0.1,
+  '/logos/airlines/canadian-regional/airnorth-wordmark-light.svg': 0.49,
+  '/logos/airlines/canadian-regional/airnorth.svg': 0.25,
+  '/logos/airlines/canadian-regional/canadian-north.svg': 0.35,
+  '/logos/airlines/canadian-regional/calmair.svg': 0.43,
+  '/logos/airlines/canadian-regional/firstair.svg': 0.2,
+  '/logos/airlines/us-regional/endeavor-air-monochrome-white.svg': 0.22,
+  '/logos/airlines/us-regional/endeavor-air.svg': 0.22,
+  '/logos/airlines/us-regional/psa-airlines-monochrome-white.svg': 0.66,
+  '/logos/airlines/us-regional/psa-airlines.svg': 0.66,
+  '/logos/airlines/us-regional/mesa-airlines.svg': 0.65,
+  '/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg': 0.65,
+  '/logos/airlines/us-regional/gojet-wordmark-light.png': 0.42,
+  '/logos/airlines/us-regional/gojet.png': 0.23,
+  '/logos/airlines/us-regional/horizon-air-monochrome-black.svg': 0.19
+};
+function _opbyLetterH(src) {
+  var p = String(src || '').replace(/^[a-z]+:\/\/[^/]+/i, '').split(/[?#]/)[0];
+  var k = OPBY_MARK_LETTER_H[p];
+  return (typeof k === 'number' && k > 0 && k < 1) ? k : 1;
+}
+try { if (typeof window !== 'undefined') { window.OPBY_MARK_LETTER_H = OPBY_MARK_LETTER_H; window._opbyLetterH = _opbyLetterH; } } catch (e) {}
 function _opbyContrastFix(root) {
   try {
     var imgs = (root || document).querySelectorAll('img.v2-rc-opby-logo[data-op]');
@@ -19921,19 +19971,26 @@ function gateAutofit(root) {
             _logoEl.addEventListener('error', _refit, { once: true });
           }
           el.classList.remove('is-2line');
+          // v24004 — the steps after the sizes (S1 to S6, below), cleared too
+          el.classList.remove('acb-open');
+          if (_capEl.classList && _capEl.classList.remove) {
+            ['acb-narrow', 'acb-opstack', 'acb-acstack', 'acb-grown'].forEach(function (c) { _capEl.classList.remove(c); });
+          }
+          if (_capEl.removeAttribute) _capEl.removeAttribute('data-acb-r1');
           // v23962 — step 7's own writes, cleared before each pass
           var _kids = el.children || [];
           if (el.removeAttribute) el.removeAttribute('data-fx-over');
           el.style.removeProperty('line-height');
           el.style.removeProperty('overflow');
           el.style.removeProperty('white-space');
-          for (var _rs = 0; _rs < _kids.length; _rs++) { _kids[_rs].style.removeProperty('white-space'); _kids[_rs].style.removeProperty('overflow-wrap'); }
-          if (_capEl.classList && _capEl.classList.remove) _capEl.classList.remove('acb-stack');
+          el.style.removeProperty('overflow-wrap');
+          for (var _rs = 0; _rs < _kids.length; _rs++) { _kids[_rs].style.removeProperty('white-space'); _kids[_rs].style.removeProperty('overflow-wrap'); _kids[_rs].style.removeProperty('word-break'); }
           _capEl.style.removeProperty('--acb-h');
           _capEl.style.removeProperty('height'); _capEl.style.removeProperty('max-height');
           _capEl.style.removeProperty('min-height'); _capEl.style.removeProperty('overflow');
-          if (_logoEl) { _logoEl.style.removeProperty('height'); _logoEl.style.removeProperty('max-height'); }
-          if (_nameEl) _nameEl.style.removeProperty('font-size');
+          if (_logoEl) ['height', 'max-height', 'max-width'].forEach(function (p) { _logoEl.style.removeProperty(p); });
+          if (_logoEl && _logoEl.parentElement && _logoEl.parentElement.style) _logoEl.parentElement.style.removeProperty('min-width');
+          if (_nameEl) ['font-size', 'white-space', 'display', 'text-wrap', 'line-height', 'max-width'].forEach(function (p) { _nameEl.style.removeProperty(p); });
           // The band's full height is the row's top scale (--acb-h starts at
           // --rcp-cap, which is the band's border box); the model's own height
           // is checked against the room inside it.
@@ -19972,8 +20029,113 @@ function gateAutofit(root) {
               var cr = _capEl.children[_ck].getBoundingClientRect();
               if (cr.width && (cr.right > ci.r + _ROW_EPS || cr.left < ci.l - _ROW_EPS)) return false;
             }
+            // v24004 — and up and down. The model's own lines inside its box
+            // (a line the box hides is a cut; a line's own box stands a
+            // little over its leading, so a quarter of the type is allowed),
+            // and, while the band holds its height, the operator's mark
+            // (raised for rule 1 it can stand taller than the band), the
+            // operator's labels and name and the model's labels, by their
+            // text, inside the band.
+            if (mt.height) {
+              var _mb = el.getBoundingClientRect(), _mfs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+              if (_mb.height && (mt.top < _mb.top - 0.25 * _mfs || mt.bottom > _mb.bottom + 0.25 * _mfs)) return false;
+            }
+            if (_capH && _capEl.getBoundingClientRect) {
+              var cb = _capEl.getBoundingClientRect();
+              var _vk = [_logoEl, _nameEl].concat(_capEl.querySelectorAll ? [].slice.call(_capEl.querySelectorAll('.v2-rc-acb-opby-lbl')) : []);
+              for (var _vi = 0; _vi < _vk.length; _vi++) {
+                if (!_vk[_vi] || !_vk[_vi].getBoundingClientRect) continue;
+                var vr = _vk[_vi].getBoundingClientRect();
+                if (_vk[_vi] !== _logoEl) { var _vg = document.createRange(); _vg.selectNodeContents(_vk[_vi]); var _vq = _vg.getBoundingClientRect(); if (_vq.height) vr = _vq; }
+                if (vr.height && (vr.top < cb.top - _ROW_EPS || vr.bottom > cb.bottom + _ROW_EPS)) return false;
+              }
+            }
             return !_capH || el.offsetHeight <= _capH;
           };
+          // The mark's height is laid out on a 1/64px grid, so a height
+          // set equal to the model's size can land a hair under it (12.47
+          // beside 12.48): it is rounded UP to that grid, never down.
+          var _up64 = function (v) { return Math.ceil(v * 64 - 1e-6) / 64; };
+          // v23986 — RULE 1: the mark is never smaller than the text beside
+          // it, and beside it stands its own 'Operated By:' label as well as
+          // the model. The labels came up to the readable floor in v23962 and
+          // the mark kept coming down to the model's size only: Rouge's mark
+          // ended 10px tall beside 12px labels at 1280x720 (pending, de+pt).
+          // Its floor is the larger of the two.
+          // v24004 — RULE 1 IS READ ON THE LETTERS. The floor was the mark's
+          // box against the type's size, which holds for a mark drawn as one
+          // line of lettering, and not for a lockup: Air Canada Express is
+          // AIR CANADA over EXPRESS, each line a third of the file's height,
+          // so a mark set as tall as the 12px words beside it had 6px letters
+          // beside 8px capitals (YOW gate 25, 1280x720), and PAL's capitals
+          // are two thirds of its file. The mark's letters (the file's share
+          // of lettering, OPBY_MARK_LETTER_H) now stand at least as tall as
+          // the capitals of the type beside it (Bricolage's capitals are 0.66
+          // of its size; 0.7 is used), as well as the box being no smaller
+          // than the type (the old floor, which still decides for a mark of
+          // one line of lettering).
+          var _CAP = 0.7;
+          var _frac = (_logoEl && typeof _opbyLetterH === 'function') ? _opbyLetterH(_logoEl.getAttribute('src')) : 1;
+          var _opLblEl = _capEl.querySelector('.v2-rc-acb-opby .v2-rc-opby-lline');
+          var _opLbl = function () { return _opLblEl ? (parseFloat(window.getComputedStyle(_opLblEl).fontSize) || 0) : 0; };
+          var _hold = 0;
+          // the height the mark's box is set to for type of `px` beside it
+          var _mk = function (px) {
+            var ref = Math.max(px, _opLbl()), need = Math.max(ref, _hold);
+            if (_logoEl && _frac < 1) {
+              var cs = window.getComputedStyle(_logoEl);
+              var padV = (cs.boxSizing === 'content-box') ? 0
+                : (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+              need = Math.max(need, padV + _CAP * ref / _frac);
+            }
+            return need;
+          };
+          // The mark is drawn contained in its box: a box too narrow for it
+          // draws it shorter than the height it was given (PAL's mark was
+          // 9.9px tall beside 12px type at 1280x720 in German, in a box 2.1
+          // rows wide), and the band then holds a box taller than the mark.
+          // Once the fitter sets its height, its box and the box around it
+          // are held exactly as wide as the mark is at that height: the
+          // fitter's steps measure the mark they draw.
+          var _markRoom = function () {
+            if (!_logoEl || !_logoEl.naturalWidth || !_logoEl.naturalHeight || !_logoEl.style) return;
+            var cs = window.getComputedStyle(_logoEl);
+            var pv = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+            var ph = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+            var cb = cs.boxSizing === 'content-box';
+            var h = parseFloat(cs.height) || 0;
+            var contentH = cb ? h : h - pv;
+            var need = Math.ceil((contentH * _logoEl.naturalWidth / _logoEl.naturalHeight + ph) * 64) / 64;
+            var val = _logoEl.parentElement;
+            // set each time, up or down: the mark comes down as the row is
+            // fitted, and a box held at an earlier, larger floor squeezed the
+            // model beside it
+            if (val && val.style) val.style.setProperty('min-width', need + 'px', 'important');
+            if (_logoEl.getBoundingClientRect().width + 0.01 < need) _logoEl.style.setProperty('max-width', 'none', 'important');
+          };
+          var _lh = 0;
+          var _setLh = function (px) {
+            _lh = _up64(px);
+            _logoEl.style.setProperty('height', _lh + 'px', 'important');
+            _logoEl.style.setProperty('max-height', _lh + 'px', 'important');
+            _markRoom();
+          };
+          // R. v24004 — a mark that its stylesheet draws under rule 1's floor
+          // (Air Canada Express beside a known model, at every size) is
+          // raised to it before anything is fitted; the steps below then fit
+          // the row with it. (A mark the stylesheet sizes is left to it: its
+          // box follows the row's scale, which step 1 moves.)
+          // The mark is judged as it is PAINTED: a box too narrow for it
+          // (a wide mark's box 2.1 rows wide) draws it shorter than the box.
+          if (_logoEl && _logoEl.naturalWidth && _logoEl.naturalHeight && el.isConnected && _capH > 0) {
+            var _fs0 = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+            var _lcs = window.getComputedStyle(_logoEl), _lb = _logoEl.getBoundingClientRect();
+            var _pv0 = (parseFloat(_lcs.paddingTop) || 0) + (parseFloat(_lcs.paddingBottom) || 0) + (parseFloat(_lcs.borderTopWidth) || 0) + (parseFloat(_lcs.borderBottomWidth) || 0);
+            var _ph0 = (parseFloat(_lcs.paddingLeft) || 0) + (parseFloat(_lcs.paddingRight) || 0) + (parseFloat(_lcs.borderLeftWidth) || 0) + (parseFloat(_lcs.borderRightWidth) || 0);
+            var _painted0 = Math.min(_lb.height - _pv0, (_lb.width - _ph0) * _logoEl.naturalHeight / _logoEl.naturalWidth);
+            var _h0 = _painted0 + (_lcs.boxSizing === 'content-box' ? 0 : _pv0);
+            if (_fs0 && _lb.height && _h0 < _mk(_fs0) - 0.01) _setLh(_mk(_fs0));
+          }
           // (The band's width, not the model's: a wide operator's half can
           // squeeze the model to nothing, and that is the case to fit.)
           if (el.isConnected && _capEl.clientWidth > 0 && _capH > 0 && !_fits()) {
@@ -19983,37 +20145,33 @@ function gateAutofit(root) {
             if (!_fits()) {
               var _lblEl = _capEl.querySelector('.v2-rc-opby-lline');
               var _lblPx = _lblEl ? (parseFloat(window.getComputedStyle(_lblEl).fontSize) || 10) : Math.round(_u * 0.24);
-              var _fs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
-              var _lh = _logoEl ? (_logoEl.getBoundingClientRect().height || 0) : 0;
+              var _fs = parseFloat(window.getComputedStyle(el).fontSize) || 0, _fsStart = _fs;
+              _lh = _logoEl ? (_logoEl.getBoundingClientRect().height || 0) : 0;
               var _k = (_fs && _lh) ? _lh / _fs : 0;
-              // The mark's height is laid out on a 1/64px grid, so a height
-              // set equal to the model's size can land a hair under it (12.47
-              // beside 12.48): it is rounded UP to that grid, never down.
-              var _up64 = function (v) { return Math.ceil(v * 64 - 1e-6) / 64; };
-              // v23986 — RULE 1: the mark is never smaller than the text
-              // beside it, and beside it stands its own 'Operated By:' label
-              // as well as the model. The labels came up to the readable
-              // floor in v23962 and the mark kept coming down to the model's
-              // size only: Rouge's mark ended 10px tall beside 12px labels at
-              // 1280x720 (pending, de+pt). Its floor is the larger of the two;
-              // a row that cannot hold it at that size puts the operator
-              // under the aircraft (7a), where the mark has the row's width.
-              // With no model yet (the pending words, two lines of label
-              // type) the mark is the only thing on the row that is not
-              // label-sized: there it keeps its own height on the one row
-              // and the operator goes under the aircraft instead (it came
-              // down from 28px to 16px at 1680x1050 to make room).
-              var _opLblEl = _capEl.querySelector('.v2-rc-acb-opby .v2-rc-opby-lline');
-              var _opLbl = function () { return _opLblEl ? (parseFloat(window.getComputedStyle(_opLblEl).fontSize) || 0) : 0; };
-              var _lh0 = _lh, _stacked = false;
-              var _mk = function (px) {
-                var m = Math.max(px, _opLbl());
-                return (_capEl.classList.contains('is-pending') && !_stacked) ? Math.max(m, _lh0) : m;
-              };
-              var _setLh = function (px) {
-                _lh = _up64(px);
-                _logoEl.style.setProperty('height', _lh + 'px', 'important');
-                _logoEl.style.setProperty('max-height', _lh + 'px', 'important');
+              // v24004 — ONE ROW, ALWAYS. v23986 held the mark at its full
+              // height while there was no model yet and, when the row could
+              // not hold it, put the operator under the aircraft (7a): the
+              // band went to two full-width rows, twice as tall, and covered
+              // the foot of the emblem above it (Air Canada Express at YOW
+              // gate 25, 1680x1050, en+fr: a 121px band over 60). The caption
+              // is never two rows now. With no model yet the mark is HELD
+              // (_hold) while the words come down to the floor (2) and the
+              // row's spacing comes down (5); the steps after the sizes (S1 to
+              // S6, below) then keep the two halves side by side.
+              var _lh0 = _lh;
+              _hold = _capEl.classList.contains('is-pending') ? _lh0 : 0;
+              // v24004 — the mark takes back, half a pixel at a time and no
+              // higher than it started (_lh0), the room the words gave up, as
+              // long as the row still fits and neither the words nor the band
+              // grow for it.
+              var _regrow = function () {
+                if (!_logoEl || _lh >= _lh0 || !_fits()) return;
+                var _e0 = el.getBoundingClientRect().height, _b0 = _capEl.getBoundingClientRect().height;
+                while (_lh < _lh0) {
+                  var _was = _lh;
+                  _setLh(Math.min(_lh0, _lh + 0.5));
+                  if (!_fits() || el.getBoundingClientRect().height > _e0 + 0.5 || _capEl.getBoundingClientRect().height > _b0 + 0.5) { _setLh(_was); break; }
+                }
               };
               var _setFs = function (px) {
                 el.style.setProperty('font-size', px + 'px', 'important');
@@ -20037,7 +20195,7 @@ function gateAutofit(root) {
                 _setFs(_fs);
                 while (_fs > _lblPx && !_fits()) { _fs = Math.max(_lblPx, _fs - 1); _setFs(_fs); }
               }
-              // 4. The mark alone, down to the model's own size and no further.
+              // 4. The mark alone, down to rule 1's floor and no further.
               if (_logoEl) {
                 while (_lh > _up64(_mk(_fs)) && !_fits()) _setLh(Math.max(_mk(_fs), _lh - 1));
               }
@@ -20072,20 +20230,31 @@ function gateAutofit(root) {
                   _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
                 }
               }
-              // 6. The last resort, so nothing is ever cut: a model that still
-              // does not fit at the row's floor comes down to the label's own
-              // size, and the mark and the name with it, never below it
-              // (window.__acbLastResort counts it, for the harness).
+              // S1. v24004 — no model yet, the words at the floor and the
+              // row's spacing down: the held mark comes down to rule 1's floor
+              // (its letters as tall as the capitals beside it), and only then
+              // does the row's type narrow to Bricolage's own semi-condensed
+              // width (87.5%, the width the row beside a wide mark has once a
+              // model is known). The words are what a passenger reads; the
+              // mark takes back what the row can give it at the end.
+              // Bricolage's condensed width (75%) is not used: the words read
+              // visibly smaller in it.
+              if (_pending && !_fits() && _logoEl) {
+                _hold = 0;
+                while (_lh > _up64(_mk(_fs)) && !_fits()) _setLh(Math.max(_mk(_fs), _lh - 0.5));
+              }
+              if (_pending && !_fits()) _capEl.classList.add('acb-narrow');
+              // 6. The last resort of the sizes, so nothing is ever cut: a
+              // model that still does not fit at the row's floor comes down to
+              // the label's own size, and the mark and the name with it, never
+              // below it (window.__acbLastResort counts it, for the harness).
               // REAL BOARDS REACH THIS STEP: every PAL-operated Air Canada
               // Dash 8 (YHZ gate 2C at 16:50, AC7691/AC7677; gate 57 at
               // 16:00, AC7669/AC7664 + C-GPFI). PAL's wordmark is 6.2 times
-              // as wide as it is tall and is held at the model's size, the
-              // model is one unbreakable phrase ('De Havilland Dash 8-400',
-              // 12.1 em at this size), and the two label pairs with their
-              // spacing are 3.6 of the row's scale. At 1680x1050 (a 380px
-              // panel) that leaves about 12.4px of model over 10px labels
-              // at best, which is where this lands (12.1 over 10.08, mark
-              // 12.6). One row cannot hold that caption at twice the label.
+              // as wide as it is tall, the model is one unbreakable phrase
+              // ('De Havilland Dash 8-400', 12.1 em at this size), and the two
+              // label pairs with their spacing are 3.6 of the row's scale. One
+              // row cannot hold that caption at twice the label.
               if (!_fits()) {
                 try { window.__acbLastResort = (window.__acbLastResort || 0) + 1; } catch (e6) {}
                 while (_fs > _lblPx && !_fits()) {
@@ -20095,87 +20264,192 @@ function gateAutofit(root) {
                   if (_nameEl && _nm > _fs) { _nm = _fs; _nameEl.style.setProperty('font-size', _nm + 'px', 'important'); }
                 }
               }
+              // 4b. v24004 — and the mark again, to rule 1's floor for the
+              // type as it now stands (steps 5 and 6 bring the type down; the
+              // mark came down in step 4 only as far as the type then was).
+              if (_logoEl) {
+                while (_lh > _up64(_mk(_fs)) && !_fits()) _setLh(Math.max(_mk(_fs), _lh - 0.5));
+              }
               // 7. v23962 — and never under the readable floor. The labels
               // are held at --fx-floor by the stylesheet now (they were 12.7px
               // at 1680 and 8.6px at 1280), so the model, which never goes
               // below its label, cannot either.
-              // 7a. v23972 — a caption with an operator that still does not
-              // fit puts the operator UNDER the aircraft: two rows, each the
-              // panel's full width (the lower panel's two-line caption). The
-              // band grows to hold them; the illustration above gives up the
-              // height. Then the model, the mark and the name are sized again
-              // from the top, in that room. Opening the model came first, and
-              // on a 1280 board with a typed operator ('Air Saint-Pierre') it
-              // went one word per line, 'De / Havilland / Dash / 8- / 400',
-              // German 'Havilland' running 28px into 'Durchgeführt von:'.
+              //
+              // v24004 — THE STEPS AFTER THE SIZES. The caption stays ONE ROW
+              // of two halves side by side, [the aircraft] | [Operated By and
+              // the operator]; what still does not fit changes inside its own
+              // half, the band grows for it (the art above is placed in the
+              // sky it leaves: --rcp-cap-live, below), and nothing is ever cut
+              // or drawn over anything else. In this order:
+              //   S1  with no model yet, the held mark comes down to rule 1's
+              //       floor (letters as tall as the capitals beside it), then
+              //       the row's type narrows (87.5%; above);
+              //   S2  with a model, the row's type narrows;
+              //   S3  a known model opens between its maker and its type;
+              //   S4  the operator's labels stand over its mark, in its half;
+              //   S5  a known model's labels stand over the model, in its
+              //       half; the pending words open at their own spaces, each
+              //       language in its own block; an operator's name opens at
+              //       its spaces (a phrase opens only after the halves have
+              //       given what they can: the display rule is that two
+              //       lines are fine and a severed phrase is not);
+              //   S6  only a row that still cannot hold the mark at rule 1's
+              //       floor (no supported screen reaches it) takes the mark
+              //       under it, reported (data-acb-r1), and last of all lets a
+              //       word break inside its own half (data-fx-over); never
+              //       drawn over the other half.
+              // (7a, v23972 to v24003, put the operator UNDER the aircraft
+              // here: two full-width rows. It is gone; the caption is one row.)
               var _grow = function () {
                 if (!_capEl.style) return;
                 _capEl.style.setProperty('height', 'auto', 'important');
                 _capEl.style.setProperty('max-height', 'none', 'important');
                 _capEl.style.setProperty('min-height', _bandH + 'px', 'important');
                 _capEl.style.setProperty('overflow', 'visible', 'important');
+                if (_capEl.classList) _capEl.classList.add('acb-grown');
                 _capH = 0;
               };
-              if (!_fits() && _capEl.classList.contains('has-op') && _capEl.querySelector('.v2-rc-acb-opby')) {
-                _capEl.classList.add('acb-stack');
-                _stacked = true;
-                _grow();
-                _capEl.style.removeProperty('--acb-h');
-                _u = _bandH;
-                _lblPx = _lblEl ? (parseFloat(window.getComputedStyle(_lblEl).fontSize) || _lblPx) : _lblPx;
-                el.style.removeProperty('font-size');
-                if (_logoEl) { _logoEl.style.removeProperty('height'); _logoEl.style.removeProperty('max-height'); }
-                if (_nameEl) _nameEl.style.removeProperty('font-size');
-                _fs = parseFloat(window.getComputedStyle(el).fontSize) || _fs;
-                _lh = _logoEl ? (_logoEl.getBoundingClientRect().height || 0) : 0;
-                _k = (_fs && _lh) ? _lh / _fs : 0;
-                _nm = _nameEl ? (parseFloat(window.getComputedStyle(_nameEl).fontSize) || 0) : 0;
-                // the model on ONE line in the stacked form, down to its
-                // label's size, the mark and the name with it and never below
-                // it; each row is checked on its own (the band no longer has
-                // a height to hold to: it grows)
-                var _m1 = (el.children && el.children.length) ? el.children : [];
-                for (var _m1i = 0; _m1i < _m1.length; _m1i++) _m1[_m1i].style.setProperty('white-space', 'nowrap', 'important');
-                el.style.setProperty('white-space', 'nowrap', 'important');
-                while (_fs > _lblPx && !_fits()) {
-                  _fs = Math.max(_lblPx, _fs - 0.5);
-                  el.style.setProperty('font-size', _fs + 'px', 'important');
-                  if (_logoEl && _lh > _up64(_mk(_fs)) && _k) _setLh(Math.max(_mk(_fs), Math.min(_lh, _fs * _k)));
+              var _opCell = _capEl.querySelector('.v2-rc-acb-opby');
+              // S2.
+              if (!_pending && !_fits()) {
+                _capEl.classList.add('acb-narrow');
+                // S3. 'De Havilland' over 'Dash 8-400', 'Boeing 737' over
+                // 'MAX 8': the shared fitter's rule, but only between the
+                // maker and the type. The model is written as those parts
+                // (_nbwModel, each a nowrap .fx-unit), so nothing breaks
+                // inside 'Dash 8-400' (its hyphen included) or 'De Havilland'.
+                if (!_fits()) {
+                  var _mSpans = (el.children && el.children.length) ? el.children : [el];
+                  for (var _ms = 0; _ms < _mSpans.length; _ms++) {
+                    _mSpans[_ms].style.setProperty('white-space', 'normal', 'important');
+                    _mSpans[_ms].style.setProperty('overflow-wrap', 'normal', 'important');
+                  }
+                  el.style.setProperty('white-space', 'normal', 'important');
+                  el.style.setProperty('line-height', '1.05', 'important');
+                  if (!_fits()) _grow();
                 }
-                if (_logoEl) { while (_lh > _up64(_mk(_fs)) && !_fits()) _setLh(Math.max(_mk(_fs), _lh - 1)); }
-                if (_nameEl) {
-                  while (_nm > _lblPx && !_fits()) {
-                    _nm = Math.max(_lblPx, _nm - 0.5);
-                    _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
+              }
+              // S4.
+              // (A half laid out in two tiers always takes the band's own
+              // room above and below it.)
+              if (!_fits() && _opCell) {
+                _capEl.classList.add('acb-opstack');
+                _grow();
+              }
+              // S5.
+              if (!_fits() && !_pending && _capEl.querySelector('.v2-rc-acb-lbl')) {
+                _capEl.classList.add('acb-acstack');
+                _grow();
+              }
+              if (!_fits() && _pending) {
+                el.classList.add('acb-open');
+                if (!_fits()) _grow();
+              }
+              // v24004 — what the steps took and the row can give back:
+              //   with no model yet, the words' full width, then their size
+              //   (up to where they started, the mark kept at rule 1's floor
+              //   beside them), then the mark's own height;
+              //   with a model, in a band that grew, the mark to rule 1's
+              //   floor first (the band holds no more than it needs), then
+              //   the model's size, up to 1.25x its labels and no further
+              //   than where it started, the mark following its floor;
+              // each only while the row still fits and the band does not grow
+              // for it.
+              var _b0 = _capEl.getBoundingClientRect().height;
+              var _same = function () { return _fits() && _capEl.getBoundingClientRect().height <= _b0 + 0.5; };
+              var _giveFs = function (top) {
+                while (_fs < top - 0.01) {
+                  var _wasFs = _fs, _wasLh = _lh;
+                  _fs = Math.min(top, _fs + 0.5);
+                  el.style.setProperty('font-size', _fs + 'px', 'important');
+                  if (_logoEl && _lh < _mk(_fs)) _setLh(_mk(_fs));
+                  if (!_same()) {
+                    _fs = _wasFs;
+                    el.style.setProperty('font-size', _fs + 'px', 'important');
+                    if (_logoEl && _lh !== _wasLh) _setLh(_wasLh);
+                    break;
                   }
                 }
+              };
+              if (!_pending && _fits() && _capEl.classList.contains('acb-grown')) {
+                if (_logoEl && _lh > _up64(_mk(_fs)) + 0.01) {
+                  var _lhWas = _lh;
+                  _setLh(_mk(_fs));
+                  if (!_fits()) _setLh(_lhWas);
+                  _b0 = _capEl.getBoundingClientRect().height;
+                }
+                _giveFs(Math.min(_fsStart, Math.round(_lblPx * 1.25 * 100) / 100));
               }
-              // 7b. A model that still does not fit opens at its own spaces,
-              // the shared fitter's rule, but only between the maker and the
-              // type: 'De Havilland' over 'Dash 8-400', 'Boeing 737' over
-              // 'MAX 8'. The model is written as those parts (_nbwModel, each
-              // a nowrap .fx-unit), so nothing breaks inside 'Dash 8-400' (its
-              // hyphen included) or 'De Havilland'. If even that will not hold
-              // it, it is left showing and reported (data-fx-over), never cut.
+              if (_pending && _fits()) {
+                if (_capEl.classList.contains('acb-narrow')) {
+                  _capEl.classList.remove('acb-narrow');
+                  if (!_same()) _capEl.classList.add('acb-narrow');
+                }
+                _giveFs(_fsStart);
+                _regrow();
+              }
+              if (!_fits() && _nameEl) {
+                var _nmWords = String(_nameEl.textContent || '').trim().split(/\s+/);
+                if (_nmWords.length > 1 && _nameEl.style && typeof document.createElement === 'function') {
+                  if (!_nameEl.querySelector('.fx-unit')) {
+                    while (_nameEl.firstChild) _nameEl.removeChild(_nameEl.firstChild);
+                    for (var _nw = 0; _nw < _nmWords.length; _nw++) {
+                      if (_nw) _nameEl.appendChild(document.createTextNode(' '));
+                      var _nu = document.createElement('span');
+                      _nu.className = 'fx-unit';
+                      _nu.textContent = _nmWords[_nw];
+                      _nameEl.appendChild(_nu);
+                    }
+                  }
+                  var _nmFull = _nameEl.getBoundingClientRect().width, _nmLong = 0;
+                  var _nmUnits = _nameEl.querySelectorAll('.fx-unit');
+                  for (var _nl = 0; _nl < _nmUnits.length; _nl++) _nmLong = Math.max(_nmLong, _nmUnits[_nl].getBoundingClientRect().width);
+                  _nameEl.style.setProperty('display', 'inline-block', 'important');
+                  _nameEl.style.setProperty('white-space', 'normal', 'important');
+                  _nameEl.style.setProperty('text-wrap', 'balance', 'important');
+                  _nameEl.style.setProperty('line-height', '1.05', 'important');
+                  _nameEl.style.setProperty('max-width', Math.ceil(Math.max(_nmLong, _nmFull / 2) + 1) + 'px', 'important');
+                  if (!_fits()) _grow();
+                }
+              }
+              // S6. Japanese and Chinese words, held whole until now
+              // (keep-all), break between their characters as they are set,
+              // before the mark goes under rule 1 (the pending words in a
+              // portrait screen's 237px column, beside Air Canada Express).
+              if (!_fits() && _pending) {
+                var _cjk = el.querySelectorAll ? el.querySelectorAll('[lang="ja"], [lang="zh"], [lang^="zh-"]') : [];
+                for (var _cj = 0; _cj < _cjk.length; _cj++) _cjk[_cj].style.setProperty('word-break', 'normal', 'important');
+                if (_cjk.length && !_fits()) _grow();
+              }
+              if (!_fits() && _logoEl) {
+                var _r1 = _mk(_fs), _min = Math.max(8, _lblPx * 0.75);
+                while (_lh > _min && !_fits()) _setLh(Math.max(_min, _lh - 0.5));
+                if (_lh < _r1 - 0.01 && _capEl.setAttribute) {
+                  _capEl.setAttribute('data-acb-r1', 'short');
+                  try { console.warn('[fit] operator mark under rule 1 (no room at the readable floor):', _logoEl.getAttribute('src'), _lh.toFixed(2) + 'px of ' + _r1.toFixed(2)); } catch (e8) {}
+                }
+              }
               if (!_fits()) {
-                var _mSpans = (el.children && el.children.length) ? el.children : [el];
-                for (var _ms = 0; _ms < _mSpans.length; _ms++) {
-                  _mSpans[_ms].style.setProperty('white-space', 'normal', 'important');
-                  _mSpans[_ms].style.setProperty('overflow-wrap', 'normal', 'important');
-                }
+                el.style.setProperty('overflow-wrap', 'anywhere', 'important');
+                for (var _aw = 0; _aw < _kids.length; _aw++) _kids[_aw].style.setProperty('overflow-wrap', 'anywhere', 'important');
                 el.style.setProperty('white-space', 'normal', 'important');
-                el.style.setProperty('line-height', '1.05', 'important');
-                // 8. A band that cannot hold the wrapped model (a portrait
-                // gate's 237px column) grows to it, never cuts it: the
-                // illustration above gives up the height.
-                if (!_fits()) _grow();
-                if (!_fits()) {
-                  if (el.setAttribute) el.setAttribute('data-fx-over', '1');
-                  el.style.setProperty('overflow', 'visible', 'important');
-                  try { console.warn('[fit] aircraft caption does not fit at the readable floor:', (el.textContent || '').trim()); } catch (e7) {}
-                }
+                _grow();
+                if (el.setAttribute) el.setAttribute('data-fx-over', '1');
+                try { console.warn('[fit] aircraft caption does not fit at the readable floor:', (el.textContent || '').trim()); } catch (e7) {}
               }
             }
+          }
+          // v24004 — THE ART SITS IN THE SKY THE BAND LEAVES. The emblem
+          // (no aircraft yet) and the aircraft picture were placed a fixed
+          // band's height above the panel's foot (--rcp-cap), so a band
+          // that grew covered their feet. The band's real height, after
+          // every pass, is the panel's --rcp-cap-live; the art's box ends on
+          // it (display-overrides.css, v24004).
+          var _illusEl = (typeof _capEl.closest === 'function') ? _capEl.closest('.v2-rc-shelf-illus') : null;
+          if (_illusEl && _illusEl.style) {
+            var _liveH = _capEl.getBoundingClientRect().height;
+            if (_liveH > 0) _illusEl.style.setProperty('--rcp-cap-live', (Math.ceil(_liveH * 64) / 64) + 'px');
+            else _illusEl.style.removeProperty('--rcp-cap-live');
           }
         } catch (e3) {}
         return;
@@ -30495,7 +30769,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24008';
+var FIDS_BUILD_TAG = 'v24009';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
