@@ -20071,12 +20071,10 @@ function gateAutofit(root) {
           // are two thirds of its file. The mark's letters (the file's share
           // of lettering, OPBY_MARK_LETTER_H) now stand at least as tall as
           // the capitals of the type beside it (Bricolage's capitals are 0.66
-          // of its size; 0.75 is used, so the letters keep a margin over the
-          // capitals wherever a browser paints the mark a little shorter:
-          // Linux Chrome drew them 0.4-0.5px under 9px capitals at 0.7), as
-          // well as the box being no smaller than the type (the old floor,
-          // which still decides for a mark of one line of lettering).
-          var _CAP = 0.75;
+          // of its size; 0.7 is used), as well as the box being no smaller
+          // than the type (the old floor, which still decides for a mark of
+          // one line of lettering).
+          var _CAP = 0.7;
           var _frac = (_logoEl && typeof _opbyLetterH === 'function') ? _opbyLetterH(_logoEl.getAttribute('src')) : 1;
           var _opLblEl = _capEl.querySelector('.v2-rc-acb-opby .v2-rc-opby-lline');
           var _opLbl = function () { return _opLblEl ? (parseFloat(window.getComputedStyle(_opLblEl).fontSize) || 0) : 0; };

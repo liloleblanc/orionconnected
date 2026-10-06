@@ -99,7 +99,7 @@ test('the model is twice its label, the operator mark never smaller than the tex
   // the screen to it, measuring the letters off the drawn file.
   assert.match(CORE, /var _mk = function \(px\) \{\s*var ref = Math\.max\(px, _opLbl\(\)\), need = Math\.max\(ref, _hold\);/);
   assert.match(CORE, /need = Math\.max\(need, padV \+ _CAP \* ref \/ _frac\);/);
-  assert.match(CORE, /var _CAP = 0\.75;/);
+  assert.match(CORE, /var _CAP = 0\.7;/);
   assert.match(CORE, /var _frac = \(_logoEl && typeof _opbyLetterH === 'function'\) \? _opbyLetterH\(_logoEl\.getAttribute\('src'\)\) : 1;/);
   assert.match(CORE, /_hold = _capEl\.classList\.contains\('is-pending'\) \? _lh0 : 0;/);
   assert.doesNotMatch(CORE, /_setLh\(Math\.max\(_fs, /, 'every floor of the mark goes through _mk');
