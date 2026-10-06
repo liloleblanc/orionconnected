@@ -109,7 +109,21 @@ const DEP = Date.parse('2026-10-04T21:15:00Z');
 const TZ = 'America/Moncton';
 const row = (o) => Object.assign({ flight: 'AC1987', airline: 'AC', status: 'boarding', _sortTs: DEP, _locIata: 'YYZ', time: '18:15' }, o || {});
 /** Text of markup, tags dropped (the separator and the clock read as written). */
-const textOf = (html) => String(html).replace(/<[^>]*>/g, '');
+const textOf = (html) => {
+  // a scan, not a replace: each tag runs from '<' to the next '>' (CodeQL
+  // js/incomplete-multi-character-sanitization)
+  const s = String(html);
+  let out = '', i = 0;
+  while (i < s.length) {
+    const lt = s.indexOf('<', i);
+    if (lt < 0) { out += s.slice(i); break; }
+    out += s.slice(i, lt);
+    const gt = s.indexOf('>', lt + 1);
+    if (gt < 0) break;
+    i = gt + 1;
+  }
+  return out;
+};
 /** The band's lines: [{ half, lang, dir, text }]. */
 function lines(html) {
   const out = [];
