@@ -235,43 +235,44 @@ const PAGE = `(function () {
 
 const SIZES = [[1680, 1050], [1280, 720], [1280, 1024], [1080, 1920]];
 
-test('the gate caption on screen: one row, nothing over anything, rule 1 on the letters, the art clear of the band', { timeout: 6 * 60 * 1000 }, async (t) => {
+test('the gate caption on screen: one row, nothing over anything, rule 1 on the letters, the art clear of the band', { timeout: 20 * 60 * 1000 }, async (t) => {
   const { serve, browser, CHROME } = await import(HARNESS);
   if (!CHROME) { t.skip('no Chrome or Chromium installed'); return; }
   const server = await serve();
   const port = server.address().port;
-  const b = await browser(330);
   const findings = [];
   const seen = [];
-  try {
-    const { targetInfos } = await b.send('Target.getTargets');
-    const page = targetInfos.find((x) => x.type === 'page');
-    const tid = page ? page.targetId : (await b.send('Target.createTarget', { url: 'about:blank' })).targetId;
-    const { sessionId } = await b.send('Target.attachToTarget', { targetId: tid, flatten: true });
-    const S = (m, p, ms) => b.send(m, p, sessionId, ms);
-    const ev = async (expression, ms) => {
-      const r = await S('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, ms);
-      if (r && r.exceptionDetails) throw new Error('page threw: ' + JSON.stringify(r.exceptionDetails).slice(0, 400));
-      return r && r.result && r.result.value;
-    };
-    await S('Emulation.setDeviceMetricsOverride', { width: SIZES[0][0], height: SIZES[0][1], deviceScaleFactor: 1, mobile: false });
-    await S('Emulation.setFocusEmulationEnabled', { enabled: true });
-    await S('Page.enable'); await S('Runtime.enable');
-    await S('Page.navigate', { url: `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=demo&gate=4` });
-    // The gate in its demonstration mode, held there once its first pass at
-    // the feed (which nothing here can reach) has answered, as the rendered
-    // language check holds it (tests/render/words.mjs, BOARD_UP).
-    const up = await ev(`new Promise(function (res) { var t0 = Date.now(), held = false; (function poll() {
-      try { if (!held && Date.now() - t0 > 3000 && typeof loadDemo === 'function' && data
-          && (window._initialFetchDone === true || Date.now() - t0 > 50000)) { held = true; LIVE_MODE = false; loadDemo(); } } catch (e) {}
-      try { if (held && typeof gateAutofit === 'function' && document.querySelector('.gad-map-col-v2 .v2-rc-acb-cap') && typeof aircraftImgTag === 'function'
-        && typeof _gateLbl === 'function' && document.fonts && document.fonts.status === 'loaded') return res(1); } catch (e) {}
-      if (Date.now() - t0 > 65000) return res(0); setTimeout(poll, 400); })(); })`, 75000);
-    assert.equal(up, 1, 'the gate came up with its caption');
-    assert.equal(await ev(PAGE), 1);
-    const nCases = await ev('window.__capT.count'), nSets = await ev('window.__capT.sets');
-    for (const [w, h] of SIZES) {
+  // One browser for each screen size, each under its own alarm: a single
+  // browser for every size outlived its 330 s alarm on CI's slower runners.
+  const runSize = async (w, h) => {
+    const b = await browser(300);
+    try {
+      const { targetInfos } = await b.send('Target.getTargets');
+      const page = targetInfos.find((x) => x.type === 'page');
+      const tid = page ? page.targetId : (await b.send('Target.createTarget', { url: 'about:blank' })).targetId;
+      const { sessionId } = await b.send('Target.attachToTarget', { targetId: tid, flatten: true });
+      const S = (m, p, ms) => b.send(m, p, sessionId, ms);
+      const ev = async (expression, ms) => {
+        const r = await S('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, ms);
+        if (r && r.exceptionDetails) throw new Error('page threw: ' + JSON.stringify(r.exceptionDetails).slice(0, 400));
+        return r && r.result && r.result.value;
+      };
       await S('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+      await S('Emulation.setFocusEmulationEnabled', { enabled: true });
+      await S('Page.enable'); await S('Runtime.enable');
+      await S('Page.navigate', { url: `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=demo&gate=4` });
+      // The gate in its demonstration mode, held there once its first pass at
+      // the feed (which nothing here can reach) has answered, as the rendered
+      // language check holds it (tests/render/words.mjs, BOARD_UP).
+      const up = await ev(`new Promise(function (res) { var t0 = Date.now(), held = false; (function poll() {
+        try { if (!held && Date.now() - t0 > 3000 && typeof loadDemo === 'function' && data
+            && (window._initialFetchDone === true || Date.now() - t0 > 50000)) { held = true; LIVE_MODE = false; loadDemo(); } } catch (e) {}
+        try { if (held && typeof gateAutofit === 'function' && document.querySelector('.gad-map-col-v2 .v2-rc-acb-cap') && typeof aircraftImgTag === 'function'
+          && typeof _gateLbl === 'function' && document.fonts && document.fonts.status === 'loaded') return res(1); } catch (e) {}
+        if (Date.now() - t0 > 65000) return res(0); setTimeout(poll, 400); })(); })`, 75000);
+      assert.equal(up, 1, `${w}x${h}: the gate came up with its caption`);
+      assert.equal(await ev(PAGE), 1);
+      const nCases = await ev('window.__capT.count'), nSets = await ev('window.__capT.sets');
       await ev('new Promise(function (r) { setTimeout(r, 1800); })');
       for (let si = 0; si < nSets; si++) {
         const set = await ev(`window.__capT.setLangs(${si | 0})`);
@@ -288,9 +289,13 @@ test('the gate caption on screen: one row, nothing over anything, rule 1 on the 
           for (const p of r.problems) findings.push(`${w}x${h} ${set} — ${id}: ${p}`);
         }
       }
+    } finally {
+      b.close();
     }
+  };
+  try {
+    for (const [w, h] of SIZES) await runSize(w, h);
   } finally {
-    b.close();
     server.close();
   }
   if (process.env.CAPTION_RENDER_LOG) fs.writeFileSync(process.env.CAPTION_RENDER_LOG, seen.join('\n') + '\n' + findings.join('\n') + '\n');
