@@ -2871,6 +2871,15 @@ var FIDS_FIT_RULES = [
       return Math.max(r.clientHeight * 0.36, r.clientHeight * 0.92 - (n ? n.offsetHeight : 0));
     } },
   { sel: '.bidsv2-airline-name', lines: 1 },
+  // v24005 — the belt's status: a Delayed row says until when ('Delayed ·
+  // 7:29pm'), the word and the time each a whole piece, on one line or
+  // stacked in the pill with the "·" dropped; any long word is fitted the
+  // same way rather than cut with an ellipsis
+  { sel: '.bidsv3 .b3-status', lines: 2, units: true, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.6 : 0; } },
+  // and the hall's "to be announced" list: its carousel cell (the store's
+  // words in both languages, a whole phrase each) and its column titles
+  { sel: '.bidsv3 .b3-belt', lines: 2, units: true, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.8 : 0; } },
+  { sel: '.bidsv3 .b3-head > div', lines: 1 },
   // the belt sign's band: each language is its own line of the band, inside
   // the band's own padding, and the two share one size (group). The second
   // language was a CSS ::after no script can measure, cut at the card's edge
@@ -3759,8 +3768,11 @@ function changeSubScreen(val) {
 // source: a <select>.value, and — since v23270 — the ?gate=/?belt= query
 // string, which is attacker-supplied in a way a select option never was.
 // Gates and belts are alphanumeric; strip everything else, < > & " included.
+// v24005 — except the em dash, the key of the hall's "to be announced" screen
+// (BIDS_UNASSIGNED): stripped, that screen's key became '' and it listed
+// nobody. It is one inert character, never markup.
 function _fidsSafeSub(val) {
-  return String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
+  return String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-\u2014]/g, '');
 }
 
 // v23270 — WHICH SUB-SCREEN WAS THIS DISPLAY OPENED TO?
@@ -3814,6 +3826,11 @@ function updateSubScreens() {
         locations = [...new Set(locations)].sort();
       }
     } catch (e) {}
+    // v24005 — the flights no feed has put on a belt have a screen of their
+    // own, listed with "to be announced" where a belt number would be
+    // (BIDS_UNASSIGNED). It sorts after every real belt ('—' is past the
+    // ASCII digits and letters), so a hall with belts still opens on one.
+    if (flights.some(f => !f._belt || f._belt === BIDS_UNASSIGNED)) locations.push(BIDS_UNASSIGNED);
     useGate = false;
   } else {
     locations = [...new Set(flights.map(f => f.gate).filter(g => g && g !== '—'))].sort();
@@ -5398,8 +5415,10 @@ function getDedicatedRenderKey() {
     });
   }
   if (screenType === 'baggage') {
-    const arrFlights = (data.arr || []).filter(f => (f._belt === subScreenVal || f.flight === subScreenVal) && (typeof _bidsInWindow !== 'function' || _bidsInWindow(f, Date.now()))).map(f => ({
-      flight:f.flight, status:f.status, time:f.time, airline:f.airline, loc:f._locIata, sort:f._sortTs
+    // v24005 — _bidsOnScreen: the "to be announced" screen lists the flights
+    // with no belt; upd is signed so a revised time beside a Delayed repaints.
+    const arrFlights = (data.arr || []).filter(f => _bidsOnScreen(f, subScreenVal) && (typeof _bidsInWindow !== 'function' || _bidsInWindow(f, Date.now()))).map(f => ({
+      flight:f.flight, status:f.status, time:f.time, upd:f.upd || null, airline:f.airline, loc:f._locIata, sort:f._sortTs
     }));
     return JSON.stringify({screenType, subScreenVal, iata, lang, langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '', flights:arrFlights,
       feed: _fidsFeedDownKey(iata, 'arr')});   // v23998 — the empty belt says when the arrivals feed is down
@@ -5417,6 +5436,43 @@ function getDedicatedRenderKey() {
 // its time by the clock is gone: a gate reads closed when the airport says so.
 // See the phase block in uxgGateHtml.)
 var BIDS_WINDOW_AHEAD_MS = 60 * 60000;
+// v24005 — THE HALL'S "TO BE ANNOUNCED" SCREEN. A flight whose feed gives it
+// no belt (f._belt null: see the belt rules in mapADB) is on no belt's screen
+// and is listed on this one instead, under the '—' key updateSubScreens has
+// always used for a hall with no belts. Its carousel cell reads the store's
+// words (beltTba), never a number. Every reader of a belt's flights (the
+// render key, the renderer, the belt walk) asks this one rule.
+var BIDS_UNASSIGNED = '—';
+// Its rows: the departures board's dark navy, no belt colour.
+var BIDS_TBA_BAR = 'linear-gradient(100deg,rgb(11,36,71) 0%,rgb(20,58,107) 100%)';
+// v24005 — red, amber and green are the status colours (the Cancelled and
+// Diverted bars, the Delayed bar, the Arrived word) and a plain belt bar may
+// not wear them. A colour with a stop whose hue is red (330°–20°), amber,
+// orange or yellow (20°–70°) or green, sea-green included (70°–190°) is a
+// status colour; greys and near-blacks (chroma under 40) are not. Blues,
+// violets, purples and magentas are left for the belts.
+function _bidsIsStatusHue(r, g, b) {
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), c = mx - mn;
+  if (c < 40) return false;
+  var h = mx === r ? (g - b) / c : (mx === g ? (b - r) / c + 2 : (r - g) / c + 4);
+  h = ((h * 60) % 360 + 360) % 360;
+  return h >= 330 || h < 190;
+}
+function _bidsBarIsStatusColour(css) {
+  var re = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)|#([0-9a-f]{6})\b/gi, m;
+  while ((m = re.exec(String(css || '')))) {
+    var r = m[4] ? parseInt(m[4].slice(0, 2), 16) : +m[1];
+    var g = m[4] ? parseInt(m[4].slice(2, 4), 16) : +m[2];
+    var b = m[4] ? parseInt(m[4].slice(4, 6), 16) : +m[3];
+    if (_bidsIsStatusHue(r, g, b)) return true;
+  }
+  return false;
+}
+function _bidsOnScreen(f, sub) {
+  if (!f) return false;
+  if (sub === BIDS_UNASSIGNED) return !f._belt || f._belt === BIDS_UNASSIGNED;
+  return f._belt === sub || f.flight === sub;
+}
 var BIDS_WINDOW_TRAIL_MS = 45 * 60000;
 function _bidsInWindow(f, nowTs) {
   try {
@@ -10585,7 +10641,11 @@ function renderMobileBaggageHtml(ctx) {
     +   '</div>'
     +   '<div style="flex:0 0 auto;text-align:right;">'
     +     '<div style="font-size:10px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;">' + TL('carousel') + '</div>'
-    +     '<div style="font-size:30px;color:' + T.ink + ';font-weight:900;line-height:1;">' + fidsEscHtml(beltVal) + '</div>'
+    // v24005 — the flights no feed has put on a belt: the store's words
+    // where the number would be, never a dash or a number of ours
+    +     ((subScreenVal === BIDS_UNASSIGNED)
+          ? '<div style="font-size:15px;color:' + T.ink + ';font-weight:800;line-height:1.2;margin-top:4px;">' + fidsEscHtml(BoardStrings.bs('beltTba', lang)) + '</div>'
+          : '<div style="font-size:30px;color:' + T.ink + ';font-weight:900;line-height:1;">' + fidsEscHtml(beltVal) + '</div>')
     +   '</div>'
     + '</div>'
     + '<div id="bagBgDiv" style="display:none;"></div>'
@@ -23479,7 +23539,10 @@ const gView = document.getElementById('gateView');
     // its effective arrival until 45 minutes after it (bags on the belt),
     // judged on actual > revised > scheduled time, best known first.
     const arrFlights = (data.arr || []).filter(f =>
-      (f._belt === subScreenVal || f.flight === subScreenVal) && _bidsInWindow(f, Date.now()));
+      _bidsOnScreen(f, subScreenVal) && _bidsInWindow(f, Date.now()));
+    // v24005 — the hall's "to be announced" list: the flights no feed has put
+    // on a belt. It claims no number, so it has no belt sign.
+    const _bidsTba = subScreenVal === BIDS_UNASSIGNED;
 
     var _isMobileBag = (window.innerWidth || document.documentElement.clientWidth) < 700;
     if (_isMobileBag) {
@@ -23528,8 +23591,12 @@ const gView = document.getElementById('gateView');
     // with fixed heights that can't happen, and forcing MORE than fit would
     // overflow/clip the fixed rows.)
     const _bidsFitKey = _logoSize + '|' + Math.round(window.innerHeight);
-    const BIDS_FLIGHTS_PER_PAGE = (_BIDS_FIT.key === _bidsFitKey && _BIDS_FIT.n > 0)
-                                  ? _BIDS_FIT.n
+    // v24005 — the "to be announced" list has a title row a belt has not, so
+    // it keeps a fit of its own: one slot shared with the belts made every
+    // step of the walk between them start again from the estimate.
+    const _BF = _bidsTba ? _BIDS_FIT_TBA : _BIDS_FIT;
+    const BIDS_FLIGHTS_PER_PAGE = (_BF.key === _bidsFitKey && _BF.n > 0)
+                                  ? _BF.n
                                   : _estimatePerPage;
     const BIDS_ROTATE_MS = 10000;
     const _totalPages = Math.max(1, Math.ceil(arrFlights.length / BIDS_FLIGHTS_PER_PAGE));
@@ -23615,13 +23682,21 @@ const gView = document.getElementById('gateView');
     // (assets in /patterns), bars in the accent's own colours. Belts cycle
     // through the set so belts differ at every airport. Yellow and red
     // stay reserved for delayed / cancelled.
+    // v24005 — and green, for the status words: thirteen of these bars were
+    // red, orange, raspberry or green (entry 14 pure red, 13 pure green, 2
+    // and 11 sea green, 12 and 18 ending in teal), so Ottawa's on-time belt
+    // 5 was red and its belt 4 green. Those thirteen now carry blues,
+    // indigos, violets, plums and slate (no two neighbours alike, so belts at
+    // one airport still differ); the seven that were already clear of the
+    // status hues are untouched. tests/belt-honesty.test.js holds every
+    // entry to it, and the pick below falls back to navy if one ever is not.
     var _bidsAccents = [
       { img: '/patterns/bids-accent-1.png', ground: '/patterns/bids-ground-1.jpg',
-        bar: 'linear-gradient(100deg,rgb(121,55,24) 0%,rgb(243,110,49) 100%)',
-        tint: 'rgba(243,110,49,.10)' },
+        bar: 'linear-gradient(100deg,rgb(52,36,86) 0%,rgb(104,78,156) 100%)',
+        tint: 'rgba(104,78,156,.10)' },
       { img: '/patterns/bids-accent-2.png', ground: '/patterns/bids-ground-2.jpg',
-        bar: 'linear-gradient(100deg,rgb(21,90,100) 0%,rgb(65,122,104) 100%)',
-        tint: 'rgba(65,122,104,.10)' },
+        bar: 'linear-gradient(100deg,rgb(14,58,102) 0%,rgb(30,108,170) 100%)',
+        tint: 'rgba(30,108,170,.10)' },
       { img: '/patterns/bids-accent-3.png', ground: '/patterns/bids-ground-3.jpg',
         bar: 'linear-gradient(100deg,rgb(42,47,84) 0%,rgb(79,164,218) 100%)',
         tint: 'rgba(79,164,218,.10)' },
@@ -23635,29 +23710,29 @@ const gView = document.getElementById('gateView');
         bar: 'linear-gradient(100deg,rgb(59,5,149) 0%,rgb(75,7,177) 100%)',
         tint: 'rgba(75,7,177,.10)' },
       { img: '/patterns/bids-accent-7.png', ground: '/patterns/bids-ground-1.jpg',
-        bar: 'linear-gradient(100deg,rgb(118,40,1) 0%,rgb(236,80,3) 100%)',
-        tint: 'rgba(236,80,3,.10)' },
+        bar: 'linear-gradient(100deg,rgb(80,22,90) 0%,rgb(138,50,150) 100%)',
+        tint: 'rgba(138,50,150,.10)' },
       { img: '/patterns/bids-accent-8.png', ground: '/patterns/bids-ground-2.jpg',
-        bar: 'linear-gradient(100deg,rgb(217,32,121) 0%,rgb(217,32,121) 100%)',
-        tint: 'rgba(217,32,121,.10)' },
+        bar: 'linear-gradient(100deg,rgb(36,30,108) 0%,rgb(72,62,182) 100%)',
+        tint: 'rgba(72,62,182,.10)' },
       { img: '/patterns/bids-accent-9.png', ground: '/patterns/bids-ground-3.jpg',
-        bar: 'linear-gradient(100deg,rgb(121,51,17) 0%,rgb(242,103,34) 100%)',
-        tint: 'rgba(242,103,34,.10)' },
+        bar: 'linear-gradient(100deg,rgb(10,68,118) 0%,rgb(22,118,188) 100%)',
+        tint: 'rgba(22,118,188,.10)' },
       { img: '/patterns/bids-accent-10.png', ground: '/patterns/bids-ground-4.jpg',
-        bar: 'linear-gradient(100deg,rgb(120,45,70) 0%,rgb(241,102,146) 100%)',
-        tint: 'rgba(241,102,146,.10)' },
+        bar: 'linear-gradient(100deg,rgb(104,28,116) 0%,rgb(178,58,188) 100%)',
+        tint: 'rgba(178,58,188,.10)' },
       { img: '/patterns/bids-accent-11.png', ground: '/patterns/bids-ground-5.jpg',
-        bar: 'linear-gradient(100deg,rgb(60,88,77) 0%,rgb(60,120,101) 100%)',
-        tint: 'rgba(60,120,101,.10)' },
+        bar: 'linear-gradient(100deg,rgb(38,50,78) 0%,rgb(78,96,138) 100%)',
+        tint: 'rgba(78,96,138,.10)' },
       { img: '/patterns/bids-accent-12.png', ground: '/patterns/bids-ground-6.jpg',
-        bar: 'linear-gradient(100deg,rgb(19,78,109) 0%,rgb(3,127,132) 100%)',
-        tint: 'rgba(3,127,132,.10)' },
+        bar: 'linear-gradient(100deg,rgb(58,38,138) 0%,rgb(108,78,208) 100%)',
+        tint: 'rgba(108,78,208,.10)' },
       { img: '/patterns/bids-accent-13.png', ground: '/patterns/bids-ground-1.jpg',
-        bar: 'linear-gradient(100deg,rgb(0,77,0) 0%,rgb(1,154,1) 100%)',
-        tint: 'rgba(1,154,1,.10)' },
+        bar: 'linear-gradient(100deg,rgb(18,48,136) 0%,rgb(38,88,206) 100%)',
+        tint: 'rgba(38,88,206,.10)' },
       { img: '/patterns/bids-accent-14.png', ground: '/patterns/bids-ground-2.jpg',
-        bar: 'linear-gradient(100deg,rgb(254,19,1) 0%,rgb(254,19,1) 100%)',
-        tint: 'rgba(254,19,1,.10)' },
+        bar: 'linear-gradient(100deg,rgb(68,18,108) 0%,rgb(118,38,168) 100%)',
+        tint: 'rgba(118,38,168,.10)' },
       { img: '/patterns/bids-accent-15.png', ground: '/patterns/bids-ground-3.jpg',
         bar: 'linear-gradient(100deg,rgb(155,1,155) 0%,rgb(222,1,222) 100%)',
         tint: 'rgba(222,1,222,.10)' },
@@ -23665,14 +23740,14 @@ const gView = document.getElementById('gateView');
         bar: 'linear-gradient(100deg,rgb(0,0,0) 0%,rgb(65,22,80) 100%)',
         tint: 'rgba(65,22,80,.10)' },
       { img: '/patterns/bids-accent-17.png', ground: '/patterns/bids-ground-5.jpg',
-        bar: 'linear-gradient(100deg,rgb(103,23,89) 0%,rgb(192,44,111) 100%)',
-        tint: 'rgba(192,44,111,.10)' },
+        bar: 'linear-gradient(100deg,rgb(48,48,146) 0%,rgb(88,88,216) 100%)',
+        tint: 'rgba(88,88,216,.10)' },
       { img: '/patterns/bids-accent-18.png', ground: '/patterns/bids-ground-6.jpg',
-        bar: 'linear-gradient(100deg,rgb(43,53,151) 0%,rgb(6,130,123) 100%)',
-        tint: 'rgba(6,130,123,.10)' },
+        bar: 'linear-gradient(100deg,rgb(18,78,146) 0%,rgb(38,128,206) 100%)',
+        tint: 'rgba(38,128,206,.10)' },
       { img: '/patterns/bids-accent-19.png', ground: '/patterns/bids-ground-1.jpg',
-        bar: 'linear-gradient(100deg,rgb(124,29,14) 0%,rgb(248,58,28) 100%)',
-        tint: 'rgba(248,58,28,.10)' },
+        bar: 'linear-gradient(100deg,rgb(96,38,118) 0%,rgb(158,68,178) 100%)',
+        tint: 'rgba(158,68,178,.10)' },
       { img: '/patterns/bids-accent-20.png', ground: '/patterns/bids-ground-2.jpg',
         bar: 'linear-gradient(100deg,rgb(49,70,237) 0%,rgb(39,105,233) 100%)',
         tint: 'rgba(39,105,233,.10)' },
@@ -23687,7 +23762,18 @@ const gView = document.getElementById('gateView');
     // ALL of the supplied patterns.
     var _bidsApHash = 0;
     try { var _apStr = String(iata || ''); for (var _ai = 0; _ai < _apStr.length; _ai++) _bidsApHash = (_bidsApHash * 31 + _apStr.charCodeAt(_ai)) % 997; } catch (e) {}
+    // v24005 — RED, AMBER AND GREEN ON A BELT SAY A STATUS, NEVER THE BELT.
+    // The bars are coloured by this airport-hash + belt rotation, not by the
+    // airline, and thirteen of its twenty gradients were red, orange or
+    // green: Ottawa's belt 5 put every on-time Porter arrival on a red bar,
+    // belt 4 every row on a green one, and a passenger reads those as
+    // Cancelled and Arrived. Those entries are recoloured in the table above,
+    // and a bar in a status hue (_bidsBarIsStatusColour) is never painted:
+    // only the Delayed / Cancelled / Diverted rows and the status words wear
+    // them. The hall's "to be announced" list has no belt to colour: its rows
+    // take the departures board's dark navy (BIDS_TBA_BAR).
     var _bidsAcc = _bidsAccents[(_bidsApHash + Math.max(1, _bidsBeltNo) - 1) % _bidsAccents.length];
+    if (_bidsTba || _bidsBarIsStatusColour(_bidsAcc.bar)) _bidsAcc = { img: _bidsAcc.img, ground: _bidsAcc.ground, bar: BIDS_TBA_BAR, tint: _bidsAcc.tint };
     // v23769 — DIFFERENT NUMBERS, DIFFERENT COLOURS. The belt sign's palette
     // (band, body, disc, suitcase, handle, conveyor dots, ink for the number)
     // is chosen by the belt NUMBER alone — no airport hash — so belt 1 wears
@@ -23719,6 +23805,13 @@ const gView = document.getElementById('gateView');
     // screen. Default false = the prior design, untouched.
     var _bidsV3On = false;
     try { _bidsV3On = _BIDSV3_ON === true || localStorage.getItem('fids_bidsv3') === '1'; } catch (e) {}
+    // v24005 — the carousel cell of the "to be announced" list: the store's
+    // words in the board's two languages (French first in Québec), each a
+    // whole phrase the shared fitter (FIDS_FIT_RULES: .b3-belt) keeps on one
+    // line with the bar between them, or stacks one under the other.
+    var _bidsTbaHtml = _bidsTba
+      ? BoardStrings.pair('beltTba', { langs: langs, frFirst: iata, cls: 'fx-unit', sep: ' <span class="bs-sep fx-brk">|</span> ' })
+      : '';
     bView.innerHTML = `
       <div class="bidsv2-screen${_bidsV3On ? ' bidsv3' : ''}" style="${_bidsCardVars}--bids-accent-img:url('${_bidsAcc.img}');--bids-ground-img:url('${_bidsAcc.ground}');--bids-bar-grad:${_bidsAcc.bar};--bids-tint:${_bidsAcc.tint};">
 
@@ -23760,12 +23853,16 @@ const gView = document.getElementById('gateView');
           + '</div>';
         })()}
 
-        <!-- Body: carousel block left + flight list right -->
-        <div class="bidsv2-body">
+        <!-- Body: carousel block left + flight list right (v24005: the hall's
+             "to be announced" list is the list alone, full width) -->
+        <div class="bidsv2-body${(_bidsTba && _bidsV3On) ? ' bids-tba' : ''}">
           <!-- Decorative chevron layers behind the carousel block -->
           <div class="bidsv2-chevrons"></div>
 
           ${(function(){
+            // v24005 — the hall's "to be announced" list is the flights no
+            // feed has put on a belt: it claims no belt, so it has no sign.
+            if (_bidsTba && _bidsV3On) return '';
             // v23247 — THE BELT PANEL'S TWO BARS ARE THE BOARD'S OWN LANGUAGES
             // (a MIA screenshot: the dual language was not working properly —
             // top bar CARRUSEL from the rotating slide, bottom bar CARROUSEL
@@ -23858,6 +23955,13 @@ const gView = document.getElementById('gateView');
               <div class="bidsv2-col-time">${_bidsHdr('time')}</div>
               <div class="bidsv2-col-status">${_bidsHdr('status')}</div>
             </div>
+            ${(_bidsTba && _bidsV3On && _pageFlights.length) ? `<div class="b3-head">
+              <div class="b3-h-flight">${_bidsHdr('flight')}</div>
+              <div class="b3-h-from">${_bidsHdr('destArr')}</div>
+              <div class="b3-h-time">${_bidsHdr('time')}</div>
+              <div class="b3-h-belt">${_bidsHdr('carousel')}</div>
+              <div class="b3-h-status">${_bidsHdr('status')}</div>
+            </div>` : ''}
             ${_pageFlights.length ? _pageFlights.map((f) => {
               const stTxt = SL(f.status);
               // Normalize like the FIDS board does — raw string equality
@@ -23906,6 +24010,20 @@ const gView = document.getElementById('gateView');
                                : (_bStKey === 'diverted' ? ' b3-diverted' : ''));
                 const _b3StCls = isArr || isEarly ? 's-arrived' : (isDelayed ? 's-delayed'
                                : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 's-cancelled' : 's-other');
+                // v24005 — A DELAYED ROW SAYS UNTIL WHEN, when the feed says
+                // it. f.upd is the feed's own landed / expected / revised time
+                // (mapADB: runwayTime, else predicted, else revised, kept when
+                // it is more than five minutes off the schedule), the same time
+                // the departures and arrivals boards print in their Revised
+                // column; it was never shown here, so Halifax's AC2048 read
+                // "Delayed 7:10pm" while its feed said 7:29. It goes beside the
+                // word in the board's clock ("Delayed · 7:29pm"), each a whole
+                // piece the shared fitter (FIDS_FIT_RULES: .b3-status) keeps on
+                // one line or stacks, the "·" dropped at the break. No time in
+                // the feed, no time here: the word stands alone as before.
+                const _b3StHtml = (isDelayed && f.upd && f.upd !== f.time)
+                  ? '<span class="fx-unit">' + fidsEscHtml(stTxt) + '</span> <span class="b3-st-sep fx-brk">·</span> <span class="fx-unit b3-st-at">' + fidsEscHtml(_bidsTimeForLang(f.upd)) + '</span>'
+                  : fidsEscHtml(stTxt);
                 const _b3WmOne = '';   // v23350 — lockups are not wordmarks; see the note on the main board
                 // v23967 — the Delayed bar is yellow with navy lettering, so its
                 // wordmark takes the dark artwork, as the bidsv2 row below does.
@@ -23934,7 +24052,8 @@ const gView = document.getElementById('gateView');
                   <div class="b3-flight">${_b3Wm}<div class="b3-num">${fidsEscHtml(_flightDisp)}</div></div>
                   <div class="b3-from"><span class="b3-city">${_cityApHtml(_b3City, _b3Code, false, !!_b3Code)}</span>${_b3Code ? '<span class="b3-tail">\u00a0<span class="b3-sep">|</span>\u00a0<span class="b3-code">' + fidsEscHtml(_b3Code) + '</span></span>' : ''}</div>
                   <div class="b3-time">${fidsEscHtml(_bidsTimeForLang(f.time))}</div>
-                  <div class="b3-status ${_b3StCls}">${fidsEscHtml(stTxt)}</div>
+                  ${_bidsTba ? '<div class="b3-belt">' + _bidsTbaHtml + '</div>' : ''}
+                  <div class="b3-status ${_b3StCls}">${_b3StHtml}</div>
                 </div>`;
               }
               return `<div class="bidsv2-flight-row${_bRowCls}">
@@ -23989,12 +24108,14 @@ Bilingual baggage-hall messages loop in a
           // the per-page count never adapted to the screen height on the
           // live (b3) baggage board — the clipped bottom row on short screens.
           const _rows = bView.querySelectorAll('.b3-row, .bidsv2-flight-row');
-          const _header = bView.querySelector('.bidsv2-list-header');
+          // v24005 — the "to be announced" list shows its column titles
+          // (.b3-head); the bidsv2 header is never drawn on b3.
+          const _header = bView.querySelector('.b3-head') || bView.querySelector('.bidsv2-list-header');
           if (!_list || !_rows || _rows.length === 0) return;
           // Available height = list height minus header (if present) and
           // a little bottom padding to avoid the row kissing the edge.
           const _listH = _list.clientHeight;
-          const _headerH = _header ? _header.offsetHeight : 0;
+          const _headerH = (_header && _header.offsetHeight) ? _header.offsetHeight + (parseFloat(getComputedStyle(_header).marginBottom) || 0) : 0;
           const _rowH = _rows[0].offsetHeight;
           if (_listH <= 0 || _rowH <= 0) return;
           // b3 bars stack with a margin-bottom (none after the last one):
@@ -24006,21 +24127,27 @@ Bilingual baggage-hall messages loop in a
           // is exactly the bottom row that rendered clipped.
           const _lcs = getComputedStyle(_list);
           const _listPad = (parseFloat(_lcs.paddingTop) || 0) + (parseFloat(_lcs.paddingBottom) || 0);
-          const _avail = _listH - _listPad - _headerH - 8; // 8px breathing room
+          // v24005 — and the page count under the rows ("Page 1 / 2"), with
+          // the gap the last row then keeps above it: left out, six rows were
+          // fitted on a 1080 belt and the count went under the list's clipped
+          // edge, so nothing said a second page of arrivals existed.
+          const _pg = bView.querySelector('.bidsv2-page-indicator');
+          const _pgH = (_pg && _pg.offsetHeight) ? _pg.offsetHeight + _rowGap : 0;
+          const _avail = _listH - _listPad - _headerH - _pgH - 8; // 8px breathing room
           let _fit = Math.max(1, Math.floor((_avail + _rowGap) / (_rowH + _rowGap)));
           _fit = Math.min(_fit, 40);
           const _key = (document.body.dataset.fidsLogoSize || BOARD_DENSITY_FALLBACK) + '|' + Math.round(window.innerHeight);
-          if (_BIDS_FIT.key !== _key) { _BIDS_FIT.key = _key; _BIDS_FIT.n = 0; _BIDS_FIT.capped = false; }
-          const _current = _BIDS_FIT.n || _estimatePerPage;
+          if (_BF.key !== _key) { _BF.key = _key; _BF.n = 0; _BF.capped = false; }
+          const _current = _BF.n || _estimatePerPage;
           // Sticky cap: shrinking (real overflow) always applies and locks;
           // growing is only allowed while no overflow has ever forced a
           // shrink on this key. Without the lock the fit pulsed grow ->
           // overflow -> shrink -> grow on the wall.
           let _next = _current;
-          if (_fit < _current) { _next = _fit; _BIDS_FIT.capped = true; }
-          else if (_fit > _current && !_BIDS_FIT.capped) { _next = _fit; }
-          if (_next !== _BIDS_FIT.n) {
-            _BIDS_FIT.n = _next;
+          if (_fit < _current) { _next = _fit; _BF.capped = true; }
+          else if (_fit > _current && !_BF.capped) { _next = _fit; }
+          if (_next !== _BF.n) {
+            _BF.n = _next;
             // The DEDICATED renderer owns this screen. render() is the main
             // table's — routing the refit through it was repainting the
             // wrong surface and never applying the corrected count here.
@@ -24051,7 +24178,11 @@ function _b3FitList(root) {
   if (!view) return 0;
   var list = view.querySelector('.bidsv3 .bidsv2-flight-list');
   var w = list ? (list.clientWidth || 0) : 0;
-  var u = w ? (w / 1141) : ((window.innerWidth || 1920) / 1920);
+  // v24005 — the "to be announced" list has no sign beside it: it is the
+  // whole 1840px body on a 1920 kiosk, and its bars are drawn for that width
+  // (one more cell, the carousel's), so the unit is 1 there as it is on a belt.
+  var design = view.querySelector('.bidsv3 .bidsv2-body.bids-tba') ? 1840 : 1141;
+  var u = w ? (w / design) : ((window.innerWidth || 1920) / 1920);
   u = Math.max(0.3, Math.min(3, u));
   view.style.setProperty('--b3u', u.toFixed(4) + 'px');
   return u;
@@ -24145,6 +24276,7 @@ try {
 // real overflow, the fit may not grow again under the same key — grow ->
 // overflow -> shrink -> grow was a visible pulse on the wall.
 var _BIDS_FIT = { key: '', n: 0, capped: false };
+var _BIDS_FIT_TBA = { key: '', n: 0, capped: false };   // v24005 — the "to be announced" list's
 
 const AP = {
   YYZ:{ name:'Toronto Pearson International Airport',                tz:'America/Toronto', sub:'Pearson' },
@@ -30314,7 +30446,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24004';
+var FIDS_BUILD_TAG = 'v24005';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -35886,7 +36018,8 @@ function mapADB(raw, mode, kept) {
     //        can't trust to place correctly.
     //      - At single-terminal airports → use the raw belt number.
     //
-    //   C) ADB provides no belt at all → synthesize per-airport (YQM only).
+    //   C) ADB provides no belt at all → synthesize per-airport (YQM only);
+    //      every other airport leaves it null (v24005: never a made-up '1').
     //
     // Known multi-terminal airports — orphan flights (belt without terminal)
     // get dropped from BIDS here. Add airports to this set as needed.
@@ -35907,6 +36040,10 @@ function mapADB(raw, mode, kept) {
     const _NATIVE_BELT_AIRPORTS = new Set(['YUL', 'YHU', 'MCO']);
 
     let _belt = f.arrival?.baggageBelt || null;
+    // v24005 — a feed's own word for "no belt" is no belt: Boston's feed
+    // writes "None" into the field, and its belt sign read "None" where the
+    // number goes. ('INTL' is Boston's name for a real claim area and stays.)
+    if (_belt != null && /^\s*(none|null|undefined|n\/?a|tba|tbd|-+|—+)?\s*$/i.test(String(_belt))) _belt = null;
     if (mode === 'arr') {
       const _apForBelt = document.getElementById('apSel').value;
       if (_apForBelt === 'YQM') {
@@ -35955,12 +36092,15 @@ function mapADB(raw, mode, kept) {
           }
         }
       } else {
-        // No belt in the feed. At multi-terminal airports NEVER fabricate
-        // Carousel 1 — an
-        // honest '—' beats sending a traveler to the wrong belt. Small
-        // single-terminal airports keep the '1' default (YQM precedent:
-        // synthesized beats blank there).
-        _belt = _MULTI_TERMINAL_AIRPORTS.has(_apForBelt) ? null : '1';
+        // v24005 — NO BELT IN THE FEED, NO BELT ON THE SCREEN. This used to
+        // make every arrival "Baggage claim 1" at any airport outside the
+        // multi-terminal list: all 17 of Halifax's, and Detroit's 256 on "belt
+        // 1, page 2 of 26". Nobody published that 1. A flight the feed gives
+        // no belt has none here (null): the belt screens leave it out and the
+        // hall's "to be announced" list (BIDS_UNASSIGNED, updateSubScreens)
+        // carries it. Moncton's 1/2 split above is the one belt we work out
+        // ourselves, and it is untouched.
+        _belt = null;
       }
     }
     const _checkIn = f.departure?.checkInDesk || null;
@@ -52194,10 +52334,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // If NOTHING is due anywhere, fall back to the full set rather than
         // showing no carousel at all: at 3am an honest empty belt is right.
         var _all = ((typeof data !== 'undefined' && data && data.arr) || []);
+        // v24005 — a flight with no belt in its feed is walked to on the
+        // hall's "to be announced" screen ('—', BIDS_UNASSIGNED), last, after
+        // every real belt; it is never put on a belt of our choosing.
         var _uniq = function (list) {
-          var v = list.map(function (f) { return f._belt; })
-                      .filter(function (x) { return x && x !== '—'; });
-          return v.filter(function (x, i) { return v.indexOf(x) === i; }).sort();
+          var v = list.map(function (f) { return f._belt || '—'; });
+          v = v.filter(function (x, i) { return v.indexOf(x) === i; });
+          var tba = v.indexOf('—') >= 0;
+          v = v.filter(function (x) { return x !== '—'; }).sort();
+          return tba ? v.concat(['—']) : v;
         };
         var _now = Date.now();
         var _due = _uniq(_all.filter(function (f) {

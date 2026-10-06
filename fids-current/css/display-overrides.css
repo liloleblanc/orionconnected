@@ -19426,6 +19426,45 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   padding: .3vh 4% 2.6vh !important;
 }
 
+/* v24005 — THE HALL'S "TO BE ANNOUNCED" LIST.
+   A flight whose feed gives it no belt is on no belt's screen: the flights
+   like it are listed on a screen of their own (fids-core.js BIDS_UNASSIGNED,
+   .bidsv2-body.bids-tba), in the departures board's grammar. No belt sign
+   (it would claim a number nobody published), the list across the whole
+   body, the column titles shown, dark navy bars (the renderer stamps
+   BIDS_TBA_BAR as the bar colour) and a carousel cell between the time and
+   the status that reads the store's "To be announced | À venir". Delayed,
+   Cancelled and Diverted bars keep their own colours. The cells are drawn
+   for the 1840px body of a 1920 kiosk (_b3FitList), in the bar's own unit.
+   Kept inside the flat block, which owns the b3 surface (bids-flat.test). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-body.bids-tba {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-body.bids-tba .bidsv2-flight-list {
+  grid-column: 1 / -1 !important;
+}
+.bidsv3 .bids-tba .b3-head {
+  display: flex; align-items: flex-end; flex-shrink: 0;
+  gap: calc(16 * var(--b3u, 1px));
+  padding: 0 calc(29 * var(--b3u, 1px));
+  margin-bottom: calc(12 * var(--b3u, 1px));
+  font-size: calc(20 * var(--b3u, 1px)); font-weight: 800; line-height: 1.15;
+  color: #16283C; white-space: nowrap;
+}
+.bidsv3 .bids-tba .b3-head > div { min-width: 0; }
+.bidsv3 .bids-tba .b3-h-flight { flex: 0 0 calc(295 * var(--b3u, 1px)); }
+.bidsv3 .bids-tba .b3-h-from { flex: 1 1 auto; }
+.bidsv3 .bids-tba .b3-h-time { flex: 0 0 calc(175 * var(--b3u, 1px)); text-align: right; }
+.bidsv3 .bids-tba .b3-h-belt { flex: 0 0 calc(300 * var(--b3u, 1px)); text-align: center; }
+.bidsv3 .bids-tba .b3-h-status { flex: 0 0 calc(215 * var(--b3u, 1px)); text-align: center; }
+.bidsv3 .b3-belt {
+  flex: 0 0 calc(300 * var(--b3u, 1px)); min-width: 0;
+  text-align: center; white-space: nowrap;
+  font-size: calc(26 * var(--b3u, 1px)); font-weight: 800; line-height: 1.12;
+}
+.bidsv3 .b3-belt .bs-sep,
+.bidsv3 .b3-status .b3-st-sep { opacity: .6; }
+
 /* ═══════════════════════════════════════════════════════════════════════
    v23769 — ONE SIGN FOR EVERY AIRLINE.
 

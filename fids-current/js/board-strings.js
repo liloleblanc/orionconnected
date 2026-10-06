@@ -405,6 +405,11 @@
     // Tampa's own name for its satellite terminals (Airside A/C/E/F); it publishes no other language, so the others are careful translations.
     airside: { en: 'Airside', fr: 'Satellite', es: 'Satélite', de: 'Satellit', it: 'Satellite', pt: 'Satélite', ja: 'サテライト', zh: '卫星厅', ar: 'المبنى الفرعي',
       $src: { en: 'airport:TPA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // v24005 — the baggage hall's carousel cell for a flight whose feed gives
+    // it no belt (fids-core.js BIDS_UNASSIGNED): said in place of a number,
+    // never a number of our choosing. The French is the house wording.
+    beltTba: { en: 'To be announced', fr: 'À venir', es: 'Por anunciar', de: 'Wird bekannt gegeben', it: 'Da comunicare', pt: 'A definir', ja: '後ほどご案内', zh: '待公布', ar: 'سيُعلن لاحقًا',
+      $src: { en: 'house', fr: 'house', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // ALL is Accor Live Limitless, the brand; only the word for rating is translated.
     allRating: { en: '(ALL rating)', fr: '(note ALL)', es: '(valoración ALL)', de: '(ALL-Bewertung)', it: '(valutazione ALL)', pt: '(avaliação ALL)', ja: '(ALL評価)', zh: '(ALL评分)', ar: '(تقييم ALL)' },
 
