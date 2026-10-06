@@ -375,3 +375,17 @@ html[data-i18n-provenance] [data-i18n-src="careful"]::after {
   vertical-align: super;
   margin-inline-start: 0.15em;
 }
+
+/* ── v24008 — DAY AND NIGHT: THE CROSSFADE A SURFACE OPTS INTO ──────────────
+   js/fids-sun.js puts fids-day or fids-night on <html> for the board's own
+   airport and moves it at that airport's sunrise and sunset. A surface that
+   changes between the two looks adds .fids-dn-fade and changes over two
+   seconds instead of cutting. The transition waits for fids-dn-ready, which
+   the engine adds only after the first state has been painted, so a screen
+   booting at night comes up dark rather than fading from light. */
+:root { --fids-dn-fade: 2s; }
+html.fids-dn-ready .fids-dn-fade {
+  transition: background-color var(--fids-dn-fade) ease, color var(--fids-dn-fade) ease,
+    border-color var(--fids-dn-fade) ease, box-shadow var(--fids-dn-fade) ease,
+    opacity var(--fids-dn-fade) ease, fill var(--fids-dn-fade) ease, stroke var(--fids-dn-fade) ease;
+}
