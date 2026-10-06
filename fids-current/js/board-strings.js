@@ -246,7 +246,55 @@
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     genboard: { en: 'General boarding', fr: 'Embarquement général', es: 'Embarque general', de: 'Allgemeines Boarding', it: 'Imbarco generale', pt: 'Embarque geral', ja: '一般搭乗', zh: '普通登机', ar: 'صعود عام',
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    photoId: { en: 'Have your ID ready for presentation', fr: 'Veuillez avoir votre pièce d’identité prête', es: 'Tenga su identificación con foto lista', de: 'Halten Sie Ihren Lichtbildausweis bereit', it: 'Tenete pronto un documento con foto', pt: 'Tenha sua identificação com foto pronta', ja: '写真付き身分証明書をご用意ください', zh: '请准备好带照片的身份证件', ar: 'يرجى تجهيز بطاقة هوية تحمل صورة',
+    // v24006 — what the rule says, in every language: GOVERNMENT-ISSUED ID.
+    // Seven languages (es, de, it, pt, ja, zh, ar) asked for an ID with a
+    // photo, English and French for plain ID. The Secure Air Travel Regulations
+    // (SOR/2015-181 s.3(1)) accept one government ID with a photo, name and
+    // date of birth OR two government IDs without a photo, so "photo"
+    // over-claimed.
+    // The words are the ones the documents research used for that rule
+    // (U2 docId18: amtlicher Ausweis, identificación oficial, 政府発行の身分証明書…).
+    photoId: { en: 'Have your government-issued ID ready for presentation', fr: 'Veuillez avoir votre pièce d’identité gouvernementale prête', es: 'Tenga lista su identificación oficial', de: 'Halten Sie Ihren amtlichen Ausweis bereit', it: 'Tenete pronto il documento d’identità ufficiale', pt: 'Tenha seu documento oficial de identidade em mãos', ja: '政府発行の身分証明書をご用意ください', zh: '请准备好政府签发的身份证件', ar: 'يرجى تجهيز هوية صادرة عن جهة حكومية',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // ── v24006 — THE BOARDING SCREEN'S DOCUMENTS LINE (_gateBandHtml) ──────
+    // One line for the whole of boarding, under NOW BOARDING, chosen by the
+    // flight's route (_gateDocsVariant). Each restates a published rule and
+    // adds nothing to it:
+    //   docsDomestic       a Canadian domestic flight: CATSA's "Have your
+    //                      boarding pass ready" and SOR/2015-181 s.3's
+    //                      government ID at the gate (catsa-acsta.gc.ca,
+    //                      tips-stress-free-screening; laws-lois.justice.gc.ca
+    //                      SOR-2015-181). French « carte d'embarquement » is
+    //                      the government's and CATSA's word (Air Canada's own
+    //                      page says « carte d'accès à bord »; one word for
+    //                      every airline, the screening authority's).
+    //   docsPassOnly       a domestic flight outside Canada: the boarding
+    //                      pass only (the U.S. ID rule is the TSA's, at the
+    //                      checkpoint, not the gate); CATSA's own words.
+    //   docsPassport       a flight from Canada to the U.S. from an airport
+    //                      without U.S. preclearance, and every international
+    //                      flight (SOR/2015-181 s.4; travel.gc.ca).
+    //   docsPassportNexus  a flight to the U.S. from one of the ten Canadian
+    //                      preclearance airports (cbp.gov/travel/preclearance;
+    //                      travel.gc.ca/destinations/united-states: "a valid
+    //                      NEXUS card"). Never Porter at Billy Bishop: Porter's
+    //                      own NEXUS page names Pearson and Ottawa only.
+    //   docsVisa           an international flight, under the passport line
+    //                      (travel.gc.ca/travelling/documents/visas; "travel
+    //                      authorization" covers every scheme, so no scheme's
+    //                      name can go stale). French and Spanish say it in
+    //                      the plural, as a notice to everyone at the gate:
+    //                      the singular « Visa » / "Visa" spells the English
+    //                      word, which the guard reads as one left untranslated.
+    docsDomestic: { en: 'Boarding pass and ID ready', fr: 'Carte d’embarquement et pièce d’identité en main', es: 'Tarjeta de embarque e identificación a mano', de: 'Bordkarte und Ausweis bereithalten', it: 'Carta d’imbarco e documento pronti', pt: 'Cartão de embarque e documento em mãos', ja: '搭乗券と身分証明書をご用意ください', zh: '请备好登机牌和身份证件', ar: 'جهّز بطاقة الصعود والهوية',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    docsPassOnly: { en: 'Have your boarding pass ready', fr: 'Ayez votre carte d’embarquement à portée de main', es: 'Tenga lista su tarjeta de embarque', de: 'Halten Sie Ihre Bordkarte bereit', it: 'Tenete pronta la carta d’imbarco', pt: 'Tenha seu cartão de embarque em mãos', ja: '搭乗券をご用意ください', zh: '请准备好登机牌', ar: 'يرجى تجهيز بطاقة الصعود إلى الطائرة',
+      $src: { en: 'gov:CATSA', fr: 'gov:CATSA', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    docsPassport: { en: 'Have your passport ready', fr: 'Ayez votre passeport à portée de main', es: 'Tenga listo su pasaporte', de: 'Halten Sie Ihren Reisepass bereit', it: 'Tenete pronto il passaporto', pt: 'Tenha seu passaporte em mãos', ja: 'パスポートをご用意ください', zh: '请准备好护照', ar: 'يرجى تجهيز جواز السفر',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    docsPassportNexus: { en: 'Have your passport or NEXUS card ready', fr: 'Ayez votre passeport ou carte NEXUS à portée de main', es: 'Tenga listo su pasaporte o tarjeta NEXUS', de: 'Halten Sie Reisepass oder NEXUS-Karte bereit', it: 'Tenete pronto il passaporto o la carta NEXUS', pt: 'Tenha seu passaporte ou cartão NEXUS em mãos', ja: 'パスポートまたはNEXUSカードをご用意ください', zh: '请准备好护照或NEXUS卡', ar: 'يرجى تجهيز جواز السفر أو بطاقة NEXUS',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    docsVisa: { en: 'Visa or travel authorization if required', fr: 'Visas ou autorisations de voyage, s’il y a lieu', es: 'Visas o autorizaciones de viaje, si corresponde', de: 'Visum oder Reisegenehmigung, falls erforderlich', it: 'Visto o autorizzazione di viaggio, se richiesti', pt: 'Visto ou autorização de viagem, se exigidos', ja: '必要な方はビザまたは渡航認証', zh: '如有需要：签证或电子旅行许可', ar: 'تأشيرة أو تصريح سفر إلكتروني عند الاقتضاء',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // Porter's own pre-boarding list, as Porter publishes it in English and
     // French (flyporter.com, Boarding process, "Boarding order" / « Ordre
@@ -532,6 +580,11 @@
         $src: { en: 'airline:F8', fr: 'airline:F8', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     boardingEnds: { en:'Boarding ends {MIN} min before departure · {TIME}', fr:'Fin de l’embarquement {MIN} min avant le départ · {TIME}', es:'El embarque termina {MIN} min antes de la salida · {TIME}', de:'Boarding endet {MIN} Min. vor Abflug · {TIME}', it:'L’imbarco termina {MIN} min prima della partenza · {TIME}', pt:'O embarque termina {MIN} min antes da partida · {TIME}', ja:'搭乗は出発{MIN}分前に終了 · {TIME}', zh:'登机于起飞前{MIN}分钟结束 · {TIME}', ar:'ينتهي الصعود قبل {MIN} دقيقة من المغادرة · {TIME}',
         $src: { en: 'airline:AA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // v24006 — WestJet's own word: "Boarding cut-off: 15 minutes before
+    // departure" / « Heure limite pour l'embarquement : 15 minutes avant le
+    // départ » (westjet.com/en-ca/manage/check-in and fr-ca, read 2026-10-05).
+    boardingCutoff: { en:'Boarding cut-off {MIN} min before departure · {TIME}', fr:'Heure limite pour l’embarquement {MIN} min avant le départ · {TIME}', es:'Hora límite de embarque {MIN} min antes de la salida · {TIME}', de:'Boarding-Schluss {MIN} Min. vor Abflug · {TIME}', it:'Termine dell’imbarco {MIN} min prima della partenza · {TIME}', pt:'Limite para embarque {MIN} min antes da partida · {TIME}', ja:'搭乗締切は出発{MIN}分前 · {TIME}', zh:'登机截止于起飞前{MIN}分钟 · {TIME}', ar:'آخر موعد للصعود قبل {MIN} دقيقة من المغادرة · {TIME}',
+        $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     gateBeAt: { en:'Be at the gate {MIN} min before departure · {TIME}', fr:'Présentez-vous à la porte {MIN} min avant le départ · {TIME}', es:'Esté en la puerta {MIN} min antes de la salida · {TIME}', de:'{MIN} Min. vor Abflug am Gate sein · {TIME}', it:'Presentarsi al gate {MIN} min prima della partenza · {TIME}', pt:'Esteja no portão {MIN} min antes da partida · {TIME}', ja:'出発{MIN}分前までに搭乗口へ · {TIME}', zh:'请于起飞前{MIN}分钟到达登机口 · {TIME}', ar:'كونوا عند البوابة قبل {MIN} دقيقة من المغادرة · {TIME}',
         $src: { en: 'airline:DL', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // The same rules as one ticker line, on a board showing one airline only
@@ -544,6 +597,22 @@
         $src: { en: 'airline:AA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     tickerGateBeAt: { en:'{AIRLINE}: BE AT THE BOARDING GATE {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : PRÉSENTEZ-VOUS À LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: PRESÉNTESE EN LA PUERTA DE EMBARQUE {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: SEIEN SIE {MIN} MINUTEN VOR ABFLUG AM GATE', it:'{AIRLINE}: PRESENTARSI AL GATE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: ESTEJA NO PORTÃO DE EMBARQUE {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：出発{MIN}分前までに搭乗口へお越しください', zh:'{AIRLINE}：请于起飞前{MIN}分钟到达登机口', ar:'{AIRLINE}: يرجى التواجد عند بوابة الصعود قبل {MIN} دقيقة من المغادرة',
         $src: { en: 'airline:DL', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    tickerBoardingCutoff: { en:'{AIRLINE}: BOARDING CUT-OFF {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : HEURE LIMITE POUR L’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: HORA LÍMITE DE EMBARQUE {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: BOARDING-SCHLUSS {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: TERMINE DELL’IMBARCO {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: LIMITE PARA EMBARQUE {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗締切は出発{MIN}分前です', zh:'{AIRLINE}：登机截止于起飞前{MIN}分钟', ar:'{AIRLINE}: آخر موعد للصعود قبل {MIN} دقيقة من المغادرة',
+        $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // v24006 — THE SAME DEADLINE ON THE BOARDING SCREEN (_gateBandHtml): the
+    // airline's own word and the clock time, for the whole of boarding, on
+    // the band under NOW BOARDING. {TIME} is the clock in that language's own
+    // convention (_fidsClockForLang). Only the airlines that publish a time
+    // the gate or boarding CLOSES: a be-at-the-gate deadline (PAL, Delta,
+    // United) is not a close time and is never printed here.
+    closeAtGate: { en:'Gate closes {TIME}', fr:'Fermeture de la porte {TIME}', es:'Cierre de la puerta {TIME}', de:'Gate-Schließung {TIME}', it:'Chiusura del gate {TIME}', pt:'Fechamento do portão {TIME}', ja:'搭乗口締切 {TIME}', zh:'登机口关闭 {TIME}', ar:'إغلاق البوابة {TIME}',
+        $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    closeAtCutoff: { en:'Boarding cut-off {TIME}', fr:'Heure limite pour l’embarquement {TIME}', es:'Hora límite de embarque {TIME}', de:'Boarding-Schluss {TIME}', it:'Termine dell’imbarco {TIME}', pt:'Limite para embarque {TIME}', ja:'搭乗締切 {TIME}', zh:'登机截止 {TIME}', ar:'آخر موعد للصعود {TIME}',
+        $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    closeAtBoarding: { en:'Boarding closes {TIME}', fr:'Fin de l’embarquement {TIME}', es:'Cierre del embarque {TIME}', de:'Boarding-Ende {TIME}', it:'Chiusura dell’imbarco {TIME}', pt:'Encerramento do embarque {TIME}', ja:'搭乗締切 {TIME}', zh:'登机截止 {TIME}', ar:'انتهاء الصعود {TIME}',
+        $src: { en: 'airline:F8', fr: 'airline:F8', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    closeAtEnds: { en:'Boarding ends {TIME}', fr:'Fin de l’embarquement {TIME}', es:'Fin del embarque {TIME}', de:'Boarding-Ende {TIME}', it:'Fine dell’imbarco {TIME}', pt:'Fim do embarque {TIME}', ja:'搭乗終了 {TIME}', zh:'登机结束 {TIME}', ar:'انتهاء الصعود {TIME}',
+        $src: { en: 'airline:AA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v23973 — LATER AT THIS GATE (_gateLaterStripHtml, _gateChangeNoticeHtml).
     // The strip's title; the label before a moved flight's new gate number
     // ("now Gate 2 | maintenant porte 2", the number in its own pill); the

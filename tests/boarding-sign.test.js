@@ -274,19 +274,19 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(T, /^  priority:\s*\{ en:'Priority',\s*fr:'Prioritaire'/m, 'Priority | Prioritaire');
   assert.match(T, /^  nowBoarding: \{ en:'Now Boarding', fr:'Embarquement',/m, 'the strip says Embarquement, plain');
   assert.match(SRC, /^  nowBoarding:\{ en:'NOW BOARDING',fr:'EMBARQUEMENT',/m, 'and so does the board countdown');
-  assert.equal(STORE.bs('photoId', 'en'), 'Have your ID ready for presentation', 'the reminder');
-  assert.equal(STORE.bs('photoId', 'fr'), 'Veuillez avoir votre pièce d’identité prête', 'in French');
-  // The strip carries the reminder for Porter's general phase only, gated by
-  // the same five-minute rule the sign uses for pre-boarding.
-  const noteFn = fn('_pdIdNote');
-  assert.match(noteFn, /if \(airlineCode !== 'PD' \|\| \(minsToDep > \(_boardLeadShown - 5\)\)\) return '';/, 'Porter, and never during pre-boarding');
-  assert.match(noteFn, /_gateLbl\('photoId', _frF/, 'it is the photoId label');
+  // v24006 — the reminder says what the rule says (government-issued ID, in
+  // every language), and it has moved off the strip to the band under it
+  // (_boardBandHtml), where every airline's documents line now is.
+  assert.equal(STORE.bs('photoId', 'en'), 'Have your government-issued ID ready for presentation', 'the reminder');
+  assert.equal(STORE.bs('photoId', 'fr'), 'Veuillez avoir votre pièce d’identité gouvernementale prête', 'in French');
+  assert.equal(SRC.indexOf('function _pdIdNote('), -1, 'the strip note is gone');
   const stripAt = SRC.indexOf('function _boardWelcomeStripHtml(');
   const strip = SRC.slice(stripAt, SRC.indexOf('\n  }\n', stripAt));
-  assert.match(strip, /var _bwNote = \(String\(_stripState \|\| ''\) === 'boarding'\) \? _pdIdNote\(\) : '';/, 'the strip prints it while boarding');
-  assert.match(strip, /'<div class="g8-bw-text">' \+ _bwMidWords \+ _bwNote \+ '<\/div>'/, 'under the phase words');
-  assert.match(SRC, /'<div class="g8-final-hdr">' \+ finalHdr \+ _pdIdNote\('g8-final-note'\) \+ '<\/div>'/, 'and the final-call header prints it too — it must not vanish for the last minutes');
-  assert.doesNotMatch(assembly(), /_g8SignLines\('photoId'\)/, 'and no longer in the column');
+  assert.doesNotMatch(strip, /_bwNote|g8-bw-note|photoId/, 'the strip holds its headline alone');
+  assert.match(strip, /'<div class="g8-bw-text">' \+ _bwMidWords \+ '<\/div>'/, 'the phase words alone, at full size');
+  assert.match(assembly(), /\+ _boardWelcomeStripHtml\('boarding'\)\s*\+ _boardBandHtml\(\)/, 'the band under NOW BOARDING');
+  assert.match(SRC, /'<div class="g8-final-hdr">' \+ finalHdr \+ '<\/div>'[\s\S]{0,400}\+ _boardBandHtml\(\)/, 'and under FINAL CALL: it must not vanish for the last minutes');
+  assert.doesNotMatch(assembly(), /_g8SignLines\('photoId'\)/, 'and not in the column');
   // Only a numeral earns the row; a word value (All | Toutes at the final
   // call) keeps its own size under its word, or the row's numeral size
   // would blow it past the column.
@@ -324,7 +324,7 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   const sels = [...block.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/^html[^{]*?(?=\s*\{)/gm)].map((m) => m[0]);
   assert.ok(sels.length >= 12, `expected the block's selectors, found ${sels.length}`);
   for (const s of sels) assert.ok((s.match(/:not\(#_\)/g) || []).length >= 16, `"${s.slice(-70)}" must carry 16 guards`);
-  for (const sel of ['.g8-sign .g8-sign-row {', '.g8-sign .g8-sign-label {', '.g8-sign .g8-sign-sub .g8-pair-h[lang="fr"] {', '.g8-board-welcome .g8-bw-text .g8-bw-note {', '.g8-final-hdr .g8-bw-note {', '.g8-sign .g8-sign-value.g8-grp-txt {', '.g8-sign .g8-sign-col.has-note:not(.has-roster) .g8-sign-title {']) {
+  for (const sel of ['.g8-sign .g8-sign-row {', '.g8-sign .g8-sign-label {', '.g8-sign .g8-sign-sub .g8-pair-h[lang="fr"] {', '.g8-sign .g8-sign-value.g8-grp-txt {', '.g8-sign .g8-sign-col.has-note:not(.has-roster) .g8-sign-title {']) {
     assert.ok(block.indexOf(sel) >= 0, sel + ' must be styled');
   }
   assert.match(block, /\.g8-sign-row \{[^}]*flex-direction: row !important;[^}]*align-items: center !important;[^}]*margin: auto 0 !important;/s, 'the word beside the number, centred on it, and the row floats like the number did');
@@ -336,9 +336,15 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(block, /\.g8-sign-sub \.g8-pair-h\[lang="fr"\] \{ color: #2e86de !important; \}/, "Porter's French half in Porter blue, by language");
   assert.doesNotMatch(block, /\.g8-pair-sep \+ \.g8-pair-h \{ color/, 'never by position');
   assert.match(block, /\[data-gate-airline="PD"\]/, 'scoped to Porter');
-  const note = block.slice(block.indexOf('.g8-bw-note {'), block.indexOf('}', block.indexOf('.g8-bw-note {')));
-  assert.match(note, /color: #c2410c !important;/, 'an attention colour');
-  assert.doesNotMatch(note, /#f87171|#ef4444|#dc2626|#ff0000|\bred\b/, 'never bright red — it is not an emergency');
+  // v24006 — no rule styles the strip's old reminder; the band that took its
+  // place is painted in the airline's own pair, never a status colour
+  assert.doesNotMatch(block.replace(/\/\*[\s\S]*?\*\//g, ''), /\.g8-bw-note/, 'the strip note has no styles left');
+  const bAt2 = block.indexOf("v24006 — THE BOARDING SCREEN'S BAND");
+  assert.ok(bAt2 > 0, 'the band block must exist');
+  const band = block.slice(bAt2).replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(band, /\.g8-band \.g8-band-docs \{[^}]*background: var\(--rc2-a, #0c1119\) !important;[^}]*color: var\(--rc2-a-ink, #ffffff\) !important;/, "the documents on the airline's first colour, in its ink");
+  assert.match(band, /\.g8-band \.g8-band-close \{[^}]*background: var\(--rc2-b, #0c1119\) !important;[^}]*color: #ffffff !important;/, 'the close time white on its second');
+  assert.doesNotMatch(band, /#c2410c|#f59e0b|#fbbf24|#dc2626|#ef4444|#f87171|#22c55e|#16a34a|#34d399|animation|transition|@keyframes/i, 'no status colour, nothing moves');
   assert.match(block, /\.g8-sign \.g8-sign-marks, [^{]*\.g8-sign \.g8-sign-kicker \{ display: none !important; \}/, 'marks and kicker cannot leak back');
   // A cabin pair can be long (Economy Class | Classe économique). The rule is
   // one line per pair, so the pass shrinks a sign pair to its column before
