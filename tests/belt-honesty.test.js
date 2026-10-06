@@ -11,18 +11,26 @@
 //     of Halifax's, and Detroit's 256 on "belt 1, page 2 of 26". Nobody
 //     published that 1. A flight with no belt in its feed now has none
 //     (null); it is listed on the hall's own "to be announced" screen, whose
-//     carousel cell reads the store's words and which has no belt sign.
+//     carousel cell reads the store's words and which has no belt sign. A
+//     flight whose feed did publish a belt the board cannot place (a bare
+//     number at a multi-terminal airport) is on no screen, as before: "to be
+//     announced" would be untrue of it.
 //     Moncton's domestic 1 / international 2 is our own mapping, kept as it
-//     is (a question for the airport, not a fix).
+//     is (an open question, not a fix).
 //
 //  2. Status colours on ordinary rows. The belt bars are coloured by an
-//     airport-hash + belt rotation, and nine of its twenty gradients were red,
-//     orange or green: Ottawa's belt 5 put every on-time arrival on a pure red
-//     bar (read: Cancelled), belt 4 every row on a green one (read: Arrived).
-//     A plain bar now never wears red, amber or green; those are the Delayed,
-//     Cancelled and Diverted bars' and the status words' alone.
+//     airport-hash + belt rotation, and thirteen of its twenty gradients were
+//     red, orange or green: Ottawa's belt 5 put every on-time arrival on a
+//     pure red bar (read: Cancelled), belt 4 every row on a green one (read:
+//     Arrived). A plain bar now never wears red, amber or green; those are
+//     the Delayed, Cancelled and Diverted bars' and the status words' alone.
+//     The belt sign's own surfaces (band, body, suitcase) are held to the same
+//     rule on every belt but 1, whose sign is the approved mock (red band,
+//     marigold disc) and is kept exactly; the warm discs that carry that
+//     mock's marigold onto belts 4, 7 and 8 are kept too.
 //
-// And, while there: a Delayed row says until when, when the feed says it.
+// And, while there: a Delayed row says until when, when the feed says it,
+// with the word at the size every other pill's word has.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -81,12 +89,13 @@ const CITY_TYPE_SRC = (() => {
   const a = SRC.indexOf('const CITY_TYPE = {');
   return SRC.slice(a, closeAt(SRC, SRC.indexOf('{', a), '{', '}') + 1) + ';';
 })();
-function beltFor(ap, { belt = null, terminal = '', airline = 'AC', from = 'YYZ' } = {}) {
+function rowFor(ap, { belt = null, terminal = '', airline = 'AC', from = 'YYZ' } = {}) {
   const run = new Function('f', 'mode', 'airline', 'locIata', 'terminal', 'document',
-    CITY_TYPE_SRC + '\n' + BELT_RULES + '\nreturn _belt;');
+    CITY_TYPE_SRC + '\n' + BELT_RULES + '\nreturn { _belt, _beltUnplaced };');
   return run({ arrival: { baggageBelt: belt } }, 'arr', airline, from, terminal,
     { getElementById: () => ({ value: ap }) });
 }
+const beltFor = (ap, o) => rowFor(ap, o)._belt;
 
 test('a feed with no belt gives no belt: never "1"', () => {
   // The 24 airports the audit found sending every arrival to belt 1, among
@@ -114,7 +123,7 @@ test('a belt the feed publishes is shown as published', () => {
   assert.equal(beltFor('BOS', { belt: 'INTL', terminal: 'A' }), 'A-INTL', "Boston's international claim keeps its name");
 });
 
-test("Moncton's domestic 1 / international 2 is untouched (our mapping, asked of the owner)", () => {
+test("Moncton's domestic 1 / international 2 is untouched (our own mapping, an open question)", () => {
   assert.equal(beltFor('YQM', { from: 'YYZ', airline: 'AC' }), '1');
   assert.equal(beltFor('YQM', { from: 'YHU', airline: 'PD' }), '1', 'any Canadian Y-code is domestic');
   assert.equal(beltFor('YQM', { from: 'MCO', airline: 'WS' }), '2', 'a US origin clears customs: international');
@@ -129,7 +138,7 @@ test("Moncton's domestic 1 / international 2 is untouched (our mapping, asked of
 });
 
 const BIDS_UNASSIGNED = '—';
-const onScreen = new Function('BIDS_UNASSIGNED', lift('_bidsOnScreen') + '\nreturn _bidsOnScreen;')(BIDS_UNASSIGNED);
+const onScreen = new Function('BIDS_UNASSIGNED', lift('_bidsUnassigned') + '\n' + lift('_bidsOnScreen') + '\nreturn _bidsOnScreen;')(BIDS_UNASSIGNED);
 
 test('a flight with no belt is listed on the hall\'s "to be announced" screen, and on no belt', () => {
   const none = { flight: 'AC2048', _belt: null };
@@ -141,7 +150,7 @@ test('a flight with no belt is listed on the hall\'s "to be announced" screen, a
   assert.equal(onScreen(four, '1'), false);
   // the screen list: the real belts first, then the "to be announced" screen
   const upd = lift('updateSubScreens');
-  assert.match(upd, /if \(flights\.some\(f => !f\._belt \|\| f\._belt === BIDS_UNASSIGNED\)\) locations\.push\(BIDS_UNASSIGNED\);/);
+  assert.match(upd, /if \(flights\.some\(_bidsUnassigned\)\) locations\.push\(BIDS_UNASSIGNED\);/);
   assert.ok(upd.indexOf("_apBagSel.value === 'YQM'") > 0 && upd.indexOf("_apBagSel.value === 'YQM'") < upd.indexOf('locations.push(BIDS_UNASSIGNED)'),
     "it is added after Moncton's two belts are settled");
   assert.ok(['1', '4', 'A-1', 'D-300'].every((b) => [b, BIDS_UNASSIGNED].sort()[0] === b),
@@ -150,6 +159,34 @@ test('a flight with no belt is listed on the hall\'s "to be announced" screen, a
   const key = SRC.slice(SRC.indexOf('function getDedicatedRenderKey('), SRC.indexOf('function _bidsOnScreen('));
   assert.match(key, /\.filter\(f => _bidsOnScreen\(f, subScreenVal\)/, 'the render key');
   assert.match(SRC, /const arrFlights = \(data\.arr \|\| \[\]\)\.filter\(f =>\s*_bidsOnScreen\(f, subScreenVal\) && _bidsInWindow\(f, Date\.now\(\)\)\);/, 'the renderer');
+});
+
+test('an announced belt the board cannot place is on no screen, not "to be announced"', () => {
+  // At the multi-terminal airports a bare belt with no terminal is not
+  // trusted (belt 7 of which terminal?). Before v24005 such a flight was on
+  // no screen; the "to be announced" list must not take it, because its feed
+  // did announce a belt.
+  const unAt = new Function('BIDS_UNASSIGNED', lift('_bidsUnassigned') + '\nreturn _bidsUnassigned;')(BIDS_UNASSIGNED);
+  const onS = new Function('BIDS_UNASSIGNED', '_bidsUnassigned', lift('_bidsOnScreen') + '\nreturn _bidsOnScreen;')(BIDS_UNASSIGNED, unAt);
+  for (const ap of ['ORD', 'JFK', 'LHR', 'TPA', 'YYZ']) {
+    const r = rowFor(ap, { belt: '7' });
+    assert.equal(r._belt, null, ap);
+    assert.equal(r._beltUnplaced, true, `${ap}: the feed's belt 7 is marked as announced, not missing`);
+    const row = { flight: 'XX1', ...r };
+    assert.equal(onS(row, BIDS_UNASSIGNED), false, `${ap}: listed as "to be announced" though its feed announced belt 7`);
+    assert.equal(onS(row, '7'), false, `${ap}: put on a bare belt 7 with no terminal`);
+  }
+  // with its terminal it is placed; with no belt at all it is "to be announced"
+  assert.deepEqual(rowFor('ORD', { belt: '7', terminal: '3' }), { _belt: '3-7', _beltUnplaced: false });
+  const none = rowFor('ORD');
+  assert.deepEqual(none, { _belt: null, _beltUnplaced: false });
+  assert.equal(onS({ flight: 'XX2', ...none }, BIDS_UNASSIGNED), true);
+  // and the native-feed airports keep their whole-hall numbers
+  assert.deepEqual(rowFor('YUL', { belt: '20' }), { _belt: '20', _beltUnplaced: false });
+  // the row carries the mark, and the screen list and the belt walk read it
+  assert.match(SRC, /_actualArrTime,_belt,_beltUnplaced,_checkIn,/);
+  assert.match(lift('updateSubScreens'), /if \(flights\.some\(_bidsUnassigned\)\) locations\.push\(BIDS_UNASSIGNED\);/);
+  assert.match(lift('bagBelts'), /list\.filter\(function \(f\) \{ return f && !f\._beltUnplaced; \}\)/);
 });
 
 test('the "to be announced" key survives the sub-screen sanitizer, and markup still does not', () => {
@@ -233,7 +270,9 @@ function barFor(ap, belt) {
 
 test('the status colours are recognised for what they are', () => {
   for (const c of ['rgb(254,19,1)', 'rgb(1,154,1)', 'rgb(243,110,49)', 'rgb(236,80,3)', 'rgb(248,58,28)',
-    'rgb(60,120,101)', 'rgb(65,122,104)', 'rgb(217,32,121)', '#a82633', '#d05560', '#EDBB00', '#157A43', '#B3261E']) {
+    'rgb(60,120,101)', 'rgb(65,122,104)', 'rgb(217,32,121)', '#a82633', '#d05560', '#EDBB00', '#157A43', '#B3261E',
+    // a hot pink a few degrees off red (325°) is taken for red, and teal for green
+    'rgb(229,18,142)', '#2F8F8E', '#0F4C50']) {
     assert.equal(HUE.bar(c), true, `${c} is a status colour`);
   }
   for (const c of ['rgb(79,164,218)', 'rgb(42,47,84)', 'rgb(75,7,177)', 'rgb(222,1,222)', 'rgb(39,105,233)',
@@ -249,10 +288,12 @@ test('no belt bar at any airport wears red, amber or green', () => {
     // belts step through the table, so neighbours are neighbouring belts
     assert.notEqual(a.bar, ACCENTS[(i + 1) % ACCENTS.length].bar, `entries ${i + 1} and ${(i + 1) % 20 + 1} are alike`);
   }
-  // the seven bars that were already clear of the status hues are untouched
+  // six of the seven bars that were already clear of the status hues are
+  // untouched; the seventh, entry 4, started on a hot pink (325°) and now
+  // starts on a magenta (310°) into its own orchid
   const KEPT = {
     3: 'linear-gradient(100deg,rgb(42,47,84) 0%,rgb(79,164,218) 100%)',
-    4: 'linear-gradient(100deg,rgb(229,18,142) 0%,rgb(169,65,153) 100%)',
+    4: 'linear-gradient(100deg,rgb(205,22,175) 0%,rgb(169,65,153) 100%)',
     5: 'linear-gradient(100deg,rgb(150,9,136) 0%,rgb(185,12,129) 100%)',
     6: 'linear-gradient(100deg,rgb(59,5,149) 0%,rgb(75,7,177) 100%)',
     15: 'linear-gradient(100deg,rgb(155,1,155) 0%,rgb(222,1,222) 100%)',
@@ -277,6 +318,35 @@ test('no belt bar at any airport wears red, amber or green', () => {
   assert.match(SRC, /var _bidsAcc = _bidsAccents\[\(_bidsApHash \+ Math\.max\(1, _bidsBeltNo\) - 1\) % _bidsAccents\.length\];\n\s*if \(_bidsTba \|\| _bidsBarIsStatusColour\(_bidsAcc\.bar\)\) _bidsAcc = \{ img: _bidsAcc\.img, ground: _bidsAcc\.ground, bar: BIDS_TBA_BAR, tint: _bidsAcc\.tint \};/);
 });
 
+test("the belt sign's surfaces wear no status colour, except belt 1's approved mock", () => {
+  const at = SRC.indexOf('var _BIDS_CARD_PALETTES = [');
+  assert.ok(at > 0, 'the sign palette table must exist');
+  const from = SRC.indexOf('[', at);
+  const P = new Function('return ' + SRC.slice(from, closeAt(SRC, from, '[', ']') + 1) + ';')();
+  assert.equal(P.length, 8);
+  // belt 1 is the approved mock, exactly (tests/bids-flat.test.js holds it)
+  assert.equal(P[0].band, '#8A1C2B');
+  for (const [i, p] of P.entries()) {
+    if (i === 0) continue;
+    // the band, the body and the suitcase are the sign; the handle and the
+    // number's ink sit on them. The disc and its dots carry the mock's
+    // marigold disc (belts 4, 7 and 8 keep their warm ones).
+    for (const k of ['band', 'body', 'suitcase', 'handle', 'ink']) {
+      assert.equal(HUE.bar(p[k]), false, `belt ${i + 1}'s sign ${k} is a status colour: ${p[k]}`);
+    }
+  }
+  // the three that were green, teal and rust are clear all through, disc
+  // included: Ottawa's belt 5 sign was teal
+  for (const n of [3, 5, 6]) {
+    for (const [k, v] of Object.entries(P[n - 1])) assert.equal(HUE.bar(v), false, `belt ${n}'s sign ${k}: ${v}`);
+  }
+  for (const old of ['#1E4D2B', '#4F9A5E', '#0F4C50', '#2F8F8E', '#6E2A0E', '#C9683B']) {
+    assert.ok(!P.some((p) => p.band === old || p.body === old), `${old} (forest, teal or rust) is still a sign colour`);
+  }
+  // neighbouring belts' signs still differ
+  for (let i = 0; i < P.length; i++) assert.notEqual(P[i].body, P[(i + 1) % P.length].body);
+});
+
 test('only the Delayed, Cancelled and Diverted bars are painted in a status colour', () => {
   const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
   let seen = 0;
@@ -298,13 +368,40 @@ test('only the Delayed, Cancelled and Diverted bars are painted in a status colo
 // ── 3. A DELAYED ROW SAYS UNTIL WHEN, WHEN THE FEED SAYS IT ────────────────
 
 test('a Delayed row carries the feed\'s revised time beside the word, and no other row is given one', () => {
-  assert.match(SRC, /const _b3StHtml = \(isDelayed && f\.upd && f\.upd !== f\.time\)\n\s*\? '<span class="fx-unit">' \+ fidsEscHtml\(stTxt\) \+ '<\/span> <span class="b3-st-sep fx-brk">·<\/span> <span class="fx-unit b3-st-at">' \+ fidsEscHtml\(_bidsTimeForLang\(f\.upd\)\) \+ '<\/span>'\n\s*: fidsEscHtml\(stTxt\);/);
-  assert.match(SRC, /<div class="b3-status \$\{_b3StCls\}">\$\{_b3StHtml\}<\/div>/);
+  assert.match(SRC, /const _b3StTimed = !!\(isDelayed && f\.upd && f\.upd !== f\.time\);\n\s*const _b3StHtml = _b3StTimed\n\s*\? '<span class="fx-unit">' \+ fidsEscHtml\(stTxt\) \+ '<\/span> <span class="b3-st-sep fx-brk">·<\/span> <span class="fx-unit b3-st-at">' \+ fidsEscHtml\(_bidsTimeForLang\(f\.upd\)\) \+ '<\/span>'\n\s*: fidsEscHtml\(stTxt\);/);
   // the time is the feed's (mapADB's upd: actual, else predicted, else revised)
   assert.match(SRC, /const revL=_actualL\|\|_predL\|\|_revisedL;/);
   assert.match(SRC, /const upd=\(revTs&&Math\.abs\(revTs-schedTs\)>5\*60000\)\?adbHHMM\(revL\):null;/);
   // a new time repaints the belt, and the pill is fitted, never cut
-  const key = SRC.slice(SRC.indexOf('function getDedicatedRenderKey('), SRC.indexOf('function _bidsOnScreen('));
+  const key = SRC.slice(SRC.indexOf('function getDedicatedRenderKey('), SRC.indexOf('function _bidsUnassigned('));
   assert.match(key, /upd:f\.upd \|\| null/);
   assert.match(SRC, /\{ sel: '\.bidsv3 \.b3-status', lines: 2, units: true,/);
+});
+
+test('a Delayed pill with its time keeps the word at full size: stacked, not shrunk', () => {
+  // On a Moncton belt 'Delayed · 8:34pm' was held on one line at 22.5px
+  // (1920x1080; 19px seen on the live board) while every other pill's word
+  // was 26px. A pill that carries a time is fitted with keep: 1, before the
+  // general pill rule.
+  const timed = SRC.indexOf("{ sel: '.bidsv3 .b3-status.b3-st-timed', lines: 2, units: true, keep: 1,");
+  const plain = SRC.indexOf("{ sel: '.bidsv3 .b3-status', lines: 2, units: true,");
+  assert.ok(timed > 0 && plain > timed, 'the timed pill rule must come first (an element is fitted by the first rule it matches)');
+  assert.match(SRC, /<div class="b3-status \$\{_b3StCls\}\$\{_b3StTimed \? ' b3-st-timed' : ''\}">\$\{_b3StHtml\}<\/div>/);
+  assert.match(SRC, /var res = _fxPlan\(base, floor, lines, hasSub, units, at, giveWay, o\.keep\);/);
+  // the planner, run as it is: the word and the time fit on one line only at
+  // 22.5px of a designed 26 (87%), and stacked at 26
+  const plan = new Function(lift('_fxSearch') + '\n' + lift('_fxApMin') + '\n' + lift('_fxPlan') + '\nreturn _fxPlan;')();
+  const fits = (oneMax, twoMax) => (px, wrap) => px <= (wrap ? twoMax : oneMax) + 1e-9;
+  const was = plan(26, 14, 2, false, true, fits(22.5, 26));
+  assert.equal(was.wrap, false, 'the default keeps a single line at 80% of the design or more');
+  assert.ok(Math.abs(was.px - 22.5) < 0.3);
+  const now = plan(26, 14, 2, false, true, fits(22.5, 26), undefined, 1);
+  assert.deepEqual([now.wrap, Math.round(now.px)], [true, 26], 'keep: 1 stacks the word over the time at 26px');
+  // one line is still kept when it holds the full size, or when stacking
+  // would be no bigger
+  assert.deepEqual(plan(26, 14, 2, false, true, fits(26, 26), undefined, 1), { px: 26, wrap: false });
+  const tight = plan(26, 14, 2, false, true, fits(22, 20), undefined, 1);
+  assert.equal(tight.wrap, false, 'a row too short to stack keeps the larger single line');
+  // and every other fit keeps the old 80% rule
+  assert.deepEqual([plan(28, 14, 2, false, false, fits(24, 27)).wrap, plan(28, 14, 2, false, false, fits(18, 27)).wrap], [false, true]);
 });

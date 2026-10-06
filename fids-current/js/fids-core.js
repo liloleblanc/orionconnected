@@ -2325,7 +2325,13 @@ function _fxNudge(el, box) {
 // v23998 — giveWay: what an airport's name that has no room becomes, -1 (not
 // drawn: the code is already on the line, '| YYZ') or -2 (its code in its
 // place, where the line has none: the Later-at-this-gate strip).
-function _fxPlan(base, floor, lines, hasSub, units, at, giveWay) {
+// v24005 — keep: the share of the designed size (and of the wrapped size) a
+// single line must hold to be kept over two lines, 0.8 when not given. A
+// Delayed pill that carries its time ('Delayed · 9:46pm') is fitted with 1:
+// it stacks the word over the time at the size the other pills' words have
+// rather than shrink the word to hold both on one line (22.5px against 26px
+// on a Moncton belt at 1920x1080).
+function _fxPlan(base, floor, lines, hasSub, units, at, giveWay, keep) {
   if (base < floor) base = floor;
   if (at(base, false)) return { px: base, wrap: false };
   var off = 0, at0 = at;
@@ -2359,7 +2365,8 @@ function _fxPlan(base, floor, lines, hasSub, units, at, giveWay) {
   }
   var s1 = _fxSearch(floor, base, function (p) { return at(p, false); });
   var s2 = lines > 1 ? _fxSearch(floor, base, function (p) { return at(p, true); }) : 0;
-  var keepOne = s1 >= base * 0.8 || s1 >= s2 * 0.9;
+  var kp = (keep > 0) ? keep : 0.8;
+  var keepOne = s1 >= base * kp || s1 >= s2 * Math.max(0.9, kp);
   var res;
   if (s1 && (!s2 || keepOne)) res = { px: s1, wrap: false };
   else if (s2) res = { px: s2, wrap: true };
@@ -2798,13 +2805,13 @@ function fidsFitText(el, o) {
     // ('Istanbul · Aeroporto de / Istambul | IST' in a 1280 board's Terminal
     // layout, where the Portuguese name is wider than the column at the floor)
     var units = !!o.units || hasSub;
-    var res = _fxPlan(base, floor, lines, hasSub, units, at, giveWay);
+    var res = _fxPlan(base, floor, lines, hasSub, units, at, giveWay, o.keep);
     // Nothing fits at the floor: the letters' extra tracking is given up
     // before the name is reported (a 1280 board's narrow Terminal column).
     if (res.over && (parseFloat(getComputedStyle(el).letterSpacing) || 0) > 0) {
       var lsKeep = st.getPropertyValue('letter-spacing'), lsPri = st.getPropertyPriority('letter-spacing');
       st.setProperty('letter-spacing', '0px', 'important');
-      var res2 = _fxPlan(base, floor, lines, hasSub, units, at, giveWay);
+      var res2 = _fxPlan(base, floor, lines, hasSub, units, at, giveWay, o.keep);
       if (!res2.over) { res = res2; el.__fxLs = true; }
       else if (lsKeep) st.setProperty('letter-spacing', lsKeep, lsPri); else st.removeProperty('letter-spacing');
     }
@@ -2872,9 +2879,12 @@ var FIDS_FIT_RULES = [
     } },
   { sel: '.bidsv2-airline-name', lines: 1 },
   // v24005 — the belt's status: a Delayed row says until when ('Delayed ·
-  // 7:29pm'), the word and the time each a whole piece, on one line or
-  // stacked in the pill with the "·" dropped; any long word is fitted the
-  // same way rather than cut with an ellipsis
+  // 7:29pm'), the word and the time each a whole piece, on one line only at
+  // the size the other pills' words have, else stacked in the pill (the "·"
+  // dropped at the break) with the word kept at that size (keep: 1): the
+  // word passengers most need is not the one made smaller. Any long word is
+  // fitted the same way rather than cut with an ellipsis.
+  { sel: '.bidsv3 .b3-status.b3-st-timed', lines: 2, units: true, keep: 1, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.6 : 0; } },
   { sel: '.bidsv3 .b3-status', lines: 2, units: true, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.6 : 0; } },
   // and the hall's "to be announced" list: its carousel cell (the store's
   // words in both languages, a whole phrase each) and its column titles
@@ -3830,7 +3840,7 @@ function updateSubScreens() {
     // own, listed with "to be announced" where a belt number would be
     // (BIDS_UNASSIGNED). It sorts after every real belt ('—' is past the
     // ASCII digits and letters), so a hall with belts still opens on one.
-    if (flights.some(f => !f._belt || f._belt === BIDS_UNASSIGNED)) locations.push(BIDS_UNASSIGNED);
+    if (flights.some(_bidsUnassigned)) locations.push(BIDS_UNASSIGNED);
     useGate = false;
   } else {
     locations = [...new Set(flights.map(f => f.gate).filter(g => g && g !== '—'))].sort();
@@ -5447,16 +5457,18 @@ var BIDS_UNASSIGNED = '—';
 var BIDS_TBA_BAR = 'linear-gradient(100deg,rgb(11,36,71) 0%,rgb(20,58,107) 100%)';
 // v24005 — red, amber and green are the status colours (the Cancelled and
 // Diverted bars, the Delayed bar, the Arrived word) and a plain belt bar may
-// not wear them. A colour with a stop whose hue is red (330°–20°), amber,
-// orange or yellow (20°–70°) or green, sea-green included (70°–190°) is a
-// status colour; greys and near-blacks (chroma under 40) are not. Blues,
-// violets, purples and magentas are left for the belts.
+// not wear them. A colour with a stop whose hue is red, pinks and roses
+// included (320°–20°), amber, orange or yellow (20°–70°) or green, sea-green
+// and teal included (70°–190°) is a status colour; greys and near-blacks
+// (chroma under 40) are not. Blues, violets, purples and magentas up to
+// 320° are left for the belts. (Red starts at 320°, not 330°, so a hot pink
+// at 325° is not taken for "not red" by a hair.)
 function _bidsIsStatusHue(r, g, b) {
   var mx = Math.max(r, g, b), mn = Math.min(r, g, b), c = mx - mn;
   if (c < 40) return false;
   var h = mx === r ? (g - b) / c : (mx === g ? (b - r) / c + 2 : (r - g) / c + 4);
   h = ((h * 60) % 360 + 360) % 360;
-  return h >= 330 || h < 190;
+  return h >= 320 || h < 190;
 }
 function _bidsBarIsStatusColour(css) {
   var re = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)|#([0-9a-f]{6})\b/gi, m;
@@ -5468,9 +5480,17 @@ function _bidsBarIsStatusColour(css) {
   }
   return false;
 }
+// A flight on the "to be announced" list: its feed gave it no belt. A flight
+// whose feed did give one that the board cannot place (_beltUnplaced: a bare
+// number at a multi-terminal airport) is not: its belt was announced, so the
+// list would say something untrue of it. It stays off every screen, as it
+// always was.
+function _bidsUnassigned(f) {
+  return !!f && !f._beltUnplaced && (!f._belt || f._belt === BIDS_UNASSIGNED);
+}
 function _bidsOnScreen(f, sub) {
   if (!f) return false;
-  if (sub === BIDS_UNASSIGNED) return !f._belt || f._belt === BIDS_UNASSIGNED;
+  if (sub === BIDS_UNASSIGNED) return _bidsUnassigned(f);
   return f._belt === sub || f.flight === sub;
 }
 var BIDS_WINDOW_TRAIL_MS = 45 * 60000;
@@ -23687,8 +23707,10 @@ const gView = document.getElementById('gateView');
     // and 11 sea green, 12 and 18 ending in teal), so Ottawa's on-time belt
     // 5 was red and its belt 4 green. Those thirteen now carry blues,
     // indigos, violets, plums and slate (no two neighbours alike, so belts at
-    // one airport still differ); the seven that were already clear of the
-    // status hues are untouched. tests/belt-honesty.test.js holds every
+    // one airport still differ). Of the seven that were already clear of the
+    // status hues, six are untouched; entry 4 started on a hot pink (325°)
+    // a few degrees from red and now starts on a magenta (310°), still
+    // running into its own orchid. tests/belt-honesty.test.js holds every
     // entry to it, and the pick below falls back to navy if one ever is not.
     var _bidsAccents = [
       { img: '/patterns/bids-accent-1.png', ground: '/patterns/bids-ground-1.jpg',
@@ -23701,7 +23723,7 @@ const gView = document.getElementById('gateView');
         bar: 'linear-gradient(100deg,rgb(42,47,84) 0%,rgb(79,164,218) 100%)',
         tint: 'rgba(79,164,218,.10)' },
       { img: '/patterns/bids-accent-4.png', ground: '/patterns/bids-ground-4.jpg',
-        bar: 'linear-gradient(100deg,rgb(229,18,142) 0%,rgb(169,65,153) 100%)',
+        bar: 'linear-gradient(100deg,rgb(205,22,175) 0%,rgb(169,65,153) 100%)',
         tint: 'rgba(169,65,153,.10)' },
       { img: '/patterns/bids-accent-5.png', ground: '/patterns/bids-ground-5.jpg',
         bar: 'linear-gradient(100deg,rgb(150,9,136) 0%,rgb(185,12,129) 100%)',
@@ -23784,13 +23806,20 @@ const gView = document.getElementById('gateView');
     // handle, dots a shade under the disc, dark ink — in other hues. Yellow
     // and red are still the status pills' own, so nothing here leans on them
     // beyond the mock's marigold.
+    // v24005 — and green: the sign's own surfaces (band, body, suitcase) on
+    // every belt but 1 are clear of the status hues (_bidsIsStatusHue).
+    // Belt 3 was forest green, belt 5 teal (Ottawa's belt 5) and belt 6 rust;
+    // they are now graphite, cerulean and violet, each with a pale disc of
+    // its own hue. Belt 1 is the approved mock, red band and marigold disc,
+    // and is kept exactly; the warm discs of belts 4, 7 and 8 (peach, coral,
+    // gold) carry the mock's marigold disc and are kept too.
     var _BIDS_CARD_PALETTES = [
       { band: '#8A1C2B', body: '#D9696B', disc: '#F4C15C', suitcase: '#E27A6E', handle: '#F6EBD3', dots: '#E3A455', ink: '#2C1A6B' }, // 1 — the mock
       { band: '#14264B', body: '#3E6FB8', disc: '#9FD3F5', suitcase: '#5A8FD6', handle: '#EEF6FF', dots: '#6FB1E0', ink: '#0C1A3A' }, // 2 — navy / sky
-      { band: '#1E4D2B', body: '#4F9A5E', disc: '#CDE38B', suitcase: '#6BB479', handle: '#F1F8E6', dots: '#A8C96A', ink: '#123320' }, // 3 — forest / lime
+      { band: '#23262B', body: '#565C66', disc: '#D5DAE2', suitcase: '#6E7581', handle: '#F3F5F8', dots: '#A9B1BE', ink: '#121418' }, // 3 — graphite / silver
       { band: '#4A1B4E', body: '#9B5AA3', disc: '#F7C7A3', suitcase: '#B27AB9', handle: '#FFF1E8', dots: '#E9A57C', ink: '#2B0E30' }, // 4 — plum / peach
-      { band: '#0F4C50', body: '#2F8F8E', disc: '#F1DFA6', suitcase: '#4FAAA7', handle: '#FBF7EA', dots: '#D9C27A', ink: '#082E31' }, // 5 — teal / sand
-      { band: '#6E2A0E', body: '#C9683B', disc: '#F8E3B0', suitcase: '#D9825A', handle: '#FFF7E6', dots: '#E2BC7A', ink: '#3A1607' }, // 6 — rust / cream
+      { band: '#0B3B5A', body: '#2A7DB0', disc: '#CDEBFA', suitcase: '#4593C4', handle: '#F2FAFE', dots: '#92CDEA', ink: '#062437' }, // 5 — cerulean / ice
+      { band: '#34195E', body: '#7445B8', disc: '#DCCBFA', suitcase: '#8C62CC', handle: '#FAF6FF', dots: '#B79BE8', ink: '#1E0E3A' }, // 6 — violet / lilac
       { band: '#2B3A4F', body: '#6B7F99', disc: '#FFB3A0', suitcase: '#8798B0', handle: '#FFF3EE', dots: '#F08A72', ink: '#16202E' }, // 7 — slate / coral
       { band: '#2D2A7A', body: '#6A63C9', disc: '#F6D26A', suitcase: '#857FDA', handle: '#FFFBE8', dots: '#E5B93F', ink: '#1A1848' }  // 8 — indigo / gold
     ];
@@ -24021,7 +24050,8 @@ const gView = document.getElementById('gateView');
                 // piece the shared fitter (FIDS_FIT_RULES: .b3-status) keeps on
                 // one line or stacks, the "·" dropped at the break. No time in
                 // the feed, no time here: the word stands alone as before.
-                const _b3StHtml = (isDelayed && f.upd && f.upd !== f.time)
+                const _b3StTimed = !!(isDelayed && f.upd && f.upd !== f.time);
+                const _b3StHtml = _b3StTimed
                   ? '<span class="fx-unit">' + fidsEscHtml(stTxt) + '</span> <span class="b3-st-sep fx-brk">·</span> <span class="fx-unit b3-st-at">' + fidsEscHtml(_bidsTimeForLang(f.upd)) + '</span>'
                   : fidsEscHtml(stTxt);
                 const _b3WmOne = '';   // v23350 — lockups are not wordmarks; see the note on the main board
@@ -24053,7 +24083,7 @@ const gView = document.getElementById('gateView');
                   <div class="b3-from"><span class="b3-city">${_cityApHtml(_b3City, _b3Code, false, !!_b3Code)}</span>${_b3Code ? '<span class="b3-tail">\u00a0<span class="b3-sep">|</span>\u00a0<span class="b3-code">' + fidsEscHtml(_b3Code) + '</span></span>' : ''}</div>
                   <div class="b3-time">${fidsEscHtml(_bidsTimeForLang(f.time))}</div>
                   ${_bidsTba ? '<div class="b3-belt">' + _bidsTbaHtml + '</div>' : ''}
-                  <div class="b3-status ${_b3StCls}">${_b3StHtml}</div>
+                  <div class="b3-status ${_b3StCls}${_b3StTimed ? ' b3-st-timed' : ''}">${_b3StHtml}</div>
                 </div>`;
               }
               return `<div class="bidsv2-flight-row${_bRowCls}">
@@ -36040,6 +36070,11 @@ function mapADB(raw, mode, kept) {
     const _NATIVE_BELT_AIRPORTS = new Set(['YUL', 'YHU', 'MCO']);
 
     let _belt = f.arrival?.baggageBelt || null;
+    // v24005 — a belt the feed DID publish that the board cannot place (a
+    // bare number at a multi-terminal airport, below): the flight is on no
+    // belt's screen, as before, and not on the "to be announced" list
+    // either, because its belt has been announced. _bidsUnassigned.
+    let _beltUnplaced = false;
     // v24005 — a feed's own word for "no belt" is no belt: Boston's feed
     // writes "None" into the field, and its belt sign read "None" where the
     // number goes. ('INTL' is Boston's name for a real claim area and stays.)
@@ -36087,6 +36122,7 @@ function mapADB(raw, mode, kept) {
           // nulled, board fell through to the flight-number fallback).
           if (_MULTI_TERMINAL_AIRPORTS.has(_apForBelt) && !_NATIVE_BELT_AIRPORTS.has(_apForBelt)) {
             _belt = null;
+            _beltUnplaced = true;
           } else {
             _belt = String(_belt);
           }
@@ -36139,8 +36175,8 @@ function mapADB(raw, mode, kept) {
     // there.
     if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     const _row = mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus}
-      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
+      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_beltUnplaced,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus}
+      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_beltUnplaced,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
     // v23944 — who operates it, from the one ladder the gates read too.
     fidsApplyOperator(_row, (mode==='dep' ? f.departure?.airport?.iata : f.arrival?.airport?.iata) || (document.getElementById('apSel') || {}).value || '');
     return _row;
@@ -52338,7 +52374,9 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // hall's "to be announced" screen ('—', BIDS_UNASSIGNED), last, after
         // every real belt; it is never put on a belt of our choosing.
         var _uniq = function (list) {
-          var v = list.map(function (f) { return f._belt || '—'; });
+          // (a flight whose announced belt cannot be placed is on no screen)
+          var v = list.filter(function (f) { return f && !f._beltUnplaced; })
+            .map(function (f) { return f._belt || '—'; });
           v = v.filter(function (x, i) { return v.indexOf(x) === i; });
           var tba = v.indexOf('—') >= 0;
           v = v.filter(function (x) { return x !== '—'; }).sort();
