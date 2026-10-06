@@ -181,7 +181,11 @@ const PAGE = `(function () {
         };
         var caps = Math.max(capOf(cap.querySelector('.v2-rc-acb-actype')), capOf(opc.querySelector('.v2-rc-opby-lline')));
         info.letters = r1(L); info.caps = r1(caps);
-        if (L < caps - 0.3) out.push('rule 1: the mark\\'s letters are ' + r1(L) + 'px beside ' + r1(caps) + 'px capitals');
+        // the letters are measured from painted pixels: anti-aliasing puts the
+        // edge within about half a pixel, and Linux Chrome lands 0.4-0.5px
+        // under the Mac at 9-10px capitals, so the check allows 7% of the
+        // capitals (0.63px at 9px), never less than 0.3px
+        if (L < caps - Math.max(0.3, caps * 0.07)) out.push('rule 1: the mark\\'s letters are ' + r1(L) + 'px beside ' + r1(caps) + 'px capitals');
         if (b.right > C.right + 0.5 || b.left < C.left - 0.5 || b.top < C.top - 0.5 || b.bottom > C.bottom + 0.5) out.push('the mark stands out of the band');
       }
       // the art, clear of the band: laid out (offsets, inside the panel), and
