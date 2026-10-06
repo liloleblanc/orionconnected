@@ -672,6 +672,9 @@ export const SURFACES = {
   gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, cards: true, states: true, feed: true, chunk: 2, alarm: 280, parallel: 2 },
   departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
   baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
+  // v24013 — the baggage hall board (bids5: welcome band, hall list, Moncton's
+  // hall map), switched on for this screen by its URL
+  bids5: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}&bidslook=5`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 3, alarm: 240 },
   // the phone: one language, the one the passenger picked (fids_mobile_lang)
   'phone-gate': { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
   'phone-departures': { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },

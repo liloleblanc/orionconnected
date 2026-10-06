@@ -681,3 +681,336 @@ body.fids-light-board .bidsv2-empty { color: #3A4E66 !important; }
   to   { transform: translateX(-50%); }
 }
 
+
+/* ══ v24013 — BIDS5: THE BAGGAGE HALL BOARD (?bidslook=5) ════════════════════
+   fids-core.js _b5Render. The welcome band on top (the city's photograph by
+   day and by night, the welcome in the board's two languages, the clock, the
+   date, the weather), the hall list on the left (~60%), the hall map on the
+   right (~40%; Moncton's real hall, a labelled schematic elsewhere, none where
+   the feed gives no belt). Portrait: band, map, list. Every size is in --u,
+   one pixel of the 1920x1080 design (1080x1920 upright), so a 1280x720 screen
+   is the same board at two thirds. A light look by day and a dark one at
+   night, from html.fids-day / html.fids-night (js/fids-sun.js), changing over
+   two seconds once the engine has painted its first state (fids-dn-ready).
+   Amber, red and green are the status words' alone; the carousel is the blue
+   of a hall's wayfinding signs. Nothing here moves but a page's slow fade. */
+#baggageView .b5 {
+  --u: min(calc(100vw / 1920), calc(100vh / 1080));
+  --b5-way: #2763D0; --b5-way-ink: #FFFFFF;
+  --b5-ground: #08111F; --b5-panel: #0C1829;
+  --b5-row-a: #12223A; --b5-row-b: #0F1D33; --b5-row-line: #1B2E48;
+  --b5-ink: #FFFFFF; --b5-ink-2: #A9BAD0; --b5-ink-3: #71849C;
+  --b5-cols-bg: #0C1829; --b5-cols-ink: #9FB2C9; --b5-cols-sep: #2E4566;
+  --b5-amber: #FFC23D; --b5-red: #FF6E6E; --b5-green: #41D392;
+  --b5-tba-line: #4E6684; --b5-tba-ink: #C6D3E2;
+  --b5-strip-bg: #0C1829; --b5-cut: #08111F;
+  --b5-map-bg: #0E1729; --b5-floor-dom: #1A2742; --b5-floor-intl: #201F40; --b5-floor-ctx: #131D33; --b5-floor-meet: #15223A;
+  --b5-wall: #53658A; --b5-belt: #34456A; --b5-belt-edge: #A9BCDA; --b5-belt-island: #0D1526;
+  --b5-map-ink: #DCE5F3; --b5-map-ink-2: #8FA1C0; --b5-halo: #0E1729;
+  --b5-disc-off: #2A3954; --b5-disc-off-ink: #7F92B1;
+  --b5-card: #111D33; --b5-card-line: rgba(255,255,255,.10);
+  --b5-clockcard: rgba(8,16,34,.66); --b5-clockink: #FFFFFF; --b5-clockink2: #C3D0E4; --b5-clockline: rgba(255,255,255,.16);
+  --b5-grid: minmax(0, 1fr) calc(120 * var(--u)) calc(140 * var(--u)) calc(196 * var(--u)) calc(132 * var(--u));
+  position: relative; flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; overflow: hidden;
+  display: grid; grid-template-rows: calc(176 * var(--u)) minmax(0, 1fr);
+  background: var(--b5-ground); color: var(--b5-ink);
+  font-family: 'Bricolage Grotesque', var(--font-primary);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+html.fids-day #baggageView .b5 {
+  --b5-ground: #DCE5EE; --b5-panel: #FFFFFF;
+  --b5-row-a: #FFFFFF; --b5-row-b: #F4F7FA; --b5-row-line: #D3DDE8;
+  --b5-ink: #0D2440; --b5-ink-2: #4B607A; --b5-ink-3: #6E8098;
+  --b5-cols-bg: #0F2E52; --b5-cols-ink: #BCD2EA; --b5-cols-sep: #5E80A8;
+  --b5-amber: #9A5800; --b5-red: #C11B2C; --b5-green: #08744A;
+  --b5-tba-line: #8EA2B9; --b5-tba-ink: #33496A;
+  --b5-strip-bg: #FFFFFF; --b5-cut: #FFFFFF;
+  --b5-map-bg: #D7DFE9; --b5-floor-dom: #FFFFFF; --b5-floor-intl: #EEEAF7; --b5-floor-ctx: #C9D3DF; --b5-floor-meet: #EEF2F7;
+  --b5-wall: #8193AD; --b5-belt: #C3CEDD; --b5-belt-edge: #4E6383; --b5-belt-island: #E8EDF3;
+  --b5-map-ink: #2A3A56; --b5-map-ink-2: #5B6C88; --b5-halo: #FFFFFF;
+  --b5-disc-off: #B7C2D2; --b5-disc-off-ink: #F4F7FB;
+  --b5-card: #FFFFFF; --b5-card-line: rgba(16,32,58,.12);
+  --b5-clockcard: rgba(255,255,255,.92); --b5-clockink: #0D1B33; --b5-clockink2: #3F4F6B; --b5-clockline: rgba(13,27,51,.12);
+}
+#baggageView .b5.b5-port {
+  --u: min(calc(100vw / 1080), calc(100vh / 1920));
+  --b5-grid: minmax(0, 1fr) calc(112 * var(--u)) calc(132 * var(--u)) calc(182 * var(--u)) calc(124 * var(--u));
+  grid-template-rows: calc(236 * var(--u)) minmax(0, 1fr);
+}
+#baggageView .b5 *, #baggageView .b5 *::before, #baggageView .b5 *::after { box-sizing: border-box; }
+#baggageView .b5 svg { display: block; }
+#baggageView .b5 .b5-cut { fill: var(--b5-cut); }
+/* the change between day and night: colours over two seconds, the photo and
+   the lettering crossfade; a page turn fades over 1.2 s whatever the hour */
+html.fids-dn-ready #baggageView .b5, html.fids-dn-ready #baggageView .b5 * {
+  transition: background-color 2s ease, color 2s ease, border-color 2s ease, fill 2s ease, stroke 2s ease, box-shadow 2s ease;
+}
+html.fids-dn-ready #baggageView .b5 .b5-ph, html.fids-dn-ready #baggageView .b5 .b5-wm img,
+html.fids-dn-ready #baggageView .b5 .b5-wxi > span, html.fids-dn-ready #baggageView .b5 .b5-scrim { transition: opacity 2s ease; }
+#baggageView .b5 .b5-page, #baggageView .b5 .b5-pg,
+html.fids-dn-ready #baggageView .b5 .b5-page, html.fids-dn-ready #baggageView .b5 .b5-pg { transition: opacity 1.2s ease, background-color 2s ease, color 2s ease; }
+
+/* a pair: each language a whole phrase, the bar the only break */
+#baggageView .b5 .b5-u { white-space: nowrap; }
+#baggageView .b5 .b5-sep { margin: 0 .34em; opacity: .55; font-weight: 400; }
+/* a pair the shared fitter stacks (fx-wrap) is one language a line: each
+   language its own block, the bar dropped. The fitter's own stacking mark
+   (a line feed drawn before the second half) is not used here: after the
+   line had already wrapped at the space it drew an empty line between them. */
+#baggageView .b5 .fx-brk.fx-brk-off + .fx-unit::before { content: none !important; }
+#baggageView .b5 .fx-wrap > .fx-unit { display: block; }
+#baggageView .b5 .fx-wrap > .fx-brk { display: none !important; }
+
+/* ── the welcome band ─────────────────────────────────────────────────── */
+#baggageView .b5 .b5-band { position: relative; overflow: hidden; color: #FFFFFF; background: #0B1A33; min-width: 0; }
+#baggageView .b5 .b5-ph { position: absolute; inset: 0; background-size: cover; background-position: 50% 42%; background-repeat: no-repeat; opacity: 0; }
+#baggageView .b5 .b5-ph-n { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-ph-d { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-ph-n { opacity: 0; }
+#baggageView .b5 .b5-ph.b5-dusk { filter: brightness(.42) saturate(.65) contrast(1.08); }
+#baggageView .b5 .b5-scrim { position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(4,9,20,.80) 0%, rgba(4,9,20,.42) 46%, rgba(4,9,20,.35) 62%, rgba(4,9,20,.70) 100%), linear-gradient(180deg, rgba(4,9,20,.10) 0%, rgba(4,9,20,.45) 100%); }
+html.fids-day #baggageView .b5 .b5-scrim {
+  background: linear-gradient(90deg, rgba(6,20,44,.80) 0%, rgba(6,20,44,.50) 40%, rgba(6,20,44,.12) 66%, rgba(6,20,44,.05) 100%), linear-gradient(180deg, rgba(6,20,44,.18) 0%, rgba(6,20,44,.30) 100%); }
+#baggageView .b5 .b5-bin { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between;
+  gap: calc(36 * var(--u)); padding: 0 calc(32 * var(--u)) 0 calc(40 * var(--u)); }
+#baggageView .b5 .b5-greet { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: calc(8 * var(--u)); }
+#baggageView .b5 .b5-kicker { display: flex; align-items: center; gap: calc(14 * var(--u)); min-width: 0;
+  font-size: calc(25 * var(--u)); font-weight: 550; color: rgba(255,255,255,.94); text-shadow: 0 2px 10px rgba(0,0,0,.35); }
+#baggageView .b5 .b5-kick { min-width: 0; white-space: nowrap; }
+#baggageView .b5 .b5-kico { width: calc(38 * var(--u)); height: calc(38 * var(--u)); flex: none; color: #FFFFFF; }
+#baggageView .b5 .b5-kico svg { width: 100%; height: 100%; }
+#baggageView .b5 .b5-kico .b5-cut { fill: rgba(0,0,0,0); }
+#baggageView .b5 .b5-welcome { font-size: calc(50 * var(--u)); line-height: 1.06; font-weight: 660; letter-spacing: -.012em;
+  text-shadow: 0 3px 18px rgba(0,0,0,.40); white-space: nowrap; max-width: 100%; min-width: 0; }
+#baggageView .b5 .b5-welcome .b5-lg2 { font-weight: 430; color: rgba(255,255,255,.90); }
+#baggageView .b5 .b5-clockwx { flex: none; display: flex; align-items: center; gap: calc(30 * var(--u)); max-width: 52%;
+  background: var(--b5-clockcard); color: var(--b5-clockink); border-radius: calc(24 * var(--u)); padding: calc(14 * var(--u)) calc(28 * var(--u)); }
+#baggageView .b5 .b5-cl { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+#baggageView .b5 .b5-clock { font-size: calc(66 * var(--u)); font-weight: 640; line-height: .95; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#baggageView .b5 .b5-date { font-size: calc(21 * var(--u)); font-weight: 540; color: var(--b5-clockink2); margin-top: calc(8 * var(--u)); white-space: nowrap; }
+#baggageView .b5 .b5-date .cl-sep { margin: 0 .3em; opacity: .6; }
+#baggageView .b5 .b5-wx { display: flex; align-items: center; gap: calc(14 * var(--u)); padding-inline-start: calc(28 * var(--u));
+  border-inline-start: 1.5px solid var(--b5-clockline); align-self: stretch; flex: none; }
+#baggageView .b5 .b5-wxi { position: relative; width: calc(56 * var(--u)); height: calc(56 * var(--u)); flex: none; }
+#baggageView .b5 .b5-wxi > span { position: absolute; inset: 0; opacity: 0; }
+#baggageView .b5 .b5-wxi > .b5-wxi-n { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-wxi > .b5-wxi-d { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-wxi > .b5-wxi-n { opacity: 0; }
+#baggageView .b5 .b5-wxi img, #baggageView .b5 .b5-wxi .fids-wx-cell { width: 100% !important; height: 100% !important; }
+#baggageView .b5 .b5-deg { font-size: calc(48 * var(--u)); font-weight: 580; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#baggageView .b5 .b5-wxw { display: flex; flex-direction: column; align-items: flex-end; gap: calc(5 * var(--u)); text-align: end; flex: none; max-width: calc(330 * var(--u)); }
+#baggageView .b5 .b5-wxc { font-size: calc(22 * var(--u)); font-weight: 560; white-space: nowrap; }
+#baggageView .b5 .b5-feels { font-size: calc(18 * var(--u)); font-weight: 480; color: var(--b5-clockink2); white-space: nowrap; }
+#baggageView .b5.b5-port .b5-bin { padding: 0 calc(28 * var(--u)) 0 calc(32 * var(--u)); gap: calc(22 * var(--u)); }
+#baggageView .b5.b5-port .b5-welcome { font-size: calc(52 * var(--u)); }
+#baggageView .b5.b5-port .b5-clockwx { flex-direction: column; align-items: stretch; gap: calc(12 * var(--u)); padding: calc(16 * var(--u)) calc(24 * var(--u)); max-width: 48%; }
+#baggageView .b5.b5-port .b5-clock { font-size: calc(60 * var(--u)); }
+#baggageView .b5.b5-port .b5-wx { border-inline-start: 0; padding-inline-start: 0; border-top: 1.5px solid var(--b5-clockline); padding-top: calc(12 * var(--u)); justify-content: space-between; }
+
+/* ── the body: list ~60%, map ~40% (portrait: map, then list) ─────────── */
+#baggageView .b5 .b5-body { display: grid; grid-template-columns: minmax(0, 1136fr) minmax(0, 744fr); gap: calc(16 * var(--u));
+  padding: calc(16 * var(--u)) calc(24 * var(--u)) calc(18 * var(--u)); min-height: 0; min-width: 0; }
+#baggageView .b5.b5-none .b5-body { grid-template-columns: minmax(0, 1fr); }
+/* no map: the list has the width, and its time, status and carousel columns
+   take a share of it rather than leaving it all to the airline and city */
+#baggageView .b5.b5-none { --b5-grid: minmax(0, 1fr) calc(190 * var(--u)) calc(210 * var(--u)) calc(320 * var(--u)) calc(250 * var(--u)); }
+#baggageView .b5.b5-none.b5-port { --b5-grid: minmax(0, 1fr) calc(112 * var(--u)) calc(132 * var(--u)) calc(182 * var(--u)) calc(124 * var(--u)); }
+#baggageView .b5.b5-port .b5-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); padding: calc(16 * var(--u)) calc(20 * var(--u)) calc(20 * var(--u)); }
+#baggageView .b5.b5-port.b5-none .b5-body { grid-template-rows: minmax(0, 1fr); }
+#baggageView .b5.b5-port .b5-side { order: -1; }
+#baggageView .b5.b5-port .b5-side-plan { height: calc(830 * var(--u)); }
+#baggageView .b5.b5-port .b5-side-schem { height: calc(560 * var(--u)); }
+
+/* ── the hall list ────────────────────────────────────────────────────── */
+#baggageView .b5 .b5-list { display: flex; flex-direction: column; gap: calc(8 * var(--u)); min-height: 0; min-width: 0; }
+#baggageView .b5 .b5-cols { flex: none; height: calc(46 * var(--u)); display: grid; grid-template-columns: var(--b5-grid); column-gap: calc(12 * var(--u));
+  align-items: center; padding: 0 calc(14 * var(--u)) 0 calc(18 * var(--u)); border-radius: calc(14 * var(--u));
+  background: var(--b5-cols-bg); color: var(--b5-cols-ink); font-size: calc(17 * var(--u)); font-weight: 620; }
+#baggageView .b5 .b5-h { min-width: 0; white-space: nowrap; line-height: 1.1; }
+#baggageView .b5 .b5-h-belt { text-align: center; }
+#baggageView .b5 .b5-cols .b5-sep, #baggageView .b5 .b5-dot { color: var(--b5-cols-sep); opacity: 1; }
+#baggageView .b5 .b5-dot { margin: 0 .3em; }
+#baggageView .b5 .b5-pages { position: relative; flex: 1 1 auto; min-height: 0; }
+#baggageView .b5 .b5-page { position: absolute; inset: 0; display: grid; grid-template-rows: repeat(var(--b5-slots, 7), minmax(0, 1fr));
+  row-gap: calc(6 * var(--u)); align-content: start; opacity: 0; }
+#baggageView .b5 .b5-page.b5-on { opacity: 1; }
+#baggageView .b5 .b5-row { --b5-base: min(34cqh, calc(42 * var(--u))); --b5-city: calc(var(--b5-base) * var(--b5-k, 1));
+  display: grid; grid-template-columns: var(--b5-grid); column-gap: calc(12 * var(--u)); align-items: center;
+  padding: 0 calc(14 * var(--u)) 0 calc(18 * var(--u)); border-radius: calc(12 * var(--u));
+  background: var(--b5-row-a); box-shadow: inset 0 0 0 1px var(--b5-row-line); container-type: size; min-height: 0; min-width: 0; }
+#baggageView .b5 .b5-row.b5-alt { background: var(--b5-row-b); }
+html.fids-day #baggageView .b5 .b5-row { box-shadow: 0 1px 0 rgba(13,36,64,.10), inset 0 0 0 1px var(--b5-row-line); }
+#baggageView .b5 .b5-main { display: flex; flex-direction: column; justify-content: center; gap: 5cqh; min-width: 0; height: 100%; }
+#baggageView .b5 .b5-l1 { display: flex; align-items: center; gap: .3em; min-width: 0; max-width: 100%; height: var(--b5-city); font-size: var(--b5-city); line-height: 1; }
+#baggageView .b5 .b5-emb { flex: none; height: 1em; display: flex; align-items: center; }
+#baggageView .b5 .b5-emb > *, #baggageView .b5 .b5-temb > * { margin: 0 !important; }
+#baggageView .b5 .b5-emb img, #baggageView .b5 .b5-emb .full-logo {
+  height: 1em !important; min-height: 0 !important; max-height: 1em !important; width: auto !important; min-width: 0 !important; max-width: 1.6em !important;
+  object-fit: contain !important; display: block !important; background: none !important; padding: 0 !important; }
+#baggageView .b5 .b5-wm { display: inline-grid; flex: none; height: 1em; }
+#baggageView .b5 .b5-wm img { grid-area: 1 / 1; height: 1em; width: auto; display: block; opacity: 0; }
+#baggageView .b5 .b5-wm .b5-wm-n { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-wm .b5-wm-d { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-wm .b5-wm-n { opacity: 0; }
+#baggageView .b5 .b5-aname { font-size: .8em; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+#baggageView .b5 .b5-fn { font-size: .74em; font-weight: 700; color: var(--b5-ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; margin-inline-start: .1em; }
+#baggageView .b5 .b5-from { font-size: var(--b5-city); font-weight: 700; line-height: 1.06; min-width: 0; max-width: 100%; white-space: nowrap; }
+#baggageView .b5 .b5-from .ap-sub { font-weight: 600; color: var(--b5-ink-2); }
+#baggageView .b5 .b5-code { color: var(--b5-ink-2); }
+#baggageView .b5 .b5-bar { color: var(--b5-ink-3); font-weight: 400; }
+#baggageView .b5 .b5-tm, #baggageView .b5 .b5-rv { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3cqh; min-width: 0; }
+#baggageView .b5 .b5-t { font-size: calc(var(--b5-base) * .9); font-weight: 720; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#baggageView .b5 .b5-dim .b5-t { color: var(--b5-ink-3); font-weight: 500; }
+#baggageView .b5 .b5-rl { font-size: min(15cqh, calc(17 * var(--u))); font-weight: 600; color: var(--b5-ink-2); white-space: nowrap; line-height: 1.1; }
+#baggageView .b5 .b5-stc { display: flex; align-items: center; gap: calc(10 * var(--u)); min-width: 0; }
+#baggageView .b5 .b5-sti { width: min(26cqh, calc(30 * var(--u))); height: min(26cqh, calc(30 * var(--u))); flex: none; color: var(--b5-ink); }
+#baggageView .b5 .b5-sti svg { width: 100%; height: 100%; }
+#baggageView .b5 .b5-st { font-size: min(25cqh, calc(30 * var(--u))); font-weight: 700; line-height: 1.08; min-width: 0; white-space: nowrap; }
+#baggageView .b5 .b5-st-amber .b5-u { color: var(--b5-amber); }
+#baggageView .b5 .b5-st-red .b5-u { color: var(--b5-red); }
+#baggageView .b5 .b5-st-green .b5-u { color: var(--b5-green); }
+#baggageView .b5 .b5-st-ink .b5-u { color: var(--b5-ink); }
+#baggageView .b5 .b5-st-quiet .b5-u { color: var(--b5-ink-2); font-weight: 600; }
+#baggageView .b5 .b5-st .b5-sep { color: var(--b5-ink-3); }
+#baggageView .b5 .b5-tone-quiet .b5-sti { color: var(--b5-ink-2); }
+#baggageView .b5 .b5-tone-red .b5-fn, #baggageView .b5 .b5-tone-red .b5-from { opacity: .78; }
+#baggageView .b5 .b5-bc { display: flex; justify-content: center; align-items: center; min-width: 0; }
+#baggageView .b5 .b5-chip { display: inline-flex; align-items: center; justify-content: center;
+  height: min(70cqh, calc(86 * var(--u))); min-width: calc(min(70cqh, calc(86 * var(--u))) * 1.15); padding: 0 .22em;
+  border-radius: calc(12 * var(--u)); background: var(--b5-way); color: var(--b5-way-ink);
+  font-size: min(54cqh, calc(66 * var(--u))); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em; }
+#baggageView .b5 .b5-chip-n[data-len="3"] { font-size: .8em; }
+#baggageView .b5 .b5-chip-n[data-len="4"], #baggageView .b5 .b5-chip-n[data-len="5"] { font-size: .64em; }
+#baggageView .b5 .b5-chip-t { font-size: .42em; margin-inline-end: .14em; opacity: .92; }
+#baggageView .b5 .b5-tba { display: flex; align-items: center; justify-content: center; text-align: center; width: 100%;
+  min-height: min(70cqh, calc(86 * var(--u))); padding: calc(4 * var(--u)) calc(8 * var(--u));
+  border: 2px dashed var(--b5-tba-line); border-radius: calc(12 * var(--u)); color: var(--b5-tba-ink);
+  font-size: min(17cqh, calc(19 * var(--u))); font-weight: 620; line-height: 1.14; }
+#baggageView .b5 .b5-tbat { display: block; max-width: 100%; white-space: nowrap; }
+
+/* the strip under the list: the page count, then Later */
+#baggageView .b5 .b5-strip { flex: none; height: calc(64 * var(--u)); display: flex; align-items: center; gap: calc(22 * var(--u));
+  padding: 0 calc(20 * var(--u)); background: var(--b5-strip-bg); border-radius: calc(14 * var(--u)); box-shadow: inset 0 0 0 1px var(--b5-row-line); min-width: 0; }
+#baggageView .b5 .b5-pager { flex: none; display: grid; }
+#baggageView .b5 .b5-pager > .b5-pg { grid-area: 1 / 1; display: flex; align-items: center; gap: calc(12 * var(--u)); opacity: 0; white-space: nowrap; }
+#baggageView .b5 .b5-pg.b5-on { opacity: 1; }
+#baggageView .b5 .b5-plbl { font-size: calc(22 * var(--u)); font-weight: 620; color: var(--b5-ink-2); }
+#baggageView .b5 .b5-pn { font-size: calc(32 * var(--u)); font-weight: 800; font-variant-numeric: tabular-nums; }
+#baggageView .b5 .b5-of { margin: 0 .18em; color: var(--b5-ink-3); font-weight: 600; }
+#baggageView .b5 .b5-dots { display: flex; gap: calc(8 * var(--u)); }
+#baggageView .b5 .b5-dots i { width: calc(12 * var(--u)); height: calc(12 * var(--u)); border-radius: 50%; border: 2px solid var(--b5-ink-3); display: block; }
+#baggageView .b5 .b5-dots i.b5-don { background: var(--b5-ink); border-color: var(--b5-ink); }
+#baggageView .b5 .b5-later { display: flex; align-items: center; gap: calc(18 * var(--u)); min-width: 0; flex: 1 1 auto; }
+#baggageView .b5 .b5-pager + .b5-later { padding-inline-start: calc(22 * var(--u)); border-inline-start: 1.5px solid var(--b5-row-line); }
+#baggageView .b5 .b5-llbl { font-size: calc(22 * var(--u)); font-weight: 650; color: var(--b5-ink-2); white-space: nowrap; flex: none; }
+#baggageView .b5 .b5-litems { display: flex; align-items: center; gap: calc(28 * var(--u)); min-width: 0; flex: 1 1 auto; overflow: hidden; }
+#baggageView .b5 .b5-li { display: flex; align-items: center; gap: calc(10 * var(--u)); white-space: nowrap; flex: none; }
+#baggageView .b5 .b5-temb { width: calc(40 * var(--u)); height: calc(40 * var(--u)); flex: none; display: flex; align-items: center; justify-content: center; }
+#baggageView .b5 .b5-temb img, #baggageView .b5 .b5-temb .full-logo {
+  width: 100% !important; height: 100% !important; min-width: 0 !important; min-height: 0 !important; max-width: 100% !important; max-height: 100% !important;
+  object-fit: contain !important; display: block !important; background: none !important; padding: 0 !important; }
+#baggageView .b5 .b5-lt { font-size: calc(28 * var(--u)); font-weight: 680; font-variant-numeric: tabular-nums; }
+#baggageView .b5 .b5-lc { font-size: calc(28 * var(--u)); font-weight: 600; }
+#baggageView .b5 .b5-lcode { font-size: calc(19 * var(--u)); font-weight: 600; color: var(--b5-ink-2); letter-spacing: .04em; }
+#baggageView .b5 .b5-lf { font-size: calc(20 * var(--u)); font-weight: 560; color: var(--b5-ink-3); }
+#baggageView .b5 .b5-tmr { font-size: calc(19 * var(--u)); font-weight: 600; color: var(--b5-ink-2); }
+
+/* the empty hall: both languages at once, and the next arrival */
+#baggageView .b5 .b5-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(26 * var(--u)); padding: calc(30 * var(--u)); text-align: center; border-radius: calc(24 * var(--u));
+  border: 3px dashed var(--b5-tba-line); background: var(--b5-panel); color: var(--b5-ink); }
+#baggageView .b5 .b5-eico { width: calc(120 * var(--u)); height: calc(120 * var(--u)); color: var(--b5-ink-2); }
+#baggageView .b5 .b5-eico svg { width: 100%; height: 100%; }
+#baggageView .b5 .b5-eico .b5-cut { fill: var(--b5-panel); }
+#baggageView .b5 .b5-etxt { font-size: calc(50 * var(--u)); font-weight: 720; line-height: 1.12; white-space: nowrap; max-width: 100%; }
+#baggageView .b5 .b5-etxt .b5-lg2 { font-weight: 520; color: var(--b5-ink-2); }
+#baggageView .b5 .b5-next { display: flex; flex-direction: column; align-items: center; gap: calc(14 * var(--u)); max-width: 100%; }
+#baggageView .b5 .b5-nlbl { font-size: calc(26 * var(--u)); font-weight: 650; color: var(--b5-ink-2); white-space: nowrap; max-width: 100%; }
+#baggageView .b5 .b5-next .b5-li { gap: calc(14 * var(--u)); }
+#baggageView .b5 .b5-next .b5-temb { width: calc(56 * var(--u)); height: calc(56 * var(--u)); }
+#baggageView .b5 .b5-next .b5-lt, #baggageView .b5 .b5-next .b5-lc { font-size: calc(40 * var(--u)); }
+#baggageView .b5 .b5-next .b5-lcode, #baggageView .b5 .b5-next .b5-lf, #baggageView .b5 .b5-next .b5-tmr { font-size: calc(26 * var(--u)); }
+
+/* ── the hall map ─────────────────────────────────────────────────────── */
+#baggageView .b5 .b5-side { min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: calc(12 * var(--u)); }
+#baggageView .b5 .b5-mapbox { flex: 1 1 auto; min-height: 0; position: relative; background: var(--b5-map-bg); border-radius: calc(22 * var(--u)); container-type: size; }
+#baggageView .b5 .b5-plan { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(94cqw, calc(94cqh * 816 / 610)); aspect-ratio: 816 / 610; container-type: inline-size; }
+#baggageView .b5 .b5-plan-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+#baggageView .b5 .b5-f-meet { fill: var(--b5-floor-meet); }
+#baggageView .b5 .b5-f-dom { fill: var(--b5-floor-dom); }
+#baggageView .b5 .b5-f-intl { fill: var(--b5-floor-intl); }
+#baggageView .b5 .b5-f-ctx { fill: var(--b5-floor-ctx); }
+#baggageView .b5 .b5-wall { fill: none; stroke: var(--b5-wall); stroke-linejoin: round; stroke-linecap: round; }
+#baggageView .b5 .b5-belt { fill: none; stroke: var(--b5-belt); stroke-linecap: round; stroke-linejoin: round; }
+#baggageView .b5 .b5-belt-edge { fill: none; stroke: var(--b5-belt-edge); stroke-linecap: round; stroke-linejoin: round; }
+#baggageView .b5 .b5-belt-cap { fill: var(--b5-belt); stroke: var(--b5-belt-edge); stroke-width: 1.5; }
+#baggageView .b5 .b5-belt-isl { fill: none; stroke: var(--b5-belt-island); stroke-linecap: round; stroke-linejoin: round; }
+#baggageView .b5 .b5-slat { fill: none; stroke: var(--b5-belt-edge); stroke-opacity: .35; stroke-linecap: butt; }
+#baggageView .b5 .b5-beltg { opacity: .55; }
+#baggageView .b5 .b5-beltg.b5-lit { opacity: 1; }
+#baggageView .b5 .b5-beltg.b5-lit .b5-belt-edge, #baggageView .b5 .b5-beltg.b5-lit .b5-belt-cap { stroke: var(--b5-way); }
+#baggageView .b5 .b5-door-intl { stroke: var(--b5-floor-intl); }
+#baggageView .b5 .b5-door-meet { stroke: var(--b5-floor-meet); }
+#baggageView .b5 .b5-route { fill: none; stroke: var(--b5-map-ink-2); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 0.1 7; opacity: .95; }
+#baggageView .b5 .b5-mlbl { position: absolute; color: var(--b5-map-ink); font-weight: 700; line-height: 1.08; font-size: 3.3cqw; }
+#baggageView .b5 .b5-mlbl-sub { color: var(--b5-map-ink-2); font-weight: 620; display: flex; align-items: center; gap: .4em; font-size: 3cqw; }
+#baggageView .b5 .b5-mico { width: 1.2em; height: 1.2em; flex: none; }
+#baggageView .b5 .b5-mico svg { width: 100%; height: 100%; }
+#baggageView .b5 .b5-mico .b5-cut { fill: var(--b5-floor-ctx); }
+#baggageView .b5 .b5-mtx { white-space: nowrap; min-width: 0; }
+#baggageView .b5 .b5-disc { position: absolute; width: 10.4cqw; height: 10.4cqw; transform: translate(-50%, -50%); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 6.4cqw; line-height: 1; letter-spacing: -.03em;
+  background: var(--b5-disc-off); color: var(--b5-disc-off-ink); box-shadow: 0 0 0 .6cqw var(--b5-halo); }
+#baggageView .b5 .b5-disc.b5-lit { background: var(--b5-way); color: var(--b5-way-ink); box-shadow: 0 0 0 .7cqw var(--b5-halo), 0 0 0 1.5cqw rgba(39,99,208,.38); }
+#baggageView .b5 .b5-here { position: absolute; display: flex; align-items: center; gap: 1.3cqw; transform: translate(-1.4cqw, -50%); max-width: 46%; }
+#baggageView .b5 .b5-hdot { width: 2.8cqw; height: 2.8cqw; border-radius: 50%; flex: none; background: #FFFFFF; box-shadow: 0 0 0 .8cqw rgba(255,255,255,.22); }
+html.fids-day #baggageView .b5 .b5-hdot { background: #0F1D35; box-shadow: 0 0 0 .8cqw rgba(15,29,53,.18); }
+#baggageView .b5 .b5-htag { font-size: 3.2cqw; font-weight: 700; border-radius: 1em; padding: .22em .6em; background: #FFFFFF; color: #0F1D35; white-space: nowrap; line-height: 1.1; }
+html.fids-day #baggageView .b5 .b5-htag { background: #0F1D35; color: #FFFFFF; }
+#baggageView .b5 .b5-key { flex: none; display: flex; flex-direction: column; gap: calc(12 * var(--u)); }
+#baggageView .b5 .b5-krow { display: flex; align-items: center; gap: calc(20 * var(--u)); padding: calc(12 * var(--u)) calc(20 * var(--u)); min-height: calc(136 * var(--u));
+  border-radius: calc(18 * var(--u)); background: var(--b5-card); box-shadow: inset 0 0 0 1px var(--b5-card-line); }
+#baggageView .b5 .b5-kdisc { width: calc(76 * var(--u)); height: calc(76 * var(--u)); flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: calc(50 * var(--u)); font-weight: 800; line-height: 1; background: var(--b5-disc-off); color: var(--b5-disc-off-ink); }
+#baggageView .b5 .b5-krow.b5-lit .b5-kdisc { background: var(--b5-way); color: var(--b5-way-ink); }
+#baggageView .b5 .b5-kbody { display: flex; flex-direction: column; gap: calc(10 * var(--u)); min-width: 0; flex: 1 1 auto; }
+#baggageView .b5 .b5-krule { font-size: calc(25 * var(--u)); font-weight: 700; white-space: nowrap; color: var(--b5-ink); }
+#baggageView .b5 .b5-krow:not(.b5-lit) .b5-krule { color: var(--b5-ink-2); }
+#baggageView .b5 .b5-ktags, #baggageView .b5 .b5-stags { display: grid; min-width: 0; }
+#baggageView .b5 .b5-ktags > .b5-pg { grid-area: 1 / 1; display: flex; flex-wrap: wrap; align-items: center; gap: calc(10 * var(--u)) calc(22 * var(--u)); opacity: 0; min-width: 0; }
+#baggageView .b5 .b5-ktags > .b5-pg.b5-on, #baggageView .b5 .b5-stags > .b5-pg.b5-on { opacity: 1; }
+#baggageView .b5 .b5-tag { display: inline-flex; align-items: center; gap: calc(9 * var(--u)); white-space: nowrap; }
+#baggageView .b5 .b5-tag .b5-temb { width: calc(36 * var(--u)); height: calc(36 * var(--u)); }
+#baggageView .b5 .b5-tfn { font-size: calc(25 * var(--u)); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--b5-ink); }
+#baggageView .b5 .b5-knone { font-size: calc(23 * var(--u)); font-weight: 600; color: var(--b5-ink-2); white-space: nowrap; }
+#baggageView .b5.b5-port .b5-krow { min-height: calc(104 * var(--u)); padding: calc(10 * var(--u)) calc(20 * var(--u)); }
+#baggageView .b5.b5-port .b5-kdisc { width: calc(60 * var(--u)); height: calc(60 * var(--u)); font-size: calc(40 * var(--u)); }
+/* the schematic: a plainly labelled row of the feed's belts, not a floor plan */
+#baggageView .b5 .b5-schem { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--b5-map-bg);
+  border-radius: calc(22 * var(--u)); padding: calc(22 * var(--u)) calc(22 * var(--u)) calc(20 * var(--u)); }
+#baggageView .b5 .b5-scap { flex: none; font-size: calc(20 * var(--u)); font-weight: 620; color: var(--b5-map-ink-2); text-align: center; white-space: nowrap;
+  padding-bottom: calc(14 * var(--u)); border-bottom: 1.5px dashed var(--b5-wall); }
+#baggageView .b5 .b5-srow { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(var(--b5-n, 5), minmax(0, 1fr));
+  column-gap: calc(12 * var(--u)); padding-top: calc(26 * var(--u)); }
+#baggageView .b5 .b5-scol { display: flex; flex-direction: column; align-items: center; min-width: 0; min-height: 0; }
+#baggageView .b5 .b5-track { position: relative; width: min(calc(70 * var(--u)), 80%); height: min(calc(340 * var(--u)), 58%); flex: none;
+  border-radius: calc(33 * var(--u)); background: var(--b5-belt); border: 3px solid var(--b5-belt-edge); }
+#baggageView .b5 .b5-isl { position: absolute; inset: 14% 30%; border-radius: calc(12 * var(--u)); background: var(--b5-belt-island); }
+#baggageView .b5 .b5-scol:not(.b5-lit) .b5-track { opacity: .5; }
+#baggageView .b5 .b5-scol.b5-lit .b5-track { border-color: var(--b5-way); }
+#baggageView .b5 .b5-chip.b5-sdisc { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  height: calc(76 * var(--u)); min-width: calc(76 * var(--u)); border-radius: calc(38 * var(--u)); font-size: calc(44 * var(--u));
+  background: var(--b5-disc-off); color: var(--b5-disc-off-ink); box-shadow: 0 0 0 4px var(--b5-halo); }
+#baggageView .b5 .b5-scol.b5-lit .b5-chip.b5-sdisc { background: var(--b5-way); color: var(--b5-way-ink); box-shadow: 0 0 0 5px var(--b5-halo), 0 0 0 11px rgba(39,99,208,.38); }
+#baggageView .b5 .b5-stags { margin-top: calc(22 * var(--u)); }
+#baggageView .b5 .b5-stags > .b5-pg { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; gap: calc(9 * var(--u)); opacity: 0; }
+#baggageView .b5 .b5-stags .b5-tag { flex-direction: column; gap: calc(4 * var(--u)); }
+#baggageView .b5 .b5-stags .b5-temb { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
+#baggageView .b5 .b5-stags .b5-tfn { font-size: calc(20 * var(--u)); }
+#baggageView .b5 .b5-snote { flex: none; display: flex; align-items: center; justify-content: center; gap: calc(14 * var(--u)); color: var(--b5-map-ink-2);
+  padding-top: calc(14 * var(--u)); border-top: 1.5px dashed var(--b5-wall); min-width: 0; }
+#baggageView .b5 .b5-mi { width: calc(28 * var(--u)); height: calc(28 * var(--u)); flex: none; }
+#baggageView .b5 .b5-mi svg { width: 100%; height: 100%; }
+#baggageView .b5 .b5-msg { font-size: calc(19 * var(--u)); font-weight: 620; letter-spacing: .02em; text-align: center; white-space: nowrap; min-width: 0; }

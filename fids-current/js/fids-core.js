@@ -2914,6 +2914,33 @@ var FIDS_FIT_RULES = [
   // (a title is one line while it fits; at the floor and still too wide for
   // its column it stacks one language per line, the "|" dropped)
   { sel: '.bidsv3 .b3-head > div', lines: 2, units: true },
+  // v24013 — the hall board (bids5): the From line, two lines at most in the
+  // row less its airline line; the status and "To be announced", one line or
+  // a language a line; the column titles, the welcome, the band's date and
+  // weather, the map's and the key's words, and the empty hall's.
+  { sel: '.b5 .b5-from', lines: 2, h: function (el) {
+      var r = el.closest('.b5-row'), l = r && r.querySelector('.b5-l1');
+      return r ? Math.max(0, r.clientHeight * 0.94 - (l ? l.offsetHeight : 0)) : 0;
+    } },
+  { sel: '.b5 .b5-st', box: '.b5-stc', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-row'); return r ? r.clientHeight * 0.92 : 0; } },
+  { sel: '.b5 .b5-tbat', box: '.b5-tba', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-row'); return r ? r.clientHeight * 0.86 : 0; } },
+  { sel: '.b5 .b5-rl', box: '.b5-rv', lines: 2, units: true },
+  { sel: '.b5 .b5-aname', box: '.b5-main', lines: 1 },
+  { sel: '.b5 .b5-h-main', lines: 1 },
+  { sel: '.b5 .b5-h', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-cols'); return r ? r.clientHeight - 2 : 0; } },
+  { sel: '.b5 .b5-kick', box: '.b5-greet', lines: 1, units: true },
+  { sel: '.b5 .b5-welcome', box: '.b5-greet', lines: 2, units: true },
+  { sel: '.b5 .b5-date', box: '.b5-cl', lines: 2, units: true },
+  { sel: '.b5 .b5-wxc', box: '.b5-wxw', lines: 2, units: true },
+  { sel: '.b5 .b5-feels', box: '.b5-wxw', lines: 1 },
+  { sel: '.b5 .b5-mtx', box: '.b5-mlbl', lines: 2, units: true },
+  { sel: '.b5 .b5-htag', box: '.b5-plan', lines: 2, units: true },
+  { sel: '.b5 .b5-krule', box: '.b5-kbody', lines: 2, units: true },
+  { sel: '.b5 .b5-knone', box: '.b5-kbody', lines: 2, units: true },
+  { sel: '.b5 .b5-scap', box: '.b5-schem', lines: 2, units: true },
+  { sel: '.b5 .b5-msg', box: '.b5-snote', lines: 2, units: true },
+  { sel: '.b5 .b5-etxt, .b5 .b5-nlbl', box: '.b5-empty', lines: 2, units: true },
+  { sel: '.b5 .b5-llbl, .b5 .b5-plbl', lines: 1 },
   // the belt sign's band: each language is its own line of the band, inside
   // the band's own padding, and the two share one size (group). The second
   // language was a CSS ::after no script can measure, cut at the card's edge
@@ -5476,6 +5503,9 @@ function getDedicatedRenderKey() {
     });
   }
   if (screenType === 'baggage') {
+    // v24013 — the hall board (bids5, ?bidslook=5) lists the whole hall, not
+    // one belt, in both languages at once: its own key.
+    if (_bids5On(iata)) return _b5RenderKey(iata);
     // v24005 — _bidsOnScreen: the "to be announced" screen lists the flights
     // with no belt; upd is signed so a revised time beside a Delayed repaints.
     const arrFlights = (data.arr || []).filter(f => _bidsOnScreen(f, subScreenVal) && (typeof _bidsInWindow !== 'function' || _bidsInWindow(f, Date.now()))).map(f => ({
@@ -5553,6 +5583,605 @@ function _bidsInWindow(f, nowTs) {
     if (!eff) return true;
     return eff >= nowTs - BIDS_WINDOW_TRAIL_MS && eff <= nowTs + BIDS_WINDOW_AHEAD_MS;
   } catch (e) { return true; }
+}
+
+// ══ v24013 — BIDS5: THE BAGGAGE HALL BOARD ════════════════════════════════
+//
+// One screen for the whole hall, from the three directions picked for it:
+// the welcome band across the top (the city's photograph, by day and by
+// night, "Welcome to <City>" in the board's two languages, the clock, the
+// date and the weather when the board already has it), the hall list on the
+// left (every arrival of the belt window, each row ending in its carousel)
+// and the hall map on the right (Moncton's real hall, from the airport's
+// 2018 master plan; elsewhere a row of the belts the feed uses, labelled as
+// a schematic; no map at all where the feed gives no belt).
+//
+// It is OFF unless asked for: ?bidslook=5 on the URL, or an airport whose
+// config carries bidsLook: 5 (getAirportConfig). Anything else, the URL's
+// ?bidslook=3 included, is today's belt screen (bidsv3), untouched.
+//
+// What it will not do:
+//   - show a belt a feed did not give: a flight with no belt reads the
+//     store's "To be announced", and a belt the board could not place
+//     (_beltUnplaced) is left off, as on every belt screen (_bidsUnassigned);
+//   - show one language at a time: every word is a pair of the board's two
+//     languages (French first in Québec), on every page;
+//   - colour anything but a status word amber, red or green; nothing on it
+//     flashes, and a page turns with a slow fade.
+var BIDS5_PAGE_MS = 10000;
+// The switch, as a pure function of the URL's query and the airport's config
+// (tests/bids5-hall.test.js). The URL wins, so one screen can be shown either
+// way; an airport is switched by its config, and the default is off.
+function _b5LookOn(search, cfg) {
+  var m = /[?&]bidslook=([^&#]*)/i.exec(String(search || ''));
+  if (m) {
+    var v = m[1];
+    try { v = decodeURIComponent(v); } catch (e) {}
+    return String(v).trim() === '5';
+  }
+  if (cfg && Object.prototype.hasOwnProperty.call(cfg, 'bidsLook')) return String(cfg.bidsLook).trim() === '5';
+  return false;
+}
+function _bids5On(iata) {
+  var s = '', cfg = null;
+  try { s = (typeof location !== 'undefined' && location.search) || ''; } catch (e) {}
+  try { cfg = (typeof getAirportConfig === 'function') ? getAirportConfig(iata) : null; } catch (e2) {}
+  return _b5LookOn(s, cfg);
+}
+// The time a flight is listed by (the belt window's own: revised, else
+// scheduled).
+function _b5Eff(f) {
+  return (f && ((typeof f._revTs === 'number' && f._revTs > 0) ? f._revTs : (f._sortTs || 0))) || 0;
+}
+// A codeshare is one flight, listed once: rows from the same place at the
+// same scheduled time onto the same belt are the same aircraft. The
+// operating carrier's number is the one kept, when the board knows it.
+function _b5Dedupe(rows) {
+  var out = [], at = Object.create(null);
+  (rows || []).forEach(function (f) {
+    var t = f._sortTs || f.time || '';
+    var k = t ? [f._locIata || f.origin || '', t, f._belt || ''].join('|') : 'n|' + (f.flight || '');
+    if (at[k] == null) { at[k] = out.length; out.push(f); return; }
+    var o = out[at[k]];
+    var own = function (r) { return !!(r._opCode && r._opCode === r.airline); };
+    if (own(f) && !own(o)) out[at[k]] = f;
+  });
+  return out;
+}
+// The hall's list: every arrival of the belt window (_bidsInWindow), each
+// one once. A belt the feed gave that the board cannot place is on no
+// screen, as on the belt screens.
+function _b5Hall(arr, nowTs, inWin) {
+  return _b5Dedupe((arr || []).filter(function (f) {
+    return f && !f._beltUnplaced && (typeof inWin !== 'function' || inWin(f, nowTs));
+  }));
+}
+// The arrivals after the window, soonest first: the strip's "Later", and the
+// empty hall's next arrival. Cancelled and diverted flights are not coming.
+function _b5Later(arr, nowTs, aheadMs, n, norm) {
+  var rows = (arr || []).filter(function (f) {
+    if (!f || f._beltUnplaced) return false;
+    var k = typeof norm === 'function' ? norm(f.status) : '';
+    if (k === 'cancelled' || k === 'diverted') return false;
+    return _b5Eff(f) > nowTs + aheadMs;
+  }).sort(function (a, b) { return _b5Eff(a) - _b5Eff(b); });
+  return _b5Dedupe(rows).slice(0, n);
+}
+// A belt key as the hall shows it: the terminal (or hall) letter the board
+// composed in front of it ('A-1' at Boston, 'D-300' at Calgary) and the
+// number. null when there is no belt.
+function _b5BeltParts(belt) {
+  var s = String(belt == null ? '' : belt).trim();
+  if (!s || s === '—') return null;
+  var m = /^([A-Za-z0-9]+)-(.+)$/.exec(s);
+  return m ? { t: m[1].toUpperCase(), n: m[2] } : { t: '', n: s };
+}
+function _b5BeltOrder(a, b) {
+  var pa = _b5BeltParts(a) || { t: '', n: '' }, pb = _b5BeltParts(b) || { t: '', n: '' };
+  if (pa.t !== pb.t) return pa.t < pb.t ? -1 : 1;
+  var na = parseFloat(pa.n), nb = parseFloat(pb.n);
+  if (isFinite(na) && isFinite(nb) && na !== nb) return na - nb;
+  return String(pa.n) < String(pb.n) ? -1 : (String(pa.n) > String(pb.n) ? 1 : 0);
+}
+// The belts the feed uses today, in order.
+function _b5FeedBelts(arr) {
+  var seen = Object.create(null), out = [];
+  (arr || []).forEach(function (f) {
+    var b = f && !f._beltUnplaced && f._belt;
+    if (b && _b5BeltParts(b) && !seen[b]) { seen[b] = 1; out.push(String(b)); }
+  });
+  return out.sort(_b5BeltOrder);
+}
+// The halls we hold a real plan of. Moncton's is traced from the 2018
+// Master Plan, figure 7-1 (Level 1): the sloped oval in the public hall is
+// the DOMESTIC BAGGAGE CONVEYOR (belt 1, its sign over it in the airport's
+// own 2016 photograph), the flat L-shaped wall-fed belt inside the customs
+// hall the INTERNATIONAL BAGGAGE CONVEYOR (belt 2, 2023 annual report). The
+// board's own belt for a Moncton flight is mapADB's domestic 1 /
+// international 2. Coordinates are the plan's (viewBox), the labels and
+// discs placed on them in shares of the box.
+var _B5_HALL_PLANS = {
+  YQM: {
+    box: [196, 138, 1012, 748],
+    belts: [
+      { id: '1', label: 'domesticFlights', disc: [744, 303] },
+      { id: '2', label: 'internationalFlights', disc: [372, 312] }
+    ],
+    labels: [
+      { key: 'domesticFlights', at: [598, 160], w: 300 },
+      { key: 'internationalFlights', at: [262, 196], w: 300 },
+      { key: 'hallCustoms', at: [214, 676], w: 250, icon: 'shield', sub: true },
+      { key: 'arr', at: [700, 556], w: 290 },
+      { key: 'hallExit', at: [700, 690], w: 290, icon: 'exit', sub: true }
+    ],
+    here: [630, 452]
+  }
+};
+function _b5PlanSvg(P, lit) {
+  // lit: belt id -> the pages (" 1 2 ") whose flights use it
+  var b1 = 'M654,374 L835,233', b2 = 'M242,170 L242,312 L488,312', sw = 3.4;
+  var g = function (id) { return '<g class="b5-beltg' + (lit[id] && lit[id].on ? ' b5-lit' : '') + '" data-lit="' + (lit[id] ? lit[id].pages : '') + '">'; };
+  var bx = P.box[0], by = P.box[1], bw = P.box[2] - P.box[0], bh = P.box[3] - P.box[1];
+  return '<svg class="b5-plan-svg" viewBox="' + bx + ' ' + by + ' ' + bw + ' ' + bh + '" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">'
+    + '<path class="b5-f-ctx" d="M200,480 L476,480 L476,722 L200,722 Z"/>'
+    + '<path class="b5-f-ctx" d="M200,150 L241,150 L241,476 L200,476 Z" opacity=".6"/>'
+    + '<path class="b5-f-ctx" d="M884,395 L1000,378 L1000,545 L868,513 L870,486 Z" opacity=".8"/>'
+    + '<path class="b5-f-meet" d="M582,504 Q724,482 868,517 L1000,549 L1000,722 L480,722 L480,650 Q505,560 582,504 Z"/>'
+    + '<path class="b5-f-intl" d="M245,155 L322,155 L332,192 L480,162 L578,153 L578,476 L245,476 Z"/>'
+    + '<path class="b5-f-dom" d="M582,153 L1000,153 L1000,378 L884,395 L870,486 L868,512 Q724,478 582,500 Z"/>'
+    + g('2')
+    +   '<path class="b5-belt-edge" d="' + b2 + '" stroke-width="45" style="stroke-linecap:butt"/>'
+    +   '<path class="b5-belt" d="' + b2 + '" stroke-width="42" style="stroke-linecap:butt"/>'
+    +   '<path class="b5-belt-cap" d="M488,291 A21,21 0 0 1 488,333"/>'
+    +   '<path class="b5-slat" d="M242,170 L242,312 L490,312" stroke-width="30" stroke-dasharray="1.2 9"/>'
+    +   '<path class="b5-belt-isl" d="M242,180 L242,312 L488,312" stroke-width="5" style="stroke-linecap:butt"/>'
+    + '</g>'
+    + g('1')
+    +   '<path class="b5-belt-edge" d="' + b1 + '" stroke-width="50"/>'
+    +   '<path class="b5-belt" d="' + b1 + '" stroke-width="47"/>'
+    +   '<path class="b5-slat" d="' + b1 + '" stroke-width="41" stroke-dasharray="1.2 9"/>'
+    +   '<path class="b5-belt-isl" d="' + b1 + '" stroke-width="23"/>'
+    + '</g>'
+    + '<path class="b5-wall" d="M245,155 L322,155 L332,192 L480,162 L578,153 L578,476 L245,476 Z" stroke-width="' + sw + '"/>'
+    + '<path class="b5-wall" d="M1000,190 L1000,153 L582,153 L582,500 M868,512 L870,486 L884,395 L1000,378 L1000,330" stroke-width="' + sw + '"/>'
+    + '<path class="b5-wall" d="M582,500 Q724,478 868,512" stroke-width="' + (sw * 0.6) + '" stroke-dasharray="6 7" opacity=".8"/>'
+    + '<path class="b5-wall" d="M200,480 L476,480 L476,722 L200,722 Z" stroke-width="' + (sw * 0.6) + '" opacity=".7"/>'
+    + '<path class="b5-wall" d="M480,650 Q505,560 582,504 M868,517 L1000,549" stroke-width="' + (sw * 0.6) + '" opacity=".7"/>'
+    + '<path class="b5-door-intl" d="M300,476 L360,476" stroke-width="' + (sw + 2) + '"/>'
+    + '<path class="b5-door-meet" d="M476,612 L476,650" stroke-width="' + (sw + 2) + '"/>'
+    + '<path class="b5-f-ctx" d="M603,722 L690,722 L690,744 L603,744 Z"/>'
+    + '<path class="b5-route" d="M650,470 C655,560 646,640 646,716"/>'
+    + '<path class="b5-route" d="M330,446 L330,600 Q330,632 362,632 L530,632 Q600,632 616,690"/>'
+    + '</svg>';
+}
+// What the right-hand side of the hall is: Moncton's plan, a schematic of
+// the feed's belts, or nothing (no belt in the feed: no map is drawn and the
+// list takes the width).
+function _b5MapKind(iata, arr) {
+  if (_B5_HALL_PLANS[String(iata || '').toUpperCase()]) return 'plan';
+  return _b5FeedBelts(arr).length ? 'schematic' : 'none';
+}
+// Rows a page holds: seven on a landscape screen, six under the map on a
+// portrait one, twelve when a portrait screen has no map.
+function _b5PerPage(portrait, kind) { return portrait ? (kind === 'none' ? 12 : 6) : 7; }
+// The pages, as even as they come: eight flights are two pages of four, not
+// seven and one.
+function _b5PageSizes(n, per) {
+  if (!(n > 0)) return [];
+  per = Math.max(1, per || 1);
+  var pages = Math.ceil(n / per), base = Math.floor(n / pages), extra = n % pages, out = [];
+  for (var i = 0; i < pages; i++) out.push(base + (i < extra ? 1 : 0));
+  return out;
+}
+// The schematic's belts: all of the feed's when they fit (eight), else the
+// ones this hour's flights use.
+function _b5SchematicBelts(all, hall) {
+  if (all.length <= 8) return all;
+  var used = Object.create(null);
+  (hall || []).forEach(function (f) { if (f._belt) used[f._belt] = 1; });
+  var u = all.filter(function (b) { return used[b]; });
+  return u.length ? u.slice(0, 10) : all.slice(0, 8);
+}
+// A pair of the board's two languages: each language a whole phrase
+// (.fx-unit) marked with its language, the bar between them the only place
+// the line may break (.fx-brk), dropped when the shared fitter stacks them.
+function _b5Pair(get, L, key, cls) {
+  var seen = Object.create(null), out = [];
+  for (var i = 0; i < L.length; i++) {
+    var w = String(get(L[i]) || '');
+    if (!w || seen[w.toLowerCase()]) continue;
+    seen[w.toLowerCase()] = 1;
+    out.push(BoardStrings.half(L[i], fidsEscHtml(w), 'b5-u fx-unit' + (out.length ? ' b5-lg2' : ' b5-lg1') + (cls ? ' ' + cls : ''), key ? { key: key } : null));
+  }
+  return out.join(' <span class="b5-sep fx-brk">|</span> ');
+}
+function _b5Word(key) { return function (l) { return String(TLin(key, l) || '').replace(/^\s*#\s*|\s*#\s*$/g, ''); }; }
+// A feed's status as the board's status key (SS): the spellings feeds use
+// folded onto it, as _statusWord does.
+function _b5StatusKey(raw) {
+  var r = String(raw || '').toLowerCase().replace(/[\s_-]+/g, '');
+  var same = { finalcall: 'final', enroute: 'active', inair: 'active', airborne: 'active', closed: 'gateclosed', canceled: 'cancelled', late: 'delayed' };
+  return (typeof SS !== 'undefined' && SS[r]) ? r : (same[r] || r);
+}
+// Which status colour a status word wears: amber Delayed, red Cancelled and
+// Diverted, green On time and Early. Arrived reads in the ink, the rest
+// quieter. Nothing else on the board takes these colours.
+function _b5Tone(norm) {
+  if (norm === 'delayed') return 'amber';
+  if (norm === 'cancelled' || norm === 'diverted') return 'red';
+  if (norm === 'on-time' || norm === 'early') return 'green';
+  if (norm === 'arrived') return 'ink';
+  return 'quiet';
+}
+var _B5_ICON = {
+  bag: '<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M24 14v-3a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v3" fill="none" stroke="currentColor" stroke-width="4"/><rect x="14" y="14" width="36" height="30" rx="5" fill="currentColor"/><rect x="21" y="17" width="4" height="24" rx="2" class="b5-cut"/><rect x="39" y="17" width="4" height="24" rx="2" class="b5-cut"/><rect x="4" y="49" width="56" height="5" rx="2.5" fill="currentColor"/><circle cx="12" cy="59" r="3" fill="currentColor"/><circle cx="32" cy="59" r="3" fill="currentColor"/><circle cx="52" cy="59" r="3" fill="currentColor"/></svg>',
+  landed: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g transform="rotate(22 12 11)"><path fill="currentColor" d="M21.2 11c0 .8-.7 1.3-1.5 1.3h-5.4l-4.5 7.1H8l2.5-7.1H6l-1.5 1.8H3.1l.9-3.1-.9-3.1h1.4L6 9.7h4.5L8 2.6h1.8l4.5 7.1h5.4c.8 0 1.5.5 1.5 1.3z"/></g><rect x="2" y="20.6" width="20" height="2" rx="1" fill="currentColor"/></svg>',
+  plane: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M21.2 12c0 .8-.7 1.3-1.5 1.3h-5.4l-4.5 7.1H8l2.5-7.1H6l-1.5 1.8H3.1l.9-3.1-.9-3.1h1.4L6 10.7h4.5L8 3.6h1.8l4.5 7.1h5.4c.8 0 1.5.5 1.5 1.3z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 6.8V12l3.6 2.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M7.6 12.4l3 3 5.8-6.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cross: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.7 8.7l6.6 6.6M15.3 8.7l-6.6 6.6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  shield: '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="currentColor" d="M24 4l16 6v12c0 10-7 18-16 22C15 40 8 32 8 22V10z"/><path class="b5-cut" d="M21 28.5l-5.5-5.5 2.8-2.8 2.7 2.7 7.7-7.7 2.8 2.8z"/></svg>',
+  exit: '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8v26"/><path d="M14 25l10 10 10-10"/><path d="M8 42h32"/></g></svg>',
+  info: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.6" r="1.4" fill="currentColor"/><rect x="10.8" y="10.4" width="2.4" height="7.2" rx="1.2" fill="currentColor"/></svg>'
+};
+var _B5_TONE_ICON = { amber: 'clock', red: 'cross', green: 'check', ink: 'landed', quiet: 'plane' };
+// The carousel chip: the wayfinding blue of a hall sign, a white numeral,
+// the terminal letter small in front of it. Never a status colour.
+function _b5Chip(p, cls) {
+  return '<span class="b5-chip' + (cls ? ' ' + cls : '') + '" dir="ltr">'
+    + (p.t ? '<span class="b5-chip-t">' + fidsEscHtml(p.t) + '</span>' : '')
+    + '<span class="b5-chip-n" data-len="' + String(p.n).length + '">' + fidsEscHtml(p.n) + '</span></span>';
+}
+// A row's carousel cell: the feed's belt, or the store's "To be announced"
+// in both languages. Never a number the feed did not give; nothing for a
+// flight that is not coming.
+function _b5BeltCell(f, c, dead) {
+  if (dead) return '';
+  var p = _b5BeltParts(f._belt);
+  return p ? _b5Chip(p) : '<span class="b5-tba"><span class="b5-tbat">' + c.tba + '</span></span>';
+}
+// An airline's mark on a row: its emblem, then its lettering at the city's
+// size (rule 1: the logo is never smaller than the text beside it), the
+// white lettering by night and the colour one by day, never on a box.
+function _b5Airline(f) {
+  var code = String(f.airline || '').trim().toUpperCase();
+  var name = String(f._airlineName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code).toUpperCase();
+  var safe = fidsEscHtml(name);
+  var base = (typeof IATA_TO_WORDMARK !== 'undefined') ? IATA_TO_WORDMARK[code] : '';
+  var mark = base
+    ? '<span class="b5-wm" data-name="' + safe + '">'
+      + '<img class="b5-wm-n" alt="' + safe + '" src="' + fidsEscHtml(wordmarkSrc(base, 'light')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
+      + '<img class="b5-wm-d" alt="" src="' + fidsEscHtml(wordmarkSrc(base, 'dark')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
+      + '</span>'
+    : '<span class="b5-aname">' + safe + '</span>';
+  return '<span class="b5-emb">' + mkLogo(f.airline, f._airlineName) + '</span>' + mark;
+}
+function _b5Tag(f) {
+  return '<span class="b5-tag"><span class="b5-temb">' + mkLogo(f.airline, f._airlineName) + '</span><span class="b5-tfn" dir="ltr">' + fidsEscHtml(f.flight || '') + '</span></span>';
+}
+// 'HH:MM' in the airport's clock from a time stamp, for the board's own
+// clock formatting (_bidsTimeForLang).
+function _b5Hhmm(ts, c) {
+  if (!(ts > 0)) return '';
+  return BoardStrings.time(new Date(ts), c.L[0], c.tz, { clock24: true });
+}
+function _b5LandedTs(f) {
+  var a = f && f._actualArrTime;
+  if (!a) return 0;
+  if (typeof a === 'number') return a;
+  var t = (typeof adbTs === 'function') ? adbTs(String(a)) : Date.parse(String(a));
+  return isFinite(t) ? t : 0;
+}
+function _b5CityHtml(f, c) {
+  var disp = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, c.L[0]) : formatCityIata(f.origin || '—', '', c.L[0]);
+  var city = String(disp || ''), code = '';
+  try {
+    var m = city.match(_CITY_CODE_TAIL);
+    if (m) { code = _dispIata((m[1] || m[2] || '').toUpperCase()); city = _stripCityCode(city); }
+  } catch (e) {}
+  return { html: _cityApHtml(city, code, false, !!code), code: code, city: city };
+}
+function _b5RowHtml(f, c, i) {
+  var norm = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus(f.status) : String(f.status || '');
+  var tone = _b5Tone(norm), dead = tone === 'red';
+  var st = _ssEntry(_b5StatusKey(f.status));
+  var stWords = st ? _b5Pair(function (l) { return st[l]; }, c.L) : '';
+  var from = _b5CityHtml(f, c);
+  var rev = '';
+  if (!dead) {
+    var lt = norm === 'arrived' ? _b5LandedTs(f) : 0;
+    if (lt) rev = '<span class="b5-t">' + fidsEscHtml(_bidsTimeForLang(_b5Hhmm(lt, c))) + '</span><span class="b5-rl">' + c.landedLbl + '</span>';
+    else if (f.upd && f.upd !== f.time) rev = '<span class="b5-t">' + fidsEscHtml(_bidsTimeForLang(f.upd)) + '</span>';
+  }
+  return '<div class="b5-row fids-dn-fade b5-tone-' + tone + (i % 2 ? ' b5-alt' : '') + '">'
+    + '<div class="b5-main"><div class="b5-l1">' + _b5Airline(f) + '<span class="b5-fn" dir="ltr">' + fidsEscHtml(f.flight || '') + '</span></div>'
+    +   BoardStrings.markHalf('<div class="b5-from"><span class="b5-city">' + from.html + '</span>'
+    +   (from.code ? '<span class="b5-tail"> <span class="b5-bar">|</span> <span class="b5-code">' + fidsEscHtml(from.code) + '</span></span>' : '') + '</div>', c.L[0])
+    + '</div>'
+    + '<div class="b5-tm' + (dead ? ' b5-dim' : '') + '"><span class="b5-t">' + fidsEscHtml(_bidsTimeForLang(f.time)) + '</span></div>'
+    + '<div class="b5-rv">' + rev + '</div>'
+    + '<div class="b5-stc"><span class="b5-sti">' + _B5_ICON[_B5_TONE_ICON[tone]] + '</span><span class="b5-st b5-st-' + tone + '">' + stWords + '</span></div>'
+    + '<div class="b5-bc">' + _b5BeltCell(f, c, dead) + '</div>'
+    + '</div>';
+}
+// The page a list row is on, for each belt: the map lights a belt while the
+// page on screen has a flight on it.
+function _b5Lit(c, ids) {
+  var lit = Object.create(null);
+  ids.forEach(function (id) { lit[id] = { pages: ' ', on: false }; });
+  c.pages.forEach(function (rows, pi) {
+    rows.forEach(function (f) {
+      if (_b5Tone((typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus(f.status) : '') === 'red') return;
+      var b = f._belt && lit[f._belt];
+      if (b && b.pages.indexOf(' ' + (pi + 1) + ' ') < 0) b.pages += (pi + 1) + ' ';
+    });
+  });
+  ids.forEach(function (id) { lit[id].on = lit[id].pages.indexOf(' ' + c.page + ' ') >= 0; });
+  return lit;
+}
+// Each page's flights on one belt, as tags (the airline's emblem and the
+// flight number), one block per page, shown with that page. A belt with no
+// flight on the page says so on the key (idle), and says nothing on the
+// schematic's narrow column.
+function _b5Tags(c, belt, idle) {
+  var pages = c.pages.length ? c.pages : [[]];
+  return pages.map(function (rows, pi) {
+    var on = rows.filter(function (f) { return f._belt === belt && _b5Tone((typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus(f.status) : '') !== 'red'; });
+    return '<div class="b5-pg' + (pi + 1 === c.page ? ' b5-on' : '') + '" data-p="' + (pi + 1) + '">'
+      + (on.length ? on.map(_b5Tag).join('') : (idle ? '<span class="b5-knone">' + c.idle + '</span>' : '')) + '</div>';
+  }).join('');
+}
+function _b5PlanHtml(c) {
+  var P = _B5_HALL_PLANS[c.iata.toUpperCase()];
+  var bw = P.box[2] - P.box[0], bh = P.box[3] - P.box[1];
+  var X = function (x) { return ((x - P.box[0]) / bw * 100).toFixed(2) + '%'; };
+  var Y = function (y) { return ((y - P.box[1]) / bh * 100).toFixed(2) + '%'; };
+  var lit = _b5Lit(c, P.belts.map(function (b) { return b.id; }));
+  var out = '<div class="b5-mapbox fids-dn-fade"><div class="b5-plan" dir="ltr">' + _b5PlanSvg(P, lit);
+  P.labels.forEach(function (lb) {
+    out += '<div class="b5-mlbl' + (lb.sub ? ' b5-mlbl-sub' : '') + '" style="left:' + X(lb.at[0]) + ';top:' + Y(lb.at[1]) + ';width:' + (lb.w / bw * 100).toFixed(2) + '%">'
+      + (lb.icon ? '<span class="b5-mico">' + _B5_ICON[lb.icon] + '</span>' : '') + '<span class="b5-mtx">' + _b5Pair(_b5Word(lb.key), c.L, lb.key) + '</span></div>';
+  });
+  P.belts.forEach(function (b) {
+    out += '<div class="b5-disc' + (lit[b.id].on ? ' b5-lit' : '') + '" data-lit="' + lit[b.id].pages + '" style="left:' + X(b.disc[0]) + ';top:' + Y(b.disc[1]) + '">' + fidsEscHtml(b.id) + '</div>';
+  });
+  out += '<div class="b5-here" style="left:' + X(P.here[0]) + ';top:' + Y(P.here[1]) + '"><span class="b5-hdot"></span><span class="b5-htag">' + _b5Pair(_b5Word('youAreHere'), c.L, 'youAreHere') + '</span></div>';
+  out += '</div></div>';
+  // the key: each belt by the hall's own label, and this page's flights on it
+  out += '<div class="b5-key">' + P.belts.map(function (b) {
+    return '<div class="b5-krow fids-dn-fade' + (lit[b.id].on ? ' b5-lit' : '') + '" data-lit="' + lit[b.id].pages + '"><span class="b5-kdisc">' + fidsEscHtml(b.id) + '</span>'
+      + '<div class="b5-kbody"><div class="b5-krule">' + _b5Pair(_b5Word(b.label), c.L, b.label) + '</div><div class="b5-ktags">' + _b5Tags(c, b.id, true) + '</div></div></div>';
+  }).join('') + '</div>';
+  return out;
+}
+function _b5SchematicHtml(c) {
+  var lit = _b5Lit(c, c.belts);
+  return '<div class="b5-schem fids-dn-fade">'
+    + '<div class="b5-scap">' + _b5Pair(_b5Word('schematicNote'), c.L, 'schematicNote') + '</div>'
+    + '<div class="b5-srow" style="--b5-n:' + c.belts.length + '">' + c.belts.map(function (b) {
+      var p = _b5BeltParts(b);
+      return '<div class="b5-scol' + (lit[b].on ? ' b5-lit' : '') + '" data-lit="' + lit[b].pages + '"><div class="b5-track"><span class="b5-isl"></span>' + _b5Chip(p, 'b5-sdisc') + '</div>'
+        + '<div class="b5-stags">' + _b5Tags(c, b, false) + '</div></div>';
+    }).join('') + '</div>'
+    + '<div class="b5-snote"><span class="b5-mi">' + _B5_ICON.info + '</span><span class="b5-msg">' + _b5Pair(function (l) { return (BoardStrings.list('bagsTicker', l) || [])[0]; }, c.L) + '</span></div>'
+    + '</div>';
+}
+function _b5LaterItem(f, c) {
+  var ts = _b5Eff(f);
+  var tmr = (typeof _wxLocalDate === 'function' && ts && _wxLocalDate(c.iata, ts) !== _wxLocalDate(c.iata, c.nowTs)) ? '<span class="b5-tmr">' + c.tomorrow + '</span>' : '';
+  var from = _b5CityHtml(f, c);
+  return '<span class="b5-li"><span class="b5-temb">' + mkLogo(f.airline, f._airlineName) + '</span>'
+    + '<span class="b5-lt" dir="ltr">' + fidsEscHtml(_bidsTimeForLang(f.upd || f.time)) + '</span>' + tmr
+    + BoardStrings.markHalf('<span class="b5-lc">' + fidsEscHtml(from.city) + '</span>', c.L[0])
+    + (from.code ? '<span class="b5-lcode">' + fidsEscHtml(from.code) + '</span>' : '')
+    + '<span class="b5-lf" dir="ltr">' + fidsEscHtml(f.flight || '') + '</span></span>';
+}
+function _b5StripHtml(c) {
+  var n = c.pages.length;
+  var pager = n > 1 ? '<div class="b5-pager">' + c.pages.map(function (r, pi) {
+    var p = pi + 1, dots = '';
+    for (var d = 1; d <= n; d++) dots += '<i class="' + (d === p ? 'b5-don' : '') + '"></i>';
+    return '<span class="b5-pg' + (p === c.page ? ' b5-on' : '') + '" data-p="' + p + '"><span class="b5-plbl">' + c.pageLbl + '</span><span class="b5-pn" dir="ltr">' + p + '<span class="b5-of">/</span>' + n + '</span><span class="b5-dots">' + dots + '</span></span>';
+  }).join('') + '</div>' : '';
+  var items = c.later.length ? '<div class="b5-later"><span class="b5-llbl">' + c.laterLbl + '</span><span class="b5-litems">' + c.later.map(function (f) { return _b5LaterItem(f, c); }).join('') + '</span></div>' : '';
+  // (the empty hall names its next arrival itself: no strip under it)
+  return (c.pages.length && (pager || items)) ? '<div class="b5-strip fids-dn-fade">' + pager + items + '</div>' : '';
+}
+function _b5EmptyHtml(c) {
+  var down = (typeof _fidsFeedDownInView === 'function') ? _fidsFeedDownInView(c.iata, 'arr') : '';
+  if (down) return '<div class="b5-empty b5-feeddown ffn-inview ffn-inview--belt" role="status">' + down + '</div>';
+  var nx = c.later[0];
+  return '<div class="b5-empty fids-dn-fade" role="status"><span class="b5-eico">' + _B5_ICON.bag + '</span>'
+    + '<div class="b5-etxt">' + _b5Pair(_b5Word('noArrivalsHour'), c.L, 'noArrivalsHour') + '</div>'
+    + (nx ? '<div class="b5-next"><span class="b5-nlbl">' + _b5Pair(_b5Word('nextArrival'), c.L, 'nextArrival') + '</span>' + _b5LaterItem(nx, c) + '</div>' : '')
+    + '</div>';
+}
+function _b5WxHtml(c) {
+  var w = (typeof TOMORROW_WX !== 'undefined') && TOMORROW_WX[c.iata] && TOMORROW_WX[c.iata].current;
+  if (!w || typeof w.temp !== 'number') return '';
+  var key = (typeof TIO_KEY !== 'undefined') ? TIO_KEY[w.code] : '';
+  var ic = function (night) { try { return window.fidsWxIcon(_wxAnimIcon(w.code, night), 64); } catch (e) { return ''; } };
+  return '<div class="b5-wx"><span class="b5-wxi"><span class="b5-wxi-d">' + ic(false) + '</span><span class="b5-wxi-n">' + ic(true) + '</span></span>'
+    + '<span class="b5-deg" dir="ltr">' + fidsEscHtml(displayTemp(Math.round(w.temp))) + '</span>'
+    + '<span class="b5-wxw">' + (key ? '<span class="b5-wxc">' + _b5Pair(function (l) { return BoardStrings.bs(key, l); }, c.L, key) + '</span>' : '')
+    + (typeof w.feelsLike === 'number' ? '<span class="b5-feels">' + _b5Pair(_b5Word('feelsLike'), c.L) + ' <bdi class="b5-fdeg" dir="ltr">' + fidsEscHtml(displayTemp(Math.round(w.feelsLike))) + '</bdi></span>' : '')
+    + '</span></div>';
+}
+function _b5BandHtml(c) {
+  var day = '', night = '', dusk = false;
+  try { day = _wxCityPic(c.iata, false) || ''; night = _wxNightPicFor(c.iata) || ''; } catch (e) {}
+  if (!night) { night = day; dusk = true; }
+  var bg = function (u) { return u ? ' style="background-image:url(' + fidsEscHtml(u) + ')"' : ''; };
+  var city = function (l) {
+    var n = '';
+    try { n = airportCityNameSafe_v21877(c.iata, l) || ''; } catch (e) {}
+    if (!n) { try { n = String((typeof CITY !== 'undefined' && CITY[c.iata]) || (AP[c.iata] || {}).city || c.iata); } catch (e2) { n = c.iata; } }
+    // the board's tables keep some names in capitals (MONCTON): a welcome is
+    // written as a name is, in title case
+    if (n && n === n.toUpperCase() && /[A-Z]/.test(n)) { try { n = tc(n); } catch (e3) {} }
+    return n;
+  };
+  var welcome = _b5Pair(function (l) { var w = TLin('welcomeTo', l); return w ? w + ' ' + city(l) : ''; }, c.L, '', 'b5-wl');
+  return '<header class="b5-band">'
+    + '<div class="b5-ph b5-ph-d"' + bg(day) + '></div><div class="b5-ph b5-ph-n' + (dusk ? ' b5-dusk' : '') + '"' + bg(night) + '></div><div class="b5-scrim"></div>'
+    + '<div class="b5-bin"><div class="b5-greet">'
+    +   '<div class="b5-kicker"><span class="b5-kico">' + _B5_ICON.bag + '</span><span class="b5-kick">' + _b5Pair(_b5Word('bagClaim'), c.L) + '</span></div>'
+    +   '<div class="b5-welcome">' + welcome + '</div>'
+    + '</div><div class="b5-clockwx fids-dn-fade">'
+    +   '<div class="b5-cl"><div class="b5-clock" id="dedicatedBannerClock" dir="ltr">' + fidsEscHtml(_ocClockTime1(c.now, c.tz)) + '</div><div class="b5-date" id="bidsBannerDate">' + _ocClockDate(c.now, c.tz) + '</div></div>'
+    +   _b5WxHtml(c)
+    + '</div></div></header>';
+}
+function _b5ColsHtml(c) {
+  var dot = ' <span class="b5-dot">·</span> ';
+  return '<div class="b5-cols fids-dn-fade">'
+    + '<div class="b5-h b5-h-main">' + _b5Pair(_b5Word('airline'), c.L) + dot + _b5Pair(_b5Word('flight'), c.L) + dot + _b5Pair(_b5Word('destArr'), c.L) + '</div>'
+    + '<div class="b5-h">' + _b5Pair(_b5Word('time'), c.L) + '</div>'
+    + '<div class="b5-h">' + _b5Pair(_b5Word('revised'), c.L) + '</div>'
+    + '<div class="b5-h">' + _b5Pair(_b5Word('status'), c.L) + '</div>'
+    + '<div class="b5-h b5-h-belt">' + _b5Pair(_b5Word('carousel'), c.L) + '</div>'
+    + '</div>';
+}
+// The whole screen, from the context _b5Render gathers.
+function _b5Html(c) {
+  var minSlots = c.portrait ? (c.kind === 'none' ? 8 : 4) : 5;
+  var pages = c.pages.length
+    ? c.pages.map(function (rows, pi) {
+        return '<div class="b5-page' + (pi + 1 === c.page ? ' b5-on' : '') + '" data-p="' + (pi + 1) + '" style="--b5-slots:' + Math.max(rows.length, minSlots) + '">'
+          + rows.map(function (f, i) { return _b5RowHtml(f, c, i); }).join('') + '</div>';
+      }).join('')
+    : '<div class="b5-page b5-on" data-p="1">' + _b5EmptyHtml(c) + '</div>';
+  var side = c.kind === 'plan' ? '<aside class="b5-side b5-side-plan">' + _b5PlanHtml(c) + '</aside>'
+    : c.kind === 'schematic' ? '<aside class="b5-side b5-side-schem">' + _b5SchematicHtml(c) + '</aside>' : '';
+  return '<div class="b5 b5-' + c.kind + (c.portrait ? ' b5-port' : '') + (c.pages.length ? '' : ' b5-isempty') + '" data-page="' + c.page + '" data-pages="' + Math.max(1, c.pages.length) + '" data-map="' + c.kind + '">'
+    + _b5BandHtml(c)
+    + '<div class="b5-body"><section class="b5-list">' + (c.pages.length ? _b5ColsHtml(c) : '') + '<div class="b5-pages">' + pages + '</div>' + _b5StripHtml(c) + '</section>' + side + '</div>'
+    + '</div>';
+}
+// Shows page p (1-based) of the list, of the map's lights and of the key, in
+// place: a turn changes classes only, so it fades and never repaints.
+function _b5Show(root, p) {
+  if (!root) return;
+  root.setAttribute('data-page', String(p));
+  var ps = root.querySelectorAll('[data-p]');
+  for (var i = 0; i < ps.length; i++) ps[i].classList.toggle('b5-on', ps[i].getAttribute('data-p') === String(p));
+  var ls = root.querySelectorAll('[data-lit]');
+  for (var j = 0; j < ls.length; j++) ls[j].classList.toggle('b5-lit', (' ' + ls[j].getAttribute('data-lit') + ' ').indexOf(' ' + p + ' ') >= 0);
+}
+function _b5Turn(view) {
+  var root = view && view.querySelector('.b5');
+  if (!root) return;
+  var n = parseInt(root.getAttribute('data-pages'), 10) || 1;
+  if (n < 2) return;
+  view._b5Page = ((view._b5Page || 0) + 1) % n;
+  _b5Show(root, view._b5Page + 1);
+}
+// A wordmark that will not load leaves the airline's name, never a gap.
+function _b5WmFail(img) {
+  try {
+    var w = img && img.closest('.b5-wm');
+    if (!w || !w.parentNode) return;
+    var s = document.createElement('span');
+    s.className = 'b5-aname';
+    s.textContent = w.getAttribute('data-name') || '';
+    w.parentNode.replaceChild(s, w);
+  } catch (e) {}
+}
+// A wide wordmark that would run past its cell takes the city and the flight
+// number down with it, by the same step, so the mark stays at the city's size
+// (rule 1) and nothing runs over the time beside it.
+function _b5WmFit(img) {
+  try {
+    var row = img && img.closest('.b5-row');
+    var main = row && row.querySelector('.b5-main'), l1 = row && row.querySelector('.b5-l1');
+    if (!main || !l1) return;
+    var k = parseFloat(row.style.getPropertyValue('--b5-k')) || 1;
+    var need = l1.scrollWidth, room = main.clientWidth;
+    if (need > room + 1 && room > 0) {
+      row.style.setProperty('--b5-k', Math.max(0.5, k * room / need).toFixed(3));
+      var fx = row.querySelectorAll('.fx-fit');
+      for (var i = 0; i < fx.length; i++) fx[i].__fxKey = null;
+      if (typeof _fidsSchedulePairPass === 'function') _fidsSchedulePairPass();
+    }
+  } catch (e) {}
+}
+try { if (typeof window !== 'undefined') { window._b5WmFail = _b5WmFail; window._b5WmFit = _b5WmFit; } } catch (e) {}
+// The strip keeps the later flights that fit whole, and drops the rest whole.
+function _b5StripFit(root) {
+  try {
+    var box = root.querySelector('.b5-litems');
+    if (!box) return;
+    var items = box.querySelectorAll('.b5-li');
+    var right = box.getBoundingClientRect().right + 0.5;
+    for (var i = 0; i < items.length; i++) items[i].style.removeProperty('display');
+    for (var j = 0; j < items.length; j++) if (items[j].getBoundingClientRect().right > right) items[j].style.setProperty('display', 'none');
+  } catch (e) {}
+}
+// The weather the board already keeps (TOMORROW_WX, one cached reading per
+// airport per half hour from the site's /wxcurrent): asked for when there is
+// none, at most once every five minutes.
+function _b5AskWx(view, iata) {
+  try {
+    if (typeof TOMORROW_WX === 'undefined' || typeof fetchTomorrowWeather !== 'function') return;
+    var have = TOMORROW_WX[iata];
+    if (have && have.current && (Date.now() - (have.ts || 0)) < TOMORROW_TTL) return;
+    if (typeof COORDS === 'undefined' || !COORDS[iata]) return;
+    if (view._b5WxAt && Date.now() - view._b5WxAt < 300000) return;
+    view._b5WxAt = Date.now();
+    fetchTomorrowWeather(iata).then(function (r) {
+      try { if (r && screenType === 'baggage' && _bids5On(iata)) renderDedicatedScreen(); } catch (e) {}
+    }, function () {});
+  } catch (e) {}
+}
+function _b5Portrait() {
+  try { return (window.innerHeight || 0) > (window.innerWidth || 0); } catch (e) { return false; }
+}
+// Everything the hall shows now: the render key's input and the renderer's.
+function _b5State(iata, nowTs) {
+  var arr = (typeof data !== 'undefined' && data.arr) || [];
+  var norm = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus : null;
+  var hall = _b5Hall(arr, nowTs, _bidsInWindow);
+  var kind = _b5MapKind(iata, arr);
+  return { arr: arr, hall: hall, kind: kind, later: _b5Later(arr, nowTs, BIDS_WINDOW_AHEAD_MS, 3, norm),
+    belts: kind === 'schematic' ? _b5SchematicBelts(_b5FeedBelts(arr), hall) : [] };
+}
+function _b5RenderKey(iata) {
+  var nowTs = Date.now(), s = _b5State(iata, nowTs);
+  var w = (typeof TOMORROW_WX !== 'undefined') && TOMORROW_WX[iata] && TOMORROW_WX[iata].current;
+  var row = function (f) { return [f.flight, f.status, f.time, f.upd || '', f._belt || '', f._actualArrTime || '', f.airline, f._locIata || f.origin || '']; };
+  return JSON.stringify({ screenType: 'baggage', look: 5, iata: iata,
+    langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '',
+    hall: s.hall.map(row), later: s.later.map(row), kind: s.kind, belts: s.belts,
+    wx: w ? [Math.round(w.temp), w.code, Math.round(w.feelsLike || 0)] : null,
+    unit: (typeof tempUnit !== 'undefined') ? tempUnit : '', portrait: _b5Portrait(),
+    feed: _fidsFeedDownKey(iata, 'arr') });
+}
+function _b5Render(view, iata, now) {
+  var nowTs = now.getTime();
+  var s = _b5State(iata, nowTs);
+  var portrait = _b5Portrait();
+  var sizes = _b5PageSizes(s.hall.length, _b5PerPage(portrait, s.kind));
+  var pages = [], at = 0;
+  sizes.forEach(function (n) { pages.push(s.hall.slice(at, at + n)); at += n; });
+  if (typeof view._b5Page !== 'number' || view._b5Page >= Math.max(1, pages.length)) view._b5Page = 0;
+  var L = BoardStrings.pairLangs(langs, iata);
+  var c = { iata: iata, tz: (AP[iata] || {}).tz || null, now: now, nowTs: nowTs, L: L, portrait: portrait,
+    kind: s.kind, belts: s.belts, pages: pages, later: s.later, page: view._b5Page + 1,
+    tba: _b5Pair(_b5Word('beltTba'), L, 'beltTba'), landedLbl: _b5Pair(function (l) { var o = _ssEntry('landed'); return o ? o[l] : ''; }, L),
+    idle: _b5Pair(_b5Word('beltIdle'), L, 'beltIdle'), tomorrow: _b5Pair(_b5Word('tomorrow'), L, 'tomorrow'),
+    pageLbl: _b5Pair(_b5Word('pageLbl'), L), laterLbl: _b5Pair(_b5Word('laterLbl'), L, 'laterLbl') };
+  if (view._bidsRotateTimer) { clearTimeout(view._bidsRotateTimer); view._bidsRotateTimer = null; }
+  view.innerHTML = _b5Html(c);
+  if (!view._b5Tick) view._b5Tick = setInterval(function () { try { _b5Turn(view); } catch (e) {} }, BIDS5_PAGE_MS);
+  _b5StripFit(view);
+  // a wordmark already in the cache has its size now: fitted at once, the
+  // rest as each one loads (_b5WmFit, onload)
+  try { var wms = view.querySelectorAll('.b5-wm img'); for (var wi = 0; wi < wms.length; wi++) if (wms[wi].complete && wms[wi].naturalWidth) _b5WmFit(wms[wi]); } catch (eW) {}
+  _b5AskWx(view, iata);
+  if (!view._b5Resize) {
+    view._b5Resize = true;
+    try { window.addEventListener('resize', function () { try { if (view.querySelector('.b5')) _b5StripFit(view); } catch (e) {} }); } catch (e) {}
+  }
 }
 
 // ── LIVE TELEMETRY ANIMATOR ────────────────────────────────────────────────
@@ -23882,6 +24511,11 @@ const gView = document.getElementById('gateView');
       setGateBg(document.getElementById('bagBgDiv'), iata);
       return;
     }
+    // v24013 — THE HALL BOARD, when this screen or its airport asks for it
+    // (?bidslook=5, or the airport config's bidsLook: 5; off by default): the
+    // welcome band, the hall list and the hall map (_b5Render). Off, the belt
+    // screen below is drawn exactly as before.
+    if (_bids5On(iata)) { _b5Render(bView, iata, now); return; }
 
     // Read user preferences for BIDS rendering. Try localStorage first
     // (most direct, always up to date), then dataset, then default false.
@@ -30913,7 +31547,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24012';
+var FIDS_BUILD_TAG = 'v24013';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -55349,6 +55983,116 @@ function _wxAdvanceLeg(cf) {
   try { if (_flightLegs(cf).length > 1) window._wxLegIdx = (window._wxLegIdx || 0) + 1; } catch (e) {}
 }
 
+// v24013 — hoisted, unchanged, out of _renderWxCard: the city photographs and
+// their resolver are read by the baggage hall board (bids5, _b5BandHtml) too,
+// which draws the same picture by day and the same night picture after dark.
+// ══ v23849 — THE CITY ON THE PLATE ═══════════════════════════════════
+//
+// Each plate carries a photograph of its city — the departure on the
+// left, the destination on the right — and the weather is drawn over
+// it: rain falling, snow drifting, cloud crossing, the sun's warmth, the
+// night's blue, a storm's flash. The photographs are real ones. The
+// roster's airports ship with a curated picture under /logos/cities/
+// (one file, NYC, serves the three New York fields). An airport outside
+// the set asks the Worker's /citypic, which looks a picture up once and
+// keeps it; a 404 there leaves the plate on its glass, and the weather
+// still plays over the glass. The weather layer is CSS, not footage:
+// the card already runs three full-panel clips, and two more decoding
+// behind the plates is a cost the stream servers should not carry for
+// an effect a few gradients can draw.
+var _WX_CITY_PICS = {
+  ATL:1,
+  YQM:1, YDF:1, YHZ:1, YYT:1, YWK:1, YUL:1, YYZ:1, YOW:1, YYC:1, YHM:1,
+  YEG:1, YWG:1, YFC:1, YSJ:1, YQB:1, YVR:1, MCO:1, FLL:1, CUN:1, PUJ:1,
+  VRA:1, ORD:1, DEN:1, SFO:1, CLT:1, NYC:1, IAH:1, LAS:1, PHX:1, DTW:1,
+  MSP:1, BOS:1, PHL:1, MIA:1, TPA:1, ZRH:1, DUB:1, EDI:1, KEF:1,
+  JFK:'NYC', LGA:'NYC', EWR:'NYC'
+};
+// v23853 — AND THE SAME CITY AFTER DARK. A plate at two in the morning
+// was showing the city in full daylight, and five of the curated
+// pictures were the opposite fault: a night or a sunset shot, on the
+// plate at noon. Those five are night pictures and are filed as such
+// here; a city with no night picture keeps its day one, which is what
+// the board did before, so this can only improve as the set fills in.
+// An alias belongs here only once the city it points at HAS a night
+// picture: pointing at one that does not exist asks the board for a file
+// that answers 404, which is worse than the day picture it would have
+// kept. (New York's three fields waited here until NYC had one; v23908.)
+var _WX_CITY_NIGHT = {
+  // v23867 — ATLANTA AFTER DARK IS A PHOTOGRAPH, NOT A FILTER.
+  //
+  // A city with no entry here is handed its DAYTIME picture at night with
+  // brightness(.40) over it. On Atlanta that measured 124/255 mean
+  // luminance down to 49.7 — a blackout, and the plate read as a fault
+  // rather than as a city. The grade was not the thing to fix: dimming a
+  // flat overcast afternoon does not make night, because a city reads as
+  // night by its LIGHTS. Orlando has always looked right for exactly that
+  // reason — it has a real night photograph and never takes this path.
+  //
+  // The picture service cannot close the gap either. It matches every
+  // search word at once, so 'Atlanta night skyline' returns nothing at
+  // all; a night picture has to be a file, the way these five are.
+  MCO:1, ZRH:1, YYZ:1, LAS:1, YOW:1, ATL:1,
+  // v23908 — TWENTY-THREE MORE CITIES AFTER DARK. Every roster city big
+  // enough to have its own skyline now has a photograph taken at blue
+  // hour or later, with its lights on: the same 1280×720 frame as the
+  // day set, each checked to be that city and not a lookalike. Each was
+  // also measured, because the Atlanta blackout above is what a plate
+  // looks like below about 50/255 mean luminance: the set runs 52 to
+  // 121, and the first Varadero pick (moonlit palms, 19) was swapped for
+  // a lit beach bar (106) for that reason. The resort towns with no
+  // skyline (Punta Cana, Varadero, Cancún) are a beach or a hotel front
+  // after dark. New York has its night picture now, so its three fields
+  // point at it.
+  NYC:1, MIA:1, DUB:1, EDI:1, SFO:1, BOS:1, PHL:1, ORD:1, DEN:1, CLT:1,
+  IAH:1, PHX:1, DTW:1, MSP:1, TPA:1, YVR:1, YUL:1, YYC:1, CUN:1, PUJ:1,
+  VRA:1, FLL:1, KEF:1,
+  JFK:'NYC', LGA:'NYC', EWR:'NYC',
+  // v23908 — AND MONCTON, THE PLATE THIS BOARD SHOWS MOST AFTER DARK. No
+  // stock library holds a licensable Moncton night skyline (searched
+  // across Vecteezy, Unsplash, Pexels, Pixabay, Adobe Stock, Commons and
+  // Flickr; the skylines that exist are paid Shutterstock or
+  // non-commercial). This is the city from the air at night — the
+  // Petitcodiac bend and the lights of Moncton, Dieppe and Riverview —
+  // Unsplash licence, no credit required. Its shadows were lifted from
+  // 26 to 55/255 mean so it does not read as a black plate.
+  YQM:1
+};
+// The name the Worker searches by, for an airport outside the curated
+// set: the encyclopedia title where there is one (it carries the
+// province or state, which is what tells the two Saint Johns apart),
+// else the board's own city name in title case.
+var _wxCityQuery = function (iata) {
+  var q = '';
+  try { q = (typeof WIKI_CITY !== 'undefined' && WIKI_CITY[iata]) || ''; } catch (eQ) {}
+  if (q) return String(q).replace(/_/g, ' ').replace(/,/g, '');
+  try { q = (typeof CITY !== 'undefined' && CITY[iata]) || (AP[iata] && AP[iata].city) || ''; } catch (eQ2) {}
+  return q ? tc(String(q)) : '';
+};
+// The address goes inside url('…') in a style attribute, and
+// encodeURIComponent leaves the apostrophe alone (Val-D'Or), so the
+// five characters it spares are encoded here as well.
+var _wxEnc = function (t) {
+  return encodeURIComponent(t).replace(/[!'()*]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });
+};
+var _wxNightPicFor = function (iata) {
+  var k = String(iata || '').toUpperCase();
+  var n = k && _WX_CITY_NIGHT[k];
+  return n ? '/logos/cities/' + (n === 1 ? k : n) + '-night.jpg' : '';
+};
+var _wxCityPic = function (iata, night) {
+  var k = String(iata || '').toUpperCase();
+  if (!k) return '';
+  if (night) {
+    var n = _wxNightPicFor(k);
+    if (n) return n;
+  }
+  var v = _WX_CITY_PICS[k];
+  if (v) return '/logos/cities/' + (v === 1 ? k : v) + '.jpg';
+  var q = _wxCityQuery(k);
+  return '/citypic?iata=' + _wxEnc(k) + (q ? '&q=' + _wxEnc(q) : '');
+};
+
 function _renderWxCard(el) {
   try {
     var cf = window._gateCurrentFlight;
@@ -55666,112 +56410,6 @@ function _renderWxCard(el) {
     // own weather. Then the set gives way to the destination's next hours,
     // then to its five days. One card, three screens, the flips timed in CSS
     // against the same clock as the entrance.
-    // ══ v23849 — THE CITY ON THE PLATE ═══════════════════════════════════
-    //
-    // Each plate carries a photograph of its city — the departure on the
-    // left, the destination on the right — and the weather is drawn over
-    // it: rain falling, snow drifting, cloud crossing, the sun's warmth, the
-    // night's blue, a storm's flash. The photographs are real ones. The
-    // roster's airports ship with a curated picture under /logos/cities/
-    // (one file, NYC, serves the three New York fields). An airport outside
-    // the set asks the Worker's /citypic, which looks a picture up once and
-    // keeps it; a 404 there leaves the plate on its glass, and the weather
-    // still plays over the glass. The weather layer is CSS, not footage:
-    // the card already runs three full-panel clips, and two more decoding
-    // behind the plates is a cost the stream servers should not carry for
-    // an effect a few gradients can draw.
-    var _WX_CITY_PICS = {
-      ATL:1,
-      YQM:1, YDF:1, YHZ:1, YYT:1, YWK:1, YUL:1, YYZ:1, YOW:1, YYC:1, YHM:1,
-      YEG:1, YWG:1, YFC:1, YSJ:1, YQB:1, YVR:1, MCO:1, FLL:1, CUN:1, PUJ:1,
-      VRA:1, ORD:1, DEN:1, SFO:1, CLT:1, NYC:1, IAH:1, LAS:1, PHX:1, DTW:1,
-      MSP:1, BOS:1, PHL:1, MIA:1, TPA:1, ZRH:1, DUB:1, EDI:1, KEF:1,
-      JFK:'NYC', LGA:'NYC', EWR:'NYC'
-    };
-    // v23853 — AND THE SAME CITY AFTER DARK. A plate at two in the morning
-    // was showing the city in full daylight, and five of the curated
-    // pictures were the opposite fault: a night or a sunset shot, on the
-    // plate at noon. Those five are night pictures and are filed as such
-    // here; a city with no night picture keeps its day one, which is what
-    // the board did before, so this can only improve as the set fills in.
-    // An alias belongs here only once the city it points at HAS a night
-    // picture: pointing at one that does not exist asks the board for a file
-    // that answers 404, which is worse than the day picture it would have
-    // kept. (New York's three fields waited here until NYC had one; v23908.)
-    var _WX_CITY_NIGHT = {
-      // v23867 — ATLANTA AFTER DARK IS A PHOTOGRAPH, NOT A FILTER.
-      //
-      // A city with no entry here is handed its DAYTIME picture at night with
-      // brightness(.40) over it. On Atlanta that measured 124/255 mean
-      // luminance down to 49.7 — a blackout, and the plate read as a fault
-      // rather than as a city. The grade was not the thing to fix: dimming a
-      // flat overcast afternoon does not make night, because a city reads as
-      // night by its LIGHTS. Orlando has always looked right for exactly that
-      // reason — it has a real night photograph and never takes this path.
-      //
-      // The picture service cannot close the gap either. It matches every
-      // search word at once, so 'Atlanta night skyline' returns nothing at
-      // all; a night picture has to be a file, the way these five are.
-      MCO:1, ZRH:1, YYZ:1, LAS:1, YOW:1, ATL:1,
-      // v23908 — TWENTY-THREE MORE CITIES AFTER DARK. Every roster city big
-      // enough to have its own skyline now has a photograph taken at blue
-      // hour or later, with its lights on: the same 1280×720 frame as the
-      // day set, each checked to be that city and not a lookalike. Each was
-      // also measured, because the Atlanta blackout above is what a plate
-      // looks like below about 50/255 mean luminance: the set runs 52 to
-      // 121, and the first Varadero pick (moonlit palms, 19) was swapped for
-      // a lit beach bar (106) for that reason. The resort towns with no
-      // skyline (Punta Cana, Varadero, Cancún) are a beach or a hotel front
-      // after dark. New York has its night picture now, so its three fields
-      // point at it.
-      NYC:1, MIA:1, DUB:1, EDI:1, SFO:1, BOS:1, PHL:1, ORD:1, DEN:1, CLT:1,
-      IAH:1, PHX:1, DTW:1, MSP:1, TPA:1, YVR:1, YUL:1, YYC:1, CUN:1, PUJ:1,
-      VRA:1, FLL:1, KEF:1,
-      JFK:'NYC', LGA:'NYC', EWR:'NYC',
-      // v23908 — AND MONCTON, THE PLATE THIS BOARD SHOWS MOST AFTER DARK. No
-      // stock library holds a licensable Moncton night skyline (searched
-      // across Vecteezy, Unsplash, Pexels, Pixabay, Adobe Stock, Commons and
-      // Flickr; the skylines that exist are paid Shutterstock or
-      // non-commercial). This is the city from the air at night — the
-      // Petitcodiac bend and the lights of Moncton, Dieppe and Riverview —
-      // Unsplash licence, no credit required. Its shadows were lifted from
-      // 26 to 55/255 mean so it does not read as a black plate.
-      YQM:1
-    };
-    // The name the Worker searches by, for an airport outside the curated
-    // set: the encyclopedia title where there is one (it carries the
-    // province or state, which is what tells the two Saint Johns apart),
-    // else the board's own city name in title case.
-    var _wxCityQuery = function (iata) {
-      var q = '';
-      try { q = (typeof WIKI_CITY !== 'undefined' && WIKI_CITY[iata]) || ''; } catch (eQ) {}
-      if (q) return String(q).replace(/_/g, ' ').replace(/,/g, '');
-      try { q = (typeof CITY !== 'undefined' && CITY[iata]) || (AP[iata] && AP[iata].city) || ''; } catch (eQ2) {}
-      return q ? tc(String(q)) : '';
-    };
-    // The address goes inside url('…') in a style attribute, and
-    // encodeURIComponent leaves the apostrophe alone (Val-D'Or), so the
-    // five characters it spares are encoded here as well.
-    var _wxEnc = function (t) {
-      return encodeURIComponent(t).replace(/[!'()*]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });
-    };
-    var _wxNightPicFor = function (iata) {
-      var k = String(iata || '').toUpperCase();
-      var n = k && _WX_CITY_NIGHT[k];
-      return n ? '/logos/cities/' + (n === 1 ? k : n) + '-night.jpg' : '';
-    };
-    var _wxCityPic = function (iata, night) {
-      var k = String(iata || '').toUpperCase();
-      if (!k) return '';
-      if (night) {
-        var n = _wxNightPicFor(k);
-        if (n) return n;
-      }
-      var v = _WX_CITY_PICS[k];
-      if (v) return '/logos/cities/' + (v === 1 ? k : v) + '.jpg';
-      var q = _wxCityQuery(k);
-      return '/citypic?iata=' + _wxEnc(k) + (q ? '&q=' + _wxEnc(q) : '');
-    };
     var _wxSide = function (iata, ts, shortLbl, cls) {
       var w = _wxAtTime(iata, ts);
       if (!w) return '';

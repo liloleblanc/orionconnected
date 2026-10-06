@@ -481,6 +481,32 @@
     // never a number of our choosing. The French is the house wording.
     beltTba: { en: 'To be announced', fr: 'À venir', es: 'Por anunciar', de: 'Wird bekannt gegeben', it: 'Da comunicare', pt: 'A definir', ja: '後ほどご案内', zh: '待公布', ar: 'سيُعلن لاحقًا',
       $src: { en: 'house', fr: 'house', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // v24013 — THE BAGGAGE HALL BOARD (bids5, fids-core.js _b5*): its hall
+    // map's words (the Moncton plan's two belts by the hall's own labels, the
+    // marker where the screen hangs, the customs hall and the way out), the
+    // label a drawing that is not a floor plan carries, a belt with no flight
+    // on it now, the empty hall, and the flights after the hour on screen.
+    // English is the house wording; the rest are careful translations.
+    youAreHere: { en: 'You are here', fr: 'Vous êtes ici', es: 'Usted está aquí', de: 'Sie sind hier', it: 'Voi siete qui', pt: 'Você está aqui', ja: '現在地', zh: '您在这里', ar: 'أنت هنا',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    hallCustoms: { en: 'Customs', fr: 'Douanes', es: 'Aduana', de: 'Zoll', it: 'Dogana', pt: 'Alfândega', ja: '税関', zh: '海关', ar: 'الجمارك',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    hallExit: { en: 'Exit', fr: 'Sortie', es: 'Salida', de: 'Ausgang', it: 'Uscita', pt: 'Saída', ja: 'お出口', zh: '出口', ar: 'المخرج',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    domesticFlights: { en: 'Domestic flights', fr: 'Vols intérieurs', es: 'Vuelos nacionales', de: 'Inlandsflüge', it: 'Voli nazionali', pt: 'Voos domésticos', ja: '国内線', zh: '国内航班', ar: 'الرحلات الداخلية',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    internationalFlights: { en: 'International flights', fr: 'Vols internationaux', es: 'Vuelos internacionales', de: 'Auslandsflüge', it: 'Voli internazionali', pt: 'Voos internacionais', ja: '国際線', zh: '国际航班', ar: 'الرحلات الدولية',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    schematicNote: { en: 'Schematic, not a floor plan', fr: 'Schéma, pas un plan des lieux', es: 'Esquema, no es un plano', de: 'Schema, kein Lageplan', it: 'Schema, non una planimetria', pt: 'Esquema, não é uma planta', ja: '模式図（実際の配置図ではありません）', zh: '示意图，非实际平面图', ar: 'مخطط توضيحي، وليس خريطة للمكان',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    beltIdle: { en: 'No flight now', fr: 'Aucun vol pour l’instant', es: 'Ningún vuelo por ahora', de: 'Derzeit kein Flug', it: 'Nessun volo al momento', pt: 'Nenhum voo no momento', ja: '現在、到着便はありません', zh: '目前没有航班', ar: 'لا توجد رحلات حاليًا',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    noArrivalsHour: { en: 'No arrivals in the next hour', fr: 'Aucune arrivée dans la prochaine heure', es: 'No hay llegadas en la próxima hora', de: 'Keine Ankünfte in der nächsten Stunde', it: 'Nessun arrivo nella prossima ora', pt: 'Nenhuma chegada na próxima hora', ja: '今後1時間の到着便はありません', zh: '未来一小时内没有到达航班', ar: 'لا توجد رحلات واصلة خلال الساعة القادمة',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    nextArrival: { en: 'Next arrival', fr: 'Prochaine arrivée', es: 'Próxima llegada', de: 'Nächste Ankunft', it: 'Prossimo arrivo', pt: 'Próxima chegada', ja: '次の到着便', zh: '下一个到达航班', ar: 'الرحلة الواصلة التالية',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    laterLbl: { en: 'Later', fr: 'Plus tard', es: 'Más tarde', de: 'Später', it: 'Più tardi', pt: 'Mais tarde', ja: 'この後', zh: '稍后', ar: 'لاحقًا',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // ALL is Accor Live Limitless, the brand; only the word for rating is translated.
     allRating: { en: '(ALL rating)', fr: '(note ALL)', es: '(valoración ALL)', de: '(ALL-Bewertung)', it: '(valutazione ALL)', pt: '(avaliação ALL)', ja: '(ALL評価)', zh: '(ALL评分)', ar: '(تقييم ALL)' },
 
