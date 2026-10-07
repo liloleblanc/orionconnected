@@ -710,7 +710,12 @@ body.fids-light-board .bidsv2-empty { color: #3A4E66 !important; }
   --b5-disc-off: #2A3954; --b5-disc-off-ink: #7F92B1;
   --b5-card: #111D33; --b5-card-line: rgba(255,255,255,.10);
   --b5-clockcard: rgba(8,16,34,.66); --b5-clockink: #FFFFFF; --b5-clockink2: #C3D0E4; --b5-clockline: rgba(255,255,255,.16);
-  --b5-grid: minmax(0, 1fr) calc(120 * var(--u)) calc(140 * var(--u)) calc(196 * var(--u)) calc(132 * var(--u));
+  /* v24014 — the two time columns hold a 12-hour time at full size
+     ('12:28am' is 148 units at the row's 37.8): at 120 and 140 the time ran
+     into the revised one beside it ('9:38pm9:47pm'). A longer form (French
+     '21 h 38' in a narrower row) is shrunk to its column by FIDS_FIT_RULES,
+     every time on the page at one size. */
+  --b5-grid: minmax(0, 1fr) calc(152 * var(--u)) calc(152 * var(--u)) calc(196 * var(--u)) calc(132 * var(--u));
   position: relative; flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; overflow: hidden;
   display: grid; grid-template-rows: calc(176 * var(--u)) minmax(0, 1fr);
   background: var(--b5-ground); color: var(--b5-ink);
@@ -734,7 +739,7 @@ html.fids-day #baggageView .b5 {
 }
 #baggageView .b5.b5-port {
   --u: min(calc(100vw / 1080), calc(100vh / 1920));
-  --b5-grid: minmax(0, 1fr) calc(112 * var(--u)) calc(132 * var(--u)) calc(182 * var(--u)) calc(124 * var(--u));
+  --b5-grid: minmax(0, 1fr) calc(150 * var(--u)) calc(150 * var(--u)) calc(182 * var(--u)) calc(124 * var(--u));
   grid-template-rows: calc(236 * var(--u)) minmax(0, 1fr);
 }
 #baggageView .b5 *, #baggageView .b5 *::before, #baggageView .b5 *::after { box-sizing: border-box; }
@@ -815,7 +820,7 @@ html.fids-day #baggageView .b5 .b5-wxi > .b5-wxi-n { opacity: 0; }
 /* no map: the list has the width, and its time, status and carousel columns
    take a share of it rather than leaving it all to the airline and city */
 #baggageView .b5.b5-none { --b5-grid: minmax(0, 1fr) calc(190 * var(--u)) calc(210 * var(--u)) calc(320 * var(--u)) calc(250 * var(--u)); }
-#baggageView .b5.b5-none.b5-port { --b5-grid: minmax(0, 1fr) calc(112 * var(--u)) calc(132 * var(--u)) calc(182 * var(--u)) calc(124 * var(--u)); }
+#baggageView .b5.b5-none.b5-port { --b5-grid: minmax(0, 1fr) calc(150 * var(--u)) calc(150 * var(--u)) calc(182 * var(--u)) calc(124 * var(--u)); }
 #baggageView .b5.b5-port .b5-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); padding: calc(16 * var(--u)) calc(20 * var(--u)) calc(20 * var(--u)); }
 #baggageView .b5.b5-port.b5-none .b5-body { grid-template-rows: minmax(0, 1fr); }
 #baggageView .b5.b5-port .b5-side { order: -1; }

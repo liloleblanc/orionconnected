@@ -2925,6 +2925,9 @@ var FIDS_FIT_RULES = [
   { sel: '.b5 .b5-st', box: '.b5-stc', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-row'); return r ? r.clientHeight * 0.92 : 0; } },
   { sel: '.b5 .b5-tbat', box: '.b5-tba', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-row'); return r ? r.clientHeight * 0.86 : 0; } },
   { sel: '.b5 .b5-rl', box: '.b5-rv', lines: 2, units: true },
+  // v24014 — the scheduled and revised times, one line in their columns,
+  // every time on the page at one size (the smallest any of them needs)
+  { sel: '.b5 .b5-tm > .b5-t, .b5 .b5-rv > .b5-t', box: '.b5-tm, .b5-rv', lines: 1, group: '.b5-list' },
   { sel: '.b5 .b5-aname', box: '.b5-main', lines: 1 },
   { sel: '.b5 .b5-h-main', lines: 1 },
   { sel: '.b5 .b5-h', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-cols'); return r ? r.clientHeight - 2 : 0; } },
