@@ -55368,8 +55368,11 @@ var HERITAGE_MARKS = [
     // Mail/CP and Aviation Week, February–March 2002), the first airline outside
     // the United States to fly the type, headquartered in Montreal throughout.
     // v24015 — THE CAPTION NAMES THE AEROPLANE AND ITS LIVERY, NOT A CITY:
-    // 'McDonnell Douglas DC-9 · 1966–2002 · 1987 livery' here, '… · 1980
-    // livery' on the caps card below, as the 767 card does. Each livery is
+    // 'McDonnell Douglas DC-9-32 · 1968–2002 · 1987 livery' here, '… · 1980
+    // livery' on the caps card below, as the 767 card does. The years are the
+    // DC-9-32's own, the model both drawings show: Air Canada's -32s from 1968
+    // (C-FTMA among the first that year) to the type's last flights in 2002,
+    // confirmed first hand; the 1966 start above is the earlier -14s and -15s. Each livery is
     // named by the year it came in (Norebbo's Air Canada livery history: 1980
     // the simplified red stripe with bold capital titles, 1987 the dual
     // stripe with 'Air Canada' in mixed case; confirmed first hand by staff

@@ -78,7 +78,8 @@ test('every file in the heritage folder is either used or deliberately not', () 
 
 test('no card claims a date its sources disagree on', () => {
   const byKey = Object.fromEntries(marks().map((m) => [m.key, m]));
-  // Air Canada: the DC-9 years are checked (1966–2002). v24015 — each card
+  // Air Canada: the DC-9-32 years are checked (1968–2002; the fleet's 1966 start
+  // is the earlier -14s and -15s, not the model drawn). v24015 — each card
   // names the aeroplane and its livery by the year the livery came in (1987
   // dual stripe, 1980 simplified red stripe), not a city; the year a livery
   // went out is disputed (1992/93/94) and never printed.
@@ -88,9 +89,9 @@ test('no card claims a date its sources disagree on', () => {
     assert.ok(acm, k + ': the Air Canada DC-9 card exists');
     for (const l of STORE.LANGS) {
       const cap = acm.caption[l];
-      assert.match(cap, /DC-9 · 1966–2002 · /, 'the type and its checked years print, in ' + l);
+      assert.match(cap, /DC-9-32 · 1968–2002 · /, 'the model drawn and its checked years print, in ' + l);
       assert.match(cap, new RegExp(LIVERY[k]), 'the livery is named by the year it came in, in ' + l);
-      const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => y !== '1966' && y !== '2002' && y !== LIVERY[k]);
+      const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => y !== '1968' && y !== '2002' && y !== LIVERY[k]);
       assert.deepEqual(years, [], 'no other year (no disputed end of a livery), in ' + l);
       assert.doesNotMatch(cap, /Montr[eé]al|モントリオール|蒙特利尔|مونتريال/, 'no city: the card names the aeroplane, in ' + l);
     }
