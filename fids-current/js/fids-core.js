@@ -5656,7 +5656,11 @@ function _b5LookOn(search, cfg) {
     return String(v).trim() === '5';
   }
   if (cfg && Object.prototype.hasOwnProperty.call(cfg, 'bidsLook')) return String(cfg.bidsLook).trim() === '5';
-  return false;
+  // v24016 — THE HALL BOARD IS THE BAGGAGE SCREEN NOW. It was a preview
+  // behind ?bidslook=5; it is the default for every airport. The old belt
+  // screen is still one switch away: ?bidslook=3 on one screen, or an
+  // airport's config bidsLook: 3 for the whole airport.
+  return true;
 }
 function _bids5On(iata) {
   var s = '', cfg = null;
@@ -5741,11 +5745,16 @@ var _B5_HALL_PLANS = {
     box: [196, 138, 1012, 748],
     belts: [
       { id: '1', label: 'domesticFlights', disc: [744, 303] },
-      { id: '2', label: 'internationalFlights', disc: [372, 312] }
+      // v24016 — the wall-fed belt in the customs hall takes domestic flights
+      // too, most of the time (first hand, 2026-10-07), so it is never
+      // labelled as international only. Which NUMBER each belt carries is
+      // still the 2016 photograph's and is to be checked against the signs;
+      // the per-flight rule above (domestic 1, international 2) is unchanged.
+      { id: '2', label: 'intlAndDomFlights', disc: [372, 312] }
     ],
     labels: [
       { key: 'domesticFlights', at: [598, 160], w: 300 },
-      { key: 'internationalFlights', at: [262, 196], w: 300 },
+      { key: 'intlAndDomFlights', at: [262, 196], w: 300 },
       { key: 'hallCustoms', at: [214, 676], w: 250, icon: 'shield', sub: true },
       { key: 'arr', at: [700, 556], w: 290 },
       { key: 'hallExit', at: [700, 690], w: 290, icon: 'exit', sub: true }
@@ -31583,7 +31592,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24015';
+var FIDS_BUILD_TAG = 'v24016';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -56232,6 +56241,10 @@ var _WX_CITY_NIGHT = {
   // Petitcodiac bend and the lights of Moncton, Dieppe and Riverview —
   // Unsplash licence, no credit required. Its shadows were lifted from
   // 26 to 55/255 mean so it does not read as a black plate.
+  // v24016 — Moncton's day and night pictures are now artwork made for these
+  // boards: the skyline (Assumption Place, the telecom tower) over the
+  // Petitcodiac marsh, a gold afternoon and a violet night, supplied without
+  // lettering so the board's own words sit on it (night mean 82/255).
   YQM:1
 };
 // The name the Worker searches by, for an airport outside the curated

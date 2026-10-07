@@ -999,14 +999,18 @@ html.fids-day #baggageView .b5 .b5-htag { background: #0F1D35; color: #FFFFFF; }
   padding-bottom: calc(14 * var(--u)); border-bottom: 1.5px dashed var(--b5-wall); }
 #baggageView .b5 .b5-srow { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(var(--b5-n, 5), minmax(0, 1fr));
   column-gap: calc(12 * var(--u)); padding-top: calc(26 * var(--u)); }
-#baggageView .b5 .b5-scol { display: flex; flex-direction: column; align-items: center; min-width: 0; min-height: 0; }
+#baggageView .b5 .b5-scol { display: flex; flex-direction: column; align-items: center; min-width: 0; min-height: 0; container-type: inline-size; }
 #baggageView .b5 .b5-track { position: relative; width: min(calc(70 * var(--u)), 80%); height: min(calc(340 * var(--u)), 58%); flex: none;
   border-radius: calc(33 * var(--u)); background: var(--b5-belt); border: 3px solid var(--b5-belt-edge); }
 #baggageView .b5 .b5-isl { position: absolute; inset: 14% 30%; border-radius: calc(12 * var(--u)); background: var(--b5-belt-island); }
 #baggageView .b5 .b5-scol:not(.b5-lit) .b5-track { opacity: .5; }
 #baggageView .b5 .b5-scol.b5-lit .b5-track { border-color: var(--b5-way); }
+/* v24016 — the disc is sized to its own column (cqi), so a hall of eleven
+   belts (Calgary) keeps every disc whole and apart; a longer name (D100,
+   DOMA) is set smaller inside it, never wider than the column. */
 #baggageView .b5 .b5-chip.b5-sdisc { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  height: calc(76 * var(--u)); min-width: calc(76 * var(--u)); border-radius: calc(38 * var(--u)); font-size: calc(44 * var(--u));
+  height: min(calc(76 * var(--u)), 86cqi); min-width: min(calc(76 * var(--u)), 86cqi); max-width: 100cqi; border-radius: 999px;
+  font-size: min(calc(44 * var(--u)), 46cqi);
   background: var(--b5-disc-off); color: var(--b5-disc-off-ink); box-shadow: 0 0 0 4px var(--b5-halo); }
 #baggageView .b5 .b5-scol.b5-lit .b5-chip.b5-sdisc { background: var(--b5-way); color: var(--b5-way-ink); box-shadow: 0 0 0 5px var(--b5-halo), 0 0 0 11px rgba(39,99,208,.38); }
 #baggageView .b5 .b5-stags { margin-top: calc(22 * var(--u)); }
@@ -1019,3 +1023,10 @@ html.fids-day #baggageView .b5 .b5-htag { background: #0F1D35; color: #FFFFFF; }
 #baggageView .b5 .b5-mi { width: calc(28 * var(--u)); height: calc(28 * var(--u)); flex: none; }
 #baggageView .b5 .b5-mi svg { width: 100%; height: 100%; }
 #baggageView .b5 .b5-msg { font-size: calc(19 * var(--u)); font-weight: 620; letter-spacing: .02em; text-align: center; white-space: nowrap; min-width: 0; }
+/* v24016 — inside a belt disc a three- or four-character name steps down so it fits the disc */
+#baggageView .b5 .b5-chip.b5-sdisc .b5-chip-n[data-len="3"] { font-size: .7em; }
+#baggageView .b5 .b5-chip.b5-sdisc .b5-chip-n[data-len="4"] { font-size: .56em; }
+/* v24016 — under a crowded diagram each flight's number and emblem are sized to their own belt's
+   column too, so two neighbours' numbers never run together (Calgary: 'WS3469F8808') */
+#baggageView .b5 .b5-stags .b5-tfn { font-size: min(calc(20 * var(--u)), 26cqi); }
+#baggageView .b5 .b5-stags .b5-temb { width: min(calc(30 * var(--u)), 42cqi); height: min(calc(30 * var(--u)), 42cqi); }
