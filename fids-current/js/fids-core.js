@@ -2009,7 +2009,7 @@ function _fidsPairSeparators(root) {
   try {
     var scope = root || document;
     try { _fidsSignRowFit(scope); } catch (eR) {}
-    var SEL = '.v2-rc-fi-stline, .v2-fi-mlbl, .v2-rc-fi-tlbl, .wxc-title, .g8-pair';
+    var SEL = '.v2-rc-fi-stline, .v2-fi-mlbl, .v2-rc-fi-tlbl, .wxc-title, .wxc-stk, .g8-pair';
     var nodes = scope.querySelectorAll(SEL);
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -2925,6 +2925,9 @@ var FIDS_FIT_RULES = [
   { sel: '.b5 .b5-st', box: '.b5-stc', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-row'); return r ? r.clientHeight * 0.92 : 0; } },
   { sel: '.b5 .b5-tbat', box: '.b5-tba', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-row'); return r ? r.clientHeight * 0.86 : 0; } },
   { sel: '.b5 .b5-rl', box: '.b5-rv', lines: 2, units: true },
+  // v24014 — the scheduled and revised times, one line in their columns,
+  // every time on the page at one size (the smallest any of them needs)
+  { sel: '.b5 .b5-tm > .b5-t, .b5 .b5-rv > .b5-t', box: '.b5-tm, .b5-rv', lines: 1, group: '.b5-list' },
   { sel: '.b5 .b5-aname', box: '.b5-main', lines: 1 },
   { sel: '.b5 .b5-h-main', lines: 1 },
   { sel: '.b5 .b5-h', lines: 2, units: true, h: function (el) { var r = el.closest('.b5-cols'); return r ? r.clientHeight - 2 : 0; } },
@@ -3003,6 +3006,20 @@ var FIDS_FIT_RULES = [
   { sel: '.gcard .gc-bday', box: '.gc-big', lines: 2, units: true },
   { sel: '.gcard .gc-rule', box: '.gc-ft', lines: 2, units: true },
   { sel: '.gcard .gc-dlbl', box: '.gc-dep', lines: 2, units: true },
+  // v24014 — the weather card at its larger sizes: each figure set at one
+  // size across its row (the eight hours, the five days, the two plates),
+  // the smallest any of them needs, so a two-digit or a below-zero reading
+  // shrinks its whole row a step instead of running into its neighbour;
+  // the plate's temperature keeps clear of the icon beside it
+  { sel: '.wxc-mon-temp', box: '.wxc-mon-now', lines: 1, avoid: '.wxanim-host, img.wxanim', avoidIn: '.wxc-mon-now', group: '.wxc-mon-body' },
+  { sel: '.wxc-mon-ap', lines: 1 },
+  { sel: '.wxc-mon-note', lines: 2 },
+  { sel: '.wxc-sc-city', box: '.wxc-sc-band', lines: 2 },
+  { sel: '.wxc-hgrid .wxc-pt-time', box: '.wxc-pt', lines: 1, group: '.wxc-hgrid' },
+  { sel: '.wxc-hgrid .wxc-pt-temp', box: '.wxc-pt', lines: 1, group: '.wxc-hgrid' },
+  { sel: '.wxc-days .wxc-dchip', box: '.wxc-day2', lines: 2, group: '.wxc-days' },
+  { sel: '.wxc-days .wxc-dhi', box: '.wxc-day2', lines: 1, group: '.wxc-days' },
+  { sel: '.wxc-days .wxc-dlo', box: '.wxc-day2', lines: 1, group: '.wxc-days' },
   // ── guards: sized by their own fitters, held to the floor and never cut ──
   // the gate's Your Aircraft lines (PD2373 from | de Îles-de-la-Madeleine | YGR)
   { sel: '.gad-map-col-v2 .v2-fi-value > .v2-fi-mline1, .gad-map-col-v2 .v2-fi-value > .v2-fi-mline2, .gad-map-col-v2 .v2-fi-value > .v2-fi-mline3', box: '.v2-fi-value', lines: 2, guard: true },
@@ -3270,6 +3287,23 @@ function _wxDayRoom(scr) {
       ic.style.setProperty('height', nw + 'px', 'important');
     }
     d.__wxdKey = key;
+  }
+  // v24014 — and the five icons at ONE size, the smallest any panel needed,
+  // so the highs, the lows and the words line up across the days
+  var ics = [], mn = Infinity;
+  for (var j = 0; j < days.length; j++) {
+    var ic2 = days[j].querySelector('.wxc-dbody > .wxanim-host, .wxc-dbody > img.wxanim');
+    if (!ic2 || !ic2.offsetHeight) continue;
+    ics.push(ic2);
+    if (ic2.offsetHeight < mn) mn = ic2.offsetHeight;
+  }
+  if (ics.length > 1 && mn < Infinity) {
+    for (var q = 0; q < ics.length; q++) {
+      if (ics[q].offsetHeight > mn + 0.5) {
+        ics[q].style.setProperty('width', mn + 'px', 'important');
+        ics[q].style.setProperty('height', mn + 'px', 'important');
+      }
+    }
   }
 }
 function _wxFitTitles(scope) {
@@ -31547,7 +31581,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24013';
+var FIDS_BUILD_TAG = 'v24014';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -54719,6 +54753,93 @@ var _WX_ICON_DIR = '/logos/weather/flat/';
 function _wxIconQ() {
   return (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
 }
+// ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS ══════════════════════
+//
+// The card was the same sky blue at every gate. It now wears the gate's
+// airline, the way the rest of the gate does, over a near-black ground:
+//   · the bands (each plate's Departure | Arrival head, the hours and days
+//     title) and the airport-code chips take the airline's colour, with the
+//     airline's own ink on it — the lower right panel's pair (_rc2Pair), so
+//     a carrier whose brand colour reads as a status (amber Delayed, red
+//     Cancelled, green On time) is already given its other colour there and
+//     here alike;
+//   · the plates and tiles carry a light tint of the airline over the
+//     ground, never strong enough to compete with the words on it;
+//   · the ground is the airline's near-black, laid over the weather footage
+//     at 70 %, so the footage plays behind everything at 30 % and a storm
+//     clip's lightning can never flash the panel white (the flash-safety
+//     measurement of the chosen design).
+// The three tints below are the ones the chosen design was drawn and
+// measured with; every other carrier's is mixed from its pair by one rule.
+var _WX_LOOK = {
+  AC: { g: [11, 13, 16], f: [26, 16, 19] },   // Air Canada: black, a breath of its red
+  PD: { g: [12, 16, 24], f: [19, 41, 76] },   // Porter: its navy
+  WS: { g: [10, 17, 20], f: [11, 58, 59] }    // WestJet: its teal, deep
+};
+var _WX_GROUND_DIM = 0.70;     // the near-black over the footage: the footage shows at 30 %
+var _WX_TINT = 0.55;           // the airline tint on plates and tiles
+function _wxMix(a, b, t) { return [0, 1, 2].map(function (i) { return Math.round(a[i] * (1 - t) + b[i] * t); }); }
+function _wxHex(c) { return '#' + c.map(function (v) { return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2); }).join('').toUpperCase(); }
+function _wxAirlineLook(code) {
+  var c = String(code || '').trim().toUpperCase();
+  var p = _rc2Pair(c);
+  // the hand-drawn three, under every code they reach the gate with
+  var base = '';
+  ['AC', 'PD', 'WS'].some(function (k) {
+    if (c === k || (RC2_PAIRS[c] && RC2_PAIRS[c] === RC2_PAIRS[k])) { base = k; return true; }
+    return false;
+  });
+  var g, f;
+  if (base) { g = _WX_LOOK[base].g; f = _WX_LOOK[base].f; }
+  else {
+    // Any other carrier: the darker of its two colours tints the ground —
+    // its band colour when that is a deep one, its dark when the band is a
+    // light one (a white or a cream band would only grey the tiles).
+    var a = _rc2Rgb(p.a) || [242, 244, 247], b = _rc2Rgb(p.b) || [12, 17, 25];
+    var lum = function (x) { return 0.2126 * _rc2Lin(x[0]) + 0.7152 * _rc2Lin(x[1]) + 0.0722 * _rc2Lin(x[2]); };
+    var src = lum(a) < 0.4 ? a : b, k = lum(a) < 0.4 ? 0.20 : 0.85;
+    g = _wxMix([11, 13, 17], src, 0.04);
+    f = _wxMix(g, src, k);
+    // white words on a tile must hold at 7:1 or better; a bright colour is
+    // taken back toward the ground until they do
+    for (var i = 0; i < 8 && _rc2Contrast('#FFFFFF', _wxHex(_wxMix(g, f, _WX_TINT))) < 7; i++) f = _wxMix(g, f, 0.75);
+    // and no tint may read as a status colour
+    if (_rc2StatusLike(_wxHex(f))) f = _wxMix(g, [20, 24, 32], 1);
+  }
+  var tile = _wxMix(g, f, _WX_TINT);
+  return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile) };
+}
+// The card's icons are the board's own flat set, drawn white and still:
+// white type over a dark ground wants white symbols (the set's lemon sun
+// and moon are the Delayed amber's family, and its sun turned and breathed
+// — colour that moves is for a status, never decoration). A white cloud in
+// front of a white sun or moon is given a cut edge in the colour of the
+// tile under it (.wxc-ko), so one-colour artwork still reads as two shapes.
+// Each icon is also framed on its own artwork, so a thin crescent and a
+// full sun are drawn the same size (measured once from the files).
+var _WX_ICON_FRAME = {
+  'clear-day': '36.3 36.3 127.4 127.4', 'clear-night': '61.1 61.1 77.8 77.8', 'cloudy': '29.7 40.3 141.6 141.6',
+  'drizzle': '36.9 47.8 128.1 128.1', 'extreme-rain': '19 35.9 164 164', 'extreme-snow': '21.2 36.1 159.6 159.6',
+  'fog': '28.7 46 142.6 142.6', 'hail': '37.8 43.8 126.4 126.4', 'mist': '28.7 46 142.6 142.6',
+  'overcast-day': '29.7 40.3 141.6 141.6', 'overcast-night': '29.7 40.3 141.6 141.6', 'overcast': '29.7 40.3 141.6 141.6',
+  'partly-cloudy-day': '31.1 9.7 156.7 156.7', 'partly-cloudy-night': '32 34.6 132.9 132.9', 'rain': '33.6 43.5 134.8 134.8',
+  'sleet': '38.1 43.8 125.7 125.7', 'snow': '36.5 43.7 128.8 128.8', 'thunderstorms-day-rain': '27.1 14.6 171.7 171.7',
+  'thunderstorms-night-rain': '30.1 40.6 144.7 144.7', 'thunderstorms-rain': '31.9 44.9 138.2 138.2',
+  'thunderstorms': '31.9 44.9 138.2 138.2', 'wind-cloud': '22.6 39.8 145.8 145.8', 'wind': '23.5 41.5 121 121'
+};
+function _wxWhiteStill(txt, name) {
+  var s = String(txt || '');
+  s = s.replace(/<animateTransform\b[^>]*\/>/g, '').replace(/<animate\b[^>]*\/>/g, '')
+       .replace(/<animateTransform\b[^>]*>[\s\S]*?<\/animateTransform>/g, '').replace(/<animate\b[^>]*>[\s\S]*?<\/animate>/g, '');
+  s = s.replace(/(fill|stroke)="#FFF200"/gi, '$1="#FFFFFF"').replace(/(fill|stroke)="#3A78C7"/gi, '$1="#FFFFFF"')
+       .replace(/fill="#AEB9C4"/gi, 'fill="#FFFFFF" fill-opacity="0.55"');
+  s = s.replace(/<g transform="([^"]+)" fill="#FFFFFF" opacity="[^"]*">((?:<circle[^>]*\/>|<rect[^>]*\/>)+)<\/g>/g, function (m, tr, body) {
+    return '<g transform="' + tr + '" class="wxc-ko" stroke-width="13" stroke-linejoin="round">' + body + '</g>' + m;
+  });
+  var fr = _WX_ICON_FRAME[name];
+  if (fr) s = s.replace(/viewBox="0 0 200 200"/, 'viewBox="' + fr + '"');
+  return s;
+}
 function _wxSceneKindOf(icon) {
   var n = String(icon || '');
   if (/thunder/.test(n)) return 'storm';
@@ -54916,6 +55037,8 @@ function _wxHydrateSvgs(root) {
       function inject(rawTxt) {
         try {
           if (!img.parentNode) return;
+          // v24014 — on the weather card the icons are white and still
+          if (img.closest && img.closest('.wxcard-wrap')) rawTxt = _wxWhiteStill(rawTxt, name);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
           // carry <defs> gradients / clipPaths / <animate> targets referenced
           // by url(#id) and href="#id". Inlining the SAME icon more than once
@@ -56410,6 +56533,25 @@ function _renderWxCard(el) {
     // own weather. Then the set gives way to the destination's next hours,
     // then to its five days. One card, three screens, the flips timed in CSS
     // against the same clock as the entrance.
+    // v24014 — a city and its airport as two pieces of text, from the same
+    // words every other line of the board takes (_wxCityOf → _cityAp): the
+    // airport is the part after the last ' · ' when it is one of the board's
+    // airport names, exactly as _cityApHtml decides it.
+    var _wxCityParts = function (iata) {
+      var s = String(_wxCityOf(iata) || ''), i = s.lastIndexOf(' · ');
+      var esc = (typeof fidsEscHtml === 'function') ? fidsEscHtml : function (v) { return String(v); };
+      var names = {};
+      try { names = _apSublineNames() || {}; } catch (eN) { names = {}; }
+      if (i > 0 && names[s.slice(i + 3).trim().toLowerCase()]) return { city: esc(s.slice(0, i)), ap: esc(s.slice(i + 3).trim()) };
+      return { city: esc(s), ap: '' };
+    };
+    // v24014 — the plate's temperature as its figure and its unit, so the
+    // unit can sit small beside a large figure ('5' '°C'); the words are the
+    // same dT() writes.
+    var _wxTempHtml = function (v) {
+      var t = dT(v), m = /^(.*?)(°[CF])$/.exec(t);
+      return m ? '<span class="wxc-mon-num">' + m[1] + '</span><span class="wxc-mon-unit">' + m[2] + '</span>' : t;
+    };
     var _wxSide = function (iata, ts, shortLbl, cls) {
       var w = _wxAtTime(iata, ts);
       if (!w) return '';
@@ -56426,20 +56568,39 @@ function _renderWxCard(el) {
       // on it at all, then the readings on their own glass underneath. Every
       // word now sits on a surface made for it, which is why they can be
       // this size and still be read from across a room.
+      // v24014 — the head says WHEN the plate is, in words as well as a
+      // clock: a plate for a flight that leaves after midnight reads
+      // Tomorrow beside its time, and a plate with no time to read shows the
+      // weather now and says so.
+      var note = '';
+      try {
+        if (!ts) note = _wxPairT(BoardStrings.entry('wxNowTitle'));
+        else if (when) {
+          var tDay = _wxLocalDate(iata), dDay = _wxLocalDate(iata, ts);
+          var nDay = tDay ? new Date(Date.parse(tDay + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10) : '';
+          if (dDay && dDay === nDay) note = _wxPairT(BoardStrings.entry('tomorrow'));
+        }
+      } catch (eNo) { note = ''; }
+      var cp = _wxCityParts(iata);
       return '<div class="wxc-mon-side ' + cls + (pic ? ' wxc-mon-haspic' : '') + '">'
         +   '<div class="wxc-mon-head"><span class="wxc-mon-lbl">' + shortLbl + '</span>'
-        +     (when ? '<b class="wxc-mon-when">' + when + '</b>' : '') + '</div>'
+        +     (when ? '<b class="wxc-mon-when">' + when + '</b>' : '')
+        +     (note ? '<span class="wxc-mon-note wxc-stk">' + note + '</span>' : '') + '</div>'
         +   '<div class="wxc-mon-pic' + (dusk ? ' wxc-mon-dusk' : '') + '"'
         +     (pic ? ' style="background-image:url(\'' + pic + '\')"' : '') + '>'
         +     '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
         +   '</div>'
         +   '<div class="wxc-mon-info">'
-        +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _cityApHtml(_wxCityOf(iata), iata, false, true) + '</span>\u00a0<span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
+        // v24014 — the city on a line of its own, at the card's largest size;
+        // its airport and its code under it (Toronto / PEARSON YYZ), so the
+        // name never shares its line with anything that could crowd it
+        +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + cp.city + '</span></div>'
+        +     '<div class="wxc-mon-subl">' + (cp.ap ? '<span class="wxc-mon-ap">' + cp.ap + '</span>' : '') + '<span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +     '<div class="wxc-mon-now">'
         +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg' + _wxIconQ() + '" alt="">'
-        +       '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
+        +       '<div class="wxc-mon-temp">' + _wxTempHtml(w.temp) + '</div>'
         +     '</div>'
-        +     '<div class="wxc-mon-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
+        +     '<div class="wxc-mon-cond wxc-stk">' + _wxPairT(_WXLBL[sIc] || { en: '' }) + '</div>'
         +   '</div>'
         + '</div>';
     };
@@ -56481,8 +56642,18 @@ function _renderWxCard(el) {
       for (var k = 1; k <= 3; k++) d += '<i' + (k === n ? ' class="on"' : '') + '></i>';
       return '<div class="wxc-dots" aria-hidden="true">' + d + '</div>';
     };
-    // The place travels as one piece (v23767): city and code never separate.
-    var _wxPlace = '<span class="wxc-place"><span class="wxc-t-place">' + _cityApHtml(_wxCityOf(dest), dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest) + '</span></span>';
+    // v24014 — THE DESTINATION ON ITS PHOTOGRAPH. The hours and the days
+    // open on the destination's picture (the arrival plate's, by its own
+    // hour now), the city written large across its foot with its airport and
+    // its code; the screen's title runs under it on the airline's band. The
+    // place travels as one piece (v23767): city and code never separate.
+    var _wxBand = (function () {
+      var bn = !!night, bp = _wxCityPic(dest, bn), bd = bn && !_wxNightPicFor(dest);
+      return '<div class="wxc-sc-band">'
+        + '<div class="wxc-sc-pic' + (bd ? ' wxc-mon-dusk' : '') + '"' + (bp ? ' style="background-image:url(\'' + bp + '\')"' : '') + '></div>'
+        + '<div class="wxc-sc-city"><span class="wxc-sc-name">' + _cityApHtml(_wxCityOf(dest), dest, false, true) + '</span>\u00a0<span class="wxc-sc-chip">' + _dispIata(dest) + '</span></div>'
+        + '</div>';
+    })();
     var _wxDeg = function (v) { return dT(v).replace(/°[CF]$/, '°'); };
 
     // ── screen 1: the set ──────────────────────────────────────────────────
@@ -56501,7 +56672,10 @@ function _renderWxCard(el) {
     // other time on the screen.
     var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep') : '';
     var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr');
-    var _wxLink = '<div class="wxc-mon-link" aria-hidden="true"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><path class="wxc-mon-dash" d="M2 12H96"/><path class="wxc-mon-tip" d="M96 3l22 9-22 9z"/></svg></div>';
+    // v24014 — from here to there: a round token in the airline's colour
+    // between the two photographs, its arrow in the airline's ink (the dashed
+    // amber line it replaces was the Delayed colour's family)
+    var _wxLink = '<div class="wxc-mon-link" aria-hidden="true"><i class="wxc-mon-tok"><svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg></i></div>';
     var _wxS1 = '<div class="wxc-screen wxc-s1">'
       + '<div class="wxc-monitor' + (_sideL ? ' wxc-mon-2up' : '') + '">' + _wxBar
       +   '<div class="wxc-mon-body">' + (_sideL ? _sideL + _wxLink : '') + _sideR + '</div>'
@@ -56597,9 +56771,11 @@ function _renderWxCard(el) {
         try {
           var t = _wxClock(dest, Date.now());
           if (!t) return '';
-          return '<div class="wxc-facts-when">'
-            + _wxPairD(BoardStrings.entry('wxNowTitle'))
-            + '<b>' + t + '</b></div>';
+          // v24014 — the first cell of the readings row, its two languages
+          // one over the other like every reading's label beside it
+          return '<div class="wxc-facts-when"><span class="wxc-fact-l">'
+            + _wxPairS(BoardStrings.entry('wxNowTitle'))
+            + '</span><b>' + t + '</b></div>';
         } catch (eFW) { return ''; }
       })();
       var _s2facts = '';
@@ -56625,11 +56801,11 @@ function _renderWxCard(el) {
           _s2facts += _wxFact(_WX_F_PRESS, _wxPairS(BoardStrings.entry('wxPressure')), Math.round(_c2.pressure) + ' hPa');
         }
       } catch (eS2) { _s2facts = ''; }
-      _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar
-        + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.entry('wxNextHours')) + _wxPlace + '</div>'
+      _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar + _wxBand
+        + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.entry('wxNextHours')) + '</div>'
         + '<div class="wxc-chart wxc-hgrid">' + _cols + '</div>'
         + _hnote
-        + (_s2facts ? _factsWhen + '<div class="wxc-facts wxc-facts2">' + _s2facts + '</div>' : '')
+        + (_s2facts ? '<div class="wxc-facts wxc-facts2">' + (_factsWhen || '') + _s2facts + '</div>' : '')
         + _wxDots(2) + '</div>';
     }
 
@@ -56692,10 +56868,10 @@ function _renderWxCard(el) {
           + '<div class="wxc-dstrip" style="background-image:url(/logos/weather/stills/wx-still-' + _dSlot + '.jpg)"></div>'
           + '</div>';
       }).join('');
-      _wxS3 = '<div class="wxc-screen wxc-s3">' + _wxBar
-        + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.filled('wxForecastN', { N: nDays })) + _wxPlace + '</div>'
+      _wxS3 = '<div class="wxc-screen wxc-s3">' + _wxBar + _wxBand
+        + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.filled('wxForecastN', { N: nDays })) + '</div>'
         + '<div class="wxc-days wxc-days-' + nDays + '">' + _dayCols + '</div>'
-        + (_facts ? _factsWhen + '<div class="wxc-facts">' + _facts + '</div>' : '')
+        + (_facts ? '<div class="wxc-facts">' + (_factsWhen || '') + _facts + '</div>' : '')
         + _wxDots(3) + '</div>';
     }
     // A missing screen must not leave its slot blank: the days stand in for
@@ -56916,9 +57092,35 @@ function _renderWxCard(el) {
     // and no longer leans on the top.
     // Night carries a deeper scrim and no photo; day keeps the plate and the
     // light one it was tuned against.
+    // v24014 — the ground is near-black, day and night: the footage plays
+    // over it and the airline's near-black is laid over the footage
+    // (.wxcard-wrap::after), so this is only what shows if a clip fails.
     var _wxBg = _wxNightScene
-      ? 'linear-gradient(180deg, rgba(3,14,32,0.55) 0%, rgba(4,20,44,0.42) 45%, rgba(2,10,26,0.62) 100%) center/cover no-repeat, #06152e'
-      : 'linear-gradient(180deg, rgba(6,40,78,0.34) 0%, rgba(14,80,140,0.14) 46%, rgba(5,34,68,0.42) 100%) center/cover no-repeat, #1c6fb0';
+      ? 'linear-gradient(180deg, rgba(8,10,13,0.94) 0%, rgba(11,13,16,0.90) 100%) center/cover no-repeat, #0b0d10'
+      : 'linear-gradient(180deg, rgba(14,17,21,0.92) 0%, rgba(11,13,16,0.90) 100%) center/cover no-repeat, #0e1115';
+    // v24014 — the gate airline's colours, as custom properties on the wrap
+    // (_wxAirlineLook). The gate's own code, folded the way the gate folds it
+    // (Hawaiian livery on Alaska, Endeavor as Delta). Set in place on every
+    // render path and only when they change, so a refresh never repaints.
+    var _wxAl = '';
+    try {
+      _wxAl = String((cf && cf.airline) || window._gateCurrentAirline || '').trim().toUpperCase();
+      if (typeof isHawaiianBrandedFlight === 'function' && isHawaiianBrandedFlight(cf, window._gateIata || '')) _wxAl = 'HA';
+      if (_wxAl === '9E') _wxAl = 'DL';
+    } catch (eAl) {}
+    var _wxLk = _wxAirlineLook(_wxAl);
+    var _wxPaint = function (wrap) {
+      if (!wrap || !wrap.style) return;
+      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p].join('|');
+      if (wrap._wxLookKey === key) return;
+      wrap._wxLookKey = key;
+      wrap.style.setProperty('--wxc-a', _wxLk.a);
+      wrap.style.setProperty('--wxc-a-ink', _wxLk.ink);
+      wrap.style.setProperty('--wxc-g', _wxLk.g);
+      wrap.style.setProperty('--wxc-p', _wxLk.p);
+      wrap.style.setProperty('--wxc-ko', _wxLk.ko);
+      wrap.setAttribute('data-wx-airline', _wxLk.code || '');
+    };
     try {
       // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
       // same source the media frame reads) — the static AIRLINE_ACCENT table
@@ -56951,6 +57153,7 @@ function _renderWxCard(el) {
         if (_wxWrapT) _wxWrapT.style.setProperty('background', _wxBg, 'important');
         el._wxLastBg = _wxBg;
       }
+      _wxPaint(el.querySelector('.wxcard-wrap'));
       // RE-RENDER PATH 1 — nothing changed but the tint. Asking is harmless:
       // the visit number is the same one this card already played on, so this
       // is a no-op. It is here so no path has to know the rule.
@@ -56981,6 +57184,7 @@ function _renderWxCard(el) {
         });
         el._wxLastHtml = _wxSig;
         if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
+        _wxPaint(_wxWrapP);
         _wxHydrateSvgs(_wxWrapP);
         _wxFitPlateCities(_wxWrapP);
         // RE-RENDER PATH 2 — screens swapped under an untouched set. This fires
@@ -56998,6 +57202,7 @@ function _renderWxCard(el) {
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');
     if (_wxWrap) _wxWrap.style.setProperty('background', _wxBg, 'important');
+    _wxPaint(_wxWrap);
     _wxHydrateSvgs(el);
     _wxFitPlateCities(el);
     // RE-RENDER PATH 3 — a full rebuild. This is the path a real arrival takes
