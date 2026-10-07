@@ -334,7 +334,6 @@ const SAME_AS_ENGLISH = {
   'Demonstration': { langs: ['de'], why: 'the German word' },
   '{TEMP} in {CITY}': { langs: ['de'], why: 'German in' },
   'Calgary · 1987–2001': { langs: ['fr', 'es', 'de', 'it', 'pt'], why: 'data: a city and two years' },
-  'Montreal · DC-9 · 1966–2002': { langs: ['es', 'de', 'it', 'pt'], why: 'data: a city, a type and two years (Italian writes Montréal)' }
 };
 
 // Spanish, Italian and Portuguese share many words. A value two of them

@@ -3033,6 +3033,8 @@ var FIDS_FIT_RULES = [
   { sel: '.wxc-credit', lines: 2 },
   // the heritage card's kicker (From the archive | Depuis les archives)
   { sel: '.hcard-kicker', lines: 2, guard: true },
+  // v24015 — the 3D model credit: each language one line, smaller before it is cut
+  { sel: '.hcard-credit', lines: 2 },
   // the big map's "Estimated position" note, the day under a gate time
   // (Tomorrow | Demain), and the belts' page count
   { sel: '.bigcraft-est', lines: 2, guard: true },
@@ -31581,7 +31583,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24014';
+var FIDS_BUILD_TAG = 'v24015';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -55365,11 +55367,19 @@ var HERITAGE_MARKS = [
     // Space Museum, 'Air Canada operated DC-9s from 1966 to 2002'; Globe and
     // Mail/CP and Aviation Week, February–March 2002), the first airline outside
     // the United States to fly the type, headquartered in Montreal throughout.
-    // NOT PRINTED: the livery's own years. Its start (red titles: 1977/78 vs
-    // 1980) and its end (1992, 1993 or 1994 — Air Canada's own publications
-    // disagree, and aircraft were repainted over time) are both disputed, so
-    // no livery date appears, and neither does any day or month for the
-    // DC-9's first or last flight, which the sources also give differently.
+    // v24015 — THE CAPTION NAMES THE AEROPLANE AND ITS LIVERY, NOT A CITY:
+    // 'McDonnell Douglas DC-9-32 · 1968–2002 · 1987 livery' here, '… · 1980
+    // livery' on the caps card below, as the 767 card does. The years are the
+    // DC-9-32's own, the model both drawings show: Air Canada's -32s from 1968
+    // (C-FTMA among the first that year) to the type's last flights in 2002,
+    // confirmed first hand; the 1966 start above is the earlier -14s and -15s. Each livery is
+    // named by the year it came in (Norebbo's Air Canada livery history: 1980
+    // the simplified red stripe with bold capital titles, 1987 the dual
+    // stripe with 'Air Canada' in mixed case; confirmed first hand by staff
+    // of the period). The year a livery went out is still not printed: the
+    // repaint took years (1992, 1993 or 1994 in Air Canada's own
+    // publications). No day or month of the DC-9's first or last flight is
+    // printed either; the sources give those differently.
     key: 'air-canada',
     file: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
     name: 'Air Canada',
@@ -55396,6 +55406,38 @@ var HERITAGE_MARKS = [
     file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc9-ac80.svg',
+    airports: '*CA'
+  },
+  {
+    // v24015 — AND THE BOEING 767, IN THE SAME CAPITALS LIVERY. A 767-200 with
+    // 'AIR CANADA' in red capitals over a single red cheatline and the white
+    // rondelle on a red tail: the dress of the caps DC-9 card above, so it
+    // carries the same capitals mark. The aeroplane is C-GAUN, fleet number 604.
+    //
+    // THE PICTURE IS A RENDER, NOT A DRAWING: the supplied 3D model "boeing 767"
+    // by 1883 on Sketchfab, CC BY 4.0, rendered to a still with the landing gear
+    // removed so it flies. CC BY asks for the maker's credit where the work is
+    // seen, so this card carries a credit line ('heritageCredit:<key>'), and
+    // docs/licenses/3d-models.md holds the full notice.
+    //
+    // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Boeing 767-233 · 1982–2008 ·
+    // 1980 livery'. 233 is Air Canada's own customer number, so the designation
+    // is this airline's 767-200s and nobody else's.
+    // CHECKED: the first, C-GAUB (fleet 601), was delivered in October 1982 and
+    // flew the first transcontinental service on 14 February 1983 (Air Canada,
+    // 'Flying into the sunset', June 2020); the 767-200s and -200ERs were
+    // retired in 2008, replaced by A330-300s (Air Canada fleet history; Canadian
+    // Museum of Flight, August 2022). The later 767-300ERs are another model
+    // and do not change these years.
+    // THE LIVERY is the one introduced in 1980: red and white, the titles in
+    // bold capitals (Norebbo's Air Canada livery history, and confirmed first
+    // hand by staff of the period). It is named by the year it came in; the year
+    // it went out is not printed, because the sources give 1987 and 1992-94.
+    key: 'air-canada-767',
+    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-767.png',
+    credit: true,
     airports: '*CA'
   }
 ];
@@ -55453,6 +55495,13 @@ function _renderHeritageCard(el) {
       _lines.push(BoardStrings.half(lg, esc(w)));
     });
     var kicker = BoardStrings.pair('heritageKicker', { langs: _hLangs, sep: ' &nbsp;|&nbsp; ' });
+    var _credit = [], _seenC = Object.create(null);
+    if (mark.credit) _hLangs.forEach(function (lg) {
+      var w = BoardStrings.bs('heritageCredit:' + mark.key, lg);
+      if (!w || _seenC[w]) return;
+      _seenC[w] = 1;
+      _credit.push(BoardStrings.half(lg, esc(w)));
+    });
     // v23883 — THE AEROPLANE ITSELF, AND NOTHING ELSE ADDED.
     //
     // The first attempt at this put the mark on a white plate over a drawn sky
@@ -55499,7 +55548,7 @@ function _renderHeritageCard(el) {
     // printed card.
     var acSrc = mark.aircraft || ('/aircraft/heritage/' + mark.key + '.png');
     var html =
-      '<div class="hcard-wrap">'
+      '<div class="hcard-wrap' + (_credit.length ? ' hcard-credited' : '') + '">'
       // The five layers of the gate aircraft scene, in its order: the sky plate
       // (::before), the cartoon fast band, the cumulus, the aeroplane, then the
       // front band with the rush streaks riding on it (::after). v23928: every
@@ -55544,6 +55593,10 @@ function _renderHeritageCard(el) {
       +   '<div class="hcard-rule" aria-hidden="true"></div>'
       +   (_lines[0] ? '<div class="hcard-line">' + _lines[0] + '</div>' : '')
       +   (_lines[1] ? '<div class="hcard-line hcard-line-2">' + _lines[1] + '</div>' : '')
+      // v24015 — the maker's credit, for an aeroplane rendered from someone
+      // else's 3D model (CC BY): small, at the foot of the card, in the
+      // board's two languages like every other line on it.
+      +   (_credit.length ? '<div class="hcard-credit">' + _credit.join('<br>') + '</div>' : '')
       + '</div>';
     if (el.innerHTML !== html) el.innerHTML = html;
     return true;

@@ -78,17 +78,23 @@ test('every file in the heritage folder is either used or deliberately not', () 
 
 test('no card claims a date its sources disagree on', () => {
   const byKey = Object.fromEntries(marks().map((m) => [m.key, m]));
-  // Air Canada: the DC-9 years are checked (1966–2002); the livery's own years
-  // are not (start 1977/78 vs 1980, end 1992/93/94), so none is printed.
-  for (const k of ['air-canada', 'air-canada-caps']) {
+  // Air Canada: the DC-9-32 years are checked (1968–2002; the fleet's 1966 start
+  // is the earlier -14s and -15s, not the model drawn). v24015 — each card
+  // names the aeroplane and its livery by the year the livery came in (1987
+  // dual stripe, 1980 simplified red stripe), not a city; the year a livery
+  // went out is disputed (1992/93/94) and never printed.
+  const LIVERY = { 'air-canada': '1987', 'air-canada-caps': '1980' };
+  for (const k of Object.keys(LIVERY)) {
     const acm = byKey[k];
     assert.ok(acm, k + ': the Air Canada DC-9 card exists');
     for (const l of STORE.LANGS) {
       const cap = acm.caption[l];
-      assert.match(cap, /DC-9 · 1966–2002$/, 'the checked DC-9 years print, in ' + l);
-      assert.doesNotMatch(cap, /19(6[5-9]|7\d|8\d|9[0-4])(?!–2002)/, 'no disputed livery or logo year appears');
+      assert.match(cap, /DC-9-32 · 1968–2002 · /, 'the model drawn and its checked years print, in ' + l);
+      assert.match(cap, new RegExp(LIVERY[k]), 'the livery is named by the year it came in, in ' + l);
+      const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => y !== '1968' && y !== '2002' && y !== LIVERY[k]);
+      assert.deepEqual(years, [], 'no other year (no disputed end of a livery), in ' + l);
+      assert.doesNotMatch(cap, /Montr[eé]al|モントリオール|蒙特利尔|مونتريال/, 'no city: the card names the aeroplane, in ' + l);
     }
-    assert.match(acm.fr, /^Montréal/, 'the French caption spells Montréal');
   }
   // Founding year reported as 1985 in one source and 1986 in another.
   for (const l of STORE.LANGS) {
@@ -245,17 +251,14 @@ test('the artwork is never recoloured', () => {
 test('every clamp on the card carries a width term', () => {
   // The v23730 house rule: a vh-only clamp sizes off height alone and
   // overflows the moment a board is narrower than the geometry it was tuned on.
-  // Bounded at the card's OWN last rule (the last rule naming .hcard, to its
-  // closing brace). The file is append-only, and a block appended after the
-  // card is not the card: v23973's Later-at-this-gate strip copies the left
+  // Read rule by rule: every rule whose selector names .hcard, wherever it sits.
+  // The file is append-only, and a block appended between two of the card's
+  // blocks is not the card: v23973's Later-at-this-gate strip copies the left
   // rail's plate inset and orb size (vh-only clamps) on purpose, so that it
-  // lines up with the rail's bottom card.
-  const start = CSS.indexOf('v23758 — FROM THE ARCHIVE');
-  let lastRule = -1;
-  const ruleRe = /\n[^\n{}]*\.hcard[^\n{]*\{/g;
-  for (let m = ruleRe.exec(CSS); m; m = ruleRe.exec(CSS)) lastRule = m.index;
-  const end = lastRule > start ? CSS.indexOf('\n}', lastRule) : -1;
-  const seg = CSS.slice(start, end > start ? end + 2 : undefined);
+  // lines up with the rail's bottom card. (v24015 — the card's credit line was
+  // appended after that strip; the old first-to-last slice swept the strip in.)
+  const flat = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  const seg = (flat.match(/[^{}]*\{[^{}]*\}/g) || []).filter((r) => /\.hcard/.test(r.split('{')[0])).join('\n');
   const all = seg.match(/clamp\([^()]*(?:\([^()]*\)[^()]*)*\)/g) || [];
   assert.ok(all.length >= 8, `expected the card's clamps, found ${all.length}`);
   const bad = all.filter((c) => c.includes('vh') && !c.includes('vw'));
@@ -344,4 +347,33 @@ test('a shape drawn see-through in a heritage aeroplane has the artboard behind 
         f + ': a see-through shape has nothing behind it but the sky: ' + t.slice(0, 90));
     }
   }
+});
+
+test('the 767 card: the capitals livery and mark, a year every source agrees on, and its maker credited', () => {
+  // v24015 — the aeroplane is a render of a CC BY 3D model, so the card names
+  // the model's maker where the picture is seen, in all nine languages.
+  const byK = Object.fromEntries(marks().map((m) => [m.key, m]));
+  const m = byK['air-canada-767'];
+  assert.ok(m, 'the 767 card exists');
+  assert.equal(m.aircraft, '/aircraft/heritage/air-canada-767.png');
+  assert.match(m.file, /air-canada-logo-1965-1987\.png$/, 'the capitals livery carries the capitals mark, as the caps DC-9 card does');
+  assert.equal(m.airports, '*CA');
+  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''))), 'the render is on disk');
+  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
+    const cap = STORE.bs('heritage:air-canada-767', l);
+    assert.match(cap, /767-233/, 'the type prints as Air Canada\'s own designation, in ' + l);
+    assert.match(cap, /1982–2008/, 'the checked years print, in ' + l);
+    assert.doesNotMatch(cap, /Montr[eé]al|モントリオール|蒙特利尔|مونتريال/, 'no city: the card names the aeroplane, in ' + l);
+    assert.match(cap, /1980/, 'the livery is named by the year it came in, in ' + l);
+    assert.doesNotMatch(cap, /19[67]\d|198[1-17-9]|199\d/, 'and no other year: when it went out the sources disagree, in ' + l);
+    const cr = STORE.bs('heritageCredit:air-canada-767', l);
+    assert.match(cr, /1883/, 'the maker is named, in ' + l);
+    assert.match(cr, /CC BY 4\.0/, 'the licence is named, in ' + l);
+  }
+  assert.equal(m.credit, true, 'the card asks for its credit line');
+  assert.match(SRC, /if \(mark\.credit\) _hLangs\.forEach/, 'the credit is written in the board\'s languages');
+  assert.match(SRC, /'<div class="hcard-credit">' \+ _credit\.join\('<br>'\)/, 'and placed on the card');
+  assert.ok(fs.existsSync(path.join(ROOT, 'docs', 'licenses', '3d-models.md')), 'the full notice is filed');
+  // only a mark that asks for a credit gets one: the drawn aeroplanes are the supplied artwork
+  for (const k of ['air-canada', 'air-canada-caps', 'canadian-airlines']) assert.ok(!byK[k].credit, k + ' carries no credit line');
 });
