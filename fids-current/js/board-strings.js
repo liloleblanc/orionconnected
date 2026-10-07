@@ -150,6 +150,9 @@
     // weather strips. Moved here from TOMORROW and LS.tomorrow, which held
     // the same nine words twice.
     tomorrow: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Morgen', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+    // v24018 — the day an arrival the gate prints happened, when that was
+    // the day before (the Your Aircraft card, a night stop: _gateDayWords past)
+    yesterday: { en: 'Yesterday', fr: 'Hier', es: 'Ayer', de: 'Gestern', it: 'Ieri', pt: 'Ontem', ja: '昨日', zh: '昨天', ar: 'أمس' },
 
     // ── LOADERS AND STATUS LINES ──────────────────────────────────────────
     // The boot loader of fids/gids/bids/index (it greets in the board's own

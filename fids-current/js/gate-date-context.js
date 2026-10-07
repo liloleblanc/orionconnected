@@ -127,7 +127,8 @@
   //
   //   the next day          Tomorrow | Demain        (Demain | Tomorrow in Québec)
   //   two or more days on   Sun, Oct 4 | dim. 4 oct.
-  //   today, or earlier     nothing
+  //   today, or earlier     nothing (unless options.pastDays: yesterday,
+  //                         then the date)
   //
   // Earlier days get nothing on purpose: a flight from before midnight that is
   // still at its door is tonight's flight to the people standing there.
@@ -146,13 +147,18 @@
     var today = zonedDateOrdinal(now, options.nowTimeZone || options.timeZone);
     if (flightDay === null || today === null) return empty;
     var offset = flightDay - today;
-    if (offset < 1) return { dayOffset: offset, words: [], text: '' };
+    // v24018 — options.pastDays: an ARRIVAL that has happened (the Your
+    // Aircraft card's "Arrived at the gate") is dated when it was not today,
+    // 'Yesterday', or the date further back. Departures never ask for it.
+    if (offset === 0 || (offset < 0 && !options.pastDays)) return { dayOffset: offset, words: [], text: '' };
     var zone = validTimeZone(options.timeZone);
     var seen = Object.create(null), words = [], languages = [];
     selectedLanguages(options.languages, options.frenchFirst).forEach(function (language) {
       var word = offset === 1
         ? Strings.bs('tomorrow', language)
-        : Strings.date(ts, language, { weekday: 'short', month: 'short', day: 'numeric' }, zone);
+        : offset === -1
+          ? Strings.bs('yesterday', language)
+          : Strings.date(ts, language, { weekday: 'short', month: 'short', day: 'numeric' }, zone);
       if (!word || seen[word.toLowerCase()]) return;
       seen[word.toLowerCase()] = true;
       words.push(word);

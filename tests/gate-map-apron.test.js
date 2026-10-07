@@ -103,7 +103,7 @@ const FNS = [
   '_gateLegGone', '_gateFamily', '_gateRowKey', '_gateRawStatus', '_gateRawLanded', '_gateRawAirborne', '_gatePushLeft',
   '_gateOutboundAtGate', '_gateTodayReg', '_gateIsProp', '_gateMinTurnMs', '_gateDepSchedTs',
   '_gateAcFamily', '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn',
-  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateLandedAt',
+  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnedByPattern', '_gateTurnConsumed', '_gateLandedAt',
   '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateFeedKept', '_gateInboundForDeparture',
   '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', 'adbStatus',

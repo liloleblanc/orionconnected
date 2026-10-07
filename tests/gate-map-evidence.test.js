@@ -74,7 +74,7 @@ const FNS = [
   '_gateLegGone', '_gateFamily', '_gateRowKey', '_gateRawStatus', '_gateRawLanded', '_gateRawAirborne', '_gatePushLeft',
   '_gateOutboundAtGate', '_gateTodayReg', '_gateIsProp', '_gateMinTurnMs', '_gateDepSchedTs',
   '_gateAcFamily', '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn',
-  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateLandedAt',
+  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnedByPattern', '_gateTurnConsumed', '_gateLandedAt',
   '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateInboundForDeparture', '_gateMapCity', '_gateMapNote', 'fidsInboundAirborne',
   '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', 'adbStatus',
@@ -785,4 +785,31 @@ test('a hub with no registrations: a landed same-gate inbound is on its stand wh
     assert.ok(later >= 20, 'and turns long enough to outlast the window (' + later + ')');
     assert.deepEqual(parked, [], 'parked on a landing alone');
   }
+});
+
+test('gate 3 at 10:18: yesterday\'s PD2373 turned into PD2382, so it is not PD2370\'s aeroplane; last night\'s PD2381 is (v24018)', () => {
+  // Oct 7 in the field, Sep 30 here: the feed has dropped last night's PD2381
+  // and yesterday's PD2382, and kept yesterday's PD2373 "Arrived" (remembered).
+  const arrs = [
+    arr('PD2373', 'YOW', '3', 29, 16, 33, { status: 'arrived', _remembered: true, _aircraft: 'DHC-8-400' }),
+    arr('PD2373', 'YOW', '3', 30, 16, 33, { _aircraft: 'DHC-8-400' }),
+    arr('PD2381', 'YHU', '3', 30, 21, 30, { _aircraft: 'DHC-8-400' }),
+  ];
+  const deps = [
+    dep('PD2370', 'YOW', '3', 30, 11, 55, { _aircraft: 'DHC-8-400' }),
+    dep('PD2382', 'YHU', '3', 30, 17, 20, { _aircraft: 'DHC-8-400' }),
+  ];
+  const E = engine({ data: { arr: arrs, dep: deps } });
+  const cf = deps[0];
+  assert.equal(E._gateTurnedByPattern(arrs[0], cf, deps, arrs) && E._gateTurnedByPattern(arrs[0], cf, deps, arrs).flight, 'PD2382',
+    'PD2373 lands again today at 16:33 and PD2382 leaves gate 3 at 17:20: yesterday it did the same');
+  assert.equal(E._gateInboundForDeparture(cf, '3', arrs, deps), null, 'no aeroplane named rather than the wrong one');
+  // with last night's PD2381 still known, it is the aeroplane: nothing leaves gate 3 a turn after 21:30
+  const withNight = arrs.concat([arr('PD2381', 'YHU', '3', 29, 21, 30, { status: 'arrived', _remembered: true, _aircraft: 'DHC-8-400' })]);
+  const inb = E._gateInboundForDeparture(cf, '3', withNight, deps);
+  assert.equal(inb && inb.flight, 'PD2381');
+  assert.equal(E._gateTurnedByPattern(withNight[3], cf, deps, withNight), null);
+  // an arrival from this morning is never judged by yesterday's pattern
+  const morning = arr('PD2293', 'YTZ', '3', 30, 6, 0, { _aircraft: 'DHC-8-400' });
+  assert.equal(E._gateTurnedByPattern(morning, cf, deps, arrs.concat([morning])), null);
 });
