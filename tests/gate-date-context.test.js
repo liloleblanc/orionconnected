@@ -105,3 +105,18 @@ test('uses the airport timezone rather than the computer timezone', () => {
   assert.equal(gateDate.dayOffset(flight, now, 'America/Moncton'), 1);
   assert.equal(gateDate.dayOffset(flight, now, 'UTC'), 0);
 });
+
+test('an arrival that has happened is dated when it was yesterday, only when the caller asks (v24018)', () => {
+  // Moncton, Oct 7 at 10:18 ADT: the Your Aircraft card's "Arrived at the gate | 4:33pm" was Oct 6.
+  const now = Date.parse('2026-10-07T13:18:00Z');
+  const yday = Date.parse('2026-10-06T19:33:00Z');            // 4:33pm ADT on Oct 6
+  assert.deepEqual(words({ timestamp: yday, nowTimestamp: now }).words, [], 'a departure never asks: nothing, as before');
+  const r = words({ timestamp: yday, nowTimestamp: now, pastDays: true });
+  assert.equal(r.dayOffset, -1);
+  assert.deepEqual(r.words, ['Yesterday', 'Hier']);
+  assert.deepEqual(words({ timestamp: Date.parse('2026-10-07T12:00:00Z'), nowTimestamp: now, pastDays: true }).words, [], 'today: nothing');
+  const older = words({ timestamp: Date.parse('2026-10-05T19:33:00Z'), nowTimestamp: now, pastDays: true });
+  assert.equal(older.dayOffset, -2);
+  assert.equal(older.words.length, 2, 'two days back: the date, in both languages');
+  assert.doesNotMatch(older.text, /Yesterday|Hier/);
+});

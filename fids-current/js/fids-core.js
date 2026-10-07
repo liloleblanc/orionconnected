@@ -14635,7 +14635,10 @@ function _buildV2MapCol(ctx, vars) {
         // it as an element of v23934's line list, and in this concatenation
         // a comma ended the card after its time line.)
         +         (function () {
-                    var _dwI = _gateDayWords(_ibShownTs, vars.tz, _frF);
+                    // v24018 — and an arrival from yesterday says so: at 10:18
+                    // "Arrived at the gate | 4:33pm" read as a time still to
+                    // come today.
+                    var _dwI = _gateDayWords(_ibShownTs, vars.tz, _frF, undefined, _stKey === 'arrived');
                     return _dwI ? '<div class="v2-fi-mline2">' + _gateDayLineHtml(_dwI) + '</div>' : '';
                   })()
         // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. The layout of the
@@ -15878,11 +15881,13 @@ function _buildV2MapCol(ctx, vars) {
 // own, so no label rule elsewhere (the title's grey second language, the
 // punctuation rule for bare spans) can restyle it: it takes the colour of the
 // time it sits under, never a status colour, and it never moves.
-function _gateDayWords(ts, tz, frF, boardTz) {
+// v24018 — past: an arrival that has HAPPENED is dated too when it was not
+// today ('Yesterday | Hier'); only the Your Aircraft card asks for it.
+function _gateDayWords(ts, tz, frF, boardTz, past) {
   try {
     if (!ts || !window.FIDSGateDate || typeof window.FIDSGateDate.getFlightDayWords !== 'function') return null;
     var r = window.FIDSGateDate.getFlightDayWords({
-      timestamp: ts, nowTimestamp: Date.now(), timeZone: tz || 'UTC', nowTimeZone: boardTz || tz || 'UTC',
+      timestamp: ts, nowTimestamp: Date.now(), timeZone: tz || 'UTC', nowTimeZone: boardTz || tz || 'UTC', pastDays: !!past,
       languages: (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'],
       frenchFirst: !!frF
     });
@@ -31592,7 +31597,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24017';
+var FIDS_BUILD_TAG = 'v24018';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43567,8 +43572,43 @@ function _gateInboundForDeparture(cf, gateVal, arrs, deps) {
     if (f.flight === cf.flight) return true;
     if (f.gate !== gateVal) return false;
     if (depTs - f._sortTs < _gateMinTurnMs(cf, f)) return false;
+    if (_gateTurnedByPattern(f, cf, deps, arrs)) return false;
     return !_gateArrivalClaimed(f, cf, deps, arrs);
   }).sort(function (a, b) { return (rank(b) - rank(a)) || (b._sortTs - a._sortTs); })[0] || null;
+}
+// v24018 — AN ARRIVAL FROM THE DAY BEFORE THAT THE DAILY PATTERN TURNS.
+// Moncton, Oct 7 at 10:18: gate 3's PD2370 (11:55) named yesterday's PD2373
+// from Ottawa (16:33) as its aeroplane, "Arrived at the gate | 4:33pm". That
+// aeroplane left again as PD2382 at 17:20; PD2370's is the one PD2381 brings
+// in at 21:30 and keeps overnight. The feed had dropped both of those rows
+// and the worker had never been told they moved, so _gateArrivalClaimed had
+// no 17:20 departure to see. The schedule still shows it: the same arrival
+// lands again today (PD2373 at 16:33) and a same-family departure leaves its
+// gate a turn later (PD2382 at 17:20), so the day before, it did the same.
+// Only for an arrival at least 12 hours before our departure (the previous
+// rotation, never this morning's); the departure must be one that arrival
+// could turn into (_gateCouldTurn) and must have no other inbound of its
+// own today (_gateDepOwnInbound). Returns that departure, or null.
+function _gateTurnedByPattern(a, cf, deps, arrs) {
+  if (!a || !cf || !a._sortTs || !cf._sortTs || cf._sortTs - a._sortTs < 12 * 3600000) return null;
+  var DAY = 24 * 3600000, fam = _gateFamily(a.airline), aG = _gateRefNorm(a.gate);
+  if (!aG) return null;
+  var aNext = null;
+  for (var j = 0; j < (arrs || []).length; j++) {
+    var x = arrs[j];
+    if (x && x !== a && x.flight === a.flight && x._sortTs && Math.abs(x._sortTs - (a._sortTs + DAY)) <= 3600000) { aNext = x; break; }
+  }
+  if (!aNext) return null;
+  for (var i = 0; i < (deps || []).length; i++) {
+    var d = deps[i];
+    if (!d || d === cf || !d._sortTs || _gateFamily(d.airline) !== fam || _gateRefNorm(d.gate) !== aG) continue;
+    var y = d._sortTs - DAY;
+    if (y < a._sortTs + _gateMinTurnMs(d, a) || y > a._sortTs + 4 * 3600000) continue;
+    if (!_gateCouldTurn(d, aNext, arrs)) continue;
+    if (_gateDepOwnInbound(d, aNext, arrs)) continue;
+    return d;
+  }
+  return null;
 }
 // v23915 — NO NEW FLIGHTRADAR24 LOOKUPS FROM THE NEW PAIRING. Until this
 // version the gate-match never returned a through flight (it threw away an
