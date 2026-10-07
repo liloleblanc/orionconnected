@@ -31592,7 +31592,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24016';
+var FIDS_BUILD_TAG = 'v24017';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -56243,8 +56243,9 @@ var _WX_CITY_NIGHT = {
   // 26 to 55/255 mean so it does not read as a black plate.
   // v24016 — Moncton's day and night pictures are now artwork made for these
   // boards: the skyline (Assumption Place, the telecom tower) over the
-  // Petitcodiac marsh, a gold afternoon and a violet night, supplied without
-  // lettering so the board's own words sit on it (night mean 82/255).
+  // Petitcodiac marsh, a gold afternoon and a night of lit windows under a
+  // deep blue starry sky (v24017), supplied without lettering so the board's
+  // own words sit on it.
   YQM:1
 };
 // The name the Worker searches by, for an airport outside the curated
