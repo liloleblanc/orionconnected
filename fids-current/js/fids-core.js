@@ -55367,11 +55367,16 @@ var HERITAGE_MARKS = [
     // Space Museum, 'Air Canada operated DC-9s from 1966 to 2002'; Globe and
     // Mail/CP and Aviation Week, February–March 2002), the first airline outside
     // the United States to fly the type, headquartered in Montreal throughout.
-    // NOT PRINTED: the livery's own years. Its start (red titles: 1977/78 vs
-    // 1980) and its end (1992, 1993 or 1994 — Air Canada's own publications
-    // disagree, and aircraft were repainted over time) are both disputed, so
-    // no livery date appears, and neither does any day or month for the
-    // DC-9's first or last flight, which the sources also give differently.
+    // v24015 — THE CAPTION NAMES THE AEROPLANE AND ITS LIVERY, NOT A CITY:
+    // 'McDonnell Douglas DC-9 · 1966–2002 · 1987 livery' here, '… · 1980
+    // livery' on the caps card below, as the 767 card does. Each livery is
+    // named by the year it came in (Norebbo's Air Canada livery history: 1980
+    // the simplified red stripe with bold capital titles, 1987 the dual
+    // stripe with 'Air Canada' in mixed case; confirmed first hand by staff
+    // of the period). The year a livery went out is still not printed: the
+    // repaint took years (1992, 1993 or 1994 in Air Canada's own
+    // publications). No day or month of the DC-9's first or last flight is
+    // printed either; the sources give those differently.
     key: 'air-canada',
     file: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
     name: 'Air Canada',
@@ -55412,14 +55417,19 @@ var HERITAGE_MARKS = [
     // seen, so this card carries a credit line ('heritageCredit:<key>'), and
     // docs/licenses/3d-models.md holds the full notice.
     //
-    // CHECKED: Air Canada's first 767, a 767-233 (C-GAUB, fleet 601), was
-    // delivered in October 1982 and flew its first transcontinental service on
-    // 14 February 1983 (Air Canada, 'Flying into the sunset', June 2020;
-    // Canadian Museum of Flight, August 2022). NOT PRINTED: an end year. The
-    // last mainline passenger 767 flew on 2 June 2020, but two 767-300ERs were
-    // announced back into passenger service for 2025 and Air Canada Cargo flies
-    // the type, so the type has not left the airline: 'since 1982' is what every
-    // source agrees on. Nothing about this aeroplane's own history is printed.
+    // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Boeing 767-233 · 1982–2008 ·
+    // 1980 livery'. 233 is Air Canada's own customer number, so the designation
+    // is this airline's 767-200s and nobody else's.
+    // CHECKED: the first, C-GAUB (fleet 601), was delivered in October 1982 and
+    // flew the first transcontinental service on 14 February 1983 (Air Canada,
+    // 'Flying into the sunset', June 2020); the 767-200s and -200ERs were
+    // retired in 2008, replaced by A330-300s (Air Canada fleet history; Canadian
+    // Museum of Flight, August 2022). The later 767-300ERs are another model
+    // and do not change these years.
+    // THE LIVERY is the one introduced in 1980: red and white, the titles in
+    // bold capitals (Norebbo's Air Canada livery history, and confirmed first
+    // hand by staff of the period). It is named by the year it came in; the year
+    // it went out is not printed, because the sources give 1987 and 1992-94.
     key: 'air-canada-767',
     file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
     name: 'Air Canada',

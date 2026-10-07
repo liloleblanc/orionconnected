@@ -78,17 +78,22 @@ test('every file in the heritage folder is either used or deliberately not', () 
 
 test('no card claims a date its sources disagree on', () => {
   const byKey = Object.fromEntries(marks().map((m) => [m.key, m]));
-  // Air Canada: the DC-9 years are checked (1966–2002); the livery's own years
-  // are not (start 1977/78 vs 1980, end 1992/93/94), so none is printed.
-  for (const k of ['air-canada', 'air-canada-caps']) {
+  // Air Canada: the DC-9 years are checked (1966–2002). v24015 — each card
+  // names the aeroplane and its livery by the year the livery came in (1987
+  // dual stripe, 1980 simplified red stripe), not a city; the year a livery
+  // went out is disputed (1992/93/94) and never printed.
+  const LIVERY = { 'air-canada': '1987', 'air-canada-caps': '1980' };
+  for (const k of Object.keys(LIVERY)) {
     const acm = byKey[k];
     assert.ok(acm, k + ': the Air Canada DC-9 card exists');
     for (const l of STORE.LANGS) {
       const cap = acm.caption[l];
-      assert.match(cap, /DC-9 · 1966–2002$/, 'the checked DC-9 years print, in ' + l);
-      assert.doesNotMatch(cap, /19(6[5-9]|7\d|8\d|9[0-4])(?!–2002)/, 'no disputed livery or logo year appears');
+      assert.match(cap, /DC-9 · 1966–2002 · /, 'the type and its checked years print, in ' + l);
+      assert.match(cap, new RegExp(LIVERY[k]), 'the livery is named by the year it came in, in ' + l);
+      const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => y !== '1966' && y !== '2002' && y !== LIVERY[k]);
+      assert.deepEqual(years, [], 'no other year (no disputed end of a livery), in ' + l);
+      assert.doesNotMatch(cap, /Montr[eé]al|モントリオール|蒙特利尔|مونتريال/, 'no city: the card names the aeroplane, in ' + l);
     }
-    assert.match(acm.fr, /^Montréal/, 'the French caption spells Montréal');
   }
   // Founding year reported as 1985 in one source and 1986 in another.
   for (const l of STORE.LANGS) {
@@ -355,9 +360,11 @@ test('the 767 card: the capitals livery and mark, a year every source agrees on,
   assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''))), 'the render is on disk');
   for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
     const cap = STORE.bs('heritage:air-canada-767', l);
-    assert.match(cap, /767/, 'the type prints, in ' + l);
-    assert.match(cap, /1982/, 'the first year prints, in ' + l);
-    assert.doesNotMatch(cap, /20\d\d/, 'no end year: the type has not left the airline, in ' + l);
+    assert.match(cap, /767-233/, 'the type prints as Air Canada\'s own designation, in ' + l);
+    assert.match(cap, /1982–2008/, 'the checked years print, in ' + l);
+    assert.doesNotMatch(cap, /Montr[eé]al|モントリオール|蒙特利尔|مونتريال/, 'no city: the card names the aeroplane, in ' + l);
+    assert.match(cap, /1980/, 'the livery is named by the year it came in, in ' + l);
+    assert.doesNotMatch(cap, /19[67]\d|198[1-17-9]|199\d/, 'and no other year: when it went out the sources disagree, in ' + l);
     const cr = STORE.bs('heritageCredit:air-canada-767', l);
     assert.match(cr, /1883/, 'the maker is named, in ' + l);
     assert.match(cr, /CC BY 4\.0/, 'the licence is named, in ' + l);
