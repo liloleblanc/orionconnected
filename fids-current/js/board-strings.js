@@ -499,6 +499,8 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     internationalFlights: { en: 'International flights', fr: 'Vols internationaux', es: 'Vuelos internacionales', de: 'Auslandsflüge', it: 'Voli internazionali', pt: 'Voos internacionais', ja: '国際線', zh: '国际航班', ar: 'الرحلات الدولية',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    intlAndDomFlights: { en: 'International and domestic flights', fr: 'Vols internationaux et intérieurs', es: 'Vuelos internacionales y nacionales', de: 'Auslands- und Inlandsflüge', it: 'Voli internazionali e nazionali', pt: 'Voos internacionais e domésticos', ja: '国際線・国内線', zh: '国际及国内航班', ar: 'الرحلات الدولية والداخلية',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     schematicNote: { en: 'Schematic, not a floor plan', fr: 'Schéma, pas un plan des lieux', es: 'Esquema, no es un plano', de: 'Schema, kein Lageplan', it: 'Schema, non una planimetria', pt: 'Esquema, não é uma planta', ja: '模式図（実際の配置図ではありません）', zh: '示意图，非实际平面图', ar: 'مخطط توضيحي، وليس خريطة للمكان',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     beltIdle: { en: 'No flight now', fr: 'Aucun vol pour l’instant', es: 'Ningún vuelo por ahora', de: 'Derzeit kein Flug', it: 'Nessun volo al momento', pt: 'Nenhum voo no momento', ja: '現在、到着便はありません', zh: '目前没有航班', ar: 'لا توجد رحلات حاليًا',

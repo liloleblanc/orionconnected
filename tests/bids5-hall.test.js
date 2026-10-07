@@ -11,9 +11,9 @@
 // elsewhere; no map where the feed gives no belt).
 //
 // What these tests hold:
-//   1. it is OFF unless asked for (?bidslook=5, or an airport config's
-//      bidsLook: 5), and today's belt screen is drawn exactly as before when
-//      it is off;
+//   1. it is the baggage screen by default (v24016); the old belt screen is
+//      one switch away (?bidslook=3 on a screen, bidsLook: 3 for an airport)
+//      and is drawn exactly as before when asked for;
 //   2. it shows no belt a feed did not give: a flight with none reads the
 //      store's "To be announced", never a number;
 //   3. an airport whose feed gives no belt has no map, and the list takes
@@ -143,20 +143,20 @@ const ctxFor = (S, o) => Object.assign({ iata: 'YQM', tz: 'America/Moncton', now
   pageLbl: S._b5Pair(S._b5Word('pageLbl'), BS.pairLangs(S.langs, o.iata || 'YQM')),
   laterLbl: S._b5Pair(S._b5Word('laterLbl'), BS.pairLangs(S.langs, o.iata || 'YQM'), 'laterLbl') }, o);
 
-// ── 1. OFF BY DEFAULT ──────────────────────────────────────────────────────
+// ── 1. ON BY DEFAULT (v24016), THE OLD SCREEN ONE SWITCH AWAY ─────────────
 
-test('the hall board is off unless the URL or the airport asks for it', () => {
+test('the hall board is the baggage screen unless the URL or the airport asks for the old one', () => {
   const S = sandbox(['en', 'fr']);
-  assert.equal(S._b5LookOn('', null), false, 'no URL flag and no config: off');
-  assert.equal(S._b5LookOn('?ap=YQM&stream=1', {}), false, 'an airport config without the field: off');
-  assert.equal(S._b5LookOn('?ap=YQM', { bidsLook: 3 }), false, 'any other look: off');
-  assert.equal(S._b5LookOn('?ap=YQM&bidslook=5', null), true, '?bidslook=5 turns it on');
-  assert.equal(S._b5LookOn('', { bidsLook: 5 }), true, 'an airport config turns it on');
+  assert.equal(S._b5LookOn('', null), true, 'no URL flag and no config: the hall board');
+  assert.equal(S._b5LookOn('?ap=YQM&stream=1', {}), true, 'an airport config without the field: the hall board');
+  assert.equal(S._b5LookOn('?ap=YQM', { bidsLook: 3 }), false, 'an airport can keep the old screen');
+  assert.equal(S._b5LookOn('?ap=YQM&bidslook=5', null), true, '?bidslook=5 still asks for it');
+  assert.equal(S._b5LookOn('', { bidsLook: 5 }), true, 'an airport config asks for it');
   assert.equal(S._b5LookOn('', { bidsLook: '5' }), true);
   assert.equal(S._b5LookOn('?bidslook=3', { bidsLook: 5 }), false, 'the URL wins over the airport: one screen can be shown the old way');
-  assert.equal(S._b5LookOn('?bidslook=55', null), false);
+  assert.equal(S._b5LookOn('?bidslook=55', null), false, 'any other look named in the URL: the old screen');
   S.location.search = ''; S.getAirportConfig = () => null;
-  assert.equal(S._bids5On('YQM'), false, 'the live wrapper defaults to off');
+  assert.equal(S._bids5On('YQM'), true, 'the live wrapper defaults to the hall board');
 });
 
 test('off, the belt screen is drawn exactly as before (one early return, one key)', () => {
@@ -264,7 +264,7 @@ for (const langs of [['en', 'fr'], ['fr', 'en'], ['ja', 'ar'], ['de', 'pt']]) {
     assert.ok(both(band.slice(band.indexOf('b5-welcome'))), 'the welcome in both');
     const map = html.slice(html.indexOf('<aside'));
     assert.ok(both(map.slice(map.indexOf('b5-here'))), 'You are here in both');
-    for (const k of ['domesticFlights', 'internationalFlights', 'hallCustoms', 'hallExit', 'youAreHere']) {
+    for (const k of ['domesticFlights', 'intlAndDomFlights', 'hallCustoms', 'hallExit', 'youAreHere']) {
       for (const l of L) assert.ok(map.indexOf(BS.bs(k, l)) >= 0, k + ' in ' + l);
     }
     const strip = html.slice(html.indexOf('b5-strip'), html.indexOf('</section>'));
@@ -289,7 +289,7 @@ test('the empty hall says so in both languages at once, with the next arrival', 
   assert.match(e, /Prochaine arrivée/);
   assert.match(e, /AC2040/);
   assert.doesNotMatch(html, /b5-strip/, 'no Later strip under it: it names the next arrival itself');
-  for (const k of ['noArrivalsHour', 'nextArrival', 'beltIdle', 'laterLbl', 'schematicNote', 'youAreHere', 'hallCustoms', 'hallExit', 'domesticFlights', 'internationalFlights']) {
+  for (const k of ['noArrivalsHour', 'nextArrival', 'beltIdle', 'laterLbl', 'schematicNote', 'youAreHere', 'hallCustoms', 'hallExit', 'domesticFlights', 'intlAndDomFlights']) {
     for (const l of BS.LANGS) assert.ok(BS.STR[k][l], k + ' in ' + l);
   }
 });
@@ -299,8 +299,8 @@ test('the empty hall says so in both languages at once, with the next arrival', 
 test('the Moncton map draws its two real belts by the hall\'s labels, and lights the ones the page uses', () => {
   const S = sandbox(['en', 'fr']);
   const P = S._B5_HALL_PLANS.YQM;
-  assert.deepEqual(JSON.parse(JSON.stringify(P.belts.map((b) => [b.id, b.label]))), [['1', 'domesticFlights'], ['2', 'internationalFlights']],
-    'belt 1 the domestic oval, belt 2 the international belt in the customs hall (2018 Master Plan, fig. 7-1)');
+  assert.deepEqual(JSON.parse(JSON.stringify(P.belts.map((b) => [b.id, b.label]))), [['1', 'domesticFlights'], ['2', 'intlAndDomFlights']],
+    'belt 1 the domestic oval, belt 2 the wall-fed belt in the customs hall (2018 Master Plan, fig. 7-1), which takes domestic flights too');
   // the board's own Moncton belts are the same two (mapADB)
   assert.match(SRC, /_belt = _isIntl \? '2' : '1';/);
   const c = ctxFor(S, { pages: [[row({ _belt: '1' }), row({ flight: 'PD2381', airline: 'PD', _belt: '1' })], [row({ flight: 'TS123', airline: 'TS', _belt: '2', origin: 'Cancún', _locIata: 'CUN' })]] });
