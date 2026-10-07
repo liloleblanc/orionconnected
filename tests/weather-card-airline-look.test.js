@@ -213,7 +213,7 @@ test('the icons are the board\'s flat set, white and still, framed on their own 
     assert.doesNotMatch(out, /<animate/, name + ': nothing moves');
     assert.doesNotMatch(out, /#FFF200|#3A78C7|#AEB9C4/i, name + ': no lemon, no blue, no grey');
     assert.ok(L._WX_ICON_FRAME[name], name + ' has its frame');
-    assert.match(out, new RegExp('viewBox="' + L._WX_ICON_FRAME[name].replace(/\./g, '\\.') + '"'), name + ' is framed');
+    assert.ok(out.includes('viewBox="' + L._WX_ICON_FRAME[name] + '"'), name + ' is framed');
   }
   // a white cloud over a white sun or moon is cut from it in the tile's colour
   for (const n of ['partly-cloudy-day', 'partly-cloudy-night']) {
