@@ -3033,6 +3033,8 @@ var FIDS_FIT_RULES = [
   { sel: '.wxc-credit', lines: 2 },
   // the heritage card's kicker (From the archive | Depuis les archives)
   { sel: '.hcard-kicker', lines: 2, guard: true },
+  // v24015 — the 3D model credit: each language one line, smaller before it is cut
+  { sel: '.hcard-credit', lines: 2 },
   // the big map's "Estimated position" note, the day under a gate time
   // (Tomorrow | Demain), and the belts' page count
   { sel: '.bigcraft-est', lines: 2, guard: true },
@@ -31581,7 +31583,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24014';
+var FIDS_BUILD_TAG = 'v24015';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -55397,6 +55399,33 @@ var HERITAGE_MARKS = [
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc9-ac80.svg',
     airports: '*CA'
+  },
+  {
+    // v24015 — AND THE BOEING 767, IN THE SAME CAPITALS LIVERY. A 767-200 with
+    // 'AIR CANADA' in red capitals over a single red cheatline and the white
+    // rondelle on a red tail: the dress of the caps DC-9 card above, so it
+    // carries the same capitals mark. The aeroplane is C-GAUN, fleet number 604.
+    //
+    // THE PICTURE IS A RENDER, NOT A DRAWING: the supplied 3D model "boeing 767"
+    // by 1883 on Sketchfab, CC BY 4.0, rendered to a still with the landing gear
+    // removed so it flies. CC BY asks for the maker's credit where the work is
+    // seen, so this card carries a credit line ('heritageCredit:<key>'), and
+    // docs/licenses/3d-models.md holds the full notice.
+    //
+    // CHECKED: Air Canada's first 767, a 767-233 (C-GAUB, fleet 601), was
+    // delivered in October 1982 and flew its first transcontinental service on
+    // 14 February 1983 (Air Canada, 'Flying into the sunset', June 2020;
+    // Canadian Museum of Flight, August 2022). NOT PRINTED: an end year. The
+    // last mainline passenger 767 flew on 2 June 2020, but two 767-300ERs were
+    // announced back into passenger service for 2025 and Air Canada Cargo flies
+    // the type, so the type has not left the airline: 'since 1982' is what every
+    // source agrees on. Nothing about this aeroplane's own history is printed.
+    key: 'air-canada-767',
+    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-767.png',
+    credit: true,
+    airports: '*CA'
   }
 ];
 // Canadian airports get the national carrier's card; the regional card is
@@ -55453,6 +55482,13 @@ function _renderHeritageCard(el) {
       _lines.push(BoardStrings.half(lg, esc(w)));
     });
     var kicker = BoardStrings.pair('heritageKicker', { langs: _hLangs, sep: ' &nbsp;|&nbsp; ' });
+    var _credit = [], _seenC = Object.create(null);
+    if (mark.credit) _hLangs.forEach(function (lg) {
+      var w = BoardStrings.bs('heritageCredit:' + mark.key, lg);
+      if (!w || _seenC[w]) return;
+      _seenC[w] = 1;
+      _credit.push(BoardStrings.half(lg, esc(w)));
+    });
     // v23883 — THE AEROPLANE ITSELF, AND NOTHING ELSE ADDED.
     //
     // The first attempt at this put the mark on a white plate over a drawn sky
@@ -55499,7 +55535,7 @@ function _renderHeritageCard(el) {
     // printed card.
     var acSrc = mark.aircraft || ('/aircraft/heritage/' + mark.key + '.png');
     var html =
-      '<div class="hcard-wrap">'
+      '<div class="hcard-wrap' + (_credit.length ? ' hcard-credited' : '') + '">'
       // The five layers of the gate aircraft scene, in its order: the sky plate
       // (::before), the cartoon fast band, the cumulus, the aeroplane, then the
       // front band with the rush streaks riding on it (::after). v23928: every
@@ -55544,6 +55580,10 @@ function _renderHeritageCard(el) {
       +   '<div class="hcard-rule" aria-hidden="true"></div>'
       +   (_lines[0] ? '<div class="hcard-line">' + _lines[0] + '</div>' : '')
       +   (_lines[1] ? '<div class="hcard-line hcard-line-2">' + _lines[1] + '</div>' : '')
+      // v24015 — the maker's credit, for an aeroplane rendered from someone
+      // else's 3D model (CC BY): small, at the foot of the card, in the
+      // board's two languages like every other line on it.
+      +   (_credit.length ? '<div class="hcard-credit">' + _credit.join('<br>') + '</div>' : '')
       + '</div>';
     if (el.innerHTML !== html) el.innerHTML = html;
     return true;

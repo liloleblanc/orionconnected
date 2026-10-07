@@ -18965,6 +18965,28 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 500 !important;
 }
 
+/* ══ v24015 — THE ARCHIVE CARD CREDITS A 3D MODEL'S MAKER ══════════════════
+   An aeroplane rendered from someone else's 3D model under CC BY (the 767) is
+   credited where it is seen: one small line per board language at the foot of
+   the card, below the facts and apart from them, in the caption's ink at a
+   lower weight. It sits on the paper, never over the sky window. */
+/* The card lifts its content clear of the credit: the bottom padding grows by
+   the credit's two lines and a gap, so the caption never sits on it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap.hcard-credited {
+  padding-bottom: clamp(56px, min(9vh, 9.6vw), 128px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap .hcard-credit {
+  position: absolute !important;
+  left: 0 !important; right: 0 !important;
+  bottom: clamp(8px, min(1.4vh, 1.5vw), 20px) !important;
+  font-size: clamp(9px, min(1.15vh, 1.25vw), 15px) !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  color: rgba(6,29,64,.45) !important;
+  text-align: center !important;
+  padding: 0 4% !important;
+}
+
 /* v23758 — the partner endorsement, at its real weight.
    It is the mark a FEEDER carried to show whose network it fed, not a second
    carrier's identity — so it sits under the wordmark at roughly a third the
