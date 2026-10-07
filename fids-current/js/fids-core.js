@@ -56241,6 +56241,10 @@ var _WX_CITY_NIGHT = {
   // Petitcodiac bend and the lights of Moncton, Dieppe and Riverview —
   // Unsplash licence, no credit required. Its shadows were lifted from
   // 26 to 55/255 mean so it does not read as a black plate.
+  // v24016 — Moncton's day and night pictures are now artwork made for these
+  // boards: the skyline (Assumption Place, the telecom tower) over the
+  // Petitcodiac marsh, a gold afternoon and a violet night, supplied without
+  // lettering so the board's own words sit on it (night mean 82/255).
   YQM:1
 };
 // The name the Worker searches by, for an airport outside the curated
