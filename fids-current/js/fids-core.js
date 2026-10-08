@@ -4461,6 +4461,27 @@ var FEED_SAYS_GATE_WORDS = {
   IAH: 'worker iahStatus — "BRD @ 830PM" in the 2026-09-05 capture (tests/iah-feed.test.js)',
   SYD: 'worker SYD_STATUS / sydStatus — Boarding, Final Call, Gate Closed in archived daytime captures (the adapter\'s notes)'
 };
+// v24020 — THE GATE BOARDS BY THE CLOCK WHERE THE FEED HAS SAID NOTHING.
+// Moncton's cyqm.ca says "Boarding" for some flights and not for others: on
+// 2026-10-07 Porter's PD2370 (11:55, gate 3) read "On Time" through its 11:35
+// boarding time until it had gone, and the gate never opened NOW BOARDING.
+// Decision of 2026-10-07: at the airports here, the GATE opens NOW BOARDING at
+// its own printed boarding time when the feed has said nothing about the door
+// by then, and whatever the airport does say wins the moment it says it
+// (Boarding, Final call, Delayed with a new time, Cancelled). The airport stays
+// in FEED_SAYS_GATE_WORDS, so the departures board keeps the airport's word and
+// the boarding time keeps the type the gate has resolved (a Jazz or PAL Dash 8
+// is not given a jet's 35 minutes because the feed names no type). The clock
+// still never says Final call or Gate closed, and the gate maps put an
+// aeroplane at a door only on the airport's own word: they read the row, never
+// the gate's door word (_gateDoor).
+var GATE_BOARDS_BY_CLOCK = {
+  YQM: true   // cyqm.ca left PD2370 On Time through its boarding time, 2026-10-07 (tests/status-evidence.test.js)
+};
+function _gateBoardsByClock(iata) {
+  var k = String(iata || '').toUpperCase();
+  return !!k && Object.prototype.hasOwnProperty.call(GATE_BOARDS_BY_CLOCK, k);
+}
 function _feedSaysGateWords(iata) {
   var k = String(iata || '').toUpperCase();
   return !!k && Object.prototype.hasOwnProperty.call(FEED_SAYS_GATE_WORDS, k);
@@ -31597,7 +31618,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24019';
+var FIDS_BUILD_TAG = 'v24020';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -35735,8 +35756,10 @@ function _fidsBoardEquip(f, iata) {
 // and nothing else: never Final call, never Gate closed, and nothing from the
 // departure time on, so the gate returns to its idle layout and the board to
 // the airport's own word.
-function _schedBoardingOn(f, nowMs, iata, bt) {
-  if (!f || _feedSaysGateWords(iata)) return false;
+// gateSide: asked by the gate's own door (_gateDoor), where an airport in
+// GATE_BOARDS_BY_CLOCK boards by the clock although its feed can say the words.
+function _schedBoardingOn(f, nowMs, iata, bt, gateSide) {
+  if (!f || (_feedSaysGateWords(iata) && !(gateSide && _gateBoardsByClock(iata)))) return false;
   var w = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
   if (!(w === '' || w === 'scheduled' || w === 'ontime' || w === 'expected' || w === 'early'
         || (w === 'delayed' && _gateDelayHasTime(f)))) return false;
@@ -35890,7 +35913,7 @@ function _gateDoor(cf, nowMs, iata, gi, arrRows, tz, equip) {
   var eq = (equip == null || !_feedSaysGateWords(iata)) ? _fidsBoardEquip(cf, iata) : equip;
   var bt = _gateBoardingTimes(basis, eq, gi, arrRows, tz);
   if (basis && basis !== cf) return { word: String(basis.status), kept: true, basis: basis, bt: bt };
-  return { word: _schedBoardingOn(cf, nowMs, iata, bt) ? 'boarding' : '', kept: false, basis: cf, bt: bt };
+  return { word: _schedBoardingOn(cf, nowMs, iata, bt, true) ? 'boarding' : '', kept: false, basis: cf, bt: bt };
 }
 // v23925 — _gateDoor with the page's own inputs: the gate's inbound, the
 // arrivals list and the airport's zone.
