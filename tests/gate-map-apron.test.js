@@ -115,6 +115,7 @@ const FNS = [
   '_gateApronOn', '_gateDepLeft', '_gateApronSpec', '_gateApronDoor', '_gateApronCollect', '_gateApronOwn',
   '_gateApronIsOwn', '_gateApronAssign', '_gateApronStandSpot', '_gateApronPlan', '_gateApronClear',
   '_gateApronFit', '_gateApronSync', '_gateApronSince', '_gateApronOwnIndex', '_gateApronOwnRef', '_gateOwnParkSpot',
+  '_gateApronTagHtml', '_gateApronTagBuild', '_gateApronTagPlace',
   '_gateSeenKeepIdentity',
   // v23925 — the boarding the gate's own sign shows (v23930: the maps' door word)
   '_gateDoorBasis', '_gateDoorRecord',

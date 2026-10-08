@@ -23042,6 +23042,42 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 .leaflet-marker-icon.gate-apron-other img[src*="/logos/map-plane-"] {
   opacity: 0.55;
 }
+/* v24018 — each of them carries a small tag beside it: the flight it is there
+   to fly and its gate (_gateApronTagHtml), in the empty stand label's look but
+   smaller and lighter, so this board's own aeroplane stays the one the eye
+   goes to and another gate's never reads as this gate's. */
+.leaflet-marker-icon.gate-apron-tag {
+  overflow: visible;
+  background: none;
+  border: 0;
+  pointer-events: none;
+}
+.gate-apron-tag-in {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, calc(-100% - 20px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-family: system-ui, -apple-system, 'Segoe UI', var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
+  font-weight: 700;
+  font-size: clamp(10px, min(1vh, 0.6vw), 12px);
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.gate-apron-tag-in .gat-l2 { font-weight: 600; opacity: 0.9; }
+/* above its aeroplane by default; under it when above would cover the board's
+   own label or another tag; hidden when neither fits (_gateApronTagPlace) */
+.gate-apron-tag-in.gat-below { transform: translate(-50%, 20px); }
+.gate-apron-tag-in.gat-hide { visibility: hidden; }
+#bigCraftMap .gate-apron-tag-in { font-size: clamp(11px, min(1.3vh, 0.75vw), 15px); }
 
 /* ══ v23925 — THE LATE-INBOUND NOTICE, ONE WHOLE SENTENCE PER LINE ═════════
    When the inbound is late and the airline has published no new time, the
