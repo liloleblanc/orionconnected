@@ -31597,7 +31597,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24018';
+var FIDS_BUILD_TAG = 'v24019';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44777,7 +44777,8 @@ function _gateApronPlan(ap, now) {
     var spec = (i === ownIdx && own.spec) ? own.spec : _gateApronSpec(e.inb, e.dep);
     return { id: e.id, door: e.door, prop: !!spec.prop, len: spec.len, spec: spec, since: e.since,
              tie: (e.dep && e.dep._sortTs) || 0, own: i === ownIdx || _gateApronIsOwn(e, own),
-             dest: (e.dep && e.dep._locIata) || '', flight: (e.inb && e.inb.flight) || (e.dep && e.dep.flight) || '' };
+             dest: (e.dep && e.dep._locIata) || '', flight: (e.inb && e.inb.flight) || (e.dep && e.dep.flight) || '',
+             dflight: (e.dep && e.dep.flight) || '' };
   });
   var stands = _gateApronAssign(f, o, items, own.reserve);
   var ownRef = null, ownDoor = own.door;
@@ -44839,6 +44840,7 @@ function _gateApronClear(map) {
 function _gateApronFit(map, z) {
   var st = map && map._fidsApron;
   if (!st || !st.items) return;
+  try { _gateApronTagPlace(map); } catch (eT) {}
   for (var i = 0; i < st.items.length; i++) {
     try {
       var it = st.items[i], el = it.mk && it.mk.getElement ? it.mk.getElement() : null;
@@ -44853,6 +44855,63 @@ function _gateApronFit(map, z) {
 // Put the other aeroplanes on one map, or take them off it. Called whenever
 // the map's camera settles (hooked in _gateMapTileLayer) and on every map tick
 // (_gateMapApply); cheap when nothing has changed.
+// v24018 — WHERE A TAG GOES. Above its aeroplane; under it when above would
+// cover the board's own label (.gate-map-note) or another tag; not shown at all
+// when neither fits — the board's own words always win the space. Read after
+// layout (one frame later), and again after every zoom re-size.
+function _gateApronTagPlace(map) {
+  try {
+    var root = map && map.getContainer ? map.getContainer() : null;
+    if (!root || typeof requestAnimationFrame !== 'function') return;
+    requestAnimationFrame(function () {
+      try {
+        var hit = function (a, b) { return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom; };
+        var notes = Array.prototype.map.call(root.querySelectorAll('.gate-map-note'), function (n) { return n.getBoundingClientRect(); });
+        var placed = [];
+        Array.prototype.forEach.call(root.querySelectorAll('.gate-apron-tag-in'), function (t) {
+          t.classList.remove('gat-below', 'gat-hide');
+          var clear = function () {
+            var r = t.getBoundingClientRect();
+            return !notes.some(function (n) { return hit(r, n); }) && !placed.some(function (p) { return hit(r, p); });
+          };
+          if (!clear()) { t.classList.add('gat-below'); if (!clear()) { t.classList.remove('gat-below'); t.classList.add('gat-hide'); return; } }
+          placed.push(t.getBoundingClientRect());
+        });
+      } catch (e2) {}
+    });
+  } catch (e) {}
+}
+// v24018 — THE OTHER AEROPLANES SAY WHOSE THEY ARE. Drawn lighter and with no
+// label, another gate's aeroplane read as this gate's: at 11:45 Moncton gate 3,
+// waiting for a Dash 8, showed "a jet at the gate" (AC644 from Toronto on gate
+// 4's bridge). Each now carries a small tag under it: the flight it is there to
+// fly and where to (else the flight it came in on), and its gate in the board's
+// two languages, "AC647 · YYZ / Gate 4 | Porte 4". Smaller and lighter than the
+// board's own label, so its own aeroplane is still the one the eye goes to.
+function _gateApronTagHtml(it, ap) {
+  try { return _gateApronTagBuild(it, ap); } catch (e) { return ''; }   // no tag, never a lost aeroplane
+}
+function _gateApronTagBuild(it, ap) {
+  if (!it) return '';
+  var fl = String(it.dflight || it.flight || '').trim();
+  if (!fl) return '';
+  var dest = (it.dflight && it.dest) ? String(_dispIata(it.dest) || it.dest) : '';
+  var door = String(it.door || '').trim();
+  var frF = false;
+  try { frF = (typeof frFirstAirport === 'function') && !!frFirstAirport(ap); } catch (e) {}
+  var units = [];
+  if (door && door !== '\u2014' && door !== '-') {
+    var G = _lblEntry('gate') || {}, seen = Object.create(null);
+    BoardStrings.pairLangs(langs, frF).forEach(function (l) {
+      var g = G[l] ? G[l] + '\u00a0' + door : '';
+      if (!g || seen[g]) return;
+      seen[g] = 1;
+      units.push(BoardStrings.markHalf('<span class="gat-g">' + fidsEscHtml(g) + '</span>', l));
+    });
+  }
+  return '<div class="gate-apron-tag-in"><span class="gat-l1" dir="ltr">' + fidsEscHtml(fl + (dest ? ' \u00b7 ' + dest : '')) + '</span>'
+    + (units.length ? '<span class="gat-l2">' + units.join('<span class="gat-sep"> | </span>') + '</span>' : '') + '</div>';
+}
 function _gateApronSync(map) {
   try {
     if (!map || !map._loaded || !map.getZoom || !map.getCenter) return;
@@ -44881,12 +44940,21 @@ function _gateApronSync(map) {
         var mk = L.marker([pl.lat, pl.lng], { zIndexOffset: -1000, interactive: false, keyboard: false,
           icon: L.divIcon({ className: 'gate-apron-other', html: html, iconSize: [48, 48], iconAnchor: [24, 24] }) }).addTo(map);
         layers.push(mk);
+        // v24018 — and its tag beside it, so it never reads as this gate's own
+        // (Moncton gate 3 at 11:45: "a jet at the gate", AC644 on gate 4's bridge)
+        var tag = _gateApronTagHtml(it, ap);
+        if (tag) {
+          layers.push(L.marker([pl.lat, pl.lng], { zIndexOffset: -900, interactive: false, keyboard: false,
+            icon: L.divIcon({ className: 'gate-apron-tag', html: tag, iconSize: [0, 0], iconAnchor: [0, 0] }) }).addTo(map));
+        }
         items.push({ mk: mk, spec: it.spec, lat: pl.lat, lng: pl.lng, id: it.id, stand: it.stand });
       } catch (e1) {}
     });
     map._fidsApron = { key: key, layers: layers, items: items };
     try { console.log('[APRON]', items.map(function (x) { return x.id.split('|')[0] + '@' + x.stand; }).join(' ') || '(none)', 'z' + zi); } catch (eL) {}
     _gateApronFrame(map);
+    // after the framing, so a tag can never cost the picture its frame
+    try { _gateApronTagPlace(map); } catch (eT) {}
   } catch (e) {}
 }
 // v23919 — EVERY AEROPLANE ON THE GROUND IS IN THE PICTURE. The parked view
