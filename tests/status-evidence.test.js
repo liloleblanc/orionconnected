@@ -100,7 +100,7 @@ const CORE_FNS = [
   'fidsInboundHasArrived', '_gateIsProp', '_gateMinTurnMs', '_gateInbLateNotice', '_gateLbl',
   '_gateSignPhase', '_gateDepDisplayState', '_gateBoardingFloorTs', '_boardStripStatusKey', '_gateInbCaptionKey',
   // (D) Option B, the boarding-began memory and the Delayed rules.
-  '_feedSaysGateWords', '_pageAirport', '_gateDelayHasTime', '_gateBoardingBeganHere', 'getAircraftCategory', 'getBoardingLeadMins', '_gateBoardingTimes',
+  '_feedSaysGateWords', '_gateBoardsByClock', '_pageAirport', '_gateDelayHasTime', '_gateBoardingBeganHere', 'getAircraftCategory', 'getBoardingLeadMins', '_gateBoardingTimes',
   '_fidsBoardEquip', '_schedBoardingOn', '_schedBoardingWindow', '_gateIsGateFlight', '_fidsShownRow', '_gateDoorBasis', '_gateDoorRecord', '_gateDoor', '_gateDoorFor',
   '_gateRowKey', '_gateDepsSeen', '_gateSeenKeepIdentity', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave'
 ];
@@ -121,7 +121,7 @@ function engine(opts) {
   const src = [
     constLine('DEPART_TRAIL_HRS'),
     constLine('BOARDING_HOLD_MIN'), constLine('GATE_GRACE_MIN'), constLine('BOARD_TRAIL_MIN'), constLine('DELAY_HOLD_MIN'),
-    block('var FEED_SAYS_GATE_WORDS = {'), block('const AIRCRAFT_CATEGORY = {'),
+    block('var FEED_SAYS_GATE_WORDS = {'), block('var GATE_BOARDS_BY_CLOCK = {'), block('const AIRCRAFT_CATEGORY = {'),
     constLine('_GATE_SEEN_IDENTITY'), constLine('_GATE_DEP_SEEN'), constLine('_GATE_SEEN_KEY'), constLine('_GATE_SEEN_FIELDS'),
     constLine('BIDS_WINDOW_AHEAD_MS'), constLine('BIDS_WINDOW_TRAIL_MS'),
     constLine('_ADB_EXPLICIT_STATUS'), constLine('_CS_REGIONAL_FAM'),
@@ -129,7 +129,7 @@ function engine(opts) {
     block('var _GATE_LBL = {'),
     ...CORE_FNS.map(fn),
     'return { ' + CORE_FNS.map((n) => n + ': ' + n).join(', ') + ', _ADB_EXPLICIT_STATUS: _ADB_EXPLICIT_STATUS, _GATE_LBL: _GATE_LBL,'
-      + ' FEED_SAYS_GATE_WORDS: FEED_SAYS_GATE_WORDS, seen: function () { return _GATE_DEP_SEEN; } };'
+      + ' FEED_SAYS_GATE_WORDS: FEED_SAYS_GATE_WORDS, GATE_BOARDS_BY_CLOCK: GATE_BOARDS_BY_CLOCK, seen: function () { return _GATE_DEP_SEEN; } };'
   ].join('\n');
   const data = o.data || { dep: [], arr: [] };
   // An operator's overrides, as the gate override panel stores them (by flight
@@ -141,6 +141,10 @@ function engine(opts) {
   E.data = data;
   E.window = win;
   E.storage = storage;
+  // v24020 — Moncton's gate boards by the clock where cyqm.ca has said nothing
+  // (GATE_BOARDS_BY_CLOCK). The strict-airport rules below are written on
+  // Moncton's captures; noGateClock runs them on the strict rule alone.
+  if (o.noGateClock) delete E.GATE_BOARDS_BY_CLOCK.YQM;
   return E;
 }
 const E0 = engine();
@@ -943,9 +947,9 @@ const boardText = (() => {
   vm.runInNewContext(V2, { window, console });
   return (row, l) => window.fidsFormatStatus(row, l).html;
 })();
-async function yhzEngine() {
+async function yhzEngine(opts) {
   const raw = await yhzRaw();
-  const E = engine();
+  const E = engine(opts);
   E.data.arr = mapRows(E, raw.arr, 'arr', YHZ_NOW);
   return { E, raw };
 }
@@ -1158,7 +1162,7 @@ test('(D) Halifax F8655, delayed with a new time: the boarding window moves with
 });
 
 test('(D) no schedule boarding on a Delayed with no new time, a Cancelled or a Departed, and never Final call or Gate closed', async () => {
-  const { E, raw } = await yhzEngine();
+  const { E, raw } = await yhzEngine({ noGateClock: true });
   const sweep = (rows, number, from, to) => {
     const seen = new Set();
     for (let t = from; t <= to; t += MIN) {
@@ -1266,7 +1270,7 @@ test('(D) the hour-long hold is the airport\'s word only: a schedule Boarding le
 });
 
 test('(D) a quiet morning at Moncton: no Boarding before cyqm.ca says it, then the airport\'s word', () => {
-  const E = engine();
+  const E = engine({ noGateClock: true });
   // AC1983 05:25 gate 1, the first wave. Nothing on the board has said
   // Boarding yet today; Moncton is strict by the table, not by the morning.
   for (const [hh, mm] of [[4, 40], [4, 55], [5, 0], [5, 10], [5, 20], [5, 24]]) {
@@ -1288,9 +1292,52 @@ test('(D) a quiet morning at Moncton: no Boarding before cyqm.ca says it, then t
   assert.equal(E._gateSignPhase(r.status, 25, 35, r, false).showBoarding, true);
 });
 
+test('(D) v24020: Moncton\'s GATE boards by the clock where cyqm.ca has said nothing; the board keeps the airport\'s word; the airport\'s word always wins', () => {
+  // 2026-10-07: PD2370 read "On Time" through its boarding time until it had gone.
+  const E = engine();
+  assert.ok(E.GATE_BOARDS_BY_CLOCK.YQM, 'Moncton is in the table');
+  assert.ok(E.FEED_SAYS_GATE_WORDS.YQM, 'and still strict for the departures board');
+  const door = (rows, t) => { const r = find(rows, 'AC1983', 29); return { r, d: E._gateDoorFor(r, t, 'YQM') }; };
+  // A quiet morning: AC1983 05:25 gate 1, no word from cyqm.ca. The gate prints
+  // its boarding time from the type it knows (none here: the narrowbody lead).
+  const q0 = door(deps(E, YQM.dep28, T(9, 29, 4, 0)), T(9, 29, 4, 0));
+  const boardAt = q0.d.bt.boardTs;
+  assert.equal(hmAdt(boardAt), '04:50');
+  for (const [hh, mm, want] of [[4, 49, ''], [4, 50, 'boarding'], [5, 10, 'boarding'], [5, 24, 'boarding'], [5, 26, '']]) {
+    const t = T(9, 29, hh, mm);
+    const { r, d } = door(deps(E, YQM.dep28, t), t);
+    if (!r) { assert.equal(want, '', `${hh}:${mm}: gone from the list`); continue; }
+    assert.equal(r.status, 'ontime', `${hh}:${mm}: the row keeps cyqm.ca's word`);
+    assert.equal(E._fidsShownRow(r, t, 'YQM'), r, `${hh}:${mm}: the departures board says what cyqm.ca says`);
+    assert.equal(d.word, want, `${hh}:${mm}: the gate's door`);
+    assert.equal(E._gateDoorBasis(r, t), r, `${hh}:${mm}: nothing for the maps — the row is untouched`);
+    const p = E._gateSignPhase(d.word || r.status, Math.round((r._sortTs - t) / MIN), d.bt.lead, r, false);
+    assert.equal(p.showBoarding, want === 'boarding', `${hh}:${mm}: NOW BOARDING`);
+    assert.equal(p.isFinalCallStatus || p.isGateClosedStatus, false, `${hh}:${mm}: never Final call or Gate closed by the clock`);
+  }
+  // The airport's word wins the moment it says it.
+  const at = (said_, hh, mm) => { const t = T(9, 29, hh, mm); const { r, d } = door(deps(E, said_, t), t); return { r, d, p: E._gateSignPhase(d.word || r.status, Math.round(((r._revTs || r._sortTs) - t) / MIN), d.bt.lead, r, false) }; };
+  const b = at(said(YQM.dep28, 'AC1983', 29, 'Boarding'), 4, 40);
+  assert.equal(b.d.word, '', 'its own Boarding opens the sign, before the clock would');
+  assert.equal(b.p.showBoarding, true);
+  const f = at(said(YQM.dep28, 'AC1983', 29, 'Final Call'), 5, 10);
+  assert.equal(f.p.isFinalCallStatus, true, 'Final call is the airport\'s');
+  for (const w of ['Cancelled', 'Delayed']) {
+    const x = at(said(YQM.dep28, 'AC1983', 29, w), 5, 0);
+    assert.equal(x.d.word, '', w + ' with no new time: no clock boarding');
+    assert.equal(x.p.showBoarding, false, w + ': no sign');
+  }
+  // Delayed until 5:50: the gate's clock moves with the new time (boarding 05:15).
+  const late = said(YQM.dep28, 'AC1983', 29, 'Delayed until 5:50 AM', '5:50 AM');
+  assert.equal(at(late, 5, 10).d.word, '', 'before the new boarding time');
+  assert.equal(at(late, 5, 20).d.word, 'boarding', 'from the new boarding time');
+  // An airport not in the table keeps the strict rule on its gate too.
+  assert.equal(E._schedBoardingOn(find(deps(E, YQM.dep28, T(9, 29, 5, 0)), 'AC1983', 29), T(9, 29, 5, 0), 'MSP', q0.d.bt, true), false);
+});
+
 test('(D) Moncton AC1983 delayed while boarding: the sign keeps running, the departure moves, the gate keeps the flight', () => {
   const storage = makeStorage();
-  const g = engine({ storage });
+  const g = engine({ storage, noGateClock: true });
   // 05:00 — cyqm.ca says Boarding; the gate paints (renderDedicatedScreen runs
   // _gateDepsSeen before the build).
   const t0 = T(9, 29, 5, 0);
@@ -1357,7 +1404,7 @@ test('(D) Moncton AC1983 delayed while boarding: the sign keeps running, the dep
 
 test('(D) delayed while boarding with no new time; the memory survives a reload and stays with its flight and day', () => {
   const storage = makeStorage();
-  const g = engine({ storage });
+  const g = engine({ storage, noGateClock: true });
   const t0 = T(9, 29, 5, 0);
   g.data.dep = deps(g, said(YQM.dep28, 'AC1983', 29, 'Boarding'), t0);
   g._gateDepsSeen(g.data.dep, 'YQM', t0);
@@ -1384,14 +1431,14 @@ test('(D) delayed while boarding with no new time; the memory survives a reload 
   // The airport saying it has gone frees the gate at once.
   const left = said(YQM.dep28, 'AC1983', 29, 'Departed', '6:40 AM');
   const tl = T(9, 29, 6, 41);
-  const gl = engine({ storage: makeStorage() });
+  const gl = engine({ storage: makeStorage(), noGateClock: true });
   gl.data.dep = deps(gl, said(YQM.dep28, 'AC1983', 29, 'Boarding'), t0);
   gl._gateDepsSeen(gl.data.dep, 'YQM', t0);
   gl.data.dep = deps(gl, left, tl);
   gl._gateDepsSeen(gl.data.dep, 'YQM', tl);
   assert.ok(!gl._gateFlightsAt('1', tl).some((f) => f.flight === 'AC1983'), 'Departed frees the gate');
   // A delayed flight that never boarded still lets go an hour past its schedule.
-  const gn = engine({ storage: makeStorage() });
+  const gn = engine({ storage: makeStorage(), noGateClock: true });
   gn.data.dep = deps(gn, timeless, t1);
   gn._gateDepsSeen(gn.data.dep, 'YQM', t1);
   assert.equal(gn._gateBoardingBeganHere(find(gn.data.dep, 'AC1983', 29)), false);
@@ -1402,7 +1449,7 @@ test('(D) delayed while boarding with no new time; the memory survives a reload 
   const saved = JSON.parse(storage.getItem('fids_gate_seen_v1'));
   const key = 'AC1983|' + r1._sortTs;
   assert.deepEqual(saved.YQM.dep[key]._doorSaid, { w: 'boarding', rev: null, upd: null, gate: '1' });
-  const g2 = engine({ storage });
+  const g2 = engine({ storage, noGateClock: true });
   const t2 = T(9, 29, 5, 30);
   g2.data.dep = deps(g2, timeless, t2);
   g2._gateDepsSeen(g2.data.dep, 'YQM', t2);
@@ -1416,7 +1463,7 @@ test('(D) delayed while boarding with no new time; the memory survives a reload 
   assert.equal(dT.word, '');
   // ... and the real October 1 AC1983 (gate 4), delayed at 05:20 that day,
   // shows the delay; the September 29 record has expired by then.
-  const g3 = engine({ storage });
+  const g3 = engine({ storage, noGateClock: true });
   const t3 = T(10, 1, 5, 20);
   const oct1 = YQM.dep30.map((r) => (r.flightId === 'AC1983' && r.displayDate === 'Oct 1')
     ? Object.assign({}, r, { status: 'Delayed until 5:50 AM', actualTime: '5:50 AM' }) : r);
@@ -1631,7 +1678,7 @@ test('(D) an Early departure opens its schedule boarding on its revised time, th
 });
 
 test('(D) one boarding time on both screens: the lead reads the feed\'s own aircraft type, not one only the gate has resolved', async () => {
-  const { E, raw } = await yhzEngine();
+  const { E, raw } = await yhzEngine({ noGateClock: true });
   // The gate resolved a Dash 8-400 for AC2057 (its lookups write the type onto
   // its own copy of the row, and into window._ACRES); Halifax's feed names no
   // aircraft, so the departures board never has it. uxgGateHtml passes the
@@ -1748,7 +1795,7 @@ test('(B) a delayed flight yields only to a later flight still at the door: Monc
 
 test('(D) the kept sign stays with its door and its flight: a gate change, real departure evidence', () => {
   const storage = makeStorage();
-  const g = engine({ storage });
+  const g = engine({ storage, noGateClock: true });
   const t0 = T(9, 29, 5, 0);
   g.data.dep = deps(g, said(YQM.dep28, 'AC1983', 29, 'Boarding'), t0);
   g._gateDepsSeen(g.data.dep, 'YQM', t0);
@@ -1788,7 +1835,7 @@ test('(D) the kept sign stays with its door and its flight: a gate change, real 
 
 test('(D) Boarding again after a delay: the sign keeps running, only the departure time is pushed', () => {
   const storage = makeStorage();
-  const g = engine({ storage });
+  const g = engine({ storage, noGateClock: true });
   const step = (t, rows) => { g.data.dep = deps(g, rows, t); g._gateDepsSeen(g.data.dep, 'YQM', t); const r = find(g.data.dep, 'AC1983', 29); return { r, d: g._gateDoorFor(r, t, 'YQM') }; };
   const t0 = T(9, 29, 5, 0);
   const a = step(t0, said(YQM.dep28, 'AC1983', 29, 'Boarding'));

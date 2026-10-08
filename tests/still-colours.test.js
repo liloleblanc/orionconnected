@@ -222,16 +222,21 @@ test('the clear-day sun glow and its rays hold still, and the glow is kept (item
 });
 
 // ── 15: the carrier roundel ─────────────────────────────────────────────────
-test('the carrier roundel stands face-on on the countdown and the boarding strip, for every carrier (item 15)', () => {
+test('the carrier roundel turns again on the countdown and the boarding strip (item 15, restored in v24020), and reduced motion stills it', () => {
+  // Decision of 2026-10-07: the mark turning like a coin is the boarding sign's
+  // own motion, the airline's mark and not a status colour; it is what tells the
+  // hall that boarding has started. The sun glow and rays (items 13, 14) stay still.
   for (const tail of ['.g8-bw-clocked .g8-bw-emblem', '.g8-cd-mark .g8-cd-mark-still']) {
-    assert.equal(winning(tail, ['animation', 'animation-name']).value, 'none', tail + ' no longer turns');
-    assert.equal(winning(tail, ['transform']).value, 'none', tail + ' rests face-on');
+    assert.match(String(winning(tail, ['animation', 'animation-name']).value), /g8RondSpin/, tail + ' turns');
   }
+  const css = read('css/display-overrides.css');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*[^{}]*\.g8-bw-clocked \.g8-bw-emblem,\s*[^{}]*\.g8-cd-mark \.g8-cd-mark-still \{\s*animation: none !important;/,
+    'still for anyone who has asked for less motion');
   // The other way a mark could turn: a clip registered in the motion slot
   // replaces the still with a video of the mark swinging. It stays empty.
   const m = CORE.match(/var GATE_RONDELLE_MOTION = window\._GATE_RONDELLE_MOTION = (\{[\s\S]*?\n\});/);
   assert.ok(m, 'the motion slot must exist');
-  assert.equal(m[1].replace(/\/\/.*$/gm, '').replace(/\s+/g, ''), '{}', 'no carrier registers a turning mark');
+  assert.equal(m[1].replace(/\/\/.*$/gm, '').replace(/\s+/g, ''), '{}', 'no carrier registers a turning clip');
 });
 
 // ── 10, 14: the loading splash ──────────────────────────────────────────────
