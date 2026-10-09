@@ -108,7 +108,7 @@
     window._yqmCacheAircraftMerge = window._yqmCacheAircraftMerge || async function () {};
     pilotRouterPromise = new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = '../js/feed-router.js?v=24022';
+      script.src = '../js/feed-router.js?v=24024';
       script.async = true;
       script.addEventListener('load', function () {
         if (typeof window.adbFetch === 'function') resolve(window.adbFetch);
