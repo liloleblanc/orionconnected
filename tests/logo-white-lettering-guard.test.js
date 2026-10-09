@@ -479,7 +479,7 @@ const WHITENS = (v) => /brightness\(\s*0\s*\)/.test(v) && /invert\(\s*(?:1|100%)
 // A selector naming an emblem, a tile, an orb or a board lockup (a .full-logo carries its emblem).
 const EMBLEM_SEL = /emblem|tile|orb\b|v2-fi-orb|full-logo|airline-tiles|symbol|monogram/i;
 const ALLOW_FILTER = [
-  [/gate-display\.css$/, /\[src\*="airlines-mono"\]$/, 'the mono art folder: a single-colour silhouette drawn to be inked'],
+  [/gate-display\.css$/, /\[src\*="-mono\.svg"\]$/, 'the mono art (XX-mono.svg): a single-colour silhouette drawn to be inked'],
 ];
 
 test('6. no stylesheet rule whitens an emblem, a tile or a lockup', () => {
@@ -498,7 +498,7 @@ test('6. no stylesheet rule whitens an emblem, a tile or a lockup', () => {
       if (/^\s*(?:\/\/|\*)/.test(ln)) return;
       for (const r of ln.matchAll(/([^{}'"`]+)\{([^{}]*)\}/g)) {
         const fm = /filter\s*:\s*([^;]+)/.exec(r[2]);
-        if (fm && WHITENS(fm[1]) && EMBLEM_SEL.test(r[1]) && !/airlines-mono/.test(r[1])) found.push(`${f}:~${i + 1} ${r[1].trim().slice(-100)} { filter: ${fm[1].trim()} }`);
+        if (fm && WHITENS(fm[1]) && EMBLEM_SEL.test(r[1]) && !/-mono\.svg/.test(r[1])) found.push(`${f}:~${i + 1} ${r[1].trim().slice(-100)} { filter: ${fm[1].trim()} }`);
       }
       if (/\/logos\/airline-tiles\//.test(ln) && WHITENS(ln) && !/filter:none|_adTile|isTile/.test(ln)) found.push(`${f}:~${i + 1} a tile whitened: ${ln.trim().slice(0, 140)}`);
     });

@@ -32,9 +32,7 @@ SKIP = {".DS_Store"}
 RULES = [
     ("logos/airline-tiles",            "airline", "tile",            "Airline tile logos (row icons)"),
     ("logos/icao-icons",               "airline", "archive",         "Airline icons (archive / deep fallback)"),
-    ("logos/symbols/airlines-mono",    "airline", "symbol-mono",     "Airline symbols (monochrome)"),
     ("logos/symbols/airlines",         "airline", "symbol",          "Airline symbols (emblem only)"),
-    ("logos/wordmarks-mono",           "airline", "wordmark-mono",   "Airline wordmarks (monochrome)"),
     ("logos/wordmarks",                "airline", "wordmark",        "Airline wordmarks"),
     ("logos/airlines/canadian-regional","airline","canadian-regional","Airlines — Canadian regional"),
     ("logos/airlines/canadian",        "airline", "canadian",        "Airlines — Canadian"),

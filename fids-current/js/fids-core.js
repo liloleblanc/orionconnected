@@ -12910,8 +12910,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // white. The colour leaf is applied ONLY on the welcome card, via
         // WELCOME_CARD_EMBLEM.
         // v23404 — WestJet's leaf was BLACK on the aircraft hold panel; it
-        // must render in colour there. symbols/airlines-mono/
-        // WS.svg is painted fill="currentColor", and inside an <img> there is
+        // must render in colour there. symbols/airlines/
+        // WS-mono.svg is painted fill="currentColor", and inside an <img> there is
         // no colour to inherit, so it resolves to the initial value: black.
         // The orb never showed it because the orb whitens its art — but the
         // hold panel sits on the light sky plate and paints the file as-is.
@@ -12930,8 +12930,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // them to one solid white blob. This file's own v23050 note already
         // said it — 'the round rail ORB keeps the mono white leaf it has
         // always had'. The hold plate gets its own override instead.
-        'WS':  '/logos/symbols/airlines-mono/WS.svg',
-        'WR':  '/logos/symbols/airlines-mono/WS.svg',
+        'WS':  '/logos/symbols/airlines/WS-mono.svg',
+        'WR':  '/logos/symbols/airlines/WS-mono.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right as specified; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
@@ -31618,7 +31618,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24020';
+var FIDS_BUILD_TAG = 'v24022';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
