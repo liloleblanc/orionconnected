@@ -55542,8 +55542,12 @@ var HERITAGE_MARKS = [
     // years are solid, the years each livery was worn are not. The mark's
     // FILENAME carries '1965-1987'; that is the artwork's name, and no date
     // from it is printed.
+    // v24021 — the mark is the supplied 1980 logo (AC-1980-LOGO.svg: the
+    // rondelle beside AIR CANADA in red capitals, one red, all shapes), the
+    // mark of the livery this card and the 767 card show; it replaces the
+    // stacked capitals bitmap (air-canada-logo-1965-1987.png, kept on disk).
     key: 'air-canada-caps',
-    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc9-ac80.svg',
     airports: '*CA'
@@ -55574,7 +55578,7 @@ var HERITAGE_MARKS = [
     // hand by staff of the period). It is named by the year it came in; the year
     // it went out is not printed, because the sources give 1987 and 1992-94.
     key: 'air-canada-767',
-    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-767.png',
     credit: true,

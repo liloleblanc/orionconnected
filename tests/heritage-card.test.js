@@ -279,7 +279,7 @@ test('every card that names its own aeroplane has the file on disk', () => {
   assert.equal(byK['air-canada'].aircraft, '/aircraft/heritage/air-canada-dc9-ac87.svg');
   assert.match(byK['air-canada'].file, /AC-1987-LOGO\.svg$/);
   assert.equal(byK['air-canada-caps'].aircraft, '/aircraft/heritage/air-canada-dc9-ac80.svg');
-  assert.match(byK['air-canada-caps'].file, /air-canada-logo-1965-1987\.png$/);
+  assert.match(byK['air-canada-caps'].file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark (v24021)');
   for (const k of ['air-canada', 'air-canada-caps']) {
     assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', byK[k].file.replace(/^\//, ''))), k + ' mark on disk');
   }
@@ -356,7 +356,7 @@ test('the 767 card: the capitals livery and mark, a year every source agrees on,
   const m = byK['air-canada-767'];
   assert.ok(m, 'the 767 card exists');
   assert.equal(m.aircraft, '/aircraft/heritage/air-canada-767.png');
-  assert.match(m.file, /air-canada-logo-1965-1987\.png$/, 'the capitals livery carries the capitals mark, as the caps DC-9 card does');
+  assert.match(m.file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark, as the caps DC-9 card does');
   assert.equal(m.airports, '*CA');
   assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''))), 'the render is on disk');
   for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
