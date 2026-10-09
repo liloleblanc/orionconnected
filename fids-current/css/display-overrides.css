@@ -20888,10 +20888,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    The banner was contradicting the lockups sitting beside it in the same
    folder.
 
-   The symbol file itself is fine and is NOT mirrored here — three independent
-   copies (american-flight-symbol.svg, airline-tiles/AAL.svg,
-   icao-icons/AAL.svg) all agree on its orientation, and flipping it produces
-   something that matches none of them. Only the running order was wrong.
+   The symbol file itself is fine and is NOT mirrored here — both copies
+   (american-flight-symbol.svg, airline-tiles/AAL.svg) agree on its
+   orientation, and flipping it produces something that matches neither.
+   Only the running order was wrong.
 
    Scoped to the carrier by data-gate-airline, which the banner already sets and
    which other rules in this file already key on. Nothing else moves.

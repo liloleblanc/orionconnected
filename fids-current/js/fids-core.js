@@ -9703,13 +9703,13 @@ const AIRLINE_ACCENT = {
   'AK':'#E32526', 'QZ':'#E32526',
   // Emirates. Was '#C8102E' — the generic red it shared with Japan Airlines
   // and Turkish, three unrelated carriers on one value. UAE.svg paints
-  // '#d71a21' and its icao-icons twin '#D71921', deltaE 0.19 apart.
+  // '#D71921', deltaE 0.19 from the value below.
   //
-  // Those two are NOT independent: icao-icons is a byte-copy of airline-tiles
-  // for 273 of its 283 files, so this is one source seen twice, which is the
-  // TAP failure mode. It is taken anyway because the value it replaces is a
-  // demonstrable placeholder rather than a rival reading — but it is derived,
-  // not stated, and a published Emirates value should overrule it.
+  // That is ONE source. The old icao-icons/ archive (since deleted) held a
+  // byte-copy of the same tile, so it never counted as a second reading —
+  // the TAP failure mode. It is taken anyway because the value it replaces
+  // is a demonstrable placeholder rather than a rival reading — but it is
+  // derived, not stated, and a published Emirates value should overrule it.
   'EK':'#D71A21',
   // SWISS. Was '#E2001A'; the airline's red is '#E60005', which SWR.svg has
   // always painted exactly. See the emblem note below — the tile's COLOUR was
@@ -28667,15 +28667,6 @@ function logoFallback(img) {
     img.dataset.tried = '3';
     img.dataset.logoSet = 'tile';
     img.src = '/logos/airline-tiles/' + IATA_TO_TILE_ICAO[c] + '.svg';
-  } else if (t === '3' && IATA_TO_TILE_ICAO[c]) {
-    // airline-tiles failed too (e.g. file missing) — try the icao-icons
-    // archive folder as a deep-fallback. icao-icons/ is a backup copy of
-    // airline-tiles/ from the AirlineIcons-main source pack. Only useful
-    // if airline-tiles/{ICAO}.svg got deleted or corrupted but the
-    // archive copy survived.
-    img.dataset.tried = '4';
-    img.dataset.logoSet = 'tile';
-    img.src = '/logos/icao-icons/' + IATA_TO_TILE_ICAO[c] + '.svg';
   } else {
     // All sources exhausted — MONOGRAM tile, not bare text (text or a
     // wordmark in the emblem slot does not work). Cache so later renders
@@ -31618,7 +31609,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24022';
+var FIDS_BUILD_TAG = 'v24023';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
