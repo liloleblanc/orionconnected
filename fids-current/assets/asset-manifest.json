@@ -28122,17 +28122,6 @@
       "ext": "png"
     },
     {
-      "path": "/logos/tails-fake/F9.svg",
-      "file": "F9.svg",
-      "category": "livery",
-      "subcategory": "tail-fake",
-      "group": "Aircraft tails (placeholder)",
-      "name": "F9",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
       "path": "/logos/tails-modern/2T.svg",
       "file": "2T.svg",
       "category": "livery",
@@ -28579,6 +28568,17 @@
       "subcategory": "tail-modern",
       "group": "Aircraft tails (modern)",
       "name": "F8",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/tails-modern/F9.svg",
+      "file": "F9.svg",
+      "category": "livery",
+      "subcategory": "tail-modern",
+      "group": "Aircraft tails (modern)",
+      "name": "F9",
       "iata": "",
       "country": "",
       "ext": "svg"

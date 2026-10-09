@@ -46,7 +46,6 @@ RULES = [
     ("logos/airlines/other",           "airline", "other",           "Airlines — other"),
     ("logos/airlines",                 "airline", "misc",            "Airlines — misc"),
     ("logos/tails-modern",             "livery",  "tail-modern",     "Aircraft tails (modern)"),
-    ("logos/tails-fake",               "livery",  "tail-fake",       "Aircraft tails (placeholder)"),
     ("logos/hotels/accor-luxury",      "hotel",   "accor-luxury",    "Hotels — Accor Luxury"),
     ("logos/hotels/accor-premium",     "hotel",   "accor-premium",   "Hotels — Accor Premium"),
     ("logos/hotels/accor-midscale",    "hotel",   "accor-midscale",  "Hotels — Accor Midscale"),

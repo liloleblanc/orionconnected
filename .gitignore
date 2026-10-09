@@ -17,3 +17,7 @@ fids-current/mapcdn
 
 # the language pictures (node tests/render/languages.mjs)
 tests/render/out/
+
+# Python bytecode caches
+__pycache__/
+*.pyc
