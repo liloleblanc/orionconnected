@@ -15,12 +15,13 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=24029"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/host-airport.js?v=24030"></script>
 <title>Airport Companion</title>
 <style>
+  /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
+     site's own files (the boards' font.css faces), not Inter from Google */
+  @font-face{font-family:'Bricolage Grotesque';font-weight:200 800;font-stretch:75% 100%;font-style:normal;font-display:swap;src:url('fonts/bricolage/BricolageGrotesque-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+  @font-face{font-family:'Bricolage Grotesque';font-weight:200 800;font-stretch:75% 100%;font-style:normal;font-display:swap;src:url('fonts/bricolage/BricolageGrotesque-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
   :root{
     --bg:#f4f6f9; --card:#ffffff; --soft:#eef1f6; --soft2:#e7ebf2;
     --line:#e6eaf0; --line2:#dde3ec;
@@ -60,8 +61,8 @@
   html,body{margin:0;overscroll-behavior:none;}
   body{
     background:var(--bg); color:var(--txt);
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    -webkit-font-smoothing:antialiased; letter-spacing:-0.011em;
+    font-family:'Bricolage Grotesque',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased; letter-spacing:0;
     display:flex; flex-direction:column; min-height:100dvh;
     padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px);
   }
@@ -155,6 +156,8 @@
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
   .st.ontime{color:var(--green);} .st.delayed,.st.early{color:var(--amber);}
   .st.cancelled{color:var(--red);} .st.boarding{color:var(--accent);}
+  /* v24030 — Scheduled / Expected: the airport's neutral word, no status colour */
+  .st.neutral{color:var(--muted);}
   .fcard .row2{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .fcard .city{font-size:23px;font-weight:800;line-height:1.05;letter-spacing:-0.02em;}
   .fcard .sub{color:var(--muted);font-size:15.5px;font-weight:700;margin-top:6px;}
@@ -188,6 +191,7 @@
   .fcard.dark .chip.gate .ic{color:#fff;}
   .fcard.dark .st.ontime{color:#4ade80;} .fcard.dark .st.delayed,.fcard.dark .st.early{color:#fde047;}
   .fcard.dark .st.cancelled{color:#fca5a5;} .fcard.dark .st.boarding{color:#fff;}
+  .fcard.dark .st.neutral{color:rgba(255,255,255,.82);}
   /* v23232 — a light bubble (AA/DL white spheres) carries its OWN dark ink,
      never the page theme's: in dark mode --txt is near-white, which painted
  Tampa/20:53 white-on-white. Every text
@@ -203,6 +207,7 @@
   .fcard.light .chip.gate .ic{color:#10151d;}
   .fcard.light .st.ontime{color:#15803d;} .fcard.light .st.delayed,.fcard.light .st.early{color:#b45309;}
   .fcard.light .st.cancelled{color:#b91c1c;} .fcard.light .st.boarding{color:#1559c0;}
+  .fcard.light .st.neutral{color:#3f4a56;}
   .fcard.light .bubwm-txt{color:#0d1220;}
   .fcard.light .belt-no{color:#0d1220;} .fcard.light .belt-tbd,.fcard.light .belt-lbl{color:rgba(13,18,32,.5);}
   .empty{padding:64px 24px;text-align:center;color:var(--muted);}
@@ -238,6 +243,12 @@
     font-family:inherit;font-size:10px;font-weight:600;transition:color .15s;}
   .nav button .ic{width:23px;height:23px;}
   .nav button.active{color:var(--accent);}
+  /* v24030 — the tab bar follows the theme like the top bar (it stayed white in dark mode) */
+  :root[data-theme="dark"] .nav{background:rgba(10,13,19,.94);}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .nav{background:rgba(10,13,19,.94);}}
+  /* a moved time: the new one under the printed one, in the delay's own colour */
+  .fcard .time .new{font-size:13px;font-weight:800;margin-top:3px;color:var(--amber);white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
+  .fcard .time .hh small,.fcard .time .new small{font-size:.5em;font-weight:800;margin-left:2px;}
   .fcard{cursor:pointer;position:relative;overflow:hidden;}
   .fcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand,transparent);}
   /* ── Flight detail ───────────────────────────────── */
@@ -407,8 +418,10 @@
   <button class="cta" onclick="closeFullAd()">Explore offers</button>
 </div>
 
-<script src="js/shared-names.js?v=24029"></script>
-<script src="js/feed-router.js?v=24029"></script>
+<!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
+<script src="js/board-strings.js?v=24030"></script>
+<script src="js/shared-names.js?v=24030"></script>
+<script src="js/feed-router.js?v=24030"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -598,6 +611,9 @@ function acName(code){
   return t;
 }
 let CURAP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
+// v24030 — false until the first answer for the shown direction: until then the
+// list says it is loading, not that there are no flights
+let LOADED=false;
 // Shown only when live data is unavailable (e.g. OAG trial over quota), so the
 // app still demonstrates fully instead of going blank. Clearly labelled.
 const SAMPLE=[
@@ -609,7 +625,7 @@ const SAMPLE=[
   {airline:'AC',flight:'AC1518',cityIata:'YUL',schedTime:'17:20',estTime:'17:20',gate:'1',aircraft:'CR9',reg:'C-FFEN',state:'scheduled',timeliness:'onTime'},
   {airline:'WS',flight:'WS3422',cityIata:'YYZ',schedTime:'18:05',estTime:'18:05',gate:'4',aircraft:'7M8',reg:'C-GWSV',state:'scheduled',timeliness:'onTime',operatedBy:'WestJet Encore'}
 ];
-// ── LANGUAGE (v23234) — English / Français / Español ─────────────────
+// ── LANGUAGE (v23234; v24030 — all nine of the boards' languages) ─────
 // — the boards are bilingual;
 // the app now is too. Default follows the phone (auto); the globe-style
 // button in the top bar cycles EN → FR → ES and the choice persists.
@@ -649,16 +665,25 @@ es:{dep:'Salidas',arr:'Llegadas',findFlight:'Busca tu vuelo — número o ciudad
  stBoarding:'Abordando',stFinal:'Última llamada',stClosed:'Puerta cerrada'}
 };
 let LANG=(function(){try{return localStorage.getItem('app_lang')||'auto';}catch(e){return 'auto';}})();
+// v24030 — the app speaks the boards' nine languages (the language list is
+// the store's, BoardStrings.LANGS); the phone's own language when it is one
+const APP_LANGS=(window.BoardStrings&&BoardStrings.LANGS)||[];
 function langRes(){
-  if(LANG!=='auto'&&I18N[LANG])return LANG;
-  const n=String((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase();
-  if(n.indexOf('fr')===0)return 'fr';
-  if(n.indexOf('es')===0)return 'es';
-  return 'en';
+  if(LANG!=='auto'&&APP_LANGS.indexOf(LANG)>=0)return LANG;
+  const n=String((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase().slice(0,2);
+  return APP_LANGS.indexOf(n)>=0?n:'en';
 }
-function T(k){const d=I18N[langRes()]||I18N.en;return d[k]!==undefined?d[k]:(I18N.en[k]!==undefined?I18N.en[k]:k);}
+// v24030 — every word comes from the boards' store, in all nine languages
+// (APP_KEY: the store's key for each of the app's words); I18N, frozen at
+// English, French and Spanish, is only what is left if the store is missing
+const APP_KEY={dep:'appDep',arr:'appArr',findFlight:'appFindFlight',findArr:'appFindArr',liveDep:'appLiveDep',liveArr:'appLiveArr',flightsN:'appFlightsN',noDep:'appNoDep',noArr:'appNoArr',noMatch:'appNoMatch',noArrMatch:'appNoArrMatch',reconn:'appReconn',reconnB:'appReconnB',bagHint:'appBagHint',bagOffline:'appBagOffline',departs:'appDeparts',arrives:'appArrives',arrShort:'appArrShort',depShort:'appDepShort',gate:'gateWord',belt:'appBelt',tbd:'appTbd',terminal:'terminal',via:'appVia',estimated:'estimated',flightTime:'appFlightTime',bagBelt:'appBagBelt',depOrigin:'appDepOrigin',aircraft:'appAircraft',reg:'appReg',operatedBy:'appOperatedBy',details:'appDetails',tabFlights:'appTabFlights',tabExplore:'appTabExplore',tabBag:'appTabBag',tabTrip:'appTabTrip',exploreH:'appExploreH',exploreP:'appExploreP',soon:'appSoon',tripH:'appTripH',tripP:'appTripP',members:'appMembers',stOnTime:'stOnTime',stDelayed:'stDelayed',stEarly:'appStEarly',stCancelled:'stCancelled',stDeparted:'stDeparted',stArrived:'stArrived',stBoarding:'stBoarding',stFinal:'stFinalCall',stClosed:'stGateClosed',stScheduled:'stScheduled',stExpected:'expected',stEnRoute:'stEnRoute',stDiverted:'stDiverted',loading:'appLoading'};
+function T(k){
+  const L=langRes();
+  try{if(APP_KEY[k]&&window.BoardStrings){const w=BoardStrings.bs(APP_KEY[k],L);if(w)return w;}}catch(e){}
+  const d=I18N[L]||I18N.en;return d[k]!==undefined?d[k]:(I18N.en[k]!==undefined?I18N.en[k]:k);
+}
 function cycleLang(){
-  const order=['en','fr','es'];
+  const order=APP_LANGS.slice(); if(!order.length)return;
   LANG=order[(order.indexOf(langRes())+1)%order.length];
   try{localStorage.setItem('app_lang',LANG);}catch(e){}
   applyLang();
@@ -666,6 +691,8 @@ function cycleLang(){
 function applyLang(){
   const L=langRes();
   try{document.documentElement.lang=L;}catch(e){}
+  // Arabic reads right to left (the store's own mark for it)
+  try{if(window.BoardStrings&&BoardStrings.setLang)BoardStrings.setLang(document.documentElement,L);else document.documentElement.dir=(L==='ar'?'rtl':'ltr');}catch(e){}
   const set=function(id,txt){const el=document.getElementById(id);if(el)el.textContent=txt;};
   set('langBtn',L.toUpperCase());
   set('segDep',T('dep'));set('segArr',T('arr'));
@@ -681,7 +708,7 @@ function applyLang(){
     const hint=document.getElementById('hint');
     if(hint&&typeof FLIGHTS!=='undefined'){
       const w=(typeof DIR!=='undefined'&&DIR==='arr')?T('liveArr'):T('liveDep');
-      hint.textContent=FLIGHTS.length?(w+' · '+FLIGHTS.length+' '+T('flightsN')):((typeof DIR!=='undefined'&&DIR==='arr')?T('noArr'):T('noDep'));
+      hint.textContent=FLIGHTS.length?(w+' · '+FLIGHTS.length+' '+T('flightsN')):(!LOADED?BoardStrings.bs('appLoading',langRes()):((typeof DIR!=='undefined'&&DIR==='arr')?T('noArr'):T('noDep')));
     }
   }catch(e){}
   try{render();}catch(e){}
@@ -834,19 +861,33 @@ function liveryImg(airline,raw,operatedBy){
     +'else if(this.dataset.fb2){this.src=this.dataset.fb2;this.dataset.fb2=\'\';}else{this.style.display=\'none\';}">';
 }
 function fmtDur(m){if(!m||m<=0)return '';const h=Math.floor(m/60),mm=m%60;return (h?h+'h':'')+(h&&mm?' ':'')+(mm?mm+'m':'');}
+// v24030 — THE STATUS IS THE AIRPORT'S WORD, as on the boards (fids-core.js
+// adbStatus): the feed's own word, or an actual runway time on the row's own
+// leg; otherwise Delayed or Early when the airport moved the time, else its
+// neutral word (On time only where it said On time, Expected, or Scheduled).
+// The app used to make Boarding up 45 minutes out, Final call at 12 and
+// Departed 2 minutes after the time, whatever the airport said.
+const ST_WORD={cancelled:['stCancelled','cancelled'],diverted:['stDiverted','cancelled'],departed:['stDeparted','ontime'],
+  active:['stEnRoute','ontime'],arrived:['stArrived','ontime'],boarding:['stBoarding','boarding'],final:['stFinal','boarding'],
+  gateclosed:['stClosed','boarding'],delayed:['stDelayed','delayed'],early:['stEarly','early'],ontime:['stOnTime','ontime'],
+  expected:['stExpected','neutral'],scheduled:['stScheduled','neutral']};
 function statusOf(f){
-  const st=(f.state||'').toLowerCase();
-  if(st==='canceled'||st==='cancelled')return{t:T('stCancelled'),c:'cancelled'};
-  if(st==='outgate'||st==='inair')return{t:T('stDeparted'),c:'ontime'};
-  if(st==='ingate'||st==='landed')return{t:T('stArrived'),c:'ontime'};
-  if(st==='boarding')return{t:T('stBoarding'),c:'boarding'};
-  if(st==='final')return{t:T('stFinal'),c:'boarding'};
-  if(st==='gateclosed')return{t:T('stClosed'),c:'boarding'};
-  const tl=(f.timeliness||'').toLowerCase();
-  if(tl==='delayed')return{t:T('stDelayed'),c:'delayed'};
-  if(tl==='early')return{t:T('stEarly'),c:'early'};
-  return{t:T('stOnTime'),c:'ontime'};
+  const w=ST_WORD[f.state]||ST_WORD.scheduled;
+  return{t:T(w[0]),c:w[1]};
 }
+// a feed's local time ("15:09") in the clock of the app's language, by the
+// boards' own rule (BoardStrings.boardTime: English reads 3:09 PM, the other
+// eight 15:09), its am/pm half smaller
+function clk(hhmm){
+  const m=/^(\d{1,2}):(\d{2})/.exec(String(hhmm||''));
+  if(!m)return esc(hhmm||'');
+  let t='';
+  try{t=String(window.BoardStrings.boardTime(new Date(Date.UTC(2000,0,1,+m[1],+m[2])),'UTC',{list:[langRes()]})||'');}catch(e){t='';}
+  if(!t)return esc(m[1]+':'+m[2]);
+  const s=/^(\d{1,2}:\d{2})\s*(\S+)$/.exec(t);
+  return s?esc(s[1])+'<small>'+esc(s[2])+'</small>':esc(t);
+}
+function clkText(hhmm){return clk(hhmm).replace(/<\/?small>/g,' ').replace(/\s+/g,' ').trim();}
 function render(){
   const q=(document.getElementById('q').value||'').trim().toLowerCase();
   const cards=document.getElementById('cards');
@@ -855,22 +896,27 @@ function render(){
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q)||String(dispIata(f.cityIata||'')).toLowerCase().includes(q);});
   const isArr=DIR==='arr', tLbl=isArr?T('arrives'):T('departs');
   if(!list.length){cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
-    +'<div>'+(q?T('noMatch')+' “'+esc(q)+'”':(isArr?T('noArr'):T('noDep')))+'</div></div>';RENDERED=[];return;}
+    +'<div>'+(q?T('noMatch')+' “'+esc(q)+'”':(!LOADED?BoardStrings.bs('appLoading',langRes()):(isArr?T('noArr'):T('noDep'))))+'</div></div>';RENDERED=[];return;}
   RENDERED=list;
   cards.innerHTML=list.map((f,i)=>{
     const s=statusOf(f),city=cityOf(f),al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
-    const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
+    const via=(f.via&&f.via.length)?' · '+T('via')+' '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
     const belt=(isArr&&f.belt)?'<span class="chip gate">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')+'<span class="k">'+T('belt')+'</span> '+esc(f.belt)+'</span>':'';
     const gate=(!isArr&&f.gate)?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">'+T('gate')+'</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     // Arrival time (for a departure) / origin departure time (for an arrival),
     // shown under the main time on each card.
-    const otherLine=f.otherTime?'<div class="arr">'+(isArr?T('depShort'):T('arrShort'))+' '+esc((f.otherTime||'').slice(0,5))+'</div>':'';
+    // v24030 — only a real far-end time (both legs' times known, a flight time
+    // above zero): a feed that repeats this airport's time there printed
+    // "Arr 14:30" for a 14:30 departure
+    const otherLine=(f.otherTime&&f.durMin>0)?'<div class="arr">'+(isArr?T('depShort'):T('arrShort'))+' '+clk((f.otherTime||'').slice(0,5))+'</div>':'';
+    const est=(f.estTime||'').slice(0,5);
+    const newLine=(est&&est!==sched&&(f.state==='delayed'||f.state==='early'))?'<div class="new">→ '+clk(est)+'</div>':'';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(dispIata(f.cityIata||''))+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
-      +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div>'+otherLine+'</div></div>'
+      +'<div class="time"><div class="hh">'+clk(sched)+'</div>'+newLine+'<div class="lbl">'+tLbl+'</div>'+otherLine+'</div></div>'
       +(gate||belt||ac?'<div class="meta">'+gate+belt+ac+'</div>':'')+'</div>';
   }).join('');
 }
@@ -951,39 +997,29 @@ function adbToCard(f,dir){
   const raw=String(f.status||'').toLowerCase();
   const sc=(here.scheduledTime&&(here.scheduledTime.utc||here.scheduledTime.local))||'';
   const rv=(here.revisedTime&&(here.revisedTime.utc||here.revisedTime.local))||'';
-  let state='scheduled',timeliness='onTime';
-  if(raw==='cancelled'||raw==='canceled')state='canceled';
-  else if(raw==='departed'||raw==='enroute')state=dir==='arr'?'scheduled':'outgate';
-  else if(raw==='arrived'||raw==='landed')state='ingate';
-  else if(raw==='boarding')state='boarding';
-  else if(raw==='gateclosed'||raw==='gate closed')state='gateclosed';
-  // v23925 — the shared router now passes Moncton's "Final call" through as
-  // 'final' instead of folding it into 'boarding'; read it as the final call
-  // it is. The app's own clock below is otherwise unchanged.
-  else if(raw==='final'||raw==='finalcall')state='final';
-  if(raw==='delayed')timeliness='delayed';
-  else if(sc&&rv){const dt=(new Date(rv.replace(' ','T'))-new Date(sc.replace(' ','T')))/60000;
-    if(dt>=5)timeliness='delayed'; else if(dt<=-5)timeliness='early';}
-  // ADB's schedule feed rarely sends a live 'Boarding'/'Gate closed' flag, so
-  // derive a boarding window from the (revised) departure time. Regional flights
-  // (and AC's 5 zones + pre-board) start ~45 min out; the gate is closing in the
-  // last ~12 min, so flip to "Final call" then instead of clinging to Boarding.
-  if(dir==='dep' && state==='scheduled'){
-    var _eff=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
-    if(_eff){var _mins=(_eff-Date.now())/60000;
-      if(_mins>0&&_mins<=12)state='final';
-      else if(_mins>12&&_mins<=45)state='boarding';
-    }
-  }
-  // Feed status lags reality: if a departure is well past its (revised) time but
-  // is still flagged boarding / gate-closed / scheduled, it has actually left —
-  // show Departed, don't keep saying Boarding (e.g. AC7995 after pushback).
-  if(dir==='dep' && (state==='boarding'||state==='gateclosed'||state==='final'||state==='scheduled')){
-    var _effD=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
-    // v23230 — the boards flip to closed/departed at (revised) departure
-    // +2 min (v23228); the app follows the same clock rule, not its own.
-    if(_effD && (Date.now()-_effD)>2*60000) state='outgate';
-  }
+  // v24030 — the boards' adbStatus, word for word in what it decides (see
+  // statusOf): the feed's word; an actual runway time on this leg; the
+  // airport's moved time (Delayed / Early, 5 minutes or more); its neutral word.
+  const _w=raw.replace(/[\s_-]+/g,'');
+  const _act=(here.runwayTime&&(here.runwayTime.utc||here.runwayTime.local))||'';
+  const _upd=_act||(here.predictedTime&&(here.predictedTime.utc||here.predictedTime.local))||rv;
+  const _ms=(t)=>{const v=new Date(String(t).replace(' ','T')).getTime();return isFinite(v)?v:0;};
+  let state='scheduled';
+  if(/^(cancelled|canceled|cancelleduncertain|canceleduncertain)$/.test(_w))state='cancelled';
+  else if(_w==='diverted')state='diverted';
+  else if(_w==='arrived'||_w==='landed')state=dir==='dep'?'departed':'arrived';
+  else if(_w==='enroute'||_w==='approaching'||_w==='active'||_w==='departed')state=dir==='dep'?'departed':'active';
+  else if(_w==='boarding')state='boarding';
+  else if(_w==='gateclosed')state='gateclosed';
+  else if(_w==='final'||_w==='finalcall')state='final';
+  else if(_w==='delayed')state='delayed';
+  else if(_w==='early')state='early';
+  else if(_act&&_ms(_act)&&_ms(_act)<=Date.now())state=dir==='dep'?'departed':'arrived';
+  else if(_upd&&sc&&_ms(_upd)>_ms(sc)+5*60000)state='delayed';
+  else if(_upd&&sc&&_ms(_upd)<_ms(sc)-5*60000)state='early';
+  else if(_w==='ontime')state='ontime';
+  else if(_w==='expected')state='expected';
+  const timeliness=state==='delayed'?'delayed':state==='early'?'early':'onTime';
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
@@ -1000,7 +1036,7 @@ function adbToCard(f,dir){
     // map lacks shows its real place name instead of a bare code or "—".
     cityName:(other.airport&&(other.airport.municipalityName||other.airport.shortName||other.airport.name))||'',
     schedTime:adbHHMM(here.scheduledTime&&here.scheduledTime.local),
-    estTime:adbHHMM(here.revisedTime&&here.revisedTime.local)||adbHHMM(here.scheduledTime&&here.scheduledTime.local),
+    estTime:adbHHMM(here.runwayTime&&here.runwayTime.local)||adbHHMM(here.predictedTime&&here.predictedTime.local)||adbHHMM(here.revisedTime&&here.revisedTime.local)||adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     otherTime:otherTime, durMin:durMin,
     gate:(here.gate&&here.gate!=='-')?here.gate:'',
     belt:(dir==='arr'&&arr.baggageBelt&&arr.baggageBelt!=='-')?arr.baggageBelt:'',
@@ -1072,6 +1108,7 @@ async function load(){
   const hint=document.getElementById('hint'), isArr=DIR==='arr', word=isArr?'arrivals':'departures';
   try{
     const mapped=await fetchDir(DIR);
+    LOADED=true;
     if(isArr) ARRIVALS=mapped;
     if(mapped.length){ FLIGHTS=mapped; hint.textContent=(isArr?T('liveArr'):T('liveDep'))+' · '+mapped.length+' '+T('flightsN'); }
     else{ FLIGHTS=[]; hint.textContent=isArr?T('noArr'):T('noDep'); }   // honest empty — never fake flights
@@ -1103,7 +1140,7 @@ function setDir(dir){
   document.getElementById('segDep').classList.toggle('active',dir==='dep');
   document.getElementById('segArr').classList.toggle('active',dir==='arr');
   document.getElementById('apDir').textContent=dir==='arr'?T('arr'):T('dep');
-  FLIGHTS=[];render();load();
+  FLIGHTS=[];LOADED=false;render();load();
 }
 // ── BAGGAGE ───────────────────────────────────────────────────────────
 // Arriving flights with their baggage belt, newest-arriving first. Reuses the
@@ -1132,7 +1169,7 @@ function renderBags(){
                         :'<div class="belt-tbd">'+T('tbd')+'</div><div class="belt-lbl">'+T('belt')+'</div>';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'">'+cardMark(f.airline,!BUB_LIGHT[f.airline])
       +'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div><span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
-      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(dispIata(f.cityIata||''))+'</b> · '+esc(f.flight)+' · arr '+esc(sched)+'</div></div>'
+      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(dispIata(f.cityIata||''))+'</b> · '+esc(f.flight)+' · '+T('arrShort')+' '+clk(sched)+'</div></div>'
       +'<div class="belt-box">'+beltBig+'</div></div></div>';
   }).join('');
 }
@@ -1204,9 +1241,9 @@ function openFlight(i){
   const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?(T('operatedBy')+' '+f.operatedBy):'';
   function cell(k,v,sub){return '<div class="dt-cell"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';}
   let cells='';
-  cells+=cell(isArr?T('arrives'):T('departs'),sched||'—');
-  if(est&&est!==sched) cells+=cell(T('estimated'),est);
-  if(f.otherTime) cells+=cell(isArr?T('depOrigin'):T('arrives'),(f.otherTime||'').slice(0,5));
+  cells+=cell(isArr?T('arrives'):T('departs'),sched?clkText(sched):'—');
+  if(est&&est!==sched) cells+=cell(T('estimated'),clkText(est));
+  if(f.otherTime&&f.durMin>0) cells+=cell(isArr?T('depOrigin'):T('arrives'),clkText((f.otherTime||'').slice(0,5)));
   var _dur=fmtDur(f.durMin); if(_dur) cells+=cell(T('flightTime'),_dur);
   if(isArr) cells+=cell(T('bagBelt'),f.belt||T('tbd'));
   else cells+=cell(T('gate'),f.gate||'—');
