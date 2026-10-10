@@ -152,6 +152,33 @@ function miaParseFlights(xml) {
   return out;
 }
 
+// v24027 — POSSIBILITY, FROM PRIVATE STORAGE.
+// The licensed Possibility-Bold.otf is no longer in the public repository
+// (its licence forbids passing the file on). It lives in the private R2
+// bucket fids-private (binding FIDS_PRIVATE) and is served here, at the path
+// font.css already names (../fonts/Possibility-Bold.otf), and only on
+// orionconnected.com and its airport addresses: the licence covers one
+// domain. Anywhere else (.ca, .app, a preview), or when the bucket cannot
+// answer, it is a 404 and the font stack falls back to Bricolage Grotesque.
+const PRIVATE_FONTS = { '/fonts/Possibility-Bold.otf': 'fonts/Possibility-Bold.otf' };
+async function privateFont(url, env) {
+  const key = PRIVATE_FONTS[url.pathname];
+  if (!key) return null;
+  const host = String(url.hostname || '').toLowerCase();
+  const ours = host === 'orionconnected.com' || host.endsWith('.orionconnected.com');
+  if (!ours || !env || !env.FIDS_PRIVATE) return new Response('Not found', { status: 404, headers: NO_STORE });
+  try {
+    const obj = await env.FIDS_PRIVATE.get(key);
+    if (!obj) return new Response('Not found', { status: 404, headers: NO_STORE });
+    return new Response(obj.body, {
+      status: 200,
+      headers: { 'Content-Type': 'font/otf', 'Cache-Control': 'public, max-age=86400', 'ETag': obj.httpEtag || '' }
+    });
+  } catch (e) {
+    return new Response('Not found', { status: 404, headers: NO_STORE });
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -167,6 +194,9 @@ export default {
     if (url.hostname.startsWith("fids-proxy")) {
       return proxy.fetch(request, env, ctx);
     }
+
+    const font = await privateFont(url, env);
+    if (font) return font;
 
     // ── Map engine passthrough ──────────────────────────────────────────
     // Short alias for the stream-agent installer, so it can be TYPED into a

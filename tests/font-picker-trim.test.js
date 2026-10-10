@@ -77,7 +77,12 @@ test('the removed keys are gone from every table, the bulk tool and the worker',
 test('the stylesheet names only files that exist, and the removed faces and files are gone', () => {
   const srcs = [...FONT_CSS.matchAll(/url\('\.\.\/([^']+)'\)/g)].map((m) => decodeURIComponent(m[1]));
   assert.ok(srcs.length >= 20);
-  for (const s of new Set(srcs)) assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', s)), `declared but missing: ${s}`);
+  // Possibility is served from private storage (v24027, worker-entry.js privateFont)
+  const PRIVATE = ['fonts/Possibility-Bold.otf'];
+  for (const s of new Set(srcs)) {
+    if (PRIVATE.includes(s)) continue;
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', s)), `declared but missing: ${s}`);
+  }
   assert.doesNotMatch(FONT_CSS, /font-family:'(?:TR Tahoma|ABC [^']+)'/);
   for (const p of ['TR-Tahoma-Bold.ttf', 'ginto-nord', 'abc-areal', 'DINAMO Trial Fonts']) {
     assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/fonts', p)), `fonts/${p} must be gone`);
@@ -91,5 +96,5 @@ test('the three board pages reload font.css at the same version', () => {
     return +m[1];
   });
   assert.equal(new Set(versions).size, 1, `the pages disagree about font.css: ${versions.join(', ')}`);
-  assert.ok(versions[0] >= 331, 'font.css changed in v24025, so its token moved');
+  assert.ok(versions[0] >= 332, 'font.css changed in v24027, so its token moved');
 });

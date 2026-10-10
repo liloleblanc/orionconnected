@@ -2872,7 +2872,7 @@ function cuFontChanged() {
 function _cuApplyFont(fontKey) {
   // Map keys to CSS font stacks. Keep in sync with css/font.css :root vars.
   var stacks = {
-    'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+    'possibility':   "'Possibility', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
     'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
     'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
     'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",

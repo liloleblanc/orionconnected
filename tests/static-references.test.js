@@ -9,6 +9,9 @@ const staticRoot = path.resolve(__dirname, '..', 'fids-current');
 const sourceExtensions = new Set(['.css', '.html', '.js']);
 const assetExtension = '(?:css|gif|glb|html|ico|jpeg|jpg|js|json|mov|mp4|otf|png|svg|ttf|webp|woff2?|xml)';
 const dynamicRoutes = ['/demtiles/', '/mapcdn/', '/maptiles/', '/tiles/'];
+// v24027 — licensed files the Worker serves from private storage, never in
+// the repository (worker-entry.js PRIVATE_FONTS, tests/private-font.test.js)
+const privateFiles = [path.join(staticRoot, 'fonts', 'Possibility-Bold.otf')];
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -67,7 +70,7 @@ test('literal local references in public HTML, CSS, and JavaScript resolve', () 
   }
 
   const missing = found
-    .filter(({ target }) => !fs.existsSync(target))
+    .filter(({ target }) => !fs.existsSync(target) && !privateFiles.includes(target))
     .map(({ source, value }) => `${path.relative(staticRoot, source)} -> ${value}`)
     .filter((value, index, values) => values.indexOf(value) === index)
     .sort();

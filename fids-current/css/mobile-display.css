@@ -40,7 +40,7 @@
     flex:1; padding:11px 8px; border-radius:12px;
     border:1px solid var(--m-border,#d4d4d8); background:var(--m-bg-card,#fff);
     color:var(--m-text,#18181b);
-    font-family:var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family:var(--font-primary, 'Bricolage Grotesque'), -apple-system, BlinkMacSystemFont, sans-serif;
     font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;
     overflow:hidden; text-overflow:ellipsis;
   }
@@ -108,7 +108,7 @@
   }
 
   .hero-time {
-    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-primary, 'Bricolage Grotesque'), -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 46px;
     font-weight: 700;
     line-height: 1;
@@ -134,7 +134,7 @@
     font-size: 16px;
   }
   .hero-time-new {
-    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-primary, 'Bricolage Grotesque'), -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 46px;
     font-weight: 700;
     color: var(--m-time-arrow);
@@ -148,7 +148,7 @@
     margin-bottom: 8px;
   }
   .hero-city {
-    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-primary, 'Bricolage Grotesque'), -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 31px;
     font-weight: 700;
     color: var(--m-text);
@@ -183,7 +183,7 @@
     letter-spacing: 1px;
   }
   .hero-tag-val {
-    font-family: var(--font-possibility), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-primary, 'Bricolage Grotesque'), -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 22px;
     font-weight: 700;
     color: var(--m-text);
