@@ -332,7 +332,7 @@ holds until it is answered; the ledger tags the items that wait on one.
 | D3 | Portuguese: Brazil or Portugal | **Brazilian**, as `Intl` 'pt' writes the boards' dates: Retirada de bagagem, Situação (the status column), Classe Econômica, Neblina, Pancadas de chuva |
 | D5 | Accor's feature lines in English on a non-English ad | not shown: a feed's text is shown in a language only when it is that language (`looksLike`); the address and names are data (`translate="no"`) |
 | D7 | Title Case on fr/es/it/pt signs | English only: other languages keep their own capitals (`_fidsTitleCaseIn`) |
-| D6 | The companion app: translate now, or leave to its replacement | ledgered |
+| D6 | The companion app: translate now, or leave to its replacement | **translate now** (2026-10-10): every word its script writes comes from the store in all nine languages, the phrases the boards hold in their words (v24030); its static page text is still ledgered |
 | D8 | May an operator put English first on a Québec screen? | no: the Québec rule wins |
 | D11 | The archive pages (a 1991 board, the heritage index) in nine languages or their period's two | unchanged (ledgered) |
 | D13 | The reading order of a pair on a board led by Arabic ('رحلة \| Flight', Arabic on the left) | unchanged: the halves are each marked and isolated, the pair runs left to right. The map caption already reads right to left on an Arabic-led board. Open: whether every pair on such a board should start from the right |
