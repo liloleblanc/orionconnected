@@ -106,7 +106,7 @@
 
   /* ── the cards ── */
   html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .mobile-compact {
-    display: grid !important; grid-template-columns: 76px minmax(0, 1fr) auto !important; grid-template-rows: auto !important; align-items: start !important; column-gap: 10px !important; row-gap: 0 !important;
+    display: grid !important; grid-template-columns: 88px minmax(0, 1fr) auto !important; grid-template-rows: auto !important; align-items: start !important; column-gap: 10px !important; row-gap: 0 !important;
     margin: 0 0 8px !important; padding: 12px 12px !important; border-radius: 14px !important;
     background: var(--ph-card) !important; color: var(--ph-ink) !important; border: 1px solid var(--ph-line) !important;
   }
