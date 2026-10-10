@@ -91,6 +91,13 @@ function engine(langs) {
     line(/^var _GATE_CARD_TYPES = [^;]+;/m),
     line(/^var _GATE_CARD_DWELL_MS = [^;]+;/m),
     line(/^var _GATE_CARD_CLOSE_WINDOW_MS = [^;]+;/m),
+    line(/^var GATE_SB_PRETEND_EVERYWHERE = [^;]+;/m),
+    block('var _GATE_SB_LEAD_MIN = {'),
+    line(/^var _GATE_SB_COUNTDOWN_MS = [^;]+;/m),
+    block('var GATE_SB_CABINS = {'),
+    block('var GATE_SB_NAME_FMT = {'),
+    line(/^var _GATE_SB_SUR = \[[^\]]*\];/m),
+    block('var _GATE_SB_SEATS = {'),
     block('var _GATE_CARD_TINT = {'),
     block('var _GATE_CARD_ALIAS = {'),
     block('var _GATE_CARD_EMBLEM = {'),
@@ -98,10 +105,10 @@ function engine(langs) {
     block('var _GC_STATUS = {'),
     ...['_gateDelayHasTime', 'airportCountry', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseCarrier', '_gateCloseInfo',
       '_gateDocsVariant', '_ssEntry', 'SLpair', '_rc2Rgb', '_rc2Lin', '_rc2Contrast', '_rc2DeltaE', '_rc2StatusLike',
-      '_gateDayWords', '_gateCardsBuild', '_gateCardsDue', '_gateCardTint', '_gateCardEmblem', '_gcPair', '_gcStatusPair', '_gcDayPair',
+      '_gateDayWords', 'flightRegionKey', '_gateSbPretendOn', '_gateSbRand', '_gateSbSeed', '_gateSbLists', '_gateCardsBuild', '_gateCardsDue', '_gateCardTint', '_gateCardEmblem', '_gcPair', '_gcStatusPair', '_gcDayPair',
       '_gcTime', '_gcCloseLabel', '_gcRow', '_gateCardHtml'].map(fn),
     'return { GATE_CLOSE_WORDS, _GATE_DOCS, _GATE_CARD_TYPES, _GATE_CARD_DWELL_MS, _GATE_CARD_CLOSE_WINDOW_MS, _gateCloseInfo, _gateDocsVariant,'
-      + ' _gateCardsBuild, _gateCardsDue, _gateCardTint, _gateCardEmblem, _gcCloseLabel, _gateCardHtml };'
+      + ' _gateCardsBuild, _gateCardsDue, _gateCardTint, _gateCardEmblem, _gcCloseLabel, _gateCardHtml, _gateSbLists, GATE_SB_CABINS };'
   ].join('\n'));
   const win = { FIDSGateDate: GD, _gateOrbParts: () => null };
   // (fidsEscHtml is the board's own escape; its regex literals hold quotes the
@@ -150,14 +157,14 @@ test('the cards have facts only in the idle layout, for a departure still to go'
 test('which cards are due: the overview and the documents before boarding, nothing once the departure has passed', () => {
   const E = engine();
   const due = (o, now) => E._gateCardsDue(E._gateCardsBuild(facts(o)), now);
-  assert.deepEqual(due({}, DEP - 3 * 60 * MIN), { ovcard: true, docscard: true, closecard: false });
-  assert.deepEqual(E._gateCardsDue(null, DEP - 3 * 60 * MIN), { ovcard: false, docscard: false, closecard: false });
-  assert.deepEqual(due({}, DEP + MIN), { ovcard: false, docscard: false, closecard: false }, 'past its departure');
+  assert.deepEqual(due({}, DEP - 3 * 60 * MIN), { ovcard: true, docscard: true, closecard: false, sbcard: false });
+  assert.deepEqual(E._gateCardsDue(null, DEP - 3 * 60 * MIN), { ovcard: false, docscard: false, closecard: false, sbcard: false });
+  assert.deepEqual(due({}, DEP + MIN), { ovcard: false, docscard: false, closecard: false, sbcard: false }, 'past its departure');
   // "Updated boarding time to follow": the gate's times are not firm, so no
   // timeline and no close time; the documents still hold
-  assert.deepEqual(due({ inbLate: true }, DEP - 30 * MIN), { ovcard: false, docscard: true, closecard: false });
+  assert.deepEqual(due({ inbLate: true }, DEP - 30 * MIN), { ovcard: false, docscard: true, closecard: false, sbcard: false });
   // Delayed with no new time: the same; with the airport's new time, the timeline
-  assert.deepEqual(due({ stKey: 'delayed', cf: row({ status: 'delayed' }) }, DEP - 3 * 60 * MIN), { ovcard: false, docscard: true, closecard: false });
+  assert.deepEqual(due({ stKey: 'delayed', cf: row({ status: 'delayed' }) }, DEP - 3 * 60 * MIN), { ovcard: false, docscard: true, closecard: false, sbcard: false });
   assert.equal(due({ stKey: 'delayed', cf: row({ status: 'delayed', upd: '19:00', _revTs: DEP + 45 * MIN }), depTs: DEP + 45 * MIN }, DEP - 3 * 60 * MIN).ovcard, true);
   // no boarding time printed: no timeline
   assert.equal(due({ boardTs: 0 }, DEP - 3 * 60 * MIN).ovcard, false);
@@ -184,7 +191,7 @@ test('the gate publishes the facts from its own paint, null under any sign, and 
   assert.match(ad, /if \(_renderGateCard\(el, slide\.type, true\)\) return;\s*slot = \(slot \+ 1\) % totalSlots;\s*_gateAdIndex = slot;\s*window\._gateAdCurrentIdx = slot;/);
   // a minute each, as the weather card
   const E = engine();
-  assert.deepEqual(E._GATE_CARD_TYPES, ['ovcard', 'docscard', 'closecard']);
+  assert.deepEqual(E._GATE_CARD_TYPES, ['ovcard', 'docscard', 'closecard', 'sbcard']);
   assert.equal(E._GATE_CARD_DWELL_MS, 60000);
   assert.match(fn('_getGateAdDwellMs'), /if \(_GATE_CARD_TYPES\.indexOf\(slide\.type\) >= 0\) return _GATE_CARD_DWELL_MS;/);
   // ?scene= reaches each card (the review pin matches the slide's type)
@@ -413,4 +420,133 @@ test('by day the card is BLEND-2, at night NIGHT, switched by the engine\'s html
     assert.ok(uses.length >= 1, tok);
     for (const l of uses) assert.match(l, /\.gc-st-(ok|amb|red) \{/, tok + ' on a status word only');
   }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// v24026 — THE UPGRADE AND STANDBY LISTS, PRETEND FLIGHTS ONLY
+// ════════════════════════════════════════════════════════════════════════════
+
+const testRow = (o) => row(Object.assign({ _flightKey: 'AC1987_test' }, o || {}));
+
+// the same engine with the switch off: pretend flights only
+function engineOff() {
+  engine();
+  const off = SRC.replace(/^var GATE_SB_PRETEND_EVERYWHERE = true;/m, 'var GATE_SB_PRETEND_EVERYWHERE = false;');
+  assert.notEqual(off, SRC, 'the switch is in the lifted source');
+  const esc = (v) => String(v == null ? '' : v).split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('"').join('&quot;').split("'").join('&#39;');
+  return new Function('langs', 'window', 'BoardStrings', 'getAirlineAccent', 'fidsEscHtml', off)(['en', 'fr'], { FIDSGateDate: GD, _gateOrbParts: () => null }, BS, () => '#3466A8', esc);
+}
+
+test('the lists show on every flight (decided 2026-10-10); with the switch off, on pretend flights only', () => {
+  assert.match(CORE, /^var GATE_SB_PRETEND_EVERYWHERE = true;/m, 'shown on every flight');
+  const E = engine();
+  // boarding at DEP-35, so a domestic list runs DEP-90 .. DEP-35
+  const real = E._gateCardsBuild(facts());
+  assert.equal(real.pretend, true);
+  assert.equal(E._gateCardsDue(real, DEP - 60 * MIN).sbcard, true);
+  const O = engineOff();
+  const realOff = O._gateCardsBuild(facts());
+  assert.equal(realOff.pretend, false);
+  assert.equal(O._gateCardsDue(realOff, DEP - 60 * MIN).sbcard, false, 'switch off: a live flight carries no made-up names');
+  assert.equal(O._gateCardHtml('sbcard', realOff, DEP - 60 * MIN, null), '');
+  const fake = O._gateCardsBuild(facts({ cf: testRow() }));
+  assert.equal(fake.pretend, true, 'a test flight (✚ ADD FLIGHT) is pretend');
+  assert.equal(O._gateCardsDue(fake, DEP - 60 * MIN).sbcard, true);
+});
+
+test('the lists run from 90 minutes before a domestic departure (120 abroad) until boarding', () => {
+  const E = engine();
+  const dom = E._gateCardsBuild(facts({ cf: testRow() }));
+  assert.equal(dom.region, 'dom');
+  const at = (m, mins) => E._gateCardsDue(m, DEP - mins * MIN).sbcard;
+  assert.equal(at(dom, 91), false, 'not before the window');
+  assert.equal(at(dom, 90), true);
+  assert.equal(at(dom, 46), true, 'up to the countdown (DEP-45), which then takes the screen');
+  assert.equal(at(dom, 35), false, 'gone at boarding: the sign takes the screen');
+  const intl = E._gateCardsBuild(facts({ cf: testRow({ _locIata: 'LHR' }), code: 'LHR', city: 'London' }));
+  assert.equal(intl.region, 'intl');
+  assert.equal(at(intl, 121), false);
+  assert.equal(at(intl, 120), true);
+  // no firm times (Delayed with no new time), no list
+  const late = E._gateCardsBuild(facts({ cf: testRow(), inbLate: true }));
+  assert.equal(at(late, 60), false);
+});
+
+test('names clear one by one as boarding comes closer, the next one called', () => {
+  const E = engine();
+  const m = E._gateCardsBuild(facts({ cf: testRow() }));
+  const first = E._gateSbLists(m, DEP - 90 * MIN);
+  const last = E._gateSbLists(m, DEP - 46 * MIN);
+  const n = (L, st) => L.rows.filter((r) => r.st === st).length;
+  assert.ok(first.upgrade && first.standby, 'Air Canada: an upgrade list and a standby list');
+  assert.ok(n(first.upgrade, 'cleared') >= 1, 'upgrades are cleared from check-in on');
+  assert.equal(n(first.standby, 'cleared'), 0, 'standby clears at the gate');
+  assert.ok(n(last.standby, 'cleared') > n(first.standby, 'cleared'));
+  assert.ok(n(last.upgrade, 'cleared') >= n(first.upgrade, 'cleared'));
+  for (const L of [first.upgrade, first.standby, last.upgrade, last.standby]) {
+    assert.ok(n(L, 'cleared') < L.rows.length, 'someone is always still waiting');
+    assert.ok(n(L, 'called') <= 1, 'one name called at a time');
+    for (const r of L.rows) {
+      assert.match(r.name, /^[A-Z]{3}, [A-Z]\.$/, 'the masked name: three letters of the surname and an initial');
+      assert.match(r.seat, /^\d{1,2}[A-F]$/);
+    }
+    // the queue numbers count only who is still waiting
+    assert.deepEqual(L.rows.filter((r) => r.st !== 'cleared').map((r) => r.pos), L.rows.filter((r) => r.st !== 'cleared').map((_, i) => i + 1));
+  }
+  // the same flight draws the same list on every paint and every screen
+  assert.deepEqual(E._gateSbLists(m, DEP - 60 * MIN), E._gateSbLists(m, DEP - 60 * MIN));
+  const names = (L) => L.rows.map((r) => r.name);
+  assert.deepEqual(names(first.standby), names(last.standby), 'the names stay; only their status moves');
+});
+
+test('an airline with no premium cabin shows the standby list alone', () => {
+  const E = engine();
+  const m = E._gateCardsBuild(facts({ cf: testRow({ airline: 'F8', flight: 'F8123' }), airline: 'F8', flight: 'F8123' }));
+  const L = E._gateSbLists(m, DEP - 60 * MIN);
+  assert.equal(L.upgrade, null);
+  assert.ok(L.standby && L.standby.rows.length >= 4);
+  assert.deepEqual(E.GATE_SB_CABINS.PD, ['pdReserve', 'pdClassic'], "Porter's own cabin names");
+});
+
+test('the card is drawn in the board pair, its status words the only colour', () => {
+  for (const pair of [['en', 'fr'], ['en', 'es']]) {
+    const E = engine(pair);
+    const m = E._gateCardsBuild(facts({ cf: testRow() }));
+    const html = E._gateCardHtml('sbcard', m, DEP - 50 * MIN, null);
+    const txt = textOf(html);
+    for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbRefresh', 'cabinBiz', 'cabinEcon']) {
+      for (const lg of pair) assert.ok(txt.includes(BS.bs(k, lg)), `${k} in ${lg}`);
+    }
+    assert.match(html, /<span class="gc-st-ok">/, 'a cleared name says so in words');
+    assert.doesNotMatch(html, /style="[^"]*color/, 'no colour but the status words');
+    assert.match(html, /data-gcard="sbcard"/);
+
+  }
+});
+
+test('the lists’ words exist in all nine languages', () => {
+  for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbCleared', 'sbSeeAgent', 'sbRefresh']) {
+    for (const lg of LANGS) assert.ok(BS.bs(k, lg), `${k} ${lg}`);
+  }
+});
+
+test('no made-up surname is a word in any board language', () => {
+  // The rendered language check (tests/render/words.mjs) reads a capitalised
+  // short word as a word unless no language has it: CI read "PAR, Y." as the
+  // French "par". The same vocabulary: everyday English and every word of
+  // the store and the guard's tables.
+  const checks = require('./i18n/checks.js');
+  const R = checks.run();
+  const ELIDED = /^(?:d|l|qu|n|s|j|c|m|t|dell|nell|all|dall|sull)['\u2019](?=\p{L})/iu;
+  const wordsOf = (s) => (String(s).replace(/<[^>]*>/g, ' ').replace(/\{[A-Za-z0-9_]+\}/g, ' ').match(/\p{L}[\p{L}\p{M}'\u2019.-]*/gu) || [])
+    .map((w) => w.replace(ELIDED, '').replace(/[^\p{L}]+$/u, '').toLowerCase()).filter((w) => w.length >= 2);
+  const ANY = new Set(R.englishWords);
+  for (const o of R.textObjects) for (const l of Object.keys(o.langs || {})) for (const w of wordsOf(o.langs[l])) ANY.add(w);
+  for (const li of R.listObjects) for (const it of li.items) for (const w of wordsOf(it)) ANY.add(w);
+  for (const e of Object.values(BS.STR)) for (const l of LANGS) for (const w of wordsOf(e[l] || '')) ANY.add(w);
+  const sur = JSON.parse(line(/^var _GATE_SB_SUR = (\[[^\]]*\]);/m).replace(/^var _GATE_SB_SUR = /, '').replace(/;$/, '').replace(/'/g, '"'));
+  assert.ok(sur.length >= 30);
+  assert.deepEqual(sur.filter((w) => !/^[A-Z]{3}$/.test(w)), [], 'three capital letters each');
+  assert.deepEqual(sur.filter((w) => ANY.has(w.toLowerCase())), [], 'a prefix that is a word would read as one');
+  assert.equal(new Set(sur).size, sur.length, 'no prefix twice');
 });

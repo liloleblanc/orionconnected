@@ -677,6 +677,19 @@
     //                    airline's published minutes, in the very phrase its
     //                    close line has always said them in (gateCloses
     //                    above: "Gate closes {MIN} min before departure").
+    // v24026 — the gate's pretend upgrade and standby lists (fids-core.js
+    // _gateSbLists): the two lists' headings, a row's two status words and
+    // the card's foot line
+    sbUpgradeList: { en: 'Upgrade list', fr: 'Liste des surclassements', es: 'Lista de mejoras de clase', de: 'Höherstufungsliste', it: 'Lista dei passaggi di classe', pt: 'Lista de mudanças de classe', ja: 'アップグレード待ちリスト', zh: '升舱名单', ar: 'قائمة الترقية',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    sbStandbyList: { en: 'Standby list', fr: 'Liste d’attente', es: 'Lista de espera', de: 'Warteliste', it: 'Lista d’attesa', pt: 'Lista de passageiros em espera', ja: 'キャンセル待ちリスト', zh: '候补名单', ar: 'قائمة الانتظار',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    sbCleared: { en: 'Cleared', fr: 'Confirmé', es: 'Confirmado', de: 'Bestätigt', it: 'Confermato', pt: 'Assento confirmado', ja: '確定', zh: '已确认', ar: 'مؤكَّد',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    sbSeeAgent: { en: 'See agent', fr: 'Voir l’agent', es: 'Acuda al agente', de: 'Bitte zum Schalter', it: 'Rivolgersi all’agente', pt: 'Dirija-se ao agente', ja: '係員までお越しください', zh: '请至柜台', ar: 'يرجى مراجعة الموظف',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    sbRefresh: { en: 'Refresh your boarding pass or see the agent', fr: 'Actualisez votre carte d’embarquement ou voyez l’agent', es: 'Actualice su tarjeta de embarque o acuda al agente', de: 'Bordkarte aktualisieren oder zum Schalter kommen', it: 'Aggiorna la carta d’imbarco o rivolgiti all’agente', pt: 'Atualize o seu cartão de embarque ou dirija-se ao agente', ja: '搭乗券を更新するか、係員までお越しください', zh: '请刷新登机牌或前往柜台', ar: 'حدّث بطاقة صعودك أو راجع الموظف',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     cardBeforeBoard: { en: 'Before you board', fr: 'Avant l’embarquement', es: 'Antes de embarcar', de: 'Vor dem Einsteigen', it: 'Prima dell’imbarco', pt: 'Antes do embarque', ja: 'ご搭乗の前に', zh: '登机前须知', ar: 'قبل الصعود إلى الطائرة',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     closeMinBefore: { en:'{MIN} min before departure', fr:'{MIN} min avant le départ', es:'{MIN} min antes de la salida', de:'{MIN} Min. vor Abflug', it:'{MIN} min prima della partenza', pt:'{MIN} min antes da partida', ja:'出発{MIN}分前', zh:'起飞前{MIN}分钟', ar:'قبل {MIN} دقيقة من المغادرة',
