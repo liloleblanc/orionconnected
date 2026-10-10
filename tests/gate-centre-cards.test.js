@@ -520,6 +520,9 @@ test('the card is drawn in the board pair, its status words the only colour', ()
     assert.match(html, /<span class="gc-st-ok">/, 'a cleared name says so in words');
     assert.doesNotMatch(html, /style="[^"]*color/, 'no colour but the status words');
     assert.match(html, /data-gcard="sbcard"/);
+    // a name is data in every language ("PAR, Y." is not the French "par")
+    const nm = html.match(/<div class="gc-sbnm"[^>]*>/g) || [];
+    assert.ok(nm.length >= 4 && nm.every((x) => /translate="no"/.test(x)), 'every name cell is marked translate="no"');
   }
 });
 

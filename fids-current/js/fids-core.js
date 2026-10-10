@@ -35617,7 +35617,8 @@ function _gateCardHtml(type, m, nowMs, inb) {
           : r.st === 'called' ? '<span class="gc-st-amb">' + _gcPair('sbSeeAgent', frF) + '</span>' : '';
         rowsS += '<div class="gc-sbr" data-st="' + r.st + '">'
           + '<div class="gc-sbn">' + (r.st === 'cleared' ? tick : String(r.pos)) + '</div>'
-          + '<div class="gc-sbnm">' + fidsEscHtml(r.name) + '</div>'
+          // a name is data, read as written (translate="no", as the hotels' names)
+          + '<div class="gc-sbnm" translate="no">' + fidsEscHtml(r.name) + '</div>'
           + '<div class="gc-sbx">' + stS + '</div>'
           + '<div class="gc-sbseat">' + (r.st === 'cleared' ? fidsEscHtml(r.seat) : '') + '</div>'
           + '</div>';
