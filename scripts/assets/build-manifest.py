@@ -31,7 +31,6 @@ SKIP = {".DS_Store"}
 # Order matters: first match wins, so put more specific paths first.
 RULES = [
     ("logos/airline-tiles",            "airline", "tile",            "Airline tile logos (row icons)"),
-    ("logos/icao-icons",               "airline", "archive",         "Airline icons (archive / deep fallback)"),
     ("logos/symbols/airlines",         "airline", "symbol",          "Airline symbols (emblem only)"),
     ("logos/wordmarks",                "airline", "wordmark",        "Airline wordmarks"),
     ("logos/airlines/canadian-regional","airline","canadian-regional","Airlines — Canadian regional"),
@@ -44,7 +43,6 @@ RULES = [
     ("logos/airlines/other",           "airline", "other",           "Airlines — other"),
     ("logos/airlines",                 "airline", "misc",            "Airlines — misc"),
     ("logos/tails-modern",             "livery",  "tail-modern",     "Aircraft tails (modern)"),
-    ("logos/tails-fake",               "livery",  "tail-fake",       "Aircraft tails (placeholder)"),
     ("logos/hotels/accor-luxury",      "hotel",   "accor-luxury",    "Hotels — Accor Luxury"),
     ("logos/hotels/accor-premium",     "hotel",   "accor-premium",   "Hotels — Accor Premium"),
     ("logos/hotels/accor-midscale",    "hotel",   "accor-midscale",  "Hotels — Accor Midscale"),
@@ -80,7 +78,7 @@ def classify(relpath):
 # ── Load any existing per-folder MANIFEST.json metadata (name/iata/country) ──
 def load_existing_meta():
     meta = {}  # relpath -> {name, iata, country}
-    for folder in ("logos/airline-tiles", "logos/icao-icons"):
+    for folder in ("logos/airline-tiles",):
         mpath = os.path.join(ROOT, folder, "MANIFEST.json")
         if not os.path.isfile(mpath):
             continue
