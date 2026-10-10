@@ -478,12 +478,16 @@ test('names clear one by one as boarding comes closer, the next one called', () 
   const first = E._gateSbLists(m, DEP - 90 * MIN);
   const last = E._gateSbLists(m, DEP - 46 * MIN);
   const n = (L, st) => L.rows.filter((r) => r.st === st).length;
-  assert.ok(first.upgrade && first.standby, 'Air Canada: an upgrade list and a standby list');
+  assert.ok(first.upgrade && first.standby && first.seats, 'Air Canada: upgrade, standby and seat-change lists');
+  assert.equal(first.seats.cabin, null, 'seat changes are for the whole flight');
+  assert.equal(first.seats.rows.length, 2);
+  assert.ok(first.upgrade.rows.length >= 2 && first.upgrade.rows.length <= 3);
+  assert.ok(first.standby.rows.length >= 3 && first.standby.rows.length <= 4);
   assert.ok(n(first.upgrade, 'cleared') >= 1, 'upgrades are cleared from check-in on');
   assert.equal(n(first.standby, 'cleared'), 0, 'standby clears at the gate');
   assert.ok(n(last.standby, 'cleared') > n(first.standby, 'cleared'));
   assert.ok(n(last.upgrade, 'cleared') >= n(first.upgrade, 'cleared'));
-  for (const L of [first.upgrade, first.standby, last.upgrade, last.standby]) {
+  for (const L of [first.upgrade, first.standby, first.seats, last.upgrade, last.standby, last.seats]) {
     assert.ok(n(L, 'cleared') < L.rows.length, 'someone is always still waiting');
     assert.ok(n(L, 'called') <= 1, 'one name called at a time');
     for (const r of L.rows) {
@@ -504,7 +508,8 @@ test('an airline with no premium cabin shows the standby list alone', () => {
   const m = E._gateCardsBuild(facts({ cf: testRow({ airline: 'F8', flight: 'F8123' }), airline: 'F8', flight: 'F8123' }));
   const L = E._gateSbLists(m, DEP - 60 * MIN);
   assert.equal(L.upgrade, null);
-  assert.ok(L.standby && L.standby.rows.length >= 4);
+  assert.ok(L.standby && L.standby.rows.length >= 3);
+  assert.ok(L.seats && L.seats.rows.length === 2, 'seat changes for every airline');
   assert.deepEqual(E.GATE_SB_CABINS.PD, ['pdReserve', 'pdClassic'], "Porter's own cabin names");
 });
 
@@ -514,7 +519,7 @@ test('the card is drawn in the board pair, its status words the only colour', ()
     const m = E._gateCardsBuild(facts({ cf: testRow() }));
     const html = E._gateCardHtml('sbcard', m, DEP - 50 * MIN, null);
     const txt = textOf(html);
-    for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbRefresh', 'cabinBiz', 'cabinEcon']) {
+    for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbSeatList', 'sbRefresh', 'cabinBiz', 'cabinEcon']) {
       for (const lg of pair) assert.ok(txt.includes(BS.bs(k, lg)), `${k} in ${lg}`);
     }
     assert.match(html, /<span class="gc-st-ok">/, 'a cleared name says so in words');
@@ -525,7 +530,7 @@ test('the card is drawn in the board pair, its status words the only colour', ()
 });
 
 test('the lists’ words exist in all nine languages', () => {
-  for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbCleared', 'sbSeeAgent', 'sbRefresh']) {
+  for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbSeatList', 'sbCleared', 'sbNewSeat', 'sbSeeAgent', 'sbRefresh']) {
     for (const lg of LANGS) assert.ok(BS.bs(k, lg), `${k} ${lg}`);
   }
 });

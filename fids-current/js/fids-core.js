@@ -31572,7 +31572,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24027';
+var FIDS_BUILD_TAG = 'v24028';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -35166,7 +35166,7 @@ try { if (typeof window !== 'undefined') { window._gateCloseInfo = _gateCloseInf
 //              and only for an airline that publishes a close time
 //              (GATE_CLOSE_WORDS[kind].band: a deadline to be AT the gate is
 //              not one);
-//   sbcard     v24026 — THE UPGRADE AND STANDBY LISTS, pretend flights only
+//   sbcard     v24026 — THE UPGRADE, STANDBY AND SEAT-CHANGE LISTS, made up
 //              (see _gateSbLists).
 // They replace the small gate-close line that sat under the Boarding time on
 // the left rail (v23968's _gateCloseLineHtml, removed here with its fitter
@@ -35303,6 +35303,13 @@ function _gateCardsDue(m, nowMs) {
 // HOW IT MOVES: across that time the names clear one by one (a tick and the
 // seat) and the next is called ("See agent"). Arithmetic on the clock, so
 // every paint agrees and nothing is stored.
+//
+// v24028 — THE THIRD LIST, SEAT CHANGES (decided 2026-10-10): the passengers
+// the agent calls to move seat (a family seated apart, an aircraft swap). The
+// same rows; a done one says "New seat" with the seat. Two names, for every
+// airline (seat changes are not a premium-cabin thing). To keep three lists
+// on one card, the upgrade list holds 2 to 3 names and the standby list 3 to
+// 4.
 var GATE_SB_PRETEND_EVERYWHERE = true;
 var _GATE_SB_LEAD_MIN = { dom: 90, trans: 120, intl: 120 };
 var _GATE_SB_COUNTDOWN_MS = 10 * 60000;
@@ -35355,7 +35362,7 @@ function _gateSbSeed(str) {
   return h >>> 0;
 }
 // The two lists for the card, or null when the card is not due. Pure.
-//   { upgrade: { cabin, rows } | null, standby: { cabin, rows } }
+//   { upgrade: { cabin, rows } | null, standby: { cabin, rows }, seats: { cabin: null, rows } }
 //   a row: { st: 'cleared' | 'called' | 'wait', name, seat, pos }
 function _gateSbLists(m, nowMs) {
   if (!m || !m.pretend || !m.firm) return null;
@@ -35405,9 +35412,10 @@ function _gateSbLists(m, nowMs) {
     }
     return { cabin: cabin, rows: rows };
   }
-  var nUp = 3 + Math.floor(rnd() * 2), nSb = 4 + Math.floor(rnd() * 3);
+  var nUp = 2 + Math.floor(rnd() * 2), nSb = 3 + Math.floor(rnd() * 2);
   var up = cab[0] ? list(cab[0], nUp, 1, 'up') : null;
-  return { upgrade: up, standby: list(cab[1] || 'cabinEcon', nSb, 0, 'sb') };
+  var sb = list(cab[1] || 'cabinEcon', nSb, 0, 'sb');
+  return { upgrade: up, standby: sb, seats: list(null, 2, 0, 'sb') };
 }
 
 // The card's two colours on its dark frame: the airline's deep tint and the
@@ -35609,14 +35617,14 @@ function _gateCardHtml(type, m, nowMs, inb) {
       + '</div></div></div>';
     var tick = '<svg class="gc-sbck" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.6l4.9 4.9L19.6 7.2" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     var secs = '';
-    var parts = [['upgrade', 'sbUpgradeList'], ['standby', 'sbStandbyList']];
+    var parts = [['upgrade', 'sbUpgradeList', 'sbCleared'], ['standby', 'sbStandbyList', 'sbCleared'], ['seats', 'sbSeatList', 'sbNewSeat']];
     for (var q = 0; q < parts.length; q++) {
       var Lq = SL[parts[q][0]];
       if (!Lq) continue;
       var rowsS = '';
       for (var j = 0; j < Lq.rows.length; j++) {
         var r = Lq.rows[j];
-        var stS = r.st === 'cleared' ? '<span class="gc-st-ok">' + _gcPair('sbCleared', frF) + '</span>'
+        var stS = r.st === 'cleared' ? '<span class="gc-st-ok">' + _gcPair(parts[q][2], frF) + '</span>'
           : r.st === 'called' ? '<span class="gc-st-amb">' + _gcPair('sbSeeAgent', frF) + '</span>' : '';
         rowsS += '<div class="gc-sbr" data-st="' + r.st + '">'
           + '<div class="gc-sbn">' + (r.st === 'cleared' ? tick : String(r.pos)) + '</div>'
@@ -35627,7 +35635,7 @@ function _gateCardHtml(type, m, nowMs, inb) {
       }
       secs += '<div class="gc-sbsec" data-list="' + parts[q][0] + '">'
         + '<div class="gc-sbhd"><div class="gc-sbtt">' + _gcPair(parts[q][1], frF) + '</div>'
-        + '<div class="gc-sbcab fids-dn-fade">' + _gcPair(Lq.cabin, frF) + '</div></div>'
+        + (Lq.cabin ? '<div class="gc-sbcab fids-dn-fade">' + _gcPair(Lq.cabin, frF) + '</div>' : '') + '</div>'
         + '<div class="gc-sbt gc-zone fids-dn-fade">' + rowsS + '</div></div>';
     }
     return open + hdS + '<div class="gc-sbl">' + secs + '</div>'
