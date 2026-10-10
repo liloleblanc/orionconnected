@@ -693,7 +693,10 @@ export const SURFACES = {
     sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['en']], chunk: 2, alarm: 280, parallel: 2 },
   // the stream's rotation page: the boards it rotates, in its frames
   rotate: { url: (port, set) => `http://127.0.0.1:${port}/rotate.html?ap=YQM&mode=${MODE}&rotate=fids,gids,bids&dwell=9&langs=${set.join(',')}`, ready: SETTLE(15000),
-    sets: [['de'], ['ar', 'ja'], ['fr', 'en']], perSet: true, waits: [0, 9000, 9000], chunk: 3, alarm: 200 },
+    // one set per browser: three sets in one browser came in at 200-201 s on
+    // CI's runners (twice on 2026-10-10, #1024 and #1026), its alarm, and
+    // failed a change that never touched the stream page
+    sets: [['de'], ['ar', 'ja'], ['fr', 'en']], perSet: true, waits: [0, 9000, 9000], chunk: 1, alarm: 200 },
   // the stream tour: its own card, and the boards in its frames
   tour: { url: (port, set) => `http://127.0.0.1:${port}/tour.html?ap=YQM&langs=${set.join(',')}`, ready: SETTLE(9000), sets: [['de'], ['ar'], ['ja'], ['en', 'fr']], chunk: 2, perSet: true }
 };
