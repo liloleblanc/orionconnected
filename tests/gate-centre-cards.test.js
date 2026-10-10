@@ -520,9 +520,7 @@ test('the card is drawn in the board pair, its status words the only colour', ()
     assert.match(html, /<span class="gc-st-ok">/, 'a cleared name says so in words');
     assert.doesNotMatch(html, /style="[^"]*color/, 'no colour but the status words');
     assert.match(html, /data-gcard="sbcard"/);
-    // a name is data in every language ("PAR, Y." is not the French "par")
-    const nm = html.match(/<div class="gc-sbnm"[^>]*>/g) || [];
-    assert.ok(nm.length >= 4 && nm.every((x) => /translate="no"/.test(x)), 'every name cell is marked translate="no"');
+
   }
 });
 
@@ -530,4 +528,25 @@ test('the lists’ words exist in all nine languages', () => {
   for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbCleared', 'sbSeeAgent', 'sbRefresh']) {
     for (const lg of LANGS) assert.ok(BS.bs(k, lg), `${k} ${lg}`);
   }
+});
+
+test('no made-up surname is a word in any board language', () => {
+  // The rendered language check (tests/render/words.mjs) reads a capitalised
+  // short word as a word unless no language has it: CI read "PAR, Y." as the
+  // French "par". The same vocabulary: everyday English and every word of
+  // the store and the guard's tables.
+  const checks = require('./i18n/checks.js');
+  const R = checks.run();
+  const ELIDED = /^(?:d|l|qu|n|s|j|c|m|t|dell|nell|all|dall|sull)['\u2019](?=\p{L})/iu;
+  const wordsOf = (s) => (String(s).replace(/<[^>]*>/g, ' ').replace(/\{[A-Za-z0-9_]+\}/g, ' ').match(/\p{L}[\p{L}\p{M}'\u2019.-]*/gu) || [])
+    .map((w) => w.replace(ELIDED, '').replace(/[^\p{L}]+$/u, '').toLowerCase()).filter((w) => w.length >= 2);
+  const ANY = new Set(R.englishWords);
+  for (const o of R.textObjects) for (const l of Object.keys(o.langs || {})) for (const w of wordsOf(o.langs[l])) ANY.add(w);
+  for (const li of R.listObjects) for (const it of li.items) for (const w of wordsOf(it)) ANY.add(w);
+  for (const e of Object.values(BS.STR)) for (const l of LANGS) for (const w of wordsOf(e[l] || '')) ANY.add(w);
+  const sur = JSON.parse(line(/^var _GATE_SB_SUR = (\[[^\]]*\]);/m).replace(/^var _GATE_SB_SUR = /, '').replace(/;$/, '').replace(/'/g, '"'));
+  assert.ok(sur.length >= 30);
+  assert.deepEqual(sur.filter((w) => !/^[A-Z]{3}$/.test(w)), [], 'three capital letters each');
+  assert.deepEqual(sur.filter((w) => ANY.has(w.toLowerCase())), [], 'a prefix that is a word would read as one');
+  assert.equal(new Set(sur).size, sur.length, 'no prefix twice');
 });

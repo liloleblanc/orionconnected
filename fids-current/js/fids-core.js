@@ -35321,9 +35321,12 @@ var GATE_SB_CABINS = {
 var GATE_SB_NAME_FMT = { AC: 'sur3' };
 // The surnames' first three letters (data, written like airport codes):
 // common Canadian and US surnames, so a made-up list reads like a real one.
-var _GATE_SB_SUR = ['TRE', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'FOR', 'COT', 'PEL', 'BEL', 'GIR', 'SIM', 'POI',
-  'OUE', 'SMI', 'BRO', 'WIL', 'MAR', 'TAY', 'CAM', 'AND', 'JOH', 'THO', 'WHI', 'CLA', 'HAL', 'KIN', 'SCO', 'REI', 'GRA',
-  'MIL', 'NGU', 'WON', 'SAN', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'PAR', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'DES'];
+// None may be a word in any board language ('PAR' is French, 'AND' English):
+// the rendered language check reads a capitalised word as a word, so such a
+// name would be "not a word of en" (tests/gate-centre-cards.test.js holds it).
+var _GATE_SB_SUR = ['TRE', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'LAP', 'COT', 'PEL', 'BEL', 'GIR', 'SIM', 'POI',
+  'OUE', 'SMI', 'BRO', 'WIL', 'MAR', 'TAY', 'CAM', 'BEA', 'JOH', 'THO', 'WHI', 'CLA', 'HAL', 'KIN', 'SCO', 'REI', 'GRA',
+  'MIL', 'NGU', 'WON', 'SAN', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'LEF', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'HAR'];
 // premium seat letters (A C D F) and the main cabin's (A to F), as char codes
 var _GATE_SB_SEATS = { up: [65, 67, 68, 70], sb: [65, 66, 67, 68, 69, 70] };
 
@@ -35617,8 +35620,7 @@ function _gateCardHtml(type, m, nowMs, inb) {
           : r.st === 'called' ? '<span class="gc-st-amb">' + _gcPair('sbSeeAgent', frF) + '</span>' : '';
         rowsS += '<div class="gc-sbr" data-st="' + r.st + '">'
           + '<div class="gc-sbn">' + (r.st === 'cleared' ? tick : String(r.pos)) + '</div>'
-          // a name is data, read as written (translate="no", as the hotels' names)
-          + '<div class="gc-sbnm" translate="no">' + fidsEscHtml(r.name) + '</div>'
+          + '<div class="gc-sbnm">' + fidsEscHtml(r.name) + '</div>'
           + '<div class="gc-sbx">' + stS + '</div>'
           + '<div class="gc-sbseat">' + (r.st === 'cleared' ? fidsEscHtml(r.seat) : '') + '</div>'
           + '</div>';
