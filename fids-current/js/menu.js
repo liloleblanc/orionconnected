@@ -491,9 +491,8 @@ function _bfTz() {
 // Families for "everyone on …, any weight": a key belongs to a family when it
 // is the family key or starts with it and a hyphen.
 var BF_FAMILIES = [
-  ['ac-nord', 'AC Nord'], ['ginto-nord', 'Ginto Nord'], ['bricolage', 'Bricolage Grotesque'],
-  ['cabinet', 'Cabinet Grotesk'], ['abc-areal', 'ABC Areal'],
-  ['abc-ginto-rounded', 'Ginto Rounded'], ['abc-gravity', 'Gravity']
+  ['ac-nord', 'AC Nord'], ['bricolage', 'Bricolage Grotesque'],
+  ['cabinet', 'Cabinet Grotesk']
 ];
 
 // PURE. The groups a font can be aimed at, derived from data the boards
@@ -2874,12 +2873,6 @@ function _cuApplyFont(fontKey) {
   // Map keys to CSS font stacks. Keep in sync with css/font.css :root vars.
   var stacks = {
     'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
-    'ginto-nord':          "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
-    'ginto-nord-thin':     "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
-    'ginto-nord-light':    "'ABC Ginto Nord Light', 'ABC Ginto Nord', sans-serif",
-    'ginto-nord-regular':  "'ABC Ginto Nord Regular', 'ABC Ginto Nord', sans-serif",
-    'ginto-nord-medium':   "'ABC Ginto Nord Medium', 'ABC Ginto Nord', sans-serif",
-    'ginto-nord-bold':     "'ABC Ginto Nord Bold', 'ABC Ginto Nord', sans-serif",
     'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
     'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
     'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -2889,38 +2882,6 @@ function _cuApplyFont(fontKey) {
     'cabinet-bold': "'Cabinet Grotesk Bold', -apple-system, BlinkMacSystemFont, sans-serif",
     'cabinet-extrabold': "'Cabinet Grotesk Extrabold', -apple-system, BlinkMacSystemFont, sans-serif",
     'cabinet-black': "'Cabinet Grotesk Black', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-areal': "'ABC Areal', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-areal-regular': "'ABC Areal Regular', 'ABC Areal', sans-serif",
-    'abc-areal-medium': "'ABC Areal Medium', 'ABC Areal', sans-serif",
-    'abc-areal-bold': "'ABC Areal Bold', 'ABC Areal', sans-serif",
-    'abc-areal-semi-mono': "'ABC Areal Semi Mono', 'ABC Areal', sans-serif",
-    'abc-areal-semi-mono-bold': "'ABC Areal Semi Mono Bold', 'ABC Areal Semi Mono', sans-serif",
-    'abc-areal-mono': "'ABC Areal Mono', 'ABC Areal', monospace",
-    'abc-areal-mono-bold': "'ABC Areal Mono Bold', 'ABC Areal Mono', monospace",
-    'abc-ginto-rounded': "'ABC Ginto Rounded', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-ginto-rounded-bold': "'ABC Ginto Rounded Bold', 'ABC Ginto Rounded', sans-serif",
-    'abc-ginto-rounded-black': "'ABC Ginto Rounded Black', 'ABC Ginto Rounded', sans-serif",
-    'abc-ginto-rounded-ultra': "'ABC Ginto Rounded Ultra', 'ABC Ginto Rounded', sans-serif",
-    'abc-ginto-rounded-nord': "'ABC Ginto Rounded Nord', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-ginto-rounded-nord-bold': "'ABC Ginto Rounded Nord Bold', 'ABC Ginto Rounded Nord', sans-serif",
-    'abc-ginto-rounded-nord-black': "'ABC Ginto Rounded Nord Black', 'ABC Ginto Rounded Nord', sans-serif",
-    'abc-ginto-rounded-nord-ultra': "'ABC Ginto Rounded Nord Ultra', 'ABC Ginto Rounded Nord', sans-serif",
-    'abc-ginto-rounded-nord-condensed': "'ABC Ginto Rounded Nord Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity': "'ABC Gravity', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity-bold': "'ABC Gravity Bold', 'ABC Gravity', sans-serif",
-    'abc-gravity-black': "'ABC Gravity Black', 'ABC Gravity', sans-serif",
-    'abc-gravity-ultra': "'ABC Gravity Ultra', 'ABC Gravity', sans-serif",
-    'abc-gravity-compressed': "'ABC Gravity Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity-condensed': "'ABC Gravity Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity-expanded': "'ABC Gravity Expanded', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity-extra-condensed': "'ABC Gravity Extra Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity-wide': "'ABC Gravity Wide', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity-xx-compressed': "'ABC Gravity XX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
-    'abc-gravity-xxxx-compressed': "'ABC Gravity XXXX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
-    'ginto-nord-black':    "'ABC Ginto Nord Black', 'ABC Ginto Nord', sans-serif",
-    'ginto-nord-ultra':    "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
-    'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
-    'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
     'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
     'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
     'ac-nord-display-regular': "'AC Nord Display Regular', 'AC Nord Display', sans-serif",
@@ -2937,8 +2898,6 @@ function _cuApplyFont(fontKey) {
     'inter':         "'Inter', system-ui, -apple-system, sans-serif",
     'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
     'space-grotesk': "'Space Grotesk', system-ui, -apple-system, sans-serif",
-    'airport':       "'Airport', system-ui, -apple-system, sans-serif",
-    'airport-x':     "'Airport X', system-ui, -apple-system, sans-serif",
     'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
   };

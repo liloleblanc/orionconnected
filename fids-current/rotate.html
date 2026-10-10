@@ -155,7 +155,11 @@
         // v23420 — served by dedicated routes; verified live EWR 1235, LGA 896, TPA 453
         'EWR', 'LGA', 'TPA',
         // Canada
-        'YYC', 'YUL', 'YEG', 'YOW', 'YHZ',
+        // v24025 — Toronto Pearson joins. Its feed has worked since v23804 but
+        // it was never added here. While it sits in the dry dock the tour
+        // leaves it out like any other docked airport, and it airs once it is
+        // released.
+        'YYZ', 'YYC', 'YUL', 'YEG', 'YOW', 'YHZ',
         // Europe — these carry the North American overnight
         'ZRH', 'DUB', 'EDI', 'KEF'
       ];
@@ -506,7 +510,7 @@
       // running boxes swap to this copy within minutes of the deploy: the copy
       // they run now reloads on Cloudflare's edits rather than on ours (see
       // selfSigOf below).
-      try { window.__ocRotatorVer = 23950; } catch (e) {}
+      try { window.__ocRotatorVer = 24025; } catch (e) {}
       var selfSig = null, reloadPending = false;
       // v23518 — THE SELF-REFRESH WAS INERT IN PRODUCTION. Measured on the live
       // site: https://fids.orionconnected.com/rotate answers 200 with
