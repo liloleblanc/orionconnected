@@ -21,7 +21,9 @@
     { "binding": "CITY_BG_CACHE",     "id": "9aa58d273cc64dc08992a35b3c508c8f" }
   ],
   "r2_buckets": [
-    { "binding": "FIDS_ASSETS", "bucket_name": "fids-assets" }
+    { "binding": "FIDS_ASSETS", "bucket_name": "fids-assets" },
+    // v24027 — licensed files kept out of the public repository (worker-entry.js privateFont)
+    { "binding": "FIDS_PRIVATE", "bucket_name": "fids-private" }
   ],
   "ai": { "binding": "AI" }
 }

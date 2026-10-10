@@ -30,9 +30,12 @@
 /* JetBrains Mono — monospace for tabular figures, timestamps, codes. */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
-/* Possibility (Bold) — the project brand font, bundled locally (no CDN). Single
-   weight mapped across the range so it always resolves regardless of the
-   weight the UI requests. */
+/* Possibility (Bold) — the project brand font. Single weight mapped across the
+   range so it always resolves regardless of the weight the UI requests.
+   v24027 — the file is NOT in the repository: its licence forbids passing it
+   on, so it lives in private storage and the Worker serves it at this path on
+   orionconnected.com addresses only (worker-entry.js privateFont). Elsewhere
+   the stacks fall back to Bricolage Grotesque. */
 @font-face { font-family:'Possibility'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/Possibility-Bold.otf') format('opentype'); }
 
 /* AC Nord — Air Canada's official brand typeface, bundled locally (woff2, no
@@ -66,7 +69,7 @@
 /* ── Font stacks exposed as variables ────────────────────────────────────── */
 :root {
   /* Named font stacks — referenced by --font-primary when user picks one */
-  --font-possibility:   'Possibility', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-possibility:   'Possibility', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-ac-nord-display: 'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-ac-nord-text:    'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-geist:         'Geist', -apple-system, BlinkMacSystemFont, sans-serif;

@@ -1572,7 +1572,7 @@ var FIDS_FONT_STACKS = {
   // documents. That is deliberate and it is what makes them usable at all: a
   // Typekit web kit carries a web-embedding licence, which is the thing the
   // previously evaluated candidates lacked.
-  'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+  'possibility':   "'Possibility', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
   'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
   'inter':         "'Inter', system-ui, -apple-system, sans-serif",
   'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -31572,7 +31572,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24026';
+var FIDS_BUILD_TAG = 'v24027';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38661,7 +38661,7 @@ function applyAirportConfigToBoard(iata) {
       'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
       'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
       'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
+      'possibility':   "'Possibility', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-display-regular': "'AC Nord Display Regular', 'AC Nord Display', sans-serif",
