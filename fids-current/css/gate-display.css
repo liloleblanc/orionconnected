@@ -5132,7 +5132,7 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
    sits on the DARK map-life panel. A MONO (dark-ink) symbol read dark-on-dark
  White it
    so it reads. Colour/native emblems (AA, DL, Flair, United) keep their art. */
-.g8-wrap.g8-bigcraft-active .v2-rc-map-life-emblem[src*="airlines-mono"] {
+.g8-wrap.g8-bigcraft-active .v2-rc-map-life-emblem[src*="-mono.svg"] {
   filter: brightness(0) invert(1) drop-shadow(0 12px 22px rgba(0,0,0,.42)) !important;
 }
 .g8-wrap .v2-rc-map-life-code {

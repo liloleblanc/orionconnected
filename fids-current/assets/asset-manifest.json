@@ -5209,6 +5209,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/A3-mono.svg",
+      "file": "A3-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "A3 mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/A3.svg",
       "file": "A3.svg",
       "category": "airline",
@@ -5248,6 +5259,17 @@
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "AH",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/AI-mono.svg",
+      "file": "AI-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "AI mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5303,6 +5325,17 @@
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "AV",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/BA-mono.svg",
+      "file": "BA-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "BA mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5396,12 +5429,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/ET-mono.svg",
+      "file": "ET-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "ET mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/ET.svg",
       "file": "ET.svg",
       "category": "airline",
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "ET",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/EW-mono.svg",
+      "file": "EW-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "EW mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5451,12 +5506,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/FY-mono.svg",
+      "file": "FY-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "FY mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/FY.svg",
       "file": "FY.svg",
       "category": "airline",
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "FY",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/GA-mono.svg",
+      "file": "GA-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "GA mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5484,12 +5561,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/IB-mono.svg",
+      "file": "IB-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "IB mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/IB.svg",
       "file": "IB.svg",
       "category": "airline",
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "IB",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/J2-mono.svg",
+      "file": "J2-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "J2 mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5534,6 +5633,17 @@
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "JU",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/JX-mono.svg",
+      "file": "JX-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "JX mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5600,6 +5710,17 @@
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "KU",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/LA-mono.svg",
+      "file": "LA-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "LA mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5748,6 +5869,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/PG-mono.svg",
+      "file": "PG-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "PG mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/PG.svg",
       "file": "PG.svg",
       "category": "airline",
@@ -5770,12 +5902,34 @@
       "ext": "png"
     },
     {
+      "path": "/logos/symbols/airlines/PR-mono.svg",
+      "file": "PR-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "PR mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/PR.svg",
       "file": "PR.svg",
       "category": "airline",
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "PR",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/QF-mono.svg",
+      "file": "QF-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "QF mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5803,12 +5957,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/QR-mono.svg",
+      "file": "QR-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "QR mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/QR.svg",
       "file": "QR.svg",
       "category": "airline",
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "QR",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/RC-mono.svg",
+      "file": "RC-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "RC mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5902,6 +6078,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/TK-mono.svg",
+      "file": "TK-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "TK mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/TK.svg",
       "file": "TK.svg",
       "category": "airline",
@@ -5957,6 +6144,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/UO-mono.svg",
+      "file": "UO-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "UO mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/UO.svg",
       "file": "UO.svg",
       "category": "airline",
@@ -6001,6 +6199,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/VS-mono.svg",
+      "file": "VS-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "VS mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/VS.svg",
       "file": "VS.svg",
       "category": "airline",
@@ -6023,12 +6232,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/WS-mono.svg",
+      "file": "WS-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "WS mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/WS.svg",
       "file": "WS.svg",
       "category": "airline",
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "WS",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/WY-mono.svg",
+      "file": "WY-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "WY mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -6056,6 +6287,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/symbols/airlines/ZB-mono.svg",
+      "file": "ZB-mono.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "ZB mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/symbols/airlines/ZB.svg",
       "file": "ZB.svg",
       "category": "airline",
@@ -6073,248 +6315,6 @@
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "ZP",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/A3.svg",
-      "file": "A3.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "A3",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/AI.svg",
-      "file": "AI.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "AI",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/BA.svg",
-      "file": "BA.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "BA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/ET.svg",
-      "file": "ET.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "ET",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/EW.svg",
-      "file": "EW.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "EW",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/FY.svg",
-      "file": "FY.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "FY",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/GA.svg",
-      "file": "GA.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "GA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/IB.svg",
-      "file": "IB.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "IB",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/J2.svg",
-      "file": "J2.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "J2",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/JX.svg",
-      "file": "JX.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "JX",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/LA.svg",
-      "file": "LA.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "LA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/PG.svg",
-      "file": "PG.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "PG",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/PR.svg",
-      "file": "PR.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "PR",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/QF.svg",
-      "file": "QF.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "QF",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/QR.svg",
-      "file": "QR.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "QR",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/RC.svg",
-      "file": "RC.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "RC",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/TK.svg",
-      "file": "TK.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "TK",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/UO.svg",
-      "file": "UO.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "UO",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/VS.svg",
-      "file": "VS.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "VS",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/WS.svg",
-      "file": "WS.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "WS",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/WY.svg",
-      "file": "WY.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "WY",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols/airlines-mono/ZB.svg",
-      "file": "ZB.svg",
-      "category": "airline",
-      "subcategory": "symbol-mono",
-      "group": "Airline symbols (monochrome)",
-      "name": "ZB",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -11787,6 +11787,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/A3-mono.svg",
+      "file": "A3-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "A3 mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/A3.svg",
       "file": "A3.svg",
       "category": "airline",
@@ -11798,12 +11809,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/AC-mono.svg",
+      "file": "AC-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "AC mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/AC.svg",
       "file": "AC.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "AC",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/AF-mono.svg",
+      "file": "AF-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "AF mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -11826,6 +11859,17 @@
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "AH",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/AI-mono.svg",
+      "file": "AI-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "AI mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -11908,6 +11952,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/BA-mono.svg",
+      "file": "BA-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "BA mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/BA.svg",
       "file": "BA.svg",
       "category": "airline",
@@ -11985,12 +12040,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/ET-mono.svg",
+      "file": "ET-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "ET mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/ET.svg",
       "file": "ET.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "ET",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/EW-mono.svg",
+      "file": "EW-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "EW mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12029,12 +12106,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/FR-mono.svg",
+      "file": "FR-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "FR mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/FR.svg",
       "file": "FR.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "FR",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/FY-mono.svg",
+      "file": "FY-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "FY mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12051,12 +12150,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/GA-mono.svg",
+      "file": "GA-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "GA mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/GA.svg",
       "file": "GA.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "GA",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/IB-mono.svg",
+      "file": "IB-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "IB mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12073,6 +12194,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/J2-mono.svg",
+      "file": "J2-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "J2 mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/J2.svg",
       "file": "J2.svg",
       "category": "airline",
@@ -12084,12 +12216,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/JL-mono.svg",
+      "file": "JL-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "JL mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/JL.svg",
       "file": "JL.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "JL",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/JQ-mono.svg",
+      "file": "JQ-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "JQ mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12112,6 +12266,17 @@
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "JU",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/JX-mono.svg",
+      "file": "JX-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "JX mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12172,6 +12337,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/LA-mono.svg",
+      "file": "LA-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "LA mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/LA.svg",
       "file": "LA.svg",
       "category": "airline",
@@ -12211,6 +12387,17 @@
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "LX",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/MF-mono.svg",
+      "file": "MF-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "MF mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12282,12 +12469,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/OZ-mono.svg",
+      "file": "OZ-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "OZ mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/OZ.svg",
       "file": "OZ.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "OZ",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/PG-mono.svg",
+      "file": "PG-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "PG mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12304,12 +12513,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/PR-mono.svg",
+      "file": "PR-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "PR mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/PR.svg",
       "file": "PR.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "PR",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/QF-mono.svg",
+      "file": "QF-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "QF mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12326,6 +12557,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/QP-mono.svg",
+      "file": "QP-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "QP mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/QP.svg",
       "file": "QP.svg",
       "category": "airline",
@@ -12337,12 +12579,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/QR-mono.svg",
+      "file": "QR-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "QR mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/QR.svg",
       "file": "QR.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "QR",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/RC-mono.svg",
+      "file": "RC-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "RC mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12392,12 +12656,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/SN-mono.svg",
+      "file": "SN-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "SN mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/SN.svg",
       "file": "SN.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "SN",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/SQ-mono.svg",
+      "file": "SQ-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "SQ mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12414,12 +12700,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/SUN-mono.svg",
+      "file": "SUN-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "SUN mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/SUN.svg",
       "file": "SUN.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "SUN",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/TK-mono.svg",
+      "file": "TK-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "TK mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12458,12 +12766,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/TS-mono.svg",
+      "file": "TS-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "TS mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/TS.svg",
       "file": "TS.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "TS",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/TW-mono.svg",
+      "file": "TW-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "TW mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12491,12 +12821,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/UB-mono.svg",
+      "file": "UB-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "UB mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/UB.svg",
       "file": "UB.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "UB",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/UO-mono.svg",
+      "file": "UO-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "UO mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12524,6 +12876,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/VA-mono.svg",
+      "file": "VA-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "VA mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/VA.svg",
       "file": "VA.svg",
       "category": "airline",
@@ -12546,12 +12909,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/VN-mono.svg",
+      "file": "VN-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "VN mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/VN.svg",
       "file": "VN.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "VN",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/VS-mono.svg",
+      "file": "VS-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "VS mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12590,12 +12975,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/WS-mono.svg",
+      "file": "WS-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "WS mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/WS.svg",
       "file": "WS.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "WS",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/wordmarks/WY-mono.svg",
+      "file": "WY-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "WY mono",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -12623,6 +13030,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/ZB-mono.svg",
+      "file": "ZB-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "ZB mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/ZB.svg",
       "file": "ZB.svg",
       "category": "airline",
@@ -12634,440 +13052,22 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/wordmarks/ZP-mono.svg",
+      "file": "ZP-mono.svg",
+      "category": "airline",
+      "subcategory": "wordmark",
+      "group": "Airline wordmarks",
+      "name": "ZP mono",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/wordmarks/ZP.svg",
       "file": "ZP.svg",
       "category": "airline",
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
-      "name": "ZP",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/A3.svg",
-      "file": "A3.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "A3",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/AC.svg",
-      "file": "AC.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "AC",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/AF.svg",
-      "file": "AF.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "AF",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/AI.svg",
-      "file": "AI.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "AI",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/BA.svg",
-      "file": "BA.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "BA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/ET.svg",
-      "file": "ET.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "ET",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/EW.svg",
-      "file": "EW.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "EW",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/FR.svg",
-      "file": "FR.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "FR",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/FY.svg",
-      "file": "FY.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "FY",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/GA.svg",
-      "file": "GA.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "GA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/IB.svg",
-      "file": "IB.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "IB",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/J2.svg",
-      "file": "J2.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "J2",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/JL.svg",
-      "file": "JL.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "JL",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/JQ.svg",
-      "file": "JQ.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "JQ",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/JX.svg",
-      "file": "JX.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "JX",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/LA.svg",
-      "file": "LA.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "LA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/MF.svg",
-      "file": "MF.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "MF",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/OZ.svg",
-      "file": "OZ.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "OZ",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/PG.svg",
-      "file": "PG.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "PG",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/PR.svg",
-      "file": "PR.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "PR",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/QF.svg",
-      "file": "QF.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "QF",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/QP.svg",
-      "file": "QP.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "QP",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/QR.svg",
-      "file": "QR.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "QR",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/RC.svg",
-      "file": "RC.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "RC",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/SN.svg",
-      "file": "SN.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "SN",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/SQ.svg",
-      "file": "SQ.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "SQ",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/SUN.svg",
-      "file": "SUN.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "SUN",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/TK.svg",
-      "file": "TK.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "TK",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/TS.svg",
-      "file": "TS.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "TS",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/TW.svg",
-      "file": "TW.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "TW",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/UB.svg",
-      "file": "UB.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "UB",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/UO.svg",
-      "file": "UO.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "UO",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/VA.svg",
-      "file": "VA.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "VA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/VN.svg",
-      "file": "VN.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "VN",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/VS.svg",
-      "file": "VS.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "VS",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/WS.svg",
-      "file": "WS.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "WS",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/WY.svg",
-      "file": "WY.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "WY",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/ZB.svg",
-      "file": "ZB.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
-      "name": "ZB",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks-mono/ZP.svg",
-      "file": "ZP.svg",
-      "category": "airline",
-      "subcategory": "wordmark-mono",
-      "group": "Airline wordmarks (monochrome)",
       "name": "ZP",
       "iata": "",
       "country": "",

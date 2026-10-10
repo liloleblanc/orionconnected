@@ -8,8 +8,8 @@ is `fids-current/assets/asset-manifest.json`.
 | Folder | Purpose |
 | --- | --- |
 | `airline-tiles/` | ICAO-keyed square icons used by FIDS rows |
-| `symbols/airlines/` | IATA-keyed airline emblems |
-| `wordmarks/` and `wordmarks-mono/` | Header and gate wordmarks |
+| `symbols/airlines/` | IATA-keyed airline emblems; single-colour variants as `XX-mono.svg` |
+| `wordmarks/` | Header and gate wordmarks; single-colour variants as `XX-mono.svg` |
 | `tails-modern/` | Decorative airline tail art |
 | `airlines/` | Carrier-specific fallback logos and programme marks |
 | `airports/` | Airport identity marks |

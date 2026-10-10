@@ -31,9 +31,7 @@ SKIP = {".DS_Store"}
 # Order matters: first match wins, so put more specific paths first.
 RULES = [
     ("logos/airline-tiles",            "airline", "tile",            "Airline tile logos (row icons)"),
-    ("logos/symbols/airlines-mono",    "airline", "symbol-mono",     "Airline symbols (monochrome)"),
     ("logos/symbols/airlines",         "airline", "symbol",          "Airline symbols (emblem only)"),
-    ("logos/wordmarks-mono",           "airline", "wordmark-mono",   "Airline wordmarks (monochrome)"),
     ("logos/wordmarks",                "airline", "wordmark",        "Airline wordmarks"),
     ("logos/airlines/canadian-regional","airline","canadian-regional","Airlines — Canadian regional"),
     ("logos/airlines/canadian",        "airline", "canadian",        "Airlines — Canadian"),
