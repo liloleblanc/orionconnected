@@ -628,27 +628,13 @@ __name(handleDeleteAirport, "handleDeleteAirport");
 // the last bulk change is kept. Undo restores an airport only while it still
 // shows the bulk font; one that was changed since is left alone and reported.
 const BULK_FONT_KEYS = new Set([
-  "possibility", "tr-tahoma", "ac-nord-display", "ac-nord-text",
-  "ac-nord-display-regular", "ac-nord-display-medium", "ac-nord-display-bold",
-  "ac-nord-display-heavy", "ac-nord-text-light", "ac-nord-text-regular",
-  "ac-nord-text-italic", "ac-nord-text-medium", "ac-nord-text-bold",
-  "ac-nord-text-heavy", "ginto-nord", "ginto-nord-thin", "ginto-nord-light",
-  "ginto-nord-regular", "ginto-nord-medium", "ginto-nord-bold",
-  "ginto-nord-black", "ginto-nord-ultra", "ginto-nord-hairline", "bricolage",
+  "possibility", "ac-nord-display", "ac-nord-text",
+  "ac-nord-display-regular", "ac-nord-display-medium",
+  "ac-nord-display-bold", "ac-nord-display-heavy", "ac-nord-text-light",
+  "ac-nord-text-regular", "ac-nord-text-italic", "ac-nord-text-medium",
+  "ac-nord-text-bold", "ac-nord-text-heavy", "bricolage",
   "bricolage-semicond", "bricolage-cond", "cabinet", "cabinet-light",
-  "cabinet-medium", "cabinet-bold", "cabinet-extrabold", "cabinet-black",
-  "abc-areal", "abc-areal-regular", "abc-areal-medium", "abc-areal-bold",
-  "abc-areal-semi-mono", "abc-areal-semi-mono-bold", "abc-areal-mono",
-  "abc-areal-mono-bold", "abc-ginto-rounded", "abc-ginto-rounded-bold",
-  "abc-ginto-rounded-black", "abc-ginto-rounded-ultra",
-  "abc-ginto-rounded-nord", "abc-ginto-rounded-nord-bold",
-  "abc-ginto-rounded-nord-black", "abc-ginto-rounded-nord-ultra",
-  "abc-ginto-rounded-nord-condensed", "abc-gravity", "abc-gravity-bold",
-  "abc-gravity-black", "abc-gravity-ultra", "abc-gravity-compressed",
-  "abc-gravity-condensed", "abc-gravity-expanded",
-  "abc-gravity-extra-condensed", "abc-gravity-wide",
-  "abc-gravity-xx-compressed", "abc-gravity-xxxx-compressed", "airport",
-  "airport-x"
+  "cabinet-medium", "cabinet-bold", "cabinet-extrabold", "cabinet-black"
 ]);
 const BULK_FONT_MAX = 300;                  // the roster is ~65; this is a typo guard
 const BULK_FONT_UNDO_DOC = "font-bulk-last";
