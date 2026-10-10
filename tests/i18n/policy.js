@@ -63,7 +63,8 @@ const PASSENGER_STYLES = [
   'fids-current/css/baggage-display.css', 'fids-current/css/mobile.css', 'fids-current/css/mobile-display.css',
   'fids-current/css/display-overrides.css', 'fids-current/css/gate-display.css', 'fids-current/css/hotel-ads.css',
   'fids-current/css/gids-mobile.css', 'fids-current/css/entry.css', 'fids-current/css/heritage-board.css',
-  'fids-current/css/studio-modules.css', 'fids-current/css/studio-canvas.css', 'fids-current/css/studio-player.css'
+  'fids-current/css/studio-modules.css', 'fids-current/css/studio-canvas.css', 'fids-current/css/studio-player.css',
+  'fids-current/css/phone.css'
 ];
 
 // Loaded by passenger pages, and not passenger text: operator UI and vendor

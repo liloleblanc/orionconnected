@@ -31572,7 +31572,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24028';
+var FIDS_BUILD_TAG = 'v24029';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39525,6 +39525,9 @@ function getPageCount(modeKey) {
 }
 
 function advancePage() {
+  // v24029 — a phone's list does not flip between Departures and Arrivals by
+  // itself while someone reads it: its tabs choose (fidsMobileTab)
+  if (viewMode === 'rotate' && _fidsPhoneList()) return;
   // In fixed DEP or ARR mode, just page through — no mode switching
   if (viewMode === 'dep') { currentPage++; if (currentPage >= getPageCount('dep')) currentPage = 0; return; }
   if (viewMode === 'arr') { currentPage++; if (currentPage >= getPageCount('arr')) currentPage = 0; return; }
@@ -40251,6 +40254,36 @@ function renderChangesFeed() {
   }).join('');
 }
 
+// v24029 — THE PHONE LIST. #mobileView is the board under 800px (fids.css).
+// There it is one scrolling list (up to _M_PHONE_ROWS flights, no pages),
+// chosen with its Departures | Arrivals tabs, its times in the board's own
+// clock (fidsFormatTime12: 12-hour on a board that leads in English) with the
+// wall board's "+1" for a later day, and nothing cut.
+var _M_PHONE_ROWS = 80;
+function _fidsPhoneList() {
+  try { return (window.innerWidth || 0) > 0 && window.innerWidth <= 800; } catch (e) { return false; }
+}
+function fidsMobileTab(m) {
+  if (m !== 'dep' && m !== 'arr') return;
+  try { setViewMode(m); } catch (e) {}
+  try { var sc = document.getElementById('mobileCardsScroll'); if (sc) sc.scrollTop = 0; window.scrollTo(0, 0); } catch (e2) {}
+}
+// a time as the board prints it: digits, and an English AM/PM beside them
+function _mClock(hhmm) {
+  var s = (typeof window.fidsFormatTime12 === 'function') ? window.fidsFormatTime12(hhmm) : String(hhmm || '');
+  var m = /^(\d{1,2}:\d{2})\s*([AP]M)$/.exec(s);
+  return m ? m[1] + '<span class="cc-ap">' + m[2] + '</span>' : fidsEscHtml(s);
+}
+// the wall board's day marker: +1 for a flight on the airport's next day
+// (the gate's own day arithmetic, FIDSGateDate.dayOffset, in the airport's zone)
+function _mDayPlus(f, tz) {
+  try {
+    if (!f || !f._sortTs || !window.FIDSGateDate || !tz) return '';
+    var n = window.FIDSGateDate.dayOffset(f._sortTs, Date.now(), tz);
+    return n > 0 ? '<sup class="cc-dayplus">+' + n + '</sup>' : '';
+  } catch (e) { return ''; }
+}
+
 function mobilePagePrev() {
   if (mobileCurrentPage > 0) { mobileCurrentPage--; renderMobile(); }
 }
@@ -40332,9 +40365,21 @@ function renderMobile() {
   const all = [...departed, ...upcoming];
   const filtered = applySearch(all);
 
-  const total = Math.max(1, Math.ceil(filtered.length / MOBILE_ROWS));
+  const PER = _fidsPhoneList() ? _M_PHONE_ROWS : MOBILE_ROWS;
+  const total = Math.max(1, Math.ceil(filtered.length / PER));
   if (mobileCurrentPage >= total) mobileCurrentPage = 0;
-  const page = filtered.slice(mobileCurrentPage * MOBILE_ROWS, (mobileCurrentPage + 1) * MOBILE_ROWS);
+  const page = filtered.slice(mobileCurrentPage * PER, (mobileCurrentPage + 1) * PER);
+
+  // v24029 — the phone's tabs: their words in the phone's language, the open one marked
+  try {
+    const tD = document.getElementById('mTabDep'), tA = document.getElementById('mTabArr');
+    if (tD && tA) {
+      tD.textContent = TL('dep'); tA.textContent = TL('arr');
+      tD.classList.toggle('active', mobileMode === 'dep'); tA.classList.toggle('active', mobileMode === 'arr');
+      tD.setAttribute('aria-selected', mobileMode === 'dep' ? 'true' : 'false');
+      tA.setAttribute('aria-selected', mobileMode === 'arr' ? 'true' : 'false');
+    }
+  } catch (eT) {}
 
   // Sync view-selector tabs to current mobile mode
   $el('vTabDep').classList.toggle('active',    mobileMode === 'dep' && viewMode !== 'rotate');
@@ -40398,11 +40443,13 @@ function _mobileBuildContext(f, isDep) {
   const _hasGate = (f.gate && f.gate !== '—');
 
   let stTxt = SLbi(f.status);
+  // v24029 — the time in the board's own clock, as the row's own time
+  const _upd = f.upd ? ((typeof window.fidsFormatTime12 === 'function') ? window.fidsFormatTime12(f.upd) : f.upd) : '';
   if (f.upd) {
-    if (f.status === 'delayed')  stTxt = `${SLbi('delayed')} · ${f.upd}`;
-    if (f.status === 'early')    stTxt = `${SLbi('early')} · ${f.upd}`;
-    if (f.status === 'departed') stTxt = `${SLbi('departed')} · ${f.upd}`;
-    if (f.status === 'arrived')  stTxt = `${SLbi('arrived')} · ${f.upd}`;
+    if (f.status === 'delayed')  stTxt = `${SLbi('delayed')} · ${_upd}`;
+    if (f.status === 'early')    stTxt = `${SLbi('early')} · ${_upd}`;
+    if (f.status === 'departed') stTxt = `${SLbi('departed')} · ${_upd}`;
+    if (f.status === 'arrived')  stTxt = `${SLbi('arrived')} · ${_upd}`;
   }
 
   // Hide-prefix toggle from airport config / user customize — same as desktop
@@ -40438,10 +40485,11 @@ function renderMobileCompactCard(f, isDep, iata, tz, nowTs) {
     : '';
 
   // Updated time inline arrow
-  let timeMain = f.time;
+  // v24029 — in the board's own clock, with the wall board's "+1"
+  let timeMain = _mClock(f.time) + _mDayPlus(f, tz);
   let timeSub = '';
   if (f.upd && (f.status === 'delayed' || f.status === 'early')) {
-    timeSub = `<span class="cc-time-arrow">→ ${f.upd}</span>`;
+    timeSub = `<span class="cc-time-arrow">→ ${_mClock(f.upd)}</span>`;
   }
 
   const dirAttr = isDep ? 'dep' : 'arr';
@@ -40458,7 +40506,7 @@ function renderMobileCompactCard(f, isDep, iata, tz, nowTs) {
     </div>
     <div class="cc-mid">
       <div class="cc-logo-row">${airlineLogo}</div>
-      <div class="cc-city">${cityDisplay || '—'}</div>
+      <div class="cc-city">${String(cityDisplay || '—').replace(/\s\|\s/g, '\u00a0|\u00a0')}</div>
       <div class="cc-meta">
         <span class="cc-meta-flight">${flightDisplay}</span>
         ${_hasGate ? `<span class="cc-meta-sep">·</span><span class="cc-meta-gate">${TLbi('gateDep')} ${f.gate}</span>` : ''}
