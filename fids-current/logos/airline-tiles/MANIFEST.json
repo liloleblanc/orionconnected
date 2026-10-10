@@ -10,8 +10,7 @@
     "updated": "2026-05-03",
     "role": "ACTIVE — read by mkLogo() in js/fids-core.js via IATA_TO_TILE_ICAO map. To update a logo for FIDS, edit the file HERE.",
     "active_folder": "/logos/airline-tiles/",
-    "code_ref": "js/fids-core.js IATA_TO_TILE_ICAO at ~line 6471",
-    "archive_folder": "/logos/icao-icons/"
+    "code_ref": "js/fids-core.js IATA_TO_TILE_ICAO at ~line 6471"
   },
   "commercial": {
     "AAH": {
