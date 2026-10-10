@@ -35286,11 +35286,12 @@ function _gateCardsDue(m, nowMs) {
 // app: a numbered list per cabin, the cleared ticked with their seat, names
 // as the first three letters of the surname and an initial, "SHE, X.").
 //
-// So it shows only where the whole flight is pretend: a test flight (✚ ADD
-// FLIGHT), a board in demo mode (loadDemo), or ?standby=1 for review (that
-// load only, never saved). On a real flight it would send a real passenger
-// to the counter for nothing; GATE_SB_PRETEND_EVERYWHERE is the one switch
-// that would put it there too.
+// WHERE: on every flight (GATE_SB_PRETEND_EVERYWHERE, decided 2026-10-10,
+// after the question of real passengers being sent to the counter was put:
+// the names are made up and masked, never a real passenger's). With the
+// switch off it shows only where the whole flight is pretend: a test flight
+// (✚ ADD FLIGHT), a board in demo mode (loadDemo), or ?standby=1 for review
+// (that load only, never saved).
 //
 // WHEN: from 90 minutes before a domestic departure (120 for transborder and
 // international), from the gate's own firm times only, until the boarding
@@ -35302,7 +35303,7 @@ function _gateCardsDue(m, nowMs) {
 // HOW IT MOVES: across that time the names clear one by one (a tick and the
 // seat) and the next is called ("See agent"). Arithmetic on the clock, so
 // every paint agrees and nothing is stored.
-var GATE_SB_PRETEND_EVERYWHERE = false;
+var GATE_SB_PRETEND_EVERYWHERE = true;
 var _GATE_SB_LEAD_MIN = { dom: 90, trans: 120, intl: 120 };
 var _GATE_SB_COUNTDOWN_MS = 10 * 60000;
 // Each list's cabin: the airline's premium cabin (upgrades) and its main

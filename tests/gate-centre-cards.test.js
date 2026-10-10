@@ -428,16 +428,30 @@ test('by day the card is BLEND-2, at night NIGHT, switched by the engine\'s html
 
 const testRow = (o) => row(Object.assign({ _flightKey: 'AC1987_test' }, o || {}));
 
-test('the lists never show on a real flight, only on a pretend one', () => {
+// the same engine with the switch off: pretend flights only
+function engineOff() {
+  engine();
+  const off = SRC.replace(/^var GATE_SB_PRETEND_EVERYWHERE = true;/m, 'var GATE_SB_PRETEND_EVERYWHERE = false;');
+  assert.notEqual(off, SRC, 'the switch is in the lifted source');
+  const esc = (v) => String(v == null ? '' : v).split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('"').join('&quot;').split("'").join('&#39;');
+  return new Function('langs', 'window', 'BoardStrings', 'getAirlineAccent', 'fidsEscHtml', off)(['en', 'fr'], { FIDSGateDate: GD, _gateOrbParts: () => null }, BS, () => '#3466A8', esc);
+}
+
+test('the lists show on every flight (decided 2026-10-10); with the switch off, on pretend flights only', () => {
+  assert.match(CORE, /^var GATE_SB_PRETEND_EVERYWHERE = true;/m, 'shown on every flight');
   const E = engine();
   // boarding at DEP-35, so a domestic list runs DEP-90 .. DEP-35
   const real = E._gateCardsBuild(facts());
-  assert.equal(real.pretend, false);
-  assert.equal(E._gateCardsDue(real, DEP - 60 * MIN).sbcard, false, 'a live flight carries no made-up names');
-  assert.equal(E._gateCardHtml('sbcard', real, DEP - 60 * MIN, null), '');
-  const fake = E._gateCardsBuild(facts({ cf: testRow() }));
+  assert.equal(real.pretend, true);
+  assert.equal(E._gateCardsDue(real, DEP - 60 * MIN).sbcard, true);
+  const O = engineOff();
+  const realOff = O._gateCardsBuild(facts());
+  assert.equal(realOff.pretend, false);
+  assert.equal(O._gateCardsDue(realOff, DEP - 60 * MIN).sbcard, false, 'switch off: a live flight carries no made-up names');
+  assert.equal(O._gateCardHtml('sbcard', realOff, DEP - 60 * MIN, null), '');
+  const fake = O._gateCardsBuild(facts({ cf: testRow() }));
   assert.equal(fake.pretend, true, 'a test flight (✚ ADD FLIGHT) is pretend');
-  assert.equal(E._gateCardsDue(fake, DEP - 60 * MIN).sbcard, true);
+  assert.equal(O._gateCardsDue(fake, DEP - 60 * MIN).sbcard, true);
 });
 
 test('the lists run from 90 minutes before a domestic departure (120 abroad) until boarding', () => {
