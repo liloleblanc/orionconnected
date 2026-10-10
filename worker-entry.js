@@ -179,6 +179,35 @@ async function privateFont(url, env) {
   }
 }
 
+// v24031 — an airport's own aerial photo under its gate maps, from our own
+// storage. Moncton's is New Brunswick's GeoNB Imagery Basemap (2021, Open
+// Government Licence - New Brunswick) with the aircraft parked that day
+// painted out (scripts/geonb-photo/), cut to the web map's tiles at zooms
+// 14-18 and kept in R2 under maptiles/<set>/<z>/<x>/<y>. A tile the photo
+// does not reach is a 404 and the street map under it shows through.
+const PHOTO_TILE_SETS = { YQM: 'geonb-yqm' };
+async function photoTile(path, env) {
+  const m = /^\/tiles\/photo\/([A-Z]{3})\/(\d{1,2})\/(\d{1,7})\/(\d{1,7})$/.exec(path);
+  if (!m) return null;
+  const set = PHOTO_TILE_SETS[m[1]];
+  if (!set || !env || !env.FIDS_ASSETS) return new Response('Not found', { status: 404, headers: NO_STORE });
+  try {
+    const obj = await env.FIDS_ASSETS.get('maptiles/' + set + '/' + m[2] + '/' + m[3] + '/' + m[4]);
+    if (!obj) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'public, max-age=' + DAY } });
+    return new Response(obj.body, {
+      status: 200,
+      headers: {
+        'Content-Type': (obj.httpMetadata && obj.httpMetadata.contentType) || 'image/jpeg',
+        'Cache-Control': 'public, max-age=' + (30 * DAY),
+        'ETag': obj.httpEtag || '',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  } catch (e) {
+    return new Response('Not found', { status: 404, headers: NO_STORE });
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -1042,6 +1071,11 @@ export default {
       } catch (e) {
         return new Response('DEM fetch failed', { status: 502, headers: NO_STORE });
       }
+    }
+
+    // v24031 — /tiles/photo/YQM/18/83967/93139 → our own aerial photo (photoTile)
+    if (path.startsWith('/tiles/photo/')) {
+      return (await photoTile(path, env)) || new Response('Bad tile path', { status: 400 });
     }
 
     // ── Selectable base-map tiles passthrough ──────────────────────────

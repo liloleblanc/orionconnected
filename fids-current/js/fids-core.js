@@ -31572,7 +31572,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24030';
+var FIDS_BUILD_TAG = 'v24031';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41540,6 +41540,55 @@ function _fetchAirportCoords(iata) {
   return _airportFetchInFlight[code];
 }
 
+// v24031 — MONCTON'S OWN AERIAL PHOTO under its gate maps: New Brunswick's
+// GeoNB Imagery Basemap (2021, Open Government Licence - New Brunswick), the
+// aircraft parked that day painted out (scripts/geonb-photo/), cut to the web
+// map's tiles at zooms 14-18 and served from our storage (worker-entry.js
+// photoTile). It lies over the street map inside the photo's own box only,
+// so the streets still run on past the airfield, and only from zoom 14 in,
+// where the field fills the view. Wherever it shows, the licence's credit
+// line shows with it (_gatePhotoCredit).
+var _GATE_PHOTO = {
+  YQM: { bounds: [[46.094186, -64.716339], [46.130363, -64.649048]] }
+};
+var _GATE_PHOTO_MINZ = 14;
+function _gatePhotoAdd(m) {
+  if (!m || m._fidsPhoto || !window.L) return;
+  m._fidsPhoto = [];
+  Object.keys(_GATE_PHOTO).forEach(function (ap) {
+    var b = L.latLngBounds(_GATE_PHOTO[ap].bounds);
+    var lyr = L.tileLayer('/tiles/photo/' + ap + '/{z}/{x}/{y}', {
+      minZoom: _GATE_PHOTO_MINZ, maxNativeZoom: 18, maxZoom: 19, bounds: b, zIndex: 2, attribution: ''
+    }).addTo(m);
+    m._fidsPhoto.push({ ap: ap, b: b, lyr: lyr });
+  });
+  m.on('moveend zoomend viewreset', function () { _gatePhotoCredit(m); });
+  setTimeout(function () { _gatePhotoCredit(m); }, 0);
+}
+// The licence's own credit line, in the board's pair of languages (one line
+// each), in the bottom-right corner above the OpenStreetMap credit, while the
+// photo is in view. Off it, the line goes.
+function _gatePhotoCredit(m) {
+  try {
+    var box = m && m.getContainer && m.getContainer();
+    if (!box || !m._fidsPhoto) return;
+    var z = m.getZoom(), vb = m.getBounds(), on = false;
+    for (var i = 0; i < m._fidsPhoto.length; i++) {
+      if (z >= _GATE_PHOTO_MINZ && vb.intersects(m._fidsPhoto[i].b)) on = true;
+    }
+    var el = box.querySelector('.gate-map-photo-credit');
+    if (!on) { if (el) el.hidden = true; return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'gate-map-photo-credit';
+      box.appendChild(el);
+    }
+    // one line per language, so neither breaks mid-phrase on a narrow map
+    var html = BoardStrings.pair('mapCreditOglNb', { frFirst: window._gateIata || '', sep: '<br>' });
+    if (el.innerHTML !== html) el.innerHTML = html;
+    el.hidden = false;
+  } catch (e) {}
+}
 // v218.96: Pick a leaflet tile layer based on the active gate theme.
 // Light  = CartoDB Voyager (default, color, business-screen friendly)
 // Dark   = CartoDB Dark Matter
@@ -41560,6 +41609,8 @@ function _gateMapTileLayer() {
   t.on('add', function () {
     var m = this._map;
     setTimeout(function () { try { _wxRadarAdd(m); } catch (e) {} }, 0);
+    // v24031 — and an airport's own aerial photo over it (_gatePhotoAdd)
+    try { _gatePhotoAdd(m); } catch (e) {}
     // v23916 — the aeroplane is sized in metres, so its size follows the zoom:
     // hooked here, once per map, for the same reason as the radar — every
     // map-build site passes through this layer. 'zoom' fires on every frame of
