@@ -2964,6 +2964,11 @@ var FIDS_FIT_RULES = [
   { sel: '.gcard .gc-bday', box: '.gc-big', lines: 2, units: true },
   { sel: '.gcard .gc-rule', box: '.gc-ft', lines: 2, units: true },
   { sel: '.gcard .gc-dlbl', box: '.gc-dep', lines: 2, units: true },
+  // v24026 — the upgrade and standby lists: a heading and its cabin on one
+  // line, each row's name and status word on one line
+  { sel: '.gcard .gc-sbtt, .gcard .gc-sbcab', box: '.gc-sbhd', lines: 1, units: true, group: '.gc-sbl' },
+  { sel: '.gcard .gc-sbnm', box: '.gc-sbr', lines: 1, group: '.gc-sbl' },
+  { sel: '.gcard .gc-sbx', box: '.gc-sbr', lines: 1, units: true, group: '.gc-sbl' },
   // v24014 — the weather card at its larger sizes: each figure set at one
   // size across its row (the eight hours, the five days, the two plates),
   // the smallest any of them needs, so a two-digit or a below-zero reading
@@ -31567,7 +31572,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24025';
+var FIDS_BUILD_TAG = 'v24026';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -35160,7 +35165,9 @@ try { if (typeof window !== 'undefined') { window._gateCloseInfo = _gateCloseInf
 //              before departure"), in the last 45 minutes before the close,
 //              and only for an airline that publishes a close time
 //              (GATE_CLOSE_WORDS[kind].band: a deadline to be AT the gate is
-//              not one).
+//              not one);
+//   sbcard     v24026 — THE UPGRADE AND STANDBY LISTS, pretend flights only
+//              (see _gateSbLists).
 // They replace the small gate-close line that sat under the Boarding time on
 // the left rail (v23968's _gateCloseLineHtml, removed here with its fitter
 // and its styles). The boarding screen keeps its band (v24006).
@@ -35191,7 +35198,7 @@ try { if (typeof window !== 'undefined') { window._gateCloseInfo = _gateCloseInf
 // geometry is the same in both, so the change is colour only, a 2 s crossfade
 // (.fids-dn-fade, css/shared.css). Amber, red and green are status words only
 // (darkened on the light tiles), and nothing moves or flashes.
-var _GATE_CARD_TYPES = ['ovcard', 'docscard', 'closecard'];
+var _GATE_CARD_TYPES = ['ovcard', 'docscard', 'closecard', 'sbcard'];
 var _GATE_CARD_DWELL_MS = 60000;
 // The close card's window: from 45 minutes before the close until it.
 var _GATE_CARD_CLOSE_WINDOW_MS = 45 * 60000;
@@ -35229,6 +35236,9 @@ function _gateCardsBuild(o) {
   var firm = !o.inbLate && hasTime && Number(o.depTs) > 0;
   var docs = 'B';
   try { docs = _gateDocsVariant(o.cf, o.iata, o.airline); } catch (eD) { docs = 'B'; }
+  var pretend = false, region = 'intl';
+  try { pretend = !!_gateSbPretendOn(o.cf); } catch (eS) { pretend = false; }
+  try { region = flightRegionKey(o.cf, o.iata) || 'intl'; } catch (eR) { region = 'intl'; }
   var arr = (o.arr && Number(o.arr.ts) > 0) ? { ts: Number(o.arr.ts), tz: o.arr.tz || o.tz, revised: !!o.arr.revised, early: !!o.arr.early } : null;
   return {
     flight: String(o.flight || o.cf.flight || ''),
@@ -35246,12 +35256,14 @@ function _gateCardsBuild(o) {
     boardTs: firm ? (Number(o.boardTs) || 0) : 0,
     close: firm && o.close && o.close.ts ? o.close : null,
     arr: arr,
-    docs: docs
+    docs: docs,
+    pretend: pretend,
+    region: region
   };
 }
 // Which cards are due now. Pure: the deck builder and the renderer both ask.
 function _gateCardsDue(m, nowMs) {
-  var due = { ovcard: false, docscard: false, closecard: false };
+  var due = { ovcard: false, docscard: false, closecard: false, sbcard: false };
   if (!m) return due;
   var now = Number(nowMs) || Date.now();
   if (m.depAt && m.depAt <= now) return due;
@@ -35260,7 +35272,138 @@ function _gateCardsDue(m, nowMs) {
   var c = m.close;
   due.closecard = !!(c && c.ts && GATE_CLOSE_WORDS[c.kind] && GATE_CLOSE_WORDS[c.kind].band
     && now >= c.ts - _GATE_CARD_CLOSE_WINDOW_MS && now < c.ts);
+  due.sbcard = !!_gateSbLists(m, now);
   return due;
+}
+
+// ── v24026 — THE UPGRADE AND STANDBY LISTS (sbcard). PRETEND ONLY. ─────────
+// Before boarding, airlines call names to the counter: standby passengers
+// cleared onto a full flight, upgrades, seat changes. The real lists exist
+// only in each airline's own check-in system, and our gate boards are public
+// pages that also feed the streams, so no real name ever comes here. This
+// card's list is made up: drawn from the flight number and its day, the same
+// on every paint, in the shape the airlines print their own (Air Canada's
+// app: a numbered list per cabin, the cleared ticked with their seat, names
+// as the first three letters of the surname and an initial, "SHE, X.").
+//
+// So it shows only where the whole flight is pretend: a test flight (✚ ADD
+// FLIGHT), a board in demo mode (loadDemo), or ?standby=1 for review (that
+// load only, never saved). On a real flight it would send a real passenger
+// to the counter for nothing; GATE_SB_PRETEND_EVERYWHERE is the one switch
+// that would put it there too.
+//
+// WHEN: from 90 minutes before a domestic departure (120 for transborder and
+// international), from the gate's own firm times only, until the boarding
+// countdown takes the screen ten minutes before boarding (the deck is off the
+// screen from then on). That countdown starts about when Air Canada clears
+// its last standby names (45 minutes before a domestic departure), so the
+// list is all but done by then.
+//
+// HOW IT MOVES: across that time the names clear one by one (a tick and the
+// seat) and the next is called ("See agent"). Arithmetic on the clock, so
+// every paint agrees and nothing is stored.
+var GATE_SB_PRETEND_EVERYWHERE = false;
+var _GATE_SB_LEAD_MIN = { dom: 90, trans: 120, intl: 120 };
+var _GATE_SB_COUNTDOWN_MS = 10 * 60000;
+// Each list's cabin: the airline's premium cabin (upgrades) and its main
+// cabin (standby). An airline with no premium cabin, or one not listed,
+// shows the standby list alone.
+var GATE_SB_CABINS = {
+  AC: ['cabinBiz', 'cabinEcon'], QK: ['cabinBiz', 'cabinEcon'], RV: ['cabinPremRouge', 'cabinEcon'],
+  WS: ['cabinPremiumWS', 'cabinEconWS'], PD: ['pdReserve', 'pdClassic'],
+  UA: ['cabinUnitedFirst', 'cabinUnitedEcon'], DL: ['cabinFirst', 'cabinEcon'], AA: ['cabinFirst', 'cabinEcon'],
+  AS: ['cabinFirst', 'cabinEcon'], TS: ['cabinClub', 'cabinEcon']
+};
+// The masked name, per airline (decided 2026-10-05: by airline, most of them
+// Air Canada's). 'sur3': the first three letters of the surname and the
+// first initial, "SHE, X.". An airline not listed takes it too.
+var GATE_SB_NAME_FMT = { AC: 'sur3' };
+// The surnames' first three letters (data, written like airport codes):
+// common Canadian and US surnames, so a made-up list reads like a real one.
+var _GATE_SB_SUR = ['TRE', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'FOR', 'COT', 'PEL', 'BEL', 'GIR', 'SIM', 'POI',
+  'OUE', 'SMI', 'BRO', 'WIL', 'MAR', 'TAY', 'CAM', 'AND', 'JOH', 'THO', 'WHI', 'CLA', 'HAL', 'KIN', 'SCO', 'REI', 'GRA',
+  'MIL', 'NGU', 'WON', 'SAN', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'PAR', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'DES'];
+// premium seat letters (A C D F) and the main cabin's (A to F), as char codes
+var _GATE_SB_SEATS = { up: [65, 67, 68, 70], sb: [65, 66, 67, 68, 69, 70] };
+
+function _gateSbPretendOn(cf) {
+  if (GATE_SB_PRETEND_EVERYWHERE) return true;
+  if (cf && /_test$/.test(String(cf._flightKey || ''))) return true;
+  try { if (window._fidsBoardIsDemo) return true; } catch (e) {}
+  try { if (new URLSearchParams(location.search).get('standby') === '1') return true; } catch (e2) {}
+  return false;
+}
+// a small seeded generator (mulberry32), so a flight's list is the same on
+// every paint and every screen
+function _gateSbRand(seed) {
+  var a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    var t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function _gateSbSeed(str) {
+  var h = 2166136261;
+  for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+// The two lists for the card, or null when the card is not due. Pure.
+//   { upgrade: { cabin, rows } | null, standby: { cabin, rows } }
+//   a row: { st: 'cleared' | 'called' | 'wait', name, seat, pos }
+function _gateSbLists(m, nowMs) {
+  if (!m || !m.pretend || !m.firm) return null;
+  var now = Number(nowMs) || Date.now();
+  var lead = _GATE_SB_LEAD_MIN[m.region] || 60;
+  var from = m.depTs - lead * 60000, to = m.boardTs;
+  if (!(m.depTs > now && to > from && now >= from && now < to)) return null;
+  // the clearing runs until the countdown (the card's last minutes on screen)
+  var end = Math.max(from + 60000, to - _GATE_SB_COUNTDOWN_MS);
+  var p = Math.min(0.999, (now - from) / (end - from));
+  var rnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|' + new Date(m.depTs).toISOString().slice(0, 10)));
+  var air = String(m.airline || '').toUpperCase();
+  var cab = GATE_SB_CABINS[air] || GATE_SB_CABINS[_GATE_CARD_ALIAS[air]] || [null, 'cabinEcon'];
+  var fmt = GATE_SB_NAME_FMT[air] || GATE_SB_NAME_FMT[_GATE_CARD_ALIAS[air]] || 'sur3';
+  var used = {}, seats = {};
+  function name() {
+    var s = _GATE_SB_SUR[0];
+    for (var k = 0; k < 40; k++) { s = _GATE_SB_SUR[Math.floor(rnd() * _GATE_SB_SUR.length)]; if (!used[s]) break; }
+    used[s] = 1;
+    var ini = String.fromCharCode(65 + Math.floor(rnd() * 26));
+    // 'sur3' is the only format any airline has asked for so far
+    return fmt === 'sur3' ? s + ', ' + ini + '.' : s;
+  }
+  function seat(which) {
+    var L = _GATE_SB_SEATS[which], s = '';
+    for (var k = 0; k < 40; k++) {
+      var r = which === 'up' ? 1 + Math.floor(rnd() * 4) : 12 + Math.floor(rnd() * 20);
+      s = r + String.fromCharCode(L[Math.floor(rnd() * L.length)]);
+      if (!seats[s]) break;
+    }
+    seats[s] = 1;
+    return s;
+  }
+  // n names; `base` cleared at the start, the rest clearing evenly until
+  // boarding, the next one called for the second half of its step
+  function list(cabin, n, base, which) {
+    var steps = Math.max(1, n - base - 1);
+    var x = p * steps;
+    var cleared = Math.min(n - 1, base + Math.floor(x));
+    var called = (x - Math.floor(x)) >= 0.5;
+    var rows = [], pos = 0;
+    for (var i = 0; i < n; i++) {
+      var st = i < cleared ? 'cleared' : (i === cleared && called ? 'called' : 'wait');
+      var r = { st: st, name: name(), seat: seat(which), pos: 0 };
+      if (st !== 'cleared') r.pos = ++pos;
+      rows.push(r);
+    }
+    return { cabin: cabin, rows: rows };
+  }
+  var nUp = 3 + Math.floor(rnd() * 2), nSb = 4 + Math.floor(rnd() * 3);
+  var up = cab[0] ? list(cab[0], nUp, 1, 'up') : null;
+  return { upgrade: up, standby: list(cab[1] || 'cabinEcon', nSb, 0, 'sb') };
 }
 
 // The card's two colours on its dark frame: the airline's deep tint and the
@@ -35451,6 +35594,40 @@ function _gateCardHtml(type, m, nowMs, inb) {
       + '<div class="gc-plate gc-zone fids-dn-fade" data-doc="' + (_GATE_DOCS[m.docs] ? m.docs : 'B') + '"><div class="gc-hero">' + hero + '</div><div class="gc-heads">' + heads + '</div></div>'
       + '<div class="gc-rules fids-dn-fade' + (rules ? '' : ' gc-rules-none') + '">' + rules + '</div>'
       + '</div>';
+  }
+  if (type === 'sbcard') {
+    var SL = _gateSbLists(m, now);
+    if (!SL) return '';
+    var cityS = fidsEscHtml(m.city);
+    var hdS = '<div class="gc-hd">' + embw + '<div class="gc-grow"><div class="gc-ttl">'
+      + '<span class="fx-unit gc-fl">' + fidsEscHtml(m.flight) + '</span> '
+      + '<span class="fx-unit gc-city">' + cityS + (m.code ? '<span class="gc-code">' + fidsEscHtml(m.code) + '</span>' : '') + '</span>'
+      + '</div></div></div>';
+    var tick = '<svg class="gc-sbck" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.6l4.9 4.9L19.6 7.2" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var secs = '';
+    var parts = [['upgrade', 'sbUpgradeList'], ['standby', 'sbStandbyList']];
+    for (var q = 0; q < parts.length; q++) {
+      var Lq = SL[parts[q][0]];
+      if (!Lq) continue;
+      var rowsS = '';
+      for (var j = 0; j < Lq.rows.length; j++) {
+        var r = Lq.rows[j];
+        var stS = r.st === 'cleared' ? '<span class="gc-st-ok">' + _gcPair('sbCleared', frF) + '</span>'
+          : r.st === 'called' ? '<span class="gc-st-amb">' + _gcPair('sbSeeAgent', frF) + '</span>' : '';
+        rowsS += '<div class="gc-sbr" data-st="' + r.st + '">'
+          + '<div class="gc-sbn">' + (r.st === 'cleared' ? tick : String(r.pos)) + '</div>'
+          + '<div class="gc-sbnm">' + fidsEscHtml(r.name) + '</div>'
+          + '<div class="gc-sbx">' + stS + '</div>'
+          + '<div class="gc-sbseat">' + (r.st === 'cleared' ? fidsEscHtml(r.seat) : '') + '</div>'
+          + '</div>';
+      }
+      secs += '<div class="gc-sbsec" data-list="' + parts[q][0] + '">'
+        + '<div class="gc-sbhd"><div class="gc-sbtt">' + _gcPair(parts[q][1], frF) + '</div>'
+        + '<div class="gc-sbcab fids-dn-fade">' + _gcPair(Lq.cabin, frF) + '</div></div>'
+        + '<div class="gc-sbt gc-zone fids-dn-fade">' + rowsS + '</div></div>';
+    }
+    return open + hdS + '<div class="gc-sbl">' + secs + '</div>'
+      + '<div class="gc-ft fids-dn-fade"><div class="gc-rule">' + _gcPair('sbRefresh', frF) + '</div></div></div>';
   }
   if (type === 'closecard') {
     var c = m.close;
@@ -38023,6 +38200,7 @@ async function _fidsFetchLeg(label, fn) {
 }
 
 async function fetchLive() {
+  try { window._fidsBoardIsDemo = false; } catch (eDm) {}
   // ── A HERITAGE BOARD HAS NO LIVE DATA, BY DEFINITION ──
   //
   // Every carrier a heritage gate can show has ceased operating, so a live
@@ -39088,6 +39266,7 @@ function loadDemo() {
     data.dep.sort((a,b) => a._sortTs - b._sortTs);
   }
   if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  window._fidsBoardIsDemo = true;   // v24026 — the pretend standby lists (_gateSbPretendOn)
   document.getElementById('liveLabel').textContent = 'DEMO'; // i18n-ok: operator
   document.getElementById('lastUp').textContent    = 'DEMO MODE'; // i18n-ok: operator
   setState('loading', false);
@@ -52644,6 +52823,7 @@ function _buildGateAdSlideList() {
     if (_gcDue.ovcard) deck.splice(Math.min(2, deck.length), 0, { type: 'ovcard' });
     if (_gcDue.docscard) deck.splice(Math.min(6, deck.length), 0, { type: 'docscard' });
     if (_gcDue.closecard) deck.push({ type: 'closecard' });
+    if (_gcDue.sbcard) deck.splice(Math.min(1, deck.length), 0, { type: 'sbcard' });
   } catch (e) {}
 
   return deck;
