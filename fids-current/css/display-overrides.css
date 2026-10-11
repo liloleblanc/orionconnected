@@ -22958,12 +22958,36 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   pointer-events: none;
 }
 
-/* ══ v24031 — THE CREDIT MONCTON'S AERIAL PHOTO ASKS FOR ══════════════════════
-   While the GeoNB photo is in view (fids-core.js _gatePhotoCredit), its
-   licence's credit line sits in the bottom-right corner just above the
-   OpenStreetMap credit, in the same small type: the board's pair of
-   languages, one line each, right-aligned. */
-.gate-map-photo-credit {
+/* ══ v24032 — THE CREDIT MONCTON'S AERIAL PHOTO ASKS FOR, OFF THE MAP ═══════
+   The licence's line (fids-core.js _gatePhotoCredit) sits in the strip under
+   the centre panel: the glass card is inset --gx-g from the column, and the
+   line takes exactly that strip, one language at a time, so the maps lose
+   nothing. White lettering straight on the board, no box. A board with no
+   centre panel keeps it in the map's corner, above the OpenStreetMap credit
+   (.gate-photo-credit-onmap). */
+.g8-wrap .gad-media-col > .gate-photo-credit {
+  position: absolute;
+  left: var(--gx-g, 10px);
+  right: var(--gx-g, 10px);
+  top: auto;
+  bottom: 0;
+  width: auto;
+  height: var(--gx-g, 10px);
+  margin: 0;
+  z-index: 70;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: system-ui, -apple-system, 'Segoe UI', var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
+  font-weight: 600;
+  font-size: min(clamp(9px, min(1.1vh, 0.62vw), 13px), calc(var(--gx-g, 10px) * 0.9));
+  line-height: var(--gx-g, 10px);
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+.gate-photo-credit.gate-photo-credit-onmap {
   position: absolute;
   right: 4px;
   bottom: calc(5px + 1.25 * clamp(9px, min(1.1vh, 0.62vw), 13px) + 2px);
@@ -22978,11 +23002,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 600;
   font-size: clamp(9px, min(1.1vh, 0.62vw), 13px);
   line-height: 1.25;
-  letter-spacing: 0.01em;
   text-align: right;
   pointer-events: none;
 }
-.gate-map-photo-credit[hidden] { display: none; }
+.gate-photo-credit[hidden] { display: none !important; }
 
 /* ══ v23915 — THE EMPTY STAND'S LABEL ═══════════════════════════════════════
    When nothing says where the aeroplane is, both gate maps stay on this
