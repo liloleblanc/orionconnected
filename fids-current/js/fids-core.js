@@ -4892,35 +4892,27 @@ const CITY_TYPE = {
   YFC:'canada',YYG:'canada',YYJ:'canada',
 };
 
-const WIKI_IMG_CACHE = {};
-
-async function fetchWikiImage(iata) {
-  if (WIKI_IMG_CACHE[iata]) return WIKI_IMG_CACHE[iata];
-  const title = WIKI_CITY[iata];
-  if (!title) return null;
-  try {
-    const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
-    if (!r.ok) return null;
-    const d = await r.json();
-    const url = d.originalimage?.source || d.thumbnail?.source || null;
-    if (url) WIKI_IMG_CACHE[iata] = url;
-    return url;
-  } catch(e) { return null; }
-}
-
 // ── CITY BACKGROUND PHOTOS — Unsplash direct + Openverse bonus ──────
 // Unsplash direct URLs need no API key and no CORS headers.
 // Openverse API (800M+ CC images) used as dynamic fallback.
-const BG_PHOTO_CACHE = {}; // locIata → image URL (session cache)
-const _BG_LS_KEY = 'fids_bg_cache';
+// v24037 — CREDIT WHERE IT IS DUE. These photos show on the empty-gate
+// screen. Openverse's CC BY photos are now credited on it ("Photo: name ·
+// CC BY 4.0", _gateBgCredit); Wikipedia's page images came with no licence
+// or author to credit, so that source is gone. The cache keeps each photo's
+// credit beside it, and moved to a new key so no photo cached without one
+// can come back uncredited.
+const BG_PHOTO_CACHE = {};  // locIata → image URL (session cache)
+const BG_PHOTO_CREDIT = {}; // locIata → { who, ver } or null
+const _BG_LS_KEY = 'fids_bg_cache_v2';
 
 function getBgCache() {
   try { return JSON.parse(localStorage.getItem(_BG_LS_KEY) || '{}'); } catch(e) { return {}; }
 }
-function setBgCache(iata, url) {
+function setBgCache(iata, url, credit) {
+  BG_PHOTO_CREDIT[iata] = credit || null;
   try {
     var c = getBgCache();
-    c[iata] = { url: url, ts: Date.now() };
+    c[iata] = { url: url, credit: credit || null, ts: Date.now() };
     var keys = Object.keys(c);
     if (keys.length > 100) {
       keys.sort(function(a,b){ return (c[a].ts||0) - (c[b].ts||0); });
@@ -4936,6 +4928,7 @@ function getCachedBgUrl(iata) {
     var entry = c[iata];
     if (entry && entry.url && (Date.now() - entry.ts) < 7 * 86400000) {
       BG_PHOTO_CACHE[iata] = entry.url;
+      BG_PHOTO_CREDIT[iata] = entry.credit || null;
       return entry.url;
     }
   } catch(e) {}
@@ -5068,16 +5061,44 @@ async function fetchOpenversePhoto(cityName) {
     if (!resp.ok) return null;
     var data = await resp.json();
     if (data.results && data.results.length > 0) {
+      // a CC BY photo is only usable when Openverse names who took it
+      var creditable = function(r) { return r.url && (String(r.license || '').toLowerCase() !== 'by' || r.creator); };
       var candidates = data.results.filter(function(r) {
-        return r.url && r.width && r.width >= 800;
+        return creditable(r) && r.width && r.width >= 800;
       });
-      if (!candidates.length) candidates = data.results.filter(function(r) { return r.url; });
+      if (!candidates.length) candidates = data.results.filter(creditable);
       if (!candidates.length) return null;
       var pick = candidates[Math.floor(Math.random() * Math.min(candidates.length, 3))];
-      return pick.url;
+      // CC BY is credited on screen; CC0 asks for none
+      var lic = String(pick.license || '').toLowerCase();
+      var credit = (lic === 'by')
+        ? { who: String(pick.creator).slice(0, 48), ver: String(pick.license_version || '').slice(0, 8) }
+        : null;
+      return { url: pick.url, credit: credit };
     }
   } catch(e) { /* Openverse may CORS-block — that's OK, we fall back to Unsplash */ }
   return null;
+}
+
+// v24037 — a photo's credit on the screen it shows on: one small line in the
+// bottom-right corner of the photo's own box (the empty gate's whole screen,
+// the active gate's welcome panel), in the board's pair of languages
+// ("Photo: name · CC BY 4.0"). No credit owed, no line — and none for a
+// layer that is never shown (gateBgDiv, the phone baggage's bagBgDiv).
+function _gateBgCredit(bgDiv, credit) {
+  try {
+    var host = bgDiv && bgDiv.parentNode;
+    if (!host) return;
+    var el = host.querySelector(':scope > .gate-bg-credit');
+    var hidden = bgDiv.style && bgDiv.style.display === 'none';
+    if (!credit || !credit.who || hidden) { if (el) el.parentNode.removeChild(el); return; }
+    if (!el) {
+      el = document.createElement('small');
+      el.className = 'gate-bg-credit';
+      host.appendChild(el);
+    }
+    el.innerHTML = BoardStrings.pair('photoCredit', { frFirst: window._gateIata || '', fields: { WHO: credit.who, VER: credit.ver || '' } });
+  } catch (e) {}
 }
 
 function tryLoadImage(bgDiv, url) {
@@ -5273,10 +5294,11 @@ async function setGateBg(bgDiv, locIata) {
   bgDiv.style.transition = 'opacity 0.8s ease';
   
   // 0. Session/localStorage cache (instant, highest priority if present)
+  _gateBgCredit(bgDiv, null);
   var cached = getCachedBgUrl(locIata);
   if (cached) {
     var ok = await tryLoadImage(bgDiv, cached);
-    if (ok) { bgDiv._hasPhoto = true; return; }
+    if (ok) { bgDiv._hasPhoto = true; _gateBgCredit(bgDiv, BG_PHOTO_CREDIT[locIata]); return; }
   }
 
   // 1. AI-generated destination city photo via Cloudflare Worker (FLUX) —
@@ -5294,7 +5316,7 @@ async function setGateBg(bgDiv, locIata) {
     bgDiv.classList.remove('no-photo');
     bgDiv.style.background = '';
     BG_PHOTO_CACHE[locIata] = aiUrl;
-    setBgCache(locIata, aiUrl);
+    setBgCache(locIata, aiUrl, null);
     bgDiv._hasPhoto = true;
     bgDiv._loadingIata = null;
     console.log('[FIDS-BG] AI background loaded for ' + locIata);
@@ -5307,35 +5329,23 @@ async function setGateBg(bgDiv, locIata) {
     var ok2 = await tryLoadImage(bgDiv, unsplashUrl);
     if (ok2) {
       BG_PHOTO_CACHE[locIata] = unsplashUrl;
-      setBgCache(locIata, unsplashUrl);
+      setBgCache(locIata, unsplashUrl, null);
       bgDiv._hasPhoto = true; return;
     }
   }
 
-  // 3. Wikipedia — city photo fallback
-  if (typeof WIKI_CITY !== 'undefined' && WIKI_CITY[locIata]) {
-    var wikiUrl = await fetchWikiImage(locIata);
-    if (wikiUrl) {
-      var ok3 = await tryLoadImage(bgDiv, wikiUrl);
-      if (ok3) {
-        BG_PHOTO_CACHE[locIata] = wikiUrl;
-        setBgCache(locIata, wikiUrl);
-        bgDiv._hasPhoto = true;
-        return;
-      }
-    }
-  }
-
-  // 4. Openverse — city photo fallback
+  // 3. Openverse — city photo fallback, credited (v24037: the Wikipedia
+  // step that stood before it is gone — no licence or author to credit)
   var cityName = CITY[locIata] || _cityForIata(locIata) || '';
   if (cityName) {
-    var ovUrl = await fetchOpenversePhoto(cityName);
-    if (ovUrl) {
-      var ok4 = await tryLoadImage(bgDiv, ovUrl);
+    var ov = await fetchOpenversePhoto(cityName);
+    if (ov && ov.url) {
+      var ok4 = await tryLoadImage(bgDiv, ov.url);
       if (ok4) {
-        BG_PHOTO_CACHE[locIata] = ovUrl;
-        setBgCache(locIata, ovUrl);
+        BG_PHOTO_CACHE[locIata] = ov.url;
+        setBgCache(locIata, ov.url, ov.credit);
         bgDiv._hasPhoto = true;
+        _gateBgCredit(bgDiv, ov.credit);
         return;
       }
     }
@@ -5367,34 +5377,6 @@ async function setGateBg(bgDiv, locIata) {
 
   // 6. Smart gradient already showing
   console.log('[FIDS-BG] Using smart gradient for ' + locIata);
-}
-
-// ── WEATHER ICONS — Icons8 Emoji style ──────────────────────────────────
-const WX_ICON_CDN = 'https://img.icons8.com/emoji';
-const WX_ICON_MAP = {
-  'clear-day':          'sun-emoji',
-  'partly-cloudy-day':  'sun-behind-cloud',
-  'cloudy':             'cloud-emoji',
-  'fog':                'fog-emoji',
-  'drizzle':            'cloud-with-rain',
-  'sleet':              'cloud-with-snow',
-  'rain':               'cloud-with-rain',
-  'extreme-rain':       'cloud-with-rain',
-  'snow':               'cloud-with-snow',
-  'extreme-snow':       'cloud-with-snow',
-  'thunderstorms-rain': 'cloud-with-lightning-and-rain',
-  'clear-night':        'crescent-moon',
-  'partly-cloudy-night':'crescent-moon',
-  'wind':               'wind-face',
-  'hail':               'cloud-with-snow',
-};
-function meteoconImg(name, size) {
-  size = size || 80;
-  const i8name = WX_ICON_MAP[name] || WX_ICON_MAP['clear-day'];
-  // onerror hides the element if the external PNG 404s, so a broken-image
-  // placeholder can never appear (the fidsWxIcon sprite path is preferred and
-  // this is only a last-resort fallback).
-  return '<img src="' + WX_ICON_CDN + '/' + size + '/' + i8name + '.png" width="' + size + '" height="' + size + '" alt="" onerror="this.style.display=\'none\'" style="display:inline-block;vertical-align:middle;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));">';
 }
 
 function gateWeatherHtml(locIata, loc, dayNames) {
@@ -28053,20 +28035,16 @@ const TIO_KEY = {
 };
 
 function tioIcon(weatherCode, size) {
-  // Prefer the inline SVG-sprite icon used by the FIDS board (fidsWxIcon).
-  // The legacy meteoconImg path points at an external PNG CDN that 404s on
-  // the gate screens, leaving broken-image placeholders. fidsWxIcon accepts
-  // the same numeric Tomorrow.io/WMO code and renders the same icon set the
-  // board uses, so gate weather now matches the board exactly.
+  // The board's own icon (fids-v2.js fidsWxIcon), which every page loads
+  // first. v24037 — the icons8 emoji CDN fallback that stood here is gone.
   if (typeof window !== 'undefined' && typeof window.fidsWxIcon === 'function') {
     return window.fidsWxIcon(weatherCode, size || 48);
   }
-  const name = TIO_ICON[weatherCode] || 'clear-day';
-  return meteoconImg(name, size || 48);
+  return '';
 }
 // Expose the WMO/Tomorrow.io code → name map to window so the v2 weather
 // helper (in fids-v2.js) can translate numeric codes from the data feed
-// into our flat-icon sprite cell names.
+// into the icon names it draws.
 if (typeof window !== 'undefined') window.TIO_ICON = TIO_ICON;
 
 // v22959 — weather labels follow the FIRST selected language (French first
@@ -28079,27 +28057,20 @@ function tioLabel(weatherCode) {
   return BoardStrings.bs(_key, BoardStrings.pairLangs(langs, _ap)[0]);
 }
 
-// ── Open-Meteo fallback (keyless, no quota) ────────────────────────────
-// Tomorrow.io's free quota can die mid-day and the whole WEATHER column
-// went '—' until it reset.
-// Open-Meteo returns WMO codes, which TIO_ICON already maps natively; the
-// worker's /wxdaily route set the precedent for leaning on it.
-async function _fetchOpenMeteoWx(iata) {
+// ── v24037 — THE BOARDS' WEATHER IS MET NORWAY'S, AND ONLY MET NORWAY'S ──
+// The rows, the gate and the weather card all read the site worker's
+// /wxcurrent: MET Norway's forecast (NLOD 2.0 / CC BY 4.0, keyless, credited
+// on the weather card), behind the worker's cache — one upstream call per
+// airport per half hour however many screens ask, a last-known-good through
+// an outage. The rows used to ask the proxy's Open-Meteo routes first and fall
+// back here; Open-Meteo's free tier is non-commercial only and these boards
+// carry advertising, so those routes are gone (workers/fids-proxy.js).
+// The body is MET's forecast in the field names the boards already read.
+// MET publishes no visibility; a surface that has none omits it.
+async function _fetchMetWx(iata) {
   try {
     if (!COORDS[iata]) return null;
     var lat = COORDS[iata][0], lon = COORDS[iata][1];
-    // v23448 — THROUGH THE SITE WORKER, NOT STRAIGHT AT OPEN-METEO.
-    // Every board called the public API from its own address, around the
-    // clock, at full coordinate precision — nothing shared, nothing cached.
-    // Between that and the equally uncached proxy route, the free daily
-    // allowance was gone and the API started answering 'Daily API request
-    // limit exceeded. Please try again tomorrow.'
-    // /wxcurrent is the same query behind the worker's cache: one
-    // upstream call per airport per half hour however many screens ask, a
-    // six-hour last-known-good so an outage shows the previous reading, and a
-    // refusal that is never stored as if it were weather. Same origin, so no
-    // preflight. The response body is open-meteo's own shape, unchanged, so
-    // everything below reads exactly as it did.
     var r = await fetch('/wxcurrent?location=' + lat + ',' + lon);
     if (!r.ok) return null;
     var d = await r.json();
@@ -28107,158 +28078,62 @@ async function _fetchOpenMeteoWx(iata) {
     // never storms on it); treat that as 'no reading', not as data.
     if (!d || d.error) return null;
     if (!d.current || typeof d.current.temperature_2m !== 'number') return null;
+    var c = d.current, H = d.hourly || {};
+    var at = function (k, i) { var v = H[k] && H[k][i]; return (typeof v === 'number') ? v : undefined; };
     var hourly = [];
     try {
-      var ht = (d.hourly && d.hourly.time) || [];
+      var ht = H.time || [];
       for (var i = 0; i < ht.length; i++) {
         hourly.push({ time: ht[i], ts: new Date(ht[i] + ':00Z').getTime(),
-                      temp: d.hourly.temperature_2m[i], code: d.hourly.weather_code[i] });
+                      temp: at('temperature_2m', i), code: at('weather_code', i),
+                      feelsLike: at('apparent_temperature', i), windSpeed: at('wind_speed_10m', i),
+                      windGust: at('wind_gusts_10m', i), windDir: at('wind_direction_10m', i),
+                      cloudCover: at('cloud_cover', i), precip: at('precipitation_probability', i) });
       }
     } catch (e2) {}
+    var num = function (v) { return (typeof v === 'number') ? v : undefined; };
     TOMORROW_WX[iata] = {
       current: {
-        temp: d.current.temperature_2m,
-        feelsLike: d.current.apparent_temperature,
-        code: d.current.weather_code,
-        windSpeed: d.current.wind_speed_10m,
-        humidity: d.current.relative_humidity_2m,
+        temp: c.temperature_2m,
+        feelsLike: num(c.apparent_temperature),
+        code: c.weather_code,
+        windSpeed: num(c.wind_speed_10m),
+        windDir: num(c.wind_direction_10m),
+        windGust: num(c.wind_gusts_10m),
+        humidity: num(c.relative_humidity_2m),
+        cloudCover: num(c.cloud_cover),
+        pressure: num(c.surface_pressure),
+        precip: num(c.precipitation_probability)
       },
       hourly: hourly,
       ts: Date.now(),
-      // v23452 — the route reports which service actually answered, so a
-      // console line never claims a source that did not supply the reading.
-      _src: d._src || 'met-norway',
+      _src: d._src || 'met-norway'
     };
-    console.log('[WX] ✓', (d._src || 'met-norway'), 'for', iata, Math.round(d.current.temperature_2m) + '°C');
+    console.log('[WX] ✓', (d._src || 'met-norway'), 'for', iata, Math.round(c.temperature_2m) + '°C');
     return TOMORROW_WX[iata];
   } catch (e) { return null; }
 }
 
-// v23217 — WALL-TIME → UTC. Reported as temperatures not adding up: the
-// hourly strip showed every temperature exactly the UTC
-// offset early: 4 AM wearing 8 AM's 14°C on Ottawa). The proxy's
-// /weather/forecast is open-meteo with timezone=auto, so its time strings
-// are the DESTINATION's wall clock with no zone marker; new Date() read
-// them in whatever zone the kiosk happens to run (UTC on the stream
-// boxes). Convert a wall-time string in a named zone to the true instant.
-function _fidsWallTsToUtc(iso, tz) {
-  try {
-    var s = String(iso || '');
-    if (/Z$|[+-]\d\d:?\d\d$/.test(s)) return Date.parse(s);    // already zoned
-    if (!tz) return Date.parse(s);                             // best effort
-    var guess = Date.parse(s.length === 16 ? s + ':00Z' : s + 'Z');
-    if (isNaN(guess)) return Date.parse(s);
-    var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, // i18n-ok: code
-      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-    var p = {};
-    f.formatToParts(new Date(guess)).forEach(function (x) { p[x.type] = x.value; });
-    var asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, (+p.hour === 24 ? 0 : +p.hour), +p.minute);
-    return guess - (asUtc - guess);   // subtract the zone's offset at that instant
-  } catch (e) { return Date.parse(iso); }
-}
-
 async function fetchTomorrowWeather(iata) {
-  if (!COORDS[iata]) { console.warn('[TIO] No coords for', iata); return null; }
+  if (!COORDS[iata]) { console.warn('[WX] No coords for', iata); return null; }
   const now = Date.now();
   const cached = TOMORROW_WX[iata];
   if (cached && (now - cached.ts < TOMORROW_TTL)) return cached;
-
-  // Rate limit backoff — if we got 429'd, go straight to the keyless
-  // fallback for 5 minutes instead of showing '—'.
-  if (window._tioRateLimited && (now - window._tioRateLimited < 5 * 60000)) {
-    return (await _fetchOpenMeteoWx(iata)) || cached || null;
-  }
-
+  // v24037 — MET Norway only (_fetchMetWx); a failed reading keeps the last one.
+  const got = await _fetchMetWx(iata);
+  if (!got) return cached || null;
+  // The gate's weather strip redraws with the new hours, as the hourly
+  // forecast's own arrival used to trigger.
   try {
-    const [lat, lon] = COORDS[iata];
-    console.log('[TIO] Fetching weather for', iata, 'at', lat, lon);
-    const rtRes = await fetch(`https://fids-proxy.n-leblanc1984.workers.dev/weather/realtime?location=${lat},${lon}&units=metric`);
-
-    if (rtRes.status === 429) {
-      console.warn('[TIO] Rate limited (429) — backing off 5 minutes, using Open-Meteo');
-      window._tioRateLimited = now;
-      return (await _fetchOpenMeteoWx(iata)) || cached || null;
+    var wxEl = document.getElementById('gateWxStrip');
+    var cf = window._gateCurrentFlight;
+    if (wxEl && cf) {
+      var arrTs = cf._arrTs || (cf._sortTs ? cf._sortTs + (cf._durationMins || 0) * 60000 : 0);
+      wxEl.innerHTML = gateWeatherWidget(window._gateIata || iata, cf._locIata || '', arrTs);
+      wxEl.style.display = 'flex';
     }
-
-    if (!rtRes.ok) {
-      const errText = await rtRes.text().catch(() => '');
-      console.warn('[TIO] HTTP', rtRes.status, 'for', iata, errText.substring(0, 200));
-      return (await _fetchOpenMeteoWx(iata)) || cached || null;
-    }
-
-    const rtData = await rtRes.json();
-    const current = rtData.data?.values || {};
-
-    if (current.temperature == null) {
-      console.warn('[TIO] No temperature in response for', iata);
-      return (await _fetchOpenMeteoWx(iata)) || cached || null;
-    }
-
-    TOMORROW_WX[iata] = {
-      current: {
-        temp: current.temperature,
-        feelsLike: current.temperatureApparent,
-        code: current.weatherCode,
-        windSpeed: current.windSpeed,
-        windDir: current.windDirection,
-        windGust: current.windGust,
-        humidity: current.humidity,
-        visibility: current.visibility,
-        precip: current.precipitationProbability,
-        cloudCover: current.cloudCover,
-        cloudCeiling: current.cloudCeiling,
-        pressure: current.pressureSeaLevel,
-        altimeter: current.altimeterSetting,
-      },
-      hourly: TOMORROW_WX[iata]?.hourly || [],
-      ts: now,
-    };
-
-    console.log('[TIO] ✓ Weather loaded for', iata, Math.round(current.temperature) + '°C', tioLabel(current.weatherCode));
-
-    // Fetch hourly forecast in background (non-blocking)
-    fetch(`https://fids-proxy.n-leblanc1984.workers.dev/weather/forecast?location=${lat},${lon}&timesteps=1h&units=metric`)
-      .then(r => {
-        if (r.status === 429) { window._tioRateLimited = Date.now(); return null; }
-        return r.ok ? r.json() : null;
-      })
-      .then(fcData => {
-        if (!fcData || !fcData.timelines) return;
-        // v23217 — proxy times are destination WALL TIME (open-meteo
-        // timezone=auto); parse them in the destination's zone, never the
-        // kiosk's (see _fidsWallTsToUtc).
-        var _fcTz = (typeof AP !== 'undefined' && AP[iata] && AP[iata].tz) || '';
-        TOMORROW_WX[iata].hourly = (fcData.timelines.hourly || []).map(h => ({
-          time: h.time,
-          ts: _fidsWallTsToUtc(h.time, _fcTz),
-          temp: h.values?.temperature,
-          feelsLike: h.values?.temperatureApparent,
-          code: h.values?.weatherCode,
-          windSpeed: h.values?.windSpeed,
-          windDir: h.values?.windDirection,
-          windGust: h.values?.windGust,
-          humidity: h.values?.humidity,
-          visibility: h.values?.visibility,
-          precip: h.values?.precipitationProbability,
-          cloudCover: h.values?.cloudCover,
-          cloudCeiling: h.values?.cloudCeiling,
-        }));
-        console.log('[TIO] ✓ Hourly forecast loaded for', iata, TOMORROW_WX[iata].hourly.length, 'hours');
-        var wxEl = document.getElementById('gateWxStrip');
-        var cf = window._gateCurrentFlight;
-        if (wxEl && cf) {
-          var arrTs = cf._arrTs || (cf._sortTs ? cf._sortTs + (cf._durationMins||0)*60000 : 0);
-          wxEl.innerHTML = gateWeatherWidget(window._gateIata || iata, cf._locIata || '', arrTs);
-          wxEl.style.display = 'flex';
-        }
-      })
-      .catch(e => console.warn('[TIO] Hourly forecast error for', iata, e.message));
-
-    return TOMORROW_WX[iata];
-  } catch(e) {
-    console.warn('[TIO] Fetch error for', iata, ':', e.message);
-    return (await _fetchOpenMeteoWx(iata)) || cached || null;
-  }
+  } catch (eS) {}
+  return got;
 }
 
 // Get forecast for a specific arrival timestamp
@@ -31591,7 +31466,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24036';
+var FIDS_BUILD_TAG = 'v24037';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -32558,8 +32433,8 @@ function render() {
   //   - Cancelled / diverted = full red row via row class
   //   - Delayed = "Now H:MM AM/PM" in amber via the Status cell
   //   - 12-hour AM/PM time format throughout
-  //   - Inline weather icon comes from /logos/weather/sprite.svg via the
-  //     fidsWxIcon() helper in fids-v2.js
+  //   - Inline weather icon comes from the fidsWxIcon() helper in fids-v2.js
+  //     (the animated set, or the Solid / Colour looks)
   const _newHtml = pageFlights.map(f => {
     const loc       = isDep ? f.dest : f.origin;
     // A row with no code of its own goes through formatCityIata too, not the
@@ -47667,20 +47542,13 @@ function fetchAccorHotels(destIata, langOverride) {
   if (cached && (Date.now() - cached.ts < ACCOR_CACHE_TTL)) return;
   if (window['_accorFetching_' + _ck]) return;
 
-  // If COORDS missing, geocode first then fetch
+  // No coordinates: our own airport table (v24037 — Open-Meteo's geocoder is
+  // gone with the rest of Open-Meteo); none there, no hotels for this city.
   if (!COORDS[destIata]) {
-    var cityName = CITY[destIata] || _cityForIata(destIata) || destIata;
-    fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cityName) + '&count=1')
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(gd){
-        if (gd && gd.results && gd.results.length) {
-          COORDS[destIata] = [gd.results[0].latitude, gd.results[0].longitude];
-          console.log('[ACCOR] Geocoded', destIata, 'to', COORDS[destIata]);
-          fetchAccorHotels(destIata, _listLang); // Retry now that we have coords
-        }
-      })
-      .catch(function(){ console.warn('[ACCOR] Geocoding failed for', destIata); });
-    return;
+    var _apC = null;
+    try { _apC = (typeof _lookupAirport === 'function') ? _lookupAirport(destIata) : null; } catch (eAp) {}
+    if (!_apC) return;
+    COORDS[destIata] = [_apC[0], _apC[1]];
   }
 
   window['_accorFetching_' + _ck] = true;
@@ -55575,22 +55443,12 @@ function _wxFetchDaily(iata, onReady) {
     // while _prev keeps showing meanwhile.
     var _failTs = function () { return Date.now() - 1800000 + 90000; };
     window._wxDaily[iata] = { pending: true, ts: 0, data: _prev };
-    // Primary: the site worker's keyless /wxdaily proxy. Fallback: Open-Meteo
-    // DIRECT (same keyless API the FIDS weather column already calls) — the
-    // proxy route only exists on workers that carry worker-entry.js, and any
-    // deploy where it's missing must not cost the card its week.
-    var _omDaily = 'https://api.open-meteo.com/v1/forecast?latitude=' + C[0]
-      + '&longitude=' + C[1]
-      + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
-      + '&timezone=auto&forecast_days=7';
-    var _omFb = function () {
-      return fetch(_omDaily)
-        .then(function (r2) { return r2.ok ? r2.json() : null; })
-        .catch(function () { return null; });
-    };
+    // The site worker's /wxdaily: MET Norway (v24037 — the Open-Meteo direct
+    // fallback is gone; its free tier is non-commercial only). A failed day
+    // keeps showing the last good week and retries in ~90 s (below).
     fetch('/wxdaily?location=' + C[0] + ',' + C[1])
-      .then(function (r) { return r.ok ? r.json() : _omFb(); })
-      .catch(function () { return _omFb(); })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
       .then(function (d) {
         if (d && d.daily && d.daily.time) {
           window._wxDaily[iata] = { data: d.daily, ts: Date.now() };

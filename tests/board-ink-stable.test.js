@@ -420,10 +420,12 @@ function fixtureFor(url, palette, now) {
   if (/\/flights\/airports\/iata\/YOW\//.test(u.pathname)) {
     return { status: 200, type: 'application/json', body: JSON.stringify(feed(u.searchParams.get('direction'), now)) };
   }
-  if (/\/weather\/realtime/.test(u.pathname)) {
-    return { status: 200, type: 'application/json', body: JSON.stringify({ data: { values: {
-      temperature: 15.2, temperatureApparent: 13.8, humidity: 75, windSpeed: 11, windDirection: 184,
-      weatherCode: 1000, cloudCover: 10, pressureSeaLevel: 1003, visibility: 20000, precipitationIntensity: 0 } } }) };
+  // v24037 — the board's weather is MET Norway's, through the site worker's
+  // /wxcurrent (tests/weather-met-only.test.js), in the field names it serves
+  if (/\/wxcurrent$/.test(u.pathname)) {
+    return { status: 200, type: 'application/json', body: JSON.stringify({ current: {
+      temperature_2m: 15.2, apparent_temperature: 13.8, relative_humidity_2m: 75, wind_speed_10m: 11, wind_direction_10m: 184,
+      weather_code: 0, cloud_cover: 10, surface_pressure: 1003 }, hourly: { time: [], temperature_2m: [], weather_code: [] }, _src: 'met-norway' }) };
   }
   if (/\/api\/airport-config\/YOW/.test(u.pathname)) {
     return { status: 200, type: 'application/json', body: JSON.stringify(airportConfig(palette)) };
@@ -537,7 +539,8 @@ async function boardPass(t, chrome, palette) {
     cdp.on(async (msg) => {
       if (msg.method !== 'Fetch.requestPaused') return;
       const { requestId, request } = msg.params;
-      if (request.url.startsWith(base)) { cdp.send('Fetch.continueRequest', { requestId }); return; }
+      // (the site worker's own routes — /wxcurrent — have no local server: fixtures)
+      if (request.url.startsWith(base) && !/\/wxcurrent\?/.test(request.url)) { cdp.send('Fetch.continueRequest', { requestId }); return; }
       const fx = fixtureFor(request.url, palette, feedNow);
       cdp.send('Fetch.fulfillRequest', { requestId, responseCode: fx.status,
         responseHeaders: [{ name: 'Content-Type', value: fx.type }, { name: 'Access-Control-Allow-Origin', value: '*' }],

@@ -123,8 +123,8 @@ __name(adbFetch, "adbFetch");
 // one, which is part of why this worker had no committed deploy config for so
 // long. The authoritative config is now workers/wrangler.fids-proxy.jsonc.
 //
-// TIO_KEY is also listed below but no longer used — weather comes from
-// open-meteo, which needs no key.
+// TIO_KEY is also listed below but no longer used — weather comes from MET
+// Norway through the site worker (v24037), which needs no key.
 
 // ── PASSWORDS ─────────────────────────────────────────────────────────────
 // v23169. What was here was a bare SHA-256 of the password: no salt, no
@@ -5403,92 +5403,7 @@ function _adbDeadEnrichment(p) {
 }
 __name(_adbDeadEnrichment, "_adbDeadEnrichment");
 
-// ── v23448 — WEATHER GOES THROUGH A CACHE, AND STOPS LYING WHEN IT FAILS.
-//
-// open-meteo is answering:
-//   {"error":true,"reason":"Daily API request limit exceeded. Please try
-//    again tomorrow."}
-//
-// Two faults, and they compound.
-//
-// 1. NOTHING WAS CACHED. /weather/realtime and /weather/forecast each did a
-//    bare `await fetch(omUrl)` per request — no caches.default, no cf.cacheTtl
-//    — and the boards poll around the clock. Coordinates arrived at full
-//    precision, so two screens at the same airport did not even share a URL.
-//    This is the AeroDataBox shape all over again: an unthrottled third-party
-//    API behind a screen that never stops asking.
-//
-// 2. THE FAILURE WAS DRESSED UP AS DATA. The handler read `omData.current`,
-//    got undefined off the error body, and returned {"data":{"values":{}}}
-//    with HTTP 200 and Cache-Control: max-age=300 — so every board and every
-//    CDN hop cached an empty shell as if it were a real answer. That is why
-//    the panel goes blank rather than saying anything.
-//
-// Now: coordinates rounded to ~1km so an airport shares one upstream call;
-// a colo cache in front of it; a long last-known-good copy so an outage shows
-// the previous reading instead of blanks; and a short negative cache so a
-// failing upstream is retried at most once every couple of minutes per place
-// rather than on every poll (the neg-cache lesson from the dead-ADB storm).
-const OM_LKG_TTL = 21600;   // 6h — how long a good reading stays usable as a fallback
-const OM_NEG_TTL = 120;     // 2m — how long we sit out after an upstream failure
-function omRound(v, fb) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n.toFixed(2) : fb;
-}
-__name(omRound, "omRound");
-// Returns { ok, data, stale } — `stale` means the upstream is down and this is
-// the last good reading. ok:false means we have nothing at all to show.
-async function omCachedJson(kind, lat, lng, upstreamUrl, ttlSec) {
-  const base = `https://wx.cache.invalid/${kind}?lat=${lat}&lng=${lng}`;
-  const freshKey = new Request(base, { method: "GET" });
-  const lkgKey = new Request(base + "&lkg=1", { method: "GET" });
-  const negKey = new Request(base + "&neg=1", { method: "GET" });
-  let cache;
-  try { cache = caches.default; } catch (e) { cache = null; }
-  if (cache) {
-    const hit = await cache.match(freshKey).catch(() => null);
-    if (hit) { try { return { ok: true, data: await hit.json(), stale: false }; } catch (e) {} }
-  }
-  const serveLkg = async () => {
-    if (!cache) return { ok: false };
-    const old = await cache.match(lkgKey).catch(() => null);
-    if (!old) return { ok: false };
-    try { return { ok: true, data: await old.json(), stale: true }; } catch (e) { return { ok: false }; }
-  };
-  // Sitting out after a recent failure — don't add to the pile-on upstream.
-  if (cache) {
-    const neg = await cache.match(negKey).catch(() => null);
-    if (neg) return await serveLkg();
-  }
-  let res, body;
-  try {
-    res = await fetch(upstreamUrl, { cf: { cacheTtl: ttlSec, cacheEverything: true } });
-    body = await res.json();
-  } catch (e) { body = null; }
-  // open-meteo answers 200 with {error:true, reason} for a quota refusal, so
-  // the status alone is not enough to tell a good reading from a refusal.
-  if (!res || !res.ok || !body || body.error) {
-    if (cache) {
-      await cache.put(negKey, new Response("1", {
-        headers: { "Cache-Control": `public, max-age=${OM_NEG_TTL}` }
-      })).catch(() => {});
-    }
-    const fallback = await serveLkg();
-    if (fallback.ok) return fallback;
-    return { ok: false, reason: (body && body.reason) || (res ? `upstream ${res.status}` : "fetch failed") };
-  }
-  if (cache) {
-    const payload = JSON.stringify(body);
-    await cache.put(freshKey, new Response(payload, {
-      headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttlSec}` }
-    })).catch(() => {});
-    await cache.put(lkgKey, new Response(payload, {
-      headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${OM_LKG_TTL}` }
-    })).catch(() => {});
-  }
-  return { ok: true, data: body, stale: false };
-}
-__name(omCachedJson, "omCachedJson");
+
 
 // SEA — Sea-Tac's Drupal flight-status page, server-rendered rows with a
 // per-row DATE column (mm-dd-yyyy) and 12-hour clocks. The page serves a
@@ -13071,112 +12986,12 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         return jsonResponse({ error: "Proxy failed" }, 502, origin);
       }
     }
+    // v24037 — the board weather routes are gone. They proxied Open-Meteo,
+    // whose free tier is non-commercial only (these boards carry advertising).
+    // Every board now reads MET Norway through the site worker (/wxcurrent,
+    // /wxdaily). A board that still asks here is told so, not given weather.
     if (path.startsWith("/weather/")) {
-      const loc = url.searchParams.get("location") || "";
-      const parts = loc.split(",");
-      // v23448 — rounded to ~1km so every board at one airport shares a single
-      // upstream call and a single cache entry. See omCachedJson.
-      const lat = omRound(parts[0], "45.50");
-      const lng = omRound(parts[1], "-73.60");
-      if (path.includes("/forecast")) {
-        const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,visibility,cloud_cover,surface_pressure,precipitation_probability&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto&forecast_days=2`;
-        try {
-          const got = await omCachedJson("forecast", lat, lng, omUrl, 1800);
-          if (!got.ok) {
-            return new Response(JSON.stringify({ error: true, reason: got.reason, timelines: { hourly: [] } }), {
-              status: 200,
-              headers: {
-                "Content-Type": "application/json",
-                // Never let a refusal be cached as if it were weather.
-                "Cache-Control": `public, max-age=${OM_NEG_TTL}`,
-                "X-Weather-State": "unavailable",
-                ...corsHeaders(origin)
-              }
-            });
-          }
-          const omData = got.data;
-          const hourly = omData.hourly || {};
-          const times = hourly.time || [];
-          const mapped = {
-            timelines: {
-              hourly: times.map((t, i) => ({
-                time: t,
-                values: {
-                  temperature: hourly.temperature_2m?.[i],
-                  temperatureApparent: hourly.apparent_temperature?.[i],
-                  weatherCode: hourly.weather_code?.[i],
-                  windSpeed: hourly.wind_speed_10m?.[i],
-                  windDirection: hourly.wind_direction_10m?.[i],
-                  windGust: hourly.wind_gusts_10m?.[i],
-                  humidity: hourly.relative_humidity_2m?.[i],
-                  visibility: hourly.visibility?.[i],
-                  cloudCover: hourly.cloud_cover?.[i],
-                  pressureSeaLevel: hourly.surface_pressure?.[i],
-                  precipitationProbability: hourly.precipitation_probability?.[i]
-                }
-              }))
-            }
-          };
-          if (got.stale) mapped._stale = true;
-          return new Response(JSON.stringify(mapped), {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json",
-              "Cache-Control": "public, max-age=600",
-              "X-Weather-State": got.stale ? "stale" : "fresh",
-              ...corsHeaders(origin)
-            }
-          });
-        } catch (e) {
-          return jsonResponse({ error: "Weather forecast proxy failed" }, 502, origin);
-        }
-      }
-      const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,surface_pressure,visibility,precipitation&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto&forecast_days=1`;
-      try {
-        const got = await omCachedJson("realtime", lat, lng, omUrl, 600);
-        if (!got.ok) {
-          return new Response(JSON.stringify({ error: true, reason: got.reason, data: { values: {} } }), {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json",
-              "Cache-Control": `public, max-age=${OM_NEG_TTL}`,
-              "X-Weather-State": "unavailable",
-              ...corsHeaders(origin)
-            }
-          });
-        }
-        const omData = got.data;
-        const cur = omData.current || {};
-        const mapped = {
-          data: {
-            values: {
-              temperature: cur.temperature_2m,
-              temperatureApparent: cur.apparent_temperature,
-              humidity: cur.relative_humidity_2m,
-              windSpeed: cur.wind_speed_10m,
-              windDirection: cur.wind_direction_10m,
-              windGust: cur.wind_gusts_10m,
-              weatherCode: cur.weather_code,
-              cloudCover: cur.cloud_cover,
-              pressureSeaLevel: cur.surface_pressure,
-              visibility: cur.visibility,
-              precipitationIntensity: cur.precipitation
-            }
-          }
-        };
-        if (got.stale) mapped._stale = true;
-        return new Response(JSON.stringify(mapped), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=300",
-            "X-Weather-State": got.stale ? "stale" : "fresh",
-            ...corsHeaders(origin)
-          }
-        });
-      } catch (e) {
-        return jsonResponse({ error: "Weather proxy failed" }, 502, origin);
-      }
+      return jsonResponse({ error: "gone", detail: "weather comes from the board site's /wxcurrent (MET Norway)" }, 410, origin);
     }
     if (path.startsWith("/ninjas/")) {
       const ninjasPath = path.replace("/ninjas/", "");

@@ -415,7 +415,14 @@ export default {
       if (typeof inst.air_temperature !== 'number') return null;
       const sym0 = (d0.next_1_hours && d0.next_1_hours.summary && d0.next_1_hours.summary.symbol_code)
                 || (d0.next_6_hours && d0.next_6_hours.summary && d0.next_6_hours.summary.symbol_code);
-      const time = [], temp = [], code = [];
+      // v24037 — every board's weather comes from here now (the rows, the
+      // gate, the card), so the hourly series carries what those surfaces
+      // read: feels-like, wind, gusts, direction, cloud and rain chance.
+      // MET publishes no visibility; a board that has none simply omits it.
+      const kmh = (v) => (typeof v === 'number') ? Math.round(v * 3.6 * 10) / 10 : null;
+      const num = (v) => (typeof v === 'number') ? v : null;
+      const pop = (d) => num(d && d.next_1_hours && d.next_1_hours.details && d.next_1_hours.details.probability_of_precipitation);
+      const time = [], temp = [], code = [], app = [], wind = [], gust = [], dir = [], cloud = [], rainP = [];
       for (const step of ts) {
         const det = (step.data && step.data.instant && step.data.instant.details) || {};
         if (typeof det.air_temperature !== 'number') continue;
@@ -424,6 +431,12 @@ export default {
         time.push(metHourStr(step.time));
         temp.push(det.air_temperature);
         code.push(metWmo(sym));
+        app.push(num(det.apparent_air_temperature));
+        wind.push(kmh(det.wind_speed));
+        gust.push(kmh(det.wind_speed_of_gust));
+        dir.push(num(det.wind_from_direction));
+        cloud.push(num(det.cloud_area_fraction));
+        rainP.push(pop(step.data));
       }
       return {
         current: {
@@ -436,9 +449,16 @@ export default {
           wind_speed_10m: (typeof inst.wind_speed === 'number')
             ? Math.round(inst.wind_speed * 3.6 * 10) / 10 : null,
           relative_humidity_2m: (typeof inst.relative_humidity === 'number')
-            ? Math.round(inst.relative_humidity) : null
+            ? Math.round(inst.relative_humidity) : null,
+          wind_gusts_10m: kmh(inst.wind_speed_of_gust),
+          wind_direction_10m: num(inst.wind_from_direction),
+          cloud_cover: num(inst.cloud_area_fraction),
+          surface_pressure: num(inst.air_pressure_at_sea_level),
+          precipitation_probability: pop(d0)
         },
-        hourly: { time: time, temperature_2m: temp, weather_code: code },
+        hourly: { time: time, temperature_2m: temp, weather_code: code, apparent_temperature: app,
+                  wind_speed_10m: wind, wind_gusts_10m: gust, wind_direction_10m: dir,
+                  cloud_cover: cloud, precipitation_probability: rainP },
         _src: 'met-norway'
       };
     };
