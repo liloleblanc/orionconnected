@@ -231,7 +231,7 @@
   /* ── Component registry: render + properties schema ────────────────────── */
   const COMPONENTS = {
     text: {
-      defaultProps: { text: 'Your text here', fontSize: 36, color: '#ffffff', weight: 700, align: 'left', fontFamily: 'Inter' },
+      defaultProps: { text: 'Your text here', fontSize: 36, color: '#ffffff', weight: 700, align: 'left', fontFamily: 'Bricolage Grotesque' },
       defaultSize:  { w: 360, h: 70 },
       render(el, props) {
         el.classList.add('dgn-comp-text');
@@ -269,7 +269,7 @@
       ]
     },
     clock: {
-      defaultProps: { format: '12h', fontSize: 64, color: '#ffffff', showSeconds: false, fontFamily: 'Inter' },
+      defaultProps: { format: '12h', fontSize: 64, color: '#ffffff', showSeconds: false, fontFamily: 'Bricolage Grotesque' },
       defaultSize:  { w: 320, h: 100 },
       render(el, props) {
         el.classList.add('dgn-comp-clock');
@@ -346,7 +346,7 @@
         zebra: true,
         columnGap: 18, rowPadding: 12, headerPadding: 10,
         wrap: 'truncate',
-        fontFamily: 'Inter',
+        fontFamily: 'Bricolage Grotesque',
         statusColors: {
           'boarding':   '#10b981',
           'final call': '#10b981',
@@ -485,7 +485,7 @@
         body: 'Please proceed to your gate.',
         bg: '#065f46', titleColor: '#ffffff', bodyColor: '#d1fae5',
         accent: '#10b981', titleSize: 42, bodySize: 24, icon: '✈',
-        fontFamily: 'Inter'
+        fontFamily: 'Bricolage Grotesque'
       },
       defaultSize: { w: 600, h: 220 },
       render(el, props) {
@@ -677,7 +677,7 @@
     const o = coords[originCode], d = coords[destCode];
     const accent = props.accent || '#3b82f6';
     const note = (msg) => {
-      el.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9ca3af;font:14px/1.5 Inter,system-ui,sans-serif;padding:20px;">' + _esc(msg) + '</div>';
+      el.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9ca3af;font:14px/1.5 \'Bricolage Grotesque\',system-ui,sans-serif;padding:20px;">' + _esc(msg) + '</div>';
     };
     if (typeof L === 'undefined' || typeof L.map !== 'function') { note('Loading map engine…'); return null; }
     if (!o) { note('Unknown origin airport code: "' + (originCode || '—') + '". Use an IATA code like YQM.'); return null; }
@@ -761,12 +761,12 @@
         '</g>') +
       '</svg>';
     return svg +
-      (o.fnum ? '<div style="position:absolute;top:16px;left:0;right:0;text-align:center;color:' + _esc(text) + ';font-weight:700;font-size:24px;letter-spacing:0.12em;font-family:Inter,system-ui,sans-serif;">' + _esc(o.fnum) + '</div>' : '') +
-      '<div style="position:absolute;left:24px;bottom:22px;text-align:left;font-family:Inter,system-ui,sans-serif;">' +
+      (o.fnum ? '<div style="position:absolute;top:16px;left:0;right:0;text-align:center;color:' + _esc(text) + ';font-weight:700;font-size:24px;letter-spacing:0.12em;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;">' + _esc(o.fnum) + '</div>' : '') +
+      '<div style="position:absolute;left:24px;bottom:22px;text-align:left;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;">' +
         '<div style="font-size:58px;font-weight:900;color:' + _esc(text) + ';line-height:1;">' + _esc(o.origin || '—') + '</div>' +
         (o.originLabel ? '<div style="font-size:22px;color:rgba(255,255,255,0.6);margin-top:4px;">' + _esc(o.originLabel) + '</div>' : '') +
       '</div>' +
-      '<div style="position:absolute;right:24px;bottom:22px;text-align:right;font-family:Inter,system-ui,sans-serif;">' +
+      '<div style="position:absolute;right:24px;bottom:22px;text-align:right;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;">' +
         '<div style="font-size:58px;font-weight:900;color:' + _esc(text) + ';line-height:1;">' + _esc(o.dest || '—') + '</div>' +
         (o.destLabel ? '<div style="font-size:22px;color:rgba(255,255,255,0.6);margin-top:4px;">' + _esc(o.destLabel) + '</div>' : '') +
       '</div>';
@@ -806,7 +806,7 @@
       ['Gate',         flight.gate]
     ].filter(r => r[1]);
     return '<div style="height:100%;box-sizing:border-box;padding:20px 22px;background:rgba(0,0,0,0.28);' +
-      'border-left:1px solid rgba(255,255,255,0.08);font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;">' +
+      'border-left:1px solid rgba(255,255,255,0.08);font-family:\'Bricolage Grotesque\',system-ui,sans-serif;display:flex;flex-direction:column;">' +
       '<div style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' + _esc(flight.airlineName || flight.airline || 'Flight') + '</div>' +
       '<div style="font-size:34px;font-weight:900;color:' + _esc(accent) + ';line-height:1.1;margin:2px 0 14px;">' + _esc(flight.status || 'Scheduled') + '</div>' +
       rows.map(r =>
@@ -819,21 +819,18 @@
   }
 
   /* Shared font-family helper: maps a friendly font name to a CSS stack
-   * that matches what the engine already loads (Geist, Inter, etc.). */
+   * that matches what the engine already loads (the approved families). */
   const FONT_FAMILIES = [
-    { v: 'Inter',          l: 'Inter (modern UI)' },
-    { v: 'DM Sans',        l: 'DM Sans (geometric)' },
-    { v: 'Manrope',        l: 'Manrope (rounded)' },
-    { v: 'Space Grotesk',  l: 'Space Grotesk (display)' },
-    { v: 'Geist',          l: 'Geist (clean)' },
-    { v: 'Airport',        l: 'Airport (signage)' },
-    { v: 'Airport X',      l: 'Airport X (alt signage)' },
-    { v: 'JetBrains Mono', l: 'JetBrains Mono (monospace)' },
-    { v: 'system',         l: 'System default' }
+    { v: 'Bricolage Grotesque', l: 'Bricolage Grotesque (board default)' },
+    { v: 'AC Nord Display',     l: 'AC Nord Display' },
+    { v: 'AC Nord Text',        l: 'AC Nord Text' },
+    { v: 'Cabinet Grotesk',     l: 'Cabinet Grotesk' },
+    { v: 'Possibility',         l: 'Possibility' },
+    { v: 'system',              l: 'System default' }
   ];
   function _fontStack(name) {
     if (!name || name === 'system') return "system-ui, -apple-system, 'Segoe UI', sans-serif";
-    return "'" + name + "', 'Inter', system-ui, sans-serif";
+    return "'" + name + "', 'Bricolage Grotesque', system-ui, sans-serif";
   }
   window.FidsDesignerFonts = FONT_FAMILIES; // shared with field renderer
 
@@ -1784,7 +1781,7 @@
       '</div>';
     }
     else if (f.type === 'font') {
-      const list = (window.FidsDesignerFonts) || [{v:'Inter',l:'Inter'},{v:'system',l:'System'}];
+      const list = (window.FidsDesignerFonts) || [{v:'Bricolage Grotesque',l:'Bricolage Grotesque'},{v:'system',l:'System'}];
       input = '<select data-prop="' + f.key + '">' +
         list.map(o => '<option value="' + _esc(o.v) + '"' + (String(o.v) === String(v || '') ? ' selected' : '') + '>' + _esc(o.l) + '</option>').join('') +
       '</select>';

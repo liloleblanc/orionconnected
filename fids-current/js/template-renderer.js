@@ -232,7 +232,7 @@
     el.style.flexDirection = 'column';
     el.style.alignItems = 'stretch';
     el.style.justifyContent = 'flex-start';
-    el.style.fontFamily = "'Inter', system-ui, sans-serif";
+    el.style.fontFamily = "'Bricolage Grotesque', system-ui, sans-serif";
     const draw = () => el.innerHTML = _buildFlightListHTML(p, _liveFlights(p.source));
     draw();
     // Refresh every 8s so new live data reflects without a full reload.
@@ -269,7 +269,7 @@
   }
   function _fontStack(name) {
     if (!name || name === 'system') return "system-ui, -apple-system, 'Segoe UI', sans-serif";
-    return "'" + name + "', 'Inter', system-ui, sans-serif";
+    return "'" + name + "', 'Bricolage Grotesque', system-ui, sans-serif";
   }
 
   /* ── Dynamic-text resolution (live side) ─────────────────────────────────
@@ -422,7 +422,7 @@
       [_w('aircraft'), flight.aircraft], [_w('gate'), flight.gate]
     ].filter(r => r[1]);
     return '<div style="height:100%;box-sizing:border-box;padding:20px 22px;background:rgba(0,0,0,0.28);' +
-      'border-left:1px solid rgba(255,255,255,0.08);font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;">' +
+      'border-left:1px solid rgba(255,255,255,0.08);font-family:\'Bricolage Grotesque\',system-ui,sans-serif;display:flex;flex-direction:column;">' +
       '<div style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' + _esc(flight.airlineName || flight.airline || _w('flight')) + '</div>' +
       '<div style="font-size:34px;font-weight:900;color:' + _esc(accent) + ';line-height:1.1;margin:2px 0 14px;">' + _esc(_stWord(flight.status || 'scheduled')) + '</div>' +
       rows.map(r =>
@@ -437,7 +437,7 @@
   /* Renders one geographic Leaflet map into `container`, returns the map. */
   function _flightMapGeoLive(container, p, rt) {
     const note = (msg) => {
-      container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9ca3af;font:14px/1.5 Inter,system-ui,sans-serif;padding:20px;">' + _esc(msg) + '</div>';
+      container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#9ca3af;font:14px/1.5 \'Bricolage Grotesque\',system-ui,sans-serif;padding:20px;">' + _esc(msg) + '</div>';
     };
     const coords = window.AIRPORT_COORDS || {};
     const o = coords[rt.org], d = coords[rt.dst];
@@ -569,12 +569,12 @@
         '</g>') +
       '</svg>';
     return svg +
-      (o.fnum ? '<div style="position:absolute;top:16px;left:0;right:0;text-align:center;color:' + _esc(text) + ';font-weight:700;font-size:24px;letter-spacing:0.12em;font-family:Inter,system-ui,sans-serif;">' + _esc(o.fnum) + '</div>' : '') +
-      '<div style="position:absolute;left:24px;bottom:22px;text-align:left;font-family:Inter,system-ui,sans-serif;">' +
+      (o.fnum ? '<div style="position:absolute;top:16px;left:0;right:0;text-align:center;color:' + _esc(text) + ';font-weight:700;font-size:24px;letter-spacing:0.12em;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;">' + _esc(o.fnum) + '</div>' : '') +
+      '<div style="position:absolute;left:24px;bottom:22px;text-align:left;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;">' +
         '<div style="font-size:58px;font-weight:900;color:' + _esc(text) + ';line-height:1;">' + _esc(o.origin || '—') + '</div>' +
         (o.originLabel ? '<div style="font-size:22px;color:rgba(255,255,255,0.6);margin-top:4px;">' + _esc(o.originLabel) + '</div>' : '') +
       '</div>' +
-      '<div style="position:absolute;right:24px;bottom:22px;text-align:right;font-family:Inter,system-ui,sans-serif;">' +
+      '<div style="position:absolute;right:24px;bottom:22px;text-align:right;font-family:\'Bricolage Grotesque\',system-ui,sans-serif;">' +
         '<div style="font-size:58px;font-weight:900;color:' + _esc(text) + ';line-height:1;">' + _esc(o.dest || '—') + '</div>' +
         (o.destLabel ? '<div style="font-size:22px;color:rgba(255,255,255,0.6);margin-top:4px;">' + _esc(o.destLabel) + '</div>' : '') +
       '</div>';
@@ -674,7 +674,7 @@
     el.style.borderRadius = '8px';
     el.style.overflow = 'hidden';
     el.style.justifyContent = 'center';
-    el.style.fontFamily = "'Inter', system-ui, sans-serif";
+    el.style.fontFamily = "'Bricolage Grotesque', system-ui, sans-serif";
     const items = Array.isArray(p.items) && p.items.length ? p.items : [{ type:'text', text:'', bg:'#374151', color:'#fff' }];
     let i = 0;
     const show = () => {

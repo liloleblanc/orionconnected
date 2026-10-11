@@ -31,14 +31,14 @@
   --danger: #dc2626;
   --info: #60a5fa;
 
-  /* Typography — default to Geist (free Roc Grotesk twin).
+  /* Typography — default to Bricolage Grotesque (the board default).
      Switchable at runtime by overriding --font-primary on body.
      See css/font.css for the full set of named font stacks. */
   /* The Japanese, Chinese and Arabic web fonts close every stack, so those
      languages render on a host with no fonts of its own (the stream host).
      BoardStrings.withScripts() adds the same tail to a stack set at run time. */
-  --font-primary: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, Arial, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+  --font-primary: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, Arial, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   /* Spacing */
   --space-xs: 4px;
@@ -149,7 +149,7 @@ body {
   align-items: center;
   justify-content: center;
   color: var(--ld-text);
-  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
   background:
     radial-gradient(ellipse at 80% 20%, var(--ld-bg-radial-1) 0%, transparent 50%),
     radial-gradient(ellipse at 20% 80%, var(--ld-bg-radial-2) 0%, transparent 50%),
@@ -216,7 +216,7 @@ html[data-boot-ground="1"] #fidsLoader {
 #fidsLoader.is-gone   { display: none; }
 
 .fids-loader-brand {
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.32em;
@@ -225,7 +225,7 @@ html[data-boot-ground="1"] #fidsLoader {
   margin-bottom: 14px;
 }
 .fids-loader-title {
-  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
   font-size: 64px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -234,7 +234,7 @@ html[data-boot-ground="1"] #fidsLoader {
   line-height: 1;
 }
 .fids-loader-sub {
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.22em;
@@ -292,7 +292,7 @@ html[data-boot-ground="1"] #fidsLoader {
 }
 .fids-loader-status {
   margin-top: 32px;
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.18em;

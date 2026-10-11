@@ -1494,7 +1494,13 @@ function getAirlineBgSlideLabel(slide, idx) {
   return 'Scene ' + (idx + 1);
 }
 
+// v24038 — the families the site serves (font.css). A name a device still
+// remembers from an older picker (Geist, Inter, Airport…) is no longer
+// served, so changeFont draws the board default instead of the system face.
+var FIDS_SERVED_FONT = /^(Bricolage Grotesque( SemiCond| Cond)?|Cabinet Grotesk( Light| Medium| Bold| Extrabold| Black)?|Possibility|AC Nord (Display|Text)( Light| Regular| Italic| Medium| Bold| Heavy)?)$/;
+
 function changeFont(f) {
+  if (!FIDS_SERVED_FONT.test(String(f || ''))) f = FIDS_FONT_STACKS.bricolage.split("'")[1];
   // v23970 — with the Japanese, Chinese and Arabic web fonts before the generic.
   const fam = BoardStrings.withScripts("'" + f + "', sans-serif");
   document.body.style.fontFamily = fam;
@@ -1535,7 +1541,7 @@ function changeFont(f) {
   // Without the :not() guards this universal !important nuked those fonts
   //
   s.textContent = `*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
-  // Persist the choice — page load used to hard-reset to Geist, wiping
+  // Persist the choice — page load used to hard-reset to one font, wiping
   // whatever the user picked; a newly added font vanished on the next load.
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
   try { var _fs = document.getElementById('fontSel'); if (_fs && _fs.value !== f) _fs.value = f; } catch (e) {}
@@ -1558,27 +1564,11 @@ var FIDS_FONT_STACKS = {
   'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
   'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
   'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",
-  // v23868 — BRICOLAGE GROTESQUE, served from a licensed Adobe Fonts web kit.
-  //
-  // Three widths across four optical sizes, regular and bold. The optical
-  // sizes are the reason it is registered face by face rather than as one
-  // family: 24 is drawn for text and 72 for headlines, and on a board read
-  // from across a concourse that distinction is the whole point of the
-  // typeface. Picking '72' for a gate number and '24' for a row is a choice
-  // the picker can now express.
-  //
-  // Unlike every other family here the faces are NOT in font.css and NOT in
-  // the repo — they load from use.typekit.net, linked in the three board
-  // documents. That is deliberate and it is what makes them usable at all: a
-  // Typekit web kit carries a web-embedding licence, which is the thing the
-  // previously evaluated candidates lacked.
+  // Bricolage Grotesque (SIL OFL) is self-hosted in font.css: one variable
+  // face across three widths, registered as three families so the picker
+  // can pin a width.
   'possibility':   "'Possibility', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
-  'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
-  'inter':         "'Inter', system-ui, -apple-system, sans-serif",
-  'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
-  'space-grotesk': "'Space Grotesk', system-ui, -apple-system, sans-serif",
-  'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
+  'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 };
 // Re-apply the saved font on page load. Priority:
 //   1. FIDS Console → Customize panel pick (per-airport pref) — the UI users
@@ -1586,7 +1576,7 @@ var FIDS_FONT_STACKS = {
 //      board render did), so the font vanished on refresh until the panel
 //      was reopened. Apply it here for every screen type.
 //   2. Control-bar FONT dropdown pick (fids_font_choice).
-//   3. defaultFont (page default), then Geist.
+//   3. defaultFont (page default), then Bricolage Grotesque.
 // ── THE OLD DEFAULT WAS SAVED AS IF IT HAD BEEN CHOSEN ─────────────────────
 // v23872. changeFont() persists EVERY call, including the one that applies
 // the page default when nobody has picked anything. So every board that has
@@ -8981,7 +8971,7 @@ function resolveFairmontLockupFile(hotelName) {
 // When a Fairmont property doesn't have an official brand-team lockup file
 // in FAIRMONT_PROPERTY_LOCKUPS above, we build one on the fly using this
 // generator. It composes: Fairmont script wordmark (from the official
-// brand SVG) → horizontal rule → property name in Cinzel serif spaced caps.
+// brand SVG) → horizontal rule → property name in serif spaced caps.
 //
 // Output is a data-URI SVG that the <img> tag in buildAdLogoPanelHtml can
 // render directly without needing a separate logo file. Approximates the
@@ -9245,7 +9235,7 @@ function makeEmblemsLockupSvgDataUri(propertyName) {
     +   '<path d="' + _EMBLEMS_WORDMARK_D + '"/>'
     + '</g>'
     + '<text x="40" y="27" text-anchor="middle" '
-    +   'font-family="Cinzel, &apos;Trajan Pro&apos;, &apos;Times New Roman&apos;, serif" '
+    +   'font-family="Georgia, &apos;Times New Roman&apos;, serif" '
     +   'font-size="' + fontSize + '" letter-spacing="' + letterSpacing + '" font-weight="500" fill="#ffffff">'
     +   name
     + '</text>'
@@ -11434,7 +11424,7 @@ function renderMobileBaggageHtml(ctx) {
       ? '<div class="ffn-inview ffn-inview--phone" role="status" style="text-align:center;padding:48px 20px;color:' + T.ink + ';font-size:15px;">' + _fidsFeedDownInView(iata, 'arr') + '</div>'
       : '<div style="text-align:center;padding:48px 20px;color:' + T.muted + ';font-size:14px;letter-spacing:2px;">' + TL('noAssigned') + '</div>');
 
-  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('\'Bricolage Grotesque\',system-ui,sans-serif') + ';padding-bottom:110px;">'
     // header: airport + belt
     + '<div style="background:' + T.header + ';padding:16px 18px 14px;border-bottom:1px solid ' + T.line + ';display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">'
     +   '<div style="flex:1;min-width:0;">'
@@ -11736,7 +11726,7 @@ function renderMobileGateHtml(ctx) {
     }
   } catch (e) { _inbBlock = ''; }
 
-  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('\'Bricolage Grotesque\',system-ui,sans-serif') + ';padding-bottom:110px;">'
 
     // ── HEADER: compact, clears the gear icon, no dead space ──
     + '<div style="background:' + T.header + ';padding:54px 20px 18px;border-bottom:1px solid ' + T.line + ';">'
@@ -31466,7 +31456,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24037';
+var FIDS_BUILD_TAG = 'v24038';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38541,7 +38531,7 @@ function applyAirportConfigToBoard(iata) {
   } catch (e) {}
 
   // ── FONT (v218.6+) ──
-  // User-chosen font wins over admin > built-in (Geist default from CSS).
+  // User-chosen font wins over admin > built-in (Bricolage default from CSS).
   // The font key maps to a CSS font stack we write to --font-primary, PLUS
   // a *, *::before, *::after { !important } override so the font also
   // applies to hardcoded inline styles and JS-generated content.
@@ -38576,12 +38566,7 @@ function applyAirportConfigToBoard(iata) {
       'ac-nord-text-medium':     "'AC Nord Text Medium', 'AC Nord Text', sans-serif",
       'ac-nord-text-bold':       "'AC Nord Text Bold', 'AC Nord Text', sans-serif",
       'ac-nord-text-heavy':      "'AC Nord Text Heavy', 'AC Nord Text', sans-serif",
-      'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
-      'inter':         "'Inter', system-ui, -apple-system, sans-serif",
-      'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
-      'space-grotesk': "'Space Grotesk', system-ui, -apple-system, sans-serif",
-      'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
+      'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     };
     if (_fontStacks[_font]) {
       var _stack = BoardStrings.withScripts(_fontStacks[_font]);
@@ -52064,7 +52049,7 @@ function buildAdLogoPanelHtml(ad) {
   // filter so any-color brand mark renders crisp on the dark panel.
   if (ad.isAccorHotel || ad._customLogo) {
     // Luxury serif brands — Fairmont, Four Seasons, Ritz-Carlton, etc.
-    // Use Cinzel (Trajan-like roman serif) for property names.
+    // A roman serif for property names.
     var serifBrands = {
       'FAI': true,            // Fairmont (Accor brand code)
       'four-seasons': true,   // Four Seasons (slug)
@@ -52113,10 +52098,10 @@ function buildAdLogoPanelHtml(ad) {
       ? getHotelLogoSizing(logoPath, ad)
       : 'width:74%;max-width:74%;height:auto;max-height:38%;';
 
-    // Property name: serif brands get Cinzel; others get Helvetica. Slightly
+    // Property name: serif brands get a roman serif; others get Helvetica. Slightly
     // lighter weight + reduced opacity so it reads as subordinate to the logo.
     var nameStyle = isSerifBrand
-      ? "font-family:'Cinzel','Trajan Pro','Times New Roman',serif;font-size:clamp(12px,1.1vw,15px);font-weight:500;letter-spacing:0.18em;"
+      ? "font-family:Georgia,'Times New Roman',serif;font-size:clamp(12px,1.1vw,15px);font-weight:500;letter-spacing:0.18em;"
       : "font-family:'Helvetica Neue','Arial',sans-serif;font-size:clamp(12px,1.1vw,15px);font-weight:400;letter-spacing:0.14em;";
     return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 18px;box-sizing:border-box;gap:10px;">'
       + '<img src="' + logoPath + '" alt="" '
