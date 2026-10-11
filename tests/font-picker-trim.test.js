@@ -78,7 +78,7 @@ test('the stylesheet names only files that exist, and the removed faces and file
   const srcs = [...FONT_CSS.matchAll(/url\('\.\.\/([^']+)'\)/g)].map((m) => decodeURIComponent(m[1]));
   assert.ok(srcs.length >= 20);
   // Possibility is served from private storage (v24027, worker-entry.js privateFont)
-  const PRIVATE = ['fonts/Possibility-Bold.otf'];
+  const PRIVATE = ['fonts/Possibility-Bold-Web.woff2'];
   for (const s of new Set(srcs)) {
     if (PRIVATE.includes(s)) continue;
     assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', s)), `declared but missing: ${s}`);

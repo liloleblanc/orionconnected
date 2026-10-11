@@ -153,26 +153,33 @@ function miaParseFlights(xml) {
 }
 
 // v24027 — POSSIBILITY, FROM PRIVATE STORAGE.
-// The licensed Possibility-Bold.otf is no longer in the public repository
-// (its licence forbids passing the file on). It lives in the private R2
-// bucket fids-private (binding FIDS_PRIVATE) and is served here, at the path
-// font.css already names (../fonts/Possibility-Bold.otf), and only on
-// orionconnected.com and its airport addresses: the licence covers one
-// domain. Anywhere else (.ca, .app, a preview), or when the bucket cannot
-// answer, it is a 404 and the font stack falls back to Bricolage Grotesque.
-const PRIVATE_FONTS = { '/fonts/Possibility-Bold.otf': 'fonts/Possibility-Bold.otf' };
+// v24036 — LICENSED: Possibility Bold, Commercial Use and Webfont (Matthew
+// Reynolds, receipt #1903-1253, 2026-10-10). The licence lets the WEB font be
+// installed on our site, and does not let the desktop file be downloaded over
+// the internet, so the board now loads the webfont as supplied
+// (Possibility-Bold-Web.woff2 — no conversion, no subsetting) and the .otf is
+// no longer served at all. It lives in the private R2 bucket fids-private
+// (binding FIDS_PRIVATE), never in the public repository, and is served at
+// the path font.css names on our own site: orionconnected.com, .ca and .app
+// and their airport addresses — one website on three domains, which Matthew
+// confirmed in writing (2026-10-11) is one licence. Anywhere else (a
+// preview, another host), or when the bucket cannot answer, it is a 404 and
+// the font stack falls back to Bricolage Grotesque.
+const PRIVATE_FONTS = { '/fonts/Possibility-Bold-Web.woff2': { key: 'fonts/Possibility-Bold-Web.woff2', type: 'font/woff2' } };
+const PRIVATE_FONT_DOMAINS = ['orionconnected.com', 'orionconnected.ca', 'orionconnected.app'];
 async function privateFont(url, env) {
-  const key = PRIVATE_FONTS[url.pathname];
-  if (!key) return null;
+  const f = PRIVATE_FONTS[url.pathname];
+  if (!f) return null;
+  const key = f.key;
   const host = String(url.hostname || '').toLowerCase();
-  const ours = host === 'orionconnected.com' || host.endsWith('.orionconnected.com');
+  const ours = PRIVATE_FONT_DOMAINS.some((d) => host === d || host.endsWith('.' + d));
   if (!ours || !env || !env.FIDS_PRIVATE) return new Response('Not found', { status: 404, headers: NO_STORE });
   try {
     const obj = await env.FIDS_PRIVATE.get(key);
     if (!obj) return new Response('Not found', { status: 404, headers: NO_STORE });
     return new Response(obj.body, {
       status: 200,
-      headers: { 'Content-Type': 'font/otf', 'Cache-Control': 'public, max-age=86400', 'ETag': obj.httpEtag || '' }
+      headers: { 'Content-Type': f.type, 'Cache-Control': 'public, max-age=86400', 'ETag': obj.httpEtag || '' }
     });
   } catch (e) {
     return new Response('Not found', { status: 404, headers: NO_STORE });

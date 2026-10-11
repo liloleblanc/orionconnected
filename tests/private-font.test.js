@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // v24027 — POSSIBILITY IS SERVED FROM PRIVATE STORAGE, ON OUR DOMAIN ONLY.
 //
+// v24036: now licensed (Commercial Use and Webfont), served as the webfont.
 // Possibility-Bold.otf is licensed for one domain, with no passing the file
 // on. It sat in the public repository, which anyone could download. It now
 // lives in the private R2 bucket fids-private, and the board Worker serves it
@@ -33,30 +34,39 @@ function lift(src, name) {
 const NO_STORE = { 'Cache-Control': 'no-store' };
 const PRIVATE_FONTS = WORKER.match(/^const PRIVATE_FONTS = (\{[^\n]*\});/m);
 const fnSrc = lift(WORKER, 'privateFont');
-const make = new Function('NO_STORE', 'Response', `const PRIVATE_FONTS = ${PRIVATE_FONTS[1]}; ${fnSrc}; return privateFont;`);
+const DOMAINS = WORKER.match(/^const PRIVATE_FONT_DOMAINS = (\[[^\n]*\]);/m);
+const make = new Function('NO_STORE', 'Response', `const PRIVATE_FONTS = ${PRIVATE_FONTS[1]}; const PRIVATE_FONT_DOMAINS = ${DOMAINS[1]}; ${fnSrc}; return privateFont;`);
 const serve = make(NO_STORE, Response);
-const bucket = (has) => ({ FIDS_PRIVATE: { get: async (k) => (has && k === 'fonts/Possibility-Bold.otf') ? { body: 'OTF', httpEtag: '"e1"' } : null } });
+const WEB = '/fonts/Possibility-Bold-Web.woff2';
+const bucket = (has) => ({ FIDS_PRIVATE: { get: async (k) => (has && k === 'fonts/Possibility-Bold-Web.woff2') ? { body: 'WOFF2', httpEtag: '"e1"' } : null } });
 
-test('the font file is not in the public repository', () => {
+test('the font files are not in the public repository, and the board loads the webfont', () => {
   assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/fonts/Possibility-Bold.otf')));
-  assert.match(rd('fids-current/css/font.css'), /font-family:'Possibility';[^}]*url\('\.\.\/fonts\/Possibility-Bold\.otf'\)/, 'font.css still names it, served by the Worker');
+  assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/fonts/Possibility-Bold-Web.woff2')));
+  // v24036 — the licence (Commercial Use and Webfont) covers the WEB font on
+  // our site; the desktop file may not be downloadable over the internet
+  assert.match(rd('fids-current/css/font.css'), /font-family:'Possibility';[^}]*url\('\.\.\/fonts\/Possibility-Bold-Web\.woff2'\) format\('woff2'\)/, 'font.css names the webfont, served by the Worker');
+  assert.doesNotMatch(rd('fids-current/css/font.css'), /Possibility-Bold\.otf/);
   assert.match(rd('wrangler.jsonc'), /"binding": "FIDS_PRIVATE", "bucket_name": "fids-private"/);
 });
 
-test('the Worker serves it on orionconnected.com addresses only', async () => {
-  for (const host of ['fids.orionconnected.com', 'yqm.orionconnected.com', 'orionconnected.com']) {
-    const r = await serve(new URL('https://' + host + '/fonts/Possibility-Bold.otf'), bucket(true));
+test('the Worker serves the webfont on our site only: .com, .ca and .app', async () => {
+  // one website on three domains = one licence (Matthew Reynolds, in writing, 2026-10-11)
+  for (const host of ['fids.orionconnected.com', 'yqm.orionconnected.com', 'orionconnected.com',
+                      'yhz.orionconnected.ca', 'orionconnected.ca', 'yul.orionconnected.app', 'orionconnected.app']) {
+    const r = await serve(new URL('https://' + host + WEB), bucket(true));
     assert.equal(r.status, 200, host);
-    assert.equal(r.headers.get('Content-Type'), 'font/otf');
+    assert.equal(r.headers.get('Content-Type'), 'font/woff2');
   }
-  for (const host of ['yqm.orionconnected.ca', 'orionconnected.app', 'fids-proxy.example.workers.dev', 'localhost', 'evilorionconnected.com']) {
-    const r = await serve(new URL('https://' + host + '/fonts/Possibility-Bold.otf'), bucket(true));
-    assert.equal(r.status, 404, host + ' is not the licensed domain');
+  for (const host of ['fids-proxy.example.workers.dev', 'localhost', 'evilorionconnected.com', 'orionconnected.ca.example.com']) {
+    const r = await serve(new URL('https://' + host + WEB), bucket(true));
+    assert.equal(r.status, 404, host + ' is not our site');
   }
   // a bucket that cannot answer is a 404, never a broken font
-  assert.equal((await serve(new URL('https://fids.orionconnected.com/fonts/Possibility-Bold.otf'), bucket(false))).status, 404);
-  assert.equal((await serve(new URL('https://fids.orionconnected.com/fonts/Possibility-Bold.otf'), {})).status, 404);
-  // anything else is not this route's
+  assert.equal((await serve(new URL('https://fids.orionconnected.com' + WEB), bucket(false))).status, 404);
+  assert.equal((await serve(new URL('https://fids.orionconnected.com' + WEB), {})).status, 404);
+  // the desktop file is not served at all any more, and nothing else is this route's
+  assert.equal(await serve(new URL('https://fids.orionconnected.com/fonts/Possibility-Bold.otf'), bucket(true)), null);
   assert.equal(await serve(new URL('https://fids.orionconnected.com/fonts/other.otf'), bucket(true)), null);
   // the route runs before every other Worker path
   const fetchAt = WORKER.indexOf('async fetch(request, env, ctx) {');

@@ -11,7 +11,7 @@ const assetExtension = '(?:css|gif|glb|html|ico|jpeg|jpg|js|json|mov|mp4|otf|png
 const dynamicRoutes = ['/demtiles/', '/mapcdn/', '/maptiles/', '/tiles/'];
 // v24027 — licensed files the Worker serves from private storage, never in
 // the repository (worker-entry.js PRIVATE_FONTS, tests/private-font.test.js)
-const privateFiles = [path.join(staticRoot, 'fonts', 'Possibility-Bold.otf')];
+const privateFiles = [path.join(staticRoot, 'fonts', 'Possibility-Bold-Web.woff2')];
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
