@@ -221,7 +221,7 @@ test('the icons are the board\'s flat set, white and still, framed on their own 
   }
   assert.match(rule('.wxcard-wrap .wxanim-host .wxc-ko'), /fill: var\(--wxc-ko, #141319\) !important; stroke: var\(--wxc-ko, #141319\) !important;/);
   // applied as the card's icons are inlined, and only on the card
-  assert.match(fnSource('_wxHydrateSvgs'), /if \(img\.closest && img\.closest\('\.wxcard-wrap'\)\) rawTxt = _wxWhiteStill\(rawTxt, name\);/);
+  assert.match(fnSource('_wxHydrateSvgs'), /if \(img\.closest && img\.closest\('\.wxcard-wrap'\) && !\/\\\/disc-\(day\|night\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill\(rawTxt, name\);/);
   assert.match(rule('.wxcard-wrap img.wxanim'), /visibility: hidden !important/, 'the file\'s own coloured copy is never shown on the card');
 });
 

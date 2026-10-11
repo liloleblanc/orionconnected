@@ -22958,6 +22958,38 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   pointer-events: none;
 }
 
+/* ══ v24035 — THE WEATHER ICONS' LOOK (Customize → Weather icons) ══════════════
+   fids-v2.js wxIconHtml. In the departures and arrivals rows the solid glyph
+   is white; on a light row it goes dark: the amber and orange states on a
+   dark board, every row but the red cancelled one on a light board. On the
+   gate screens the icon's own round background is the circle: white with
+   the colour icon baked in, or the airline's deep colour (--wx-disc) with
+   the glyph as a mask painted in its brand colour (--wx-ink). */
+#fidsTable tbody tr.row-delayed img.fids-wx-glyph,
+#fidsTable tbody tr.row-final img.fids-wx-glyph,
+body.fids-light-board #fidsTable tbody tr:not(.row-cancelled) img.fids-wx-glyph {
+  filter: brightness(0) !important;
+  opacity: 0.86;
+}
+img.fids-wx-disc {
+  border-radius: 50% !important;
+  background: var(--wx-disc, transparent) !important;
+  object-fit: contain !important;
+}
+.fids-wx-pair {
+  position: relative;
+  border-radius: 50% !important;
+  background: var(--wx-disc, #033F77) !important;
+}
+.fids-wx-pair::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--wx-ink, #FFFFFF);
+  -webkit-mask: var(--wx-glyph) center / contain no-repeat;
+  mask: var(--wx-glyph) center / contain no-repeat;
+}
+
 /* ══ v24032 — THE CREDIT MONCTON'S AERIAL PHOTO ASKS FOR, OFF THE MAP ═══════
    The licence's line (fids-core.js _gatePhotoCredit) sits in the strip under
    the centre panel: the glass card is inset --gx-g from the column, and the

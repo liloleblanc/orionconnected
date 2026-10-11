@@ -214,7 +214,53 @@
   // We compute the negative background-position so the desired 220×220 cell
   // appears in the rendered box. background-size scales the full sprite so
   // each cell is exactly `size` pixels.
-  function wxIconHtml(code, size) {
+  // ── v24035 — THE WEATHER ICONS' LOOK ──────────────────────────────────
+  // Customize → Weather icons (html[data-fids-wx-icons], set per airport by
+  // applyAirportConfigToBoard): '' Classic, 'colour', 'solid', or 'daynight'
+  // (Colour by day, Solid at night, by the board airport's own sunrise and
+  // sunset: html.fids-day / html.fids-night from js/fids-sun.js).
+  //   - The departures and arrivals ROWS take the solid glyph, no circle,
+  //     white (dark on the light row states, css/display-overrides.css).
+  //   - The GATE screens take a circle: Colour = the colour icon on white,
+  //     Solid = the glyph in the airline's brand colour on its deep colour
+  //     (fids-core.js _wxDiscPair: WestJet teal on navy).
+  //   - Every other surface keeps the Classic icons.
+  // Files: logos/weather/<set>/<condition>.svg, built by scripts/wx-icons.
+  const WX_LOOK_NAMES = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'mist':1,'overcast-day':1,'overcast-night':1,'overcast':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'thunderstorms-day-rain':1,'thunderstorms-night-rain':1,'thunderstorms-rain':1,'thunderstorms':1,'wind-cloud':1,'wind':1 };
+  function wxLook(opts) {
+    const root = document.documentElement;
+    let v = root.getAttribute('data-fids-wx-icons') || '';
+    if (v === 'daynight') v = root.classList.contains('fids-night') ? 'solid' : 'colour';
+    if (v !== 'colour' && v !== 'solid') return '';
+    if (opts && opts.row) return 'row';
+    return /\/gids(\.html)?$/.test(location.pathname) ? v : '';
+  }
+  // the gate airline's two colours for the Solid circle (the board's navy
+  // and white without one)
+  function wxGatePair() {
+    try {
+      const code = String(window._gateCurrentAirline || document.body.getAttribute('data-gate-airline') || '').trim().toUpperCase();
+      if (code && typeof _wxDiscPair === 'function') return _wxDiscPair(code);
+    } catch (e) {}
+    return { disc: '#033F77', ink: '#FFFFFF' };
+  }
+  function wxLookHtml(look, nameKey, size) {
+    const v = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
+    const box = 'display:inline-block;width:' + size + 'px;height:' + size + 'px;flex-shrink:0;object-fit:contain;vertical-align:middle;';
+    if (look === 'row') {
+      return '<img class="fids-wx-cell fids-wx-glyph" data-wxg="' + nameKey + '" src="/logos/weather/solid/' + nameKey + '.svg' + v + '" alt="" aria-hidden="true" style="' + box + '">';
+    }
+    if (look === 'colour') {
+      return '<img class="fids-wx-cell fids-wx-disc" data-wxg="' + nameKey + '" src="/logos/weather/disc-day/' + nameKey + '.svg' + v + '" alt="" aria-hidden="true" style="' + box + '">';
+    }
+    // the circle is the element's own round background; the glyph a mask
+    // painted in the brand colour (css/display-overrides.css .fids-wx-pair)
+    const pr = wxGatePair();
+    return '<span class="fids-wx-cell fids-wx-disc fids-wx-pair" data-wxg="' + nameKey + '" aria-hidden="true" style="' + box
+      + '--wx-disc:' + pr.disc + ';--wx-ink:' + pr.ink + ';--wx-glyph:url(/logos/weather/solid-in-disc/' + nameKey + '.svg' + v + ');"></span>';
+  }
+
+  function wxIconHtml(code, size, opts) {
     size = size || 36;
     let nameKey = code;
     // Numeric WMO/Tomorrow.io code → string name via TIO_ICON
@@ -224,6 +270,8 @@
         nameKey = window.TIO_ICON[numKey];
       }
     }
+    const _look = wxLook(opts);
+    if (_look && WX_LOOK_NAMES[nameKey]) return wxLookHtml(_look, nameKey, size);
     // v223 — clean animated icon set (same icons the arrival-weather card
     // uses): the old sprite bakes a teal disc behind every icon, which
     // clashed with every board theme
@@ -272,6 +320,9 @@
       + '" aria-hidden="true"></span>';
   }
   window.fidsWxIcon = wxIconHtml;
+  // v24035 — the weather card asks the same questions (fids-core.js _wxCardIconDir)
+  window.fidsWxLook = function (opts) { return wxLook(opts); };
+  window.fidsWxGatePair = wxGatePair;
 
   // ── Per-airport config ─────────────────────────────────────────────────
   // Each airport can have:
@@ -405,7 +456,7 @@
         return '<td>' + (f._cityName || f.dest || f.origin || '') + '</td>';
       case 'weather':
         return '<td><div class="fids-cell-weather">'
-          +    wxIconHtml(f._wxCode, 36)
+          +    wxIconHtml(f._wxCode, 36, { row: true })
           +    '<span>' + (f._wxTemp != null ? f._wxTemp + '°' : '—') + '</span>'
           +  '</div></td>';
       case 'flight':

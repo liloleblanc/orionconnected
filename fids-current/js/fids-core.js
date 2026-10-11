@@ -31591,7 +31591,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24034';
+var FIDS_BUILD_TAG = 'v24035';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -32652,7 +32652,7 @@ function render() {
       if (!(tw && tw.current && tw.current.temp !== undefined)) return '<td class="td-wx">—</td>';
       const tempStr = displayTemp(Math.round(tw.current.temp));
       const iconHtml = (typeof window.fidsWxIcon === 'function')
-        ? window.fidsWxIcon(tw.current.code, 48)
+        ? window.fidsWxIcon(tw.current.code, 48, { row: true })
         : tioIcon(tw.current.code, 48);
       return '<td class="td-wx"><div class="fids-cell-weather">' + iconHtml + '<span>' + tempStr + '</span></div></td>';
     })();
@@ -38499,7 +38499,7 @@ function applyAirportConfigToBoard(iata) {
         && (+_userCfg.savedAt || 0) < +_adminCfg.updatedAt) {
       var _cloudOwned = ['theme', 'themePresetId', 'customColors', 'font',
         'logoPosition', 'logoSize', 'hideAirlinePrefix', 'hideWeather',
-        'airlineStyle', 'displayMode'];
+        'airlineStyle', 'displayMode', 'wxIcons'];
       var _shed = false;
       for (var _coI = 0; _coI < _cloudOwned.length; _coI++) {
         if (_userCfg[_cloudOwned[_coI]] !== undefined) { delete _userCfg[_cloudOwned[_coI]]; _shed = true; }
@@ -38964,6 +38964,15 @@ function applyAirportConfigToBoard(iata) {
   } else {
     delete document.body.dataset.fidsHideWx;
   }
+  // v24035 — the weather icons' look, read by fids-v2.js wxIconHtml and the
+  // weather card (_wxCardIconDir): '' Classic, 'daynight', 'colour', 'solid'.
+  // ?wxicons= overrides it for review.
+  try {
+    var _wxiUrl = new URLSearchParams(location.search).get('wxicons');
+    var _wxi = _wxiUrl !== null ? _wxiUrl : _toggleVal('wxIcons');
+    if (_WX_ICON_STYLES.indexOf(_wxi) > 0) document.documentElement.setAttribute('data-fids-wx-icons', _wxi);
+    else document.documentElement.removeAttribute('data-fids-wx-icons');
+  } catch (eWxi) {}
   var _aStyle = _toggleVal('airlineStyle');
   if (_aStyle && _aStyle !== 'full') {
     document.body.dataset.fidsAirlineStyle = _aStyle;
@@ -55176,6 +55185,20 @@ function _wxAnimIcon(code, night) {
 // forecast-card references the card is being styled after. The animated set
 // stays on disk for the other boards.
 var _WX_ICON_DIR = '/logos/weather/flat/';
+// v24035 — the operator's weather-icon look (Customize → Weather icons):
+// '' Classic, 'daynight' (Colour by day, Solid at night), 'colour', 'solid'.
+// On the card, Colour is the colour icon on a white circle and Solid the
+// glyph in the airline's brand colour on its deep colour (_wxDiscPair, set
+// as --wx-disc / --wx-ink on .wxcard-wrap with the rest of the airline's
+// look, read by the inlined disc-night icons). Classic keeps the flat set
+// above, drawn white and still (_wxWhiteStill).
+var _WX_ICON_STYLES = ['', 'daynight', 'colour', 'solid'];
+function _wxCardIconDir() {
+  var look = (typeof window.fidsWxLook === 'function') ? window.fidsWxLook() : '';
+  if (look === 'colour') return '/logos/weather/disc-day/';
+  if (look === 'solid') return '/logos/weather/disc-night/';
+  return _WX_ICON_DIR;
+}
 // v23933 — the icon URLs carry the build tag. The thunderstorm icons were
 // edited in place (their bolts no longer dim, v23933), and a board holding the
 // old file in its cache kept the old motion; a build-tied query mints fresh
@@ -55238,6 +55261,17 @@ function _wxAirlineLook(code) {
   }
   var tile = _wxMix(g, f, _WX_TINT);
   return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile) };
+}
+// v24035 — THE SOLID LOOK'S TWO COLOURS: the circle is the airline's deep
+// colour and the glyph its brand colour (WestJet navy behind its teal, Air
+// Canada black behind its red, Porter navy behind its cream), from the same
+// pair the lower right panel wears (_rc2Pair: a = brand, b = deep). Where the
+// two are too close to read apart (under 3:1), the glyph is white.
+function _wxDiscPair(code) {
+  var p = _rc2Pair(code);
+  var disc = p.b || '#033F77', ink = p.a || '#FFFFFF';
+  if (_rc2Contrast(ink, disc) < 3) ink = '#FFFFFF';
+  return { disc: disc, ink: ink };
 }
 // The card's icons are the board's own flat set, drawn white and still:
 // white type over a dark ground wants white symbols (the set's lemon sun
@@ -55468,7 +55502,8 @@ function _wxHydrateSvgs(root) {
         try {
           if (!img.parentNode) return;
           // v24014 — on the weather card the icons are white and still
-          if (img.closest && img.closest('.wxcard-wrap')) rawTxt = _wxWhiteStill(rawTxt, name);
+          // (v24035: not the Colour / Solid circles, which keep their own colours)
+          if (img.closest && img.closest('.wxcard-wrap') && !/\/disc-(day|night)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
           // carry <defs> gradients / clipPaths / <animate> targets referenced
           // by url(#id) and href="#id". Inlining the SAME icon more than once
@@ -57087,7 +57122,7 @@ function _renderWxCard(el) {
         +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + cp.city + '</span></div>'
         +     '<div class="wxc-mon-subl">' + (cp.ap ? '<span class="wxc-mon-ap">' + cp.ap + '</span>' : '') + '<span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +     '<div class="wxc-mon-now">'
-        +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg' + _wxIconQ() + '" alt="">'
+        +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _wxCardIconDir() + sIc + '.svg' + _wxIconQ() + '" alt="">'
         +       '<div class="wxc-mon-temp">' + _wxTempHtml(w.temp) + '</div>'
         +     '</div>'
         +     '<div class="wxc-mon-cond wxc-stk">' + _wxPairT(_WXLBL[sIc] || { en: '' }) + '</div>'
@@ -57203,7 +57238,7 @@ function _renderWxCard(el) {
       var _cols = _pts.map(function (p, i) {
         return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
           + '<div class="wxc-pt-time">' + (i === 0 ? _wxNowLbl : p.h.lbl) + '</div>'
-          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _WX_ICON_DIR + p.h.ic + '.svg' + _wxIconQ() + '" alt="">'
+          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _wxCardIconDir() + p.h.ic + '.svg' + _wxIconQ() + '" alt="">'
           + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
           + '</div>';
       }).join('');
@@ -57350,7 +57385,7 @@ function _renderWxCard(el) {
         return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
           + '<div class="wxc-dchip">' + BoardStrings.markHalf(_dayAbbr(d.dt, _wxLangs[0]), _wxLangs[0]) + (_wxLangs[1] ? _wxDia + BoardStrings.markHalf(_dayAbbr(d.dt, _wxLangs[1]), _wxLangs[1]) : '') + '</div>'
           + '<div class="wxc-dbody">'
-          +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg' + _wxIconQ() + '" alt="">'
+          +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _wxCardIconDir() + d.ic + '.svg' + _wxIconQ() + '" alt="">'
           +   '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
           +   '<div class="wxc-dlo">' + _wxDeg(d.lo) + '</div>'
           +   '<div class="wxc-dcond">' + _wxPairS(_WXLBL[d.ic] || { en: '' }) + '</div>'
@@ -57609,6 +57644,9 @@ function _renderWxCard(el) {
       wrap.style.setProperty('--wxc-g', _wxLk.g);
       wrap.style.setProperty('--wxc-p', _wxLk.p);
       wrap.style.setProperty('--wxc-ko', _wxLk.ko);
+      var _wxDp = _wxDiscPair(_wxLk.code);
+      wrap.style.setProperty('--wx-disc', _wxDp.disc);
+      wrap.style.setProperty('--wx-ink', _wxDp.ink);
       wrap.setAttribute('data-wx-airline', _wxLk.code || '');
     };
     try {
