@@ -694,6 +694,13 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     sbRefresh: { en: 'Refresh your boarding pass or see the agent', fr: 'Actualisez votre carte d’embarquement ou voyez l’agent', es: 'Actualice su tarjeta de embarque o acuda al agente', de: 'Bordkarte aktualisieren oder zum Schalter kommen', it: 'Aggiorna la carta d’imbarco o rivolgiti all’agente', pt: 'Atualize o seu cartão de embarque ou dirija-se ao agente', ja: '搭乗券を更新するか、係員までお越しください', zh: '请刷新登机牌或前往柜台', ar: 'حدّث بطاقة صعودك أو راجع الموظف',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // v24031 — the credit line Moncton's aerial photo map carries (fids-core.js
+    // _gatePhotoCredit). English and French are the licence's own wording, the
+    // line it asks for when the provider names none:
+    // https://www.gnb.ca/en/campaign/geonb/open-government-license.html
+    // https://www.gnb.ca/fr/campagne/geonb/licence-gouvernement-ouvert.html
+    mapCreditOglNb: { en: 'Contains information licensed under the Open Government Licence – New Brunswick', fr: 'Contient de l’information visée par la Licence du gouvernement ouvert — Nouveau-Brunswick', es: 'Contiene información autorizada por la Licencia de Gobierno Abierto – Nuevo Brunswick', de: 'Enthält Informationen unter der Open-Government-Lizenz – New Brunswick', it: 'Contiene informazioni concesse con la Licenza di governo aperto – Nuovo Brunswick', pt: 'Contém informações licenciadas pela Licença de Governo Aberto – Novo Brunswick', ja: 'ニューブランズウィック州オープンガバメントライセンスに基づく情報を含みます', zh: '包含依据新不伦瑞克省开放政府许可证授权的信息', ar: 'يتضمن معلومات مرخّصة بموجب ترخيص الحكومة المفتوحة – نيو برونزويك',
+      $src: { en: 'gov:NB', fr: 'gov:NB', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v24030 — the Companion app's own words (app.html T()), in all nine
     // languages: the phrases the boards already hold keep their words
     appDep: { en: 'Departures', fr: 'Départs', es: 'Salidas', de: 'Abflüge', it: 'Partenze', pt: 'Partidas', ja: '出発', zh: '出发', ar: 'المغادرات' },
