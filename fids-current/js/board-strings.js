@@ -694,6 +694,12 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     sbRefresh: { en: 'Refresh your boarding pass or see the agent', fr: 'Actualisez votre carte d’embarquement ou voyez l’agent', es: 'Actualice su tarjeta de embarque o acuda al agente', de: 'Bordkarte aktualisieren oder zum Schalter kommen', it: 'Aggiorna la carta d’imbarco o rivolgiti all’agente', pt: 'Atualize o seu cartão de embarque ou dirija-se ao agente', ja: '搭乗券を更新するか、係員までお越しください', zh: '请刷新登机牌或前往柜台', ar: 'حدّث بطاقة صعودك أو راجع الموظف',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // v24037 — the credit an Openverse CC BY photo carries on the empty-gate
+    // screen (fids-core.js _gateBgCredit). {WHO} is the photographer as
+    // Openverse gives it, {VER} the licence version (4.0) — both as
+    // published; CC BY is the licence's own mark, written so everywhere.
+    photoCredit: { en: 'Photo: {WHO} · CC BY {VER}', fr: 'Crédit : {WHO} · CC BY {VER}', es: 'Foto: {WHO} · CC BY {VER}', de: 'Bild: {WHO} · CC BY {VER}', it: 'Foto di {WHO} · CC BY {VER}', pt: 'Fotografia: {WHO} · CC BY {VER}', ja: '写真：{WHO} · CC BY {VER}', zh: '照片：{WHO} · CC BY {VER}', ar: 'صورة: {WHO} · CC BY {VER}',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v24031 — the credit line Moncton's aerial photo map carries (fids-core.js
     // _gatePhotoCredit). English and French are the licence's own wording, the
     // line it asks for when the provider names none:

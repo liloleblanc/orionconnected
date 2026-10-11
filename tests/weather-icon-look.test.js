@@ -34,7 +34,7 @@ const CONDITIONS = ['clear-day', 'clear-night', 'cloudy', 'drizzle', 'extreme-ra
 const SETS = ['solid', 'solid-in-disc', 'disc-day', 'disc-night'];
 
 // ── the icon helper, lifted from fids-v2.js ──────────────────────────────
-const a = V2.indexOf('const WX_SPRITE_URL');
+const a = V2.indexOf('const WX_ANIM_ALIAS');
 const END = 'window.fidsWxGatePair = wxGatePair;';
 const SLICE = V2.slice(a, V2.indexOf(END) + END.length);
 function helper({ look = '', night = false, path: p = '/fids', airline = '' } = {}) {
@@ -99,8 +99,8 @@ test('the pair rule: deep colour behind, brand colour in front, white where the 
 test('other surfaces, and conditions the packs do not draw, keep the Classic icons', () => {
   assert.match(src(helper({ look: 'solid', path: '/fids' }).wxIconHtml('snow', 44)), /\/animated\//, 'not a row and not the gate');
   assert.match(src(helper({ look: 'solid', path: '/bids' }).wxIconHtml('snow', 64)), /\/animated\//);
-  const sprite = helper({ look: 'solid' }).wxIconHtml('tornado', 36, { row: true });
-  assert.doesNotMatch(sprite, /\/weather\/solid\//, 'a name outside the 23 falls back');
+  const other = helper({ look: 'solid' }).wxIconHtml('tornado', 36, { row: true });
+  assert.match(src(other), /\/logos\/weather\/animated\/wind\.svg/, 'a name outside the 23 falls back to the animated set\'s nearest');
 });
 
 test('every condition has an icon in every set, sized and coloured as its set says', () => {
@@ -162,4 +162,18 @@ test('the tools that build the icons are kept', () => {
   for (const f of ['build.py', 'export.jsx', 'split.js', 'cluster.py', 'README.md']) {
     assert.ok(fs.existsSync(path.join(ROOT, 'scripts/wx-icons', f)), f);
   }
+});
+
+test('v24037 — no sprite: the animated set draws every name, its nearest for the few it lacks, nothing for no reading', () => {
+  const h = helper();
+  const pairs = { 'overcast-night': 'overcast', 'thunderstorms-night-rain': 'thunderstorms-rain', 'thunderstorms': 'thunderstorms-rain',
+    'wind-cloud': 'wind', 'rain-with-sun': 'rain', 'light-snow': 'snow', 'tornado': 'wind' };
+  for (const [name, file] of Object.entries(pairs)) {
+    assert.match(src(h.wxIconHtml(name, 36)), new RegExp('/logos/weather/animated/' + file + '\\.svg'), name);
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current/logos/weather/animated', file + '.svg')), file);
+  }
+  for (const none of [null, undefined, '', 'not-a-weather', 9999]) assert.equal(h.wxIconHtml(none, 36), '', 'no reading, no icon: ' + none);
+  assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/logos/weather/sprite.svg')), 'the Vexels sprite is gone');
+  assert.doesNotMatch(V2, /WX_SPRITE|WX_CELL|WX_CODE_MAP/);
+  assert.doesNotMatch(CORE, /img\.icons8\.com|meteoconImg\(|WX_ICON_CDN/);
 });

@@ -3,7 +3,7 @@
    Bridges the existing fids-core.js data pipeline to the new visual layout.
    - Translations for 9 languages
    - Status mapping with NOW prefix for delays
-   - Weather icon resolution against the 25-icon flat sprite
+   - Weather icon resolution (the animated set, or the Solid / Colour looks)
    - Per-airport theme + layout config
    =========================================================================== */
 
@@ -149,71 +149,18 @@
   }
   window.fidsFormatTime12 = formatTime12;
 
-  // ── Weather icon mapping ───────────────────────────────────────────────
-  // The /logos/weather/sprite.svg file is a 5×5 grid of 25 colored icons.
-  // Each icon is centered in a 220-unit cell. We render a cropped <svg> via
-  // <image href=…> with the right viewBox for that cell.
-  // Sprite source dimensions: 1365.1 × 1330.6
-  const WX_SPRITE_URL = '/logos/weather/sprite.svg';
-  const WX_SPRITE_W = 1365.1;
-  const WX_SPRITE_H = 1330.6;
-  const WX_CELL = {
-    // [x, y] = top-left of the 220×220 crop window (centered on each circle)
-    'clear':                  [115.7, 164.1],
-    'cloudy':                 [344.1, 164.1],
-    'partly-cloudy-day':      [572.5, 164.1],
-    'partly-cloudy-overcast': [800.9, 164.1],
-    'rain':                   [1029.3, 164.1],
-    'heavy-rain':             [115.7, 375.2],
-    'thunder':                [344.1, 375.2],
-    'thunder-rain':           [572.5, 375.2],
-    'light-snow':             [800.9, 375.2],
-    'snow':                   [1029.3, 375.2],
-    'rain-sun':               [115.7, 586.2],
-    'rainbow':                [344.1, 586.2],
-    'wind-cloud':             [572.5, 586.2],
-    'wind-sun':               [800.9, 586.2],
-    'tornado':                [1029.3, 586.2],
-    'sunset':                 [115.7, 797.3],
-    'sunrise':                [344.1, 797.3],
-    'thermo-cold':            [572.5, 797.3],
-    'thermo-mild':            [800.9, 797.3],
-    'thermo-hot':             [1029.3, 797.3],
-    'snowflake':              [115.7, 1008.3],
-    'lightning':              [344.1, 1008.3],
-    'wind':                   [572.5, 1008.3],
-    'fahrenheit':             [800.9, 1008.3],
-    'celsius':                [1029.3, 1008.3]
-  };
-  // Map Tomorrow.io / generic weather codes to the icon name we use.
-  const WX_CODE_MAP = {
-    'clear-day':           'clear',
-    'clear-night':         'clear',          // same icon; could use moon variant later
-    'cloudy':              'cloudy',
-    'partly-cloudy-day':   'partly-cloudy-day',
-    'partly-cloudy-night': 'partly-cloudy-day',
-    'rain':                'rain',
-    'drizzle':             'rain',
-    'extreme-rain':        'heavy-rain',
-    'rain-with-sun':       'rain-sun',
-    'thunderstorms':       'thunder',
-    'thunderstorms-rain':  'thunder-rain',
-    'snow':                'snow',
-    'light-snow':          'light-snow',
-    'extreme-snow':        'snow',
-    'sleet':               'light-snow',
-    'hail':                'snow',
-    'fog':                 'cloudy',         // no fog icon in the set; cloudy is closest
-    'wind':                'wind',
-    'tornado':             'tornado'
+  // ── WEATHER ICONS ───────────────────────────────────────────────────────
+  // v24037 — the Vexels sprite (/logos/weather/sprite.svg, a 25-cell grid)
+  // that caught names the animated set doesn't draw is gone: its free use
+  // needs a credit and nothing licensed it. Every name the boards produce is
+  // in the animated set already; the few that aren't take its nearest icon,
+  // and no reading at all draws no icon (it used to draw the sprite's sun).
+  const WX_ANIM_ALIAS = {
+    'overcast-night': 'overcast', 'thunderstorms-night-rain': 'thunderstorms-rain',
+    'thunderstorms': 'thunderstorms-rain', 'wind-cloud': 'wind', 'rain-with-sun': 'rain',
+    'light-snow': 'snow', 'tornado': 'wind'
   };
 
-  // Render a weather icon by CSS-cropping the sprite image via background.
-  // Using `background-image` + `background-position` + `background-size` is
-  // far more reliable across browsers than nesting <image> inside <svg>.
-  // We compute the negative background-position so the desired 220×220 cell
-  // appears in the rendered box. background-size scales the full sprite so
-  // each cell is exactly `size` pixels.
   // ── v24035 — THE WEATHER ICONS' LOOK ──────────────────────────────────
   // Customize → Weather icons (html[data-fids-wx-icons], set per airport by
   // applyAirportConfigToBoard): '' Classic, 'colour', 'solid', or 'daynight'
@@ -273,10 +220,9 @@
     const _look = wxLook(opts);
     if (_look && WX_LOOK_NAMES[nameKey]) return wxLookHtml(_look, nameKey, size);
     // v223 — clean animated icon set (same icons the arrival-weather card
-    // uses): the old sprite bakes a teal disc behind every icon, which
-    // clashed with every board theme
-    // Sprite kept below as fallback for names the
-    // animated set doesn't cover.
+    // uses). v24037 — the only set: a name it doesn't draw takes its nearest
+    // icon (WX_ANIM_ALIAS); no reading draws nothing.
+    if (WX_ANIM_ALIAS[nameKey]) nameKey = WX_ANIM_ALIAS[nameKey];
     const _animSet = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'mist':1,'overcast-day':1,'overcast':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'thunderstorms-day-rain':1,'thunderstorms-rain':1,'wind':1 };
     if (_animSet[nameKey]) {
       // v22674 — data-wx names the icon so CSS can swap in the dark-ink
@@ -295,29 +241,7 @@
         + 'display:inline-block;width:' + size + 'px;height:' + size + 'px;'
         + 'flex-shrink:0;object-fit:contain;vertical-align:middle;">';
     }
-    const iconKey = WX_CODE_MAP[nameKey] || 'clear';
-    const cell = WX_CELL[iconKey];
-    if (!cell) return '';
-    // The sprite's natural size is 1365.1 × 1330.6 and each cell is 220 wide.
-    // To make the displayed cell exactly `size` pixels, we scale the sprite
-    // so that 220 source units = `size` rendered pixels, i.e.:
-    //   spriteScaledW = (1365.1 / 220) * size
-    //   spriteScaledH = (1330.6 / 220) * size
-    // Then we offset by the cell's top-left scaled into the same units.
-    const scale = size / 220;
-    const bgW = WX_SPRITE_W * scale;
-    const bgH = WX_SPRITE_H * scale;
-    const offX = -cell[0] * scale;
-    const offY = -cell[1] * scale;
-    return '<span class="fids-wx-cell" style="'
-      + 'display:inline-block;'
-      + 'width:' + size + 'px;height:' + size + 'px;'
-      + 'background-image:url(\'' + WX_SPRITE_URL + '\');'
-      + 'background-size:' + bgW.toFixed(2) + 'px ' + bgH.toFixed(2) + 'px;'
-      + 'background-position:' + offX.toFixed(2) + 'px ' + offY.toFixed(2) + 'px;'
-      + 'background-repeat:no-repeat;'
-      + 'flex-shrink:0;'
-      + '" aria-hidden="true"></span>';
+    return '';
   }
   window.fidsWxIcon = wxIconHtml;
   // v24035 — the weather card asks the same questions (fids-core.js _wxCardIconDir)

@@ -5,7 +5,7 @@
      - Header banner (chevron pattern, swappable left/right)
      - Table with airline toggle, title case, NOW prefix, full-red cancelled row
      - 9-language ready (text comes from data attributes / JS rotation)
-     - Weather column with 25-icon flat sprite
+     - Weather column (fids-v2.js fidsWxIcon)
      - Footer ticker (existing logic preserved)
    =========================================================================== */
 

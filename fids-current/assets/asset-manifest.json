@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2670,
+    "total": 2669,
     "by_category": {
       "ad": 13,
       "airline": 1174,
@@ -12,7 +12,7 @@
       "livery": 96,
       "misc": 90,
       "symbol": 4,
-      "weather": 208
+      "weather": 207
     }
   },
   "items": [
@@ -28758,17 +28758,6 @@
       "iata": "",
       "country": "",
       "ext": "png"
-    },
-    {
-      "path": "/logos/weather/sprite.svg",
-      "file": "sprite.svg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "sprite",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
     },
     {
       "path": "/logos/weather/orion-papercut/thermo-cold.png",

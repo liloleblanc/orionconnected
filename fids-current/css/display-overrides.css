@@ -22958,6 +22958,25 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   pointer-events: none;
 }
 
+/* ══ v24037 — A CITY PHOTO'S CREDIT, IN THE PHOTO'S OWN CORNER ════════════════
+   An Openverse CC BY photo names its photographer and licence (fids-core.js
+   _gateBgCredit) wherever it shows: behind "no flight at this gate" (the
+   whole .gate-screen) and in an active gate's welcome panel. One small line
+   in the bottom-right corner, white lettering on the photo, no box. */
+.gate-screen > .gate-bg-credit,
+#gateWelcomePanel > .gate-bg-credit {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  z-index: 3;
+  max-width: 60%;
+  color: rgba(255, 255, 255, 0.82);
+  font: 600 clamp(10px, 1.1vh, 13px)/1.25 system-ui, -apple-system, 'Segoe UI', var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  text-align: right;
+  pointer-events: none;
+}
+
 /* ══ v24035 — THE WEATHER ICONS' LOOK (Customize → Weather icons) ══════════════
    fids-v2.js wxIconHtml. In the departures and arrivals rows the solid glyph
    is white; on a light row it goes dark: the amber and orange states on a
