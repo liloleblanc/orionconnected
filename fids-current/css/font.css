@@ -33,10 +33,11 @@
 /* Possibility (Bold) — the project brand font. Single weight mapped across the
    range so it always resolves regardless of the weight the UI requests.
    v24027 — the file is NOT in the repository: its licence forbids passing it
-   on, so it lives in private storage and the Worker serves it at this path on
-   orionconnected.com addresses only (worker-entry.js privateFont). Elsewhere
-   the stacks fall back to Bricolage Grotesque. */
-@font-face { font-family:'Possibility'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/Possibility-Bold.otf') format('opentype'); }
+   on, so it lives in private storage and the Worker serves it at this path
+   (worker-entry.js privateFont). v24036 — licensed (Commercial Use and
+   Webfont, Matthew Reynolds): the webfont as supplied, on orionconnected.com,
+   .ca and .app. Elsewhere the stacks fall back to Bricolage Grotesque. */
+@font-face { font-family:'Possibility'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/Possibility-Bold-Web.woff2') format('woff2'); }
 
 /* AC Nord — Air Canada's official brand typeface, bundled locally (woff2, no
    CDN). Two optical families: Display (headlines / gate numbers) and Text
