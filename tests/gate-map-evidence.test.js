@@ -522,7 +522,8 @@ test('the poll stamps its fix, checks it like the maps do, and drops it on the f
   const poll = fnSource('_gateNumbersPoll');
   assert.match(poll, /at: _fxAt, fl: flt, via: _adsb\.via \|\| '', cs: _adsb\.cs \|\| ''/);
   assert.match(poll, /var _rOk = _fixPlausibleForLeg\(inb, _adsb\.lat, _adsb\.lng, _adsb\.onGround === true\);/);
-  assert.match(poll, /\(_gateRawLanded\(inb\) \|\| _gateLegGone\(inb\)\) && \(!_lpEnd\.fl \|\| _lpEnd\.fl === flt\)\) window\._gateInboundLivePos = null;/);
+  // (v24034: and the map is redrawn from the arrival — tests/gate-glide-resume.test.js)
+  assert.match(poll, /\(_gateRawLanded\(inb\) \|\| _gateLegGone\(inb\)\) && \(!_lpEnd\.fl \|\| _lpEnd\.fl === flt\)\) \{\s*window\._gateInboundLivePos = null;/);
   assert.match(poll, /var _depGateT = _gateDepSchedTs\(inb\) \|\| null;/);
   assert.match(fnSource('_adsbTelemetry'), /fl: _fn \|\| _cs,\s*via: \(\(tries\[i\]\.match\(\/\^\\\/\(\\w\+\)\\\/\/\) \|\| \[\]\)\[1\]\) \|\| '',/);
 });

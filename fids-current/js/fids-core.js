@@ -6652,7 +6652,13 @@ async function _gateNumbersPoll() {
       // retires that position on its own.
       try {
         var _lpEnd = window._gateInboundLivePos;
-        if (_lpEnd && (_gateRawLanded(inb) || _gateLegGone(inb)) && (!_lpEnd.fl || _lpEnd.fl === flt)) window._gateInboundLivePos = null;
+        if (_lpEnd && (_gateRawLanded(inb) || _gateLegGone(inb)) && (!_lpEnd.fl || _lpEnd.fl === flt)) {
+          window._gateInboundLivePos = null;
+          // v24034 — and the map is redrawn from the arrival, once, rather
+          // than left showing the last airborne glide (see TOUCHDOWN above)
+          try { _stopGateMapGlide(); } catch (eSt) {}
+          window._lastMapPosKey = null; window._lastMapProgKey = null;
+        }
       } catch (eEnd) {}
       return;
     }
@@ -6901,7 +6907,20 @@ async function _gateNumbersPoll() {
         window._gateInboundLiveTrack = { track: _adsb.track, at: Date.now() };
       }
       if (typeof _adsb.vs === 'number') inb._liveVs = _adsb.vs;
-      if (_adsb.onGround === true) inb._liveOnGround = true;
+      if (_adsb.onGround === true) {
+        // v24034 — TOUCHDOWN REDRAWS THE MAP. On the ground the speed is a
+        // taxi crawl or 0, so no glide restarts (no live speed: the marker
+        // stays put) and the aeroplane was left where the last airborne glide
+        // stopped — on the approach, over Scoudouc, at 0 ft (Moncton, AC1986,
+        // 2026-10-11), while a fresh load drew it on the field. The first
+        // ground fix stops the glide and lets the next map tick rebuild the
+        // map as a fresh load would.
+        if (inb._liveOnGround !== true) {
+          try { _stopGateMapGlide(); } catch (eSt) {}
+          window._lastMapPosKey = null; window._lastMapProgKey = null;
+        }
+        inb._liveOnGround = true;
+      }
       // ADS-B knows the exact sub-type (B38M where the schedule feed says
       // nothing) and the live tail — both better than what we had.
       if (!inb._reg && _adsb.reg) inb._reg = _adsb.reg;
@@ -31572,7 +31591,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24032';
+var FIDS_BUILD_TAG = 'v24034';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43063,6 +43082,23 @@ function _gateGlideFixFresh(now) {
 // a moving marker is a guess about an aeroplane nobody has heard from.
 var _GLIDE_DR_MAX_MS = 5 * 60000;
 
+// v24034 — WHERE A DRAWN POINT SITS ALONG A ROUTE, as a fraction of the
+// route's length: the nearest point on any segment (flat-earth inside a
+// segment, which is metres-exact at map scale). The glide resumes a new fix
+// from where the marker is DRAWN, measured on the NEW route (_startGateMapGlide).
+function _gateRouteFrac(route, cum, totalNm, pt) {
+  if (!route || route.length < 2 || !pt || !(totalNm > 0)) return null;
+  var kx = Math.cos(pt[0] * Math.PI / 180), best = Infinity, bestNm = 0;
+  for (var k = 0; k < route.length - 1; k++) {
+    var A = route[k], B = route[k + 1];
+    var ax = (A[1] - pt[1]) * kx, ay = A[0] - pt[0], bx = (B[1] - pt[1]) * kx, by = B[0] - pt[0];
+    var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+    var t = L2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L2)) : 0;
+    var cx = ax + t * dx, cy = ay + t * dy, d2 = cx * cx + cy * cy;
+    if (d2 < best) { best = d2; bestNm = cum[k] + t * (cum[k + 1] - cum[k]); }
+  }
+  return Math.max(0, Math.min(1, bestNm / totalNm));
+}
 function _stopGateMapGlide() {
   // Bumping the generation is what actually stops things — clearing the
   // handles below is only tidiness, and was never sufficient on its own.
@@ -45575,12 +45611,25 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     if (_gateGlide.o && _gateGlide.d && typeof _gateGlide.p === 'number' && _fresh &&
         _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
       _sameLeg = true;
-      var _dp = _seedP - _gateGlide.p;
+      // v24034 — RESUME WHERE THE MARKER IS DRAWN. The route is rebuilt
+      // through every fix (a new recorded track, a new runway-aligned final),
+      // so the OLD route's fraction lands somewhere else on the NEW route —
+      // behind, beside, or round a bend: the plane backing up, flying
+      // sideways and cutting sharp turns (Moncton, AC1986, 2026-10-11).
+      // Measure the drawn point on the new route instead.
+      var _pRes = _gateGlide.p;
+      try {
+        if (_gateGlide.ll) {
+          var _pDrawn = _gateRouteFrac(route, _cum, _routeNm, _gateGlide.ll);
+          if (typeof _pDrawn === 'number') _pRes = _pDrawn;
+        }
+      } catch (eRes) {}
+      var _dp = _seedP - _pRes;
       // Tolerance in NAUTICAL MILES, not route fraction: the route is rebuilt
       // through the live position on every fix, so totalNm shrinks on approach
       // and a fixed fraction stops meaning the same thing (v22927).
       if (Math.abs(_dp) * totalNm < 40) {
-        p = _gateGlide.p;
+        p = _pRes;
         _errP = _dp;
       }
     }
@@ -45592,8 +45641,12 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // surfaces re-attach on their own next init.
   try {
     if (!_sameLeg) _gateGlide.views = {};
+    // v24034 — a same-leg re-anchor keeps the nose's heading: it turns from
+    // where it points (slewed) instead of snapping onto the new route's bend.
+    var _oldView = _sameLeg ? _gateGlide.views[_viewKey] : null;
+    var _keepHdg = (_oldView && typeof _oldView.hdg === 'number') ? _oldView.hdg : null;
     _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
-      hdg: null, seg: 0, arcIdx: -1, last: 0 };
+      hdg: _keepHdg, kept: _keepHdg !== null, seg: 0, arcIdx: -1, last: 0 };
   } catch (e) {}
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
 
@@ -45786,6 +45839,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         lat = A[0] + (B[0] - A[0]) * frac;
         lng = A[1] + (B[1] - A[1]) * frac;
         vmarker.setLatLng([lat, lng]);
+        _gateGlide.ll = [lat, lng];   // v24034 — the drawn spot, for the next re-anchor
         // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
         // Leaflet's Marker._setPos rounds marker positions to WHOLE PIXELS.
         // Measured on the recording the marker advances ~0.14px/frame, so
@@ -45818,7 +45872,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
               // beyond 35° is a bad seed or a surface re-join, not a turn —
               // holding the wrong nose while the slew catches up is exactly
               // the flying-sideways fault that keeps being filmed.
-              if (Math.abs(_dh) > 35) { v.hdg = _tgt; }
+              // (v24034: a heading carried across a re-anchor is a real nose,
+              // not a bad seed — it always turns, never snaps)
+              if (Math.abs(_dh) > 35 && !v.kept) { v.hdg = _tgt; }
               else {
                 var _lim = _MAX_SLEW_DPS * (_dtMs / 1000);
                 if (!(_lim > 0)) _lim = 0.05;
