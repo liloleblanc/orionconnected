@@ -31572,7 +31572,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24031';
+var FIDS_BUILD_TAG = 'v24032';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41547,7 +41547,7 @@ function _fetchAirportCoords(iata) {
 // photoTile). It lies over the street map inside the photo's own box only,
 // so the streets still run on past the airfield, and only from zoom 14 in,
 // where the field fills the view. Wherever it shows, the licence's credit
-// line shows with it (_gatePhotoCredit).
+// line shows with it, under the centre panel (_gatePhotoCredit).
 var _GATE_PHOTO = {
   YQM: { bounds: [[46.094186, -64.716339], [46.130363, -64.649048]] }
 };
@@ -41565,28 +41565,60 @@ function _gatePhotoAdd(m) {
   m.on('moveend zoomend viewreset', function () { _gatePhotoCredit(m); });
   setTimeout(function () { _gatePhotoCredit(m); }, 0);
 }
-// The licence's own credit line, in the board's pair of languages (one line
-// each), in the bottom-right corner above the OpenStreetMap credit, while the
-// photo is in view. Off it, the line goes.
+// v24032 — The licence's own credit line, OFF THE MAP. One thin line in the
+// strip under the centre panel (the glass card's own inset, --gx-g), one
+// language at a time, switching every 8 s: English and French side by side do
+// not fit under the panel on a 1280x720 board, and the maps cannot spare the
+// room. It shows while any map on the board has the photo in view, and goes
+// with the photo. A board with no centre panel keeps it in the map's corner.
+var _GATE_PHOTO_MAPS = [];
+var _gatePhotoCreditTurn = 0, _gatePhotoCreditTimer = null;
+function _gatePhotoInView(m) {
+  if (!m._fidsPhoto || m.getZoom() < _GATE_PHOTO_MINZ) return false;
+  var vb = m.getBounds();
+  for (var i = 0; i < m._fidsPhoto.length; i++) if (vb.intersects(m._fidsPhoto[i].b)) return true;
+  return false;
+}
 function _gatePhotoCredit(m) {
   try {
-    var box = m && m.getContainer && m.getContainer();
-    if (!box || !m._fidsPhoto) return;
-    var z = m.getZoom(), vb = m.getBounds(), on = false;
-    for (var i = 0; i < m._fidsPhoto.length; i++) {
-      if (z >= _GATE_PHOTO_MINZ && vb.intersects(m._fidsPhoto[i].b)) on = true;
+    if (m && _GATE_PHOTO_MAPS.indexOf(m) < 0) _GATE_PHOTO_MAPS.push(m);
+    var on = false, mapBox = null;
+    _GATE_PHOTO_MAPS = _GATE_PHOTO_MAPS.filter(function (mm) {
+      var box = mm.getContainer && mm.getContainer();
+      if (!box || !box.isConnected) return false;   // a map since torn down
+      if (box.offsetWidth > 0 && _gatePhotoInView(mm)) { on = true; if (!mapBox) mapBox = box; }
+      return true;
+    });
+    var col = document.querySelector('.g8-wrap .gad-media-col');
+    var host = col || mapBox;
+    var el = document.querySelector('.gate-photo-credit');
+    if (el && (!host || el.parentNode !== host)) { el.parentNode.removeChild(el); el = null; }
+    if (!on || !host) {
+      if (el) el.hidden = true;
+      if (_gatePhotoCreditTimer) { clearInterval(_gatePhotoCreditTimer); _gatePhotoCreditTimer = null; }
+      return;
     }
-    var el = box.querySelector('.gate-map-photo-credit');
-    if (!on) { if (el) el.hidden = true; return; }
     if (!el) {
-      el = document.createElement('div');
-      el.className = 'gate-map-photo-credit';
-      box.appendChild(el);
+      // <small>: the element for attribution, and not a div, which the centre
+      // column stretches to full size (gate-display.css .gad-media-col > div)
+      el = document.createElement('small');
+      el.className = 'gate-photo-credit' + (col ? '' : ' gate-photo-credit-onmap');
+      host.appendChild(el);
     }
-    // one line per language, so neither breaks mid-phrase on a narrow map
-    var html = BoardStrings.pair('mapCreditOglNb', { frFirst: window._gateIata || '', sep: '<br>' });
-    if (el.innerHTML !== html) el.innerHTML = html;
+    var langs = BoardStrings.pairLangs(null, window._gateIata || '');
+    var lang = langs[_gatePhotoCreditTurn % Math.max(1, langs.length)];
+    var html = BoardStrings.pair('mapCreditOglNb', { langs: [lang] });
     el.hidden = false;
+    if (el.innerHTML !== html) {
+      el.innerHTML = html;
+      // never wider than the strip: a long language steps its type down
+      el.style.fontSize = '';
+      var fs = parseFloat(getComputedStyle(el).fontSize) || 10;
+      if (el.scrollWidth > el.clientWidth + 1) el.style.fontSize = Math.max(7, Math.floor(fs * el.clientWidth / el.scrollWidth * 10) / 10) + 'px';
+    }
+    if (!_gatePhotoCreditTimer) {
+      _gatePhotoCreditTimer = setInterval(function () { _gatePhotoCreditTurn++; _gatePhotoCredit(null); }, 8000);
+    }
   } catch (e) {}
 }
 // v218.96: Pick a leaflet tile layer based on the active gate theme.

@@ -10,7 +10,8 @@
 // aircraft), the photo is cut to the web map's tiles at zooms 14-18 and kept
 // in R2, and the worker serves it at /tiles/photo/YQM/<z>/<x>/<y>. The board
 // lays it over the street map inside the photo's box from zoom 14 in, and
-// shows the licence's line in the map's corner whenever it is in view.
+// shows the licence's line whenever it is in view (v24032: off the map, in
+// the strip under the centre panel, one language at a time).
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -110,52 +111,113 @@ test('the credit line is the licence\'s own wording, in all nine languages', () 
   assert.equal(e.$src.fr, 'gov:NB');
 });
 
-function fakeMap(z, center) {
-  const kids = [];
-  const box = {
-    querySelector: (sel) => kids.find((k) => sel === '.' + k.className) || null,
-    appendChild: (k) => { kids.push(k); },
+// A board with its centre panel, and maps that can be moved, hidden or torn
+// down, enough for _gatePhotoCredit to run as it does on a gate.
+function board() {
+  const made = [];
+  const node = (cls) => {
+    const n = { className: cls || '', hidden: false, innerHTML: '', style: {}, kids: [], parentNode: null, isConnected: true,
+      offsetWidth: 400, scrollWidth: 300, clientWidth: 600, tag: '' };
+    n.appendChild = (k) => { k.parentNode = n; n.kids.push(k); };
+    n.removeChild = (k) => { n.kids = n.kids.filter((x) => x !== k); k.parentNode = null; };
+    return n;
   };
-  const span = 0.02;
-  return {
-    kids,
-    getContainer: () => box,
-    getZoom: () => z,
-    getBounds: () => ({ intersects: (b) => !(center[0] - span > b.n || center[0] + span < b.s || center[1] - span > b.e || center[1] + span < b.w) }),
-    _fidsPhoto: [{ ap: 'YQM', b: { s: PHOTO.YQM.bounds[0][0], w: PHOTO.YQM.bounds[0][1], n: PHOTO.YQM.bounds[1][0], e: PHOTO.YQM.bounds[1][1] } }],
+  const col = node('gad-media-col');
+  const doc = {
+    querySelector: (sel) => {
+      if (sel === '.g8-wrap .gad-media-col') return col;
+      if (sel === '.gate-photo-credit') return made.find((k) => k.parentNode) || null;
+      return null;
+    },
+    createElement: (tag) => { const n = node(); n.tag = tag; made.push(n); return n; },
   };
+  const timers = [];
+  const env = {
+    document: doc, window: { _gateIata: 'YQM' },
+    getComputedStyle: () => ({ fontSize: '10px' }),
+    setInterval: (fn) => { timers.push(fn); return timers.length; },
+    clearInterval: (id) => { timers[id - 1] = null; },
+  };
+  const map = (z, center) => {
+    const span = 0.02, box = node('gate-map');
+    const [[s, w], [n, e]] = PHOTO.YQM.bounds;
+    return {
+      box, z, center,
+      getContainer: () => box,
+      getZoom() { return this.z; },
+      getBounds() { const c = this.center; return { intersects: (b) => !(c[0] - span > b.n || c[0] + span < b.s || c[1] - span > b.e || c[1] + span < b.w) }; },
+      _fidsPhoto: [{ ap: 'YQM', b: { s, w, n, e } }],
+    };
+  };
+  const credit = new Function('BoardStrings', 'document', 'window', 'getComputedStyle', 'setInterval', 'clearInterval',
+    'var _GATE_PHOTO_MINZ = 14; var _GATE_PHOTO_MAPS = []; var _gatePhotoCreditTurn = 0, _gatePhotoCreditTimer = null; '
+      + lift(CORE, 'function _gatePhotoInView(') + '; ' + lift(CORE, 'function _gatePhotoCredit(') + '; return _gatePhotoCredit;'
+  )(BS, doc, env.window, env.getComputedStyle, env.setInterval, env.clearInterval);
+  const tick = () => timers.forEach((f) => f && f());
+  return { col, credit, map, tick, line: () => col.kids[0] };
 }
-const credit = new Function('BoardStrings', 'document', 'window',
-  'var _GATE_PHOTO_MINZ = 14; ' + lift(CORE, 'function _gatePhotoCredit(') + '; return _gatePhotoCredit;'
-)(BS, { createElement: () => ({ hidden: true, innerHTML: '' }) }, { _gateIata: 'YQM' });
+const YQM_AT = [46.1122, -64.6786];
 
-test('the line shows while the photo is in view and goes when it is not', () => {
-  const m = fakeMap(16, [46.1122, -64.6786]);
-  credit(m);
-  assert.equal(m.kids.length, 1);
-  assert.equal(m.kids[0].hidden, false);
-  assert.match(m.kids[0].innerHTML, /lang="en">Contains information licensed under the Open Government Licence/);
-  assert.match(m.kids[0].innerHTML, /lang="fr">Contient de l’information/);
-  assert.match(m.kids[0].innerHTML, /<\/span><br><span/, 'one line per language');
-  // zoomed out past the photo, or looking at another city: no line
-  const out = fakeMap(12, [46.1122, -64.6786]); credit(out);
-  assert.equal(out.kids.length, 0);
-  const far = fakeMap(16, [44.88, -63.51]); credit(far);
-  assert.equal(far.kids.length, 0);
-  // and it goes again once the camera leaves
-  m.getZoom = () => 11; credit(m);
-  assert.equal(m.kids[0].hidden, true);
+test('the credit line is off the map: under the centre panel, one language at a time', () => {
+  assert.match(CORE, /var _GATE_PHOTO_MAPS = \[\];\nvar _gatePhotoCreditTurn = 0, _gatePhotoCreditTimer = null;/);
+  const b = board();
+  const m = b.map(17, YQM_AT);
+  b.credit(m);
+  const el = b.line();
+  assert.ok(el, 'drawn in the centre column');
+  assert.equal(el.tag, 'small', 'the element for attribution, and not a div (the column stretches its divs)');
+  assert.equal(m.box.kids.length, 0, 'nothing drawn on the map');
+  assert.equal(el.hidden, false);
+  assert.match(el.innerHTML, /lang="en">Contains information licensed under the Open Government Licence – New Brunswick</);
+  assert.doesNotMatch(el.innerHTML, /lang="fr"/, 'one language at once');
+  b.tick();
+  assert.match(b.line().innerHTML, /lang="fr">Contient de l’information visée par la Licence du gouvernement ouvert — Nouveau-Brunswick</);
+  b.tick();
+  assert.match(b.line().innerHTML, /lang="en">/, 'and back');
 });
 
-test('the line sits above the OpenStreetMap credit, in the same small type, with no words in the stylesheet', () => {
-  const at = CSS.indexOf('.gate-map-photo-credit {');
+test('the line goes when the photo leaves the view, and when its map is torn down', () => {
+  const b = board();
+  const m = b.map(17, YQM_AT);
+  b.credit(m);
+  m.z = 11; b.credit(m);
+  assert.equal(b.line().hidden, true, 'zoomed out past the photo');
+  m.z = 17; m.center = [44.88, -63.51]; b.credit(m);
+  assert.equal(b.line().hidden, true, 'looking at another city');
+  m.center = YQM_AT; b.credit(m);
+  assert.equal(b.line().hidden, false, 'back over the field');
+  m.box.isConnected = false; b.tick();
+  assert.equal(b.line().hidden, true, 'the map was rebuilt: its old copy no longer counts');
+  const far = board(); far.credit(far.map(16, [44.88, -63.51]));
+  assert.equal(far.line(), undefined, 'a board that never shows the photo never draws the line');
+});
+
+test('a long language steps its type down rather than run past the strip', () => {
+  const b = board();
+  const m = b.map(17, YQM_AT);
+  b.credit(m);
+  const el = b.line();
+  el.innerHTML = ''; el.scrollWidth = 700; el.clientWidth = 600;
+  b.credit(m);
+  assert.equal(el.style.fontSize, '8.5px', '10 px x 600/700, to the tenth');
+  el.innerHTML = ''; el.scrollWidth = 2000;
+  b.credit(m);
+  assert.equal(el.style.fontSize, '7px', 'never under 7 px');
+});
+
+test('the line takes exactly the strip under the glass card, white lettering, no box, no words in the stylesheet', () => {
+  const at = CSS.indexOf('\n.g8-wrap .gad-media-col > .gate-photo-credit {');
   assert.ok(at > 0);
   const rule = CSS.slice(at, CSS.indexOf('\n}', at) + 2);
-  assert.match(rule, /right: 4px;\s*bottom: calc\(5px \+ 1\.25 \* clamp\(9px, min\(1\.1vh, 0\.62vw\), 13px\) \+ 2px\);/);
-  assert.match(rule, /font-size: clamp\(9px, min\(1\.1vh, 0\.62vw\), 13px\);/);
-  assert.match(rule, /z-index: 10000;/);
-  assert.doesNotMatch(rule, /content:/, 'its words come from the string table');
-  assert.match(CSS, /\.gate-map-photo-credit\[hidden\] \{ display: none; \}/);
+  assert.match(rule, /left: var\(--gx-g, 10px\);\s*right: var\(--gx-g, 10px\);/, 'as wide as the glass card');
+  assert.match(rule, /bottom: 0;[\s\S]*height: var\(--gx-g, 10px\);/, 'the card\'s own inset is the strip');
+  assert.match(rule, /line-height: var\(--gx-g, 10px\);/);
+  assert.match(rule, /font-size: min\(clamp\(9px, min\(1\.1vh, 0\.62vw\), 13px\), calc\(var\(--gx-g, 10px\) \* 0\.9\)\);/);
+  assert.match(rule, /color: rgba\(255, 255, 255, 0\.72\);/);
+  assert.doesNotMatch(rule, /background|border-radius|content:/, 'no box behind it, and its words come from the string table');
+  assert.match(CSS, /\.gate-photo-credit\[hidden\] \{ display: none !important; \}/);
+  assert.match(rd('fids-current/css/gate-display.css'), /\.gad-media-col > div:not\(#gateAdLogo\)/, 'the rule a div would have been stretched by (why it is a <small>)');
+  assert.doesNotMatch(CSS, /\.gate-map-photo-credit/, 'the on-map line of v24031 is gone');
 });
 
 // ── how the photo was made ────────────────────────────────────────────────
