@@ -567,10 +567,13 @@ async function handlePutAirport(request, env, payload, origin, code) {
     "logoPosition",
     "logoSize",
     "displayMode",    // auto | light | dark
+    "wxIcons",        // v24035 — weather icons: '' classic | daynight | colour | solid
     "gateBlocks",     // order + on/off of the gate screen blocks
     "tickerMessage"
   ];
   for (const f of fields) { if (body[f] !== undefined) cfg[f] = body[f]; }
+  // v24035 — only a look the boards know is stored
+  if (cfg.wxIcons !== undefined && !["", "daynight", "colour", "solid"].includes(cfg.wxIcons)) delete cfg.wxIcons;
   cfg.updatedAt = Date.now();
   cfg.updatedBy = payload.sub;
   await env.FIDS_USERS.put(`airport:${norm}`, JSON.stringify(cfg));

@@ -2643,7 +2643,7 @@ function _cuCloudPush(code, prefs) {
       _cuCloudTimer = null;
       var body = {};
       ['theme', 'customColors', 'font', 'logoPosition', 'logoSize',
-       'hideAirlinePrefix', 'hideWeather', 'airlineStyle', 'displayMode']
+       'hideAirlinePrefix', 'hideWeather', 'airlineStyle', 'displayMode', 'wxIcons']
         .forEach(function (k) { if (prefs[k] !== undefined) body[k] = prefs[k]; });
       // A custom theme saved as a preset ID must travel as its colours.
       if (prefs.theme === 'custom' && !body.customColors && prefs.themePresetId) {
@@ -2764,6 +2764,10 @@ function _cuReadForm() {
   var ae = document.getElementById('cuAirlineEmblem');
   if (ae && ae.dataset.painted === '1') p.airlineStyle = ae.checked ? 'emblem' : 'full';
   else { var _pv2 = _cuLoad(); if (_pv2 && _pv2.airlineStyle) p.airlineStyle = _pv2.airlineStyle; }
+  // v24035 — the weather icons' look; '' is Classic. Unpainted → carry forward.
+  var wi = document.getElementById('cuWxIcons');
+  if (wi && wi.dataset.painted === '1') p.wxIcons = wi.value;
+  else { var _pv3 = _cuLoad(); if (_pv3 && _pv3.wxIcons !== undefined) p.wxIcons = _pv3.wxIcons; }
   // Font selection (v218.6+)
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel && fontSel.value) p.font = fontSel.value;
@@ -2801,6 +2805,8 @@ function _cuPaintForm(prefs) {
   if (hw) { hw.checked = !!prefs.hideWeather; hw.dataset.painted = '1'; }
   var ae = document.getElementById('cuAirlineEmblem');
   if (ae) { ae.checked = (prefs.airlineStyle === 'emblem'); ae.dataset.painted = '1'; }
+  var wi = document.getElementById('cuWxIcons');
+  if (wi) { wi.value = prefs.wxIcons || ''; wi.dataset.painted = '1'; }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';

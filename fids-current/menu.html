@@ -496,6 +496,15 @@
           <input type="checkbox" id="cuAirlineEmblem" style="width:16px;height:16px;cursor:pointer;" onchange="cuApplyAndSave()">
           <span style="font-size:13px;">Airline column: emblem only (no name)</span>
         </label>
+        <!-- v24035 — the weather icons' look (fids-v2.js wxIconHtml, fids-core.js _wxCardIconDir) -->
+        <label for="cuWxIcons" style="display:block;font-size:13px;margin-top:12px;margin-bottom:4px;">Weather icons</label>
+        <select class="sm-select" id="cuWxIcons" onchange="cuApplyAndSave()">
+          <option value="">Classic (the original icons)</option>
+          <option value="daynight">Day &amp; night: Colour by day, Solid at night</option>
+          <option value="colour">Colour: white circles at the gate</option>
+          <option value="solid">Solid: the airline's two colours at the gate</option>
+        </select>
+        <div style="font-size:11px;opacity:.7;margin-top:4px;">The departures and arrivals rows show the solid glyph, no circle, in every choice but Classic.</div>
       </div>
 
       <!-- ─── 5. BACKGROUND ─── -->
