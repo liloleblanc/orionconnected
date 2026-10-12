@@ -3892,9 +3892,11 @@ function updateSubScreens() {
   let useGate = true;
   if (isBag) {
     locations = [...new Set(flights.map(f => f._belt).filter(b => b && b !== '—'))].sort();
-    // YQM has exactly two carousels: 1 (domestic) and 2 (international). Always
-    // surface BOTH — even an empty Carousel 2 — so travelers always see where
-    // international bags come out. Other airports list only live belts.
+    // YQM has exactly two carousels: 2, the normal belt (in the customs hall,
+    // so every international flight's), and 1, opened when two flights' bags
+    // would share belt 2 (_yqmAssignBelts). Always surface BOTH — even an
+    // empty one — so travelers always see both of Moncton's belts. Other
+    // airports list only live belts.
     try {
       var _apBagSel = document.getElementById('apSel');
       if (_apBagSel && _apBagSel.value === 'YQM') {
@@ -5577,6 +5579,98 @@ function _bidsInWindow(f, nowTs) {
   } catch (e) { return true; }
 }
 
+// vNEXT — MONCTON'S BELTS: 2 IS THE NORMAL BELT, 1 TAKES THE OVERLAP.
+//
+// Moncton has two carousels and its own feed (cyqm.ca) publishes neither, so
+// every Moncton belt is one the board works out itself. It used to be a
+// fixed split (domestic on 1, international on 2), which put nearly every
+// arrival on belt 1. The airport works the other way round: belt 2, the
+// wall-fed belt in the customs hall, is the one bags normally come out on,
+// and belt 1, the oval in the public hall, is opened only when two flights'
+// bags would be on the belt at the same time.
+//
+// A flight's BAG WINDOW is the board's existing "bags on the belt" span: from
+// its effective arrival (actual, else revised, else scheduled — the time
+// _bidsInWindow judges by) for BIDS_WINDOW_TRAIL_MS (45 minutes), the trail
+// the belt screens already keep a landed flight listed for. Two windows
+// OVERLAP when each starts before the other ends; flights exactly 45 minutes
+// apart do not share the belt (one ends as the next begins).
+//
+// The rule, flight by flight in order of arrival:
+//   - belt 2 when no flight already on belt 2 overlaps it;
+//   - otherwise belt 1 (the later flight is the one that moves, so a flight
+//     already on belt 2 is never moved by one landing after it);
+//   - when both belts are taken (three at once), the belt that comes free
+//     first, belt 2 on a tie.
+// Two kinds of flight never take belt 1:
+//   - an international arrival (a sun charter, a U.S. origin) clears customs,
+//     and belt 2 is the customs hall's belt, so it is always on belt 2 and
+//     holds that belt for its window; a domestic flight it overlaps goes to
+//     belt 1 even when the domestic one landed first. This keeps belt 1 what
+//     the hall map labels it (_B5_HALL_PLANS.YQM: "Domestic flights").
+//   - a cancelled or diverted flight, or one with no usable time, brings no
+//     bags here: it reads belt 2 and holds no belt.
+// One aircraft is one flight: rows from the same origin at the same scheduled
+// time (codeshares) share one window and one belt, as _b5Dedupe lists them.
+//
+// Only rows mapADB marked as Moncton's own fill-in (_yqmBelt: 'dom' or
+// 'intl') are touched. A row carrying a belt 1 or 2 that a feed published
+// (none does at Moncton today) keeps it, and holds that belt for its window.
+// Run over the whole arrivals list once mapADB and the revision collapse are
+// done (the fetch, below), because a belt here depends on the other flights.
+var YQM_BELT_MAIN = '2';
+var YQM_BELT_OVERFLOW = '1';
+function _yqmBagTs(f) {
+  return (typeof f._actualArrTime === 'number' && f._actualArrTime > 0) ? f._actualArrTime
+       : (typeof f._revTs === 'number' && f._revTs > 0) ? f._revTs
+       : (typeof f._sortTs === 'number' && f._sortTs > 0) ? f._sortTs : 0;
+}
+function _yqmAssignBelts(rows) {
+  try {
+    if (!Array.isArray(rows) || !rows.some(function (f) { return f && f._yqmBelt; })) return rows;
+    var dur = (typeof BIDS_WINDOW_TRAIL_MS === 'number' && BIDS_WINDOW_TRAIL_MS > 0) ? BIDS_WINDOW_TRAIL_MS : 45 * 60000;
+    var noBags = function (f) { return /cancel|divert/i.test(String((f && f.status) || '')); };
+    var held = Object.create(null);
+    held[YQM_BELT_MAIN] = [];
+    held[YQM_BELT_OVERFLOW] = [];
+    // When a belt is free again for a window starting at t: 0 when nothing on
+    // it overlaps [t, t + dur), else the latest end among those that do.
+    var busyUntil = function (belt, t) {
+      var until = 0;
+      held[belt].forEach(function (w) { if (w[0] < t + dur && w[1] > t && w[1] > until) until = w[1]; });
+      return until;
+    };
+    var groups = [], byKey = Object.create(null);
+    rows.forEach(function (f) {
+      if (!f) return;
+      var t = _yqmBagTs(f);
+      if (!f._yqmBelt) {
+        // a published belt keeps its flight and holds its belt
+        if (held[f._belt] && t && !noBags(f)) held[f._belt].push([t, t + dur]);
+        return;
+      }
+      f._belt = YQM_BELT_MAIN;
+      if (!t || noBags(f)) return;
+      var k = (f._locIata || f.origin || '') + '|' + (f._sortTs || t);
+      var g = byKey[k];
+      if (!g) { g = byKey[k] = { t: t, rows: [], intl: false }; groups.push(g); }
+      g.rows.push(f);
+      if (f._yqmBelt === 'intl') g.intl = true;
+      if (t < g.t) g.t = t;
+    });
+    groups.forEach(function (g) { if (g.intl) held[YQM_BELT_MAIN].push([g.t, g.t + dur]); });
+    groups.filter(function (g) { return !g.intl; })
+      .sort(function (a, b) { return a.t - b.t; })
+      .forEach(function (g) {
+        var main = busyUntil(YQM_BELT_MAIN, g.t), over = busyUntil(YQM_BELT_OVERFLOW, g.t);
+        var belt = !main ? YQM_BELT_MAIN : (!over ? YQM_BELT_OVERFLOW : (over < main ? YQM_BELT_OVERFLOW : YQM_BELT_MAIN));
+        held[belt].push([g.t, g.t + dur]);
+        g.rows.forEach(function (f) { f._belt = belt; });
+      });
+  } catch (e) {}
+  return rows;
+}
+
 // ══ v24013 — BIDS5: THE BAGGAGE HALL BOARD ════════════════════════════════
 //
 // One screen for the whole hall, from the three directions picked for it:
@@ -5693,8 +5787,9 @@ function _b5FeedBelts(arr) {
 // the DOMESTIC BAGGAGE CONVEYOR (belt 1, its sign over it in the airport's
 // own 2016 photograph), the flat L-shaped wall-fed belt inside the customs
 // hall the INTERNATIONAL BAGGAGE CONVEYOR (belt 2, 2023 annual report). The
-// board's own belt for a Moncton flight is mapADB's domestic 1 /
-// international 2. Coordinates are the plan's (viewBox), the labels and
+// board's own belt for a Moncton flight is _yqmAssignBelts': belt 2
+// normally, belt 1 only for a domestic flight whose bags would share belt 2
+// with another's. Coordinates are the plan's (viewBox), the labels and
 // discs placed on them in shares of the box.
 var _B5_HALL_PLANS = {
   YQM: {
@@ -5704,8 +5799,10 @@ var _B5_HALL_PLANS = {
       // v24016 — the wall-fed belt in the customs hall takes domestic flights
       // too, most of the time (first hand, 2026-10-07), so it is never
       // labelled as international only. Which NUMBER each belt carries is
-      // still the 2016 photograph's and is to be checked against the signs;
-      // the per-flight rule above (domestic 1, international 2) is unchanged.
+      // still the 2016 photograph's and is to be checked against the signs.
+      // vNEXT — the per-flight rule is now belt 2 normally, belt 1 for the
+      // overlap (_yqmAssignBelts); an international flight is never put on
+      // belt 1, so its label stays true.
       { id: '2', label: 'intlAndDomFlights', disc: [372, 312] }
     ],
     labels: [
@@ -32928,7 +33025,8 @@ function render() {
       + (_gateChanged ? '<span class="gate-changed-badge">' + _gateVal2 + '</span>' : _gateVal2)
       + '</td>';
     // Arrivals "Carousel" column must show the baggage belt (_belt — carries the
-    // per-airport rule, e.g. YQM domestic→1 / international→2), NOT f.gate (that's
+    // per-airport rule, e.g. YQM's belt 2 / belt 1 for the overlap, see
+    // _yqmAssignBelts), NOT f.gate (that's
     // the arrival GATE, which is why this column was showing the feed's phantom
     // 3/4 while the bags board correctly showed 1). Strip any terminal prefix
     // ("1-4" → "4") so it matches the bags board.
@@ -38129,6 +38227,9 @@ function mapADB(raw, mode, kept) {
     // belt's screen, as before, and not on the "to be announced" list
     // either, because its belt has been announced. _bidsUnassigned.
     let _beltUnplaced = false;
+    // vNEXT — at Moncton, which kind of arrival this is for the belt pass
+    // (_yqmAssignBelts): 'dom' or 'intl'. null everywhere else.
+    let _yqmBeltKind = null;
     // v24005 — a feed's own word for "no belt" is no belt: Boston's feed
     // writes "None" into the field, and its belt sign read "None" where the
     // number goes. ('INTL' is Boston's name for a real claim area and stays.)
@@ -38136,10 +38237,18 @@ function mapADB(raw, mode, kept) {
     if (mode === 'arr') {
       const _apForBelt = document.getElementById('apSel').value;
       if (_apForBelt === 'YQM') {
-        // YQM has exactly TWO carousels: domestic → 1, international
-        // (incl. US, which clears customs) → 2. Override whatever ADB
-        // returns — it reports phantom belt numbers (3,4,…) that don't exist
-        // here.
+        // YQM has exactly TWO carousels, and Moncton's own feed (cyqm.ca)
+        // publishes no belt at all, so every Moncton belt is one we work out.
+        // Override whatever ADB returns — it reports phantom belt numbers
+        // (3,4,…) that don't exist here.
+        //
+        // vNEXT — belt 2 is the normal belt and belt 1 takes the overlap
+        // (_yqmAssignBelts, which explains the rule). A belt depends on the
+        // other flights, so it cannot be settled one row at a time: here each
+        // arrival goes on belt 2 and is marked domestic or international
+        // (international = clears customs: a sun-charter carrier, or any
+        // origin outside Canada), and the pass over the whole list moves the
+        // ones whose bags would share belt 2.
         const _YQM_INTL_CARRIERS = new Set(['TS','WG']);
         let _isIntl;
         if (_YQM_INTL_CARRIERS.has(airline)) {
@@ -38160,7 +38269,8 @@ function mapADB(raw, mode, kept) {
           const isCanadian = locIata && (CITY_TYPE[locIata] === 'canada' || _CA_FALLBACK.has(locIata) || /^Y[A-Z0-9]{2}$/i.test(locIata));
           _isIntl = !isCanadian;
         }
-        _belt = _isIntl ? '2' : '1';
+        _yqmBeltKind = _isIntl ? 'intl' : 'dom';
+        _belt = YQM_BELT_MAIN;
       } else if (_belt) {
         const _termRaw = (terminal && terminal !== '—') ? String(terminal).trim() : '';
         const _termNorm = _termRaw.replace(/^T/i, '');  // "T1" → "1"
@@ -38233,6 +38343,8 @@ function mapADB(raw, mode, kept) {
       :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_beltUnplaced,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
     // v23944 — who operates it, from the one ladder the gates read too.
     fidsApplyOperator(_row, (mode==='dep' ? f.departure?.airport?.iata : f.arrival?.airport?.iata) || (document.getElementById('apSel') || {}).value || '');
+    // vNEXT — Moncton's belt pass reads this (_yqmAssignBelts).
+    if (_yqmBeltKind) _row._yqmBelt = _yqmBeltKind;
     return _row;
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
 }
@@ -38356,6 +38468,11 @@ async function fetchLive() {
     // on a cold one.
     if (depRaw) data.dep = _fidsCollapseRevisions(mapADB(depRaw, 'dep'), _revTz);
     if (arrRaw) data.arr = _fidsCollapseRevisions(mapADB(arrRaw, 'arr'), _revTz);
+    // vNEXT — and then Moncton's belts, which depend on the other arrivals
+    // (belt 2 normally, belt 1 when two flights' bags would share it), once
+    // the list holds one row per flight (_yqmAssignBelts). Rows of any other
+    // airport carry no _yqmBelt mark and are left as they are.
+    if (arrRaw) data.arr = _yqmAssignBelts(data.arr);
     // v23944 — the far end's record of who operates our Air Canada flights
     // (the worker's /opinfo), shared by the board and every gate here.
     try { _opEvRefresh(iata, (data.dep || []).concat(data.arr || [])); } catch (e) {}
@@ -54634,8 +54751,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // ── BAGGAGE CAROUSEL CYCLE ──────────────────────────────────────────────
 // The bids board shows ONE carousel at a time (subScreenVal). For the stream /
 // rotator, walk through every carousel so each one shows — including an EMPTY
-// Carousel 2 at YQM (international; it must stay visible so travelers
-// see where international bags come out). Same enable rules + pause-when-hidden
+// carousel at YQM (both of Moncton's belts stay visible: 2 the normal belt,
+// 1 the overlap belt, _yqmAssignBelts). Same enable rules + pause-when-hidden
 // as the gate cycle. Override with ?bagcycle=SECONDS (?bagcycle=0 to force off).
 (function () {
   try {
