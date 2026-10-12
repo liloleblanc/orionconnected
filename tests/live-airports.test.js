@@ -126,6 +126,25 @@ test('the mobile app offers the same live airports as the board', () => {
   assert.match(app, /APP_LIVE_AIRPORTS\.has\(k\)/, 'the app picker no longer filters on APP_LIVE_AIRPORTS');
 });
 
+// vNEXT — and every one of them can be OPENED in the app. The Set above was
+// right while the app's own catalogue (AIRPORTS) lacked 19 of its codes, and
+// boot took only catalogue codes: a phone sent from the Fredericton or Saint
+// John board landed on Moncton, under ?ap=YQM, and the picker never listed
+// them. Each live airport needs its row, in the board's own time zone (the
+// app builds its feed windows, its clock and its day lines from it).
+test('every live airport has a row in the app\'s catalogue, in the board\'s time zone', () => {
+  const app = readFileSync(path.join(here, '..', 'fids-current', 'app.html'), 'utf8');
+  const start = core.indexOf('const AP = {');
+  const apBlock = core.slice(start, core.indexOf('\n};', start));
+  for (const c of clientCodes()) {
+    const row = app.match(new RegExp(`\\n\\s*${c}:\\{n:(?:'[^']+'|"[^"]+"),tz:'([^']+)',r:'(?:CA|US|INT)'\\}`));
+    assert.ok(row, `${c} is live but the app's catalogue has no row for it — it cannot be opened in the app`);
+    const board = apBlock.match(new RegExp(`\\n\\s*${c}\\s*:\\s*\\{[^}]*tz\\s*:\\s*'([^']+)'`));
+    assert.ok(board, `${c} missing from the board's AP table`);
+    assert.equal(row[1], board[1], `${c}: the app and the board disagree on the time zone`);
+  }
+});
+
 // v23346 — the rotator filters hand-written tour lists against its own copy of
 // the roster (a URL can name any airport), so it has to agree with the board.
 test('the rotator knows the same live airports as the board', () => {
