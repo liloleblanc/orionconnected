@@ -215,14 +215,111 @@ test('the Studio and the Designer are previews: their clocks read 10:10', () => 
   assert.equal(d.getHours(), 10);
   assert.equal(d.getMinutes(), 10);
   assert.equal(d.toDateString(), now.toDateString(), 'today');
+  // ?clock=live: the real time, as on every board
+  const realNow = new Function('location', extract(dsg, '_demoNow', '  ') + '; return _demoNow;')({ search: '?clock=live' });
+  const r = realNow(), n2 = new Date();
+  assert.ok(Math.abs(r.getTime() - n2.getTime()) < 5000, 'the real time with ?clock=live');
   assert.match(extract(dsg, 'designerContext', '  '), /const d = _demoNow\(\);/);
   assert.match(extract(dsg, '_formatClock', '  '), /const d = _demoNow\(\);/);
 });
 
-test('?mode=arr shows the Arrivals board on the real flights, not the demo', () => {
+// ?mode=arr on screen (first painted title, the live path, a tab that
+// remembers the demo) is read in tests/demo-clock-render.test.js; these are
+// the two decisions, run.
+test('?mode=arr / ?mode=dep: the board\'s fixed view, and the live path', () => {
+  const urlView = (search) => new Function('window', extract(CORE, '_fidsUrlView') + '; return _fidsUrlView();')({ location: { search } });
+  assert.equal(urlView('?ap=YQM&mode=arr'), 'arr');
+  assert.equal(urlView('?mode=dep&ap=YHZ'), 'dep');
+  for (const q of ['?ap=YQM', '?mode=live', '?mode=demo', '?mode=ARR', '']) assert.equal(urlView(q), '', q);
+  assert.match(CORE, /let viewMode = _fidsUrlView\(\) \|\| 'rotate';/, 'decided where it is declared, before the first render');
+  // fids.html: which flights. Run its two lines with each URL and storage.
   const html = read('fids.html');
-  assert.match(html, /var _urlView = \(_urlMode === 'arr' \|\| _urlMode === 'dep'\) \? _urlMode : '';\s*if \(_urlView\) _urlMode = null;/,
-    'arr / dep is a view: it no longer falls into the demo branch');
-  assert.equal((html.match(/startPaging\(\);\s*_bootView\(\);/g) || []).length, 2, 'the view is set once the flights are in, live or demo');
-  assert.match(html, /setViewMode\(_urlView\)/);
+  const a = html.indexOf('var _urlView ='), b = html.indexOf('\n', html.indexOf('var startMode =', a));
+  assert.ok(a > 0 && b > a, 'the start-mode lines');
+  const startMode = (urlMode, signedIn, stored) => new Function('_urlMode', 'localStorage', 'sessionStorage',
+    html.slice(a, b) + '; return startMode;')(urlMode, { getItem: (k) => (signedIn && k === 'fids_token' ? 'tok' : null) },
+    { getItem: (k) => (k === 'fids_mode' ? stored : null) });
+  assert.equal(startMode('arr', false, 'demo'), 'live', 'a view in the URL outranks a demo this tab remembers');
+  assert.equal(startMode('dep', false, null), 'live');
+  assert.equal(startMode('demo', true, null), 'demo', 'an explicit ?mode=demo still wins');
+  assert.equal(startMode(null, false, 'demo'), 'demo', 'no ?mode=: the tab\'s own choice, as before');
+  assert.equal(startMode(null, true, 'demo'), 'live', 'signed in: live, as before');
+});
+
+// ── Day or night follows the clock shown ─────────────────────────────────
+// A board whose clocks read 10:10 is drawn for 10:10: no moon on the gate's
+// aircraft sky, no night photograph in the baggage hall, no night scene on
+// the weather card under a 10:10 AM clock. A board in an airport, and any
+// question asked about a given time, keep the real clock.
+const FidsSun = require(path.join(ROOT, 'js', 'fids-sun.js'));
+const YQM = [46.1122, -64.6786];
+
+test('the page\'s day or night (fids-sun.js) is judged at the instant the clocks show', () => {
+  const night = Date.parse('2026-10-12T06:40:00Z');              // 3:40 AM in Moncton
+  let demo = false;
+  const shown = (t, tz) => (demo ? BS.clockNow(new Date(t), tz).getTime() : t);
+  const make = (extra) => FidsSun.create(Object.assign({ now: () => night, coords: () => YQM, tz: () => 'America/Moncton' }, extra || {}));
+  // without the hook: the real hour
+  assert.equal(make().isDay('YQM'), false);
+  // with it, off: the real hour; on: 10:10, daylight
+  const e = make({ shown: (t, tz) => { BS.setDemoClock(demo); try { return shown(t, tz); } finally { BS.setDemoClock(false); } } });
+  assert.equal(e.isDay('YQM'), false, 'a board in an airport');
+  demo = true;
+  assert.equal(e.isDay('YQM'), true, 'a demo board at 3:40 AM is drawn for 10:10');
+  assert.equal(e.isDay('YQM', night), false, 'a question about a given time keeps it');
+  assert.equal(e.times('YQM').date, '2026-10-12', 'the astronomy is the real day\'s');
+  // subscribers and the <html> classes follow it, and turn back when it ends
+  const calls = [];
+  e.subscribe('YQM', (d) => calls.push(d));
+  assert.deepEqual(calls, [true]);
+  demo = false; e.check('test');
+  assert.deepEqual(calls, [true, false], 'live again: the real night');
+  // ?daynight= still wins
+  const held = make({ search: () => '?daynight=night', shown: () => Date.parse('2026-10-12T14:10:00Z') });
+  assert.equal(held.isDay('YQM'), false);
+});
+
+test('the browser\'s hook asks the store each time, and is the real time without it', () => {
+  const t = Date.parse('2026-10-12T06:40:00Z');
+  const env = FidsSun.browserEnv({ document: {}, BoardStrings: BS });
+  BS.setDemoClock(false);
+  assert.equal(env.shown(t, 'America/Moncton'), t);
+  BS.setDemoClock(true);
+  try { assert.equal(new Date(env.shown(t, 'America/Moncton')).toISOString(), '2026-10-12T13:10:00.000Z', '10:10 ADT'); }
+  finally { BS.setDemoClock(false); }
+  assert.equal(FidsSun.browserEnv({ document: {} }).shown(t, 'America/Moncton'), t, 'no store on the page: the real time');
+});
+
+test('the weather card\'s "now" and the aircraft sky follow the clock shown', () => {
+  const T = Date.parse('2026-10-12T13:10:00Z');                  // 10:10 ADT
+  let shownTs = 0, asked = [];
+  const sunAround = (c) => ({ sunrise: new Date(c - 3 * 3600000).toISOString(), sunset: new Date(c + 3 * 3600000).toISOString() });
+  const wxNightAt = new Function('_fidsDemoShownTs', '_wxFetchSun', 'AP', extract(CORE, '_wxNightAt') + '; return _wxNightAt;')(
+    () => shownTs, (ia, ts) => { asked.push(ts); return ts ? sunAround(T) : { sunrise: new Date(Date.now() + 3600000).toISOString(), sunset: new Date(Date.now() + 9 * 3600000).toISOString() }; }, {});
+  // a board in an airport: the real now (here, an hour before sunrise)
+  assert.equal(wxNightAt('YQM'), true);
+  assert.equal(asked.pop(), undefined, 'asked for today, as before');
+  // a demo board: 10:10, in daylight, and the sun times of that day
+  shownTs = T;
+  assert.equal(wxNightAt('YQM'), false);
+  assert.equal(asked.pop(), T);
+  // an hour on the card keeps its own time
+  assert.equal(wxNightAt('YQM', T + 5 * 3600000), true, 'a given hour (after sunset) is not moved');
+  // _fidsDemoShownTs: 0 on a live board; 10:10 at the board's own airport on a demo
+  const doc = { getElementById: () => ({ value: 'YQM' }) };
+  const shownFn = new Function('BoardStrings', 'document', 'window', 'AP', extract(CORE, '_fidsDemoShownTs') + '; return _fidsDemoShownTs;')(
+    BS, doc, {}, { YQM: { tz: 'America/Moncton' } });
+  BS.setDemoClock(false);
+  assert.equal(shownFn(), 0);
+  BS.setDemoClock(true);
+  try {
+    const s = new Date(shownFn());
+    assert.equal(BS.boardTime(s, 'America/Moncton', { list: ['en'] }), '10:10 AM');
+  } finally { BS.setDemoClock(false); }
+  // the aircraft sky asks _wxNightAt (or the same instant when no airport is set)
+  assert.match(extract(CORE, '_acSkyIsNight'), /_wxNightAt\(ia\)/);
+  assert.match(extract(CORE, '_acSkyIsNight'), /if \(_dts && typeof _wxNightAt === 'function'\) return !!_wxNightAt\(ia, _dts\);/);
+  // and the page is judged again the moment a demo starts, not 30 s later
+  assert.match(extract(CORE, 'loadDemo'), /_fidsDemoClockChanged\(\);/);
+  assert.match(extract(CORE, '_fidsDemoClockChanged'), /window\.fidsSun\.check\('demo-clock'\)/);
 });

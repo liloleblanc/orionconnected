@@ -884,14 +884,16 @@ window.addEventListener("DOMContentLoaded", function() {
     // Departures, no rotation) on the same flights as any other link. It fell
     // into the demo branch below with every mode that is not 'live', so an
     // arrivals link showed DEMO flights on the rotating Departures board.
+    // The view itself is set where fids-core.js declares it (_fidsUrlView), so
+    // the board's very first render, during the page's load, is already that
+    // view, live flights or not, slow fetch or failed.
     var _urlView = (_urlMode === 'arr' || _urlMode === 'dep') ? _urlMode : '';
     if (_urlView) _urlMode = null;
-    var _bootView = function () {
-      try { if (_urlView && typeof setViewMode === 'function') setViewMode(_urlView); } catch (eV) {}
-    };
     var _signedIn = false;
     try { _signedIn = !!(localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token')); } catch (e) {}
-    var startMode = _urlMode || (_signedIn ? 'live' : (sessionStorage.getItem('fids_mode') || 'live'));
+    // An explicit view in the URL is a request for the live flights, as an
+    // explicit ?mode=live is: a 'demo' this tab remembers does not outrank it.
+    var startMode = _urlMode || ((_urlView || _signedIn) ? 'live' : (sessionStorage.getItem('fids_mode') || 'live'));
 
     var apSel = document.getElementById('apSel');
     if (apSel) apSel.value = ap;
@@ -933,7 +935,6 @@ window.addEventListener("DOMContentLoaded", function() {
       _fidsSetLoaderStatus(BoardStrings.loaderLine('fetchingLive'));
       Promise.resolve(fetchLive()).then(function() {
         if (typeof startPaging === "function") startPaging();
-        _bootView();
         _fidsHideLoader();
       }).catch(function(e) {
         console.error('[init] fetchLive failed:', e);
@@ -943,7 +944,6 @@ window.addEventListener("DOMContentLoaded", function() {
       _fidsSetLoaderStatus(BoardStrings.loaderLine('loadingDemo'));
       Promise.resolve(loadDemo()).then(function() {
         if (typeof startPaging === "function") startPaging();
-        _bootView();
         _fidsHideLoader();
       }).catch(function(e) {
         console.error('[init] loadDemo failed:', e);

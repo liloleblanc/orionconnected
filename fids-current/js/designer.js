@@ -208,9 +208,12 @@
   // vNEXT — THE DESIGNER IS A PREVIEW, SO ITS CLOCK READS 10:10: the
   // watch-advert convention every example board follows (BoardStrings.
   // clockNow on the boards; this page does not load the store). Today's date,
-  // and the real seconds so a seconds display still ticks.
+  // and the real seconds so a seconds display still ticks. ?clock=live (or
+  // real / off / 0) shows the real time, as it does on every board.
   function _demoNow() {
     const d = new Date();
+    const q = (typeof location !== 'undefined' && location.search) || '';
+    if (/[?&]clock=(live|real|off|0)(?:&|#|$)/i.test(q)) return d;
     d.setHours(10, 10);
     return d;
   }

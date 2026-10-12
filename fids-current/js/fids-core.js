@@ -4783,6 +4783,7 @@ function submitTestFlight() {
 
   if (!window._testFlights) window._testFlights = [];
   window._testFlights.push(testFlight);
+  try { _fidsDemoClockChanged(); } catch (e) {}   // vNEXT — the demo clock is on from here
   data.dep.push(testFlight);
   data.dep.sort((a,b) => a._sortTs - b._sortTs);
 
@@ -31788,6 +31789,10 @@ function _acSkyIsNight() {
     if (ia && typeof _wxNightAt === 'function') return !!_wxNightAt(ia);
     var tz = '';
     try { tz = (typeof AP !== 'undefined' && AP[ia] && AP[ia].tz) || ''; } catch (eT) {}
+    // vNEXT — no airport set on a demo: the 06–21 window at the instant the
+    // clocks show (10:10), as _wxNightAt answers for a given time
+    var _dts = _fidsDemoShownTs();
+    if (_dts && typeof _wxNightAt === 'function') return !!_wxNightAt(ia, _dts);
     var hh = Number(new Date().toLocaleTimeString('en-GB', tz // i18n-ok: code
       ? { timeZone: tz, hour12: false, hour: '2-digit' } // i18n-ok: code
       : { hour12: false, hour: '2-digit' }).slice(0, 2)); // i18n-ok: code
@@ -39618,6 +39623,24 @@ function _fidsDemoClockWanted() {
   } catch (e) { return false; }
 }
 try { BoardStrings.setDemoClock(_fidsDemoClockWanted); } catch (e) {}
+// The instant the board's day-or-night art is drawn for while its clocks read
+// 10:10 (the weather card's sky and scene, the gate's aircraft sky); 0 on a
+// board in an airport, which keeps the real clock. The page's own day/night
+// (html.fids-day, fids-sun.js) asks the same switch through env.shown.
+function _fidsDemoShownTs() {
+  try {
+    if (!BoardStrings.demoClock()) return 0;
+    var ia = ((document.getElementById('apSel') || {}).value || window._gateIata || '').toUpperCase();
+    return BoardStrings.clockNow(new Date(), ((typeof AP !== 'undefined' && AP[ia]) || {}).tz || null).getTime();
+  } catch (e) { return 0; }
+}
+// Called where the demo switch turns on (loadDemo, a test flight): the page's
+// day or night is judged again at once instead of at the next 30 s heartbeat,
+// so a demo board never opens on a night sky that turns to day half a minute in.
+function _fidsDemoClockChanged() {
+  try { if (window.fidsSun && typeof window.fidsSun.check === 'function') window.fidsSun.check('demo-clock'); } catch (e) {}
+  try { if (typeof _acSkyPhaseApply === 'function') _acSkyPhaseApply(); } catch (e) {}
+}
 
 function loadDemo() {
   const iata = document.getElementById('apSel').value;
@@ -39633,6 +39656,7 @@ function loadDemo() {
   }
   if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
   window._fidsBoardIsDemo = true;   // v24026 — the pretend standby lists (_gateSbPretendOn)
+  _fidsDemoClockChanged();           // vNEXT — its day or night follows the 10:10 clock now
   document.getElementById('liveLabel').textContent = 'DEMO'; // i18n-ok: operator
   document.getElementById('lastUp').textContent    = 'DEMO MODE'; // i18n-ok: operator
   setState('loading', false);
@@ -40550,7 +40574,16 @@ function applySearch(flights) {
 }
 
 // ── VIEW MODE (DEP / ARR / ROTATE) ────────────────────────────────────────
-let viewMode = 'rotate'; // 'dep' | 'arr' | 'rotate'
+// vNEXT — ?mode=arr / ?mode=dep (fids.html) is the board's fixed view from its
+// very first render: the board renders while the page is still loading (the
+// first airport apply, menu.js's theme re-apply), long before fids.html's own
+// boot, so the view is decided here, where it is declared. render() locks
+// `mode` to it; startPaging() then pages within it while the languages take
+// turns. fids.html reads the same parameter to take the live path.
+function _fidsUrlView() {
+  try { var m = new URLSearchParams(window.location.search).get('mode'); return (m === 'arr' || m === 'dep') ? m : ''; } catch (e) { return ''; }
+}
+let viewMode = _fidsUrlView() || 'rotate'; // 'dep' | 'arr' | 'rotate'
 
 function setViewMode(vm) {
   viewMode = vm;
@@ -40565,7 +40598,7 @@ function setViewMode(vm) {
 }
 
 // ── MOBILE MODE ────────────────────────────────────────────────────────────
-let mobileMode = 'dep';
+let mobileMode = _fidsUrlView() || 'dep';
 let mobileCurrentPage = 0;
 const MOBILE_ROWS = 8;
 
@@ -55993,6 +56026,11 @@ function _wxFetchSun(iata, ts) {
 // 06:00-21:00 window only while those have not arrived.
 function _wxNightAt(iata, ts) {
   try {
+    // vNEXT — asked about NOW on a board shown as an example, the answer is
+    // for the instant its clocks show (10:10 at the board's airport), so the
+    // sky, the scene and the icons agree with the clock. A board in an
+    // airport, and any question about a given time, keep the real clock.
+    if (!ts) ts = _fidsDemoShownTs() || ts;
     var sun = (typeof _wxFetchSun === 'function') ? _wxFetchSun(iata, ts) : null;
     if (sun) {
       if (sun.polarDay) return false;
