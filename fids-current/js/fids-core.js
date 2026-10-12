@@ -3897,12 +3897,15 @@ function updateSubScreens() {
     // would share belt 2 (_yqmAssignBelts). Always surface BOTH — even an
     // empty one — so travelers always see both of Moncton's belts. Other
     // airports list only live belts.
+    // vNEXT — belt 2 FIRST: a single-belt screen nobody pinned opens on
+    // locations[0], and that should be the belt the bags normally come out
+    // on, not the overflow belt that is usually empty.
     try {
       var _apBagSel = document.getElementById('apSel');
       if (_apBagSel && _apBagSel.value === 'YQM') {
-        if (locations.indexOf('1') === -1) locations.push('1');
-        if (locations.indexOf('2') === -1) locations.push('2');
-        locations = [...new Set(locations)].sort();
+        locations = [YQM_BELT_MAIN, YQM_BELT_OVERFLOW].concat(locations.filter(function (l) {
+          return l !== YQM_BELT_MAIN && l !== YQM_BELT_OVERFLOW;
+        }));
       }
     } catch (e) {}
     // v24005 — the flights no feed has put on a belt have a screen of their
@@ -5590,11 +5593,17 @@ function _bidsInWindow(f, nowTs) {
 // bags would be on the belt at the same time.
 //
 // A flight's BAG WINDOW is the board's existing "bags on the belt" span: from
-// its effective arrival (actual, else revised, else scheduled — the time
-// _bidsInWindow judges by) for BIDS_WINDOW_TRAIL_MS (45 minutes), the trail
-// the belt screens already keep a landed flight listed for. Two windows
-// OVERLAP when each starts before the other ends; flights exactly 45 minutes
-// apart do not share the belt (one ends as the next begins).
+// its effective arrival for BIDS_WINDOW_TRAIL_MS (45 minutes), the trail the
+// belt screens already keep a landed flight listed for. The effective arrival
+// is the touchdown when the feed gives one (_actualArrTime, which mapADB
+// keeps as the feed's runwayTime STRING, so it is parsed here, _b5LandedTs),
+// else the revised time, else the scheduled time. cyqm.ca gives no touchdown;
+// its "Arrived at 10:54 AM" is already the row's revised time. (_bidsInWindow,
+// which lists a flight on its belt's screen, reads only a NUMBER there, so on
+// a feed that does give a touchdown it times the listing from the revised
+// time; at Moncton the two are the same.) Two windows OVERLAP when each
+// starts before the other ends; flights exactly 45 minutes apart do not share
+// the belt (one ends as the next begins).
 //
 // The rule, flight by flight in order of arrival:
 //   - belt 2 when no flight already on belt 2 overlaps it;
@@ -5607,28 +5616,82 @@ function _bidsInWindow(f, nowTs) {
 //     and belt 2 is the customs hall's belt, so it is always on belt 2 and
 //     holds that belt for its window; a domestic flight it overlaps goes to
 //     belt 1 even when the domestic one landed first. This keeps belt 1 what
-//     the hall map labels it (_B5_HALL_PLANS.YQM: "Domestic flights").
+//     the hall map labels it (_B5_HALL_PLANS.YQM: "Domestic flights"). (The
+//     part where an EARLIER domestic flight moves for a later international
+//     one is the board's reading of the customs hall, not yet confirmed as
+//     the airport's practice: an open item. Without it, both would share
+//     belt 2.)
 //   - a cancelled or diverted flight, or one with no usable time, brings no
 //     bags here: it reads belt 2 and holds no belt.
 // One aircraft is one flight: rows from the same origin at the same scheduled
 // time (codeshares) share one window and one belt, as _b5Dedupe lists them.
 //
+// A BELT NEVER CHANGES UNDER BAGS ALREADY ON IT. The pass is run afresh on
+// every poll, and a belt here depends on every earlier flight, so two things
+// keep it still:
+//   1. cyqm.ca drops an arrival about an hour after it lands, while its bags
+//      can still be on the belt. The worker remembers those rows for 30 hours
+//      (yqmWithMemory, fids-proxy.js) and feed-router sets them aside
+//      (window._yqmRemembered). The pass runs over the listed rows AND the
+//      remembered ones the list no longer holds (`kept`, one row per flight
+//      and scheduled day, a listed row winning), so a flight that left the
+//      list still holds its window, and every screen works from the same
+//      flights. Belts are written back to the listed rows only.
+//   2. Once a flight's window has begun — the feed says it arrived or landed,
+//      or its effective time has come — its belt is FROZEN (`memo`, keyed by
+//      flight and scheduled day, kept in this browser's storage so a reload
+//      keeps it too). A frozen flight holds its belt for its window, ahead of
+//      every flight still to come, so no later revision, drop or reordering
+//      of other flights can move it. A frozen flight whose time is revised
+//      back into the future without having landed (its window had not begun
+//      after all) is thawed and placed again. A frozen flight that has left
+//      both lists still holds its belt for its last known window.
+// The arrivals board, the hall board and every belt screen read the same
+// rows, so they agree on every frozen flight; a flight still to land can
+// change belt before it lands, when the flights around it change.
+//
 // Only rows mapADB marked as Moncton's own fill-in (_yqmBelt: 'dom' or
 // 'intl') are touched. A row carrying a belt 1 or 2 that a feed published
 // (none does at Moncton today) keeps it, and holds that belt for its window.
 // Run over the whole arrivals list once mapADB and the revision collapse are
-// done (the fetch, below), because a belt here depends on the other flights.
+// done (_yqmBeltPass, from the fetch), because a belt here depends on the
+// other flights. Called with no options (the tests' snapshots), it reads only
+// the rows it is given and freezes nothing.
 var YQM_BELT_MAIN = '2';
 var YQM_BELT_OVERFLOW = '1';
+var YQM_BELT_MEMO_HRS = 30;
 function _yqmBagTs(f) {
-  return (typeof f._actualArrTime === 'number' && f._actualArrTime > 0) ? f._actualArrTime
+  var a = 0;
+  try { a = _b5LandedTs(f); } catch (e) { a = 0; }
+  return (a > 0) ? a
        : (typeof f._revTs === 'number' && f._revTs > 0) ? f._revTs
        : (typeof f._sortTs === 'number' && f._sortTs > 0) ? f._sortTs : 0;
 }
-function _yqmAssignBelts(rows) {
+// The feed's own word that it is down (never the clock's guess, _stInferred),
+// or a touchdown time.
+function _yqmLanded(f) {
+  if (!f) return false;
+  try { if (_b5LandedTs(f) > 0) return true; } catch (e) {}
+  return f._stInferred !== true && /^(arrived|landed)$/.test(String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase());
+}
+// One flight on one scheduled day, in Moncton's clock: the memo's key, and
+// how a remembered row is matched to a listed one.
+function _yqmFlightDay(f, tz) {
+  var day = '';
+  try {
+    day = (typeof fidsLocalDateKey === 'function') ? fidsLocalDateKey(f._sortTs, tz || 'America/Moncton')
+        : new Date(f._sortTs).toISOString().slice(0, 10);
+  } catch (e) { day = String(f._sortTs || ''); }
+  return String(f.flight || '') + '|' + day;
+}
+function _yqmAssignBelts(rows, o) {
   try {
     if (!Array.isArray(rows) || !rows.some(function (f) { return f && f._yqmBelt; })) return rows;
+    o = o || {};
     var dur = (typeof BIDS_WINDOW_TRAIL_MS === 'number' && BIDS_WINDOW_TRAIL_MS > 0) ? BIDS_WINDOW_TRAIL_MS : 45 * 60000;
+    var now = (typeof o.now === 'number' && o.now > 0) ? o.now : 0;
+    var memo = (now && o.memo && typeof o.memo === 'object') ? o.memo : null;
+    var isBelt = function (b) { return b === YQM_BELT_MAIN || b === YQM_BELT_OVERFLOW; };
     var noBags = function (f) { return /cancel|divert/i.test(String((f && f.status) || '')); };
     var held = Object.create(null);
     held[YQM_BELT_MAIN] = [];
@@ -5640,35 +5703,123 @@ function _yqmAssignBelts(rows) {
       held[belt].forEach(function (w) { if (w[0] < t + dur && w[1] > t && w[1] > until) until = w[1]; });
       return until;
     };
-    var groups = [], byKey = Object.create(null);
+    // The pass's flights: every listed row, then each remembered row whose
+    // flight and day the list no longer holds.
+    var seen = Object.create(null), all = [];
     rows.forEach(function (f) {
       if (!f) return;
-      var t = _yqmBagTs(f);
+      seen[_yqmFlightDay(f, o.tz)] = true;
+      all.push({ f: f, listed: true });
+    });
+    (Array.isArray(o.kept) ? o.kept : []).forEach(function (f) {
+      if (!f || !f._yqmBelt) return;
+      var k = _yqmFlightDay(f, o.tz);
+      if (seen[k]) return;
+      seen[k] = true;
+      all.push({ f: f, listed: false });
+    });
+    var groups = [], byKey = Object.create(null);
+    all.forEach(function (e) {
+      var f = e.f, t = _yqmBagTs(f);
       if (!f._yqmBelt) {
         // a published belt keeps its flight and holds its belt
         if (held[f._belt] && t && !noBags(f)) held[f._belt].push([t, t + dur]);
         return;
       }
-      f._belt = YQM_BELT_MAIN;
+      if (e.listed) f._belt = YQM_BELT_MAIN;
       if (!t || noBags(f)) return;
       var k = (f._locIata || f.origin || '') + '|' + (f._sortTs || t);
       var g = byKey[k];
-      if (!g) { g = byKey[k] = { t: t, rows: [], intl: false }; groups.push(g); }
-      g.rows.push(f);
+      if (!g) { g = byKey[k] = { t: t, rows: [], keys: [], intl: false, landed: false, fixed: null }; groups.push(g); }
+      g.rows.push(e);
+      g.keys.push(_yqmFlightDay(f, o.tz));
       if (f._yqmBelt === 'intl') g.intl = true;
+      if (_yqmLanded(f)) g.landed = true;
       if (t < g.t) g.t = t;
     });
-    groups.forEach(function (g) { if (g.intl) held[YQM_BELT_MAIN].push([g.t, g.t + dur]); });
-    groups.filter(function (g) { return !g.intl; })
+    if (memo) {
+      // forget what is past every window (the worker's own 30 hours)
+      Object.keys(memo).forEach(function (k) {
+        var m = memo[k];
+        if (!m || !isBelt(m.b) || !(m.t > 0) || now - m.t > YQM_BELT_MEMO_HRS * 3600000) delete memo[k];
+      });
+      groups.forEach(function (g) {
+        var begun = g.landed || g.t <= now;
+        g.keys.forEach(function (k) {
+          if (!memo[k]) return;
+          if (!begun) { delete memo[k]; return; }       // revised into the future, not down: thawed
+          if (!g.fixed) g.fixed = memo[k].b;
+        });
+      });
+      // a frozen flight that has left both lists holds its last window
+      Object.keys(memo).forEach(function (k) {
+        if (!seen[k]) held[memo[k].b].push([memo[k].t, memo[k].t + dur]);
+      });
+    }
+    // frozen flights first, as fixed holders; then the customs hall's; then
+    // the rest in order of arrival
+    groups.forEach(function (g) { if (g.fixed) { g.belt = g.fixed; held[g.belt].push([g.t, g.t + dur]); } });
+    groups.forEach(function (g) { if (!g.fixed && g.intl) { g.belt = YQM_BELT_MAIN; held[g.belt].push([g.t, g.t + dur]); } });
+    groups.filter(function (g) { return !g.fixed && !g.intl; })
       .sort(function (a, b) { return a.t - b.t; })
       .forEach(function (g) {
         var main = busyUntil(YQM_BELT_MAIN, g.t), over = busyUntil(YQM_BELT_OVERFLOW, g.t);
-        var belt = !main ? YQM_BELT_MAIN : (!over ? YQM_BELT_OVERFLOW : (over < main ? YQM_BELT_OVERFLOW : YQM_BELT_MAIN));
-        held[belt].push([g.t, g.t + dur]);
-        g.rows.forEach(function (f) { f._belt = belt; });
+        g.belt = !main ? YQM_BELT_MAIN : (!over ? YQM_BELT_OVERFLOW : (over < main ? YQM_BELT_OVERFLOW : YQM_BELT_MAIN));
+        held[g.belt].push([g.t, g.t + dur]);
       });
+    groups.forEach(function (g) {
+      g.rows.forEach(function (e) { if (e.listed) e.f._belt = g.belt; });
+      if (memo && (g.fixed || g.landed || g.t <= now)) {
+        g.keys.forEach(function (k) { memo[k] = { b: g.belt, t: g.t }; });
+      }
+    });
   } catch (e) {}
   return rows;
+}
+// The rows the worker remembered (window._yqmRemembered.arrivals), as board
+// rows: the same mapADB, past its three-hour trail, and the same revision
+// collapse as _gateFeedKept, mapped once per poll (memoised on the list they
+// came from). They are the pass's own copies; nothing the boards list.
+var _YQM_KEPT_ARR = { src: null, rows: [] };
+function _yqmKeptArrivals(tz) {
+  var rem = (typeof window !== 'undefined') ? window._yqmRemembered : null;
+  if (!rem || String(rem.ap || '').toUpperCase() !== 'YQM') return [];
+  var raw = rem.arrivals;
+  if (!Array.isArray(raw) || !raw.length) return [];
+  if (_YQM_KEPT_ARR.src === raw) return _YQM_KEPT_ARR.rows;
+  var rows = [];
+  try { rows = _fidsCollapseRevisions(mapADB({ arrivals: raw }, 'arr', true), tz) || []; } catch (e) { rows = []; }
+  _YQM_KEPT_ARR = { src: raw, rows: rows };
+  return rows;
+}
+// The frozen belts, kept in this browser so a reload (a build bump) does not
+// re-deal a belt with bags on it. Read once per page; written when it changes.
+var YQM_BELT_MEMO_STORE = 'fids_yqm_belts_v1';
+var _yqmBeltMemoCache = null, _yqmBeltMemoSaved = '';
+function _yqmBeltMemo() {
+  if (_yqmBeltMemoCache) return _yqmBeltMemoCache;
+  var m = {};
+  try {
+    var s = localStorage.getItem(YQM_BELT_MEMO_STORE);
+    var p = s ? JSON.parse(s) : null;
+    if (p && typeof p === 'object' && !Array.isArray(p)) { m = p; _yqmBeltMemoSaved = s; }
+  } catch (e) {}
+  _yqmBeltMemoCache = m;
+  return m;
+}
+// The fetch's call: Moncton's belts over the listed rows and the remembered
+// ones, with the frozen belts, now.
+function _yqmBeltPass(rows) {
+  if (!Array.isArray(rows) || !rows.some(function (f) { return f && f._yqmBelt; })) return rows;
+  var tz = 'America/Moncton';
+  try { tz = (typeof AP !== 'undefined' && AP.YQM && AP.YQM.tz) || tz; } catch (e) {}
+  var memo = _yqmBeltMemo();
+  var out = _yqmAssignBelts(rows, { kept: _yqmKeptArrivals(tz), now: Date.now(), memo: memo, tz: tz });
+  try {
+    var s = JSON.stringify(memo);
+    if (s !== _yqmBeltMemoSaved) { localStorage.setItem(YQM_BELT_MEMO_STORE, s); _yqmBeltMemoSaved = s; }
+  } catch (e) {}
+  return out;
 }
 
 // ══ v24013 — BIDS5: THE BAGGAGE HALL BOARD ════════════════════════════════
@@ -38470,9 +38621,11 @@ async function fetchLive() {
     if (arrRaw) data.arr = _fidsCollapseRevisions(mapADB(arrRaw, 'arr'), _revTz);
     // vNEXT — and then Moncton's belts, which depend on the other arrivals
     // (belt 2 normally, belt 1 when two flights' bags would share it), once
-    // the list holds one row per flight (_yqmAssignBelts). Rows of any other
-    // airport carry no _yqmBelt mark and are left as they are.
-    if (arrRaw) data.arr = _yqmAssignBelts(data.arr);
+    // the list holds one row per flight, over the listed and the remembered
+    // arrivals, with every belt already under bags frozen (_yqmAssignBelts,
+    // _yqmBeltPass). Rows of any other airport carry no _yqmBelt mark and are
+    // left as they are.
+    if (arrRaw) data.arr = _yqmBeltPass(data.arr);
     // v23944 — the far end's record of who operates our Air Canada flights
     // (the worker's /opinfo), shared by the board and every gate here.
     try { _opEvRefresh(iata, (data.dep || []).concat(data.arr || [])); } catch (e) {}
@@ -54790,7 +54943,9 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     function bagBelts() {
       try {
         var ap = document.getElementById('apSel');
-        if (ap && ap.value === 'YQM') return ['1', '2'];   // always both carousels
+        // always both carousels; vNEXT — the normal belt (2) first, so the
+        // walk starts where the bags normally are (_yqmAssignBelts)
+        if (ap && ap.value === 'YQM') return [YQM_BELT_MAIN, YQM_BELT_OVERFLOW];
         // v23514 — WALK ONLY THE BELTS THAT HAVE SOMETHING DUE. This read
         // every belt in data.arr, which spans hours, while a belt's own list
         // is cut to the BIDS window (45 min back, 60 min ahead). So a belt

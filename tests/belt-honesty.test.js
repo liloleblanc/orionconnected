@@ -224,13 +224,15 @@ test('the belt walk visits the "to be announced" screen last, and a hall with no
   const NOW = 1_757_400_000_000;
   const mk = (belt, mins) => ({ _belt: belt, _sortTs: NOW + mins * 60000 });
   const walk = (arr, ap = 'YHZ') => new Function('data', 'document', '_bidsInWindow', 'Date',
-    lift('bagBelts') + '\nreturn bagBelts();')(
+    "var YQM_BELT_MAIN = '2', YQM_BELT_OVERFLOW = '1';\n" + lift('bagBelts') + '\nreturn bagBelts();')(
     { arr }, { getElementById: () => ({ value: ap }) },
     (f, nowTs) => f._sortTs >= nowTs - 45 * 60000 && f._sortTs <= nowTs + 60 * 60000,
     { now: () => NOW });
   assert.deepEqual(walk([mk(null, 10), mk(null, 20)]), ['—'], 'Halifax: one screen, nothing to cycle');
   assert.deepEqual(walk([mk('3', 10), mk(null, 5), mk('1', 20)], 'BOS'), ['1', '3', '—']);
-  assert.deepEqual(walk([mk('1', 10), mk('2', 400)], 'YQM'), ['1', '2'], 'Moncton walks its two belts as before');
+  // vNEXT — Moncton walks its two belts, the normal belt (2) first: the walk
+  // starts on belts[0], and belt 1 is now the overflow belt, usually empty
+  assert.deepEqual(walk([mk('1', 10), mk('2', 400)], 'YQM'), ['2', '1'], 'Moncton walks both belts, belt 2 first');
 });
 
 test('the "to be announced" screen claims no number: no sign, the store\'s words in the carousel cell', () => {
