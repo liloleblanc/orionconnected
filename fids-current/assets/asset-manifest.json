@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2686,
+    "total": 2692,
     "by_category": {
       "ad": 13,
       "airline": 1174,
@@ -10,7 +10,7 @@
       "brand": 5,
       "hotel": 888,
       "livery": 96,
-      "misc": 106,
+      "misc": 112,
       "symbol": 4,
       "weather": 207
     }
@@ -26131,6 +26131,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/home/app-phone.jpg",
+      "file": "app-phone.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "app phone",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/home/arrivals.jpg",
+      "file": "arrivals.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "arrivals",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/icons/arrow-diagonal.svg",
       "file": "arrow-diagonal.svg",
       "category": "misc",
@@ -26159,6 +26181,17 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "ATL",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/home/baggage.jpg",
+      "file": "baggage.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "baggage",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -26307,6 +26340,28 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/home/departures-yhz.jpg",
+      "file": "departures-yhz.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "departures yhz",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/home/departures.jpg",
+      "file": "departures.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "departures",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/dots-sphere.svg",
       "file": "dots-sphere.svg",
       "category": "misc",
@@ -26401,6 +26456,17 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "FLL",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/home/gate.jpg",
+      "file": "gate.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "gate",
       "iata": "",
       "country": "",
       "ext": "jpg"
