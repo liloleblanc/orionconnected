@@ -39262,13 +39262,18 @@ function applyAirportConfigToBoard(iata) {
     delete document.body.dataset.fidsHideWx;
   }
   // v24035 — the weather icons' look, read by fids-v2.js wxIconHtml and the
-  // weather card (_wxCardIconDir): '' Classic, 'daynight', 'colour', 'solid'.
+  // weather card (_wxCardIconDir): 'daynight', 'classic', 'colour', 'solid'.
   // ?wxicons= overrides it for review.
+  // vNEXT — Day & night is the default. Nothing chosen (unset, the '' an
+  // earlier Customize save left, or a look the boards don't know) is Day &
+  // night; Classic is now its own value, 'classic', so an airport that
+  // picks it keeps it. The attribute is always stamped, so the page says
+  // which look it is running.
   try {
     var _wxiUrl = new URLSearchParams(location.search).get('wxicons');
     var _wxi = _wxiUrl !== null ? _wxiUrl : _toggleVal('wxIcons');
-    if (_WX_ICON_STYLES.indexOf(_wxi) > 0) document.documentElement.setAttribute('data-fids-wx-icons', _wxi);
-    else document.documentElement.removeAttribute('data-fids-wx-icons');
+    if (_WX_ICON_STYLES.indexOf(_wxi) < 0) _wxi = _WX_ICON_STYLES[0];
+    document.documentElement.setAttribute('data-fids-wx-icons', _wxi);
   } catch (eWxi) {}
   var _aStyle = _toggleVal('airlineStyle');
   if (_aStyle && _aStyle !== 'full') {
@@ -55478,13 +55483,15 @@ function _wxAnimIcon(code, night) {
 // stays on disk for the other boards.
 var _WX_ICON_DIR = '/logos/weather/flat/';
 // v24035 — the operator's weather-icon look (Customize → Weather icons):
-// '' Classic, 'daynight' (Colour by day, Solid at night), 'colour', 'solid'.
+// 'daynight' (Colour by day, Solid at night), 'classic', 'colour', 'solid'.
 // On the card, Colour is the colour icon on a white circle and Solid the
 // glyph in the airline's brand colour on its deep colour (_wxDiscPair, set
 // as --wx-disc / --wx-ink on .wxcard-wrap with the rest of the airline's
 // look, read by the inlined disc-night icons). Classic keeps the flat set
 // above, drawn white and still (_wxWhiteStill).
-var _WX_ICON_STYLES = ['', 'daynight', 'colour', 'solid'];
+// vNEXT — the first entry is the default, what an airport that has chosen
+// nothing gets: Day & night (applyAirportConfigToBoard).
+var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
 function _wxCardIconDir() {
   var look = (typeof window.fidsWxLook === 'function') ? window.fidsWxLook() : '';
   if (look === 'colour') return '/logos/weather/disc-day/';

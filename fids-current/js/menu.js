@@ -2764,7 +2764,9 @@ function _cuReadForm() {
   var ae = document.getElementById('cuAirlineEmblem');
   if (ae && ae.dataset.painted === '1') p.airlineStyle = ae.checked ? 'emblem' : 'full';
   else { var _pv2 = _cuLoad(); if (_pv2 && _pv2.airlineStyle) p.airlineStyle = _pv2.airlineStyle; }
-  // v24035 — the weather icons' look; '' is Classic. Unpainted → carry forward.
+  // v24035 — the weather icons' look. vNEXT — '' is nothing chosen, which the
+  // boards draw as Day & night (the default); Classic is 'classic'.
+  // Unpainted → carry forward.
   var wi = document.getElementById('cuWxIcons');
   if (wi && wi.dataset.painted === '1') p.wxIcons = wi.value;
   else { var _pv3 = _cuLoad(); if (_pv3 && _pv3.wxIcons !== undefined) p.wxIcons = _pv3.wxIcons; }
@@ -2806,7 +2808,9 @@ function _cuPaintForm(prefs) {
   var ae = document.getElementById('cuAirlineEmblem');
   if (ae) { ae.checked = (prefs.airlineStyle === 'emblem'); ae.dataset.painted = '1'; }
   var wi = document.getElementById('cuWxIcons');
-  if (wi) { wi.value = prefs.wxIcons || ''; wi.dataset.painted = '1'; }
+  // vNEXT — a saved 'daynight' (or a look the list no longer has) is the
+  // default entry: the select has no separate Day & night line.
+  if (wi) { wi.value = prefs.wxIcons || ''; if (wi.selectedIndex < 0) wi.value = ''; wi.dataset.painted = '1'; }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';
