@@ -39269,9 +39269,14 @@ function applyAirportConfigToBoard(iata) {
   // night; Classic is now its own value, 'classic', so an airport that
   // picks it keeps it. The attribute is always stamped, so the page says
   // which look it is running.
+  // The layers are read with _pref, which passes over a device's '' to the
+  // airport's choice: '' now means nothing chosen, and every Customize save
+  // writes the field, so a device holding '' must not hide the airport's
+  // Classic, Colour or Solid behind the default (_toggleVal would, since it
+  // keeps any value a device holds).
   try {
     var _wxiUrl = new URLSearchParams(location.search).get('wxicons');
-    var _wxi = _wxiUrl !== null ? _wxiUrl : _toggleVal('wxIcons');
+    var _wxi = _wxiUrl !== null ? _wxiUrl : _pref('wxIcons');
     if (_WX_ICON_STYLES.indexOf(_wxi) < 0) _wxi = _WX_ICON_STYLES[0];
     document.documentElement.setAttribute('data-fids-wx-icons', _wxi);
   } catch (eWxi) {}
@@ -55492,8 +55497,19 @@ var _WX_ICON_DIR = '/logos/weather/flat/';
 // vNEXT — the first entry is the default, what an airport that has chosen
 // nothing gets: Day & night (applyAirportConfigToBoard).
 var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
-function _wxCardIconDir() {
+// vNEXT — under Day & night, an icon on the card that stands for one moment
+// in one city takes that moment's day or night: the same flag that already
+// chose its glyph (a moon, not a sun), its photograph and its column. A
+// plate for a city in darkness drew its moon in the white daytime circle
+// over a night photograph whenever the board's own airport was in daylight.
+// Without a flag (the day forecasts, which are daytime forecasts with no
+// hour) the board's own day or night decides, as on the gate screen.
+function _wxCardIconDir(night) {
   var look = (typeof window.fidsWxLook === 'function') ? window.fidsWxLook() : '';
+  if (look && typeof night === 'boolean'
+      && (document.documentElement.getAttribute('data-fids-wx-icons') || 'daynight') === 'daynight') {
+    look = night ? 'solid' : 'colour';
+  }
   if (look === 'colour') return '/logos/weather/disc-day/';
   if (look === 'solid') return '/logos/weather/disc-night/';
   return _WX_ICON_DIR;
@@ -57411,7 +57427,7 @@ function _renderWxCard(el) {
         +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + cp.city + '</span></div>'
         +     '<div class="wxc-mon-subl">' + (cp.ap ? '<span class="wxc-mon-ap">' + cp.ap + '</span>' : '') + '<span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +     '<div class="wxc-mon-now">'
-        +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _wxCardIconDir() + sIc + '.svg' + _wxIconQ() + '" alt="">'
+        +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _wxCardIconDir(isNight) + sIc + '.svg' + _wxIconQ() + '" alt="">'
         +       '<div class="wxc-mon-temp">' + _wxTempHtml(w.temp) + '</div>'
         +     '</div>'
         +     '<div class="wxc-mon-cond wxc-stk">' + _wxPairT(_WXLBL[sIc] || { en: '' }) + '</div>'
@@ -57527,7 +57543,7 @@ function _renderWxCard(el) {
       var _cols = _pts.map(function (p, i) {
         return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
           + '<div class="wxc-pt-time">' + (i === 0 ? _wxNowLbl : p.h.lbl) + '</div>'
-          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _wxCardIconDir() + p.h.ic + '.svg' + _wxIconQ() + '" alt="">'
+          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _wxCardIconDir(!!p.h.night) + p.h.ic + '.svg' + _wxIconQ() + '" alt="">'
           + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
           + '</div>';
       }).join('');

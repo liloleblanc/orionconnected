@@ -2626,7 +2626,10 @@ function _cuSyncNote(kind) {
   var m = {
     local:  ['#fbbf24', '⚠ Not signed in — this look is saved on THIS device only. Sign in (Login) and save again to apply it to every screen at this airport.'],
     saved:  ['#34d399', '✓ Saved to the airport cloud — every screen picks it up within ~10 seconds.'],
-    failed: ['#f87171', '⚠ Cloud save failed — the look is on this device only for now. Check the connection or sign-in and try again.']
+    failed: ['#f87171', '⚠ Cloud save failed — the look is on this device only for now. Check the connection or sign-in and try again.'],
+    // vNEXT — the save went through but the cloud did not keep the weather
+    // icons' look it was sent (see _cuCloudPush)
+    wxDropped: ['#f87171', '⚠ Saved to the airport cloud, except the weather icons: the cloud server does not know this look yet and did not keep it. Every screen, this one too, shows Day & night (the default) until the server is updated.']
   }[kind];
   if (!m) { el.style.display = 'none'; return; }
   el.style.color = m[0];
@@ -2676,6 +2679,26 @@ function _cuCloudPush(code, prefs) {
       }).then(function (res) { return res.ok ? res.json() : null; })
         .then(function (out) {
           if (!out || !out.config || !out.config.updatedAt) { _cuSyncNote('failed'); return; }
+          // vNEXT — the cloud must have KEPT the weather icons' look it was
+          // sent. The airport-config worker deploys on its own, and one older
+          // than the 'classic' value accepts the save, deletes a look it does
+          // not know (with the look stored before it) and still answers with
+          // a stamp: Customize said "Saved" while every other screen fell
+          // back to Day & night. Say so instead, and do NOT align this
+          // device's stamp: the cloud's copy is then the newer one, so this
+          // screen sheds its local look on the next config read and shows
+          // what every other screen shows. The select goes back to the
+          // default entry, so the next save does not send the dropped look
+          // again.
+          if (body.wxIcons !== undefined && out.config.wxIcons !== body.wxIcons) {
+            _cuSyncNote('wxDropped');
+            try {
+              var _wiSel = document.getElementById('cuWxIcons');
+              if (_wiSel && _wiSel.value === body.wxIcons) _wiSel.value = '';
+            } catch (e) {}
+            try { console.warn('[FIDS Customize] The cloud did not keep wxIcons "' + body.wxIcons + '" for ' + code); } catch (e) {}
+            return;
+          }
           _cuSyncNote('saved');
           // Align this device's stamp with the cloud's so the newer-wins
           // comparison treats them as the same save, not a conflict.
@@ -2810,7 +2833,22 @@ function _cuPaintForm(prefs) {
   var wi = document.getElementById('cuWxIcons');
   // vNEXT — a saved 'daynight' (or a look the list no longer has) is the
   // default entry: the select has no separate Day & night line.
-  if (wi) { wi.value = prefs.wxIcons || ''; if (wi.selectedIndex < 0) wi.value = ''; wi.dataset.painted = '1'; }
+  // The select shows what the board shows, the same layers the board reads
+  // (applyAirportConfigToBoard's _pref): this device's look when it holds
+  // one, otherwise the airport's. A newer cloud save clears the device's
+  // copy, and painting only that left the select on the default while the
+  // airport ran Classic, so the next save of anything else (a font) sent ''
+  // and quietly reset the airport to Day & night.
+  if (wi) {
+    var _wiv = prefs.wxIcons;
+    if (_wiv === undefined || _wiv === null || _wiv === '') {
+      try {
+        var _wiCfg = (typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null;
+        _wiv = (_wiCfg && _wiCfg.wxIcons) || '';
+      } catch (e) { _wiv = ''; }
+    }
+    wi.value = _wiv || ''; if (wi.selectedIndex < 0) wi.value = ''; wi.dataset.painted = '1';
+  }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel) fontSel.value = prefs.font || '';
