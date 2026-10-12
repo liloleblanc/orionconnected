@@ -116,8 +116,10 @@ test('it runs before anything reads the airport', () => {
 // the .app domain it hands over to the Airport Companion instead.
 //
 // Done on the page rather than in the Worker because static assets are served
-// BEFORE the Worker runs — there is no run_worker_first — so the Worker never
-// sees a request for "/" and cannot route on the Host header.
+// BEFORE the Worker runs, so the Worker could not route "/" on the Host header.
+// (Since the homepage, "/" does reach the Worker first — run_worker_first — but
+// on every host except www.orionconnected.com and orionconnected.com it is
+// handed straight back to the asset server, so this page still decides here.)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const INDEX = fs.readFileSync(path.join(ROOT, 'fids-current', 'index.html'), 'utf8');

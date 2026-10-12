@@ -69,8 +69,11 @@ test('literal local references in public HTML, CSS, and JavaScript resolve', () 
     for (const match of uncommented.matchAll(rootLiteral)) addReference(found, source, match[1], 'literal');
   }
 
+  // A page is linked without .html, the way the live URLs read: the asset
+  // server's html_handling answers /credits with credits.html.
   const missing = found
-    .filter(({ target }) => !fs.existsSync(target) && !privateFiles.includes(target))
+    .filter(({ target }) => !fs.existsSync(target) && !privateFiles.includes(target)
+      && !(path.extname(target) === '' && fs.existsSync(target + '.html')))
     .map(({ source, value }) => `${path.relative(staticRoot, source)} -> ${value}`)
     .filter((value, index, values) => values.indexOf(value) === index)
     .sort();

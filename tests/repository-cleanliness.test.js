@@ -62,6 +62,10 @@ test('only supported production pages sit at the public root', () => {
     .sort();
   assert.deepEqual(pages, [
     'app.html', 'bids.html', 'designer.html', 'fids.html', 'gids.html',
+    // The homepage of www.orionconnected.com and its Credits & Contact page,
+    // served at "/" and "/credits" on that host and the bare domain
+    // (worker-entry.js homeRoute; tests/homepage.test.js).
+    'home.html', 'credits.html',
     // v23759 — the heritage archive: a chooser for carriers that no longer
     // fly, each opening a gate board rendered in that carrier's identity with
     // an invented schedule. Deliberately standalone — it pulls its own small
