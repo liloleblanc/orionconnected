@@ -55,6 +55,17 @@ test('every icon class is drawn from its own file in logos/icons', () => {
   }
 });
 
+test('every icon the boards ask for has a drawing, and one without paints nothing', () => {
+  const css = rd('css/font.css');
+  const asked = new Set();
+  for (const f of walk(SITE).filter((x) => /\.(js|html)$/.test(x))) {
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/ac-ico-([a-z]+)/g)) asked.add(m[1]);
+  }
+  assert.ok(asked.size >= 8);
+  for (const cls of asked) assert.ok(MARKS[cls], `ac-ico-${cls} is used but has no drawing`);
+  assert.match(css, /\.ac-ico::before \{[^}]*mask-image:linear-gradient\(transparent, transparent\); \}/);
+});
+
 test('the title badge, the lane arrows and the hotel ads use our files too', () => {
   const over = rd('css/display-overrides.css');
   assert.match(over, /\.fids-banner \.fids-board-icon::before \{[^}]*mask: url\('\.\.\/logos\/icons\/takeoff\.svg'\)/);
