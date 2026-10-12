@@ -711,6 +711,189 @@ test('in the centre the list carries the documents and the close time at its foo
   assert.ok(CORE.includes("{ sel: '.gcard .gc-sbfl', box: '.gc-sbfx', lines: 2, units: true, group: '.gc-sbfoot' }"));
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// 2026-10-12 — THE LISTS IN THE CENTRE KEEP EVERY ROW WHOLE (_gateSbFit). With
+// "Later at this gate" up the centre card is 718px at 1920x1080, and with the
+// foot the rows went under their own words (YUL C76 AC513, YHZ 20 PD244: 11-13
+// rows lying on each other). The rendered check (tests/render/words.mjs,
+// SB_CHECK) measures it on the screen in every language set, with the strip
+// up and without; here the pass itself runs against a card whose layout is
+// computed from the stylesheet's own sizes, so its order and its floors hold.
+// ════════════════════════════════════════════════════════════════════════════
+
+// A card of the lists, laid out as the stylesheet lays it out (in the card's
+// unit, --gc-u = u0 x --gc-k): its padding, its header, the lists (a heading,
+// a tile, rows of --gc-sbrf units, never under 4.67), the line under them,
+// and the foot (the documents on two lines and the close time, or the
+// documents on one line at `docsOneLine` of their size (step 1), or the close
+// time alone (2), or none (3)). Every try the pass makes is logged.
+function sbCard(o) {
+  const W = o.W || 970, H = o.H, U0 = o.u0 || 10.8, LISTS = o.lists || [2, 4, 2];
+  const attrs = {}, props = {}, log = [];
+  const k = () => parseFloat(props['--gc-k'] || '1');
+  const u = () => U0 * k();
+  const f = () => parseFloat(props['--gc-sbrf'] || '5.9');
+  const step = () => +(attrs['data-sb-foot'] || 0);
+  const ruleLines = () => (o.ruleOneLineUnderK && k() < o.ruleOneLineUnderK ? 1 : 2);
+  const docsLines = () => (step() >= 2 ? 0 : step() === 1 ? 1 : 2);
+  const footH = () => {
+    if (!o.foot || step() === 3) return 0;
+    const U = u(), d = docsLines(), c = o.close ? 1 : 0;
+    return 2.28 * U + (d + c) * 2.56 * U + (d && c ? 0.57 * U : 0);
+  };
+  const lay = () => {
+    const U = u(), padT = 1.9 * U, padB = 1.14 * U, hd = 7.61 * U, ft = 1.71 * U + ruleLines() * 3.42 * U, fo = footH();
+    const rowH = Math.max(f(), 4.67) * U;
+    const secs = [];
+    let y = 1.33 * U;
+    LISTS.forEach((n, i) => { if (i) y += 1.33 * U; const top = y; y += 3.97 * U + 0.76 * U + n * rowH; secs.push([top, y]); });
+    const sblTop = padT + hd, sblH = Math.max(0, H - padT - padB - hd - ft - fo);
+    return { U, padB, hd, ft, fo, rowH, secs, sblTop, sblH };
+  };
+  const rect = (top, h, w) => ({ top, bottom: top + h, height: h, left: 0, width: w == null ? W : w, right: w == null ? W : w });
+  const el = (r, x) => Object.assign({ getBoundingClientRect: r, hasAttribute: () => false, removeAttribute() {}, classList: { contains: () => false }, nextElementSibling: null }, x || {});
+  const lastSec = el(() => { const L = lay(), s = L.secs[L.secs.length - 1]; return rect(L.sblTop + s[0], s[1] - s[0]); });
+  const sbl = el(() => { const L = lay(); return rect(L.sblTop, L.sblH); }, { lastElementChild: lastSec });
+  const hd = el(() => { const L = lay(); return rect(L.sblTop - L.hd, L.hd); });
+  const ft = el(() => { const L = lay(); return rect(L.sblTop + L.sblH, L.ft); });
+  const footEl = el(() => { const L = lay(); return rect(L.sblTop + L.sblH + L.ft, L.fo); });
+  hd.nextElementSibling = sbl; sbl.nextElementSibling = ft; ft.nextElementSibling = o.foot ? footEl : null;
+  const rows = [];
+  LISTS.forEach((n) => { for (let i = 0; i < n; i++) {
+    const ring = el(() => rect(0, 4.29 * u(), 4.29 * u()));
+    ring.nextElementSibling = el(() => rect(0, 3.4 * u(), 200));
+    rows.push(el(() => rect(0, lay().rowH), { firstElementChild: ring, _cs: { borderTopWidth: rows.length ? '2px' : '0px' } }));
+  } });
+  const line = (docs) => el(() => rect(0, (docs ? docsLines() : 1) ? 2.56 * u() : 0), { _cs: { get fontSize() { return (2.29 * u() * (docs && step() === 1 ? o.docsOneLine : 1)) + 'px'; } } });
+  const lines = o.foot ? [line(true)].concat(o.close ? [line(false)] : []) : [];
+  const card = {
+    offsetWidth: W, offsetHeight: H, firstElementChild: hd,
+    getBoundingClientRect: () => rect(0, H),
+    _cs: { get paddingBottom() { return lay().padB + 'px'; } },
+    getAttribute: (a) => (a in attrs ? attrs[a] : null),
+    setAttribute: (a, v) => { attrs[a] = String(v); },
+    removeAttribute: (a) => { delete attrs[a]; },
+    hasAttribute: (a) => a in attrs,
+    style: {
+      setProperty: (p, v) => { props[p] = String(v); if (p === '--gc-k') log.push({ foot: step(), f: f(), k: k() }); },
+      removeProperty: (p) => { delete props[p]; if (p === '--gc-k') log.push({ foot: step(), f: f(), k: k() }); },
+      getPropertyValue: (p) => props[p] || ''
+    },
+    querySelector: (s) => ({ '.gc-sbl': sbl, '.gc-sbfoot': o.foot ? footEl : null, '.gc-sbfoot .gc-sbfc': o.foot && o.close ? {} : null, '.gc-sbn': rows[0].firstElementChild }[s] || null),
+    querySelectorAll: (s) => ({ '.gc-sbr': rows, '.fx-fit': [], '.gc-sbfoot .gc-sbfl': lines }[s] || [])
+  };
+  return { card, log, attrs, props, u, f, k, step, rows: rows.length };
+}
+function sbFitter() {
+  const src = [
+    line(/^var _GATE_SB_ROW_U = [^;]+;/m), line(/^var _GATE_SB_ROW_MIN_U = [^;]+;/m), line(/^var _GATE_SB_RING_U = [^;]+;/m),
+    line(/^var _GATE_SB_FOOT_U = [^;]+;/m), line(/^var _GATE_SB_K_MIN = [^;]+;/m), line(/^var _GATE_SB_K_MIN_BARE = [^;]+;/m),
+    fn('_gateSbExcess'), fn('_gateSbLadder'), fn('_gateSbFit'),
+    'return { _gateSbExcess, _gateSbLadder, _gateSbFit };'
+  ].join('\n');
+  const gcs = (e) => e._cs || {};
+  return (doc) => new Function('getComputedStyle', 'fidsFitAll', '_fidsPairSeparators', 'document', 'window', 'console', src)(gcs, () => {}, () => {}, doc || {}, { innerWidth: 1920, innerHeight: 1080 }, { warn() {} });
+}
+// a row never under its ring and its rule (2px) with a hair: the floor
+const sbFloorOk = (C, st) => st.f * 10.8 * st.k + 1e-6 >= 4.29 * 10.8 * st.k + 2 - 1e-6 && st.f >= 4.67;
+
+test('the lists in the centre: the foot gives way first, then the rows come closer, then the card comes down, and no row goes under its words', () => {
+  const F = sbFitter()();
+  // "Later at this gate" up (718px), three lists of 2, 4 and 2 names, the
+  // documents too long for one line (en|fr), a close time
+  const C = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65 });
+  F._gateSbLadder(C.card);
+  assert.ok(F._gateSbExcess(C.card) <= 0.5, 'every row inside the card');
+  assert.equal(C.attrs['data-sb-over'], undefined);
+  assert.equal(C.step(), 2, 'the documents go to the boarding band; the close time stays, on one line');
+  assert.ok(C.k() < 1 && C.k() >= 0.62, 'then the card came down: ' + C.k());
+  for (const st of C.log) assert.ok(sbFloorOk(C, st), 'no try puts a row under its ring: ' + JSON.stringify(st));
+  // the order: no row closer before the foot has given all it can, no
+  // smaller card before the rows are at their floor
+  const firstClose = C.log.findIndex((s) => s.f < 5.9), firstSmall = C.log.findIndex((s) => s.k < 1);
+  assert.ok(firstClose > 0 && C.log.slice(0, firstClose).some((s) => s.foot === 2) && C.log[firstClose].foot === 2, 'the foot first');
+  assert.ok(firstSmall > firstClose, 'the rows before the card');
+  assert.ok(C.log.slice(0, firstClose).every((s) => s.k === 1), 'full size until the rows are at their floor');
+
+  // where one line of the documents keeps four fifths of its size, the foot
+  // keeps them (step 1) when that is enough
+  const C1 = sbCard({ H: 800, foot: true, close: true, docsOneLine: 0.9 });
+  F._gateSbLadder(C1.card);
+  assert.ok(F._gateSbExcess(C1.card) <= 0.5);
+  assert.ok(C1.log.some((s) => s.foot === 1), 'one line each was tried');
+  // and a smaller one is not taken: straight to the close time alone
+  const C2 = sbCard({ H: 800, foot: true, close: true, docsOneLine: 0.7 });
+  F._gateSbLadder(C2.card);
+  assert.notEqual(C2.step(), 1);
+
+  // the full panel with room to spare: nothing changes
+  const T = sbCard({ H: 1100, foot: true, close: true, docsOneLine: 0.65 });
+  F._gateSbLadder(T.card);
+  assert.equal(T.step(), 0);
+  assert.equal(T.f(), 5.9);
+  assert.equal(T.k(), 1);
+
+  // a smaller card can let a line take one line instead of two: the largest
+  // scale that fits is kept, and the room left goes back to the rows
+  const B = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65, ruleOneLineUnderK: 0.845 });
+  F._gateSbLadder(B.card);
+  assert.ok(F._gateSbExcess(B.card) <= 0.5);
+  const first = B.log.find((s) => s.k < 1).k;
+  assert.ok(B.k() > first + 0.015 && B.k() < 0.845, 'not the first estimate (' + first + '): ' + B.k());
+  assert.ok(F._gateSbExcess(B.card) > -2, 'the rows take what is left');
+
+  // far too short: the foot goes last, the card down to half, and what still
+  // does not fit is reported (data-sb-over), the rows never under their floor
+  const X = sbCard({ H: 300, foot: true, close: true, docsOneLine: 0.65 });
+  F._gateSbLadder(X.card);
+  assert.equal(X.step(), 3);
+  assert.equal(X.attrs['data-sb-over'], '1');
+  assert.ok(X.k() >= 0.5);
+  for (const st of X.log) assert.ok(sbFloorOk(X, st), JSON.stringify(st));
+  assert.ok(X.log.findIndex((s) => s.foot === 3) > X.log.findIndex((s) => s.k < 1), 'the foot goes only after the card came down');
+
+  // fitted once for its size; a resize fits it again
+  const D = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65 });
+  const doc = { fonts: { status: 'loaded' }, querySelectorAll: () => [D.card] };
+  const G = sbFitter()(doc);
+  G._gateSbFit();
+  const n = D.log.length;
+  assert.ok(n > 0 && D.attrs['data-sb-fit']);
+  G._gateSbFit();
+  assert.equal(D.log.length, n, 'not again for the same size');
+  D.card.offsetHeight = 873;
+  G._gateSbFit();
+  assert.ok(D.log.length > n, 'again for a new size');
+  // not before the board's fonts have landed
+  const E = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65 });
+  sbFitter()({ fonts: { status: 'loading' }, querySelectorAll: () => [E.card] })._gateSbFit();
+  assert.equal(E.log.length, 0);
+});
+
+test('the lists in the centre: the stylesheet gives every row a set height and a floor, and nothing gives up height on its own', () => {
+  const C = 'html body' + ':not(#_)'.repeat(16) + ' .gcard.gcard-sbcard:not(.gcard-col)';
+  const P = 'html body' + ':not(#_)'.repeat(16);
+  assert.ok(CSS.includes(C + ' { --gc-u: calc(min(1vh, .625vw) * var(--gc-k, 1)); }'), 'the card\'s scale');
+  assert.ok(CSS.includes(C + ' .gc-sbr { flex: 0 0 auto !important; height: calc(var(--gc-sbrf, 5.9) * var(--gc-u)) !important; min-height: calc(4.67 * var(--gc-u)) !important; }'), 'a row: its set height and its floor (the ring, 4.29, and a hair)');
+  assert.ok(CSS.includes(C + ' .gc-sbsec, ' + C + ' .gc-sbt { flex: 0 0 auto !important; }'), 'a list and its tile never shrink under their rows');
+  assert.ok(CSS.includes(C + ' .gc-sbl { overflow: hidden !important; }'), 'what does not fit is hidden, never drawn over the line under it');
+  assert.ok(CSS.includes(P + ' .gcard[data-sb-foot="2"] .gc-sbfoot .gc-sbfd { display: none !important; }'));
+  assert.ok(CSS.includes(P + ' .gcard[data-sb-foot="3"] .gc-sbfoot { display: none !important; }'));
+  // the v24026 rows gave up height with no floor; that rule is still there
+  // for the column's own, but the centre's is overridden after it
+  assert.ok(CSS.indexOf(C + ' .gc-sbr {') > CSS.indexOf('.gcard .gc-sbr { flex: 0 1 calc(5.9 * var(--gc-u)) !important; min-height: 0 !important;'));
+  // one line each in the foot's first step: ahead of the foot's own rule
+  const one = CORE.indexOf("{ sel: '.gcard[data-sb-foot] .gc-sbfl', box: '.gc-sbfx', lines: 1, units: true, group: '.gc-sbfoot' }");
+  assert.ok(one > 0 && one < CORE.indexOf("{ sel: '.gcard .gc-sbfl', box: '.gc-sbfx', lines: 2, units: true, group: '.gc-sbfoot' }"));
+  // after every fitting pass, once the column has had its own
+  assert.match(fn('_fidsSchedulePairPass'), /try \{ _gateSbColFit\(\); \} catch \(eSb\) \{\}\s*\/\/[^\n]*\n\s*try \{ _gateSbFit\(\); \} catch \(eSc\) \{\}/);
+  // and the rendered check measures it, with "Later at this gate" up too
+  const WORDS = fs.readFileSync(path.join(root, 'tests', 'render', 'words.mjs'), 'utf8');
+  assert.match(WORDS, /const SB_CHECK = `/);
+  assert.match(WORDS, /a row is shorter than its words/);
+  assert.match(WORDS, /const sb2 = await evalv\(SB_CHECK\);/);
+});
+
 test('names clear one by one as boarding comes closer, the next one called', () => {
   const E = engine();
   const m = E._gateCardsBuild(facts({ cf: testRow() }));

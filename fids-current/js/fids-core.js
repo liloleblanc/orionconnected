@@ -2043,6 +2043,8 @@ function _fidsSchedulePairPass() {
     // 2026-10-12 — then the lists' column beside a boarding sign keeps its
     // last row (_gateSbColFit), once its lines have their sizes
     try { _gateSbColFit(); } catch (eSb) {}
+    // and the lists in the centre make room for every row (_gateSbFit)
+    try { _gateSbFit(); } catch (eSc) {}
   });
 }
 // 2026-10-12 — THE LISTS' COLUMN KEEPS EVERY ROW. Beside a boarding sign the
@@ -2088,6 +2090,184 @@ function _gateSbColFit() {
     again = true;
   }
   if (again) _fidsSchedulePairPass();
+}
+
+// 2026-10-12 — THE LISTS IN THE CENTRE KEEP EVERY ROW WHOLE. With "Later at
+// this gate" up the centre panel is 718px tall at 1920x1080 (873 without),
+// and the lists' foot (this flight's documents and the close time,
+// _gcSbFoot) took 123-130px of it: the rows, which gave up height to it,
+// went under their own text, and names, ticks, rings and status words piled
+// on each other (YUL C76 AC513, YHZ 20 PD244). Now a row has a set height
+// (css: --gc-sbrf, in the card's unit) and never less than its tallest piece
+// (the ring) with a hair to spare, and nothing in the list gives up height on
+// its own. When the card is short, this pass makes room, each step only when
+// the one before it is not enough:
+//   1. the foot: each fact on one line, its two languages a pair round the
+//      bar, if that keeps four fifths of its size (data-sb-foot 1); then the
+//      close time alone, on one line (2: the documents are the boarding
+//      band's, which carries them in full from the first call,
+//      _gateBandHtml);
+//   2. the rows come closer, down to their floor (--gc-sbrf);
+//   3. the card comes down as a whole (--gc-k: names, headings, rings, the
+//      foot and the spacing together), not under 0.62: the largest scale
+//      that fits, the room it leaves going back to the rows;
+//   4. only then the foot goes (3), the card back to its full size, and
+//      steps 2 and 3 again (not under 0.5).
+// Every try is measured at once, in this frame, so a paint never shows a
+// half-fitted card. A card is fitted once for its size and the fonts it was
+// measured in (data-sb-fit); a new paint, a new language, a resize or a late
+// font starts afresh. A card that still does not fit is marked data-sb-over
+// (the rendered check fails on it), its last rows hidden under the lists'
+// edge, never drawn over another.
+var _GATE_SB_ROW_U = 5.9;
+var _GATE_SB_ROW_MIN_U = 4.67;
+var _GATE_SB_RING_U = 4.29;
+var _GATE_SB_FOOT_U = 2.29;
+var _GATE_SB_K_MIN = 0.62;
+var _GATE_SB_K_MIN_BARE = 0.5;
+function _gateSbFit() {
+  try { if (document.fonts && document.fonts.status !== 'loaded') return; } catch (eF) {}
+  var cards = document.querySelectorAll('.gcard-sbcard:not(.gcard-col)');
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var cr = card.getBoundingClientRect();
+    if (!(cr.width > 50 && cr.height > 50)) continue;
+    // its size, the screen's, and the fonts (a face that lands late sets a
+    // line's width, and so whether a phrase takes one line or two)
+    var sig = card.offsetWidth + 'x' + card.offsetHeight + '|' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0)
+      + '|' + (typeof _fxFontsEpoch !== 'undefined' ? _fxFontsEpoch : 0);
+    if (card.getAttribute('data-sb-fit') === sig) continue;
+    try { _gateSbLadder(card); } catch (eL) {}
+    card.setAttribute('data-sb-fit', sig);
+  }
+}
+// How far the card's contents run past their room, in CSS px: the lists past
+// the foot of their box, and anything past the card's; when everything fits,
+// the room left under the lists (0 or less).
+function _gateSbExcess(card) {
+  var s = (card.getBoundingClientRect().width / (card.offsetWidth || 1)) || 1;
+  var sbl = card.querySelector('.gc-sbl');
+  var last = sbl && sbl.lastElementChild;
+  var over = last ? last.getBoundingClientRect().bottom - sbl.getBoundingClientRect().bottom : 0;
+  var cr = card.getBoundingClientRect();
+  var foot = cr.bottom - (parseFloat(getComputedStyle(card).paddingBottom) || 0) * s;
+  var tail = 0;
+  for (var c = card.firstElementChild; c; c = c.nextElementSibling) {
+    var r = c.getBoundingClientRect();
+    if (r.height > 0) tail = Math.max(tail, r.bottom - foot);
+  }
+  // (a quarter pixel either way is a rounding, not a line run over)
+  var pos = (over > 0.25 ? over : 0) + (tail > 0.25 ? tail : 0);
+  return (pos > 0 ? pos : over) / s;
+}
+function _gateSbLadder(card) {
+  var s = (card.getBoundingClientRect().width / (card.offsetWidth || 1)) || 1;
+  var n = card.querySelectorAll('.gc-sbr').length;
+  if (!n) return;
+  var hasFoot = !!card.querySelector('.gc-sbfoot');
+  var hasClose = !!card.querySelector('.gc-sbfoot .gc-sbfc');
+  var set = function (foot, f, k) {
+    if (foot) card.setAttribute('data-sb-foot', String(foot)); else card.removeAttribute('data-sb-foot');
+    card.style.setProperty('--gc-sbrf', String(f));
+    if (k < 1) card.style.setProperty('--gc-k', String(k)); else card.style.removeProperty('--gc-k');
+  };
+  // every line fitted afresh at the card's new size (the fitter keys on its
+  // box, which a new unit does not always change)
+  var refit = function () {
+    var fx = card.querySelectorAll('.fx-fit');
+    for (var q = 0; q < fx.length; q++) { fx[q].__fxKey = null; fx[q].removeAttribute('data-fx-over'); }
+    try { fidsFitAll(card); } catch (e1) {}
+    try { _fidsPairSeparators(card); } catch (e2) {}
+  };
+  // the card's unit in CSS px, from the ring (4.29 units wide)
+  var unit = function () {
+    var ring = card.querySelector('.gc-sbn');
+    return ring ? ring.getBoundingClientRect().width / s / _GATE_SB_RING_U : 0;
+  };
+  // a row's floor, in units: its tallest piece, its rule and a hair
+  var floorU = function (u) {
+    var most = 0, rows = card.querySelectorAll('.gc-sbr');
+    for (var r = 0; r < rows.length; r++) {
+      var bt = parseFloat(getComputedStyle(rows[r]).borderTopWidth) || 0;
+      for (var p = rows[r].firstElementChild; p; p = p.nextElementSibling) {
+        var h = p.getBoundingClientRect().height / s;
+        if (h > 0) most = Math.max(most, h + bt);
+      }
+    }
+    return u > 0 ? Math.max(_GATE_SB_ROW_MIN_U, most / u + 0.38) : _GATE_SB_ROW_MIN_U;
+  };
+  // the foot's lines: fitted on one line each, at four fifths of their size
+  var footWhole = function () {
+    var ls = card.querySelectorAll('.gc-sbfoot .gc-sbfl');
+    var base = _GATE_SB_FOOT_U * unit();
+    for (var q = 0; q < ls.length; q++) {
+      if (!(ls[q].getBoundingClientRect().height > 0)) continue;
+      if (ls[q].hasAttribute('data-fx-over') || ls[q].classList.contains('fx-wrap')) return false;
+      if ((parseFloat(getComputedStyle(ls[q]).fontSize) || 0) < base * 0.8 - 0.25) return false;
+    }
+    return true;
+  };
+  // rows closer, then the whole card smaller, at this foot
+  var tighten = function (foot, kMin) {
+    var u = unit(), fl = floorU(u);
+    var e = _gateSbExcess(card);
+    if (e <= 0.5) return true;
+    set(foot, Math.max(fl, _GATE_SB_ROW_U - (e + 0.5) / (n * u)), 1);
+    e = _gateSbExcess(card);
+    if (e <= 0.5) return true;
+    var k = 1, kHi = 1;
+    for (var it = 0; it < 8 && e > 0.5 && k > kMin; it++) {
+      var H = card.offsetHeight;
+      kHi = k;
+      k = Math.max(kMin, Math.floor(k * H / (H + e) * 1000) / 1000 - 0.004);
+      set(foot, fl, k);
+      refit();
+      e = _gateSbExcess(card);
+    }
+    if (e > 0.5) return false;
+    // the largest scale that fits: a smaller one can let a line take one
+    // line instead of two ("Refresh your boarding pass…"), so the estimate
+    // overshoots; halve the gap to the last one that did not fit
+    var best = k;
+    for (var b = 0; b < 3 && kHi - best > 0.012; b++) {
+      var mid = Math.floor((best + kHi) / 2 * 1000) / 1000;
+      set(foot, fl, mid);
+      refit();
+      if (_gateSbExcess(card) <= 0.5) best = mid; else kHi = mid;
+    }
+    if (String(best) !== card.style.getPropertyValue('--gc-k')) { set(foot, fl, best); refit(); }
+    e = _gateSbExcess(card);
+    // and what the smaller card left over goes back to the rows
+    var u2 = unit();
+    if (u2 > 0 && e < -1) set(foot, Math.min(_GATE_SB_ROW_U, fl - (e + 0.5) / (n * u2)), best);
+    if (_gateSbExcess(card) > 0.5) set(foot, fl, best);
+    return true;
+  };
+  card.removeAttribute('data-sb-over');
+  set(0, _GATE_SB_ROW_U, 1);
+  refit();
+  if (_gateSbExcess(card) <= 0.5) return;
+  // 1. the foot gives way
+  var compact = 0;
+  var feet = hasFoot ? (hasClose ? [1, 2] : [1]) : [];
+  for (var fi = 0; fi < feet.length; fi++) {
+    set(feet[fi], _GATE_SB_ROW_U, 1);
+    refit();
+    if (feet[fi] === 1 && !footWhole()) continue;
+    compact = feet[fi];
+    if (_gateSbExcess(card) <= 0.5) return;
+  }
+  if (card.getAttribute('data-sb-foot') !== (compact ? String(compact) : null)) { set(compact, _GATE_SB_ROW_U, 1); refit(); }
+  // 2 and 3. the rows, then the card
+  if (tighten(compact, _GATE_SB_K_MIN)) return;
+  // 4. the foot goes, and the rows and the card again
+  if (hasFoot) {
+    set(3, _GATE_SB_ROW_U, 1);
+    refit();
+    if (tighten(3, _GATE_SB_K_MIN_BARE)) return;
+  }
+  card.setAttribute('data-sb-over', '1');
+  try { console.warn('[fids] the standby lists do not fit their card', card.offsetWidth + 'x' + card.offsetHeight); } catch (eW) {}
 }
 
 // ══ v23962 — ONE FITTER FOR EVERY NAME ════════════════════════════════════
@@ -3021,7 +3201,9 @@ var FIDS_FIT_RULES = [
   { sel: '.gcard .gc-sbnm', box: '.gc-sbr', lines: 1, group: '.gc-sbl' },
   { sel: '.gcard .gc-sbx', box: '.gc-sbr', lines: 1, units: true, group: '.gc-sbl' },
   // 2026-10-12 — the lists' foot: the documents and the close time, each
-  // language a line of whole phrases, the foot's lines at one size
+  // language a line of whole phrases, the foot's lines at one size; where
+  // the card is short (_gateSbFit, data-sb-foot) each fact keeps one line
+  { sel: '.gcard[data-sb-foot] .gc-sbfl', box: '.gc-sbfx', lines: 1, units: true, group: '.gc-sbfoot' },
   { sel: '.gcard .gc-sbfl', box: '.gc-sbfx', lines: 2, units: true, group: '.gc-sbfoot' },
   // v24014 — the weather card at its larger sizes: each figure set at one
   // size across its row (the eight hours, the five days, the two plates),

@@ -617,6 +617,72 @@ const CARD_CHECK = (t) => `(function (t) {
   } catch (e) { return 'error ' + e.message; }
 })(${jsWord(t)})`;
 const CARD_RESET = `(function () { try { var u = new URL(location.href); u.searchParams.delete('scene'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`;
+// 2026-10-12 — and the standby lists in the centre never run into
+// themselves (_gateSbFit), measured on the screen: every row at least as
+// tall as its pieces (its ring, its name, its status word, its seat) and
+// none over the row before it, every list's tile holding its rows and no
+// list over the one before it, the last list inside its box and clear of the
+// line and the foot under it, and no card the fitting pass gave up on
+// (data-sb-over). Read on the full centre panel and again with "Later at
+// this gate" up (SB_SHORT), where the card is 705px of 849 at 1680x1050 and
+// the rows went under their own words (YUL C76, YHZ 20, Oct 12).
+const SB_CHECK = `(function () {
+  try {
+    var card = document.querySelector('#gateAdCarousel > .gcard-sbcard');
+    if (!card) return 'the lists are not in the centre';
+    if (card.hasAttribute('data-sb-over')) return 'the lists do not fit their card (' + card.offsetWidth + 'x' + card.offsetHeight + ')';
+    var name = function (e) { return e ? (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 40) : ''; };
+    var R = function (e) { return e.getBoundingClientRect(); };
+    var secs = card.querySelectorAll('.gc-sbsec');
+    if (!secs.length) return 'the lists card has no list';
+    for (var i = 0; i < secs.length; i++) {
+      var tile = secs[i].querySelector('.gc-sbt'), tr = R(tile);
+      var rows = tile.querySelectorAll('.gc-sbr'), prev = null;
+      for (var j = 0; j < rows.length; j++) {
+        var b = R(rows[j]);
+        if (b.top < tr.top - 1 || b.bottom > tr.bottom + 1) return 'a row runs out of its list: ' + name(rows[j]);
+        if (prev && b.top < prev.bottom - 1) return 'a row lies over the one before it: ' + name(rows[j]);
+        for (var p = rows[j].firstElementChild; p; p = p.nextElementSibling) {
+          var q = R(p);
+          if (q.height > 0 && (q.top < b.top - 1 || q.bottom > b.bottom + 1)) return 'a row is shorter than its words (' + Math.round(b.height) + 'px for ' + Math.round(q.height) + '): ' + name(rows[j]);
+        }
+        prev = b;
+      }
+      if (i && R(secs[i]).top < R(secs[i - 1]).bottom - 1) return 'a list lies over the one before it: ' + name(secs[i].querySelector('.gc-sbhd'));
+    }
+    var sbl = card.querySelector('.gc-sbl'), lr = R(sbl);
+    if (R(secs[secs.length - 1]).bottom > lr.bottom + 1) return 'the last list runs past its box: ' + name(secs[secs.length - 1].querySelector('.gc-sbhd'));
+    for (var n = sbl.nextElementSibling; n; n = n.nextElementSibling) {
+      var nr = R(n);
+      if (nr.height > 0 && nr.top < lr.bottom - 1) return 'the lists run into what is under them: ' + name(n);
+    }
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+// "Later at this gate" up: the gate's own flight, and the same flight three
+// hours on under another number (_gateFlightsAt, put back by SB_UNSHORT)
+const SB_SHORT = `(function () {
+  try {
+    if (!window.__gfaOrig) window.__gfaOrig = window._gateFlightsAt;
+    var orig = window.__gfaOrig;
+    var tz = (AP[(document.getElementById('apSel') || {}).value] || AP.YQM || {}).tz;
+    window._gateFlightsAt = function () {
+      var gf = orig.apply(this, arguments) || [];
+      if (gf.length !== 1) return gf;
+      var f = gf[0], g = {};
+      Object.keys(f).forEach(function (k) { g[k] = f[k]; });
+      g._sortTs = (f._sortTs || Date.now()) + 3 * 3600000;
+      g.time = new Date(g._sortTs).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+      g.upd = null; g._revTs = null; g.status = 'scheduled';
+      g.flight = String(f.airline || 'AC') + '8583'; g._flightKey = g.flight;
+      return [f, g];
+    };
+    renderDedicatedScreen();
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const SB_SHORT_UP = `(function () { return document.querySelector('.gad-media-col.gl-on') ? 'ok' : 'Later at this gate did not come up'; })()`;
+const SB_UNSHORT = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } renderDedicatedScreen(); } catch (e) {} })()`;
 const GATE_RESET = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
 
 // When the airport's feed is down (v23996, fidsFeedStatus): 'unavailable' —
@@ -840,6 +906,23 @@ async function runChunk(port, name, spec, sets) {
             problems.push(...await read(set, t));
             const c = await evalv(CARD_CHECK(t));
             if (c !== 'ok') problems.push(`scene ${t}: ${c}`);
+            if (t === 'sbcard') {
+              const sb = await evalv(SB_CHECK);
+              if (sb !== 'ok') problems.push(`scene ${t}: ${sb}`);
+              // and with "Later at this gate" up
+              const sh = await evalv(SB_SHORT);
+              const r2 = sh === 'ok' ? await evalv(CARD_SCENE(t)) : sh;
+              if (r2 !== 'ok') { problems.push(`scene ${t} with Later at this gate: ${r2}`); await evalv(SB_UNSHORT); continue; }
+              await evalv(SETTLE(1500));
+              const up = await evalv(SB_SHORT_UP);
+              if (up !== 'ok') problems.push(`scene ${t}: ${up}`);
+              problems.push(...await read(set, t + ' (Later at this gate up)'));
+              const c2 = await evalv(CARD_CHECK(t));
+              if (c2 !== 'ok') problems.push(`scene ${t} with Later at this gate: ${c2}`);
+              const sb2 = await evalv(SB_CHECK);
+              if (sb2 !== 'ok') problems.push(`scene ${t} with Later at this gate: ${sb2}`);
+              await evalv(SB_UNSHORT);
+            }
           }
         }
         await evalv(CARD_RESET);
