@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2669,
+    "total": 2680,
     "by_category": {
       "ad": 13,
       "airline": 1174,
@@ -10,7 +10,7 @@
       "brand": 4,
       "hotel": 888,
       "livery": 96,
-      "misc": 90,
+      "misc": 101,
       "symbol": 4,
       "weather": 207
     }
@@ -26120,6 +26120,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/icons/arrow-diagonal.svg",
+      "file": "arrow-diagonal.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "arrow diagonal",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/cities/ATL-night.jpg",
       "file": "ATL-night.jpg",
       "category": "misc",
@@ -26140,6 +26151,28 @@
       "iata": "",
       "country": "",
       "ext": "jpg"
+    },
+    {
+      "path": "/logos/icons/bell.svg",
+      "file": "bell.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "bell",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/icons/boarding-pass.svg",
+      "file": "boarding-pass.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "boarding pass",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/booking.svg",
@@ -26362,6 +26395,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/icons/home.svg",
+      "file": "home.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "home",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/cities/IAH-night.jpg",
       "file": "IAH-night.jpg",
       "category": "misc",
@@ -26404,6 +26448,17 @@
       "iata": "",
       "country": "",
       "ext": "jpg"
+    },
+    {
+      "path": "/logos/icons/landing.svg",
+      "file": "landing.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "landing",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/cities/LAS-night.jpg",
@@ -26648,6 +26703,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/icons/passengers.svg",
+      "file": "passengers.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "passengers",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/cities/PHL-night.jpg",
       "file": "PHL-night.jpg",
       "category": "misc",
@@ -26690,6 +26756,28 @@
       "iata": "",
       "country": "",
       "ext": "jpg"
+    },
+    {
+      "path": "/logos/icons/plane-ring.svg",
+      "file": "plane-ring.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "plane ring",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/icons/plane.svg",
+      "file": "plane.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "plane",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/priority-pass.svg",
@@ -26745,6 +26833,39 @@
       "iata": "",
       "country": "",
       "ext": "jpg"
+    },
+    {
+      "path": "/logos/icons/suitcase.svg",
+      "file": "suitcase.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "suitcase",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/icons/takeoff.svg",
+      "file": "takeoff.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "takeoff",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/icons/timer.svg",
+      "file": "timer.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "timer",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/cities/TPA-night.jpg",

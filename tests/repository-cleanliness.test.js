@@ -32,15 +32,19 @@ test('the public directory contains no development or source-package debris', ()
   // browser is redistribution. So this .txt is not debris — it is the
   // condition on which those faces may be here at all. Named exactly, by
   // full path, so it exempts that file and nothing else.
+  // v24039 — the second is the same case for Google's Material Symbols: the
+  // Apache License 2.0 asks for its text to go with any redistribution, and
+  // six of the board's icons (logos/icons/) are those files.
   const licensedText = new Set([
-    path.join(staticRoot, 'fonts', 'bricolage', 'OFL.txt')
+    path.join(staticRoot, 'fonts', 'bricolage', 'OFL.txt'),
+    path.join(staticRoot, 'logos', 'icons', 'LICENSE-Apache-2.0.txt')
   ]);
   const debris = walk(staticRoot).filter((file) =>
     forbiddenExtensions.has(path.extname(file).toLowerCase()) && !licensedText.has(file));
   assert.deepEqual(debris, []);
   for (const f of licensedText) {
     assert.ok(fs.existsSync(f), `${path.basename(f)} must ship beside the fonts it licenses`);
-    assert.match(fs.readFileSync(f, 'utf8'), /SIL Open Font License, Version 1\.1/, 'the carve-out is for an OFL text only');
+    assert.match(fs.readFileSync(f, 'utf8'), /SIL Open Font License, Version 1\.1|Apache License\s+Version 2\.0, January 2004/, 'the carve-out is for an open-licence text only');
   }
 });
 

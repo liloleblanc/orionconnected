@@ -2464,15 +2464,10 @@ html.fids-stream .ticker { flex: 0 0 auto !important; }
    display"). tests/stream-font-parity.test.js fails if any html.fids-stream
    rule sets a font family or --font-primary again.
 
-   The icon-font guard below stays: it only keeps the AC icon glyphs on their
-   icon font. Accor's own ads (.axr) keep their brand typography from
+   v24039 — the icon-font guard that stood here is gone with the icon font:
+   the icons are drawn from our own files (font.css), which no font rule can
+   reach. Accor's own ads (.axr) keep their brand typography from
    hotel-ads.css, on the stream and off it. */
-html.fids-stream .ac-ico,
-html.fids-stream [class*="ac-ico"],
-html.fids-stream .ac-ico::before,
-html.fids-stream .ac-ico::after {
-  font-family: 'ac-icons' !important;
-}
 
 
 /* Board title bigger + both plane icons together (the up and down
@@ -2480,18 +2475,20 @@ html.fids-stream .ac-ico::after {
    (departures) AND down (arrivals) plane in one rounded white badge instead
    of swapping one out, and pull the badge close to the title. */
 html .fids-banner .fids-board-label { font-size: 54px !important; min-width: 360px !important; text-align: left !important; }
-/* ONE plane badge that swaps with the board mode, drawn from the AC icon
-   font: takeoff (departures) / landing (arrivals). The built-in SVGs are
-   hidden and replaced by the glyph. */
+/* ONE plane badge that swaps with the board mode: takeoff (departures) /
+   landing (arrivals), v24039 our own icons (logos/icons/, font.css). The
+   built-in SVGs are hidden and replaced by the mark. */
 html .fids-banner .fids-board-icon svg { display: none !important; }
 html .fids-banner .fids-board-icon::before {
-  font-family: 'ac-icons' !important;
-  content: '\e934' !important;   /* takeoff / up — departures */
-  font-size: 60px !important; line-height: 1 !important;
-  color: #14263f !important;
+  content: '' !important;
+  display: block !important; width: 64px !important; height: 64px !important;
+  background-color: #14263f !important;
+  -webkit-mask: url('../logos/icons/takeoff.svg') center / contain no-repeat !important;
+  mask: url('../logos/icons/takeoff.svg') center / contain no-repeat !important;
 }
 html body[data-fids-mode="arr"] .fids-banner .fids-board-icon::before {
-  content: '\e933' !important;   /* landing — arrivals */
+  -webkit-mask-image: url('../logos/icons/landing.svg') !important;   /* landing — arrivals */
+  mask-image: url('../logos/icons/landing.svg') !important;
 }
 html .fids-banner .fids-board-icon {
   width: 100px !important; height: 100px !important; min-width: 0 !important;
@@ -9814,10 +9811,10 @@ html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airli
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge .ac-ico,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge svg,
 html body:is([data-gate-airline="DL"],[data-gate-airline="DAL"],[data-gate-airline*="DELTA"]):not(#_):not(#_):not(#_):not(#_) .g8-bir-badge svg path {
-  /* v22967 — the ac-ico glyphs are icon-FONT glyphs (font.css ::before +
-     content), NOT mask-painted: `background:#fff` here painted every span's
-     BOX solid white — the white squares on the red orbs at MCO gate 76.
-     Their ink is `color`; svg ink is `fill`. No background. */
+  /* v22967 — the ac-ico marks take their ink from `color` (v24039: a mask on
+     the ::before, font.css), never `background` on the span: that painted
+     every span's BOX solid white — the white squares on the red orbs at MCO
+     gate 76. svg ink is `fill`. No background. */
   fill: #ffffff !important;
   color: #ffffff !important;
   filter: drop-shadow(0 1px 1px rgba(90, 6, 18, 0.5)) !important;
@@ -16351,6 +16348,7 @@ html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-baggage::before,
 html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-dest::before {
   content: '' !important;
+  display: none !important;   /* v24039: no mask over Porter's own art */
 }
 html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-boarding,
 html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-baggage,
@@ -18819,11 +18817,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-la
   opacity: .92 !important;
   min-width: 0 !important;
 }
-/* ac-icons ships exactly ONE diagonal (e929, up-right), so the other three
-   directions are that glyph rotated. Using the kit's arrow rather than the
-   inline SVG keeps these identical to every other arrow on the boards. */
+/* The lane arrow is ONE diagonal (up-right) turned to point each way —
+   v24039 the airport-sign arrow from our own icons (logos/icons/), drawn as
+   a mask so it takes the lane's ink. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr {
-  font-family: 'ac-icons' !important;
   font-style: normal !important;
   font-weight: normal !important;
   font-size: clamp(18px, min(3.2vh, 2.7vw), 46px) !important;
@@ -18831,7 +18828,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-ar
   display: inline-block !important;
   opacity: .95 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr::before { content: "\e929" !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr::before {
+  content: '' !important; display: block !important; width: .8em !important; height: .8em !important;
+  background-color: currentColor !important;
+  -webkit-mask: url('../logos/icons/arrow-diagonal.svg') center / contain no-repeat !important;
+  mask: url('../logos/icons/arrow-diagonal.svg') center / contain no-repeat !important;
+}
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr.dl { transform: rotate(180deg) !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr.dr { transform: rotate(90deg) !important; }
 

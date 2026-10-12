@@ -7,9 +7,6 @@
    so hotel ads sit natively beside the rest of the FIDS type system.
    Brand palettes stay per-brand (see generated section / gen-brand-styles.py).
    ════════════════════════════════════════════════════════════════════════ */
-/* Air Canada icomoon UI icons — same set the gate info rows use */
-@font-face{ font-family:'ac-icons'; src:url('../fonts/ac-icons/icomoon.woff') format('woff');
-  font-weight:normal; font-style:normal; font-display:block; }
 .axr, .axr *{ box-sizing:border-box; }
 .axr{
   --all-blue:#050033; --all-light:#F4F4F5; --all-gold:#C9A227;
@@ -274,10 +271,15 @@ The QR never actually crossed
 .axr-loc-line{ font-size:calc(var(--axr-info) * 0.92); font-weight:300; color:rgba(255,255,255,.82);
   display:flex; align-items:center; }
 .axr-loc-pin{ color:var(--all-gold); margin-right:.55em; font-size:0; display:inline-flex; align-items:center; }
-.axr-loc-pin::before{ font-family:'ac-icons' !important; content:'\e973'; font-style:normal;
-  font-size:calc(var(--axr-info) * 1.0); line-height:1; }
-/* second distance row = city centre → home glyph */
-.axr-loc-line + .axr-loc-line .axr-loc-pin::before{ content:'\e9a4'; }
+.axr-loc-pin::before{ content:''; display:block; flex:none;
+  width:calc(var(--axr-info) * 1.0); height:calc(var(--axr-info) * 1.0);
+  background-color:currentColor;
+  -webkit-mask:url('../logos/icons/plane.svg') center / contain no-repeat;
+  mask:url('../logos/icons/plane.svg') center / contain no-repeat; }
+/* second distance row = city centre → the house (v24039: our own icons,
+   logos/icons/, not the Air Canada icon font) */
+.axr-loc-line + .axr-loc-line .axr-loc-pin::before{
+  -webkit-mask-image:url('../logos/icons/home.svg'); mask-image:url('../logos/icons/home.svg'); }
 .axr-stars{ color:var(--all-gold); letter-spacing:.08em; white-space:nowrap; }
 .axr-score{ font-weight:700; font-family:var(--axr-display); }
 .axr-score small{ font-weight:400; opacity:.82; font-size:.72em; font-family:var(--axr-body); }
