@@ -11,7 +11,7 @@
    How the words get on the page:
      data-i18n="key" data-i18n-one   the store fills it (applyStatic), in the
                                      page's language — `langs` below is it
-     data-i18n-fill                  then filled here: {N}, {CA}, {HERE}…
+     data-i18n-fill                  then filled here: {N}, {CA}, {GATE}…
                                      (data-i18n-n gives a figure its number)
      data-i18n-alt / -label / -content / -title
                                      an alt text, aria-label, a meta content
@@ -70,8 +70,37 @@
   ];
   // Moncton: the first airport, and the pair the languages section shows
   var HOME_CODE = 'YQM';
-  // docked in the dry dock (fids-core.js) and shown as paused
-  var PAUSED = { SYD: true };
+  // ── PAUSED: THE BOARDS' OWN DRY DOCK ─────────────────────────────────────
+  // An airport the boards do not offer now is shown as paused, and left out
+  // of "Live now at…". The boards decide that from the live dry dock
+  // (fids-core.js fidsDryDock): the admin's list (docked) AND the airports
+  // whose own feed has been blocked for 30 minutes or more (auto), both
+  // changing without a deploy. So the page reads the same document, once,
+  // when it loads. Until it answers, and if it never does (offline, a
+  // blocked request, a malformed answer), the page keeps the list as of
+  // this writing, PAUSED_DEFAULT, which the English written into the page
+  // for a reader without script also counts.
+  var PAUSED_DEFAULT = ['SYD'];
+  var DRY_DOCK = 'https://fids-proxy.n-leblanc1984.workers.dev/api/dry-dock';
+  var PAUSED = {};
+  // the paused airports: codes on the roster only, each once
+  function setPaused(codes) {
+    var next = {};
+    (codes || []).forEach(function (c) {
+      c = String(c || '').trim().toUpperCase();
+      for (var i = 0; i < AIRPORTS.length; i++) if (AIRPORTS[i][1] === c) next[c] = true;
+    });
+    var same = Object.keys(next).sort().join() === Object.keys(PAUSED).sort().join();
+    PAUSED = next;
+    return !same;
+  }
+  setPaused(PAUSED_DEFAULT);
+  // the dock's document, read as the boards read it (loadDryDock): only a
+  // correctly shaped one counts, never one that merely looks empty
+  function dockedCodes(doc) {
+    if (!doc || typeof doc !== 'object' || !Array.isArray(doc.docked)) return null;
+    return doc.docked.concat(Array.isArray(doc.auto) ? doc.auto : []);
+  }
   // the 3D model credited on the credits page (docs/licenses/3d-models.md),
   // its title and its author as Sketchfab publishes them
   var MODEL = { title: 'boeing 767', author: '1883' };
@@ -89,8 +118,8 @@
   }
   function regionOf(a) { return REGION_OF[a[0]] || a[0]; }
   // {N} the whole roster; {LIVE} the airports live now, the paused left out
-  // (the folio line says "Live now at…", beside an index that shows Sydney
-  // as paused)
+  // (the folio line says "Live now at…", beside an index that shows the
+  // paused ones as paused: PAUSED, the boards' dry dock)
   function counts() {
     var c = { N: AIRPORTS.length };
     c.LIVE = AIRPORTS.filter(function (a) { return !PAUSED[a[1]]; }).length;
@@ -117,7 +146,6 @@
   function fields(l) {
     var f = counts();
     f.GATE = '1';
-    f.HERE = S.bs('youAreHere', l);
     f.WORD = S.bs('appDep', l);
     f.KICKER = S.bs('heritageKicker', l);
     f.TITLE = MODEL.title;
@@ -147,43 +175,142 @@
     });
     var t = doc.querySelector('[data-i18n-title]');
     if (t) doc.title = S.bs(t.getAttribute('data-i18n-title'), l);
-    holdNamesWhole(l);
   }
 
-  // ── NAMES HELD WHOLE IN CHINESE ──────────────────────────────────────────
-  // A name never breaks across lines (the display rule: no severed phrases).
-  // The other languages hold theirs whole in the store, with a no-break
-  // space; Japanese breaks between phrases (css/home.css, auto-phrase). But
-  // Chinese may break a line between any two characters, and the store
-  // cannot hold a name together there (the guard bars invisible joiners),
-  // so 新不伦瑞克 (New Brunswick) broke inside itself on the credits page at
-  // 600 and 320 px. The store lists the names a language's own line
-  // breaking would cut (BoardStrings.META[lang].whole); each one in the
-  // page's words is set here in a span that never wraps (.nb), after the
-  // store has filled them. Longer names first, so a name inside another is
-  // never cut out of it.
-  function holdNamesWhole(l) {
-    var names = String((S.META[l] && S.META[l].whole) || '').split(' ').filter(Boolean);
-    if (!names.length || !doc.createTextNode) return;
-    names.sort(function (a, b) { return b.length - a.length; });
-    var re = new RegExp(names.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
-    var els = doc.querySelectorAll('[data-i18n]');
+  // ── WORDS HELD WHOLE IN JAPANESE AND CHINESE ────────────────────────────
+  // A word never breaks inside itself, nor a name (the display rule: no
+  // severed phrases). The other languages break lines at spaces, and hold
+  // their two-word names whole in the store with a no-break space. Japanese
+  // and Chinese put no space between words, and a browser breaks their
+  // lines between any two characters: 航 / 空写真, 切り / 替えられます,
+  // 澳 / 大利亚, 航空公 / 司. CSS's own answer for Japanese
+  // (word-break:auto-phrase) still cut 航空写真 at 390 px, and Chinese has
+  // none. So the page sets both keep-all (css/home.css, .cjk-words), which
+  // leaves a line nowhere to break but a space or a punctuation mark, and
+  // the places between words are marked here with <wbr>, from the words
+  // Intl.Segmenter finds:
+  //   Japanese  a line may break before a word, but never before hiragana
+  //             (a particle or an ending: を, による, られます), after kana
+  //             that is not a particle or an ending (の, を, た…: the
+  //             store's META.ja.after), so never inside a compound verb
+  //             (描き|出す, 取り|除く), never inside a run of katakana or of
+  //             kanji (one word the dictionary cut in pieces:
+  //             ニューブランズウィック, 航空写真), before a one-kanji suffix
+  //             (州, 年, 便), after a prefix (お, ご, 各, 全…: META.ja.prefix),
+  //             or between letters or figures and the word they touch (図1,
+  //             3Dモデル, Possibility書体);
+  //   Chinese   the dictionary knows few words (it cuts 航|班 and 实|时), so
+  //             a line may break only between two words it knows (two
+  //             characters or more each) or after a function word (的, 和,
+  //             与, 在, 从…: META.zh.after); a single character stays with
+  //             its neighbours, and a prefix (第, 每, 各…) with the word
+  //             after it.
+  // A name the dictionary would still cut is listed in the store
+  // (BoardStrings.META[lang].whole: 卡尔加里, 哈利法克斯斯坦菲尔德) and set
+  // here in a span that never wraps (.nb). A run longer than the whole line
+  // still breaks (overflow-wrap) rather than run off the page.
+  //
+  // Done after every paint, on the elements that hold only text in one of
+  // the two languages (the page's own or a tile's). One already done here
+  // has children and is skipped; the store and the painters set plain text
+  // again whenever the language changes.
+  var CJK = /[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+  var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, TEMPLATE: 1, TITLE: 1, NOSCRIPT: 1 };
+  function kindOf(ch) {
+    if (!ch) return '';
+    if (/[\u3041-\u309F]/.test(ch)) return 'h';                         // hiragana
+    if (/[\u30A0-\u30FF\u31F0-\u31FF]/.test(ch)) return 'k';            // katakana, ー
+    if (/[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3005]/.test(ch)) return 'c'; // kanji, 々
+    if (/[0-9A-Za-z\u00C0-\u024F]/.test(ch)) return 'l';               // Latin, figures
+    return '';
+  }
+  function len(s) { return Array.from(s).length; }
+  // the store's lists for a language (BoardStrings.META): the particles,
+  // endings and function words a line may break after, and the prefixes it
+  // never breaks after
+  function wordList(l, k) { return ' ' + String((S.META[l] && S.META[l][k]) || '') + ' '; }
+  function isIn(list, w) { return list.indexOf(' ' + w + ' ') >= 0; }
+  // may a line break between two words that touch, a then b?
+  function breakJa(a, b, L) {
+    var x = kindOf(a.slice(-1)), y = kindOf(b.charAt(0));
+    if (!x || !y) return false;
+    // before hiragana only where it is a prefix after a particle (の|ご質問)
+    if (y === 'h') return isIn(L.prefix, b) && isIn(L.after, a);
+    if (isIn(L.prefix, a)) return false;
+    // after kana, only a particle or an ending: a kana the dictionary left
+    // alone may be the middle of a compound verb (描|き|出した, 取り|除いて)
+    if (x === 'h' && y !== 'l') return isIn(L.after, a);
+    if (x === y && x !== 'h') return false;
+    if (y === 'c' && len(b) === 1 && x !== 'h') return false;
+    if (x === 'l' || (y === 'l' && x !== 'h')) return false;
+    return true;
+  }
+  function breakZh(a, b, L) {
+    if (kindOf(a.slice(-1)) !== 'c' || kindOf(b.charAt(0)) !== 'c') return false;
+    if (len(a) === 1) return isIn(L.after, a);
+    return len(b) >= 2 && !isIn(L.prefix, a.slice(-1));
+  }
+  function langOf(e) {
+    var h = e.closest && e.closest('[lang]');
+    return h ? String(h.getAttribute('lang') || '').toLowerCase().split('-')[0] : '';
+  }
+  function holdWordsWhole() {
+    var Seg = typeof Intl !== 'undefined' && Intl.Segmenter;
+    if (!Seg || !doc.createTextNode || !doc.body) return;
+    root.classList.add('cjk-words');
+    var els = doc.body.querySelectorAll('*');
+    var names = {}, segs = {}, lists = {};
     for (var i = 0; i < els.length; i++) {
-      var e = els[i], s = e.textContent;
-      // the store's words are plain text; one already set here is skipped
-      if (e.children.length || !s) continue;
+      var e = els[i];
+      if (e.children.length || SKIP_TAGS[e.tagName]) continue;
+      var s = e.textContent;
+      if (!s || !CJK.test(s)) continue;
+      var l = langOf(e);
+      if (l !== 'ja' && l !== 'zh') continue;
+      if (!(l in segs)) {
+        try { segs[l] = new Seg(S.intl(l), { granularity: 'word' }); } catch (x) { segs[l] = null; }
+        var ns = String((S.META[l] && S.META[l].whole) || '').split(' ').filter(Boolean);
+        // longer names first, so a name inside another is never cut out of it
+        ns.sort(function (a, b) { return b.length - a.length; });
+        lists[l] = { after: wordList(l, 'after'), prefix: wordList(l, 'prefix') };
+        names[l] = ns.length ? new RegExp(ns.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g') : null;
+      }
+      if (segs[l]) setWords(e, s, l, segs[l], names[l], lists[l]);
+    }
+  }
+  // the element's words: each name a word of its own, the rest as the
+  // segmenter finds them; then text, names (.nb) and <wbr> between words
+  function setWords(e, s, l, seg, re, L) {
+    var parts = [];   // { t: text, name: true|false, word: true|false }
+    function add(t) {
+      Array.from(seg.segment(t)).forEach(function (g) { parts.push({ t: g.segment, word: !!g.isWordLike }); });
+    }
+    var at = 0, m;
+    if (re) {
       re.lastIndex = 0;
-      if (!re.test(s)) continue;
-      re.lastIndex = 0;
-      e.textContent = '';
-      var at = 0, m;
       while ((m = re.exec(s))) {
-        if (m.index > at) e.appendChild(doc.createTextNode(s.slice(at, m.index)));
-        e.appendChild(el('span', 'nb', m[0]));
+        if (m.index > at) add(s.slice(at, m.index));
+        parts.push({ t: m[0], word: true, name: true });
         at = m.index + m[0].length;
       }
-      if (at < s.length) e.appendChild(doc.createTextNode(s.slice(at)));
     }
+    if (at < s.length) add(s.slice(at));
+    var out = [], text = '', marks = 0, named = 0;
+    function flush() { if (text) { out.push(doc.createTextNode(text)); text = ''; } }
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i], prev = parts[i - 1];
+      if (prev && prev.word && p.word && (l === 'ja' ? breakJa(prev.t, p.t, L) : breakZh(prev.t, p.t, L))) {
+        flush();
+        out.push(doc.createElement('wbr'));
+        marks++;
+      }
+      if (p.name) { flush(); out.push(el('span', 'nb', p.t)); named++; }
+      else text += p.t;
+    }
+    flush();
+    if (!marks && !named) return;
+    e.textContent = '';
+    for (var j = 0; j < out.length; j++) e.appendChild(out[j]);
   }
 
   // ── THE AIRPORT INDEX, BY REGION ─────────────────────────────────────────
@@ -264,10 +391,18 @@
       sec.appendChild(ul);
       box.appendChild(sec);
     });
+    // the note beside the Paused tag under the index: one sentence for each
+    // paused airport, in the index's order; with none, the tag and its note
+    // leave the key
     var note = doc.getElementById('paused-note');
     if (note) {
-      var p = Object.keys(PAUSED)[0];
-      note.textContent = p ? S.fmt('homeNotePaused', l, { CITY: cityName(p, l) }) : '';
+      var ps = AIRPORTS.filter(function (a) { return PAUSED[a[1]]; }).map(function (a) { return a[1]; });
+      ps.sort(function (a, b) { return coll ? coll.compare(cityName(a, l), cityName(b, l)) : 0; });
+      note.textContent = ps.map(function (p) { return S.fmt('homeNotePaused', l, { CITY: cityName(p, l) }); }).join(' · ');
+      var item = note.parentNode;
+      if (item && item.setAttribute) {
+        if (ps.length) item.removeAttribute('hidden'); else item.setAttribute('hidden', '');
+      }
     }
   }
 
@@ -420,6 +555,7 @@
     paintLangs(l);
     paintSwitch(l);
     paintPageLinks(l);
+    holdWordsWhole();
   }
   S.onLangs(paint);
 
@@ -427,12 +563,27 @@
     var ds = doc.querySelectorAll('details.menu, details.lsw');
     for (var i = 0; i < ds.length; i++) if (ds[i] !== open) ds[i].open = false;
   }
+  // the live dry dock, once: a different list repaints the count, the
+  // index and its note in the page's language
+  function loadDock() {
+    if (typeof fetch !== 'function') return;
+    try {
+      fetch(DRY_DOCK + '?_oc=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r && r.ok ? r.json() : null; })
+        .then(function (d) {
+          var codes = dockedCodes(d);
+          if (codes && setPaused(codes)) paint([lang]);
+        })
+        .catch(function () {});
+    } catch (e) {}
+  }
   function boot() {
     // applyStatic (board-strings.js) has run on this event already, in the
     // page's language; the rest is painted here
     paint([lang]);
     paintLinks();
     paintAddresses();
+    loadDock();
     doc.addEventListener('click', function (e) {
       var pick = e.target.closest && e.target.closest('[data-lang-pick]');
       if (pick) {
@@ -467,7 +618,8 @@
 
   // for tests/homepage.test.js
   window.OCHome = {
-    AIRPORTS: AIRPORTS, REGIONS: REGIONS, REGION_OF: REGION_OF, PAUSED: PAUSED, MODEL: MODEL,
+    AIRPORTS: AIRPORTS, REGIONS: REGIONS, REGION_OF: REGION_OF, PAUSED_DEFAULT: PAUSED_DEFAULT, DRY_DOCK: DRY_DOCK, MODEL: MODEL,
+    paused: function () { return Object.keys(PAUSED); }, dockedCodes: dockedCodes,
     counts: counts, countText: countText, groups: groups, choose: choose, isPhone: isPhone,
     lang: function () { return lang; }
   };

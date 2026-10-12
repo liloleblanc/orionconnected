@@ -168,7 +168,7 @@ function parsePage(html, doc) {
   }
   return root.children.find((n) => n.localName === 'html');
 }
-// o: { url, languages, saved, blocked (storage throws), ua }
+// o: { url, languages, saved, blocked (storage throws), ua, fetch }
 function loadPage(name, o) {
   o = o || {};
   const listeners = {};
@@ -196,6 +196,7 @@ function loadPage(name, o) {
     history: { replaceState: (a, b, u) => { const n = new URL(u, location.href); Object.assign(location, { href: n.href, search: n.search, hash: n.hash, pathname: n.pathname }); } },
     innerWidth: 1440
   };
+  if (o.fetch) g.fetch = o.fetch;
   for (const k of ['localStorage', 'sessionStorage']) {
     Object.defineProperty(g, k, { get: () => { if (o.blocked) throw new Error('storage is blocked'); return store; } });
   }
@@ -347,13 +348,16 @@ test('the airport index is the live roster', () => {
   const c = home.counts();
   assert.equal(c.N, live.length);
   assert.equal(c.CA + c.US + c.EU + c.AU, c.N, 'every airport counted in one region');
-  assert.deepEqual(Array.from(Object.keys(home.PAUSED)), ['SYD'], 'Sydney is docked, and shown as paused');
+  // paused: the boards' own dry dock, read live (below); until it answers,
+  // the list as of this writing, Sydney
+  assert.deepEqual(Array.from(home.PAUSED_DEFAULT), ['SYD']);
+  assert.deepEqual(Array.from(home.paused()), ['SYD'], 'Sydney is docked, and shown as paused');
   // grouped by country, each named by CLDR from its ISO code
   for (const a of home.AIRPORTS) assert.match(a[0], /^[A-Z]{2}$/, a[1] + ' has an ISO country code');
   assert.deepEqual(Array.from(home.groups('en', new Intl.Collator('en'))), ['CA', 'US', 'IS', 'IE', 'CH', 'GB', 'AU']);
   // "Live now" counts the airports live now: the paused one is not, and the
   // index beside it says so (homeNotePaused)
-  assert.equal(c.LIVE, c.N - Object.keys(home.PAUSED).length, 'the folio line leaves the paused airports out');
+  assert.equal(c.LIVE, c.N - home.paused().length, 'the folio line leaves the paused airports out');
   assert.match(BS.bs('homeLiveNow', 'en'), /\{LIVE\}/);
   // the words written into the page before its script runs say the same
   assert.match(HOME, new RegExp(`Live now at ${c.LIVE} airports`));
@@ -402,7 +406,7 @@ test('home.js paints the homepage: the index, the nine languages, the switch, th
   assert.deepEqual(aps.map((a) => a.href).sort(), Array.from(home.AIRPORTS, (a) => 'https://' + a[1].toLowerCase() + '.orionconnected.com').sort());
   assert.deepEqual(p.$$('#airport-index .region h3').map((h) => h.textContent),
     Array.from(home.groups('en', new Intl.Collator('en'))).map((c) => new Intl.DisplayNames(['en'], { type: 'region' }).of(c)));
-  assert.equal(p.$$('#airport-index a.paused').length, Object.keys(home.PAUSED).length);
+  assert.equal(p.$$('#airport-index a.paused').length, home.paused().length);
   assert.equal(p.$('#paused-note').textContent, BS.fmt('homeNotePaused', 'en', { CITY: 'Sydney' }));
   // the words the page fills: the folio line counts what is live now
   assert.equal(p.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'en', { LIVE: home.counts().LIVE }));
@@ -435,6 +439,60 @@ test('home.js paints the homepage: the index, the nine languages, the switch, th
   assert.equal(p.$('a[href="mailto:contact@orionconnected.com"] [data-href-text]').textContent, 'contact@orionconnected.com');
   // the links between the two pages carry the page's language
   assert.deepEqual(pageLinks(p).map((a) => a.getAttribute('href')), ['/?lang=en', '/credits?lang=en', '/credits?lang=en']);
+});
+
+// ── the boards' own dry dock, read live ──────────────────────────────────
+// The boards do not offer an airport the admin has docked, nor one whose
+// feed has been blocked for 30 minutes or more (fids-core.js fidsDryDock:
+// docked and auto). On 2026-10-12 that was Sydney (docked) and Toronto
+// Pearson (auto) — 60 airports offered while the page said 61. The page now
+// reads the same document when it loads.
+const settle = () => new Promise((r) => setImmediate(r));
+const dockAnswer = (body, ok = true) => () => Promise.resolve({ ok, json: () => Promise.resolve(body) });
+test('"Live now" and the paused marks follow the boards\' own dry dock, read live', async () => {
+  // the same document the boards read
+  const base = CORE.match(/const FIDS_API_BASE = '([^']+)'/)[1];
+  assert.match(JS, /var DRY_DOCK = '([^']+)'/);
+  assert.equal(JS.match(/var DRY_DOCK = '([^']+)'/)[1], base + '/api/dry-dock');
+  assert.match(CORE, /fetch\(FIDS_API_BASE \+ '\/api\/dry-dock/);
+  let asked = null;
+  const p = loadPage('home.html', { fetch: (u, o) => { asked = { u, o }; return dockAnswer({ v: 1, docked: ['SYD'], auto: ['YYZ'] })(); } });
+  assert.ok(asked && asked.u.startsWith(base + '/api/dry-dock'), 'the page asks the dock once it loads');
+  assert.equal(asked.o.cache, 'no-store');
+  await settle();
+  const { home } = p;
+  assert.deepEqual(Array.from(home.paused()).sort(), ['SYD', 'YYZ'], 'the admin\'s list and the automatic one, as the boards count them');
+  assert.equal(home.counts().LIVE, home.AIRPORTS.length - 2);
+  assert.equal(p.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'en', { LIVE: home.AIRPORTS.length - 2 }));
+  assert.deepEqual(p.$$('#airport-index a.paused').map((a) => a.href).sort(), ['https://syd.orionconnected.com', 'https://yyz.orionconnected.com']);
+  assert.equal(p.$('#paused-note').textContent, [BS.fmt('homeNotePaused', 'en', { CITY: 'Sydney' }), BS.fmt('homeNotePaused', 'en', { CITY: 'Toronto Pearson' })].join(' · '));
+  assert.equal(p.$('#paused-note').parentNode.hasAttribute('hidden'), false);
+  // the Canada group says which of its airports is paused, in the page's words
+  assert.ok(p.$$('#airport-index .region-h p').some((x) => x.textContent.endsWith(BS.fmt('homeRegionPaused', 'en', { CITY: 'Toronto Pearson' }))));
+  // a language picked afterwards keeps the dock's list
+  const sw = p.$('details.lsw');
+  sw.open = true;
+  p.click(sw.querySelector('[data-lang-pick="fr"]'));
+  assert.equal(p.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'fr', { LIVE: home.AIRPORTS.length - 2 }));
+  // an empty dock: every airport is live, and the Paused key leaves the notes
+  const none = loadPage('home.html', { fetch: dockAnswer({ v: 1, docked: [], auto: [] }) });
+  await settle();
+  assert.deepEqual(Array.from(none.home.paused()), []);
+  assert.equal(none.home.counts().LIVE, none.home.AIRPORTS.length);
+  assert.equal(none.$$('#airport-index a.paused').length, 0);
+  assert.equal(none.$('#paused-note').parentNode.hasAttribute('hidden'), true);
+  // a code that is not on the roster is no airport of ours
+  const odd = loadPage('home.html', { fetch: dockAnswer({ docked: ['syd', 'XXX'], auto: 'YYZ' }) });
+  await settle();
+  assert.deepEqual(Array.from(odd.home.paused()), ['SYD']);
+  // no answer, a refusal, a malformed or an empty-looking body: the list as
+  // of this writing stays (as the boards keep their last good list)
+  for (const f of [() => Promise.reject(new Error('offline')), dockAnswer({ docked: ['YYZ'] }, false), dockAnswer({}), dockAnswer(null), () => { throw new Error('blocked'); }]) {
+    const q = loadPage('home.html', { fetch: f });
+    await settle();
+    assert.deepEqual(Array.from(q.home.paused()), ['SYD']);
+    assert.equal(q.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'en', { LIVE: q.home.AIRPORTS.length - 1 }));
+  }
 });
 
 test('picking a language turns the whole page, saves the choice, and gives focus back to the switch', () => {
@@ -737,5 +795,95 @@ test('in Chinese a name is never broken inside: each one is set in a span that n
     p.click(sw.querySelector('[data-lang-pick="en"]'));
     assert.equal(p.html.getAttribute('lang'), 'en');
     assert.equal(p.$$('span.nb').length, 0, name);
+  }
+});
+
+// ── Japanese and Chinese: a word never breaks inside itself ───────────────
+// Both put no space between words, and a browser breaks their lines between
+// any two characters: 航 / 空写真 and 切り / 替えられます in Japanese (CSS's
+// auto-phrase did not hold), 澳 / 大利亚 and 航空公 / 司 in Chinese. The page
+// is set keep-all once home.js has marked the places between words (<wbr>).
+const wordsOf = (s, l) => Array.from(new Intl.Segmenter(l, { granularity: 'word' }).segment(s));
+// the places a line may break in an element: where its <wbr>s stand
+function breaksIn(e) {
+  const at = [];
+  let n = 0;
+  for (const c of e.childNodes) {
+    if (c.nodeType === 1 && c.localName === 'wbr') at.push(n);
+    else n += c.textContent.length;
+  }
+  return at;
+}
+test('in Japanese and Chinese a line breaks only between words', () => {
+  assert.match(CSS, /\.cjk-words :lang\(ja\),\.cjk-words :lang\(zh\)\{word-break:keep-all\}/);
+  assert.doesNotMatch(CSS, /auto-phrase/, 'auto-phrase did not hold; the page marks the places itself');
+  const cases = {
+    ja: { 'home.html': ['航空写真', '切り替えられます', 'ターンテーブル', 'ライブマップ', 'フランス語'], 'credits.html': ['航空写真', '航空機', 'による', '描き出した', '取り除いて', 'ご質問'] },
+    zh: { 'home.html': ['航空公司', '实时航班', '航班号', '登机口', '第一个'], 'credits.html': ['航拍照片', '许可证', '开放'] }
+  };
+  for (const l of ['ja', 'zh']) {
+    for (const name of Object.keys(PAGES)) {
+      const p = loadPage(name, { url: 'https://www.orionconnected.com/?lang=' + l });
+      assert.ok(p.html.classList.contains('cjk-words'), name + ' ' + l);
+      let marked = 0;
+      const words = [];
+      for (const e of p.$$('body *')) {
+        if (!e.querySelector('wbr')) continue;
+        if (e.children.some((c) => c.localName !== 'wbr' && !c.classList.contains('nb'))) continue;
+        const s = e.textContent, at = breaksIn(e);
+        marked += at.length;
+        words.push(s);
+        // every mark stands between two of the dictionary's words, never inside one
+        const bounds = new Set(wordsOf(s, l).map((g) => g.index));
+        for (const i of at) assert.ok(bounds.has(i), `${name} ${l}: a break inside a word at ${i}: ${s.slice(Math.max(0, i - 6), i)}|${s.slice(i, i + 6)}`);
+        // and never inside a word the reader knows, whatever the dictionary says
+        for (const w of cases[l][name]) {
+          for (let k = s.indexOf(w); k >= 0; k = s.indexOf(w, k + 1)) {
+            for (const i of at) assert.ok(i <= k || i >= k + w.length, `${name} ${l}: ${w} cut in ${s}`);
+          }
+        }
+        // the words themselves are the store's, unchanged
+        assert.ok(!/[​­]/.test(s));
+      }
+      assert.ok(marked > 40, `${name} ${l}: the places between words are marked: ${marked}`);
+      for (const w of cases[l][name]) assert.ok(words.some((s) => s.includes(w)), `${name} ${l}: ${w} is on the page`);
+      // another language takes the marks away with the words
+      const sw = p.$('details.lsw');
+      sw.open = true;
+      p.click(sw.querySelector('[data-lang-pick="en"]'));
+      assert.equal(p.$$('[data-i18n] wbr').length, 0, name);
+    }
+  }
+  // Australia is a name held whole in Chinese, beside the other three regions
+  const zh = loadPage('home.html', { url: 'https://www.orionconnected.com/?lang=zh' });
+  assert.deepEqual(zh.$('[data-i18n="homeAirportsLead"]').querySelectorAll('span.nb').map((x) => x.textContent), ['加拿大', '澳大利亚']);
+});
+
+test('a word is never hyphenated, and the Paused tag never breaks inside its word', () => {
+  assert.doesNotMatch(CSS, /hyphens\s*:\s*auto/, 'German Live-Flugan- / zeigen, Spanish aero- / puertos');
+  const tag = CSS.match(/\n\.tag\{([^}]*)\}/)[1];
+  assert.match(tag, /white-space:nowrap/);
+  assert.doesNotMatch(tag, /overflow-wrap/, 'PAUSIER / T at 320 px');
+  assert.match(CSS, /\.index-notes \.tag\{[^}]*flex:none/);
+});
+
+test('the words beside a picture say what the picture shows', () => {
+  // Fig. 4's map is marked "You are here | Vous êtes ici": only English and
+  // French can quote it; the others say what it shows
+  for (const k of ['homeAltBags', 'homeBidsK2']) {
+    for (const l of BS.LANGS) {
+      const v = BS.STR[k][l];
+      if (l === 'en') assert.match(v, /“You are here”/, k + ' ' + l);
+      else if (l === 'fr') assert.match(v, /«\s?Vous êtes ici\s?»/, k + ' ' + l);
+      else assert.doesNotMatch(v, /\{HERE\}|«|»|“|”|„|「|」/, k + ' ' + l);
+    }
+  }
+  // Fig. 1: Flair's F8671 to Toronto has no gate yet
+  assert.match(BS.bs('homeAltYqmDep', 'en'), /all but one with a gate/);
+  // Fig. 3: the gate screen welcomes passengers aboard, not to Calgary
+  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt']) assert.doesNotMatch(BS.STR.homeGidsText[l], /destination|destino|Ziel|destinazione/, l);
+  // Arabic: رحلات مباشرة reads as nonstop flights, not live ones
+  for (const k of Object.keys(BS.STR).filter((x) => /^(home|cred)[A-Z0-9]/.test(x))) {
+    assert.doesNotMatch(String(BS.STR[k].ar), /رحلات?\s+(?:مغادرة\s+)?مباشرة|الرحلات المباشرة/, k);
   }
 });
