@@ -23296,20 +23296,69 @@ var HOLIDAY_BAND = {
   'thanksgiving-ca': ['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12']
 };
 // The few layers a look adds outside the band (display-overrides.css,
-// "A HOLIDAY LOOK"): on the gate, a warm wash, a harvest ribbon on the
-// date bar's top edge, one red maple leaf in the empty cream between the
-// airline's logo and the airport's mark, and two small fallen leaves (gold,
-// orange) resting on the ribbon either side of it; on the baggage board, a
-// warm grade under the scrim. The leaves are real artwork
-// (logos/holiday/thanksgiving/, docs/licenses/holiday-leaves.md). They
+// "A HOLIDAY LOOK"). Every leaf is real artwork, trimmed out of two licensed
+// vector files (logos/holiday/thanksgiving/, docs/licenses/holiday-leaves.md),
+// in four colours: gold, amber and orange, rust and a deep red.
+// - Silk banner (fids): besides the gold badge, four fallen leaves in the
+//   two warm gaps, title-to-logo and logo-to-clock (tg-fall-a..d).
+// - Gate: a warm wash, a harvest ribbon on the date bar's top edge, one gold
+//   leaf drifting in the empty cream between the airline's artwork and the
+//   airport's mark, and up to three leaves resting ON the ribbon (pinned
+//   from the bottom, like the ribbon, so they sit on it at every size). On
+//   an Air Canada family gate the rust and deep red leaves turn amber and
+//   gold (tg-ac): no red maple beside the airline's own red maple.
+// - Baggage: a warm grade under the scrim and up to three leaves in the
+//   free warm space above the welcome line (tg-bag-a..c).
+// Each leaf is placed by measuring the free space it sits in, and is hidden
+// when it would not fit clear of every word, logo, clock or date. They
 // exist only while body[data-fids-holiday] is set and are removed the
 // moment it is not, so a board that runs past midnight goes back to itself
 // without a reload.
 var _HOLIDAY_LAYERS = [
   ['.g8-r1', 'tg-warm', null], ['.g8-r1', 'tg-ribbon', null], ['.g8-r1', 'tg-leaf', null],
-  ['.g8-r1', 'tg-rest-a', null], ['.g8-r1', 'tg-rest-b', null],
-  ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim']
+  ['.g8-r1', 'tg-rest-a', null], ['.g8-r1', 'tg-rest-b', null], ['.g8-r1', 'tg-rest-c', null],
+  ['#fidsBanner', 'tg-fall-a', null], ['#fidsBanner', 'tg-fall-b', null],
+  ['#fidsBanner', 'tg-fall-c', null], ['#fidsBanner', 'tg-fall-d', null],
+  ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim'],
+  ['#baggageView .b5 .b5-band', 'tg-bag-a', '.b5-bin'], ['#baggageView .b5 .b5-band', 'tg-bag-b', '.b5-bin'],
+  ['#baggageView .b5 .b5-band', 'tg-bag-c', '.b5-bin']
 ];
+// the free span [lo, hi] of a host, measured from the host's left edge
+function _tgEdges(host, sel, hr, side) {
+  var v = side === 'right' ? -1 : Infinity, els = host.querySelectorAll(sel);
+  for (var i = 0; i < els.length; i++) {
+    var r = els[i].getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) continue;
+    if (side === 'right') v = Math.max(v, r.right - hr.left); else v = Math.min(v, r.left - hr.left);
+  }
+  return side === 'right' ? (v < 0 ? null : v) : (v === Infinity ? null : v);
+}
+// one leaf of size s, centred on x, shown only when it fits inside [lo, hi]
+function _tgPut(el, x, top, s, lo, hi) {
+  if (!el) return false;
+  var ok = s >= 24 && x - s / 2 >= lo && x + s / 2 <= hi;
+  el.style.display = ok ? '' : 'none';
+  if (!ok) return false;
+  el.style.width = el.style.height = Math.round(s) + 'px';
+  el.style.left = Math.round(x - s / 2) + 'px';
+  if (top != null) el.style.top = Math.round(top) + 'px';
+  return true;
+}
+// two leaves in one gap [g0, g1]: side by side where both fit, otherwise
+// the first alone, centred, made smaller if it must be (never under 36px)
+function _tgPair(e1, e2, g0, g1, w1, w2, t1, t2, H) {
+  var W = g1 - g0;
+  if (W >= w1 + w2 + 24) {
+    var x1 = Math.max(g0 + w1 / 2, g0 + W * 0.30), x2 = Math.min(g1 - w2 / 2, g0 + W * 0.80);
+    if (x2 - x1 < (w1 + w2) / 2 + 24) { x1 = g0 + w1 / 2; x2 = g1 - w2 / 2; }
+    _tgPut(e1, x1, t1, w1, g0, g1);
+    _tgPut(e2, x2, t2, w2, g0, g1);
+    return;
+  }
+  var w = Math.min(w1, W);
+  if (w < 36) { if (e1) e1.style.display = 'none'; } else _tgPut(e1, g0 + W / 2, (H - w) / 2, w, g0, g1);
+  if (e2) e2.style.display = 'none';
+}
 function _fidsHolidayLayers() {
   try {
     var on = !!document.body.dataset.fidsHoliday;
@@ -23327,26 +23376,72 @@ function _fidsHolidayLayers() {
       }
     }
     if (!on) return;
-    // the gate leaf: centred in the empty cream between the airline's
-    // artwork and the clock; no room (under 170px), no leaf. The two fallen
-    // leaves sit on the ribbon either side of it, only where the cream is
-    // wide enough (420px) that they stay clear of both logos.
+    // the gate: the free cream runs from the airline's artwork to the
+    // airport's mark (or the clock). The gold leaf drifts in its middle;
+    // the resting leaves line up along the ribbon either side of it, each
+    // only where it fits, 24px clear of both logos.
+    var ga = String(document.body.getAttribute('data-gate-airline') || '').toUpperCase();
+    var acGate = /^(AC|QK|RV|ZX)$/.test(ga);
     var bands = document.querySelectorAll('.g8-r1');
     for (var k = 0; k < bands.length; k++) {
       var band = bands[k], leaf = band.querySelector(':scope > .tg-leaf');
-      var ra = band.querySelector(':scope > .tg-rest-a'), rb = band.querySelector(':scope > .tg-rest-b');
       if (!leaf) continue;
-      var hr = band.getBoundingClientRect(), a = 0;
-      var art = band.querySelectorAll('.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas');
-      for (var m = 0; m < art.length; m++) { var r = art[m].getBoundingClientRect(); if (r.width > 0) a = Math.max(a, r.right - hr.left); }
-      var clock = band.querySelector('.octb-clockrow') || band.querySelector('.g8-r1-timebox');
-      var bx = clock ? clock.getBoundingClientRect().left - hr.left : 0;
-      var c = (a + bx) / 2, wide = !!(a && bx && bx - a >= 420);
-      if (ra) { ra.style.display = wide ? '' : 'none'; if (wide) ra.style.left = Math.round(c - 130 - ra.offsetWidth / 2) + 'px'; }
-      if (rb) { rb.style.display = wide ? '' : 'none'; if (wide) rb.style.left = Math.round(c + 118 - rb.offsetWidth / 2) + 'px'; }
-      if (!a || !bx || bx - a < 170) { leaf.style.display = 'none'; continue; }
-      leaf.style.display = '';
-      leaf.style.left = Math.round(c - (leaf.offsetWidth || 84) / 2) + 'px';
+      var rest = [band.querySelector(':scope > .tg-rest-a'), band.querySelector(':scope > .tg-rest-b'), band.querySelector(':scope > .tg-rest-c')];
+      var acArt = !!band.querySelector('.g8-r1-logoslot img[src*="/AC."], .g8-r1-logoslot img[src*="air-canada"], .g8-r1-logoslot img[src*="rouge"], .g8-r1-logoslot img[src*="jazz"]');
+      band.classList.toggle('tg-ac', acGate || acArt);
+      var hr = band.getBoundingClientRect();
+      var a = _tgEdges(band, '.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas', hr, 'right');
+      var bx = _tgEdges(band, '.octb-apmark, .octb-apsep, .octb-clock', hr, 'left');
+      if (bx == null) bx = _tgEdges(band, '.octb-clockrow, .g8-r1-timebox', hr, 'left');
+      var rib = band.querySelector(':scope > .tg-ribbon'), rt = rib ? rib.getBoundingClientRect().top - hr.top : hr.height - 32;
+      var kc = Math.max(0.6, Math.min(1.2, rt / 106));
+      if (a == null || bx == null || rt < 40) { leaf.style.display = 'none'; rest.forEach(function (e) { if (e) e.style.display = 'none'; }); continue; }
+      var lo = a + 24, hi = bx - 24, c = (lo + hi) / 2;
+      var m = Math.min(84 * kc, rt - 14);
+      var mOk = _tgPut(leaf, c, null, m, lo, hi);
+      if (!mOk) m = 0;
+      var wa = 52 * kc, wb = 46 * kc, wc = 42 * kc;
+      var xa = c - m / 2 - 14 * kc - wa / 2, xb = c + m / 2 + 18 * kc + wb / 2, xc = xb + wb / 2 + 26 * kc + wc / 2;
+      _tgPut(rest[0], xa, null, wa, lo, hi);
+      var bOk = _tgPut(rest[1], xb, null, wb, lo, hi);
+      _tgPut(rest[2], xc, null, wc, lo, bOk ? hi : -1);
+    }
+    // the silk banner: two leaves in the gap from the title to the
+    // airport's logo, two from the logo to the clock; sizes follow the
+    // banner's height (128px on a 1080p screen), each 24px clear of text.
+    var fb = document.getElementById('fidsBanner');
+    var fall = fb ? [fb.querySelector(':scope > .tg-fall-a'), fb.querySelector(':scope > .tg-fall-b'), fb.querySelector(':scope > .tg-fall-c'), fb.querySelector(':scope > .tg-fall-d')] : [];
+    if (fall[0]) {
+      var fr = fb.getBoundingClientRect(), H = fr.height, s = H / 128, pad = 24 * s;
+      var tR = _tgEdges(fb, '#hdrBoard > *, .fids-board-label > *, .fids-board-icon', fr, 'right');
+      var pL = _tgEdges(fb, '#fidsAirportPill', fr, 'left'), pR = _tgEdges(fb, '#fidsAirportPill', fr, 'right');
+      var cL = _tgEdges(fb, '#clock, #clockDate > *, .fids-banner-time', fr, 'left');
+      if (fr.width < 700 || H < 48 || tR == null || cL == null) { fall.forEach(function (e) { if (e) e.style.display = 'none'; }); }
+      else {
+        if (pL == null || pR == null) { pL = pR = fr.width / 2; }
+        var A0 = tR + pad, A1 = pL - pad, B0 = pR + pad, B1 = cL - pad;
+        _tgPair(fall[0], fall[1], A0, A1, 72 * s, 46 * s, H * 0.04, H * 0.50, H);
+        _tgPair(fall[2], fall[3], B0, B1, 56 * s, 44 * s, H * 0.44, H * 0.10, H);
+      }
+    }
+    // baggage: the warm space above the welcome line, right of the
+    // "Baggage claim" line and left of the clock and weather glass.
+    var bb = document.querySelector('#baggageView .b5 .b5-band');
+    var bag = bb ? [bb.querySelector(':scope > .tg-bag-a'), bb.querySelector(':scope > .tg-bag-b'), bb.querySelector(':scope > .tg-bag-c')] : [];
+    if (bag[0]) {
+      var br = bb.getBoundingClientRect();
+      var kR = _tgEdges(bb, '.b5-kick > *, .b5-kico', br, 'right');
+      var wel = bb.querySelector('.b5-welcome'), wT = wel ? wel.getBoundingClientRect().top - br.top : null;
+      var cwL = _tgEdges(bb, '.b5-clockwx', br, 'left');
+      if (cwL == null) cwL = br.width;
+      var room = wT == null ? 0 : wT - 14;
+      if (br.width < 700 || kR == null || room < 30) { bag.forEach(function (e) { if (e) e.style.display = 'none'; }); }
+      else {
+        var lo2 = kR + 28, hi2 = cwL - 28, sz = Math.min(60, room);
+        _tgPut(bag[0], lo2 + (hi2 - lo2) * 0.16, 6 + (room - sz) * 0.2, sz, lo2, hi2);
+        _tgPut(bag[1], lo2 + (hi2 - lo2) * 0.50, 6 + room - sz * 0.95, sz * 0.95, lo2, hi2);
+        _tgPut(bag[2], lo2 + (hi2 - lo2) * 0.84, 10, sz * 0.9, lo2, hi2);
+      }
     }
   } catch (e) {}
 }
