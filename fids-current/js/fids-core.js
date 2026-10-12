@@ -42024,17 +42024,16 @@ function _gateMapTileLayer() {
   // single layer is enough — no separate labels overlay. The route line +
   // plane live in the SVG overlay pane on top.
   var t = L.tileLayer('/tiles/osm/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
-  // v22712 — the radar overlay attaches itself whenever this base layer
-  // lands on a map. Hooking the layer's own 'add' event covers all six
+  // v22712 — hooking this base layer's own 'add' event covers all six
   // map-build sites (gate, gate-live, bigcraft, world fallbacks) without
-  // touching any of them.
+  // touching any of them. (2026-10-12: the precipitation radar overlay that
+  // first used this hook is removed; see the note below _gateMapShowOverlay.)
   t.on('add', function () {
     var m = this._map;
-    setTimeout(function () { try { _wxRadarAdd(m); } catch (e) {} }, 0);
-    // v24031 — and an airport's own aerial photo over it (_gatePhotoAdd)
+    // v24031 — an airport's own aerial photo over it (_gatePhotoAdd)
     try { _gatePhotoAdd(m); } catch (e) {}
     // v23916 — the aeroplane is sized in metres, so its size follows the zoom:
-    // hooked here, once per map, for the same reason as the radar — every
+    // hooked here, once per map, for the same reason as the photo — every
     // map-build site passes through this layer. 'zoom' fires on every frame of
     // a flyTo, so the aeroplane grows with the camera rather than after it.
     try {
@@ -42120,86 +42119,16 @@ function _bcFadeInWhenReady(tileLayer) {
 }
 
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.
-// v22712 — weather flips ON: the route map carries live precipitation
-// radar (backlog #27,
-// 
 function _gateMapShowOverlay(name) {
   return true;
 }
 
-// ── v22712: LIVE PRECIPITATION RADAR on the route maps. RainViewer's
-// global composite, served same-origin through the worker's /wxradar
-// route (host-pinned upstream, the /maptiles discipline) so locked-down
-// display networks only ever talk to us. The newest frame timestamp
-// comes from /wxradar/index (cached 5 min here AND at the worker); the
-// layer sits above the base tiles at 55% so streets stay readable, and
-// below the SVG pane so the route arc and plane always win. Where
-// there's no radar coverage (oceans, remote north) tiles are simply
-// transparent — the map looks exactly as before.
-var _wxRadarIdx = { at: 0, ts: 0 };
-function _wxRadarAdd(m) {
-  if (!m || !_gateMapShowOverlay('weather')) return;
-  var add = function (ts) {
-    if (!ts) return;
-    try {
-      if (!m._container || !m._container.isConnected) return; // map already torn down
-      // maxNativeZoom 7: RainViewer serves real tiles through z7 and a
-      // 'Zoom Level Not Supported' placeholder image beyond (measured:
- // z8+ returns the identical 1370-byte card — the PB923 big map
-      // was papered with them). Leaflet upscales the z7 tiles instead;
-      // radar blobs survive upscaling with no visible loss.
-      // v23103 — the radar draws in its own blurred pane
-      //
-      // RainViewer's low-zoom tiles are coarse blocks;
-      // blurring each tile img separately would show seams at tile edges,
-      // so the PANE is blurred as one composite — the blocks melt into
-      // soft weather shapes at every zoom.
-      try {
-        if (!m.getPane('wxradar')) {
-          m.createPane('wxradar');
-          var _wp = m.getPane('wxradar');
-          _wp.className += ' g8-wx-radar-pane';
-          _wp.style.zIndex = 350;
-        }
-      } catch (ep) {}
-      // v23104 — no radar at continental zooms
-      // : at z<=5 RainViewer cells are sub-blur speckle covering
-      // the whole map. The overlay only appears once the view is close
-      // enough for weather shapes to mean something.
-      // v23222 — RADAR HAS A CLOSE-ZOOM CEILING TOO
-      // Beyond z11 the z7 cells are stretched
-      // 16×+ — the Toronto close-up was one giant blocky wash. Past the
-      // ceiling the radar simply hides; the street/airport view stays clean.
-      // v23296 — the radar was invisible
-      // Two causes stacked: it was drawn
-      // at HALF opacity, and Leaflet 1.9 blends every tile with plus-lighter,
-      // which is ADDITIVE — radar's pale blues and greens added onto a
-      // near-black basemap barely move the pixels. Opacity up, and the radar
-      // pane is taken off the additive blend in CSS so its colours paint as
-      // themselves.
-      // v23299 — 0.92 was MY over-correction in v23296b and it is what made the
-      // radar look blurry — the blur had not been visible before.
-      // The tiles are native zoom 7 shown on a map at zoom 9: a 4x
-      // enlargement that was simply invisible at the old 0.5 additive blend.
-      // Turning it opaque did not add blur, it revealed it. Sharpness is
-      // capped by the source, so the honest fix is to sit between the two —
-      // clearly readable as weather, without the upscaled blocks dominating
-      // the map. A genuinely sharp radar needs a higher-zoom source.
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.68, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
-    } catch (e) {}
-  };
-  if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
-  try {
-    fetch('/wxradar/index').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
-      var past = j && j.radar && j.radar.past;
-      // Frame id comes from the PATH ("/v2/radar/9fbb5e443776"), not the
-      // numeric time — RainViewer switched to opaque tokens.
-      var p = (past && past.length) ? past[past.length - 1] : null;
-      var ts = p ? String(p.path || '').split('/').pop() : '';
-      if (ts) { _wxRadarIdx = { at: Date.now(), ts: ts }; add(ts); }
-    }).catch(function () {});
-  } catch (e) {}
-}
+// ── 2026-10-12 — NO PRECIPITATION RADAR ON THE MAPS. The route maps carried a
+// live radar overlay (v22712) from a free radar service whose terms allow
+// personal and educational use only. These boards are public and streamed,
+// so the layer, its pane, its CSS and the worker's radar route are all
+// removed, and nothing fetches radar any more (the worker answers the old
+// route with 410 Gone). A licensed source can be added later as its own layer.
 
 // ── Map plane marker: the supplied real silhouettes, drawn for the map.
 // The Airplanes.svg source carries two top-down aircraft — a jet and a turboprop —
