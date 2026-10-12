@@ -25,7 +25,10 @@
 //   blank on that screen.
 //
 //   What is shown: the gate (its whole centre deck, its three information
-//   cards each through its own ?scene=, and its departure
+//   cards each through its own ?scene=, its standby lists (every row whole,
+//   with Later at this gate up and without; with eight names on the full
+//   panel, the documents kept; and painted while a face is still loading,
+//   fitted in their first frame), and its departure
 //   delayed, cancelled, boarding (with the band under NOW BOARDING on a
 //   U.S., an international and a domestic flight, checked to be on the
 //   screen with every line fitted), on final call, closed, at
@@ -170,10 +173,14 @@ function liveUrl(reqUrl) {
   const target = new URL('https://fids.orionconnected.com/' + u.pathname.slice(1) + u.search);
   return target.origin === LIVE_ORIGIN ? target : null;
 }
+// A face that is still loading when the standby lists paint (SB_LOADING,
+// which names it as written here): answered, with nothing, only after 20 s.
+const HELD_FACE = '/__words/held-face.woff2';
 function serve() {
   const server = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const p = decodeURIComponent(u.pathname);
+    if (p === HELD_FACE) { setTimeout(() => { try { res.writeHead(404); res.end(); } catch (e) {} }, 20000); return; }
     if (BLOCK.test(p)) { res.writeHead(403); return res.end('blocked'); }
     let f = path.join(ROOT, p);
     if (!f.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
@@ -682,8 +689,119 @@ const SB_SHORT = `(function () {
   } catch (e) { return 'error ' + e.message; }
 })()`;
 const SB_SHORT_UP = `(function () { return document.querySelector('.gad-media-col.gl-on') ? 'ok' : 'Later at this gate did not come up'; })()`;
+// 2026-10-12 — and the documents (the boarding pass, ID, passport or NEXUS
+// card) stay at the lists' foot on the full centre panel: the pass takes them
+// away only when the rows at their floor and the card at 0.62 of its size
+// cannot hold them (_gateSbLadder). Read with eight names, the most the lists
+// hold with a premium cabin (2 upgrades, 4 standbys, 2 seat changes: YQM
+// gate 1, WS813, the full 873px panel at 1920x1080), whatever the day's draw
+// gives the demonstration flight (SB_EIGHT; SB_UNEIGHT puts it back), on the
+// full panel whatever else the demonstration day has at the gate (SB_FULL:
+// the gate's own flight alone, no later or moved flight; SB_UNFULL puts both
+// back).
+const SB_EIGHT = `(function () {
+  try {
+    if (!window.__sbListsOrig) window.__sbListsOrig = window._gateSbLists;
+    var orig = window.__sbListsOrig;
+    window._gateSbLists = function () {
+      var L = orig.apply(this, arguments);
+      if (!L) return L;
+      var used = {};
+      [L.upgrade, L.standby, L.seats].forEach(function (x) { ((x && x.rows) || []).forEach(function (r) { used[r.name] = 1; }); });
+      var spare = ['KIN, B.', 'SCO, D.', 'HUN, F.', 'EVA, G.', 'FRA, J.', 'STE, K.', 'RIC, L.', 'DAV, N.'].filter(function (nm) { return !used[nm]; });
+      var take = function (x, n, cabin) {
+        var rows = ((x && x.rows) || []).slice(0, n).map(function (r) { return { st: r.st, name: r.name, seat: r.seat, pos: 0 }; });
+        while (rows.length < n) rows.push({ st: 'wait', name: spare.shift(), seat: '14C', pos: 0 });
+        var pos = 0;
+        rows.forEach(function (r) { if (r.st !== 'cleared') r.pos = ++pos; });
+        return { cabin: x ? x.cabin : cabin, rows: rows };
+      };
+      return { upgrade: take(L.upgrade, 2, 'cabinBiz'), standby: take(L.standby, 4, 'cabinEcon'), seats: take(L.seats, 2, null) };
+    };
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const SB_FULL = `new Promise(function (res) {
+  try {
+    if (!window.__gfaOrig) window.__gfaOrig = window._gateFlightsAt;
+    var orig = window.__gfaOrig;
+    window._gateFlightsAt = function () { return (orig.apply(this, arguments) || []).slice(0, 1); };
+    if (!window.__gmaOrig) window.__gmaOrig = window._gateMovedAway;
+    window._gateMovedAway = function () { return []; };
+    // (the gate's own key does not carry what Later at this gate shows:
+    // the gate is painted afresh)
+    try { dedicatedRenderKey = null; window._lastGateKey = null; } catch (e) {}
+    renderDedicatedScreen();
+  } catch (e) { return res('error ' + e.message); }
+  var t0 = Date.now();
+  (function poll() {
+    if (!document.querySelector('.gad-media-col.gl-on')) return res('ok');
+    if (Date.now() - t0 > 6000) return res('Later at this gate did not go');
+    setTimeout(poll, 100);
+  })();
+})`;
+const SB_UNFULL = `(function () { try { if (window.__gmaOrig) { window._gateMovedAway = window.__gmaOrig; window.__gmaOrig = null; } if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } try { dedicatedRenderKey = null; window._lastGateKey = null; } catch (e) {} renderDedicatedScreen(); } catch (e) {} })()`;
+const SB_UNEIGHT = `(function () { try { if (window.__sbListsOrig) { window._gateSbLists = window.__sbListsOrig; window.__sbListsOrig = null; } } catch (e) {} })()`;
+const SB_DOCS = `(function () {
+  try {
+    var card = document.querySelector('#gateAdCarousel > .gcard-sbcard');
+    if (!card) return 'the lists are not in the centre';
+    if (document.querySelector('.gad-media-col.gl-on')) return 'the centre panel is not the full panel (Later at this gate is up)';
+    var n = card.querySelectorAll('.gc-sbr').length;
+    if (n !== 8) return 'the lists hold ' + n + ' names, not 8';
+    var d = card.querySelector('.gc-sbfoot .gc-sbfd');
+    if (!d) return 'the lists carry no documents line';
+    var step = card.getAttribute('data-sb-foot');
+    if (!(d.getBoundingClientRect().height > 4) || step === '2' || step === '3') return 'the documents gave way on the full panel with 8 names (foot step ' + step + ', scale ' + (card.style.getPropertyValue('--gc-k') || '1') + ')';
+    var l = d.querySelector('.gc-sbfl');
+    if (!l || !(l.getBoundingClientRect().height > 4)) return 'the documents line is not drawn';
+    if (l.hasAttribute('data-fx-over')) return 'the documents line does not fit at the floor: ' + l.textContent;
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+// 2026-10-12 — and the lists are fitted in the frame they first paint, while
+// the board's fonts are still loading. The boards reload on every deploy, and
+// the pass used to wait for the fonts: the lists painted unfitted, rows cut
+// off at their edge, for 3.6 s on a typical load and 25 s or more on two of
+// 528 (a Japanese or Arabic face lands in many pieces). Here a face is held
+// loading (HELD_FACE, answered only after 20 s), the lists are painted afresh,
+// and read one frame later: the fonts still loading, the card measured and
+// fitted (data-sb-fit), then SB_CHECK. SB_RELEASE lets the face go.
+const SB_LOADING = `new Promise(function (res) {
+  try {
+    var ff = new FontFace('WordsHeldFace', 'url(/__words/held-face.woff2)');
+    document.fonts.add(ff);
+    ff.load().catch(function () {});
+    window.__wordsHeldFace = ff;
+    if (document.fonts.status !== 'loading') return res('a face held loading did not hold the fonts loading (' + document.fonts.status + ')');
+    var sl = _buildGateAdSlideList(), i = -1;
+    for (var k = 0; k < sl.length; k++) if (sl[k] && sl[k].type === 'sbcard') { i = k; break; }
+    if (i < 0) return res('the deck has no sbcard');
+    var car = document.getElementById('gateAdCarousel');
+    car.innerHTML = ''; car.__gcardHtml = null;
+    _gateAdIndex = i;
+    window._gateAdAuthChange = true; renderGateAd(i); window._gateAdAuthChange = false;
+    var card0 = car.querySelector(':scope > .gcard-sbcard');
+    if (!card0) return res('the lists did not paint');
+    if (card0.hasAttribute('data-sb-fit')) return res('the lists were not painted afresh');
+    requestAnimationFrame(function () {
+      setTimeout(function () {
+        if (document.fonts.status !== 'loading') return res('the fonts finished loading before the frame was read');
+        var card = car.querySelector(':scope > .gcard-sbcard');
+        if (card !== card0) return res('the lists were painted again before the frame was read');
+        if (!card.getAttribute('data-sb-fit')) return res('the lists painted unfitted while the fonts were loading (the frame after their paint)');
+        res('ok');
+      }, 0);
+    });
+  } catch (e) { res('error ' + e.message); }
+})`;
+const SB_RELEASE = `new Promise(function (res) {
+  try { if (window.__wordsHeldFace) { document.fonts.delete(window.__wordsHeldFace); window.__wordsHeldFace = null; } } catch (e) {}
+  var t0 = Date.now();
+  (function poll() { if (document.fonts.status === 'loaded' || Date.now() - t0 > 22000) return res(document.fonts.status); setTimeout(poll, 100); })();
+})`;
 const SB_UNSHORT = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } renderDedicatedScreen(); } catch (e) {} })()`;
-const GATE_RESET = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
+const GATE_RESET = `(function () { try { if (window.__sbListsOrig) { window._gateSbLists = window.__sbListsOrig; window.__sbListsOrig = null; } if (window.__gmaOrig) { window._gateMovedAway = window.__gmaOrig; window.__gmaOrig = null; } if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
 
 // When the airport's feed is down (v23996, fidsFeedStatus): 'unavailable' —
 // no list at all ("Live data unavailable" in the board's empty panel, on the
@@ -909,6 +1027,33 @@ async function runChunk(port, name, spec, sets) {
             if (t === 'sbcard') {
               const sb = await evalv(SB_CHECK);
               if (sb !== 'ok') problems.push(`scene ${t}: ${sb}`);
+              // eight names on the full panel: the documents stay
+              const e8 = await evalv(SB_EIGHT);
+              const f8 = e8 === 'ok' ? await evalv(SB_FULL) : e8;
+              const r8 = f8 === 'ok' ? await evalv(CARD_SCENE(t)) : f8;
+              if (r8 !== 'ok') problems.push(`scene ${t} with 8 names: ${r8}`);
+              else {
+                await evalv(SETTLE(900));
+                const dc = await evalv(SB_DOCS);
+                if (dc !== 'ok') problems.push(`scene ${t} with 8 names: ${dc}`);
+                const sb8 = await evalv(SB_CHECK);
+                if (sb8 !== 'ok') problems.push(`scene ${t} with 8 names: ${sb8}`);
+                // painted while a face is still loading: fitted in its first frame
+                const ld = await evalv(SB_LOADING, 30000);
+                if (ld !== 'ok') problems.push(`scene ${t} while the fonts load: ${ld}`);
+                else {
+                  const sbl = await evalv(SB_CHECK);
+                  if (sbl !== 'ok') problems.push(`scene ${t} while the fonts load: ${sbl}`);
+                }
+                const rel = await evalv(SB_RELEASE, 30000);
+                if (rel !== 'loaded') problems.push(`scene ${t}: the held face did not let the fonts finish (${rel})`);
+              }
+              await evalv(SB_UNEIGHT);
+              await evalv(SB_UNFULL);
+              await evalv(SETTLE(900));
+              const rb = await evalv(CARD_SCENE(t));
+              if (rb !== 'ok') problems.push(`scene ${t}: ${rb}`);
+              await evalv(SETTLE(600));
               // and with "Later at this gate" up
               const sh = await evalv(SB_SHORT);
               const r2 = sh === 'ok' ? await evalv(CARD_SCENE(t)) : sh;

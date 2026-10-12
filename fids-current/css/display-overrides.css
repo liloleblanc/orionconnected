@@ -24717,9 +24717,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
        (light by day, clear at night, as the list's rows), one line per fact
        under its pictograms (its two languages a pair round the card's bar,
        or a line each where the pair is too long), every phrase whole.
-       Where the card is short it gives way first (the block after this
-       one, and fids-core.js _gateSbFit); a row never gives up height
-       under its own words.
+       Where the card is short its facts take one line each, then the
+       rows come closer and the card comes down, and only then do the
+       documents give way (the block after this one, and fids-core.js
+       _gateSbFit); a row never gives up height under its own words.
    (2) UNDER THE COUNTDOWN, NOW BOARDING AND FINAL CALL there is no centre
        panel. The banner, the four tiles and the Welcome / Now Boarding /
        Final call strip keep the full width; under the strip the takeover is
@@ -24824,10 +24825,11 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    (4.67 units); the lists, their tiles and their rows give up no height on
    their own, and the lists' box hides what does not fit rather than drawing
    it over the line and the foot under it. The card's unit carries its scale
-   (--gc-k, set by the pass as the third step). data-sb-foot is the foot's
+   (--gc-k, set by the pass after the rows). data-sb-foot is the foot's
    step: 1 each fact on one line (the fitter, FIDS_FIT_RULES), 2 the close
-   time alone (its one pictogram no longer held to the documents' two), 3 no
-   foot. Static: nothing here moves. */
+   time alone (its one pictogram no longer held to the documents' two; the
+   pass takes the documents away only once the rows and the card have given
+   all they can), 3 no foot. Static: nothing here moves. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard.gcard-sbcard:not(.gcard-col) { --gc-u: calc(min(1vh, .625vw) * var(--gc-k, 1)); }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard.gcard-sbcard:not(.gcard-col) .gc-sbl { overflow: hidden !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard.gcard-sbcard:not(.gcard-col) .gc-sbsec, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard.gcard-sbcard:not(.gcard-col) .gc-sbt { flex: 0 0 auto !important; }

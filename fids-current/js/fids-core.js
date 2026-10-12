@@ -2101,45 +2101,122 @@ function _gateSbColFit() {
 // (css: --gc-sbrf, in the card's unit) and never less than its tallest piece
 // (the ring) with a hair to spare, and nothing in the list gives up height on
 // its own. When the card is short, this pass makes room, each step only when
-// the one before it is not enough:
-//   1. the foot: each fact on one line, its two languages a pair round the
-//      bar, if that keeps four fifths of its size (data-sb-foot 1); then the
-//      close time alone, on one line (2: the documents are the boarding
-//      band's, which carries them in full from the first call,
-//      _gateBandHtml);
-//   2. the rows come closer, down to their floor (--gc-sbrf);
-//   3. the card comes down as a whole (--gc-k: names, headings, rings, the
+// the one before it is not enough, and the documents (boarding pass, ID,
+// passport or NEXUS card) are the last thing it takes away:
+//   a. the foot: each fact on one line, its two languages a pair round the
+//      bar, if that keeps four fifths of its size (data-sb-foot 1);
+//   b. the rows come closer, down to their floor (--gc-sbrf);
+//   c. the card comes down as a whole (--gc-k: names, headings, rings, the
 //      foot and the spacing together), not under 0.62: the largest scale
 //      that fits, the room it leaves going back to the rows;
-//   4. only then the foot goes (3), the card back to its full size, and
-//      steps 2 and 3 again (not under 0.5).
+//   d. only then the documents go (2: the close time stays, on one line; the
+//      documents are the boarding band's too, which carries them in full
+//      from the first call, _gateBandHtml), the card back to its full size,
+//      and b and c again (not under 0.62);
+//   e. last, the foot goes (3), and b and c again (not under 0.5).
 // Every try is measured at once, in this frame, so a paint never shows a
 // half-fitted card. A card is fitted once for its size and the fonts it was
 // measured in (data-sb-fit); a new paint, a new language, a resize or a late
 // font starts afresh. A card that still does not fit is marked data-sb-over
 // (the rendered check fails on it), its last rows hidden under the lists'
 // edge, never drawn over another.
+//
+// NOR IS IT EVER PAINTED UNFITTED. The pass used to wait for the board's
+// fonts (document.fonts.status 'loaded'), and after a load (the boards
+// reload on every deploy) the list painted unfitted, three or four rows cut
+// off at the lists' edge, for about 3.6 s, and in 2 loads of 528 for 25 s or
+// more (a Japanese or Arabic face lands in many pieces, one after another).
+// Now a card is fitted in the frame it first paints, in whatever faces have
+// landed (the fallback's metrics where the board's own have not), and while
+// the fonts are still loading:
+//   - every face still loading asks for a pass when it lands or fails
+//     (_gateSbWatchFaces: a face that lands mid-load changes a line's width
+//     with nothing in the page to announce it, and before the load's own
+//     loadingdone); the card's lines are fitted again and the card measured,
+//     and the ladder runs afresh only when a row no longer fits;
+//   - a pass is asked for again on a bounded backoff (_gateSbRetry, nine
+//     tries over about 80 s), so no card is left as it was first measured;
+// and once the fonts are in (loadingdone, ready: _fxFontsEpoch, and the
+// fonts' state in the key) the card is fitted afresh in the faces it keeps.
 var _GATE_SB_ROW_U = 5.9;
 var _GATE_SB_ROW_MIN_U = 4.67;
 var _GATE_SB_RING_U = 4.29;
 var _GATE_SB_FOOT_U = 2.29;
 var _GATE_SB_K_MIN = 0.62;
 var _GATE_SB_K_MIN_BARE = 0.5;
+var _GATE_SB_RETRY_MS = [100, 250, 500, 1000, 2500, 5000, 10000, 20000, 40000];
+var _gateSbFaceN = 0;
+var _gateSbRetryN = 0;
+var _gateSbRetryT = null;
+var _gateSbHooked = (typeof WeakSet === 'function') ? new WeakSet() : null;
 function _gateSbFit() {
-  try { if (document.fonts && document.fonts.status !== 'loaded') return; } catch (eF) {}
+  var loading = false;
+  try { loading = !!(document.fonts && document.fonts.status && document.fonts.status !== 'loaded'); } catch (eF) {}
+  if (loading) _gateSbWatchFaces();
   var cards = document.querySelectorAll('.gcard-sbcard:not(.gcard-col)');
+  var unsure = loading;
   for (var i = 0; i < cards.length; i++) {
     var card = cards[i];
     var cr = card.getBoundingClientRect();
-    if (!(cr.width > 50 && cr.height > 50)) continue;
+    // (not laid out yet: asked again, below)
+    if (!(cr.width > 50 && cr.height > 50)) { unsure = true; continue; }
     // its size, the screen's, and the fonts (a face that lands late sets a
-    // line's width, and so whether a phrase takes one line or two)
-    var sig = card.offsetWidth + 'x' + card.offsetHeight + '|' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0)
+    // line's width, and so whether a phrase takes one line or two): the
+    // epoch of the fonts' loads, and while they are loading, the faces
+    // landed since
+    var base = card.offsetWidth + 'x' + card.offsetHeight + '|' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0)
       + '|' + (typeof _fxFontsEpoch !== 'undefined' ? _fxFontsEpoch : 0);
-    if (card.getAttribute('data-sb-fit') === sig) continue;
+    var sig = base + '|' + (loading ? 'f' + _gateSbFaceN : 'F');
+    var had = card.getAttribute('data-sb-fit') || '';
+    if (had === sig) continue;
+    // faces landed while the fonts load: the fit holds while every row still
+    // fits (the whole ladder runs again once they are all in)
+    if (loading && had.indexOf(base + '|f') === 0 && _gateSbHolds(card)) { card.setAttribute('data-sb-fit', sig); continue; }
+    if (had.indexOf(base + '|') !== 0) _gateSbRetryN = 0;
     try { _gateSbLadder(card); } catch (eL) {}
     card.setAttribute('data-sb-fit', sig);
   }
+  if (unsure && cards.length) _gateSbRetry();
+}
+// Each face the board is still loading asks for a pass when it lands (or
+// fails), once.
+function _gateSbWatchFaces() {
+  try {
+    var set = document.fonts;
+    if (!set || typeof set.forEach !== 'function') return;
+    set.forEach(function (face) {
+      if (!face || face.status !== 'loading' || !face.loaded || typeof face.loaded.then !== 'function') return;
+      if (_gateSbHooked) { if (_gateSbHooked.has(face)) return; _gateSbHooked.add(face); }
+      else { if (face.__gateSbHook) return; face.__gateSbHook = 1; }
+      var landed = function () { _gateSbFaceN++; try { _fidsSchedulePairPass(); } catch (e) {} };
+      face.loaded.then(landed, landed);
+    });
+  } catch (e) {}
+}
+// One more pass, later, a bounded number of times (each new fit starts the
+// count again).
+function _gateSbRetry() {
+  if (_gateSbRetryT || _gateSbRetryN >= _GATE_SB_RETRY_MS.length) return;
+  _gateSbRetryT = setTimeout(function () {
+    _gateSbRetryT = null;
+    try { _fidsSchedulePairPass(); } catch (e) {}
+  }, _GATE_SB_RETRY_MS[_gateSbRetryN++]);
+}
+// Every line of the card fitted afresh at its present size (the fitter keys
+// on its box and the fonts' epoch, which neither a new unit nor a face
+// landing mid-load always changes).
+function _gateSbRefitLines(card) {
+  var fx = card.querySelectorAll('.fx-fit');
+  for (var q = 0; q < fx.length; q++) { fx[q].__fxKey = null; fx[q].removeAttribute('data-fx-over'); }
+  try { fidsFitAll(card); } catch (e1) {}
+  try { _fidsPairSeparators(card); } catch (e2) {}
+}
+// Whether the card, as the ladder left it, still fits now that more faces
+// have landed: its lines fitted again, then measured.
+function _gateSbHolds(card) {
+  if (card.hasAttribute('data-sb-over')) return false;
+  _gateSbRefitLines(card);
+  return _gateSbExcess(card) <= 0.5;
 }
 // How far the card's contents run past their room, in CSS px: the lists past
 // the foot of their box, and anything past the card's; when everything fits,
@@ -2171,14 +2248,8 @@ function _gateSbLadder(card) {
     card.style.setProperty('--gc-sbrf', String(f));
     if (k < 1) card.style.setProperty('--gc-k', String(k)); else card.style.removeProperty('--gc-k');
   };
-  // every line fitted afresh at the card's new size (the fitter keys on its
-  // box, which a new unit does not always change)
-  var refit = function () {
-    var fx = card.querySelectorAll('.fx-fit');
-    for (var q = 0; q < fx.length; q++) { fx[q].__fxKey = null; fx[q].removeAttribute('data-fx-over'); }
-    try { fidsFitAll(card); } catch (e1) {}
-    try { _fidsPairSeparators(card); } catch (e2) {}
-  };
+  // every line fitted afresh at the card's new size
+  var refit = function () { _gateSbRefitLines(card); };
   // the card's unit in CSS px, from the ring (4.29 units wide)
   var unit = function () {
     var ring = card.querySelector('.gc-sbn');
@@ -2243,27 +2314,31 @@ function _gateSbLadder(card) {
     if (_gateSbExcess(card) > 0.5) set(foot, fl, best);
     return true;
   };
+  // a step of the foot, at the card's full size
+  var from = function (foot) { set(foot, _GATE_SB_ROW_U, 1); refit(); };
   card.removeAttribute('data-sb-over');
-  set(0, _GATE_SB_ROW_U, 1);
-  refit();
+  from(0);
   if (_gateSbExcess(card) <= 0.5) return;
-  // 1. the foot gives way
-  var compact = 0;
-  var feet = hasFoot ? (hasClose ? [1, 2] : [1]) : [];
-  for (var fi = 0; fi < feet.length; fi++) {
-    set(feet[fi], _GATE_SB_ROW_U, 1);
-    refit();
-    if (feet[fi] === 1 && !footWhole()) continue;
-    compact = feet[fi];
-    if (_gateSbExcess(card) <= 0.5) return;
-  }
-  if (card.getAttribute('data-sb-foot') !== (compact ? String(compact) : null)) { set(compact, _GATE_SB_ROW_U, 1); refit(); }
-  // 2 and 3. the rows, then the card
-  if (tighten(compact, _GATE_SB_K_MIN)) return;
-  // 4. the foot goes, and the rows and the card again
+  // a. the foot's facts on one line each, where that keeps four fifths of
+  // their size
+  var docs = 0;
   if (hasFoot) {
-    set(3, _GATE_SB_ROW_U, 1);
-    refit();
+    from(1);
+    if (footWhole()) {
+      docs = 1;
+      if (_gateSbExcess(card) <= 0.5) return;
+    } else from(0);
+  }
+  // b and c. the rows, then the card, the documents kept
+  if (tighten(docs, _GATE_SB_K_MIN)) return;
+  // d. only then the documents go (the close time stays), and b and c again
+  if (hasFoot && hasClose) {
+    from(2);
+    if (tighten(2, _GATE_SB_K_MIN)) return;
+  }
+  // e. last, the foot goes, and b and c again, to half the card's size
+  if (hasFoot) {
+    from(3);
     if (tighten(3, _GATE_SB_K_MIN_BARE)) return;
   }
   card.setAttribute('data-sb-over', '1');

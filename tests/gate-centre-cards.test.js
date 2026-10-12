@@ -726,9 +726,12 @@ test('in the centre the list carries the documents and the close time at its foo
 // a tile, rows of --gc-sbrf units, never under 4.67), the line under them,
 // and the foot (the documents on two lines and the close time, or the
 // documents on one line at `docsOneLine` of their size (step 1), or the close
-// time alone (2), or none (3)). Every try the pass makes is logged.
+// time alone (2), or none (3)). Every try the pass makes is logged. `fm` is
+// the face's line height against the board's own (a fallback face while the
+// fonts load: the header's, the rule's and the foot's lines).
 function sbCard(o) {
   const W = o.W || 970, H = o.H, U0 = o.u0 || 10.8, LISTS = o.lists || [2, 4, 2];
+  const FM = () => (o.fm ? o.fm() : 1);
   const attrs = {}, props = {}, log = [];
   const k = () => parseFloat(props['--gc-k'] || '1');
   const u = () => U0 * k();
@@ -739,10 +742,10 @@ function sbCard(o) {
   const footH = () => {
     if (!o.foot || step() === 3) return 0;
     const U = u(), d = docsLines(), c = o.close ? 1 : 0;
-    return 2.28 * U + (d + c) * 2.56 * U + (d && c ? 0.57 * U : 0);
+    return 2.28 * U + (d + c) * 2.56 * U * FM() + (d && c ? 0.57 * U : 0);
   };
   const lay = () => {
-    const U = u(), padT = 1.9 * U, padB = 1.14 * U, hd = 7.61 * U, ft = 1.71 * U + ruleLines() * 3.42 * U, fo = footH();
+    const U = u(), padT = 1.9 * U, padB = 1.14 * U, hd = 7.61 * U * FM(), ft = 1.71 * U + ruleLines() * 3.42 * U * FM(), fo = footH();
     const rowH = Math.max(f(), 4.67) * U;
     const secs = [];
     let y = 1.33 * U;
@@ -784,20 +787,30 @@ function sbCard(o) {
   };
   return { card, log, attrs, props, u, f, k, step, rows: rows.length };
 }
+// The pass as shipped, its timers and its pass request given by the test
+// (env.setTimeout, env.pass); setEpoch stands for the fonts' loadingdone
+// (_fxFontsEpoch) and _gateSbRetryFire for a retry's timer running out.
 function sbFitter() {
   const src = [
     line(/^var _GATE_SB_ROW_U = [^;]+;/m), line(/^var _GATE_SB_ROW_MIN_U = [^;]+;/m), line(/^var _GATE_SB_RING_U = [^;]+;/m),
     line(/^var _GATE_SB_FOOT_U = [^;]+;/m), line(/^var _GATE_SB_K_MIN = [^;]+;/m), line(/^var _GATE_SB_K_MIN_BARE = [^;]+;/m),
+    line(/^var _GATE_SB_RETRY_MS = [^;]+;/m), line(/^var _gateSbFaceN = [^;]+;/m), line(/^var _gateSbRetryN = [^;]+;/m),
+    line(/^var _gateSbRetryT = [^;]+;/m), line(/^var _gateSbHooked = [^;]+;/m), 'var _fxFontsEpoch = 0;',
+    fn('_gateSbWatchFaces'), fn('_gateSbRetry'), fn('_gateSbRefitLines'), fn('_gateSbHolds'),
     fn('_gateSbExcess'), fn('_gateSbLadder'), fn('_gateSbFit'),
-    'return { _gateSbExcess, _gateSbLadder, _gateSbFit };'
+    'return { _gateSbExcess, _gateSbLadder, _gateSbFit, setEpoch: function (n) { _fxFontsEpoch = n; }, _gateSbRetryFire: function () { _gateSbRetryT = null; } };'
   ].join('\n');
   const gcs = (e) => e._cs || {};
-  return (doc) => new Function('getComputedStyle', 'fidsFitAll', '_fidsPairSeparators', 'document', 'window', 'console', src)(gcs, () => {}, () => {}, doc || {}, { innerWidth: 1920, innerHeight: 1080 }, { warn() {} });
+  return (doc, env) => {
+    const E = env || {};
+    return new Function('getComputedStyle', 'fidsFitAll', '_fidsPairSeparators', 'document', 'window', 'console', 'setTimeout', '_fidsSchedulePairPass', src)(
+      gcs, () => {}, () => {}, doc || {}, { innerWidth: 1920, innerHeight: 1080 }, { warn() {} }, E.setTimeout || (() => 0), E.pass || (() => {}));
+  };
 }
 // a row never under its ring and its rule (2px) with a hair: the floor
 const sbFloorOk = (C, st) => st.f * 10.8 * st.k + 1e-6 >= 4.29 * 10.8 * st.k + 2 - 1e-6 && st.f >= 4.67;
 
-test('the lists in the centre: the foot gives way first, then the rows come closer, then the card comes down, and no row goes under its words', () => {
+test('the lists in the centre: one line a fact where it keeps four fifths of its size, then the rows closer, then the card smaller, and only then do the documents go; no row goes under its words', () => {
   const F = sbFitter()();
   // "Later at this gate" up (718px), three lists of 2, 4 and 2 names, the
   // documents too long for one line (en|fr), a close time
@@ -805,26 +818,28 @@ test('the lists in the centre: the foot gives way first, then the rows come clos
   F._gateSbLadder(C.card);
   assert.ok(F._gateSbExcess(C.card) <= 0.5, 'every row inside the card');
   assert.equal(C.attrs['data-sb-over'], undefined);
-  assert.equal(C.step(), 2, 'the documents go to the boarding band; the close time stays, on one line');
-  assert.ok(C.k() < 1 && C.k() >= 0.62, 'then the card came down: ' + C.k());
+  assert.equal(C.step(), 0, 'the documents stay, on their two lines (one line would be under four fifths of their size)');
+  assert.ok(C.k() < 1 && C.k() >= 0.62, 'the card came down instead: ' + C.k());
+  assert.ok(!C.log.some((s) => s.foot >= 2), 'the documents were never taken away');
   for (const st of C.log) assert.ok(sbFloorOk(C, st), 'no try puts a row under its ring: ' + JSON.stringify(st));
-  // the order: no row closer before the foot has given all it can, no
-  // smaller card before the rows are at their floor
+  // the order: one line a fact was tried first (and not kept), no smaller
+  // card before the rows are at their floor
   const firstClose = C.log.findIndex((s) => s.f < 5.9), firstSmall = C.log.findIndex((s) => s.k < 1);
-  assert.ok(firstClose > 0 && C.log.slice(0, firstClose).some((s) => s.foot === 2) && C.log[firstClose].foot === 2, 'the foot first');
-  assert.ok(firstSmall > firstClose, 'the rows before the card');
+  assert.ok(C.log.slice(0, firstClose).some((s) => s.foot === 1), 'one line a fact tried first');
+  assert.ok(firstClose > 0 && firstSmall > firstClose, 'the rows before the card');
   assert.ok(C.log.slice(0, firstClose).every((s) => s.k === 1), 'full size until the rows are at their floor');
 
   // where one line of the documents keeps four fifths of its size, the foot
-  // keeps them (step 1) when that is enough
+  // takes it (step 1), and keeps it while the rows and the card make room
   const C1 = sbCard({ H: 800, foot: true, close: true, docsOneLine: 0.9 });
   F._gateSbLadder(C1.card);
   assert.ok(F._gateSbExcess(C1.card) <= 0.5);
-  assert.ok(C1.log.some((s) => s.foot === 1), 'one line each was tried');
-  // and a smaller one is not taken: straight to the close time alone
+  assert.equal(C1.step(), 1);
+  // and a smaller one is not taken: the documents keep their two lines
   const C2 = sbCard({ H: 800, foot: true, close: true, docsOneLine: 0.7 });
   F._gateSbLadder(C2.card);
-  assert.notEqual(C2.step(), 1);
+  assert.ok(F._gateSbExcess(C2.card) <= 0.5);
+  assert.equal(C2.step(), 0);
 
   // the full panel with room to spare: nothing changes
   const T = sbCard({ H: 1100, foot: true, close: true, docsOneLine: 0.65 });
@@ -832,15 +847,34 @@ test('the lists in the centre: the foot gives way first, then the rows come clos
   assert.equal(T.step(), 0);
   assert.equal(T.f(), 5.9);
   assert.equal(T.k(), 1);
+  // the full panel at 1920x1080 (873px), eight names: the documents stay
+  const P = sbCard({ H: 873, foot: true, close: true, docsOneLine: 0.82 });
+  F._gateSbLadder(P.card);
+  assert.ok(F._gateSbExcess(P.card) <= 0.5);
+  assert.ok(P.step() < 2, 'the documents on the full panel: step ' + P.step());
+  assert.equal(P.rows, 8);
 
   // a smaller card can let a line take one line instead of two: the largest
   // scale that fits is kept, and the room left goes back to the rows
   const B = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65, ruleOneLineUnderK: 0.845 });
   F._gateSbLadder(B.card);
   assert.ok(F._gateSbExcess(B.card) <= 0.5);
+  assert.equal(B.step(), 0);
   const first = B.log.find((s) => s.k < 1).k;
   assert.ok(B.k() > first + 0.015 && B.k() < 0.845, 'not the first estimate (' + first + '): ' + B.k());
   assert.ok(F._gateSbExcess(B.card) > -2, 'the rows take what is left');
+
+  // the documents go only when the card at 0.62 cannot hold them: then the
+  // close time stays, and the card is the largest that fits without them
+  const D2 = sbCard({ H: 560, foot: true, close: true, docsOneLine: 0.65 });
+  F._gateSbLadder(D2.card);
+  assert.ok(F._gateSbExcess(D2.card) <= 0.5);
+  assert.equal(D2.step(), 2);
+  assert.ok(D2.k() >= 0.62, String(D2.k()));
+  const docsGo = D2.log.findIndex((s) => s.foot === 2);
+  assert.ok(docsGo > 0 && D2.log.slice(0, docsGo).some((s) => s.foot < 2 && Math.abs(s.k - 0.62) < 1e-9), 'the card was at 0.62 with the documents before they went');
+  assert.equal(D2.log[docsGo].k, 1, 'back to its full size without them, then down again');
+  for (const st of D2.log) assert.ok(sbFloorOk(D2, st), JSON.stringify(st));
 
   // far too short: the foot goes last, the card down to half, and what still
   // does not fit is reported (data-sb-over), the rows never under their floor
@@ -850,7 +884,9 @@ test('the lists in the centre: the foot gives way first, then the rows come clos
   assert.equal(X.attrs['data-sb-over'], '1');
   assert.ok(X.k() >= 0.5);
   for (const st of X.log) assert.ok(sbFloorOk(X, st), JSON.stringify(st));
-  assert.ok(X.log.findIndex((s) => s.foot === 3) > X.log.findIndex((s) => s.k < 1), 'the foot goes only after the card came down');
+  const x2 = X.log.findIndex((s) => s.foot === 2), x3 = X.log.findIndex((s) => s.foot === 3);
+  assert.ok(x2 > X.log.findIndex((s) => s.foot < 2 && s.k < 1), 'the documents go only after the card came down with them');
+  assert.ok(x3 > x2 && x3 > X.log.findIndex((s) => s.foot === 2 && s.k < 1), 'the close time goes only after the card came down without the documents');
 
   // fitted once for its size; a resize fits it again
   const D = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65 });
@@ -864,10 +900,66 @@ test('the lists in the centre: the foot gives way first, then the rows come clos
   D.card.offsetHeight = 873;
   G._gateSbFit();
   assert.ok(D.log.length > n, 'again for a new size');
-  // not before the board's fonts have landed
-  const E = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65 });
-  sbFitter()({ fonts: { status: 'loading' }, querySelectorAll: () => [E.card] })._gateSbFit();
-  assert.equal(E.log.length, 0);
+});
+
+test('the lists in the centre are fitted in the frame they first paint, while the fonts are still loading, and again as the faces land', () => {
+  // the boards reload on every deploy; the pass used to wait for the fonts,
+  // and the list painted unfitted, rows cut off at the lists' edge, for 3.6 s
+  // on a typical load and 25 s or more on two loads of 528
+  let fm = 1.12;   // the fallback face's lines, taller than the board's own
+  const E = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65, fm: () => fm });
+  const faces = [];
+  const face = () => { const f = { status: 'loading', cbs: [] }; f.loaded = { then: (a, b) => { f.cbs.push(a); } }; faces.push(f); return f; };
+  face(); face();
+  const fonts = { status: 'loading', forEach: (cb) => faces.forEach(cb) };
+  const timers = [];
+  let passes = 0;
+  const G = sbFitter()({ fonts, querySelectorAll: () => [E.card] }, { setTimeout: (f, ms) => { timers.push(ms); return timers.length; }, pass: () => { passes++; } });
+  G._gateSbFit();
+  assert.ok(E.log.length > 0, 'fitted at once, in the fallback face');
+  assert.ok(G._gateSbExcess(E.card) <= 0.5, 'every row inside the card from the first paint');
+  assert.match(E.attrs['data-sb-fit'] || '', /\|f0$/, 'marked as measured while the fonts load');
+  assert.equal(faces.filter((f) => f.cbs.length === 1).length, 2, 'every face still loading asks for a pass when it lands');
+  assert.deepEqual(timers, [100], 'and a pass is asked for again, later');
+  // the same frame again: nothing new
+  const n0 = E.log.length;
+  G._gateSbFit();
+  assert.equal(E.log.length, n0);
+  assert.equal(faces.filter((f) => f.cbs.length === 1).length, 2, 'each face hooked once');
+  // a face lands and the card still fits: the fit holds (no new ladder)
+  fm = 1.05;
+  faces[0].cbs[0]();
+  assert.equal(passes, 1, 'a landed face asks for a pass');
+  G._gateSbFit();
+  assert.equal(E.log.length, n0, 'still fits: kept');
+  assert.match(E.attrs['data-sb-fit'], /\|f1$/);
+  // a face lands and a line grows past its room: the card is fitted again
+  fm = 1.4;
+  faces[1].cbs[0]();
+  G._gateSbFit();
+  assert.ok(E.log.length > n0, 'fitted again when a row no longer fits');
+  assert.ok(G._gateSbExcess(E.card) <= 0.5);
+  // the retries are bounded
+  for (let i = 0; i < 30; i++) { G._gateSbRetryFire(); G._gateSbFit(); }
+  assert.ok(timers.length <= 10, 'a bounded number of retries: ' + timers.length);
+  assert.ok(timers.every((ms, i) => !i || ms >= timers[i - 1]), 'each later than the last');
+  // the fonts are in: fitted afresh in the faces it keeps
+  fm = 1;
+  fonts.status = 'loaded';
+  G.setEpoch(1);
+  const n1 = E.log.length;
+  G._gateSbFit();
+  assert.ok(E.log.length > n1, 'the whole ladder once the fonts are in');
+  assert.match(E.attrs['data-sb-fit'], /\|1\|F$/);
+  assert.equal(E.step(), 0, 'and the documents stay');
+  // a card not laid out yet is asked for again (bounded)
+  const Z = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65 });
+  Z.card.getBoundingClientRect = () => ({ top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0 });
+  const zt = [];
+  const GZ = sbFitter()({ fonts: { status: 'loaded' }, querySelectorAll: () => [Z.card] }, { setTimeout: (f, ms) => { zt.push(ms); return 1; } });
+  GZ._gateSbFit();
+  assert.equal(Z.log.length, 0);
+  assert.equal(zt.length, 1, 'asked again');
 });
 
 test('the lists in the centre: the stylesheet gives every row a set height and a floor, and nothing gives up height on its own', () => {
@@ -892,6 +984,18 @@ test('the lists in the centre: the stylesheet gives every row a set height and a
   assert.match(WORDS, /const SB_CHECK = `/);
   assert.match(WORDS, /a row is shorter than its words/);
   assert.match(WORDS, /const sb2 = await evalv\(SB_CHECK\);/);
+  // and with eight names on the full panel the documents stay (SB_DOCS); and
+  // painted while a face is still loading, the lists are fitted in their
+  // first frame (SB_LOADING, a face the check's server holds for 20 s)
+  assert.match(WORDS, /const SB_DOCS = `/);
+  assert.match(WORDS, /the documents gave way on the full panel with 8 names/);
+  assert.match(WORDS, /const dc = await evalv\(SB_DOCS\);/);
+  assert.match(WORDS, /const SB_LOADING = `/);
+  assert.match(WORDS, /the lists painted unfitted while the fonts were loading/);
+  assert.match(WORDS, /const ld = await evalv\(SB_LOADING, 30000\);/);
+  assert.match(WORDS, /if \(p === HELD_FACE\) \{ setTimeout\(/);
+  // the pass no longer waits for the fonts
+  assert.doesNotMatch(fn('_gateSbFit'), /status !== 'loaded'\) return;/);
 });
 
 test('names clear one by one as boarding comes closer, the next one called', () => {
