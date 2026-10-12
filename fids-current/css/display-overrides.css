@@ -2752,7 +2752,7 @@ html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
 /* ── YQM main/baggage boards: the Acadian flag lives in the banner tabs too
  — blue time tab with the
    gold star, white airport band, RED board tab.
-   vNEXT — SEASONAL: keyed on body.fids-acadian, which fids-core.js sets only
+   v24041 — SEASONAL: keyed on body.fids-acadian, which fids-core.js sets only
    at Moncton and only from 1 to 15 August on Moncton's calendar
    (ACADIAN_SEASON). Keyed on body.fids-ap-YQM, these painted the flag tabs
    and a ★ by the clock on every banner Moncton wore, the plain silk one
@@ -3559,7 +3559,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
    the Figma file (OrionConnected — Board Banner Design): ONE continuous
    band whose colours flow like fabric. Generic: deep navy → white → gold.
    Moncton: the Acadian tricolore flowing blue → white → red, gold star at
-   the clock (star comes from the fids-acadian ::before rule). vNEXT —
+   the clock (star comes from the fids-acadian ::before rule). v24041 —
    'silk-acadian' is SEASONAL: fids-core.js resolves it for Moncton only
    from 1 to 15 August, Moncton's calendar (ACADIAN_SEASON); the rest of
    the year Moncton wears plain 'silk'.
@@ -3759,7 +3759,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon::before {
     color: #ffffff !important;
   }
-  /* vNEXT — the plain-silk plane is WHITE, like the white title beside it.
+  /* v24041 — the plain-silk plane is WHITE, like the white title beside it.
      Since v24039 the plane is a mask painted from background-color (the base
      rule paints it #14263f for the old white badge), so `color` alone left a
      navy plane on the navy head of the band. (0,3,2) beats that base rule's
@@ -3797,7 +3797,7 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon svg { display: none !important; }
 }
-/* vNEXT — THE STAR ALONE. In the Acadian season the corner badge is the gold
+/* v24041 — THE STAR ALONE. In the Acadian season the corner badge is the gold
    star by itself: the plane (departures/arrivals) or the bag (baggage) that
    was drawn on it is not shown — a glyph sitting on the star was not wanted.
    The rule above still sizes the plane for the day it is wanted back; this
@@ -4035,7 +4035,7 @@ html .octb-attached .octb-tab::after {
    baggage icon at the original small size so the enlarged bag (used everywhere
  else) doesn't cover it (s
    taken over the star'). High-specificity + end-of-file so it wins over the
-   big-bag rules for Moncton only. vNEXT — keyed on the season class
+   big-bag rules for Moncton only. v24041 — keyed on the season class
    (fids-acadian), not fids-ap-YQM: outside 1–15 August Moncton has no star,
    so its bag takes the regular size. */
 html body.fids-acadian .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage,
@@ -25456,6 +25456,63 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   min-height: min(9.5vh, 8.8vw) !important;
 }
 }
+
+
+/* ══ v24041 — A HOLIDAY LOOK: THANKSGIVING, "HARVEST SILK" ═══════════════════
+   Canadian Thanksgiving (the second Monday of October) on Canadian airports'
+   boards, keyed on body[data-fids-holiday] (fids-core.js _fidsHolidayFor).
+   No words, so nothing to translate. The band runs maple red under the title,
+   burnt orange into a warm ivory centre where the airport's logo sits as
+   always, then gold out to cognac under the clock; its colours go in through
+   the band's palette hook (HOLIDAY_BAND), so white text still clears the
+   silk. The plane badge becomes a gold sugar-maple leaf — a natural leaf,
+   deliberately neither the flag's leaf nor either airline's. Big screens
+   only (701px and wider, the silk band's own line). On the gate the cream
+   stays cream (airline logos are drawn for it), warmed toward parchment,
+   with one gold leaf alone in the empty cream and a harvest ribbon along
+   the date bar's top edge; on baggage the title side sits on maple red —
+   cognac clock glass at night, the white glass only warmed to ivory by day.
+   The layers outside the band are made by _fidsHolidayLayers. */
+@media (min-width: 701px) {
+  html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)[data-fids-banner="silk"] #fidsBanner.fids-banner {
+    background: linear-gradient(100deg,
+      var(--fids-band-1) 0%, var(--fids-band-1) var(--fids-band-s1, 11%),
+      var(--fids-band-2) var(--fids-band-m1, 24%),
+      #FFF7EA var(--fids-band-w1, 39%), #FFF7EA var(--fids-band-w2, 54%),
+      var(--fids-band-3) var(--fids-band-m2, 62%),
+      var(--fids-band-4) var(--fids-band-s2, 68%), var(--fids-band-4) 100%) !important;
+  }
+  html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)[data-fids-banner="silk"] #fidsBanner .fids-board-icon {
+    background: transparent !important; box-shadow: none !important; border-radius: 0 !important;
+    width: 72px !important; height: 72px !important;
+  }
+  html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)[data-fids-banner="silk"] #fidsBanner .fids-board-icon::before {
+    -webkit-mask: none !important; mask: none !important;
+    background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M50%204L55%2013L62%2011L60%2018L66%2021Q60%2031%2061%2041Q67%2037%2072%2032L75%2025L78%2032L86%2027L84%2033L95%2034L87%2041L90%2047L81%2047Q74%2052%2070%2059Q76%2060%2080%2062L85%2059L84%2066L89%2071L78%2071L76%2076Q64%2074%2053.2%2075.5Q51.5%2085%2050.9%2095L49.1%2095Q48.5%2085%2046.8%2075.5Q36%2074%2024%2076L22%2071L11%2071L16%2066L15%2059L20%2062Q24%2060%2030%2059Q26%2052%2019%2047L10%2047L13%2041L5%2034L16%2033L14%2027L22%2032L25%2025L28%2032Q33%2037%2039%2041Q40%2031%2034%2021L40%2018L38%2011L45%2013L50%204Z%22%20fill%3D%22%23F2B23A%22%2F%3E%3Cpath%20d%3D%22M50%2074L50%2012M50%2070L88%2036M50%2070L12%2036M50%2072L83%2067M50%2072L17%2067%22%20stroke%3D%22%23B56A12%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%20opacity%3D%22.7%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat !important;
+    width: 72px !important; height: 72px !important; transform: rotate(-14deg);
+    filter: drop-shadow(0 2px 3px rgba(40, 8, 0, .45));
+  }
+}
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-warm { position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(90deg, #F4D9BC 0%, #F9E6CF 45%, #FAE9D3 100%); mix-blend-mode: multiply; opacity: .6; }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-ribbon { position: absolute; left: 0; right: 0; bottom: 25px; height: 7px; z-index: 3; pointer-events: none;
+  background: linear-gradient(90deg, #9E2A1B 0%, #C9471C 30%, #E39B2D 55%, #F0B93A 70%, #8F4A12 100%);
+  box-shadow: 0 -1px 0 rgba(120, 40, 10, .25); }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-leaf { position: absolute; top: 14px; width: 78px; height: 78px; z-index: 1; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23F3B638%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23D9781C%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M50%204L55%2013L62%2011L60%2018L66%2021Q60%2031%2061%2041Q67%2037%2072%2032L75%2025L78%2032L86%2027L84%2033L95%2034L87%2041L90%2047L81%2047Q74%2052%2070%2059Q76%2060%2080%2062L85%2059L84%2066L89%2071L78%2071L76%2076Q64%2074%2053.2%2075.5Q51.5%2085%2050.9%2095L49.1%2095Q48.5%2085%2046.8%2075.5Q36%2074%2024%2076L22%2071L11%2071L16%2066L15%2059L20%2062Q24%2060%2030%2059Q26%2052%2019%2047L10%2047L13%2041L5%2034L16%2033L14%2027L22%2032L25%2025L28%2032Q33%2037%2039%2041Q40%2031%2034%2021L40%2018L38%2011L45%2013L50%204Z%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Cpath%20d%3D%22M50%2074L50%2012M50%2070L88%2036M50%2070L12%2036M50%2072L83%2067M50%2072L17%2067%22%20stroke%3D%22%239A4E0E%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%20opacity%3D%22.75%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat; transform: rotate(-14deg);
+  filter: drop-shadow(0 2px 3px rgba(90, 40, 0, .35)); }
+html:not(.fids-day) body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .b5-band > .tg-grade { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: .55;
+  background: linear-gradient(90deg, #C8461E 0%, #E39B2D 55%, #B0561A 100%); }
+html:not(.fids-day) body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #baggageView .b5 .b5-scrim {
+  background: linear-gradient(98deg, rgba(126,26,14,.94) 0%, rgba(140,34,16,.88) 22%, rgba(160,52,20,.62) 40%, rgba(120,44,16,.30) 54%, rgba(30,10,4,.28) 64%, rgba(26,9,4,.62) 100%),
+    linear-gradient(180deg, rgba(20,6,2,.0) 0%, rgba(20,6,2,.30) 100%) !important; }
+html:not(.fids-day) body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #baggageView .b5 .b5-clockwx { background: rgba(58, 20, 8, .66) !important; }
+html.fids-day body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .b5-band > .tg-grade { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: .30;
+  background: linear-gradient(90deg, #C8461E 0%, #E39B2D 55%, #B0561A 100%); }
+html.fids-day body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #baggageView .b5 .b5-scrim {
+  background: linear-gradient(98deg, rgba(118,24,12,.88) 0%, rgba(128,30,14,.80) 26%, rgba(140,40,16,.62) 42%, rgba(120,36,14,.26) 60%, rgba(90,30,10,.08) 76%, rgba(90,30,10,.04) 100%),
+    linear-gradient(180deg, rgba(40,10,4,.10) 0%, rgba(40,10,4,.24) 100%) !important; }
+html.fids-day body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #baggageView .b5 .b5-clockwx { background: rgba(255, 246, 232, .94) !important; }
 
 /* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS, AT TWICE THE SIZE ════
    The chosen design for the three screens: the near-black ground of the calm
