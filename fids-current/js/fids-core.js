@@ -53367,10 +53367,15 @@ function _buildGateAdSlideList() {
   // ── 8. FROM THE ARCHIVE — one heritage mark, once per cycle, only where
   // that carrier actually flew. _heritagePick returns null everywhere else
   // and the slide is simply not added, so no gate has to skip a dead slot.
+  // vNEXT — and only on an Air Canada gate (_heritageOnAirCanadaGate, the
+  // heritage demonstration gates included): the set is Air Canada's history,
+  // and it was running on WestJet, Porter, PAL and Flair gates at every
+  // Canadian airport.
   try {
     var _hIa = '';
     try { _hIa = String(window._gateIata || '').toUpperCase(); } catch (eH2) {}
-    if (_hIa && typeof _heritagePick === 'function' && _heritagePick.peek !== false) {
+    if (_hIa && typeof _heritagePick === 'function' && _heritagePick.peek !== false
+        && typeof _heritageOnAirCanadaGate === 'function' && _heritageOnAirCanadaGate()) {
       var _hHas = HERITAGE_MARKS.some(function (m) {
         return (m.airports === '*CA') ? _heritageIsCanadian(_hIa) : m.airports.indexOf(_hIa) !== -1;
       });
@@ -56105,6 +56110,8 @@ var _WXLBL = {
 // It is scoped to airports the carrier actually served. A heritage card for
 // an Atlantic Canada feeder at a European gate would be a non sequitur, and
 // worse, would read as a data error.
+// vNEXT — and to Air Canada gates only, whatever the airport: the whole set
+// is Air Canada's history (_heritageOnAirCanadaGate, below the table).
 // v23970 — each mark's caption lives in the store as 'heritage:<key>', in all
 // nine languages (board-strings.js); the records carry the art and facts only.
 var HERITAGE_MARKS = [
@@ -56284,6 +56291,70 @@ function _heritageIsCanadian(iata) {
   // canada prefix: Canadian airports are the Y-codes on this roster.
   return /^Y/.test(String(iata || '').toUpperCase());
 }
+// vNEXT — THE ARCHIVE IS AIR CANADA'S, SO IT RUNS ON AIR CANADA'S GATES ONLY.
+//
+// Every card in HERITAGE_MARKS is Air Canada's own past or the past of the
+// carriers that came into its family: Air Nova (into Jazz), Canadian Airlines,
+// and Air Atlantic, Canadian's partner. Scoped by AIRPORT alone, the set
+// ran on every gate at a Canadian airport, so a WestJet, Porter, PAL or Flair
+// gate showed another airline's history in the middle of its own page. The
+// decision: these cards belong on Air Canada pages and nowhere else. The
+// airport scope above still applies on top, so an Air Canada gate abroad shows
+// nothing it cannot stand behind.
+//
+// An Air Canada page is a gate whose flight is Air Canada or flies as Air
+// Canada: mainline, Rouge, and Air Canada Express whoever operates it (Jazz,
+// PAL). The row reaches the gate under whichever code its feed publishes, so
+// every code the family arrives with counts: the marketing code (AC), the
+// operating brands (QK Jazz, RV Rouge, ACEX the shared Express brand) and the
+// ICAO designators some feeds send instead (ACA, JZA, ROU). These are the
+// same codes the rail palette's ALIAS table folds into AC.
+//
+// The flight NUMBER is asked too. A row whose carrier field holds the
+// operator (a feed that publishes PB for a PAL-operated AC7672) is still an
+// Air Canada flight, and the number is what the passenger holds; PAL's own
+// PB923 is not, and neither is anything numbered WS, PD or F8.
+//
+// Deliberately NOT in the family: ZX, 9M and 9L, which the name table still
+// calls 'Air Canada' from an earlier era (ZX was Air Georgian, which ceased in
+// 2020 — see CALLSIGN_TO_IATA). None is a current Air Canada brand, so they are
+// left out rather than guessed in; an AC-numbered flight any of them operated
+// would still qualify by its number. PB is out on the same footing: PAL's own
+// flights are PAL's, and only an AC-numbered PAL flight qualifies.
+//
+// The heritage DEMONSTRATION gates are Air Canada pages too, and keep the card.
+// gids.html?heritage=ANV, =CDX and =9A (linked from heritage.html) are gates
+// drawn in the identity of Air Nova, Canadian Airlines and Air Atlantic: the
+// same family carriers the cards are about, and the pages exist to show them.
+// Their rows carry the demo's own code and a bare number ('ANV', '500'), so
+// the row test below cannot see it; the page is asked instead
+// (HERITAGE_AC_DEMO). Air Atlantic is included because the decision names it
+// with the family; it was Canadian's partner and ceased in 1998, before
+// Canadian joined Air Canada, so striking it is a one-key change here. A
+// heritage carrier added later is NOT in the family until it is listed.
+//
+// A board with no gate flight (departures, arrivals, belts) answers false: the
+// card only ever lives in the gate's centre carousel.
+var HERITAGE_AC_FAMILY = { AC: 1, ACA: 1, QK: 1, JZA: 1, RV: 1, ROU: 1, ACEX: 1 };
+var HERITAGE_AC_DEMO = { ANV: 1, CDX: 1, '9A': 1 };
+function _heritageIsAirCanada(flight) {
+  if (!flight) return false;
+  var al = String(flight.airline || '').trim().toUpperCase();
+  if (HERITAGE_AC_FAMILY[al]) return true;
+  var m = /^([A-Z]{2,3})\s*\d/.exec(String(flight.flight || '').trim().toUpperCase());
+  return !!(m && (m[1] === 'AC' || m[1] === 'ACA'));
+}
+// The flight on THIS gate, as the gate itself last drew it (_gateCurrentFlight).
+// The row alone is asked. _gateCurrentAirline is written from that same row's
+// airline in the same pass, so it can never fill a blank the row left; a row
+// with no carrier qualifies only by an AC/ACA flight number.
+function _heritageOnAirCanadaGate() {
+  try {
+    var hc = (typeof _heritageCode === 'function') ? _heritageCode() : '';
+    if (hc) return !!HERITAGE_AC_DEMO[hc];
+    return _heritageIsAirCanada(window._gateCurrentFlight);
+  } catch (e) { return false; }
+}
 function _heritagePick(iata) {
   var ia = String(iata || '').toUpperCase();
   if (!ia) return null;
@@ -56303,6 +56374,10 @@ function _heritagePick(iata) {
 function _renderHeritageCard(el) {
   try {
     if (!el) return false;
+    // vNEXT — an Air Canada gate only (see _heritageOnAirCanadaGate). The deck
+    // already leaves the slide out elsewhere; this is the backstop for a slide
+    // still on screen when the gate changes carrier.
+    if (!_heritageOnAirCanadaGate()) return false;
     var ia = '';
     try { ia = String(window._gateIata || '').toUpperCase(); } catch (e) {}
     var mark = _heritagePick(ia);
@@ -56324,7 +56399,11 @@ function _renderHeritageCard(el) {
       var w = BoardStrings.bs(_capKey, lg);
       if (!w || _seenL[w]) return;
       _seenL[w] = 1;
-      _lines.push(BoardStrings.half(lg, esc(w)));
+      // vNEXT — a year range is one phrase. Under the Later-at-this-gate strip
+      // the French Air Nova line broke inside '1986–2001', leaving '2001'
+      // alone on a third line; word joiners either side of the dash keep the
+      // range whole, so the line breaks before it instead.
+      _lines.push(BoardStrings.half(lg, esc(w).replace(/(\d)\u2013(\d)/g, '$1\u2060\u2013\u2060$2')));
     });
     var kicker = BoardStrings.pair('heritageKicker', { langs: _hLangs, sep: ' &nbsp;|&nbsp; ' });
     var _credit = [], _seenC = Object.create(null);
