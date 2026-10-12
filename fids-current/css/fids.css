@@ -436,6 +436,13 @@ thead th { height: 50px; }
   animation: scroll 240s linear infinite; 
 }
 @keyframes scroll { from { transform: translateX(100vw) } to { transform: translateX(-100%) } }
+/* v24040 — ONE STRIP SCROLLS, NOT EACH LANGUAGE INSIDE IT. Since v23995 every
+   language half of a ticker line is its own <span class="tk-h"> inside the
+   scrolling span, and `.ticker span` above matched those too: each half ran
+   its own 240 s scroll, drifting away from the separators and the planes, so
+   the strip read "…AT ALL TIMESVEUILLEZ…", left stray "·" and "· ✈" in empty
+   stretches, and at times showed nothing at all. Only the outer span moves. */
+.ticker span span { display: inline; animation: none !important; transform: none !important; }
 
 /* ─── FOOTER (Deep Graphite) ───────────────────────────────────────────────── */
 /* footer removed - info moved to ctrl bar */
