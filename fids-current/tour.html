@@ -393,7 +393,9 @@
           var t = '';
           try {
             // v23970 — the clock every board reads, in the card's first language
-            t = BoardStrings.time(new Date(), pair[0], tz);
+            // (vNEXT — through clockNow: 10:10 with ?clock=1010, which the
+            // tour also hands to every board it shows)
+            t = BoardStrings.time(BoardStrings.clockNow(new Date(), tz), pair[0], tz);
           } catch (e) { t = ''; }
           elTime.textContent = t;
           BoardStrings.setLang(elTime, pair[0]);

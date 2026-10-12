@@ -163,7 +163,8 @@
       el.style.fontVariantNumeric = 'tabular-nums';
       el.style.fontFamily = _fontStack(p.fontFamily);
       const tick = () => {
-        const d = new Date();
+        // vNEXT — BoardStrings.clockNow: 10:10 on a demo board, else the time
+        const d = BoardStrings.clockNow(new Date());
         // v23970 — the boards' clock in the board's language; the designer's
         // 24h choice forces 24 hours, otherwise the language's own convention.
         el.textContent = BoardStrings.time(d, _lang(), undefined, {
@@ -334,7 +335,7 @@
     return {
       // the board's clock and the date in the board's language (the browser's
       // own locale was English on every stream host, whatever the board spoke)
-      time: BoardStrings.boardTime(d, null, { hour: '2-digit' }),
+      time: BoardStrings.boardTime(BoardStrings.clockNow(d), null, { hour: '2-digit' }),
       date: BoardStrings.date(d, BoardStrings.isLang(typeof lang !== 'undefined' ? lang : '') ? lang : (BoardStrings.bootLangs()[0] || 'en'), { year: 'numeric', month: 'short', day: 'numeric' }),
       gate, flight, airport: { code: apCode, name: apName }
     };

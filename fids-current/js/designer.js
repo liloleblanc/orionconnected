@@ -205,8 +205,17 @@
   // The Designer's preview context uses sample data so what you see in
   // the editor reflects what'll play. On the live display the same shape
   // is built from window.flightsDep + the assigned gate.
-  function designerContext() {
+  // vNEXT — THE DESIGNER IS A PREVIEW, SO ITS CLOCK READS 10:10: the
+  // watch-advert convention every example board follows (BoardStrings.
+  // clockNow on the boards; this page does not load the store). Today's date,
+  // and the real seconds so a seconds display still ticks.
+  function _demoNow() {
     const d = new Date();
+    d.setHours(10, 10);
+    return d;
+  }
+  function designerContext() {
+    const d = _demoNow();
     const sample = SAMPLE_FLIGHTS[0];  // first sample row stands in for "current flight"
     return {
       time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -975,7 +984,7 @@
   window.FidsAirlineLogo = _airlineLogoSrc;
 
   function _formatClock(format, showSeconds) {
-    const d = new Date();
+    const d = _demoNow();
     const opts = { hour: '2-digit', minute: '2-digit', hour12: format !== '24h' };
     if (showSeconds === true || showSeconds === 'true') opts.second = '2-digit';
     return d.toLocaleTimeString([], opts);

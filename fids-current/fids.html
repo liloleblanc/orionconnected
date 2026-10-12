@@ -880,6 +880,15 @@ window.addEventListener("DOMContentLoaded", function() {
     // deliberate request — but a stored 'demo' no longer outranks a real
     // session.
     var _urlMode = params.get('mode');
+    // vNEXT — ?mode=arr / ?mode=dep is the board's fixed view (Arrivals or
+    // Departures, no rotation) on the same flights as any other link. It fell
+    // into the demo branch below with every mode that is not 'live', so an
+    // arrivals link showed DEMO flights on the rotating Departures board.
+    var _urlView = (_urlMode === 'arr' || _urlMode === 'dep') ? _urlMode : '';
+    if (_urlView) _urlMode = null;
+    var _bootView = function () {
+      try { if (_urlView && typeof setViewMode === 'function') setViewMode(_urlView); } catch (eV) {}
+    };
     var _signedIn = false;
     try { _signedIn = !!(localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token')); } catch (e) {}
     var startMode = _urlMode || (_signedIn ? 'live' : (sessionStorage.getItem('fids_mode') || 'live'));
@@ -924,6 +933,7 @@ window.addEventListener("DOMContentLoaded", function() {
       _fidsSetLoaderStatus(BoardStrings.loaderLine('fetchingLive'));
       Promise.resolve(fetchLive()).then(function() {
         if (typeof startPaging === "function") startPaging();
+        _bootView();
         _fidsHideLoader();
       }).catch(function(e) {
         console.error('[init] fetchLive failed:', e);
@@ -933,6 +943,7 @@ window.addEventListener("DOMContentLoaded", function() {
       _fidsSetLoaderStatus(BoardStrings.loaderLine('loadingDemo'));
       Promise.resolve(loadDemo()).then(function() {
         if (typeof startPaging === "function") startPaging();
+        _bootView();
         _fidsHideLoader();
       }).catch(function(e) {
         console.error('[init] loadDemo failed:', e);

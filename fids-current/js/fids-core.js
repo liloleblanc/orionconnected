@@ -7341,7 +7341,9 @@ function updateDedicatedTimeOnly() {
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
+  // v23970 — the board's clock; vNEXT — through clockNow (10:10 on a demo).
+  // `now` itself stays real: the rows and the date beside it read it.
+  const timeStr = BoardStrings.boardTime(BoardStrings.clockNow(now, tz), tz, { hour: '2-digit' });
   // Weekday, month, day number and year all come from the AIRPORT's clock —
   // see _airportDateLine for the mixed-clock bug this replaces — in the
   // language on screen (the store's locale for it).
@@ -19543,7 +19545,7 @@ function uxgGateHtml(ctx) {
             // (rounded top, soft border/shadow separation).
             var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
             var _tbNow1 = '—';
-            try { _tbNow1 = BoardStrings.boardTime(new Date(), _tbTz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
+            try { _tbNow1 = BoardStrings.boardTime(BoardStrings.clockNow(new Date(), _tbTz || null), _tbTz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
             var _tbDate1 = '', _tbDay1 = '';
             try { _tbDate1 = _ocClockDate(new Date(), _tbTz || null); } catch (e) {}
             try { _tbDay1 = _ocLocalDayKey(_tbTz || null); } catch (e) {}
@@ -23469,7 +23471,9 @@ const gView = document.getElementById('gateView');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
+  // v23970 — the board's clock; vNEXT — through clockNow (10:10 on a demo).
+  // `now` itself stays real: the rows and the date beside it read it.
+  const timeStr = BoardStrings.boardTime(BoardStrings.clockNow(now, tz), tz, { hour: '2-digit' });
   // Weekday, month, day number and year all come from the AIRPORT's clock —
   // see _airportDateLine for the mixed-clock bug this replaces — in the
   // language on screen (the store's locale for it).
@@ -39600,6 +39604,21 @@ function _fidsCollapseRevisions(list, tz) {
   } catch (e) { return list; }
 }
 
+// vNEXT — THE DEMO CLOCK. While this board shows an example rather than an
+// airport's live flights, every clock on it reads 10:10 (BoardStrings.clockNow,
+// the watch-advert convention): demo data (loadDemo — fetchLive clears it), a
+// heritage gate (?heritage=), or a test flight added in this tab (the list
+// lives only in this tab, so no screen in an airport carries one). The rows
+// keep the real time. ?clock=1010 and ?clock=live outrank this.
+function _fidsDemoClockWanted() {
+  try {
+    if (window._fidsBoardIsDemo) return true;
+    if (window._testFlights && window._testFlights.length) return true;
+    return !!_heritageCode();
+  } catch (e) { return false; }
+}
+try { BoardStrings.setDemoClock(_fidsDemoClockWanted); } catch (e) {}
+
 function loadDemo() {
   const iata = document.getElementById('apSel').value;
   const d    = buildDemoFlights(iata);
@@ -39709,8 +39728,10 @@ function _boardFilterChipHtml() {
 function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
 // Single 12h time '10:29PM' — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
+// vNEXT — every clock helper reads BoardStrings.clockNow: 10:10 on a demo
+// (the watch-advert convention), the real time on a board in an airport.
 function _ocClockTime1(now, tz) {
-  return BoardStrings.boardTime(now, tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
+  return BoardStrings.boardTime(BoardStrings.clockNow(now, tz), tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 }
 // Dual time '6:26PM | 18h 26' — PLAIN text (used in textContent contexts too).
 // v23995 — the board's own pair (BoardStrings.pairLangs), each half in its
@@ -39721,6 +39742,7 @@ function _ocClockTime1(now, tz) {
 function _ocClockTime(now, tz) {
   var L = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
   var out = [];
+  now = BoardStrings.clockNow(now, tz);   // vNEXT — 10:10 on a demo
   for (var i = 0; i < L.length; i++) {
     var l = L[i], M = BoardStrings.META[l], t = BoardStrings.time(now, l, tz);
     if (!M.clock24) t = t.replace(/([ap])m$/i, function (_, p) { return p.toUpperCase() + 'M'; });
@@ -54551,14 +54573,14 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // rewrote the French half as '5:35pm' five seconds after it painted,
         // undoing the whole point of showing each language its own format.
         if (els[i].getAttribute('data-bwlang') && typeof _fidsClockForLang === 'function') {
-          s = _fidsClockForLang(new Date(), tz || null, els[i].getAttribute('data-bwlang'));
+          s = _fidsClockForLang(BoardStrings.clockNow(new Date(), tz || null), tz || null, els[i].getAttribute('data-bwlang'));
         } else if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
           s = _ocClockTime(new Date(), tz || null);
         } else {
           // data-mer="up" → uppercase 'PM' (silk banner clock); default stays
           // lowercase 'pm' for the rail shelf clocks.
           var _up = els[i].getAttribute('data-mer') === 'up';
-          s = BoardStrings.boardTime(new Date(), tz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
+          s = BoardStrings.boardTime(BoardStrings.clockNow(new Date(), tz || null), tz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
         }
         if (s && els[i].textContent !== s) els[i].textContent = s;
       } catch (e) {}

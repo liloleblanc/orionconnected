@@ -299,7 +299,8 @@
 
     // The time in the board's own clock (BoardStrings.boardTime: 5:35 PM on
     // a board led by English, 17:35 on any other)
-    const timeStr = BoardStrings.boardTime(new Date());
+    // vNEXT — through BoardStrings.clockNow: 10:10 on a demo
+    const timeStr = BoardStrings.boardTime(BoardStrings.clockNow(new Date()));
 
     // Airport pill — custom logo if configured, else IATA + city
     let pillContent;
