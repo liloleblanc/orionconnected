@@ -83,7 +83,7 @@ function holidayBlock() {
   return CSS.slice(at, CSS.indexOf('/* ══', at + 10));
 }
 const leafOf = (block, sel) => {
-  const m = new RegExp(sel.replace(/[\\^$.*+?()[\]{}|-]/g, '\\$&') + ' \\{[^}]*url\\("/logos/holiday/thanksgiving/([a-z-]+)\\.svg"\\)').exec(block);
+  const m = new RegExp(sel.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&') + ' \\{[^}]*url\\("/logos/holiday/thanksgiving/([a-z-]+)\\.svg"\\)').exec(block);
   return m && m[1];
 };
 

@@ -107,7 +107,11 @@ class El {
   }
   get textContent() { return this.childNodes.map((n) => n.textContent).join(''); }
   set textContent(v) { this.childNodes.forEach((n) => { n.parentNode = null; }); this.childNodes = []; if (v !== '' && v != null) this.appendChild(new Txt(String(v))); }
-  set innerHTML(v) { this.textContent = String(v).replace(/<[^>]*>/g, ''); }
+  set innerHTML(v) {
+    let s = String(v), prev;
+    do { prev = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== prev);
+    this.textContent = s;
+  }
   appendChild(n) { if (n.parentNode) n.parentNode.childNodes.splice(n.parentNode.childNodes.indexOf(n), 1); n.parentNode = this; this.childNodes.push(n); return n; }
   addEventListener(t, fn) { (this.listeners[t] = this.listeners[t] || []).push(fn); }
   dispatchEvent(e) { (this.listeners[e.type] || []).slice().forEach((fn) => fn.call(this, e)); }
@@ -156,7 +160,10 @@ function matchChain(el, chain) {
 function parsePage(html, doc) {
   const root = new El(doc, '#root');
   const stack = [root];
-  const re = /<!--[\s\S]*?-->|<!doctype[^>]*>|<(script|style|title)\b([^>]*)>([\s\S]*?)<\/\1>|<\/([\w-]+)\s*>|<([\w-]+)((?:\s+[^\s=>\/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>|([^<]+)/gi;
+  // An unquoted attribute value never starts with a quote, so '""' reads one
+  // way only (read both ways, a run of them backtracks exponentially); a
+  // script, style or title closes on '</script >' as a browser closes it.
+  const re = /<!--[\s\S]*?-->|<!doctype[^>]*>|<(script|style|title)\b([^>]*)>([\s\S]*?)<\/\1\b[^>]*>|<\/([\w-]+)\s*>|<([\w-]+)((?:\s+[^\s=>\/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>"'][^\s>]*))?)*)\s*(\/?)>|([^<]+)/gi;
   const attrsOf = (el, s) => { for (const a of s.matchAll(/([^\s=>\/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g)) el.setAttribute(a[1], decode(a[2] ?? a[3] ?? a[4] ?? '')); };
   let m;
   while ((m = re.exec(html))) {
