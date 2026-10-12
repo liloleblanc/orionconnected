@@ -37,14 +37,16 @@ test('the public directory contains no development or source-package debris', ()
   // six of the board's icons (logos/icons/) are those files.
   const licensedText = new Set([
     path.join(staticRoot, 'fonts', 'bricolage', 'OFL.txt'),
-    path.join(staticRoot, 'logos', 'icons', 'LICENSE-Apache-2.0.txt')
+    path.join(staticRoot, 'logos', 'icons', 'LICENSE-Apache-2.0.txt'),
+    // the Meteocons weather icons' MIT notice, which must travel with them
+    path.join(staticRoot, 'logos', 'weather', 'animated', 'LICENSE-MIT.txt')
   ]);
   const debris = walk(staticRoot).filter((file) =>
     forbiddenExtensions.has(path.extname(file).toLowerCase()) && !licensedText.has(file));
   assert.deepEqual(debris, []);
   for (const f of licensedText) {
     assert.ok(fs.existsSync(f), `${path.basename(f)} must ship beside the fonts it licenses`);
-    assert.match(fs.readFileSync(f, 'utf8'), /SIL Open Font License, Version 1\.1|Apache License\s+Version 2\.0, January 2004/, 'the carve-out is for an open-licence text only');
+    assert.match(fs.readFileSync(f, 'utf8'), /SIL Open Font License, Version 1\.1|Apache License\s+Version 2\.0, January 2004|^MIT License\n\nCopyright \(c\) [^\n]+\n\nPermission is hereby granted, free of charge/m, 'the carve-out is for an open-licence text only');
   }
 });
 
@@ -62,6 +64,10 @@ test('only supported production pages sit at the public root', () => {
     .sort();
   assert.deepEqual(pages, [
     'app.html', 'bids.html', 'designer.html', 'fids.html', 'gids.html',
+    // The homepage of www.orionconnected.com and its Credits & Contact page,
+    // served at "/" and "/credits" on that host and the bare domain
+    // (worker-entry.js homeRoute; tests/homepage.test.js).
+    'home.html', 'credits.html',
     // v23759 — the heritage archive: a chooser for carriers that no longer
     // fly, each opening a gate board rendered in that carrier's identity with
     // an invented schedule. Deliberately standalone — it pulls its own small

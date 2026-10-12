@@ -105,8 +105,14 @@ test('every gate map gets the photo over its street map, bounded, from zoom 14 i
 test('the credit line is the licence\'s own wording, in all nine languages', () => {
   const e = BS.STR.mapCreditOglNb;
   for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.ok(e[l], l);
-  assert.equal(e.en, 'Contains information licensed under the Open Government Licence – New Brunswick');
-  assert.equal(e.fr, 'Contient de l’information visée par la Licence du gouvernement ouvert — Nouveau-Brunswick');
+  // the licence's words, with the province's name kept on one line: a
+  // no-break space, or in French a no-break hyphen (U+2011)
+  const plain = (s) => s.replace(/\u00a0/g, ' ').replace(/\u2011/g, '-');
+  assert.equal(plain(e.en), 'Contains information licensed under the Open Government Licence – New Brunswick');
+  assert.equal(plain(e.fr), 'Contient de l’information visée par la Licence du gouvernement ouvert — Nouveau-Brunswick');
+  assert.match(e.en, /New\u00a0Brunswick$/);
+  assert.match(e.fr, /Nouveau\u2011Brunswick$/);
+  for (const l of ['es', 'de', 'it', 'pt', 'ar']) assert.doesNotMatch(e[l], /(New|Nuevo|Nuovo|Novo|نيو) (Brunswick|برونزويك)/, l + ': the name is never broken across lines');
   assert.equal(e.$src.en, 'gov:NB');
   assert.equal(e.$src.fr, 'gov:NB');
 });
@@ -168,10 +174,10 @@ test('the credit line is off the map: under the centre panel, one language at a 
   assert.equal(el.tag, 'small', 'the element for attribution, and not a div (the column stretches its divs)');
   assert.equal(m.box.kids.length, 0, 'nothing drawn on the map');
   assert.equal(el.hidden, false);
-  assert.match(el.innerHTML, /lang="en">Contains information licensed under the Open Government Licence – New Brunswick</);
+  assert.match(el.innerHTML, /lang="en">Contains information licensed under the Open Government Licence – New\u00a0Brunswick</);
   assert.doesNotMatch(el.innerHTML, /lang="fr"/, 'one language at once');
   b.tick();
-  assert.match(b.line().innerHTML, /lang="fr">Contient de l’information visée par la Licence du gouvernement ouvert — Nouveau-Brunswick</);
+  assert.match(b.line().innerHTML, /lang="fr">Contient de l’information visée par la Licence du gouvernement ouvert — Nouveau\u2011Brunswick</);
   b.tick();
   assert.match(b.line().innerHTML, /lang="en">/, 'and back');
 });

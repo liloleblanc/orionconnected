@@ -23306,7 +23306,10 @@ var HOLIDAY_BAND = {
 //   airport's mark, and up to three leaves resting ON the ribbon (pinned
 //   from the bottom, like the ribbon, so they sit on it at every size). On
 //   an Air Canada family gate the rust and deep red leaves turn amber and
-//   gold (tg-ac): no red maple beside the airline's own red maple.
+//   gold (tg-ac): no red maple beside the airline's own red maple. And a
+//   bouquet hung from the gate panel's bottom corner, spilling down over
+//   the top of the map like a corsage (tg-bq on .g8-wrap, placed by
+//   _tgBouquet).
 // - Baggage: a warm grade under the scrim and up to three leaves in the
 //   free warm space above the welcome line (tg-bag-a..c).
 // Each leaf is placed by measuring the free space it sits in, and is hidden
@@ -23317,6 +23320,7 @@ var HOLIDAY_BAND = {
 var _HOLIDAY_LAYERS = [
   ['.g8-r1', 'tg-warm', null], ['.g8-r1', 'tg-ribbon', null], ['.g8-r1', 'tg-leaf', null],
   ['.g8-r1', 'tg-rest-a', null], ['.g8-r1', 'tg-rest-b', null], ['.g8-r1', 'tg-rest-c', null],
+  ['.g8-wrap', 'tg-bq', null],
   ['#fidsBanner', 'tg-fall-a', null], ['#fidsBanner', 'tg-fall-b', null],
   ['#fidsBanner', 'tg-fall-c', null], ['#fidsBanner', 'tg-fall-d', null],
   ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim'],
@@ -23359,6 +23363,152 @@ function _tgPair(e1, e2, g0, g1, w1, w2, t1, t2, H) {
   if (w < 36) { if (e1) e1.style.display = 'none'; } else _tgPut(e1, g0 + W / 2, (H - w) / 2, w, g0, g1);
   if (e2) e2.style.display = 'none';
 }
+// The bouquet by the gate number: a bouquet of the licensed leaves (gold,
+// orange and yellow with two swirls; no red leaf, so it never sinks into a
+// red panel or reads as a second Air Canada maple), hung from the gate
+// panel's bottom-right corner like a corsage pinned there, spilling down
+// over the top corner of the panel below (the map). It lives on .g8-wrap,
+// above the band and the map, so neither clips it.
+// - Size: 172px tall on a 1920 x 1080 screen, scaled with the screen, and
+//   turned 7 degrees about the pin so its foot leans in, off the screen's
+//   edge; every leaf stays on the screen.
+// - The corner: bottom-right, the screen's corner, under the number. The
+//   bottom-left corner sits about 20px from the date and spills over the
+//   seam between the centre screen and the map, so it is only the fallback.
+// - Clear of every word: it rises toward the panel only as far as it stays
+//   clear of the number's and the Gate | Porte words' ink, and nothing
+//   under it may be a word, a logo or the aircraft on the map (map labels,
+//   captions, the Speed | Altitude strip, the clock, the date, the icons of
+//   the boarding takeover's cards). Where something is under it, its mirror
+//   image tries the bottom-left corner, and it goes back to the right the
+//   moment that is clear; where both are taken (the boarding takeover's
+//   cards fill the space under the panel) it is hidden until they are not.
+// _TG_BQ_INK: the artwork's inked width [x0, x1] in each 60-unit band of its
+// 300 x 540 box, so the empty corners of the box never count as leaves.
+var _TG_BQ_INK = [[122, 247], [27, 299], [20, 282], [23, 274], [33, 275], [5, 277], [34, 292], [11, 297], [27, 297]];
+var _TG_BQ_H = 172, _TG_BQ_TILT = 7, _tgCtx = null;
+function _tgMeet(a, b, g) {
+  return a.left < b.right + g && a.right > b.left - g && a.top < b.bottom + g && a.bottom > b.top - g;
+}
+// what a pass of the bouquet must keep clear of, inside the box q: every
+// visible line of text (by its ink, where the font says where the ink is,
+// else by its line box), every logo, the airport's mark, the aircraft on
+// the map and the round icons of the flight cards. A word clipped away by
+// its box (a map label off the map) is not seen.
+function _tgObstacles(wrap, q) {
+  var out = [], rg = document.createRange();
+  var shown = function (e, r) {
+    for (var a = e; a && a !== wrap.parentNode; a = a.parentElement) {
+      var cs = getComputedStyle(a);
+      if (cs.visibility === 'hidden' || cs.opacity === '0' || cs.display === 'none') return false;
+      if (a !== e && cs.overflow !== 'visible') {
+        var ar = a.getBoundingClientRect();
+        if (!_tgMeet(r, ar, -1)) return false;
+      }
+    }
+    return true;
+  };
+  var tw = document.createTreeWalker(wrap, NodeFilter.SHOW_TEXT), n;
+  while ((n = tw.nextNode())) {
+    if (!/\S/.test(n.nodeValue)) continue;
+    rg.selectNodeContents(n);
+    var rs = rg.getClientRects();
+    for (var i = 0; i < rs.length; i++) {
+      var r = rs[i];
+      if (r.width < 1 || r.height < 1 || !_tgMeet(r, q, 0) || !shown(n.parentElement, r)) continue;
+      var l = r.left, rt = r.right, t = r.top, b = r.bottom;
+      try {
+        if (rs.length === 1) {
+          var cs = getComputedStyle(n.parentElement);
+          _tgCtx = _tgCtx || document.createElement('canvas').getContext('2d');
+          _tgCtx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+          var m = _tgCtx.measureText(n.nodeValue), fa = m.fontBoundingBoxAscent, fd = m.fontBoundingBoxDescent;
+          if (fa > 0 && Math.abs(fa + fd - r.height) <= r.height * 0.06) {
+            t = r.top + fa - m.actualBoundingBoxAscent; b = r.top + fa + m.actualBoundingBoxDescent;
+            if (Math.abs(m.width - r.width) <= r.width * 0.02) { l = r.left - m.actualBoundingBoxLeft; rt = r.left + m.actualBoundingBoxRight; }
+          }
+        }
+      } catch (e) {}
+      out.push({ left: l, right: rt, top: t, bottom: b });
+    }
+  }
+  var im = wrap.querySelectorAll('.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas, .octb-apmark, img[src*="/logos/"], .leaflet-marker-pane > *, .v2-fi-icon-wrap, .ac-ico');
+  for (var j = 0; j < im.length; j++) {
+    var ir = im[j].getBoundingClientRect();
+    if (ir.width >= 1 && ir.height >= 1 && _tgMeet(ir, q, 0) && shown(im[j], ir)) out.push({ left: ir.left, right: ir.right, top: ir.top, bottom: ir.bottom });
+  }
+  return out;
+}
+// one corner: where the bouquet hangs from it, or null when it cannot be
+// clear there. Things in the panel (above its bottom edge) push it down,
+// toward the map, to 6px (scaled) under their ink, so its top leaf still
+// crosses the panel's bottom edge; anything under it, within 10px, rules
+// the corner out.
+function _tgBqFit(side, pr, wr, h, obs, g) {
+  var w = h * 300 / 540, th = (side === 'r' ? _TG_BQ_TILT : -_TG_BQ_TILT) * Math.PI / 180;
+  var c = Math.cos(th), s = Math.sin(th), ox = side === 'r' ? w : 0, slabs = [], all = null;
+  for (var i = 0; i < _TG_BQ_INK.length; i++) {
+    var x0 = _TG_BQ_INK[i][0] * w / 300, x1 = _TG_BQ_INK[i][1] * w / 300;
+    if (side === 'l') { var t0 = w - x1; x1 = w - x0; x0 = t0; }
+    var y0 = i * h / 9, y1 = (i + 1) * h / 9, b = null;
+    for (var k = 0; k < 4; k++) {
+      var px = (k & 1 ? x1 : x0) - ox, py = k & 2 ? y1 : y0;
+      var X = ox + px * c - py * s, Y = px * s + py * c;
+      b = b ? { left: Math.min(b.left, X), right: Math.max(b.right, X), top: Math.min(b.top, Y), bottom: Math.max(b.bottom, Y) } : { left: X, right: X, top: Y, bottom: Y };
+    }
+    slabs.push(b);
+    all = all ? { left: Math.min(all.left, b.left), right: Math.max(all.right, b.right), top: Math.min(all.top, b.top), bottom: Math.max(all.bottom, b.bottom) } : b;
+  }
+  var edge = 6 * h / _TG_BQ_H;
+  var L = side === 'r' ? Math.min(pr.right, wr.right) - edge - all.right : Math.max(pr.left, wr.left) + edge - all.left;
+  var T = pr.bottom - h * 0.3, at = function (b) { return { left: L + b.left, right: L + b.right, top: T + b.top, bottom: T + b.bottom }; };
+  for (var pass = 0; pass < 8; pass++) {
+    var moved = false;
+    for (var a = 0; a < slabs.length; a++) {
+      for (var o = 0; o < obs.length; o++) {
+        var ob = obs[o], sb = at(slabs[a]);
+        if ((ob.top + ob.bottom) / 2 < pr.bottom && _tgMeet(sb, ob, g * 0.6)) { T += ob.bottom + g * 0.6 - sb.top; moved = true; }
+      }
+    }
+    if (!moved) break;
+  }
+  var box = at(all);
+  if (box.bottom > wr.bottom || box.left < wr.left || box.right > wr.right) return null;
+  for (var a2 = 0; a2 < slabs.length; a2++) {
+    for (var o2 = 0; o2 < obs.length; o2++) {
+      var ob2 = obs[o2];
+      if (_tgMeet(at(slabs[a2]), ob2, (ob2.top + ob2.bottom) / 2 < pr.bottom ? g * 0.6 - 0.5 : g)) return null;
+    }
+  }
+  return { L: L, T: T, w: w, th: th };
+}
+function _tgBouquet(band) {
+  var wrap = band.closest('.g8-wrap'), el = wrap && wrap.querySelector(':scope > .tg-bq');
+  if (!el) return;
+  var pnl = band.querySelector('.g8-r1-right'), pr = pnl && pnl.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), fit = null;
+  if (pr && pr.height >= 60 && wr.width >= 900) {
+    var h = _TG_BQ_H * Math.min(wr.width / 1920, wr.height / 1080), g = 10 * h / _TG_BQ_H;
+    var q = { left: pr.left - h, right: pr.right, top: pr.top, bottom: pr.bottom + h * 1.2 };
+    var obs = _tgObstacles(wrap, q), side = 'r';
+    fit = _tgBqFit(side, pr, wr, h, obs, g);
+    if (!fit) { side = 'l'; fit = _tgBqFit(side, pr, wr, h, obs, g); }
+    if (fit) {
+      el.setAttribute('data-side', side);
+      el.style.width = fit.w.toFixed(1) + 'px';
+      el.style.height = h.toFixed(1) + 'px';
+      el.style.left = (fit.L - wr.left - (wrap.clientLeft || 0)).toFixed(1) + 'px';
+      el.style.top = (fit.T - wr.top - (wrap.clientTop || 0)).toFixed(1) + 'px';
+      el.style.transform = 'rotate(' + (fit.th * 180 / Math.PI).toFixed(1) + 'deg)';
+    }
+  }
+  el.classList.toggle('tg-bq-l', !!fit && el.getAttribute('data-side') === 'l');
+  el.style.display = fit ? '' : 'none';
+  // a band that changes height (the boarding takeover) re-hangs it at once
+  if (!band._tgBqRO && window.ResizeObserver) {
+    band._tgBqRO = new ResizeObserver(function () { try { _tgBouquet(band); } catch (e) {} });
+    band._tgBqRO.observe(band);
+  }
+}
 function _fidsHolidayLayers() {
   try {
     var on = !!document.body.dataset.fidsHoliday;
@@ -23390,6 +23540,7 @@ function _fidsHolidayLayers() {
       var acArt = !!band.querySelector('.g8-r1-logoslot img[src*="/AC."], .g8-r1-logoslot img[src*="air-canada"], .g8-r1-logoslot img[src*="rouge"], .g8-r1-logoslot img[src*="jazz"]');
       band.classList.toggle('tg-ac', acGate || acArt);
       var hr = band.getBoundingClientRect();
+      _tgBouquet(band);
       var a = _tgEdges(band, '.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas', hr, 'right');
       var bx = _tgEdges(band, '.octb-apmark, .octb-apsep, .octb-clock', hr, 'left');
       if (bx == null) bx = _tgEdges(band, '.octb-clockrow, .g8-r1-timebox', hr, 'left');
@@ -31985,7 +32136,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24044';
+var FIDS_BUILD_TAG = 'v24045';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -35742,12 +35893,14 @@ var GATE_SB_CABINS = {
 var GATE_SB_NAME_FMT = { AC: 'sur3' };
 // The surnames' first three letters (data, written like airport codes):
 // common Canadian and US surnames, so a made-up list reads like a real one.
-// None may be a word in any board language ('PAR' is French, 'AND' English):
+// None may be a word in any board language ('PAR' is French, 'AND' English,
+// 'TRE' Italian since the homepage says "tre schermi", 'SAN' since the
+// homepage's phone picture is described with San Diego):
 // the rendered language check reads a capitalised word as a word, so such a
 // name would be "not a word of en" (tests/gate-centre-cards.test.js holds it).
-var _GATE_SB_SUR = ['TRE', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'LAP', 'COT', 'PEL', 'BEL', 'GIR', 'SIM', 'POI',
+var _GATE_SB_SUR = ['BER', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'LAP', 'COT', 'PEL', 'BEL', 'GIR', 'SIM', 'POI',
   'OUE', 'SMI', 'BRO', 'WIL', 'MAR', 'TAY', 'CAM', 'BEA', 'JOH', 'THO', 'WHI', 'CLA', 'HAL', 'KIN', 'SCO', 'REI', 'GRA',
-  'MIL', 'NGU', 'WON', 'SAN', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'LEF', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'HAR'];
+  'MIL', 'NGU', 'WON', 'GON', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'LEF', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'HAR'];
 // premium seat letters (A C D F) and the main cabin's (A to F), as char codes
 var _GATE_SB_SEATS = { up: [65, 67, 68, 70], sb: [65, 66, 67, 68, 69, 70] };
 

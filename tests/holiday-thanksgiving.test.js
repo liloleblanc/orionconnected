@@ -77,13 +77,13 @@ test('the gate and baggage layers exist only while the holiday is set', () => {
 // CSS names exists, is small, is plain vector art and is in the asset
 // manifest, and the extra leaves follow the same layer rules.
 const LEAF_DIR = path.join(__dirname, '..', 'fids-current/logos/holiday/thanksgiving');
-const LEAVES = ['maple-amber.svg', 'maple-crimson.svg', 'maple-gold.svg', 'maple-orange.svg', 'maple-rust.svg'];
+const LEAVES = ['maple-amber.svg', 'maple-bouquet.svg', 'maple-crimson.svg', 'maple-gold.svg', 'maple-orange.svg', 'maple-rust.svg'];
 function holidayBlock() {
   const at = CSS.indexOf('A HOLIDAY LOOK: THANKSGIVING');
   return CSS.slice(at, CSS.indexOf('/* ══', at + 10));
 }
 const leafOf = (block, sel) => {
-  const m = new RegExp(sel.replace(/[.]/g, '\\.') + ' \\{[^}]*url\\("/logos/holiday/thanksgiving/([a-z-]+)\\.svg"\\)').exec(block);
+  const m = new RegExp(sel.replace(/[\\^$.*+?()[\]{}|-]/g, '\\$&') + ' \\{[^}]*url\\("/logos/holiday/thanksgiving/([a-z-]+)\\.svg"\\)').exec(block);
   return m && m[1];
 };
 
@@ -91,7 +91,7 @@ test('the leaves are the real artwork files, not drawn data URIs', () => {
   const block = holidayBlock();
   assert.doesNotMatch(block, /data:image\/svg/, 'no drawn leaf left in the look');
   const urls = [...block.matchAll(/url\("(\/logos\/holiday\/thanksgiving\/[a-z-]+\.svg)"\)/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(urls)].map((u) => path.basename(u)).sort(), LEAVES, 'all five leaves are used');
+  assert.deepEqual([...new Set(urls)].map((u) => path.basename(u)).sort(), LEAVES, 'all five leaves and the bouquet are used');
   assert.equal(leafOf(block, '.fids-board-icon::before'), 'maple-gold', 'gold leaf on the badge');
   assert.equal(leafOf(block, '.g8-r1 > .tg-leaf'), 'maple-gold', 'the gate keeps its gold leaf, never a red one');
   const manifest = fs.readFileSync(path.join(__dirname, '..', 'fids-current/assets/asset-manifest.json'), 'utf8');
@@ -99,7 +99,8 @@ test('the leaves are the real artwork files, not drawn data URIs', () => {
     const f = path.join(LEAF_DIR, path.basename(u));
     assert.ok(fs.existsSync(f), u);
     const svg = fs.readFileSync(f, 'utf8');
-    assert.ok(svg.length < 12000, u + ' stays small for the screens (' + svg.length + ' bytes)');
+    const cap = /bouquet/.test(u) ? 20000 : 12000;
+    assert.ok(svg.length < cap, u + ' stays small for the screens (' + svg.length + ' bytes)');
     assert.doesNotMatch(svg, /<script|<image|<foreignObject|href=|\son[a-z]+=/i, u + ' is plain vector art');
     assert.ok(manifest.includes('"' + u + '"'), u + ' is in the asset manifest');
   }
@@ -169,4 +170,70 @@ test('no red maple beside an Air Canada logo', () => {
     assert.ok(plain, cls);
     assert.ok(!red.includes(ac), cls + ' on an Air Canada gate is ' + ac);
   }
+});
+
+// The bouquet by the gate number: hung from the gate panel's bottom-right
+// corner, spilling down over the top of the map like a corsage; on
+// .g8-wrap, above the band and the map, so neither clips it; scaled with
+// the screen; kept clear of the number's and the words' ink and of every
+// word, logo and aircraft under it; mirrored to the bottom-left corner
+// only when the right one is taken; hidden when both are; and with no red
+// leaf, so it reads the same on every airline's colour.
+test('the bouquet hangs from the gate panel\'s bottom corner, over the map, clear of every word', () => {
+  assert.ok(CORE.includes("['.g8-wrap', 'tg-bq', null]"), 'a holiday layer of the gate screen, outside the band that clips');
+  assert.ok(!CORE.includes("['.g8-r1-right', 'tg-bq', null]"), 'no longer inside the gate panel');
+  const bq = fn('_tgBouquet'), fit = fn('_tgBqFit'), obs = fn('_tgObstacles');
+  assert.match(CORE, /var _TG_BQ_H = 172, _TG_BQ_TILT = 7,/, '172px tall at 1080p, turned 7 degrees');
+  assert.match(bq, /var h = _TG_BQ_H \* Math\.min\(wr\.width \/ 1920, wr\.height \/ 1080\)/, 'scaled with the screen');
+  assert.match(bq, /side = 'r';\s*fit = _tgBqFit\(side, pr, wr, h, obs, g\);\s*if \(!fit\) \{ side = 'l'; fit = _tgBqFit\(side, pr, wr, h, obs, g\); \}/, 'the bottom-right corner, and the bottom-left only while the right is taken');
+  assert.match(bq, /el\.style\.display = fit \? '' : 'none';/, 'hidden when neither corner is clear');
+  // hangs from the panel's bottom edge, starting a third of its height above it
+  assert.match(fit, /var T = pr\.bottom - h \* 0\.3,/);
+  // the panel's words push it down; anything under it rules the corner out
+  assert.match(fit, /if \(\(ob\.top \+ ob\.bottom\) \/ 2 < pr\.bottom && _tgMeet\(sb, ob, g \* 0\.6\)\) \{ T \+= ob\.bottom \+ g \* 0\.6 - sb\.top; moved = true; \}/);
+  assert.match(fit, /if \(_tgMeet\(at\(slabs\[a2\]\), ob2, \(ob2\.top \+ ob2\.bottom\) \/ 2 < pr\.bottom \? g \* 0\.6 - 0\.5 : g\)\) return null;/);
+  assert.match(fit, /if \(box\.bottom > wr\.bottom \|\| box\.left < wr\.left \|\| box\.right > wr\.right\) return null;/, 'every leaf on the screen');
+  // every word (by its ink), logo, the airport's mark and the aircraft on the map
+  assert.match(obs, /document\.createTreeWalker\(wrap, NodeFilter\.SHOW_TEXT\)/);
+  assert.match(obs, /'\.g8-r1-logoslot img, \.g8-r1-logoslot svg, \.g8-r1-logoslot canvas, \.octb-apmark, img\[src\*="\/logos\/"\], \.leaflet-marker-pane > \*, \.v2-fi-icon-wrap, \.ac-ico'/);
+  assert.match(fn('_fidsHolidayLayers'), /_tgBouquet\(band\);/);
+  const block = holidayBlock();
+  assert.equal(leafOf(block, '.g8-wrap > .tg-bq::before'), 'maple-bouquet');
+  assert.match(block, /\.g8-wrap > \.tg-bq \{ position: absolute; z-index: 3; pointer-events: none; transform-origin: 100% 0;\s*filter: drop-shadow\(/, 'above the band and the map, pinned at its top corner, with a shadow');
+  assert.match(block, /\.g8-wrap > \.tg-bq\.tg-bq-l \{ transform-origin: 0 0; \}/);
+  assert.match(block, /\.g8-wrap > \.tg-bq\.tg-bq-l::before \{ transform: scaleX\(-1\); \}/, 'mirrored on the left');
+  // the ink table is the artwork's: nine bands of its 300 x 540 box
+  const ink = JSON.parse(/var _TG_BQ_INK = (\[[^;]+\]);/.exec(CORE)[1]);
+  assert.equal(ink.length, 9);
+  for (const [x0, x1] of ink) assert.ok(x0 >= 0 && x1 <= 300 && x0 < x1);
+  // no red leaf: every leaf colour in the bouquet is gold, orange or yellow
+  const svg = fs.readFileSync(path.join(LEAF_DIR, 'maple-bouquet.svg'), 'utf8');
+  assert.match(svg, /viewBox="0 0 300 540"/);
+  const stops = [...svg.matchAll(/stop-color="#([0-9a-f]{6})"/g)].map((m) => [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16)));
+  assert.ok(stops.length > 10);
+  for (const [r, g] of stops) assert.ok(g >= r * 0.45, 'a leaf colour with red ' + r + ' and green ' + g + ' is too red for a red panel');
+});
+
+// The fit itself, on the 1080p gate screen measured at YQM gate 4: the
+// panel [1478, 0, 1920, 138], the number's ink [1765, 26, 1844, 120], the
+// words' ink [1554, 18, 1704, 122]. The bouquet's top leaf rises beside the
+// number into the panel's corner, its foot spills over the map, and nothing
+// it is kept clear of comes within 6px (panel) or 10px (under it).
+test('the bouquet\'s fit clears the number and gives way to a map label under it', () => {
+  const src = /var _TG_BQ_INK = [^;]+;/.exec(CORE)[0] + /var _TG_BQ_H = [^;]+;/.exec(CORE)[0] + fn('_tgMeet') + fn('_tgBqFit');
+  const fit = new Function(src + 'return _tgBqFit;')();
+  const pr = { left: 1478, top: 0, right: 1920, bottom: 138 }, wr = { left: 0, top: 0, right: 1920, bottom: 1080 };
+  const num = { left: 1765, top: 26, right: 1844, bottom: 120 }, words = { left: 1554, top: 18, right: 1704, bottom: 122 };
+  const r = fit('r', pr, wr, 172, [num, words], 10);
+  assert.ok(r, 'the bottom-right corner fits');
+  assert.ok(r.T < pr.bottom - 10, 'its top crosses the panel\'s bottom edge (top ' + r.T.toFixed(1) + ')');
+  assert.ok(r.T + 172 > pr.bottom + 120, 'and it spills well down over the map');
+  assert.ok(r.L + r.w <= 1920, 'on the screen');
+  // a map label under the right corner rules it out, and the left one fits
+  const label = { left: 1830, top: 200, right: 1915, bottom: 215 };
+  assert.equal(fit('r', pr, wr, 172, [num, words, label], 10), null);
+  const l = fit('l', pr, wr, 172, [num, words, label], 10);
+  assert.ok(l && l.L >= 1478, 'the mirror image hangs from the bottom-left corner');
+  // the panel's words keep it under their ink on the left too
+  assert.ok(l.T > 100, 'clear of Porte (top ' + l.T.toFixed(1) + ')');
 });

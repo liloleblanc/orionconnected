@@ -11,7 +11,13 @@
   },
   "assets": {
     "directory": "fids-current",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // The homepage (worker-entry.js homeRoute): "/" would otherwise be
+    // answered with index.html by the asset server on every host before the
+    // Worker could route www.orionconnected.com and orionconnected.com to
+    // home.html. On every other host the Worker hands these paths straight
+    // back to the asset server. Kept equal to HOME_RUN_FIRST.
+    "run_worker_first": ["/", "/credits", "/credits/"]
   },
   // v23323 — the fids-proxy recovery route bundled into worker-entry.js needs
   // the proxy's bindings. On the board Worker they are simply unused.

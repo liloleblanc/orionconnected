@@ -212,10 +212,57 @@ async function photoTile(path, env) {
   }
 }
 
+// ── THE HOMEPAGE: www.orionconnected.com AND orionconnected.com ───────────
+// The front door: home.html at "/" and its Credits & Contact page at
+// /credits, on the www host and the bare domain only.
+//
+// DORMANT for now. A Cloudflare redirect rule sends www.orionconnected.com
+// and orionconnected.com to fids.orionconnected.com before this Worker sees
+// them; this route answers once that rule is switched off.
+//
+// The asset server answers a path that matches a file before this Worker
+// runs, and "/" matches index.html on every host. So "/" (and /credits, so
+// /credits/ is served too, not redirected) is routed to the Worker first
+// (wrangler.jsonc, assets.run_worker_first, the same list as
+// HOME_RUN_FIRST). On any host but these two, those paths go straight back
+// to the asset server untouched, as they always were: fids.orionconnected.com,
+// the airport addresses (yqm.orionconnected.com…), .ca and .app see nothing
+// change. Every other path on these two hosts (/css, /logos, /fonts,
+// /picker…) is the same as on any host. Pages are asked of the asset server
+// without .html (its html_handling), the way the live URLs read.
+const HOME_HOSTS = ['www.orionconnected.com', 'orionconnected.com'];
+const HOME_PAGES = { '/': '/home', '/credits': '/credits', '/credits/': '/credits' };
+const HOME_RUN_FIRST = ['/', '/credits', '/credits/'];
+function homeRoute(url) {
+  const host = String(url.hostname || '').toLowerCase().replace(/\.$/, '');
+  if (HOME_HOSTS.indexOf(host) < 0) return null;
+  return Object.prototype.hasOwnProperty.call(HOME_PAGES, url.pathname) ? HOME_PAGES[url.pathname] : null;
+}
+async function homePage(request, url, page, env) {
+  if (!env || !env.ASSETS || typeof env.ASSETS.fetch !== 'function') return new Response('Not found', { status: 404 });
+  const res = await env.ASSETS.fetch(new Request(new URL(page + url.search, url.origin), request));
+  // a page never caches (the same rule as every HTML document below)
+  const h = new Headers(res.headers);
+  h.set('Content-Type', 'text/html; charset=utf-8');
+  h.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  h.set('Pragma', 'no-cache');
+  h.set('Expires', '0');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // ── THE HOMEPAGE (homeRoute, above) ─────────────────────────────────
+    // First, before every other route: on any other host these paths are
+    // handed back to the asset server exactly as it would have served them.
+    const home = homeRoute(url);
+    if (home) return homePage(request, url, home, env);
+    if (HOME_RUN_FIRST.indexOf(path) >= 0 && env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
+      return env.ASSETS.fetch(request);
+    }
 
     // v23323 — RECOVERY ROUTE. The fids-proxy Worker's auto-build deploys
     // THIS entry (root wrangler.jsonc) under the fids-proxy name, which

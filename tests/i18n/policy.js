@@ -27,7 +27,10 @@ const PASSENGER_PAGES = [
   'fids-current/fids.html', 'fids-current/gids.html', 'fids-current/bids.html',
   'fids-current/tour.html', 'fids-current/rotate.html', 'fids-current/index.html',
   'fids-current/heritage.html', 'fids-current/heritage-board.html',
-  'fids-current/app.html', 'fids-current/studio/player.html'
+  'fids-current/app.html', 'fids-current/studio/player.html',
+  // the homepage (www.orionconnected.com) and its Credits & Contact page:
+  // passenger pages, every word from the store like the boards'
+  'fids-current/home.html', 'fids-current/credits.html'
 ];
 
 // Scripts whose strings reach a passenger screen. Checked by every check.
@@ -47,6 +50,8 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/studio-player.js',
   'fids-current/js/heritage-board.js',
   'fids-current/js/heritage-index.js',
+  // the homepage and the credits page: their words, switch and airport index
+  'fids-current/js/home.js',
   // Data files: scanned like every other script, so a label cannot hide in
   // one; their tables are registered in DATA_TABLES below.
   'fids-current/js/shared-names.js',
@@ -64,7 +69,9 @@ const PASSENGER_STYLES = [
   'fids-current/css/display-overrides.css', 'fids-current/css/gate-display.css', 'fids-current/css/hotel-ads.css',
   'fids-current/css/gids-mobile.css', 'fids-current/css/entry.css', 'fids-current/css/heritage-board.css',
   'fids-current/css/studio-modules.css', 'fids-current/css/studio-canvas.css', 'fids-current/css/studio-player.css',
-  'fids-current/css/phone.css'
+  'fids-current/css/phone.css',
+  // the homepage and the credits page
+  'fids-current/css/home.css'
 ];
 
 // Loaded by passenger pages, and not passenger text: operator UI and vendor

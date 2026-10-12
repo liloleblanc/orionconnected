@@ -15,7 +15,7 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=24044"></script>
+<script src="js/host-airport.js?v=24045"></script>
 <title>Airport Companion</title>
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
@@ -526,10 +526,10 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24044"></script>
-<script src="js/shared-names.js?v=24044"></script>
-<script src="data/airline-colors.js?v=24044"></script>
-<script src="js/feed-router.js?v=24044"></script>
+<script src="js/board-strings.js?v=24045"></script>
+<script src="js/shared-names.js?v=24045"></script>
+<script src="data/airline-colors.js?v=24045"></script>
+<script src="js/feed-router.js?v=24045"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -712,6 +712,30 @@ function apSub(code,langOnly){
 function placeOf(code,feedName){
   const c=String(code||'').toUpperCase(), city=CITY[c]||(feedName?_tcCity(feedName):'')||c||'—';
   return {c:city,q:(city!==c&&city!=='—')?apSub(c):''};
+}
+// v24044 — A PLACE THE FEED NAMED BUT DID NOT CODE. Victoria's page prints
+// 'Whitehorse' with no airport code (the worker reads Victoria's city names
+// against a table that has no Whitehorse), so Air North's 4N527 had no code,
+// no temperature and a line that read '· 4N527'. The code is read back from
+// the boards' own city table, as the boards do it (fids-core.js
+// _iataFromCityName): accents folded, everything but letters dropped, and a
+// name that belongs to two airports ('Toronto', 'London', 'Sydney') never
+// names either: no code is a blemish, a wrong one is a passenger in the wrong
+// city.
+let _CITY_CODE=null;
+function _cityKey(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+(international\s+|regional\s+)?airport$/,'').replace(/[^a-z]/g,'');}
+function cityCodeOf(name){
+  const k=_cityKey(name); if(k.length<3)return '';
+  if(!_CITY_CODE){
+    _CITY_CODE=Object.create(null);
+    const add=function(c,n){const kk=_cityKey(n),cc=String(c).toUpperCase();if(kk.length<3)return;
+      if(!_CITY_CODE[kk])_CITY_CODE[kk]=cc;else if(_CITY_CODE[kk]!==cc)_CITY_CODE[kk]='!';};
+    const sh=window.FIDS_SHARED_CITY||{};
+    for(const c in sh)add(c,sh[c]);
+    for(const c in CITY)add(c,CITY[c]);
+  }
+  const hit=_CITY_CODE[k];
+  return (hit&&hit!=='!')?hit:'';
 }
 // Display name for a flight's other end, as one line of text (search, via)
 function cityOf(f){const p=placeOf(f.cityIata,f.cityName);return p.q?p.c+' · '+p.q:p.c;}
@@ -1171,19 +1195,29 @@ function slotHtml(f,isArr){
   return '<div class="slot"><div class="k">'+esc(k)+'</div>'+vh+'</div>';
 }
 function flightKey(f){return (f.flight||'')+'|'+(f.schedDate||'')+'|'+(f.schedTime||'');}
+// v24044 — the line under the city is its parts with a '·' BETWEEN two that
+// are there: the far end's code, the flight, the stops. A part the feed did
+// not give leaves no '·' behind ('· 4N527' at Victoria, where the code was
+// missing). The temperature brings its own '·', after the flight number.
+function rowSubParts(f){
+  const p=[], code=String(dispIata(f.cityIata||'')||'').trim(), fno=String(f.flight||'').trim();
+  if(code)p.push('<b>'+esc(code)+'</b>');
+  if(fno)p.push('<span class="fno">'+esc(fno)+'</span>');
+  if(f.via&&f.via.length)p.push(esc(T('via'))+' '+esc(f.via.map(c=>CITY[c]||c).join(', ')));
+  return p.join(' · ');
+}
 // v24043 — the status is drawn twice and shown once: beside the airline, or,
 // in a list where it has no room there (.tight, see fitRows), at the end of
 // the code line under the gate box
 function rowHtml(f,i,isArr){
   const s=statusOf(f), name=airlineName(f);
-  const via=(f.via&&f.via.length)?' · '+esc(T('via'))+' '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
   const pill='<span class="st '+s.c+'"><span class="d"></span>'+esc(capFirst(s.t))+'</span>';
   return '<div class="fcard'+(f.state==='cancelled'?' cx':'')+(isDone(f)?' done':'')
     +'" role="button" tabindex="0" data-k="'+esc(flightKey(f))+'" onclick="openFlight('+i+')" onkeydown="if(event.key===\'Enter\')openFlight('+i+')">'
     +timeHtml(f)
     +'<div class="l1"><span class="al">'+tileHtml(f.airline)+wmHtml(f.airline,name)+'</span>'+pill+'</div>'
     +'<div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName))+'</div>'
-    +'<div class="sub"><span class="sx"><b>'+esc(dispIata(f.cityIata||''))+'</b> · <span class="fno">'+esc(f.flight)+'</span>'+via+wxHtml(f.cityIata)+'</span>'+pill+'</div>'
+    +'<div class="sub"><span class="sx">'+rowSubParts(f)+wxHtml(f.cityIata)+'</span>'+pill+'</div>'
     +slotHtml(f,isArr)+'</div>';
 }
 // Rows from..to, with a day line wherever the date changes (the first row's
@@ -1214,7 +1248,8 @@ function skeletonHtml(){let h='';for(let i=0;i<6;i++)h+='<div class="sk" aria-hi
 function emptyHtml(ic,h,p){return '<div class="empty">'+svg(ic)+'<div class="h">'+esc(h)+'</div>'+(p?'<div class="p">'+esc(p)+'</div>':'')+'</div>';}
 function matches(f,q){
   const city=(cityOf(f)||'').toLowerCase();
-  return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q)
+  return (f.flight||'').toLowerCase().includes(q)||(f.codeshares||[]).some(n=>String(n).toLowerCase().includes(q))
+    ||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q)
     ||String(dispIata(f.cityIata||'')).toLowerCase().includes(q)||airlineName(f).toLowerCase().includes(q);
 }
 // o.keep: same list, same length shown (a language change);
@@ -1319,7 +1354,11 @@ function paintHeader(){
 function tickClock(){
   const t=document.getElementById('clkT'), d=document.getElementById('clkD'); if(!t||!d||!window.BoardStrings)return;
   const tz=apTz(); if(!tz){t.textContent='';d.textContent='';return;}
-  const L=langRes(), now=new Date();
+  // v24044 — the boards' 10:10 demo clock (?clock=1010 on, ?clock=live off,
+  // board-strings.js clockNow): only what this clock prints changes; the
+  // rows, statuses and day lines keep reading the real time
+  const L=langRes(), real=new Date();
+  let now=real;try{if(typeof BoardStrings.clockNow==='function')now=BoardStrings.clockNow(real,tz)||real;}catch(e){now=real;}
   let s='';try{s=String(BoardStrings.boardTime(now,tz,{list:[L]})||'');}catch(e){}
   const m=/^(\d{1,2}:\d{2})\s*(\S+)$/.exec(s);
   t.innerHTML=m?esc(m[1])+'<small>'+esc(m[2])+'</small>':esc(s);
@@ -1343,7 +1382,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24044';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24045';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -1592,6 +1631,9 @@ async function fetchDir(dir,ap){
   let all=raw.map(x=>adbToCard(x,dir)).filter(f=>f&&f.flight&&f.schedTime);
   // a feed that wrote no local date: the date of its UTC time at the airport
   for(const f of all){ if(!f.schedDate&&f._ts&&TZ[ap]) f.schedDate=adbFmt(new Date(f._ts),TZ[ap]).slice(0,10); }
+  // v24044 — a far end the feed named without its code: the code from the
+  // boards' city table (cityCodeOf), as the boards fill it
+  for(const f of all){ if(!f.cityIata&&f.cityName) f.cityIata=cityCodeOf(f.cityName); }
   return cardList(all,dir,Date.now());
 }
 // v24043 — THE CUTOFF FIRST, THEN ONE ROW PER FLIGHT PER DAY.
@@ -1606,9 +1648,71 @@ async function fetchDir(dir,ap){
 function cardList(all,dir,now){
   const cutoff=now-(dir==='arr'?90:25)*60000;   // departed ~25 min, arrived ~90 min
   const seen=new Set();
-  return all.filter(f=>!f._effTs || f._effTs>=cutoff)
-            .filter(f=>{const k=f.flight+'|'+(f.schedDate||'')+'|'+f.schedTime;if(seen.has(k))return false;seen.add(k);return true;})
+  return oneRowPerFlight(all.filter(f=>!f._effTs || f._effTs>=cutoff)
+            .filter(f=>{const k=f.flight+'|'+(f.schedDate||'')+'|'+f.schedTime;if(seen.has(k))return false;seen.add(k);return true;}),all)
             .sort((a,b)=>a._ts-b._ts);
+}
+// v24044 — A CODESHARE IS ONE FLIGHT, LISTED ONCE: the operator's row, as the
+// boards choose it where a feed lists every seller (feed-router.js for the
+// Port Authority airports, the worker's grouping for JFK). Sea-Tac's page
+// gives each carrier selling a seat its own row and never says who flies it:
+// the 1:45 PM to Amsterdam from gate A8 showed five times (AF5597, DL142,
+// KL6032, SV4469, VS3936). The main boards do not merge these rows (their
+// duplicate check, fids-core.js _fidsDedupeRows, needs the same flight
+// number), so at Sea-Tac they list all five too; this is the app's own pass.
+//
+// Rows are ONE flight when they go on the same day, at the same minute, to
+// (or from) the same airport, from the same gate or onto the same belt, and
+// nothing on them tells them apart (sameFlight). Two flights cannot leave one
+// gate for one city in the same minute (the Port Authority pass's own test);
+// rows with no gate and no belt are never merged, since two real flights to
+// one city at one minute look exactly like that. The row kept: a mainline
+// number (under 1000) first, then the carrier with the most mainline flights
+// in the feed, then the most flights, then the lowest number, the Port
+// Authority rule; terminal, aircraft and registration are taken from the
+// others where it has none. The other numbers stay on it for the search: a
+// ticket says AF5597.
+function _fltNum(f){const m=String((f&&f.flight)||'').match(/(\d+)[A-Z]?$/);return m?+m[1]:1e9;}
+// The same gate or the same belt on both rows, and no gate, terminal, belt,
+// operator, aircraft type or registration that both carry and that differs;
+// and never two mainline numbers of two carriers (each one is somebody's own
+// aircraft).
+function sameFlight(a,b){
+  const v=function(x){return String(x||'').trim().toUpperCase();};
+  const differ=function(x,y){x=v(x);y=v(y);return !!(x&&y&&x!==y);};
+  if(!((v(a.gate)&&v(a.gate)===v(b.gate))||(v(a.belt)&&v(a.belt)===v(b.belt))))return false;
+  for(const k of ['gate','terminal','belt','operatedBy','aircraft','reg']) if(differ(a[k],b[k]))return false;
+  if(a.airline!==b.airline&&_fltNum(a)<1000&&_fltNum(b)<1000)return false;
+  return true;
+}
+function oneRowPerFlight(list,all){
+  const low=Object.create(null), pres=Object.create(null);
+  for(const f of (all||list)){const c=f.airline||'';pres[c]=(pres[c]||0)+1;if(_fltNum(f)<1000)low[c]=(low[c]||0)+1;}
+  // f rather than a flies it
+  const beats=function(f,a){
+    const fm=_fltNum(f)<1000, am=_fltNum(a)<1000; if(fm!==am)return fm;
+    const lf=low[f.airline||'']||0, la=low[a.airline||'']||0; if(lf!==la)return lf>la;
+    const pf=pres[f.airline||'']||0, pa=pres[a.airline||'']||0; if(pf!==pa)return pf>pa;
+    return _fltNum(f)<_fltNum(a);
+  };
+  const groups=[], byKey=Object.create(null);
+  for(const f of list){
+    const far=String(f.cityIata||'').toUpperCase()||_cityKey(f.cityName);
+    const k=(far&&f.schedTime)?(f.schedDate||'')+'|'+f.schedTime+'|'+far:'';
+    let g=null;
+    if(k)for(const c of (byKey[k]||[])){if(c.every(r=>sameFlight(r,f))){g=c;break;}}
+    if(g){g.push(f);continue;}
+    g=[f];groups.push(g);
+    if(k)(byKey[k]=byKey[k]||[]).push(g);
+  }
+  return groups.map(function(g){
+    if(g.length===1)return g[0];
+    const best=g.reduce((a,f)=>beats(f,a)?f:a);
+    const keep=Object.assign({},best);
+    for(const r of g)for(const k of ['gate','terminal','belt','aircraft','reg'])if(!keep[k]&&r[k])keep[k]=r[k];
+    keep.codeshares=g.filter(r=>r!==best).map(r=>r.flight);
+    return keep;
+  });
 }
 // What the feed itself says about this airport and direction (feed-router.js:
 // live, stale with the time its list is from, or unavailable)
