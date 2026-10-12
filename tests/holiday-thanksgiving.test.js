@@ -172,31 +172,57 @@ test('no red maple beside an Air Canada logo', () => {
   }
 });
 
-// The bouquet by the gate number: hung from the gate panel's bottom-right
-// corner, spilling down over the top of the map like a corsage; on
-// .g8-wrap, above the band and the map, so neither clips it; scaled with
-// the screen; kept clear of the number's and the words' ink and of every
-// word, logo and aircraft under it; mirrored to the bottom-left corner
-// only when the right one is taken; hidden when both are; and with no red
-// leaf, so it reads the same on every airline's colour.
+// The bouquet by the gate number, on every gate screen all day: hung from
+// the gate panel's bottom-right corner, spilling down over the top of the map
+// like a corsage; on .g8-wrap, above the band and the map, so neither clips
+// it; scaled with the screen; kept clear of the number's and the words' ink
+// and of every word, logo (by its ink) and aircraft under it; mirrored to the
+// bottom-left corner when the right one is taken, a little smaller where
+// neither is clear at full size, and pinned inside the panel beside the
+// number where no corner is (the boarding takeover); never display:none, it
+// fades out and in, and goes at once when something comes under its leaves;
+// and with no red leaf, so it reads the same on every airline's colour.
 test('the bouquet hangs from the gate panel\'s bottom corner, over the map, clear of every word', () => {
   assert.ok(CORE.includes("['.g8-wrap', 'tg-bq', null]"), 'a holiday layer of the gate screen, outside the band that clips');
   assert.ok(!CORE.includes("['.g8-r1-right', 'tg-bq', null]"), 'no longer inside the gate panel');
-  const bq = fn('_tgBouquet'), fit = fn('_tgBqFit'), obs = fn('_tgObstacles');
+  const bq = fn('_tgBouquet'), where = fn('_tgBqWhere'), fit = fn('_tgBqFit'), pin = fn('_tgBqPin'), obs = fn('_tgObstacles');
   assert.match(CORE, /var _TG_BQ_H = 172, _TG_BQ_TILT = 7,/, '172px tall at 1080p, turned 7 degrees');
-  assert.match(bq, /var h = _TG_BQ_H \* Math\.min\(wr\.width \/ 1920, wr\.height \/ 1080\)/, 'scaled with the screen');
-  assert.match(bq, /side = 'r';\s*fit = _tgBqFit\(side, pr, wr, h, obs, g\);\s*if \(!fit\) \{ side = 'l'; fit = _tgBqFit\(side, pr, wr, h, obs, g\); \}/, 'the bottom-right corner, and the bottom-left only while the right is taken');
-  assert.match(bq, /el\.style\.display = fit \? '' : 'none';/, 'hidden when neither corner is clear');
+  assert.match(where, /var k = Math\.min\(wr\.width \/ 1920, wr\.height \/ 1080\), H = _TG_BQ_H \* k, g = 10 \* k;/, 'scaled with the screen');
+  // 1. the corsage: right, then left, at 100, 92, 84 and 76% of its size
+  assert.match(where, /for \(i = 0; i < 4 && !out\.P; i\+\+\) \{\s*h = H \* \(1 - 0\.08 \* i\);\s*for \(sd = 0; sd < 2 && !out\.P; sd\+\+\) \{\s*f = _tgBqFit\(sd \? 'l' : 'r', pr, wr, h, out\.obs, g\);/);
+  // 2. else pinned in the panel, beside the number first, as tall as fits
+  assert.match(where, /for \(h = Math\.min\(H \* 0\.72, pr\.height\); h >= H \* 0\.4 && !out\.P; h -= 4 \* k\) \{\s*f = _tgBqPin\(sd \? 'l' : 'r', pr, wr, h, out\.obs, g\);/);
+  assert.ok(where.indexOf('_tgBqFit(') < where.indexOf('_tgBqPin('), 'the corsage before the panel');
   // hangs from the panel's bottom edge, starting a third of its height above it
   assert.match(fit, /var T = pr\.bottom - h \* 0\.3,/);
   // the panel's words push it down; anything under it rules the corner out
   assert.match(fit, /if \(\(ob\.top \+ ob\.bottom\) \/ 2 < pr\.bottom && _tgMeet\(sb, ob, g \* 0\.6\)\) \{ T \+= ob\.bottom \+ g \* 0\.6 - sb\.top; moved = true; \}/);
-  assert.match(fit, /if \(_tgMeet\(at\(slabs\[a2\]\), ob2, \(ob2\.top \+ ob2\.bottom\) \/ 2 < pr\.bottom \? g \* 0\.6 - 0\.5 : g\)\) return null;/);
+  assert.match(fit, /if \(_tgBqHit\(S, L, T, pr, obs, g \* 0\.6 - 0\.5, g\)\) return null;/);
   assert.match(fit, /if \(box\.bottom > wr\.bottom \|\| box\.left < wr\.left \|\| box\.right > wr\.right\) return null;/, 'every leaf on the screen');
-  // every word (by its ink), logo, the airport's mark and the aircraft on the map
+  assert.match(pin, /if \(_tgBqHit\(S, L, T, pr, obs, g \* 0\.6 - 0\.5, g\)\) return null;/, 'pinned, it keeps the same distances');
+  // every word (by its ink), logo (by its ink), the airport's mark and the aircraft on the map
   assert.match(obs, /document\.createTreeWalker\(wrap, NodeFilter\.SHOW_TEXT\)/);
   assert.match(obs, /'\.g8-r1-logoslot img, \.g8-r1-logoslot svg, \.g8-r1-logoslot canvas, \.octb-apmark, img\[src\*="\/logos\/"\], \.leaflet-marker-pane > \*, \.v2-fi-icon-wrap, \.ac-ico'/);
+  assert.match(obs, /var ik = _tgImgInk\(im\[j\], ir\);/);
   assert.match(fn('_fidsHolidayLayers'), /_tgBouquet\(band\);/);
+  // never hidden by display:none; it fades, or goes at once when something
+  // is under its leaves or the screen's state has just changed
+  assert.doesNotMatch(bq, /display/);
+  assert.match(bq, /var cut = !!now \|\| under\(\);\s*_tgBqVis\(el, false, cut\);/);
+  assert.match(bq, /if \(el\._tgBqWait\) \{ if \(under\(\)\) _tgBqVis\(el, false, true\); return; \}/, 'even while it fades out');
+  assert.match(bq, /var under = function \(\) \{ return !W \|\| !at \|\| _tgBqHit\(_tgBqSlabs\(at\.side, at\.h\), at\.L, at\.T, W\.pr, W\.obs, 0, 0\); \};/);
+  // measured at once when the takeover changes the band's height, when the
+  // airline's card comes up or goes (a class on .g8-wrap) and when the map
+  // draws its words, not only on the 2-second pass
+  assert.match(bq, /band\._tgBqRO = new ResizeObserver\(function \(\) \{ _tgBqNow\(band, wrap\); \}\);/);
+  assert.match(bq, /wrap\._tgBqMO\.observe\(wrap, \{ attributes: true, attributeFilter: \['class'\] \}\);/);
+  assert.match(bq, /wrap\._tgBqMapMO\.observe\(mb, \{ childList: true, subtree: true \}\);/);
+  assert.match(fn('_tgBqNow'), /_tgBouquet\(band, true\);/);
+  // the fade is the bouquet's own opacity, inline (the stylesheet's leaves
+  // rest): from nothing for a bouquet just made, 0.6s, or none for a cut
+  const vis = fn('_tgBqVis');
+  assert.match(vis, /if \(el\.style\.opacity === ''\) \{ el\.style\.transition = 'none'; el\.style\.opacity = '0'; void getComputedStyle\(el\)\.opacity; \}/, 'a bouquet just made fades in from nothing');
+  assert.match(vis, /el\.style\.transition = cut \? 'none' : 'opacity \.6s ease';\s*void getComputedStyle\(el\)\.opacity;\s*el\.style\.opacity = on \? '1' : '0';/);
   const block = holidayBlock();
   assert.equal(leafOf(block, '.g8-wrap > .tg-bq::before'), 'maple-bouquet');
   assert.match(block, /\.g8-wrap > \.tg-bq \{ position: absolute; z-index: 3; pointer-events: none; transform-origin: 100% 0;\s*filter: drop-shadow\(/, 'above the band and the map, pinned at its top corner, with a shadow');
@@ -214,14 +240,15 @@ test('the bouquet hangs from the gate panel\'s bottom corner, over the map, clea
   for (const [r, g] of stops) assert.ok(g >= r * 0.45, 'a leaf colour with red ' + r + ' and green ' + g + ' is too red for a red panel');
 });
 
+const BQ_SRC = () => /var _TG_BQ_INK = [^;]+;/.exec(CORE)[0] + /var _TG_BQ_H = [^;]+;/.exec(CORE)[0] + fn('_tgMeet') + fn('_tgBqSlabs') + fn('_tgBqHit') + fn('_tgBqFit') + fn('_tgBqPin');
+
 // The fit itself, on the 1080p gate screen measured at YQM gate 4: the
 // panel [1478, 0, 1920, 138], the number's ink [1765, 26, 1844, 120], the
 // words' ink [1554, 18, 1704, 122]. The bouquet's top leaf rises beside the
 // number into the panel's corner, its foot spills over the map, and nothing
 // it is kept clear of comes within 6px (panel) or 10px (under it).
 test('the bouquet\'s fit clears the number and gives way to a map label under it', () => {
-  const src = /var _TG_BQ_INK = [^;]+;/.exec(CORE)[0] + /var _TG_BQ_H = [^;]+;/.exec(CORE)[0] + fn('_tgMeet') + fn('_tgBqFit');
-  const fit = new Function(src + 'return _tgBqFit;')();
+  const fit = new Function(BQ_SRC() + 'return _tgBqFit;')();
   const pr = { left: 1478, top: 0, right: 1920, bottom: 138 }, wr = { left: 0, top: 0, right: 1920, bottom: 1080 };
   const num = { left: 1765, top: 26, right: 1844, bottom: 120 }, words = { left: 1554, top: 18, right: 1704, bottom: 122 };
   const r = fit('r', pr, wr, 172, [num, words], 10);
@@ -236,4 +263,54 @@ test('the bouquet\'s fit clears the number and gives way to a map label under it
   assert.ok(l && l.L >= 1478, 'the mirror image hangs from the bottom-left corner');
   // the panel's words keep it under their ink on the left too
   assert.ok(l.T > 100, 'clear of Porte (top ' + l.T.toFixed(1) + ')');
+});
+
+// The boarding takeover, measured at YQM gate 4 (AC1987, Now Boarding) at
+// 1920 x 1080: the panel shrinks to [1440, 0, 1920, 110] and the flight
+// cards fill the space under it (the Departure card's "6:15pm" ink reaches
+// [1765, 197, 1901, 266], its icon [1469, 161, 1550, 242]). Neither corner
+// is clear at any size, and the bouquet is pinned in the panel beside the
+// number instead of being hidden for the whole takeover.
+test('through the boarding takeover the bouquet is pinned in the gate panel beside the number', () => {
+  const S = new Function(BQ_SRC() + 'return { fit: _tgBqFit, pin: _tgBqPin, slabs: _tgBqSlabs };')();
+  const pr = { left: 1440, top: 0, right: 1920, bottom: 110 }, wr = { left: 0, top: 0, right: 1920, bottom: 1080 };
+  const num = { left: 1753, top: 19, right: 1813, bottom: 89 };
+  const obs = [{ left: 1573, top: 3, right: 1695, bottom: 43 }, { left: 1552, top: 66, right: 1694, bottom: 105 }, num,
+    { left: 1581, top: 129, right: 1683, bottom: 146 }, { left: 1703, top: 127, right: 1771, bottom: 146 },
+    { left: 1566, top: 184, right: 1761, bottom: 252 }, { left: 1765, top: 197, right: 1901, bottom: 266 },
+    { left: 1469, top: 161, right: 1550, bottom: 242 }];
+  for (const f of [1, 0.92, 0.84, 0.76]) for (const side of ['r', 'l']) assert.equal(S.fit(side, pr, wr, 172 * f, obs, 10), null, side + ' corner at ' + f);
+  let p = null, h;
+  for (h = Math.min(172 * 0.72, 110); h >= 172 * 0.4 && !p; h -= 4) p = S.pin('r', pr, wr, h, obs, 10);
+  h += 4;
+  assert.ok(p, 'pinned beside the number');
+  assert.equal(Math.round(h), 110, 'as tall as the panel');
+  const k = S.slabs('r', h), box = { left: p.L + k.all.left, right: p.L + k.all.right, top: p.T + k.all.top, bottom: p.T + k.all.bottom };
+  assert.ok(box.left >= num.right + 6, 'clear of the number (' + box.left.toFixed(1) + ')');
+  assert.ok(box.right <= 1920 && box.top >= 0, 'every leaf on the screen');
+  assert.ok(box.bottom < 197 - 10, 'above the Departure card\'s time');
+});
+
+// A logo counts by its ink, not its box: an airline's card with a mark in
+// the left half of a 350px box leaves the box's right half free.
+test('a logo is measured by its ink, read once per file', () => {
+  let draws = 0;
+  const canvas = () => ({ width: 0, height: 0, getContext: () => ({
+    drawImage: () => { draws++; },
+    // ink only in the left half of the image
+    getImageData: (x, y, w, h) => { const d = new Uint8ClampedArray(w * h * 4); for (let j = 0; j < h; j++) for (let i = 0; i < w / 2; i++) d[(j * w + i) * 4 + 3] = 255; return { data: d }; }
+  }) });
+  const doc = { createElement: () => canvas() };
+  const cs = () => ({ objectFit: 'contain', objectPosition: '50% 50%', paddingLeft: '0px', paddingTop: '0px', paddingRight: '0px', paddingBottom: '0px', borderLeftWidth: '0px', borderTopWidth: '0px', borderRightWidth: '0px', borderBottomWidth: '0px' });
+  const ink = new Function('document', 'getComputedStyle', 'var _tgInkMemo = {};' + fn('_tgImgInk') + 'return _tgImgInk;')(doc, cs);
+  const im = { tagName: 'IMG', complete: true, naturalWidth: 100, naturalHeight: 100, src: '/logos/x.svg', currentSrc: '/logos/x.svg' };
+  const box = { left: 1524, top: 197, right: 1874, bottom: 557, width: 350, height: 360 };
+  const rs = ink(im, box);
+  assert.ok(rs.length > 0);
+  for (const r of rs) assert.ok(r.left >= 1524 && r.right <= 1524 + 175 + 0.01, 'only the left half (' + r.left + '..' + r.right + ')');
+  assert.ok(Math.min(...rs.map((r) => r.top)) >= 202 - 0.01, 'contained: the square image sits 5px down in the 360px box');
+  ink(im, box);
+  assert.equal(draws, 1, 'read once');
+  // an image it cannot read counts by its box
+  assert.deepEqual(ink({ tagName: 'IMG', complete: false, naturalWidth: 0, naturalHeight: 0 }, box), [box]);
 });
