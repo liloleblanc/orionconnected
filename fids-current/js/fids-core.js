@@ -2024,9 +2024,49 @@ function _fidsPairSeparators(root) {
         el.classList.toggle('is-stacked', stacked);
       }
     }
+    // (after the pairs: what is left of the panel is measured as it is drawn)
+    try { _fidsSignColFit(scope); } catch (eC) {}
   } catch (e) {}
 }
 try { if (typeof window !== 'undefined') window._fidsPairSeparators = _fidsPairSeparators; } catch (e) {}
+// BOARDING SEQUENCES — A PANEL'S WHO-LIST NEVER RUNS OFF IT. The list of who
+// a call is for is drawn in both of the board's languages, and a long one
+// (Alaska's Group A, United's pre-boarding) in two languages ran past the
+// panel's foot at 1680x1050, over the lane line and under the arrow discs,
+// and the panel clipped it. When a panel's content is taller than the
+// panel, the list comes down first (to 75% of its size), then the call's
+// number (to 60%), then the list again (to 55%), each step measured as
+// drawn. The stylesheet's sizes are kept (data-g8-rbase, data-g8-nbase) and
+// every pass starts from them, so a panel never stays shrunk for a list it
+// no longer carries; a resize clears them.
+function _fidsSignColFit(scope) {
+  var cols = scope.querySelectorAll('.g8-sign .g8-sign-col.has-roster');
+  for (var i = 0; i < cols.length; i++) {
+    var col = cols[i], ro = col.querySelector('.g8-sign-roster');
+    if (!ro) continue;
+    var val = col.querySelector('.g8-sign-row .g8-sign-value, .g8-sign-value:not(.g8-grp-txt)');
+    var rb = parseFloat(ro.getAttribute('data-g8-rbase')) || 0;
+    if (!rb) {
+      ro.style.removeProperty('font-size');
+      rb = parseFloat(getComputedStyle(ro).fontSize) || 0;
+      if (!rb) continue;
+      ro.setAttribute('data-g8-rbase', String(rb));
+    }
+    var nb = 0;
+    if (val) {
+      nb = parseFloat(val.getAttribute('data-g8-nbase')) || 0;
+      if (!nb) { nb = parseFloat(getComputedStyle(val).fontSize) || 0; if (nb) val.setAttribute('data-g8-nbase', String(nb)); }
+    }
+    var over = function () { return col.scrollHeight > col.clientHeight + 1; };
+    ro.style.setProperty('font-size', rb + 'px', 'important');
+    if (val && nb) val.style.setProperty('font-size', nb + 'px', 'important');
+    var steps = [[0.92, 1], [0.84, 1], [0.75, 1], [0.75, 0.85], [0.75, 0.72], [0.75, 0.6], [0.65, 0.6], [0.55, 0.6]];
+    for (var k = 0; k < steps.length && over(); k++) {
+      ro.style.setProperty('font-size', (rb * steps[k][0]) + 'px', 'important');
+      if (val && nb) val.style.setProperty('font-size', (nb * steps[k][1]) + 'px', 'important');
+    }
+  }
+}
 
 // One pass per settled frame. The board re-renders constantly, so this is
 // scheduled rather than called inline: a rAF collapses a burst of renders into
@@ -3822,6 +3862,9 @@ try {
         for (var _i = 0; _i < _sp.length; _i++) { _sp[_i].removeAttribute('data-g8-base'); _sp[_i].style.removeProperty('font-size'); }
         var _sv = document.querySelectorAll('.g8-sign .g8-sign-value[data-g8-vbase]');
         for (var _j = 0; _j < _sv.length; _j++) { _sv[_j].removeAttribute('data-g8-vbase'); _sv[_j].style.removeProperty('font-size'); }
+        // and the who-list panel's (_fidsSignColFit)
+        var _sr = document.querySelectorAll('.g8-sign [data-g8-rbase], .g8-sign [data-g8-nbase]');
+        for (var _k = 0; _k < _sr.length; _k++) { _sr[_k].removeAttribute('data-g8-rbase'); _sr[_k].removeAttribute('data-g8-nbase'); _sr[_k].style.removeProperty('font-size'); }
       } catch (e) {}
       _fidsSchedulePairPass();
     });
@@ -18454,9 +18497,11 @@ function uxgGateHtml(ctx) {
   // sign uses over its two panels. A carrier with one cabin (Flair, PAL,
   // Encore) has no entry and gets no cabin line. Jazz flies Air Canada's
   // cabins; Rouge has its own.
-  // BOARDING SEQUENCES — each airline's own table in boarding-sequence.js
-  // carries these same cabins on its stages; this map is what the generic
-  // plan reads (ctx.cabins), for a carrier with no published order.
+  // BOARDING SEQUENCES — this map is only what the generic plan reads
+  // (ctx.cabins), for a carrier with no published order. An airline with a
+  // table in boarding-sequence.js names each zone's own cabin there (Air
+  // Canada's Zone 2 is Premium Economy on a widebody and none on an A320;
+  // Delta's and Alaska's cabins are named in their who-lists).
   var _G8_CABINS = {
     'AC': ['cabinBiz', 'cabinEcon'], 'QK': ['cabinBiz', 'cabinEcon'],
     'RV': ['cabinPremRouge', 'cabinEcon'],
@@ -18511,14 +18556,23 @@ function uxgGateHtml(ctx) {
     var h = '<div class="g8-board-col ' + (side === 'left' ? 'now' : 'next') + ' g8-sign-col g8-sign-' + side
       + ((S.note || S.roster) ? ' has-note' : '') + (S.roster ? ' has-roster' : '')
       // BOARDING SEQUENCES — a panel with no number keeps its lane line at the foot
-      + (S.value ? '' : ' no-value') + '">';
+      + (S.value ? '' : ' no-value')
+      // and one that is not called yet says so in its class (its main line is
+      // words, never a number with an arrow)
+      + (S.waiting ? ' is-waiting' : '') + '">';
     // g8-pair puts these on _fidsPairSeparators' radar, so a pair that has
     // to go to two rows loses its bar. g8-board-lane on the lane line gives it
     // back the nowrap armour and the stacking guard it always had.
     if (S.title) h += '<div class="g8-sign-title g8-pair">' + S.title + '</div>';
     if (S.sub) h += '<div class="g8-sign-sub g8-pair">' + S.sub + '</div>';
     if (S.value) {
-      var _txt = _g8GrpValCls(S.value);
+      // BOARDING SEQUENCES — a group's own code (Alaska's A, Norwegian's B,
+      // WestJet's 3+) is a numeral like Zone 3: it shares the row with its
+      // word, it is never set as a phrase under it
+      var _vPlain = String(S.value), _vPrev;
+      do { _vPrev = _vPlain; _vPlain = _vPlain.replace(/<[^>]*>/g, ''); } while (_vPlain !== _vPrev);
+      var _isCode = /^[A-Z0-9]{1,2}\+?(\s*[\u2022\u2013]\s*[A-Z0-9]{1,2}\+?)*$/.test(_vPlain.trim());
+      var _txt = _isCode ? '' : _g8GrpValCls(S.value);
       var _val = '<div class="g8-sign-value' + _txt + (_txt ? ' g8-pair' : '') + '">' + S.value
         + ((side === 'right' && !_txt) ? '<span class="g8-sign-valarrow">' + _g8ArrowGlyph() + '</span>' : '')
         + '</div>';
@@ -18610,9 +18664,32 @@ function uxgGateHtml(ctx) {
     if (!_t0 && _dep) _t0 = _dep - (_boardLeadShown || 35) * 60000;
     var _homeC = '', _toC = '';
     try { _homeC = airportCountry(iata) || ''; _toC = airportCountry(currentFlight._locIata || '') || ''; } catch (eA) {}
+    // EACH ZONE'S OWN CABIN depends on the aircraft and the route (Air
+    // Canada's Premium Economy flies only on its widebodies; Premium Rouge
+    // boards in Zone 1 on domestic and Caribbean flights, Zone 2 on
+    // international ones; Express sells Business only on its two-cabin jets).
+    // A type the gate cannot place says nothing: no cabin is guessed.
+    var _eqU = String(equipRaw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    var _cat = '';
+    if (_eqU) {
+      if ((typeof AIRCRAFT_CATEGORY !== 'undefined') && AIRCRAFT_CATEGORY[_eqU]) _cat = AIRCRAFT_CATEGORY[_eqU];
+      else if (/^(B7[4-8]|A3[3-8]|B77|B78|B76|B74)/.test(_eqU)) _cat = 'widebody';
+      else if (/^(CR|CRJ|E1[3-9]|E[2-9]\d|E75|E7W|E170|E175|E190|E195|E29|DH|DHC|AT[47]|SF3|B19|J[S3]|SW)/.test(_eqU)) _cat = 'regional';
+      else if (/^(31[89]|32[0-9A-Z]|A3[12]\d|A2[01]N|22[13]|BCS|CS[13]|7[0-9][0-9A-Z]|7M[789]|B7[0-3]|B3[789]M|B73)/.test(_eqU)) _cat = 'narrowbody';
+    }
+    var _twoCabin = /^(CR9|CRJ9|CR7|CRJ7|E75|E7W|E175|E75L|E75S)/.test(_eqU);
+    // the route: 'dom', 'carib', 'na' (the rest of North America), 'intl'
+    var _region = '';
+    try {
+      var _rawCC = function (c) { c = String(c || '').toUpperCase(); return (typeof _IATA_CC !== 'undefined' && _IATA_CC[c]) || airportCountry(c) || ''; };
+      var _dc = _rawCC(currentFlight._locIata || ''), _hc = _rawCC(iata);
+      var _CARIB = ['AG', 'AI', 'AW', 'BB', 'BL', 'BQ', 'BS', 'CU', 'CW', 'DM', 'DO', 'GD', 'GP', 'HT', 'JM', 'KN', 'KY', 'LC', 'MF', 'MQ', 'MS', 'PR', 'SX', 'TC', 'TT', 'VC', 'VG', 'VI'];
+      if (_dc) _region = (_dc === _hc) ? 'dom' : (_CARIB.indexOf(_dc) >= 0 ? 'carib' : (/^(CA|US|MX)$/.test(_dc) ? 'na' : 'intl'));
+    } catch (eR) { _region = ''; }
     var p = FIDSBoardSeq.plan(_seqCode, {
       t0: _t0, dep: _dep, close: _close, express: !!_express, pdDash: _pdIsDash, pdRows: _pdRows,
       legalPre: _homeC === 'CA' || _homeC === 'US', toUS: _toC === 'US',
+      cat: _cat, twoCabin: _twoCabin, region: _region,
       cabins: _G8_CABINS[airlineCode] || null, boardStage: currentFlight._boardStage
     });
     var st = FIDSBoardSeq.stageAt(p, Date.now());
@@ -18634,8 +18711,31 @@ function uxgGateHtml(ctx) {
     }
     return { label: '', value: _g8SignPair('allPax') };
   }
+  // WHO IS CALLED, in BOTH of the board's languages, each a whole block (the
+  // way boardSoon and boardConv go through _g8SignLines): the gate has no
+  // language rotation, so a list shown one language at a time was only ever
+  // shown in the first. Inside each block every ' · ' item is one unit
+  // (display rule 2): a line breaks between items, never inside 'Global
+  // Services' or 'Premier 1K'; an item wider than the panel wraps on its own
+  // words. The dot stays with the item before it.
   function _g8SeqWho(s) {
-    return (s && s.who) ? (_gateLbl1Html(s.who, _frF) || '') : '';
+    if (!s || !s.who) return '';
+    return _gateLbl(s.who, _frF, function (w) {
+      var items = String(w).split(' \u00B7 ');
+      return '<span class="g8-who-blk">' + items.map(function (it, i) {
+        return '<span class="g8-who-i">' + it + (i < items.length - 1 ? '\u00A0\u00B7' : '') + '</span>';
+      }).join(' ') + '</span>';
+    }, '');
+  }
+  // A stage's own cabin, as a pair; and the cabin a list of calls shares
+  // (a merged or a summed-up panel names one only when every call in it has
+  // that same one).
+  function _g8SeqCab(k) { return k ? _g8SignPair(k, false, true) : ''; }
+  function _g8SeqCabOf(list) {
+    if (!list || !list.length) return '';
+    var v = list[0].sub || '';
+    for (var i = 1; i < list.length; i++) if ((list[i].sub || '') !== v) return '';
+    return v;
   }
   // The two panels for the live stage, or for the final call (every value
   // called, no Next line, no pre-boarding words).
@@ -18643,65 +18743,30 @@ function uxgGateHtml(ctx) {
     var p = seq.p, st = seq.st, stg = p.stages, cur = st.cur, B = FIDSBoardSeq;
     var lanesL = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('1 \u2022 2', true);
     var lanesR = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('3 \u2022 4', true);
-    var prem = p.cabins[0] ? _g8SignPair(p.cabins[0], false, true) : '';
-    var econ = p.cabins[1] ? _g8SignPair(p.cabins[1], false, true) : '';
     var gen = _g8SignPair('genboard');
     var sideOf = function (list, side) { return list.filter(function (s) { return s.side === side; }); };
     var pL, pR;
-    // ── LEFT ──
-    if (!isFinal && cur && cur.side === 'L') {
-      // The next call on THIS panel only; when the next call is on the other
-      // panel, that panel's "Boarding will begin shortly" already says so.
-      var nx = (st.next && st.next.side === 'L') ? st.next : null;
-      var nextL = !nx ? '' : (nx.values.length
-        ? _g8SignNext(_g8SeqLabelKey(nx.label, nx.values.length), B.fmt(nx.values, 3))
-        : _g8SignNext(null, null, nx.title || 'priority'));
-      if (cur.kind === 'pre') {
-        // Pre-boarding: the airline's list of who pre-boards, one language
-        // at a time with the board's rotation (Porter's roster slot), and
-        // Porter's PorterReserve, which pre-boards.
-        pL = { title: _g8SignPair('preboard'), sub: cur.sub ? _g8SignPair(cur.sub, false, true) : '',
-              roster: _g8SeqWho(cur), lanes: lanesL, next: nextL };
-      } else if (cur.kind === 'prio') {
-        var pv = cur.values.length ? _g8SeqValue(cur, 3) : { label: '', value: '' };
-        pL = { title: _g8SignPair('priority'), sub: cur.sub ? _g8SignPair(cur.sub, false, true) : prem,
-              label: pv.label, value: pv.value, roster: _g8SeqWho(cur), lanes: lanesL, next: nextL };
-      } else {
-        // The airline's own family or courtesy call, in its own words.
-        pL = { title: _g8SignPair(cur.title), roster: _g8SeqWho(cur), lanes: lanesL };
-      }
-    } else {
-      // Every left call made: Priority, the cabin, and the priority values
-      // called so far, still callable (the sign never says a call is over);
-      // "Board at your convenience" only where the airline publishes it.
-      var made = isFinal ? sideOf(p.full, 'L') : stg.slice(0, Math.max(0, st.i) + 1);
-      var prios = made.filter(function (s) { return s.kind === 'prio' && s.values.length; });
-      var pvals = B.valuesOf(prios);
-      // An airline that publishes no priority step at all (PAL, Air North,
-      // Calm Air, Pascan…) is never given one: its lanes 1 • 2 stay its
-      // pre-boarding lane, without the list.
-      var anyPrio = p.prioAnyTime || p.full.some(function (s) { return s.kind === 'prio'; });
-      if (!anyPrio) pL = { title: _g8SignPair('preboard'), lanes: lanesL };
-      else pL = { title: _g8SignPair('priority'), sub: prem,
-            label: pvals.length ? _g8SignPair(_g8SeqLabelKey(prios[0].label, pvals.length)) : '',
-            value: pvals.length ? B.fmt(pvals, 3) : '',
-            note: p.prioAnyTime ? _g8SignLines('boardConv') : '', lanes: lanesL };
-    }
     // ── RIGHT ──
     if (isFinal) {
       // Every general value the plan uses: AC 3 • 4 • 5 • 6, Express 3 • 4,
-      // WestJet 3–9, Porter's Rows All, All passengers where none is numbered.
+      // WestJet 3+, Porter's Rows All, All passengers where none is numbered.
       var fr = sideOf(p.full, 'R');
       var gv = B.valuesOf(fr);
       var first = fr.filter(function (s) { return s.values.length; })[0];
-      if (first && first.label === 'rows') pR = { title: gen, sub: econ, label: _g8SignPair('rows'), value: _g8SignPair('all'), lanes: lanesR };
-      else if (gv.length) pR = { title: gen, sub: econ, label: _g8SignPair(_g8SeqLabelKey(first.label, gv.length)), value: B.fmt(gv, 4), lanes: lanesR };
-      else pR = { title: gen, sub: econ, value: _g8SignPair('allPax'), lanes: lanesR };
+      var fsub = _g8SeqCab(_g8SeqCabOf(fr));
+      if (first && first.label === 'rows') pR = { title: gen, sub: fsub, label: _g8SignPair('rows'), value: _g8SignPair('all'), lanes: lanesR };
+      else if (gv.length) pR = { title: gen, sub: fsub, label: _g8SignPair(_g8SeqLabelKey(first.label, gv.length)), value: B.fmt(gv, 4), lanes: lanesR };
+      else pR = { title: gen, sub: fsub, value: _g8SignPair('allPax'), lanes: lanesR };
     } else if (!cur || cur.side === 'L') {
-      // Waiting: the first general call, and that it is coming.
+      // WAITING. General boarding is not called yet, and the panel says so
+      // as its main line: no number, no arrow, so it never reads as a live
+      // call (the old sign brought both panels up at once). Its first call
+      // is the Next line.
       var g0 = sideOf(stg, 'R')[0];
-      var wv = _g8SeqValue(g0, 4);
-      pR = { title: gen, sub: econ, label: wv.label, value: wv.value, note: _g8SignLines('boardSoon'), lanes: lanesR };
+      var nx0 = !g0 ? '' : (g0.values.length
+        ? _g8SignNext(_g8SeqLabelKey(g0.label, g0.values.length), B.fmt(g0.values, 3))
+        : _g8SignNext(null, null, g0.title || 'allPax'));
+      pR = { title: gen, sub: _g8SeqCab(g0 && g0.sub), value: _g8SignPair('boardSoon'), lanes: lanesR, next: nx0, waiting: true };
     } else {
       // Live: the call now, the calls still to come as the Next line (three
       // or fewer with •, more as a range: Next: Zones 4–9).
@@ -18709,7 +18774,53 @@ function uxgGateHtml(ctx) {
       var rest = stg.slice(st.i + 1).filter(function (s) { return s.side === 'R'; });
       var rv = B.valuesOf(rest);
       var nextR = rv.length ? _g8SignNext(_g8SeqLabelKey(rest[0].label, rv.length), B.fmt(rv, 3)) : '';
-      pR = { title: gen, sub: econ, label: lv.label, value: lv.value, lanes: lanesR, next: nextR };
+      pR = { title: gen, sub: _g8SeqCab(cur.sub), label: lv.label, value: lv.value, lanes: lanesR, next: nextR };
+    }
+    // ── LEFT ──
+    // An airline that publishes no priority step at all (PAL, Porter, Air
+    // North, Calm Air, Pascan…) is never given one.
+    var anyPrio = p.prioAnyTime || p.full.some(function (s) { return s.kind === 'prio'; });
+    if (!isFinal && cur && cur.side === 'L') {
+      // The next call on THIS panel only; when the next call is on the other
+      // panel, that panel's Next line already says so.
+      var nx = (st.next && st.next.side === 'L') ? st.next : null;
+      var nextL = !nx ? '' : (nx.values.length
+        ? _g8SignNext(_g8SeqLabelKey(nx.label, nx.values.length), B.fmt(nx.values, 3))
+        : _g8SignNext(null, null, nx.title || 'priority'));
+      if (cur.kind === 'pre') {
+        // Pre-boarding: the airline's list of who pre-boards, in both of the
+        // board's languages, and Porter's PorterReserve, which pre-boards.
+        pL = { title: _g8SignPair('preboard'), sub: _g8SeqCab(cur.sub), roster: _g8SeqWho(cur), lanes: lanesL, next: nextL };
+      } else if (cur.kind === 'prio') {
+        // The call's own cabin, or none: never the first priority call's.
+        var pv = cur.values.length ? _g8SeqValue(cur, 3) : { label: '', value: '' };
+        pL = { title: _g8SignPair('priority'), sub: _g8SeqCab(cur.sub),
+              label: pv.label, value: pv.value, roster: _g8SeqWho(cur), lanes: lanesL, next: nextL };
+      } else {
+        // The airline's own family or courtesy call, in its own words.
+        pL = { title: _g8SignPair(cur.title), roster: _g8SeqWho(cur), lanes: lanesL, next: nextL };
+      }
+    } else if (!anyPrio) {
+      // Pre-boarding is over (or it is the final call) at an airline with no
+      // priority step: lanes 1 • 2 serve the same call as the right panel,
+      // so the panel says that call, never 'Pre-boarding' or an invented
+      // priority. No Next line of its own: the right panel has it.
+      pL = {};
+      for (var kR in pR) if (Object.prototype.hasOwnProperty.call(pR, kR)) pL[kR] = pR[kR];
+      pL.lanes = lanesL; pL.next = '';
+    } else {
+      // Every left call made: Priority, the cabin all of them share, and the
+      // priority values called so far, still callable (the sign never says a
+      // call is over); "Board at your convenience" only where the airline
+      // publishes it.
+      var made = isFinal ? sideOf(p.full, 'L') : stg.slice(0, Math.max(0, st.i) + 1);
+      var prioMade = made.filter(function (s) { return s.kind === 'prio'; });
+      var prios = prioMade.filter(function (s) { return s.values.length; });
+      var pvals = B.valuesOf(prios);
+      pL = { title: _g8SignPair('priority'), sub: _g8SeqCab(_g8SeqCabOf(prioMade)),
+            label: pvals.length ? _g8SignPair(_g8SeqLabelKey(prios[0].label, pvals.length)) : '',
+            value: pvals.length ? B.fmt(pvals, 3) : '',
+            note: p.prioAnyTime ? _g8SignLines('boardConv') : '', lanes: lanesL };
     }
     return { L: pL, R: pR };
   }

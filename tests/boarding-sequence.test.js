@@ -70,7 +70,12 @@ const CARRIERS = [
   ['AC', {}], ['AC', { express: true }], ['RV', {}], ['QK', {}],
   ['WS', {}], ['WR', {}], ['PD', { pdDash: true }], ['PD', { pdDash: false }], ['PB', {}],
   ['F8', {}], ['TS', {}], ['TS', { toUS: true }], ['UA', {}], ['DL', {}], ['AA', {}], ['AS', {}],
-  ['HA', {}], ['WN', {}], ['B6', {}], ['F9', {}], ['ZZ', { legalPre: true }], ['ZZ', {}], ['4N', { legalPre: true }]
+  ['HA', {}], ['WN', {}], ['B6', {}], ['F9', {}], ['ZZ', { legalPre: true }], ['ZZ', {}], ['4N', { legalPre: true }],
+  // the cabins that follow the aircraft and the route
+  ['AC', { cat: 'widebody' }], ['AC', { express: true, twoCabin: true }], ['RV', { region: 'carib' }], ['RV', { region: 'intl', cat: 'widebody' }],
+  ['UA', { cat: 'narrowbody' }], ['UA', { cat: 'widebody' }],
+  // the tables whose order is not pre → elite → general, and Calm Air
+  ['MO', { legalPre: true }], ['FR', {}], ['DY', {}], ['IB', {}]
 ];
 const LEADS = [20, 25, 30, 35, 45];
 const CLOSES = [10, 15, 20];
@@ -82,11 +87,16 @@ const planFor = (code, ctx, lead, close) => SEQ.plan(code, Object.assign({ t0: T
 
 // Every key a table can name: stage titles, who-lists, cabins, and the group
 // words the gate turns its labels into (singular and plural).
+// (a sub is a key, or a list of [condition, key]: each zone's own cabin)
+const subKeys = (spec) => (!spec ? [] : typeof spec === 'string' ? [spec] : spec.map((c) => c[1]).filter(Boolean));
 function keysOf(T) {
   const out = new Set(['preboard', 'priority', 'genboard', 'allPax', 'all', 'rows', 'zone', 'zones', 'groupLabel', 'groups',
     'boardSoon', 'boardConv', 'nextUp', 'useLane', 'useLanes', 'preboardWhoAny', 'preboardWhoTSus']);
-  for (const s of T.stages) for (const k of ['title', 'who', 'sub', 'label']) if (s[k]) out.add(s[k]);
-  for (const v of Object.values(T.variants || {})) for (const k of Object.values(v.sub || {})) if (k) out.add(k);
+  for (const s of T.stages) {
+    for (const k of ['title', 'who', 'label']) if (s[k]) out.add(s[k]);
+    subKeys(s.sub).forEach((k) => out.add(k));
+  }
+  for (const v of Object.values(T.variants || {})) for (const spec of Object.values(v.stageSub || {})) subKeys(spec).forEach((k) => out.add(k));
   return out;
 }
 // _GATE_LBL as the gate holds it (the frozen legacy table _gateLbl reads first).
@@ -116,7 +126,9 @@ test('every key a table names exists where the gate looks, in all nine languages
   for (const k of ['groups', 'familyBoard', 'specialBoard', 'earlyAccess', 'courtesyBoard', 'preboardWhoAny',
     'preboardWhoAC', 'familyWhoAC', 'preboardWhoWS', 'specialWhoWS', 'preboardWhoPB', 'preboardWhoF8', 'preboardWhoTS',
     'preboardWhoTSus', 'preboardWhoUA', 'preboardWhoDL', 'earlyAccessWhoDL', 'preboardWhoAA', 'prioWhoAA', 'familyWhoAA',
-    'preboardWhoAS', 'preboardWhoB6', 'courtesyWhoB6', 'preboardWhoWN', 'prioWhoWN', 'preboardWhoF9']) {
+    'preboardWhoAS', 'preboardWhoB6', 'courtesyWhoB6', 'preboardWhoWN', 'prioWhoWN', 'preboardWhoF9',
+    'cabinPremEconAC', 'cabinExtComfortWS', 'cabinMainAA', 'prioWhoDL1', 'prioWhoDL2', 'prioWhoDL3', 'prioWhoAS', 'prioWhoASa',
+    'prioWhoASb', 'prioWhoASc', 'prioWhoWNalp', 'preboardWhoMO', 'preboardWhoIB']) {
     const e = STORE.entry(k);
     assert.ok(e && e.$src, k + ' carries $src');
     for (const l of LANGS) assert.ok(e.$src[l], k + ' $src ' + l);
@@ -126,6 +138,14 @@ test('every key a table names exists where the gate looks, in all nine languages
   assert.equal(STORE.bs('specialBoard', 'fr'), 'Embarquement spécial', "WestJet's French");
   assert.equal(STORE.bs('earlyAccess', 'fr'), 'Accès anticipé', "Delta's French");
   assert.equal(STORE.entry('preboardWhoF8').$src.fr, 'careful', "Flair's French is not verified, and says so");
+  // each zone's own cabin, in the airline's own French where it publishes one
+  assert.equal(STORE.bs('cabinPremEconAC', 'fr'), 'Économique Privilège', "Air Canada's Zone 2 cabin");
+  assert.equal(STORE.bs('cabinExtComfortWS', 'fr'), 'Confort accru', "WestJet's Zone 2 seats");
+  assert.equal(STORE.bs('cabinMainAA', 'en'), 'Main Cabin', "American's word, not 'Economy Class'");
+  assert.match(STORE.bs('familyWhoAC', 'en'), /children under the age of 6 or who need more time to board · .*musical instruments/, "Air Canada's whole family step");
+  assert.equal(STORE.bs('earlyAccessWhoDL', 'fr'), 'Voyageurs avec des sièges-auto et des poussettes', "Delta's « sièges auto »");
+  assert.equal(STORE.entry('preboardWhoTS').$src.fr, 'careful', "Transat's French for who pre-boards is a reading, and says so");
+  assert.ok(!/A-List/.test(STORE.bs('prioWhoWN', 'en')), "Southwest's A-List Preferred is its own row");
   // the fixes in the same change
   assert.equal(STORE.bs('cabinPremiumWS', 'fr'), 'Privilège', "WestJet's own French for its cabin");
   assert.notEqual(STORE.bs('preboard', 'ja'), GATE_LBL.priority.ja + '搭乗', 'pre-boarding no longer reads "priority boarding" in Japanese');
@@ -134,13 +154,14 @@ test('every key a table names exists where the gate looks, in all nine languages
 });
 
 test('a programme name never stands on its own: only inside a translated who-list', () => {
-  const NAMES = ['Aeroplan', 'ConciergeKey', 'A-List Preferred', 'Global Services', 'Premier 1K', 'Medallion', 'Elite Diamond'];
+  const NAMES = ['Aeroplan', 'ConciergeKey', 'A-List Preferred', 'Global Services', 'Premier 1K', 'Medallion', 'Elite Diamond',
+    'Delta One', 'Delta First', 'Delta Comfort', 'Premium Select', 'Atmos', 'Polaris'];
   for (const [key, T] of Object.entries(SEQ.SEQ)) {
     for (const s of T.stages) {
-      for (const k of ['title', 'sub', 'label']) {
-        if (!s[k]) continue;
-        const e = GATE_LBL[s[k]] || STORE.entry(s[k]);
-        for (const n of NAMES) assert.ok(!String(e.en).includes(n), `${key}: ${s[k]} names ${n} outside a who-list`);
+      for (const k of [s.title, s.label, ...subKeys(s.sub)]) {
+        if (!k) continue;
+        const e = GATE_LBL[k] || STORE.entry(k);
+        for (const n of NAMES) assert.ok(!String(e.en).includes(n), `${key}: ${k} names ${n} outside a who-list`);
       }
     }
   }
@@ -148,8 +169,8 @@ test('a programme name never stands on its own: only inside a translated who-lis
 });
 
 test('every carrier starts with pre-boarding, and its calls run in its published order', () => {
-  // Phase 1 has no airline without pre-boarding (Iberia, Ryanair and
-  // Norwegian, which differ, are phase 2 and stay on the generic plan).
+  // Ryanair does not pre-board, Norwegian publishes no pre-boarding, and
+  // Iberia calls Group 0 before it: their own tables.
   const EXCEPTIONS = new Set(['IB', 'FR', 'DY']);
   for (const [code, ctx] of CARRIERS) {
     const p = planFor(code, ctx, 35, 15);
@@ -161,12 +182,28 @@ test('every carrier starts with pre-boarding, and its calls run in its published
     assert.ok(firstGen > 0, code + ' has a general call');
     assert.ok(p.full.slice(firstGen).every((s) => s.kind === 'gen'), code + ': general boarding comes last');
   }
-  for (const code of ['IB', 'FR', 'DY', 'NK', 'OO', 'YX']) assert.equal(SEQ.plan(code).key, 'generic', code + ' gets the generic plan');
+  for (const code of ['NK', 'OO', 'YX']) assert.equal(SEQ.plan(code).key, 'generic', code + ' gets the generic plan');
+  for (const code of ['IB', 'FR', 'DY']) {
+    const p = SEQ.plan(code);
+    assert.equal(p.key, code, code + ' reads its own table');
+    const firstGen = p.full.findIndex((s) => s.kind === 'gen');
+    assert.ok(firstGen > 0 && p.full.slice(firstGen).every((s) => s.kind === 'gen'), code + ': general boarding comes last');
+  }
   // the airline's own order where it differs from pre → elite → general
   const kinds = (c, ctx) => SEQ.plan(c, ctx).full.map((s) => s.kind + (s.values.length ? s.values.join('') : (s.title ? ':' + s.title : ''))).join(' ');
   assert.equal(kinds('AC'), 'pre:preboard prio1 prio2 fam:familyBoard gen3 gen4 gen5 gen6', 'Air Canada: families between Zones 2 and 3');
   assert.equal(kinds('AC', { express: true }), 'pre:preboard prio1 prio2 fam:familyBoard gen3 gen4', 'Express tops out at Zone 4');
-  assert.equal(kinds('WS'), 'pre:preboard prio1 prio2 fam:specialBoard gen3 gen4 gen5 gen6 gen7 gen8 gen9', 'WestJet: special boarding after the priority zones, then 3 to 9');
+  assert.equal(kinds('WS'), 'pre:preboard prio1 prio2 fam:specialBoard gen3 gen3+', "WestJet: special boarding after the priority zones, then Zone 3 and WestJet's own Zone 3+");
+  assert.equal(kinds('WR'), 'pre:preboard prio1 prio2 fam:specialBoard gen3 gen3+', 'Encore the same: never stepping through zones an aircraft may not use');
+  assert.equal(kinds('FR'), 'prio gen:allPax', 'Ryanair does not pre-board: Priority, then everyone');
+  assert.equal(kinds('DY'), 'prioA genB genC', 'Norwegian: Group A (Priority Boarding), then B, then C');
+  assert.equal(kinds('IB'), 'prio0 pre:preboard prio1 prio2 gen:allPax', 'Iberia: Group 0 before pre-boarding');
+  assert.equal(kinds('MO', { legalPre: true }), 'pre:preboard gen:allPax', 'Calm Air: its own pre-boarding list, no priority step');
+  assert.equal(SEQ.plan('MO').full[0].who, 'preboardWhoMO', "Calm Air's own list, not the house line");
+  assert.equal(kinds('WN'), 'pre:preboard prio prio prio1 prio2 gen3 gen4 gen5 gen6 gen7 gen8', 'Southwest: Priority Boarding, then A-List Preferred, then Groups 1 and 2');
+  assert.deepEqual(SEQ.plan('WN').full.slice(1, 3).map((s) => s.who), ['prioWhoWN', 'prioWhoWNalp'], 'A-List Preferred is its own call');
+  assert.equal(kinds('AS'), 'pre:preboard prio prioA prioB prioC genD genE genF');
+  assert.equal(SEQ.plan('AS').full[1].who, 'prioWhoAS', "Alaska's Priority Boarding names First Class and Atmos Titanium");
   assert.equal(kinds('DL'), 'pre:preboard prio1 prio2 fam:earlyAccess prio3 prio4 gen5 gen6 gen7 gen8', 'Delta: Early Access after Zone 2');
   assert.equal(kinds('B6'), 'pre:preboard prio1 prio2 prio3 fam:courtesyBoard gen4 gen5 gen6 gen7 gen8', 'JetBlue: Courtesy Boarding after Group 3');
   assert.equal(kinds('AA'), 'pre:preboard prio fam:familyBoard prio1 prio2 prio3 prio4 gen5 gen6 gen78 gen9', 'American: families after Business');
@@ -175,9 +212,13 @@ test('every carrier starts with pre-boarding, and its calls run in its published
   assert.equal(kinds('PB'), 'pre:preboard gen:allPax', "PAL's two steps");
   assert.equal(kinds('ZZ'), 'pre:preboard prio gen:allPax', 'the generic plan: three steps, nothing invented');
   assert.equal(kinds('4N'), 'pre:preboard gen:allPax', 'a carrier with no priority step: two');
+  // Porter publishes no "board at your convenience": the sign does not say it
+  assert.equal(SEQ.SEQ.PD.prioAnyTime, false, 'Porter: no board-at-your-convenience line');
+  assert.equal(SEQ.SEQ.AC.prioAnyTime, true, "Air Canada's footnote says it");
+  for (const [k, T] of Object.entries(SEQ.SEQ)) if (k !== 'AC') assert.equal(T.prioAnyTime, false, k + ' publishes no any-time line');
 });
 
-test('for every table, every lead and every close: increasing starts, steps 1.5–5 min, pre-boarding 2–5, the last call in time', () => {
+test('for every table, every lead and every close: increasing starts, steps 1.5–5 min, pre-boarding 2–5, the last call before the close', () => {
   let n = 0;
   for (const [code, ctx] of CARRIERS) {
     for (const lead of LEADS) {
@@ -186,15 +227,23 @@ test('for every table, every lead and every close: increasing starts, steps 1.5�
         const at = p.stages.map((s) => s.at);
         const where = `${code}${JSON.stringify(ctx)} lead ${lead} close ${close}: ${at.map((x) => x.toFixed(2)).join(' ')}`;
         assert.equal(at[0], 0, where + ' — starts at boarding open');
+        const last = at[at.length - 1];
+        // THE LAST CALL NEVER COMES AT OR AFTER THE CLOSE THE SAME SCREEN
+        // PRINTS: by L − C − 2, and five minutes before departure at the latest
+        assert.equal(p.S, Math.max(0, Math.min(lead - close - 2, lead - 5)), where + ' — S');
+        assert.ok(last <= lead - close - 2 + 1e-9 || (p.S === 0 && last === 0), where + ' — the last call two minutes before the close');
+        assert.ok(lead - last >= 5 - 1e-9, where + ' — at least five minutes before departure');
         for (let i = 1; i < at.length; i++) {
-          assert.ok(at[i] > at[i - 1], where + ' — strictly increasing');
+          assert.ok(at[i] >= at[i - 1], where + ' — in order');
           const step = at[i] - at[i - 1];
-          if (i === 1 && p.stages[0].kind === 'pre') assert.ok(step >= 2 - 1e-9 && step <= 5 + 1e-9, where + ' — pre-boarding 2 to 5 minutes');
+          if (p.even) {
+            // a window too short for 1.5-minute steps after every merge: a
+            // minute apart at the least, or everything after the first call
+            // together at S
+            assert.ok(step >= 1 - 1e-9 || at[i] === p.S, where + ' — never more often than once a minute, or together at S');
+          } else if (i === 1 && p.stages[0].kind === 'pre') assert.ok(step >= 2 - 1e-9 && step <= 5 + 1e-9, where + ' — pre-boarding 2 to 5 minutes');
           else assert.ok(step >= 1.5 - 1e-9 && step <= 5 + 1e-9, where + ' — a step 1.5 to 5 minutes');
         }
-        const last = at[at.length - 1];
-        assert.ok(last <= Math.max(lead - close - 2, lead / 2) + 1e-9, where + ' — the last call by max(L − C − 2, L/2)');
-        assert.ok(lead - last >= 5 - 1e-9, where + ' — at least five minutes before departure');
         // the absolute times agree with the minutes
         p.stages.forEach((s) => assert.equal(s.ts, T0 + Math.round(s.at * MIN)));
         n++;
@@ -204,16 +253,53 @@ test('for every table, every lead and every close: increasing starts, steps 1.5�
   assert.ok(n >= CARRIERS.length * 15);
 });
 
+test('no general call is ever made at or after the gate close the screen prints', () => {
+  // Found rendered on Halifax gate 99: an Air Canada Express Dash 8 (the sign
+  // opens 20 minutes out) printed "Gate closes 3:05pm" and called Zone 3 at
+  // 3:08 and Zone 4 at 3:10; a WestJet Encore Dash 8 called Zones 3 to 9
+  // after its 3:05 cut-off; an A320 and a Porter Dash 8 made their last call
+  // in the very minute the gate closed. The close is GATE_CLOSE_POLICY's.
+  const policyAt = CORE.indexOf('var GATE_CLOSE_POLICY = {');
+  const POLICY = new Function(braceFrom(CORE, policyAt, 'GATE_CLOSE_POLICY') + ';\nreturn GATE_CLOSE_POLICY;')();
+  const LEAD = { 'Dash 8-400 (DH4)': 20, 'CRJ (CR9)': 25, 'A320 (320)': 30, '737 (73H)': 35, 'widebody': 45 };
+  const cases = [['AC', {}], ['AC', { express: true }], ['QK', {}], ['RV', {}], ['WS', {}], ['WR', {}], ['PD', { pdDash: true }], ['PD', { pdDash: false }],
+    ['F8', {}], ['TS', {}], ['AA', {}]];
+  let n = 0;
+  for (const [code, ctx] of cases) {
+    const pol = POLICY[SEQ.resolve(code, ctx).key];
+    assert.ok(pol && pol.kind !== 'gateBeAt', code + ' publishes a close');
+    for (const [type, lead] of Object.entries(LEAD)) {
+      const p = planFor(code, ctx, lead, pol.min);
+      const dep = T0 + lead * MIN;
+      const lastTs = p.stages[p.stages.length - 1].ts;
+      // (a sign that opens less than three minutes before the close, which
+      // no airline's own aircraft does here: everything at boarding open)
+      if (lead - pol.min < 3) { assert.ok(p.stages.every((s) => s.ts === T0), code + ' ' + type + ': all at once'); n++; continue; }
+      assert.ok(lastTs <= dep - pol.min * MIN - MIN, `${code}${JSON.stringify(ctx)} on a ${type}: the last call ${(dep - lastTs) / MIN} min before departure, the gate closes at ${pol.min}`);
+      n++;
+    }
+  }
+  assert.ok(n >= 50);
+  // and the ones that were caught, at their own numbers
+  const last = (code, ctx, lead, close) => { const p = planFor(code, ctx, lead, close); return (p.dep - p.stages[p.stages.length - 1].ts) / MIN; };
+  assert.equal(last('QK', {}, 20, 15), 17, 'Express Dash 8: the last call 17 minutes out, before the 15-minute close');
+  assert.equal(last('WR', {}, 20, 15), 17, 'Encore Dash 8: the same');
+  assert.equal(last('AC', {}, 30, 15), 17, 'A320: two minutes before the close, not in its minute');
+  assert.equal(last('PD', { pdDash: true }, 20, 10), 12, 'Porter Dash 8: two minutes before its 10-minute close');
+});
+
 test('the worked offsets in the design', () => {
   const at = (c, ctx, L, C) => planFor(c, ctx, L, C).stages.map((s) => Math.round(s.at * 10) / 10);
-  assert.deepEqual(at('AC', {}, 30, 15), [0, 3, 5, 7, 9, 11, 13, 15]);
+  assert.deepEqual(at('AC', {}, 30, 15), [0, 2.6, 4.3, 6.1, 7.8, 9.5, 11.3, 13]);
   assert.deepEqual(at('AC', {}, 35, 15), [0, 3.6, 6, 8.4, 10.8, 13.2, 15.6, 18]);
   assert.deepEqual(at('AC', {}, 45, 15), [0, 5, 8.8, 12.7, 16.5, 20.3, 24.2, 28]);
-  assert.deepEqual(at('QK', {}, 20, 15), [0, 2.7, 4.5, 6.4, 8.2, 10]);
-  assert.deepEqual(at('WS', {}, 35, 15).slice(0, 4), [0, 2.6, 4.3, 6]);
-  assert.equal(at('WS', {}, 35, 15).slice(-1)[0], 18);
-  assert.deepEqual(at('WR', {}, 20, 15), [0, 2.3, 3.8, 5.4, 6.9, 8.5, 10]);
-  assert.deepEqual(at('PD', { pdDash: true }, 20, 10), [0, 4.3, 7.1, 10]);
+  // an Express Dash 8: the sign opens 20 minutes out, the gate closes 15
+  // out; three minutes for the calls, a minute apart
+  assert.deepEqual(at('QK', {}, 20, 15), [0, 1, 2, 3]);
+  assert.deepEqual(at('QK', {}, 25, 15), [0, 2.7, 4.4, 6.2, 8]);
+  assert.deepEqual(at('WS', {}, 35, 15), [0, 4.9, 8.2, 11.5, 14.7, 18]);
+  assert.deepEqual(at('WR', {}, 20, 15), [0, 1, 2, 3]);
+  assert.deepEqual(at('PD', { pdDash: true }, 20, 10), [0, 3.4, 5.7, 8]);
   assert.deepEqual(at('PD', { pdDash: false }, 35, 10), [0, 5, 10, 15]);
   assert.deepEqual(at('PB', {}, 25, 10), [0, 5]);
   assert.deepEqual(at('PB', {}, 20, 10), [0, 5]);
@@ -221,10 +307,16 @@ test('the worked offsets in the design', () => {
   assert.deepEqual(at('UA', {}, 35, 10), [0, 5, 8.6, 12.2, 15.8, 19.4, 23]);
   assert.equal(at('DL', {}, 35, 10).slice(-1)[0], 23);
   assert.deepEqual(at('ZZ', {}, 35, 10), [0, 5, 10]);
-  // the airport said Boarding 12 minutes late: the window is 18 minutes
-  const late = planFor('AC', {}, 18, 15);
+  // the airport said Boarding a few minutes late: the window is 26 minutes
+  const late = planFor('AC', {}, 26, 15);
   assert.deepEqual(late.stages.map((s) => s.values.join('•') || s.title), ['preboard', '1', '2', 'familyBoard', '3•4', '5•6']);
   assert.deepEqual(late.stages.map((s) => Math.round(s.at * 10) / 10), [0, 2.5, 4.1, 5.7, 7.4, 9]);
+  // and very late (18 minutes, three before the close): pre-boarding, then
+  // every other call together
+  const later = planFor('AC', {}, 18, 15);
+  assert.deepEqual(later.stages.map((s) => s.values.join('•') || s.title), ['preboard', '1•2', 'familyBoard', 'allPax']);
+  assert.deepEqual(later.stages.map((s) => s.at), [0, 1, 1, 1]);
+  assert.equal(SEQ.stageAt(later, T0 + 1.2 * MIN).cur.title, 'allPax', 'everything called at once, so the panels show it all');
 });
 
 test('a window too short merges calls and never drops a number', () => {
@@ -235,16 +327,37 @@ test('a window too short merges calls and never drops a number', () => {
         const want = SEQ.valuesOf(p.full);
         const got = [];
         for (const s of p.stages) got.push(...s.values, ...(s.collapsed || []));
-        assert.deepEqual(got, want, `${code} L=${L} C=${C}: every number is still called, in order`);
+        // (WestJet's Zone 3 and Zone 3+ merged are Zone 3+)
+        assert.deepEqual(SEQ.coverPlus(got), want, `${code} L=${L} C=${C}: every number is still called, in order`);
         for (let i = 1; i < p.stages.length; i++) assert.ok(p.stages[i].at >= p.stages[i - 1].at, `${code} L=${L}: in order`);
       }
     }
   }
   // the order of the merges: general pairs, then the priority numbers, then All passengers
+  const ac = planFor('AC', {}, 26, 15).stages.map((s) => s.values.join('•') || s.title);
+  assert.deepEqual(ac, ['preboard', '1', '2', 'familyBoard', '3•4', '5•6'], 'general pairs first');
+  const qk = planFor('QK', {}, 20, 15).stages.map((s) => s.values.join('•') || s.title);
+  assert.deepEqual(qk, ['preboard', '1•2', 'familyBoard', '3•4'], 'then the priority zones');
   const ws = planFor('WR', {}, 20, 15).stages.map((s) => s.values.join('•') || s.title);
-  assert.deepEqual(ws, ['preboard', '1•2', 'specialBoard', '3•4', '5•6', '7•8', '9']);
+  assert.deepEqual(ws, ['preboard', '1•2', 'specialBoard', '3+'], "WestJet's Zone 3 and Zone 3+ merged are Zone 3+");
   const tiny = planFor('UA', {}, 8, 10).stages.map((s) => s.values.join('•') || s.title);
   assert.equal(tiny[tiny.length - 1], 'allPax', 'a few minutes left: general boarding, all passengers');
+  // priority numbers merge only with their neighbours: never across a family
+  // call, which keeps its place (Delta's Early Access sits after Zone 2)
+  for (const L of [12, 14, 16, 18, 20, 22, 25]) {
+    const dl = planFor('DL', {}, L, 10).stages;
+    const ea = dl.findIndex((s) => s.title === 'earlyAccess');
+    const before = SEQ.valuesOf(dl.slice(0, ea)), after = SEQ.valuesOf(dl.slice(ea + 1).filter((s) => s.kind === 'prio'));
+    assert.ok(before.every((v) => +v <= 2), `DL L=${L}: only Zones 1 and 2 before Early Access (${before})`);
+    assert.ok(after.every((v) => +v >= 3), `DL L=${L}: Zones 3 and 4 after it (${after})`);
+  }
+  // a merged call names a cabin or a who-list only when every call in it has it
+  const qk2 = planFor('QK', { twoCabin: true }, 20, 15).stages[1];
+  assert.deepEqual(qk2.values, ['1', '2']);
+  assert.equal(qk2.sub, '', 'Zones 1 • 2 merged: Zone 1 is Business, Zone 2 is not, so no cabin');
+  const dlm = planFor('DL', {}, 20, 10).stages.find((s) => s.merged && s.kind === 'prio');
+  assert.ok(dlm, 'a merged Delta priority call');
+  assert.equal(dlm.who, '', 'and no who-list that only one of them calls');
 });
 
 test('Porter boards in three row bands: no gap, no overlap, the middle band called', () => {
@@ -281,7 +394,7 @@ test('stageAt: stage 0 before boarding opens, the last after the last call, and 
   const mid = SEQ.stageAt(p, T0 + 6 * MIN);
   assert.equal(mid.cur.values[0], '2', '6 minutes in: Zone 2');
   assert.equal(mid.next.title, 'familyBoard');
-  assert.equal(mid.nextTs, T0 + 7 * MIN);
+  assert.equal(mid.nextTs, p.stages[3].ts);
   assert.equal(SEQ.stageAt(p, T0 + 7 * MIN).cur.title, 'familyBoard', 'a call comes on at its own minute');
   const after = SEQ.stageAt(p, T0 + 60 * MIN);
   assert.equal(after.i, p.stages.length - 1);
@@ -312,7 +425,8 @@ test('carriers resolve to their tables', () => {
   for (const c of ['MQ', 'PT', 'OH']) assert.equal(r(c), 'AA', c);
   assert.equal(r('G7'), 'UA');
   for (const c of ['OO', 'YX', 'NK', 'XX', '']) assert.equal(r(c), 'generic', (c || 'empty') + ' is ambiguous or unpublished');
-  for (const c of ['4N', 'MO', 'BQ', 'P6', '9M']) assert.equal(r(c), 'noPrio', c + ' publishes no priority step');
+  for (const c of ['4N', 'BQ', 'P6', '9M']) assert.equal(r(c), 'noPrio', c + ' publishes no priority step');
+  for (const [c, k] of [['MO', 'MO'], ['CAV', 'MO'], ['FR', 'FR'], ['RYR', 'FR'], ['DY', 'DY'], ['NOZ', 'DY'], ['IB', 'IB'], ['IBE', 'IB']]) assert.equal(r(c), k, c + ' reads its own table');
   // Edinburgh's ICAO designators go through CALLSIGN_ICAO first
   assert.match(inner('_g8SeqPlan'), /CALLSIGN_ICAO\[_seqCode\]/);
 });
@@ -418,16 +532,23 @@ test('the memo never steps back, whatever the plan is rebuilt from', () => {
   const G = gate();
   const cf = row('boarding');
   const p1 = SEQ.plan('AC', { t0: T0, dep: T0 + 30 * MIN, close: 15 });
-  const s1 = G._gateSeqMemo(cf, p1, SEQ.stageAt(p1, T0 + 13.5 * MIN));
+  const s1 = G._gateSeqMemo(cf, p1, SEQ.stageAt(p1, T0 + 11.5 * MIN));
   assert.deepEqual(s1.cur.values, ['5']);
   // t0 worked out again, later (the aircraft type resolved: a shorter lead)
-  const p2 = SEQ.plan('AC', { t0: T0 + 10 * MIN, dep: T0 + 30 * MIN, close: 15 });
-  const raw = SEQ.stageAt(p2, T0 + 14 * MIN);
+  const p2 = SEQ.plan('AC', { t0: T0 + 4 * MIN, dep: T0 + 30 * MIN, close: 15 });
+  const raw = SEQ.stageAt(p2, T0 + 12 * MIN);
   assert.ok(raw.i < s1.i, 'the rebuilt plan alone would step back');
   const s2 = G._gateSeqMemo(cf, p2, raw);
   assert.ok(SEQ.valuesOf([s2.cur]).includes('5') || s2.cur.values.some((v) => +v >= 5), 'the memo holds Zone 5');
   assert.deepEqual(s2.cur.values, ['5', '6'], 'the merged Zones 5 • 6 once Zone 5 was called');
-  assert.ok(s2.nextTs === 0 || s2.nextTs > T0 + 14 * MIN, 'and a next call, if any, is still to come');
+  assert.ok(s2.nextTs === 0 || s2.nextTs > T0 + 12 * MIN, 'and a next call, if any, is still to come');
+  // two un-numbered calls in a row are two calls (Southwest's Priority
+  // Boarding, then A-List Preferred): calling the first never marks the
+  // second as made
+  const wn = SEQ.plan('WN', { t0: T0, dep: T0 + 35 * MIN, close: 10 });
+  const wc = SEQ.calledThrough(wn, 1, null);
+  assert.ok(wc['w:prioWhoWN'] && !wc['w:prioWhoWNalp']);
+  assert.equal(SEQ.floorIndex(wn, wc), 1, 'A-List Preferred is still to come');
   // a plan that turns into Express (top zone 4) after Zone 5 was called
   const p3 = SEQ.plan('AC', { t0: T0, dep: T0 + 30 * MIN, close: 15, express: true });
   const s3 = G._gateSeqMemo(cf, p3, SEQ.stageAt(p3, T0 + 3 * MIN));
@@ -452,7 +573,7 @@ test('the memo never steps back, whatever the plan is rebuilt from', () => {
 // renders as nothing or as its own name; either fails here.
 function signRenderer(langs, frF) {
   const helpers = ['_g8GrpValCls', '_g8SignPair', '_g8SignLanes', '_g8SignLines', '_g8SignNext', '_g8ArrowDisc', '_g8ArrowGlyph',
-    '_g8SignCol', '_g8SignHtml', '_g8SeqLabelKey', '_g8SeqValue', '_g8SeqWho', '_g8SeqPanels'].map(inner);
+    '_g8SignCol', '_g8SignHtml', '_g8SeqLabelKey', '_g8SeqValue', '_g8SeqWho', '_g8SeqCab', '_g8SeqCabOf', '_g8SeqPanels'].map(inner);
   const arrow = (UXG.match(/  var _G8_ARROW_PATH = [^;]+;/) || [])[0];
   assert.ok(arrow, 'the arrow path');
   const src = [block('var _GATE_LBL = {'), top('_lblEntry'), top('_gateLbl'), top('_gateLbl1Pick'), top('_gateLbl1Html'),
@@ -492,11 +613,10 @@ test('no missing label key on any stage, in any language: every panel says its w
           assert.equal(cols.length, 2, where + ': both panels');
           for (const c of cols) assert.match(c, /class="g8-sign-title g8-pair"><span class="bs-h|class="g8-sign-title g8-pair"><span /, where + ': a title on each panel');
           for (const c of cols) assert.match(c, /g8-sign-lanes g8-pair"><span/, where + ': a lane line on each panel');
-          // a who-list where the stage names one, in the board's first language
+          // a who-list where the stage names one, in each of the board's languages
           if (!isFinal && st.cur.side === 'L' && st.cur.who) {
             const e = STORE.entry(st.cur.who);
-            const first = STORE.pairLangs(langs, frF)[0];
-            assert.ok(text.includes(e[first].split(' · ')[0]), `${where}: who is called (${st.cur.who})`);
+            for (const l of STORE.pairLangs(langs, frF)) assert.ok(text.includes(e[l].split(' · ')[0]), `${where}: who is called (${st.cur.who}, ${l})`);
           }
           // a pair is two whole halves round one bar: never stacked halves
           assert.doesNotMatch(html, /g8-bir-l1|g8-bir-l2/, where + ': no stacked halves');
@@ -510,30 +630,53 @@ test('no missing label key on any stage, in any language: every panel says its w
 
 test('the panels say the right thing at the right stage', () => {
   const render = signRenderer(['en', 'fr'], false);
+  const planOf = (code, ctx) => planFor(code, ctx, 30, 15);
   const at = (code, ctx, mins, isFinal) => {
-    const p = planFor(code, ctx, 30, 15);
+    const p = planOf(code, ctx);
     return textOf(render({ p, st: SEQ.stageAt(p, T0 + mins * MIN) }, !!isFinal));
   };
+  const htmlAt = (code, ctx, mins, isFinal) => {
+    const p = planOf(code, ctx);
+    return render({ p, st: SEQ.stageAt(p, T0 + mins * MIN) }, !!isFinal);
+  };
+  // the minute a stage is live, by what it calls
+  const when = (code, ctx, pick) => { const s = planOf(code, ctx).stages.find(pick); assert.ok(s, code + ': the stage'); return s.at + 0.3; };
   // Air Canada A320, 30-minute window
   const pre = at('AC', {}, 1);
   assert.match(pre, /Pre-boarding \| Préembarquement/);
   assert.match(pre, /wheelchair/, "Air Canada's own words for who pre-boards");
+  assert.match(pre, /fauteuil roulant/, 'and in French too: the gate has no language rotation, both are shown');
   assert.match(pre, /Next : Zone 1|Next: Zone 1/);
   assert.match(pre, /General boarding \| Embarquement général/);
   assert.match(pre, /Boarding Will Begin Shortly/, 'general boarding is not called yet');
   assert.doesNotMatch(pre, /Zones/, 'a single zone is singular');
-  const z1 = at('AC', {}, 3.5);
+  // the waiting panel never reads as a live call: no number, no arrow; its
+  // first call is the Next line
+  const preH = htmlAt('AC', {}, 1);
+  const right = preH.split('g8-sign-right')[1];
+  assert.match(preH, /g8-sign-right[^"]*is-waiting/, 'the waiting panel says so in its class');
+  assert.doesNotMatch(right, /g8-sign-valarrow/, 'no arrow while it waits');
+  assert.doesNotMatch(right, /g8-sign-row/, 'no number on a row while it waits');
+  assert.match(textOf(right), /Next: Zone 3/, 'its first call, as the Next line');
+  const z1 = at('AC', {}, when('AC', {}, (s) => s.values.includes('1')));
   assert.match(z1, /Priority \| Prioritaire/);
-  assert.match(z1, /Business Class \| Classe affaires/);
+  assert.match(z1, /Business Class \| Classe affaires/, 'Zone 1: Business Class');
   assert.match(z1, /Zone 1/);
   assert.match(z1, /Next: Zone 2/);
-  const fam = at('AC', {}, 7.5);
+  const z2 = at('AC', {}, when('AC', {}, (s) => s.values.includes('2')));
+  assert.doesNotMatch(z2, /Business Class|Premium Economy/, 'Zone 2 on an A320 names no cabin: Premium Economy flies only on widebodies');
+  const z2w = at('AC', { cat: 'widebody' }, when('AC', { cat: 'widebody' }, (s) => s.values.includes('2')));
+  assert.match(z2w, /Premium Economy \| Économique Privilège/, 'Zone 2 on a widebody: Premium Economy, in Air Canada\'s French');
+  assert.doesNotMatch(z2w, /Business Class/, 'never the first priority call\'s cabin');
+  const fam = at('AC', {}, when('AC', {}, (s) => s.title === 'familyBoard'));
   assert.match(fam, /Family boarding \| Embarquement des familles/);
-  assert.match(fam, /under the age of 6/);
-  const z3 = at('AC', {}, 9.5);
+  assert.match(fam, /under the age of 6 or who need more time to board/);
+  assert.match(fam, /musical instruments/, "Air Canada's whole step");
+  const z3 = at('AC', {}, when('AC', {}, (s) => s.values.includes('3')));
   assert.match(z3, /Priority \| Prioritaire.*Zones 1 • 2/, 'the priority values called stay listed');
+  assert.doesNotMatch(z3.split('General boarding')[0], /Business Class/, 'Zones 1 • 2 share no cabin: none is named');
   assert.match(z3, /Board at your convenience/, "Air Canada's footnote: priority may board at any time");
-  assert.match(z3, /Zone 3/);
+  assert.match(z3, /Economy Class \| Classe économique.*Zone 3/);
   assert.match(z3, /Next: Zones 4 • 5 • 6/);
   const z6 = at('AC', {}, 20);
   assert.match(z6, /Zone 6/);
@@ -541,20 +684,33 @@ test('the panels say the right thing at the right stage', () => {
   const fc = at('AC', {}, 20, true);
   assert.match(fc, /Zones 3 • 4 • 5 • 6/);
   assert.doesNotMatch(fc, /Pre-boarding|wheelchair|Next/, 'the final call: no pre-boarding words, no Next line');
-  // WestJet: special boarding, and its final call 3–9
-  const wsP = planFor('WS', {}, 30, 15);
-  const wsSp = wsP.stages.find((x) => x.title === 'specialBoard');
-  assert.match(at('WS', {}, wsSp.at + 0.5), /Special boarding \| Embarquement spécial/);
-  assert.match(at('WS', {}, wsSp.at + 0.5), /under five/);
-  assert.match(at('WS', {}, 20, true), /Zones 3–9/);
-  assert.match(at('WS', {}, 9), /Next: Zones 4–9|Next: Zones 5–9|Next: Zones 6–9/, 'more than three still to come: a range');
+  // Rouge: Premium Rouge in Zone 1 on a Caribbean flight, Zone 2 on an international one
+  assert.match(at('RV', { region: 'carib' }, when('RV', { region: 'carib' }, (s) => s.values.includes('1'))), /Premium Rouge/);
+  assert.doesNotMatch(at('RV', { region: 'carib' }, when('RV', { region: 'carib' }, (s) => s.values.includes('2'))), /Premium Rouge/);
+  assert.doesNotMatch(at('RV', { region: 'intl' }, when('RV', { region: 'intl' }, (s) => s.values.includes('1'))), /Premium Rouge/);
+  assert.match(at('RV', { region: 'intl' }, when('RV', { region: 'intl' }, (s) => s.values.includes('2'))), /Premium Rouge/);
+  assert.doesNotMatch(at('RV', { region: 'na' }, when('RV', { region: 'na' }, (s) => s.values.includes('1'))), /Premium Rouge/, 'a U.S. or Mexican flight: neither, so none');
+  // WestJet: Premium, Extended Comfort, special boarding, Zone 3 then Zone 3+
+  assert.match(at('WS', {}, when('WS', {}, (s) => s.values.includes('1'))), /Premium \| Privilège/);
+  assert.match(at('WS', {}, when('WS', {}, (s) => s.values.includes('2'))), /Extended Comfort \| Confort accru/, "WestJet's Zone 2 seats");
+  assert.doesNotMatch(at('WR', {}, when('WR', {}, (s) => s.values.includes('2'))), /Extended Comfort/, 'no page says Encore sells it');
+  assert.match(at('WR', {}, when('WR', {}, (s) => s.values.includes('1'))), /Premium \| Privilège/, 'Encore sells Premium');
+  const wsSp = when('WS', {}, (s) => s.title === 'specialBoard');
+  assert.match(at('WS', {}, wsSp), /Special boarding \| Embarquement spécial/);
+  assert.match(at('WS', {}, wsSp), /under five/);
+  assert.match(at('WS', {}, when('WS', {}, (s) => s.values.includes('3'))), /Zone 3.*Next: Zone 3\+/, 'Zone 3, then Zone 3+');
+  assert.match(at('WS', {}, 20, true), /Zone 3\+/);
+  assert.doesNotMatch(at('WS', {}, 20, true), /Zones? 3–9|Zones? [4-9]\b/, 'never a zone WestJet does not publish');
   // Porter: pre-boarding keeps PorterReserve; the rows; Rows All at the final call
   const pd = at('PD', { pdDash: true }, 1);
   assert.match(pd, /Pre-boarding/);
   assert.match(pd, /PorterReserve/);
   assert.match(pd, /Unaccompanied minors/, "Porter's published roster");
-  assert.match(pd, /Rows \| Rangées 14–20/, 'waiting: the first band, never 1–7');
-  assert.match(at('PD', { pdDash: true }, 6), /Rows \| Rangées 14–20.*Next: Rows 7–13 • 1–6|Rows \| Rangées 14–20/);
+  assert.match(pd, /Mineurs non accompagnés/, 'in French as well');
+  assert.match(pd, /Next: Rows 14–20/, 'waiting: the first band is the Next line, never 1–7');
+  const pdLive = at('PD', { pdDash: true }, when('PD', { pdDash: true }, (s) => s.values.includes('14–20')));
+  assert.match(pdLive, /Rows \| Rangées 14–20.*Next: Rows 7–13 • 1–6/);
+  assert.doesNotMatch(pdLive, /Board at your convenience|Priority/, 'Porter publishes neither: the sign says neither');
   assert.match(at('PD', { pdDash: true }, 20, true), /Rows \| Rangées All \| Toutes/);
   // the generic plan: All passengers, never an invented group number
   const g = at('ZZ', { legalPre: true }, 12);
@@ -566,14 +722,102 @@ test('the panels say the right thing at the right stage', () => {
   assert.match(at('PB', {}, 1), /Use Lane 1 \| Utilisez la voie 1/);
   assert.match(at('PB', {}, 8), /All passengers/);
   assert.match(at('PB', {}, 1), /Pre-boarding.*Unaccompanied minors/, "PAL's own pre-boarding list");
-  // an airline with no priority step is never given one: its left lane stays
-  // its pre-boarding lane, without the list
-  for (const [code, mins, fin] of [['PB', 8, false], ['PB', 20, true], ['4N', 8, false]]) {
-    const x = at(code, { legalPre: true }, mins, fin);
-    assert.doesNotMatch(x, /Priority|Prioritaire/, code + ': no priority step is invented');
-    assert.match(x, /Pre-boarding \| Préembarquement/, code + ': the pre-boarding lane');
-    assert.doesNotMatch(x, /Unaccompanied minors|need assistance/, code + ': without the list');
+  // An airline with no priority step is never given one, and once its
+  // pre-boarding is over (and at the final call) its left lanes serve the
+  // same call as the right: never 'Pre-boarding' at the final call
+  for (const [code, ctx, mins, fin] of [['PB', {}, 8, false], ['PB', {}, 20, true], ['4N', { legalPre: true }, 8, false],
+    ['MO', {}, 8, false], ['PD', { pdDash: true }, 20, true]]) {
+    const x = at(code, ctx, mins, fin);
+    const where = code + (fin ? ' final' : ' at ' + mins);
+    assert.doesNotMatch(x, /Priority|Prioritaire/, where + ': no priority step is invented');
+    assert.doesNotMatch(x, /Pre-boarding|Préembarquement/, where + ': not a pre-boarding panel once pre-boarding is over');
+    assert.equal((x.match(/General boarding \| Embarquement général/g) || []).length, 2, where + ': both lanes serve the general call');
+    assert.doesNotMatch(x, /Unaccompanied minors|need assistance/, where + ': without the list');
   }
+  // Delta and Alaska: their cabins are brands, named in who each call is for
+  const dl1 = at('DL', {}, when('DL', {}, (s) => s.values.includes('1')));
+  assert.match(dl1, /Delta One customers · Delta First customers/);
+  assert.doesNotMatch(dl1, /First Class|Première classe/, "never 'First Class' for Delta");
+  assert.match(at('DL', {}, when('DL', {}, (s) => s.values.includes('3'))), /Delta Comfort customers/);
+  assert.doesNotMatch(at('DL', {}, when('DL', {}, (s) => s.values.includes('6'))), /Economy Class/, 'Delta Main is not called Economy Class');
+  assert.match(at('AS', {}, when('AS', {}, (s) => s.who === 'prioWhoAS')), /First Class · Atmos Titanium members/);
+  assert.match(at('AS', {}, when('AS', {}, (s) => s.values.includes('A'))), /Families with children under the age of 2/);
+  assert.match(at('AA', {}, when('AA', {}, (s) => s.values.includes('5'))), /Main Cabin \| Cabine principale/);
+  assert.doesNotMatch(at('AA', {}, when('AA', {}, (s) => s.values.includes('1'))), /First Class/, "American's Group 1 is no cabin");
+  assert.match(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1'))), /United First/);
+  assert.doesNotMatch(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('2'))), /United First/, "United's Group 2 is Premier Silver and Premier Access");
+  assert.doesNotMatch(at('UA', { cat: 'widebody' }, when('UA', { cat: 'widebody' }, (s) => s.values.includes('1'))), /United First/, 'a widebody: United Polaris or Business, so none is guessed');
+  // Ryanair: no pre-boarding step at all
+  assert.doesNotMatch(at('FR', {}, 1) + at('FR', {}, 20, true), /Pre-boarding|Préembarquement/);
+  assert.match(at('FR', {}, 1), /Priority \| Prioritaire/);
+});
+
+test('the who-line is in both of the board\'s languages, each item whole', () => {
+  // The gate has no language rotation (tick_carousel runs on the main board
+  // only), so a who-line drawn one language at a time was only ever drawn
+  // in the first: Air Canada's pre-boarding never in French at Halifax,
+  // never in English at Montréal.
+  const P = inner('_g8SeqWho');
+  assert.match(P, /return _gateLbl\(s\.who, _frF, function \(w\) \{/, 'through the pair builder: both languages');
+  assert.doesNotMatch(P, /_gateLbl1/, 'never one language');
+  for (const [langs, frF] of [[['en', 'fr'], false], [['fr', 'en'], true], [['en', 'es'], false], [['ja', 'en'], false], [['ar', 'en'], false], [['de', 'pt'], false]]) {
+    const render = signRenderer(langs, frF);
+    const pair = STORE.pairLangs(langs, frF);
+    for (const [code, key] of [['AC', 'preboardWhoAC'], ['UA', 'preboardWhoUA'], ['PD', 'preboardList'], ['WS', 'preboardWhoWS']]) {
+      const p = planFor(code, code === 'PD' ? { pdDash: true } : {}, 30, 15);
+      const html = render({ p, st: SEQ.stageAt(p, T0 + 0.5 * MIN) }, false);
+      const e = GATE_LBL[key] || STORE.entry(key);
+      for (const l of pair) {
+        for (const item of e[l].split(' · ')) {
+          // each item one unit: the line breaks between items, never inside
+          const unit = new RegExp('<span class="g8-who-i">' + item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '( ·)?</span>');
+          assert.match(html, unit, `${code} ${langs}: '${item}' (${l}) is one whole unit`);
+        }
+      }
+      assert.equal((html.match(/class="g8-who-blk"/g) || []).length, new Set(pair.map((l) => e[l])).size, `${code} ${langs}: one block per language`);
+      assert.match(html, new RegExp('<span class="g8-who-blk" lang="' + pair[0] + '"'), 'each block marked with its language');
+    }
+  }
+  const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
+  assert.match(CSS, /\.g8-sign \.g8-sign-roster \.g8-who-i \{ display: inline-block !important; white-space: normal !important; max-width: 100% !important;/, 'an item is an unbreakable unit that may wrap only on its own words when wider than the panel');
+  assert.match(CSS, /\.g8-sign \.g8-sign-roster \.g8-who-blk \{ display: block !important; \}/, 'each language its own block');
+  assert.match(CSS, /\.g8-sign \.g8-sign-col\.has-roster \.g8-sign-lanes \{ margin-top: auto !important; \}/, 'a numbered call with a short who-list keeps its lane line level with the other panel');
+});
+
+test('a who-list never runs off its panel, and a group code shares the row with its word', () => {
+  // Alaska's Group A in English and French at 1680x1050 ran past the panel's
+  // foot, over the lane line and under the arrow discs, and was clipped.
+  const fit = top('_fidsSignColFit');
+  assert.match(fit, /querySelectorAll\('\.g8-sign \.g8-sign-col\.has-roster'\)/);
+  assert.match(fit, /col\.scrollHeight > col\.clientHeight \+ 1/, 'measured as drawn');
+  assert.match(fit, /var steps = \[\[0\.92, 1\], \[0\.84, 1\], \[0\.75, 1\], \[0\.75, 0\.85\], \[0\.75, 0\.72\], \[0\.75, 0\.6\], \[0\.65, 0\.6\], \[0\.55, 0\.6\]\];/, 'the list first, then the number, then the list again');
+  assert.match(fit, /ro\.style\.setProperty\('font-size', rb \+ 'px', 'important'\);/, 'every pass starts from the stylesheet size');
+  const pass = top('_fidsPairSeparators');
+  assert.ok(pass.indexOf('_fidsSignColFit(scope)') > pass.indexOf("el.classList.toggle('is-stacked', stacked)"), 'after the pairs are fitted');
+  assert.match(CORE, /var _sr = document\.querySelectorAll\('\.g8-sign \[data-g8-rbase\], \.g8-sign \[data-g8-nbase\]'\);/, 'a resize measures afresh');
+  // 'A' was set as a phrase under 'Group | Groupe'; a code is a numeral now
+  const render = signRenderer(['en', 'fr'], false);
+  const p = planFor('AS', {}, 35, 10);
+  const html = render({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes('A')).ts + 1000) }, false);
+  assert.match(html, /<div class="g8-sign-row"><div class="g8-sign-label g8-pair">[\s\S]*?<\/div><div class="g8-sign-value">A<\/div><\/div>/, 'Group | Groupe  A on one row');
+  const ws = planFor('WS', {}, 35, 15);
+  const wsH = render({ p: ws, st: SEQ.stageAt(ws, ws.stages[ws.stages.length - 1].ts + 1000) }, false);
+  assert.match(wsH, /<div class="g8-sign-value">3\+<span class="g8-sign-valarrow">/, 'Zone 3+ is a numeral, with its arrow');
+  const pdH = render({ p: planFor('PD', { pdDash: true }, 30, 10), st: SEQ.stageAt(planFor('PD', { pdDash: true }, 30, 10), T0 + 29 * MIN) }, true);
+  assert.match(pdH, /g8-sign-value g8-grp-txt g8-pair/, 'a word value (All | Toutes) stays a phrase');
+});
+
+test("the final call's sign has the room boarding has", () => {
+  // Under the final call the sign fell back to a flex row, where a column's
+  // 4% padding is reckoned on the whole sign (77 px a side, not 38): 'Todos
+  // los pasajeros | All passengers' fitted while boarding and stacked at
+  // the final call.
+  const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
+  const at = CSS.indexOf("BOARDING SEQUENCES — THE FINAL CALL'S SIGN HAS THE ROOM BOARDING HAS");
+  assert.ok(at > 0);
+  const rule = CSS.slice(at, CSS.indexOf('}', at) + 1);
+  assert.match(rule, /(:not\(#_\)){16} \.g8-final\.active \.g8-board-body\.g8-sign \{\s*display: grid !important;\s*grid-template-columns: 1fr 1fr !important;/);
+  assert.ok(at < CSS.indexOf('v24014 — THE WEATHER CARD'), 'and the weather block stays last');
 });
 
 // ════════════════════════════════════════════════════════════════════════════

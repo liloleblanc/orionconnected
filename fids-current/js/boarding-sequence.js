@@ -25,7 +25,8 @@
  *
  * Exports: SEQ, ALIAS, plan(carrier, ctx), stageAt(plan, nowMs), and the
  * pure pieces the gate and the tests use: pace, t0For, fmt, atomsOf,
- * calledThrough, floorIndex, porterBands, resolve. No page access.
+ * calledThrough, floorIndex, porterBands, resolve, pickSub, coverPlus. No
+ * page access.
  */
 (function (root, factory) {
   var api = factory();
@@ -40,7 +41,21 @@
   // stage's own name (pre, fam and an un-numbered priority call); label: the
   // group word ('zone', 'groupLabel', 'rows'); value: the airline's number or
   // letter; sub: the cabin key printed under the title; who: the store key of
-  // who is called (shown one language at a time).
+  // who is called (shown in both of the board's languages).
+  //
+  // EACH STAGE NAMES ITS OWN CABIN, OR NONE. A sub is a key, or a list of
+  // [condition, key] read in order (the first that holds wins, none: no
+  // cabin), because the cabin in a zone depends on the aircraft and the
+  // route: Air Canada's Premium Economy (Zone 2) flies only on its widebodies,
+  // Premium Rouge boards in Zone 1 on domestic and Caribbean flights and in
+  // Zone 2 on international ones. Conditions (subWhen): 'wide' and 'narrow'
+  // (the aircraft's category, when the type is known), 'twoCabin' (a regional
+  // jet with a business cabin: CRJ900, CRJ700, E175), 'domcarib' and 'intl'
+  // (the route), '*' (always). A cabin the airline names only by a brand
+  // that is the same in every language (Delta One, Delta Main, United
+  // Polaris) is not a sub: the board-languages guard takes a new brand term
+  // only with its own approval, so those cabins are named inside a who-list
+  // in the airline's own words, or not at all.
   function pre(who, sub) { return { kind: 'pre', title: 'preboard', who: who || '', sub: sub || '' }; }
   function prio(label, value, sub, who) { return { kind: 'prio', label: label || '', value: value || '', sub: sub || '', who: who || '' }; }
   function fam(title, who) { return { kind: 'fam', title: title, who: who || '' }; }
@@ -54,41 +69,56 @@
     // Zone 2 · Family Boarding / Musical Instruments · Zone 3 – General
     // Boarding · Zones 4, 5 and 6". FAMILIES COME AFTER ZONES 1 AND 2: the
     // French family page says outright « entre les zones 2 et 3 ». Express
-    // ends at Zone 4. Rouge differs only in its premium cabin. Priority
-    // guests in Zones 1 and 2 may board at any time once general boarding has
-    // started (the page's footnote): prioAnyTime.
+    // ends at Zone 4. Priority guests in Zones 1 and 2 may board at any time
+    // once general boarding has started (the page's footnote): prioAnyTime.
+    // Cabins, as the page lists them: Zone 1 "Business Class passengers and
+    // Premium Rouge passengers on domestic or Caribbean flights"; Zone 2
+    // "Premium Economy passengers and Premium Rouge passengers on
+    // international flights" (Premium Economy flies only on Air Canada's
+    // widebodies; a U.S. or Mexican Rouge flight is neither, so it names no
+    // cabin). Air Canada Express sells Business only on its two-cabin jets
+    // (CRJ900, E175), never on the Dash 8 or the CRJ200.
     AC: {
       src: 'https://www.aircanada.com/ca/en/aco/home/fly/at-the-airport/boarding-by-zone.html',
       srcFr: 'https://www.aircanada.com/ca/fr/aco/home/fly/at-the-airport/boarding-by-zone.html',
       checked: '2026-10-12', conf: 'high', prioAnyTime: true,
-      stages: [pre('preboardWhoAC'), prio('zone', '1', 'cabinBiz'), prio('zone', '2', 'cabinBiz'),
+      stages: [pre('preboardWhoAC'), prio('zone', '1', 'cabinBiz'), prio('zone', '2', [['wide', 'cabinPremEconAC']]),
         fam('familyBoard', 'familyWhoAC')].concat(gens('zone', ['3', '4', '5', '6'], 'cabinEcon')),
       variants: {
-        express: { drop: ['5', '6'] },
-        rouge: { sub: { cabinBiz: 'cabinPremRouge' } }
+        express: { drop: ['5', '6'], stageSub: { '1': [['twoCabin', 'cabinBiz']], '2': '' } },
+        rouge: { stageSub: { '1': [['domcarib', 'cabinPremRouge']], '2': [['intl', 'cabinPremRouge']] } }
       }
     },
     // WestJet and WestJet Encore. Pre-boarding (guests who need extra time or
-    // support, unaccompanied minors), Zone 1, Zone 2, then "special boarding,
-    // after our priority guests" for children under five, then Zones 3
-    // through 9 (rewards page, effective 2025-01-15). Encore flies one cabin.
+    // support, unaccompanied minors), Zone 1 (Premium), Zone 2 ("Gold and
+    // Silver Rewards members… Guests seated in Extended Comfort"), then
+    // "special boarding, after our priority guests" for children under five,
+    // then "Zone 3+ — Remaining guests" (rewards page, effective 2025-01-15).
+    // The sign calls Zone 3, then Zone 3+: WestJet publishes no top zone (the
+    // highest is printed on the pass), so the sign never steps through zones
+    // an aircraft may not use. Encore sells Premium (no extra legroom on its
+    // aircraft, inflight/premium-cabin); no page says Encore sells Extended
+    // Comfort, so its Zone 2 names no cabin.
     WS: {
       src: 'https://www.westjet.com/en-ca/airport/priority-services',
       srcFr: 'https://www.westjet.com/fr-ca/aeroport/services-prioritaires',
+      srcZones: 'https://www.westjet.com/en-ca/rewards',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoWS'), prio('zone', '1', 'cabinPremiumWS'), prio('zone', '2', 'cabinPremiumWS'),
-        fam('specialBoard', 'specialWhoWS')].concat(gens('zone', ['3', '4', '5', '6', '7', '8', '9'], 'cabinEconWS')),
-      variants: { encore: { sub: { cabinPremiumWS: '', cabinEconWS: '' } } }
+      stages: [pre('preboardWhoWS'), prio('zone', '1', 'cabinPremiumWS'), prio('zone', '2', 'cabinExtComfortWS'),
+        fam('specialBoard', 'specialWhoWS')].concat(gens('zone', ['3', '3+'], 'cabinEconWS')),
+      variants: { encore: { stageSub: { '2': '' } } }
     },
     // Porter. Two phases only: one pre-boarding group (disabilities,
     // unaccompanied minors, children two and under, the four VIPorter elite
     // tiers and PorterReserve, so Porter has no separate priority step), then
     // general boarding. The row bands, back to front, are the sign's own
-    // presentation (porterBands), not something Porter publishes.
+    // presentation (porterBands), not something Porter publishes; nor is a
+    // "board at your convenience" line (prioAnyTime false: Porter publishes
+    // none).
     PD: {
       src: 'https://www.flyporter.com/en-ca/travel-information/at-the-airport/boarding-process',
       srcFr: 'https://www.flyporter.com/fr-ca/travel-information/at-the-airport/boarding-process',
-      checked: '2026-10-12', conf: 'high', prioAnyTime: true,
+      checked: '2026-10-12', conf: 'high', prioAnyTime: false, rowsHouse: true,
       stages: [pre('preboardList', 'pdReserve'),
         { kind: 'gen', label: 'rows', band: 0, sub: 'pdClassic' },
         { kind: 'gen', label: 'rows', band: 1, sub: 'pdClassic' },
@@ -120,55 +150,70 @@
       checked: '2026-10-12', conf: 'low', prioAnyTime: false,
       stages: [pre('preboardWhoTS'), prio('', '', 'cabinClub'), allPax('cabinEcon')]
     },
-    // United: Pre-boarding, Groups 1 and 2 (premium, elites), Groups 3 to 6.
+    // United: Pre-boarding, Group 1 (its premium cabins and top elites),
+    // Group 2 (Premier Silver, Premier Access: no cabin), Groups 3 to 6.
+    // United First is the front cabin of United's mainline narrowbodies; on a
+    // widebody it is United Polaris or United Business, and a one-cabin
+    // regional jet has none, so only a known mainline narrowbody names it.
     UA: {
       src: 'https://www.united.com/en/us/fly/travel/airport/boarding-process.html',
       srcFr: 'https://www.united.com/fr/ca/fly/travel/airport/boarding-process.html',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoUA'), prio('groupLabel', '1', 'cabinUnitedFirst'), prio('groupLabel', '2', 'cabinUnitedFirst')]
+      stages: [pre('preboardWhoUA'), prio('groupLabel', '1', [['narrow', 'cabinUnitedFirst']]), prio('groupLabel', '2')]
         .concat(gens('groupLabel', ['3', '4', '5', '6'], 'cabinUnitedEcon'))
     },
-    // Delta: Pre-Boarding (and active-duty military), Zones 1 and 2, Early
-    // Access (car seats and strollers, an unlabeled row between Zone 2 and
-    // Zone 3), Zones 3 and 4 (Sky Priority lane), Zones 5 to 8.
+    // Delta: Pre-Boarding (and active-duty military), Zone 1 ("Delta One
+    // customers", "Delta First customers"), Zone 2 (Delta 360°, Diamond
+    // Medallion, Delta Premium Select), Early Access (car seats and
+    // strollers, an unlabeled row between Zone 2 and Zone 3), Zone 3 ("Delta
+    // Comfort customers"), Zone 4 (Medallion elites, Sky Priority lane),
+    // Zones 5 to 8 (Delta Main Extra, Classic and Basic). Delta's cabins are
+    // brands, so they are named in the who-lists.
     DL: {
       src: 'https://www.delta.com/us/en/check-in-security/boarding-priority',
       srcFr: 'https://fr.delta.com/ca/fr/check-in-security/boarding-priority',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoDL'), prio('zone', '1', 'cabinFirst'), prio('zone', '2', 'cabinFirst'),
-        fam('earlyAccess', 'earlyAccessWhoDL'), prio('zone', '3', 'cabinFirst'), prio('zone', '4', 'cabinFirst')]
-        .concat(gens('zone', ['5', '6', '7', '8'], 'cabinEcon'))
+      stages: [pre('preboardWhoDL'), prio('zone', '1', '', 'prioWhoDL1'), prio('zone', '2', '', 'prioWhoDL2'),
+        fam('earlyAccess', 'earlyAccessWhoDL'), prio('zone', '3', '', 'prioWhoDL3'), prio('zone', '4')]
+        .concat(gens('zone', ['5', '6', '7', '8']))
     },
-    // American: special assistance, then ConciergeKey, First and Business,
-    // then families with children under 2, then Groups 1 to 9 (Groups 1 to 4
-    // the elites' "premium perks"; 7 and 8 are one row on American's table).
+    // American: special assistance, then ConciergeKey, First and Business
+    // (three rows on American's table, called as one step here: one after
+    // another, the who-list names all three in American's order), then
+    // families with children under 2, then Groups 1 to 9 (Groups 1 to 4 the
+    // elites and oneworld tiers, and Premium Economy where it flies, so no
+    // cabin; 7 and 8 are one row on American's table; Groups 5 to 9 board
+    // the Main Cabin).
     AA: {
       src: 'https://www.aa.com/web/i18n/travel-info/boarding-process.html',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoAA'), prio('', '', 'cabinFirst', 'prioWhoAA'), fam('familyBoard', 'familyWhoAA'),
-        prio('groupLabel', '1', 'cabinFirst'), prio('groupLabel', '2', 'cabinFirst'),
-        prio('groupLabel', '3', 'cabinFirst'), prio('groupLabel', '4', 'cabinFirst'),
-        gen('groupLabel', '5', 'cabinEcon'), gen('groupLabel', '6', 'cabinEcon'),
-        { kind: 'gen', label: 'groupLabel', values: ['7', '8'], sub: 'cabinEcon' },
-        gen('groupLabel', '9', 'cabinEcon')]
+      stages: [pre('preboardWhoAA'), prio('', '', '', 'prioWhoAA'), fam('familyBoard', 'familyWhoAA'),
+        prio('groupLabel', '1'), prio('groupLabel', '2'), prio('groupLabel', '3'), prio('groupLabel', '4'),
+        gen('groupLabel', '5', 'cabinMainAA'), gen('groupLabel', '6', 'cabinMainAA'),
+        { kind: 'gen', label: 'groupLabel', values: ['7', '8'], sub: 'cabinMainAA' },
+        gen('groupLabel', '9', 'cabinMainAA')]
     },
     // Alaska, and Hawaiian since 2026-04-22: Preboarding, Priority Boarding
-    // (First Class, Atmos Titanium), Groups A to C, then D (back half), E
-    // (front half), F. Families with infants board in Group A.
+    // ("First Class", "Atmos Titanium"), Group A (Atmos Million Milers,
+    // Platinum and Gold, families with children under 2, active military),
+    // Group B (Atmos Silver, Premium Class seats), Group C (Atmos Rewards
+    // Visa cardholders), then D (Main seats, back half), E (Main seats, front
+    // half), F (Saver seats). Each named in its who-list, never as a cabin
+    // line of its own.
     AS: {
       src: 'https://www.alaskaair.com/content/travel-info/flight-experience/our-boarding-process',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoAS'), prio('', '', 'cabinFirst'),
-        prio('groupLabel', 'A', 'cabinFirst'), prio('groupLabel', 'B', 'cabinFirst'), prio('groupLabel', 'C', 'cabinFirst')]
-        .concat(gens('groupLabel', ['D', 'E', 'F'], 'cabinEcon'))
+      stages: [pre('preboardWhoAS'), prio('', '', '', 'prioWhoAS'),
+        prio('groupLabel', 'A', '', 'prioWhoASa'), prio('groupLabel', 'B', '', 'prioWhoASb'), prio('groupLabel', 'C', '', 'prioWhoASc')]
+        .concat(gens('groupLabel', ['D', 'E', 'F']))
     },
     // Southwest (assigned seats since 2026-01-27): Preboarding, Priority
-    // Boarding with active-duty military and A-List Preferred, Groups 1 and
-    // 2, then Groups 3 to 8.
+    // Boarding (with active-duty military), A-List Preferred (its own row,
+    // before Group 1), Groups 1 and 2, then Groups 3 to 8.
     WN: {
       src: 'https://support.southwest.com/helpcenter/article/boarding-process',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoWN'), prio('', '', '', 'prioWhoWN'), prio('groupLabel', '1'), prio('groupLabel', '2')]
+      stages: [pre('preboardWhoWN'), prio('', '', '', 'prioWhoWN'), prio('', '', '', 'prioWhoWNalp'), prio('groupLabel', '1'), prio('groupLabel', '2')]
         .concat(gens('groupLabel', ['3', '4', '5', '6', '7', '8']))
     },
     // JetBlue: Pre-boarding, Groups 1 to 3, Courtesy Boarding (military, car
@@ -188,6 +233,42 @@
         .concat(gens('groupLabel', ['2', '3', '4', '5']))
         .concat([{ kind: 'gen', label: 'groupLabel', values: ['6', '7'] }])
     },
+    // Calm Air: "Pre-boarding is offered to passengers traveling with small
+    // children, unaccompanied minors, persons with disabilities, or for those
+    // requiring additional time or assistance while boarding" (check-in, en
+    // and fr). No priority step.
+    MO: {
+      src: 'https://www.calmair.com/travel-info/check-in',
+      checked: '2026-10-12', conf: 'high', prioAnyTime: false,
+      stages: [pre('preboardWhoMO'), allPax()]
+    },
+    // Ryanair: "Ryanair does not pre-board passengers" (help centre,
+    // assistance and Priority Boarding); its paid Priority Boarding queue
+    // boards first, then everyone else. No pre-boarding step.
+    FR: {
+      src: 'https://help.ryanair.com/hc/en-gb/articles/48217528757265',
+      checked: '2026-10-12', conf: 'high', prioAnyTime: false,
+      stages: [prio(), allPax()]
+    },
+    // Norwegian: "Passengers with Priority Boarding (Boarding Group A) will
+    // board first, followed by Boarding Group B passengers, and finally,
+    // Boarding Group C passengers." No pre-boarding is published.
+    DY: {
+      src: 'https://www.norwegian.com/en/travel-info/check-in-and-boarding/priority-boarding/',
+      checked: '2026-10-12', conf: 'high', prioAnyTime: false,
+      stages: [prio('groupLabel', 'A'), gen('groupLabel', 'B'), gen('groupLabel', 'C')]
+    },
+    // Iberia: Group 0 boards first, then customers needing special assistance
+    // and families with children under 2, then Group 1, Group 2 (where its
+    // paid Priority Boarding sits), then the remaining groups in turn. Read
+    // from the search index (iberia.com refuses automated readers); the
+    // number of groups after 2 is not published there, so the rest are
+    // called as general boarding, all passengers.
+    IB: {
+      src: 'https://www.iberia.com/ca/boarding/',
+      checked: '2026-10-12', conf: 'low', prioAnyTime: false,
+      stages: [prio('groupLabel', '0'), pre('preboardWhoIB'), prio('groupLabel', '1'), prio('groupLabel', '2'), allPax()]
+    },
     // Every airline with no published order: pre-boarding (passengers who
     // need assistance or more time, a legal duty at Canadian and U.S.
     // airports: ATPDR s.34(1), 14 CFR 382.93, so the who-line shows there
@@ -198,8 +279,8 @@
       stages: [pre('preboardWhoAny'), prio(), allPax()]
     },
     // Airlines that publish no priority step at all: pre-boarding, then
-    // general boarding. Air North (Advance Boarding is in no fare), Calm Air,
-    // Pascan, Central Mountain Air on its own numbers.
+    // general boarding. Air North (Advance Boarding is in no fare), Pascan,
+    // Central Mountain Air on its own numbers.
     noPrio: {
       src: 'house', checked: '2026-10-12', conf: 'generic', prioAnyTime: false,
       stages: [pre('preboardWhoAny'), allPax()]
@@ -226,7 +307,11 @@
     WN: 'WN', SWA: 'WN',
     B6: 'B6', JBU: 'B6',
     F9: 'F9', FFT: 'F9',
-    '4N': 'noPrio', MO: 'noPrio', BQ: 'noPrio', P6: 'noPrio', '9M': 'noPrio'
+    MO: 'MO', CAV: 'MO',
+    FR: 'FR', RYR: 'FR',
+    DY: 'DY', NOZ: 'DY',
+    IB: 'IB', IBE: 'IB',
+    '4N': 'noPrio', BQ: 'noPrio', P6: 'noPrio', '9M': 'noPrio'
   };
   function resolve(carrier, ctx) {
     var code = String(carrier || '').trim().toUpperCase();
@@ -250,9 +335,59 @@
     return [[lo1, hi1], [lo2, hi2], [1, lo2 - 1]];
   }
 
+  // A stage's cabin for this flight: a key, or the first [condition, key]
+  // that holds (subWhen), or none.
+  function subWhen(cond, ctx) {
+    var c = ctx || {};
+    if (cond === '*') return true;
+    if (cond === 'wide') return c.cat === 'widebody';
+    if (cond === 'narrow') return c.cat === 'narrowbody';
+    if (cond === 'twoCabin') return !!c.twoCabin;
+    if (cond === 'domcarib') return c.region === 'dom' || c.region === 'carib';
+    if (cond === 'intl') return c.region === 'intl';
+    return false;
+  }
+  function pickSub(spec, ctx) {
+    if (!spec) return '';
+    if (typeof spec === 'string') return spec;
+    for (var i = 0; i < spec.length; i++) if (spec[i] && subWhen(spec[i][0], ctx)) return spec[i][1] || '';
+    return '';
+  }
+  // What two or more stages share, or nothing: a merged call names a cabin or
+  // a who-list only when every call in it has that same one.
+  function common(list, k) {
+    var v = list.length ? (list[0][k] || '') : '';
+    for (var i = 1; i < list.length; i++) if ((list[i][k] || '') !== v) return '';
+    return v;
+  }
+  // A value 'N+' (WestJet's Zone 3+) covers every number from N up: listed
+  // with them, it stands for them.
+  function coverPlus(values) {
+    var v = (values || []).slice(), lo = Infinity;
+    v.forEach(function (x) { var m = /^(\d+)\+$/.exec(String(x)); if (m) lo = Math.min(lo, parseInt(m[1], 10)); });
+    if (lo === Infinity) return v;
+    var out = [];
+    v.forEach(function (x) {
+      var s = String(x);
+      if (/^\d+$/.test(s) && parseInt(s, 10) >= lo) return;
+      var m = /^(\d+)\+$/.exec(s);
+      if (m && parseInt(m[1], 10) > lo) return;
+      if (out.indexOf(s) < 0) out.push(s);
+    });
+    // the plus value stands where its first covered number stood
+    var plus = lo + '+', at = out.indexOf(plus);
+    if (at > 0) {
+      out.splice(at, 1);
+      var k = 0;
+      while (k < out.length && !(/^\d+$/.test(out[k]) && parseInt(out[k], 10) > lo)) k++;
+      out.splice(k, 0, plus);
+    }
+    return out;
+  }
+
   // The table expanded for one flight: variants applied, values as lists,
-  // each stage with its side (L for pre/prio/fam, R for gen) and its atoms
-  // (what it calls, for the no-going-back memo).
+  // cabins resolved, each stage with its side (L for pre/prio/fam, R for gen)
+  // and its atoms (what it calls, for the no-going-back memo).
   function expand(T, variant, ctx) {
     var V = (T.variants && variant && T.variants[variant]) || {};
     var out = [];
@@ -268,7 +403,8 @@
       s.values = s.values ? s.values.slice() : (s.value ? [s.value] : []);
       delete s.value;
       if (V.drop && s.values.length === 1 && V.drop.indexOf(s.values[0]) >= 0) return;
-      if (V.sub && s.sub && Object.prototype.hasOwnProperty.call(V.sub, s.sub)) s.sub = V.sub[s.sub];
+      if (V.stageSub && s.values.length === 1 && Object.prototype.hasOwnProperty.call(V.stageSub, s.values[0])) s.sub = V.stageSub[s.values[0]];
+      s.sub = pickSub(s.sub, ctx);
       if (s.kind === 'pre' && s.who === 'preboardWhoAny' && !(ctx && ctx.legalPre)) s.who = '';
       if (s.kind === 'pre' && s.who === 'preboardWhoTS' && ctx && ctx.toUS) s.who = 'preboardWhoTSus';
       // A generic plan's cabins are the carrier's own where the gate knows
@@ -287,21 +423,27 @@
   // ── PACING ───────────────────────────────────────────────────────────────
   // All in minutes after boarding opens (t0), the window L = dep − t0, the
   // airline's close C (pacing only, never printed).
-  //   S, when the last general step is called: max(L − C − 2, L/2), never
-  //     later than dep − 5.
-  //   Pre-boarding: 1.5 shares, 2 to 5 minutes.
+  //   S, when the last general step is called: L − C − 2, and never later
+  //     than dep − 5: NEVER AT OR AFTER THE CLOSE THE SAME SCREEN PRINTS. A
+  //     window that is short against the close (an Air Canada Express or
+  //     Encore Dash 8: the sign opens 20 minutes out, the gate closes 15 out)
+  //     plays its calls in the few minutes it has, merged; it never runs
+  //     them past the close.
+  //   Pre-boarding (first): 1.5 shares, 2 to 5 minutes.
   //   Every other step: one share, 1.5 to 5 minutes (with only two or three
   //     steps the 5-minute cap brings general boarding forward before S).
   //   The last step holds until Final call, Gate closed or departure.
   // A share under 1.5 minutes merges, in this order, without dropping a
   // number: neighbouring numbered general steps in pairs (Zones 3 • 4), then
-  // the numbered priority steps into one (Zones 1 • 2), then the general
-  // steps into "All passengers". So the sign never changes more often than
-  // every 90 seconds.
+  // neighbouring numbered priority steps (Zones 1 • 2; never across a family
+  // call, which keeps its place), then the general steps into "All
+  // passengers". Only when nothing is left to merge and the window is still
+  // too short are the calls spread evenly to S, in order, never closer than a
+  // minute (an Express Dash 8: a call a minute); a window shorter still (the
+  // airport said Boarding a few minutes before the close) holds pre-boarding
+  // to S and calls everything else there, together.
   function lastAt(L, C) {
-    var S = Math.min(Math.max(L - C - 2, L / 2), L - 5);
-    if (!(S >= 1.5)) S = Math.max(0, Math.min(1.5, L / 2));
-    return S;
+    return Math.max(0, Math.min(L - C - 2, L - 5));
   }
   function timesFor(st, S) {
     var n = st.length;
@@ -327,36 +469,45 @@
     }
     return { t: t, rest: r };
   }
+  function evenly(n, S) {
+    var t = [0];
+    for (var q = 1; q < n; q++) t.push(q * (S > 0 ? S : 0) / (n - 1));
+    return t;
+  }
   function mergeGen(st) {
     var out = [], did = false, i = 0;
     while (i < st.length) {
       var a = st[i], b = st[i + 1];
       if (a.kind === 'gen' && b && b.kind === 'gen' && a.values.length && b.values.length && !a.merged && !b.merged) {
-        out.push({ kind: 'gen', label: a.label, values: a.values.concat(b.values), sub: a.sub, side: 'R', merged: true });
+        out.push({ kind: 'gen', label: a.label, values: coverPlus(a.values.concat(b.values)), sub: common([a, b], 'sub'), side: 'R', merged: true });
         i += 2; did = true;
       } else { out.push(a); i++; }
     }
     return did ? out : null;
   }
+  // Neighbouring numbered priority calls, one run at a time: Zones 1 • 2, and
+  // Delta's Zones 3 • 4 after its Early Access row, never Zones 1 to 4 ahead
+  // of the families.
   function mergePrio(st) {
-    var p = st.filter(function (s) { return s.kind === 'prio' && s.values.length; });
-    if (p.length < 2) return null;
-    var vals = [];
-    p.forEach(function (s) { vals = vals.concat(s.values); });
-    var out = [];
-    st.forEach(function (s) {
-      if (s.kind === 'prio' && s.values.length) {
-        if (s === p[0]) out.push({ kind: 'prio', label: s.label, values: vals, sub: s.sub, who: s.who, side: 'L', merged: true });
-      } else out.push(s);
-    });
-    return out;
+    var out = [], did = false, i = 0;
+    var num = function (s) { return s && s.kind === 'prio' && s.values.length; };
+    while (i < st.length) {
+      if (num(st[i]) && num(st[i + 1]) && st[i + 1].label === st[i].label) {
+        var run = [st[i]], j = i + 1;
+        while (num(st[j]) && st[j].label === st[i].label) { run.push(st[j]); j++; }
+        var vals = [];
+        run.forEach(function (s) { vals = vals.concat(s.values); });
+        out.push({ kind: 'prio', label: st[i].label, values: vals, sub: common(run, 'sub'), who: common(run, 'who'), side: 'L', merged: true });
+        i = j; did = true;
+      } else { out.push(st[i]); i++; }
+    }
+    return did ? out : null;
   }
   function collapseGen(st) {
     var gi = -1;
     for (var i = 0; i < st.length; i++) if (st[i].kind === 'gen') { gi = i; break; }
     if (gi < 0 || st.length - gi < 2) return null;
-    var g = st[gi];
-    var all = { kind: 'gen', title: 'allPax', values: [], sub: g.sub, side: 'R', collapsed: [] };
+    var all = { kind: 'gen', title: 'allPax', values: [], sub: common(st.slice(gi), 'sub'), side: 'R', collapsed: [] };
     st.slice(gi).forEach(function (s) { all.collapsed = all.collapsed.concat(s.values); });
     return st.slice(0, gi).concat([all]);
   }
@@ -370,7 +521,22 @@
       st = m;
       r = timesFor(st, S);
     }
-    return { stages: st, at: r.t, S: S };
+    // Nothing left to merge and still too short: evenly to S, in order, a
+    // minute apart at the least; closer than that, the first call (pre-
+    // boarding) holds to S and every other call comes on together there
+    // (the panels then show everything called), so the sign never changes
+    // more often than once a minute.
+    var at = r.t, even = false;
+    if (r.rest < 1.5) {
+      even = true;
+      var n = st.length, u = n > 1 ? S / (n - 1) : 0;
+      if (u >= 1) at = evenly(n, S);
+      else { at = [0]; for (var q = 1; q < n; q++) at.push(S); }
+    }
+    // (two calls in a window shorter than pre-boarding's two minutes: the
+    // first holds to S, the second comes there)
+    for (var k = 1; k < at.length; k++) if (at[k] - at[k - 1] < (k === 1 && st[0].kind === 'pre' ? 2 : 1.5) - 1e-9) even = true;
+    return { stages: st, at: at, S: S, even: even };
   }
 
   // ── WHEN BOARDING OPENED (t0) ────────────────────────────────────────────
@@ -388,9 +554,12 @@
     return seen || bt;
   }
 
+  // (an un-numbered call is known by its title, or by who it calls:
+  // Southwest's Priority Boarding and A-List Preferred are two calls)
   function ids(s) {
     if (s.values && s.values.length) return s.values.map(function (v) { return 'v:' + v; });
     if (s.title) return ['t:' + s.title];
+    if (s.who) return ['w:' + s.who];
     return ['k:' + s.kind];
   }
   function atomsOf(s) { return ids(s).concat(s.collapsed ? s.collapsed.map(function (v) { return 'v:' + v; }) : []); }
@@ -399,8 +568,13 @@
   // ctx: t0 and dep (ms), close (minutes, GATE_CLOSE_POLICY; 10 when the
   // airline publishes none or only a be-at-the-gate time), express, pdDash,
   // legalPre (a Canadian or U.S. airport), toUS (Transat), cabins (the gate's
-  // [premium, economy] keys, for the generic plan), boardStage (the row's
-  // _boardStage).
+  // [premium, economy] keys, for the generic plan), cat ('widebody',
+  // 'narrowbody', 'regional', or '' when the type is not known), twoCabin (a
+  // regional jet with a business cabin), region ('dom', 'carib', 'na' for
+  // the rest of North America, 'intl', or '' when the destination is not
+  // known), boardStage (the row's _boardStage).
+  // The plan's cabins are each stage's own (stage.sub); p.cabins is only the
+  // first priority and the first general one, for a quick look.
   function plan(carrier, ctx) {
     ctx = ctx || {};
     var r = resolve(carrier, ctx);
@@ -426,7 +600,7 @@
     var out = {
       carrier: String(carrier || '').toUpperCase(), key: r.key, variant: r.variant,
       src: T.src, checked: T.checked, conf: T.conf, prioAnyTime: !!T.prioAnyTime, oneLane: !!T.oneLane,
-      stages: stages, full: full, t0: t0, dep: dep, L: L, C: C, S: p.S, cabins: [premium, economy],
+      stages: stages, full: full, t0: t0, dep: dep, L: L, C: C, S: p.S, even: !!p.even, cabins: [premium, economy],
       forced: -1
     };
     if (ctx.boardStage != null && ctx.boardStage !== '') out.forced = forcedIndex(out, ctx.boardStage);
@@ -503,16 +677,17 @@
     return run ? v[0] + '–' + v[v.length - 1] : v.join(' • ');
   }
 
-  // The values a list of stages calls, in order.
+  // The values a list of stages calls, in order (Zone 3 and Zone 3+ are
+  // Zone 3+).
   function valuesOf(list) {
     var out = [];
     (list || []).forEach(function (s) { out = out.concat(s.values || []); });
-    return out;
+    return coverPlus(out);
   }
 
   return {
     SEQ: SEQ, ALIAS: ALIAS, plan: plan, stageAt: stageAt, resolve: resolve, pace: pace, lastAt: lastAt,
     t0For: t0For, fmt: fmt, valuesOf: valuesOf, atomsOf: atomsOf, calledThrough: calledThrough,
-    floorIndex: floorIndex, porterBands: porterBands
+    floorIndex: floorIndex, porterBands: porterBands, pickSub: pickSub, coverPlus: coverPlus
   };
 });

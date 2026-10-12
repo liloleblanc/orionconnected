@@ -25690,6 +25690,38 @@ html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):n
    motion. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.no-value .g8-sign-lanes { margin-top: auto !important; }
 
+/* ══ BOARDING SEQUENCES — WHO IS CALLED, IN BOTH LANGUAGES, NEVER CUT MID-ITEM ══
+   The gate has no language rotation, so the who-line under Pre-boarding,
+   Family boarding, Early Access and the rest is drawn in both of the board's
+   languages, each its own block (_g8SeqWho). Inside a block each ' · ' item
+   is one unit (display rule 2): the line may break between items, never
+   inside 'Global Services' or 'Premier 1K'; an item wider than the panel
+   wraps on its own words. Layout only: no colour, no motion. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-roster .g8-who-blk { display: block !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-roster .g8-who-blk + .g8-who-blk { margin-top: .3em !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-roster .g8-who-i { display: inline-block !important; white-space: normal !important; max-width: 100% !important; overflow-wrap: break-word !important; }
+/* a call with a number and a short who-list (Delta's Zone 1) left space under
+   it, and its lane line rose above the other panel's: the line takes the free
+   space above it, level with the other panel's, as a panel with no number does */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-roster .g8-sign-lanes { margin-top: auto !important; }
+
+/* ══ BOARDING SEQUENCES — THE FINAL CALL'S SIGN HAS THE ROOM BOARDING HAS ═══════
+   The sign's grid (two equal columns, each padded 4% of its own width) was
+   keyed on .g8-board.active, so under the final call the same sign fell
+   back to the plain flex row, where a column's 4% padding is reckoned on the
+   whole sign: 77 px a side instead of 38. 'Todos los pasajeros | All
+   passengers' fitted on one line while boarding and stacked at the final
+   call. The final call's sign now takes the same grid. Layout only. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-final.active .g8-board-body.g8-sign {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  grid-template-rows: 1fr !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+}
+
 /* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS, AT TWICE THE SIZE ════
    The chosen design for the three screens: the near-black ground of the calm
    option, the airline colour of the tinted one, between the two.
