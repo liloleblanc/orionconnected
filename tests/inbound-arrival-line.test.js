@@ -90,10 +90,9 @@ function arrivalLine(opts) {
   return makeArrLine(!!opts.onStand, opts.evt || '', railT, false, gateLbl);
 }
 
-// Strip to a FIXPOINT, not in one pass. A single .replace(/<[^>]+>/g,'') is
-// incomplete — removing the inner tag from '<<a>script' yields '<script', so
-// one pass can manufacture a tag it just removed. Nothing here is attacker
-// controlled, but a half-working strip in a test is a half-working assertion.
+// Strip to a FIXPOINT, not in one pass: a strip that visibly runs until nothing
+// is left to remove (and the form CodeQL's multi-character sanitization check
+// accepts). Nothing here is attacker controlled.
 const strip = (html) => {
   let s = String(html), prev;
   do { prev = s; s = s.replace(/<[^>]+>/g, ''); } while (s !== prev);

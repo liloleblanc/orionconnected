@@ -63,6 +63,13 @@ function page() {
   return ctx;
 }
 
+// The text of a row's markup, tags stripped to a fixpoint rather than in one pass
+const strip = (html) => {
+  let s = String(html), prev;
+  do { prev = s; s = s.replace(/<[^>]+>/g, ''); } while (s !== prev);
+  return s;
+};
+
 // adbToCard with the tables it reads stubbed (as tests/companion-app.test.js)
 const card = new Function(['REGIONAL_FAM', 'AIRLINE', 'BRAND', 'REGIONAL_OP', 'wmUrls'],
   fn('adbHHMM') + fn('inferOperator') + fn('adbToCard') + '; return adbToCard;')({}, {}, {}, {}, () => null);
@@ -87,7 +94,7 @@ function feedRow(o) {
 
 test('the line under the city never draws a separator beside an empty part', () => {
   const ctx = page();
-  const parts = (f) => ctx.rowSubParts(f).replace(/<[^>]+>/g, '');
+  const parts = (f) => strip(ctx.rowSubParts(f));
   // the code, the flight, the stops: a '·' only between two that are there
   assert.equal(parts({ cityIata: 'YYC', flight: 'WS266' }), 'YYC · WS266');
   assert.equal(parts({ cityIata: '', flight: '4N527' }), '4N527', 'no code: no dot in front of the flight');
@@ -100,7 +107,7 @@ test('the line under the city never draws a separator beside an empty part', () 
   // the temperature brings its own '·', and only beside a code
   assert.equal(ctx.wxHtml(''), '');
   ctx.WX.YXY = { t: 3.4 };
-  assert.equal((ctx.rowSubParts({ cityIata: 'YXY', flight: '4N527' }) + ctx.wxHtml('YXY')).replace(/<[^>]+>/g, ''), 'YXY · 4N527 · 3°C');
+  assert.equal(strip(ctx.rowSubParts({ cityIata: 'YXY', flight: '4N527' }) + ctx.wxHtml('YXY')), 'YXY · 4N527 · 3°C');
   // the row draws the line through it, and the old fixed '·' is gone
   const rh = fn('rowHtml');
   assert.match(rh, /'<div class="sub"><span class="sx">'\+rowSubParts\(f\)\+wxHtml\(f\.cityIata\)\+'<\/span>'\+pill\+'<\/div>'/);
@@ -131,7 +138,7 @@ test('a far end the feed names without its code gets the code from the boards\' 
   const fill = new Function('cityCodeOf', 'all', line(/^\s*for\(const f of all\)\{ if\(!f\.cityIata&&f\.cityName\) f\.cityIata=cityCodeOf\(f\.cityName\); \}/m));
   fill(ctx.cityCodeOf, [c]);
   assert.equal(c.cityIata, 'YXY');
-  assert.equal(ctx.rowSubParts(c).replace(/<[^>]+>/g, ''), 'YXY · 4N527');
+  assert.equal(strip(ctx.rowSubParts(c)), 'YXY · 4N527');
   // fetchDir fills it before the list is made
   const fd = fn('fetchDir');
   assert.ok(fd.indexOf('f.cityIata=cityCodeOf(f.cityName)') > 0 && fd.indexOf('f.cityIata=cityCodeOf(f.cityName)') < fd.indexOf('return cardList('));
