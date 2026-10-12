@@ -23049,17 +23049,19 @@ img.fids-wx-disc {
    fids-v2.js wxIconHtml at night. The element's own round background is the
    night circle (--wxn-disc, fids-core.js _wxNightDisc: the airline's dark
    tint, or the charcoal the icons were drawn on) and the icon
-   (logos/weather/night-owner/, in its colours as drawn) sits on it at 84 % of
-   the diameter (_WX_NIGHT_ICON): 8 % in from every side. */
-.fids-wx-own {
+   (logos/weather/night-line/, in its colours as drawn) is its ::after on the
+   whole circle: each file's frame is the circle the icon was drawn on, so the
+   icon sits as large and where it was drawn (_WX_NIGHT_ICON = 100). No
+   element of today's gate layout shows it (#hdrTemp is hidden). */
+.fids-wx-line {
   position: relative;
   border-radius: 50% !important;
   background: var(--wxn-disc, #2B2B2A) !important;
 }
-.fids-wx-own::after {
+.fids-wx-line::after {
   content: '';
   position: absolute;
-  inset: 8%;
+  inset: 0;
   background: var(--wxn-icon) center / contain no-repeat;
 }
 

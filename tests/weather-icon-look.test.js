@@ -64,7 +64,7 @@ test('Day & night is the default: no look stamped draws the solid rows, Colour b
   assert.equal(helper({ night: true, path: '/gids' }).look(), 'solid');
   assert.match(src(helper({ path: '/gids' }).wxIconHtml('snow', 64)), /\/logos\/weather\/disc-day\/snow\.svg/);
   // v24045 — at night the circle holds the night icons drawn for Orion Connected
-  assert.match(helper({ night: true, path: '/gids', airline: 'WS' }).wxIconHtml('snow', 64), /--wxn-icon:url\(\/logos\/weather\/night-owner\/snow\.svg\?v=v1\);/);
+  assert.match(helper({ night: true, path: '/gids', airline: 'WS' }).wxIconHtml('snow', 64), /--wxn-icon:url\(\/logos\/weather\/night-line\/snow\.svg\?v=v1\);/);
 });
 
 test('Classic, chosen, keeps the original icons on the rows, the gate and the card', () => {
@@ -198,28 +198,28 @@ test('the weather card follows the look, and its circles keep their own colours'
     { fidsWxLook: () => look },
     { documentElement: { getAttribute: (k) => (k === 'data-fids-wx-icons' ? (stamped === undefined ? null : stamped) : null),
       classList: { contains: (c) => c === (boardNight ? 'fids-night' : 'fids-day') } } },
-    '/logos/weather/flat/', '/logos/weather/night-owner/');
+    '/logos/weather/flat/', '/logos/weather/night-line/');
   assert.equal(dir('', 'classic')(), '/logos/weather/flat/');
   assert.equal(dir('colour', 'colour')(), '/logos/weather/disc-day/');
-  assert.equal(dir('solid', 'solid')(), '/logos/weather/night-owner/', 'Solid, chosen, at night: the night icons');
+  assert.equal(dir('solid', 'solid')(), '/logos/weather/night-line/', 'Solid, chosen, at night: the night icons');
   assert.equal(dir('solid', 'solid', false)(), '/logos/weather/disc-night/', 'Solid, chosen, by day: its glyphs');
   // v24042 — under Day & night a plate or an hour takes its own moment's day
   // or night (the flag that chose its glyph); a chosen Colour or Solid, and
   // Classic, do not move. v24045 — night is the night icons drawn for Orion
-  // Connected (logos/weather/night-owner/)
-  assert.equal(dir('colour', 'daynight')(true), '/logos/weather/night-owner/', 'a city in darkness while the board is in daylight');
+  // Connected (logos/weather/night-line/)
+  assert.equal(dir('colour', 'daynight')(true), '/logos/weather/night-line/', 'a city in darkness while the board is in daylight');
   assert.equal(dir('solid', 'daynight')(false), '/logos/weather/disc-day/', 'a city in daylight while the board is at night');
-  assert.equal(dir('colour', undefined)(true), '/logos/weather/night-owner/', 'nothing stamped yet is the default');
-  assert.equal(dir('solid', 'daynight')(), '/logos/weather/night-owner/', 'no flag (the day forecasts): the board decides');
+  assert.equal(dir('colour', undefined)(true), '/logos/weather/night-line/', 'nothing stamped yet is the default');
+  assert.equal(dir('solid', 'daynight')(), '/logos/weather/night-line/', 'no flag (the day forecasts): the board decides');
   assert.equal(dir('colour', 'colour')(true), '/logos/weather/disc-day/', 'Colour, chosen, stays Colour at night');
   assert.equal(dir('solid', 'solid')(false), '/logos/weather/disc-night/', 'Solid, chosen, keeps its glyphs for a moment in daylight');
-  assert.equal(dir('solid', 'solid', false)(true), '/logos/weather/night-owner/', 'and a city in darkness takes the night icons');
+  assert.equal(dir('solid', 'solid', false)(true), '/logos/weather/night-line/', 'and a city in darkness takes the night icons');
   assert.equal(dir('', 'classic')(true), '/logos/weather/flat/', 'Classic stays Classic');
   assert.equal(dir('', 'daynight')(true), '/logos/weather/flat/', 'off the gate screens the card keeps the flat set');
   assert.match(CORE, /src="' \+ _wxCardIconDir\(isNight\) \+ sIc \+ /, 'the plates pass their own night');
   assert.match(CORE, /src="' \+ _wxCardIconDir\(!!p\.h\.night\) \+ p\.h\.ic \+ /, 'the hours pass theirs');
   assert.match(CORE, /src="' \+ _wxCardIconDir\(\) \+ d\.ic \+ /, 'the days follow the board');
-  assert.match(CORE, /img\.closest\('\.wxcard-wrap'\) && !\/\\\/\(disc-\(day\|night\)\|night-owner\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill/, 'not drawn white and still');
+  assert.match(CORE, /img\.closest\('\.wxcard-wrap'\) && !\/\\\/\(disc-\(day\|night\)\|night-line\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill/, 'not drawn white and still');
 });
 
 test('the choice lives in Customize, saves per airport like the font, and the board applies it', () => {

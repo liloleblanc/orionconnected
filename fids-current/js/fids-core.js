@@ -55669,28 +55669,34 @@ function _wxDiscTint(f, dh) {
 }
 // ══ v24045 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
 // At night, wherever the look draws its weather icons in a circle (Day &
-// night after dark, and Solid at night: the weather card and the gate
-// screens), the icons are the set drawn for Orion Connected, one file per
-// condition in logos/weather/night-owner/ (scripts/wx-icons/night-owner.py).
-// The files carry no circle: the boards draw it (_wxNightOwnerDisc on the
-// card, .fids-wx-own on the gate) and place the icon at _WX_NIGHT_ICON % of
-// its diameter, so the farthest point of any icon stays inside 92 % of the
-// radius (tests/weather-night-owner.test.js). The circle's colour is ONE
-// choice, _WX_NIGHT_DISC:
+// night after dark, and Solid at night), the icons are the set drawn for
+// Orion Connected, one file per condition in logos/weather/night-line/
+// (scripts/wx-icons/night-line.py). The weather card draws them; the gate's
+// circle look (fids-v2.js wxIconHtml) is wired the same way, though no
+// element of today's gate layout shows it (its header #hdrTemp is hidden).
+// The files carry no circle: the boards draw it (_wxNightLineDisc on the
+// card, .fids-wx-line on the gate). Each file's frame IS the circle the icon
+// was drawn on, so the board's circle, drawn on that frame, puts every icon
+// exactly as large and exactly where it was drawn: nothing re-centred,
+// nothing scaled (_WX_NIGHT_ICON = 100). As drawn, the farthest point of any
+// icon (the moon's tip in partly cloudy night) is at 92.06 % of the radius:
+// the boards' 92 % rule to 0.06 % (tests/weather-night-line.test.js). The
+// circle's colour is ONE choice, _WX_NIGHT_DISC:
 //   'airline'  (B, the default) a dark tint of the airline's night ground,
 //              the night form of the day circle's rule (_wxNightDiscTint):
 //              the hue the card tints its ground with, no more colour than
 //              that tint has nor than _WX_NIGHT_C, and a step lighter than
 //              the tile it sits on (_WX_NIGHT_STEP in OKLab), never darker
-//              than the charcoal the icons were drawn on, so it still reads
-//              as a circle and the icons keep the contrast they were drawn
-//              with. Air Canada's is a dark wine, WestJet's a dark teal,
-//              Porter's a dark navy;
+//              than the charcoal the icons were drawn on (checked after
+//              rounding to a hex colour), so it still reads as a circle and
+//              the icons keep the contrast they were drawn with. Air
+//              Canada's is a dark wine, WestJet's a dark teal, Porter's a
+//              dark navy;
 //   'charcoal' (A) the charcoal circle the icons were drawn on, as drawn.
 var _WX_NIGHT_DISC = 'airline';
-var _WX_NIGHT_DIR = '/logos/weather/night-owner/';
+var _WX_NIGHT_DIR = '/logos/weather/night-line/';
 var _WX_NIGHT_CHARCOAL = '#2B2B2A';   // the circle on the sheet the icons were drawn on
-var _WX_NIGHT_ICON = 84;              // the icon's share of the circle's diameter
+var _WX_NIGHT_ICON = 100;             // the file's frame, as a share of the circle's diameter: the frame is the circle
 var _WX_NIGHT_C = 0.035;              // at most this much colour in the airline's circle
 var _WX_NIGHT_STEP = 0.10;            // this much lighter than the tile under it (OKLab)
 // the colours the icons are drawn in: both ends of the gold gradient, the
@@ -55710,7 +55716,13 @@ function _wxNightDiscTint(f, tile) {
   for (var i = 0; i < 12 && !inks.every(function (p) { return far(p, at()) >= _WX_DISC_KEEP * far(p, ch); }); i++) {
     c *= 0.8; L = Math.max(ch[0], L - 0.01);
   }
-  return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
+  // never darker than the charcoal once rounded to a hex colour (Air Canada's
+  // wine and Delta's navy rounded to a hair under it)
+  var hex = _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
+  for (var j = 0; j < 20 && _wxOklab(_rc2Rgb(hex))[0] < ch[0]; j++) {
+    L += 0.001; hex = _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
+  }
+  return hex;
 }
 // the night circle's colour for an airline (the gate screens ask through
 // fids-v2.js wxGateNightDisc; the card wears it as --wxn-disc)
@@ -55718,9 +55730,10 @@ function _wxNightDisc(code) {
   if (_WX_NIGHT_DISC !== 'airline') return _WX_NIGHT_CHARCOAL;
   return _wxAirlineLook(code).nk;
 }
-// a night-owner file, inlined on the card, inside its circle: the file's own
-// frame placed at _WX_NIGHT_ICON % of a 100-unit circle, centred
-function _wxNightOwnerDisc(txt) {
+// a night-line file, inlined on the card, inside its circle: the file's own
+// frame placed at _WX_NIGHT_ICON % of a 100-unit circle, centred (at 100 the
+// frame is the circle, as on the sheet)
+function _wxNightLineDisc(txt) {
   var s = String(txt || '');
   var m = /^\s*<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="([^"]+)">/.exec(s);
   if (!m) return s;
@@ -56007,10 +56020,10 @@ function _wxHydrateSvgs(root) {
           if (!img.parentNode) return;
           // v24014 — on the weather card the icons are white and still
           // (v24035: not the Colour / Solid circles, which keep their own colours)
-          if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-owner)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
+          if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-line)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
           // v24045 — the night icons drawn for Orion Connected come without a
           // circle: they are set in the night circle here (--wxn-disc)
-          if (/\/night-owner\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightOwnerDisc(rawTxt);
+          if (/\/night-line\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightLineDisc(rawTxt);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
           // carry <defs> gradients / clipPaths / <animate> targets referenced
           // by url(#id) and href="#id". Inlining the SAME icon more than once
