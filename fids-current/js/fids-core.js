@@ -22954,9 +22954,49 @@ function _autoBandPalette(ap, _tries) {
     });
   } catch (e) { _clearBandPalette(); }
 }
+// vNEXT — A HOLIDAY LOOK, ON THE AIRPORT'S OWN HOLIDAY. Canadian
+// Thanksgiving (the second Monday of October) gives Canadian airports'
+// boards body[data-fids-holiday="thanksgiving-ca"] for that day in the
+// airport's own time zone; the look itself is CSS keyed on the attribute,
+// so a board on any other day, or outside Canada, is untouched. Canadian
+// airports are the Y-codes on the roster (as _heritageIsCanadian reads them
+// when AP carries no country). ?holiday=<id> previews a look and
+// ?holiday=none turns it off, for review only.
+function _fidsAirportYmd(iata, now) {
+  var tz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || undefined;
+  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+  var get = function (t) { return +((parts.find(function (q) { return q.type === t; }) || {}).value || 0); };
+  return { y: get('year'), m: get('month'), d: get('day') };
+}
+function _fidsHolidayFor(iata, now) {
+  try {
+    var q = new URLSearchParams(location.search).get('holiday');
+    if (q === 'none') return '';
+    if (q && /^[a-z0-9-]{3,40}$/.test(q)) return q;
+  } catch (eQ) {}
+  var ap = String(iata || '').toUpperCase();
+  var canadian = (function () {
+    var c = ((typeof AP !== 'undefined' && AP[ap]) || {}).country || '';
+    if (c) return /^(CA|CAN|Canada)$/i.test(String(c));
+    return /^Y[A-Z]{2}$/.test(ap);
+  })();
+  if (!canadian) return '';
+  var t = _fidsAirportYmd(ap, now || new Date());
+  // the second Monday of October: the first Monday falls on day 1..7
+  if (t.m === 10) {
+    var dow = new Date(Date.UTC(t.y, 9, t.d)).getUTCDay();
+    if (dow === 1 && t.d >= 8 && t.d <= 14) return 'thanksgiving-ca';
+  }
+  return '';
+}
 function _applyBannerStyle(iata, screen) {
   try {
     var ap = String(iata || '').toUpperCase();
+    try {
+      var _hol = _fidsHolidayFor(ap, new Date());
+      if (_hol) document.body.dataset.fidsHoliday = _hol;
+      else delete document.body.dataset.fidsHoliday;
+    } catch (eHol) {}
     // v23330 — THE PER-AIRPORT HOOKS TRAVEL WITH THE STYLE. render() and
     // renderDedicatedScreen() stamp body.fids-ap-YQM / body[data-fids-ap]
     // right before calling us, but the v23328 boot call did not, and the
