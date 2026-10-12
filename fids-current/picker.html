@@ -64,7 +64,7 @@
     <!-- Brand rail — same design language as the entry screen + boot loaders -->
     <div class="ocb-rail">
       <div class="ocb-brand">
-        <img class="ocb-logo" src="/logos/brand/orion-connected-white.svg" alt="Orion Connected">
+        <img class="ocb-logo" src="/logos/brand/orion-connected-on-dark.svg" alt="Orion Connected">
         <div class="ocb-lockup">Connecting Beyond</div>
       </div>
       <div class="ocb-id">
@@ -124,7 +124,15 @@
       gap:clamp(24px,3.4vh,44px); padding:clamp(30px,4vh,56px) clamp(26px,2.2vw,40px);
     }
     #pickerScreen .ocb-brand{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; }
-    #pickerScreen .ocb-logo{ width:clamp(88px,7.4vw,132px); height:auto; object-fit:contain; filter:brightness(0) invert(1); }
+    /* vNEXT — THE LOGO IN COLOUR, AND THE WIDTH OF THE RAIL. This was the
+       charcoal mark (orion-connected-white.svg carries charcoal ink, whatever
+       its name says) forced flat white by a filter, inside a square 1024 box
+       that is mostly empty, so the artwork drew about 90px wide in a 262px
+       rail. orion-connected-on-dark.svg is the official colour logo for a
+       dark ground: white lettering, the gold planets and stars as drawn, no
+       backing shape, cropped to the artwork, so the rail's width is the
+       logo's width. No filter: one would turn the gold white. */
+    #pickerScreen .ocb-logo{ display:block; width:100%; height:auto; aspect-ratio:3975/2410; object-fit:contain; filter:none; }
     #pickerScreen .ocb-lockup{ font-family:'AC Nord Text','AC Nord Display',system-ui,sans-serif;
       font-size:clamp(13px,1.15vw,19px); font-weight:600; color:rgba(255,255,255,.62); }
     #pickerScreen .ocb-code{ font-family:'AC Nord Display','AC Nord Text',system-ui,sans-serif;
@@ -180,6 +188,10 @@
     @media (max-aspect-ratio:1/1){
       #pickerScreen .ocb{ flex-direction:column; overflow:auto; }
       #pickerScreen .ocb-rail{ flex-basis:auto; }
+      /* vNEXT — stacked, the rail is the screen's whole width, so a
+         1080px portrait display would draw the logo over 1000px wide.
+         Held near the size it reaches beside a landscape board. */
+      #pickerScreen .ocb-logo{ width:min(100%,320px); }
       #pickerScreen .ocb-stage{ align-items:center; text-align:center; padding:clamp(24px,4vh,48px) 20px; }
       #pickerScreen .ocb-cards{ justify-content:center; }
       #pickerScreen .ocb-foot{ justify-content:center; }
