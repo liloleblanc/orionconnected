@@ -78,3 +78,31 @@ Rebuild: `python3 night-owner.py split WEATHER.svg <work>`, serve `<work>`
 and run `night-owner-measure.js` in headless Chrome on a page there (it prints
 each icon's drawn extent), save that as `measure.json`, then
 `python3 night-owner.py build WEATHER.svg measure.json ../../fids-current/logos/weather/night-owner`.
+
+### On the boards (v24045)
+
+At night, wherever the look draws its weather icons in a circle (Day & night
+after dark, and Solid at night), the boards draw these icons:
+
+- **The weather card** (`fids-core.js` `_wxCardIconDir`): a plate or an hour in
+  darkness, or with no flag of its own (the day forecasts) the board at night,
+  takes `night-owner/`. Each file is inlined and set in its circle by
+  `_wxNightOwnerDisc`: a 100-unit circle filled with `var(--wxn-disc)`, the
+  file's own frame placed at 84 % of it (`_WX_NIGHT_ICON`), centred.
+- **The gate screens** (`fids-v2.js` `wxIconHtml`): a `.fids-wx-own` element
+  whose round background is the circle (`--wxn-disc`) and whose `::after` is
+  the icon at 84 % (`inset: 8%`, `css/display-overrides.css`).
+- A Solid chosen by day keeps its glyphs; the rows never take a circle; the
+  day look (Colour, the light tint of the card's ground) is unchanged.
+
+The circle's colour is **one choice**, `_WX_NIGHT_DISC` in `fids-core.js`:
+
+| Value | Circle |
+|---|---|
+| `'airline'` (B, the default) | a dark tint of the airline's night ground (`_wxNightDiscTint`): the hue the card tints its ground with, no more colour than that tint has nor than 0.035, one step (0.10 in OKLab) lighter than the tile it sits on and never darker than the charcoal, so it reads as a circle and every colour the icons are drawn in keeps 3/4 of the distance it has from the charcoal. Air Canada `#33272B` (dark wine), WestJet `#254242` (dark teal), Porter `#2C3749` (dark navy). |
+| `'charcoal'` (A) | the charcoal circle the icons were drawn on, `#2B2B2A`, as drawn. |
+
+`tests/weather-night-owner.test.js` pins every MET symbol, read at night, to
+its icon and that icon to a file here, and measures every file (its shapes,
+their clips, the edge stroke and its corner miters): nothing past its frame,
+nothing past 92 % of the circle's radius at 84 %.

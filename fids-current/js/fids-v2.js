@@ -193,6 +193,15 @@
     } catch (e) {}
     return { disc: '#033F77', ink: '#FFFFFF' };
   }
+  // v24045 — the night circle for the gate airline (fids-core.js _wxNightDisc:
+  // the airline's dark tint, or the charcoal the night icons were drawn on)
+  function wxGateNightDisc() {
+    try {
+      const code = String(window._gateCurrentAirline || document.body.getAttribute('data-gate-airline') || '').trim().toUpperCase();
+      if (typeof _wxNightDisc === 'function') return _wxNightDisc(code);
+    } catch (e) {}
+    return '#2B2B2A';
+  }
   function wxLookHtml(look, nameKey, size) {
     const v = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
     const box = 'display:inline-block;width:' + size + 'px;height:' + size + 'px;flex-shrink:0;object-fit:contain;vertical-align:middle;';
@@ -201,6 +210,15 @@
     }
     if (look === 'colour') {
       return '<img class="fids-wx-cell fids-wx-disc" data-wxg="' + nameKey + '" src="/logos/weather/disc-day/' + nameKey + '.svg' + v + '" alt="" aria-hidden="true" style="' + box + '">';
+    }
+    // v24045 — at night the circle look draws the night icons drawn for
+    // Orion Connected (logos/weather/night-owner/): the element's round
+    // background is the night circle, the icon its ::after at 84 % of it
+    // (css/display-overrides.css .fids-wx-own). A Solid chosen by day keeps
+    // the glyph below.
+    if (look === 'solid' && document.documentElement.classList.contains('fids-night')) {
+      return '<span class="fids-wx-cell fids-wx-disc fids-wx-own" data-wxg="' + nameKey + '" aria-hidden="true" style="' + box
+        + '--wxn-disc:' + wxGateNightDisc() + ';--wxn-icon:url(/logos/weather/night-owner/' + nameKey + '.svg' + v + ');"></span>';
     }
     // the circle is the element's own round background; the glyph a mask
     // painted in the brand colour (css/display-overrides.css .fids-wx-pair)
@@ -249,6 +267,7 @@
   // v24035 — the weather card asks the same questions (fids-core.js _wxCardIconDir)
   window.fidsWxLook = function (opts) { return wxLook(opts); };
   window.fidsWxGatePair = wxGatePair;
+  window.fidsWxGateNightDisc = wxGateNightDisc;
 
   // ── Per-airport config ─────────────────────────────────────────────────
   // Each airport can have:

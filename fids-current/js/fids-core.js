@@ -55564,6 +55564,9 @@ var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
 // over a night photograph whenever the board's own airport was in daylight.
 // Without a flag (the day forecasts, which are daytime forecasts with no
 // hour) the board's own day or night decides, as on the gate screen.
+// v24045 — at night the circle look draws the night icons drawn for Orion
+// Connected (_WX_NIGHT_DIR, below): a plate or an hour in darkness, or with
+// no flag the board's own night. A Solid chosen by day keeps its glyphs.
 function _wxCardIconDir(night) {
   var look = (typeof window.fidsWxLook === 'function') ? window.fidsWxLook() : '';
   if (look && typeof night === 'boolean'
@@ -55571,7 +55574,10 @@ function _wxCardIconDir(night) {
     look = night ? 'solid' : 'colour';
   }
   if (look === 'colour') return '/logos/weather/disc-day/';
-  if (look === 'solid') return '/logos/weather/disc-night/';
+  if (look === 'solid') {
+    var dark = (typeof night === 'boolean') ? night : document.documentElement.classList.contains('fids-night');
+    return dark ? _WX_NIGHT_DIR : '/logos/weather/disc-night/';
+  }
   return _WX_ICON_DIR;
 }
 // v23933 — the icon URLs carry the build tag. The thunderstorm icons were
@@ -55661,6 +55667,69 @@ function _wxDiscTint(f, dh) {
   }
   return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
 }
+// ══ v24045 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
+// At night, wherever the look draws its weather icons in a circle (Day &
+// night after dark, and Solid at night: the weather card and the gate
+// screens), the icons are the set drawn for Orion Connected, one file per
+// condition in logos/weather/night-owner/ (scripts/wx-icons/night-owner.py).
+// The files carry no circle: the boards draw it (_wxNightOwnerDisc on the
+// card, .fids-wx-own on the gate) and place the icon at _WX_NIGHT_ICON % of
+// its diameter, so the farthest point of any icon stays inside 92 % of the
+// radius (tests/weather-night-owner.test.js). The circle's colour is ONE
+// choice, _WX_NIGHT_DISC:
+//   'airline'  (B, the default) a dark tint of the airline's night ground,
+//              the night form of the day circle's rule (_wxNightDiscTint):
+//              the hue the card tints its ground with, no more colour than
+//              that tint has nor than _WX_NIGHT_C, and a step lighter than
+//              the tile it sits on (_WX_NIGHT_STEP in OKLab), never darker
+//              than the charcoal the icons were drawn on, so it still reads
+//              as a circle and the icons keep the contrast they were drawn
+//              with. Air Canada's is a dark wine, WestJet's a dark teal,
+//              Porter's a dark navy;
+//   'charcoal' (A) the charcoal circle the icons were drawn on, as drawn.
+var _WX_NIGHT_DISC = 'airline';
+var _WX_NIGHT_DIR = '/logos/weather/night-owner/';
+var _WX_NIGHT_CHARCOAL = '#2B2B2A';   // the circle on the sheet the icons were drawn on
+var _WX_NIGHT_ICON = 84;              // the icon's share of the circle's diameter
+var _WX_NIGHT_C = 0.035;              // at most this much colour in the airline's circle
+var _WX_NIGHT_STEP = 0.10;            // this much lighter than the tile under it (OKLab)
+// the colours the icons are drawn in: both ends of the gold gradient, the
+// blue, the white, the grey; each keeps 3/4 of its distance from the charcoal
+var _WX_NIGHT_INKS = ['#FFF406', '#FFAC2D', '#25B4E4', '#FEFEFE', '#D5D5D5'];
+// f: the colour the card tints its ground with; tile: the tile it makes.
+// The day circle's warm hue for Air Canada (dh) is the daylight footage
+// under its ground; at night its ground reads as its own wine, so the night
+// circle takes f's hue for every airline.
+function _wxNightDiscTint(f, tile) {
+  var ch = _wxOklab(_rc2Rgb(_WX_NIGHT_CHARCOAL)), o = _wxOklab(f), h = Math.atan2(o[2], o[1]);
+  var c = Math.min(Math.sqrt(o[1] * o[1] + o[2] * o[2]), _WX_NIGHT_C);
+  var L = Math.max(ch[0], _wxOklab(tile)[0] + _WX_NIGHT_STEP);
+  var far = function (p, q) { return Math.sqrt(Math.pow(p[0] - q[0], 2) + Math.pow(p[1] - q[1], 2) + Math.pow(p[2] - q[2], 2)); };
+  var inks = _WX_NIGHT_INKS.map(function (x) { return _wxOklab(_rc2Rgb(x)); });
+  var at = function () { return _wxOklab(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)])); };
+  for (var i = 0; i < 12 && !inks.every(function (p) { return far(p, at()) >= _WX_DISC_KEEP * far(p, ch); }); i++) {
+    c *= 0.8; L = Math.max(ch[0], L - 0.01);
+  }
+  return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
+}
+// the night circle's colour for an airline (the gate screens ask through
+// fids-v2.js wxGateNightDisc; the card wears it as --wxn-disc)
+function _wxNightDisc(code) {
+  if (_WX_NIGHT_DISC !== 'airline') return _WX_NIGHT_CHARCOAL;
+  return _wxAirlineLook(code).nk;
+}
+// a night-owner file, inlined on the card, inside its circle: the file's own
+// frame placed at _WX_NIGHT_ICON % of a 100-unit circle, centred
+function _wxNightOwnerDisc(txt) {
+  var s = String(txt || '');
+  var m = /^\s*<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="([^"]+)">/.exec(s);
+  if (!m) return s;
+  var at = (100 - _WX_NIGHT_ICON) / 2;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+    + '<circle cx="50" cy="50" r="50" style="fill:var(--wxn-disc, ' + _WX_NIGHT_CHARCOAL + ')"/>'
+    + '<svg x="' + at + '" y="' + at + '" width="' + _WX_NIGHT_ICON + '" height="' + _WX_NIGHT_ICON + '" viewBox="' + m[1] + '">'
+    + s.slice(m[0].length).replace(/\s+$/, '') + '</svg>';
+}
 function _wxAirlineLook(code) {
   var c = String(code || '').trim().toUpperCase();
   var p = _rc2Pair(c);
@@ -55689,7 +55758,9 @@ function _wxAirlineLook(code) {
   }
   var tile = _wxMix(g, f, _WX_TINT);
   return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile),
-           dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined) };
+           dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined),
+           // v24045 — the night circle (_WX_NIGHT_DISC): the airline's dark tint, or the charcoal
+           nk: _WX_NIGHT_DISC === 'airline' ? _wxNightDiscTint(f, tile) : _WX_NIGHT_CHARCOAL };
 }
 // v24035 — THE SOLID LOOK'S TWO COLOURS: the circle is the airline's deep
 // colour and the glyph its brand colour (WestJet navy behind its teal, Air
@@ -55936,7 +56007,10 @@ function _wxHydrateSvgs(root) {
           if (!img.parentNode) return;
           // v24014 — on the weather card the icons are white and still
           // (v24035: not the Colour / Solid circles, which keep their own colours)
-          if (img.closest && img.closest('.wxcard-wrap') && !/\/disc-(day|night)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
+          if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-owner)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
+          // v24045 — the night icons drawn for Orion Connected come without a
+          // circle: they are set in the night circle here (--wxn-disc)
+          if (/\/night-owner\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightOwnerDisc(rawTxt);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
           // carry <defs> gradients / clipPaths / <animate> targets referenced
           // by url(#id) and href="#id". Inlining the SAME icon more than once
@@ -58138,7 +58212,7 @@ function _renderWxCard(el) {
     var _wxLk = _wxAirlineLook(_wxAl);
     var _wxPaint = function (wrap) {
       if (!wrap || !wrap.style) return;
-      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p, _wxLk.dk].join('|');
+      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p, _wxLk.dk, _wxLk.nk].join('|');
       if (wrap._wxLookKey === key) return;
       wrap._wxLookKey = key;
       wrap.style.setProperty('--wxc-a', _wxLk.a);
@@ -58148,6 +58222,8 @@ function _renderWxCard(el) {
       wrap.style.setProperty('--wxc-ko', _wxLk.ko);
       // v24044 — the day circle: a light tint of this ground (_wxDiscTint)
       wrap.style.setProperty('--wxc-disc', _wxLk.dk);
+      // v24045 — the night circle: the airline's dark tint or the charcoal (_WX_NIGHT_DISC)
+      wrap.style.setProperty('--wxn-disc', _wxLk.nk);
       var _wxDp = _wxDiscPair(_wxLk.code);
       wrap.style.setProperty('--wx-disc', _wxDp.disc);
       wrap.style.setProperty('--wx-ink', _wxDp.ink);

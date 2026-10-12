@@ -168,8 +168,8 @@ test('the footage plays at 30 % under one near-black layer, so even a lightning 
 test('the card wears the gate\'s airline, set in place on every render path', () => {
   const src = fnSource('_renderWxCard');
   assert.match(src, /var _wxLk = _wxAirlineLook\(_wxAl\);/);
-  for (const p of ['--wxc-a', '--wxc-a-ink', '--wxc-g', '--wxc-p', '--wxc-ko', '--wxc-disc']) assert.ok(src.includes("wrap.style.setProperty('" + p + "'"), p);
-  assert.match(src, /var key = \[_wxLk\.code, _wxLk\.a, _wxLk\.ink, _wxLk\.g, _wxLk\.p, _wxLk\.dk\]\.join\('\|'\);/, 'a new circle tint repaints');
+  for (const p of ['--wxc-a', '--wxc-a-ink', '--wxc-g', '--wxc-p', '--wxc-ko', '--wxc-disc', '--wxn-disc']) assert.ok(src.includes("wrap.style.setProperty('" + p + "'"), p);
+  assert.match(src, /var key = \[_wxLk\.code, _wxLk\.a, _wxLk\.ink, _wxLk\.g, _wxLk\.p, _wxLk\.dk, _wxLk\.nk\]\.join\('\|'\);/, 'a new circle tint, day or night, repaints');
   assert.match(src, /if \(wrap\._wxLookKey === key\) return;/, 'only when the colours change, so a refresh never repaints');
   assert.equal((src.match(/_wxPaint\((el\.querySelector\('\.wxcard-wrap'\)|_wxWrapP|_wxWrap)\);/g) || []).length, 3, 'the three render paths');
   assert.match(src, /if \(_wxAl === '9E'\) _wxAl = 'DL';/, 'folded the way the gate folds it');
@@ -222,7 +222,7 @@ test('the icons are the board\'s flat set, white and still, framed on their own 
   }
   assert.match(rule('.wxcard-wrap .wxanim-host .wxc-ko'), /fill: var\(--wxc-ko, #141319\) !important; stroke: var\(--wxc-ko, #141319\) !important;/);
   // applied as the card's icons are inlined, and only on the card
-  assert.match(fnSource('_wxHydrateSvgs'), /if \(img\.closest && img\.closest\('\.wxcard-wrap'\) && !\/\\\/disc-\(day\|night\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill\(rawTxt, name\);/);
+  assert.match(fnSource('_wxHydrateSvgs'), /if \(img\.closest && img\.closest\('\.wxcard-wrap'\) && !\/\\\/\(disc-\(day\|night\)\|night-owner\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill\(rawTxt, name\);/);
   assert.match(rule('.wxcard-wrap img.wxanim'), /visibility: hidden !important/, 'the file\'s own coloured copy is never shown on the card');
 });
 

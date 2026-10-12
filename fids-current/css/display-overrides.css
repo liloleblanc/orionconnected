@@ -23045,6 +23045,24 @@ img.fids-wx-disc {
   mask: var(--wx-glyph) center / contain no-repeat;
 }
 
+/* ══ v24045 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE ══════════
+   fids-v2.js wxIconHtml at night. The element's own round background is the
+   night circle (--wxn-disc, fids-core.js _wxNightDisc: the airline's dark
+   tint, or the charcoal the icons were drawn on) and the icon
+   (logos/weather/night-owner/, in its colours as drawn) sits on it at 84 % of
+   the diameter (_WX_NIGHT_ICON): 8 % in from every side. */
+.fids-wx-own {
+  position: relative;
+  border-radius: 50% !important;
+  background: var(--wxn-disc, #2B2B2A) !important;
+}
+.fids-wx-own::after {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  background: var(--wxn-icon) center / contain no-repeat;
+}
+
 /* ══ v24032 — THE CREDIT MONCTON'S AERIAL PHOTO ASKS FOR, OFF THE MAP ═══════
    The licence's line (fids-core.js _gatePhotoCredit) sits in the strip under
    the centre panel: the glass card is inset --gx-g from the column, and the
