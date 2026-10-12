@@ -35743,12 +35743,13 @@ var GATE_SB_NAME_FMT = { AC: 'sur3' };
 // The surnames' first three letters (data, written like airport codes):
 // common Canadian and US surnames, so a made-up list reads like a real one.
 // None may be a word in any board language ('PAR' is French, 'AND' English,
-// 'TRE' Italian since the homepage says "tre schermi"):
+// 'TRE' Italian since the homepage says "tre schermi", 'SAN' since the
+// homepage's phone picture is described with San Diego):
 // the rendered language check reads a capitalised word as a word, so such a
 // name would be "not a word of en" (tests/gate-centre-cards.test.js holds it).
 var _GATE_SB_SUR = ['BER', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'LAP', 'COT', 'PEL', 'BEL', 'GIR', 'SIM', 'POI',
   'OUE', 'SMI', 'BRO', 'WIL', 'MAR', 'TAY', 'CAM', 'BEA', 'JOH', 'THO', 'WHI', 'CLA', 'HAL', 'KIN', 'SCO', 'REI', 'GRA',
-  'MIL', 'NGU', 'WON', 'SAN', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'LEF', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'HAR'];
+  'MIL', 'NGU', 'WON', 'GON', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'LEF', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'HAR'];
 // premium seat letters (A C D F) and the main cabin's (A to F), as char codes
 var _GATE_SB_SEATS = { up: [65, 67, 68, 70], sb: [65, 66, 67, 68, 69, 70] };
 

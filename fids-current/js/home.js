@@ -147,6 +147,43 @@
     });
     var t = doc.querySelector('[data-i18n-title]');
     if (t) doc.title = S.bs(t.getAttribute('data-i18n-title'), l);
+    holdNamesWhole(l);
+  }
+
+  // ── NAMES HELD WHOLE IN CHINESE ──────────────────────────────────────────
+  // A name never breaks across lines (the display rule: no severed phrases).
+  // The other languages hold theirs whole in the store, with a no-break
+  // space; Japanese breaks between phrases (css/home.css, auto-phrase). But
+  // Chinese may break a line between any two characters, and the store
+  // cannot hold a name together there (the guard bars invisible joiners),
+  // so 新不伦瑞克 (New Brunswick) broke inside itself on the credits page at
+  // 600 and 320 px. The store lists the names a language's own line
+  // breaking would cut (BoardStrings.META[lang].whole); each one in the
+  // page's words is set here in a span that never wraps (.nb), after the
+  // store has filled them. Longer names first, so a name inside another is
+  // never cut out of it.
+  function holdNamesWhole(l) {
+    var names = String((S.META[l] && S.META[l].whole) || '').split(' ').filter(Boolean);
+    if (!names.length || !doc.createTextNode) return;
+    names.sort(function (a, b) { return b.length - a.length; });
+    var re = new RegExp(names.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
+    var els = doc.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < els.length; i++) {
+      var e = els[i], s = e.textContent;
+      // the store's words are plain text; one already set here is skipped
+      if (e.children.length || !s) continue;
+      re.lastIndex = 0;
+      if (!re.test(s)) continue;
+      re.lastIndex = 0;
+      e.textContent = '';
+      var at = 0, m;
+      while ((m = re.exec(s))) {
+        if (m.index > at) e.appendChild(doc.createTextNode(s.slice(at, m.index)));
+        e.appendChild(el('span', 'nb', m[0]));
+        at = m.index + m[0].length;
+      }
+      if (at < s.length) e.appendChild(doc.createTextNode(s.slice(at)));
+    }
   }
 
   // ── THE AIRPORT INDEX, BY REGION ─────────────────────────────────────────

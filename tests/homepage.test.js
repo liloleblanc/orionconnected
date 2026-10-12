@@ -177,6 +177,7 @@ function loadPage(name, o) {
     addEventListener: (t, fn) => { (listeners[t] = listeners[t] || []).push(fn); },
     createElement: (t) => new El(doc, t),
     createElementNS: (ns, t) => new El(doc, t),
+    createTextNode: (t) => new Txt(String(t)),
     getElementById: (id) => doc.querySelector('#' + id),
     querySelectorAll: (sel) => [doc.documentElement].concat(doc.documentElement.descendants()).filter((n) => n.matches(sel)),
     querySelector: (sel) => doc.querySelectorAll(sel)[0] || null
@@ -700,5 +701,41 @@ test('a name of two words never breaks across lines (no severed phrases)', () =>
   for (const [name, html] of Object.entries(PAGES)) {
     const text = html.slice(html.indexOf('<body')).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ');
     assert.doesNotMatch(text, SEVERABLE, name);
+  }
+});
+
+test('in Chinese a name is never broken inside: each one is set in a span that never wraps', () => {
+  // Chinese breaks between any two characters, and the store cannot hold a
+  // name together there; 新不伦瑞克 broke inside itself on the credits page.
+  // The store lists the names (META.zh.whole); home.js sets each in a span.
+  assert.match(CSS, /\.nb\{white-space:nowrap\}/);
+  const whole = BS.META.zh.whole.split(' ');
+  for (const n of ['新不伦瑞克', '蒙克顿', '挪威气象研究所']) assert.ok(whole.includes(n), n);
+  for (const l of BS.LANGS) if (l !== 'zh') assert.equal(BS.META[l].whole, undefined, l + ' holds its names in its words');
+  // each of them, wherever the two pages print it in Chinese
+  const NAMES = new RegExp(whole.sort((a, b) => b.length - a.length).join('|'), 'g');
+  for (const name of Object.keys(PAGES)) {
+    const p = loadPage(name, { url: 'https://www.orionconnected.com/?lang=zh' });
+    assert.equal(p.html.getAttribute('lang'), 'zh');
+    let held = 0;
+    for (const e of p.$$('[data-i18n]')) {
+      const key = e.getAttribute('data-i18n');
+      // the words are the store's own, unchanged
+      if (!e.hasAttribute('data-i18n-fill')) assert.equal(e.textContent, BS.bs(key, 'zh'), name + ' ' + key);
+      // and every name in them sits whole in its own span
+      const want = e.textContent.match(NAMES) || [];
+      assert.deepEqual(e.querySelectorAll('span.nb').map((s) => s.textContent), want, name + ' ' + key);
+      held += want.length;
+    }
+    assert.ok(held >= 3, name + ': the names are there, held whole: ' + held);
+    if (name === 'credits.html') {
+      assert.ok(p.$$('span.nb').some((s) => s.textContent === '新不伦瑞克' && s.parentNode.getAttribute('data-i18n') === 'credGeonb'));
+    }
+    // another language takes the spans away with the Chinese
+    const sw = p.$('details.lsw');
+    sw.open = true;
+    p.click(sw.querySelector('[data-lang-pick="en"]'));
+    assert.equal(p.html.getAttribute('lang'), 'en');
+    assert.equal(p.$$('span.nb').length, 0, name);
   }
 });
