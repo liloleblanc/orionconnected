@@ -69,6 +69,14 @@
    REVIEW
      ?daynight=day or ?daynight=night holds the page in that state (isDay,
      subscribers and the <html> classes; times and next stay astronomical).
+
+   A BOARD SHOWN AS AN EXAMPLE (v24042)
+     Its clocks read 10:10 (BoardStrings.clockNow, the demo clock), and its
+     day or night follows those clocks rather than the real hour: no moon and
+     no night photograph under a 10:10 AM clock. env.shown(ms, tz) gives the
+     instant the look is drawn for (ms itself on a board in an airport); the
+     state is judged at that instant. Timers, the heartbeat and every answer
+     asked for an explicit ms keep the real clock. ?daynight= still wins.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function (root) {
   'use strict';
@@ -312,6 +320,12 @@
       return (places[key] = new Place(c[0], c[1], tz, code));
     }
     function at(ms) { return ms == null ? now() : Number(ms); }
+    // the instant a place's day or night is SHOWN for at the real moment t
+    // (v24042 — the demo clock; see the header): t itself without env.shown
+    function shownAt(p, t) {
+      if (!env.shown || !p) return t;
+      try { var s = Number(env.shown(t, p.tz)); return isFinite(s) ? s : t; } catch (e) { return t; }
+    }
 
     var api = {
       version: VERSION,
@@ -321,7 +335,7 @@
       isDay: function (where, ms) {
         if (override) return override === 'day';
         var p = placeFor(where);
-        return p ? isDayAt(p, at(ms)) : null;
+        return p ? isDayAt(p, ms == null ? shownAt(p, now()) : Number(ms)) : null;
       },
       next: function (where, ms) { var p = placeFor(where); return p ? nextSwitch(p, at(ms)) : null; },
       events: function (where, from, to) { var p = placeFor(where); return p ? eventsBetween(p, Number(from), Number(to)) : null; },
@@ -351,7 +365,7 @@
     function check(w, why) {
       if (!w.place) w.place = placeFor(w.where);
       var t = now();
-      var s = override ? (override === 'day') : (w.place ? isDayAt(w.place, t) : null);
+      var s = override ? (override === 'day') : (w.place ? isDayAt(w.place, shownAt(w.place, t)) : null);
       arm(w, t);                                  // first, so a subscriber sees the next switch
       if (s !== null && s !== w.state) {
         var prev = w.state;
@@ -539,6 +553,16 @@
       },
       coords: boardCoords,
       tz: boardTz,
+      // v24042 — a board whose clocks read 10:10 is drawn for 10:10. The demo
+      // switch (BoardStrings, the store every board loads first) is asked each
+      // time a state is judged, so a demo turned on after boot is followed
+      shown: function (t, tz) {
+        try {
+          var B = w.BoardStrings;
+          if (B && B.demoClock && B.demoClock()) return B.clockNow(new Date(t), tz || null).getTime();
+        } catch (e) {}
+        return t;
+      },
       metSun: function (code, date) {
         var hit = w._wxSun && w._wxSun[code + '|' + date];
         return hit && hit.data && hit.data.sunrise ? hit.data : null;

@@ -15,11 +15,11 @@ The loader's palette in shared.css is the
   <!-- v23803 — yqm.orionconnected.com shows Moncton. Loaded FIRST: it fills in
        sessionStorage.fids_airport, which every board reads as its default, and the
        earliest reader is an inline script further down this page. -->
-  <script src="js/host-airport.js?v=24041"></script>
+  <script src="js/host-airport.js?v=24042"></script>
   <!-- The one store for passenger words (board-strings.js). Loaded first, before
        the loader below, so the loader greets in the board's own languages. Its
        ?v= always equals fids-core.js's (tests/board-languages.test.js B14). -->
-  <script src="js/board-strings.js?v=24041"></script>
+  <script src="js/board-strings.js?v=24042"></script>
 
   <script>
   (function () {
@@ -196,14 +196,14 @@ s not just start it's all the time now'). ?rotate= navigates with
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+Arabic:wght@400;700;900&display=swap">
   <link rel="stylesheet" href="css/font.css?v=335">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
-  <link rel="stylesheet" href="css/shared.css?v=24041">
-  <link rel="stylesheet" href="css/menu.css?v=24041">
-  <link rel="stylesheet" href="css/fids.css?v=24041">
-  <link rel="stylesheet" href="css/flight-display.css?v=24041">
-  <link rel="stylesheet" href="css/baggage-display.css?v=24041">
+  <link rel="stylesheet" href="css/shared.css?v=24042">
+  <link rel="stylesheet" href="css/menu.css?v=24042">
+  <link rel="stylesheet" href="css/fids.css?v=24042">
+  <link rel="stylesheet" href="css/flight-display.css?v=24042">
+  <link rel="stylesheet" href="css/baggage-display.css?v=24042">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=313">
-  <link rel="stylesheet" href="css/display-overrides.css?v=24041">
+  <link rel="stylesheet" href="css/display-overrides.css?v=24042">
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
@@ -244,7 +244,7 @@ s not just start it's all the time now'). ?rotate= navigates with
     }, 8000);
   } catch (e) {}
   </script>
-  <link rel="stylesheet" href="css/hotel-ads.css?v=24041">
+  <link rel="stylesheet" href="css/hotel-ads.css?v=24042">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
@@ -323,7 +323,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
     <!-- Brand rail (fixed identity, English — the letters spell the name) -->
     <div class="ocb-rail">
       <div class="ocb-brand">
-        <img class="ocb-logo" src="/logos/brand/orion-connected-white.svg" alt="Orion Connected">
+        <img class="ocb-logo" src="/logos/brand/orion-connected-on-dark.svg" alt="Orion Connected">
         <div class="ocb-lockup">Connecting Beyond</div>
       </div>
       <div class="ocb-id">
@@ -353,9 +353,17 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
       gap:clamp(24px,3.4vh,44px); padding:clamp(30px,4vh,56px) clamp(26px,2.2vw,40px);
     }
     #fidsLoader .ocb-brand{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; }
+    /* v24042 — THE LOGO IN COLOUR, AND THE WIDTH OF THE RAIL. This was the
+       charcoal mark (orion-connected-white.svg carries charcoal ink, whatever
+       its name says) forced flat white by a filter, inside a square 1024 box
+       that is mostly empty, so the artwork drew about 90px wide in a 262px
+       rail. orion-connected-on-dark.svg is the official colour logo for a
+       dark ground: white lettering, the gold planets and stars as drawn, no
+       backing shape, cropped to the artwork, so the rail's width is the
+       logo's width. No filter: one would turn the gold white. */
     #fidsLoader .ocb-logo{
-      width:clamp(88px,7.4vw,132px); height:auto; object-fit:contain;
-      filter:brightness(0) invert(1); animation:none !important; max-height:none !important; margin:0 !important;
+      display:block; width:100%; height:auto; aspect-ratio:3975/2410; object-fit:contain;
+      filter:none; animation:none !important; max-height:none !important; margin:0 !important;
     }
     #fidsLoader .ocb-lockup{
       font-family:'AC Nord Text','AC Nord Display',system-ui,sans-serif;
@@ -417,6 +425,12 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
     @media (max-aspect-ratio:1/1){
       #fidsLoader .ocb{ flex-direction:column; }
       #fidsLoader .ocb-rail{ flex-basis:auto; }
+      /* v24042 — stacked, the rail is the screen's whole width, so a
+         1080px portrait display would draw the logo over 1000px wide.
+         At most 360px, which fills the rail of a 390px phone, and at
+         most 40% of the screen's height, so a short phone keeps the
+         rest of the screen in view. */
+      #fidsLoader .ocb-logo{ width:min(100%,360px,40vh); }
       #fidsLoader .ocb-stage{ align-items:center; text-align:center; padding-top:clamp(24px,4vh,48px); }
       #fidsLoader .ocb-track{ width:min(280px,80%); }
     }
@@ -804,24 +818,24 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="/mapcdn/leaflet.js?v=22485"></script>
 <script src="/mapcdn/leaflet-arc.js?v=22485"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="js/fids-v2.js?v=24041"></script>
+<script src="js/fids-v2.js?v=24042"></script>
 <script src="data/airline-colors.js?v=5"></script>
-<script src="js/gate-date-context.js?v=24041"></script>
-<script src="js/feed-router.js?v=24041"></script>
+<script src="js/gate-date-context.js?v=24042"></script>
+<script src="js/feed-router.js?v=24042"></script>
 <!-- v24008 — day and night from the airport's own sun, computed on the screen
      (js/fids-sun.js): sets html.fids-day / html.fids-night. Before the core, so
      the core can call fidsSun from anywhere. -->
-<script src="js/fids-sun.js?v=24041"></script>
-<script src="js/fids-core.js?v=24041"></script>
+<script src="js/fids-sun.js?v=24042"></script>
+<script src="js/fids-core.js?v=24042"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
 <script src="js/media-base.js?v=2"></script>
-<script src="js/airport-coords.js?v=24041"></script>
+<script src="js/airport-coords.js?v=24042"></script>
 <script src="js/airport-runways.js?v=23035"></script>
-<script src="js/template-renderer.js?v=24041"></script>
+<script src="js/template-renderer.js?v=24042"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=24041"></script>
+<script src="js/menu.js?v=24042"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=23233"></script>
 <script src="js/editor-roles.js?v=1"></script>

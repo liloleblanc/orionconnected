@@ -163,9 +163,11 @@
 
   // ── v24035 — THE WEATHER ICONS' LOOK ──────────────────────────────────
   // Customize → Weather icons (html[data-fids-wx-icons], set per airport by
-  // applyAirportConfigToBoard): '' Classic, 'colour', 'solid', or 'daynight'
+  // applyAirportConfigToBoard): 'classic', 'colour', 'solid', or 'daynight'
   // (Colour by day, Solid at night, by the board airport's own sunrise and
   // sunset: html.fids-day / html.fids-night from js/fids-sun.js).
+  // v24042 — Day & night is the default: a page with no look stamped yet
+  // draws it too, the same as an airport that has chosen nothing.
   //   - The departures and arrivals ROWS take the solid glyph, no circle,
   //     white (dark on the light row states, css/display-overrides.css).
   //   - The GATE screens take a circle: Colour = the colour icon on white,
@@ -176,7 +178,7 @@
   const WX_LOOK_NAMES = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'mist':1,'overcast-day':1,'overcast-night':1,'overcast':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'thunderstorms-day-rain':1,'thunderstorms-night-rain':1,'thunderstorms-rain':1,'thunderstorms':1,'wind-cloud':1,'wind':1 };
   function wxLook(opts) {
     const root = document.documentElement;
-    let v = root.getAttribute('data-fids-wx-icons') || '';
+    let v = root.getAttribute('data-fids-wx-icons') || 'daynight';
     if (v === 'daynight') v = root.classList.contains('fids-night') ? 'solid' : 'colour';
     if (v !== 'colour' && v !== 'solid') return '';
     if (opts && opts.row) return 'row';
@@ -297,7 +299,8 @@
 
     // The time in the board's own clock (BoardStrings.boardTime: 5:35 PM on
     // a board led by English, 17:35 on any other)
-    const timeStr = BoardStrings.boardTime(new Date());
+    // v24042 — through BoardStrings.clockNow: 10:10 on a demo
+    const timeStr = BoardStrings.boardTime(BoardStrings.clockNow(new Date()));
 
     // Airport pill — custom logo if configured, else IATA + city
     let pillContent;

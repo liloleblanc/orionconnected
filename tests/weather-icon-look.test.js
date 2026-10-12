@@ -4,9 +4,9 @@
 // v24035 — THE WEATHER ICONS' LOOK, A CHOICE IN THE CUSTOMIZE MENU.
 //
 // Three Vecteezy packs, combined. Customize → Weather icons, per airport like
-// the font: Classic (the original icons, the default), Colour, Solid, or Day &
-// night (Colour by day, Solid at night, by the board airport's own sunrise and
-// sunset). The departures and arrivals rows never take a circle: they show
+// the font: Day & night (Colour by day, Solid at night, by the board
+// airport's own sunrise and sunset; the default since v24042), Classic (the
+// original icons, value 'classic'), Colour or Solid. The departures and arrivals rows never take a circle: they show
 // the solid glyph, white, dark on a light row. The gate screens take a
 // circle: Colour = the colour icon on white, Solid = the glyph in the
 // airline's brand colour on its deep colour (WestJet teal on navy), drawn
@@ -51,15 +51,79 @@ function helper({ look = '', night = false, path: p = '/fids', airline = '' } = 
 }
 const src = (html) => (/src="([^"]+)"/.exec(html) || [])[1] || '';
 
-test('Classic is the default: nothing changes until an operator picks a look', () => {
-  const h = helper();
-  assert.match(src(h.wxIconHtml('cloudy', 36, { row: true })), /\/logos\/weather\/animated\/cloudy\.svg/);
-  assert.match(src(h.wxIconHtml('cloudy', 48)), /\/animated\//);
-  assert.equal(h.look(), '');
+// v24042 — Day & night became the default. An airport that has chosen nothing
+// gets it; Classic is a choice of its own ('classic') and keeps the original
+// icons everywhere.
+test('Day & night is the default: no look stamped draws the solid rows, Colour by day and Solid at night at the gate', () => {
+  for (const night of [false, true]) {
+    const h = helper({ night });
+    assert.match(src(h.wxIconHtml('cloudy', 36, { row: true })), /^\/logos\/weather\/solid\/cloudy\.svg\?v=v1$/, night ? 'night row' : 'day row');
+    assert.match(src(h.wxIconHtml('cloudy', 48)), /\/animated\//, 'not a row and not the gate');
+  }
+  assert.equal(helper({ path: '/gids' }).look(), 'colour');
+  assert.equal(helper({ night: true, path: '/gids' }).look(), 'solid');
+  assert.match(src(helper({ path: '/gids' }).wxIconHtml('snow', 64)), /\/logos\/weather\/disc-day\/snow\.svg/);
+  assert.match(helper({ night: true, path: '/gids', airline: 'WS' }).wxIconHtml('snow', 64), /--wx-disc:#003366;--wx-ink:#00B2A9;/);
+});
+
+test('Classic, chosen, keeps the original icons on the rows, the gate and the card', () => {
+  for (const night of [false, true]) {
+    for (const p of ['/fids', '/gids', '/bids']) {
+      const h = helper({ look: 'classic', night, path: p });
+      assert.match(src(h.wxIconHtml('cloudy', 36, { row: true })), /\/logos\/weather\/animated\/cloudy\.svg/, p);
+      assert.match(src(h.wxIconHtml('cloudy', 64)), /\/logos\/weather\/animated\/cloudy\.svg/, p);
+      assert.equal(h.look(), '', p);
+    }
+  }
+});
+
+// the resolver in applyAirportConfigToBoard, run as written: what the airport
+// chose (or ?wxicons=) → html[data-fids-wx-icons]. The two layers are this
+// device's Customize prefs and the airport's cloud config, read through the
+// function's own _pref.
+function resolve(saved, query = '', admin) {
+  const at = CORE.indexOf("    var _wxiUrl = new URLSearchParams(location.search).get('wxicons');");
+  const end = CORE.indexOf('} catch (eWxi) {}', at);
+  assert.ok(at > 0 && end > at, 'the resolver is in fids-core.js');
+  const stylesAt = CORE.indexOf('var _WX_ICON_STYLES = ');
+  const styles = new Function(CORE.slice(stylesAt, CORE.indexOf('\n', stylesAt)) + '\nreturn _WX_ICON_STYLES;')();
+  const prefAt = CORE.indexOf('  function _pref(field) {');
+  assert.ok(prefAt > 0 && prefAt < at, '_pref is in the same function, above the resolver');
+  const pref = new Function('_userCfg', '_adminCfg', CORE.slice(prefAt, CORE.indexOf('\n  }\n', prefAt) + 4) + '\nreturn _pref;')(
+    saved === undefined ? {} : { wxIcons: saved }, admin === undefined ? null : { wxIcons: admin });
+  const attrs = {};
+  const doc = { documentElement: { setAttribute: (k, v) => { attrs[k] = v; }, removeAttribute: (k) => { delete attrs[k]; } } };
+  new Function('location', 'document', '_pref', '_WX_ICON_STYLES', 'URLSearchParams', CORE.slice(at, end))(
+    { search: query }, doc, pref, styles, URLSearchParams);
+  return attrs['data-fids-wx-icons'];
+}
+
+test('the board resolves nothing chosen to Day & night, and keeps every look that was chosen', () => {
+  assert.equal(resolve(undefined), 'daynight', 'never set (Moncton)');
+  assert.equal(resolve(''), 'daynight', "an earlier save's '' is nothing chosen");
+  assert.equal(resolve(null), 'daynight');
+  assert.equal(resolve('not-a-look'), 'daynight');
+  assert.equal(resolve('classic'), 'classic');
+  assert.equal(resolve('daynight'), 'daynight');
+  assert.equal(resolve('colour'), 'colour');
+  assert.equal(resolve('solid'), 'solid');
+  assert.equal(resolve(undefined, '?wxicons=classic'), 'classic', 'the review override');
+  assert.equal(resolve('classic', '?wxicons=solid'), 'solid');
+  assert.equal(resolve('classic', '?wxicons='), 'daynight');
+});
+
+test("a device's '' (nothing chosen) does not hide the airport's look; a device's own look still wins", () => {
+  assert.equal(resolve('', '', 'classic'), 'classic', "every Customize save writes '': it must not cover the airport's Classic");
+  assert.equal(resolve('', '', 'solid'), 'solid');
+  assert.equal(resolve(undefined, '', 'colour'), 'colour', 'nothing on the device: the airport decides');
+  assert.equal(resolve('', '', ''), 'daynight', 'nothing chosen anywhere');
+  assert.equal(resolve(undefined, '', ''), 'daynight', "the cloud's earlier '' is nothing chosen too");
+  assert.equal(resolve('solid', '', 'classic'), 'solid', 'a device that chose a look keeps it');
+  assert.equal(resolve('', '?wxicons=colour', 'classic'), 'colour', 'the review override stays on top');
 });
 
 test('the rows take the solid glyph with no circle, in every look but Classic', () => {
-  for (const look of ['solid', 'colour', 'daynight']) {
+  for (const look of ['solid', 'colour', 'daynight', '']) {
     for (const night of [false, true]) {
       const html = helper({ look, night }).wxIconHtml(1001, 36, { row: true });
       assert.match(src(html), /^\/logos\/weather\/solid\/cloudy\.svg\?v=v1$/, look + (night ? ' night' : ' day'));
@@ -124,28 +188,121 @@ test('every condition has an icon in every set, sized and coloured as its set sa
 });
 
 test('the weather card follows the look, and its circles keep their own colours', () => {
-  const dir = new Function('window', '_WX_ICON_DIR', CORE.slice(CORE.indexOf('function _wxCardIconDir()'), CORE.indexOf('\n}\n', CORE.indexOf('function _wxCardIconDir()')) + 2) + '\nreturn _wxCardIconDir;');
-  assert.equal(dir({ fidsWxLook: () => '' }, '/logos/weather/flat/')(), '/logos/weather/flat/');
-  assert.equal(dir({ fidsWxLook: () => 'colour' }, '/logos/weather/flat/')(), '/logos/weather/disc-day/');
-  assert.equal(dir({ fidsWxLook: () => 'solid' }, '/logos/weather/flat/')(), '/logos/weather/disc-night/');
-  assert.equal((CORE.match(/src="' \+ _wxCardIconDir\(\) \+ /g) || []).length, 3, 'all three of the card\'s icon rows');
+  const fnAt = CORE.indexOf('function _wxCardIconDir(night)');
+  assert.ok(fnAt > 0);
+  const dir = (look, stamped) => new Function('window', 'document', '_WX_ICON_DIR', CORE.slice(fnAt, CORE.indexOf('\n}\n', fnAt) + 2) + '\nreturn _wxCardIconDir;')(
+    { fidsWxLook: () => look },
+    { documentElement: { getAttribute: (k) => (k === 'data-fids-wx-icons' ? (stamped === undefined ? null : stamped) : null) } },
+    '/logos/weather/flat/');
+  assert.equal(dir('', 'classic')(), '/logos/weather/flat/');
+  assert.equal(dir('colour', 'colour')(), '/logos/weather/disc-day/');
+  assert.equal(dir('solid', 'solid')(), '/logos/weather/disc-night/');
+  // v24042 — under Day & night a plate or an hour takes its own moment's day
+  // or night (the flag that chose its glyph); a chosen Colour or Solid, and
+  // Classic, do not move
+  assert.equal(dir('colour', 'daynight')(true), '/logos/weather/disc-night/', 'a city in darkness while the board is in daylight');
+  assert.equal(dir('solid', 'daynight')(false), '/logos/weather/disc-day/', 'a city in daylight while the board is at night');
+  assert.equal(dir('colour', undefined)(true), '/logos/weather/disc-night/', 'nothing stamped yet is the default');
+  assert.equal(dir('solid', 'daynight')(), '/logos/weather/disc-night/', 'no flag (the day forecasts): the board decides');
+  assert.equal(dir('colour', 'colour')(true), '/logos/weather/disc-day/', 'Colour, chosen, stays Colour at night');
+  assert.equal(dir('solid', 'solid')(false), '/logos/weather/disc-night/', 'Solid, chosen, stays Solid by day');
+  assert.equal(dir('', 'classic')(true), '/logos/weather/flat/', 'Classic stays Classic');
+  assert.equal(dir('', 'daynight')(true), '/logos/weather/flat/', 'off the gate screens the card keeps the flat set');
+  assert.match(CORE, /src="' \+ _wxCardIconDir\(isNight\) \+ sIc \+ /, 'the plates pass their own night');
+  assert.match(CORE, /src="' \+ _wxCardIconDir\(!!p\.h\.night\) \+ p\.h\.ic \+ /, 'the hours pass theirs');
+  assert.match(CORE, /src="' \+ _wxCardIconDir\(\) \+ d\.ic \+ /, 'the days follow the board');
   assert.match(CORE, /img\.closest\('\.wxcard-wrap'\) && !\/\\\/disc-\(day\|night\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill/, 'not drawn white and still');
 });
 
 test('the choice lives in Customize, saves per airport like the font, and the board applies it', () => {
   const sel = MENU_HTML.slice(MENU_HTML.indexOf('<select class="sm-select" id="cuWxIcons"'), MENU_HTML.indexOf('</select>', MENU_HTML.indexOf('id="cuWxIcons"')));
-  assert.deepEqual([...sel.matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]), ['', 'daynight', 'colour', 'solid']);
+  assert.deepEqual([...sel.matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]), ['', 'classic', 'colour', 'solid']);
+  assert.match(sel, /<option value="">Day &amp; night \(default\): Colour by day, Solid at night<\/option>/, 'the first entry is the default, and says so');
+  assert.match(sel, /<option value="classic">Classic \(the original icons\)<\/option>/);
   assert.match(sel, /onchange="cuApplyAndSave\(\)"/);
   assert.match(MENU, /if \(wi && wi\.dataset\.painted === '1'\) p\.wxIcons = wi\.value;/, 'read from the form');
-  assert.match(MENU, /if \(wi\) \{ wi\.value = prefs\.wxIcons \|\| ''; wi\.dataset\.painted = '1'; \}/, 'painted into the form');
   assert.match(MENU, /'hideAirlinePrefix', 'hideWeather', 'airlineStyle', 'displayMode', 'wxIcons'\]/, 'sent to the cloud');
   assert.match(PROXY, /"wxIcons",/, 'the worker keeps it');
-  assert.match(PROXY, /if \(cfg\.wxIcons !== undefined && !\["", "daynight", "colour", "solid"\]\.includes\(cfg\.wxIcons\)\) delete cfg\.wxIcons;/, 'and only a look the boards know');
+  assert.match(PROXY, /if \(cfg\.wxIcons !== undefined && !\["", "classic", "daynight", "colour", "solid"\]\.includes\(cfg\.wxIcons\)\) delete cfg\.wxIcons;/, 'and only a look the boards know, Classic among them');
   assert.match(CORE, /'airlineStyle', 'displayMode', 'wxIcons'\];/, 'a newer cloud copy wins over a device copy');
-  assert.match(CORE, /var _WX_ICON_STYLES = \['', 'daynight', 'colour', 'solid'\];/);
-  assert.match(CORE, /if \(_WX_ICON_STYLES\.indexOf\(_wxi\) > 0\) document\.documentElement\.setAttribute\('data-fids-wx-icons', _wxi\);/);
+  assert.match(CORE, /var _WX_ICON_STYLES = \['daynight', 'classic', 'colour', 'solid'\];/, 'the first is the default');
+  assert.match(CORE, /if \(_WX_ICON_STYLES\.indexOf\(_wxi\) < 0\) _wxi = _WX_ICON_STYLES\[0\];\s*document\.documentElement\.setAttribute\('data-fids-wx-icons', _wxi\);/);
+  assert.match(V2, /let v = root\.getAttribute\('data-fids-wx-icons'\) \|\| 'daynight';/, 'a page with no look stamped yet draws the default too');
   assert.match(CORE, /window\.fidsWxIcon\(tw\.current\.code, 48, \{ row: true \}\)/, 'the board rows say they are rows');
   assert.match(V2, /wxIconHtml\(f\._wxCode, 36, \{ row: true \}\)/);
+});
+
+// v24042 — the Customize select paints what the board shows: this device's
+// look, else the airport's. Run as written against a select that behaves as
+// a browser's does (a value it has no option for selects nothing).
+function paintWx(prefs, airportCfg) {
+  const at = MENU.indexOf('  if (wi) {\n    var _wiv = prefs.wxIcons;');
+  assert.ok(at > 0, 'the paint is in menu.js');
+  const end = MENU.indexOf("wi.dataset.painted = '1';\n  }\n", at) + "wi.dataset.painted = '1';\n  }\n".length;
+  const sel = MENU_HTML.slice(MENU_HTML.indexOf('<select class="sm-select" id="cuWxIcons"'), MENU_HTML.indexOf('</select>', MENU_HTML.indexOf('id="cuWxIcons"')));
+  const values = [...sel.matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]);
+  let v = 'solid', idx = values.indexOf('solid');
+  const wi = { dataset: {}, get value() { return v; }, set value(x) { idx = values.indexOf(String(x)); v = idx < 0 ? '' : String(x); }, get selectedIndex() { return idx; } };
+  new Function('prefs', 'wi', 'getAirportConfig', '_acCurrentCode', MENU.slice(at, end))(
+    prefs, wi, (code) => (code === 'YQM' ? airportCfg : null), () => 'YQM');
+  return { value: wi.value, painted: wi.dataset.painted };
+}
+
+test("Customize paints the look the board runs: the device's, else the airport's", () => {
+  assert.deepEqual(paintWx({ wxIcons: 'colour' }, { wxIcons: 'classic' }), { value: 'colour', painted: '1' }, "the device's own look");
+  assert.equal(paintWx({}, { wxIcons: 'classic' }).value, 'classic', "a newer cloud save cleared the device's copy: the airport's Classic, not the default");
+  assert.equal(paintWx({ wxIcons: '' }, { wxIcons: 'solid' }).value, 'solid', "a device's '' is nothing chosen");
+  assert.equal(paintWx({}, null).value, '', 'no airport config yet: the default entry');
+  assert.equal(paintWx({}, { wxIcons: '' }).value, '', "the cloud's earlier '' is the default entry");
+  assert.equal(paintWx({ wxIcons: 'daynight' }, null).value, '', "a saved 'daynight' is the default entry");
+  assert.equal(paintWx({}, { wxIcons: 'daynight' }).value, '', "and so is the airport's");
+  assert.equal(paintWx({ wxIcons: 'not-a-look' }, null).value, '');
+});
+
+// v24042 — the cloud save says what the cloud KEPT. _cuSyncNote and
+// _cuCloudPush run as written against two workers: the one live before this
+// change (it deletes 'classic', the look stored before it with it, and still
+// answers with a stamp) and the one in workers/fids-proxy.js.
+async function push(prefs, allowed, selValue) {
+  const at = MENU.indexOf('function _cuSyncNote(kind) {');
+  const fnAt = MENU.indexOf('function _cuCloudPush(code, prefs) {');
+  const end = MENU.indexOf('\n}\n', fnAt) + 3;
+  assert.ok(at > 0 && fnAt > at, 'the sync note and the cloud push are in menu.js');
+  const note = { style: {}, textContent: '' };
+  const sel = { value: selValue === undefined ? '' : selValue };
+  const store = { fids_customize_YQM: JSON.stringify(Object.assign({}, prefs, { savedAt: 100 })) };
+  const ls = { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v2) => { store[k] = String(v2); } };
+  const doc = { getElementById: (id) => (id === 'cuCloudSyncNote' ? note : id === 'cuWxIcons' ? sel : null) };
+  const fetch = (url, opts) => {
+    const cfg = Object.assign({ wxIcons: 'solid' }, JSON.parse(opts.body));     // the look the airport held before
+    if (cfg.wxIcons !== undefined && !allowed.includes(cfg.wxIcons)) delete cfg.wxIcons;
+    cfg.updatedAt = 200;
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, config: cfg }) });
+  };
+  new Function('document', 'localStorage', '_acGetToken', '_acFetch', '_AC_WORKER_URL', 'setTimeout', 'clearTimeout', 'console',
+    MENU.slice(at, MENU.indexOf('\n}\n', at) + 3) + MENU.slice(MENU.indexOf('var _cuCloudTimer = null;'), end) + '\n_cuCloudPush("YQM", ' + JSON.stringify(prefs) + ');')(
+    doc, ls, () => 'token', fetch, '', (fn) => { fn(); return 1; }, () => {}, { log() {}, warn() {} });
+  for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
+  return { note: note.textContent, savedAt: JSON.parse(store.fids_customize_YQM).savedAt, sel: sel.value };
+}
+const OLD_WORKER = ['', 'daynight', 'colour', 'solid'];
+const NEW_WORKER = JSON.parse(/!(\[[^\]]+\])\.includes\(cfg\.wxIcons\)/.exec(PROXY)[1]);
+
+test('a cloud save that drops the weather icons says so, and the screen follows the cloud', async () => {
+  let r = await push({ wxIcons: 'classic', font: 'Bricolage' }, OLD_WORKER, 'classic');
+  assert.match(r.note, /^⚠ Saved to the airport cloud, except the weather icons/, 'not "Saved"');
+  assert.equal(r.savedAt, 100, "this device's stamp is not aligned, so the newer cloud copy wins on the next read");
+  assert.equal(r.sel, '', 'the select goes back to the default entry');
+  assert.deepEqual(NEW_WORKER, ['', 'classic', 'daynight', 'colour', 'solid']);
+  r = await push({ wxIcons: 'classic', font: 'Bricolage' }, NEW_WORKER, 'classic');
+  assert.match(r.note, /^✓ Saved to the airport cloud/, 'a worker that knows Classic keeps it');
+  assert.equal(r.savedAt, 200, 'stamps aligned');
+  assert.equal(r.sel, 'classic');
+  r = await push({ wxIcons: '', font: 'Bricolage' }, OLD_WORKER, '');
+  assert.match(r.note, /^✓ Saved/, "nothing chosen ('') is kept by either worker");
+  r = await push({ font: 'Bricolage' }, OLD_WORKER);
+  assert.match(r.note, /^✓ Saved/, 'a save without the field is not checked for it');
+  assert.match(MENU, /wxDropped: \['#f87171', /);
 });
 
 test('a light row turns the glyph dark; the gate circle is the icon\'s own round background', () => {

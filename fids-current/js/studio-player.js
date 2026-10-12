@@ -106,15 +106,19 @@
     const timezone = documentModel && documentModel.airport.timezone;
     const lang = BoardStrings.isLang(language) ? language : 'en';
     const now = new Date();
+    // v24042 — the clock prints BoardStrings.clockNow: the real time on a
+    // screen, 10:10 with ?clock=1010 (a picture of one). The date and the
+    // scene rules' minutes stay real.
+    const shown = BoardStrings.clockNow(now, timezone);
     let time, date, minutes;
     try {
-      time = BoardStrings.time(now, lang, timezone);
+      time = BoardStrings.time(shown, lang, timezone);
       date = BoardStrings.date(now, lang, { weekday: 'long', month: 'long', day: 'numeric' }, timezone);
       // minutes since midnight at the airport: any language's 24-hour clock
       const parts = BoardStrings.time(now, lang, timezone, { clock24: true }).split(':');
       minutes = Number(parts[0]) * 60 + Number(parts[1]);
     } catch (error) {
-      time = BoardStrings.time(now, lang);
+      time = BoardStrings.time(shown, lang);
       date = BoardStrings.date(now, lang, { weekday: 'long', month: 'long', day: 'numeric' });
       minutes = now.getHours() * 60 + now.getMinutes();
     }
@@ -210,7 +214,7 @@
     window._yqmCacheAircraftMerge = window._yqmCacheAircraftMerge || async function () {};
     pilotRouterPromise = new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = '../js/feed-router.js?v=24041';
+      script.src = '../js/feed-router.js?v=24042';
       script.async = true;
       script.addEventListener('load', function () {
         if (typeof window.adbFetch === 'function') resolve(window.adbFetch);

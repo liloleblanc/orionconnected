@@ -9,7 +9,7 @@
   <title>Orion Airport Tour</title>
   <link rel="stylesheet" href="css/font.css?v=335">
   <!-- The one store for passenger words and times (board-strings.js). -->
-  <script src="js/board-strings.js?v=24041"></script>
+  <script src="js/board-strings.js?v=24042"></script>
   <style>
     html, body { margin: 0; height: 100%; width: 100%; overflow: hidden;
                  background: #0b1a2b; cursor: none; }
@@ -393,7 +393,9 @@
           var t = '';
           try {
             // v23970 — the clock every board reads, in the card's first language
-            t = BoardStrings.time(new Date(), pair[0], tz);
+            // (v24042 — through clockNow: 10:10 with ?clock=1010, which the
+            // tour also hands to every board it shows)
+            t = BoardStrings.time(BoardStrings.clockNow(new Date(), tz), pair[0], tz);
           } catch (e) { t = ''; }
           elTime.textContent = t;
           BoardStrings.setLang(elTime, pair[0]);

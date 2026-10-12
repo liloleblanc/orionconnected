@@ -1144,6 +1144,91 @@
     });
   }
 
+  // ── THE DEMO CLOCK: 10:10 ───────────────────────────────────────────────
+  // v24042 — a board shown as an EXAMPLE reads 10:10 AM, the watch-advert
+  // convention (the hands frame the maker's name and the dial smiles): a demo
+  // board (?mode=demo), a heritage gate, a board carrying a test flight, the
+  // Studio and Designer previews, the homepage pictures. A board in an
+  // airport keeps the real time; nothing turns this on by itself there.
+  //
+  // Only what a CLOCK prints changes. clockNow() hands a clock the instant
+  // at 10:10 on the airport's own calendar day (the real seconds kept, so a
+  // ticking clock still ticks), and the clock formats it with its usual rule:
+  // 10:10 AM on a board led by English, 10:10 or 10h 10 on the others. Rows,
+  // statuses, countdowns and Today | Tomorrow keep reading the real time, so
+  // the flights on a demo picture stay the real ones.
+  //
+  //   ?clock=1010            on, whatever the page is showing
+  //   ?clock=live            off, even on a demo (the real time is wanted)
+  //   setDemoClock(on)       a demo mode's own switch (true/false, or a
+  //                          function asked at every tick); the URL outranks it
+  // A board inside a same-origin frame (the tour, the stream) follows that
+  // frame's ?clock= when it has none of its own, so tour.html?clock=1010
+  // turns every board it shows.
+  var DEMO_CLOCK = { h: 10, m: 10 };
+  var _demoClockSet = false;
+  function _clockParam(search) {
+    var m = /[?&]clock=([^&#]*)/.exec(String(search || ''));
+    if (!m) return '';
+    var v = decodeURIComponent(m[1]).toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (v === '1010' || v === 'demo') return 'on';
+    if (v === 'live' || v === 'real' || v === 'off' || v === '0') return 'off';
+    return '';
+  }
+  function _clockUrl() {
+    try {
+      if (typeof location === 'undefined') return '';
+      var own = _clockParam(location.search);
+      if (own) return own;
+      // the frame this board sits in (same origin only: reading another
+      // origin's location throws, and that board keeps its own setting)
+      if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+        return _clockParam(window.parent.location.search);
+      }
+    } catch (e) {}
+    return '';
+  }
+  function demoClock() {
+    var u = _clockUrl();
+    if (u) return u === 'on';
+    if (typeof _demoClockSet === 'function') {
+      try { return !!_demoClockSet(); } catch (e) { return false; }
+    }
+    return !!_demoClockSet;
+  }
+  function setDemoClock(on) {
+    _demoClockSet = (typeof on === 'function') ? on : !!on;
+    return demoClock();
+  }
+  // y, mo, d, h, mi of an instant on the zone's wall clock (no zone: the
+  // machine's, as every formatter here falls back to)
+  function _wall(dt, tz) {
+    var o = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
+    if (tz) o.timeZone = tz;
+    var p = {};
+    new Intl.DateTimeFormat('en-US', o).formatToParts(dt).forEach(function (x) { p[x.type] = x.value; });
+    return { y: +p.year, mo: +p.month, d: +p.day, h: (+p.hour) % 24, mi: +p.minute };
+  }
+  // The instant a clock shows: d itself, or 10:10 on d's day at the airport.
+  function clockNow(d, tz) {
+    var dt = toDate(d == null ? new Date() : d);
+    if (isNaN(dt.getTime()) || !demoClock()) return dt;
+    try {
+      var w = _wall(dt, tz);
+      var want = Date.UTC(w.y, w.mo - 1, w.d, DEMO_CLOCK.h, DEMO_CLOCK.m);
+      var t = want;
+      // a zone's offset can differ at 10:10 from the real moment's (a DST
+      // morning): walk to the instant whose wall clock reads 10:10
+      for (var i = 0; i < 3; i++) {
+        var g = _wall(new Date(t), tz);
+        var got = Date.UTC(g.y, g.mo - 1, g.d, g.h, g.mi);
+        if (got === want) break;
+        t += want - got;
+      }
+      return new Date(t + dt.getTime() % 60000);
+    } catch (e) { return dt; }
+  }
+
   // Is a feed's text in this language? Japanese, Chinese and Arabic by their
   // script; the five Latin languages by their own short words against
   // English's. Text a passenger would read as English on a board that is not
@@ -1402,6 +1487,10 @@
   api.boardClock24 = boardClock24;
   api.boardTime = boardTime;
   api.boardClockText = boardClockText;
+  api.demoClock = demoClock;
+  api.setDemoClock = setDemoClock;
+  api.clockNow = clockNow;
+  api.DEMO_CLOCK = DEMO_CLOCK;
   api.looksLike = looksLike;
   api.date = date;
   api.longDate = longDate;

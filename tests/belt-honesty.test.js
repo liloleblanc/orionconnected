@@ -15,8 +15,9 @@
 //     flight whose feed did publish a belt the board cannot place (a bare
 //     number at a multi-terminal airport) is on no screen, as before: "to be
 //     announced" would be untrue of it.
-//     Moncton's domestic 1 / international 2 is our own mapping, kept as it
-//     is (an open question, not a fix).
+//     Moncton's belts are the one belt we work out ourselves (its feed
+//     publishes none): v24042, belt 2 normally and belt 1 for the overlap,
+//     tested in full in yqm-belts.test.js.
 //
 //  2. Status colours on ordinary rows. The belt bars are coloured by an
 //     airport-hash + belt rotation, and thirteen of its twenty gradients were
@@ -89,13 +90,24 @@ const CITY_TYPE_SRC = (() => {
   const a = SRC.indexOf('const CITY_TYPE = {');
   return SRC.slice(a, closeAt(SRC, SRC.indexOf('{', a), '{', '}') + 1) + ';';
 })();
-function rowFor(ap, { belt = null, terminal = '', airline = 'AC', from = 'YYZ' } = {}) {
+// Moncton's normal belt, the one constant the arrivals branch reads.
+const YQM_MAIN_SRC = (() => {
+  const m = SRC.match(/^var YQM_BELT_MAIN = '\d+';$/m);
+  assert.ok(m, 'fids-core.js must define YQM_BELT_MAIN');
+  return m[0];
+})();
+function runBeltRules(ap, { belt = null, terminal = '', airline = 'AC', from = 'YYZ' } = {}) {
   const run = new Function('f', 'mode', 'airline', 'locIata', 'terminal', 'document',
-    CITY_TYPE_SRC + '\n' + BELT_RULES + '\nreturn { _belt, _beltUnplaced };');
+    YQM_MAIN_SRC + '\n' + CITY_TYPE_SRC + '\n' + BELT_RULES + '\nreturn { _belt, _beltUnplaced, _yqmBeltKind };');
   return run({ arrival: { baggageBelt: belt } }, 'arr', airline, from, terminal,
     { getElementById: () => ({ value: ap }) });
 }
+function rowFor(ap, o) {
+  const r = runBeltRules(ap, o);
+  return { _belt: r._belt, _beltUnplaced: r._beltUnplaced };
+}
 const beltFor = (ap, o) => rowFor(ap, o)._belt;
+const yqmKindFor = (o) => runBeltRules('YQM', o)._yqmBeltKind;
 
 test('a feed with no belt gives no belt: never "1"', () => {
   // The 24 airports the audit found sending every arrival to belt 1, among
@@ -123,18 +135,29 @@ test('a belt the feed publishes is shown as published', () => {
   assert.equal(beltFor('BOS', { belt: 'INTL', terminal: 'A' }), 'A-INTL', "Boston's international claim keeps its name");
 });
 
-test("Moncton's domestic 1 / international 2 is untouched (our own mapping, an open question)", () => {
-  assert.equal(beltFor('YQM', { from: 'YYZ', airline: 'AC' }), '1');
-  assert.equal(beltFor('YQM', { from: 'YHU', airline: 'PD' }), '1', 'any Canadian Y-code is domestic');
-  assert.equal(beltFor('YQM', { from: 'MCO', airline: 'WS' }), '2', 'a US origin clears customs: international');
-  assert.equal(beltFor('YQM', { from: 'YYZ', airline: 'TS' }), '2', 'Air Transat sun flights: international');
-  assert.equal(beltFor('YQM', { from: 'YYZ', airline: 'AC', belt: '4' }), '1', "the feed's phantom belts are still overridden");
-  // and it is the only belt the code writes by itself
+// v24042 — Moncton's belt is no longer settled row by row: every arrival
+// starts on belt 2, the normal belt, and the pass over the whole list
+// (_yqmAssignBelts, yqm-belts.test.js) moves a flight to belt 1 only when two
+// flights' bags would share belt 2. Here: each row starts on 2 and carries
+// whether it is domestic or international, which the pass needs.
+test("Moncton's arrivals all start on belt 2, marked domestic or international, for the overlap pass", () => {
+  assert.equal(beltFor('YQM', { from: 'YYZ', airline: 'AC' }), '2', 'belt 2 is the normal belt');
+  assert.equal(yqmKindFor({ from: 'YYZ', airline: 'AC' }), 'dom');
+  assert.equal(beltFor('YQM', { from: 'YHU', airline: 'PD' }), '2');
+  assert.equal(yqmKindFor({ from: 'YHU', airline: 'PD' }), 'dom', 'any Canadian Y-code is domestic');
+  assert.equal(beltFor('YQM', { from: 'MCO', airline: 'WS' }), '2');
+  assert.equal(yqmKindFor({ from: 'MCO', airline: 'WS' }), 'intl', 'a US origin clears customs: international');
+  assert.equal(yqmKindFor({ from: 'YYZ', airline: 'TS' }), 'intl', 'Air Transat sun flights: international');
+  assert.equal(beltFor('YQM', { from: 'YYZ', airline: 'AC', belt: '4' }), '2', "the feed's phantom belts are still overridden");
+  assert.equal(runBeltRules('YOW', { belt: '4' })._yqmBeltKind, null, 'only Moncton rows are marked');
+  // and Moncton's normal belt is the only belt the code writes by itself
   const literal = [...BELT_RULES.matchAll(/_belt = ([^;]+);/g)].map((m) => m[1].trim());
   for (const rhs of literal) {
-    assert.doesNotMatch(rhs.replace(/_isIntl \? '2' : '1'/, ''), /'\d+'/,
-      `"_belt = ${rhs}" writes a belt number no feed sent`);
+    assert.doesNotMatch(rhs, /'\d+'/, `"_belt = ${rhs}" writes a belt number no feed sent`);
   }
+  assert.ok(literal.includes('YQM_BELT_MAIN'), "Moncton's row starts on its normal belt");
+  // the mark reaches the row the pass reads
+  assert.match(SRC, /if \(_yqmBeltKind\) _row\._yqmBelt = _yqmBeltKind;/);
 });
 
 const BIDS_UNASSIGNED = '—';
@@ -201,13 +224,15 @@ test('the belt walk visits the "to be announced" screen last, and a hall with no
   const NOW = 1_757_400_000_000;
   const mk = (belt, mins) => ({ _belt: belt, _sortTs: NOW + mins * 60000 });
   const walk = (arr, ap = 'YHZ') => new Function('data', 'document', '_bidsInWindow', 'Date',
-    lift('bagBelts') + '\nreturn bagBelts();')(
+    "var YQM_BELT_MAIN = '2', YQM_BELT_OVERFLOW = '1';\n" + lift('bagBelts') + '\nreturn bagBelts();')(
     { arr }, { getElementById: () => ({ value: ap }) },
     (f, nowTs) => f._sortTs >= nowTs - 45 * 60000 && f._sortTs <= nowTs + 60 * 60000,
     { now: () => NOW });
   assert.deepEqual(walk([mk(null, 10), mk(null, 20)]), ['—'], 'Halifax: one screen, nothing to cycle');
   assert.deepEqual(walk([mk('3', 10), mk(null, 5), mk('1', 20)], 'BOS'), ['1', '3', '—']);
-  assert.deepEqual(walk([mk('1', 10), mk('2', 400)], 'YQM'), ['1', '2'], 'Moncton walks its two belts as before');
+  // v24042 — Moncton walks its two belts, the normal belt (2) first: the walk
+  // starts on belts[0], and belt 1 is now the overflow belt, usually empty
+  assert.deepEqual(walk([mk('1', 10), mk('2', 400)], 'YQM'), ['2', '1'], 'Moncton walks both belts, belt 2 first');
 });
 
 test('the "to be announced" screen claims no number: no sign, the store\'s words in the carousel cell', () => {

@@ -377,3 +377,193 @@ test('the 767 card: the capitals livery and mark, a year every source agrees on,
   // only a mark that asks for a credit gets one: the drawn aeroplanes are the supplied artwork
   for (const k of ['air-canada', 'air-canada-caps', 'canadian-airlines']) assert.ok(!byK[k].credit, k + ' carries no credit line');
 });
+
+// ── v24042 — Air Canada gates only ──────────────────────────────────────────
+//
+// The whole set is Air Canada's history: its own DC-9s and 767, and the
+// carriers that came into its family (Air Nova, Canadian Airlines, Air
+// Atlantic). Scoped by airport alone it ran on every gate at a Canadian
+// airport, so YQM gate 1's WestJet WS813 showed Air Atlantic in the middle of
+// a WestJet page. The decision is that these cards belong on Air Canada pages
+// only: a gate whose flight is Air Canada, Rouge or Air Canada Express,
+// whoever operates it. Everything below runs the shipping functions, lifted
+// out of fids-core.js, against the rows the YQM feed actually sends.
+
+function gate(flight, opts = {}) {
+  const lift = (name) => {
+    const at = SRC.indexOf('function ' + name + '(');
+    assert.ok(at >= 0, `fids-core.js must define ${name}`);
+    let d = 0;
+    for (let k = SRC.indexOf('{', at); k < SRC.length; k++) {
+      if (SRC[k] === '{') d++;
+      else if (SRC[k] === '}') { d--; if (d === 0) return SRC.slice(at, k + 1); }
+    }
+    throw new Error('unterminated ' + name);
+  };
+  const set = /var HERITAGE_MARKS = \[[\s\S]*?\n\];/.exec(SRC)[0];
+  const fam = /var HERITAGE_AC_FAMILY = \{[^}]*\};/.exec(SRC);
+  assert.ok(fam, 'the Air Canada family must be declared');
+  const demo = /var HERITAGE_AC_DEMO = \{[^}]*\};/.exec(SRC);
+  assert.ok(demo, 'the family\'s heritage demonstration gates must be declared');
+  const AP = { YQM: { country: 'CA' }, YHZ: { country: 'CA' }, YYZ: { country: 'CA' },
+               YYT: { country: 'CA' }, YYC: { country: 'CA' }, ZRH: { country: 'CH' } };
+  const win = { _gateIata: opts.iata === undefined ? 'YQM' : opts.iata };
+  if (flight) {
+    // As the gate writes them: both from the same row, in the same pass.
+    win._gateCurrentFlight = flight;
+    win._gateCurrentAirline = flight.airline || '';
+  }
+  const doc = { documentElement: { classList: { contains: () => false } } };
+  const names = ['_heritageIsCanadian', '_heritageIsAirCanada', '_heritageOnAirCanadaGate',
+                 '_heritagePick', '_renderHeritageCard', '_buildGateAdSlideList'];
+  // _heritageCode reads ?heritage= off the URL; the stub answers what a
+  // heritage demonstration gate's URL would.
+  const heritageCode = () => opts.heritage || '';
+  return new Function('AP', 'window', 'document', 'getGateAds', '_welcomeCardData', 'BoardStrings', 'langs', '_heritageCode',
+    set + '\n' + fam[0] + '\n' + demo[0] + '\n' + names.map(lift).join('\n')
+      + '\nreturn { isAC: _heritageIsAirCanada, onAC: _heritageOnAirCanadaGate, render: _renderHeritageCard,'
+      + ' deck: function () { return _buildGateAdSlideList().map(function (s) { return s.type; }); } };')(
+    AP, win, doc, () => [], (c) => ({ welcome: c }), STORE, ['en', 'fr'], heritageCode);
+}
+
+// The YQM departures as the feed sent them on 12 October 2026 (flight,
+// airline, operator), plus the Jazz and ICAO shapes other feeds send.
+const AIR_CANADA_ROWS = [
+  { flight: 'AC659', airline: 'AC' },                         // mainline
+  { flight: 'AC1983', airline: 'AC', _opCode: 'RV' },         // Rouge, as YQM sends it
+  { flight: 'AC7753', airline: 'AC', _opCode: 'ACEX' },       // Air Canada Express, operator unproven
+  { flight: 'AC8790', airline: 'AC', _opCode: 'QK' },         // Express, operated by Jazz
+  { flight: 'AC7672', airline: 'AC', _opCode: 'PB' },         // Express, operated by PAL
+  { flight: 'QK8790', airline: 'QK' },                        // a feed that sends the operator
+  { flight: 'RV1983', airline: 'RV' },
+  { flight: 'ACA659', airline: 'ACA' },                       // ICAO designators (EDI-style feeds)
+  { flight: 'JZA8790', airline: 'JZA' },
+  { flight: 'ROU1983', airline: 'ROU' },
+  { flight: 'AC7672', airline: 'PB' }                         // operator in the carrier field, AC number
+];
+const OTHER_ROWS = [
+  { flight: 'WS813', airline: 'WS' },                         // YQM gate 1
+  { flight: 'WS3101', airline: 'WS', _opCode: 'WR' },         // WestJet Encore
+  { flight: 'PD2382', airline: 'PD' },                        // Porter, YQM gate 3
+  { flight: 'PB924', airline: 'PB' },                         // PAL's own flight, YQM gate 2
+  { flight: 'F8671', airline: 'F8' },                         // Flair
+  { flight: 'TS123', airline: 'TS' },
+  { flight: 'ZX7300', airline: 'ZX' },                        // stale 'Air Canada' names, not AC today
+  { flight: '9M200', airline: '9M' },
+  { flight: '500', airline: '9A' }                            // a demo gate's row, off its demo page
+];
+
+test('an Air Canada, Rouge or Air Canada Express gate is an Air Canada page', () => {
+  const { isAC } = gate(null);
+  for (const f of AIR_CANADA_ROWS) assert.equal(isAC(f), true, `${f.airline} ${f.flight} flies as Air Canada`);
+});
+
+test('a WestJet, Porter, PAL, Flair or any other gate is not', () => {
+  const { isAC } = gate(null);
+  for (const f of OTHER_ROWS) assert.equal(isAC(f), false, `${f.airline} ${f.flight} is not an Air Canada page`);
+  assert.equal(isAC(null), false, 'no flight, no page');
+  assert.equal(isAC({}), false, 'an empty row is nobody');
+});
+
+test('the deck carries the archive card on an Air Canada gate', () => {
+  for (const f of AIR_CANADA_ROWS) {
+    assert.ok(gate(f).deck().includes('heritage'), `${f.flight} at YQM rotates through the archive`);
+  }
+});
+
+test('and never on any other gate, the WestJet gate at Moncton included', () => {
+  for (const f of OTHER_ROWS) {
+    assert.ok(!gate(f).deck().includes('heritage'), `${f.flight} at YQM must not carry the archive card`);
+  }
+});
+
+test('nor on a board with no gate flight (departures, arrivals, belts)', () => {
+  assert.ok(!gate(null).deck().includes('heritage'), 'no gate flight, no archive card');
+  assert.ok(!gate(null, { iata: '' }).deck().includes('heritage'));
+});
+
+test('the airport scope still holds on top: an Air Canada gate abroad shows nothing untrue', () => {
+  assert.ok(!gate({ flight: 'AC880', airline: 'AC' }, { iata: 'ZRH' }).deck().includes('heritage'),
+    'no card in the set is true at Zurich');
+});
+
+test('the gate asks the row it drew; a row with no carrier qualifies by its number alone', () => {
+  assert.equal(gate({ flight: 'AC659', airline: 'AC' }).onAC(), true);
+  assert.equal(gate({ flight: 'WS813', airline: 'WS' }).onAC(), false);
+  // A refresh that drops the carrier field leaves _gateCurrentAirline blank
+  // too (the gate writes it from the same row), so the number is all there is.
+  assert.equal(gate({ flight: 'AC659', airline: '' }).onAC(), true, 'an AC number is Air Canada');
+  assert.equal(gate({ flight: 'ACA659' }).onAC(), true, 'so is the ICAO form');
+  assert.equal(gate({ flight: '659', airline: '' }).onAC(), false, 'a bare number is nobody');
+  assert.equal(gate({ flight: 'WS813', airline: '' }).onAC(), false);
+  assert.equal(gate(null).onAC(), false, 'no row on the gate, no Air Canada page');
+});
+
+test('the heritage demonstration gates are the family\'s own pages and keep the card', () => {
+  // heritage.html links these: Air Nova at Halifax, Air Atlantic at St John's,
+  // Canadian Airlines at Calgary. Their rows carry the demo code and a bare
+  // number, so the PAGE is what qualifies them.
+  for (const [code, iata] of [['ANV', 'YHZ'], ['9A', 'YYT'], ['CDX', 'YYC']]) {
+    const g = gate({ flight: '500', airline: code }, { heritage: code, iata });
+    assert.equal(g.onAC(), true, `gids.html?ap=${iata}&heritage=${code} is an Air Canada family page`);
+    assert.ok(g.deck().includes('heritage'), `and its deck carries the archive card`);
+    const el = { innerHTML: '' };
+    assert.equal(g.render(el), true, `and draws it at ${iata}`);
+  }
+  assert.ok(gate(null, { heritage: 'ANV', iata: 'YHZ' }).deck().includes('heritage'),
+    'between demo flights too, as before');
+  // A heritage carrier added later is not family until someone lists it.
+  assert.equal(gate({ flight: '500', airline: 'XQ' }, { heritage: 'XQ', iata: 'YHZ' }).onAC(), false);
+  assert.ok(!gate({ flight: '500', airline: 'XQ' }, { heritage: 'XQ', iata: 'YHZ' }).deck().includes('heritage'));
+});
+
+test('the family\'s demonstration list names only heritage carriers that exist', () => {
+  const demo = Object.keys(new Function('return ' + /var HERITAGE_AC_DEMO = (\{[^}]*\});/.exec(SRC)[1])()).sort();
+  assert.deepEqual(demo, ['9A', 'ANV', 'CDX']);
+  const block = /var HERITAGE_CARRIERS = \{[\s\S]*?\n\};/.exec(SRC);
+  assert.ok(block, 'the heritage carriers table exists');
+  const carriers = [...block[0].matchAll(/^  '([A-Z0-9]+)': \{/gm)].map((m) => m[1]);
+  for (const c of demo) assert.ok(carriers.includes(c), `${c} is a heritage demonstration carrier`);
+});
+
+test('a slide left on screen when the gate changes carrier renders nothing', () => {
+  // The renderer is the backstop: a WestJet gate cannot draw the card even if
+  // a heritage slide reaches it.
+  const el = { innerHTML: '' };
+  assert.equal(gate({ flight: 'WS813', airline: 'WS' }).render(el), false, 'the WestJet gate skips the slide');
+  assert.equal(el.innerHTML, '', 'and draws nothing into the slot');
+  const el2 = { innerHTML: '' };
+  assert.equal(gate({ flight: 'AC659', airline: 'AC' }).render(el2), true, 'the Air Canada gate draws it');
+  assert.match(el2.innerHTML, /hcard-wrap/, 'the archive card itself');
+  assert.match(el2.innerHTML, /From the archive/, 'with its kicker');
+});
+
+test('the Air Canada family is the codes the board already folds into AC', () => {
+  // The rail palette's ALIAS table lists the codes Air Canada reaches a gate
+  // under; the archive family must not drift from it. ACEX is the shared
+  // Express brand the operator ladder writes when the operator is unproven.
+  const fam = Object.keys(new Function('return ' + /var HERITAGE_AC_FAMILY = (\{[^}]*\});/.exec(SRC)[1])()).sort();
+  const alias = /var ALIAS = \{([^}]*)\};/.exec(SRC);
+  assert.ok(alias, 'the rail palette ALIAS table exists');
+  const toAC = [...alias[1].matchAll(/(\w+):\s*'AC'/g)].map((m) => m[1]);
+  assert.deepEqual(fam, ['AC', 'ACEX'].concat(toAC).sort());
+  assert.match(SRC, /var AC_EXPRESS_OP = 'ACEX';/, 'and ACEX is still the Express brand code');
+});
+
+test('a year range on the card is never split across two lines', () => {
+  // Under the Later-at-this-gate strip at 1680x1050 the French Air Nova line
+  // broke inside '1986–2001' and left '2001' alone on a line of its own.
+  const el = { innerHTML: '' };
+  const g = gate({ flight: 'AC659', airline: 'AC' });
+  let seen = 0;
+  for (let i = 0; i < 12; i++) {
+    el.innerHTML = '';
+    assert.equal(g.render(el), true);
+    for (const m of el.innerHTML.matchAll(/\d(.)–(.)\d/g)) {
+      seen++;
+      assert.equal(m[1], '⁠', 'a word joiner before the dash');
+      assert.equal(m[2], '⁠', 'and after it');
+    }
+  }
+  assert.ok(seen > 0, 'the rotation reached a card with a year range');
+});
