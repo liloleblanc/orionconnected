@@ -22984,18 +22984,11 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 /* ══ v24035 — THE WEATHER ICONS' LOOK (Customize → Weather icons) ══════════════
-   fids-v2.js wxIconHtml. In the departures and arrivals rows the solid glyph
-   is white; on a light row it goes dark: the amber and orange states on a
-   dark board, every row but the red cancelled one on a light board. On the
-   gate screens the icon's own round background is the circle: white with
+   fids-v2.js wxIconHtml. (The departures and arrivals rows wear the sets
+   drawn for Orion Connected since v24046: see that block.) On the gate
+   screens the icon's own round background is the circle: white with
    the colour icon baked in, or the airline's deep colour (--wx-disc) with
    the glyph as a mask painted in its brand colour (--wx-ink). */
-#fidsTable tbody tr.row-delayed img.fids-wx-glyph,
-#fidsTable tbody tr.row-final img.fids-wx-glyph,
-body.fids-light-board #fidsTable tbody tr:not(.row-cancelled) img.fids-wx-glyph {
-  filter: brightness(0) !important;
-  opacity: 0.86;
-}
 img.fids-wx-disc {
   border-radius: 50% !important;
   background: var(--wx-disc, transparent) !important;
@@ -25427,6 +25420,24 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 }
 
+
+/* ══ v24046 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, BY GROUND ═══════
+   fids-v2.js wxRowHtml: in every look but Classic the departures and arrivals
+   rows draw one of two sets, no circle. The icon is the element's own
+   background, its two files given on the element (--wxr-w, the white set
+   for a dark ground; --wxr-c, the colour set for a light ground), and
+   fids-core.js _fidsRowWxSet writes data-wx-set="colour" where the row's
+   ground is light. The box keeps its size whichever set it wears, so a
+   swap never moves anything. Without a pick (before the first pass) it
+   shows the white file, the set for the dark boards most airports run.
+   No filter is ever laid on it: the drawings show as they were drawn. */
+#fidsTable .fids-wx-row {
+  background: var(--wxr-w) center / contain no-repeat !important;
+  filter: none !important;
+}
+#fidsTable .fids-wx-row[data-wx-set="colour"] {
+  background-image: var(--wxr-c) !important;
+}
 
 /* ══ v24041 — A HOLIDAY LOOK: THANKSGIVING, "HARVEST SILK" ═══════════════════
    Canadian Thanksgiving (the second Monday of October) on Canadian airports'

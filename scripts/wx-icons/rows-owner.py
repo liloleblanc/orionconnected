@@ -35,6 +35,12 @@ What changes is only what is around it:
       writes <outroot>/rows-owner-white/ and <outroot>/rows-owner-color/:
       <name>.svg for the 20 drawings, plus a copy under every other condition
       name the boards draw (ALIAS, the same mapping as night-owner/)
+
+On the boards (v24046) every departures / arrivals row wears one of the two
+sets, picked from the ground its icon sits on (fids-core.js _fidsRowWxSet):
+white below a ground luminance of _WX_ROW_SPLIT, colour above it. The split
+is where the two sets' median contrast crosses: rows-owner-split.js measures
+it in headless Chrome.
 """
 import json, math, os, re, sys
 import xml.etree.ElementTree as ET

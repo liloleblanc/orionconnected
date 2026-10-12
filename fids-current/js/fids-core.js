@@ -22306,6 +22306,84 @@ function _fidsRowInk(root) {
   } catch (e) {}
 }
 
+// ══ v24046 — EACH ROW PICKS ITS WEATHER ICON SET FROM ITS OWN GROUND ════════
+// The row icons drawn for Orion Connected come in two sets, one for a dark
+// ground and one for a light ground (fids-v2.js wxRowHtml): the white set
+// and the colour set. Which one a row wears is decided by the colour the
+// icon actually sits on, read from the page, not from a list of themes:
+// the airport's theme, Customize's custom row colours, the alternate rows,
+// a light board, and the status rows (yellow Delayed, orange Final call, red
+// Cancelled and Diverted, the faded Departed / Arrived / Gate closed rows).
+// Change an airport's colours and the next render (applyAirportConfigToBoard
+// forces one), or the 5 s heartbeat, picks again.
+//
+// The ground (_wxRowGround) is the cell's colour as it is painted: every
+// background from the page down to the cell, each over the one beneath it
+// by its alpha, and every opacity on the way (the faded history rows) mixed
+// with what shows through it. Background images (the textures) are left
+// out; they are faint by design.
+//
+// The pick (_wxRowSetFor) is the set with the higher contrast on that
+// ground. WCAG contrast depends only on the two luminances, so the choice is
+// one number: the white set reads better below a ground luminance of
+// _WX_ROW_SPLIT and the colour set above it. 0.56 is where the two sets'
+// median contrast over their 20 icons crosses (0.563, measured in headless
+// Chrome by scripts/wx-icons/rows-owner-split.js; a sample of 40 real row
+// grounds put it at about 0.57): navy, the dark custom rows, red Cancelled
+// and Diverted, the default teal, orange Final call and the darker yellow
+// Delayed row take the white set; the lighter yellow Delayed row, white,
+// cream, mist and the light custom rows the colour set. Between about 0.30
+// and 0.60 neither set reads well; the split is still the better of the
+// two there.
+//
+// Cheap by construction: it runs with the row inks (_fidsBoardInk, in the
+// same task as the rows are rebuilt, so the first paint already wears the
+// right set) and on the 5 s heartbeat, writes only when a row's ground has
+// changed, and swaps a background image inside a box of fixed size, so
+// nothing moves.
+var _WX_ROW_SPLIT = 0.56;
+function _wxRowSetFor(rgb) {
+  return (rgb && _ocLum(rgb) >= _WX_ROW_SPLIT) ? 'colour' : 'white';
+}
+function _wxRowRgba(str) {
+  var n = String(str || '').match(/[\d.]+/g);
+  if (!n || n.length < 3) return null;
+  if (/^color\(\s*srgb/i.test(String(str).trim())) {
+    return [n[0] * 255, n[1] * 255, n[2] * 255, n.length > 3 ? +n[3] : 1];
+  }
+  return [+n[0], +n[1], +n[2], (/^rgba/i.test(String(str).trim()) && n.length > 3) ? +n[3] : 1];
+}
+function _wxRowGround(el) {
+  var chain = [];
+  for (var n = el; n && n.nodeType === 1; n = n.parentElement) chain.push(n);
+  // the canvas under a page that paints nothing is white
+  var acc = [255, 255, 255], groups = [];
+  var mix = function (a, b, t) { return [a[0] * t + b[0] * (1 - t), a[1] * t + b[1] * (1 - t), a[2] * t + b[2] * (1 - t)]; };
+  for (var i = chain.length - 1; i >= 0; i--) {
+    var cs = getComputedStyle(chain[i]);
+    var op = parseFloat(cs.opacity);
+    if (op >= 0 && op < 1) groups.push([acc, op]);
+    var c = _wxRowRgba(cs.backgroundColor);
+    if (c && c[3] > 0) acc = mix(c, acc, Math.min(1, c[3]));
+  }
+  for (var k = groups.length - 1; k >= 0; k--) acc = mix(acc, groups[k][0], groups[k][1]);
+  return acc.map(Math.round);
+}
+function _fidsRowWxSet(root) {
+  try {
+    var icons = (root || document).querySelectorAll('#fidsTable .fids-wx-row');
+    for (var i = 0; i < icons.length; i++) {
+      var ic = icons[i];
+      var g = _wxRowGround(ic.parentElement || ic);
+      var key = g.join(',');
+      if (ic.getAttribute('data-wx-ground') === key) continue;
+      ic.setAttribute('data-wx-ground', key);
+      ic.setAttribute('data-wx-set', _wxRowSetFor(g));
+    }
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window._fidsRowWxSet = _fidsRowWxSet;
+
 // v23967 — EVERY INK THE BOARD'S ROWS WEAR, SET IN ONE PLACE AND ONE ORDER.
 // Called by render() in the same task as `tbody.innerHTML`, so a rebuilt row
 // is never painted without its inks (it used to show the stylesheet's colours
@@ -22318,6 +22396,8 @@ function _fidsBoardInk() {
   if (!table) return;
   try { applyCodeAccents(table); } catch (e) {}
   try { _fidsRowInk(table); } catch (e) {}
+  // v24046 — and each row's weather icon set, from the ground it sits on
+  try { _fidsRowWxSet(table); } catch (e) {}
 }
 if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;
 
@@ -22690,7 +22770,9 @@ function boardAutofit(full) {
 // before the board is laid out or its fonts have arrived; a board whose rows
 // do not change was then never measured again. It only ever shrinks a cell
 // that is cut, so on a board that fits it changes nothing.
-try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
+// v24046 — and the row weather icons' set (_fidsRowWxSet): a colour change
+// that did not rebuild the rows is picked up here; unchanged, it writes nothing.
+try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); _fidsRowWxSet(); }, 5000); } catch (e) {}
 // The logo's natural size is only known once it decodes, and the banner may
 // still be revealing — fit on load as well as on the heartbeat.
 try {
@@ -33032,6 +33114,9 @@ function render() {
     const wxHtml = (() => {
       if (!isDep) return '';
       let tw = TOMORROW_WX[f._locIata];
+      // v24046 — and where that weather is: the row's icon takes the night
+      // form while it is dark there (fids-v2.js wxRowName)
+      let _wxAt = f._locIata;
       // Multi-city rows: the primary code often has no weather (or the row's
       // dest is a via-stop). Fall back to the first through-flight leg that
       // DOES have weather so the column isn't a dead '—'
@@ -33040,13 +33125,13 @@ function render() {
         const _codes = _flightWxCodes(f);
         for (let _ci = 0; _ci < _codes.length; _ci++) {
           const _cw = TOMORROW_WX[_codes[_ci]];
-          if (_cw && _cw.current && _cw.current.temp !== undefined) { tw = _cw; break; }
+          if (_cw && _cw.current && _cw.current.temp !== undefined) { tw = _cw; _wxAt = _codes[_ci]; break; }
         }
       }
       if (!(tw && tw.current && tw.current.temp !== undefined)) return '<td class="td-wx">—</td>';
       const tempStr = displayTemp(Math.round(tw.current.temp));
       const iconHtml = (typeof window.fidsWxIcon === 'function')
-        ? window.fidsWxIcon(tw.current.code, 48, { row: true })
+        ? window.fidsWxIcon(tw.current.code, 48, { row: true, at: _wxAt })
         : tioIcon(tw.current.code, 48);
       return '<td class="td-wx"><div class="fids-cell-weather">' + iconHtml + '<span>' + tempStr + '</span></div></td>';
     })();
