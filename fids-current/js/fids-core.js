@@ -23308,8 +23308,9 @@ var HOLIDAY_BAND = {
 //   an Air Canada family gate the rust and deep red leaves turn amber and
 //   gold (tg-ac): no red maple beside the airline's own red maple. And a
 //   bouquet hung from the gate panel's bottom corner, spilling down over
-//   the top of the map like a corsage (tg-bq on .g8-wrap, placed by
-//   _tgBouquet).
+//   the top of the map like a corsage, or pinned in the panel beside the
+//   number through the boarding takeover (tg-bq on .g8-wrap, placed by
+//   _tgBouquet; on the screen all day).
 // - Baggage: a warm grade under the scrim and up to three leaves in the
 //   free warm space above the welcome line (tg-bag-a..c).
 // Each leaf is placed by measuring the free space it sits in, and is hidden
@@ -23365,36 +23366,105 @@ function _tgPair(e1, e2, g0, g1, w1, w2, t1, t2, H) {
 }
 // The bouquet by the gate number: a bouquet of the licensed leaves (gold,
 // orange and yellow with two swirls; no red leaf, so it never sinks into a
-// red panel or reads as a second Air Canada maple), hung from the gate
-// panel's bottom-right corner like a corsage pinned there, spilling down
-// over the top corner of the panel below (the map). It lives on .g8-wrap,
-// above the band and the map, so neither clips it.
-// - Size: 172px tall on a 1920 x 1080 screen, scaled with the screen, and
-//   turned 7 degrees about the pin so its foot leans in, off the screen's
-//   edge; every leaf stays on the screen.
-// - The corner: bottom-right, the screen's corner, under the number. The
-//   bottom-left corner sits about 20px from the date and spills over the
-//   seam between the centre screen and the map, so it is only the fallback.
-// - Clear of every word: it rises toward the panel only as far as it stays
-//   clear of the number's and the Gate | Porte words' ink, and nothing
-//   under it may be a word, a logo or the aircraft on the map (map labels,
-//   captions, the Speed | Altitude strip, the clock, the date, the icons of
-//   the boarding takeover's cards). Where something is under it, its mirror
-//   image tries the bottom-left corner, and it goes back to the right the
-//   moment that is clear; where both are taken (the boarding takeover's
-//   cards fill the space under the panel) it is hidden until they are not.
+// red panel or reads as a second Air Canada maple), on the gate screen all
+// day, the boarding takeover and the airline's card included. It lives on
+// .g8-wrap, above the band and the map, so neither clips it, and takes the
+// first of these places that is clear:
+// 1. Hung from the gate panel's bottom corner like a corsage pinned there,
+//    spilling down over the top corner of the panel below (the map): 172px
+//    tall on a 1920 x 1080 screen, scaled with the screen, turned 7 degrees
+//    about the pin so its foot leans in, off the screen's edge. Bottom-right
+//    (the screen's corner, under the number) first; the bottom-left corner
+//    sits about 20px from the date and spills over the seam between the
+//    centre screen and the map, so its mirror image there is the fallback.
+//    Where neither corner is clear at full size, the same a little smaller,
+//    down to 76% (131px at 1080p).
+// 2. Pinned inside the gate panel, beside the number (before the Gate |
+//    Porte words only when the number's side has no room), as tall as the
+//    panel lets it be (124px at most at 1080p), centred on its height. This
+//    is where it sits through the boarding takeover (10 minutes before
+//    boarding until the gate has closed), whose cards fill the space under
+//    the panel, and while the airline's card stands in for the map with a
+//    logo whose ink is under both corners. It is never hidden for those.
+// It is not shown only where none of these is clear (a panel too small).
+// - Clear of every word: the number's and the words' ink by 6px (scaled),
+//   and anything under the panel's edge by 10px: map labels, captions, the
+//   Speed | Altitude strip, the clock, the date, a logo (by its ink, not its
+//   box, so the airline card's swoosh leaves a corner free that its box
+//   would not), the aircraft on the map, the icons of the takeover's cards.
+// - It is measured again every 2s, and at once, before the next frame is
+//   drawn, when the band changes height (the takeover), when .g8-wrap's
+//   state changes (the airline's card comes up or goes) and when the map
+//   draws its words. It changes place by fading out and in again; when the
+//   screen's state has just changed, or something now lies under its leaves,
+//   it goes in that same frame instead of fading (and fades in at its new
+//   place), so it is never drawn over the airline's logo or a word.
 // _TG_BQ_INK: the artwork's inked width [x0, x1] in each 60-unit band of its
 // 300 x 540 box, so the empty corners of the box never count as leaves.
 var _TG_BQ_INK = [[122, 247], [27, 299], [20, 282], [23, 274], [33, 275], [5, 277], [34, 292], [11, 297], [27, 297]];
-var _TG_BQ_H = 172, _TG_BQ_TILT = 7, _tgCtx = null;
+var _TG_BQ_H = 172, _TG_BQ_TILT = 7, _tgCtx = null, _tgInkMemo = {};
 function _tgMeet(a, b, g) {
   return a.left < b.right + g && a.right > b.left - g && a.top < b.bottom + g && a.bottom > b.top - g;
+}
+// An image's ink, not its box: the cells of a grid (32 on its long side)
+// its pixels cover, one rect per run of cells in a row, where the image is
+// drawn in its box (object-fit contain / scale-down / none / fill, at its
+// object-position). Read once per image file. Its box is returned when its
+// pixels cannot be read (not loaded, no size of its own, or another site's).
+function _tgImgInk(im, r) {
+  var nw = im.naturalWidth, nh = im.naturalHeight;
+  if (im.tagName !== 'IMG' || !im.complete || !nw || !nh) return [r];
+  var key = im.currentSrc || im.src, grid = _tgInkMemo[key];
+  if (grid === undefined) {
+    grid = null;
+    try {
+      var gw = nw >= nh ? 32 : Math.max(1, Math.round(32 * nw / nh)), gh = nh >= nw ? 32 : Math.max(1, Math.round(32 * nh / nw));
+      var cv = document.createElement('canvas');
+      cv.width = gw * 4; cv.height = gh * 4;
+      var cx = cv.getContext('2d');
+      cx.drawImage(im, 0, 0, cv.width, cv.height);
+      var px = cx.getImageData(0, 0, cv.width, cv.height).data, rows = [];
+      for (var y = 0; y < gh; y++) {
+        var runs = [], x0 = -1;
+        for (var x = 0; x <= gw; x++) {
+          var ink = false;
+          for (var yy = 0; x < gw && yy < 4 && !ink; yy++) {
+            for (var xx = 0; xx < 4; xx++) { if (px[(((y * 4 + yy) * cv.width) + x * 4 + xx) * 4 + 3] > 24) { ink = true; break; } }
+          }
+          if (ink && x0 < 0) x0 = x;
+          if (!ink && x0 >= 0) { runs.push([x0, x]); x0 = -1; }
+        }
+        rows.push(runs);
+      }
+      grid = { w: gw, h: gh, rows: rows };
+    } catch (e) { grid = null; }
+    _tgInkMemo[key] = grid;
+  }
+  if (!grid) return [r];
+  var cs = getComputedStyle(im), fit = cs.objectFit;
+  var pl = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.borderLeftWidth) || 0), pt = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.borderTopWidth) || 0);
+  var cw = r.width - pl - (parseFloat(cs.paddingRight) || 0) - (parseFloat(cs.borderRightWidth) || 0);
+  var ch = r.height - pt - (parseFloat(cs.paddingBottom) || 0) - (parseFloat(cs.borderBottomWidth) || 0);
+  if (fit === 'cover' || cw <= 0 || ch <= 0) return [r];
+  var dw = cw, dh = ch, sc;
+  if (fit === 'contain' || fit === 'scale-down') { sc = Math.min(cw / nw, ch / nh); if (fit === 'scale-down') sc = Math.min(sc, 1); dw = nw * sc; dh = nh * sc; }
+  else if (fit === 'none') { dw = nw; dh = nh; }
+  var op = String(cs.objectPosition || '50% 50%').split(/\s+/), fx = /%$/.test(op[0]) ? parseFloat(op[0]) / 100 : 0.5, fy = /%$/.test(op[1] || '') ? parseFloat(op[1]) / 100 : 0.5;
+  var ox = r.left + pl + (cw - dw) * fx, oy = r.top + pt + (ch - dh) * fy, out = [];
+  for (var j = 0; j < grid.h; j++) {
+    for (var k = 0; k < grid.rows[j].length; k++) {
+      var run = grid.rows[j][k];
+      out.push({ left: ox + run[0] * dw / grid.w, right: ox + run[1] * dw / grid.w, top: oy + j * dh / grid.h, bottom: oy + (j + 1) * dh / grid.h });
+    }
+  }
+  return out;
 }
 // what a pass of the bouquet must keep clear of, inside the box q: every
 // visible line of text (by its ink, where the font says where the ink is,
 // else by its line box), every logo, the airport's mark, the aircraft on
-// the map and the round icons of the flight cards. A word clipped away by
-// its box (a map label off the map) is not seen.
+// the map and the round icons of the flight cards; a picture by its ink
+// (_tgImgInk). A word clipped away by its box (a map label off the map) is
+// not seen.
 function _tgObstacles(wrap, q) {
   var out = [], rg = document.createRange();
   var shown = function (e, r) {
@@ -23435,16 +23505,16 @@ function _tgObstacles(wrap, q) {
   var im = wrap.querySelectorAll('.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas, .octb-apmark, img[src*="/logos/"], .leaflet-marker-pane > *, .v2-fi-icon-wrap, .ac-ico');
   for (var j = 0; j < im.length; j++) {
     var ir = im[j].getBoundingClientRect();
-    if (ir.width >= 1 && ir.height >= 1 && _tgMeet(ir, q, 0) && shown(im[j], ir)) out.push({ left: ir.left, right: ir.right, top: ir.top, bottom: ir.bottom });
+    if (!(ir.width >= 1 && ir.height >= 1 && _tgMeet(ir, q, 0) && shown(im[j], ir))) continue;
+    var ik = _tgImgInk(im[j], ir);
+    for (var m2 = 0; m2 < ik.length; m2++) if (_tgMeet(ik[m2], q, 0)) out.push({ left: ik[m2].left, right: ik[m2].right, top: ik[m2].top, bottom: ik[m2].bottom });
   }
   return out;
 }
-// one corner: where the bouquet hangs from it, or null when it cannot be
-// clear there. Things in the panel (above its bottom edge) push it down,
-// toward the map, to 6px (scaled) under their ink, so its top leaf still
-// crosses the panel's bottom edge; anything under it, within 10px, rules
-// the corner out.
-function _tgBqFit(side, pr, wr, h, obs, g) {
+// the bouquet's ink, h tall: the nine slabs of _TG_BQ_INK turned about its
+// pin (the top right corner of its box on the right, the top left on the
+// left, where it is mirrored), and their bounds
+function _tgBqSlabs(side, h) {
   var w = h * 300 / 540, th = (side === 'r' ? _TG_BQ_TILT : -_TG_BQ_TILT) * Math.PI / 180;
   var c = Math.cos(th), s = Math.sin(th), ox = side === 'r' ? w : 0, slabs = [], all = null;
   for (var i = 0; i < _TG_BQ_INK.length; i++) {
@@ -23459,6 +23529,26 @@ function _tgBqFit(side, pr, wr, h, obs, g) {
     slabs.push(b);
     all = all ? { left: Math.min(all.left, b.left), right: Math.max(all.right, b.right), top: Math.min(all.top, b.top), bottom: Math.max(all.bottom, b.bottom) } : b;
   }
+  return { w: w, th: th, slabs: slabs, all: all };
+}
+// whether the bouquet's leaves, hung at (L, T), come within gIn of something
+// in the panel (above its bottom edge) or within gOut of something under it
+function _tgBqHit(S, L, T, pr, obs, gIn, gOut) {
+  for (var a = 0; a < S.slabs.length; a++) {
+    var b = S.slabs[a], sb = { left: L + b.left, right: L + b.right, top: T + b.top, bottom: T + b.bottom };
+    for (var o = 0; o < obs.length; o++) {
+      if (_tgMeet(sb, obs[o], (obs[o].top + obs[o].bottom) / 2 < pr.bottom ? gIn : gOut)) return true;
+    }
+  }
+  return false;
+}
+// one corner: where the bouquet hangs from it, or null when it cannot be
+// clear there. Things in the panel (above its bottom edge) push it down,
+// toward the map, to 6px (scaled) under their ink, so its top leaf still
+// crosses the panel's bottom edge; anything under it, within 10px, rules
+// the corner out.
+function _tgBqFit(side, pr, wr, h, obs, g) {
+  var S = _tgBqSlabs(side, h), slabs = S.slabs, all = S.all;
   var edge = 6 * h / _TG_BQ_H;
   var L = side === 'r' ? Math.min(pr.right, wr.right) - edge - all.right : Math.max(pr.left, wr.left) + edge - all.left;
   var T = pr.bottom - h * 0.3, at = function (b) { return { left: L + b.left, right: L + b.right, top: T + b.top, bottom: T + b.bottom }; };
@@ -23474,40 +23564,120 @@ function _tgBqFit(side, pr, wr, h, obs, g) {
   }
   var box = at(all);
   if (box.bottom > wr.bottom || box.left < wr.left || box.right > wr.right) return null;
-  for (var a2 = 0; a2 < slabs.length; a2++) {
-    for (var o2 = 0; o2 < obs.length; o2++) {
-      var ob2 = obs[o2];
-      if (_tgMeet(at(slabs[a2]), ob2, (ob2.top + ob2.bottom) / 2 < pr.bottom ? g * 0.6 - 0.5 : g)) return null;
+  if (_tgBqHit(S, L, T, pr, obs, g * 0.6 - 0.5, g)) return null;
+  return { L: L, T: T, w: S.w, th: S.th };
+}
+// pinned inside the gate panel: against its screen-side edge, beside the
+// number (side 'r'), or against its other edge, before the words ('l'), 6px
+// (scaled) in; centred on the panel's height and never above the screen's
+// top. Null when its leaves would come within 6px of the number or the
+// words, or within 10px of anything under the panel's edge it spills over.
+function _tgBqPin(side, pr, wr, h, obs, g) {
+  var S = _tgBqSlabs(side, h), all = S.all, edge = g * 0.6;
+  var L = side === 'r' ? Math.min(pr.right, wr.right) - edge - all.right : Math.max(pr.left, wr.left) + edge - all.left;
+  var T = Math.max(pr.top + (pr.bottom - pr.top - (all.bottom - all.top)) / 2, Math.max(pr.top, wr.top) + edge) - all.top;
+  if (L + all.left < wr.left || L + all.right > wr.right || T + all.bottom > wr.bottom) return null;
+  if (_tgBqHit(S, L, T, pr, obs, g * 0.6 - 0.5, g)) return null;
+  return { L: L, T: T, w: S.w, th: S.th };
+}
+// where the bouquet goes now: { pr, obs, P } with P its place ({ mode
+// 'hang' or 'pin', side, L, T, w, h, th }, on the screen), or P null when no
+// place is clear; null when the screen has no gate panel to hang it from
+function _tgBqWhere(band, wrap) {
+  var pnl = band.querySelector('.g8-r1-right'), pr = pnl && pnl.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+  if (!pr || pr.height < 60 || wr.width < 900) return null;
+  var k = Math.min(wr.width / 1920, wr.height / 1080), H = _TG_BQ_H * k, g = 10 * k;
+  var q = { left: pr.left - H, right: pr.right, top: pr.top, bottom: pr.bottom + H * 1.2 };
+  var out = { pr: pr, obs: _tgObstacles(wrap, q), P: null }, f, h, i, sd;
+  // 1. the corsage: right, then left, at 100%, 92%, 84% and 76% of its size
+  for (i = 0; i < 4 && !out.P; i++) {
+    h = H * (1 - 0.08 * i);
+    for (sd = 0; sd < 2 && !out.P; sd++) {
+      f = _tgBqFit(sd ? 'l' : 'r', pr, wr, h, out.obs, g);
+      if (f) out.P = { mode: 'hang', side: sd ? 'l' : 'r', L: f.L, T: f.T, w: f.w, h: h, th: f.th };
     }
   }
-  return { L: L, T: T, w: w, th: th };
+  // 2. pinned in the panel: beside the number, as tall as fits (from 72% of
+  // the corsage, or the panel's height, down to 40%); before the words only
+  // when the number's side has no room
+  for (sd = 0; sd < 2 && !out.P; sd++) {
+    for (h = Math.min(H * 0.72, pr.height); h >= H * 0.4 && !out.P; h -= 4 * k) {
+      f = _tgBqPin(sd ? 'l' : 'r', pr, wr, h, out.obs, g);
+      if (f) out.P = { mode: 'pin', side: sd ? 'l' : 'r', L: f.L, T: f.T, w: f.w, h: h, th: f.th };
+    }
+  }
+  return out;
 }
-function _tgBouquet(band) {
+// put the bouquet at P (its box, turned about its pin)
+function _tgBqSet(el, wrap, P) {
+  var wr = wrap.getBoundingClientRect();
+  el.setAttribute('data-side', P.side);
+  el.setAttribute('data-place', P.mode);
+  el.classList.toggle('tg-bq-l', P.side === 'l');
+  el.style.width = P.w.toFixed(1) + 'px';
+  el.style.height = P.h.toFixed(1) + 'px';
+  el.style.left = (P.L - wr.left - (wrap.clientLeft || 0)).toFixed(1) + 'px';
+  el.style.top = (P.T - wr.top - (wrap.clientTop || 0)).toFixed(1) + 'px';
+  el.style.transform = 'rotate(' + (P.th * 180 / Math.PI).toFixed(1) + 'deg)';
+  el._tgBqAt = P;
+}
+// shown (fading in over 0.6s), or not: fading out, or gone at once (cut).
+// Its opacity is its own, inline: a bouquet just made starts from nothing,
+// and the style is read before the change so the fade runs from there.
+function _tgBqVis(el, on, cut) {
+  if (el.style.opacity === '') { el.style.transition = 'none'; el.style.opacity = '0'; void getComputedStyle(el).opacity; }
+  el.style.transition = cut ? 'none' : 'opacity .6s ease';
+  void getComputedStyle(el).opacity;
+  el.style.opacity = on ? '1' : '0';
+  el._tgBqOn = !!on;
+}
+// the screen's state has changed (the takeover, the airline's card): the
+// bouquet is measured now, and again as what follows it settles (the map's
+// words come back a frame or two after the card goes); a move made for it
+// is made at once, with the change itself, not faded
+function _tgBqNow(band, wrap) {
+  try { _tgBouquet(band, true); } catch (e) {}
+  (wrap._tgBqSettle || []).forEach(clearTimeout);
+  wrap._tgBqSettle = [250, 900].map(function (ms) { return setTimeout(function () { try { _tgBouquet(band, true); } catch (e) {} }, ms); });
+}
+function _tgBouquet(band, now) {
   var wrap = band.closest('.g8-wrap'), el = wrap && wrap.querySelector(':scope > .tg-bq');
   if (!el) return;
-  var pnl = band.querySelector('.g8-r1-right'), pr = pnl && pnl.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), fit = null;
-  if (pr && pr.height >= 60 && wr.width >= 900) {
-    var h = _TG_BQ_H * Math.min(wr.width / 1920, wr.height / 1080), g = 10 * h / _TG_BQ_H;
-    var q = { left: pr.left - h, right: pr.right, top: pr.top, bottom: pr.bottom + h * 1.2 };
-    var obs = _tgObstacles(wrap, q), side = 'r';
-    fit = _tgBqFit(side, pr, wr, h, obs, g);
-    if (!fit) { side = 'l'; fit = _tgBqFit(side, pr, wr, h, obs, g); }
-    if (fit) {
-      el.setAttribute('data-side', side);
-      el.style.width = fit.w.toFixed(1) + 'px';
-      el.style.height = h.toFixed(1) + 'px';
-      el.style.left = (fit.L - wr.left - (wrap.clientLeft || 0)).toFixed(1) + 'px';
-      el.style.top = (fit.T - wr.top - (wrap.clientTop || 0)).toFixed(1) + 'px';
-      el.style.transform = 'rotate(' + (fit.th * 180 / Math.PI).toFixed(1) + 'deg)';
-    }
-  }
-  el.classList.toggle('tg-bq-l', !!fit && el.getAttribute('data-side') === 'l');
-  el.style.display = fit ? '' : 'none';
-  // a band that changes height (the boarding takeover) re-hangs it at once
+  // measured again before the next frame is drawn when the band changes
+  // height (the boarding takeover), when .g8-wrap's state changes
+  // (g8-bigcraft-active: the airline's card stands in for the map), and
+  // when the map draws or takes away its words and aircraft
   if (!band._tgBqRO && window.ResizeObserver) {
-    band._tgBqRO = new ResizeObserver(function () { try { _tgBouquet(band); } catch (e) {} });
+    band._tgBqRO = new ResizeObserver(function () { _tgBqNow(band, wrap); });
     band._tgBqRO.observe(band);
   }
+  if (!wrap._tgBqMO && window.MutationObserver) {
+    wrap._tgBqMO = new MutationObserver(function () { _tgBqNow(band, wrap); });
+    wrap._tgBqMO.observe(wrap, { attributes: true, attributeFilter: ['class'] });
+  }
+  var mb = wrap.querySelector('#gateMapBox');
+  if (mb && wrap._tgBqMapBox !== mb && window.MutationObserver) {
+    if (wrap._tgBqMapMO) wrap._tgBqMapMO.disconnect();
+    wrap._tgBqMapBox = mb;
+    wrap._tgBqMapMO = new MutationObserver(function () { try { _tgBouquet(band); } catch (e) {} });
+    wrap._tgBqMapMO.observe(mb, { childList: true, subtree: true });
+  }
+  var W = _tgBqWhere(band, wrap), P = W && W.P, at = el._tgBqAt;
+  var under = function () { return !W || !at || _tgBqHit(_tgBqSlabs(at.side, at.h), at.L, at.T, W.pr, W.obs, 0, 0); };
+  // on its way out: only something now under its leaves hurries it
+  if (el._tgBqWait) { if (under()) _tgBqVis(el, false, true); return; }
+  if (!el._tgBqOn) { if (P) { _tgBqSet(el, wrap, P); _tgBqVis(el, true); } return; }
+  // the same place (a nudge of a few px at most is made where it is)
+  if (P && at && P.mode === at.mode && P.side === at.side && Math.abs(P.h - at.h) < 0.5 && Math.abs(P.L - at.L) < 8 && Math.abs(P.T - at.T) < 8) {
+    if (Math.abs(P.L - at.L) > 0.4 || Math.abs(P.T - at.T) > 0.4) _tgBqSet(el, wrap, P);
+    return;
+  }
+  // a new place, or none: it fades out, or goes at once when the screen's
+  // state changed or something now lies under its leaves; the place is
+  // measured again when it has gone, and it fades in where it is clear then
+  var cut = !!now || under();
+  _tgBqVis(el, false, cut);
+  el._tgBqWait = setTimeout(function () { el._tgBqWait = 0; try { _tgBouquet(band); } catch (e) {} }, cut ? 200 : 650);
 }
 function _fidsHolidayLayers() {
   try {
