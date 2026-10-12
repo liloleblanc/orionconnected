@@ -1343,7 +1343,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24040';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24041';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
