@@ -20976,6 +20976,33 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   margin-right: .55em !important;
 }
 
+/* ══ GATE / PORTE STAYS INSIDE THE TAKEOVER PANEL ═══════════════════════════
+   Seen live on v24045 at Moncton gates 1 and 4 (and on v24043 before it): on
+   the countdown, Now Boarding, Final call and Gate closed layouts the top of
+   "Gate" was sliced off at the top of the screen.
+
+   The rule above sizes the label for the IDLE panel, which is 138px tall at
+   1920x1080: two lines of 58.3px at line-height 1.06 make a 124px stack, 7px
+   of air above and below, level with the numeral. A takeover pins the same
+   panel to 110px (".g8-wrap.g8-takeover .g8-r1-right", the 112px band) and
+   nothing brought the label down with it. The numeral is height-fitted by
+   fids-core (gateAutofit) and went to 106px; the label is only ever fitted to
+   WIDTH there, so it kept its 124px stack in a 110px box. The box centres it
+   (align-items:center), so it hung 7px over each edge, and the top edge is
+   the top of the screen. At 1680x1050 the stack was 109px of 110: inside, but
+   wall to wall.
+
+   On a takeover the label takes the numeral's own air instead: the numeral
+   sits 6px in from each edge (106px at line-height .9, 98px tall), and
+   46px x 1.06 x 2 lines = 97.5px matches it. Below 46px (1366x768 is 41.5px)
+   nothing changes. The idle panel is not touched: this applies only under
+   .g8-takeover, and gateAutofit's label pass now also keeps the stack inside
+   the panel's real height, for any language pair and any face.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-takeover .g8-r1-right .g8-bilbl {
+  font-size: clamp(34px, min(5.4vh, 3.05vw), 46px) !important;
+}
+
 
 /* ══ v23836 — THE WEATHER REPORT IN THREE SCREENS ═══════════════════════════
    The title clears onto a news set whose monitor carries the two airports over

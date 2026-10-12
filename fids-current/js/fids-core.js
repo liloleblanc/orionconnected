@@ -20809,10 +20809,22 @@ function gateAutofit(root) {
         try {
           bil.style.removeProperty('font-size');
           var _bilAvail = w - (num.getBoundingClientRect().width + 16);
+          // AND NEVER TALLER THAN THE PANEL. The label was fitted to width
+          // only, so on a takeover (the panel pinned to 110px) its two-line
+          // stack kept the idle panel's 124px, was centred, and lost the top
+          // of "Gate" off the top of the screen. The stylesheet sizes it for
+          // the takeover now; this keeps any pair of words in any face inside
+          // the box it is centred in, 2px clear of each edge. It only shrinks,
+          // so a label that already fits (the idle panel) is never touched.
+          var _bilAvailH = box.clientHeight - 4;
+          var _bilOver = function () {
+            var r = bil.getBoundingClientRect();
+            return (_bilAvail > 24 && r.width > _bilAvail)
+                || (_bilAvailH > 24 && r.height > _bilAvailH);
+          };
           var _bilPx = parseFloat(window.getComputedStyle(bil).fontSize) || 0;
           var _bilGuard = 24;
-          while (_bilAvail > 24 && _bilPx > 14
-                 && bil.getBoundingClientRect().width > _bilAvail && _bilGuard-- > 0) {
+          while (_bilPx > 14 && _bilOver() && _bilGuard-- > 0) {
             _bilPx -= Math.max(1, _bilPx * 0.06);
             bil.style.setProperty('font-size', _bilPx + 'px', 'important');
           }
