@@ -23390,7 +23390,9 @@ function _tgPair(e1, e2, g0, g1, w1, w2, t1, t2, H) {
 //    sits about 20px from the date and spills over the seam between the
 //    centre screen and the map, so its mirror image there is the fallback.
 //    Where neither corner is clear at full size, the same a little smaller,
-//    down to 76% (131px at 1080p).
+//    down to 76% (131px at 1080p). Never through a takeover (countdown,
+//    Now Boarding, Final call, Gate closed): its cards fill the space under
+//    the panel, and a corner clear of their words is still over a card.
 // 2. Pinned inside the gate panel, beside the number (before the Gate |
 //    Porte words only when the number's side has no room), as tall as the
 //    panel lets it be (124px at most at 1080p), centred on its height. This
@@ -23601,8 +23603,14 @@ function _tgBqWhere(band, wrap) {
   var k = Math.min(wr.width / 1920, wr.height / 1080), H = _TG_BQ_H * k, g = 10 * k;
   var q = { left: pr.left - H, right: pr.right, top: pr.top, bottom: pr.bottom + H * 1.2 };
   var out = { pr: pr, obs: _tgObstacles(wrap, q), P: null }, f, h, i, sd;
-  // 1. the corsage: right, then left, at 100%, 92%, 84% and 76% of its size
-  for (i = 0; i < 4 && !out.P; i++) {
+  // 1. the corsage: right, then left, at 100%, 92%, 84% and 76% of its size;
+  // never on a takeover (.g8-wrap.g8-takeover). Its cards fill the space
+  // under the panel, and their words can sit far enough from a corner for
+  // the corsage to "fit": at 2560 x 1440 on every gate, and at 1680 x 1050 on
+  // YQM gate 4 once the label took its takeover size (v24047), it hung over
+  // the Departure card. Through a takeover it is pinned in the panel (2.).
+  var tk = wrap.classList.contains('g8-takeover');
+  for (i = 0; i < 4 && !out.P && !tk; i++) {
     h = H * (1 - 0.08 * i);
     for (sd = 0; sd < 2 && !out.P; sd++) {
       f = _tgBqFit(sd ? 'l' : 'r', pr, wr, h, out.obs, g);

@@ -188,8 +188,10 @@ test('the bouquet hangs from the gate panel\'s bottom corner, over the map, clea
   const bq = fn('_tgBouquet'), where = fn('_tgBqWhere'), fit = fn('_tgBqFit'), pin = fn('_tgBqPin'), obs = fn('_tgObstacles');
   assert.match(CORE, /var _TG_BQ_H = 172, _TG_BQ_TILT = 7,/, '172px tall at 1080p, turned 7 degrees');
   assert.match(where, /var k = Math\.min\(wr\.width \/ 1920, wr\.height \/ 1080\), H = _TG_BQ_H \* k, g = 10 \* k;/, 'scaled with the screen');
-  // 1. the corsage: right, then left, at 100, 92, 84 and 76% of its size
-  assert.match(where, /for \(i = 0; i < 4 && !out\.P; i\+\+\) \{\s*h = H \* \(1 - 0\.08 \* i\);\s*for \(sd = 0; sd < 2 && !out\.P; sd\+\+\) \{\s*f = _tgBqFit\(sd \? 'l' : 'r', pr, wr, h, out\.obs, g\);/);
+  // 1. the corsage: right, then left, at 100, 92, 84 and 76% of its size;
+  // never on a takeover
+  assert.match(where, /var tk = wrap\.classList\.contains\('g8-takeover'\);/);
+  assert.match(where, /for \(i = 0; i < 4 && !out\.P && !tk; i\+\+\) \{\s*h = H \* \(1 - 0\.08 \* i\);\s*for \(sd = 0; sd < 2 && !out\.P; sd\+\+\) \{\s*f = _tgBqFit\(sd \? 'l' : 'r', pr, wr, h, out\.obs, g\);/);
   // 2. else pinned in the panel, beside the number first, as tall as fits
   assert.match(where, /for \(h = Math\.min\(H \* 0\.72, pr\.height\); h >= H \* 0\.4 && !out\.P; h -= 4 \* k\) \{\s*f = _tgBqPin\(sd \? 'l' : 'r', pr, wr, h, out\.obs, g\);/);
   assert.ok(where.indexOf('_tgBqFit(') < where.indexOf('_tgBqPin('), 'the corsage before the panel');
@@ -289,6 +291,40 @@ test('through the boarding takeover the bouquet is pinned in the gate panel besi
   assert.ok(box.left >= num.right + 6, 'clear of the number (' + box.left.toFixed(1) + ')');
   assert.ok(box.right <= 1920 && box.top >= 0, 'every leaf on the screen');
   assert.ok(box.bottom < 197 - 10, 'above the Departure card\'s time');
+});
+
+// v24047 — the corsage is never hung through a takeover. Measured at YUL
+// gate C75 (AC513, Now Boarding) on a 2560 x 1440 screen: the panel is
+// [1920, 0, 2560, 110] (the takeover pins it to 110px at every size), its
+// words "Porte" [2060, 1, 2211, 43], "Gate" [2082, 66, 2211, 109] and the
+// number "C75" [2273, 18, 2445, 91]; under it the Departure card's title
+// "Départ | Departure" [2101, 129, 2337, 153] and its time "19:08" [2085,
+// 191, 2336, 258]. Nothing written comes within 10px of the bottom-right
+// corner at that size, so v24046 hung the 229px corsage there, over the
+// Départ card (and at 1680 x 1050 on YQM gate 4 once the label took its
+// takeover size). On the takeover it is pinned beside the number instead.
+test('through a takeover the bouquet is pinned beside the number, never hung over the cards', () => {
+  const pr = { left: 1920, top: 0, right: 2560, bottom: 110, width: 640, height: 110 };
+  const wr = { left: 0, top: 0, right: 2560, bottom: 1440, width: 2560, height: 1440 };
+  const num = { left: 2273, top: 18, right: 2445, bottom: 91 };
+  const obs = [{ left: 2060, top: 1, right: 2211, bottom: 43 }, { left: 2082, top: 66, right: 2211, bottom: 109 }, num,
+    { left: 2101, top: 129, right: 2186, bottom: 153 }, { left: 2194, top: 132, right: 2201, bottom: 153 }, { left: 2209, top: 132, right: 2337, bottom: 153 },
+    { left: 2085, top: 191, right: 2336, bottom: 258 }, { left: 1963, top: 156, right: 2055, bottom: 248 }];
+  const where = new Function('OBS', BQ_SRC() + 'function _tgObstacles() { return OBS; }' + fn('_tgBqWhere') + 'return _tgBqWhere;')(obs);
+  const band = { querySelector: () => ({ getBoundingClientRect: () => pr }) };
+  const wrapOf = (tk) => ({ classList: { contains: (c) => tk && c === 'g8-takeover' }, getBoundingClientRect: () => wr });
+  // off a takeover the same geometry takes the corsage (the place v24046 chose here)
+  const idle = where(band, wrapOf(false));
+  assert.equal(idle.P && idle.P.mode, 'hang', 'the corner is clear of every word');
+  const tk = where(band, wrapOf(true)), P = tk.P;
+  assert.ok(P, 'still shown through the takeover');
+  assert.equal(P.mode, 'pin');
+  assert.equal(P.side, 'r', 'beside the number');
+  const S = new Function(BQ_SRC() + 'return _tgBqSlabs;')()(P.side, P.h);
+  const box = { left: P.L + S.all.left, right: P.L + S.all.right, top: P.T + S.all.top, bottom: P.T + S.all.bottom };
+  assert.ok(box.left >= num.right + 6, 'clear of the number (' + box.left.toFixed(1) + ')');
+  assert.ok(box.right <= 2560 && box.top >= 0, 'every leaf on the screen');
+  assert.ok(box.bottom < 129 - 6, 'above the Departure card (' + box.bottom.toFixed(1) + ')');
 });
 
 // A logo counts by its ink, not its box: an airline's card with a mark in
