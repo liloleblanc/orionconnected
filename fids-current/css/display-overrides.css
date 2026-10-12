@@ -25435,14 +25435,21 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    burnt orange into a warm ivory centre where the airport's logo sits as
    always, then gold out to cognac under the clock; its colours go in through
    the band's palette hook (HOLIDAY_BAND), so white text still clears the
-   silk. The plane badge becomes a gold sugar-maple leaf — a natural leaf,
-   deliberately neither the flag's leaf nor either airline's. Big screens
-   only (701px and wider, the silk band's own line). On the gate the cream
-   stays cream (airline logos are drawn for it), warmed toward parchment,
-   with one gold leaf alone in the empty cream and a harvest ribbon along
-   the date bar's top edge; on baggage the title side sits on maple red —
-   cognac clock glass at night, the white glass only warmed to ivory by day.
-   The layers outside the band are made by _fidsHolidayLayers. */
+   silk. The plane badge becomes a gold maple leaf — a natural leaf,
+   deliberately neither the flag's leaf nor either airline's; gold because a
+   red or orange leaf disappears into the maple-red end of the silk. Big
+   screens only (701px and wider, the silk band's own line). On the gate the
+   cream stays cream (airline logos are drawn for it), warmed toward
+   parchment, with one red maple leaf in the empty cream (red reads best on
+   cream), a harvest ribbon along the date bar's top edge and, where the
+   cream is wide enough, a small gold and a small orange leaf fallen onto
+   that ribbon either side of it. The leaves are still, like everything
+   else on the boards. Nothing is added to the silk band beyond the badge: extra leaves there fought the white silk lines and sank into the
+   red and gold ends. On baggage the title side sits on maple red — cognac
+   clock glass at night, the white glass only warmed to ivory by day. The
+   leaves are real artwork, trimmed out of a licensed vector file into
+   logos/holiday/thanksgiving/ (docs/licenses/holiday-leaves.md). The layers
+   outside the band are made by _fidsHolidayLayers. */
 @media (min-width: 701px) {
   html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)[data-fids-banner="silk"] #fidsBanner.fids-banner {
     background: linear-gradient(100deg,
@@ -25458,9 +25465,9 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   }
   html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_)[data-fids-banner="silk"] #fidsBanner .fids-board-icon::before {
     -webkit-mask: none !important; mask: none !important;
-    background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M50%204L55%2013L62%2011L60%2018L66%2021Q60%2031%2061%2041Q67%2037%2072%2032L75%2025L78%2032L86%2027L84%2033L95%2034L87%2041L90%2047L81%2047Q74%2052%2070%2059Q76%2060%2080%2062L85%2059L84%2066L89%2071L78%2071L76%2076Q64%2074%2053.2%2075.5Q51.5%2085%2050.9%2095L49.1%2095Q48.5%2085%2046.8%2075.5Q36%2074%2024%2076L22%2071L11%2071L16%2066L15%2059L20%2062Q24%2060%2030%2059Q26%2052%2019%2047L10%2047L13%2041L5%2034L16%2033L14%2027L22%2032L25%2025L28%2032Q33%2037%2039%2041Q40%2031%2034%2021L40%2018L38%2011L45%2013L50%204Z%22%20fill%3D%22%23F2B23A%22%2F%3E%3Cpath%20d%3D%22M50%2074L50%2012M50%2070L88%2036M50%2070L12%2036M50%2072L83%2067M50%2072L17%2067%22%20stroke%3D%22%23B56A12%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%20opacity%3D%22.7%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat !important;
-    width: 72px !important; height: 72px !important; transform: rotate(-14deg);
-    filter: drop-shadow(0 2px 3px rgba(40, 8, 0, .45));
+    background: url("/logos/holiday/thanksgiving/maple-gold.svg") center / contain no-repeat !important;
+    width: 72px !important; height: 72px !important; transform: rotate(-6deg);
+    filter: drop-shadow(0 2px 3px rgba(60, 14, 0, .40));
   }
 }
 html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-warm { position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 0; pointer-events: none;
@@ -25468,9 +25475,16 @@ html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):n
 html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-ribbon { position: absolute; left: 0; right: 0; bottom: 25px; height: 7px; z-index: 3; pointer-events: none;
   background: linear-gradient(90deg, #9E2A1B 0%, #C9471C 30%, #E39B2D 55%, #F0B93A 70%, #8F4A12 100%);
   box-shadow: 0 -1px 0 rgba(120, 40, 10, .25); }
-html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-leaf { position: absolute; top: 14px; width: 78px; height: 78px; z-index: 1; pointer-events: none;
-  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23F3B638%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23D9781C%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M50%204L55%2013L62%2011L60%2018L66%2021Q60%2031%2061%2041Q67%2037%2072%2032L75%2025L78%2032L86%2027L84%2033L95%2034L87%2041L90%2047L81%2047Q74%2052%2070%2059Q76%2060%2080%2062L85%2059L84%2066L89%2071L78%2071L76%2076Q64%2074%2053.2%2075.5Q51.5%2085%2050.9%2095L49.1%2095Q48.5%2085%2046.8%2075.5Q36%2074%2024%2076L22%2071L11%2071L16%2066L15%2059L20%2062Q24%2060%2030%2059Q26%2052%2019%2047L10%2047L13%2041L5%2034L16%2033L14%2027L22%2032L25%2025L28%2032Q33%2037%2039%2041Q40%2031%2034%2021L40%2018L38%2011L45%2013L50%204Z%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Cpath%20d%3D%22M50%2074L50%2012M50%2070L88%2036M50%2070L12%2036M50%2072L83%2067M50%2072L17%2067%22%20stroke%3D%22%239A4E0E%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%20fill%3D%22none%22%20opacity%3D%22.75%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat; transform: rotate(-14deg);
-  filter: drop-shadow(0 2px 3px rgba(90, 40, 0, .35)); }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-leaf { position: absolute; top: 10px; width: 84px; height: 84px; z-index: 1; pointer-events: none;
+  background: url("/logos/holiday/thanksgiving/maple-red.svg") center / contain no-repeat; transform: rotate(-6deg);
+  filter: drop-shadow(0 3px 4px rgba(90, 40, 0, .30)); }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-rest-a,
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-rest-b { position: absolute; z-index: 4; pointer-events: none;
+  background: url("/logos/holiday/thanksgiving/maple-gold.svg") center / contain no-repeat;
+  filter: drop-shadow(0 2px 2px rgba(90, 40, 0, .30)); }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-rest-a { top: 69px; width: 46px; height: 46px; transform: rotate(18deg); }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1 > .tg-rest-b { top: 75px; width: 38px; height: 38px; transform: rotate(-24deg);
+  background-image: url("/logos/holiday/thanksgiving/maple-orange.svg"); }
 html:not(.fids-day) body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .b5-band > .tg-grade { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: .55;
   background: linear-gradient(90deg, #C8461E 0%, #E39B2D 55%, #B0561A 100%); }
 html:not(.fids-day) body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #baggageView .b5 .b5-scrim {

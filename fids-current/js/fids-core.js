@@ -23297,13 +23297,17 @@ var HOLIDAY_BAND = {
 };
 // The few layers a look adds outside the band (display-overrides.css,
 // "A HOLIDAY LOOK"): on the gate, a warm wash, a harvest ribbon on the
-// date bar's top edge and one gold leaf alone in the empty cream between
-// the airline's logo and the airport's mark; on the baggage board, a warm
-// grade under the scrim. They exist only while body[data-fids-holiday] is
-// set and are removed the moment it is not, so a board that runs past
-// midnight goes back to itself without a reload.
+// date bar's top edge, one red maple leaf in the empty cream between the
+// airline's logo and the airport's mark, and two small fallen leaves (gold,
+// orange) resting on the ribbon either side of it; on the baggage board, a
+// warm grade under the scrim. The leaves are real artwork
+// (logos/holiday/thanksgiving/, docs/licenses/holiday-leaves.md). They
+// exist only while body[data-fids-holiday] is set and are removed the
+// moment it is not, so a board that runs past midnight goes back to itself
+// without a reload.
 var _HOLIDAY_LAYERS = [
   ['.g8-r1', 'tg-warm', null], ['.g8-r1', 'tg-ribbon', null], ['.g8-r1', 'tg-leaf', null],
+  ['.g8-r1', 'tg-rest-a', null], ['.g8-r1', 'tg-rest-b', null],
   ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim']
 ];
 function _fidsHolidayLayers() {
@@ -23324,19 +23328,25 @@ function _fidsHolidayLayers() {
     }
     if (!on) return;
     // the gate leaf: centred in the empty cream between the airline's
-    // artwork and the clock; no room (under 170px), no leaf
+    // artwork and the clock; no room (under 170px), no leaf. The two fallen
+    // leaves sit on the ribbon either side of it, only where the cream is
+    // wide enough (420px) that they stay clear of both logos.
     var bands = document.querySelectorAll('.g8-r1');
     for (var k = 0; k < bands.length; k++) {
       var band = bands[k], leaf = band.querySelector(':scope > .tg-leaf');
+      var ra = band.querySelector(':scope > .tg-rest-a'), rb = band.querySelector(':scope > .tg-rest-b');
       if (!leaf) continue;
       var hr = band.getBoundingClientRect(), a = 0;
       var art = band.querySelectorAll('.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas');
       for (var m = 0; m < art.length; m++) { var r = art[m].getBoundingClientRect(); if (r.width > 0) a = Math.max(a, r.right - hr.left); }
       var clock = band.querySelector('.octb-clockrow') || band.querySelector('.g8-r1-timebox');
       var bx = clock ? clock.getBoundingClientRect().left - hr.left : 0;
+      var c = (a + bx) / 2, wide = !!(a && bx && bx - a >= 420);
+      if (ra) { ra.style.display = wide ? '' : 'none'; if (wide) ra.style.left = Math.round(c - 130 - ra.offsetWidth / 2) + 'px'; }
+      if (rb) { rb.style.display = wide ? '' : 'none'; if (wide) rb.style.left = Math.round(c + 118 - rb.offsetWidth / 2) + 'px'; }
       if (!a || !bx || bx - a < 170) { leaf.style.display = 'none'; continue; }
       leaf.style.display = '';
-      leaf.style.left = Math.round((a + bx) / 2 - 39) + 'px';
+      leaf.style.left = Math.round(c - (leaf.offsetWidth || 84) / 2) + 'px';
     }
   } catch (e) {}
 }

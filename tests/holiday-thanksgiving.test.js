@@ -71,3 +71,57 @@ test('the gate and baggage layers exist only while the holiday is set', () => {
   assert.match(layers, /if \(!on\) \{ if \(el\) el\.parentNode\.removeChild\(el\); continue; \}/);
   assert.match(CORE, /_ocEvery\(_fidsHolidayLayers, 2000\)/);
 });
+
+// The leaves are real artwork (two licensed vector files), trimmed into
+// logos/holiday/thanksgiving/: no drawn leaf left in the look, every file the
+// CSS names exists, is small, is plain vector art and is in the asset
+// manifest, and the gate's extra leaves follow the same layer rules.
+const LEAF_DIR = path.join(__dirname, '..', 'fids-current/logos/holiday/thanksgiving');
+function holidayBlock() {
+  const at = CSS.indexOf('A HOLIDAY LOOK: THANKSGIVING');
+  return CSS.slice(at, CSS.indexOf('/* ══', at + 10));
+}
+
+test('the leaves are the real artwork files, not drawn data URIs', () => {
+  const block = holidayBlock();
+  assert.doesNotMatch(block, /data:image\/svg/, 'no drawn leaf left in the look');
+  const urls = [...block.matchAll(/url\("(\/logos\/holiday\/thanksgiving\/[a-z-]+\.svg)"\)/g)].map((m) => m[1]);
+  assert.deepEqual([...new Set(urls)].sort(), ['/logos/holiday/thanksgiving/maple-gold.svg', '/logos/holiday/thanksgiving/maple-orange.svg', '/logos/holiday/thanksgiving/maple-red.svg']);
+  assert.match(block, /\.fids-board-icon::before \{[^}]*url\("\/logos\/holiday\/thanksgiving\/maple-gold\.svg"\)/, 'gold leaf on the badge');
+  assert.match(block, /\.g8-r1 > \.tg-leaf \{[^}]*url\("\/logos\/holiday\/thanksgiving\/maple-red\.svg"\)/, 'red leaf on the gate');
+  const manifest = fs.readFileSync(path.join(__dirname, '..', 'fids-current/assets/asset-manifest.json'), 'utf8');
+  for (const u of new Set(urls)) {
+    const f = path.join(LEAF_DIR, path.basename(u));
+    assert.ok(fs.existsSync(f), u);
+    const svg = fs.readFileSync(f, 'utf8');
+    assert.ok(svg.length < 12000, u + ' stays small for the screens (' + svg.length + ' bytes)');
+    assert.doesNotMatch(svg, /<script|<image|<foreignObject|href=|\son[a-z]+=/i, u + ' is plain vector art');
+    assert.ok(manifest.includes('"' + u + '"'), u + ' is in the asset manifest');
+  }
+  // provenance: in docs (the public tree carries no text files) and in each file
+  const doc = fs.readFileSync(path.join(__dirname, '..', 'docs/licenses/holiday-leaves.md'), 'utf8');
+  assert.match(doc, /Vecteezy item 11215158/);
+  assert.match(doc, /Vecteezy item 23481840/);
+  for (const u of new Set(urls)) {
+    assert.ok(doc.includes('`' + path.basename(u) + '`'), u + ' is listed in the provenance note');
+    assert.match(fs.readFileSync(path.join(LEAF_DIR, path.basename(u)), 'utf8'), /^<svg [^>]*><!-- [^>]*Vecteezy item 11215158[^>]*-->/, u + ' names its source');
+  }
+  assert.deepEqual(fs.readdirSync(LEAF_DIR).sort(), ['maple-gold.svg', 'maple-orange.svg', 'maple-red.svg'], 'only the leaves in use ship');
+});
+
+test('the gate\'s fallen leaves are holiday layers, placed only where the cream is wide, and nothing moves', () => {
+  assert.match(CORE, /\['\.g8-r1', 'tg-rest-a', null\], \['\.g8-r1', 'tg-rest-b', null\]/);
+  const layers = fn('_fidsHolidayLayers');
+  assert.match(layers, /wide = !!\(a && bx && bx - a >= 420\)/);
+  assert.match(layers, /ra\.style\.display = wide \? '' : 'none'/);
+  assert.match(layers, /rb\.style\.display = wide \? '' : 'none'/);
+  const block = holidayBlock();
+  assert.doesNotMatch(block, /animation|transition|@keyframes/, 'the leaves rest, like the rest of the boards');
+  // the fallen leaves stay above the date bar: top + height never passes the
+  // ribbon's lower edge (the band is 140px, the ribbon sits 25px off its bottom)
+  for (const cls of ['tg-rest-a', 'tg-rest-b']) {
+    const m = new RegExp('\\.g8-r1 > \\.' + cls + ' \\{ top: (\\d+)px; width: (\\d+)px; height: (\\d+)px;').exec(block);
+    assert.ok(m, cls);
+    assert.ok(+m[1] + +m[3] <= 140 - 25, cls + ' rests on the ribbon, not on the date');
+  }
+});
