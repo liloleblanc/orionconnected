@@ -170,8 +170,8 @@
   // draws it too, the same as an airport that has chosen nothing.
   //   - The departures and arrivals ROWS take the icons drawn for Orion
   //     Connected, no circle (v24046, wxRowHtml below): the white set on a
-  //     dark row, the colour set on a light one, picked from each row's own
-  //     ground by fids-core.js _fidsRowWxSet.
+  //     dark row, the colour set on a light one, each row taking the side
+  //     its own ink takes (dark text: colour) by fids-core.js _fidsRowWxSet.
   //   - The GATE screens take a circle: Colour = the colour icon on white,
   //     Solid = the glyph in the airline's brand colour on its deep colour
   //     (fids-core.js _wxDiscPair: WestJet teal on navy).
@@ -203,13 +203,16 @@
   // and every file shares one frame, so a row that changes set never moves
   // (scripts/wx-icons/rows-owner.py).
   //   - The icon is the element's own background: the white file by
-  //     default, the colour file when its row's ground is light. fids-core.js
-  //     _fidsRowWxSet reads each row's real ground once per render (the
-  //     airport's colours, Customize's custom rows, the alternate rows and
-  //     the status rows: yellow Delayed, red Cancelled…) and writes
-  //     data-wx-set="white|colour" on the icon (css/display-overrides.css,
-  //     the v24046 block). Nothing is redrawn: an operator's new colours
-  //     re-render the rows and the icons follow.
+  //     default, the colour file when its row is light. fids-core.js
+  //     _fidsRowWxSet reads, once per render, which side the board itself
+  //     took for that row: the temperature beside the icon inked dark (a
+  //     light ground: colour set) or light (a dark ground: white set), so
+  //     the icon agrees with its digits on the airport's colours,
+  //     Customize's custom rows, the alternate rows and the status rows
+  //     (yellow Delayed, red Cancelled…). It writes data-wx-set=
+  //     "white|colour" on the icon (css/display-overrides.css, the v24046
+  //     block). Nothing is redrawn: an operator's new colours re-render the
+  //     rows and the icons follow.
   //   - The name comes from the code by fids-core.js _wxAnimIcon, the
   //     mapping every set drawn for Orion Connected shares: MET's 'fair' is
   //     a clear sky, 'cloudy' the two clouds (overcast), and the clear and

@@ -1,5 +1,7 @@
-// Where the row boards change from the white set to the colour set
-// (fids-core.js _WX_ROW_SPLIT, v24046).
+// Where the two row sets cross on a ground's luminance alone
+// (fids-core.js _WX_ROW_SPLIT, v24046). The board picks a row's set from the
+// row's own text ink (dark text: the colour set); this split is used only
+// where a cell has no text to read.
 //
 // Run in headless Chrome on any page of a served fids-current (live-shot
 // style: evaluated with awaitPromise). Draws the 20 drawings of both row sets

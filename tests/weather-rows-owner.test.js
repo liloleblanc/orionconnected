@@ -6,18 +6,22 @@
 // The departures and arrivals rows draw one of two sets drawn for Orion
 // Connected (logos/weather/rows-owner-white/ and rows-owner-color/, built by
 // scripts/wx-icons/rows-owner.py): the white set on a dark ground, the colour
-// set on a light ground. Each row picks for itself from the colour its icon
-// actually sits on (fids-core.js _fidsRowWxSet: the airport's colours,
-// Customize's custom rows, the alternate rows and the status rows), so an
-// operator's new colours bring the other set with them.
+// set on a light ground. Each row takes the side the board's own ink took
+// for it (fids-core.js _fidsRowWxSet: the temperature beside the icon inked
+// dark, a light row, the colour set; inked light, the white set), on the
+// airport's colours, Customize's custom rows, the alternate rows and the
+// status rows, so an operator's new colours bring the other set with them
+// and the icon always agrees with its digits.
 //
 // This test pins:
 //   · every reading the rows can draw (every MET symbol, by day and at night,
 //     every WMO and Tomorrow.io code, every name a caller passes) to a file
 //     that exists in BOTH sets, and the two folders to the same names;
-//   · the chooser: white on the navy, red and dark custom grounds, colour on
-//     the light custom grounds, from the ground as the page paints it
-//     (alpha and opacity on the way);
+//   · the chooser: the icon follows the row's ink (both Delayed stripes,
+//     Final call, the faded rows of a light board and mid-tone custom rows
+//     ink dark and take the colour set; navy, red and dark custom rows ink
+//     light and take the white set), the ink and the ground read as the page
+//     paints them (alpha and opacity on the way);
 //   · no gradient or clip id is used by two files, and every file's
 //     references stay inside that file, so any number of icons can share a
 //     page (inlined or not);
@@ -174,35 +178,55 @@ test('the row icon: one box, both files, no circle, in every look but Classic', 
 
 // ── the chooser ────────────────────────────────────────────────────────────
 const PICK = vm.runInNewContext(fnSource(CORE, '_ocLum') + '\n' + /var _WX_ROW_SPLIT = [^;]+;/.exec(CORE)[0] + '\n'
-  + fnSource(CORE, '_wxRowSetFor') + '\n' + fnSource(CORE, '_wxRowRgba') + '\n' + fnSource(CORE, '_wxRowGround') + '\n' + fnSource(CORE, '_fidsRowWxSet')
-  + '\n({ _wxRowSetFor, _wxRowRgba, _wxRowGround, _fidsRowWxSet, _WX_ROW_SPLIT, setGCS: (f) => { getComputedStyle = f; }, setDoc: (d) => { document = d; } });',
+  + ['_wxRowSetFor', '_wxRowRgba', '_wxRowGround', '_wxRowText', '_wxRowInk', '_fidsRowWxSet'].map((n) => fnSource(CORE, n)).join('\n')
+  + '\n({ _wxRowSetFor, _wxRowRgba, _wxRowGround, _wxRowText, _wxRowInk, _fidsRowWxSet, _WX_ROW_SPLIT, setGCS: (f) => { getComputedStyle = f; }, setDoc: (d) => { document = d; } });',
   { getComputedStyle: null, document: null });
 const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 // the board's arrays come from its own realm: compare their values
-const G = (e) => Array.from(PICK._wxRowGround(e));
+const G = (e, top) => Array.from(PICK._wxRowGround(e, top));
 
-test('the chooser: white on the navy, red and dark custom grounds, colour on the light ones', () => {
+test('the chooser: the icon takes the side the row ink took (dark text, colour set; light text, white set)', () => {
+  // [the row's ground, the ink the board paints the temperature in, the set, the row]
+  const rows = [
+    ['#012846', '#FFFFFF', 'white', 'navy row'],
+    ['#033F77', '#E8EEF5', 'white', 'navy stripe'],
+    ['#00565A', '#FFFFFF', 'white', 'dark custom row'],
+    ['#D42341', '#FFFFFF', 'white', 'Cancelled'],
+    ['#A61B2B', '#FFFFFF', 'white', 'Diverted'],
+    ['#405160', '#E8EEF5', 'white', 'a faded history row on a dark board'],
+    // a luminance split put these four in the white set, while the board inks them dark
+    ['#EDBB00', '#0A2236', 'colour', 'Delayed, one stripe'],
+    ['#E5A800', '#0A2236', 'colour', 'Delayed, darker'],
+    ['#F28C00', '#0A2236', 'colour', 'Final call'],
+    ['#A7BFA4', '#0A2236', 'colour', 'a faded Departed row on a light board'],
+    ['#7D848B', '#0A2236', 'colour', 'a faded Gate closed row'],
+    ['#7C8C9C', '#0A2236', 'colour', 'mid-tone custom row'],
+    ['#B4C0CC', '#0A2236', 'colour', 'mid-tone custom stripe'],
+    ['#F9D44C', '#0A2236', 'colour', 'Delayed, the other stripe'],
+    ['#FFFFFF', '#0A2236', 'colour', 'white row'],
+    ['#B3F0FF', '#0A2236', 'colour', 'pale blue row'],
+    ['#EBE6DA', '#4A3B2A', 'colour', 'cream row, brown text']
+  ];
+  for (const [g, k, set, what] of rows) assert.equal(PICK._wxRowSetFor(rgb(g), rgb(k)), set, what + ' ' + g + ' / ' + k);
+  // the ground decides alone only where there is no text to read
   assert.equal(PICK._WX_ROW_SPLIT, 0.56, 'where the two sets cross (scripts/wx-icons/rows-owner-split.js measured 0.563)');
-  const white = {
-    navy: ['#0E2447', '#14305E', '#012846', '#033F77', '#050505'],
-    red: ['#A50D24', '#D42341', '#C8102E', '#B91C1C', '#A61B2B', '#DA3544', '#DE4B58'],
-    'dark custom': ['#4D4C4C', '#735460', '#3D698A', '#4162A4', '#00565A', '#1B4D34', '#3A80CB', '#262D36'],
-    'mid-tone that still reads better in white': ['#1E7EB8', '#2DA4C4', '#F28C00', '#E5A800']
-  };
-  const colour = { 'light custom': ['#FFFFFF', '#E9EEF3', '#EBE6DA', '#ECECEF', '#FFDFB3', '#E0EDD4', '#F8FADB', '#B3F0FF', '#CDDDE4', '#E6ECF2', '#F9D44C'] };
-  for (const [k, list] of Object.entries(white)) for (const h of list) assert.equal(PICK._wxRowSetFor(rgb(h)), 'white', k + ' ' + h);
-  for (const [k, list] of Object.entries(colour)) for (const h of list) assert.equal(PICK._wxRowSetFor(rgb(h)), 'colour', k + ' ' + h);
-  assert.equal(PICK._wxRowSetFor(null), 'white', 'no ground read: the white set, for the dark boards most airports run');
+  for (const h of ['#012846', '#D42341', '#F28C00']) assert.equal(PICK._wxRowSetFor(rgb(h), null), 'white', h + ', no text');
+  for (const h of ['#FFFFFF', '#E6ECF2', '#F9D44C']) assert.equal(PICK._wxRowSetFor(rgb(h), null), 'colour', h + ', no text');
+  assert.equal(PICK._wxRowSetFor(null, null), 'white', 'no ground read: the white set, for the dark boards most airports run');
 });
 
-// a page as getComputedStyle sees it: each element its own background and opacity
+// a page as getComputedStyle sees it: each element its own background,
+// opacity and text colour
 function el(bg, opacity, parent, extra) {
-  return Object.assign({ nodeType: 1, parentElement: parent || null, _bg: bg, _op: opacity == null ? '1' : String(opacity), attrs: {},
-    getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }, setAttribute(k, v) { this.attrs[k] = String(v); } }, extra || {});
+  return Object.assign({ nodeType: 1, parentElement: parent || null, _bg: bg, _op: opacity == null ? '1' : String(opacity), attrs: {}, kids: [], textContent: '',
+    getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; }, setAttribute(k, v) { this.attrs[k] = String(v); },
+    querySelectorAll() { const out = []; const walk = (e) => e.kids.forEach((c) => { out.push(c); walk(c); }); walk(this); return out; },
+    querySelector() { return this.kids[0] || null; } }, extra || {});
 }
-PICK.setGCS((e) => ({ backgroundColor: e._bg, opacity: e._op }));
+const kid = (parent, e) => { parent.kids.push(e); return e; };
+PICK.setGCS((e) => ({ backgroundColor: e._bg, opacity: e._op, color: e._color || 'rgb(0, 0, 0)', webkitTextFillColor: e._fill || e._color || 'rgb(0, 0, 0)' }));
 
-test('the ground is the colour the icon sits on: every background by its alpha, every opacity on the way', () => {
+test('the ground is the colour the icon sits on, and the ink the colour the text is painted: every background by its alpha, every opacity on the way', () => {
   const html = el('rgba(0, 0, 0, 0)');
   const body = el('rgb(10, 22, 40)', 1, html);
   const table = el('rgba(0, 0, 0, 0)', 1, body);
@@ -212,38 +236,71 @@ test('the ground is the colour the icon sits on: every background by its alpha, 
   // a Delayed cell painted on its own, over the row
   tr = el('rgb(1, 40, 70)', 1, table); cell = el('rgba(0, 0, 0, 0)', 1, el('rgb(249, 212, 76)', 1, tr));
   assert.deepEqual(G(cell), [249, 212, 76]);
-  // a faded history row: slate at 0.7 over the board's navy
+  // a faded history row: slate at 0.7 over the board's navy, and white text in it
   tr = el('rgb(38, 45, 54)', 0.7, table); cell = el('rgba(0, 0, 0, 0)', 1, el('rgb(38, 45, 54)', 1, tr));
   assert.deepEqual(G(cell), [30, 38, 50]);
+  assert.deepEqual(G(cell, [255, 255, 255, 1]), [182, 185, 191], 'the text fades with its row');
   // a wash: white at 10 % over the navy
   tr = el('rgba(255, 255, 255, 0.1)', 1, table); cell = el('rgba(0, 0, 0, 0)', 1, tr);
   assert.deepEqual(G(cell), [35, 45, 62]);
+  // text at half alpha lies half over its ground
+  assert.deepEqual(G(cell, [255, 255, 255, 0.5]), [145, 150, 158]);
   // a page that paints nothing sits on the white canvas
   assert.deepEqual(G(el('rgba(0, 0, 0, 0)', 1, el('rgba(0, 0, 0, 0)'))), [255, 255, 255]);
   // Chrome's color() form
   assert.deepEqual(Array.from(PICK._wxRowRgba('color(srgb 0.5 0.25 1 / 0.5)')), [127.5, 63.75, 255, 0.5]);
 });
 
-test('each row picks for itself, writes only when its ground changed, and follows a new palette', () => {
+test('the text read is the temperature beside the icon, in the colour it is painted', () => {
+  const tr = el('rgb(237, 187, 0)', 1, el('rgb(10, 22, 40)', 1, el('rgba(0, 0, 0, 0)')));
+  const cell = el('rgba(0, 0, 0, 0)', 1, el('rgba(0, 0, 0, 0)', 1, tr));
+  const ic = kid(cell, el('rgba(0, 0, 0, 0)', 1, cell));
+  assert.equal(PICK._wxRowText(ic), null, 'no text: nothing to read');
+  // the temperature, its digits in a span of their own inside it
+  const t = kid(cell, el('rgba(0, 0, 0, 0)', 1, cell, { textContent: '12°C' }));
+  const digits = kid(t, el('rgba(0, 0, 0, 0)', 1, t, { textContent: '12°C', _color: 'rgb(10, 34, 54)' }));
+  assert.equal(PICK._wxRowText(ic), digits, 'the element that paints the text, as _fidsRowInk inks it');
+  assert.deepEqual(Array.from(PICK._wxRowInk(digits)), [10, 34, 54]);
+  // -webkit-text-fill-color is what is painted; a transparent one falls back to color
+  digits._fill = 'rgb(255, 255, 255)';
+  assert.deepEqual(Array.from(PICK._wxRowInk(digits)), [255, 255, 255]);
+  digits._fill = 'rgba(0, 0, 0, 0)';
+  assert.deepEqual(Array.from(PICK._wxRowInk(digits)), [10, 34, 54]);
+});
+
+test('each row picks for itself, one status one set, writes only when its ground or ink changed, and follows a new palette', () => {
   const body = el('rgb(10, 22, 40)', 1, el('rgba(0, 0, 0, 0)'));
-  const row = (bg) => { const tr = el(bg, 1, body); const cell = el('rgba(0, 0, 0, 0)', 1, tr); return el('rgba(0, 0, 0, 0)', 1, cell); };
-  const icons = [row('rgb(1, 40, 70)'), row('rgb(212, 35, 65)'), row('rgb(249, 212, 76)'), row('rgb(255, 255, 255)')];
+  const row = (bg, ink) => {
+    const tr = el(bg, 1, body); const cell = el('rgba(0, 0, 0, 0)', 1, el('rgba(0, 0, 0, 0)', 1, tr));
+    const ic = kid(cell, el('rgba(0, 0, 0, 0)', 1, cell));
+    ic._t = kid(cell, el('rgba(0, 0, 0, 0)', 1, cell, { textContent: '15°C', _color: ink }));
+    ic._tr = tr;
+    return ic;
+  };
+  const NAVY_INK = 'rgb(10, 34, 54)', WHITE = 'rgb(255, 255, 255)';
+  const icons = [row('rgb(1, 40, 70)', WHITE), row('rgb(212, 35, 65)', WHITE), row('rgb(237, 187, 0)', NAVY_INK), row('rgb(249, 212, 76)', NAVY_INK),
+    row('rgb(242, 140, 0)', NAVY_INK), row('rgb(255, 255, 255)', NAVY_INK)];
   let writes = 0;
   icons.forEach((ic) => { const set = ic.setAttribute; ic.setAttribute = function (k, v) { writes++; set.call(this, k, v); }; });
   PICK.setDoc({ querySelectorAll: () => icons });
   PICK._fidsRowWxSet();
-  assert.deepEqual(icons.map((i) => i.getAttribute('data-wx-set')), ['white', 'white', 'colour', 'colour'], 'navy, red Cancelled, yellow Delayed (even), white');
+  assert.deepEqual(icons.map((i) => i.getAttribute('data-wx-set')), ['white', 'white', 'colour', 'colour', 'colour', 'colour'],
+    'navy, red Cancelled, both yellow Delayed stripes, orange Final call, white');
   const first = writes;
   PICK._fidsRowWxSet();
   assert.equal(writes, first, 'the heartbeat on unchanged rows writes nothing');
-  // the operator saves light custom rows: the navy row turns light
-  icons[0].parentElement.parentElement._bg = 'rgb(233, 238, 243)';
+  // the operator saves mid-tone custom rows: the board inks them dark, and the icon follows
+  icons[0]._tr._bg = 'rgb(180, 192, 204)'; icons[0]._t._color = NAVY_INK;
   PICK._fidsRowWxSet();
   assert.equal(icons[0].getAttribute('data-wx-set'), 'colour');
   // and back to dark
-  icons[0].parentElement.parentElement._bg = 'rgb(3, 63, 119)';
+  icons[0]._tr._bg = 'rgb(3, 63, 119)'; icons[0]._t._color = WHITE;
   PICK._fidsRowWxSet();
   assert.equal(icons[0].getAttribute('data-wx-set'), 'white');
+  // the ground unchanged, the ink changed (a palette with a new text colour): it picks again
+  icons[0]._t._color = 'rgb(0, 0, 0)';
+  PICK._fidsRowWxSet();
+  assert.equal(icons[0].getAttribute('data-wx-set'), 'colour');
 });
 
 // ── many icons on one page ────────────────────────────────────────────────
@@ -271,7 +328,7 @@ test('the rows say where their weather is, and the row inks pass picks the set',
   assert.match(CORE, /window\.fidsWxIcon\(tw\.current\.code, 48, \{ row: true, at: _wxAt \}\)/);
   assert.match(CORE, /tw = _cw; _wxAt = _codes\[_ci\]; break;/, 'a through-flight leg says its own place');
   const ink = fnSource(CORE, '_fidsBoardInk');
-  assert.ok(ink.indexOf('_fidsRowWxSet(table)') > ink.indexOf('_fidsRowInk(table)'), 'in the same task as the rows are rebuilt');
+  assert.ok(ink.indexOf('_fidsRowWxSet(table)') > ink.indexOf('_fidsRowInk(table)'), 'in the same task as the rows are rebuilt, after the inks it reads');
   assert.match(CORE, /_fidsRowInk\(\); _fidsRowWxSet\(\); \}, 5000\)/, 'and on the 5 s heartbeat');
   assert.match(V2, /if \(_look === 'row'\) \{\s*const rn = wxRowName\(code, opts && opts\.at\);\s*if \(rn\) return wxRowHtml\(rn, size\);/);
 });

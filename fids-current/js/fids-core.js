@@ -22306,44 +22306,53 @@ function _fidsRowInk(root) {
   } catch (e) {}
 }
 
-// ══ v24046 — EACH ROW PICKS ITS WEATHER ICON SET FROM ITS OWN GROUND ════════
+// ══ v24046 — EACH ROW'S WEATHER ICON SET FOLLOWS THE ROW'S OWN INK ══════════
 // The row icons drawn for Orion Connected come in two sets, one for a dark
 // ground and one for a light ground (fids-v2.js wxRowHtml): the white set
-// and the colour set. Which one a row wears is decided by the colour the
-// icon actually sits on, read from the page, not from a list of themes:
-// the airport's theme, Customize's custom row colours, the alternate rows,
-// a light board, and the status rows (yellow Delayed, orange Final call, red
-// Cancelled and Diverted, the faded Departed / Arrived / Gate closed rows).
-// Change an airport's colours and the next render (applyAirportConfigToBoard
-// forces one), or the 5 s heartbeat, picks again.
+// and the colour set. Which one a row wears is read from the page, not from
+// a list of themes, so it covers the airport's theme, Customize's custom row
+// colours, the alternate rows, a light board, and the status rows (yellow
+// Delayed, orange Final call, red Cancelled and Diverted, the faded
+// Departed / Arrived / Gate closed rows). Change an airport's colours and
+// the next render (applyAirportConfigToBoard forces one), or the 5 s
+// heartbeat, picks again.
 //
-// The ground (_wxRowGround) is the cell's colour as it is painted: every
-// background from the page down to the cell, each over the one beneath it
-// by its alpha, and every opacity on the way (the faded history rows) mixed
-// with what shows through it. Background images (the textures) are left
+// THE BOARD HAS ALREADY DECIDED WHETHER A ROW IS LIGHT OR DARK: it inks the
+// text dark on a light ground and light on a dark one (the stylesheet's
+// status grammar on the status rows, the palette and _fidsRowInk on the
+// plain stripes). The icon takes the same side as that ink: the temperature
+// beside it is read as it is painted, and where it is darker than the
+// ground (dark text: a light ground) the row wears the colour set, where it
+// is lighter (light text: a dark ground) the white set. So the icon always
+// agrees with the digits beside it, and one status always wears one set:
+// both Delayed stripes (EDBB00 and F9D44C) ink navy and both take the colour
+// set. A split on the ground's luminance alone (0.56) disagreed with the
+// board between about 0.35 and 0.56, where yellow Delayed, orange Final
+// call, the faded history rows of a light board and mid-tone custom rows
+// all ink dark but were given the white set.
+//
+// Painted colours (_wxRowGround): every background from the page down to
+// the element, each over the one beneath it by its alpha, then the text's
+// own colour for the ink, and every opacity on the way (the faded history
+// rows) mixed with what shows through it, so the ink and the ground are
+// compared as the eye gets them. Background images (the textures) are left
 // out; they are faint by design.
 //
-// The pick (_wxRowSetFor) is the set with the higher contrast on that
-// ground. WCAG contrast depends only on the two luminances, so the choice is
-// one number: the white set reads better below a ground luminance of
-// _WX_ROW_SPLIT and the colour set above it. 0.56 is where the two sets'
-// median contrast over their 20 icons crosses (0.563, measured in headless
-// Chrome by scripts/wx-icons/rows-owner-split.js; a sample of 40 real row
-// grounds put it at about 0.57): navy, the dark custom rows, red Cancelled
-// and Diverted, the default teal, orange Final call and the darker yellow
-// Delayed row take the white set; the lighter yellow Delayed row, white,
-// cream, mist and the light custom rows the colour set. Between about 0.30
-// and 0.60 neither set reads well; the split is still the better of the
-// two there.
+// Only where a cell has no text to read (no row draws one today) does the
+// ground decide alone, by _WX_ROW_SPLIT: 0.56 is where the two sets' median
+// contrast over their 20 icons crosses (0.563, measured in headless Chrome by
+// scripts/wx-icons/rows-owner-split.js).
 //
-// Cheap by construction: it runs with the row inks (_fidsBoardInk, in the
+// Cheap by construction: it runs after the row inks (_fidsBoardInk, in the
 // same task as the rows are rebuilt, so the first paint already wears the
-// right set) and on the 5 s heartbeat, writes only when a row's ground has
-// changed, and swaps a background image inside a box of fixed size, so
-// nothing moves.
+// right set) and on the 5 s heartbeat, writes only when a row's ground or
+// ink has changed, and swaps a background image inside a box of fixed size,
+// so nothing moves.
 var _WX_ROW_SPLIT = 0.56;
-function _wxRowSetFor(rgb) {
-  return (rgb && _ocLum(rgb) >= _WX_ROW_SPLIT) ? 'colour' : 'white';
+function _wxRowSetFor(ground, ink) {
+  if (!ground) return 'white';
+  if (ink) return _ocLum(ink) < _ocLum(ground) ? 'colour' : 'white';
+  return _ocLum(ground) >= _WX_ROW_SPLIT ? 'colour' : 'white';
 }
 function _wxRowRgba(str) {
   var n = String(str || '').match(/[\d.]+/g);
@@ -22353,7 +22362,9 @@ function _wxRowRgba(str) {
   }
   return [+n[0], +n[1], +n[2], (/^rgba/i.test(String(str).trim()) && n.length > 3) ? +n[3] : 1];
 }
-function _wxRowGround(el) {
+// the colour painted at an element: its ground, or with `top` (a text
+// colour, rgba) that colour laid over its ground
+function _wxRowGround(el, top) {
   var chain = [];
   for (var n = el; n && n.nodeType === 1; n = n.parentElement) chain.push(n);
   // the canvas under a page that paints nothing is white
@@ -22366,8 +22377,31 @@ function _wxRowGround(el) {
     var c = _wxRowRgba(cs.backgroundColor);
     if (c && c[3] > 0) acc = mix(c, acc, Math.min(1, c[3]));
   }
+  if (top && top[3] > 0) acc = mix(top, acc, Math.min(1, top[3]));
   for (var k = groups.length - 1; k >= 0; k--) acc = mix(acc, groups[k][0], groups[k][1]);
   return acc.map(Math.round);
+}
+// the text beside the icon (the temperature): the first element in its cell
+// that paints text of its own, the element _fidsRowInk would ink
+function _wxRowText(ic) {
+  var cell = ic.parentElement;
+  if (!cell) return null;
+  var all = cell.querySelectorAll('*');
+  for (var i = 0; i < all.length; i++) {
+    var e = all[i];
+    if (e === ic || e.querySelector('*') || !String(e.textContent || '').trim()) continue;
+    return e;
+  }
+  return null;
+}
+// its ink as painted: -webkit-text-fill-color is what is drawn (it follows
+// color unless a rule sets it)
+function _wxRowInk(t) {
+  if (!t) return null;
+  var cs = getComputedStyle(t);
+  var c = _wxRowRgba(cs.webkitTextFillColor);
+  if (!c || !(c[3] > 0)) c = _wxRowRgba(cs.color);
+  return (c && c[3] > 0) ? _wxRowGround(t, c) : null;
 }
 function _fidsRowWxSet(root) {
   try {
@@ -22375,10 +22409,12 @@ function _fidsRowWxSet(root) {
     for (var i = 0; i < icons.length; i++) {
       var ic = icons[i];
       var g = _wxRowGround(ic.parentElement || ic);
-      var key = g.join(',');
-      if (ic.getAttribute('data-wx-ground') === key) continue;
+      var ink = _wxRowInk(_wxRowText(ic));
+      var key = g.join(','), inkKey = ink ? ink.join(',') : '';
+      if (ic.getAttribute('data-wx-ground') === key && ic.getAttribute('data-wx-ink') === inkKey) continue;
       ic.setAttribute('data-wx-ground', key);
-      ic.setAttribute('data-wx-set', _wxRowSetFor(g));
+      ic.setAttribute('data-wx-ink', inkKey);
+      ic.setAttribute('data-wx-set', _wxRowSetFor(g, ink));
     }
   } catch (e) {}
 }
@@ -22396,7 +22432,7 @@ function _fidsBoardInk() {
   if (!table) return;
   try { applyCodeAccents(table); } catch (e) {}
   try { _fidsRowInk(table); } catch (e) {}
-  // v24046 — and each row's weather icon set, from the ground it sits on
+  // v24046 — and each row's weather icon set, on the side its ink took
   try { _fidsRowWxSet(table); } catch (e) {}
 }
 if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;

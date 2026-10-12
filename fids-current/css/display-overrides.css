@@ -25421,13 +25421,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 
-/* ══ v24046 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, BY GROUND ═══════
+/* ══ v24046 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, BY THE ROW INK ═══
    fids-v2.js wxRowHtml: in every look but Classic the departures and arrivals
    rows draw one of two sets, no circle. The icon is the element's own
    background, its two files given on the element (--wxr-w, the white set
    for a dark ground; --wxr-c, the colour set for a light ground), and
-   fids-core.js _fidsRowWxSet writes data-wx-set="colour" where the row's
-   ground is light. The box keeps its size whichever set it wears, so a
+   fids-core.js _fidsRowWxSet writes data-wx-set="colour" where the row is
+   light, as the board itself judged it: the temperature beside the icon
+   is inked dark. The box keeps its size whichever set it wears, so a
    swap never moves anything. Without a pick (before the first pass) it
    shows the white file, the set for the dark boards most airports run.
    No filter is ever laid on it: the drawings show as they were drawn. */
