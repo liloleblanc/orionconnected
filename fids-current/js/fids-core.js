@@ -22574,24 +22574,73 @@ try {
 } catch (e) {}
 
 // ── Banner style registry (merged time+airport banner, changeable by
-// destination or screen, Acadian flag pinned for Moncton). Resolution:
-// localStorage override (fids_banner_style_<IATA>_<SCREEN>, then
-// fids_banner_style_<IATA>) → registry per-airport (a string, or an object
-// keyed fids/gids/bids/'*') → global '*'. Styles: 'tabs' = the current
-// three-tab banner (YQM's Acadian tricolore lives there, untouched);
-// 'merged' = the clock joins the white airport band (two tabs). CSS keys
-// off body[data-fids-banner] and is ADDITIVE-ONLY — if JS and CSS ever
-// deploy out of step, the banner falls back to today's 'tabs' look,
-// never a broken one.
+// destination or screen; Moncton's Acadian flag is SEASONAL, see
+// ACADIAN_SEASON below). Resolution: localStorage override
+// (fids_banner_style_<IATA>_<SCREEN>, then fids_banner_style_<IATA>) →
+// the Acadian season (Moncton, 1–15 August local) → registry per-airport (a
+// string, or an object keyed fids/gids/bids/'*') → global '*'. Styles:
+// 'tabs' = the old three-tab banner; 'merged' = the clock joins the white
+// airport band (two tabs). CSS keys off body[data-fids-banner] and is
+// ADDITIVE-ONLY — if JS and CSS ever deploy out of step, the banner falls
+// back to today's 'tabs' look, never a broken one.
 var BANNER_STYLE = {
   // Concept A ('Silk', approved in Figma): one continuous band, colours
-  // flow like fabric. Moncton's variant IS the Acadian tricolore flowing
-  // blue → white → red with the gold star at the clock. 'tabs' (the old
-  // three-tab banner) remains available as a named style and is the
-  // fallback whenever no style resolves.
-  'YQM': 'silk-acadian',
+  // flow like fabric. 'tabs' (the old three-tab banner) remains available
+  // as a named style and is the fallback whenever no style resolves.
+  // Moncton is NOT pinned here any more (vNEXT): it wears the regular silk
+  // band like every airport, and 'silk-acadian' comes from ACADIAN_SEASON.
   '*': 'silk'
 };
+// ── The Acadian season (vNEXT) ───────────────────────────────────────────
+// Moncton's Acadian flag look — the tricolore band flowing blue → white →
+// red, the blue time tab, the red board tab and the gold star — used to be
+// pinned to Moncton all year. Decision: it is seasonal. It shows from
+// 1 August to 15 August inclusive (15 August is the Fête nationale de
+// l'Acadie), counted on MONCTON's own calendar (America/Moncton), never the
+// host's or UTC's: at 23:30 on 31 July in Moncton it is already 1 August in
+// UTC, and the flag must not go up early. The rest of the year Moncton
+// wears the plain silk band. In season the corner badge is the gold star
+// ALONE: the plane (or bag) glyph that sat on the star is not drawn.
+//
+// body.fids-acadian is the one switch the CSS keys the flag tabs on. Before
+// this, those rules keyed on body.fids-ap-YQM alone, so they painted the
+// blue time tab, the red board tab and a ★ by the clock on ANY banner
+// Moncton wore, the plain silk one included.
+//
+// The localStorage override still wins, for testing: setting
+// fids_banner_style_YQM = 'silk-acadian' shows the August look on any day,
+// and 'silk' shows the plain band in August.
+var ACADIAN_SEASON = { iata: 'YQM', style: 'silk-acadian', tz: 'America/Moncton', month: 8, from: 1, to: 15 };
+// True when `now` falls on 1–15 August on Moncton's calendar. Pure: the
+// answer depends only on the instant, not on the machine's own time zone.
+// fidsLocalDateKey gives the date in the zone named, as 'YYYY-MM-DD'.
+function _acadianSeasonOn(now) {
+  try {
+    var S = ACADIAN_SEASON;
+    var key = fidsLocalDateKey((now || new Date()).getTime(), S.tz);
+    var md = /^\d{4}-(\d{2})-(\d{2})$/.exec(String(key || ''));
+    if (!md) return false;
+    var m = parseInt(md[1], 10), d = parseInt(md[2], 10);
+    return m === S.month && d >= S.from && d <= S.to;
+  } catch (e) { return false; }
+}
+// Which banner style an airport wears on a screen at a moment, and whether
+// the Acadian flag tabs are on. Pure (tests/acadian-season.test.js):
+// `override` is the localStorage value, '' when none is set.
+function _bannerStyleFor(ap, screen, now, override) {
+  var inSeason = ap === ACADIAN_SEASON.iata && _acadianSeasonOn(now);
+  var s = override || '';
+  if (!s && inSeason) s = ACADIAN_SEASON.style;
+  if (!s) {
+    var c = Object.prototype.hasOwnProperty.call(BANNER_STYLE, ap) ? BANNER_STYLE[ap] : BANNER_STYLE['*'];
+    s = (c && typeof c === 'object') ? (c[screen] || c['*'] || 'tabs') : (c || 'tabs');
+  }
+  // The flag tabs follow the flag band. The old three-tab banner was where
+  // Moncton's tricolore first lived, so a 'tabs' override keeps it — in
+  // season only.
+  var acadian = ap === ACADIAN_SEASON.iata && (s === ACADIAN_SEASON.style || (s === 'tabs' && inSeason));
+  return { style: s, acadian: acadian };
+}
 // Per-airport silk accent — the band's tail colour, keyed to the airport's
 // own logo. localStorage override:
 // fids_banner_accent_<IATA>. Unlisted airports fall back to the gold.
@@ -23009,15 +23058,17 @@ function _applyBannerStyle(iata, screen) {
       if (ap) document.body.setAttribute('data-fids-ap', ap);
       else document.body.removeAttribute('data-fids-ap');
     } catch (e0) {}
-    var s = '';
+    var ovr = '';
     try {
-      s = localStorage.getItem('fids_banner_style_' + ap + '_' + screen)
+      ovr = localStorage.getItem('fids_banner_style_' + ap + '_' + screen)
         || localStorage.getItem('fids_banner_style_' + ap) || '';
     } catch (e) {}
-    if (!s) {
-      var c = Object.prototype.hasOwnProperty.call(BANNER_STYLE, ap) ? BANNER_STYLE[ap] : BANNER_STYLE['*'];
-      s = (c && typeof c === 'object') ? (c[screen] || c['*'] || 'tabs') : (c || 'tabs');
-    }
+    // vNEXT — the Acadian season is decided here, from the date, every time
+    // the banner is applied (see ACADIAN_SEASON).
+    var res = _bannerStyleFor(ap, screen, new Date(), ovr);
+    var s = res.style;
+    _bannerStyleLast = { iata: iata, screen: screen, style: s, acadian: res.acadian };
+    try { document.body.classList.toggle('fids-acadian', res.acadian); } catch (eA) {}
     document.body.dataset.fidsBanner = s;
     try {
       var acc = '';
@@ -23053,6 +23104,27 @@ function _applyBannerStyle(iata, screen) {
     } catch (e3) {}
   } catch (e) {}
 }
+// vNEXT — boards run for weeks, so the Acadian season has to turn over by
+// itself at Moncton midnight on 1 August and on 16 August, not wait for a
+// reload. render() re-applies the banner on every pass, but it returns
+// before that when no flight is listed, and a board whose feed has gone
+// quiet does not render at all. This keeper asks the same question once a
+// minute and re-applies only when the answer has changed. (Declared without
+// an initialiser so a boot call that ran first is never reset to empty.)
+var _bannerStyleLast;
+function _bannerSeasonKeeper() {
+  var L = _bannerStyleLast;
+  if (!L) return;
+  var ap = String(L.iata || '').toUpperCase();
+  var ovr = '';
+  try {
+    ovr = localStorage.getItem('fids_banner_style_' + ap + '_' + L.screen)
+      || localStorage.getItem('fids_banner_style_' + ap) || '';
+  } catch (e) {}
+  var res = _bannerStyleFor(ap, L.screen, new Date(), ovr);
+  if (res.style !== L.style || res.acadian !== L.acadian) _applyBannerStyle(L.iata, L.screen);
+}
+try { _ocEvery(_bannerSeasonKeeper, 60000); } catch (e) {}
 
 function renderDedicatedScreen() {
   if (screenType === 'gate') {

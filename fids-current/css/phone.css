@@ -76,7 +76,8 @@
     width: auto !important; height: 46px !important; min-width: 0 !important; margin: 0 -14px !important; padding: 0 16px !important;
     border-radius: 0 !important; box-shadow: none !important; clip-path: none !important;
   }
-  html body:not(.fids-ap-YQM):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-banner-board { background: var(--fids-banner-bg, #0b1f3a) !important; background-image: none !important; }
+  /* vNEXT — Moncton keeps its red flag tab only in the Acadian season (body.fids-acadian, 1–15 August); otherwise its board tab is the regular one. */
+  html body:not(.fids-acadian):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-banner-board { background: var(--fids-banner-bg, #0b1f3a) !important; background-image: none !important; }
   html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-icon {
     flex: none !important; width: 24px !important; height: 24px !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important;
     background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;

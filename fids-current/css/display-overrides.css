@@ -2751,22 +2751,28 @@ html body .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
 
 /* ── YQM main/baggage boards: the Acadian flag lives in the banner tabs too
  — blue time tab with the
-   gold star, white airport band, RED board tab. ── */
-body.fids-ap-YQM .fids-banner-time-block {
+   gold star, white airport band, RED board tab.
+   vNEXT — SEASONAL: keyed on body.fids-acadian, which fids-core.js sets only
+   at Moncton and only from 1 to 15 August on Moncton's calendar
+   (ACADIAN_SEASON). Keyed on body.fids-ap-YQM, these painted the flag tabs
+   and a ★ by the clock on every banner Moncton wore, the plain silk one
+   included. One class swapped for one class, so the cascade is unchanged
+   in season. ── */
+body.fids-acadian .fids-banner-time-block {
   background: linear-gradient(90deg, #0b0f16 0%, #003DA5 32%) !important;
 }
-body.fids-ap-YQM .fids-banner-time::before {
+body.fids-acadian .fids-banner-time::before {
   content: '★ ';
   color: #FFD600;
   font-size: 0.62em;
   vertical-align: 0.18em;
 }
-body.fids-ap-YQM .fids-banner-board {
+body.fids-acadian .fids-banner-board {
   background: #D21034 !important;
 }
-body.fids-ap-YQM .fids-banner-board .fids-board-label { color: #ffffff !important; }
-body.fids-ap-YQM .fids-banner-board .fids-board-icon { background: #ffffff !important; }
-body.fids-ap-YQM .fids-banner-board .fids-board-icon svg { fill: #D21034 !important; }
+body.fids-acadian .fids-banner-board .fids-board-label { color: #ffffff !important; }
+body.fids-acadian .fids-banner-board .fids-board-icon { background: #ffffff !important; }
+body.fids-acadian .fids-banner-board .fids-board-icon svg { fill: #D21034 !important; }
 
 
 /* ── Arrival-weather scene: the dots-world globe breathes behind the card,
@@ -3553,7 +3559,10 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
    the Figma file (OrionConnected — Board Banner Design): ONE continuous
    band whose colours flow like fabric. Generic: deep navy → white → gold.
    Moncton: the Acadian tricolore flowing blue → white → red, gold star at
-   the clock (star comes from the existing fids-ap-YQM ::before rule).
+   the clock (star comes from the fids-acadian ::before rule). vNEXT —
+   'silk-acadian' is SEASONAL: fids-core.js resolves it for Moncton only
+   from 1 to 15 August, Moncton's calendar (ACADIAN_SEASON); the rest of
+   the year Moncton wears plain 'silk'.
    Lives at the END of display-overrides.css so it out-cascades both the
    three-tab geometry in flight-display.css and the YQM flag-tab rules above.
    ADDITIVE-ONLY: without body[data-fids-banner] these rules are inert and
@@ -3782,6 +3791,23 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon svg { display: none !important; }
 }
+/* vNEXT — THE STAR ALONE. In the Acadian season the corner badge is the gold
+   star by itself: the plane (departures/arrivals) or the bag (baggage) that
+   was drawn on it is not shown — a glyph sitting on the star was not wanted.
+   The rule above still sizes the plane for the day it is wanted back; this
+   one, scoped to the season class and weighted past every board-icon glyph
+   rule (the v24039 mask ::before, the BIDS .ac-ico colour rules), takes it
+   off. */
+@media (min-width: 701px) {
+  html:not(#_) body.fids-ap-YQM.fids-acadian[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-board .fids-board-icon::before {
+    content: none !important;
+    display: none !important;
+  }
+  html:not(#_) body.fids-ap-YQM.fids-acadian[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-board .fids-board-icon .ac-ico,
+  html:not(#_) body.fids-ap-YQM.fids-acadian[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-board .fids-board-icon svg {
+    display: none !important;
+  }
+}
 
 /* ── BIDS bag icon: white on the silk banner, not black. The baggage
    glyph is an .ac-ico span, not the svg/::before the other rules colour. ── */
@@ -4003,8 +4029,10 @@ html .octb-attached .octb-tab::after {
    baggage icon at the original small size so the enlarged bag (used everywhere
  else) doesn't cover it (s
    taken over the star'). High-specificity + end-of-file so it wins over the
-   big-bag rules for Moncton only. */
-html body.fids-ap-YQM .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage,
+   big-bag rules for Moncton only. vNEXT — keyed on the season class
+   (fids-acadian), not fids-ap-YQM: outside 1–15 August Moncton has no star,
+   so its bag takes the regular size. */
+html body.fids-acadian .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage,
 html body[data-fids-banner="silk-acadian"] .bidsv2-fids-banner .fids-board-icon .ac-ico-baggage {
   font-size: clamp(24px, 1.9vw, 40px) !important;
 }
