@@ -26200,15 +26200,16 @@ const AP = {
   // (a name is data, decision D2, and this is the table of airport names);
   // `subKey` is the store's entry for an airport named by a description
   // ('International'), which each board language writes its own way. The
-  // entries below are here for that name only: no time zone, as before.
+  // entries below are here for that name only; Linate, Daxing and Belfast
+  // City also carry their zone, for the Earth floor's local times.
   DAL:{ name:'Dallas Love Field',                                   sub:'Love Field' },
   CIA:{ name:'Rome Ciampino Airport',                               sub:'Ciampino' },
-  LIN:{ name:'Milan Linate Airport',                                sub:'Linate' },
+  LIN:{ name:'Milan Linate Airport',                                sub:'Linate', tz:'Europe/Rome' },
   BMA:{ name:'Stockholm Bromma Airport',                            sub:'Bromma' },
   GMP:{ name:'Seoul Gimpo International Airport',                   sub:'Gimpo' },
   ITM:{ name:'Osaka Itami International Airport',                   sub:'Itami' },
   DMK:{ name:'Bangkok Don Mueang International Airport',            sub:'Don Mueang' },
-  PKX:{ name:'Beijing Daxing International Airport',                sub:'Daxing' },
+  PKX:{ name:'Beijing Daxing International Airport',                sub:'Daxing', tz:'Asia/Shanghai' },
   SHA:{ name:'Shanghai Hongqiao International Airport',             sub:'Hongqiao' },
   AEP:{ name:'Buenos Aires Aeroparque Jorge Newbery',               sub:'Aeroparque' },
   GIG:{ name:'Rio de Janeiro Galeão International Airport',         sub:'Galeão' },
@@ -26216,10 +26217,91 @@ const AP = {
   CGH:{ name:'São Paulo Congonhas Airport',                         sub:'Congonhas' },
   SAW:{ name:'Istanbul Sabiha Gökçen International Airport',        sub:'Sabiha Gökçen' },
   BFS:{ name:'Belfast International Airport',                       subKey:'apIntl' },
-  BHD:{ name:'George Best Belfast City Airport',                    sub:'City' },
+  BHD:{ name:'George Best Belfast City Airport',                    sub:'City', tz:'Europe/London' },
   DWC:{ name:'Dubai Al Maktoum International Airport',              sub:'Al Maktoum' },
   BFI:{ name:'Seattle Boeing Field (King County International Airport)', sub:'Boeing Field' },
   LBG:{ name:'Paris Le Bourget Airport',                            sub:'Le Bourget' },
+  // ── THE EARTH FLOOR'S PLACES: 73 DESTINATIONS THAT HAD NO ZONE ──────────
+  // The planet under the departures and arrivals (js/fids-earth.js) prints
+  // the time it is in each place it names, and reads the zone from here
+  // only: a place with no zone gets no time, never a guess. These 73 were on
+  // the live lists of YQM, YUL, YYZ, LHR and HBA with no AP entry at all, so
+  // none of them overrides an existing value. Each is the airport's own
+  // name and the zone the airport is in (tests/ap-timezones.test.js checks
+  // every zone and that no two airports fold to one name).
+  YYY:{ name:'Mont-Joli Airport',                                 tz:'America/Toronto' },
+  YGR:{ name:'Îles-de-la-Madeleine Airport',                      tz:'America/Halifax' },
+  YPX:{ name:'Puvirnituq Airport',                                tz:'America/Toronto' },
+  YBG:{ name:'Saguenay-Bagotville Airport',                       tz:'America/Toronto' },
+  YVO:{ name:"Val-d'Or Airport",                                  tz:'America/Toronto' },
+  YWK:{ name:'Wabush Airport',                                    tz:'America/Goose_Bay' },
+  YAM:{ name:'Sault Ste. Marie Airport',                          tz:'America/Toronto' },
+  YSB:{ name:'Greater Sudbury Airport',                           tz:'America/Toronto' },
+  YXU:{ name:'London International Airport (Ontario)',            tz:'America/Toronto' },
+  YTS:{ name:'Timmins Victor M. Power Airport',                   tz:'America/Toronto' },
+  YQG:{ name:'Windsor International Airport',                     tz:'America/Toronto' },
+  CLE:{ name:'Cleveland Hopkins International Airport',           tz:'America/New_York' },
+  CVG:{ name:'Cincinnati/Northern Kentucky International Airport', tz:'America/New_York' },
+  CMH:{ name:'John Glenn Columbus International Airport',         tz:'America/New_York' },
+  IND:{ name:'Indianapolis International Airport',                tz:'America/Indiana/Indianapolis' },
+  STL:{ name:'St. Louis Lambert International Airport',           tz:'America/Chicago' },
+  BNA:{ name:'Nashville International Airport',                   tz:'America/Chicago' },
+  SAT:{ name:'San Antonio International Airport',                 tz:'America/Chicago' },
+  MEX:{ name:'Mexico City International Airport',                 tz:'America/Mexico_City' },
+  GUA:{ name:'La Aurora International Airport',                   tz:'America/Guatemala' },
+  SAL:{ name:'Monseñor Óscar Arnulfo Romero International Airport', tz:'America/El_Salvador' },
+  SJO:{ name:'Juan Santamaría International Airport',             tz:'America/Costa_Rica' },
+  KIN:{ name:'Norman Manley International Airport',               tz:'America/Jamaica' },
+  POS:{ name:'Piarco International Airport',                      tz:'America/Port_of_Spain' },
+  SCL:{ name:'Arturo Merino Benítez International Airport',       tz:'America/Santiago' },
+  PDL:{ name:'João Paulo II Airport',                             tz:'Atlantic/Azores' },
+  ABZ:{ name:'Aberdeen International Airport',                    tz:'Europe/London' },
+  LDY:{ name:'City of Derry Airport',                             tz:'Europe/London' },
+  DND:{ name:'Dundee Airport',                                    tz:'Europe/London' },
+  GCI:{ name:'Guernsey Airport',                                  tz:'Europe/Guernsey' },
+  JER:{ name:'Jersey Airport',                                    tz:'Europe/Jersey' },
+  ORK:{ name:'Cork Airport',                                      tz:'Europe/Dublin' },
+  SNN:{ name:'Shannon Airport',                                   tz:'Europe/Dublin' },
+  NTE:{ name:'Nantes Atlantique Airport',                         tz:'Europe/Paris' },
+  GVA:{ name:'Geneva Airport',                                    tz:'Europe/Zurich' },
+  BSL:{ name:'EuroAirport Basel Mulhouse Freiburg',               tz:'Europe/Zurich' },
+  DUS:{ name:'Düsseldorf Airport',                                tz:'Europe/Berlin' },
+  HAJ:{ name:'Hannover Airport',                                  tz:'Europe/Berlin' },
+  HAM:{ name:'Hamburg Airport',                                   tz:'Europe/Berlin' },
+  BLL:{ name:'Billund Airport',                                   tz:'Europe/Copenhagen' },
+  FLR:{ name:'Florence Peretola Airport',                         tz:'Europe/Rome' },
+  BLQ:{ name:'Bologna Guglielmo Marconi Airport',                 tz:'Europe/Rome' },
+  PRG:{ name:'Václav Havel Airport Prague',                       tz:'Europe/Prague' },
+  BUD:{ name:'Budapest Ferenc Liszt International Airport',       tz:'Europe/Budapest' },
+  ZAG:{ name:'Zagreb Franjo Tuđman Airport',                      tz:'Europe/Zagreb' },
+  SOF:{ name:'Sofia Airport',                                     tz:'Europe/Sofia' },
+  LCA:{ name:'Larnaca International Airport',                     tz:'Asia/Nicosia' },
+  CMN:{ name:'Mohammed V International Airport',                  tz:'Africa/Casablanca' },
+  ALG:{ name:'Houari Boumediene Airport',                         tz:'Africa/Algiers' },
+  TUN:{ name:'Tunis–Carthage International Airport',              tz:'Africa/Tunis' },
+  CAI:{ name:'Cairo International Airport',                       tz:'Africa/Cairo' },
+  LXR:{ name:'Luxor International Airport',                       tz:'Africa/Cairo' },
+  ADD:{ name:'Addis Ababa Bole International Airport',            tz:'Africa/Addis_Ababa' },
+  NBO:{ name:'Jomo Kenyatta International Airport',               tz:'Africa/Nairobi' },
+  KGL:{ name:'Kigali International Airport',                      tz:'Africa/Kigali' },
+  JNB:{ name:'O. R. Tambo International Airport',                 tz:'Africa/Johannesburg' },
+  CPT:{ name:'Cape Town International Airport',                   tz:'Africa/Johannesburg' },
+  ABV:{ name:'Nnamdi Azikiwe International Airport',              tz:'Africa/Lagos' },
+  LOS:{ name:'Murtala Muhammed International Airport',            tz:'Africa/Lagos' },
+  AMM:{ name:'Queen Alia International Airport',                  tz:'Asia/Amman' },
+  BAH:{ name:'Bahrain International Airport',                     tz:'Asia/Bahrain' },
+  DMM:{ name:'King Fahd International Airport',                   tz:'Asia/Riyadh' },
+  MCT:{ name:'Muscat International Airport',                      tz:'Asia/Muscat' },
+  ISB:{ name:'Islamabad International Airport',                   tz:'Asia/Karachi' },
+  BLR:{ name:'Kempegowda International Airport Bengaluru',        tz:'Asia/Kolkata' },
+  CMB:{ name:'Bandaranaike International Airport',                tz:'Asia/Colombo' },
+  HAN:{ name:'Noi Bai International Airport',                     tz:'Asia/Ho_Chi_Minh' },
+  CAN:{ name:'Guangzhou Baiyun International Airport',            tz:'Asia/Shanghai' },
+  TAO:{ name:'Qingdao Jiaodong International Airport',            tz:'Asia/Shanghai' },
+  TPE:{ name:'Taiwan Taoyuan International Airport',              tz:'Asia/Taipei' },
+  BNE:{ name:'Brisbane Airport',                                  tz:'Australia/Brisbane' },
+  CBR:{ name:'Canberra Airport',                                  tz:'Australia/Sydney' },
+  LST:{ name:'Launceston Airport',                                tz:'Australia/Hobart' },
 };
 // v23265 — EXPORTED for sibling pages in the same origin. AP is declared with
 // `const`, which creates a script-scope binding and NOT a window property, so
@@ -39069,6 +39151,7 @@ function applyAirportConfigToBoard(iata) {
       var _cloudOwned = ['theme', 'themePresetId', 'customColors', 'font',
         'logoPosition', 'logoSize', 'hideAirlinePrefix', 'hideWeather',
         'airlineStyle', 'displayMode', 'wxIcons'];
+      _cloudOwned.push('floor');   // the bottom of the departures and arrivals (Earth, now | Classic)
       var _shed = false;
       for (var _coI = 0; _coI < _cloudOwned.length; _coI++) {
         if (_userCfg[_cloudOwned[_coI]] !== undefined) { delete _userCfg[_cloudOwned[_coI]]; _shed = true; }
@@ -39547,6 +39630,16 @@ function applyAirportConfigToBoard(iata) {
     if (_WX_ICON_STYLES.indexOf(_wxi) < 0) _wxi = _WX_ICON_STYLES[0];
     document.documentElement.setAttribute('data-fids-wx-icons', _wxi);
   } catch (eWxi) {}
+  // The bottom of the departures and arrivals boards (Customize: Bottom of
+  // the board): '' (nothing chosen) and 'earth' draw Earth, now
+  // (js/fids-earth.js); 'classic' keeps the earlier backdrop. Read with
+  // _pref like the weather icons, so a device's '' never hides the airport's
+  // choice. ?floor= overrides it for review (the module reads it too).
+  try {
+    var _flUrl = new URLSearchParams(location.search).get('floor');
+    var _fl = _flUrl !== null ? _flUrl : _pref('floor');
+    document.documentElement.setAttribute('data-fids-floor-pref', _fl === 'classic' ? 'classic' : 'earth');
+  } catch (eFl) {}
   var _aStyle = _toggleVal('airlineStyle');
   if (_aStyle && _aStyle !== 'full') {
     document.body.dataset.fidsAirlineStyle = _aStyle;

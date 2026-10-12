@@ -25549,6 +25549,66 @@ html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):n
 html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap > .tg-bq.tg-bq-l { transform-origin: 0 0; }
 html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap > .tg-bq.tg-bq-l::before { transform: scaleX(-1); }
 
+/* ══ EARTH, NOW — THE PLANET UNDER THE DEPARTURES AND ARRIVALS ══════════════
+   js/fids-earth.js draws the space under the flight rows as the Earth from
+   orbit, this minute (NASA pictures, our own copy under /earth/v1/). This
+   block is its stylesheet half.
+
+   THE OLD BACKDROP, BEHIND THE SWITCH. The Moncton skyline (v23146, YQM) and
+   the world-network picture (every themed board but YQM and MCO) are not
+   deleted: they are switched off only while html carries data-fids-floor=earth,
+   which the module sets once a planet has painted. Take the attribute away
+   (EARTH_FLOOR_ON = false, ?floor=classic, the airport Customize choice
+   Classic, or a floor whose pictures fail) and the board looks exactly as
+   before. MCO keeps its own backdrop and its row pattern; the belts
+   (.bidsv2-screen) are not touched.
+
+   THE LAYER sits under the rows at z-index -1 inside the content area, which
+   already contains its layout, so it moves nothing. Its names take the board
+   own font and weight. Nothing here moves: the floor stays hidden until its
+   planet has painted, and its one fade-in (2.4 s, once, when it first
+   appears) is run by the module, which skips it on a screen asking for
+   reduced motion. No quote marks anywhere in this block
+   (tests/earth-floor-wiring.test.js). */
+html[data-fids-floor=earth] body[data-fids-ap=YQM]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_),
+html[data-fids-floor=earth] body[data-fids-theme]:not([data-fids-ap=MCO]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  background-image: none !important;
+}
+#fidsBoard > .content-area > #ocFloor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+#ocFloor > canvas,
+#ocFloor > svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#ocFloor:not(.ready) > canvas,
+#ocFloor:not(.ready) > svg {
+  visibility: hidden;
+}
+#ocFloor text {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: .01em;
+  paint-order: stroke;
+  stroke-linejoin: round;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 800px) {
+  #ocFloor { display: none; }
+}
+
 /* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS, AT TWICE THE SIZE ════
    The chosen design for the three screens: the near-black ground of the calm
    option, the airline colour of the tinted one, between the two.

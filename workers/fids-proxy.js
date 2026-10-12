@@ -568,6 +568,7 @@ async function handlePutAirport(request, env, payload, origin, code) {
     "logoSize",
     "displayMode",    // auto | light | dark
     "wxIcons",        // v24035 — weather icons: '' nothing chosen (Day & night) | classic | daynight | colour | solid
+    "floor",          // the bottom of the departures and arrivals: '' nothing chosen (Earth, now) | earth | classic
     "gateBlocks",     // order + on/off of the gate screen blocks
     "tickerMessage"
   ];
@@ -575,6 +576,8 @@ async function handlePutAirport(request, env, payload, origin, code) {
   // v24035 — only a look the boards know is stored
   // vNEXT — 'classic' is its own value now that Day & night is the default
   if (cfg.wxIcons !== undefined && !["", "classic", "daynight", "colour", "solid"].includes(cfg.wxIcons)) delete cfg.wxIcons;
+  // only a bottom the boards know is stored
+  if (cfg.floor !== undefined && !["", "earth", "classic"].includes(cfg.floor)) delete cfg.floor;
   cfg.updatedAt = Date.now();
   cfg.updatedBy = payload.sub;
   await env.FIDS_USERS.put(`airport:${norm}`, JSON.stringify(cfg));

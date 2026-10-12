@@ -507,6 +507,14 @@
           <option value="solid">Solid: the airline's two colours at the gate</option>
         </select>
         <div style="font-size:11px;opacity:.7;margin-top:4px;">The departures and arrivals rows show the solid glyph, no circle, in every choice but Classic.</div>
+        <!-- The bottom of the departures and arrivals boards (js/fids-earth.js).
+             Earth, now is the default, so it is the "nothing chosen" entry (value "");
+             Classic keeps the earlier backdrop (the Moncton skyline, the world map). -->
+        <label for="cuFloor" style="display:block;font-size:13px;margin-top:12px;margin-bottom:4px;">Bottom of the board</label>
+        <select class="sm-select" id="cuFloor" onchange="cuApplyAndSave()">
+          <option value="">Earth, now (default): the planet as it is now, with today&#39;s flights</option>
+          <option value="classic">Classic: the earlier backdrop</option>
+        </select>
       </div>
 
       <!-- ─── 5. BACKGROUND ─── -->
