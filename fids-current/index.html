@@ -318,9 +318,9 @@
     function two(k) {
       return BoardStrings.pair(k, { langs: L, iata: ap, sep: '' });
     }
-    document.getElementById('ocOfferQ').innerHTML = two('q');
-    document.getElementById('ocOfferYes').innerHTML = two('yes');
-    document.getElementById('ocOfferNo').innerHTML = two('no');
+    document.getElementById('ocOfferQ').innerHTML = two('mobileAsk');
+    document.getElementById('ocOfferYes').innerHTML = two('mobileYes');
+    document.getElementById('ocOfferNo').innerHTML = two('mobileNo');
     var noteEl = document.getElementById('ocOfferNote');
     noteEl.innerHTML = BoardStrings.fill(BoardStrings.bs('mobileNote', L[0]), { ASK: '<b class="nb">?mobile=ask</b>' }, true); // i18n-ok: code
     BoardStrings.setLang(noteEl, L[0]);
