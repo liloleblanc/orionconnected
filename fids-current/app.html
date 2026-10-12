@@ -1698,11 +1698,19 @@ const LOGO_NIGHT={YSJ:'own',YYJ:'own',SLC:'own',LAS:'own',SYD:'code',MIA:'code'}
 // Bricolage on a navy band at every airport; at Moncton the board and the
 // phone board are Possibility on the Acadian red. The airport config the
 // app already read for the logo says which font (font) and which band
-// (customColors.hdr, the board's --fids-banner-bg); Moncton's red is the
-// board's own rule (css/display-overrides.css, body.fids-ap-YQM
-// .fids-banner-board), which overrides its config there. A band is worn only
+// (customColors.hdr, the board's --fids-banner-bg). Moncton's red is the
+// Acadian look (css/display-overrides.css, body.fids-acadian
+// .fids-banner-board), which the boards wear only 1–15 August on Moncton's
+// own calendar (fids-core.js ACADIAN_SEASON, v24041); the rest of the year
+// Moncton takes its config's colour like every airport. A band is worn only
 // where the band's white words read on it at 4.5:1 or better.
 const BAND_OWN={YQM:'#D21034'};
+const BAND_SEASON={YQM:{tz:'America/Moncton',month:8,from:1,to:15}};
+function bandSeasonOn(code,now){
+  const s=BAND_SEASON[code]; if(!s)return true;
+  const k=adbFmt(now||new Date(),s.tz), m=+k.slice(5,7), d=+k.slice(8,10);
+  return m===s.month&&d>=s.from&&d<=s.to;
+}
 const FONT_STACK={possibility:"'Possibility','Bricolage Grotesque',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"};
 function _wcr(rgb){
   const l=rgb.map(function(x){x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4);});
@@ -1714,9 +1722,9 @@ function bandOk(h){
   const n=parseInt(m[1],16), c=[(n>>16)&255,(n>>8)&255,n&255];
   return _wcr(c.map(function(v){return Math.round(v*.9+25.5);}))>=4.5;
 }
-function brandOf(code,c){
+function brandOf(code,c,now){
   c=c||{}; const cc=c.customColors||{};
-  let band=BAND_OWN[code]||((!c.theme||c.theme==='custom')&&cc.hdr)||'';
+  let band=(BAND_OWN[code]&&bandSeasonOn(code,now)&&BAND_OWN[code])||((!c.theme||c.theme==='custom')&&cc.hdr)||'';
   if(!bandOk(band))band='';
   return {u:String((c.logo&&c.logo.url)||''),font:String(c.font||'').toLowerCase(),band:band,hw:!!c.hideWeather};
 }

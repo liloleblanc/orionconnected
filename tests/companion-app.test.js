@@ -483,16 +483,21 @@ test('the cutoff runs first, and a duplicate is the same flight on the same day'
 test('at Moncton the app wears its boards\' font and band', () => {
   const vm = require('node:vm');
   const ctx = {};
-  vm.runInNewContext(line(/^const BAND_OWN=\{[^\n]*\};/m) + line(/^const FONT_STACK=\{[^\n]*\};/m)
-    + fn('_wcr') + fn('bandOk') + fn('brandOf') + ';this.brandOf=brandOf;this.bandOk=bandOk;this.BAND_OWN=BAND_OWN;this.FONT_STACK=FONT_STACK;', ctx);
-  // Moncton: the board's own Acadian red, whatever its config's header colour
-  const yqm = ctx.brandOf('YQM', { font: 'possibility', theme: 'custom', customColors: { hdr: '#28364d' }, logo: { url: 'https://x/l.svg' } });
+  vm.runInNewContext(line(/^const BAND_OWN=\{[^\n]*\};/m) + line(/^const BAND_SEASON=\{[^\n]*\};/m) + line(/^const FONT_STACK=\{[^\n]*\};/m)
+    + fn('adbFmt') + fn('bandSeasonOn') + fn('_wcr') + fn('bandOk') + fn('brandOf') + ';this.brandOf=brandOf;this.bandOk=bandOk;this.BAND_OWN=BAND_OWN;this.FONT_STACK=FONT_STACK;', ctx);
+  // Moncton: the board's Acadian red 1–15 August (Moncton's calendar), its
+  // config's colour the rest of the year — the boards' season (v24041)
+  const cfg = { font: 'possibility', theme: 'custom', customColors: { hdr: '#28364d' }, logo: { url: 'https://x/l.svg' } };
+  const yqm = ctx.brandOf('YQM', cfg, new Date('2026-08-15T12:00:00Z'));
   assert.equal(yqm.band, '#D21034');
   assert.equal(yqm.font, 'possibility');
+  assert.equal(ctx.brandOf('YQM', cfg, new Date('2026-08-16T12:00:00Z')).band, '#28364d', 'after 15 August, the config colour');
+  assert.equal(ctx.brandOf('YQM', cfg, new Date('2026-08-01T03:30:00Z')).band, '#D21034', '1 August 00:30 in Moncton is in season');
+  assert.equal(ctx.brandOf('YQM', cfg, new Date('2026-10-12T12:00:00Z')).band, '#28364d', 'October: no Acadian red');
   assert.match(ctx.FONT_STACK.possibility, /^'Possibility','Bricolage Grotesque'/);
   const OV = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.css'), 'utf8');
-  const m = OV.match(/body\.fids-ap-YQM \.fids-banner-board \{[^}]*background:\s*(#[0-9A-Fa-f]{6})/);
-  assert.ok(m, 'the board\'s Moncton band rule');
+  const m = OV.match(/body\.fids-acadian \.fids-banner-board \{[^}]*background:\s*(#[0-9A-Fa-f]{6})/);
+  assert.ok(m, 'the board\'s Acadian band rule');
   assert.equal(ctx.BAND_OWN.YQM.toLowerCase(), m[1].toLowerCase(), 'the same red as the board');
   // elsewhere the config's header colour (the board's --fids-banner-bg)
   assert.equal(ctx.brandOf('YUL', { theme: 'custom', customColors: { hdr: '#27272a' } }).band, '#27272a');
