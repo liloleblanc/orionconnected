@@ -1677,12 +1677,19 @@ function _fltNum(f){const m=String((f&&f.flight)||'').match(/(\d+)[A-Z]?$/);retu
 // operator, aircraft type or registration that both carry and that differs;
 // and never two mainline numbers of two carriers (each one is somebody's own
 // aircraft).
+// v24047 — and never two rows of ONE carrier, and never two rows whose status
+// or expected time differ: a codeshare's sellers all print the same flight's
+// state. Moncton lists PAL's PB924 'Arrived' and PB9241 'Delayed' at one minute
+// and one gate; they are two operations, and the merge kept PB924 and hid the
+// delayed one.
 function sameFlight(a,b){
   const v=function(x){return String(x||'').trim().toUpperCase();};
   const differ=function(x,y){x=v(x);y=v(y);return !!(x&&y&&x!==y);};
   if(!((v(a.gate)&&v(a.gate)===v(b.gate))||(v(a.belt)&&v(a.belt)===v(b.belt))))return false;
   for(const k of ['gate','terminal','belt','operatedBy','aircraft','reg']) if(differ(a[k],b[k]))return false;
   if(a.airline!==b.airline&&_fltNum(a)<1000&&_fltNum(b)<1000)return false;
+  if(v(a.airline)&&v(a.airline)===v(b.airline))return false;
+  if(v(a.state)!==v(b.state)||differ(a.estTime,b.estTime))return false;
   return true;
 }
 function oneRowPerFlight(list,all){
