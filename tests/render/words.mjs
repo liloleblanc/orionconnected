@@ -514,6 +514,32 @@ const GATE_STATE = (st) => `(function (st) {
 // variants in lowercase, as page code takes only plain words: 'pn' is the
 // passport, or the passport or NEXUS card at a preclearance airport).
 const BAND_STATES = { boarding: ['any', false], final: ['any', false], 'boarding-intl': ['i', true], 'boarding-domestic': ['d', true], 'boarding-us': ['pn', true] };
+// 2026-10-12 — and under those signs the standby lists stay up, in their
+// column beside the sign (gate-centre-cards.test.js): the column on the
+// screen, beside the band and the sign and over neither, every row inside
+// its card (none cut off at its foot) and every line fitted.
+const COL_CHECK = `(function () {
+  try {
+    var col = document.querySelector('.g8-wrap.g8-sbcol-on .g8-sbcol');
+    var card = col && col.querySelector('.gcard-col[data-gcard="sbcard"]');
+    if (!card) return 'the lists are not beside the sign';
+    var r = card.getBoundingClientRect(), c = col.getBoundingClientRect();
+    if (!(r.width > 100 && r.height > 100) || r.right > innerWidth + 1 || r.bottom > innerHeight + 1) return 'the lists are not on the screen';
+    var others = document.querySelectorAll('.g8-takeover .g8-band, .g8-takeover .g8-board-body.g8-sign');
+    for (var k = 0; k < others.length; k++) {
+      var o = others[k].getBoundingClientRect();
+      if (o.right > c.left + 1 && o.left < c.right - 1 && o.bottom > c.top + 1 && o.top < c.bottom - 1) return 'the lists overlap the ' + (others[k].classList.contains('g8-band') ? 'band' : 'sign');
+    }
+    var over = card.querySelector('[data-fx-over]');
+    if (over) return 'a line of the lists does not fit at the floor: ' + over.textContent;
+    var rows = card.querySelectorAll('.gc-sbr, .gc-sbhd');
+    for (var i = 0; i < rows.length; i++) {
+      var b = rows[i].getBoundingClientRect();
+      if (b.bottom > r.bottom + 1) return 'a row of the lists is cut off at the foot of its column: ' + rows[i].textContent;
+    }
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
 const BAND_CHECK = (want, close) => `(function (want, close) {
   try {
     var band = document.querySelector('.g8-board.active .g8-band, .g8-final.active .g8-band');
@@ -541,7 +567,9 @@ const BAND_CHECK = (want, close) => `(function (want, close) {
 // Scheduled so all three are due (the gate-closes card shows only in the last
 // 45 minutes before the close): the card on the screen, inside the centre
 // panel, and every one of its lines fitted and inside it.
-const CARD_SCENES = ['ovcard', 'docscard', 'closecard'];
+// 2026-10-12 — and the standby lists (sbcard), with the documents and the
+// close time at their foot.
+const CARD_SCENES = ['ovcard', 'docscard', 'closecard', 'sbcard'];
 const CARD_PREP = `(function () {
   try {
     var f = window._gateCurrentFlight;
@@ -578,7 +606,7 @@ const CARD_CHECK = (t) => `(function (t) {
     if (!(r.width > 100 && r.height > 100) || r.left < s.left - 1 || r.right > s.right + 1 || r.top < s.top - 1 || r.bottom > s.bottom + 1) return 'the ' + t + ' card is not inside the centre panel';
     var over = card.querySelector('[data-fx-over]');
     if (over) return 'a line does not fit at the floor: ' + over.textContent;
-    var els = card.querySelectorAll('.gc-ttl, .gc-lbl, .gc-sub, .gc-t, .gc-stw, .gc-day, .gc-dtitle, .gc-hl, .gc-dl, .gc-gtl, .gc-bigt, .gc-bday, .gc-rule, .gc-dlbl, .gc-dt');
+    var els = card.querySelectorAll('.gc-ttl, .gc-lbl, .gc-sub, .gc-t, .gc-stw, .gc-day, .gc-dtitle, .gc-hl, .gc-dl, .gc-gtl, .gc-bigt, .gc-bday, .gc-rule, .gc-dlbl, .gc-dt, .gc-sbtt, .gc-sbcab, .gc-sbnm, .gc-sbx, .gc-sbfl');
     if (!els.length) return 'the ' + t + ' card has no words';
     for (var i = 0; i < els.length; i++) {
       var b = els[i].getBoundingClientRect();
@@ -776,6 +804,11 @@ async function runChunk(port, name, spec, sets) {
       // weather card through its three screens (?wxspeed=0.5 runs it at
       // twice its speed: ~18 s for all three)
       if (spec.deck) {
+        // 2026-10-12 — while the flight's standby lists are up the deck is
+        // the list alone (_buildGateAdSlideList); a review pin that names no
+        // scene (?scene=deck) gives the whole deck back, the list in it, so
+        // every slide is still read (CARD_RESET takes the pin off again)
+        await evalv(`(function () { try { var u = new URL(location.href); u.searchParams.set('scene', 'deck'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`);
         const n = await evalv(`(function () { try { return _buildGateAdSlideList().length; } catch (e) { return 0; } })()`);
         for (let i = 0; i < Math.min(n || 0, 10); i++) {
           const type = await evalv(`(function () { try { var sl = _buildGateAdSlideList()[${i}]; _gateAdIndex = ${i}; window._gateAdAuthChange = true; renderGateAd(${i}); window._gateAdAuthChange = false; return (sl && sl.type) || ''; } catch (e) { window._gateAdAuthChange = false; return 'error ' + e.message; } })()`);
@@ -793,6 +826,7 @@ async function runChunk(port, name, spec, sets) {
             }
           }
         }
+        await evalv(CARD_RESET);
       }
       // the centre deck's three cards, each through its own ?scene= (v24012)
       if (spec.cards) {
@@ -820,6 +854,8 @@ async function runChunk(port, name, spec, sets) {
           if (BAND_STATES[st]) {
             const b = await evalv(BAND_CHECK(BAND_STATES[st][0], BAND_STATES[st][1]));
             if (b !== 'ok') problems.push(`state ${st}: ${b}`);
+            const lc = await evalv(COL_CHECK);
+            if (lc !== 'ok') problems.push(`state ${st}: ${lc}`);
           }
         }
         await evalv(GATE_RESET);

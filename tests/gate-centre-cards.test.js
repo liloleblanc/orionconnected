@@ -17,7 +17,10 @@
 // Pinned here: the cards only before boarding, the gate-closes window, the
 // documents from _gateDocsVariant, status words only on evidence and no
 // invented times, the words in all nine languages, the emblems, and the
-// day/night classes the look switches on.
+// day/night classes the look switches on. And (2026-10-12) the lists' window:
+// from 90 minutes before a domestic departure (120 abroad) without a break
+// until the flight closes, the centre deck the list alone, a column beside
+// the boarding signs, never in the way of the countdown or the sign.
 //
 // Everything below runs the shipped code: the functions are lifted out of
 // fids-core.js by brace matching.
@@ -102,13 +105,14 @@ function engine(langs) {
     block('var _GATE_CARD_ALIAS = {'),
     block('var _GATE_CARD_EMBLEM = {'),
     line(/^var _GC_SEP = [^\n]+;/m),
+    line(/^var _GC_SEP_HOLD = [^\n]+;/m),
     block('var _GC_STATUS = {'),
     ...['_gateDelayHasTime', 'airportCountry', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseCarrier', '_gateCloseInfo',
       '_gateDocsVariant', '_ssEntry', 'SLpair', '_rc2Rgb', '_rc2Lin', '_rc2Contrast', '_rc2DeltaE', '_rc2StatusLike',
       '_gateDayWords', 'flightRegionKey', '_gateSbPretendOn', '_gateSbRand', '_gateSbSeed', '_gateSbLists', '_gateCardsBuild', '_gateCardsDue', '_gateCardTint', '_gateCardEmblem', '_gcPair', '_gcStatusPair', '_gcDayPair',
-      '_gcTime', '_gcCloseLabel', '_gcRow', '_gateCardHtml'].map(fn),
+      '_gcTime', '_gcCloseLabel', '_gcRow', '_gateCardHtml', '_gcSbFoot', '_gateSbColHtml'].map(fn),
     'return { GATE_CLOSE_WORDS, _GATE_DOCS, _GATE_CARD_TYPES, _GATE_CARD_DWELL_MS, _GATE_CARD_CLOSE_WINDOW_MS, _gateCloseInfo, _gateDocsVariant,'
-      + ' _gateCardsBuild, _gateCardsDue, _gateCardTint, _gateCardEmblem, _gcCloseLabel, _gateCardHtml, _gateSbLists, GATE_SB_CABINS };'
+      + ' _gateCardsBuild, _gateCardsDue, _gateCardTint, _gateCardEmblem, _gcCloseLabel, _gateCardHtml, _gateSbLists, GATE_SB_CABINS, _gcSbFoot, _gateSbColHtml };'
   ].join('\n'));
   const win = { FIDSGateDate: GD, _gateOrbParts: () => null };
   // (fidsEscHtml is the board's own escape; its regex literals hold quotes the
@@ -140,16 +144,27 @@ function rowOf(html, kind) {
 // BEFORE BOARDING ONLY
 // ════════════════════════════════════════════════════════════════════════════
 
-test('the cards have facts only in the idle layout, for a departure still to go', () => {
+test('the facts are kept under the signs (never idle there) and dropped once the flight has closed', () => {
   const E = engine();
   const m = E._gateCardsBuild(facts());
   assert.ok(m, 'a scheduled departure, no sign up');
   assert.equal(m.docs, 'D');
-  assert.equal(E._gateCardsBuild(facts({ idle: false })), null, 'under a sign, the countdown or a door word: nothing');
-  for (const st of ['boarding', 'final', 'finalcall', 'final-call', 'gateclosed', 'gate_closed', 'departed', 'cancelled', 'canceled', 'diverted', 'active', 'enroute', 'landed', 'arrived']) {
+  assert.equal(m.idle, true);
+  // 2026-10-12 — under the countdown, a sign or a door word the facts stay
+  // (the lists hold until the flight closes), marked not idle
+  const sign = E._gateCardsBuild(facts({ idle: false }));
+  assert.ok(sign, 'under the countdown or a door word: kept');
+  assert.equal(sign.idle, false);
+  for (const st of ['boarding', 'final', 'finalcall', 'final-call']) {
+    const k = E._gateCardsBuild(facts({ stKey: st, cf: row({ status: st }) }));
+    assert.ok(k, st + ': kept');
+    assert.equal(k.idle, false, st + ' is never the idle layout');
+  }
+  // the flight has closed: nothing
+  for (const st of ['gateclosed', 'gate_closed', 'departed', 'cancelled', 'canceled', 'diverted', 'active', 'enroute', 'landed', 'arrived']) {
     assert.equal(E._gateCardsBuild(facts({ stKey: st, cf: row({ status: st }) })), null, st);
   }
-  for (const st of ['scheduled', 'ontime', 'expected', 'early']) assert.ok(E._gateCardsBuild(facts({ stKey: st })), st);
+  for (const st of ['scheduled', 'ontime', 'expected', 'early']) assert.equal(E._gateCardsBuild(facts({ stKey: st })).idle, true, st);
   assert.equal(E._gateCardsBuild(null), null);
   assert.equal(E._gateCardsBuild(facts({ cf: null })), null);
 });
@@ -161,8 +176,12 @@ test('which cards are due: the overview and the documents before boarding, nothi
   assert.deepEqual(E._gateCardsDue(null, DEP - 3 * 60 * MIN), { ovcard: false, docscard: false, closecard: false, sbcard: false });
   assert.deepEqual(due({}, DEP + MIN), { ovcard: false, docscard: false, closecard: false, sbcard: false }, 'past its departure');
   // "Updated boarding time to follow": the gate's times are not firm, so no
-  // timeline and no close time; the documents still hold
-  assert.deepEqual(due({ inbLate: true }, DEP - 30 * MIN), { ovcard: false, docscard: true, closecard: false, sbcard: false });
+  // timeline and no close time; the documents still hold, and so do the
+  // lists (2026-10-12: they do not wait for a firm time)
+  assert.deepEqual(due({ inbLate: true }, DEP - 30 * MIN), { ovcard: false, docscard: true, closecard: false, sbcard: true });
+  // under a sign or the countdown (not idle): the lists only
+  assert.deepEqual(due({ idle: false }, DEP - 30 * MIN), { ovcard: false, docscard: false, closecard: false, sbcard: true });
+  assert.deepEqual(due({ idle: false }, DEP - 3 * 60 * MIN), { ovcard: false, docscard: false, closecard: false, sbcard: false });
   // Delayed with no new time: the same; with the airport's new time, the timeline
   assert.deepEqual(due({ stKey: 'delayed', cf: row({ status: 'delayed' }) }, DEP - 3 * 60 * MIN), { ovcard: false, docscard: true, closecard: false, sbcard: false });
   assert.equal(due({ stKey: 'delayed', cf: row({ status: 'delayed', upd: '19:00', _revTs: DEP + 45 * MIN }), depTs: DEP + 45 * MIN }, DEP - 3 * 60 * MIN).ovcard, true);
@@ -170,15 +189,16 @@ test('which cards are due: the overview and the documents before boarding, nothi
   assert.equal(due({ boardTs: 0 }, DEP - 3 * 60 * MIN).ovcard, false);
 });
 
-test('the gate publishes the facts from its own paint, null under any sign, and the deck carries only cards that are due', () => {
+test('the gate publishes the facts from its own paint, not idle under any sign, and the deck carries only cards that are due', () => {
   const uxg = fn('uxgGateHtml');
   assert.match(uxg, /window\._gateCardsModel = _gateCardsBuild\(\{\s*cf: currentFlight,\s*idle: !showBoarding && !showCountdown && !isFinalCallStatus && !isGateClosedStatus && !_door\.word,\s*stKey: stKey, inbLate: !!inbDelayed,\s*depTs: _bt\.effDepForBoard \|\| 0, boardTs: _bt\.boardTs \|\| 0, close: _gateClose,/);
   // the boarding takeover is exactly a sign or the countdown: never idle
   assert.match(CORE, /\+ \(\(finalActive \|\| boardActive \|\| showCountdown\) \? ' g8-takeover' : ''\)/);
   assert.match(fn('_gateSignPhase'), /finalActive: isGateClosedStatus \|\| isFinalCallStatus,\s*boardActive: showBoarding && !isGateClosedStatus && !isFinalCallStatus/);
-  // the deck: only through _gateCardsDue, on the facts of this gate's own flight
+  // the deck: only through _gateCardsDue, on the facts of this gate's own
+  // flight; while the lists are due, the lists alone (below)
   const deck = fn('_buildGateAdSlideList');
-  assert.match(deck, /var _gcDue = _gateCardsDue\(_gateCardsLive\(\), Date\.now\(\)\);\s*if \(_gcDue\.ovcard\) deck\.splice\(Math\.min\(2, deck\.length\), 0, \{ type: 'ovcard' \}\);\s*if \(_gcDue\.docscard\) deck\.splice\(Math\.min\(6, deck\.length\), 0, \{ type: 'docscard' \}\);\s*if \(_gcDue\.closecard\) deck\.push\(\{ type: 'closecard' \}\);/);
+  assert.match(deck, /var _gcDue = _gateCardsDue\(_gateCardsLive\(\), Date\.now\(\)\);[\s\S]{0,200}if \(_gcDue\.sbcard && !_gcPin\) return \[\{ type: 'sbcard' \}\];\s*if \(_gcDue\.ovcard\) deck\.splice\(Math\.min\(2, deck\.length\), 0, \{ type: 'ovcard' \}\);\s*if \(_gcDue\.docscard\) deck\.splice\(Math\.min\(6, deck\.length\), 0, \{ type: 'docscard' \}\);\s*if \(_gcDue\.closecard\) deck\.push\(\{ type: 'closecard' \}\);/);
   assert.equal((deck.match(/type: '(ovcard|docscard|closecard)'/g) || []).length, 3, 'nowhere else');
   assert.match(fn('_gateCardsLive'), /if \(!m \|\| !cf \|\| String\(cf\.flight \|\| ''\) !== m\.flight\) return null;/);
   // the renderer draws a card only when it has something true to show, after
@@ -188,7 +208,7 @@ test('the gate publishes the facts from its own paint, null under any sign, and 
   const cards = ad.indexOf('_GATE_CARD_TYPES.indexOf(slide.type) >= 0');
   const heritage = ad.indexOf("slide.type === 'heritage'");
   assert.ok(tear > 0 && cards > tear && heritage > cards, 'after the map is torn down, before the other scenes');
-  assert.match(ad, /if \(_renderGateCard\(el, slide\.type, true\)\) return;\s*slot = \(slot \+ 1\) % totalSlots;\s*_gateAdIndex = slot;\s*window\._gateAdCurrentIdx = slot;/);
+  assert.match(ad, /if \(_renderGateCard\(el, slide\.type, true\)\) return;[\s\S]{0,420}?slot = \(slot \+ 1\) % totalSlots;\s*_gateAdIndex = slot;\s*window\._gateAdCurrentIdx = slot;/);
   // a minute each, as the weather card
   const E = engine();
   assert.deepEqual(E._GATE_CARD_TYPES, ['ovcard', 'docscard', 'closecard', 'sbcard']);
@@ -454,22 +474,241 @@ test('the lists show on every flight (decided 2026-10-10); with the switch off, 
   assert.equal(O._gateCardsDue(fake, DEP - 60 * MIN).sbcard, true);
 });
 
-test('the lists run from 90 minutes before a domestic departure (120 abroad) until boarding', () => {
+test('the lists run from 90 minutes before a domestic departure (120 abroad) without a break until the flight closes', () => {
   const E = engine();
   const dom = E._gateCardsBuild(facts({ cf: testRow() }));
   assert.equal(dom.region, 'dom');
   const at = (m, mins) => E._gateCardsDue(m, DEP - mins * MIN).sbcard;
-  assert.equal(at(dom, 91), false, 'not before the window');
+  // the start: 90 minutes before the departure the gate prints, not a
+  // millisecond earlier
+  assert.equal(E._gateCardsDue(dom, DEP - 90 * MIN - 1).sbcard, false, 'not before the window');
+  assert.equal(at(dom, 91), false);
   assert.equal(at(dom, 90), true);
-  assert.equal(at(dom, 46), true, 'up to the countdown (DEP-45), which then takes the screen');
-  assert.equal(at(dom, 35), false, 'gone at boarding: the sign takes the screen');
+  // counted from the departure the gate prints (the airport's revised time)
+  const rev = E._gateCardsBuild(facts({ cf: testRow({ status: 'delayed', upd: '19:00', _revTs: DEP + 45 * MIN }), stKey: 'delayed', depTs: DEP + 45 * MIN, boardTs: DEP + 10 * MIN }));
+  assert.equal(E._gateCardsDue(rev, DEP + 45 * MIN - 91 * MIN).sbcard, false);
+  assert.equal(E._gateCardsDue(rev, DEP + 45 * MIN - 90 * MIN).sbcard, true);
+  // no break: due at every minute from the start to the departure, in the
+  // idle layout, under the countdown (DEP-45 .. DEP-35, idle false), under
+  // NOW BOARDING (the airport's word, or the schedule's door word at an
+  // airport whose feed never says it) and under FINAL CALL
+  for (let t = 90; t >= 1; t--) assert.equal(at(dom, t), true, 'idle, DEP-' + t);
+  const cd = E._gateCardsBuild(facts({ cf: testRow(), idle: false }));
+  for (let t = 45; t >= 36; t--) assert.equal(at(cd, t), true, 'countdown, DEP-' + t);
+  for (const w of ['boarding', 'final', 'finalcall']) {
+    const sg = E._gateCardsBuild(facts({ cf: testRow(), idle: false, stKey: w }));
+    for (let t = 35; t >= 1; t--) assert.equal(at(sg, t), true, w + ', DEP-' + t);
+  }
+  // the close: the printed departure passed while the times are firm ...
+  assert.equal(E._gateCardsDue(dom, DEP).sbcard, false, 'gone at the departure');
+  assert.equal(at(dom, -5), false);
+  const sgB = E._gateCardsBuild(facts({ cf: testRow(), idle: false, stKey: 'boarding' }));
+  assert.equal(E._gateCardsDue(sgB, DEP).sbcard, false, 'under NOW BOARDING too');
+  // ... on a sign kept through a delay, the new departure the gate prints
+  const kept = E._gateCardsBuild(facts({ cf: testRow(), idle: false, stKey: 'boarding', depEnd: DEP + 30 * MIN }));
+  assert.equal(at(kept, -10), true, 'boarding goes on to the new time');
+  assert.equal(at(kept, -30), false);
+  // ... or the flight's own word (the model is then null)
+  for (const w of ['gateclosed', 'departed', 'cancelled', 'diverted']) {
+    assert.equal(E._gateCardsDue(E._gateCardsBuild(facts({ cf: testRow({ status: w }), stKey: w })), DEP - 20 * MIN).sbcard, false, w);
+  }
+  // not firm: a Delayed with no new time neither waits for one nor closes on
+  // the clock (the flight's own hold on the gate bounds it)
+  const dl = E._gateCardsBuild(facts({ cf: testRow({ status: 'delayed' }), stKey: 'delayed' }));
+  assert.equal(dl.firm, false);
+  assert.equal(at(dl, 91), false);
+  assert.equal(at(dl, 60), true);
+  assert.equal(at(dl, 0), true, 'not closed by a departure that will not hold');
+  assert.equal(at(dl, -30), true);
+  // "Updated boarding time to follow" coming up mid-window takes nothing down,
+  // and redraws nothing: the same names in the same states
+  const late = E._gateCardsBuild(facts({ cf: testRow(), inbLate: true }));
+  assert.equal(at(late, 60), true);
+  const names = (L) => [L.upgrade, L.standby, L.seats].map((x) => x && x.rows.map((r) => r.name + r.st).join(','));
+  assert.deepEqual(names(E._gateSbLists(late, DEP - 60 * MIN)), names(E._gateSbLists(dom, DEP - 60 * MIN)));
+  // abroad: 120 minutes, transborder and international
   const intl = E._gateCardsBuild(facts({ cf: testRow({ _locIata: 'LHR' }), code: 'LHR', city: 'London' }));
   assert.equal(intl.region, 'intl');
   assert.equal(at(intl, 121), false);
   assert.equal(at(intl, 120), true);
-  // no firm times (Delayed with no new time), no list
-  const late = E._gateCardsBuild(facts({ cf: testRow(), inbLate: true }));
-  assert.equal(at(late, 60), false);
+  const trans = E._gateCardsBuild(facts({ cf: testRow({ _locIata: 'BOS' }), code: 'BOS', city: 'Boston' }));
+  assert.equal(trans.region, 'trans');
+  assert.equal(at(trans, 121), false);
+  assert.equal(at(trans, 120), true);
+});
+
+test('the names clear until the boarding countdown, then the list holds its last state until the flight closes', () => {
+  const E = engine();
+  const m = E._gateCardsBuild(facts({ cf: testRow() }));
+  const atCd = E._gateSbLists(m, DEP - 45 * MIN);
+  for (const t of [44, 40, 35, 20, 5, 1]) assert.deepEqual(E._gateSbLists(m, DEP - t * MIN), atCd, 'DEP-' + t);
+  // the countdown is ten minutes before the printed boarding time
+  assert.notDeepEqual(E._gateSbLists(m, DEP - 90 * MIN), atCd);
+});
+
+test('while the lists are up the centre deck is the list alone; the full deck comes back when the flight closes; ?scene= still reaches every scene', () => {
+  const deckSrc = fn('_buildGateAdSlideList');
+  const build = (due, search) => new Function('window', 'document', 'location', 'getGateAds', '_welcomeCardData', '_gateCardsDue', '_gateCardsLive',
+    'return (' + deckSrc + ')();')(
+    { FIDS_MEDIA: null, _gateCurrentAirline: 'WS' },
+    { documentElement: { classList: { contains: () => false } } },
+    { search: search || '' },
+    () => [{ headline: 'one' }, { headline: 'two' }, { headline: 'three' }],
+    (c) => ({ adLayout: 'welcome-card', code: c }),
+    () => Object.assign({ ovcard: false, docscard: false, closecard: false, sbcard: false }, due),
+    () => ({}));
+  assert.deepEqual(build({ sbcard: true, ovcard: true, docscard: true }), [{ type: 'sbcard' }], 'the list alone');
+  const closed = build({ ovcard: true, docscard: true });
+  assert.ok(closed.length >= 4 && !closed.some((d) => d.type === 'sbcard'), 'the deck again after the close');
+  assert.ok(closed.some((d) => d.type === 'ovcard') && closed.some((d) => d.type === 'ad'));
+  const pinned = build({ sbcard: true, ovcard: true }, '?scene=ovcard');
+  assert.ok(pinned.some((d) => d.type === 'sbcard') && pinned.some((d) => d.type === 'ovcard') && pinned.length > 2, 'the review pin sees the whole deck');
+  // the list never waits out a gap: every turn is its turn
+  const turnSrc = fn('_gateCardTurnDue');
+  const win = { _gateAdVisitSeq: 1 };
+  const turn = new Function('window', 'location', '_GATE_CARD_GAP_MS', 'return (' + turnSrc + ');')(win, { search: '' }, 4 * MIN);
+  for (let i = 0; i < 5; i++) { win._gateAdVisitSeq++; assert.equal(turn('sbcard'), true, 'visit ' + i); }
+  assert.equal(turn('ovcard'), true);
+  win._gateAdVisitSeq++;
+  assert.equal(turn('ovcard'), false, 'the other cards keep their gap');
+  // on screen and next again: repainted in place, never crossfaded into a
+  // copy of itself (before the outgoing slide is lifted into the overlay)
+  const tick = fn('_restartGateAdsTimer');
+  const stay = tick.indexOf(":scope > .gcard[data-gcard=\"sbcard\"]");
+  assert.ok(stay > 0 && stay < tick.indexOf('var _old = null;'), 'checked before the crossfade');
+  assert.match(tick.slice(stay, tick.indexOf('var _old = null;')), /if \(_sbNext && _sbNext\.type === 'sbcard'\) \{[\s\S]*renderGateAd\(_gateAdIndex\);[\s\S]*_gateAdTimer = setTimeout\(_tick, Math\.max\(22000, _getGateAdDwellMs\(_sbNext\)\)\);\s*return;/);
+  // and its minute still posts the rotator's boundary (that comes first)
+  assert.ok(tick.indexOf('ocGateBoundary') < stay);
+});
+
+test('a card after a skipped weather or heritage slot is drawn, never a blank panel', () => {
+  // the skip loop of renderGateAd, run as written
+  const ad = fn('renderGateAd');
+  const a = ad.indexOf('var _skipN = 0;');
+  const b = ad.indexOf('if (_skipN >= totalSlots) return;');
+  assert.ok(a > 0 && b > a, 'one loop for every scene that skips itself');
+  const loop = ad.slice(a, b + 'if (_skipN >= totalSlots) return;'.length);
+  const run = (slides, slot, ok) => {
+    const drawn = [];
+    const out = new Function('slides', 'slot', 'el', 'window', '_GATE_CARD_TYPES', '_renderGateCard', '_renderHeritageCard', '_wxTurnDue', '_renderWxCard',
+      'var totalSlots = slides.length, slide = slides[slot], _gateAdIndex = slot;\n' + loop + '\nreturn { fell: slide && slide.type, slot: slot };')(
+      slides, slot, {}, {}, ['ovcard', 'docscard', 'closecard', 'sbcard'],
+      (el, t) => { if (ok[t]) { drawn.push(t); return true; } return false; },
+      () => { if (ok.heritage) { drawn.push('heritage'); return true; } return false; },
+      () => true,
+      () => { if (ok.wxcard) { drawn.push('wxcard'); return true; } return false; });
+    return { drawn, out };
+  };
+  const S = (...t) => t.map((type) => ({ type }));
+  let r = run(S('ad', 'wxcard', 'docscard', 'ad'), 1, { docscard: true });
+  assert.deepEqual(r.drawn, ['docscard'], 'the documents after a weather slot with no data');
+  assert.equal(r.out, undefined, 'drawn, so the painter returned');
+  r = run(S('ad', 'heritage', 'closecard'), 1, { closecard: true });
+  assert.deepEqual(r.drawn, ['closecard'], 'the close card after a heritage slot with nothing to show');
+  r = run(S('ad', 'heritage', 'wxcard', 'ovcard', 'ad'), 1, {});
+  assert.deepEqual(r.drawn, []);
+  assert.deepEqual(r.out, { fell: 'ad', slot: 4 }, 'a run of skipped scenes lands on the next ad, for the ad painter');
+  r = run(S('sbcard'), 0, {});
+  assert.equal(r.out, undefined, 'a pass where everything skipped itself leaves the panel as it is');
+});
+
+test('under the countdown, NOW BOARDING and FINAL CALL the list is a column beside the sign, never over it', () => {
+  const uxg = fn('uxgGateHtml');
+  // built from the same facts, only under a takeover
+  assert.match(uxg, /var _sbColHtml = '';\s*if \(_gateSign\.boardActive \|\| _gateSign\.finalActive \|\| showCountdown\) \{\s*try \{ _sbColHtml = _gateSbColHtml\(window\._gateCardsModel, Date\.now\(\)\); \}/);
+  // the last child of each takeover, after the sign (or the countdown's body)
+  assert.match(uxg, /return _g8SignHtml\(_L, _R\);\s*\}\)\(\)\s*\+ _sbColHtml\s*\+ '<\/div>';\s*\}\s*\/\/ Build final call HTML/);
+  assert.match(uxg, /return _g8SignHtml\(_L, _R\);\s*\}\)\(\)\s*\+ _sbColHtml\s*\+ '<\/div>';\s*\}\s*\}\s*\/\/ Build countdown panel/);
+  assert.match(uxg, /\+ '<\/div>' \+ _sbColHtml \+ '<\/div>';\s*\}\s*\/\/ Determine which row4 content to show/);
+  const closed = uxg.slice(uxg.indexOf('finalHtml = \'<div class="g8-final active g8-final-closed">\''), uxg.indexOf('} else {', uxg.indexOf('g8-final-closed')));
+  assert.doesNotMatch(closed, /_sbColHtml/, 'GATE CLOSED: the flight has closed');
+  assert.match(uxg, /\+ \(\(\(finalActive \|\| boardActive \|\| showCountdown\) && _sbColHtml\) \? ' g8-sbcol-on' : ''\)/);
+  // the column form: the lists alone, no title, no foot
+  const E = engine();
+  const m = E._gateCardsBuild(facts({ cf: testRow(), idle: false, stKey: 'boarding' }));
+  const col = E._gateSbColHtml(m, DEP - 20 * MIN);
+  assert.match(col, /^<div class="g8-sbcol"><div class="gcard gcard-sbcard gcard-col /);
+  assert.doesNotMatch(col, /gc-hd|gc-sbfoot|gc-ft/);
+  for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbSeatList']) assert.ok(textOf(col).includes(BS.bs(k, 'en')), k);
+  assert.equal(E._gateSbColHtml(m, DEP + MIN), '', 'gone once the flight has closed');
+  assert.equal(E._gateSbColHtml(E._gateCardsBuild(facts({ cf: testRow(), idle: false })), DEP - 91 * MIN), '', 'not before the window');
+  // the layout: the banner, the tiles and the strip keep the width; the
+  // band and the sign (or the countdown) in the first column, the list in
+  // the second, so neither covers the other
+  const G = 'html body' + ':not(#_)'.repeat(16) + ' .g8-wrap.g8-sbcol-on';
+  const has = (sel, decl) => {
+    const i = CSS.indexOf(sel + ' {');
+    assert.ok(i >= 0, sel);
+    assert.ok(CSS.slice(i, CSS.indexOf('}', i)).includes(decl), sel + ': ' + decl);
+  };
+  assert.ok(CSS.includes(G + ' .g8-board.active,\n' + G + ' .g8-final.active,\n' + G + ' .g8-countdown {'));
+  assert.ok(CSS.includes(G + ' .g8-countdown { grid-template-rows: auto auto minmax(0, 1fr) !important; }'));
+  assert.ok(CSS.includes('grid-template-columns: minmax(0, 1fr) var(--g8-sbcol-w) !important;'));
+  assert.ok(CSS.includes('--g8-sbcol-w: 22.66vw;'), 'as wide as the idle right column (435px at 1920)');
+  has(G + ' .g8-board.active > *, ' + G + ' .g8-final.active > *, ' + G + ' .g8-countdown > *', 'grid-column: 1 / -1 !important;');
+  has(G + ' .g8-board.active > .g8-band, ' + G + ' .g8-final.active > .g8-band', 'grid-column: 1 !important; grid-row: 3 !important;');
+  has(G + ' .g8-board.active > .g8-board-body, ' + G + ' .g8-final.active > .g8-board-body', 'grid-column: 1 !important; grid-row: 4 !important;');
+  has(G + ' .g8-countdown > .g8-cd-body', 'grid-column: 1 !important; grid-row: 3 !important;');
+  has(G + ' .g8-board.active > .g8-sbcol, ' + G + ' .g8-final.active > .g8-sbcol', 'grid-column: 2 !important; grid-row: 3 / span 2 !important;');
+  has(G + ' .g8-countdown > .g8-sbcol', 'grid-column: 2 !important; grid-row: 3 !important;');
+  // the sign's pairs keep one line in the narrower half (down to half
+  // their size, then two whole phrases), the rest of the sign untouched
+  const pairs = fn('_fidsPairSeparators');
+  assert.match(pairs, /var target = ratio >= 1 \? base : Math\.max\(base \* 0\.68, base \* ratio \* 0\.985\);\s*(\/\/[^\n]*\n\s*)*if \(ratio < 1 && el\.closest\('\.g8-sbcol-on'\)\) target = Math\.max\(base \* 0\.5, base \* ratio \* 0\.985\);/);
+  // every word whole in the narrow column: a heading, its cabin and a status
+  // word may take a second line there (each language one phrase, the bar
+  // held to the phrase before it), and the column's rules come first (an
+  // element is fitted by the first rule that matches it)
+  const colRules = CORE.indexOf("{ sel: '.gcard-col .gc-sbtt, .gcard-col .gc-sbcab', box: '.gc-sbhd', lines: 2, units: true, keep: 0.5, group: '.gc-sbl' }");
+  const colX = CORE.indexOf("{ sel: '.gcard-col .gc-sbx', box: '.gc-sbr', lines: 2, units: true, group: '.gc-sbl' }");
+  assert.ok(colRules > 0 && colX > colRules, 'the column\'s rules');
+  assert.ok(colX < CORE.indexOf("{ sel: '.gcard .gc-sbtt, .gcard .gc-sbcab'") && colX < CORE.indexOf("{ sel: '.gcard .gc-sbx'"), 'ahead of the lists\' own');
+  assert.match(CORE, /^var _GC_SEP_HOLD = '\\u00a0<span class="gc-sep fx-brk">\|<\/span> ';/m);
+  assert.equal((fn('_gateCardHtml').match(/_GC_SEP_HOLD/g) || []).length, 4, 'headings, cabins and both status words');
+  // and every row inside the column: the card's scale steps down after the
+  // fitting pass until the last list ends above the card's foot
+  const fit = fn('_gateSbColFit');
+  assert.match(fit, /if \(lb > foot \+ 0\.5\) \{\s*card\.setAttribute\('data-sb-max', String\(Math\.min\(max, k\)\)\);\s*nk = Math\.max\(0\.62, Math\.round\(\(k - 0\.04\) \* 100\) \/ 100\);/);
+  assert.match(fit, /if \(up < max - 0\.005\) nk = up;/, 'back up, never to a scale that ran over');
+  assert.match(fit, /document\.fonts\.status !== 'loaded'\) return;/, 'not before the fonts land');
+  assert.match(fn('_fidsSchedulePairPass'), /_fidsPairSeparators\(document\);\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*try \{ _gateSbColFit\(\); \} catch \(eSb\) \{\}/);
+  assert.ok(CSS.includes('--gc-u: calc(min(.84vh, .47vw) * var(--gc-k, 1));'));
+  // the clock opens and closes the column with nothing in the feed changing
+  const clock = fn('updateDedicatedTimeOnly');
+  assert.match(clock, /const _sbNow = !!_gateSbLists\(_sbM, _nowMs3\);\s*const _sbCol = _tkW\.querySelector\('\.g8-sbcol'\);\s*if \(_sbNow !== !!_sbCol\) \{/);
+  assert.match(clock, /requestGateRebuild\(\);/);
+});
+
+test('in the centre the list carries the documents and the close time at its foot, the band\'s own words', () => {
+  for (const pair of [['en', 'fr'], ['fr', 'en'], ['en', 'ja'], ['en', 'ar']]) {
+    const E = engine(pair);
+    const m = E._gateCardsBuild(facts({ cf: testRow() }));
+    const html = E._gateCardHtml('sbcard', m, DEP - 60 * MIN, null);
+    assert.match(html, /<div class="gc-sbfoot gc-zone fids-dn-fade" data-doc="D">/);
+    const foot = html.slice(html.indexOf('gc-sbfoot'));
+    const txt = textOf(foot);
+    for (const lg of pair) {
+      assert.ok(txt.includes(textOf(BS.bs('docsDomestic', lg))), 'docsDomestic ' + lg);
+      assert.ok(foot.includes('lang="' + lg + '"'), 'marked ' + lg);
+    }
+    assert.doesNotMatch(foot, /\{[A-Z]+\}/, 'no placeholder left');
+    assert.match(foot, /gc-sbfc/, 'the close time while it is still to come');
+    if (pair.includes('ar')) assert.match(foot, /lang="ar" dir="rtl"/);
+  }
+  const E = engine();
+  const m = E._gateCardsBuild(facts({ cf: testRow() }));
+  // the close time has passed (DEP-15): the documents alone
+  const late = E._gateCardHtml('sbcard', m, DEP - 10 * MIN, null);
+  assert.match(late, /gc-sbfoot/);
+  assert.doesNotMatch(late, /gc-sbfc/);
+  // an airline with no close time: the documents alone
+  const noClose = E._gateCardHtml('sbcard', E._gateCardsBuild(facts({ cf: testRow(), close: null })), DEP - 60 * MIN, null);
+  assert.doesNotMatch(noClose, /gc-sbfc/);
+  // an international flight: both documents, the variant the band shows
+  const intl = E._gateCardsBuild(facts({ cf: testRow({ _locIata: 'LHR' }), code: 'LHR', city: 'London' }));
+  assert.match(E._gateCardHtml('sbcard', intl, DEP - 100 * MIN, null), new RegExp('data-doc="' + intl.docs + '"'));
+  // every phrase whole: the shared fitter holds the foot's lines
+  assert.ok(CORE.includes("{ sel: '.gcard .gc-sbfl', box: '.gc-sbfx', lines: 2, units: true, group: '.gc-sbfoot' }"));
 });
 
 test('names clear one by one as boarding comes closer, the next one called', () => {

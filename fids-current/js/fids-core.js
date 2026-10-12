@@ -2006,6 +2006,11 @@ function _fidsPairSeparators(root) {
           }
           var ratio = need ? avail / (need * base / cur) : 1;
           var target = ratio >= 1 ? base : Math.max(base * 0.68, base * ratio * 0.985);
+          // 2026-10-12 — beside the lists' column (.g8-sbcol-on) the sign is a
+          // quarter narrower: a pair keeps its one line down to half its
+          // size there before it stacks ("General boarding | Embarquement
+          // général" needs 0.62 of it at 1920x1080)
+          if (ratio < 1 && el.closest('.g8-sbcol-on')) target = Math.max(base * 0.5, base * ratio * 0.985);
           // the stylesheet's size is !important (it has to outrank the brand
           // skins), so a plain inline value would lose to it
           if (Math.abs(target - cur) > 0.5) el.style.setProperty('font-size', target + 'px', 'important');
@@ -2035,7 +2040,54 @@ function _fidsSchedulePairPass() {
   _fidsPairT = requestAnimationFrame(function () {
     _fidsPairT = null; try { fidsFitAll(document); } catch (e) {}
     _fidsPairSeparators(document);
+    // 2026-10-12 — then the lists' column beside a boarding sign keeps its
+    // last row (_gateSbColFit), once its lines have their sizes
+    try { _gateSbColFit(); } catch (eSb) {}
   });
+}
+// 2026-10-12 — THE LISTS' COLUMN KEEPS EVERY ROW. Beside a boarding sign the
+// lists have a column of a fixed height (css: .g8-sbcol), and in a long
+// language pair (Japanese and Arabic, a status word on two lines) with the
+// longest lists their rows ran past its foot, the last one cut off. After
+// each fitting pass, when the last list ends below the card's foot, the
+// card's scale (--gc-k, css: .gcard-col's --gc-u) steps down a little and
+// another pass is asked for, so names, headings and spacing come down
+// together until every row is inside (not under 0.62 of the designed size;
+// the words keep the shared fitter's floor). A scale that came down steps
+// back up while the room under the last list would hold the step with a
+// quarter to spare, never to a scale that ran over before (data-sb-max), so
+// it settles and never swings. Nothing is measured before the board's fonts
+// have landed (a fallback face's taller lines are not the column's). A new
+// paint, or a resize, starts afresh.
+function _gateSbColFit() {
+  try { if (document.fonts && document.fonts.status !== 'loaded') return; } catch (eF) {}
+  var cards = document.querySelectorAll('.g8-sbcol > .gcard-col');
+  var again = false;
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var sbl = card.querySelector('.gc-sbl');
+    var last = sbl && sbl.lastElementChild;
+    if (!last) continue;
+    var cr = card.getBoundingClientRect();
+    if (!(cr.height > 50)) continue;
+    var foot = cr.bottom - (parseFloat(getComputedStyle(card).paddingBottom) || 0);
+    var lb = last.getBoundingClientRect().bottom;
+    var k = parseFloat(card.getAttribute('data-sb-k') || '1') || 1;
+    var max = parseFloat(card.getAttribute('data-sb-max') || '1.01') || 1.01;
+    var nk = k;
+    if (lb > foot + 0.5) {
+      card.setAttribute('data-sb-max', String(Math.min(max, k)));
+      nk = Math.max(0.62, Math.round((k - 0.04) * 100) / 100);
+    } else if (k < 1 && (foot - lb) > (lb - cr.top) * (0.05 / k)) {
+      var up = Math.min(1, Math.round((k + 0.04) * 100) / 100);
+      if (up < max - 0.005) nk = up;
+    }
+    if (nk === k) continue;
+    card.setAttribute('data-sb-k', String(nk));
+    card.style.setProperty('--gc-k', String(nk));
+    again = true;
+  }
+  if (again) _fidsSchedulePairPass();
 }
 
 // ══ v23962 — ONE FITTER FOR EVERY NAME ════════════════════════════════════
@@ -2954,11 +3006,23 @@ var FIDS_FIT_RULES = [
   { sel: '.gcard .gc-bday', box: '.gc-big', lines: 2, units: true },
   { sel: '.gcard .gc-rule', box: '.gc-ft', lines: 2, units: true },
   { sel: '.gcard .gc-dlbl', box: '.gc-dep', lines: 2, units: true },
+  // 2026-10-12 — in the column beside a boarding sign a heading, its cabin
+  // and a status word (under its name) may take a second line, each
+  // language whole (Höherstufungsliste | Lista de mudanças de classe and
+  // 係員までお越しください | يرجى مراجعة الموظف do not fit one line there);
+  // a heading keeps its one line down to half its size first (keep), so a
+  // pair that fits stays a pair. Ahead of the lists' own rules: an element
+  // is fitted by the first rule that matches it.
+  { sel: '.gcard-col .gc-sbtt, .gcard-col .gc-sbcab', box: '.gc-sbhd', lines: 2, units: true, keep: 0.5, group: '.gc-sbl' },
+  { sel: '.gcard-col .gc-sbx', box: '.gc-sbr', lines: 2, units: true, group: '.gc-sbl' },
   // v24026 — the upgrade and standby lists: a heading and its cabin on one
   // line, each row's name and status word on one line
   { sel: '.gcard .gc-sbtt, .gcard .gc-sbcab', box: '.gc-sbhd', lines: 1, units: true, group: '.gc-sbl' },
   { sel: '.gcard .gc-sbnm', box: '.gc-sbr', lines: 1, group: '.gc-sbl' },
   { sel: '.gcard .gc-sbx', box: '.gc-sbr', lines: 1, units: true, group: '.gc-sbl' },
+  // 2026-10-12 — the lists' foot: the documents and the close time, each
+  // language a line of whole phrases, the foot's lines at one size
+  { sel: '.gcard .gc-sbfl', box: '.gc-sbfx', lines: 2, units: true, group: '.gc-sbfoot' },
   // v24014 — the weather card at its larger sizes: each figure set at one
   // size across its row (the eight hours, the five days, the two plates),
   // the smallest any of them needs, so a two-digit or a below-zero reading
@@ -3300,6 +3364,9 @@ try {
     window.addEventListener('resize', function () {
       // the sign pairs' stored base size is in screen units — measure afresh
       try {
+        // (and the lists' column its scale, _gateSbColFit)
+        var _sk = document.querySelectorAll('.g8-sbcol > .gcard-col[data-sb-k]');
+        for (var _k = 0; _k < _sk.length; _k++) { _sk[_k].removeAttribute('data-sb-k'); _sk[_k].removeAttribute('data-sb-max'); _sk[_k].style.removeProperty('--gc-k'); }
         var _sp = document.querySelectorAll('.g8-sign .g8-pair[data-g8-base]');
         for (var _i = 0; _i < _sp.length; _i++) { _sp[_i].removeAttribute('data-g8-base'); _sp[_i].style.removeProperty('font-size'); }
         var _sv = document.querySelectorAll('.g8-sign .g8-sign-value[data-g8-vbase]');
@@ -7408,6 +7475,34 @@ function updateDedicatedTimeOnly() {
       const _bandTs = _bandEl ? Number(_bandEl.getAttribute('data-close-ts')) : 0;
       if (_bandEl && _bandTs > 0 && _nowMs3 >= _bandTs) { _bandEl.removeAttribute('data-close-ts'); requestGateRebuild(); }
     } catch (eB) {}
+    // 2026-10-12 — THE LISTS' COLUMN UNDER THE SIGNS FOLLOWS THE CLOCK. The
+    // column (_gateSbColHtml) is drawn with the takeover, and nothing in the
+    // feed changes when the lists' window opens or the printed departure
+    // passes. When whether they are due no longer matches what is painted,
+    // one rebuild is asked for (marked on the takeover first, so it is asked
+    // once, and never more than once in 30 s whatever the paint does);
+    // while they are up, a list whose rows changed is repainted in place.
+    try {
+      const _tkW = document.querySelector('.g8-wrap.g8-takeover');
+      if (_tkW && typeof _gateSbLists === 'function') {
+        const _sbM = _gateCardsLive();
+        const _sbNow = !!_gateSbLists(_sbM, _nowMs3);
+        const _sbCol = _tkW.querySelector('.g8-sbcol');
+        if (_sbNow !== !!_sbCol) {
+          if (_tkW.getAttribute('data-sb-asked') !== String(_sbNow) && _nowMs3 - (window._gateSbAskedAt || 0) >= 30000) {
+            _tkW.setAttribute('data-sb-asked', String(_sbNow));
+            window._gateSbAskedAt = _nowMs3;
+            requestGateRebuild();
+          }
+        } else if (_sbCol) {
+          const _sbH = _gateCardHtml('sbcard', _sbM, _nowMs3, null, true);
+          if (_sbH && _sbCol.__sbHtml !== _sbH) {
+            if (_sbCol.__sbHtml) _sbCol.innerHTML = _sbH;
+            _sbCol.__sbHtml = _sbH;
+          }
+        }
+      }
+    } catch (eSb) {}
     // v23973 — LATER AT THIS GATE FOLLOWS THE CLOCK. A moved flight's notice
     // ends when the flight leaves (_gateFlightLive), a later flight moves up
     // when the one before it goes, and a day word changes at midnight, all
@@ -16675,11 +16770,22 @@ function uxgGateHtml(ctx) {
       idle: !showBoarding && !showCountdown && !isFinalCallStatus && !isGateClosedStatus && !_door.word,
       stKey: stKey, inbLate: !!inbDelayed,
       depTs: _bt.effDepForBoard || 0, boardTs: _bt.boardTs || 0, close: _gateClose,
+      // 2026-10-12 — on a sign kept through a delay the Departure field
+      // prints the airport's new time, and the flight closes on that one
+      depEnd: (_door.kept && _gateDelayHasTime(currentFlight) && currentFlight._revTs) || 0,
       arr: arrTimeStr ? { ts: ctx.arrInstant, tz: ctx.arrTz || tz, revised: !!ctx.arrRevised, early: !!ctx.arrEarly } : null,
       iata: iata, airline: airlineCode, tz: tz, frF: _frF, city: displayLoc, code: _dispIata(locIata || ''), flight: currentFlight.flight
     });
   } catch (eCM) { window._gateCardsModel = null; }
   _gateCardsRefreshSoon();
+  // 2026-10-12 — THE LISTS BESIDE THE BOARDING SIGNS (_gateSbColHtml): under
+  // the countdown, NOW BOARDING and FINAL CALL, while they are due, the list
+  // the centre held is the takeover's last child, a column beside the sign
+  // (the wrap's g8-sbcol-on lays it out).
+  var _sbColHtml = '';
+  if (_gateSign.boardActive || _gateSign.finalActive || showCountdown) {
+    try { _sbColHtml = _gateSbColHtml(window._gateCardsModel, Date.now()); } catch (eSC) { _sbColHtml = ''; }
+  }
   var _inbNoticeHtml = inbDelayed
     ? ('<span class="g8-msg-pair">' + _gateLbl('inbDelayed', _frF, function (w, i) { return '<span class="g8-msg-l g8-msg-l' + (i + 1) + '">' + w + '</span>'; }, '') + '</span>')
     : '';
@@ -18161,6 +18267,7 @@ function uxgGateHtml(ctx) {
           }
           return _g8SignHtml(_L, _R);
         })()
+      + _sbColHtml
       + '</div>';
   }
 
@@ -18245,6 +18352,7 @@ function uxgGateHtml(ctx) {
           }
           return _g8SignHtml(_L, _R);
         })()
+        + _sbColHtml
         + '</div>';
     }
   }
@@ -18274,7 +18382,7 @@ function uxgGateHtml(ctx) {
             + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2">' + _cdL[1] + '</div>' : '');
         })()
       // 'Please remain seated until your zone is called' REMOVED.
-      + '</div></div>';
+      + '</div>' + _sbColHtml + '</div>';
   }
 
   // Determine which row4 content to show
@@ -19359,6 +19467,8 @@ function uxgGateHtml(ctx) {
        // was used here — so the state is marked on the wrap instead.
        + ((finalActive || boardActive || showCountdown) ? ' g8-takeover' : '')
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
+       // 2026-10-12 — the lists' column beside the sign (_sbColHtml)
+       + (((finalActive || boardActive || showCountdown) && _sbColHtml) ? ' g8-sbcol-on' : '')
        + ((function () {
            // light-banner = LUMINANCE, not the literal '#FFFFFF' — Porter's
            // cream banner needs the same dark-ink treatment as a white one.
@@ -35928,11 +36038,13 @@ try { if (typeof window !== 'undefined') { window._gateCloseInfo = _gateCloseInf
 // and its styles). The boarding screen keeps its band (v24006).
 //
 // BEFORE BOARDING ONLY. The facts are published by uxgGateHtml on every gate
-// paint (window._gateCardsModel), and only while the gate is in its idle
-// layout: no NOW BOARDING sign, no countdown, no final call, no gate closed,
-// no door word, and a departure that is still to go (not cancelled, diverted
-// or gone). Under the boarding takeover the deck is not on the screen at all,
-// and the model is null, so the deck carries no card either.
+// paint (window._gateCardsModel). The overview, documents and close cards are
+// drawn only while the gate is in its idle layout (m.idle): no NOW BOARDING
+// sign, no countdown, no final call, no door word, and a departure that is
+// still to go. (2026-10-12: the model itself is kept under the countdown,
+// NOW BOARDING and FINAL CALL, idle false, so the lists can stay up until the
+// flight closes; it is null only once the flight has closed: gate closed,
+// departed, cancelled, diverted or gone. See _gateSbLists.)
 //
 // STATUS ONLY ON EVIDENCE, NO INVENTED TIMES. Every time on a card is one the
 // gate already prints, from the same answer: the boarding time and the
@@ -35970,21 +36082,31 @@ try {
   }
 } catch (eGCG) {}
 
-// The facts the cards are drawn from, or null when no card may show. Pure:
+// The facts the cards are drawn from, or null once the flight has closed.
+// Pure:
 //   o.cf        the departure's row
 //   o.idle      the gate is in its idle layout (no sign, countdown or door word)
-//   o.stKey     the departure's own word (_gateDepDisplayState)
+//   o.stKey     the departure's own word (_gateDepDisplayState), or the door
+//               word a sign opened on
 //   o.inbLate   "Updated boarding time to follow" is up (_gateInbLateNotice)
 //   o.depTs     the departure the boarding time is counted from (its revised
 //               time when the airport published one)
 //   o.boardTs   the boarding time the gate prints
 //   o.close     _gateCloseInfo's answer (or null)
+//   o.depEnd    on a sign kept through a delay, the new departure the gate
+//               prints (the sign keeps its own clock, o.depTs), or 0
 //   o.arr       { ts, tz, revised, early } the destination's own arrival, or null
 //   o.iata, o.airline, o.tz, o.frF, o.city, o.code, o.flight
+// m.idle is the idle layout, and NOW BOARDING / FINAL CALL are never idle:
+// the overview, documents and close cards ask it (_gateCardsDue); the lists
+// do not (_gateSbLists).
 function _gateCardsBuild(o) {
-  if (!o || !o.cf || !o.idle) return null;
+  if (!o || !o.cf) return null;
   var w = String(o.stKey || o.cf.status || '').replace(/[\s_-]+/g, '').toLowerCase();
-  if (/^(cancelled|canceled|diverted|departed|arrived|landed|active|enroute|boarding|final|finalcall|gateclosed)$/.test(w)) return null;
+  // the flight has closed (the airport's word, or the operator's, or a test
+  // flight's): no card, and no list
+  if (/^(cancelled|canceled|diverted|departed|arrived|landed|active|enroute|gateclosed)$/.test(w)) return null;
+  var idle = !!o.idle && !/^(boarding|final|finalcall)$/.test(w);
   var hasTime = true;
   if (w === 'delayed') { try { hasTime = !!_gateDelayHasTime(o.cf); } catch (e) { hasTime = false; } }
   // the gate's own times hold: no late-inbound notice, no Delayed without a time
@@ -36004,11 +36126,19 @@ function _gateCardsBuild(o) {
     city: String(o.city || ''),
     code: String(o.code || ''),
     stKey: w,
+    idle: idle,
     firm: firm,
     // the departure as printed, firm or not: no card once it has passed
     depAt: Number(o.depTs) || 0,
     depTs: firm ? Number(o.depTs) : 0,
     boardTs: firm ? (Number(o.boardTs) || 0) : 0,
+    // the boarding time as printed, firm or not (the lists' clearing runs to
+    // its countdown), and the flight's scheduled departure (the lists' names
+    // are drawn from its day, so a new time never redraws them)
+    boardAt: Number(o.boardTs) || 0,
+    schedAt: Number(o.cf._sortTs) || Number(o.depTs) || 0,
+    // the departure the flight closes on: the printed one
+    depEnd: Math.max(Number(o.depTs) || 0, Number(o.depEnd) || 0),
     close: firm && o.close && o.close.ts ? o.close : null,
     arr: arr,
     docs: docs,
@@ -36021,13 +36151,16 @@ function _gateCardsDue(m, nowMs) {
   var due = { ovcard: false, docscard: false, closecard: false, sbcard: false };
   if (!m) return due;
   var now = Number(nowMs) || Date.now();
+  // the lists: their own window, from the idle layout to the flight's close
+  due.sbcard = !!_gateSbLists(m, now);
+  // the other three: before boarding only, in the idle layout
+  if (m.idle === false) return due;
   if (m.depAt && m.depAt <= now) return due;
   due.docscard = !!(_GATE_DOCS[m.docs]);
   due.ovcard = !!(m.firm && m.depTs > 0 && m.boardTs > 0 && m.depTs > now);
   var c = m.close;
   due.closecard = !!(c && c.ts && GATE_CLOSE_WORDS[c.kind] && GATE_CLOSE_WORDS[c.kind].band
     && now >= c.ts - _GATE_CARD_CLOSE_WINDOW_MS && now < c.ts);
-  due.sbcard = !!_gateSbLists(m, now);
   return due;
 }
 
@@ -36048,16 +36181,38 @@ function _gateCardsDue(m, nowMs) {
 // (✚ ADD FLIGHT), a board in demo mode (loadDemo), or ?standby=1 for review
 // (that load only, never saved).
 //
-// WHEN: from 90 minutes before a domestic departure (120 for transborder and
-// international), from the gate's own firm times only, until the boarding
-// countdown takes the screen ten minutes before boarding (the deck is off the
-// screen from then on). That countdown starts about when Air Canada clears
-// its last standby names (45 minutes before a domestic departure), so the
-// list is all but done by then.
+// WHEN (2026-10-12, replacing v24026's window): from 90 minutes before a
+// domestic departure (120 for transborder and international), counted from
+// the departure the gate prints (the airport's revised time when it has
+// posted one), and from then on WITHOUT A BREAK until the flight closes.
+// Once the list is up it is not rotated away and nothing replaces it: it
+// was one slide among the ads, a minute on and at least four off, and ended
+// at the boarding countdown, so in practice it was seen only in its last
+// visit before boarding. Now:
+//   - in the idle layout the centre deck is the list alone
+//     (_buildGateAdSlideList), repainted in place, never crossfaded into a
+//     copy of itself (_restartGateAdsTimer); the documents and the
+//     airline's close time ride its foot (_gcSbFoot), the facts the
+//     documents and close cards carried, so they do not leave the screen;
+//   - under the countdown, NOW BOARDING and FINAL CALL, where there is no
+//     centre panel, it is a column beside the sign (_gateSbColHtml);
+//   - the flight closes on the first of: its own word says Gate closed,
+//     Departed, Cancelled or Diverted (the model is then null,
+//     _gateCardsBuild); the departure the gate prints has passed while the
+//     gate's times are firm; or the gate moves on to another flight
+//     (_gateCardsLive). A Delayed with no new time, or "Updated boarding
+//     time to follow", is not a firm time: the list neither waits for one
+//     nor comes down because one is missing, and the flight's own hold on
+//     the gate bounds it.
+// A gate shows one flight, so where departures are close together the next
+// flight's list follows the last one's close.
 //
-// HOW IT MOVES: across that time the names clear one by one (a tick and the
-// seat) and the next is called ("See agent"). Arithmetic on the clock, so
-// every paint agrees and nothing is stored.
+// HOW IT MOVES: from the start of the window to the boarding countdown (ten
+// minutes before the printed boarding time) the names clear one by one (a
+// tick and the seat) and the next is called ("See agent"); then the list
+// holds its last state until the flight closes. Arithmetic on the clock, so
+// every paint agrees and nothing is stored. The card prints no time, so
+// nothing on it claims one.
 //
 // v24028 — THE THIRD LIST, SEAT CHANGES (decided 2026-10-10): the passengers
 // the agent calls to move seat (a family seated apart, an aircraft swap). The
@@ -36122,15 +36277,20 @@ function _gateSbSeed(str) {
 //   { upgrade: { cabin, rows } | null, standby: { cabin, rows }, seats: { cabin: null, rows } }
 //   a row: { st: 'cleared' | 'called' | 'wait', name, seat, pos }
 function _gateSbLists(m, nowMs) {
-  if (!m || !m.pretend || !m.firm) return null;
+  if (!m || !m.pretend) return null;
   var now = Number(nowMs) || Date.now();
+  var dep = Number(m.depAt) || 0;
+  if (!(dep > 0)) return null;
   var lead = _GATE_SB_LEAD_MIN[m.region] || 60;
-  var from = m.depTs - lead * 60000, to = m.boardTs;
-  if (!(m.depTs > now && to > from && now >= from && now < to)) return null;
-  // the clearing runs until the countdown (the card's last minutes on screen)
-  var end = Math.max(from + 60000, to - _GATE_SB_COUNTDOWN_MS);
-  var p = Math.min(0.999, (now - from) / (end - from));
-  var rnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|' + new Date(m.depTs).toISOString().slice(0, 10)));
+  var from = dep - lead * 60000;
+  if (now < from) return null;
+  // closed: the printed departure has passed, while the gate's times hold
+  if (m.firm && now >= Math.max(dep, Number(m.depEnd) || 0)) return null;
+  // the clearing runs until the boarding countdown, then holds
+  var board = Number(m.boardAt) || 0;
+  var end = Math.max(from + 60000, (board > from ? board : dep - 35 * 60000) - _GATE_SB_COUNTDOWN_MS);
+  var p = Math.max(0, Math.min(0.999, (now - from) / (end - from)));
+  var rnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|' + new Date(Number(m.schedAt) || dep).toISOString().slice(0, 10)));
   var air = String(m.airline || '').toUpperCase();
   var cab = GATE_SB_CABINS[air] || GATE_SB_CABINS[_GATE_CARD_ALIAS[air]] || [null, 'cabinEcon'];
   var fmt = GATE_SB_NAME_FMT[air] || GATE_SB_NAME_FMT[_GATE_CARD_ALIAS[air]] || 'sur3';
@@ -36238,11 +36398,17 @@ function _gateCardEmblem(code) {
 // break offered the one between them (display rule 2), in the board's own two
 // languages, French first in Québec (_gateLbl / BoardStrings.pairLangs).
 var _GC_SEP = ' <span class="gc-sep fx-brk">|</span> ';
-function _gcPair(key, frF, fmt) {
+// 2026-10-12 — the same bar held to the phrase before it (a no-break space in
+// front), for a pair that may take two lines in a narrow box (the lists'
+// status words in the column beside a boarding sign): the break comes after
+// the bar, which the fitter then drops, never before it, where the bar was
+// left alone on a middle line between the two phrases.
+var _GC_SEP_HOLD = '\u00a0<span class="gc-sep fx-brk">|</span> ';
+function _gcPair(key, frF, fmt, sep) {
   return _gateLbl(key, frF, function (w, i, lg) {
     var t = fmt ? fmt(String(w), lg) : String(w);
     return '<span class="fx-unit gc-h">' + t + '</span>';
-  }, _GC_SEP);
+  }, sep || _GC_SEP);
 }
 // a status word, in the words the gate's other cards print it in (SLpair)
 function _gcStatusPair(k, frF) {
@@ -36310,17 +36476,23 @@ function _gcRow(kind, glyph, label, sub, ts, tz, st, dw, frF) {
 }
 
 // The card's markup ('' when it has nothing true to show). `inb` is the Your
-// Aircraft card's own facts (window._gateInbFacts), or null.
-function _gateCardHtml(type, m, nowMs, inb) {
+// Aircraft card's own facts (window._gateInbFacts), or null. `col` (the lists
+// only): the column beside a boarding sign (_gateSbColHtml), the lists alone:
+// no title (the tiles above it carry the flight and its city), no documents
+// or close time (the band beside it carries them), and no "Refresh your
+// boarding pass or see the agent" line, whose longest phrases do not fit the
+// column whole at the readable floor (a called name still says "See agent").
+function _gateCardHtml(type, m, nowMs, inb, col) {
   if (!m) return '';
   var now = Number(nowMs) || Date.now();
   var due = _gateCardsDue(m, now);
   if (!due[type]) return '';
+  col = !!col && type === 'sbcard';
   var frF = m.frF, tz = m.tz;
   var tint = _gateCardTint(m.airline);
   var emb = _gateCardEmblem(m.airline);
   var solo = type === 'docscard' && !((_GATE_DOCS[m.docs] || _GATE_DOCS.B).keys.length > 1);
-  var open = '<div class="gcard gcard-' + type + (solo ? ' gcard-docs-solo' : '') + ' fids-dn-fade" data-gcard="' + type + '" data-gcard-air="' + fidsEscHtml(m.airline) + '"'
+  var open = '<div class="gcard gcard-' + type + (solo ? ' gcard-docs-solo' : '') + (col ? ' gcard-col' : '') + ' fids-dn-fade" data-gcard="' + type + '" data-gcard-air="' + fidsEscHtml(m.airline) + '"'
     + ' style="--gc-frame:' + tint.frame + ';--gc-acc:' + tint.acc + '">';
   var embw = emb ? '<div class="gc-embw">' + emb + '</div>' : '';
   var day = function (ts, dtz) { return _gateDayWords(ts, dtz || tz, frF, tz); };
@@ -36381,8 +36553,8 @@ function _gateCardHtml(type, m, nowMs, inb) {
       var rowsS = '';
       for (var j = 0; j < Lq.rows.length; j++) {
         var r = Lq.rows[j];
-        var stS = r.st === 'cleared' ? '<span class="gc-st-ok">' + _gcPair(parts[q][2], frF) + '</span>'
-          : r.st === 'called' ? '<span class="gc-st-amb">' + _gcPair('sbSeeAgent', frF) + '</span>' : '';
+        var stS = r.st === 'cleared' ? '<span class="gc-st-ok">' + _gcPair(parts[q][2], frF, null, _GC_SEP_HOLD) + '</span>'
+          : r.st === 'called' ? '<span class="gc-st-amb">' + _gcPair('sbSeeAgent', frF, null, _GC_SEP_HOLD) + '</span>' : '';
         rowsS += '<div class="gc-sbr" data-st="' + r.st + '">'
           + '<div class="gc-sbn">' + (r.st === 'cleared' ? tick : String(r.pos)) + '</div>'
           + '<div class="gc-sbnm">' + fidsEscHtml(r.name) + '</div>'
@@ -36391,12 +36563,14 @@ function _gateCardHtml(type, m, nowMs, inb) {
           + '</div>';
       }
       secs += '<div class="gc-sbsec" data-list="' + parts[q][0] + '">'
-        + '<div class="gc-sbhd"><div class="gc-sbtt">' + _gcPair(parts[q][1], frF) + '</div>'
-        + (Lq.cabin ? '<div class="gc-sbcab fids-dn-fade">' + _gcPair(Lq.cabin, frF) + '</div>' : '') + '</div>'
+        + '<div class="gc-sbhd"><div class="gc-sbtt">' + _gcPair(parts[q][1], frF, null, _GC_SEP_HOLD) + '</div>'
+        + (Lq.cabin ? '<div class="gc-sbcab fids-dn-fade">' + _gcPair(Lq.cabin, frF, null, _GC_SEP_HOLD) + '</div>' : '') + '</div>'
         + '<div class="gc-sbt gc-zone fids-dn-fade">' + rowsS + '</div></div>';
     }
+    if (col) return open + '<div class="gc-sbl">' + secs + '</div></div>';
     return open + hdS + '<div class="gc-sbl">' + secs + '</div>'
-      + '<div class="gc-ft fids-dn-fade"><div class="gc-rule">' + _gcPair('sbRefresh', frF) + '</div></div></div>';
+      + '<div class="gc-ft fids-dn-fade"><div class="gc-rule">' + _gcPair('sbRefresh', frF) + '</div></div>'
+      + _gcSbFoot(m, now) + '</div>';
   }
   if (type === 'closecard') {
     var c = m.close;
@@ -36417,6 +36591,73 @@ function _gateCardHtml(type, m, nowMs, inb) {
   return '';
 }
 
+// 2026-10-12 — THE LISTS' FOOT: this flight's documents and the airline's
+// close time, the two facts the documents and close cards carried before the
+// list took the centre alone. The boarding band's own content
+// (_gateBandHtml: _GATE_DOCS' lines and pictograms, GATE_CLOSE_WORDS' band
+// line with each language's own clock) in the card's own look: one line per
+// fact under its pictograms, its two languages a pair round the card's bar
+// (_GC_SEP, French first in Québec), each language one whole phrase
+// (.fx-unit) and, where the pair does not fit one line, one line each (the
+// shared fitter, '.gcard .gc-sbfl'). An international flight's two documents
+// sit in each language round a dot that a break may also take. The close
+// time only while it is still to come and the gate's times hold (m.close,
+// _gateCloseInfo through _gateCardsBuild); an airline with no close time
+// shows the documents alone. No new words: all of them are the band's.
+function _gcSbFoot(m, nowMs) {
+  try {
+    if (!m) return '';
+    var now = Number(nowMs) || Date.now();
+    var frF = !!m.frF;
+    var d = _GATE_DOCS[m.docs] || _GATE_DOCS.B;
+    var by = [], lgs = [];
+    d.keys.forEach(function (k) {
+      _gateLbl(k, frF, function (w, i, lg) {
+        (by[i] = by[i] || []).push('<span class="fx-unit gc-h">' + w + '</span>');
+        lgs[i] = lg;
+        return '';
+      }, '');
+    });
+    var halves = [];
+    for (var i = 0; i < by.length; i++) {
+      if (!by[i]) continue;
+      halves.push(BoardStrings.markHalf('<span class="gc-sbfu">' + by[i].join(' <span class="gc-sep fx-brk">\u00b7</span> ') + '</span>', lgs[i], d.keys.length > 1 ? '' : d.keys[0]));
+    }
+    if (!halves.length) return '';
+    var gl = '';
+    for (var g = 0; g < d.glyphs.length; g++) gl += _GATE_BAND_GLYPH[d.glyphs.charAt(g)] || '';
+    var close = '';
+    var c = m.close;
+    var cw = (c && Number(c.ts) > now && GATE_CLOSE_WORDS[c.kind]) ? GATE_CLOSE_WORDS[c.kind].band : '';
+    if (cw) {
+      var when = new Date(Number(c.ts));
+      var line = _gateLbl(cw, frF, function (w, i2, lg) {
+        var clock = _fidsClockForLang(when, m.tz || 'UTC', lg);
+        var t = String(w), at = t.indexOf('{TIME}');
+        if (!clock || at < 0) return '';
+        return '<span class="fx-unit gc-h">' + t.slice(0, at) + '<b class="gc-sbft"><bdi>' + fidsEscHtml(clock) + '</bdi></b>' + t.slice(at + 6) + '</span>';
+      }, _GC_SEP);
+      if (line) close = '<div class="gc-sbfh gc-sbfc"><div class="gc-sbfi">' + _GATE_BAND_GLYPH.c + '</div><div class="gc-sbfx"><div class="gc-sbfl">' + line + '</div></div></div>';
+    }
+    return '<div class="gc-sbfoot gc-zone fids-dn-fade" data-doc="' + (_GATE_DOCS[m.docs] ? m.docs : 'B') + '">'
+      + '<div class="gc-sbfh gc-sbfd"><div class="gc-sbfi">' + gl + '</div><div class="gc-sbfx"><div class="gc-sbfl">' + halves.join(_GC_SEP) + '</div></div></div>'
+      + close + '</div>';
+  } catch (e) { return ''; }
+}
+// 2026-10-12 — THE LISTS BESIDE THE BOARDING SIGNS. Under the countdown, NOW
+// BOARDING and FINAL CALL the gate has no centre panel, so the list is drawn
+// with the takeover, in a column on its right as wide as the idle layout's
+// right column (css: .g8-sbcol): the same card, its column form (no title, no
+// foot). '' when the list is not due (the window has not opened, or the
+// flight has closed). uxgGateHtml places it; the gate's clock tick asks for
+// one repaint when what it shows no longer matches the clock
+// (updateDedicatedTimeOnly).
+function _gateSbColHtml(m, nowMs) {
+  try {
+    var html = _gateCardHtml('sbcard', m, nowMs, null, true);
+    return html ? '<div class="g8-sbcol">' + html + '</div>' : '';
+  } catch (e) { return ''; }
+}
 // The facts, while they are this gate's flight's (a gate that has moved on to
 // its next flight, or to none, shows no card from the last one).
 function _gateCardsLive() {
@@ -36428,9 +36669,11 @@ function _gateCardsLive() {
 }
 // Whether a card may take this turn: always on a repaint of the visit it is
 // already showing, and under ?scene= (the review pin); otherwise not within
-// _GATE_CARD_GAP_MS of its last turn.
+// _GATE_CARD_GAP_MS of its last turn. 2026-10-12: the lists always (once up,
+// they stay until the flight closes; there is no gap to keep).
 function _gateCardTurnDue(type) {
   try {
+    if (type === 'sbcard') return true;
     if (new URLSearchParams(location.search).get('scene')) return true;
     var seq = window._gateAdVisitSeq || 0;
     var rec = (window._gateCardTurns = window._gateCardTurns || {});
@@ -52495,37 +52738,38 @@ function renderGateAd(index) {
   }
   // Any non-bigcraft slide: tear the takeover down (overlay + map + class).
   try { if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown(); } catch (e) {}
-  // v24012 — THE CENTRE CARDS (overview, documents, gate closes). Drawn when
-  // due and their turn has come (_gateCardTurnDue); otherwise skipped onto
-  // the next slide, as the weather card is, and a run of cards is skipped
-  // whole.
-  for (var _gcN = 0; _gcN < totalSlots && slide && _GATE_CARD_TYPES.indexOf(slide.type) >= 0; _gcN++) {
-    if (_renderGateCard(el, slide.type, true)) return;
+  // THE SCENES THAT SKIP THEMSELVES, in one loop: the centre cards
+  // (v24012: overview, documents, gate closes, the lists), drawn when due and
+  // their turn has come (_gateCardTurnDue); FROM THE ARCHIVE, the heritage
+  // mark, when there is something true to show for this airport; and the
+  // ARRIVAL WEATHER scene (destination card + outlook), when its data is in
+  // and its turn has come (_wxTurnDue). Each one that has nothing to show is
+  // skipped onto the next slide, and the rotation index is synced so the next
+  // tick advances past the substituted slide instead of repeating it (the
+  // wrap-around once duplicated deck[0] every cycle).
+  // 2026-10-12 — one loop, so whatever follows a skipped scene is drawn by
+  // its own branch: the cards' loop used to run first, so a documents or
+  // close card that came after a skipped weather or heritage slot fell
+  // through to the ad painter with no ad (buildGateAdHtml(undefined)) and the
+  // panel stood blank for the slot's whole turn. A pass where every slide
+  // skipped itself leaves the panel as it is rather than blanking it.
+  var _skipN = 0;
+  for (; _skipN < totalSlots && slide; _skipN++) {
+    if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) {
+      if (_renderGateCard(el, slide.type, true)) return;
+    } else if (slide.type === 'heritage') {
+      if (typeof _renderHeritageCard === 'function' && _renderHeritageCard(el)) return;
+    } else if (slide.type === 'wxcard') {
+      if (_wxTurnDue() && typeof _renderWxCard === 'function' && _renderWxCard(el)) return;
+    } else {
+      break;
+    }
     slot = (slot + 1) % totalSlots;
     _gateAdIndex = slot;
     window._gateAdCurrentIdx = slot;
     slide = slides[slot] || slide;
   }
-  // FROM THE ARCHIVE — heritage mark. Skips itself the same way the weather
-  // card does when there is nothing true to show for this airport.
-  if (slide && slide.type === 'heritage') {
-    if (typeof _renderHeritageCard === 'function' && _renderHeritageCard(el)) return;
-    slot = (slot + 1) % totalSlots;
-    _gateAdIndex = slot;
-    window._gateAdCurrentIdx = slot;
-    slide = slides[slot] || slide;
-  }
-  // ARRIVAL WEATHER scene (destination card + outlook).
-  if (slide && slide.type === 'wxcard') {
-    if (_wxTurnDue() && typeof _renderWxCard === 'function' && _renderWxCard(el)) return;
-    // No data — SKIP the dead weather slide and sync the rotation index so
-    // the next tick advances past the substituted slide instead of
-    // repeating it (this wrap-around duplicated deck[0] every cycle).
-    slot = (slot + 1) % totalSlots;
-    _gateAdIndex = slot;
-    window._gateAdCurrentIdx = slot;
-    slide = slides[slot] || slide;
-  }
+  if (_skipN >= totalSlots) return;
 
   // ── Custom theme slide (image or video uploaded via Media Library) ──
   if (slide && slide.type === 'custom' && slide.item) {
@@ -53762,9 +54006,18 @@ function _buildGateAdSlideList() {
   // ── 9. v24012 — THE CENTRE CARDS, before boarding only (_gateCardsModel,
   // _gateCardsDue): the overview after the map, the documents after the
   // weather, the close time last, each only while it is due. Under a sign
-  // the facts are null and no card is in the deck.
+  // the deck is not on the screen.
+  // 2026-10-12 — THE LISTS HOLD THE CENTRE: from the moment they are due
+  // until the flight closes the deck is the list alone (_gateSbLists), so
+  // nothing rotates it away; the documents and the close time ride its foot.
+  // The ads, the map, the weather, the heritage mark and uploaded media come
+  // back with the deck when the flight closes. Not under ?scene=, the review
+  // pin, which must still reach every scene (the list is then one slide).
   try {
     var _gcDue = _gateCardsDue(_gateCardsLive(), Date.now());
+    var _gcPin = '';
+    try { _gcPin = new URLSearchParams(location.search).get('scene') || ''; } catch (ePn) { _gcPin = ''; }
+    if (_gcDue.sbcard && !_gcPin) return [{ type: 'sbcard' }];
     if (_gcDue.ovcard) deck.splice(Math.min(2, deck.length), 0, { type: 'ovcard' });
     if (_gcDue.docscard) deck.splice(Math.min(6, deck.length), 0, { type: 'docscard' });
     if (_gcDue.closecard) deck.push({ type: 'closecard' });
@@ -53971,6 +54224,29 @@ function _restartGateAdsTimer() {
       }
       var totalSlots = 1;
       try { totalSlots = _getGateAdTotalSlots(); } catch (e) { totalSlots = ((getGateAds() || []).length + 1); }
+      // 2026-10-12 — THE LISTS STAY PUT. While the lists are up the deck is
+      // the list alone (_buildGateAdSlideList), so the slide after the list
+      // is the list again: it is repainted in place (only where its rows
+      // changed, _renderGateCard), never lifted into the dissolving overlay
+      // and crossfaded into a copy of itself. The tick still runs a minute at
+      // a time (_getGateAdDwellMs), so the boundary posted above still tells
+      // the stream's rotator a minute has passed.
+      try {
+        if (el3.querySelector(':scope > .gcard[data-gcard="sbcard"]')) {
+          var _sbNext = _getGateAdSlideAt((_gateAdIndex + 1) % Math.max(1, totalSlots));
+          if (_sbNext && _sbNext.type === 'sbcard') {
+            _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
+            _gateAdExtN = 0;
+            window._gateAdAuthChange = true;
+            try { renderGateAd(_gateAdIndex); } catch (eSb) {}
+            window._gateAdAuthChange = false;
+            el3.style.transition = 'none';
+            el3.style.opacity = '1';
+            _gateAdTimer = setTimeout(_tick, Math.max(22000, _getGateAdDwellMs(_sbNext)));
+            return;
+          }
+        }
+      } catch (eSbS) {}
       // Lift the current slide's DOM into a fading overlay. Moving (not
       // cloning) keeps playing videos playing while they dissolve.
       //
