@@ -55529,7 +55529,11 @@ function _wxIconQ() {
 // The three tints below are the ones the chosen design was drawn and
 // measured with; every other carrier's is mixed from its pair by one rule.
 var _WX_LOOK = {
-  AC: { g: [11, 13, 16], f: [26, 16, 19] },   // Air Canada: black, a breath of its red
+  // dh (v24044): the hue of the day circle, where the ground reads as a
+  // colour its tint alone does not carry — Air Canada's card reads as a warm
+  // brown on the stream (its warm footage under the near-black), so its
+  // circle is a light beige
+  AC: { g: [11, 13, 16], f: [26, 16, 19], dh: 70 },   // Air Canada: black, a breath of its red
   PD: { g: [12, 16, 24], f: [19, 41, 76] },   // Porter: its navy
   WS: { g: [10, 17, 20], f: [11, 58, 59] }    // WestJet: its teal, deep
 };
@@ -55537,6 +55541,55 @@ var _WX_GROUND_DIM = 0.70;     // the near-black over the footage: the footage s
 var _WX_TINT = 0.55;           // the airline tint on plates and tiles
 function _wxMix(a, b, t) { return [0, 1, 2].map(function (i) { return Math.round(a[i] * (1 - t) + b[i] * t); }); }
 function _wxHex(c) { return '#' + c.map(function (v) { return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2); }).join('').toUpperCase(); }
+// ══ v24044 — THE DAY CIRCLE TAKES THE CARD'S GROUND, LIGHTENED ═════════════
+// The Colour look's circle was the page's stark white, a hole in the card's
+// dark ground. It is now a light tint of that ground: the hue of the colour
+// the card tints its ground with for the airline (f above; dh where the
+// ground reads otherwise), lightened to _WX_DISC_L in OKLab and given no
+// more colour than the ground has, nor than _WX_DISC_C. A light beige on Air
+// Canada's warm brown, a light teal on WestJet's, a light blue on Porter's
+// and United's navy, a soft grey on a neutral black. The icons on it keep
+// reading: every colour the Colour icons are drawn in (the sun's yellows,
+// the clouds' greys, the rain's slate) keeps at least _WX_DISC_KEEP of the
+// colour distance it has from white, and a tint that would take more is
+// made paler until it does. Set as --wxc-disc on the card; the disc-day
+// files fill their circle with it and fall back to white anywhere else.
+var _WX_DISC_L = 0.95;         // light, never the page's white
+var _WX_DISC_C = 0.022;        // at most this much colour
+var _WX_DISC_KEEP = 0.75;      // each icon colour keeps 3/4 of its distance from white
+var _WX_DISC_INKS = ['#FDBF4E', '#EEBF5B', '#F8A93B', '#97A8B6', '#99AAB8', '#6D8AA3', '#6E879C'];
+function _wxOklab(c) {
+  var l = c.map(_rc2Lin);
+  var L = Math.cbrt(0.4122214708 * l[0] + 0.5363325363 * l[1] + 0.0514459929 * l[2]),
+      M = Math.cbrt(0.2119034982 * l[0] + 0.6806995451 * l[1] + 0.1073969566 * l[2]),
+      S = Math.cbrt(0.0883024619 * l[0] + 0.2817188376 * l[1] + 0.6299787005 * l[2]);
+  return [0.2104542553 * L + 0.7936177850 * M - 0.0040720468 * S,
+          1.9779984951 * L - 2.4285922050 * M + 0.4505937099 * S,
+          0.0259040371 * L + 0.7827717662 * M - 0.8086757660 * S];
+}
+function _wxFromOklab(o) {
+  var L = Math.pow(o[0] + 0.3963377774 * o[1] + 0.2158037573 * o[2], 3),
+      M = Math.pow(o[0] - 0.1055613458 * o[1] - 0.0638541728 * o[2], 3),
+      S = Math.pow(o[0] - 0.0894841775 * o[1] - 1.2914855480 * o[2], 3);
+  return [4.0767416621 * L - 3.3077115913 * M + 0.2309699292 * S,
+          -1.2684380046 * L + 2.6097574011 * M - 0.3413193965 * S,
+          -0.0041960863 * L - 0.7034186147 * M + 1.7076147010 * S].map(function (v) {
+    var x = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+    return Math.round(Math.max(0, Math.min(1, x)) * 255);
+  });
+}
+function _wxDiscTint(f, dh) {
+  var o = _wxOklab(f), h = Math.atan2(o[2], o[1]);
+  var c = Math.min(Math.sqrt(o[1] * o[1] + o[2] * o[2]), _WX_DISC_C), L = _WX_DISC_L;
+  if (typeof dh === 'number') { h = dh * Math.PI / 180; c = _WX_DISC_C; }
+  var far = function (p, q) { return Math.sqrt(Math.pow(p[0] - q[0], 2) + Math.pow(p[1] - q[1], 2) + Math.pow(p[2] - q[2], 2)); };
+  var white = _wxOklab([255, 255, 255]), inks = _WX_DISC_INKS.map(function (x) { return _wxOklab(_rc2Rgb(x)); });
+  var at = function () { return _wxOklab(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)])); };
+  for (var i = 0; i < 12 && !inks.every(function (p) { return far(p, at()) >= _WX_DISC_KEEP * far(p, white); }); i++) {
+    c *= 0.8; L = Math.min(1, L + 0.004);
+  }
+  return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
+}
 function _wxAirlineLook(code) {
   var c = String(code || '').trim().toUpperCase();
   var p = _rc2Pair(c);
@@ -55564,7 +55617,8 @@ function _wxAirlineLook(code) {
     if (_rc2StatusLike(_wxHex(f))) f = _wxMix(g, [20, 24, 32], 1);
   }
   var tile = _wxMix(g, f, _WX_TINT);
-  return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile) };
+  return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile),
+           dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined) };
 }
 // v24035 — THE SOLID LOOK'S TWO COLOURS: the circle is the airline's deep
 // colour and the glyph its brand colour (WestJet navy behind its teal, Air
@@ -55758,7 +55812,11 @@ function _wmoAnimIcon(code) {
   var c = Number(code) || 0;
   if (c === 0 || c === 1) return 'clear-day';
   if (c === 2) return 'partly-cloudy-day';
-  if (c === 3) return 'overcast-day';
+  // v24044 — 3 is overcast: MET's 'cloudy', the whole sky covered. It drew
+  // 'overcast-day', which in every set is a sun behind a cloud, under the
+  // words Overcast | Couvert (and that sun at night, which has no other
+  // form). 'overcast' is the same words with cloud and no sun.
+  if (c === 3) return 'overcast';
   if (c === 45 || c === 48) return 'fog';
   if (c >= 51 && c <= 55) return 'drizzle';
   if (c === 56 || c === 57 || c === 66 || c === 67) return 'sleet';
@@ -58009,7 +58067,7 @@ function _renderWxCard(el) {
     var _wxLk = _wxAirlineLook(_wxAl);
     var _wxPaint = function (wrap) {
       if (!wrap || !wrap.style) return;
-      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p].join('|');
+      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p, _wxLk.dk].join('|');
       if (wrap._wxLookKey === key) return;
       wrap._wxLookKey = key;
       wrap.style.setProperty('--wxc-a', _wxLk.a);
@@ -58017,6 +58075,8 @@ function _renderWxCard(el) {
       wrap.style.setProperty('--wxc-g', _wxLk.g);
       wrap.style.setProperty('--wxc-p', _wxLk.p);
       wrap.style.setProperty('--wxc-ko', _wxLk.ko);
+      // v24044 — the day circle: a light tint of this ground (_wxDiscTint)
+      wrap.style.setProperty('--wxc-disc', _wxLk.dk);
       var _wxDp = _wxDiscPair(_wxLk.code);
       wrap.style.setProperty('--wx-disc', _wxDp.disc);
       wrap.style.setProperty('--wx-ink', _wxDp.ink);

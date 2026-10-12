@@ -65,7 +65,7 @@ vm.runInNewContext(COLORS_SRC, SANDBOX);
 SANDBOX.AIRLINE_ACCENT = table('AIRLINE_ACCENT');
 SANDBOX.AIRLINE_BRAND = table('AIRLINE_BRAND');
 SANDBOX.AIRLINE_BRAND_COLORS = SANDBOX.window.AIRLINE_BRAND_COLORS;
-const L = vm.runInNewContext(RC2_SRC + '\n' + LOOK_SRC + '\n({ RC2_STATUS, RC2_PAIRS, _rc2StatusLike, _rc2Contrast, _rc2Rgb, _wxAirlineLook, _wxWhiteStill, _wxMix, _WX_GROUND_DIM, _WX_TINT, _WX_ICON_FRAME });', SANDBOX);
+const L = vm.runInNewContext(RC2_SRC + '\n' + LOOK_SRC + '\n({ RC2_STATUS, RC2_PAIRS, _rc2StatusLike, _rc2Contrast, _rc2Rgb, _wxAirlineLook, _wxWhiteStill, _wxMix, _WX_GROUND_DIM, _WX_TINT, _WX_ICON_FRAME, _wxDiscTint, _wxOklab, _WX_DISC_INKS, _WX_DISC_KEEP, _WX_DISC_L });', SANDBOX);
 const look = (c) => ({ ...L._wxAirlineLook(c) });
 const rgbOf = (s) => String(s).split(',').map(Number);
 const tintOf = (p) => { const m = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/.exec(p); assert.ok(m, 'tint ' + p); return { c: [+m[1], +m[2], +m[3]], a: +m[4] }; };
@@ -168,7 +168,8 @@ test('the footage plays at 30 % under one near-black layer, so even a lightning 
 test('the card wears the gate\'s airline, set in place on every render path', () => {
   const src = fnSource('_renderWxCard');
   assert.match(src, /var _wxLk = _wxAirlineLook\(_wxAl\);/);
-  for (const p of ['--wxc-a', '--wxc-a-ink', '--wxc-g', '--wxc-p', '--wxc-ko']) assert.ok(src.includes("wrap.style.setProperty('" + p + "'"), p);
+  for (const p of ['--wxc-a', '--wxc-a-ink', '--wxc-g', '--wxc-p', '--wxc-ko', '--wxc-disc']) assert.ok(src.includes("wrap.style.setProperty('" + p + "'"), p);
+  assert.match(src, /var key = \[_wxLk\.code, _wxLk\.a, _wxLk\.ink, _wxLk\.g, _wxLk\.p, _wxLk\.dk\]\.join\('\|'\);/, 'a new circle tint repaints');
   assert.match(src, /if \(wrap\._wxLookKey === key\) return;/, 'only when the colours change, so a refresh never repaints');
   assert.equal((src.match(/_wxPaint\((el\.querySelector\('\.wxcard-wrap'\)|_wxWrapP|_wxWrap)\);/g) || []).length, 3, 'the three render paths');
   assert.match(src, /if \(_wxAl === '9E'\) _wxAl = 'DL';/, 'folded the way the gate folds it');
@@ -235,4 +236,71 @@ test('every word is the store\'s: the plate\'s Tomorrow and Now, in all nine lan
   assert.match(side, /if \(dDay && dDay === nDay\) note = _wxPairT\(BoardStrings\.entry\('tomorrow'\)\);/, 'a plate for after midnight says Tomorrow beside its time');
   assert.match(side, /'<div class="wxc-mon-cond wxc-stk">' \+ _wxPairT\(_WXLBL\[sIc\] \|\| \{ en: '' \}\) \+ '<\/div>'/, 'the condition\'s two languages stack whole, never break mid-phrase');
   assert.match(CORE, /var SEL = '[^']*\.wxc-stk[^']*'/, 'the pair pass stacks them');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v24044 — THE DAY CIRCLE BLENDS WITH THE CARD: a light tint of its ground,
+// not the page's white. The colour icons on it keep reading.
+// ═══════════════════════════════════════════════════════════════════════════
+const okDist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+const okLch = (h) => { const o = L._wxOklab(L._rc2Rgb(h)); return { L: o[0], C: Math.hypot(o[1], o[2]), h: (Math.atan2(o[2], o[1]) * 180 / Math.PI + 360) % 360 }; };
+
+test('the day circle is a light tint of each airline\'s ground: beige on Air Canada, teal on WestJet, blue on Porter and United', () => {
+  const tint = (c) => look(c).dk;
+  assert.equal(tint('AC'), '#F8ECDF', 'Air Canada: a light beige, the warm brown its card reads as, lightened');
+  for (const c of AC_FAMILY) assert.equal(tint(c), tint('AC'), c + ' wears the Air Canada circle');
+  const hue = (c, lo, hi) => { const x = okLch(tint(c)); assert.ok(x.h >= lo && x.h <= hi, c + ' hue ' + x.h.toFixed(0)); return x; };
+  hue('AC', 55, 85);              // beige
+  hue('WS', 180, 215);            // teal
+  hue('PD', 245, 275);            // navy, lightened
+  hue('UA', 245, 275);
+  for (const c of ['AC', 'WS', 'PD', 'UA', 'DL', 'AA', 'B6', 'F8', 'TS', 'WG', 'NK', 'QR', 'HA', 'LH', 'EK', '']) {
+    const x = okLch(tint(c));
+    assert.ok(x.L >= 0.94 && x.L < 0.99, (c || 'no airline') + ': light, never the page\'s white (L ' + x.L.toFixed(3) + ')');
+    assert.ok(x.C <= 0.0235, (c || 'no airline') + ': a tint, not a colour (C ' + x.C.toFixed(3) + ')');
+    assert.notEqual(tint(c), '#FFFFFF', (c || 'no airline') + ' is not the stark white');
+  }
+  assert.ok(okLch(tint('F8')).C < 0.004, 'a neutral black ground gives a soft grey');
+});
+
+test('the sun, the clouds and the rain still read on every airline\'s circle', () => {
+  const white = L._wxOklab([255, 255, 255]);
+  assert.ok(L._WX_DISC_INKS.includes('#FDBF4E') && L._WX_DISC_INKS.includes('#97A8B6'), 'the sun and the cloud are measured');
+  // every colour the Colour icons are drawn in is one the rule measures
+  const DAY = path.join(ROOT, 'fids-current/logos/weather/disc-day');
+  const used = new Set();
+  for (const f of fs.readdirSync(DAY)) for (const m of fs.readFileSync(path.join(DAY, f), 'utf8').matchAll(/fill="(#[0-9A-Fa-f]{6})"/g)) used.add(m[1].toUpperCase());
+  for (const c of used) assert.ok(L._WX_DISC_INKS.includes(c), c + ' is drawn on the day circle and measured against its tint');
+  for (const code of Object.keys(L.RC2_PAIRS).concat(['AC', 'WS', 'PD', ''])) {
+    const t = L._wxOklab(L._rc2Rgb(look(code).dk));
+    for (const ink of L._WX_DISC_INKS) {
+      const p = L._wxOklab(L._rc2Rgb(ink));
+      assert.ok(okDist(p, t) >= L._WX_DISC_KEEP * okDist(p, white) - 1e-9, (code || 'no airline') + ': ' + ink + ' keeps 3/4 of its distance from the circle');
+    }
+  }
+  // whatever hue a ground has, the rule pales its circle until every icon
+  // colour keeps 3/4 of its distance — the sun's own hue included
+  let paled = 0;
+  for (let h = 0; h < 360; h += 5) {
+    const tint = L._wxDiscTint([40, 40, 40], h), t = L._wxOklab(L._rc2Rgb(tint));
+    if (okLch(tint).C < 0.0205) paled++;
+    for (const ink of L._WX_DISC_INKS) {
+      const p = L._wxOklab(L._rc2Rgb(ink));
+      assert.ok(okDist(p, t) >= L._WX_DISC_KEEP * okDist(p, white) - 1e-9, 'hue ' + h + ': ' + ink + ' on ' + tint);
+    }
+  }
+  assert.equal(paled, 0, 'at the chosen strength no hue needs paling');
+  // and the guard works: allowed three times the colour, the yellows' own
+  // hues are paled back until the sun reads, the rest keep their colour
+  const STRONG = vm.runInNewContext(RC2_SRC + '\n' + LOOK_SRC.replace('var _WX_DISC_C = 0.022;', 'var _WX_DISC_C = 0.066;') + '\n({ _wxDiscTint });', SANDBOX);
+  let strongPaled = 0;
+  for (let h = 0; h < 360; h += 5) {
+    const tint = STRONG._wxDiscTint([40, 40, 40], h), t = L._wxOklab(L._rc2Rgb(tint));
+    if (okLch(tint).C < 0.065) strongPaled++;
+    for (const ink of L._WX_DISC_INKS) {
+      const p = L._wxOklab(L._rc2Rgb(ink));
+      assert.ok(okDist(p, t) >= L._WX_DISC_KEEP * okDist(p, white) - 1e-9, 'strong, hue ' + h + ': ' + ink + ' on ' + tint);
+    }
+  }
+  assert.ok(strongPaled > 0 && strongPaled < 72, 'some hues paled, not all: ' + strongPaled);
 });
