@@ -77,7 +77,7 @@ test('the gate and baggage layers exist only while the holiday is set', () => {
 // CSS names exists, is small, is plain vector art and is in the asset
 // manifest, and the extra leaves follow the same layer rules.
 const LEAF_DIR = path.join(__dirname, '..', 'fids-current/logos/holiday/thanksgiving');
-const LEAVES = ['maple-amber.svg', 'maple-crimson.svg', 'maple-gold.svg', 'maple-orange.svg', 'maple-rust.svg'];
+const LEAVES = ['maple-amber.svg', 'maple-bouquet.svg', 'maple-crimson.svg', 'maple-gold.svg', 'maple-orange.svg', 'maple-rust.svg'];
 function holidayBlock() {
   const at = CSS.indexOf('A HOLIDAY LOOK: THANKSGIVING');
   return CSS.slice(at, CSS.indexOf('/* ══', at + 10));
@@ -91,7 +91,7 @@ test('the leaves are the real artwork files, not drawn data URIs', () => {
   const block = holidayBlock();
   assert.doesNotMatch(block, /data:image\/svg/, 'no drawn leaf left in the look');
   const urls = [...block.matchAll(/url\("(\/logos\/holiday\/thanksgiving\/[a-z-]+\.svg)"\)/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(urls)].map((u) => path.basename(u)).sort(), LEAVES, 'all five leaves are used');
+  assert.deepEqual([...new Set(urls)].map((u) => path.basename(u)).sort(), LEAVES, 'all five leaves and the bouquet are used');
   assert.equal(leafOf(block, '.fids-board-icon::before'), 'maple-gold', 'gold leaf on the badge');
   assert.equal(leafOf(block, '.g8-r1 > .tg-leaf'), 'maple-gold', 'the gate keeps its gold leaf, never a red one');
   const manifest = fs.readFileSync(path.join(__dirname, '..', 'fids-current/assets/asset-manifest.json'), 'utf8');
@@ -99,7 +99,8 @@ test('the leaves are the real artwork files, not drawn data URIs', () => {
     const f = path.join(LEAF_DIR, path.basename(u));
     assert.ok(fs.existsSync(f), u);
     const svg = fs.readFileSync(f, 'utf8');
-    assert.ok(svg.length < 12000, u + ' stays small for the screens (' + svg.length + ' bytes)');
+    const cap = /bouquet/.test(u) ? 20000 : 12000;
+    assert.ok(svg.length < cap, u + ' stays small for the screens (' + svg.length + ' bytes)');
     assert.doesNotMatch(svg, /<script|<image|<foreignObject|href=|\son[a-z]+=/i, u + ' is plain vector art');
     assert.ok(manifest.includes('"' + u + '"'), u + ' is in the asset manifest');
   }
@@ -169,4 +170,29 @@ test('no red maple beside an Air Canada logo', () => {
     assert.ok(plain, cls);
     assert.ok(!red.includes(ac), cls + ' on an Air Canada gate is ' + ac);
   }
+});
+
+// The bouquet by the gate number: in the gate panel's corner beside the
+// number, or beside the Gate | Porte words when a long number fills that
+// corner; measured clear of both, inside the panel, still, and with no red
+// leaf, so it reads the same on every airline's colour.
+test('the bouquet sits in the gate panel, measured clear of the number and the words', () => {
+  assert.ok(CORE.includes("['.g8-r1-right', 'tg-bq', null]"), 'a holiday layer of the gate panel');
+  const bq = fn('_tgBouquet');
+  assert.match(bq, /pnl\.querySelector\(':scope > \.tg-bq'\)/);
+  assert.match(bq, /num\.getBoundingClientRect\(\)\.right - gap/, 'clear of the number');
+  assert.match(bq, /lbl\.getBoundingClientRect\(\)\.left - pr\.left - bl - gap/, 'clear of Gate | Porte');
+  assert.match(bq, /hMax = \(pr\.height - 6 \* k\) \* A/, 'never taller than the panel');
+  assert.match(bq, /ok = w >= 34;/, 'hidden rather than squeezed');
+  assert.match(bq, /el\.style\.display = ok \? '' : 'none';/);
+  assert.match(fn('_fidsHolidayLayers'), /_tgBouquet\(band\);/);
+  const block = holidayBlock();
+  assert.equal(leafOf(block, '.g8-r1-right > .tg-bq'), 'maple-bouquet');
+  assert.match(block, /\.g8-r1-right > \.tg-bq \{ position: absolute;/, 'inside the panel, which clips it');
+  assert.match(block, /\.g8-r1-right > \.tg-bq\.tg-bq-l \{ transform: scaleX\(-1\); \}/, 'mirrored on the words side');
+  // no red leaf: every leaf colour in the bouquet is gold, orange or yellow
+  const svg = fs.readFileSync(path.join(LEAF_DIR, 'maple-bouquet.svg'), 'utf8');
+  const stops = [...svg.matchAll(/stop-color="#([0-9a-f]{6})"/g)].map((m) => [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16)));
+  assert.ok(stops.length > 10);
+  for (const [r, g] of stops) assert.ok(g >= r * 0.45, 'a leaf colour with red ' + r + ' and green ' + g + ' is too red for a red panel');
 });

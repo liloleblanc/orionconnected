@@ -25453,6 +25453,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    (gold, rust, amber) in the warm space above the welcome line. Every leaf
    is placed by measuring the free space it sits in (_fidsHolidayLayers) and
    is hidden when it would not fit clear of the words, logos, clock and date.
+   On the gate panel, beside the number, a small bouquet of the same leaves
+   (gold, orange and yellow with two swirls, and no red leaf, so it never
+   sinks into a red panel or sits as a second maple beside Air Canada's) is
+   tucked into the panel's top-right corner, the screen's corner, running off
+   the edge by an eighth of its width; where a long gate number fills that
+   corner its mirror image sits in the panel's top-left corner, beside the
+   Gate | Porte words. It is sized clear of the number and the words by
+   _tgBouquet and lives inside the panel, which clips it, so it never reaches
+   the clock, the date or the airline's artwork.
    The leaves are still, like everything else on the boards. They are real
    artwork, trimmed out of two licensed vector files into
    logos/holiday/thanksgiving/ (docs/licenses/holiday-leaves.md). The layers
@@ -25530,6 +25539,9 @@ html.fids-day body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):
   background: linear-gradient(98deg, rgba(118,24,12,.88) 0%, rgba(128,30,14,.80) 26%, rgba(140,40,16,.62) 42%, rgba(120,36,14,.26) 60%, rgba(90,30,10,.08) 76%, rgba(90,30,10,.04) 100%),
     linear-gradient(180deg, rgba(40,10,4,.10) 0%, rgba(40,10,4,.24) 100%) !important; }
 html.fids-day body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #baggageView .b5 .b5-clockwx { background: rgba(255, 246, 232, .94) !important; }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-right > .tg-bq { position: absolute; z-index: 1; pointer-events: none;
+  background: url("/logos/holiday/thanksgiving/maple-bouquet.svg") center / contain no-repeat; filter: drop-shadow(0 2px 3px rgba(40, 10, 0, .45)); }
+html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-right > .tg-bq.tg-bq-l { transform: scaleX(-1); }
 
 /* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS, AT TWICE THE SIZE ════
    The chosen design for the three screens: the near-black ground of the calm

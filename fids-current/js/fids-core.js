@@ -23306,7 +23306,9 @@ var HOLIDAY_BAND = {
 //   airport's mark, and up to three leaves resting ON the ribbon (pinned
 //   from the bottom, like the ribbon, so they sit on it at every size). On
 //   an Air Canada family gate the rust and deep red leaves turn amber and
-//   gold (tg-ac): no red maple beside the airline's own red maple.
+//   gold (tg-ac): no red maple beside the airline's own red maple. And a
+//   small bouquet in the gate panel's corner, beside the number (tg-bq,
+//   placed by _tgBouquet).
 // - Baggage: a warm grade under the scrim and up to three leaves in the
 //   free warm space above the welcome line (tg-bag-a..c).
 // Each leaf is placed by measuring the free space it sits in, and is hidden
@@ -23317,6 +23319,7 @@ var HOLIDAY_BAND = {
 var _HOLIDAY_LAYERS = [
   ['.g8-r1', 'tg-warm', null], ['.g8-r1', 'tg-ribbon', null], ['.g8-r1', 'tg-leaf', null],
   ['.g8-r1', 'tg-rest-a', null], ['.g8-r1', 'tg-rest-b', null], ['.g8-r1', 'tg-rest-c', null],
+  ['.g8-r1-right', 'tg-bq', null],
   ['#fidsBanner', 'tg-fall-a', null], ['#fidsBanner', 'tg-fall-b', null],
   ['#fidsBanner', 'tg-fall-c', null], ['#fidsBanner', 'tg-fall-d', null],
   ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim'],
@@ -23359,6 +23362,39 @@ function _tgPair(e1, e2, g0, g1, w1, w2, t1, t2, H) {
   if (w < 36) { if (e1) e1.style.display = 'none'; } else _tgPut(e1, g0 + W / 2, (H - w) / 2, w, g0, g1);
   if (e2) e2.style.display = 'none';
 }
+// The bouquet by the gate number: a small bouquet of the licensed leaves
+// (gold, orange and yellow with two swirls; no red leaf, so it never sinks
+// into a red panel or reads as a second Air Canada maple) tucked into the
+// gate panel's top-right corner, the screen's corner, beside the number. It
+// is sized to the room between the number and the screen's edge, 12px clear
+// of the number (scaled with the panel), never taller than the panel, and
+// runs off the edge by an eighth of its width so the leaves seem to come in
+// from outside. Where a long gate number (C76) fills that corner, its mirror
+// image sits in the panel's top-left corner, beside "Gate | Porte", the same
+// distance clear of the words; where neither side has room it is hidden.
+// It lives inside the panel, which clips it, so it never reaches the clock,
+// the date or the airline's artwork.
+function _tgBouquet(band) {
+  var pnl = band.querySelector('.g8-r1-right'), el = pnl && pnl.querySelector(':scope > .tg-bq');
+  if (!el) return;
+  var num = pnl.querySelector('.g8-r1-gate'), lbl = pnl.querySelector('.g8-bilbl');
+  var pr = pnl.getBoundingClientRect(), A = 300 / 540, ok = false, left = false;
+  if (num && lbl && pr.height >= 60) {
+    var k = pr.height / 138, gap = 12 * k, bleed = 0.125, hMax = (pr.height - 6 * k) * A;
+    var bl = pnl.clientLeft || 0, pw = pr.width - bl;
+    var w = Math.min((pr.right - num.getBoundingClientRect().right - gap) / (1 - bleed), hMax);
+    if (w < 34) { left = true; w = Math.min(lbl.getBoundingClientRect().left - pr.left - bl - gap, hMax); }
+    ok = w >= 34;
+    if (ok) {
+      el.style.width = Math.round(w) + 'px';
+      el.style.height = Math.round(w / A) + 'px';
+      el.style.left = Math.round(left ? 0 : pw - w * (1 - bleed)) + 'px';
+      el.style.top = Math.round(3 * k) + 'px';
+    }
+  }
+  el.classList.toggle('tg-bq-l', ok && left);
+  el.style.display = ok ? '' : 'none';
+}
 function _fidsHolidayLayers() {
   try {
     var on = !!document.body.dataset.fidsHoliday;
@@ -23390,6 +23426,7 @@ function _fidsHolidayLayers() {
       var acArt = !!band.querySelector('.g8-r1-logoslot img[src*="/AC."], .g8-r1-logoslot img[src*="air-canada"], .g8-r1-logoslot img[src*="rouge"], .g8-r1-logoslot img[src*="jazz"]');
       band.classList.toggle('tg-ac', acGate || acArt);
       var hr = band.getBoundingClientRect();
+      _tgBouquet(band);
       var a = _tgEdges(band, '.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas', hr, 'right');
       var bx = _tgEdges(band, '.octb-apmark, .octb-apsep, .octb-clock', hr, 'left');
       if (bx == null) bx = _tgEdges(band, '.octb-clockrow, .g8-r1-timebox', hr, 'left');
