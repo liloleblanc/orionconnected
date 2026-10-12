@@ -157,7 +157,7 @@ test('the belts, the board row and the companion app no longer end a name in "�
   assert.doesNotMatch(rule('.bidsv3 .b3-airline-name'), /ellipsis|overflow: hidden/);
   assert.match(rule('.bidsv3 .b3-airline-name'), /font-size: max\(var\(--fx-floor, 12px\)/);
   assert.match(rule('.bidsv3 .b3-tail'), /white-space: nowrap/);
-  // vNEXT — the header's airport name is .apn (shown only where there is no logo)
+  // v24043 — the header's airport name is .apn (shown only where there is no logo)
   for (const sel of ['.wm-txt{', '.fcard .alname{', '.brand .apn{']) {
     const i = APP.indexOf(sel); assert.ok(i >= 0, sel);
     const body = APP.slice(i, APP.indexOf('}', i));

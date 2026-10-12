@@ -1061,7 +1061,7 @@ window.FIDS_SHARED_WORDMARK = {
 ]
 };
 
-// vNEXT — the boards' own airline art for each carrier, for the companion app:
+// v24043 — the boards' own airline art for each carrier, for the companion app:
 // FIDS_SHARED_TILE is fids-core.js IATA_TO_TILE_ICAO (the square tile the board's
 // row draws, as a path under /logos/airline-tiles/), FIDS_SHARED_EMBLEM is its
 // IATA_TO_EMBLEM (a carrier's emblem where it has no tile). Copied, like the
@@ -1111,7 +1111,7 @@ window.FIDS_SHARED_EMBLEM = {
   "LA":"/logos/airlines/asian-other/latam-spark.svg", "AC":"/logos/symbols/airlines/AC.svg", "WS":"/logos/symbols/airlines/WS.svg"
 };
 
-// vNEXT — THE AIRPORT'S OWN NAME AFTER ITS CITY, as the boards write it
+// v24043 — THE AIRPORT'S OWN NAME AFTER ITS CITY, as the boards write it
 // (fids-core.js AP: each airport's `sub`, or `subKey`, the store's entry for an
 // airport named by a description), for the cities with two or more of the
 // airports we show: 'Toronto · Billy Bishop', 'New York · LaGuardia'. The app

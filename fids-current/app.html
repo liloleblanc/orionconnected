@@ -15,21 +15,21 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=24042"></script>
+<script src="js/host-airport.js?v=24043"></script>
 <title>Airport Companion</title>
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
      site's own files (the boards' font.css faces), not Inter from Google */
   @font-face{font-family:'Bricolage Grotesque';font-weight:200 800;font-stretch:75% 100%;font-style:normal;font-display:swap;src:url('fonts/bricolage/BricolageGrotesque-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
   @font-face{font-family:'Bricolage Grotesque';font-weight:200 800;font-stretch:75% 100%;font-style:normal;font-display:swap;src:url('fonts/bricolage/BricolageGrotesque-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
-  /* vNEXT — an airport whose boards are set in Possibility (Moncton: its
+  /* v24043 — an airport whose boards are set in Possibility (Moncton: its
      airport config says font:"possibility") is set in it here too, as the
      board's font.css does: the same licensed webfont, which the Worker
      serves at this path on .com, .ca and .app (never in the repository), one
      bold weight for every weight asked, Bricolage behind it for what it does
      not cover. Loaded only when an airport asks for it (--app-font). */
   @font-face{font-family:'Possibility';font-weight:100 900;font-style:normal;font-display:swap;src:url('fonts/Possibility-Bold-Web.woff2') format('woff2');}
-  /* vNEXT — THE BOARD IN YOUR POCKET.
+  /* v24043 — THE BOARD IN YOUR POCKET.
      The app takes the phone board's own frame (css/phone.css, v24029): the
      airport's logo and clock on the page's surface, then the board's navy band
      with Departures and Arrivals in white. The list is the board's row, not a
@@ -121,7 +121,7 @@
     :root[data-theme="auto"] .brand .logo[data-night="code"] .lcode{display:inline;}
   }
   [dir="rtl"] .brand .logo img{object-position:right center;}
-  /* vNEXT — the airport is named once, as the phone board names it: its logo,
+  /* v24043 — the airport is named once, as the phone board names it: its logo,
      with a small chevron after it (the logo is the button that opens the
      picker). The header used to name it three times — the logo, the name,
      the code — and an unknown code read 'XYZ XYZ XYZ'. With no logo the code
@@ -146,7 +146,7 @@
   .seg button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 8px;
     border:0;border-radius:8px;background:none;color:#ffffff;font-size:14px;font-weight:750;line-height:1.05;white-space:normal;transition:background .15s,color .15s;}
   .seg button.active{background:#ffffff;color:#0b1f3a;box-shadow:0 1px 3px rgba(0,0,0,.25);}
-  /* vNEXT — the boards' own take-off and landing marks (logos/icons, v24039),
+  /* v24043 — the boards' own take-off and landing marks (logos/icons, v24039),
      drawn through a mask in the tab's own colour, as css/font.css draws
      .ac-ico-depart and .ac-ico-landing; the outline icons were generic */
   .tic{display:block;flex:none;width:19px;height:19px;background-color:currentColor;
@@ -177,7 +177,7 @@
   .hint{padding:8px 18px 6px;color:var(--muted);font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px;line-height:1.3;}
   /* v23939 — the "Live departures" dot is solid, like the boards' LIVE dot. */
   .hint .live{width:7px;height:7px;border-radius:50%;background:var(--green);animation:none;flex:none;}
-  /* vNEXT — the dot is green only when the feed is live: grey while it loads
+  /* v24043 — the dot is green only when the feed is live: grey while it loads
      or when there is no data, amber over an older list */
   .hint .live.wait,.hint .live.down{background:var(--faint);}
   .hint .live.stale{background:var(--amber);}
@@ -201,7 +201,7 @@
 
   /* ── The rows ────────────────────────────────────── */
   .cards{padding:4px 12px 8px;display:flex;flex-direction:column;gap:8px;}
-  /* vNEXT — the gate column is as wide as its word needs (CARROUSEL,
+  /* v24043 — the gate column is as wide as its word needs (CARROUSEL,
      ターンテーブル) and never narrower than 58 px; the word is the same on every
      row of a list, so every row's column is the same width. A value never
      widens it (contain: a long TBD wraps inside the box). */
@@ -217,7 +217,7 @@
   .fcard .was{display:inline-block;position:relative;font-size:12.5px;font-weight:700;line-height:1;color:var(--muted);margin-bottom:4px;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
   .fcard .was small{font-size:.75em;margin-left:1px;}
   .fcard .hh.moved{color:var(--moved);}
-  /* vNEXT — ONE LINE THROUGH THE WHOLE TIME. text-decoration struck the
+  /* v24043 — ONE LINE THROUGH THE WHOLE TIME. text-decoration struck the
      digits and drew its line under the smaller AM, which read as a typo; the
      line is now drawn once, across the time and its AM/PM together. */
   /* its height: through the lower middle of the digits and the upper middle
@@ -252,7 +252,7 @@
   .wm-txt{font-weight:750;font-size:13.5px;color:var(--txt);letter-spacing:-0.005em;line-height:1.15;
     white-space:normal;overflow-wrap:normal;word-break:normal;overflow:visible;text-overflow:clip;}
   .fcard .alname{font-weight:750;font-size:13.5px;line-height:1.15;white-space:normal;overflow-wrap:normal;word-break:normal;overflow:visible;text-overflow:clip;}
-  /* vNEXT — THE PLACE, NEVER CUT INSIDE A NAME. The city and the airport's
+  /* v24043 — THE PLACE, NEVER CUT INSIDE A NAME. The city and the airport's
      own name are two units, as the board sets them ('Toronto · Billy
      Bishop', the airport a step smaller): a line breaks only between them,
      never inside 'Billy Bishop' and never after a hanging '·'. The '·' rides
@@ -278,7 +278,7 @@
   /* the gate (a belt on arrivals) in its own box, TBD until the airport says */
   .slot{grid-column:3;grid-row:2 / 4;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;
     min-width:58px;max-width:88px;min-height:44px;border-radius:10px;background:var(--slot);color:var(--slot-ink);padding:4px 4px;text-align:center;}
-  /* vNEXT — the box's word is 10 px or more in every language (it was 8.5,
+  /* v24043 — the box's word is 10 px or more in every language (it was 8.5,
      and 7.5 for CARROUSEL); the box widens for a long word instead */
   .slot .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:750;color:var(--muted);line-height:1.1;white-space:nowrap;}
   .slot .v{contain:inline-size;align-self:stretch;font-size:21px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:2px;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
@@ -293,7 +293,7 @@
   /* v24030 — Scheduled / Expected: the airport's neutral word, no status colour */
   .st.neutral{color:var(--muted);}
   .st.neutral{background:var(--neu-bg);}
-  /* vNEXT — a flight that has gone: still listed, in the sheet's own quieter
+  /* v24043 — a flight that has gone: still listed, in the sheet's own quieter
      ink (4.5:1 or better), not faded (opacity .66 took its words to 3:1);
      the time it went is plain, amber is for a flight still to go */
   .fcard.done .hh,.fcard.done .city,.fcard.done .sub b{color:var(--muted);}
@@ -310,7 +310,7 @@
   .fcard.cx .slot{background:rgba(255,255,255,.14);color:#ffffff;}
   .fcard.cx .slot .k,.fcard.cx .slot .v.tbd{color:rgba(255,255,255,.86);}
   .fcard.cx .wm-l{display:none !important;} .fcard.cx .wm-d{display:block !important;}
-  /* vNEXT — WHEN THE STATUS HAS NO ROOM BESIDE THE AIRLINE. On a small phone
+  /* v24043 — WHEN THE STATUS HAS NO ROOM BESIDE THE AIRLINE. On a small phone
      (and at 360 px in the longer languages: 'Programado', 'Gate
      geschlossen') the status pill dropped to a line of its own on every row
      and the rows jumped between four heights. Then the whole list (.tight,
@@ -374,7 +374,7 @@
   .dt-top .ttl{font-size:15.5px;font-weight:750;color:var(--head-ink);}
   /* the hero takes the airline's own colours, as its gate does: flat, as the
      boards' airline panels are (the white gloss over it turned Air Canada's
-     black grey at the top). vNEXT — on the night page a carrier whose bar
+     black grey at the top). v24043 — on the night page a carrier whose bar
      colour is light (Porter's cream) takes its own dark colour instead, with
      its white lettering: a light slab with dark words in the middle of the
      night page is a light box behind a logo. */
@@ -415,7 +415,7 @@
   /* cancelled: a full red band, not a small red word */
   .dt-cx{margin:14px 12px 0;padding:14px 16px;border-radius:14px;background:var(--cx);color:#ffffff;text-align:center;font-size:18px;font-weight:800;letter-spacing:-.01em;}
   .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 12px 0;}
-  /* vNEXT — a fact alone on its line takes the whole line (a cancelled
+  /* v24043 — a fact alone on its line takes the whole line (a cancelled
      flight's detail was one half-width card beside a blank) */
   .dt-grid > .dt-cell:last-child:nth-child(odd){grid-column:1 / -1;}
   .dt-cell{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow);min-width:0;}
@@ -460,7 +460,7 @@
 </head>
 <body>
 
-<!-- vNEXT — the phone board's frame: the airport's logo and clock, then the
+<!-- v24043 — the phone board's frame: the airport's logo and clock, then the
      band with Departures and Arrivals. Every word on it is written from the
      store at boot (applyLang); the markup itself carries none. The tab bar is
      gone: Explore and Trip had nothing behind them, the person button opened
@@ -526,10 +526,10 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24042"></script>
-<script src="js/shared-names.js?v=24042"></script>
-<script src="data/airline-colors.js?v=24042"></script>
-<script src="js/feed-router.js?v=24042"></script>
+<script src="js/board-strings.js?v=24043"></script>
+<script src="js/shared-names.js?v=24043"></script>
+<script src="data/airline-colors.js?v=24043"></script>
+<script src="js/feed-router.js?v=24043"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -556,7 +556,7 @@ const BANNER_ADS=[
 // tz=IANA timezone (used to build the live-data query window), r=region group
 // for the picker (CA / US / INT). AP_NAME and TZ are derived from this, and the
 // <select> is generated at init, so adding an airport here lights it up app-wide.
-// vNEXT — a name is the city, then ' · ' and the airport's own name where
+// v24043 — a name is the city, then ' · ' and the airport's own name where
 // the city has more than one ('Toronto · Billy Bishop'); never a name in
 // brackets, so the picker's '(YTZ)' is the only bracket on its line (it read
 // 'Toronto City (Billy Bishop) (YTZ)').
@@ -577,7 +577,7 @@ const AIRPORTS={
   YVR:{n:'Vancouver',tz:'America/Vancouver',r:'CA'},
   YYJ:{n:'Victoria',tz:'America/Vancouver',r:'CA'},
   YXX:{n:'Abbotsford',tz:'America/Vancouver',r:'CA'},
-  // vNEXT — the live airports this catalogue never had. A code missing here
+  // v24043 — the live airports this catalogue never had. A code missing here
   // could not be opened at all: a phone redirected from the Fredericton or
   // Saint John board landed on Moncton, under ?ap=YQM. Their time zones are
   // the boards' own (fids-core.js AP); tests/companion-app.test.js holds every
@@ -655,14 +655,14 @@ const AIRPORTS={
   SYD:{n:'Sydney',tz:'Australia/Sydney',r:'INT'},
   HBA:{n:'Hobart',tz:'Australia/Hobart',r:'INT'}
 };
-// vNEXT — the picker's group headings are words like any other: the store's,
+// v24043 — the picker's group headings are words like any other: the store's,
 // in all nine languages (they were English in every language)
 const REGION_KEY={CA:'regionCA',US:'regionUS',INT:'regionINT'};
 const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
 // v23230 — the shared feed router (js/feed-router.js) reads the boards'
 // global `AP` map for airport timezones; publish ours in that shape.
 window.AP={}; for(var _tk in AIRPORTS) window.AP[_tk]={tz:AIRPORTS[_tk].tz};
-// The city at a flight's other end. vNEXT — the city alone: which Toronto or
+// The city at a flight's other end. v24043 — the city alone: which Toronto or
 // which Montréal is the airport's own name after it, from the boards' table
 // (FIDS_SHARED_SUBLINE, below), so every two-airport city reads the same way.
 const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHU:'Montréal',YHZ:'Halifax',YYT:"St. John's",
@@ -688,10 +688,10 @@ function _tcCity(s){return String(s).toLowerCase().replace(/(^|[\s\-\/(\.])[a-z�
 if(window.FIDS_SHARED_CITY){for(var _sk in FIDS_SHARED_CITY){if(!CITY[_sk])CITY[_sk]=_tcCity(FIDS_SHARED_CITY[_sk]);}}
 // Fill any gaps from the airport catalogue — its city, before any ' · ' —
 // so no destination ever shows as a bare IATA code when we know its name.
-// vNEXT — after the board's names, not before: the catalogue's own spelling
+// v24043 — after the board's names, not before: the catalogue's own spelling
 // ('New York LaGuardia') stood beside the board's 'Toronto · Pearson'.
 for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=String(AIRPORTS[_ck].n).split(' · ')[0]; }
-// vNEXT — WHICH TORONTO, AS THE BOARD SAYS IT (fids-core.js _apSubline): the
+// v24043 — WHICH TORONTO, AS THE BOARD SAYS IT (fids-core.js _apSubline): the
 // airport's own name for a city with two of our airports, from the boards'
 // table; a name chosen by description (Dubai's 'International') in the
 // app's language; a name that honours a person hyphenated in French and on a
@@ -729,7 +729,7 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   '223':'Airbus A220-300','221':'Airbus A220-100','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9','73H':'Boeing 737-800','738':'Boeing 737-800',
   '7S7':'Boeing 737-700','73W':'Boeing 737-700','757':'Boeing 757','75F':'Boeing 757 Freighter','767':'Boeing 767','76Y':'Boeing 767','77W':'Boeing 777',
   'DH4':'De Havilland Dash 8-400','DH8D':'De Havilland Dash 8-400','DH3':'De Havilland Dash 8-300',
-  // vNEXT — the ICAO forms /acinfo answers with (the usual type a number flies)
+  // v24043 — the ICAO forms /acinfo answers with (the usual type a number flies)
   'DH8C':'De Havilland Dash 8-300','DH8B':'De Havilland Dash 8-200','DH8A':'De Havilland Dash 8-100',
   'BCS1':'Airbus A220-100','BCS3':'Airbus A220-300',
   'CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550',
@@ -782,20 +782,20 @@ let CURAP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
 // v24030 — false until the first answer for the shown direction: until then the
 // list says it is loading, not that there are no flights
 let LOADED=false;
-// vNEXT — what the feed itself said about the list on screen (fidsFeedStatus:
+// v24043 — what the feed itself said about the list on screen (fidsFeedStatus:
 // live, stale with the time it is from, or unavailable). Nothing reads "Live"
 // or shows the green dot unless this says live.
 let FEED=null;
-// vNEXT — every answer is stamped with what it was asked for. REQ counts the
+// v24043 — every answer is stamped with what it was asked for. REQ counts the
 // requests; APPLIED is the newest one on screen. An answer for another
 // airport or direction, or older than the one shown, is dropped (a slow
 // O'Hare answer drew 1,331 Chicago flights under "Moncton").
 let REQ=0,APPLIED=0;
-// vNEXT — the last list per airport and direction, so switching back is
+// v24043 — the last list per airport and direction, so switching back is
 // instant while a fresh one loads (same rule: it is only ever drawn under
 // its own airport and direction)
 const CACHE={};
-// vNEXT — the list is drawn PAGE rows at a time as it scrolls into view;
+// v24043 — the list is drawn PAGE rows at a time as it scrolls into view;
 // O'Hare's 1,333 cards were 225,000 px and 27,000 nodes in one pass
 const PAGE=50;
 let SHOWN=PAGE,DETAIL_I=-1;
@@ -867,7 +867,7 @@ function T(k){
   try{if(APP_KEY[k]&&window.BoardStrings){const w=BoardStrings.bs(APP_KEY[k],L);if(w)return w;}}catch(e){}
   const d=I18N[L]||I18N.en;return d[k]!==undefined?d[k]:(I18N.en[k]!==undefined?I18N.en[k]:k);
 }
-// vNEXT — the language button opens the nine languages by their own names
+// v24043 — the language button opens the nine languages by their own names
 // (the store's META), instead of stepping through all nine one tap at a time
 function buildLangOptions(){
   const sel=document.getElementById('langSelect'); if(!sel||!window.BoardStrings)return;
@@ -914,7 +914,7 @@ const WORDMARK={
 };
 // Returns [lightThemeUrl (dark ink), darkThemeUrl (white ink)], or null if none.
 function wmUrls(code){
-  // vNEXT — Flair's own pair: dark lettering by day, white at night (flair.svg
+  // v24043 — Flair's own pair: dark lettering by day, white at night (flair.svg
   // was one black file for both, which disappeared on the night rows)
   if(code==='F8') return ['/logos/airlines/canadian/flair-wordmark-dark.svg','/logos/airlines/canadian/flair-wordmark-light.svg'];
   const b=WORDMARK[code];
@@ -942,7 +942,7 @@ const REGIONAL_OP={QK:'Jazz',RV:'Air Canada Rouge',ZX:'Air Georgian','9M':'Centr
 // wordmark file instead.)
 const WM_INK={AC:'#111111',WS:'#00AC9D',PD:'#152C53',TS:'#16335F',F8:'#2BA84A',PB:'#1C3474',
   B6:'#003876',DL:'#003A70',AA:'#0078D2',UA:'#0033A0',WN:'#304CB2',F9:'#026845'};
-// vNEXT — THE AIRLINE, AS THE BOARD DRAWS IT
+// v24043 — THE AIRLINE, AS THE BOARD DRAWS IT
 // The board's row draws each carrier's own square tile (fids-core.js
 // IATA_TO_TILE_ICAO, 124 carriers) or its emblem art (IATA_TO_EMBLEM); both
 // reach the app through js/shared-names.js. The app's own tables knew eleven
@@ -1007,7 +1007,7 @@ function wmHtml(code,name){
 // The detail's hero wears the airline's own bar colour (data/airline-colors.js
 // r1, the colour its gate screens use), navy for a carrier with none; its
 // wordmark is chosen for that ground, not for the phone's theme.
-// vNEXT — night: a light bar colour (Porter's cream) gives way on the night
+// v24043 — night: a light bar colour (Porter's cream) gives way on the night
 // page to the carrier's own dark colour (its ink, then its accent), with its
 // white lettering — never a light slab with dark words on the night page.
 function heroColors(code){
@@ -1113,7 +1113,7 @@ function clk(hhmm){
 }
 function clkText(hhmm){return clk(hhmm).replace(/<\/?small>/g,' ').replace(/\s+/g,' ').trim();}
 // ── THE LIST ─────────────────────────────────────────────────────────
-// vNEXT — one row per flight in the board's order of reading: the time
+// v24043 — one row per flight in the board's order of reading: the time
 // first, the airline's tile and wordmark, the place, the status on its own
 // pill, and the gate (a belt on arrivals) in its own box with TBD until the
 // airport names one. A moved time puts the airport's NEW time in the big
@@ -1153,7 +1153,7 @@ function movedTime(f){
 }
 // A flight that has gone (left this airport, or landed here)
 function isDone(f){return f.state==='departed'||f.state==='arrived';}
-// vNEXT — amber is for a time still to come; once a flight has gone, the
+// v24043 — amber is for a time still to come; once a flight has gone, the
 // time it went is in the row's plain ink (an amber 02:57 beside a green
 // 'Arrived' read as two different stories)
 function timeHtml(f){
@@ -1171,7 +1171,7 @@ function slotHtml(f,isArr){
   return '<div class="slot"><div class="k">'+esc(k)+'</div>'+vh+'</div>';
 }
 function flightKey(f){return (f.flight||'')+'|'+(f.schedDate||'')+'|'+(f.schedTime||'');}
-// vNEXT — the status is drawn twice and shown once: beside the airline, or,
+// v24043 — the status is drawn twice and shown once: beside the airline, or,
 // in a list where it has no room there (.tight, see fitRows), at the end of
 // the code line under the gate box
 function rowHtml(f,i,isArr){
@@ -1199,7 +1199,7 @@ function rowsHtml(list,from,to,isArr){
   }
   return h;
 }
-// vNEXT — THE DEPARTURES THAT HAVE GONE, FOLDED. At Heathrow the whole first
+// v24043 — THE DEPARTURES THAT HAVE GONE, FOLDED. At Heathrow the whole first
 // screen was flights that had already left; they are now one line above the
 // list ('Departed (12)'), which opens them. Arrivals are never folded: a
 // flight that has just landed is the one whose belt people are looking for.
@@ -1299,7 +1299,7 @@ function paintHint(){
   const L=langRes(), isArr=DIR==='arr';
   let cls='', txt='';
   if(!LOADED){cls='wait';txt=(!LOADED?BoardStrings.bs('appLoading',langRes()):'');}
-  // vNEXT — with nothing to show, the list itself says the data is
+  // v24043 — with nothing to show, the list itself says the data is
   // unavailable; the line above it does not say it a second time
   else if(FEED&&FEED.state==='unavailable'){cls='down';txt=FLIGHTS.length?BoardStrings.bs('feedUnavailable',L):'';}
   else if(FEED&&FEED.state==='stale'){cls='stale';txt=FEED.asOf?BoardStrings.fmt('feedStale',L,{TIME:timeAt(FEED.asOf)},true):BoardStrings.bs('feedUnavailable',L);}
@@ -1328,7 +1328,7 @@ function tickClock(){
 }
 // The day lines stick under the header, whatever height it wraps to
 function measureHeader(){const tb=document.getElementById('topbar');if(tb)document.documentElement.style.setProperty('--hdr-h',tb.offsetHeight+'px');}
-// ── THE WEATHER AT THE OTHER END (vNEXT) ─────────────────────────────
+// ── THE WEATHER AT THE OTHER END (v24043) ─────────────────────────────
 // The phone board prints each destination's temperature on its row
 // ('AC1983 Gate 4 11°C'); the app now does too, on the row and on the
 // flight's route card. Same source as the boards (fids-core.js _fetchMetWx):
@@ -1343,7 +1343,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24041';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24043';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -1378,7 +1378,7 @@ function wxCredit(){
   const on=WX_ON&&!!document.querySelector('#cards .wx:not(:empty)');
   el.hidden=!on; if(on)el.textContent=BoardStrings.bs('wxCredit',langRes());
 }
-// ── THE AIRCRAFT BEFORE IT FLIES (vNEXT) ─────────────────────────────
+// ── THE AIRCRAFT BEFORE IT FLIES (v24043) ─────────────────────────────
 // The gate screens' own answer (fids-core.js _acInfoKick): the Worker's
 // /acinfo reads the far end's own feed for today's aircraft, else the type
 // this flight number usually flies (a type only, never a registration). It
@@ -1469,7 +1469,7 @@ function adbToCard(f,dir){
   // two-char prefix whenever it names a carrier we know (F9, 9E, B6…).
   if(opCode.length<2){
     const _p2=(num.match(/^([A-Z0-9]{2})[0-9]/)||[])[1];
-    // vNEXT — a carrier the app does not know yet keeps its two-character
+    // v24043 — a carrier the app does not know yet keeps its two-character
     // code as well (Y8, O3, W1, 5Y, 7L, 3S): cutting the number at its first
     // digit left 'Y', 'O', 'W' or nothing at all on the card. A three-letter
     // ICAO prefix (EZY123) is kept whole, as before.
@@ -1521,7 +1521,7 @@ function adbToCard(f,dir){
     // map lacks shows its real place name instead of a bare code or "—".
     cityName:(other.airport&&(other.airport.municipalityName||other.airport.shortName||other.airport.name))||'',
     schedTime:adbHHMM(here.scheduledTime&&here.scheduledTime.local),
-    // vNEXT — the airport's own date for the row (the list marks where the day
+    // v24043 — the airport's own date for the row (the list marks where the day
     // changes), and the feed's own airline name (a fuller spelling of the
     // board's short one: 'Turkish Airlines' for TURKISH)
     schedDate:((String((here.scheduledTime&&here.scheduledTime.local)||'').match(/\d{4}-\d{2}-\d{2}/))||[])[0]||'',
@@ -1545,7 +1545,7 @@ function _rawKey(f){
 // Fetch one direction across two back-to-back 12h windows. For airports with a
 // webhook (YQM/CYQM), overlay the fresher real-time records on the scrape.
 async function fetchDir(dir,ap){
-  // vNEXT — the airport is the one this request was made for, start to end:
+  // v24043 — the airport is the one this request was made for, start to end:
   // the overlay below used to read CURAP after the await, which by then could
   // be another airport
   ap=ap||CURAP;
@@ -1594,7 +1594,7 @@ async function fetchDir(dir,ap){
   for(const f of all){ if(!f.schedDate&&f._ts&&TZ[ap]) f.schedDate=adbFmt(new Date(f._ts),TZ[ap]).slice(0,10); }
   return cardList(all,dir,Date.now());
 }
-// vNEXT — THE CUTOFF FIRST, THEN ONE ROW PER FLIGHT PER DAY.
+// v24043 — THE CUTOFF FIRST, THEN ONE ROW PER FLIGHT PER DAY.
 // The duplicate check used to match the flight number and the time only, and
 // ran before the cutoff: a feed carries the same flight at the same time on
 // three days, so yesterday's copy won the check and was then cut as gone, and
@@ -1640,7 +1640,7 @@ async function load(o){
     if(hint.parentNode)hint.parentNode.hidden=false;
     return;
   }
-  // vNEXT — an answer for another airport or direction, or older than the one
+  // v24043 — an answer for another airport or direction, or older than the one
   // on screen, is dropped here (stamped with what it was asked for)
   if(ap!==CURAP||dir!==DIR||seq<APPLIED)return;
   APPLIED=seq;
@@ -1687,14 +1687,14 @@ function setDir(dir){
   window.scrollTo(0,0);
   startView();load();
 }
-// vNEXT — at night an airport's logo is white lettering, as the boards' dark
+// v24043 — at night an airport's logo is white lettering, as the boards' dark
 // grounds draw it. A logo that is a plate of its own (Saint John's blue box
 // with white letters) keeps its own colours: whitened, it was a white box.
 // One whose plate is white, or whose box holds dark words (Sydney, Miami),
 // shows its code in white instead. Measured from every live airport's logo
 // on 2026-10-12; a logo not listed here is lettering, and turns white.
 const LOGO_NIGHT={YSJ:'own',YYJ:'own',SLC:'own',LAS:'own',SYD:'code',MIA:'code'};
-// vNEXT — THE AIRPORT'S OWN LOOK, AS ITS PHONE BOARD WEARS IT. The app was
+// v24043 — THE AIRPORT'S OWN LOOK, AS ITS PHONE BOARD WEARS IT. The app was
 // Bricolage on a navy band at every airport; at Moncton the board and the
 // phone board are Possibility on the Acadian red. The airport config the
 // app already read for the logo says which font (font) and which band
@@ -1832,12 +1832,12 @@ function opLogoHtml(name,lightGround){
   const img=function(u,cls){return '<img'+(cls?' class="'+cls+'"':'')+' src="'+u+'" alt="'+esc(name)+'" onerror="this.outerHTML=&quot;'+esc(name)+'&quot;">';};
   return lightGround?img(v.l,'wm-l')+img(v.d,'wm-d'):img(v.d,'');
 }
-// vNEXT — THE FLIGHT. The hero wears the airline's colours; then the route
+// v24043 — THE FLIGHT. The hero wears the airline's colours; then the route
 // as codes, the status (a cancelled flight's is a full red band, and its
 // times are struck, its gate not offered), the day it flies, and the facts in
 // the order a passenger needs them: the time (the airport's new time first
 // when it moved), the gate or belt, the terminal, the far end, the aircraft.
-// vNEXT — what the boards show for the same flight is here too: the weather
+// v24043 — what the boards show for the same flight is here too: the weather
 // at the other end (the phone board's row: 'AC1983 Gate 4 11°C') and the
 // aircraft before it flies (the gate screens' /acinfo: the far end's own
 // feed, else the type this number usually flies — no FR24 call, no credit),
@@ -1974,7 +1974,7 @@ const APP_LIVE_AIRPORTS = new Set([
 ]);
 // Build the airport picker from the catalogue, grouped by region, its
 // headings in the app's language (rebuilt when the language changes).
-// vNEXT — a name the way the boards write it: the city, then the airport's
+// v24043 — a name the way the boards write it: the city, then the airport's
 // own name where its city has two ('Toronto · Billy Bishop', 'Billy-Bishop'
 // in French), then its code, the line's only bracket.
 function pickerName(k){
@@ -2012,7 +2012,7 @@ buildAirportOptions();
 //   ?gate=95                 → auto-open that gate's next departure
 // Board links opened on a phone land here (fids-core hands off to app.html)
 // with their query intact — same link, same screen, phone gets the app.
-// vNEXT — the link's airport is the airport shown. A code the catalogue did
+// v24043 — the link's airport is the airport shown. A code the catalogue did
 // not know used to fall through to Moncton and rewrite the link to ?ap=YQM;
 // now a live airport opens, and any other code opens as itself with no live
 // data, said in so many words.

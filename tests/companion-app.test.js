@@ -107,7 +107,7 @@ test('every word of the app is in the store, in all nine languages', () => {
 test('the boards\' font from this site, the frame dark in dark mode, loading says loading', () => {
   assert.doesNotMatch(APP, /fonts\.googleapis\.com|'Inter'/);
   assert.match(APP, /font-family:'Bricolage Grotesque';[^}]*src:url\('fonts\/bricolage\/BricolageGrotesque-latin\.woff2'\)/);
-  // vNEXT — the tab bar is gone (see "nothing on screen leads nowhere"); the
+  // v24043 — the tab bar is gone (see "nothing on screen leads nowhere"); the
   // header and the band carry the theme instead, from the same palette
   assert.match(APP, /\.topbar\{[^}]*background:var\(--head\);/);
   assert.match(APP, /\.band\{[^}]*background:var\(--band\);/);
@@ -118,7 +118,7 @@ test('the boards\' font from this site, the frame dark in dark mode, loading say
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// vNEXT — THE COMPANION APP, MADE FOR A PHONE (the mobile audit of 2026-10-12)
+// v24043 — THE COMPANION APP, MADE FOR A PHONE (the mobile audit of 2026-10-12)
 // ═══════════════════════════════════════════════════════════════════════════
 
 // A function's source (async too), for building it against stubs
@@ -237,7 +237,7 @@ test('the feed line is green and says Live only when the feed is live', () => {
   const loading = hint({ loaded: false });
   assert.equal(loading.dot, 'live wait');
   assert.equal(loading.text, BS.bs('appLoading', 'en'));
-  // vNEXT — with nothing to list, the list says it (once); the line is hidden
+  // v24043 — with nothing to list, the list says it (once); the line is hidden
   const down = hint({ loaded: true, feed: { state: 'unavailable' } });
   assert.equal(down.dot, 'live down');
   assert.equal(down.text, '');
@@ -371,7 +371,7 @@ test('every word on a row reads at 4.5:1 or better, in both themes', () => {
     const cx = rgb(V['--cx']);
     assert.ok(contrast([255, 255, 255], cx) >= 4.5, name + ' cancelled row');
     assert.ok(contrast([255, 255, 255], rgb('rgba(0,0,0,.24)', cx)) >= 4.5, name + ' cancelled pill');
-    // the band: white on navy, and on the tabs' white wash (vNEXT: the tab
+    // the band: white on navy, and on the tabs' white wash (v24043: the tab
     // that is not chosen reads in full white, for Moncton's red band)
     const band = rgb(V['--band']);
     assert.ok(contrast([255, 255, 255], rgb('rgba(255,255,255,.1)', band)) >= 4.5, name + ' band');
@@ -408,7 +408,7 @@ test('a big airport is drawn a page at a time, and search waits for the typing t
 test('a cancelled flight is the board\'s red row; a moved time puts the new time in the big slot', () => {
   const th = new Function('clk', fn('isDone') + fn('movedTime') + fn('timeHtml') + '; return timeHtml;')((t) => t);
   // a flight that has gone carries the time it went, when that is 5 minutes
-  // off its printed one — vNEXT: in plain ink; amber is for a time still to come
+  // off its printed one — v24043: in plain ink; amber is for a time still to come
   assert.match(th({ schedTime: '22:03', estTime: '01:50', state: 'arrived' }), /<div class="was">22:03<\/div><div class="hh">01:50<\/div>/);
   assert.match(th({ schedTime: '08:00', estTime: '08:30', state: 'delayed' }), /<div class="was">08:00<\/div><div class="hh moved">08:30<\/div>/);
   assert.match(th({ schedTime: '22:03', estTime: '22:05', state: 'arrived' }), /^<div class="tcol"><div class="hh">22:03<\/div><\/div>$/);
@@ -447,7 +447,7 @@ test('the airport\'s logo is drawn at its own width, white lettering at night, n
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// vNEXT — THE PHONE, SECOND PASS (the design and function reviews of the
+// v24043 — THE PHONE, SECOND PASS (the design and function reviews of the
 // companion app, 2026-10-12)
 // ═══════════════════════════════════════════════════════════════════════════
 

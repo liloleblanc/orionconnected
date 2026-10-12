@@ -126,7 +126,7 @@ test('the mobile app offers the same live airports as the board', () => {
   assert.match(app, /APP_LIVE_AIRPORTS\.has\(k\)/, 'the app picker no longer filters on APP_LIVE_AIRPORTS');
 });
 
-// vNEXT — and every one of them can be OPENED in the app. The Set above was
+// v24043 — and every one of them can be OPENED in the app. The Set above was
 // right while the app's own catalogue (AIRPORTS) lacked 19 of its codes, and
 // boot took only catalogue codes: a phone sent from the Fredericton or Saint
 // John board landed on Moncton, under ?ap=YQM, and the picker never listed
