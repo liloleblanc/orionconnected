@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2686,
+    "total": 2748,
     "by_category": {
       "ad": 13,
       "airline": 1174,
@@ -12,7 +12,7 @@
       "livery": 96,
       "misc": 106,
       "symbol": 4,
-      "weather": 207
+      "weather": 269
     }
   },
   "items": [
@@ -27396,6 +27396,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/clear-day.svg",
+      "file": "clear-day.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "clear day",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/clear-day.svg",
+      "file": "clear-day.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "clear day",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/clear-day.svg",
       "file": "clear-day.svg",
       "category": "weather",
@@ -27495,6 +27517,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/clear-night.svg",
+      "file": "clear-night.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "clear night",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/clear-night.svg",
+      "file": "clear-night.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "clear night",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/clear-night.svg",
       "file": "clear-night.svg",
       "category": "weather",
@@ -27562,6 +27606,28 @@
     },
     {
       "path": "/logos/weather/flat/cloudy.svg",
+      "file": "cloudy.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "cloudy",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/cloudy.svg",
+      "file": "cloudy.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "cloudy",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/cloudy.svg",
       "file": "cloudy.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -27660,6 +27726,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/drizzle.svg",
+      "file": "drizzle.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "drizzle",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/drizzle.svg",
+      "file": "drizzle.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "drizzle",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/drizzle.svg",
       "file": "drizzle.svg",
       "category": "weather",
@@ -27737,6 +27825,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/extreme-rain.svg",
+      "file": "extreme-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "extreme rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/extreme-rain.svg",
+      "file": "extreme-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "extreme rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/extreme-rain.svg",
       "file": "extreme-rain.svg",
       "category": "weather",
@@ -27804,6 +27914,28 @@
     },
     {
       "path": "/logos/weather/flat/extreme-snow.svg",
+      "file": "extreme-snow.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "extreme snow",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/extreme-snow.svg",
+      "file": "extreme-snow.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "extreme snow",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/extreme-snow.svg",
       "file": "extreme-snow.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -27902,6 +28034,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/fog.svg",
+      "file": "fog.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "fog",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/fog.svg",
+      "file": "fog.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "fog",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/fog.svg",
       "file": "fog.svg",
       "category": "weather",
@@ -27979,6 +28133,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/hail.svg",
+      "file": "hail.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "hail",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/hail.svg",
+      "file": "hail.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "hail",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/hail.svg",
       "file": "hail.svg",
       "category": "weather",
@@ -27996,6 +28172,28 @@
       "subcategory": "icon",
       "group": "Weather icons",
       "name": "hail",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/lightning-bolt.svg",
+      "file": "lightning-bolt.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "lightning bolt",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/lightning-bolt.svg",
+      "file": "lightning-bolt.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "lightning bolt",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -28046,6 +28244,28 @@
     },
     {
       "path": "/logos/weather/flat/mist.svg",
+      "file": "mist.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "mist",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/mist.svg",
+      "file": "mist.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "mist",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/mist.svg",
       "file": "mist.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -28133,6 +28353,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/overcast-day.svg",
+      "file": "overcast-day.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "overcast day",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/overcast-day.svg",
+      "file": "overcast-day.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "overcast day",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/overcast-day.svg",
       "file": "overcast-day.svg",
       "category": "weather",
@@ -28189,6 +28431,28 @@
     },
     {
       "path": "/logos/weather/flat/overcast-night.svg",
+      "file": "overcast-night.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "overcast night",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/overcast-night.svg",
+      "file": "overcast-night.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "overcast night",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/overcast-night.svg",
       "file": "overcast-night.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -28276,6 +28540,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/overcast.svg",
+      "file": "overcast.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "overcast",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/overcast.svg",
+      "file": "overcast.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "overcast",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/overcast.svg",
       "file": "overcast.svg",
       "category": "weather",
@@ -28326,6 +28612,28 @@
       "subcategory": "icon",
       "group": "Weather icons",
       "name": "partly cloudy day light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/partly-cloudy-day-snow.svg",
+      "file": "partly-cloudy-day-snow.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "partly cloudy day snow",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/partly-cloudy-day-snow.svg",
+      "file": "partly-cloudy-day-snow.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "partly cloudy day snow",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -28398,6 +28706,28 @@
     },
     {
       "path": "/logos/weather/orion/partly-cloudy-day.svg",
+      "file": "partly-cloudy-day.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "partly cloudy day",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/partly-cloudy-day.svg",
+      "file": "partly-cloudy-day.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "partly cloudy day",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/partly-cloudy-day.svg",
       "file": "partly-cloudy-day.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -28530,6 +28860,28 @@
     },
     {
       "path": "/logos/weather/orion/partly-cloudy-night.svg",
+      "file": "partly-cloudy-night.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "partly cloudy night",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/partly-cloudy-night.svg",
+      "file": "partly-cloudy-night.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "partly cloudy night",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/partly-cloudy-night.svg",
       "file": "partly-cloudy-night.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -28683,6 +29035,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/rain.svg",
+      "file": "rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/rain.svg",
+      "file": "rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/rain.svg",
       "file": "rain.svg",
       "category": "weather",
@@ -28772,6 +29146,28 @@
     },
     {
       "path": "/logos/weather/flat/sleet.svg",
+      "file": "sleet.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "sleet",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/sleet.svg",
+      "file": "sleet.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "sleet",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/sleet.svg",
       "file": "sleet.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -28914,6 +29310,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/snow.svg",
+      "file": "snow.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "snow",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/snow.svg",
+      "file": "snow.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "snow",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/snow.svg",
       "file": "snow.svg",
       "category": "weather",
@@ -28947,6 +29365,50 @@
       "ext": "png"
     },
     {
+      "path": "/logos/weather/rows-owner-color/snowflake.svg",
+      "file": "snowflake.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "snowflake",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/snowflake.svg",
+      "file": "snowflake.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "snowflake",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/sunrise.svg",
+      "file": "sunrise.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "sunrise",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/sunrise.svg",
+      "file": "sunrise.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "sunrise",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/orion-papercut/thermo-cold.png",
       "file": "thermo-cold.png",
       "category": "weather",
@@ -28967,6 +29429,50 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/thermometer-colder.svg",
+      "file": "thermometer-colder.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thermometer colder",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/thermometer-colder.svg",
+      "file": "thermometer-colder.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thermometer colder",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/thermometer-warmer.svg",
+      "file": "thermometer-warmer.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thermometer warmer",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/thermometer-warmer.svg",
+      "file": "thermometer-warmer.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thermometer warmer",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/weather/animated/thunderstorms-day-rain-light.svg",
@@ -29024,6 +29530,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/thunderstorms-day-rain.svg",
+      "file": "thunderstorms-day-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms day rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/thunderstorms-day-rain.svg",
+      "file": "thunderstorms-day-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms day rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/thunderstorms-day-rain.svg",
       "file": "thunderstorms-day-rain.svg",
       "category": "weather",
@@ -29069,6 +29597,28 @@
     },
     {
       "path": "/logos/weather/flat/thunderstorms-night-rain.svg",
+      "file": "thunderstorms-night-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms night rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/thunderstorms-night-rain.svg",
+      "file": "thunderstorms-night-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms night rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/thunderstorms-night-rain.svg",
       "file": "thunderstorms-night-rain.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -29211,6 +29761,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/thunderstorms-rain.svg",
+      "file": "thunderstorms-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/thunderstorms-rain.svg",
+      "file": "thunderstorms-rain.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms rain",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/thunderstorms-rain.svg",
       "file": "thunderstorms-rain.svg",
       "category": "weather",
@@ -29277,6 +29849,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/weather/rows-owner-color/thunderstorms.svg",
+      "file": "thunderstorms.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/thunderstorms.svg",
+      "file": "thunderstorms.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "thunderstorms",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/weather/solid-in-disc/thunderstorms.svg",
       "file": "thunderstorms.svg",
       "category": "weather",
@@ -29294,6 +29888,50 @@
       "subcategory": "icon",
       "group": "Weather icons",
       "name": "thunderstorms",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/tornado.svg",
+      "file": "tornado.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "tornado",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/tornado.svg",
+      "file": "tornado.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "tornado",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/umbrella.svg",
+      "file": "umbrella.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "umbrella",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/umbrella.svg",
+      "file": "umbrella.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "umbrella",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -29333,6 +29971,28 @@
     },
     {
       "path": "/logos/weather/flat/wind-cloud.svg",
+      "file": "wind-cloud.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "wind cloud",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/wind-cloud.svg",
+      "file": "wind-cloud.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "wind cloud",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/wind-cloud.svg",
       "file": "wind-cloud.svg",
       "category": "weather",
       "subcategory": "icon",
@@ -29421,6 +30081,28 @@
     },
     {
       "path": "/logos/weather/flat/wind.svg",
+      "file": "wind.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "wind",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-color/wind.svg",
+      "file": "wind.svg",
+      "category": "weather",
+      "subcategory": "icon",
+      "group": "Weather icons",
+      "name": "wind",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/weather/rows-owner-white/wind.svg",
       "file": "wind.svg",
       "category": "weather",
       "subcategory": "icon",
