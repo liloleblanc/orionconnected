@@ -14,7 +14,7 @@ lives here; each SVG also names its source in a comment on its first line.
 | `maple-orange.svg` | orange maple | item 11215158 | a leaf resting on the gate ribbon |
 | `maple-rust.svg` | rust maple | item 23481840 | a fallen leaf on the banner (title to logo) and on the baggage board; a leaf resting on the gate ribbon (not on Air Canada gates) |
 | `maple-crimson.svg` | deep red maple | item 11215158 | a fallen leaf on the banner (logo to clock); a leaf resting on the gate ribbon (not on Air Canada gates) |
-| `maple-bouquet.svg` | a small bouquet: two gold, two orange and one yellow maple leaf with two orange-brown swirls and one dark brown curl | item 11215158 | in the gate panel's corner, beside the gate number (`_tgBouquet`); no red leaf, so it is the same on every airline's colour |
+| `maple-bouquet.svg` | a small bouquet: two gold, two orange and one yellow maple leaf with two orange-brown swirls and one dark brown curl | item 11215158 | hung from the gate panel's bottom corner under the gate number, spilling over the top corner of the map like a corsage (`_tgBouquet`); no red leaf, so it is the same on every airline's colour |
 
 No red or rust leaf is ever placed on an Air Canada family gate (AC, QK, RV, ZX, or a gate
 showing Air Canada artwork), so nothing reads as a second Air Canada maple beside the
