@@ -58,7 +58,7 @@ const PASSENGER_SCRIPTS = [
 
 // Stylesheets passenger pages load. Checked for CSS `content:` text (B9).
 const PASSENGER_STYLES = [
-  'fids-current/css/font.css', 'fids-current/css/airport-fonts.css', 'fids-current/css/leaflet-embed.css',
+  'fids-current/css/font.css', 'fids-current/css/leaflet-embed.css',
   'fids-current/css/shared.css', 'fids-current/css/fids.css', 'fids-current/css/flight-display.css',
   'fids-current/css/baggage-display.css', 'fids-current/css/mobile.css', 'fids-current/css/mobile-display.css',
   'fids-current/css/display-overrides.css', 'fids-current/css/gate-display.css', 'fids-current/css/hotel-ads.css',

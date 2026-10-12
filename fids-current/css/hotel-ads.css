@@ -1496,7 +1496,7 @@ Sized well clear of
 /* Fairmont LOGO-NAME font — Franklin Gothic URW Book. The property
    name line inside the LOCKUP (under the script wordmark, e.g. 'EL SAN JUAN
  HOTEL') is set in Franklin Gothic Book — the specified face for the logo name.
-   Distinct from titles (Season Serif) and body (Montserrat). */
+   Distinct from titles (The Seasons) and body (Montserrat). */
 @font-face {
   font-family: 'FairmontLogoName';
   src: url('/fonts/fairmont-name-franklin.otf') format('opentype');

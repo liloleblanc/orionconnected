@@ -5,7 +5,7 @@
  *   - Dark navy gradient backdrop
  *   - Glass surface panels with hairline borders
  *   - Amber active accent (#fbbf24), cyan info (#22d3ee)
- *   - Geist display + Manrope body + JetBrains Mono for codes
+ *   - Bricolage Grotesque throughout, the system monospace for codes
  *
  * Layout: full-overlay console centered on screen.
  *   ┌──────────────────────────────────────────────────────┐
@@ -21,9 +21,9 @@
 /* ─── Design tokens ─────────────────────────────────────────────────── */
 :root {
   /* Fonts (shared) */
-  --font-display:        'Geist', system-ui, sans-serif;
-  --font-body:           'Manrope', system-ui, sans-serif;
-  --font-mono:           'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  --font-display:        'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+  --font-body:           'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+  --font-mono:           ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   /* ─── LIGHT THEME (default, daytime use) ─── */
   --console-bg-1:        #fbfcfe;

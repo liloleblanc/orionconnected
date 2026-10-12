@@ -13,9 +13,9 @@
 // (restoreFontChoice and the airport config pass both test the table), so a
 // device that still remembers one falls back to the default.
 //
-// Airport / Airport X keep their files and airport-fonts.css: the old
-// designer and tour.html still draw with them. Only the board picker lost
-// them.
+// Airport / Airport X kept their files and airport-fonts.css for the old
+// designer and tour.html until v24038, when only the approved families
+// stayed (tests/fonts-approved-only.test.js).
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');

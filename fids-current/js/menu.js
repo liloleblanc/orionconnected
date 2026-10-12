@@ -2900,12 +2900,7 @@ function _cuApplyFont(fontKey) {
     'ac-nord-text-medium':     "'AC Nord Text Medium', 'AC Nord Text', sans-serif",
     'ac-nord-text-bold':       "'AC Nord Text Bold', 'AC Nord Text', sans-serif",
     'ac-nord-text-heavy':      "'AC Nord Text Heavy', 'AC Nord Text', sans-serif",
-    'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
-    'inter':         "'Inter', system-ui, -apple-system, sans-serif",
-    'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
-    'space-grotesk': "'Space Grotesk', system-ui, -apple-system, sans-serif",
-    'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
+    'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
   };
   // v218.99.13 — overlay any user-uploaded custom fonts. Key format: "custom:Name"
   try {
@@ -5179,10 +5174,10 @@ window.FIDS_MEDIA_PICKER = (function() {
       +   'border-radius:14px;width:min(720px,92vw);max-height:84vh;'
       +   'display:flex;flex-direction:column;overflow:hidden;'
       +   'box-shadow:var(--console-shadow, 0 32px 80px rgba(0,0,0,0.4));'
-      +   'color:var(--console-text, #0f172a);font-family:var(--font-body, Manrope, system-ui, sans-serif);">'
+      +   'color:var(--console-text, #0f172a);font-family:var(--font-body, 'Bricolage Grotesque', system-ui, sans-serif);">'
       +   '<div style="display:flex;align-items:center;justify-content:space-between;'
       +        'padding:16px 20px;border-bottom:1px solid var(--console-border, #e5e7eb);">'
-      +     '<div id="fmpTitle" style="font-family:var(--font-display, Geist);font-size:16px;font-weight:600;">Pick from Library</div>'
+      +     '<div id="fmpTitle" style="font-family:var(--font-display, 'Bricolage Grotesque');font-size:16px;font-weight:600;">Pick from Library</div>'
       +     '<button onclick="FIDS_MEDIA_PICKER.close()" style="background:transparent;border:1px solid var(--console-border-hi);border-radius:6px;padding:6px 12px;font-size:12px;color:var(--console-text-3);cursor:pointer;">Cancel</button>'
       +   '</div>'
       +   '<div style="padding:12px 20px;border-bottom:1px solid var(--console-border, #e5e7eb);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'

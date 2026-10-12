@@ -1827,7 +1827,7 @@ body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status * {
 }
 
 /* Force a fallback font that has full Latin Extended (é, à, ô, etc.) at
-   the same metric as Inter/Manrope. Manrope has good extended support;
+   the same metric as the board face. Bricolage has full extended support;
    pinning it here ensures accented chars render at the right size even
    if the user picked a custom font without those glyphs. */
 .fids-board-label,
