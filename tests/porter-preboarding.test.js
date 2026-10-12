@@ -121,10 +121,23 @@ test('once general boarding commences it returns to the Reserve priority queue',
 });
 
 test('the phase is driven by the real boarding window, not a magic number', () => {
-  // v23769 — the phase now feeds the unified sign through _pdPre, computed
-  // from the same lead; the invariant is the expression, not the callee.
-  assert.match(SRC, /var _pdPre = minsToDep > \(_boardLeadShown - 5\);/,
-    'pre-boarding must key off the boarding lead the sign already computes, so it moves with the aircraft type');
+  // BOARDING SEQUENCES — pre-boarding is the first call of Porter's sequence
+  // (js/boarding-sequence.js): from the minute boarding opened (_gateSeqT0,
+  // the same window the sign has always opened on) to the next call, paced
+  // against Porter's own close. It moves with the aircraft type because the
+  // window does; no fixed minute count is left in the sign.
+  assert.doesNotMatch(SRC, /var _pdPre = /, 'the fixed five minutes are gone');
+  assert.match(SRC, /_t0 = _gateSeqT0\(currentFlight, _door, iata\)/, 'the sequence starts when boarding opened');
+  const SEQ = require('../fids-current/js/boarding-sequence.js');
+  const T0 = Date.UTC(2026, 9, 12, 12, 0);
+  for (const [lead, dash] of [[20, true], [35, false]]) {
+    const p = SEQ.plan('PD', { t0: T0, dep: T0 + lead * 60000, close: 10, pdDash: dash });
+    assert.equal(p.stages[0].kind, 'pre', 'Porter starts with pre-boarding');
+    assert.equal(p.stages[0].who, 'preboardList', 'and names its published list');
+    assert.ok(p.stages[1].at >= 2 && p.stages[1].at <= 5, lead + ' min: pre-boarding lasts 2 to 5 minutes (' + p.stages[1].at + ')');
+    assert.equal(SEQ.stageAt(p, T0 + 60000).cur.kind, 'pre', 'a minute in, still pre-boarding');
+    assert.equal(SEQ.stageAt(p, p.stages[1].ts).cur.label, 'rows', 'then the back rows');
+  }
 });
 
 test('the French sign says it in French', () => {

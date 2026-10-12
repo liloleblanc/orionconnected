@@ -25681,6 +25681,15 @@ html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):n
 html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap > .tg-bq.tg-bq-l { transform-origin: 0 0; }
 html body[data-fids-holiday="thanksgiving-ca"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap > .tg-bq.tg-bq-l::before { transform: scaleX(-1); }
 
+/* ══ BOARDING SEQUENCES — THE LANE LINE SITS AT THE FOOT OF EVERY PANEL ═════
+   A panel with no big number (pre-boarding with its list, an airline's own
+   family or courtesy call, a pre-boarding lane once the call is made) had
+   nothing to push its lane line down, so the line sat under the title while
+   the other panel's sat at the foot. It takes the free space above it
+   instead, level with the other panel's. Position only: no colour, no
+   motion. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.no-value .g8-sign-lanes { margin-top: auto !important; }
+
 /* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS, AT TWICE THE SIZE ════
    The chosen design for the three screens: the near-black ground of the calm
    option, the airline colour of the tinted one, between the two.

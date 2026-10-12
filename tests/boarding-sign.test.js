@@ -81,23 +81,34 @@ test('the same two arrow discs, on both panels, for everyone', () => {
 });
 
 test("each family still says its own words, with a lane line each side", () => {
+  // BOARDING SEQUENCES — each airline's words come from its own table
+  // (js/boarding-sequence.js) through ONE panel builder, _g8SeqPanels, for
+  // the stage that is live; no family keeps a body of its own.
   const a = assembly();
-  // Air Canada / WestJet: zones, priority 1 • 2, called zone, lanes 1 • 2 / 3 • 4
-  assert.match(a, /_acLanes[\s\S]{0,400}value: '1 \\u2022 2'/, 'AC/WS priority panel shows Zones 1 • 2');
-  assert.match(a, /_g8SignPair\('zones'/, 'AC/WS right panel is titled Zones');
-  // Porter: rows and cabins
-  assert.match(a, /_g8SignPair\('pdReserve'/, "Porter's priority panel carries the Reserve cabin");
-  assert.match(a, /_g8SignPair\('pdClassic'/, "and the called panel the Classic cabin");
-  assert.match(a, /_g8SignPair\('rows'/, 'titled Rows');
-  assert.match(a, /_g8SignNext\('rows', _comingVal\)/, 'with the next row band as a Next line');
-  // PAL: open flow — 'will begin shortly' then the general call
-  assert.match(a, /_g8SignPair\(_pbPre \? 'boardSoon' : 'genboard'/, "PAL's called panel names the phase");
-  // generic: groups, or zones for a carrier AIRLINE_ZONES says boards by zone
-  assert.match(a, /_g8SignPair\(_gkey\)/, 'everyone else is titled Group or Zones by their own model');
-  assert.match(a, /_g8SignNext\(_gkey, nextVal\)/, 'with the next group as a Next line');
-  // lanes: every family passes one on each side
-  const lanes = (a.match(/lanes: _g8SignLanes\(/g) || []).length;
-  assert.ok(lanes >= 8, `expected a lane line on both panels of all four families, found ${lanes}`);
+  assert.match(a, /_g8SeqPanels\(_seq, false\)/, 'the boarding sign is built from the live stage');
+  const P = fn('_g8SeqPanels');
+  assert.match(P, /title: _g8SignPair\('preboard'\)/, 'pre-boarding is titled Pre-boarding');
+  assert.match(P, /title: _g8SignPair\('priority'\)/, 'the priority calls keep Priority');
+  assert.match(P, /title: _g8SignPair\(cur\.title\)/, "the airline's own family or courtesy call, in its own words");
+  assert.match(P, /var gen = _g8SignPair\('genboard'\)/, 'general boarding on the right');
+  assert.match(fn('_g8SeqValue'), /_g8SignPair\(_g8SeqLabelKey\(s\.label, s\.values\.length\)\)/, "the group word is the airline's own: zone, group or rows");
+  assert.match(fn('_g8SeqValue'), /value: _g8SignPair\('allPax'\)/, 'All passengers where no number is called');
+  // the words each table names
+  const SEQ = require('../fids-current/js/boarding-sequence.js');
+  const labels = (c, ctx) => SEQ.plan(c, ctx).full.map((s) => s.label).filter(Boolean);
+  assert.ok(labels('AC').every((l) => l === 'zone'), 'Air Canada calls zones');
+  assert.ok(labels('WS').every((l) => l === 'zone'), 'and WestJet');
+  assert.ok(labels('PD', { pdDash: true }).every((l) => l === 'rows'), 'Porter calls rows');
+  assert.ok(labels('UA').every((l) => l === 'groupLabel'), 'United calls groups');
+  assert.deepEqual(SEQ.plan('PB').full.map((s) => s.title), ['preboard', 'allPax'], "PAL's two phases");
+  // lanes: every panel carries its lane line, 1 • 2 left and 3 • 4 right
+  // (PAL's one lane on both)
+  assert.match(P, /var lanesL = p\.oneLane \? _g8SignLanes\('1', false\) : _g8SignLanes\('1 \\u2022 2', true\);/);
+  assert.match(P, /var lanesR = p\.oneLane \? _g8SignLanes\('1', false\) : _g8SignLanes\('3 \\u2022 4', true\);/);
+  const panels = (P.match(/p[LR] = \{/g) || []).length;
+  const withLanes = (P.match(/p[LR] = \{[^}]*lanes: lanes[LR]/g) || []).length;
+  assert.ok(panels >= 8, `expected every left and right panel state, found ${panels}`);
+  assert.equal(withLanes, panels, `every panel carries its lane line (${withLanes} of ${panels})`);
 });
 
 test('every title the sign asks for exists where the gate looks', () => {
@@ -199,9 +210,11 @@ test('what the review found, held so it stays fixed', () => {
   assert.match(fn('_g8SignLanes'), /_gateLbl\([^,]+, _frF,/, 'French-first like every other pair');
   assert.match(fn('_g8SignLanes'), /g8-pair-h[^']*' \+ w \+ ' ' \+ nums/, 'each half is the phrase plus the lane numbers, one unit');
   const a = assembly();
-  const laneCalls = a.match(/lanes: _g8SignLanes\(/g) || [];
-  assert.ok(laneCalls.length >= 8, `expected the eight lane lines, found ${laneCalls.length}`);
-  assert.ok(!a.includes('_gateLaneLbl('), 'the old lane markup must not reach the sign');
+  const P = fn('_g8SeqPanels');
+  // BOARDING SEQUENCES — the lane lines are built once per side and every
+  // panel carries one (see "each family still says its own words").
+  assert.equal((P.match(/_g8SignLanes\(/g) || []).length, 4, 'the lane lines come from _g8SignLanes, left and right, one lane or two');
+  assert.ok(!a.includes('_gateLaneLbl(') && !P.includes('_gateLaneLbl('), 'the old lane markup must not reach the sign');
   // A column carrying a note or roster or marks says so, so the CSS can make
   // room — Porter's pre-boarding overflowed both columns without it.
   assert.match(col, /\(S\.note \|\| S\.roster\) \? ' has-note' : ''/);
@@ -210,24 +223,35 @@ test('what the review found, held so it stays fixed', () => {
   assert.doesNotMatch(assembly(), /_pdPrioMarksHtml\(|_pdClassicMark\(/, 'the marks are not rendered');
   // The roster is a list and wraps in its own slot; poured into a nowrap
   // line it lost three of its five groups.
-  assert.match(a, /roster: _pdPre \? \(_gateLbl1Html\('preboardList', _frF\) \|\| ''\) : ''/, 'the roster has its own slot, marked with its language');
+  // BOARDING SEQUENCES — every airline's who-list (Porter's roster among
+  // them) goes in that slot, one language at a time, marked with it.
+  assert.match(fn('_g8SeqWho'), /_gateLbl1Html\(s\.who, _frF\)/, 'the roster has its own slot, marked with its language');
+  assert.match(P, /roster: _g8SeqWho\(cur\)/, 'pre-boarding and the family calls name who they are for');
+  assert.equal(require('../fids-current/js/boarding-sequence.js').SEQ.PD.stages[0].who, 'preboardList', "Porter's pre-boarding roster is its published list");
   assert.match(col, /if \(S\.roster\) h \+= '<div class="g8-sign-roster">'/, 'which the column renders');
-  // During pre-boarding the Classic panel says it is not being called yet.
-  assert.match(a, /_R = _pdPre\s*\? \{[^}]*note: _g8SignLines\('boardSoon'\)/, "Porter's called panel says 'will begin shortly' during pre-boarding");
-  // PAL says 'Pre-boarding' once, not on both panels.
-  assert.match(a, /value: _g8SignPair\(_pbPre \? 'boardSoon' : 'genboard'\)/);
-  assert.match(a, /next: _pbPre \? _g8SignNext\(null, null, 'genboard'\) : ''/);
-  // Zone carriers are titled Zones, and a single zone is singular.
-  assert.match(a, /AIRLINE_ZONES\[airlineCode\] \|\| \{\}\)\.call === 'zone'\) \? 'zones' : 'groupLabel'/);
+  // While the left panel runs, general boarding says it is not being
+  // called yet (every airline, Porter's pre-phase pattern).
+  assert.match(P, /pR = \{ title: gen, sub: econ, label: wv\.label, value: wv\.value, note: _g8SignLines\('boardSoon'\)/, "the waiting panel says 'will begin shortly'");
+  // 'Pre-boarding' is said once, on the left: PAL's right panel names its
+  // general call, All passengers.
+  const right = (P.split('// ── RIGHT ──')[1] || '').replace(/\/\/.*$/mg, '');
+  assert.ok(right.length > 200, 'the right panel\'s code');
+  assert.doesNotMatch(right, /'preboard'/);
+  // The made-up counts are gone: a carrier's word comes from its own table,
+  // and a single zone or group is singular ('Zones 3' was the bug).
+  assert.doesNotMatch(SRC, /AIRLINE_ZONES\[|getZoneCount\(/, 'the invented group numbers are retired');
+  assert.match(fn('_g8SeqLabelKey'), /if \(label === 'zone'\) return n > 1 \? 'zones' : 'zone';/);
+  assert.match(fn('_g8SeqLabelKey'), /if \(label === 'groupLabel'\) return n > 1 \? 'groups' : 'groupLabel';/);
   assert.match(fn('_g8SignNext'), /groupKey = 'zone'/, 'a single number takes the singular');
   // A word that is the same in both languages is printed once — 'Zones', not
   // 'Zones | Zones' — and only doubles when the second language differs.
   assert.doesNotMatch(SRC, /_g8SignPair\('zones', true\)/, "'Zones' must not be kept twice");
   assert.doesNotMatch(SRC, /_g8SignPair\(_gkey, _gkey === 'zones'\)/);
-  // And the priority panel names what its 1 • 2 are — the word beside the
-  // number, on one row (v23773, the design mock).
-  const zoneLeft = (SRC.match(/_L = \{ title: _prioT, sub: _g8CabinPair\(airlineCode, 0\), label: _g8SignPair\('zones'\), value: '1 \\u2022 2'/g) || []).length;
-  assert.equal(zoneLeft, 3, `the AC/WS priority panel must say Zones beside 1 • 2 during boarding and at the final call (found ${zoneLeft})`);
+  // And the priority panel names what its values are — the word beside the
+  // number, on one row (v23773, the design mock): once every left call is
+  // made, and at the final call, Priority with the priority values called
+  // (Zones 1 • 2) and their group word.
+  assert.match(P, /label: pvals\.length \? _g8SignPair\(_g8SeqLabelKey\(prios\[0\]\.label, pvals\.length\)\) : '',\s*value: pvals\.length \? B\.fmt\(pvals, 3\) : '',/);
 });
 
 test("each airline's cabins, named the way it names them", () => {
@@ -249,16 +273,24 @@ test("each airline's cabins, named the way it names them", () => {
   const lblAt = SRC.indexOf('var _GATE_LBL = {');
   const T = SRC.slice(lblAt, lblAt + 80000);
   for (const [, pair] of Object.entries(map)) for (const k of pair) assert.ok(new RegExp('^  ' + k + ':\\s*\\{', 'm').test(T) || STORE.entry(k), `${k} must be a gate label`);
-  // the helper is what the panels read, and a missing cabin is an empty string
-  assert.match(fn('_g8CabinPair'), /return \(c && c\[which\]\) \? _g8SignPair\(c\[which\]\) : '';/);
-  const a = assembly();
+  // BOARDING SEQUENCES — each airline's table carries the same cabins on its
+  // stages, and a carrier with no table of its own reads this map.
+  const SEQ = require('../fids-current/js/boarding-sequence.js');
+  for (const c of ['AC', 'RV', 'QK', 'WS', 'UA', 'DL', 'AA', 'AS', 'TS']) {
+    assert.deepEqual(SEQ.plan(c).cabins, map[c], c + ': its table names the cabins the gate always named');
+  }
+  assert.deepEqual(SEQ.plan('WR').cabins, ['', ''], 'Encore flies one cabin');
+  assert.deepEqual(SEQ.plan('PD').cabins, ['pdReserve', 'pdClassic'], "Porter's cabins by its own names");
+  assert.deepEqual(SEQ.plan('ZZ', { cabins: ['cabinFirst', 'cabinEcon'] }).cabins, ['cabinFirst', 'cabinEcon'], 'a carrier with no table gets the map');
+  assert.match(fn('_g8SeqPlan'), /cabins: _G8_CABINS\[airlineCode\] \|\| null/);
   // v23773 — the called panel is titled General boarding, the economy cabin
-  // under it, and the group word shares a row with its number.
-  assert.match(a, /_R = \{ title: _g8SignPair\('genboard'\), sub: _g8CabinPair\(airlineCode, 1\), label: _g8SignPair\('zones'\), value: _acZonesVal/,
-    'the AC/WS called panel: General boarding, the economy cabin, Zones beside the number');
-  assert.match(a, /_R = \{ title: _g8SignPair\('genboard'\), sub: _g8CabinPair\(airlineCode, 1\), label: _g8SignPair\(_gkey\), value: String\(nowVal\)/,
-    'the generic called panel does the same with its own group word');
-  assert.match(a, /sub: _g8CabinPair\(airlineCode, 0\), note: _g8SignLines\('preboard'\)/, 'the generic priority panel names its premium cabin');
+  // under it, and the group word shares a row with its number; the priority
+  // panel names the premium cabin.
+  const P = fn('_g8SeqPanels');
+  assert.match(P, /var prem = p\.cabins\[0\] \? _g8SignPair\(p\.cabins\[0\], false, true\) : '';/);
+  assert.match(P, /var econ = p\.cabins\[1\] \? _g8SignPair\(p\.cabins\[1\], false, true\) : '';/);
+  assert.match(P, /pR = \{ title: gen, sub: econ, label: lv\.label, value: lv\.value, lanes: lanesR, next: nextR \};/, 'the live general panel');
+  assert.match(P, /pL = \{ title: _g8SignPair\('priority'\), sub: prem,/, 'the priority panel names its premium cabin');
   const colSrc = fn('_g8SignCol');
   assert.doesNotMatch(colSrc, /g8-sign-kicker/, 'no kicker slot');
   assert.match(colSrc, /'<div class="g8-sign-row"><div class="g8-sign-label g8-pair">' \+ S\.label \+ '<\/div>' \+ _val \+ '<\/div>'/, 'the word and the number share one row');
@@ -294,9 +326,10 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(colFn, /h \+= \(S\.label && !_txt\) \? '<div class="g8-sign-row">/, 'a row only for a numeral');
   assert.match(colFn, /: \(\(S\.label \? '<div class="g8-sign-label g8-pair">' \+ S\.label \+ '<\/div>' : ''\) \+ _val\)/, 'a word value stands under its word');
   assert.match(colFn, /\(S\.roster \? ' has-roster' : ''\)/, 'a roster column says so, so only it is shrunk');
-  const fc = SRC.slice(SRC.indexOf("finalHtml = '<div class=\"g8-final active\">'"));
-  assert.match(fc, /label: _g8SignPair\('rows'\), value: _g8SignPair\('all'\)/, "Porter's final call: Rows beside All | Toutes");
-  assert.match(fc, /label: _g8SignPair\(_gkey\), value: _g8SignPair\('all'\)/, 'and the generic one');
+  // The final call's panels come from _g8SeqPanels(_seq, true).
+  const fcP = fn('_g8SeqPanels');
+  assert.match(fcP, /if \(first && first\.label === 'rows'\) pR = \{ title: gen, sub: econ, label: _g8SignPair\('rows'\), value: _g8SignPair\('all'\)/, "Porter's final call: Rows beside All | Toutes");
+  assert.match(fcP, /else pR = \{ title: gen, sub: econ, value: _g8SignPair\('allPax'\), lanes: lanesR \};/, 'and a call with no number: All passengers');
   // Each half of a pair carries its language, so Porter blue lands on the
   // French half wherever the airport puts it (first at YUL/YQB).
   // (a half cut from a brand also says it is a name, translate="no")
@@ -306,14 +339,13 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   const pairPass = SRC.slice(SRC.indexOf('function _fidsPairSeparators('), SRC.indexOf('\n}\n', SRC.indexOf('function _fidsPairSeparators(')));
   assert.match(pairPass, /var rowEl = col\.classList\.contains\('g8-sign-row'\) \? col : null;\s*if \(rowEl && rowEl\.parentElement\) col = rowEl\.parentElement;/, 'a row word is measured against the column, not the row');
   assert.match(pairPass, /avail -= sib\.getBoundingClientRect\(\)\.width \+ \(parseFloat\(getComputedStyle\(rowEl\)\.columnGap\) \|\| 0\);/);
-  // The general phase panels are titled General boarding with the cabin under
-  // it; Porter's pre-boarding keeps the cabin as the title with "will begin
-  // shortly" as the note.
-  const a = assembly();
-  assert.equal((a.match(/title: _g8SignPair\('genboard'\)/g) || []).length, 3, 'AC/WS, PD, generic during boarding');
-  assert.equal((SRC.match(/title: _g8SignPair\('genboard'\)/g) || []).length, 7, 'and four more at the final call — AC, WS, PD, generic');
-  assert.match(a, /_R = _pdPre\s*\? \{ title: _g8SignPair\('pdClassic', false, true\), label: _g8SignPair\('rows'\), value: nowVal,\s*note: _g8SignLines\('boardSoon'\)/);
-  assert.match(a, /: \{ title: _g8SignPair\('genboard'\), sub: _g8SignPair\('pdClassic', false, true\), label: _g8SignPair\('rows'\), value: nowVal/);
+  // The general panels are titled General boarding with the cabin under it,
+  // waiting ("will begin shortly", the first call), live, and at the final
+  // call; the cabin pair drops the repeated brand prefix (PorterClassic |
+  // Classique).
+  assert.equal((fcP.match(/title: gen,/g) || []).length, 5, 'General boarding on every right panel: waiting, live and the three final forms');
+  assert.equal((fcP.match(/title: gen, sub: econ,/g) || []).length, 5, 'each with the economy cabin under it');
+  assert.match(fcP, /_g8SignPair\(p\.cabins\[1\], false, true\)/);
   // CSS: the row, the Porter blue half, the note's colour — none of them red.
   const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
   const bAt = CSS.lastIndexOf('v23773 — THE SIGN, TO THE PICTURE');
@@ -372,14 +404,28 @@ test('the final call goes through the same sign', () => {
   const at = SRC.indexOf("finalHtml = '<div class=\"g8-final active\">'");
   assert.ok(at >= 0, 'the final-call assembly must exist');
   const f = SRC.slice(at, SRC.indexOf('\n    }\n', at));
-  assert.match(f, /_g8SignHtml\(_L, _R\)/, 'the final call must use the builder');
+  assert.match(f, /var _P = _g8SeqPanels\(_seq, true\);\s*return _g8SignHtml\(_P\.L, _P\.R\);/, 'the final call must use the builder');
   for (const old of ['_acLanesBodyHtml(', '_pdLanesBodyHtml(', '_pbFlowBodyHtml(', 'g8-lanes-std', '_gateLblHalf']) {
     assert.ok(!f.includes(old), `${old} must not be rendered at the final call`);
   }
-  assert.match(f, /_fcExpress \? '3 \\u2022 4' : '3 \\u2022 4 \\u2022 5 \\u2022 6'/, 'AC family: all zones');
-  assert.match(f, /value: _fcNext, lanes/, "WestJet: its own '2 – 9'");
-  assert.match(f, /value: _g8SignPair\('all'\)/, "everyone else: 'All | Tous'");
+  // BOARDING SEQUENCES — every general value the plan uses, from the table:
+  // Air Canada 3 • 4 • 5 • 6, Express 3 • 4, WestJet 3–9 (not 2 – 9: Zone 2
+  // is priority), Porter Rows All, All passengers where none is numbered.
+  const SEQ = require('../fids-current/js/boarding-sequence.js');
+  const finalR = (c, ctx) => { const p = SEQ.plan(c, ctx); return SEQ.fmt(SEQ.valuesOf(p.full.filter((s) => s.side === 'R')), 4); };
+  assert.equal(finalR('AC'), '3 \u2022 4 \u2022 5 \u2022 6', 'AC family: all zones');
+  assert.equal(finalR('AC', { express: true }), '3 \u2022 4', 'Express: 3 • 4');
+  assert.equal(finalR('QK'), '3 \u2022 4');
+  assert.equal(finalR('WS'), '3\u20139', "WestJet: 3–9");
+  assert.equal(finalR('XX'), '', 'a carrier with no numbers: All passengers');
+  assert.doesNotMatch(f, /'2 – 9'/);
+  // and the left panel: Priority with the values called, no pre-boarding words
+  const P = fn('_g8SeqPanels');
+  assert.match(P, /var made = isFinal \? sideOf\(p\.full, 'L'\)/, 'at the final call every priority value is called');
+  assert.match(P, /if \(!isFinal && cur && cur\.side === 'L'\)/, 'no pre-boarding panel at the final call');
   assert.doesNotMatch(f, /next:/, 'nothing comes after the final call');
+  assert.match(P, /if \(isFinal\) \{[\s\S]*?\} else if/, 'the final right panel has no Next line');
+  assert.doesNotMatch((P.match(/if \(isFinal\) \{[\s\S]*?\} else if/) || [''])[0], /next:/);
 });
 
 test('the CSS wins, and keeps the halves unbreakable', () => {

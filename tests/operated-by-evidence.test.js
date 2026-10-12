@@ -379,7 +379,9 @@ test('one ladder: the board and all three gate paths call it, and no flight-numb
   assert.doesNotMatch(CORE, /_acFlNum >= 1600|_fn >= 1600|_fnRv >= 1600|>= 2200 && _fn <= 2299|_acFlNum >= 7600/);
   assert.doesNotMatch(CORE, /_PAL_REGS/, 'the PAL tails moved to the worker\'s table, which every screen reads');
   // The zone rule reads the ladder: Express (Jazz, PAL, the shared brand) to Zone 4.
-  assert.equal((CORE.match(/acExpressOperated\(fidsResolveOperator\(currentFlight, iata\)\.op\)/g) || []).length, 2);
+  // BOARDING SEQUENCES — once, for the boarding sign and the final call alike
+  // (_g8SeqPlan builds both from one plan).
+  assert.equal((CORE.match(/acExpressOperated\(fidsResolveOperator\(currentFlight, iata\)\.op\)/g) || []).length, 1);
   const C = L();
   assert.equal(C.acExpressOperated('ACEX'), true);
   assert.equal(C.acExpressOperated('RV'), false);

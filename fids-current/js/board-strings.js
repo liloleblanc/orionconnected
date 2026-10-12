@@ -268,8 +268,12 @@
     // Porter's own words, in both languages it publishes (flyporter.com,
     // Boarding process, en-ca and fr-ca, read 2026-10-04): "Pre-boarding" /
     // « préembarquement », "general boarding" / « embarquement général ».
-    preboard: { en: 'Pre-boarding', fr: 'Préembarquement', es: 'Preembarque', de: 'Vorab-Einstieg', it: 'Preimbarco', pt: 'Pré-embarque', ja: '優先搭乗', zh: '优先登机', ar: 'صعود مسبق',
-      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // BOARDING SEQUENCES — ja and zh read "priority boarding" (優先搭乗, 优先登机), the
+    // same words as the priority step that now follows pre-boarding on the
+    // sign (_GATE_LBL.priority 優先 / 优先). Japanese takes ANA's own word for
+    // pre-boarding, 事前改札; Chinese 预先登机 (careful).
+    preboard: { en: 'Pre-boarding', fr: 'Préembarquement', es: 'Preembarque', de: 'Vorab-Einstieg', it: 'Preimbarco', pt: 'Pré-embarque', ja: '事前改札', zh: '预先登机', ar: 'صعود مسبق',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'airline:NH', zh: 'careful', ar: 'careful' } },
     genboard: { en: 'General boarding', fr: 'Embarquement général', es: 'Embarque general', de: 'Allgemeines Boarding', it: 'Imbarco generale', pt: 'Embarque geral', ja: '一般搭乗', zh: '普通登机', ar: 'صعود عام',
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v24006 — what the rule says, in every language: GOVERNMENT-ISSUED ID.
@@ -385,7 +389,9 @@
       $src: { en: 'airline:TS', fr: 'airline:TS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     cabinEcon: { en: 'Economy Class', fr: 'Classe économique', es: 'Clase Económica', de: 'Economy Class', it: 'Classe Economica', pt: 'Classe Econômica', ja: 'エコノミークラス', zh: '经济舱', ar: 'الدرجة السياحية',
       $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    cabinPremiumWS: { en: 'Premium', fr: 'Premium', es: 'Premium', de: 'Premium', it: 'Premium', pt: 'Premium', ja: 'プレミアム', zh: '高级舱', ar: 'بريميوم',
+    // BOARDING SEQUENCES — French « Privilège », WestJet's own name for the cabin
+    // (westjet.com/fr-ca, « cabine Affaires ou Privilège »), not the English.
+    cabinPremiumWS: { en: 'Premium', fr: 'Privilège', es: 'Premium', de: 'Premium', it: 'Premium', pt: 'Premium', ja: 'プレミアム', zh: '高级舱', ar: 'بريميوم',
       $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     cabinEconWS: { en: 'Economy', fr: 'Économie', es: 'Económica', de: 'Economy', it: 'Economica', pt: 'Econômica', ja: 'エコノミー', zh: '经济舱', ar: 'اقتصادي',
       $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
@@ -395,6 +401,113 @@
       $src: { en: 'airline:UA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     cabinUnitedEcon: { en: 'United Economy', fr: 'United Economy', es: 'United Economy', de: 'United Economy', it: 'United Economy', pt: 'United Economy', ja: 'United Economy', zh: 'United Economy', ar: 'United Economy',
       $src: { en: 'airline:UA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // ── BOARDING SEQUENCES (boarding-sequence.js) ───────────────────────────
+    // Each airline's published boarding calls play one after another on the
+    // gate's sign, pre-boarding first. The stage names and the who-lists are
+    // the airline's own words in every language it publishes (the URL is the
+    // table's src in boarding-sequence.js); the other languages are careful
+    // translations, marked so. A programme name (ConciergeKey, Global
+    // Services, Premier 1K, A-List Preferred, Elite Diamond) appears only
+    // inside a translated who-list, never on its own.
+    // The plural of _GATE_LBL.groupLabel, for two groups called together
+    // (Groups 3 • 4) and the groups called so far; house wording.
+    groups: { en: 'Groups', fr: 'Groupes', es: 'Grupos', de: 'Gruppen', it: 'Gruppi', pt: 'Grupos', ja: 'グループ', zh: '组别', ar: 'المجموعات',
+      $src: { en: 'house', fr: 'house', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Air Canada's « Family Boarding » / « Embarquement des familles »,
+    // between Zones 2 and 3 (aircanada.com, family travel tips, fr-ca); and
+    // American's family boarding (aa.com), the same words.
+    familyBoard: { en: 'Family boarding', fr: 'Embarquement des familles', es: 'Embarque para familias', de: 'Boarding für Familien', it: 'Imbarco per famiglie', pt: 'Embarque para famílias', ja: 'ファミリー搭乗', zh: '家庭登机', ar: 'صعود العائلات',
+      $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // WestJet's "special boarding, after our priority guests" / « pendant
+    // l'embarquement spécial » (westjet.com, children and infants).
+    specialBoard: { en: 'Special boarding', fr: 'Embarquement spécial', es: 'Embarque especial', de: 'Sonder-Boarding', it: 'Imbarco speciale', pt: 'Embarque especial', ja: '特別搭乗', zh: '特别登机', ar: 'صعود خاص',
+      $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Delta's "Early Access" / « Accès anticipé » (delta.com, Boarding
+    // priority, en and fr-ca), between Zone 2 and Zone 3.
+    earlyAccess: { en: 'Early Access', fr: 'Accès anticipé', es: 'Acceso anticipado', de: 'Früher Zugang', it: 'Accesso anticipato', pt: 'Acesso antecipado', ja: '早期搭乗', zh: '提前登机', ar: 'الصعود المبكر',
+      $src: { en: 'airline:DL', fr: 'airline:DL', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // JetBlue's "Courtesy Boarding" (jetblue.com, Boarding procedures), after
+    // Group 3; JetBlue publishes no French.
+    courtesyBoard: { en: 'Courtesy boarding', fr: 'Embarquement de courtoisie', es: 'Embarque de cortesía', de: 'Kulanz-Boarding', it: 'Imbarco di cortesia', pt: 'Embarque de cortesia', ja: '特別配慮搭乗', zh: '礼遇登机', ar: 'صعود المجاملة',
+      $src: { en: 'airline:B6', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // WHO IS CALLED, shown one language at a time under the stage's name.
+    // preboardWhoAny: the pre-boarding every airline owes at a Canadian or
+    // U.S. airport, whatever it publishes: the Accessible Transportation for
+    // Persons with Disabilities Regulations, SOR/2019-244 s.34(1) (boarding
+    // before other passengers on request), and 14 CFR 382.93 (the
+    // opportunity to pre-board). House wording; shown only at those airports.
+    preboardWhoAny: { en: 'Passengers who need assistance or more time to board', fr: 'Passagers ayant besoin d’aide ou de plus de temps pour embarquer', es: 'Pasajeros que necesitan asistencia o más tiempo para embarcar', de: 'Fluggäste, die Hilfe oder mehr Zeit zum Einsteigen benötigen', it: 'Passeggeri che necessitano di assistenza o di più tempo per l’imbarco', pt: 'Passageiros que precisam de assistência ou de mais tempo para embarcar', ja: '介助が必要なお客様、搭乗にお時間がかかるお客様', zh: '需要协助或需要更多登机时间的旅客', ar: 'الركاب الذين يحتاجون إلى مساعدة أو إلى وقت أطول للصعود',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Air Canada, Boarding by zone (en and fr), Pre-boarding.
+    preboardWhoAC: { en: 'Customers who have requested wheelchair assistance or who need more time to board', fr: 'Clients qui ont demandé le service de fauteuil roulant ou qui ont besoin de plus de temps pour monter à bord', es: 'Clientes que solicitaron asistencia con silla de ruedas o que necesitan más tiempo para embarcar', de: 'Fluggäste, die Rollstuhlhilfe angefordert haben oder mehr Zeit zum Einsteigen benötigen', it: 'Clienti che hanno richiesto assistenza in sedia a rotelle o che necessitano di più tempo per l’imbarco', pt: 'Clientes que solicitaram assistência com cadeira de rodas ou que precisam de mais tempo para embarcar', ja: '車いすでの介助をご依頼のお客様、搭乗にお時間がかかるお客様', zh: '已申请轮椅协助或需要更多登机时间的旅客', ar: 'العملاء الذين طلبوا المساعدة بكرسي متحرك أو يحتاجون إلى وقت أطول للصعود',
+      $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Air Canada's Family Boarding block (en and fr): children under 6.
+    familyWhoAC: { en: 'Customers travelling with children under the age of 6', fr: 'Clients voyageant avec des enfants de moins de 6 ans', es: 'Clientes que viajan con niños menores de 6 años', de: 'Fluggäste mit Kindern unter 6 Jahren', it: 'Clienti in viaggio con bambini sotto i 6 anni', pt: 'Clientes viajando com crianças menores de 6 anos', ja: '6歳未満のお子様連れのお客様', zh: '携带6岁以下儿童的旅客', ar: 'العملاء المسافرون مع أطفال دون سن 6 سنوات',
+      $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // WestJet's pre-boarding (westjet.com, mobility assistance and
+    // unaccompanied minors, en-ca and fr-ca).
+    preboardWhoWS: { en: 'Guests who need extra time or support · Unaccompanied minors', fr: 'Invités qui ont besoin de temps supplémentaire ou de soutien · Mineurs non accompagnés', es: 'Pasajeros que necesitan más tiempo o apoyo · Menores no acompañados', de: 'Gäste, die mehr Zeit oder Unterstützung benötigen · Alleinreisende Minderjährige', it: 'Ospiti che necessitano di più tempo o supporto · Minori non accompagnati', pt: 'Passageiros que precisam de mais tempo ou apoio · Menores desacompanhados', ja: 'お時間やサポートが必要なお客様 · 同伴者のいない未成年のお客様', zh: '需要更多时间或协助的旅客 · 无成人陪伴的未成年人', ar: 'الضيوف الذين يحتاجون إلى وقت إضافي أو دعم · القاصرون غير المصحوبين',
+      $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // WestJet's special boarding (children and infants, en-ca and fr-ca).
+    specialWhoWS: { en: 'Guests travelling with children under five', fr: 'Invités voyageant avec des enfants de moins de cinq ans', es: 'Pasajeros que viajan con niños menores de cinco años', de: 'Gäste mit Kindern unter fünf Jahren', it: 'Ospiti in viaggio con bambini sotto i cinque anni', pt: 'Passageiros viajando com crianças menores de cinco anos', ja: '5歳未満のお子様連れのお客様', zh: '携带五岁以下儿童的旅客', ar: 'الضيوف المسافرون مع أطفال دون الخامسة',
+      $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // PAL Airlines' pre-boarding (palairlines.ca, travel documents, en and fr).
+    preboardWhoPB: { en: 'Unaccompanied minors · Passengers with small children · Passengers in need of assistance', fr: 'Personnes mineures non accompagnées · Passagers accompagnés de jeunes enfants · Personnes ayant besoin d’assistance', es: 'Menores no acompañados · Pasajeros con niños pequeños · Pasajeros que necesitan asistencia', de: 'Alleinreisende Minderjährige · Fluggäste mit kleinen Kindern · Fluggäste, die Hilfe benötigen', it: 'Minori non accompagnati · Passeggeri con bambini piccoli · Passeggeri che necessitano di assistenza', pt: 'Menores desacompanhados · Passageiros com crianças pequenas · Passageiros que precisam de assistência', ja: '同伴者のいない未成年のお客様 · 小さなお子様連れのお客様 · 介助が必要なお客様', zh: '无成人陪伴的未成年人 · 携带幼儿的旅客 · 需要协助的旅客', ar: 'القاصرون غير المصحوبين · الركاب المسافرون مع أطفال صغار · الركاب الذين يحتاجون إلى مساعدة',
+      $src: { en: 'airline:PB', fr: 'airline:PB', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Flair's pre-boarding (flyflair.com, deadlines; read from the search
+    // index, the site blocks automated readers). FLAIR'S FRENCH IS NOT
+    // VERIFIED: careful.
+    preboardWhoF8: { en: 'Families with young children · Customers who need extra assistance', fr: 'Familles avec de jeunes enfants · Clients ayant besoin d’une aide supplémentaire', es: 'Familias con niños pequeños · Clientes que necesitan asistencia adicional', de: 'Familien mit kleinen Kindern · Fluggäste, die zusätzliche Hilfe benötigen', it: 'Famiglie con bambini piccoli · Clienti che necessitano di ulteriore assistenza', pt: 'Famílias com crianças pequenas · Clientes que precisam de assistência adicional', ja: '小さなお子様連れのご家族 · 特別な介助が必要なお客様', zh: '携带幼儿的家庭 · 需要额外协助的旅客', ar: 'العائلات مع أطفال صغار · العملاء الذين يحتاجون إلى مساعدة إضافية',
+      $src: { en: 'airline:F8', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Air Transat (family privileges; accessibility, en-CA and fr-CA). Its
+    // family pre-boarding excludes flights to the U.S. (« À l'exception des
+    // vols vers les États-Unis »): preboardWhoTSus there.
+    preboardWhoTS: { en: 'Families travelling with young children · Passengers with disabilities receiving assistance', fr: 'Familles voyageant avec de jeunes enfants · Passagers ayant une incapacité qui reçoivent de l’assistance', es: 'Familias que viajan con niños pequeños · Pasajeros con discapacidad que reciben asistencia', de: 'Familien mit kleinen Kindern · Fluggäste mit Behinderung, die Hilfe erhalten', it: 'Famiglie in viaggio con bambini piccoli · Passeggeri con disabilità che ricevono assistenza', pt: 'Famílias viajando com crianças pequenas · Passageiros com deficiência que recebem assistência', ja: '小さなお子様連れのご家族 · 介助を受ける障がいのあるお客様', zh: '携带幼儿出行的家庭 · 接受协助的残障旅客', ar: 'العائلات المسافرة مع أطفال صغار · الركاب ذوو الإعاقة الذين يتلقون المساعدة',
+      $src: { en: 'airline:TS', fr: 'airline:TS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    preboardWhoTSus: { en: 'Passengers with disabilities receiving assistance', fr: 'Passagers ayant une incapacité qui reçoivent de l’assistance', es: 'Pasajeros con discapacidad que reciben asistencia', de: 'Fluggäste mit Behinderung, die Hilfe erhalten', it: 'Passeggeri con disabilità che ricevono assistenza', pt: 'Passageiros com deficiência que recebem assistência', ja: '介助を受ける障がいのあるお客様', zh: '接受协助的残障旅客', ar: 'الركاب ذوو الإعاقة الذين يتلقون المساعدة',
+      $src: { en: 'airline:TS', fr: 'airline:TS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // United's pre-boarding row (united.com, Boarding process; its French
+    // page reads « Passagers à mobilité réduite »). United's own French calls
+    // this row « Embarquement prioritaire », the name of its paid product in
+    // Group 2 as well; the sign titles it with preboard instead, so the
+    // pre-boarding and priority steps never read the same (a deliberate
+    // choice).
+    preboardWhoUA: { en: 'Customers with disabilities · Unaccompanied minors · Families with children 2 and younger · Active military · Members of Global Services and Premier 1K', fr: 'Passagers à mobilité réduite · Mineurs non accompagnés · Familles avec des enfants de 2 ans ou moins · Militaires en service actif · Membres Global Services et Premier 1K', es: 'Clientes con discapacidad · Menores no acompañados · Familias con niños de 2 años o menos · Militares en servicio activo · Miembros Global Services y Premier 1K', de: 'Fluggäste mit Behinderung · Alleinreisende Minderjährige · Familien mit Kindern bis 2 Jahre · Aktive Militärangehörige · Mitglieder von Global Services und Premier 1K', it: 'Clienti con disabilità · Minori non accompagnati · Famiglie con bambini fino a 2 anni · Militari in servizio attivo · Membri Global Services e Premier 1K', pt: 'Clientes com deficiência · Menores desacompanhados · Famílias com crianças de até 2 anos · Militares na ativa · Membros Global Services e Premier 1K', ja: '障がいのあるお客様 · 同伴者のいない未成年のお客様 · 2歳以下のお子様連れのご家族 · 現役軍人 · Global ServicesおよびPremier 1K会員', zh: '残障旅客 · 无成人陪伴的未成年人 · 携带两岁及以下儿童的家庭 · 现役军人 · Global Services和Premier 1K会员', ar: 'العملاء ذوو الإعاقة · القاصرون غير المصحوبين · العائلات مع أطفال بعمر سنتين أو أقل · العسكريون في الخدمة الفعلية · أعضاء Global Services وPremier 1K',
+      $src: { en: 'airline:UA', fr: 'airline:UA', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Delta's Pre-Boarding row and the active-duty military row under it
+    // (delta.com, Boarding priority, en and fr-ca).
+    preboardWhoDL: { en: 'Customers needing assistance or more time to board · Active-duty U.S. military', fr: 'Passagers ayant besoin d’une assistance particulière ou d’un temps supplémentaire pour embarquer · Militaires américains en activité', es: 'Clientes que necesitan asistencia o más tiempo para embarcar · Militares estadounidenses en servicio activo', de: 'Fluggäste, die Hilfe oder mehr Zeit zum Einsteigen benötigen · Aktive US-Militärangehörige', it: 'Clienti che necessitano di assistenza o di più tempo per l’imbarco · Militari statunitensi in servizio attivo', pt: 'Clientes que precisam de assistência ou de mais tempo para embarcar · Militares dos EUA na ativa', ja: '介助または搭乗にお時間が必要なお客様 · 現役の米軍人', zh: '需要协助或更多登机时间的旅客 · 美国现役军人', ar: 'العملاء الذين يحتاجون إلى مساعدة أو وقت أطول للصعود · العسكريون الأمريكيون في الخدمة الفعلية',
+      $src: { en: 'airline:DL', fr: 'airline:DL', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    earlyAccessWhoDL: { en: 'Customers travelling with car seats and strollers', fr: 'Voyageurs avec des sièges pour enfant et des poussettes', es: 'Clientes que viajan con sillas infantiles y cochecitos', de: 'Reisende mit Autositzen und Kinderwagen', it: 'Clienti in viaggio con seggiolini per bambini e passeggini', pt: 'Clientes viajando com cadeirinhas de carro e carrinhos de bebê', ja: 'チャイルドシートやベビーカーをお持ちのお客様', zh: '携带儿童安全座椅和婴儿车的旅客', ar: 'العملاء المسافرون مع مقاعد أطفال للسيارة وعربات أطفال',
+      $src: { en: 'airline:DL', fr: 'airline:DL', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // American (aa.com, Boarding process): special assistance at the gate,
+    // then ConciergeKey, First and Business (its cabin names, the same on its
+    // French page), then families with children under 2.
+    preboardWhoAA: { en: 'Customers who need special assistance', fr: 'Clients ayant besoin d’une assistance particulière', es: 'Clientes que necesitan asistencia especial', de: 'Fluggäste, die besondere Hilfe benötigen', it: 'Clienti che necessitano di assistenza speciale', pt: 'Clientes que precisam de assistência especial', ja: '特別な介助が必要なお客様', zh: '需要特殊协助的旅客', ar: 'العملاء الذين يحتاجون إلى مساعدة خاصة',
+      $src: { en: 'airline:AA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    prioWhoAA: { en: 'ConciergeKey members · First · Business', fr: 'Membres ConciergeKey · First · Business', es: 'Miembros ConciergeKey · First · Business', de: 'ConciergeKey-Mitglieder · First · Business', it: 'Membri ConciergeKey · First · Business', pt: 'Membros ConciergeKey · First · Business', ja: 'ConciergeKey会員 · ファースト · ビジネス', zh: 'ConciergeKey会员 · 头等舱 · 商务舱', ar: 'أعضاء ConciergeKey · الدرجة الأولى · درجة رجال الأعمال',
+      $src: { en: 'airline:AA', fr: 'airline:AA', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    familyWhoAA: { en: 'Families with children under 2', fr: 'Familles avec des enfants de moins de 2 ans', es: 'Familias con niños menores de 2 años', de: 'Familien mit Kindern unter 2 Jahren', it: 'Famiglie con bambini sotto i 2 anni', pt: 'Famílias com crianças menores de 2 anos', ja: '2歳未満のお子様連れのご家族', zh: '携带2岁以下儿童的家庭', ar: 'العائلات مع أطفال دون سنتين',
+      $src: { en: 'airline:AA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Alaska, and Hawaiian on the same page since 2026-04-22 (alaskaair.com,
+    // Our boarding process).
+    preboardWhoAS: { en: 'Guests with disabilities who need help or a little more time to board', fr: 'Passagers ayant un handicap qui ont besoin d’aide ou d’un peu plus de temps pour embarquer', es: 'Pasajeros con discapacidad que necesitan ayuda o un poco más de tiempo para embarcar', de: 'Gäste mit Behinderung, die Hilfe oder etwas mehr Zeit zum Einsteigen benötigen', it: 'Ospiti con disabilità che necessitano di aiuto o di un po’ più di tempo per l’imbarco', pt: 'Passageiros com deficiência que precisam de ajuda ou de um pouco mais de tempo para embarcar', ja: '搭乗に介助や少しお時間が必要な障がいのあるお客様', zh: '需要协助或稍多登机时间的残障旅客', ar: 'الضيوف ذوو الإعاقة الذين يحتاجون إلى مساعدة أو وقت أطول قليلاً للصعود',
+      $src: { en: 'airline:AS', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // JetBlue (jetblue.com, Boarding procedures): Pre-boarding, and Courtesy
+    // Boarding after Group 3.
+    preboardWhoB6: { en: 'Customers with disabilities', fr: 'Clients ayant un handicap', es: 'Clientes con discapacidad', de: 'Fluggäste mit Behinderung', it: 'Clienti con disabilità', pt: 'Clientes com deficiência', ja: '障がいのあるお客様', zh: '残障旅客', ar: 'العملاء ذوو الإعاقة',
+      $src: { en: 'airline:B6', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    courtesyWhoB6: { en: 'Active military · Customers travelling with car seats or strollers', fr: 'Militaires en service actif · Clients voyageant avec des sièges pour enfant ou des poussettes', es: 'Militares en servicio activo · Clientes que viajan con sillas infantiles o cochecitos', de: 'Aktive Militärangehörige · Reisende mit Autositzen oder Kinderwagen', it: 'Militari in servizio attivo · Clienti in viaggio con seggiolini per bambini o passeggini', pt: 'Militares na ativa · Clientes viajando com cadeirinhas de carro ou carrinhos de bebê', ja: '現役軍人 · チャイルドシートまたはベビーカーをお持ちのお客様', zh: '现役军人 · 携带儿童安全座椅或婴儿车的旅客', ar: 'العسكريون في الخدمة الفعلية · العملاء المسافرون مع مقاعد أطفال للسيارة أو عربات أطفال',
+      $src: { en: 'airline:B6', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Southwest (support.southwest.com, Boarding process): Preboarding, then
+    // Priority Boarding with active-duty military and A-List Preferred.
+    preboardWhoWN: { en: 'Customers with disabilities who need more time or assistance · Unaccompanied minors', fr: 'Clients ayant un handicap qui ont besoin de plus de temps ou d’aide · Mineurs non accompagnés', es: 'Clientes con discapacidad que necesitan más tiempo o asistencia · Menores no acompañados', de: 'Fluggäste mit Behinderung, die mehr Zeit oder Hilfe benötigen · Alleinreisende Minderjährige', it: 'Clienti con disabilità che necessitano di più tempo o assistenza · Minori non accompagnati', pt: 'Clientes com deficiência que precisam de mais tempo ou assistência · Menores desacompanhados', ja: 'お時間や介助が必要な障がいのあるお客様 · 同伴者のいない未成年のお客様', zh: '需要更多时间或协助的残障旅客 · 无成人陪伴的未成年人', ar: 'العملاء ذوو الإعاقة الذين يحتاجون إلى وقت أطول أو مساعدة · القاصرون غير المصحوبين',
+      $src: { en: 'airline:WN', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    prioWhoWN: { en: 'Customers with priority boarding · Active-duty U.S. military · Members of A-List Preferred', fr: 'Clients avec embarquement prioritaire · Militaires américains en activité · Membres A-List Preferred', es: 'Clientes con embarque prioritario · Militares estadounidenses en servicio activo · Miembros A-List Preferred', de: 'Fluggäste mit Vorrang-Boarding · Aktive US-Militärangehörige · Mitglieder von A-List Preferred', it: 'Clienti con imbarco prioritario · Militari statunitensi in servizio attivo · Membri A-List Preferred', pt: 'Clientes com embarque prioritário · Militares dos EUA na ativa · Membros A-List Preferred', ja: '優先搭乗をご購入のお客様 · 現役の米軍人 · A-List Preferred会員', zh: '购买优先登机的旅客 · 美国现役军人 · A-List Preferred会员', ar: 'عملاء الصعود ذي الأولوية · العسكريون الأمريكيون في الخدمة الفعلية · أعضاء A-List Preferred',
+      $src: { en: 'airline:WN', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Frontier (faq.flyfrontier.com, Frontier boarding process).
+    preboardWhoF9: { en: 'Customers with disabilities · Active-duty U.S. military · Families with children under 2 · Members of Elite Diamond', fr: 'Clients ayant un handicap · Militaires américains en activité · Familles avec des enfants de moins de 2 ans · Membres Elite Diamond', es: 'Clientes con discapacidad · Militares estadounidenses en servicio activo · Familias con niños menores de 2 años · Miembros Elite Diamond', de: 'Fluggäste mit Behinderung · Aktive US-Militärangehörige · Familien mit Kindern unter 2 Jahren · Mitglieder von Elite Diamond', it: 'Clienti con disabilità · Militari statunitensi in servizio attivo · Famiglie con bambini sotto i 2 anni · Membri Elite Diamond', pt: 'Clientes com deficiência · Militares dos EUA na ativa · Famílias com crianças menores de 2 anos · Membros Elite Diamond', ja: '障がいのあるお客様 · 現役の米軍人 · 2歳未満のお子様連れのご家族 · Elite Diamond会員', zh: '残障旅客 · 美国现役军人 · 携带2岁以下儿童的家庭 · Elite Diamond会员', ar: 'العملاء ذوو الإعاقة · العسكريون الأمريكيون في الخدمة الفعلية · العائلات مع أطفال دون سنتين · أعضاء Elite Diamond',
+      $src: { en: 'airline:F9', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
 
     // ── HERITAGE CARD ("FROM THE ARCHIVE") ────────────────────────────────
     // The kicker and the captions of the archive card on the gate. Captions
