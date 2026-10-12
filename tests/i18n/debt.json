@@ -930,71 +930,11 @@
   "decision": "D6"
  },
  {
-  "id": "B10:fids-current/app.html:-:Arrivals",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Arrivals",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Arriving flights & baggage belts",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Arriving flights & baggage belts",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Baggage",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Baggage",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Coming soon",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Coming soon",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Departures",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Departures",
-  "count": 2,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
   "id": "B10:fids-current/app.html:-:Duty-free, your way",
   "check": "B10",
   "file": "fids-current/app.html",
   "fn": null,
   "text": "Duty-free, your way",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Explore",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Explore",
   "count": 1,
   "surface": "Companion app",
   "decision": "D6"
@@ -1010,81 +950,11 @@
   "decision": "D6"
  },
  {
-  "id": "B10:fids-current/app.html:-:Explore the airport",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Explore the airport",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Find shops, food, lounges and washrooms — and how to get to them.",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Find shops, food, lounges and washrooms — and how to get to them.",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Flight details",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Flight details",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Flights",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Flights",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
   "id": "B10:fids-current/app.html:-:Grab a coffee before you fly",
   "check": "B10",
   "file": "fids-current/app.html",
   "fn": null,
   "text": "Grab a coffee before you fly",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Greater Moncton",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Greater Moncton",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Live departures",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Live departures",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Members",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Members",
   "count": 1,
   "surface": "Companion app",
   "decision": "D6"
@@ -1110,41 +980,11 @@
   "decision": "D6"
  },
  {
-  "id": "B10:fids-current/app.html:-:Save your flight and boarding pass for quick access. Sign in to unlock.",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Save your flight and boarding pass for quick access. Sign in to unlock.",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
   "id": "B10:fids-current/app.html:-:Sponsored",
   "check": "B10",
   "file": "fids-current/app.html",
   "fn": null,
   "text": "Sponsored",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Trip",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Trip",
-  "count": 1,
-  "surface": "Companion app",
-  "decision": "D6"
- },
- {
-  "id": "B10:fids-current/app.html:-:Your trip",
-  "check": "B10",
-  "file": "fids-current/app.html",
-  "fn": null,
-  "text": "Your trip",
   "count": 1,
   "surface": "Companion app",
   "decision": "D6"
