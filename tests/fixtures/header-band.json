@@ -1,6 +1,6 @@
 {
  "_about": [
-  "Every live airport's silk-band palette as the board derived it from the airport's own logo, measured 2026-10-04 in headless Chrome at 1680x1050 (body --fids-band-1..4 before the v23955 end guard). null = no logo palette resolved (the band is the default navy); 'acadian' = Moncton's hand-drawn flag.",
+  "Every live airport's silk-band palette as the board derived it from the airport's own logo, measured 2026-10-04 in headless Chrome at 1680x1050 (body --fids-band-1..4 before the v23955 end guard). null = no logo palette resolved (the band is the default navy). YQM was re-measured 2026-10-12 the same way (its cached fids_logo_palette3_YQM): Moncton wears its own logo band all year except 1-15 August, when the Acadian flag band is checked by its own test.",
   "geometry: the glyph boxes fids-core's band layout reads (title text, time-block text, the mark), in banner pixels, captured from the same boards. yow-departures-long-date sets the longest date of the year before the logo fit has caught up, so the mark and the date overlap there on purpose."
  ],
  "palettes": {
@@ -198,7 +198,12 @@
    "#256dff",
    "#0044cc"
   ],
-  "YQM": "acadian",
+  "YQM": [
+   "#00426f",
+   "#d5d5eb",
+   "#d4d4ea",
+   "#5b5b65"
+  ],
   "YQR": null,
   "YQT": [
    "#3920a7",

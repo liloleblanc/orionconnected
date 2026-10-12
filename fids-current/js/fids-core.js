@@ -22574,24 +22574,73 @@ try {
 } catch (e) {}
 
 // ── Banner style registry (merged time+airport banner, changeable by
-// destination or screen, Acadian flag pinned for Moncton). Resolution:
-// localStorage override (fids_banner_style_<IATA>_<SCREEN>, then
-// fids_banner_style_<IATA>) → registry per-airport (a string, or an object
-// keyed fids/gids/bids/'*') → global '*'. Styles: 'tabs' = the current
-// three-tab banner (YQM's Acadian tricolore lives there, untouched);
-// 'merged' = the clock joins the white airport band (two tabs). CSS keys
-// off body[data-fids-banner] and is ADDITIVE-ONLY — if JS and CSS ever
-// deploy out of step, the banner falls back to today's 'tabs' look,
-// never a broken one.
+// destination or screen; Moncton's Acadian flag is SEASONAL, see
+// ACADIAN_SEASON below). Resolution: localStorage override
+// (fids_banner_style_<IATA>_<SCREEN>, then fids_banner_style_<IATA>) →
+// the Acadian season (Moncton, 1–15 August local) → registry per-airport (a
+// string, or an object keyed fids/gids/bids/'*') → global '*'. Styles:
+// 'tabs' = the old three-tab banner; 'merged' = the clock joins the white
+// airport band (two tabs). CSS keys off body[data-fids-banner] and is
+// ADDITIVE-ONLY — if JS and CSS ever deploy out of step, the banner falls
+// back to today's 'tabs' look, never a broken one.
 var BANNER_STYLE = {
   // Concept A ('Silk', approved in Figma): one continuous band, colours
-  // flow like fabric. Moncton's variant IS the Acadian tricolore flowing
-  // blue → white → red with the gold star at the clock. 'tabs' (the old
-  // three-tab banner) remains available as a named style and is the
-  // fallback whenever no style resolves.
-  'YQM': 'silk-acadian',
+  // flow like fabric. 'tabs' (the old three-tab banner) remains available
+  // as a named style and is the fallback whenever no style resolves.
+  // Moncton is NOT pinned here any more (v24041): it wears the regular silk
+  // band like every airport, and 'silk-acadian' comes from ACADIAN_SEASON.
   '*': 'silk'
 };
+// ── The Acadian season (v24041) ───────────────────────────────────────────
+// Moncton's Acadian flag look — the tricolore band flowing blue → white →
+// red, the blue time tab, the red board tab and the gold star — used to be
+// pinned to Moncton all year. Decision: it is seasonal. It shows from
+// 1 August to 15 August inclusive (15 August is the Fête nationale de
+// l'Acadie), counted on MONCTON's own calendar (America/Moncton), never the
+// host's or UTC's: at 23:30 on 31 July in Moncton it is already 1 August in
+// UTC, and the flag must not go up early. The rest of the year Moncton
+// wears the plain silk band. In season the corner badge is the gold star
+// ALONE: the plane (or bag) glyph that sat on the star is not drawn.
+//
+// body.fids-acadian is the one switch the CSS keys the flag tabs on. Before
+// this, those rules keyed on body.fids-ap-YQM alone, so they painted the
+// blue time tab, the red board tab and a ★ by the clock on ANY banner
+// Moncton wore, the plain silk one included.
+//
+// The localStorage override still wins, for testing: setting
+// fids_banner_style_YQM = 'silk-acadian' shows the August look on any day,
+// and 'silk' shows the plain band in August.
+var ACADIAN_SEASON = { iata: 'YQM', style: 'silk-acadian', tz: 'America/Moncton', month: 8, from: 1, to: 15 };
+// True when `now` falls on 1–15 August on Moncton's calendar. Pure: the
+// answer depends only on the instant, not on the machine's own time zone.
+// fidsLocalDateKey gives the date in the zone named, as 'YYYY-MM-DD'.
+function _acadianSeasonOn(now) {
+  try {
+    var S = ACADIAN_SEASON;
+    var key = fidsLocalDateKey((now || new Date()).getTime(), S.tz);
+    var md = /^\d{4}-(\d{2})-(\d{2})$/.exec(String(key || ''));
+    if (!md) return false;
+    var m = parseInt(md[1], 10), d = parseInt(md[2], 10);
+    return m === S.month && d >= S.from && d <= S.to;
+  } catch (e) { return false; }
+}
+// Which banner style an airport wears on a screen at a moment, and whether
+// the Acadian flag tabs are on. Pure (tests/acadian-season.test.js):
+// `override` is the localStorage value, '' when none is set.
+function _bannerStyleFor(ap, screen, now, override) {
+  var inSeason = ap === ACADIAN_SEASON.iata && _acadianSeasonOn(now);
+  var s = override || '';
+  if (!s && inSeason) s = ACADIAN_SEASON.style;
+  if (!s) {
+    var c = Object.prototype.hasOwnProperty.call(BANNER_STYLE, ap) ? BANNER_STYLE[ap] : BANNER_STYLE['*'];
+    s = (c && typeof c === 'object') ? (c[screen] || c['*'] || 'tabs') : (c || 'tabs');
+  }
+  // The flag tabs follow the flag band. The old three-tab banner was where
+  // Moncton's tricolore first lived, so a 'tabs' override keeps it — in
+  // season only.
+  var acadian = ap === ACADIAN_SEASON.iata && (s === ACADIAN_SEASON.style || (s === 'tabs' && inSeason));
+  return { style: s, acadian: acadian };
+}
 // Per-airport silk accent — the band's tail colour, keyed to the airport's
 // own logo. localStorage override:
 // fids_banner_accent_<IATA>. Unlisted airports fall back to the gold.
@@ -22954,9 +23003,101 @@ function _autoBandPalette(ap, _tries) {
     });
   } catch (e) { _clearBandPalette(); }
 }
+// v24041 — A HOLIDAY LOOK, ON THE AIRPORT'S OWN HOLIDAY. Canadian
+// Thanksgiving (the second Monday of October) gives Canadian airports'
+// boards body[data-fids-holiday="thanksgiving-ca"] for that day in the
+// airport's own time zone; the look itself is CSS keyed on the attribute,
+// so a board on any other day, or outside Canada, is untouched. Canadian
+// airports are the Y-codes on the roster (as _heritageIsCanadian reads them
+// when AP carries no country). ?holiday=<id> previews a look and
+// ?holiday=none turns it off, for review only.
+function _fidsAirportYmd(iata, now) {
+  var tz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
+  // the airport's own calendar day, as YYYY-MM-DD (fidsLocalDateKey)
+  var k = String(fidsLocalDateKey(+now, tz)).split('-');
+  return { y: +k[0], m: +k[1], d: +k[2] };
+}
+function _fidsHolidayFor(iata, now) {
+  try {
+    var q = new URLSearchParams(location.search).get('holiday');
+    if (q === 'none') return '';
+    if (q && /^[a-z0-9-]{3,40}$/.test(q)) return q;
+  } catch (eQ) {}
+  var ap = String(iata || '').toUpperCase();
+  var canadian = (function () {
+    var c = ((typeof AP !== 'undefined' && AP[ap]) || {}).country || '';
+    if (c) return /^(CA|CAN|Canada)$/i.test(String(c));
+    return /^Y[A-Z]{2}$/.test(ap);
+  })();
+  if (!canadian) return '';
+  var t = _fidsAirportYmd(ap, now || new Date());
+  // the second Monday of October: the first Monday falls on day 1..7
+  if (t.m === 10) {
+    var dow = new Date(Date.UTC(t.y, 9, t.d)).getUTCDay();
+    if (dow === 1 && t.d >= 8 && t.d <= 14) return 'thanksgiving-ca';
+  }
+  return '';
+}
+// The band colours of each holiday look: maple red, burnt orange, gold,
+// cognac for Thanksgiving (the harvest), read by the palette pick in
+// _applyBannerStyle.
+var HOLIDAY_BAND = {
+  'thanksgiving-ca': ['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12']
+};
+// The few layers a look adds outside the band (display-overrides.css,
+// "A HOLIDAY LOOK"): on the gate, a warm wash, a harvest ribbon on the
+// date bar's top edge and one gold leaf alone in the empty cream between
+// the airline's logo and the airport's mark; on the baggage board, a warm
+// grade under the scrim. They exist only while body[data-fids-holiday] is
+// set and are removed the moment it is not, so a board that runs past
+// midnight goes back to itself without a reload.
+var _HOLIDAY_LAYERS = [
+  ['.g8-r1', 'tg-warm', null], ['.g8-r1', 'tg-ribbon', null], ['.g8-r1', 'tg-leaf', null],
+  ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim']
+];
+function _fidsHolidayLayers() {
+  try {
+    var on = !!document.body.dataset.fidsHoliday;
+    for (var i = 0; i < _HOLIDAY_LAYERS.length; i++) {
+      var L = _HOLIDAY_LAYERS[i], hosts = document.querySelectorAll(L[0]);
+      for (var j = 0; j < hosts.length; j++) {
+        var h = hosts[j], el = h.querySelector(':scope > .' + L[1]);
+        if (!on) { if (el) el.parentNode.removeChild(el); continue; }
+        if (el) continue;
+        el = document.createElement('div');
+        el.className = L[1];
+        el.setAttribute('aria-hidden', 'true');
+        var ref = L[2] ? h.querySelector(':scope > ' + L[2]) : null;
+        if (ref) h.insertBefore(el, ref); else h.appendChild(el);
+      }
+    }
+    if (!on) return;
+    // the gate leaf: centred in the empty cream between the airline's
+    // artwork and the clock; no room (under 170px), no leaf
+    var bands = document.querySelectorAll('.g8-r1');
+    for (var k = 0; k < bands.length; k++) {
+      var band = bands[k], leaf = band.querySelector(':scope > .tg-leaf');
+      if (!leaf) continue;
+      var hr = band.getBoundingClientRect(), a = 0;
+      var art = band.querySelectorAll('.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas');
+      for (var m = 0; m < art.length; m++) { var r = art[m].getBoundingClientRect(); if (r.width > 0) a = Math.max(a, r.right - hr.left); }
+      var clock = band.querySelector('.octb-clockrow') || band.querySelector('.g8-r1-timebox');
+      var bx = clock ? clock.getBoundingClientRect().left - hr.left : 0;
+      if (!a || !bx || bx - a < 170) { leaf.style.display = 'none'; continue; }
+      leaf.style.display = '';
+      leaf.style.left = Math.round((a + bx) / 2 - 39) + 'px';
+    }
+  } catch (e) {}
+}
+try { _ocEvery(_fidsHolidayLayers, 2000); } catch (e) {}
 function _applyBannerStyle(iata, screen) {
   try {
     var ap = String(iata || '').toUpperCase();
+    try {
+      var _hol = _fidsHolidayFor(ap, new Date());
+      if (_hol) document.body.dataset.fidsHoliday = _hol;
+      else delete document.body.dataset.fidsHoliday;
+    } catch (eHol) {}
     // v23330 — THE PER-AIRPORT HOOKS TRAVEL WITH THE STYLE. render() and
     // renderDedicatedScreen() stamp body.fids-ap-YQM / body[data-fids-ap]
     // right before calling us, but the v23328 boot call did not, and the
@@ -22969,15 +23110,17 @@ function _applyBannerStyle(iata, screen) {
       if (ap) document.body.setAttribute('data-fids-ap', ap);
       else document.body.removeAttribute('data-fids-ap');
     } catch (e0) {}
-    var s = '';
+    var ovr = '';
     try {
-      s = localStorage.getItem('fids_banner_style_' + ap + '_' + screen)
+      ovr = localStorage.getItem('fids_banner_style_' + ap + '_' + screen)
         || localStorage.getItem('fids_banner_style_' + ap) || '';
     } catch (e) {}
-    if (!s) {
-      var c = Object.prototype.hasOwnProperty.call(BANNER_STYLE, ap) ? BANNER_STYLE[ap] : BANNER_STYLE['*'];
-      s = (c && typeof c === 'object') ? (c[screen] || c['*'] || 'tabs') : (c || 'tabs');
-    }
+    // v24041 — the Acadian season is decided here, from the date, every time
+    // the banner is applied (see ACADIAN_SEASON).
+    var res = _bannerStyleFor(ap, screen, new Date(), ovr);
+    var s = res.style;
+    _bannerStyleLast = { iata: iata, screen: screen, style: s, acadian: res.acadian };
+    try { document.body.classList.toggle('fids-acadian', res.acadian); } catch (eA) {}
     document.body.dataset.fidsBanner = s;
     try {
       var acc = '';
@@ -23007,12 +23150,36 @@ function _applyBannerStyle(iata, screen) {
       // derived and cached per logo URL.
       var pal = null;
       try { pal = JSON.parse(localStorage.getItem('fids_banner_palette_' + ap) || 'null'); } catch (e5) {}
+      // v24041 — a holiday look recolours the band through this same hook, so
+      // the core still deepens both ends until white clears the silk.
+      if (!pal) { try { pal = HOLIDAY_BAND[document.body.dataset.fidsHoliday || ''] || null; } catch (eHB) {} }
       if (!pal) pal = BANNER_PALETTE[ap] || null;
       if (pal && pal.length >= 4) { _applyBandPalette(pal); }
       else { _autoBandPalette(ap); }
     } catch (e3) {}
   } catch (e) {}
 }
+// v24041 — boards run for weeks, so the Acadian season has to turn over by
+// itself at Moncton midnight on 1 August and on 16 August, not wait for a
+// reload. render() re-applies the banner on every pass, but it returns
+// before that when no flight is listed, and a board whose feed has gone
+// quiet does not render at all. This keeper asks the same question once a
+// minute and re-applies only when the answer has changed. (Declared without
+// an initialiser so a boot call that ran first is never reset to empty.)
+var _bannerStyleLast;
+function _bannerSeasonKeeper() {
+  var L = _bannerStyleLast;
+  if (!L) return;
+  var ap = String(L.iata || '').toUpperCase();
+  var ovr = '';
+  try {
+    ovr = localStorage.getItem('fids_banner_style_' + ap + '_' + L.screen)
+      || localStorage.getItem('fids_banner_style_' + ap) || '';
+  } catch (e) {}
+  var res = _bannerStyleFor(ap, L.screen, new Date(), ovr);
+  if (res.style !== L.style || res.acadian !== L.acadian) _applyBannerStyle(L.iata, L.screen);
+}
+try { _ocEvery(_bannerSeasonKeeper, 60000); } catch (e) {}
 
 function renderDedicatedScreen() {
   if (screenType === 'gate') {
@@ -31456,7 +31623,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24040';
+var FIDS_BUILD_TAG = 'v24041';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

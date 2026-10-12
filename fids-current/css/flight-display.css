@@ -4144,8 +4144,10 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    BANNER STYLE 'merged' — the clock joins the white airport band.
    Scoped ENTIRELY to body[data-fids-banner="merged"], which fids-core.js
-   sets from the BANNER_STYLE registry (per airport / per screen — YQM is
-   pinned to 'tabs' so the Acadian tricolore renders exactly as today).
+   sets from the BANNER_STYLE registry (per airport / per screen). Moncton
+   is not pinned: it wears 'silk-acadian' only from 1 to 15 August on
+   Moncton's own calendar and plain 'silk' the rest of the year — see
+   ACADIAN_SEASON in fids-core.js.
    ADDITIVE-ONLY by design: without the attribute every rule here is inert
    and the three-tab banner renders unchanged — a mid-deploy JS/CSS
    mismatch can only ever fall back to the current look.
