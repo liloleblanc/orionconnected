@@ -174,7 +174,8 @@ test('every condition has an icon in every set, sized and coloured as its set sa
       assert.ok(fs.existsSync(path.join(ROOT, f)), f);
       const svg = rd(f);
       assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 100 100">/, f);
-      if (set === 'disc-day') assert.match(svg, /<circle cx="50" cy="50" r="50" fill="#FFFFFF"\/>/, f);
+      // v24044 — the day circle takes the card's light tint of its ground (--wxc-disc), white elsewhere
+      if (set === 'disc-day') assert.match(svg, /<circle cx="50" cy="50" r="50" style="fill:var\(--wxc-disc, #FFFFFF\)"\/>/, f);
       if (set === 'disc-night') {
         assert.match(svg, /style="fill:var\(--wx-disc, #033F77\)"/, f);
         assert.match(svg, /style="fill:var\(--wx-ink, #FFFFFF\)"/, f);

@@ -149,7 +149,9 @@ test('WMO codes — what the boards actually receive — map to real icons, with
   assert.equal(icon(0, true), 'clear-night');
   assert.equal(icon(2, false), 'partly-cloudy-day');
   assert.equal(icon(2, true), 'partly-cloudy-night');
-  assert.equal(icon(3, true), 'overcast-day', 'overcast has no night form');
+  assert.equal(icon(3, true), 'overcast', 'overcast has no night form');
+  // v24044 — and no sun: MET's cloudy (WMO 3) drew a sun behind a cloud under the word Overcast
+  assert.equal(icon(3, false), 'overcast', 'overcast by day is all cloud too');
   assert.equal(icon(45, false), 'fog');
   assert.equal(icon(61, false), 'rain');
   assert.equal(icon(65, false), 'extreme-rain');
