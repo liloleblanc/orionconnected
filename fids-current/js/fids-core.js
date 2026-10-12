@@ -3897,7 +3897,7 @@ function updateSubScreens() {
     // would share belt 2 (_yqmAssignBelts). Always surface BOTH — even an
     // empty one — so travelers always see both of Moncton's belts. Other
     // airports list only live belts.
-    // vNEXT — belt 2 FIRST: a single-belt screen nobody pinned opens on
+    // v24042 — belt 2 FIRST: a single-belt screen nobody pinned opens on
     // locations[0], and that should be the belt the bags normally come out
     // on, not the overflow belt that is usually empty.
     try {
@@ -4783,7 +4783,7 @@ function submitTestFlight() {
 
   if (!window._testFlights) window._testFlights = [];
   window._testFlights.push(testFlight);
-  try { _fidsDemoClockChanged(); } catch (e) {}   // vNEXT — the demo clock is on from here
+  try { _fidsDemoClockChanged(); } catch (e) {}   // v24042 — the demo clock is on from here
   data.dep.push(testFlight);
   data.dep.sort((a,b) => a._sortTs - b._sortTs);
 
@@ -5583,7 +5583,7 @@ function _bidsInWindow(f, nowTs) {
   } catch (e) { return true; }
 }
 
-// vNEXT — MONCTON'S BELTS: 2 IS THE NORMAL BELT, 1 TAKES THE OVERLAP.
+// v24042 — MONCTON'S BELTS: 2 IS THE NORMAL BELT, 1 TAKES THE OVERLAP.
 //
 // Moncton has two carousels and its own feed (cyqm.ca) publishes neither, so
 // every Moncton belt is one the board works out itself. It used to be a
@@ -5952,7 +5952,7 @@ var _B5_HALL_PLANS = {
       // too, most of the time (first hand, 2026-10-07), so it is never
       // labelled as international only. Which NUMBER each belt carries is
       // still the 2016 photograph's and is to be checked against the signs.
-      // vNEXT — the per-flight rule is now belt 2 normally, belt 1 for the
+      // v24042 — the per-flight rule is now belt 2 normally, belt 1 for the
       // overlap (_yqmAssignBelts); an international flight is never put on
       // belt 1, so its label stays true.
       { id: '2', label: 'intlAndDomFlights', disc: [372, 312] }
@@ -7342,7 +7342,7 @@ function updateDedicatedTimeOnly() {
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  // v23970 — the board's clock; vNEXT — through clockNow (10:10 on a demo).
+  // v23970 — the board's clock; v24042 — through clockNow (10:10 on a demo).
   // `now` itself stays real: the rows and the date beside it read it.
   const timeStr = BoardStrings.boardTime(BoardStrings.clockNow(now, tz), tz, { hour: '2-digit' });
   // Weekday, month, day number and year all come from the AIRPORT's clock —
@@ -23472,7 +23472,7 @@ const gView = document.getElementById('gateView');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  // v23970 — the board's clock; vNEXT — through clockNow (10:10 on a demo).
+  // v23970 — the board's clock; v24042 — through clockNow (10:10 on a demo).
   // `now` itself stays real: the rows and the date beside it read it.
   const timeStr = BoardStrings.boardTime(BoardStrings.clockNow(now, tz), tz, { hour: '2-digit' });
   // Weekday, month, day number and year all come from the AIRPORT's clock —
@@ -31789,7 +31789,7 @@ function _acSkyIsNight() {
     if (ia && typeof _wxNightAt === 'function') return !!_wxNightAt(ia);
     var tz = '';
     try { tz = (typeof AP !== 'undefined' && AP[ia] && AP[ia].tz) || ''; } catch (eT) {}
-    // vNEXT — no airport set on a demo: the 06–21 window at the instant the
+    // v24042 — no airport set on a demo: the 06–21 window at the instant the
     // clocks show (10:10), as _wxNightAt answers for a given time
     var _dts = _fidsDemoShownTs();
     if (_dts && typeof _wxNightAt === 'function') return !!_wxNightAt(ia, _dts);
@@ -31880,7 +31880,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24041';
+var FIDS_BUILD_TAG = 'v24042';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38387,7 +38387,7 @@ function mapADB(raw, mode, kept) {
     // belt's screen, as before, and not on the "to be announced" list
     // either, because its belt has been announced. _bidsUnassigned.
     let _beltUnplaced = false;
-    // vNEXT — at Moncton, which kind of arrival this is for the belt pass
+    // v24042 — at Moncton, which kind of arrival this is for the belt pass
     // (_yqmAssignBelts): 'dom' or 'intl'. null everywhere else.
     let _yqmBeltKind = null;
     // v24005 — a feed's own word for "no belt" is no belt: Boston's feed
@@ -38402,7 +38402,7 @@ function mapADB(raw, mode, kept) {
         // Override whatever ADB returns — it reports phantom belt numbers
         // (3,4,…) that don't exist here.
         //
-        // vNEXT — belt 2 is the normal belt and belt 1 takes the overlap
+        // v24042 — belt 2 is the normal belt and belt 1 takes the overlap
         // (_yqmAssignBelts, which explains the rule). A belt depends on the
         // other flights, so it cannot be settled one row at a time: here each
         // arrival goes on belt 2 and is marked domestic or international
@@ -38503,7 +38503,7 @@ function mapADB(raw, mode, kept) {
       :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_beltUnplaced,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
     // v23944 — who operates it, from the one ladder the gates read too.
     fidsApplyOperator(_row, (mode==='dep' ? f.departure?.airport?.iata : f.arrival?.airport?.iata) || (document.getElementById('apSel') || {}).value || '');
-    // vNEXT — Moncton's belt pass reads this (_yqmAssignBelts).
+    // v24042 — Moncton's belt pass reads this (_yqmAssignBelts).
     if (_yqmBeltKind) _row._yqmBelt = _yqmBeltKind;
     return _row;
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
@@ -38628,7 +38628,7 @@ async function fetchLive() {
     // on a cold one.
     if (depRaw) data.dep = _fidsCollapseRevisions(mapADB(depRaw, 'dep'), _revTz);
     if (arrRaw) data.arr = _fidsCollapseRevisions(mapADB(arrRaw, 'arr'), _revTz);
-    // vNEXT — and then Moncton's belts, which depend on the other arrivals
+    // v24042 — and then Moncton's belts, which depend on the other arrivals
     // (belt 2 normally, belt 1 when two flights' bags would share it), once
     // the list holds one row per flight, over the listed and the remembered
     // arrivals, with every belt already under bags frozen (_yqmAssignBelts,
@@ -39273,7 +39273,7 @@ function applyAirportConfigToBoard(iata) {
   // v24035 — the weather icons' look, read by fids-v2.js wxIconHtml and the
   // weather card (_wxCardIconDir): 'daynight', 'classic', 'colour', 'solid'.
   // ?wxicons= overrides it for review.
-  // vNEXT — Day & night is the default. Nothing chosen (unset, the '' an
+  // v24042 — Day & night is the default. Nothing chosen (unset, the '' an
   // earlier Customize save left, or a look the boards don't know) is Day &
   // night; Classic is now its own value, 'classic', so an airport that
   // picks it keeps it. The attribute is always stamped, so the page says
@@ -39609,7 +39609,7 @@ function _fidsCollapseRevisions(list, tz) {
   } catch (e) { return list; }
 }
 
-// vNEXT — THE DEMO CLOCK. While this board shows an example rather than an
+// v24042 — THE DEMO CLOCK. While this board shows an example rather than an
 // airport's live flights, every clock on it reads 10:10 (BoardStrings.clockNow,
 // the watch-advert convention): demo data (loadDemo — fetchLive clears it), a
 // heritage gate (?heritage=), or a test flight added in this tab (the list
@@ -39656,7 +39656,7 @@ function loadDemo() {
   }
   if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
   window._fidsBoardIsDemo = true;   // v24026 — the pretend standby lists (_gateSbPretendOn)
-  _fidsDemoClockChanged();           // vNEXT — its day or night follows the 10:10 clock now
+  _fidsDemoClockChanged();           // v24042 — its day or night follows the 10:10 clock now
   document.getElementById('liveLabel').textContent = 'DEMO'; // i18n-ok: operator
   document.getElementById('lastUp').textContent    = 'DEMO MODE'; // i18n-ok: operator
   setState('loading', false);
@@ -39752,7 +39752,7 @@ function _boardFilterChipHtml() {
 function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
 // Single 12h time '10:29PM' — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
-// vNEXT — every clock helper reads BoardStrings.clockNow: 10:10 on a demo
+// v24042 — every clock helper reads BoardStrings.clockNow: 10:10 on a demo
 // (the watch-advert convention), the real time on a board in an airport.
 function _ocClockTime1(now, tz) {
   return BoardStrings.boardTime(BoardStrings.clockNow(now, tz), tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
@@ -39766,7 +39766,7 @@ function _ocClockTime1(now, tz) {
 function _ocClockTime(now, tz) {
   var L = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
   var out = [];
-  now = BoardStrings.clockNow(now, tz);   // vNEXT — 10:10 on a demo
+  now = BoardStrings.clockNow(now, tz);   // v24042 — 10:10 on a demo
   for (var i = 0; i < L.length; i++) {
     var l = L[i], M = BoardStrings.META[l], t = BoardStrings.time(now, l, tz);
     if (!M.clock24) t = t.replace(/([ap])m$/i, function (_, p) { return p.toUpperCase() + 'M'; });
@@ -40574,7 +40574,7 @@ function applySearch(flights) {
 }
 
 // ── VIEW MODE (DEP / ARR / ROTATE) ────────────────────────────────────────
-// vNEXT — ?mode=arr / ?mode=dep (fids.html) is the board's fixed view from its
+// v24042 — ?mode=arr / ?mode=dep (fids.html) is the board's fixed view from its
 // very first render: the board renders while the page is still loading (the
 // first airport apply, menu.js's theme re-apply), long before fids.html's own
 // boot, so the view is decided here, where it is declared. render() locks
@@ -53367,7 +53367,7 @@ function _buildGateAdSlideList() {
   // ── 8. FROM THE ARCHIVE — one heritage mark, once per cycle, only where
   // that carrier actually flew. _heritagePick returns null everywhere else
   // and the slide is simply not added, so no gate has to skip a dead slot.
-  // vNEXT — and only on an Air Canada gate (_heritageOnAirCanadaGate, the
+  // v24042 — and only on an Air Canada gate (_heritageOnAirCanadaGate, the
   // heritage demonstration gates included): the set is Air Canada's history,
   // and it was running on WestJet, Porter, PAL and Flair gates at every
   // Canadian airport.
@@ -55013,7 +55013,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     function bagBelts() {
       try {
         var ap = document.getElementById('apSel');
-        // always both carousels; vNEXT — the normal belt (2) first, so the
+        // always both carousels; v24042 — the normal belt (2) first, so the
         // walk starts where the bags normally are (_yqmAssignBelts)
         if (ap && ap.value === 'YQM') return [YQM_BELT_MAIN, YQM_BELT_OVERFLOW];
         // v23514 — WALK ONLY THE BELTS THAT HAVE SOMETHING DUE. This read
@@ -55554,10 +55554,10 @@ var _WX_ICON_DIR = '/logos/weather/flat/';
 // as --wx-disc / --wx-ink on .wxcard-wrap with the rest of the airline's
 // look, read by the inlined disc-night icons). Classic keeps the flat set
 // above, drawn white and still (_wxWhiteStill).
-// vNEXT — the first entry is the default, what an airport that has chosen
+// v24042 — the first entry is the default, what an airport that has chosen
 // nothing gets: Day & night (applyAirportConfigToBoard).
 var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
-// vNEXT — under Day & night, an icon on the card that stands for one moment
+// v24042 — under Day & night, an icon on the card that stands for one moment
 // in one city takes that moment's day or night: the same flag that already
 // chose its glyph (a moon, not a sun), its photograph and its column. A
 // plate for a city in darkness drew its moon in the white daytime circle
@@ -56031,7 +56031,7 @@ function _wxFetchSun(iata, ts) {
 // 06:00-21:00 window only while those have not arrived.
 function _wxNightAt(iata, ts) {
   try {
-    // vNEXT — asked about NOW on a board shown as an example, the answer is
+    // v24042 — asked about NOW on a board shown as an example, the answer is
     // for the instant its clocks show (10:10 at the board's airport), so the
     // sky, the scene and the icons agree with the clock. A board in an
     // airport, and any question about a given time, keep the real clock.
@@ -56110,7 +56110,7 @@ var _WXLBL = {
 // It is scoped to airports the carrier actually served. A heritage card for
 // an Atlantic Canada feeder at a European gate would be a non sequitur, and
 // worse, would read as a data error.
-// vNEXT — and to Air Canada gates only, whatever the airport: the whole set
+// v24042 — and to Air Canada gates only, whatever the airport: the whole set
 // is Air Canada's history (_heritageOnAirCanadaGate, below the table).
 // v23970 — each mark's caption lives in the store as 'heritage:<key>', in all
 // nine languages (board-strings.js); the records carry the art and facts only.
@@ -56291,7 +56291,7 @@ function _heritageIsCanadian(iata) {
   // canada prefix: Canadian airports are the Y-codes on this roster.
   return /^Y/.test(String(iata || '').toUpperCase());
 }
-// vNEXT — THE ARCHIVE IS AIR CANADA'S, SO IT RUNS ON AIR CANADA'S GATES ONLY.
+// v24042 — THE ARCHIVE IS AIR CANADA'S, SO IT RUNS ON AIR CANADA'S GATES ONLY.
 //
 // Every card in HERITAGE_MARKS is Air Canada's own past or the past of the
 // carriers that came into its family: Air Nova (into Jazz), Canadian Airlines,
@@ -56374,7 +56374,7 @@ function _heritagePick(iata) {
 function _renderHeritageCard(el) {
   try {
     if (!el) return false;
-    // vNEXT — an Air Canada gate only (see _heritageOnAirCanadaGate). The deck
+    // v24042 — an Air Canada gate only (see _heritageOnAirCanadaGate). The deck
     // already leaves the slide out elsewhere; this is the backstop for a slide
     // still on screen when the gate changes carrier.
     if (!_heritageOnAirCanadaGate()) return false;
@@ -56399,7 +56399,7 @@ function _renderHeritageCard(el) {
       var w = BoardStrings.bs(_capKey, lg);
       if (!w || _seenL[w]) return;
       _seenL[w] = 1;
-      // vNEXT — a year range is one phrase. Under the Later-at-this-gate strip
+      // v24042 — a year range is one phrase. Under the Later-at-this-gate strip
       // the French Air Nova line broke inside '1986–2001', leaving '2001'
       // alone on a third line; word joiners either side of the dash keep the
       // range whole, so the line breaks before it instead.

@@ -5,7 +5,7 @@
 //
 // Three Vecteezy packs, combined. Customize → Weather icons, per airport like
 // the font: Day & night (Colour by day, Solid at night, by the board
-// airport's own sunrise and sunset; the default since vNEXT), Classic (the
+// airport's own sunrise and sunset; the default since v24042), Classic (the
 // original icons, value 'classic'), Colour or Solid. The departures and arrivals rows never take a circle: they show
 // the solid glyph, white, dark on a light row. The gate screens take a
 // circle: Colour = the colour icon on white, Solid = the glyph in the
@@ -51,7 +51,7 @@ function helper({ look = '', night = false, path: p = '/fids', airline = '' } = 
 }
 const src = (html) => (/src="([^"]+)"/.exec(html) || [])[1] || '';
 
-// vNEXT — Day & night became the default. An airport that has chosen nothing
+// v24042 — Day & night became the default. An airport that has chosen nothing
 // gets it; Classic is a choice of its own ('classic') and keeps the original
 // icons everywhere.
 test('Day & night is the default: no look stamped draws the solid rows, Colour by day and Solid at night at the gate', () => {
@@ -197,7 +197,7 @@ test('the weather card follows the look, and its circles keep their own colours'
   assert.equal(dir('', 'classic')(), '/logos/weather/flat/');
   assert.equal(dir('colour', 'colour')(), '/logos/weather/disc-day/');
   assert.equal(dir('solid', 'solid')(), '/logos/weather/disc-night/');
-  // vNEXT — under Day & night a plate or an hour takes its own moment's day
+  // v24042 — under Day & night a plate or an hour takes its own moment's day
   // or night (the flag that chose its glyph); a chosen Colour or Solid, and
   // Classic, do not move
   assert.equal(dir('colour', 'daynight')(true), '/logos/weather/disc-night/', 'a city in darkness while the board is in daylight');
@@ -232,7 +232,7 @@ test('the choice lives in Customize, saves per airport like the font, and the bo
   assert.match(V2, /wxIconHtml\(f\._wxCode, 36, \{ row: true \}\)/);
 });
 
-// vNEXT — the Customize select paints what the board shows: this device's
+// v24042 — the Customize select paints what the board shows: this device's
 // look, else the airport's. Run as written against a select that behaves as
 // a browser's does (a value it has no option for selects nothing).
 function paintWx(prefs, airportCfg) {
@@ -259,7 +259,7 @@ test("Customize paints the look the board runs: the device's, else the airport's
   assert.equal(paintWx({ wxIcons: 'not-a-look' }, null).value, '');
 });
 
-// vNEXT — the cloud save says what the cloud KEPT. _cuSyncNote and
+// v24042 — the cloud save says what the cloud KEPT. _cuSyncNote and
 // _cuCloudPush run as written against two workers: the one live before this
 // change (it deletes 'classic', the look stored before it with it, and still
 // answers with a stamp) and the one in workers/fids-proxy.js.

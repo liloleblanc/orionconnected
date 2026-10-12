@@ -7,7 +7,7 @@
   const StudioData = window.OrionStudioData;
   const Render = window.OrionStudioRender;
   if (!Schema || !Compat || !Airports || !StudioData || !Render) throw new Error('Airport Display Studio dependencies did not load.');
-  // vNEXT — the Studio's canvas is a preview, an example of a screen: its
+  // v24042 — the Studio's canvas is a preview, an example of a screen: its
   // clock reads 10:10 (BoardStrings.clockNow, the watch-advert convention).
   // The scene rules still run on the real minutes. ?clock=live shows the time.
   try { if (window.BoardStrings) window.BoardStrings.setDemoClock(true); } catch (e) {}
@@ -112,7 +112,7 @@
     window._yqmCacheAircraftMerge = window._yqmCacheAircraftMerge || async function () {};
     pilotRouterPromise = new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = '../js/feed-router.js?v=24041';
+      script.src = '../js/feed-router.js?v=24042';
       script.async = true;
       script.addEventListener('load', function () {
         if (typeof window.adbFetch === 'function') resolve(window.adbFetch);

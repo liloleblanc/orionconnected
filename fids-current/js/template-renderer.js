@@ -163,7 +163,7 @@
       el.style.fontVariantNumeric = 'tabular-nums';
       el.style.fontFamily = _fontStack(p.fontFamily);
       const tick = () => {
-        // vNEXT — BoardStrings.clockNow: 10:10 on a demo board, else the time
+        // v24042 — BoardStrings.clockNow: 10:10 on a demo board, else the time
         const d = BoardStrings.clockNow(new Date());
         // v23970 — the boards' clock in the board's language; the designer's
         // 24h choice forces 24 hours, otherwise the language's own convention.

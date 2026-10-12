@@ -1145,7 +1145,7 @@
   }
 
   // ── THE DEMO CLOCK: 10:10 ───────────────────────────────────────────────
-  // vNEXT — a board shown as an EXAMPLE reads 10:10 AM, the watch-advert
+  // v24042 — a board shown as an EXAMPLE reads 10:10 AM, the watch-advert
   // convention (the hands frame the maker's name and the dial smiles): a demo
   // board (?mode=demo), a heritage gate, a board carrying a test flight, the
   // Studio and Designer previews, the homepage pictures. A board in an

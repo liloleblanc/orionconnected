@@ -302,7 +302,7 @@ test('the Moncton map draws its two real belts by the hall\'s labels, and lights
   assert.deepEqual(JSON.parse(JSON.stringify(P.belts.map((b) => [b.id, b.label]))), [['1', 'domesticFlights'], ['2', 'intlAndDomFlights']],
     'belt 1 the domestic oval, belt 2 the wall-fed belt in the customs hall (2018 Master Plan, fig. 7-1), which takes domestic flights too');
   // the board's own Moncton belts are the same two: belt 2 normally, belt 1
-  // for the overlap (vNEXT, _yqmAssignBelts; yqm-belts.test.js)
+  // for the overlap (v24042, _yqmAssignBelts; yqm-belts.test.js)
   assert.match(SRC, /^var YQM_BELT_MAIN = '2';$/m);
   assert.match(SRC, /^var YQM_BELT_OVERFLOW = '1';$/m);
   const c = ctxFor(S, { pages: [[row({ _belt: '1' }), row({ flight: 'PD2381', airline: 'PD', _belt: '1' })], [row({ flight: 'TS123', airline: 'TS', _belt: '2', origin: 'Cancún', _locIata: 'CUN' })]] });

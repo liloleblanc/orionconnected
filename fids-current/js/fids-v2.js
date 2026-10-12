@@ -166,7 +166,7 @@
   // applyAirportConfigToBoard): 'classic', 'colour', 'solid', or 'daynight'
   // (Colour by day, Solid at night, by the board airport's own sunrise and
   // sunset: html.fids-day / html.fids-night from js/fids-sun.js).
-  // vNEXT — Day & night is the default: a page with no look stamped yet
+  // v24042 — Day & night is the default: a page with no look stamped yet
   // draws it too, the same as an airport that has chosen nothing.
   //   - The departures and arrivals ROWS take the solid glyph, no circle,
   //     white (dark on the light row states, css/display-overrides.css).
@@ -299,7 +299,7 @@
 
     // The time in the board's own clock (BoardStrings.boardTime: 5:35 PM on
     // a board led by English, 17:35 on any other)
-    // vNEXT — through BoardStrings.clockNow: 10:10 on a demo
+    // v24042 — through BoardStrings.clockNow: 10:10 on a demo
     const timeStr = BoardStrings.boardTime(BoardStrings.clockNow(new Date()));
 
     // Airport pill — custom logo if configured, else IATA + city

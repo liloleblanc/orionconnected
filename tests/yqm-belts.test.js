@@ -1,7 +1,7 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// vNEXT — MONCTON'S BELTS: 2 IS THE NORMAL BELT, 1 TAKES THE OVERLAP.
+// v24042 — MONCTON'S BELTS: 2 IS THE NORMAL BELT, 1 TAKES THE OVERLAP.
 //
 // Moncton's own feed publishes no belt, so the board works Moncton's belt out
 // itself. It used a fixed split, domestic on belt 1 and international on belt

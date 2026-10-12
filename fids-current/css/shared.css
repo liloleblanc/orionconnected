@@ -302,7 +302,7 @@ html[data-boot-ground="1"] #fidsLoader {
 }
 
 /* Hide the old boot loader's FIDS/GIDS/BIDS text + bar if one is ever drawn.
-   vNEXT — the old loader logo's rules (.fids-loader-logo, its pulse, and a
+   v24042 — the old loader logo's rules (.fids-loader-logo, its pulse, and a
    filter that turned it flat white on the dark loader) are removed: no page
    draws that class any more. The loaders' logo is .ocb-logo in each page,
    orion-connected-on-dark.svg in its own colours, and no rule may whiten it

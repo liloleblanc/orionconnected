@@ -378,7 +378,7 @@ test('the 767 card: the capitals livery and mark, a year every source agrees on,
   for (const k of ['air-canada', 'air-canada-caps', 'canadian-airlines']) assert.ok(!byK[k].credit, k + ' carries no credit line');
 });
 
-// ── vNEXT — Air Canada gates only ──────────────────────────────────────────
+// ── v24042 — Air Canada gates only ──────────────────────────────────────────
 //
 // The whole set is Air Canada's history: its own DC-9s and 767, and the
 // carriers that came into its family (Air Nova, Canadian Airlines, Air

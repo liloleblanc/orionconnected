@@ -197,7 +197,7 @@ test('an icon edited in place is fetched fresh, not from a stale cache', () => {
   // the weather card's flat set: every <img> and the inlining fetch
   assert.match(CORE, /function _wxIconQ\(\) \{\n  return \(typeof FIDS_BUILD_TAG !== 'undefined'\) \? '\?v=' \+ encodeURIComponent\(FIDS_BUILD_TAG\) : '';\n\}/);
   // (v24035: the card's folder follows the Weather icons look, _wxCardIconDir;
-  // vNEXT: a plate or an hour passes its own night)
+  // v24042: a plate or an hour passes its own night)
   const uses = [...CORE.matchAll(/(?:_WX_ICON_DIR|_wxCardIconDir\([\w.!]*\)) \+ [\w.]+ \+ '\.svg'( \+ _wxIconQ\(\))?/g)];
   assert.ok(uses.length >= 3, 'the plates, the hours and the days');
   for (const u of uses) assert.ok(u[1], 'every flat icon URL carries the tag: ' + u[0]);

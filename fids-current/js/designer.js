@@ -205,7 +205,7 @@
   // The Designer's preview context uses sample data so what you see in
   // the editor reflects what'll play. On the live display the same shape
   // is built from window.flightsDep + the assigned gate.
-  // vNEXT — THE DESIGNER IS A PREVIEW, SO ITS CLOCK READS 10:10: the
+  // v24042 — THE DESIGNER IS A PREVIEW, SO ITS CLOCK READS 10:10: the
   // watch-advert convention every example board follows (BoardStrings.
   // clockNow on the boards; this page does not load the store). Today's date,
   // and the real seconds so a seconds display still ticks. ?clock=live (or

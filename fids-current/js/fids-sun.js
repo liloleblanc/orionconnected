@@ -70,7 +70,7 @@
      ?daynight=day or ?daynight=night holds the page in that state (isDay,
      subscribers and the <html> classes; times and next stay astronomical).
 
-   A BOARD SHOWN AS AN EXAMPLE (vNEXT)
+   A BOARD SHOWN AS AN EXAMPLE (v24042)
      Its clocks read 10:10 (BoardStrings.clockNow, the demo clock), and its
      day or night follows those clocks rather than the real hour: no moon and
      no night photograph under a 10:10 AM clock. env.shown(ms, tz) gives the
@@ -321,7 +321,7 @@
     }
     function at(ms) { return ms == null ? now() : Number(ms); }
     // the instant a place's day or night is SHOWN for at the real moment t
-    // (vNEXT — the demo clock; see the header): t itself without env.shown
+    // (v24042 — the demo clock; see the header): t itself without env.shown
     function shownAt(p, t) {
       if (!env.shown || !p) return t;
       try { var s = Number(env.shown(t, p.tz)); return isFinite(s) ? s : t; } catch (e) { return t; }
@@ -553,7 +553,7 @@
       },
       coords: boardCoords,
       tz: boardTz,
-      // vNEXT — a board whose clocks read 10:10 is drawn for 10:10. The demo
+      // v24042 — a board whose clocks read 10:10 is drawn for 10:10. The demo
       // switch (BoardStrings, the store every board loads first) is asked each
       // time a state is judged, so a demo turned on after boot is followed
       shown: function (t, tz) {

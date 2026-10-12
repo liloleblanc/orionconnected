@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // THE LOADING SCREENS DRAW THE LOGO IN ITS OWN COLOURS, AT THE RAIL'S WIDTH.
 //
-// vNEXT — every loading screen (the F.I.D.S., G.A.T.E. and B.A.G.S. boot
+// v24042 — every loading screen (the F.I.D.S., G.A.T.E. and B.A.G.S. boot
 // loaders, the index entry screen, the display picker) drew
 // orion-connected-white.svg, which carries charcoal ink whatever its name
 // says, forced flat white by brightness(0) invert(1), inside a square box

@@ -2627,7 +2627,7 @@ function _cuSyncNote(kind) {
     local:  ['#fbbf24', '⚠ Not signed in — this look is saved on THIS device only. Sign in (Login) and save again to apply it to every screen at this airport.'],
     saved:  ['#34d399', '✓ Saved to the airport cloud — every screen picks it up within ~10 seconds.'],
     failed: ['#f87171', '⚠ Cloud save failed — the look is on this device only for now. Check the connection or sign-in and try again.'],
-    // vNEXT — the save went through but the cloud did not keep the weather
+    // v24042 — the save went through but the cloud did not keep the weather
     // icons' look it was sent (see _cuCloudPush)
     wxDropped: ['#f87171', '⚠ Saved to the airport cloud, except the weather icons: the cloud server does not know this look yet and did not keep it. Every screen, this one too, shows Day & night (the default) until the server is updated.']
   }[kind];
@@ -2679,7 +2679,7 @@ function _cuCloudPush(code, prefs) {
       }).then(function (res) { return res.ok ? res.json() : null; })
         .then(function (out) {
           if (!out || !out.config || !out.config.updatedAt) { _cuSyncNote('failed'); return; }
-          // vNEXT — the cloud must have KEPT the weather icons' look it was
+          // v24042 — the cloud must have KEPT the weather icons' look it was
           // sent. The airport-config worker deploys on its own, and one older
           // than the 'classic' value accepts the save, deletes a look it does
           // not know (with the look stored before it) and still answers with
@@ -2787,7 +2787,7 @@ function _cuReadForm() {
   var ae = document.getElementById('cuAirlineEmblem');
   if (ae && ae.dataset.painted === '1') p.airlineStyle = ae.checked ? 'emblem' : 'full';
   else { var _pv2 = _cuLoad(); if (_pv2 && _pv2.airlineStyle) p.airlineStyle = _pv2.airlineStyle; }
-  // v24035 — the weather icons' look. vNEXT — '' is nothing chosen, which the
+  // v24035 — the weather icons' look. v24042 — '' is nothing chosen, which the
   // boards draw as Day & night (the default); Classic is 'classic'.
   // Unpainted → carry forward.
   var wi = document.getElementById('cuWxIcons');
@@ -2831,7 +2831,7 @@ function _cuPaintForm(prefs) {
   var ae = document.getElementById('cuAirlineEmblem');
   if (ae) { ae.checked = (prefs.airlineStyle === 'emblem'); ae.dataset.painted = '1'; }
   var wi = document.getElementById('cuWxIcons');
-  // vNEXT — a saved 'daynight' (or a look the list no longer has) is the
+  // v24042 — a saved 'daynight' (or a look the list no longer has) is the
   // default entry: the select has no separate Day & night line.
   // The select shows what the board shows, the same layers the board reads
   // (applyAirportConfigToBoard's _pref): this device's look when it holds

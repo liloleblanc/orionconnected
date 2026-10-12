@@ -16,7 +16,7 @@
 //     number at a multi-terminal airport) is on no screen, as before: "to be
 //     announced" would be untrue of it.
 //     Moncton's belts are the one belt we work out ourselves (its feed
-//     publishes none): vNEXT, belt 2 normally and belt 1 for the overlap,
+//     publishes none): v24042, belt 2 normally and belt 1 for the overlap,
 //     tested in full in yqm-belts.test.js.
 //
 //  2. Status colours on ordinary rows. The belt bars are coloured by an
@@ -135,7 +135,7 @@ test('a belt the feed publishes is shown as published', () => {
   assert.equal(beltFor('BOS', { belt: 'INTL', terminal: 'A' }), 'A-INTL', "Boston's international claim keeps its name");
 });
 
-// vNEXT — Moncton's belt is no longer settled row by row: every arrival
+// v24042 — Moncton's belt is no longer settled row by row: every arrival
 // starts on belt 2, the normal belt, and the pass over the whole list
 // (_yqmAssignBelts, yqm-belts.test.js) moves a flight to belt 1 only when two
 // flights' bags would share belt 2. Here: each row starts on 2 and carries
@@ -230,7 +230,7 @@ test('the belt walk visits the "to be announced" screen last, and a hall with no
     { now: () => NOW });
   assert.deepEqual(walk([mk(null, 10), mk(null, 20)]), ['—'], 'Halifax: one screen, nothing to cycle');
   assert.deepEqual(walk([mk('3', 10), mk(null, 5), mk('1', 20)], 'BOS'), ['1', '3', '—']);
-  // vNEXT — Moncton walks its two belts, the normal belt (2) first: the walk
+  // v24042 — Moncton walks its two belts, the normal belt (2) first: the walk
   // starts on belts[0], and belt 1 is now the overflow belt, usually empty
   assert.deepEqual(walk([mk('1', 10), mk('2', 400)], 'YQM'), ['2', '1'], 'Moncton walks both belts, belt 2 first');
 });
