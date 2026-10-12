@@ -3759,8 +3759,14 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-icon::before {
     color: #ffffff !important;
   }
+  /* vNEXT — the plain-silk plane is WHITE, like the white title beside it.
+     Since v24039 the plane is a mask painted from background-color (the base
+     rule paints it #14263f for the old white badge), so `color` alone left a
+     navy plane on the navy head of the band. (0,3,2) beats that base rule's
+     (0,2,2); both are !important. */
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon::before {
     color: #ffffff !important;
+    background-color: #ffffff !important;
   }
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-iata { color: #0d2440 !important; }
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-name { color: rgba(13, 36, 64, 0.6) !important; }

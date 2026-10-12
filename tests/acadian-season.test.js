@@ -179,18 +179,73 @@ function rules(css) {
   return out;
 }
 const R_OVR = rules(OVR);
-const R_ALL = R_OVR.concat(rules(PHONE));
 const SEASONED = /\.fids-acadian\b|\[data-fids-banner="silk-acadian"\]/;
+// Moncton can be named two ways in a selector. body.fids-ap-YQM exists only
+// for the flag, so EVERY selector on it must wait for the season.
+// body[data-fids-ap="YQM"] is the airport attribute every board stamps, and
+// Moncton has year-round looks on it (the skyline behind the departures
+// board), so there a rule is the flag's when it paints one of the flag's own
+// colours or the ★. A :not(...) names everyone BUT Moncton and is set aside.
+const YQM_CLASS = /\.fids-ap-YQM\b/;
+const YQM_ATTR = /\[data-fids-ap=["']?YQM["']?\]/;
+const FLAG_INK = /#003DA5|#D21034|#B50E2C|#6E081A|#001A4D|FFD600|★|\\2605/i;
+const positive = s => s.replace(/:not\((?:[^()]|\([^()]*\))*\)/g, '');
 const parts = sel => sel.split(/,(?![^(]*\))/).map(s => s.trim());
 
-test('nothing keys the flag on Moncton alone — every Moncton rule waits for the season', () => {
+// Every stylesheet the boards can load: each .css under fids-current (any
+// folder), and the inline <style> blocks of every page.
+function cssSources() {
+  const out = [];
+  const walk = dir => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.css')) out.push({ file: path.relative(ROOT, p), css: fs.readFileSync(p, 'utf8') });
+      else if (e.name.endsWith('.html')) {
+        const html = fs.readFileSync(p, 'utf8');
+        const re = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+        let m, n = 0;
+        while ((m = re.exec(html))) out.push({ file: path.relative(ROOT, p) + ' <style #' + (++n) + '>', css: m[1] });
+      }
+    }
+  };
+  walk(path.join(ROOT, 'fids-current'));
+  return out;
+}
+const SOURCES = cssSources();
+
+test('nothing keys the flag on Moncton alone — every Moncton rule, in every stylesheet, waits for the season', () => {
+  const files = SOURCES.map(x => x.file);
+  for (const want of ['fids-current/css/display-overrides.css', 'fids-current/css/phone.css',
+    'fids-current/css/flight-display.css', 'fids-current/css/baggage-display.css', 'fids-current/css/gate-display.css']) {
+    assert.ok(files.includes(want), 'the scan must reach ' + want);
+  }
+  for (const page of ['fids.html', 'bids.html', 'gids.html']) {
+    assert.ok(files.some(f => f.startsWith('fids-current/' + page + ' <style')), 'the scan must reach the inline styles of ' + page);
+  }
+  const flagged = (sel, body) => {
+    const s = positive(sel);
+    return !SEASONED.test(s) && (YQM_CLASS.test(s) || (YQM_ATTR.test(s) && FLAG_INK.test(body)));
+  };
+  // the matcher itself: both spellings caught, the season and a negation let through
+  assert.ok(flagged('body.fids-ap-YQM .fids-banner-board', 'color: red'));
+  assert.ok(flagged('html body[data-fids-ap="YQM"]:not(#_) .fids-banner-board', 'background: #D21034 !important'));
+  assert.ok(!flagged('body[data-fids-ap="YQM"] #fidsBoard', 'background-image: url(moncton-skyline.svg)'), 'the skyline is year-round');
+  assert.ok(!flagged('body.fids-ap-YQM.fids-acadian .fids-banner-board', 'background: #D21034'));
+  assert.ok(!flagged('body:not([data-fids-ap="YQM"]) .x', 'background: #D21034'), 'a :not() is everyone else');
   const bad = [];
-  for (const r of R_ALL) {
-    for (const s of parts(r.sel)) {
-      if (/fids-ap-YQM/.test(s) && !SEASONED.test(s)) bad.push(s.slice(0, 160));
+  let seen = 0;
+  for (const src of SOURCES) {
+    for (const r of rules(src.css)) {
+      for (const s of parts(r.sel)) {
+        if (YQM_CLASS.test(positive(s))) seen++;
+        if (flagged(s, r.body)) bad.push(src.file + ': ' + s.slice(0, 160));
+      }
     }
   }
-  assert.deepEqual(bad, [], 'a selector on body.fids-ap-YQM without the season paints the flag all year');
+  assert.ok(seen >= 10, 'the flag rules must still be found (' + seen + ')');
+  assert.deepEqual(bad, [], 'a selector on Moncton without the season paints the flag all year');
 });
 
 test('the blue time tab, the ★ by the clock and the red board tab are season-only', () => {
@@ -231,4 +286,35 @@ test('in season the star stands alone: no plane, no bag on it', () => {
       assert.ok(ids(s) < mine, 'this glyph rule could put the plane back on the star: ' + s.slice(0, 160));
     }
   }
+});
+
+// ── out of season: the plain-silk badge ────────────────────────────────────
+// Out of season Moncton's badge is the plain-silk plane, like every airport's.
+// Since v24039 that plane is a mask painted from background-color, and the
+// base rule paints it navy (#14263f, for the old white badge), so the silk
+// band's `color: #fff` no longer reached it: a navy plane on the navy head of
+// the band, beside a white title. It is painted white, the title's ink.
+function spec(sel) {
+  const s = sel.replace(/::[a-z-]+/g, ' ');
+  const ids = (s.match(/#[\w-]+/g) || []).length;
+  const cls = (s.match(/\.[\w-]+|\[[^\]]+\]|:(?!not\()[a-z-]+/g) || []).length;
+  const el = (s.replace(/:not\(/g, ' ').match(/(^|[\s>+~(])[a-z][\w-]*/gi) || []).length + (sel.includes('::') ? 1 : 0);
+  return [ids, cls, el];
+}
+const beats = (a, b) => a[0] !== b[0] ? a[0] > b[0] : a[1] !== b[1] ? a[1] > b[1] : a[2] >= b[2];
+
+test('out of season the badge is the plane in white, the title\'s ink, not navy on navy', () => {
+  const base = R_OVR.find(r => r.sel === 'html .fids-banner .fids-board-icon::before' && /mask:\s*url/.test(r.body));
+  assert.ok(base, 'the v24039 base mask rule must exist');
+  assert.match(base.body, /background-color:\s*#14263f\s*!important/i, 'the base paints the plane navy (for the white badge)');
+  const silk = R_OVR.filter(r => parts(r.sel).includes('body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon::before'));
+  assert.ok(silk.length, 'the plain-silk glyph rule must exist');
+  const white = silk.find(r => /background-color:\s*#ffffff\s*!important/i.test(r.body));
+  assert.ok(white, 'the plain-silk plane must be painted white through background-color (the mask), not only `color`');
+  assert.ok(beats(spec('body[data-fids-banner="silk"] .fids-banner-board .fids-board-icon::before'), spec(base.sel)),
+    'and outrank the base mask rule');
+  // The phone board's band glyph is the same mask.
+  const ph = rules(PHONE).find(r => /\.fids-banner \.fids-board-icon::before\s*$/.test(r.sel));
+  assert.ok(ph, 'the phone band glyph rule must exist');
+  assert.match(ph.body, /background-color:\s*#ffffff\s*!important/i, 'phone: the glyph is white on the band too');
 });

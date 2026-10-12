@@ -19,7 +19,7 @@
 // This file measures that, for every airport's band:
 //   - the ink against the painted end colour on each side, for every palette
 //     the boards derived on 2026-10-04 (tests/fixtures/header-band.json), the
-//     default navy, Moncton's flag, and palettes chosen to be hostile;
+//     default navy, Moncton's August flag, and palettes chosen to be hostile;
 //   - the band's stops on real glyph boxes captured from the boards: words on
 //     solid colour, the mark on white, the two sides symmetric;
 //   - that no other rule in the stylesheet can re-ink one side alone.
@@ -142,11 +142,7 @@ test('every airport: the ink clears both ends of its own band', () => {
   const report = [];
   for (const [ap, pal] of Object.entries(pals)) {
     let head, tail;
-    if (pal === 'acadian') {
-      // the flag's brand tones are the lightest ground under its words
-      head = rgb('#003DA5'); tail = rgb('#B50E2C');
-      assert.ok(CSS.includes('#003DA5 30%') && CSS.includes('#B50E2C 70%'), 'Moncton\'s flag stops moved — re-measure it');
-    } else if (pal === null) {
+    if (pal === null) {
       head = navyHead; tail = navyTail;
     } else {
       head = rgb(_fidsBandEnd(pal[0])); tail = rgb(_fidsBandEnd(pal[3]));
@@ -157,6 +153,21 @@ test('every airport: the ink clears both ends of its own band', () => {
     assert.ok(r >= PAINTED_FLOOR, ap + ': the clock side measures ' + r.toFixed(2) + ':1 against its painted ground');
   }
   assert.equal(report.length, Object.keys(pals).length);
+});
+
+// Moncton wears its own logo band (measured with the others) all year except
+// 1-15 August, when it wears the Acadian flag band (ACADIAN_SEASON in
+// fids-core.js). The flag is hand-drawn, not derived, so it is checked here on
+// its own: its brand tones are the lightest ground under its words.
+test('Moncton in August: the ink clears both ends of the Acadian flag band', () => {
+  const flag = RULES.find(r => r.sel.includes('data-fids-banner="silk-acadian"') && /linear-gradient\(/.test(r.body) &&
+    r.body.includes('#003DA5 30%') && r.body.includes('#B50E2C 70%'));
+  assert.ok(flag, 'Moncton\'s flag stops moved (#003DA5 30% / #B50E2C 70%) — re-measure it');
+  for (const [side, hex] of [['title', '#003DA5'], ['clock', '#B50E2C']]) {
+    const c = contrast(INK, painted(rgb(hex)));
+    assert.ok(c >= PAINTED_FLOOR, 'YQM (Acadian season): the ' + side + ' side measures ' + c.toFixed(2) + ':1 against ' + hex);
+  }
+  assert.ok(Array.isArray(FX.palettes.YQM), 'the rest of the year Moncton\'s own logo band is measured with every other airport');
 });
 
 test('a live airport the fixture has not met is held by the same guard', () => {

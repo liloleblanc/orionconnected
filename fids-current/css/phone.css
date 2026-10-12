@@ -83,7 +83,8 @@
     background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
     display: flex !important; align-items: center !important; justify-content: center !important; color: #ffffff !important;
   }
-  html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-icon::before { font-size: 22px !important; line-height: 1 !important; color: #ffffff !important; margin: 0 !important; }
+  /* vNEXT — the glyph is a mask painted from background-color since v24039, so it is set white here too (color alone left it navy on the band). */
+  html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-icon::before { font-size: 22px !important; line-height: 1 !important; color: #ffffff !important; background-color: #ffffff !important; margin: 0 !important; }
   html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-icon svg { width: 22px !important; height: 22px !important; fill: #ffffff !important; }
   html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-label {
     flex: 1 1 auto !important; min-width: 0 !important; font-size: 20px !important; font-weight: 800 !important; line-height: 1.1 !important;
