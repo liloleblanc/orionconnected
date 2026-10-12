@@ -148,6 +148,12 @@ bdi{unicode-bidi:isolate}
   display:grid;place-items:center;width:clamp(22px,1.95vw,28px);aspect-ratio:1;border-radius:4px;
   background:var(--gold);color:var(--ink);font-weight:800;font-size:clamp(12px,1.05vw,15px);line-height:1;font-stretch:87.5%;font-variant-numeric:tabular-nums;
   box-shadow:0 0 0 2px var(--ink),0 6px 14px rgba(0,0,0,.5)}
+/* a pin never sits on the words it points to. .up stands it on --y, its
+   foot on that line: the column pins of Fig. 2 stand on the top of the
+   header row, above each label. On a phone (600 px and less) pins are
+   smaller, yet still large beside the picture; --xs, where given, is a
+   pin's place there (Fig. 2's last one would be cut off at the edge) */
+.pin.up{transform:translate(-50%,-100%)}
 .key{margin-top:24px;border-top:1px solid var(--line)}
 .key li{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--rule);font-size:16px;line-height:1.4}
 .k{flex:none;display:grid;place-items:center;width:28px;height:28px;margin-top:-2px;border-radius:4px;background:var(--gold);color:var(--ink);font-weight:800;font-size:15px;line-height:1;font-stretch:87.5%;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2px var(--ink)}
@@ -342,8 +348,18 @@ bdi{unicode-bidi:isolate}
   .chip{inset-inline-start:10px;top:10px;font-size:12px;padding:5px 9px 5px 8px}
   .play{gap:10px;font-size:16px;min-height:52px}
   .cap{gap:12px;font-size:14px}
+  .pin{width:16px;font-size:10px;left:var(--xs,var(--x))}
   .schedule div{flex-wrap:wrap}
   .c-contact .big-link{font-size:22px;gap:10px}
+}
+/* two columns of airports on a phone: the longest single word in a name
+   ("Intercontinental", Houston) must fit its line whole, down to 375 px
+   (one column below). A word is never broken inside; between words is fine. */
+@media (max-width:420px){
+  .region ul{column-gap:12px}
+  .ap{gap:6px;padding-inline:4px}
+  .ap .c{font-size:18px}
+  .ap .n{font-size:14.5px}
 }
 @media (max-width:480px){
   .logo{height:44px}

@@ -289,7 +289,8 @@ test('MET is capitalised in the credit', () => {
   // name stays as MET Norway writes it in every one of them.
   assert.match(SRC, /class="wxc-credit">' \+ BoardStrings\.pair\('wxCredit'/, 'the credit line must exist');
   const S = require('../fids-current/js/board-strings.js');
-  for (const l of S.LANGS) assert.match(S.bs('wxCredit', l), /\bMET Norway\b/, 'must credit "MET Norway", not "Met Norway" (' + l + ')');
+  // (a no-break space holds the name on one line)
+  for (const l of S.LANGS) assert.match(S.bs('wxCredit', l), /\bMET\u00a0Norway\b/, 'must credit "MET Norway", not "Met Norway", kept on one line (' + l + ')');
 });
 
 test('no malformed percentages reached the stylesheet', () => {

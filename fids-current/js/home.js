@@ -5,7 +5,8 @@
    languages. Unlike a board, a page speaks ONE language at a time, the
    reader's: ?lang= first, then the reader's saved choice, then the browser's
    languages, then English (BoardStrings.pageLang decides). Arabic reads right
-   to left. The language switch writes ?lang= and saves the choice.
+   to left. The language switch writes ?lang= and saves the choice, and the
+   links between the two pages carry ?lang= on to the next page.
 
    How the words get on the page:
      data-i18n="key" data-i18n-one   the store fills it (applyStatic), in the
@@ -87,8 +88,12 @@
     return (lang === 'fr' && a[3]) || a[2];
   }
   function regionOf(a) { return REGION_OF[a[0]] || a[0]; }
+  // {N} the whole roster; {LIVE} the airports live now, the paused left out
+  // (the folio line says "Live now at…", beside an index that shows Sydney
+  // as paused)
   function counts() {
     var c = { N: AIRPORTS.length };
+    c.LIVE = AIRPORTS.filter(function (a) { return !PAUSED[a[1]]; }).length;
     REGIONS.forEach(function (r) { c[r] = AIRPORTS.filter(function (a) { return regionOf(a) === r; }).length; });
     return c;
   }
@@ -237,16 +242,24 @@
     box.setAttribute('aria-label', S.fmt('homeLangsAria', l, { WORD: S.bs('appDep', l) }));
     var pair = S.defaultLangs(HOME_CODE);
     S.LANGS.forEach(function (code) {
+      // the tile itself keeps the page's direction, so its dividers and
+      // padding sit where every other tile's do; its words are in their own
+      // language and direction (Arabic right to left on any page)
       var li = el('li', 'lang');
-      S.setLang(li, code);
-      li.appendChild(el('span', 'w', S.bs('appDep', code)));
+      var w = el('span', 'w', S.bs('appDep', code));
+      S.setLang(w, code);
+      li.appendChild(w);
       var m = el('span', 'm');
+      S.setLang(m, code);
       m.appendChild(el('b', null, code.toUpperCase()));
       m.appendChild(el('span', null, S.META[code].name));
       if (pair.indexOf(code) >= 0) {
         var pr = el('span', 'pair');
         pr.appendChild(svgUse('star', 'i-star'));
-        pr.appendChild(el('span', null, cityName(HOME_CODE, l)));
+        // the city, in the page's language
+        var cn = el('span', null, cityName(HOME_CODE, l));
+        S.setLang(cn, l);
+        pr.appendChild(cn);
         m.appendChild(pr);
       }
       li.appendChild(m);
@@ -295,15 +308,41 @@
     S.langsChanged();
   }
 
+  // ── THE PAGES' OWN LINKS KEEP THE LANGUAGE ──────────────────────────────
+  // The homepage and its credits page link to each other ("/" and
+  // "/credits"). Each such link carries ?lang=, so the next page speaks this
+  // one's language even when the choice could not be saved (storage
+  // blocked) or came with a shared ?lang= link (which is never saved: a
+  // link someone shares does not change the reader's own choice). A link to
+  // a file (a licence .txt), to a part of the page (#…) or to another site
+  // stays as written, and so does each choice in the language switch (it
+  // names its own language).
+  function isPageLink(h) {
+    return /^\/(?!\/)/.test(h) && !/\.[A-Za-z0-9]+$/.test(h.split(/[?#]/)[0]);
+  }
+  function paintPageLinks(l) {
+    var ls = doc.querySelectorAll('a[href]');
+    for (var i = 0; i < ls.length; i++) {
+      var h = ls[i].getAttribute('href') || '';
+      if (!isPageLink(h) || ls[i].hasAttribute('data-lang-pick')) continue;
+      try {
+        var u = new URL(h, location.href);
+        u.searchParams.set('lang', l);
+        ls[i].setAttribute('href', u.pathname + u.search + u.hash);
+      } catch (e) {}
+    }
+  }
+
   // ── LINKS ────────────────────────────────────────────────────────────────
   // A phone opening a board is sent to the companion app anyway (fids-core.js
-  // PHONE HANDOFF); the homepage sends it there directly.
-  var narrow = null;
-  try { narrow = window.matchMedia('(max-width: 700px)'); } catch (e) {}
+  // PHONE HANDOFF); the homepage sends it there directly, by the boards' own
+  // rule: the user agent alone. Bare 'Android' without 'Mobile' is not a
+  // phone (Android TVs carry it), and there is no width test, so a narrow
+  // desktop window keeps the boards, as it does on the boards themselves
+  // (which have their own narrow layout, css/phone.css).
   function isPhone() {
     var ua = navigator.userAgent || '';
-    var phoneUa = /iPhone|iPod|iPad|Windows Phone/i.test(ua) || (/Android/i.test(ua) && /Mobile/i.test(ua));
-    return phoneUa || !!(narrow && narrow.matches);
+    return /iPhone|iPod|iPad|Windows Phone/i.test(ua) || (/Android/i.test(ua) && /Mobile/i.test(ua));
   }
   function paintLinks() {
     var to = isPhone() ? PHONE_APP : LIVE_BOARDS;
@@ -343,6 +382,7 @@
     paintIndex(l);
     paintLangs(l);
     paintSwitch(l);
+    paintPageLinks(l);
   }
   S.onLangs(paint);
 
@@ -356,10 +396,6 @@
     paint([lang]);
     paintLinks();
     paintAddresses();
-    if (narrow) {
-      if (narrow.addEventListener) narrow.addEventListener('change', paintLinks);
-      else if (narrow.addListener) narrow.addListener(paintLinks);
-    }
     doc.addEventListener('click', function (e) {
       var pick = e.target.closest && e.target.closest('[data-lang-pick]');
       if (pick) {

@@ -64,6 +64,162 @@ function runHome(o) {
   return { g, attrs, classes, stored, home: g.OCHome, replaced: () => replaced, listeners };
 }
 
+// ── home.js, run against the real page ────────────────────────────────────
+// A small DOM, enough for what the store and home.js do with a page: the
+// page's own HTML parsed into elements, selectors (tag, #id, .class,
+// [attr], [attr="v"], descendant, lists), events, details' open state and
+// focus. home.js then runs exactly as in a browser: DOMContentLoaded fires
+// the store's applyStatic and home.js's boot, in that order.
+const VOID = new Set(['meta', 'link', 'img', 'br', 'hr', 'input', 'source', 'area', 'base', 'col', 'embed', 'track', 'wbr']);
+const decode = (s) => s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => {
+  if (e[0] === '#') return String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10));
+  return { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ' }[e.toLowerCase()] || m;
+});
+class Txt {
+  constructor(t) { this.nodeType = 3; this.data = t; this.parentNode = null; }
+  get textContent() { return this.data; }
+}
+class El {
+  constructor(doc, tag) {
+    this.nodeType = 1; this.ownerDocument = doc; this.tagName = tag.toUpperCase(); this.localName = tag.toLowerCase();
+    this.attributes = new Map(); this.childNodes = []; this.parentNode = null; this.listeners = {};
+  }
+  get children() { return this.childNodes.filter((n) => n.nodeType === 1); }
+  getAttribute(k) { return this.attributes.has(k) ? this.attributes.get(k) : null; }
+  setAttribute(k, v) { this.attributes.set(k, String(v)); }
+  hasAttribute(k) { return this.attributes.has(k); }
+  removeAttribute(k) { this.attributes.delete(k); }
+  get id() { return this.getAttribute('id') || ''; }
+  set id(v) { this.setAttribute('id', v); }
+  get className() { return this.getAttribute('class') || ''; }
+  set className(v) { this.setAttribute('class', v); }
+  get classList() {
+    const el = this, has = (c) => el.className.split(/\s+/).includes(c);
+    return { contains: has, add: (c) => { if (!has(c)) el.className = (el.className + ' ' + c).trim(); } };
+  }
+  get href() { return this.getAttribute('href') || ''; }
+  set href(v) { this.setAttribute('href', v); }
+  get open() { return this.hasAttribute('open'); }
+  set open(v) {
+    if (!!v === this.open) return;
+    if (v) this.setAttribute('open', ''); else this.removeAttribute('open');
+    this.dispatchEvent({ type: 'toggle' });
+  }
+  get textContent() { return this.childNodes.map((n) => n.textContent).join(''); }
+  set textContent(v) { this.childNodes.forEach((n) => { n.parentNode = null; }); this.childNodes = []; if (v !== '' && v != null) this.appendChild(new Txt(String(v))); }
+  set innerHTML(v) { this.textContent = String(v).replace(/<[^>]*>/g, ''); }
+  appendChild(n) { if (n.parentNode) n.parentNode.childNodes.splice(n.parentNode.childNodes.indexOf(n), 1); n.parentNode = this; this.childNodes.push(n); return n; }
+  addEventListener(t, fn) { (this.listeners[t] = this.listeners[t] || []).push(fn); }
+  dispatchEvent(e) { (this.listeners[e.type] || []).slice().forEach((fn) => fn.call(this, e)); }
+  focus() { this.ownerDocument.activeElement = this; }
+  matches(sel) { return parseSel(sel).some((chain) => matchChain(this, chain)); }
+  closest(sel) { for (let n = this; n && n.nodeType === 1; n = n.parentNode) if (n.matches(sel)) return n; return null; }
+  descendants() { const out = []; const walk = (n) => n.children.forEach((c) => { out.push(c); walk(c); }); walk(this); return out; }
+  querySelectorAll(sel) { return this.descendants().filter((n) => n.matches(sel)); }
+  querySelector(sel) { return this.querySelectorAll(sel)[0] || null; }
+}
+// a selector list: each item a chain of compounds joined by descendant spaces
+function parseSel(sel) {
+  return sel.split(',').map((one) => one.trim().split(/\s+/).map((part) => {
+    const c = { tag: null, id: null, cls: [], attrs: [] };
+    const re = /^([a-z][\w-]*|\*)|#([\w-]+)|\.([\w-]+)|\[([\w-]+)(?:([\^]?=)"([^"]*)")?\]/gi;
+    let m, at = 0;
+    while ((m = re.exec(part)) && m.index === at) {
+      at = re.lastIndex;
+      if (m[1]) c.tag = m[1] === '*' ? null : m[1].toLowerCase();
+      else if (m[2]) c.id = m[2];
+      else if (m[3]) c.cls.push(m[3]);
+      else c.attrs.push({ name: m[4], op: m[5], value: m[6] });
+    }
+    assert.equal(at, part.length, 'the test DOM cannot read the selector ' + sel);
+    return c;
+  }));
+}
+function matchOne(el, c) {
+  if (c.tag && el.localName !== c.tag) return false;
+  if (c.id && el.id !== c.id) return false;
+  const cls = el.className.split(/\s+/);
+  if (!c.cls.every((x) => cls.includes(x))) return false;
+  return c.attrs.every((a) => {
+    if (!el.hasAttribute(a.name)) return false;
+    if (a.op === '=') return el.getAttribute(a.name) === a.value;
+    if (a.op === '^=') return el.getAttribute(a.name).startsWith(a.value);
+    return true;
+  });
+}
+function matchChain(el, chain) {
+  if (!matchOne(el, chain[chain.length - 1])) return false;
+  let i = chain.length - 2;
+  for (let n = el.parentNode; n && n.nodeType === 1 && i >= 0; n = n.parentNode) if (matchOne(n, chain[i])) i--;
+  return i < 0;
+}
+function parsePage(html, doc) {
+  const root = new El(doc, '#root');
+  const stack = [root];
+  const re = /<!--[\s\S]*?-->|<!doctype[^>]*>|<(script|style|title)\b([^>]*)>([\s\S]*?)<\/\1>|<\/([\w-]+)\s*>|<([\w-]+)((?:\s+[^\s=>\/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>|([^<]+)/gi;
+  const attrsOf = (el, s) => { for (const a of s.matchAll(/([^\s=>\/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g)) el.setAttribute(a[1], decode(a[2] ?? a[3] ?? a[4] ?? '')); };
+  let m;
+  while ((m = re.exec(html))) {
+    const top = stack[stack.length - 1];
+    if (m[1]) { const el = top.appendChild(new El(doc, m[1])); attrsOf(el, m[2]); if (m[1].toLowerCase() === 'title') el.appendChild(new Txt(decode(m[3]))); }
+    else if (m[4]) { const at = stack.map((n) => n.localName).lastIndexOf(m[4].toLowerCase()); if (at > 0) stack.length = at; }
+    else if (m[5]) { const el = top.appendChild(new El(doc, m[5])); attrsOf(el, m[6]); if (!m[7] && !VOID.has(el.localName)) stack.push(el); }
+    else if (m[8]) top.appendChild(new Txt(decode(m[8])));
+  }
+  return root.children.find((n) => n.localName === 'html');
+}
+// o: { url, languages, saved, blocked (storage throws), ua }
+function loadPage(name, o) {
+  o = o || {};
+  const listeners = {};
+  const doc = {
+    readyState: 'loading', activeElement: null, title: '',
+    addEventListener: (t, fn) => { (listeners[t] = listeners[t] || []).push(fn); },
+    createElement: (t) => new El(doc, t),
+    createElementNS: (ns, t) => new El(doc, t),
+    getElementById: (id) => doc.querySelector('#' + id),
+    querySelectorAll: (sel) => [doc.documentElement].concat(doc.documentElement.descendants()).filter((n) => n.matches(sel)),
+    querySelector: (sel) => doc.querySelectorAll(sel)[0] || null
+  };
+  doc.documentElement = parsePage(rd('fids-current/' + name), doc);
+  doc.body = doc.querySelector('body');
+  const url = new URL(o.url || 'https://www.orionconnected.com/');
+  const location = { href: url.href, search: url.search, hash: url.hash, pathname: url.pathname, hostname: url.hostname, origin: url.origin };
+  const stored = {};
+  if (o.saved != null) stored.oc_home_lang = o.saved;
+  const store = { getItem: (k) => (k in stored ? stored[k] : null), setItem: (k, v) => { stored[k] = String(v); }, removeItem: (k) => { delete stored[k]; } };
+  const g = {
+    URL, URLSearchParams, Intl, console, Object, Array, String, Number, Math, JSON, Date, Error,
+    document: doc, location,
+    navigator: { languages: o.languages || ['en-US'], language: (o.languages || ['en-US'])[0], userAgent: o.ua || 'Mozilla/5.0 (Macintosh)' },
+    history: { replaceState: (a, b, u) => { const n = new URL(u, location.href); Object.assign(location, { href: n.href, search: n.search, hash: n.hash, pathname: n.pathname }); } },
+    innerWidth: 1440
+  };
+  for (const k of ['localStorage', 'sessionStorage']) {
+    Object.defineProperty(g, k, { get: () => { if (o.blocked) throw new Error('storage is blocked'); return store; } });
+  }
+  g.window = g;
+  vm.createContext(g);
+  vm.runInContext(rd('fids-current/js/host-airport.js'), g);
+  vm.runInContext(rd('fids-current/js/board-strings.js'), g);
+  vm.runInContext(JS, g);
+  doc.readyState = 'interactive';
+  (listeners.DOMContentLoaded || []).forEach((fn) => fn({ type: 'DOMContentLoaded' }));
+  const fire = (type, target, extra) => {
+    const e = Object.assign({ type, target, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } }, extra);
+    (listeners[type] || []).forEach((fn) => fn(e));
+    return e;
+  };
+  const html = doc.documentElement;
+  return {
+    g, doc, html, stored, location, fire,
+    $: (s) => doc.querySelector(s), $$: (s) => doc.querySelectorAll(s),
+    click: (el) => fire('click', el),
+    key: (k) => fire('keydown', doc.activeElement || doc.body, { key: k }),
+    home: g.OCHome
+  };
+}
+
 // every key a page or home.js asks the store for
 function keysUsed() {
   const keys = new Set();
@@ -111,7 +267,7 @@ test('the pages carry no words outside the store', () => {
 test('the English written into the pages, for a reader without script, is the store\'s own', () => {
   const { home } = runHome();
   const c = home.counts();
-  const F = { N: String(c.N), CA: String(c.CA), US: String(c.US), EU: String(c.EU), AU: String(c.AU), GATE: '1',
+  const F = { N: String(c.N), LIVE: String(c.LIVE), CA: String(c.CA), US: String(c.US), EU: String(c.EU), AU: String(c.AU), GATE: '1',
     HERE: BS.bs('youAreHere', 'en'), WORD: BS.bs('appDep', 'en'), KICKER: BS.bs('heritageKicker', 'en'),
     TITLE: home.MODEL.title, AUTHOR: home.MODEL.author };
   const dec = (s) => s.replace(/&nbsp;/g, '\u00a0').replace(/&amp;/g, '&');
@@ -194,8 +350,12 @@ test('the airport index is the live roster', () => {
   // grouped by country, each named by CLDR from its ISO code
   for (const a of home.AIRPORTS) assert.match(a[0], /^[A-Z]{2}$/, a[1] + ' has an ISO country code');
   assert.deepEqual(Array.from(home.groups('en', new Intl.Collator('en'))), ['CA', 'US', 'IS', 'IE', 'CH', 'GB', 'AU']);
+  // "Live now" counts the airports live now: the paused one is not, and the
+  // index beside it says so (homeNotePaused)
+  assert.equal(c.LIVE, c.N - Object.keys(home.PAUSED).length, 'the folio line leaves the paused airports out');
+  assert.match(BS.bs('homeLiveNow', 'en'), /\{LIVE\}/);
   // the words written into the page before its script runs say the same
-  assert.match(HOME, new RegExp(`Live now at ${c.N} airports`));
+  assert.match(HOME, new RegExp(`Live now at ${c.LIVE} airports`));
   assert.match(HOME, new RegExp(`${c.CA} in Canada, ${c.US} in the United States, ${c.EU} in Europe and ${c.AU} in Australia\\.`));
   // each airport links to its own address
   assert.match(JS, /link\.href = 'https:\/\/' \+ a\[1\]\.toLowerCase\(\) \+ '\.orionconnected\.com';/);
@@ -223,6 +383,134 @@ test('the region counts read right in every language', () => {
   assert.equal(home.countText(2, 'fr'), '2 aéroports');
   assert.equal(home.countText(28, 'ja'), '28空港');
   for (const l of BS.LANGS) for (const n of [1, 2, 5, 27, 28, 62]) assert.ok(home.countText(n, l), `${l} ${n}`);
+});
+
+// ── home.js in the page, as a browser runs it ─────────────────────────────
+const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)';
+// the links between the two pages (not a file, not a choice in the language switch)
+const pageLinks = (p) => p.$$('a[href]').filter((a) => /^\/(?!\/)/.test(a.getAttribute('href')) && !/\.txt$/.test(a.getAttribute('href')) && !a.hasAttribute('data-lang-pick'));
+
+test('home.js paints the homepage: the index, the nine languages, the switch, the words and the links', () => {
+  const p = loadPage('home.html', { languages: ['en-US'] });
+  const { home } = p;
+  assert.equal(p.html.getAttribute('lang'), 'en');
+  assert.ok(p.html.classList.contains('js'));
+  // the airport index: one link per airport, to its own address, grouped by country
+  const aps = p.$$('#airport-index a.ap');
+  assert.equal(aps.length, home.AIRPORTS.length, 'every airport of the roster is in the index');
+  assert.deepEqual(aps.map((a) => a.href).sort(), Array.from(home.AIRPORTS, (a) => 'https://' + a[1].toLowerCase() + '.orionconnected.com').sort());
+  assert.deepEqual(p.$$('#airport-index .region h3').map((h) => h.textContent),
+    Array.from(home.groups('en', new Intl.Collator('en'))).map((c) => new Intl.DisplayNames(['en'], { type: 'region' }).of(c)));
+  assert.equal(p.$$('#airport-index a.paused').length, Object.keys(home.PAUSED).length);
+  assert.equal(p.$('#paused-note').textContent, BS.fmt('homeNotePaused', 'en', { CITY: 'Sydney' }));
+  // the words the page fills: the folio line counts what is live now
+  assert.equal(p.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'en', { LIVE: home.counts().LIVE }));
+  assert.equal(p.$('h1').textContent, BS.fmt('homeHeroTitle', 'en', { N: home.AIRPORTS.length }));
+  // nine tiles, each word in its own language and direction; the tile itself
+  // keeps the page's, so its divider and padding sit where every other one's do
+  const tiles = p.$$('#lang-tiles li.lang');
+  assert.deepEqual(tiles.map((t) => t.querySelector('.w').getAttribute('lang')), Array.from(BS.LANGS));
+  assert.deepEqual(tiles.map((t) => t.querySelector('.w').textContent), BS.LANGS.map((l) => BS.bs('appDep', l)));
+  for (const t of tiles) {
+    assert.equal(t.getAttribute('lang'), null, 'a tile is in the page language');
+    assert.equal(t.getAttribute('dir'), null, 'a tile keeps the page direction');
+  }
+  const ar = tiles[BS.LANGS.indexOf('ar')];
+  assert.equal(ar.querySelector('.w').getAttribute('dir'), 'rtl');
+  assert.equal(ar.querySelector('.m').getAttribute('dir'), 'rtl');
+  // the switch: the nine languages, the one on screen marked, once
+  const sws = p.$$('details.lsw');
+  assert.equal(sws.length, 1);
+  const links = sws[0].querySelectorAll('.lsw-list a');
+  assert.deepEqual(links.map((a) => a.getAttribute('data-lang-pick')), Array.from(BS.LANGS));
+  assert.deepEqual(links.filter((a) => a.getAttribute('aria-current') === 'true').map((a) => a.getAttribute('data-lang-pick')), ['en']);
+  assert.equal(sws[0].querySelector('.lsw-name').textContent, BS.META.en.name);
+  for (const a of links) assert.equal(new URL(a.href, 'https://www.orionconnected.com/').searchParams.get('lang'), a.getAttribute('data-lang-pick'), 'each choice links to its own language');
+  // the boards' links go to the boards on a computer, to the app on a phone
+  for (const a of p.$$('[data-boards-link]')) assert.equal(a.href, 'https://fids.orionconnected.com/picker');
+  for (const a of loadPage('home.html', { ua: IPHONE }).$$('[data-boards-link]')) assert.equal(a.href, 'https://orionconnected.app');
+  // addresses shown as they are
+  assert.equal(p.$('[data-addr] .code').textContent + p.$('[data-addr] .dom').textContent, 'yqm.orionconnected.com');
+  assert.equal(p.$('a[href="mailto:contact@orionconnected.com"] [data-href-text]').textContent, 'contact@orionconnected.com');
+  // the links between the two pages carry the page's language
+  assert.deepEqual(pageLinks(p).map((a) => a.getAttribute('href')), ['/?lang=en', '/credits?lang=en', '/credits?lang=en']);
+});
+
+test('picking a language turns the whole page, saves the choice, and gives focus back to the switch', () => {
+  const p = loadPage('home.html', { languages: ['en-CA'] });
+  const sw = p.$('details.lsw');
+  sw.open = true;
+  const e = p.click(sw.querySelector('[data-lang-pick="ar"]'));
+  assert.ok(e.defaultPrevented, 'the page turns in place');
+  assert.equal(p.html.getAttribute('lang'), 'ar');
+  assert.equal(p.html.getAttribute('dir'), 'rtl');
+  assert.equal(p.stored.oc_home_lang, 'ar', 'the choice is remembered');
+  assert.match(p.location.search, /[?&]lang=ar\b/, 'and written into the address');
+  assert.equal(sw.open, false, 'the switch closes');
+  assert.equal(p.doc.activeElement, sw.querySelector('summary'), 'focus goes back to the switch');
+  // everything follows
+  assert.deepEqual(sw.querySelectorAll('.lsw-list a').filter((a) => a.getAttribute('aria-current') === 'true').map((a) => a.getAttribute('data-lang-pick')), ['ar']);
+  assert.equal(sw.querySelector('.lsw-name').textContent, BS.META.ar.name);
+  assert.equal(p.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'ar', { LIVE: p.home.counts().LIVE }));
+  assert.equal(p.$('[data-i18n="homeScreensTitle"]').textContent, BS.bs('homeScreensTitle', 'ar'));
+  assert.equal(p.$$('#airport-index a.ap').length, p.home.AIRPORTS.length);
+  assert.equal(p.$$('#lang-tiles li.lang').length, 9);
+  assert.deepEqual(pageLinks(p).map((a) => a.getAttribute('href')), ['/?lang=ar', '/credits?lang=ar', '/credits?lang=ar']);
+  for (const a of sw.querySelectorAll('.lsw-list a')) assert.equal(new URL(a.href, 'https://www.orionconnected.com/').searchParams.get('lang'), a.getAttribute('data-lang-pick'));
+  // and back to left to right
+  sw.open = true;
+  p.click(sw.querySelector('[data-lang-pick="de"]'));
+  assert.equal(p.html.getAttribute('lang'), 'de');
+  assert.equal(p.html.getAttribute('dir'), null);
+  assert.equal(p.stored.oc_home_lang, 'de');
+});
+
+test('the next page speaks the same language, even when the choice cannot be saved or came with a link', () => {
+  // storage blocked: the choice is lost on a reload, but not on the next page
+  const p = loadPage('home.html', { blocked: true });
+  assert.equal(p.html.getAttribute('lang'), 'en');
+  p.click(p.$('details.lsw [data-lang-pick="fr"]'));
+  assert.equal(p.html.getAttribute('lang'), 'fr');
+  assert.deepEqual(p.stored, {}, 'nothing could be saved');
+  const credits = p.$$('a[href^="/credits"]');
+  assert.equal(credits.length, 2);
+  for (const a of credits) assert.equal(a.getAttribute('href'), '/credits?lang=fr');
+  const next = loadPage('credits.html', { url: new URL(credits[0].getAttribute('href'), 'https://www.orionconnected.com/').href, blocked: true });
+  assert.equal(next.html.getAttribute('lang'), 'fr', 'the credits page opens in French');
+  // and back home from the credits page
+  assert.equal(next.$('a.brand').getAttribute('href'), '/?lang=fr');
+  assert.equal(loadPage('home.html', { url: 'https://www.orionconnected.com' + next.$('a.brand').getAttribute('href'), blocked: true }).html.getAttribute('lang'), 'fr');
+  // a shared ?lang= link: the page and the next one speak it; the reader's own saved choice stays
+  const s = loadPage('home.html', { url: 'https://www.orionconnected.com/?lang=de', saved: 'es' });
+  assert.equal(s.html.getAttribute('lang'), 'de');
+  assert.equal(s.stored.oc_home_lang, 'es', 'a shared link does not change the saved choice');
+  for (const a of s.$$('a[href^="/credits"]')) assert.equal(a.getAttribute('href'), '/credits?lang=de');
+  // a link to a file, to a part of the page, to another site or an address stays as written
+  const c = loadPage('credits.html', { url: 'https://www.orionconnected.com/credits?lang=pt' });
+  assert.deepEqual(pageLinks(c).map((a) => a.getAttribute('href')), ['/?lang=pt', '/credits?lang=pt']);
+  for (const h of ['/logos/icons/LICENSE-Apache-2.0.txt', '/logos/weather/animated/LICENSE-MIT.txt', '/fonts/bricolage/OFL.txt', '#main',
+    'mailto:contact@orionconnected.com', 'https://epcotfont.com', 'https://orionconnected.app']) {
+    assert.ok(c.$(`a[href="${h}"]`), h + ' is still there, as written');
+  }
+});
+
+test('Escape, or a click elsewhere, closes an open menu or language switch', () => {
+  const p = loadPage('home.html');
+  const menu = p.$('details.menu'), sw = p.$('details.lsw');
+  menu.open = true;
+  p.key('Tab');
+  assert.equal(menu.open, true, 'another key leaves it open');
+  p.key('Escape');
+  assert.equal(menu.open, false, 'Escape closes it');
+  assert.equal(p.doc.activeElement, menu.querySelector('summary'), 'and focus goes back to it');
+  sw.open = true;
+  menu.open = true;
+  assert.equal(sw.open, false, 'opening one closes the other');
+  p.click(p.$('#h-screens'));
+  assert.equal(menu.open, false, 'a click elsewhere closes it');
+  menu.open = true;
+  p.click(menu.querySelector('.menu-list a[href="#airports"]'));
+  assert.equal(menu.open, false, 'choosing a place in the menu closes it');
 });
 
 // ── the Worker ─────────────────────────────────────────────────────────────
@@ -336,12 +624,17 @@ test('the links go where they should', () => {
   assert.match(HOME, /href="https:\/\/fids\.orionconnected\.com\/picker" data-boards-link/, 'the live boards');
   assert.match(JS, /var LIVE_BOARDS = 'https:\/\/fids\.orionconnected\.com\/picker';/);
   assert.match(JS, /var PHONE_APP = 'https:\/\/orionconnected\.app';/);
-  // a phone goes to the app, the way the boards send it (fids-core.js PHONE HANDOFF)
+  // a phone goes to the app, by the boards' own rule (fids-core.js PHONE
+  // HANDOFF): the user agent alone
   assert.equal(runHome({ ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' }).home.isPhone(), true);
   assert.equal(runHome({ ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile' }).home.isPhone(), true);
   assert.equal(runHome({ ua: 'Mozilla/5.0 (Linux; Android 12; BRAVIA 4K)' }).home.isPhone(), false, 'an Android TV keeps the boards');
-  assert.equal(runHome({ narrow: true }).home.isPhone(), true, 'a narrow screen too');
+  assert.equal(runHome({ narrow: true }).home.isPhone(), false, 'a narrow desktop window keeps the boards, as it does on the boards');
   assert.equal(runHome({}).home.isPhone(), false);
+  assert.doesNotMatch(JS, /matchMedia|max-width/, 'no width test');
+  const core = CORE.slice(CORE.indexOf('// ── PHONE HANDOFF'), CORE.indexOf('// ── CROSS-DEVICE SCREEN STATE'));
+  const rule = (src) => /\/iPhone\|iPod\|iPad\|Windows Phone\/i\.test\(\w+\) \|\| \(\/Android\/i\.test\(\w+\) && \/Mobile\/i\.test\(\w+\)\)/.test(src);
+  assert.ok(rule(core) && rule(JS), 'the same user-agent rule as the boards');
   for (const html of Object.values(PAGES)) {
     assert.match(html, /href="https:\/\/orionconnected\.app"/);
     assert.match(html, /href="https:\/\/www\.youtube\.com\/watch\?v=5BUvFGF7AT4"/);
@@ -384,5 +677,28 @@ test('the facts: a one-person start-up, no company words, no invented figures', 
   for (const k of Object.keys(BS.STR).filter((x) => /^(home|cred)[A-Z0-9]/.test(x))) for (const l of BS.LANGS) words.push(BS.STR[k][l]);
   for (const w of words) {
     assert.doesNotMatch(w, /\bInc\.|\bLtd\.|\bLLC\b|\bCorp\.|our team|testimonial|\$\s?\d/i);
+  }
+});
+
+test('a name of two words never breaks across lines (no severed phrases)', () => {
+  // a no-break space inside the name, or in French a no-break hyphen (U+2011)
+  const SEVERABLE = /Orion Connected|MET Norway|(New|Nuevo|Nuovo|Novo) Brunswick|نيو برونزويك|Nouveau-Brunswick/;
+  // every word the two pages show, but the page title and the logo link's
+  // name for a screen reader, which are never set across lines
+  const keys = Object.keys(BS.STR).filter((k) => /^(home|cred)[A-Z0-9]/.test(k) && !['homeHomeLink', 'credDocTitle'].includes(k))
+    .concat(['wxCredit', 'mapCreditOglNb']);
+  let named = 0;
+  for (const k of keys) {
+    for (const l of BS.LANGS) {
+      const s = BS.STR[k][l];
+      assert.doesNotMatch(s, SEVERABLE, `${k} ${l}`);
+      if (/Orion Connected|MET Norway|Brunswick|برونزويك/.test(s)) named++;
+    }
+  }
+  assert.ok(named > 60, 'the names are there, held whole: ' + named);
+  // and in the English written into the pages
+  for (const [name, html] of Object.entries(PAGES)) {
+    const text = html.slice(html.indexOf('<body')).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ');
+    assert.doesNotMatch(text, SEVERABLE, name);
   }
 });
