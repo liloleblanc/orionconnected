@@ -94,6 +94,38 @@ test('times read the boards\' clock: 12-hour in English, 24-hour in the other ei
   assert.match(APP, /const otherLine=\(f\.otherTime&&f\.durMin>0\)/, 'a far-end time only when it is real');
 });
 
+test('the app\'s clock obeys the boards\' 10:10 demo clock, and only the clock does', () => {
+  // v24044 — ?clock=1010 turns a board's clock to 10:10 (board-strings.js
+  // clockNow); the app's header clock now goes through the same door
+  const src = fn('tickClock');
+  assert.match(src, /BoardStrings\.clockNow\(real,tz\)/, 'the clock asks clockNow for its instant');
+  assert.match(src, /BoardStrings\.boardTime\(now,tz,/, 'the time prints the instant clockNow gave');
+  assert.match(src, /BoardStrings\.date\(now,L,DAY_FMT,tz\)/, 'the date line prints it too');
+  // the rows, statuses and day lines keep the real time: nothing else asks
+  assert.equal(APP.split('BoardStrings.clockNow(').length - 1, 1, 'clockNow is the header clock\'s alone');
+
+  const TZ = 'America/Moncton';
+  const DAY_FMT = { weekday: 'short', day: 'numeric', month: 'short' };
+  const el = { clkT: { innerHTML: '', textContent: '' }, clkD: { textContent: '' } };
+  const doc = { getElementById: (id) => el[id] || null };
+  const tick = (L) => new Function('document', 'window', 'BoardStrings', 'apTz', 'langRes', 'esc', 'DAY_FMT', src + '; tickClock();')(
+    doc, { BoardStrings: BS }, BS, () => TZ, () => L, String, DAY_FMT);
+  const real = (L) => BS.boardTime(new Date(), TZ, { list: [L] });
+  try {
+    BS.setDemoClock(true);
+    tick('en');
+    assert.equal(el.clkT.innerHTML, '10:10<small>AM</small>');
+    assert.equal(el.clkD.textContent, BS.date(new Date(), 'en', DAY_FMT, TZ), '10:10 on the airport\'s own day');
+    for (const L of ['fr', 'de', 'ja', 'ar']) { tick(L); assert.equal(el.clkT.innerHTML, '10:10', L); }
+    BS.setDemoClock(false);
+    const before = real('en'); tick('en'); const after = real('en');
+    const m = (s) => s.replace(/^(\d{1,2}:\d{2})\s*(\S+)$/, '$1<small>$2</small>');
+    assert.ok([m(before), m(after)].includes(el.clkT.innerHTML), 'off, the clock is the real time: ' + el.clkT.innerHTML);
+  } finally {
+    BS.setDemoClock(false);
+  }
+});
+
 test('every word of the app is in the store, in all nine languages', () => {
   const map = new Function(line(/^const APP_KEY=\{[^\n]*\};/m) + '; return APP_KEY;')();
   assert.ok(Object.keys(map).length >= 50);

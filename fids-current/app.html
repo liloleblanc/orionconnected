@@ -1319,7 +1319,11 @@ function paintHeader(){
 function tickClock(){
   const t=document.getElementById('clkT'), d=document.getElementById('clkD'); if(!t||!d||!window.BoardStrings)return;
   const tz=apTz(); if(!tz){t.textContent='';d.textContent='';return;}
-  const L=langRes(), now=new Date();
+  // v24044 — the boards' 10:10 demo clock (?clock=1010 on, ?clock=live off,
+  // board-strings.js clockNow): only what this clock prints changes; the
+  // rows, statuses and day lines keep reading the real time
+  const L=langRes(), real=new Date();
+  let now=real;try{if(typeof BoardStrings.clockNow==='function')now=BoardStrings.clockNow(real,tz)||real;}catch(e){now=real;}
   let s='';try{s=String(BoardStrings.boardTime(now,tz,{list:[L]})||'');}catch(e){}
   const m=/^(\d{1,2}:\d{2})\s*(\S+)$/.exec(s);
   t.innerHTML=m?esc(m[1])+'<small>'+esc(m[2])+'</small>':esc(s);
