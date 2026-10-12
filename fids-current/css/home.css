@@ -282,6 +282,7 @@ bdi{unicode-bidi:isolate}
 .cr-links a{display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:15px;font-weight:600;text-decoration:underline;text-decoration-color:var(--gold);text-decoration-thickness:2px;text-underline-offset:5px;overflow-wrap:anywhere}
 .cr-links a:hover{text-decoration-color:currentColor}
 .cr-font+.cr-font{margin-top:18px;padding-top:16px;border-top:1px solid var(--rule-soft)}
+.cr-links+p{margin-top:18px;padding-top:16px;border-top:1px solid var(--rule-soft)}
 
 /* ── narrower ─────────────────────────────────────────────────────────── */
 @media (max-width:1240px){
