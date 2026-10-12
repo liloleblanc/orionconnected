@@ -488,7 +488,8 @@ test('the cutoff runs first, and a duplicate is the same flight on the same day'
   // yesterday's copy won it and was then cut as gone, and today's flight went
   // with it (YUL departures: 224 of 439 shown). At 22:30 Moncton showed no
   // departures while the feed carried 9 for the morning.
-  const cardList = new Function(fn('cardList') + '; return cardList;')();
+  // (with the codeshare pass it hands its rows to: tests/companion-app-rows.test.js)
+  const cardList = new Function(fn('_cityKey') + fn('_fltNum') + fn('sameFlight') + fn('oneRowPerFlight') + fn('cardList') + '; return cardList;')();
   const now = Date.parse('2026-10-12T22:30:00-03:00');
   const H = 3600000;
   const mk = (flight, date, time, ts) => ({ flight, schedDate: date, schedTime: time, _ts: ts, _effTs: ts });
