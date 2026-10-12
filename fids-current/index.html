@@ -435,12 +435,17 @@
     #entryScreen .ocb-version{ margin-top:clamp(26px,3.6vh,46px); font-family:'AC Nord Text',system-ui,sans-serif;
       font-size:11px; letter-spacing:.22em; font-weight:700; color:#94a3b8; }
     @media (max-aspect-ratio:1/1){
-      #entryScreen .ocb{ flex-direction:column; }
+      /* vNEXT — stacked on a small phone the rail and the stage are
+         taller than the screen; scroll, as the picker does, so the
+         language row and the version line are never cut off. */
+      #entryScreen .ocb{ flex-direction:column; overflow-y:auto; }
       #entryScreen .ocb-rail{ flex-basis:auto; }
       /* vNEXT — stacked, the rail is the screen's whole width, so a
          1080px portrait display would draw the logo over 1000px wide.
-         Held near the size it reaches beside a landscape board. */
-      #entryScreen .ocb-logo{ width:min(100%,320px); }
+         At most 360px, which fills the rail of a 390px phone, and at
+         most 40% of the screen's height, so a short phone keeps the
+         rest of the screen in view. */
+      #entryScreen .ocb-logo{ width:min(100%,360px,40vh); }
       #entryScreen .ocb-stage{ align-items:center; text-align:center; padding-top:clamp(24px,4vh,48px); }
       #entryScreen .ocb-actions{ justify-content:center; }
     }

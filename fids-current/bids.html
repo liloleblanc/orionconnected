@@ -427,8 +427,10 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
       #fidsLoader .ocb-rail{ flex-basis:auto; }
       /* vNEXT — stacked, the rail is the screen's whole width, so a
          1080px portrait display would draw the logo over 1000px wide.
-         Held near the size it reaches beside a landscape board. */
-      #fidsLoader .ocb-logo{ width:min(100%,320px); }
+         At most 360px, which fills the rail of a 390px phone, and at
+         most 40% of the screen's height, so a short phone keeps the
+         rest of the screen in view. */
+      #fidsLoader .ocb-logo{ width:min(100%,360px,40vh); }
       #fidsLoader .ocb-stage{ align-items:center; text-align:center; padding-top:clamp(24px,4vh,48px); }
       #fidsLoader .ocb-track{ width:min(280px,80%); }
     }

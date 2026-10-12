@@ -190,11 +190,20 @@
       #pickerScreen .ocb-rail{ flex-basis:auto; }
       /* vNEXT — stacked, the rail is the screen's whole width, so a
          1080px portrait display would draw the logo over 1000px wide.
-         Held near the size it reaches beside a landscape board. */
-      #pickerScreen .ocb-logo{ width:min(100%,320px); }
+         At most 360px, which fills the rail of a 390px phone, and at
+         most 40% of the screen's height, so a short phone keeps the
+         rest of the screen in view. */
+      #pickerScreen .ocb-logo{ width:min(100%,360px,40vh); }
       #pickerScreen .ocb-stage{ align-items:center; text-align:center; padding:clamp(24px,4vh,48px) 20px; }
       #pickerScreen .ocb-cards{ justify-content:center; }
       #pickerScreen .ocb-foot{ justify-content:center; }
+    }
+    /* vNEXT — the picker is a choice screen: on a short phone (a 667px or
+       640px screen) the first display card must still fit above the fold,
+       so the stacked logo there is held to 29% of the height (about 190px
+       wide, still twice the old mark). A taller phone keeps the cap above. */
+    @media (max-aspect-ratio:1/1) and (max-height:700px){
+      #pickerScreen .ocb-logo{ width:min(100%,360px,29vh); }
     }
   </style>
 </div>
