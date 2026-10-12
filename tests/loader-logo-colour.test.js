@@ -58,11 +58,11 @@ function rules(css) {
   const src = stripComments(css);
   return [...src.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1].trim(), body: m[2] }));
 }
-const styleBlocks = (html) => [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]);
-const scriptBlocks = (html) => [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
+const styleBlocks = (html) => [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)].map((m) => m[1]);
+const scriptBlocks = (html) => [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)].map((m) => m[1]);
 /** The value of each `prop:` declaration in a rule body. */
 const decls = (body, prop) =>
-  [...body.matchAll(new RegExp('(?:^|[;\\s{])' + prop.replace(/-/g, '\\-') + '\\s*:\\s*([^;]+)', 'gi'))].map((m) => m[1].trim());
+  [...body.matchAll(new RegExp('(?:^|[;\\s{])' + prop.replace(/[\\^$.*+?()[\]{}|-]/g, '\\$&') + '\\s*:\\s*([^;]+)', 'gi'))].map((m) => m[1].trim());
 /** A selector that reaches a loader logo or the brand block it sits in. */
 const isLoaderLogoSel = (sel) => /\.ocb-logo\b|\.ocb-brand\b/.test(sel) || (/loader/i.test(sel) && /logo/i.test(sel));
 
