@@ -237,17 +237,23 @@ test('the feed line is green and says Live only when the feed is live', () => {
   const loading = hint({ loaded: false });
   assert.equal(loading.dot, 'live wait');
   assert.equal(loading.text, BS.bs('appLoading', 'en'));
+  // vNEXT — with nothing to list, the list says it (once); the line is hidden
   const down = hint({ loaded: true, feed: { state: 'unavailable' } });
   assert.equal(down.dot, 'live down');
-  assert.equal(down.text, BS.bs('feedUnavailable', 'en'));
+  assert.equal(down.text, '');
+  const downOld = hint({ loaded: true, feed: { state: 'unavailable' }, flights: [{}, {}] });
+  assert.equal(downOld.text, BS.bs('feedUnavailable', 'en'));
+  assert.match(src('paintHint'), /if\(hint\.parentNode\)hint\.parentNode\.hidden=!txt;/);
   const stale = hint({ loaded: true, feed: { state: 'stale', asOf: Date.now() - 3600000 }, flights: [{}, {}] });
   assert.equal(stale.dot, 'live stale');
   assert.equal(stale.text, BS.fmt('feedStale', 'en', { TIME: '3:01 AM' }, true));
   const live = hint({ loaded: true, feed: { state: 'live' }, flights: Array(13).fill({}) });
   assert.equal(live.dot, 'live');
   assert.equal(live.text, 'Live departures · 13 flights');
+  // an empty live list: 'No departures right now' is the list's own words
   const quiet = hint({ loaded: true, feed: { state: 'live' }, flights: [] });
-  assert.equal(quiet.text, 'No departures right now');
+  assert.equal(quiet.text, '');
+  assert.match(src('render'), /else cards\.innerHTML=emptyHtml\(IC_PLANE,isArr\?T\('noArr'\):T\('noDep'\)\);/);
   for (const s of [loading, down, stale]) assert.doesNotMatch(s.text, /^Live (departures|arrivals)/);
   // and the list reads the same word: an unavailable feed is never "no flights"
   assert.match(src('render'), /else if\(FEED&&FEED\.state==='unavailable'\) cards\.innerHTML=emptyHtml\(IC_OFF,BoardStrings\.bs\('feedUnavailable',langRes\(\)\)\)/);
@@ -365,9 +371,10 @@ test('every word on a row reads at 4.5:1 or better, in both themes', () => {
     const cx = rgb(V['--cx']);
     assert.ok(contrast([255, 255, 255], cx) >= 4.5, name + ' cancelled row');
     assert.ok(contrast([255, 255, 255], rgb('rgba(0,0,0,.24)', cx)) >= 4.5, name + ' cancelled pill');
-    // the band: white on navy, and the unselected tab's lighter white
+    // the band: white on navy, and on the tabs' white wash (vNEXT: the tab
+    // that is not chosen reads in full white, for Moncton's red band)
     const band = rgb(V['--band']);
-    assert.ok(contrast(rgb('rgba(255,255,255,.8)', rgb('rgba(255,255,255,.1)', band)), rgb('rgba(255,255,255,.1)', band)) >= 4.5, name + ' band');
+    assert.ok(contrast([255, 255, 255], rgb('rgba(255,255,255,.1)', band)) >= 4.5, name + ' band');
   }
   // no airline colour is ever painted under a row's words again
   assert.doesNotMatch(APP, /function bubBg|BUB_LIGHT|class="cardmark/);
@@ -389,7 +396,7 @@ test('a big airport is drawn a page at a time, and search waits for the typing t
   // O'Hare was 1,333 cards, 225,000 px and 27,000 nodes in one pass, rebuilt on every keystroke
   const page = +line(/^const PAGE=(\d+);/m).match(/\d+/)[0];
   assert.ok(page >= 30 && page <= 80, 'PAGE ' + page);
-  assert.match(src('render'), /cards\.innerHTML=rowsHtml\(list,0,n,isArr\)/);
+  assert.match(src('render'), /cards\.innerHTML=\(gone\?goneHtml\(gone\):''\)\+rowsHtml\(list,0,n,isArr\)/);
   assert.match(src('showMore'), /insertAdjacentHTML\('beforebegin',rowsHtml\(RENDERED,from,to,/);
   assert.match(src('onSearch'), /clearTimeout\(_qT\);_qT=setTimeout\(/);
   assert.match(APP, /oninput="onSearch\(\)"/);
@@ -399,16 +406,18 @@ test('a big airport is drawn a page at a time, and search waits for the typing t
 });
 
 test('a cancelled flight is the board\'s red row; a moved time puts the new time in the big slot', () => {
-  const th = new Function('clk', fn('movedTime') + fn('timeHtml') + '; return timeHtml;')((t) => t);
-  // a flight that has gone carries the time it went, when that is 5 minutes off its printed one
-  assert.match(th({ schedTime: '22:03', estTime: '01:50', state: 'arrived' }), /<div class="was">22:03<\/div><div class="hh moved">01:50<\/div>/);
+  const th = new Function('clk', fn('isDone') + fn('movedTime') + fn('timeHtml') + '; return timeHtml;')((t) => t);
+  // a flight that has gone carries the time it went, when that is 5 minutes
+  // off its printed one — vNEXT: in plain ink; amber is for a time still to come
+  assert.match(th({ schedTime: '22:03', estTime: '01:50', state: 'arrived' }), /<div class="was">22:03<\/div><div class="hh">01:50<\/div>/);
+  assert.match(th({ schedTime: '08:00', estTime: '08:30', state: 'delayed' }), /<div class="was">08:00<\/div><div class="hh moved">08:30<\/div>/);
   assert.match(th({ schedTime: '22:03', estTime: '22:05', state: 'arrived' }), /^<div class="tcol"><div class="hh">22:03<\/div><\/div>$/);
   assert.match(th({ schedTime: '08:00', estTime: '08:30', state: 'scheduled' }), /^<div class="tcol"><div class="hh">08:00<\/div><\/div>$/, 'a moved time with no word from the airport is not shown as moved');
   assert.equal(th({ schedTime: '06:55', estTime: '06:46', state: 'early' }), '<div class="tcol"><div class="was">06:55</div><div class="hh moved">06:46</div></div>');
   assert.equal(th({ schedTime: '06:55', estTime: '06:55', state: 'scheduled' }), '<div class="tcol"><div class="hh">06:55</div></div>');
   assert.match(src('rowHtml'), /\(f\.state==='cancelled'\?' cx':''\)/);
   assert.match(APP, /\.fcard\.cx\{background:var\(--cx\);/);
-  assert.match(APP, /\.fcard\.cx \.hh\{text-decoration:line-through;/);
+  assert.match(APP, /\.fcard\.cx \.hh::after/, 'the cancelled time is struck');
   // the gate has its own box, TBD until the airport names one, none when cancelled
   const slot = new Function('T', 'esc', fn('slotHtml') + '; return slotHtml;')((k) => ({ gate: 'Gate', belt: 'Belt', tbd: 'TBD' })[k], String);
   assert.match(slot({ gate: 'A12', state: 'scheduled' }, false), /<div class="k">Gate<\/div><div class="v l3">A12<\/div>/);
@@ -435,4 +444,270 @@ test('the airport\'s logo is drawn at its own width, white lettering at night, n
   assert.equal(night.YSJ, 'own');
   assert.equal(night.SYD, 'code');
   for (const v of Object.values(night)) assert.ok(v === 'own' || v === 'code', v);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// vNEXT — THE PHONE, SECOND PASS (the design and function reviews of the
+// companion app, 2026-10-12)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('the cutoff runs first, and a duplicate is the same flight on the same day', () => {
+  // The duplicate check matched number and time only, before the cutoff:
+  // yesterday's copy won it and was then cut as gone, and today's flight went
+  // with it (YUL departures: 224 of 439 shown). At 22:30 Moncton showed no
+  // departures while the feed carried 9 for the morning.
+  const cardList = new Function(fn('cardList') + '; return cardList;')();
+  const now = Date.parse('2026-10-12T22:30:00-03:00');
+  const H = 3600000;
+  const mk = (flight, date, time, ts) => ({ flight, schedDate: date, schedTime: time, _ts: ts, _effTs: ts });
+  const day = 24 * H;
+  const feed = [
+    mk('UA3549', '2026-10-11', '16:55', now - 5.5 * H - day),   // yesterday's copy first
+    mk('UA3549', '2026-10-12', '16:55', now - 5.5 * H + 6 * H),  // (an evening flight, still to go)
+    mk('AC1983', '2026-10-12', '05:25', now - 17 * H),          // this morning's: gone
+    mk('AC1983', '2026-10-13', '05:25', now + 7 * H),           // tomorrow's
+    mk('AC1983', '2026-10-13', '05:25', now + 7 * H),           // the same flight twice in the feed
+    mk('PD2294', '2026-10-13', '06:10', now + 7.75 * H)
+  ];
+  const out = cardList(feed, 'dep', now);
+  assert.deepEqual(out.map((f) => f.flight + ' ' + f.schedDate), ['UA3549 2026-10-12', 'AC1983 2026-10-13', 'PD2294 2026-10-13']);
+  // the evening: nothing left today, the morning's flights are the list
+  const eve = cardList([mk('AC1983', '2026-10-12', '05:25', now - 17 * H), mk('AC1983', '2026-10-13', '05:25', now + 7 * H)], 'dep', now);
+  assert.equal(eve.length, 1);
+  assert.equal(eve[0].schedDate, '2026-10-13');
+  // fetchDir hands its rows to it; the old key is gone
+  assert.match(src('fetchDir'), /return cardList\(all,dir,Date\.now\(\)\);/);
+  assert.doesNotMatch(APP, /const k=f\.flight\+'\|'\+f\.schedTime;/);
+});
+
+test('at Moncton the app wears its boards\' font and band', () => {
+  const vm = require('node:vm');
+  const ctx = {};
+  vm.runInNewContext(line(/^const BAND_OWN=\{[^\n]*\};/m) + line(/^const FONT_STACK=\{[^\n]*\};/m)
+    + fn('_wcr') + fn('bandOk') + fn('brandOf') + ';this.brandOf=brandOf;this.bandOk=bandOk;this.BAND_OWN=BAND_OWN;this.FONT_STACK=FONT_STACK;', ctx);
+  // Moncton: the board's own Acadian red, whatever its config's header colour
+  const yqm = ctx.brandOf('YQM', { font: 'possibility', theme: 'custom', customColors: { hdr: '#28364d' }, logo: { url: 'https://x/l.svg' } });
+  assert.equal(yqm.band, '#D21034');
+  assert.equal(yqm.font, 'possibility');
+  assert.match(ctx.FONT_STACK.possibility, /^'Possibility','Bricolage Grotesque'/);
+  const OV = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.css'), 'utf8');
+  const m = OV.match(/body\.fids-ap-YQM \.fids-banner-board \{[^}]*background:\s*(#[0-9A-Fa-f]{6})/);
+  assert.ok(m, 'the board\'s Moncton band rule');
+  assert.equal(ctx.BAND_OWN.YQM.toLowerCase(), m[1].toLowerCase(), 'the same red as the board');
+  // elsewhere the config's header colour (the board's --fids-banner-bg)
+  assert.equal(ctx.brandOf('YUL', { theme: 'custom', customColors: { hdr: '#27272a' } }).band, '#27272a');
+  // a band white words cannot read on is not worn
+  assert.equal(ctx.brandOf('XXX', { theme: 'custom', customColors: { hdr: '#f2d16b' } }).band, '');
+  for (const c of Object.values(ctx.BAND_OWN)) assert.ok(ctx.bandOk(c), c);
+  // the face is the licensed webfont the Worker serves, never a file in the repo
+  assert.match(APP, /@font-face\{font-family:'Possibility';[^}]*src:url\('fonts\/Possibility-Bold-Web\.woff2'\)/);
+  assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/fonts/Possibility-Bold-Web.woff2')));
+  assert.match(APP, /body\{[^}]*font-family:var\(--app-font\);/);
+  // set from the config, remembered for the next visit
+  const ab = src('applyBrand');
+  assert.match(ab, /root\.style\.setProperty\('--band',\(b&&b\.band\)\|\|''\);/);
+  assert.match(ab, /root\.style\.setProperty\('--app-font',fs\|\|''\);/);
+  assert.match(src('loadBrand'), /brandPut\(code,b\);/);
+  assert.match(src('setAirport'), /applyBrand\(code,brandGet\(code\),true\);/);
+});
+
+test('the header names the airport once', () => {
+  assert.doesNotMatch(APP, /class="meta"|id="apIata"/);
+  assert.match(APP, /\.brand \.apn:empty,\.brand\.has-logo \.apn\{display:none;\}/);
+  // the name only where it says more than the code ('XYZ XYZ XYZ')
+  assert.match(src('paintHeader'), /\(nm&&nm!==code&&nm!==dispIata\(code\)\)\?nm:''/);
+});
+
+test('the tabs fit a 320 px phone, with the boards\' own icons', () => {
+  assert.match(APP, /\.tic\.dep\{-webkit-mask-image:url\('logos\/icons\/takeoff\.svg'\)/);
+  assert.match(APP, /\.tic\.arr\{-webkit-mask-image:url\('logos\/icons\/landing\.svg'\)/);
+  assert.match(APP, /<button id="segDep"[^>]*><span class="tic dep"/);
+  assert.doesNotMatch(APP.slice(APP.indexOf('<button id="segDep"'), APP.indexOf('</div>', APP.indexOf('<button id="segDep"'))), /<svg/);
+  assert.match(APP, /@media \(max-width:359\.98px\)\{\n\s*\.seg button\{padding:0 4px;gap:0;\}\n\s*\.seg button \.tic\{display:none;\}/);
+  for (const f of ['takeoff', 'landing', 'plane']) assert.ok(fs.existsSync(path.join(ROOT, 'fids-current/logos/icons/' + f + '.svg')), f);
+  // the route card's plane is the boards' own, in the page's ink, not app blue
+  assert.match(APP, /\.dt-route \.pl\{[^}]*color:var\(--txt\);/);
+  assert.match(src('openFlight'), /<span class="pl"><span class="tic pln"/);
+});
+
+test('a place is never cut inside its name', () => {
+  // 'Toronto · Billy / Bishop' at 360 px; 'Toronto · / Pearson' at 320. The
+  // city and the airport's own name are two units; the '·' rides on the second.
+  const vm = require('node:vm');
+  const ctx = { BoardStrings: BS, CURAP: 'YQM', LANG: 'en' };
+  ctx.window = ctx;   // as in a page: window's properties are globals
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'fids-current/js/shared-names.js'), 'utf8'), ctx);
+  vm.runInNewContext('var langRes=function(){return LANG;};' + fn('esc') + line(/^const CITY=\{[\s\S]*?\};/m).replace('const CITY', 'var CITY')
+    + fn('_tcCity') + line(/^if\(window\.FIDS_SHARED_CITY\)[^\n]*/m) + fn('apSub') + fn('placeOf') + fn('cityOf') + fn('placeHtml'), ctx);
+  assert.equal(ctx.placeHtml(ctx.placeOf('YTZ')), '<span class="pl-in"><span class="pl-c">Toronto</span><span class="pl-q"><span>Billy Bishop</span></span></span>');
+  assert.equal(ctx.placeHtml(ctx.placeOf('YOW')), '<span class="pl-in"><span class="pl-c">Ottawa</span></span>');
+  assert.equal(ctx.cityOf({ cityIata: 'LGA' }), 'New York · LaGuardia', 'the board\'s name, not the catalogue\'s');
+  assert.equal(ctx.cityOf({ cityIata: 'ORD' }), "Chicago · O'Hare");
+  ctx.LANG = 'fr';
+  assert.equal(ctx.cityOf({ cityIata: 'YTZ' }), 'Toronto · Billy-Bishop', 'a person\'s name, hyphenated in French');
+  ctx.LANG = 'ja';
+  assert.equal(ctx.cityOf({ cityIata: 'DXB' }).split(' · ')[1], BS.bs('apIntl', 'ja'));
+  // the units: a line breaks between them only; the dot is drawn in the
+  // room the line is shifted by, so a second line does not start with it
+  assert.match(APP, /\.pl-c,\.pl-q\{display:inline-block;max-width:100%;/);
+  assert.match(APP, /\.fcard \.city\{[^}]*overflow:hidden;/);
+  assert.match(APP, /\.pl-in\{display:block;margin-inline-start:-\.8em;\}/);
+  assert.match(src('rowHtml'), /placeHtml\(placeOf\(f\.cityIata,f\.cityName\)\)/);
+  assert.match(src('openFlight'), /placeHtml\(placeOf\(f\.cityIata,f\.cityName\)\)/);
+  // no city in the app's own table carries an airport's name any more
+  for (const [k, v] of Object.entries(ctx.CITY)) assert.doesNotMatch(String(v), / · /, k);
+});
+
+test('the shared airport names are the board\'s own, and cannot drift', () => {
+  const CORE = fs.readFileSync(path.join(ROOT, 'fids-current/js/fids-core.js'), 'utf8');
+  const at = CORE.indexOf('\nconst AP = {');
+  assert.ok(at >= 0);
+  let i = CORE.indexOf('{', at), d = 0, j = i;
+  for (; j < CORE.length; j++) {
+    const ch = CORE[j];
+    if (ch === "'" || ch === '"') { const q = ch; for (j++; j < CORE.length && CORE[j] !== q; j++) if (CORE[j] === '\\') j++; continue; }
+    if (ch === '/' && CORE[j + 1] === '/') { j = CORE.indexOf('\n', j); continue; }
+    if (ch === '{') d++; else if (ch === '}' && --d === 0) break;
+  }
+  const AP = new Function('return ' + CORE.slice(i, j + 1))();
+  const want = {};
+  for (const k of Object.keys(AP)) { const a = AP[k]; if (a && a.subKey) want[k] = { subKey: a.subKey }; else if (a && a.sub) want[k] = a.sub; }
+  const win = {};
+  require('node:vm').runInNewContext(fs.readFileSync(path.join(ROOT, 'fids-current/js/shared-names.js'), 'utf8'), { window: win });
+  assert.deepEqual(JSON.parse(JSON.stringify(win.FIDS_SHARED_SUBLINE)), want, 'shared-names.js FIDS_SHARED_SUBLINE is fids-core.js AP sub/subKey');
+  const person = (CORE.match(/var AIRPORT_SUBLINE_PERSON = (\[[^\]]*\]);/) || [])[1];
+  assert.deepEqual(JSON.parse(JSON.stringify(win.FIDS_SHARED_SUBLINE_PERSON)), new Function('return ' + person)());
+  for (const v of Object.values(want)) if (typeof v === 'object') for (const L of BS.LANGS) assert.ok(BS.bs(v.subKey, L), v.subKey + ' ' + L);
+});
+
+test('the airport picker speaks the app\'s language, one bracket per line', () => {
+  const keys = new Function(line(/^const APP_KEY=\{[^\n]*\};/m) + '; return APP_KEY;')();
+  const reg = new Function(line(/^const REGION_KEY=\{[^\n]*\};/m) + '; return REGION_KEY;')();
+  for (const r of ['CA', 'US', 'INT']) for (const L of BS.LANGS) assert.ok(BS.bs(keys[reg[r]], L), r + ' ' + L);
+  assert.match(src('buildAirportOptions'), /'<optgroup label="'\+esc\(T\(REGION_KEY\[r\]\)\)\+'">'/);
+  assert.match(src('applyLang'), /buildAirportOptions\(\);/);
+  assert.doesNotMatch(APP, /Sun & International|REGION_LABEL/);
+  // no catalogue name carries a bracket of its own
+  const cat = APP.slice(APP.indexOf('const AIRPORTS={'), APP.indexOf('};', APP.indexOf('const AIRPORTS={')));
+  for (const m of cat.matchAll(/\n\s*([A-Z0-9]{3}):\{n:(?:'([^']+)'|"([^"]+)")/g)) assert.doesNotMatch(m[2] || m[3], /[()]/, m[1]);
+  assert.match(src('buildAirportOptions'), /esc\(pickerName\(k\)\)\+' \('\+esc\(dispIata\(k\)\)\+'\)<\/option>'/);
+});
+
+test('the status keeps its line: one layout for the whole list', () => {
+  // At 340 px and below the pill fell to a line of its own on every row (rows
+  // of 88, 97, 112 and 121 px); at 360 px in Spanish, Portuguese and Italian too.
+  const rh = src('rowHtml');
+  assert.match(rh, /'<div class="l1">.*\+pill\+'<\/div>'/);
+  assert.match(rh, /'<div class="sub"><span class="sx">.*<\/span>'\+pill\+'<\/div>'/);
+  assert.match(APP, /\.fcard \.sub \.st\{display:none;\}/);
+  assert.match(APP, /\.cards\.tight \.fcard \.l1 \.st\{display:none;\}/);
+  assert.match(APP, /\.cards\.tight \.fcard \.sub \.st\{display:inline-flex;\}/);
+  assert.match(APP, /\.cards\.tight \.slot\{grid-row:1 \/ 3;\}/);
+  const fr = src('fitRows');
+  assert.match(fr, /if\(window\.innerWidth<360\)\{c\.classList\.add\('tight'\);return;\}/);
+  assert.match(fr, /offsetHeight>34/);
+  assert.match(src('render'), /fitRows\(true\);/);
+  assert.match(src('showMore'), /fitRows\(false\);/);
+  // a small phone: 62 px time column with AM/PM under it, the mark capped at 88 x 13
+  assert.match(APP, /@media \(max-width:359\.98px\)\{\n\s*\.fcard\{grid-template-columns:62px minmax\(0,1fr\) auto;/);
+  assert.match(APP, /\.fcard \.hh small\{display:block;/);
+  assert.match(APP, /img\.wm\{max-width:88px;height:13px;\}/);
+});
+
+test('one line through the whole time, never text-decoration', () => {
+  // the line struck '7:10' and ran under the smaller AM, which read as a typo
+  assert.doesNotMatch(APP, /text-decoration:\s*line-through/);
+  assert.match(APP, /\.fcard \.was::after,\.fcard\.cx \.hh::after,\.dt-cell \.v\.strike \.ltr::after,\.dt-cell \.v\.was \.ltr::after\{content:'';position:absolute;left:-1px;right:-1px;top:\.68em;height:2px;/);
+  assert.match(APP, /\.fcard\.cx \.hh\{display:inline-block;position:relative;\}/);
+});
+
+test('the gate box\'s word is 10 px or more, in every language', () => {
+  // it was 8.5 px, and 7.5 px for CARROUSEL
+  const sizes = [...APP.matchAll(/\.slot \.k(?:\.[a-z]+)?\{[^}]*font-size:([\d.]+)px/g)].map((m) => +m[1]);
+  assert.ok(sizes.length >= 1);
+  for (const s of sizes) assert.ok(s >= 10, s + 'px');
+  assert.doesNotMatch(APP, /\.slot \.k\.long|' long':''/);
+  // the column takes the word's width (CARROUSEL, ターンテーブル) and no value widens it
+  assert.match(APP, /\.fcard\{display:grid;grid-template-columns:74px minmax\(0,1fr\) auto;/);
+  assert.match(APP, /\.slot\{[^}]*min-width:58px;max-width:88px;/);
+  assert.match(APP, /\.slot \.v\{contain:inline-size;/);
+  // the longest label at 10 px with its spacing fits the widest box
+  for (const L of BS.LANGS) for (const k of ['gateWord', 'appBelt']) {
+    const w = [...BS.bs(k, L)].reduce((a, ch) => a + (ch.charCodeAt(0) > 0x2e80 ? 10 : 7.2), 0) * 1.06;
+    assert.ok(w + 8 <= 88, k + ' ' + L + ' ' + w.toFixed(1));
+  }
+});
+
+test('a flight that has gone is quieter in ink, not faded, and departures fold it', () => {
+  assert.doesNotMatch(APP, /\.fcard\.done\{opacity/);
+  assert.match(APP, /\.fcard\.done \.hh,\.fcard\.done \.city,\.fcard\.done \.sub b\{color:var\(--muted\);\}/);
+  // --muted on the card is held to 4.5:1 by the contrast test above
+  const r = src('render');
+  assert.match(r, /else if\(!isArr&&!SHOW_GONE\)\{const left=list\.filter\(f=>!isDone\(f\)\);/, 'departures only: a landed flight is the one whose belt people want');
+  assert.match(src('goneHtml'), /BoardStrings\.fmt\('appGoneDep',L,\{N:ns\},true\)/);
+  for (const L of BS.LANGS) assert.match(BS.bs('appGoneDep', L), /\{N\}/, L);
+  assert.match(src('startView'), /SHOW_GONE=false;/);
+});
+
+test('the detail: flat hero, night colours for a light carrier, nothing half-empty', () => {
+  assert.doesNotMatch(APP, /\.dt-hero::before/);
+  assert.doesNotMatch(APP, /\.dt-cell\.key\{background/);
+  assert.match(APP, /\.dt-grid > \.dt-cell:last-child:nth-child\(odd\)\{grid-column:1 \/ -1;\}/);
+  assert.match(APP, /:root\[data-theme="dark"\] \.dt-hero\{background:var\(--hero-n,var\(--hero,#0b1f3a\)\);/);
+  const ABC = { PD: { r1: '#EFE8DA', r1Text: '#152C53', r2: '#152C53' }, AC: { r1: '#0A0A0A', r1Text: '#FFFFFF' } };
+  const hc = new Function('window', 'AIRLINE_BRAND_COLORS', 'WM_INK', fn('_lum') + fn('heroColors') + '; return heroColors;')(
+    { AIRLINE_BRAND_COLORS: ABC }, ABC, {});
+  assert.deepEqual(hc('PD'), { bg: '#EFE8DA', ink: '#152C53', light: true, night: '#152C53' });
+  assert.equal(hc('AC').night, '');
+  // both marks drawn on a light carrier's hero; the theme shows one
+  const hb = new Function('wmUrls', 'esc', 'tileHtml', '_wmOnlyWhite', 'WM_INK', fn('heroBrand') + '; return heroBrand;')(
+    () => ['/d.svg', '/l.svg'], String, () => '', () => false, {});
+  assert.match(hb('PD', 'Porter', true), /<img class="wm wm-l" src="\/d\.svg"[^>]*><img class="wm wm-d" src="\/l\.svg"/);
+  assert.doesNotMatch(hb('AC', 'Air Canada', false), /wm-l/);
+});
+
+test('the detail carries what the boards show: the weather there, the aircraft before it flies', () => {
+  // the boards' own sources: the site's /wxcurrent (MET Norway) by the
+  // airport's position, and the Worker's /acinfo — never FR24 from the app
+  assert.match(src('_wxPump'), /fetch\('\/wxcurrent\?location='\+p\[0\]\+','\+p\[1\]\)/);
+  assert.match(src('_coords'), /js\/airport-coords\.js/);
+  assert.match(src('acKick'), /fetch\(APP_PROXY\+'\/acinfo\?f='/);
+  assert.match(src('acKick'), /reg:j\.basis==='feed'\?String\(j\.reg\|\|''\):''/, 'a registration only from the far end\'s own feed');
+  assert.doesNotMatch(APP, /(['"])(?:(?!\1)[^\n])*(?:fr24|flightradar)(?:(?!\1)[^\n])*\1/i, 'no FR24 address anywhere in the app');
+  // MET's credit wherever a temperature shows
+  assert.match(src('wxPaint'), /BoardStrings\.bs\('wxCredit',langRes\(\)\)/);
+  assert.match(src('openFlight'), /BoardStrings\.bs\('wxCredit',langRes\(\)\)/);
+  assert.match(src('rowHtml'), /wxHtml\(f\.cityIata\)/);
+  // an airport whose boards hide the weather hides it here
+  assert.match(APP, /\.no-wx \.wx,\.no-wx #wxCredit,\.no-wx \.dt-credit\{display:none !important;\}/);
+  assert.match(src('applyBrand'), /WX_ON=!\(b&&b\.hw\); root\.classList\.toggle\('no-wx',!WX_ON\);/);
+  // the type /acinfo answers with reads as a name
+  const AT = new Function(line(/^const ACTYPE=\{[\s\S]*?\};/m) + '; return ACTYPE;')();
+  assert.equal(AT.DH8C, 'De Havilland Dash 8-300');
+});
+
+test('at 320 px both tabs and every gate box word fit, in all nine languages and both faces', () => {
+  // Measured on the rendered app (tests/fixtures/app-phone-fit-320.json):
+  // English 'Departures' ran 2 px past its white pill at 320 px. The CSS the
+  // measurement was taken with is held too, so a change to it is measured again.
+  const fit = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/app-phone-fit-320.json'), 'utf8'));
+  const runs = Object.entries(fit.runs);
+  assert.deepEqual(runs.map(([k]) => k).sort(), ['YQM-arr', 'YQM-dep', 'YUL-arr', 'YUL-dep']);
+  assert.deepEqual([...new Set(runs.map(([, r]) => r.font))].sort(), ['Bricolage Grotesque', 'Possibility']);
+  for (const [k, r] of runs) {
+    assert.equal(r.w, 320, k);
+    assert.deepEqual(Object.keys(r.langs).sort(), [...BS.LANGS].sort(), k + ': every language measured');
+    for (const [L, m] of Object.entries(r.langs)) {
+      for (const t of ['dep', 'arr']) {
+        assert.equal(m[t].over, false, `${k} ${L} ${t} tab overflows`);
+        assert.ok(m[t].text <= m[t].room, `${k} ${L} ${t}: ${m[t].text} > ${m[t].room}`);
+      }
+      assert.ok(m.slotK.px >= 10, `${k} ${L} gate word ${m.slotK.px}px`);
+      assert.ok(m.slotK.w <= m.slotK.box, `${k} ${L} gate word ${m.slotK.w} in a ${m.slotK.box} box`);
+      // the word measured is the store's
+      assert.equal(m.slotK.word, BS.bs(k.endsWith('arr') ? 'appBelt' : 'gateWord', L), k + ' ' + L);
+    }
+  }
+  assert.match(APP, /\.seg button\{[^}]*padding:0 8px;[^}]*font-size:14px;font-weight:750;/);
+  assert.match(APP, /\.slot \.k\{font-size:10px;letter-spacing:\.06em;/);
 });

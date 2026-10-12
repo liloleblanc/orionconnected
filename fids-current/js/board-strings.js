@@ -750,6 +750,21 @@
     appMembers: { en: 'Members', fr: 'Membres', es: 'Miembros', de: 'Mitglieder', it: 'Membri', pt: 'Membros', ja: '会員', zh: '会员', ar: 'الأعضاء' },
     appStEarly: { en: 'Early', fr: 'En avance', es: 'Adelantado', de: 'Verfrüht', it: 'In anticipo', pt: 'Adiantado', ja: '早着', zh: '提前', ar: 'مبكر' },
     appLoading: { en: 'Loading flights…', fr: 'Chargement des vols…', es: 'Cargando vuelos…', de: 'Flüge werden geladen…', it: 'Caricamento dei voli…', pt: 'Carregando voos…', ja: 'フライトを読み込み中…', zh: '正在加载航班…', ar: 'جارٍ تحميل الرحلات…' },
+    // vNEXT — the app's airport picker: its three group headings (they were
+    // English in every language, the third 'Sun & International', which named
+    // none of what it holds: London, Dublin, Edinburgh, Reykjavík, Zurich,
+    // Sydney and Hobart, every airport outside Canada and the United States
+    // with a feed of ours).
+    appRegionCA: { $ctx: 'the airport picker: the group of Canadian airports', en: 'Airports in Canada', fr: 'Aéroports au Canada', es: 'Aeropuertos de Canadá', de: 'Flughäfen in Kanada', it: 'Aeroporti in Canada', pt: 'Aeroportos no Canadá', ja: 'カナダの空港', zh: '加拿大机场', ar: 'مطارات في كندا',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    appRegionUS: { $ctx: 'the airport picker: the group of airports in the United States', en: 'Airports in the United States', fr: 'Aéroports aux États-Unis', es: 'Aeropuertos en Estados Unidos', de: 'Flughäfen in den USA', it: 'Aeroporti negli Stati Uniti', pt: 'Aeroportos nos Estados Unidos', ja: 'アメリカの空港', zh: '美国机场', ar: 'مطارات في الولايات المتحدة',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    appRegionINT: { $ctx: 'the airport picker: the group of airports outside Canada and the United States', en: 'Airports in other countries', fr: 'Aéroports dans d’autres pays', es: 'Aeropuertos en otros países', de: 'Flughäfen in anderen Ländern', it: 'Aeroporti in altri paesi', pt: 'Aeroportos em outros países', ja: 'その他の国の空港', zh: '其他国家的机场', ar: 'مطارات في دول أخرى',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // vNEXT — the app's departures list folds the flights that have already
+    // left into one line above it, which opens them; {N} is how many
+    appGoneDep: { $ctx: 'the departures list: one line folding the flights that have already left, with their count', en: 'Departed ({N})', fr: 'Vols partis ({N})', es: 'Vuelos que ya salieron ({N})', de: 'Bereits abgeflogen ({N})', it: 'Voli già partiti ({N})', pt: 'Voos que já partiram ({N})', ja: '出発済みの便（{N}）', zh: '已出发航班（{N}）', ar: 'رحلات غادرت ({N})',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     cardBeforeBoard: { en: 'Before you board', fr: 'Avant l’embarquement', es: 'Antes de embarcar', de: 'Vor dem Einsteigen', it: 'Prima dell’imbarco', pt: 'Antes do embarque', ja: 'ご搭乗の前に', zh: '登机前须知', ar: 'قبل الصعود إلى الطائرة',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     closeMinBefore: { en:'{MIN} min before departure', fr:'{MIN} min avant le départ', es:'{MIN} min antes de la salida', de:'{MIN} Min. vor Abflug', it:'{MIN} min prima della partenza', pt:'{MIN} min antes da partida', ja:'出発{MIN}分前', zh:'起飞前{MIN}分钟', ar:'قبل {MIN} دقيقة من المغادرة',

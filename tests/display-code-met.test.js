@@ -274,7 +274,7 @@ test('tc() cases the city and keeps the code a code: "Montreal | MET", never "Mo
 });
 
 test('an airport logo\'s alt text names the display code too (screen readers read it out)', () => {
-  assert.match(read('app.html'), /<img src="'\+u\+'" alt="'\+esc\(dispIata\(code\)\)\+'"/);
+  assert.match(read('app.html'), /<img src="'\+(?:esc\(u\)|u)\+'" alt="'\+esc\(dispIata\(code\)\)\+'"/);
   assert.match(read('js/fids-v2.js'), /alt="' \+ \(\(window\.fidsDisplayIata \? window\.fidsDisplayIata\(iata\) : iata\) \|\| ''\) \+ '"/);
 });
 

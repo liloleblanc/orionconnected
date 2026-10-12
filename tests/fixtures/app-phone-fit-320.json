@@ -1,0 +1,677 @@
+{
+ "_about": "Measured in headless Chrome at 320 x 700 on 2026-10-12 (scratchpad tool fit9.js): app.html at Moncton (Possibility) and Montreal-Trudeau (Bricolage Grotesque), departures (gate) and arrivals (belt), every board language. text = the tab word's width, room = the tab's width inside its padding; slotK = the gate box's word (font px, width) and the box. tests/companion-app.test.js holds every one to fit.",
+ "runs": {
+  "YQM-dep": {
+   "w": 320,
+   "font": "Possibility",
+   "langs": {
+    "en": {
+     "dep": {
+      "text": 76.8,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 52.2,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Gate",
+      "w": 30,
+      "box": 58
+     }
+    },
+    "fr": {
+     "dep": {
+      "text": 54.8,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 56.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Porte",
+      "w": 38,
+      "box": 58
+     }
+    },
+    "es": {
+     "dep": {
+      "text": 48.8,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 60.5,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Puerta",
+      "w": 44,
+      "box": 58
+     }
+    },
+    "de": {
+     "dep": {
+      "text": 52,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 61.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Gate",
+      "w": 30,
+      "box": 58
+     }
+    },
+    "it": {
+     "dep": {
+      "text": 61,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 37.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Gate",
+      "w": 30,
+      "box": 58
+     }
+    },
+    "pt": {
+     "dep": {
+      "text": 57.6,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 66.6,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Portão",
+      "w": 46,
+      "box": 58
+     }
+    },
+    "ja": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "ゲート",
+      "w": 32,
+      "box": 58
+     }
+    },
+    "zh": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "登机口",
+      "w": 32,
+      "box": 58
+     }
+    },
+    "ar": {
+     "dep": {
+      "text": 48.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 45.9,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "البوابة",
+      "w": 27,
+      "box": 58
+     }
+    }
+   }
+  },
+  "YQM-arr": {
+   "w": 320,
+   "font": "Possibility",
+   "langs": {
+    "en": {
+     "dep": {
+      "text": 76.8,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 52.2,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Belt",
+      "w": 28,
+      "box": 58
+     }
+    },
+    "fr": {
+     "dep": {
+      "text": 54.8,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 56.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Carrousel",
+      "w": 67,
+      "box": 75
+     }
+    },
+    "es": {
+     "dep": {
+      "text": 48.8,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 60.5,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Banda",
+      "w": 39,
+      "box": 58
+     }
+    },
+    "de": {
+     "dep": {
+      "text": 52,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 61.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Band",
+      "w": 31,
+      "box": 58
+     }
+    },
+    "it": {
+     "dep": {
+      "text": 61,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 37.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Nastro",
+      "w": 46,
+      "box": 58
+     }
+    },
+    "pt": {
+     "dep": {
+      "text": 57.6,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 66.6,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Esteira",
+      "w": 47,
+      "box": 58
+     }
+    },
+    "ja": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "ターンテーブル",
+      "w": 74,
+      "box": 81
+     }
+    },
+    "zh": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "转盘",
+      "w": 22,
+      "box": 58
+     }
+    },
+    "ar": {
+     "dep": {
+      "text": 48.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 45.9,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "السير",
+      "w": 23,
+      "box": 58
+     }
+    }
+   }
+  },
+  "YUL-dep": {
+   "w": 320,
+   "font": "Bricolage Grotesque",
+   "langs": {
+    "en": {
+     "dep": {
+      "text": 78.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 53.8,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Gate",
+      "w": 29,
+      "box": 58
+     }
+    },
+    "fr": {
+     "dep": {
+      "text": 55,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 58.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Porte",
+      "w": 36,
+      "box": 58
+     }
+    },
+    "es": {
+     "dep": {
+      "text": 50.3,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 60.9,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Puerta",
+      "w": 43,
+      "box": 58
+     }
+    },
+    "de": {
+     "dep": {
+      "text": 53.7,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 64.5,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Gate",
+      "w": 29,
+      "box": 58
+     }
+    },
+    "it": {
+     "dep": {
+      "text": 61.9,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 38.2,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Gate",
+      "w": 29,
+      "box": 58
+     }
+    },
+    "pt": {
+     "dep": {
+      "text": 58.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 68.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Portão",
+      "w": 44,
+      "box": 58
+     }
+    },
+    "ja": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "ゲート",
+      "w": 32,
+      "box": 58
+     }
+    },
+    "zh": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "登机口",
+      "w": 32,
+      "box": 58
+     }
+    },
+    "ar": {
+     "dep": {
+      "text": 48.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 45.9,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "البوابة",
+      "w": 27,
+      "box": 58
+     }
+    }
+   }
+  },
+  "YUL-arr": {
+   "w": 320,
+   "font": "Bricolage Grotesque",
+   "langs": {
+    "en": {
+     "dep": {
+      "text": 78.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 53.8,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Belt",
+      "w": 26,
+      "box": 58
+     }
+    },
+    "fr": {
+     "dep": {
+      "text": 55,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 58.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Carrousel",
+      "w": 66,
+      "box": 73
+     }
+    },
+    "es": {
+     "dep": {
+      "text": 50.3,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 60.9,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Banda",
+      "w": 39,
+      "box": 58
+     }
+    },
+    "de": {
+     "dep": {
+      "text": 53.7,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 64.5,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Band",
+      "w": 32,
+      "box": 58
+     }
+    },
+    "it": {
+     "dep": {
+      "text": 61.9,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 38.2,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Nastro",
+      "w": 45,
+      "box": 58
+     }
+    },
+    "pt": {
+     "dep": {
+      "text": 58.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 68.3,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "Esteira",
+      "w": 47,
+      "box": 58
+     }
+    },
+    "ja": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "ターンテーブル",
+      "w": 74,
+      "box": 81
+     }
+    },
+    "zh": {
+     "dep": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 28,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "转盘",
+      "w": 22,
+      "box": 58
+     }
+    },
+    "ar": {
+     "dep": {
+      "text": 48.2,
+      "room": 90,
+      "over": false
+     },
+     "arr": {
+      "text": 45.9,
+      "room": 90,
+      "over": false
+     },
+     "slotK": {
+      "px": 10,
+      "word": "السير",
+      "w": 23,
+      "box": 58
+     }
+    }
+   }
+  }
+ }
+}

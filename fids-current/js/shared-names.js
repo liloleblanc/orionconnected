@@ -1110,3 +1110,24 @@ window.FIDS_SHARED_EMBLEM = {
   "DL":"/logos/airlines/us-major/delta-widget-red.svg", "HA":"/logos/airlines/us-major/hawaiian-pualani.svg", "AA":"/logos/airlines/us-major/american-flight-symbol.svg", "UA":"/logos/airline-tiles/UA-globe-glossy.png?v=22350",
   "LA":"/logos/airlines/asian-other/latam-spark.svg", "AC":"/logos/symbols/airlines/AC.svg", "WS":"/logos/symbols/airlines/WS.svg"
 };
+
+// vNEXT — THE AIRPORT'S OWN NAME AFTER ITS CITY, as the boards write it
+// (fids-core.js AP: each airport's `sub`, or `subKey`, the store's entry for an
+// airport named by a description), for the cities with two or more of the
+// airports we show: 'Toronto · Billy Bishop', 'New York · LaGuardia'. The app
+// read 'New York LaGuardia' from its own catalogue beside the board's
+// 'Toronto · Pearson'. GENERATED from AP; tests/companion-app.test.js holds the
+// two equal. _PERSON: the names that honour a person, hyphenated in French
+// (AIRPORT_SUBLINE_PERSON).
+window.FIDS_SHARED_SUBLINE = {
+  AEP:"Aeroparque", ARN:"Arlanda", BFI:"Boeing Field", BFS:{subKey:"apIntl"}, BHD:"City", BKK:"Suvarnabhumi",
+  BMA:"Bromma", CDG:"Charles de Gaulle", CGH:"Congonhas", CIA:"Ciampino", DAL:"Love Field",
+  DCA:"Reagan National", DMK:"Don Mueang", DWC:"Al Maktoum", DXB:{subKey:"apIntl"}, EZE:"Ezeiza",
+  FCO:"Fiumicino", GIG:"Galeão", GMP:"Gimpo", GRU:"Guarulhos", HND:"Haneda", HOU:"Hobby", IAD:"Dulles",
+  IAH:"Intercontinental", ICN:"Incheon", IST:{subKey:"apIstanbul"}, ITM:"Itami", JFK:"Kennedy", KIX:"Kansai",
+  LBG:"Le Bourget", LCY:"City", LGA:"LaGuardia", LGW:"Gatwick", LHR:"Heathrow", LIN:"Linate", LTN:"Luton",
+  MDW:"Midway", MXP:"Malpensa", NRT:"Narita", ORD:"O'Hare", ORY:"Orly", PEK:"Capital International",
+  PKX:"Daxing", PVG:"Pudong", SAW:"Sabiha Gökçen", SDU:"Santos Dumont", SEA:"Sea-Tac", SHA:"Hongqiao",
+  STN:"Stansted", YHU:"Métropolitain", YTZ:"Billy Bishop", YUL:"Trudeau", YYZ:"Pearson"
+};
+window.FIDS_SHARED_SUBLINE_PERSON = ["YTZ", "CDG", "SDU", "SAW", "DWC"];

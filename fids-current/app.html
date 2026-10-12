@@ -22,6 +22,13 @@
      site's own files (the boards' font.css faces), not Inter from Google */
   @font-face{font-family:'Bricolage Grotesque';font-weight:200 800;font-stretch:75% 100%;font-style:normal;font-display:swap;src:url('fonts/bricolage/BricolageGrotesque-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
   @font-face{font-family:'Bricolage Grotesque';font-weight:200 800;font-stretch:75% 100%;font-style:normal;font-display:swap;src:url('fonts/bricolage/BricolageGrotesque-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+  /* vNEXT — an airport whose boards are set in Possibility (Moncton: its
+     airport config says font:"possibility") is set in it here too, as the
+     board's font.css does: the same licensed webfont, which the Worker
+     serves at this path on .com, .ca and .app (never in the repository), one
+     bold weight for every weight asked, Bricolage behind it for what it does
+     not cover. Loaded only when an airport asks for it (--app-font). */
+  @font-face{font-family:'Possibility';font-weight:100 900;font-style:normal;font-display:swap;src:url('fonts/Possibility-Bold-Web.woff2') format('woff2');}
   /* vNEXT — THE BOARD IN YOUR POCKET.
      The app takes the phone board's own frame (css/phone.css, v24029): the
      airport's logo and clock on the page's surface, then the board's navy band
@@ -47,6 +54,7 @@
     --radius:14px;
     --shadow:0 1px 2px rgba(11,31,58,.05);
     --hdr-h:112px;
+    --app-font:'Bricolage Grotesque',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   }
   /* ── Night: the boards' navy (forced, or auto via system) ───── */
   :root[data-theme="dark"]{
@@ -83,7 +91,7 @@
   html,body{margin:0;overscroll-behavior-y:none;}
   body{
     background:var(--bg); color:var(--txt);
-    font-family:'Bricolage Grotesque',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-family:var(--app-font);
     -webkit-font-smoothing:antialiased; letter-spacing:0;
     min-height:100dvh;
     padding-bottom:calc(env(safe-area-inset-bottom) + 24px);
@@ -91,7 +99,7 @@
   svg{display:block;}
   .ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;}
   button{font-family:inherit;cursor:pointer;}
-  button:focus-visible,.brand select:focus-visible+.meta,.search input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  button:focus-visible,.brand:has(select:focus-visible),.search input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
   /* ── The header: logo and clock, then the band ─────────────── */
   .topbar{position:sticky;top:0;z-index:20;background:var(--head);box-shadow:0 1px 0 var(--line);}
@@ -113,17 +121,19 @@
     :root[data-theme="auto"] .brand .logo[data-night="code"] .lcode{display:inline;}
   }
   [dir="rtl"] .brand .logo img{object-position:right center;}
-  .brand .meta{display:flex;flex-direction:column;line-height:1.12;min-width:0;}
-  .brand .meta b{font-size:14.5px;font-weight:750;color:var(--head-ink);white-space:normal;overflow-wrap:normal;overflow:visible;text-overflow:clip;line-height:1.15;}
-  .brand .meta .apline{font-size:11.5px;color:var(--head-muted);font-weight:650;display:flex;align-items:center;gap:4px;margin-top:2px;letter-spacing:.03em;}
-  .brand .meta .chev{width:13px;height:13px;stroke-width:2.2;}
+  /* vNEXT — the airport is named once, as the phone board names it: its logo,
+     with a small chevron after it (the logo is the button that opens the
+     picker). The header used to name it three times — the logo, the name,
+     the code — and an unknown code read 'XYZ XYZ XYZ'. With no logo the code
+     stands in the logo's place, and the name follows only where it is more
+     than the code. */
+  .brand{flex:0 1 auto;}
+  .brand .apn{font-size:14.5px;font-weight:750;color:var(--head-ink);line-height:1.15;min-width:0;white-space:normal;overflow-wrap:normal;}
+  .brand .apn:empty,.brand.has-logo .apn{display:none;}
+  .brand .chev{width:15px;height:15px;stroke-width:2.4;flex:none;color:var(--head-muted);margin-inline-start:-4px;}
   .brand select{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;}
-  /* a small phone: the logo already names the airport, so its name gives way
-     (a long one ran into the clock) and the code with its chevron stays */
   @media (max-width:360px){
-    .brand.has-logo .meta b{display:none;}
-    .brand.has-logo .meta .apline{font-size:13px;color:var(--head-ink);margin-top:0;}
-    .brand .logo,.brand .logo img{max-width:36vw;}
+    .brand .logo,.brand .logo img{max-width:44vw;}
   }
   .clock{flex:none;text-align:end;}
   .clock .t{font-size:21px;font-weight:800;letter-spacing:-.015em;line-height:1;color:var(--head-ink);white-space:nowrap;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;}
@@ -131,10 +141,26 @@
   .clock .d{font-size:11px;font-weight:600;color:var(--head-muted);white-space:nowrap;margin-top:4px;}
   .band{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--band);}
   .seg{flex:1 1 auto;display:flex;gap:3px;padding:3px;border-radius:11px;background:rgba(255,255,255,.1);min-width:0;}
+  /* the tab that is not chosen reads in full white: on Moncton's Acadian red
+     band a softer white fell under 4.5:1 */
   .seg button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 8px;
-    border:0;border-radius:8px;background:none;color:rgba(255,255,255,.8);font-size:14px;font-weight:750;line-height:1.05;white-space:normal;transition:background .15s,color .15s;}
-  .seg button .ic{width:17px;height:17px;flex:none;stroke-width:1.9;}
+    border:0;border-radius:8px;background:none;color:#ffffff;font-size:14px;font-weight:750;line-height:1.05;white-space:normal;transition:background .15s,color .15s;}
   .seg button.active{background:#ffffff;color:#0b1f3a;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  /* vNEXT — the boards' own take-off and landing marks (logos/icons, v24039),
+     drawn through a mask in the tab's own colour, as css/font.css draws
+     .ac-ico-depart and .ac-ico-landing; the outline icons were generic */
+  .tic{display:block;flex:none;width:19px;height:19px;background-color:currentColor;
+    -webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;}
+  .tic.dep{-webkit-mask-image:url('logos/icons/takeoff.svg');mask-image:url('logos/icons/takeoff.svg');}
+  .tic.arr{-webkit-mask-image:url('logos/icons/landing.svg');mask-image:url('logos/icons/landing.svg');}
+  .tic.pln{-webkit-mask-image:url('logos/icons/plane.svg');mask-image:url('logos/icons/plane.svg');}
+  [dir="rtl"] .tic.dep,[dir="rtl"] .tic.arr{transform:scaleX(-1);}
+  /* a small phone: the word alone, with the room the icon took (English
+     'Departures' ran 2 px past its white pill at 320 px) */
+  @media (max-width:359.98px){
+    .seg button{padding:0 4px;gap:0;}
+    .seg button .tic{display:none;}
+  }
   .tb-btn{position:relative;flex:none;width:38px;height:38px;border-radius:10px;border:0;background:rgba(255,255,255,.1);color:#ffffff;
     display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;letter-spacing:.05em;}
   .tb-btn .ic{width:19px;height:19px;}
@@ -155,6 +181,9 @@
      or when there is no data, amber over an older list */
   .hint .live.wait,.hint .live.down{background:var(--faint);}
   .hint .live.stale{background:var(--amber);}
+  .hint[hidden]{display:none;}
+  /* an airport whose boards show no weather shows none here either */
+  .no-wx .wx,.no-wx #wxCredit,.no-wx .dt-credit{display:none !important;}
 
   /* ── Views ───────────────────────────────────────── */
   .view{display:none;} .view.active{display:block;}
@@ -172,7 +201,11 @@
 
   /* ── The rows ────────────────────────────────────── */
   .cards{padding:4px 12px 8px;display:flex;flex-direction:column;gap:8px;}
-  .fcard{display:grid;grid-template-columns:74px minmax(0,1fr) 58px;grid-template-rows:auto auto auto;column-gap:10px;row-gap:0;
+  /* vNEXT — the gate column is as wide as its word needs (CARROUSEL,
+     ターンテーブル) and never narrower than 58 px; the word is the same on every
+     row of a list, so every row's column is the same width. A value never
+     widens it (contain: a long TBD wraps inside the box). */
+  .fcard{display:grid;grid-template-columns:74px minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:10px;row-gap:0;
     align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     padding:8px 10px 9px 12px;box-shadow:var(--shadow);cursor:pointer;position:relative;
     content-visibility:auto;contain-intrinsic-size:auto 80px;}
@@ -181,9 +214,17 @@
   .fcard .hh{font-size:21px;font-weight:800;letter-spacing:-.025em;line-height:1;color:var(--txt);white-space:nowrap;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;}
   .fcard .hh small,.dt-cell .v small{font-size:.52em;font-weight:800;margin-left:2px;letter-spacing:0;}
   /* a moved time: the airport's new time is the big one, the printed one struck above it */
-  .fcard .was{font-size:12.5px;font-weight:700;color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px;margin-bottom:3px;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
+  .fcard .was{display:inline-block;position:relative;font-size:12.5px;font-weight:700;line-height:1;color:var(--muted);margin-bottom:4px;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
   .fcard .was small{font-size:.75em;margin-left:1px;}
   .fcard .hh.moved{color:var(--moved);}
+  /* vNEXT — ONE LINE THROUGH THE WHOLE TIME. text-decoration struck the
+     digits and drew its line under the smaller AM, which read as a typo; the
+     line is now drawn once, across the time and its AM/PM together. */
+  /* its height: through the lower middle of the digits and the upper middle
+     of the smaller AM, the one height that crosses both */
+  .fcard .was::after,.fcard.cx .hh::after,.dt-cell .v.strike .ltr::after,.dt-cell .v.was .ltr::after{content:'';position:absolute;left:-1px;right:-1px;top:.68em;height:2px;margin-top:-1px;background:currentColor;pointer-events:none;}
+  .fcard .was::after{height:1.5px;top:.6em;}
+  .dt-cell .v.was .ltr::after{top:.6em;}
   .fcard .l1{grid-column:2 / 4;grid-row:1;display:flex;align-items:center;gap:7px;flex-wrap:wrap;row-gap:4px;min-width:0;min-height:22px;margin-bottom:3px;}
   .fcard .al{display:flex;align-items:center;gap:7px;min-width:0;}
   .tile{width:22px;height:22px;border-radius:6px;flex:none;object-fit:cover;display:block;}
@@ -211,17 +252,36 @@
   .wm-txt{font-weight:750;font-size:13.5px;color:var(--txt);letter-spacing:-0.005em;line-height:1.15;
     white-space:normal;overflow-wrap:normal;word-break:normal;overflow:visible;text-overflow:clip;}
   .fcard .alname{font-weight:750;font-size:13.5px;line-height:1.15;white-space:normal;overflow-wrap:normal;word-break:normal;overflow:visible;text-overflow:clip;}
-  .fcard .city{grid-column:2;grid-row:2;font-size:16px;font-weight:750;line-height:1.15;letter-spacing:-.01em;min-width:0;
-    white-space:normal;overflow-wrap:break-word;}
+  /* vNEXT — THE PLACE, NEVER CUT INSIDE A NAME. The city and the airport's
+     own name are two units, as the board sets them ('Toronto · Billy
+     Bishop', the airport a step smaller): a line breaks only between them,
+     never inside 'Billy Bishop' and never after a hanging '·'. The '·' rides
+     on the airport's name, in the room the city's line is shifted by, so on a
+     second line it falls outside the box and is not drawn (the board drops
+     it there too). A unit wider than the whole line still wraps, never cut. */
+  .fcard .city{grid-column:2;grid-row:2;font-size:16px;font-weight:750;line-height:1.15;letter-spacing:-.01em;min-width:0;overflow:hidden;padding-bottom:1px;}
+  .pl-in{display:block;margin-inline-start:-.8em;}
+  .pl-c,.pl-q{display:inline-block;max-width:100%;white-space:normal;overflow-wrap:break-word;vertical-align:baseline;}
+  .pl-c{padding-inline-start:.8em;}
+  .pl-q{padding-inline-start:.8em;position:relative;}
+  .pl-q::before{content:'·';position:absolute;inset-inline-start:0;width:.8em;text-align:center;}
+  .pl-q > span{font-size:.84em;font-weight:650;}
   .fcard .sub{grid-column:2;grid-row:3;color:var(--muted);font-size:12.5px;font-weight:600;margin-top:1px;min-width:0;}
   .fcard .sub b{color:var(--txt);font-weight:800;letter-spacing:.02em;}
-  .fcard .sub .fno{direction:ltr;unicode-bidi:isolate;}
+  .fcard .sub .fno{direction:ltr;unicode-bidi:isolate;white-space:nowrap;}
+  /* the temperature is isolated on its own, its ' · ' outside it, so in
+     Arabic the line reads 'YYZ · AC1983 · 11°C' from the right, never
+     '· 11°CAC1983' */
+  .wx{white-space:nowrap;}
+  .wx bdi{direction:ltr;unicode-bidi:isolate;}
+  .fcard .sub .st{display:none;}
   /* the gate (a belt on arrivals) in its own box, TBD until the airport says */
   .slot{grid-column:3;grid-row:2 / 4;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-height:44px;border-radius:10px;background:var(--slot);color:var(--slot-ink);padding:4px 2px;text-align:center;}
-  .slot .k{font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:750;color:var(--muted);line-height:1.1;white-space:nowrap;}
-  .slot .k.long{font-size:7.5px;letter-spacing:.02em;}
-  .slot .v{font-size:21px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:2px;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
+    min-width:58px;max-width:88px;min-height:44px;border-radius:10px;background:var(--slot);color:var(--slot-ink);padding:4px 4px;text-align:center;}
+  /* vNEXT — the box's word is 10 px or more in every language (it was 8.5,
+     and 7.5 for CARROUSEL); the box widens for a long word instead */
+  .slot .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:750;color:var(--muted);line-height:1.1;white-space:nowrap;}
+  .slot .v{contain:inline-size;align-self:stretch;font-size:21px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:2px;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
   .slot .v.l3{font-size:18px;} .slot .v.l4{font-size:15px;} .slot .v.l5{font-size:12.5px;}
   .slot .v.tbd{font-size:12px;font-weight:750;color:var(--muted);letter-spacing:0;white-space:normal;}
   /* status: one solid pill, its own background — never the airline's colour under it */
@@ -233,17 +293,49 @@
   /* v24030 — Scheduled / Expected: the airport's neutral word, no status colour */
   .st.neutral{color:var(--muted);}
   .st.neutral{background:var(--neu-bg);}
-  /* a flight that has gone: still listed, quieter */
-  .fcard.done{opacity:.66;}
+  /* vNEXT — a flight that has gone: still listed, in the sheet's own quieter
+     ink (4.5:1 or better), not faded (opacity .66 took its words to 3:1);
+     the time it went is plain, amber is for a flight still to go */
+  .fcard.done .hh,.fcard.done .city,.fcard.done .sub b{color:var(--muted);}
+  /* the departures that have gone, folded into one line above the list */
+  .gone{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:1px dashed var(--line2);border-radius:var(--radius);
+    background:none;color:var(--muted);font-size:13px;font-weight:700;text-align:start;}
+  .gone .ic{width:16px;height:16px;stroke-width:2.2;flex:none;}
   /* cancelled: the board's red row — the whole card, the time struck */
   .fcard.cx{background:var(--cx);border-color:transparent;}
   .fcard.cx .hh,.fcard.cx .city,.fcard.cx .sub b,.fcard.cx .wm-txt{color:#ffffff;}
-  .fcard.cx .hh{text-decoration:line-through;text-decoration-thickness:2px;}
+  .fcard.cx .hh{display:inline-block;position:relative;}
   .fcard.cx .sub{color:rgba(255,255,255,.86);}
   .fcard.cx .st{background:rgba(0,0,0,.24);color:#ffffff;}
   .fcard.cx .slot{background:rgba(255,255,255,.14);color:#ffffff;}
   .fcard.cx .slot .k,.fcard.cx .slot .v.tbd{color:rgba(255,255,255,.86);}
   .fcard.cx .wm-l{display:none !important;} .fcard.cx .wm-d{display:block !important;}
+  /* vNEXT — WHEN THE STATUS HAS NO ROOM BESIDE THE AIRLINE. On a small phone
+     (and at 360 px in the longer languages: 'Programado', 'Gate
+     geschlossen') the status pill dropped to a line of its own on every row
+     and the rows jumped between four heights. Then the whole list (.tight,
+     set by fitRows when any row's pill would wrap, and always under 360 px)
+     takes the same three lines: the airline; the place; the code and flight
+     number with the status at the end, under the gate box. The row's
+     temperature stays on the flight's own page there: on the row it pushed
+     the status to a fourth line. */
+  .cards.tight .fcard .l1{grid-column:2;}
+  .cards.tight .fcard .l1 .st{display:none;}
+  .cards.tight .slot{grid-row:1 / 3;}
+  .cards.tight .fcard .sub{grid-column:2 / 4;display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin-top:4px;}
+  .cards.tight .fcard .sub .sx{min-width:0;}
+  .cards.tight .fcard .sub .st{display:inline-flex;}
+  .cards.tight .fcard .sub .wx{display:none;}
+  /* a small phone (under 360 px): the time column narrows to 62 px with
+     AM/PM under its digits, and the airline's mark is capped at 88 x 13 */
+  @media (max-width:359.98px){
+    .fcard{grid-template-columns:62px minmax(0,1fr) auto;column-gap:8px;padding:8px 9px 9px 10px;}
+    .fcard .hh small{display:block;margin:3px 0 0;font-size:.55em;}
+    img.wm{max-width:88px;height:13px;}
+    span.wm{width:88px;height:13px;}
+    img.wm[src*="southwest-wordmark"]{height:11px;}
+    img.wm[src*="jetblue-wordmark"]{height:12px;}
+  }
   /* the day changes: Tomorrow, with its date, held at the top while its flights scroll */
   .day{position:sticky;top:var(--hdr-h);z-index:5;display:flex;align-items:center;gap:10px;margin:6px -12px 0;padding:6px 12px;
     background:var(--bg);}
@@ -280,11 +372,16 @@
     color:var(--txt);display:flex;align-items:center;justify-content:center;flex:none;}
   [dir="rtl"] .dt-top .back svg{transform:scaleX(-1);}
   .dt-top .ttl{font-size:15.5px;font-weight:750;color:var(--head-ink);}
-  /* the hero takes the airline's own colours, as its gate does */
+  /* the hero takes the airline's own colours, as its gate does: flat, as the
+     boards' airline panels are (the white gloss over it turned Air Canada's
+     black grey at the top). vNEXT — on the night page a carrier whose bar
+     colour is light (Porter's cream) takes its own dark colour instead, with
+     its white lettering: a light slab with dark words in the middle of the
+     night page is a light box behind a logo. */
   .dt-hero{position:relative;overflow:hidden;margin:12px 12px 0;border-radius:18px;padding:20px 18px 14px;text-align:center;
     background:var(--hero,#0b1f3a);color:var(--hero-ink,#ffffff);}
-  .dt-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 0%,rgba(255,255,255,.14),rgba(255,255,255,0) 60%);pointer-events:none;}
-  .dt-hero > *{position:relative;}
+  :root[data-theme="dark"] .dt-hero{background:var(--hero-n,var(--hero,#0b1f3a));color:var(--hero-ink-n,var(--hero-ink,#ffffff));}
+  @media(prefers-color-scheme:dark){:root[data-theme="auto"] .dt-hero{background:var(--hero-n,var(--hero,#0b1f3a));color:var(--hero-ink-n,var(--hero-ink,#ffffff));}}
   .dt-brand{display:flex;align-items:center;justify-content:center;gap:10px;min-height:34px;}
   .dt-brand .tile{width:34px;height:34px;border-radius:9px;}
   .dt-brand .tile.mono{font-size:12px;}
@@ -294,15 +391,23 @@
   .dt-name{font-size:17px;font-weight:750;}
   .dt-hero .flt{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:10px;direction:ltr;unicode-bidi:isolate;}
   .dt-hero .al-op{font-size:13px;font-weight:550;margin-top:4px;opacity:.88;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+  .dt-hero .al-op img{height:22px;width:auto;max-width:170px;object-fit:contain;}
   .dt-illus{display:block;width:250px;max-width:86%;margin:10px auto 0;}
   .dt-route{display:grid;grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);align-items:start;gap:6px;margin:14px 12px 0;padding:16px 14px;
     background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);}
   .dt-route .ep{text-align:center;min-width:0;}
   .dt-route .ep .code{font-size:30px;font-weight:800;letter-spacing:.01em;line-height:1;color:var(--txt);}
-  .dt-route .ep .city{font-size:13px;font-weight:650;color:var(--muted);margin-top:6px;line-height:1.2;white-space:normal;}
-  .dt-route .pl{align-self:center;color:var(--accent);display:flex;justify-content:center;margin-top:2px;}
-  .dt-route .pl .ic{width:24px;height:24px;transform:rotate(90deg);}
-  [dir="rtl"] .dt-route .pl .ic{transform:rotate(-90deg);}
+  .dt-route .ep .city{font-size:13px;font-weight:650;color:var(--muted);margin-top:6px;line-height:1.2;}
+  /* in the route card's narrow, centred column the airport's name goes under
+     its city, without the '·' (the board's own second-line form) */
+  .dt-route .ep .pl-in{margin-inline-start:0;}
+  .dt-route .ep .pl-c,.dt-route .ep .pl-q{display:block;padding-inline-start:0;}
+  .dt-route .ep .pl-q::before{content:none;}
+  .dt-route .ep .wx{display:block;margin-top:5px;font-size:15px;font-weight:800;color:var(--txt);}
+  /* the boards' own plane (logos/icons/plane.svg), in the page's ink */
+  .dt-route .pl{align-self:center;color:var(--txt);display:flex;justify-content:center;margin-top:2px;}
+  .dt-route .pl .tic{width:22px;height:22px;transform:rotate(90deg);}
+  [dir="rtl"] .dt-route .pl .tic{transform:rotate(-90deg);}
   .dt-status{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px 4px;}
   .dt-status .st{font-size:14px;padding:6px 14px 6px 12px;margin:0;}
   .dt-status .st .d{width:8px;height:8px;}
@@ -310,21 +415,29 @@
   /* cancelled: a full red band, not a small red word */
   .dt-cx{margin:14px 12px 0;padding:14px 16px;border-radius:14px;background:var(--cx);color:#ffffff;text-align:center;font-size:18px;font-weight:800;letter-spacing:-.01em;}
   .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 12px 0;}
+  /* vNEXT — a fact alone on its line takes the whole line (a cancelled
+     flight's detail was one half-width card beside a blank) */
+  .dt-grid > .dt-cell:last-child:nth-child(odd){grid-column:1 / -1;}
   .dt-cell{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow);min-width:0;}
-  .dt-cell.wide{grid-column:1 / -1;display:flex;align-items:center;gap:13px;}
-  .dt-cell.key{background:var(--slot);}
+  .dt-cell.wide{display:flex;align-items:center;gap:13px;margin:10px 12px 0;}
+  /* the gate is marked by its size, the board's big gate number, on the same
+     ground as the time beside it */
   .dt-cell .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;}
   .dt-cell .v{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-top:5px;color:var(--txt);overflow-wrap:break-word;}
   .dt-cell .v.big{font-size:30px;line-height:1;}
+  .dt-cell.key .v.big{font-size:40px;}
   .dt-cell .v.moved{color:var(--moved);}
   .dt-cell .v.tbd{color:var(--muted);font-size:18px;}
-  .dt-cell .v.was{font-size:14px;color:var(--muted);text-decoration:line-through;margin-top:3px;}
-  .dt-cell .v.strike{color:var(--muted);text-decoration:line-through;text-decoration-thickness:2px;}
+  .dt-cell .v.was{font-size:14px;color:var(--muted);margin-top:4px;}
+  .dt-cell .v.strike{color:var(--muted);}
+  .dt-cell .v.strike .ltr,.dt-cell .v.was .ltr{position:relative;display:inline-block;}
   .dt-cell .sub{font-size:12px;color:var(--muted);font-weight:550;margin-top:3px;}
-  .dt-cell .planeic{width:44px;height:44px;border-radius:12px;flex:none;background:var(--slot);color:var(--accent);
+  .dt-cell .planeic{width:44px;height:44px;border-radius:12px;flex:none;background:var(--slot);color:var(--txt);
     display:flex;align-items:center;justify-content:center;}
-  .dt-cell .planeic .ic{width:24px;height:24px;}
+  .dt-cell .planeic .tic{width:24px;height:24px;}
   .dt-cell .ltr{direction:ltr;unicode-bidi:isolate;}
+  .dt-credit{margin:16px 18px 0;font-size:11px;font-weight:550;color:var(--muted);text-align:center;line-height:1.35;}
+  .detail .dt-credit:empty{display:none;}
 
   /* ── Full-page ad ────────────────────────────────── */
   .ad-full{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
@@ -355,21 +468,18 @@
      is now on every arrival, where the gate is on a departure. -->
 <header class="topbar" id="topbar">
   <div class="tb-row">
-    <div class="brand">
+    <div class="brand" id="brand">
       <span class="logo" id="apLogo"></span>
-      <span class="meta">
-        <b id="apName"></b>
-        <span class="apline"><span id="apIata"></span>
-          <svg class="ic chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
-      </span>
+      <b class="apn" id="apName"></b>
+      <svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
       <select id="apSelect" aria-label="Choose airport" onchange="setAirport(this.value)"></select>
     </div>
     <div class="clock"><div class="t" id="clkT"></div><div class="d" id="clkD"></div></div>
   </div>
   <div class="band">
     <div class="seg">
-      <button id="segDep" class="active" onclick="setDir('dep')"><svg class="ic" viewBox="0 0 24 24"><path d="M2 22h20"/><path d="M6.36 17.4 4 17l-2-4 1.1-.55a2 2 0 0 1 1.8 0l.17.1a2 2 0 0 0 1.8 0L8 12 5 6l.9-.45a2 2 0 0 1 2.09.2l4.02 3a2 2 0 0 0 2.1.2l4.19-2.06a2.41 2.41 0 0 1 1.73-.17L21 7a1.4 1.4 0 0 1 .87 1.99l-.38.76c-.23.46-.6.84-1.07 1.08L7.58 17.2a2 2 0 0 1-1.22.18Z"/></svg><span id="segDepT"></span></button>
-      <button id="segArr" onclick="setDir('arr')"><svg class="ic" viewBox="0 0 24 24"><path d="M2 22h20"/><path d="M3.77 10.77 2 9l2-4.5 1.1.55c.55.28.9.84.9 1.45s.35 1.17.9 1.45L8 8.5l3-6 1.05.53a2 2 0 0 1 1.09 1.52l.72 5.4a2 2 0 0 0 1.09 1.52l4.4 2.2c.42.22.78.55 1.01.96l.6 1.03c.49.88-.06 1.98-1.06 2.1l-1.18.15c-.47.06-.95-.02-1.37-.24L4.29 11.15a2 2 0 0 1-.52-.38Z"/></svg><span id="segArrT"></span></button>
+      <button id="segDep" class="active" onclick="setDir('dep')"><span class="tic dep" aria-hidden="true"></span><span id="segDepT"></span></button>
+      <button id="segArr" onclick="setDir('arr')"><span class="tic arr" aria-hidden="true"></span><span id="segArrT"></span></button>
     </div>
     <span class="tb-btn" title="Language / Langue / Idioma"><span id="langBtn">EN</span><select id="langSelect" onchange="pickLang(this.value)"></select></span>
     <button class="tb-btn" id="themeBtn" title="Theme" onclick="cycleTheme()"><span id="themeIc"></span></button>
@@ -393,6 +503,7 @@
   </div>
 
   <div class="cards" id="cards"></div>
+  <div class="dt-credit" id="wxCredit" hidden></div>
 </main>
 
 <!-- Flight detail -->
@@ -445,15 +556,19 @@ const BANNER_ADS=[
 // tz=IANA timezone (used to build the live-data query window), r=region group
 // for the picker (CA / US / INT). AP_NAME and TZ are derived from this, and the
 // <select> is generated at init, so adding an airport here lights it up app-wide.
+// vNEXT — a name is the city, then ' · ' and the airport's own name where
+// the city has more than one ('Toronto · Billy Bishop'); never a name in
+// brackets, so the picker's '(YTZ)' is the only bracket on its line (it read
+// 'Toronto City (Billy Bishop) (YTZ)').
 const AIRPORTS={
   // ── Canada ──
   YQM:{n:'Moncton',tz:'America/Moncton',r:'CA'},
   YHZ:{n:'Halifax Stanfield',tz:'America/Halifax',r:'CA'},
   YYT:{n:"St. John's",tz:'America/St_Johns',r:'CA'},
-  YYZ:{n:'Toronto Pearson',tz:'America/Toronto',r:'CA'},
-  YTZ:{n:'Toronto City (Billy Bishop)',tz:'America/Toronto',r:'CA'},
-  YHU:{n:'Montréal Métropolitain (MET)',tz:'America/Toronto',r:'CA'},
-  YUL:{n:'Montréal–Trudeau',tz:'America/Toronto',r:'CA'},
+  YYZ:{n:'Toronto · Pearson',tz:'America/Toronto',r:'CA'},
+  YTZ:{n:'Toronto · Billy Bishop',tz:'America/Toronto',r:'CA'},
+  YHU:{n:'Montréal · Métropolitain',tz:'America/Toronto',r:'CA'},
+  YUL:{n:'Montréal · Trudeau',tz:'America/Toronto',r:'CA'},
   YOW:{n:'Ottawa',tz:'America/Toronto',r:'CA'},
   YQB:{n:'Québec City',tz:'America/Toronto',r:'CA'},
   YWG:{n:'Winnipeg',tz:'America/Winnipeg',r:'CA'},
@@ -483,13 +598,13 @@ const AIRPORTS={
   YMM:{n:'Fort McMurray',tz:'America/Edmonton',r:'CA'},
   YZF:{n:'Yellowknife',tz:'America/Yellowknife',r:'CA'},
   // ── United States ──
-  JFK:{n:'New York JFK',tz:'America/New_York',r:'US'},
-  LGA:{n:'New York LaGuardia',tz:'America/New_York',r:'US'},
+  JFK:{n:'New York · Kennedy',tz:'America/New_York',r:'US'},
+  LGA:{n:'New York · LaGuardia',tz:'America/New_York',r:'US'},
   EWR:{n:'Newark',tz:'America/New_York',r:'US'},
   BOS:{n:'Boston Logan',tz:'America/New_York',r:'US'},
   PHL:{n:'Philadelphia',tz:'America/New_York',r:'US'},
-  DCA:{n:'Washington Reagan',tz:'America/New_York',r:'US'},
-  IAD:{n:'Washington Dulles',tz:'America/New_York',r:'US'},
+  DCA:{n:'Washington · Reagan National',tz:'America/New_York',r:'US'},
+  IAD:{n:'Washington · Dulles',tz:'America/New_York',r:'US'},
   BWI:{n:'Baltimore',tz:'America/New_York',r:'US'},
   CLT:{n:'Charlotte',tz:'America/New_York',r:'US'},
   ATL:{n:'Atlanta',tz:'America/New_York',r:'US'},
@@ -499,14 +614,14 @@ const AIRPORTS={
   TPA:{n:'Tampa',tz:'America/New_York',r:'US'},
   RDU:{n:'Raleigh-Durham',tz:'America/New_York',r:'US'},
   PIT:{n:'Pittsburgh',tz:'America/New_York',r:'US'},
-  BDL:{n:'Hartford (Bradley)',tz:'America/New_York',r:'US'},
+  BDL:{n:'Hartford · Bradley',tz:'America/New_York',r:'US'},
   DTW:{n:'Detroit',tz:'America/Detroit',r:'US'},
-  ORD:{n:"Chicago O'Hare",tz:'America/Chicago',r:'US'},
-  MDW:{n:'Chicago Midway',tz:'America/Chicago',r:'US'},
+  ORD:{n:"Chicago · O'Hare",tz:'America/Chicago',r:'US'},
+  MDW:{n:'Chicago · Midway',tz:'America/Chicago',r:'US'},
   MSP:{n:'Minneapolis–St. Paul',tz:'America/Chicago',r:'US'},
   DFW:{n:'Dallas/Fort Worth',tz:'America/Chicago',r:'US'},
-  IAH:{n:'Houston (Bush)',tz:'America/Chicago',r:'US'},
-  HOU:{n:'Houston (Hobby)',tz:'America/Chicago',r:'US'},
+  IAH:{n:'Houston · Intercontinental',tz:'America/Chicago',r:'US'},
+  HOU:{n:'Houston · Hobby',tz:'America/Chicago',r:'US'},
   AUS:{n:'Austin',tz:'America/Chicago',r:'US'},
   DEN:{n:'Denver',tz:'America/Denver',r:'US'},
   SLC:{n:'Salt Lake City',tz:'America/Denver',r:'US'},
@@ -520,34 +635,37 @@ const AIRPORTS={
   MCI:{n:'Kansas City',tz:'America/Chicago',r:'US'},
   MSY:{n:'New Orleans',tz:'America/Chicago',r:'US'},
   HNL:{n:'Honolulu',tz:'Pacific/Honolulu',r:'US'},
-  OGG:{n:'Maui (Kahului)',tz:'Pacific/Honolulu',r:'US'},
-  // ── Sun & International ──
+  OGG:{n:'Maui · Kahului',tz:'Pacific/Honolulu',r:'US'},
+  // ── The rest of the world ──
   CUN:{n:'Cancún',tz:'America/Cancun',r:'INT'},
   PUJ:{n:'Punta Cana',tz:'America/Santo_Domingo',r:'INT'},
   NAS:{n:'Nassau',tz:'America/Nassau',r:'INT'},
   MBJ:{n:'Montego Bay',tz:'America/Jamaica',r:'INT'},
   SJU:{n:'San Juan',tz:'America/Puerto_Rico',r:'INT'},
   AUA:{n:'Aruba',tz:'America/Aruba',r:'INT'},
-  LHR:{n:'London Heathrow',tz:'Europe/London',r:'INT'},
-  LGW:{n:'London Gatwick',tz:'Europe/London',r:'INT'},
-  CDG:{n:'Paris CDG',tz:'Europe/Paris',r:'INT'},
+  LHR:{n:'London · Heathrow',tz:'Europe/London',r:'INT'},
+  LGW:{n:'London · Gatwick',tz:'Europe/London',r:'INT'},
+  CDG:{n:'Paris · Charles de Gaulle',tz:'Europe/Paris',r:'INT'},
   FRA:{n:'Frankfurt',tz:'Europe/Berlin',r:'INT'},
   AMS:{n:'Amsterdam',tz:'Europe/Amsterdam',r:'INT'},
   DUB:{n:'Dublin',tz:'Europe/Dublin',r:'INT'},
   EDI:{n:'Edinburgh',tz:'Europe/London',r:'INT'},
   ZRH:{n:'Zurich',tz:'Europe/Zurich',r:'INT'},
-  KEF:{n:'Reykjavík (Keflavík)',tz:'Atlantic/Reykjavik',r:'INT'},
+  KEF:{n:'Reykjavík · Keflavík',tz:'Atlantic/Reykjavik',r:'INT'},
   SYD:{n:'Sydney',tz:'Australia/Sydney',r:'INT'},
-HBA:{n:'Hobart',tz:'Australia/Hobart',r:'INT'}
+  HBA:{n:'Hobart',tz:'Australia/Hobart',r:'INT'}
 };
-const REGION_LABEL={CA:'Canada',US:'United States',INT:'Sun & International'};
+// vNEXT — the picker's group headings are words like any other: the store's,
+// in all nine languages (they were English in every language)
+const REGION_KEY={CA:'regionCA',US:'regionUS',INT:'regionINT'};
 const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
 // v23230 — the shared feed router (js/feed-router.js) reads the boards'
 // global `AP` map for airport timezones; publish ours in that shape.
 window.AP={}; for(var _tk in AIRPORTS) window.AP[_tk]={tz:AIRPORTS[_tk].tz};
-// v23962 — a city with two of our airports names the airport, as the boards
-// do (AIRPORT_SUBLINE in fids-core.js): which Toronto, which Montréal.
-const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto · Pearson',YTZ:'Toronto · Billy Bishop',YUL:'Montréal · Trudeau',YHU:'Montréal · Métropolitain',YHZ:'Halifax',YYT:"St. John's",
+// The city at a flight's other end. vNEXT — the city alone: which Toronto or
+// which Montréal is the airport's own name after it, from the boards' table
+// (FIDS_SHARED_SUBLINE, below), so every two-airport city reads the same way.
+const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHU:'Montréal',YHZ:'Halifax',YYT:"St. John's",
   YDF:'Deer Lake',YOW:'Ottawa',YQB:'Québec City',YWK:'Wabush',YYY:'Mont-Joli',YBG:'Bagotville',YFC:'Fredericton',
   YSJ:'Saint John',YQY:'Sydney',YZX:'Greenwood',YGP:'Gaspé',YGR:'Îles-de-la-Madeleine',YQM:'Moncton',
   YYC:'Calgary',YEG:'Edmonton',YVR:'Vancouver',YWG:'Winnipeg',YYJ:'Victoria',YXX:'Abbotsford',
@@ -556,9 +674,6 @@ const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto · Pearson',YTZ:'Toron
   DEN:'Denver',LAX:'Los Angeles',ORD:'Chicago',MIA:'Miami',MCO:'Orlando',FLL:'Fort Lauderdale',DTW:'Detroit',
   CUN:'Cancún',NAS:'Nassau',MBJ:'Montego Bay',AUA:'Aruba',STI:'Santiago',LHR:'London',CDG:'Paris',
   FRA:'Frankfurt',AMS:'Amsterdam',DUB:'Dublin',KEF:'Reykjavík'};
-// Fill any gaps from the airport catalogue so no destination ever shows as a
-// bare IATA code when we already know its name.
-for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=AIRPORTS[_ck].n; }
 // v23230 — THE APP SPEAKS THE BOARD'S LANGUAGE
 // The board's full
 // CITY (2,400+ airports) and AIRLINE_NAME (190 carriers) maps arrive via
@@ -570,10 +685,39 @@ for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=AIRPORTS[_ck].n; }
 // → "New Orleans", "ST. JOHN'S" → "St. John's" — the apostrophe never
 // triggers a capital).
 function _tcCity(s){return String(s).toLowerCase().replace(/(^|[\s\-\/(\.])[a-zà-ÿ]/g,function(m){return m.toUpperCase();});}
-// Display name for a flight's other end: CITY map first, then the feed's own
-// airport name (v23232), then the bare code.
-function cityOf(f){return CITY[f.cityIata]||(f.cityName?_tcCity(f.cityName):'')||f.cityIata||'—';}
 if(window.FIDS_SHARED_CITY){for(var _sk in FIDS_SHARED_CITY){if(!CITY[_sk])CITY[_sk]=_tcCity(FIDS_SHARED_CITY[_sk]);}}
+// Fill any gaps from the airport catalogue — its city, before any ' · ' —
+// so no destination ever shows as a bare IATA code when we know its name.
+// vNEXT — after the board's names, not before: the catalogue's own spelling
+// ('New York LaGuardia') stood beside the board's 'Toronto · Pearson'.
+for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=String(AIRPORTS[_ck].n).split(' · ')[0]; }
+// vNEXT — WHICH TORONTO, AS THE BOARD SAYS IT (fids-core.js _apSubline): the
+// airport's own name for a city with two of our airports, from the boards'
+// table; a name chosen by description (Dubai's 'International') in the
+// app's language; a name that honours a person hyphenated in French and on a
+// Québec airport's app, as the boards write it ('Billy-Bishop'). langOnly:
+// by the language alone (the airport picker belongs to no one airport).
+function apSub(code,langOnly){
+  const c=String(code||'').toUpperCase(), t=window.FIDS_SHARED_SUBLINE, v=t&&Object.prototype.hasOwnProperty.call(t,c)?t[c]:null;
+  if(!v)return '';
+  const L=langRes();
+  if(typeof v==='object'){try{return String(BoardStrings.bs(v.subKey,L)||'');}catch(e){return '';}}
+  let fr=L==='fr';
+  try{fr=fr||(!langOnly&&!!(window.BoardStrings&&BoardStrings.isFrFirst&&BoardStrings.isFrFirst(CURAP)));}catch(e){}
+  if(fr&&(window.FIDS_SHARED_SUBLINE_PERSON||[]).indexOf(c)>=0)return String(v).replace(/ /g,'-');
+  return String(v);
+}
+// A place as its two parts: the city (CITY, then the feed's own name, then
+// the code) and the airport's own name where its city has two of ours
+function placeOf(code,feedName){
+  const c=String(code||'').toUpperCase(), city=CITY[c]||(feedName?_tcCity(feedName):'')||c||'—';
+  return {c:city,q:(city!==c&&city!=='—')?apSub(c):''};
+}
+// Display name for a flight's other end, as one line of text (search, via)
+function cityOf(f){const p=placeOf(f.cityIata,f.cityName);return p.q?p.c+' · '+p.q:p.c;}
+// The same as markup: the city and the airport's name as two units that a
+// line can break between and never inside (see .pl-in in the stylesheet)
+function placeHtml(p){return '<span class="pl-in"><span class="pl-c">'+esc(p.c)+'</span>'+(p.q?'<span class="pl-q"><span>'+esc(p.q)+'</span></span>':'')+'</span>';}
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet',
   JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air',UX:'Air Europa'};
@@ -585,6 +729,9 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   '223':'Airbus A220-300','221':'Airbus A220-100','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9','73H':'Boeing 737-800','738':'Boeing 737-800',
   '7S7':'Boeing 737-700','73W':'Boeing 737-700','757':'Boeing 757','75F':'Boeing 757 Freighter','767':'Boeing 767','76Y':'Boeing 767','77W':'Boeing 777',
   'DH4':'De Havilland Dash 8-400','DH8D':'De Havilland Dash 8-400','DH3':'De Havilland Dash 8-300',
+  // vNEXT — the ICAO forms /acinfo answers with (the usual type a number flies)
+  'DH8C':'De Havilland Dash 8-300','DH8B':'De Havilland Dash 8-200','DH8A':'De Havilland Dash 8-100',
+  'BCS1':'Airbus A220-100','BCS3':'Airbus A220-300',
   'CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550',
   'E75':'Embraer E175','E90':'Embraer E190','E95':'Embraer E195',
   'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop',
@@ -714,7 +861,7 @@ function langRes(){
 // v24030 — every word comes from the boards' store, in all nine languages
 // (APP_KEY: the store's key for each of the app's words); I18N, frozen at
 // English, French and Spanish, is only what is left if the store is missing
-const APP_KEY={dep:'appDep',arr:'appArr',findFlight:'appFindFlight',findArr:'appFindArr',liveDep:'appLiveDep',liveArr:'appLiveArr',flightsN:'appFlightsN',noDep:'appNoDep',noArr:'appNoArr',noMatch:'appNoMatch',noArrMatch:'appNoArrMatch',reconn:'appReconn',reconnB:'appReconnB',bagHint:'appBagHint',bagOffline:'appBagOffline',departs:'appDeparts',arrives:'appArrives',arrShort:'appArrShort',depShort:'appDepShort',gate:'gateWord',belt:'appBelt',tbd:'appTbd',terminal:'terminal',via:'appVia',estimated:'estimated',flightTime:'appFlightTime',bagBelt:'appBagBelt',depOrigin:'appDepOrigin',aircraft:'appAircraft',reg:'appReg',operatedBy:'appOperatedBy',details:'appDetails',tabFlights:'appTabFlights',tabExplore:'appTabExplore',tabBag:'appTabBag',tabTrip:'appTabTrip',exploreH:'appExploreH',exploreP:'appExploreP',soon:'appSoon',tripH:'appTripH',tripP:'appTripP',members:'appMembers',stOnTime:'stOnTime',stDelayed:'stDelayed',stEarly:'appStEarly',stCancelled:'stCancelled',stDeparted:'stDeparted',stArrived:'stArrived',stBoarding:'stBoarding',stFinal:'stFinalCall',stClosed:'stGateClosed',stScheduled:'stScheduled',stExpected:'expected',stEnRoute:'stEnRoute',stDiverted:'stDiverted',loading:'appLoading'};
+const APP_KEY={dep:'appDep',arr:'appArr',findFlight:'appFindFlight',findArr:'appFindArr',liveDep:'appLiveDep',liveArr:'appLiveArr',flightsN:'appFlightsN',noDep:'appNoDep',noArr:'appNoArr',noMatch:'appNoMatch',noArrMatch:'appNoArrMatch',reconn:'appReconn',reconnB:'appReconnB',bagHint:'appBagHint',bagOffline:'appBagOffline',departs:'appDeparts',arrives:'appArrives',arrShort:'appArrShort',depShort:'appDepShort',gate:'gateWord',belt:'appBelt',tbd:'appTbd',terminal:'terminal',via:'appVia',estimated:'estimated',flightTime:'appFlightTime',bagBelt:'appBagBelt',depOrigin:'appDepOrigin',aircraft:'appAircraft',reg:'appReg',operatedBy:'appOperatedBy',details:'appDetails',tabFlights:'appTabFlights',tabExplore:'appTabExplore',tabBag:'appTabBag',tabTrip:'appTabTrip',exploreH:'appExploreH',exploreP:'appExploreP',soon:'appSoon',tripH:'appTripH',tripP:'appTripP',members:'appMembers',stOnTime:'stOnTime',stDelayed:'stDelayed',stEarly:'appStEarly',stCancelled:'stCancelled',stDeparted:'stDeparted',stArrived:'stArrived',stBoarding:'stBoarding',stFinal:'stFinalCall',stClosed:'stGateClosed',stScheduled:'stScheduled',stExpected:'expected',stEnRoute:'stEnRoute',stDiverted:'stDiverted',loading:'appLoading',regionCA:'appRegionCA',regionUS:'appRegionUS',regionINT:'appRegionINT'};
 function T(k){
   const L=langRes();
   try{if(APP_KEY[k]&&window.BoardStrings){const w=BoardStrings.bs(APP_KEY[k],L);if(w)return w;}}catch(e){}
@@ -744,6 +891,7 @@ function applyLang(){
   set('segDepT',T('dep'));set('segArrT',T('arr'));
   set('dtTtl',T('details'));
   const q=document.getElementById('q');if(q)q.placeholder=(typeof DIR!=='undefined'&&DIR==='arr')?T('findArr'):T('findFlight');
+  try{buildAirportOptions();}catch(e){}
   try{paintHeader();}catch(e){}
   try{paintHint();}catch(e){}
   try{render({keep:true});}catch(e){}
@@ -859,23 +1007,33 @@ function wmHtml(code,name){
 // The detail's hero wears the airline's own bar colour (data/airline-colors.js
 // r1, the colour its gate screens use), navy for a carrier with none; its
 // wordmark is chosen for that ground, not for the phone's theme.
+// vNEXT — night: a light bar colour (Porter's cream) gives way on the night
+// page to the carrier's own dark colour (its ink, then its accent), with its
+// white lettering — never a light slab with dark words on the night page.
 function heroColors(code){
   const b=window.AIRLINE_BRAND_COLORS&&AIRLINE_BRAND_COLORS[code];
-  const bg=(b&&b.r1)||'#0b1f3a';
-  return {bg:bg, ink:(b&&b.r1Text)||'#ffffff', light:_lum(bg)>.55};
+  const bg=(b&&b.r1)||'#0b1f3a', light=_lum(bg)>.55;
+  let night='';
+  if(light){
+    const c=[b&&b.r1Text,b&&b.r2,b&&b.r3,WM_INK[code]].filter(function(x){return /^#[0-9a-f]{6}$/i.test(String(x||''))&&_lum(x)<.3;});
+    night=c[0]||'#0b1f3a';
+  }
+  return {bg:bg, ink:(b&&b.r1Text)||'#ffffff', light:light, night:night};
 }
 function heroBrand(code,name,light){
   const u=wmUrls(code), nm=esc(name);
   let wm;
   if(!u) wm=name===code?'':'<div class="dt-name">'+nm+'</div>';
-  else if(light){
-    // a light ground (Porter's cream): the dark-lettered file as drawn; ink
-    // through a mask only where the carrier has white art alone
-    wm=_wmOnlyWhite(u)
-      ?'<span class="wm" role="img" aria-label="'+nm+'" style="background:'+(WM_INK[code]||'#0b1f3a')+';-webkit-mask-image:url(\''+u[0]+'\');mask-image:url(\''+u[0]+'\')"></span>'
-      :'<img class="wm" src="'+u[0]+'" alt="'+nm+'">';
-  } else {
-    wm='<img class="wm'+((u[0]===u[1]&&!_wmOnlyWhite(u))?' inv':'')+'" src="'+u[1]+'" alt="'+nm+'">';
+  else {
+    const white='<img class="wm'+((u[0]===u[1]&&!_wmOnlyWhite(u))?' inv':'')+(light?' wm-d':'')+'" src="'+u[1]+'" alt="'+nm+'">';
+    if(light){
+      // a light ground by day (Porter's cream): the dark-lettered file as
+      // drawn, ink through a mask only where the carrier has white art alone;
+      // its white lettering on its dark colour at night
+      wm=(_wmOnlyWhite(u)
+        ?'<span class="wm wm-l" role="img" aria-label="'+nm+'" style="background:'+(WM_INK[code]||'#0b1f3a')+';-webkit-mask-image:url(\''+u[0]+'\');mask-image:url(\''+u[0]+'\')"></span>'
+        :'<img class="wm wm-l" src="'+u[0]+'" alt="'+nm+'">')+white;
+    } else wm=white;
   }
   return '<div class="dt-brand">'+tileHtml(code)+wm+'</div>';
 }
@@ -993,10 +1151,15 @@ function movedTime(f){
   let d=Math.abs(m(e)-m(s));d=Math.min(d,1440-d);
   return d>=5;
 }
+// A flight that has gone (left this airport, or landed here)
+function isDone(f){return f.state==='departed'||f.state==='arrived';}
+// vNEXT — amber is for a time still to come; once a flight has gone, the
+// time it went is in the row's plain ink (an amber 02:57 beside a green
+// 'Arrived' read as two different stories)
 function timeHtml(f){
   const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
   if(movedTime(f))
-    return '<div class="tcol"><div class="was">'+clk(sched)+'</div><div class="hh moved">'+clk(est)+'</div></div>';
+    return '<div class="tcol"><div class="was">'+clk(sched)+'</div><div class="hh'+(isDone(f)?'':' moved')+'">'+clk(est)+'</div></div>';
   return '<div class="tcol"><div class="hh">'+clk(sched)+'</div></div>';
 }
 function slotHtml(f,isArr){
@@ -1005,19 +1168,22 @@ function slotHtml(f,isArr){
   if(f.state==='cancelled') vh='<div class="v tbd">—</div>';
   else if(v){const n=v.length;vh='<div class="v'+(n>=5?' l5':n===4?' l4':n===3?' l3':'')+'">'+esc(v)+'</div>';}
   else vh='<div class="v tbd">'+esc(T('tbd'))+'</div>';
-  return '<div class="slot"><div class="k'+(String(k).length>6?' long':'')+'">'+esc(k)+'</div>'+vh+'</div>';
+  return '<div class="slot"><div class="k">'+esc(k)+'</div>'+vh+'</div>';
 }
 function flightKey(f){return (f.flight||'')+'|'+(f.schedDate||'')+'|'+(f.schedTime||'');}
+// vNEXT — the status is drawn twice and shown once: beside the airline, or,
+// in a list where it has no room there (.tight, see fitRows), at the end of
+// the code line under the gate box
 function rowHtml(f,i,isArr){
   const s=statusOf(f), name=airlineName(f);
   const via=(f.via&&f.via.length)?' · '+esc(T('via'))+' '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
-  return '<div class="fcard'+(f.state==='cancelled'?' cx':'')+((f.state==='departed'||f.state==='arrived')?' done':'')
+  const pill='<span class="st '+s.c+'"><span class="d"></span>'+esc(capFirst(s.t))+'</span>';
+  return '<div class="fcard'+(f.state==='cancelled'?' cx':'')+(isDone(f)?' done':'')
     +'" role="button" tabindex="0" data-k="'+esc(flightKey(f))+'" onclick="openFlight('+i+')" onkeydown="if(event.key===\'Enter\')openFlight('+i+')">'
     +timeHtml(f)
-    +'<div class="l1"><span class="al">'+tileHtml(f.airline)+wmHtml(f.airline,name)+'</span>'
-    +'<span class="st '+s.c+'"><span class="d"></span>'+esc(capFirst(s.t))+'</span></div>'
-    +'<div class="city">'+esc(cityOf(f))+'</div>'
-    +'<div class="sub"><b>'+esc(dispIata(f.cityIata||''))+'</b> · <span class="fno">'+esc(f.flight)+'</span>'+via+'</div>'
+    +'<div class="l1"><span class="al">'+tileHtml(f.airline)+wmHtml(f.airline,name)+'</span>'+pill+'</div>'
+    +'<div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName))+'</div>'
+    +'<div class="sub"><span class="sx"><b>'+esc(dispIata(f.cityIata||''))+'</b> · <span class="fno">'+esc(f.flight)+'</span>'+via+wxHtml(f.cityIata)+'</span>'+pill+'</div>'
     +slotHtml(f,isArr)+'</div>';
 }
 // Rows from..to, with a day line wherever the date changes (the first row's
@@ -1033,6 +1199,17 @@ function rowsHtml(list,from,to,isArr){
   }
   return h;
 }
+// vNEXT — THE DEPARTURES THAT HAVE GONE, FOLDED. At Heathrow the whole first
+// screen was flights that had already left; they are now one line above the
+// list ('Departed (12)'), which opens them. Arrivals are never folded: a
+// flight that has just landed is the one whose belt people are looking for.
+let SHOW_GONE=false;
+const IC_DOWN='<polyline points="6 9 12 15 18 9"/>';
+function goneHtml(n){
+  const L=langRes(); let ns=String(n);try{ns=BoardStrings.num(n,L)||ns;}catch(e){}
+  return '<button class="gone" type="button" onclick="showGone()">'+svg(IC_DOWN)+'<span>'+esc(BoardStrings.fmt('appGoneDep',L,{N:ns},true))+'</span></button>';
+}
+function showGone(){SHOW_GONE=true;render({keep:true});}
 function skeletonHtml(){let h='';for(let i=0;i<6;i++)h+='<div class="sk" aria-hidden="true"><i class="a"></i><div class="m"><i></i><i></i><i></i></div><i class="s"></i></div>';return h;}
 function emptyHtml(ic,h,p){return '<div class="empty">'+svg(ic)+'<div class="h">'+esc(h)+'</div>'+(p?'<div class="p">'+esc(p)+'</div>':'')+'</div>';}
 function matches(f,q){
@@ -1047,14 +1224,16 @@ function render(o){
   const cards=document.getElementById('cards'); if(!cards)return;
   const q=(document.getElementById('q').value||'').trim().toLowerCase();
   const isArr=DIR==='arr';
-  if(!LOADED){cards.innerHTML=skeletonHtml();RENDERED=[];return;}
-  let list=FLIGHTS;
+  if(!LOADED){cards.innerHTML=skeletonHtml();RENDERED=[];wxCredit();return;}
+  let list=FLIGHTS, gone=0;
   if(q)list=list.filter(f=>matches(f,q));
+  else if(!isArr&&!SHOW_GONE){const left=list.filter(f=>!isDone(f));if(left.length&&left.length<list.length){gone=list.length-left.length;list=left;}}
   if(!list.length){
     RENDERED=[];
     if(q) cards.innerHTML=emptyHtml(IC_SEARCH,(isArr?T('noArrMatch'):T('noMatch'))+' “'+q+'”');
     else if(FEED&&FEED.state==='unavailable') cards.innerHTML=emptyHtml(IC_OFF,BoardStrings.bs('feedUnavailable',langRes()));
     else cards.innerHTML=emptyHtml(IC_PLANE,isArr?T('noArr'):T('noDep'));
+    wxCredit();
     return;
   }
   const anchor=o.keepScroll?anchorGet():null;
@@ -1063,16 +1242,30 @@ function render(o){
   RENDERED=list;
   const n=Math.min(list.length,Math.max(PAGE,SHOWN));
   SHOWN=n;
-  cards.innerHTML=rowsHtml(list,0,n,isArr)+(n<list.length?'<div class="more" id="more"></div>':'');
+  cards.innerHTML=(gone?goneHtml(gone):'')+rowsHtml(list,0,n,isArr)+(n<list.length?'<div class="more" id="more"></div>':'');
+  fitRows(true);
   watchMore();
   if(anchor)anchorSet(anchor);
+  wxCredit();
+  wxKick(list.slice(0,n).map(f=>f.cityIata));
 }
 function showMore(){
   const s=document.getElementById('more'); if(!s)return;
   const from=SHOWN, to=Math.min(RENDERED.length,SHOWN+PAGE);
-  if(to>from){SHOWN=to;s.insertAdjacentHTML('beforebegin',rowsHtml(RENDERED,from,to,DIR==='arr'));}
+  if(to>from){SHOWN=to;s.insertAdjacentHTML('beforebegin',rowsHtml(RENDERED,from,to,DIR==='arr'));fitRows(false);wxKick(RENDERED.slice(from,to).map(f=>f.cityIata));}
   if(SHOWN>=RENDERED.length){s.remove();return;}
   if(_io){_io.unobserve(s);_io.observe(s);}
+}
+// The list's layout: .tight when the status has no room beside the airline
+// on some row (or always under 360 px). fresh: a new list, measured afresh;
+// otherwise only the rows just added can make it tight.
+function fitRows(fresh){
+  const c=document.getElementById('cards'); if(!c)return;
+  if(window.innerWidth<360){c.classList.add('tight');return;}
+  if(fresh)c.classList.remove('tight');
+  else if(c.classList.contains('tight'))return;
+  const ls=c.querySelectorAll('.fcard .l1');
+  for(let i=fresh?0:Math.max(0,ls.length-PAGE);i<ls.length;i++){if(ls[i].offsetHeight>34){c.classList.add('tight');return;}}
 }
 let _io=null;
 function watchMore(){
@@ -1106,18 +1299,21 @@ function paintHint(){
   const L=langRes(), isArr=DIR==='arr';
   let cls='', txt='';
   if(!LOADED){cls='wait';txt=(!LOADED?BoardStrings.bs('appLoading',langRes()):'');}
-  else if(FEED&&FEED.state==='unavailable'){cls='down';txt=BoardStrings.bs('feedUnavailable',L);}
+  // vNEXT — with nothing to show, the list itself says the data is
+  // unavailable; the line above it does not say it a second time
+  else if(FEED&&FEED.state==='unavailable'){cls='down';txt=FLIGHTS.length?BoardStrings.bs('feedUnavailable',L):'';}
   else if(FEED&&FEED.state==='stale'){cls='stale';txt=FEED.asOf?BoardStrings.fmt('feedStale',L,{TIME:timeAt(FEED.asOf)},true):BoardStrings.bs('feedUnavailable',L);}
   else if(FLIGHTS.length){let n=String(FLIGHTS.length);try{n=BoardStrings.num(FLIGHTS.length,L)||n;}catch(e){}txt=(isArr?T('liveArr'):T('liveDep'))+' · '+n+' '+T('flightsN');}
-  else txt=isArr?T('noArr'):T('noDep');
+  else txt='';
   dot.className='live'+(cls?' '+cls:'');
   hint.textContent=txt;
+  if(hint.parentNode)hint.parentNode.hidden=!txt;
 }
-// The header: the airport's name and code, and its clock and date
+// The header: the airport once (its logo, or its code where it has none,
+// with its name where that says more than the code), its clock and date
 function paintHeader(){
-  const code=CURAP;
-  document.getElementById('apName').textContent=AP_NAME[code]||CITY[code]||dispIata(code);
-  document.getElementById('apIata').textContent=dispIata(code);
+  const code=CURAP, p=placeOf(code), nm=AIRPORTS[code]?pickerName(code):(p.q?p.c+' · '+p.q:p.c);
+  document.getElementById('apName').textContent=(nm&&nm!==code&&nm!==dispIata(code))?nm:'';
   tickClock();
 }
 function tickClock(){
@@ -1132,6 +1328,79 @@ function tickClock(){
 }
 // The day lines stick under the header, whatever height it wraps to
 function measureHeader(){const tb=document.getElementById('topbar');if(tb)document.documentElement.style.setProperty('--hdr-h',tb.offsetHeight+'px');}
+// ── THE WEATHER AT THE OTHER END (vNEXT) ─────────────────────────────
+// The phone board prints each destination's temperature on its row
+// ('AC1983 Gate 4 11°C'); the app now does too, on the row and on the
+// flight's route card. Same source as the boards (fids-core.js _fetchMetWx):
+// the site's own /wxcurrent, MET Norway behind the Worker's half-hour cache,
+// asked by the airport's position (js/airport-coords.js, the boards' COORDS,
+// loaded when first needed). Only for rows on screen, four at a time; °C, as
+// the boards' first slide. MET's licence asks for its credit, which shows
+// wherever a temperature does (wxCredit, the weather card's own words).
+const WX={}, WX_TRY={}; let WX_Q=[], WX_RUN=0, WX_ON=true, _coordsP=null;
+function wxTemp(code){const w=WX[String(code||'').toUpperCase()];return (w&&typeof w.t==='number')?Math.round(w.t)+'°C':'';}
+function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<span class="wx" data-wx="'+esc(code)+'">'+(t?' · <bdi>'+esc(t)+'</bdi>':'')+'</span>';}
+function _coords(){
+  if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
+  if(!_coordsP)_coordsP=new Promise(function(ok){
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24040';
+    sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
+    document.head.appendChild(sc);
+  });
+  return _coordsP;
+}
+function wxKick(codes){
+  if(!WX_ON||!codes||!codes.length)return;
+  const now=Date.now();
+  for(const c0 of codes){const c=String(c0||'').toUpperCase();if(!/^[A-Z]{3}$/.test(c)||(WX_TRY[c]&&now-WX_TRY[c]<30*60000))continue;WX_TRY[c]=now;WX_Q.push(c);}
+  if(WX_Q.length)_wxPump();
+}
+async function _wxPump(){
+  const co=await _coords();
+  while(WX_RUN<4&&WX_Q.length){
+    const c=WX_Q.shift(), p=co[c]; if(!p)continue;
+    WX_RUN++;
+    fetch('/wxcurrent?location='+p[0]+','+p[1]).then(function(r){return r.ok?r.json():null;}).then(function(d){
+      if(d&&!d.error&&d.current&&typeof d.current.temperature_2m==='number'){WX[c]={t:d.current.temperature_2m,at:Date.now()};wxPaint(c);}
+    }).catch(function(){}).then(function(){WX_RUN--;if(WX_Q.length)_wxPump();});
+  }
+}
+function wxPaint(c){
+  const t=wxTemp(c); if(!t)return;
+  document.querySelectorAll('.wx[data-wx="'+c+'"]').forEach(function(el){el.innerHTML=(el.classList.contains('ep-wx')?'':' · ')+'<bdi>'+esc(t)+'</bdi>';});
+  const cr=BoardStrings.bs('wxCredit',langRes());
+  document.querySelectorAll('.dt-credit[data-wxc="'+c+'"]').forEach(function(el){el.textContent=cr;});
+  wxCredit();
+}
+// the list's credit line, under the rows, while any of them shows a temperature
+function wxCredit(){
+  const el=document.getElementById('wxCredit'); if(!el)return;
+  const on=WX_ON&&!!document.querySelector('#cards .wx:not(:empty)');
+  el.hidden=!on; if(on)el.textContent=BoardStrings.bs('wxCredit',langRes());
+}
+// ── THE AIRCRAFT BEFORE IT FLIES (vNEXT) ─────────────────────────────
+// The gate screens' own answer (fids-core.js _acInfoKick): the Worker's
+// /acinfo reads the far end's own feed for today's aircraft, else the type
+// this flight number usually flies (a type only, never a registration). It
+// makes no FR24 call and spends no credit. Asked once per flight, when its
+// detail opens with no aircraft from the feed.
+const ACI={};
+function acKick(f){
+  const k=flightKey(f); if(Object.prototype.hasOwnProperty.call(ACI,k))return;
+  ACI[k]=null;
+  const fl=String(f.flight||'').replace(/\s+/g,'').toUpperCase();
+  if(!/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d{1,4}[A-Z]?$/.test(fl))return;
+  const other=/^[A-Z]{3}$/.test(String(f.cityIata||''))?f.cityIata:'';
+  // our arrival left from THEIR departures; our departure lands in THEIR arrivals
+  const at=f.dir==='arr'?'dep':'arr';
+  fetch(APP_PROXY+'/acinfo?f='+encodeURIComponent(fl)+(other?'&other='+encodeURIComponent(other):'')+'&at='+at+(f._ts?'&ts='+f._ts:''),{cache:'no-store'})
+    .then(function(r){return r.ok?r.json():null;}).then(function(j){
+      if(!j||!j.type)return;
+      ACI[k]={type:String(j.type),reg:j.basis==='feed'?String(j.reg||''):''};
+      const d=document.getElementById('detail');
+      if(DETAIL_I>=0&&d&&d.classList.contains('show')&&RENDERED[DETAIL_I]&&flightKey(RENDERED[DETAIL_I])===k)openFlight(DETAIL_I);
+    }).catch(function(){});
+}
 // ── LIVE FLIGHTS ──────────────────────────────────────────────────────
 // The app asks the same Worker the boards ask, so the two surfaces show the
 // same flights (the old /oag/departures route does not exist on this origin,
@@ -1319,14 +1588,26 @@ async function fetchDir(dir,ap){
       }
     }catch(e){}
   }
-  // Map → dedupe → drop stale departed/arrived → sort.
+  // Map → drop stale departed/arrived → dedupe → sort.
   let all=raw.map(x=>adbToCard(x,dir)).filter(f=>f&&f.flight&&f.schedTime);
   // a feed that wrote no local date: the date of its UTC time at the airport
   for(const f of all){ if(!f.schedDate&&f._ts&&TZ[ap]) f.schedDate=adbFmt(new Date(f._ts),TZ[ap]).slice(0,10); }
+  return cardList(all,dir,Date.now());
+}
+// vNEXT — THE CUTOFF FIRST, THEN ONE ROW PER FLIGHT PER DAY.
+// The duplicate check used to match the flight number and the time only, and
+// ran before the cutoff: a feed carries the same flight at the same time on
+// three days, so yesterday's copy won the check and was then cut as gone, and
+// today's flight vanished with it (YUL departures showed 224 of 439 flights;
+// at 22:30 Moncton showed no departures while the feed carried 9 for the
+// morning). A duplicate is now the same flight on the same date at the same
+// time, among the flights still listed — the board's own key (number and
+// scheduled time, which carries the date).
+function cardList(all,dir,now){
+  const cutoff=now-(dir==='arr'?90:25)*60000;   // departed ~25 min, arrived ~90 min
   const seen=new Set();
-  const cutoff=Date.now()-(dir==='arr'?90:25)*60000;   // departed ~25 min, arrived ~90 min
-  return all.filter(f=>{const k=f.flight+'|'+f.schedTime;if(seen.has(k))return false;seen.add(k);return true;})
-            .filter(f=>!f._effTs || f._effTs>=cutoff)
+  return all.filter(f=>!f._effTs || f._effTs>=cutoff)
+            .filter(f=>{const k=f.flight+'|'+(f.schedDate||'')+'|'+f.schedTime;if(seen.has(k))return false;seen.add(k);return true;})
             .sort((a,b)=>a._ts-b._ts);
 }
 // What the feed itself says about this airport and direction (feed-router.js:
@@ -1356,6 +1637,7 @@ async function load(o){
     const hint=document.getElementById('hint'), isArr=dir==='arr';
     if(LOADED&&FLIGHTS.length){hint.textContent=(isArr?T('liveArr'):T('liveDep'))+' · '+T('reconn');}
     else{hint.textContent=T('reconnB');}
+    if(hint.parentNode)hint.parentNode.hidden=false;
     return;
   }
   // vNEXT — an answer for another airport or direction, or older than the one
@@ -1386,7 +1668,7 @@ function refresh(){load({keepScroll:true});}
 // visit already has one (it is replaced the moment the fresh one lands),
 // otherwise the loading rows — never the previous airport's flights
 function startView(){
-  FLIGHTS=[];FEED=null;LOADED=false;SHOWN=PAGE;
+  FLIGHTS=[];FEED=null;LOADED=false;SHOWN=PAGE;SHOW_GONE=false;
   const c=CACHE[CURAP+'|'+DIR];
   if(c&&Date.now()-c.at<10*60000){FLIGHTS=c.list;FEED=c.feed;LOADED=true;}
   paintHint();render();
@@ -1412,26 +1694,89 @@ function setDir(dir){
 // shows its code in white instead. Measured from every live airport's logo
 // on 2026-10-12; a logo not listed here is lettering, and turns white.
 const LOGO_NIGHT={YSJ:'own',YYJ:'own',SLC:'own',LAS:'own',SYD:'code',MIA:'code'};
+// vNEXT — THE AIRPORT'S OWN LOOK, AS ITS PHONE BOARD WEARS IT. The app was
+// Bricolage on a navy band at every airport; at Moncton the board and the
+// phone board are Possibility on the Acadian red. The airport config the
+// app already read for the logo says which font (font) and which band
+// (customColors.hdr, the board's --fids-banner-bg); Moncton's red is the
+// board's own rule (css/display-overrides.css, body.fids-ap-YQM
+// .fids-banner-board), which overrides its config there. A band is worn only
+// where the band's white words read on it at 4.5:1 or better.
+const BAND_OWN={YQM:'#D21034'};
+const FONT_STACK={possibility:"'Possibility','Bricolage Grotesque',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"};
+function _wcr(rgb){
+  const l=rgb.map(function(x){x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4);});
+  return 1.05/(0.2126*l[0]+0.7152*l[1]+0.0722*l[2]+0.05);
+}
+// white on the band, under the tabs' 10% white wash (the harder of the two)
+function bandOk(h){
+  const m=/^#([0-9a-f]{6})$/i.exec(String(h||'')); if(!m)return false;
+  const n=parseInt(m[1],16), c=[(n>>16)&255,(n>>8)&255,n&255];
+  return _wcr(c.map(function(v){return Math.round(v*.9+25.5);}))>=4.5;
+}
+function brandOf(code,c){
+  c=c||{}; const cc=c.customColors||{};
+  let band=BAND_OWN[code]||((!c.theme||c.theme==='custom')&&cc.hdr)||'';
+  if(!bandOk(band))band='';
+  return {u:String((c.logo&&c.logo.url)||''),font:String(c.font||'').toLowerCase(),band:band,hw:!!c.hideWeather};
+}
+// Each airport's look is remembered on the phone, so its logo, band and font
+// are drawn at once on the next visit (the code used to stand in the logo's
+// place until the config answered)
+const BRAND_KEY='app_brand_v1';
+function brandGet(code){try{const all=JSON.parse(localStorage.getItem(BRAND_KEY)||'{}');return (all&&all[code])||null;}catch(e){return null;}}
+function brandPut(code,b){try{const all=JSON.parse(localStorage.getItem(BRAND_KEY)||'{}')||{};all[code]=b;localStorage.setItem(BRAND_KEY,JSON.stringify(all));}catch(e){}}
+function _logoCode(code){
+  const el=document.getElementById('apLogo'); if(!el)return;
+  el.removeAttribute('data-night');el.removeAttribute('data-src');
+  document.getElementById('brand').classList.remove('has-logo');
+  el.textContent=dispIata(code);measureHeader();
+}
+function _logoDraw(code,u){
+  const el=document.getElementById('apLogo');
+  el.setAttribute('data-night',LOGO_NIGHT[code]||'white');el.setAttribute('data-src',u);
+  document.getElementById('brand').classList.add('has-logo');
+  el.innerHTML='<img src="'+esc(u)+'" alt="'+esc(dispIata(code))+'"><span class="lcode">'+esc(dispIata(code))+'</span>';
+  const im=el.querySelector('img'); if(im)im.onerror=function(){if(code===CURAP)_logoCode(code);};
+  measureHeader();
+}
+// remembered: drawn at once; new: the code stays until the logo has arrived
+function applyBrand(code,b,remembered){
+  const root=document.documentElement;
+  // (an empty value removes the airport's own and the sheet's band returns)
+  root.style.setProperty('--band',(b&&b.band)||'');
+  const fs=b&&FONT_STACK[b.font];
+  root.style.setProperty('--app-font',fs||'');
+  if(fs){try{document.fonts.load("700 16px 'Possibility'").then(function(){measureHeader();fitRows(true);});}catch(e){}}
+  WX_ON=!(b&&b.hw); root.classList.toggle('no-wx',!WX_ON);
+  const el=document.getElementById('apLogo');
+  if(!b||!b.u){_logoCode(code);return;}
+  if(el.getAttribute('data-src')===b.u)return;
+  if(remembered){_logoDraw(code,b.u);return;}
+  const im=new Image();
+  im.onload=function(){if(code===CURAP)_logoDraw(code,b.u);};
+  im.onerror=function(){if(code===CURAP)_logoCode(code);};
+  im.src=b.u;
+}
 async function loadBrand(code){
-  // Real airport logo from the public airport-config (R2-hosted).
-  // vNEXT — written only while that airport is still the one shown
+  // the public airport config (R2-hosted logo); written only while that
+  // airport is still the one shown. A failed answer keeps what is drawn.
   try{
     const r=await fetch(PROXY+'/api/airport-config/'+encodeURIComponent(code),{cache:'no-cache'});
+    if(code!==CURAP||!r.ok)return;
+    const c=await r.json();
     if(code!==CURAP)return;
-    if(r.ok){const c=await r.json();const u=c&&c.logo&&c.logo.url;
-      if(code!==CURAP)return;
-      const el=document.getElementById('apLogo');
-      // the code stays in its place until the logo has arrived (no blank slot)
-      if(u){const im=new Image();im.onload=function(){if(code!==CURAP)return;el.setAttribute('data-night',LOGO_NIGHT[code]||'white');el.parentNode.classList.add('has-logo');el.innerHTML='<img src="'+u+'" alt="'+esc(dispIata(code))+'" onerror="this.parentNode.textContent=\''+esc(dispIata(code))+'\'"><span class="lcode">'+esc(dispIata(code))+'</span>';measureHeader();};im.src=u;}
-      else{el.textContent=dispIata(code);}}
-  }catch(e){if(code===CURAP)document.getElementById('apLogo').textContent=dispIata(code);}
+    const b=brandOf(code,c);
+    brandPut(code,b);
+    applyBrand(code,b,false);
+  }catch(e){}
 }
 // An airport the picker does not list (a link to one with no feed of ours)
 // is still shown as itself, with no live data — never as Moncton
 function ensureOption(code){
   const sel=document.getElementById('apSelect');
   if(!sel||sel.querySelector('option[value="'+code+'"]'))return;
-  const o=document.createElement('option');o.value=code;o.textContent=(CITY[code]||code)+' ('+dispIata(code)+')';
+  const o=document.createElement('option');o.value=code;o.textContent=CITY[code]?CITY[code]+' ('+dispIata(code)+')':dispIata(code);
   sel.insertBefore(o,sel.firstChild);
 }
 function setAirport(code,_boot){
@@ -1454,9 +1799,7 @@ function setAirport(code,_boot){
   }catch(e){}
   ensureOption(code);
   document.getElementById('apSelect').value=code;
-  document.getElementById('apLogo').textContent=dispIata(code);
-  document.getElementById('apLogo').removeAttribute('data-night');
-  document.getElementById('apLogo').parentNode.classList.remove('has-logo');
+  applyBrand(code,brandGet(code),true);
   paintHeader();
   closeFlight(true);
   const q=document.getElementById('q'); if(q&&!_boot)q.value='';
@@ -1466,7 +1809,6 @@ function setAirport(code,_boot){
   loadBrand(code);
   measureHeader();
 }
-const PLANE_SVG='<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>';
 // Operator logo (Rouge/Jazz/PAL/Encore) for the detail view, picked light/dark
 // for the current app theme so it stays visible. Falls back to the name text.
 const OP_LOGO={
@@ -1475,25 +1817,36 @@ const OP_LOGO={
   'PAL Airlines':    {d:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg', l:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg'},
   'WestJet Encore':  {d:'/logos/airlines/canadian/encore.png',                                 l:'/logos/airlines/canadian/encore.png'}
 };
-function opLogoHtml(name,onDark){
+// lightGround: the hero is light by day and dark at night (Porter), so both
+// marks are drawn and the theme shows one
+function opLogoHtml(name,lightGround){
   const v=OP_LOGO[name]; if(!v) return '';
-  const u=onDark?v.d:v.l;
-  return '<img src="'+u+'" alt="'+esc(name)+'" style="height:22px;width:auto;max-width:170px;object-fit:contain;vertical-align:middle;" '
-    +'onerror="this.outerHTML=&quot;'+esc(name)+'&quot;">';
+  const img=function(u,cls){return '<img'+(cls?' class="'+cls+'"':'')+' src="'+u+'" alt="'+esc(name)+'" onerror="this.outerHTML=&quot;'+esc(name)+'&quot;">';};
+  return lightGround?img(v.l,'wm-l')+img(v.d,'wm-d'):img(v.d,'');
 }
 // vNEXT — THE FLIGHT. The hero wears the airline's colours; then the route
 // as codes, the status (a cancelled flight's is a full red band, and its
 // times are struck, its gate not offered), the day it flies, and the facts in
 // the order a passenger needs them: the time (the airport's new time first
 // when it moved), the gate or belt, the terminal, the far end, the aircraft.
+// vNEXT — what the boards show for the same flight is here too: the weather
+// at the other end (the phone board's row: 'AC1983 Gate 4 11°C') and the
+// aircraft before it flies (the gate screens' /acinfo: the far end's own
+// feed, else the type this number usually flies — no FR24 call, no credit),
+// with its livery art.
 function openFlight(i){
   const f=RENDERED[i]; if(!f)return;
   DETAIL_I=i;
-  const s=statusOf(f), city=cityOf(f), name=airlineName(f);
+  const s=statusOf(f), name=airlineName(f), key=flightKey(f);
   const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
-  const isArr=f.dir==='arr', cx=f.state==='cancelled';
+  const isArr=f.dir==='arr', cx=f.state==='cancelled', done=isDone(f);
   const moved=!cx&&movedTime(f);
   const hc=heroColors(f.airline);
+  const aci=ACI[key]||null, acRaw=f.aircraft||(aci&&aci.type)||'', reg=f.reg||(aci&&aci.reg)||'';
+  // the far end's real code, for the weather lookups only (what is printed
+  // goes through dispIata)
+  const oc=String(f.cityIata||'');
+  if(!acRaw&&!cx)acKick(f);
   const opLine=!!(f.operatedBy&&f.operatedBy.toUpperCase()!==name.toUpperCase()&&f.operatedBy.toUpperCase()!==String(AIRLINE[f.airline]||'').toUpperCase());
   function cell(k,v,o){o=o||{};
     const vc=(o.big?' big':'')+(o.moved?' moved':'')+(o.tbd?' tbd':'')+(o.strike?' strike':'');
@@ -1501,7 +1854,7 @@ function openFlight(i){
       +(o.was?'<div class="v was">'+o.was+'</div>':'')+(o.sub?'<div class="sub">'+esc(o.sub)+'</div>':'')+'</div>';}
   const tLbl=isArr?T('arrives'):T('departs');
   let cells='';
-  if(moved) cells+=cell(tLbl,'<span class="ltr">'+clk(est)+'</span>',{html:true,big:true,moved:true,was:'<span class="ltr">'+clk(sched)+'</span>'});
+  if(moved) cells+=cell(tLbl,'<span class="ltr">'+clk(est)+'</span>',{html:true,big:true,moved:!done,was:'<span class="ltr">'+clk(sched)+'</span>'});
   else cells+=cell(tLbl,sched?'<span class="ltr">'+clk(sched)+'</span>':'—',{html:true,big:true,strike:cx});
   if(!cx){const gv=String((isArr?f.belt:f.gate)||'').trim();cells+=cell(isArr?T('bagBelt'):T('gate'),gv||T('tbd'),{key:true,big:!!gv,tbd:!gv});}
   if(f.terminal&&!cx) cells+=cell(T('terminal'),f.terminal);
@@ -1512,24 +1865,27 @@ function openFlight(i){
   cells+=otherLine;
   var _dur=fmtDur(f.durMin); if(_dur) cells+=cell(T('flightTime'),_dur);
   if(f.via&&f.via.length) cells+=cell(T('via'),f.via.map(c=>CITY[c]||c).join(', '));
-  const plane=f.aircraft?('<div class="dt-cell wide"><div class="planeic">'+svg(PLANE_SVG)+'</div>'
-    +'<div><div class="k">'+esc(T('aircraft'))+'</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
-    +(f.reg?'<div class="sub">'+esc(T('reg'))+' '+esc(f.reg)+'</div>':'')+'</div></div>'):'';
+  const plane=acRaw?('<div class="dt-cell wide"><div class="planeic"><span class="tic pln" aria-hidden="true"></span></div>'
+    +'<div><div class="k">'+esc(T('aircraft'))+'</div><div class="v">'+esc(acName(acRaw))+'</div>'
+    +(reg?'<div class="sub">'+esc(T('reg'))+' '+esc(reg)+'</div>':'')+'</div></div>'):'';
   // Route endpoints: for an arrival, origin → here; for a departure, here → destination.
-  const epHere='<div class="ep"><div class="code">'+esc(dispIata(CURAP))+'</div><div class="city">'+esc(AP_NAME[CURAP]||CITY[CURAP]||dispIata(CURAP))+'</div></div>';
-  const epOther='<div class="ep"><div class="code">'+esc(dispIata(f.cityIata||''))+'</div><div class="city">'+esc(city)+'</div></div>';
+  const epHere='<div class="ep"><div class="code">'+esc(dispIata(CURAP))+'</div><div class="city">'+placeHtml(placeOf(CURAP))+'</div></div>';
+  const epOther='<div class="ep"><div class="code">'+esc(dispIata(f.cityIata||''))+'</div><div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName))+'</div>'
+    +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(f.cityIata)?'<bdi>'+esc(wxTemp(f.cityIata))+'</bdi>':'')+'</span>':'')+'</div>';
   const when=f.schedDate?dayLabel(f.schedDate):'';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+'">'+heroBrand(f.airline,name,hc.light)
+    '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light)
     +'<div class="flt">'+esc(f.flight)+'</div>'
-    +(opLine?'<div class="al-op">'+esc(T('operatedBy'))+' '+(opLogoHtml(f.operatedBy,!hc.light)||esc(f.operatedBy))+'</div>':'')
-    +liveryImg(f.airline,f.aircraft,f.operatedBy)+'</div>'
+    +(opLine?'<div class="al-op">'+esc(T('operatedBy'))+' '+(opLogoHtml(f.operatedBy,hc.light)||esc(f.operatedBy))+'</div>':'')
+    +liveryImg(f.airline,acRaw,f.operatedBy)+'</div>'
     +'<div class="dt-route">'+(isArr?epOther:epHere)
-    +'<span class="pl">'+svg(PLANE_SVG)+'</span>'
+    +'<span class="pl"><span class="tic pln" aria-hidden="true"></span></span>'
     +(isArr?epHere:epOther)+'</div>'
     +(cx?'<div class="dt-cx">'+esc(capFirst(s.t))+'</div>'+(when?'<div class="dt-status"><span class="when">'+esc(when)+'</span></div>':'')
         :'<div class="dt-status"><span class="st '+s.c+'"><span class="d"></span>'+esc(capFirst(s.t))+'</span>'+(when?'<span class="when">'+esc(when)+'</span>':'')+'</div>')
-    +'<div class="dt-grid">'+cells+plane+'</div>';
+    +'<div class="dt-grid">'+cells+'</div>'+plane
+    +'<div class="dt-credit" data-wxc="'+esc(oc)+'">'+(WX_ON&&wxTemp(f.cityIata)?esc(BoardStrings.bs('wxCredit',langRes())):'')+'</div>';
+  if(WX_ON&&f.cityIata)wxKick([f.cityIata]);
   const d=document.getElementById('detail'), wasOpen=d.classList.contains('show');
   if(!wasOpen)d.scrollTop=0;
   d.classList.add('show');d.setAttribute('aria-hidden','false');
@@ -1608,7 +1964,16 @@ const APP_LIVE_AIRPORTS = new Set([
   'LHR','DUB','EDI','KEF',
   'SYD'   // v23772
 ]);
-// Build the airport picker from the catalogue, grouped by region.
+// Build the airport picker from the catalogue, grouped by region, its
+// headings in the app's language (rebuilt when the language changes).
+// vNEXT — a name the way the boards write it: the city, then the airport's
+// own name where its city has two ('Toronto · Billy Bishop', 'Billy-Bishop'
+// in French), then its code, the line's only bracket.
+function pickerName(k){
+  const sub=apSub(k,true), a=AIRPORTS[k];
+  if(sub)return (CITY[k]||String(a?a.n:k).split(' · ')[0])+' · '+sub;
+  return a?a.n:(CITY[k]||k);
+}
 function buildAirportOptions(){
   const sel=document.getElementById('apSelect');
   const groups={CA:[],US:[],INT:[]};
@@ -1622,11 +1987,13 @@ function buildAirportOptions(){
   let html='';
   ['CA','US','INT'].forEach(r=>{
     if(!groups[r].length)return;
-    html+='<optgroup label="'+REGION_LABEL[r]+'">';
-    groups[r].forEach(k=>{html+='<option value="'+k+'">'+esc(AIRPORTS[k].n)+(String(AIRPORTS[k].n).indexOf('('+dispIata(k)+')')>=0?'':' ('+esc(dispIata(k))+')')+'</option>';});
+    html+='<optgroup label="'+esc(T(REGION_KEY[r]))+'">';
+    groups[r].forEach(k=>{html+='<option value="'+k+'">'+esc(pickerName(k))+' ('+esc(dispIata(k))+')</option>';});
     html+='</optgroup>';
   });
   sel.innerHTML=html;
+  // an airport outside the list (a link to one with no feed) stays chosen
+  try{if(CURAP){ensureOption(CURAP);sel.value=CURAP;}}catch(e){}
 }
 buildAirportOptions();
 // ── CONNECTED BOOT
@@ -1665,8 +2032,9 @@ let BOOT_GATE='';
 // Refresh the list (every 3 min), holding the reader's place; the clock every 15 s.
 setInterval(()=>{ refresh(); },180000);
 setInterval(()=>{ tickClock(); },15000);
-window.addEventListener('resize',()=>{ measureHeader(); });
-try{document.fonts.ready.then(()=>{ measureHeader(); });}catch(e){}
+let _rzT=0;
+window.addEventListener('resize',()=>{ measureHeader(); clearTimeout(_rzT); _rzT=setTimeout(function(){fitRows(true);},150); });
+try{document.fonts.ready.then(()=>{ measureHeader(); fitRows(true); });}catch(e){}
 // v23230 — iOS RESUME WATCHDOG, same rule the boards carry (the reference 20:05
 // screenshot: cards frozen at 18:20 — iOS suspends a background tab's
 // timers, and a frozen WebKit context never fires them again). A heartbeat
