@@ -97,7 +97,7 @@ test('every gate map gets the photo over its street map, bounded, from zoom 14 i
   assert.match(add, /if \(!m \|\| m\._fidsPhoto/, 'once per map');
   const tiles = lift(CORE, 'function _gateMapTileLayer(');
   assert.match(tiles, /L\.tileLayer\('\/tiles\/osm\/\{z\}\/\{x\}\/\{y\}\.png'/, 'the street map stays the base everywhere');
-  assert.match(tiles, /_gatePhotoAdd\(m\)/, 'hooked where every map build passes (the radar\'s hook)');
+  assert.match(tiles, /_gatePhotoAdd\(m\)/, 'hooked where every map build passes (the base layer\'s add hook)');
   assert.doesNotMatch(CORE, /mapphoto|geonb\.snb\.ca/, 'the preview that asked GeoNB live is gone');
 });
 

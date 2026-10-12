@@ -23296,16 +23296,69 @@ var HOLIDAY_BAND = {
   'thanksgiving-ca': ['#9E2A1B', '#D4561F', '#E8A93A', '#8F4A12']
 };
 // The few layers a look adds outside the band (display-overrides.css,
-// "A HOLIDAY LOOK"): on the gate, a warm wash, a harvest ribbon on the
-// date bar's top edge and one gold leaf alone in the empty cream between
-// the airline's logo and the airport's mark; on the baggage board, a warm
-// grade under the scrim. They exist only while body[data-fids-holiday] is
-// set and are removed the moment it is not, so a board that runs past
-// midnight goes back to itself without a reload.
+// "A HOLIDAY LOOK"). Every leaf is real artwork, trimmed out of two licensed
+// vector files (logos/holiday/thanksgiving/, docs/licenses/holiday-leaves.md),
+// in four colours: gold, amber and orange, rust and a deep red.
+// - Silk banner (fids): besides the gold badge, four fallen leaves in the
+//   two warm gaps, title-to-logo and logo-to-clock (tg-fall-a..d).
+// - Gate: a warm wash, a harvest ribbon on the date bar's top edge, one gold
+//   leaf drifting in the empty cream between the airline's artwork and the
+//   airport's mark, and up to three leaves resting ON the ribbon (pinned
+//   from the bottom, like the ribbon, so they sit on it at every size). On
+//   an Air Canada family gate the rust and deep red leaves turn amber and
+//   gold (tg-ac): no red maple beside the airline's own red maple.
+// - Baggage: a warm grade under the scrim and up to three leaves in the
+//   free warm space above the welcome line (tg-bag-a..c).
+// Each leaf is placed by measuring the free space it sits in, and is hidden
+// when it would not fit clear of every word, logo, clock or date. They
+// exist only while body[data-fids-holiday] is set and are removed the
+// moment it is not, so a board that runs past midnight goes back to itself
+// without a reload.
 var _HOLIDAY_LAYERS = [
   ['.g8-r1', 'tg-warm', null], ['.g8-r1', 'tg-ribbon', null], ['.g8-r1', 'tg-leaf', null],
-  ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim']
+  ['.g8-r1', 'tg-rest-a', null], ['.g8-r1', 'tg-rest-b', null], ['.g8-r1', 'tg-rest-c', null],
+  ['#fidsBanner', 'tg-fall-a', null], ['#fidsBanner', 'tg-fall-b', null],
+  ['#fidsBanner', 'tg-fall-c', null], ['#fidsBanner', 'tg-fall-d', null],
+  ['#baggageView .b5 .b5-band', 'tg-grade', '.b5-scrim'],
+  ['#baggageView .b5 .b5-band', 'tg-bag-a', '.b5-bin'], ['#baggageView .b5 .b5-band', 'tg-bag-b', '.b5-bin'],
+  ['#baggageView .b5 .b5-band', 'tg-bag-c', '.b5-bin']
 ];
+// the free span [lo, hi] of a host, measured from the host's left edge
+function _tgEdges(host, sel, hr, side) {
+  var v = side === 'right' ? -1 : Infinity, els = host.querySelectorAll(sel);
+  for (var i = 0; i < els.length; i++) {
+    var r = els[i].getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) continue;
+    if (side === 'right') v = Math.max(v, r.right - hr.left); else v = Math.min(v, r.left - hr.left);
+  }
+  return side === 'right' ? (v < 0 ? null : v) : (v === Infinity ? null : v);
+}
+// one leaf of size s, centred on x, shown only when it fits inside [lo, hi]
+function _tgPut(el, x, top, s, lo, hi) {
+  if (!el) return false;
+  var ok = s >= 24 && x - s / 2 >= lo && x + s / 2 <= hi;
+  el.style.display = ok ? '' : 'none';
+  if (!ok) return false;
+  el.style.width = el.style.height = Math.round(s) + 'px';
+  el.style.left = Math.round(x - s / 2) + 'px';
+  if (top != null) el.style.top = Math.round(top) + 'px';
+  return true;
+}
+// two leaves in one gap [g0, g1]: side by side where both fit, otherwise
+// the first alone, centred, made smaller if it must be (never under 36px)
+function _tgPair(e1, e2, g0, g1, w1, w2, t1, t2, H) {
+  var W = g1 - g0;
+  if (W >= w1 + w2 + 24) {
+    var x1 = Math.max(g0 + w1 / 2, g0 + W * 0.30), x2 = Math.min(g1 - w2 / 2, g0 + W * 0.80);
+    if (x2 - x1 < (w1 + w2) / 2 + 24) { x1 = g0 + w1 / 2; x2 = g1 - w2 / 2; }
+    _tgPut(e1, x1, t1, w1, g0, g1);
+    _tgPut(e2, x2, t2, w2, g0, g1);
+    return;
+  }
+  var w = Math.min(w1, W);
+  if (w < 36) { if (e1) e1.style.display = 'none'; } else _tgPut(e1, g0 + W / 2, (H - w) / 2, w, g0, g1);
+  if (e2) e2.style.display = 'none';
+}
 function _fidsHolidayLayers() {
   try {
     var on = !!document.body.dataset.fidsHoliday;
@@ -23323,20 +23376,72 @@ function _fidsHolidayLayers() {
       }
     }
     if (!on) return;
-    // the gate leaf: centred in the empty cream between the airline's
-    // artwork and the clock; no room (under 170px), no leaf
+    // the gate: the free cream runs from the airline's artwork to the
+    // airport's mark (or the clock). The gold leaf drifts in its middle;
+    // the resting leaves line up along the ribbon either side of it, each
+    // only where it fits, 24px clear of both logos.
+    var ga = String(document.body.getAttribute('data-gate-airline') || '').toUpperCase();
+    var acGate = /^(AC|QK|RV|ZX)$/.test(ga);
     var bands = document.querySelectorAll('.g8-r1');
     for (var k = 0; k < bands.length; k++) {
       var band = bands[k], leaf = band.querySelector(':scope > .tg-leaf');
       if (!leaf) continue;
-      var hr = band.getBoundingClientRect(), a = 0;
-      var art = band.querySelectorAll('.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas');
-      for (var m = 0; m < art.length; m++) { var r = art[m].getBoundingClientRect(); if (r.width > 0) a = Math.max(a, r.right - hr.left); }
-      var clock = band.querySelector('.octb-clockrow') || band.querySelector('.g8-r1-timebox');
-      var bx = clock ? clock.getBoundingClientRect().left - hr.left : 0;
-      if (!a || !bx || bx - a < 170) { leaf.style.display = 'none'; continue; }
-      leaf.style.display = '';
-      leaf.style.left = Math.round((a + bx) / 2 - 39) + 'px';
+      var rest = [band.querySelector(':scope > .tg-rest-a'), band.querySelector(':scope > .tg-rest-b'), band.querySelector(':scope > .tg-rest-c')];
+      var acArt = !!band.querySelector('.g8-r1-logoslot img[src*="/AC."], .g8-r1-logoslot img[src*="air-canada"], .g8-r1-logoslot img[src*="rouge"], .g8-r1-logoslot img[src*="jazz"]');
+      band.classList.toggle('tg-ac', acGate || acArt);
+      var hr = band.getBoundingClientRect();
+      var a = _tgEdges(band, '.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas', hr, 'right');
+      var bx = _tgEdges(band, '.octb-apmark, .octb-apsep, .octb-clock', hr, 'left');
+      if (bx == null) bx = _tgEdges(band, '.octb-clockrow, .g8-r1-timebox', hr, 'left');
+      var rib = band.querySelector(':scope > .tg-ribbon'), rt = rib ? rib.getBoundingClientRect().top - hr.top : hr.height - 32;
+      var kc = Math.max(0.6, Math.min(1.2, rt / 106));
+      if (a == null || bx == null || rt < 40) { leaf.style.display = 'none'; rest.forEach(function (e) { if (e) e.style.display = 'none'; }); continue; }
+      var lo = a + 24, hi = bx - 24, c = (lo + hi) / 2;
+      var m = Math.min(84 * kc, rt - 14);
+      var mOk = _tgPut(leaf, c, null, m, lo, hi);
+      if (!mOk) m = 0;
+      var wa = 52 * kc, wb = 46 * kc, wc = 42 * kc;
+      var xa = c - m / 2 - 14 * kc - wa / 2, xb = c + m / 2 + 18 * kc + wb / 2, xc = xb + wb / 2 + 26 * kc + wc / 2;
+      _tgPut(rest[0], xa, null, wa, lo, hi);
+      var bOk = _tgPut(rest[1], xb, null, wb, lo, hi);
+      _tgPut(rest[2], xc, null, wc, lo, bOk ? hi : -1);
+    }
+    // the silk banner: two leaves in the gap from the title to the
+    // airport's logo, two from the logo to the clock; sizes follow the
+    // banner's height (128px on a 1080p screen), each 24px clear of text.
+    var fb = document.getElementById('fidsBanner');
+    var fall = fb ? [fb.querySelector(':scope > .tg-fall-a'), fb.querySelector(':scope > .tg-fall-b'), fb.querySelector(':scope > .tg-fall-c'), fb.querySelector(':scope > .tg-fall-d')] : [];
+    if (fall[0]) {
+      var fr = fb.getBoundingClientRect(), H = fr.height, s = H / 128, pad = 24 * s;
+      var tR = _tgEdges(fb, '#hdrBoard > *, .fids-board-label > *, .fids-board-icon', fr, 'right');
+      var pL = _tgEdges(fb, '#fidsAirportPill', fr, 'left'), pR = _tgEdges(fb, '#fidsAirportPill', fr, 'right');
+      var cL = _tgEdges(fb, '#clock, #clockDate > *, .fids-banner-time', fr, 'left');
+      if (fr.width < 700 || H < 48 || tR == null || cL == null) { fall.forEach(function (e) { if (e) e.style.display = 'none'; }); }
+      else {
+        if (pL == null || pR == null) { pL = pR = fr.width / 2; }
+        var A0 = tR + pad, A1 = pL - pad, B0 = pR + pad, B1 = cL - pad;
+        _tgPair(fall[0], fall[1], A0, A1, 72 * s, 46 * s, H * 0.04, H * 0.50, H);
+        _tgPair(fall[2], fall[3], B0, B1, 56 * s, 44 * s, H * 0.44, H * 0.10, H);
+      }
+    }
+    // baggage: the warm space above the welcome line, right of the
+    // "Baggage claim" line and left of the clock and weather glass.
+    var bb = document.querySelector('#baggageView .b5 .b5-band');
+    var bag = bb ? [bb.querySelector(':scope > .tg-bag-a'), bb.querySelector(':scope > .tg-bag-b'), bb.querySelector(':scope > .tg-bag-c')] : [];
+    if (bag[0]) {
+      var br = bb.getBoundingClientRect();
+      var kR = _tgEdges(bb, '.b5-kick > *, .b5-kico', br, 'right');
+      var wel = bb.querySelector('.b5-welcome'), wT = wel ? wel.getBoundingClientRect().top - br.top : null;
+      var cwL = _tgEdges(bb, '.b5-clockwx', br, 'left');
+      if (cwL == null) cwL = br.width;
+      var room = wT == null ? 0 : wT - 14;
+      if (br.width < 700 || kR == null || room < 30) { bag.forEach(function (e) { if (e) e.style.display = 'none'; }); }
+      else {
+        var lo2 = kR + 28, hi2 = cwL - 28, sz = Math.min(60, room);
+        _tgPut(bag[0], lo2 + (hi2 - lo2) * 0.16, 6 + (room - sz) * 0.2, sz, lo2, hi2);
+        _tgPut(bag[1], lo2 + (hi2 - lo2) * 0.50, 6 + room - sz * 0.95, sz * 0.95, lo2, hi2);
+        _tgPut(bag[2], lo2 + (hi2 - lo2) * 0.84, 10, sz * 0.9, lo2, hi2);
+      }
     }
   } catch (e) {}
 }
@@ -31880,7 +31985,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24043';
+var FIDS_BUILD_TAG = 'v24044';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -42024,17 +42129,16 @@ function _gateMapTileLayer() {
   // single layer is enough — no separate labels overlay. The route line +
   // plane live in the SVG overlay pane on top.
   var t = L.tileLayer('/tiles/osm/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '', zIndex: 1 });
-  // v22712 — the radar overlay attaches itself whenever this base layer
-  // lands on a map. Hooking the layer's own 'add' event covers all six
+  // v22712 — hooking this base layer's own 'add' event covers all six
   // map-build sites (gate, gate-live, bigcraft, world fallbacks) without
-  // touching any of them.
+  // touching any of them. (2026-10-12: the precipitation radar overlay that
+  // first used this hook is removed; see the note below _gateMapShowOverlay.)
   t.on('add', function () {
     var m = this._map;
-    setTimeout(function () { try { _wxRadarAdd(m); } catch (e) {} }, 0);
-    // v24031 — and an airport's own aerial photo over it (_gatePhotoAdd)
+    // v24031 — an airport's own aerial photo over it (_gatePhotoAdd)
     try { _gatePhotoAdd(m); } catch (e) {}
     // v23916 — the aeroplane is sized in metres, so its size follows the zoom:
-    // hooked here, once per map, for the same reason as the radar — every
+    // hooked here, once per map, for the same reason as the photo — every
     // map-build site passes through this layer. 'zoom' fires on every frame of
     // a flyTo, so the aeroplane grows with the camera rather than after it.
     try {
@@ -42120,86 +42224,16 @@ function _bcFadeInWhenReady(tileLayer) {
 }
 
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.
-// v22712 — weather flips ON: the route map carries live precipitation
-// radar (backlog #27,
-// 
 function _gateMapShowOverlay(name) {
   return true;
 }
 
-// ── v22712: LIVE PRECIPITATION RADAR on the route maps. RainViewer's
-// global composite, served same-origin through the worker's /wxradar
-// route (host-pinned upstream, the /maptiles discipline) so locked-down
-// display networks only ever talk to us. The newest frame timestamp
-// comes from /wxradar/index (cached 5 min here AND at the worker); the
-// layer sits above the base tiles at 55% so streets stay readable, and
-// below the SVG pane so the route arc and plane always win. Where
-// there's no radar coverage (oceans, remote north) tiles are simply
-// transparent — the map looks exactly as before.
-var _wxRadarIdx = { at: 0, ts: 0 };
-function _wxRadarAdd(m) {
-  if (!m || !_gateMapShowOverlay('weather')) return;
-  var add = function (ts) {
-    if (!ts) return;
-    try {
-      if (!m._container || !m._container.isConnected) return; // map already torn down
-      // maxNativeZoom 7: RainViewer serves real tiles through z7 and a
-      // 'Zoom Level Not Supported' placeholder image beyond (measured:
- // z8+ returns the identical 1370-byte card — the PB923 big map
-      // was papered with them). Leaflet upscales the z7 tiles instead;
-      // radar blobs survive upscaling with no visible loss.
-      // v23103 — the radar draws in its own blurred pane
-      //
-      // RainViewer's low-zoom tiles are coarse blocks;
-      // blurring each tile img separately would show seams at tile edges,
-      // so the PANE is blurred as one composite — the blocks melt into
-      // soft weather shapes at every zoom.
-      try {
-        if (!m.getPane('wxradar')) {
-          m.createPane('wxradar');
-          var _wp = m.getPane('wxradar');
-          _wp.className += ' g8-wx-radar-pane';
-          _wp.style.zIndex = 350;
-        }
-      } catch (ep) {}
-      // v23104 — no radar at continental zooms
-      // : at z<=5 RainViewer cells are sub-blur speckle covering
-      // the whole map. The overlay only appears once the view is close
-      // enough for weather shapes to mean something.
-      // v23222 — RADAR HAS A CLOSE-ZOOM CEILING TOO
-      // Beyond z11 the z7 cells are stretched
-      // 16×+ — the Toronto close-up was one giant blocky wash. Past the
-      // ceiling the radar simply hides; the street/airport view stays clean.
-      // v23296 — the radar was invisible
-      // Two causes stacked: it was drawn
-      // at HALF opacity, and Leaflet 1.9 blends every tile with plus-lighter,
-      // which is ADDITIVE — radar's pale blues and greens added onto a
-      // near-black basemap barely move the pixels. Opacity up, and the radar
-      // pane is taken off the additive blend in CSS so its colours paint as
-      // themselves.
-      // v23299 — 0.92 was MY over-correction in v23296b and it is what made the
-      // radar look blurry — the blur had not been visible before.
-      // The tiles are native zoom 7 shown on a map at zoom 9: a 4x
-      // enlargement that was simply invisible at the old 0.5 additive blend.
-      // Turning it opaque did not add blur, it revealed it. Sharpness is
-      // capped by the source, so the honest fix is to sit between the two —
-      // clearly readable as weather, without the upscaled blocks dominating
-      // the map. A genuinely sharp radar needs a higher-zoom source.
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.68, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
-    } catch (e) {}
-  };
-  if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
-  try {
-    fetch('/wxradar/index').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
-      var past = j && j.radar && j.radar.past;
-      // Frame id comes from the PATH ("/v2/radar/9fbb5e443776"), not the
-      // numeric time — RainViewer switched to opaque tokens.
-      var p = (past && past.length) ? past[past.length - 1] : null;
-      var ts = p ? String(p.path || '').split('/').pop() : '';
-      if (ts) { _wxRadarIdx = { at: Date.now(), ts: ts }; add(ts); }
-    }).catch(function () {});
-  } catch (e) {}
-}
+// ── 2026-10-12 — NO PRECIPITATION RADAR ON THE MAPS. The route maps carried a
+// live radar overlay (v22712) from a free radar service whose terms allow
+// personal and educational use only. These boards are public and streamed,
+// so the layer, its pane, its CSS and the worker's radar route are all
+// removed, and nothing fetches radar any more (the worker answers the old
+// route with 410 Gone). A licensed source can be added later as its own layer.
 
 // ── Map plane marker: the supplied real silhouettes, drawn for the map.
 // The Airplanes.svg source carries two top-down aircraft — a jet and a turboprop —
@@ -55600,7 +55634,11 @@ function _wxIconQ() {
 // The three tints below are the ones the chosen design was drawn and
 // measured with; every other carrier's is mixed from its pair by one rule.
 var _WX_LOOK = {
-  AC: { g: [11, 13, 16], f: [26, 16, 19] },   // Air Canada: black, a breath of its red
+  // dh (v24044): the hue of the day circle, where the ground reads as a
+  // colour its tint alone does not carry — Air Canada's card reads as a warm
+  // brown on the stream (its warm footage under the near-black), so its
+  // circle is a light beige
+  AC: { g: [11, 13, 16], f: [26, 16, 19], dh: 70 },   // Air Canada: black, a breath of its red
   PD: { g: [12, 16, 24], f: [19, 41, 76] },   // Porter: its navy
   WS: { g: [10, 17, 20], f: [11, 58, 59] }    // WestJet: its teal, deep
 };
@@ -55608,6 +55646,55 @@ var _WX_GROUND_DIM = 0.70;     // the near-black over the footage: the footage s
 var _WX_TINT = 0.55;           // the airline tint on plates and tiles
 function _wxMix(a, b, t) { return [0, 1, 2].map(function (i) { return Math.round(a[i] * (1 - t) + b[i] * t); }); }
 function _wxHex(c) { return '#' + c.map(function (v) { return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2); }).join('').toUpperCase(); }
+// ══ v24044 — THE DAY CIRCLE TAKES THE CARD'S GROUND, LIGHTENED ═════════════
+// The Colour look's circle was the page's stark white, a hole in the card's
+// dark ground. It is now a light tint of that ground: the hue of the colour
+// the card tints its ground with for the airline (f above; dh where the
+// ground reads otherwise), lightened to _WX_DISC_L in OKLab and given no
+// more colour than the ground has, nor than _WX_DISC_C. A light beige on Air
+// Canada's warm brown, a light teal on WestJet's, a light blue on Porter's
+// and United's navy, a soft grey on a neutral black. The icons on it keep
+// reading: every colour the Colour icons are drawn in (the sun's yellows,
+// the clouds' greys, the rain's slate) keeps at least _WX_DISC_KEEP of the
+// colour distance it has from white, and a tint that would take more is
+// made paler until it does. Set as --wxc-disc on the card; the disc-day
+// files fill their circle with it and fall back to white anywhere else.
+var _WX_DISC_L = 0.95;         // light, never the page's white
+var _WX_DISC_C = 0.022;        // at most this much colour
+var _WX_DISC_KEEP = 0.75;      // each icon colour keeps 3/4 of its distance from white
+var _WX_DISC_INKS = ['#FDBF4E', '#EEBF5B', '#F8A93B', '#97A8B6', '#99AAB8', '#6D8AA3', '#6E879C'];
+function _wxOklab(c) {
+  var l = c.map(_rc2Lin);
+  var L = Math.cbrt(0.4122214708 * l[0] + 0.5363325363 * l[1] + 0.0514459929 * l[2]),
+      M = Math.cbrt(0.2119034982 * l[0] + 0.6806995451 * l[1] + 0.1073969566 * l[2]),
+      S = Math.cbrt(0.0883024619 * l[0] + 0.2817188376 * l[1] + 0.6299787005 * l[2]);
+  return [0.2104542553 * L + 0.7936177850 * M - 0.0040720468 * S,
+          1.9779984951 * L - 2.4285922050 * M + 0.4505937099 * S,
+          0.0259040371 * L + 0.7827717662 * M - 0.8086757660 * S];
+}
+function _wxFromOklab(o) {
+  var L = Math.pow(o[0] + 0.3963377774 * o[1] + 0.2158037573 * o[2], 3),
+      M = Math.pow(o[0] - 0.1055613458 * o[1] - 0.0638541728 * o[2], 3),
+      S = Math.pow(o[0] - 0.0894841775 * o[1] - 1.2914855480 * o[2], 3);
+  return [4.0767416621 * L - 3.3077115913 * M + 0.2309699292 * S,
+          -1.2684380046 * L + 2.6097574011 * M - 0.3413193965 * S,
+          -0.0041960863 * L - 0.7034186147 * M + 1.7076147010 * S].map(function (v) {
+    var x = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+    return Math.round(Math.max(0, Math.min(1, x)) * 255);
+  });
+}
+function _wxDiscTint(f, dh) {
+  var o = _wxOklab(f), h = Math.atan2(o[2], o[1]);
+  var c = Math.min(Math.sqrt(o[1] * o[1] + o[2] * o[2]), _WX_DISC_C), L = _WX_DISC_L;
+  if (typeof dh === 'number') { h = dh * Math.PI / 180; c = _WX_DISC_C; }
+  var far = function (p, q) { return Math.sqrt(Math.pow(p[0] - q[0], 2) + Math.pow(p[1] - q[1], 2) + Math.pow(p[2] - q[2], 2)); };
+  var white = _wxOklab([255, 255, 255]), inks = _WX_DISC_INKS.map(function (x) { return _wxOklab(_rc2Rgb(x)); });
+  var at = function () { return _wxOklab(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)])); };
+  for (var i = 0; i < 12 && !inks.every(function (p) { return far(p, at()) >= _WX_DISC_KEEP * far(p, white); }); i++) {
+    c *= 0.8; L = Math.min(1, L + 0.004);
+  }
+  return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
+}
 function _wxAirlineLook(code) {
   var c = String(code || '').trim().toUpperCase();
   var p = _rc2Pair(c);
@@ -55635,7 +55722,8 @@ function _wxAirlineLook(code) {
     if (_rc2StatusLike(_wxHex(f))) f = _wxMix(g, [20, 24, 32], 1);
   }
   var tile = _wxMix(g, f, _WX_TINT);
-  return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile) };
+  return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile),
+           dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined) };
 }
 // v24035 — THE SOLID LOOK'S TWO COLOURS: the circle is the airline's deep
 // colour and the glyph its brand colour (WestJet navy behind its teal, Air
@@ -55829,7 +55917,11 @@ function _wmoAnimIcon(code) {
   var c = Number(code) || 0;
   if (c === 0 || c === 1) return 'clear-day';
   if (c === 2) return 'partly-cloudy-day';
-  if (c === 3) return 'overcast-day';
+  // v24044 — 3 is overcast: MET's 'cloudy', the whole sky covered. It drew
+  // 'overcast-day', which in every set is a sun behind a cloud, under the
+  // words Overcast | Couvert (and that sun at night, which has no other
+  // form). 'overcast' is the same words with cloud and no sun.
+  if (c === 3) return 'overcast';
   if (c === 45 || c === 48) return 'fog';
   if (c >= 51 && c <= 55) return 'drizzle';
   if (c === 56 || c === 57 || c === 66 || c === 67) return 'sleet';
@@ -58080,7 +58172,7 @@ function _renderWxCard(el) {
     var _wxLk = _wxAirlineLook(_wxAl);
     var _wxPaint = function (wrap) {
       if (!wrap || !wrap.style) return;
-      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p].join('|');
+      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p, _wxLk.dk].join('|');
       if (wrap._wxLookKey === key) return;
       wrap._wxLookKey = key;
       wrap.style.setProperty('--wxc-a', _wxLk.a);
@@ -58088,6 +58180,8 @@ function _renderWxCard(el) {
       wrap.style.setProperty('--wxc-g', _wxLk.g);
       wrap.style.setProperty('--wxc-p', _wxLk.p);
       wrap.style.setProperty('--wxc-ko', _wxLk.ko);
+      // v24044 — the day circle: a light tint of this ground (_wxDiscTint)
+      wrap.style.setProperty('--wxc-disc', _wxLk.dk);
       var _wxDp = _wxDiscPair(_wxLk.code);
       wrap.style.setProperty('--wx-disc', _wxDp.disc);
       wrap.style.setProperty('--wx-ink', _wxDp.ink);

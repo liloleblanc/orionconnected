@@ -68,11 +68,8 @@ const NO_STORE = { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '
 const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
 // AWS open elevation tiles (terrarium encoding) — free, no API key.
 const DEM_BASE = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/';
-// RainViewer composite precipitation radar — free, no API key. The index
-// lists available frame timestamps; tiles are fetched per-frame. Both are
-// fixed constants (same SSRF discipline as every other upstream here).
-const WX_RADAR_INDEX = 'https://api.rainviewer.com/public/weather-maps.json';
-const WX_RADAR_TILE_BASE = 'https://tilecache.rainviewer.com/v2/radar/';
+// 2026-10-12 — the precipitation radar upstream that stood here is removed
+// (its free terms allow personal and educational use only; see /wxradar below).
 
 // Selectable base-map providers for the 3D route map (all free, no key).
 // Requested as /tiles/<provider>/{z}/{x}/{y}.png; the Worker reorders the
@@ -1028,51 +1025,15 @@ export default {
       }
     }
 
-    // ── Weather radar passthrough (RainViewer) ─────────────────────────
-    // /wxradar/index → frame-index JSON (which timestamps exist);
-    // /wxradar/<ts>/<z>/<x>/<y>.png → composite radar tile for that frame.
-    // Same-origin so locked-down display networks never talk to a third
-    // party; <ts> is constrained to digits so the upstream URL can only
-    // ever point at RainViewer's own frame tree.
-    if (path === '/wxradar/index') {
-      try {
-        const r = await fetch(WX_RADAR_INDEX, { cf: { cacheEverything: true, cacheTtl: 300 } });
-        if (!r.ok) return new Response('Radar index upstream ' + r.status, { status: 502, headers: NO_STORE });
-        return new Response(r.body, {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'public, max-age=300',
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
-      } catch (e) {
-        return new Response('Radar index fetch failed', { status: 502, headers: NO_STORE });
-      }
-    }
-    if (path.startsWith('/wxradar/')) {
-      // Frame token: RainViewer moved from numeric timestamps to opaque hex
-      // tokens in the index's `path` field ("/v2/radar/9fbb5e443776") —
-      // accept both shapes, nothing else.
-      const wm = path.slice('/wxradar/'.length).match(/^([0-9a-f]{4,32})\/(\d+)\/(\d+)\/(\d+)\.png$/i);
-      if (!wm) return new Response('Bad radar path', { status: 400 });
-      // /2/1_1.png = color scheme 2 (universal blue), smoothed, snow shown.
-      const upstream = WX_RADAR_TILE_BASE + wm[1] + '/256/' + wm[2] + '/' + wm[3] + '/' + wm[4] + '/2/1_1.png';
-      try {
-        // Frames are immutable once published — cache hard for an hour.
-        const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: 3600 } });
-        if (!r.ok) return new Response('Radar upstream ' + r.status, { status: 502, headers: NO_STORE });
-        return new Response(r.body, {
-          status: 200,
-          headers: {
-            'Content-Type': 'image/png',
-            'Cache-Control': 'public, max-age=3600',
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
-      } catch (e) {
-        return new Response('Radar fetch failed', { status: 502, headers: NO_STORE });
-      }
+    // ── Weather radar: GONE (2026-10-12) ───────────────────────────────
+    // The route maps carried a precipitation radar overlay served through
+    // here from a free radar service whose terms allow personal and
+    // educational use only. These boards are public and streamed, so the
+    // overlay is off every map and this route no longer fetches anything:
+    // a board still asking is told the route is gone. A licensed radar
+    // source, when there is one, gets its own route.
+    if (path === '/wxradar' || path.startsWith('/wxradar/')) {
+      return new Response('Gone: the weather radar route is retired', { status: 410, headers: NO_STORE });
     }
 
     // ── Terrain elevation tiles passthrough ────────────────────────────
