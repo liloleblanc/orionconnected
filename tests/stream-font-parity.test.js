@@ -62,8 +62,8 @@ test('no stream-only rule sets a font: a stream board resolves its font like a w
       if (!/fids-stream/.test(r.sel)) continue;
       if (/--font-primary\s*:/.test(r.body)) offenders.push(name + ': ' + r.sel.slice(0, 90) + ' sets --font-primary');
       const fam = r.body.match(/font-family\s*:\s*([^;]+)/);
-      // The one allowed case: the AC icon glyphs stay on their icon font.
-      if (fam && !/^'ac-icons'/.test(fam[1].trim())) offenders.push(name + ': ' + r.sel.slice(0, 90) + ' sets font-family ' + fam[1].trim());
+      // v24039 — no exception left: the icons are our own files, not a font.
+      if (fam) offenders.push(name + ': ' + r.sel.slice(0, 90) + ' sets font-family ' + fam[1].trim());
     }
   }
   assert.deepEqual(offenders, [],

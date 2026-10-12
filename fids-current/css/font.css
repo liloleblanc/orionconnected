@@ -59,44 +59,47 @@
   --font-mono-stack:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
-/* ── Air Canada UI icon font (icomoon) — used for the gate-row icons everywhere ── */
-@font-face { font-family:'ac-icons'; src:url('../fonts/ac-icons/icomoon.woff') format('woff'); font-weight:normal; font-style:normal; font-display:block; }
-.ac-ico { font-family:'ac-icons' !important; font-style:normal; font-weight:normal; line-height:1; speak:none;
-  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+/* ── THE BOARD'S ICONS — our own files, not Air Canada's ─────────────────
+   v24039. The gate info rows, the BIDS suitcase, the board-title plane, the
+   boarding-lane arrows and the hotel ads' two marks were glyphs of Air
+   Canada's own icon font (icomoon). They are now our own SVGs in
+   logos/icons/: the planes, suitcase and boarding pass from a Vecteezy pack
+   and the lane arrow from another (Vecteezy Pro licence); the bell,
+   stopwatch, passengers, ringed plane, plane and house from Google's
+   Material Symbols (Apache 2.0, LICENSE-Apache-2.0.txt beside them).
+
+   Each is drawn as a MASK on the ::before box, so it takes `color` exactly
+   as the font glyph did: white on the badges, an airline's ink where a rule
+   sets one, Porter's navy, the hotel ads' gold. Every file is cropped to its
+   own ink in a square box, with a little more margin on the tall marks than
+   the wide ones, so one font-size gives one visible size. */
+.ac-ico { font-style:normal; font-weight:normal; line-height:1; speak:none;
   display:inline-flex; align-items:center; justify-content:center;
   font-size:clamp(42px,6.4vh,84px); color:#fff; }
-.ac-ico-flight::before   { content:'\e9ad'; }  /* plane */
-.ac-ico-dest::before     { content:'\e974'; }  /* destination / target */
-.ac-ico-status::before   { content:'\e931'; }  /* info */
-.ac-ico-boarding::before { content:'\e996'; }  /* boarding pass */
-.ac-ico-depart::before   { content:'\e934'; }  /* takeoff */
-.ac-ico-time::before     { content:'\e941'; }  /* clock */
-.ac-ico-landing::before  { content:'\e933'; }  /* plane landing (arrival) */
-.ac-ico-baggage::before  { content:'\e9a8'; }  /* solid suitcase (bids title tab) */
-/* Beat the global "*::before { font-family !important }" override so the icon
-   glyphs actually render in the AC icon font (class specificity > universal). */
-.ac-ico::before, .ac-ico-flight::before, .ac-ico-dest::before, .ac-ico-status::before,
-.ac-ico-boarding::before, .ac-ico-depart::before, .ac-ico-time::before, .ac-ico-landing::before {
-  font-family:'ac-icons' !important; font-style:normal !important; font-weight:normal !important;
-}
-/* Per-glyph size tuning — normalized so every flight-info badge glyph renders the
-   SAME visible size (~58px optical box at 1080p). Each icomoon glyph fills its em
-   differently (measured ink-height ÷ em: plane .99, target .97, bell .81, boarding
-   .92, takeoff .85, stopwatch .88), so a single font-size would look uneven. These
-   font-sizes = target ÷ that ratio, so the mark you actually SEE matches across all
-   six rows (Flight · Destination · Status · Boarding · Departure · Arrival). If you
-   add a row icon, canvas-measure its ink ratio and size it the same way. */
-.ac-ico-flight   { font-size:clamp(36px,5.42vh,74px) !important; }   /* plane     — ink .99 */
-.ac-ico-dest     { font-size:clamp(36px,5.54vh,76px) !important; }   /* target    — ink .97 */
-.ac-ico-status   { font-size:clamp(43px,6.63vh,90px) !important; }   /* bell      — ink .81 */
-.ac-ico-boarding { font-size:clamp(38px,5.84vh,80px) !important; }   /* boarding  — ink .92 */
-.ac-ico-depart   { font-size:clamp(41px,6.32vh,86px) !important; }   /* takeoff   — ink .85 */
-/* The stopwatch badge must not clip (its glyph sits high in the em). And the
-   icon rule must out-specify gate-display.css's `.gad-aircraft-col [class*="time"]
-   {font-size:…34px}` — that value-text rule's [class*="time"] also matches
-   ac-ico-TIME, so a bare `.ac-ico-time` loses to it. Hence the deep scope below. */
+.ac-ico::before { content:'' !important; display:block; width:1em; height:1em; flex:none;
+  background-color:currentColor;
+  -webkit-mask-position:center; mask-position:center;
+  -webkit-mask-size:contain; mask-size:contain;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  /* an icon class with no drawing of its own paints nothing, never a square */
+  -webkit-mask-image:linear-gradient(transparent, transparent); mask-image:linear-gradient(transparent, transparent); }
+.ac-ico-flight::before   { -webkit-mask-image:url('../logos/icons/passengers.svg');    mask-image:url('../logos/icons/passengers.svg'); }
+.ac-ico-dest::before     { -webkit-mask-image:url('../logos/icons/plane-ring.svg');    mask-image:url('../logos/icons/plane-ring.svg'); }
+.ac-ico-status::before   { -webkit-mask-image:url('../logos/icons/bell.svg');          mask-image:url('../logos/icons/bell.svg'); }
+.ac-ico-boarding::before { -webkit-mask-image:url('../logos/icons/boarding-pass.svg'); mask-image:url('../logos/icons/boarding-pass.svg'); }
+.ac-ico-depart::before   { -webkit-mask-image:url('../logos/icons/takeoff.svg');       mask-image:url('../logos/icons/takeoff.svg'); }
+.ac-ico-time::before     { -webkit-mask-image:url('../logos/icons/timer.svg');         mask-image:url('../logos/icons/timer.svg'); }
+.ac-ico-landing::before  { -webkit-mask-image:url('../logos/icons/landing.svg');       mask-image:url('../logos/icons/landing.svg'); }
+.ac-ico-baggage::before  { -webkit-mask-image:url('../logos/icons/suitcase.svg');      mask-image:url('../logos/icons/suitcase.svg'); }
+/* One visible size on the rail (~58px at 1080p). The optical balance is in
+   the files themselves (a tall bell carries more margin than a wide plane),
+   so every mark takes the same size here. */
+.ac-ico-flight, .ac-ico-dest, .ac-ico-status, .ac-ico-boarding, .ac-ico-depart { font-size:clamp(40px,6.4vh,86px) !important; }
+/* The stopwatch rule must out-specify gate-display.css's
+   `.gad-aircraft-col [class*="time"] {font-size:…34px}` — that value-text
+   rule's [class*="time"] also matches ac-ico-TIME. Hence the deep scope. */
 .g8-wrap .gad-aircraft-col .v2-fi-row .v2-fi-icon-badge:has(.ac-ico-time) { overflow: visible !important; }
-.g8-wrap .gad-aircraft-col .v2-fi-icon-badge .ac-ico-time { font-size:clamp(39px,6.10vh,82px) !important; line-height:1 !important; }  /* stopwatch — ink .88 */
+.g8-wrap .gad-aircraft-col .v2-fi-icon-badge .ac-ico-time { font-size:clamp(40px,6.4vh,86px) !important; line-height:1 !important; }
 
 /* ── BRICOLAGE GROTESQUE — self-hosted, variable ──────────────────────────
    v23869. Three axes in one file per subset: weight 200–800, width 75–100%,

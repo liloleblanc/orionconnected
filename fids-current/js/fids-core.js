@@ -1540,7 +1540,7 @@ function changeFont(f) {
   // Montserrat / Rebelton…) must render per brand book, not the board font.
   // Without the :not() guards this universal !important nuked those fonts
   //
-  s.textContent = `*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
+  s.textContent = `*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ${fam} !important; }`;
   // Persist the choice — page load used to hard-reset to one font, wiping
   // whatever the user picked; a newly added font vanished on the next load.
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
@@ -1635,7 +1635,7 @@ function restoreFontChoice(defaultFont) {
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
         // .axr exempt — Accor brand ads keep brand typography (see changeFont).
-        s.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+        s.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; }";
         return;
       }
     }
@@ -17492,7 +17492,7 @@ function uxgGateHtml(ctx) {
   // lane it names. '1 \u2022 2' in one element could only ever be pointed at once;
   // split, each numeral points where a passenger actually has to walk.
   //
-  // The arrows are the ac-icons diagonal (e929) rotated \u2014 the kit ships exactly
+  // The arrows are one diagonal (logos/icons/arrow-diagonal.svg) rotated \u2014 exactly
   // one diagonal, so the down-left is the same glyph turned 180\u00b0. Using the
   // kit's own arrow rather than the inline SVG keeps this sign's arrows
   // identical to every other arrow on the boards.
@@ -31456,7 +31456,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24038';
+var FIDS_BUILD_TAG = 'v24039';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38585,7 +38585,7 @@ function applyAirportConfigToBoard(iata) {
         document.head.appendChild(_ovr);
       }
       // .axr exempt — Accor brand ads keep brand typography (see changeFont).
-      _ovr.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }";
+      _ovr.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + _stack + " !important; }";
     }
   } else {
     // No board-pref font — but NEVER nuke a font the user picked via the
