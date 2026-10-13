@@ -2008,17 +2008,18 @@ function _fidsPairSeparators(root) {
             if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
           }
           var ratio = need ? avail / (need * base / cur) : 1;
+          var target = ratio >= 1 ? base : Math.max(base * 0.68, base * ratio * 0.985);
+          // 2026-10-12 — beside the lists' column (.g8-sbcol-on) the sign is a
+          // quarter narrower: a pair keeps its one line down to half its
+          // size there ("General boarding | Embarquement général" needs
+          // 0.62 of it at 1920x1080)
+          if (ratio < 1 && el.closest('.g8-sbcol-on')) target = Math.max(base * 0.5, base * ratio * 0.985);
           // THE FINAL DESIGN — the two panels are half the screen each, and
           // their longest pairs ("Allgemeines Boarding | Embarquement
           // général", "All passengers | Tous les passagers") stacked at 68%
-          // at 1680x1050, the switch among them: there a pair comes down to
-          // half its size before it may stack (one line is the sign's rule).
-          // 2026-10-12 — beside the lists' column (.g8-sbcol-on) the sign is a
-          // quarter narrower: a pair keeps its one line down to half its
-          // size there too ("General boarding | Embarquement général" needs
-          // 0.62 of it at 1920x1080)
-          var floor = (el.closest('.g8-sign-two') || el.closest('.g8-sbcol-on')) ? 0.5 : 0.68;
-          var target = ratio >= 1 ? base : Math.max(base * floor, base * ratio * 0.985);
+          // at 1680x1050, the switch among them: there too a pair comes down
+          // to half its size before it may stack (one line is the sign's rule)
+          if (ratio < 1 && el.closest('.g8-sign-two')) target = Math.max(base * 0.5, base * ratio * 0.985);
           // the stylesheet's size is !important (it has to outrank the brand
           // skins), so a plain inline value would lose to it
           if (Math.abs(target - cur) > 0.5) el.style.setProperty('font-size', target + 'px', 'important');
@@ -19056,14 +19057,36 @@ function uxgGateHtml(ctx) {
   // (display rule 2): a line breaks between items, never inside 'Global
   // Services' or 'Premier 1K'; an item wider than the panel wraps on its own
   // words. The dot stays with the item before it.
+  function _g8SeqWhoBlk(w) {
+    var items = String(w).split(' \u00B7 ');
+    return '<span class="g8-who-blk">' + items.map(function (it, i) {
+      return '<span class="g8-who-i">' + it + (i < items.length - 1 ? '\u00A0\u00B7' : '') + '</span>';
+    }).join(' ') + '</span>';
+  }
   function _g8SeqWho(s) {
-    if (!s || !s.who) return '';
-    return _gateLbl(s.who, _frF, function (w) {
-      var items = String(w).split(' \u00B7 ');
-      return '<span class="g8-who-blk">' + items.map(function (it, i) {
-        return '<span class="g8-who-i">' + it + (i < items.length - 1 ? '\u00A0\u00B7' : '') + '</span>';
-      }).join(' ') + '</span>';
-    }, '');
+    if (!s) return '';
+    if (s.who) return _gateLbl(s.who, _frF, _g8SeqWhoBlk, '');
+    // A MERGED CALL (a short window calls Zones 1 \u2022 2 together: an Air
+    // Canada Express or WestJet Encore Dash 8 at Moncton) names everyone
+    // each of its calls names, in each of the board's two languages: the
+    // lists joined (FIDSBoardSeq.joinWho), an item two of them share said
+    // once. The same language pick and the same one-language-once rule as
+    // _gateLbl; a half is marked careful when any list in it is.
+    var keys = (s.whos || []).filter(Boolean);
+    if (!keys.length || typeof FIDSBoardSeq === 'undefined' || typeof FIDSBoardSeq.joinWho !== 'function') return '';
+    var L = BoardStrings.pairLangs(langs, !!_frF), seen = Object.create(null), out = '', n = 0;
+    for (var i = 0; i < L.length && n < 2; i++) {
+      var lg = L[i], ents = keys.map(function (k) { return _lblEntry(k) || {}; });
+      if (ents.some(function (e) { return !e[lg]; })) continue;
+      var w = FIDSBoardSeq.joinWho(ents.map(function (e) { return e[lg]; }));
+      var lk = w.toLowerCase();
+      if (!w || seen[lk]) continue;
+      seen[lk] = 1; n++;
+      var ck = keys[0];
+      for (var j = 0; j < keys.length; j++) if (ents[j].$src && ents[j].$src[lg] === 'careful') { ck = keys[j]; break; }
+      out += BoardStrings.markHalf(_g8SeqWhoBlk(w), lg, ck);
+    }
+    return out;
   }
   // A stage's own cabin, as a pair; and the cabin a list of calls shares
   // (a merged or a summed-up panel names one only when every call in it has

@@ -247,8 +247,12 @@ test('what the review found, held so it stays fixed', () => {
   // line it lost three of its five groups.
   // BOARDING SEQUENCES — every airline's who-list (Porter's roster among
   // them) goes in that slot, one language at a time, marked with it.
-  assert.match(fn('_g8SeqWho'), /return _gateLbl\(s\.who, _frF, function \(w\) \{/, 'the roster has its own slot: both of the board\'s languages, each marked with its own');
-  assert.match(fn('_g8SeqWho'), /'<span class="g8-who-blk">' \+ items\.map/, 'each language a block of whole items');
+  assert.match(fn('_g8SeqWho'), /if \(s\.who\) return _gateLbl\(s\.who, _frF, _g8SeqWhoBlk, ''\);/, 'the roster has its own slot: both of the board\'s languages, each marked with its own');
+  assert.match(fn('_g8SeqWhoBlk'), /'<span class="g8-who-blk">' \+ items\.map/, 'each language a block of whole items');
+  // a merged call (Zones 1 • 2 on a short window): each call's list, joined
+  // per language, each half marked with its own
+  assert.match(fn('_g8SeqWho'), /FIDSBoardSeq\.joinWho\(/);
+  assert.match(fn('_g8SeqWho'), /BoardStrings\.markHalf\(_g8SeqWhoBlk\(w\), lg, ck\)/);
   assert.match(P, /roster: _g8SeqWho\(cur\)/, 'pre-boarding and the family calls name who they are for');
   assert.equal(require('../fids-current/js/boarding-sequence.js').SEQ.PD.stages[0].who, 'preboardList', "Porter's pre-boarding roster is its published list");
   assert.match(col, /if \(S\.roster\) h \+= '<div class="g8-sign-roster">'/, 'which the column renders');
@@ -434,8 +438,8 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   const pass = SRC.slice(pAt, SRC.indexOf('\n}\n', pAt));
   assert.match(pass, /el\.closest\('\.g8-sign'\)/, 'the shrink is scoped to the sign');
   assert.match(pass, /data-g8-base/, 'measured against the stylesheet size, not its own earlier shrink');
-  assert.match(pass, /var floor = \(el\.closest\('\.g8-sign-two'\) \? 0\.5 : 0\.68\);/, 'floor of 68%, half in the two panels (half the screen each)');
-  assert.match(pass, /Math\.max\(base \* floor, base \* ratio \* 0\.985\)/);
+  assert.match(pass, /var target = ratio >= 1 \? base : Math\.max\(base \* 0\.68, base \* ratio \* 0\.985\);/, 'floor of 68%');
+  assert.match(pass, /if \(ratio < 1 && el\.closest\('\.g8-sign-two'\)\) target = Math\.max\(base \* 0\.5, base \* ratio \* 0\.985\);/, 'half in the two panels (half the screen each)');
   assert.match(pass, /el\.style\.setProperty\('font-size', target \+ 'px', 'important'\)/, "the stylesheet's size is !important — a plain inline value loses to it");
   assert.match(pass, /el\.classList\.remove\('is-stacked'\);[\s\S]{0,900}var need = 0/, 'a pair once stacked is re-judged at the new size, not left stacked by its own class');
   assert.match(pass, /parseFloat\(ks\.marginLeft\)/, "the separator's margins are part of what has to fit");

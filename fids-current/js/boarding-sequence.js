@@ -24,7 +24,7 @@
  * the stage outright and stops the clock.
  *
  * Exports: SEQ, ALIAS, plan(carrier, ctx), stageAt(plan, nowMs), and the
- * pure pieces the gate and the tests use: pace, t0For, fmt, atomsOf,
+ * pure pieces the gate and the tests use: pace, t0For, fmt, joinWho, atomsOf,
  * calledThrough, floorIndex, porterBands, resolve, pickSub, coverPlus. No
  * page access.
  */
@@ -41,7 +41,11 @@
   // stage's own name (pre, fam and an un-numbered priority call); label: the
   // group word ('zone', 'groupLabel', 'rows'); value: the airline's number or
   // letter; sub: the cabin key printed under the title; who: the store key of
-  // who is called (shown in both of the board's languages).
+  // who is called (shown in both of the board's languages). A PRIORITY CALL
+  // NAMES EVERYONE IN IT: its cabin stays the sub, and its who-list names
+  // everyone else the airline puts in that call (elite tiers, alliance
+  // status, cardholders, paid priority, companions on the same reservation),
+  // read from the airline's own boarding page (prioWho* in the store).
   //
   // EACH STAGE NAMES ITS OWN CABIN, OR NONE. A sub is a key, or a list of
   // [condition, key] read in order (the first that holds wins, none: no
@@ -82,7 +86,7 @@
       src: 'https://www.aircanada.com/ca/en/aco/home/fly/at-the-airport/boarding-by-zone.html',
       srcFr: 'https://www.aircanada.com/ca/fr/aco/home/fly/at-the-airport/boarding-by-zone.html',
       checked: '2026-10-12', conf: 'high', prioAnyTime: true,
-      stages: [pre('preboardWhoAC'), prio('zone', '1', 'cabinBiz'), prio('zone', '2', [['wide', 'cabinPremEconAC']]),
+      stages: [pre('preboardWhoAC'), prio('zone', '1', 'cabinBiz', 'prioWhoAC1'), prio('zone', '2', [['wide', 'cabinPremEconAC']], 'prioWhoAC2'),
         fam('familyBoard', 'familyWhoAC')].concat(gens('zone', ['3', '4', '5', '6'], 'cabinEcon')),
       variants: {
         express: { drop: ['5', '6'], stageSub: { '1': [['twoCabin', 'cabinBiz']], '2': '' } },
@@ -98,13 +102,17 @@
     // highest is printed on the pass), so the sign never steps through zones
     // an aircraft may not use. Encore sells Premium (no extra legroom on its
     // aircraft, inflight/premium-cabin); no page says Encore sells Extended
-    // Comfort, so its Zone 2 names no cabin.
+    // Comfort, so its Zone 2 names no cabin. Business flies only on the
+    // 787-9, so Zone 1 reads "Business or Premium" on a widebody.
+    // Who else each zone takes (Platinum; Gold, Silver and Delta Gold
+    // Medallion) is from priority services and the rewards page, read
+    // 2026-10-13.
     WS: {
       src: 'https://www.westjet.com/en-ca/airport/priority-services',
       srcFr: 'https://www.westjet.com/fr-ca/aeroport/services-prioritaires',
       srcZones: 'https://www.westjet.com/en-ca/rewards',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoWS'), prio('zone', '1', 'cabinPremiumWS'), prio('zone', '2', 'cabinExtComfortWS'),
+      stages: [pre('preboardWhoWS'), prio('zone', '1', [['wide', 'cabinBizPremWS'], ['*', 'cabinPremiumWS']], 'prioWhoWS1'), prio('zone', '2', 'cabinExtComfortWS', 'prioWhoWS2'),
         fam('specialBoard', 'specialWhoWS')].concat(gens('zone', ['3', '3+'], 'cabinEconWS')),
       variants: { encore: { stageSub: { '2': '' } } }
     },
@@ -135,11 +143,13 @@
     },
     // Flair: pre-boarding, Priority Boarding, general boarding. Read from the
     // search index of flyflair.com (the site blocks automated readers);
-    // Flair's French is not verified.
+    // Flair's French is not verified. Who its priority call is for (Flair
+    // Express, included with a carry-on bag since 2025-12-03) is from the
+    // search index of https://www.flyflair.com/flair-express only (low).
     F8: {
       src: 'https://www.flyflair.com/priority-boarding',
       checked: '2026-10-12', conf: 'medium', prioAnyTime: false,
-      stages: [pre('preboardWhoF8'), prio(), allPax()]
+      stages: [pre('preboardWhoF8'), prio('', '', '', 'prioWhoF8'), allPax()]
     },
     // Air Transat publishes who pre-boards and who boards in priority, no
     // numbers. Family pre-boarding excludes flights to the U.S.
@@ -151,7 +161,7 @@
       src: 'https://www.airtransat.com/en-CA/travel-information/families-and-children/family-privileges',
       srcFr: 'https://www.airtransat.com/fr-CA/info-voyage/familles-et-enfants/privileges-familles',
       checked: '2026-10-12', conf: 'low', prioAnyTime: false, unit: 'zone',
-      stages: [pre('preboardWhoTS'), prio('', '', 'cabinClub'), allPax('cabinEcon')]
+      stages: [pre('preboardWhoTS'), prio('', '', 'cabinClub', 'prioWhoTS'), allPax('cabinEcon')]
     },
     // United: Pre-boarding, Group 1 (its premium cabins and top elites),
     // Group 2 (Premier Silver, Premier Access: no cabin), Groups 3 to 6.
@@ -162,7 +172,7 @@
       src: 'https://www.united.com/en/us/fly/travel/airport/boarding-process.html',
       srcFr: 'https://www.united.com/fr/ca/fly/travel/airport/boarding-process.html',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoUA'), prio('groupLabel', '1', [['narrow', 'cabinUnitedFirst']]), prio('groupLabel', '2')]
+      stages: [pre('preboardWhoUA'), prio('groupLabel', '1', [['narrow', 'cabinUnitedFirst']], 'prioWhoUA1'), prio('groupLabel', '2', '', 'prioWhoUA2')]
         .concat(gens('groupLabel', ['3', '4', '5', '6'], 'cabinUnitedEcon'))
     },
     // Delta: Pre-Boarding (and active-duty military), Zone 1 ("Delta One
@@ -177,7 +187,7 @@
       srcFr: 'https://fr.delta.com/ca/fr/check-in-security/boarding-priority',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
       stages: [pre('preboardWhoDL'), prio('zone', '1', '', 'prioWhoDL1'), prio('zone', '2', '', 'prioWhoDL2'),
-        fam('earlyAccess', 'earlyAccessWhoDL'), prio('zone', '3', '', 'prioWhoDL3'), prio('zone', '4')]
+        fam('earlyAccess', 'earlyAccessWhoDL'), prio('zone', '3', '', 'prioWhoDL3'), prio('zone', '4', '', 'prioWhoDL4')]
         .concat(gens('zone', ['5', '6', '7', '8']))
     },
     // American: special assistance, then ConciergeKey, First and Business
@@ -189,9 +199,10 @@
     // the Main Cabin).
     AA: {
       src: 'https://www.aa.com/web/i18n/travel-info/boarding-process.html',
+      srcFr: 'https://www.aa.com/web/i18n/travel-info/boarding-process.html?locale=fr_CA',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
       stages: [pre('preboardWhoAA'), prio('', '', '', 'prioWhoAA'), fam('familyBoard', 'familyWhoAA'),
-        prio('groupLabel', '1'), prio('groupLabel', '2'), prio('groupLabel', '3'), prio('groupLabel', '4'),
+        prio('groupLabel', '1', '', 'prioWhoAA1'), prio('groupLabel', '2', '', 'prioWhoAA2'), prio('groupLabel', '3', '', 'prioWhoAA3'), prio('groupLabel', '4', '', 'prioWhoAA4'),
         gen('groupLabel', '5', 'cabinMainAA'), gen('groupLabel', '6', 'cabinMainAA'),
         { kind: 'gen', label: 'groupLabel', values: ['7', '8'], sub: 'cabinMainAA' },
         gen('groupLabel', '9', 'cabinMainAA')]
@@ -216,15 +227,16 @@
     WN: {
       src: 'https://support.southwest.com/helpcenter/article/boarding-process',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoWN'), prio('', '', '', 'prioWhoWN'), prio('', '', '', 'prioWhoWNalp'), prio('groupLabel', '1'), prio('groupLabel', '2')]
+      stages: [pre('preboardWhoWN'), prio('', '', '', 'prioWhoWN'), prio('', '', '', 'prioWhoWNalp'), prio('groupLabel', '1', '', 'prioWhoWN1'), prio('groupLabel', '2', '', 'prioWhoWN2')]
         .concat(gens('groupLabel', ['3', '4', '5', '6', '7', '8']))
     },
     // JetBlue: Pre-boarding, Groups 1 to 3, Courtesy Boarding (military, car
     // seats and strollers), then Groups 4 to 8.
     B6: {
       src: 'https://www.jetblue.com/help/boarding-procedures',
+      srcFr: 'https://www.jetblue.com/fr/help/boarding-procedures',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoB6'), prio('groupLabel', '1'), prio('groupLabel', '2'), prio('groupLabel', '3'),
+      stages: [pre('preboardWhoB6'), prio('groupLabel', '1', '', 'prioWhoB6g1'), prio('groupLabel', '2', '', 'prioWhoB6g2'), prio('groupLabel', '3', '', 'prioWhoB6g3'),
         fam('courtesyBoard', 'courtesyWhoB6')].concat(gens('groupLabel', ['4', '5', '6', '7', '8']))
     },
     // Frontier: Preboarding (with Elite Diamond), Group 1, Groups 2 to 7 (6
@@ -232,7 +244,7 @@
     F9: {
       src: 'https://faq.flyfrontier.com/help/frontier-boarding-process',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoF9'), prio('groupLabel', '1')]
+      stages: [pre('preboardWhoF9'), prio('groupLabel', '1', '', 'prioWhoF9g1')]
         .concat(gens('groupLabel', ['2', '3', '4', '5']))
         .concat([{ kind: 'gen', label: 'groupLabel', values: ['6', '7'] }])
     },
@@ -500,7 +512,14 @@
         while (num(st[j]) && st[j].label === st[i].label) { run.push(st[j]); j++; }
         var vals = [];
         run.forEach(function (s) { vals = vals.concat(s.values); });
-        out.push({ kind: 'prio', label: st[i].label, values: vals, sub: common(run, 'sub'), who: common(run, 'who'), side: 'L', merged: true });
+        // WHO A MERGED CALL IS FOR: every call in it names its own list
+        // (Air Canada's Zone 1 and Zone 2 on a Moncton Dash 8, called
+        // together), so the merged call names them all (whos, joined per
+        // language by joinWho); a run where one call names nobody keeps
+        // none, so a list never stands for a call it leaves out.
+        var cw = common(run, 'who');
+        var ws = (!cw && run.every(function (s) { return !!s.who; })) ? run.map(function (s) { return s.who; }) : [];
+        out.push({ kind: 'prio', label: st[i].label, values: vals, sub: common(run, 'sub'), who: cw, whos: ws, side: 'L', merged: true });
         i = j; did = true;
       } else { out.push(st[i]); i++; }
     }
@@ -669,6 +688,20 @@
     return f;
   }
 
+  // ── WHO A MERGED CALL IS FOR ─────────────────────────────────────────────
+  // The who-lists of the calls a merged call holds, in ONE language, as one
+  // list: each call's ' · ' items in order, an item two of them share (Air
+  // Canada's "Travel companions on the same reservation", in both of its
+  // zones) said once, where it stood last, so it closes the list as it
+  // closes each zone's.
+  function joinWho(texts) {
+    var items = [];
+    (texts || []).forEach(function (t) {
+      String(t || '').split(' \u00B7 ').forEach(function (it) { if (it) items.push(it); });
+    });
+    return items.filter(function (it, i) { return items.indexOf(it, i + 1) < 0; }).join(' \u00B7 ');
+  }
+
   // ── WRITING A LIST OF VALUES ─────────────────────────────────────────────
   // Up to `max` values with • between them; more, when they run on (1 2 3 4,
   // D E F), as a range 4–9.
@@ -731,7 +764,7 @@
 
   return {
     SEQ: SEQ, ALIAS: ALIAS, plan: plan, stageAt: stageAt, resolve: resolve, pace: pace, lastAt: lastAt,
-    t0For: t0For, fmt: fmt, valuesOf: valuesOf, atomsOf: atomsOf, calledThrough: calledThrough,
+    t0For: t0For, fmt: fmt, valuesOf: valuesOf, joinWho: joinWho, atomsOf: atomsOf, calledThrough: calledThrough,
     isSwitch: isSwitch, waitingAfter: waitingAfter,
     floorIndex: floorIndex, porterBands: porterBands, pickSub: pickSub, coverPlus: coverPlus
   };
