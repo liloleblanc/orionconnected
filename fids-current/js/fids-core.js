@@ -16525,6 +16525,9 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div id="gateCloudsBg"></div>'
         // v23899 — the sky is a clip: the reference flight with its own aircraft removed. It starts
         // at the wall clock's phase, so a rebuild never restarts it and every gate shows the same sky.
+        // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
+        // aircraft are carried through from the frames where they show, so they keep moving and keep
+        // their texture (the first render's per-frame fill smeared them into a glow).
         +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
@@ -57728,9 +57731,8 @@ function _renderHeritageCard(el) {
       '<div class="hcard-wrap' + (_credit.length ? ' hcard-credited' : '') + '">'
       // The five layers of the gate aircraft scene, in its order: the sky plate
       // (::before), the cartoon fast band, the cumulus, the aeroplane, then the
-      // front band with the rush streaks riding on it (::after). v23928: every
-      // cloud layer now passes BEHIND the aeroplane, as on the gate shelf; the
-      // front layer comes later in the markup but the aeroplane is stacked above it.
+      // front band with the rush streaks riding on it (::after). The last two
+      // sit ABOVE the aeroplane exactly as they do on the gate shelf.
       +   '<div class="hcard-sky" aria-hidden="true">'
       // ONE element for the back plate, with the fast and cumulus bands as its
       // OWN pseudo-children — the shelf's topology, not merely its numbers.

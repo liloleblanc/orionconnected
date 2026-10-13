@@ -29,6 +29,7 @@ tools; `render-clips.sh` reproduces the two archive-card clips byte-for-purpose;
 | `plate` | draws alpha layers onto a JPG background at fixed positions (the still sky plate) |
 | `cropscale` | crops a region and scales it to a width, alpha kept (sips silently centres a zero offset and refuses a crop that reaches the edge) |
 | `cleanplate` | removes an aircraft from a sky clip: mask traced from the clip itself, bob tracked on the aircraft's own pixels, hole filled from the surrounding sky |
+| `cleanplate5` | the same removal with a motion-compensated fill: each cloud is carried through the hole at its own layer's speed, from the hole's own edges (the shelf clip since 2026-10) |
 
 ## The structure is measured, not tuned
 
@@ -169,3 +170,129 @@ with `qlmanage`, and needs Pillow.
 - every see-through shape is backed;
 - the drawing contains no embedded bitmap. Illustrator writes one when it
   cannot express some shading, as it did with the DC-9's engine.
+
+## The shelf clip re-rendered: clouds carried through the hole (`cleanplate5`)
+
+`cleanplate` filled the hole on each frame from the sky around it (dilate,
+feather, push-pull). Every cloud that drifted through the removed band played
+as a bright, flat glow that did not travel: on veil pixels inside the hole the
+texture was a third of the surroundings' (high-pass ratio 0.32) and the change
+from frame to frame was not a translation (it was explained 2.4x by moving at
+the clip's speeds, against 5.9x around it). The first frame has no cloud in the
+band, so the poster and every still looked clean.
+
+What the reference does, measured (1920 wide):
+
+- The aircraft only bobs vertically: 60 px in all (about +-30), eased, and the
+  last frame steps to the first by 0 px. No sideways drift.
+- The sky painting is still. White, see-through veils cross it leftward at
+  constant speed with no vertical motion. They are LAYERS: about 205 and
+  395 px/s through the fuselage's rows (both at once), 455 px/s just below
+  them, 165 px/s over the bottom bank (110 to 303 px/s at 1280 wide). Each
+  cloud keeps one speed; a map of the layers by cloud is `--layer-map`. The
+  earlier single 171 px/s is superseded.
+- The band the aircraft covers is nearly empty of veils at both ends of the
+  clip, so the loop is seamless there.
+
+`cleanplate5` keeps the mask, the bob tracking and the output geometry of
+v23899 (1824 px at x 48 scaled to 1140x674, 25 fps, frame k = reference frame
+k), so the CSS is unchanged. Inside the cover (the mask with its letter and
+window holes filled, dilated 16 px):
+
+1. The still sky is each pixel's mean over its uncovered, veil-free frames.
+   Pixels the aircraft always hides, and pixels it uncovers for fewer than 150
+   frames, get a membrane fill. **The bob reveals a strip above and below the
+   fuselage only around 7 s, under a passing veil: trusted as "still", that
+   strip came out 45 grey too bright and drew a lit slab with a hard edge along
+   the fuselage.**
+2. Every visible point of the band gets a soft membership in each layer
+   (165, 205, 300, 395, 455 px/s): how well its optical depth matches its own
+   past and future shifted at that speed, over a window of 33x17 px and 13
+   frames. A flat, saturated cloud interior, where the speeds hardly differ,
+   takes the confident memberships around it (the cloud's own edges), and only
+   failing that the row's usual layer.
+3. Each layer is carried through the hole at its own speed, from the hole's
+   own edges: a hidden pixel x at frame t is what the first visible point
+   along its track showed, to its right (x + v d, d frames earlier) and to its
+   left (x - v d, d frames later), in its own row, round the seamless loop.
+   The track ends wherever the hole ends in that row at that moment: the nose
+   and the tail for the fuselage's rows, the fin's edges for the fin's rows,
+   the engine's for the engine's, a few frames back for a row the bob has just
+   covered. The two ends are interpolated along the track and the layers add.
+   Samples are taken at whole frames (Catmull-Rom along x), not at one column
+   at fractional times, which would blur the veils along x by v px per frame.
+4. Near the top and bottom of each column's hidden run, where the edge runs
+   along x (the fuselage's lines, the engine's), the clip's own pixels
+   reflected about the row just outside it, weighted against the transport by
+   inverse squared distance (for the transport: to the row's run end, or 14 px),
+   so the fill meets the clip there too. Not at a slanted edge (the fin's
+   leading edge, the nose), where the row's run end is about as near: there
+   the reflection pulled in sky from beside the edge and drew a line along it.
+   Under a narrow notch (the antenna's) the reflection is about the fuselage
+   line beside it.
+5. Colour is S + beta (255 - S) per channel; the cover edge is feathered 6 px.
+
+Rules that came out of building it:
+
+- **Carry each cloud at its own speed.** The first version used one pair of
+  source columns, just outside the hole's widest extent, and one speed
+  (205 px/s) for every row. A 395 px/s cloud carried at 205 px/s is squeezed to
+  half its width, so its soft sides turn steep: it came out a box with straight
+  sides, its top cut flat along the fuselage line (1.2 to 4.8 s). Rows whose
+  hidden run is short (the fin, the engine, the nose) got clouds copied from
+  600 px away that did not match the clouds crossing their own edges, so the
+  fin's outline showed as a cloud (4.2 to 4.8 s). Straight vertical edges (10
+  px or more at one column) came 11 per 1000 px of fill, against 2 in the
+  reference sky. The layer memberships fix the first; tracks that end at each
+  row's own edge fix the second.
+- **A track that ends at the row's own edge does not make horizontal edges once
+  the speed is right.** Per-row columns did, when every row was carried at one
+  speed: the rows then disagreed by the speed error times a different distance.
+  With each cloud at its own speed, the rows of one cloud agree.
+- **Never spread the edge mismatch over the hole.** A Laplace or push-pull
+  correction from the hole's rim made the glow again; reflection and transport
+  do not.
+- **Least squares into rigid layers does not work here.** The strips beside
+  the hole are 190 px wide and the veils are broad and overlap, so the split
+  between layers is not determined: the fits matched the visible pixels to 2-6 %
+  and put horizontal cigars and streaks in the hole. A soft membership per
+  point, from that point's own motion, does work.
+- **Hold-outs** (a second cover where the truth is known; `--holdout DY` and
+  `--holdout-strip` reproduce them): mean error 10.8 grey with the copy 150 px
+  lower (the still sky alone 12.0; the first version 13.7), 4.5 with it 150 px
+  higher (9.1; 6.5), 2.2 with the left strip hidden for 4 s (10.2; 10.7). On
+  moving-veil pixels: 7.1, 10.1 and 5.3 grey (first version 15.1, 16.0, 41.0).
+
+Result on the shipped clip, with the probes used for the smear:
+
+- straight vertical edges in the fill 0.9 per 1000 px (reference sky 2.0; the
+  first version 11.0; the spatial fill 0.01);
+- change from frame to frame explained by translation 6.6x against 5.8x around
+  the hole (the first version 4.6x against 5.5x; the spatial fill 2.4x against
+  5.9x); frame-to-frame step in the hole 1.45 grey against 1.39 around it;
+- texture on veil pixels in the hole 0.64 of the surroundings' (untouched
+  pixels score 0.91; the spatial fill 0.32). The first version's 0.85 came
+  partly from its box edges;
+- outside the cover the clip is the reference's own (median difference 0.52
+  grey, codec noise); last frame to first in the hole 0.48 grey against an
+  ordinary step of 1.28.
+
+### Where the fill shows on the gate shelf
+
+Checked on the board itself (YQM gate 3, 1920x1080, by day, with test flights
+of a Rouge A320, a Jazz and a Porter Dash 8-400 and a Jazz CRJ900), with every
+layer and the clip paused at the same moments (1.5, 3, 4.5, 7.5 and 10.5 s) on
+the live build and on this one, then again with the gate aircraft hidden.
+
+- The removed band sits behind the gate aircraft, but no gate aircraft covers
+  all of it. The A320 leaves a strip under its fuselage, engine and wing open;
+  the Dash 8-400s and the CRJ900 are slimmer and leave much more of it open,
+  and with no aircraft at the gate (the carrier mark holding its place) all of
+  it shows. So the fill has to hold up on its own: judge it with the aircraft
+  hidden as well as in place.
+- On the live build the band shows the glow. With this clip it shows clouds of
+  the same kind as the rest of the sky, moving with it, mirrored or not; no box
+  shapes and no outline of the removed fin, engine or fuselage, including at
+  the moments the one-speed attempt showed them (3 and 4.5 s).
+- The first frame is clean on every clip; judge at moments when a cloud
+  crosses the band.
