@@ -627,8 +627,19 @@ const COL_REC = `(function () {
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
 })()`;
+// The window is a floor, not a fixed length: a slow runner (CI) draws fewer
+// frames per second, so after the window, reading continues until 8 frames
+// have been seen with the column on screen, or until 6 s have passed. The bar is unchanged:
+// 8 frames, none cut.
 const COL_REC_READ = (ms, still) => `new Promise(function (res) {
-  setTimeout(function () {
+  var t0 = Date.now();
+  (function check() {
+    var R0 = window.__wordsColRec;
+    var el = Date.now() - t0;
+    if (el < ${Number(ms)} || (R0 && R0.seen < 8 && el < Math.max(${Number(ms)}, 6000))) { return setTimeout(check, 50); }
+    finish();
+  })();
+  function finish() {
     var R = window.__wordsColRec;
     if (!R) return res('the frames were not read');
     R.stop();
@@ -636,7 +647,7 @@ const COL_REC_READ = (ms, still) => `new Promise(function (res) {
     if (R.bad.length) return res(R.bad.length + ' frames painted the column cut: its last row past its foot, or a line past its edge (' + R.bad.slice(0, 4).join(', ') + '; scales ' + R.ks.join(' > ') + ')');
     if (${still ? 'true' : 'false'} && R.ks.length > 1) return res('its scale moved: ' + R.ks.join(' > '));
     res('ok');
-  }, ${Number(ms)});
+  }
 })`;
 // the takeover painted afresh, as when the countdown or NOW BOARDING comes up
 const COL_REPAINT = `(function () {
