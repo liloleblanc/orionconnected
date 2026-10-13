@@ -90,8 +90,13 @@ const planFor = (code, ctx, lead, close) => SEQ.plan(code, Object.assign({ t0: T
 // (a sub is a key, or a list of [condition, key]: each zone's own cabin)
 const subKeys = (spec) => (!spec ? [] : typeof spec === 'string' ? [spec] : spec.map((c) => c[1]).filter(Boolean));
 function keysOf(T) {
-  const out = new Set(['preboard', 'priority', 'genboard', 'allPax', 'all', 'rows', 'zone', 'zones', 'groupLabel', 'groups',
-    'boardSoon', 'boardConv', 'nextUp', 'useLane', 'useLanes', 'preboardWhoAny', 'preboardWhoTSus']);
+  const out = new Set(['preboard', 'priority', 'genboard', 'allPax', 'rows', 'zone', 'zones', 'groupLabel', 'groups',
+    'boardSoon', 'boardConv', 'useLane', 'useLanes', 'preboardWhoAny', 'preboardWhoTSus',
+    // THE FINAL DESIGN — the switch's words in the airline's own unit, who
+    // still waits, the instruction line
+    'allZones', 'allGroups', 'allRows', 'paxRemainGo',
+    'seatedZone', 'seatedZones', 'seatedZonesTwo', 'seatedGroup', 'seatedGroups', 'seatedGroupsTwo', 'seatedRows',
+    'seatedUntilZone', 'seatedUntilGroup', 'seatedUntilRow', 'seatedUntilGen']);
   for (const s of T.stages) {
     for (const k of ['title', 'who', 'label']) if (s[k]) out.add(s[k]);
     subKeys(s.sub).forEach((k) => out.add(k));
@@ -570,66 +575,86 @@ test('the memo never steps back, whatever the plan is rebuilt from', () => {
 
 // The gate's own sign builders, lifted out of uxgGateHtml with the label
 // helpers they call, run over every stage. A key that does not resolve
-// renders as nothing or as its own name; either fails here.
-function signRenderer(langs, frF) {
-  const helpers = ['_g8GrpValCls', '_g8SignPair', '_g8SignLanes', '_g8SignLines', '_g8SignNext', '_g8ArrowDisc', '_g8ArrowGlyph',
-    '_g8SignCol', '_g8SignHtml', '_g8SeqLabelKey', '_g8SeqValue', '_g8SeqWho', '_g8SeqCab', '_g8SeqCabOf', '_g8SeqPanels'].map(inner);
+// renders as nothing or as its own name; either fails here. THE FINAL
+// DESIGN: two layouts carry the same calls, the one centre display
+// ('centre', the default) and the two lane panels it adapts ('panels').
+function signRenderer(langs, frF, layout) {
+  const helpers = ['_g8GrpValCls', '_g8SignPair', '_g8SignLanes', '_g8SignLines', '_g8Picto', '_g8SeatList', '_g8SeatKey', '_g8SignGo',
+    '_g8SignInstr', '_g8ArrowDisc', '_g8ArrowGlyph', '_g8SignCol', '_g8SignHtml', '_g8SignCentreHtml', '_g8SeqLabelKey', '_g8SeqValue',
+    '_g8SeqWho', '_g8SeqCab', '_g8SeqCabOf', '_g8SeqSeated', '_g8SeqAll', '_g8SeqPanels', '_g8SeqCentre'].map(inner);
   const arrow = (UXG.match(/  var _G8_ARROW_PATH = [^;]+;/) || [])[0];
   assert.ok(arrow, 'the arrow path');
+  const picto = braceFrom(UXG, UXG.indexOf('  var _G8_PICTO = {'), '_G8_PICTO') + ';';
   const src = [block('var _GATE_LBL = {'), top('_lblEntry'), top('_gateLbl'), top('_gateLbl1Pick'), top('_gateLbl1Html'),
-    arrow, ...helpers,
-    'return function (seq, isFinal) { var P = _g8SeqPanels(seq, isFinal); return _g8SignHtml(P.L, P.R, isFinal ? 0 : seq.st.nextTs); };'].join('\n');
-  return new Function('langs', '_frF', 'BoardStrings', 'FIDSBoardSeq', src)(langs, frF, STORE, SEQ);
+    arrow, picto, ...helpers,
+    'return function (seq, isFinal) {',
+    "  if (layout === 'centre') return _g8SignCentreHtml(_g8SeqCentre(seq, isFinal), isFinal ? 0 : seq.st.nextTs);",
+    '  var P = _g8SeqPanels(seq, isFinal); return _g8SignHtml(P.L, P.R, isFinal ? 0 : seq.st.nextTs);',
+    '};'].join('\n');
+  return new Function('langs', '_frF', 'BoardStrings', 'FIDSBoardSeq', 'layout', src)(langs, frF, STORE, SEQ, layout || 'panels');
 }
-const textOf = (html) => html.replace(/<svg[\s\S]*?<\/svg>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;| /g, ' ').replace(/\s+/g, ' ').trim();
+const textOf = (html) => html.replace(/<svg[\s\S]*?<\/svg>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;| /g, ' ').replace(/\s+/g, ' ').trim();
 // (the keys that are not everyday words: 'priority' or 'rows' may be a
 // passenger's word, 'preboardWhoAC' never is)
 const ALL_KEYS = (() => {
   const s = new Set();
   for (const T of Object.values(SEQ.SEQ)) for (const k of keysOf(T)) if (/[A-Z]/.test(k) || /board$/.test(k)) s.add(k);
+  for (const k of ['seeAgent', 'finalCall', 'gateClosed', 'nowBoarding']) s.add(k);
   return [...s];
 })();
+const LAYOUTS = ['panels', 'centre'];
+// the instruction line, as each layout carries it: in the band under the two
+// panels, or at the foot of the one centre panel
+const instrOf = (html) => {
+  const m = html.match(/<div class="g8-sign-instr[^"]*">([\s\S]*?)<\/div>/);
+  return m ? textOf(m[1]) : '';
+};
 
-test('no missing label key on any stage, in any language: every panel says its words', () => {
+test('no missing label key on any stage, in any language, in either layout: every panel says its words', () => {
   const SETS = [[['en', 'fr'], false], [['en', 'fr'], true], [['de', 'pt'], false], [['ja'], false], [['zh'], false], [['ar'], false], [['es', 'it'], false]];
   let frames = 0;
-  for (const [langs, frF] of SETS) {
-    const render = signRenderer(langs, frF);
-    for (const [code, ctx] of CARRIERS) {
-      const p = planFor(code, ctx, 35, 15);
-      const moments = p.stages.map((s) => s.ts + 30000);
-      for (const [k, at] of moments.entries()) {
-        const st = SEQ.stageAt(p, at);
-        for (const isFinal of [false, true]) {
-          if (isFinal && k > 0) continue;
-          const html = render({ p, st }, isFinal);
-          const text = textOf(html);
-          const where = `${code}${JSON.stringify(ctx)} ${langs.join('+')} stage ${st.i}${isFinal ? ' final' : ''}`;
-          // no key's own name on screen
-          for (const key of ALL_KEYS) assert.ok(!new RegExp('\\b' + key + '\\b').test(text), `${where}: the raw key "${key}" is on the sign`);
-          assert.doesNotMatch(text, /undefined|null|NaN|\[object/, where);
-          // both panels, each with a title
-          const cols = html.split('class="g8-board-col ').slice(1);
-          assert.equal(cols.length, 2, where + ': both panels');
-          for (const c of cols) assert.match(c, /class="g8-sign-title g8-pair"><span class="bs-h|class="g8-sign-title g8-pair"><span /, where + ': a title on each panel');
-          for (const c of cols) assert.match(c, /g8-sign-lanes g8-pair"><span/, where + ': a lane line on each panel');
-          // a who-list where the stage names one, in each of the board's languages
-          if (!isFinal && st.cur.side === 'L' && st.cur.who) {
-            const e = STORE.entry(st.cur.who);
-            for (const l of STORE.pairLangs(langs, frF)) assert.ok(text.includes(e[l].split(' · ')[0]), `${where}: who is called (${st.cur.who}, ${l})`);
+  for (const layout of LAYOUTS) {
+    for (const [langs, frF] of SETS) {
+      const render = signRenderer(langs, frF, layout);
+      for (const [code, ctx] of CARRIERS) {
+        const p = planFor(code, ctx, 35, 15);
+        const moments = p.stages.map((s) => s.ts + 30000);
+        for (const [k, at] of moments.entries()) {
+          const st = SEQ.stageAt(p, at);
+          for (const isFinal of [false, true]) {
+            if (isFinal && k > 0) continue;
+            const html = render({ p, st }, isFinal);
+            const text = textOf(html);
+            const where = `${layout} ${code}${JSON.stringify(ctx)} ${langs.join('+')} stage ${st.i}${isFinal ? ' final' : ''}`;
+            // no key's own name on screen (the new keys among them)
+            for (const key of ALL_KEYS) assert.ok(!new RegExp('\\b' + key + '\\b').test(text), `${where}: the raw key "${key}" is on the sign`);
+            assert.doesNotMatch(text, /undefined|null|NaN|\[object|\{N\}|\{LIST\}|\{LO\}|\{HI\}/, where);
+            const cols = html.split('class="g8-board-col ').slice(1);
+            assert.equal(cols.length, layout === 'centre' ? 1 : 2, where + ': its panels');
+            // every panel says what it is: a title, a number on its row, or words
+            for (const c of cols) assert.match(c, /class="g8-sign-title g8-pair"><span|class="g8-sign-row"|g8-sign-value g8-grp-txt/, where + ': each panel says its call');
+            for (const c of cols) assert.match(c, /g8-sign-lanes g8-pair"><span/, where + ': a lane line on each panel');
+            // the instruction line, once, never empty
+            assert.equal((html.match(/class="g8-sign-instr/g) || []).length, 1, where + ': one instruction line');
+            assert.ok(instrOf(html).length > 8, where + ': the instruction line says something');
+            // a who-list where the stage names one, in each of the board's languages
+            if (!isFinal && st.cur.side === 'L' && st.cur.who) {
+              const e = STORE.entry(st.cur.who);
+              for (const l of STORE.pairLangs(langs, frF)) assert.ok(text.includes(e[l].split(' · ')[0]), `${where}: who is called (${st.cur.who}, ${l})`);
+            }
+            // a pair is two whole halves round one bar: never stacked halves
+            assert.doesNotMatch(html, /g8-bir-l1|g8-bir-l2/, where + ': no stacked halves');
+            frames++;
           }
-          // a pair is two whole halves round one bar: never stacked halves
-          assert.doesNotMatch(html, /g8-bir-l1|g8-bir-l2/, where + ': no stacked halves');
-          frames++;
         }
       }
     }
   }
-  assert.ok(frames > 500, 'frames rendered: ' + frames);
+  assert.ok(frames > 1000, 'frames rendered: ' + frames);
 });
 
 test('the panels say the right thing at the right stage', () => {
-  const render = signRenderer(['en', 'fr'], false);
+  const render = signRenderer(['en', 'fr'], false, 'panels');
   const planOf = (code, ctx) => planFor(code, ctx, 30, 15);
   const at = (code, ctx, mins, isFinal) => {
     const p = planOf(code, ctx);
@@ -646,23 +671,24 @@ test('the panels say the right thing at the right stage', () => {
   assert.match(pre, /Pre-boarding \| Préembarquement/);
   assert.match(pre, /wheelchair/, "Air Canada's own words for who pre-boards");
   assert.match(pre, /fauteuil roulant/, 'and in French too: the gate has no language rotation, both are shown');
-  assert.match(pre, /Next : Zone 1|Next: Zone 1/);
-  assert.match(pre, /General boarding \| Embarquement général/);
+  assert.doesNotMatch(pre, /Next|Prochain/, 'the Next line is gone');
+  assert.doesNotMatch(pre, /General boarding/, 'General boarding is said only at the switch');
   assert.match(pre, /Boarding Will Begin Shortly/, 'general boarding is not called yet');
-  assert.doesNotMatch(pre, /Zones/, 'a single zone is singular');
+  assert.doesNotMatch(pre, /Zones? [\d–, and]+: please remain seated/, 'pre-boarding numbers no one: the instruction line says it');
+  assert.match(pre, /Please remain seated until your zone is called.*Veuillez rester assis jusqu’à l’appel de votre zone/);
   // the waiting panel never reads as a live call: no number, no arrow; its
-  // first call is the Next line
+  // title is the cabin its first call is for
   const preH = htmlAt('AC', {}, 1);
   const right = preH.split('g8-sign-right')[1];
   assert.match(preH, /g8-sign-right[^"]*is-waiting/, 'the waiting panel says so in its class');
   assert.doesNotMatch(right, /g8-sign-valarrow/, 'no arrow while it waits');
   assert.doesNotMatch(right, /g8-sign-row/, 'no number on a row while it waits');
-  assert.match(textOf(right), /Next: Zone 3/, 'its first call, as the Next line');
+  assert.match(textOf(right.slice(right.indexOf('>') + 1)), /^Economy Class \| Classe économique Boarding Will Begin Shortly/, 'the cabin it will call, then "will begin shortly"');
   const z1 = at('AC', {}, when('AC', {}, (s) => s.values.includes('1')));
   assert.match(z1, /Priority \| Prioritaire/);
   assert.match(z1, /Business Class \| Classe affaires/, 'Zone 1: Business Class');
   assert.match(z1, /Zone 1/);
-  assert.match(z1, /Next: Zone 2/);
+  assert.match(z1, /Zones 2–6: please remain seated Zones 2–6 : veuillez rester assis/, 'who still waits, each language a whole line, a run of five as a range');
   const z2 = at('AC', {}, when('AC', {}, (s) => s.values.includes('2')));
   assert.doesNotMatch(z2, /Business Class|Premium Economy/, 'Zone 2 on an A320 names no cabin: Premium Economy flies only on widebodies');
   const z2w = at('AC', { cat: 'widebody' }, when('AC', { cat: 'widebody' }, (s) => s.values.includes('2')));
@@ -672,17 +698,27 @@ test('the panels say the right thing at the right stage', () => {
   assert.match(fam, /Family boarding \| Embarquement des familles/);
   assert.match(fam, /under the age of 6 or who need more time to board/);
   assert.match(fam, /musical instruments/, "Air Canada's whole step");
+  assert.doesNotMatch(fam, /: please remain seated/, 'a family call numbers no one');
   const z3 = at('AC', {}, when('AC', {}, (s) => s.values.includes('3')));
   assert.match(z3, /Priority \| Prioritaire.*Zones 1 • 2/, 'the priority values called stay listed');
-  assert.doesNotMatch(z3.split('General boarding')[0], /Business Class/, 'Zones 1 • 2 share no cabin: none is named');
+  assert.doesNotMatch(z3.split('Economy Class')[0], /Business Class/, 'Zones 1 • 2 share no cabin: none is named');
   assert.match(z3, /Board at your convenience/, "Air Canada's footnote: priority may board at any time");
-  assert.match(z3, /Economy Class \| Classe économique.*Zone 3/);
-  assert.match(z3, /Next: Zones 4 • 5 • 6/);
+  assert.match(z3, /Economy Class \| Classe économique Zone 3/, 'the cabin over the number, never General boarding over one zone');
+  assert.doesNotMatch(z3, /General boarding/);
+  assert.match(z3, /Zones 4, 5 and 6: please remain seated Zones 4, 5 et 6 : veuillez rester assis/);
+  const z5 = at('AC', {}, when('AC', {}, (s) => s.values.includes('5')));
+  assert.match(z5, /Zone 6: please remain seated Zone 6 : veuillez rester assis/, 'one zone left: the singular');
+  // THE SWITCH: the last call takes everyone still waiting
   const z6 = at('AC', {}, 20);
-  assert.match(z6, /Zone 6/);
-  assert.doesNotMatch(z6, /Next/, 'nothing after the last call');
+  assert.match(z6, /General boarding \| Embarquement général All zones \| Toutes les zones/);
+  assert.match(z6, /All remaining passengers, please proceed to the gate Tous les autres passagers sont priés de se présenter à la porte/);
+  assert.doesNotMatch(z6, /Zone 6|remain seated|rester assis/, 'never one more number, and no one is left waiting');
+  const z6H = htmlAt('AC', {}, 20);
+  assert.match(z6H, /g8-sign-right[^"]*is-switch/, 'the switch in its own colour (is-switch)');
+  assert.match(z6H, /class="g8-sign-picto g8-picto-all"/, 'with the group of passengers');
   const fc = at('AC', {}, 20, true);
-  assert.match(fc, /Zones 3 • 4 • 5 • 6/);
+  assert.match(fc, /All zones \| Toutes les zones/, 'the final call keeps ALL ZONES');
+  assert.doesNotMatch(fc, /Zones 3 • 4 • 5 • 6/, 'not the list of numbers under it');
   assert.doesNotMatch(fc, /Pre-boarding|wheelchair|Next/, 'the final call: no pre-boarding words, no Next line');
   // Rouge: Premium Rouge in Zone 1 on a Caribbean flight, Zone 2 on an international one
   assert.match(at('RV', { region: 'carib' }, when('RV', { region: 'carib' }, (s) => s.values.includes('1'))), /Premium Rouge/);
@@ -698,25 +734,27 @@ test('the panels say the right thing at the right stage', () => {
   const wsSp = when('WS', {}, (s) => s.title === 'specialBoard');
   assert.match(at('WS', {}, wsSp), /Special boarding \| Embarquement spécial/);
   assert.match(at('WS', {}, wsSp), /under five/);
-  assert.match(at('WS', {}, when('WS', {}, (s) => s.values.includes('3'))), /Zone 3.*Next: Zone 3\+/, 'Zone 3, then Zone 3+');
-  assert.match(at('WS', {}, 20, true), /Zone 3\+/);
+  assert.match(at('WS', {}, when('WS', {}, (s) => s.values.includes('3'))), /Zone 3 Zone 3\+: please remain seated/, 'Zone 3, then Zone 3+');
+  assert.match(at('WS', {}, 20, true), /All zones \| Toutes les zones/);
   assert.doesNotMatch(at('WS', {}, 20, true), /Zones? 3–9|Zones? [4-9]\b/, 'never a zone WestJet does not publish');
-  // Porter: pre-boarding keeps PorterReserve; the rows; Rows All at the final call
+  // Porter: pre-boarding keeps PorterReserve; the rows; ALL ROWS at the switch
   const pd = at('PD', { pdDash: true }, 1);
   assert.match(pd, /Pre-boarding/);
   assert.match(pd, /PorterReserve/);
   assert.match(pd, /Unaccompanied minors/, "Porter's published roster");
   assert.match(pd, /Mineurs non accompagnés/, 'in French as well');
-  assert.match(pd, /Next: Rows 14–20/, 'waiting: the first band is the Next line, never 1–7');
+  assert.match(pd, /Please remain seated until your row is called.*Veuillez rester assis jusqu’à l’appel de votre rangée/, "Porter's unit: the row");
   const pdLive = at('PD', { pdDash: true }, when('PD', { pdDash: true }, (s) => s.values.includes('14–20')));
-  assert.match(pdLive, /Rows \| Rangées 14–20.*Next: Rows 7–13 • 1–6/);
+  assert.match(pdLive, /Rows \| Rangées 14–20/);
+  assert.match(pdLive, /Rows 1–13: please remain seated Rangées 1–13 : veuillez rester assis/, 'the bands still to come, as one range');
   assert.doesNotMatch(pdLive, /Board at your convenience|Priority/, 'Porter publishes neither: the sign says neither');
-  assert.match(at('PD', { pdDash: true }, 20, true), /Rows \| Rangées All \| Toutes/);
+  assert.match(at('PD', { pdDash: true }, 20, true), /All rows \| Toutes les rangées/, '« TOUTES LES RANGÉES »');
   // the generic plan: All passengers, never an invented group number
   const g = at('ZZ', { legalPre: true }, 12);
-  assert.match(g, /All passengers \| Tous les passagers/);
+  assert.match(g, /General boarding \| Embarquement général All passengers \| Tous les passagers/);
   assert.doesNotMatch(g, /Group \d|Groupe \d/);
   assert.match(at('ZZ', { legalPre: true }, 1), /Passengers who need assistance or more time to board/);
+  assert.match(at('ZZ', { legalPre: true }, 1), /Please remain seated until general boarding is called/, 'nothing numbered: until general boarding');
   assert.doesNotMatch(at('ZZ', { legalPre: true }, 20, true), /Pre-boarding|need assistance/);
   // PAL: one lane, its own two steps
   assert.match(at('PB', {}, 1), /Use Lane 1 \| Utilisez la voie 1/);
@@ -732,6 +770,7 @@ test('the panels say the right thing at the right stage', () => {
     assert.doesNotMatch(x, /Priority|Prioritaire/, where + ': no priority step is invented');
     assert.doesNotMatch(x, /Pre-boarding|Préembarquement/, where + ': not a pre-boarding panel once pre-boarding is over');
     assert.equal((x.match(/General boarding \| Embarquement général/g) || []).length, 2, where + ': both lanes serve the general call');
+    assert.equal((x.match(/All remaining passengers/g) || []).length, 1, where + ': the instruction line once, under both');
     assert.doesNotMatch(x, /Unaccompanied minors|need assistance/, where + ': without the list');
   }
   // Delta and Alaska: their cabins are brands, named in who each call is for
@@ -747,64 +786,230 @@ test('the panels say the right thing at the right stage', () => {
   assert.match(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1'))), /United First/);
   assert.doesNotMatch(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('2'))), /United First/, "United's Group 2 is Premier Silver and Premier Access");
   assert.doesNotMatch(at('UA', { cat: 'widebody' }, when('UA', { cat: 'widebody' }, (s) => s.values.includes('1'))), /United First/, 'a widebody: United Polaris or Business, so none is guessed');
+  assert.match(at('UA', {}, 1), /Please remain seated until your group is called/, "United's unit: the group");
+  assert.match(at('UA', {}, 20), /All groups \| Tous les groupes/, 'ALL GROUPS at the switch');
   // Ryanair: no pre-boarding step at all
   assert.doesNotMatch(at('FR', {}, 1) + at('FR', {}, 20, true), /Pre-boarding|Préembarquement/);
   assert.match(at('FR', {}, 1), /Priority \| Prioritaire/);
 });
 
-test('the who-line is in both of the board\'s languages, each item whole', () => {
-  // The gate has no language rotation (tick_carousel runs on the main board
-  // only), so a who-line drawn one language at a time was only ever drawn
-  // in the first: Air Canada's pre-boarding never in French at Halifax,
-  // never in English at Montréal.
-  const P = inner('_g8SeqWho');
-  assert.match(P, /return _gateLbl\(s\.who, _frF, function \(w\) \{/, 'through the pair builder: both languages');
-  assert.doesNotMatch(P, /_gateLbl1/, 'never one language');
-  for (const [langs, frF] of [[['en', 'fr'], false], [['fr', 'en'], true], [['en', 'es'], false], [['ja', 'en'], false], [['ar', 'en'], false], [['de', 'pt'], false]]) {
-    const render = signRenderer(langs, frF);
-    const pair = STORE.pairLangs(langs, frF);
-    for (const [code, key] of [['AC', 'preboardWhoAC'], ['UA', 'preboardWhoUA'], ['PD', 'preboardList'], ['WS', 'preboardWhoWS']]) {
-      const p = planFor(code, code === 'PD' ? { pdDash: true } : {}, 30, 15);
-      const html = render({ p, st: SEQ.stageAt(p, T0 + 0.5 * MIN) }, false);
-      const e = GATE_LBL[key] || STORE.entry(key);
-      for (const l of pair) {
-        for (const item of e[l].split(' · ')) {
-          // each item one unit: the line breaks between items, never inside
-          const unit = new RegExp('<span class="g8-who-i">' + item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '( ·)?</span>');
-          assert.match(html, unit, `${code} ${langs}: '${item}' (${l}) is one whole unit`);
+test('the one centre says who may line up now: pictograms and huge numbers first', () => {
+  const render = signRenderer(['en', 'fr'], false, 'centre');
+  const p = planFor('AC', {}, 30, 15);
+  const html = (mins, fin) => render({ p, st: SEQ.stageAt(p, T0 + mins * MIN) }, !!fin);
+  const when = (pick) => p.stages.find(pick).at + 0.3;
+  // pre-boarding: the wheelchair and the family, big, Pre-boarding, who
+  const pre = html(1);
+  assert.match(pre, /class="g8-sign-picto g8-picto-pre"><svg class="g8-picto"[\s\S]*?<\/svg><svg class="g8-picto"/, 'two pictograms: the wheelchair and the family');
+  assert.match(textOf(pre), /^Pre-boarding \| Préembarquement Customers who have requested wheelchair/);
+  // one call: the unit and its number on one row, its cabin and who still
+  // waits small under it, the instruction line at the foot
+  const z3 = html(when((s) => s.values.includes('3')));
+  assert.match(z3, /<div class="g8-sign-row"><div class="g8-sign-label g8-pair">[\s\S]*?Zone[\s\S]*?<\/div><div class="g8-sign-value">3<\/div><\/div>/, 'ZONE 3 on one row');
+  assert.match(z3, /<div class="g8-sign-who g8-pair">[\s\S]*?Economy Class/, 'its cabin, small');
+  assert.match(z3, /<div class="g8-sign-wait">[\s\S]*?Zones 4, 5 and 6: please remain seated/, 'who still waits, small');
+  assert.match(instrOf(z3), /^Please remain seated until your zone is called Veuillez rester assis jusqu’à l’appel de votre zone$/);
+  assert.doesNotMatch(textOf(z3), /General boarding|Priority/, 'the centre says the call, nothing else');
+  assert.match(z3, /class="g8-board-col next g8-sign-col g8-sign-centre/, "a general call in the airline's general colour");
+  assert.match(html(when((s) => s.values.includes('1'))), /class="g8-board-col now g8-sign-col g8-sign-centre/, 'a priority call in its priority colour');
+  // the switch, and the final call keeps it
+  for (const [mins, fin] of [[20, false], [20, true]]) {
+    const sw = html(mins, fin);
+    assert.match(sw, /class="g8-board-col all g8-sign-col g8-sign-centre[^"]* is-switch/, 'its own colour');
+    assert.match(textOf(sw), /General boarding \| Embarquement général All zones \| Toutes les zones/);
+    assert.match(instrOf(sw), /^All remaining passengers, please proceed to the gate Tous les autres passagers/);
+    assert.doesNotMatch(sw, /g8-sign-wait/);
+  }
+  // the default layout is the one centre; a screen may ask for the panels
+  const lay = inner('_g8SignLayout');
+  assert.match(UXG, /var _G8_SIGN_LAYOUT = 'centre';/);
+  assert.match(lay, /\[\?&\]sign=\(centre\|center\|panels\)/);
+  assert.match(UXG, /if \(_signOne\) return _g8SignCentreHtml\(_g8SeqCentre\(_seq, false\), _seq\.st\.nextTs\);/);
+});
+
+test('never a bare All: every carrier says its own unit at the switch and the final call, in nine languages', () => {
+  // the retired bare word, in every language it had (_GATE_LBL.all)
+  const BARE = new Set(['All', 'Toutes', 'Todas', 'Alle', 'Tutte', '全て', '全部', 'الكل', 'Todos', 'Toute', 'Tous', 'Tout']);
+  const unitKey = (u) => (u === 'zone' ? 'allZones' : u === 'groupLabel' ? 'allGroups' : u === 'rows' ? 'allRows' : 'allPax');
+  const word = (k, l) => (GATE_LBL[k] || STORE.entry(k))[l];
+  // Zones for Air Canada, WestJet, Delta and Transat; groups for United,
+  // American and Alaska; rows for Porter
+  const expect = { AC: 'allZones', WS: 'allZones', DL: 'allZones', TS: 'allZones', UA: 'allGroups', AA: 'allGroups', AS: 'allGroups', PD: 'allRows' };
+  for (const [code, key] of Object.entries(expect)) assert.equal(unitKey(planFor(code, {}, 30, 15).unit), key, code + "'s own unit");
+  for (const l of LANGS) {
+    for (const layout of LAYOUTS) {
+      const render = signRenderer([l], false, layout);
+      for (const [code, ctx] of CARRIERS) {
+        const p = planFor(code, ctx, 35, 15);
+        const want = word(unitKey(p.unit), l);
+        assert.ok(want, code + ' ' + l + ': the word');
+        const last = p.stages[p.stages.length - 1];
+        for (const [st, fin] of [[SEQ.stageAt(p, last.ts + 1000), false], [SEQ.stageAt(p, T0), true]]) {
+          const html = render({ p, st }, fin);
+          const where = `${layout} ${code}${JSON.stringify(ctx)} ${l}${fin ? ' final' : ' switch'}`;
+          assert.ok(textOf(html).includes(want), `${where}: says "${want}"`);
+          assert.ok(textOf(html).includes(word('genboard', l)), `${where}: under General boarding`);
+          // no value on the sign is a bare word
+          for (const m of html.matchAll(/<div class="g8-sign-value[^"]*">([\s\S]*?)<\/div>/g)) {
+            for (const half of textOf(m[1]).split(' | ')) assert.ok(!BARE.has(half.trim()), `${where}: a bare "${half}" as a value`);
+          }
         }
       }
-      assert.equal((html.match(/class="g8-who-blk"/g) || []).length, new Set(pair.map((l) => e[l])).size, `${code} ${langs}: one block per language`);
-      assert.match(html, new RegExp('<span class="g8-who-blk" lang="' + pair[0] + '"'), 'each block marked with its language');
     }
   }
-  const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
-  assert.match(CSS, /\.g8-sign \.g8-sign-roster \.g8-who-i \{ display: inline-block !important; white-space: normal !important; max-width: 100% !important;/, 'an item is an unbreakable unit that may wrap only on its own words when wider than the panel');
-  assert.match(CSS, /\.g8-sign \.g8-sign-roster \.g8-who-blk \{ display: block !important; \}/, 'each language its own block');
-  assert.match(CSS, /\.g8-sign \.g8-sign-col\.has-roster \.g8-sign-lanes \{ margin-top: auto !important; \}/, 'a numbered call with a short who-list keeps its lane line level with the other panel');
+  // the bare word is gone from the gate's table, and so is FINAL BOARDING CALL
+  assert.ok(!GATE_LBL.all, "_GATE_LBL.all is gone");
+  assert.equal(GATE_LBL.finalCall.en, 'FINAL CALL');
+});
+
+test('the status bar: NOW BOARDING for the whole of boarding, FINAL CALL and GATE CLOSED only with the flight', () => {
+  // the strip over the sign is the boarding period's, whatever call is live:
+  // the assembly builds it with no stage in it
+  const at = UXG.indexOf("boardHtml = '<div class=\"g8-board active\">'");
+  const asm = UXG.slice(at, UXG.indexOf("\n  }\n", at));
+  assert.match(asm, /\+ _boardWelcomeStripHtml\('boarding'\)\s*\+ _boardBandHtml\(\)/);
+  assert.doesNotMatch(asm.split("_boardWelcomeStripHtml('boarding')")[0], /_seq/, 'the bar does not follow the queue');
+  const strip = inner('_boardWelcomeStripHtml');
+  assert.match(strip, /var _bwNB = _lblEntry\('nowBoarding'\);/);
+  // the final call and gate closed replace it, in their own words
+  assert.match(UXG, /var finalHdr = _gateLbl\(isGateClosed \? 'gateClosed' : 'finalCall', _frF,/);
+  // the words, in nine languages (the reviewed wording)
+  const W = {
+    nowBoarding: { en: 'Now Boarding', fr: 'Embarquement', es: 'Embarcando', de: 'Boarding', it: 'Imbarco in corso', pt: 'Embarque em curso', ja: '搭乗中', zh: '正在登机', ar: 'جارٍ الصعود' },
+    finalCall: { en: 'FINAL CALL', fr: 'DERNIER APPEL', es: 'ÚLTIMA LLAMADA', de: 'LETZTER AUFRUF', it: 'ULTIMA CHIAMATA', pt: 'ÚLTIMA CHAMADA', ja: '最終案内', zh: '最后登机', ar: 'النداء الأخير' },
+    gateClosed: { en: 'GATE CLOSED', fr: 'PORTE FERMÉE', es: 'PUERTA CERRADA', de: 'GATE GESCHLOSSEN', it: 'GATE CHIUSO', pt: 'PORTÃO FECHADO', ja: '搭乗終了', zh: '登机口已关闭', ar: 'البوابة مغلقة' }
+  };
+  for (const [k, by] of Object.entries(W)) for (const l of LANGS) assert.equal(GATE_LBL[k][l], by[l], k + ' ' + l);
+  // the board's own copies say the same (one translation per phrase)
+  const LS = new Function(block('const LS = {').replace(/^const /, 'var ') + '\nreturn LS;')();
+  for (const l of LANGS) {
+    assert.equal(LS.finalCall[l], W.finalCall[l], 'LS.finalCall ' + l);
+    assert.equal(LS.nowBoarding[l], W.nowBoarding[l].toLocaleUpperCase(l), 'LS.nowBoarding ' + l);
+  }
+  assert.doesNotMatch(CORE.replace(/\/\/.*$/mg, ''), /FINAL BOARDING CALL|最后登机广播|EMBARCANDO AHORA|JETZT BOARDING/, 'the old words are gone');
+  // gate closed: the closed symbol, big, and where to turn
+  const closed = UXG.slice(UXG.indexOf("finalHtml = '<div class=\"g8-final active g8-final-closed\">'"), UXG.indexOf("} else {", UXG.indexOf("finalHtml = '<div class=\"g8-final active g8-final-closed\">'")));
+  assert.match(closed, /_g8Picto\('closed'\)/);
+  assert.match(closed, /_g8SignGo\('seeAgent'\)/);
+  assert.equal(STORE.bs('seeAgent', 'fr'), 'Veuillez vous adresser à un agent', '« à un agent », not a calque');
+  assert.equal(STORE.bs('seeAgent', 'es'), 'Por favor, diríjase al personal de tierra');
+});
+
+test('the instruction line, before the switch and after it, in the airline\'s own unit', () => {
+  const cases = [['AC', {}, 'seatedUntilZone'], ['WS', {}, 'seatedUntilZone'], ['DL', {}, 'seatedUntilZone'], ['UA', {}, 'seatedUntilGroup'],
+    ['AS', {}, 'seatedUntilGroup'], ['PD', { pdDash: true }, 'seatedUntilRow'], ['PB', {}, 'seatedUntilGen'], ['ZZ', { legalPre: true }, 'seatedUntilGen']];
+  for (const [langs, frF] of [[['en', 'fr'], false], [['fr', 'en'], true], [['de', 'pt'], false], [['ja', 'ar'], false], [['zh', 'es'], false], [['it', 'en'], false]]) {
+    const pair = STORE.pairLangs(langs, frF);
+    for (const layout of LAYOUTS) {
+      const render = signRenderer(langs, frF, layout);
+      for (const [code, ctx, key] of cases) {
+        const p = planFor(code, ctx, 35, 15);
+        const want = (k) => pair.map((l) => STORE.bs(k, l)).join(' ');
+        p.stages.forEach((s, i) => {
+          const st = SEQ.stageAt(p, s.ts + 1000);
+          const where = `${layout} ${code} ${pair.join('+')} stage ${i}`;
+          const sw = SEQ.isSwitch(p, st);
+          assert.equal(instrOf(render({ p, st }, false)), want(sw ? 'paxRemainGo' : key), where + (sw ? ': the switch' : ': before the switch'));
+        });
+        assert.equal(instrOf(render({ p, st: SEQ.stageAt(p, T0) }, true)), want('paxRemainGo'), `${layout} ${code}: the final call`);
+      }
+    }
+  }
+  // each language a whole line, marked with its language (an Arabic one
+  // with its direction)
+  const html = signRenderer(['en', 'ar'], false, 'centre')({ p: planFor('AC', {}, 30, 15), st: SEQ.stageAt(planFor('AC', {}, 30, 15), T0) }, false);
+  assert.match(html, /<span class="g8-seat-line" lang="en"[^>]*>Please remain seated until your zone is called<\/span>/);
+  assert.match(html, /<span class="g8-seat-line" lang="ar" dir="rtl"[^>]*>يُرجى الانتظار في أماكنكم حتى النداء على منطقتكم<\/span>/);
+});
+
+test('who still waits: whole lines, each language its own list, Arabic ranges in words', () => {
+  const list = new Function('BoardStrings', inner('_g8SeatList') + '\nreturn _g8SeatList;')(STORE);
+  const key = new Function('BoardStrings', inner('_g8SeatKey') + '\nreturn _g8SeatKey;')(STORE);
+  assert.deepEqual(list(['4', '5', '6'], 'zone', 'en'), { txt: '4, 5 and 6', n: 3 });
+  assert.deepEqual(list(['4', '5', '6'], 'zone', 'fr'), { txt: '4, 5 et 6', n: 3 });
+  assert.deepEqual(list(['4', '5', '6'], 'zone', 'zh'), { txt: '4、5、6', n: 3 }, 'Chinese lists numbers with 、');
+  assert.deepEqual(list(['2', '3', '4', '5', '6'], 'zone', 'en'), { txt: '2–6', n: 5 }, 'a run of four or more is a range');
+  assert.deepEqual(list(['2', '3', '4', '5', '6'], 'zone', 'ja'), { txt: '2〜6', n: 5 });
+  assert.deepEqual(list(['2', '3', '4', '5', '6'], 'zone', 'zh'), { txt: '2至6', n: 5 });
+  // the en dash between two numbers runs right to left in Arabic text (class
+  // ON) and showed 6–2: the range is written in words
+  assert.deepEqual(list(['2', '3', '4', '5', '6'], 'zone', 'ar'), { txt: 'من 2 إلى 6', n: 5 });
+  assert.deepEqual(list(['7–13', '1–6'], 'rows', 'ar'), { txt: 'من 1 إلى 13', n: 13 }, "Porter's bands as one range");
+  assert.deepEqual(list(['7–13', '1–6'], 'rows', 'en'), { txt: '1–13', n: 13 });
+  assert.equal(key('zone', 1, 'en'), 'seatedZone');
+  assert.equal(key('zone', 2, 'ar'), 'seatedZonesTwo', 'the Arabic dual');
+  assert.equal(key('groupLabel', 3, 'ar'), 'seatedGroups');
+  assert.equal(key('zone', 1, 'ja'), 'seatedZones', 'Japanese has one form');
+  assert.equal(key('rows', 1, 'en'), 'seatedRows');
+  // rendered: an Arabic range reads in words, Chinese waits politely (稍候)
+  const p = planFor('UA', {}, 35, 10);
+  const st = SEQ.stageAt(p, p.stages.find((s) => s.values.includes('2')).ts + 1000);
+  const ar = signRenderer(['ar'], false, 'centre')({ p, st }, false);
+  assert.match(ar, /المجموعات من 3 إلى 6: يُرجى الانتظار في أماكنكم/);
+  assert.doesNotMatch(textOf(ar), /\d–\d/, 'no dash between two numbers in Arabic');
+  const zh = signRenderer(['zh'], false, 'centre')({ p, st }, false);
+  assert.match(zh, /第3至6组旅客请在座位上稍候/);
+  for (const k of ['seatedZone', 'seatedZones', 'seatedZonesTwo', 'seatedGroup', 'seatedGroups', 'seatedGroupsTwo', 'seatedRows']) {
+    assert.ok(STORE.bs(k, 'zh').endsWith('稍候'), k + ' zh: 稍候');
+    assert.ok(/\{(N|LIST)\}/.test(STORE.bs(k, 'en')), k + ': its placeholder');
+    for (const l of LANGS) assert.match(STORE.bs(k, l), /\{(N|LIST)\}/, `${k} ${l}: the list goes in`);
+  }
+  // only under a numbered call
+  const fam = planFor('AC', {}, 30, 15);
+  const famH = signRenderer(['en', 'fr'], false, 'centre')({ p: fam, st: SEQ.stageAt(fam, fam.stages.find((s) => s.title === 'familyBoard').ts + 1000) }, false);
+  assert.doesNotMatch(famH, /g8-sign-wait/);
+});
+
+test('the reviewed words, as reviewed', () => {
+  const W = {
+    allZones: ['All zones', 'Toutes les zones', 'Todas las zonas', 'Alle Zonen', 'Tutte le zone', 'Todas as zonas', '全ゾーン', '所有区域', 'جميع المناطق'],
+    allGroups: ['All groups', 'Tous les groupes', 'Todos los grupos', 'Alle Gruppen', 'Tutti i gruppi', 'Todos os grupos', '全グループ', '所有组别', 'جميع المجموعات'],
+    allRows: ['All rows', 'Toutes les rangées', 'Todas las filas', 'Alle Reihen', 'Tutte le file', 'Todas as fileiras', '全座席', '所有座位', 'جميع الصفوف'],
+    preboard: ['Pre-boarding', 'Préembarquement', 'Preembarque', 'Vorabeinstieg', 'Preimbarco', 'Pré-embarque', '事前改札', '提前登机', 'الصعود المسبق'],
+    genboard: ['General boarding', 'Embarquement général', 'Embarque general', 'Allgemeines Boarding', 'Imbarco generale', 'Embarque geral', '一般搭乗', '普通登机', 'الصعود العام'],
+    paxRemainGo: ['All remaining passengers, please proceed to the gate', 'Tous les autres passagers sont priés de se présenter à la porte',
+      'Los demás pasajeros, por favor, diríjanse a la puerta', 'Alle übrigen Fluggäste bitte jetzt zum Gate', 'Tutti gli altri passeggeri sono pregati di recarsi al gate',
+      'Os demais passageiros, por favor, dirijam-se ao portão', 'その他すべてのお客様は搭乗口へお進みください', '其余旅客请前往登机口', 'يُرجى من باقي الركاب التوجه إلى البوابة'],
+    seeAgent: ['Please see an agent', 'Veuillez vous adresser à un agent', 'Por favor, diríjase al personal de tierra', 'Bitte wenden Sie sich an das Bodenpersonal',
+      'Si prega di rivolgersi al personale', 'Por favor, procure a equipe da companhia', '係員にお申し出ください', '请咨询工作人员', 'يُرجى مراجعة أحد الموظفين']
+  };
+  for (const [k, by] of Object.entries(W)) LANGS.forEach((l, i) => assert.equal(STORE.bs(k, l), by[i], k + ' ' + l));
+  assert.equal(GATE_LBL.allPax.zh, '所有旅客', 'the zh lines say 旅客 throughout');
+  assert.equal(GATE_LBL.allPax.ja, 'すべてのお客様');
+  assert.equal(STORE.META.ar.rangeFmt, 'من {LO} إلى {HI}');
 });
 
 test('a who-list never runs off its panel, and a group code shares the row with its word', () => {
   // Alaska's Group A in English and French at 1680x1050 ran past the panel's
   // foot, over the lane line and under the arrow discs, and was clipped.
+  // THE FINAL DESIGN — every panel is measured now: who still waits and the
+  // instruction line came in, so a panel without a list can be short too.
   const fit = top('_fidsSignColFit');
-  assert.match(fit, /querySelectorAll\('\.g8-sign \.g8-sign-col\.has-roster'\)/);
+  assert.match(fit, /querySelectorAll\('\.g8-sign \.g8-sign-col'\)/);
   assert.match(fit, /col\.scrollHeight > col\.clientHeight \+ 1/, 'measured as drawn');
   assert.match(fit, /var steps = \[\[0\.92, 1\], \[0\.84, 1\], \[0\.75, 1\], \[0\.75, 0\.85\], \[0\.75, 0\.72\], \[0\.75, 0\.6\], \[0\.65, 0\.6\], \[0\.55, 0\.6\]\];/, 'the list first, then the number, then the list again');
-  assert.match(fit, /ro\.style\.setProperty\('font-size', rb \+ 'px', 'important'\);/, 'every pass starts from the stylesheet size');
+  assert.match(fit, /if \(ro && rb\) ro\.style\.setProperty\('font-size', rb \+ 'px', 'important'\);/, 'every pass starts from the stylesheet size');
+  assert.match(fit, /if \(pic\) pic\.style\.setProperty\('zoom'/, 'the pictograms come down with the number');
   const pass = top('_fidsPairSeparators');
   assert.ok(pass.indexOf('_fidsSignColFit(scope)') > pass.indexOf("el.classList.toggle('is-stacked', stacked)"), 'after the pairs are fitted');
+  assert.ok(pass.indexOf('_fidsSignLineFit(scope)') < pass.indexOf('_fidsSignColFit(scope)'), 'the whole lines to their width first');
   assert.match(CORE, /var _sr = document\.querySelectorAll\('\.g8-sign \[data-g8-rbase\], \.g8-sign \[data-g8-nbase\]'\);/, 'a resize measures afresh');
+  // a whole sentence keeps its line: one size for a block's lines, down to a
+  // floor, then it wraps on its own words, never cut
+  const line = top('_fidsSignLineFit');
+  assert.match(line, /querySelectorAll\('\.g8-sign \.g8-sign-wait, \.g8-sign \.g8-sign-instr, \.g8-closed-body \.g8-sign-go'\)/);
+  assert.match(line, /Math\.max\(0\.55, \(avail \/ need\) \* 0\.985\)/);
+  assert.match(line, /classList\.add\('is-wrapped'\)/);
   // 'A' was set as a phrase under 'Group | Groupe'; a code is a numeral now
   const render = signRenderer(['en', 'fr'], false);
   const p = planFor('AS', {}, 35, 10);
   const html = render({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes('A')).ts + 1000) }, false);
   assert.match(html, /<div class="g8-sign-row"><div class="g8-sign-label g8-pair">[\s\S]*?<\/div><div class="g8-sign-value">A<\/div><\/div>/, 'Group | Groupe  A on one row');
   const ws = planFor('WS', {}, 35, 15);
-  const wsH = render({ p: ws, st: SEQ.stageAt(ws, ws.stages[ws.stages.length - 1].ts + 1000) }, false);
-  assert.match(wsH, /<div class="g8-sign-value">3\+<span class="g8-sign-valarrow">/, 'Zone 3+ is a numeral, with its arrow');
+  const wsH = render({ p: ws, st: SEQ.stageAt(ws, ws.stages[ws.stages.length - 2].ts + 1000) }, false);
+  assert.match(wsH, /<div class="g8-sign-value">3<span class="g8-sign-valarrow">/, 'Zone 3 is a numeral, with its arrow');
   const pdH = render({ p: planFor('PD', { pdDash: true }, 30, 10), st: SEQ.stageAt(planFor('PD', { pdDash: true }, 30, 10), T0 + 29 * MIN) }, true);
-  assert.match(pdH, /g8-sign-value g8-grp-txt g8-pair/, 'a word value (All | Toutes) stays a phrase');
+  assert.match(pdH, /g8-sign-value g8-grp-txt g8-pair/, 'a word value (All rows | Toutes les rangées) stays a phrase');
 });
 
 test("the final call's sign has the room boarding has", () => {

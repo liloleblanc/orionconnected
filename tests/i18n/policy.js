@@ -387,11 +387,11 @@ const SAME_JA_ZH = {
 
 // A word of one of the Latin-script languages that is also an English word,
 // and that no other translation in the store happens to use. Each is that
-// language's own word (French 'destinations', Spanish 'general'), or the
+// language's own word (French 'destinations', Spanish 'error'), or the
 // loanword its airports and hotels write ('check-in'). Any other English
 // word inside a translation fails B3 ('Gate closes shortly' in German).
 const NATIVE_WORDS = {
-  es: { error: 'code: the Spanish word', general: 'code: the Spanish word (Embarque general)', taxi: 'code: the Spanish word', club: 'code: the cabin name as Spanish writes it (Clase Club)' },
+  es: { error: 'code: the Spanish word', taxi: 'code: the Spanish word', club: 'code: the cabin name as Spanish writes it (Clase Club)' },
   fr: {
     site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
     programme: 'code: the French word', image: 'code: the French word', unique: 'code: the French word',

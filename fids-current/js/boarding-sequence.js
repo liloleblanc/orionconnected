@@ -144,10 +144,13 @@
     // Air Transat publishes who pre-boards and who boards in priority, no
     // numbers. Family pre-boarding excludes flights to the U.S.
     // (preboardWhoTSus).
+    // Transat boards by zone (the zone is printed on the pass), but no page
+    // lists who is in which: its calls carry no number, and the switch to
+    // everyone says ALL ZONES (unit).
     TS: {
       src: 'https://www.airtransat.com/en-CA/travel-information/families-and-children/family-privileges',
       srcFr: 'https://www.airtransat.com/fr-CA/info-voyage/familles-et-enfants/privileges-familles',
-      checked: '2026-10-12', conf: 'low', prioAnyTime: false,
+      checked: '2026-10-12', conf: 'low', prioAnyTime: false, unit: 'zone',
       stages: [pre('preboardWhoTS'), prio('', '', 'cabinClub'), allPax('cabinEcon')]
     },
     // United: Pre-boarding, Group 1 (its premium cabins and top elites),
@@ -593,6 +596,13 @@
       return o;
     });
     var premium = '', economy = '';
+    // THE UNIT the airline counts in, for the switch to everyone (ALL ZONES,
+    // ALL GROUPS, ALL ROWS) and the remain-seated line: the table's own, or
+    // the word its general calls use, or any call's; none (All passengers)
+    // for an airline that numbers nothing.
+    var unit = T.unit || '';
+    if (!unit) full.forEach(function (s) { if (s.kind === 'gen' && s.label) unit = s.label; });
+    if (!unit) full.forEach(function (s) { if (!unit && s.label) unit = s.label; });
     full.forEach(function (s) {
       if (!premium && s.kind !== 'gen' && s.sub) premium = s.sub;
       if (!economy && s.kind === 'gen' && s.sub) economy = s.sub;
@@ -600,7 +610,7 @@
     var out = {
       carrier: String(carrier || '').toUpperCase(), key: r.key, variant: r.variant,
       src: T.src, checked: T.checked, conf: T.conf, prioAnyTime: !!T.prioAnyTime, oneLane: !!T.oneLane,
-      stages: stages, full: full, t0: t0, dep: dep, L: L, C: C, S: p.S, even: !!p.even, cabins: [premium, economy],
+      stages: stages, full: full, t0: t0, dep: dep, L: L, C: C, S: p.S, even: !!p.even, cabins: [premium, economy], unit: unit,
       forced: -1
     };
     if (ctx.boardStage != null && ctx.boardStage !== '') out.forced = forcedIndex(out, ctx.boardStage);
@@ -685,9 +695,30 @@
     return coverPlus(out);
   }
 
+  // ── THE SWITCH TO EVERYONE ───────────────────────────────────────────────
+  // The last call of a sequence is the general call that takes everyone
+  // still waiting (Air Canada's Zone 6, WestJet's 3+, Porter's front rows,
+  // PAL's general boarding): from that moment the sign says so as GENERAL
+  // BOARDING over ALL ZONES (ALL GROUPS, ALL ROWS, ALL PASSENGERS), not as
+  // one more number. The airport's Final call keeps it.
+  function isSwitch(p, st) {
+    if (!p || !st || !st.cur || !p.stages || !p.stages.length) return false;
+    return st.i === p.stages.length - 1 && st.cur.kind === 'gen';
+  }
+  // Who still waits after stage i: every value the later calls name (a
+  // collapsed "All passengers" call names the ones it holds), in order.
+  function waitingAfter(p, i) {
+    var out = [];
+    ((p && p.stages) || []).slice(i + 1).forEach(function (s) {
+      out = out.concat(s.values || []).concat(s.collapsed || []);
+    });
+    return coverPlus(out);
+  }
+
   return {
     SEQ: SEQ, ALIAS: ALIAS, plan: plan, stageAt: stageAt, resolve: resolve, pace: pace, lastAt: lastAt,
     t0For: t0For, fmt: fmt, valuesOf: valuesOf, atomsOf: atomsOf, calledThrough: calledThrough,
+    isSwitch: isSwitch, waitingAfter: waitingAfter,
     floorIndex: floorIndex, porterBands: porterBands, pickSub: pickSub, coverPlus: coverPlus
   };
 });

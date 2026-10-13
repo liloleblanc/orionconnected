@@ -82,6 +82,17 @@
   //         character.
   // prefix  (Japanese and Chinese) the prefixes a line never breaks after
   //         (ご|質問, 各|便, 第|一个).
+  // range   (optional) what stands between the two ends of a range of
+  //         numbers (Zones 2–6, Rows 1–13): the en dash, except Japanese
+  //         (2〜6, 1〜13列目) and Chinese (第2至6区, 第1至13排), where the en
+  //         dash is not range punctuation.
+  // listSep (optional) the separator of a list of numbers on a sign, where
+  //         Intl.ListFormat's conjunction is not what a sign writes: Chinese
+  //         lists numbers with 、 alone (第4、5、6区, not 4、5和6).
+  // rangeFmt (optional) a range of numbers written as words, {LO} and {HI}
+  //         its two ends: Arabic « من 4 إلى 9 ». A dash between two numbers in
+  //         Arabic text has no direction of its own (Unicode class ON) and
+  //         resolves right to left, so "4–9" displayed as 9–4.
   var META = {
     en: { dir: 'ltr', intl: 'en-CA', clock24: false, colon: ': ',  weekdaySep: '  ', script: 'latin', name: 'English',
       stop: 'the and of to with in for our your is are at from on by this that you we its it an as be has have will all each every just than '
@@ -98,15 +109,15 @@
       stop: 'il lo la le gli i di e con per un una è del della dei delle nel nella al alla che nostro nostra' },
     pt: { dir: 'ltr', intl: 'pt',    clock24: true,  colon: ': ',  script: 'latin', name: 'Português',
       stop: 'o a os as de e com para um uma é do da dos das no na nos nas ao pelo pela que nosso nossa seu sua' },
-    ja: { dir: 'ltr', intl: 'ja',    clock24: true,  colon: '：',  script: 'jpan',  name: '日本語',
+    ja: { dir: 'ltr', intl: 'ja',    clock24: true,  colon: '：',  script: 'jpan',  name: '日本語', range: '\u301C',
       after: 'の を に で と は が も へ や か から まで より ので には では とは にも でも での への との など て た だ ず した して ます です そして また および または',
       prefix: 'お ご 各 全 毎 第 両 約' },
-    zh: { dir: 'ltr', intl: 'zh',    clock24: true,  colon: '：',  script: 'hans',  name: '中文',
+    zh: { dir: 'ltr', intl: 'zh',    clock24: true,  colon: '：',  script: 'hans',  name: '中文', range: '\u81F3', listSep: '\u3001',
       whole: '哈利法克斯斯坦菲尔德 挪威气象研究所 新不伦瑞克 蒙克顿 波特兰 澳大利亚 加拿大 卡尔加里 蒙特利尔特鲁多 '
         + '萨克拉门托 斯波坎 温哥华 圣迭戈 阿拉斯加航空 西南航空 知识共享',
       after: '的 和 与 及 或 并 在 是 了 也 都 于 从 对 按 将 被 由 为 以 而 把 向 至',
       prefix: '第 每 各 全 约' },
-    ar: { dir: 'rtl', intl: 'ar',    clock24: true,  colon: ': ',  script: 'arab',  name: 'العربية' }
+    ar: { dir: 'rtl', intl: 'ar',    clock24: true,  colon: ': ',  script: 'arab',  name: 'العربية', rangeFmt: '\u0645\u0646 {LO} \u0625\u0644\u0649 {HI}' }
   };
 
   var _stopSet = {};
@@ -182,7 +193,7 @@
     // languages now, not a fixed six) and its status line. The greetings copy
     // the boards' own words: _GATE_LBL.nowBoarding, _GATE_LBL.welcome and
     // LS.bagClaim.
-    greetGate: { en: 'Now boarding', fr: 'Embarquement', es: 'Embarcando ahora', de: 'Jetzt Boarding', it: 'Imbarco in corso', pt: 'Embarque em curso', ja: '搭乗中', zh: '正在登机', ar: 'الصعود الآن' },
+    greetGate: { en: 'Now boarding', fr: 'Embarquement', es: 'Embarcando', de: 'Boarding', it: 'Imbarco in corso', pt: 'Embarque em curso', ja: '搭乗中', zh: '正在登机', ar: 'جارٍ الصعود' },
     greetBoard: { en: 'Welcome', fr: 'Bienvenue', es: 'Bienvenido', de: 'Willkommen', it: 'Benvenuto', pt: 'Bem-vindo', ja: 'ようこそ', zh: '欢迎', ar: 'أهلاً' },
     greetBags: { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje', de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Retirada de bagagem', ja: '手荷物受取所', zh: '行李提取', ar: 'استلام الأمتعة' },
     loading: { en: 'Loading', fr: 'Chargement', es: 'Cargando', de: 'Wird geladen', it: 'Caricamento', pt: 'Carregando', ja: '読み込み中', zh: '加载中', ar: 'جارٍ التحميل' },
@@ -271,11 +282,80 @@
     // BOARDING SEQUENCES — ja and zh read "priority boarding" (優先搭乗, 优先登机), the
     // same words as the priority step that now follows pre-boarding on the
     // sign (_GATE_LBL.priority 優先 / 优先). Japanese takes ANA's own word for
-    // pre-boarding, 事前改札; Chinese 预先登机 (careful).
-    preboard: { en: 'Pre-boarding', fr: 'Préembarquement', es: 'Preembarque', de: 'Vorab-Einstieg', it: 'Preimbarco', pt: 'Pré-embarque', ja: '事前改札', zh: '预先登机', ar: 'صعود مسبق',
+    // pre-boarding, 事前改札; Chinese 提前登机 (careful). German closes the
+    // compound, Vorabeinstieg (SWISS writes it so).
+    preboard: { en: 'Pre-boarding', fr: 'Préembarquement', es: 'Preembarque', de: 'Vorabeinstieg', it: 'Preimbarco', pt: 'Pré-embarque', ja: '事前改札', zh: '提前登机', ar: 'الصعود المسبق',
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'airline:NH', zh: 'careful', ar: 'careful' } },
-    genboard: { en: 'General boarding', fr: 'Embarquement général', es: 'Embarque general', de: 'Allgemeines Boarding', it: 'Imbarco generale', pt: 'Embarque geral', ja: '一般搭乗', zh: '普通登机', ar: 'صعود عام',
+    genboard: { en: 'General boarding', fr: 'Embarquement général', es: 'Embarque general', de: 'Allgemeines Boarding', it: 'Imbarco generale', pt: 'Embarque geral', ja: '一般搭乗', zh: '普通登机', ar: 'الصعود العام',
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // ── THE SWITCH TO EVERYONE, AND WHO STILL WAITS (the gate's boarding sign) ──
+    // When the last call of an airline's sequence takes everyone still
+    // waiting, the sign's centre says GENERAL BOARDING over the airline's own
+    // unit, plural, never a bare "All": ALL ZONES (Air Canada, WestJet, Delta,
+    // Transat), ALL GROUPS (United, American, Alaska), ALL ROWS (Porter: « TOUTES
+    // LES RANGÉES »), ALL PASSENGERS for an airline that numbers nothing. The
+    // sign sets the centre's big line in capitals (CSS, Latin scripts only),
+    // so one key serves it. French agrees in gender: zone, rangée (toutes
+    // les), groupe, passager (tous les). Rows in Japanese and Chinese are
+    // "all seats" (全座席, 所有座位): 列 alone also reads as a queue.
+    // allZones and allGroups moved here from the board's LS table, which the
+    // sign cannot read (a key lives in one table).
+    allZones: { en: 'All zones', fr: 'Toutes les zones', es: 'Todas las zonas', de: 'Alle Zonen', it: 'Tutte le zone', pt: 'Todas as zonas', ja: '全ゾーン', zh: '所有区域', ar: 'جميع المناطق',
+      $src: { en: 'careful', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    allGroups: { en: 'All groups', fr: 'Tous les groupes', es: 'Todos los grupos', de: 'Alle Gruppen', it: 'Tutti i gruppi', pt: 'Todos os grupos', ja: '全グループ', zh: '所有组别', ar: 'جميع المجموعات',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    allRows: { en: 'All rows', fr: 'Toutes les rangées', es: 'Todas las filas', de: 'Alle Reihen', it: 'Tutte le file', pt: 'Todas as fileiras', ja: '全座席', zh: '所有座位', ar: 'جميع الصفوف',
+      $src: { en: 'careful', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Under a single call, who still waits: "Zones 4, 5 and 6: please remain
+    // seated", in each language a whole line. The list is built per language
+    // (Intl.ListFormat; Chinese joins with 、; four or more in a run is a
+    // range: 2–6, 2〜6 in Japanese, 2至6 in Chinese) and stands for {LIST},
+    // or {N} for one. The key follows the count (Intl.PluralRules): one, two
+    // (the Arabic dual: المنطقتان, المجموعتان), or more; Japanese and Chinese
+    // have one form, so every key there carries the list. One key per unit,
+    // because the word order changes with it (ゾーン4 but 4列目; 第4区, 第14至20排).
+    // French takes a no-break space before its colon. Japanese uses the
+    // gate-announcement idiom 今しばらくお待ちください (お席 would mean an
+    // assigned seat); Arabic يُرجى الانتظار في أماكنكم (the seat-belt phrase
+    // البقاء في مقاعدكم is for the cabin, not the lounge).
+    seatedZone: { en: 'Zone {N}: please remain seated', fr: 'Zone {N}\u00A0: veuillez rester assis', es: 'Zona {N}: por favor, permanezcan sentados', de: 'Zone {N}: Bitte bleiben Sie noch sitzen', it: 'Zona {N}: si prega di rimanere seduti', pt: 'Zona {N}: por favor, aguardem sentados', ja: 'ゾーン{N}のお客様は、今しばらくお待ちください', zh: '第{N}区旅客请在座位上稍候', ar: 'المنطقة {N}: يُرجى الانتظار في أماكنكم',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedZonesTwo: { en: 'Zones {LIST}: please remain seated', fr: 'Zones {LIST}\u00A0: veuillez rester assis', es: 'Zonas {LIST}: por favor, permanezcan sentados', de: 'Zonen {LIST}: Bitte bleiben Sie noch sitzen', it: 'Zone {LIST}: si prega di rimanere seduti', pt: 'Zonas {LIST}: por favor, aguardem sentados', ja: 'ゾーン{LIST}のお客様は、今しばらくお待ちください', zh: '第{LIST}区旅客请在座位上稍候', ar: 'المنطقتان {LIST}: يُرجى الانتظار في أماكنكم', $ctx: 'two',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedZones: { en: 'Zones {LIST}: please remain seated', fr: 'Zones {LIST}\u00A0: veuillez rester assis', es: 'Zonas {LIST}: por favor, permanezcan sentados', de: 'Zonen {LIST}: Bitte bleiben Sie noch sitzen', it: 'Zone {LIST}: si prega di rimanere seduti', pt: 'Zonas {LIST}: por favor, aguardem sentados', ja: 'ゾーン{LIST}のお客様は、今しばらくお待ちください', zh: '第{LIST}区旅客请在座位上稍候', ar: 'المناطق {LIST}: يُرجى الانتظار في أماكنكم',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedGroup: { en: 'Group {N}: please remain seated', fr: 'Groupe {N}\u00A0: veuillez rester assis', es: 'Grupo {N}: por favor, permanezcan sentados', de: 'Gruppe {N}: Bitte bleiben Sie noch sitzen', it: 'Gruppo {N}: si prega di rimanere seduti', pt: 'Grupo {N}: por favor, aguardem sentados', ja: 'グループ{N}のお客様は、今しばらくお待ちください', zh: '第{N}组旅客请在座位上稍候', ar: 'المجموعة {N}: يُرجى الانتظار في أماكنكم',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedGroupsTwo: { en: 'Groups {LIST}: please remain seated', fr: 'Groupes {LIST}\u00A0: veuillez rester assis', es: 'Grupos {LIST}: por favor, permanezcan sentados', de: 'Gruppen {LIST}: Bitte bleiben Sie noch sitzen', it: 'Gruppi {LIST}: si prega di rimanere seduti', pt: 'Grupos {LIST}: por favor, aguardem sentados', ja: 'グループ{LIST}のお客様は、今しばらくお待ちください', zh: '第{LIST}组旅客请在座位上稍候', ar: 'المجموعتان {LIST}: يُرجى الانتظار في أماكنكم', $ctx: 'two',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedGroups: { en: 'Groups {LIST}: please remain seated', fr: 'Groupes {LIST}\u00A0: veuillez rester assis', es: 'Grupos {LIST}: por favor, permanezcan sentados', de: 'Gruppen {LIST}: Bitte bleiben Sie noch sitzen', it: 'Gruppi {LIST}: si prega di rimanere seduti', pt: 'Grupos {LIST}: por favor, aguardem sentados', ja: 'グループ{LIST}のお客様は、今しばらくお待ちください', zh: '第{LIST}组旅客请在座位上稍候', ar: 'المجموعات {LIST}: يُرجى الانتظار في أماكنكم',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedRows: { en: 'Rows {LIST}: please remain seated', fr: 'Rangées {LIST}\u00A0: veuillez rester assis', es: 'Filas {LIST}: por favor, permanezcan sentados', de: 'Reihen {LIST}: Bitte bleiben Sie noch sitzen', it: 'File {LIST}: si prega di rimanere seduti', pt: 'Fileiras {LIST}: por favor, aguardem sentados', ja: '{LIST}列目のお客様は、今しばらくお待ちください', zh: '第{LIST}排旅客请在座位上稍候', ar: 'الصفوف {LIST}: يُرجى الانتظار في أماكنكم',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // At the switch, under ALL ZONES: everyone still waiting goes now. At
+    // GATE CLOSED, under the closed symbol: where to turn. French says « un
+    // agent », the usual Canadian airport word (« personnel de la porte »
+    // was a calque that read as door staff); Spanish and German name the
+    // ground staff.
+    paxRemainGo: { en: 'All remaining passengers, please proceed to the gate', fr: 'Tous les autres passagers sont priés de se présenter à la porte', es: 'Los demás pasajeros, por favor, diríjanse a la puerta', de: 'Alle übrigen Fluggäste bitte jetzt zum Gate', it: 'Tutti gli altri passeggeri sono pregati di recarsi al gate', pt: 'Os demais passageiros, por favor, dirijam-se ao portão', ja: 'その他すべてのお客様は搭乗口へお進みください', zh: '其余旅客请前往登机口', ar: 'يُرجى من باقي الركاب التوجه إلى البوابة',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seeAgent: { en: 'Please see an agent', fr: 'Veuillez vous adresser à un agent', es: 'Por favor, diríjase al personal de tierra', de: 'Bitte wenden Sie sich an das Bodenpersonal', it: 'Si prega di rivolgersi al personale', pt: 'Por favor, procure a equipe da companhia', ja: '係員にお申し出ください', zh: '请咨询工作人员', ar: 'يُرجى مراجعة أحد الموظفين',
+      $src: { en: 'careful', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // THE INSTRUCTION LINE, the foot of the general panel until the switch:
+    // "Please remain seated until your zone is called", in the airline's own
+    // unit (zone, group, Porter's row), or until general boarding where the
+    // airline numbers nothing. At the switch it gives way to paxRemainGo.
+    // The same idiom as the who-still-waits lines (rester assis, permanezcan
+    // sentados, 今しばらくお待ちください, 稍候, الانتظار في أماكنكم); French with
+    // the typographic apostrophe; German with the comma before its clause.
+    seatedUntilZone: { en: 'Please remain seated until your zone is called', fr: 'Veuillez rester assis jusqu\u2019à l\u2019appel de votre zone', es: 'Por favor, permanezcan sentados hasta que se llame a su zona', de: 'Bitte bleiben Sie sitzen, bis Ihre Zone aufgerufen wird', it: 'Si prega di rimanere seduti fino alla chiamata della propria zona', pt: 'Por favor, aguardem sentados até que sua zona seja chamada', ja: 'お客様のゾーンのご案内まで、今しばらくお待ちください', zh: '请在座位上稍候，直至您的区域开始登机', ar: 'يُرجى الانتظار في أماكنكم حتى النداء على منطقتكم',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedUntilGroup: { en: 'Please remain seated until your group is called', fr: 'Veuillez rester assis jusqu\u2019à l\u2019appel de votre groupe', es: 'Por favor, permanezcan sentados hasta que se llame a su grupo', de: 'Bitte bleiben Sie sitzen, bis Ihre Gruppe aufgerufen wird', it: 'Si prega di rimanere seduti fino alla chiamata del proprio gruppo', pt: 'Por favor, aguardem sentados até que seu grupo seja chamado', ja: 'お客様のグループのご案内まで、今しばらくお待ちください', zh: '请在座位上稍候，直至您的组别开始登机', ar: 'يُرجى الانتظار في أماكنكم حتى النداء على مجموعتكم',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedUntilRow: { en: 'Please remain seated until your row is called', fr: 'Veuillez rester assis jusqu\u2019à l\u2019appel de votre rangée', es: 'Por favor, permanezcan sentados hasta que se llame a su fila', de: 'Bitte bleiben Sie sitzen, bis Ihre Reihe aufgerufen wird', it: 'Si prega di rimanere seduti fino alla chiamata della propria fila', pt: 'Por favor, aguardem sentados até que sua fileira seja chamada', ja: 'お客様の座席列のご案内まで、今しばらくお待ちください', zh: '请在座位上稍候，直至您所在的排开始登机', ar: 'يُرجى الانتظار في أماكنكم حتى النداء على صفوفكم',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    seatedUntilGen: { en: 'Please remain seated until general boarding is called', fr: 'Veuillez rester assis jusqu\u2019à l\u2019appel de l\u2019embarquement général', es: 'Por favor, permanezcan sentados hasta que se anuncie el embarque general', de: 'Bitte bleiben Sie sitzen, bis das allgemeine Boarding aufgerufen wird', it: 'Si prega di rimanere seduti fino alla chiamata dell\u2019imbarco generale', pt: 'Por favor, aguardem sentados até o anúncio do embarque geral', ja: '一般搭乗のご案内まで、今しばらくお待ちください', zh: '请在座位上稍候，直至普通登机开始', ar: 'يُرجى الانتظار في أماكنكم حتى النداء على الصعود العام',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v24006 — what the rule says, in every language: GOVERNMENT-ISSUED ID.
     // Seven languages (es, de, it, pt, ja, zh, ar) asked for an ID with a
     // photo, English and French for plain ID. The Secure Air Travel Regulations
