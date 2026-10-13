@@ -563,7 +563,8 @@ const COL_CHECK = `(function () {
 // ResizeObserver's second round, after any of the page's own), and the
 // column is painted afresh as the takeover comes up (COL_REPAINT), through a
 // resize, and while a face is still loading (HELD_FACE): no frame may show a
-// row past the column's foot, and the resize may not move its scale.
+// row past the column's foot, or a line of the lists past its own edge
+// (2026-10-13), and the resize may not move its scale.
 const COL_SHORT = `(function () {
   try {
     var col = document.querySelector('.g8-wrap.g8-sbcol-on .g8-sbcol'), card = col && col.querySelector('.gcard-col');
@@ -604,6 +605,15 @@ const COL_REC = `(function () {
       if (R.ks[R.ks.length - 1] !== k) R.ks.push(k);
       var past = last.getBoundingClientRect().bottom - (r.bottom - (parseFloat(getComputedStyle(card).paddingBottom) || 0));
       if (past > 1 && R.bad.length < 20) R.bad.push(Math.round(past) + 'px at scale ' + k);
+      // 2026-10-13 — and across: no line of the lists run past its own edge,
+      // which cuts it (a status word a landing face widened, its first
+      // letters cut for 250-500 ms until the face's own pass)
+      var lns = card.querySelectorAll('.gc-sbl .gc-sbx, .gc-sbl .gc-sbnm, .gc-sbl .gc-sbtt, .gc-sbl .gc-sbcab');
+      for (var j = 0; j < lns.length; j++) {
+        var ln = lns[j];
+        if (ln.hasAttribute('data-fx-over') || !(ln.clientWidth > 4)) continue;
+        if (ln.scrollWidth > ln.clientWidth + 1) { if (R.bad.length < 20) R.bad.push('a line cut at its edge by ' + (ln.scrollWidth - ln.clientWidth) + 'px (' + (ln.textContent || '').trim().slice(0, 24) + ') at scale ' + k); break; }
+      }
     };
     // the shallow box changes every frame; its callback changes a box deeper
     // than any the page watches, delivered in the next round, after the
@@ -623,7 +633,7 @@ const COL_REC_READ = (ms, still) => `new Promise(function (res) {
     if (!R) return res('the frames were not read');
     R.stop();
     if (R.seen < 8) return res('the column was on screen for ' + R.seen + ' frames of ' + R.frames + ' read');
-    if (R.bad.length) return res(R.bad.length + ' frames painted the column with its last row past its foot (' + R.bad.slice(0, 4).join(', ') + '; scales ' + R.ks.join(' > ') + ')');
+    if (R.bad.length) return res(R.bad.length + ' frames painted the column cut: its last row past its foot, or a line past its edge (' + R.bad.slice(0, 4).join(', ') + '; scales ' + R.ks.join(' > ') + ')');
     if (${still ? 'true' : 'false'} && R.ks.length > 1) return res('its scale moved: ' + R.ks.join(' > '));
     res('ok');
   }, ${Number(ms)});

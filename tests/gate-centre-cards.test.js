@@ -619,6 +619,64 @@ test('while the lists are up the centre deck is the list alone; the full deck co
   assert.ok(tick.indexOf('ocGateBoundary') < stay);
 });
 
+test('the list takes the centre on its minute: the slide up gives way at boarding minus 15, once, not at its own turn', () => {
+  // 2026-10-13: the list came in at the deck's next turn, 4-8 s late behind
+  // the map or a card, up to a minute behind the weather card, and up to ten
+  // behind an uploaded media item (its own dwell), the whole of the list's
+  // time in the centre
+  const E = engine();
+  const BOARD = DEP - 35 * MIN;
+  const dom = E._gateCardsBuild(facts({ cf: testRow() }));
+  const clock = fn('updateDedicatedTimeOnly');
+  const a = clock.indexOf("if (typeof _gateAdTurnNow === 'function' && typeof _gateSbLists === 'function'");
+  const b = clock.indexOf('} catch (eSt) {}', a);
+  assert.ok(a > 0 && b > a, 'the clock checks the lists\' turn');
+  const run = new Function('window', 'document', 'location', '_gateCardsLive', '_gateSbLists', '_gateAdTurnNow', '_nowMs3', 'try {\n' + clock.slice(a, b) + '} catch (eSt) {}');
+  const page = { takeover: false, showing: false, fading: false, search: '' };
+  const car = { querySelector: (q) => (q === ':scope > .gcard[data-gcard="sbcard"]' && page.showing ? {} : null) };
+  const doc = {
+    querySelector: (q) => (q === '.g8-wrap.g8-takeover' ? (page.takeover ? {} : null) : q === '[data-ad-fading]' ? (page.fading ? {} : null) : null),
+    getElementById: (id) => (id === 'gateAdCarousel' ? car : null)
+  };
+  const win = {};
+  let turns = 0;
+  const tickAt = (t) => run(win, doc, { search: page.search }, () => dom, E._gateSbLists, () => { turns++; page.showing = true; return true; }, t);
+  // the map has its turn when the window opens: it gives way on the second
+  for (let t = BOARD - 16 * MIN; t < BOARD - 15 * MIN; t += 1000) tickAt(t);
+  assert.equal(turns, 0, 'before the window, the deck turns as it always has');
+  tickAt(BOARD - 15 * MIN);
+  assert.equal(turns, 1, 'at boarding minus 15, the turn now');
+  for (let t = BOARD - 15 * MIN + 1000; t < BOARD - 14 * MIN; t += 1000) tickAt(t);
+  assert.equal(turns, 1, 'once: the list is up');
+  // a turn that did not bring the list in is not forced again (the deck's
+  // own turn follows)
+  page.showing = false;
+  tickAt(BOARD - 13 * MIN);
+  assert.equal(turns, 1, 'once for this flight\'s window');
+  // mid-crossfade it waits for the overlay to go, then turns
+  delete win._gateSbTurnKey;
+  page.fading = true;
+  tickAt(BOARD - 15 * MIN);
+  assert.equal(turns, 1);
+  page.fading = false;
+  tickAt(BOARD - 15 * MIN + 1000);
+  assert.equal(turns, 2);
+  // never under a sign, under the review pin, or once the list is up
+  for (const set of [{ takeover: true }, { search: '?scene=ovcard' }, { showing: true }]) {
+    delete win._gateSbTurnKey;
+    Object.assign(page, { takeover: false, showing: false, fading: false, search: '' }, set);
+    tickAt(BOARD - 14 * MIN);
+    assert.equal(turns, 2, JSON.stringify(set));
+  }
+  // the turn itself: the deck's own, on its own chain, one slide (its
+  // pending turn and a crossfade not yet begun called off), no room-page
+  // hold, and no rotator boundary (no slide completed its dwell)
+  const tick = fn('_restartGateAdsTimer');
+  assert.match(tick, /_gateAdTurnNow = function \(\) \{\s*if \(gen !== _gateAdGen\) return false;\s*try \{ clearTimeout\(_gateAdTimer\); \} catch \(e\) \{\}\s*try \{ clearTimeout\(_gateAdFadeTimer\); \} catch \(e\) \{\}\s*_gateAdExtN = 2;\s*_tick\(true\);\s*return true;\s*\};/);
+  assert.match(tick, /var _tick = function\(_now\) \{/);
+  assert.match(tick, /if \(window\.self !== window\.top && _now !== true\) \{\s*try \{ window\.parent\.postMessage\(\{ ocGateBoundary: true \}, '\*'\); \} catch \(e\) \{\}/);
+});
+
 test('a card after a skipped weather or heritage slot is drawn, never a blank panel', () => {
   // the skip loop of renderGateAd, run as written
   const ad = fn('renderGateAd');
@@ -724,48 +782,78 @@ test('under the countdown, NOW BOARDING and FINAL CALL the list is a column besi
   assert.match(clock, /requestGateRebuild\(\);/);
 });
 
-test('the countdown opens and closes on its minute, so the lists move beside it on time with nothing in the feed changing', () => {
+test('the countdown opens and closes on its instant, so the lists move beside it on time and NOW BOARDING follows it with no idle step', () => {
   // 2026-10-13: the gate's keys do not carry the countdown, so on a quiet
   // feed it (and the lists' move into the column beside it) waited for the
-  // next change in the feed; on the recorded feeds it never came
+  // next change in the feed; on the recorded feeds it never came. And worked
+  // out on minutes rounded, it closed 30 s before the printed boarding time,
+  // while the schedule's NOW BOARDING opens only at it: the gate fell back
+  // to its idle layout for those 30 s, the list back in the centre (YUL A62C
+  // TS602, YQM 1 WS813, YHZ 20 PD244, every boarding)
   const uxg = fn('uxgGateHtml');
-  assert.match(uxg, /var showCountdown = _gateSign\.showCountdown;\s*(\/\/[^\n]*\n\s*)*try \{ window\._gatePaintedCd = \{ k: _gateRowKey\(currentFlight\), cd: !!showCountdown, dep: _signDepTs \|\| 0, st: stKey, lead: _boardLeadShown, inb: !!inbDelayed \}; \} catch \(ePc\) \{\}/);
+  // one instant for the door and the countdown, the printed boarding time
+  // the instant the countdown closes on
+  assert.match(uxg, /var _doorNow = Date\.now\(\);\s*var _door = _gateDoor\(currentFlight, _doorNow, iata, window\._gateInbound, data\.arr, tz, equipRaw\);/);
+  assert.match(uxg, /if \(_leadShown >= 5 && _leadShown <= 90\) \{ _boardLeadShown = _leadShown; _cdBoardTs = boardTs; \}\s*\}\s*if \(!_cdBoardTs && _signDepTs\) _cdBoardTs = _signDepTs - _boardLeadShown \* 60000;/);
+  assert.match(uxg, /var _gateSign = _gateSignPhase\(stKey, minsToDep, _boardLeadShown, currentFlight, inbDelayed, _cdBoardTs \? _cdBoardTs - _doorNow : undefined\);/);
+  assert.match(uxg, /var showCountdown = _gateSign\.showCountdown;\s*(\/\/[^\n]*\n\s*)*try \{ window\._gatePaintedCd = \{ k: _gateRowKey\(currentFlight\), cd: !!showCountdown, dep: _signDepTs \|\| 0, st: stKey, lead: _boardLeadShown, inb: !!inbDelayed, board: _cdBoardTs \|\| 0 \}; \} catch \(ePc\) \{\}/);
+  // the schedule's door opens on the same instant, to the millisecond
+  assert.match(fn('_schedBoardingOn'), /return now >= bt\.boardTs && now < dep;/);
+  const phase = new Function('return (' + fn('_gateSignPhase') + ');')();
+  const cf = { flight: 'AC1987', status: 'scheduled', _sortTs: DEP };
+  const LEAD = 35, BOARD = DEP - LEAD * MIN;
+  // the ten minutes before the printed boarding time, to the millisecond
+  const cdAt = (now) => phase('scheduled', Math.round((DEP - now) / 60000), LEAD, cf, false, BOARD - now).showCountdown;
+  assert.equal(cdAt(BOARD - 10 * MIN - 1), false, 'a millisecond before boarding minus 10: not yet');
+  assert.equal(cdAt(BOARD - 10 * MIN), true, 'boarding minus 10: open');
+  assert.equal(cdAt(BOARD - 30000), true, 'boarding minus 0:30: still open (it closed here on rounded minutes)');
+  assert.equal(cdAt(BOARD - 1), true, 'a millisecond before boarding: still open');
+  assert.equal(cdAt(BOARD), false, 'at the printed boarding time: closed');
+  // on a word that opens a sign, or a time that will not hold: never
+  assert.equal(phase('boarding', 40, LEAD, cf, false, 5 * MIN).showCountdown, false);
+  assert.equal(phase('delayed', 40, LEAD, cf, false, 5 * MIN).showCountdown, false);
+  assert.equal(phase('scheduled', 40, LEAD, cf, true, 5 * MIN).showCountdown, false, 'nor under "Updated boarding time to follow"');
+  // without the instant (older callers), on minsToDep as before
+  assert.equal(phase('scheduled', 45, LEAD, cf, false).showCountdown, true);
+  assert.equal(phase('scheduled', 35, LEAD, cf, false).showCountdown, false);
   // the clock's check, run as written, a tick a second, the paint it asks
-  // for standing in (it publishes the phase it painted)
+  // for standing in: a paint shows NOW BOARDING where the schedule's door is
+  // open (_schedBoardingOn: now >= boardTs), else the countdown, else idle
   const clock = fn('updateDedicatedTimeOnly');
   const a = clock.indexOf('const _pc = window._gatePaintedCd;');
   const b = clock.indexOf('} catch (eCd) {}', a);
   assert.ok(a > 0 && b > a, 'the clock checks the painted countdown');
   const tick = new Function('window', 'cf', '_nowMs3', '_gateRowKey', '_gateSignPhase', 'requestGateRebuild', 'try {\n' + clock.slice(a, b) + '} catch (eCd) {}');
-  const phase = new Function('return (' + fn('_gateSignPhase') + ');')();
-  const cf = { flight: 'AC1987', status: 'scheduled', _sortTs: DEP };
-  const LEAD = 35;
   const win = { _gatePaintedCd: null };
+  const door = (now) => now >= BOARD && now < DEP;
   const paint = (now) => {
-    const ph = phase('scheduled', Math.round((DEP - now) / 60000), LEAD, cf, false);
-    win._gatePaintedCd = { k: 'AC1987', cd: !!ph.showCountdown, dep: DEP, st: 'scheduled', lead: LEAD, inb: false };
-    return ph.showCountdown;
+    const st = door(now) ? 'boarding' : 'scheduled';
+    const ph = phase(st, Math.round((DEP - now) / 60000), LEAD, cf, false, BOARD - now);
+    win._gatePaintedCd = { k: 'AC1987', cd: !!ph.showCountdown, dep: DEP, st, lead: LEAD, inb: false, board: BOARD };
+    return ph.showBoarding ? 'NOW BOARDING' : ph.showCountdown ? 'countdown' : 'idle';
   };
   paint(DEP - 50 * MIN);
-  const asked = [];
+  const asked = [], shown = [];
+  let painted = 'idle';
   for (let t = DEP - 50 * MIN; t <= DEP - 30 * MIN; t += 1000) {
     let ask = false;
     tick(win, cf, t, () => 'AC1987', phase, () => { ask = true; });
-    if (ask) asked.push([(DEP - t) / 1000, paint(t + 400)]);
+    if (ask) { painted = paint(t + 400); asked.push([(DEP - t) / 1000, painted]); }
+    if (!shown.length || shown[shown.length - 1][1] !== painted) shown.push([(DEP - t) / 1000, painted]);
   }
-  // opened ten minutes before boarding, closed at boarding (each on the
-  // second a paint then would decide it: 45:29 and 35:29 before the
-  // departure, its minutes rounded), each asked for once
-  assert.deepEqual(asked, [[45 * 60 + 29, true], [35 * 60 + 29, false]]);
-  assert.equal(phase('scheduled', Math.round(2730 / 60), LEAD, cf, false).showCountdown, false, 'a second earlier: not yet');
+  // opened ten minutes before boarding and closed at boarding, each on the
+  // second it is due, each asked for once
+  assert.deepEqual(asked, [[45 * 60, 'countdown'], [35 * 60, 'NOW BOARDING']]);
+  // idle, the countdown, then NOW BOARDING: never idle between the two
+  assert.deepEqual(shown.map((x) => x[1]), ['idle', 'countdown', 'NOW BOARDING']);
   // another flight's paint is not this one's
-  win._gatePaintedCd = { k: 'AC1985', cd: false, dep: DEP, st: 'scheduled', lead: LEAD, inb: false };
+  win._gatePaintedCd = { k: 'AC1985', cd: false, dep: DEP, st: 'scheduled', lead: LEAD, inb: false, board: BOARD };
   let ask2 = false;
   tick(win, cf, DEP - 40 * MIN, () => 'AC1987', phase, () => { ask2 = true; });
   assert.equal(ask2, false);
   // and with the countdown open the lists are due, so the column comes with it
   const E = engine();
-  assert.equal(E._gateCardsDue(E._gateCardsBuild(facts({ cf: testRow(), idle: false })), DEP - 45.5 * MIN).sbcard, true);
+  assert.equal(E._gateCardsDue(E._gateCardsBuild(facts({ cf: testRow(), idle: false })), DEP - 45 * MIN).sbcard, true);
 });
 
 test('in the centre the list carries the documents and the close time at its foot, the band\'s own words', () => {
@@ -885,8 +973,8 @@ function sbFitter() {
     line(/^var _GATE_SB_ROW_U = [^;]+;/m), line(/^var _GATE_SB_ROW_MIN_U = [^;]+;/m), line(/^var _GATE_SB_RING_U = [^;]+;/m),
     line(/^var _GATE_SB_FOOT_U = [^;]+;/m), line(/^var _GATE_SB_K_MIN = [^;]+;/m), line(/^var _GATE_SB_K_MIN_BARE = [^;]+;/m),
     line(/^var _GATE_SB_RETRY_MS = [^;]+;/m), line(/^var _gateSbFaceN = [^;]+;/m), line(/^var _gateSbRetryN = [^;]+;/m),
-    line(/^var _gateSbRetryT = [^;]+;/m), line(/^var _gateSbHooked = [^;]+;/m), 'var _fxFontsEpoch = 0;',
-    fn('_gateSbWatchFaces'), fn('_gateSbRetry'), fn('_gateSbRefitLines'), fn('_gateSbHolds'),
+    line(/^var _gateSbRetryT = [^;]+;/m), line(/^var _gateSbHooked = [^;]+;/m), line(/^var _GATE_SB_LINES = [^;]+;/m), 'var _fxFontsEpoch = 0;',
+    fn('_gateSbWatchFaces'), fn('_gateSbRetry'), fn('_gateSbRefitLines'), fn('_gateSbHolds'), fn('_gateSbLinesCut'),
     fn('_gateSbExcess'), fn('_gateSbLadder'), fn('_gateSbFit'),
     'return { _gateSbExcess, _gateSbLadder, _gateSbFit, setEpoch: function (n) { _fxFontsEpoch = n; }, _gateSbRetryFire: function () { _gateSbRetryT = null; } };'
   ].join('\n');
@@ -894,7 +982,7 @@ function sbFitter() {
   return (doc, env) => {
     const E = env || {};
     return new Function('getComputedStyle', 'fidsFitAll', '_fidsPairSeparators', 'document', 'window', 'console', 'setTimeout', '_fidsSchedulePairPass', src)(
-      gcs, () => {}, () => {}, doc || {}, { innerWidth: 1920, innerHeight: 1080 }, { warn() {} }, E.setTimeout || (() => 0), E.pass || (() => {}));
+      gcs, E.fit || (() => {}), () => {}, doc || {}, { innerWidth: 1920, innerHeight: 1080 }, { warn() {} }, E.setTimeout || (() => 0), E.pass || (() => {}));
   };
 }
 // a row never under its ring and its rule (2px) with a hair: the floor
@@ -1137,8 +1225,8 @@ function sbPasses() {
     line(/^var _GATE_SB_FOOT_U = [^;]+;/m), line(/^var _GATE_SB_K_MIN = [^;]+;/m), line(/^var _GATE_SB_K_MIN_BARE = [^;]+;/m),
     line(/^var _GATE_SB_RETRY_MS = [^;]+;/m), line(/^var _gateSbFaceN = [^;]+;/m), line(/^var _gateSbRetryN = [^;]+;/m),
     line(/^var _gateSbRetryT = [^;]+;/m), line(/^var _gateSbHooked = [^;]+;/m), line(/^var _gateSbRO = [^;]+;/m), line(/^var _gateSbROEls = [^;]+;/m),
-    'var _fxFontsEpoch = 0;',
-    fn('_gateSbWatchFaces'), fn('_gateSbRetry'), fn('_gateSbRefitLines'), fn('_gateSbHolds'),
+    line(/^var _GATE_SB_LINES = [^;]+;/m), 'var _fxFontsEpoch = 0;',
+    fn('_gateSbWatchFaces'), fn('_gateSbRetry'), fn('_gateSbRefitLines'), fn('_gateSbHolds'), fn('_gateSbLinesCut'),
     fn('_gateSbExcess'), fn('_gateSbLadder'), fn('_gateSbFit'),
     fn('_gateSbColExcess'), fn('_gateSbColSolve'), fn('_gateSbColFit'), fn('_gateSbObserve'), fn('_gateSbResized'),
     'return { _gateSbColFit, _gateSbFit, _gateSbExcess, _gateSbObserve, _gateSbResized, setEpoch: function (n) { _fxFontsEpoch = n; }, _gateSbRetryFire: function () { _gateSbRetryT = null; } };'
@@ -1153,13 +1241,13 @@ function sbPasses() {
         if (s === '.g8-sbcol > .gcard-col') return cols.map((c) => c.card);
         if (s === '.gcard-sbcard:not(.gcard-col)') return centre.map((c) => c.card);
         if (s === '.gcard-sbcard') return centre.concat(cols).map((c) => c.card);
-        if (s === '.gcard-sbcard .gc-sbl, .gcard-sbcard .gc-sbl > *') return [].concat(...centre.concat(cols).map((c) => [c.sbl, c.sbl.lastElementChild]));
+        if (s === '.gcard-sbcard .gc-sbl, .gcard-sbcard .gc-sbl > *, .gcard-sbcard .gc-sbx > span') return [].concat(...centre.concat(cols).map((c) => [c.sbl, c.sbl.lastElementChild].concat(c.words || [])));
         return [];
       }
     };
     const win = P.win || { innerWidth: 1920, innerHeight: 1080 };
     return new Function('getComputedStyle', 'fidsFitAll', '_fidsPairSeparators', 'document', 'window', 'console', 'setTimeout', '_fidsSchedulePairPass', 'ResizeObserver', src)(
-      gcs, () => {}, () => {}, doc, win, { warn() {} }, P.setTimeout || (() => 0), P.pass || (() => {}), P.RO);
+      gcs, P.fit || (() => {}), () => {}, doc, win, { warn() {} }, P.setTimeout || (() => 0), P.pass || (() => {}), P.RO);
   };
 }
 
@@ -1343,6 +1431,85 @@ test('between passes, a face that draws before its own pass runs is fitted befor
   assert.equal(ro.disconnects, d0 + 1);
   // the pass watches them after both fits, every pass
   assert.match(fn('_fidsSchedulePairPass'), /try \{ _gateSbFit\(\); \} catch \(eSc\) \{\}\s*\/\/[^\n]*\n\s*try \{ _gateSbObserve\(\); \} catch \(eSo\) \{\}/);
+});
+
+test('between passes, a status word a landing face widens on its row is fitted again before that frame is painted, and never frame after frame', () => {
+  // 2026-10-13: in the column (YUL A62C TS602, ja+ar, a cold load) the bold
+  // Arabic face of يرجى مراجعة الموظف landed and widened the status words
+  // with no list growing taller: the observer measured only the lists' foot,
+  // and each word's first letter sat cut at its row's edge for 250-500 ms,
+  // until that face's own pass ran
+  const LINES = new Function('return ' + line(/^var _GATE_SB_LINES = [^;]+;/m).replace(/^var _GATE_SB_LINES = /, '').replace(/;$/, ''))();
+  assert.equal(LINES, '.gc-sbl .gc-sbx, .gc-sbl .gc-sbnm, .gc-sbl .gc-sbtt, .gc-sbl .gc-sbcab', 'a status word, a name, a heading and its cabin: each clips what runs past it');
+  // each status word has a box as wide as its words, which the observer
+  // watches (css), laid out as the words were
+  const P = 'html body' + ':not(#_)'.repeat(16);
+  assert.ok(CSS.includes(P + ' .gcard .gc-sbx > span { display: inline-block !important; max-width: none !important; }'));
+  assert.match(fn('_gateSbObserve'), /querySelectorAll\('\.gcard-sbcard \.gc-sbl, \.gcard-sbcard \.gc-sbl > \*, \.gcard-sbcard \.gc-sbx > span'\)/);
+  // a column whose rows fit, and one status word on a row: the fitter, as
+  // shipped, would fit it inside its edge (the face's own pass)
+  const mk = (C) => {
+    const w = { wide: 0, stuck: false, fits: 0 };
+    w.el = { hasAttribute: () => false, clientWidth: 300, get scrollWidth() { return 300 + w.wide; } };
+    w.span = { isConnected: true };
+    const qsa = C.card.querySelectorAll;
+    C.card.querySelectorAll = (s) => (s === LINES ? [w.el] : qsa(s));
+    C.words = [w.span];
+    w.fit = () => { w.fits++; if (!w.stuck) w.wide = 0; };
+    return w;
+  };
+  const C = sbColCard({ H: 760, wraps: () => 2 });
+  const E = sbCard({ H: 900, foot: true, close: true, docsOneLine: 0.65 });
+  const wc = mk(C), we = mk(E);
+  let ro = null, passes = 0;
+  class FakeRO {
+    constructor(cb) { this.cb = cb; this.els = new Set(); this.disconnects = 0; ro = this; }
+    observe(el) { this.els.add(el); }
+    disconnect() { this.els.clear(); this.disconnects++; }
+  }
+  const G = sbPasses()({ centre: [E], cols: [C], RO: FakeRO, pass: () => { passes++; }, fit: (card) => { (card === C.card ? wc : we).fit(); } });
+  G._gateSbColFit(); G._gateSbFit(); G._gateSbObserve();
+  assert.ok(ro.els.has(wc.span) && ro.els.has(we.span), 'each status word\'s own box is watched');
+  const k0 = C.k(), f0c = wc.fits, f0e = we.fits;
+  ro.cb([]);
+  assert.equal(ro.disconnects, 0, 'nothing past its edge: nothing done');
+  // a face lands and widens the word in the column, no list taller, no pass
+  // yet: after that frame's layout the observer fits the line again, before
+  // the frame is painted, at the scale the column has
+  wc.wide = 9;
+  assert.ok(C.excess() <= 0.5, 'every row still inside its foot');
+  ro.cb([]);
+  assert.equal(wc.fits, f0c + 1, 'the column\'s lines fitted again at once');
+  assert.equal(wc.wide, 0, 'the word inside its edge');
+  assert.equal(C.k(), k0, 'at the scale the column has');
+  assert.equal(ro.disconnects, 1, 'and it lets go until the next pass');
+  assert.equal(passes, 1);
+  // the same in the centre
+  G._gateSbObserve();
+  we.wide = 7;
+  ro.cb([]);
+  assert.equal(we.fits, f0e + 1, 'the centre\'s lines fitted again at once');
+  assert.equal(we.wide, 0);
+  // a word no refit brings inside (reported by the fitter another way) is
+  // tried once for that fit, not on every frame
+  G._gateSbObserve();
+  wc.stuck = true; wc.wide = 6;
+  ro.cb([]);
+  const n1 = wc.fits, d1 = ro.disconnects;
+  assert.equal(n1, f0c + 2);
+  G._gateSbObserve();
+  ro.cb([]); ro.cb([]);
+  G._gateSbColFit();
+  assert.equal(wc.fits, n1, 'not again for the same fit');
+  assert.equal(ro.disconnects, d1, 'and the observer is left alone');
+  // a line the fitter could not fit at its floor (data-fx-over) is left out
+  const C2 = sbColCard({ H: 760, wraps: () => 2 });
+  const w2 = mk(C2); w2.el.hasAttribute = (a) => a === 'data-fx-over'; w2.wide = 20; w2.stuck = true;
+  const G2 = sbPasses()({ cols: [C2], fit: () => { w2.fit(); } });
+  G2._gateSbColFit();
+  const n2 = w2.fits;
+  G2._gateSbColFit();
+  assert.equal(w2.fits, n2, 'a line reported over is not fitted again on every pass');
 });
 
 test('the lists in the centre: the stylesheet gives every row a set height and a floor, and nothing gives up height on its own', () => {

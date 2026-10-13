@@ -24706,6 +24706,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard .gc-sbck { display: block !important; width: 100% !important; height: 100% !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard .gc-sbnm { flex: 1 1 auto !important; min-width: 0 !important; overflow: hidden !important; font-size: calc(3.24 * var(--gc-u)) !important; font-weight: 800 !important; line-height: 1.05 !important; letter-spacing: .02em !important; white-space: nowrap !important; color: inherit !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard .gc-sbx { flex: 0 1 auto !important; min-width: 0 !important; max-width: 56% !important; overflow: hidden !important; font-size: calc(2.29 * var(--gc-u)) !important; font-weight: 700 !important; line-height: 1.1 !important; white-space: nowrap !important; text-align: right !important; }
+/* 2026-10-13 — the status word's own box, as wide as its words (one atomic
+   run holding the same lines, laid out as before): a face that lands and
+   widens it changes this box, so the lists' ResizeObserver hears of it in
+   the frame it is drawn (fids-core.js _gateSbObserve, _gateSbLinesCut) and
+   the line is fitted again before that frame is painted, never cut at its
+   edge for the frames until the face's own pass. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard .gc-sbx > span { display: inline-block !important; max-width: none !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gcard .gc-sbseat { flex: none !important; width: calc(6.48 * var(--gc-u)) !important; text-align: right !important; font-size: calc(3.05 * var(--gc-u)) !important; font-weight: 800 !important; line-height: 1 !important; white-space: nowrap !important; font-variant-numeric: tabular-nums !important; color: inherit !important; }
 
 /* 2026-10-12 — THE LISTS STAY UP UNTIL THE FLIGHT CLOSES (fids-core.js

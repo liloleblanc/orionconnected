@@ -2079,7 +2079,9 @@ function _fidsSchedulePairPass() {
 // (_gateSbRetry). A column is solved once for its size and its fonts
 // (data-sb-fit); every other pass only measures the last list against the
 // foot (a word changed in place, a face that drew before its pass ran) and
-// solves again if a row has gone past it.
+// solves again if a row has gone past it, and a line against its own edge
+// (2026-10-13, _gateSbLinesCut: a face that widened a word since), fitting
+// the lines again at the scale it has.
 //
 // A resize keeps the scale the column has until the pass, in the same frame,
 // has solved it for the new size (the key carries the column's box and the
@@ -2105,7 +2107,19 @@ function _gateSbColFit() {
     var sig = base + '|' + (loading ? 'f' + _gateSbFaceN : 'F');
     var had = card.getAttribute('data-sb-fit') || '';
     if (had === sig) {
-      if (!card.hasAttribute('data-sb-over') && _gateSbColExcess(card) > 0.5) { _gateSbColSolve(card); did = true; }
+      if (card.hasAttribute('data-sb-over')) continue;
+      // a line run past its own edge (a face that landed since the fit, heard
+      // by the lists' ResizeObserver in the frame it is drawn): the lines
+      // fitted again at the scale the column has, and solved again only if a
+      // row is then past the foot
+      if (_gateSbLinesCut(card) && card.__sbHxStuck !== sig) {
+        _gateSbRefitLines(card);
+        did = true;
+        if (_gateSbColExcess(card) > 0.5) _gateSbColSolve(card);
+        if (_gateSbLinesCut(card)) card.__sbHxStuck = sig;
+        continue;
+      }
+      if (_gateSbColExcess(card) > 0.5) { _gateSbColSolve(card); did = true; }
       continue;
     }
     // faces landed while the fonts load: the fit holds while every row still
@@ -2264,7 +2278,16 @@ function _gateSbFit() {
     // retry, the two-second pass), and fitted again if a row has gone under
     // the lists' edge since (a face that drew before its pass ran)
     if (had === sig) {
-      if (!card.hasAttribute('data-sb-over') && _gateSbExcess(card) > 0.5) { try { _gateSbLadder(card); } catch (eL0) {} did = true; }
+      if (card.hasAttribute('data-sb-over')) continue;
+      // (a line run past its own edge: fitted again, the ladder run only if a
+      // row then no longer fits; as in the column, above)
+      if (_gateSbLinesCut(card) && card.__sbHxStuck !== sig) {
+        did = true;
+        if (!_gateSbHolds(card)) { try { _gateSbLadder(card); } catch (eL1) {} }
+        if (_gateSbLinesCut(card)) card.__sbHxStuck = sig;
+        continue;
+      }
+      if (_gateSbExcess(card) > 0.5) { try { _gateSbLadder(card); } catch (eL0) {} did = true; }
       continue;
     }
     did = true;
@@ -2314,12 +2337,19 @@ function _gateSbRetry() {
 // runs past its room, the passes run there and then, and that frame is
 // painted fitted. (It then lets go of every box until the next pass, so its
 // own change is not reported back to it within the same frame.)
+// 2026-10-13 — and across: a face that lands can widen a line without
+// changing any list's height (a status word on its row, its first letter cut
+// at the row's edge for 250-500 ms while the bold Arabic face of يرجى مراجعة
+// الموظف landed in the column, until that face's own pass). Each status
+// word's own box is watched as well (css: .gc-sbx > span, inline-block, as
+// wide as its words), and a line run past its own edge (_gateSbLinesCut)
+// runs the passes too: the lines are fitted again in that frame.
 var _gateSbRO = null;
 var _gateSbROEls = [];
 function _gateSbObserve() {
   try {
     if (typeof ResizeObserver !== 'function') return;
-    var want = document.querySelectorAll('.gcard-sbcard .gc-sbl, .gcard-sbcard .gc-sbl > *');
+    var want = document.querySelectorAll('.gcard-sbcard .gc-sbl, .gcard-sbcard .gc-sbl > *, .gcard-sbcard .gc-sbx > span');
     if (!want.length && !_gateSbROEls.length) return;
     if (!_gateSbRO) _gateSbRO = new ResizeObserver(_gateSbResized);
     // a repaint put new boxes in: the old ones are let go
@@ -2339,7 +2369,8 @@ function _gateSbResized() {
       if (c.hasAttribute('data-sb-over') || !c.hasAttribute('data-sb-fit')) continue;
       var r = c.getBoundingClientRect();
       if (!(r.width > 50 && r.height > 50)) continue;
-      cut = (c.classList.contains('gcard-col') ? _gateSbColExcess(c) : _gateSbExcess(c)) > 0.5;
+      cut = (c.classList.contains('gcard-col') ? _gateSbColExcess(c) : _gateSbExcess(c)) > 0.5
+        || (c.__sbHxStuck !== c.getAttribute('data-sb-fit') && _gateSbLinesCut(c));
     }
     if (!cut) return;
     var did = false;
@@ -2347,6 +2378,24 @@ function _gateSbResized() {
     try { did = _gateSbFit() || did; } catch (e2) {}
     if (did && _gateSbRO) { _gateSbRO.disconnect(); _gateSbROEls = []; try { _fidsSchedulePairPass(); } catch (e3) {} }
   } catch (e) {}
+}
+// Whether a line of the lists runs past its own edge, which cuts it (a status
+// word, a name, a heading, a cabin: each clips what runs past it), as a face
+// that landed after the line was fitted can make it. A line the fitter could
+// not fit even at the floor (data-fx-over) is left out: it is reported. A
+// card whose lines a refit could not bring inside is not asked again for the
+// same fit (__sbHxStuck), so this never runs the passes frame after frame.
+var _GATE_SB_LINES = '.gc-sbl .gc-sbx, .gc-sbl .gc-sbnm, .gc-sbl .gc-sbtt, .gc-sbl .gc-sbcab';
+function _gateSbLinesCut(card) {
+  try {
+    var els = card.querySelectorAll(_GATE_SB_LINES);
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.hasAttribute('data-fx-over') || !(el.clientWidth > 4)) continue;
+      if (el.scrollWidth > el.clientWidth + 1) return true;
+    }
+  } catch (e) {}
+  return false;
 }
 // Every line of the card fitted afresh at its present size (the fitter keys
 // on its box and the fonts' epoch, which neither a new unit nor a face
@@ -7867,21 +7916,23 @@ function updateDedicatedTimeOnly() {
         if (_dw !== _pd.w) { _pd.w = _dw; requestGateRebuild(); }
       }
     } catch (eD) {}
-    // 2026-10-13 — THE COUNTDOWN OPENS AND CLOSES ON ITS MINUTE. "Boarding
-    // begins in" opens ten minutes before the boarding time the gate shows
-    // and closes at it (_gateSignPhase), with nothing in the feed changing,
-    // and the gate's keys do not carry it: on a quiet feed the countdown, and
-    // the standby lists' move from the centre into the column beside it,
-    // waited for the next change in the feed (on the recorded feeds, never).
-    // Each second the phase is worked out again from what the paint decided
-    // it from (window._gatePaintedCd, set by uxgGateHtml); when it no longer
-    // matches, one rebuild is asked for (the painted phase updated first, so
-    // it is asked once).
+    // 2026-10-13 — THE COUNTDOWN OPENS AND CLOSES ON ITS INSTANT. "Boarding
+    // will begin shortly" opens ten minutes before the boarding time the gate
+    // prints and closes at it (_gateSignPhase, to the millisecond), with
+    // nothing in the feed changing, and the gate's keys do not carry it: on a
+    // quiet feed the countdown, and the standby lists' move from the centre
+    // into the column beside it, waited for the next change in the feed (on
+    // the recorded feeds, never). Each second the phase is worked out again
+    // from what the paint decided it from (window._gatePaintedCd, set by
+    // uxgGateHtml); when it no longer matches, one rebuild is asked for (the
+    // painted phase updated first, so it is asked once). It closes on the
+    // tick the schedule's door (above) opens on, so the two ask for the same
+    // rebuild and NOW BOARDING follows the countdown with no idle step.
     try {
       const _pc = window._gatePaintedCd;
       if (cf && _pc && _pc.k === _gateRowKey(cf)) {
         const _pcMins = _pc.dep ? Math.round((_pc.dep - _nowMs3) / 60000) : 9999;
-        const _pcCd = !!_gateSignPhase(_pc.st, _pcMins, _pc.lead, cf, _pc.inb).showCountdown;
+        const _pcCd = !!_gateSignPhase(_pc.st, _pcMins, _pc.lead, cf, _pc.inb, _pc.board ? _pc.board - _nowMs3 : undefined).showCountdown;
         if (_pcCd !== _pc.cd) { _pc.cd = _pcCd; requestGateRebuild(); }
       }
     } catch (eCd) {}
@@ -7923,6 +7974,35 @@ function updateDedicatedTimeOnly() {
         }
       }
     } catch (eSb) {}
+    // 2026-10-13 — THE LISTS TAKE THE CENTRE ON THEIR MINUTE. From 15 minutes
+    // before the printed boarding time the centre deck is the list alone
+    // (_buildGateAdSlideList), but the slide on the screen kept its own turn:
+    // the list came in at the deck's next turn, 4-8 s late behind the map or
+    // a card, up to a minute behind the weather card, and behind an uploaded
+    // media item up to its own dwell (10 minutes: the whole of the list's time
+    // in the centre). When the list is due, the gate is in its idle layout,
+    // and the centre shows something else and is not mid-crossfade, the deck
+    // takes its turn now (_gateAdTurnNow), once for this flight's window (a
+    // turn that does not bring the list in is not forced again: the deck's
+    // own turn follows). Not under ?scene=, the review pin.
+    try {
+      if (typeof _gateAdTurnNow === 'function' && typeof _gateSbLists === 'function'
+          && !document.querySelector('.g8-wrap.g8-takeover')) {
+        const _sbMt = _gateCardsLive();
+        if (_sbMt && _gateSbLists(_sbMt, _nowMs3)) {
+          const _sbTk = String(_sbMt.flight || '') + '|' + (_sbMt.boardAt || 0);
+          const _sbCar = document.getElementById('gateAdCurrentCarousel') || document.getElementById('gateAdCarousel');
+          let _sbPin = '';
+          try { _sbPin = new URLSearchParams(location.search).get('scene') || ''; } catch (eP2) { _sbPin = ''; }
+          if (_sbCar && !_sbPin && window._gateSbTurnKey !== _sbTk
+              && !_sbCar.querySelector(':scope > .gcard[data-gcard="sbcard"]')
+              && !document.querySelector('[data-ad-fading]')) {
+            window._gateSbTurnKey = _sbTk;
+            _gateAdTurnNow();
+          }
+        }
+      }
+    } catch (eSt) {}
     // v23973 — LATER AT THIS GATE FOLLOWS THE CLOCK. A moved flight's notice
     // ends when the flight leaves (_gateFlightLive), a later flight moves up
     // when the one before it goes, and a day word changes at midnight, all
@@ -17049,7 +17129,10 @@ function uxgGateHtml(ctx) {
   //     above reads the real row);
   //   - an airport whose feed never says the gate words: Boarding from this
   //     boarding time until the departure time (_schedBoardingOn), clock-made.
-  var _door = _gateDoor(currentFlight, Date.now(), iata, window._gateInbound, data.arr, tz, equipRaw);
+  // (2026-10-13: at one instant, _doorNow, which the countdown below is also
+  // decided at, so the one closes on the instant the other opens)
+  var _doorNow = Date.now();
+  var _door = _gateDoor(currentFlight, _doorNow, iata, window._gateInbound, data.arr, tz, equipRaw);
   var _bt = _door.bt;
   var boardLeadMins = _bt.lead;
   var boardTimeHtml = '\u2014';
@@ -17146,10 +17229,16 @@ function uxgGateHtml(ctx) {
   // (v23925 — from the departure the sign was opened for, _signDepTs: the
   // real departure, except on a sign kept through a delay.)
   var _boardLeadShown = boardLeadMins;
+  // 2026-10-13 — and the boarding instant the countdown closes on: the
+  // printed boarding time itself (boardTs, the instant the schedule's door
+  // opens on, _schedBoardingOn), where the lead was read off it; otherwise
+  // the lead before the departure the sign is counted from
+  var _cdBoardTs = 0;
   if (typeof boardTs === 'number' && boardTs && _signDepTs) {
     var _leadShown = Math.round((_signDepTs - boardTs) / 60000);
-    if (_leadShown >= 5 && _leadShown <= 90) _boardLeadShown = _leadShown;
+    if (_leadShown >= 5 && _leadShown <= 90) { _boardLeadShown = _leadShown; _cdBoardTs = boardTs; }
   }
+  if (!_cdBoardTs && _signDepTs) _cdBoardTs = _signDepTs - _boardLeadShown * 60000;
   var minsToBoard = Math.max(0, minsToDep - _boardLeadShown);
   // v23925 — the late-inbound notice, honest: only when the inbound really is
   // late, has not arrived, the turn genuinely threatens this departure, and
@@ -17165,15 +17254,17 @@ function uxgGateHtml(ctx) {
   // _gateInbLateNotice), so a clock can be put back into none of them without
   // a test seeing it. Row 4 below takes boardActive / finalActive from the
   // same answer.
-  var _gateSign = _gateSignPhase(stKey, minsToDep, _boardLeadShown, currentFlight, inbDelayed);
+  // (2026-10-13: the countdown on the printed boarding instant, to the
+  // millisecond, at the door's own instant: it closes as NOW BOARDING opens)
+  var _gateSign = _gateSignPhase(stKey, minsToDep, _boardLeadShown, currentFlight, inbDelayed, _cdBoardTs ? _cdBoardTs - _doorNow : undefined);
   var _gateWord = _gateSign.word;
   var showBoarding = _gateSign.showBoarding;
   var isGateClosedStatus = _gateSign.isGateClosedStatus;
   var isFinalCallStatus = _gateSign.isFinalCallStatus;
   var showCountdown = _gateSign.showCountdown;
   // 2026-10-13 — and what the countdown was decided from, for the clock
-  // (updateDedicatedTimeOnly): it opens and closes on its minute
-  try { window._gatePaintedCd = { k: _gateRowKey(currentFlight), cd: !!showCountdown, dep: _signDepTs || 0, st: stKey, lead: _boardLeadShown, inb: !!inbDelayed }; } catch (ePc) {}
+  // (updateDedicatedTimeOnly): it opens and closes on its instant (board)
+  try { window._gatePaintedCd = { k: _gateRowKey(currentFlight), cd: !!showCountdown, dep: _signDepTs || 0, st: stKey, lead: _boardLeadShown, inb: !!inbDelayed, board: _cdBoardTs || 0 }; } catch (ePc) {}
   // v23968 — the airline's gate-close time (_gateCloseInfo): only in the
   // idle layout before any sign, never while "Updated boarding time to
   // follow" is up, counted back from the same departure the printed boarding
@@ -35904,15 +35995,27 @@ function _boardStripStatusKey(currentFlight, _stripState, minsToDep, kept) {
 //     already revised, so a revised delay keeps its countdown;
 //   - while the gate is saying "Updated boarding time to follow" (inbLate):
 //     the two would contradict each other on one screen.
-function _gateSignPhase(stKey, minsToDep, lead, cf, inbLate) {
+// 2026-10-13 — ON THE PRINTED BOARDING INSTANT, NOT ON ROUNDED MINUTES. Given
+// msToBoard (the boarding time the gate prints, less now, in ms: uxgGateHtml
+// and the clock pass it) the countdown is the ten minutes before that
+// instant, to the millisecond, and closes on the instant the schedule's NOW
+// BOARDING opens (_schedBoardingOn: now >= boardTs). On minsToDep, rounded to
+// the minute, it closed 30 s before boarding: at an airport whose feed never
+// says the gate words the gate fell back to its idle layout for those 30 s,
+// the lists back in the centre, then NOW BOARDING took over again. Without
+// msToBoard (older callers) it is worked out on minsToDep as before.
+function _gateSignPhase(stKey, minsToDep, lead, cf, inbLate, msToBoard) {
   var _gateWord = String(stKey || '').replace(/[\s_-]+/g, '').toLowerCase();
   var showBoarding = (_gateWord === 'boarding');
   var isGateClosedStatus = (_gateWord === 'gateclosed' || _gateWord === 'departed');
   var isFinalCallStatus = (_gateWord === 'final' || _gateWord === 'finalcall');
   var revised = !!(cf && (cf.upd || (cf._revTs && cf._sortTs && cf._revTs > cf._sortTs + 60000)));
   var timeWontHold = /^(cancelled|canceled|diverted)$/.test(_gateWord) || (_gateWord === 'delayed' && !revised);
+  var cdDue = (typeof msToBoard === 'number' && isFinite(msToBoard))
+    ? (msToBoard > 0 && msToBoard <= 10 * 60000)
+    : (minsToDep <= (lead + 10) && minsToDep > lead);
   var showCountdown = !showBoarding && !isFinalCallStatus && !isGateClosedStatus && !timeWontHold && !inbLate
-    && minsToDep <= (lead + 10) && minsToDep > lead;
+    && cdDue;
   return {
     word: _gateWord,
     showBoarding: showBoarding,
@@ -47474,6 +47577,10 @@ var _gateAdIndex = 0;
 // on the .axr-pages element (dataset.axrExtended), but every repaint mints a
 // fresh element, so the 'one hold per deck' cap reset and the holds compounded.
 var _gateAdExtN = 0;
+// 2026-10-13 — the deck's turn, taken now (set by _restartGateAdsTimer for its
+// own chain): the standby lists take the centre on their minute
+// (updateDedicatedTimeOnly), not at the turn of the slide that is up.
+var _gateAdTurnNow = null;
 
 // ═══════════════════════════════════════════════════════════════════════
 // AIR CANADA "BIEN VOYAGER" DESTINATION VIDEOS
@@ -54593,7 +54700,7 @@ function _restartGateAdsTimer() {
   // left an orphaned chain running in parallel, making slides flash past in
   // a split second and rotate unevenly.
   var gen = ++_gateAdGen;
-  var _tick = function() {
+  var _tick = function(_now) {
     if (gen !== _gateAdGen) return; // superseded — abandon this chain
     // v22504 — LATE ROOM PAGES: the Accor dwell is sized at slide start, but
     // room pages render asynchronously after the detail fetch. If the live
@@ -54630,7 +54737,10 @@ function _restartGateAdsTimer() {
     // Inside the rotator, tell the parent an ad just completed its full dwell.
     // The rotator only switches away from the gate on one of these boundaries
     // (once past its minimum), so an ad is never chopped mid-display.
-    if (window.self !== window.top) {
+    // (2026-10-13: not on a turn taken now for the lists, _gateAdTurnNow: no
+    // slide completed its dwell, and the stream would leave the gate on the
+    // turn that brings them in; the list's own minute posts the next one.)
+    if (window.self !== window.top && _now !== true) {
       try { window.parent.postMessage({ ocGateBoundary: true }, '*'); } catch (e) {}
     }
     var el2 = document.getElementById('gateAdCarousel');
@@ -54814,6 +54924,21 @@ function _restartGateAdsTimer() {
       try { _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % totalSlots)); } catch (e) {}
       _gateAdTimer = setTimeout(_tick, dwell);
     }, 10);
+  };
+  // 2026-10-13 — THE TURN, NOW (updateDedicatedTimeOnly, when the standby
+  // lists' window opens and the centre is showing something else). The slide
+  // up gives way at once: its pending turn and any crossfade not yet begun
+  // are called off (so the deck moves one slide, never two), no room-page
+  // hold is granted, and the turn is taken exactly as a timed one is (the
+  // crossfade, the weather card's leave, the map's hand-back), the list's own
+  // dwell timed from it. Only on this chain.
+  _gateAdTurnNow = function () {
+    if (gen !== _gateAdGen) return false;
+    try { clearTimeout(_gateAdTimer); } catch (e) {}
+    try { clearTimeout(_gateAdFadeTimer); } catch (e) {}
+    _gateAdExtN = 2;
+    _tick(true);
+    return true;
   };
   // Kick off — use the dwell of the FIRST slide on initial run.
   var initDwell = 15000;
