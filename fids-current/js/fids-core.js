@@ -11501,7 +11501,7 @@ var PLANE_FACING = {
   'AA/772.png':'L', 'AA/773.png':'L', 'AA/777.png':'L', 'AA/77L.png':'L', 'AA/77W.png':'L', 'AA/788.png':'L',
   'AA/789.png':'L', 'AA/7M8.png':'L', 'AA/CAN.png':'L', 'AA/CR2.png':'L', 'AA/CR7.png':'L', 'AA/CR9.png':'L',
   'AA/E70.png':'L', 'AA/E75.png':'L', 'AA/ER4.png':'L', 'AA/RJ1.png':'L', 'AB4.png':'L', 'AB6.png':'L',
-  'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'R', 'AC/319retired.png':'R', 'AC/320.png':'L',
+  'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'L', 'AC/319retired.png':'R', 'AC/320.png':'L',
   'AC/320r.png':'L', 'AC/321.png':'L', 'AC/321r.png':'L', 'AC/32Q.png':'L', 'AC/332.png':'L', 'AC/333.png':'L',
   'AC/737.png':'L', 'AC/737r.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
   'AC/77L-ge.png':'L', 'AC/77L.png':'L', 'AC/77W-ge.png':'L', 'AC/77W.png':'L', 'AC/788.png':'L', 'AC/789.png':'L',
