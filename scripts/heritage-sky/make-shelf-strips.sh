@@ -96,6 +96,12 @@ BACK="$E/smoke_05.png,0.04,0.54,0.80,0,0.74;$E/wisp_l.png,0.13,0.40,0.86,1,0.70;
 # tracks its bob on its own pixels, keeps as mask only what stays non-sky across aligned frames (clouds move,
 # so they drop out), fills the hole from the surrounding sky, and centre-crops to 1140x675.
 #   "$HERE/bin/cleanplate" A320.mp4 "$O/gate-sky-shelf.mp4" 1140 675 9.5 1000 640 330 330 1600 790
+# That fill was spatial, frame by frame, so every cloud crossing the hole played as a soft glow. RE-RENDERED
+# (2026-10) with cleanplate5: the same mask, bob and output geometry (1824 px at x 48, 1140x674, 25 fps, frame k =
+# reference frame k), but each cloud is carried through the hole from the frames where it shows, at its own veil
+# layer's speed and from the hole's own edges, so it keeps its shape and texture and keeps moving. Notes and hold-out
+# tests in the README; about 15 s, needs ~4 GB:
+#   "$HERE/bin/cleanplate5" A320.mp4 "$O/gate-sky-shelf.mp4"
 # The poster and the plate (gate-sky-model.jpg) are the clip's first frame, so nothing changes when it starts:
 #   "$HERE/bin/grabframes" "$O/gate-sky-shelf.mp4" frames 0 ; sips -s format jpeg -s formatOptions 90 frames/frame_00.00.png --out "$O/gate-sky-model.jpg"
 # Three layers of the supplied soft clouds pass over it, unprocessed apart from whitening; alpharemap then

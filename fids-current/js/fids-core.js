@@ -16525,7 +16525,10 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div id="gateCloudsBg"></div>'
         // v23899 — the sky is a clip: the reference flight with its own aircraft removed. It starts
         // at the wall clock's phase, so a rebuild never restarts it and every gate shows the same sky.
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
+        // aircraft are carried through from the frames where they show, so they keep moving and keep
+        // their texture (the first render's per-frame fill smeared them into a glow).
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24050" src="/textures/gate-sky-shelf.mp4?v=24050" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16569,7 +16572,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24050" src="/textures/gate-sky-shelf.mp4?v=24050" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -32950,7 +32953,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24049';
+var FIDS_BUILD_TAG = 'v24050';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -57728,9 +57731,8 @@ function _renderHeritageCard(el) {
       '<div class="hcard-wrap' + (_credit.length ? ' hcard-credited' : '') + '">'
       // The five layers of the gate aircraft scene, in its order: the sky plate
       // (::before), the cartoon fast band, the cumulus, the aeroplane, then the
-      // front band with the rush streaks riding on it (::after). v23928: every
-      // cloud layer now passes BEHIND the aeroplane, as on the gate shelf; the
-      // front layer comes later in the markup but the aeroplane is stacked above it.
+      // front band with the rush streaks riding on it (::after). The last two
+      // sit ABOVE the aeroplane exactly as they do on the gate shelf.
       +   '<div class="hcard-sky" aria-hidden="true">'
       // ONE element for the back plate, with the fast and cumulus bands as its
       // OWN pseudo-children — the shelf's topology, not merely its numbers.
@@ -57741,7 +57743,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24050" src="/textures/gate-sky-shelf.mp4?v=24050"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
