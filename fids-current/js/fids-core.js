@@ -11393,7 +11393,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=202';
+  var _imgCacheBuster = '?v=203';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -11501,7 +11501,7 @@ var PLANE_FACING = {
   'AA/772.png':'L', 'AA/773.png':'L', 'AA/777.png':'L', 'AA/77L.png':'L', 'AA/77W.png':'L', 'AA/788.png':'L',
   'AA/789.png':'L', 'AA/7M8.png':'L', 'AA/CAN.png':'L', 'AA/CR2.png':'L', 'AA/CR7.png':'L', 'AA/CR9.png':'L',
   'AA/E70.png':'L', 'AA/E75.png':'L', 'AA/ER4.png':'L', 'AA/RJ1.png':'L', 'AB4.png':'L', 'AB6.png':'L',
-  'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'R', 'AC/319retired.png':'R', 'AC/320.png':'L',
+  'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'L', 'AC/319retired.png':'R', 'AC/320.png':'L',
   'AC/320r.png':'L', 'AC/321.png':'L', 'AC/321r.png':'L', 'AC/32Q.png':'L', 'AC/332.png':'L', 'AC/333.png':'L',
   'AC/737.png':'L', 'AC/737r.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
   'AC/77L-ge.png':'L', 'AC/77L.png':'L', 'AC/77W-ge.png':'L', 'AC/77W.png':'L', 'AC/788.png':'L', 'AC/789.png':'L',
@@ -32326,7 +32326,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24047';
+var FIDS_BUILD_TAG = 'v24048';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
