@@ -707,10 +707,24 @@
   }
   // Who still waits after stage i: every value the later calls name (a
   // collapsed "All passengers" call names the ones it holds), in order.
+  // NEVER THE NUMBER BEING CALLED: a value the live call names, or an open
+  // band 'N+' that covers one of its numbers, is not waiting. WestJet calls
+  // Zone 3, then "Zone 3+ — Remaining guests": under ZONE 3 the line read
+  // « Zone 3+: please remain seated », which tells a Zone 3 passenger both to
+  // go and to stay. With the band gone nothing numbered is left to name, and
+  // the instruction line says the rest ("until your zone is called").
   function waitingAfter(p, i) {
-    var out = [];
-    ((p && p.stages) || []).slice(i + 1).forEach(function (s) {
+    var stg = (p && p.stages) || [], out = [];
+    stg.slice(i + 1).forEach(function (s) {
       out = out.concat(s.values || []).concat(s.collapsed || []);
+    });
+    var called = ((stg[i] && stg[i].values) || []).map(String);
+    var nums = called.filter(function (x) { return /^\d+$/.test(x); }).map(function (x) { return parseInt(x, 10); });
+    out = out.filter(function (x) {
+      var s = String(x);
+      if (called.indexOf(s) >= 0) return false;
+      var m = /^(\d+)\+$/.exec(s);
+      return !(m && nums.some(function (n) { return n >= parseInt(m[1], 10); }));
     });
     return coverPlus(out);
   }
