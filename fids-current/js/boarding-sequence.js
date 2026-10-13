@@ -45,7 +45,12 @@
   // NAMES EVERYONE IN IT: its cabin stays the sub, and its who-list names
   // everyone else the airline puts in that call (elite tiers, alliance
   // status, cardholders, paid priority, companions on the same reservation),
-  // read from the airline's own boarding page (prioWho* in the store).
+  // read from the airline's own boarding page (prioWho* in the store). A
+  // who-list is a key, or a list of [condition, key] read like a sub's,
+  // because what it names can follow the aircraft too: American's Group 4
+  // names Premium Economy only on a widebody (prioWhoAA4w), and United's
+  // Group 1 names its premium cabins in its own words where no cabin line
+  // does (prioWhoUA1w, prioWhoUA1c).
   //
   // EACH STAGE NAMES ITS OWN CABIN, OR NONE. A sub is a key, or a list of
   // [condition, key] read in order (the first that holds wins, none: no
@@ -53,13 +58,14 @@
   // route: Air Canada's Premium Economy (Zone 2) flies only on its widebodies,
   // Premium Rouge boards in Zone 1 on domestic and Caribbean flights and in
   // Zone 2 on international ones. Conditions (subWhen): 'wide' and 'narrow'
-  // (the aircraft's category, when the type is known), 'twoCabin' (a regional
-  // jet with a business cabin: CRJ900, CRJ700, E175), 'domcarib' and 'intl'
-  // (the route), '*' (always). A cabin the airline names only by a brand
-  // that is the same in every language (Delta One, Delta Main, United
-  // Polaris) is not a sub: the board-languages guard takes a new brand term
-  // only with its own approval, so those cabins are named inside a who-list
-  // in the airline's own words, or not at all.
+  // (the aircraft's category, when the type is known), 'regional' (a known
+  // regional type), 'twoCabin' (a regional jet with a business cabin:
+  // CRJ900, CRJ700, E175), 'domcarib' and 'intl' (the route), '*' (always).
+  // A cabin the airline names only by a brand that is the same in every
+  // language (Delta One, Delta Main, United Polaris) is not a sub: the
+  // board-languages guard takes a new brand term only with its own
+  // approval, so those cabins are named inside a who-list in the airline's
+  // own words, or not at all.
   function pre(who, sub) { return { kind: 'pre', title: 'preboard', who: who || '', sub: sub || '' }; }
   function prio(label, value, sub, who) { return { kind: 'prio', label: label || '', value: value || '', sub: sub || '', who: who || '' }; }
   function fam(title, who) { return { kind: 'fam', title: title, who: who || '' }; }
@@ -165,14 +171,20 @@
     },
     // United: Pre-boarding, Group 1 (its premium cabins and top elites),
     // Group 2 (Premier Silver, Premier Access: no cabin), Groups 3 to 6.
-    // United First is the front cabin of United's mainline narrowbodies; on a
-    // widebody it is United Polaris or United Business, and a one-cabin
-    // regional jet has none, so only a known mainline narrowbody names it.
+    // United First is the front cabin of United's mainline narrowbodies and
+    // of its two-cabin regional jets (CRJ700, E175), its cabin line there; on
+    // a widebody it is United Polaris or United Business, and a one-cabin
+    // regional jet has none. Where no cabin line names one, the who-list
+    // does, in United's own words: "United Polaris or United Business" on a
+    // widebody, United's whole Group 1 row ("United Polaris, United First
+    // and United Business cabins") when the type is not known, nothing on a
+    // one-cabin regional jet.
     UA: {
       src: 'https://www.united.com/en/us/fly/travel/airport/boarding-process.html',
       srcFr: 'https://www.united.com/fr/ca/fly/travel/airport/boarding-process.html',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoUA'), prio('groupLabel', '1', [['narrow', 'cabinUnitedFirst']], 'prioWhoUA1'), prio('groupLabel', '2', '', 'prioWhoUA2')]
+      stages: [pre('preboardWhoUA'), prio('groupLabel', '1', [['narrow', 'cabinUnitedFirst'], ['twoCabin', 'cabinUnitedFirst']],
+        [['wide', 'prioWhoUA1w'], ['narrow', 'prioWhoUA1'], ['twoCabin', 'prioWhoUA1'], ['regional', 'prioWhoUA1'], ['*', 'prioWhoUA1c']]), prio('groupLabel', '2', '', 'prioWhoUA2')]
         .concat(gens('groupLabel', ['3', '4', '5', '6'], 'cabinUnitedEcon'))
     },
     // Delta: Pre-Boarding (and active-duty military), Zone 1 ("Delta One
@@ -194,15 +206,16 @@
     // (three rows on American's table, called as one step here: one after
     // another, the who-list names all three in American's order), then
     // families with children under 2, then Groups 1 to 9 (Groups 1 to 4 the
-    // elites and oneworld tiers, and Premium Economy where it flies, so no
-    // cabin; 7 and 8 are one row on American's table; Groups 5 to 9 board
-    // the Main Cabin).
+    // elites and oneworld tiers, so no cabin line; Group 4 names Premium
+    // Economy in its list only on a widebody, the only aircraft American
+    // flies it on; 7 and 8 are one row on American's table; Groups 5 to 9
+    // board the Main Cabin).
     AA: {
       src: 'https://www.aa.com/web/i18n/travel-info/boarding-process.html',
       srcFr: 'https://www.aa.com/web/i18n/travel-info/boarding-process.html?locale=fr_CA',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
       stages: [pre('preboardWhoAA'), prio('', '', '', 'prioWhoAA'), fam('familyBoard', 'familyWhoAA'),
-        prio('groupLabel', '1', '', 'prioWhoAA1'), prio('groupLabel', '2', '', 'prioWhoAA2'), prio('groupLabel', '3', '', 'prioWhoAA3'), prio('groupLabel', '4', '', 'prioWhoAA4'),
+        prio('groupLabel', '1', '', 'prioWhoAA1'), prio('groupLabel', '2', '', 'prioWhoAA2'), prio('groupLabel', '3', '', 'prioWhoAA3'), prio('groupLabel', '4', '', [['wide', 'prioWhoAA4w'], ['*', 'prioWhoAA4']]),
         gen('groupLabel', '5', 'cabinMainAA'), gen('groupLabel', '6', 'cabinMainAA'),
         { kind: 'gen', label: 'groupLabel', values: ['7', '8'], sub: 'cabinMainAA' },
         gen('groupLabel', '9', 'cabinMainAA')]
@@ -259,30 +272,41 @@
     },
     // Ryanair: "Ryanair does not pre-board passengers" (help centre,
     // assistance and Priority Boarding); its paid Priority Boarding queue
-    // boards first, then everyone else. No pre-boarding step.
+    // boards first, then everyone else. No pre-boarding step. Who the
+    // Priority queue is for (Priority Boarding bought on its own, or in the
+    // Regular, Flexi Plus and Time Saver fares) is from its fare bundles
+    // page (srcWho), read 2026-10-13.
     FR: {
       src: 'https://help.ryanair.com/hc/en-gb/articles/48217528757265',
+      srcWho: 'https://help.ryanair.com/hc/en-gb/articles/12888555638161',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [prio(), allPax()]
+      stages: [prio('', '', '', 'prioWhoFR'), allPax()]
     },
     // Norwegian: "Passengers with Priority Boarding (Boarding Group A) will
     // board first, followed by Boarding Group B passengers, and finally,
-    // Boarding Group C passengers." No pre-boarding is published.
+    // Boarding Group C passengers." No pre-boarding is published. "Our Flex
+    // tickets already include Priority Boarding" (read 2026-10-13).
     DY: {
       src: 'https://www.norwegian.com/en/travel-info/check-in-and-boarding/priority-boarding/',
       checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [prio('groupLabel', 'A'), gen('groupLabel', 'B'), gen('groupLabel', 'C')]
+      stages: [prio('groupLabel', 'A', '', 'prioWhoDYa'), gen('groupLabel', 'B'), gen('groupLabel', 'C')]
     },
     // Iberia: Group 0 boards first, then customers needing special assistance
     // and families with children under 2, then Group 1, Group 2 (where its
-    // paid Priority Boarding sits), then the remaining groups in turn. Read
-    // from the search index (iberia.com refuses automated readers); the
-    // number of groups after 2 is not published there, so the rest are
-    // called as general boarding, all passengers.
+    // paid Priority Boarding sits), then the remaining groups in turn. The
+    // order was read from the search index (iberia.com refuses automated
+    // readers); who Groups 0, 1 and 2 are for is from the page itself, in
+    // English, French and Spanish, read 2026-10-13 (Group 1 takes Business
+    // Class, named in its list in Iberia's own words; Group 2 takes Premium
+    // Economy, named only on a widebody). The rest are called as general
+    // boarding, all passengers.
     IB: {
       src: 'https://www.iberia.com/ca/boarding/',
+      srcFr: 'https://www.iberia.com/fr/embarquement/',
+      srcEs: 'https://www.iberia.com/es/embarque/',
       checked: '2026-10-12', conf: 'low', prioAnyTime: false,
-      stages: [prio('groupLabel', '0'), pre('preboardWhoIB'), prio('groupLabel', '1'), prio('groupLabel', '2'), allPax()]
+      stages: [prio('groupLabel', '0', '', 'prioWhoIB0'), pre('preboardWhoIB'), prio('groupLabel', '1', '', 'prioWhoIB1'),
+        prio('groupLabel', '2', '', [['wide', 'prioWhoIB2w'], ['*', 'prioWhoIB2']]), allPax()]
     },
     // Every airline with no published order: pre-boarding (passengers who
     // need assistance or more time, a legal duty at Canadian and U.S.
@@ -357,6 +381,7 @@
     if (cond === '*') return true;
     if (cond === 'wide') return c.cat === 'widebody';
     if (cond === 'narrow') return c.cat === 'narrowbody';
+    if (cond === 'regional') return c.cat === 'regional';
     if (cond === 'twoCabin') return !!c.twoCabin;
     if (cond === 'domcarib') return c.region === 'dom' || c.region === 'carib';
     if (cond === 'intl') return c.region === 'intl';
@@ -368,8 +393,7 @@
     for (var i = 0; i < spec.length; i++) if (spec[i] && subWhen(spec[i][0], ctx)) return spec[i][1] || '';
     return '';
   }
-  // What two or more stages share, or nothing: a merged call names a cabin or
-  // a who-list only when every call in it has that same one.
+  // What two or more stages share, or nothing.
   function common(list, k) {
     var v = list.length ? (list[0][k] || '') : '';
     for (var i = 1; i < list.length; i++) if ((list[i][k] || '') !== v) return '';
@@ -420,6 +444,7 @@
       if (V.drop && s.values.length === 1 && V.drop.indexOf(s.values[0]) >= 0) return;
       if (V.stageSub && s.values.length === 1 && Object.prototype.hasOwnProperty.call(V.stageSub, s.values[0])) s.sub = V.stageSub[s.values[0]];
       s.sub = pickSub(s.sub, ctx);
+      s.who = pickSub(s.who, ctx);
       if (s.kind === 'pre' && s.who === 'preboardWhoAny' && !(ctx && ctx.legalPre)) s.who = '';
       if (s.kind === 'pre' && s.who === 'preboardWhoTS' && ctx && ctx.toUS) s.who = 'preboardWhoTSus';
       // A generic plan's cabins are the carrier's own where the gate knows
@@ -519,7 +544,14 @@
         // none, so a list never stands for a call it leaves out.
         var cw = common(run, 'who');
         var ws = (!cw && run.every(function (s) { return !!s.who; })) ? run.map(function (s) { return s.who; }) : [];
-        out.push({ kind: 'prio', label: st[i].label, values: vals, sub: common(run, 'sub'), who: cw, whos: ws, side: 'L', merged: true });
+        // AND EVERY CABIN ITS CALLS NAME: Zone 1's Premium on a WestJet
+        // Encore Dash 8, Zone 1's Business on an Air Canada Express CRJ900,
+        // called with a Zone 2 that has none, stays named (sub); two calls
+        // with two cabins (WestJet's Premium and Extended Comfort on a 737)
+        // name both (subs, joined per language on the sign).
+        var subs = [];
+        run.forEach(function (s) { if (s.sub && subs.indexOf(s.sub) < 0) subs.push(s.sub); });
+        out.push({ kind: 'prio', label: st[i].label, values: vals, sub: subs.length === 1 ? subs[0] : '', subs: subs, who: cw, whos: ws, side: 'L', merged: true });
         i = j; did = true;
       } else { out.push(st[i]); i++; }
     }

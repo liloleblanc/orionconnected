@@ -25981,6 +25981,22 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-closed-body .g8-sign-picto .g8-picto { display: block !important; height: min(24vh, 22vw) !important; width: auto !important; aspect-ratio: 1 / 1 !important; fill: currentColor !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-closed-body .g8-sign-go { font-size: min(5vh, 3.6vw) !important; }
 
+/* ══ BOARDING SEQUENCES — A LONG LIST IN THE TWO PANELS, ONE LANGUAGE AT A TIME ══
+   In the two panels (?sign=panels) a panel is half the screen, and a long
+   who-list in both of the board's languages, one under the other, ran under
+   the arrow discs (American's Groups 1-4 called together on an E175, twelve
+   items a language, at 1680x1050) and brought the call's number down with
+   it. When the list alone has come down and the panel is still too short,
+   the column fitter (_fidsSignColFit) turns it to is-alt: both languages in
+   one cell, the panel as tall as the longer, one shown at a time, ten
+   seconds each by the clock (_fidsSignWhoAlt sets alt-b). The same items,
+   the same order, never cut. The one centre is not touched. Layout only: no
+   colour, and nothing moves (one block is shown, then the other). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt { display: grid !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt > .g8-who-blk { grid-area: 1 / 1 !important; margin-top: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt:not(.alt-b) > .g8-who-blk ~ .g8-who-blk,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt.alt-b > .g8-who-blk:first-child { visibility: hidden !important; }
+
 /* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS, AT TWICE THE SIZE ════
    The chosen design for the three screens: the near-black ground of the calm
    option, the airline colour of the tinted one, between the two.

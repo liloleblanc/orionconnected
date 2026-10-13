@@ -2141,15 +2141,49 @@ function _fidsSignColFit(scope) {
     if (lbl && lb0) setL(lb0);
     if (pic) pic.style.removeProperty('zoom');
     var steps = [[0.92, 1], [0.84, 1], [0.75, 1], [0.75, 0.85], [0.75, 0.72], [0.75, 0.6], [0.65, 0.6], [0.55, 0.6]];
-    for (var k = 0; k < steps.length && over(); k++) {
+    var step = function (k) {
       if (ro && rb) ro.style.setProperty('font-size', (rb * steps[k][0]) + 'px', 'important');
       if (val && nb) val.style.setProperty('font-size', (nb * steps[k][1]) + 'px', 'important');
       if (lbl && lb0) setL(lb0 * steps[k][1]);
       // the pictograms come down with the number (pre-boarding has no
       // number: with its list)
       if (pic) pic.style.setProperty('zoom', String(val ? steps[k][1] : steps[k][0]), 'important');
+    };
+    // 2026-10-13 — A LONG LIST IN THE TWO PANELS: ONE LANGUAGE AT A TIME.
+    // A panel is half the screen there, and a list in both of the board's
+    // languages one under the other ran under the arrow discs even at the
+    // last step (American's Groups 1-4 called together on an E175: twelve
+    // items in each, 13.8px), and every long list brought the call's number
+    // down to 72px (American's Group 4, 126px without it). Side by side
+    // did not help: in half a panel each item wraps to more lines. Once the
+    // list alone has come down (to 75%) and the panel is still too short,
+    // its two languages take turns in one place (is-alt: both blocks in one
+    // cell, the panel as tall as the longer, ten seconds each by the clock,
+    // _fidsSignWhoAlt), and the steps start again from the stylesheet's
+    // sizes, so the number keeps its size first. Nothing moves: one block
+    // is shown, then the other. The one centre keeps both at once.
+    var alt = !!(ro && col.closest('.g8-sign-two') && ro.querySelectorAll(':scope > .g8-who-blk').length > 1);
+    if (ro) ro.classList.remove('is-alt');
+    var k = 0;
+    for (; k < (alt ? 3 : steps.length) && over(); k++) step(k);
+    if (alt && over()) {
+      ro.classList.add('is-alt');
+      _fidsSignWhoAlt(ro);
+      if (rb) ro.style.setProperty('font-size', rb + 'px', 'important');
+      for (k = 0; k < steps.length && over(); k++) step(k);
     }
   }
+}
+// Which of a long list's two languages is shown (is-alt): ten seconds each,
+// by the clock, so a sign rebuilt between two turns carries on where it was
+// (the gate rebuilds its sign on every telemetry tick). Set by the column
+// fitter when it turns a list to is-alt, and every second by the gate's
+// clock (updateDedicatedTimeOnly).
+var _G8_WHO_ALT_MS = 10000;
+function _fidsSignWhoAlt(el) {
+  var b = Math.floor(Date.now() / _G8_WHO_ALT_MS) % 2 === 1;
+  var rs = el ? [el] : document.querySelectorAll('.g8-sign .g8-sign-roster.is-alt');
+  for (var i = 0; i < rs.length; i++) rs[i].classList.toggle('alt-b', b);
 }
 
 // THE FINAL DESIGN — THE SWITCH LEADS THE TWO PANELS. Once the switch is on
@@ -8200,6 +8234,8 @@ function updateDedicatedTimeOnly() {
       const _sgTs = _sgEl ? Number(_sgEl.getAttribute('data-stage-next-ts')) : 0;
       if (_sgEl && _sgTs > 0 && _nowMs3 >= _sgTs) { _sgEl.removeAttribute('data-stage-next-ts'); requestGateRebuild(); }
     } catch (eSg) {}
+    // a long list in the two panels: its two languages take their turns
+    try { _fidsSignWhoAlt(); } catch (eWa) {}
     // v23973 — LATER AT THIS GATE FOLLOWS THE CLOCK. A moved flight's notice
     // ends when the flight leaves (_gateFlightLive), a later flight moves up
     // when the one before it goes, and a day word changes at midnight, all
@@ -19089,9 +19125,31 @@ function uxgGateHtml(ctx) {
     return out;
   }
   // A stage's own cabin, as a pair; and the cabin a list of calls shares
-  // (a merged or a summed-up panel names one only when every call in it has
-  // that same one).
+  // (the summed-up panel names one only when every call in it has that same
+  // one; a merged call names every one its calls name: _g8SeqCabS).
   function _g8SeqCab(k) { return k ? _g8SignPair(k, false, true) : ''; }
+  // A CALL'S CABINS. A merged call (Zones 1 \u2022 2 on a short window)
+  // names every cabin its calls name (FIDSBoardSeq: subs): one is its own
+  // pair, as for a single call; two or more are one pair whose halves each
+  // list them in that language (« Premium · Extended Comfort | Privilège ·
+  // Confort accru »), the same language pick and the same one-language-once
+  // rule as _gateLbl.
+  function _g8SeqCabS(s) {
+    var ks = (s && s.subs) || [];
+    if (ks.length < 2) return _g8SeqCab(s && s.sub);
+    var L = BoardStrings.pairLangs(langs, !!_frF), seen = Object.create(null), halves = [];
+    for (var i = 0; i < L.length && halves.length < 2; i++) {
+      var lg = L[i], ents = ks.map(function (k) { return _lblEntry(k) || {}; });
+      if (ents.some(function (e) { return !e[lg]; })) continue;
+      var w = ents.map(function (e) { return e[lg]; }).join(' \u00B7 ');
+      if (seen[w.toLowerCase()]) continue;
+      seen[w.toLowerCase()] = 1;
+      var ck = ks[0];
+      for (var j = 0; j < ks.length; j++) if (ents[j].$src && ents[j].$src[lg] === 'careful') { ck = ks[j]; break; }
+      halves.push(BoardStrings.markHalf('<span class="g8-pair-h">' + w + '</span>', lg, ck));
+    }
+    return halves.join('<span class="g8-pair-sep">|</span>');
+  }
   function _g8SeqCabOf(list) {
     if (!list || !list.length) return '';
     var v = list[0].sub || '';
@@ -19190,7 +19248,7 @@ function uxgGateHtml(ctx) {
         // The call's own cabin, or none: never the first priority call's.
         // A call with no number of its own still has its symbol (prio).
         var pv = cur.values.length ? _g8SeqValue(cur, 3) : { label: '', value: '' };
-        pL = { picto: pv.value ? '' : 'prio', title: _g8SignPair('priority'), sub: _g8SeqCab(cur.sub),
+        pL = { picto: pv.value ? '' : 'prio', title: _g8SignPair('priority'), sub: _g8SeqCabS(cur),
               label: pv.label, value: pv.value, roster: _g8SeqWho(cur), lanes: lanesL };
       } else {
         // The airline's own family or courtesy call, in its own words.
@@ -19237,7 +19295,7 @@ function uxgGateHtml(ctx) {
     var lanesR = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('3 \u2022 4', true);
     if (isFinal || !cur || B.isSwitch(p, st)) return _g8SeqAll(p, lanesR);
     var seated = _g8SeqSeated(p, st), instr = _g8SignInstr(p, false, seated);
-    var who = _g8SeqWho(cur), cab = _g8SeqCab(cur.sub);
+    var who = _g8SeqWho(cur), cab = _g8SeqCabS(cur);
     if (cur.kind === 'pre') return { cls: 'now', picto: 'pre', title: _g8SignPair('preboard'), who: cab, roster: who, lanes: lanesL, instr: instr };
     if (cur.kind === 'fam') return { cls: 'now', picto: 'fam', title: _g8SignPair(cur.title), roster: who, lanes: lanesL, instr: instr };
     if (cur.kind === 'prio' && !cur.values.length) return { cls: 'now', picto: 'prio', value: _g8SignPair('priority'), who: cab, roster: who, lanes: lanesL, instr: instr };

@@ -98,8 +98,9 @@ function keysOf(T) {
     'seatedZone', 'seatedZones', 'seatedZonesTwo', 'seatedGroup', 'seatedGroups', 'seatedGroupsTwo', 'seatedRows',
     'seatedUntilZone', 'seatedUntilGroup', 'seatedUntilRow', 'seatedUntilGen']);
   for (const s of T.stages) {
-    for (const k of ['title', 'who', 'label']) if (s[k]) out.add(s[k]);
+    for (const k of ['title', 'label']) if (s[k]) out.add(s[k]);
     subKeys(s.sub).forEach((k) => out.add(k));
+    subKeys(s.who).forEach((k) => out.add(k));
   }
   for (const v of Object.values(T.variants || {})) for (const spec of Object.values(v.stageSub || {})) subKeys(spec).forEach((k) => out.add(k));
   return out;
@@ -356,18 +357,32 @@ test('a window too short merges calls and never drops a number', () => {
     assert.ok(before.every((v) => +v <= 2), `DL L=${L}: only Zones 1 and 2 before Early Access (${before})`);
     assert.ok(after.every((v) => +v >= 3), `DL L=${L}: Zones 3 and 4 after it (${after})`);
   }
-  // a merged call names a cabin or a who-list only when every call in it has it
+  // a merged call names every cabin its calls name (2026-10-13: a cabin
+  // passenger is never left unnamed because a short window merged the calls)
   const qk2 = planFor('QK', { twoCabin: true }, 20, 15).stages[1];
   assert.deepEqual(qk2.values, ['1', '2']);
-  assert.equal(qk2.sub, '', 'Zones 1 • 2 merged: Zone 1 is Business, Zone 2 is not, so no cabin');
+  assert.equal(qk2.sub, 'cabinBiz', 'Zones 1 • 2 merged on an Express CRJ900: Zone 1 is Business, still named');
+  assert.equal(planFor('QK', {}, 20, 15).stages[1].sub, '', 'on a Dash 8 neither zone has a cabin: none');
+  const wr2 = planFor('WR', {}, 20, 15).stages[1];
+  assert.deepEqual([wr2.values, wr2.sub], [['1', '2'], 'cabinPremiumWS'], "Encore's Zones 1 • 2 at Moncton: Zone 1's Premium, still named");
+  const ws2 = planFor('WS', {}, 18, 10).stages.find((s) => s.merged && s.kind === 'prio');
+  assert.deepEqual([ws2.sub, ws2.subs], ['', ['cabinPremiumWS', 'cabinExtComfortWS']], 'two cabins: both, in order (subs)');
   const dlm = planFor('DL', {}, 20, 10).stages.find((s) => s.merged && s.kind === 'prio');
   assert.ok(dlm, 'a merged Delta priority call');
   assert.equal(dlm.who, '', 'no one who-list stands for both');
   assert.deepEqual(dlm.whos, ['prioWhoDL1', 'prioWhoDL2'], "each zone's own list, in order (joined per language on the sign)");
-  // a run where one call names nobody keeps none: a list never stands for a
-  // call it leaves out (Iberia's Groups 1 and 2 have no lists)
+  // Iberia's Groups 1 • 2 on a short window: both lists
   const ibm = planFor('IB', {}, 12, 10).stages.find((s) => s.merged && s.kind === 'prio');
-  if (ibm) assert.deepEqual(ibm.whos, [], 'no list for a merged call nobody is named in');
+  assert.ok(ibm, 'a merged Iberia priority call');
+  assert.deepEqual([ibm.values, ibm.whos], [['1', '2'], ['prioWhoIB1', 'prioWhoIB2']]);
+  // a run where one call names nobody keeps none: a list never stands for a
+  // call it leaves out
+  const mk = (v, who, sub) => ({ kind: 'prio', label: 'zone', values: [v], who, sub: sub || '', side: 'L' });
+  const run = SEQ.pace([{ kind: 'pre', title: 'preboard', who: '', sub: '', values: [], side: 'L' }, mk('1', 'prioWhoAC1', 'cabinBiz'), mk('2', ''),
+    { kind: 'gen', label: 'zone', values: ['3'], sub: '', side: 'R' }, { kind: 'gen', label: 'zone', values: ['4'], sub: '', side: 'R' }], 6, 0).stages
+    .find((s) => s.merged && s.kind === 'prio');
+  assert.ok(run, 'a merged call with one list');
+  assert.deepEqual([run.who, run.whos, run.sub], ['', [], 'cabinBiz'], 'no list for a call it would leave out; the cabin still named');
 });
 
 test('Porter boards in three row bands: no gap, no overlap, the middle band called', () => {
@@ -586,7 +601,7 @@ test('the memo never steps back, whatever the plan is rebuilt from', () => {
 function signRenderer(langs, frF, layout) {
   const helpers = ['_g8GrpValCls', '_g8SignPair', '_g8SignLanes', '_g8SignLines', '_g8Picto', '_g8SeatList', '_g8SeatKey', '_g8SignGo',
     '_g8SignInstr', '_g8ArrowDisc', '_g8ArrowGlyph', '_g8SignCol', '_g8SignHtml', '_g8SignCentreHtml', '_g8SeqLabelKey', '_g8SeqValue',
-    '_g8SeqWhoBlk', '_g8SeqWho', '_g8SeqCab', '_g8SeqCabOf', '_g8SeqSeated', '_g8SeqAll', '_g8SeqPanels', '_g8SeqCentre'].map(inner);
+    '_g8SeqWhoBlk', '_g8SeqWho', '_g8SeqCab', '_g8SeqCabS', '_g8SeqCabOf', '_g8SeqSeated', '_g8SeqAll', '_g8SeqPanels', '_g8SeqCentre'].map(inner);
   const arrow = (UXG.match(/  var _G8_ARROW_PATH = [^;]+;/) || [])[0];
   assert.ok(arrow, 'the arrow path');
   const picto = braceFrom(UXG, UXG.indexOf('  var _G8_PICTO = {'), '_G8_PICTO') + ';';
@@ -802,6 +817,22 @@ test('the panels say the right thing at the right stage', () => {
   assert.match(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1'))), /United First/);
   assert.doesNotMatch(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('2'))), /United First/, "United's Group 2 is Premier Silver and Premier Access");
   assert.doesNotMatch(at('UA', { cat: 'widebody' }, when('UA', { cat: 'widebody' }, (s) => s.values.includes('1'))), /United First/, 'a widebody: United Polaris or Business, so none is guessed');
+  // 2026-10-13 — who else Group 1 calls: a widebody's premium cabins in the
+  // list (no cabin line names them), United's whole row when the type is not
+  // known, the cabin line alone on a narrowbody and a two-cabin regional jet
+  assert.match(at('UA', { cat: 'widebody' }, when('UA', { cat: 'widebody' }, (s) => s.values.includes('1'))),
+    /Travelers in United Polaris or United Business.*Voyageurs en United Polaris ou United Business/);
+  assert.match(at('UA', {}, when('UA', {}, (s) => s.values.includes('1'))), /Travelers in United Polaris, United First and United Business cabins/);
+  const uaN = at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1')));
+  assert.equal(uaN.split('United First').length - 1, 1, 'a narrowbody: United First once, as its cabin line');
+  assert.match(at('UA', { cat: 'regional', twoCabin: true }, when('UA', { cat: 'regional', twoCabin: true }, (s) => s.values.includes('1'))), /United First/, 'a two-cabin regional jet: United First');
+  assert.doesNotMatch(at('UA', { cat: 'regional' }, when('UA', { cat: 'regional' }, (s) => s.values.includes('1'))), /United First|Polaris/, 'a one-cabin regional jet: no premium cabin');
+  assert.doesNotMatch(at('AA', { cat: 'regional', twoCabin: true }, when('AA', { cat: 'regional', twoCabin: true }, (s) => s.values.includes('4'))), /Premium Economy/, "American's Group 4 on an E175: no Premium Economy");
+  assert.match(at('AA', { cat: 'widebody' }, when('AA', { cat: 'widebody' }, (s) => s.values.includes('4'))), /AirPass · Premium Economy/, 'on a widebody: named');
+  assert.doesNotMatch(at('IB', {}, when('IB', {}, (s) => s.values.includes('2'))), /Premium Economy/, "Iberia's Group 2 on a narrowbody: no Premium Economy");
+  assert.match(at('IB', { cat: 'widebody' }, when('IB', { cat: 'widebody' }, (s) => s.values.includes('2'))), /Premium Economy customers/);
+  assert.match(at('FR', {}, 1), /Customers with Priority Boarding · Customers on Regular, Flexi Plus and Time Saver fares/, "Ryanair's priority queue");
+  assert.match(at('DY', {}, 1), /Passengers with a Flex ticket/, "Norwegian's Group A");
   assert.match(at('UA', {}, 1), /Please remain seated until your group is called/, "United's unit: the group");
   assert.match(at('UA', {}, 20), /All groups \| Tous les groupes/, 'ALL GROUPS at the switch');
   // Ryanair: no pre-boarding step at all
@@ -1041,6 +1072,23 @@ test('a who-list never runs off its panel, and a group code shares the row with 
   assert.match(fit, /var steps = \[\[0\.92, 1\], \[0\.84, 1\], \[0\.75, 1\], \[0\.75, 0\.85\], \[0\.75, 0\.72\], \[0\.75, 0\.6\], \[0\.65, 0\.6\], \[0\.55, 0\.6\]\];/, 'the list first, then the number, then the list again');
   assert.match(fit, /if \(ro && rb\) ro\.style\.setProperty\('font-size', rb \+ 'px', 'important'\);/, 'every pass starts from the stylesheet size');
   assert.match(fit, /if \(pic\) pic\.style\.setProperty\('zoom'/, 'the pictograms come down with the number');
+  // 2026-10-13 — in the two panels a long list shows one language at a time
+  // once the list alone has come down, before the number does
+  assert.match(fit, /var alt = !!\(ro && col\.closest\('\.g8-sign-two'\) && ro\.querySelectorAll\(':scope > \.g8-who-blk'\)\.length > 1\);/, 'the two panels only, a list in two languages');
+  assert.match(fit, /for \(; k < \(alt \? 3 : steps\.length\) && over\(\); k\+\+\) step\(k\);/, 'the list alone first');
+  assert.match(fit, /if \(alt && over\(\)\) \{\s*ro\.classList\.add\('is-alt'\);\s*_fidsSignWhoAlt\(ro\);[\s\S]{0,120}for \(k = 0; k < steps\.length && over\(\); k\+\+\) step\(k\);/, 'then one at a time, the steps again from the start');
+  assert.match(fit, /if \(ro\) ro\.classList\.remove\('is-alt'\);/, 'judged afresh on every pass');
+  // ten seconds each, by the clock: a rebuilt sign carries on where it was
+  assert.match(top('_fidsSignWhoAlt'), /var b = Math\.floor\(Date\.now\(\) \/ _G8_WHO_ALT_MS\) % 2 === 1;/);
+  assert.match(CORE, /var _G8_WHO_ALT_MS = 10000;/);
+  assert.match(top('updateDedicatedTimeOnly'), /try \{ _fidsSignWhoAlt\(\); \} catch \(eWa\) \{\}/, 'the gate clock turns it');
+  const CSSF = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
+  const sAt = CSSF.indexOf('BOARDING SEQUENCES — A LONG LIST IN THE TWO PANELS, ONE LANGUAGE AT A TIME');
+  assert.ok(sAt > 0 && sAt < CSSF.indexOf('v24014 — THE WEATHER CARD'), 'before the weather block, which stays last');
+  const sBlk = CSSF.slice(sAt, CSSF.indexOf('v24014 — THE WEATHER CARD')).replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(sBlk, /(:not\(#_\)){16} \.g8-sign\.g8-sign-two \.g8-sign-roster\.is-alt > \.g8-who-blk \{ grid-area: 1 \/ 1 !important;/, 'both in one cell: the panel as tall as the longer');
+  assert.match(sBlk, /\.is-alt:not\(\.alt-b\) > \.g8-who-blk ~ \.g8-who-blk,[\s\S]*?\.is-alt\.alt-b > \.g8-who-blk:first-child \{ visibility: hidden !important; \}/, 'one shown at a time');
+  assert.doesNotMatch(sBlk, /animation|transition|@keyframes/, 'nothing moves');
   const pass = top('_fidsPairSeparators');
   assert.ok(pass.indexOf('_fidsSignColFit(scope)') > pass.indexOf("el.classList.toggle('is-stacked', stacked)"), 'after the pairs are fitted');
   assert.ok(pass.indexOf('_fidsSignLineFit(scope)') < pass.indexOf('_fidsSignColFit(scope)'), 'the whole lines to their width first');
@@ -1272,16 +1320,29 @@ test('the module is a passenger script loaded before the core on every board', (
 
 test('every priority call names who it is for: elites, alliance tiers, cardholders, not only the cabin', () => {
   // the airlines whose pages list who each priority call takes (read
-  // 2026-10-13); Iberia, Ryanair, Norwegian and the generic plan were not
-  // researched, so they name nobody rather than guess
-  for (const code of ['AC', 'WS', 'F8', 'TS', 'UA', 'DL', 'AA', 'AS', 'WN', 'B6', 'F9']) {
+  // 2026-10-13). The generic plan is no airline's: it names nobody rather
+  // than invent a tier.
+  for (const code of ['AC', 'WS', 'F8', 'TS', 'UA', 'DL', 'AA', 'AS', 'WN', 'B6', 'F9', 'FR', 'DY', 'IB']) {
     for (const s of SEQ.SEQ[code].stages.filter((x) => x.kind === 'prio')) {
-      assert.ok(s.who, `${code} ${s.label || 'priority'} ${s.value || ''}: who it calls`);
-      const e = STORE.entry(s.who);
-      assert.ok(e && e.$src, s.who + ' carries $src');
-      for (const l of LANGS) assert.ok(typeof e[l] === 'string' && e[l].trim() && e.$src[l], s.who + ' ' + l);
+      assert.ok(subKeys(s.who).length, `${code} ${s.label || 'priority'} ${s.value || ''}: who it calls`);
+      // (on every aircraft: a list that follows the aircraft ends in '*')
+      if (Array.isArray(s.who)) assert.equal(s.who[s.who.length - 1][0], '*', code + ': a list whatever the aircraft');
+      for (const k of subKeys(s.who)) {
+        const e = STORE.entry(k);
+        assert.ok(e && e.$src, k + ' carries $src');
+        for (const l of LANGS) assert.ok(typeof e[l] === 'string' && e[l].trim() && e.$src[l], k + ' ' + l);
+      }
     }
   }
+  assert.ok(!SEQ.plan('ZZ').full.some((s) => s.kind === 'prio' && s.who), 'the generic plan invents no list');
+  // each stage names its own cabin or none, in its list too: Premium Economy
+  // only where it flies
+  for (const k of ['prioWhoAA4', 'prioWhoIB2']) assert.ok(!/Premium Economy/.test(STORE.bs(k, 'en')), k + ': no Premium Economy');
+  for (const k of ['prioWhoAA4w', 'prioWhoIB2w']) assert.match(STORE.bs(k, 'en'), /Premium Economy/, k);
+  // the airline's own French and Spanish where it publishes them
+  assert.match(STORE.bs('prioWhoIB1', 'fr'), /^Clients Iberia Club Oro · Clients oneworld Sapphire · Clients en classe Business$/, "Iberia's French");
+  assert.match(STORE.bs('prioWhoIB0', 'es'), /^Clientes Iberia Club Infinita Prime, Infinita, Platino Prime y Platino · Clientes Iberia Singular/, "Iberia's Spanish");
+  assert.equal(STORE.entry('prioWhoIB0').$src.es, 'airline:IB');
   // the airline's own words where it publishes them
   assert.equal(STORE.bs('prioWhoAC1', 'en'), 'Aeroplan Super Elite members · Travel companions on the same reservation');
   assert.match(STORE.bs('prioWhoAC1', 'fr'), /^Membres de statut Aéroplan Super Élite/, "Air Canada's French");
@@ -1306,7 +1367,7 @@ test('in Japanese and Chinese a Latin name stands apart from the kana and kanji 
   // words (and the rendered-word check reads it so). Digits keep their
   // counters (6歳, 2岁).
   const keys = new Set();
-  for (const T of Object.values(SEQ.SEQ)) for (const s of T.stages) if (s.who) keys.add(s.who);
+  for (const T of Object.values(SEQ.SEQ)) for (const s of T.stages) subKeys(s.who).forEach((k) => keys.add(k));
   const glued = /[A-Za-z°][ぁ-ゖァ-ヺー一-鿿]|[ぁ-ゖァ-ヺー一-鿿][A-Za-z]/;
   for (const k of keys) for (const l of ['ja', 'zh']) assert.doesNotMatch(STORE.bs(k, l), glued, `${k} ${l}`);
   assert.ok(keys.size >= 40, 'the who-lists: ' + keys.size);
@@ -1341,4 +1402,20 @@ test('a merged call names everyone in each of its calls, an item they share once
   // Delta's Zones 3 • 4, American's Groups 1–4: every list
   const aa = planFor('AA', {}, 20, 15).stages.find((s) => s.kind === 'prio' && s.merged);
   assert.deepEqual(aa.whos, ['prioWhoAA1', 'prioWhoAA2', 'prioWhoAA3', 'prioWhoAA4']);
+  // WestJet Encore at Moncton: Zones 1 • 2 name Zone 1's Premium, and the
+  // travel companions once (each zone's list names them as their own item)
+  const wr = planFor('WR', {}, 20, 15);
+  const wrm = wr.stages.find((s) => s.kind === 'prio' && s.merged);
+  for (const layout of LAYOUTS) {
+    const text = textOf(signRenderer(['en', 'fr'], false, layout)({ p: wr, st: SEQ.stageAt(wr, wrm.ts + 1000) }, false));
+    assert.match(text, /Premium \| Privilège/, layout + ': Zone 1\'s cabin');
+    assert.match(text, /Platinum Rewards members · Gold and Silver Rewards members · Travel companions on the same reservation · Delta Gold Medallion members/, layout);
+    for (const comp of ['Travel companions on the same reservation', 'Personnes voyageant sur la même réservation']) assert.equal(text.split(comp).length - 1, 1, layout + ': ' + comp + ' once');
+  }
+  // two cabins: one pair, each half listing both in its language
+  const ws = planFor('WS', {}, 18, 10);
+  const wsm = ws.stages.find((s) => s.kind === 'prio' && s.merged);
+  const wsH = signRenderer(['en', 'fr'], false, 'centre')({ p: ws, st: SEQ.stageAt(ws, wsm.ts + 1000) }, false);
+  assert.match(textOf(wsH), /Premium · Extended Comfort \| Privilège · Confort accru/);
+  assert.match(wsH, /<span class="g8-pair-h" lang="en">Premium · Extended Comfort<\/span><span class="g8-pair-sep">\|<\/span><span class="g8-pair-h" lang="fr">/);
 });

@@ -336,7 +336,7 @@ test("each airline's cabins, named the way it names them", () => {
   const P = fn('_g8SeqPanels');
   assert.doesNotMatch(P, /p\.cabins\[/, 'never the first priority or general call\'s cabin for another');
   assert.match(P, /pR = \{ title: _g8SeqCab\(cur\.sub\), label: lv\.label, value: lv\.value, roster: _g8SeqWho\(cur\), lanes: lanesR, instr: instr \};/, 'the live general panel: its own cabin over its number, never General boarding');
-  assert.match(P, /pL = \{ picto: pv\.value \? '' : 'prio', title: _g8SignPair\('priority'\), sub: _g8SeqCab\(cur\.sub\),/, 'the live priority panel: its own cabin, and its symbol when it has no number');
+  assert.match(P, /pL = \{ picto: pv\.value \? '' : 'prio', title: _g8SignPair\('priority'\), sub: _g8SeqCabS\(cur\),/, 'the live priority panel: its own cabins (a merged call: every one its calls name), and its symbol when it has no number');
   assert.match(P, /pL = \{ picto: pvals\.length \? '' : 'prio', title: _g8SignPair\('priority'\), sub: _g8SeqCab\(_g8SeqCabOf\(prioMade\)\),/, 'the made panel: the cabin they all share');
   assert.match(fn('_g8SeqCabOf'), /if \(\(list\[i\]\.sub \|\| ''\) !== v\) return '';/);
   const colSrc = fn('_g8SignCol');
