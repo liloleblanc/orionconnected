@@ -11393,7 +11393,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=201';
+  var _imgCacheBuster = '?v=202';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -20809,10 +20809,22 @@ function gateAutofit(root) {
         try {
           bil.style.removeProperty('font-size');
           var _bilAvail = w - (num.getBoundingClientRect().width + 16);
+          // AND NEVER TALLER THAN THE PANEL. The label was fitted to width
+          // only, so on a takeover (the panel pinned to 110px) its two-line
+          // stack kept the idle panel's 124px, was centred, and lost the top
+          // of "Gate" off the top of the screen. The stylesheet sizes it for
+          // the takeover now; this keeps any pair of words in any face inside
+          // the box it is centred in, 2px clear of each edge. It only shrinks,
+          // so a label that already fits (the idle panel) is never touched.
+          var _bilAvailH = box.clientHeight - 4;
+          var _bilOver = function () {
+            var r = bil.getBoundingClientRect();
+            return (_bilAvail > 24 && r.width > _bilAvail)
+                || (_bilAvailH > 24 && r.height > _bilAvailH);
+          };
           var _bilPx = parseFloat(window.getComputedStyle(bil).fontSize) || 0;
           var _bilGuard = 24;
-          while (_bilAvail > 24 && _bilPx > 14
-                 && bil.getBoundingClientRect().width > _bilAvail && _bilGuard-- > 0) {
+          while (_bilPx > 14 && _bilOver() && _bilGuard-- > 0) {
             _bilPx -= Math.max(1, _bilPx * 0.06);
             bil.style.setProperty('font-size', _bilPx + 'px', 'important');
           }
@@ -23378,7 +23390,9 @@ function _tgPair(e1, e2, g0, g1, w1, w2, t1, t2, H) {
 //    sits about 20px from the date and spills over the seam between the
 //    centre screen and the map, so its mirror image there is the fallback.
 //    Where neither corner is clear at full size, the same a little smaller,
-//    down to 76% (131px at 1080p).
+//    down to 76% (131px at 1080p). Never through a takeover (countdown,
+//    Now Boarding, Final call, Gate closed): its cards fill the space under
+//    the panel, and a corner clear of their words is still over a card.
 // 2. Pinned inside the gate panel, beside the number (before the Gate |
 //    Porte words only when the number's side has no room), as tall as the
 //    panel lets it be (124px at most at 1080p), centred on its height. This
@@ -23589,8 +23603,14 @@ function _tgBqWhere(band, wrap) {
   var k = Math.min(wr.width / 1920, wr.height / 1080), H = _TG_BQ_H * k, g = 10 * k;
   var q = { left: pr.left - H, right: pr.right, top: pr.top, bottom: pr.bottom + H * 1.2 };
   var out = { pr: pr, obs: _tgObstacles(wrap, q), P: null }, f, h, i, sd;
-  // 1. the corsage: right, then left, at 100%, 92%, 84% and 76% of its size
-  for (i = 0; i < 4 && !out.P; i++) {
+  // 1. the corsage: right, then left, at 100%, 92%, 84% and 76% of its size;
+  // never on a takeover (.g8-wrap.g8-takeover). Its cards fill the space
+  // under the panel, and their words can sit far enough from a corner for
+  // the corsage to "fit": at 2560 x 1440 on every gate, and at 1680 x 1050 on
+  // YQM gate 4 once the label took its takeover size (v24047), it hung over
+  // the Departure card. Through a takeover it is pinned in the panel (2.).
+  var tk = wrap.classList.contains('g8-takeover');
+  for (i = 0; i < 4 && !out.P && !tk; i++) {
     h = H * (1 - 0.08 * i);
     for (sd = 0; sd < 2 && !out.P; sd++) {
       f = _tgBqFit(sd ? 'l' : 'r', pr, wr, h, out.obs, g);
@@ -32306,7 +32326,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24046';
+var FIDS_BUILD_TAG = 'v24047';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

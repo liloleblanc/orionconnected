@@ -213,6 +213,22 @@ test('the same minute and the same city are not enough: different flights stay a
   assert.match(sf, /_fltNum\(a\)<1000&&_fltNum\(b\)<1000/);
 });
 
+test('one carrier\'s two rows, or two rows whose state or time differ, are two flights (Moncton PB924 / PB9241)', () => {
+  const pb = (number, status) => feedRow({ dir: 'arr', number, code: 'PB', alName: 'PAL Airlines', gate: '2', home: 'YQM', to: 'YDF', toName: 'Deer Lake', at: '2026-10-12 18:15', status });
+  // PB924 has landed; PB9241 is still delayed: both stay on the list
+  const out = list([pb('PB924', 'Arrived'), pb('PB9241', 'Delayed')], 'arr');
+  assert.deepEqual(out.map((f) => f.flight).sort(), ['PB924', 'PB9241']);
+  // two carriers, same gate and minute, but one Delayed and one on time: apart
+  const two = list([
+    feedRow({ number: 'XY1234', code: 'XY', gate: '9', to: 'YVR', toName: 'Vancouver', home: 'YYJ', at: '2026-10-12 15:05', status: 'Delayed' }),
+    feedRow({ number: 'ZQ2345', code: 'ZQ', gate: '9', to: 'YVR', toName: 'Vancouver', home: 'YYJ', at: '2026-10-12 15:05' })
+  ]);
+  assert.equal(two.length, 2);
+  const sf = fn('sameFlight');
+  assert.match(sf, /v\(a\.airline\)===v\(b\.airline\)\)return false/);
+  assert.match(sf, /v\(a\.state\)!==v\(b\.state\)/);
+});
+
 test('arrivals: one belt and one minute from one city is one flight, two belts are two', () => {
   const arr = (number, code, belt, gate) => feedRow({ dir: 'arr', number, code, belt, gate, to: 'AMS', toName: 'Amsterdam', at: '2026-10-12 11:52' });
   const one = list([arr('DL143', 'DL', '22', 'A4'), arr('AF8992', 'AF', '22', 'A4'), arr('KL6033', 'KL', '22', '')], 'arr');
