@@ -177,7 +177,7 @@ async function shoot(url, out) {
   const prof = fs.mkdtempSync(process.env.PROFILE_DIR ? path.join(process.env.PROFILE_DIR, 'prof-pics-') : path.join(OUT, '.prof-'));
   // perl's alarm puts a hard ceiling on the browser even if this
   // script dies before it can kill it
-  const chrome = spawn('perl', ['-e', 'alarm 120; exec @ARGV', CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', `--user-data-dir=${prof}`,
+  const chrome = spawn('perl', ['-e', 'alarm 120; exec @ARGV', CHROME, '--headless=new', '--use-mock-keychain', '--password-store=basic', '--no-first-run', '--disable-gpu', '--hide-scrollbars', `--user-data-dir=${prof}`,
     `--window-size=${W},${H}`, `--remote-debugging-port=${port}`, '--autoplay-policy=no-user-gesture-required', 'about:blank'], { stdio: 'ignore' });
   const kill = setTimeout(() => { try { chrome.kill('SIGKILL'); } catch (e) {} }, 115000);
   try {

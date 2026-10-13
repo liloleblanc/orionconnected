@@ -502,7 +502,7 @@ async function boardPass(t, chrome, palette) {
   const base = 'http://127.0.0.1:' + server.address().port;
 
   const prof = fs.mkdtempSync(path.join(os.tmpdir(), 'board-ink-'));
-  const args = ['--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
+  const args = ['--headless=new', '--use-mock-keychain', '--password-store=basic', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
     '--disable-dev-shm-usage', '--window-size=1680,1050', '--remote-debugging-port=0', '--user-data-dir=' + prof, 'about:blank'];
   if (process.platform === 'linux') args.unshift('--no-sandbox');
   const proc = spawn(chrome, args, { stdio: 'ignore' });

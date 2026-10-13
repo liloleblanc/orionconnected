@@ -684,7 +684,9 @@ test('(A)(B) the boarding, final call and gate closed signs open on the flight\'
 
   // uxgGateHtml takes every one of these from that one answer, and assigns
   // none of them anywhere else: a clock put back into any of them shows here.
-  assert.match(UXG, /var _gateSign = _gateSignPhase\(stKey, minsToDep, _boardLeadShown, currentFlight, inbDelayed\);/);
+  // (2026-10-13: and the countdown on the printed boarding instant, to the
+  // millisecond, so it closes as the schedule's NOW BOARDING opens)
+  assert.match(UXG, /var _gateSign = _gateSignPhase\(stKey, minsToDep, _boardLeadShown, currentFlight, inbDelayed, _cdBoardTs \? _cdBoardTs - _doorNow : undefined\);/);
   const only = (name, want) => assert.deepEqual(UXG.match(new RegExp('\\b' + name + '\\s*=(?!=)[^\\n;]*', 'g')), want, name);
   only('showBoarding', ['showBoarding = _gateSign.showBoarding']);
   only('isGateClosedStatus', ['isGateClosedStatus = _gateSign.isGateClosedStatus']);
@@ -757,7 +759,7 @@ test('(C) the gate writes no time and no status onto the shared flight row', () 
   // revised; v23925 — it runs inside _gateBoardingTimes, which the gate's
   // Boarding field reads through _gateDoor.
   assert.match(fn('_gateBoardingTimes'), /boardTs = _gateBoardingFloorTs\(boardTs, effDep, cf, gi, arrRows, depDelayed\);/);
-  assert.match(UXG, /var _door = _gateDoor\(currentFlight, Date\.now\(\), iata, window\._gateInbound, data\.arr, tz, equipRaw\);/);
+  assert.match(UXG, /var _doorNow = Date\.now\(\);\s*var _door = _gateDoor\(currentFlight, _doorNow, iata, window\._gateInbound, data\.arr, tz, equipRaw\);/);
   assert.doesNotMatch(UXG, /_bGi\._revTs|var _bArrTs/, 'no second copy of the floor inside the builder');
   assert.doesNotMatch(UXG, /_gateBoardingFloorTs\(|getBoardingLeadMins\(|var _delayB/, 'no second copy of the boarding time inside the builder');
 });
@@ -1706,7 +1708,7 @@ test('(D) one boarding time on both screens: the lead reads the feed\'s own airc
   assert.equal((CORE.match(/_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,/g) || []).length, 2);
   assert.equal(E._fidsBoardEquip({ _aircraftCode: 'DH4', _feedAcCode: '789' }, 'YHZ'), '789');
   assert.equal(E._fidsBoardEquip({ _aircraftCode: 'DH4', _feedAcCode: '789' }, 'YQM'), 'DH4');
-  assert.match(UXG, /var _door = _gateDoor\(currentFlight, Date\.now\(\), iata, window\._gateInbound, data\.arr, tz, equipRaw\);/);
+  assert.match(UXG, /var _doorNow = Date\.now\(\);\s*var _door = _gateDoor\(currentFlight, _doorNow, iata, window\._gateInbound, data\.arr, tz, equipRaw\);/);
 });
 
 test('(D) a tight turn at Halifax: the next flight takes its gate on its printed boarding time, and the two screens agree every minute', async () => {
