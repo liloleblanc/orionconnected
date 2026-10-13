@@ -2045,51 +2045,143 @@ function _fidsSchedulePairPass() {
     try { _gateSbColFit(); } catch (eSb) {}
     // and the lists in the centre make room for every row (_gateSbFit)
     try { _gateSbFit(); } catch (eSc) {}
+    // and both are watched between passes (_gateSbObserve)
+    try { _gateSbObserve(); } catch (eSo) {}
   });
 }
 // 2026-10-12 — THE LISTS' COLUMN KEEPS EVERY ROW. Beside a boarding sign the
 // lists have a column of a fixed height (css: .g8-sbcol), and in a long
 // language pair (Japanese and Arabic, a status word on two lines) with the
-// longest lists their rows ran past its foot, the last one cut off. After
-// each fitting pass, when the last list ends below the card's foot, the
-// card's scale (--gc-k, css: .gcard-col's --gc-u) steps down a little and
-// another pass is asked for, so names, headings and spacing come down
+// longest lists their rows ran past its foot, the last one cut off. When the
+// last list ends below the card's foot, the card's scale (--gc-k, css:
+// .gcard-col's --gc-u) comes down, so names, headings and spacing come down
 // together until every row is inside (not under 0.62 of the designed size;
-// the words keep the shared fitter's floor). A scale that came down steps
-// back up while the room under the last list would hold the step with a
-// quarter to spare, never to a scale that ran over before (data-sb-max), so
-// it settles and never swings. Nothing is measured before the board's fonts
-// have landed (a fallback face's taller lines are not the column's). A new
-// paint, or a resize, starts afresh.
+// the words keep the shared fitter's floor): the largest scale that fits.
+//
+// SOLVED IN ONE FRAME, NEVER STEPPED. The scale used to come down 0.04 a pass,
+// one pass a frame, and every step between was painted: at the switch into
+// the countdown the last rows sat cut off for 1-5 frames (YUL A62C TS602
+// ja+ar: 1 > 0.96 > 0.92 > 0.88). Now every try is measured at once, in the
+// frame the column first paints (_gateSbColSolve: the card at its full size;
+// then the scale the room asks for, the lines fitted again at each try, until
+// every row is inside; then the gap to the last scale that did not fit halved,
+// so the largest that fits is kept), and only the answer is painted.
+//
+// NOR DOES IT WAIT FOR THE FONTS. The pass used to measure nothing until the
+// board's fonts had landed, and after a reload during the countdown, NOW
+// BOARDING or FINAL CALL its last rows sat cut off for the whole load (3 to
+// 18 s seen). Now the column is fitted in whatever faces have landed, the way
+// the lists in the centre are (_gateSbFit, below): each face still loading
+// asks for a pass when it lands (_gateSbWatchFaces), the column's lines are
+// fitted again and the fit kept while every row still fits, and once the
+// fonts are in (the fonts' state and _fxFontsEpoch in the key) it is solved
+// afresh; a pass is asked for again on the same bounded backoff
+// (_gateSbRetry). A column is solved once for its size and its fonts
+// (data-sb-fit); every other pass only measures the last list against the
+// foot (a word changed in place, a face that drew before its pass ran) and
+// solves again if a row has gone past it.
+//
+// A resize keeps the scale the column has until the pass, in the same frame,
+// has solved it for the new size (the key carries the column's box and the
+// screen's): it never springs back to its full size for a frame.
 function _gateSbColFit() {
-  try { if (document.fonts && document.fonts.status !== 'loaded') return; } catch (eF) {}
+  var loading = false;
+  try { loading = !!(document.fonts && document.fonts.status && document.fonts.status !== 'loaded'); } catch (eF) {}
+  if (loading) _gateSbWatchFaces();
   var cards = document.querySelectorAll('.g8-sbcol > .gcard-col');
-  var again = false;
+  var unsure = loading, did = false;
   for (var i = 0; i < cards.length; i++) {
     var card = cards[i];
     var sbl = card.querySelector('.gc-sbl');
-    var last = sbl && sbl.lastElementChild;
-    if (!last) continue;
+    if (!(sbl && sbl.lastElementChild)) continue;
     var cr = card.getBoundingClientRect();
-    if (!(cr.height > 50)) continue;
-    var foot = cr.bottom - (parseFloat(getComputedStyle(card).paddingBottom) || 0);
-    var lb = last.getBoundingClientRect().bottom;
-    var k = parseFloat(card.getAttribute('data-sb-k') || '1') || 1;
-    var max = parseFloat(card.getAttribute('data-sb-max') || '1.01') || 1.01;
-    var nk = k;
-    if (lb > foot + 0.5) {
-      card.setAttribute('data-sb-max', String(Math.min(max, k)));
-      nk = Math.max(0.62, Math.round((k - 0.04) * 100) / 100);
-    } else if (k < 1 && (foot - lb) > (lb - cr.top) * (0.05 / k)) {
-      var up = Math.min(1, Math.round((k + 0.04) * 100) / 100);
-      if (up < max - 0.005) nk = up;
+    // (not laid out yet: asked again, below)
+    if (!(cr.width > 50 && cr.height > 50)) { unsure = true; continue; }
+    // the column's own box (not the card's, whose insets are in its scale),
+    // the screen's, and the fonts
+    var col = card.parentElement || card;
+    var base = col.offsetWidth + 'x' + col.offsetHeight + '|' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0)
+      + '|' + (typeof _fxFontsEpoch !== 'undefined' ? _fxFontsEpoch : 0);
+    var sig = base + '|' + (loading ? 'f' + _gateSbFaceN : 'F');
+    var had = card.getAttribute('data-sb-fit') || '';
+    if (had === sig) {
+      if (!card.hasAttribute('data-sb-over') && _gateSbColExcess(card) > 0.5) { _gateSbColSolve(card); did = true; }
+      continue;
     }
-    if (nk === k) continue;
-    card.setAttribute('data-sb-k', String(nk));
-    card.style.setProperty('--gc-k', String(nk));
-    again = true;
+    // faces landed while the fonts load: the fit holds while every row still
+    // fits (solved afresh once they are all in)
+    if (loading && had.indexOf(base + '|f') === 0 && !card.hasAttribute('data-sb-over')) {
+      _gateSbRefitLines(card);
+      did = true;
+      if (_gateSbColExcess(card) <= 0.5) { card.setAttribute('data-sb-fit', sig); continue; }
+    }
+    if (had.indexOf(base + '|') !== 0) _gateSbRetryN = 0;
+    try { _gateSbColSolve(card); } catch (eS) {}
+    card.setAttribute('data-sb-fit', sig);
+    did = true;
   }
-  if (again) _fidsSchedulePairPass();
+  // (a face this pass's own layout asked for is watched from now)
+  try { if (did && document.fonts && document.fonts.status !== 'loaded') _gateSbWatchFaces(); } catch (eW) {}
+  if (unsure && cards.length) _gateSbRetry();
+  return did;
+}
+// How far the last list runs past the card's foot, in CSS px (0 or less: it
+// is inside).
+function _gateSbColExcess(card) {
+  var s = (card.getBoundingClientRect().width / (card.offsetWidth || 1)) || 1;
+  var sbl = card.querySelector('.gc-sbl');
+  var last = sbl && sbl.lastElementChild;
+  if (!last) return 0;
+  var foot = card.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(card).paddingBottom) || 0) * s;
+  return (last.getBoundingClientRect().bottom - foot) / s;
+}
+// The largest scale, from the full size down to _GATE_SB_K_MIN, at which the
+// last list ends inside the card, every try measured at once (in this frame,
+// so a paint never shows a try). A column that does not fit even at the
+// smallest is marked data-sb-over (the rendered check fails on it).
+function _gateSbColSolve(card) {
+  var set = function (k) {
+    if (k < 1) card.style.setProperty('--gc-k', String(k)); else card.style.removeProperty('--gc-k');
+    card.setAttribute('data-sb-k', String(k));
+    _gateSbRefitLines(card);
+  };
+  var span = function () {
+    var s = (card.getBoundingClientRect().width / (card.offsetWidth || 1)) || 1;
+    var sbl = card.querySelector('.gc-sbl');
+    var last = sbl && sbl.lastElementChild;
+    return last ? (last.getBoundingClientRect().bottom - sbl.getBoundingClientRect().top) / s : 0;
+  };
+  card.removeAttribute('data-sb-over');
+  var k = 1, kHi = 1;
+  set(1);
+  var e = _gateSbColExcess(card);
+  if (e <= 0.5) return k;
+  // the scale the room asks for (the lists' height is in the card's unit),
+  // a hair under it; again from there while a row is still past the foot
+  for (var it = 0; it < 8 && e > 0.5 && k > _GATE_SB_K_MIN; it++) {
+    var h = span();
+    kHi = k;
+    k = Math.max(_GATE_SB_K_MIN, Math.floor((h > e ? k * (h - e - 0.5) / h : _GATE_SB_K_MIN) * 1000) / 1000 - 0.004);
+    set(k);
+    e = _gateSbColExcess(card);
+  }
+  if (e > 0.5) {
+    card.setAttribute('data-sb-over', '1');
+    try { if (document.fonts && document.fonts.status === 'loaded') console.warn('[fids] the standby lists do not fit their column', card.offsetWidth + 'x' + card.offsetHeight); } catch (eW) {}
+    return k;
+  }
+  // the largest scale that fits: a smaller one can let a word take one line
+  // instead of two, so the estimate can overshoot; halve the gap to the last
+  // one that did not fit
+  var best = k;
+  for (var b = 0; b < 6 && kHi - best > 0.008; b++) {
+    var mid = Math.floor((best + kHi) / 2 * 1000) / 1000;
+    if (mid <= best) break;
+    set(mid);
+    if (_gateSbColExcess(card) <= 0.5) best = mid; else kHi = mid;
+  }
+  if (String(best) !== card.getAttribute('data-sb-k')) set(best);
+  return best;
 }
 
 // 2026-10-12 — THE LISTS IN THE CENTRE KEEP EVERY ROW WHOLE. With "Later at
@@ -2154,7 +2246,7 @@ function _gateSbFit() {
   try { loading = !!(document.fonts && document.fonts.status && document.fonts.status !== 'loaded'); } catch (eF) {}
   if (loading) _gateSbWatchFaces();
   var cards = document.querySelectorAll('.gcard-sbcard:not(.gcard-col)');
-  var unsure = loading;
+  var unsure = loading, did = false;
   for (var i = 0; i < cards.length; i++) {
     var card = cards[i];
     var cr = card.getBoundingClientRect();
@@ -2168,7 +2260,14 @@ function _gateSbFit() {
       + '|' + (typeof _fxFontsEpoch !== 'undefined' ? _fxFontsEpoch : 0);
     var sig = base + '|' + (loading ? 'f' + _gateSbFaceN : 'F');
     var had = card.getAttribute('data-sb-fit') || '';
-    if (had === sig) continue;
+    // fitted for this size and these faces: measured again all the same (a
+    // retry, the two-second pass), and fitted again if a row has gone under
+    // the lists' edge since (a face that drew before its pass ran)
+    if (had === sig) {
+      if (!card.hasAttribute('data-sb-over') && _gateSbExcess(card) > 0.5) { try { _gateSbLadder(card); } catch (eL0) {} did = true; }
+      continue;
+    }
+    did = true;
     // faces landed while the fonts load: the fit holds while every row still
     // fits (the whole ladder runs again once they are all in)
     if (loading && had.indexOf(base + '|f') === 0 && _gateSbHolds(card)) { card.setAttribute('data-sb-fit', sig); continue; }
@@ -2176,7 +2275,11 @@ function _gateSbFit() {
     try { _gateSbLadder(card); } catch (eL) {}
     card.setAttribute('data-sb-fit', sig);
   }
+  // and a face this pass's own layout asked for (a script's subset) is
+  // watched from now, not from the next pass
+  try { if (did && document.fonts && document.fonts.status !== 'loaded') _gateSbWatchFaces(); } catch (eW) {}
   if (unsure && cards.length) _gateSbRetry();
+  return did;
 }
 // Each face the board is still loading asks for a pass when it lands (or
 // fails), once.
@@ -2201,6 +2304,49 @@ function _gateSbRetry() {
     _gateSbRetryT = null;
     try { _fidsSchedulePairPass(); } catch (e) {}
   }, _GATE_SB_RETRY_MS[_gateSbRetryN++]);
+}
+// AND NOTHING BETWEEN TWO PASSES IS PAINTED CUT OFF. A face that lands can
+// draw the lists in its own metrics a frame before the pass it asks for runs
+// (its promise settles after the frame that drew it), and a word can change
+// with no pass to follow. A ResizeObserver on the lists' boxes (the box that
+// holds them, and each list) hears of a change of their size after the
+// frame's layout and before its paint: when a fitted card's last list then
+// runs past its room, the passes run there and then, and that frame is
+// painted fitted. (It then lets go of every box until the next pass, so its
+// own change is not reported back to it within the same frame.)
+var _gateSbRO = null;
+var _gateSbROEls = [];
+function _gateSbObserve() {
+  try {
+    if (typeof ResizeObserver !== 'function') return;
+    var want = document.querySelectorAll('.gcard-sbcard .gc-sbl, .gcard-sbcard .gc-sbl > *');
+    if (!want.length && !_gateSbROEls.length) return;
+    if (!_gateSbRO) _gateSbRO = new ResizeObserver(_gateSbResized);
+    // a repaint put new boxes in: the old ones are let go
+    for (var i = 0; i < _gateSbROEls.length; i++) {
+      if (!_gateSbROEls[i].isConnected) { _gateSbRO.disconnect(); _gateSbROEls = []; break; }
+    }
+    for (var j = 0; j < want.length; j++) {
+      if (_gateSbROEls.indexOf(want[j]) < 0) { _gateSbRO.observe(want[j]); _gateSbROEls.push(want[j]); }
+    }
+  } catch (e) {}
+}
+function _gateSbResized() {
+  try {
+    var cut = false, cards = document.querySelectorAll('.gcard-sbcard');
+    for (var i = 0; i < cards.length && !cut; i++) {
+      var c = cards[i];
+      if (c.hasAttribute('data-sb-over') || !c.hasAttribute('data-sb-fit')) continue;
+      var r = c.getBoundingClientRect();
+      if (!(r.width > 50 && r.height > 50)) continue;
+      cut = (c.classList.contains('gcard-col') ? _gateSbColExcess(c) : _gateSbExcess(c)) > 0.5;
+    }
+    if (!cut) return;
+    var did = false;
+    try { did = _gateSbColFit() || did; } catch (e1) {}
+    try { did = _gateSbFit() || did; } catch (e2) {}
+    if (did && _gateSbRO) { _gateSbRO.disconnect(); _gateSbROEls = []; try { _fidsSchedulePairPass(); } catch (e3) {} }
+  } catch (e) {}
 }
 // Every line of the card fitted afresh at its present size (the fitter keys
 // on its box and the fonts' epoch, which neither a new unit nor a face
@@ -3620,10 +3766,9 @@ try {
     else _startPairMO();
     window.addEventListener('resize', function () {
       // the sign pairs' stored base size is in screen units — measure afresh
+      // (the lists' column keeps its scale until the pass, in this frame,
+      // has solved it for the new size: _gateSbColFit)
       try {
-        // (and the lists' column its scale, _gateSbColFit)
-        var _sk = document.querySelectorAll('.g8-sbcol > .gcard-col[data-sb-k]');
-        for (var _k = 0; _k < _sk.length; _k++) { _sk[_k].removeAttribute('data-sb-k'); _sk[_k].removeAttribute('data-sb-max'); _sk[_k].style.removeProperty('--gc-k'); }
         var _sp = document.querySelectorAll('.g8-sign .g8-pair[data-g8-base]');
         for (var _i = 0; _i < _sp.length; _i++) { _sp[_i].removeAttribute('data-g8-base'); _sp[_i].style.removeProperty('font-size'); }
         var _sv = document.querySelectorAll('.g8-sign .g8-sign-value[data-g8-vbase]');
@@ -7722,6 +7867,24 @@ function updateDedicatedTimeOnly() {
         if (_dw !== _pd.w) { _pd.w = _dw; requestGateRebuild(); }
       }
     } catch (eD) {}
+    // 2026-10-13 — THE COUNTDOWN OPENS AND CLOSES ON ITS MINUTE. "Boarding
+    // begins in" opens ten minutes before the boarding time the gate shows
+    // and closes at it (_gateSignPhase), with nothing in the feed changing,
+    // and the gate's keys do not carry it: on a quiet feed the countdown, and
+    // the standby lists' move from the centre into the column beside it,
+    // waited for the next change in the feed (on the recorded feeds, never).
+    // Each second the phase is worked out again from what the paint decided
+    // it from (window._gatePaintedCd, set by uxgGateHtml); when it no longer
+    // matches, one rebuild is asked for (the painted phase updated first, so
+    // it is asked once).
+    try {
+      const _pc = window._gatePaintedCd;
+      if (cf && _pc && _pc.k === _gateRowKey(cf)) {
+        const _pcMins = _pc.dep ? Math.round((_pc.dep - _nowMs3) / 60000) : 9999;
+        const _pcCd = !!_gateSignPhase(_pc.st, _pcMins, _pc.lead, cf, _pc.inb).showCountdown;
+        if (_pcCd !== _pc.cd) { _pc.cd = _pcCd; requestGateRebuild(); }
+      }
+    } catch (eCd) {}
     // v24006 — THE BAND'S CLOSE TIME COMES OFF AT ITS MINUTE. A deadline
     // that has passed is not shown (_gateCloseBandInfo), but nothing in the
     // feed changes when it passes, so the gate's key does not either. When
@@ -17008,6 +17171,9 @@ function uxgGateHtml(ctx) {
   var isGateClosedStatus = _gateSign.isGateClosedStatus;
   var isFinalCallStatus = _gateSign.isFinalCallStatus;
   var showCountdown = _gateSign.showCountdown;
+  // 2026-10-13 — and what the countdown was decided from, for the clock
+  // (updateDedicatedTimeOnly): it opens and closes on its minute
+  try { window._gatePaintedCd = { k: _gateRowKey(currentFlight), cd: !!showCountdown, dep: _signDepTs || 0, st: stKey, lead: _boardLeadShown, inb: !!inbDelayed }; } catch (ePc) {}
   // v23968 — the airline's gate-close time (_gateCloseInfo): only in the
   // idle layout before any sign, never while "Updated boarding time to
   // follow" is up, counted back from the same departure the printed boarding
@@ -36370,9 +36536,8 @@ function _gateCardsBuild(o) {
   var firm = !o.inbLate && hasTime && Number(o.depTs) > 0;
   var docs = 'B';
   try { docs = _gateDocsVariant(o.cf, o.iata, o.airline); } catch (eD) { docs = 'B'; }
-  var pretend = false, region = 'intl';
+  var pretend = false;
   try { pretend = !!_gateSbPretendOn(o.cf); } catch (eS) { pretend = false; }
-  try { region = flightRegionKey(o.cf, o.iata) || 'intl'; } catch (eR) { region = 'intl'; }
   var arr = (o.arr && Number(o.arr.ts) > 0) ? { ts: Number(o.arr.ts), tz: o.arr.tz || o.tz, revised: !!o.arr.revised, early: !!o.arr.early } : null;
   return {
     flight: String(o.flight || o.cf.flight || ''),
@@ -36389,9 +36554,10 @@ function _gateCardsBuild(o) {
     depAt: Number(o.depTs) || 0,
     depTs: firm ? Number(o.depTs) : 0,
     boardTs: firm ? (Number(o.boardTs) || 0) : 0,
-    // the boarding time as printed, firm or not (the lists' clearing runs to
-    // its countdown), and the flight's scheduled departure (the lists' names
-    // are drawn from its day, so a new time never redraws them)
+    // the boarding time as printed, firm or not (the lists come up 15
+    // minutes before it and clear until its countdown), and the flight's
+    // scheduled departure (the lists' names are drawn from its day, so a new
+    // time never redraws them)
     boardAt: Number(o.boardTs) || 0,
     schedAt: Number(o.cf._sortTs) || Number(o.depTs) || 0,
     // the departure the flight closes on: the printed one
@@ -36399,8 +36565,7 @@ function _gateCardsBuild(o) {
     close: firm && o.close && o.close.ts ? o.close : null,
     arr: arr,
     docs: docs,
-    pretend: pretend,
-    region: region
+    pretend: pretend
   };
 }
 // Which cards are due now. Pure: the deck builder and the renderer both ask.
@@ -36408,7 +36573,8 @@ function _gateCardsDue(m, nowMs) {
   var due = { ovcard: false, docscard: false, closecard: false, sbcard: false };
   if (!m) return due;
   var now = Number(nowMs) || Date.now();
-  // the lists: their own window, from the idle layout to the flight's close
+  // the lists: their own window, from 15 minutes before the printed
+  // boarding time to the flight's close, in any layout
   due.sbcard = !!_gateSbLists(m, now);
   // the other three: before boarding only, in the idle layout
   if (m.idle === false) return due;
@@ -36438,17 +36604,22 @@ function _gateCardsDue(m, nowMs) {
 // (✚ ADD FLIGHT), a board in demo mode (loadDemo), or ?standby=1 for review
 // (that load only, never saved).
 //
-// WHEN (2026-10-12, replacing v24026's window): from 90 minutes before a
-// domestic departure (120 for transborder and international), counted from
-// the departure the gate prints (the airport's revised time when it has
-// posted one), and from then on WITHOUT A BREAK until the flight closes.
-// Once the list is up it is not rotated away and nothing replaces it: it
-// was one slide among the ads, a minute on and at least four off, and ended
-// at the boarding countdown, so in practice it was seen only in its last
-// visit before boarding. Now:
-//   - in the idle layout the centre deck is the list alone
-//     (_buildGateAdSlideList), repainted in place, never crossfaded into a
-//     copy of itself (_restartGateAdsTimer); the documents and the
+// WHEN (2026-10-13, replacing 2026-10-12's 90 minutes before a domestic
+// departure and 120 abroad, which was far too early: nobody waits at a gate
+// that long, and the lists are called a quarter of an hour before boarding):
+// from 15 minutes before the boarding time the gate prints
+// (_GATE_SB_BEFORE_BOARD_MIN, counted from m.boardAt, which follows the
+// airport's revised departure when it has posted one), and from then on
+// WITHOUT A BREAK until the flight closes. Until then the centre deck turns
+// as it always has: the ads, the weather, the heritage mark, the map,
+// uploaded media and the other cards. Once the list is up it is not rotated
+// away and nothing replaces it (it was one slide among the ads, a minute on
+// and at least four off, and in practice was seen once). Now:
+//   - in the idle layout, from 15 minutes before boarding to the countdown
+//     ten minutes before it, the centre deck is the list alone
+//     (_buildGateAdSlideList, from the deck's next turn), repainted in
+//     place, never crossfaded into a copy of itself
+//     (_restartGateAdsTimer); the documents and the
 //     airline's close time ride its foot (_gcSbFoot), the facts the
 //     documents and close cards carried, so they do not leave the screen;
 //   - under the countdown, NOW BOARDING and FINAL CALL, where there is no
@@ -36465,11 +36636,11 @@ function _gateCardsDue(m, nowMs) {
 // flight's list follows the last one's close.
 //
 // HOW IT MOVES: from the start of the window to the boarding countdown (ten
-// minutes before the printed boarding time) the names clear one by one (a
-// tick and the seat) and the next is called ("See agent"); then the list
-// holds its last state until the flight closes. Arithmetic on the clock, so
-// every paint agrees and nothing is stored. The card prints no time, so
-// nothing on it claims one.
+// minutes before the printed boarding time, so five minutes) the names clear
+// one by one (a tick and the seat) and the next is called ("See agent"); then
+// the list holds its last state until the flight closes. Arithmetic on the
+// clock, so every paint agrees and nothing is stored. The card prints no
+// time, so nothing on it claims one.
 //
 // v24028 — THE THIRD LIST, SEAT CHANGES (decided 2026-10-10): the passengers
 // the agent calls to move seat (a family seated apart, an aircraft swap). The
@@ -36478,7 +36649,7 @@ function _gateCardsDue(m, nowMs) {
 // on one card, the upgrade list holds 2 to 3 names and the standby list 3 to
 // 4.
 var GATE_SB_PRETEND_EVERYWHERE = true;
-var _GATE_SB_LEAD_MIN = { dom: 90, trans: 120, intl: 120 };
+var _GATE_SB_BEFORE_BOARD_MIN = 15;
 var _GATE_SB_COUNTDOWN_MS = 10 * 60000;
 // Each list's cabin: the airline's premium cabin (upgrades) and its main
 // cabin (standby). An airline with no premium cabin, or one not listed,
@@ -36538,14 +36709,16 @@ function _gateSbLists(m, nowMs) {
   var now = Number(nowMs) || Date.now();
   var dep = Number(m.depAt) || 0;
   if (!(dep > 0)) return null;
-  var lead = _GATE_SB_LEAD_MIN[m.region] || 60;
-  var from = dep - lead * 60000;
+  // the printed boarding time (a gate that printed none: 35 minutes before
+  // the departure, the board's usual boarding lead)
+  var board = Number(m.boardAt) || 0;
+  if (!(board > 0) || board > dep) board = dep - 35 * 60000;
+  var from = board - _GATE_SB_BEFORE_BOARD_MIN * 60000;
   if (now < from) return null;
   // closed: the printed departure has passed, while the gate's times hold
   if (m.firm && now >= Math.max(dep, Number(m.depEnd) || 0)) return null;
   // the clearing runs until the boarding countdown, then holds
-  var board = Number(m.boardAt) || 0;
-  var end = Math.max(from + 60000, (board > from ? board : dep - 35 * 60000) - _GATE_SB_COUNTDOWN_MS);
+  var end = Math.max(from + 60000, board - _GATE_SB_COUNTDOWN_MS);
   var p = Math.max(0, Math.min(0.999, (now - from) / (end - from)));
   var rnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|' + new Date(Number(m.schedAt) || dep).toISOString().slice(0, 10)));
   var air = String(m.airline || '').toUpperCase();

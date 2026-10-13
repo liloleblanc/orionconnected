@@ -27,11 +27,16 @@
 //   What is shown: the gate (its whole centre deck, its three information
 //   cards each through its own ?scene=, its standby lists (every row whole,
 //   with Later at this gate up and without; with eight names on the full
-//   panel, the documents kept; and painted while a face is still loading,
-//   fitted in their first frame), and its departure
+//   panel, the documents kept; painted while a face is still loading,
+//   fitted in their first frame; and their window, not in the deck a minute
+//   before 15 minutes ahead of boarding and the deck alone a minute after),
+//   and its departure
 //   delayed, cancelled, boarding (with the band under NOW BOARDING on a
 //   U.S., an international and a domestic flight, checked to be on the
-//   screen with every line fitted), on final call, closed, at
+//   screen with every line fitted; and the lists' column beside the sign,
+//   made short and read frame by frame as the takeover comes up, through a
+//   resize and while a face is still loading, never a row past its foot),
+//   on final call, closed, at
 //   Porter's pre-boarding, and moved to another gate; and the gate with no
 //   flight left), the departures board, the
 //   baggage board, the phone layout of the gate and of the departures board
@@ -207,7 +212,7 @@ async function browser(alarm) {
   const base = process.env.PROFILE_DIR || process.env.RUNNER_TEMP || require('node:os').tmpdir();
   fs.mkdirSync(base, { recursive: true });
   const prof = fs.mkdtempSync(path.join(base, 'prof-words-'));
-  const args = ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--user-data-dir=${prof}`, `--window-size=${W},${H}`,
+  const args = ['--headless=new', '--use-mock-keychain', '--password-store=basic', '--disable-gpu', '--hide-scrollbars', `--user-data-dir=${prof}`, `--window-size=${W},${H}`,
     '--remote-debugging-pipe', '--autoplay-policy=no-user-gesture-required', '--mute-audio', '--no-first-run', '--no-default-browser-check'];
   // CI runners give Chrome a small /dev/shm; without this a long run can lose
   // its renderer, which reads as 'the browser went away'
@@ -547,6 +552,110 @@ const COL_CHECK = `(function () {
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
 })()`;
+// 2026-10-12 — and the column is fitted in the frame it paints, every frame:
+// its scale used to come down 0.04 a frame, each step painted with its last
+// rows cut off (1-5 frames at the switch into the countdown); it waited for
+// the board's fonts (cut off for a whole load after a reload, 3-18 s); and a
+// resize sent it back to its full size for a frame. Here the column is made
+// short (COL_SHORT: its box is given the height that holds 0.8 of its lists
+// at their full size, so its scale has to come down in every language set),
+// every frame is read after its layout and before its paint (COL_REC: a
+// ResizeObserver's second round, after any of the page's own), and the
+// column is painted afresh as the takeover comes up (COL_REPAINT), through a
+// resize, and while a face is still loading (HELD_FACE): no frame may show a
+// row past the column's foot, and the resize may not move its scale.
+const COL_SHORT = `(function () {
+  try {
+    var col = document.querySelector('.g8-wrap.g8-sbcol-on .g8-sbcol'), card = col && col.querySelector('.gcard-col');
+    if (!card) return 'the lists are not beside the sign';
+    var k = parseFloat(card.style.getPropertyValue('--gc-k') || '1') || 1;
+    var sbl = card.querySelector('.gc-sbl'), last = sbl && sbl.lastElementChild;
+    if (!last) return 'the column has no list';
+    var top = sbl.getBoundingClientRect().top, r = card.getBoundingClientRect();
+    var room = r.bottom - (parseFloat(getComputedStyle(card).paddingBottom) || 0) - top;
+    var lists = last.getBoundingClientRect().bottom - top;
+    var h = Math.round(col.offsetHeight - room + 0.8 * lists / k);
+    var st = document.getElementById('__wordsColShort');
+    if (!st) { st = document.createElement('style'); st.id = '__wordsColShort'; document.head.appendChild(st); }
+    st.textContent = '.g8-sbcol { max-height: ' + h + 'px !important; }';
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const COL_UNSHORT = `(function () { try { var st = document.getElementById('__wordsColShort'); if (st) st.remove(); if (window.__wordsColRec) window.__wordsColRec.stop(); } catch (e) {} })()`;
+const COL_REC = `(function () {
+  try {
+    if (window.__wordsColRec) window.__wordsColRec.stop();
+    var R = window.__wordsColRec = { frames: 0, seen: 0, bad: [], ks: [], on: true };
+    var a = document.createElement('div'), top = document.createElement('div'), d = top;
+    a.style.cssText = 'position:fixed;left:-40px;top:-40px;width:1px;height:1px;opacity:0;pointer-events:none';
+    top.style.cssText = 'position:fixed;left:-80px;top:-80px;width:4px;height:4px;opacity:0;pointer-events:none;overflow:hidden';
+    for (var i = 0; i < 60; i++) { var c = document.createElement('div'); c.style.cssText = 'width:3px;height:3px'; d.appendChild(c); d = c; }
+    document.documentElement.appendChild(a); document.documentElement.appendChild(top);
+    var read = function () {
+      R.frames++;
+      var card = document.querySelector('.g8-sbcol .gcard-col');
+      if (!card) return;
+      var r = card.getBoundingClientRect();
+      if (!(r.width > 50 && r.height > 50)) return;
+      var sbl = card.querySelector('.gc-sbl'), last = sbl && sbl.lastElementChild;
+      if (!last) return;
+      R.seen++;
+      var k = card.style.getPropertyValue('--gc-k') || '1';
+      if (R.ks[R.ks.length - 1] !== k) R.ks.push(k);
+      var past = last.getBoundingClientRect().bottom - (r.bottom - (parseFloat(getComputedStyle(card).paddingBottom) || 0));
+      if (past > 1 && R.bad.length < 20) R.bad.push(Math.round(past) + 'px at scale ' + k);
+    };
+    // the shallow box changes every frame; its callback changes a box deeper
+    // than any the page watches, delivered in the next round, after the
+    // page's own observers: the frame is read there
+    var flip = false, dflip = false, first = true;
+    var ro1 = new ResizeObserver(function () { d.style.width = (dflip = !dflip) ? '2px' : '1px'; });
+    var ro2 = new ResizeObserver(function () { if (first) { first = false; return; } read(); });
+    ro1.observe(a); ro2.observe(d);
+    (function loop() { requestAnimationFrame(function () { if (!R.on) return; a.style.width = (flip = !flip) ? '2px' : '1px'; loop(); }); })();
+    R.stop = function () { R.on = false; ro1.disconnect(); ro2.disconnect(); a.remove(); top.remove(); };
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const COL_REC_READ = (ms, still) => `new Promise(function (res) {
+  setTimeout(function () {
+    var R = window.__wordsColRec;
+    if (!R) return res('the frames were not read');
+    R.stop();
+    if (R.seen < 8) return res('the column was on screen for ' + R.seen + ' frames of ' + R.frames + ' read');
+    if (R.bad.length) return res(R.bad.length + ' frames painted the column with its last row past its foot (' + R.bad.slice(0, 4).join(', ') + '; scales ' + R.ks.join(' > ') + ')');
+    if (${still ? 'true' : 'false'} && R.ks.length > 1) return res('its scale moved: ' + R.ks.join(' > '));
+    res('ok');
+  }, ${Number(ms)});
+})`;
+// the takeover painted afresh, as when the countdown or NOW BOARDING comes up
+const COL_REPAINT = `(function () {
+  try {
+    window._lastGateKey = ''; dedicatedRenderKey = '';
+    renderDedicatedScreen();
+    var card = document.querySelector('.g8-sbcol .gcard-col');
+    if (!card) return 'the lists are not beside the sign';
+    if (card.hasAttribute('data-sb-k') || card.style.getPropertyValue('--gc-k')) return 'the column was not painted afresh';
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const COL_RESIZE = `(function () { try { window.dispatchEvent(new Event('resize')); return 'ok'; } catch (e) { return 'error ' + e.message; } })()`;
+// a face held loading (as SB_LOADING), then the takeover painted afresh
+const COL_HOLD = `(function () {
+  try {
+    var ff = new FontFace('WordsHeldFace', 'url(/__words/held-face.woff2)');
+    document.fonts.add(ff);
+    ff.load().catch(function () {});
+    window.__wordsHeldFace = ff;
+    return document.fonts.status === 'loading' ? 'ok' : 'a face held loading did not hold the fonts loading (' + document.fonts.status + ')';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const COL_LOADED_FIT = `(function () {
+  var card = document.querySelector('.g8-sbcol .gcard-col');
+  if (!card) return 'the lists are not beside the sign';
+  if (document.fonts.status !== 'loading') return 'the fonts finished loading before the column was read';
+  return /\\|f\\d+$/.test(card.getAttribute('data-sb-fit') || '') ? 'ok' : 'the column was not measured while the fonts were loading (' + (card.getAttribute('data-sb-fit') || 'unfitted') + ')';
+})()`;
 const BAND_CHECK = (want, close) => `(function (want, close) {
   try {
     var band = document.querySelector('.g8-board.active .g8-band, .g8-final.active .g8-band');
@@ -585,11 +694,22 @@ const CARD_PREP = `(function () {
     var o = JSON.parse(window.__wsOrig);
     Object.keys(o).forEach(function (k) { f[k] = o[k]; });
     var tz = (AP[(document.getElementById('apSel') || {}).value] || AP.YQM || {}).tz;
-    f._sortTs = Date.now() + 50 * 60000;
-    f.time = new Date(f._sortTs).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    var at = function (ts) { f._sortTs = ts; f.time = new Date(ts).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
+    at(Date.now() + 50 * 60000);
     f.upd = null; f._revTs = null; f.status = 'scheduled';
     try { setGateHistory({}); } catch (e) {}
     renderDedicatedScreen();
+    // 2026-10-13 — the standby lists come up 15 minutes before the printed
+    // boarding time and go beside the countdown 10 minutes before it: the
+    // boarding time is put 14 minutes on (the departure the gate's own lead
+    // after it, read back from the paint), so every card is due in the
+    // centre for the next four minutes
+    var m = window._gateCardsModel;
+    if (!(m && m.depAt > 0 && m.boardAt > 0)) return 'the gate printed no boarding time';
+    at(Date.now() + 14 * 60000 + (m.depAt - m.boardAt));
+    renderDedicatedScreen();
+    var due = _gateCardsDue(window._gateCardsModel, Date.now());
+    if (!due.sbcard) return 'the standby lists are not due 14 minutes before boarding';
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
 })()`;
@@ -624,6 +744,37 @@ const CARD_CHECK = (t) => `(function (t) {
   } catch (e) { return 'error ' + e.message; }
 })(${jsWord(t)})`;
 const CARD_RESET = `(function () { try { var u = new URL(location.href); u.searchParams.delete('scene'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`;
+// 2026-10-13 — the standby lists' window, on the board itself: they come up
+// 15 minutes before the printed boarding time (the 90 or 120 minutes before
+// the departure they had was far too early). A minute before it opens the
+// centre deck turns as it always has, the lists not in it; a minute after,
+// the deck is the lists alone. The gate's own boarding lead is read back
+// from its paint (the departure minus the boarding time it printed).
+const SB_WINDOW = `(function () {
+  try {
+    var f = window._gateCurrentFlight;
+    if (!f) return 'no flight on the gate';
+    if (!window.__wsOrig) window.__wsOrig = JSON.stringify(f);
+    var o = JSON.parse(window.__wsOrig);
+    Object.keys(o).forEach(function (k) { f[k] = o[k]; });
+    var u = new URL(location.href); u.searchParams.delete('scene'); history.replaceState(null, '', u.toString());
+    var tz = (AP[(document.getElementById('apSel') || {}).value] || AP.YQM || {}).tz;
+    var at = function (ts) { f._sortTs = ts; f.time = new Date(ts).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); renderDedicatedScreen(); };
+    f.upd = null; f._revTs = null; f.status = 'scheduled';
+    try { setGateHistory({}); } catch (e) {}
+    at(Date.now() + 50 * 60000);
+    var m = window._gateCardsModel;
+    if (!(m && m.depAt > 0 && m.boardAt > 0)) return 'the gate printed no boarding time';
+    var lead = m.depAt - m.boardAt;
+    var deck = function (mins) { at(Date.now() + mins * 60000 + lead); return _buildGateAdSlideList().map(function (d) { return (d && d.type) || ''; }); };
+    var early = deck(16);
+    if (early.indexOf('sbcard') >= 0) return 'the lists are in the deck 16 minutes before boarding (' + early.join(',') + ')';
+    if (early.length < 2) return 'the deck does not turn 16 minutes before boarding (' + early.join(',') + ')';
+    var open = deck(14);
+    if (open.join(',') !== 'sbcard') return 'the deck is not the lists alone 14 minutes before boarding (' + open.join(',') + ')';
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
 // 2026-10-12 — and the standby lists in the centre never run into
 // themselves (_gateSbFit), measured on the screen: every row at least as
 // tall as its pieces (its ring, its name, its status word, its seat) and
@@ -1014,6 +1165,8 @@ async function runChunk(port, name, spec, sets) {
       }
       // the centre deck's three cards, each through its own ?scene= (v24012)
       if (spec.cards) {
+        const win = await evalv(SB_WINDOW);
+        if (win !== 'ok') problems.push(`the standby lists' window: ${win}`);
         const prep = await evalv(CARD_PREP);
         if (prep !== 'ok') problems.push(`the centre cards: ${prep}`);
         else {
@@ -1084,6 +1237,33 @@ async function runChunk(port, name, spec, sets) {
             if (b !== 'ok') problems.push(`state ${st}: ${b}`);
             const lc = await evalv(COL_CHECK);
             if (lc !== 'ok') problems.push(`state ${st}: ${lc}`);
+          }
+          // the column under NOW BOARDING, short, read frame by frame: as the
+          // takeover comes up, through a resize, and while a face loads
+          if (st === 'boarding') {
+            const cs = await evalv(COL_SHORT);
+            if (cs !== 'ok') problems.push(`state ${st}, the column made short: ${cs}`);
+            else {
+              const steps = [
+                ['as the takeover comes up', [COL_REC, COL_REPAINT], COL_REC_READ(1000, false)],
+                ['through a resize', [COL_REC, COL_RESIZE], COL_REC_READ(700, true)],
+                ['while a face is still loading', [COL_HOLD, COL_REC, COL_REPAINT], COL_REC_READ(600, false)]
+              ];
+              for (const [what, run, readBack] of steps) {
+                let r = 'ok';
+                for (const x of run) { if (r === 'ok') r = await evalv(x); }
+                if (r === 'ok') r = await evalv(readBack, 10000);
+                if (r === 'ok' && what === 'while a face is still loading') r = await evalv(COL_LOADED_FIT);
+                if (r !== 'ok') problems.push(`state ${st}, the column made short, ${what}: ${r}`);
+                else {
+                  const c3 = await evalv(COL_CHECK);
+                  if (c3 !== 'ok') problems.push(`state ${st}, the column made short, ${what}: ${c3}`);
+                }
+              }
+              const rel = await evalv(SB_RELEASE, 30000);
+              if (rel !== 'loaded') problems.push(`state ${st}: the held face did not let the fonts finish (${rel})`);
+            }
+            await evalv(COL_UNSHORT);
           }
         }
         await evalv(GATE_RESET);

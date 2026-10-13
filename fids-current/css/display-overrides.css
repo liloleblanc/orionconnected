@@ -24737,8 +24737,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
        (two whole lines where its pair is long, the row growing to hold
        them), so a name and its word keep their size. Where the longest
        lists in a long pair still run past the column's foot, the card's
-       scale (--gc-k) steps down until every row is inside
-       (_gateSbColFit). The
+       scale (--gc-k) comes down to the largest that holds every row,
+       solved in the frame it paints (_gateSbColFit). The
        sign's own fitter keeps every pair on one line in the narrower half.
        A portrait screen puts the column under the sign instead.
    Static: nothing here moves. */

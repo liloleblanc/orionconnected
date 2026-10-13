@@ -17,10 +17,12 @@
 // Pinned here: the cards only before boarding, the gate-closes window, the
 // documents from _gateDocsVariant, status words only on evidence and no
 // invented times, the words in all nine languages, the emblems, and the
-// day/night classes the look switches on. And (2026-10-12) the lists' window:
-// from 90 minutes before a domestic departure (120 abroad) without a break
-// until the flight closes, the centre deck the list alone, a column beside
-// the boarding signs, never in the way of the countdown or the sign.
+// day/night classes the look switches on. And the lists' window (2026-10-13,
+// replacing 2026-10-12's 90 minutes before a domestic departure and 120
+// abroad): from 15 minutes before the printed boarding time without a break
+// until the flight closes, the centre deck the list alone until the
+// countdown, then a column beside the boarding signs, never in the way of
+// the countdown or the sign; before that the deck turns as it always has.
 //
 // Everything below runs the shipped code: the functions are lifted out of
 // fids-core.js by brace matching.
@@ -95,7 +97,7 @@ function engine(langs) {
     line(/^var _GATE_CARD_DWELL_MS = [^;]+;/m),
     line(/^var _GATE_CARD_CLOSE_WINDOW_MS = [^;]+;/m),
     line(/^var GATE_SB_PRETEND_EVERYWHERE = [^;]+;/m),
-    block('var _GATE_SB_LEAD_MIN = {'),
+    line(/^var _GATE_SB_BEFORE_BOARD_MIN = [^;]+;/m),
     line(/^var _GATE_SB_COUNTDOWN_MS = [^;]+;/m),
     block('var GATE_SB_CABINS = {'),
     block('var GATE_SB_NAME_FMT = {'),
@@ -460,81 +462,113 @@ function engineOff() {
 test('the lists show on every flight (decided 2026-10-10); with the switch off, on pretend flights only', () => {
   assert.match(CORE, /^var GATE_SB_PRETEND_EVERYWHERE = true;/m, 'shown on every flight');
   const E = engine();
-  // boarding at DEP-35, so a domestic list runs DEP-90 .. DEP-35
+  // boarding at DEP-35, so the list runs from DEP-50 to the departure
   const real = E._gateCardsBuild(facts());
   assert.equal(real.pretend, true);
-  assert.equal(E._gateCardsDue(real, DEP - 60 * MIN).sbcard, true);
+  assert.equal(E._gateCardsDue(real, DEP - 48 * MIN).sbcard, true);
   const O = engineOff();
   const realOff = O._gateCardsBuild(facts());
   assert.equal(realOff.pretend, false);
-  assert.equal(O._gateCardsDue(realOff, DEP - 60 * MIN).sbcard, false, 'switch off: a live flight carries no made-up names');
-  assert.equal(O._gateCardHtml('sbcard', realOff, DEP - 60 * MIN, null), '');
+  assert.equal(O._gateCardsDue(realOff, DEP - 48 * MIN).sbcard, false, 'switch off: a live flight carries no made-up names');
+  assert.equal(O._gateCardHtml('sbcard', realOff, DEP - 48 * MIN, null), '');
   const fake = O._gateCardsBuild(facts({ cf: testRow() }));
   assert.equal(fake.pretend, true, 'a test flight (✚ ADD FLIGHT) is pretend');
-  assert.equal(O._gateCardsDue(fake, DEP - 60 * MIN).sbcard, true);
+  assert.equal(O._gateCardsDue(fake, DEP - 48 * MIN).sbcard, true);
 });
 
-test('the lists run from 90 minutes before a domestic departure (120 abroad) without a break until the flight closes', () => {
+test('the lists come up 15 minutes before the printed boarding time, and stay without a break until the flight closes', () => {
+  // 2026-10-13: 90 minutes before a domestic departure (120 abroad) was far
+  // too early; nobody waits at a gate that long, and the lists are called a
+  // quarter of an hour before boarding
+  assert.equal(line(/^var _GATE_SB_BEFORE_BOARD_MIN = [^;]+;/m), 'var _GATE_SB_BEFORE_BOARD_MIN = 15;');
+  assert.doesNotMatch(CORE, /_GATE_SB_LEAD_MIN/, 'the minutes before the departure are gone');
   const E = engine();
+  // the gate prints boarding 35 minutes before the departure (facts)
+  const BOARD = DEP - 35 * MIN;
   const dom = E._gateCardsBuild(facts({ cf: testRow() }));
-  assert.equal(dom.region, 'dom');
-  const at = (m, mins) => E._gateCardsDue(m, DEP - mins * MIN).sbcard;
-  // the start: 90 minutes before the departure the gate prints, not a
-  // millisecond earlier
-  assert.equal(E._gateCardsDue(dom, DEP - 90 * MIN - 1).sbcard, false, 'not before the window');
-  assert.equal(at(dom, 91), false);
-  assert.equal(at(dom, 90), true);
-  // counted from the departure the gate prints (the airport's revised time)
+  assert.equal(dom.boardAt, BOARD);
+  // minutes before the printed boarding time (negative: after it)
+  const at = (m, mins) => E._gateCardsDue(m, BOARD - mins * MIN).sbcard;
+  // the start: 15 minutes before boarding, not a millisecond earlier
+  assert.equal(E._gateCardsDue(dom, BOARD - 15 * MIN - 1).sbcard, false, 'not before the window');
+  assert.equal(at(dom, 16), false);
+  assert.equal(at(dom, 15), true);
+  // not at the old window's start, nor anywhere in its first 75 minutes
+  for (const t of [120, 90, 75, 60, 51]) assert.equal(E._gateCardsDue(dom, DEP - t * MIN).sbcard, false, 'DEP-' + t);
+  // until then the centre deck turns as it always has: the other cards are
+  // due as before, the list is not, and the deck is the whole deck; from
+  // boarding minus 15 it is the list alone
+  const d20 = E._gateCardsDue(dom, BOARD - 20 * MIN);
+  assert.deepEqual([d20.sbcard, d20.ovcard, d20.docscard, d20.closecard], [false, true, true, true]);
+  const deckAt = (T) => new Function('window', 'document', 'location', 'getGateAds', '_welcomeCardData', '_gateCardsDue', '_gateCardsLive',
+    'return (' + fn('_buildGateAdSlideList') + ')();')(
+    { FIDS_MEDIA: null, _gateCurrentAirline: 'AC' },
+    { documentElement: { classList: { contains: () => false } } },
+    { search: '' },
+    () => [{ headline: 'one' }, { headline: 'two' }, { headline: 'three' }],
+    (c) => ({ adLayout: 'welcome-card', code: c }),
+    (m) => E._gateCardsDue(m, T),
+    () => dom).map((d) => d.type);
+  const full = deckAt(BOARD - 16 * MIN);
+  assert.ok(full.length >= 5 && !full.includes('sbcard') && full.includes('ad') && full.includes('ovcard') && full.includes('docscard'), 'the whole deck at boarding minus 16: ' + full.join(','));
+  assert.deepEqual(deckAt(BOARD - 15 * MIN), ['sbcard'], 'the list alone from boarding minus 15');
+  // counted from the boarding time the gate prints, which follows the
+  // airport's revised departure
   const rev = E._gateCardsBuild(facts({ cf: testRow({ status: 'delayed', upd: '19:00', _revTs: DEP + 45 * MIN }), stKey: 'delayed', depTs: DEP + 45 * MIN, boardTs: DEP + 10 * MIN }));
-  assert.equal(E._gateCardsDue(rev, DEP + 45 * MIN - 91 * MIN).sbcard, false);
-  assert.equal(E._gateCardsDue(rev, DEP + 45 * MIN - 90 * MIN).sbcard, true);
-  // no break: due at every minute from the start to the departure, in the
-  // idle layout, under the countdown (DEP-45 .. DEP-35, idle false), under
+  assert.equal(E._gateCardsDue(rev, DEP + 10 * MIN - 16 * MIN).sbcard, false);
+  assert.equal(E._gateCardsDue(rev, DEP + 10 * MIN - 15 * MIN).sbcard, true);
+  // whatever the route and however long before the departure the airline
+  // boards: from the boarding time, never from the departure
+  for (const loc of ['YYZ', 'BOS', 'LHR']) {
+    for (const lead of [25, 35, 45, 60]) {
+      const m = E._gateCardsBuild(facts({ cf: testRow({ _locIata: loc }), code: loc, boardTs: DEP - lead * MIN }));
+      assert.equal(E._gateCardsDue(m, DEP - (lead + 15) * MIN - 1).sbcard, false, loc + ' boarding ' + lead + ' min before the departure');
+      assert.equal(E._gateCardsDue(m, DEP - (lead + 15) * MIN).sbcard, true, loc + ' boarding ' + lead + ' min before the departure');
+    }
+  }
+  // a gate that printed no boarding time: 35 minutes before the departure
+  const nb = E._gateCardsBuild(facts({ cf: testRow(), boardTs: 0 }));
+  assert.equal(E._gateCardsDue(nb, DEP - 51 * MIN).sbcard, false);
+  assert.equal(E._gateCardsDue(nb, DEP - 50 * MIN).sbcard, true);
+  // no break: in the centre from boarding minus 15 to the countdown (idle),
+  // beside the countdown (boarding minus 10 to boarding, idle false), beside
   // NOW BOARDING (the airport's word, or the schedule's door word at an
-  // airport whose feed never says it) and under FINAL CALL
-  for (let t = 90; t >= 1; t--) assert.equal(at(dom, t), true, 'idle, DEP-' + t);
+  // airport whose feed never says it) and FINAL CALL until the departure
+  for (let t = 15; t >= 11; t--) assert.equal(at(dom, t), true, 'idle, boarding-' + t);
   const cd = E._gateCardsBuild(facts({ cf: testRow(), idle: false }));
-  for (let t = 45; t >= 36; t--) assert.equal(at(cd, t), true, 'countdown, DEP-' + t);
+  for (let t = 10; t >= 1; t--) assert.equal(at(cd, t), true, 'countdown, boarding-' + t);
   for (const w of ['boarding', 'final', 'finalcall']) {
     const sg = E._gateCardsBuild(facts({ cf: testRow(), idle: false, stKey: w }));
-    for (let t = 35; t >= 1; t--) assert.equal(at(sg, t), true, w + ', DEP-' + t);
+    for (let t = 0; t >= -34; t--) assert.equal(at(sg, t), true, w + ', boarding+' + -t);
   }
   // the close: the printed departure passed while the times are firm ...
   assert.equal(E._gateCardsDue(dom, DEP).sbcard, false, 'gone at the departure');
-  assert.equal(at(dom, -5), false);
+  assert.equal(E._gateCardsDue(dom, DEP + 5 * MIN).sbcard, false);
   const sgB = E._gateCardsBuild(facts({ cf: testRow(), idle: false, stKey: 'boarding' }));
+  assert.equal(E._gateCardsDue(sgB, DEP - 1).sbcard, true);
   assert.equal(E._gateCardsDue(sgB, DEP).sbcard, false, 'under NOW BOARDING too');
   // ... on a sign kept through a delay, the new departure the gate prints
   const kept = E._gateCardsBuild(facts({ cf: testRow(), idle: false, stKey: 'boarding', depEnd: DEP + 30 * MIN }));
-  assert.equal(at(kept, -10), true, 'boarding goes on to the new time');
-  assert.equal(at(kept, -30), false);
+  assert.equal(E._gateCardsDue(kept, DEP + 10 * MIN).sbcard, true, 'boarding goes on to the new time');
+  assert.equal(E._gateCardsDue(kept, DEP + 30 * MIN).sbcard, false);
   // ... or the flight's own word (the model is then null)
   for (const w of ['gateclosed', 'departed', 'cancelled', 'diverted']) {
-    assert.equal(E._gateCardsDue(E._gateCardsBuild(facts({ cf: testRow({ status: w }), stKey: w })), DEP - 20 * MIN).sbcard, false, w);
+    assert.equal(E._gateCardsDue(E._gateCardsBuild(facts({ cf: testRow({ status: w }), stKey: w })), BOARD - 5 * MIN).sbcard, false, w);
   }
   // not firm: a Delayed with no new time neither waits for one nor closes on
   // the clock (the flight's own hold on the gate bounds it)
   const dl = E._gateCardsBuild(facts({ cf: testRow({ status: 'delayed' }), stKey: 'delayed' }));
   assert.equal(dl.firm, false);
-  assert.equal(at(dl, 91), false);
-  assert.equal(at(dl, 60), true);
-  assert.equal(at(dl, 0), true, 'not closed by a departure that will not hold');
-  assert.equal(at(dl, -30), true);
+  assert.equal(at(dl, 16), false);
+  assert.equal(at(dl, 12), true);
+  assert.equal(E._gateCardsDue(dl, DEP).sbcard, true, 'not closed by a departure that will not hold');
+  assert.equal(E._gateCardsDue(dl, DEP + 30 * MIN).sbcard, true);
   // "Updated boarding time to follow" coming up mid-window takes nothing down,
   // and redraws nothing: the same names in the same states
   const late = E._gateCardsBuild(facts({ cf: testRow(), inbLate: true }));
-  assert.equal(at(late, 60), true);
+  assert.equal(at(late, 12), true);
   const names = (L) => [L.upgrade, L.standby, L.seats].map((x) => x && x.rows.map((r) => r.name + r.st).join(','));
-  assert.deepEqual(names(E._gateSbLists(late, DEP - 60 * MIN)), names(E._gateSbLists(dom, DEP - 60 * MIN)));
-  // abroad: 120 minutes, transborder and international
-  const intl = E._gateCardsBuild(facts({ cf: testRow({ _locIata: 'LHR' }), code: 'LHR', city: 'London' }));
-  assert.equal(intl.region, 'intl');
-  assert.equal(at(intl, 121), false);
-  assert.equal(at(intl, 120), true);
-  const trans = E._gateCardsBuild(facts({ cf: testRow({ _locIata: 'BOS' }), code: 'BOS', city: 'Boston' }));
-  assert.equal(trans.region, 'trans');
-  assert.equal(at(trans, 121), false);
-  assert.equal(at(trans, 120), true);
+  assert.deepEqual(names(E._gateSbLists(late, BOARD - 12 * MIN)), names(E._gateSbLists(dom, BOARD - 12 * MIN)));
 });
 
 test('the names clear until the boarding countdown, then the list holds its last state until the flight closes', () => {
@@ -542,8 +576,12 @@ test('the names clear until the boarding countdown, then the list holds its last
   const m = E._gateCardsBuild(facts({ cf: testRow() }));
   const atCd = E._gateSbLists(m, DEP - 45 * MIN);
   for (const t of [44, 40, 35, 20, 5, 1]) assert.deepEqual(E._gateSbLists(m, DEP - t * MIN), atCd, 'DEP-' + t);
-  // the countdown is ten minutes before the printed boarding time
-  assert.notDeepEqual(E._gateSbLists(m, DEP - 90 * MIN), atCd);
+  // the countdown is ten minutes before the printed boarding time; the
+  // window opened five minutes before it, the names as they were then
+  const atOpen = E._gateSbLists(m, DEP - 50 * MIN);
+  assert.ok(atOpen, 'up at boarding minus 15');
+  assert.notDeepEqual(atOpen, atCd);
+  assert.equal(E._gateSbLists(m, DEP - 51 * MIN), null);
 });
 
 test('while the lists are up the centre deck is the list alone; the full deck comes back when the flight closes; ?scene= still reaches every scene', () => {
@@ -631,7 +669,8 @@ test('under the countdown, NOW BOARDING and FINAL CALL the list is a column besi
   assert.doesNotMatch(col, /gc-hd|gc-sbfoot|gc-ft/);
   for (const k of ['sbUpgradeList', 'sbStandbyList', 'sbSeatList']) assert.ok(textOf(col).includes(BS.bs(k, 'en')), k);
   assert.equal(E._gateSbColHtml(m, DEP + MIN), '', 'gone once the flight has closed');
-  assert.equal(E._gateSbColHtml(E._gateCardsBuild(facts({ cf: testRow(), idle: false })), DEP - 91 * MIN), '', 'not before the window');
+  assert.equal(E._gateSbColHtml(E._gateCardsBuild(facts({ cf: testRow(), idle: false })), DEP - 51 * MIN), '', 'not before the window');
+  assert.ok(E._gateSbColHtml(E._gateCardsBuild(facts({ cf: testRow(), idle: false })), DEP - 45 * MIN), 'beside the countdown from its start');
   // the layout: the banner, the tiles and the strip keep the width; the
   // band and the sign (or the countdown) in the first column, the list in
   // the second, so neither covers the other
@@ -665,13 +704,19 @@ test('under the countdown, NOW BOARDING and FINAL CALL the list is a column besi
   assert.ok(colX < CORE.indexOf("{ sel: '.gcard .gc-sbtt, .gcard .gc-sbcab'") && colX < CORE.indexOf("{ sel: '.gcard .gc-sbx'"), 'ahead of the lists\' own');
   assert.match(CORE, /^var _GC_SEP_HOLD = '\\u00a0<span class="gc-sep fx-brk">\|<\/span> ';/m);
   assert.equal((fn('_gateCardHtml').match(/_GC_SEP_HOLD/g) || []).length, 4, 'headings, cabins and both status words');
-  // and every row inside the column: the card's scale steps down after the
-  // fitting pass until the last list ends above the card's foot
+  // and every row inside the column: after the fitting pass the card's scale
+  // is solved, in that frame, for the largest that holds every row (run
+  // against a laid-out column in the tests after this one)
   const fit = fn('_gateSbColFit');
-  assert.match(fit, /if \(lb > foot \+ 0\.5\) \{\s*card\.setAttribute\('data-sb-max', String\(Math\.min\(max, k\)\)\);\s*nk = Math\.max\(0\.62, Math\.round\(\(k - 0\.04\) \* 100\) \/ 100\);/);
-  assert.match(fit, /if \(up < max - 0\.005\) nk = up;/, 'back up, never to a scale that ran over');
-  assert.match(fit, /document\.fonts\.status !== 'loaded'\) return;/, 'not before the fonts land');
+  assert.match(fit, /try \{ _gateSbColSolve\(card\); \} catch \(eS\) \{\}/);
+  assert.doesNotMatch(fit, /status !== 'loaded'\) return;/, 'never held back while the fonts load');
+  assert.doesNotMatch(fit + fn('_gateSbColSolve'), /0\.04|data-sb-max/, 'never stepped a pass at a time');
   assert.match(fn('_fidsSchedulePairPass'), /_fidsPairSeparators\(document\);\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*try \{ _gateSbColFit\(\); \} catch \(eSb\) \{\}/);
+  // a resize keeps the column's scale for the pass to solve in that frame
+  const rz = CORE.slice(CORE.indexOf("window.addEventListener('resize', function () {\n      // the sign pairs' stored base size"));
+  const rzBody = braceFrom(rz, 0, 'the pairs\' resize handler');
+  assert.match(rzBody, /data-g8-base/);
+  assert.doesNotMatch(rzBody, /gcard-col|--gc-k|data-sb-k|data-sb-max/, 'the column is not sent back to its full size for a frame');
   assert.ok(CSS.includes('--gc-u: calc(min(.84vh, .47vw) * var(--gc-k, 1));'));
   // the clock opens and closes the column with nothing in the feed changing
   const clock = fn('updateDedicatedTimeOnly');
@@ -679,11 +724,55 @@ test('under the countdown, NOW BOARDING and FINAL CALL the list is a column besi
   assert.match(clock, /requestGateRebuild\(\);/);
 });
 
+test('the countdown opens and closes on its minute, so the lists move beside it on time with nothing in the feed changing', () => {
+  // 2026-10-13: the gate's keys do not carry the countdown, so on a quiet
+  // feed it (and the lists' move into the column beside it) waited for the
+  // next change in the feed; on the recorded feeds it never came
+  const uxg = fn('uxgGateHtml');
+  assert.match(uxg, /var showCountdown = _gateSign\.showCountdown;\s*(\/\/[^\n]*\n\s*)*try \{ window\._gatePaintedCd = \{ k: _gateRowKey\(currentFlight\), cd: !!showCountdown, dep: _signDepTs \|\| 0, st: stKey, lead: _boardLeadShown, inb: !!inbDelayed \}; \} catch \(ePc\) \{\}/);
+  // the clock's check, run as written, a tick a second, the paint it asks
+  // for standing in (it publishes the phase it painted)
+  const clock = fn('updateDedicatedTimeOnly');
+  const a = clock.indexOf('const _pc = window._gatePaintedCd;');
+  const b = clock.indexOf('} catch (eCd) {}', a);
+  assert.ok(a > 0 && b > a, 'the clock checks the painted countdown');
+  const tick = new Function('window', 'cf', '_nowMs3', '_gateRowKey', '_gateSignPhase', 'requestGateRebuild', 'try {\n' + clock.slice(a, b) + '} catch (eCd) {}');
+  const phase = new Function('return (' + fn('_gateSignPhase') + ');')();
+  const cf = { flight: 'AC1987', status: 'scheduled', _sortTs: DEP };
+  const LEAD = 35;
+  const win = { _gatePaintedCd: null };
+  const paint = (now) => {
+    const ph = phase('scheduled', Math.round((DEP - now) / 60000), LEAD, cf, false);
+    win._gatePaintedCd = { k: 'AC1987', cd: !!ph.showCountdown, dep: DEP, st: 'scheduled', lead: LEAD, inb: false };
+    return ph.showCountdown;
+  };
+  paint(DEP - 50 * MIN);
+  const asked = [];
+  for (let t = DEP - 50 * MIN; t <= DEP - 30 * MIN; t += 1000) {
+    let ask = false;
+    tick(win, cf, t, () => 'AC1987', phase, () => { ask = true; });
+    if (ask) asked.push([(DEP - t) / 1000, paint(t + 400)]);
+  }
+  // opened ten minutes before boarding, closed at boarding (each on the
+  // second a paint then would decide it: 45:29 and 35:29 before the
+  // departure, its minutes rounded), each asked for once
+  assert.deepEqual(asked, [[45 * 60 + 29, true], [35 * 60 + 29, false]]);
+  assert.equal(phase('scheduled', Math.round(2730 / 60), LEAD, cf, false).showCountdown, false, 'a second earlier: not yet');
+  // another flight's paint is not this one's
+  win._gatePaintedCd = { k: 'AC1985', cd: false, dep: DEP, st: 'scheduled', lead: LEAD, inb: false };
+  let ask2 = false;
+  tick(win, cf, DEP - 40 * MIN, () => 'AC1987', phase, () => { ask2 = true; });
+  assert.equal(ask2, false);
+  // and with the countdown open the lists are due, so the column comes with it
+  const E = engine();
+  assert.equal(E._gateCardsDue(E._gateCardsBuild(facts({ cf: testRow(), idle: false })), DEP - 45.5 * MIN).sbcard, true);
+});
+
 test('in the centre the list carries the documents and the close time at its foot, the band\'s own words', () => {
   for (const pair of [['en', 'fr'], ['fr', 'en'], ['en', 'ja'], ['en', 'ar']]) {
     const E = engine(pair);
     const m = E._gateCardsBuild(facts({ cf: testRow() }));
-    const html = E._gateCardHtml('sbcard', m, DEP - 60 * MIN, null);
+    const html = E._gateCardHtml('sbcard', m, DEP - 48 * MIN, null);
     assert.match(html, /<div class="gc-sbfoot gc-zone fids-dn-fade" data-doc="D">/);
     const foot = html.slice(html.indexOf('gc-sbfoot'));
     const txt = textOf(foot);
@@ -702,11 +791,11 @@ test('in the centre the list carries the documents and the close time at its foo
   assert.match(late, /gc-sbfoot/);
   assert.doesNotMatch(late, /gc-sbfc/);
   // an airline with no close time: the documents alone
-  const noClose = E._gateCardHtml('sbcard', E._gateCardsBuild(facts({ cf: testRow(), close: null })), DEP - 60 * MIN, null);
+  const noClose = E._gateCardHtml('sbcard', E._gateCardsBuild(facts({ cf: testRow(), close: null })), DEP - 48 * MIN, null);
   assert.doesNotMatch(noClose, /gc-sbfc/);
   // an international flight: both documents, the variant the band shows
   const intl = E._gateCardsBuild(facts({ cf: testRow({ _locIata: 'LHR' }), code: 'LHR', city: 'London' }));
-  assert.match(E._gateCardHtml('sbcard', intl, DEP - 100 * MIN, null), new RegExp('data-doc="' + intl.docs + '"'));
+  assert.match(E._gateCardHtml('sbcard', intl, DEP - 48 * MIN, null), new RegExp('data-doc="' + intl.docs + '"'));
   // every phrase whole: the shared fitter holds the foot's lines
   assert.ok(CORE.includes("{ sel: '.gcard .gc-sbfl', box: '.gc-sbfx', lines: 2, units: true, group: '.gc-sbfoot' }"));
 });
@@ -756,7 +845,8 @@ function sbCard(o) {
   const rect = (top, h, w) => ({ top, bottom: top + h, height: h, left: 0, width: w == null ? W : w, right: w == null ? W : w });
   const el = (r, x) => Object.assign({ getBoundingClientRect: r, hasAttribute: () => false, removeAttribute() {}, classList: { contains: () => false }, nextElementSibling: null }, x || {});
   const lastSec = el(() => { const L = lay(), s = L.secs[L.secs.length - 1]; return rect(L.sblTop + s[0], s[1] - s[0]); });
-  const sbl = el(() => { const L = lay(); return rect(L.sblTop, L.sblH); }, { lastElementChild: lastSec });
+  const sbl = el(() => { const L = lay(); return rect(L.sblTop, L.sblH); }, { lastElementChild: lastSec, isConnected: true });
+  lastSec.isConnected = true;
   const hd = el(() => { const L = lay(); return rect(L.sblTop - L.hd, L.hd); });
   const ft = el(() => { const L = lay(); return rect(L.sblTop + L.sblH, L.ft); });
   const footEl = el(() => { const L = lay(); return rect(L.sblTop + L.sblH + L.ft, L.fo); });
@@ -770,7 +860,7 @@ function sbCard(o) {
   const line = (docs) => el(() => rect(0, (docs ? docsLines() : 1) ? 2.56 * u() : 0), { _cs: { get fontSize() { return (2.29 * u() * (docs && step() === 1 ? o.docsOneLine : 1)) + 'px'; } } });
   const lines = o.foot ? [line(true)].concat(o.close ? [line(false)] : []) : [];
   const card = {
-    offsetWidth: W, offsetHeight: H, firstElementChild: hd,
+    offsetWidth: W, offsetHeight: H, firstElementChild: hd, classList: { contains: (c) => c === 'gcard' || c === 'gcard-sbcard' },
     getBoundingClientRect: () => rect(0, H),
     _cs: { get paddingBottom() { return lay().padB + 'px'; } },
     getAttribute: (a) => (a in attrs ? attrs[a] : null),
@@ -785,7 +875,7 @@ function sbCard(o) {
     querySelector: (s) => ({ '.gc-sbl': sbl, '.gc-sbfoot': o.foot ? footEl : null, '.gc-sbfoot .gc-sbfc': o.foot && o.close ? {} : null, '.gc-sbn': rows[0].firstElementChild }[s] || null),
     querySelectorAll: (s) => ({ '.gc-sbr': rows, '.fx-fit': [], '.gc-sbfoot .gc-sbfl': lines }[s] || [])
   };
-  return { card, log, attrs, props, u, f, k, step, rows: rows.length };
+  return { card, log, attrs, props, u, f, k, step, rows: rows.length, sbl, lastSec };
 }
 // The pass as shipped, its timers and its pass request given by the test
 // (env.setTimeout, env.pass); setEpoch stands for the fonts' loadingdone
@@ -962,6 +1052,299 @@ test('the lists in the centre are fitted in the frame they first paint, while th
   assert.equal(zt.length, 1, 'asked again');
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// 2026-10-12 — THE LISTS' COLUMN BESIDE THE SIGNS (_gateSbColFit). Its scale
+// used to come down 0.04 a pass, one pass a frame, every step painted (rows
+// cut off for 1-5 frames at the switch into the countdown); it measured
+// nothing while the fonts loaded (rows cut off for the whole load after a
+// reload, 3-18 s); and a resize sent it back to its full size for a frame.
+// Here the pass runs against a column laid out as the stylesheet lays it out
+// (css: .gcard-col, its insets, padding and gaps in its unit, --gc-u = u0 x
+// --gc-k; type never under the readable floor), and what a frame would paint
+// is what one call of the pass leaves.
+// ════════════════════════════════════════════════════════════════════════════
+
+// A column of the lists: a box `H` px tall (its grid row, beside the sign),
+// the card inset in it, three lists (a heading and its cabin, rows of a name
+// and a status word that takes `wraps(k)` lines). `fm` is the face's lines
+// against the board's own (a fallback face while the fonts load); `extra`
+// grows the lists in place (a word changed, a face drawn before its pass).
+function sbColCard(o) {
+  const W = o.W || 435, U0 = o.u0 || 9.02, FLOOR = o.floor || 14.25, LISTS = o.lists || [3, 4, 2];
+  const FM = () => (o.fm ? o.fm() : 1);
+  const attrs = {}, props = {}, log = [];
+  const box = { offsetWidth: W, offsetHeight: o.H || 640 };
+  const k = () => parseFloat(props['--gc-k'] || '1');
+  const u = () => U0 * k();
+  const px = (units) => Math.max(units * u(), FLOOR);
+  const lay = () => {
+    const U = u(), top = 1.33 * U, cardH = box.offsetHeight - 2.66 * U, padT = 1.33 * U, padB = 1.14 * U;
+    const sblTop = top + padT;
+    let y = sblTop;
+    LISTS.forEach((n, i) => {
+      if (i) y += 0.95 * U;
+      y += (px(3.05) * 1.05 + px(2.29) * 1.1) * FM() + 0.76 * U;
+      y += 0.76 * U;
+      const lines = o.wraps ? o.wraps(k()) : 1;
+      y += n * (Math.max(5.24 * U, (px(2.6) * 1.1 + lines * px(2.1) * 1.1) * FM()) + 0.48 * U);
+    });
+    return { top, cardH, padB, sblTop, last: y + (o.extra ? o.extra() : 0), w: box.offsetWidth - 2.28 * U };
+  };
+  const rect = (top, h, w) => ({ top, bottom: top + h, height: h, left: 0, right: w, width: w });
+  const last = { isConnected: true, getBoundingClientRect: () => { const L = lay(); return rect(L.sblTop, L.last - L.sblTop, L.w); } };
+  const sbl = { isConnected: true, lastElementChild: last, getBoundingClientRect: () => { const L = lay(); return rect(L.sblTop, L.top + L.cardH - L.padB - L.sblTop, L.w); } };
+  let laidOut = true;
+  const card = {
+    parentElement: box, classList: { contains: (c) => c === 'gcard' || c === 'gcard-sbcard' || c === 'gcard-col' },
+    get offsetWidth() { return laidOut ? lay().w : 0; },
+    get offsetHeight() { return laidOut ? lay().cardH : 0; },
+    getBoundingClientRect: () => { if (!laidOut) return rect(0, 0, 0); const L = lay(); return rect(L.top, L.cardH, L.w); },
+    _cs: { get paddingBottom() { return lay().padB + 'px'; } },
+    getAttribute: (a) => (a in attrs ? attrs[a] : null),
+    setAttribute: (a, v) => { attrs[a] = String(v); },
+    removeAttribute: (a) => { delete attrs[a]; },
+    hasAttribute: (a) => a in attrs,
+    style: {
+      setProperty: (p, v) => { props[p] = String(v); if (p === '--gc-k') log.push(k()); },
+      removeProperty: (p) => { delete props[p]; if (p === '--gc-k') log.push(k()); },
+      getPropertyValue: (p) => props[p] || ''
+    },
+    querySelector: (s) => (s === '.gc-sbl' ? sbl : null),
+    querySelectorAll: () => []
+  };
+  // the largest scale (in thousandths) at which the last list ends inside the
+  // card, found the slow way, the card put back after
+  const oracle = () => {
+    const keep = Object.assign({}, props);
+    let best = null;
+    for (let m = 1000; m >= 620; m--) {
+      props['--gc-k'] = String(m / 1000);
+      const L = lay();
+      if (L.last <= L.top + L.cardH - L.padB + 0.5) { best = m / 1000; break; }
+    }
+    Object.keys(props).forEach((p) => delete props[p]); Object.assign(props, keep);
+    return best;
+  };
+  const excess = () => { const L = lay(); return L.last - (L.top + L.cardH - L.padB); };
+  return { card, box, attrs, props, log, k, excess, oracle, sbl, last, setLaidOut: (v) => { laidOut = v; } };
+}
+// The column's pass and the lists' own, as shipped, over a page that holds
+// `cols` (the column) and `centre` (the centre's cards): the screen, the
+// fonts, the timers, the pass request and a ResizeObserver given by the test.
+function sbPasses() {
+  const src = [
+    line(/^var _GATE_SB_ROW_U = [^;]+;/m), line(/^var _GATE_SB_ROW_MIN_U = [^;]+;/m), line(/^var _GATE_SB_RING_U = [^;]+;/m),
+    line(/^var _GATE_SB_FOOT_U = [^;]+;/m), line(/^var _GATE_SB_K_MIN = [^;]+;/m), line(/^var _GATE_SB_K_MIN_BARE = [^;]+;/m),
+    line(/^var _GATE_SB_RETRY_MS = [^;]+;/m), line(/^var _gateSbFaceN = [^;]+;/m), line(/^var _gateSbRetryN = [^;]+;/m),
+    line(/^var _gateSbRetryT = [^;]+;/m), line(/^var _gateSbHooked = [^;]+;/m), line(/^var _gateSbRO = [^;]+;/m), line(/^var _gateSbROEls = [^;]+;/m),
+    'var _fxFontsEpoch = 0;',
+    fn('_gateSbWatchFaces'), fn('_gateSbRetry'), fn('_gateSbRefitLines'), fn('_gateSbHolds'),
+    fn('_gateSbExcess'), fn('_gateSbLadder'), fn('_gateSbFit'),
+    fn('_gateSbColExcess'), fn('_gateSbColSolve'), fn('_gateSbColFit'), fn('_gateSbObserve'), fn('_gateSbResized'),
+    'return { _gateSbColFit, _gateSbFit, _gateSbExcess, _gateSbObserve, _gateSbResized, setEpoch: function (n) { _fxFontsEpoch = n; }, _gateSbRetryFire: function () { _gateSbRetryT = null; } };'
+  ].join('\n');
+  const gcs = (e) => e._cs || {};
+  return (page) => {
+    const P = page;
+    const doc = {
+      fonts: P.fonts || { status: 'loaded' },
+      querySelectorAll: (s) => {
+        const cols = P.cols || [], centre = P.centre || [];
+        if (s === '.g8-sbcol > .gcard-col') return cols.map((c) => c.card);
+        if (s === '.gcard-sbcard:not(.gcard-col)') return centre.map((c) => c.card);
+        if (s === '.gcard-sbcard') return centre.concat(cols).map((c) => c.card);
+        if (s === '.gcard-sbcard .gc-sbl, .gcard-sbcard .gc-sbl > *') return [].concat(...centre.concat(cols).map((c) => [c.sbl, c.sbl.lastElementChild]));
+        return [];
+      }
+    };
+    const win = P.win || { innerWidth: 1920, innerHeight: 1080 };
+    return new Function('getComputedStyle', 'fidsFitAll', '_fidsPairSeparators', 'document', 'window', 'console', 'setTimeout', '_fidsSchedulePairPass', 'ResizeObserver', src)(
+      gcs, () => {}, () => {}, doc, win, { warn() {} }, P.setTimeout || (() => 0), P.pass || (() => {}), P.RO);
+  };
+}
+
+test('the lists\' column beside the signs is fitted in one frame: the largest scale that holds every row, solved at once, never stepped', () => {
+  // YUL A62C TS602 in ja+ar at 1920x1080: the status words on two lines,
+  // nine names; the column's box is 640px
+  const C = sbColCard({ H: 640, wraps: (k) => (k > 0.8 ? 2 : 1) });
+  assert.ok(C.excess() > 40, 'at its full size the last rows run past the foot: ' + C.excess());
+  let passes = 0;
+  const G = sbPasses()({ cols: [C], pass: () => { passes++; } });
+  G._gateSbColFit();
+  // what this frame paints: every row inside, at the largest scale that does it
+  assert.ok(C.excess() <= 0.5, 'every row inside the column after one pass: ' + C.excess());
+  const best = C.oracle();
+  assert.ok(C.k() >= best - 0.012 && C.k() <= best + 1e-9, 'the largest scale that fits (' + best + '): ' + C.k());
+  assert.equal(passes, 0, 'no further pass asked for to finish it');
+  assert.equal(C.attrs['data-sb-k'], String(C.k()));
+  assert.match(C.attrs['data-sb-fit'] || '', /\|F$/);
+  assert.equal(C.attrs['data-sb-over'], undefined);
+  // the same frame again, or a later pass: nothing tried again
+  const n = C.log.length;
+  G._gateSbColFit(); G._gateSbColFit();
+  assert.equal(C.log.length, n, 'solved once for its size and its fonts');
+
+  // a word that changes in place (the clock moves a name on) and runs a row
+  // past the foot: fitted again in the same pass, not a frame later
+  let extra = 0;
+  const D = sbColCard({ H: 760, wraps: () => 2, extra: () => extra });
+  const GD2 = sbPasses()({ cols: [D] });
+  GD2._gateSbColFit();
+  assert.ok(D.excess() <= 0.5);
+  const k0 = D.k();
+  extra = 24;
+  assert.ok(D.excess() > 0.5);
+  GD2._gateSbColFit();
+  assert.ok(D.excess() <= 0.5, 'still inside: ' + D.excess());
+  assert.ok(D.k() < k0);
+
+  // a column with room: left at its full size
+  const T = sbColCard({ H: 900, wraps: () => 1 });
+  sbPasses()({ cols: [T] })._gateSbColFit();
+  assert.equal(T.k(), 1);
+  assert.equal(T.props['--gc-k'], undefined);
+
+  // far too short: the smallest scale, marked (the rendered check fails on
+  // it), and not tried again on every pass
+  const X = sbColCard({ H: 300, wraps: () => 2 });
+  const GX = sbPasses()({ cols: [X] });
+  GX._gateSbColFit();
+  assert.equal(X.attrs['data-sb-over'], '1');
+  assert.equal(X.k(), 0.62);
+  const nx = X.log.length;
+  GX._gateSbColFit();
+  assert.equal(X.log.length, nx);
+});
+
+test('the lists\' column is fitted while the fonts load, again as the faces land, and once more when they are all in', () => {
+  // the boards reload on every deploy; the column used to measure nothing
+  // until the fonts had landed, its last rows cut off for the whole load
+  let fm = 1.12;
+  const C = sbColCard({ H: 640, wraps: (k) => (k > 0.8 ? 2 : 1), fm: () => fm });
+  const faces = [];
+  const face = () => { const f = { status: 'loading', cbs: [] }; f.loaded = { then: (a) => { f.cbs.push(a); } }; faces.push(f); return f; };
+  face(); face();
+  const fonts = { status: 'loading', forEach: (cb) => faces.forEach(cb) };
+  const timers = [];
+  let passes = 0;
+  const G = sbPasses()({ cols: [C], fonts, setTimeout: (f, ms) => { timers.push(ms); return timers.length; }, pass: () => { passes++; } });
+  G._gateSbColFit();
+  assert.ok(C.k() < 1, 'fitted at once, in the fallback face');
+  assert.ok(C.excess() <= 0.5, 'every row inside from the first frame: ' + C.excess());
+  assert.match(C.attrs['data-sb-fit'] || '', /\|f0$/, 'marked as measured while the fonts load');
+  assert.equal(faces.filter((f) => f.cbs.length === 1).length, 2, 'every face still loading asks for a pass when it lands');
+  assert.deepEqual(timers, [100], 'and a pass is asked for again, later');
+  const n0 = C.log.length;
+  G._gateSbColFit();
+  assert.equal(C.log.length, n0, 'the same frame again: nothing new');
+  // a face lands and every row still fits: the fit holds
+  fm = 1.05;
+  faces[0].cbs[0]();
+  assert.equal(passes, 1, 'a landed face asks for a pass');
+  G._gateSbColFit();
+  assert.equal(C.log.length, n0, 'still fits: kept');
+  assert.match(C.attrs['data-sb-fit'], /\|f1$/);
+  // a face lands and the lists grow past the foot: solved again, at once
+  fm = 1.3;
+  faces[1].cbs[0]();
+  G._gateSbColFit();
+  assert.ok(C.log.length > n0, 'solved again');
+  assert.ok(C.excess() <= 0.5, 'every row inside: ' + C.excess());
+  // the retries are bounded and spaced
+  for (let i = 0; i < 30; i++) { G._gateSbRetryFire(); G._gateSbColFit(); }
+  assert.ok(timers.length <= 10, 'a bounded number of retries: ' + timers.length);
+  assert.ok(timers.every((ms, i) => !i || ms >= timers[i - 1]), 'each later than the last');
+  // the fonts are in: solved afresh in the faces it keeps, up to the largest
+  // scale they allow
+  fm = 1;
+  fonts.status = 'loaded';
+  G.setEpoch(1);
+  G._gateSbColFit();
+  assert.match(C.attrs['data-sb-fit'], /\|1\|F$/);
+  assert.ok(C.excess() <= 0.5);
+  const best = C.oracle();
+  assert.ok(C.k() >= best - 0.012 && C.k() <= best + 1e-9, 'the largest scale the board\'s faces allow (' + best + '): ' + C.k());
+  // a column not laid out yet is asked for again (bounded)
+  const Z = sbColCard({ H: 640, wraps: () => 2 });
+  Z.setLaidOut(false);
+  const zt = [];
+  sbPasses()({ cols: [Z], setTimeout: (f, ms) => { zt.push(ms); return 1; } })._gateSbColFit();
+  assert.equal(Z.log.length, 0);
+  assert.equal(zt.length, 1, 'asked again');
+});
+
+test('a resize keeps the column\'s scale until it is solved for the new size, in the same pass', () => {
+  const win = { innerWidth: 1920, innerHeight: 1080 };
+  const C = sbColCard({ H: 640, wraps: (k) => (k > 0.8 ? 2 : 1) });
+  const G = sbPasses()({ cols: [C], win });
+  G._gateSbColFit();
+  const k0 = C.k();
+  assert.ok(k0 < 1 && C.excess() <= 0.5);
+  // the resize itself leaves the scale as it is (the handler is pinned in
+  // the test above); the pass, in the frame the resize is handled, solves it
+  // for the new size before that frame is painted
+  win.innerWidth = 1680; win.innerHeight = 1050;
+  C.box.offsetWidth = 381; C.box.offsetHeight = 600;
+  assert.equal(C.k(), k0, 'kept until the pass');
+  G._gateSbColFit();
+  assert.ok(C.excess() <= 0.5, 'fitted for the new size: ' + C.excess());
+  const best = C.oracle();
+  assert.ok(C.k() >= best - 0.012 && C.k() <= best + 1e-9, 'the largest scale at the new size (' + best + '): ' + C.k());
+  // the same size again: nothing tried again
+  const n = C.log.length;
+  G._gateSbColFit();
+  assert.equal(C.log.length, n);
+});
+
+test('between passes, a face that draws before its own pass runs is fitted before that frame is painted (the lists in the centre and the column)', () => {
+  // a face that lands draws the lists in its metrics a frame before the pass
+  // it asks for runs; and a pass with the same size and faces used to skip a
+  // card that had been fitted, so neither the retries nor the two-second
+  // pass caught it
+  let fm = 1;
+  const E = sbCard({ H: 718, foot: true, close: true, docsOneLine: 0.65, fm: () => fm });
+  let colFm = 1;
+  const C = sbColCard({ H: 640, wraps: (k) => (k > 0.8 ? 2 : 1), fm: () => colFm });
+  let ro = null, passes = 0;
+  class FakeRO {
+    constructor(cb) { this.cb = cb; this.els = new Set(); this.disconnects = 0; ro = this; }
+    observe(el) { this.els.add(el); }
+    disconnect() { this.els.clear(); this.disconnects++; }
+  }
+  const G = sbPasses()({ centre: [E], cols: [C], RO: FakeRO, pass: () => { passes++; } });
+  G._gateSbColFit(); G._gateSbFit(); G._gateSbObserve();
+  assert.ok(ro, 'the lists\' boxes are watched');
+  assert.ok(ro.els.has(E.sbl) && ro.els.has(C.sbl) && ro.els.has(C.last), 'the box that holds the lists, and each list, in both');
+  const nE = E.log.length, nC = C.log.length;
+  // a size changed with nothing past its room: nothing is done
+  ro.cb([]);
+  assert.equal(E.log.length, nE); assert.equal(C.log.length, nC); assert.equal(ro.disconnects, 0);
+  // a face draws taller lines, no pass yet: the observer, after that frame's
+  // layout, fits both before it is painted
+  fm = 1.4; colFm = 1.25;
+  assert.ok(G._gateSbExcess(E.card) > 0.5 && C.excess() > 0.5, 'both run past their room');
+  ro.cb([]);
+  assert.ok(G._gateSbExcess(E.card) <= 0.5, 'the centre\'s rows inside: ' + G._gateSbExcess(E.card));
+  assert.ok(C.excess() <= 0.5, 'the column\'s rows inside: ' + C.excess());
+  assert.equal(ro.disconnects, 1, 'and it lets go until the next pass (its own change is not reported back to it in that frame)');
+  assert.equal(passes, 1, 'the next pass watches them again');
+  G._gateSbObserve();
+  assert.ok(ro.els.has(E.sbl) && ro.els.has(C.sbl));
+  // and a pass with the same size and faces measures a fitted card all the
+  // same (a retry, the two-second pass)
+  fm = 1.6;
+  const nE2 = E.log.length;
+  G._gateSbFit();
+  assert.ok(E.log.length > nE2 && G._gateSbExcess(E.card) <= 0.5, 'fitted again on a pass with the same key');
+  // boxes a repaint replaced are let go
+  E.sbl.isConnected = false;
+  const d0 = ro.disconnects;
+  G._gateSbObserve();
+  assert.equal(ro.disconnects, d0 + 1);
+  // the pass watches them after both fits, every pass
+  assert.match(fn('_fidsSchedulePairPass'), /try \{ _gateSbFit\(\); \} catch \(eSc\) \{\}\s*\/\/[^\n]*\n\s*try \{ _gateSbObserve\(\); \} catch \(eSo\) \{\}/);
+});
+
 test('the lists in the centre: the stylesheet gives every row a set height and a floor, and nothing gives up height on its own', () => {
   const C = 'html body' + ':not(#_)'.repeat(16) + ' .gcard.gcard-sbcard:not(.gcard-col)';
   const P = 'html body' + ':not(#_)'.repeat(16);
@@ -1001,7 +1384,7 @@ test('the lists in the centre: the stylesheet gives every row a set height and a
 test('names clear one by one as boarding comes closer, the next one called', () => {
   const E = engine();
   const m = E._gateCardsBuild(facts({ cf: testRow() }));
-  const first = E._gateSbLists(m, DEP - 90 * MIN);
+  const first = E._gateSbLists(m, DEP - 50 * MIN);
   const last = E._gateSbLists(m, DEP - 46 * MIN);
   const n = (L, st) => L.rows.filter((r) => r.st === st).length;
   assert.ok(first.upgrade && first.standby && first.seats, 'Air Canada: upgrade, standby and seat-change lists');
@@ -1024,7 +1407,7 @@ test('names clear one by one as boarding comes closer, the next one called', () 
     assert.deepEqual(L.rows.filter((r) => r.st !== 'cleared').map((r) => r.pos), L.rows.filter((r) => r.st !== 'cleared').map((_, i) => i + 1));
   }
   // the same flight draws the same list on every paint and every screen
-  assert.deepEqual(E._gateSbLists(m, DEP - 60 * MIN), E._gateSbLists(m, DEP - 60 * MIN));
+  assert.deepEqual(E._gateSbLists(m, DEP - 48 * MIN), E._gateSbLists(m, DEP - 48 * MIN));
   const names = (L) => L.rows.map((r) => r.name);
   assert.deepEqual(names(first.standby), names(last.standby), 'the names stay; only their status moves');
 });
@@ -1032,7 +1415,7 @@ test('names clear one by one as boarding comes closer, the next one called', () 
 test('an airline with no premium cabin shows the standby list alone', () => {
   const E = engine();
   const m = E._gateCardsBuild(facts({ cf: testRow({ airline: 'F8', flight: 'F8123' }), airline: 'F8', flight: 'F8123' }));
-  const L = E._gateSbLists(m, DEP - 60 * MIN);
+  const L = E._gateSbLists(m, DEP - 48 * MIN);
   assert.equal(L.upgrade, null);
   assert.ok(L.standby && L.standby.rows.length >= 3);
   assert.ok(L.seats && L.seats.rows.length === 2, 'seat changes for every airline');
