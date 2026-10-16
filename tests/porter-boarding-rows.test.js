@@ -121,3 +121,23 @@ test('the three bands cover the cabin without a gap', () => {
     assert.ok(next[0] - 1 <= band, 'the final band must reach row 1');
   }
 });
+
+test('boarding sequences: the middle and front bands are called, and no row is in two bands', () => {
+  // The sign used to call the back band, then jump to rows 1–7 for the last
+  // minutes: the middle band was never called and row 7 sat in two bands.
+  // js/boarding-sequence.js now plays all three, back to front, from the
+  // fleet this rule picks (the gate passes _pdIsDash).
+  const SEQ = require('../fids-current/js/boarding-sequence.js');
+  for (const fl of ['PD2195', 'PD202']) {
+    const rows = rowsFor(fl);
+    const [back, middle, front] = SEQ.porterBands(rows);
+    const { now, next } = bands(rows);
+    assert.deepEqual(back, now, fl + ': the back band, as the sign always called it');
+    assert.deepEqual(middle, next, fl + ': then the middle band, now called');
+    assert.deepEqual(front, [1, next[0] - 1], fl + ': then the front band, from row 1 to the row before the middle band');
+    const plan = SEQ.plan('PD', { pdDash: rows === 20 });
+    assert.deepEqual(plan.full.filter((s) => s.kind === 'gen').map((s) => s.values[0]),
+      [back, middle, front].map((b) => b[0] + '\u2013' + b[1]), fl + ': the sign calls exactly these three');
+  }
+  assert.match(SRC, /pdDash: _pdIsDash/, 'the gate hands the sequence the fleet the flight number names');
+});

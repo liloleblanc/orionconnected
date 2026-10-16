@@ -1994,6 +1994,9 @@ function _fidsPairSeparators(root) {
           var cur = parseFloat(getComputedStyle(el).fontSize) || base;
           var cs = getComputedStyle(col);
           var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+          // THE FINAL DESIGN — a pair set out of the flow between the two
+          // discs (the two panels' lane line) has the room its own box has
+          if (getComputedStyle(el).position === 'absolute') avail = el.clientWidth;
           var need = 0, kids = el.children;
           for (var k = 0; k < kids.length; k++) {
             // the separator's room is its margins (0 .22em), which a rect leaves out
@@ -2008,9 +2011,15 @@ function _fidsPairSeparators(root) {
           var target = ratio >= 1 ? base : Math.max(base * 0.68, base * ratio * 0.985);
           // 2026-10-12 — beside the lists' column (.g8-sbcol-on) the sign is a
           // quarter narrower: a pair keeps its one line down to half its
-          // size there before it stacks ("General boarding | Embarquement
-          // général" needs 0.62 of it at 1920x1080)
+          // size there ("General boarding | Embarquement général" needs
+          // 0.62 of it at 1920x1080)
           if (ratio < 1 && el.closest('.g8-sbcol-on')) target = Math.max(base * 0.5, base * ratio * 0.985);
+          // THE FINAL DESIGN — the two panels are half the screen each, and
+          // their longest pairs ("Allgemeines Boarding | Embarquement
+          // général", "All passengers | Tous les passagers") stacked at 68%
+          // at 1680x1050, the switch among them: there too a pair comes down
+          // to half its size before it may stack (one line is the sign's rule)
+          if (ratio < 1 && el.closest('.g8-sign-two')) target = Math.max(base * 0.5, base * ratio * 0.985);
           // the stylesheet's size is !important (it has to outrank the brand
           // skins), so a plain inline value would lose to it
           if (Math.abs(target - cur) > 0.5) el.style.setProperty('font-size', target + 'px', 'important');
@@ -2024,9 +2033,210 @@ function _fidsPairSeparators(root) {
         el.classList.toggle('is-stacked', stacked);
       }
     }
+    // (after the pairs: the whole-sentence lines to their width, then what
+    // is left of the panel is measured as it is drawn)
+    try { _fidsSignLineFit(scope); } catch (eL) {}
+    try { _fidsSignColFit(scope); } catch (eC) {}
+    try { _fidsSignSwitchLead(scope); } catch (eS) {}
+    try { _fidsSignChipAway(); } catch (eA) {}
   } catch (e) {}
 }
 try { if (typeof window !== 'undefined') window._fidsPairSeparators = _fidsPairSeparators; } catch (e) {}
+// THE FINAL DESIGN — A WHOLE SENTENCE KEEPS ITS LINE. The line of who still
+// waits ("Zonas 4, 5 y 6: por favor, permanezcan sentados"), the instruction
+// line ("Please remain seated until your zone is called", at the switch "All
+// remaining passengers, please proceed to the gate") and gate closed's
+// "Please see an agent" are each one whole line per language (display rule
+// 2). A block's lines take one size: the largest at which its longest line
+// fits the panel, down to 55% of the stylesheet's size; past that a line
+// that still does not fit wraps on its own words (is-wrapped). Never cut,
+// never an ellipsis. The stylesheet's size is kept in data-g8-lbase and
+// every pass starts from it; a resize clears it.
+function _fidsSignLineFit(scope) {
+  var blks = scope.querySelectorAll('.g8-sign .g8-sign-wait, .g8-sign .g8-sign-instr, .g8-sign .g8-sign-soon, .g8-closed-body .g8-sign-go');
+  for (var i = 0; i < blks.length; i++) {
+    var b = blks[i], lines = b.querySelectorAll('.g8-seat-line');
+    if (!lines.length) continue;
+    var base = parseFloat(b.getAttribute('data-g8-lbase')) || 0;
+    if (!base) {
+      b.style.removeProperty('font-size');
+      base = parseFloat(getComputedStyle(b).fontSize) || 0;
+      if (!base) continue;
+      b.setAttribute('data-g8-lbase', String(base));
+    }
+    b.style.setProperty('font-size', base + 'px', 'important');
+    for (var k = 0; k < lines.length; k++) lines[k].classList.remove('is-wrapped');
+    // (the box's inner width: the band under the two panels is padded)
+    var bcs = getComputedStyle(b);
+    var avail = b.clientWidth - (parseFloat(bcs.paddingLeft) || 0) - (parseFloat(bcs.paddingRight) || 0), need = 0;
+    if (avail <= 0) continue;
+    var wOf = function (el) { var r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width; };
+    for (var j = 0; j < lines.length; j++) need = Math.max(need, wOf(lines[j]));
+    if (need <= avail) continue;
+    b.style.setProperty('font-size', (base * Math.max(0.55, (avail / need) * 0.985)) + 'px', 'important');
+    for (var q = 0; q < lines.length; q++) if (wOf(lines[q]) > avail + 1) lines[q].classList.add('is-wrapped');
+  }
+}
+// BOARDING SEQUENCES — A PANEL'S WHO-LIST NEVER RUNS OFF IT. The list of who
+// a call is for is drawn in both of the board's languages, and a long one
+// (Alaska's Group A, United's pre-boarding) in two languages ran past the
+// panel's foot at 1680x1050, over the lane line and under the arrow discs,
+// and the panel clipped it. When a panel's content is taller than the
+// panel, the list comes down first (to 75% of its size), then the call's
+// number (to 60%), then the list again (to 55%), each step measured as
+// drawn. The stylesheet's sizes are kept (data-g8-rbase, data-g8-nbase) and
+// every pass starts from them, so a panel never stays shrunk for a list it
+// no longer carries; a resize clears them.
+function _fidsSignColFit(scope) {
+  // THE FINAL DESIGN — every panel, not only one with a who-list: the line
+  // of who still waits and the instruction line came in, so a panel with no
+  // list can be short too; its number (and its pictogram with it) comes down.
+  var cols = scope.querySelectorAll('.g8-sign .g8-sign-col');
+  for (var i = 0; i < cols.length; i++) {
+    var col = cols[i], ro = col.querySelector('.g8-sign-roster');
+    var val = col.querySelector('.g8-sign-row .g8-sign-value, .g8-sign-value:not(.g8-grp-txt)');
+    var pic = col.querySelector('.g8-sign-picto');
+    if (!ro && !val && !pic) continue;
+    var rb = 0;
+    if (ro) {
+      rb = parseFloat(ro.getAttribute('data-g8-rbase')) || 0;
+      if (!rb) {
+        ro.style.removeProperty('font-size');
+        rb = parseFloat(getComputedStyle(ro).fontSize) || 0;
+        if (rb) ro.setAttribute('data-g8-rbase', String(rb));
+      }
+    }
+    var nb = 0;
+    if (val) {
+      nb = parseFloat(val.getAttribute('data-g8-nbase')) || 0;
+      if (!nb) { nb = parseFloat(getComputedStyle(val).fontSize) || 0; if (nb) val.setAttribute('data-g8-nbase', String(nb)); }
+    }
+    // THE WORD COMES DOWN WITH ITS NUMBER. Delta's Zone 1 carries a long
+    // who-list, so its number came down to 140px while ZONE stayed 108px
+    // beside it (216px over 108px on Zone 4): the number barely bigger than
+    // its word, and the pair's proportions jumping from one call to the
+    // next. The word on the number's row keeps their ratio: it starts from
+    // the size the pair pass just gave it and takes every step the number
+    // takes. A word printed once (Zones | Zones is "Zones") is not a pair
+    // the pair pass resizes, so the size this pass started from is kept on
+    // it (data-g8-lfit, and data-g8-lset the size last set): a later pass
+    // starts from that again, never from its own shrink (the word went to
+    // 12px over a few passes without it).
+    var lbl = val ? col.querySelector('.g8-sign-row .g8-sign-label') : null;
+    var lb0 = 0;
+    if (lbl) {
+      var lcur = parseFloat(getComputedStyle(lbl).fontSize) || 0;
+      var lset = parseFloat(lbl.getAttribute('data-g8-lset')) || 0;
+      var lfit = parseFloat(lbl.getAttribute('data-g8-lfit')) || 0;
+      lb0 = (lset && lfit && Math.abs(lcur - lset) < 0.5) ? lfit : lcur;
+    }
+    var setL = function (px) {
+      lbl.style.setProperty('font-size', px + 'px', 'important');
+      lbl.setAttribute('data-g8-lfit', String(lb0));
+      lbl.setAttribute('data-g8-lset', String(parseFloat(getComputedStyle(lbl).fontSize) || px));
+    };
+    var over = function () { return col.scrollHeight > col.clientHeight + 1; };
+    if (ro && rb) ro.style.setProperty('font-size', rb + 'px', 'important');
+    if (val && nb) val.style.setProperty('font-size', nb + 'px', 'important');
+    if (lbl && lb0) setL(lb0);
+    if (pic) pic.style.removeProperty('zoom');
+    var steps = [[0.92, 1], [0.84, 1], [0.75, 1], [0.75, 0.85], [0.75, 0.72], [0.75, 0.6], [0.65, 0.6], [0.55, 0.6]];
+    var step = function (k) {
+      if (ro && rb) ro.style.setProperty('font-size', (rb * steps[k][0]) + 'px', 'important');
+      if (val && nb) val.style.setProperty('font-size', (nb * steps[k][1]) + 'px', 'important');
+      if (lbl && lb0) setL(lb0 * steps[k][1]);
+      // the pictograms come down with the number (pre-boarding has no
+      // number: with its list)
+      if (pic) pic.style.setProperty('zoom', String(val ? steps[k][1] : steps[k][0]), 'important');
+    };
+    // 2026-10-13 — A LONG LIST IN THE TWO PANELS: ONE LANGUAGE AT A TIME.
+    // A panel is half the screen there, and a list in both of the board's
+    // languages one under the other ran under the arrow discs even at the
+    // last step (American's Groups 1-4 called together on an E175: twelve
+    // items in each, 13.8px), and every long list brought the call's number
+    // down to 72px (American's Group 4, 126px without it). Side by side
+    // did not help: in half a panel each item wraps to more lines. Once the
+    // list alone has come down (to 75%) and the panel is still too short,
+    // its two languages take turns in one place (is-alt: both blocks in one
+    // cell, the panel as tall as the longer, ten seconds each by the clock,
+    // _fidsSignWhoAlt), and the steps start again from the stylesheet's
+    // sizes, so the number keeps its size first. Nothing moves: one block
+    // is shown, then the other. The one centre keeps both at once.
+    var alt = !!(ro && col.closest('.g8-sign-two') && ro.querySelectorAll(':scope > .g8-who-blk').length > 1);
+    if (ro) ro.classList.remove('is-alt');
+    var k = 0;
+    for (; k < (alt ? 3 : steps.length) && over(); k++) step(k);
+    if (alt && over()) {
+      ro.classList.add('is-alt');
+      _fidsSignWhoAlt(ro);
+      if (rb) ro.style.setProperty('font-size', rb + 'px', 'important');
+      for (k = 0; k < steps.length && over(); k++) step(k);
+    }
+  }
+}
+// Which of a long list's two languages is shown (is-alt): ten seconds each,
+// by the clock, so a sign rebuilt between two turns carries on where it was
+// (the gate rebuilds its sign on every telemetry tick). Set by the column
+// fitter when it turns a list to is-alt, and every second by the gate's
+// clock (updateDedicatedTimeOnly).
+var _G8_WHO_ALT_MS = 10000;
+function _fidsSignWhoAlt(el) {
+  var b = Math.floor(Date.now() / _G8_WHO_ALT_MS) % 2 === 1;
+  var rs = el ? [el] : document.querySelectorAll('.g8-sign .g8-sign-roster.is-alt');
+  for (var i = 0; i < rs.length; i++) rs[i].classList.toggle('alt-b', b);
+}
+
+// THE FINAL DESIGN — THE SWITCH LEADS THE TWO PANELS. Once the switch is on
+// (.has-switch), ALL ZONES | TOUTES LES ZONES is a word value fitted to half
+// the screen (59px at 1920x1080, 51px at 1680x1050) while the priority panel
+// beside it kept ZONES 1 • 2 at 140px: the biggest thing on the sign was a
+// call already made. A number on a panel that is not the switch is drawn no
+// bigger than the switch's own value, and its word no bigger than 85% of
+// that. Runs last, on what the fitters above settled.
+function _fidsSignSwitchLead(scope) {
+  var signs = scope.querySelectorAll('.g8-sign.g8-sign-two.has-switch');
+  for (var i = 0; i < signs.length; i++) {
+    var sv = signs[i].querySelector('.g8-sign-col.is-switch .g8-sign-value');
+    var cap = sv ? (parseFloat(getComputedStyle(sv).fontSize) || 0) : 0;
+    if (!cap) continue;
+    var vals = signs[i].querySelectorAll('.g8-sign-col:not(.is-switch) .g8-sign-value:not(.g8-grp-txt)');
+    for (var k = 0; k < vals.length; k++) {
+      var v = vals[k], fs = parseFloat(getComputedStyle(v).fontSize) || 0;
+      if (fs > cap + 0.5) v.style.setProperty('font-size', cap + 'px', 'important');
+      var row = v.parentElement;
+      var lb = (row && row.classList.contains('g8-sign-row')) ? row.querySelector('.g8-sign-label') : null;
+      var lf = lb ? (parseFloat(getComputedStyle(lb).fontSize) || 0) : 0;
+      if (lf > cap * 0.85 + 0.5) {
+        lb.style.setProperty('font-size', (cap * 0.85) + 'px', 'important');
+        // (the column fitter's record: the next pass starts from its own
+        // size, not from this cap)
+        if (lb.hasAttribute('data-g8-lfit')) lb.setAttribute('data-g8-lset', String(parseFloat(getComputedStyle(lb).fontSize) || cap * 0.85));
+      }
+    }
+    // (a pictogram on such a panel is the priority symbol: drawn no taller
+    // than the switch's own group of passengers)
+    var spic = signs[i].querySelector('.g8-sign-col.is-switch .g8-sign-picto');
+    var sh = spic ? spic.getBoundingClientRect().height : 0;
+    var pics = signs[i].querySelectorAll('.g8-sign-col:not(.is-switch) .g8-sign-picto');
+    for (var q = 0; q < pics.length && sh; q++) {
+      var ph = pics[q].getBoundingClientRect().height;
+      if (ph > sh + 0.5) pics[q].style.setProperty('zoom', String((parseFloat(pics[q].style.zoom) || 1) * sh / ph), 'important');
+    }
+  }
+}
+
+// THE FINAL DESIGN — THE ADMIN CHIP STEPS AWAY WHILE A SIGN IS UP. The Login
+// chip (#ocAdminLogin, a fixed grey pill in the bottom-left corner of every
+// board) sat on the sign's bottom-left arrow disc at 1680x1050, and over the
+// switch's panel; the boarding screen shows the sign and nothing else. The
+// stylesheet hides the chip under body.g8-sign-up, a class set here on every
+// pass (the drawn rules keep :has() out). The class changes only when the
+// sign comes or goes, and the pass's observer does not watch attributes.
+function _fidsSignChipAway() {
+  if (typeof document === 'undefined' || !document.body) return;
+  var up = !!document.querySelector('.g8-board.active .g8-sign, .g8-final.active');
+  if (document.body.classList.contains('g8-sign-up') !== up) document.body.classList.toggle('g8-sign-up', up);
+}
 
 // One pass per settled frame. The board re-renders constantly, so this is
 // scheduled rather than called inline: a rAF collapses a burst of renders into
@@ -3822,6 +4032,17 @@ try {
         for (var _i = 0; _i < _sp.length; _i++) { _sp[_i].removeAttribute('data-g8-base'); _sp[_i].style.removeProperty('font-size'); }
         var _sv = document.querySelectorAll('.g8-sign .g8-sign-value[data-g8-vbase]');
         for (var _j = 0; _j < _sv.length; _j++) { _sv[_j].removeAttribute('data-g8-vbase'); _sv[_j].style.removeProperty('font-size'); }
+        // and the who-list panel's (_fidsSignColFit)
+        var _sr = document.querySelectorAll('.g8-sign [data-g8-rbase], .g8-sign [data-g8-nbase]');
+        for (var _k = 0; _k < _sr.length; _k++) { _sr[_k].removeAttribute('data-g8-rbase'); _sr[_k].removeAttribute('data-g8-nbase'); _sr[_k].style.removeProperty('font-size'); }
+        var _sp = document.querySelectorAll('.g8-sign .g8-sign-picto');
+        for (var _p = 0; _p < _sp.length; _p++) _sp[_p].style.removeProperty('zoom');
+        // and the word beside a number (_fidsSignColFit's record)
+        var _sw = document.querySelectorAll('.g8-sign [data-g8-lfit]');
+        for (var _w = 0; _w < _sw.length; _w++) { _sw[_w].removeAttribute('data-g8-lfit'); _sw[_w].removeAttribute('data-g8-lset'); _sw[_w].style.removeProperty('font-size'); }
+        // and the whole-sentence lines' (_fidsSignLineFit)
+        var _sl = document.querySelectorAll('[data-g8-lbase]');
+        for (var _m = 0; _m < _sl.length; _m++) { _sl[_m].removeAttribute('data-g8-lbase'); _sl[_m].style.removeProperty('font-size'); }
       } catch (e) {}
       _fidsSchedulePairPass();
     });
@@ -8003,6 +8224,18 @@ function updateDedicatedTimeOnly() {
         }
       }
     } catch (eSt) {}
+    // BOARDING SEQUENCES — THE NEXT CALL COMES ON AT ITS MINUTE. The sign
+    // carries the time its next call is due (data-stage-next-ts, _g8SignHtml);
+    // nothing in the feed changes then, so the gate's key would not either.
+    // When it is reached, one rebuild is asked for; the mark is taken off
+    // first, so it is asked once.
+    try {
+      const _sgEl = document.querySelector('.g8-sign[data-stage-next-ts]');
+      const _sgTs = _sgEl ? Number(_sgEl.getAttribute('data-stage-next-ts')) : 0;
+      if (_sgEl && _sgTs > 0 && _nowMs3 >= _sgTs) { _sgEl.removeAttribute('data-stage-next-ts'); requestGateRebuild(); }
+    } catch (eSg) {}
+    // a long list in the two panels: its two languages take their turns
+    try { _fidsSignWhoAlt(); } catch (eWa) {}
     // v23973 — LATER AT THIS GATE FOLLOWS THE CLOCK. A moved flight's notice
     // ends when the flight leaves (_gateFlightLive), a later flight moves up
     // when the one before it goes, and a day word changes at midnight, all
@@ -11250,38 +11483,10 @@ function darkenHex(hex, factor) {
   return '#' + ((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
 }
 
-const AIRLINE_ZONES = {
-  // { zones, call: 'group'|'zone' } — how the carrier calls its passengers
-  // (a code: the words are _GATE_LBL.groupLabel / .zones, in every language)
-  'AA': { narrowbody: 9, widebody: 9, regional: 9, call: 'group' },     // American: 9 Groups
-  'DL': { narrowbody: 8, widebody: 8, regional: 8, call: 'zone' },      // Delta: 8 Zones
-  'UA': { narrowbody: 6, widebody: 6, regional: 6, call: 'group' },     // United: WILMA 6 Groups
-  'WN': { narrowbody: 3, widebody: 3, regional: 3, call: 'group' },     // Southwest: A/B/C
-  'AC': { narrowbody: 5, widebody: 5, regional: 4, call: 'zone' },      // Air Canada: 5 Zones
-  'WS': { narrowbody: 5, widebody: 5, regional: 3, call: 'zone' },      // WestJet: 5 Zones
-  'B6': { narrowbody: 6, widebody: 6, regional: 6, call: 'group' },     // JetBlue: Groups A-F
-  'AS': { narrowbody: 6, widebody: 6, regional: 6, call: 'group' },     // Alaska: Groups A-F
-  // NK (Spirit) — ceased operations May 2 2026
-  'F9': { narrowbody: 4, widebody: 4, regional: 4, call: 'zone' },      // Frontier: 4 Zones
-  'HA': { narrowbody: 7, widebody: 7, regional: 7, call: 'zone' },      // Hawaiian: 7 Zones
-  'AM': { narrowbody: 5, widebody: 5, regional: 5, call: 'zone' },      // Aeromexico: 5 Zones
-  'PD': { narrowbody: 5, widebody: 5, regional: 3, call: 'group' },     // Porter: Groups 1-5
-  'G4': { narrowbody: 5, widebody: 5, regional: 5, call: 'zone' },      // Allegiant: 4-5 Zones
-  'SY': { narrowbody: 4, widebody: 4, regional: 4, call: 'group' },     // Sun Country: Groups 1-4
-  'Y4': { narrowbody: 3, widebody: 3, regional: 3, call: 'group' },     // Volaris: Groups 1-3
-  'XP': { narrowbody: 3, widebody: 3, regional: 3, call: 'group' },     // Avelo: Numbered Groups
-  'MX': { narrowbody: 4, widebody: 4, regional: 4, call: 'group' },     // Breeze: Groups 1-4
-  'WL': { narrowbody: 2, widebody: 2, regional: 2, call: 'group' },     // World Atlantic: charter, two calls
-  'F8': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Flair: Zones 1-3
-  '3M': { narrowbody: 2, widebody: 2, regional: 2, call: 'zone' },      // Silver: 1-2 Zones
-  'TS': { narrowbody: 4, widebody: 4, regional: 4, call: 'zone' },      // Air Transat: 4 Zones
-  '4N': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Air North: 3 Zones
-  'BA': { narrowbody: 5, widebody: 5, regional: 5, call: 'group' },     // British Airways
-  'AF': { narrowbody: 5, widebody: 5, regional: 5, call: 'group' },     // Air France
-  'LH': { narrowbody: 5, widebody: 5, regional: 5, call: 'group' },     // Lufthansa
-  'EK': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Emirates
-  'QR': { narrowbody: 3, widebody: 3, regional: 3, call: 'zone' },      // Qatar
-};
+// BOARDING SEQUENCES — the made-up zone and group counts per carrier
+// (AIRLINE_ZONES, getZoneCount: the generic sign called Group 1, then jumped
+// to N−1) are retired. Each airline's published calls live in
+// js/boarding-sequence.js.
 // Aircraft category classification
 const AIRCRAFT_CATEGORY = {
   // Widebody
@@ -11320,11 +11525,6 @@ function getBoardingLeadMins(aircraftCode) {
   return 35; // default narrowbody (737, A321, etc.)
 }
 
-function getZoneCount(airlineCode, aircraftCode) {
-  var cat = getAircraftCategory(aircraftCode);
-  var config = AIRLINE_ZONES[airlineCode] || { narrowbody:4, widebody:4, regional:3, call:'zone' };
-  return config[cat] || config.narrowbody || 4;
-}
 // ── AIRCRAFT NAME FORMATTER ──────────────────────────────────────────────
 
 // ── AIRLINE AMENITIES ────────────────────────────────────────────────────────
@@ -16528,7 +16728,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24050" src="/textures/gate-sky-shelf.mp4?v=24050" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24051" src="/textures/gate-sky-shelf.mp4?v=24051" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16572,7 +16772,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24050" src="/textures/gate-sky-shelf.mp4?v=24050" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24051" src="/textures/gate-sky-shelf.mp4?v=24051" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -17492,14 +17692,12 @@ function uxgGateHtml(ctx) {
   // v23925 — which sign row 4 carries is _gateSignPhase's answer, the
   // flight's word only: GATE CLOSED / FINAL CALL on their words, NOW BOARDING
   // on 'boarding' until the airport says final call or gate closed. Five
-  // minutes out this used to swap the sign for FINAL CALL by the clock; the
-  // zone steps inside the sign still follow minsToDep.
+  // minutes out this used to swap the sign for FINAL CALL by the clock.
+  // BOARDING SEQUENCES — the calls inside the sign follow the airline's own
+  // order from the minute boarding opened (_g8SeqPlan), no longer fixed
+  // minutes before departure.
   finalActive = _gateSign.finalActive;
   boardActive = _gateSign.boardActive;
-  if (boardActive) {
-    var zones = getZoneCount(airlineCode, equipRaw);
-    var lateBoarding = minsToDep <= 18;
-  }
 
   // Alliance check — Star Alliance, Oneworld, SkyTeam
   var ALLIANCE_MAP = {
@@ -18479,6 +18677,11 @@ function uxgGateHtml(ctx) {
   // sign uses over its two panels. A carrier with one cabin (Flair, PAL,
   // Encore) has no entry and gets no cabin line. Jazz flies Air Canada's
   // cabins; Rouge has its own.
+  // BOARDING SEQUENCES — this map is only what the generic plan reads
+  // (ctx.cabins), for a carrier with no published order. An airline with a
+  // table in boarding-sequence.js names each zone's own cabin there (Air
+  // Canada's Zone 2 is Premium Economy on a widebody and none on an A320;
+  // Delta's and Alaska's cabins are named in their who-lists).
   var _G8_CABINS = {
     'AC': ['cabinBiz', 'cabinEcon'], 'QK': ['cabinBiz', 'cabinEcon'],
     'RV': ['cabinPremRouge', 'cabinEcon'],
@@ -18487,36 +18690,187 @@ function uxgGateHtml(ctx) {
     'DL': ['cabinFirst', 'cabinEcon'], 'AA': ['cabinFirst', 'cabinEcon'], 'AS': ['cabinFirst', 'cabinEcon'],
     'TS': ['cabinClub', 'cabinEcon']
   };
-  function _g8CabinPair(code, which) {
-    var c = _G8_CABINS[code];
-    return (c && c[which]) ? _g8SignPair(c[which]) : '';
-  }
   function _g8SignLines(key) {
     // a list's ' · ' keeps its dot with the item before it (a no-break space
     // in front), so a wrapped line never opens with '·'
     return _gateLbl(key, _frF, function (w) { return '<span class="g8-sign-line">' + String(w).replace(/ \u00B7 /g, '\u00A0\u00B7 ') + '</span>'; }, '');
   }
-  // 'Next: Rows 8-16' / 'Prochain : Rangées 8-16' — each language a whole
-  // line, the group word in that language, French with its space before the
-  // colon.
-  function _g8SignNext(groupKey, value, valueKey) {
-    if (!value && !valueKey) return '';
-    // v23970 — the board's pair through the one chooser (it sliced `langs`
-    // itself), and each language's own colon: 'Prochain : …', '次：…'.
-    var L = BoardStrings.pairLangs(langs, _frF);
-    // 'Next: Zone 6', not 'Next: Zones 6' — a single number takes the singular.
-    if (groupKey === 'zones' && value && !/[\u2022,\u2013\-]/.test(String(value)) && _lblEntry('zone')) groupKey = 'zone';
-    var nx = _lblEntry('nextUp') || {}, grp = groupKey ? (_lblEntry(groupKey) || {}) : {}, vk = valueKey ? (_lblEntry(valueKey) || {}) : null;
-    var seen = {}, out = '';
-    for (var i = 0; i < L.length; i++) {
-      var lg = L[i], gw = grp[lg] || '';
-      var v = vk ? (vk[lg] || '') : value;
-      var line = (nx[lg] || '') + BoardStrings.META[lg].colon + (gw ? gw + ' ' : '') + v;
-      if (seen[line]) continue;
-      seen[line] = 1;
-      out += BoardStrings.markHalf('<span class="g8-sign-line">' + line + '</span>', lg);
+  // ═══════════════════════════════════════════════════════════════════════
+  // THE FINAL DESIGN (2026-10-12): A FIXED STATUS BAR, AND A CENTRE THAT
+  // SAYS WHO MAY LINE UP.
+  //
+  // The bar on top (the strip: NOW BOARDING | EMBARQUEMENT) stays for the
+  // whole boarding period and changes only with the FLIGHT: FINAL CALL, then
+  // GATE CLOSED (and DELAYED, as the board already does). Under it, the
+  // centre shows who may line up now, symbols and big first, words second,
+  // so a passenger who reads neither language still understands:
+  //   pre-boarding  the wheelchair and family pictograms, Pre-boarding, the
+  //                 airline's own list of who;
+  //   one call      the airline's unit and number, huge (ZONE 1, GROUP 4,
+  //                 ROWS 14–20), with who it is for and, small, who still
+  //                 waits (« Zones 5 and 6: please remain seated »);
+  //   THE SWITCH    the last call takes everyone still waiting: GENERAL
+  //                 BOARDING over ALL ZONES (ALL GROUPS, ALL ROWS, ALL
+  //                 PASSENGERS), in its own solid colour, "All remaining
+  //                 passengers, please proceed to the gate". General boarding
+  //                 is said only here, never over a single zone, and never a
+  //                 bare "All". The final call keeps it;
+  //   GATE CLOSED   a closed symbol, big, "Please see an agent".
+  // THE INSTRUCTION LINE says the rest, the same line in the same place,
+  // before and after (_g8SignInstr): under a numbered call, who still waits
+  // (« Zones 5 and 6: please remain seated »); where no number is left to
+  // name, « Please remain seated until your zone [group, row] is called »;
+  // from the switch, « All remaining passengers, please proceed to the gate ».
+  // Two layouts carry it, the same frame for every airline: one centre
+  // display ('centre', the design as drawn) or the two lane panels it
+  // adapts ('panels': priority lanes 1 • 2 on the left, general lanes 3 • 4
+  // on the right). ?sign=centre or ?sign=panels picks one on a screen (and
+  // the fids_sign_layout setting); _G8_SIGN_LAYOUT is the default.
+  // ═══════════════════════════════════════════════════════════════════════
+  var _G8_SIGN_LAYOUT = 'centre';
+  function _g8SignLayout() {
+    var v = '';
+    try {
+      var m = /[?&]sign=(centre|center|panels)(?:&|$)/.exec(String((typeof location !== 'undefined' && location && location.search) || ''));
+      if (m) v = m[1];
+    } catch (eL) {}
+    if (!v) { try { v = String((typeof localStorage !== 'undefined' && localStorage.getItem('fids_sign_layout')) || ''); } catch (eS) { v = ''; } }
+    if (v === 'center') v = 'centre';
+    return (v === 'centre' || v === 'panels') ? v : _G8_SIGN_LAYOUT;
+  }
+
+  // THE PICTOGRAMS, drawn here (our own drawings, in the manner of the ISO
+  // 7001 airport symbols), filled with the panel's own ink (currentColor):
+  //   pre     the wheelchair and the family, side by side (pre-boarding);
+  //   fam     the family (an airline's own family or courtesy call);
+  //   all     a group of passengers (the switch to everyone): Material
+  //           Symbols 'groups', Apache License 2.0, the same drawing as
+  //           logos/icons/passengers.svg, credited on the credits page; its
+  //           box cropped to the drawing (the symbol’s own 960-unit square
+  //           left it half its height), so it is drawn wide and big;
+  //   prio    a passenger and a star (a priority call with no number);
+  //   closed  a padlock (gate closed).
+  var _G8_PICTO = {
+    wheel: '<svg class="g8-picto" viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
+      + '<circle cx="44" cy="12" r="9" fill="currentColor"/>'
+      + '<path d="M42 27 L44 58 M43 40 L63 40 M44 58 L67 58 L77 86" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>'
+      + '<path d="M33.8 49.4 A24 24 0 1 0 65.2 65.8" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>'
+      + '</svg>',
+    family: '<svg class="g8-picto" viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
+      + '<circle cx="32" cy="12" r="9" fill="currentColor"/>'
+      + '<rect x="22" y="25" width="20" height="37" rx="7" fill="currentColor"/>'
+      + '<rect x="23" y="56" width="8" height="40" rx="4" fill="currentColor"/>'
+      + '<rect x="33" y="56" width="8" height="40" rx="4" fill="currentColor"/>'
+      + '<path d="M40 33 L59 53" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>'
+      + '<circle cx="68" cy="44" r="7" fill="currentColor"/>'
+      + '<rect x="60" y="54" width="16" height="24" rx="5" fill="currentColor"/>'
+      + '<rect x="61" y="74" width="6" height="22" rx="3" fill="currentColor"/>'
+      + '<rect x="69" y="74" width="6" height="22" rx="3" fill="currentColor"/>'
+      + '</svg>',
+    all: '<svg class="g8-picto g8-picto-wide" viewBox="-12 -732 984 504" aria-hidden="true" focusable="false">'
+      + '<path fill="currentColor" d="M30-240q-12.75 0-21.37-8.63Q0-257.25 0-270v-23q0-38.57 41.5-62.78Q83-380 150.38-380q12.16 0 23.39.5t22.23 2.15q-8 17.35-12 35.17-4 17.81-4 37.18v65H30Zm240 0q-12.75 0-21.37-8.63Q240-257.25 240-270v-35q0-32 17.5-58.5T307-410q32-20 76.5-30t96.5-10q53 0 97.5 10t76.5 30q32 20 49 46.5t17 58.5v35q0 12.75-8.62 21.37Q702.75-240 690-240H270Zm510 0v-65q0-19.86-3.5-37.43T765-377.27q11-1.73 22.17-2.23 11.17-.5 22.83-.5 67.5 0 108.75 23.77T960-293v23q0 12.75-8.62 21.37Q942.75-240 930-240H780ZM149.57-410q-28.57 0-49.07-20.56Q80-451.13 80-480q0-29 20.56-49.5Q121.13-550 150-550q29 0 49.5 20.5t20.5 49.93q0 28.57-20.5 49.07T149.57-410Zm660 0q-28.57 0-49.07-20.56Q740-451.13 740-480q0-29 20.56-49.5Q781.13-550 810-550q29 0 49.5 20.5t20.5 49.93q0 28.57-20.5 49.07T809.57-410ZM480-480q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T600-600q0 50-34.5 85T480-480Z"/>'
+      + '</svg>',
+    // a passenger and a star: a priority call that has no number of its
+    // own (the generic plan's Priority, an airline's un-numbered priority
+    // step) still has its symbol, drawn like the others
+    prio: '<svg class="g8-picto" viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
+      + '<circle cx="23" cy="13" r="11" fill="currentColor"/>'
+      + '<rect x="11" y="28" width="24" height="38" rx="9" fill="currentColor"/>'
+      + '<rect x="12" y="58" width="10" height="38" rx="5" fill="currentColor"/>'
+      + '<rect x="24" y="58" width="10" height="38" rx="5" fill="currentColor"/>'
+      + '<path fill="currentColor" d="M64 16 L70.47 33.1 L88.73 33.97 L74.46 45.4 L79.28 63.03 L64 53 L48.72 63.03 L53.54 45.4 L39.27 33.97 L57.53 33.1 Z"/>'
+      + '</svg>',
+    closed: '<svg class="g8-picto" viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
+      + '<path d="M32 46 V32 A18 18 0 0 1 68 32 V46" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>'
+      + '<path fill="currentColor" fill-rule="evenodd" d="M27 44 H73 A7 7 0 0 1 80 51 V85 A7 7 0 0 1 73 92 H27 A7 7 0 0 1 20 85 V51 A7 7 0 0 1 27 44 Z M50 57 A7 7 0 0 0 46.5 70.1 V80 H53.5 V70.1 A7 7 0 0 0 50 57 Z"/>'
+      + '</svg>'
+  };
+  function _g8Picto(kind) {
+    var P = _G8_PICTO;
+    if (kind === 'pre') return P.wheel + P.family;
+    if (kind === 'fam') return P.family;
+    if (kind === 'all') return P.all;
+    if (kind === 'prio') return P.prio;
+    if (kind === 'closed') return P.closed;
+    return '';
+  }
+
+  // WHO STILL WAITS, as a list in one language: the values in that
+  // language's own list form (4, 5 and 6 · 4, 5 et 6 · 4、5、6 · 第4、5、6区 ·
+  // 4 و5 و6), four or more in a run as a range (2–6; 2〜6 in Japanese, 2至6 in
+  // Chinese: META.range; in Arabic as words, « من 4 إلى 9 »: META.rangeFmt,
+  // since a dash between two numbers runs right to left there and showed
+  // 9–4), Porter's row bands always as one range (1–13).
+  // n is the count the key's plural form follows.
+  function _g8SeatList(vals, unit, lg) {
+    var v = (vals || []).filter(function (x) { return x !== '' && x != null; }).map(String);
+    if (!v.length) return null;
+    var M = BoardStrings.META[lg] || BoardStrings.META.en;
+    var lo = null, hi = null, n = v.length;
+    if (unit === 'rows') {
+      var nums = [];
+      v.forEach(function (x) { x.split(/[–-]/).forEach(function (q) { var k = parseInt(q, 10); if (!isNaN(k)) nums.push(k); }); });
+      if (nums.length) { lo = Math.min.apply(null, nums); hi = Math.max.apply(null, nums); n = hi - lo + 1; }
+    } else if (v.length >= 4) {
+      var run = v.every(function (x, i) {
+        if (!i) return true;
+        var a = v[i - 1];
+        if (/^\d+$/.test(a) && /^\d+$/.test(x)) return parseInt(x, 10) === parseInt(a, 10) + 1;
+        if (/^[A-Z]$/.test(a) && /^[A-Z]$/.test(x)) return x.charCodeAt(0) === a.charCodeAt(0) + 1;
+        return false;
+      });
+      if (run) { lo = v[0]; hi = v[v.length - 1]; }
     }
-    return out;
+    if (lo !== null && String(lo) !== String(hi)) {
+      if (M.rangeFmt) return { txt: M.rangeFmt.replace('{LO}', function () { return String(lo); }).replace('{HI}', function () { return String(hi); }), n: n };
+      return { txt: lo + (M.range || '–') + hi, n: n };
+    }
+    if (lo !== null) return { txt: String(lo), n: 1 };
+    if (v.length === 1) return { txt: v[0], n: 1 };
+    if (M.listSep) return { txt: v.join(M.listSep), n: n };
+    try { return { txt: new Intl.ListFormat(M.intl, { type: 'conjunction' }).format(v), n: n }; }
+    catch (eF) { return { txt: v.join(', '), n: n }; }
+  }
+  // The remain-seated key for a unit and a count in one language: one, two
+  // (the Arabic dual) or more, by Intl.PluralRules. Japanese and Chinese have
+  // one form ('other'), so they always take the list key; every key's
+  // placeholder ({N} or {LIST}) takes the same list.
+  function _g8SeatKey(unit, n, lg) {
+    if (unit === 'rows') return 'seatedRows';
+    var base = unit === 'groupLabel' ? 'seatedGroup' : 'seatedZone';
+    var form = 'other';
+    try { form = new Intl.PluralRules((BoardStrings.META[lg] || BoardStrings.META.en).intl).select(n); }
+    catch (eP) { form = n === 1 ? 'one' : 'other'; }
+    if (form === 'one') return base;
+    if (form === 'two') return base + 'sTwo';
+    return base + 's';
+  }
+  // A whole sentence in each of the board's languages, each its own line
+  // (the instruction line, seeAgent at gate closed), never cut: the line
+  // shrinks to its box (_fidsSignLineFit) and wraps on its own words only
+  // past the floor.
+  function _g8SignGo(key) {
+    return _gateLbl(key, _frF, function (w) { return '<span class="g8-seat-line">' + w + '</span>'; }, '');
+  }
+  // THE INSTRUCTION LINE, the foot of the general panel (the centre, or the
+  // right-hand panel of the two): until the switch, "Please remain seated
+  // until your zone is called" in the airline's own unit (group, Porter's
+  // row; general boarding where nothing is numbered); from the switch, and
+  // through the final call, "All remaining passengers, please proceed to the
+  // gate". The same line, in the same place, before and after.
+  // ONE "REMAIN SEATED", NOT TWO: under a numbered call with zones still
+  // waiting, the line IS who still waits ("Zones 4, 5 and 6: please remain
+  // seated", seated): the generic sentence beside it said the same thing a
+  // second time in each language, four sentences for one message. The
+  // generic one is left for a call that leaves no number to name
+  // (pre-boarding, a family or courtesy call, an un-numbered priority call,
+  // WestJet's calls, whose open Zone 3+ is said in words, an airline that
+  // numbers nobody).
+  function _g8SignInstr(p, sw, seated) {
+    if (sw) return _g8SignGo('paxRemainGo');
+    if (seated) return seated;
+    var u = (p && p.unit) || '';
+    return _g8SignGo(u === 'zone' ? 'seatedUntilZone' : (u === 'groupLabel' ? 'seatedUntilGroup' : (u === 'rows' ? 'seatedUntilRow' : 'seatedUntilGen')));
   }
 
   // The arrow disc from the licensed arrow pack (Pro licence held): the dark
@@ -18534,255 +18888,451 @@ function uxgGateHtml(ctx) {
       + '" fill="currentColor" transform="rotate(-45 100 100)"/></svg>';
   }
   function _g8SignCol(side, S) {
-    var h = '<div class="g8-board-col ' + (side === 'left' ? 'now' : 'next') + ' g8-sign-col g8-sign-' + side
-      + ((S.note || S.roster) ? ' has-note' : '') + (S.roster ? ' has-roster' : '') + '">';
+    // the panel's colour: the airline's own (now: the priority lanes, next:
+    // general boarding), or the switch's own (all, is-switch)
+    var h = '<div class="g8-board-col ' + (S.cls || (side === 'left' ? 'now' : 'next')) + ' g8-sign-col g8-sign-' + side
+      + ((S.note || S.roster) ? ' has-note' : '') + (S.roster ? ' has-roster' : '')
+      // BOARDING SEQUENCES — a panel with no number keeps its lane line at the foot
+      + (S.value ? '' : ' no-value')
+      // and one that is not called yet says so in its class (its main line is
+      // words, never a number with an arrow)
+      + (S.waiting ? ' is-waiting' : '')
+      // THE SWITCH TO EVERYONE, its own solid colour; a pictogram; the line
+      // of who still waits; the instruction line at its foot
+      + (S.sw ? ' is-switch' : '') + (S.picto ? ' has-picto' : '') + (S.wait ? ' has-wait' : '') + (S.instr ? ' has-instr' : '') + '">';
+    if (S.picto) h += '<div class="g8-sign-picto g8-picto-' + S.picto + '">' + _g8Picto(S.picto) + '</div>';
     // g8-pair puts these on _fidsPairSeparators' radar, so a pair that has
     // to go to two rows loses its bar. g8-board-lane on the lane line gives it
     // back the nowrap armour and the stacking guard it always had.
     if (S.title) h += '<div class="g8-sign-title g8-pair">' + S.title + '</div>';
     if (S.sub) h += '<div class="g8-sign-sub g8-pair">' + S.sub + '</div>';
     if (S.value) {
-      var _txt = _g8GrpValCls(S.value);
+      // BOARDING SEQUENCES — a group's own code (Alaska's A, Norwegian's B,
+      // WestJet's 3+) is a numeral like Zone 3: it shares the row with its
+      // word, it is never set as a phrase under it
+      var _vPlain = String(S.value), _vPrev;
+      do { _vPrev = _vPlain; _vPlain = _vPlain.replace(/<[^>]*>/g, ''); } while (_vPlain !== _vPrev);
+      var _isCode = /^[A-Z0-9]{1,2}\+?(\s*[\u2022\u2013]\s*[A-Z0-9]{1,2}\+?)*$/.test(_vPlain.trim());
+      var _txt = _isCode ? '' : _g8GrpValCls(S.value);
       var _val = '<div class="g8-sign-value' + _txt + (_txt ? ' g8-pair' : '') + '">' + S.value
         + ((side === 'right' && !_txt) ? '<span class="g8-sign-valarrow">' + _g8ArrowGlyph() + '</span>' : '')
         + '</div>';
       // v23773 — the group word and its number share ONE row, the word to
       // the left of the number (Rows | Rangées  1–7), as the reference picture
-      // draws it. Only a NUMERAL earns the row: a word value (the final
-      // call's All | Toutes) keeps its own size under its word, or the
-      // row's numeral size would blow it past the column.
+      // draws it. Only a NUMERAL earns the row: a word value (ALL ZONES |
+      // TOUTES LES ZONES) keeps its own size under its word, or the row's
+      // numeral size would blow it past the column.
       h += (S.label && !_txt) ? '<div class="g8-sign-row"><div class="g8-sign-label g8-pair">' + S.label + '</div>' + _val + '</div>'
          : ((S.label ? '<div class="g8-sign-label g8-pair">' + S.label + '</div>' : '') + _val);
     }
+    // "Boarding will begin shortly", the waiting panel's main line: a
+    // sentence, so each language is a whole line of its own, like the
+    // instruction line (a pair of two sentences stacked at half the screen:
+    // "Das Boarding beginnt in Kürze | L’embarquement débutera sous peu")
+    if (S.soon) h += '<div class="g8-sign-soon">' + S.soon + '</div>';
+    // who the call is for, small, under the number (the call's own cabin)
+    if (S.who) h += '<div class="g8-sign-who g8-pair">' + S.who + '</div>';
     if (S.note) h += '<div class="g8-sign-note">' + S.note + '</div>';
     if (S.roster) h += '<div class="g8-sign-roster">' + S.roster + '</div>';
+    // a small line of whole sentences under the number (the sequence now
+    // puts who still waits in the instruction line instead: one "remain
+    // seated", not two)
+    if (S.wait) h += '<div class="g8-sign-wait">' + S.wait + '</div>';
     if (S.lanes) h += '<div class="g8-sign-lanes g8-pair">' + S.lanes + '</div>';
-    if (S.next) h += '<div class="g8-sign-next">' + S.next + '</div>';
+    // THE INSTRUCTION LINE ("Please remain seated until your zone is called",
+    // then at the switch "All remaining passengers, please proceed to the
+    // gate"), each language a whole line, in the band between the two discs
+    // where the Next line was: it can never push the lane line or land under
+    // a disc
+    if (S.instr) h += '<div class="g8-sign-instr">' + S.instr + '</div>';
     h += '<span class="g8-sign-arrow l">' + _g8ArrowDisc('dl') + '</span>'
        + '<span class="g8-sign-arrow r">' + _g8ArrowDisc('dr') + '</span>';
     return h + '</div>';
   }
-  function _g8SignHtml(L, R) {
-    return '<div class="g8-board-body g8-sign">' + _g8SignCol('left', L) + _g8SignCol('right', R) + '</div>';
+  function _g8SignHtml(L, R, nextTs) {
+    // BOARDING SEQUENCES — when the next call is due, so the once-a-second
+    // clock (updateDedicatedTimeOnly) repaints the sign at that minute: the
+    // band's data-close-ts pattern. Nothing in the feed changes when a step
+    // is due, so without it the sign stood still until the next refresh.
+    // THE INSTRUCTION LINE runs UNDER the two panels, the whole width of
+    // the sign: in the right-hand panel's foot it had a third of the screen
+    // between the discs, and « Tous les autres passagers sont priés de se
+    // présenter à la porte » came down to 19 px there.
+    var ins = R.instr || L.instr || '', strip = function (S) {
+      var o = {};
+      for (var k in S) if (Object.prototype.hasOwnProperty.call(S, k) && k !== 'instr') o[k] = S[k];
+      return o;
+    };
+    // has-switch: the switch is on, so its panel leads the sign
+    // (_fidsSignSwitchLead keeps every other number on it no bigger)
+    return '<div class="g8-board-body g8-sign g8-sign-two' + (ins ? ' has-instr' : '') + ((L.sw || R.sw) ? ' has-switch' : '') + '"' + (nextTs > 0 ? ' data-stage-next-ts="' + Math.round(nextTs) + '"' : '') + '>'
+      + _g8SignCol('left', strip(L)) + _g8SignCol('right', strip(R))
+      + (ins ? '<div class="g8-sign-instr g8-sign-instr-band">' + ins + '</div>' : '') + '</div>';
+  }
+  // The one centre display: the same frame (the same panel, the same two
+  // arrow discs in its corners), one panel wide.
+  function _g8SignCentreHtml(C, nextTs) {
+    return '<div class="g8-board-body g8-sign g8-sign-one"' + (nextTs > 0 ? ' data-stage-next-ts="' + Math.round(nextTs) + '"' : '') + '>'
+      + _g8SignCol('centre', C) + '</div>';
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // BOARDING SEQUENCES — EACH AIRLINE'S CALLS, ONE AFTER ANOTHER.
+  //
+  // Both panels used to come up at the first second of boarding, so priority
+  // and general boarding were called together, and the steps inside were
+  // tied to fixed minutes before departure (minsToDep > 18, > 13, > 8…) that
+  // knew nothing of when boarding opened. Now the window is exactly what it
+  // was (_gateSignPhase, _schedBoardingOn, _door: the same minute opens the
+  // sign), and inside it each airline's PUBLISHED order plays in turn,
+  // pre-boarding first: js/boarding-sequence.js (FIDSBoardSeq) holds the
+  // tables and the pacing; this builds the same two panels from the stage
+  // that is live.
+  //   LEFT  (lanes 1 • 2): pre-boarding, then the airline's priority and
+  //         family calls in its own order; once they are all called, the
+  //         priority values called so far stay listed as callable.
+  //   RIGHT (lanes 3 • 4): general boarding: "Boarding will begin shortly"
+  //         while the left runs, then each zone, group or row band in turn
+  //         with the ones still to come as the Next line.
+  // The sequence starts when boarding opened (_gateSeqT0) and runs to the
+  // departure the sign keeps (_signDepTs: a delay after boarding began does
+  // not restart it), and never steps back (_gateSeqMemo). The airport's
+  // Final call and Gate closed end it; a row's _boardStage picks the stage.
+  // ═══════════════════════════════════════════════════════════════════════
+  function _g8SeqPlan() {
+    if (typeof FIDSBoardSeq === 'undefined' || !FIDSBoardSeq || typeof FIDSBoardSeq.plan !== 'function') return null;
+    // Express is whatever the one ladder says (fidsResolveOperator: Jazz,
+    // PAL, or the Air Canada Express brand); an AC number flown as Express
+    // calls Express zones (top zone 4).
+    var _express = (airlineCode === 'QK')
+      || (typeof acExpressOperated === 'function' && typeof fidsResolveOperator === 'function'
+          && acExpressOperated(fidsResolveOperator(currentFlight, iata).op));
+    // Porter boards by ROW NUMBER, back to front, in three bands. The fleet
+    // is in the flight number (v23688): the 4-digit series is the Billy
+    // Bishop turboprop network (Dash 8-400, 20 rows), the 3-digit series the
+    // jets flying YYZ and west (E195-E2, 33 rows). The equipment string is
+    // the fallback for a number this rule does not describe, and anything
+    // still unknown is called as the Dash 8: calling rows 21-33 on a 20-row
+    // aircraft sends passengers to rows that do not exist. Punctuation is
+    // stripped before matching (v23520: 'DHC-8-400', 'DHC8400').
+    var _pdNum = String(currentFlight.flight || '').replace(/[^0-9]/g, '');
+    var _pdEq = (String(equipRaw || '') + ' ' + String(equipName || ''))
+      .toUpperCase().replace(/[^A-Z0-9]/g, '');
+    var _pdIsDash = _pdNum.length === 4 ? true
+                  : _pdNum.length === 3 ? false
+                  : !/E19|E29|E95|195|290|295|EMBRAER/.test(_pdEq);
+    var _pdRows = _pdIsDash ? 20 : 33;
+    // Edinburgh sends ICAO designators as the carrier: the IATA code first.
+    var _seqCode = airlineCode;
+    try { if (/^[A-Z]{3}$/.test(_seqCode) && typeof CALLSIGN_ICAO !== 'undefined' && CALLSIGN_ICAO[_seqCode]) _seqCode = CALLSIGN_ICAO[_seqCode]; } catch (eI) {}
+    // The airline's own close time paces the calls (GATE_CLOSE_POLICY, never
+    // printed here); an airline with none, or only a be-at-the-gate time, 10.
+    var _close = 10;
+    try {
+      var _cc = _gateCloseCarrier(_seqCode);
+      var _cp = _cc ? GATE_CLOSE_POLICY[_cc] : null;
+      if (_cp && _cp.kind !== 'gateBeAt') _close = _cp.min;
+    } catch (eC) {}
+    var _dep = _signDepTs || effectiveDepTs || 0;
+    var _t0 = 0;
+    try { _t0 = _gateSeqT0(currentFlight, _door, iata); } catch (eT) { _t0 = 0; }
+    if (!_t0 && _dep) _t0 = _dep - (_boardLeadShown || 35) * 60000;
+    var _homeC = '', _toC = '';
+    try { _homeC = airportCountry(iata) || ''; _toC = airportCountry(currentFlight._locIata || '') || ''; } catch (eA) {}
+    // EACH ZONE'S OWN CABIN depends on the aircraft and the route (Air
+    // Canada's Premium Economy flies only on its widebodies; Premium Rouge
+    // boards in Zone 1 on domestic and Caribbean flights, Zone 2 on
+    // international ones; Express sells Business only on its two-cabin jets).
+    // A type the gate cannot place says nothing: no cabin is guessed.
+    var _eqU = String(equipRaw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    var _cat = '';
+    if (_eqU) {
+      if ((typeof AIRCRAFT_CATEGORY !== 'undefined') && AIRCRAFT_CATEGORY[_eqU]) _cat = AIRCRAFT_CATEGORY[_eqU];
+      else if (/^(B7[4-8]|A3[3-8]|B77|B78|B76|B74)/.test(_eqU)) _cat = 'widebody';
+      else if (/^(CR|CRJ|E1[3-9]|E[2-9]\d|E75|E7W|E170|E175|E190|E195|E29|DH|DHC|AT[47]|SF3|B19|J[S3]|SW)/.test(_eqU)) _cat = 'regional';
+      else if (/^(31[89]|32[0-9A-Z]|A3[12]\d|A2[01]N|22[13]|BCS|CS[13]|7[0-9][0-9A-Z]|7M[789]|B7[0-3]|B3[789]M|B73)/.test(_eqU)) _cat = 'narrowbody';
+    }
+    var _twoCabin = /^(CR9|CRJ9|CR7|CRJ7|E75|E7W|E175|E75L|E75S)/.test(_eqU);
+    // the route: 'dom', 'carib', 'na' (the rest of North America), 'intl'
+    var _region = '';
+    try {
+      var _rawCC = function (c) { c = String(c || '').toUpperCase(); return (typeof _IATA_CC !== 'undefined' && _IATA_CC[c]) || airportCountry(c) || ''; };
+      var _dc = _rawCC(currentFlight._locIata || ''), _hc = _rawCC(iata);
+      var _CARIB = ['AG', 'AI', 'AW', 'BB', 'BL', 'BQ', 'BS', 'CU', 'CW', 'DM', 'DO', 'GD', 'GP', 'HT', 'JM', 'KN', 'KY', 'LC', 'MF', 'MQ', 'MS', 'PR', 'SX', 'TC', 'TT', 'VC', 'VG', 'VI'];
+      if (_dc) _region = (_dc === _hc) ? 'dom' : (_CARIB.indexOf(_dc) >= 0 ? 'carib' : (/^(CA|US|MX)$/.test(_dc) ? 'na' : 'intl'));
+    } catch (eR) { _region = ''; }
+    var p = FIDSBoardSeq.plan(_seqCode, {
+      t0: _t0, dep: _dep, close: _close, express: !!_express, pdDash: _pdIsDash, pdRows: _pdRows,
+      legalPre: _homeC === 'CA' || _homeC === 'US', toUS: _toC === 'US',
+      cat: _cat, twoCabin: _twoCabin, region: _region,
+      cabins: _G8_CABINS[airlineCode] || null, boardStage: currentFlight._boardStage
+    });
+    var st = FIDSBoardSeq.stageAt(p, Date.now());
+    try { st = _gateSeqMemo(currentFlight, p, st); } catch (eM) {}
+    return { p: p, st: st };
+  }
+  // A group word for n values: 'Zone 3', 'Zones 3 • 4'; 'Group 1', 'Groups
+  // 1 • 2'; Rows always.
+  function _g8SeqLabelKey(label, n) {
+    if (label === 'zone') return n > 1 ? 'zones' : 'zone';
+    if (label === 'groupLabel') return n > 1 ? 'groups' : 'groupLabel';
+    return label || '';
+  }
+  // A stage's group word and value, or "All passengers" for a call with no
+  // number.
+  function _g8SeqValue(s, max) {
+    if (s && s.values && s.values.length) {
+      return { label: _g8SignPair(_g8SeqLabelKey(s.label, s.values.length)), value: FIDSBoardSeq.fmt(s.values, max || 4) };
+    }
+    return { label: '', value: _g8SignPair('allPax') };
+  }
+  // WHO IS CALLED, in BOTH of the board's languages, each a whole block (the
+  // way boardSoon and boardConv go through _g8SignLines): the gate has no
+  // language rotation, so a list shown one language at a time was only ever
+  // shown in the first. Inside each block every ' · ' item is one unit
+  // (display rule 2): a line breaks between items, never inside 'Global
+  // Services' or 'Premier 1K'; an item wider than the panel wraps on its own
+  // words. The dot stays with the item before it.
+  function _g8SeqWhoBlk(w) {
+    var items = String(w).split(' \u00B7 ');
+    return '<span class="g8-who-blk">' + items.map(function (it, i) {
+      return '<span class="g8-who-i">' + it + (i < items.length - 1 ? '\u00A0\u00B7' : '') + '</span>';
+    }).join(' ') + '</span>';
+  }
+  function _g8SeqWho(s) {
+    if (!s) return '';
+    if (s.who) return _gateLbl(s.who, _frF, _g8SeqWhoBlk, '');
+    // A MERGED CALL (a short window calls Zones 1 \u2022 2 together: an Air
+    // Canada Express or WestJet Encore Dash 8 at Moncton) names everyone
+    // each of its calls names, in each of the board's two languages: the
+    // lists joined (FIDSBoardSeq.joinWho), an item two of them share said
+    // once. The same language pick and the same one-language-once rule as
+    // _gateLbl; a half is marked careful when any list in it is.
+    var keys = (s.whos || []).filter(Boolean);
+    if (!keys.length || typeof FIDSBoardSeq === 'undefined' || typeof FIDSBoardSeq.joinWho !== 'function') return '';
+    var L = BoardStrings.pairLangs(langs, !!_frF), seen = Object.create(null), out = '', n = 0;
+    for (var i = 0; i < L.length && n < 2; i++) {
+      var lg = L[i], ents = keys.map(function (k) { return _lblEntry(k) || {}; });
+      if (ents.some(function (e) { return !e[lg]; })) continue;
+      var w = FIDSBoardSeq.joinWho(ents.map(function (e) { return e[lg]; }));
+      var lk = w.toLowerCase();
+      if (!w || seen[lk]) continue;
+      seen[lk] = 1; n++;
+      var ck = keys[0];
+      for (var j = 0; j < keys.length; j++) if (ents[j].$src && ents[j].$src[lg] === 'careful') { ck = keys[j]; break; }
+      out += BoardStrings.markHalf(_g8SeqWhoBlk(w), lg, ck);
+    }
+    return out;
+  }
+  // A stage's own cabin, as a pair; and the cabin a list of calls shares
+  // (the summed-up panel names one only when every call in it has that same
+  // one; a merged call names every one its calls name: _g8SeqCabS).
+  function _g8SeqCab(k) { return k ? _g8SignPair(k, false, true) : ''; }
+  // A CALL'S CABINS. A merged call (Zones 1 \u2022 2 on a short window)
+  // names every cabin its calls name (FIDSBoardSeq: subs): one is its own
+  // pair, as for a single call; two or more are one pair whose halves each
+  // list them in that language (« Premium · Extended Comfort | Privilège ·
+  // Confort accru »), the same language pick and the same one-language-once
+  // rule as _gateLbl.
+  function _g8SeqCabS(s) {
+    var ks = (s && s.subs) || [];
+    if (ks.length < 2) return _g8SeqCab(s && s.sub);
+    var L = BoardStrings.pairLangs(langs, !!_frF), seen = Object.create(null), halves = [];
+    for (var i = 0; i < L.length && halves.length < 2; i++) {
+      var lg = L[i], ents = ks.map(function (k) { return _lblEntry(k) || {}; });
+      if (ents.some(function (e) { return !e[lg]; })) continue;
+      var w = ents.map(function (e) { return e[lg]; }).join(' \u00B7 ');
+      if (seen[w.toLowerCase()]) continue;
+      seen[w.toLowerCase()] = 1;
+      var ck = ks[0];
+      for (var j = 0; j < ks.length; j++) if (ents[j].$src && ents[j].$src[lg] === 'careful') { ck = ks[j]; break; }
+      halves.push(BoardStrings.markHalf('<span class="g8-pair-h">' + w + '</span>', lg, ck));
+    }
+    return halves.join('<span class="g8-pair-sep">|</span>');
+  }
+  function _g8SeqCabOf(list) {
+    if (!list || !list.length) return '';
+    var v = list[0].sub || '';
+    for (var i = 1; i < list.length; i++) if ((list[i].sub || '') !== v) return '';
+    return v;
+  }
+  // WHO STILL WAITS after the live call: "Zones 4, 5 and 6: please remain
+  // seated" in each of the board's languages, a whole line each, the list in
+  // that language's form and the key by its count (_g8SeatList,
+  // _g8SeatKey). Only under a numbered call (ZONE 3, GROUP 2, ROWS 14–20),
+  // where it IS the instruction line (_g8SignInstr): pre-boarding and a
+  // family or courtesy call have the generic sentence. Nothing when nothing
+  // numbered waits (an airline that numbers nothing, the last call, or
+  // WestJet's Zone 3, whose Zone 3+ covers the zone being called:
+  // FIDSBoardSeq.waitingAfter never names the number being called), and
+  // nothing when an open band is still to come (below).
+  function _g8SeqSeated(p, st) {
+    if (!p || !st || !p.unit || !st.cur || !(st.cur.values || []).length) return '';
+    var vals = FIDSBoardSeq.waitingAfter(p, st.i);
+    if (!vals.length) return '';
+    // AN OPEN BAND IS "EVERYONE ELSE", NOT A NUMBER TO LIST. WestJet's Zone
+    // 3+ ("Remaining guests") has no top zone to name: "Zones 2 and 3+" came
+    // out as 第2和3+区 in Chinese, which no one writes, and as "+3" in Arabic
+    // (right to left, the plus runs to the left of its digit). Where one is
+    // still to come, the instruction line says it in words ("Please remain
+    // seated until your zone is called").
+    if (vals.some(function (v) { return /\+$/.test(String(v)); })) return '';
+    var L = BoardStrings.pairLangs(langs, _frF), seen = {}, out = '';
+    for (var i = 0; i < L.length; i++) {
+      var lg = L[i], f = _g8SeatList(vals, p.unit, lg);
+      if (!f) continue;
+      var e = _lblEntry(_g8SeatKey(p.unit, f.n, lg)) || {};
+      var line = String(e[lg] || '').replace(/\{N\}|\{LIST\}/g, function () { return f.txt; });
+      if (!line || seen[line]) continue;
+      seen[line] = 1;
+      out += BoardStrings.markHalf('<span class="g8-seat-line">' + line + '</span>', lg);
+    }
+    return out;
+  }
+  // THE SWITCH TO EVERYONE: GENERAL BOARDING over the airline's own unit,
+  // plural (ALL ZONES, ALL GROUPS, ALL ROWS; ALL PASSENGERS where nothing is
+  // numbered), the group pictogram, and the instruction line turned to
+  // « All remaining passengers, please proceed to the gate ». Its own solid
+  // colour (cls 'all', is-switch). The final call keeps it.
+  function _g8SeqAll(p, lanes) {
+    var u = (p && p.unit) || '';
+    var k = u === 'zone' ? 'allZones' : (u === 'groupLabel' ? 'allGroups' : (u === 'rows' ? 'allRows' : 'allPax'));
+    return { cls: 'all', sw: true, picto: 'all', title: _g8SignPair('genboard'), value: _g8SignPair(k),
+      instr: _g8SignInstr(p, true), lanes: lanes };
+  }
+  // THE TWO LANE PANELS for the live stage, or for the final call.
+  //   LEFT  (lanes 1 • 2): pre-boarding, then the airline's priority and
+  //         family calls in its own order; once they are all called, the
+  //         priority values called so far stay listed as callable.
+  //   RIGHT (lanes 3 • 4): "Boarding will begin shortly" while the left
+  //         runs, then each zone, group or row band in turn, then THE SWITCH.
+  // The live call's panel carries the line of who still waits (a numbered
+  // call); the right-hand panel carries the instruction line at its foot.
+  function _g8SeqPanels(seq, isFinal) {
+    var p = seq.p, st = seq.st, stg = p.stages, cur = st.cur, B = FIDSBoardSeq;
+    var lanesL = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('1 \u2022 2', true);
+    var lanesR = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('3 \u2022 4', true);
+    var sideOf = function (list, side) { return list.filter(function (s) { return s.side === side; }); };
+    var sw = isFinal || B.isSwitch(p, st);
+    var seated = (!sw && cur) ? _g8SeqSeated(p, st) : '';
+    // who still waits IS the instruction line under a numbered call (one
+    // "remain seated", in the band under both panels)
+    var instr = _g8SignInstr(p, sw, seated);
+    var pL, pR;
+    // ── RIGHT ──
+    if (sw) {
+      pR = _g8SeqAll(p, lanesR);
+    } else if (!cur || cur.side === 'L') {
+      // WAITING. General boarding is not called yet, and the panel says so
+      // as its main line: no number, no arrow, so it never reads as a live
+      // call. Its cabin over it; who still waits is the instruction line.
+      // The line is a sentence, each language a whole line (soon).
+      var g0 = sideOf(stg, 'R')[0];
+      pR = { title: _g8SeqCab(g0 && g0.sub), soon: _g8SignGo('boardSoon'), lanes: lanesR, instr: instr, waiting: true };
+    } else {
+      // One call: its cabin, the airline's word and number; who still waits
+      // is the instruction line under both panels.
+      var lv = _g8SeqValue(cur, 4);
+      pR = { title: _g8SeqCab(cur.sub), label: lv.label, value: lv.value, roster: _g8SeqWho(cur), lanes: lanesR, instr: instr };
+    }
+    // ── LEFT ──
+    // An airline that publishes no priority step at all (PAL, Porter, Air
+    // North, Calm Air, Pascan…) is never given one.
+    var anyPrio = p.prioAnyTime || p.full.some(function (s) { return s.kind === 'prio'; });
+    if (!isFinal && cur && cur.side === 'L') {
+      if (cur.kind === 'pre') {
+        // Pre-boarding: the pictograms, the airline's list of who pre-boards
+        // in both of the board's languages, and Porter's PorterReserve.
+        pL = { picto: 'pre', title: _g8SignPair('preboard'), sub: _g8SeqCab(cur.sub), roster: _g8SeqWho(cur), lanes: lanesL };
+      } else if (cur.kind === 'prio') {
+        // The call's own cabin, or none: never the first priority call's.
+        // A call with no number of its own still has its symbol (prio).
+        var pv = cur.values.length ? _g8SeqValue(cur, 3) : { label: '', value: '' };
+        pL = { picto: pv.value ? '' : 'prio', title: _g8SignPair('priority'), sub: _g8SeqCabS(cur),
+              label: pv.label, value: pv.value, roster: _g8SeqWho(cur), lanes: lanesL };
+      } else {
+        // The airline's own family or courtesy call, in its own words.
+        pL = { picto: 'fam', title: _g8SignPair(cur.title), roster: _g8SeqWho(cur), lanes: lanesL };
+      }
+    } else if (!anyPrio) {
+      // Pre-boarding is over (or it is the final call) at an airline with no
+      // priority step: lanes 1 • 2 serve the same call as the right panel,
+      // so the panel says that call, never 'Pre-boarding' or an invented
+      // priority. The instruction line is said once, under both panels.
+      pL = {};
+      for (var kR in pR) if (Object.prototype.hasOwnProperty.call(pR, kR)) pL[kR] = pR[kR];
+      pL.lanes = lanesL; pL.instr = '';
+    } else {
+      // Every left call made: Priority, the cabin all of them share, and the
+      // priority values called so far, still callable (the sign never says a
+      // call is over); "Board at your convenience" only where the airline
+      // publishes it.
+      var made = isFinal ? sideOf(p.full, 'L') : stg.slice(0, Math.max(0, st.i) + 1);
+      var prioMade = made.filter(function (s) { return s.kind === 'prio'; });
+      var prios = prioMade.filter(function (s) { return s.values.length; });
+      var pvals = B.valuesOf(prios);
+      pL = { picto: pvals.length ? '' : 'prio', title: _g8SignPair('priority'), sub: _g8SeqCab(_g8SeqCabOf(prioMade)),
+            label: pvals.length ? _g8SignPair(_g8SeqLabelKey(prios[0].label, pvals.length)) : '',
+            value: pvals.length ? B.fmt(pvals, 3) : '',
+            note: p.prioAnyTime ? _g8SignLines('boardConv') : '', lanes: lanesL };
+    }
+    return { L: pL, R: pR };
+  }
+  // THE ONE CENTRE DISPLAY for the live stage, or for the final call: who
+  // may line up now, and nothing else. Pre-boarding and the airline's family
+  // or courtesy call carry their pictograms and their own words; a
+  // numbered call is its word and number, huge, its cabin under it; an
+  // un-numbered priority call is its symbol (a passenger and a star) and
+  // its word, big. The instruction line sits at its foot throughout: who
+  // still waits under a numbered call ("Zones 4, 5 and 6: please remain
+  // seated"), the generic sentence when no number is left to name. The
+  // panel takes the airline's priority colour for the left-lane calls and
+  // its general colour for the general ones, as the two panels do; the
+  // switch its own.
+  function _g8SeqCentre(seq, isFinal) {
+    var p = seq.p, st = seq.st, cur = st.cur, B = FIDSBoardSeq;
+    var lanesL = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('1 \u2022 2', true);
+    var lanesR = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('3 \u2022 4', true);
+    if (isFinal || !cur || B.isSwitch(p, st)) return _g8SeqAll(p, lanesR);
+    var seated = _g8SeqSeated(p, st), instr = _g8SignInstr(p, false, seated);
+    var who = _g8SeqWho(cur), cab = _g8SeqCabS(cur);
+    if (cur.kind === 'pre') return { cls: 'now', picto: 'pre', title: _g8SignPair('preboard'), who: cab, roster: who, lanes: lanesL, instr: instr };
+    if (cur.kind === 'fam') return { cls: 'now', picto: 'fam', title: _g8SignPair(cur.title), roster: who, lanes: lanesL, instr: instr };
+    if (cur.kind === 'prio' && !cur.values.length) return { cls: 'now', picto: 'prio', value: _g8SignPair('priority'), who: cab, roster: who, lanes: lanesL, instr: instr };
+    var v = cur.values.length ? _g8SeqValue(cur, 4) : { label: '', value: _g8SignPair('allPax') };
+    return { cls: cur.side === 'L' ? 'now' : 'next', label: v.label, value: v.value, who: cab, roster: who,
+      lanes: cur.side === 'L' ? lanesL : lanesR, instr: instr };
+  }
+  // The sequence file did not load: one generic call, nothing invented.
+  function _g8SignFallback(one) {
+    var lanesR = _g8SignLanes('3 \u2022 4', true);
+    if (one) return _g8SignCentreHtml(_g8SeqAll(null, lanesR));
+    return _g8SignHtml({ picto: 'prio', title: _g8SignPair('priority'), lanes: _g8SignLanes('1 \u2022 2', true) }, _g8SeqAll(null, lanesR));
   }
 
   // Build boarding panel HTML
   var boardHtml = '';
+  var _seq = null;
+  try { window._gatePaintedStage = null; } catch (eW) {}
+  if (boardActive || finalActive) {
+    try { _seq = _g8SeqPlan(); } catch (eSq) { _seq = null; }
+  }
+  // the one centre display, or the two lane panels (_g8SignLayout)
+  var _signOne = _g8SignLayout() === 'centre';
   if (boardActive) {
-    var lateBoarding = minsToDep <= 18;
-    // v23706 — THE GENERIC BOARDING PANEL SPEAKS BOTH LANGUAGES.
-    //
-    // Reported on a United YUL/C80 board: the boarding sequence rendered in
-    // French only — "Groupe", "Embarquement en cours", "Prochain embarquement"
-    // — while every other element on the same screen carried its pair.
-    //
-    // Cause: two panels built at different times. The AC/WestJet lane sign
-    // (_acLanesBodyHtml) uses _gateLbl, which emits the bilingual pair. This
-    // generic panel — everything that is NOT AC, Rouge, Jazz, WestJet or
-    // Encore, so United and most of the network — used TL(), which returns ONE
-    // language, whichever the board is currently rotating through. Nothing
-    // about boarding was ever meant to be monolingual; the second builder
-    // simply never learned the pairing the first one had.
-    var _grpLbl = _gateLbl('groupLabel', _frF, function (w) { return w; },
-      ' <span class="g8-bir-sep">|</span> ') || TL('groupLabel');
-    var nowVal, nextVal, _acZonesVal = '', _comingVal = '';
-    if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
-      // Air Canada family boards by ZONE:
-      // priority Zones 1•2 first, then general boarding Zone 3, then Zones
-      // 4•5•6 on Mainline/Rouge — Express (Jazz/PAL) tops out at Zone 4.
-      // v23944 — Express is whatever the one ladder says (fidsResolveOperator:
-      // Jazz, PAL, or the Air Canada Express brand both fly as); a mainline
-      // extra in the 70xx block (AC7050) boards like mainline.
-      var _acExpress = (airlineCode === 'QK')
-        || (typeof acExpressOperated === 'function' && typeof fidsResolveOperator === 'function'
-            && acExpressOperated(fidsResolveOperator(currentFlight, iata).op));
-      _grpLbl = _gateLbl('zones', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
-      // Lane model per the physical AC gate signs: priority Zones 1
-      // (black, Lane 1) and 2 (red, Lane 2) get their own quarter panels AT
-      // ALL TIMES; the right half is the called-zones sign (3, then up to
-      // 4 \u2022 5 \u2022 6 \u2014 Express tops out at 4).
-      nowVal = '1'; nextVal = '2';
-      // Zones are called ONE AT A TIME — 3, then 4, then 5, then 6 as
-      // departure approaches. Express tops out at Zone 4.
-      var _zStep;
-      if (minsToDep > 18) _zStep = 3;
-      else if (_acExpress) _zStep = 4;
-      else if (minsToDep > 13) _zStep = 4;
-      else if (minsToDep > 8) _zStep = 5;
-      else _zStep = 6;
-      _acZonesVal = String(_zStep);
-      // v23223 — the zones still to be called
-      // Express tops out at 4, mainline at 6.
-      var _zMaxAC = _acExpress ? 4 : 6;
-      var _zRestAC = [];
-      for (var _zi = _zStep + 1; _zi <= _zMaxAC; _zi++) _zRestAC.push(_zi);
-      _comingVal = _zRestAC.join(' • ');
-    } else if (airlineCode === 'WS' || airlineCode === 'WR') {
-      // WestJet \u2014 SAME lane-sign model as the AC gate sign (stated more than
-      // once: zones 1 and 2 are 2 lanes ALL THE TIME, priority; zones
-      // 3 to 8 are also 2 lanes, by number). Priority Zones 1 (Lane 1) and
-      // 2 (Lane 2) hold their quarter panels for the whole boarding \u2014 they
-      // are never a now/next step. The right half calls Zones 3-8 ONE AT A
-      // TIME through Lanes 3\u20224 as departure approaches. Zone 9 (UltraBasic)
-      // rides the final call, not the zones sign.
-      _grpLbl = _gateLbl('zones', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
-      nowVal = '1'; nextVal = '2';
-      var _wzStep;
-      if (minsToDep > 18) _wzStep = 3;
-      else if (minsToDep > 15) _wzStep = 4;
-      else if (minsToDep > 12) _wzStep = 5;
-      else if (minsToDep > 10) _wzStep = 6;
-      else if (minsToDep > 8) _wzStep = 7;
-      else _wzStep = 8;
-      _acZonesVal = String(_wzStep);
-      // v23223 — zones still to come (WestJet calls through Zone 8).
-      var _zRestWS = [];
-      for (var _wzi = _wzStep + 1; _wzi <= 8; _wzi++) _zRestWS.push(_wzi);
-      _comingVal = _zRestWS.join(' • ');
-    } else if (airlineCode === 'PD') {
-      // Porter boards by ROW NUMBER, back to front. Row count by
-      // aircraft: Dash 8-400 = 20 rows, E195-E2 = 33 rows; three bands.
-      //
-      // v23520 —
-      // "E195 has 33". Two things were wrong. The E-jet figure was 29, which
-      // called rows 20-29 on an aircraft that has 33 — the last four rows were
-      // never called at all, and they are the first ones that should be, since
-      // Porter boards back to front. And the Dash 8 test read the raw code with
-      // hyphens in place, so it matched DH4 and DH8D but missed the DHC-8
-      // spellings the feeds also send ('DHC-8-400', 'DHC8400'). Anything it
-      // missed fell through to the E-jet branch, so a Dash 8 could be called by
-      // rows that do not exist on it.
-      // Punctuation is stripped before matching for that reason.
-      //
-      // v23688 — AND THE EQUIPMENT STRING IS USUALLY EMPTY, SO THAT TEST WAS
-      // DECIDING NOTHING.
-      // It was not the matcher that was wrong
-      // this time — it was the input. Read live off the YHZ board: EVERY Porter
-      // departure arrives with _aircraftCode:'' AND _aircraft:'' (PD202, PD470,
-      // PD2195, PD204, PD465, PD2494 — all blank), because the type is resolved
-      // per-flight by the enrichment poll well after this sign is first built.
-      // An empty string matches no Dash 8 spelling, so every Porter flight fell
-      // to the `: 33` else-branch and was called by E195-E2 row bands — on an
-      // aircraft that stops at row 20.
-      //
-      // THE FLEET IS IN THE FLIGHT NUMBER.
-      // and that is how
-      // the fleet is known, along with YTZ vs YYZ and western flights — the 4-digit
-      // series is the Billy Bishop turboprop network, the 3-digit series the
-      // jets flying YYZ and west. That is data this sign always has: the flight
-      // number is the one field the feed never leaves blank.
-      //
-      // Order of trust: the flight number decides; the equipment string is the
-      // fallback for a number this rule does not describe; and anything still
-      // unknown is called as the Dash 8, because calling rows 21-33 on a 20-row
-      // aircraft sends passengers to rows that do not exist, while the reverse
-      // merely calls a jet in three smaller bands.
-      var _pdNum = String(currentFlight.flight || '').replace(/[^0-9]/g, '');
-      var _pdEq = (String(equipRaw || '') + ' ' + String(equipName || ''))
-        .toUpperCase().replace(/[^A-Z0-9]/g, '');
-      var _pdIsDash = _pdNum.length === 4 ? true
-                    : _pdNum.length === 3 ? false
-                    : !/E19|E29|E95|195|290|295|EMBRAER/.test(_pdEq);
-      var _pdRows = _pdIsDash ? 20 : 33;
-      var _pdBand = Math.ceil(_pdRows / 3);
-      _grpLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
-      if (lateBoarding) {
-        nowVal = '1\u2013' + _pdBand;
-        nextVal = '\u2014';
-      } else {
-        nowVal = (_pdRows - _pdBand + 1) + '\u2013' + _pdRows;
-        nextVal = (_pdRows - 2 * _pdBand + 1) + '\u2013' + (_pdRows - _pdBand);
-        // v23223 \u2014 the next row band is the 'coming up' on Porter's sign.
-        _comingVal = nextVal;
-      }
-    } else {
-      var zones = getZoneCount(airlineCode, equipRaw);
-      if (lateBoarding) { nowVal = zones - 1; nextVal = zones; }
-      else { nowVal = 1; nextVal = 2; }
-    }
-    // Lane-sign mode mirrors the printed sign exactly: no now/next
-    // header row, no label over the "1" quarter, and the right side titled
-    // "Zones". WestJet uses the same sign model
-    // inheriting its own brand colours via the
-    // banner-bg/accent vars.
-    var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK'
-                    || airlineCode === 'WS' || airlineCode === 'WR');
-    // v23706 — same pairing for the two column headers. See the note at
-    // _grpLbl: these were the other half of the monolingual generic panel.
-    var _hdrNow = _gateLbl('boardNow', _frF, function (w) { return w; },
-      ' <span class="g8-bir-sep">|</span> ') || TL('boardNow');
-    var _hdrNext = _gateLbl('boardNext', _frF, function (w) { return w; },
-      ' <span class="g8-bir-sep">|</span> ') || TL('boardNext');
-    var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + _hdrNow + '</div><div class="g8-board-hdr-next">' + _hdrNext + '</div></div>';
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
       + _boardWelcomeStripHtml('boarding')
       + _boardBandHtml()
       + (function () {
-          // v23769 — each family's own words and values, poured into the one
-          // frame. The values are the ones computed above: nothing about
-          // timing, aircraft or the order of calls is decided here.
-          var _prioT = _g8SignPair('priority');
-          var _L, _R;
-          if (_acLanes) {
-            // Air Canada family and WestJet: priority Zones 1 • 2 on the left
-            // for the whole window; the called zone on the right, with the
-            // zones still to come as the Next line.
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), label: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair('zones'), value: _acZonesVal,
-                   lanes: _g8SignLanes('3 \u2022 4', true),
-                   next: _g8SignNext('zones', _comingVal) };
-          } else if (airlineCode === 'PD') {
-            // Porter: the Reserve cabin pre-boards, then boards at its
-            // convenience, on Lanes 1 • 2; Classic boards by row band on
-            // Lanes 3 • 4 with the next band as the Next line. Pre-boarding
-            // runs for the first five minutes of the window.
-            var _pdPre = minsToDep > (_boardLeadShown - 5);
-            // The roster is a LIST and wraps in its own slot — poured into a
-            // nowrap line it lost three of its five groups. The photo-ID
-            // reminder now rides the strip (see _boardWelcomeStripHtml); the
-            // tier marks are off the sign — the reference picture has neither.
-            _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true),
-                   note: _pdPre ? _g8SignLines('preboard') : _g8SignLines('boardConv'),
-                   roster: _pdPre ? (_gateLbl1Html('preboardList', _frF) || '') : '',
-                   lanes: _g8SignLanes('1 \u2022 2', true) };
-            // During pre-boarding the Classic panel is not being called yet;
-            // it says so. Once general boarding is on, the panel is titled
-            // General boarding with the cabin under it, and the row band
-            // shares a row with its word.
-            _R = _pdPre
-              ? { title: _g8SignPair('pdClassic', false, true), label: _g8SignPair('rows'), value: nowVal,
-                  note: _g8SignLines('boardSoon'),
-                  lanes: _g8SignLanes('3 \u2022 4', true),
-                  next: _g8SignNext('rows', _comingVal) }
-              : { title: _g8SignPair('genboard'), sub: _g8SignPair('pdClassic', false, true), label: _g8SignPair('rows'), value: nowVal,
-                  lanes: _g8SignLanes('3 \u2022 4', true),
-                  next: _g8SignNext('rows', _comingVal) };
-          } else if (airlineCode === 'PB') {
-            // PAL's open flow: pre-boarding for the first stretch of the
-            // window, then the one general call. One lane.
-            var _pbPre = minsToDep > 20;
-            // The priority panel names the pre-boarding; the called panel
-            // says the general call is coming, then that it is on — so the
-            // word 'Pre-boarding' is printed once, not on both panels.
-            _L = { title: _prioT, note: _g8SignLines('preboard'), lanes: _g8SignLanes('1', false) };
-            _R = { title: _g8SignPair('boarding'),
-                   value: _g8SignPair(_pbPre ? 'boardSoon' : 'genboard'),
-                   note: _pbPre ? '' : _g8SignLines('allPax'),
-                   next: _pbPre ? _g8SignNext(null, null, 'genboard') : '',
-                   lanes: _g8SignLanes('1', false) };
-          } else {
-            // Everyone else boards by group: pre-boarding on the left, the
-            // called group on the right, the next group as the Next line.
-            // A carrier that boards by ZONE (AIRLINE_ZONES says so) is titled
-            // Zones, not Group — Air North, for one.
-            var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).call === 'zone') ? 'zones' : 'groupLabel';
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair(_gkey), value: String(nowVal),
-                   lanes: _g8SignLanes('3 \u2022 4', true),
-                   next: _g8SignNext(_gkey, nextVal) };
-          }
-          return _g8SignHtml(_L, _R);
+          // The sequence file did not load: one generic call, nothing invented.
+          if (!_seq || !_seq.st || !_seq.st.cur) return _g8SignFallback(_signOne);
+          // What this paint shows, for the gate's key (_gateStageTerm): a
+          // background tab catches up on its next render.
+          try { window._gatePaintedStage = { k: _gateRowKey(currentFlight), i: _seq.st.i, next: _seq.st.nextTs || 0 }; } catch (eP) {}
+          if (_signOne) return _g8SignCentreHtml(_g8SeqCentre(_seq, false), _seq.st.nextTs);
+          var _P = _g8SeqPanels(_seq, false);
+          return _g8SignHtml(_P.L, _P.R, _seq.st.nextTs);
         })()
       + _sbColHtml
       + '</div>';
@@ -18802,31 +19352,26 @@ function uxgGateHtml(ctx) {
       function (w) { return '<span class="g8-lane-p">' + w + '</span>'; },
       '<span class="g8-lane-sep"> <span class="g8-bir-sep">|</span> </span>', true);
     if (!finalHdr) finalHdr = isGateClosed ? TL('gateClosed') : TL('finalCall');
-    var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
-    var finalSub = isGateClosed ? '' : TL('proceedGate');
     if (isGateClosed) {
       // Closed gate: no 'Welcome' strip — just the facts. ONE
       // statement only: the big 'GATE CLOSED' header IS the message —
       // the 'This gate is now closed' sub-line said the exact same thing a
       // second time (and the info-row status cell a third), so it's dropped
       //
+      // THE FINAL DESIGN — GATE CLOSED is the status bar's word, and the
+      // centre under it shows a closed symbol, big, and where to turn
+      // ("Please see an agent"), each language a whole line, centred.
       finalHtml = '<div class="g8-final active g8-final-closed">'
         + _boardInfoRowHtml('gateclosed')
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
+        + '<div class="g8-closed-body">'
+          + '<div class="g8-sign-picto g8-picto-closed">' + _g8Picto('closed') + '</div>'
+          + '<div class="g8-sign-go g8-closed-msg">' + _g8SignGo('seeAgent') + '</div>'
+        + '</div>'
         + '</div>';
     } else {
-      // FINAL CALL: same lane-panel format as boarding
-      // — every group called.
-      var _fcAcFam = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
-      var _fcExpress = (airlineCode === 'QK')
-        || (typeof acExpressOperated === 'function' && typeof fidsResolveOperator === 'function'
-            && acExpressOperated(fidsResolveOperator(currentFlight, iata).op));
-      var _grpValCls = _g8GrpValCls;
-      var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true);
-      if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
-      else if (airlineCode === 'PD') { _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); }
-      else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
-      // FINAL CALL replaces the Welcome strip — one call-out where
+      // FINAL CALL: same lane-panel format as boarding — every group
+      // called. FINAL CALL replaces the Welcome strip — one call-out where
       // the welcome sat, more room for the lane panels below.
       finalHtml = '<div class="g8-final active">'
         + _boardInfoRowHtml('final')
@@ -18835,39 +19380,19 @@ function uxgGateHtml(ctx) {
         // documents and the close time do not vanish for the last minutes,
         // when they matter most (Porter's ID note did this here before).
         + _boardBandHtml()
-        // v23771 — the final call goes through the one sign as well. Left is
-        // the priority group as during boarding; right is everyone: all the
-        // zones (AC family, WestJet's 2 – 9), all rows for Porter, the general
-        // call for PAL, 'All | Tous' for the rest. No Next line — there is
-        // nothing after the final call. Without this an AC gate flipped from
-        // the sign back to three quarter-columns with stacked halves for the
-        // last minutes of boarding.
+        // v23771 — the final call goes through the one sign as well (without
+        // it an AC gate flipped back to three quarter-columns with stacked
+        // halves for the last minutes of boarding). BOARDING SEQUENCES — it
+        // ends the sequence on the airport's word. THE FINAL DESIGN: the
+        // centre keeps the switch, GENERAL BOARDING over ALL ZONES (ALL
+        // GROUPS, ALL ROWS, ALL PASSENGERS), never a bare All and never a
+        // list of numbers under it (ALL ZONES already says every zone); the
+        // two panels keep Priority with every priority value on the left.
         + (function () {
-          var _prioT = _g8SignPair('priority');
-          var _L, _R;
-          if (_fcAcFam) {
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), label: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair('zones'), value: _fcExpress ? '3 \u2022 4' : '3 \u2022 4 \u2022 5 \u2022 6',
-                   lanes: _g8SignLanes('3 \u2022 4', true) };
-          } else if (airlineCode === 'WS' || airlineCode === 'WR') {
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), label: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair('zones'), value: _fcNext, lanes: _g8SignLanes('3 \u2022 4', true) };
-          } else if (airlineCode === 'PD') {
-            _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true), note: _g8SignLines('boardConv'),
-                   lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('genboard'), sub: _g8SignPair('pdClassic', false, true), label: _g8SignPair('rows'), value: _g8SignPair('all'),
-                   lanes: _g8SignLanes('3 \u2022 4', true) };
-          } else if (airlineCode === 'PB') {
-            _L = { title: _prioT, note: _g8SignLines('preboard'), lanes: _g8SignLanes('1', false) };
-            _R = { title: _g8SignPair('boarding'), value: _g8SignPair('genboard'), note: _g8SignLines('allPax'),
-                   lanes: _g8SignLanes('1', false) };
-          } else {
-            var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).call === 'zone') ? 'zones' : 'groupLabel';
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair(_gkey), value: _g8SignPair('all'),
-                   lanes: _g8SignLanes('3 \u2022 4', true) };
-          }
-          return _g8SignHtml(_L, _R);
+          if (!_seq || !_seq.p) return _g8SignFallback(_signOne);
+          if (_signOne) return _g8SignCentreHtml(_g8SeqCentre(_seq, true));
+          var _P = _g8SeqPanels(_seq, true);
+          return _g8SignHtml(_P.L, _P.R);
         })()
         + _sbColHtml
         + '</div>';
@@ -24968,7 +25493,10 @@ const gView = document.getElementById('gateView');
         // appears and clears as the inbound's lateness changes (not a day term).
         // v23925 — and the door word (_gateDoorFor), so the schedule boarding
         // and a sign kept through a delay repaint when they open and close.
-        return (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag + '|' + (inboundFlight ? (inboundFlight._revTs || '') : '') + '|' + _gateDoorFor(currentFlight, Date.now(), iata).word;
+        return (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag + '|' + (inboundFlight ? (inboundFlight._revTs || '') : '')
+          // BOARDING SEQUENCES — and the stage the sign painted, due or not
+          // (_gateStageTerm), so a step comes on with nothing in the feed changing.
+          + '|' + _gateStageTerm(currentFlight, Date.now()) + '|' + _gateDoorFor(currentFlight, Date.now(), iata).word;
       };
       var _gateKey = _computeGateKey();
       if (window._lastGateKey !== _gateKey) {
@@ -31057,7 +31585,7 @@ const LS = {
   status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Situação',ja:'状況',zh:'状态',ar:'الحالة' },
   boardsIn: { en:'BOARDS IN',fr:'EMBARQUEMENT DANS',es:'EMBARQUE EN',de:'BOARDING IN',it:'IMBARCO TRA',pt:'EMBARQUE EM',ja:'搭乗まで',zh:'登机倒计时',ar:'الصعود خلال' },
   depBoards: { en:'Departs in',fr:'Départ dans',es:'Sale en',de:'Abflug in',it:'Parte tra',pt:'Sai em',ja:'出発まで',zh:'出发倒计时',ar:'يغادر خلال' },
-  nowBoarding:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
+  nowBoarding:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'جارٍ الصعود' },
   arrivesAt: { en:'Arrives',fr:'Arrivée',es:'Llega',de:'Ankunft',it:'Arrivo',pt:'Chega',ja:'到着',zh:'到达',ar:'وصول' },
   flightDur: { en:'flight',fr:'de vol',es:'de vuelo',de:'Flug',it:'di volo',pt:'de voo',ja:'飛行',zh:'飞行',ar:'الرحلة', $ctx: 'duration' },
   duration:  { en:'Duration',fr:'Durée',es:'Duración',de:'Dauer',it:'Durata',pt:'Duração',ja:'所要時間',zh:'飞行时间',ar:'المدة' },
@@ -31070,8 +31598,7 @@ const LS = {
   flightN: { en:'Flight #',fr:'Vol #',es:'Vuelo #',de:'Flug #',it:'Volo #',pt:'Voo #',ja:'便名 #',zh:'航班 #',ar:'# رحلة' },
   upcoming:{ en:'Upcoming',fr:'Prochain vol',es:'Próximo vuelo',de:'Nächster Flug',it:'Prossimo volo',pt:'Próximo voo',ja:'次の便',zh:'下一航班',ar:'الرحلة التالية' },
   equipType:{ en:'Equipment',fr:'Appareil',es:'Aeronave',de:'Flugzeug',it:'Aeromobile',pt:'Aeronave',ja:'機材',zh:'机型',ar:'الطائرة' },
-  nowBoardingZone:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
-  allZones:{ en:'ALL ZONES',fr:'TOUTES LES ZONES',es:'TODAS LAS ZONAS',de:'ALLE ZONEN',it:'TUTTE LE ZONE',pt:'TODAS AS ZONAS',ja:'全ゾーン',zh:'所有区域',ar:'جميع المناطق' },
+  nowBoardingZone:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'جارٍ الصعود' },
   zone:{ en:'Zone',fr:'Zone',es:'Zona',de:'Zone',it:'Zona',pt:'Zona',ja:'ゾーン',zh:'区',ar:'المنطقة' },
   groupLabel:{ en:'Group',fr:'Groupe',es:'Grupo',de:'Gruppe',it:'Gruppo',pt:'Grupo',ja:'グループ',zh:'组',ar:'المجموعة' },
   inboundArrived:{ en:'The incoming flight from',fr:'Le vol en provenance de',es:'El vuelo procedente de',de:'Der Flug aus',it:'Il volo da',pt:'O voo de',ja:'到着便',zh:'来自',ar:'الرحلة من' },
@@ -31122,12 +31649,10 @@ const LS = {
   // where the full 'MINUTES' would not fit next to a digit that size.
   minsShort: { en:'mins', fr:'min', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
-  remainSeated:{ en:'Please remain seated until your zone is called',fr:'Veuillez rester assis jusqu\'à l\'appel de votre zone',es:'Por favor permanezca sentado hasta que llamen su zona',de:'Bitte bleiben Sie sitzen bis Ihre Zone aufgerufen wird',it:'Si prega di restare seduti fino alla chiamata della zona',pt:'Por favor permaneça sentado até sua zona ser chamada',ja:'ゾーンが呼ばれるまでお待ちください',zh:'请在座位上等待登机区域呼叫',ar:'يرجى البقاء جالساً حتى يتم استدعاء منطقتك' },
 
   operatedBy:{ en:'Operated by',fr:'Exploité par',es:'Operado por',de:'Durchgeführt von',it:'Operato da',pt:'Operado por',ja:'運航',zh:'执飞',ar:'تُشغّل بواسطة' },
   aircraftLbl:{ en:'Aircraft',fr:'Appareil',es:'Aeronave',de:'Flugzeug',it:'Aeromobile',pt:'Aeronave',ja:'機材',zh:'机型',ar:'الطائرة' },
   registrationLbl:{ en:'Registration',fr:'Immatriculation',es:'Matrícula',de:'Kennzeichen',it:'Immatricolazione',pt:'Matrícula',ja:'登録番号',zh:'注册号',ar:'رقم التسجيل' },
-  allGroups: { en:'All groups',fr:'Tous les groupes',es:'Todos los grupos',de:'Alle Gruppen',it:'Tutti i gruppi',pt:'Todos os grupos',ja:'全グループ',zh:'所有组',ar:'جميع المجموعات' },
   proceedGate:{ en:'Please proceed to gate immediately',fr:'Veuillez vous diriger immédiatement vers la porte',es:'Diríjase a la puerta inmediatamente',de:'Bitte begeben Sie sich sofort zum Gate',it:'Procedere immediatamente al gate',pt:'Dirija-se ao portão imediatamente',ja:'直ちにゲートへお進みください',zh:'请立即前往登机口',ar:'يرجى التوجه إلى البوابة فوراً' },
   gateNowClosed:{ en:'This gate is now closed',fr:'Cette porte est maintenant fermée',es:'Esta puerta está cerrada',de:'Dieses Gate ist geschlossen',it:'Questo gate è chiuso',pt:'Este portão está fechado',ja:'このゲートは閉まりました',zh:'本登机口已关闭',ar:'هذه البوابة مغلقة الآن' },
   nextDep:   { en:'Next departure',fr:'Prochain départ',es:'Próxima salida',de:'Nächster Abflug',it:'Prossima partenza',pt:'Próxima partida',ja:'次の出発',zh:'下一航班',ar:'المغادرة التالية' },
@@ -31170,7 +31695,7 @@ const LS = {
   depDelayed:{ en:'This flight has been delayed. Please check the updated departure time.',fr:'Ce vol est en retard. Veuillez vérifier l\'heure de départ mise à jour.',es:'Este vuelo ha sido retrasado. Por favor verifique la hora de salida actualizada.',de:'Dieser Flug hat Verspätung. Bitte prüfen Sie die aktualisierte Abflugzeit.',it:'Questo volo è in ritardo. Si prega di verificare l\'orario di partenza aggiornato.',pt:'Este voo está atrasado. Por favor verifique o horário de partida atualizado.',ja:'この便は遅延しています。出発時刻をご確認ください。',zh:'此航班已延误，请查看更新后的出发时间。',ar:'تأخرت هذه الرحلة. يرجى التحقق من وقت المغادرة المحدث.' },
   nowBoardMsg:{ en:'Now boarding. Please proceed to gate',fr:'Embarquement en cours. Veuillez vous diriger vers la porte',es:'Embarcando ahora. Diríjase a la puerta',de:'Jetzt Boarding. Bitte begeben Sie sich zum Gate',it:'Imbarco in corso. Procedere al gate',pt:'Embarque em curso. Dirija-se ao portão',ja:'搭乗中です。ゲートにお進みください',zh:'正在登机，请前往登机口',ar:'الصعود الآن. يرجى التوجه إلى البوابة' },
   boardApprox:{ en:'Your flight will board in approximately',fr:"L'embarquement de votre vol commencera dans environ",es:'Su vuelo embarcará en aproximadamente',de:'Das Boarding Ihres Fluges beginnt in ca.',it:"L'imbarco del vostro volo inizierà tra circa",pt:'O embarque do seu voo começará em aproximadamente',ja:'搭乗は約',zh:'您的航班将在约',ar:'سيبدأ صعود رحلتك خلال حوالي' },
-  finalCall: { en:'FINAL BOARDING CALL',fr:'DERNIER APPEL',es:'ÚLTIMA LLAMADA',de:'LETZTER AUFRUF',it:'ULTIMA CHIAMATA',pt:'ÚLTIMA CHAMADA',ja:'最終搭乗案内',zh:'最后登机广播',ar:'النداء الأخير للصعود' },
+  finalCall: { en:'FINAL CALL',fr:'DERNIER APPEL',es:'ÚLTIMA LLAMADA',de:'LETZTER AUFRUF',it:'ULTIMA CHIAMATA',pt:'ÚLTIMA CHAMADA',ja:'最終案内',zh:'最后登机',ar:'النداء الأخير' },
   gateClosed:{ en:'GATE CLOSED',fr:'PORTE FERMÉE',es:'PUERTA CERRADA',de:'GATE GESCHLOSSEN',it:'GATE CHIUSO',pt:'PORTÃO FECHADO',ja:'搭乗終了',zh:'登机口已关闭',ar:'البوابة مغلقة' },
   next3days:{ en:'Next 3 Days',fr:'3 prochains jours',es:'Próximos 3 días',de:'Nächste 3 Tage',it:'Prossimi 3 giorni',pt:'Próximos 3 dias',ja:'3日間',zh:'未来3天',ar:'الأيام الثلاثة القادمة' },
   search:  { en:'Flight · City · Airline',fr:'Vol · Ville · Compagnie',es:'Vuelo · Ciudad · Aerolínea',de:'Flug · Stadt · Fluggesellschaft',it:'Volo · Città · Compagnia',pt:'Voo · Cidade · Companhia',ja:'便名 · 都市 · 航空会社',zh:'航班 · 城市 · 航空公司',ar:'رحلة · مدينة · شركة طيران' },
@@ -32350,12 +32875,11 @@ var _GATE_LBL = {
   zone:      { en:'Zone', fr:'Zone', es:'Zona', de:'Zone', it:'Zona', pt:'Zona', ja:'ゾーン', zh:'区', ar:'المنطقة' },
   nextUp:    { en:'Next', fr:'Prochain', es:'Siguiente', de:'Nächste', it:'Prossimo', pt:'Próximo', ja:'次', zh:'下一个', ar:'التالي' },
   boardConv: { en:'Board at your convenience', fr:'Embarquez à votre convenance', es:'Embarque cuando desee', de:'Boarding jederzeit möglich', it:'Imbarco quando preferisce', pt:'Embarque quando quiser', ja:'ご都合の良い時にご搭乗ください', zh:'随时登机', ar:'اصعد في الوقت المناسب لك' },
-  allPax:    { en:'All passengers', fr:'Tous les passagers', es:'Todos los pasajeros', de:'Alle Passagiere', it:'Tutti i passeggeri', pt:'Todos os passageiros', ja:'全てのお客様', zh:'所有乘客', ar:'جميع الركاب' },
-  finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
+  allPax:    { en:'All passengers', fr:'Tous les passagers', es:'Todos los pasajeros', de:'Alle Fluggäste', it:'Tutti i passeggeri', pt:'Todos os passageiros', ja:'すべてのお客様', zh:'所有旅客', ar:'جميع الركاب' },
+  finalCall: { en:'FINAL CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終案内', zh:'最后登机', ar:'النداء الأخير' },
   gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'搭乗終了', zh:'登机口已关闭', ar:'البوابة مغلقة' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
   useLanes:  { en:'Use Lanes',     fr:'Utilisez les voies', es:'Use carriles', de:'Spuren nutzen', it:'Usa corsie', pt:'Use faixas', ja:'レーン',  zh:'通道',   ar:'ممرات' },
-  all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' },
   // Countdown headline + short unit, mirrored from LS so the boarding screen
  // can render BOTH board languages at once (the mockup puts English above
   // the number and French below it) through the same _gateLbl language pick
@@ -32373,7 +32897,7 @@ var _GATE_LBL = {
   distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
   feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
   estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
-  nowBoarding: { en:'Now Boarding', fr:'Embarquement', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
+  nowBoarding: { en:'Now Boarding', fr:'Embarquement', es:'Embarcando', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'جارٍ الصعود' },
   minsShort: { en:'mins', fr:'min', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
  // Clock label for the boarding screen's white strip. The concept wrote
@@ -32953,7 +33477,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24050';
+var FIDS_BUILD_TAG = 'v24051';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -37598,6 +38122,67 @@ function _gateDoorFor(cf, nowMs, iata) {
   try { gi = (typeof window !== 'undefined' && window._gateInbound) || null; } catch (e) { gi = null; }
   try { arr = (typeof data !== 'undefined' && data && data.arr) || []; } catch (e) { arr = []; }
   return _gateDoor(cf, nowMs, ap, gi, arr, tz);
+}
+// BOARDING SEQUENCES — WHEN BOARDING OPENED, FOR THE SEQUENCE INSIDE THE SIGN
+// (js/boarding-sequence.js FIDSBoardSeq.t0For). The sign opens at the minute
+// it always did (_gateDoor); this says where its sequence starts:
+//   - a gate that boards by the clock (an airport whose feed never says the
+//     gate words, or Moncton's gate, GATE_BOARDS_BY_CLOCK): the boarding time
+//     the sign opened on (_door.bt.boardTs, not the gate's own boardTs, which
+//     can read another aircraft type), or the airport's Boarding when this
+//     screen saw it say so earlier. cyqm.ca saying Boarding after the clock
+//     has opened the sign moves nothing;
+//   - an airport whose feed says the words: the moment this screen saw the
+//     feed switch to Boarding (_doorSaid.t, _gateDepsSeen), so an early
+//     Boarding starts pre-boarding early and a late one late; when the switch
+//     was not seen (a browser arriving mid-boarding), the printed time.
+// The record counts only at the door it was said at, as for the kept sign.
+function _gateSeqT0(cf, door, iata) {
+  var bt = (door && door.bt && door.bt.boardTs) || 0;
+  var rec = null;
+  try { rec = _gateDoorRecord((door && door.basis) || cf); } catch (e) { rec = null; }
+  var g = (cf && cf.gate && cf.gate !== '—') ? String(cf.gate) : '';
+  var seen = 0;
+  if (rec && rec.t && /^(boarding|final|gateclosed)$/.test(String(rec.w || ''))
+      && !(rec.gate && g && String(rec.gate) !== g)) seen = Number(rec.t) || 0;
+  var byClock = !_feedSaysGateWords(iata) || _gateBoardsByClock(iata);
+  if (typeof FIDSBoardSeq === 'undefined' || !FIDSBoardSeq) return byClock ? (bt || seen) : (seen || bt);
+  return FIDSBoardSeq.t0For({ byClock: byClock, boardTs: bt, seenTs: seen });
+}
+// BOARDING SEQUENCES — THE SIGN NEVER STEPS BACK. Per page, per flight and
+// gate (_gateRowKey + gate): everything the sign has called so far. When the
+// sequence is worked out again with another start or another shape (the
+// aircraft type resolved late, a window merged differently), the stage shown
+// is never earlier than the furthest one whose calls were all made
+// (FIDSBoardSeq.floorIndex). The airport's own stage (_boardStage) is
+// remembered but not overruled.
+var _GATE_SEQ_MEMO = {};
+function _gateSeqMemo(cf, p, st) {
+  if (!cf || !p || !st || st.i < 0 || typeof FIDSBoardSeq === 'undefined' || !FIDSBoardSeq) return st;
+  var key = _gateRowKey(cf) + '|' + ((cf.gate && cf.gate !== '—') ? String(cf.gate) : '');
+  var m = _GATE_SEQ_MEMO[key];
+  var i = st.i;
+  if (p.forced < 0 && m) {
+    var f = FIDSBoardSeq.floorIndex(p, m.called);
+    if (f > i) i = f;
+  }
+  var keys = Object.keys(_GATE_SEQ_MEMO);
+  if (!m && keys.length >= 64) delete _GATE_SEQ_MEMO[keys[0]];
+  _GATE_SEQ_MEMO[key] = { called: FIDSBoardSeq.calledThrough(p, i, m && m.called) };
+  if (i === st.i) return st;
+  var next = p.stages[i + 1] || null;
+  return { i: i, cur: p.stages[i], next: next, nextTs: next ? next.ts : 0 };
+}
+// BOARDING SEQUENCES — the gate key's stage term: the stage the sign painted
+// (window._gatePaintedStage, uxgGateHtml), marked due once its next call's
+// minute has come. A gate whose once-a-second clock missed that minute (a
+// background tab) repaints on its next render because the key changed.
+function _gateStageTerm(cf, nowMs) {
+  try {
+    var p = (typeof window !== 'undefined') ? window._gatePaintedStage : null;
+    if (!p || !cf || p.k !== _gateRowKey(cf)) return '';
+    return 's' + p.i + ((p.next && (nowMs || Date.now()) >= p.next) ? 'due' : '');
+  } catch (e) { return ''; }
 }
 // v23925 — THE VERB THE BIG MAP'S CAPTION GIVES THE INBOUND IT IS TRACKING
 // ("<verb> | <verb> AC7992 · YYZ", _renderBigCraft). Its _GATE_LBL key:
@@ -45555,9 +46140,20 @@ function _gateDepsSeen(list, ap, now) {
           if (_dp && (!_dp.gate || !_dg || String(_dp.gate) === _dg)) {
             if (_dp.w !== _dw) changed = true;
             d._doorSaid = { w: _dw, rev: _dp.rev || null, upd: _dp.upd || null, gate: _dp.gate || _dg || null };
+            if (_dp.t) d._doorSaid.t = _dp.t;
           } else {
             changed = true;
+            // BOARDING SEQUENCES — WHEN THIS SCREEN SAW THE DOOR OPEN (t): only
+            // when the copy of the row it held before carried a word that was
+            // not a door word, so the switch to Boarding happened between the
+            // two. A row met for the first time, or one remembered from
+            // storage, says nothing about when boarding began: no t, and the
+            // sequence starts from the printed boarding time instead
+            // (FIDSBoardSeq.t0For, _gateSeqT0).
+            var _wasW = (was && !was._remembered) ? _gateRawStatus(was) : null;
+            var _sawSwitch = _wasW != null && !/^(boarding|final|finalcall|gateclosed)$/.test(_wasW);
             d._doorSaid = { w: _dw, rev: d._revTs || null, upd: d.upd || null, gate: _dg || null };
+            if (_sawSwitch && Number(now) > 0) d._doorSaid.t = Number(now);
           }
         } else if (was && was._doorSaid && !d._doorSaid) {
           d._doorSaid = was._doorSaid;
@@ -57743,7 +58339,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24050" src="/textures/gate-sky-shelf.mp4?v=24050"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24051" src="/textures/gate-sky-shelf.mp4?v=24051"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

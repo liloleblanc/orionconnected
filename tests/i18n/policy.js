@@ -40,6 +40,7 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/fids-v2.js',
   'fids-current/js/gate-date-context.js',
   'fids-current/js/fids-sun.js',
+  'fids-current/js/boarding-sequence.js',
   'fids-current/js/gate-visual-integrity.js',
   'fids-current/js/feed-router.js',
   'fids-current/js/gids-layout.js',
@@ -330,7 +331,7 @@ const SAME_AS_ENGLISH = {
   'Club Class': { langs: ['de', 'it', 'pt'], why: 'the cabin name; pt Classe Club is also the French' },
   'Economy Class': { langs: ['de'], why: 'the cabin name German airlines use' },
   'Economy': { langs: ['de'], why: 'WestJet\'s cabin name in German' },
-  'Premium': { langs: ['fr', 'es', 'de', 'it', 'pt'], why: 'WestJet\'s cabin name' },
+  'Premium': { langs: ['es', 'de', 'it', 'pt'], why: 'WestJet\'s cabin name (its French is Privilège)' },
   'Bar & lounge': { langs: ['de'], why: 'the German usage' },
   'From': { langs: ['pt'], why: 'Portuguese De is also the French' },
   'Airside': { langs: ['it'], why: 'the Italian word, Satellite, is also the French' },
@@ -353,7 +354,6 @@ const SAME_AS_ENGLISH = {
 const SAME_ACROSS = {
   'expected': { langs: ['es', 'pt'], why: 'code: prevista (hora prevista) in both' },
   'Expected': { langs: ['es', 'pt'], why: 'code: Previsto, as Spanish and Brazilian airports write the status' },
-  'Club Class': { langs: ['it', 'pt'], why: 'code: Classe Club, the cabin name in both' },
   'NEXT HOURS': { langs: ['es', 'pt'], why: 'code: PRÓXIMAS HORAS in both' },
   'Bar & lounge': { langs: ['it', 'pt'], why: 'code: Bar e lounge in both' },
   'Airside': { langs: ['es', 'pt'], why: 'code: Satélite in both' },
@@ -390,12 +390,12 @@ const SAME_JA_ZH = {
 // loanword its airports and hotels write ('check-in'). Any other English
 // word inside a translation fails B3 ('Gate closes shortly' in German).
 const NATIVE_WORDS = {
-  es: { error: 'code: the Spanish word', general: 'code: the Spanish word (Embarque general)', taxi: 'code: the Spanish word', club: 'code: the cabin name as Spanish writes it (Clase Club)' },
+  es: { error: 'code: the Spanish word', general: 'code: the Spanish word (Embarque general)', taxi: 'code: the Spanish word' },
   fr: {
     site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
     programme: 'code: the French word', image: 'code: the French word', unique: 'code: the French word',
     dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word', centre: 'code: the French word (centre-ville)',
-    taxi: 'code: the French word', club: 'code: the cabin name as French writes it (Classe Club)'
+    taxi: 'code: the French word'
   },
   de: { taxi: 'code: the German word', 'check-in': 'code: the word German airports use' },
   it: { 'check-in': 'code: the word Italian airports use', king: 'code: the bed size as Italian hotels write it (king size)', taxi: 'code: the Italian word' },

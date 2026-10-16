@@ -713,8 +713,9 @@ test('under the countdown, NOW BOARDING and FINAL CALL the list is a column besi
   // built from the same facts, only under a takeover
   assert.match(uxg, /var _sbColHtml = '';\s*if \(_gateSign\.boardActive \|\| _gateSign\.finalActive \|\| showCountdown\) \{\s*try \{ _sbColHtml = _gateSbColHtml\(window\._gateCardsModel, Date\.now\(\)\); \}/);
   // the last child of each takeover, after the sign (or the countdown's body)
-  assert.match(uxg, /return _g8SignHtml\(_L, _R\);\s*\}\)\(\)\s*\+ _sbColHtml\s*\+ '<\/div>';\s*\}\s*\/\/ Build final call HTML/);
-  assert.match(uxg, /return _g8SignHtml\(_L, _R\);\s*\}\)\(\)\s*\+ _sbColHtml\s*\+ '<\/div>';\s*\}\s*\}\s*\/\/ Build countdown panel/);
+  // (the sign is the boarding sequence's: the two panels or the one centre)
+  assert.match(uxg, /return _g8SignHtml\(_P\.L, _P\.R, _seq\.st\.nextTs\);\s*\}\)\(\)\s*\+ _sbColHtml\s*\+ '<\/div>';\s*\}\s*\/\/ Build final call HTML/);
+  assert.match(uxg, /return _g8SignHtml\(_P\.L, _P\.R\);\s*\}\)\(\)\s*\+ _sbColHtml\s*\+ '<\/div>';\s*\}\s*\}\s*\/\/ Build countdown panel/);
   assert.match(uxg, /\+ '<\/div>' \+ _sbColHtml \+ '<\/div>';\s*\}\s*\/\/ Determine which row4 content to show/);
   const closed = uxg.slice(uxg.indexOf('finalHtml = \'<div class="g8-final active g8-final-closed">\''), uxg.indexOf('} else {', uxg.indexOf('g8-final-closed')));
   assert.doesNotMatch(closed, /_sbColHtml/, 'GATE CLOSED: the flight has closed');
