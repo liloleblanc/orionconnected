@@ -193,6 +193,15 @@
     } catch (e) {}
     return { disc: '#033F77', ink: '#FFFFFF' };
   }
+  // v24045 — the night circle for the gate airline (fids-core.js _wxNightDisc:
+  // the airline's dark tint, or the charcoal the night icons were drawn on)
+  function wxGateNightDisc() {
+    try {
+      const code = String(window._gateCurrentAirline || document.body.getAttribute('data-gate-airline') || '').trim().toUpperCase();
+      if (typeof _wxNightDisc === 'function') return _wxNightDisc(code);
+    } catch (e) {}
+    return '#2B2B2A';
+  }
   function wxLookHtml(look, nameKey, size) {
     const v = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
     const box = 'display:inline-block;width:' + size + 'px;height:' + size + 'px;flex-shrink:0;object-fit:contain;vertical-align:middle;';
@@ -202,11 +211,41 @@
     if (look === 'colour') {
       return '<img class="fids-wx-cell fids-wx-disc" data-wxg="' + nameKey + '" src="/logos/weather/disc-day/' + nameKey + '.svg' + v + '" alt="" aria-hidden="true" style="' + box + '">';
     }
+    // v24045 — at night the circle look draws the night icons drawn for
+    // Orion Connected (logos/weather/night-line/): the element's round
+    // background is the night circle, the icon its ::after on the whole of
+    // it, each file's frame being the circle it was drawn on
+    // (css/display-overrides.css .fids-wx-line). A Solid chosen by day keeps
+    // the glyph below. No element of today's gate layout shows this circle
+    // (its header #hdrTemp is hidden); it is wired so the gate and the card
+    // agree if one does.
+    if (look === 'solid' && document.documentElement.classList.contains('fids-night')) {
+      return '<span class="fids-wx-cell fids-wx-disc fids-wx-line" data-wxg="' + nameKey + '" aria-hidden="true" style="' + box
+        + '--wxn-disc:' + wxGateNightDisc() + ';--wxn-icon:url(/logos/weather/night-line/' + nameKey + '.svg' + v + ');"></span>';
+    }
     // the circle is the element's own round background; the glyph a mask
     // painted in the brand colour (css/display-overrides.css .fids-wx-pair)
     const pr = wxGatePair();
     return '<span class="fids-wx-cell fids-wx-disc fids-wx-pair" data-wxg="' + nameKey + '" aria-hidden="true" style="' + box
       + '--wx-disc:' + pr.disc + ';--wx-ink:' + pr.ink + ';--wx-glyph:url(/logos/weather/solid-in-disc/' + nameKey + '.svg' + v + ');"></span>';
+  }
+
+  // v24045 — the night circle draws the condition's night form, the icon the
+  // weather card draws for the same code at night (fids-core.js _wxAnimIcon):
+  // a clear sky the moon, not the sun; WMO 3, the whole sky covered, the two
+  // clouds the card calls Overcast, not one cloud. TIO_ICON names a code by
+  // its day icon; the old Tomorrow.io codes keep that name's night form.
+  const WX_NIGHT_FORM = { 'clear-day': 'clear-night', 'partly-cloudy-day': 'partly-cloudy-night', 'overcast-day': 'overcast', 'thunderstorms-day-rain': 'thunderstorms-rain' };
+  function wxNightName(code, nameKey) {
+    if (!document.documentElement.classList.contains('fids-night')) return nameKey;
+    try {
+      const c = (typeof code === 'number' || (typeof code === 'string' && /^\d+$/.test(code))) ? parseInt(code, 10) : -1;
+      if (c >= 0 && c < 100 && typeof _wxAnimIcon === 'function') {
+        const n = _wxAnimIcon(c, true);
+        if (WX_LOOK_NAMES[n]) return n;
+      }
+    } catch (e) {}
+    return WX_NIGHT_FORM[nameKey] || nameKey;
   }
 
   function wxIconHtml(code, size, opts) {
@@ -220,7 +259,7 @@
       }
     }
     const _look = wxLook(opts);
-    if (_look && WX_LOOK_NAMES[nameKey]) return wxLookHtml(_look, nameKey, size);
+    if (_look && WX_LOOK_NAMES[nameKey]) return wxLookHtml(_look, _look === 'solid' ? wxNightName(code, nameKey) : nameKey, size);
     // v223 — clean animated icon set (same icons the arrival-weather card
     // uses). v24037 — the only set: a name it doesn't draw takes its nearest
     // icon (WX_ANIM_ALIAS); no reading draws nothing.
@@ -249,6 +288,7 @@
   // v24035 — the weather card asks the same questions (fids-core.js _wxCardIconDir)
   window.fidsWxLook = function (opts) { return wxLook(opts); };
   window.fidsWxGatePair = wxGatePair;
+  window.fidsWxGateNightDisc = wxGateNightDisc;
 
   // ── Per-airport config ─────────────────────────────────────────────────
   // Each airport can have:
