@@ -27,8 +27,19 @@ boards comes from MET Norway only.
   used, and nothing may suggest that NASA **endorses** the boards. Promotional
   pictures of the boards must never present them as a NASA product.
 - NASA asks for a credit. It is on the Credits page (`credits.html`, section
-  `c-earth`, store keys `credEarthH` and `credNasa` in all nine languages), not
-  on the boards.
+  `c-earth`, store keys `credEarthH`, `credNasa` and `credNasaLine` in all
+  nine languages), not on the boards. The quoted line carries the credits the
+  pictures ask for (checked 2026-10-18):
+  - Blue Marble: Next Generation: the collection page asks anyone using it to
+    credit "NASA Earth Observatory" (it was produced there by Reto Stöckli).
+  - Black Marble 2016: NASA's Scientific Visualization Studio gives the credit
+    as "NASA's Goddard Space Flight Center"; the Earth Observatory's own image
+    credit reads "NASA Earth Observatory images by Joshua Stevens, using Suomi
+    NPP VIIRS data from Miguel Román, NASA's Goddard Space Flight Center".
+- NASA's media guidelines (nasa.gov, Images and Media): NASA content is
+  generally not subject to copyright in the United States; it may be used
+  publicly and commercially provided nothing implies NASA endorsement, and the
+  insignia and logotype are not in the public domain.
 - Collection pages, linked from the Credits page:
   - https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/
   - https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/

@@ -65,6 +65,9 @@ test('the floor has its off switch and pauses with the board', () => {
   assert.match(MOD, /setAttribute\('data-fids-floor', 'earth'\)/);
   assert.match(MOD, /removeAttribute\('data-fids-floor'\)/, 'a failure brings the old backdrop back');
   assert.match(MOD, /RETRY_MS = 600000/, 'a floor with no picture is tried again after 10 minutes');
+  // a busy board whose rows leave under 28 px shows its plain ground, never a
+  // sliver of the old picture; but not while a failed floor waits to retry
+  assert.match(MOD, /if \(md === 'none' && !painted && shows && here && pageW >= MIN_PAGE_W && W >= MIN_W && H < MIN_ANY && Date\.now\(\) >= retryAt\) setPainted\(true\);/);
   assert.match(MOD, /'aria-hidden', 'true'/);
   // it never writes to the rows
   assert.doesNotMatch(code(MOD), /fidsTable[^;\n]*\.(innerHTML|textContent|style|classList|setAttribute)/);
@@ -116,6 +119,9 @@ test('the stylesheet: behind the switch, Orlando and the belts untouched, still,
   assert.match(rules, /@media \(max-width: 800px\) \{\s*#ocFloor \{ display: none; \}/);
   assert.match(rules, /pointer-events: none/);
   assert.match(rules, /z-index: -1/);
+  // the names are placed from their left end, so the layer reads left to
+  // right on an Arabic board too
+  assert.match(rules, /#fidsBoard > \.content-area > #ocFloor \{[^}]*direction: ltr;/);
 });
 
 test('the Customize choice travels: panel, cloud, and the board layers', () => {
@@ -152,5 +158,14 @@ test('the Credits page names the pictures, in the store words, with no NASA insi
     assert.ok(BS.bs('credEarthH', l), l);
   }
   assert.match(BS.bs('credNasa', 'en'), /NASA does not endorse these boards\./);
+  // the credit the pictures ask for, quoted in every language: NASA Earth
+  // Observatory (asked by the Blue Marble: Next Generation page) and NASA's
+  // Goddard Space Flight Center (the Black Marble 2016 night lights, NASA SVS)
+  assert.match(credits, /<blockquote data-i18n="credNasaLine" data-i18n-one>/);
+  for (const l of BS.LANGS) {
+    const q = BS.bs('credNasaLine', l);
+    assert.match(q, /NASA[\s\u00a0]Earth[\s\u00a0]Observatory/, l);
+  }
+  assert.match(BS.bs('credNasaLine', 'en'), /NASA’s Goddard[\s\u00a0]Space[\s\u00a0]Flight[\s\u00a0]Center/);
   assert.doesNotMatch(credits, /<img[^>]*nasa|meatball|insignia/i);
 });

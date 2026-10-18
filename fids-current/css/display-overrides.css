@@ -26075,6 +26075,9 @@ html[data-fids-floor=earth] body[data-fids-theme]:not([data-fids-ap=MCO]):not(#_
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
+  /* the layout places every name from its left end: an Arabic board keeps
+     that reading (each name still runs right to left inside itself) */
+  direction: ltr;
 }
 #ocFloor > canvas,
 #ocFloor > svg {

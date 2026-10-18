@@ -45,7 +45,8 @@
        the picture; several leaving at one spot share one route and one list.
      · The time there is the board's own clock (BoardStrings.boardTime: the
        format its rows use), printed only where it differs from this
-       airport's, and only for a place whose zone the AP table knows.
+       airport's, and only for a place whose zone is known: the AP table's,
+       else the floor's own list of zones (ZONE_LIST below).
      · White ink with a dark halo, nothing behind it. Nothing moves, flashes
        or travels: the planet is re-lit once a minute, a quarter of a degree
        of sunlight, written in bands nobody can see change.
@@ -59,10 +60,11 @@
        the airport's Customize choice (html[data-fids-floor-pref], set by
        fids-core.js from the field floor: '' or earth is Earth, classic is the
        earlier backdrop).
-     · html[data-fids-floor=earth] is set only once a planet has painted, and
-       it is what retires the old backdrop (css/display-overrides.css). It
-       does not follow the floor page by page: a busy page under 28 px shows
-       plain ground, not the old picture.
+     · html[data-fids-floor=earth] is set only once a planet has painted (or
+       the rows leave under 28 px for one), and it is what retires the old
+       backdrop (css/display-overrides.css). It does not follow the floor page
+       by page: a busy page under 28 px shows plain ground, not the old
+       picture.
      · Pictures that fail: a missing square is covered by the whole-Earth
        picture. If that fails too the attribute goes and the old backdrop
        shows; it is tried again at most once every 10 minutes. A thrown error
@@ -198,6 +200,138 @@
     var by = {}; list.forEach(function (p) { by[p.code] = p; });
     return codes.map(function (c) { return by[c]; }).filter(Boolean);
   }
+
+  // ── THE TIME THERE: THE ZONES OF THE PLACES AP DOES NOT KNOW ─────────────
+  // A place's zone comes from AP (fids-core.js) first, then from here, and a
+  // place found in neither gets no time, never a guess. These are the 453
+  // destinations the live boards listed on 2026-10-18 with no zone in AP
+  // (every live airport's departures and arrivals). Each is the zone the
+  // airport is in: the US by county where the line runs through a state
+  // (Evansville, Paducah and Owensboro are Central, South Bend and
+  // Lafayette Eastern; Iron Mountain and Ironwood are Central, the rest of
+  // Michigan Eastern; the Florida panhandle west of the Apalachicola is
+  // Central; Rapid City is Mountain; Lewiston and Elko are Pacific), Canada
+  // by its own lines (Fort Frances, Kenora and Sioux Lookout Central,
+  // Cranbrook Mountain, Fort St John on year-round Mountain). When the list
+  // was made, each was compared with the nearest zone of the tz database by
+  // its offsets in January and July, and every difference read by hand.
+  // tests/earth-zones.test.js holds every zone to one the browser knows, no
+  // code to two zones or to another zone than AP's, and the hard cases.
+  var ZONE_LIST = {
+    'America/New_York': 'ABE ACK ACY AGS ALB AOO AUG AVL AVP BGM BGR BHB BKW BTV BUF CAE CAK ' +
+                        'CHA CHO CHS CKB CRW DAB DAY DUJ ELM ERI EWN EYW FAY FLO GNV GSO GSP ' +
+                        'HHH HPN HTS HVN HYA ILM ISP ITH JAX JST LEB LEX LNS LWB LYH MDT MGW ' +
+                        'MHT MLB MSS MVY MYR OAJ OGS ORF ORH PBG PBI PGV PHF PIE PKB PQI PSM ' +
+                        'PVD PWM RIC RKD ROA ROC RSW RUT SAV SBY SCE SHD SLK SRQ SWF SYR TEB ' +
+                        'TLH TRI TTN TYS VRB',
+    'America/Detroit': 'APN AZO CIU CMX ESC FNT GRR LAN MBL MBS MKG MQT PLN TVC',
+    'America/Indiana/Indianapolis': 'FWA LAF SBN',
+    'America/Kentucky/Louisville': 'SDF',
+    'America/Menominee': 'IMT IWD',
+    'America/Chicago': 'ABI ABR AEX ALO AMA ATW ATY BHM BIS BMI BRD BRL BRO BTR CGI CID CMI ' +
+                       'COU CRP CWA DAL DEC DLH DSM EAR EAU ECP EVV FAR FOD FSD GFK GPT GRB ' +
+                       'HIB HRL HSV ICT INL JAN JLN LBB LCH LFT LIT LNK LRD LSE MAF MCW MEI ' +
+                       'MEM MFE MGM MHK MKE MKL MLI MOB MOT MSL MSN MWA OKC OMA OWB PAH PIA ' +
+                       'PIB PNS RHI RST SGF SHV SLN SPI SUX SWO TUL TVF UIN VCT VPS XNA XWA',
+    'America/Denver': 'ABQ ASE BIL BZN CDC COS DRO ELP FCA GJT GTF GUP HLN HOB JAC MSO PVU RAP ' +
+                      'SAF SGU SVC',
+    'America/Boise': 'BOI IDA PIH SUN TWF',
+    'America/Phoenix': 'FLG PGA SOW TUS YUM',
+    'America/Los_Angeles': 'ACV BFL BLI BUR CLD EAT EKO EUG FAT GEG IPL LGB LWS MFR MRY OAK ' +
+                           'ONT OTH PAE PSC PSP RDD RDM RNO SBA SBP SCK SJC SMF SMX SNA STS',
+    'America/Anchorage': 'ANC',
+    'Pacific/Honolulu': 'KOA LIH',
+    'America/Puerto_Rico': 'BQN',
+    'America/St_Thomas': 'STT STX',
+    'America/Toronto': 'YKF',
+    'America/Iqaluit': 'YFB',
+    'America/Winnipeg': 'YAG YBR YQK YXL',
+    'America/Rankin_Inlet': 'YRT',
+    'America/Regina': 'YPA',
+    'America/Edmonton': 'YFS YHY YQU YXC',
+    'America/Cambridge_Bay': 'YCB',
+    'America/Inuvik': 'YEV',
+    'America/Dawson_Creek': 'YXJ',
+    'America/Vancouver': 'YBL YCD YQQ YXT',
+    'America/Miquelon': 'FSP',
+    'Atlantic/Bermuda': 'BDA',
+    'America/Santo_Domingo': 'AZS POP SDQ STI',
+    'America/Bogota': 'BAQ CLO CTG MDE',
+    'America/Barbados': 'BGI',
+    'America/Caracas': 'CCS',
+    'America/Havana': 'CMW HAV HOG SCU SNU',
+    'America/Curacao': 'CUR',
+    'America/Cancun': 'CZM TQO',
+    'America/Merida': 'MID',
+    'America/Mexico_City': 'AGU BJX GDL MLM OAX PBC QRO SLP VER',
+    'America/Monterrey': 'MTY TAM',
+    'America/Mazatlan': 'CUL LTO MZT',
+    'America/Hermosillo': 'HMO',
+    'America/Tortola': 'EIS',
+    'America/Nassau': 'ELH FPO GGT MHH',
+    'America/Martinique': 'FDF',
+    'America/Guyana': 'GEO',
+    'America/Grenada': 'GND',
+    'America/Guayaquil': 'GYE UIO',
+    'America/Costa_Rica': 'LIR',
+    'America/Grand_Turk': 'PLS',
+    'America/Guadeloupe': 'PTP',
+    'America/Panama': 'PTY',
+    'America/St_Vincent': 'SVD',
+    'America/St_Lucia': 'UVF',
+    'America/Sao_Paulo': 'GIG',
+    'Europe/London': 'BFS BOH KOI LSI NQY SYY',
+    'Europe/Dublin': 'NOC',
+    'Europe/Paris': 'BIQ BOD CLY DOL FNI',
+    'Europe/Berlin': 'BRE CGN DRS FMM GWT NRN',
+    'Europe/Rome': 'BRI CAG CIA CTA OLB PMO SUF',
+    'Europe/Brussels': 'CRL LGG',
+    'Europe/Athens': 'CHQ GPA HER JMK JTR KGS PVK RHO SKG ZTH',
+    'Europe/Zagreb': 'DBV',
+    'Europe/Ljubljana': 'LJU',
+    'Europe/Sarajevo': 'SJJ',
+    'Europe/Podgorica': 'TGD',
+    'Europe/Skopje': 'SKP',
+    'Europe/Belgrade': 'BEG PRN',
+    'Atlantic/Canary': 'FUE LPA TFS',
+    'Europe/Madrid': 'MAH SDR XRY',
+    'Europe/Warsaw': 'GDN KTW LUZ POZ WMI WRO',
+    'Europe/Stockholm': 'GOT',
+    'Europe/Oslo': 'BGO',
+    'Europe/Tallinn': 'TLL',
+    'Europe/Istanbul': 'AYT BJV DLM ESB SAW',
+    'Asia/Nicosia': 'PFO',
+    'Asia/Beirut': 'BEY',
+    'Africa/Cairo': 'HRG RMF',
+    'Africa/Casablanca': 'RAK',
+    'Africa/Accra': 'ACC',
+    'Asia/Riyadh': 'JED',
+    'Asia/Dubai': 'DWC',
+    'Asia/Karachi': 'LHE',
+    'Asia/Kolkata': 'CCU HYD MAA',
+    'Asia/Bangkok': 'HKT',
+    'Asia/Ho_Chi_Minh': 'SGN',
+    'Asia/Makassar': 'DPS',
+    'Asia/Shanghai': 'NKG TFU WUH XMN',
+    'Australia/Perth': 'PER',
+    'Australia/Darwin': 'AYQ DRW',
+    'Australia/Adelaide': 'ADL',
+    'Australia/Brisbane': 'CNS HTI MCY OOL PPP TSV',
+    'Australia/Sydney': 'ABX ARM BNK CFS DBO GFF MIM MRZ MYA PQQ TMW WGA',
+    'Australia/Melbourne': 'AVV MQL',
+    'Pacific/Auckland': 'CHC WLG ZQN',
+    'Pacific/Fiji': 'NAN',
+    'Pacific/Tahiti': 'PPT'
+  };
+  // Quebec's airports one by one: the board keeps its one list of them for
+  // the order of its languages (BoardStrings.FR_FIRST); this says only where
+  // their clocks are
+  var ZONE_ONE = { YGP: 'America/Toronto', YUY: 'America/Toronto', YVP: 'America/Toronto', YZG: 'America/Toronto', YZV: 'America/Toronto' };
+  var ZONES = {};
+  Object.keys(ZONE_LIST).forEach(function (z) { ZONE_LIST[z].split(' ').forEach(function (c) { if (c) ZONES[c] = z; }); });
+  Object.keys(ZONE_ONE).forEach(function (c) { ZONES[c] = ZONE_ONE[c]; });
+  // a place's zone: AP's, else the list above, else none
+  function zoneOf(c, apZone) { return apZone || ZONES[c] || null; }
 
   // ── THE VIEW: an orthographic globe, north up at this airport ──────────────
   function frameBasis(A, psi, delta) {
@@ -660,7 +794,7 @@
     EARTH_FLOOR_ON: EARTH_FLOOR_ON, BASE: BASE,
     MIN_ANY: MIN_ANY, MIN_ROUTES: MIN_ROUTES, MIN_FULL: MIN_FULL, MIN_W: MIN_W, MIN_PAGE_W: MIN_PAGE_W,
     SLICE_MS: SLICE_MS, MAX_PLACES: MAX_PLACES,
-    capFor: capFor, modeFor: modeFor, placesFrom: placesFrom, onPage: onPage,
+    capFor: capFor, modeFor: modeFor, placesFrom: placesFrom, onPage: onPage, ZONES: ZONES, zoneOf: zoneOf,
     frameBasis: frameBasis, stripView: stripView, chooseView: chooseView, llAt: llAt,
     levelFor: levelFor, tilesFor: tilesFor, texSrc: texSrc, layerName: layerName, sampleInto: sampleInto,
     toScreen: toScreen, routeRuns: routeRuns, layout: layout, handsOf: handsOf,
@@ -692,7 +826,7 @@
     try { if (!v && typeof _lookupAirport === 'function') v = asPair(_lookupAirport(c)); } catch (e) {}
     return v;
   }
-  function apTz(c) { try { /* global AP */ return (typeof AP !== 'undefined' && AP[c] && AP[c].tz) || null; } catch (e) { return null; } }
+  function apTz(c) { var z = null; try { /* global AP */ z = (typeof AP !== 'undefined' && AP[c] && AP[c].tz) || null; } catch (e) { z = null; } return zoneOf(c, z); }
   function boardDir() { try { /* global mode */ return (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep'; } catch (e) { return 'dep'; } }
   function boardRows(dir) { try { /* global data */ return (typeof data !== 'undefined' && data && data[dir]) || []; } catch (e) { return []; } }
   function realCode(c) { try { if (typeof _realIata === 'function') return String(_realIata(c) || c).toUpperCase(); } catch (e) {} return c; }
@@ -1257,6 +1391,11 @@
       var pageW = root.innerWidth || W;
       bare = !tableShown;
       var md = (!shows || pageW < MIN_PAGE_W) ? 'none' : modeFor(W, H, !!here);
+      // a busy board whose rows leave under 28 px: nothing is drawn, and the
+      // sliver under the last row is the board's plain ground, never a strip
+      // of the old picture (unless the pictures failed: then, until the
+      // retry, the old backdrop stays, as it does for a floor that failed)
+      if (md === 'none' && !painted && shows && here && pageW >= MIN_PAGE_W && W >= MIN_W && H < MIN_ANY && Date.now() >= retryAt) setPainted(true);
       // the places that shape the view: on a full floor, the rows above it; on
       // a strip, the next flight still to come
       var sig = md, at = nowFor(apTz(AP0)), month = monthAt(at.getTime(), apTz(AP0));
