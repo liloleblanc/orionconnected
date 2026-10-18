@@ -30,9 +30,9 @@
    - Gate: the centre screen (map, adverts and cards) gives way to a black
      card with the same. The flight details, the gate number and the right
      column stay. A boarding call, final call, gate closed or the boarding
-     countdown (the takeover), a gate change, a cancellation, and the
-     upgrade and standby lists or the gate-close card when they are due,
-     always win: the card stands aside for them.
+     countdown (the takeover), a gate change, a cancellation, the upgrade
+     and standby lists while they are due, and the gate-close card while it
+     is on the screen, always win: the card stands aside for them.
    Nothing moves and nothing flashes. Each piece is put in place, or taken
    away, in one step, with no transition (reduced motion or not).
 
@@ -177,8 +177,9 @@
   }
   // The gate's silence card stands aside for everything that is the
   // passenger's business: the takeover (boarding, final call, gate closed,
-  // the boarding countdown), a gate change, a cancellation, and the lists
-  // or the gate-close card when they are due. It needs the centre screen.
+  // the boarding countdown), a gate change, a cancellation, the lists while
+  // they are due, and the gate-close card while it is on the screen
+  // (closing). It needs the centre screen.
   function gateCardMayShow(s) {
     s = s || {};
     return !!s.media && !s.takeover && !s.gateChange && !s.cancelled && !s.lists && !s.closing;
@@ -273,27 +274,34 @@
     if (at == null) return '';
     return String(B.boardTime(new Date(at), tz) || '').replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
   }
+  // Each time the page's fonts finish loading, every box is measured again
+  // (a box measured in the fallback type would not fit in the board's own).
+  var fontsGen = 0;
+  try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', function () { fontsGen++; }); } catch (eF) {}
   // Shrink a box's type until every unbreakable unit fits its width; a box
   // that cannot fit even at minPx is hidden, never cut. Measured again only
-  // when its words or the room it has change (key), so a board that keeps
-  // the look all day does not re-measure it every second.
+  // when its words, the room it has or the fonts change (the cache key), so
+  // a board that keeps the look all day does not re-measure it every second.
+  // (The key and the loop counter once shared a name, `k`: the counter
+  // overwrote the key, the cache never matched, and every box was measured
+  // again every second. tests/remembrance.test.js runs fit twice to hold it.)
   function fit(el, maxPx, minPx, key) {
     var host = el.parentNode || el;
-    var k = String(key || '') + '|' + host.clientWidth + 'x' + host.clientHeight + '|' + el.style.width + '|' + el.style.maxWidth + '|' + Math.round(maxPx) + '|' + minPx;
-    if (el.__remFit === k) return el.__remFitOk;
+    var cacheKey = String(key || '') + '|' + host.clientWidth + 'x' + host.clientHeight + '|' + el.style.width + '|' + el.style.maxWidth + '|' + Math.round(maxPx) + '|' + minPx + '|' + fontsGen;
+    if (el.__remFit === cacheKey) return el.__remFitOk;
     var px = Math.max(minPx, Math.round(maxPx)), over = true;
     el.style.visibility = '';
     for (var i = 0; i < 80; i++) {
       el.style.fontSize = px + 'px';
       over = false;
       var u = el.querySelectorAll('.rem-line');
-      for (var k = 0; k < u.length; k++) if (u[k].scrollWidth > u[k].clientWidth + 1) over = true;
+      for (var j = 0; j < u.length; j++) if (u[j].scrollWidth > u[j].clientWidth + 1) over = true;
       if (el.scrollHeight > el.clientHeight + 2) over = true;
       if (!over || px <= minPx) break;
       px -= 1;
     }
     if (over) el.style.visibility = 'hidden';
-    el.__remFit = k;
+    el.__remFit = cacheKey;
     el.__remFitOk = !over;
     return !over;
   }
@@ -361,6 +369,18 @@
   }
 
   // ── departures and arrivals ─────────────────────────────────────────────
+  // The bottom of the board's rows (#fidsTable) or of its message panels
+  // (.status-msg: no flights, loading, the feed down, an error), whichever
+  // is shown and lowest; the content area's own top when none is shown.
+  function floorTop(area, ar) {
+    var top = null, els = [document.getElementById('fidsTable')].concat([].slice.call(area.querySelectorAll('.status-msg')));
+    for (var i = 0; i < els.length; i++) {
+      if (!els[i] || !shown(els[i])) continue;
+      var b = els[i].getBoundingClientRect().bottom;
+      top = top == null ? b : Math.max(top, b);
+    }
+    return top == null ? ar.t : top;
+  }
   function board(look, ctx) {
     var L = LOOKS[look];
     var fb = document.getElementById('fidsBanner'), pill = document.getElementById('fidsAirportPill');
@@ -384,13 +404,16 @@
     if (!pinOk) drop('#fidsBanner > .rem-pin');
 
     // the silence: the free floor under the rows, and the ticker held still
-    var area = document.querySelector('.content-area'), tb = document.getElementById('fidsTable'), tk = document.querySelector('.ticker');
+    var area = document.querySelector('.content-area'), tk = document.querySelector('.ticker');
     var floorOk = false, stillOk = false;
     if (ctx.silent && area && shown(area)) {
       var ar = rect(area);
       var bottom = tk && shown(tk) ? rect(tk).t : ar.b;
-      var top = tb && shown(tb) ? rect(tb).b : null;
-      if (top != null && bottom - top >= 220) {
+      // the floor starts under the last thing the board is saying: its rows,
+      // or, on a board with none, its message ("No flights in window", the
+      // feed-down panel); with neither, the top of the content area
+      var top = floorTop(area, ar);
+      if (bottom - top >= 220) {
         var H = bottom - top, fl = layer('rem-floor', { l: ar.l, t: top, w: ar.w, h: H });
         var A = Math.round(Math.min(H * 0.74, 330));
         var key = ctx.langs.join() + '|' + ctx.eleven + '|' + look + '|' + A;
@@ -433,13 +456,22 @@
     var gc = false;
     var notes = document.querySelectorAll('.gl-solo, .gl-gc-title');
     for (var i = 0; i < notes.length; i++) if (shown(notes[i])) gc = true;
+    // The gate-close card takes its turn in the centre deck like the other
+    // cards (a minute at a time, _gateCardTurnDue), so it wins while it is on
+    // the screen, not for the whole 45 minutes it is due: an idle gate whose
+    // flight closes in the next three quarters of an hour still keeps the
+    // silence between the card's turns. The lists hold the centre for as long
+    // as they are due, so for them due is on the screen.
+    var closing = false;
+    var cc = media ? media.querySelectorAll('.gcard[data-gcard="closecard"]') : [];
+    for (var j = 0; j < cc.length; j++) if (shown(cc[j])) closing = true;
     return {
       media: !!(media && shown(media)),
       takeover: !!(wrap && wrap.classList.contains('g8-takeover')),
       gateChange: gc,
       cancelled: /^(cancelled|canceled)$/i.test(st.replace(/[\s_-]+/g, '')),
       lists: !!(due && due.sbcard),
-      closing: !!(due && due.closecard),
+      closing: closing,
       mediaEl: media
     };
   }

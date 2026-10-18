@@ -34,6 +34,18 @@ function fn(name) {
   assert.ok(at >= 0, name);
   return CORE.slice(at, CORE.indexOf('\n}\n', at) + 2);
 }
+// one of remembrance.js's own page functions (indented inside the module)
+function rfn(name) {
+  const at = SRC.indexOf('  function ' + name + '(');
+  assert.ok(at >= 0, name);
+  return SRC.slice(at, SRC.indexOf('\n  }\n', at) + 4);
+}
+// an element as the page functions read it: a box and its computed style
+const elBox = (l, t, w, h, cs = {}) => ({
+  getBoundingClientRect: () => ({ left: l, top: t, right: l + w, bottom: t + h, width: w, height: h }),
+  _cs: { display: 'block', visibility: 'visible', opacity: '1', ...cs }
+});
+const gcs = (e) => e._cs;
 
 // the roster's own airport → country table, as the board reads it
 const COUNTRY_SRC = CORE.slice(CORE.indexOf('const _IATA_CC_GROUPS = {'), CORE.indexOf('\n}\n', CORE.indexOf('function airportCountry(')) + 2);
@@ -203,15 +215,114 @@ test('a boarding call, a gate change, a cancellation and the lists always win ov
   assert.equal(R.gateCardMayShow({ media: false }), false, 'no centre screen, no card');
   // read from the gate itself: the takeover class (NOW BOARDING, FINAL CALL,
   // gate closed, the countdown), the gate-change notice, the flight's word,
-  // and the centre deck's due cards
+  // the lists while due, and the gate-close card while it is on the screen
   assert.match(SRC, /takeover: !!\(wrap && wrap\.classList\.contains\('g8-takeover'\)\)/);
   assert.match(SRC, /document\.querySelectorAll\('\.gl-solo, \.gl-gc-title'\)/);
   assert.match(SRC, /window\._gatePaintedCd\.st/);
   assert.match(SRC, /_gateCardsDue\(_gateCardsLive\(\), Date\.now\(\)\)/);
   assert.match(SRC, /lists: !!\(due && due\.sbcard\)/);
-  assert.match(SRC, /closing: !!\(due && due\.closecard\)/);
   // and the Later-at-this-gate strip under the window stays in view
   assert.match(SRC, /var strip = s\.mediaEl\.querySelector\('\.gl-strip'\);/);
+});
+
+// The gate-close card takes a minute's turn in the centre deck; it is due for
+// 45 minutes. The silence card stands aside while it is on the screen, not
+// for the whole 45 minutes (an idle gate whose flight closes at 11:30 would
+// otherwise keep no silence at all).
+test('the gate-close card wins while it is on the screen, not for all the 45 minutes it is due', () => {
+  const run = ({ cardShown, closeDue, listsDue = false }) => {
+    const cards = cardShown == null ? [] : [elBox(400, 200, 900, 700, cardShown ? {} : { display: 'none' })];
+    const media = { ...elBox(400, 200, 900, 760), querySelectorAll: (sel) => (sel === '.gcard[data-gcard="closecard"]' ? cards : []) };
+    const doc = {
+      querySelector: (sel) => (sel === '.g8-wrap' ? { classList: { contains: () => false } } : sel === '.g8-wrap .gad-media-col' ? media : null),
+      querySelectorAll: () => []
+    };
+    const due = () => ({ ovcard: false, docscard: false, closecard: closeDue, sbcard: listsDue });
+    const gs = new Function('document', 'window', 'getComputedStyle', '_gateCardsDue', '_gateCardsLive',
+      rfn('shown') + rfn('gateState') + 'return gateState;')(doc, {}, gcs, due, () => ({}));
+    const s = gs();
+    return { closing: s.closing, lists: s.lists, card: R.gateCardMayShow(s) };
+  };
+  // due, but the deck is on the map or an advert: the silence card shows
+  assert.deepEqual(run({ cardShown: null, closeDue: true }), { closing: false, lists: false, card: true });
+  // its turn: the gate-close card is on the screen and wins
+  assert.deepEqual(run({ cardShown: true, closeDue: true }), { closing: true, lists: false, card: false });
+  // a card element left hidden is not on the screen
+  assert.deepEqual(run({ cardShown: false, closeDue: true }), { closing: false, lists: false, card: true });
+  // the lists hold the centre for as long as they are due
+  assert.deepEqual(run({ cardShown: null, closeDue: false, listsDue: true }), { closing: false, lists: true, card: false });
+  assert.match(SRC, /media\.querySelectorAll\('\.gcard\[data-gcard="closecard"\]'\)/);
+  assert.doesNotMatch(SRC, /due\.closecard/, 'due is not on the screen');
+});
+
+// "No flights in window": the table is hidden and only the message panel
+// shows. The floor must still go black, under the message.
+test('the floor under the departures starts under the rows, or under the message on a board with none', () => {
+  const ar = { l: 0, t: 128, w: 1920, h: 913, b: 1041 };
+  const top = (table, panels) => new Function('document', 'getComputedStyle', rfn('shown') + rfn('floorTop') + 'return floorTop;')(
+    { getElementById: (id) => (id === 'fidsTable' ? table : null) }, gcs)({ querySelectorAll: (sel) => (sel === '.status-msg' ? panels : []) }, ar);
+  const hidden = { display: 'none' };
+  // rows on the board: under the table
+  assert.equal(top(elBox(0, 128, 1920, 477), [elBox(0, 605, 1920, 0, hidden), elBox(0, 605, 1920, 0, hidden)]), 605);
+  // no rows: the table is hidden, the message shows
+  assert.equal(top(elBox(0, 0, 0, 0, hidden), [elBox(0, 128, 1920, 172), elBox(0, 0, 0, 0, hidden)]), 300);
+  // nothing shown at all: the top of the content area
+  assert.equal(top(elBox(0, 0, 0, 0, hidden), [elBox(0, 0, 0, 0, hidden)]), 128);
+  assert.equal(top(null, []), 128);
+  assert.match(SRC, /var top = floorTop\(area, ar\);\s*if \(bottom - top >= 220\)/);
+});
+
+// fit() keeps a cache key per box; with the key and the loop counter under
+// one name the counter overwrote the key, so every box was measured again
+// every second all day.
+test('a fitted box is measured once, and again only when its words, its room or the fonts change', () => {
+  const mk = () => new Function(rfn('fit').replace(/^/, 'var fontsGen = 0;\n') + '\nreturn { fit: fit, fontsLoaded: function () { fontsGen++; } };')();
+  const box = (natural, room) => {
+    const st = { measures: 0, writes: 0 };
+    const style = { width: '', maxWidth: '', visibility: '', _fs: '' };
+    Object.defineProperty(style, 'fontSize', { get() { return this._fs; }, set(v) { st.writes++; this._fs = v; } });
+    const line = { get scrollWidth() { st.measures++; return Math.round(natural * parseFloat(style.fontSize) / 40); }, clientWidth: room };
+    const el = { style, parentNode: { clientWidth: 1000, clientHeight: 300 }, querySelectorAll: () => [line], scrollHeight: 10, clientHeight: 100 };
+    return { el, st };
+  };
+  const F = mk();
+  const a = box(800, 600);
+  assert.equal(F.fit(a.el, 40, 10, 'k1'), true);
+  const first = { ...a.st };
+  assert.ok(first.measures > 1 && first.writes > 1, 'it shrank to fit');
+  assert.equal(a.el.style.fontSize, '30px');
+  assert.equal(typeof a.el.__remFit, 'string', 'the cache holds its key');
+  // the next seconds: nothing measured, nothing written
+  for (let i = 0; i < 5; i++) assert.equal(F.fit(a.el, 40, 10, 'k1'), true);
+  assert.deepEqual(a.st, first);
+  // new words, or the fonts finished loading: measured again
+  F.fit(a.el, 40, 10, 'k2');
+  assert.ok(a.st.measures > first.measures, 'new words');
+  const second = { ...a.st };
+  F.fontsLoaded();
+  F.fit(a.el, 40, 10, 'k2');
+  assert.ok(a.st.measures > second.measures, 'the fonts loaded');
+  // a box that cannot fit even at the smallest size is hidden, never cut,
+  // and stays hidden without being measured again
+  const b = box(4000, 300);
+  assert.equal(F.fit(b.el, 40, 10, 'x'), false);
+  assert.equal(b.el.style.visibility, 'hidden');
+  const kept = { ...b.st };
+  assert.equal(F.fit(b.el, 40, 10, 'x'), false);
+  assert.deepEqual(b.st, kept);
+  assert.match(SRC, /document\.fonts\.addEventListener\('loadingdone', function \(\) \{ fontsGen\+\+; \}\)/);
+});
+
+// remembrance.js reads the airport's clock in its zone (the machine's with
+// none) and _fidsAirportYmd its day (UTC with none). Every airport of a
+// country that keeps the day carries its zone, so the two always agree.
+test('every airport in a country that keeps 11 November carries its own zone', () => {
+  const keep = new Set(Object.values(R.LOOKS).map((L) => L.cc));
+  const missing = Object.keys(AP).filter((ap) => keep.has(airportCountry(ap)) && !AP[ap].tz);
+  assert.deepEqual(missing, []);
+  assert.equal(AP.DAL.tz, 'America/Chicago');
+  assert.equal(AP.BFI.tz, 'America/Los_Angeles');
+  assert.equal(AP.BFS.tz, 'Europe/London');
 });
 
 test('the United States: a flag pin and a laurel wreath, never a poppy, never the flag beside the adverts', () => {
@@ -266,7 +377,7 @@ test('nothing moves and nothing flashes', () => {
   // measured again only when the words or their room change, and styles
   // written only when they change, so a board that keeps the look all day
   // does no work for it most seconds
-  assert.match(SRC, /if \(el\.__remFit === k\) return el\.__remFitOk;/);
+  assert.match(SRC, /if \(el\.__remFit === cacheKey\) return el\.__remFitOk;/);
   assert.match(SRC, /function put\(el, prop, v\) \{ if \(el\.style\[prop\] !== v\) el\.style\[prop\] = v; \}/);
   assert.match(SRC, /if \(!look && ap === lastAp && t - lastAsk < 30000 && t >= lastAsk\) return;/);
 });
