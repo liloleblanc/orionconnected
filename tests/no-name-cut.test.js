@@ -817,6 +817,18 @@ test('the weather screens\' title keeps one line, its airport giving way first; 
   assert.match(room, /var o = _wxDayOver\(d, body, ic\);/);
   assert.match(room, /ic\.style\.setProperty\('height', nw \+ 'px', 'important'\);/);
   assert.match(fnSource('_wxDayOver'), /rg\.selectNodeContents\(n\);/);
+  // 2026-10-18 — measured against the edge that cuts the words, not only the
+  // panel's foot: the body clips at its content box, above the panel's bottom
+  // padding, and four lines ('Partiellement nuageux' over 'Parzialmente
+  // nuvoloso') ran 1 to 4px into that padding, read as fitting and were cut
+  const over = fnSource('_wxDayOver');
+  assert.match(over, /if \(getComputedStyle\(a0\)\.overflowY === 'visible'\) continue;/);
+  assert.match(over, /var af = ab\.top \+ \(a0\.clientTop \+ a0\.clientHeight\) \* k;\s*if \(af < foot\) foot = af;/);
+  assert.ok(over.indexOf('if (af < foot) foot = af;') < over.indexOf('var down = '), 'the cutting edge is the foot the words are measured against');
+  // and with the icon at its smallest, the five conditions come down together, never under the floor
+  assert.match(room, /if \(fs0 > flo\) setFs\(_fxSearch\(flo, fs0, setFs\) \|\| flo\);/);
+  assert.match(room, /flo = fidsFitFloor\(\)/);
+  assert.match(room, /if \(c1\) c1\.style\.removeProperty\('font-size'\);/);
   // after every fit pass and every plate fit
   assert.match(fnSource('fidsFitAll'), /try \{ _wxFitTitles\(scope\); \} catch \(eW\) \{\}/);
   assert.match(fnSource('_wxFitPlateCities'), /try \{ _wxFitTitles\(root\); \} catch \(e2\) \{\}/);
