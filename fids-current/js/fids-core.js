@@ -24903,6 +24903,10 @@ function _autoBandPalette(ap, _tries) {
 // airports are the Y-codes on the roster (as _heritageIsCanadian reads them
 // when AP carries no country). ?holiday=<id> previews a look and
 // ?holiday=none turns it off, for review only.
+// Remembrance Day, Armistice Day, Remembrance Sunday and Veterans Day are
+// decided by js/remembrance.js (FidsRemembrance.lookFor): 'remembrance-ca',
+// 'remembrance-gb', 'remembrance-au' or 'veterans-us', each by the
+// airport's country and that country's switch.
 function _fidsAirportYmd(iata, now) {
   var tz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
   // the airport's own calendar day, as YYYY-MM-DD (fidsLocalDateKey)
@@ -24910,19 +24914,35 @@ function _fidsAirportYmd(iata, now) {
   return { y: +k[0], m: +k[1], d: +k[2] };
 }
 function _fidsHolidayFor(iata, now) {
+  var ap = String(iata || '').toUpperCase();
+  // the airport's country: AP's own, else the roster's (airportCountry),
+  // else the Y-codes are Canadian
+  var cc = (function () {
+    var c = ((typeof AP !== 'undefined' && AP[ap]) || {}).country || '';
+    if (c) return /^(CA|CAN|Canada)$/i.test(String(c)) ? 'CA' : String(c).toUpperCase();
+    try { if (typeof airportCountry === 'function') { var r = airportCountry(ap); if (r) return r; } } catch (eC) {}
+    return /^Y[A-Z]{2}$/.test(ap) ? 'CA' : '';
+  })();
   try {
     var q = new URLSearchParams(location.search).get('holiday');
     if (q === 'none') return '';
-    if (q && /^[a-z0-9-]{3,40}$/.test(q)) return q;
+    if (q && /^[a-z0-9-]{3,40}$/.test(q)) {
+      // ?holiday=remembrance previews the look of the airport's own country
+      // (js/remembrance.js), and none where that country keeps no day
+      if (q === 'remembrance' && typeof FidsRemembrance !== 'undefined') return FidsRemembrance.lookOf(cc);
+      return q;
+    }
   } catch (eQ) {}
-  var ap = String(iata || '').toUpperCase();
-  var canadian = (function () {
-    var c = ((typeof AP !== 'undefined' && AP[ap]) || {}).country || '';
-    if (c) return /^(CA|CAN|Canada)$/i.test(String(c));
-    return /^Y[A-Z]{2}$/.test(ap);
-  })();
-  if (!canadian) return '';
   var t = _fidsAirportYmd(ap, now || new Date());
+  // 11 November (and the United Kingdom's Remembrance Sunday), by the
+  // airport's country and that country's switch (js/remembrance.js)
+  try {
+    if (typeof FidsRemembrance !== 'undefined') {
+      var rem = FidsRemembrance.lookFor(cc, t.y, t.m, t.d);
+      if (rem) return rem;
+    }
+  } catch (eR) {}
+  if (cc !== 'CA') return '';
   // the second Monday of October: the first Monday falls on day 1..7
   if (t.m === 10) {
     var dow = new Date(Date.UTC(t.y, 9, t.d)).getUTCDay();
@@ -25330,7 +25350,10 @@ function _tgBouquet(band, now) {
 }
 function _fidsHolidayLayers() {
   try {
-    var on = !!document.body.dataset.fidsHoliday;
+    // These layers are Thanksgiving's own: made for thanksgiving-ca only.
+    // (Made for any look, they sat unstyled in the gate's flow under
+    // another one, and the bouquet alone squashed the gate by ~172px.)
+    var on = document.body.dataset.fidsHoliday === 'thanksgiving-ca';
     for (var i = 0; i < _HOLIDAY_LAYERS.length; i++) {
       var L = _HOLIDAY_LAYERS[i], hosts = document.querySelectorAll(L[0]);
       for (var j = 0; j < hosts.length; j++) {
@@ -25361,7 +25384,9 @@ function _fidsHolidayLayers() {
       var hr = band.getBoundingClientRect();
       _tgBouquet(band);
       var a = _tgEdges(band, '.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas', hr, 'right');
-      var bx = _tgEdges(band, '.octb-apmark, .octb-apsep, .octb-clock', hr, 'left');
+      // the airport's mark: its logo, or its code in letters (.octb-ap) where
+      // it has none (YUL, DCA), so no leaf rests on the letters
+      var bx = _tgEdges(band, '.octb-apmark, .octb-ap, .octb-apsep, .octb-clock', hr, 'left');
       if (bx == null) bx = _tgEdges(band, '.octb-clockrow, .g8-r1-timebox', hr, 'left');
       var rib = band.querySelector(':scope > .tg-ribbon'), rt = rib ? rib.getBoundingClientRect().top - hr.top : hr.height - 32;
       var kc = Math.max(0.6, Math.min(1.2, rt / 106));
