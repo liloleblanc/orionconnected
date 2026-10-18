@@ -113,7 +113,7 @@ thermometer-warmer, partly-cloudy-day-snow, umbrella, tornado.
 Rebuild: `python3 night-line.py WEATHER.svg ../../fids-current/logos/weather/night-line`
 (it prints each circle's measured size and centre), then `npm run assets:build`.
 
-### On the boards (v24053)
+### On the boards (v24054)
 
 At night, wherever the look draws its weather icons in a circle (Day & night
 after dark, and Solid at night), the boards draw these icons:

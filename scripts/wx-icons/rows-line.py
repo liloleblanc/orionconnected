@@ -36,7 +36,7 @@ What changes is only what is around it:
       <name>.svg for the 20 drawings, plus a copy under every other condition
       name the boards draw (ALIAS, the same mapping as night-line/)
 
-On the boards (v24053) every departures / arrivals row icon wears one of the
+On the boards (v24054) every departures / arrivals row icon wears one of the
 two sets, or the white set's shapes in the row's own ink, picked from the
 ground it sits on (fids-core.js _fidsRowWxSet, scripts/wx-icons/README.md):
 the set the row calls for (the colour set wherever white holds less than 3:1

@@ -1,7 +1,7 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v24053 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, CHOSEN BY GROUND.
+// v24054 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, CHOSEN BY GROUND.
 //
 // The departures and arrivals rows draw one of two sets drawn for Orion
 // Connected (logos/weather/rows-line-white/ and rows-line-color/, built by
@@ -527,7 +527,7 @@ test('the rows say where their weather is, and the row inks pass picks the set',
 });
 
 test('the stylesheet paints the white file, the colour file, or the white file\'s shapes in the row\'s ink; nothing filters any of them', () => {
-  const at = CSS.indexOf('v24053 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED');
+  const at = CSS.indexOf('v24054 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED');
   assert.ok(at > 0);
   const block = CSS.slice(at, CSS.indexOf('/* ══', at + 10));
   assert.match(block, /#fidsTable \.fids-wx-row \{\s*background: var\(--wxr-w\) center \/ contain no-repeat !important;\s*filter: none !important;\s*\}/);

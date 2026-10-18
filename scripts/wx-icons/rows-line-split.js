@@ -1,5 +1,5 @@
 // How the two row sets read across ground luminance (fids-core.js
-// _wxRowSetFor, v24053). The board does not split on this: it gives the
+// _wxRowSetFor, v24054). The board does not split on this: it gives the
 // colour set wherever white holds less than 3:1 on the row's ground (above a
 // relative luminance of 0.30) and otherwise follows the row's own text ink.
 // This measures what that choice costs and gains, icon by icon.

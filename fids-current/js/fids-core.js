@@ -16728,7 +16728,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24053" src="/textures/gate-sky-shelf.mp4?v=24053" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24054" src="/textures/gate-sky-shelf.mp4?v=24054" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16772,7 +16772,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24053" src="/textures/gate-sky-shelf.mp4?v=24053" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24054" src="/textures/gate-sky-shelf.mp4?v=24054" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -23470,7 +23470,7 @@ function _fidsRowInk(root) {
   } catch (e) {}
 }
 
-// ══ v24053 — EACH ROW'S WEATHER ICON: THE DRAWING WHERE IT CAN BE SEEN, ELSE ITS INK COPY ══
+// ══ v24054 — EACH ROW'S WEATHER ICON: THE DRAWING WHERE IT CAN BE SEEN, ELSE ITS INK COPY ══
 // The row icons drawn for Orion Connected come in two sets, one for a dark
 // ground and one for a light ground (fids-v2.js wxRowHtml): the white set
 // (white shapes, a thin blue edge) and the colour set (gold suns, moons and
@@ -23516,7 +23516,7 @@ function _fidsRowInk(root) {
 //     most legible of the drawings and the ink copies in the row's ink and
 //     the board's two inks (_WX_ROW_INKS, the pair _fidsInk falls back to).
 // It writes data-wx-set="white|colour|ink" on the icon, and the ink as
-// --wxr-k (css/display-overrides.css, the v24053 block). Nothing is redrawn
+// --wxr-k (css/display-overrides.css, the v24054 block). Nothing is redrawn
 // and no filter is laid on a drawing: the ink copy is the drawing's own
 // outline filled with one colour, as a mask.
 //
@@ -23774,7 +23774,7 @@ function _fidsBoardInk() {
   if (!table) return;
   try { applyCodeAccents(table); } catch (e) {}
   try { _fidsRowInk(table); } catch (e) {}
-  // v24053 — and each row's weather icon set, on the side its ink took
+  // v24054 — and each row's weather icon set, on the side its ink took
   try { _fidsRowWxSet(table); } catch (e) {}
 }
 if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;
@@ -24148,7 +24148,7 @@ function boardAutofit(full) {
 // before the board is laid out or its fonts have arrived; a board whose rows
 // do not change was then never measured again. It only ever shrinks a cell
 // that is cut, so on a board that fits it changes nothing.
-// v24053 — and the row weather icons' set (_fidsRowWxSet): a colour change
+// v24054 — and the row weather icons' set (_fidsRowWxSet): a colour change
 // that did not rebuild the rows is picked up here; unchanged, it writes nothing.
 try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); _fidsRowWxSet(); }, 5000); } catch (e) {}
 // The logo's natural size is only known once it decodes, and the banner may
@@ -33773,7 +33773,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24053';
+var FIDS_BUILD_TAG = 'v24054';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -34820,7 +34820,7 @@ function render() {
     const wxHtml = (() => {
       if (!isDep) return '';
       let tw = TOMORROW_WX[f._locIata];
-      // v24053 — and where that weather is: the row's icon takes the night
+      // v24054 — and where that weather is: the row's icon takes the night
       // form while it is dark there (fids-v2.js wxRowName)
       let _wxAt = f._locIata;
       // Multi-city rows: the primary code often has no weather (or the row's
@@ -57670,7 +57670,7 @@ var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
 // over a night photograph whenever the board's own airport was in daylight.
 // Without a flag (the day forecasts, which are daytime forecasts with no
 // hour) the board's own day or night decides, as on the gate screen.
-// v24053 — at night the circle look draws the night icons drawn for Orion
+// v24054 — at night the circle look draws the night icons drawn for Orion
 // Connected (_WX_NIGHT_DIR, below): a plate or an hour in darkness, or with
 // no flag the board's own night. A Solid chosen by day keeps its glyphs.
 function _wxCardIconDir(night) {
@@ -57773,7 +57773,7 @@ function _wxDiscTint(f, dh) {
   }
   return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
 }
-// ══ v24053 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
+// ══ v24054 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
 // At night, wherever the look draws its weather icons in a circle (Day &
 // night after dark, and Solid at night), the icons are the set drawn for
 // Orion Connected, one file per condition in logos/weather/night-line/
@@ -57872,7 +57872,7 @@ function _wxAirlineLook(code) {
   var tile = _wxMix(g, f, _WX_TINT);
   return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile),
            dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined),
-           // v24053 — the night circle (_WX_NIGHT_DISC): the ground under it lifted toward the airline's tint, or the charcoal
+           // v24054 — the night circle (_WX_NIGHT_DISC): the ground under it lifted toward the airline's tint, or the charcoal
            nk: _WX_NIGHT_DISC === 'airline' ? _wxNightDiscTint(f) : _WX_NIGHT_CHARCOAL };
 }
 // v24035 — THE SOLID LOOK'S TWO COLOURS: the circle is the airline's deep
@@ -58121,7 +58121,7 @@ function _wxHydrateSvgs(root) {
           // v24014 — on the weather card the icons are white and still
           // (v24035: not the Colour / Solid circles, which keep their own colours)
           if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-line)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
-          // v24053 — the night icons drawn for Orion Connected come without a
+          // v24054 — the night icons drawn for Orion Connected come without a
           // circle: they are set in the night circle here (--wxn-disc)
           if (/\/night-line\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightLineDisc(rawTxt);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
@@ -58719,7 +58719,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24053" src="/textures/gate-sky-shelf.mp4?v=24053"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24054" src="/textures/gate-sky-shelf.mp4?v=24054"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -60334,7 +60334,7 @@ function _renderWxCard(el) {
       wrap.style.setProperty('--wxc-ko', _wxLk.ko);
       // v24044 — the day circle: a light tint of this ground (_wxDiscTint)
       wrap.style.setProperty('--wxc-disc', _wxLk.dk);
-      // v24053 — the night circle: the ground under it lifted toward the airline's tint, or the charcoal (_WX_NIGHT_DISC)
+      // v24054 — the night circle: the ground under it lifted toward the airline's tint, or the charcoal (_WX_NIGHT_DISC)
       wrap.style.setProperty('--wxn-disc', _wxLk.nk);
       var _wxDp = _wxDiscPair(_wxLk.code);
       wrap.style.setProperty('--wx-disc', _wxDp.disc);
