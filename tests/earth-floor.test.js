@@ -280,3 +280,134 @@ test('the planet is the airport own: its view is centred on it, north up or turn
     assert.ok(view.R >= Math.max(s.H * 0.9, s.W * 0.6) - 1, s.ap + ': the planet spans the floor');
   }
 });
+
+// ── a name is its own dot's ────────────────────────────────────────────────
+// Halifax at 1680 by 226 put "Ottawa" right under Montréal's dot, 21 px from
+// it and 29 px from its own, with no line between: a passenger reads the two
+// the wrong way round. A name now stands nearer its own dot than any other
+// place's, or a leader line joins it to its own.
+const HALIFAX = [
+  { ap: 'YHZ', codes: ['YOW', 'EWR', 'YYZ', 'YUL', 'YYC', 'YYT', 'YEG'], W: 1680, H: 226 },
+  { ap: 'YHZ', codes: ['YUL', 'YYZ', 'YOW', 'YYC', 'YYT', 'YEG', 'EWR'], W: 1920, H: 257 },
+  { ap: 'YQB', codes: ['YYZ', 'YUL', 'EWR', 'PUJ', 'YGR', 'YWK'], W: 1920, H: 221 },
+  { ap: 'YOW', codes: ['YVR', 'YYZ', 'YUL', 'IAD', 'EWR'], W: 1920, H: 185 },
+  { ap: 'YEG', codes: ['DEN', 'YVR', 'YYZ', 'YWG', 'YYC'], W: 1920, H: 220 }
+];
+Object.assign(NAMES, {
+  EWR: ['Newark', 'Newark'], YYC: ['Calgary', 'Calgary'], YEG: ['Edmonton', 'Edmonton'], PUJ: ['Punta Cana', 'Punta Cana'],
+  YGR: ['Îles-de-la-Madeleine', 'Îles-de-la-Madeleine'], YWK: ['Wabush', 'Wabush'], IAD: ['Washington', 'Washington'],
+  DEN: ['Denver', 'Denver'], YWG: ['Winnipeg', 'Winnipeg']
+});
+function boxDist(b, x, y) { return Math.hypot(Math.max(b.x0, Math.min(x, b.x1)) - x, Math.max(b.y0, Math.min(y, b.y1)) - y); }
+
+test('a name reads as its own place: no other dot is as near it unless a leader line joins it to its own', () => {
+  const now = at('2026-10-18T09:00:00-03:00');
+  for (const s of SCENES.concat(HALIFAX.map((h) => Object.assign({ now }, h)))) {
+    const L = draw(s.ap, placesFor(s.ap, s.codes, NAMES, s.now), s.W, s.H, 'en', ['en', 'fr'], s.now);
+    for (const lab of L.labels) {
+      if (lab.edge) continue;
+      const own = L.dots.find((d) => d.code === lab.code);
+      assert.ok(own, `${s.ap}: ${lab.code} is named but has no dot`);
+      const dOwn = boxDist(lab.box, own.x, own.y);
+      const lead = L.leaders.some((l) => Math.hypot(l.x1 - own.x, l.y1 - own.y) < 9);
+      for (const d of L.dots) {
+        if (d.code === lab.code) continue;
+        const dd = boxDist(lab.box, d.x, d.y);
+        if (dd < dOwn + E.AMBIG) assert.ok(lead, `${s.ap} ${s.W}x${s.H}: ${lab.code} is ${dOwn.toFixed(0)} px from its dot and ${dd.toFixed(0)} px from ${d.code}'s, with no line`);
+      }
+    }
+  }
+});
+
+test('two places whose dots would touch: only the first is drawn', () => {
+  const now = at('2026-10-18T09:00:00-03:00');
+  NAMES.YHM = ['Hamilton', 'Hamilton']; NAMES.YTZ = ['Toronto Island', 'Toronto Island'];
+  const scenes = SCENES.concat(HALIFAX.map((h) => Object.assign({ now }, h)),
+    [{ ap: 'YHZ', codes: ['YEG', 'YYC', 'YYT', 'EWR', 'YYZ', 'LHR', 'YUL', 'YHM', 'LIS'], W: 1920, H: 292, now },
+     { ap: 'YQM', codes: ['YYZ', 'YHM', 'YTZ', 'YUL', 'YOW'], W: 1680, H: 300, now }]);
+  for (const s of scenes) {
+    const L = draw(s.ap, placesFor(s.ap, s.codes, NAMES, s.now), s.W, s.H, 'en', ['en', 'fr'], s.now);
+    L.dots.forEach((a, i) => L.dots.forEach((b, j) => {
+      if (j <= i) return;
+      assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= E.DOT_GAP, `${s.ap} ${s.W}x${s.H}: ${a.code} and ${b.code} touch`);
+    }));
+  }
+});
+
+// ── a name is never read as a row ──────────────────────────────────────────
+test('every name stands at least 10 px under the last row, on a strip as on a full floor', () => {
+  assert.equal(E.NAME_TOP, 10);
+  const now = at('2026-10-18T09:00:00-03:00');
+  const strips = [
+    { ap: 'SYD', codes: ['ADL'], W: 1920, H: 77 }, { ap: 'HBA', codes: ['OOL'], W: 1920, H: 64 },
+    { ap: 'MCO', codes: ['DEN'], W: 1920, H: 96 }, { ap: 'ORD', codes: ['YYZ'], W: 1920, H: 120 },
+    { ap: 'YYZ', codes: ['YVR'], W: 1680, H: 60 }, { ap: 'YOW', codes: ['YYZ'], W: 1920, H: 149 }
+  ];
+  NAMES.ADL = ['Adelaide', 'Adélaïde']; NAMES.OOL = ['Gold Coast', 'Gold Coast']; NAMES.ORD = ['Chicago', 'Chicago'];
+  let named = 0;
+  for (const s of SCENES.concat(strips.map((h) => Object.assign({ now }, h)))) {
+    const L = draw(s.ap, placesFor(s.ap, s.codes, NAMES, s.now), s.W, s.H, 'en', ['en', 'fr'], s.now);
+    for (const lab of L.labels) { named++; assert.ok(lab.box.y0 >= E.NAME_TOP, `${s.ap} ${s.W}x${s.H}: ${lab.code} starts ${lab.box.y0.toFixed(1)} px under the rows`); }
+    if (s.H < E.MIN_FULL && s.H >= E.MIN_ROUTES) assert.equal(L.labels.length, 1, `${s.ap} ${s.W}x${s.H}: the strip names its next flight`);
+  }
+  assert.ok(named > 20);
+  // a floor kept up under a page with more rows: its names keep to the part in sight
+  const s = SCENES[0], places = placesFor(s.ap, s.codes, NAMES, s.now), here = coords(s.ap);
+  const view = E.chooseView(here, places, s.W, s.H);
+  const L = E.layout({ view, W: s.W, H: s.H, top: 120, here, full: true, places: places.map((p) => Object.assign({}, p, { name: p.names[0] })), timeOf: () => '', hereTz: tz(s.ap), measure });
+  assert.ok(L.labels.length >= 1);
+  for (const lab of L.labels) assert.ok(lab.box.y0 >= 120 + E.NAME_TOP, lab.code + ' is in the part cut off');
+});
+
+// ── places beyond the picture ──────────────────────────────────────────────
+test('a place beyond the picture has an arrow where its route leaves, pointing the way the route goes on', () => {
+  let arrows = 0;
+  const now = at('2026-10-18T09:00:00-03:00');
+  for (const s of SCENES.concat(HALIFAX.map((h) => Object.assign({ now }, h)))) {
+    const L = draw(s.ap, placesFor(s.ap, s.codes, NAMES, s.now), s.W, s.H, 'en', ['en', 'fr'], s.now);
+    for (const lab of L.labels) {
+      const w = L.arrows.find((a) => a.code === lab.code);
+      if (!lab.edge) { assert.ok(!w, `${s.ap}: ${lab.code} is in the picture and has an arrow`); continue; }
+      assert.ok(w, `${s.ap} ${s.W}x${s.H}: ${lab.code} is beyond the picture with nothing to say so`);
+      arrows++;
+      assert.ok(Math.abs(w.x - lab.at.x) < 0.01 && Math.abs(w.y - lab.at.y) < 0.01, 'the arrow is where the name stands');
+      // the route's own way at that point
+      const r = L.routes.find((rt) => rt.code === lab.code), run = r.runs[0];
+      const k = run.findIndex((q) => Math.abs(q.x - w.x) < 0.01 && Math.abs(q.y - w.y) < 0.01);
+      assert.ok(k > 0, 'the arrow sits on its route');
+      let j = k - 1; while (j > 0 && Math.hypot(run[k].x - run[j].x, run[k].y - run[j].y) < 3) j--;
+      const a2 = Math.atan2(run[k].y - run[j].y, run[k].x - run[j].x);
+      let dA = Math.abs(a2 - w.ang); if (dA > Math.PI) dA = 2 * Math.PI - dA;
+      assert.ok(dA < 0.35, `${lab.code}: the arrow points ${(dA * 57.3).toFixed(0)}° off its route`);
+      assert.match(E.arrowPath(w), /^M[\d.-]+,[\d.-]+(L[\d.-]+,[\d.-]+){3}Z$/);
+    }
+  }
+  assert.ok(arrows >= 3, 'the scenes have places beyond the picture');
+});
+
+// ── one planet per direction ───────────────────────────────────────────────
+test('a direction is framed once for all its pages: the view stays as the pages turn and flights leave', () => {
+  const now = at('2026-10-18T09:00:00-04:00');
+  const codes = ['YYZ', 'YUL', 'YHZ', 'YVR', 'YYC', 'YEG', 'YWG', 'EWR', 'IAD', 'ORD', 'LHR', 'CDG', 'FLL', 'MCO', 'CUN', 'PUJ', 'YQB', 'YQM'];
+  const rows = codes.map((c, i) => ({ _locIata: c, dest: c, status: 'scheduled', _sortTs: now + (i + 1) * 20 * MIN }));
+  const P = E.placesFrom(rows, { dir: 'dep', ap0: 'YOW', now, coords, tz });
+  const store = {};
+  const a = E.shapersOf(store, P.list);
+  const here = coords('YOW');
+  const view = E.chooseView(here, a.list, 1920, 300);
+  // the next refresh: the first three have gone from the list; nothing moves
+  const P2 = E.placesFrom(rows.slice(3), { dir: 'dep', ap0: 'YOW', now, coords, tz });
+  const b = E.shapersOf(store, P2.list);
+  assert.equal(b.sig, a.sig, 'places that left still frame the day');
+  assert.equal(E.viewSig(E.chooseView(here, b.list, 1920, 300)), E.viewSig(view));
+  // pages of that list are drawn on the one view: every page's layout holds
+  for (let pg = 0; pg < 3; pg++) {
+    const page = P.list.slice(pg * 6, pg * 6 + 6).map((p) => Object.assign({}, p, { name: p.code, names: [p.code] }));
+    const L = E.layout({ view, W: 1920, H: 300, here, full: true, places: page, timeOf: () => '', hereTz: tz('YOW'), measure });
+    assert.ok(L.labels.length >= 1, 'page ' + pg + ' names its places');
+  }
+  // a new place joins the day: the signature changes (a new view may follow)
+  const c = E.shapersOf(store, [{ code: 'SFO', lat: 37.6, lon: -122.4, n: 1 }]);
+  assert.notEqual(c.sig, a.sig);
+  assert.ok(c.list.length <= 40, 'at most the 40 busiest places frame a view');
+});

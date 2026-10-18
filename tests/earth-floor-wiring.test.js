@@ -169,3 +169,35 @@ test('the Credits page names the pictures, in the store words, with no NASA insi
   assert.match(BS.bs('credNasaLine', 'en'), /NASA’s Goddard[\s\u00a0]Space[\s\u00a0]Flight[\s\u00a0]Center/);
   assert.doesNotMatch(credits, /<img[^>]*nasa|meatball|insignia/i);
 });
+
+test('a page change never blanks the floor: the one on screen stays until the next is lit, sizes settle, a rotation is kept', () => {
+  const sel = MOD.slice(MOD.indexOf('function select(key, md, view)'), MOD.indexOf('function rebuild(e)'));
+  assert.ok(sel.length > 200, 'select() is where it was');
+  const miss = sel.slice(sel.indexOf('a floor not seen yet'));
+  assert.doesNotMatch(miss.slice(0, miss.indexOf('build(e,')), /showCanvas\(null\)|svg\.textContent = ''/, 'nothing is cleared before the build');
+  assert.match(miss, /shade\(e, function \(\) \{\s*if \(cur !== e\) return;\s*showCanvas\(e\.cv\); drawOverlay\(\); becomeReady\(\);/, 'the new floor goes up in one step once lit');
+  assert.match(sel, /return;\s+\/\/ still being lit: the floor on screen stays/);
+  // one step: the new planet is put in before the old one is taken out
+  assert.match(MOD, /if \(cv\) layer\.insertBefore\(cv, \(shown && shown\.parentNode === layer\) \? shown : svg\);\s*if \(shown && shown\.parentNode\) shown\.parentNode\.removeChild\(shown\);/);
+  // the planet and its names stand at the foot of the layer at their own size
+  assert.match(MOD, /cv\.style\.width = W \+ 'px'; cv\.style\.height = H \+ 'px';/);
+  assert.match(MOD, /svg\.style\.width = W \+ 'px'; svg\.style\.height = H \+ 'px';/);
+  const block = CSS.slice(CSS.indexOf('/* ══ EARTH, NOW'), CSS.indexOf("/* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS"));
+  assert.match(block.replace(/\/\*[\s\S]*?\*\//g, ''), /#ocFloor > canvas,\s*#ocFloor > svg \{[^}]*bottom: 0;/);
+  // a new size is acted on once it has held 3 s, or at once when its lit floor is at hand
+  assert.match(MOD, /var SETTLE_MS = 3000;/);
+  assert.match(MOD, /if \(!shown \|\| now - pend\.at >= SETTLE_MS \|\| readyFor\(planFor\(w, h, shows, pageW\)\.key\)\) \{ W = w; H = h; pend = null; \}/);
+  // one view per direction, fitted to the whole rotation's places, never one page's
+  assert.match(MOD, /shapersOf\(shapeStore\[dir\], P\.list\)/);
+  assert.doesNotMatch(MOD, /chooseView\(here, viewPlaces\(/);
+  // the cache holds a rotation, and never lets go of the floor on screen or the one replacing it
+  assert.match(MOD, /var CACHE_MAX = 8;/);
+  assert.match(MOD, /var CACHE_BYTES = 40e6;/);
+  assert.match(MOD, /var keep = function \(x\) \{ return x === cur \|\| x\.cv === shown; \};/);
+  assert.match(MOD, /function drop\(x\) \{ x\.day = x\.night = null; x\.dropped = true; if \(x\.cv !== shown\)/);
+  // a floor kept up in a space of another height shows no band of flat
+  // ground and no hard edge: its own sky above it, or its cut top turned
+  // into the ground; within the 6 px a size allows nothing is added
+  assert.match(MOD, /if \(shown && fh && gap > 6\) \{\s*bg = 'linear-gradient\(rgb\(' \+ ground\.join/);
+  assert.match(MOD, /\} else if \(shown && fh && gap < -6\) \{\s*mask = 'linear-gradient\(transparent 0px, #000 ' \+ f \+ 'px\)';/);
+});

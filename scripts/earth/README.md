@@ -71,6 +71,13 @@ per request, and are within the Workers static-asset limits (25 MiB a file,
 matters, is the 60° squares (234 files, about 30 MB): wide views would then read
 four 30° squares instead of one.
 
+**Not decided: where they live.** The repository is public and was about
+938 MB packed (2.2 GB `.git`) on 2026-10-18 before this set; 136 MB of JPEGs
+takes it past 1 GB, and every later change to a picture adds its whole size
+again. The R2 bucket the worker already binds (`FIDS_ASSETS`) could hold them
+instead, served under the same `/earth/v1/` paths, so `fids-earth.js` would not
+change. The choice is open; until it is made they stay here.
+
 ## Rebuilding
 
 Needs Node (fetch, manifest) and Swift (ImageIO / CoreGraphics; there is no

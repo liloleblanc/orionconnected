@@ -29,10 +29,13 @@
    THE RULES IT KEEPS
      · Sizes. Under 28 px nothing; 28–59 px the planet's lit edge; 60–149 px
        a strip turned toward the next flight still to come, its place and
-       local time on one line; 150 px and up the full view of the places on
-       the rows above it (this page), 5 to 16 of them by height. A board
-       showing no rows but its own notice (no flights in its window, its
-       feed down) has the planet and the airport under the notice, no routes.
+       local time on one line; 150 px and up the full view: the routes and
+       names of the places on the rows above it (this page), 5 to 16 of them
+       by height, on a planet framed once for the direction (every place its
+       rows list, all pages: shapersOf), so the planet stays put as the pages
+       turn. A board showing no rows but its own notice (no flights in its
+       window, its feed down) has the planet and the airport under the
+       notice, no routes.
      · The next flight is the earliest whose time (revised, else scheduled)
        is now or later, not gone, not cancelled. An overdue row is never it.
      · Names are the rows' own (formatCityIata, the language on screen). They
@@ -40,16 +43,25 @@
        moves when the board turns language: only its text changes. A name
        never sits on a route (6 px clear), or the routes are cut away under
        it; a place with no room for its name is left out with its route and
-       dot, so every line carries a name. The airport's ring keeps a clear
-       zone. Places over the planet's edge are named where their route leaves
-       the picture; several leaving at one spot share one route and one list.
+       dot, so every line carries a name. A name reads as its own dot's: where
+       another dot stands as near, a leader line joins it to its own, or it
+       goes elsewhere; of two dots that would touch, only the first is drawn. Names keep 10 px under the last row. The airport's ring
+       keeps a clear zone. Places beyond the picture are named where their
+       route leaves it, an arrow there pointing on; several leaving at one
+       spot share one route, one arrow and one list.
      · The time there is the board's own clock (BoardStrings.boardTime: the
        format its rows use), printed only where it differs from this
        airport's, and only for a place whose zone is known: the AP table's,
        else the floor's own list of zones (ZONE_LIST below).
      · White ink with a dark halo, nothing behind it. Nothing moves, flashes
        or travels: the planet is re-lit once a minute, a quarter of a degree
-       of sunlight, written in bands nobody can see change.
+       of sunlight, written in bands nobody can see change. A new floor (a
+       page with more rows or fewer, the other direction) is built while the
+       one on screen stays up, then put in its place in one step: the floor
+       is never blank. A new size is built only once it has held 3 s (the
+       board settling its rows), and the lit floors of a board's whole
+       rotation are kept, so after the first round every page change is
+       that one step.
      · No passenger words of its own: names come from the rows, times are
        numbers, the clock mark is a symbol; the layer is aria-hidden.
 
@@ -75,9 +87,10 @@
        half size; at half size, three over 400 ms re-light every 5 minutes.
        ?earthscale=1 | 0.5 forces a size; window.__ocfBench() measures.
      · Memory: pictures are kept compressed (about 8 MB at most) and decoded
-       only to be read, then released. The projected day and night colours
-       are kept for the current floor and the two before it; older floors
-       keep only their lit picture.
+       only to be read, then released. Up to 8 lit floors are kept, within
+       40 MB with their projected day and night colours (about 5.8 MB a floor
+       of 1920 by 300); over that the oldest let go of their colours first,
+       then go. The floor on screen and the one replacing it always stay.
      · Paused while hidden: the loop runs on _ocEvery (skipped while the
        rotator has this board out of sight, caught up by _ocOnShow), and
        nothing is built or re-lit while the document is hidden.
@@ -102,8 +115,14 @@
   var SLICE_MS = 6;                 // the longest the floor holds the page in one go
   var SPACE = [3, 8, 24];           // the space above the planet's edge: deep night navy
   var MAX_PLACES = 16;
-  var CACHE_SIZES = 4;              // lit planets kept (a floor size and a page's places each)
-  var ARRAYS_KEPT = 3;              // of those, the ones that keep their projected colours
+  var SHAPERS = 40;                 // the most places a direction's view is fitted to (by flights)
+  var NAME_TOP = 10;                // a name stands at least this far under the last row
+  var AMBIG = 6;                    // another dot this much nearer a name than its own (or less): ambiguous
+  var LEAD_NEAR = 18;               // the shortest leader line, drawn only to settle an ambiguity
+  var DOT_GAP = 14;                 // two places' dots nearer than this: only the first is drawn
+  var CACHE_MAX = 8;                // lit floors kept: a board's whole rotation, both directions
+  var CACHE_BYTES = 40e6;           // what they may hold together (canvases and projected colours)
+  var SETTLE_MS = 3000;             // a new floor size is built once it has held this long
   var BLOB_BUDGET = 8e6;            // compressed pictures kept at hand, bytes
   var RETRY_MS = 600000;            // a floor with no picture is tried again after this
   var HALO = '#020a1c';
@@ -392,14 +411,18 @@
             xs.push({ x: dot(v, B.r) * R, w: want[i].w });
           }
           xs.sort(function (a, b) { return a.x - b.x; });
-          // the heaviest run of places no wider than the floor, the airport in it
-          var best = null;
-          for (var lo = 0; lo < xs.length; lo++) {
-            var wsum = 0, home = 0;
-            for (var hi = lo; hi < xs.length && xs[hi].x - xs[lo].x <= room; hi++) {
-              wsum += xs[hi].w; home = home || xs[hi].home;
-              if (home && (!best || wsum > best.w)) best = { w: wsum, lo: xs[lo].x, hi: xs[hi].x };
-            }
+          // the heaviest run of places no wider than the floor, the airport in
+          // it: from each place, the run reaching as far as the room allows
+          // (every place weighs at least 1, so the longest run from a place is
+          // its heaviest), kept when it holds the airport; one pass, the far
+          // end only ever moving on
+          var best = null, ih = 0;
+          while (!xs[ih].home) ih++;
+          for (var lo = 0, hi = -1, wsum = 0; lo < xs.length; lo++) {
+            if (hi < lo - 1) { hi = lo - 1; wsum = 0; }
+            while (hi + 1 < xs.length && xs[hi + 1].x - xs[lo].x <= room) { hi++; wsum += xs[hi].w; }
+            if (lo <= ih && ih <= hi && (!best || wsum > best.w)) best = { w: wsum, lo: xs[lo].x, hi: xs[hi].x };
+            if (hi >= lo) wsum -= xs[lo].w;
           }
           if (best) all.push({ B: B, R: R, cy: cy, ya: ya, psi: psi, delta: delta, kept: best.w, lo: best.lo, hi: best.hi });
         }
@@ -416,6 +439,27 @@
     var cx = mX + leftRoom - pick.lo + (room - (pick.hi - pick.lo)) / 2;
     cx = clamp(cx, Math.max(W * 0.1, mX + leftRoom - pick.lo), Math.min(W * 0.9, W - mX - nameRoom - pick.hi));
     return { B: pick.B, R: pick.R, cx: cx, cy: pick.cy, yl: yl, ya: pick.ya, psi: pick.psi, delta: pick.delta };
+  }
+  // a view's own name: two sets of places that frame the planet alike share
+  // one floor, and one picture in the cache
+  function viewSig(v) { return [v.psi, v.delta, Math.round(v.R), Math.round(v.cx), Math.round(v.cy)].join(','); }
+  // THE PLACES A DIRECTION'S VIEW IS FITTED TO: every place its rows have
+  // listed (the whole rotation, never one page), each at the most flights it
+  // has had, the busiest SHAPERS of them. The store only grows through the
+  // day, so a board frames its departures once and its arrivals once, and the
+  // planet stays put while the pages turn: only the routes and names follow
+  // the page. `store` is the caller's ({} to start); returns the places and
+  // a signature that changes only when they do.
+  function shapersOf(store, list) {
+    (list || []).forEach(function (p) {
+      var o = store[p.code], n = p.n || 1;
+      if (!o) store[p.code] = { code: p.code, lat: p.lat, lon: p.lon, n: n };
+      else if (n > o.n) o.n = n;
+    });
+    var all = Object.keys(store).map(function (k) { return store[k]; });
+    all.sort(function (a, b) { return (b.n - a.n) || (a.code < b.code ? -1 : 1); });
+    all = all.slice(0, SHAPERS);
+    return { list: all, sig: all.map(function (p) { return p.code + ':' + p.n; }).sort().join(',') };
   }
 
   // ── WHICH SQUARES A VIEW SEES ──────────────────────────────────────────────
@@ -493,6 +537,14 @@
     var h = +m[1], mi = +m[2];
     return { h: ((h % 12) + mi / 60) * 30, m: mi * 6 };
   }
+  // the arrow where a route leaves the picture: its tip on the route's last
+  // point in sight, pointing the way the route goes on, notched at the back
+  function arrowPath(w) {
+    var c = Math.cos(w.ang), s = Math.sin(w.ang), L = w.len, hw = L * 0.5;
+    var bx = w.x - c * L, by = w.y - s * L;
+    var p = [[w.x, w.y], [bx - s * hw, by + c * hw], [w.x - c * L * 0.68, w.y - s * L * 0.68], [bx + s * hw, by - c * hw]];
+    return 'M' + p.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join('L') + 'Z';
+  }
 
   // layout(o) → everything the floor draws, as plain numbers:
   //   o.view, o.W, o.H, o.here [lat, lon], o.full (a full floor or a strip)
@@ -502,8 +554,8 @@
   //   o.hereTz   this airport's zone
   //   o.measure(text, px) → width in px
   function layout(o) {
-    var view = o.view, W = o.W, H = o.H, full = !!o.full, measure = o.measure;
-    var out = { full: full, hub: null, routes: [], dots: [], leaders: [], labels: [], knockouts: [], unplaced: [], tooNear: [], placed: 0 };
+    var view = o.view, W = o.W, H = o.H, full = !!o.full, measure = o.measure, top = Math.max(0, +o.top || 0);
+    var out = { full: full, hub: null, routes: [], dots: [], arrows: [], leaders: [], labels: [], knockouts: [], unplaced: [], tooNear: [], placed: 0 };
     var A = vec(o.here[0], o.here[1]), a = toScreen(A, view);
     // ONE route and one name per place: places that share every language's
     // name and stand together (Montréal: YUL and MET) are one
@@ -630,18 +682,27 @@
 
     // places beyond the picture are named where their route leaves it; places
     // leaving at one spot share ONE route and their names stand as one list
-    function inPicture(g) { return !g.q.hidden && g.q.z > 0.02 && g.q.x > 6 && g.q.x < W - 6 && g.q.y > 4 && g.q.y < H - 4; }
+    // (`top`: the floor's first rows out of sight, while a floor is kept up
+    // under a page with more rows; 0 otherwise)
+    function inPicture(g) { return !g.q.hidden && g.q.z > 0.02 && g.q.x > 6 && g.q.x < W - 6 && g.q.y > top + 4 && g.q.y < H - 4; }
     groups.forEach(function (g) {
       g.edge = null; g.follow = null; g.sign = null;
       if (inPicture(g)) return;
       var run = g.runs[0]; if (!run || !run.length) return;
-      var last = null;
+      var last = null, prev = null;
       for (var i = 0; i < run.length; i++) {
         var q = run[i];
-        if (q.x < 4 || q.x > W - 4 || q.y < 2 || q.y > H - 2) { if (last) break; else continue; }
-        last = q;
+        if (q.x < 4 || q.x > W - 4 || q.y < top + 2 || q.y > H - 2) { if (last) break; else continue; }
+        prev = last; last = q;
       }
-      if (last && Math.hypot(last.x - run[0].x, last.y - run[0].y) > 40) g.edge = last;
+      if (last && Math.hypot(last.x - run[0].x, last.y - run[0].y) > 40) {
+        g.edge = last;
+        // the way the route is going where it leaves (its last 3 px): the
+        // arrow there points on
+        var p0 = prev || run[0];
+        for (var k = run.indexOf(last) - 1; k >= 0 && Math.hypot(last.x - p0.x, last.y - p0.y) < 3; k--) p0 = run[k];
+        g.edgeAng = Math.atan2(last.y - p0.y, last.x - p0.x);
+      }
     });
     var signs = [];
     groups.slice().sort(function (x, y) { return x.rank - y.rank; }).forEach(function (g) {
@@ -678,8 +739,14 @@
     if (!a.hidden) boxes.push({ x0: a.x - hz, y0: a.y - hz, x1: a.x + hz, y1: a.y + hz });
     var dots = groups.filter(inPicture);
     dots.forEach(function (g) { boxes.push({ x0: g.q.x - 7, y0: g.q.y - 7, x1: g.q.x + 7, y1: g.q.y + 7, own: g }); });
+    // every place's dot in the picture: a name must read as its own place's,
+    // never as the name of a dot nearer it
+    var dotAt = dots.map(function (g) { return { g: g, x: g.q.x, y: g.q.y }; });
+    // the arrow where a route leaves the picture is kept clear of other names
+    signs.forEach(function (sg) { var e = sg.lead.edge; boxes.push({ x0: e.x - 8, y0: e.y - 8, x1: e.x + 8, y1: e.y + 8, own: sg.lead }); });
     function free(b, self) {
-      if (b.x0 < 10 || b.x1 > W - 10 || b.y0 < (full ? 4 : 1) || b.y1 > H - 2) return false;
+      // a name stands NAME_TOP px under the last row: never read as a row's
+      if (b.x0 < 10 || b.x1 > W - 10 || b.y0 < top + NAME_TOP || b.y1 > H - 2) return false;
       for (var i = 0; i < boxes.length; i++) {
         var q = boxes[i]; if (q.own === self) continue;
         // two names keep a word space apart, and a line apart
@@ -689,9 +756,23 @@
     }
     signs.forEach(function (sg) { dots.push(sg.lead); });
     dots.sort(function (x, y) { return x.rank - y.rank; });
-    function leaderOf(b, pt) {
+    function boxDist(b, x, y) { return Math.hypot(clamp(x, b.x0, b.x1) - x, clamp(y, b.y0, b.y1) - y); }
+    // the nearest OTHER dot to a name, when it is as near as the name's own
+    // point (or nearer, less AMBIG px): the name could be read as that place's
+    function rival(b, g, pt) {
+      var own = boxDist(b, pt.x, pt.y), mates = g.sign ? g.sign.members : [g], hit = null;
+      dotAt.forEach(function (d) {
+        if (mates.indexOf(d.g) >= 0 || d.g.unplaced) return;
+        var dd = boxDist(b, d.x, d.y);
+        if (dd < own + AMBIG && (!hit || dd < hit.d)) hit = { d: dd, own: own };
+      });
+      return hit;
+    }
+    // a leader line joins a name to its dot when they stand apart (30 px), or
+    // nearer when another dot stands as close: then the line says which
+    function leaderOf(b, pt, near) {
       var nx = clamp(pt.x, b.x0, b.x1), ny = clamp(pt.y, b.y0, b.y1), dx = nx - pt.x, dy = ny - pt.y, L = Math.hypot(dx, dy);
-      if (L < 30) return null;
+      if (L < (near ? LEAD_NEAR : 30)) return null;
       return [pt.x + dx / L * 7, pt.y + dy / L * 7, nx - dx / L * 5, ny - dy / L * 5];
     }
     function leaderCrosses(l, self) {
@@ -722,18 +803,32 @@
       var cand = [];
       var ds = full ? [11, 22, 34, 50, 68] : [10, 20, 34];
       ds.forEach(function (d, di) {
+        // a strip's one line beside its point, level with it, under it or
+        // over it (the strip is low: the line keeps NAME_TOP under the rows)
         var dirs = full
           ? [['start', d, -lh / 2], ['end', -d - lw, -lh / 2], ['start', d * 0.5, d * 0.45], ['end', -d * 0.5 - lw, d * 0.45], ['middle', -lw / 2, d],
              ['start', d * 0.5, -lh - d * 0.45], ['end', -d * 0.5 - lw, -lh - d * 0.45], ['middle', -lw / 2, -lh - d]]
-          : [['start', d, -lh / 2 + 2], ['end', -d - lw, -lh / 2 + 2], ['start', d, 2], ['end', -d - lw, 2], ['middle', -lw / 2, 6]];
-        dirs.forEach(function (c, ci) { cand.push({ al: c[0], dx: c[1], dy: c[2], cost: di * 6 + ci }); });
+          : [['start', d, -lh / 2 + 2], ['end', -d - lw, -lh / 2 + 2], ['start', d, 2], ['end', -d - lw, 2], ['middle', -lw / 2, 6],
+             ['start', d, 9], ['end', -d - lw, 9], ['middle', -lw / 2, 12], ['start', d, -lh + 4], ['end', -d - lw, -lh + 4]];
+        dirs.forEach(function (c, ci) { cand.push({ al: c[0], dx: c[1], dy: c[2], cost: di * (full ? 6 : 10) + ci }); });
       });
       var spot = null, best = 1e12;
-      if (out.placed < maxNames) cand.forEach(function (c) {
+      // two dots this close cannot be told apart: the place named first keeps
+      // the spot, the other is left out with its route (the rows list it)
+      var crowded = !isEdge && out.dots.some(function (d) { return Math.hypot(d.x - pt.x, d.y - pt.y) < DOT_GAP; });
+      if (out.placed < maxNames && !crowded) cand.forEach(function (c) {
         var b = { x0: pt.x + c.dx, y0: pt.y + c.dy, x1: pt.x + c.dx + lw, y1: pt.y + c.dy + lh, own: g, al: c.al, px: pt.x, py: pt.y };
         if (!free(b, g)) return;
         var cost = crossings(b, g) * 1000 + c.cost;              // on a route: only if there is nowhere else
-        var lead = leaderOf(b, pt);
+        // another place's dot as near as this name's own: a leader line must
+        // say which dot it names, else the spot is not taken; a name at the
+        // edge (its arrow says where it goes) only keeps away if it can
+        var rv = rival(b, g, pt), lead = leaderOf(b, pt, !!rv && !isEdge);
+        if (rv) {
+          if (isEdge) cost += 400;
+          else if (!lead) return;
+          else cost += 150;
+        }
         if (lead && leaderCrosses(lead, g)) cost += 300;
         if (cost < best) { best = cost; spot = b; spot.lead = lead; }
       });
@@ -742,6 +837,9 @@
       if (!spot) { g.unplaced = true; (g.sign ? g.sign.members : [g]).forEach(function (m) { m.unplaced = true; }); out.unplaced.push(g.code); return; }
       boxes.push(spot); out.placed++;
       if (!isEdge) out.dots.push({ x: pt.x, y: pt.y, r: g.isNext ? 6 : 4.6, op: op, code: g.code });
+      // a place beyond the picture: an arrow on its route where it leaves,
+      // pointing on (a symbol, no words)
+      else out.arrows.push({ x: pt.x, y: pt.y, ang: g.edgeAng || 0, len: full ? 13 : 10, op: list ? 1 : op, code: g.code });
       if (spot.lead && !isEdge) out.leaders.push({ x1: spot.lead[0], y1: spot.lead[1], x2: spot.lead[2], y2: spot.lead[3], op: op });
       // never a name on a visible line: the routes are cut away under it
       if (best >= 1000) out.knockouts.push({ x0: spot.x0 - 5, y0: spot.y0 - 4, x1: spot.x1 + 5, y1: spot.y1 + 4 });
@@ -797,7 +895,9 @@
     capFor: capFor, modeFor: modeFor, placesFrom: placesFrom, onPage: onPage, ZONES: ZONES, zoneOf: zoneOf,
     frameBasis: frameBasis, stripView: stripView, chooseView: chooseView, llAt: llAt,
     levelFor: levelFor, tilesFor: tilesFor, texSrc: texSrc, layerName: layerName, sampleInto: sampleInto,
-    toScreen: toScreen, routeRuns: routeRuns, layout: layout, handsOf: handsOf,
+    toScreen: toScreen, routeRuns: routeRuns, layout: layout, handsOf: handsOf, arrowPath: arrowPath,
+    NAME_TOP: NAME_TOP, AMBIG: AMBIG, LEAD_NEAR: LEAD_NEAR, DOT_GAP: DOT_GAP, SETTLE_MS: SETTLE_MS, CACHE_MAX: CACHE_MAX, CACHE_BYTES: CACHE_BYTES,
+    viewSig: viewSig, shapersOf: shapersOf,
     vec: vec, dot: dot, sunAt: sunAt, sunAltitude: sunAltitude, sunVecLocal: sunVecLocal
   };
   if (typeof module === 'object' && module.exports) module.exports = Core;
@@ -877,6 +977,15 @@
     } catch (e) {}
     return new Date(ms).getUTCMonth() + 1;
   }
+  // the airport's own date, as a day number (its places are gathered per day)
+  function dayAt(ms, tz) {
+    try {
+      var G = root.FIDSGateDate;
+      var n = G && G.zonedDateOrdinal ? G.zonedDateOrdinal(ms, tz || 'UTC') : null;
+      if (typeof n === 'number' && isFinite(n)) return String(n);
+    } catch (e) {}
+    return String(Math.floor(ms / 86400000));
+  }
   function rgbOf(str) { var m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/.exec(str || ''); return m ? [+m[1], +m[2], +m[3]] : null; }
   function el(name, attrs, parent) { var e = doc.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
   function hidden() {
@@ -894,7 +1003,9 @@
   }
 
   // ── work in slices: never hold the page more than SLICE_MS at a time ──────
-  var stats = { slices: 0, maxSliceMs: 0, maxBlockMs: 0, cacheHits: 0, builds: 0, files: 0, fileErrors: 0 };
+  // (workMs: all the floor's own main-thread time, projecting and lighting;
+  // overlayMs: laying out and drawing the routes and names)
+  var stats = { slices: 0, maxSliceMs: 0, maxBlockMs: 0, cacheHits: 0, builds: 0, files: 0, fileErrors: 0, workMs: 0, overlayMs: 0, overlays: 0 };
   var disabled = false;
   function slices(step, fin, acct) {
     function tick() {
@@ -903,7 +1014,7 @@
       var t0 = performance.now(), done = false;
       try { done = step(t0 + SLICE_MS); } catch (err) { fail(err); return; }
       var dt = performance.now() - t0;
-      stats.slices++; if (dt > stats.maxSliceMs) stats.maxSliceMs = +dt.toFixed(1);
+      stats.slices++; stats.workMs += dt; if (dt > stats.maxSliceMs) stats.maxSliceMs = +dt.toFixed(1);
       if (acct) acct.ms += dt;
       if (done) { try { fin(); } catch (err2) { fail(err2); } } else setTimeout(tick, 0);
     }
@@ -960,15 +1071,31 @@
     if (qk === '0.5' || qk === '1') { K = +qk; K_FORCED = true; }
     else if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)) K = 0.5;
   } catch (e) {}
+  // THE LIT FLOORS AT HAND, newest first: a board's whole rotation (its
+  // departures and arrivals, each at the heights its pages leave), so a page
+  // or a direction seen once comes back at once. Within CACHE_BYTES the
+  // oldest first let go of their projected colours (they are projected again
+  // if they are re-lit), then go; never the floor on screen, nor the one
+  // being built to replace it.
   var cache = [];
   function cached(key) {
     for (var i = 0; i < cache.length; i++) if (cache[i].key === key) { var e = cache[i]; cache.splice(i, 1); cache.unshift(e); trim(); return e; }
     return null;
   }
+  function drop(x) { x.day = x.night = null; x.dropped = true; if (x.cv !== shown) { x.cv.width = 1; x.cv.height = 1; } }
+  function bytesOf(x) { return x.Wk * x.Hk * (x.day ? 10 : 4); }
   function trim() {
-    while (cache.length > CACHE_SIZES) { var old = cache.pop(); old.day = old.night = null; old.dropped = true; old.cv.width = 1; old.cv.height = 1; }
-    // only the newest few keep the colours a re-light needs
-    for (var i = ARRAYS_KEPT; i < cache.length; i++) { if (cache[i].day) { cache[i].day = cache[i].night = null; cache[i].stale = true; } }
+    var keep = function (x) { return x === cur || x.cv === shown; };
+    var total = 0; cache.forEach(function (x) { total += bytesOf(x); });
+    for (var i = cache.length - 1; i >= 0 && (cache.length > CACHE_MAX || total > CACHE_BYTES); i--) {
+      var x = cache[i]; if (keep(x)) continue;
+      if (x.day && cache.length <= CACHE_MAX) { total -= x.Wk * x.Hk * 6; x.day = x.night = null; x.stale = true; continue; }
+      total -= bytesOf(x); drop(x); cache.splice(i, 1);
+    }
+    for (var j = cache.length - 1; j >= 0 && total > CACHE_BYTES; j--) {
+      var y = cache[j]; if (keep(y)) continue;
+      total -= bytesOf(y); drop(y); cache.splice(j, 1);
+    }
   }
   function remember(e) { cache.unshift(e); trim(); }
 
@@ -1045,6 +1172,13 @@
   // glow is summed into a small copy as the planet is lit, halved twice more
   // for the wide glow, and both are laid back over it, added: every browser
   // draws it the same, without ctx.filter.
+  // the few pixels under the last row where the board's ground turns to the
+  // deep navy of space
+  function featherOf(h) { return clamp(h * 0.06, 8, 22); }
+  // how much of the top of the current floor is out of sight (a floor kept up
+  // under a page with more rows, past the 6 px a floor size allows), with the
+  // turn into the ground that fitShown gives its cut edge; 0 otherwise
+  function hiddenTop() { return cur && cur.H - spaceH > 6 ? cur.H - spaceH + featherOf(cur.H) : 0; }
   function halve(src) {
     var c = doc.createElement('canvas'); c.width = Math.max(1, Math.round(src.width / 2)); c.height = Math.max(1, Math.round(src.height / 2));
     var x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.drawImage(src, 0, 0, c.width, c.height);
@@ -1063,7 +1197,7 @@
     var img = c2.createImageData(Wk, Hk), o = img.data;
     var q = Math.max(1, Math.round(((e.H >= MIN_FULL) ? 4 : 2) * Kk)), gwq = Math.ceil(Wk / q), ghq = Math.ceil(Hk / q), gsum = new Float32Array(gwq * ghq * 3);
     var g = ground.slice(), day = e.day, night = e.night;
-    var feather = clamp(e.H * 0.06, 8, 22), row = 0, acct = { ms: 0 };
+    var feather = featherOf(e.H), row = 0, acct = { ms: 0 };
     slices(function (end) {
       for (; row < Hk; row++) {
         var yF = (row + 0.5) / Kk, sy = (cy - yF) / R;
@@ -1145,7 +1279,8 @@
       // size, three over 400 ms re-light every 5 minutes
       if (!K_FORCED && K === 1 && Kk === 1) {
         slowRun = e.shadeMs > 150 ? slowRun + 1 : 0;
-        if (slowRun >= 3) { K = 0.5; stats.dropped = 'half'; cache.forEach(function (x) { x.dropped = true; x.day = x.night = null; }); cache.length = 0; curKey = ''; }
+        // (the floor on screen stays up until its half-size copy is lit)
+        if (slowRun >= 3) { K = 0.5; stats.dropped = 'half'; cache.forEach(drop); cache.length = 0; curKey = ''; viewMemo = {}; }
       } else if (Kk === 0.5 && relightEvery === 1) {
         slowHalf = e.shadeMs > 400 ? slowHalf + 1 : 0;
         if (slowHalf >= 3) { relightEvery = 5; stats.dropped = 'slow'; }
@@ -1183,10 +1318,14 @@
     el('line', { x1: c.cx.toFixed(1), y1: c.cy.toFixed(1), x2: (c.cx + Math.sin(ha) * c.r * 0.5).toFixed(1), y2: (c.cy - Math.cos(ha) * c.r * 0.5).toFixed(1), stroke: '#fff', 'stroke-width': (sw * 1.1).toFixed(2), 'stroke-linecap': 'round' }, g);
     el('line', { x1: c.cx.toFixed(1), y1: c.cy.toFixed(1), x2: (c.cx + Math.sin(ma) * c.r * 0.74).toFixed(1), y2: (c.cy - Math.cos(ma) * c.r * 0.74).toFixed(1), stroke: '#fff', 'stroke-width': (sw * 0.85).toFixed(2), 'stroke-linecap': 'round' }, g);
   }
-  function render(L) {
+  // the names, routes and dots of one floor, at that floor's own size (it
+  // stands at the foot of the layer, like its planet)
+  function render(L, fw, fh) {
     svg.textContent = '';
-    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     if (!L) return;
+    var W = fw, H = fh;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.style.width = W + 'px'; svg.style.height = H + 'px';
     var defs = el('defs', {}, svg);
     var sh = el('filter', { id: 'ocfSh', x: '-20%', y: '-40%', width: '140%', height: '180%' }, defs);
     el('feDropShadow', { dx: 0, dy: 1, stdDeviation: 2.2, 'flood-color': HALO, 'flood-opacity': 0.85 }, sh);
@@ -1211,6 +1350,7 @@
       el('circle', { cx: hb.x.toFixed(1), cy: hb.y.toFixed(1), r: hb.dot, fill: '#fff' }, gD);
     }
     L.dots.forEach(function (d) { el('circle', { cx: d.x.toFixed(1), cy: d.y.toFixed(1), r: d.r, fill: '#fff', 'fill-opacity': d.op, stroke: HALO, 'stroke-opacity': 0.5, 'stroke-width': 1.6 }, gD); });
+    (L.arrows || []).forEach(function (w) { el('path', { d: arrowPath(w), fill: '#fff', 'fill-opacity': w.op, stroke: HALO, 'stroke-opacity': 0.5, 'stroke-width': 1.6, 'stroke-linejoin': 'round' }, gD); });
     L.leaders.forEach(function (l) {
       el('line', { x1: l.x1.toFixed(1), y1: l.y1.toFixed(1), x2: l.x2.toFixed(1), y2: l.y2.toFixed(1), stroke: HALO, 'stroke-opacity': 0.35 * l.op, 'stroke-width': 3.4, 'stroke-linecap': 'round' }, gD);
       el('line', { x1: l.x1.toFixed(1), y1: l.y1.toFixed(1), x2: l.x2.toFixed(1), y2: l.y2.toFixed(1), stroke: '#fff', 'stroke-opacity': 0.7 * l.op, 'stroke-width': 1.4, 'stroke-linecap': 'round' }, gD);
@@ -1226,13 +1366,47 @@
   }
 
   // ── what is on screen ──────────────────────────────────────────────────────
+  //   W, H     the size the floor is built for (it follows the space under
+  //            the rows once a new size has held SETTLE_MS, or at once when a
+  //            lit floor of that size is at hand)
+  //   shown    the planet on screen; it stays until the next one is lit
   var layer = null, svg = null, shown = null, W = 0, H = 0, AP0 = '', curKey = '', LSIG = '', lastBucket = -1;
   var cur = null, P = null, here = null, ground = [16, 40, 80], painted = false, retryAt = 0, lastLayout = null, bare = false;
+  var pend = null, viewMemo = {}, shapeStore = { dep: {}, arr: {} }, shapeDay = '', spaceH = 0, fitSig = '';
+  // a planet goes on screen in place of the one there, in one step: it stands
+  // at the foot of the layer at its own size, so a floor kept up while the
+  // next is built is never stretched (a taller one is cut at its top edge, a
+  // shorter one stands under its own sky: fitShown)
   function showCanvas(cv) {
     if (shown === cv) return;
+    if (cv) layer.insertBefore(cv, (shown && shown.parentNode === layer) ? shown : svg);
     if (shown && shown.parentNode) shown.parentNode.removeChild(shown);
     shown = cv;
-    if (cv) layer.insertBefore(cv, svg);
+    fitShown();
+  }
+  // a floor kept up in a space of another height until the next is lit:
+  // shorter, the space above it is the floor's own sky (the board's ground
+  // turning to the navy of space, as its top does, and its own turn hidden);
+  // taller, its cut top edge turns into the board's ground the same way.
+  // Never a band of flat ground, never a hard edge under the rows.
+  function fitShown() {
+    if (!layer) return;
+    var fh = shown ? +shown.getAttribute('data-h') || 0 : 0, gap = spaceH - fh, f = Math.ceil(featherOf(fh));
+    var bg = '', clip = '', mask = '';
+    if (shown && fh && gap > 6) {
+      bg = 'linear-gradient(rgb(' + ground.join(',') + ') 0px, rgb(' + SPACE.join(',') + ') ' + f + 'px)';
+      clip = 'inset(' + f + 'px 0px 0px 0px)';
+    } else if (shown && fh && gap < -6) {
+      mask = 'linear-gradient(transparent 0px, #000 ' + f + 'px)';
+    }
+    // written only when it changes (the browser reports these back in its
+    // own form, so the last values written are kept here)
+    var sig = bg + '|' + clip + '|' + mask;
+    if (shown && shown.getAttribute('data-fit') !== clip) { shown.style.clipPath = clip; shown.setAttribute('data-fit', clip); }
+    if (sig === fitSig) return;
+    fitSig = sig;
+    layer.style.backgroundImage = bg;
+    layer.style.webkitMaskImage = mask; layer.style.maskImage = mask;
   }
   function setPainted(on) {
     painted = !!on;
@@ -1278,12 +1452,12 @@
   // the places a floor shows: on a full floor the rows above it, on a strip
   // the next flight still to come; none at all on a board showing no rows
   // (no flights in its window, its feed down): the planet and the airport
-  function viewPlaces(md) {
+  function viewPlaces(md, h) {
     if (bare) return [];
-    return md === 'full' ? onPage(P.list, pageCodes()).slice(0, capFor(H)) : P.list.filter(function (p) { return p.isNext; });
+    return md === 'full' ? onPage(P.list, pageCodes()).slice(0, capFor(h)) : P.list.filter(function (p) { return p.isNext; });
   }
-  function placesToDraw(md) {
-    var list = viewPlaces(md);
+  function placesToDraw(md, h) {
+    var list = viewPlaces(md, h);
     var langs = boardLangsNow(), cur0 = shownLang();
     return list.map(function (p) {
       var names = langs.map(function (l) { return cityName(p.code, p.raw, l); });
@@ -1294,15 +1468,42 @@
   }
   function drawOverlay() {
     var e = cur;
-    if (!e || !e.ready || !P || !here || H < MIN_ROUTES) { render(null); return; }
-    var at = nowFor(apTz(AP0));
+    if (!e || !e.ready || !P || !here || e.H < MIN_ROUTES) { render(null); return; }
+    var at = nowFor(apTz(AP0)), t0 = performance.now();
+    // a floor kept up under a page with more rows is cut at its top edge
+    // until the next is lit: its names keep to the part in sight
     lastLayout = layout({
-      view: e.view, W: W, H: H, here: here, full: H >= MIN_FULL, places: placesToDraw(e.md),
+      view: e.view, W: e.W, H: e.H, top: hiddenTop(), here: here, full: e.H >= MIN_FULL, places: placesToDraw(e.md, e.H),
       timeOf: function (tz) { return timeThere(at, tz); }, hereTz: apTz(AP0), measure: textW
     });
-    render(lastLayout);
+    render(lastLayout, e.W, e.H);
+    stats.overlays++; stats.overlayMs += performance.now() - t0;
   }
-  function select(key, md) {
+  // THE PLAN FOR A FLOOR SIZE: what it shows and the view it is drawn in.
+  // A full floor is framed for its direction's places (shapersOf: the whole
+  // rotation, never one page), a strip for the next flight still to come;
+  // the key names the view, so two pages, or two sets of places, that frame
+  // the planet alike share one lit floor.
+  function planFor(w, h, shows, pageW) {
+    var md = (!shows || pageW < MIN_PAGE_W) ? 'none' : modeFor(w, h, !!here);
+    if (md === 'none') return { md: md, key: 'none', view: null };
+    var dir = P.dir, sig, mk, view;
+    if (Object.keys(viewMemo).length > 64) viewMemo = {};
+    if (md === 'full') {
+      var sh = bare ? null : shapersOf(shapeStore[dir], P.list);
+      sig = bare ? 'bare' : dir + '|' + sh.sig;
+      mk = w + 'x' + h + '|full|' + sig;
+      view = viewMemo[mk] || (viewMemo[mk] = chooseView(here, sh ? sh.list : [], w, h));
+    } else {
+      var nx = md === 'strip' && !bare ? viewPlaces(md, h)[0] || null : null;
+      mk = w + 'x' + h + '|' + md + '|' + (nx ? nx.code : '');
+      view = viewMemo[mk] || (viewMemo[mk] = stripView(here, nx, w, h));
+    }
+    var month = monthAt(nowFor(apTz(AP0)).getTime(), apTz(AP0));
+    return { md: md, view: view, key: w + 'x' + h + '@' + K + '|' + AP0 + '|' + month + '|' + md + '|' + viewSig(view) };
+  }
+  function readyFor(key) { for (var i = 0; i < cache.length; i++) if (cache[i].key === key) return !!cache[i].ready; return false; }
+  function select(key, md, view) {
     layer.setAttribute('data-mode', md);
     if (md === 'none') { cur = null; showCanvas(null); svg.textContent = ''; return; }
     var e = cached(key);
@@ -1311,26 +1512,25 @@
       cur = e;
       if (e.ready && e.day) { showCanvas(e.cv); drawOverlay(); shade(e, function () { if (cur === e) drawOverlay(); }); return; }
       if (e.ready && e.stale) { showCanvas(e.cv); drawOverlay(); rebuild(e); return; }
-      showCanvas(null); svg.textContent = '';
-      return;
+      return;   // still being lit: the floor on screen stays until it is
     }
     if (Date.now() < retryAt) { cur = null; showCanvas(null); svg.textContent = ''; return; }
-    // a size not seen yet: fit the view, project, light, then show
-    showCanvas(null); svg.textContent = '';
-    var view;
-    if (md === 'full') view = chooseView(here, viewPlaces(md), W, H);
-    else view = stripView(here, md === 'strip' ? viewPlaces(md)[0] || null : null, W, H);
+    // a floor not seen yet: project, light, then put it on screen in place of
+    // the one there, which stays up meanwhile (never a blank floor)
+    if (shown) stats.held = (stats.held || 0) + 1;
     var Wk = Math.max(1, Math.round(W * K)), Hk = Math.max(1, Math.round(H * K));
     var cv = doc.createElement('canvas'); cv.width = Wk; cv.height = Hk;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.setAttribute('data-h', H);
     e = { key: key, view: view, W: W, H: H, K: K, Wk: Wk, Hk: Hk, cv: cv, md: md, month: monthAt(nowFor(apTz(AP0)).getTime(), apTz(AP0)) };
-    remember(e); cur = e; stats.builds++;
+    cur = e; remember(e); stats.builds++;
     stats.view = { delta: view.delta, psi: view.psi, R: Math.round(view.R), cx: Math.round(view.cx), ya: Math.round(view.ya) };
     build(e, function (ok) {
       stats.level = e.level; stats.tiles = e.tiles;
       if (!ok) {
         // no picture: the old backdrop shows again, and this is tried again later
         e.failed = true; stats.noPicture = (stats.noPicture || 0) + 1; retryAt = Date.now() + RETRY_MS;
-        cache.splice(cache.indexOf(e), 1); curKey = '';
+        var at = cache.indexOf(e); if (at >= 0) cache.splice(at, 1);
+        curKey = '';
         if (cur === e) teardown();
         return;
       }
@@ -1382,30 +1582,42 @@
       });
       var shows = tableShown || !!panel;
       var w = Math.round(caR.width), h = shows ? Math.max(0, Math.round(bottom - top)) : 0;
+      // the layer always fills the space under the rows exactly; the floor in
+      // it stands at its foot
       layer.style.bottom = Math.max(0, Math.round(caR.height - bottom)) + 'px';
+      layer.style.height = h + 'px'; spaceH = h;
       var ap = (doc.body.getAttribute('data-fids-ap') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       var gcol = rgbOf(root.getComputedStyle(board).backgroundColor) || ground;
-      if (Math.abs(w - W) > 2 || Math.abs(h - H) > 6 || ap !== AP0) { W = w; H = h; layer.style.height = H + 'px'; }
+      var now = Date.now(), today = dayAt(now, apTz(ap));
+      if (ap !== AP0 || today !== shapeDay) {
+        // another airport, or a new day: its places are gathered afresh
+        if (ap !== AP0) { W = w; H = h; pend = null; }
+        shapeStore = { dep: {}, arr: {} }; viewMemo = {}; shapeDay = today;
+      }
       AP0 = ap; here = coordsOf(AP0); ground = gcol;
+      fitShown();
       P = placesNow();
-      var pageW = root.innerWidth || W;
+      var pageW = root.innerWidth || w;
       bare = !tableShown;
-      var md = (!shows || pageW < MIN_PAGE_W) ? 'none' : modeFor(W, H, !!here);
+      // A NEW SIZE (a page with more rows or fewer, the other direction, the
+      // board settling its rows) is acted on once it has held SETTLE_MS, so
+      // a size shown for a moment never costs a floor; at once when a lit
+      // floor of that size is at hand (a page seen before) or when nothing
+      // is on screen yet. Meanwhile the floor on screen stays.
+      if (Math.abs(w - W) > 2 || Math.abs(h - H) > 6) {
+        if (!pend || Math.abs(pend.w - w) > 2 || Math.abs(pend.h - h) > 6) pend = { w: w, h: h, at: now };
+        if (!shown || now - pend.at >= SETTLE_MS || readyFor(planFor(w, h, shows, pageW).key)) { W = w; H = h; pend = null; }
+      } else pend = null;
+      var plan = planFor(W, H, shows, pageW), md = plan.md;
       // a busy board whose rows leave under 28 px: nothing is drawn, and the
       // sliver under the last row is the board's plain ground, never a strip
       // of the old picture (unless the pictures failed: then, until the
       // retry, the old backdrop stays, as it does for a floor that failed)
       if (md === 'none' && !painted && shows && here && pageW >= MIN_PAGE_W && W >= MIN_W && H < MIN_ANY && Date.now() >= retryAt) setPainted(true);
-      // the places that shape the view: on a full floor, the rows above it; on
-      // a strip, the next flight still to come
-      var sig = md, at = nowFor(apTz(AP0)), month = monthAt(at.getTime(), apTz(AP0));
-      if (bare) sig += '|bare';
-      else if (md === 'full') sig += '|' + viewPlaces(md).map(function (p) { return p.code; }).sort().join(',');
-      else if (md === 'strip') sig += '|' + P.dir + '|' + (P.next ? P.next.code : '');
-      var key = md === 'none' ? 'none' : W + 'x' + H + '@' + K + '|' + AP0 + '|' + month + '|' + sig;
+      var at = nowFor(apTz(AP0)), key = plan.key;
       var rows = boardRows(P.dir);
-      var lsig = P.dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + (P.next ? P.next.code : '') + '|' + pageCodes().join(',');
-      if (key !== curKey) { curKey = key; LSIG = lsig; select(key, md); return; }
+      var lsig = P.dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + (P.next ? P.next.code : '') + '|' + pageCodes().join(',') + '|' + Math.round(hiddenTop());
+      if (key !== curKey) { curKey = key; LSIG = lsig; select(key, md, plan.view); return; }
       if (!cur || !cur.ready) return;
       var bucket = Math.floor(at.getTime() / (60000 * relightEvery));
       if (bucket !== lastBucket || String(cur.litKey || '').split('|')[1] !== ground.join(',')) {
@@ -1435,8 +1647,9 @@
     root.__ocfEarth = function () {
       var mem = blobBytes;
       cache.forEach(function (x) { mem += x.Wk * x.Hk * 4 + (x.day ? x.Wk * x.Hk * 6 : 0); });
-      return { W: W, H: H, ap: AP0, mode: layer.getAttribute('data-mode'), K: K, relightEvery: relightEvery, painted: painted, disabled: disabled, wanted: wanted(),
+      return { W: W, H: H, space: spaceH, settling: pend ? { w: pend.w, h: pend.h, ms: Date.now() - pend.at } : null, ap: AP0, mode: layer.getAttribute('data-mode'), K: K, relightEvery: relightEvery, painted: painted, disabled: disabled, wanted: wanted(),
         ready: !!(cur && cur.ready && cur.litKey), memMB: +(mem / 1e6).toFixed(1), blobMB: +(blobBytes / 1e6).toFixed(1),
+        view: cur && cur.view ? { psi: cur.view.psi, delta: cur.view.delta, R: Math.round(cur.view.R), cx: Math.round(cur.view.cx), cy: Math.round(cur.view.cy) } : null,
         cache: cache.map(function (x) { return x.key.split('|')[0] + (x.ready ? '' : '~') + (x.day ? '' : '-'); }),
         layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear } : null,
         stats: stats };
