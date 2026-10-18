@@ -1,0 +1,1328 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   fids-earth.js — EARTH, NOW: THE BOTTOM OF THE DEPARTURES AND ARRIVALS
+
+   The space under the flight rows (tall at a small airport, a thin strip at a
+   busy one) is a window onto the planet as it is this minute, seen from
+   orbit: lit where the sun really is, the cities' lights on the night side,
+   today's flights from this airport drawn across it, each place named the
+   way its row names it, with the time it is there now. It replaces the
+   Moncton skyline and the world-network picture at every airport (both stay
+   in the stylesheet, behind the switch, for rollback).
+
+   THE PICTURES are NASA's: Blue Marble Next Generation by day (one per month,
+   the airport's own month), Black Marble 2016 by night. Public domain; no
+   NASA insignia, nothing that implies endorsement; credited on the Credits
+   page. They are OUR OWN COPY, cut into squares by scripts/earth/ and served
+   from this origin under /earth/v1/: no screen ever asks NASA for anything.
+     /earth/v1/world/<layer>.jpg          the whole Earth, 2048×1024
+     /earth/v1/t16/<layer>/<S>_<W>.jpg    60° squares, 960 px (16 px a degree)
+     /earth/v1/t32/<layer>/<S>_<W>.jpg    30° squares, 960 px (32 px a degree)
+   A view reads only the squares it can see, and the whole-Earth picture only
+   for what the squares leave uncovered (a failed file, a view too wide).
+
+   WHAT IS OURS: the projection, the sunlight (NOAA, the same sums as
+   fids-sun.js: fidsSun.subsolar, so the planet's day and night line and the
+   board's html.fids-day / fids-night can never disagree), the air glow, the
+   faint moonlit land at night, the dusk band, the routes, dots, names,
+   leader lines, the clock mark, the signpost lists and the cut-aways.
+
+   THE RULES IT KEEPS
+     · Sizes. Under 28 px nothing; 28–59 px the planet's lit edge; 60–149 px
+       a strip turned toward the next flight still to come, its place and
+       local time on one line; 150 px and up the full view of the places on
+       the rows above it (this page), 5 to 16 of them by height. A board
+       showing no rows but its own notice (no flights in its window, its
+       feed down) has the planet and the airport under the notice, no routes.
+     · The next flight is the earliest whose time (revised, else scheduled)
+       is now or later, not gone, not cancelled. An overdue row is never it.
+     · Names are the rows' own (formatCityIata, the language on screen). They
+       are placed by the longest of the board's languages, so a name never
+       moves when the board turns language: only its text changes. A name
+       never sits on a route (6 px clear), or the routes are cut away under
+       it; a place with no room for its name is left out with its route and
+       dot, so every line carries a name. The airport's ring keeps a clear
+       zone. Places over the planet's edge are named where their route leaves
+       the picture; several leaving at one spot share one route and one list.
+     · The time there is the board's own clock (BoardStrings.boardTime: the
+       format its rows use), printed only where it differs from this
+       airport's, and only for a place whose zone the AP table knows.
+     · White ink with a dark halo, nothing behind it. Nothing moves, flashes
+       or travels: the planet is re-lit once a minute, a quarter of a degree
+       of sunlight, written in bands nobody can see change.
+     · No passenger words of its own: names come from the rows, times are
+       numbers, the clock mark is a symbol; the layer is aria-hidden.
+
+   SAFETY
+     · EARTH_FLOOR_ON below turns it all off: nothing runs, the attribute is
+       never set, the boards look exactly as before.
+     · ?floor=classic | ?floor=earth on one screen (review, emergencies), then
+       the airport's Customize choice (html[data-fids-floor-pref], set by
+       fids-core.js from the field floor: '' or earth is Earth, classic is the
+       earlier backdrop).
+     · html[data-fids-floor=earth] is set only once a planet has painted, and
+       it is what retires the old backdrop (css/display-overrides.css). It
+       does not follow the floor page by page: a busy page under 28 px shows
+       plain ground, not the old picture.
+     · Pictures that fail: a missing square is covered by the whole-Earth
+       picture. If that fails too the attribute goes and the old backdrop
+       shows; it is tried again at most once every 10 minutes. A thrown error
+       turns the floor off for the session.
+     · Never holds the page: projecting and lighting run in slices of 6 ms at
+       most. A screen with little memory or few cores starts at half size; a
+       screen whose re-lights take over 150 ms three times running drops to
+       half size; at half size, three over 400 ms re-light every 5 minutes.
+       ?earthscale=1 | 0.5 forces a size; window.__ocfBench() measures.
+     · Memory: pictures are kept compressed (about 8 MB at most) and decoded
+       only to be read, then released. The projected day and night colours
+       are kept for the current floor and the two before it; older floors
+       keep only their lit picture.
+     · Paused while hidden: the loop runs on _ocEvery (skipped while the
+       rotator has this board out of sight, caught up by _ocOnShow), and
+       nothing is built or re-lit while the document is hidden.
+     · No layout shift: the floor is absolutely placed under the rows, at
+       z-index -1, pointer-events none, inside the content area (contain:
+       layout). It never writes to #fidsTable or a row.
+
+   Node can require this file: the pure parts (places, sizes, views, squares,
+   the layout of routes and names, the sun) are exported for the tests
+   (tests/earth-floor.test.js, tests/earth-sun.test.js).
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function (root) {
+  'use strict';
+
+  // ── THE SWITCH ─────────────────────────────────────────────────────────────
+  var EARTH_FLOOR_ON = true;
+
+  var RAD = Math.PI / 180, DEG = 180 / Math.PI;
+  var NS = 'http://www.w3.org/2000/svg';
+  var BASE = '/earth/v1/';
+  var MIN_ANY = 28, MIN_ROUTES = 60, MIN_FULL = 150, MIN_W = 400, MIN_PAGE_W = 800;
+  var SLICE_MS = 6;                 // the longest the floor holds the page in one go
+  var SPACE = [3, 8, 24];           // the space above the planet's edge: deep night navy
+  var MAX_PLACES = 16;
+  var CACHE_SIZES = 4;              // lit planets kept (a floor size and a page's places each)
+  var ARRAYS_KEPT = 3;              // of those, the ones that keep their projected colours
+  var BLOB_BUDGET = 8e6;            // compressed pictures kept at hand, bytes
+  var RETRY_MS = 600000;            // a floor with no picture is tried again after this
+  var HALO = '#020a1c';
+
+  // ── small sums ─────────────────────────────────────────────────────────────
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function smooth(a, b, x) { var t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+  function vec(lat, lon) { var a = lat * RAD, b = lon * RAD, c = Math.cos(a); return [c * Math.cos(b), c * Math.sin(b), Math.sin(a)]; }
+  function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function add(a, b, k) { return [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]; }
+  function scale(a, k) { return [a[0] * k, a[1] * k, a[2] * k]; }
+  function wrap180(d) { return ((d % 360) + 540) % 360 - 180; }
+  function wrapPi(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; }
+
+  // how many places a full floor of this height names calmly: about one for
+  // every 26 px of floor, 5 to 16
+  function capFor(h) { return Math.max(5, Math.min(MAX_PLACES, Math.floor((h - 40) / 26))); }
+  // what a floor of this size shows
+  function modeFor(W, H, known) {
+    if (!known || H < MIN_ANY || W < MIN_W) return 'none';
+    return H >= MIN_FULL ? 'full' : H >= MIN_ROUTES ? 'strip' : 'edge';
+  }
+
+  // ── THE SUN ────────────────────────────────────────────────────────────────
+  // The sub-solar point from fids-sun.js (fidsSun.subsolar: NOAA, the sums the
+  // board's own day and night use), else NOAA / Meeus low precision here.
+  function sunVecLocal(ms) {
+    var n = ms / 86400000 + 2440587.5 - 2451545.0;
+    var L = (280.460 + 0.9856474 * n) % 360;
+    var g = ((357.528 + 0.9856003 * n) % 360) * RAD;
+    var lam = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * RAD;
+    var eps = (23.439 - 0.0000004 * n) * RAD;
+    var dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+    var ra = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam));
+    var gmst = ((280.46061837 + 360.98564736629 * n) % 360) * RAD;
+    return { lat: dec * DEG, lon: wrap180((ra - gmst) * DEG) };
+  }
+  var _sunLib = null;
+  function sunLib() {
+    if (_sunLib !== null) return _sunLib;
+    _sunLib = false;
+    try { if (root && root.FidsSun && typeof root.FidsSun.subsolar === 'function') _sunLib = root.FidsSun; } catch (e) {}
+    if (!_sunLib) { try { if (typeof require === 'function') _sunLib = require('./fids-sun.js'); } catch (e) { _sunLib = false; } }
+    if (_sunLib && typeof _sunLib.subsolar !== 'function') _sunLib = false;
+    return _sunLib;
+  }
+  function sunAt(ms) {
+    var L = sunLib(), s = null;
+    try { if (L) s = L.subsolar(ms); } catch (e) { s = null; }
+    if (!s || !isFinite(s.lat) || !isFinite(s.lon)) s = sunVecLocal(ms);
+    return { lat: s.lat, lon: s.lon, v: vec(s.lat, s.lon) };
+  }
+  // the sun's altitude, degrees, at a place (the planet's own lighting test)
+  function sunAltitude(lat, lon, ms) { return Math.asin(clamp(dot(vec(lat, lon), sunAt(ms).v), -1, 1)) * DEG; }
+
+  // ── TODAY'S PLACES, FROM THE BOARD'S OWN ROWS ──────────────────────────────
+  //   rows      data[dir]
+  //   o.dir     'dep' | 'arr'      o.ap0   this airport
+  //   o.now     ms                 o.coords(code) → [lat, lon] | null
+  //   o.tz(code) → zone | null     o.real(code) → the real code for a shown one
+  var GONE = /departed|active|enroute|airborne|landed|arrived|atbelt|baggage|diverted/;
+  function placesFrom(rows, o) {
+    var dir = o.dir === 'arr' ? 'arr' : 'dep', now = +o.now, by = {}, next = null;
+    (rows || []).forEach(function (f) {
+      if (!f) return;
+      var text = String((dir === 'dep' ? f.dest : f.origin) || f.dest || f.origin || '');
+      var lc = String(f._locIata || '').toUpperCase();
+      if (!lc) { var mt = /\|\s*([A-Z]{3})\s*$/.exec(text); if (mt) lc = mt[1]; }
+      var c = lc && o.real ? String(o.real(lc) || lc).toUpperCase() : lc;
+      if (!c || c === o.ap0) return;
+      var at = o.coords(c); if (!at) return;
+      var st = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+      // the zone: the board's AP table, else the row's own arrival zone (a
+      // departure's). Never the feed's own offset, which is the departure
+      // airport's.
+      var p = by[c] || (by[c] = { code: c, lat: +at[0], lon: +at[1], n: 0, gone: 0, cxl: 0, soon: Infinity, tz: (o.tz && o.tz(c)) || (dir === 'dep' ? f._arrTz || null : null), raw: text });
+      p.n++;
+      if (/cancel/.test(st)) { p.cxl++; return; }
+      if (GONE.test(st)) { p.gone++; return; }
+      var ts = f._revTs || f._sortTs || 0;
+      var key = ts >= now ? ts : ts + 1e13;                     // an overdue row ranks after every flight to come
+      if (ts && key < p.soon) p.soon = key;
+      if (ts && ts >= now && (!next || ts < next.ts)) next = { ts: ts, code: c };
+    });
+    var out = Object.keys(by).map(function (k) { return by[k]; }).filter(function (p) { return p.cxl < p.n; });
+    out.forEach(function (p) { p.done = p.gone >= p.n - p.cxl; p.isNext = !!(next && next.code === p.code); });
+    out.sort(function (a, b) { return (b.isNext - a.isNext) || (a.done - b.done) || (a.soon - b.soon) || (b.n - a.n) || (a.code < b.code ? -1 : 1); });
+    out.forEach(function (p, i) { p.rank = i; });
+    return { list: out, dir: dir, next: next };
+  }
+  // this page's places in the order its rows list them; without codes, the day's
+  function onPage(list, codes) {
+    if (!codes || !codes.length) return list;
+    var by = {}; list.forEach(function (p) { by[p.code] = p; });
+    return codes.map(function (c) { return by[c]; }).filter(Boolean);
+  }
+
+  // ── THE VIEW: an orthographic globe, north up at this airport ──────────────
+  function frameBasis(A, psi, delta) {
+    var nA = vec(A[0], A[1]);
+    var lo = A[1] * RAD, la = A[0] * RAD;
+    var e0 = [-Math.sin(lo), Math.cos(lo), 0];
+    var n0 = [-Math.sin(la) * Math.cos(lo), -Math.sin(la) * Math.sin(lo), Math.cos(la)];
+    var ps = psi * RAD, d = delta * RAD;
+    var up0 = add(scale(n0, Math.cos(ps)), e0, Math.sin(ps));
+    var r = add(scale(e0, Math.cos(ps)), n0, -Math.sin(ps));
+    var n = add(scale(nA, Math.cos(d)), up0, -Math.sin(d));
+    var u = add(scale(up0, Math.cos(d)), nA, Math.sin(d));
+    return { r: r, u: u, n: n };
+  }
+  function bearingTo(A, p) {
+    var p1 = A[0] * RAD, p2 = p.lat * RAD, dl = (p.lon - A[1]) * RAD;
+    return Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl)) * DEG;
+  }
+  // THE STRIP (60–149 px) and THE EDGE (28–59 px): a wide, low dome of the
+  // planet's edge seen from above this airport, looking the way the next
+  // flight still to come goes (north when there is none)
+  function stripView(A, next, W, H) {
+    var yl = Math.round(clamp(H * 0.14, 4, 14)), ya = H - Math.round(clamp(H * 0.17, 6, 16)), h = H - yl;
+    var R = Math.max(900, ((0.42 * W) * (0.42 * W) + h * h) / (2 * h));
+    var sd = clamp(1 - (ya - yl) / R, 0, 0.9999), delta = Math.asin(sd) * DEG;
+    var psi = next ? Math.round(bearingTo(A, next) / 5) * 5 : 0;
+    return { B: frameBasis(A, psi, delta), R: R, cx: W / 2, cy: ya + R * sd, yl: yl, ya: ya, psi: psi, delta: +delta.toFixed(1), strip: true };
+  }
+  // THE FULL VIEW. Every view (turned 0–30°, tilted 3–74°, the airport at
+  // four heights) is tried; the places it holds inside the floor, clear of
+  // the edge and with room for their names, are counted by their flights.
+  // The CLOSEST of those that hold the most is kept, north up unless turning
+  // holds more or comes a quarter closer. The planet's curve always spans the
+  // floor: never a small ball.
+  function chooseView(A, pts, W, H) {
+    var yl = Math.round(clamp(H * 0.13, 22, 70));
+    var Rmin = Math.max(H * 0.9, W * 0.6);
+    if (!pts.length) {
+      var ya1 = H * 0.72, sd1 = Math.sin(45 * RAD), R1 = Math.max(Rmin, (ya1 - yl) / (1 - sd1));
+      var sd1b = 1 - (ya1 - yl) / R1;
+      return { B: frameBasis(A, 0, Math.asin(sd1b) * DEG), R: R1, cx: W / 2, cy: ya1 + R1 * sd1b, yl: yl, ya: ya1, psi: 0, delta: +(Math.asin(sd1b) * DEG).toFixed(1) };
+    }
+    var mX = 26, mTop = 16, mBot = 18, nameRoom = 150, leftRoom = 110, room = W - 2 * mX - nameRoom - leftRoom;
+    var yas = [0.62, 0.68, 0.74, 0.80].map(function (k) { return H * k; });
+    var psis = [0, -15, 15, -30, 30];
+    var want = pts.map(function (p) { return { v: vec(p.lat, p.lon), w: p.n || 1 }; });
+    var all = [];
+    psis.forEach(function (psi) {
+      for (var delta = 74; delta >= 3; delta--) {
+        var B = frameBasis(A, psi, delta), sd = Math.sin(delta * RAD);
+        for (var yi = 0; yi < yas.length; yi++) {
+          var ya = yas[yi], R = (ya - yl) / (1 - sd);
+          if (R < Rmin) continue;
+          var cy = ya + R * sd, xs = [{ x: 0, w: 0, home: 1 }];
+          for (var i = 0; i < want.length; i++) {
+            var v = want[i].v, sz = dot(v, B.n); if (sz < 0.16) continue;
+            var Y = cy - dot(v, B.u) * R; if (Y < yl + mTop || Y > H - mBot) continue;
+            xs.push({ x: dot(v, B.r) * R, w: want[i].w });
+          }
+          xs.sort(function (a, b) { return a.x - b.x; });
+          // the heaviest run of places no wider than the floor, the airport in it
+          var best = null;
+          for (var lo = 0; lo < xs.length; lo++) {
+            var wsum = 0, home = 0;
+            for (var hi = lo; hi < xs.length && xs[hi].x - xs[lo].x <= room; hi++) {
+              wsum += xs[hi].w; home = home || xs[hi].home;
+              if (home && (!best || wsum > best.w)) best = { w: wsum, lo: xs[lo].x, hi: xs[hi].x };
+            }
+          }
+          if (best) all.push({ B: B, R: R, cy: cy, ya: ya, psi: psi, delta: delta, kept: best.w, lo: best.lo, hi: best.hi });
+        }
+      }
+    });
+    if (!all.length) {
+      var sd0 = Math.sin(60 * RAD), ya0 = yas[0], R0 = Math.max(Rmin, (ya0 - yl) / (1 - sd0)), sdb = 1 - (ya0 - yl) / R0;
+      return { B: frameBasis(A, 0, Math.asin(sdb) * DEG), R: R0, cx: W / 2, cy: ya0 + R0 * sdb, yl: yl, ya: ya0, psi: 0, delta: 60 };
+    }
+    var kmax = 0; all.forEach(function (c) { if (c.kept > kmax) kmax = c.kept; });
+    function closest(list) { var b = null; list.forEach(function (c) { if (c.kept >= kmax && (!b || c.R > b.R * 1.001 || (Math.abs(c.R - b.R) <= b.R * 0.001 && c.kept > b.kept))) b = c; }); return b; }
+    var b0 = closest(all.filter(function (c) { return c.psi === 0; })), b1 = closest(all);
+    var pick = (b0 && !(b1.R > b0.R * 1.25 || b1.kept > b0.kept)) ? b0 : b1;
+    var cx = mX + leftRoom - pick.lo + (room - (pick.hi - pick.lo)) / 2;
+    cx = clamp(cx, Math.max(W * 0.1, mX + leftRoom - pick.lo), Math.min(W * 0.9, W - mX - nameRoom - pick.hi));
+    return { B: pick.B, R: pick.R, cx: cx, cy: pick.cy, yl: yl, ya: pick.ya, psi: pick.psi, delta: pick.delta };
+  }
+
+  // ── WHICH SQUARES A VIEW SEES ──────────────────────────────────────────────
+  function llAt(v, px, py) {
+    var sx = (px - v.cx) / v.R, sy = (v.cy - py) / v.R, rr = sx * sx + sy * sy;
+    if (rr >= 1) return null;
+    var z = Math.sqrt(1 - rr), B = v.B;
+    var wx = sx * B.r[0] + sy * B.u[0] + z * B.n[0], wy = sx * B.r[1] + sy * B.u[1] + z * B.n[1], wz = sx * B.r[2] + sy * B.u[2] + z * B.n[2];
+    return [Math.asin(clamp(wz, -1, 1)) * DEG, Math.atan2(wy, wx) * DEG];
+  }
+  // the level a view reads: 30° squares when it is close, 60° when wide, the
+  // whole Earth alone when wider still
+  function levelFor(view, k) { var ppd = view.R * RAD * (k || 1); return ppd > 22 ? 32 : ppd > 7 ? 16 : 0; }
+  function tilesFor(v, W, H, lvl) {
+    var sp = lvl === 16 ? 60 : 30, seen = {}, out = [];
+    for (var py = 0; py <= H + 5; py += 10) for (var px = 0; px <= W + 7; px += 14) {
+      var ll = llAt(v, Math.min(px, W - 1), Math.min(py, H - 1)); if (!ll) continue;
+      var i = Math.min(180 / sp - 1, Math.floor((ll[0] + 90) / sp)), j = Math.min(360 / sp - 1, Math.floor((ll[1] + 180) / sp));
+      if (seen[i + '_' + j]) continue; seen[i + '_' + j] = 1;
+      out.push({ latS: -90 + i * sp, lonW: -180 + j * sp, sp: sp });
+    }
+    return out;
+  }
+  function layerName(layer, month) { return layer === 'day' ? 'day-' + ('0' + clamp(month | 0, 1, 12)).slice(-2) : 'night'; }
+  // the file for a square (kind 32 or 16) or the whole Earth (kind 'world'),
+  // always on our own origin
+  function texSrc(kind, layer, latS, lonW, month) {
+    var name = layerName(layer, month);
+    if (kind === 'world') return BASE + 'world/' + name + '.jpg';
+    return BASE + 't' + (kind === 16 ? 16 : 32) + '/' + name + '/' + latS + '_' + lonW + '.jpg';
+  }
+  // bilinear sample of a square into arr[o..o+2]; pixel centres half a pixel in
+  function sampleInto(t, lat, lon, arr, o) {
+    if (lat < t.lat0 || lat > t.lat1) return false;
+    var dl = lon - t.lon0; if (dl < 0) dl += 360; if (dl > t.lon1 - t.lon0) return false;
+    var fx = dl / (t.lon1 - t.lon0) * t.w - 0.5, fy = (t.lat1 - lat) / (t.lat1 - t.lat0) * t.h - 0.5;
+    var x0 = Math.floor(fx), y0 = Math.floor(fy), ax = fx - x0, ay = fy - y0, x1 = x0 + 1, y1 = y0 + 1, w = t.w, h = t.h;
+    if (x0 < 0) x0 = 0; if (y0 < 0) y0 = 0; if (x1 >= w) x1 = w - 1; if (y1 >= h) y1 = h - 1; if (x0 >= w) x0 = w - 1; if (y0 >= h) y0 = h - 1;
+    var d = t.d, i00 = (y0 * w + x0) * 4, i10 = (y0 * w + x1) * 4, i01 = (y1 * w + x0) * 4, i11 = (y1 * w + x1) * 4;
+    for (var k = 0; k < 3; k++) {
+      var a = d[i00 + k] + (d[i10 + k] - d[i00 + k]) * ax, b = d[i01 + k] + (d[i11 + k] - d[i01 + k]) * ax;
+      arr[o + k] = a + (b - a) * ay;
+    }
+    return true;
+  }
+
+  // ── ROUTES, PLACES AND NAMES: WHERE EVERYTHING GOES ────────────────────────
+  function toScreen(v, view) {
+    var B = view.B, x = dot(v, B.r), y = dot(v, B.u), z = dot(v, B.n);
+    return { x: view.cx + x * view.R, y: view.cy - y * view.R, z: z, hidden: z < 0 && (x * x + y * y) < 1 };
+  }
+  function slerp(a, b, t, om) {
+    var so = Math.sin(om); if (so < 1e-6) return a;
+    var k1 = Math.sin((1 - t) * om) / so, k2 = Math.sin(t * om) / so;
+    return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2];
+  }
+  // a route: the great circle raised by `lift` (a share of the Earth's radius)
+  // at its middle, cut where it is behind the planet
+  function routeRuns(a, b, lift, view) {
+    var om = Math.acos(clamp(dot(a, b), -1, 1));
+    var runs = [], cur = [], N = Math.max(32, Math.round(om * DEG * 1.6));
+    for (var i = 0; i <= N; i++) {
+      var t = i / N, q = toScreen(scale(slerp(a, b, t, om), 1 + lift * Math.sin(Math.PI * t)), view);
+      if (q.hidden) { if (cur.length > 1) runs.push(cur); cur = []; continue; }
+      cur.push(q);
+    }
+    if (cur.length > 1) runs.push(cur);
+    return runs;
+  }
+  // the hands of the clock mark, from the time printed beside it (its digits:
+  // a 12-hour dial reads the same for either half of the day)
+  function handsOf(tStr) {
+    var m = /(\d{1,2})\D(\d{2})/.exec(String(tStr || ''));
+    if (!m) return null;
+    var h = +m[1], mi = +m[2];
+    return { h: ((h % 12) + mi / 60) * 30, m: mi * 6 };
+  }
+
+  // layout(o) → everything the floor draws, as plain numbers:
+  //   o.view, o.W, o.H, o.here [lat, lon], o.full (a full floor or a strip)
+  //   o.places   [{ code, lat, lon, tz, isNext, done, rank, name, names: [every
+  //              language's name] }] in the order they are named
+  //   o.timeOf(tz) → the time there in the board's clock ('' for none)
+  //   o.hereTz   this airport's zone
+  //   o.measure(text, px) → width in px
+  function layout(o) {
+    var view = o.view, W = o.W, H = o.H, full = !!o.full, measure = o.measure;
+    var out = { full: full, hub: null, routes: [], dots: [], leaders: [], labels: [], knockouts: [], unplaced: [], tooNear: [], placed: 0 };
+    var A = vec(o.here[0], o.here[1]), a = toScreen(A, view);
+    // ONE route and one name per place: places that share every language's
+    // name and stand together (Montréal: YUL and MET) are one
+    var groups = [];
+    o.places.forEach(function (p, idx) {
+      var nameKey = (p.names || [p.name]).join('\u0001'), q = toScreen(vec(p.lat, p.lon), view), gq = null, rk = p.isNext ? -1 : idx;
+      groups.forEach(function (g) { if (g.nameKey === nameKey && Math.hypot(g.q.x - q.x, g.q.y - q.y) < 40) gq = g; });
+      if (gq) { gq.members.push(p); gq.isNext = gq.isNext || p.isNext; gq.done = gq.done && p.done; gq.rank = Math.min(gq.rank, rk); if (!gq.tz) gq.tz = p.tz; return; }
+      groups.push({ name: p.name, names: p.names || [p.name], nameKey: nameKey, q: q, p: p, members: [p], isNext: p.isNext, done: p.done, rank: rk, tz: p.tz, code: p.code });
+    });
+    // a place nearer the airport than 44 px cannot be named without seeming
+    // to name the airport itself: left out at this scale (the rows list it)
+    if (full) groups = groups.filter(function (g) {
+      var near = !g.q.hidden && g.q.z > 0 && Math.hypot(g.q.x - a.x, g.q.y - a.y) < 44;
+      if (near) out.tooNear.push(g.code);
+      return !near;
+    });
+    // the time there, only where the clock differs from this airport's
+    var hereTime = o.timeOf(o.hereTz);
+    groups.forEach(function (g) {
+      g.tStr = g.tz ? o.timeOf(g.tz) : '';
+      if (g.tStr && g.tStr === hereTime) g.tStr = '';
+      g.v = vec(g.p.lat, g.p.lon); g.om = Math.acos(clamp(dot(A, g.v), -1, 1));
+      var Ls = (g.q.z > 0 && !g.q.hidden) ? Math.hypot(g.q.x - a.x, g.q.y - a.y) : g.om * view.R;
+      g.tA = clamp(40 / Math.max(Ls, 1), 0.002, 0.35);
+    });
+    function leaveAng(g, lift) {
+      var t = g.tA, p = toScreen(scale(slerp(A, g.v, t, g.om), 1 + lift * Math.sin(Math.PI * t)), view);
+      return Math.atan2(p.y - a.y, p.x - a.x);
+    }
+    function badArc(m, runs) {
+      if (m.q.hidden || m.q.z <= 0.02 || !runs.length) return false;
+      var reach = Math.hypot(m.q.x - a.x, m.q.y - a.y) + 4, bad = false;
+      runs[0].forEach(function (q) { if (q.y < view.yl + 10 || Math.hypot(q.x - a.x, q.y - a.y) > reach) bad = true; });
+      return bad;
+    }
+    // FAN. Routes leaving the airport within 16° of each other are a family,
+    // fanned inside the room before the next route: the nearest place leaves
+    // lowest, the farthest highest, so the arcs open out, nest and never cross.
+    if (full) {
+      groups.forEach(function (g) { g.a0 = leaveAng(g, 0); g.sgn = wrapPi(leaveAng(g, 0.03) - g.a0) >= 0 ? 1 : -1; });
+      var seen = {};
+      groups.forEach(function (g, i) {
+        if (seen[i]) return;
+        var fam = [g]; seen[i] = 1;
+        for (var grow = true; grow;) {
+          grow = false;
+          groups.forEach(function (h, j) {
+            if (seen[j] || h.sgn !== g.sgn) return;
+            if (fam.some(function (m) { return Math.abs(wrapPi(m.a0 - h.a0)) < 16 * RAD; })) { fam.push(h); seen[j] = 1; grow = true; }
+          });
+        }
+        var sF = g.sgn, aBase = fam[0].a0;
+        fam.forEach(function (m) { if (wrapPi(m.a0 - aBase) * sF < 0) aBase = m.a0; });
+        var oMax = 0; fam.forEach(function (m) { m.off = wrapPi(m.a0 - aBase) * sF; if (m.off > oMax) oMax = m.off; });
+        var gap = 46 * RAD;
+        groups.forEach(function (h) { if (fam.indexOf(h) >= 0) return; var d = wrapPi(h.a0 - aBase) * sF; if (d > oMax && d < gap) gap = d; });
+        var maxE = clamp(gap - 9 * RAD, 7 * RAD, 34 * RAD);
+        fam.sort(function (x, y) { return x.om - y.om; });
+        var n = fam.length, e0 = n > 1 ? 4 * RAD : Math.min(12 * RAD, maxE);
+        var step = n > 1 ? Math.min(10 * RAD, Math.max(0, maxE - e0) / (n - 1)) : 0;
+        fam.forEach(function (m, j) {
+          var want = Math.max(m.off + 3 * RAD, e0 + j * step), lo = 0, hi = 0.16;
+          if (wrapPi(leaveAng(m, hi) - aBase) * sF < want) m.lift = hi;
+          else { for (var it = 0; it < 22; it++) { var mid = (lo + hi) / 2; if (wrapPi(leaveAng(m, mid) - aBase) * sF < want) lo = mid; else hi = mid; } m.lift = (lo + hi) / 2; }
+          // a route to a place over the edge stays low, so it runs over the
+          // edge where its name stands instead of looping into space
+          m.lift = Math.min(m.lift, (m.q.hidden || m.q.z <= 0.02) ? 0.02 : 0.12);
+          // a route to a place in sight stays under the edge and never passes
+          // farther from the airport than its own place (no hook)
+          for (var k2 = 0; k2 < 14; k2++) {
+            m.runs = routeRuns(A, m.v, m.lift, view);
+            if (!badArc(m, m.runs)) break;
+            m.lift *= 0.8;
+          }
+        });
+      });
+      // make room: an arc passing close to another place's dot is raised over
+      // it or lowered under it; an arc crossing a farther one of its own family
+      // is lowered (nearer places fly lower)
+      var hubR = 26, fams = groups.slice().sort(function (x, y) { return y.om - x.om; });
+      var pts = function (g) { var r = []; g.runs.forEach(function (run) { run.forEach(function (q) { if (Math.hypot(q.x - a.x, q.y - a.y) > hubR) r.push(q); }); }); return r; };
+      var cross = function (P1, P2) {
+        for (var i = 1; i < P1.length; i++) for (var j = 1; j < P2.length; j++) {
+          var p = P1[i - 1], r = { x: P1[i].x - p.x, y: P1[i].y - p.y }, q = P2[j - 1], s2 = { x: P2[j].x - q.x, y: P2[j].y - q.y };
+          var den = r.x * s2.y - r.y * s2.x; if (Math.abs(den) < 1e-9) continue;
+          var t = ((q.x - p.x) * s2.y - (q.y - p.y) * s2.x) / den, u = ((q.x - p.x) * r.y - (q.y - p.y) * r.x) / den;
+          if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return true;
+        }
+        return false;
+      };
+      for (var pass = 0; pass < 24; pass++) {
+        var fix = null;
+        for (var xi = 0; xi < fams.length && !fix; xi++) {
+          var X = fams[xi], PX = pts(X);
+          if (X.lift < 0.0004) continue;
+          groups.forEach(function (Y) {
+            if (fix || Y === X || Y.q.hidden || Y.q.z <= 0.02) return;
+            if (PX.some(function (q) { return Math.hypot(q.x - Y.q.x, q.y - Y.q.y) < 18; })) { fix = X; X.dotY = Y; }
+          });
+          if (fix) break;
+          groups.forEach(function (Y) {
+            if (fix || Y === X || Y.om >= X.om || Y.sgn !== X.sgn || Y.lift < 0.0004) return;
+            if (cross(PX, pts(Y))) fix = Y;
+          });
+        }
+        if (!fix) break;
+        if (fix.dotY) {
+          var far = fix.q.hidden || fix.q.z <= 0.02, Y0 = fix.dotY, F = fix;
+          var up = Math.min(far ? 0.02 : 0.12, fix.lift * 1.25 + 0.002), dn = fix.lift * 0.8;
+          var dist = function (lift) {
+            var m = Infinity, rr2 = routeRuns(A, F.v, lift, view);
+            if (badArc(F, rr2)) return -1;
+            rr2.forEach(function (run) { run.forEach(function (q) {
+              if (Math.hypot(q.x - a.x, q.y - a.y) > hubR) m = Math.min(m, Math.hypot(q.x - Y0.q.x, q.y - Y0.q.y));
+            }); });
+            return m;
+          };
+          fix.lift = dist(up) > dist(dn) ? up : dn;
+        } else fix.lift *= 0.84;
+        fix.dotY = null; fix.runs = routeRuns(A, fix.v, fix.lift, view);
+      }
+    } else groups.forEach(function (g) { g.lift = 0; g.runs = routeRuns(A, g.v, 0, view); });   // a strip's route lies on the ground
+
+    // places beyond the picture are named where their route leaves it; places
+    // leaving at one spot share ONE route and their names stand as one list
+    function inPicture(g) { return !g.q.hidden && g.q.z > 0.02 && g.q.x > 6 && g.q.x < W - 6 && g.q.y > 4 && g.q.y < H - 4; }
+    groups.forEach(function (g) {
+      g.edge = null; g.follow = null; g.sign = null;
+      if (inPicture(g)) return;
+      var run = g.runs[0]; if (!run || !run.length) return;
+      var last = null;
+      for (var i = 0; i < run.length; i++) {
+        var q = run[i];
+        if (q.x < 4 || q.x > W - 4 || q.y < 2 || q.y > H - 2) { if (last) break; else continue; }
+        last = q;
+      }
+      if (last && Math.hypot(last.x - run[0].x, last.y - run[0].y) > 40) g.edge = last;
+    });
+    var signs = [];
+    groups.slice().sort(function (x, y) { return x.rank - y.rank; }).forEach(function (g) {
+      if (!g.edge) return;
+      var sg = null;
+      signs.forEach(function (c) { if (!sg && Math.hypot(c.lead.edge.x - g.edge.x, c.lead.edge.y - g.edge.y) < 44) sg = c; });
+      if (sg) { sg.members.push(g); g.follow = sg.lead; } else { sg = { lead: g, members: [g] }; signs.push(sg); g.sign = sg; }
+    });
+    var drawn = groups.filter(function (g) { return !g.follow; });
+    // every route as points 3 px apart: a name is never placed on one
+    var marks = [];
+    drawn.forEach(function (g) { g.runs.forEach(function (run) {
+      for (var i = 1; i < run.length; i++) {
+        var p0 = run[i - 1], p1 = run[i], L = Math.hypot(p1.x - p0.x, p1.y - p0.y), n = Math.max(1, Math.ceil(L / 3));
+        for (var s2 = 0; s2 < n; s2++) marks.push({ x: p0.x + (p1.x - p0.x) * s2 / n, y: p0.y + (p1.y - p0.y) * s2 / n, g: g });
+      }
+    }); });
+    var CLEAR = full ? 6 : 4;
+    function crossings(b, self) {
+      var n = 0;
+      for (var i = 0; i < marks.length; i++) {
+        var m = marks[i];
+        if (m.x > b.x0 - CLEAR && m.x < b.x1 + CLEAR && m.y > b.y0 - CLEAR && m.y < b.y1 + CLEAR) {
+          if (m.g === self && Math.hypot(m.x - b.px, m.y - b.py) < 14) continue;     // a route's own last pixels into its dot
+          n++;
+        }
+      }
+      return n;
+    }
+    // names: sizes follow the room, always under the rows' own size
+    var fs = full ? Math.round(clamp(H * 0.064, 24, 28)) : Math.round(clamp(H * 0.3, 20, 24));
+    var boxes = [];
+    var hz = full ? 40 : 16;                                   // the airport's clear zone
+    if (!a.hidden) boxes.push({ x0: a.x - hz, y0: a.y - hz, x1: a.x + hz, y1: a.y + hz });
+    var dots = groups.filter(inPicture);
+    dots.forEach(function (g) { boxes.push({ x0: g.q.x - 7, y0: g.q.y - 7, x1: g.q.x + 7, y1: g.q.y + 7, own: g }); });
+    function free(b, self) {
+      if (b.x0 < 10 || b.x1 > W - 10 || b.y0 < (full ? 4 : 1) || b.y1 > H - 2) return false;
+      for (var i = 0; i < boxes.length; i++) {
+        var q = boxes[i]; if (q.own === self) continue;
+        // two names keep a word space apart, and a line apart
+        if (b.x0 < q.x1 + 12 && b.x1 > q.x0 - 12 && b.y0 < q.y1 + 4 && b.y1 > q.y0 - 4) return false;
+      }
+      return true;
+    }
+    signs.forEach(function (sg) { dots.push(sg.lead); });
+    dots.sort(function (x, y) { return x.rank - y.rank; });
+    function leaderOf(b, pt) {
+      var nx = clamp(pt.x, b.x0, b.x1), ny = clamp(pt.y, b.y0, b.y1), dx = nx - pt.x, dy = ny - pt.y, L = Math.hypot(dx, dy);
+      if (L < 30) return null;
+      return [pt.x + dx / L * 7, pt.y + dy / L * 7, nx - dx / L * 5, ny - dy / L * 5];
+    }
+    function leaderCrosses(l, self) {
+      for (var i = 0; i < marks.length; i++) {
+        var m = marks[i]; if (m.g === self) continue;
+        var vx = l[2] - l[0], vy = l[3] - l[1], t = clamp(((m.x - l[0]) * vx + (m.y - l[1]) * vy) / (vx * vx + vy * vy), 0, 1);
+        if (Math.hypot(l[0] + vx * t - m.x, l[1] + vy * t - m.y) < 3) return true;
+      }
+      return false;
+    }
+    // the widest of the board's languages: a name keeps its place as the
+    // board turns language
+    function nameW(g, f) { var w = 0; g.names.forEach(function (s) { w = Math.max(w, measure(s, f)); }); return w; }
+    var maxNames = full ? capFor(H) : 1;
+    dots.forEach(function (g) {
+      var pt = g.edge || g.q, isEdge = !!g.edge;
+      var f = (g.isNext && full) ? Math.round(fs * 1.08) : fs, ts = Math.round(f * (full ? 0.8 : 0.9));
+      var tStr = g.tStr, tTpl = tStr.replace(/\d/g, '0');
+      var nW = nameW(g, f), timeW = tStr ? measure(tTpl, ts) : 0, r = ts * 0.36, gap = ts * 0.3;
+      var timeRowW = tStr ? 2 * r + gap + timeW : 0;
+      var list = (g.sign && g.sign.members.length > 1) ? g.sign.members.slice(0, clamp(Math.floor((H - 16) / (fs * 1.2)), 2, 8)) : null, nameCol = 0, timeCol = 0;
+      if (list) {
+        f = fs; ts = Math.round(f * 0.8); r = ts * 0.36; gap = ts * 0.3;
+        list.forEach(function (m) { nameCol = Math.max(nameCol, nameW(m, f)); if (m.tStr) timeCol = Math.max(timeCol, 2 * r + gap + measure(m.tStr.replace(/\d/g, '0'), ts)); });
+      }
+      var lw = list ? nameCol + (timeCol ? f * 0.5 + timeCol : 0) : full ? Math.max(nW, timeRowW) : nW + (tStr ? f * 0.45 + timeRowW : 0);
+      var lh = list ? list.length * f * 1.2 : full ? (tStr ? f * 1.06 + ts * 1.12 : f * 1.1) : f * 1.15;
+      var cand = [];
+      var ds = full ? [11, 22, 34, 50, 68] : [10, 20, 34];
+      ds.forEach(function (d, di) {
+        var dirs = full
+          ? [['start', d, -lh / 2], ['end', -d - lw, -lh / 2], ['start', d * 0.5, d * 0.45], ['end', -d * 0.5 - lw, d * 0.45], ['middle', -lw / 2, d],
+             ['start', d * 0.5, -lh - d * 0.45], ['end', -d * 0.5 - lw, -lh - d * 0.45], ['middle', -lw / 2, -lh - d]]
+          : [['start', d, -lh / 2 + 2], ['end', -d - lw, -lh / 2 + 2], ['start', d, 2], ['end', -d - lw, 2], ['middle', -lw / 2, 6]];
+        dirs.forEach(function (c, ci) { cand.push({ al: c[0], dx: c[1], dy: c[2], cost: di * 6 + ci }); });
+      });
+      var spot = null, best = 1e12;
+      if (out.placed < maxNames) cand.forEach(function (c) {
+        var b = { x0: pt.x + c.dx, y0: pt.y + c.dy, x1: pt.x + c.dx + lw, y1: pt.y + c.dy + lh, own: g, al: c.al, px: pt.x, py: pt.y };
+        if (!free(b, g)) return;
+        var cost = crossings(b, g) * 1000 + c.cost;              // on a route: only if there is nowhere else
+        var lead = leaderOf(b, pt);
+        if (lead && leaderCrosses(lead, g)) cost += 300;
+        if (cost < best) { best = cost; spot = b; spot.lead = lead; }
+      });
+      var op = g.done && !g.isNext ? 0.55 : 1;
+      // no room for the name: its route and dot are not drawn either
+      if (!spot) { g.unplaced = true; (g.sign ? g.sign.members : [g]).forEach(function (m) { m.unplaced = true; }); out.unplaced.push(g.code); return; }
+      boxes.push(spot); out.placed++;
+      if (!isEdge) out.dots.push({ x: pt.x, y: pt.y, r: g.isNext ? 6 : 4.6, op: op, code: g.code });
+      if (spot.lead && !isEdge) out.leaders.push({ x1: spot.lead[0], y1: spot.lead[1], x2: spot.lead[2], y2: spot.lead[3], op: op });
+      // never a name on a visible line: the routes are cut away under it
+      if (best >= 1000) out.knockouts.push({ x0: spot.x0 - 5, y0: spot.y0 - 4, x1: spot.x1 + 5, y1: spot.y1 + 4 });
+      var L = { code: g.code, at: { x: pt.x, y: pt.y }, edge: isEdge, box: { x0: spot.x0, y0: spot.y0, x1: spot.x1, y1: spot.y1 }, op: list ? 1 : op, rows: [] };
+      var clockAt = function (cx, cy, rr, s) { return { cx: cx, cy: cy, r: rr, hands: handsOf(s) }; };
+      if (list) {
+        list.forEach(function (m, li) {
+          var ly = spot.y0 + f * 1.2 * (li + 0.5), row = { op: m.done && !m.isNext ? 0.55 : 1, texts: [{ x: spot.x0, y: ly, s: m.name, fs: f, anchor: 'start', code: m.code }] };
+          if (m.tStr) {
+            var tx3 = spot.x0 + nameCol + f * 0.5;
+            row.clock = clockAt(tx3 + r, ly, r, m.tStr);
+            row.texts.push({ x: tx3 + 2 * r + gap, y: ly, s: m.tStr, fs: ts, anchor: 'start', time: true });
+          }
+          L.rows.push(row);
+        });
+      } else if (full) {
+        var al = spot.al, tx = al === 'start' ? spot.x0 : al === 'end' ? spot.x1 : (spot.x0 + spot.x1) / 2;
+        var row1 = { op: 1, texts: [{ x: tx, y: spot.y0 + f * 0.53, s: g.name, fs: f, anchor: al, code: g.code }] };
+        if (tStr) {
+          var ty = spot.y0 + f * 1.06 + ts * 0.56, tw = measure(tStr, ts);
+          var x0 = al === 'start' ? spot.x0 : al === 'end' ? spot.x1 - (2 * r + gap + tw) : tx - (2 * r + gap + tw) / 2;
+          row1.clock = clockAt(x0 + r, ty, r, tStr);
+          row1.texts.push({ x: x0 + 2 * r + gap, y: ty, s: tStr, fs: ts, anchor: 'start', time: true });
+        }
+        L.rows.push(row1);
+      } else {
+        var my = spot.y0 + lh / 2, row2 = { op: 1, texts: [{ x: spot.x0, y: my, s: g.name, fs: f, anchor: 'start', code: g.code }] };
+        if (tStr) {
+          var tx2 = spot.x0 + nW + f * 0.45;
+          row2.clock = clockAt(tx2 + r, my, r, tStr);
+          row2.texts.push({ x: tx2 + 2 * r + gap, y: my, s: tStr, fs: ts, anchor: 'start', time: true });
+        }
+        L.rows.push(row2);
+      }
+      out.labels.push(L);
+    });
+    // the routes, under everything (a place left unnamed loses its route):
+    // the next flight's bright and strong, the others finer, flown ones faint
+    drawn.filter(function (g) { return !g.unplaced; })
+      .sort(function (x, y) { return (x.isNext - y.isNext) || (y.done - x.done); })
+      .forEach(function (g) {
+        out.routes.push({ code: g.code, runs: g.runs.map(function (run) { return run.map(function (q) { return { x: q.x, y: q.y }; }); }), w: g.isNext ? 3.4 : g.done ? 1.5 : 2.0, op: g.isNext ? 1 : g.done ? 0.36 : 0.7, lift: g.lift || 0 });
+      });
+    if (!a.hidden) out.hub = { x: a.x, y: a.y, r: full ? 13 : 9, dot: full ? 5.5 : 4 };
+    out.marks = marks.filter(function (m) { return !m.g.unplaced; }).map(function (m) { return { x: m.x, y: m.y, code: m.g.code }; });
+    return out;
+  }
+
+  var Core = {
+    EARTH_FLOOR_ON: EARTH_FLOOR_ON, BASE: BASE,
+    MIN_ANY: MIN_ANY, MIN_ROUTES: MIN_ROUTES, MIN_FULL: MIN_FULL, MIN_W: MIN_W, MIN_PAGE_W: MIN_PAGE_W,
+    SLICE_MS: SLICE_MS, MAX_PLACES: MAX_PLACES,
+    capFor: capFor, modeFor: modeFor, placesFrom: placesFrom, onPage: onPage,
+    frameBasis: frameBasis, stripView: stripView, chooseView: chooseView, llAt: llAt,
+    levelFor: levelFor, tilesFor: tilesFor, texSrc: texSrc, layerName: layerName, sampleInto: sampleInto,
+    toScreen: toScreen, routeRuns: routeRuns, layout: layout, handsOf: handsOf,
+    vec: vec, dot: dot, sunAt: sunAt, sunAltitude: sunAltitude, sunVecLocal: sunVecLocal
+  };
+  if (typeof module === 'object' && module.exports) module.exports = Core;
+  if (!root || !root.document || !root.document.documentElement) return;
+  root.FidsEarth = Core;
+  if (!EARTH_FLOOR_ON || root.__ocFloor) return;
+  root.__ocFloor = 'earth';
+
+  // ═════════════════════════════════════════════════════════════════════════
+  //  THE BROWSER
+  // ═════════════════════════════════════════════════════════════════════════
+  var doc = root.document, HTML = doc.documentElement;
+
+  // a place's latitude and longitude, from the same tables, in the same
+  // order, as the board's own sun (fids-sun.js boardCoords)
+  function asPair(v) {
+    if (!v) return null;
+    var lat = Number(v.lat != null ? v.lat : v[0]), lon = Number(v.lon != null ? v.lon : (v.lng != null ? v.lng : v[1]));
+    return (isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) ? [lat, lon] : null;
+  }
+  function coordsOf(c) {
+    var v = null;
+    try { /* global COORDS */ if (typeof COORDS !== 'undefined' && COORDS[c]) v = asPair(COORDS[c]); } catch (e) {}
+    try { if (!v && root.AIRPORT_COORDS && root.AIRPORT_COORDS[c]) v = asPair(root.AIRPORT_COORDS[c]); } catch (e) {}
+    try { /* global GATE_AP */ if (!v && typeof GATE_AP !== 'undefined' && GATE_AP[c]) v = asPair(GATE_AP[c]); } catch (e) {}
+    try { if (!v && typeof _lookupAirport === 'function') v = asPair(_lookupAirport(c)); } catch (e) {}
+    return v;
+  }
+  function apTz(c) { try { /* global AP */ return (typeof AP !== 'undefined' && AP[c] && AP[c].tz) || null; } catch (e) { return null; } }
+  function boardDir() { try { /* global mode */ return (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep'; } catch (e) { return 'dep'; } }
+  function boardRows(dir) { try { /* global data */ return (typeof data !== 'undefined' && data && data[dir]) || []; } catch (e) { return []; } }
+  function realCode(c) { try { if (typeof _realIata === 'function') return String(_realIata(c) || c).toUpperCase(); } catch (e) {} return c; }
+  function S() { return root.BoardStrings || null; }
+  // the language on screen, and the board's languages (a name is placed by
+  // the widest of them)
+  function shownLang() { try { /* global lang */ if (typeof lang !== 'undefined' && lang) return String(lang); } catch (e) {} return ''; }
+  function boardLangsNow() {
+    var out = [];
+    try { var B = S(); if (B && B.pairLangs) out = B.pairLangs().slice(); } catch (e) { out = []; }
+    var cur = shownLang(); if (cur && out.indexOf(cur) < 0) out.push(cur);
+    return out;
+  }
+  // the city exactly as the row prints it in a language: the row's own
+  // formatCityIata, without the airport's name and without the code
+  function cityName(code, raw, l) {
+    var n = '';
+    try {
+      if (raw && typeof formatCityIata === 'function') {
+        n = String(formatCityIata(raw, code, l) || '');
+        if (typeof _stripCityCode === 'function') n = _stripCityCode(n) || n;
+        n = n.split(' · ')[0].trim();
+        if (n && n !== '—') return n;
+      }
+    } catch (e) {}
+    n = '';
+    try { if (typeof airportCityNameSafe_v21877 === 'function') n = airportCityNameSafe_v21877(code, l); } catch (e) {}
+    try { if (n && typeof normalizeDisplayCity === 'function') n = normalizeDisplayCity(n, code); } catch (e) {}
+    try { if (n && typeof _stripCityCode === 'function') n = _stripCityCode(n) || n; } catch (e) {}
+    return n || code;
+  }
+  // the instant the board's clocks show (the 10:10 demo clock on an example board)
+  function nowFor(tz) {
+    try { var B = S(); if (B && B.clockNow) return B.clockNow(new Date(), tz); } catch (e) {}
+    return new Date();
+  }
+  function timeThere(at, tz) {
+    if (!tz) return '';
+    try { var B = S(); if (B && B.boardTime) return B.boardTime(at, tz) || ''; } catch (e) {}
+    return '';
+  }
+  // the airport's own month (the day picture is that month's)
+  function monthAt(ms, tz) {
+    try {
+      var G = root.FIDSGateDate;
+      var n = G && G.zonedDateOrdinal ? G.zonedDateOrdinal(ms, tz || 'UTC') : null;
+      if (typeof n === 'number' && isFinite(n)) return new Date(n * 86400000).getUTCMonth() + 1;
+    } catch (e) {}
+    return new Date(ms).getUTCMonth() + 1;
+  }
+  function rgbOf(str) { var m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/.exec(str || ''); return m ? [+m[1], +m[2], +m[3]] : null; }
+  function el(name, attrs, parent) { var e = doc.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function hidden() {
+    try { if (doc.hidden) return true; } catch (e) {}
+    try { if (typeof root._ocIdle === 'function' && root._ocIdle()) return true; } catch (e) {}
+    return false;
+  }
+
+  // ── which look this screen wants ───────────────────────────────────────────
+  var urlFloor = '';
+  try { var _fq = new URLSearchParams(root.location.search).get('floor'); if (_fq === 'classic' || _fq === 'earth') urlFloor = _fq; } catch (e) {}
+  function wanted() {
+    if (urlFloor) return urlFloor === 'earth';
+    return HTML.getAttribute('data-fids-floor-pref') !== 'classic';
+  }
+
+  // ── work in slices: never hold the page more than SLICE_MS at a time ──────
+  var stats = { slices: 0, maxSliceMs: 0, maxBlockMs: 0, cacheHits: 0, builds: 0, files: 0, fileErrors: 0 };
+  var disabled = false;
+  function slices(step, fin, acct) {
+    function tick() {
+      if (disabled) return;
+      if (hidden()) { setTimeout(tick, 500); return; }          // work in hand waits while the board is out of sight
+      var t0 = performance.now(), done = false;
+      try { done = step(t0 + SLICE_MS); } catch (err) { fail(err); return; }
+      var dt = performance.now() - t0;
+      stats.slices++; if (dt > stats.maxSliceMs) stats.maxSliceMs = +dt.toFixed(1);
+      if (acct) acct.ms += dt;
+      if (done) { try { fin(); } catch (err2) { fail(err2); } } else setTimeout(tick, 0);
+    }
+    setTimeout(tick, 0);
+  }
+
+  // ── the pictures: kept compressed, decoded only to be read ─────────────────
+  var blobs = {}, blobOrder = [], blobBytes = 0, pending = {};
+  function getBlob(url) {
+    if (blobs[url]) { blobOrder.splice(blobOrder.indexOf(url), 1); blobOrder.push(url); return Promise.resolve(blobs[url]); }
+    if (pending[url]) return pending[url];
+    var p = fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.blob() : null; }).then(function (b) {
+      delete pending[url];
+      if (!b || !b.size) { stats.fileErrors++; return null; }
+      stats.files++;
+      blobs[url] = b; blobOrder.push(url); blobBytes += b.size;
+      while (blobBytes > BLOB_BUDGET && blobOrder.length > 1) { var old = blobOrder.shift(); blobBytes -= blobs[old].size; delete blobs[old]; }
+      return b;
+    }, function () { delete pending[url]; stats.fileErrors++; return null; });
+    pending[url] = p;
+    return p;
+  }
+  function decode(b) {
+    if (!b) return Promise.resolve(null);
+    var viaImg = function () {
+      return new Promise(function (ok) {
+        var u = URL.createObjectURL(b), img = new Image();
+        img.onload = function () { URL.revokeObjectURL(u); ok(img); };
+        img.onerror = function () { URL.revokeObjectURL(u); ok(null); };
+        img.src = u;
+      });
+    };
+    if (typeof root.createImageBitmap === 'function') return root.createImageBitmap(b).then(null, viaImg);
+    return viaImg();
+  }
+  var scratch = null;
+  function pixelsOf(img, bbox) {
+    var t0 = performance.now(), w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    var c = scratch || (scratch = doc.createElement('canvas'));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    var x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0);
+    var t = { d: x.getImageData(0, 0, w, h).data, w: w, h: h, lat0: bbox[0], lon0: bbox[1], lat1: bbox[2], lon1: bbox[3] };
+    try { if (img.close) img.close(); } catch (e) {}
+    var dt = performance.now() - t0; if (dt > stats.maxBlockMs) stats.maxBlockMs = +dt.toFixed(1);
+    return t;
+  }
+  function freeScratch() { if (scratch) { scratch.width = 1; scratch.height = 1; } }
+
+  // ── one floor size: its view, its projected planet, its own canvas ────────
+  var K = 1, K_FORCED = false, slowRun = 0, slowHalf = 0, relightEvery = 1;
+  try {
+    var qk = new URLSearchParams(root.location.search).get('earthscale');
+    if (qk === '0.5' || qk === '1') { K = +qk; K_FORCED = true; }
+    else if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)) K = 0.5;
+  } catch (e) {}
+  var cache = [];
+  function cached(key) {
+    for (var i = 0; i < cache.length; i++) if (cache[i].key === key) { var e = cache[i]; cache.splice(i, 1); cache.unshift(e); trim(); return e; }
+    return null;
+  }
+  function trim() {
+    while (cache.length > CACHE_SIZES) { var old = cache.pop(); old.day = old.night = null; old.dropped = true; old.cv.width = 1; old.cv.height = 1; }
+    // only the newest few keep the colours a re-light needs
+    for (var i = ARRAYS_KEPT; i < cache.length; i++) { if (cache[i].day) { cache[i].day = cache[i].night = null; cache[i].stale = true; } }
+  }
+  function remember(e) { cache.unshift(e); trim(); }
+
+  // Project the pictures through the view, once per floor size: where each
+  // pixel is on Earth first; then each picture in turn is read and let go
+  function build(e, done) {
+    var v = e.view, Wk = e.Wk, Hk = e.Hk, Kk = e.K, n = Wk * Hk;
+    var la = new Float32Array(n), lo = new Float32Array(n), cov = { day: new Uint8Array(n), night: new Uint8Array(n) };
+    var day = new Uint8ClampedArray(n * 3), night = new Uint8ClampedArray(n * 3);
+    var lvl = levelFor(v, Kk), tiles = lvl ? tilesFor(v, e.W, e.H, lvl) : [], jobs = [];
+    tiles.forEach(function (t) {
+      ['day', 'night'].forEach(function (L) { jobs.push({ kind: lvl, layer: L, bbox: [t.latS, t.lonW, t.latS + t.sp, t.lonW + t.sp] }); });
+    });
+    jobs.forEach(function (j) { j.p = getBlob(texSrc(j.kind, j.layer, j.bbox[0], j.bbox[1], e.month)); });
+    e.level = lvl; e.tiles = tiles.length; e.world = false;
+    var acct = { ms: 0 }, B = v.B, R = v.R, cx = v.cx, cy = v.cy, row = 0, got = 0;
+    var lim2 = Math.pow(1 + 0.5 / (R * Kk), 2);
+    slices(function (end) {
+      for (; row < Hk; row++) {
+        var sy0 = (cy - (row + 0.5) / Kk) / R;
+        for (var px = 0; px < Wk; px++) {
+          var i = row * Wk + px, sx = ((px + 0.5) / Kk - cx) / R, sy = sy0, rr = sx * sx + sy * sy;
+          if (rr >= lim2) { la[i] = 99; continue; }
+          if (rr > 1) { var k1 = 1 / Math.sqrt(rr); sx *= k1; sy *= k1; rr = 1; }   // the anti-aliased rim takes the edge's colour
+          var z = Math.sqrt(Math.max(0, 1 - rr));
+          var wx = sx * B.r[0] + sy * B.u[0] + z * B.n[0], wy = sx * B.r[1] + sy * B.u[1] + z * B.n[1], wz = sx * B.r[2] + sy * B.u[2] + z * B.n[2];
+          la[i] = Math.asin(clamp(wz, -1, 1)) * DEG; lo[i] = Math.atan2(wy, wx) * DEG;
+        }
+        if (performance.now() > end) { row++; return false; }
+      }
+      return true;
+    }, function () { next(0); }, acct);
+    function next(j) {
+      if (e.dropped || disabled) return;
+      if (j >= jobs.length) {
+        // anything the squares left uncovered takes the whole-Earth picture
+        if (!e.world) {
+          var left = 0; for (var i = 0; i < n && !left; i++) if (la[i] !== 99 && (!cov.day[i] || !cov.night[i])) left = 1;
+          if (left || !jobs.length) {
+            e.world = true;
+            ['day', 'night'].forEach(function (L) { var wj = { kind: 'world', layer: L, bbox: [-90, -180, 90, 180], onlyGaps: true }; wj.p = getBlob(texSrc('world', L, 0, 0, e.month)); jobs.push(wj); });
+            return next(j);
+          }
+        }
+        // a floor is ready when both layers cover the whole planet in sight
+        var whole = true; for (var i2 = 0; i2 < n && whole; i2++) if (la[i2] !== 99 && (!cov.day[i2] || !cov.night[i2])) whole = false;
+        la = lo = cov = null; freeScratch();
+        e.day = day; e.night = night; e.stale = false;
+        e.projectMs = Math.round(acct.ms); stats.projectMs = e.projectMs;
+        e.ready = got > 0 && whole; done(e.ready); return;
+      }
+      jobs[j].p.then(decode).then(function (img) {
+        if (e.dropped || disabled) return;
+        if (!img) return next(j + 1);
+        var job = jobs[j], t = pixelsOf(img, job.bbox), arr = job.layer === 'day' ? day : night, cv2 = cov[job.layer], gaps = !!job.onlyGaps, r2 = 0;
+        got++;
+        slices(function (end) {
+          for (; r2 < Hk; r2++) {
+            var base = r2 * Wk;
+            for (var px = 0; px < Wk; px++) {
+              var i = base + px;
+              if (la[i] === 99 || (gaps && cv2[i])) continue;
+              if (sampleInto(t, la[i], lo[i], arr, i * 3)) cv2[i] = 1;
+            }
+            if (performance.now() > end) { r2++; return false; }
+          }
+          return true;
+        }, function () { t = null; next(j + 1); }, acct);
+      }, function (err) { fail(err); });
+    }
+  }
+
+  // Light the planet for this minute, into this size's canvas. The lights'
+  // glow is summed into a small copy as the planet is lit, halved twice more
+  // for the wide glow, and both are laid back over it, added: every browser
+  // draws it the same, without ctx.filter.
+  function halve(src) {
+    var c = doc.createElement('canvas'); c.width = Math.max(1, Math.round(src.width / 2)); c.height = Math.max(1, Math.round(src.height / 2));
+    var x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.drawImage(src, 0, 0, c.width, c.height);
+    return c;
+  }
+  function shade(e, done) {
+    if (!e || !e.ready || !e.day) { if (done) done(); return; }
+    var at = nowFor(apTz(AP0)), ms = at.getTime(), minute = Math.floor(ms / 60000);
+    var lk = minute + '|' + ground.join(',');
+    if (e.litKey === lk) { if (done) done(); return; }
+    if (e.shading) { (e.waiters = e.waiters || []).push(done); return; }
+    e.shading = true;
+    var Sn = sunAt(ms), v = e.view, B = v.B, R = v.R, cx = v.cx, cy = v.cy, Kk = e.K, Wk = e.Wk, Hk = e.Hk;
+    var s = [dot(Sn.v, B.r), dot(Sn.v, B.u), dot(Sn.v, B.n)];
+    var c2 = e.cv.getContext('2d');
+    var img = c2.createImageData(Wk, Hk), o = img.data;
+    var q = Math.max(1, Math.round(((e.H >= MIN_FULL) ? 4 : 2) * Kk)), gwq = Math.ceil(Wk / q), ghq = Math.ceil(Hk / q), gsum = new Float32Array(gwq * ghq * 3);
+    var g = ground.slice(), day = e.day, night = e.night;
+    var feather = clamp(e.H * 0.06, 8, 22), row = 0, acct = { ms: 0 };
+    slices(function (end) {
+      for (; row < Hk; row++) {
+        var yF = (row + 0.5) / Kk, sy = (cy - yF) / R;
+        // the sky above the edge: the board's own ground under the last row,
+        // turning within a few pixels to the deep navy of space
+        var f = smooth(0, feather, yF);
+        var skr = g[0] + (SPACE[0] - g[0]) * f, skg = g[1] + (SPACE[1] - g[1]) * f, skb = g[2] + (SPACE[2] - g[2]) * f;
+        for (var px = 0; px < Wk; px++) {
+          var i = row * Wk + px, j = i * 4, k = i * 3, sx = ((px + 0.5) / Kk - cx) / R;
+          var rr = sx * sx + sy * sy, rad = Math.sqrt(rr), dpx = (rad - 1) * R;
+          var sr = skr, sg = skg, sb = skb;
+          if (dpx > -2 && dpx < 160) {
+            // the thin shell of air lit along the edge: blue by day, a warm
+            // band at dusk, faint airglow by night
+            var mul = (sx * s[0] + sy * s[1]) / (rad || 1);
+            var gw = Math.exp(-Math.max(0, dpx) / 7) * 0.85 + Math.exp(-Math.max(0, dpx) / 34) * 0.32;
+            var dayL = smooth(-0.12, 0.25, mul), dusk = Math.exp(-Math.pow((mul + 0.02) / 0.10, 2));
+            sr = clamp(sr + (22 + 120 * dayL + 150 * dusk) * gw, 0, 255);
+            sg = clamp(sg + (48 + 140 * dayL + 70 * dusk) * gw, 0, 255);
+            sb = clamp(sb + (92 + 160 * dayL + 20 * dusk) * gw, 0, 255);
+          }
+          var c = (1 - rad) * R * Kk + 0.5;                       // coverage of the planet (anti-aliased rim)
+          if (c <= 0) { o[j] = sr; o[j + 1] = sg; o[j + 2] = sb; o[j + 3] = 255; continue; }
+          if (c > 1) c = 1;
+          var z = Math.sqrt(Math.max(0, 1 - rr)), mu = sx * s[0] + sy * s[1] + z * s[2];
+          var dayF = smooth(-0.075, 0.09, mu);
+          var lit = (0.2 + 0.8 * (mu > 0 ? Math.pow(mu, 0.55) : 0)) * 0.9;   // a touch under full sun: the rows stay the brightest thing
+          var dusk2 = Math.exp(-Math.pow((mu - 0.02) / 0.08, 2));
+          var dr = day[k] * lit * (1.0 + 0.10 * dusk2), dg = day[k + 1] * lit * (1 - 0.14 * dusk2), db = day[k + 2] * lit * (1 - 0.30 * dusk2);
+          var haze = Math.pow(1 - z, 2.4) * 0.75 * dayF;          // air seen edge-on hazes blue by day
+          dr = dr + (120 - dr) * haze; dg = dg + (170 - dg) * haze; db = db + (240 - db) * haze;
+          // night: a deep blue planet, its land faintly moonlit, and its
+          // lights, which come on at dusk
+          var Lr = night[k], Lg = night[k + 1], Lb = night[k + 2];
+          var Lm = Math.max(Lr, Lg, Lb) / 255, lightsF = 1 - smooth(-0.10, 0.03, mu);
+          var dl = 0.3 * day[k] + 0.6 * day[k + 1] + 0.1 * day[k + 2];
+          var nr = 3 + Lr * 0.80 + dl * 0.10, ng = 6 + Lg * 0.80 + dl * 0.14, nb = 16 + Lb * 0.92 + dl * 0.26;
+          var ice = smooth(0.06, 0.16, (Lb - Lr) / 255) * (1 - smooth(0.45, 0.75, Lm));
+          var lk2 = smooth(0.26, 0.86, Lm) * (1 - ice) * 1.45 * lightsF;
+          if (lk2 > 0.02) { var gk = Math.min(1, lk2 * 1.4) * c, gi = (((row / q) | 0) * gwq + ((px / q) | 0)) * 3; gsum[gi] += 255 * gk; gsum[gi + 1] += 205 * gk; gsum[gi + 2] += 140 * gk; }
+          var er = (dr * dayF + nr * (1 - dayF)) + 255 * lk2, eg = (dg * dayF + ng * (1 - dayF)) + 216 * lk2, eb = (db * dayF + nb * (1 - dayF)) + 158 * lk2;
+          var ag2 = Math.pow(1 - z, 6) * (1 - dayF) * 0.6;         // the night side's own edge glows faintly
+          er += 20 * ag2; eg += 60 * ag2; eb += 120 * ag2;
+          o[j] = sr + (clamp(er, 0, 255) - sr) * c; o[j + 1] = sg + (clamp(eg, 0, 255) - sg) * c; o[j + 2] = sb + (clamp(eb, 0, 255) - sb) * c; o[j + 3] = 255;
+        }
+        if (performance.now() > end) { row++; return false; }
+      }
+      return true;
+    }, function () {
+      var t0 = performance.now(), sm = doc.createElement('canvas'); sm.width = gwq; sm.height = ghq;
+      var sx2 = sm.getContext('2d'), gi2 = sx2.createImageData(gwq, ghq), gd = gi2.data, inv = 1 / (q * q);
+      for (var m = 0, mm = gwq * ghq; m < mm; m++) { gd[m * 4] = gsum[m * 3] * inv; gd[m * 4 + 1] = gsum[m * 3 + 1] * inv; gd[m * 4 + 2] = gsum[m * 3 + 2] * inv; gd[m * 4 + 3] = 255; }
+      sx2.putImageData(gi2, 0, 0);
+      var wide = halve(halve(sm));
+      acct.ms += performance.now() - t0;
+      // written in bands of rows between frames: from one minute to the next
+      // the light moves a quarter of a degree, so no band is seen to differ
+      var band = 0, BAND = 48, gsy = sm.height / Hk, wsy = wide.height / Hk;
+      slices(function (end) {
+        for (; band * BAND < Hk; band++) {
+          var y0 = band * BAND, bh = Math.min(BAND, Hk - y0);
+          c2.putImageData(img, 0, 0, 0, y0, Wk, bh);
+          c2.save(); c2.globalCompositeOperation = 'lighter'; c2.imageSmoothingEnabled = true;
+          c2.globalAlpha = 0.9; c2.drawImage(sm, 0, y0 * gsy, sm.width, bh * gsy, 0, y0, Wk, bh);
+          c2.globalAlpha = 0.55; c2.drawImage(wide, 0, y0 * wsy, wide.width, bh * wsy, 0, y0, Wk, bh);
+          c2.restore();
+          if (performance.now() > end) { band++; return band * BAND >= Hk; }
+        }
+        return true;
+      }, function () { finish(); }, acct);
+    }, acct);
+    function finish() {
+      e.litKey = lk; e.shading = false; e.shadeMs = Math.round(acct.ms);
+      stats.shadeMs = e.shadeMs; stats.scale = Kk;
+      stats.sun = { lat: +Sn.lat.toFixed(2), lon: +Sn.lon.toFixed(2), at: ms };
+      // a screen too slow for full size draws the planet at half size from
+      // then on (the routes and names stay sharp): after THREE re-lights in a
+      // row over 150 ms of work, so one busy moment never decides it; at half
+      // size, three over 400 ms re-light every 5 minutes
+      if (!K_FORCED && K === 1 && Kk === 1) {
+        slowRun = e.shadeMs > 150 ? slowRun + 1 : 0;
+        if (slowRun >= 3) { K = 0.5; stats.dropped = 'half'; cache.forEach(function (x) { x.dropped = true; x.day = x.night = null; }); cache.length = 0; curKey = ''; }
+      } else if (Kk === 0.5 && relightEvery === 1) {
+        slowHalf = e.shadeMs > 400 ? slowHalf + 1 : 0;
+        if (slowHalf >= 3) { relightEvery = 5; stats.dropped = 'slow'; }
+      }
+      var w = e.waiters || []; e.waiters = null;
+      if (done) done(); w.forEach(function (fn) { if (fn) fn(); });
+    }
+  }
+
+  // ── drawing the layout into the SVG ────────────────────────────────────────
+  var measureCtx = null, faceCache = '';
+  function face() {
+    try { var f = root.getComputedStyle(layer).fontFamily; if (f) faceCache = f; } catch (e) {}
+    return faceCache || 'sans-serif';
+  }
+  // a name's width as drawn: the glyphs, the 0.01 em tracking the stylesheet
+  // adds to each letter, and the halo round the ends
+  function textW(s, fs) {
+    if (!measureCtx) measureCtx = doc.createElement('canvas').getContext('2d');
+    measureCtx.font = '700 ' + fs + 'px ' + face();
+    return measureCtx.measureText(s).width + String(s).length * fs * 0.01 + fs * 0.2;
+  }
+  function pathOf(run) { return run.map(function (q, i) { return (i ? 'L' : 'M') + q.x.toFixed(1) + ',' + q.y.toFixed(1); }).join(''); }
+  function txt(parent, t) {
+    var n = el('text', { x: t.x.toFixed(1), y: t.y.toFixed(1), 'dominant-baseline': 'central', 'text-anchor': t.anchor || 'start', 'font-size': t.fs, fill: '#fff', stroke: HALO, 'stroke-opacity': 0.6, 'stroke-width': (t.fs * 0.2).toFixed(1) }, parent);
+    n.textContent = t.s; return n;
+  }
+  // the small clock mark that says "the time there", its hands at that time
+  function clockMark(parent, c) {
+    if (!c) return;
+    var g = el('g', {}, parent), sw = Math.max(1.6, c.r * 0.17);
+    el('circle', { cx: c.cx.toFixed(1), cy: c.cy.toFixed(1), r: c.r.toFixed(1), fill: 'none', stroke: '#fff', 'stroke-width': sw.toFixed(2) }, g);
+    if (!c.hands) return;
+    var ha = c.hands.h * RAD, ma = c.hands.m * RAD;
+    el('line', { x1: c.cx.toFixed(1), y1: c.cy.toFixed(1), x2: (c.cx + Math.sin(ha) * c.r * 0.5).toFixed(1), y2: (c.cy - Math.cos(ha) * c.r * 0.5).toFixed(1), stroke: '#fff', 'stroke-width': (sw * 1.1).toFixed(2), 'stroke-linecap': 'round' }, g);
+    el('line', { x1: c.cx.toFixed(1), y1: c.cy.toFixed(1), x2: (c.cx + Math.sin(ma) * c.r * 0.74).toFixed(1), y2: (c.cy - Math.cos(ma) * c.r * 0.74).toFixed(1), stroke: '#fff', 'stroke-width': (sw * 0.85).toFixed(2), 'stroke-linecap': 'round' }, g);
+  }
+  function render(L) {
+    svg.textContent = '';
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    if (!L) return;
+    var defs = el('defs', {}, svg);
+    var sh = el('filter', { id: 'ocfSh', x: '-20%', y: '-40%', width: '140%', height: '180%' }, defs);
+    el('feDropShadow', { dx: 0, dy: 1, stdDeviation: 2.2, 'flood-color': HALO, 'flood-opacity': 0.85 }, sh);
+    var gR = el('g', {}, svg), gD = el('g', {}, svg), gL = el('g', { filter: 'url(#ocfSh)' }, svg);
+    if (L.knockouts.length) {
+      var ko = el('mask', { id: 'ocfKO', maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: W, height: H }, defs);
+      el('rect', { x: 0, y: 0, width: W, height: H, fill: '#fff' }, ko);
+      L.knockouts.forEach(function (b) { el('rect', { x: b.x0.toFixed(1), y: b.y0.toFixed(1), width: (b.x1 - b.x0).toFixed(1), height: (b.y1 - b.y0).toFixed(1), rx: 6, fill: '#000' }, ko); });
+      gR.setAttribute('mask', 'url(#ocfKO)');
+    }
+    L.routes.forEach(function (r) {
+      r.runs.forEach(function (run) {
+        var d = pathOf(run);
+        el('path', { d: d, fill: 'none', stroke: HALO, 'stroke-opacity': (0.30 * r.op).toFixed(2), 'stroke-width': (r.w + 3).toFixed(1), 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, gR);
+        el('path', { d: d, fill: 'none', stroke: '#fff', 'stroke-opacity': r.op.toFixed(2), 'stroke-width': r.w.toFixed(1), 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, gR);
+      });
+    });
+    if (L.hub) {
+      var hb = L.hub;
+      el('circle', { cx: hb.x.toFixed(1), cy: hb.y.toFixed(1), r: hb.r, fill: 'none', stroke: HALO, 'stroke-opacity': 0.35, 'stroke-width': 5 }, gD);
+      el('circle', { cx: hb.x.toFixed(1), cy: hb.y.toFixed(1), r: hb.r, fill: 'none', stroke: '#fff', 'stroke-width': 2.4 }, gD);
+      el('circle', { cx: hb.x.toFixed(1), cy: hb.y.toFixed(1), r: hb.dot, fill: '#fff' }, gD);
+    }
+    L.dots.forEach(function (d) { el('circle', { cx: d.x.toFixed(1), cy: d.y.toFixed(1), r: d.r, fill: '#fff', 'fill-opacity': d.op, stroke: HALO, 'stroke-opacity': 0.5, 'stroke-width': 1.6 }, gD); });
+    L.leaders.forEach(function (l) {
+      el('line', { x1: l.x1.toFixed(1), y1: l.y1.toFixed(1), x2: l.x2.toFixed(1), y2: l.y2.toFixed(1), stroke: HALO, 'stroke-opacity': 0.35 * l.op, 'stroke-width': 3.4, 'stroke-linecap': 'round' }, gD);
+      el('line', { x1: l.x1.toFixed(1), y1: l.y1.toFixed(1), x2: l.x2.toFixed(1), y2: l.y2.toFixed(1), stroke: '#fff', 'stroke-opacity': 0.7 * l.op, 'stroke-width': 1.4, 'stroke-linecap': 'round' }, gD);
+    });
+    L.labels.forEach(function (lab) {
+      var gg = el('g', { opacity: lab.op }, gL);
+      lab.rows.forEach(function (row) {
+        var lg = row.op === 1 ? gg : el('g', { opacity: row.op }, gg);
+        row.texts.forEach(function (t) { txt(lg, t); });
+        clockMark(lg, row.clock);
+      });
+    });
+  }
+
+  // ── what is on screen ──────────────────────────────────────────────────────
+  var layer = null, svg = null, shown = null, W = 0, H = 0, AP0 = '', curKey = '', LSIG = '', lastBucket = -1;
+  var cur = null, P = null, here = null, ground = [16, 40, 80], painted = false, retryAt = 0, lastLayout = null, bare = false;
+  function showCanvas(cv) {
+    if (shown === cv) return;
+    if (shown && shown.parentNode) shown.parentNode.removeChild(shown);
+    shown = cv;
+    if (cv) layer.insertBefore(cv, svg);
+  }
+  function setPainted(on) {
+    painted = !!on;
+    if (on) HTML.setAttribute('data-fids-floor', 'earth'); else HTML.removeAttribute('data-fids-floor');
+  }
+  // the floor appears: at once on a screen that asks for reduced motion, and
+  // the first time otherwise with one 2.4 s fade (never again for a page or
+  // a size change: a ready floor swaps its pictures in)
+  function becomeReady() {
+    setPainted(true);
+    if (!layer || layer.classList.contains('ready')) return;
+    layer.classList.add('ready');
+    var still = false;
+    try { still = !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    try { if (!still && layer.animate) layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 2400, easing: 'ease' }); } catch (e) {}
+  }
+  function clearLayer() {
+    cur = null; showCanvas(null); if (svg) svg.textContent = ''; lastLayout = null;
+    if (layer) { layer.classList.remove('ready'); layer.setAttribute('data-mode', 'none'); }
+  }
+  // the old backdrop back, and nothing drawn
+  function teardown() { clearLayer(); curKey = ''; setPainted(false); }
+  function fail(err) {
+    stats.err = String(err && err.message || err).slice(0, 200);
+    disabled = true;
+    try { teardown(); } catch (e) {}
+  }
+  function pageCodes() {
+    var out = [], seen = {};
+    try {
+      Array.prototype.forEach.call(doc.querySelectorAll('#fidsTable tr[data-flight][data-iata]'), function (tr) {
+        var c = realCode(String(tr.getAttribute('data-iata') || '').toUpperCase());
+        if (c && !seen[c]) { seen[c] = 1; out.push(c); }
+      });
+    } catch (e) {}
+    return out;
+  }
+  function placesNow() {
+    var dir = boardDir();
+    return placesFrom(boardRows(dir), { dir: dir, ap0: AP0, now: Date.now(), coords: coordsOf, tz: apTz, real: realCode });
+  }
+  // the places one floor draws, each with its name in every language
+  // the places a floor shows: on a full floor the rows above it, on a strip
+  // the next flight still to come; none at all on a board showing no rows
+  // (no flights in its window, its feed down): the planet and the airport
+  function viewPlaces(md) {
+    if (bare) return [];
+    return md === 'full' ? onPage(P.list, pageCodes()).slice(0, capFor(H)) : P.list.filter(function (p) { return p.isNext; });
+  }
+  function placesToDraw(md) {
+    var list = viewPlaces(md);
+    var langs = boardLangsNow(), cur0 = shownLang();
+    return list.map(function (p) {
+      var names = langs.map(function (l) { return cityName(p.code, p.raw, l); });
+      var name = cityName(p.code, p.raw, cur0 || undefined);
+      if (names.indexOf(name) < 0) names.push(name);
+      return { code: p.code, lat: p.lat, lon: p.lon, tz: p.tz, isNext: p.isNext, done: p.done, rank: p.rank, n: p.n, name: name, names: names };
+    });
+  }
+  function drawOverlay() {
+    var e = cur;
+    if (!e || !e.ready || !P || !here || H < MIN_ROUTES) { render(null); return; }
+    var at = nowFor(apTz(AP0));
+    lastLayout = layout({
+      view: e.view, W: W, H: H, here: here, full: H >= MIN_FULL, places: placesToDraw(e.md),
+      timeOf: function (tz) { return timeThere(at, tz); }, hereTz: apTz(AP0), measure: textW
+    });
+    render(lastLayout);
+  }
+  function select(key, md) {
+    layer.setAttribute('data-mode', md);
+    if (md === 'none') { cur = null; showCanvas(null); svg.textContent = ''; return; }
+    var e = cached(key);
+    if (e && (e.ready || !e.failed)) {
+      stats.cacheHits++;
+      cur = e;
+      if (e.ready && e.day) { showCanvas(e.cv); drawOverlay(); shade(e, function () { if (cur === e) drawOverlay(); }); return; }
+      if (e.ready && e.stale) { showCanvas(e.cv); drawOverlay(); rebuild(e); return; }
+      showCanvas(null); svg.textContent = '';
+      return;
+    }
+    if (Date.now() < retryAt) { cur = null; showCanvas(null); svg.textContent = ''; return; }
+    // a size not seen yet: fit the view, project, light, then show
+    showCanvas(null); svg.textContent = '';
+    var view;
+    if (md === 'full') view = chooseView(here, viewPlaces(md), W, H);
+    else view = stripView(here, md === 'strip' ? viewPlaces(md)[0] || null : null, W, H);
+    var Wk = Math.max(1, Math.round(W * K)), Hk = Math.max(1, Math.round(H * K));
+    var cv = doc.createElement('canvas'); cv.width = Wk; cv.height = Hk;
+    e = { key: key, view: view, W: W, H: H, K: K, Wk: Wk, Hk: Hk, cv: cv, md: md, month: monthAt(nowFor(apTz(AP0)).getTime(), apTz(AP0)) };
+    remember(e); cur = e; stats.builds++;
+    stats.view = { delta: view.delta, psi: view.psi, R: Math.round(view.R), cx: Math.round(view.cx), ya: Math.round(view.ya) };
+    build(e, function (ok) {
+      stats.level = e.level; stats.tiles = e.tiles;
+      if (!ok) {
+        // no picture: the old backdrop shows again, and this is tried again later
+        e.failed = true; stats.noPicture = (stats.noPicture || 0) + 1; retryAt = Date.now() + RETRY_MS;
+        cache.splice(cache.indexOf(e), 1); curKey = '';
+        if (cur === e) teardown();
+        return;
+      }
+      shade(e, function () {
+        if (cur !== e) return;
+        showCanvas(e.cv); drawOverlay(); becomeReady();
+      });
+    });
+  }
+  // an older floor that let go of its colours: projected again from the
+  // pictures at hand (the lit picture stays up meanwhile)
+  function rebuild(e) {
+    if (e.rebuilding) return;
+    e.rebuilding = true;
+    var fresh = { key: e.key, view: e.view, W: e.W, H: e.H, K: e.K, Wk: e.Wk, Hk: e.Hk, cv: e.cv, md: e.md, month: e.month };
+    build(fresh, function (ok) {
+      e.rebuilding = false;
+      if (!ok || e.dropped) return;
+      e.day = fresh.day; e.night = fresh.night; e.stale = false; e.litKey = '';
+      if (cur === e) shade(e, function () { if (cur === e) drawOverlay(); });
+    });
+  }
+  function measure() {
+    if (disabled || !layer) return;
+    try {
+      if (hidden()) return;
+      if (!wanted()) { if (painted || cur) teardown(); return; }
+      var board = doc.getElementById('fidsBoard'), ca = board && board.querySelector(':scope > .content-area'), tb = doc.getElementById('fidsTable');
+      if (!ca) return;
+      if (layer.parentNode !== ca) ca.insertBefore(layer, ca.firstChild);   // a render dropped it: put back
+      var caR = ca.getBoundingClientRect(), tbR = tb ? tb.getBoundingClientRect() : null;
+      var tableShown = !!(tb && tb.offsetParent && tbR && tbR.height);
+      // no rows on the board, but its own notice instead (no flights in its
+      // window, its feed down): the floor goes under the notice. Anything
+      // else in the place of the rows (a Studio template) leaves it idle.
+      var panel = null;
+      if (!tableShown) ['panelEmpty', 'panelError'].forEach(function (id) {
+        var pn = doc.getElementById(id);
+        if (!panel && pn && pn.offsetParent && pn.getBoundingClientRect().height) panel = pn;
+      });
+      var top = tableShown ? Math.max(0, tbR.bottom - caR.top) : panel ? Math.max(0, panel.getBoundingClientRect().bottom - caR.top) : 0;
+      // the floor stops above anything the board puts under its rows
+      var bottom = caR.height;
+      Array.prototype.forEach.call(ca.children, function (c) {
+        if (c === layer || c === panel || (tb && c.contains(tb))) return;
+        var r = c.getBoundingClientRect(); if (!r.height || !r.width) return;
+        var cs = root.getComputedStyle(c); if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || cs.position === 'fixed') return;
+        var t = r.top - caR.top; if (t >= top - 1 && t < bottom) bottom = t;
+      });
+      var shows = tableShown || !!panel;
+      var w = Math.round(caR.width), h = shows ? Math.max(0, Math.round(bottom - top)) : 0;
+      layer.style.bottom = Math.max(0, Math.round(caR.height - bottom)) + 'px';
+      var ap = (doc.body.getAttribute('data-fids-ap') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      var gcol = rgbOf(root.getComputedStyle(board).backgroundColor) || ground;
+      if (Math.abs(w - W) > 2 || Math.abs(h - H) > 6 || ap !== AP0) { W = w; H = h; layer.style.height = H + 'px'; }
+      AP0 = ap; here = coordsOf(AP0); ground = gcol;
+      P = placesNow();
+      var pageW = root.innerWidth || W;
+      bare = !tableShown;
+      var md = (!shows || pageW < MIN_PAGE_W) ? 'none' : modeFor(W, H, !!here);
+      // the places that shape the view: on a full floor, the rows above it; on
+      // a strip, the next flight still to come
+      var sig = md, at = nowFor(apTz(AP0)), month = monthAt(at.getTime(), apTz(AP0));
+      if (bare) sig += '|bare';
+      else if (md === 'full') sig += '|' + viewPlaces(md).map(function (p) { return p.code; }).sort().join(',');
+      else if (md === 'strip') sig += '|' + P.dir + '|' + (P.next ? P.next.code : '');
+      var key = md === 'none' ? 'none' : W + 'x' + H + '@' + K + '|' + AP0 + '|' + month + '|' + sig;
+      var rows = boardRows(P.dir);
+      var lsig = P.dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + (P.next ? P.next.code : '') + '|' + pageCodes().join(',');
+      if (key !== curKey) { curKey = key; LSIG = lsig; select(key, md); return; }
+      if (!cur || !cur.ready) return;
+      var bucket = Math.floor(at.getTime() / (60000 * relightEvery));
+      if (bucket !== lastBucket || String(cur.litKey || '').split('|')[1] !== ground.join(',')) {
+        lastBucket = bucket;
+        if (cur.day) shade(cur, function () { drawOverlay(); });   // the planet re-lit and the times stepped, together
+        else if (cur.stale) rebuild(cur);
+        else drawOverlay();
+      } else if (lsig !== LSIG) { LSIG = lsig; drawOverlay(); }   // a flight went, or the board turned language
+    } catch (err) { fail(err); }
+  }
+  function boot() {
+    if (disabled) return;
+    var board = doc.getElementById('fidsBoard');
+    var ca = board && board.querySelector(':scope > .content-area');
+    if (!ca || !doc.getElementById('fidsTable')) return setTimeout(boot, 250);
+    layer = doc.createElement('div'); layer.id = 'ocFloor'; layer.setAttribute('aria-hidden', 'true'); layer.setAttribute('data-mode', 'none');
+    svg = doc.createElementNS(NS, 'svg');
+    layer.appendChild(svg);
+    ca.insertBefore(layer, ca.firstChild);
+    measure();
+    if (typeof root._ocEvery === 'function') root._ocEvery(measure, 1000); else setInterval(function () { measure(); }, 1000);
+    root.addEventListener('resize', function () { measure(); });
+    doc.addEventListener('visibilitychange', function () { if (!doc.hidden) measure(); });
+    try { new ResizeObserver(function () { measure(); }).observe(doc.getElementById('fidsTable')); } catch (e) {}
+    try { if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { if (cur && cur.ready) drawOverlay(); }); } catch (e) {}
+    // review aids
+    root.__ocfEarth = function () {
+      var mem = blobBytes;
+      cache.forEach(function (x) { mem += x.Wk * x.Hk * 4 + (x.day ? x.Wk * x.Hk * 6 : 0); });
+      return { W: W, H: H, ap: AP0, mode: layer.getAttribute('data-mode'), K: K, relightEvery: relightEvery, painted: painted, disabled: disabled, wanted: wanted(),
+        ready: !!(cur && cur.ready && cur.litKey), memMB: +(mem / 1e6).toFixed(1), blobMB: +(blobBytes / 1e6).toFixed(1),
+        cache: cache.map(function (x) { return x.key.split('|')[0] + (x.ready ? '' : '~') + (x.day ? '' : '-'); }),
+        layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear } : null,
+        stats: stats };
+    };
+    // project and light the current floor again from the pictures at hand,
+    // and report the CPU it took
+    root.__ocfBench = function () {
+      return new Promise(function (ok) {
+        if (!cur || !cur.ready) return ok(null);
+        var e = cur, t0 = performance.now(); stats.maxSliceMs = 0; stats.maxBlockMs = 0; var sl0 = stats.slices;
+        var c = { key: e.key + '#bench', view: e.view, W: e.W, H: e.H, K: e.K, Wk: e.Wk, Hk: e.Hk, cv: doc.createElement('canvas'), md: e.md, month: e.month };
+        c.cv.width = e.Wk; c.cv.height = e.Hk;
+        build(c, function () {
+          var t1 = performance.now();
+          shade(c, function () {
+            ok({ K: e.K, canvas: e.Wk + 'x' + e.Hk, projectCpuMs: c.projectMs, relightCpuMs: c.shadeMs, projectWallMs: Math.round(t1 - t0), relightWallMs: Math.round(performance.now() - t1), maxSliceMs: stats.maxSliceMs, maxBlockMs: stats.maxBlockMs, slices: stats.slices - sl0, files: e.tiles * 2 });
+          });
+        });
+      });
+    };
+    root.__ocfAt = function (px, py) {
+      if (!cur) return null;
+      var ll = llAt(cur.view, px, py); if (!ll) return null;
+      return { lat: +ll[0].toFixed(2), lon: +ll[1].toFixed(2), sunAlt: +sunAltitude(ll[0], ll[1], nowFor(apTz(AP0)).getTime()).toFixed(1) };
+    };
+  }
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot); else boot();
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

@@ -41,6 +41,9 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/gate-date-context.js',
   'fids-current/js/fids-sun.js',
   'fids-current/js/boarding-sequence.js',
+  // the Earth floor under the departures and arrivals: names from the rows,
+  // times from the store, no words of its own
+  'fids-current/js/fids-earth.js',
   'fids-current/js/gate-visual-integrity.js',
   'fids-current/js/feed-router.js',
   'fids-current/js/gids-layout.js',
