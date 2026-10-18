@@ -80,7 +80,7 @@ const WORKER_HOST = 'fids-proxy.n-leblanc1984.workers.dev';
 const WORKER_URL = 'https://' + WORKER_HOST;
 const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 // The Cloud config's second line (the first is #!/bin/bash).
-const CLOUD_LINE = 'curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://fids.orionconnected.com/o && bash /root/o';
+const CLOUD_LINE = 'curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/install.sh && bash /root/o';
 
 const PY = (() => {
   const r = spawnSync('python3', ['--version'], { encoding: 'utf8' });
@@ -1676,7 +1676,7 @@ test('install.sh: no tunnel, a hardened unit with the relay key via LoadCredenti
   assert.match(INSTALL_SRC, /^set -eEuo pipefail$/m);
   assert.doesNotMatch(main, /systemctl enable [^|\n]*2>&1(?! \|\| true)/, 'no enable with its error hidden');
   assert.ok(main.indexOf('write_commands') < main.indexOf('install_relay'), 'opensky-update exists before anything can fail');
-  assert.match(embedded(COMMON), /^OSKY_INSTALLER_URL=https:\/\/fids\.orionconnected\.com\/o$/m);
+  assert.match(embedded(COMMON), /^OSKY_INSTALLER_URL=https:\/\/raw\.githubusercontent\.com\/liloleblanc\/orionconnected\/main\/stream-server\/opensky-relay\/install\.sh$/m);
   assert.match(embedded('/usr/local/bin/opensky-update'), /curl -fsSL --retry 3 -o \/root\/o\.new "\$OSKY_INSTALLER_URL"/);
 });
 

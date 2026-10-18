@@ -1616,7 +1616,7 @@
       if (md === 'none' && !painted && shows && here && pageW >= MIN_PAGE_W && W >= MIN_W && H < MIN_ANY && Date.now() >= retryAt) setPainted(true);
       var at = nowFor(apTz(AP0)), key = plan.key;
       var rows = boardRows(P.dir);
-      var lsig = P.dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + (P.next ? P.next.code : '') + '|' + pageCodes().join(',') + '|' + Math.round(hiddenTop());
+      var lsig = P.dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + boardLangsNow().join(',') + '|' + (P.next ? P.next.code : '') + '|' + pageCodes().join(',') + '|' + Math.round(hiddenTop());
       if (key !== curKey) { curKey = key; LSIG = lsig; select(key, md, plan.view); return; }
       if (!cur || !cur.ready) return;
       var bucket = Math.floor(at.getTime() / (60000 * relightEvery));
@@ -1625,7 +1625,7 @@
         if (cur.day) shade(cur, function () { drawOverlay(); });   // the planet re-lit and the times stepped, together
         else if (cur.stale) rebuild(cur);
         else drawOverlay();
-      } else if (lsig !== LSIG) { LSIG = lsig; drawOverlay(); }   // a flight went, or the board turned language
+      } else if (lsig !== LSIG) { LSIG = lsig; drawOverlay(); }   // a flight went, the board turned language, or its languages changed (its clock: 9:10 AM led by English, 09:10 led by French)
     } catch (err) { fail(err); }
   }
   function boot() {
