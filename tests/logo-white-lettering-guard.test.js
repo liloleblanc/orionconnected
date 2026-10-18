@@ -677,8 +677,11 @@ test('9. the phone gate\'s header: white lettering on its dark header for every 
     + '; var CALLSIGN_TO_IATA = ' + JSON.stringify(table('const CALLSIGN_TO_IATA = {'))
     + '; var MG_LOGO_FILES = ' + JSON.stringify(MG) + ';\n'
     + fnSource('logoPath') + fnSource('wordmarkSrc') + fnSource('_mgHeaderLogoSrc') + '\n_mgHeaderLogoSrc;');
-  // (a comment in a file is not paint: Pacific Coastal's says "no live <text>")
-  const paints = (f) => svgPaints(fs.readFileSync(f, 'utf8').replace(/<!--[\s\S]*?-->/g, '')).map((p) => p.colour.slice(0, 3));
+  // (a comment in a file is not paint: Pacific Coastal's says "no live <text>").
+  // Stripped until none is left, so a marker split around a comment cannot
+  // join into a new one.
+  const noComments = (s) => { let prev; do { prev = s; s = s.replace(/<!--[\s\S]*?-->/g, ''); } while (s !== prev); return s; };
+  const paints = (f) => svgPaints(noComments(fs.readFileSync(f, 'utf8'))).map((p) => p.colour.slice(0, 3));
   const reads = (url, ground) => {
     const f = path.join(FC, String(url).split('?')[0]);
     assert.ok(fs.existsSync(f), url + ' exists');
