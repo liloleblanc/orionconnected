@@ -132,6 +132,40 @@ It never executes and costs nothing. Leave it inert; it is not approved.
 
 ---
 
+## OFFERED, NOT SIGNED OR PAID — OpenSky Network (not wired in)
+
+**There is no licence in force.** On 16 Oct 2026 OpenSky sent a Startup
+Commercial Licence agreement and an invoice. Neither is signed or paid yet:
+questions about it are still open with OpenSky. **The API key may not be used
+before the invoice is paid**, so nothing may call OpenSky until then, and the
+key is typed on the relay server only after that.
+
+What the agreement offers: live positions, altitude and speed (REST
+`/states/all`) for the aircraft of the flights being shown, for a one-month
+term from 13 Oct to 12 Nov 2026, 23:59 Swiss time. It does not renew by
+itself; an extension is a written amendment. Its conditions: server-side only,
+one OAuth2 client used from a single server with a shared short-lived cache,
+small area queries, no archive, no raw data or API offered onward, and
+"Data: OpenSky Network" on every map that uses it (plus the Schäfer et al.,
+IPSN 2014 citation on the project page).
+
+OpenSky whitelists the address the account calls from, and a Worker has no
+fixed egress address, so every call would go through the relay in
+`stream-server/opensky-relay/` (its own small server, installed from
+`fids.orionconnected.com/o`). The relay holds the secret, answers only a
+caller that sends its caller key, only for named flights (a callsign or
+icao24, never the whole box) in a box of at most 25 sq deg, caps itself at
+1,500 calls a UTC day and stops by itself at the end of the term. It calls
+nothing until the key is typed on that server. The boards' Worker is not
+connected to it.
+
+When it is (only after signing and paying): keep OpenSky data out of
+`/fltrack/`, `acmem`, `/acinfo`, `/opinfo`, the surrounding-traffic code
+(`/adsb/point/`), logs, fixtures and screenshots, and do not serve it on an
+open route (the Worker's CORS answers any origin today).
+
+---
+
 ## A note on how these are written
 
 Decisions here are recorded as decisions, with the technical reasoning that
