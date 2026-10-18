@@ -639,16 +639,70 @@ test('the switch works from the keyboard: the arrows walk the languages, and Tab
   assert.equal(menu.open, false, 'Shift+Tab out of the menu closes it');
 });
 
+// the @media (max-width:N px) blocks of home.css: [N, body]
+const MEDIA = [...CSS.matchAll(/@media \(max-width:(\d+)px\)\{((?:[^{}]|\{[^{}]*\})*)\}/g)].map((m) => [+m[1], m[2]]);
+
 test('on a phone the switch still names the language on screen in its own script', () => {
-  // the two-letter code stands in for the name only below 300 px, narrower than any phone
-  const hides = [...CSS.matchAll(/@media \(max-width:(\d+)px\)\{((?:[^{}]|\{[^{}]*\})*)\}/g)]
-    .filter((m) => /\.lsw \.lsw-name\{display:none\}/.test(m[2])).map((m) => +m[1]);
-  assert.deepEqual(hides, [299]);
+  // the two-letter code stands in for the name on screen only below 300 px,
+  // narrower than any phone; the name is never display:none, at any width,
+  // so a screen reader still hears which language is on screen
+  const codeAt = MEDIA.filter(([, body]) => /\.lsw \.lsw-code\{display:inline\}/.test(body)).map(([w]) => w);
+  assert.deepEqual(codeAt, [299]);
   assert.match(CSS, /\.lsw \.lsw-code\{display:none;/, 'the code is hidden everywhere else');
+  assert.doesNotMatch(CSS, /\.lsw-name\{[^}]*display:none/, 'the name is never taken from a screen reader');
+  const [, narrow] = MEDIA.find(([w]) => w === 299);
+  assert.match(narrow, /\.lsw \.lsw-name\{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect\(0 0 0 0\);clip-path:inset\(50%\)/, 'below 300 px the name is visually hidden, still read');
+  for (const html of Object.values(PAGES)) {
+    assert.match(html, /<span class="lsw-code" aria-hidden="true">/, 'the code is never read out beside the name');
+  }
   // each language is the whole row, to click or tap: the masthead's inline-flex
   // links (.nav a:not(.btn)) outrank .lsw-list a, so only a width fills the row
   assert.match(CSS, /\.nav a:not\(\.btn\),\.menu-list a\{[^}]*display:inline-flex/);
   assert.match(CSS, /\.lsw-list a\{[^}]*width:100%/, 'a language fills its row');
+});
+
+test('the focus ring on a language is whole, inside its row', () => {
+  // the list scrolls (overflow:auto) and a row is as wide as the list, so a
+  // ring drawn outside the row (the page's outline-offset:3px) lost its two
+  // sides, and what was left read as two rules between the rows
+  assert.match(CSS, /\.lsw-list\{[^}]*overflow:auto/);
+  assert.match(CSS, /:focus-visible\{outline:3px solid var\(--ink\);outline-offset:3px/);
+  assert.match(CSS, /\.lsw-list a:focus-visible\{outline-offset:-3px\}/, 'a 3 px ring drawn 3 px inside the row');
+});
+
+test('the homepage masthead never runs off the page: the boards button gives way to the menu', () => {
+  // logo, switch (its language's name), Menu (its word) and the button do not
+  // fit in one row up to 686 px in French (measured: fr 686, pt 678, it 660,
+  // es 653, de 641); the button gives way there, and stays in the menu
+  assert.ok(MEDIA.some(([w, body]) => w === 720 && /\.mast \.menu~\.btn\{display:none\}/.test(body)), 'the button hides up to 720 px on the page with a menu');
+  assert.ok(MEDIA.some(([w, body]) => w === 600 && /\.mast \.btn\{display:none\}/.test(body)), 'and on both pages on a phone');
+  const nav = HOME.slice(HOME.indexOf('<div class="nav">'), HOME.indexOf('</header>'));
+  assert.ok(nav.indexOf('<details class="menu">') < nav.indexOf('<a class="btn"'), 'the button follows the menu, so .menu~.btn finds it');
+  assert.match(nav, /<ul class="menu-list">\s*<li><a href="https:\/\/fids\.orionconnected\.com\/picker" data-boards-link data-i18n="homeOpenBoards"/, "the menu's first place is the boards");
+  assert.doesNotMatch(CREDITS, /<details class="menu">/, 'credits has no menu, and keeps its button where it fits');
+});
+
+test('a span the store fills is never a flex box (Chinese names would stand apart)', () => {
+  // in Chinese and Japanese home.js sets each name in a span of its own (.nb);
+  // as flex items, with a gap, 来自新不伦瑞克省蒙克顿 read 来自  新不伦瑞克  省  蒙克顿
+  assert.match(CSS, /\.folio-line>span:not\(\[data-i18n\]\)\{display:inline-flex;align-items:center;gap:10px\}/);
+  assert.doesNotMatch(CSS, /\.folio-line>span\{/);
+  assert.match(HOME, /<div class="folio-line">\s*<span><i class="live-dot"[^>]*><\/i><span data-i18n="homeLiveNow"[^>]*>[^<]*<\/span><\/span>\s*<span data-i18n="homeMadeIn"/);
+});
+
+test('the hero title and standfirst run from the gutter in the phone column, and fit it', () => {
+  // in the column (900 px and under) align-self:end is the side, not the foot:
+  // the Chinese and Japanese titles sat against the right (800 px), the Arabic
+  // standfirst off its start, and a title wider than the column hung off the left
+  const [, col] = MEDIA.find(([w]) => w === 900);
+  assert.match(col, /\.hero-grid\{display:flex;flex-direction:column\}/);
+  assert.match(col, /\.hero h1\{order:1;align-self:stretch\}/);
+  assert.match(col, /\.standfirst\{order:3;margin-top:24px;align-self:stretch\}/);
+  // 实时航班信息屏。 has no break in it: eight characters at 11vw fit the column down to 267 px
+  const [, cjk] = MEDIA.find(([w]) => w === 319);
+  assert.match(cjk, /:lang\(ja\) \.hero h1,:lang\(zh\) \.hero h1\{font-size:11vw\}/);
+  assert.ok(/实时航班信息屏。/.test(BS.STR.homeHeroTitle.zh));
+  assert.match(cjk, /\.ctas \.btn\{max-width:100%;padding-inline:16px;white-space:normal\}/, 'the hero button takes two lines rather than leave the page');
 });
 
 // ── the Worker ─────────────────────────────────────────────────────────────
