@@ -25,6 +25,16 @@ jobs:
           python-version: "3.x"
       - run: npm test
       - run: npm run assets:check
+      # The OpenSky relay runs on Ubuntu 24.04's Python 3.12, not on the
+      # latest one set up above: run its tests on that version too. After
+      # the steps that use Python, which keep the latest one.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: OpenSky relay on the server's Python (3.12)
+        env:
+          OSKY_RELAY_REQUIRE_PY: "3.12"
+        run: node --test tests/opensky-relay.test.js
       # main's own board-languages guard on this change, from a worktree of
       # origin/main: never this checkout's copy of it.
       - name: Board languages, as main enforces them
