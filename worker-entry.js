@@ -264,13 +264,15 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
-    // v23323 — RECOVERY ROUTE. The fids-proxy Worker's auto-build deploys
-    // THIS entry (root wrangler.jsonc) under the fids-proxy name, which
-    // tonight replaced the real backend and took the feeds down. Until that
-    // build is repointed at workers/wrangler.fids-proxy.jsonc, this entry
-    // carries the real proxy bundled in and hands the request over whenever
-    // it is running under the fids-proxy hostname. Secrets persist on the
-    // Worker; KV/R2/AI bindings are declared in the root config below.
+    // v23323 — RECOVERY ROUTE. The fids-proxy Worker's auto-build once
+    // deployed THIS entry (root wrangler.jsonc) under the fids-proxy name,
+    // which replaced the real backend and took the feeds down. The build has
+    // since been repointed: checked 2026-10-18, the live fids-proxy Worker's
+    // code is one module, fids-proxy.js, with none of this file in it, so it
+    // is deployed from workers/wrangler.fids-proxy.jsonc (its vars, such as
+    // FR24_DAILY_BUDGET and OPENSKY_ON, live there). This route stays as a
+    // harmless safety net: it hands the request to the bundled proxy only
+    // when this entry is running under the fids-proxy hostname.
     if (url.hostname.startsWith("fids-proxy")) {
       return proxy.fetch(request, env, ctx);
     }
@@ -304,7 +306,7 @@ export default {
     //   /t → rebuild the SECOND stream (/opt/fids-stream-tpa)
     //   /o → the OpenSky relay's own server (stream-server/opensky-relay/),
     //        fetched over https only: from Hetzner's Cloud config box
-    //        (curl -fsSL --retry 5 -o /root/o https://fids.orionconnected.com/o),
+    //        (#!/bin/bash, then: curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://fids.orionconnected.com/o && bash /root/o),
     //        or with opensky-update on the server
     // Served straight from the repository, so there is one source of truth and
     // nothing shell-shaped has to live in the public asset directory — which
