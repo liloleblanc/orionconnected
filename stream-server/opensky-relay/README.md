@@ -48,9 +48,16 @@ Creating or deleting a server or an IP, adding a Worker secret, merging the
 switch-on change, and anything else that costs money waits for an explicit
 yes from the account holder.
 
+> **Why GitHub, not fids.orionconnected.com/o:** the orionconnected.com zone
+> runs Cloudflare Bot Fight Mode, which challenges a data-centre server's
+> `curl` (2026-10-18: the relay server's setup was challenged 11 times and
+> never ran). GitHub serves the same file with no challenge. The relay
+> itself talks to the fids-proxy workers.dev host, which has no zone and no
+> Bot Fight Mode.
+
 ### 0. Before starting
 
-1. Open <https://fids.orionconnected.com/o>. It must show plain text whose
+1. Open <https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/install.sh>. It must show plain text whose
    first line is `#!/usr/bin/env bash`, and the text must mention
    `OSKY_RELAY_IPV4`. If it does not, this change is not live yet: wait 10
    minutes and open it again.
@@ -93,7 +100,7 @@ Claude then does the rest.
 
     ```
     #!/bin/bash
-    curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://fids.orionconnected.com/o && bash /root/o
+    curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/install.sh && bash /root/o
     ```
 
     The first line is needed: cloud-init runs the Cloud config only when it

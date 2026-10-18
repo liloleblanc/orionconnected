@@ -153,7 +153,7 @@ IPSN 2014 citation on the project page).
 OpenSky whitelists the address the account calls from, and a Worker has no
 fixed egress address, so every call goes through the relay in
 `stream-server/opensky-relay/`: its own small server with a fixed IPv4,
-installed from `fids.orionconnected.com/o` by the server's Cloud config. The
+installed from GitHub (the same file `fids.orionconnected.com/o` serves; the zone's Bot Fight Mode challenges servers) by the server's Cloud config. The
 relay only calls out. It registers with the Worker (`/osky/register`, only
 from the address pinned in the Worker secret `OSKY_RELAY_IPV4`), then polls
 it once a minute for the OpenSky client (`/osky/creds`, memory only) and the

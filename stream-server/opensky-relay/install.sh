@@ -17,7 +17,7 @@
 # as root, no terminal), these two lines:
 #
 #        #!/bin/bash
-#        curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://fids.orionconnected.com/o && bash /root/o
+#        curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/install.sh && bash /root/o
 #
 # cloud-init runs the Cloud config as a script only when it starts with #!,
 # so the first line is needed. The download is retried (a 502 or a network
@@ -272,7 +272,9 @@ OSKY_STATE_DIR=/var/lib/opensky-relay
 OSKY_STATE=$OSKY_STATE_DIR/state.json
 OSKY_STATUS=$OSKY_STATE_DIR/status.json
 OSKY_STOP_MARKER=$OSKY_STATE_DIR/stopped
-OSKY_INSTALLER_URL=https://fids.orionconnected.com/o
+# Straight from GitHub: the orionconnected.com zone runs Bot Fight Mode, which
+# challenges a data-centre server's curl (it blocked the first relay's setup).
+OSKY_INSTALLER_URL=https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/install.sh
 OSKY_DEFAULT_WORKER_URL=https://fids-proxy.n-leblanc1984.workers.dev
 
 # The saved STOP_AT, read exactly the way relay.py reads it: one line that

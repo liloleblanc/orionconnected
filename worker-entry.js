@@ -306,7 +306,7 @@ export default {
     //   /t → rebuild the SECOND stream (/opt/fids-stream-tpa)
     //   /o → the OpenSky relay's own server (stream-server/opensky-relay/),
     //        fetched over https only: from Hetzner's Cloud config box
-    //        (#!/bin/bash, then: curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://fids.orionconnected.com/o && bash /root/o),
+    //        (#!/bin/bash, then: curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/install.sh && bash /root/o),
     //        or with opensky-update on the server
     // Served straight from the repository, so there is one source of truth and
     // nothing shell-shaped has to live in the public asset directory — which
