@@ -7,7 +7,8 @@
 // the font: Day & night (Colour by day, Solid at night, by the board
 // airport's own sunrise and sunset; the default since v24042), Classic (the
 // original icons, value 'classic'), Colour or Solid. The departures and arrivals rows never take a circle: they show
-// the solid glyph, white, dark on a light row. The gate screens take a
+// the sets drawn for Orion Connected, white on a dark row and colour on a light one (v24054,
+// tests/weather-rows-line.test.js). The gate screens take a
 // circle: Colour = the colour icon on white, Solid = the glyph in the
 // airline's brand colour on its deep colour (WestJet teal on navy), drawn
 // larger. The weather card does the same with icons it inlines. Files: logos/weather/<set>/<condition>.svg,
@@ -50,20 +51,23 @@ function helper({ look = '', night = false, path: p = '/fids', airline = '' } = 
   )(win, { documentElement: root, body }, { pathname: p }, 'v1', pair);
 }
 const src = (html) => (/src="([^"]+)"/.exec(html) || [])[1] || '';
+// v24054 — a row icon carries both of its files (the white set's, the colour set's)
+const rowFiles = (html) => ((/--wxr-w:url\(([^)]+)\);--wxr-c:url\(([^)]+)\);/.exec(html) || []).slice(1).join(' '));
 
 // v24042 — Day & night became the default. An airport that has chosen nothing
 // gets it; Classic is a choice of its own ('classic') and keeps the original
 // icons everywhere.
-test('Day & night is the default: no look stamped draws the solid rows, Colour by day and Solid at night at the gate', () => {
+test('Day & night is the default: no look stamped draws the rows drawn for Orion Connected, Colour by day and Solid at night at the gate', () => {
   for (const night of [false, true]) {
     const h = helper({ night });
-    assert.match(src(h.wxIconHtml('cloudy', 36, { row: true })), /^\/logos\/weather\/solid\/cloudy\.svg\?v=v1$/, night ? 'night row' : 'day row');
+    assert.equal(rowFiles(h.wxIconHtml('cloudy', 36, { row: true })), '/logos/weather/rows-line-white/cloudy.svg?v=v1 /logos/weather/rows-line-color/cloudy.svg?v=v1', night ? 'night row' : 'day row');
     assert.match(src(h.wxIconHtml('cloudy', 48)), /\/animated\//, 'not a row and not the gate');
   }
   assert.equal(helper({ path: '/gids' }).look(), 'colour');
   assert.equal(helper({ night: true, path: '/gids' }).look(), 'solid');
   assert.match(src(helper({ path: '/gids' }).wxIconHtml('snow', 64)), /\/logos\/weather\/disc-day\/snow\.svg/);
-  assert.match(helper({ night: true, path: '/gids', airline: 'WS' }).wxIconHtml('snow', 64), /--wx-disc:#003366;--wx-ink:#00B2A9;/);
+  // v24054 — at night the circle holds the night icons drawn for Orion Connected
+  assert.match(helper({ night: true, path: '/gids', airline: 'WS' }).wxIconHtml('snow', 64), /--wxn-icon:url\(\/logos\/weather\/night-line\/snow\.svg\?v=v1\);/);
 });
 
 test('Classic, chosen, keeps the original icons on the rows, the gate and the card', () => {
@@ -122,12 +126,12 @@ test("a device's '' (nothing chosen) does not hide the airport's look; a device'
   assert.equal(resolve('', '?wxicons=colour', 'classic'), 'colour', 'the review override stays on top');
 });
 
-test('the rows take the solid glyph with no circle, in every look but Classic', () => {
+test('the rows take the sets drawn for Orion Connected with no circle, in every look but Classic', () => {
   for (const look of ['solid', 'colour', 'daynight', '']) {
     for (const night of [false, true]) {
       const html = helper({ look, night }).wxIconHtml(1001, 36, { row: true });
-      assert.match(src(html), /^\/logos\/weather\/solid\/cloudy\.svg\?v=v1$/, look + (night ? ' night' : ' day'));
-      assert.match(html, /class="fids-wx-cell fids-wx-glyph"/);
+      assert.equal(rowFiles(html), '/logos/weather/rows-line-white/cloudy.svg?v=v1 /logos/weather/rows-line-color/cloudy.svg?v=v1', look + (night ? ' night' : ' day'));
+      assert.match(html, /class="fids-wx-cell fids-wx-row"/);
       assert.doesNotMatch(html, /fids-wx-disc|--wx-disc/, 'no circle on the main board');
     }
   }
@@ -163,8 +167,12 @@ test('the pair rule: deep colour behind, brand colour in front, white where the 
 test('other surfaces, and conditions the packs do not draw, keep the Classic icons', () => {
   assert.match(src(helper({ look: 'solid', path: '/fids' }).wxIconHtml('snow', 44)), /\/animated\//, 'not a row and not the gate');
   assert.match(src(helper({ look: 'solid', path: '/bids' }).wxIconHtml('snow', 64)), /\/animated\//);
-  const other = helper({ look: 'solid' }).wxIconHtml('tornado', 36, { row: true });
-  assert.match(src(other), /\/logos\/weather\/animated\/wind\.svg/, 'a name outside the 23 falls back to the animated set\'s nearest');
+  // v24054 — the rows draw every name the sets drawn for Orion Connected have (a tornado among them);
+  // a name they lack takes its nearest
+  assert.match(rowFiles(helper({ look: 'solid' }).wxIconHtml('tornado', 36, { row: true })), /rows-line-white\/tornado\.svg/);
+  assert.match(rowFiles(helper({ look: 'solid' }).wxIconHtml('rain-with-sun', 36, { row: true })), /rows-line-white\/rain\.svg/);
+  const other = helper({ look: 'solid', path: '/gids' }).wxIconHtml('tornado', 64);
+  assert.match(src(other), /\/logos\/weather\/animated\/wind\.svg/, 'off the rows, a name outside the 23 falls back to the animated set\'s nearest');
 });
 
 test('every condition has an icon in every set, sized and coloured as its set says', () => {
@@ -191,28 +199,34 @@ test('every condition has an icon in every set, sized and coloured as its set sa
 test('the weather card follows the look, and its circles keep their own colours', () => {
   const fnAt = CORE.indexOf('function _wxCardIconDir(night)');
   assert.ok(fnAt > 0);
-  const dir = (look, stamped) => new Function('window', 'document', '_WX_ICON_DIR', CORE.slice(fnAt, CORE.indexOf('\n}\n', fnAt) + 2) + '\nreturn _wxCardIconDir;')(
+  // boardNight: the board's own airport after dark (html.fids-night); v24054 —
+  // a Solid circle at night draws the night icons drawn for Orion Connected
+  const dir = (look, stamped, boardNight = look === 'solid') => new Function('window', 'document', '_WX_ICON_DIR', '_WX_NIGHT_DIR', CORE.slice(fnAt, CORE.indexOf('\n}\n', fnAt) + 2) + '\nreturn _wxCardIconDir;')(
     { fidsWxLook: () => look },
-    { documentElement: { getAttribute: (k) => (k === 'data-fids-wx-icons' ? (stamped === undefined ? null : stamped) : null) } },
-    '/logos/weather/flat/');
+    { documentElement: { getAttribute: (k) => (k === 'data-fids-wx-icons' ? (stamped === undefined ? null : stamped) : null),
+      classList: { contains: (c) => c === (boardNight ? 'fids-night' : 'fids-day') } } },
+    '/logos/weather/flat/', '/logos/weather/night-line/');
   assert.equal(dir('', 'classic')(), '/logos/weather/flat/');
   assert.equal(dir('colour', 'colour')(), '/logos/weather/disc-day/');
-  assert.equal(dir('solid', 'solid')(), '/logos/weather/disc-night/');
+  assert.equal(dir('solid', 'solid')(), '/logos/weather/night-line/', 'Solid, chosen, at night: the night icons');
+  assert.equal(dir('solid', 'solid', false)(), '/logos/weather/disc-night/', 'Solid, chosen, by day: its glyphs');
   // v24042 — under Day & night a plate or an hour takes its own moment's day
   // or night (the flag that chose its glyph); a chosen Colour or Solid, and
-  // Classic, do not move
-  assert.equal(dir('colour', 'daynight')(true), '/logos/weather/disc-night/', 'a city in darkness while the board is in daylight');
+  // Classic, do not move. v24054 — night is the night icons drawn for Orion
+  // Connected (logos/weather/night-line/)
+  assert.equal(dir('colour', 'daynight')(true), '/logos/weather/night-line/', 'a city in darkness while the board is in daylight');
   assert.equal(dir('solid', 'daynight')(false), '/logos/weather/disc-day/', 'a city in daylight while the board is at night');
-  assert.equal(dir('colour', undefined)(true), '/logos/weather/disc-night/', 'nothing stamped yet is the default');
-  assert.equal(dir('solid', 'daynight')(), '/logos/weather/disc-night/', 'no flag (the day forecasts): the board decides');
+  assert.equal(dir('colour', undefined)(true), '/logos/weather/night-line/', 'nothing stamped yet is the default');
+  assert.equal(dir('solid', 'daynight')(), '/logos/weather/night-line/', 'no flag (the day forecasts): the board decides');
   assert.equal(dir('colour', 'colour')(true), '/logos/weather/disc-day/', 'Colour, chosen, stays Colour at night');
-  assert.equal(dir('solid', 'solid')(false), '/logos/weather/disc-night/', 'Solid, chosen, stays Solid by day');
+  assert.equal(dir('solid', 'solid')(false), '/logos/weather/disc-night/', 'Solid, chosen, keeps its glyphs for a moment in daylight');
+  assert.equal(dir('solid', 'solid', false)(true), '/logos/weather/night-line/', 'and a city in darkness takes the night icons');
   assert.equal(dir('', 'classic')(true), '/logos/weather/flat/', 'Classic stays Classic');
   assert.equal(dir('', 'daynight')(true), '/logos/weather/flat/', 'off the gate screens the card keeps the flat set');
   assert.match(CORE, /src="' \+ _wxCardIconDir\(isNight\) \+ sIc \+ /, 'the plates pass their own night');
   assert.match(CORE, /src="' \+ _wxCardIconDir\(!!p\.h\.night\) \+ p\.h\.ic \+ /, 'the hours pass theirs');
   assert.match(CORE, /src="' \+ _wxCardIconDir\(\) \+ d\.ic \+ /, 'the days follow the board');
-  assert.match(CORE, /img\.closest\('\.wxcard-wrap'\) && !\/\\\/disc-\(day\|night\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill/, 'not drawn white and still');
+  assert.match(CORE, /img\.closest\('\.wxcard-wrap'\) && !\/\\\/\(disc-\(day\|night\)\|night-line\)\\\/\/\.test\(img\.getAttribute\('src'\) \|\| ''\)\) rawTxt = _wxWhiteStill/, 'not drawn white and still');
 });
 
 test('the choice lives in Customize, saves per airport like the font, and the board applies it', () => {
@@ -229,7 +243,7 @@ test('the choice lives in Customize, saves per airport like the font, and the bo
   assert.match(CORE, /var _WX_ICON_STYLES = \['daynight', 'classic', 'colour', 'solid'\];/, 'the first is the default');
   assert.match(CORE, /if \(_WX_ICON_STYLES\.indexOf\(_wxi\) < 0\) _wxi = _WX_ICON_STYLES\[0\];\s*document\.documentElement\.setAttribute\('data-fids-wx-icons', _wxi\);/);
   assert.match(V2, /let v = root\.getAttribute\('data-fids-wx-icons'\) \|\| 'daynight';/, 'a page with no look stamped yet draws the default too');
-  assert.match(CORE, /window\.fidsWxIcon\(tw\.current\.code, 48, \{ row: true \}\)/, 'the board rows say they are rows');
+  assert.match(CORE, /window\.fidsWxIcon\(tw\.current\.code, 48, \{ row: true, at: _wxAt \}\)/, 'the board rows say they are rows (v24054: and where their weather is)');
   assert.match(V2, /wxIconHtml\(f\._wxCode, 36, \{ row: true \}\)/);
 });
 
@@ -306,11 +320,11 @@ test('a cloud save that drops the weather icons says so, and the screen follows 
   assert.match(MENU, /wxDropped: \['#f87171', /);
 });
 
-test('a light row turns the glyph dark; the gate circle is the icon\'s own round background', () => {
+test('the gate circle is the icon\'s own round background (the rows pick their set by ground since v24054)', () => {
   const at = CSS.indexOf("v24035 — THE WEATHER ICONS' LOOK");
   assert.ok(at > 0);
   const block = CSS.slice(at, CSS.indexOf('/* ══', at + 10));
-  assert.match(block, /#fidsTable tbody tr\.row-delayed img\.fids-wx-glyph,\s*#fidsTable tbody tr\.row-final img\.fids-wx-glyph,\s*body\.fids-light-board #fidsTable tbody tr:not\(\.row-cancelled\) img\.fids-wx-glyph \{\s*filter: brightness\(0\) !important;/);
+  assert.doesNotMatch(block, /fids-wx-glyph|brightness\(0\)/, 'nothing darkens the drawings drawn for Orion Connected');
   assert.match(block, /img\.fids-wx-disc \{\s*border-radius: 50% !important;\s*background: var\(--wx-disc, transparent\) !important;/);
   assert.match(block, /\.fids-wx-pair \{[^}]*border-radius: 50% !important;\s*background: var\(--wx-disc, #033F77\) !important;/);
   assert.match(block, /\.fids-wx-pair::after \{[^}]*content: '';[^}]*background: var\(--wx-ink, #FFFFFF\);[^}]*mask: var\(--wx-glyph\) center \/ contain no-repeat;/);

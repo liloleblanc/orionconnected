@@ -16728,7 +16728,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24052" src="/textures/gate-sky-shelf.mp4?v=24052" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24054" src="/textures/gate-sky-shelf.mp4?v=24054" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16772,7 +16772,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24052" src="/textures/gate-sky-shelf.mp4?v=24052" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24054" src="/textures/gate-sky-shelf.mp4?v=24054" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -23470,6 +23470,298 @@ function _fidsRowInk(root) {
   } catch (e) {}
 }
 
+// ══ v24054 — EACH ROW'S WEATHER ICON: THE DRAWING WHERE IT CAN BE SEEN, ELSE ITS INK COPY ══
+// The row icons drawn for Orion Connected come in two sets, one for a dark
+// ground and one for a light ground (fids-v2.js wxRowHtml): the white set
+// (white shapes, a thin blue edge) and the colour set (gold suns, moons and
+// bolts, blue clouds, dark navy rain and storm clouds). What each icon wears
+// is read from the page, not from a list of themes or carriers, so it covers
+// the airport's theme, Customize's custom row colours, the alternate rows, a
+// light board, a board painted in an airline's colours, and the status rows
+// (yellow Delayed, orange Final call, red Cancelled and Diverted, the faded
+// Departed / Arrived / Gate closed rows). Change an airport's colours and the
+// next render (applyAirportConfigToBoard forces one), or the 5 s heartbeat,
+// picks again.
+//
+// FIRST, THE SET THE ROW CALLS FOR (_wxRowSetFor), on the colour the icon
+// really sits on:
+//  1. where white holds less than 3:1 against the ground (_WX_ROW_WHITE_MIN,
+//     the WCAG 2.2 floor for a graphic that must be made out, SC 1.4.11) the
+//     white set would vanish and the row calls for the colour set, whatever
+//     its text is inked: every ground lighter than a relative luminance of
+//     0.30 (both yellow Delayed stripes, orange Final call, every light or
+//     mid-light row, an airline's yellow, orange, lime or teal);
+//  2. otherwise the side the row's ink took: where the temperature beside the
+//     icon is darker than the ground (the board judged the ground light) the
+//     colour set, where it is lighter the white set.
+//
+// THEN, ICON BY ICON, WHETHER THAT DRAWING CAN BE SEEN THERE (_wxRowWear).
+// Each drawing is known by its pixels at the rows' 38 px (_WX_ROW_PX: the
+// pixels at least half covered, in colour groups), painted on the row's own
+// ground as the page paints it:
+//  a. a drawing is worn where at least half of what it draws stands at 3:1
+//     or more against the ground (_WX_ROW_SEEN: its median contrast reaches
+//     the floor): the set the row calls for first, then the other one. On a
+//     navy or black row that is the white set; on a light or yellow row the
+//     colour set's dark navy rain and storm clouds;
+//  b. where neither does (the colour set's gold sun and moon, its pale
+//     clouds, its white snow and fog on yellow Delayed, orange Final call and
+//     every light row; the white set's thin lines where its blue edge sinks
+//     into a red Cancelled row), the row wears the INK COPY: the same drawing,
+//     the white set's own shapes, painted in the colour of the row's own text
+//     (navy on yellow and orange, white on red), wherever a quarter of it
+//     stands at 3:1 (_WX_ROW_COPY) and it shows more than either drawing;
+//  c. where the row's text colour is itself too faint for that (the board
+//     keeps an operator's white text on a teal or gold row below 3:1), the
+//     most legible of the drawings and the ink copies in the row's ink and
+//     the board's two inks (_WX_ROW_INKS, the pair _fidsInk falls back to).
+// It writes data-wx-set="white|colour|ink" on the icon, and the ink as
+// --wxr-k (css/display-overrides.css, the v24054 block). Nothing is redrawn
+// and no filter is laid on a drawing: the ink copy is the drawing's own
+// outline filled with one colour, as a mask.
+//
+// Painted colours (_wxRowLayers): every background from the page down to the
+// element, each over the one beneath it by its alpha, then every opacity on
+// the way (the faded history rows) mixed with what shows through it, so the
+// icon, its ink and the ground are compared as the eye gets them. Background
+// images (the textures) are left out; they are faint by design. A cell with
+// no text to read (no row draws one today) is decided by test 1 alone, and
+// its copy takes the board's inks.
+//
+// Cheap by construction: it runs after the row inks (_fidsBoardInk, in the
+// same task as the rows are rebuilt, so the first paint already wears the
+// right drawing) and on the 5 s heartbeat, works on a few dozen colour groups
+// per icon, writes only when a row's ground or ink has changed, and swaps a
+// background inside a box of fixed size, so nothing moves.
+var _WX_ROW_WHITE = [255, 255, 255];   // the white set's shapes (fill #ffffff in every file)
+var _WX_ROW_WHITE_MIN = 3;             // below this against the ground, the white set vanishes
+var _WX_ROW_SEEN = 0.5;                // a drawing is worn where half of it stands at 3:1
+var _WX_ROW_COPY = 0.25;               // the ink copy in the row's ink, where a quarter of it does
+var _WX_ROW_INKS = [[255, 255, 255, 1], [17, 17, 17, 1]];   // the board's two inks (_fidsInk)
+// Each file's pixels at 38 px that are at least half covered, as colour
+// groups: 'sha1:' (the first 10 hex digits of the file, so a redrawn file
+// without a new table fails tests/weather-rows-line.test.js), then each group
+// as rrggbbaa and its share of the pixels in 255ths. Made by
+// scripts/wx-icons/rows-line-pixels.js in headless Chrome.
+var _WX_ROW_PX = {
+  // the white set (rows-line-white/)
+  w: {
+    'clear-day': '2a066872e0:c0dbe8870cc2dce98c0cc6dce99206c5dfec9109c6deea9209c9e0eb8610c9dfec9d06cce0ec9013cfe2ee9706d3e5ef9606d2e4ef9e10d0e4eda810d8e7f1b609d8e7f1be09dce8f1cc06dae9f2c806dfecf3bf06e1edf4cc0ce2edf5e710dfecf3dc10e4eff6f406e6f1f6ef13ebf3f8f209edf4f8e906',
+    'clear-night': 'a6b1129afc:b9d5e68e0acaddeb9603cce1ed880dcfe2ee9510d0e4eea20ad9e7f1ad0ad7e6f0b70ddceaf3b710e0edf4d90dd8e8f1ca06dfecf3b00ae2edf4b906e2eef4c50ae5f0f6f510e4eef4d20aeef6fac103e6f0f5fd1ae4eff5e906e4eff4ef10e9f1f6eb03e8f2f7e80deaf2f8ef0decf4f8e406f2f7fbf306',
+    'cloudy': 'c5cd2c0eb4:ccdfeda004cce0ed8e13cfe2ef950ccfe3ee9904d1e5ed9c04d3e5ef9e08d6e6f0ae0fd6e8f29c04d9e7f0cc0cdceaf2c213dbe9f1c804dbe9f2c727d9e8f2b713dceaf2eb04e0ecf4d708dfecf4df04e2edf4cf13e0ecf3e50ce1edf4f10ce6eff6e10ce9f1f6eb0fe8f1f8f104ebf3f8f604',
+    'drizzle': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
+    'extreme-rain': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
+    'extreme-snow': 'e78048ce84:c5dfeb8f06cadeea8c09cbe0eb8a03cee1ec950ecce1ed8f09cbe0ec820ec9ddeaa206d2e4efa90bd1e4ef9f0ed5e5efc00ed5e7f1b80bdae9f2b109dae9f2c811dcebf4b403e1edf3f111dfedf4d406e2edf4cd06dfecf4c417e1eef4ff06e6f0f6ee0ee6f0f7d90be7f1f6fe0bebf3f8eb0bf7fafcfd0b',
+    'fog': 'a6c2ae181f:c3dcea9102c8ddea9019c8ddec900dcce1ec9202cadfec901bcbdfeb8404cce0ed9d08cfe2ed9406cfe2ed8f0fd2e4ef9706d9e8f2b30ad7e7f1a60dd8e8f1be0ddbe9f2c508d9e8f1c836dde9f2d004e1ecf5e30ae0ecf3d702e0edf4ce0ae5eff6d704e6f0f6f211',
+    'hail': 'e78048ce84:c5dfeb8f06cadeea8c09cbe0eb8a03cee1ec950ecce1ed8f09cbe0ec820ec9ddeaa206d2e4efa90bd1e4ef9f0ed5e5efc00ed5e7f1b80bdae9f2b109dae9f2c811dcebf4b403e1edf3f111dfedf4d406e2edf4cd06dfecf4c417e1eef4ff06e6f0f6ee0ee6f0f7d90be7f1f6fe0bebf3f8eb0bf7fafcfd0b',
+    'lightning-bolt': 'f574d98d10:bbd7e6850dc9deeb850dcde1ec970acce1ed8d07d1e2ef8f03d1e4eea40ad5e6efad0ad8e8f1b00ad6e6f0aa14d7e7f0b90adceaf3d611d9e9f1c107dceaf2c607dfebf4fb07deebf3b90ae2edf4cb11e1edf3c203dfebf3e60ae4eff6df0de6f0f6ed11e1edf4ef0debf2f7fd0de8f2f7f60dfafcfdff03',
+    'mist': 'a6c2ae181f:c3dcea9102c8ddea9019c8ddec900dcce1ec9202cadfec901bcbdfeb8404cce0ed9d08cfe2ed9406cfe2ed8f0fd2e4ef9706d9e8f2b30ad7e7f1a60dd8e8f1be0ddbe9f2c508d9e8f1c836dde9f2d004e1ecf5e30ae0ecf3d702e0edf4ce0ae5eff6d704e6f0f6f211',
+    'overcast-day': 'd83c222cf1:bfd8e78507c6deea8607c1dbe89807c8ddea9018cadfec8407cae1eb8f02cadfec9018cde1ee8d09cce1ed9009d2e2eec705d0e4ed9405cee3ee9911d3e4efa40ed3e5f0b307d8e8f1a907dbe9f2ae05dceaf3c013deebf3d513dfedf4e10ce4eff5f011ecf3f9d202e7f1f6e207eaf3f7e70eedf4f9f809',
+    'overcast-night': 'd83c222cf1:bfd8e78507c6deea8607c1dbe89807c8ddea9018cadfec8407cae1eb8f02cadfec9018cde1ee8d09cce1ed9009d2e2eec705d0e4ed9405cee3ee9911d3e4efa40ed3e5f0b307d8e8f1a907dbe9f2ae05dceaf3c013deebf3d513dfedf4e10ce4eff5f011ecf3f9d202e7f1f6e207eaf3f7e70eedf4f9f809',
+    'overcast': 'd83c222cf1:bfd8e78507c6deea8607c1dbe89807c8ddea9018cadfec8407cae1eb8f02cadfec9018cde1ee8d09cce1ed9009d2e2eec705d0e4ed9405cee3ee9911d3e4efa40ed3e5f0b307d8e8f1a907dbe9f2ae05dceaf3c013deebf3d513dfedf4e10ce4eff5f011ecf3f9d202e7f1f6e207eaf3f7e70eedf4f9f809',
+    'partly-cloudy-day-snow': 'cc0aeb0571:b9d4e58406c2dbe89508cbdfec990acbdfecbf04c9dfeb8913cfe2eeee02d4e4f0ab13cadfeaa40ad5e6f19d08d3e5efbc0ad6e6f0c40cdbeaf2c70edae8f0c715d8e8f1b30addeaf3bd0cdfecf3cd06e1eef4d508e7f2f6c102e3eef4dc08e2edf5f410e9f2f7e708e0ecf3e810e8f1f6d606e8f1f7f310',
+    'partly-cloudy-day': '5fea6bf2be:b3d2e3850bc0d7e68506c3dbeb9406cadfec8306c6deeb8c06cadfec9018cee2ec8904cfe3ed9002cde1ed8f1ad1e4ef9709c5ddeba806d3e4eeab09d3e5efa609d6e6f0b911d1e2eee006d8e8f1c711dbeaf2cf04dfecf3d51ae0ecf4f206e2eef5fd04e4eef5c706e7f1f7f40fe6f0f6dc0be7f1f6e811',
+    'partly-cloudy-night': '88c556d9c9:c2dae9880dcde2ece106c8dfeb9104cee1ed8a0bcadfec901bcadfec9117cbe0edcf04cde2ec9708cbdfeca508cfe3ed9e0dc9dfedb704d3e4eebe04d4e6efa508d6e6f0cb0bd7e7f1b508d8e7f1bc0dd8e9f2aa04dfecf4c00fe0ecf4d50fd8e7f1e30be4eff6f611e6f0f6cf08e3eef5e40be7f0f6eb08',
+    'rain': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
+    'sleet': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
+    'snow': 'e78048ce84:c5dfeb8f06cadeea8c09cbe0eb8a03cee1ec950ecce1ed8f09cbe0ec820ec9ddeaa206d2e4efa90bd1e4ef9f0ed5e5efc00ed5e7f1b80bdae9f2b109dae9f2c811dcebf4b403e1edf3f111dfedf4d406e2edf4cd06dfecf4c417e1eef4ff06e6f0f6ee0ee6f0f7d90be7f1f6fe0bebf3f8eb0bf7fafcfd0b',
+    'snowflake': '463ce65385:c7ddea9006c7dfea8303cde0ec9509cadfeb8e07cce1ed901acde1edb004c8ddeb9f04cfe2ee981ed1e2efb707d0e2eea40ad7e7f1b506daeaf2b307d9e9f2af04d9e8f1c922e2edf4c106e3eef5e706e2eef4ef0be6f0f6d50de8f1f7dd0deff5f9e70aeef5f9e00df0f7faf211f9fcfdf206fbfcfeff06',
+    'sunrise': 'cd67354b97:c3dbea9807c5dcea850dc6deea8e07cbe0ec8a07cadfec9021c8dfec9102cadfec9116cce0ec9509cae1ea9018cae1ec900fcfe1eda002cde2ed8f12d0e4ee9c09d1e4efa506d1e3ee8b02d0e4ef8e18d4e6f0c409dceaf2cd0deaf3f8f907e5f0f6e812ecf4f9d006',
+    'thermometer-colder': '722283ff0d:b3d2e29209c8dfec870dcfe3ed9b11cde0ecab09d6e5f0aa07d5e5f0c802d7e7f1ba14d7e8f1c80fd8e8f1c307dae9f2ca0dd9e8f1d707dbe9f2d914dbe9f2df04dbe9f2dd0fe3eef5c802ddebf3e30ddeebf3d211deecf4db0be3eef4ff09e4eff6e70be5eff5dd04e0ecf4f20bedf4f9f60dfeffffff07',
+    'thermometer-warmer': 'd826bab594:d5e6f18d03d5e7ee8b1ed8e8f1910ad8e7f1a00adae7f2ab03d9e8f1a807d9e8f1a72ed7e8f08a07dbe9f2990dddebf3cb0adcebf1a407e3eef4da14e0ebf3fa0de0ebf39007dfecf3ae07e0edf49d0adfeef48903e2eef4c611e1eef4b914e7f0f59e03e9f1f9c60a',
+    'thunderstorms-day-rain': '174c5808d1:c9e0ec8a08cee1ed920ed2e3ef9b11d3e5efab08d4e5eeb306d3e5efa108d8e8f1b80ed9e9f0af03d8e7f1c50bdae9f1c711dfecf3ed08deecf3ce0edeebf3bf0bdfecf4db0ee1edf4e40be3eef5d408e5eff5f508e6f0f6e90bebf3f8eb06ffffff9b11ffffffc00effffffc808ffffffde08ffffffff0b',
+    'thunderstorms-night-rain': 'ca7cb37c55:c9e0ec8a08cee1ed920ed2e3ef9b11d3e5efab08d4e5eeb306d3e5efa108d8e8f1b80ed9e9f0af03d8e7f1c50bdae9f1c711dfecf3ed08deecf3ce0edeebf3bf0bdfecf4db0ee1edf4e40be3eef5d408e5eff5f508e6f0f6e90bebf3f8eb06ffffff9b11ffffffc00effffffc808ffffffde08ffffffff0b',
+    'thunderstorms-rain': '766dec35ae:c9e0ec8a08cee1ed920ed2e3ef9b11d3e5efab08d4e5eeb306d3e5efa108d8e8f1b80ed9e9f0af03d8e7f1c50bdae9f1c711dfecf3ed08deecf3ce0edeebf3bf0bdfecf4db0ee1edf4e40be3eef5d408e5eff5f508e6f0f6e90bebf3f8eb06ffffff9b11ffffffc00effffffc808ffffffde08ffffffff0b',
+    'thunderstorms': 'ebf25fbe63:c8deea850ccadfec920ccbe0ec8d07d0e2ef9c05cee2ed9013d4e5f09e0fd3e4f09702d4e4efa90ad7e8f1b00cdae9f2c61be0ecf4c007dceaf2b707d6e7f0bc0cdceaf1ce0adceaf2e107e1edf4d90ae0ecf3ee0ae1edf4ec07e1edf5e60ae6f0f6e00ae4eff5cd0fe8f1f7f40fe9f2f7ea0af4f8fbf905',
+    'tornado': '416d6a372a:b2d1e39f0ab2d1e29008b8d4e4ae05bed7e8c90ac0d8e7a103c2dbe8931ec5dde99b08bed8e6860ac7deea910fcce1ec8e0ccadfec9e08cce1edac08cde1edbc07cbe1ec8405d2e4efb70dd3e4edc908d3e4efca17d5e6f0d90dd2e4efc508d5e6f0c90fe2edf4ca03d1e3efe40cdbe9f3f10de8f0f5fe08',
+    'umbrella': '21ba35e3fe:b6d2e49e0fc0d9e88205c5dde99007c7deeb860cc8deeb9c0acbe1ed910acfe2ed9a0ccce0ecaa14d4e5f0af0fd4e5eebf05d4e5f0ba0cd9e9f2b602d4e5f0ca0adbe9f2ce0cd7e7f1c40ad9e8f1c80cdae7f2c107d9e8f0dc11deebf3d60fe3eef5d102e1edf4c50ae2edf5dd11e9f2f8eb05ebf3f8fa0c',
+    'wind-cloud': '3a5b8a0937:c4dbe98104cadeeb8c04cae1ec9034cce1ec9104cce1ec9034cfe2ec9404cfe4efb507d5e6f0b40bd5e5f0a507e1edf4ea0be2edf3ff1ee1edf4ff04e3eff4fc04e2edf4ff25e5eff7f707e4eff5dd12',
+    'wind': '3a5b8a0937:c4dbe98104cadeeb8c04cae1ec9034cce1ec9104cce1ec9034cfe2ec9404cfe4efb507d5e6f0b40bd5e5f0a507e1edf4ea0be2edf3ff1ee1edf4ff04e3eff4fc04e2edf4ff25e5eff7f707e4eff5dd12'
+  },
+  // the colour set (rows-line-color/)
+  c: {
+    'clear-day': 'fabc674ba0:ffad2c8a08ffac2c8008ffad2d9b0fffae2cee17ffad2e8004ffb22ac60cffbb24df0cffb329b60cffc0238508ffca1eb517ffc71e800cffc71e8904ffcc1c8104ffcd1c8904ffd119e808ffd717e508ffd715ef08ffd715c513ffe011f308ffde12950fffdf11d90cffe30f8a0fffe60def08fff3068008',
+    'clear-night': 'caf61d37f1:f4b53fb207f5b43ff807f4b540c10ef4b8428707f3b540ed12f4b6428f04f3b9459a0bf4b742e70bf3b943ab19f2bc47860bf3bc47f607f3bb46e60bf3bd48ee0ef3bd48b80ef2bf49e307f3bc46fe0ef3bd47d315f2c650c904f2c44efd0bf2c24daa0ef2c54f9f04f2c54f8504f2c651f40ef2c852e304',
+    'cloudy': 'daae049733:0d83adbb081589b1e1081387b1940c2c92b9960f2290b6e30f3096bbda043798bfeb044ba3c3d70c3c9cbfb80f59a9c8c00f5aa9c9960868b1cec80c76b9d1c70483bed5ca0c7dbbd4ec0c9dcadebf17a5d0dfea04afd4e4e208acd4e3ec04b2d6e5cd0cd1e6eff10cd1e4eebd0fbedae89813d6e9efcf04',
+    'drizzle': '4221995672:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
+    'extreme-rain': '935257e524:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
+    'extreme-snow': 'caff683253:0f80c3ad0b1182c38f091784c480062f8fc99c0b1385c8e50b2991cdf8063093cdca17449acf8a0653a1d3940952a5d5b70952a4d5dc0965afdced116fb1d98c0e6fb3def40b74b7e0ff097db9e0c51188bfe1a30995c7e7f31192c5e5a60ea3cdeacd0398c7e6c409a3cbe78906b1d3ecc90bb0d4ecb70b',
+    'fog': '4b70565281:1f89c7c8081f89c79f0f3996cecb0c3b97cd94062b90cdf6084fa3d5c90f67aed9910865add9c70f8fc3e5d21185bde3eb06a8d0eded069ac7e58a04a7c5d89102acc8d89025aecdd69d02aecada9019b2cbda8f0c99c8e6a70cbad0ddc821add1ecbc0a',
+    'hail': '1930d37845:0f80c3ad0b1182c38f091784c480062f8fc99c0b1385c8e50b2991cdf8063093cdca17449acf8a0653a1d3940952a5d5b70952a4d5dc0965afdced116fb1d98c0e6fb3def40b74b7e0ff097db9e0c51188bfe1a30995c7e7f31192c5e5a60ea3cdeacd0398c7e6c409a3cbe78906b1d3ecc90bb0d4ecb70b',
+    'lightning-bolt': 'b4463bd032:f7d0009904f7d202a013f7d302fd0ff6d2029204f7d202e108f8d201ce04f7d3028208f7d202ec0ff6d302b313f6d4048e04f8d202f508f6d504cd04f4d9059f17f6d905fd08f5da05f608f6d604c117f6d704a808f3dd07af0bf4d905ea13f4da05d70ff3dd07df08f2e009f008f2e009ca0bf2df078208',
+    'mist': '4aa303bd0f:1f89c7c8081f89c79f0f3996cecb0c3b97cd94062b90cdf6084fa3d5c90f67aed9910865add9c70f8fc3e5d21185bde3eb06a8d0eded069ac7e58a04a7c5d89102acc8d89025aecdd69d02aecada9019b2cbda8f0c99c8e6a70cbad0ddc821add1ecbc0a',
+    'overcast-day': '4988cbfe05:097dab83050c80af84090b80ae8e090a80ad9f111086b0c1110d83aeae0c0a84aee1180c84b0f0091786b285023399bde605288fb8960c3695bb91093f9bbe900551a3c4921573b4cf92134fa5c5cf0c60accae80595c4da921373b9d2fc0597c9ddf405aad1e3cc0ccae0ec9e09d0e5eee909d8e9f1d305',
+    'overcast-night': '0be6126bee:097dab83050c80af84090b80ae8e090a80ad9f111086b0c1110d83aeae0c0a84aee1180c84b0f0091786b285023399bde605288fb8960c3695bb91093f9bbe900551a3c4921573b4cf92134fa5c5cf0c60accae80595c4da921373b9d2fc0597c9ddf405aad1e3cc0ccae0ec9e09d0e5eee909d8e9f1d305',
+    'overcast': '9f6de83272:097dab83050c80af84090b80ae8e090a80ad9f111086b0c1110d83aeae0c0a84aee1180c84b0f0091786b285023399bde605288fb8960c3695bb91093f9bbe900551a3c4921573b4cf92134fa5c5cf0c60accae80595c4da921373b9d2fc0597c9ddf405aad1e3cc0ccae0ec9e09d0e5eee909d8e9f1d305',
+    'partly-cloudy-day-snow': '88cde0a143:3a89b7f2063c89b6940f3988b5bf0b3d8ab7da0b4991bac50b5295bcc80f5094b9e30b5b9abec7095797bcaa0d5596bef40b649ec09213629dbfd6066ea4c3ec0670a5c3c51176a8c5f10fadc6c8b802a6b77feb02f7d63ab30ff8d31d9c09f7d849e40bf7db58b709f7de748b0df6e39aa20bf6e8bcc30b',
+    'partly-cloudy-day': '992a37eaf2:0b80ae8d130b82aea9070d85b0ef0c0a83aecb050982aed6110a82aebc07258db5900c3995a8d307699b81da05449cc18f0c61accb980c5baac9f6077ebad39c0e8dc2d78e0cffb02bc90e9acaddd30ceebf29b407ffd01ae90cffb22b9105ffe111b00affdc13cf0cffd8159011cde4eef00ed8e8f1d505',
+    'partly-cloudy-night': '4d9cd30b37:09648bd30f0b658cf10f08648e93090b668f88090e668db90f0d668e9e041b6c92940b2671949104307695900b387894aa07407c98900b50839b930b5e889d8d0d5c8797e40b688d9eb3098197a1ab0f87999ae80decb648da0df3b9459907f3b843a904f4ba46ca0ff3c34eb511f4be498807f3c753e109',
+    'rain': 'd382da3423:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
+    'sleet': '9d0d5a7431:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
+    'snow': '2690fb0514:0f80c3ad0b1182c38f091784c480062f8fc99c0b1385c8e50b2991cdf8063093cdca17449acf8a0653a1d3940952a5d5b70952a4d5dc0965afdced116fb1d98c0e6fb3def40b74b7e0ff097db9e0c51188bfe1a30995c7e7f31192c5e5a60ea3cdeacd0398c7e6c409a3cbe78906b1d3ecc90bb0d4ecb70b',
+    'snowflake': '5bf1fe970f:1f8ab49f041e8bb58303208db78f0b1e8cb6901b208cb6b60b1f8cb6a6041f8db7a306208db697151e8eb69711218fb6c70e208eb7af09218fb7b409218fb8c90e2290b7bf042090b8ee04218fb8cf0d2191b8e80a218fb7f10a2190b9ef032291b8e5062290b8d90d2291b9f2112291b8e0142393baff06',
+    'sunrise': '81b27fbcf6:ffaf2be50cffad2c8e08ffad2c8117ffaf2cc008ffc71ec106ffb428800fffb7288006ffbb258311ffc3208006ffbf22800cffcd1bea08ffc5208006ffc71e800fffcd1c800cffd1198311ffe110f308ffdf11cb0fffd518800cffde128108ffd915800affdc149f08ffe50d8a06ffe20f810affeb0b8004',
+    'thermometer-colder': 'f59fb00967:1d87b68404218db783071e8bb6910b208db69e14228fb7d904208eb8d90b218eb7ba162190b8d40d228fb9e20d208fb7dd14228fb7f902208eb7ac0d218fb8ff07228fb8ca092290b8cf0b2190b8ee072190b8c71a2191b9f8072090b9ff02228fb9da0f2391b8df072191b8e80b2190b8f4092495bbff07',
+    'thermometer-warmer': '5a65dd6658:d78d22b307c293448b0ed69739c407e29425e30cd6993cae0cd4a049a102e29c34c102d79f44c107d9a044cf1adea347c907d6a655be1ad4a95caa0aceab669005e0a447e10ae0a64af80ed8ae60ce18e0b262da05deb86dc807e2b05be70cceb675a207d4b36db50ac8b77d8807e3bc71e00ae3c27bd50a',
+    'thunderstorms-day-rain': '898a2867d0:041118ee06051a25a00b08202aea11051721c91109243197080a2835cc0e113746ec0b0b2836ae080e3748a006113a4bcb08113f53910816495eb40e184f64e90b164c60c8111a556cda0e1b5972bd0b19556e8e061b5c768d031a5a739a08f7d847e60bf7da54bf13f6df74950bf6e082ff08f6e18ab908',
+    'thunderstorms-night-rain': '91130a688d:041118ee06051a25a00b08202aea11051721c91109243197080a2835cc0e113746ec0b0b2836ae080e3748a006113a4bcb08113f53910816495eb40e184f64e90b164c60c8111a556cda0e1b5972bd0b19556e8e061b5c768d031a5a739a08f7d847e60bf7da54bf13f6df74950bf6e082ff08f6e18ab908',
+    'thunderstorms-rain': '38dc3ef4cf:041118ee06051a25a00b08202aea11051721c91109243197080a2835cc0e113746ec0b0b2836ae080e3748a006113a4bcb08113f53910816495eb40e184f64e90b164c60c8111a556cda0e1b5972bd0b19556e8e061b5c768d031a5a739a08f7d847e60bf7da54bf13f6df74950bf6e082ff08f6e18ab908',
+    'thunderstorms': 'e534aa0b18:04243ae71105243bcb0506283fd705072b449b0a09304a8e0a062c45c80c072b43b70f08324cec0c093956ef0a073955c81b073855db05093d5aad070b41609e050b41619407c6c146990cd4c427b305d1c647bc0cc8cc7e8c0cddcc3ce411c9d19c8c07d5d17ab30acdd9bf920ce0e7d2d70ae7e2a2ee0a',
+    'tornado': '98b967a01d:26323abe0c213036930736434cf705263037e10c2d3d49990a32434d8e0c334853a30335444dca15384c58940d405460c9153d505c900a405662940d3f57638605465e6cae08465b6a960d4a65728e05516976cc1a54707e8b075872819d03597685b5085f7988ee0a6382929b086c8a9bf60a6e8d9fc10d',
+    'umbrella': '52c0ea4203:6481cf870a6982cea90f7382bc90057d83b0ae077784c5df0f878396a40a8284b1d1119b857387078b859fcc0aa786629c11aa8767b10a97868dc20aa48779bc059f867cc7079486a6fc0ab085489214ab8770d50ab38658b605bd884ed20cbd8954e10ac0873fb60ccf8722ab05cc8933cc14d98a20dd07',
+    'wind-cloud': '72445765c3:1182c28f0b1a87c6910f1686c9e007218ac8ad0f208bcaed042e90c98d122c91cde50b439bd097123897d0fb0f3998d3da04449dd3d80450a2d5fe075da9d690165ca9d8ff0767aed9ff0467afdbff0479b8deff0f79b6dd900f88bde090078bc1e3ff0797c6e3900fabcfebb5079cc9e8ff0faed2ecff07',
+    'wind': '3045cd2e78:1182c28f0b1a87c6910f1686c9e007218ac8ad0f208bcaed042e90c98d122c91cde50b439bd097123897d0fb0f3998d3da04449dd3d80450a2d5fe075da9d690165ca9d8ff0767aed9ff0467afdbff0479b8deff0f79b6dd900f88bde090078bc1e3ff0797c6e3900fabcfebb5079cc9e8ff0faed2ecff07'
+  }
+};
+var _wxRowPxCache = {};
+function _wxRowPx(set, name) {
+  var k = set + '/' + name;
+  if (Object.prototype.hasOwnProperty.call(_wxRowPxCache, k)) return _wxRowPxCache[k];
+  var t = _WX_ROW_PX[set === 'colour' ? 'c' : 'w'], s = t && Object.prototype.hasOwnProperty.call(t, name) ? t[name] : '', out = null;
+  if (s) {
+    var d = s.slice(s.indexOf(':') + 1);
+    out = [];
+    for (var i = 0; i + 10 <= d.length; i += 10) {
+      out.push([0, 2, 4, 6, 8].map(function (j) { return parseInt(d.substr(i + j, 2), 16); }));
+    }
+  }
+  return (_wxRowPxCache[k] = out);
+}
+function _wxRowWhiteVanishes(ground) {
+  return _ocCr(_WX_ROW_WHITE, ground) < _WX_ROW_WHITE_MIN;
+}
+function _wxRowSetFor(ground, ink) {
+  if (!ground) return 'white';
+  if (_wxRowWhiteVanishes(ground)) return 'colour';
+  if (ink) return _ocLum(ink) < _ocLum(ground) ? 'colour' : 'white';
+  return 'white';
+}
+function _wxRowRgba(str) {
+  var n = String(str || '').match(/[\d.]+/g);
+  if (!n || n.length < 3) return null;
+  if (/^color\(\s*srgb/i.test(String(str).trim())) {
+    return [n[0] * 255, n[1] * 255, n[2] * 255, n.length > 3 ? +n[3] : 1];
+  }
+  return [+n[0], +n[1], +n[2], (/^rgba/i.test(String(str).trim()) && n.length > 3) ? +n[3] : 1];
+}
+function _wxRowMix(a, b, t) { return [a[0] * t + b[0] * (1 - t), a[1] * t + b[1] * (1 - t), a[2] * t + b[2] * (1 - t)]; }
+// how the page paints at an element: `raw`, the colour of every background
+// down to it (the canvas under a page that paints nothing is white), and the
+// opacities on the way, each with what shows through it
+function _wxRowLayers(el) {
+  var chain = [];
+  for (var n = el; n && n.nodeType === 1; n = n.parentElement) chain.push(n);
+  var acc = [255, 255, 255], groups = [];
+  for (var i = chain.length - 1; i >= 0; i--) {
+    var cs = getComputedStyle(chain[i]);
+    var op = parseFloat(cs.opacity);
+    if (op >= 0 && op < 1) groups.push([acc, op]);
+    var c = _wxRowRgba(cs.backgroundColor);
+    if (c && c[3] > 0) acc = _wxRowMix(c, acc, Math.min(1, c[3]));
+  }
+  return { raw: acc, groups: groups };
+}
+// a colour painted at that element (over `raw`), as the eye gets it
+function _wxRowSee(L, x) {
+  var acc = x;
+  for (var k = L.groups.length - 1; k >= 0; k--) acc = _wxRowMix(acc, L.groups[k][0], L.groups[k][1]);
+  return acc;
+}
+// the colour painted at an element: its ground, or with `top` (a text
+// colour, rgba) that colour laid over its ground
+function _wxRowGround(el, top) {
+  var L = _wxRowLayers(el), acc = L.raw;
+  if (top && top[3] > 0) acc = _wxRowMix(top, acc, Math.min(1, top[3]));
+  return _wxRowSee(L, acc).map(Math.round);
+}
+// the text beside the icon (the temperature): the first element in its cell
+// that paints text of its own, the element _fidsRowInk would ink
+function _wxRowText(ic) {
+  var cell = ic.parentElement;
+  if (!cell) return null;
+  var all = cell.querySelectorAll('*');
+  for (var i = 0; i < all.length; i++) {
+    var e = all[i];
+    if (e === ic || e.querySelector('*') || !String(e.textContent || '').trim()) continue;
+    return e;
+  }
+  return null;
+}
+// its ink as set (rgba): -webkit-text-fill-color is what is drawn (it
+// follows color unless a rule sets it)
+function _wxRowInkRaw(t) {
+  if (!t) return null;
+  var cs = getComputedStyle(t);
+  var c = _wxRowRgba(cs.webkitTextFillColor);
+  if (!c || !(c[3] > 0)) c = _wxRowRgba(cs.color);
+  return (c && c[3] > 0) ? c : null;
+}
+// and as painted
+function _wxRowInk(t) {
+  var c = _wxRowInkRaw(t);
+  return c ? _wxRowGround(t, c) : null;
+}
+// the share of a drawing's pixels (_wxRowPx) that stands at 3:1 against the
+// ground, each group painted over the ground at its own coverage, in its own
+// colour or, for the ink copy, in `ink` (rgba)
+function _wxRowShare(px, L, ink) {
+  if (!px || !px.length) return 0;
+  var g = _wxRowSee(L, L.raw), on = 0, all = 0;
+  for (var i = 0; i < px.length; i++) {
+    var p = px[i], c = ink || p, a = (p[3] / 255) * (ink ? (ink[3] == null ? 1 : ink[3]) : 1);
+    var x = [c[0] * a + L.raw[0] * (1 - a), c[1] * a + L.raw[1] * (1 - a), c[2] * a + L.raw[2] * (1 - a)];
+    all += p[4];
+    if (_ocCr(_wxRowSee(L, x), g) >= 3) on += p[4];
+  }
+  return all ? on / all : 0;
+}
+// what one icon wears on its row: { set: 'white' | 'colour' | 'ink', ink }
+function _wxRowWear(name, L, prefer, ink) {
+  var order = prefer === 'colour' ? ['colour', 'white'] : ['white', 'colour'];
+  var shape = _wxRowPx('white', name);
+  if (!shape || !_wxRowPx('colour', name)) return { set: order[0] };   // a file the table does not know
+  var tried = [];
+  for (var i = 0; i < order.length; i++) {
+    var s = _wxRowShare(_wxRowPx(order[i], name), L);
+    if (s >= _WX_ROW_SEEN) return { set: order[i] };
+    tried.push({ set: order[i], s: s });
+  }
+  var drawn = Math.max(tried[0].s, tried[1].s);
+  if (ink) {
+    var own = _wxRowShare(shape, L, ink);
+    if (own >= _WX_ROW_COPY && own >= drawn) return { set: 'ink', ink: ink };
+    tried.push({ set: 'ink', ink: ink, s: own });
+  }
+  for (var j = 0; j < _WX_ROW_INKS.length; j++) tried.push({ set: 'ink', ink: _WX_ROW_INKS[j], s: _wxRowShare(shape, L, _WX_ROW_INKS[j]) });
+  var best = tried[0];
+  for (var k = 1; k < tried.length; k++) if (tried[k].s > best.s) best = tried[k];
+  return best.ink ? { set: 'ink', ink: best.ink } : { set: best.set };
+}
+function _wxRowCss(c) {
+  return 'rgba(' + [0, 1, 2].map(function (i) { return Math.round(c[i]); }).join(', ') + ', ' + (c[3] == null ? 1 : +(+c[3]).toFixed(3)) + ')';
+}
+function _fidsRowWxSet(root) {
+  try {
+    var icons = (root || document).querySelectorAll('#fidsTable .fids-wx-row');
+    for (var i = 0; i < icons.length; i++) {
+      var ic = icons[i];
+      var L = _wxRowLayers(ic.parentElement || ic);
+      var g = _wxRowSee(L, L.raw).map(Math.round);
+      var t = _wxRowText(ic), raw = _wxRowInkRaw(t);
+      var ink = raw ? _wxRowGround(t, raw) : null;
+      var key = g.join(','), inkKey = ink ? ink.join(',') : '';
+      if (ic.getAttribute('data-wx-ground') === key && ic.getAttribute('data-wx-ink') === inkKey) continue;
+      ic.setAttribute('data-wx-ground', key);
+      ic.setAttribute('data-wx-ink', inkKey);
+      var w = _wxRowWear(ic.getAttribute('data-wxg') || '', L, _wxRowSetFor(g, ink), raw);
+      if (w.ink) ic.style.setProperty('--wxr-k', _wxRowCss(w.ink));
+      else ic.style.removeProperty('--wxr-k');
+      ic.setAttribute('data-wx-set', w.set);
+    }
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window._fidsRowWxSet = _fidsRowWxSet;
+
 // v23967 — EVERY INK THE BOARD'S ROWS WEAR, SET IN ONE PLACE AND ONE ORDER.
 // Called by render() in the same task as `tbody.innerHTML`, so a rebuilt row
 // is never painted without its inks (it used to show the stylesheet's colours
@@ -23482,6 +23774,8 @@ function _fidsBoardInk() {
   if (!table) return;
   try { applyCodeAccents(table); } catch (e) {}
   try { _fidsRowInk(table); } catch (e) {}
+  // v24054 — and each row's weather icon set, on the side its ink took
+  try { _fidsRowWxSet(table); } catch (e) {}
 }
 if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;
 
@@ -23854,7 +24148,9 @@ function boardAutofit(full) {
 // before the board is laid out or its fonts have arrived; a board whose rows
 // do not change was then never measured again. It only ever shrinks a cell
 // that is cut, so on a board that fits it changes nothing.
-try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
+// v24054 — and the row weather icons' set (_fidsRowWxSet): a colour change
+// that did not rebuild the rows is picked up here; unchanged, it writes nothing.
+try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); _fidsRowWxSet(); }, 5000); } catch (e) {}
 // The logo's natural size is only known once it decodes, and the banner may
 // still be revealing — fit on load as well as on the heartbeat.
 try {
@@ -33477,7 +33773,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24052';
+var FIDS_BUILD_TAG = 'v24054';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -34524,6 +34820,9 @@ function render() {
     const wxHtml = (() => {
       if (!isDep) return '';
       let tw = TOMORROW_WX[f._locIata];
+      // v24054 — and where that weather is: the row's icon takes the night
+      // form while it is dark there (fids-v2.js wxRowName)
+      let _wxAt = f._locIata;
       // Multi-city rows: the primary code often has no weather (or the row's
       // dest is a via-stop). Fall back to the first through-flight leg that
       // DOES have weather so the column isn't a dead '—'
@@ -34532,13 +34831,13 @@ function render() {
         const _codes = _flightWxCodes(f);
         for (let _ci = 0; _ci < _codes.length; _ci++) {
           const _cw = TOMORROW_WX[_codes[_ci]];
-          if (_cw && _cw.current && _cw.current.temp !== undefined) { tw = _cw; break; }
+          if (_cw && _cw.current && _cw.current.temp !== undefined) { tw = _cw; _wxAt = _codes[_ci]; break; }
         }
       }
       if (!(tw && tw.current && tw.current.temp !== undefined)) return '<td class="td-wx">—</td>';
       const tempStr = displayTemp(Math.round(tw.current.temp));
       const iconHtml = (typeof window.fidsWxIcon === 'function')
-        ? window.fidsWxIcon(tw.current.code, 48, { row: true })
+        ? window.fidsWxIcon(tw.current.code, 48, { row: true, at: _wxAt })
         : tioIcon(tw.current.code, 48);
       return '<td class="td-wx"><div class="fids-cell-weather">' + iconHtml + '<span>' + tempStr + '</span></div></td>';
     })();
@@ -57371,6 +57670,9 @@ var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
 // over a night photograph whenever the board's own airport was in daylight.
 // Without a flag (the day forecasts, which are daytime forecasts with no
 // hour) the board's own day or night decides, as on the gate screen.
+// v24054 — at night the circle look draws the night icons drawn for Orion
+// Connected (_WX_NIGHT_DIR, below): a plate or an hour in darkness, or with
+// no flag the board's own night. A Solid chosen by day keeps its glyphs.
 function _wxCardIconDir(night) {
   var look = (typeof window.fidsWxLook === 'function') ? window.fidsWxLook() : '';
   if (look && typeof night === 'boolean'
@@ -57378,7 +57680,10 @@ function _wxCardIconDir(night) {
     look = night ? 'solid' : 'colour';
   }
   if (look === 'colour') return '/logos/weather/disc-day/';
-  if (look === 'solid') return '/logos/weather/disc-night/';
+  if (look === 'solid') {
+    var dark = (typeof night === 'boolean') ? night : document.documentElement.classList.contains('fids-night');
+    return dark ? _WX_NIGHT_DIR : '/logos/weather/disc-night/';
+  }
   return _WX_ICON_DIR;
 }
 // v23933 — the icon URLs carry the build tag. The thunderstorm icons were
@@ -57468,6 +57773,76 @@ function _wxDiscTint(f, dh) {
   }
   return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
 }
+// ══ v24054 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
+// At night, wherever the look draws its weather icons in a circle (Day &
+// night after dark, and Solid at night), the icons are the set drawn for
+// Orion Connected, one file per condition in logos/weather/night-line/
+// (scripts/wx-icons/night-line.py). The weather card draws them; the gate's
+// circle look (fids-v2.js wxIconHtml) is wired the same way, though no
+// element of today's gate layout shows it (its header #hdrTemp is hidden).
+// The files carry no circle: the boards draw it (_wxNightLineDisc on the
+// card, .fids-wx-line on the gate). Each file's frame IS the circle the icon
+// was drawn on, so the board's circle, drawn on that frame, puts every icon
+// exactly as large and exactly where it was drawn: nothing re-centred,
+// nothing scaled (_WX_NIGHT_ICON = 100). As drawn, the farthest point of any
+// icon (the moon's tip in partly cloudy night) is at 92.06 % of the radius:
+// the boards' 92 % rule to 0.06 % (tests/weather-night-line.test.js). The
+// circle's colour is ONE choice, _WX_NIGHT_DISC:
+//   'airline'  (B, the default) the card's own ground under the circle, a
+//              step lighter, toward a light tint of the airline
+//              (_wxNightDiscTint): the hue the card tints its ground with, at
+//              no more colour than that tint has nor than _WX_NIGHT_C, laid
+//              over whatever is painted there at _WX_NIGHT_LIFT. What is
+//              painted there is the airline's near-black over the weather
+//              footage at 30 %, so it changes with the footage (Air Canada's
+//              measured about #2D2F31 in a rain take, where its tile alone is
+//              #130F12): a circle of one fixed colour sat at 1.01 to 1.06:1
+//              on it for Air Canada and read as no circle at all. Lifting
+//              what is there keeps it one step lighter on any take (about
+//              1.3:1; measured on the card at 1920: Air Canada 1.25 to 1.29,
+//              Porter 1.28 to 1.34, WestJet 1.30 to 1.34), so it always reads as a circle and always
+//              blends; the icons' gold, blue and white keep 3:1 or more on
+//              it. Air Canada's lifts toward a faint wine, WestJet's a faint
+//              teal, Porter's a faint navy;
+//   'charcoal' (A) the charcoal circle the icons were drawn on, as drawn.
+var _WX_NIGHT_DISC = 'airline';
+var _WX_NIGHT_DIR = '/logos/weather/night-line/';
+var _WX_NIGHT_CHARCOAL = '#2B2B2A';   // the circle on the sheet the icons were drawn on
+var _WX_NIGHT_ICON = 100;             // the file's frame, as a share of the circle's diameter: the frame is the circle
+var _WX_NIGHT_C = 0.035;              // at most this much colour in the airline's tint
+var _WX_NIGHT_LIFT = 0.10;            // the circle: what is painted under it, this much toward the tint
+// the colours the icons are drawn in: both ends of the gold gradient, the
+// blue, the white, the grey
+var _WX_NIGHT_INKS = ['#FFF406', '#FFAC2D', '#25B4E4', '#FEFEFE', '#D5D5D5'];
+// f: the colour the card tints its ground with. The day circle's warm hue
+// for Air Canada (dh) is the daylight footage under its ground; at night its
+// ground reads as its own wine, so the night circle takes f's hue for every
+// airline. The tint is as light as the day circle (_WX_DISC_L).
+function _wxNightDiscTint(f) {
+  var o = _wxOklab(f), h = Math.atan2(o[2], o[1]);
+  var c = Math.min(Math.sqrt(o[1] * o[1] + o[2] * o[2]), _WX_NIGHT_C);
+  var t = _wxFromOklab([_WX_DISC_L, c * Math.cos(h), c * Math.sin(h)]);
+  return 'rgba(' + t.join(', ') + ', ' + _WX_NIGHT_LIFT + ')';
+}
+// the night circle's colour for an airline (the gate screens ask through
+// fids-v2.js wxGateNightDisc; the card wears it as --wxn-disc)
+function _wxNightDisc(code) {
+  if (_WX_NIGHT_DISC !== 'airline') return _WX_NIGHT_CHARCOAL;
+  return _wxAirlineLook(code).nk;
+}
+// a night-line file, inlined on the card, inside its circle: the file's own
+// frame placed at _WX_NIGHT_ICON % of a 100-unit circle, centred (at 100 the
+// frame is the circle, as on the sheet)
+function _wxNightLineDisc(txt) {
+  var s = String(txt || '');
+  var m = /^\s*<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="([^"]+)">/.exec(s);
+  if (!m) return s;
+  var at = (100 - _WX_NIGHT_ICON) / 2;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+    + '<circle cx="50" cy="50" r="50" style="fill:var(--wxn-disc, ' + _WX_NIGHT_CHARCOAL + ')"/>'
+    + '<svg x="' + at + '" y="' + at + '" width="' + _WX_NIGHT_ICON + '" height="' + _WX_NIGHT_ICON + '" viewBox="' + m[1] + '">'
+    + s.slice(m[0].length).replace(/\s+$/, '') + '</svg>';
+}
 function _wxAirlineLook(code) {
   var c = String(code || '').trim().toUpperCase();
   var p = _rc2Pair(c);
@@ -57496,7 +57871,9 @@ function _wxAirlineLook(code) {
   }
   var tile = _wxMix(g, f, _WX_TINT);
   return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile),
-           dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined) };
+           dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined),
+           // v24054 — the night circle (_WX_NIGHT_DISC): the ground under it lifted toward the airline's tint, or the charcoal
+           nk: _WX_NIGHT_DISC === 'airline' ? _wxNightDiscTint(f) : _WX_NIGHT_CHARCOAL };
 }
 // v24035 — THE SOLID LOOK'S TWO COLOURS: the circle is the airline's deep
 // colour and the glyph its brand colour (WestJet navy behind its teal, Air
@@ -57743,7 +58120,10 @@ function _wxHydrateSvgs(root) {
           if (!img.parentNode) return;
           // v24014 — on the weather card the icons are white and still
           // (v24035: not the Colour / Solid circles, which keep their own colours)
-          if (img.closest && img.closest('.wxcard-wrap') && !/\/disc-(day|night)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
+          if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-line)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
+          // v24054 — the night icons drawn for Orion Connected come without a
+          // circle: they are set in the night circle here (--wxn-disc)
+          if (/\/night-line\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightLineDisc(rawTxt);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
           // carry <defs> gradients / clipPaths / <animate> targets referenced
           // by url(#id) and href="#id". Inlining the SAME icon more than once
@@ -58339,7 +58719,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24052" src="/textures/gate-sky-shelf.mp4?v=24052"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24054" src="/textures/gate-sky-shelf.mp4?v=24054"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -59944,7 +60324,7 @@ function _renderWxCard(el) {
     var _wxLk = _wxAirlineLook(_wxAl);
     var _wxPaint = function (wrap) {
       if (!wrap || !wrap.style) return;
-      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p, _wxLk.dk].join('|');
+      var key = [_wxLk.code, _wxLk.a, _wxLk.ink, _wxLk.g, _wxLk.p, _wxLk.dk, _wxLk.nk].join('|');
       if (wrap._wxLookKey === key) return;
       wrap._wxLookKey = key;
       wrap.style.setProperty('--wxc-a', _wxLk.a);
@@ -59954,6 +60334,8 @@ function _renderWxCard(el) {
       wrap.style.setProperty('--wxc-ko', _wxLk.ko);
       // v24044 — the day circle: a light tint of this ground (_wxDiscTint)
       wrap.style.setProperty('--wxc-disc', _wxLk.dk);
+      // v24054 — the night circle: the ground under it lifted toward the airline's tint, or the charcoal (_WX_NIGHT_DISC)
+      wrap.style.setProperty('--wxn-disc', _wxLk.nk);
       var _wxDp = _wxDiscPair(_wxLk.code);
       wrap.style.setProperty('--wx-disc', _wxDp.disc);
       wrap.style.setProperty('--wx-ink', _wxDp.ink);
