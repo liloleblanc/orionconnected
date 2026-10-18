@@ -1,7 +1,8 @@
-// Where the two row sets cross on a ground's luminance alone
-// (fids-core.js _WX_ROW_SPLIT, v24046). The board picks a row's set from the
-// row's own text ink (dark text: the colour set); this split is used only
-// where a cell has no text to read.
+// How the two row sets read across ground luminance (fids-core.js
+// _wxRowSetFor, v24052). The board does not split on this: it gives the
+// colour set wherever white holds less than 3:1 on the row's ground (above a
+// relative luminance of 0.30) and otherwise follows the row's own text ink.
+// This measures what that choice costs and gains, icon by icon.
 //
 // Run in headless Chrome on any page of a served fids-current (live-shot
 // style: evaluated with awaitPromise). Draws the 20 drawings of both row sets
@@ -15,8 +16,8 @@
 // Returns { split, table }: split is the ground luminance at which the colour
 // set's median first reaches the white set's (interpolated between steps);
 // table lists each step: [luminance, white median, colour median, icons the
-// white set draws better]. Measured 2026-10-12: split 0.563 (the board uses
-// 0.56). Between about 0.30 and 0.60 neither set reaches 3:1 on most icons.
+// white set draws better]. Measured 2026-10-12: split 0.563. Between about
+// 0.30 and 0.60 neither set reaches 3:1 on most icons.
 (async () => {
   const NAMES = ['clear-day', 'partly-cloudy-day', 'sunrise', 'cloudy', 'overcast', 'clear-night', 'partly-cloudy-night', 'rain',
     'lightning-bolt', 'thunderstorms', 'snowflake', 'snow', 'fog', 'wind', 'thunderstorms-rain', 'thermometer-colder',

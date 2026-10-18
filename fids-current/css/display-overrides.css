@@ -23018,7 +23018,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 /* ══ v24035 — THE WEATHER ICONS' LOOK (Customize → Weather icons) ══════════════
    fids-v2.js wxIconHtml. (The departures and arrivals rows wear the sets
-   drawn for Orion Connected since v24046: see that block.) On the gate
+   drawn for Orion Connected since v24052: see that block.) On the gate
    screens the icon's own round background is the circle: white with
    the colour icon baked in, or the airline's deep colour (--wx-disc) with
    the glyph as a mask painted in its brand colour (--wx-ink). */
@@ -23041,7 +23041,7 @@ img.fids-wx-disc {
   mask: var(--wx-glyph) center / contain no-repeat;
 }
 
-/* ══ v24045 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE ══════════
+/* ══ v24052 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE ══════════
    fids-v2.js wxIconHtml at night. The element's own round background is the
    night circle (--wxn-disc, fids-core.js _wxNightDisc: the airline's dark
    tint, or the charcoal the icons were drawn on) and the icon
@@ -25573,14 +25573,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 
-/* ══ v24046 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, BY THE ROW INK ═══
+/* ══ v24052 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, BY THE ROW'S GROUND ══
    fids-v2.js wxRowHtml: in every look but Classic the departures and arrivals
    rows draw one of two sets, no circle. The icon is the element's own
    background, its two files given on the element (--wxr-w, the white set
    for a dark ground; --wxr-c, the colour set for a light ground), and
    fids-core.js _fidsRowWxSet writes data-wx-set="colour" where the row is
-   light, as the board itself judged it: the temperature beside the icon
-   is inked dark. The box keeps its size whichever set it wears, so a
+   light: where white holds less than 3:1 on the colour the icon really
+   sits on, or else where the board inked the temperature beside it dark.
+   The box keeps its size whichever set it wears, so a
    swap never moves anything. Without a pick (before the first pass) it
    shows the white file, the set for the dark boards most airports run.
    No filter is ever laid on it: the drawings show as they were drawn. */

@@ -1,7 +1,7 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v24045 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED.
+// v24052 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED.
 //
 // At night, wherever the look draws its weather icons in a circle (Day &
 // night after dark and Solid at night), the icons are the set drawn for
@@ -478,7 +478,7 @@ test('the gate: at night the circle look draws the night icon on the night circl
 });
 
 test('the gate circle is the element\'s own round background, the icon its ::after on the whole circle', () => {
-  const at = CSS.indexOf('/* ══ v24045 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE');
+  const at = CSS.indexOf('/* ══ v24052 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE');
   assert.ok(at > 0);
   const block = CSS.slice(at, CSS.indexOf('/* ══', at + 10));
   assert.match(block, /\.fids-wx-line \{\s*position: relative;\s*border-radius: 50% !important;\s*background: var\(--wxn-disc, #2B2B2A\) !important;\s*\}/);

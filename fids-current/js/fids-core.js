@@ -23470,53 +23470,62 @@ function _fidsRowInk(root) {
   } catch (e) {}
 }
 
-// ══ v24046 — EACH ROW'S WEATHER ICON SET FOLLOWS THE ROW'S OWN INK ══════════
+// ══ v24052 — EACH ROW'S WEATHER ICON SET: THE WHITE SET NEVER WHERE IT VANISHES ══
 // The row icons drawn for Orion Connected come in two sets, one for a dark
 // ground and one for a light ground (fids-v2.js wxRowHtml): the white set
-// and the colour set. Which one a row wears is read from the page, not from
-// a list of themes, so it covers the airport's theme, Customize's custom row
-// colours, the alternate rows, a light board, and the status rows (yellow
-// Delayed, orange Final call, red Cancelled and Diverted, the faded
-// Departed / Arrived / Gate closed rows). Change an airport's colours and
-// the next render (applyAirportConfigToBoard forces one), or the 5 s
-// heartbeat, picks again.
+// (white shapes, a thin blue edge) and the colour set (gradients, dark navy
+// clouds and lines). Which one a row wears is read from the page, not from a
+// list of themes or carriers, so it covers the airport's theme, Customize's
+// custom row colours, the alternate rows, a light board, a board painted in
+// an airline's colours, and the status rows (yellow Delayed, orange Final
+// call, red Cancelled and Diverted, the faded Departed / Arrived / Gate
+// closed rows). Change an airport's colours and the next render
+// (applyAirportConfigToBoard forces one), or the 5 s heartbeat, picks again.
 //
-// THE BOARD HAS ALREADY DECIDED WHETHER A ROW IS LIGHT OR DARK: it inks the
-// text dark on a light ground and light on a dark one (the stylesheet's
-// status grammar on the status rows, the palette and _fidsRowInk on the
-// plain stripes). The icon takes the same side as that ink: the temperature
-// beside it is read as it is painted, and where it is darker than the
-// ground (dark text: a light ground) the row wears the colour set, where it
-// is lighter (light text: a dark ground) the white set. So the icon always
-// agrees with the digits beside it, and one status always wears one set:
-// both Delayed stripes (EDBB00 and F9D44C) ink navy and both take the colour
-// set. A split on the ground's luminance alone (0.56) disagreed with the
-// board between about 0.35 and 0.56, where yellow Delayed, orange Final
-// call, the faded history rows of a light board and mid-tone custom rows
-// all ink dark but were given the white set.
+// TWO TESTS, IN THIS ORDER, on the colour the icon really sits on:
+//  1. THE WHITE SET MUST BE ABLE TO BE SEEN. Its shapes are white, so where
+//     white holds less than 3:1 against the ground (_WX_ROW_WHITE_MIN, the
+//     WCAG 2.2 floor for a graphic that must be made out, SC 1.4.11) the
+//     white set would vanish and the row wears the colour set, whatever its
+//     text is inked. That is every ground lighter than a relative luminance
+//     of 0.30: both yellow Delayed stripes (EDBB00 1.8:1, F9D44C 1.4:1),
+//     orange Final call (F28C00 2.5:1), every light or mid-light Customize
+//     row, and an airline's yellow, orange, lime or teal used as a row (the
+//     board's own floor, _fidsInk, keeps white TEXT on a ground between 0.30
+//     and 0.45 luminance below 3:1; the icon does not follow it there).
+//  2. OTHERWISE THE ICON TAKES THE SIDE THE ROW'S INK TOOK. The temperature
+//     beside it is read as it is painted: where it is darker than the ground
+//     (dark text: the board judged the ground light) the colour set, where
+//     it is lighter (light text: a dark ground) the white set. So on the
+//     mid-tones where white still reads (a faded Gate closed row, 7D848B
+//     3.8:1; a mid-grey custom row, 7C8C9C 3.5:1, both inked dark) the icon
+//     agrees with its digits.
+// One status therefore always wears one set, and no list of colours or
+// carrier codes is kept anywhere.
 //
 // Painted colours (_wxRowGround): every background from the page down to
 // the element, each over the one beneath it by its alpha, then the text's
 // own colour for the ink, and every opacity on the way (the faded history
 // rows) mixed with what shows through it, so the ink and the ground are
 // compared as the eye gets them. Background images (the textures) are left
-// out; they are faint by design.
-//
-// Only where a cell has no text to read (no row draws one today) does the
-// ground decide alone, by _WX_ROW_SPLIT: 0.56 is where the two sets' median
-// contrast over their 20 icons crosses (0.563, measured in headless Chrome by
-// scripts/wx-icons/rows-owner-split.js).
+// out; they are faint by design. A cell with no text to read (no row draws
+// one today) is decided by test 1 alone.
 //
 // Cheap by construction: it runs after the row inks (_fidsBoardInk, in the
 // same task as the rows are rebuilt, so the first paint already wears the
 // right set) and on the 5 s heartbeat, writes only when a row's ground or
 // ink has changed, and swaps a background image inside a box of fixed size,
 // so nothing moves.
-var _WX_ROW_SPLIT = 0.56;
+var _WX_ROW_WHITE = [255, 255, 255];   // the white set's shapes (fill #ffffff in every file)
+var _WX_ROW_WHITE_MIN = 3;             // below this against the ground, the white set vanishes
+function _wxRowWhiteVanishes(ground) {
+  return _ocCr(_WX_ROW_WHITE, ground) < _WX_ROW_WHITE_MIN;
+}
 function _wxRowSetFor(ground, ink) {
   if (!ground) return 'white';
+  if (_wxRowWhiteVanishes(ground)) return 'colour';
   if (ink) return _ocLum(ink) < _ocLum(ground) ? 'colour' : 'white';
-  return _ocLum(ground) >= _WX_ROW_SPLIT ? 'colour' : 'white';
+  return 'white';
 }
 function _wxRowRgba(str) {
   var n = String(str || '').match(/[\d.]+/g);
@@ -23596,7 +23605,7 @@ function _fidsBoardInk() {
   if (!table) return;
   try { applyCodeAccents(table); } catch (e) {}
   try { _fidsRowInk(table); } catch (e) {}
-  // v24046 — and each row's weather icon set, on the side its ink took
+  // v24052 — and each row's weather icon set, on the side its ink took
   try { _fidsRowWxSet(table); } catch (e) {}
 }
 if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;
@@ -23970,7 +23979,7 @@ function boardAutofit(full) {
 // before the board is laid out or its fonts have arrived; a board whose rows
 // do not change was then never measured again. It only ever shrinks a cell
 // that is cut, so on a board that fits it changes nothing.
-// v24046 — and the row weather icons' set (_fidsRowWxSet): a colour change
+// v24052 — and the row weather icons' set (_fidsRowWxSet): a colour change
 // that did not rebuild the rows is picked up here; unchanged, it writes nothing.
 try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); _fidsRowWxSet(); }, 5000); } catch (e) {}
 // The logo's natural size is only known once it decodes, and the banner may
@@ -34642,7 +34651,7 @@ function render() {
     const wxHtml = (() => {
       if (!isDep) return '';
       let tw = TOMORROW_WX[f._locIata];
-      // v24046 — and where that weather is: the row's icon takes the night
+      // v24052 — and where that weather is: the row's icon takes the night
       // form while it is dark there (fids-v2.js wxRowName)
       let _wxAt = f._locIata;
       // Multi-city rows: the primary code often has no weather (or the row's
@@ -57492,7 +57501,7 @@ var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
 // over a night photograph whenever the board's own airport was in daylight.
 // Without a flag (the day forecasts, which are daytime forecasts with no
 // hour) the board's own day or night decides, as on the gate screen.
-// v24045 — at night the circle look draws the night icons drawn for Orion
+// v24052 — at night the circle look draws the night icons drawn for Orion
 // Connected (_WX_NIGHT_DIR, below): a plate or an hour in darkness, or with
 // no flag the board's own night. A Solid chosen by day keeps its glyphs.
 function _wxCardIconDir(night) {
@@ -57595,7 +57604,7 @@ function _wxDiscTint(f, dh) {
   }
   return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
 }
-// ══ v24045 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
+// ══ v24052 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
 // At night, wherever the look draws its weather icons in a circle (Day &
 // night after dark, and Solid at night), the icons are the set drawn for
 // Orion Connected, one file per condition in logos/weather/night-line/
@@ -57700,7 +57709,7 @@ function _wxAirlineLook(code) {
   var tile = _wxMix(g, f, _WX_TINT);
   return { code: c, a: p.a, ink: p.ink, g: g.join(','), p: 'rgba(' + f.join(',') + ',' + _WX_TINT + ')', ko: _wxHex(tile),
            dk: _wxDiscTint(f, base ? _WX_LOOK[base].dh : undefined),
-           // v24045 — the night circle (_WX_NIGHT_DISC): the airline's dark tint, or the charcoal
+           // v24052 — the night circle (_WX_NIGHT_DISC): the airline's dark tint, or the charcoal
            nk: _WX_NIGHT_DISC === 'airline' ? _wxNightDiscTint(f, tile) : _WX_NIGHT_CHARCOAL };
 }
 // v24035 — THE SOLID LOOK'S TWO COLOURS: the circle is the airline's deep
@@ -57949,7 +57958,7 @@ function _wxHydrateSvgs(root) {
           // v24014 — on the weather card the icons are white and still
           // (v24035: not the Colour / Solid circles, which keep their own colours)
           if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-line)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
-          // v24045 — the night icons drawn for Orion Connected come without a
+          // v24052 — the night icons drawn for Orion Connected come without a
           // circle: they are set in the night circle here (--wxn-disc)
           if (/\/night-line\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightLineDisc(rawTxt);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
@@ -60162,7 +60171,7 @@ function _renderWxCard(el) {
       wrap.style.setProperty('--wxc-ko', _wxLk.ko);
       // v24044 — the day circle: a light tint of this ground (_wxDiscTint)
       wrap.style.setProperty('--wxc-disc', _wxLk.dk);
-      // v24045 — the night circle: the airline's dark tint or the charcoal (_WX_NIGHT_DISC)
+      // v24052 — the night circle: the airline's dark tint or the charcoal (_WX_NIGHT_DISC)
       wrap.style.setProperty('--wxn-disc', _wxLk.nk);
       var _wxDp = _wxDiscPair(_wxLk.code);
       wrap.style.setProperty('--wx-disc', _wxDp.disc);

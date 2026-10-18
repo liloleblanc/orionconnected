@@ -7,12 +7,21 @@ three Vecteezy packs: solid black glyphs (87176261), flat colour icons
 | Look | Departures / arrivals rows | Gate screens and the weather card |
 |---|---|---|
 | Classic | the original icons | the original icons |
-| Solid | solid glyph, no circle | solid glyph on a circle in the airline's colour |
-| Colour | solid glyph, no circle | colour icon on a white circle |
-| Day & night (default) | solid glyph, no circle | Colour by day, Solid at night (the airport's own sunrise and sunset) |
+| Solid | the row sets drawn for Orion Connected, no circle | solid glyph on a circle in the airline's colour; at night the night icons drawn for Orion Connected |
+| Colour | the row sets drawn for Orion Connected, no circle | colour icon on a light tint of the card's ground, day and night |
+| Day & night (default) | the row sets drawn for Orion Connected, no circle | Colour by day, the night icons drawn for Orion Connected at night (the airport's own sunrise and sunset) |
 
-The rows never take a circle. The colour pack draws its clouds as a grey edge
-with white behind them as the body, so it needs its white circle.
+The rows never take a circle. They wear one of two sets drawn for Orion
+Connected (`rows-owner-white/`, `rows-owner-color/`, built by
+`rows-owner.py`): the white set on a dark row, the colour set on a light one.
+`fids-core.js` `_fidsRowWxSet` picks per row from the colour its icon really
+sits on: wherever white holds less than 3:1 there (WCAG 2.2 SC 1.4.11; any
+ground above a relative luminance of 0.30: yellow Delayed, orange Final call,
+light Customize rows, an airline's yellow, orange, lime or teal) the white set
+would vanish and the colour set is worn; otherwise the row follows its own
+text ink (dark text: colour). No list of themes or carriers is kept. The
+colour pack draws its clouds as a grey edge with white behind them as the
+body, so on the gate and the card it needs its circle.
 
 ## Rebuild
 
@@ -83,7 +92,7 @@ thermometer-warmer, partly-cloudy-day-snow, umbrella, tornado.
 Rebuild: `python3 night-line.py WEATHER.svg ../../fids-current/logos/weather/night-line`
 (it prints each circle's measured size and centre), then `npm run assets:build`.
 
-### On the boards (v24045)
+### On the boards (v24052)
 
 At night, wherever the look draws its weather icons in a circle (Day & night
 after dark, and Solid at night), the boards draw these icons:

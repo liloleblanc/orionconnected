@@ -1,27 +1,32 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v24046 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, CHOSEN BY GROUND.
+// v24052 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, CHOSEN BY GROUND.
 //
 // The departures and arrivals rows draw one of two sets drawn for Orion
 // Connected (logos/weather/rows-owner-white/ and rows-owner-color/, built by
 // scripts/wx-icons/rows-owner.py): the white set on a dark ground, the colour
-// set on a light ground. Each row takes the side the board's own ink took
-// for it (fids-core.js _fidsRowWxSet: the temperature beside the icon inked
-// dark, a light row, the colour set; inked light, the white set), on the
-// airport's colours, Customize's custom rows, the alternate rows and the
-// status rows, so an operator's new colours bring the other set with them
-// and the icon always agrees with its digits.
+// set on a light ground. Each row picks for itself from the colour its icon
+// really sits on (fids-core.js _fidsRowWxSet): wherever white holds less
+// than 3:1 there the white set would vanish and the row wears the colour set
+// (yellow Delayed, orange Final call, a light Customize row, an airline's
+// yellow or orange used as a row), whatever its text is inked; elsewhere it
+// takes the side the board's own ink took (the temperature beside the icon
+// inked dark, the colour set; inked light, the white set), so an operator's
+// new colours bring the other set with them. No list of carriers or themes.
 //
 // This test pins:
 //   · every reading the rows can draw (every MET symbol, by day and at night,
 //     every WMO and Tomorrow.io code, every name a caller passes) to a file
 //     that exists in BOTH sets, and the two folders to the same names;
-//   · the chooser: the icon follows the row's ink (both Delayed stripes,
-//     Final call, the faded rows of a light board and mid-tone custom rows
-//     ink dark and take the colour set; navy, red and dark custom rows ink
-//     light and take the white set), the ink and the ground read as the page
-//     paints them (alpha and opacity on the way);
+//   · the chooser: never the white set where white holds under 3:1 on the
+//     ground, even under white text (both Delayed stripes, Final call, an
+//     airline's yellow, orange, lime or teal); otherwise the row's ink
+//     (mid-tone rows inked dark take the colour set; navy, red and dark
+//     custom rows inked light the white set); every airline palette in
+//     data/airline-colors.js and every board preset run through it; the ink
+//     and the ground read as the page paints them (alpha and opacity on the
+//     way);
 //   · no gradient or clip id is used by two files, and every file's
 //     references stay inside that file, so any number of icons can share a
 //     page (inlined or not);
@@ -177,15 +182,16 @@ test('the row icon: one box, both files, no circle, in every look but Classic', 
 });
 
 // ── the chooser ────────────────────────────────────────────────────────────
-const PICK = vm.runInNewContext(fnSource(CORE, '_ocLum') + '\n' + /var _WX_ROW_SPLIT = [^;]+;/.exec(CORE)[0] + '\n'
-  + ['_wxRowSetFor', '_wxRowRgba', '_wxRowGround', '_wxRowText', '_wxRowInk', '_fidsRowWxSet'].map((n) => fnSource(CORE, n)).join('\n')
-  + '\n({ _wxRowSetFor, _wxRowRgba, _wxRowGround, _wxRowText, _wxRowInk, _fidsRowWxSet, _WX_ROW_SPLIT, setGCS: (f) => { getComputedStyle = f; }, setDoc: (d) => { document = d; } });',
+const PICK = vm.runInNewContext(fnSource(CORE, '_ocLum') + '\n' + fnSource(CORE, '_ocCr') + '\n'
+  + /var _WX_ROW_WHITE = [^;]+;/.exec(CORE)[0] + '\n' + /var _WX_ROW_WHITE_MIN = [^;]+;/.exec(CORE)[0] + '\n'
+  + ['_wxRowWhiteVanishes', '_wxRowSetFor', '_wxRowRgba', '_wxRowGround', '_wxRowText', '_wxRowInk', '_fidsRowWxSet'].map((n) => fnSource(CORE, n)).join('\n')
+  + '\n({ _wxRowSetFor, _wxRowWhiteVanishes, _wxRowRgba, _wxRowGround, _wxRowText, _wxRowInk, _fidsRowWxSet, _WX_ROW_WHITE, _WX_ROW_WHITE_MIN, _ocCr, setGCS: (f) => { getComputedStyle = f; }, setDoc: (d) => { document = d; } });',
   { getComputedStyle: null, document: null });
 const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 // the board's arrays come from its own realm: compare their values
 const G = (e, top) => Array.from(PICK._wxRowGround(e, top));
 
-test('the chooser: the icon takes the side the row ink took (dark text, colour set; light text, white set)', () => {
+test('the chooser: never the white set where white would vanish; otherwise the side the row ink took', () => {
   // [the row's ground, the ink the board paints the temperature in, the set, the row]
   const rows = [
     ['#012846', '#FFFFFF', 'white', 'navy row'],
@@ -194,25 +200,79 @@ test('the chooser: the icon takes the side the row ink took (dark text, colour s
     ['#D42341', '#FFFFFF', 'white', 'Cancelled'],
     ['#A61B2B', '#FFFFFF', 'white', 'Diverted'],
     ['#405160', '#E8EEF5', 'white', 'a faded history row on a dark board'],
-    // a luminance split put these four in the white set, while the board inks them dark
+    ['#3A80CB', '#F0F0F5', 'white', 'a mid-blue custom row inked light (white holds 4.2:1)'],
+    // white holds under 3:1 on these: the white set would vanish
     ['#EDBB00', '#0A2236', 'colour', 'Delayed, one stripe'],
     ['#E5A800', '#0A2236', 'colour', 'Delayed, darker'],
     ['#F28C00', '#0A2236', 'colour', 'Final call'],
     ['#A7BFA4', '#0A2236', 'colour', 'a faded Departed row on a light board'],
-    ['#7D848B', '#0A2236', 'colour', 'a faded Gate closed row'],
-    ['#7C8C9C', '#0A2236', 'colour', 'mid-tone custom row'],
     ['#B4C0CC', '#0A2236', 'colour', 'mid-tone custom stripe'],
     ['#F9D44C', '#0A2236', 'colour', 'Delayed, the other stripe'],
     ['#FFFFFF', '#0A2236', 'colour', 'white row'],
     ['#B3F0FF', '#0A2236', 'colour', 'pale blue row'],
-    ['#EBE6DA', '#4A3B2A', 'colour', 'cream row, brown text']
+    ['#EBE6DA', '#4A3B2A', 'colour', 'cream row, brown text'],
+    // ... even where the board leaves the row's text white (its floor keeps
+    // white below 3:1 on grounds of luminance 0.30 to 0.45)
+    ['#F28C00', '#FFFFFF', 'colour', 'an orange custom row, white text'],
+    ['#F9A51A', '#FFFFFF', 'colour', 'North Star orange as a row, white text'],
+    ['#F9B612', '#FFFFFF', 'colour', 'Southwest yellow as a row, white text'],
+    ['#00ABC2', '#FFFFFF', 'colour', 'WestJet teal as a row, white text'],
+    ['#00A0DF', '#FFFFFF', 'colour', 'Transat blue as a row, white text'],
+    ['#7AFF94', '#FFFFFF', 'colour', 'Flair lime as a row, white text'],
+    // where white still reads, the ink decides: dark text is the board judging the row light
+    ['#7D848B', '#0A2236', 'colour', 'a faded Gate closed row (white 3.8:1, inked dark)'],
+    ['#7C8C9C', '#0A2236', 'colour', 'mid-tone custom row (white 3.5:1, inked dark)']
   ];
   for (const [g, k, set, what] of rows) assert.equal(PICK._wxRowSetFor(rgb(g), rgb(k)), set, what + ' ' + g + ' / ' + k);
-  // the ground decides alone only where there is no text to read
-  assert.equal(PICK._WX_ROW_SPLIT, 0.56, 'where the two sets cross (scripts/wx-icons/rows-owner-split.js measured 0.563)');
-  for (const h of ['#012846', '#D42341', '#F28C00']) assert.equal(PICK._wxRowSetFor(rgb(h), null), 'white', h + ', no text');
-  for (const h of ['#FFFFFF', '#E6ECF2', '#F9D44C']) assert.equal(PICK._wxRowSetFor(rgb(h), null), 'colour', h + ', no text');
+  // the test is a contrast test on the ground, at 3:1 (WCAG 2.2 SC 1.4.11, a graphic), against the white set's own white
+  assert.deepEqual(Array.from(PICK._WX_ROW_WHITE), [255, 255, 255]);
+  assert.equal(PICK._WX_ROW_WHITE_MIN, 3);
+  for (const n of files(WHITE)) {
+    const fills = [...fs.readFileSync(path.join(WHITE, n + '.svg'), 'utf8').matchAll(/fill="(#[0-9a-fA-F]{6})"/g)].map((m) => m[1].toLowerCase());
+    assert.ok(fills.length && fills.every((f) => f === '#ffffff'), n + ': the white set is drawn in white');
+  }
+  // where it turns: just past a luminance of 0.30
+  assert.equal(PICK._wxRowSetFor(rgb('#949494'), rgb('#FFFFFF')), 'white', 'grey 3.03:1');
+  assert.equal(PICK._wxRowSetFor(rgb('#959595'), rgb('#FFFFFF')), 'colour', 'grey 2.99:1');
+  // a cell with no text: the contrast test alone
+  for (const h of ['#012846', '#D42341', '#405160']) assert.equal(PICK._wxRowSetFor(rgb(h), null), 'white', h + ', no text');
+  for (const h of ['#FFFFFF', '#E6ECF2', '#F9D44C', '#F28C00']) assert.equal(PICK._wxRowSetFor(rgb(h), null), 'colour', h + ', no text');
   assert.equal(PICK._wxRowSetFor(null, null), 'white', 'no ground read: the white set, for the dark boards most airports run');
+  // no carrier code, theme name or colour list in the chooser
+  const src = ['_wxRowWhiteVanishes', '_wxRowSetFor', '_fidsRowWxSet'].map((n) => fnSource(CORE, n)).join('\n');
+  assert.doesNotMatch(src, /#[0-9a-fA-F]{3,6}\b|'[A-Z0-9]{2}'|data-fids-theme|row-delayed|row-final/, 'decided by the ground alone');
+});
+
+// every ground a board can paint a row in: each airline palette in
+// data/airline-colors.js (its bar, accents and body, under its own text, under
+// white, under the board's dark type) and each board preset's two stripes
+// under its row text, each through the board's own text floor (_fidsInk)
+test('every airline palette and every board preset: white set only where white holds 3:1, colour set wherever it would vanish', () => {
+  const INK = vm.runInNewContext(['_fidsRelLum', '_fidsContrast', '_fidsInk'].map((n) => fnSource(CORE, n)).join('\n') + '\n({ _fidsInk });');
+  const AB = new Function('window', rd('fids-current/data/airline-colors.js') + '\nreturn window.AIRLINE_BRAND_COLORS;')({});
+  const THEMES = table('THEMES');
+  const cases = [];
+  for (const [code, p] of Object.entries(AB)) {
+    for (const k of ['r1', 'r2', 'r3', 'body']) {
+      if (!/^#[0-9a-fA-F]{6}$/.test(p[k] || '')) continue;
+      for (const t of [p.r1Text, p.bodyText, '#FFFFFF', '#0F172A']) if (t) cases.push([code + '.' + k, p[k], INK._fidsInk(t, p[k])]);
+    }
+  }
+  for (const [name, t] of Object.entries(THEMES)) for (const k of ['rowOdd', 'rowEven']) cases.push(['theme ' + name + '.' + k, t[k], INK._fidsInk(t.rowText, t[k])]);
+  assert.ok(cases.length > 300, cases.length + ' grounds');
+  let colour = 0, white = 0;
+  for (const [what, g, k] of cases) {
+    const set = PICK._wxRowSetFor(rgb(g), rgb(k));
+    const cr = PICK._ocCr([255, 255, 255], rgb(g));
+    if (cr < 3) assert.equal(set, 'colour', what + ' ' + g + ' (white ' + cr.toFixed(2) + ':1) under ' + k);
+    else if (PICK._ocCr(rgb(k), rgb(g)) >= 3 && rgb(k).reduce((a, v) => a + v) > rgb(g).reduce((a, v) => a + v)) assert.equal(set, 'white', what + ' ' + g + ' under light ' + k);
+    if (set === 'white') { white++; assert.ok(cr >= 3, what + ': white set at ' + cr.toFixed(2) + ':1'); } else colour++;
+  }
+  assert.ok(colour > 0 && white > 0, colour + ' colour, ' + white + ' white');
+  // the carriers' yellows, oranges, lime and teal, the ones a light-set test is for
+  for (const [code, k] of [['WN', 'r2'], ['LH', 'r2'], ['4N', 'r2'], ['NSA', 'r2'], ['IB', 'r2'], ['F8', 'r2'], ['WS', 'r2'], ['TS', 'r2']]) {
+    assert.equal(PICK._wxRowSetFor(rgb(AB[code][k]), rgb('#FFFFFF')), 'colour', code + ' ' + AB[code][k] + ' under white text');
+  }
 });
 
 // a page as getComputedStyle sees it: each element its own background,
@@ -334,7 +394,7 @@ test('the rows say where their weather is, and the row inks pass picks the set',
 });
 
 test('the stylesheet paints the white file, and the colour file where the row is light; nothing filters either', () => {
-  const at = CSS.indexOf('v24046 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED');
+  const at = CSS.indexOf('v24052 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED');
   assert.ok(at > 0);
   const block = CSS.slice(at, CSS.indexOf('/* ══', at + 10));
   assert.match(block, /#fidsTable \.fids-wx-row \{\s*background: var\(--wxr-w\) center \/ contain no-repeat !important;\s*filter: none !important;\s*\}/);
