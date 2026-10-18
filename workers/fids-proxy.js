@@ -11184,33 +11184,52 @@ __name(serveGuardedList, "serveGuardedList");
 // there is no tunnel and no token for anyone to copy. The relay registers
 // once, then polls once a minute:
 //
-//   POST /osky/register {relayKey}  the FIRST caller from Hetzner (AS24940)
-//                                   only; stores sha256(key) and its IPv4
-//   GET  /osky/report?calls=&cap=&status=&hold=&state=
+//   POST /osky/register {relayKey}  from the PINNED address only (below);
+//                                   stores sha256(key) and that address
+//   GET  /osky/report?calls=&cap=&status=&hold=&state=&puts=&stop=
 //                                   heartbeat with the relay's counts; the
 //                                   answer says whether OpenSky is switched on
+//                                   and gives the Worker's stop date
 //   GET  /osky/creds                the OpenSky client, from Worker secrets
 //   GET  /osky/wanted               the boxes and flights the boards want
 //   POST /osky/put                  reduced positions for one wanted box
 //   GET  /osky/status               PUBLIC and counts only, for checking
 //
-// Every route but /osky/status and /osky/register needs BOTH the relay key
-// (X-Relay-Key, compared as sha256) and the registered IPv4 (CF-Connecting-IP,
-// which Cloudflare sets and a client cannot). OpenSky stays off until
-// OPENSKY_ON is "1" (a plain var in workers/wrangler.fids-proxy.jsonc). While
-// it is off, register, report and status still answer, so the server can
-// register and its address can be checked before the licence is paid; creds,
-// wanted and put answer 503 "off". After the hard stop (OSKY_STOP_AT, by
-// default the end of the licence term) every route answers 410.
+// THE ADDRESS PIN. Only the server whose IPv4 is in the Worker SECRET
+// OSKY_RELAY_IPV4 can register or use any locked route: CF-Connecting-IP
+// (which Cloudflare sets and a client cannot) must equal it. The address is
+// typed in the Cloudflare dashboard from the one Hetzner shows for the relay
+// server. It is not really a secret (OpenSky is sent it too), but a secret
+// survives every deploy and keeps the address out of this public repository;
+// a plain var typed in the dashboard would be wiped by the next deploy. With
+// no pin, /osky/register answers 503 "no-pin" and nothing registers. So a
+// stranger who rents a Hetzner box, or a browser on one, can never take the
+// registration or read the OpenSky client: only our server's address can.
+// (Request.cf.asn must also be Hetzner's, AS24940.)
 //
-// A second registration is refused (409) until the stored one is deleted:
-//   npx wrangler kv key delete "osky:relay" --binding FIDS_LIVE_FLIGHTS \
-//     --config workers/wrangler.fids-proxy.jsonc --remote
-// or Cloudflare dashboard -> Storage & Databases -> KV -> the FIDS_LIVE_FLIGHTS
-// namespace -> key osky:relay -> Delete.
+// Every route but /osky/status and /osky/register also needs the relay key
+// (X-Relay-Key, compared as sha256), so the address alone is not enough
+// either. A registration from the pinned address with a new key replaces the
+// stored one (a server rebuilt on the same address makes a new key), and a
+// new address needs only a new pin: the next registration from it replaces
+// the old record. Nothing in KV has to be deleted by hand.
+//
+// OpenSky stays off until OPENSKY_ON is "1" (a plain var in
+// workers/wrangler.fids-proxy.jsonc, the config the fids-proxy Worker is
+// deployed with). While it is off, register, report and status still answer,
+// so the server can register before the licence is paid; creds, wanted and
+// put answer 503 "off". After the hard stop (OSKY_STOP_AT, by default the end
+// of the licence term) every route answers 410. A stop date that cannot be
+// read is a stop too; the relay treats a 410 as stopped FOR NOW (it keeps
+// polling), so a corrected date resumes it without the server console.
+//
+// KV writes are kept few (one namespace for every feature, and the FR24
+// budget counters share it): the heartbeat's report is written only when
+// something in it changes, or every 10 minutes; positions once per OpenSky
+// answer; nothing else per minute.
 //
 // What the licence asks of these routes: no CORS (no board page reads them),
-// never cached, positions kept 120 s in KV under osky:pos:* and nowhere else
+// never cached, positions kept 180 s in KV under osky:pos:* and nowhere else
 // (never trk:v1, acmem, /fltrack/ or a log), only for a box and flights the
 // boards asked for, reduced fields only. Nothing in this section logs.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -11220,7 +11239,12 @@ const OSKY_MAX_BOX_SQ_DEG = 25;          // the 1-credit box size
 const OSKY_MAX_FILTERS = 4;              // flights per box
 const OSKY_MAX_BOXES = 8;
 const OSKY_WANT_TTL_S = 600;             // a wanted flight lapses after 10 minutes
-const OSKY_POS_TTL_S = 120;              // positions: 2 minutes (KV's minimum is 60)
+// Positions live 3 minutes. The relay asks OpenSky again for a box only once
+// its 120 s shared answer has run out (CACHE_SECONDS is at most this minus
+// 60), so a fresh put always lands before the last one lapses.
+const OSKY_POS_TTL_S = 180;
+const OSKY_REPORT_EVERY_S = 600;         // an unchanged heartbeat report is written every 10 minutes
+const OSKY_REPORT_TTL_S = 2 * 86400;
 const OSKY_MAX_STATES = 16;
 const OSKY_MAX_PUT_BYTES = 32 * 1024;
 const OSKY_MAX_REGISTER_BYTES = 1024;
@@ -11259,6 +11283,17 @@ function oskyStopMs(env) {
   const t = Date.parse(s);
   return Number.isFinite(t) ? t : 0;
 }
+// The relay's pinned IPv4 (the Worker secret OSKY_RELAY_IPV4), or null.
+function oskyPin(env) {
+  const v = env && typeof env.OSKY_RELAY_IPV4 === "string" ? env.OSKY_RELAY_IPV4.trim() : "";
+  return OSKY_RE_IPV4.test(v) ? v : null;
+}
+function oskyCallerIp(request) { return (request.headers.get("CF-Connecting-IP") || "").trim(); }
+// A JSON body only. A browser cannot send that cross-site without a CORS
+// preflight, and every /osky/ route refuses the preflight (405 or 403).
+function oskyJsonBody(request) {
+  return (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase() === "application/json";
+}
 function oskyKv(env) { return env && env.FIDS_LIVE_FLIGHTS ? env.FIDS_LIVE_FLIGHTS : null; }
 async function oskySha256Hex(s) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s)));
@@ -11270,12 +11305,21 @@ function oskySameHex(a, b) {
   for (let i = 0; i < a.length; i++) x |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return x === 0;
 }
-async function oskyGetJson(kv, key) {
+function oskyParseObj(v) {
+  if (v === null || v === undefined) return null;
   try {
-    const v = await kv.get(key);
-    if (v === null || v === undefined) return null;
     const j = typeof v === "string" ? JSON.parse(v) : v;
     return j && typeof j === "object" && !Array.isArray(j) ? j : null;
+  } catch (e) {
+    return null;
+  }
+}
+// For reads where a failure may safely look like "nothing there" (every
+// caller below refuses, or writes nothing, on null). oskyRegister reads
+// osky:relay itself, so a failed read there is a 503, never "absent".
+async function oskyGetJson(kv, key) {
+  try {
+    return oskyParseObj(await kv.get(key));
   } catch (e) {
     return null;
   }
@@ -11337,6 +11381,16 @@ function oskyEntryExp(e) { return Math.max(0, ...Object.values(e.f)); }
 // licence is paid. Returns true when the wish was stored. It is one KV
 // document and KV takes one write a second per key, so that change has to
 // call it at most once a second (on a change of flights, not per request).
+//
+// THAT LATER CHANGE MUST:
+//   - call it only from the Worker's own logic for a gate or map that is on
+//     screen, never with a box or a flight taken from a public request (or
+//     anyone could spend the OpenSky credits and have OpenSky data served
+//     back to them);
+//   - read osky:pos:* only before oskyStopMs(env), and serve it only on a
+//     locked, reduced route, never /adsb/, /fltrack/ or anything cached;
+//   - show "Data: OpenSky Network" on every map that draws it, and add the
+//     Schäfer et al. (IPSN 2014) citation to the credits page.
 async function oskyWant(env, box, filters, now = Date.now()) {
   const kv = oskyKv(env);
   const b = oskyBox(box), f = oskyFilters(filters);
@@ -11391,36 +11445,49 @@ async function oskyReadBody(request, max) {
   }
 }
 
-async function oskyRelayOk(request, kv) {
-  const rec = await oskyGetJson(kv, "osky:relay");
-  if (!rec || typeof rec.keyHash !== "string" || typeof rec.ip !== "string") return false;
+// The pinned address, then the stored registration at that address, then the key.
+async function oskyRelayOk(request, env, kv) {
+  const pin = oskyPin(env);
+  if (!pin || oskyCallerIp(request) !== pin) return false;      // before any KV read
   const key = request.headers.get("X-Relay-Key") || "";
-  const ip = (request.headers.get("CF-Connecting-IP") || "").trim();
-  if (!OSKY_RE_KEY.test(key) || !ip) return false;
-  const keyOk = oskySameHex(await oskySha256Hex(key), rec.keyHash);
-  return keyOk && ip === rec.ip;
+  if (!OSKY_RE_KEY.test(key)) return false;
+  const rec = await oskyGetJson(kv, "osky:relay");
+  if (!rec || typeof rec.keyHash !== "string" || rec.ip !== pin) return false;
+  return oskySameHex(await oskySha256Hex(key), rec.keyHash);
 }
 
-async function oskyRegister(request, kv) {
+async function oskyRegister(request, env, kv) {
   if (request.method !== "POST") return oskyJson({ error: "method" }, 405);
+  if (!oskyJsonBody(request)) return oskyJson({ error: "json-only" }, 415);
   // Hetzner's network only (the relay's server); anything else is refused
   // before the body is even read
   const cf = request.cf || {};
   if (cf.asn !== OSKY_HETZNER_ASN) return oskyForbidden();
-  const ip = (request.headers.get("CF-Connecting-IP") || "").trim();
+  const ip = oskyCallerIp(request);
   // OpenSky whitelists an IPv4: an IPv6 caller would lock the wrong address
   if (!OSKY_RE_IPV4.test(ip)) return oskyJson({ error: "ipv4-required" }, 400);
+  const pin = oskyPin(env);
+  // no address pinned yet: nothing can register (the relay asks every minute)
+  if (!pin) return oskyJson({ error: "no-pin" }, 503);
+  if (ip !== pin) return oskyForbidden();
   const body = await oskyReadBody(request, OSKY_MAX_REGISTER_BYTES);
   if (body.tooBig) return oskyJson({ error: "too-large" }, 413);
   const key = body.json && typeof body.json.relayKey === "string" ? body.json.relayKey : "";
   if (!OSKY_RE_KEY.test(key)) return oskyJson({ error: "bad-key" }, 400);
   const keyHash = await oskySha256Hex(key);
-  const rec = await oskyGetJson(kv, "osky:relay");
-  if (rec) {
-    // the same relay asking again (its first answer was lost): fine
-    if (oskySameHex(rec.keyHash, keyHash) && rec.ip === ip) return oskyJson({ registered: true });
-    return oskyJson({ error: "already-registered" }, 409);
+  // Read directly: a read that fails is a 503 (asked again), never "nobody
+  // is registered".
+  let raw;
+  try {
+    raw = await kv.get("osky:relay");
+  } catch (e) {
+    return oskyJson({ error: "store" }, 503);
   }
+  const rec = oskyParseObj(raw);
+  // the same relay asking again (its first answer was lost): nothing to write
+  if (rec && oskySameHex(rec.keyHash, keyHash) && rec.ip === ip) return oskyJson({ registered: true });
+  // anything else stored (nothing, an old address, an old key, a record that
+  // cannot be read) gives way to the relay at the pinned address
   await kv.put("osky:relay", JSON.stringify({ keyHash, ip, at: oskyIso(Date.now()) }));
   return oskyJson({ registered: true });
 }
@@ -11431,18 +11498,32 @@ function oskyInt(v, lo, hi) {
   return n >= lo && n <= hi ? n : null;
 }
 
+// The heartbeat. Its report is kept for /osky/status, written only when
+// something a person checks has changed (the state, the cap, OpenSky's last
+// answer, a hold starting or ending, the relay's stop date) or the stored
+// one is 10 minutes old. Counts alone changing do not cause a write.
 async function oskyReport(env, kv, url, now, stopMs) {
   const q = url.searchParams;
   const st = q.get("state") || "";
+  const stop = q.get("stop") || "";
   const rep = {
-    at: oskyIso(now),
     calls_today: oskyInt(q.get("calls"), 0, 100000),
     cap: oskyInt(q.get("cap"), 0, 100000),
     last_status: oskyInt(q.get("status"), 0, 599),
     hold_s: oskyInt(q.get("hold"), 0, 172800),
-    state: OSKY_RE_STATE.test(st) ? st : null
+    state: OSKY_RE_STATE.test(st) ? st : null,
+    puts_today: oskyInt(q.get("puts"), 0, 100000),
+    stop_at: OSKY_RE_ISO.test(stop) ? stop : null
   };
-  await kv.put("osky:report", JSON.stringify(rep), { expirationTtl: 2 * 86400 });
+  const old = await oskyGetJson(kv, "osky:report");
+  const age = old && typeof old.at === "string" ? now - Date.parse(old.at) : NaN;
+  const same = !!old && ["state", "cap", "last_status", "stop_at"].every((k) => old[k] === rep[k])
+    && (old.hold_s > 0) === (rep.hold_s > 0);
+  if (!(same && age >= 0 && age < OSKY_REPORT_EVERY_S * 1000)) {
+    try {
+      await kv.put("osky:report", JSON.stringify({ at: oskyIso(now), ...rep }), { expirationTtl: OSKY_REPORT_TTL_S });
+    } catch (e) { /* counts only: the heartbeat still answers */ }
+  }
   return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs) });
 }
 
@@ -11502,6 +11583,7 @@ function oskyCleanState(s, b, nowS, heading) {
 }
 
 async function oskyPut(env, kv, request, now, stopMs) {
+  if (!oskyJsonBody(request)) return oskyJson({ error: "json-only" }, 415);
   const body = await oskyReadBody(request, OSKY_MAX_PUT_BYTES);
   if (body.tooBig) return oskyJson({ error: "too-large" }, 413);
   if (!body.json) return oskyJson({ error: "bad-json" }, 400);
@@ -11532,54 +11614,39 @@ async function oskyPut(env, kv, request, now, stopMs) {
     states.push(s);
     if (states.length >= OSKY_MAX_STATES) break;
   }
-  const key = oskyBoxKey(b);
-  await kv.put("osky:pos:" + key, JSON.stringify({ at: oskyIso(now), time, box: b, credit: OSKY_CREDIT, states }),
+  await kv.put("osky:pos:" + oskyBoxKey(b), JSON.stringify({ at: oskyIso(now), time, box: b, credit: OSKY_CREDIT, states }),
     { expirationTtl: OSKY_POS_TTL_S });
-  // the count for /osky/status; KV takes one write a second per key, so
-  // several boxes put in the same second may miss a count, never a position
-  try {
-    const today = oskyIso(now).slice(0, 10);
-    const ps = await oskyGetJson(kv, "osky:putstat");
-    const count = ps && ps.date === today && Number.isInteger(ps.count) ? ps.count + 1 : 1;
-    await kv.put("osky:putstat", JSON.stringify({ date: today, count, last_at: oskyIso(now) }), { expirationTtl: 3 * 86400 });
-  } catch (e) { /* counts only */ }
   return oskyJson({ stored: states.length });
 }
 
+// Counts and yes/no answers only: never the address (it is compared with the
+// pin here, not shown), a key, the client or a position.
 async function oskyStatus(env, kv, now, stopMs) {
+  const pin = oskyPin(env);
   const rec = await oskyGetJson(kv, "osky:relay");
   const rep = await oskyGetJson(kv, "osky:report");
-  const ps = await oskyGetJson(kv, "osky:putstat");
   const wanted = oskyLiveWanted(await oskyGetJson(kv, "osky:wanted"), now);
-  // the address, without publishing it whole: its first two numbers, and the
-  // start of sha256 of the whole address to compare with the one Hetzner shows
-  let ipMasked = null, ipHash = null;
-  if (rec && typeof rec.ip === "string" && OSKY_RE_IPV4.test(rec.ip)) {
-    const p = rec.ip.split(".");
-    ipMasked = p[0] + "." + p[1] + ".x.x";
-    ipHash = (await oskySha256Hex(rec.ip)).slice(0, 12);
-  }
-  const today = oskyIso(now).slice(0, 10);
   const n = (v) => (Number.isInteger(v) ? v : null);
   return oskyJson({
     service: "osky",
     on: oskyOn(env),
     stop_at: oskyIso(stopMs),
-    relay_registered: !!(rec && typeof rec.keyHash === "string"),
-    relay_ip: ipMasked,
-    relay_ip_sha256: ipHash,
-    registered_at: rec && typeof rec.at === "string" ? rec.at : null,
+    relay_pin_set: !!pin,
+    // registered by the server at the pinned address (an old record from
+    // another address does not count)
+    relay_registered: !!(pin && rec && typeof rec.keyHash === "string" && rec.ip === pin),
+    registered_at: pin && rec && rec.ip === pin && typeof rec.at === "string" ? rec.at : null,
     creds_set: !!oskyCredsOf(env),
     wanted_boxes: Object.keys(wanted).length,
-    last_put_at: ps && typeof ps.last_at === "string" ? ps.last_at : null,
-    puts_today: ps && ps.date === today ? n(ps.count) || 0 : 0,
     relay_report: rep ? {
       at: typeof rep.at === "string" ? rep.at : null,
+      state: typeof rep.state === "string" && OSKY_RE_STATE.test(rep.state) ? rep.state : null,
       calls_today: n(rep.calls_today),
       cap: n(rep.cap),
       last_status: n(rep.last_status),
       hold_s: n(rep.hold_s),
-      state: typeof rep.state === "string" && OSKY_RE_STATE.test(rep.state) ? rep.state : null
+      puts_today: n(rep.puts_today),
+      stop_at: typeof rep.stop_at === "string" && OSKY_RE_ISO.test(rep.stop_at) ? rep.stop_at : null
     } : null
   });
 }
@@ -11596,11 +11663,11 @@ async function handleOsky(request, env, url) {
       if (request.method !== "GET") return oskyJson({ error: "method" }, 405);
       return await oskyStatus(env, kv, now, stopMs);
     }
-    if (p === "/osky/register") return await oskyRegister(request, kv);
+    if (p === "/osky/register") return await oskyRegister(request, env, kv);
     const method = OSKY_LOCKED.get(p);
     if (!method) return oskyJson({ error: "not-found" }, 404);
     if (request.method !== method) return oskyJson({ error: "method" }, 405);
-    if (!(await oskyRelayOk(request, kv))) return oskyForbidden();
+    if (!(await oskyRelayOk(request, env, kv))) return oskyForbidden();
     if (p === "/osky/report") return await oskyReport(env, kv, url, now, stopMs);
     if (!oskyOn(env)) return oskyJson({ error: "off" }, 503);
     if (p === "/osky/creds") {

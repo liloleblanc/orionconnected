@@ -154,15 +154,20 @@ OpenSky whitelists the address the account calls from, and a Worker has no
 fixed egress address, so every call goes through the relay in
 `stream-server/opensky-relay/`: its own small server with a fixed IPv4,
 installed from `fids.orionconnected.com/o` by the server's Cloud config. The
-relay only calls out. It registers with the Worker (`/osky/register`, the
-first caller from Hetzner's network only), then polls it once a minute for
-the OpenSky client (`/osky/creds`, memory only) and the boxes and flights the
-boards want (`/osky/wanted`), calls OpenSky for named flights only in boxes of
-at most 25 sq deg, and puts the reduced positions back (`/osky/put`, 120 s in
-KV `osky:pos:*`). It caps itself at 1,500 calls a UTC day and stops by itself
-at the end of the term. Everything stays off until `OPENSKY_ON` is `1` in
+relay only calls out. It registers with the Worker (`/osky/register`, only
+from the address pinned in the Worker secret `OSKY_RELAY_IPV4`), then polls
+it once a minute for the OpenSky client (`/osky/creds`, memory only) and the
+boxes and flights the boards want (`/osky/wanted`). It calls OpenSky's
+`/states/all` with one box of at most 25 sq deg per airport. When every
+wanted flight in a box is known by icao24, that filter goes to OpenSky too;
+when any is known only by callsign (OpenSky has no callsign filter), the
+answer holds every aircraft in the box, which stays in the relay's memory
+for at most 120 s and is filtered there. Only the wanted flights, reduced,
+leave the server (`/osky/put`, 180 s in KV `osky:pos:*`). It caps itself at
+1,500 calls a UTC day and stops by itself at the end of the term (or at the
+Worker's `OSKY_STOP_AT`). Everything stays off until `OPENSKY_ON` is `1` in
 `workers/wrangler.fids-proxy.jsonc` (it is `0`), and `/osky/status` shows the
-state with counts only. The first design (a Cloudflare Tunnel, #1049) was
+state with counts and yes/no answers only. The first design (a Cloudflare Tunnel, #1049) was
 replaced by this one because its tunnel never connected and it needed a
 token copied by hand.
 

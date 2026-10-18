@@ -10,38 +10,52 @@ firewall lets nothing in. There is no tunnel and no token to copy.
 
 What it does, once a minute (a polling client run by systemd; no HTTP server):
 
-  1. Registers once: POST /osky/register {relayKey}. The relay key is made on
-     the server at install time (secrets.token_urlsafe(32), root only, 0600)
-     and reaches the relay through systemd's LoadCredential. The Worker keeps
-     only its sha256 and the address it came from, and accepts the first
-     registration from Hetzner's network only. A 409 means another relay is
-     already registered: the relay calls nothing and says so in its status,
-     and asks again every 10 minutes (the registration can be deleted in the
-     Worker, see the README).
+  1. Registers: POST /osky/register {relayKey}. The relay key is made on the
+     server at install time (secrets.token_urlsafe(32), root only, 0600) and
+     reaches the relay through systemd's LoadCredential. The Worker accepts a
+     registration only from the address pinned in its secret OSKY_RELAY_IPV4
+     (typed in the Cloudflare dashboard from the address Hetzner shows for
+     this server), and keeps only the key's sha256 and that address. Until
+     the address is pinned the Worker answers 503 "no-pin": the relay calls
+     nothing else and asks again every minute.
   2. Heartbeat: GET /osky/report with its counts (calls today, cap, OpenSky's
-     last status code, hold seconds, state). The answer says whether OpenSky
-     is switched on (OPENSKY_ON) and the Worker's stop date.
+     last status code, hold seconds, state, puts today, its own stop date).
+     The answer says whether OpenSky is switched on (OPENSKY_ON) and gives
+     the Worker's stop date.
   3. Only when it is on: GET /osky/creds (the OpenSky client, kept in memory
      only, never written anywhere), GET /osky/wanted (the boxes of at most 25
      sq deg and the flights, at most 4 a box, the boards want).
-  4. Per box: GET OpenSky /api/states/all with the box (and the icao24 filter
-     when the box's flights are all named by icao24), reduce, keep only the
-     flights asked for, POST /osky/put.
+  4. Per box: GET OpenSky /api/states/all with the box. When every flight in
+     the box is named by icao24, the icao24 filter goes upstream too; when
+     any is named by callsign (OpenSky has no callsign filter), OpenSky
+     answers with every aircraft in the box, which stays in this process's
+     memory for at most CACHE_SECONDS (120 s at most) and is filtered here.
+     Only the flights asked for, reduced, go on: POST /osky/put.
 
-Every call to the Worker carries the relay key (X-Relay-Key) and comes from
-this server's IPv4, the same address OpenSky whitelists.
+Every call to the Worker comes from this server's IPv4, the same address
+OpenSky whitelists, and every call but the registration carries the relay key
+(X-Relay-Key).
 
 The licence limits it enforces:
 
-  - HARD STOP at the earlier of STOP_AT in /etc/opensky-relay/relay.conf
-    (root-owned; only opensky-extend, typed on the server, moves it) and the
-    Worker's own stop date. From then on nothing goes to OpenSky, not even a
-    login, and the relay exits. A missing, unreadable, unsafe or ambiguous
-    config (two STOP_AT lines) counts as stopped. The stop is LATCHED: the
-    first time it is reached, a marker is saved in the state directory, so a
-    clock stepped back does not undo it. Only a later local STOP_AT
-    (opensky-extend) lifts it. A Date header or a data 'time' from OpenSky at
-    or after the stop is a stop too, and so is a 410 from the Worker.
+  - HARD STOP at its own stop date: STOP_AT in /etc/opensky-relay/relay.conf
+    (root-owned), or a later one the Worker gave it (below). From then on
+    nothing goes to OpenSky, not even a login, and the relay exits. A
+    missing, unreadable, unsafe or ambiguous config (two STOP_AT lines)
+    counts as stopped. The stop is LATCHED: the first time it is reached, a
+    marker is saved in the state directory, so a clock stepped back does not
+    undo it. Only a later stop date lifts it. A Date header or a data 'time'
+    from OpenSky at or after the stop is a stop too.
+  - THE WORKER'S STOP DATE (OSKY_STOP_AT, in every heartbeat answer):
+      earlier than the relay's own: obeyed FOR NOW. Past it, and on any 410
+      from the Worker, nothing goes to OpenSky and the client is dropped,
+      but nothing is latched and the heartbeat goes on, so a corrected date
+      in the Worker (a change, no server console) resumes the relay.
+      later by at most 40 days: the relay's own stop moves to it, saved in
+      the state directory ("extended"), so an extension of the term needs
+      only a change to the Worker. The Worker's date has to move BEFORE the
+      relay's own stop is reached: a stopped relay has exited.
+      later by more than 40 days: ignored (a mistyped year never extends it).
   - A daily cap of 1500 upstream calls per UTC day, paced across the hours
     (hour h may have used at most cap * (h + 1) / 24). The count is saved to
     a small state file before every call, so a restart cannot reset it. A
@@ -52,7 +66,9 @@ The licence limits it enforces:
     server (401 after a fresh login, 403) holds every call for 10 minutes;
     an OpenSky server error holds every call for a minute.
   - Answers live in memory only: an identical box asked again within 120 s
-    (never more than 300 s) shares the earlier call. Nothing is archived.
+    (CACHE_SECONDS, never more: the Worker keeps a put 180 s, and the next
+    one has to land before it lapses) shares the earlier call. Nothing is
+    archived.
   - Only the reduced fields go to the Worker: icao24, callsign, lat, lon,
     baro_altitude, geo_altitude, on_ground, velocity, time_position,
     last_contact; true_track only when HEADING=1 in the config.
@@ -102,13 +118,15 @@ USER_AGENT = 'orion-connected-opensky-relay/2'
 CONFIG_DIR = '/etc/opensky-relay'
 STATE_DIR = '/var/lib/opensky-relay'   # systemd's StateDirectory=opensky-relay
 STOP_MARKER = 'stopped'                # in the state directory: "stopped for <STOP_AT>"
+EXTEND_FILE = 'extended'               # in the state directory: "extended to <STOP_AT>", from the Worker
 KEY_CREDENTIAL = 'relay-key'           # LoadCredential=relay-key:/etc/opensky-relay/relay-key
 LOOP_S = 60
 MAX_BOX_SQ_DEG = 25.0              # 25 sq deg or less = 1 credit per call
 MAX_DAILY_CAP = 1500               # the config may lower it, never raise it
 DEFAULT_CACHE_S = 120
 MIN_CACHE_S = 10
-MAX_CACHE_S = 300
+MAX_CACHE_S = 120                  # the Worker keeps a put 180 s: the next one must land first
+MAX_EXTEND_S = 40 * 86400          # the Worker may move the stop later by 40 days at most at a time
 MAX_BOXES = 8
 MAX_FILTER_VALUES = 4              # icao24 + callsign values together, per box
 TOKEN_RENEW_MARGIN_S = 120         # renew 2 minutes before expiry
@@ -120,8 +138,8 @@ MAX_BACKOFF_S = 86400
 REFUSED_HOLD_S = 600               # 401 after a fresh login, or 403: no call for 10 minutes
 SERVER_ERROR_HOLD_S = 60           # OpenSky 5xx: no call for a minute
 REGISTER_RETRY_MIN_S = 30
-REGISTER_RETRY_MAX_S = 900
-REGISTER_REFUSED_RETRY_S = 600     # after a 409: ask again every 10 minutes, nothing else
+REGISTER_RETRY_MAX_S = 300
+REGISTER_NO_PIN_RETRY_S = 60       # the Worker has no address pinned yet: ask again every minute, nothing else
 MAX_BODY_BYTES = 8 * 1024 * 1024
 MAX_WORKER_BODY_BYTES = 256 * 1024
 MAX_CACHE_ENTRIES = 64
@@ -378,14 +396,37 @@ def read_stop_marker(state_dir):
     return m.group(1) if m and RE_STOP.match(m.group(1)) else NEVER
 
 
-def is_stopped(settings, now, marker, worker_stop=None):
-    """Stopped when the config is wrong, either stop time has passed, or a stop
-    was latched for this STOP_AT (or a later one)."""
-    if not settings['config_ok'] or now >= settings['stop_at']:
+def read_extension(state_dir):
+    """A later stop the Worker gave the relay (saved by it), or None. One
+    that cannot be read is None: the earlier stop in relay.conf applies."""
+    if not state_dir:
+        return None
+    try:
+        with open(os.path.join(state_dir, EXTEND_FILE), 'r', encoding='utf-8') as f:
+            text = f.read()
+    except (OSError, ValueError):
+        return None
+    m = re.match(r'^extended to (\S+)\s*$', text)
+    return m.group(1) if m and parse_iso(m.group(1)) is not None else None
+
+
+def local_stop_iso(settings, extended):
+    """The relay's own stop: STOP_AT from relay.conf, or a later one the
+    Worker gave it. None when the config is wrong (that is a stop)."""
+    if not settings['config_ok']:
+        return None
+    own = settings['stop_iso']
+    return extended if extended is not None and extended > own else own
+
+
+def is_stopped(settings, now, marker, extended=None):
+    """Stopped (for good) when the config is wrong, the relay's own stop has
+    passed, or a stop was latched for this stop date (or a later one). The
+    Worker's stop date is not part of it: that one is obeyed for now only."""
+    local = local_stop_iso(settings, extended)
+    if local is None or now >= parse_iso(local):
         return True
-    if worker_stop is not None and now >= worker_stop:
-        return True
-    return marker is not None and not (settings['stop_iso'] > marker)
+    return marker is not None and not (local > marker)
 
 
 def upstream_clock(hdrs):
@@ -609,13 +650,18 @@ class Relay(object):
         self._conf_sig = self._config_sig()
         self.state_dir = rt['state_dir']
         self.latched = read_stop_marker(self.state_dir)
+        self.extended = read_extension(self.state_dir)
         (self.state_date, self.state_count, self.backoff_until,
          self.state_bad) = self._load_state()
         self.registered = False
         self.register_next = 0.0
         self.register_wait = REGISTER_RETRY_MIN_S
-        self.register_refused = False
+        self.no_pin = False              # the Worker has no address pinned yet
         self.worker_stop = None          # the Worker's stop date, from its heartbeat answer
+        self.worker_gone = False         # the Worker answered 410: stopped for now
+        self.upstream_now = None         # OpenSky's clock, as last read from its answers
+        self.puts_date = utc_date(self.now())
+        self.puts_today = 0              # puts the Worker took today (since the relay started)
         self.on = False
         self.worker_ok = False
         self.creds = None                # (client_id, client_secret): memory only
@@ -689,45 +735,93 @@ class Relay(object):
                 os.remove(path)
             except OSError:
                 pass
-        log('stop lifted: STOP_AT was moved later')
+        log('stop lifted: the stop date was moved later')
+
+    def local_stop(self):
+        """The relay's own stop date (ISO), or None when the config is wrong."""
+        return local_stop_iso(self.settings, self.extended)
+
+    def _forget(self):
+        self.creds = None
+        self.token = None
+        self.cache.clear()
 
     def stopped(self):
+        """Stopped for good: the relay's own stop date has passed (latched)."""
         self.refresh_settings()
-        s = self.settings
         now = self.now()
-        reached = s['config_ok'] and (now >= s['stop_at'] or (self.worker_stop is not None and now >= self.worker_stop))
-        if reached:
-            self._latch(s['stop_iso'])
-        elif s['config_ok'] and self.latched is not None and s['stop_iso'] > self.latched:
-            self._unlatch()             # opensky-extend moved the stop later
-        stop = is_stopped(s, now, self.latched, self.worker_stop)
+        local = self.local_stop()
+        if local is not None:
+            if now >= parse_iso(local):
+                self._latch(local)
+            elif self.latched is not None and local > self.latched:
+                self._unlatch()             # the stop date was moved later
+        stop = is_stopped(self.settings, now, self.latched, self.extended)
         if stop:
-            self.creds = None
-            self.token = None
-            self.cache.clear()
+            self._forget()
         return stop
 
-    def _stop_now(self):
-        """The Worker or OpenSky's clock says the term is over."""
-        if self.settings['config_ok']:
-            self._latch(self.settings['stop_iso'])
-        self.worker_stop = min(self.worker_stop or self.now(), self.now())
-        self.stopped()
-        raise Refused('stopped')
+    def worker_stopped(self):
+        """Stopped FOR NOW: the Worker answered 410, or its stop date has
+        passed (by this server's clock or OpenSky's). Nothing is latched."""
+        t = self.now()
+        if self.upstream_now is not None:
+            t = max(t, self.upstream_now)
+        if self.worker_gone or (self.worker_stop is not None and t >= self.worker_stop):
+            self._forget()
+            return True
+        return False
+
+    def _check_stops(self):
+        if self.stopped():
+            raise Refused('stopped')
+        if self.worker_stopped():
+            raise Refused('worker-stopped')
 
     def _stop_if_upstream_says(self, *times):
         """OpenSky's clock (its Date header, or the data's own 'time') past the
-        stop stops the relay, whatever this server's clock says."""
-        stop = self.effective_stop()
+        relay's own stop latches the stop, whatever this server's clock says;
+        past the Worker's stop, the relay stops for now."""
+        local = self.local_stop()
         for x in times:
-            if x is not None and stop is not None and x >= stop:
-                self._stop_now()
+            if x is None:
+                continue
+            self.upstream_now = x if self.upstream_now is None else max(self.upstream_now, x)
+            if local is not None and x >= parse_iso(local):
+                self._latch(local)
+                self._forget()
+                raise Refused('stopped')
+        if self.worker_stopped():
+            raise Refused('worker-stopped')
 
-    def effective_stop(self):
-        s = self.settings
-        if not s['config_ok']:
-            return None
-        return min(s['stop_at'], self.worker_stop) if self.worker_stop is not None else s['stop_at']
+    def _take_worker_stop(self, ws_iso):
+        """The Worker's stop date, from a heartbeat. Earlier than the relay's
+        own: obeyed for now (worker_stopped). Later by at most 40 days: the
+        relay's own stop moves to it and is saved, so an extension of the
+        term needs only a change to the Worker. Later by more: ignored."""
+        ws = parse_iso(ws_iso)
+        if ws is None:
+            return
+        self.worker_stop = ws
+        local = self.local_stop()
+        if local is None or self.latched is not None:
+            return
+        own = parse_iso(local)
+        if not (own < ws <= own + MAX_EXTEND_S):
+            return
+        self.extended = ws_iso
+        if self.state_dir:
+            path = os.path.join(self.state_dir, EXTEND_FILE)
+            try:
+                tmp = path + '.tmp'
+                with open(tmp, 'w', encoding='utf-8') as f:
+                    f.write('extended to %s\n' % ws_iso)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp, path)
+            except OSError:
+                pass                     # in memory only: after a restart the earlier stop applies
+        log('stop moved later by the Worker to ' + ws_iso)
 
     # the daily count and OpenSky's wait, saved before every call
     def _state_path(self):
@@ -845,8 +939,14 @@ class Relay(object):
         return status, _json_dict(raw)
 
     def _worker_says_stopped(self, status):
+        """A 410: the Worker's stop date has passed, or its OSKY_STOP_AT cannot
+        be read. Stopped FOR NOW: the client is dropped and nothing goes to
+        OpenSky, but nothing is latched and the heartbeat goes on, so a
+        corrected date in the Worker resumes the relay without the console."""
         if status == 410:
-            self._stop_now()
+            self.worker_gone = True
+            self._forget()
+            raise Refused('worker-stopped')
 
     def register(self):
         t = self.now()
@@ -855,17 +955,18 @@ class Relay(object):
         status, j = self.worker('POST', '/osky/register', {'relayKey': self.key}, auth=False)
         self._worker_says_stopped(status)
         if status == 200 and j and j.get('registered') is True:
-            self.registered, self.register_refused = True, False
+            self.registered, self.no_pin = True, False
             self.register_wait = REGISTER_RETRY_MIN_S
             log('registered with the Worker')
             return True
-        if status == 409:
-            # another relay holds the registration: call nothing, say so, ask again later
-            if not self.register_refused:
-                log('register refused: another relay is registered (409); no OpenSky calls')
-            self.register_refused = True
-            self.register_next = t + REGISTER_REFUSED_RETRY_S
+        if status == 503 and j and j.get('error') == 'no-pin':
+            # the Worker has no address pinned yet: call nothing, say so, ask again in a minute
+            if not self.no_pin:
+                log('waiting for the Worker to pin this server\'s address (OSKY_RELAY_IPV4); no OpenSky calls')
+            self.no_pin = True
+            self.register_next = t + REGISTER_NO_PIN_RETRY_S
             return False
+        self.no_pin = False
         self.register_next = t + self.register_wait
         self.register_wait = min(REGISTER_RETRY_MAX_S, self.register_wait * 2)
         self.count('worker_errors', 'register-%d' % status)
@@ -880,8 +981,10 @@ class Relay(object):
         with self.lock:
             self._roll_day(self.now())
             calls = self.state_count if self.state_count is not None else 0
+            puts = self._puts_roll(self.now())
         q = [('calls', str(calls)), ('cap', str(self.settings['cap'])), ('status', str(self.last_status)),
-             ('hold', str(self.hold_seconds())), ('state', self.state)]
+             ('hold', str(self.hold_seconds())), ('state', self.state), ('puts', str(puts)),
+             ('stop', self.local_stop() or '')]
         status, j = self.worker('GET', '/osky/report', query=q)
         self.count('heartbeats')
         self._worker_says_stopped(status)
@@ -895,9 +998,8 @@ class Relay(object):
             return False
         if not self.worker_ok:
             return False
-        ws = parse_iso(j.get('stop_at'))
-        if ws is not None:
-            self.worker_stop = ws
+        self.worker_gone = False
+        self._take_worker_stop(j.get('stop_at'))
         return j.get('on') is True
 
     def ensure_creds(self):
@@ -959,16 +1061,24 @@ class Relay(object):
             self.registered = False
         if status == 200:
             self.count('puts')
+            with self.lock:
+                self._puts_roll(self.now())
+                self.puts_today += 1
             return True
         return status == 409            # no longer wanted: nothing to retry
+
+    def _puts_roll(self, t):
+        today = utc_date(t)
+        if today > self.puts_date:
+            self.puts_date, self.puts_today = today, 0
+        return self.puts_today
 
     # ── OpenSky ────────────────────────────────────────────────────────────
     def get_token(self, stale=None):
         t = self.now()
         if self.token and self.token != stale and t < self.token_exp - TOKEN_RENEW_MARGIN_S:
             return self.token
-        if self.stopped():
-            raise Refused('stopped')
+        self._check_stops()
         if not self.creds:
             raise Refused('no-key')
         if self.token_fail_at is not None and t - self.token_fail_at < TOKEN_RETRY_GAP_S:
@@ -1018,8 +1128,7 @@ class Relay(object):
         return status, hdrs, data
 
     def fetch_box(self, box, icao):
-        if self.stopped():
-            raise Refused('stopped')
+        self._check_stops()
         if not self.creds:
             raise Refused('no-key')
         t = self.now()
@@ -1035,8 +1144,7 @@ class Relay(object):
         if status == 401:
             # the token was refused: one fresh login, one retry, no more
             tok = self.get_token(stale=tok)
-            if self.stopped():
-                raise Refused('stopped')
+            self._check_stops()
             self.reserve_call()
             status, hdrs, data = self._call_states(box, icao, tok)
             if status == 401:
@@ -1102,6 +1210,10 @@ class Relay(object):
             if e.code == 'stopped' or self.stopped():
                 self.state = 'stopped'
                 return False
+            if e.code == 'worker-stopped':
+                # the Worker's stop: nothing to OpenSky, the heartbeat goes on
+                self.state = 'worker-stopped'
+                return True
             self.count('refused', e.code)
             return True
 
@@ -1116,12 +1228,15 @@ class Relay(object):
             self.state = 'bad-worker-url'
             return True
         if not self.registered and not self.register():
-            self.state = 'register-refused' if self.register_refused else 'registering'
+            self.state = 'no-pin' if self.no_pin else 'registering'
             return True
         self.on = self.heartbeat()
         if self.stopped():
             self.state = 'stopped'
             return False
+        if self.worker_stopped():
+            self.state = 'worker-stopped'
+            return True
         if not self.registered:
             self.state = 'registering'
             return True
@@ -1143,7 +1258,7 @@ class Relay(object):
             try:
                 self.do_box(box, icao, calls)
             except Refused as e:
-                if e.code == 'stopped':
+                if e.code in ('stopped', 'worker-stopped'):
                     raise
                 self.count('refused', e.code)
                 self.state = 'hold' if e.code.endswith('-hold') else self.REFUSED_STATE.get(e.code, self.state)
@@ -1186,8 +1301,10 @@ class Relay(object):
         st = {
             'state': self.state, 'registered': self.registered, 'on': self.on,
             'relay_key_set': bool(self.key), 'opensky_client_in_memory': self.creds is not None,
-            'stop_at': self.settings['stop_iso'], 'worker_stop_at': utc_iso(self.worker_stop) if self.worker_stop else None,
+            'stop_at': self.local_stop(), 'conf_stop_at': self.settings['stop_iso'],
+            'worker_stop_at': utc_iso(self.worker_stop) if self.worker_stop else None,
             'stop_latched': self.latched is not None, 'date': self.state_date, 'calls_today': self.state_count,
+            'puts_today': self.puts_today,
             'cap': self.settings['cap'], 'last_status': self.last_status, 'hold_seconds': self.hold_seconds(),
             'at': utc_iso(t),
         }
@@ -1203,7 +1320,7 @@ class Relay(object):
     def run(self):
         s = self.settings
         log('start: relay key set: %s, stop %s, cap %d/day, cache %d s, heading %s, count today %s'
-            % ('yes' if self.key else 'no', s['stop_iso'] or 'MISSING (stopped)', s['cap'], s['cache_s'],
+            % ('yes' if self.key else 'no', self.local_stop() or 'MISSING (stopped)', s['cap'], s['cache_s'],
                'on' if s['heading'] else 'off', 'unreadable' if self.state_count is None else self.state_count))
         while not self.done.is_set():
             try:
@@ -1227,7 +1344,7 @@ class Relay(object):
 def cli_stopped(rt):
     settings = read_settings(rt['config_dir'])
     now = make_clock(rt['clock_file'])()
-    return is_stopped(settings, now, read_stop_marker(rt['state_dir']))
+    return is_stopped(settings, now, read_stop_marker(rt['state_dir']), read_extension(rt['state_dir']))
 
 
 def main(argv):

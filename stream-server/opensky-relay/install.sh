@@ -7,23 +7,29 @@
 # to the boards' Worker (fids-proxy, its /osky/* routes), which it polls once
 # a minute. Nothing calls in, no port is open, and there is no tunnel and no
 # token to copy. The one secret made here, the relay key, stays on this
-# server; the Worker keeps only its sha256. The OpenSky client is never on
-# this server's disk: the relay asks the Worker for it and keeps it in memory.
+# server; the Worker keeps only its sha256, and takes it only from the
+# address pinned in its secret OSKY_RELAY_IPV4 (typed in the Cloudflare
+# dashboard from the address Hetzner shows for this server). The OpenSky
+# client is never on this server's disk: the relay asks the Worker for it
+# and keeps it in memory.
 #
 # How it runs: Hetzner's Cloud config box, at server creation (cloud-init,
 # as root, no terminal), these two lines:
 #
 #        #!/bin/bash
-#        curl -fsSL https://fids.orionconnected.com/o | bash
+#        curl -fsSL --retry 10 --retry-all-errors --retry-delay 15 -o /root/o https://fids.orionconnected.com/o && bash /root/o
 #
 # cloud-init runs the Cloud config as a script only when it starts with #!,
-# so the first line is needed. On the server, opensky-update downloads this
-# file again and runs it.
+# so the first line is needed. The download is retried (a 502 or a network
+# blip at first boot) and runs only once it is whole: a pipe into bash would
+# run nothing on a failure and still report success, and a retried transfer
+# into a pipe would hand bash the script twice. On the server,
+# opensky-update downloads this file again and runs it.
 #
-# Safe to run again: it keeps the relay key, the stop date and the settings.
-# It never calls OpenSky itself. The relay calls OpenSky only once the Worker
-# switches it on (after the agreement is signed and paid) and hands it the
-# OpenSky client.
+# Safe to run again: it keeps the relay key, the stop date (and a later one
+# the Worker gave the relay) and the settings. It never calls OpenSky itself.
+# The relay calls OpenSky only once the Worker switches it on (after the
+# agreement is signed and paid) and hands it the OpenSky client.
 #
 # What it sets up:
 #   - /opt/opensky-relay/relay.py (Python standard library only), checked
@@ -35,7 +41,10 @@
 #     user via DynamicUser, ProtectSystem=strict, NoNewPrivileges, IPv4
 #     sockets only, no metadata service, no core dumps); the relay key
 #     arrives through LoadCredential
-#   - opensky-relay-stop.timer: turns the relay off at the end of the term
+#   - no crash reports anywhere: apport masked, kernel.core_pattern=|/bin/false
+#   - opensky-relay-stop.timer: turns the relay off once its stop date has
+#     passed (checked at STOP_AT and every hour, so a later stop date the
+#     Worker gave the relay is respected)
 #   - ufw: deny all incoming, when ufw is there
 #   - the commands opensky-status, opensky-extend and opensky-update
 #
@@ -55,13 +64,16 @@ main() {
 
   # The original licence term ends 12 Nov 2026 23:59:59 Swiss time (CET).
   # Used only when no stop date is saved yet; a saved one is never changed
-  # here. Only opensky-extend, typed on the server, moves it. The relay also
-  # stops at the Worker's own stop date, whichever comes first.
+  # here. The relay follows the Worker's stop date (OSKY_STOP_AT): an earlier
+  # one stops it for now, and a later one, by 40 days at most, moves its own
+  # stop (saved in its state directory). A server made AFTER this date
+  # starts stopped, so it moves in the same change as OSKY_STOP_AT in
+  # workers/wrangler.fids-proxy.jsonc, and stays equal to it (a test checks).
   local DEFAULT_STOP_AT="2026-11-12T22:59:59Z"
   local RELAY_URL="https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/relay.py"
   # The relay.py this installer was written with (tests/opensky-relay.test.js
   # fails when it drifts). A download that does not match is never installed.
-  local RELAY_SHA256="ee47f047b19246e9ab8ba0fe13c804829fd9be357577b98b894a59e649b88a7e"
+  local RELAY_SHA256="177ffc6f99c7f275aad36fd138cb1de24272ca47a54a0cfd374982266b34e1fb"
 
   install -d -m 0755 -o root -g root /usr/local/lib/opensky-relay
   write_common
@@ -88,6 +100,9 @@ main() {
   chown root:root "$OSKY_KEY"
   chmod 0600 "$OSKY_KEY"
   remove_old_files
+
+  echo "== OpenSky relay: no crash reports"
+  no_crash_dumps
 
   echo "== OpenSky relay: services"
   write_units
@@ -143,18 +158,31 @@ install_relay() {
   if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
     here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   fi
+  local tries=1 i
   tmp="$(mktemp)"
   # a repository checkout (bash stream-server/opensky-relay/install.sh) uses
-  # its own relay.py; anything else, a pipe from curl included, downloads
-  # the one on main
+  # its own relay.py; anything else (the Cloud config, opensky-update)
+  # downloads the one on main
   if [ -n "$here" ] && [ "$(basename "$here")" = opensky-relay ] && [ -f "$here/relay.py" ]; then
     cp "$here/relay.py" "$tmp"
   else
-    curl -fsSL --retry 3 "$url" -o "$tmp"
+    # GitHub can serve an old copy for a few minutes after a change: the
+    # download is tried, and checked, again for about 15 minutes
+    tries=16
   fi
   # only the exact relay.py this installer was written with is installed:
   # never a cut-off download, an error page or a newer, unchecked file
-  got="$(sha256sum "$tmp" | cut -d ' ' -f 1)"
+  for i in $(seq 1 "$tries"); do
+    if [ "$tries" -gt 1 ]; then
+      curl -fsSL --retry 3 --retry-all-errors "$url" -o "$tmp" || : > "$tmp"
+    fi
+    got="$(sha256sum "$tmp" | cut -d ' ' -f 1)"
+    if [ "$got" = "$want" ] || [ "$i" -ge "$tries" ]; then
+      break
+    fi
+    echo "The relay download does not match this installer yet ($i of $tries); trying again in 60 s."
+    sleep 60
+  done
   if [ "$got" != "$want" ]; then
     rm -f "$tmp"
     echo "The relay download does not match this installer, so nothing was changed."
@@ -184,13 +212,15 @@ write_config() {
   else
     cat > "$OSKY_CONF" <<EOF
 # OpenSky relay settings. Root only; read by $OSKY_RELAY.
-# STOP_AT is the end of the licence term, in UTC. Change it only with
-#     opensky-extend YYYY-MM-DD
-# (the relay also stops at the Worker's own stop date, whichever is first)
+# STOP_AT is the end of the licence term, in UTC. The relay follows the
+# Worker's stop date (OSKY_STOP_AT): an earlier one stops it for now, a later
+# one (40 days later at most) moves its stop, saved in its state directory.
+# On the server console only, if it is ever needed: opensky-extend YYYY-MM-DD
 STOP_AT=$default_stop
 # Upstream calls per UTC day, paced across the hours (1500 at most).
 DAILY_CAP=1500
-# Seconds an identical box shares one OpenSky call (300 at most).
+# Seconds an identical box shares one OpenSky call (120 at most: the Worker
+# keeps a put 180 s, and the next one has to land first).
 CACHE_SECONDS=120
 # 1 = also send the heading (true_track). 0 until OpenSky confirms it is covered.
 HEADING=0
@@ -209,6 +239,23 @@ remove_old_files() {
   # lives only in the Worker, so none of them is used any more.
   rm -f "$OSKY_ETC/credentials" "$OSKY_ETC/caller-key" \
     /usr/local/bin/opensky-key /usr/local/bin/opensky-caller-key
+}
+
+no_crash_dumps() {
+  # LimitCORE=0 in the unit stops a core FILE only. Ubuntu pipes every crash
+  # to apport, which runs as root outside the unit's sandbox and writes a
+  # report holding the process's memory (the OpenSky client, the token) to
+  # /var/crash, and the kernel pipes whatever RLIMIT_CORE says. So: no
+  # apport, and a core pattern that throws every core away.
+  systemctl disable --now apport.service >/dev/null 2>&1 || true
+  systemctl mask apport.service apport-forward.socket >/dev/null 2>&1 || true
+  cat > /etc/sysctl.d/60-opensky-relay-no-core.conf <<'EOF'
+# OpenSky relay: no core dumps and no crash reports on this server
+kernel.core_pattern=|/bin/false
+fs.suid_dumpable=0
+EOF
+  chmod 0644 /etc/sysctl.d/60-opensky-relay-no-core.conf
+  sysctl -q -p /etc/sysctl.d/60-opensky-relay-no-core.conf >/dev/null 2>&1 || true
 }
 
 write_common() {
@@ -270,7 +317,9 @@ osky_show_time() {
   printf '   %s  (Moncton time)\n' "$(TZ=America/Moncton date -d "@$e" '+%a %d %b %Y, %H:%M:%S %Z')"
 }
 
-# the timer that turns the relay off at STOP_AT ($1)
+# the timer that turns the relay off once its stop date has passed: at
+# STOP_AT ($1), and every hour (the relay may hold a later stop date from
+# the Worker; the service checks relay.py --stopped before turning it off)
 osky_write_timer() {
   local when="${1%Z}"
   when="${when/T/ } UTC"
@@ -280,6 +329,7 @@ Description=Turn the OpenSky relay off at the end of the licence term
 
 [Timer]
 OnCalendar=$when
+OnCalendar=hourly
 Persistent=true
 AccuracySec=1s
 Unit=opensky-relay-stop.service
@@ -370,7 +420,9 @@ Description=Turn the OpenSky relay off (end of the licence term)
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/systemctl disable --now opensky-relay.service
+# only once the relay's own stop date (relay.conf, or a later one the Worker
+# gave it) has passed: relay.py --stopped exits 0 then
+ExecStart=/bin/sh -c 'if /usr/bin/python3 -I /opt/opensky-relay/relay.py --stopped; then /usr/bin/systemctl disable --now opensky-relay.service; fi'
 EOF
 }
 
@@ -398,10 +450,11 @@ except Exception:
     sys.exit(0)
 for label, key in (("State", "state"), ("Registered", "registered"), ("OpenSky on", "on"),
                    ("Calls today", "calls_today"), ("Cap", "cap"), ("Last answer", "last_status"),
-                   ("Hold (s)", "hold_seconds"), ("At", "at")):
+                   ("Hold (s)", "hold_seconds"), ("Puts today", "puts_today"), ("Stop date", "stop_at"),
+                   ("Worker stop", "worker_stop_at"), ("At", "at")):
     print("  %-13s %s" % (label + ":", j.get(key)))
 ' "$OSKY_STATUS" 2>/dev/null
-echo "  Stops at:"
+echo "  relay.conf STOP_AT (the relay may hold a later one from the Worker, above):"
 osky_show_time "$(osky_stop_at)"
 echo "  Public IPv4:  ${ip:-unknown (no internet?)}"
 echo "  The relay's own log: journalctl -u opensky-relay"
@@ -503,8 +556,9 @@ print_summary() {
   if [ "${TERM_ENDED:-0}" = 1 ]; then
     echo " The licence term has ended, so the relay is OFF."
   else
-    echo " It registers with the boards' Worker by itself and calls"
-    echo " OpenSky only once the Worker switches it on."
+    echo " It registers with the boards' Worker by itself once the"
+    echo " Worker's OSKY_RELAY_IPV4 secret holds this server's address,"
+    echo " and calls OpenSky only once the Worker switches it on."
   fi
   if [ -n "$ip" ]; then
     echo
