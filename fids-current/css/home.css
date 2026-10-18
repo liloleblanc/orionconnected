@@ -116,15 +116,25 @@ bdi{unicode-bidi:isolate}
 .lsw .globe{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6}
 .lsw .lsw-code{display:none;font-stretch:87.5%;letter-spacing:.06em}
 .lsw-list{min-width:230px;padding:6px 0;max-height:min(70vh,520px);overflow:auto}
-.lsw-list a{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:46px;padding-inline:18px;text-decoration:none;font-size:16px;font-weight:550}
+/* each language is the whole row: its target, its hover and its focus ring
+   (the masthead's own links are inline-flex, and that rule outranks this one) */
+.lsw-list a{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;min-height:46px;padding-inline:18px;text-decoration:none;font-size:16px;font-weight:550}
 .lsw-list a:hover,.lsw-list a:focus-visible{background:rgba(186,196,223,.14)}
+/* a row as wide as its list keeps its focus ring inside it: the list
+   scrolls (overflow:auto), and a ring outside the row lost its two sides
+   to that, leaving two gold bars that read as rules between the rows */
+.lsw-list a:focus-visible{outline-offset:-3px}
 .lsw-list a b{font-weight:700;font-size:12.5px;letter-spacing:.08em;color:var(--mist);font-stretch:87.5%}
 .lsw-list a[aria-current="true"]{box-shadow:inset 4px 0 0 var(--gold)}
 [dir="rtl"] .lsw-list a[aria-current="true"]{box-shadow:inset -4px 0 0 var(--gold)}
 .lsw-list a[aria-current="true"] b{color:var(--gold)}
 
 .folio-line{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 24px;border-block:1px solid var(--rule);padding-block:9px;font-size:13.5px;color:var(--slate);font-weight:500}
-.folio-line>span{display:inline-flex;align-items:center;gap:10px}
+/* the LIVE line: its dot, then its words. A span the store fills holds only
+   words, and is never a flex box: in Chinese and Japanese js/home.js sets
+   each name in a span of its own (.nb), and a flex gap would open between
+   every piece (来自  新不伦瑞克  省  蒙克顿) */
+.folio-line>span:not([data-i18n]){display:inline-flex;align-items:center;gap:10px}
 /* the boards' LIVE dot holds still, and so does this one */
 .live-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);flex:none;display:inline-block;animation:none}
 
@@ -316,9 +326,12 @@ bdi{unicode-bidi:isolate}
   .g12{grid-template-columns:minmax(0,1fr)}
   .g12>*{grid-column:1/-1 !important;grid-row:auto !important}
   .hero-grid{display:flex;flex-direction:column}
-  .hero h1{order:1}
+  /* in a column, "end" is the side, not the foot: the title and the
+     standfirst run from the gutter, and a title wider than the column
+     never hangs off the start of the page */
+  .hero h1{order:1;align-self:stretch}
   .hero-fig{order:2;margin-top:24px}
-  .standfirst{order:3;margin-top:24px}
+  .standfirst{order:3;margin-top:24px;align-self:stretch}
   .kicker{margin-bottom:2px}
   .feature{row-gap:0}
   .feature .copy,.feature .main{display:contents}
@@ -339,18 +352,24 @@ bdi{unicode-bidi:isolate}
   .foot nav{grid-template-columns:1fr 1fr}
   .cr>h3{font-size:24px}
 }
+/* the homepage's masthead holds the logo, the switch with its language's
+   name, Menu with its word and the boards button: in French, Portuguese,
+   Italian, Spanish and German the four do not fit in one row up to 686 px,
+   and the button ran off the page. The menu's first place is that same
+   button, so there it gives way first (credits has no menu, and fits). */
+@media (max-width:720px){
+  .mast .menu~.btn{display:none}
+}
 @media (max-width:600px){
   body{font-size:16.5px}
   .mast{gap:12px}
   .mast .btn{display:none}
-  .lsw .lsw-name{display:none}
-  .lsw .lsw-code{display:inline}
   .folio-line{font-size:13px}
   .hero{padding-top:22px}
   /* the title's number and its noun hold together (a no-break space), and
      no word is hyphenated: at 320 px the Spanish "62 aeropuertos." needs
-     a step smaller to fit its line */
-  .hero h1{font-size:clamp(34px,11.8vw,40px)}
+     a step smaller to fit its line (and smaller again below 288 px) */
+  .hero h1{font-size:clamp(30px,11.8vw,40px)}
   .region ul{column-gap:14px}
   .colbar .cols{column-gap:14px}
   .colbar .cols span{padding-inline:6px 0}
@@ -383,6 +402,25 @@ bdi{unicode-bidi:isolate}
   .menu summary{padding-inline:12px}
   .menu summary .menu-word{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
   .menu-list{min-width:min(250px,calc(100vw - 32px))}
+}
+/* the switch names the language on screen in its own script on a phone
+   too (日本語, العربية, not JA, AR): the longest, Português, still leaves
+   32 px beside the logo at 320 px. Narrower than any phone sold now, the
+   two-letter code stands in for it on screen, and the name is still what
+   a screen reader says (the code is hidden from it).
+   The Chinese and Japanese titles set a whole phrase with no break in it
+   (实时航班信息屏。, eight characters): below 320 px they step down with
+   the screen, so the phrase keeps its line instead of leaving the page.
+   The hero's boards button ("Voir les tableaux en direct", 272 px) sits a
+   little tighter, which keeps it on one line down to 293 px; narrower
+   still, it takes two lines rather than run off the page. */
+@media (max-width:319px){
+  :lang(ja) .hero h1,:lang(zh) .hero h1{font-size:11vw}
+  .ctas .btn{max-width:100%;padding-inline:16px;white-space:normal}
+}
+@media (max-width:299px){
+  .lsw .lsw-name{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  .lsw .lsw-code{display:inline}
 }
 @media (max-width:374px){
   .region ul{columns:1}
