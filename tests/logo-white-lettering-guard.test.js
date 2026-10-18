@@ -278,7 +278,7 @@ test('2. no mount class is put on a mark, and no stylesheet styles one', () => {
 // ── white-only art ─────────────────────────────────────────────────────────
 /** Every opaque pixel of a PNG: [r, g, b, a]. 8-bit, non-interlaced, colour types 2, 3 and 6. */
 function pngPixels(file) {
-  const buf = fs.readFileSync(file);
+  const buf = Buffer.isBuffer(file) ? file : fs.readFileSync(file);
   let p = 8, w, h, ct, plte = null, trns = null;
   const idat = [];
   while (p < buf.length) {
@@ -287,8 +287,9 @@ function pngPixels(file) {
     else if (type === 'PLTE') plte = d; else if (type === 'tRNS') trns = d; else if (type === 'IDAT') idat.push(d);
     p += 12 + len;
   }
-  assert.ok(ct === 6 || ct === 2 || ct === 3, file + ': colour type ' + ct);
-  const bpp = ct === 6 ? 4 : ct === 2 ? 3 : 1, stride = w * bpp, raw = zlib.inflateSync(Buffer.concat(idat));
+  // (grey and grey-with-alpha too: Caribbean's light lettering is grey + alpha)
+  assert.ok(ct === 6 || ct === 2 || ct === 3 || ct === 4 || ct === 0, file + ': colour type ' + ct);
+  const bpp = ct === 6 ? 4 : ct === 2 ? 3 : ct === 4 ? 2 : 1, stride = w * bpp, raw = zlib.inflateSync(Buffer.concat(idat));
   const out = [];
   let prev = Buffer.alloc(stride), rp = 0;
   for (let y = 0; y < h; y++) {
@@ -303,6 +304,7 @@ function pngPixels(file) {
     }
     for (let x = 0; x < w; x++) {
       if (ct === 3) { const k = cur[x]; out.push([plte[k * 3], plte[k * 3 + 1], plte[k * 3 + 2], trns && k < trns.length ? trns[k] : 255]); continue; }
+      if (ct === 0 || ct === 4) { const g = cur[x * bpp]; out.push([g, g, g, ct === 4 ? cur[x * bpp + 1] : 255]); continue; }
       const i = x * bpp; out.push([cur[i], cur[i + 1], cur[i + 2], bpp === 4 ? cur[i + 3] : 255]);
     }
     prev = cur;
@@ -638,4 +640,126 @@ test('8. the places it was found stay clear: the banner, the board\'s rows, the 
   assert.match(CORE, /'SP': +'\/logos\/airlines\/canadian-regional\/pal-square-badge\.svg'/);
   assert.equal(PAIRS.SP.onDark, PAIRS.PB.onDark);
   assert.equal(PAIRS.SP.onLight, PAIRS.PB.onLight);
+});
+
+// ── 9. the phone gate's header ─────────────────────────────────────────────
+// 2026-10-18: the phone gate drew the TV gate's logo, which is chosen for the
+// TV banner's light band (the carrier's dark lettering file), on its own
+// near-black header: Porter's wordmark, and every carrier with a lettering
+// pair, black on the dark card. It now picks the lettering for its header's
+// ground (_mgHeaderLogoSrc).
+test('9. the phone gate\'s header: white lettering on its dark header for every carrier, never white lettering on its light one', () => {
+  const src = fnSource('renderMobileGateHtml');
+  assert.doesNotMatch(src, /ctx\.logoHtml/, 'the TV banner\'s logo (drawn for its light band) is not the phone\'s');
+  assert.match(src, /const _logoBlock = _mgHeaderLogo\(ctx\.logoCode \|\| airline, [^;]*, !_lt, T\.ink, _logoCss\);/);
+  assert.match(CORE, /renderMobileGateHtml\(\{[^}]*logoCode: bannerLogoCode, logoName: bannerLogoName,/);
+  // the two grounds, as the phone paints its header
+  const hdr = [...src.matchAll(/pageBg:'#[0-9a-f]{6}', header:'(#[0-9a-f]{6})'/gi)].map((m) => colours(m[1])[0].slice(0, 3));
+  assert.equal(hdr.length, 2, 'the light and the dark theme');
+  const [LIGHT_HDR, DARK_HDR] = hdr;
+  assert.ok(lum(...DARK_HDR) < 0.05 && lum(...LIGHT_HDR) > 0.7, 'light theme first, then dark');
+  // the name, where no file is drawn for the ground, is in the header's ink, never the old navy
+  assert.match(fnSource('_mgHeaderLogo'), /color:' \+ ink \+ ';/);
+  assert.match(fnSource('_mgLogoFail'), /img\.getAttribute\('data-ink'\)/);
+  assert.doesNotMatch(fnSource('_mgHeaderLogo') + fnSource('_mgLogoFail'), /#002B58|background/i);
+  const WM = table('const IATA_TO_WORDMARK = {');
+  const LOCAL = table('var LOCAL_LOGOS = {');
+  const MG = table('var MG_LOGO_FILES = {');
+  // the TV banner's own white and colour files (BANNER_DARK_LOGO and
+  // BANNER_LIGHT_LOGO, inside the gate's banner builder)
+  const BANNER = [table('var BANNER_DARK_LOGO = {'), table('var BANNER_LIGHT_LOGO = {')];
+  const pick = vm.runInNewContext(
+    'var FIDS_BUILD_TAG = "t"; var IATA_TO_WORDMARK = ' + JSON.stringify(WM)
+    + '; var LOGO_SUBFOLDER = ' + JSON.stringify(table('const LOGO_SUBFOLDER = {'))
+    + '; var WORDMARK_RASTER = ' + JSON.stringify(table('const WORDMARK_RASTER = {'))
+    + '; var COLOR_WORDMARKS = ' + JSON.stringify(table('const COLOR_WORDMARKS = {'))
+    + '; var OPBY_WORDMARKS_THEMED = ' + JSON.stringify(PAIRS)
+    + '; var CALLSIGN_TO_IATA = ' + JSON.stringify(table('const CALLSIGN_TO_IATA = {'))
+    + '; var MG_LOGO_FILES = ' + JSON.stringify(MG) + ';\n'
+    + fnSource('logoPath') + fnSource('wordmarkSrc') + fnSource('_mgHeaderLogoSrc') + '\n_mgHeaderLogoSrc;');
+  // (a comment in a file is not paint: Pacific Coastal's says "no live <text>").
+  // Stripped until none is left, so a marker split around a comment cannot
+  // join into a new one.
+  const noComments = (s) => { let prev; do { prev = s; s = s.replace(/<!--[\s\S]*?-->/g, ''); } while (s !== prev); return s; };
+  const paints = (f) => svgPaints(noComments(fs.readFileSync(f, 'utf8'))).map((p) => p.colour.slice(0, 3));
+  const reads = (url, ground) => {
+    const f = path.join(FC, String(url).split('?')[0]);
+    assert.ok(fs.existsSync(f), url + ' exists');
+    if (/\.png$/i.test(f)) {
+      const px = pngPixels(f).filter((q) => q[3] > 128);
+      return px.length > 0 && px.filter((q) => contrast(q.slice(0, 3), ground) >= 3).length >= 0.98 * px.length;
+    }
+    const t = fs.readFileSync(f, 'utf8');
+    // a file whose whole drawing is forced white by its own filter (Flair's)
+    if (/<g filter="url\(#fidsForceWhite\)">/.test(t) && /id="fidsForceWhite"[^>]*>\s*<feColorMatrix type="matrix" values="0 0 0 0 1\s+0 0 0 0 1\s+0 0 0 0 1\s+0 0 0 1 0"/.test(t)) return true;
+    // a bitmap drawn inside the file (SWISS's, jetBlue's): its pixels (one
+    // inside a mask only shapes the paint, as Spirit's white does)
+    const imgs = [...t.replace(/<mask\b[\s\S]*?<\/mask>/g, '').matchAll(/xlink:href="data:image\/png;base64,([^"]+)"/g)];
+    if (imgs.length) {
+      return imgs.every((m) => {
+        const px = pngPixels(Buffer.from(m[1], 'base64')).filter((q) => q[3] > 128);
+        return px.length > 0 && px.filter((q) => contrast(q.slice(0, 3), ground) >= 3).length >= 0.98 * px.length;
+      });
+    }
+    const cs = paints(f);
+    return cs.length > 0 && cs.every((c) => contrast(c, ground) >= 3);
+  };
+  // every carrier with art on file anywhere the gate draws one: its
+  // wordmark, its combined logo, its Operated-by pair, the TV banner's files
+  const codes = [...new Set([...Object.keys(WM), ...Object.keys(LOCAL), ...Object.keys(PAIRS),
+    ...Object.keys(BANNER[0]), ...Object.keys(BANNER[1])])];
+  assert.ok(codes.length > 100, 'carriers checked: ' + codes.length);
+  const bad = [];
+  // a file whose frame (its root width x height) is another shape than its
+  // drawing (its viewBox) draws small inside the header's box: Perimeter's
+  // and First Air's colour files, 1200 x 800 around drawings three and a
+  // half times as wide, came out under half the header's height
+  const frameOff = (url) => {
+    const f = path.join(FC, String(url).split('?')[0]);
+    if (!/\.svg$/i.test(f)) return false;
+    const root = (fs.readFileSync(f, 'utf8').match(/<svg\b[^>]*>/) || [''])[0];
+    const w = root.match(/\swidth="([\d.]+)(px)?"/), h = root.match(/\sheight="([\d.]+)(px)?"/), vb = root.match(/viewBox="([^"]+)"/);
+    if (!(w && h && vb)) return false;
+    const v = vb[1].trim().split(/[\s,]+/).map(Number);
+    return Math.abs((+w[1] / +h[1]) / (v[2] / v[3]) - 1) > 0.2;
+  };
+  for (const c of codes) {
+    // a carrier with art but no lettering pair is decided for both grounds
+    if (!WM[c] && LOCAL[c]) assert.ok(MG[c] || PAIRS[c], c + ': art on file but no MG_LOGO_FILES entry, so the phone header cannot know which file reads on its ground');
+    const d = pick(c, true), l = pick(c, false);
+    if (d && !reads(d, DARK_HDR)) bad.push(c + ' on the dark header: ' + d);
+    if (l && whiteOnly(l)) bad.push(c + ' on the light header is white lettering: ' + l);
+    for (const u of [d, l]) if (u && frameOff(u)) bad.push(c + ': ' + u + ' is framed as another shape than its drawing, and draws small in the header');
+    // a carrier the TV banner or the Operated-by caption draws in lettering
+    // is drawn on the phone too, on both grounds, never its name typed in
+    // its place (Calm Air, Pascan and Perimeter were, 2026-10-18); Qantas,
+    // with no white file, is the one MG_LOGO_FILES leaves to its name
+    if ((PAIRS[c] || BANNER[0][c] || BANNER[1][c]) && !(MG[c] && (MG[c].dark === null || MG[c].light === null))) {
+      if (!d) bad.push(c + ' on the dark header is its name, but its lettering is on file');
+      if (!l) bad.push(c + ' on the light header is its name, but its lettering is on file');
+    }
+  }
+  assert.deepEqual(bad, [], 'the phone gate\'s header logo does not read on its ground:\n' + bad.join('\n'));
+  // the case it was found on
+  assert.equal(pick('PD', true), '/logos/airlines/canadian/porter-wordmark-light.svg?v=t');
+  // (and the light header its brand-colour lettering, as the board's light rows)
+  assert.equal(pick('PD', false), '/logos/airlines/canadian/porter-wordmark-color.svg?v=t');
+  // the northern carriers: the Operated-by caption's own pair (#991)
+  assert.equal(pick('MO', true), '/logos/airlines/canadian-regional/calmair-wordmark-light.svg');
+  assert.equal(pick('BQ', true), '/logos/airlines/canadian-regional/pascan-wordmark-light.svg');
+  assert.equal(pick('YP', true), '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg');
+  assert.equal(pick('YP', false), '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg');
+  // (its colour twin: the white lettering's own four paths and canvas, in its colours)
+  const dOf = (f) => [...fs.readFileSync(path.join(FC, f), 'utf8').matchAll(/\sd="([^"]+)"/g)].map((m) => m[1]);
+  const vbOf = (f) => (fs.readFileSync(path.join(FC, f), 'utf8').match(/viewBox="([^"]+)"/) || [])[1];
+  const twin = '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg', white = '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg';
+  assert.deepEqual(dOf(twin), dOf(white));
+  assert.deepEqual(dOf(twin), dOf('/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg'));
+  assert.equal(vbOf(twin), vbOf(white));
+  assert.deepEqual(dOf('/logos/airlines/canadian-regional/firstair-logo-cropped.svg'), dOf('/logos/airlines/canadian-regional/firstair.svg'));
+  // a carrier named by its ICAO code is the carrier it names
+  assert.equal(pick('BAW', true), pick('BA', true));
+  assert.equal(pick('FLE', false), pick('F8', false));
+  // and Qantas, with no white file, is still its name on the dark header
+  assert.equal(pick('QF', true), '');
 });

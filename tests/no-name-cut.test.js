@@ -817,9 +817,116 @@ test('the weather screens\' title keeps one line, its airport giving way first; 
   assert.match(room, /var o = _wxDayOver\(d, body, ic\);/);
   assert.match(room, /ic\.style\.setProperty\('height', nw \+ 'px', 'important'\);/);
   assert.match(fnSource('_wxDayOver'), /rg\.selectNodeContents\(n\);/);
+  // 2026-10-18 — measured against the edge that cuts the words, not only the
+  // panel's foot: the body clips at its content box, above the panel's bottom
+  // padding, and four lines ('Partiellement nuageux' over 'Parzialmente
+  // nuvoloso') ran 1 to 4px into that padding, read as fitting and were cut
+  const over = fnSource('_wxDayOver');
+  assert.match(over, /if \(getComputedStyle\(a0\)\.overflowY === 'visible'\) continue;/);
+  assert.match(over, /var af = ab\.top \+ \(a0\.clientTop \+ a0\.clientHeight\) \* k;\s*if \(af < foot\) foot = af;/);
+  assert.ok(over.indexOf('if (af < foot) foot = af;') < over.indexOf('var down = '), 'the cutting edge is the foot the words are measured against');
+  // and with the icon at its smallest, the five conditions come down together,
+  // never under the floor (the guard's own: fidsFitFloor at the card's
+  // scale), set on each line where the board's fit sets it
+  assert.match(room, /if \(fs0 > flo\) setFs\(_fxSearch\(flo, fs0, setFs\) \|\| flo\);/);
+  assert.match(room, /var flo = fidsFitFloor\(\) \/ _fxScale\(lines\[0\]\);/);
+  assert.match(room, /fv = Math\.min\(px, bases\[u\]\)/);
+  assert.doesNotMatch(room, /conds\[u\]\.style\.setProperty\('font-size'/, 'a size on the condition\'s box does not reach a line carrying its own');
+  // a row measured again takes back only what it wrote itself
+  assert.match(room, /_wxDayLines\(days\[s1\]\.querySelector\('\.wxc-dcond'\)\)\.forEach\(_wxLineUndo\);/);
   // after every fit pass and every plate fit
   assert.match(fnSource('fidsFitAll'), /try \{ _wxFitTitles\(scope\); \} catch \(eW\) \{\}/);
   assert.match(fnSource('_wxFitPlateCities'), /try \{ _wxFitTitles\(root\); \} catch \(e2\) \{\}/);
+});
+
+// 2026-10-18 — _wxDayRoom run on a model of the five-day row: each panel an
+// icon over its weather words, the words' lines measured as the board lays
+// them out (a line wider than its panel at its size takes a second line).
+// The board's own fit (the guard rule for .wxc-l1/.wxc-l2) brings a long
+// line down to one line by writing its size on the line, and it does so
+// AFTER the card is first drawn.
+function wxDayRowModel() {
+  const mkStyle = () => ({ p: {}, getPropertyValue(k) { return this.p[k] || ''; },
+    setProperty(k, v) { this.p[k] = String(v); }, removeProperty(k) { delete this.p[k]; } });
+  const calls = { over: 0 };
+  const mkLine = (oneLineMax) => ({ style: mkStyle(), oneLineMax, base: 18.5 });
+  const mkDay = (room, lines, text) => {
+    const ic = { style: mkStyle() };
+    Object.defineProperty(ic, 'offsetHeight', { get() { return parseFloat(this.style.getPropertyValue('height')) || 128; } });
+    const cond = { querySelectorAll: () => lines };
+    const body = { textContent: text, querySelector: () => ic };
+    return { room, clientHeight: room, clientWidth: 200, ic, lines, body, cond,
+      querySelector(sel) { return /dbody >|:scope >/.test(sel) ? ic : sel === '.wxc-dbody' ? body : sel === '.wxc-dcond' ? cond : null; } };
+  };
+  const fs = (el) => parseFloat(el.style.getPropertyValue('font-size')) || el.base;
+  const ctx = {
+    window: { innerWidth: 1680, innerHeight: 1050 }, _fxFontsEpoch: 0,
+    fidsFitFloor: () => 14, _fxScale: () => 1,
+    getComputedStyle: (el) => ({ fontSize: fs(el) + 'px' }),
+    // the words' foot: the icon, the high and low (60px), then each line,
+    // at 1.25 of its size, twice where it does not fit on one
+    _wxDayOver: (d) => {
+      calls.over++;
+      let h = d.ic.offsetHeight + 60;
+      for (const ln of d.lines) h += (fs(ln) > ln.oneLineMax + 0.01 ? 2 : 1) * fs(ln) * 1.25;
+      return { down: h - d.room, up: 0 };
+    }
+  };
+  vm.createContext(ctx);
+  vm.runInContext(fnSource('_fxSearch') + '\n' + fnSource('_wxDayLines') + '\n' + fnSource('_wxLineFs') + '\n'
+    + fnSource('_wxLineUndo') + '\n' + fnSource('_wxDayRoom'), ctx);
+  return { ctx, mkLine, mkDay, calls, fs };
+}
+
+test('the five-day row: the icon is measured again once the board\'s fit has brought a long line to one line (it took the first answer all visit)', () => {
+  const { ctx, mkLine, mkDay } = wxDayRowModel();
+  // 'Starker Schneefall' wraps at the stylesheet's 18.5px (fits one line at 15.5)
+  const long = mkLine(15.5);
+  const a = mkDay(236, [long, mkLine(99)], 'Starker Schneefall Neve forte');
+  const b = mkDay(236, [mkLine(99), mkLine(99)], 'Teils bewölkt Parcialmente nublado');
+  const scr = { querySelectorAll: () => [a, b] };
+  ctx._wxDayRoom(scr);
+  const first = a.ic.offsetHeight;
+  assert.ok(first < 128, 'the long line on two lines: the icon gives up the height (' + first + ')');
+  // the board's fit brings the long line to one line, after the first draw
+  long.style.setProperty('font-size', '15.5px', 'important');
+  ctx._wxDayRoom(scr);
+  assert.equal(a.ic.offsetHeight, 128, 'the icon takes the height back: it fits at full size now');
+  assert.equal(b.ic.offsetHeight, 128, 'and the five at one size');
+});
+
+test('the five-day row: where the icon has given all it can, the words come down on their lines, together, never under the floor, and stay', () => {
+  const { ctx, mkLine, mkDay, calls, fs } = wxDayRowModel();
+  const long = mkLine(15.5);
+  long.style.setProperty('font-size', '15.5px', 'important');   // the board's fit, already
+  const a = mkDay(125, [long, mkLine(99)], 'Starker Schneefall Neve forte');
+  const b = mkDay(125, [mkLine(99), mkLine(99)], 'Gefrierender Regen Chuva congelante');
+  const scr = { querySelectorAll: () => [a, b] };
+  ctx._wxDayRoom(scr);
+  const over = (d) => ctx._wxDayOver(d).down;
+  assert.ok(over(a) <= 0.5 && over(b) <= 0.5, 'nothing runs past a panel\'s foot: ' + over(a) + ', ' + over(b));
+  const sizes = [...a.lines, ...b.lines].map(fs);
+  for (const s of sizes) assert.ok(s >= 14, 'never under the floor: ' + s);
+  assert.ok(sizes[1] < 18.5, 'the lines came down: ' + sizes.join(', '));
+  assert.equal(sizes[1], sizes[2], 'one size for the row');
+  assert.ok(fs(long) <= 15.5, 'the line the board\'s fit holds smaller keeps its smaller size (never set larger, to wrap again)');
+  // a settled row is left as it is: its own sizes are not a change
+  const n = calls.over;
+  ctx._wxDayRoom(scr);
+  assert.equal(calls.over, n, 'not measured again for what it wrote itself');
+  // the board's fit writes a line again: the row is measured again, the
+  // board's size kept, its own write on the other lines taken back first
+  long.style.setProperty('font-size', '15px', 'important');
+  ctx._wxDayRoom(scr);
+  assert.ok(calls.over > n, 'measured again');
+  assert.ok(fs(long) <= 15, 'the board\'s own size stays: ' + fs(long));
+  assert.ok(over(a) <= 0.5 && over(b) <= 0.5, 'still nothing cut');
+  // and the words grow back when the room returns
+  a.room = b.room = a.clientHeight = b.clientHeight = 400;
+  ctx._wxDayRoom(scr);
+  assert.equal(fs(b.lines[0]), 18.5, 'back to the stylesheet\'s size');
+  assert.equal(long.style.getPropertyValue('font-size'), '15px', 'and the board\'s own size on its line put back');
+  assert.equal(a.ic.offsetHeight, 128);
 });
 
 test('the Later-at-this-gate strip\'s words are the shared fitter\'s, never under the floor', () => {

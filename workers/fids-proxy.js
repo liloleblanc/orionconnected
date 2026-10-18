@@ -11177,9 +11177,523 @@ async function serveGuardedList(env, ctx, origin, code, direction, source) {
 }
 __name(serveGuardedList, "serveGuardedList");
 
+// ═══════════════════════════════════════════════════════════════════════════
+// /osky/* — THE OPENSKY RELAY'S ROUTES (the "pull" design).
+//
+// OpenSky whitelists the one address its licensed account calls from, and a
+// Worker has no fixed egress address. So a small server with a fixed IPv4
+// (stream-server/opensky-relay/) makes every OpenSky call, and it reaches
+// this Worker only by calling OUT to it. Nothing calls in to that server, and
+// there is no tunnel and no token for anyone to copy. The relay registers
+// once, then polls once a minute:
+//
+//   POST /osky/register {relayKey}  from the PINNED address only (below);
+//                                   stores sha256(key) and that address
+//   GET  /osky/report?calls=&cap=&status=&hold=&state=&puts=&stop=
+//                                   heartbeat with the relay's counts; the
+//                                   answer says whether OpenSky is switched on
+//                                   and gives the Worker's stop date
+//   GET  /osky/creds                the OpenSky client, from Worker secrets
+//   GET  /osky/wanted               the boxes and flights the boards want
+//   POST /osky/put                  reduced positions for one wanted box
+//   GET  /osky/status               PUBLIC and counts only, for checking
+//
+// THE ADDRESS PIN. Only the server whose IPv4 is in the Worker SECRET
+// OSKY_RELAY_IPV4 can register or use any locked route: CF-Connecting-IP
+// (which Cloudflare sets and a client cannot) must equal it. The address is
+// typed in the Cloudflare dashboard from the one Hetzner shows for the relay
+// server. It is not really a secret (OpenSky is sent it too), but a secret
+// survives every deploy and keeps the address out of this public repository;
+// a plain var typed in the dashboard would be wiped by the next deploy. With
+// no pin, /osky/register answers 503 "no-pin" and nothing registers. So a
+// stranger who rents a Hetzner box, or a browser on one, can never take the
+// registration or read the OpenSky client: only our server's address can.
+// (Request.cf.asn must also be Hetzner's, AS24940.)
+//
+// Every route but /osky/status and /osky/register also needs the relay key
+// (X-Relay-Key, compared as sha256), so the address alone is not enough
+// either. A registration from the pinned address with a new key replaces the
+// stored one (a server rebuilt on the same address makes a new key), and a
+// new address needs only a new pin: the next registration from it replaces
+// the old record. Nothing in KV has to be deleted by hand.
+//
+// OpenSky stays off until OPENSKY_ON is "1" (a plain var in
+// workers/wrangler.fids-proxy.jsonc, the config the fids-proxy Worker is
+// deployed with). While it is off, register, report and status still answer,
+// so the server can register before the licence is paid; creds, wanted and
+// put answer 503 "off". After the hard stop (OSKY_STOP_AT, by default the end
+// of the licence term) every route answers 410. A stop date that cannot be
+// read is a stop too; the relay treats a 410 as stopped FOR NOW (it keeps
+// polling), so a corrected date resumes it without the server console.
+//
+// KV writes are kept few (one namespace for every feature, and the FR24
+// budget counters share it): the heartbeat's report is written only when
+// something in it changes, or every 10 minutes; positions once per OpenSky
+// answer; nothing else per minute.
+//
+// What the licence asks of these routes: no CORS (no board page reads them),
+// never cached, positions kept 180 s in KV under osky:pos:* and nowhere else
+// (never trk:v1, acmem, /fltrack/ or a log), only for a box and flights the
+// boards asked for, reduced fields only. Nothing in this section logs.
+// ═══════════════════════════════════════════════════════════════════════════
+const OSKY_DEFAULT_STOP_AT = "2026-11-12T22:59:59Z";   // 12 Nov 2026, 23:59:59 Swiss time
+const OSKY_HETZNER_ASN = 24940;
+const OSKY_MAX_BOX_SQ_DEG = 25;          // the 1-credit box size
+const OSKY_MAX_FILTERS = 4;              // flights per box
+const OSKY_MAX_BOXES = 8;
+const OSKY_WANT_TTL_S = 600;             // a wanted flight lapses after 10 minutes
+// Positions live 3 minutes. The relay asks OpenSky again for a box only once
+// its 120 s shared answer has run out (CACHE_SECONDS is at most this minus
+// 60), so a fresh put always lands before the last one lapses.
+const OSKY_POS_TTL_S = 180;
+const OSKY_REPORT_EVERY_S = 600;         // an unchanged heartbeat report is written every 10 minutes
+const OSKY_REPORT_TTL_S = 2 * 86400;
+const OSKY_MAX_STATES = 16;
+const OSKY_MAX_PUT_BYTES = 32 * 1024;
+const OSKY_MAX_REGISTER_BYTES = 1024;
+const OSKY_CREDIT = "Data: OpenSky Network";
+const OSKY_RE_ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const OSKY_RE_ICAO = /^[0-9a-f]{6}$/;
+const OSKY_RE_CALLSIGN = /^[A-Z0-9]{1,8}$/;
+const OSKY_RE_KEY = /^[A-Za-z0-9_-]{43,128}$/;      // secrets.token_urlsafe(32) is 43
+const OSKY_RE_STATE = /^[a-z0-9-]{1,32}$/;
+const OSKY_RE_IPV4 = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+const OSKY_LOCKED = new Map([
+  ["/osky/report", "GET"], ["/osky/creds", "GET"], ["/osky/wanted", "GET"], ["/osky/put", "POST"]
+]);
+
+function oskyJson(obj, status = 200) {
+  // no Access-Control-* header on purpose: a browser page may not read these
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff"
+    }
+  });
+}
+// One answer for every refusal of a locked route: nothing in it says whether
+// the key, the address or the registration was wrong.
+function oskyForbidden() { return oskyJson({ error: "forbidden" }, 403); }
+function oskyIso(ms) { return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z"); }
+function oskyOn(env) { return !!env && env.OPENSKY_ON === "1"; }
+function oskyStopMs(env) {
+  const v = env ? env.OSKY_STOP_AT : undefined;
+  if (v === undefined || v === null || v === "") return Date.parse(OSKY_DEFAULT_STOP_AT);
+  const s = String(v).trim();
+  if (!OSKY_RE_ISO.test(s)) return 0;            // a stop date that cannot be read is a stop
+  const t = Date.parse(s);
+  return Number.isFinite(t) ? t : 0;
+}
+// The relay's pinned IPv4 (the Worker secret OSKY_RELAY_IPV4), or null.
+function oskyPin(env) {
+  const v = env && typeof env.OSKY_RELAY_IPV4 === "string" ? env.OSKY_RELAY_IPV4.trim() : "";
+  return OSKY_RE_IPV4.test(v) ? v : null;
+}
+function oskyCallerIp(request) { return (request.headers.get("CF-Connecting-IP") || "").trim(); }
+// A JSON body only. A browser cannot send that cross-site without a CORS
+// preflight, and every /osky/ route refuses the preflight (405 or 403).
+function oskyJsonBody(request) {
+  return (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase() === "application/json";
+}
+function oskyKv(env) { return env && env.FIDS_LIVE_FLIGHTS ? env.FIDS_LIVE_FLIGHTS : null; }
+async function oskySha256Hex(s) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s)));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function oskySameHex(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let x = 0;
+  for (let i = 0; i < a.length; i++) x |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return x === 0;
+}
+function oskyParseObj(v) {
+  if (v === null || v === undefined) return null;
+  try {
+    const j = typeof v === "string" ? JSON.parse(v) : v;
+    return j && typeof j === "object" && !Array.isArray(j) ? j : null;
+  } catch (e) {
+    return null;
+  }
+}
+// For reads where a failure may safely look like "nothing there" (every
+// caller below refuses, or writes nothing, on null). oskyRegister reads
+// osky:relay itself, so a failed read there is a 503, never "absent".
+async function oskyGetJson(kv, key) {
+  try {
+    return oskyParseObj(await kv.get(key));
+  } catch (e) {
+    return null;
+  }
+}
+function oskyNum(v) { return typeof v === "number" && Number.isFinite(v) ? v : null; }
+function oskyCredsOf(env) {
+  const id = env && typeof env.OPENSKY_CLIENT_ID === "string" ? env.OPENSKY_CLIENT_ID.trim() : "";
+  const secret = env && typeof env.OPENSKY_CLIENT_SECRET === "string" ? env.OPENSKY_CLIENT_SECRET.trim() : "";
+  return id && secret ? { client_id: id, client_secret: secret } : null;
+}
+
+// A box of at most 25 sq deg, as numbers, rounded to 4 decimals; null if not.
+function oskyBox(b) {
+  if (!b || typeof b !== "object") return null;
+  const r = (k) => (oskyNum(b[k]) === null ? null : Math.round(b[k] * 1e4) / 1e4);
+  const lamin = r("lamin"), lomin = r("lomin"), lamax = r("lamax"), lomax = r("lomax");
+  if (lamin === null || lomin === null || lamax === null || lomax === null) return null;
+  if (!(-90 <= lamin && lamin < lamax && lamax <= 90 && -180 <= lomin && lomin < lomax && lomax <= 180)) return null;
+  if ((lamax - lamin) * (lomax - lomin) > OSKY_MAX_BOX_SQ_DEG + 1e-9) return null;
+  return { lamin, lomin, lamax, lomax };
+}
+function oskyBoxKey(b) { return [b.lamin, b.lomin, b.lamax, b.lomax].map((v) => v.toFixed(4)).join(","); }
+
+// {icao24: [...], callsign: [...]}: one to four flights in all, or null.
+function oskyFilters(f) {
+  if (!f || typeof f !== "object") return null;
+  const list = (v) => (v === undefined || v === null ? [] : Array.isArray(v) ? v : null);
+  const icao = list(f.icao24), calls = list(f.callsign);
+  if (!icao || !calls) return null;
+  const i = [...new Set(icao.map((v) => String(v).trim().toLowerCase()))];
+  const c = [...new Set(calls.map((v) => String(v).trim().toUpperCase()))];
+  if (!i.every((v) => OSKY_RE_ICAO.test(v)) || !c.every((v) => OSKY_RE_CALLSIGN.test(v))) return null;
+  if (i.length + c.length === 0 || i.length + c.length > OSKY_MAX_FILTERS) return null;
+  return { icao24: i, callsign: c };
+}
+
+// The wanted list, one KV document: { v: 1, boxes: { <boxkey>: { box, f: { "i:<icao24>" | "c:<callsign>": expiresMs } } } }.
+// Only boxes with at least one flight that has not lapsed come back.
+function oskyLiveWanted(doc, now) {
+  const out = {};
+  const boxes = doc && doc.boxes && typeof doc.boxes === "object" ? doc.boxes : {};
+  for (const e of Object.values(boxes)) {
+    const b = e && oskyBox(e.box);
+    if (!b || !e.f || typeof e.f !== "object") continue;
+    const f = {};
+    for (const [tag, exp] of Object.entries(e.f)) {
+      if (!(oskyNum(exp) !== null && exp > now)) continue;
+      if (tag.startsWith("i:") && OSKY_RE_ICAO.test(tag.slice(2))) f[tag] = exp;
+      else if (tag.startsWith("c:") && OSKY_RE_CALLSIGN.test(tag.slice(2))) f[tag] = exp;
+    }
+    if (Object.keys(f).length) out[oskyBoxKey(b)] = { box: b, f };
+  }
+  return out;
+}
+function oskyEntryExp(e) { return Math.max(0, ...Object.values(e.f)); }
+
+// The boards' side: "this box, these flights, for the next 10 minutes".
+// Nothing calls it yet; wiring the boards in is a later change, after the
+// licence is paid. Returns true when the wish was stored. It is one KV
+// document and KV takes one write a second per key, so that change has to
+// call it at most once a second (on a change of flights, not per request).
+//
+// THAT LATER CHANGE MUST:
+//   - call it only from the Worker's own logic for a gate or map that is on
+//     screen, never with a box or a flight taken from a public request (or
+//     anyone could spend the OpenSky credits and have OpenSky data served
+//     back to them);
+//   - read osky:pos:* only before oskyStopMs(env), and serve it only on a
+//     locked, reduced route, never /adsb/, /fltrack/ or anything cached;
+//   - show "Data: OpenSky Network" on every map that draws it, and add the
+//     Schäfer et al. (IPSN 2014) citation to the credits page.
+async function oskyWant(env, box, filters, now = Date.now()) {
+  const kv = oskyKv(env);
+  const b = oskyBox(box), f = oskyFilters(filters);
+  if (!kv || !b || !f || now >= oskyStopMs(env)) return false;
+  const boxes = oskyLiveWanted(await oskyGetJson(kv, "osky:wanted"), now);
+  const key = oskyBoxKey(b);
+  const entry = boxes[key] || { box: b, f: {} };
+  const exp = now + OSKY_WANT_TTL_S * 1000;
+  for (const v of f.icao24) entry.f["i:" + v] = exp;
+  for (const v of f.callsign) entry.f["c:" + v] = exp;
+  // at most four flights a box, and eight boxes: the most recently wanted stay
+  const tags = Object.keys(entry.f).sort((x, y) => entry.f[y] - entry.f[x] || (x < y ? -1 : 1)).slice(0, OSKY_MAX_FILTERS);
+  entry.f = Object.fromEntries(tags.map((t) => [t, entry.f[t]]));
+  boxes[key] = entry;
+  const keys = Object.keys(boxes).sort((x, y) => oskyEntryExp(boxes[y]) - oskyEntryExp(boxes[x])).slice(0, OSKY_MAX_BOXES);
+  await kv.put("osky:wanted", JSON.stringify({ v: 1, boxes: Object.fromEntries(keys.map((k) => [k, boxes[k]])) }),
+    { expirationTtl: OSKY_WANT_TTL_S });
+  return true;
+}
+
+// A JSON object body of at most max bytes: { json } | { tooBig: true } | { bad: true }.
+async function oskyReadBody(request, max) {
+  const declared = Number(request.headers.get("Content-Length") || "0");
+  if (declared > max) return { tooBig: true };
+  const chunks = [];
+  let total = 0;
+  try {
+    if (request.body) {
+      const reader = request.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > max) {
+          try { await reader.cancel(); } catch (e) { /* already closed */ }
+          return { tooBig: true };
+        }
+        chunks.push(value);
+      }
+    }
+  } catch (e) {
+    return { bad: true };
+  }
+  const buf = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) { buf.set(c, at); at += c.byteLength; }
+  try {
+    const j = JSON.parse(new TextDecoder().decode(buf));
+    return j && typeof j === "object" && !Array.isArray(j) ? { json: j } : { bad: true };
+  } catch (e) {
+    return { bad: true };
+  }
+}
+
+// The pinned address, then the stored registration at that address, then the key.
+async function oskyRelayOk(request, env, kv) {
+  const pin = oskyPin(env);
+  if (!pin || oskyCallerIp(request) !== pin) return false;      // before any KV read
+  const key = request.headers.get("X-Relay-Key") || "";
+  if (!OSKY_RE_KEY.test(key)) return false;
+  const rec = await oskyGetJson(kv, "osky:relay");
+  if (!rec || typeof rec.keyHash !== "string" || rec.ip !== pin) return false;
+  return oskySameHex(await oskySha256Hex(key), rec.keyHash);
+}
+
+async function oskyRegister(request, env, kv) {
+  if (request.method !== "POST") return oskyJson({ error: "method" }, 405);
+  if (!oskyJsonBody(request)) return oskyJson({ error: "json-only" }, 415);
+  // Hetzner's network only (the relay's server); anything else is refused
+  // before the body is even read
+  const cf = request.cf || {};
+  if (cf.asn !== OSKY_HETZNER_ASN) return oskyForbidden();
+  const ip = oskyCallerIp(request);
+  // OpenSky whitelists an IPv4: an IPv6 caller would lock the wrong address
+  if (!OSKY_RE_IPV4.test(ip)) return oskyJson({ error: "ipv4-required" }, 400);
+  const pin = oskyPin(env);
+  // no address pinned yet: nothing can register (the relay asks every minute)
+  if (!pin) return oskyJson({ error: "no-pin" }, 503);
+  if (ip !== pin) return oskyForbidden();
+  const body = await oskyReadBody(request, OSKY_MAX_REGISTER_BYTES);
+  if (body.tooBig) return oskyJson({ error: "too-large" }, 413);
+  const key = body.json && typeof body.json.relayKey === "string" ? body.json.relayKey : "";
+  if (!OSKY_RE_KEY.test(key)) return oskyJson({ error: "bad-key" }, 400);
+  const keyHash = await oskySha256Hex(key);
+  // Read directly: a read that fails is a 503 (asked again), never "nobody
+  // is registered".
+  let raw;
+  try {
+    raw = await kv.get("osky:relay");
+  } catch (e) {
+    return oskyJson({ error: "store" }, 503);
+  }
+  const rec = oskyParseObj(raw);
+  // the same relay asking again (its first answer was lost): nothing to write
+  if (rec && oskySameHex(rec.keyHash, keyHash) && rec.ip === ip) return oskyJson({ registered: true });
+  // anything else stored (nothing, an old address, an old key, a record that
+  // cannot be read) gives way to the relay at the pinned address
+  await kv.put("osky:relay", JSON.stringify({ keyHash, ip, at: oskyIso(Date.now()) }));
+  return oskyJson({ registered: true });
+}
+
+function oskyInt(v, lo, hi) {
+  if (typeof v !== "string" || !/^\d{1,9}$/.test(v)) return null;
+  const n = Number(v);
+  return n >= lo && n <= hi ? n : null;
+}
+
+// The heartbeat. Its report is kept for /osky/status, written only when
+// something a person checks has changed (the state, the cap, OpenSky's last
+// answer, a hold starting or ending, the relay's stop date) or the stored
+// one is 10 minutes old. Counts alone changing do not cause a write.
+async function oskyReport(env, kv, url, now, stopMs) {
+  const q = url.searchParams;
+  const st = q.get("state") || "";
+  const stop = q.get("stop") || "";
+  const rep = {
+    calls_today: oskyInt(q.get("calls"), 0, 100000),
+    cap: oskyInt(q.get("cap"), 0, 100000),
+    last_status: oskyInt(q.get("status"), 0, 599),
+    hold_s: oskyInt(q.get("hold"), 0, 172800),
+    state: OSKY_RE_STATE.test(st) ? st : null,
+    puts_today: oskyInt(q.get("puts"), 0, 100000),
+    stop_at: OSKY_RE_ISO.test(stop) ? stop : null
+  };
+  const old = await oskyGetJson(kv, "osky:report");
+  const age = old && typeof old.at === "string" ? now - Date.parse(old.at) : NaN;
+  const same = !!old && ["state", "cap", "last_status", "stop_at"].every((k) => old[k] === rep[k])
+    && (old.hold_s > 0) === (rep.hold_s > 0);
+  if (!(same && age >= 0 && age < OSKY_REPORT_EVERY_S * 1000)) {
+    try {
+      await kv.put("osky:report", JSON.stringify({ at: oskyIso(now), ...rep }), { expirationTtl: OSKY_REPORT_TTL_S });
+    } catch (e) { /* counts only: the heartbeat still answers */ }
+  }
+  return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs) });
+}
+
+async function oskyWanted(kv, now) {
+  const live = oskyLiveWanted(await oskyGetJson(kv, "osky:wanted"), now);
+  const boxes = Object.values(live).slice(0, OSKY_MAX_BOXES).map((e) => {
+    const tags = Object.keys(e.f).sort();
+    return {
+      ...e.box,
+      icao24: tags.filter((t) => t.startsWith("i:")).map((t) => t.slice(2)),
+      callsign: tags.filter((t) => t.startsWith("c:")).map((t) => t.slice(2))
+    };
+  });
+  return oskyJson({ boxes });
+}
+
+// One aircraft, reduced: known fields only, each checked; null drops the row.
+function oskyCleanState(s, b, nowS, heading) {
+  if (!s || typeof s !== "object" || Array.isArray(s)) return null;
+  const icao = typeof s.icao24 === "string" ? s.icao24.trim().toLowerCase() : "";
+  if (!OSKY_RE_ICAO.test(icao)) return null;
+  let cs = null;
+  if (s.callsign !== undefined && s.callsign !== null) {
+    if (typeof s.callsign !== "string") return null;
+    cs = s.callsign.trim().toUpperCase() || null;
+    if (cs !== null && !OSKY_RE_CALLSIGN.test(cs)) return null;
+  }
+  const lat = oskyNum(s.lat), lon = oskyNum(s.lon);
+  if (lat === null || lon === null || lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+  // OpenSky answers with the aircraft inside the box that was asked for
+  const M = 0.05;
+  if (lat < b.lamin - M || lat > b.lamax + M || lon < b.lomin - M || lon > b.lomax + M) return null;
+  const out = { icao24: icao, callsign: cs, lat, lon };
+  const ranged = (v, lo, hi) => {
+    if (v === undefined || v === null) return null;
+    const n = oskyNum(v);
+    return n !== null && n >= lo && n <= hi ? n : undefined;
+  };
+  for (const [k, lo, hi] of [["baro_altitude", -2000, 25000], ["geo_altitude", -2000, 25000], ["velocity", 0, 1500]]) {
+    const v = ranged(s[k], lo, hi);
+    if (v === undefined) return null;
+    out[k] = v;
+  }
+  if (s.on_ground !== undefined && s.on_ground !== null && typeof s.on_ground !== "boolean") return null;
+  out.on_ground = typeof s.on_ground === "boolean" ? s.on_ground : null;
+  for (const k of ["time_position", "last_contact"]) {
+    const v = ranged(s[k], nowS - 86400, nowS + 600);
+    if (v === undefined) return null;
+    out[k] = v === null ? null : Math.floor(v);
+  }
+  if (heading) {
+    const v = ranged(s.true_track, 0, 360);
+    if (v === undefined) return null;
+    out.true_track = v;
+  }
+  return out;
+}
+
+async function oskyPut(env, kv, request, now, stopMs) {
+  if (!oskyJsonBody(request)) return oskyJson({ error: "json-only" }, 415);
+  const body = await oskyReadBody(request, OSKY_MAX_PUT_BYTES);
+  if (body.tooBig) return oskyJson({ error: "too-large" }, 413);
+  if (!body.json) return oskyJson({ error: "bad-json" }, 400);
+  const j = body.json;
+  const b = oskyBox(j.box);
+  if (!b) return oskyJson({ error: "bad-box" }, 400);
+  if (!Array.isArray(j.states) || j.states.length > OSKY_MAX_STATES * 4) return oskyJson({ error: "bad-states" }, 400);
+  let time = null;
+  if (j.time !== undefined && j.time !== null) {
+    if (!Number.isInteger(j.time) || j.time < 0) return oskyJson({ error: "bad-time" }, 400);
+    // OpenSky's own clock past the stop: the answer is not kept
+    if (j.time * 1000 >= stopMs) return oskyJson({ error: "stopped" }, 410);
+    time = j.time;
+  }
+  // only a box the boards asked for, and only the flights they named in it
+  const want = oskyLiveWanted(await oskyGetJson(kv, "osky:wanted"), now)[oskyBoxKey(b)];
+  if (!want) return oskyJson({ error: "not-wanted" }, 409);
+  const icao = new Set(), calls = new Set();
+  for (const tag of Object.keys(want.f)) (tag.startsWith("i:") ? icao : calls).add(tag.slice(2));
+  const heading = !!env && env.OSKY_HEADING === "1";
+  const seen = new Set();
+  const states = [];
+  for (const raw of j.states) {
+    const s = oskyCleanState(raw, b, Math.floor(now / 1000), heading);
+    if (!s || seen.has(s.icao24)) continue;
+    if (!(icao.has(s.icao24) || (s.callsign !== null && calls.has(s.callsign)))) continue;
+    seen.add(s.icao24);
+    states.push(s);
+    if (states.length >= OSKY_MAX_STATES) break;
+  }
+  await kv.put("osky:pos:" + oskyBoxKey(b), JSON.stringify({ at: oskyIso(now), time, box: b, credit: OSKY_CREDIT, states }),
+    { expirationTtl: OSKY_POS_TTL_S });
+  return oskyJson({ stored: states.length });
+}
+
+// Counts and yes/no answers only: never the address (it is compared with the
+// pin here, not shown), a key, the client or a position.
+async function oskyStatus(env, kv, now, stopMs) {
+  const pin = oskyPin(env);
+  const rec = await oskyGetJson(kv, "osky:relay");
+  const rep = await oskyGetJson(kv, "osky:report");
+  const wanted = oskyLiveWanted(await oskyGetJson(kv, "osky:wanted"), now);
+  const n = (v) => (Number.isInteger(v) ? v : null);
+  return oskyJson({
+    service: "osky",
+    on: oskyOn(env),
+    stop_at: oskyIso(stopMs),
+    relay_pin_set: !!pin,
+    // registered by the server at the pinned address (an old record from
+    // another address does not count)
+    relay_registered: !!(pin && rec && typeof rec.keyHash === "string" && rec.ip === pin),
+    registered_at: pin && rec && rec.ip === pin && typeof rec.at === "string" ? rec.at : null,
+    creds_set: !!oskyCredsOf(env),
+    wanted_boxes: Object.keys(wanted).length,
+    relay_report: rep ? {
+      at: typeof rep.at === "string" ? rep.at : null,
+      state: typeof rep.state === "string" && OSKY_RE_STATE.test(rep.state) ? rep.state : null,
+      calls_today: n(rep.calls_today),
+      cap: n(rep.cap),
+      last_status: n(rep.last_status),
+      hold_s: n(rep.hold_s),
+      puts_today: n(rep.puts_today),
+      stop_at: typeof rep.stop_at === "string" && OSKY_RE_ISO.test(rep.stop_at) ? rep.stop_at : null
+    } : null
+  });
+}
+
+async function handleOsky(request, env, url) {
+  const now = Date.now();
+  const stopMs = oskyStopMs(env);
+  if (now >= stopMs) return oskyJson({ error: "stopped" }, 410);
+  const kv = oskyKv(env);
+  if (!kv) return oskyJson({ error: "no-store" }, 503);
+  const p = url.pathname;
+  try {
+    if (p === "/osky/status") {
+      if (request.method !== "GET") return oskyJson({ error: "method" }, 405);
+      return await oskyStatus(env, kv, now, stopMs);
+    }
+    if (p === "/osky/register") return await oskyRegister(request, env, kv);
+    const method = OSKY_LOCKED.get(p);
+    if (!method) return oskyJson({ error: "not-found" }, 404);
+    if (request.method !== method) return oskyJson({ error: "method" }, 405);
+    if (!(await oskyRelayOk(request, env, kv))) return oskyForbidden();
+    if (p === "/osky/report") return await oskyReport(env, kv, url, now, stopMs);
+    if (!oskyOn(env)) return oskyJson({ error: "off" }, 503);
+    if (p === "/osky/creds") {
+      const creds = oskyCredsOf(env);
+      return creds ? oskyJson(creds) : oskyJson({ error: "no-key" }, 503);
+    }
+    if (p === "/osky/wanted") return await oskyWanted(kv, now);
+    return await oskyPut(env, kv, request, now, stopMs);
+  } catch (e) {
+    // never the error's text: it could carry part of a request
+    return oskyJson({ error: "internal" }, 500);
+  }
+}
+
 var fids_proxy_default = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // The OpenSky relay's routes come first, before the CORS preflight answer
+    // and everything else: they carry no CORS headers and are never cached
+    // (handleOsky, above).
+    if (url.pathname === "/osky" || url.pathname.startsWith("/osky/")) {
+      return handleOsky(request, env, url);
+    }
     const origin = request.headers.get("Origin") || "*";
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
@@ -13189,6 +13703,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
 };
 export {
   fids_proxy_default as default,
+  oskyWant,
+  oskyBoxKey,
   yhzCellText,
   yhzParseBoard,
   yhzWindowTs,

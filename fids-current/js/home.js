@@ -6,7 +6,9 @@
    reader's: ?lang= first, then the reader's saved choice, then the browser's
    languages, then English (BoardStrings.pageLang decides). Arabic reads right
    to left. The language switch writes ?lang= and saves the choice, and the
-   links between the two pages carry ?lang= on to the next page.
+   links between the two pages carry ?lang= on to the next page. The switch
+   names each language in its own language and script, at every width, so a
+   reader finds their own without reading any other.
 
    How the words get on the page:
      data-i18n="key" data-i18n-one   the store fills it (applyStatic), in the
@@ -563,6 +565,52 @@
     var ds = doc.querySelectorAll('details.menu, details.lsw');
     for (var i = 0; i < ds.length; i++) if (ds[i] !== open) ds[i].open = false;
   }
+
+  // ── THE SWITCH AND THE MENU FROM THE KEYBOARD ───────────────────────────
+  // Each is a <details>: Enter or Space on its button opens and shuts it,
+  // Tab walks its choices, and Escape shuts it and gives focus back to its
+  // button (boot, below). The arrow keys also move from choice to choice,
+  // round from the last to the first, with Home and End for the first and
+  // the last; Down or Up on the button opens it on the language on screen
+  // (the menu, on its first or last place), instead of scrolling the page.
+  // Up and Down run down the list on every page, Arabic too: the list is a
+  // column, which does not mirror.
+  function choicesOf(d) {
+    return Array.prototype.slice.call(d.querySelectorAll('.lsw-list a, .menu-list a'));
+  }
+  function moveFocus(e) {
+    var k = e.key;
+    if (k !== 'ArrowDown' && k !== 'ArrowUp' && k !== 'Home' && k !== 'End') return;
+    var t = e.target;
+    var d = t && t.closest && t.closest('details.menu, details.lsw');
+    if (!d) return;
+    var items = choicesOf(d);
+    if (!items.length) return;
+    var at = items.indexOf(t.closest('a')), to;
+    if (t.closest('summary')) {
+      // Home and End on the button scroll the page, as anywhere else
+      if (k === 'Home' || k === 'End') return;
+      d.open = true;
+      var cur = items.indexOf(d.querySelector('[aria-current="true"]'));
+      to = cur >= 0 ? cur : (k === 'ArrowUp' ? items.length - 1 : 0);
+    } else if (at < 0) return;
+    else if (k === 'Home') to = 0;
+    else if (k === 'End') to = items.length - 1;
+    else to = (at + (k === 'ArrowDown' ? 1 : items.length - 1)) % items.length;
+    e.preventDefault();
+    items[to].focus();
+  }
+  // Focus leaving an open switch or menu, by Tab or Shift+Tab, shuts it: an
+  // open list never stays over the page with the focus hidden behind it.
+  // Only when the focus moves to something else on the page: a click on a
+  // choice can take the focus away without giving it anywhere (Safari does
+  // not focus a link it clicks), and the click itself shuts the list (boot).
+  function shutOnLeave(e) {
+    var from = e.target, to = e.relatedTarget;
+    var d = from && from.closest && from.closest('details.menu, details.lsw');
+    if (!d || !d.open || !to || !to.closest) return;
+    if (to.closest('details.menu, details.lsw') !== d) d.open = false;
+  }
   // the live dry dock, once: a different list repaints the count, the
   // index and its note in the page's language
   function loadDock() {
@@ -612,6 +660,8 @@
       var s = open.querySelector('summary');
       if (s) s.focus();
     });
+    doc.addEventListener('keydown', moveFocus);
+    doc.addEventListener('focusout', shutOnLeave);
   }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
   else boot();
