@@ -12,16 +12,37 @@ three Vecteezy packs: solid black glyphs (87176261), flat colour icons
 | Day & night (default) | the row sets drawn for Orion Connected, no circle | Colour by day, the night icons drawn for Orion Connected at night (the airport's own sunrise and sunset) |
 
 The rows never take a circle. They wear one of two sets drawn for Orion
-Connected (`rows-owner-white/`, `rows-owner-color/`, built by
-`rows-owner.py`): the white set on a dark row, the colour set on a light one.
-`fids-core.js` `_fidsRowWxSet` picks per row from the colour its icon really
-sits on: wherever white holds less than 3:1 there (WCAG 2.2 SC 1.4.11; any
-ground above a relative luminance of 0.30: yellow Delayed, orange Final call,
-light Customize rows, an airline's yellow, orange, lime or teal) the white set
-would vanish and the colour set is worn; otherwise the row follows its own
-text ink (dark text: colour). No list of themes or carriers is kept. The
-colour pack draws its clouds as a grey edge with white behind them as the
-body, so on the gate and the card it needs its circle.
+Connected (`rows-line-white/`, `rows-line-color/`, built by
+`rows-line.py`): the white set on a dark row, the colour set on a light one.
+`fids-core.js` `_fidsRowWxSet` picks icon by icon from the colour it really
+sits on. First the set the row calls for: wherever white holds less than 3:1
+there (WCAG 2.2 SC 1.4.11; any ground above a relative luminance of 0.30:
+yellow Delayed, orange Final call, light Customize rows, an airline's yellow,
+orange, lime or teal) the white set would vanish and the row calls for the
+colour set; otherwise the row follows its own text ink (dark text: colour).
+Then whether that drawing can be seen there (`_wxRowWear`), from each file's
+pixels at the rows' 38 px (`_WX_ROW_PX`):
+
+1. a drawing is worn where half of what it draws stands at 3:1 or more on
+   the ground (the set the row calls for, then the other one);
+2. where neither does (the colour set's gold sun and moon, its pale clouds,
+   its white snow and fog on yellow, orange and light rows; the white set's
+   thin lines on red Cancelled), the **ink copy**: the white file's own
+   shapes as a mask, filled with the row's own text colour (navy on yellow
+   and orange, white on red), wherever a quarter of it stands at 3:1;
+3. where that colour is itself too faint (an operator's white text on a teal
+   or gold row), the most legible of the drawings and the copies in the
+   row's ink and the board's white or dark ink.
+
+No list of themes or carriers is kept, and no drawing is redrawn or
+filtered. So on yellow and light rows the colour set's dark navy rain and storm clouds
+show in colour, as drawn, next to the other drawings in the row's navy.
+After a row file changes, run `rows-line-pixels.js` in headless Chrome on any
+page served from `fids-current` and put the table it returns in
+`fids-core.js` in place of `_WX_ROW_PX` (each entry carries its file's SHA-1,
+and `tests/weather-rows-line.test.js` fails until it is done). The colour
+pack draws its clouds as a grey edge with white behind them as the body, so
+on the gate and the card it needs its circle.
 
 ## Rebuild
 
@@ -121,7 +142,7 @@ The circle's colour is **one choice**, `_WX_NIGHT_DISC` in `fids-core.js`:
 
 | Value | Circle |
 |---|---|
-| `'airline'` (B, the default) | a dark tint of the airline's night ground (`_wxNightDiscTint`): the hue the card tints its ground with, no more colour than that tint has nor than 0.035, one step (0.10 in OKLab) lighter than the tile it sits on and never darker than the charcoal once rounded to its hex colour, so it reads as a circle and every colour the icons are drawn in keeps 3/4 of the distance it has from the charcoal. Air Canada `#33282B` (dark wine), WestJet `#254242` (dark teal), Porter `#2C3749` (dark navy), United `#222B3D` (dark navy, close to its own tile). |
+| `'airline'` (B, the default) | what the card paints under the circle, lifted a step toward a light tint of the airline (`_wxNightDiscTint`): the hue the card tints its ground with, as light as the day circle and with no more colour than that tint has nor than 0.035, laid at 10 % (`_WX_NIGHT_LIFT`) over the ground. The ground is the airline's near-black over the weather footage at 30 %, so it changes with the take; a circle of one fixed colour (Air Canada's `#33282B`) sat at 1.01 to 1.06:1 on it and read as no circle at all. The lift keeps it about 1.3:1 lighter on any take (measured on the card at 1920: Air Canada 1.25 to 1.29, Porter 1.28 to 1.34, WestJet 1.30 to 1.34), and the icons' gold, blue and white keep 3:1 on it. Air Canada `rgba(249, 234, 238, 0.1)` (toward a faint wine), WestJet `rgba(213, 246, 247, 0.1)` (a faint teal), Porter `rgba(225, 240, 255, 0.1)` (a faint navy). |
 | `'charcoal'` (A) | the charcoal circle the icons were drawn on, `#2B2B2A`, as drawn. |
 
 Known gaps at night, all upstream of this set: the server folds MET's sleet

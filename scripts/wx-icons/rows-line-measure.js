@@ -1,4 +1,4 @@
-// Run in headless Chrome on a page served from rows-owner.py's workdir
+// Run in headless Chrome on a page served from rows-line.py's workdir
 // (live-shot style: evaluated with awaitPromise). Draws every raw icon of
 // both sets at 8 pixels to the unit and returns the drawn extent of each, in
 // sheet units: { white: {name: {x,y,w,h,n,edge}}, color: {...}, k }.

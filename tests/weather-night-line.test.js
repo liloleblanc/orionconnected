@@ -12,8 +12,9 @@
 // icon was drawn on, and the boards draw their circle on that frame
 // (_WX_NIGHT_ICON = 100), so every icon is as large and where it was drawn.
 // The circle's colour is one choice, _WX_NIGHT_DISC: 'airline' (B, the
-// default), a dark tint of the airline's night ground; 'charcoal' (A), the
-// charcoal circle the icons were drawn on.
+// default), what the card paints under the circle lifted a step toward a
+// light tint of the airline, so it reads as a circle on any footage and
+// blends with it; 'charcoal' (A), the charcoal circle the icons were drawn on.
 //
 // This test pins:
 //   · every condition MET can send, read at night, to the icon it draws, and
@@ -79,7 +80,7 @@ function lookWith(choice) {
   sb.AIRLINE_BRAND_COLORS = sb.window.AIRLINE_BRAND_COLORS;
   const src = choice ? LOOK_SRC.replace("var _WX_NIGHT_DISC = 'airline';", "var _WX_NIGHT_DISC = '" + choice + "';") : LOOK_SRC;
   return vm.runInNewContext(RC2_SRC + '\n' + src + '\n({ RC2_PAIRS, _rc2Rgb, _wxAirlineLook, _wxMix, _wxOklab, _wxNightDisc, _wxNightDiscTint, _wxNightLineDisc, _WX_LOOK, _WX_TINT,'
-    + ' _WX_NIGHT_DISC, _WX_NIGHT_DIR, _WX_NIGHT_CHARCOAL, _WX_NIGHT_ICON, _WX_NIGHT_C, _WX_NIGHT_STEP, _WX_NIGHT_INKS, _WX_DISC_KEEP });', sb);
+    + ' _WX_NIGHT_DISC, _WX_NIGHT_DIR, _WX_NIGHT_CHARCOAL, _WX_NIGHT_ICON, _WX_NIGHT_C, _WX_NIGHT_LIFT, _WX_NIGHT_INKS, _WX_DISC_KEEP, _WX_DISC_L, _WX_GROUND_DIM });', sb);
 }
 const L = lookWith();
 const okDist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -380,7 +381,7 @@ test('the card sets each night icon on its whole circle, and colours the circle 
   assert.match(card, /var key = \[_wxLk\.code, _wxLk\.a, _wxLk\.ink, _wxLk\.g, _wxLk\.p, _wxLk\.dk, _wxLk\.nk\]\.join\('\|'\);/);
 });
 
-test("one choice: B (the default) a dark tint of the airline's night ground, A the charcoal the icons were drawn on", () => {
+test("one choice: B (the default) the ground under the circle lifted toward the airline's tint, A the charcoal the icons were drawn on", () => {
   assert.match(CORE, /\nvar _WX_NIGHT_DISC = 'airline';/, 'B is the default');
   assert.equal(L._WX_NIGHT_CHARCOAL, '#2B2B2A', 'the circle on the sheet');
   // A: the charcoal, as drawn, for every airline, on the card and the gate
@@ -389,29 +390,45 @@ test("one choice: B (the default) a dark tint of the airline's night ground, A t
     assert.equal(A._wxAirlineLook(c).nk, '#2B2B2A', (c || 'no airline') + ' (A, card)');
     assert.equal(A._wxNightDisc(c), '#2B2B2A', (c || 'no airline') + ' (A, gate)');
   }
-  // B: the hue the card tints the airline's ground with, dark, and a step lighter than the tile under it
-  const ch = okLch('#2B2B2A');
+  // B: a light tint in the hue the card tints the airline's ground with, laid
+  // at _WX_NIGHT_LIFT over whatever the card paints under the circle
   const nk = (c) => L._wxAirlineLook(c).nk;
+  const parse = (v) => { const m = /^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/.exec(v); assert.ok(m, v + ' is a tint over the ground'); return { rgb: m.slice(1, 4).map(Number), a: +m[4] }; };
+  const hex = (c) => '#' + c.map((v) => ('0' + Math.round(v).toString(16)).slice(-2)).join('');
   const near = (h, lo, hi) => (lo <= hi ? h >= lo && h <= hi : h >= lo || h <= hi);
   for (const [c, lo, hi] of [['AC', 340, 20], ['WS', 180, 215], ['PD', 245, 275], ['UA', 245, 280]]) {
-    const x = okLch(nk(c));
+    const x = okLch(hex(parse(nk(c)).rgb));
     assert.ok(near(x.h, lo, hi), c + ': the hue of its ground (' + nk(c) + ', ' + x.h.toFixed(0) + ')');
   }
-  assert.equal(nk('AC'), '#33282B', 'Air Canada: a dark wine (its night ground, not the day circle\'s warm beige)');
-  assert.equal(nk('WS'), '#254242', 'WestJet: a dark teal');
-  assert.equal(nk('PD'), '#2C3749', 'Porter: a dark navy');
+  assert.equal(nk('AC'), 'rgba(249, 234, 238, 0.1)', 'Air Canada: toward a faint wine (its night ground, not the day circle\'s warm beige)');
+  assert.equal(nk('WS'), 'rgba(213, 246, 247, 0.1)', 'WestJet: toward a faint teal');
+  assert.equal(nk('PD'), 'rgba(225, 240, 255, 0.1)', 'Porter: toward a faint navy');
+  assert.equal(L._WX_NIGHT_LIFT, 0.1);
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const lum = (c) => 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]);
+  const cr = (p, q) => (Math.max(lum(p), lum(q)) + 0.05) / (Math.min(lum(p), lum(q)) + 0.05);
+  const over = (top, a, under) => under.map((v, i) => top[i] * a + v * (1 - a));
   for (const c of Object.keys(L.RC2_PAIRS).concat(['AC', 'WS', 'PD', ''])) {
-    const k = L._wxAirlineLook(c), x = okLch(k.nk), tile = okLch(k.ko);
+    const k = L._wxAirlineLook(c), t = parse(k.nk), x = okLch(hex(t.rgb));
     assert.equal(L._wxNightDisc(c), k.nk, (c || 'no airline') + ': the gate asks the same');
-    assert.ok(x.L >= ch.L, (c || 'no airline') + ': never darker than the charcoal, as rounded to its hex (L ' + x.L.toFixed(4) + ' vs ' + ch.L.toFixed(4) + ')');
-    assert.ok(x.L <= 0.45, (c || 'no airline') + ': dark, never lighter than it must be (L ' + x.L.toFixed(3) + ')');
-    assert.ok(x.L >= tile.L + L._WX_NIGHT_STEP - 0.012 || x.L >= ch.L, (c || 'no airline') + ': reads as a circle on its tile');
+    assert.equal(t.a, L._WX_NIGHT_LIFT, (c || 'no airline') + ': one lift for every airline');
+    assert.ok(Math.abs(x.L - L._WX_DISC_L) < 0.012, (c || 'no airline') + ': as light as the day circle (L ' + x.L.toFixed(3) + ')');
     assert.ok(x.C <= L._WX_NIGHT_C + 0.003, (c || 'no airline') + ': a tint, not a colour (C ' + x.C.toFixed(3) + ')');
-    // every colour the icons are drawn in keeps 3/4 of its distance from the charcoal they were drawn on
-    const t = L._wxOklab(L._rc2Rgb(k.nk)), cc = L._wxOklab(L._rc2Rgb('#2B2B2A'));
-    for (const ink of L._WX_NIGHT_INKS) {
-      const p = L._wxOklab(L._rc2Rgb(ink));
-      assert.ok(okDist(p, t) >= L._WX_DISC_KEEP * okDist(p, cc) - 1e-9, (c || 'no airline') + ': ' + ink + ' still reads on ' + k.nk);
+    // what the card paints there: the airline's near-black at 70 % over the
+    // footage, the footage from black to a bright grey, under an hour or a
+    // day (nothing more) or a plate (the airline's tint at 55 % on top)
+    const g = k.g.split(',').map(Number), f = /rgba\((\d+),(\d+),(\d+),/.exec(k.p).slice(1, 4).map(Number);
+    for (const foot of [0, 40, 80, 120, 160]) {
+      const base = over(g, L._WX_GROUND_DIM, [foot, foot, foot]);
+      for (const [where, ground] of [['hour', base], ['plate', over(f, L._WX_TINT, base)]]) {
+        const disc = over(t.rgb, t.a, ground);
+        const step = cr(disc, ground);
+        const at = (c || 'no airline') + ', ' + where + ' on footage ' + foot + ': ';
+        assert.ok(step >= 1.2 && step <= 1.45, at + 'reads as a circle and blends (' + step.toFixed(2) + ':1)');
+        assert.ok(lum(disc) > lum(ground), at + 'a step lighter');
+        // the icons' gold, blue and white keep 3:1 on it
+        for (const ink of L._WX_NIGHT_INKS) assert.ok(cr(L._rc2Rgb(ink), disc) >= 3, at + ink + ' at ' + cr(L._rc2Rgb(ink), disc).toFixed(2) + ':1');
+      }
     }
   }
   // every colour the icons are drawn in is one the rule measures
@@ -447,10 +464,10 @@ test('the gate: at night the circle look draws the night icon on the night circl
   for (const look of ['', 'daynight', 'solid']) {
     const html = helper({ look, night: true, airline: 'WS' })('snow', 64);
     assert.match(html, /^<span class="fids-wx-cell fids-wx-disc fids-wx-line" data-wxg="snow" aria-hidden="true" style="display:inline-block;width:64px;height:64px;/, look || 'default');
-    assert.match(html, /--wxn-disc:#254242;--wxn-icon:url\(\/logos\/weather\/night-line\/snow\.svg\?v=v1\);/, (look || 'default') + ': WestJet\'s dark teal, the night icon');
+    assert.match(html, /--wxn-disc:rgba\(213, 246, 247, 0\.1\);--wxn-icon:url\(\/logos\/weather\/night-line\/snow\.svg\?v=v1\);/, (look || 'default') + ': WestJet\'s faint teal lift, the night icon');
     assert.doesNotMatch(html, /'|solid-in-disc|--wx-glyph/, 'no quote in the style, and not the old glyph');
   }
-  assert.match(helper({ night: true, airline: 'AC' })(1001, 48), /--wxn-disc:#33282B;--wxn-icon:url\(\/logos\/weather\/night-line\/cloudy\.svg\?v=v1\);/, 'a Tomorrow.io code, Air Canada');
+  assert.match(helper({ night: true, airline: 'AC' })(1001, 48), /--wxn-disc:rgba\(249, 234, 238, 0\.1\);--wxn-icon:url\(\/logos\/weather\/night-line\/cloudy\.svg\?v=v1\);/, 'a Tomorrow.io code, Air Canada');
   // at night the gate draws a code's night form, the icon the card draws for it
   // (a clear sky the moon, not the sun; WMO 3 the two clouds, not one)
   const gateNight = (code) => /night-line\/([a-z-]+)\.svg/.exec(helper({ night: true, airline: 'WS' })(code, 48))[1];
@@ -467,11 +484,11 @@ test('the gate: at night the circle look draws the night icon on the night circl
   assert.match(helper({ airline: 'WS' })('snow', 64), /src="\/logos\/weather\/disc-day\/snow\.svg\?v=v1"/);
   assert.match(helper({ look: 'solid', airline: 'WS' })('snow', 64), /--wx-disc:#003366;--wx-ink:#00B2A9;--wx-glyph:url\(\/logos\/weather\/solid-in-disc\/snow\.svg\?v=v1\);/);
   // Colour chosen stays Colour at night; the rows take no circle (they wear
-  // the row sets drawn for Orion Connected, tests/weather-rows-owner.test.js);
+  // the row sets drawn for Orion Connected, tests/weather-rows-line.test.js);
   // other boards keep Classic
   assert.match(helper({ look: 'colour', night: true })('snow', 64), /\/logos\/weather\/disc-day\/snow\.svg/);
   const row = helper({ night: true })('snow', 36, { row: true });
-  assert.match(row, /class="fids-wx-cell fids-wx-row"[^>]*--wxr-w:url\(\/logos\/weather\/rows-owner-white\/snow\.svg\?v=v1\);--wxr-c:url\(\/logos\/weather\/rows-owner-color\/snow\.svg\?v=v1\);/);
+  assert.match(row, /class="fids-wx-cell fids-wx-row"[^>]*--wxr-w:url\(\/logos\/weather\/rows-line-white\/snow\.svg\?v=v1\);--wxr-c:url\(\/logos\/weather\/rows-line-color\/snow\.svg\?v=v1\);/);
   assert.doesNotMatch(row, /night-line|fids-wx-line|fids-wx-disc|--wxn-disc/, 'no night circle in a row');
   assert.match(helper({ night: true, p: '/fids' })('snow', 64), /\/logos\/weather\/animated\/snow\.svg/);
   assert.match(helper({ look: 'classic', night: true })('snow', 64), /\/logos\/weather\/animated\/snow\.svg/);

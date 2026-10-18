@@ -6,7 +6,7 @@
 //
 // Run in headless Chrome on any page of a served fids-current (live-shot
 // style: evaluated with awaitPromise). Draws the 20 drawings of both row sets
-// (logos/weather/rows-owner-white/, rows-owner-color/) at 192 px, keeps every
+// (logos/weather/rows-line-white/, rows-line-color/) at 192 px, keeps every
 // pixel the drawing covers (alpha >= 128), and for grey grounds from
 // luminance 0.02 to 0.98 takes, per icon, the median WCAG contrast of its
 // pixels laid on that ground, then the median over the 20 icons, for each
@@ -43,7 +43,7 @@
   const sets = {};
   for (const set of ['white', 'color']) {
     sets[set] = [];
-    for (const n of NAMES) sets[set].push(await ink('/logos/weather/rows-owner-' + set + '/' + n + '.svg'));
+    for (const n of NAMES) sets[set].push(await ink('/logos/weather/rows-line-' + set + '/' + n + '.svg'));
   }
   const iconMedian = (px, g) => {
     const Lg = L(g, g, g);

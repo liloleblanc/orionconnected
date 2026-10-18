@@ -8,7 +8,7 @@
 // airport's own sunrise and sunset; the default since v24042), Classic (the
 // original icons, value 'classic'), Colour or Solid. The departures and arrivals rows never take a circle: they show
 // the sets drawn for Orion Connected, white on a dark row and colour on a light one (v24053,
-// tests/weather-rows-owner.test.js). The gate screens take a
+// tests/weather-rows-line.test.js). The gate screens take a
 // circle: Colour = the colour icon on white, Solid = the glyph in the
 // airline's brand colour on its deep colour (WestJet teal on navy), drawn
 // larger. The weather card does the same with icons it inlines. Files: logos/weather/<set>/<condition>.svg,
@@ -60,7 +60,7 @@ const rowFiles = (html) => ((/--wxr-w:url\(([^)]+)\);--wxr-c:url\(([^)]+)\);/.ex
 test('Day & night is the default: no look stamped draws the rows drawn for Orion Connected, Colour by day and Solid at night at the gate', () => {
   for (const night of [false, true]) {
     const h = helper({ night });
-    assert.equal(rowFiles(h.wxIconHtml('cloudy', 36, { row: true })), '/logos/weather/rows-owner-white/cloudy.svg?v=v1 /logos/weather/rows-owner-color/cloudy.svg?v=v1', night ? 'night row' : 'day row');
+    assert.equal(rowFiles(h.wxIconHtml('cloudy', 36, { row: true })), '/logos/weather/rows-line-white/cloudy.svg?v=v1 /logos/weather/rows-line-color/cloudy.svg?v=v1', night ? 'night row' : 'day row');
     assert.match(src(h.wxIconHtml('cloudy', 48)), /\/animated\//, 'not a row and not the gate');
   }
   assert.equal(helper({ path: '/gids' }).look(), 'colour');
@@ -130,7 +130,7 @@ test('the rows take the sets drawn for Orion Connected with no circle, in every 
   for (const look of ['solid', 'colour', 'daynight', '']) {
     for (const night of [false, true]) {
       const html = helper({ look, night }).wxIconHtml(1001, 36, { row: true });
-      assert.equal(rowFiles(html), '/logos/weather/rows-owner-white/cloudy.svg?v=v1 /logos/weather/rows-owner-color/cloudy.svg?v=v1', look + (night ? ' night' : ' day'));
+      assert.equal(rowFiles(html), '/logos/weather/rows-line-white/cloudy.svg?v=v1 /logos/weather/rows-line-color/cloudy.svg?v=v1', look + (night ? ' night' : ' day'));
       assert.match(html, /class="fids-wx-cell fids-wx-row"/);
       assert.doesNotMatch(html, /fids-wx-disc|--wx-disc/, 'no circle on the main board');
     }
@@ -169,8 +169,8 @@ test('other surfaces, and conditions the packs do not draw, keep the Classic ico
   assert.match(src(helper({ look: 'solid', path: '/bids' }).wxIconHtml('snow', 64)), /\/animated\//);
   // v24053 — the rows draw every name the sets drawn for Orion Connected have (a tornado among them);
   // a name they lack takes its nearest
-  assert.match(rowFiles(helper({ look: 'solid' }).wxIconHtml('tornado', 36, { row: true })), /rows-owner-white\/tornado\.svg/);
-  assert.match(rowFiles(helper({ look: 'solid' }).wxIconHtml('rain-with-sun', 36, { row: true })), /rows-owner-white\/rain\.svg/);
+  assert.match(rowFiles(helper({ look: 'solid' }).wxIconHtml('tornado', 36, { row: true })), /rows-line-white\/tornado\.svg/);
+  assert.match(rowFiles(helper({ look: 'solid' }).wxIconHtml('rain-with-sun', 36, { row: true })), /rows-line-white\/rain\.svg/);
   const other = helper({ look: 'solid', path: '/gids' }).wxIconHtml('tornado', 64);
   assert.match(src(other), /\/logos\/weather\/animated\/wind\.svg/, 'off the rows, a name outside the 23 falls back to the animated set\'s nearest');
 });

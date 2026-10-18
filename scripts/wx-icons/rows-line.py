@@ -25,24 +25,26 @@ What changes is only what is around it:
     78 % of the box less 6 % each side. One size keeps every line at the
     weight it was drawn with, relative to the others.
 
-  python3 rows-owner.py split <White.svg> <Color.svg> <workdir>
+  python3 rows-line.py split <White.svg> <Color.svg> <workdir>
       writes <workdir>/raw/{white,color}/<name>.svg, each icon framed on a
       generous box round its place on the sheet, and raw/index.json, for
-      measuring (rows-owner-measure.js in headless Chrome, on a page served
+      measuring (rows-line-measure.js in headless Chrome, on a page served
       from <workdir>, prints the drawn extent of each: save it as
       measure.json)
-  python3 rows-owner.py build <White.svg> <Color.svg> <measure.json> <outroot>
-      writes <outroot>/rows-owner-white/ and <outroot>/rows-owner-color/:
+  python3 rows-line.py build <White.svg> <Color.svg> <measure.json> <outroot>
+      writes <outroot>/rows-line-white/ and <outroot>/rows-line-color/:
       <name>.svg for the 20 drawings, plus a copy under every other condition
       name the boards draw (ALIAS, the same mapping as night-line/)
 
-On the boards (v24053) every departures / arrivals row wears one of the two
-sets, picked from the ground its icon sits on (fids-core.js _fidsRowWxSet):
-the colour set wherever white holds less than 3:1 on that ground (the white
-set would vanish: any ground above a relative luminance of 0.30), otherwise
-the side the row's own text ink took. rows-owner-split.js measures, in
-headless Chrome, how each set's median contrast runs across ground
-luminance.
+On the boards (v24053) every departures / arrivals row icon wears one of the
+two sets, or the white set's shapes in the row's own ink, picked from the
+ground it sits on (fids-core.js _fidsRowWxSet, scripts/wx-icons/README.md):
+the set the row calls for (the colour set wherever white holds less than 3:1
+on that ground, otherwise the side the row's own text ink took) where half of
+that drawing stands at 3:1 there, else the ink copy. rows-line-split.js
+measures, in headless Chrome, how each set's median contrast runs across
+ground luminance; rows-line-pixels.js makes the table the boards read
+(fids-core.js _WX_ROW_PX).
 """
 import json, math, os, re, sys
 import xml.etree.ElementTree as ET
@@ -74,7 +76,7 @@ ALIAS = {
     'thunderstorms-night-rain': 'thunderstorms-rain',
     'wind-cloud': 'wind',
 }
-SETS = {'white': ('rows-owner-white', 'wxrw'), 'color': ('rows-owner-color', 'wxrc')}
+SETS = {'white': ('rows-line-white', 'wxrw'), 'color': ('rows-line-color', 'wxrc')}
 # today's row glyphs (build.py): the glyph box is 78 % of the icon, the glyph
 # 6 % inside it on each side -> the glyph's longest side is 78 / 1.12 %
 SPAN = 0.78 / 1.12

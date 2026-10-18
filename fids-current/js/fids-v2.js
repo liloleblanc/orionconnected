@@ -198,7 +198,8 @@
     return { disc: '#033F77', ink: '#FFFFFF' };
   }
   // v24053 — the night circle for the gate airline (fids-core.js _wxNightDisc:
-  // the airline's dark tint, or the charcoal the night icons were drawn on)
+  // the ground under it lifted toward the airline's tint, or the charcoal the
+  // night icons were drawn on)
   function wxGateNightDisc() {
     try {
       const code = String(window._gateCurrentAirline || document.body.getAttribute('data-gate-airline') || '').trim().toUpperCase();
@@ -208,32 +209,31 @@
   }
   // ── v24053 — THE ROWS WEAR THE TWO SETS DRAWN FOR ORION CONNECTED ─────
   // One set is for a dark ground, one for a light ground: white shapes with
-  // a thin blue edge (rows-owner-white/), and gradient shapes with dark navy
-  // rain and storm clouds (rows-owner-color/). Both are the 20 drawings of
+  // a thin blue edge (rows-line-white/), and gradient shapes with dark navy
+  // rain and storm clouds (rows-line-color/). Both are the 20 drawings of
   // the night set (night-line/) without its circles, under the same names,
   // and every file shares one frame, so a row that changes set never moves
-  // (scripts/wx-icons/rows-owner.py).
+  // (scripts/wx-icons/rows-line.py).
   //   - The icon is the element's own background: the white file by
-  //     default, the colour file when its row is light. fids-core.js
-  //     _fidsRowWxSet tests, once per render, the colour the icon really
-  //     sits on: where white holds less than 3:1 on it (yellow Delayed,
-  //     orange Final call, any light Customize row or airline colour) the
-  //     white set would vanish and the row takes the colour set; otherwise
-  //     it takes the side the board's own ink took (the temperature beside
-  //     the icon inked dark: colour; light: white), on the airport's
-  //     colours, Customize's custom rows, the alternate rows and the status
-  //     rows (red Cancelled…). It writes data-wx-set=
-  //     "white|colour" on the icon (css/display-overrides.css, the v24053
-  //     block). Nothing is redrawn: an operator's new colours re-render the
-  //     rows and the icons follow.
+  //     default, the colour file where the row is light and that drawing
+  //     can be seen there, and where neither can (the colour set's gold sun
+  //     and moon, pale clouds, white snow and fog on yellow Delayed, orange
+  //     Final call and the light rows; the white set's thin lines on red
+  //     Cancelled) the white file's own shapes as a mask, filled with the
+  //     row's text colour (navy on yellow and orange, white on red).
+  //     fids-core.js _fidsRowWxSet decides, icon by icon, on the colour it
+  //     really sits on, once per render, and writes data-wx-set=
+  //     "white|colour|ink" on the icon (css/display-overrides.css, the
+  //     v24053 block). Nothing is redrawn: an operator's new colours
+  //     re-render the rows and the icons follow.
   //   - The name comes from the code by fids-core.js _wxAnimIcon, the
   //     mapping every set drawn for Orion Connected shares: MET's 'fair' is
   //     a clear sky, 'cloudy' the two clouds (overcast), and the clear and
   //     partly cloudy skies take their night form (moon) while it is dark at
   //     the place the weather is for (js/fids-sun.js, the destination's own
   //     sunrise and sunset; the board's own day or night without one).
-  const WX_ROW_WHITE = '/logos/weather/rows-owner-white/';
-  const WX_ROW_COLOUR = '/logos/weather/rows-owner-color/';
+  const WX_ROW_WHITE = '/logos/weather/rows-line-white/';
+  const WX_ROW_COLOUR = '/logos/weather/rows-line-color/';
   const WX_ROW_NAMES = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'lightning-bolt':1,'mist':1,'overcast-day':1,'overcast-night':1,'overcast':1,'partly-cloudy-day-snow':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'snowflake':1,'sunrise':1,'thermometer-colder':1,'thermometer-warmer':1,'thunderstorms-day-rain':1,'thunderstorms-night-rain':1,'thunderstorms-rain':1,'thunderstorms':1,'tornado':1,'umbrella':1,'wind-cloud':1,'wind':1 };
   // dark at the place the weather is for (an IATA code), else at the board
   function wxRowNight(at) {
@@ -252,6 +252,10 @@
       const c = parseInt(code, 10);
       if (typeof window.TIO_ICON !== 'undefined' && !window.TIO_ICON[c]) return '';
       n = (typeof _wxAnimIcon === 'function') ? _wxAnimIcon(c, wxRowNight(at)) : ((window.TIO_ICON || {})[c] || '');
+      // the old Tomorrow.io wind codes (3000-3002): the card's mapping has no
+      // wind and reads them as a clear sky; the rows draw the wind drawing,
+      // as the code's own table names it
+      if (window.TIO_ICON && window.TIO_ICON[c] === 'wind') n = 'wind';
     } else if (typeof code === 'string') {
       n = code;
     }
