@@ -1,7 +1,7 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v24052 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED.
+// v24053 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED.
 //
 // At night, wherever the look draws its weather icons in a circle (Day &
 // night after dark and Solid at night), the icons are the set drawn for
@@ -430,7 +430,7 @@ test("one choice: B (the default) a dark tint of the airline's night ground, A t
   }
 });
 
-test('the gate: at night the circle look draws the night icon on the night circle; by day and in the rows nothing changes', () => {
+test('the gate: at night the circle look draws the night icon on the night circle; by day nothing changes, and the rows wear their own sets', () => {
   const a = V2.indexOf('const WX_ANIM_ALIAS');
   const END = 'window.fidsWxGateNightDisc = wxGateNightDisc;';
   assert.ok(V2.indexOf(END) > a);
@@ -466,9 +466,13 @@ test('the gate: at night the circle look draws the night icon on the night circl
   // by day: Colour (Day & night) and Solid (chosen) as they were
   assert.match(helper({ airline: 'WS' })('snow', 64), /src="\/logos\/weather\/disc-day\/snow\.svg\?v=v1"/);
   assert.match(helper({ look: 'solid', airline: 'WS' })('snow', 64), /--wx-disc:#003366;--wx-ink:#00B2A9;--wx-glyph:url\(\/logos\/weather\/solid-in-disc\/snow\.svg\?v=v1\);/);
-  // Colour chosen stays Colour at night; the rows take no circle; other boards keep Classic
+  // Colour chosen stays Colour at night; the rows take no circle (they wear
+  // the row sets drawn for Orion Connected, tests/weather-rows-owner.test.js);
+  // other boards keep Classic
   assert.match(helper({ look: 'colour', night: true })('snow', 64), /\/logos\/weather\/disc-day\/snow\.svg/);
-  assert.match(helper({ night: true })('snow', 36, { row: true }), /src="\/logos\/weather\/solid\/snow\.svg\?v=v1"/);
+  const row = helper({ night: true })('snow', 36, { row: true });
+  assert.match(row, /class="fids-wx-cell fids-wx-row"[^>]*--wxr-w:url\(\/logos\/weather\/rows-owner-white\/snow\.svg\?v=v1\);--wxr-c:url\(\/logos\/weather\/rows-owner-color\/snow\.svg\?v=v1\);/);
+  assert.doesNotMatch(row, /night-line|fids-wx-line|fids-wx-disc|--wxn-disc/, 'no night circle in a row');
   assert.match(helper({ night: true, p: '/fids' })('snow', 64), /\/logos\/weather\/animated\/snow\.svg/);
   assert.match(helper({ look: 'classic', night: true })('snow', 64), /\/logos\/weather\/animated\/snow\.svg/);
   // without fids-core.js loaded the circle is the charcoal
@@ -478,7 +482,7 @@ test('the gate: at night the circle look draws the night icon on the night circl
 });
 
 test('the gate circle is the element\'s own round background, the icon its ::after on the whole circle', () => {
-  const at = CSS.indexOf('/* ══ v24052 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE');
+  const at = CSS.indexOf('/* ══ v24053 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE');
   assert.ok(at > 0);
   const block = CSS.slice(at, CSS.indexOf('/* ══', at + 10));
   assert.match(block, /\.fids-wx-line \{\s*position: relative;\s*border-radius: 50% !important;\s*background: var\(--wxn-disc, #2B2B2A\) !important;\s*\}/);
