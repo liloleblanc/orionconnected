@@ -579,6 +579,78 @@ test('Escape, or a click elsewhere, closes an open menu or language switch', () 
   assert.equal(menu.open, false, 'choosing a place in the menu closes it');
 });
 
+test('the switch works from the keyboard: the arrows walk the languages, and Tab out of it closes it', () => {
+  for (const [page, url] of [['home.html', 'https://www.orionconnected.com/?lang=de'], ['credits.html', 'https://www.orionconnected.com/credits?lang=ar']]) {
+    const p = loadPage(page, { url });
+    const sw = p.$('details.lsw'), on = new URL(url).searchParams.get('lang');
+    const focused = () => p.doc.activeElement && p.doc.activeElement.getAttribute('data-lang-pick');
+    const order = Array.from(BS.LANGS);
+    // Down on the shut switch opens it on the language on screen, and the page does not scroll
+    sw.querySelector('summary').focus();
+    const e = p.key('ArrowDown');
+    assert.ok(e.defaultPrevented, `${page}: the arrow moves the focus, not the page`);
+    assert.equal(sw.open, true, `${page}: Down opens the switch`);
+    assert.equal(focused(), on, `${page}: on the language on screen`);
+    // Down and Up walk the list, round at both ends; Home and End go to the ends.
+    // The same keys in Arabic: the list is a column, which does not mirror.
+    const i = order.indexOf(on);
+    p.key('ArrowDown');
+    assert.equal(focused(), order[(i + 1) % order.length]);
+    p.key('ArrowUp');
+    p.key('ArrowUp');
+    assert.equal(focused(), order[(i + order.length - 1) % order.length]);
+    p.key('Home');
+    assert.equal(focused(), order[0]);
+    p.key('ArrowUp');
+    assert.equal(focused(), order[order.length - 1], 'Up from the first goes round to the last');
+    p.key('ArrowDown');
+    assert.equal(focused(), order[0], 'Down from the last goes round to the first');
+    p.key('End');
+    assert.equal(focused(), order[order.length - 1]);
+    // Enter on a choice picks it, as a click does
+    p.click(p.doc.activeElement);
+    assert.equal(p.html.getAttribute('lang'), order[order.length - 1]);
+    assert.equal(sw.open, false);
+    assert.equal(p.doc.activeElement, sw.querySelector('summary'), 'focus is back on the switch');
+    // Home and End on the button are the page's own (they scroll it)
+    assert.equal(p.key('Home').defaultPrevented, false);
+    // Tab out of an open switch closes it; moving inside it, or a click that
+    // gives the focus nowhere (Safari), leaves it to the click
+    sw.open = true;
+    const first = sw.querySelector('.lsw-list a');
+    first.focus();
+    p.fire('focusout', first, { relatedTarget: sw.querySelectorAll('.lsw-list a')[1] });
+    assert.equal(sw.open, true, `${page}: moving between languages keeps it open`);
+    p.fire('focusout', first, { relatedTarget: null });
+    assert.equal(sw.open, true, `${page}: a blur to nowhere leaves it to the click`);
+    p.fire('focusout', first, { relatedTarget: p.$('a.btn') });
+    assert.equal(sw.open, false, `${page}: Tab out of it closes it`);
+  }
+  // the menu: Down opens it on its first place, Up on its last
+  const p = loadPage('home.html');
+  const menu = p.$('details.menu'), places = menu.querySelectorAll('.menu-list a');
+  menu.querySelector('summary').focus();
+  p.key('ArrowUp');
+  assert.equal(menu.open, true);
+  assert.equal(p.doc.activeElement, places[places.length - 1]);
+  p.key('ArrowDown');
+  assert.equal(p.doc.activeElement, places[0]);
+  p.fire('focusout', places[0], { relatedTarget: p.$('a.brand') });
+  assert.equal(menu.open, false, 'Shift+Tab out of the menu closes it');
+});
+
+test('on a phone the switch still names the language on screen in its own script', () => {
+  // the two-letter code stands in for the name only below 300 px, narrower than any phone
+  const hides = [...CSS.matchAll(/@media \(max-width:(\d+)px\)\{((?:[^{}]|\{[^{}]*\})*)\}/g)]
+    .filter((m) => /\.lsw \.lsw-name\{display:none\}/.test(m[2])).map((m) => +m[1]);
+  assert.deepEqual(hides, [299]);
+  assert.match(CSS, /\.lsw \.lsw-code\{display:none;/, 'the code is hidden everywhere else');
+  // each language is the whole row, to click or tap: the masthead's inline-flex
+  // links (.nav a:not(.btn)) outrank .lsw-list a, so only a width fills the row
+  assert.match(CSS, /\.nav a:not\(\.btn\),\.menu-list a\{[^}]*display:inline-flex/);
+  assert.match(CSS, /\.lsw-list a\{[^}]*width:100%/, 'a language fills its row');
+});
+
 // ── the Worker ─────────────────────────────────────────────────────────────
 function lift(src, head) {
   const at = src.indexOf(head);

@@ -116,7 +116,9 @@ bdi{unicode-bidi:isolate}
 .lsw .globe{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6}
 .lsw .lsw-code{display:none;font-stretch:87.5%;letter-spacing:.06em}
 .lsw-list{min-width:230px;padding:6px 0;max-height:min(70vh,520px);overflow:auto}
-.lsw-list a{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:46px;padding-inline:18px;text-decoration:none;font-size:16px;font-weight:550}
+/* each language is the whole row: its target, its hover and its focus ring
+   (the masthead's own links are inline-flex, and that rule outranks this one) */
+.lsw-list a{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;min-height:46px;padding-inline:18px;text-decoration:none;font-size:16px;font-weight:550}
 .lsw-list a:hover,.lsw-list a:focus-visible{background:rgba(186,196,223,.14)}
 .lsw-list a b{font-weight:700;font-size:12.5px;letter-spacing:.08em;color:var(--mist);font-stretch:87.5%}
 .lsw-list a[aria-current="true"]{box-shadow:inset 4px 0 0 var(--gold)}
@@ -343,8 +345,6 @@ bdi{unicode-bidi:isolate}
   body{font-size:16.5px}
   .mast{gap:12px}
   .mast .btn{display:none}
-  .lsw .lsw-name{display:none}
-  .lsw .lsw-code{display:inline}
   .folio-line{font-size:13px}
   .hero{padding-top:22px}
   /* the title's number and its noun hold together (a no-break space), and
@@ -383,6 +383,14 @@ bdi{unicode-bidi:isolate}
   .menu summary{padding-inline:12px}
   .menu summary .menu-word{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
   .menu-list{min-width:min(250px,calc(100vw - 32px))}
+}
+/* the switch names the language on screen in its own script on a phone
+   too (日本語, العربية, not JA, AR): the longest, Português, still leaves
+   32 px beside the logo at 320 px. Narrower than any phone sold now, the
+   two-letter code stands in for it. */
+@media (max-width:299px){
+  .lsw .lsw-name{display:none}
+  .lsw .lsw-code{display:inline}
 }
 @media (max-width:374px){
   .region ul{columns:1}
