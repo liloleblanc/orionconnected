@@ -3,49 +3,44 @@
 # OpenSky relay: installer for its own small Ubuntu 24.04 server (Hetzner).
 #
 # The relay makes every OpenSky call from this one server, so OpenSky can
-# whitelist one fixed IPv4 address. The boards' Worker reaches it only
-# through a Cloudflare Tunnel (cloudflared) and a Workers VPC Service; the
-# relay listens on 127.0.0.1:8787 and the firewall lets nothing in.
+# whitelist one fixed IPv4 address. It only ever calls OUT: to OpenSky, and
+# to the boards' Worker (fids-proxy, its /osky/* routes), which it polls once
+# a minute. Nothing calls in, no port is open, and there is no tunnel and no
+# token to copy. The one secret made here, the relay key, stays on this
+# server; the Worker keeps only its sha256. The OpenSky client is never on
+# this server's disk: the relay asks the Worker for it and keeps it in memory.
 #
-# Three ways to run it, all as root:
+# How it runs: Hetzner's Cloud config box, at server creation (cloud-init,
+# as root, no terminal), these two lines:
 #
-#   1. Hetzner's Cloud config box, at server creation (cloud-init, no terminal):
 #        #!/bin/bash
-#        curl -fsSL --retry 5 -o /root/o https://fids.orionconnected.com/o
-#        bash /root/o || exit 1
-#        sudo cloudflared service install <the token Cloudflare shows>
-#      The tunnel line runs only once this installer has finished, so a
-#      tunnel that shows Connected means the relay is installed.
+#        curl -fsSL https://fids.orionconnected.com/o | bash
 #
-#   2. On the server, to repair or update it (downloads this file again over
-#      https and runs it):
-#        opensky-update
+# cloud-init runs the Cloud config as a script only when it starts with #!,
+# so the first line is needed. On the server, opensky-update downloads this
+# file again and runs it.
 #
-#   3. Typed in the Hetzner web console, only when nothing is installed yet:
-#        wget -O o https://fids.orionconnected.com/o
-#        bash o
-#
-# Safe to run again: it keeps the saved key, the caller key, the stop date and
-# the tunnel. It never calls OpenSky. Nothing calls OpenSky until opensky-key
-# is typed on the server, after the agreement is signed and paid.
+# Safe to run again: it keeps the relay key, the stop date and the settings.
+# It never calls OpenSky itself. The relay calls OpenSky only once the Worker
+# switches it on (after the agreement is signed and paid) and hands it the
+# OpenSky client.
 #
 # What it sets up:
-#   - cloudflared, from Cloudflare's own apt repository (pkg.cloudflare.com)
 #   - /opt/opensky-relay/relay.py (Python standard library only), checked
 #     against the SHA-256 pinned below
-#   - opensky-relay.service: a hardened systemd unit (DynamicUser,
-#     ProtectSystem=strict, NoNewPrivileges, IPv4 sockets only, no metadata
-#     service, no core dumps, cloudflared's files out of sight); the OAuth
-#     client and the caller key arrive through LoadCredential from root-only
-#     0600 files in /etc/opensky-relay/
+#   - /etc/opensky-relay/relay-key: the relay key, made once (root, 0600)
+#   - /etc/opensky-relay/relay.conf: STOP_AT, DAILY_CAP, CACHE_SECONDS,
+#     HEADING, WORKER_URL (root-owned)
+#   - opensky-relay.service: a hardened systemd unit (a dedicated throwaway
+#     user via DynamicUser, ProtectSystem=strict, NoNewPrivileges, IPv4
+#     sockets only, no metadata service, no core dumps); the relay key
+#     arrives through LoadCredential
 #   - opensky-relay-stop.timer: turns the relay off at the end of the term
-#   - ufw: deny all incoming (the Hetzner web console is out-of-band and
-#     keeps working)
-#   - the commands opensky-key, opensky-status, opensky-extend,
-#     opensky-caller-key and opensky-update
+#   - ufw: deny all incoming, when ufw is there
+#   - the commands opensky-status, opensky-extend and opensky-update
 #
 set -eEuo pipefail
-trap 'echo "OpenSky relay install stopped at line $LINENO. Nothing is lost: type opensky-update to try again." >&2' ERR
+trap 'echo "OpenSky relay install stopped at line $LINENO. Nothing is lost: run it again." >&2' ERR
 
 # Everything runs inside main(), called on the last line. When this file is
 # piped into bash, bash reads the whole function before running any of it, so
@@ -53,19 +48,20 @@ trap 'echo "OpenSky relay install stopped at line $LINENO. Nothing is lost: type
 # script from stdin.
 main() {
   if [ "$(id -u)" -ne 0 ]; then
-    echo "Run this as root (log in as root in the Hetzner console)."
+    echo "Run this as root."
     exit 1
   fi
   export DEBIAN_FRONTEND=noninteractive
 
   # The original licence term ends 12 Nov 2026 23:59:59 Swiss time (CET).
   # Used only when no stop date is saved yet; a saved one is never changed
-  # here. Only opensky-extend, typed on the server, moves it.
+  # here. Only opensky-extend, typed on the server, moves it. The relay also
+  # stops at the Worker's own stop date, whichever comes first.
   local DEFAULT_STOP_AT="2026-11-12T22:59:59Z"
   local RELAY_URL="https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/relay.py"
   # The relay.py this installer was written with (tests/opensky-relay.test.js
   # fails when it drifts). A download that does not match is never installed.
-  local RELAY_SHA256="aa27b70829bc53d7b1d4a950cbf8999cbf7f080af46bbc1ed893e3ef834cc47c"
+  local RELAY_SHA256="ee47f047b19246e9ab8ba0fe13c804829fd9be357577b98b894a59e649b88a7e"
 
   install -d -m 0755 -o root -g root /usr/local/lib/opensky-relay
   write_common
@@ -79,7 +75,6 @@ main() {
     apt_get update
     apt_get install curl ca-certificates python3
   fi
-  install_cloudflared
 
   echo "== OpenSky relay: the relay"
   install_relay "$RELAY_URL" "$RELAY_SHA256"
@@ -87,14 +82,12 @@ main() {
   echo "== OpenSky relay: settings"
   install -d -m 0755 -o root -g root "$OSKY_ETC"
   write_config "$DEFAULT_STOP_AT"
-  if [ ! -f "$OSKY_CRED" ]; then
-    # no key yet: the relay starts, knows no key, and calls nothing
-    install -m 0600 -o root -g root /dev/null "$OSKY_CRED"
-    echo "# no key yet: type opensky-key" > "$OSKY_CRED"
-  fi
-  chown root:root "$OSKY_CRED"
-  chmod 0600 "$OSKY_CRED"
-  write_caller_key
+  # the relay key: made here once, kept on every re-run (the Worker knows
+  # its sha256); root only, handed to the relay by systemd
+  "$OSKY_PY" -I "$OSKY_RELAY" --make-key "$OSKY_KEY"
+  chown root:root "$OSKY_KEY"
+  chmod 0600 "$OSKY_KEY"
+  remove_old_files
 
   echo "== OpenSky relay: services"
   write_units
@@ -112,8 +105,7 @@ main() {
 
   echo "== OpenSky relay: firewall"
   if command -v ufw >/dev/null 2>&1; then
-    # Nothing is allowed in, not even SSH: the tunnel only dials out, and the
-    # Hetzner web console does not go through the network at all.
+    # Nothing is allowed in, not even SSH: the relay only calls out.
     ufw default deny incoming >/dev/null
     ufw default allow outgoing >/dev/null
     ufw --force enable >/dev/null
@@ -134,7 +126,7 @@ main() {
 apt_get() {
   # DPkg::Lock::Timeout waits for dpkg's own lock only. apt-get update takes
   # the package-lists lock, which it does not wait for (Debian bug #1069167),
-  # so a console re-run while apt-daily is busy would fail at once: retry.
+  # so a run while apt-daily is busy would fail at once: retry.
   local i
   for i in $(seq 1 30); do
     if apt-get -o DPkg::Lock::Timeout=600 -y -q "$@" </dev/null; then
@@ -146,19 +138,6 @@ apt_get() {
   apt-get -o DPkg::Lock::Timeout=600 -y -q "$@" </dev/null
 }
 
-install_cloudflared() {
-  # Cloudflare's documented apt setup (developers.cloudflare.com/tunnel/downloads/)
-  install -d -m 0755 /usr/share/keyrings
-  curl -fsSL --retry 3 https://pkg.cloudflare.com/cloudflare-main.gpg -o /usr/share/keyrings/cloudflare-main.gpg.tmp
-  mv -f /usr/share/keyrings/cloudflare-main.gpg.tmp /usr/share/keyrings/cloudflare-main.gpg
-  chmod 0644 /usr/share/keyrings/cloudflare-main.gpg
-  echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" \
-    > /etc/apt/sources.list.d/cloudflared.list
-  apt_get update
-  apt_get install cloudflared
-  cloudflared --version || true
-}
-
 install_relay() {
   local url="$1" want="$2" here="" tmp got
   if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
@@ -166,7 +145,8 @@ install_relay() {
   fi
   tmp="$(mktemp)"
   # a repository checkout (bash stream-server/opensky-relay/install.sh) uses
-  # its own relay.py; anything else downloads the one on main
+  # its own relay.py; anything else, a pipe from curl included, downloads
+  # the one on main
   if [ -n "$here" ] && [ "$(basename "$here")" = opensky-relay ] && [ -f "$here/relay.py" ]; then
     cp "$here/relay.py" "$tmp"
   else
@@ -179,7 +159,7 @@ install_relay() {
     rm -f "$tmp"
     echo "The relay download does not match this installer, so nothing was changed."
     echo "GitHub can serve an old copy for a few minutes after a change."
-    echo "Wait 10 minutes, then type: opensky-update"
+    echo "Wait 10 minutes, then run it again (opensky-update)."
     exit 1
   fi
   install -d -m 0755 -o root -g root /opt/opensky-relay
@@ -206,13 +186,16 @@ write_config() {
 # OpenSky relay settings. Root only; read by $OSKY_RELAY.
 # STOP_AT is the end of the licence term, in UTC. Change it only with
 #     opensky-extend YYYY-MM-DD
+# (the relay also stops at the Worker's own stop date, whichever is first)
 STOP_AT=$default_stop
 # Upstream calls per UTC day, paced across the hours (1500 at most).
 DAILY_CAP=1500
-# Seconds an answer is kept in memory (300 at most).
+# Seconds an identical box shares one OpenSky call (300 at most).
 CACHE_SECONDS=120
-# 1 = also return the heading (true_track). 0 until OpenSky confirms it is covered.
+# 1 = also send the heading (true_track). 0 until OpenSky confirms it is covered.
 HEADING=0
+# The boards' Worker the relay polls: https://<host> only.
+WORKER_URL=$OSKY_DEFAULT_WORKER_URL
 EOF
   fi
   chown root:root "$OSKY_CONF"
@@ -220,21 +203,12 @@ EOF
   osky_write_timer "$(osky_stop_at)"
 }
 
-write_caller_key() {
-  # The key the boards' Worker sends as X-Relay-Key. Made here once, kept on
-  # every re-run (the Worker knows this one). opensky-caller-key shows it.
-  local k=""
-  if [ -f "$OSKY_CALLER" ]; then
-    k="$(tr -cd 'a-z0-9' < "$OSKY_CALLER" || true)"
-  fi
-  if [ "${#k}" -lt 20 ]; then
-    local tmp
-    tmp="$(mktemp "$OSKY_ETC/.caller-key.XXXXXX")"
-    "$OSKY_PY" -I -c 'import secrets; a = "abcdefghjkmnpqrstuvwxyz23456789"; k = "".join(secrets.choice(a) for _ in range(24)); print("-".join(k[i:i + 4] for i in range(0, 24, 4)))' > "$tmp"
-    mv -f "$tmp" "$OSKY_CALLER"
-  fi
-  chown root:root "$OSKY_CALLER"
-  chmod 0600 "$OSKY_CALLER"
+remove_old_files() {
+  # The first design (a Cloudflare Tunnel, PR #1049) kept the OpenSky client
+  # and a caller key in files here and had two more commands. The client now
+  # lives only in the Worker, so none of them is used any more.
+  rm -f "$OSKY_ETC/credentials" "$OSKY_ETC/caller-key" \
+    /usr/local/bin/opensky-key /usr/local/bin/opensky-caller-key
 }
 
 write_common() {
@@ -242,16 +216,17 @@ write_common() {
 # Shared by install.sh and the opensky-* commands.
 OSKY_ETC=/etc/opensky-relay
 OSKY_CONF=$OSKY_ETC/relay.conf
-OSKY_CRED=$OSKY_ETC/credentials
-OSKY_CALLER=$OSKY_ETC/caller-key
+OSKY_KEY=$OSKY_ETC/relay-key
 OSKY_IP_FILE=$OSKY_ETC/public-ipv4
 OSKY_RELAY=/opt/opensky-relay/relay.py
 OSKY_PY=/usr/bin/python3
 OSKY_TIMER=/etc/systemd/system/opensky-relay-stop.timer
 OSKY_STATE_DIR=/var/lib/opensky-relay
 OSKY_STATE=$OSKY_STATE_DIR/state.json
+OSKY_STATUS=$OSKY_STATE_DIR/status.json
 OSKY_STOP_MARKER=$OSKY_STATE_DIR/stopped
 OSKY_INSTALLER_URL=https://fids.orionconnected.com/o
+OSKY_DEFAULT_WORKER_URL=https://fids-proxy.n-leblanc1984.workers.dev
 
 # The saved STOP_AT, read exactly the way relay.py reads it: one line that
 # starts with STOP_AT=, and no other line that could be read as one (lower
@@ -331,7 +306,7 @@ EOF
 write_units() {
   cat > /etc/systemd/system/opensky-relay.service <<'EOF'
 [Unit]
-Description=OpenSky relay (one fixed IPv4 for OpenSky; 127.0.0.1:8787 only)
+Description=OpenSky relay (polls the boards' Worker; every OpenSky call from this server's IPv4)
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=/opt/opensky-relay/relay.py
@@ -340,11 +315,10 @@ ConditionPathExists=/opt/opensky-relay/relay.py
 Type=simple
 ExecStart=/usr/bin/python3 -I /opt/opensky-relay/relay.py
 Environment=OSKY_PRODUCTION=1
-UnsetEnvironment=OSKY_TEST_MODE OSKY_TEST_TOKEN_URL OSKY_TEST_API_BASE OSKY_TEST_PORT OSKY_TEST_CONFIG_DIR OSKY_TEST_CLOCK_FILE
-# the OAuth client (client_id + client_secret) and the caller key, from
-# root-only 0600 files
-LoadCredential=credentials:/etc/opensky-relay/credentials
-LoadCredential=caller-key:/etc/opensky-relay/caller-key
+UnsetEnvironment=OSKY_TEST_MODE OSKY_TEST_TOKEN_URL OSKY_TEST_API_BASE OSKY_TEST_WORKER_URL OSKY_TEST_CONFIG_DIR OSKY_TEST_CLOCK_FILE OSKY_TEST_LOOP_S
+# the relay key, from a root-only 0600 file
+LoadCredential=relay-key:/etc/opensky-relay/relay-key
+# a dedicated throwaway system user, made for this service only
 DynamicUser=yes
 StateDirectory=opensky-relay
 StateDirectoryMode=0700
@@ -371,23 +345,20 @@ MemoryDenyWriteExecute=yes
 RemoveIPC=yes
 # IPv4 only: an IPv6 socket cannot even be opened
 RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
-# no metadata service: Hetzner serves the Cloud config (with the tunnel
-# token) to any local process at its link-local metadata address. Loopback
-# stays open: the relay listens there.
+# no metadata service (Hetzner serves the Cloud config at its link-local
+# address); loopback stays open for the local DNS resolver
 IPAddressDeny=link-local
-# cloudflared's token sits in its unit's ExecStart and in cloud-init's
-# copies of the Cloud config, and the system bus would read ExecStart out
-# too: none of them is the relay's business
-InaccessiblePaths=-/etc/systemd/system/cloudflared.service -/etc/cloudflared -/var/lib/cloud -/var/log/cloud-init.log -/var/log/cloud-init-output.log -/run/dbus
-# a crash never writes the secret or OpenSky's data to disk
+InaccessiblePaths=-/var/lib/cloud -/var/log/cloud-init.log -/var/log/cloud-init-output.log -/run/dbus
+# a crash never writes the OpenSky client or OpenSky's data to disk
 LimitCORE=0
 SystemCallArchitectures=native
 SystemCallFilter=@system-service
 SystemCallFilter=~@privileged
-MemoryMax=256M
-TasksMax=128
+MemoryMax=128M
+TasksMax=32
+# it exits by itself (status 0) once the term has ended: no restart then
 Restart=on-failure
-RestartSec=5
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target
@@ -404,139 +375,35 @@ EOF
 }
 
 write_commands() {
-  cat > /usr/local/bin/opensky-key <<'EOF'
-#!/usr/bin/env bash
-# opensky-key: save the OpenSky API client on this server, restart the relay
-# and test ONE login (no data call). The secret is read hidden and kept in
-# /etc/opensky-relay/credentials (root only, 0600); systemd hands it to the
-# relay. Only its length and its last 4 characters are ever shown.
-set -euo pipefail
-. /usr/local/lib/opensky-relay/common.sh
-if [ "$(id -u)" -ne 0 ]; then echo "Log in as root first, then type opensky-key."; exit 1; fi
-if [ ! -t 0 ]; then echo "Type opensky-key in the server console."; exit 1; fi
-if [ ! -f "$OSKY_RELAY" ]; then echo "The relay is not installed. Type opensky-update first."; exit 1; fi
-if "$OSKY_PY" -I "$OSKY_RELAY" --stopped; then
-  echo "The licence term has ended, so no key was saved."
-  echo "After OpenSky signs an extension: opensky-extend YYYY-MM-DD"
-  exit 1
-fi
-echo "Your OpenSky API client (OpenSky account page, API client)."
-IFS= read -r -p "Client ID: " cid
-IFS= read -r -s -p "Client secret (nothing shows while you type): " secret
-echo
-cid="${cid//[[:space:]]/}"
-secret="${secret//[[:space:]]/}"
-if [ -z "$cid" ] || [ -z "$secret" ]; then
-  echo "Nothing saved: both are needed. Type opensky-key to try again."
-  exit 1
-fi
-umask 077
-tmp="$(mktemp "$OSKY_ETC/.credentials.XXXXXX")"
-printf 'client_id=%s\nclient_secret=%s\n' "$cid" "$secret" > "$tmp"
-chown root:root "$tmp"
-chmod 0600 "$tmp"
-mv -f "$tmp" "$OSKY_CRED"
-echo "Saved."
-echo "  Client ID:      ${#cid} characters, ends in ...${cid: -4}"
-echo "  Client secret:  ${#secret} characters, ends in ...${secret: -4}"
-echo "Compare both with your OpenSky account page."
-unset secret
-systemctl restart opensky-relay.service
-rc=0
-"$OSKY_PY" -I "$OSKY_RELAY" --check-login "$OSKY_CRED" || rc=$?
-case "$rc" in
-  0) echo "Next: type opensky-status" ;;
-  1|4) echo "Type opensky-key to try again."; exit 1 ;;
-  *) echo "Next: type opensky-status"; exit 1 ;;
-esac
-EOF
-
   cat > /usr/local/bin/opensky-status <<'EOF'
 #!/usr/bin/env bash
-# opensky-status: relay ON or OFF, key set, calls today, OpenSky's last
-# answer, the stop date (Swiss and Moncton time), this server's public IPv4
-# and the tunnel. Never the secret.
+# opensky-status: relay ON or OFF, its state, calls today, OpenSky's last
+# answer, the stop date (Swiss and Moncton time) and this server's public
+# IPv4. Never a key. (The same counts show at the Worker's /osky/status.)
 set -uo pipefail
 . /usr/local/lib/opensky-relay/common.sh
 relay_state="$(systemctl is-active opensky-relay.service 2>/dev/null)"
-tunnel_state="$(systemctl is-active cloudflared.service 2>/dev/null)"
-health="$(curl -s --max-time 3 http://127.0.0.1:8787/health 2>/dev/null)"
 if [ "$relay_state" = active ]; then on="ON"; else on="OFF ($relay_state)"; fi
-if [ "$(id -u)" -ne 0 ]; then key="(log in as root to see)"
-elif grep -qE '^client_secret=.+' "$OSKY_CRED" 2>/dev/null; then key="yes"
-else key="no"; fi
 ip="$(osky_public_ipv4 || true)"
 if [ -n "$ip" ] && [ "$(id -u)" -eq 0 ]; then printf '%s\n' "$ip" > "$OSKY_IP_FILE"; fi
 echo "OpenSky relay"
 echo "  Relay:        $on"
-echo "  Key set:      $key"
-if ! "$OSKY_PY" -I -c '
-import json, sys
-from datetime import datetime, timezone
-try:
-    from zoneinfo import ZoneInfo
-    tz = ZoneInfo("America/Moncton")
-except Exception:
-    tz = timezone.utc
-def when(iso):
-    try:
-        d = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        return d.astimezone(tz).strftime("%a %d %b, %H:%M %Z")
-    except Exception:
-        return str(iso)
-try:
-    j = json.loads(sys.argv[1])
-    assert isinstance(j, dict)
-except Exception:
-    sys.exit(1)
-STATES = {
-    "ready": "ready",
-    "no-key": "waiting for the key (type opensky-key, only after signing and paying)",
-    "no-caller-key": "no caller key (type opensky-update)",
-    "stopped": "stopped: the licence term has ended (it answers 410)",
-    "config-missing": "stopped: no clear stop date in relay.conf (type opensky-update)",
-    "count-unreadable": "no calls until 00:00 UTC: the saved count cannot be read",
-    "clock-behind": "no calls: the server clock is behind the day of the saved count",
-    "backoff": "OpenSky asked it to wait: %s s left" % j.get("backoff_seconds"),
-    "hold": "waiting after an OpenSky refusal or error: %s s left" % j.get("hold_seconds"),
-    "capped": "the day is used up: calls again after 00:00 UTC",
-}
-def hint(code):
-    code = str(code)
-    if "403" in code:
-        return "OpenSky refused this server: ask OpenSky whether this IPv4 is whitelisted."
-    if code in ("login-400", "login-401", "upstream-401"):
-        return "OpenSky did not accept the key: type opensky-key again."
-    if code in ("upstream-429",):
-        return "OpenSky asked the relay to wait. It does, by itself."
-    if "-5" in code:
-        return "A problem on OpenSky side. The relay tries again by itself."
-    if code in ("unreachable", "timeout", "login-unreachable"):
-        return "OpenSky could not be reached. The relay tries again by itself."
-    return "The relay tries again by itself."
-state = j.get("state")
-print("  State:        %s" % STATES.get(state, state))
-print("  Caller key:   %s" % ("set" if j.get("caller_key_set") else "MISSING (type opensky-update)"))
-print("  Calls today:  %s / %s   (UTC day %s)" % (j.get("calls_today"), j.get("cap"), j.get("date")))
-print("  Last OpenSky answer OK:  %s" % (when(j["last_ok_at"]) if j.get("last_ok_at") else "none yet"))
-if j.get("last_error"):
-    print("  Last OpenSky problem:    %s, %s" % (j["last_error"], when(j.get("last_error_at"))))
-    print("    %s" % hint(j["last_error"]))
-' "$health" 2>/dev/null; then
-  saved="$("$OSKY_PY" -I -c '
+"$OSKY_PY" -I -c '
 import json, sys
 try:
     j = json.load(open(sys.argv[1]))
-    print("%s (UTC day %s)" % (j.get("count"), j.get("date")))
+    assert isinstance(j, dict)
 except Exception:
-    print("")
-' "$OSKY_STATE" 2>/dev/null)"
-  echo "  Calls today:  ${saved:-unknown}   (the relay is not answering)"
-fi
+    print("  State:        unknown (the relay has not written its status yet)")
+    sys.exit(0)
+for label, key in (("State", "state"), ("Registered", "registered"), ("OpenSky on", "on"),
+                   ("Calls today", "calls_today"), ("Cap", "cap"), ("Last answer", "last_status"),
+                   ("Hold (s)", "hold_seconds"), ("At", "at")):
+    print("  %-13s %s" % (label + ":", j.get(key)))
+' "$OSKY_STATUS" 2>/dev/null
 echo "  Stops at:"
 osky_show_time "$(osky_stop_at)"
 echo "  Public IPv4:  ${ip:-unknown (no internet?)}"
-echo "  Tunnel:       $tunnel_state"
 echo "  The relay's own log: journalctl -u opensky-relay"
 EOF
 
@@ -544,6 +411,7 @@ EOF
 #!/usr/bin/env bash
 # opensky-extend YYYY-MM-DD: move the relay's stop to 23:59:59 Swiss time on
 # that date. Only once OpenSky has signed a written extension of the term.
+# The Worker's own stop date (OSKY_STOP_AT) has to move too, in a change.
 set -euo pipefail
 . /usr/local/lib/opensky-relay/common.sh
 MAX_DAYS=40     # one extension is one month; a mistyped year is caught here
@@ -606,28 +474,11 @@ systemctl restart opensky-relay.service
 echo "Done. Type opensky-status to check."
 EOF
 
-  cat > /usr/local/bin/opensky-caller-key <<'EOF'
-#!/usr/bin/env bash
-# opensky-caller-key: show the key the boards' Worker sends to this relay
-# (X-Relay-Key). Without it, /states answers 403, whoever reaches the tunnel.
-set -euo pipefail
-. /usr/local/lib/opensky-relay/common.sh
-if [ "$(id -u)" -ne 0 ]; then echo "Log in as root first."; exit 1; fi
-if [ ! -s "$OSKY_CALLER" ]; then echo "No caller key yet. Type opensky-update."; exit 1; fi
-echo "The relay's caller key:"
-echo
-echo "    $(cat "$OSKY_CALLER")"
-echo
-echo "Type it into Cloudflare only when the change that connects the boards"
-echo "asks for it. Never paste it into a chat or the repository, and do not"
-echo "film or photograph this screen."
-EOF
-
   cat > /usr/local/bin/opensky-update <<'EOF'
 #!/usr/bin/env bash
 # opensky-update: download the installer again, over https, and run it. It
-# keeps the key, the caller key, the stop date and the tunnel, and installs
-# the relay.py that installer was written for.
+# keeps the relay key, the stop date and the settings, and installs the
+# relay.py that installer was written for.
 set -uo pipefail
 . /usr/local/lib/opensky-relay/common.sh
 if [ "$(id -u)" -ne 0 ]; then echo "Log in as root first."; exit 1; fi
@@ -640,43 +491,27 @@ mv -f /root/o.new /root/o
 exec bash /root/o
 EOF
 
-  chmod 0755 /usr/local/bin/opensky-key /usr/local/bin/opensky-status /usr/local/bin/opensky-extend \
-    /usr/local/bin/opensky-caller-key /usr/local/bin/opensky-update
-  chown root:root /usr/local/bin/opensky-key /usr/local/bin/opensky-status /usr/local/bin/opensky-extend \
-    /usr/local/bin/opensky-caller-key /usr/local/bin/opensky-update
+  chmod 0755 /usr/local/bin/opensky-status /usr/local/bin/opensky-extend /usr/local/bin/opensky-update
+  chown root:root /usr/local/bin/opensky-status /usr/local/bin/opensky-extend /usr/local/bin/opensky-update
 }
 
 print_summary() {
-  local ip="${1:-}" tunnel
-  tunnel="$(systemctl is-active cloudflared.service 2>/dev/null || true)"
+  local ip="${1:-}"
   echo
   echo "============================================================"
   echo " OpenSky relay installed."
   if [ "${TERM_ENDED:-0}" = 1 ]; then
     echo " The licence term has ended, so the relay is OFF."
   else
-    echo " It calls nothing until the key is typed in: opensky-key"
-    echo " (only after the agreement is signed and paid)."
+    echo " It registers with the boards' Worker by itself and calls"
+    echo " OpenSky only once the Worker switches it on."
   fi
-  echo
   if [ -n "$ip" ]; then
+    echo
     echo " This server's public IPv4:   $ip"
     echo " Send OpenSky this address:   $ip/32"
-  else
-    echo " Public IPv4: not found yet. Type opensky-status in a minute."
   fi
-  echo
-  if [ "$tunnel" = active ]; then
-    echo " Tunnel to Cloudflare: connected."
-  else
-    echo " Tunnel to Cloudflare: not connected yet. The last line of the"
-    echo " Cloud config connects it, right after this installer."
-  fi
-  echo
-  echo " Next:"
-  echo "   1. Send the address above to OpenSky."
-  echo "   2. After signing and paying, type:  opensky-key"
-  echo "   3. Then type:  opensky-status"
+  echo " Check it from anywhere: $OSKY_DEFAULT_WORKER_URL/osky/status"
   echo "============================================================"
 }
 

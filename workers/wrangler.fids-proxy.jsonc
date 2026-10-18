@@ -12,8 +12,9 @@
   //
   // SECRETS ARE DELIBERATELY ABSENT. JWT_SECRET, SEED_ADMIN_PASSWORD, ADB_KEY,
   // ADB_WEBHOOK_SECRET, AEROAPI_KEY, ACCOR_KEY, NINJAS_KEY, MCO_FEED_KEY,
-  // VECTEEZY_TOKEN and VECTEEZY_ACCOUNT_ID are Worker secrets. They persist
-  // across deploys and must never be committed. The two VECTEEZY_* secrets are
+  // VECTEEZY_TOKEN and VECTEEZY_ACCOUNT_ID are Worker secrets, and so are
+  // OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET (the OpenSky client; see the
+  // vars below). They persist across deploys and must never be committed. The two VECTEEZY_* secrets are
   // optional — without them /api/vecteezy/* answers 503 and the rest of the
   // worker is unaffected. (A VECTEEZY_RAPIDAPI_KEY secret may linger from a
   // briefly-used, since-removed fallback route; the code ignores it — see
@@ -101,7 +102,22 @@
   // month, inside the 60,000 the account has until 2026-12-31. Spending is paced
   // through the day (fr24PacedAllowance), and from 2027-01-01 the worker clamps
   // the cap to 950/day by itself (fr24EffectiveCap), inside the permanent 30,000.
-  "vars": { "FR24_DAILY_BUDGET": "1900" },
+  "vars": {
+    "FR24_DAILY_BUDGET": "1900",
+    // ── OPENSKY (the /osky/* routes, handleOsky in fids-proxy.js) ──────────
+    // OFF until the OpenSky agreement is signed and paid: only "1" switches
+    // it on, and it stays "0" until a change flips it (merged only after an
+    // explicit yes).
+    // While it is "0" the relay server can still register and report, so its
+    // address can be checked at /osky/status before anything is paid.
+    // The OpenSky client is two Worker SECRETS, OPENSKY_CLIENT_ID and
+    // OPENSKY_CLIENT_SECRET, pasted in the Cloudflare dashboard (fids-proxy ->
+    // Settings -> Variables and Secrets -> Add, type Secret). Never here.
+    "OPENSKY_ON": "0",
+    // The end of the licence term: 12 Nov 2026, 23:59:59 Swiss time. After
+    // it every /osky/ route answers 410. Moved only with a signed extension.
+    "OSKY_STOP_AT": "2026-11-12T22:59:59Z"
+  },
 
   // ── CRON REMOVED 2026-09-10 ─────────────────────────────────────────────
   // It used to read "17 5,17 * * *" — 05:17 and 17:17 UTC daily. Its ONLY job

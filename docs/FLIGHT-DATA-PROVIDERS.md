@@ -137,8 +137,9 @@ It never executes and costs nothing. Leave it inert; it is not approved.
 **There is no licence in force.** On 16 Oct 2026 OpenSky sent a Startup
 Commercial Licence agreement and an invoice. Neither is signed or paid yet:
 questions about it are still open with OpenSky. **The API key may not be used
-before the invoice is paid**, so nothing may call OpenSky until then, and the
-key is typed on the relay server only after that.
+before the invoice is paid**, so nothing may call OpenSky until then. The key
+goes in only after that, as two Worker secrets (`OPENSKY_CLIENT_ID`,
+`OPENSKY_CLIENT_SECRET`) pasted in the Cloudflare dashboard.
 
 What the agreement offers: live positions, altitude and speed (REST
 `/states/all`) for the aircraft of the flights being shown, for a one-month
@@ -150,19 +151,26 @@ small area queries, no archive, no raw data or API offered onward, and
 IPSN 2014 citation on the project page).
 
 OpenSky whitelists the address the account calls from, and a Worker has no
-fixed egress address, so every call would go through the relay in
-`stream-server/opensky-relay/` (its own small server, installed from
-`fids.orionconnected.com/o`). The relay holds the secret, answers only a
-caller that sends its caller key, only for named flights (a callsign or
-icao24, never the whole box) in a box of at most 25 sq deg, caps itself at
-1,500 calls a UTC day and stops by itself at the end of the term. It calls
-nothing until the key is typed on that server. The boards' Worker is not
-connected to it.
+fixed egress address, so every call goes through the relay in
+`stream-server/opensky-relay/`: its own small server with a fixed IPv4,
+installed from `fids.orionconnected.com/o` by the server's Cloud config. The
+relay only calls out. It registers with the Worker (`/osky/register`, the
+first caller from Hetzner's network only), then polls it once a minute for
+the OpenSky client (`/osky/creds`, memory only) and the boxes and flights the
+boards want (`/osky/wanted`), calls OpenSky for named flights only in boxes of
+at most 25 sq deg, and puts the reduced positions back (`/osky/put`, 120 s in
+KV `osky:pos:*`). It caps itself at 1,500 calls a UTC day and stops by itself
+at the end of the term. Everything stays off until `OPENSKY_ON` is `1` in
+`workers/wrangler.fids-proxy.jsonc` (it is `0`), and `/osky/status` shows the
+state with counts only. The first design (a Cloudflare Tunnel, #1049) was
+replaced by this one because its tunnel never connected and it needed a
+token copied by hand.
 
-When it is (only after signing and paying): keep OpenSky data out of
-`/fltrack/`, `acmem`, `/acinfo`, `/opinfo`, the surrounding-traffic code
-(`/adsb/point/`), logs, fixtures and screenshots, and do not serve it on an
-open route (the Worker's CORS answers any origin today).
+The boards are not wired to it yet (nothing calls `oskyWant`). When they are
+(only after signing and paying): keep OpenSky data out of `/fltrack/`,
+`acmem`, `/acinfo`, `/opinfo`, the surrounding-traffic code (`/adsb/point/`),
+logs, fixtures and screenshots, and do not serve it on an open route (the
+Worker's CORS answers any origin outside `/osky/`).
 
 ---
 

@@ -2,83 +2,82 @@
 """OpenSky relay: every OpenSky call from one fixed IPv4 address.
 
 OpenSky whitelists the address the account's calls come from. Cloudflare
-Workers have no fixed egress address, so the boards' Worker never calls
-OpenSky itself: it asks this relay, through a Cloudflare Tunnel and a Workers
-VPC Service, and the relay makes the call from its own server.
+Workers have no fixed egress address, so the boards' Worker (fids-proxy)
+never calls OpenSky itself. This relay, on its own small server with a fixed
+IPv4, does, and it only ever calls OUT: to OpenSky and to the Worker's
+/osky/* routes. Nothing calls in to it, it opens no port, and the server's
+firewall lets nothing in. There is no tunnel and no token to copy.
 
-It listens on 127.0.0.1:8787 and nowhere else. The tunnel (cloudflared, on the
-same server) is the only way in; the server's firewall lets nothing in.
+What it does, once a minute (a polling client run by systemd; no HTTP server):
 
-Endpoints (GET only):
+  1. Registers once: POST /osky/register {relayKey}. The relay key is made on
+     the server at install time (secrets.token_urlsafe(32), root only, 0600)
+     and reaches the relay through systemd's LoadCredential. The Worker keeps
+     only its sha256 and the address it came from, and accepts the first
+     registration from Hetzner's network only. A 409 means another relay is
+     already registered: the relay calls nothing and says so in its status,
+     and asks again every 10 minutes (the registration can be deleted in the
+     Worker, see the README).
+  2. Heartbeat: GET /osky/report with its counts (calls today, cap, OpenSky's
+     last status code, hold seconds, state). The answer says whether OpenSky
+     is switched on (OPENSKY_ON) and the Worker's stop date.
+  3. Only when it is on: GET /osky/creds (the OpenSky client, kept in memory
+     only, never written anywhere), GET /osky/wanted (the boxes of at most 25
+     sq deg and the flights, at most 4 a box, the boards want).
+  4. Per box: GET OpenSky /api/states/all with the box (and the icao24 filter
+     when the box's flights are all named by icao24), reduce, keep only the
+     flights asked for, POST /osky/put.
 
-  /states?lamin=&lomin=&lamax=&lomax=&icao24=|&callsign=
-      For the flights on screen only. Needs the caller key (X-Relay-Key), one
-      bounding box of at most 25 square degrees (the 1-credit size), and at
-      least one icao24 or callsign: at most 4 values in all. A request with no
-      filter is refused (400 filter-required), so the relay never hands out
-      the surrounding traffic. Global and icao24-only queries are refused too.
-      The box goes upstream and the filter is applied here, so every screen
-      asking about the same box shares one upstream call. Repeat a parameter
-      or separate values with commas.
-      Each matching aircraft comes back reduced to: icao24, callsign, lat, lon,
-      baro_altitude, geo_altitude (metres), on_ground, velocity (m/s),
-      time_position, last_contact (unix seconds). true_track (degrees) only
-      when HEADING=1 in the config. No vertical rate, squawk or anything else.
-
-  /health
-      Counts, the stop date, whether a key is set, the last OpenSky answer,
-      the public IPv4. No secrets and no positions.
+Every call to the Worker carries the relay key (X-Relay-Key) and comes from
+this server's IPv4, the same address OpenSky whitelists.
 
 The licence limits it enforces:
 
-  - HARD STOP at STOP_AT from /etc/opensky-relay/relay.conf (root-owned; only
-    opensky-extend, typed on the server, moves it). From then on /states
-    answers 410 and nothing goes upstream, not even a login. A missing,
-    unreadable, unsafe or ambiguous config (two STOP_AT lines) counts as
-    stopped. The stop is LATCHED: the first time it is reached, a marker is
-    saved in the state directory, so a clock stepped back does not undo it.
-    Only a later STOP_AT (opensky-extend) lifts it. A Date header or a data
-    'time' from OpenSky at or after STOP_AT is a stop too.
+  - HARD STOP at the earlier of STOP_AT in /etc/opensky-relay/relay.conf
+    (root-owned; only opensky-extend, typed on the server, moves it) and the
+    Worker's own stop date. From then on nothing goes to OpenSky, not even a
+    login, and the relay exits. A missing, unreadable, unsafe or ambiguous
+    config (two STOP_AT lines) counts as stopped. The stop is LATCHED: the
+    first time it is reached, a marker is saved in the state directory, so a
+    clock stepped back does not undo it. Only a later local STOP_AT
+    (opensky-extend) lifts it. A Date header or a data 'time' from OpenSky at
+    or after the stop is a stop too, and so is a 410 from the Worker.
   - A daily cap of 1500 upstream calls per UTC day, paced across the hours
     (hour h may have used at most cap * (h + 1) / 24). The count is saved to
     a small state file before every call, so a restart cannot reset it. A
     clock stepped back to an earlier day does not reset it either: until the
     clock is back on the saved day, the day counts as spent.
   - 429 and X-Rate-Limit-Retry-After-Seconds (or Retry-After) are obeyed, and
-    the wait is saved, so a restart obeys it too. A refused key (401 after a
-    fresh login) or a refused server (403) holds every call for 10 minutes;
+    the wait is saved, so a restart obeys it too. A refused key or a refused
+    server (401 after a fresh login, 403) holds every call for 10 minutes;
     an OpenSky server error holds every call for a minute.
-  - Answers live in memory only: 120 s by default, never more than 300 s, and
-    an expired answer is dropped within a second, whether or not anyone asks
-    for it again. Identical requests in flight share one upstream call.
-  - Outbound connections are IPv4 only, so the whitelisted address always
-    matches.
-  - Logs carry counts only: one line an hour, plus one at start and one at
-    the stop. Never coordinates, callsigns, payloads or the secret.
-
-Secrets come from systemd's LoadCredential, in $CREDENTIALS_DIRECTORY:
-  credentials   the OAuth2 client: a client_id line and a client_secret line
-  caller-key    the key the boards' Worker sends as X-Relay-Key
-The access token lives in memory, is renewed two minutes before its 30-minute
-expiry, and once more after a 401.
+  - Answers live in memory only: an identical box asked again within 120 s
+    (never more than 300 s) shares the earlier call. Nothing is archived.
+  - Only the reduced fields go to the Worker: icao24, callsign, lat, lon,
+    baro_altitude, geo_altitude, on_ground, velocity, time_position,
+    last_contact; true_track only when HEADING=1 in the config.
+  - Outbound connections are IPv4 only (AF_INET resolution, AF_INET sockets),
+    to OpenSky and to the Worker alike, so the Worker sees the address
+    OpenSky whitelists.
+  - Logs carry counts only: one line an hour, plus one at start, at
+    registration and at the stop. Never coordinates, callsigns, payloads,
+    the relay key or the OpenSky secret.
 
 Python standard library only; runs on Python 3.9 and later.
 
-Command line (root, on the server; used by opensky-key and install.sh):
-  relay.py                       run the relay
-  relay.py --check-login FILE    one login with the client in FILE, no data call
-  relay.py --stopped             exit 0 when the relay is stopped (term ended)
+Command line (root, on the server; used by install.sh and the opensky-* commands):
+  relay.py                    run the relay
+  relay.py --make-key FILE    make the relay key in FILE if it has none (0600)
+  relay.py --stopped          exit 0 when the relay is stopped (term ended)
 """
 
 import email.utils
-import hmac
 import http.client
-import http.server
-import ipaddress
 import json
 import math
 import os
 import re
+import secrets
 import signal
 import socket
 import ssl
@@ -86,57 +85,65 @@ import sys
 import threading
 import time
 from datetime import datetime, timezone
-from urllib.parse import parse_qs, urlencode, urlsplit
+from urllib.parse import urlencode, urlsplit
 
 # ── Fixed settings ──────────────────────────────────────────────────────────
-LISTEN_HOST = '127.0.0.1'          # loopback only: never all interfaces, never IPv6
-LISTEN_PORT = 8787
-
 # From OpenSky's REST documentation (openskynetwork.github.io/opensky-api/rest.html):
 # the API root, and the OAuth2 client-credentials token endpoint.
 TOKEN_URL = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token'
 API_BASE = 'https://opensky-network.org/api'
-USER_AGENT = 'orion-connected-opensky-relay/1'
+# The boards' Worker. Server-side callers reach fids-proxy on its workers.dev
+# name (the site's own /a route does too); fids.orionconnected.com is the
+# board site, a different Worker. WORKER_URL= in relay.conf may change it.
+DEFAULT_WORKER_URL = 'https://fids-proxy.n-leblanc1984.workers.dev'
+# Cloudflare refuses Python's default User-Agent (error 1010); this one passes.
+USER_AGENT = 'orion-connected-opensky-relay/2'
 
 CONFIG_DIR = '/etc/opensky-relay'
 STATE_DIR = '/var/lib/opensky-relay'   # systemd's StateDirectory=opensky-relay
 STOP_MARKER = 'stopped'                # in the state directory: "stopped for <STOP_AT>"
+KEY_CREDENTIAL = 'relay-key'           # LoadCredential=relay-key:/etc/opensky-relay/relay-key
+LOOP_S = 60
 MAX_BOX_SQ_DEG = 25.0              # 25 sq deg or less = 1 credit per call
 MAX_DAILY_CAP = 1500               # the config may lower it, never raise it
 DEFAULT_CACHE_S = 120
 MIN_CACHE_S = 10
 MAX_CACHE_S = 300
+MAX_BOXES = 8
+MAX_FILTER_VALUES = 4              # icao24 + callsign values together, per box
 TOKEN_RENEW_MARGIN_S = 120         # renew 2 minutes before expiry
 TOKEN_RETRY_GAP_S = 60             # a login that could not reach OpenSky is retried at most once a minute
+CREDS_REFRESH_S = 1800             # the client is asked of the Worker again every 30 minutes
 UPSTREAM_TIMEOUT_S = 15
 DEFAULT_BACKOFF_S = 300            # a 429 without a usable wait header
 MAX_BACKOFF_S = 86400
 REFUSED_HOLD_S = 600               # 401 after a fresh login, or 403: no call for 10 minutes
 SERVER_ERROR_HOLD_S = 60           # OpenSky 5xx: no call for a minute
-ERROR_HOLD_S = 15                  # any other failure for a box is answered from memory this long
+REGISTER_RETRY_MIN_S = 30
+REGISTER_RETRY_MAX_S = 900
+REGISTER_REFUSED_RETRY_S = 600     # after a 409: ask again every 10 minutes, nothing else
 MAX_BODY_BYTES = 8 * 1024 * 1024
-MAX_FILTER_VALUES = 4              # icao24 + callsign values together: the flights on screen
-MAX_CACHE_ENTRIES = 200
-CALLER_HEADER = 'X-Relay-Key'
-MIN_CALLER_KEY_LEN = 20
-CREDIT = 'Data: OpenSky Network'
+MAX_WORKER_BODY_BYTES = 256 * 1024
+MAX_CACHE_ENTRIES = 64
 
-ALLOWED_PARAMS = {'lamin', 'lomin', 'lamax', 'lomax', 'icao24', 'callsign'}
-CONF_KEYS = ('STOP_AT', 'DAILY_CAP', 'CACHE_SECONDS', 'HEADING')
+CONF_KEYS = ('STOP_AT', 'DAILY_CAP', 'CACHE_SECONDS', 'HEADING', 'WORKER_URL')
 RE_STOP = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
 RE_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 RE_ICAO = re.compile(r'^[0-9a-f]{6}$')
 RE_CALLSIGN = re.compile(r'^[A-Z0-9]{1,8}$')
+RE_KEY = re.compile(r'^[A-Za-z0-9_-]{43,128}$')
+RE_HOST = re.compile(r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$')
 RE_CONF_LINE = re.compile(r'^([A-Z_]+)=(.*)$')
 RE_ANY_STOP_LINE = re.compile(r'^\s*stop_at\s*=', re.IGNORECASE)
 NEVER = '9999-12-31T23:59:59Z'     # an unreadable stop marker: stopped until opensky-extend removes it
 
 # ── Test mode ───────────────────────────────────────────────────────────────
-# The tests run this file against a fake OpenSky on 127.0.0.1. Only in test
-# mode may the token URL, API root, port, config directory and clock be
-# changed, and only to loopback addresses. Test mode refuses to run as root
-# or under the production unit (which sets OSKY_PRODUCTION=1), so it can
-# never move the stop date or point the secret anywhere else.
+# The tests run this file against a fake OpenSky and a fake Worker on
+# 127.0.0.1. Only in test mode may the token URL, API root, Worker URL, loop
+# interval, config directory and clock be changed, and the three URLs only to
+# loopback addresses. Test mode refuses to run as root or under the
+# production unit (which sets OSKY_PRODUCTION=1), so it can never move the
+# stop date or send the relay key anywhere else.
 TEST_MODE = os.environ.get('OSKY_TEST_MODE') == '1'
 
 
@@ -156,8 +163,8 @@ def load_runtime():
     """The values test mode may change, checked; production values otherwise."""
     state_dir = (os.environ.get('STATE_DIRECTORY') or '').split(':')[0] or None
     rt = {
-        'token_url': TOKEN_URL, 'api_base': API_BASE, 'port': LISTEN_PORT,
-        'config_dir': CONFIG_DIR, 'clock_file': None, 'tick': 1.0,
+        'token_url': TOKEN_URL, 'api_base': API_BASE, 'worker_url': None,
+        'config_dir': CONFIG_DIR, 'clock_file': None, 'loop_s': float(LOOP_S),
         'state_dir': state_dir or STATE_DIR,
     }
     if not TEST_MODE:
@@ -166,20 +173,18 @@ def load_runtime():
         raise Fatal('test mode is not allowed in production')
     if hasattr(os, 'geteuid') and os.geteuid() == 0:
         raise Fatal('test mode is not allowed as root')
-    if os.environ.get('OSKY_TEST_TOKEN_URL'):
-        rt['token_url'] = _loopback_url('OSKY_TEST_TOKEN_URL')
-    if os.environ.get('OSKY_TEST_API_BASE'):
-        rt['api_base'] = _loopback_url('OSKY_TEST_API_BASE')
-    if rt['token_url'] == TOKEN_URL or rt['api_base'] == API_BASE:
-        raise Fatal('test mode needs both OSKY_TEST_TOKEN_URL and OSKY_TEST_API_BASE')
-    if os.environ.get('OSKY_TEST_PORT'):
-        rt['port'] = int(os.environ['OSKY_TEST_PORT'])
+    for key, name in (('token_url', 'OSKY_TEST_TOKEN_URL'), ('api_base', 'OSKY_TEST_API_BASE'),
+                      ('worker_url', 'OSKY_TEST_WORKER_URL')):
+        if not os.environ.get(name):
+            raise Fatal('test mode needs OSKY_TEST_TOKEN_URL, OSKY_TEST_API_BASE and OSKY_TEST_WORKER_URL')
+        rt[key] = _loopback_url(name)
     if os.environ.get('OSKY_TEST_CONFIG_DIR'):
         rt['config_dir'] = os.environ['OSKY_TEST_CONFIG_DIR']
     if os.environ.get('OSKY_TEST_CLOCK_FILE'):
         rt['clock_file'] = os.environ['OSKY_TEST_CLOCK_FILE']
+    if os.environ.get('OSKY_TEST_LOOP_S'):
+        rt['loop_s'] = max(0.05, min(5.0, float(os.environ['OSKY_TEST_LOOP_S'])))
     rt['state_dir'] = state_dir          # never the production directory in test mode
-    rt['tick'] = 0.2
     return rt
 
 
@@ -197,7 +202,7 @@ def make_clock(clock_file):
 
 
 def log(line):
-    # counts and states only; callers never pass request data
+    # counts and states only; callers never pass request or answer data
     sys.stdout.write('opensky-relay ' + line + '\n')
     sys.stdout.flush()
 
@@ -216,6 +221,15 @@ def utc_hour_key(t):
 
 def date_start(date):
     return datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=timezone.utc).timestamp()
+
+
+def parse_iso(v):
+    if not isinstance(v, str) or not RE_STOP.match(v):
+        return None
+    try:
+        return datetime.strptime(v, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc).timestamp()
+    except ValueError:
+        return None
 
 
 def paced_allowance(cap, t):
@@ -266,10 +280,18 @@ def safe_root_file(path):
     return st.st_uid == 0 and not (st.st_mode & 0o022) and dst.st_uid == 0 and not (dst.st_mode & 0o022)
 
 
+def worker_url_ok(url):
+    """https://<host> only: no path, no port, no user, no query."""
+    parts = urlsplit(url)
+    return (parts.scheme == 'https' and parts.hostname is not None and RE_HOST.match(parts.hostname) is not None
+            and parts.port is None and parts.username is None and parts.path in ('', '/')
+            and not parts.query and not parts.fragment and parts.netloc == parts.hostname)
+
+
 def read_settings(config_dir):
-    """Settings from relay.conf. Anything wrong means stopped (stop_at = 0)."""
+    """Settings from relay.conf. Anything wrong with the stop means stopped (stop_at = 0)."""
     s = {'stop_at': 0.0, 'stop_iso': None, 'config_ok': False, 'cap': MAX_DAILY_CAP,
-         'cache_s': DEFAULT_CACHE_S, 'heading': False}
+         'cache_s': DEFAULT_CACHE_S, 'heading': False, 'worker_url': DEFAULT_WORKER_URL}
     path = os.path.join(config_dir, 'relay.conf')
     try:
         if not TEST_MODE and not safe_root_file(path):
@@ -280,13 +302,10 @@ def read_settings(config_dir):
         return s
     stops = vals.get('STOP_AT', [])
     # exactly one STOP_AT line, and no other line that could be read as one
-    if len(stops) == 1 and any_stop == 1 and RE_STOP.match(stops[0]):
-        try:
-            s['stop_at'] = datetime.strptime(stops[0], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc).timestamp()
-            s['stop_iso'] = stops[0]
-            s['config_ok'] = True
-        except ValueError:
-            pass
+    if len(stops) == 1 and any_stop == 1 and parse_iso(stops[0]) is not None:
+        s['stop_at'] = parse_iso(stops[0])
+        s['stop_iso'] = stops[0]
+        s['config_ok'] = True
     # a repeated setting takes its safest value
     caps = [max(0, min(MAX_DAILY_CAP, _int_or(v, MAX_DAILY_CAP))) for v in vals.get('DAILY_CAP', [])]
     s['cap'] = min(caps) if caps else MAX_DAILY_CAP
@@ -294,52 +313,52 @@ def read_settings(config_dir):
     s['cache_s'] = min(caches) if caches else DEFAULT_CACHE_S
     heads = vals.get('HEADING', [])
     s['heading'] = bool(heads) and all(v == '1' for v in heads)
+    urls = vals.get('WORKER_URL', [])
+    if urls:
+        # one clear https://host, or none: the key never goes anywhere unclear
+        s['worker_url'] = urls[0].rstrip('/') if len(set(urls)) == 1 and worker_url_ok(urls[0]) else None
     return s
 
 
-def read_credentials_file(path):
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            vals = {}
-            for raw in f.read().splitlines():
-                key, sep, val = raw.partition('=')
-                if sep:
-                    vals[key.strip().lower()] = val.strip()
-    except (OSError, ValueError):
-        return None
-    cid, secret = vals.get('client_id', ''), vals.get('client_secret', '')
-    return (cid, secret) if cid and secret else None
-
-
-def read_credentials():
-    d = os.environ.get('CREDENTIALS_DIRECTORY')
-    return read_credentials_file(os.path.join(d, 'credentials')) if d else None
-
-
-def normalise_key(v):
-    """The caller key compares on its letters and digits only, so dashes,
-    spaces or capitals typed into Cloudflare do not matter."""
-    return re.sub(r'[^a-z0-9]', '', str(v or '').lower())
-
-
-def read_caller_key():
+def read_relay_key():
     d = os.environ.get('CREDENTIALS_DIRECTORY')
     if not d:
         return None
     try:
-        with open(os.path.join(d, 'caller-key'), 'r', encoding='utf-8') as f:
-            k = normalise_key(f.read())
+        with open(os.path.join(d, KEY_CREDENTIAL), 'r', encoding='utf-8') as f:
+            k = f.read().strip()
     except (OSError, ValueError):
         return None
-    return k if len(k) >= MIN_CALLER_KEY_LEN else None
+    return k if RE_KEY.match(k) else None
 
 
-def read_public_ipv4(config_dir):
+def make_key(path):
+    """The relay key, made once: a file that already holds one is kept."""
     try:
-        with open(os.path.join(config_dir, 'public-ipv4'), 'r', encoding='utf-8') as f:
-            return str(ipaddress.IPv4Address(f.read().strip()))
+        with open(path, 'r', encoding='utf-8') as f:
+            if RE_KEY.match(f.read().strip()):
+                os.chmod(path, 0o600)
+                return 0
+    except FileNotFoundError:
+        pass
     except (OSError, ValueError):
-        return None
+        pass
+    tmp = '%s.%d.tmp' % (path, os.getpid())
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            f.write(secrets.token_urlsafe(32) + '\n')
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
+    os.chmod(path, 0o600)
+    return 0
 
 
 # ── The stop marker ─────────────────────────────────────────────────────────
@@ -359,10 +378,12 @@ def read_stop_marker(state_dir):
     return m.group(1) if m and RE_STOP.match(m.group(1)) else NEVER
 
 
-def is_stopped(settings, now, marker):
-    """Stopped when the config is wrong, the stop time has passed, or a stop
+def is_stopped(settings, now, marker, worker_stop=None):
+    """Stopped when the config is wrong, either stop time has passed, or a stop
     was latched for this STOP_AT (or a later one)."""
     if not settings['config_ok'] or now >= settings['stop_at']:
+        return True
+    if worker_stop is not None and now >= worker_stop:
         return True
     return marker is not None and not (settings['stop_iso'] > marker)
 
@@ -425,14 +446,13 @@ class IPv4HTTPSConnection(http.client.HTTPSConnection):
 
 
 class Upstream(Exception):
-    def __init__(self, code, status=502, retry_after=None):
+    def __init__(self, code, retry_after=None):
         Exception.__init__(self, code)
         self.code = code
-        self.status = status
         self.retry_after = retry_after
 
 
-def http_request(method, url, body=None, headers=None):
+def http_request(method, url, body=None, headers=None, limit=MAX_BODY_BYTES):
     parts = urlsplit(url)
     if parts.scheme == 'https':
         conn = IPv4HTTPSConnection(parts.hostname, parts.port or 443, timeout=UPSTREAM_TIMEOUT_S)
@@ -448,15 +468,15 @@ def http_request(method, url, body=None, headers=None):
     try:
         conn.request(method, target, body=body, headers=hdrs_out)
         resp = conn.getresponse()
-        data = resp.read(MAX_BODY_BYTES + 1)
-        if len(data) > MAX_BODY_BYTES:
+        data = resp.read(limit + 1)
+        if len(data) > limit:
             raise Upstream('too-large')
         hdrs = {k.lower(): v for k, v in resp.getheaders()}
         return resp.status, hdrs, data
     except socket.timeout:
-        raise Upstream('timeout', 504)
+        raise Upstream('timeout')
     except (OSError, http.client.HTTPException, ssl.SSLError):
-        raise Upstream('unreachable', 502)
+        raise Upstream('unreachable')
     finally:
         conn.close()
 
@@ -474,69 +494,57 @@ def retry_after_seconds(hdrs):
     return DEFAULT_BACKOFF_S
 
 
-# ── Requests ────────────────────────────────────────────────────────────────
+def _json_dict(data):
+    try:
+        j = json.loads(data.decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        return None
+    return j if isinstance(j, dict) else None
+
+
+# ── What the Worker wants ───────────────────────────────────────────────────
 class Refused(Exception):
-    def __init__(self, status, code, retry_after=None):
+    """No upstream call: the cap, a wait, a hold, the stop or a missing key."""
+
+    def __init__(self, code, retry_after=None):
         Exception.__init__(self, code)
-        self.status = status
         self.code = code
         self.retry_after = retry_after
-
-
-def _values(qs, name):
-    out = []
-    for v in qs.get(name, []):
-        out.extend(p.strip() for p in v.split(',') if p.strip())
-    return out
-
-
-def parse_states_query(query):
-    try:
-        qs = parse_qs(query, keep_blank_values=True, strict_parsing=False, max_num_fields=40)
-    except ValueError:
-        raise Refused(400, 'bad-query')
-    unknown = set(qs) - ALLOWED_PARAMS
-    if unknown:
-        raise Refused(400, 'unknown-parameter')
-    names = ('lamin', 'lomin', 'lamax', 'lomax')
-    if not all(n in qs for n in names):
-        # icao24-only and global queries both land here
-        raise Refused(400, 'box-required')
-    vals = []
-    for n in names:
-        if len(qs[n]) != 1:
-            raise Refused(400, 'box-repeated')
-        try:
-            f = float(qs[n][0])
-        except ValueError:
-            raise Refused(400, 'box-not-a-number')
-        if not math.isfinite(f):
-            raise Refused(400, 'box-not-a-number')
-        vals.append(round(f, 4))
-    lamin, lomin, lamax, lomax = vals
-    if not (-90 <= lamin < lamax <= 90 and -180 <= lomin < lomax <= 180):
-        raise Refused(400, 'box-out-of-range')
-    if (lamax - lamin) * (lomax - lomin) > MAX_BOX_SQ_DEG + 1e-9:
-        raise Refused(400, 'box-too-big')
-    icao = set(v.lower() for v in _values(qs, 'icao24'))
-    calls = set(v.upper() for v in _values(qs, 'callsign'))
-    if not icao and not calls:
-        # the licence covers the aircraft of the flights being shown, never
-        # the surrounding traffic: no filter, no answer
-        raise Refused(400, 'filter-required')
-    if len(icao) + len(calls) > MAX_FILTER_VALUES:
-        raise Refused(400, 'too-many-filters')
-    if not all(RE_ICAO.match(v) for v in icao):
-        raise Refused(400, 'bad-icao24')
-    if not all(RE_CALLSIGN.match(v) for v in calls):
-        raise Refused(400, 'bad-callsign')
-    return (lamin, lomin, lamax, lomax), icao, calls
 
 
 def _num(v):
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         return None
     return v if math.isfinite(v) else None
+
+
+def parse_box(e):
+    """One /osky/wanted entry: ((lamin, lomin, lamax, lomax), icao24 set,
+    callsign set), or None when it is not a box of at most 25 sq deg with one
+    to four flights."""
+    if not isinstance(e, dict):
+        return None
+    vals = []
+    for n in ('lamin', 'lomin', 'lamax', 'lomax'):
+        f = _num(e.get(n))
+        if f is None:
+            return None
+        vals.append(round(f, 4))
+    lamin, lomin, lamax, lomax = vals
+    if not (-90 <= lamin < lamax <= 90 and -180 <= lomin < lomax <= 180):
+        return None
+    if (lamax - lamin) * (lomax - lomin) > MAX_BOX_SQ_DEG + 1e-9:
+        return None
+    icao_in, calls_in = e.get('icao24') or [], e.get('callsign') or []
+    if not isinstance(icao_in, list) or not isinstance(calls_in, list):
+        return None
+    icao = set(str(v).strip().lower() for v in icao_in)
+    calls = set(str(v).strip().upper() for v in calls_in)
+    if not all(RE_ICAO.match(v) for v in icao) or not all(RE_CALLSIGN.match(v) for v in calls):
+        return None
+    if not (1 <= len(icao) + len(calls) <= MAX_FILTER_VALUES):
+        return None
+    return (lamin, lomin, lamax, lomax), frozenset(icao), frozenset(calls)
 
 
 def reduce_states(payload):
@@ -576,11 +584,17 @@ def reduce_states(payload):
     return (int(t) if t is not None else None), out
 
 
-class Inflight(object):
-    def __init__(self):
-        self.event = threading.Event()
-        self.result = None
-        self.error = None
+def pick_flights(rows, icao, calls, heading):
+    """Only the flights asked for; no heading unless HEADING=1."""
+    out = []
+    for r in rows:
+        if not ((icao and r['icao24'] in icao) or (calls and (r['callsign'] or '') in calls)):
+            continue
+        row = dict(r)
+        if not heading:
+            row.pop('true_track', None)
+        out.append(row)
+    return out
 
 
 # ── The relay ───────────────────────────────────────────────────────────────
@@ -589,36 +603,45 @@ class Relay(object):
         self.rt = rt
         self.now = make_clock(rt['clock_file'])
         self.lock = threading.Lock()
-        self.token_lock = threading.Lock()
-        self.creds = read_credentials()
-        self.caller_key = read_caller_key()
+        self.done = threading.Event()
+        self.key = read_relay_key()
         self.settings = read_settings(rt['config_dir'])
         self._conf_sig = self._config_sig()
-        self._conf_checked = time.monotonic()
         self.state_dir = rt['state_dir']
         self.latched = read_stop_marker(self.state_dir)
         (self.state_date, self.state_count, self.backoff_until,
          self.state_bad) = self._load_state()
+        self.registered = False
+        self.register_next = 0.0
+        self.register_wait = REGISTER_RETRY_MIN_S
+        self.register_refused = False
+        self.worker_stop = None          # the Worker's stop date, from its heartbeat answer
+        self.on = False
+        self.worker_ok = False
+        self.creds = None                # (client_id, client_secret): memory only
+        self.creds_at = 0.0
         self.token = None
         self.token_exp = 0.0
         self.token_fail_at = None
         self.hold_until = 0.0            # 401/403/5xx: no call before this (memory only)
         self.hold_code = None
         self.cache = {}
-        self.errors = {}
-        self.inflight = {}
-        self.was_stopped = None
+        self.last_status = 0             # OpenSky's last HTTP status code
+        self.state = 'starting'
         self.hour_key = utc_hour_key(self.now())
         self.hour = self._zero_hour()
         self.last_error = None
-        self.upstream_ok_at = None
-        self.upstream_error = None
-        self.upstream_error_at = None
 
     @staticmethod
     def _zero_hour():
-        return {'requests': 0, 'cache_hits': 0, 'shared': 0, 'upstream_calls': 0,
-                'token_calls': 0, 'refused': 0, 'errors': 0}
+        return {'ticks': 0, 'heartbeats': 0, 'worker_errors': 0, 'boxes': 0, 'upstream_calls': 0,
+                'shared': 0, 'token_calls': 0, 'puts': 0, 'refused': 0, 'errors': 0}
+
+    def count(self, field, code=None):
+        with self.lock:
+            self.hour[field] += 1
+            if code:
+                self.last_error = code
 
     # config, re-read when the file changes
     def _config_sig(self):
@@ -629,13 +652,13 @@ class Relay(object):
             return None
 
     def refresh_settings(self):
-        if not TEST_MODE and time.monotonic() - self._conf_checked < 5:
-            return
-        self._conf_checked = time.monotonic()
         sig = self._config_sig()
         if sig != self._conf_sig:
             self._conf_sig = sig
             self.settings = read_settings(self.rt['config_dir'])
+
+    def worker_url(self):
+        return self.rt['worker_url'] or self.settings['worker_url']
 
     # the stop, latched on disk the first time it is reached
     def _marker_path(self):
@@ -672,32 +695,39 @@ class Relay(object):
         self.refresh_settings()
         s = self.settings
         now = self.now()
-        if s['config_ok'] and now >= s['stop_at']:
+        reached = s['config_ok'] and (now >= s['stop_at'] or (self.worker_stop is not None and now >= self.worker_stop))
+        if reached:
             self._latch(s['stop_iso'])
         elif s['config_ok'] and self.latched is not None and s['stop_iso'] > self.latched:
             self._unlatch()             # opensky-extend moved the stop later
-        stop = is_stopped(s, now, self.latched)
-        if stop and self.was_stopped is not True:
-            with self.lock:
-                self.cache.clear()
-                self.errors.clear()
+        stop = is_stopped(s, now, self.latched, self.worker_stop)
+        if stop:
+            self.creds = None
             self.token = None
-            if self.was_stopped is False:
-                log('stopped: no further OpenSky calls')
-        self.was_stopped = stop
+            self.cache.clear()
         return stop
 
+    def _stop_now(self):
+        """The Worker or OpenSky's clock says the term is over."""
+        if self.settings['config_ok']:
+            self._latch(self.settings['stop_iso'])
+        self.worker_stop = min(self.worker_stop or self.now(), self.now())
+        self.stopped()
+        raise Refused('stopped')
+
     def _stop_if_upstream_says(self, *times):
-        """OpenSky's clock (its Date header, or the data's own 'time') past
-        STOP_AT stops the relay, whatever this server's clock says."""
+        """OpenSky's clock (its Date header, or the data's own 'time') past the
+        stop stops the relay, whatever this server's clock says."""
+        stop = self.effective_stop()
+        for x in times:
+            if x is not None and stop is not None and x >= stop:
+                self._stop_now()
+
+    def effective_stop(self):
         s = self.settings
         if not s['config_ok']:
-            return
-        for x in times:
-            if x is not None and x >= s['stop_at']:
-                self._latch(s['stop_iso'])
-                self.stopped()
-                raise Refused(410, 'stopped')
+            return None
+        return min(s['stop_at'], self.worker_stop) if self.worker_stop is not None else s['stop_at']
 
     # the daily count and OpenSky's wait, saved before every call
     def _state_path(self):
@@ -757,16 +787,15 @@ class Relay(object):
             self._roll_day(t)
             if self.state_bad or self.state_count is None:
                 # an unreadable count is treated as a spent day, never as zero
-                raise Refused(503, 'count-unreadable', seconds_to_next_utc_day(t))
+                raise Refused('count-unreadable', seconds_to_next_utc_day(t))
             if self._clock_behind(t):
                 # the clock went back to an earlier day: that day counts as spent
-                wait = date_start(self.state_date) - t
-                raise Refused(503, 'clock-behind', int(max(60, min(86400, wait))))
+                raise Refused('clock-behind', int(max(60, min(86400, date_start(self.state_date) - t))))
             cap = self.settings['cap']
             if self.state_count >= cap:
-                raise Refused(429, 'daily-cap', seconds_to_next_utc_day(t))
+                raise Refused('daily-cap', seconds_to_next_utc_day(t))
             if self.state_count >= paced_allowance(cap, t):
-                raise Refused(429, 'hourly-pace', seconds_to_next_hour(t))
+                raise Refused('hourly-pace', seconds_to_next_hour(t))
             if peek:
                 return
             self.state_count += 1
@@ -774,7 +803,7 @@ class Relay(object):
                 self._save_state()
             except OSError:
                 self.state_count -= 1
-                raise Refused(503, 'state-unwritable', 60)
+                raise Refused('state-unwritable', 60)
 
     def _save_backoff(self, until):
         with self.lock:
@@ -790,269 +819,345 @@ class Relay(object):
         self.hold_until = max(self.hold_until, self.now() + seconds)
         self.hold_code = code
 
-    def _upstream_failed(self, code):
-        with self.lock:
-            self.upstream_error, self.upstream_error_at = code, self.now()
+    # ── the Worker ─────────────────────────────────────────────────────────
+    def worker(self, method, path, body=None, query=None, auth=True):
+        """One call to the Worker: (status, JSON object or None). Never raises."""
+        url = self.worker_url()
+        if not url:
+            return 0, None
+        url += path
+        if query:
+            url += '?' + urlencode(query)
+        headers = {'Accept': 'application/json'}
+        data = None
+        if body is not None:
+            data = json.dumps(body, separators=(',', ':')).encode('utf-8')
+            headers['Content-Type'] = 'application/json'
+        if auth:
+            headers['X-Relay-Key'] = self.key
+        try:
+            status, _h, raw = http_request(method, url, data, headers, limit=MAX_WORKER_BODY_BYTES)
+        except Upstream as e:
+            self.count('worker_errors', 'worker-' + e.code)
+            return 0, None
+        if status >= 500:
+            self.count('worker_errors', 'worker-%d' % status)
+        return status, _json_dict(raw)
 
-    # login
+    def _worker_says_stopped(self, status):
+        if status == 410:
+            self._stop_now()
+
+    def register(self):
+        t = self.now()
+        if t < self.register_next:
+            return False
+        status, j = self.worker('POST', '/osky/register', {'relayKey': self.key}, auth=False)
+        self._worker_says_stopped(status)
+        if status == 200 and j and j.get('registered') is True:
+            self.registered, self.register_refused = True, False
+            self.register_wait = REGISTER_RETRY_MIN_S
+            log('registered with the Worker')
+            return True
+        if status == 409:
+            # another relay holds the registration: call nothing, say so, ask again later
+            if not self.register_refused:
+                log('register refused: another relay is registered (409); no OpenSky calls')
+            self.register_refused = True
+            self.register_next = t + REGISTER_REFUSED_RETRY_S
+            return False
+        self.register_next = t + self.register_wait
+        self.register_wait = min(REGISTER_RETRY_MAX_S, self.register_wait * 2)
+        self.count('worker_errors', 'register-%d' % status)
+        return False
+
+    def hold_seconds(self):
+        t = self.now()
+        return int(max(0, self.backoff_until - t, self.hold_until - t))
+
+    def heartbeat(self):
+        """GET /osky/report with the counts; True when OpenSky is switched on."""
+        with self.lock:
+            self._roll_day(self.now())
+            calls = self.state_count if self.state_count is not None else 0
+        q = [('calls', str(calls)), ('cap', str(self.settings['cap'])), ('status', str(self.last_status)),
+             ('hold', str(self.hold_seconds())), ('state', self.state)]
+        status, j = self.worker('GET', '/osky/report', query=q)
+        self.count('heartbeats')
+        self._worker_says_stopped(status)
+        self.worker_ok = status == 200 and j is not None
+        if status == 403:
+            # deleted, or not ours any more: register again, after a short
+            # wait (KV can show a just-written registration as absent for a
+            # few seconds, and asking at once would only write it again)
+            self.registered = False
+            self.register_next = max(self.register_next, self.now() + REGISTER_RETRY_MIN_S)
+            return False
+        if not self.worker_ok:
+            return False
+        ws = parse_iso(j.get('stop_at'))
+        if ws is not None:
+            self.worker_stop = ws
+        return j.get('on') is True
+
+    def ensure_creds(self):
+        """The OpenSky client, from the Worker; kept in memory only. Sets the
+        state when there is none to use."""
+        t = self.now()
+        if self.creds and 0 <= t - self.creds_at < CREDS_REFRESH_S:
+            return True
+        if self.creds is None and (self.hold_code or '').startswith('login-') and t < self.hold_until:
+            # OpenSky refused the client a moment ago: it is asked of the
+            # Worker again when the hold ends, not before
+            self.state = 'hold'
+            return False
+        status, j = self.worker('GET', '/osky/creds')
+        self._worker_says_stopped(status)
+        if status == 200 and j:
+            cid, secret = j.get('client_id'), j.get('client_secret')
+            if isinstance(cid, str) and isinstance(secret, str) and cid.strip() and secret.strip():
+                creds = (cid.strip(), secret.strip())
+                if creds != self.creds:
+                    self.token = None
+                self.creds, self.creds_at = creds, t
+                return True
+        error = j.get('error') if status == 503 and j else None
+        if error in ('no-key', 'off'):
+            self.creds, self.token = None, None
+            self.state = error
+            return False
+        if status == 403:
+            self.registered = False
+            self.state = 'registering'
+            return False
+        if self.creds is not None:
+            return True                  # the Worker had a problem: the client in memory stays in use
+        self.state = 'creds-wait'
+        return False
+
+    def wanted(self):
+        status, j = self.worker('GET', '/osky/wanted')
+        self._worker_says_stopped(status)
+        if status != 200 or not j or not isinstance(j.get('boxes'), list):
+            return []
+        out, seen = [], set()
+        for e in j['boxes']:
+            b = parse_box(e)
+            if b and b not in seen:
+                seen.add(b)
+                out.append(b)
+            if len(out) >= MAX_BOXES:
+                break
+        return out
+
+    def put(self, box, utime, rows):
+        body = {'box': {'lamin': box[0], 'lomin': box[1], 'lamax': box[2], 'lomax': box[3]},
+                'time': utime, 'states': rows}
+        status, _j = self.worker('POST', '/osky/put', body)
+        self._worker_says_stopped(status)
+        if status == 403:
+            self.registered = False
+        if status == 200:
+            self.count('puts')
+            return True
+        return status == 409            # no longer wanted: nothing to retry
+
+    # ── OpenSky ────────────────────────────────────────────────────────────
     def get_token(self, stale=None):
-        with self.token_lock:
-            t = self.now()
-            if self.token and self.token != stale and t < self.token_exp - TOKEN_RENEW_MARGIN_S:
-                return self.token
-            if self.stopped():
-                raise Refused(410, 'stopped')
-            if not self.creds:
-                raise Refused(503, 'no-key')
-            if self.token_fail_at is not None and t - self.token_fail_at < TOKEN_RETRY_GAP_S:
-                raise Refused(503, 'login-wait', max(1, int(TOKEN_RETRY_GAP_S - (t - self.token_fail_at)) + 1))
-            cid, secret = self.creds
-            body = urlencode({'grant_type': 'client_credentials', 'client_id': cid,
-                              'client_secret': secret}).encode('ascii')
-            with self.lock:
-                self.hour['token_calls'] += 1
-            self.token = None
-            try:
-                status, hdrs, data = http_request('POST', self.rt['token_url'], body,
-                                                  {'Content-Type': 'application/x-www-form-urlencoded'})
-            except Upstream:
+        t = self.now()
+        if self.token and self.token != stale and t < self.token_exp - TOKEN_RENEW_MARGIN_S:
+            return self.token
+        if self.stopped():
+            raise Refused('stopped')
+        if not self.creds:
+            raise Refused('no-key')
+        if self.token_fail_at is not None and t - self.token_fail_at < TOKEN_RETRY_GAP_S:
+            raise Refused('login-wait', max(1, int(TOKEN_RETRY_GAP_S - (t - self.token_fail_at)) + 1))
+        cid, secret = self.creds
+        body = urlencode({'grant_type': 'client_credentials', 'client_id': cid,
+                          'client_secret': secret}).encode('ascii')
+        self.count('token_calls')
+        self.token = None
+        try:
+            status, hdrs, data = http_request('POST', self.rt['token_url'], body,
+                                              {'Content-Type': 'application/x-www-form-urlencoded'})
+        except Upstream:
+            self.token_fail_at = t
+            raise Upstream('login-unreachable')
+        self.last_status = status
+        self._stop_if_upstream_says(upstream_clock(hdrs))
+        if status != 200:
+            code = 'login-%d' % status
+            if status in (400, 401, 403):
+                # the key or this server was refused: asking again soon will not help,
+                # and the client is asked of the Worker again (it may have been fixed)
+                self._hold(REFUSED_HOLD_S, code)
+                self.creds = None
+            else:
                 self.token_fail_at = t
-                raise Upstream('login-unreachable', 502)
-            self._stop_if_upstream_says(upstream_clock(hdrs))
-            if status != 200:
-                code = 'login-%d' % status
-                if status in (400, 401, 403):
-                    # the key or this server was refused: asking again soon will not help
-                    self._hold(REFUSED_HOLD_S, code)
-                else:
-                    self.token_fail_at = t
-                raise Upstream(code, 502)
-            tok, exp = None, None
-            try:
-                j = json.loads(data.decode('utf-8'))
-                tok = j.get('access_token') if isinstance(j, dict) else None
-                exp = _num(j.get('expires_in')) if isinstance(j, dict) else None
-            except (ValueError, UnicodeDecodeError):
-                tok = None
-            if not isinstance(tok, str) or not tok:
-                self.token_fail_at = t
-                raise Upstream('login-failed', 502)
-            self.token_fail_at = None
-            self.token = tok
-            self.token_exp = t + max(TOKEN_RENEW_MARGIN_S + 60, min(3600, exp if exp else 1800))
-            return tok
+            raise Upstream(code)
+        j = _json_dict(data) or {}
+        tok, exp = j.get('access_token'), _num(j.get('expires_in'))
+        if not isinstance(tok, str) or not tok:
+            self.token_fail_at = t
+            raise Upstream('login-failed')
+        self.token_fail_at = None
+        self.token = tok
+        self.token_exp = t + max(TOKEN_RENEW_MARGIN_S + 60, min(3600, exp if exp else 1800))
+        return tok
 
-    # one upstream /states/all call for a box
-    def _call_states(self, box, tok):
-        q = urlencode([('lamin', '%.4f' % box[0]), ('lomin', '%.4f' % box[1]),
-                       ('lamax', '%.4f' % box[2]), ('lomax', '%.4f' % box[3])])
-        with self.lock:
-            self.hour['upstream_calls'] += 1
-        status, hdrs, data = http_request('GET', self.rt['api_base'] + '/states/all?' + q,
+    def _call_states(self, box, icao, tok):
+        q = [('lamin', '%.4f' % box[0]), ('lomin', '%.4f' % box[1]),
+             ('lamax', '%.4f' % box[2]), ('lomax', '%.4f' % box[3])]
+        q += [('icao24', v) for v in icao]
+        self.count('upstream_calls')
+        status, hdrs, data = http_request('GET', self.rt['api_base'] + '/states/all?' + urlencode(q),
                                           headers={'Authorization': 'Bearer ' + tok})
+        self.last_status = status
         self._stop_if_upstream_says(upstream_clock(hdrs))
         return status, hdrs, data
 
-    def _fetch_box(self, box):
+    def fetch_box(self, box, icao):
         if self.stopped():
-            raise Refused(410, 'stopped')
+            raise Refused('stopped')
         if not self.creds:
-            raise Refused(503, 'no-key')
+            raise Refused('no-key')
         t = self.now()
         if t < self.backoff_until:
-            raise Refused(429, 'upstream-backoff', max(1, int(self.backoff_until - t) + 1))
+            raise Refused('upstream-backoff', max(1, int(self.backoff_until - t) + 1))
         if t < self.hold_until:
             # no call: OpenSky refused, or failed, a moment ago
-            raise Refused(503, (self.hold_code or 'upstream') + '-hold', max(1, int(self.hold_until - t) + 1))
+            raise Refused((self.hold_code or 'upstream') + '-hold', max(1, int(self.hold_until - t) + 1))
         self.reserve_call(peek=True)
         tok = self.get_token()
         self.reserve_call()
-        status, hdrs, data = self._call_states(box, tok)
+        status, hdrs, data = self._call_states(box, icao, tok)
         if status == 401:
             # the token was refused: one fresh login, one retry, no more
             tok = self.get_token(stale=tok)
             if self.stopped():
-                raise Refused(410, 'stopped')
+                raise Refused('stopped')
             self.reserve_call()
-            status, hdrs, data = self._call_states(box, tok)
+            status, hdrs, data = self._call_states(box, icao, tok)
             if status == 401:
                 self.token = None
         if status == 429:
             wait = retry_after_seconds(hdrs)
             self._save_backoff(self.now() + wait)
-            raise Refused(429, 'upstream-429', wait)
+            raise Upstream('upstream-429', wait)
         if status in (401, 403):
             self._hold(REFUSED_HOLD_S, 'upstream-%d' % status)
-            raise Upstream('upstream-%d' % status, 502, REFUSED_HOLD_S)
+            raise Upstream('upstream-%d' % status)
         if 500 <= status <= 599:
             self._hold(SERVER_ERROR_HOLD_S, 'upstream-%d' % status)
-            raise Upstream('upstream-%d' % status, 502, SERVER_ERROR_HOLD_S)
+            raise Upstream('upstream-%d' % status)
         if status != 200:
-            raise Upstream('upstream-' + str(status), 502)
+            raise Upstream('upstream-%d' % status)
         try:
             payload = json.loads(data.decode('utf-8'))
         except (ValueError, UnicodeDecodeError):
-            raise Upstream('bad-json', 502)
+            raise Upstream('bad-json')
         utime, rows = reduce_states(payload)
         self._stop_if_upstream_says(utime)
-        with self.lock:
-            self.upstream_ok_at = self.now()
-        return {'at': self.now(), 'time': utime, 'rows': rows}
+        return {'at': self.now(), 'time': utime, 'rows': rows, 'put': None}
 
-    def purge(self, t):
-        """Drop expired answers and error holds. Caller holds self.lock."""
+    def do_box(self, box, icao, calls):
+        """One wanted box: an earlier answer within the cache time, or one
+        OpenSky call; then the flights asked for go to the Worker."""
+        self.count('boxes')
+        # OpenSky can filter by icao24 itself; a callsign is matched here
+        up_icao = tuple(sorted(icao)) if icao and not calls else ()
+        key = (box, up_icao)
+        t = self.now()
         ttl = self.settings['cache_s']
         for k in [k for k, e in self.cache.items() if not (0 <= t - e['at'] < ttl)]:
             del self.cache[k]
-        for k in [k for k, held in self.errors.items() if not (0 <= t - held[0] < ERROR_HOLD_S)]:
-            del self.errors[k]
-
-    def states(self, box):
-        """Cached answer for a box, or one shared upstream call."""
-        t = self.now()
-        with self.lock:
-            self.purge(t)
-            entry = self.cache.get(box)
-            if entry:
-                self.hour['cache_hits'] += 1
-                return entry, True
-            held = self.errors.get(box)
-            if held:
-                raise held[1]
-            fl = self.inflight.get(box)
-            leader = fl is None
-            if leader:
-                fl = Inflight()
-                self.inflight[box] = fl
-        if not leader:
-            fl.event.wait(UPSTREAM_TIMEOUT_S * 3 + 5)
-            with self.lock:
-                self.hour['shared'] += 1
-            if fl.error is not None:
-                raise fl.error
-            if fl.result is None:
-                raise Upstream('timeout', 504)
-            return fl.result, True
-        try:
-            entry = self._fetch_box(box)
-            fl.result = entry
-            with self.lock:
-                self.cache[box] = entry
-                self.errors.pop(box, None)
-                if len(self.cache) > MAX_CACHE_ENTRIES:
-                    for k in sorted(self.cache, key=lambda k: self.cache[k]['at'])[:len(self.cache) - MAX_CACHE_ENTRIES]:
-                        del self.cache[k]
-            return entry, False
-        except Upstream as e:
-            fl.error = e
-            self._upstream_failed(e.code)
-            with self.lock:
-                self.errors[box] = (self.now(), e)
-            raise
-        except Refused as e:
-            fl.error = e
-            if e.code == 'upstream-429':
-                self._upstream_failed(e.code)
-            raise
-        except Exception as e:      # anything else is still answered, never a crash
-            fl.error = e
-            raise
-        finally:
-            with self.lock:
-                self.inflight.pop(box, None)
-            fl.event.set()
-
-    def answer_states(self, query):
-        with self.lock:
-            self.hour['requests'] += 1
-        if self.stopped():
-            raise Refused(410, 'stopped')
-        box, icao, calls = parse_states_query(query)
-        entry, cached = self.states(box)
-        heading = self.settings['heading']
-        out = []
-        for r in entry['rows']:
-            # a row is passed on only when it is one of the flights asked for
-            if not ((icao and r['icao24'] in icao) or (calls and (r['callsign'] or '') in calls)):
-                continue
-            row = dict(r)
-            if not heading:
-                row.pop('true_track', None)
-            out.append(row)
-        return {'credit': CREDIT, 'time': entry['time'], 'age': max(0, int(self.now() - entry['at'])),
-                'cached': cached, 'count': len(out), 'states': out}
-
-    def health(self):
-        stopped = self.stopped()
-        t = self.now()
-        with self.lock:
-            self._roll_day(t)
-            hour = dict(self.hour)
-            calls = self.state_count
-            cache_entries = len(self.cache)
-            ok_at, err, err_at = self.upstream_ok_at, self.upstream_error, self.upstream_error_at
-        s = self.settings
-        if stopped:
-            state = 'stopped' if s['config_ok'] else 'config-missing'
-        elif not self.creds:
-            state = 'no-key'
-        elif not self.caller_key:
-            state = 'no-caller-key'
-        elif self.state_bad or calls is None:
-            state = 'count-unreadable'
-        elif self._clock_behind(t):
-            state = 'clock-behind'
-        elif t < self.backoff_until:
-            state = 'backoff'
-        elif t < self.hold_until:
-            state = 'hold'
-        elif calls >= s['cap']:
-            state = 'capped'
+        entry = self.cache.get(key)
+        if entry:
+            self.count('shared')
         else:
-            state = 'ready'
-        return {
-            'service': 'opensky-relay',
-            'state': state,
-            'on': state in ('ready', 'backoff', 'hold', 'capped'),
-            'key_set': bool(self.creds),
-            'caller_key_set': bool(self.caller_key),
-            'logged_in': bool(self.token) and t < self.token_exp,
-            'stop_at': s['stop_iso'],
-            'stopped': stopped,
-            'stop_latched': self.latched is not None,
-            'date': self.state_date,
-            'calls_today': calls,
-            'cap': s['cap'],
-            'paced_allowance_now': paced_allowance(s['cap'], t),
-            'backoff_seconds': max(0, int(self.backoff_until - t)) if t < self.backoff_until else 0,
-            'hold_seconds': max(0, int(self.hold_until - t)) if t < self.hold_until else 0,
-            'last_ok_at': utc_iso(ok_at) if ok_at else None,
-            'last_error': err,
-            'last_error_at': utc_iso(err_at) if err_at else None,
-            'heading': s['heading'],
-            'cache_seconds': s['cache_s'],
-            'cache_entries': cache_entries,
-            'this_hour': hour,
-            'public_ipv4': read_public_ipv4(self.rt['config_dir']),
-        }
+            entry = self.fetch_box(box, up_icao)
+            self.cache[key] = entry
+            if len(self.cache) > MAX_CACHE_ENTRIES:
+                for k in sorted(self.cache, key=lambda k: self.cache[k]['at'])[:len(self.cache) - MAX_CACHE_ENTRIES]:
+                    del self.cache[k]
+        heading = self.settings['heading']
+        sig = (icao, calls, heading)
+        if entry['put'] == sig:
+            return                       # already with the Worker
+        if self.put(box, entry['time'], pick_flights(entry['rows'], icao, calls, heading)):
+            entry['put'] = sig
 
-    def summary_line(self, key, hour):
-        calls = '?' if self.state_count is None else str(self.state_count)
-        line = ('hour=%s requests=%d cache_hits=%d shared=%d upstream=%d tokens=%d refused=%d errors=%d today=%s/%d'
-                % (key, hour['requests'], hour['cache_hits'], hour['shared'], hour['upstream_calls'],
-                   hour['token_calls'], hour['refused'], hour['errors'], calls, self.settings['cap']))
-        if self.last_error:
-            line += ' last_error=' + self.last_error
-        return line
+    # ── one round, once a minute ───────────────────────────────────────────
+    REFUSED_STATE = {'daily-cap': 'capped', 'hourly-pace': 'capped', 'upstream-backoff': 'backoff',
+                     'no-key': 'no-key', 'count-unreadable': 'count-unreadable', 'clock-behind': 'clock-behind'}
 
     def tick(self):
-        """Every tick: drop expired answers and check the stop. Once an hour,
-        one line of counts."""
-        t = self.now()
-        with self.lock:
-            self.purge(t)
-        self.stopped()
-        key = utc_hour_key(t)
+        """One round. False once the relay is stopped for good."""
+        self.count('ticks')
+        self.roll_hour()
+        try:
+            return self._round()
+        except Refused as e:
+            if e.code == 'stopped' or self.stopped():
+                self.state = 'stopped'
+                return False
+            self.count('refused', e.code)
+            return True
+
+    def _round(self):
+        if self.stopped():
+            self.state = 'stopped'
+            return False
+        if not self.key:
+            self.state = 'no-relay-key'
+            return True
+        if not self.worker_url():
+            self.state = 'bad-worker-url'
+            return True
+        if not self.registered and not self.register():
+            self.state = 'register-refused' if self.register_refused else 'registering'
+            return True
+        self.on = self.heartbeat()
+        if self.stopped():
+            self.state = 'stopped'
+            return False
+        if not self.registered:
+            self.state = 'registering'
+            return True
+        if not self.on:
+            if self.worker_ok:
+                # switched off: nothing is kept
+                self.creds, self.token = None, None
+                self.cache.clear()
+                self.state = 'off'
+            else:
+                # the Worker cannot say this minute: no OpenSky call either
+                self.state = 'worker-unreachable'
+            return True
+        if not self.ensure_creds():
+            return True
+        boxes = self.wanted()
+        self.state = 'ready' if boxes else 'idle'
+        for box, icao, calls in boxes:
+            try:
+                self.do_box(box, icao, calls)
+            except Refused as e:
+                if e.code == 'stopped':
+                    raise
+                self.count('refused', e.code)
+                self.state = 'hold' if e.code.endswith('-hold') else self.REFUSED_STATE.get(e.code, self.state)
+            except Upstream as e:
+                self.count('errors', e.code)
+                if e.code == 'upstream-429':
+                    self.state = 'backoff'
+                elif self.now() < self.hold_until:
+                    self.state = 'hold'
+        return True
+
+    def roll_hour(self):
+        """Once an hour, one line of counts."""
+        key = utc_hour_key(self.now())
         with self.lock:
             if key == self.hour_key:
                 return
@@ -1062,131 +1167,61 @@ class Relay(object):
             self.last_error = None
         log(line)
 
-    def count(self, field, code=None):
-        with self.lock:
-            self.hour[field] += 1
-            if code:
-                self.last_error = code
+    def summary_line(self, key, hour):
+        calls = '?' if self.state_count is None else str(self.state_count)
+        line = ('hour=%s ticks=%d heartbeats=%d worker_errors=%d boxes=%d upstream=%d shared=%d tokens=%d '
+                'puts=%d refused=%d errors=%d today=%s/%d state=%s'
+                % (key, hour['ticks'], hour['heartbeats'], hour['worker_errors'], hour['boxes'],
+                   hour['upstream_calls'], hour['shared'], hour['token_calls'], hour['puts'],
+                   hour['refused'], hour['errors'], calls, self.settings['cap'], self.state))
+        if self.last_error:
+            line += ' last_error=' + self.last_error
+        return line
 
-    def caller_ok(self, value):
-        if not self.caller_key:
-            return False
-        return hmac.compare_digest(normalise_key(value).encode('ascii'), self.caller_key.encode('ascii'))
-
-
-# ── HTTP server, 127.0.0.1 only ─────────────────────────────────────────────
-class Handler(http.server.BaseHTTPRequestHandler):
-    server_version = 'opensky-relay'
-    sys_version = ''
-    protocol_version = 'HTTP/1.1'
-    timeout = 30
-    relay = None
-
-    # the default handler logs every request line, which carries the box
-    def log_message(self, fmt, *args):
-        pass
-
-    def log_request(self, code='-', size='-'):
-        pass
-
-    def log_error(self, fmt, *args):
-        pass
-
-    def _send(self, status, obj, retry_after=None):
-        body = json.dumps(obj, separators=(',', ':')).encode('utf-8')
-        self.send_response(status)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(body)))
-        self.send_header('Cache-Control', 'no-store')
-        self.send_header('X-Content-Type-Options', 'nosniff')
-        if retry_after:
-            self.send_header('Retry-After', str(int(retry_after)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def do_GET(self):
-        relay = self.relay
+    def write_status(self):
+        """Counts and states only, for opensky-status on the server."""
+        if not self.state_dir:
+            return
+        t = self.now()
+        st = {
+            'state': self.state, 'registered': self.registered, 'on': self.on,
+            'relay_key_set': bool(self.key), 'opensky_client_in_memory': self.creds is not None,
+            'stop_at': self.settings['stop_iso'], 'worker_stop_at': utc_iso(self.worker_stop) if self.worker_stop else None,
+            'stop_latched': self.latched is not None, 'date': self.state_date, 'calls_today': self.state_count,
+            'cap': self.settings['cap'], 'last_status': self.last_status, 'hold_seconds': self.hold_seconds(),
+            'at': utc_iso(t),
+        }
+        path = os.path.join(self.state_dir, 'status.json')
         try:
-            parts = urlsplit(self.path)
-            if parts.path == '/health':
-                self._send(200, relay.health())
-            elif parts.path == '/states':
-                # the tunnel is the only way in, and the key proves the caller
-                # is the boards' Worker: a hostname or network added to the
-                # tunnel by mistake still gets nothing
-                if not relay.caller_key:
-                    raise Refused(403, 'caller-key-not-set')
-                if not relay.caller_ok(self.headers.get(CALLER_HEADER, '')):
-                    raise Refused(403, 'caller-key')
-                self._send(200, relay.answer_states(parts.query))
-            else:
-                self._send(404, {'error': 'not-found'})
-        except Refused as e:
-            relay.count('refused', e.code)
-            self._send(e.status, {'error': e.code}, e.retry_after)
-        except Upstream as e:
-            relay.count('errors', e.code)
-            self._send(e.status, {'error': e.code}, e.retry_after)
-        except Exception:
-            relay.count('errors', 'internal')
+            tmp = path + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(st, f)
+            os.replace(tmp, path)
+        except OSError:
+            pass
+
+    def run(self):
+        s = self.settings
+        log('start: relay key set: %s, stop %s, cap %d/day, cache %d s, heading %s, count today %s'
+            % ('yes' if self.key else 'no', s['stop_iso'] or 'MISSING (stopped)', s['cap'], s['cache_s'],
+               'on' if s['heading'] else 'off', 'unreadable' if self.state_count is None else self.state_count))
+        while not self.done.is_set():
             try:
-                self._send(500, {'error': 'internal'})
+                going = self.tick()
             except Exception:
-                pass
-
-    def _not_allowed(self):
-        self.relay.count('refused', 'method')
-        self._send(405, {'error': 'method-not-allowed'})
-
-    do_POST = do_PUT = do_DELETE = do_PATCH = do_HEAD = do_OPTIONS = _not_allowed
-
-
-class Server(http.server.ThreadingHTTPServer):
-    daemon_threads = True
-    allow_reuse_address = True
-    address_family = socket.AF_INET
-
-    def handle_error(self, request, client_address):
-        # never a traceback on stderr: it could carry a request
-        pass
-
-
-def serve(rt):
-    relay = Relay(rt)
-    Handler.relay = relay
-    server = Server((LISTEN_HOST, rt['port']), Handler)
-    s = relay.settings
-    log('start: listening %s:%d, key set: %s, caller key set: %s, stop %s, cap %d/day, cache %d s, heading %s, count today %s'
-        % (LISTEN_HOST, rt['port'], 'yes' if relay.creds else 'no', 'yes' if relay.caller_key else 'no',
-           s['stop_iso'] or 'MISSING (stopped)', s['cap'], s['cache_s'], 'on' if s['heading'] else 'off',
-           'unreadable' if relay.state_count is None else relay.state_count))
-    relay.was_stopped = relay.stopped()
-    if relay.was_stopped:
-        log('stopped: the stop time has passed or the config is missing; no OpenSky calls')
-
-    done = threading.Event()
-
-    def ticker():
-        while not done.wait(rt['tick']):
-            try:
-                relay.tick()
-            except Exception:
-                pass
-    threading.Thread(target=ticker, daemon=True).start()
-
-    def on_term(_sig, _frame):
-        threading.Thread(target=server.shutdown, daemon=True).start()
-    signal.signal(signal.SIGTERM, on_term)
-    signal.signal(signal.SIGINT, on_term)
-    try:
-        server.serve_forever(poll_interval=0.5)
-    finally:
-        done.set()
-        with relay.lock:
-            line = relay.summary_line(relay.hour_key, relay.hour)
-            relay.cache.clear()
+                self.count('errors', 'internal')
+                going = True
+            self.write_status()
+            if not going:
+                log('stopped: the term has ended (or the stop date is missing); no OpenSky calls')
+                break
+            self.done.wait(self.rt['loop_s'])
+        with self.lock:
+            line = self.summary_line(self.hour_key, self.hour)
+        self.creds = None
+        self.token = None
+        self.cache.clear()
         log('exit: ' + line)
-        server.server_close()
 
 
 def cli_stopped(rt):
@@ -1195,68 +1230,32 @@ def cli_stopped(rt):
     return is_stopped(settings, now, read_stop_marker(rt['state_dir']))
 
 
-def check_login(rt, path):
-    """opensky-key: one login with the saved client. No data call.
-    Exit codes: 0 OK, 1 the key was refused, 3 stopped, 4 no key,
-    5 this server was refused (403), 6 OpenSky could not be reached or had a problem."""
-    if cli_stopped(rt):
-        print('The licence term has ended (or the stop date is missing). No login test was made.')
-        return 3
-    creds = read_credentials_file(path)
-    if not creds:
-        print('No key is saved. Type opensky-key again.')
-        return 4
-    cid, secret = creds
-    body = urlencode({'grant_type': 'client_credentials', 'client_id': cid,
-                      'client_secret': secret}).encode('ascii')
-    try:
-        status, _h, data = http_request('POST', rt['token_url'], body,
-                                        {'Content-Type': 'application/x-www-form-urlencoded'})
-    except Upstream as e:
-        print('OpenSky login: not tested. The login server could not be reached (%s). '
-              'The key is saved; type opensky-status in a few minutes.' % e.code)
-        return 6
-    if status == 200:
-        try:
-            j = json.loads(data.decode('utf-8'))
-            if isinstance(j, dict) and isinstance(j.get('access_token'), str) and j['access_token']:
-                print('OpenSky login: OK')
-                return 0
-        except (ValueError, UnicodeDecodeError):
-            pass
-        print('OpenSky login: not tested. The login server answered, but not with a login. '
-              'The key is saved; type opensky-status in a few minutes.')
-        return 6
-    if status in (400, 401):
-        print('OpenSky login: try again. OpenSky did not accept this Client ID and secret (answer %d). '
-              'Check both on your OpenSky account page.' % status)
-        return 1
-    if status == 403:
-        print('OpenSky login: refused (answer 403). The key is saved. '
-              "Ask OpenSky whether this server's IPv4 is whitelisted.")
-        return 5
-    print('OpenSky login: not tested. OpenSky answered %d (a problem on its side). '
-          'The key is saved; type opensky-status in a few minutes.' % status)
-    return 6
-
-
 def main(argv):
     try:
         rt = load_runtime()
     except Fatal as e:
         sys.stderr.write('opensky-relay: %s\n' % e)
         return 2
-    if len(argv) >= 2 and argv[1] == '--check-login':
+    if len(argv) >= 2 and argv[1] == '--make-key':
         if len(argv) != 3:
-            sys.stderr.write('usage: relay.py --check-login FILE\n')
+            sys.stderr.write('usage: relay.py --make-key FILE\n')
             return 2
-        return check_login(rt, argv[2])
+        if not TEST_MODE and hasattr(os, 'geteuid') and os.geteuid() != 0:
+            sys.stderr.write('opensky-relay: --make-key runs as root\n')
+            return 2
+        return make_key(argv[2])
     if len(argv) >= 2 and argv[1] == '--stopped':
         return 0 if cli_stopped(rt) else 1
     if len(argv) != 1:
-        sys.stderr.write('usage: relay.py [--check-login FILE | --stopped]\n')
+        sys.stderr.write('usage: relay.py [--make-key FILE | --stopped]\n')
         return 2
-    serve(rt)
+    relay = Relay(rt)
+
+    def on_term(_sig, _frame):
+        relay.done.set()
+    signal.signal(signal.SIGTERM, on_term)
+    signal.signal(signal.SIGINT, on_term)
+    relay.run()
     return 0
 
 
