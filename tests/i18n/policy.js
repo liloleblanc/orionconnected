@@ -397,7 +397,7 @@ const NATIVE_WORDS = {
   fr: {
     site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
     programme: 'code: the French word', image: 'code: the French word', unique: 'code: the French word',
-    dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word', centre: 'code: the French word (centre-ville)',
+    dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word',
     taxi: 'code: the French word'
   },
   de: { taxi: 'code: the German word', 'check-in': 'code: the word German airports use' },

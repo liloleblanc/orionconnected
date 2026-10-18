@@ -35,7 +35,14 @@ function walk(dir, out) {
 }
 // a script or page with its comments taken out (a URL in a string keeps its //)
 function code(text) {
-  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/(^|[^:'"\\])\/\/[^\n]*/g, '$1');
+  // block and HTML comments out until nothing changes (one removal can join a
+  // new marker), then line comments
+  let prev;
+  do {
+    prev = text;
+    text = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '');
+  } while (text !== prev);
+  return text.replace(/(^|[^:'"\\])\/\/[^\n]*/g, '$1');
 }
 
 test('only the departures and arrivals page loads the floor, after the core and the coordinates, on the build version', () => {
