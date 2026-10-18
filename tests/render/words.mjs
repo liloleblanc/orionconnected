@@ -180,6 +180,10 @@ function liveUrl(reqUrl) {
 }
 // A face that is still loading when the standby lists paint (SB_LOADING,
 // which names it as written here): answered, with nothing, only after 20 s.
+// Each hold asks for it under its own query (the server matches the path
+// only): one URL for every hold let a later hold join an earlier hold's
+// request, still pending, and finish when that one did, so the fonts
+// finished loading before the column was read (a CI flake, 2026-10-18).
 const HELD_FACE = '/__words/held-face.woff2';
 function serve() {
   const server = http.createServer((req, res) => {
@@ -664,7 +668,7 @@ const COL_RESIZE = `(function () { try { window.dispatchEvent(new Event('resize'
 // a face held loading (as SB_LOADING), then the takeover painted afresh
 const COL_HOLD = `(function () {
   try {
-    var ff = new FontFace('WordsHeldFace', 'url(/__words/held-face.woff2)');
+    var ff = new FontFace('WordsHeldFace', 'url(/__words/held-face.woff2?h=' + Date.now() + '-' + Math.random().toString(36).slice(2) + ')');
     document.fonts.add(ff);
     ff.load().catch(function () {});
     window.__wordsHeldFace = ff;
@@ -941,7 +945,7 @@ const SB_DOCS = `(function () {
 // fitted (data-sb-fit), then SB_CHECK. SB_RELEASE lets the face go.
 const SB_LOADING = `new Promise(function (res) {
   try {
-    var ff = new FontFace('WordsHeldFace', 'url(/__words/held-face.woff2)');
+    var ff = new FontFace('WordsHeldFace', 'url(/__words/held-face.woff2?h=' + Date.now() + '-' + Math.random().toString(36).slice(2) + ')');
     document.fonts.add(ff);
     ff.load().catch(function () {});
     window.__wordsHeldFace = ff;

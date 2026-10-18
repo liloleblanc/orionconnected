@@ -3936,6 +3936,27 @@ function _wxDayOver(d, body, ic) {
   var k = (d.offsetHeight && r.height) ? r.height / d.offsetHeight : 1;
   if (!(k > 0.05)) k = 1;
   var foot = r.top + (d.clientTop + d.clientHeight) * k;
+  // 2026-10-18 — and the edge that actually cuts the words: the body clips what
+  // runs past it (overflow hidden), and it ends at the panel's content box,
+  // above the panel's own bottom padding. Measured on the panel's foot alone,
+  // 'Partiellement nuageux' over 'Parzialmente nuvoloso' (four lines) ran 1
+  // to 4px past the body inside that padding, read as fitting, and its last
+  // line was cut. Every box from the words up to the panel that clips is
+  // read the same way (its padding edge, where overflow cuts).
+  try {
+    var tw0 = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null), n0;
+    var seen0 = typeof Set === 'function' ? new Set() : null;
+    while ((n0 = tw0.nextNode())) {
+      if (!/\S/.test(n0.nodeValue || '')) continue;
+      for (var a0 = n0.parentElement; a0 && a0 !== d; a0 = a0.parentElement) {
+        if (seen0) { if (seen0.has(a0)) continue; seen0.add(a0); }
+        if (getComputedStyle(a0).overflowY === 'visible') continue;
+        var ab = a0.getBoundingClientRect();
+        var af = ab.top + (a0.clientTop + a0.clientHeight) * k;
+        if (af < foot) foot = af;
+      }
+    }
+  } catch (eC) {}
   var bot = -Infinity, rg = document.createRange(), n;
   var tw = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null);
   while ((n = tw.nextNode())) {
@@ -3949,8 +3970,58 @@ function _wxDayOver(d, body, ic) {
   var up = (br.top - ir.top) / k;
   return { down: down, up: up };
 }
+// A day panel's weather words, line by line: each language on its own line
+// (.wxc-l1, .wxc-l2: _wxPairS), or the words alone.
+function _wxDayLines(cond) {
+  if (!cond) return [];
+  var ls = cond.querySelectorAll('.wxc-l1, .wxc-l2, .wxc-l3');
+  return ls.length ? [].slice.call(ls) : [cond];
+}
+// The size the board's own fit left on a line. The guard rule for the
+// weather words (FIDS_FIT_RULES) writes a long line's size on the line
+// itself, to keep it to one line ('Starker Schneefall' 15.5px beside lines
+// of 18.5px); what _wxDayRoom writes there itself is not counted, so its own
+// write never reads as a change and the row is not measured again for it.
+function _wxLineFs(ln) {
+  var v = ln.style.getPropertyValue('font-size');
+  return (ln.__wxdOwn && v === ln.__wxdOwn) ? (ln.__wxdBase || '') : v;
+}
+// What _wxDayRoom wrote on a line, taken back: the board's own size put back
+// where it had one. A size the board's fit has written since is its own, and
+// stays.
+function _wxLineUndo(ln) {
+  if (!ln.__wxdOwn) return;
+  if (ln.style.getPropertyValue('font-size') === ln.__wxdOwn) {
+    if (ln.__wxdBase) ln.style.setProperty('font-size', ln.__wxdBase, 'important');
+    else ln.style.removeProperty('font-size');
+  }
+  ln.__wxdOwn = ''; ln.__wxdBase = '';
+}
 function _wxDayRoom(scr) {
   var days = scr.querySelectorAll('.wxc-day2');
+  // 2026-10-18 — the words' size is decided here too (below), so a row
+  // measured again starts from the board's own sizes, the five together;
+  // a row already settled at this size, in these words, is left as it is.
+  // The key carries the sizes the board's fit left on the words' lines: the
+  // card is first drawn before that fit has brought a long line down to one
+  // line, and keyed on the words alone the row kept the icon it was given
+  // for the longer lines all visit (de+pt at 1680: 111px where 128 fits).
+  var _sk = '';
+  for (var s0 = 0; s0 < days.length; s0++) {
+    var b0 = days[s0].querySelector('.wxc-dbody');
+    _sk += '#' + days[s0].clientHeight + 'x' + days[s0].clientWidth + '|' + ((b0 && b0.textContent) || '').replace(/\s+/g, ' ')
+      + '|' + _wxDayLines(days[s0].querySelector('.wxc-dcond')).map(_wxLineFs).join(',');
+  }
+  _sk += '|' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '|' + (_fxFontsEpoch || 0);
+  if (scr.__wxdRowKey === _sk && scr.__wxdDone) return;
+  scr.__wxdDone = false;
+  if (scr.__wxdRowKey !== _sk) {
+    scr.__wxdRowKey = _sk;
+    for (var s1 = 0; s1 < days.length; s1++) {
+      days[s1].__wxdKey = '';
+      _wxDayLines(days[s1].querySelector('.wxc-dcond')).forEach(_wxLineUndo);
+    }
+  }
   for (var i = 0; i < days.length; i++) {
     var d = days[i], body = d.querySelector('.wxc-dbody');
     var ic = body && body.querySelector(':scope > .wxanim-host, :scope > img.wxanim');
@@ -3986,6 +4057,42 @@ function _wxDayRoom(scr) {
       }
     }
   }
+  // 2026-10-18 — and where the icon has given all it can and a panel's words still
+  // run past its foot, the five conditions come down together, one size for
+  // the row, never under the board's floor: smaller, never cut. The size is
+  // set on each LINE, where the board's own fit sets it (a size on the
+  // condition's box does not reach a line that carries its own), and a line
+  // that fit already holds smaller keeps its smaller size (it was brought
+  // down to stay on one line; set larger it would wrap again). The floor is
+  // that fit's own (fidsFitFloor at the card's scale), so it keeps the size.
+  var lines = [], over = function () {
+    for (var v = 0; v < days.length; v++) {
+      var dv = days[v], bv = dv.querySelector('.wxc-dbody');
+      var iv = bv && bv.querySelector(':scope > .wxanim-host, :scope > img.wxanim');
+      if (iv && _wxDayOver(dv, bv, iv).down > 0.5) return true;
+    }
+    return false;
+  };
+  for (var c = 0; c < days.length; c++) lines = lines.concat(_wxDayLines(days[c].querySelector('.wxc-dcond')));
+  if (lines.length && over()) {
+    var flo = fidsFitFloor() / _fxScale(lines[0]);
+    var bases = lines.map(function (ln) { return parseFloat(getComputedStyle(ln).fontSize) || 0; });
+    var fs0 = Math.max.apply(null, bases);
+    for (var u0 = 0; u0 < lines.length; u0++) {
+      if (!lines[u0].__wxdOwn) lines[u0].__wxdBase = lines[u0].style.getPropertyValue('font-size');
+    }
+    var setFs = function (px) {
+      for (var u = 0; u < lines.length; u++) {
+        var ln = lines[u], fv = Math.min(px, bases[u]);
+        if (!(fv > 0)) continue;
+        ln.style.setProperty('font-size', fv + 'px', 'important');
+        ln.__wxdOwn = ln.style.getPropertyValue('font-size');
+      }
+      return !over();
+    };
+    if (fs0 > flo) setFs(_fxSearch(flo, fs0, setFs) || flo);
+  }
+  scr.__wxdDone = true;
 }
 function _wxFitTitles(scope) {
   var root = scope || document;
@@ -12499,6 +12606,74 @@ function renderMobileBaggageHtml(ctx) {
     + '</div>';
 }
 
+// ── The phone gate's airline logo, on its header's own ground ──────────────
+// 2026-10-18. The phone gate drew the TV gate's logo (logoHtml), which is
+// chosen for the TV banner's LIGHT band: the carrier's dark lettering file.
+// The phone's header is near-black by night, so Porter's wordmark (and every
+// carrier with a lettering pair, Air Canada and WestJet among them) was black
+// on the dark card. The rule for a logo on a dark ground is white lettering,
+// never a white box: so on the dark header it is the carrier's light
+// lettering (wordmarkSrc(base, 'light')), and on the light header its dark or
+// colour lettering. A carrier with no lettering pair takes the file
+// MG_LOGO_FILES names for that ground; where none is drawn for it, its name
+// is written in the header's own ink. Nothing is put behind it.
+var MG_LOGO_FILES = {
+  // Sunwing's own white and colour logos (the Dec 2025 brand pack)
+  'WG': { dark: '/logos/airlines/canadian/sunwing/Sunwing-Logo-White.png', light: '/logos/airlines/canadian/sunwing/Sunwing-Logo-Colour.png' },
+  // WestJet Encore's white and colour lockups (the 2025 brand pack); its
+  // encore.png is white only, so it can never stand on the light header
+  'WR': { dark: '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', light: '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' },
+  // Qantas: its one file is drawn in dark grey for a light ground, so on the
+  // dark header its name is written in white instead
+  'QF': { dark: null, light: '/logos/airlines/asian-other/qantas.png' },
+  // Perimeter and First Air: their colour files (Perimeter_Aviation_Logo.svg,
+  // firstair.svg) are drawn in a 1200 x 800 frame around a far wider drawing,
+  // so in the header's 240 x 64 box they came out at under half its height.
+  // The same drawings on frames that fit them: Perimeter's on its white
+  // lettering's own canvas (the same four paths), First Air's lockup on its
+  // own viewBox. Their white lettering on the dark header, as the caption's.
+  'YP':  { dark: '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg', light: '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg' },
+  'PAG': { dark: '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg', light: '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg' },
+  '7F':  { dark: '/logos/airlines/canadian-regional/firstair-wordmark-light.svg', light: '/logos/airlines/canadian-regional/firstair-logo-cropped.svg' }
+};
+// And a carrier with neither (Calm Air, Pascan, Mesa, Horizon, GoJet and the
+// other regional operators, and the ICAO twins: CAV, PSC, AIE, ENY, PVL...)
+// takes the pair the Operated-by caption draws for it
+// (OPBY_WORDMARKS_THEMED: its white lettering for a dark ground, its own
+// colours for a light one), so its lettering is drawn rather than its name
+// typed in white. A feed that names the carrier by its ICAO code (BAW, FLE:
+// the TV banner draws both) is read as the carrier it names
+// (CALLSIGN_TO_IATA), where the code itself finds nothing.
+function _mgHeaderLogoSrc(code, dark, _tw) {
+  code = String(code || '').trim().toUpperCase();
+  var base = (typeof IATA_TO_WORDMARK !== 'undefined') ? IATA_TO_WORDMARK[code] : '';
+  if (base) return wordmarkSrc(base, dark ? 'light' : 'dark');
+  var f = MG_LOGO_FILES[code];
+  if (f) return f[dark ? 'dark' : 'light'] || '';
+  var p = (typeof OPBY_WORDMARKS_THEMED !== 'undefined') ? OPBY_WORDMARKS_THEMED[code] : null;
+  if (p) return p[dark ? 'onDark' : 'onLight'] || '';
+  var tw = (!_tw && code.length === 3 && typeof CALLSIGN_TO_IATA !== 'undefined') ? CALLSIGN_TO_IATA[code] : '';
+  return (tw && tw !== code) ? _mgHeaderLogoSrc(tw, dark, true) : '';
+}
+function _mgHeaderLogo(code, name, dark, ink, css) {
+  var nm = fidsEscHtml(String(name || code || ''));
+  var src = _mgHeaderLogoSrc(code, dark);
+  var txt = 'font-size:30px;font-weight:900;letter-spacing:-0.5px;line-height:1.1;color:' + ink + ';';
+  if (!src) return nm ? '<span class="logo-fallback" style="' + txt + '">' + nm + '</span>' : '';
+  return '<img class="full-logo mg-logo" alt="' + nm + '" src="' + fidsEscHtml(src) + '" data-ink="' + fidsEscHtml(ink) + '" style="' + css + '" onerror="_mgLogoFail(this)">';
+}
+// A lettering file that does not load: the carrier's name, in the header's ink.
+function _mgLogoFail(img) {
+  try {
+    var s = document.createElement('span');
+    s.className = 'logo-fallback';
+    s.textContent = img.alt || '';
+    s.style.cssText = 'font-size:30px;font-weight:900;letter-spacing:-0.5px;line-height:1.1;color:' + (img.getAttribute('data-ink') || 'inherit') + ';';
+    img.replaceWith(s);
+  } catch (e) {}
+}
+try { if (typeof window !== 'undefined') { window._mgLogoFail = _mgLogoFail; window.MG_LOGO_FILES = MG_LOGO_FILES; } } catch (e) {}
+
 // ── Mobile gate display — clean phone-first layout ────────────────────────
 // Replaces the wide TV layout (uxgGateHtml) when the viewport is < 700px.
 // No ads, no map — just essential info, sized for phones.
@@ -12548,7 +12723,10 @@ function renderMobileGateHtml(ctx) {
     if (_twx && _twx.current && _twx.current.temp !== undefined) {
       const _temp = (typeof displayTemp === 'function') ? displayTemp(Math.round(_twx.current.temp)) : Math.round(_twx.current.temp) + '°';
       const _icon = (typeof tioIcon === 'function') ? tioIcon(_twx.current.code, 28) : '';
-      destWxHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;font-size:13px;color:rgba(255,255,255,0.75);">'
+      // (2026-10-18: in the header's ink for the theme — white at 75% on the
+      // light theme's white panel read as nothing but the icon)
+      const _wxInk = (_gateDayNightTheme() === 'light') ? '#475569' : 'rgba(255,255,255,0.75)';
+      destWxHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;font-size:13px;color:' + _wxInk + ';">'
                  +   _icon
                  +   BoardStrings.fmt('tempIn', lang, { TEMP: '<span style="font-weight:700;">' + _temp + '</span>', CITY: '<span style="opacity:0.6;">' + dest + '</span>' }, true)
                  + '</div>';
@@ -12567,9 +12745,9 @@ function renderMobileGateHtml(ctx) {
              +   (function () { var _dwN = _gateDayWords(nextFlight._sortTs, tz, _mFrF); return _dwN ? ' · ' + _gateDayLineHtml(_dwN) : ''; })()
              + '</div>';
   }
-  // Airline logo on a white card — constrain to the 56px header card.
+  // The airline's logo in the header, at most 240 x 64 (its lettering for
+  // the header's ground: _mgHeaderLogo, below the theme)
   const _logoCss = 'max-width:240px;max-height:64px;height:auto;width:auto;object-fit:contain;display:block;';
-  const _logoBlock = (ctx.logoHtml || '').replace(/<img /g, '<img style="' + _logoCss + '" ');
 
   // Aircraft image — show the equipment livery if available
   // Rouge override: AC flights operated by RV use Rouge liveries (321r.png etc.)
@@ -12622,6 +12800,9 @@ function renderMobileGateHtml(ctx) {
     ink:'#ffffff', muted:'#6b7585', muted2:'#9aa4b0', accent:'#5b9dff',
     navBg:'#0c1320', planeIcon:'#54637a'
   };
+  // white lettering on the dark header, the dark or colour lettering on the
+  // light one (2026-10-18: it was the TV banner's dark file on both)
+  const _logoBlock = _mgHeaderLogo(ctx.logoCode || airline, ctx.logoName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[ctx.logoCode || airline]) || airline, !_lt, T.ink, _logoCss);
 
   // Operator badge — "Operated by [LOGO]" using the day/night logo variant so it
   // stays visible on both the light and dark gate theme (single-colour wordmarks
@@ -16728,7 +16909,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24058" src="/textures/gate-sky-shelf.mp4?v=24058" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24059" src="/textures/gate-sky-shelf.mp4?v=24059" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16772,7 +16953,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24058" src="/textures/gate-sky-shelf.mp4?v=24058" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24059" src="/textures/gate-sky-shelf.mp4?v=24059" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -25892,7 +26073,7 @@ const gView = document.getElementById('gateView');
         // Mobile: render a clean phone-friendly gate view; desktop: use full TV layout
         var _isMobileGate = (window.innerWidth || document.documentElement.clientWidth) < 700;
         if (_isMobileGate) {
-          gView.innerHTML = renderMobileGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrInstant: _arrInstant, arrTz: arrTz });
+          gView.innerHTML = renderMobileGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, logoCode: bannerLogoCode, logoName: bannerLogoName, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrInstant: _arrInstant, arrTz: arrTz });
         } else {
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrSchedStr: _arrSchedStr, arrRevised: _arrRevised, arrEarly: _arrEarly, arrTerm: _arrTerm, arrGate: _arrGate, arrInstant: _arrInstant, arrTz: arrTz });
@@ -33773,7 +33954,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24058';
+var FIDS_BUILD_TAG = 'v24059';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -58719,7 +58900,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24058" src="/textures/gate-sky-shelf.mp4?v=24058"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24059" src="/textures/gate-sky-shelf.mp4?v=24059"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
