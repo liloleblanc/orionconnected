@@ -665,11 +665,16 @@ test('9. the phone gate\'s header: white lettering on its dark header for every 
   const WM = table('const IATA_TO_WORDMARK = {');
   const LOCAL = table('var LOCAL_LOGOS = {');
   const MG = table('var MG_LOGO_FILES = {');
+  // the TV banner's own white and colour files (BANNER_DARK_LOGO and
+  // BANNER_LIGHT_LOGO, inside the gate's banner builder)
+  const BANNER = [table('var BANNER_DARK_LOGO = {'), table('var BANNER_LIGHT_LOGO = {')];
   const pick = vm.runInNewContext(
     'var FIDS_BUILD_TAG = "t"; var IATA_TO_WORDMARK = ' + JSON.stringify(WM)
     + '; var LOGO_SUBFOLDER = ' + JSON.stringify(table('const LOGO_SUBFOLDER = {'))
     + '; var WORDMARK_RASTER = ' + JSON.stringify(table('const WORDMARK_RASTER = {'))
     + '; var COLOR_WORDMARKS = ' + JSON.stringify(table('const COLOR_WORDMARKS = {'))
+    + '; var OPBY_WORDMARKS_THEMED = ' + JSON.stringify(PAIRS)
+    + '; var CALLSIGN_TO_IATA = ' + JSON.stringify(table('const CALLSIGN_TO_IATA = {'))
     + '; var MG_LOGO_FILES = ' + JSON.stringify(MG) + ';\n'
     + fnSource('logoPath') + fnSource('wordmarkSrc') + fnSource('_mgHeaderLogoSrc') + '\n_mgHeaderLogoSrc;');
   // (a comment in a file is not paint: Pacific Coastal's says "no live <text>")
@@ -696,19 +701,62 @@ test('9. the phone gate\'s header: white lettering on its dark header for every 
     const cs = paints(f);
     return cs.length > 0 && cs.every((c) => contrast(c, ground) >= 3);
   };
-  const codes = [...new Set([...Object.keys(WM), ...Object.keys(LOCAL)])];
-  assert.ok(codes.length > 80, 'carriers checked: ' + codes.length);
+  // every carrier with art on file anywhere the gate draws one: its
+  // wordmark, its combined logo, its Operated-by pair, the TV banner's files
+  const codes = [...new Set([...Object.keys(WM), ...Object.keys(LOCAL), ...Object.keys(PAIRS),
+    ...Object.keys(BANNER[0]), ...Object.keys(BANNER[1])])];
+  assert.ok(codes.length > 100, 'carriers checked: ' + codes.length);
   const bad = [];
+  // a file whose frame (its root width x height) is another shape than its
+  // drawing (its viewBox) draws small inside the header's box: Perimeter's
+  // and First Air's colour files, 1200 x 800 around drawings three and a
+  // half times as wide, came out under half the header's height
+  const frameOff = (url) => {
+    const f = path.join(FC, String(url).split('?')[0]);
+    if (!/\.svg$/i.test(f)) return false;
+    const root = (fs.readFileSync(f, 'utf8').match(/<svg\b[^>]*>/) || [''])[0];
+    const w = root.match(/\swidth="([\d.]+)(px)?"/), h = root.match(/\sheight="([\d.]+)(px)?"/), vb = root.match(/viewBox="([^"]+)"/);
+    if (!(w && h && vb)) return false;
+    const v = vb[1].trim().split(/[\s,]+/).map(Number);
+    return Math.abs((+w[1] / +h[1]) / (v[2] / v[3]) - 1) > 0.2;
+  };
   for (const c of codes) {
     // a carrier with art but no lettering pair is decided for both grounds
-    if (!WM[c]) assert.ok(MG[c], c + ': art on file but no MG_LOGO_FILES entry, so the phone header cannot know which file reads on its ground');
+    if (!WM[c] && LOCAL[c]) assert.ok(MG[c] || PAIRS[c], c + ': art on file but no MG_LOGO_FILES entry, so the phone header cannot know which file reads on its ground');
     const d = pick(c, true), l = pick(c, false);
     if (d && !reads(d, DARK_HDR)) bad.push(c + ' on the dark header: ' + d);
     if (l && whiteOnly(l)) bad.push(c + ' on the light header is white lettering: ' + l);
+    for (const u of [d, l]) if (u && frameOff(u)) bad.push(c + ': ' + u + ' is framed as another shape than its drawing, and draws small in the header');
+    // a carrier the TV banner or the Operated-by caption draws in lettering
+    // is drawn on the phone too, on both grounds, never its name typed in
+    // its place (Calm Air, Pascan and Perimeter were, 2026-10-18); Qantas,
+    // with no white file, is the one MG_LOGO_FILES leaves to its name
+    if ((PAIRS[c] || BANNER[0][c] || BANNER[1][c]) && !(MG[c] && (MG[c].dark === null || MG[c].light === null))) {
+      if (!d) bad.push(c + ' on the dark header is its name, but its lettering is on file');
+      if (!l) bad.push(c + ' on the light header is its name, but its lettering is on file');
+    }
   }
   assert.deepEqual(bad, [], 'the phone gate\'s header logo does not read on its ground:\n' + bad.join('\n'));
   // the case it was found on
   assert.equal(pick('PD', true), '/logos/airlines/canadian/porter-wordmark-light.svg?v=t');
   // (and the light header its brand-colour lettering, as the board's light rows)
   assert.equal(pick('PD', false), '/logos/airlines/canadian/porter-wordmark-color.svg?v=t');
+  // the northern carriers: the Operated-by caption's own pair (#991)
+  assert.equal(pick('MO', true), '/logos/airlines/canadian-regional/calmair-wordmark-light.svg');
+  assert.equal(pick('BQ', true), '/logos/airlines/canadian-regional/pascan-wordmark-light.svg');
+  assert.equal(pick('YP', true), '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg');
+  assert.equal(pick('YP', false), '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg');
+  // (its colour twin: the white lettering's own four paths and canvas, in its colours)
+  const dOf = (f) => [...fs.readFileSync(path.join(FC, f), 'utf8').matchAll(/\sd="([^"]+)"/g)].map((m) => m[1]);
+  const vbOf = (f) => (fs.readFileSync(path.join(FC, f), 'utf8').match(/viewBox="([^"]+)"/) || [])[1];
+  const twin = '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg', white = '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg';
+  assert.deepEqual(dOf(twin), dOf(white));
+  assert.deepEqual(dOf(twin), dOf('/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg'));
+  assert.equal(vbOf(twin), vbOf(white));
+  assert.deepEqual(dOf('/logos/airlines/canadian-regional/firstair-logo-cropped.svg'), dOf('/logos/airlines/canadian-regional/firstair.svg'));
+  // a carrier named by its ICAO code is the carrier it names
+  assert.equal(pick('BAW', true), pick('BA', true));
+  assert.equal(pick('FLE', false), pick('F8', false));
+  // and Qantas, with no white file, is still its name on the dark header
+  assert.equal(pick('QF', true), '');
 });

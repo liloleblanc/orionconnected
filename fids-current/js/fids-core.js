@@ -3970,15 +3970,47 @@ function _wxDayOver(d, body, ic) {
   var up = (br.top - ir.top) / k;
   return { down: down, up: up };
 }
+// A day panel's weather words, line by line: each language on its own line
+// (.wxc-l1, .wxc-l2: _wxPairS), or the words alone.
+function _wxDayLines(cond) {
+  if (!cond) return [];
+  var ls = cond.querySelectorAll('.wxc-l1, .wxc-l2, .wxc-l3');
+  return ls.length ? [].slice.call(ls) : [cond];
+}
+// The size the board's own fit left on a line. The guard rule for the
+// weather words (FIDS_FIT_RULES) writes a long line's size on the line
+// itself, to keep it to one line ('Starker Schneefall' 15.5px beside lines
+// of 18.5px); what _wxDayRoom writes there itself is not counted, so its own
+// write never reads as a change and the row is not measured again for it.
+function _wxLineFs(ln) {
+  var v = ln.style.getPropertyValue('font-size');
+  return (ln.__wxdOwn && v === ln.__wxdOwn) ? (ln.__wxdBase || '') : v;
+}
+// What _wxDayRoom wrote on a line, taken back: the board's own size put back
+// where it had one. A size the board's fit has written since is its own, and
+// stays.
+function _wxLineUndo(ln) {
+  if (!ln.__wxdOwn) return;
+  if (ln.style.getPropertyValue('font-size') === ln.__wxdOwn) {
+    if (ln.__wxdBase) ln.style.setProperty('font-size', ln.__wxdBase, 'important');
+    else ln.style.removeProperty('font-size');
+  }
+  ln.__wxdOwn = ''; ln.__wxdBase = '';
+}
 function _wxDayRoom(scr) {
   var days = scr.querySelectorAll('.wxc-day2');
   // 2026-10-18 — the words' size is decided here too (below), so a row
-  // measured again starts from the stylesheet's size, the five together;
-  // a row already settled at this size, in these words, is left as it is
+  // measured again starts from the board's own sizes, the five together;
+  // a row already settled at this size, in these words, is left as it is.
+  // The key carries the sizes the board's fit left on the words' lines: the
+  // card is first drawn before that fit has brought a long line down to one
+  // line, and keyed on the words alone the row kept the icon it was given
+  // for the longer lines all visit (de+pt at 1680: 111px where 128 fits).
   var _sk = '';
   for (var s0 = 0; s0 < days.length; s0++) {
     var b0 = days[s0].querySelector('.wxc-dbody');
-    _sk += '#' + days[s0].clientHeight + 'x' + days[s0].clientWidth + '|' + ((b0 && b0.textContent) || '').replace(/\s+/g, ' ');
+    _sk += '#' + days[s0].clientHeight + 'x' + days[s0].clientWidth + '|' + ((b0 && b0.textContent) || '').replace(/\s+/g, ' ')
+      + '|' + _wxDayLines(days[s0].querySelector('.wxc-dcond')).map(_wxLineFs).join(',');
   }
   _sk += '|' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '|' + (_fxFontsEpoch || 0);
   if (scr.__wxdRowKey === _sk && scr.__wxdDone) return;
@@ -3987,8 +4019,7 @@ function _wxDayRoom(scr) {
     scr.__wxdRowKey = _sk;
     for (var s1 = 0; s1 < days.length; s1++) {
       days[s1].__wxdKey = '';
-      var c1 = days[s1].querySelector('.wxc-dcond');
-      if (c1) c1.style.removeProperty('font-size');
+      _wxDayLines(days[s1].querySelector('.wxc-dcond')).forEach(_wxLineUndo);
     }
   }
   for (var i = 0; i < days.length; i++) {
@@ -4028,8 +4059,13 @@ function _wxDayRoom(scr) {
   }
   // 2026-10-18 — and where the icon has given all it can and a panel's words still
   // run past its foot, the five conditions come down together, one size for
-  // the row, never under the board's floor: smaller, never cut.
-  var conds = [], over = function () {
+  // the row, never under the board's floor: smaller, never cut. The size is
+  // set on each LINE, where the board's own fit sets it (a size on the
+  // condition's box does not reach a line that carries its own), and a line
+  // that fit already holds smaller keeps its smaller size (it was brought
+  // down to stay on one line; set larger it would wrap again). The floor is
+  // that fit's own (fidsFitFloor at the card's scale), so it keeps the size.
+  var lines = [], over = function () {
     for (var v = 0; v < days.length; v++) {
       var dv = days[v], bv = dv.querySelector('.wxc-dbody');
       var iv = bv && bv.querySelector(':scope > .wxanim-host, :scope > img.wxanim');
@@ -4037,11 +4073,21 @@ function _wxDayRoom(scr) {
     }
     return false;
   };
-  for (var c = 0; c < days.length; c++) { var cc = days[c].querySelector('.wxc-dcond'); if (cc) conds.push(cc); }
-  if (conds.length && over()) {
-    var fs0 = parseFloat(getComputedStyle(conds[0]).fontSize) || 0, flo = fidsFitFloor();
+  for (var c = 0; c < days.length; c++) lines = lines.concat(_wxDayLines(days[c].querySelector('.wxc-dcond')));
+  if (lines.length && over()) {
+    var flo = fidsFitFloor() / _fxScale(lines[0]);
+    var bases = lines.map(function (ln) { return parseFloat(getComputedStyle(ln).fontSize) || 0; });
+    var fs0 = Math.max.apply(null, bases);
+    for (var u0 = 0; u0 < lines.length; u0++) {
+      if (!lines[u0].__wxdOwn) lines[u0].__wxdBase = lines[u0].style.getPropertyValue('font-size');
+    }
     var setFs = function (px) {
-      for (var u = 0; u < conds.length; u++) conds[u].style.setProperty('font-size', px + 'px', 'important');
+      for (var u = 0; u < lines.length; u++) {
+        var ln = lines[u], fv = Math.min(px, bases[u]);
+        if (!(fv > 0)) continue;
+        ln.style.setProperty('font-size', fv + 'px', 'important');
+        ln.__wxdOwn = ln.style.getPropertyValue('font-size');
+      }
       return !over();
     };
     if (fs0 > flo) setFs(_fxSearch(flo, fs0, setFs) || flo);
@@ -12579,14 +12625,35 @@ var MG_LOGO_FILES = {
   'WR': { dark: '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', light: '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' },
   // Qantas: its one file is drawn in dark grey for a light ground, so on the
   // dark header its name is written in white instead
-  'QF': { dark: null, light: '/logos/airlines/asian-other/qantas.png' }
+  'QF': { dark: null, light: '/logos/airlines/asian-other/qantas.png' },
+  // Perimeter and First Air: their colour files (Perimeter_Aviation_Logo.svg,
+  // firstair.svg) are drawn in a 1200 x 800 frame around a far wider drawing,
+  // so in the header's 240 x 64 box they came out at under half its height.
+  // The same drawings on frames that fit them: Perimeter's on its white
+  // lettering's own canvas (the same four paths), First Air's lockup on its
+  // own viewBox. Their white lettering on the dark header, as the caption's.
+  'YP':  { dark: '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg', light: '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg' },
+  'PAG': { dark: '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg', light: '/logos/airlines/canadian-regional/perimeter-wordmark-color.svg' },
+  '7F':  { dark: '/logos/airlines/canadian-regional/firstair-wordmark-light.svg', light: '/logos/airlines/canadian-regional/firstair-logo-cropped.svg' }
 };
-function _mgHeaderLogoSrc(code, dark) {
+// And a carrier with neither (Calm Air, Pascan, Mesa, Horizon, GoJet and the
+// other regional operators, and the ICAO twins: CAV, PSC, AIE, ENY, PVL...)
+// takes the pair the Operated-by caption draws for it
+// (OPBY_WORDMARKS_THEMED: its white lettering for a dark ground, its own
+// colours for a light one), so its lettering is drawn rather than its name
+// typed in white. A feed that names the carrier by its ICAO code (BAW, FLE:
+// the TV banner draws both) is read as the carrier it names
+// (CALLSIGN_TO_IATA), where the code itself finds nothing.
+function _mgHeaderLogoSrc(code, dark, _tw) {
   code = String(code || '').trim().toUpperCase();
   var base = (typeof IATA_TO_WORDMARK !== 'undefined') ? IATA_TO_WORDMARK[code] : '';
   if (base) return wordmarkSrc(base, dark ? 'light' : 'dark');
   var f = MG_LOGO_FILES[code];
-  return (f && f[dark ? 'dark' : 'light']) || '';
+  if (f) return f[dark ? 'dark' : 'light'] || '';
+  var p = (typeof OPBY_WORDMARKS_THEMED !== 'undefined') ? OPBY_WORDMARKS_THEMED[code] : null;
+  if (p) return p[dark ? 'onDark' : 'onLight'] || '';
+  var tw = (!_tw && code.length === 3 && typeof CALLSIGN_TO_IATA !== 'undefined') ? CALLSIGN_TO_IATA[code] : '';
+  return (tw && tw !== code) ? _mgHeaderLogoSrc(tw, dark, true) : '';
 }
 function _mgHeaderLogo(code, name, dark, ink, css) {
   var nm = fidsEscHtml(String(name || code || ''));

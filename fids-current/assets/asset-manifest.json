@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2786,
+    "total": 2788,
     "by_category": {
       "ad": 13,
-      "airline": 1174,
+      "airline": 1176,
       "background": 193,
       "brand": 5,
       "hotel": 888,
@@ -3031,6 +3031,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian-regional/firstair-logo-cropped.svg",
+      "file": "firstair-logo-cropped.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "firstair logo cropped",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian-regional/firstair-monochrome-black.svg",
       "file": "firstair-monochrome-black.svg",
       "category": "airline",
@@ -3499,6 +3510,17 @@
       "subcategory": "canadian-regional",
       "group": "Airlines — Canadian regional",
       "name": "perimeter aviation logo monochrome white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/perimeter-wordmark-color.svg",
+      "file": "perimeter-wordmark-color.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "perimeter wordmark color",
       "iata": "",
       "country": "",
       "ext": "svg"
