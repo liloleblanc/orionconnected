@@ -41,6 +41,9 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/gate-date-context.js',
   'fids-current/js/fids-sun.js',
   'fids-current/js/boarding-sequence.js',
+  // the Earth floor under the departures and arrivals: names from the rows,
+  // times from the store, no words of its own
+  'fids-current/js/fids-earth.js',
   'fids-current/js/gate-visual-integrity.js',
   'fids-current/js/feed-router.js',
   'fids-current/js/gids-layout.js',
@@ -394,7 +397,7 @@ const NATIVE_WORDS = {
   fr: {
     site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
     programme: 'code: the French word', image: 'code: the French word', unique: 'code: the French word',
-    dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word', centre: 'code: the French word (centre-ville)',
+    dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word',
     taxi: 'code: the French word'
   },
   de: { taxi: 'code: the German word', 'check-in': 'code: the word German airports use' },

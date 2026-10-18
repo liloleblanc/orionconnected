@@ -45,6 +45,8 @@
                                    the next switch after ms, or null
      fidsSun.subscribe(iata, fn) → calls fn(isDay, info) now and again at every
                                    switch; returns the function that stops it
+     fidsSun.subsolar(ms)        → { lat, lon }: where the sun is overhead
+                                   (also FidsSun.subsolar)
      `iata` may also be { lat, lon, tz } or [lat, lon]. ms defaults to now.
 
    SCREENS LEFT RUNNING FOR WEEKS
@@ -121,6 +123,17 @@
   function hourAngle(ms, lon, eqTime) {
     var utcMin = (((ms % DAY) + DAY) % DAY) / MIN;
     return wrap180((utcMin + eqTime + 4 * lon) / 4 - 180);
+  }
+
+  // The point on Earth with the sun straight overhead at ms (degrees): the
+  // latitude is the declination, the longitude where the hour angle is zero.
+  // The Earth floor under the departures and arrivals (fids-earth.js) lights
+  // its planet from this point, so its day and night line is the one this
+  // engine switches the board on: altitude() below is the same angle.
+  function subsolar(ms) {
+    var s = solar(ms);
+    var utcMin = (((ms % DAY) + DAY) % DAY) / MIN;
+    return { lat: s.decl * DEG, lon: wrap180((720 - utcMin - s.eqTime) / 4) };
   }
 
   // Geometric altitude of the sun's centre, degrees.
@@ -340,6 +353,7 @@
       next: function (where, ms) { var p = placeFor(where); return p ? nextSwitch(p, at(ms)) : null; },
       events: function (where, from, to) { var p = placeFor(where); return p ? eventsBetween(p, Number(from), Number(to)) : null; },
       altitude: function (where, ms) { var p = placeFor(where); return p ? p.alt(at(ms)) : null; },
+      subsolar: function (ms) { return subsolar(at(ms)); },
       subscribe: subscribe,
       bindDocument: bindDocument,
       check: function (why) { checkAll(why || 'manual'); },
@@ -578,6 +592,7 @@
     create: create,
     solar: solar,
     altitude: altitude,
+    subsolar: subsolar,
     parseOverride: parseOverride,
     browserEnv: browserEnv
   };

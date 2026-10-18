@@ -22730,7 +22730,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24059') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24060') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
@@ -26040,6 +26040,73 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt > .g8-who-blk { grid-area: 1 / 1 !important; margin-top: 0 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt:not(.alt-b) > .g8-who-blk ~ .g8-who-blk,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt.alt-b > .g8-who-blk:first-child { visibility: hidden !important; }
+
+/* ══ EARTH, NOW — THE PLANET UNDER THE DEPARTURES AND ARRIVALS ══════════════
+   js/fids-earth.js draws the space under the flight rows as the Earth from
+   orbit, this minute (NASA pictures, our own copy under /earth/v1/). This
+   block is its stylesheet half.
+
+   THE OLD BACKDROP, BEHIND THE SWITCH. The Moncton skyline (v23146, YQM) and
+   the world-network picture (every themed board but YQM and MCO) are not
+   deleted: they are switched off only while html carries data-fids-floor=earth,
+   which the module sets once a planet has painted. Take the attribute away
+   (EARTH_FLOOR_ON = false, ?floor=classic, the airport Customize choice
+   Classic, or a floor whose pictures fail) and the board looks exactly as
+   before. MCO keeps its own backdrop and its row pattern; the belts
+   (.bidsv2-screen) are not touched.
+
+   THE LAYER sits under the rows at z-index -1 inside the content area, which
+   already contains its layout, so it moves nothing. Its names take the board
+   own font and weight. Nothing here moves: the floor stays hidden until its
+   planet has painted, and its one fade-in (2.4 s, once, when it first
+   appears) is run by the module, which skips it on a screen asking for
+   reduced motion. No quote marks anywhere in this block
+   (tests/earth-floor-wiring.test.js). */
+html[data-fids-floor=earth] body[data-fids-ap=YQM]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_),
+html[data-fids-floor=earth] body[data-fids-theme]:not([data-fids-ap=MCO]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  background-image: none !important;
+}
+#fidsBoard > .content-area > #ocFloor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  /* the layout places every name from its left end: an Arabic board keeps
+     that reading (each name still runs right to left inside itself) */
+  direction: ltr;
+}
+/* each planet and its names stand at the foot of the layer at their own size
+   (the module sets it): a floor kept up while the next is built is never
+   stretched: under a page with more rows its top edge is cut and turns
+   into the ground, under one with fewer it stands under its own sky */
+#ocFloor > canvas,
+#ocFloor > svg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#ocFloor:not(.ready) > canvas,
+#ocFloor:not(.ready) > svg {
+  visibility: hidden;
+}
+#ocFloor text {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: .01em;
+  paint-order: stroke;
+  stroke-linejoin: round;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 800px) {
+  #ocFloor { display: none; }
+}
 
 /* ══ v24014 — THE WEATHER CARD IN THE AIRLINE'S COLOURS, AT TWICE THE SIZE ════
    The chosen design for the three screens: the near-black ground of the calm

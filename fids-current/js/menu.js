@@ -2629,7 +2629,8 @@ function _cuSyncNote(kind) {
     failed: ['#f87171', '⚠ Cloud save failed — the look is on this device only for now. Check the connection or sign-in and try again.'],
     // v24042 — the save went through but the cloud did not keep the weather
     // icons' look it was sent (see _cuCloudPush)
-    wxDropped: ['#f87171', '⚠ Saved to the airport cloud, except the weather icons: the cloud server does not know this look yet and did not keep it. Every screen, this one too, shows Day & night (the default) until the server is updated.']
+    wxDropped: ['#f87171', '⚠ Saved to the airport cloud, except the weather icons: the cloud server does not know this look yet and did not keep it. Every screen, this one too, shows Day & night (the default) until the server is updated.'],
+    floorDropped: ['#f87171', '⚠ Saved to the airport cloud, except the bottom of the board: the cloud server does not know this choice yet and did not keep it. Every screen, this one too, shows Earth, now (the default) until the server is updated.']
   }[kind];
   if (!m) { el.style.display = 'none'; return; }
   el.style.color = m[0];
@@ -2648,6 +2649,8 @@ function _cuCloudPush(code, prefs) {
       ['theme', 'customColors', 'font', 'logoPosition', 'logoSize',
        'hideAirlinePrefix', 'hideWeather', 'airlineStyle', 'displayMode', 'wxIcons']
         .forEach(function (k) { if (prefs[k] !== undefined) body[k] = prefs[k]; });
+      // the bottom of the departures and arrivals boards: '' (Earth, now) | 'classic'
+      if (prefs.floor !== undefined) body.floor = prefs.floor;
       // A custom theme saved as a preset ID must travel as its colours.
       if (prefs.theme === 'custom' && !body.customColors && prefs.themePresetId) {
         try {
@@ -2697,6 +2700,17 @@ function _cuCloudPush(code, prefs) {
               if (_wiSel && _wiSel.value === body.wxIcons) _wiSel.value = '';
             } catch (e) {}
             try { console.warn('[FIDS Customize] The cloud did not keep wxIcons "' + body.wxIcons + '" for ' + code); } catch (e) {}
+            return;
+          }
+          // The bottom of the board, the same way: a cloud server older than
+          // the field drops it, so say so and leave this device's stamp as it is.
+          if (body.floor !== undefined && (out.config.floor || '') !== body.floor) {
+            _cuSyncNote('floorDropped');
+            try {
+              var _flSel = document.getElementById('cuFloor');
+              if (_flSel && _flSel.value === body.floor) _flSel.value = '';
+            } catch (e) {}
+            try { console.warn('[FIDS Customize] The cloud did not keep floor "' + body.floor + '" for ' + code); } catch (e) {}
             return;
           }
           _cuSyncNote('saved');
@@ -2793,6 +2807,11 @@ function _cuReadForm() {
   var wi = document.getElementById('cuWxIcons');
   if (wi && wi.dataset.painted === '1') p.wxIcons = wi.value;
   else { var _pv3 = _cuLoad(); if (_pv3 && _pv3.wxIcons !== undefined) p.wxIcons = _pv3.wxIcons; }
+  // The bottom of the board: '' is nothing chosen (Earth, now); 'classic'.
+  // Unpainted → carry forward.
+  var fl = document.getElementById('cuFloor');
+  if (fl && fl.dataset.painted === '1') p.floor = fl.value;
+  else { var _pv4 = _cuLoad(); if (_pv4 && _pv4.floor !== undefined) p.floor = _pv4.floor; }
   // Font selection (v218.6+)
   var fontSel = document.getElementById('cuFontSelect');
   if (fontSel && fontSel.value) p.font = fontSel.value;
@@ -2848,6 +2867,21 @@ function _cuPaintForm(prefs) {
       } catch (e) { _wiv = ''; }
     }
     wi.value = _wiv || ''; if (wi.selectedIndex < 0) wi.value = ''; wi.dataset.painted = '1';
+  }
+  // The bottom of the board: this device's choice when it holds one, otherwise
+  // the airport's (the layers the board reads), so the next save of anything
+  // else never resets the airport to the default.
+  var fl = document.getElementById('cuFloor');
+  if (fl) {
+    var _flv = prefs.floor;
+    if (_flv === undefined || _flv === null || _flv === '') {
+      try {
+        var _flCfg = (typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null;
+        _flv = (_flCfg && _flCfg.floor) || '';
+      } catch (e) { _flv = ''; }
+    }
+    if (_flv === 'earth') _flv = '';
+    fl.value = _flv || ''; if (fl.selectedIndex < 0) fl.value = ''; fl.dataset.painted = '1';
   }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');

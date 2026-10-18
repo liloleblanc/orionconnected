@@ -16909,7 +16909,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24059" src="/textures/gate-sky-shelf.mp4?v=24059" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24060" src="/textures/gate-sky-shelf.mp4?v=24060" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16953,7 +16953,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24059" src="/textures/gate-sky-shelf.mp4?v=24059" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24060" src="/textures/gate-sky-shelf.mp4?v=24060" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -28022,15 +28022,16 @@ const AP = {
   // (a name is data, decision D2, and this is the table of airport names);
   // `subKey` is the store's entry for an airport named by a description
   // ('International'), which each board language writes its own way. The
-  // entries below are here for that name only: no time zone, as before.
+  // entries below are here for that name only; Linate, Daxing and Belfast
+  // City also carry their zone, for the Earth floor's local times.
   DAL:{ name:'Dallas Love Field',                                   sub:'Love Field' },
   CIA:{ name:'Rome Ciampino Airport',                               sub:'Ciampino' },
-  LIN:{ name:'Milan Linate Airport',                                sub:'Linate' },
+  LIN:{ name:'Milan Linate Airport',                                sub:'Linate', tz:'Europe/Rome' },
   BMA:{ name:'Stockholm Bromma Airport',                            sub:'Bromma' },
   GMP:{ name:'Seoul Gimpo International Airport',                   sub:'Gimpo' },
   ITM:{ name:'Osaka Itami International Airport',                   sub:'Itami' },
   DMK:{ name:'Bangkok Don Mueang International Airport',            sub:'Don Mueang' },
-  PKX:{ name:'Beijing Daxing International Airport',                sub:'Daxing' },
+  PKX:{ name:'Beijing Daxing International Airport',                sub:'Daxing', tz:'Asia/Shanghai' },
   SHA:{ name:'Shanghai Hongqiao International Airport',             sub:'Hongqiao' },
   AEP:{ name:'Buenos Aires Aeroparque Jorge Newbery',               sub:'Aeroparque' },
   GIG:{ name:'Rio de Janeiro Galeão International Airport',         sub:'Galeão' },
@@ -28038,10 +28039,91 @@ const AP = {
   CGH:{ name:'São Paulo Congonhas Airport',                         sub:'Congonhas' },
   SAW:{ name:'Istanbul Sabiha Gökçen International Airport',        sub:'Sabiha Gökçen' },
   BFS:{ name:'Belfast International Airport',                       subKey:'apIntl' },
-  BHD:{ name:'George Best Belfast City Airport',                    sub:'City' },
+  BHD:{ name:'George Best Belfast City Airport',                    sub:'City', tz:'Europe/London' },
   DWC:{ name:'Dubai Al Maktoum International Airport',              sub:'Al Maktoum' },
   BFI:{ name:'Seattle Boeing Field (King County International Airport)', sub:'Boeing Field' },
   LBG:{ name:'Paris Le Bourget Airport',                            sub:'Le Bourget' },
+  // ── THE EARTH FLOOR'S PLACES: 73 DESTINATIONS THAT HAD NO ZONE ──────────
+  // The planet under the departures and arrivals (js/fids-earth.js) prints
+  // the time it is in each place it names, and reads the zone from here
+  // only: a place with no zone gets no time, never a guess. These 73 were on
+  // the live lists of YQM, YUL, YYZ, LHR and HBA with no AP entry at all, so
+  // none of them overrides an existing value. Each is the airport's own
+  // name and the zone the airport is in (tests/ap-timezones.test.js checks
+  // every zone and that no two airports fold to one name).
+  YYY:{ name:'Mont-Joli Airport',                                 tz:'America/Toronto' },
+  YGR:{ name:'Îles-de-la-Madeleine Airport',                      tz:'America/Halifax' },
+  YPX:{ name:'Puvirnituq Airport',                                tz:'America/Toronto' },
+  YBG:{ name:'Saguenay-Bagotville Airport',                       tz:'America/Toronto' },
+  YVO:{ name:"Val-d'Or Airport",                                  tz:'America/Toronto' },
+  YWK:{ name:'Wabush Airport',                                    tz:'America/Goose_Bay' },
+  YAM:{ name:'Sault Ste. Marie Airport',                          tz:'America/Toronto' },
+  YSB:{ name:'Greater Sudbury Airport',                           tz:'America/Toronto' },
+  YXU:{ name:'London International Airport (Ontario)',            tz:'America/Toronto' },
+  YTS:{ name:'Timmins Victor M. Power Airport',                   tz:'America/Toronto' },
+  YQG:{ name:'Windsor International Airport',                     tz:'America/Toronto' },
+  CLE:{ name:'Cleveland Hopkins International Airport',           tz:'America/New_York' },
+  CVG:{ name:'Cincinnati/Northern Kentucky International Airport', tz:'America/New_York' },
+  CMH:{ name:'John Glenn Columbus International Airport',         tz:'America/New_York' },
+  IND:{ name:'Indianapolis International Airport',                tz:'America/Indiana/Indianapolis' },
+  STL:{ name:'St. Louis Lambert International Airport',           tz:'America/Chicago' },
+  BNA:{ name:'Nashville International Airport',                   tz:'America/Chicago' },
+  SAT:{ name:'San Antonio International Airport',                 tz:'America/Chicago' },
+  MEX:{ name:'Mexico City International Airport',                 tz:'America/Mexico_City' },
+  GUA:{ name:'La Aurora International Airport',                   tz:'America/Guatemala' },
+  SAL:{ name:'Monseñor Óscar Arnulfo Romero International Airport', tz:'America/El_Salvador' },
+  SJO:{ name:'Juan Santamaría International Airport',             tz:'America/Costa_Rica' },
+  KIN:{ name:'Norman Manley International Airport',               tz:'America/Jamaica' },
+  POS:{ name:'Piarco International Airport',                      tz:'America/Port_of_Spain' },
+  SCL:{ name:'Arturo Merino Benítez International Airport',       tz:'America/Santiago' },
+  PDL:{ name:'João Paulo II Airport',                             tz:'Atlantic/Azores' },
+  ABZ:{ name:'Aberdeen International Airport',                    tz:'Europe/London' },
+  LDY:{ name:'City of Derry Airport',                             tz:'Europe/London' },
+  DND:{ name:'Dundee Airport',                                    tz:'Europe/London' },
+  GCI:{ name:'Guernsey Airport',                                  tz:'Europe/Guernsey' },
+  JER:{ name:'Jersey Airport',                                    tz:'Europe/Jersey' },
+  ORK:{ name:'Cork Airport',                                      tz:'Europe/Dublin' },
+  SNN:{ name:'Shannon Airport',                                   tz:'Europe/Dublin' },
+  NTE:{ name:'Nantes Atlantique Airport',                         tz:'Europe/Paris' },
+  GVA:{ name:'Geneva Airport',                                    tz:'Europe/Zurich' },
+  BSL:{ name:'EuroAirport Basel Mulhouse Freiburg',               tz:'Europe/Zurich' },
+  DUS:{ name:'Düsseldorf Airport',                                tz:'Europe/Berlin' },
+  HAJ:{ name:'Hannover Airport',                                  tz:'Europe/Berlin' },
+  HAM:{ name:'Hamburg Airport',                                   tz:'Europe/Berlin' },
+  BLL:{ name:'Billund Airport',                                   tz:'Europe/Copenhagen' },
+  FLR:{ name:'Florence Peretola Airport',                         tz:'Europe/Rome' },
+  BLQ:{ name:'Bologna Guglielmo Marconi Airport',                 tz:'Europe/Rome' },
+  PRG:{ name:'Václav Havel Airport Prague',                       tz:'Europe/Prague' },
+  BUD:{ name:'Budapest Ferenc Liszt International Airport',       tz:'Europe/Budapest' },
+  ZAG:{ name:'Zagreb Franjo Tuđman Airport',                      tz:'Europe/Zagreb' },
+  SOF:{ name:'Sofia Airport',                                     tz:'Europe/Sofia' },
+  LCA:{ name:'Larnaca International Airport',                     tz:'Asia/Nicosia' },
+  CMN:{ name:'Mohammed V International Airport',                  tz:'Africa/Casablanca' },
+  ALG:{ name:'Houari Boumediene Airport',                         tz:'Africa/Algiers' },
+  TUN:{ name:'Tunis–Carthage International Airport',              tz:'Africa/Tunis' },
+  CAI:{ name:'Cairo International Airport',                       tz:'Africa/Cairo' },
+  LXR:{ name:'Luxor International Airport',                       tz:'Africa/Cairo' },
+  ADD:{ name:'Addis Ababa Bole International Airport',            tz:'Africa/Addis_Ababa' },
+  NBO:{ name:'Jomo Kenyatta International Airport',               tz:'Africa/Nairobi' },
+  KGL:{ name:'Kigali International Airport',                      tz:'Africa/Kigali' },
+  JNB:{ name:'O. R. Tambo International Airport',                 tz:'Africa/Johannesburg' },
+  CPT:{ name:'Cape Town International Airport',                   tz:'Africa/Johannesburg' },
+  ABV:{ name:'Nnamdi Azikiwe International Airport',              tz:'Africa/Lagos' },
+  LOS:{ name:'Murtala Muhammed International Airport',            tz:'Africa/Lagos' },
+  AMM:{ name:'Queen Alia International Airport',                  tz:'Asia/Amman' },
+  BAH:{ name:'Bahrain International Airport',                     tz:'Asia/Bahrain' },
+  DMM:{ name:'King Fahd International Airport',                   tz:'Asia/Riyadh' },
+  MCT:{ name:'Muscat International Airport',                      tz:'Asia/Muscat' },
+  ISB:{ name:'Islamabad International Airport',                   tz:'Asia/Karachi' },
+  BLR:{ name:'Kempegowda International Airport Bengaluru',        tz:'Asia/Kolkata' },
+  CMB:{ name:'Bandaranaike International Airport',                tz:'Asia/Colombo' },
+  HAN:{ name:'Noi Bai International Airport',                     tz:'Asia/Ho_Chi_Minh' },
+  CAN:{ name:'Guangzhou Baiyun International Airport',            tz:'Asia/Shanghai' },
+  TAO:{ name:'Qingdao Jiaodong International Airport',            tz:'Asia/Shanghai' },
+  TPE:{ name:'Taiwan Taoyuan International Airport',              tz:'Asia/Taipei' },
+  BNE:{ name:'Brisbane Airport',                                  tz:'Australia/Brisbane' },
+  CBR:{ name:'Canberra Airport',                                  tz:'Australia/Sydney' },
+  LST:{ name:'Launceston Airport',                                tz:'Australia/Hobart' },
 };
 // v23265 — EXPORTED for sibling pages in the same origin. AP is declared with
 // `const`, which creates a script-scope binding and NOT a window property, so
@@ -29875,7 +29957,9 @@ const COORDS = {
   YFS:[61.76,-121.24], YHY:[60.84,-115.78], YDA:[64.04,-139.13],
   YEV:[68.30,-133.48], YOJ:[58.62,-117.16], YPE:[56.23,-117.45],
   YKZ:[43.86,-79.37], YHU:[45.52,-73.42],
-  YBR:[49.91,-99.95], YQU:[50.27,-108.76], YMJ:[50.33,-105.56],
+  // YQU is Grande Prairie, Alberta (it was written as 50.27,-108.76, a field in
+  // Saskatchewan; GATE_AP and airport-coords.js carry the same fix)
+  YBR:[49.91,-99.95], YQU:[55.18,-118.88], YMJ:[50.33,-105.56],
   YLL:[53.31,-110.07], YOC:[67.57,-139.84], YEK:[61.09,-94.07],
   YPA:[53.21,-105.67], YQG:[42.28,-82.96],
   YWK:[52.92,-66.86], YTH:[55.80,-97.86], YRT:[62.81,-92.12],
@@ -33954,7 +34038,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24059';
+var FIDS_BUILD_TAG = 'v24060';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41103,6 +41187,7 @@ function applyAirportConfigToBoard(iata) {
       var _cloudOwned = ['theme', 'themePresetId', 'customColors', 'font',
         'logoPosition', 'logoSize', 'hideAirlinePrefix', 'hideWeather',
         'airlineStyle', 'displayMode', 'wxIcons'];
+      _cloudOwned.push('floor');   // the bottom of the departures and arrivals (Earth, now | Classic)
       var _shed = false;
       for (var _coI = 0; _coI < _cloudOwned.length; _coI++) {
         if (_userCfg[_cloudOwned[_coI]] !== undefined) { delete _userCfg[_cloudOwned[_coI]]; _shed = true; }
@@ -41581,6 +41666,16 @@ function applyAirportConfigToBoard(iata) {
     if (_WX_ICON_STYLES.indexOf(_wxi) < 0) _wxi = _WX_ICON_STYLES[0];
     document.documentElement.setAttribute('data-fids-wx-icons', _wxi);
   } catch (eWxi) {}
+  // The bottom of the departures and arrivals boards (Customize: Bottom of
+  // the board): '' (nothing chosen) and 'earth' draw Earth, now
+  // (js/fids-earth.js); 'classic' keeps the earlier backdrop. Read with
+  // _pref like the weather icons, so a device's '' never hides the airport's
+  // choice. ?floor= overrides it for review (the module reads it too).
+  try {
+    var _flUrl = new URLSearchParams(location.search).get('floor');
+    var _fl = _flUrl !== null ? _flUrl : _pref('floor');
+    document.documentElement.setAttribute('data-fids-floor-pref', _fl === 'classic' ? 'classic' : 'earth');
+  } catch (eFl) {}
   var _aStyle = _toggleVal('airlineStyle');
   if (_aStyle && _aStyle !== 'full') {
     document.body.dataset.fidsAirlineStyle = _aStyle;
@@ -44135,7 +44230,7 @@ var gateMap=null;
 // (Ballina) on Norfolk Island, TAO on Qingdao's closed airport and GOT 18 km
 // west of Landvetter. They now match COORDS, and tests/day-night-engine.test.js
 // fails if the two tables disagree again.
-var GATE_AP={GEO:[6.50,-58.25],YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YGR:[47.42,-61.78],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXX:[49.03,-122.36],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[53.63,-77.70],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[50.27,-108.76],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],MCI:[39.30,-94.71],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.36,120.09],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[43.43,-3.82],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,12.28],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-28.83,153.56],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
+var GATE_AP={GEO:[6.50,-58.25],YQM:[46.11,-64.68],YUL:[45.47,-73.74],YYZ:[43.68,-79.62],YTZ:[43.63,-79.40],YOW:[45.32,-75.67],YHZ:[44.88,-63.51],YQB:[46.79,-71.39],YYC:[51.12,-114.01],YVR:[49.19,-123.18],YEG:[53.31,-113.58],YWG:[49.91,-97.24],YFC:[45.87,-66.54],YSJ:[45.32,-65.89],YYT:[47.62,-52.75],YDF:[49.21,-57.39],YQX:[48.94,-54.57],YYR:[53.32,-60.43],YYY:[48.61,-68.21],YYG:[46.29,-63.12],YZV:[50.22,-66.27],YCH:[47.01,-65.45],YQY:[46.16,-60.05],YGP:[48.78,-64.48],YGR:[47.42,-61.78],YBG:[48.33,-71.00],YVO:[48.05,-77.78],YXU:[43.04,-81.15],YKF:[43.46,-80.38],YAM:[46.49,-84.51],YXJ:[56.24,-120.74],YPR:[54.29,-130.44],YXS:[53.89,-122.68],YKA:[50.70,-120.44],YLW:[49.96,-119.38],YCD:[49.05,-123.87],YYJ:[48.65,-123.43],YXX:[49.03,-122.36],YXT:[54.47,-128.58],YZP:[53.25,-131.81],YDQ:[55.74,-120.18],YXC:[49.61,-115.78],YQQ:[49.71,-124.89],YCG:[49.30,-117.63],YQR:[50.43,-104.67],YXE:[52.17,-106.70],YQT:[48.37,-89.32],YMM:[56.65,-111.22],YXY:[60.71,-135.07],YHM:[43.17,-79.93],YSB:[46.62,-80.80],YTS:[48.57,-81.38],YQL:[49.63,-112.80],YPA:[53.21,-105.67],YQG:[42.28,-82.96],YWK:[52.92,-66.86],YTH:[55.80,-97.86],YZF:[62.46,-114.44],YFB:[63.76,-68.56],YRT:[62.81,-92.12],YCB:[69.11,-105.14],YHY:[60.84,-115.78],YFS:[61.76,-121.24],YDA:[64.04,-139.13],YSM:[60.02,-111.96],YEV:[68.30,-133.48],YOJ:[58.62,-117.16],YPE:[56.23,-117.45],YBL:[49.95,-125.27],YKZ:[43.86,-79.37],YHU:[45.52,-73.42],YMT:[49.78,-74.53],YGL:[53.63,-77.70],YGW:[55.28,-77.77],YVP:[58.10,-68.43],YPX:[60.05,-77.29],YKL:[54.80,-66.81],YNA:[50.19,-61.79],YMO:[51.29,-80.61],YQI:[43.83,-66.09],YBR:[49.91,-99.95],YQU:[55.18,-118.88],YMJ:[50.33,-105.56],YLL:[53.31,-110.07],YOC:[67.57,-139.84],YEK:[61.09,-94.07],JFK:[40.64,-73.78],LAX:[33.94,-118.41],ORD:[41.97,-87.91],ATL:[33.64,-84.43],SFO:[37.62,-122.38],SEA:[47.45,-122.31],MIA:[25.80,-80.29],BOS:[42.37,-71.01],EWR:[40.69,-74.17],MCO:[28.43,-81.31],FLL:[26.07,-80.15],DEN:[39.86,-104.67],DFW:[32.90,-97.04],IAD:[38.95,-77.46],CLE:[41.41,-81.85],SBA:[34.43,-119.84],LHR:[51.47,-.45],CDG:[49.01,2.55],FRA:[50.04,8.56],DXB:[25.25,55.36],CUN:[21.04,-86.88],PUJ:[18.57,-68.36],MBJ:[18.50,-77.91],BNA:[36.13,-86.68],PHL:[39.87,-75.24],SJD:[23.15,-109.72],GDL:[20.52,-103.31],CZM:[20.52,-86.93],PVR:[20.68,-105.25],ZIH:[17.60,-101.46],HUX:[15.78,-96.26],MTY:[25.78,-100.11],TIJ:[32.54,-116.97],CLT:[35.21,-80.94],DTW:[42.21,-83.35],MSP:[44.88,-93.22],SLC:[40.79,-111.98],PHX:[33.43,-112.01],SAN:[32.73,-117.19],PDX:[45.59,-122.60],ANC:[61.17,-149.99],HNL:[21.32,-157.92],LAS:[36.08,-115.15],IAH:[29.98,-95.34],MSY:[29.99,-90.26],MCI:[39.30,-94.71],RDU:[35.88,-78.79],BUF:[42.94,-78.73],PIT:[40.49,-80.23],IND:[39.72,-86.29],CMH:[39.99,-82.89],MKE:[42.95,-87.90],STL:[38.75,-90.37],RSW:[26.54,-81.76],JAX:[30.49,-81.69],BDL:[41.94,-72.68],RIC:[37.51,-77.32],SAV:[32.13,-81.20],BHM:[33.56,-86.75],TPA:[27.98,-82.53],ABQ:[35.04,-106.61],OAK:[37.72,-122.22],SJC:[37.36,-121.93],SMF:[38.70,-121.59],ONT:[34.06,-117.60],BUR:[34.20,-118.36],AUS:[30.19,-97.67],SAT:[29.53,-98.47],OKC:[35.39,-97.60],TUL:[36.20,-95.89],OMA:[41.30,-95.89],DSM:[41.53,-93.66],RNO:[39.50,-119.77],BOI:[43.56,-116.22],GEG:[47.62,-117.53],PSP:[33.83,-116.51],SNA:[33.68,-117.87],CHS:[32.90,-80.04],SAW:[40.90,29.31],IST:[41.26,28.74],AMS:[52.31,4.76],BCN:[41.30,2.08],MAD:[40.47,-3.57],FCO:[41.80,12.25],MXP:[45.63,8.72],ZRH:[47.46,8.55],MUC:[48.35,11.79],VIE:[48.11,16.57],CPH:[55.62,12.66],ARN:[59.65,17.94],HEL:[60.32,24.96],BRU:[50.90,4.48],LIS:[38.77,-9.13],ATH:[37.94,23.94],DOH:[25.27,51.61],AUH:[24.44,54.65],DEL:[28.56,77.10],BOM:[19.09,72.87],SIN:[1.35,103.99],HKG:[22.31,113.91],NRT:[35.77,140.39],ICN:[37.46,126.44],PEK:[40.08,116.58],SYD:[-33.95,151.18],MEL:[-37.67,144.84],AKL:[-37.01,174.79],GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],SCL:[-33.39,-70.79],LIM:[-12.02,-77.11],LPB:[-16.51,-68.19],VVI:[-17.64,-63.14],CBB:[-17.42,-66.18],SRZ:[-17.81,-63.17],UYU:[-20.45,-66.85],TJA:[-21.56,-64.70],SRE:[-19.24,-65.15],POI:[-19.54,-65.72],TDD:[-14.82,-64.92],CIJ:[-11.04,-68.78],RIB:[-10.96,-66.10],GYA:[-10.82,-65.35],BVL:[-13.95,-65.46],CUZ:[-13.54,-71.94],BOG:[4.70,-74.15],PTY:[9.07,-79.38],GUA:[14.58,-90.53],SJO:[9.99,-84.21],KIN:[17.94,-76.78],HAV:[22.99,-82.41],OGG:[20.90,-156.43],KOA:[19.74,-156.05],ITO:[19.72,-155.05],LIH:[21.98,-159.34],MKK:[21.15,-157.10],LNY:[20.79,-156.95],BZN:[45.78,-111.16],MSO:[46.92,-114.09],BIL:[45.81,-108.54],FAR:[46.92,-96.82],FSD:[43.58,-96.74],RAP:[44.05,-103.06],GTF:[47.48,-111.37],HLN:[46.61,-112.00],MEM:[35.04,-89.98],MOB:[30.69,-88.24],PNS:[30.47,-87.19],SDF:[38.17,-85.74],LEX:[38.04,-84.61],ROC:[43.12,-77.67],SYR:[43.11,-76.11],ALB:[42.75,-73.80],PWM:[43.65,-70.31],BTV:[44.47,-73.15],MHT:[42.93,-71.43],PVD:[41.73,-71.43],ELP:[31.81,-106.38],TUS:[32.12,-110.94],COS:[38.81,-104.70],GJT:[39.12,-108.53],MFR:[42.37,-122.87],EUG:[44.12,-123.21],RDM:[44.25,-121.15],GUM:[13.48,144.80],SPN:[15.12,145.73],PPG:[-14.33,-170.71],TPE:[25.08,121.23],KIX:[34.43,135.24],ITM:[34.79,135.43],HND:[35.55,139.78],KUL:[2.74,101.71],BKK:[13.69,100.75],HKT:[8.11,98.31],MNL:[14.51,121.00],CGK:[-6.13,106.66],DPS:[-8.75,115.17],SGN:[10.82,106.66],HAN:[21.22,105.81],PVG:[31.14,121.81],CAN:[23.39,113.31],SHA:[31.20,121.34],TSN:[39.13,117.35],KMG:[25.10,102.93],TAO:[36.36,120.09],SZX:[22.64,113.81],XIY:[34.45,108.75],HGH:[30.23,120.43],NKG:[31.74,118.86],FOC:[25.93,119.66],XMN:[24.54,118.13],CKG:[29.72,106.64],CTU:[30.58,103.95],DLC:[38.97,121.55],SHE:[41.64,123.48],HRB:[45.62,126.25],CGO:[34.52,113.84],BAH:[26.27,50.63],KWI:[29.23,47.97],RUH:[24.96,46.69],JED:[21.68,39.16],MED:[24.55,39.71],DMM:[26.47,49.80],MCT:[23.59,58.28],SAH:[15.48,44.21],BGW:[33.26,44.23],EBL:[36.24,43.96],BSR:[30.55,47.66],TLV:[32.01,34.89],AMM:[31.72,35.99],BEY:[33.82,35.49],DAM:[33.41,36.51],ALP:[36.18,37.22],CAI:[30.11,31.41],HRG:[27.18,33.80],SSH:[27.98,34.39],LXR:[25.67,32.71],ASW:[23.96,32.82],ADD:[8.98,38.80],NBO:[-1.32,36.93],MBA:[-4.03,39.59],DAR:[-6.88,39.20],KGL:[-1.97,30.13],EBB:[0.04,32.45],JNB:[-26.13,28.24],CPT:[-33.97,18.60],DUR:[-29.61,31.12],HRE:[-17.92,31.09],GBE:[-24.55,25.92],LUN:[-15.33,28.45],MPM:[-25.92,32.57],TNR:[-18.79,47.48],RUN:[-20.89,55.51],MRU:[-20.43,57.68],SEZ:[-4.67,55.52],ZNZ:[-6.22,39.22],LAD:[-8.86,13.23],GIG:[-22.81,-43.25],BSB:[-15.87,-47.92],CGH:[-23.63,-46.66],POA:[-29.99,-51.17],REC:[-8.13,-34.92],FOR:[-3.78,-38.53],SSA:[-12.91,-38.32],BEL:[-1.38,-48.48],MAO:[-3.04,-60.05],CWB:[-25.53,-49.18],FLN:[-27.67,-48.55],VCP:[-23.01,-47.13],CCS:[10.60,-66.99],UIO:[-0.13,-78.36],GYE:[-2.16,-79.88],MDE:[6.16,-75.42],CTG:[10.44,-75.51],ADZ:[12.58,-81.71],SDQ:[18.43,-69.67],STI:[19.41,-70.60],POP:[19.76,-70.57],BGI:[13.07,-59.49],POS:[10.59,-61.34],UVF:[13.73,-60.95],GND:[12.00,-61.79],FDF:[14.59,-61.00],PTP:[16.27,-61.53],SXM:[18.04,-63.11],SDR:[43.43,-3.82],SJU:[18.44,-66.00],BQN:[18.49,-67.13],STT:[18.34,-64.97],STX:[17.70,-64.80],EIS:[18.44,-64.54],PLS:[21.77,-72.27],GCM:[19.29,-81.36],MEX:[19.44,-99.07],MID:[20.94,-89.66],ACA:[16.76,-99.75],BJX:[20.99,-101.48],OAX:[17.00,-96.73],CJS:[31.64,-106.43],HMO:[29.10,-111.05],MZT:[23.16,-106.27],CUL:[24.76,-107.47],TLC:[19.34,-99.57],PXM:[15.88,-97.09],VER:[19.15,-96.19],LGW:[51.15,-0.18],STN:[51.88,0.24],LCY:[51.51,0.05],MAN:[53.35,-2.27],EDI:[55.95,-3.37],GLA:[55.87,-4.43],BFS:[54.66,-6.22],DUB:[53.42,-6.27],ORK:[51.84,-8.49],SNN:[52.70,-8.92],KEF:[63.99,-22.62],BGO:[60.29,5.22],SVG:[58.88,5.64],OSL:[60.19,11.10],TRD:[63.46,10.92],GOT:[57.66,12.28],BMA:[59.35,17.94],MMX:[55.54,13.37],RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.29],WAW:[52.17,20.97],KRK:[50.07,19.78],GDN:[54.38,18.47],PRG:[50.10,14.26],BUD:[47.43,19.26],OTP:[44.57,26.10],SOF:[42.69,23.41],BEG:[44.82,20.31],ZAG:[45.74,16.07],SPU:[43.54,16.30],DBV:[42.56,18.27],SKG:[40.52,22.97],HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],TSF:[45.65,12.19],VCE:[45.51,12.35],BLQ:[44.54,11.29],PSA:[43.69,10.39],NAP:[40.89,14.29],BRI:[41.14,16.76],CAG:[39.25,9.06],PMO:[38.18,13.10],CTA:[37.47,15.06],FLR:[43.81,11.20],LJU:[46.22,14.46],SZG:[47.79,13.00],INN:[47.26,11.34],GVA:[46.24,6.11],BSL:[47.59,7.53],BER:[52.36,13.50],HAM:[53.63,9.99],DUS:[51.28,6.77],STR:[48.69,9.22],CGN:[50.87,7.14],HAJ:[52.46,9.69],NUE:[49.50,11.08],LEJ:[51.42,12.24],DRS:[51.13,13.77],FMM:[47.99,10.24],FKB:[48.79,8.08],TLS:[43.63,1.36],NCE:[43.66,7.21],MRS:[43.44,5.21],LYS:[45.72,5.08],BOD:[44.83,-0.71],NTE:[47.16,-1.61],TLN:[43.09,6.15],MPL:[43.58,3.96],BIQ:[43.46,-1.53],EBM:[42.81,-1.65],LEI:[36.84,-2.37],ALC:[38.28,-0.55],VLC:[39.49,-0.48],BIO:[43.30,-2.91],SCQ:[42.90,-8.41],OPO:[41.24,-8.68],FAO:[37.01,-7.97],MAH:[39.86,4.22],PMI:[39.55,2.74],IBZ:[38.87,1.37],TCI:[28.04,-16.57],TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.60],FUE:[28.45,-13.86],MLA:[35.86,14.48],LCA:[34.88,33.62],PFO:[34.71,32.49],TIA:[41.41,19.72],TGD:[42.36,19.25],TIV:[42.40,18.72],SJJ:[43.82,18.33],SKP:[41.96,21.62],PRN:[42.57,21.04],TSV:[-19.25,146.77],BNE:[-27.38,153.12],OOL:[-28.16,153.51],PER:[-31.94,115.97],ADL:[-34.95,138.53],HBA:[-42.84,147.51],CNS:[-16.88,145.75],DRW:[-12.41,130.87],CHC:[-43.49,172.53],ZQN:[-45.02,168.74],WLG:[-41.33,174.81],BNK:[-28.83,153.56],NAN:[-17.75,177.45],PPT:[-17.55,-149.61],NOU:[-22.01,166.21],POM:[-9.44,147.22]};
 
 // ───────────────────────────────────────────────────────────────────────
 // AIRPORT COORDINATE LOOKUP
@@ -58900,7 +58995,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24059" src="/textures/gate-sky-shelf.mp4?v=24059"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24060" src="/textures/gate-sky-shelf.mp4?v=24060"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
