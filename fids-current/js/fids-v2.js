@@ -168,8 +168,10 @@
   // sunset: html.fids-day / html.fids-night from js/fids-sun.js).
   // v24042 — Day & night is the default: a page with no look stamped yet
   // draws it too, the same as an airport that has chosen nothing.
-  //   - The departures and arrivals ROWS take the solid glyph, no circle,
-  //     white (dark on the light row states, css/display-overrides.css).
+  //   - The departures and arrivals ROWS take the icons drawn for Orion
+  //     Connected, no circle (v24046, wxRowHtml below): the white set on a
+  //     dark row, the colour set on a light one, each row taking the side
+  //     its own ink takes (dark text: colour) by fids-core.js _fidsRowWxSet.
   //   - The GATE screens take a circle: Colour = the colour icon on white,
   //     Solid = the glyph in the airline's brand colour on its deep colour
   //     (fids-core.js _wxDiscPair: WestJet teal on navy).
@@ -202,12 +204,64 @@
     } catch (e) {}
     return '#2B2B2A';
   }
+  // ── v24046 — THE ROWS WEAR THE TWO SETS DRAWN FOR ORION CONNECTED ─────
+  // One set is for a dark ground, one for a light ground: white shapes with
+  // a thin blue edge (rows-owner-white/), and gradient shapes with dark navy
+  // rain and storm clouds (rows-owner-color/). Both are the 20 drawings of
+  // the night set (night-line/) without its circles, under the same names,
+  // and every file shares one frame, so a row that changes set never moves
+  // (scripts/wx-icons/rows-owner.py).
+  //   - The icon is the element's own background: the white file by
+  //     default, the colour file when its row is light. fids-core.js
+  //     _fidsRowWxSet reads, once per render, which side the board itself
+  //     took for that row: the temperature beside the icon inked dark (a
+  //     light ground: colour set) or light (a dark ground: white set), so
+  //     the icon agrees with its digits on the airport's colours,
+  //     Customize's custom rows, the alternate rows and the status rows
+  //     (yellow Delayed, red Cancelled…). It writes data-wx-set=
+  //     "white|colour" on the icon (css/display-overrides.css, the v24046
+  //     block). Nothing is redrawn: an operator's new colours re-render the
+  //     rows and the icons follow.
+  //   - The name comes from the code by fids-core.js _wxAnimIcon, the
+  //     mapping every set drawn for Orion Connected shares: MET's 'fair' is
+  //     a clear sky, 'cloudy' the two clouds (overcast), and the clear and
+  //     partly cloudy skies take their night form (moon) while it is dark at
+  //     the place the weather is for (js/fids-sun.js, the destination's own
+  //     sunrise and sunset; the board's own day or night without one).
+  const WX_ROW_WHITE = '/logos/weather/rows-owner-white/';
+  const WX_ROW_COLOUR = '/logos/weather/rows-owner-color/';
+  const WX_ROW_NAMES = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'lightning-bolt':1,'mist':1,'overcast-day':1,'overcast-night':1,'overcast':1,'partly-cloudy-day-snow':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'snowflake':1,'sunrise':1,'thermometer-colder':1,'thermometer-warmer':1,'thunderstorms-day-rain':1,'thunderstorms-night-rain':1,'thunderstorms-rain':1,'thunderstorms':1,'tornado':1,'umbrella':1,'wind-cloud':1,'wind':1 };
+  // dark at the place the weather is for (an IATA code), else at the board
+  function wxRowNight(at) {
+    try {
+      if (at && window.fidsSun && typeof window.fidsSun.isDay === 'function') {
+        const d = window.fidsSun.isDay(at);
+        if (d === true || d === false) return !d;
+      }
+    } catch (e) {}
+    return document.documentElement.classList.contains('fids-night');
+  }
+  // the file a reading draws ('' when it draws none: no reading, an unknown code)
+  function wxRowName(code, at) {
+    let n = '';
+    if (typeof code === 'number' || (typeof code === 'string' && /^\d+$/.test(code))) {
+      const c = parseInt(code, 10);
+      if (typeof window.TIO_ICON !== 'undefined' && !window.TIO_ICON[c]) return '';
+      n = (typeof _wxAnimIcon === 'function') ? _wxAnimIcon(c, wxRowNight(at)) : ((window.TIO_ICON || {})[c] || '');
+    } else if (typeof code === 'string') {
+      n = code;
+    }
+    if (!WX_ROW_NAMES[n] && WX_ANIM_ALIAS[n]) n = WX_ANIM_ALIAS[n];
+    return WX_ROW_NAMES[n] ? n : '';
+  }
+  function wxRowHtml(name, size) {
+    const v = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
+    return '<span class="fids-wx-cell fids-wx-row" data-wxg="' + name + '" aria-hidden="true" style="display:inline-block;width:' + size + 'px;height:' + size + 'px;flex-shrink:0;vertical-align:middle;'
+      + '--wxr-w:url(' + WX_ROW_WHITE + name + '.svg' + v + ');--wxr-c:url(' + WX_ROW_COLOUR + name + '.svg' + v + ');"></span>';
+  }
   function wxLookHtml(look, nameKey, size) {
     const v = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
     const box = 'display:inline-block;width:' + size + 'px;height:' + size + 'px;flex-shrink:0;object-fit:contain;vertical-align:middle;';
-    if (look === 'row') {
-      return '<img class="fids-wx-cell fids-wx-glyph" data-wxg="' + nameKey + '" src="/logos/weather/solid/' + nameKey + '.svg' + v + '" alt="" aria-hidden="true" style="' + box + '">';
-    }
     if (look === 'colour') {
       return '<img class="fids-wx-cell fids-wx-disc" data-wxg="' + nameKey + '" src="/logos/weather/disc-day/' + nameKey + '.svg' + v + '" alt="" aria-hidden="true" style="' + box + '">';
     }
@@ -259,7 +313,11 @@
       }
     }
     const _look = wxLook(opts);
-    if (_look && WX_LOOK_NAMES[nameKey]) return wxLookHtml(_look, _look === 'solid' ? wxNightName(code, nameKey) : nameKey, size);
+    // v24046 — the rows: the sets drawn for Orion Connected (wxRowHtml)
+    if (_look === 'row') {
+      const rn = wxRowName(code, opts && opts.at);
+      if (rn) return wxRowHtml(rn, size);
+    } else if (_look && WX_LOOK_NAMES[nameKey]) return wxLookHtml(_look, _look === 'solid' ? wxNightName(code, nameKey) : nameKey, size);
     // v223 — clean animated icon set (same icons the arrival-weather card
     // uses). v24037 — the only set: a name it doesn't draw takes its nearest
     // icon (WX_ANIM_ALIAS); no reading draws nothing.

@@ -23470,6 +23470,120 @@ function _fidsRowInk(root) {
   } catch (e) {}
 }
 
+// ══ v24046 — EACH ROW'S WEATHER ICON SET FOLLOWS THE ROW'S OWN INK ══════════
+// The row icons drawn for Orion Connected come in two sets, one for a dark
+// ground and one for a light ground (fids-v2.js wxRowHtml): the white set
+// and the colour set. Which one a row wears is read from the page, not from
+// a list of themes, so it covers the airport's theme, Customize's custom row
+// colours, the alternate rows, a light board, and the status rows (yellow
+// Delayed, orange Final call, red Cancelled and Diverted, the faded
+// Departed / Arrived / Gate closed rows). Change an airport's colours and
+// the next render (applyAirportConfigToBoard forces one), or the 5 s
+// heartbeat, picks again.
+//
+// THE BOARD HAS ALREADY DECIDED WHETHER A ROW IS LIGHT OR DARK: it inks the
+// text dark on a light ground and light on a dark one (the stylesheet's
+// status grammar on the status rows, the palette and _fidsRowInk on the
+// plain stripes). The icon takes the same side as that ink: the temperature
+// beside it is read as it is painted, and where it is darker than the
+// ground (dark text: a light ground) the row wears the colour set, where it
+// is lighter (light text: a dark ground) the white set. So the icon always
+// agrees with the digits beside it, and one status always wears one set:
+// both Delayed stripes (EDBB00 and F9D44C) ink navy and both take the colour
+// set. A split on the ground's luminance alone (0.56) disagreed with the
+// board between about 0.35 and 0.56, where yellow Delayed, orange Final
+// call, the faded history rows of a light board and mid-tone custom rows
+// all ink dark but were given the white set.
+//
+// Painted colours (_wxRowGround): every background from the page down to
+// the element, each over the one beneath it by its alpha, then the text's
+// own colour for the ink, and every opacity on the way (the faded history
+// rows) mixed with what shows through it, so the ink and the ground are
+// compared as the eye gets them. Background images (the textures) are left
+// out; they are faint by design.
+//
+// Only where a cell has no text to read (no row draws one today) does the
+// ground decide alone, by _WX_ROW_SPLIT: 0.56 is where the two sets' median
+// contrast over their 20 icons crosses (0.563, measured in headless Chrome by
+// scripts/wx-icons/rows-owner-split.js).
+//
+// Cheap by construction: it runs after the row inks (_fidsBoardInk, in the
+// same task as the rows are rebuilt, so the first paint already wears the
+// right set) and on the 5 s heartbeat, writes only when a row's ground or
+// ink has changed, and swaps a background image inside a box of fixed size,
+// so nothing moves.
+var _WX_ROW_SPLIT = 0.56;
+function _wxRowSetFor(ground, ink) {
+  if (!ground) return 'white';
+  if (ink) return _ocLum(ink) < _ocLum(ground) ? 'colour' : 'white';
+  return _ocLum(ground) >= _WX_ROW_SPLIT ? 'colour' : 'white';
+}
+function _wxRowRgba(str) {
+  var n = String(str || '').match(/[\d.]+/g);
+  if (!n || n.length < 3) return null;
+  if (/^color\(\s*srgb/i.test(String(str).trim())) {
+    return [n[0] * 255, n[1] * 255, n[2] * 255, n.length > 3 ? +n[3] : 1];
+  }
+  return [+n[0], +n[1], +n[2], (/^rgba/i.test(String(str).trim()) && n.length > 3) ? +n[3] : 1];
+}
+// the colour painted at an element: its ground, or with `top` (a text
+// colour, rgba) that colour laid over its ground
+function _wxRowGround(el, top) {
+  var chain = [];
+  for (var n = el; n && n.nodeType === 1; n = n.parentElement) chain.push(n);
+  // the canvas under a page that paints nothing is white
+  var acc = [255, 255, 255], groups = [];
+  var mix = function (a, b, t) { return [a[0] * t + b[0] * (1 - t), a[1] * t + b[1] * (1 - t), a[2] * t + b[2] * (1 - t)]; };
+  for (var i = chain.length - 1; i >= 0; i--) {
+    var cs = getComputedStyle(chain[i]);
+    var op = parseFloat(cs.opacity);
+    if (op >= 0 && op < 1) groups.push([acc, op]);
+    var c = _wxRowRgba(cs.backgroundColor);
+    if (c && c[3] > 0) acc = mix(c, acc, Math.min(1, c[3]));
+  }
+  if (top && top[3] > 0) acc = mix(top, acc, Math.min(1, top[3]));
+  for (var k = groups.length - 1; k >= 0; k--) acc = mix(acc, groups[k][0], groups[k][1]);
+  return acc.map(Math.round);
+}
+// the text beside the icon (the temperature): the first element in its cell
+// that paints text of its own, the element _fidsRowInk would ink
+function _wxRowText(ic) {
+  var cell = ic.parentElement;
+  if (!cell) return null;
+  var all = cell.querySelectorAll('*');
+  for (var i = 0; i < all.length; i++) {
+    var e = all[i];
+    if (e === ic || e.querySelector('*') || !String(e.textContent || '').trim()) continue;
+    return e;
+  }
+  return null;
+}
+// its ink as painted: -webkit-text-fill-color is what is drawn (it follows
+// color unless a rule sets it)
+function _wxRowInk(t) {
+  if (!t) return null;
+  var cs = getComputedStyle(t);
+  var c = _wxRowRgba(cs.webkitTextFillColor);
+  if (!c || !(c[3] > 0)) c = _wxRowRgba(cs.color);
+  return (c && c[3] > 0) ? _wxRowGround(t, c) : null;
+}
+function _fidsRowWxSet(root) {
+  try {
+    var icons = (root || document).querySelectorAll('#fidsTable .fids-wx-row');
+    for (var i = 0; i < icons.length; i++) {
+      var ic = icons[i];
+      var g = _wxRowGround(ic.parentElement || ic);
+      var ink = _wxRowInk(_wxRowText(ic));
+      var key = g.join(','), inkKey = ink ? ink.join(',') : '';
+      if (ic.getAttribute('data-wx-ground') === key && ic.getAttribute('data-wx-ink') === inkKey) continue;
+      ic.setAttribute('data-wx-ground', key);
+      ic.setAttribute('data-wx-ink', inkKey);
+      ic.setAttribute('data-wx-set', _wxRowSetFor(g, ink));
+    }
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window._fidsRowWxSet = _fidsRowWxSet;
+
 // v23967 — EVERY INK THE BOARD'S ROWS WEAR, SET IN ONE PLACE AND ONE ORDER.
 // Called by render() in the same task as `tbody.innerHTML`, so a rebuilt row
 // is never painted without its inks (it used to show the stylesheet's colours
@@ -23482,6 +23596,8 @@ function _fidsBoardInk() {
   if (!table) return;
   try { applyCodeAccents(table); } catch (e) {}
   try { _fidsRowInk(table); } catch (e) {}
+  // v24046 — and each row's weather icon set, on the side its ink took
+  try { _fidsRowWxSet(table); } catch (e) {}
 }
 if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;
 
@@ -23854,7 +23970,9 @@ function boardAutofit(full) {
 // before the board is laid out or its fonts have arrived; a board whose rows
 // do not change was then never measured again. It only ever shrinks a cell
 // that is cut, so on a board that fits it changes nothing.
-try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
+// v24046 — and the row weather icons' set (_fidsRowWxSet): a colour change
+// that did not rebuild the rows is picked up here; unchanged, it writes nothing.
+try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); _fidsRowWxSet(); }, 5000); } catch (e) {}
 // The logo's natural size is only known once it decodes, and the banner may
 // still be revealing — fit on load as well as on the heartbeat.
 try {
@@ -34524,6 +34642,9 @@ function render() {
     const wxHtml = (() => {
       if (!isDep) return '';
       let tw = TOMORROW_WX[f._locIata];
+      // v24046 — and where that weather is: the row's icon takes the night
+      // form while it is dark there (fids-v2.js wxRowName)
+      let _wxAt = f._locIata;
       // Multi-city rows: the primary code often has no weather (or the row's
       // dest is a via-stop). Fall back to the first through-flight leg that
       // DOES have weather so the column isn't a dead '—'
@@ -34532,13 +34653,13 @@ function render() {
         const _codes = _flightWxCodes(f);
         for (let _ci = 0; _ci < _codes.length; _ci++) {
           const _cw = TOMORROW_WX[_codes[_ci]];
-          if (_cw && _cw.current && _cw.current.temp !== undefined) { tw = _cw; break; }
+          if (_cw && _cw.current && _cw.current.temp !== undefined) { tw = _cw; _wxAt = _codes[_ci]; break; }
         }
       }
       if (!(tw && tw.current && tw.current.temp !== undefined)) return '<td class="td-wx">—</td>';
       const tempStr = displayTemp(Math.round(tw.current.temp));
       const iconHtml = (typeof window.fidsWxIcon === 'function')
-        ? window.fidsWxIcon(tw.current.code, 48, { row: true })
+        ? window.fidsWxIcon(tw.current.code, 48, { row: true, at: _wxAt })
         : tioIcon(tw.current.code, 48);
       return '<td class="td-wx"><div class="fids-cell-weather">' + iconHtml + '<span>' + tempStr + '</span></div></td>';
     })();
