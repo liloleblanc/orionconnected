@@ -39,7 +39,7 @@ test('every zone in the floor list is one the browser knows, each code once', ()
   assert.ok(list, 'fids-earth.js declares ZONE_LIST');
   const seen = {};
   let n = 0;
-  for (const m of list[1].matchAll(/'([A-Za-z_/]+)': ((?:'[A-Z0-9 ]*'(?: \+\s*)?)+)/g)) {
+  for (const m of list[1].matchAll(/'([A-Za-z_/-]+)': ((?:'[A-Z0-9 ]*'(?: \+\s*)?)+)/g)) {
     const zone = m[1];
     assert.doesNotThrow(() => new Intl.DateTimeFormat('en-US', { timeZone: zone }).format(0), zone);
     const codes = m[2].replace(/'|\+|\s+/g, ' ').trim().split(/\s+/);
@@ -52,7 +52,7 @@ test('every zone in the floor list is one the browser knows, each code once', ()
   }
   const one = /var ZONE_ONE = \{([^}]*)\};/.exec(MOD);
   assert.ok(one, 'fids-earth.js declares ZONE_ONE');
-  for (const m of one[1].matchAll(/([A-Z0-9]{3}): '([A-Za-z_/]+)'/g)) {
+  for (const m of one[1].matchAll(/([A-Z0-9]{3}): '([A-Za-z_/-]+)'/g)) {
     assert.doesNotThrow(() => new Intl.DateTimeFormat('en-US', { timeZone: m[2] }).format(0), m[2]);
     assert.ok(!seen[m[1]], m[1] + ' is listed twice');
     seen[m[1]] = m[2];
@@ -95,8 +95,17 @@ test('the zones that are easy to get wrong', () => {
     YXJ: 'America/Dawson_Creek', YPA: 'America/Regina', YGP: 'America/Toronto', FSP: 'America/Miquelon',
     // Australia and the Atlantic islands
     PER: 'Australia/Perth', AYQ: 'Australia/Darwin', ADL: 'Australia/Adelaide', OOL: 'Australia/Brisbane',
-    BNK: 'Australia/Sydney', MQL: 'Australia/Melbourne', TFS: 'Atlantic/Canary', BDA: 'Atlantic/Bermuda'
+    BNK: 'Australia/Sydney', MQL: 'Australia/Melbourne', TFS: 'Atlantic/Canary', BDA: 'Atlantic/Bermuda',
+    // v24067 — the overnight sweep's: Kansas and the Dakotas on each side of
+    // the Mountain line, Arizona, the North's own clocks, Quebec's Lower North
+    // Shore, Greenland, the Caribbean's own zones, and West Palm Beach's new code
+    DDC: 'America/Chicago', LBL: 'America/Chicago', HYS: 'America/Chicago', PIR: 'America/Chicago',
+    DIK: 'America/Denver', PRC: 'America/Phoenix', YYE: 'America/Fort_Nelson', YXY: 'America/Whitehorse',
+    YCO: 'America/Cambridge_Bay', YYH: 'America/Cambridge_Bay', YVQ: 'America/Inuvik', YHR: 'America/Blanc-Sablon',
+    YKL: 'America/Toronto', SFJ: 'America/Nuuk', CAP: 'America/Port-au-Prince', BON: 'America/Kralendijk',
+    FNC: 'Atlantic/Madeira', FAE: 'Atlantic/Faroe', DJT: 'America/New_York'
   };
+  for (const c of ['YNA', 'YMU']) assert.equal(E.ZONES[c], undefined, c + ' is left with no zone on purpose (no time, not a guess)');
   for (const [c, z] of Object.entries(want)) assert.equal(E.ZONES[c], z, c);
 });
 

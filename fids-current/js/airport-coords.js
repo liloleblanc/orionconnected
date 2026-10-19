@@ -616,4 +616,63 @@ window.AIRPORT_COORDS = {
   ZNE:[-23.42,119.8], ZOS:[-40.61,-73.06], ZQN:[-45.02,168.75], ZQZ:[40.74,114.93],
   ZSA:[24.06,-74.52], ZTH:[37.75,20.88], ZUH:[22.01,113.38], ZYI:[27.81,107.25],
 
+  // v24067 — EARTH, NOW: places the boards list that no table could place,
+  //    so the floor under the rows drew no route to them (the overnight
+  //    sweep of every airport's board, 2026-10-19), and Roberval itself,
+  //    the one board that opens with no position for its own airport.
+  //    Positions from OurAirports (ourairports.com/data, public domain),
+  //    rounded to 3 decimals; a sample checked against a second source.
+  //    The same rows are in COORDS (fids-core.js).
+  YRJ:[48.520,-72.266],   // Roberval, Quebec (CYRJ)
+  DJT:[26.683,-80.096],   // West Palm Beach (was PBI; renamed 2026) (KPBI)
+  PVC:[42.072,-70.221],   // Provincetown, Massachusetts (KPVC)
+  FMN:[36.741,-108.230],  // Farmington, New Mexico (KFMN)
+  BZE:[17.540,-88.304],   // Belize City (MZBZ)
+  XPL:[14.382,-87.621],   // Comayagua (Palmerola), Honduras (MHSC)
+  RTB:[16.317,-86.523],   // Roatan, Honduras (MHRO)
+  SAP:[15.453,-87.924],   // San Pedro Sula, Honduras (MHLM)
+  MGA:[12.142,-86.168],   // Managua, Nicaragua (MNMG)
+  CAP:[19.726,-72.201],   // Cap-Haitien, Haiti (MTCH)
+  CYA:[18.271,-73.788],   // Les Cayes, Haiti (MTCA)
+  BON:[12.131,-68.269],   // Bonaire (TNCB)
+  ANU:[17.137,-61.793],   // Antigua (TAPA)
+  DOM:[15.547,-61.301],   // Dominica (TDPD)
+  SKB:[17.311,-62.719],   // St Kitts (TKPK)
+  MAR:[10.558,-71.729],   // Maracaibo, Venezuela (SVMC)
+  FAE:[62.063,-7.276],    // Faroe Islands (Vagar) (EKVG)
+  SFJ:[67.010,-50.715],   // Kangerlussuaq, Greenland (BGSF)
+  GIB:[36.152,-5.350],    // Gibraltar (LXGB)
+  JER:[49.208,-2.196],    // Jersey (EGJJ)
+  GCI:[49.435,-2.602],    // Guernsey (EGJB)
+  BTS:[48.170,17.213],    // Bratislava, Slovakia (LZIB)
+  KSC:[48.663,21.241],    // Kosice, Slovakia (LZKZ)
+  LOS:[6.577,3.321],      // Lagos, Nigeria (DNMM)
+  WDH:[-22.480,17.471],   // Windhoek, Namibia (FYWH)
+  MLE:[4.192,73.529],     // Male, Maldives (VRMM)
+  GYD:[40.473,50.051],    // Baku, Azerbaijan (UBBB)
+  OAG:[-33.382,149.131],  // Orange, NSW (YORG)
+  YYE:[58.836,-122.597],  // Fort Nelson, BC (CYYE)
+  YYF:[49.463,-119.602],  // Penticton, BC (CYYF)
+  YWL:[52.183,-122.054],  // Williams Lake, BC (CYWL)
+  YAA:[52.452,-125.304],  // Anahim Lake, BC (CAJ4)
+  XQU:[49.337,-124.393],  // Qualicum Beach, BC (CAT4)
+  ZMT:[54.028,-132.125],  // Masset, BC (CZMT)
+  ZEL:[52.185,-128.157],  // Bella Bella, BC (CBBC)
+  YZZ:[49.056,-117.609],  // Trail, BC (CAD4)
+  YFI:[57.276,-110.977],  // Fort MacKay / Firebag, Alberta (CFG6)
+  ZFD:[59.334,-107.182],  // Fond-du-Lac, Saskatchewan (CZFD)
+  YVQ:[65.282,-126.798],  // Norman Wells, NWT (CYVQ)
+  YYH:[69.547,-93.577],   // Taloyoak, Nunavut (CYYH)
+  YCO:[67.816,-115.143],  // Kugluktuk, Nunavut (CYCO)
+  //    And the Quebec airports on the French-first list (BoardStrings.FR_FIRST)
+  //    that had no position, so each can carry its clock (fids-earth.js ZONE_ONE).
+  YMX:[45.680,-74.039],   // Montreal Mirabel (CYMX)
+  YKQ:[51.473,-78.758],   // Waskaganish, Quebec (CYKQ)
+  YHR:[50.468,-59.638],   // Chevery, Quebec (CYHR)
+  YTF:[48.509,-71.642],   // Alma, Quebec (CYTF)
+  AKV:[60.819,-78.149],   // Akulivik, Quebec (CYKO)
+  YIK:[62.417,-77.925],   // Ivujivik, Quebec (CYIK)
+  YQC:[61.046,-69.618],   // Quaqtaq, Quebec (CYHA)
+  YKG:[60.027,-69.999],   // Kangirsuk, Quebec (CYAS)
+  XGR:[58.711,-65.993],   // Kangiqsualujjuaq, Quebec (CYLU)
 };

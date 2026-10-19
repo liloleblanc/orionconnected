@@ -134,9 +134,17 @@
   //
   // The rule, applied by resolveLangs() and pairLangs(): at one of these
   // airports French leads IF it is selected. It is never added when it is not.
-  var FR_FIRST = ['YUL', 'YQB', 'YHU', 'YMX', 'YMY', 'YBG', 'YVO', 'YZV', 'YUY',
+  //
+  // v24067 — Roberval (YRJ) added: it is in the airport picker and was the
+  // one Québec board that led in English (with 12-hour times). YHA left the
+  // list: it is Port Hope Simpson, in Labrador (Quaqtaq, whose ICAO code is
+  // CYHA, is YQC, already here). Every code here is a Québec airport by
+  // OurAirports' region (CA-QC), except YMY, Montréal's central station, and
+  // every Québec airport the board can open is here
+  // (tests/earth-floor-places.test.js).
+  var FR_FIRST = ['YUL', 'YQB', 'YHU', 'YRJ', 'YMX', 'YMY', 'YBG', 'YVO', 'YZV', 'YUY',
     'YGP', 'YGL', 'YGW', 'YKQ', 'YPX', 'YVP', 'YHR', 'YNA', 'YBC', 'YTF', 'AKV',
-    'YIK', 'YZG', 'YQC', 'YHA', 'YKG', 'XGR'];
+    'YIK', 'YZG', 'YQC', 'YKG', 'XGR'];
   var _frFirstSet = Object.create(null);
   FR_FIRST.forEach(function (c) { _frFirstSet[c] = true; });
 

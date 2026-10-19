@@ -234,30 +234,42 @@
   // Cranbrook Mountain, Fort St John on year-round Mountain). When the list
   // was made, each was compared with the nearest zone of the tz database by
   // its offsets in January and July, and every difference read by hand.
+  // v24067 — and the places the overnight sweep of every airport's board
+  // (2026-10-19) found named with no zone, or with no position at all (their
+  // positions are now in COORDS): Kansas and the Dakotas east of the Mountain
+  // line are Central (Dodge City, Liberal, Hays, Pierre, Devils Lake,
+  // Jamestown), Dickinson west of it Mountain; Fort Nelson keeps year-round
+  // Mountain time (America/Fort_Nelson) and Whitehorse its own; Kugluktuk
+  // and Taloyoak are Nunavut's Mountain time; Chevery is on the Lower North
+  // Shore's Atlantic time (ZONE_ONE). Left out on purpose, so they print no
+  // time rather than a guess: Natashquan (sources disagree on its summer
+  // time) and YMU (Thunder Bay's feed means Musselwhite by it, which is
+  // Eastern; the code is a seaplane base in British Columbia elsewhere).
   // tests/earth-zones.test.js holds every zone to one the browser knows, no
   // code to two zones or to another zone than AP's, and the hard cases.
   var ZONE_LIST = {
-    'America/New_York': 'ABE ACK ACY AGS ALB AOO AUG AVL AVP BGM BGR BHB BKW BTV BUF CAE CAK ' +
-                        'CHA CHO CHS CKB CRW DAB DAY DUJ ELM ERI EWN EYW FAY FLO GNV GSO GSP ' +
-                        'HHH HPN HTS HVN HYA ILM ISP ITH JAX JST LEB LEX LNS LWB LYH MDT MGW ' +
-                        'MHT MLB MSS MVY MYR OAJ OGS ORF ORH PBG PBI PGV PHF PIE PKB PQI PSM ' +
-                        'PVD PWM RIC RKD ROA ROC RSW RUT SAV SBY SCE SHD SLK SRQ SWF SYR TEB ' +
-                        'TLH TRI TTN TYS VRB',
+    'America/New_York': 'ABE ACK ACY AGS ALB AOO AUG AVL AVP BGM BGR BHB BKW BTV BUF CAE CAK CHA ' +
+                        'CHO CHS CKB CRW DAB DAY DJT DUJ ELM ERI EWN EYW FAY FLO GNV GSO GSP HHH ' +
+                        'HPN HTS HVN HYA ILG ILM ISP ITH JAX JST LEB LEX LNS LWB LYH MDT MGW MHT ' +
+                        'MLB MSS MVY MYR OAJ OGS ORF ORH PBG PBI PGV PHF PIE PKB PQI PSM PVC PVD ' +
+                        'PWM RIC RKD ROA ROC RSW RUT SAV SBY SCE SHD SLK SRQ SWF SYR TEB TLH TRI ' +
+                        'TTN TYS VRB',
     'America/Detroit': 'APN AZO CIU CMX ESC FNT GRR LAN MBL MBS MKG MQT PLN TVC',
     'America/Indiana/Indianapolis': 'FWA LAF SBN',
     'America/Kentucky/Louisville': 'SDF',
     'America/Menominee': 'IMT IWD',
-    'America/Chicago': 'ABI ABR AEX ALO AMA ATW ATY BHM BIS BMI BRD BRL BRO BTR CGI CID CMI ' +
-                       'COU CRP CWA DAL DEC DLH DSM EAR EAU ECP EVV FAR FOD FSD GFK GPT GRB ' +
-                       'HIB HRL HSV ICT INL JAN JLN LBB LCH LFT LIT LNK LRD LSE MAF MCW MEI ' +
-                       'MEM MFE MGM MHK MKE MKL MLI MOB MOT MSL MSN MWA OKC OMA OWB PAH PIA ' +
-                       'PIB PNS RHI RST SGF SHV SLN SPI SUX SWO TUL TVF UIN VCT VPS XNA XWA',
-    'America/Denver': 'ABQ ASE BIL BZN CDC COS DRO ELP FCA GJT GTF GUP HLN HOB JAC MSO PVU RAP ' +
-                      'SAF SGU SVC',
+    'America/Chicago': 'ABI ABR AEX ALO AMA ATW ATY BHM BIS BMI BRD BRL BRO BTR CGI CID CMI COU ' +
+                       'CRP CWA DAL DDC DEC DLH DSM DVL EAR EAU ECP EVV FAR FOD FSD GFK GPT GRB ' +
+                       'HIB HRL HSV HYS ICT INL JAN JLN JMS LBB LBF LBL LCH LFT LIT LNK LRD LSE ' +
+                       'MAF MCW MEI MEM MFE MGM MHK MKE MKL MLI MOB MOT MSL MSN MWA OKC OMA OWB ' +
+                       'PAH PIA PIB PIR PNS RHI RST SGF SHV SLN SPI SUX SWO TUL TVF UIN VCT VPS ' +
+                       'XNA XWA',
+    'America/Denver': 'ABQ ASE BIL BTM BZN CDC CEZ CNY COD COS CPR CYS DIK DRO ELP FCA FMN GJT GTF ' +
+                      'GUP HLN HOB JAC LAR MSO PVU RAP RIW RKS ROW SAF SGU SHR SVC',
     'America/Boise': 'BOI IDA PIH SUN TWF',
-    'America/Phoenix': 'FLG PGA SOW TUS YUM',
-    'America/Los_Angeles': 'ACV BFL BLI BUR CLD EAT EKO EUG FAT GEG IPL LGB LWS MFR MRY OAK ' +
-                           'ONT OTH PAE PSC PSP RDD RDM RNO SBA SBP SCK SJC SMF SMX SNA STS',
+    'America/Phoenix': 'FLG PGA PRC SOW TUS YUM',
+    'America/Los_Angeles': 'ACV BFL BLI BUR CLD EAT EKO EUG FAT GEG IPL LGB LWS MFR MRY OAK ONT ' +
+                           'OTH PAE PSC PSP RDD RDM RNO SBA SBP SCK SJC SMF SMX SNA STS',
     'America/Anchorage': 'ANC',
     'Pacific/Honolulu': 'KOA LIH',
     'America/Puerto_Rico': 'BQN',
@@ -266,43 +278,59 @@
     'America/Iqaluit': 'YFB',
     'America/Winnipeg': 'YAG YBR YQK YXL',
     'America/Rankin_Inlet': 'YRT',
-    'America/Regina': 'YPA',
-    'America/Edmonton': 'YFS YHY YQU YXC',
-    'America/Cambridge_Bay': 'YCB',
-    'America/Inuvik': 'YEV',
+    'America/Regina': 'YPA ZFD',
+    'America/Edmonton': 'YFI YFS YHY YQU YXC',
+    'America/Cambridge_Bay': 'YCB YCO YYH',
+    'America/Inuvik': 'YEV YVQ',
     'America/Dawson_Creek': 'YXJ',
-    'America/Vancouver': 'YBL YCD YQQ YXT',
+    'America/Fort_Nelson': 'YYE',
+    'America/Whitehorse': 'YXY',
+    'America/Vancouver': 'XQU YAA YBL YCD YCG YPW YQQ YWL YXT YYD YYF YZZ ZEL ZMT',
     'America/Miquelon': 'FSP',
     'Atlantic/Bermuda': 'BDA',
     'America/Santo_Domingo': 'AZS POP SDQ STI',
+    'America/Port-au-Prince': 'CAP CYA',
     'America/Bogota': 'BAQ CLO CTG MDE',
     'America/Barbados': 'BGI',
-    'America/Caracas': 'CCS',
+    'America/Caracas': 'CCS MAR',
     'America/Havana': 'CMW HAV HOG SCU SNU',
     'America/Curacao': 'CUR',
+    'America/Kralendijk': 'BON',
     'America/Cancun': 'CZM TQO',
     'America/Merida': 'MID',
-    'America/Mexico_City': 'AGU BJX GDL MLM OAX PBC QRO SLP VER',
+    'America/Mexico_City': 'AGU BJX GDL MLM OAX PBC PXM QRO SLP VER',
     'America/Monterrey': 'MTY TAM',
     'America/Mazatlan': 'CUL LTO MZT',
     'America/Hermosillo': 'HMO',
     'America/Tortola': 'EIS',
-    'America/Nassau': 'ELH FPO GGT MHH',
+    'America/Nassau': 'BIM ELH FPO GGT MHH',
     'America/Martinique': 'FDF',
     'America/Guyana': 'GEO',
     'America/Grenada': 'GND',
     'America/Guayaquil': 'GYE UIO',
+    'America/La_Paz': 'VVI',
     'America/Costa_Rica': 'LIR',
     'America/Grand_Turk': 'PLS',
     'America/Guadeloupe': 'PTP',
     'America/Panama': 'PTY',
+    'America/Belize': 'BZE',
+    'America/Tegucigalpa': 'RTB SAP XPL',
+    'America/Managua': 'MGA',
     'America/St_Vincent': 'SVD',
     'America/St_Lucia': 'UVF',
-    'America/Sao_Paulo': 'GIG',
+    'America/Antigua': 'ANU',
+    'America/Dominica': 'DOM',
+    'America/St_Kitts': 'SKB',
+    'America/Sao_Paulo': 'BSB GIG',
+    'America/Nuuk': 'SFJ',
+    'Atlantic/Reykjavik': 'AEY RKV',
+    'Atlantic/Faroe': 'FAE',
+    'Atlantic/Madeira': 'FNC',
     'Europe/London': 'BFS BOH KOI LSI NQY SYY',
     'Europe/Dublin': 'NOC',
-    'Europe/Paris': 'BIQ BOD CLY DOL FNI',
+    'Europe/Paris': 'BIQ BOD CCF CLY DOL EGC FNI LDE',
     'Europe/Berlin': 'BRE CGN DRS FMM GWT NRN',
+    'Europe/Vienna': 'GRZ',
     'Europe/Rome': 'BRI CAG CIA CTA OLB PMO SUF',
     'Europe/Brussels': 'CRL LGG',
     'Europe/Athens': 'CHQ GPA HER JMK JTR KGS PVK RHO SKG ZTH',
@@ -314,29 +342,34 @@
     'Europe/Belgrade': 'BEG PRN',
     'Atlantic/Canary': 'FUE LPA TFS',
     'Europe/Madrid': 'MAH SDR XRY',
+    'Europe/Gibraltar': 'GIB',
     'Europe/Warsaw': 'GDN KTW LUZ POZ WMI WRO',
+    'Europe/Bratislava': 'BTS KSC',
     'Europe/Stockholm': 'GOT',
     'Europe/Oslo': 'BGO',
     'Europe/Tallinn': 'TLL',
     'Europe/Istanbul': 'AYT BJV DLM ESB SAW',
     'Asia/Nicosia': 'PFO',
     'Asia/Beirut': 'BEY',
+    'Asia/Baku': 'GYD',
     'Africa/Cairo': 'HRG RMF',
-    'Africa/Casablanca': 'RAK',
+    'Africa/Casablanca': 'AGA RAK RBA',
     'Africa/Accra': 'ACC',
+    'Africa/Windhoek': 'WDH',
     'Asia/Riyadh': 'JED',
     'Asia/Dubai': 'DWC',
     'Asia/Karachi': 'LHE',
+    'Indian/Maldives': 'MLE',
     'Asia/Kolkata': 'CCU HYD MAA',
     'Asia/Bangkok': 'HKT',
     'Asia/Ho_Chi_Minh': 'SGN',
     'Asia/Makassar': 'DPS',
-    'Asia/Shanghai': 'NKG TFU WUH XMN',
+    'Asia/Shanghai': 'CGO NKG TFU WUH XMN',
     'Australia/Perth': 'PER',
     'Australia/Darwin': 'AYQ DRW',
     'Australia/Adelaide': 'ADL',
     'Australia/Brisbane': 'CNS HTI MCY OOL PPP TSV',
-    'Australia/Sydney': 'ABX ARM BNK CFS DBO GFF MIM MRZ MYA PQQ TMW WGA',
+    'Australia/Sydney': 'ABX ARM BNK CFS DBO GFF MIM MRZ MYA OAG PQQ TMW WGA',
     'Australia/Melbourne': 'AVV MQL',
     'Pacific/Auckland': 'CHC WLG ZQN',
     'Pacific/Fiji': 'NAN',
@@ -345,7 +378,13 @@
   // Quebec's airports one by one: the board keeps its one list of them for
   // the order of its languages (BoardStrings.FR_FIRST); this says only where
   // their clocks are
-  var ZONE_ONE = { YGP: 'America/Toronto', YUY: 'America/Toronto', YVP: 'America/Toronto', YZG: 'America/Toronto', YZV: 'America/Toronto' };
+  var ZONE_ONE = {
+    AKV: 'America/Toronto', XGR: 'America/Toronto', YBC: 'America/Toronto', YGL: 'America/Toronto',
+    YGP: 'America/Toronto', YGW: 'America/Toronto', YHR: 'America/Blanc-Sablon',
+    YIK: 'America/Toronto', YKG: 'America/Toronto', YKL: 'America/Toronto', YKQ: 'America/Toronto',
+    YMX: 'America/Toronto', YQC: 'America/Toronto', YTF: 'America/Toronto', YUY: 'America/Toronto',
+    YVP: 'America/Toronto', YZG: 'America/Toronto', YZV: 'America/Toronto'
+  };
   var ZONES = {};
   Object.keys(ZONE_LIST).forEach(function (z) { ZONE_LIST[z].split(' ').forEach(function (c) { if (c) ZONES[c] = z; }); });
   Object.keys(ZONE_ONE).forEach(function (c) { ZONES[c] = ZONE_ONE[c]; });
@@ -586,10 +625,17 @@
       var t = g.tA, p = toScreen(scale(slerp(A, g.v, t, g.om), 1 + lift * Math.sin(Math.PI * t)), view);
       return Math.atan2(p.y - a.y, p.x - a.x);
     }
+    // a route to a place in sight keeps inside the lens of the two circles
+    // round the airport and round its place, each as wide as the way between
+    // them: never farther from the airport than its place is (no hook), and
+    // never farther from its place than the airport is (v24067: Yellowknife's
+    // route to Calgary, a place just under the floor's foot, climbed 95 px to
+    // the Arctic and came back down, all of it nearer the airport than
+    // Calgary is)
     function badArc(m, runs) {
       if (m.q.hidden || m.q.z <= 0.02 || !runs.length) return false;
       var reach = Math.hypot(m.q.x - a.x, m.q.y - a.y) + 4, bad = false;
-      runs[0].forEach(function (q) { if (q.y < view.yl + 10 || Math.hypot(q.x - a.x, q.y - a.y) > reach) bad = true; });
+      runs[0].forEach(function (q) { if (q.y < view.yl + 10 || Math.hypot(q.x - a.x, q.y - a.y) > reach || Math.hypot(q.x - m.q.x, q.y - m.q.y) > reach) bad = true; });
       return bad;
     }
     // FAN. Routes leaving the airport within 16° of each other are a family,
@@ -783,6 +829,25 @@
       }
       return false;
     }
+    // v24067 — a leader line that passes by another place's dot (6 px), or
+    // crosses a leader already drawn, reads as joining the wrong pair: the
+    // spot is not taken (Edmonton's Toronto and Ottawa lines crossed in an X)
+    function segsCross(p, q) {
+      var rx = p[2] - p[0], ry = p[3] - p[1], sx = q[2] - q[0], sy = q[3] - q[1], den = rx * sy - ry * sx;
+      if (Math.abs(den) < 1e-9) return false;
+      var t = ((q[0] - p[0]) * sy - (q[1] - p[1]) * sx) / den, u = ((q[0] - p[0]) * ry - (q[1] - p[1]) * rx) / den;
+      return t > 0 && t < 1 && u > 0 && u < 1;
+    }
+    function leaderWrong(l, g) {
+      var mates = g.sign ? g.sign.members : [g], vx = l[2] - l[0], vy = l[3] - l[1], L2 = vx * vx + vy * vy;
+      for (var i = 0; i < dotAt.length; i++) {
+        var d = dotAt[i]; if (mates.indexOf(d.g) >= 0 || d.g.unplaced) continue;
+        var t = clamp(((d.x - l[0]) * vx + (d.y - l[1]) * vy) / (L2 || 1), 0, 1);
+        if (Math.hypot(l[0] + vx * t - d.x, l[1] + vy * t - d.y) < 6) return true;
+      }
+      for (var j = 0; j < out.leaders.length; j++) { var o = out.leaders[j]; if (segsCross(l, [o.x1, o.y1, o.x2, o.y2])) return true; }
+      return false;
+    }
     // the widest of the board's languages: a name keeps its place as the
     // board turns language
     function nameW(g, f) { var w = 0; g.names.forEach(function (s) { w = Math.max(w, measure(s, f)); }); return w; }
@@ -821,14 +886,22 @@
         if (!free(b, g)) return;
         var cost = crossings(b, g) * 1000 + c.cost;              // on a route: only if there is nowhere else
         // another place's dot as near as this name's own: a leader line must
-        // say which dot it names, else the spot is not taken; a name at the
-        // edge (its arrow says where it goes) only keeps away if it can
+        // say which dot it names, else the spot is not taken
         var rv = rival(b, g, pt), lead = leaderOf(b, pt, !!rv && !isEdge);
         if (rv) {
-          if (isEdge) cost += 400;
-          else if (!lead) return;
+          // v24067 — another place's dot CLEARLY nearer than the name's own
+          // (more than AMBIG px): at a glance the name is that dot's, line or
+          // no line ('Cincinnati' 13 px from St Louis's dot and 45 px from
+          // its own). Never there: elsewhere, or the place is left out (the
+          // rows list it). And a name at an arrow (which has no line to say
+          // which) never stands as near another dot as its arrow ('San Pedro
+          // Sula' read as Cancún's dot).
+          if (rv.d + AMBIG < rv.own) return;
+          if (isEdge) return;
+          if (!lead) return;
           else cost += 150;
         }
+        if (lead && !isEdge && leaderWrong(lead, g)) return;
         if (lead && leaderCrosses(lead, g)) cost += 300;
         if (cost < best) { best = cost; spot = b; spot.lead = lead; }
       });
@@ -888,8 +961,47 @@
     return out;
   }
 
+  // the places a layout named (a signpost list names each of its rows)
+  function namedCodes(L) {
+    var out = [];
+    (L && L.labels || []).forEach(function (lab) { lab.rows.forEach(function (r) { var c = r.texts[0] && r.texts[0].code; if (c && out.indexOf(c) < 0) out.push(c); }); });
+    return out;
+  }
+  // THE CAP COUNTS NAMES, NOT PLACES TRIED (v24067). A full floor names up
+  // to capFor(H) of the page's places, in row order. The page's first ones
+  // that cannot be named on this floor (too near the airport, no room for a
+  // name, one name with another) used to keep their slots: Ottawa named 3
+  // places of its 5 while more waited on the page. Now the next places on
+  // the page are tried in their place, and a try is kept only when it names
+  // every place the one before named, and more. `run(list)` is the layout
+  // of a list of places.
+  function fillNames(pool, cap, run) {
+    var list = pool.slice(0, cap), L = run(list), next = list.length;
+    for (var tries = 0; tries < 6 && next < pool.length; tries++) {
+      var named = namedCodes(L);
+      if (named.length >= cap) break;
+      var lost = {}; L.tooNear.concat(L.unplaced).forEach(function (c) { lost[c] = 1; });
+      var list2 = list.filter(function (p) { return !lost[p.code]; }), added = 0;
+      while (next < pool.length && added < cap - named.length) { list2.push(pool[next++]); added++; }
+      if (!added) break;
+      var L2 = run(list2), named2 = namedCodes(L2);
+      if (named2.length > named.length && named2.length <= cap && named.every(function (c) { return named2.indexOf(c) >= 0; })) { list = list2; L = L2; }
+    }
+    return { list: list, L: L };
+  }
+  // the code a row names: its own (data-iata), else the code its city label
+  // ends with ('Chicago · O'Hare | ORD': the board found it from the name
+  // for the row's code chip, and not for the row itself)
+  function rowCode(iata, loc) {
+    var c = String(iata || '').trim().toUpperCase();
+    if (c) return c;
+    var m = /\|\s*([A-Z]{3})\s*$/.exec(String(loc || ''));
+    return m ? m[1] : '';
+  }
+
   var Core = {
     EARTH_FLOOR_ON: EARTH_FLOOR_ON, BASE: BASE,
+    namedCodes: namedCodes, fillNames: fillNames, rowCode: rowCode,
     MIN_ANY: MIN_ANY, MIN_ROUTES: MIN_ROUTES, MIN_FULL: MIN_FULL, MIN_W: MIN_W, MIN_PAGE_W: MIN_PAGE_W,
     SLICE_MS: SLICE_MS, MAX_PLACES: MAX_PLACES,
     capFor: capFor, modeFor: modeFor, placesFrom: placesFrom, onPage: onPage, ZONES: ZONES, zoneOf: zoneOf,
@@ -1175,10 +1287,10 @@
   // the few pixels under the last row where the board's ground turns to the
   // deep navy of space
   function featherOf(h) { return clamp(h * 0.06, 8, 22); }
-  // how much of the top of the current floor is out of sight (a floor kept up
-  // under a page with more rows, past the 6 px a floor size allows), with the
-  // turn into the ground that fitShown gives its cut edge; 0 otherwise
-  function hiddenTop() { return cur && cur.H - spaceH > 6 ? cur.H - spaceH + featherOf(cur.H) : 0; }
+  // how much of the top of the floor on screen is out of sight (a floor kept
+  // up under a page with more rows, past the 6 px a floor size allows), with
+  // the turn into the ground that fitShown gives its cut edge; 0 otherwise
+  function hiddenTop(e) { e = e || showE || cur; return e && e.H - spaceH > 6 ? e.H - spaceH + featherOf(e.H) : 0; }
   function halve(src) {
     var c = doc.createElement('canvas'); c.width = Math.max(1, Math.round(src.width / 2)); c.height = Math.max(1, Math.round(src.height / 2));
     var x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.drawImage(src, 0, 0, c.width, c.height);
@@ -1373,17 +1485,24 @@
   var layer = null, svg = null, shown = null, W = 0, H = 0, AP0 = '', curKey = '', LSIG = '', lastBucket = -1;
   var cur = null, P = null, here = null, ground = [16, 40, 80], painted = false, retryAt = 0, lastLayout = null, bare = false;
   var pend = null, viewMemo = {}, shapeStore = { dep: {}, arr: {} }, shapeDay = '', spaceH = 0, fitSig = '';
+  //   showE    the floor whose planet is on screen (its names are the ones drawn)
+  //   drawn    what the names on screen were drawn for: { e, list, wsig }
+  var showE = null, drawn = null, fillMemo = { key: '', list: null };
   // a planet goes on screen in place of the one there, in one step: it stands
   // at the foot of the layer at its own size, so a floor kept up while the
   // next is built is never stretched (a taller one is cut at its top edge, a
   // shorter one stands under its own sky: fitShown)
-  function showCanvas(cv) {
+  function showCanvas(e) {
+    var cv = e ? e.cv : null;
+    showE = e || null;
     if (shown === cv) return;
     if (cv) layer.insertBefore(cv, (shown && shown.parentNode === layer) ? shown : svg);
     if (shown && shown.parentNode) shown.parentNode.removeChild(shown);
     shown = cv;
     fitShown();
   }
+  // nothing on the floor: no planet, no names
+  function blank() { showCanvas(null); if (svg) svg.textContent = ''; drawn = null; }
   // a floor kept up in a space of another height until the next is lit:
   // shorter, the space above it is the floor's own sky (the board's ground
   // turning to the navy of space, as its top does, and its own turn hidden);
@@ -1424,7 +1543,7 @@
     try { if (!still && layer.animate) layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 2400, easing: 'ease' }); } catch (e) {}
   }
   function clearLayer() {
-    cur = null; showCanvas(null); if (svg) svg.textContent = ''; lastLayout = null;
+    cur = null; blank(); lastLayout = null;
     if (layer) { layer.classList.remove('ready'); layer.setAttribute('data-mode', 'none'); }
   }
   // the old backdrop back, and nothing drawn
@@ -1438,7 +1557,7 @@
     var out = [], seen = {};
     try {
       Array.prototype.forEach.call(doc.querySelectorAll('#fidsTable tr[data-flight][data-iata]'), function (tr) {
-        var c = realCode(String(tr.getAttribute('data-iata') || '').toUpperCase());
+        var c = realCode(rowCode(tr.getAttribute('data-iata'), tr.getAttribute('data-loc')));
         if (c && !seen[c]) { seen[c] = 1; out.push(c); }
       });
     } catch (e) {}
@@ -1452,12 +1571,13 @@
   // the places a floor shows: on a full floor the rows above it, on a strip
   // the next flight still to come; none at all on a board showing no rows
   // (no flights in its window, its feed down): the planet and the airport
-  function viewPlaces(md, h) {
+  function viewPlaces(md, h, all) {
     if (bare) return [];
-    return md === 'full' ? onPage(P.list, pageCodes()).slice(0, capFor(h)) : P.list.filter(function (p) { return p.isNext; });
+    if (md !== 'full') return P.list.filter(function (p) { return p.isNext; });
+    var pg = onPage(P.list, pageCodes());
+    return all ? pg : pg.slice(0, capFor(h));
   }
-  function placesToDraw(md, h) {
-    var list = viewPlaces(md, h);
+  function named(list) {
     var langs = boardLangsNow(), cur0 = shownLang();
     return list.map(function (p) {
       var names = langs.map(function (l) { return cityName(p.code, p.raw, l); });
@@ -1466,18 +1586,61 @@
       return { code: p.code, lat: p.lat, lon: p.lon, tz: p.tz, isNext: p.isNext, done: p.done, rank: p.rank, n: p.n, name: name, names: names };
     });
   }
+  // THE WORDS ON THE FLOOR ARE ALWAYS THE BOARD'S OWN. What they were drawn
+  // in: the board's languages, the one on screen, its clock (12-hour led by
+  // English, 24-hour by any other: BoardStrings.boardClock24) and the minute
+  // the times read. The names and times are drawn for the floor ON SCREEN
+  // (showE), which is not always the current one: while the next floor is
+  // being lit, the one on screen stays up, and so did the words it was drawn
+  // with — a board turned to French kept "9:10 AM" under its rows until the
+  // next floor was lit, seconds later on a slow screen (the rendered language
+  // check failed on it in CI, 2026-10-19). Now a change of language is drawn
+  // at once, inside the change itself (BoardStrings.onLangs), whatever is
+  // being lit, and every second the words are checked again (refreshWords).
+  function clock24() { try { var B = S(); return !!(B && B.boardClock24 && B.boardClock24()); } catch (e) { return false; } }
+  function wordsSig() {
+    var mn = 0; try { mn = Math.floor(nowFor(apTz(AP0)).getTime() / 60000); } catch (e) {}
+    return shownLang() + '|' + boardLangsNow().join(',') + '|' + (clock24() ? 24 : 12) + '|' + mn;
+  }
+  // what the layout follows besides the size: the rows, the languages, the
+  // next flight, the page, the floor's hidden top
+  function layoutSig() {
+    var dir = P ? P.dir : boardDir(), rows = boardRows(dir);
+    return dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + boardLangsNow().join(',') + '|' + (P && P.next ? P.next.code : '') + '|' + pageCodes().join(',') + '|' + Math.round(hiddenTop());
+  }
   function drawOverlay() {
-    var e = cur;
-    if (!e || !e.ready || !P || !here || e.H < MIN_ROUTES) { render(null); return; }
-    var at = nowFor(apTz(AP0)), t0 = performance.now();
+    var e = showE;
+    if (!e || !e.ready || !P || !here || e.H < MIN_ROUTES) { render(null); drawn = null; return; }
+    var at = nowFor(apTz(AP0)), t0 = performance.now(), wsig = wordsSig(), full = e.H >= MIN_FULL;
     // a floor kept up under a page with more rows is cut at its top edge
     // until the next is lit: its names keep to the part in sight
-    lastLayout = layout({
-      view: e.view, W: e.W, H: e.H, top: hiddenTop(), here: here, full: e.H >= MIN_FULL, places: placesToDraw(e.md, e.H),
-      timeOf: function (tz) { return timeThere(at, tz); }, hereTz: apTz(AP0), measure: textW
-    });
+    var run = function (lst) {
+      return layout({
+        view: e.view, W: e.W, H: e.H, top: hiddenTop(e), here: here, full: full, places: named(lst),
+        timeOf: function (tz) { return timeThere(at, tz); }, hereTz: apTz(AP0), measure: textW
+      });
+    };
+    // the current floor names this page's places (up to its cap of names:
+    // fillNames); a floor kept up while the next is lit keeps the places it
+    // named (only its words follow the board)
+    var list;
+    if (e === cur || !drawn || drawn.e !== e) {
+      var pool = viewPlaces(e.md, e.H, true), fk = e.key + '|' + hiddenTop(e) + '|' + pool.map(function (p) { return p.code + (p.done ? '~' : '') + (p.isNext ? '!' : ''); }).join(',') + '|' + wsig.replace(/\|\d+$/, '');
+      if (full && fillMemo.key === fk) { list = fillMemo.list; lastLayout = run(list); }
+      else if (full) { var fl = fillNames(pool, capFor(e.H), run); list = fl.list; lastLayout = fl.L; fillMemo = { key: fk, list: list }; }
+      else { list = pool; lastLayout = run(list); }
+    } else { list = drawn.list; lastLayout = run(list); }
     render(lastLayout, e.W, e.H);
+    drawn = { e: e, list: list, wsig: wsig };
+    if (e === cur) LSIG = layoutSig();
     stats.overlays++; stats.overlayMs += performance.now() - t0;
+  }
+  // the words on the floor on screen, drawn again when the board's languages,
+  // the one on screen, its clock or the minute have changed since they were
+  function refreshWords() {
+    if (!drawn || drawn.wsig === wordsSig()) return;
+    if (drawn.e !== showE) { render(null); drawn = null; return; }
+    drawOverlay();
   }
   // THE PLAN FOR A FLOOR SIZE: what it shows and the view it is drawn in.
   // A full floor is framed for its direction's places (shapersOf: the whole
@@ -1505,16 +1668,16 @@
   function readyFor(key) { for (var i = 0; i < cache.length; i++) if (cache[i].key === key) return !!cache[i].ready; return false; }
   function select(key, md, view) {
     layer.setAttribute('data-mode', md);
-    if (md === 'none') { cur = null; showCanvas(null); svg.textContent = ''; return; }
+    if (md === 'none') { cur = null; blank(); return; }
     var e = cached(key);
     if (e && (e.ready || !e.failed)) {
       stats.cacheHits++;
       cur = e;
-      if (e.ready && e.day) { showCanvas(e.cv); drawOverlay(); shade(e, function () { if (cur === e) drawOverlay(); }); return; }
-      if (e.ready && e.stale) { showCanvas(e.cv); drawOverlay(); rebuild(e); return; }
+      if (e.ready && e.day) { showCanvas(e); drawOverlay(); shade(e, function () { if (cur === e) drawOverlay(); }); return; }
+      if (e.ready && e.stale) { showCanvas(e); drawOverlay(); rebuild(e); return; }
       return;   // still being lit: the floor on screen stays until it is
     }
-    if (Date.now() < retryAt) { cur = null; showCanvas(null); svg.textContent = ''; return; }
+    if (Date.now() < retryAt) { cur = null; blank(); return; }
     // a floor not seen yet: project, light, then put it on screen in place of
     // the one there, which stays up meanwhile (never a blank floor)
     if (shown) stats.held = (stats.held || 0) + 1;
@@ -1536,7 +1699,7 @@
       }
       shade(e, function () {
         if (cur !== e) return;
-        showCanvas(e.cv); drawOverlay(); becomeReady();
+        showCanvas(e); drawOverlay(); becomeReady();
       });
     });
   }
@@ -1615,10 +1778,11 @@
       // retry, the old backdrop stays, as it does for a floor that failed)
       if (md === 'none' && !painted && shows && here && pageW >= MIN_PAGE_W && W >= MIN_W && H < MIN_ANY && Date.now() >= retryAt) setPainted(true);
       var at = nowFor(apTz(AP0)), key = plan.key;
-      var rows = boardRows(P.dir);
-      var lsig = P.dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + boardLangsNow().join(',') + '|' + (P.next ? P.next.code : '') + '|' + pageCodes().join(',') + '|' + Math.round(hiddenTop());
-      if (key !== curKey) { curKey = key; LSIG = lsig; select(key, md, plan.view); return; }
-      if (!cur || !cur.ready) return;
+      var lsig = layoutSig();
+      if (key !== curKey) { curKey = key; LSIG = lsig; select(key, md, plan.view); refreshWords(); return; }
+      // the next floor still being lit (or lit and not yet on screen): the
+      // one on screen stays, its words the board's
+      if (!cur || !cur.ready || cur !== showE) { refreshWords(); return; }
       var bucket = Math.floor(at.getTime() / (60000 * relightEvery));
       if (bucket !== lastBucket || String(cur.litKey || '').split('|')[1] !== ground.join(',')) {
         lastBucket = bucket;
@@ -1642,16 +1806,26 @@
     root.addEventListener('resize', function () { measure(); });
     doc.addEventListener('visibilitychange', function () { if (!doc.hidden) measure(); });
     try { new ResizeObserver(function () { measure(); }).observe(doc.getElementById('fidsTable')); } catch (e) {}
-    try { if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { if (cur && cur.ready) drawOverlay(); }); } catch (e) {}
+    try { if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { if (showE && showE.ready) drawOverlay(); }); } catch (e) {}
+    // the board's languages changed (toggleLang, setBoardLangs, the airport's
+    // configuration landing): the names and times are drawn again inside the
+    // change, before anything can read the old ones
+    try {
+      var B0 = S();
+      if (B0 && typeof B0.onLangs === 'function') B0.onLangs(function () { if (disabled || !layer) return; try { refreshWords(); } catch (err) { fail(err); } });
+    } catch (e) {}
     // review aids
     root.__ocfEarth = function () {
       var mem = blobBytes;
       cache.forEach(function (x) { mem += x.Wk * x.Hk * 4 + (x.day ? x.Wk * x.Hk * 6 : 0); });
       return { W: W, H: H, space: spaceH, settling: pend ? { w: pend.w, h: pend.h, ms: Date.now() - pend.at } : null, ap: AP0, mode: layer.getAttribute('data-mode'), K: K, relightEvery: relightEvery, painted: painted, disabled: disabled, wanted: wanted(),
-        ready: !!(cur && cur.ready && cur.litKey), memMB: +(mem / 1e6).toFixed(1), blobMB: +(blobBytes / 1e6).toFixed(1),
+        ready: !!(cur && cur.ready && cur.litKey), onScreen: showE ? showE.key.split('|')[0] : null, onScreenIsCurrent: !!showE && showE === cur, words: drawn ? drawn.wsig : null,
+        memMB: +(mem / 1e6).toFixed(1), blobMB: +(blobBytes / 1e6).toFixed(1),
         view: cur && cur.view ? { psi: cur.view.psi, delta: cur.view.delta, R: Math.round(cur.view.R), cx: Math.round(cur.view.cx), cy: Math.round(cur.view.cy) } : null,
         cache: cache.map(function (x) { return x.key.split('|')[0] + (x.ready ? '' : '~') + (x.day ? '' : '-'); }),
-        layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear } : null,
+        // labels: [code, x0, y0, x1, y1, at an arrow (1) or a dot (0), its point x, y]
+        layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1), l.edge ? 1 : 0, Math.round(l.at.x), Math.round(l.at.y)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear,
+          dots: lastLayout.dots.map(function (d) { return [d.code, Math.round(d.x), Math.round(d.y)]; }), arrows: (lastLayout.arrows || []).map(function (w) { return [w.code, Math.round(w.x), Math.round(w.y)]; }), leaders: lastLayout.leaders.length } : null,
         stats: stats };
     };
     // project and light the current floor again from the pictures at hand,

@@ -182,7 +182,7 @@ test('a page change never blanks the floor: the one on screen stays until the ne
   assert.ok(sel.length > 200, 'select() is where it was');
   const miss = sel.slice(sel.indexOf('a floor not seen yet'));
   assert.doesNotMatch(miss.slice(0, miss.indexOf('build(e,')), /showCanvas\(null\)|svg\.textContent = ''/, 'nothing is cleared before the build');
-  assert.match(miss, /shade\(e, function \(\) \{\s*if \(cur !== e\) return;\s*showCanvas\(e\.cv\); drawOverlay\(\); becomeReady\(\);/, 'the new floor goes up in one step once lit');
+  assert.match(miss, /shade\(e, function \(\) \{\s*if \(cur !== e\) return;\s*showCanvas\(e\); drawOverlay\(\); becomeReady\(\);/, 'the new floor goes up in one step once lit');
   assert.match(sel, /return;\s+\/\/ still being lit: the floor on screen stays/);
   // one step: the new planet is put in before the old one is taken out
   assert.match(MOD, /if \(cv\) layer\.insertBefore\(cv, \(shown && shown\.parentNode === layer\) \? shown : svg\);\s*if \(shown && shown\.parentNode\) shown\.parentNode\.removeChild\(shown\);/);
@@ -207,4 +207,22 @@ test('a page change never blanks the floor: the one on screen stays until the ne
   // into the ground; within the 6 px a size allows nothing is added
   assert.match(MOD, /if \(shown && fh && gap > 6\) \{\s*bg = 'linear-gradient\(rgb\(' \+ ground\.join/);
   assert.match(MOD, /\} else if \(shown && fh && gap < -6\) \{\s*mask = 'linear-gradient\(transparent 0px, #000 ' \+ f \+ 'px\)';/);
+});
+
+test('the names and times on the floor are always the board\'s languages, also while the next floor is being lit', () => {
+  // they are drawn for the floor ON SCREEN (showE), remembering the words they
+  // were drawn in (drawn.wsig: the languages, the one on screen, the clock,
+  // the minute); a change of languages draws them again inside the change
+  // (BoardStrings.onLangs), and every second they are checked again, also
+  // while the next floor is still being lit (the CI failure of 2026-10-19:
+  // '9:10 AM' on a French board). tests/earth-floor-langs-render.test.js
+  // holds that moment open in a browser.
+  assert.match(MOD, /function drawOverlay\(\) \{\s*var e = showE;/, 'the names are the floor on screen\'s');
+  assert.match(MOD, /function wordsSig\(\) \{[\s\S]{0,200}shownLang\(\) \+ '\|' \+ boardLangsNow\(\)\.join\(','\) \+ '\|' \+ \(clock24\(\) \? 24 : 12\)/);
+  assert.match(MOD, /drawn = \{ e: e, list: list, wsig: wsig \};/);
+  assert.match(MOD, /function refreshWords\(\) \{\s*if \(!drawn \|\| drawn\.wsig === wordsSig\(\)\) return;/);
+  assert.match(MOD, /if \(!cur \|\| !cur\.ready \|\| cur !== showE\) \{ refreshWords\(\); return; \}/, 'checked every second while the next floor is lit');
+  assert.match(MOD, /B0\.onLangs\(function \(\) \{ if \(disabled \|\| !layer\) return; try \{ refreshWords\(\); \}/, 'drawn again inside a change of languages');
+  assert.match(MOD, /function showCanvas\(e\) \{\s*var cv = e \? e\.cv : null;\s*showE = e \|\| null;/);
+  assert.doesNotMatch(MOD, /showCanvas\([a-z]+\.cv\)/, 'every caller hands showCanvas its floor');
 });

@@ -16985,7 +16985,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24065" src="/textures/gate-sky-shelf.mp4?v=24065" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24067" src="/textures/gate-sky-shelf.mp4?v=24067" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17029,7 +17029,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24065" src="/textures/gate-sky-shelf.mp4?v=24065" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24067" src="/textures/gate-sky-shelf.mp4?v=24067" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -30616,6 +30616,65 @@ const COORDS = {
   RMO:[46.928,28.931],    // Chisinau, Moldova
   SPU:[43.539,16.298],    // Split, Croatia
   TIA:[41.415,19.721],    // Tirana, Albania
+  // v24067 — EARTH, NOW: places the boards list that no table could place,
+  //    so the floor under the rows drew no route to them (the overnight
+  //    sweep of every airport's board, 2026-10-19), and Roberval itself,
+  //    the one board that opens with no position for its own airport.
+  //    Positions from OurAirports (ourairports.com/data, public domain),
+  //    rounded to 3 decimals; a sample checked against a second source.
+  //    The same rows are in airport-coords.js (AIRPORT_COORDS).
+  YRJ:[48.520,-72.266],   // Roberval, Quebec (CYRJ)
+  DJT:[26.683,-80.096],   // West Palm Beach (was PBI; renamed 2026) (KPBI)
+  PVC:[42.072,-70.221],   // Provincetown, Massachusetts (KPVC)
+  FMN:[36.741,-108.230],  // Farmington, New Mexico (KFMN)
+  BZE:[17.540,-88.304],   // Belize City (MZBZ)
+  XPL:[14.382,-87.621],   // Comayagua (Palmerola), Honduras (MHSC)
+  RTB:[16.317,-86.523],   // Roatan, Honduras (MHRO)
+  SAP:[15.453,-87.924],   // San Pedro Sula, Honduras (MHLM)
+  MGA:[12.142,-86.168],   // Managua, Nicaragua (MNMG)
+  CAP:[19.726,-72.201],   // Cap-Haitien, Haiti (MTCH)
+  CYA:[18.271,-73.788],   // Les Cayes, Haiti (MTCA)
+  BON:[12.131,-68.269],   // Bonaire (TNCB)
+  ANU:[17.137,-61.793],   // Antigua (TAPA)
+  DOM:[15.547,-61.301],   // Dominica (TDPD)
+  SKB:[17.311,-62.719],   // St Kitts (TKPK)
+  MAR:[10.558,-71.729],   // Maracaibo, Venezuela (SVMC)
+  FAE:[62.063,-7.276],    // Faroe Islands (Vagar) (EKVG)
+  SFJ:[67.010,-50.715],   // Kangerlussuaq, Greenland (BGSF)
+  GIB:[36.152,-5.350],    // Gibraltar (LXGB)
+  JER:[49.208,-2.196],    // Jersey (EGJJ)
+  GCI:[49.435,-2.602],    // Guernsey (EGJB)
+  BTS:[48.170,17.213],    // Bratislava, Slovakia (LZIB)
+  KSC:[48.663,21.241],    // Kosice, Slovakia (LZKZ)
+  LOS:[6.577,3.321],      // Lagos, Nigeria (DNMM)
+  WDH:[-22.480,17.471],   // Windhoek, Namibia (FYWH)
+  MLE:[4.192,73.529],     // Male, Maldives (VRMM)
+  GYD:[40.473,50.051],    // Baku, Azerbaijan (UBBB)
+  OAG:[-33.382,149.131],  // Orange, NSW (YORG)
+  YYE:[58.836,-122.597],  // Fort Nelson, BC (CYYE)
+  YYF:[49.463,-119.602],  // Penticton, BC (CYYF)
+  YWL:[52.183,-122.054],  // Williams Lake, BC (CYWL)
+  YAA:[52.452,-125.304],  // Anahim Lake, BC (CAJ4)
+  XQU:[49.337,-124.393],  // Qualicum Beach, BC (CAT4)
+  ZMT:[54.028,-132.125],  // Masset, BC (CZMT)
+  ZEL:[52.185,-128.157],  // Bella Bella, BC (CBBC)
+  YZZ:[49.056,-117.609],  // Trail, BC (CAD4)
+  YFI:[57.276,-110.977],  // Fort MacKay / Firebag, Alberta (CFG6)
+  ZFD:[59.334,-107.182],  // Fond-du-Lac, Saskatchewan (CZFD)
+  YVQ:[65.282,-126.798],  // Norman Wells, NWT (CYVQ)
+  YYH:[69.547,-93.577],   // Taloyoak, Nunavut (CYYH)
+  YCO:[67.816,-115.143],  // Kugluktuk, Nunavut (CYCO)
+  //    And the Quebec airports on the French-first list (BoardStrings.FR_FIRST)
+  //    that had no position, so each can carry its clock (fids-earth.js ZONE_ONE).
+  YMX:[45.680,-74.039],   // Montreal Mirabel (CYMX)
+  YKQ:[51.473,-78.758],   // Waskaganish, Quebec (CYKQ)
+  YHR:[50.468,-59.638],   // Chevery, Quebec (CYHR)
+  YTF:[48.509,-71.642],   // Alma, Quebec (CYTF)
+  AKV:[60.819,-78.149],   // Akulivik, Quebec (CYKO)
+  YIK:[62.417,-77.925],   // Ivujivik, Quebec (CYIK)
+  YQC:[61.046,-69.618],   // Quaqtaq, Quebec (CYHA)
+  YKG:[60.027,-69.999],   // Kangirsuk, Quebec (CYAS)
+  XGR:[58.711,-65.993],   // Kangiqsualujjuaq, Quebec (CYLU)
 };
 
 // ── WEATHER SYSTEM (Tomorrow.io only) ────────────────────────────────────
@@ -32717,8 +32776,67 @@ var _CITY2IATA_ALIAS = {
   gulfportbiloxi: 'GPT', gulfport: 'GPT',
   bentonvillefayetteville: 'XNA', northwestarkansas: 'XNA',
   pensacola: 'PNS', syracuse: 'SYR',
-  raleighdurham: 'RDU', raleighdurhamnc: 'RDU'
+  raleighdurham: 'RDU', raleighdurhamnc: 'RDU',
+  // v24067 — rows the overnight sweep of every airport's board found with no
+  // code (2026-10-19): Pascan's 'St Hubert' at Québec is Montréal
+  // Saint-Hubert; Porter's 'Toronto Centre-Ville' is Billy Bishop (the city
+  // centre airport); 'Ft Mackay/Firebag' is the Firebag aerodrome; Norman
+  // Wells has no name of its own in our tables. 'Cincinnati, OH' is the
+  // Cincinnati airport (CVG, across the river in Kentucky): the state does
+  // not settle it, because Lunken (LUK), also named Cincinnati, is in Ohio.
+  sthubert: 'YHU', sainthubert: 'YHU', torontocentreville: 'YTZ',
+  ftmackayfirebag: 'YFI', fortmackayfirebag: 'YFI', firebag: 'YFI',
+  normanwells: 'YVQ', cincinnatioh: 'CVG'
 };
+// v24067 — THE SPELLINGS FEEDS WRITE THAT NO WHOLE NAME MATCHES. Each is
+// tried only when the whole name finds nothing, and none ever picks one
+// airport of a name that has two (tests/earth-floor-places.test.js holds
+// every rule to the whole index):
+//   'Harrisburg, PA'   the US state or Canadian province after a comma:
+//                      only an airport of that name inside that state
+//                      (its box, _REGION_BOX), and only if exactly one is.
+//                      Washington, DC is left out (Reagan and Dulles).
+//   'Ft McMurray'      St/Ste/Ft/Mt and Saint/Sainte/Fort/Mount, either way
+//   'Whitehorse, Calgary', 'Inuvik, Yellowknife, Norman Wells'
+//                      a list of stops: the first, when every one is a place
+//                      we know and none is a country or a province
+//                      ('Hamilton, Bermuda' is not two stops: _NOT_A_STOP)
+//   'Montreal-Trdeau'  a city and its airport's own short name (AP sub)
+//                      one letter off, among that city's airports only
+// The boxes: each state's and province's airports in OurAirports
+// (ourairports.com/data, public domain), their furthest north, south, east
+// and west, rounded out to 0.1 degree: [south, north, west, east].
+var _REGION_BOX = {
+  AB: [48.9, 59.7, -119.9, -109.9], AK: [51.8, 71.4, -176.7, -129.9], AL: [30.1, 35.1, -88.5, -84.8],
+  AR: [32.9, 36.6, -94.7, -89.7], AZ: [31.2, 37.1, -114.8, -109], BC: [48.3, 59.9, -136.7, -114.8],
+  CA: [32.5, 42, -124.3, -114.1], CO: [37, 41.1, -109.1, -102], CT: [41.1, 42.1, -73.6, -71.7],
+  DE: [38.4, 39.8, -75.8, -75], FL: [24.5, 31.1, -87.6, -80], GA: [30.6, 35.1, -85.6, -81],
+  HI: [19.6, 24, -159.9, -154.9], IA: [40.4, 43.6, -96.5, -90.1], ID: [41.9, 49.1, -117.2, -111],
+  IL: [37, 42.6, -91.5, -87.4], IN: [37.8, 41.9, -88, -84.7], KS: [36.9, 40, -102.1, -94.5],
+  KY: [36.4, 39.1, -89.4, -82.2], LA: [28.9, 33.1, -94.1, -89.1], MA: [41.2, 43, -73.5, -69.9],
+  MB: [49, 59.8, -101.9, -90], MD: [37.9, 39.8, -79.6, -75], ME: [43, 47.5, -71.1, -66.9],
+  MI: [41.6, 47.3, -90.2, -82.4], MN: [43.4, 49.4, -97.1, -90.3], MO: [35.9, 40.7, -95.7, -89.1],
+  MS: [30.2, 35.1, -91.4, -88.1], MT: [44.6, 49.1, -116.1, -104], NB: [44.6, 48.1, -68.6, -64.3],
+  NC: [33.8, 36.6, -84, -75.5], ND: [45.9, 49.1, -104.1, -96.5], NE: [39.9, 43, -104.1, -95.5],
+  NH: [42.6, 45, -72.5, -70.7], NJ: [38.9, 41.3, -75.6, -73.9], NL: [47, 58.6, -67, -52.7],
+  NM: [31.4, 37.1, -109.1, -103], NS: [43.5, 46.4, -66.5, -59.8], NT: [59.8, 72.1, -135.1, -102.4],
+  NU: [61, 83.2, -116.3, -62.2], NV: [35.2, 42.1, -120.1, -114], NY: [40.5, 45.1, -79.8, -71.8],
+  OH: [38.3, 41.9, -84.9, -80.4], OK: [33.7, 37.1, -102.6, -94.4], ON: [41.7, 56.1, -94.8, -74.3],
+  OR: [41.9, 46.3, -124.6, -116.4], PA: [39.6, 42.3, -80.6, -74.8], PE: [46.2, 46.5, -63.9, -62.5],
+  QC: [44.9, 62.5, -79.5, -57.1], RI: [41.1, 42, -71.9, -71], SC: [32, 35.3, -83.1, -78.6],
+  SD: [42.4, 46.1, -104.1, -96.4], SK: [48.9, 59.9, -110, -101.4], TN: [34.9, 36.7, -90.2, -81.7],
+  TX: [25.8, 36.6, -106.5, -93.6], UT: [36.9, 42.1, -114.1, -109], VA: [36.4, 39.5, -83.3, -75.3],
+  VT: [42.7, 45.1, -73.5, -71.7], WA: [45.5, 49.1, -124.7, -116.9], WI: [42.4, 47, -92.9, -86.8],
+  WV: [37.2, 40.7, -82.7, -77.7], WY: [40.9, 45.1, -111.1, -104], YT: [60, 69.7, -141, -128.2]
+};
+// Names in our tables (written here as the tables write them) that are also
+// a country's, a territory's, a state's or a province's (OurAirports'
+// lists): in a comma list they are where a place is, not another stop
+var _NOT_A_STOP = {};
+['ANGUILLA', 'ARMENIA', 'ARUBA', 'BAHRAIN', 'BARBADOS', 'BELIZE', 'BERMUDA', 'CURACAO', 'DOMINICA', 'EL SALVADOR',
+ 'FAROE ISLANDS', 'GIBRALTAR', 'GRENADA', 'GUATEMALA', 'GUERNSEY', 'HONG KONG', 'ISLE OF MAN', 'Kuwait', 'LEBANON',
+ 'LIBERIA', 'LUXEMBOURG', 'MALTA', 'MEXICO', 'NEW YORK', 'ONTARIO', 'QUÉBEC', 'SAINT-MARTIN', 'SINGAPORE',
+ 'WASHINGTON'].forEach(function (n) { _NOT_A_STOP[_normCityKey(n)] = 1; });
 // Accents are folded before anything else is dropped. Without that, the
 // accented letter itself was dropped: our tables write 'ÎLES-DE-LA-MADELEINE',
 // 'SEPT-ÎLES' and 'MONTRÉAL', which keyed as 'lesdelamadeleine', 'septles',
@@ -32731,6 +32849,13 @@ function _normCityKey(s) {
 function _iataFromCityName(name) {
   var k = _normCityKey(name);
   if (k.length < 3) return '';
+  _cityIndex();
+  if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
+  var hit = _CITY2IATA[k];
+  if (hit === '!') return '';
+  return hit || _iataFromSpelling(String(name == null ? '' : name));
+}
+function _cityIndex() {
   if (!_CITY2IATA) {
     _CITY2IATA = {};
     var add = function (code, nm) {
@@ -32743,9 +32868,102 @@ function _iataFromCityName(name) {
     try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
     try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
   }
+  return _CITY2IATA;
+}
+// every code a name is ours for (the index keeps only one, or '!')
+var _CITY2IATA_ALL = null;
+function _cityCodesAll(k) {
+  if (!_CITY2IATA_ALL) {
+    _CITY2IATA_ALL = {};
+    var add = function (code, nm) {
+      var kk = _normCityKey(nm), c = String(code).toUpperCase();
+      if (!kk || kk.length < 3) return;
+      var L = _CITY2IATA_ALL[kk] || (_CITY2IATA_ALL[kk] = []);
+      if (L.indexOf(c) < 0) L.push(c);
+    };
+    try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) add(a.c, a.n); }); } catch (e) {}
+    try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
+    try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
+    Object.keys(_CITY2IATA_ALIAS).forEach(function (kk) { var L = _CITY2IATA_ALL[kk] || (_CITY2IATA_ALL[kk] = []); if (L.indexOf(_CITY2IATA_ALIAS[kk]) < 0) L.push(_CITY2IATA_ALIAS[kk]); });
+  }
+  return _CITY2IATA_ALL[k] || [];
+}
+// a whole name, or its St/Ft/Mt spelling: one code, '' for none, '!' for a
+// name that has two
+function _iataWholeOrSpelt(s) {
+  var k = _normCityKey(s);
+  if (k.length < 3) return '';
   if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
-  var hit = _CITY2IATA[k];
-  return (hit && hit !== '!') ? hit : '';
+  var hit = _cityIndex()[k];
+  if (hit) return hit;
+  var t = ' ' + String(s).replace(/[.\-\u2010-\u2015]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', got = '';
+  [[/ st /gi, ' saint '], [/ ste /gi, ' sainte '], [/ ft /gi, ' fort '], [/ mt /gi, ' mount '],
+   [/ saint /gi, ' st '], [/ sainte /gi, ' ste '], [/ fort /gi, ' ft '], [/ mount /gi, ' mt ']].forEach(function (r) {
+    if (got === '!') return;
+    var v = t.replace(r[0], r[1]); if (v === t) return;
+    var vk = _normCityKey(v), h = _CITY2IATA_ALIAS[vk] || _cityIndex()[vk];
+    if (!h) return;
+    if (h === '!' || (got && got !== h)) { got = '!'; return; }
+    got = h;
+  });
+  return got;
+}
+function _ptOf(c) {
+  var v = null;
+  try { if (typeof COORDS !== 'undefined' && COORDS[c]) v = COORDS[c]; } catch (e) {}
+  try { if (!v && typeof window !== 'undefined' && window.AIRPORT_COORDS && window.AIRPORT_COORDS[c]) v = window.AIRPORT_COORDS[c]; } catch (e) {}
+  try { if (!v && typeof GATE_AP !== 'undefined' && GATE_AP[c]) v = GATE_AP[c]; } catch (e) {}
+  if (!v) return null;
+  var la = +(v.lat != null ? v.lat : v[0]), lo = +(v.lon != null ? v.lon : (v.lng != null ? v.lng : v[1]));
+  return (isFinite(la) && isFinite(lo)) ? [la, lo] : null;
+}
+function _editsApart(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  var d = []; for (var i = 0; i <= a.length; i++) { d[i] = [i]; }
+  for (var j = 0; j <= b.length; j++) d[0][j] = j;
+  for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+function _iataFromSpelling(s) {
+  s = String(s || '').replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  // 'Harrisburg, PA': that name's airport in that state, one or none
+  var st = /^(.+?)\s*,\s*([A-Za-z]{2})\.?$/.exec(s);
+  if (st) {
+    var box = _REGION_BOX[st[2].toUpperCase()];
+    if (!box) return '';
+    var base = st[1], codes = [], bk = _normCityKey(base);
+    _cityCodesAll(bk).forEach(function (c) { if (codes.indexOf(c) < 0) codes.push(c); });
+    var sp = _iataWholeOrSpelt(base); if (sp && sp !== '!' && codes.indexOf(sp) < 0) codes.push(sp);
+    var inside = codes.filter(function (c) { var p = _ptOf(c); return p && p[0] >= box[0] && p[0] <= box[1] && p[1] >= box[2] && p[1] <= box[3]; });
+    return inside.length === 1 ? inside[0] : '';
+  }
+  // 'Ft McMurray'
+  var one = _iataWholeOrSpelt(s);
+  if (one === '!') return '';
+  if (one) return one;
+  // 'Whitehorse, Calgary': the first stop of a list of stops we all know
+  if (s.indexOf(',') > 0) {
+    var parts = s.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (parts.length < 2) return '';
+    var stops = [];
+    for (var i = 0; i < parts.length; i++) {
+      if (_NOT_A_STOP[_normCityKey(parts[i])]) return '';
+      var c1 = _iataWholeOrSpelt(parts[i]);
+      if (!c1 || c1 === '!') return '';
+      stops.push(c1);
+    }
+    return stops[0];
+  }
+  // 'Montreal-Trdeau': the city's own airports, its short name one letter off
+  var q = /^(.+?)\s*[-\u2010-\u2015]\s*(.+)$/.exec(s);
+  if (q) {
+    var qk = _normCityKey(q[2]), cands = _cityCodesAll(_normCityKey(q[1]));
+    if (qk.length < 5 || !cands.length) return '';
+    var near = cands.filter(function (c) { var sub = (typeof AP !== 'undefined' && AP[c] && AP[c].sub) ? _normCityKey(AP[c].sub) : ''; return sub.length >= 5 && _editsApart(qk, sub) <= 1; });
+    return near.length === 1 ? near[0] : '';
+  }
+  return '';
 }
 
 function formatCityIata(raw, iata, langOverride) {
@@ -34144,7 +34362,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24065';
+var FIDS_BUILD_TAG = 'v24067';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -59174,7 +59392,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24065" src="/textures/gate-sky-shelf.mp4?v=24065"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24067" src="/textures/gate-sky-shelf.mp4?v=24067"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
