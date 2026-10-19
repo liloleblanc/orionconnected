@@ -3401,8 +3401,13 @@ function acTrackAddPoint(rec, p, now) {
   const pts = (rec && Array.isArray(rec.pts)) ? rec.pts.slice() : [];
   const tms = p.timestamp ? Date.parse(p.timestamp) : NaN;
   const t = Math.round((isNaN(tms) ? now : tms) / 1000);
+  // v24068 — and the ground speed (knots, as the /adsb/ answer rounds it), so
+  // a gate that has just loaded has the fix before this one for its speed
+  // and altitude digits (fids-core.js _gateTelemTrackPrev). The map reads
+  // only the first two values.
   const pt = [Math.round(p.lat * 1e4) / 1e4, Math.round(p.lon * 1e4) / 1e4,
-    (typeof p.alt === "number") ? Math.round(p.alt) : null, t];
+    (typeof p.alt === "number") ? Math.round(p.alt) : null, t,
+    (typeof p.gspeed === "number") ? Math.round(p.gspeed) : null];
   const last = pts[pts.length - 1];
   if (last) {
     if (t <= last[3]) return null;                                   // not newer
@@ -12218,9 +12223,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
     // ── /fltrack/<flight> — THE TRACK THIS FLIGHT HAS FLOWN (v23906) ─────────
-    // { f, id, o, d, pts: [[lat, lon, altFt, epochS], ...] } for the flight's
-    // current FR24 leg, oldest first. Public like /adsb/, pattern-checked,
-    // reads only our own KV.
+    // { f, id, o, d, pts: [[lat, lon, altFt, epochS, gsKt], ...] } for the
+    // flight's current FR24 leg, oldest first (points recorded before v24068
+    // have no gsKt). Public like /adsb/, pattern-checked, reads only our own KV.
     {
       const _tm = path.match(/^\/fltrack\/([A-Za-z0-9]{3,8})$/);
       if (_tm) {
@@ -12492,7 +12497,23 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       try {
         const hit = await cache.match(cacheKey);
         if (hit) {
-          const body = await hit.text();
+          let body = await hit.text();
+          // v24068 — THE EDGE COPY AGES TOO. This copy was served exactly as
+          // stored, so a position read 150 s after it was stored still said
+          // seen_pos 4, and the gate's digits carried a climb or descent from
+          // the wrong moment. A copy stored with its time (X-Adsb-Stored)
+          // has seen_pos advanced by its age here, as the KV copy below is.
+          const _eAt = Number(hit.headers.get("X-Adsb-Stored")) || 0;
+          const _eAge = _eAt > 0 ? Math.max(0, Math.round((Date.now() - _eAt) / 1000)) : 0;
+          if (_eAge > 0) {
+            try {
+              const _ej = JSON.parse(body);
+              if (_ej && Array.isArray(_ej.ac) && _ej.ac.some((a) => a && typeof a.seen_pos === "number")) {
+                _ej.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _eAge; });
+                body = JSON.stringify(_ej);
+              }
+            } catch (e) {}
+          }
           return new Response(body, { status: 200, headers: {
             "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
             "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
@@ -12518,7 +12539,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               const _gBody = JSON.stringify(_gj);
               const _gLeft = Math.max(1, _gMax - _gAge);
               try { await cache.put(cacheKey, new Response(_gBody, { headers: {
-                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}` } })); } catch (e) {}
+                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`,
+                "X-Adsb-Stored": String(Date.now()) } })); } catch (e) {}
               return new Response(_gBody, { status: 200, headers: {
                 "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`,
                 "X-Adsb-Cache": "shared", ...corsHeaders(origin) } });
@@ -12646,7 +12668,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), body: _frBody }), { expirationTtl: ADSB_TTL })); } catch (e) {}
                 try {
                   await cache.put(cacheKey, new Response(_frBody, { headers: {
-                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+                    "X-Adsb-Stored": String(Date.now()) } }));
                 } catch (e) {}
                 return new Response(_frBody, { status: 200, headers: {
                   "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,

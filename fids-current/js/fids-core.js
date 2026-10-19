@@ -7295,14 +7295,17 @@ window._gateTelemAnim = window._gateTelemAnim || {
 };
 
 // v24068 — what a Flightradar24 answer says about its own fix, for the model:
-// its vertical speed (ft/min), when the position was taken (the answer's age
-// off the moment it reached us, the map glide's own arithmetic) and whether
-// the aircraft is on the ground. Takes an _adsbTelemetry result.
+// its vertical speed (ft/min), when the position was taken and whether the
+// aircraft is on the ground. Takes an _adsbTelemetry result. The time is the
+// answer's `taken` (its age off the moment it actually reached this screen,
+// so a copy the board's own 45 s cache hands out again is not younger than it
+// is), else its age off `at`, the map glide's own arithmetic.
 function _gateTelemFix(r) {
   if (!r || typeof r !== 'object') return null;
-  var at = (typeof r.at === 'number' ? r.at : Date.now())
-         - ((typeof r.age === 'number' && r.age > 0) ? r.age * 1000 : 0);
-  return { vs: (typeof r.vs === 'number') ? r.vs : null, at: at, onGround: r.onGround === true };
+  var at = (typeof r.taken === 'number' && isFinite(r.taken)) ? r.taken
+         : (typeof r.at === 'number' ? r.at : Date.now())
+           - ((typeof r.age === 'number' && r.age > 0) ? r.age * 1000 : 0);
+  return { vs: (typeof r.vs === 'number' && isFinite(r.vs)) ? r.vs : null, at: at, onGround: r.onGround === true };
 }
 
 // Re-anchor to a fresh real reading. Called each render with the resolved
@@ -7316,22 +7319,33 @@ function _gateTelemSetReal(spdKt, altFt, fix) {
   var al = (typeof altFt === 'number') ? altFt : null;
   if (sp === null && al === null) {
     T.spd = null; T.alt = null; T.realSpd = null; T.realAlt = null; T.realSecToArr = null;
-    T.realVs = null; T.ground = false;
+    T.realVs = null; T.realTimed = false; T.ground = false; T.dirA = 0; T.dirS = 0;
     return;
   }
   var vs = (fix && typeof fix.vs === 'number' && isFinite(fix.vs)) ? fix.vs : null;
+  var now = Date.now();
   // v24068 — DOWN IS DOWN. Once a fix says the aircraft is on the ground, a
   // reading with no fix behind it (the render's held last airborne numbers)
   // is not news and must not put it back in the air.
   if (!fix && T.ground === true && al !== null && al > 0) return;
-  if (sp === T.realSpd && al === T.realAlt) {
-    // The same fix again: the Worker re-serves one answer for up to 180 s.
-    // Keep drifting; learn its vertical speed if the first caller lacked it.
+  // When the position was taken: the fix's own time, never in the future.
+  var at = (fix && typeof fix.at === 'number' && isFinite(fix.at) && now - fix.at < 900000) ? Math.min(fix.at, now) : null;
+  // v24068 — THE SAME FIX AGAIN (the Worker re-serves one answer for up to
+  // 180 s) is the same speed, altitude AND vertical speed. A copy is never
+  // re-timed later (a copy whose age did not advance would restart the
+  // climb or descent from its raw reading), but it fills in what the anchor
+  // lacked. The same numbers with a different vertical speed are a new fix:
+  // the aircraft that read 10,000 ft and -400 ft/min as it levelled, then
+  // 10,000 ft and level, has stopped descending.
+  if (sp === T.realSpd && al === T.realAlt &&
+      (vs === null || typeof T.realVs !== 'number' || vs === T.realVs)) {
     if (vs !== null && typeof T.realVs !== 'number') T.realVs = vs;
+    if (at !== null && !T.realTimed && at < T.realTs) { T.realTs = at; T.realTimed = true; }
     if (fix) T.ground = fix.onGround === true;
     return;
   }
-  var now = Date.now();
+  // An answer older than the one already held (answers can cross) is not news.
+  if (at !== null && T.realTimed && at < T.realTs - 10000) return;
   // Remember the PREVIOUS real fix — the pair (prev, real) measures the
   // actual climb/descent/accel rate, which the model below continues
   // between pings.
@@ -7339,12 +7353,10 @@ function _gateTelemSetReal(spdKt, altFt, fix) {
   // v24068 — the anchor is timed when the position was TAKEN, not when it
   // reached this screen (an answer can be minutes old on arrival), so the
   // digits are carried from the same moment the map's aeroplane is.
-  var at = (fix && typeof fix.at === 'number' && fix.at <= now && now - fix.at < 900000) ? fix.at : now;
-  T.realSpd = sp; T.realAlt = al; T.realTs = at; T.realVs = vs;
+  T.realSpd = sp; T.realAlt = al; T.realTs = (at !== null) ? at : now; T.realTimed = (at !== null); T.realVs = vs;
   if (fix) T.ground = fix.onGround === true;
   // A fresh ping re-anchors the MODEL; the per-second animator EASES the
-  // displayed digits onto it over ~10 s
-  // — no hard snap after a frozen minute.
+  // displayed digits onto it — no hard snap after a frozen minute.
   // Only a first-ever anchor is written directly (nothing to ease from), and
   // at the model's value for right now, so the first paint is already moving.
   if ((T.spd === null && sp !== null) || (T.alt === null && al !== null)) {
@@ -7359,18 +7371,86 @@ function _gateTelemSetReal(spdKt, altFt, fix) {
   T.realSecToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
 }
 
-// Target for right now = the last REAL reading. No fabrication.
+// v24068 — HOW MUCH OF A MEASURED RATE TO CARRY, `age` seconds past the fix:
+// all of it for the first 45 s, then less and less until 225 s, then none
+// (held). So at most 135 s of a rate is ever carried, against the 240 s the
+// old two-fix rule carried. The Worker shares a new fix every three to four
+// minutes, and an aircraft that levels off between two fixes must not have
+// been carried far past its level: the digits would have to come back.
+// Held, never dropped, as before: reverting to the raw anchor when the window
+// ran out made the altimeter climb on final. `c` is the seconds carried so
+// far, `k` the share of the rate running now, `left` the seconds still to come.
+function _gateTelemCarry(age) {
+  var T1 = 45, T2 = 225, L = T2 - T1, MAX = T1 + L / 2;
+  if (!(age > 0)) return { c: 0, k: 1, left: MAX };
+  if (age <= T1) return { c: age, k: 1, left: MAX - age };
+  var x = Math.min(age, T2) - T1;
+  var c = T1 + x - x * x / (2 * L);
+  return { c: c, k: (age < T2) ? 1 - x / L : 0, left: MAX - c };
+}
+
+// v24068 — THE FLIGHT'S OWN TRACK HOLDS THE FIX BEFORE. The Worker records
+// every Flightradar24 position into the flight's track (/fltrack/, which the
+// map already reads for the flown line), now with its ground speed. A screen
+// that has just loaded holds one fix, but the track's point before it is the
+// previous real fix: with it the speed and the altitude have a measured rate
+// from the first second, instead of after the next fix three minutes later.
+// Only a point 30 s to 7 min before the anchor counts, so it is this
+// flight's, this leg's, and a different fix. And the track's newest point at
+// the anchor's time, when it holds the anchor's own numbers, IS the anchor,
+// with Flightradar24's own timestamp: a copy whose age was never advanced
+// (the Worker's edge copy) is re-timed by it, once.
+function _gateTelemTrackPrev(T) {
+  try {
+    if (!T.realTs || T.trackFor === T.realTs) return;
+    var inb = window._gateInbound || window._gatePanelInbound;
+    var f = inb && String(inb.flight || '').replace(/\s+/g, '').toUpperCase();
+    var c = (f && typeof _flownCache !== 'undefined' && _flownCache) ? _flownCache[f] : null;
+    var pts = c && c.rec && c.rec.pts;
+    if (!pts || !pts.length) return;
+    var a = T.realTs / 1000, own = -1, i, q;
+    for (i = pts.length - 1; i >= 0; i--) {
+      q = pts[i];
+      if (q && typeof q[3] === 'number' && q[3] <= a + 5) { own = i; break; }
+    }
+    if (own < 0) return;
+    q = pts[own];
+    var tOwn = a, from = own;
+    if (q[3] >= a - 420 && typeof T.realAlt === 'number' && q[2] === T.realAlt &&
+        (typeof q[4] !== 'number' || q[4] === T.realSpd)) {
+      tOwn = q[3]; from = own - 1;
+      if (Math.abs(tOwn - a) > 5) { T.realTs = tOwn * 1000; T.realTimed = true; }
+    }
+    T.trackFor = T.realTs;
+    var span = (T.prevTs && T.realTs > T.prevTs) ? (T.realTs - T.prevTs) / 1000 : 0;
+    if (span >= 10 && span <= 420 && (typeof T.prevAlt === 'number' || typeof T.prevSpd === 'number')) return;
+    for (i = from; i >= 0; i--) {
+      q = pts[i];
+      if (!q || typeof q[3] !== 'number' || q[3] > tOwn - 30) continue;
+      if (q[3] < tOwn - 420) return;
+      var pa = (typeof q[2] === 'number' && q[2] > 0 && typeof T.realAlt === 'number' && T.realAlt > 0) ? q[2] : null;
+      var ps = (typeof q[4] === 'number' && isFinite(q[4])) ? q[4] : null;
+      if (pa === null && ps === null) return;
+      T.prevAlt = pa; T.prevSpd = ps; T.prevTs = q[3] * 1000;
+      return;
+    }
+  } catch (e) {}
+}
+
+// Target for right now = the last REAL reading plus its bounded measured
+// trend. No fabrication.
 // A prior version modeled a descent (altitude bled toward 0 across the padded
 // scheduled arrival) — it "dragged time" and held a plane at 1,800 ft for 10
 // minutes, and it never handled a climb (altitude sat flat while climbing).
-// We never invent motion now: the numbers ARE the real feed. Movement comes
-// from real readings refreshing (the fast poll below) — a climbing plane's
-// altitude rises because the aircraft's real altitude rose — smoothly eased.
+// We never invent motion now: the numbers ARE the real feed, carried forward
+// only at a rate the feed itself measured, and only for a short while.
 function _gateTelemModel() {
   var T = window._gateTelemAnim;
   if (T.realAlt === null && T.realSpd === null) return null;
   var spd = T.realSpd, alt = T.realAlt;
-  var spdRate = 0, altRate = 0;   // v24068 — the model's rate right now, for the animator
+  // v24068 — for the animator: the rate running now, what is still to come,
+  // and which way the fixes say the aircraft is going (-1, 0, +1).
+  var spdRate = 0, altRate = 0, spdLeft = 0, altLeft = 0, spdWay = 0, altWay = 0;
   // v23100 — ON THE GROUND THE TREND IS DEAD. After touchdown the bridge
   // kept carrying the last measured altitude rate (a baro→ground blip can
   // even measure a CLIMB) while the speed honoured the real zero — a screen
@@ -7385,77 +7465,67 @@ function _gateTelemModel() {
     if (T.ground === true || (_gp && _gp.onGround === true) ||
         (_gi && _gi._liveOnGround === true) ||
         (_gi && /arriv|land|cancel/i.test(String(_gi.status || '')))) {
-      return { spd: (typeof spd === 'number' ? spd : 0), alt: 0, spdRate: 0, altRate: 0 };
+      return { spd: (typeof spd === 'number' ? spd : 0), alt: 0, spdRate: 0, altRate: 0, spdLeft: 0, altLeft: 0, spdWay: 0, altWay: 0, ground: true };
     }
   } catch (e) {}
   // TREND BRIDGE — the map glide's rule applied to the digits (
   // approximate first, then adjust with the pings). Between real fixes,
-  // continue the RATE measured between the last two fixes, so a plane on
-  // final keeps visibly descending instead of freezing at the last ping
-  // for 60 s (video: locked at 230 kph / 825 ft through the approach).
-  // This is measured motion carried forward, not an invented profile:
-  // clamped to sane rates, trusted max 360 s (tapered), re-anchored by
-  // every ping.
+  // continue a MEASURED rate, so a plane on final keeps visibly descending
+  // instead of freezing at the last ping (video: locked at 230 kph / 825 ft
+  // through the approach). Measured motion carried forward, not an invented
+  // profile: clamped to sane rates, carried a short while (_gateTelemCarry),
+  // re-anchored by every ping.
+  //
+  // v24068 — ONE FIX IS ENOUGH TO CLIMB OR DESCEND. The two-fix rate needs
+  // TWO different fixes, and the Worker re-serves one Flightradar24 answer
+  // for up to 180 s (adsbans:v1:, every viewer shares it), so after a load
+  // the digits sat still for minutes until a second fix arrived, then
+  // lurched. Every Flightradar24 fix carries its own vertical speed, and the
+  // flight's track holds the fix before (_gateTelemTrackPrev).
+  //   - Under 200 ft/min is level (the cruise jitter of ±64 is not a climb).
+  //   - With the vertical speed AND a two-fix rate, the SMALLER of the two,
+  //     in their shared direction: a descent that is slowing, or that has
+  //     only just begun, is carried at what it has really done, never past
+  //     what either says. Level now is level (the -400 ft/min capture that
+  //     then reads level has stopped). Two readings that disagree about the
+  //     direction carry nothing until the next fix settles it.
+  //   - Rates capped at 1,800 ft/min and 0.5 kt/s, as before.
+  //   - A carried descent never goes below half the reading, and a carried
+  //     climb never above FL410: no airborne aircraft reads 0 ft because its
+  //     transmissions dropped out on a low approach.
   try {
+    _gateTelemTrackPrev(T);
     var now = Date.now();
-    var age = (now - (T.realTs || 0)) / 1000;
-    // TRUST WINDOW = the real inter-ping gap. ADB's upstream often repeats
-    // the SAME fix for 3-5 minutes; the old 90 s cap froze the digits for
-    // the back half of every such gap — glide, stall, lurch
-    // The measured rate now
-    // carries the WHOLE gap: full strength for 120 s, HALF strength out to
-    // 360 s (accumulated-error damping — a noise blip can't run at full
-    // rate for six minutes), then HELD saturated. Held, never dropped: the
-    // old code gated on age and REVERTED to the raw stale anchor when the
-    // window expired — the display glided down for 90 s then eased back UP
-    // to the old ping (an altimeter climbing on final). Still measured
-    // motion carried forward, never an invented profile: rate caps below,
-    // floor 0, re-anchored by every genuinely fresh ping.
-    // v24068 — ONE FIX IS ENOUGH TO CLIMB OR DESCEND. The rate below needs
-    // TWO different fixes, and the Worker re-serves one Flightradar24 answer
-    // for up to 180 s (adsbans:v1:, every viewer shares it), so after a load
-    // the digits sat still for minutes until a second fix arrived, then
-    // lurched. Every Flightradar24 fix carries its own vertical speed: that
-    // is the altitude rate from the first second (and a better one than the
-    // average over the last three minutes, which runs on past a level-off).
-    // Under 200 ft/min is level flight (the cruise jitter of ±64 is not a
-    // climb); capped at 6,000 ft/min; full strength for 240 s, which covers
-    // the Worker's hold plus a poll, then half to 480 s, then held. The
-    // ground speed has no such reading: it stays as reported until a second
-    // fix measures a change, exactly as before.
-    var vAlt = false;
-    if (typeof T.realVs === 'number' && typeof alt === 'number' && age >= 0) {
-      var vs = (Math.abs(T.realVs) < 200) ? 0 : T.realVs;
-      var vRate = Math.max(-100, Math.min(100, vs / 60));              // ft/s
-      var vAge = Math.min(age, 240) + Math.max(0, Math.min(age, 480) - 240) * 0.5;
-      alt = Math.max(0, alt + vRate * vAge);
-      altRate = (alt > 0) ? vRate * (age < 240 ? 1 : (age < 480 ? 0.5 : 0)) : 0;
-      vAlt = true;
-    }
-    if (T.prevTs && T.realTs && T.realTs > T.prevTs && age > 0) {
-      var span = (T.realTs - T.prevTs) / 1000;
-      // DAMPED: two pings can differ by a wind/ADS-B noise blip (
-      // 757 kph to 867, climbing, in under a minute) — tight rate caps
-      // keep the carried trend sane at any age.
-      var effAge = Math.min(age, 120) + Math.max(0, Math.min(age, 360) - 120) * 0.5;
-      var effK = (age < 120 ? 1 : (age < 360 ? 0.5 : 0));
-      if (span >= 10 && span <= 420) {
-        if (!vAlt && typeof T.prevAlt === 'number' && typeof alt === 'number') {
-          var pAltRate = (alt - T.prevAlt) / span;                    // ft/s
-          pAltRate = Math.max(-30, Math.min(30, pAltRate));           // ≤1800 fpm
-          alt = Math.max(0, alt + pAltRate * effAge);
-          altRate = (alt > 0) ? pAltRate * effK : 0;
-        }
-        if (typeof T.prevSpd === 'number' && typeof spd === 'number') {
-          var pSpdRate = (spd - T.prevSpd) / span;                    // kt/s
-          pSpdRate = Math.max(-0.5, Math.min(0.5, pSpdRate));         // ≤~55 km/h per bridge
-          spd = Math.max(0, spd + pSpdRate * effAge);
-          spdRate = (spd > 0) ? pSpdRate * effK : 0;
-        }
+    var age = Math.max(0, (now - (T.realTs || 0)) / 1000);
+    var cr = _gateTelemCarry(age);
+    var span = (T.prevTs && T.realTs > T.prevTs) ? (T.realTs - T.prevTs) / 1000 : 0;
+    var two = (span >= 10 && span <= 420);
+    if (typeof alt === 'number' && alt > 0) {
+      var rv = null, ra = null, r = 0;
+      if (typeof T.realVs === 'number') rv = (Math.abs(T.realVs) < 200) ? 0 : Math.max(-30, Math.min(30, T.realVs / 60));
+      if (two && typeof T.prevAlt === 'number') ra = Math.max(-30, Math.min(30, (alt - T.prevAlt) / span));   // ft/s
+      if (rv !== null && ra !== null) r = (rv * ra > 0) ? (rv > 0 ? Math.min(rv, ra) : Math.max(rv, ra)) : 0;
+      else if (rv !== null) r = rv;
+      else if (ra !== null) r = ra;
+      if (r !== 0) {
+        altWay = (r > 0) ? 1 : -1;
+        var lo = alt * 0.5, hi = Math.max(alt, 41000);
+        var a1 = alt + r * cr.c;
+        if (a1 <= lo) a1 = lo;
+        else if (a1 >= hi) a1 = hi;
+        else { altRate = r * cr.k; altLeft = Math.max(lo, Math.min(hi, a1 + r * cr.left)) - a1; }
+        alt = a1;
       }
     }
+    if (two && typeof spd === 'number' && typeof T.prevSpd === 'number') {
+      var rs = Math.max(-0.5, Math.min(0.5, (spd - T.prevSpd) / span));          // kt/s
+      spdWay = (rs > 0) ? 1 : (rs < 0 ? -1 : 0);
+      var s1 = Math.max(0, spd + rs * cr.c);
+      if (s1 > 0) { spdRate = rs * cr.k; spdLeft = Math.max(0, s1 + rs * cr.left) - s1; }
+      spd = s1;
+    }
   } catch (e) {}
-  return { spd: spd, alt: alt, spdRate: spdRate, altRate: altRate };
+  return { spd: spd, alt: alt, spdRate: spdRate, altRate: altRate, spdLeft: spdLeft, altLeft: altLeft, spdWay: spdWay, altWay: altWay };
 }
 
 // Write the current modeled numbers into every on-screen telemetry span.
@@ -7482,33 +7552,54 @@ function _animateGateTelem() {
   var m = _gateTelemModel();
   if (!m) return;
   // The model is the last real anchor plus its bounded measured trend. The
-  // DISPLAYED digits ease toward it ~22%/s — smooth continuous motion while
-  // the trend runs, and a ~10 s visible 'catch-up' whenever a fresh ping
-  // moves the anchor, instead of the old snap-freeze-snap cadence.
+  // DISPLAYED digits follow it — smooth continuous motion while the trend
+  // runs, and a short visible catch-up whenever a fresh ping moves the
+  // anchor, instead of the old snap-freeze-snap cadence.
   // v24068 — timed by the clock, not per call (render() runs this too), and
-  // never backwards: see _gateTelemStep.
+  // never a jump or a snap backwards: see _gateTelemStep.
   var now = Date.now();
   var dt = (typeof T.stepAt === 'number' && T.stepAt > 0) ? Math.max(0, Math.min(30, (now - T.stepAt) / 1000)) : 1;
   T.stepAt = now;
-  if (typeof m.spd === 'number') T.spd = _gateTelemStep(T.spd, m.spd, m.spdRate, dt);
-  if (typeof m.alt === 'number') T.alt = _gateTelemStep(T.alt, m.alt, m.altRate, dt);
+  if (m.ground) {
+    // On the ground: the reading as reported, altitude 0, no trend.
+    var e = 1 - Math.pow(0.78, dt);
+    if (typeof m.spd === 'number') T.spd = (typeof T.spd === 'number') ? T.spd + (m.spd - T.spd) * e : m.spd;
+    T.alt = (typeof T.alt === 'number') ? T.alt + (0 - T.alt) * e : 0;
+    if (T.alt < 0.5) T.alt = 0;
+  } else {
+    if (m.altWay) T.dirA = m.altWay;
+    if (m.spdWay) T.dirS = m.spdWay;
+    if (typeof m.spd === 'number') T.spd = _gateTelemStep(T.spd, m.spd, m.spdRate, m.spdLeft, m.spdWay, dt, 1, 0.5, T.dirS);
+    if (typeof m.alt === 'number') T.alt = _gateTelemStep(T.alt, m.alt, m.altRate, m.altLeft, m.altWay, dt, 40, 30, T.dirA);
+  }
   _writeGateTelemDom();
 }
 
-// v24068 — ONE DISPLAYED NUMBER, ONE STEP. Behind the model, or the model
-// level: ease onto it (~22 % a second). AHEAD of it in the direction it is
-// moving (the next real fix landed a little short of where the digits had
-// carried a climb or a descent): never wind back up a descent or down a
-// climb. Keep going the same way at half the rate, so the model, moving at
-// the full rate, closes the gap from behind and the digits blend into it.
-// A gap too wide to close that way inside about four minutes is a real
-// correction (a level-off it ran past) and eases like any other.
-function _gateTelemStep(shown, target, rate, dt) {
-  if (typeof shown !== 'number') return target;
+// v24068 — ONE DISPLAYED NUMBER, ONE STEP.
+//   - AHEAD of the model in the way the latest fixes say the aircraft is
+//     still going (the next real fix landed a little short of where the
+//     digits had carried a climb or a descent): never wind back up a
+//     descent or down a climb. Keep going the same way at half the rate when
+//     what the model still has to travel closes the gap from behind, else at
+//     a quarter: the aircraft is coming to the digits.
+//   - Otherwise ease onto the model (~22 % a second), but never a jump:
+//     forward no faster than the model's own rate plus `fwd` (40 ft/s, 1 kt/s)
+//     plus a thirtieth of the gap (a big gap after a feed drop-out closes in
+//     about a minute), and against the way the aircraft was last going
+//     (`dir`) no faster than `back` (30 ft/s = 1,800 ft/min, an aircraft's
+//     own pace; 0.5 kt/s). Only a fix that says it has stopped (a level-off
+//     the digits ran past) brings them back, and at that pace.
+function _gateTelemStep(shown, target, rate, left, way, dt, fwd, back, dir) {
+  if (typeof shown !== 'number' || !isFinite(shown)) return target;
   var gap = target - shown;
+  if (gap === 0) return shown;
   var r = (typeof rate === 'number' && isFinite(rate)) ? rate : 0;
-  if (r !== 0 && gap * r < 0 && Math.abs(gap) <= Math.abs(r) * 120) return shown + r * 0.5 * dt;
-  return shown + gap * (1 - Math.pow(0.78, dt));
+  var l = (typeof left === 'number' && isFinite(left)) ? left : 0;
+  if (way && gap * way < 0) return shown + r * ((Math.abs(gap) <= Math.abs(l) * 0.5) ? 0.5 : 0.25) * dt;
+  var step = gap * (1 - Math.pow(0.78, dt));
+  var cap = (dir && step * dir < 0) ? back * dt : (Math.abs(r) + fwd + Math.abs(gap) / 30) * dt;
+  if (Math.abs(step) > cap) step = (step < 0) ? -cap : cap;
+  return shown + step;
 }
 
 // ── FAST NUMBERS-ONLY POLL ─────────────────────────────────────────────────
@@ -39718,6 +39809,10 @@ async function _adsbFetchOne(path) {
         return sa - sb;
       })[0];
     }
+    // v24068 — when this answer reached the screen, so the moment its position
+    // was taken (seen_pos before this) is still right when this cache hands
+    // the same answer out again up to 45 s later (_adsbTelemetry `taken`).
+    if (ac) { try { ac._rxAt = Date.now(); } catch (e) {} }
     // _quiet: FR24 answered cleanly and nothing is transmitting under that
     // subject — see _adsbTelemetry, which stops asking other names for it.
     _adsbCache[key] = { at: Date.now(), ac: ac, quiet: !ac && !!(j && j._quiet) };
@@ -39845,6 +39940,8 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
       desc: ac.desc || null,
       age: (typeof ac.seen_pos === 'number') ? ac.seen_pos : null,
       at: Date.now(),
+      // v24068 — when the position was taken (epoch ms), for the gate's digits.
+      taken: (typeof ac.seen_pos === 'number' && typeof ac._rxAt === 'number') ? ac._rxAt - ac.seen_pos * 1000 : null,
       // v23915 — whose answer this is, for the maps' evidence test
       // (_gateFixCheck): the flight it was asked for, how it was found
       // (flight / callsign / hex / reg), and the callsign it was squawking.
