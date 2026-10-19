@@ -7306,12 +7306,91 @@ window._gateTelemAnim = window._gateTelemAnim || {
   shimmerPh: 0
 };
 
+// ── v24068 — THE NUMBERS BELONG TO ONE AEROPLANE ───────────────────────────
+// A gate can swap to a different inbound while it keeps the same departure.
+// The telemetry state above was wiped only when the DEPARTURE changed, and the
+// shared live position (window._gateInboundLivePos) is only cleared then too,
+// so after such a swap the new inbound was handed the previous aircraft's
+// numbers: the render took the old position's speed and altitude as the new
+// aircraft's first reading, the model paired the old aircraft's last reading
+// with the new one's first and carried that "rate" (a descending aircraft's
+// digits climbed), and the old aircraft's "on the ground" eased an airborne
+// aircraft's altitude toward 0 ft. Each piece of state now says whose it is,
+// and so does every answer, position and reading that reaches it (`who`).
+//
+// Whose: the leg, named as the gate names its inbound (_newInbId): the flight
+// number, spaces and case ignored, or for a row with no flight number its
+// registration; and its scheduled time, so two legs flown under one number
+// (yesterday's late AC644 and today's) are two aircraft. Times more than 12
+// hours apart are two legs; the same leg as two sources give it (minutes
+// apart, or one without a time) is one. A row with neither a flight number nor
+// a registration cannot be named, and keeps the behaviour from before.
+function _gateTelemId(o) {
+  if (o && typeof o === 'object' && o._gtId === 1) return o;   // already one
+  var row = (o && typeof o === 'object') ? o : null;
+  var k = String((row ? row.flight : o) || '').replace(/\s+/g, '').toUpperCase();
+  if (!k && row) {
+    var rg = String(row._reg || row.registration || '').replace(/\s+/g, '').toUpperCase();
+    if (rg) k = '~' + rg;   // (never a flight number)
+  }
+  if (!k) return null;
+  return { _gtId: 1, k: k, t: (row && typeof row._sortTs === 'number' && row._sortTs > 0) ? row._sortTs : 0 };
+}
+// One aircraft? Something nobody can name is anyone's (used as before).
+function _gateTelemSame(a, b) {
+  if (!a || !b) return true;
+  return a.k === b.k && !(a.t && b.t && Math.abs(a.t - b.t) > 12 * 3600000);
+}
+
+// A new aircraft starts from nothing: the whole object is replaced, so every
+// field (the reading, the reading before it, their times) leaves with the
+// aircraft it was measured on; and so do the render's own holds of the last
+// reading (its 3-minute hold and its sticky fix), which are keyed by the
+// flight number (or tail) and would hand a second leg under that number the
+// first one's. Nothing the maps read is touched here.
+function _gateTelemReset(who) {
+  window._gateTelemAnim = { spd: null, alt: null, realSpd: null, realAlt: null, realTs: 0, realSecToArr: null, shimmerPh: 0,
+    who: _gateTelemId(who) };
+  window._gateTelemHold = null;
+  _gateFixCache = null;
+  return window._gateTelemAnim;
+}
+
+// The state for aircraft `w`: the same object while it is w's, or while it is
+// nobody's yet (it becomes w's, as it would have been before); a new one when
+// it holds another aircraft's numbers.
+function _gateTelemFor(w) {
+  var T = window._gateTelemAnim;
+  w = _gateTelemId(w);
+  if (!w) return T;
+  if (T.who && !_gateTelemSame(T.who, w)) return _gateTelemReset(w);
+  T.who = w;
+  return T;
+}
+
+// The shared live position, only when it is this aircraft's (a row or an id):
+// one written for another aircraft is not this one's. Written for nobody, or
+// read for a row that cannot be named, it is used as before.
+function _gateLivePosFor(ib) {
+  var lp = window._gateInboundLivePos;
+  if (!lp || typeof lp !== 'object') return null;
+  return _gateTelemSame(lp.who, _gateTelemId(ib)) ? lp : null;
+}
+
 // Re-anchor to a fresh real reading. Called each render with the resolved
 // _liveSpd/_liveAlt; no-ops when the values haven't changed (so the descent
 // time-base isn't reset every re-render), and clears everything when the plane
 // isn't airborne.
-function _gateTelemSetReal(spdKt, altFt) {
-  var T = window._gateTelemAnim;
+// v24068 — `who`: the aircraft the reading is for (a row or an id,
+// _gateTelemId). A reading for an aircraft other than the one the gate now
+// shows (window._gateTelemOwner, set by the gate render) is dropped: an answer
+// for the inbound before a swap that lands after it. A reading for another
+// aircraft than the one measured so far starts from nothing (_gateTelemFor).
+// Everything after that is the anchor as it was, line for line.
+function _gateTelemSetReal(spdKt, altFt, who) {
+  var w = _gateTelemId(who);
+  if (w && window._gateTelemOwner && !_gateTelemSame(w, window._gateTelemOwner)) return;
+  var T = _gateTelemFor(w);
   var sp = (typeof spdKt === 'number') ? spdKt : null;
   var al = (typeof altFt === 'number') ? altFt : null;
   if (sp === null && al === null) {
@@ -7355,9 +7434,16 @@ function _gateTelemModel() {
   // the ground the digits are the real anchor with no trend: speed as
   // reported, altitude 0 — the displayed number eases down and stays.
   try {
-    var _gp = window._gateInboundLivePos;
+    // v24068 — this aircraft's own position and row: after a swap from an
+    // aircraft on the ground to one in the air, the one before's "on the
+    // ground" eased the new one's altitude toward 0 ft until a poll wrote the
+    // new one's own position (_gateLivePosFor; another aircraft's row is not
+    // this one's either). The animator's ground test is this one.
+    var _gp = _gateLivePosFor(T.who);
+    var _gi = window._gateInbound;
+    if (_gi && !_gateTelemSame(_gateTelemId(_gi), T.who)) _gi = null;
     if ((_gp && _gp.onGround === true) ||
-        (window._gateInbound && window._gateInbound._liveOnGround === true)) {
+        (_gi && _gi._liveOnGround === true)) {
       return { spd: (typeof spd === 'number' ? spd : 0), alt: 0 };
     }
   } catch (e) {}
@@ -7711,6 +7797,12 @@ async function _gateNumbersPoll() {
     // verified loadFlight link when it exists, else the gate-match fallback),
     // so the poll always tracks what the screen is actually showing.
     var inb = window._gatePanelInbound || window._gateInbound;
+    // v24068 — whose numbers this poll brings: this aircraft's, the one the
+    // gate shows as it asks (for a row with no flight number the departure
+    // stands in below, looked up on that aircraft's behalf). The answer, the
+    // position and the readings it writes say so, so one that lands after the
+    // gate has moved on to another aircraft is not taken as that one's.
+    var _telemWho = _gateTelemId(inb);
     // NO INBOUND IS NOT NO AIRCRAFT. Plenty of gates show the DEPARTING
     // flight in the aircraft panel (AC185 at D24 — no inbound linked at all),
     // and this poll bailed out entirely in that case, so the type never
@@ -7909,7 +8001,7 @@ async function _gateNumbersPoll() {
       try { window._gateInboundLivePos = null; } catch (e) {}
       return;
     }
-    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex); } catch (e) {}
+    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex, _telemWho); } catch (e) {}
     // v23103 — THE TAIL IS NOT THE FLIGHT. Registration matching finds the
     // airframe wherever it is — including mid-air on its PREVIOUS leg.
     // On gate 4: AC1984 hadn't left Toronto (departs ~90 min later) yet
@@ -7926,7 +8018,7 @@ async function _gateNumbersPoll() {
       if (_adsb && _depGateT && Date.now() < _depGateT - 20 * 60000 && _adsb.onGround !== true) {
         try { console.log('[ADSB]', flt, 'tail is airborne on a PREVIOUS leg (this one departs later) — fix ignored'); } catch (e) {}
         _adsb = null;
-        try { _gateTelemSetReal(null, null); } catch (e) {}
+        try { _gateTelemSetReal(null, null, _telemWho); } catch (e) {}
         try { window._gateInboundLivePos = null; } catch (e) {}
       }
     } catch (e) {}
@@ -7949,7 +8041,7 @@ async function _gateNumbersPoll() {
         if (!_rOk) {
           try { console.log('[ADSB]', flt, 'fix', _adsb.lat.toFixed(2) + ',' + _adsb.lng.toFixed(2), 'is not this leg (unreachable, or a tail with no callsign) — ignored'); } catch (e) {}
           _adsb = null;
-          try { _gateTelemSetReal(null, null); } catch (e) {}
+          try { _gateTelemSetReal(null, null, _telemWho); } catch (e) {}
           try { if (window._gateInboundLivePos && (!window._gateInboundLivePos.fl || window._gateInboundLivePos.fl === flt)) window._gateInboundLivePos = null; } catch (e) {}
         }
       }
@@ -7968,7 +8060,7 @@ async function _gateNumbersPoll() {
         // onGround rides along so the map glide can be suppressed — see the
         // dead-reckoning guard in the map tick.
         window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt, onGround: _adsb.onGround === true,
-                                       at: _fxAt, fl: flt, via: _adsb.via || '', cs: _adsb.cs || '' };
+                                       at: _fxAt, fl: flt, via: _adsb.via || '', cs: _adsb.cs || '', who: _telemWho };
       }
       // The aircraft's REAL track over the ground. Published globally as well as
       // on the row, because the map markers draw from a different scope and had
@@ -8051,7 +8143,9 @@ async function _gateNumbersPoll() {
           if (_atFilled && typeof requestGateRebuild === 'function') requestGateRebuild();
         } catch (eT) {}
       }
-      try { _gateTelemSetReal(_adsb.spd, _adsb.alt); } catch (e) {}
+      // v24068 — whose numbers: the aircraft this poll asked for, which a swap
+      // during the lookup above can have left behind (_gateTelemSetReal drops it then)
+      try { _gateTelemSetReal(_adsb.spd, _adsb.alt, _telemWho); } catch (e) {}
       try { console.log('[ADSB]', flt, '→ spd', _adsb.spd, 'alt', _adsb.alt, 'trk', _adsb.track, 'age', _adsb.age + 's'); } catch (e) {}
       return;   // fresher than anything AeroDataBox can offer
     }
@@ -8074,9 +8168,9 @@ async function _gateNumbersPoll() {
     if (_lpLat !== null && _lpLng !== null) {
       // v23915 — timed on arrival and owned, like the ADS-B fix above.
       inb._liveLat = _lpLat; inb._liveLng = _lpLng; inb._liveAt = Date.now();
-      window._gateInboundLivePos = { lat: _lpLat, lng: _lpLng, speed: liveSpd, altitude: liveAlt, at: Date.now(), fl: flt, via: 'flight', cs: '' };
+      window._gateInboundLivePos = { lat: _lpLat, lng: _lpLng, speed: liveSpd, altitude: liveAlt, at: Date.now(), fl: flt, via: 'flight', cs: '', who: _telemWho };
     }
-    try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
+    try { _gateTelemSetReal(liveSpd, liveAlt, _telemWho); } catch (e) {}
     try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt, 'pos', _lpLat, _lpLng); } catch (e) {}
   } catch (e) { _gateNumPollBusy = false; }
 }
@@ -15372,7 +15466,9 @@ function _buildV2MapCol(ctx, vars) {
       // Best candidate from this poll: board feed (withLocation) first, then the
       // by-number window cache. Feed it through the sticky smoother so the panel
       // doesn't blink off on polls where ADB omits the position.
-      var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
+      // v24068 — and only when that cache is this inbound's (_gateLivePosFor):
+      // after a swap it still held the aircraft before's position and numbers.
+      var _wpC = _gateLivePosFor(_ib);
       // v22889 — ADS-B FIRST. The 60-second gate poll mutates the inbound
       // object it fetched; the renderer frequently holds a DIFFERENT object
       // for the same flight, so those mutations never arrived and SPD/ALT
@@ -15384,9 +15480,15 @@ function _buildV2MapCol(ctx, vars) {
       // and could only ever answer with some other leg of the same tail.
       try {
         if (typeof _gateLegWindowOpen !== 'function' || _gateLegWindowOpen(_ib, vars.iata)) {
-          _adsbC = _adsbCached(_ib._reg, _ib._callSign, _ib.flight, null, _ib._modeS || (_ib.aircraft && _ib.aircraft.modeS));
+          _adsbC = _adsbCached(_ib._reg, _ib._callSign, _ib.flight, null, _ib._modeS || (_ib.aircraft && _ib.aircraft.modeS), _gateTelemId(_ib));
         }
       } catch (e) {}
+      // v24068 — AN ANSWER IS THE AIRCRAFT'S IT WAS ASKED FOR (who). Two rows
+      // can share a callsign, a tail or a Mode-S code (or, two legs, a flight
+      // number), and the cache finds an answer under any of them: one asked
+      // for another aircraft is that aircraft's speed, altitude and "on the
+      // ground", not this one's.
+      if (_adsbC && !_gateTelemSame(_adsbC.who, _gateTelemId(_ib))) _adsbC = null;
       var _candAlt = (_adsbC && typeof _adsbC.alt === 'number') ? _adsbC.alt
                    : (typeof _ib._liveAlt === 'number') ? _ib._liveAlt
                    : (_wpC && typeof _wpC.altitude === 'number' ? _wpC.altitude : null);
@@ -16997,7 +17099,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17041,7 +17143,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -25887,6 +25989,14 @@ const gView = document.getElementById('gateView');
       // the poll enriches it in place, so the fetched tail is what the next
       // render reads.
       try { window._gatePanelInbound = inboundFlight || null; } catch (e) {}
+      // v24068 — and the speed/altitude digits are this inbound's, before this
+      // render builds the panel: another inbound for the same departure (or
+      // the next) starts them from nothing, and an answer for the inbound
+      // before it is dropped from here on (_gateTelemFor, _gateTelemSetReal).
+      try {
+        window._gateTelemOwner = _gateTelemId(inboundFlight);
+        _gateTelemFor(window._gateTelemOwner);
+      } catch (e) {}
 
       if (inboundFlight) {
         console.log('[FIDS] Inbound for', currentFlight.flight, ':',
@@ -25966,9 +26076,13 @@ const gView = document.getElementById('gateView');
                     lat: _latRaw, lng: _lngRaw, speed: liveSpd, altitude: liveAlt,
                     _airport: _capturedIata, _inboundFlight: _capturedInbound,
                     // v23915 — timed and owned (_gateFixCheck ignores a position without both).
-                    at: Date.now(), fl: _capturedInbound, via: 'flight', cs: ''
+                    at: Date.now(), fl: _capturedInbound, via: 'flight', cs: '',
+                    // v24068 — whose: the inbound this lookup was for
+                    who: _gateTelemId(_directInbound)
                   };
-                  try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
+                  // v24068 — the inbound this lookup was for (dropped when the gate
+                  // has swapped to another inbound since it was asked)
+                  try { _gateTelemSetReal(liveSpd, liveAlt, _directInbound); } catch (e) {}
                 }
                 console.log('[FIDS] Direct inbound resolved:', _capturedInbound,
                   'reg:', _todayReg || '(pending)', 'type:', _todayAc || _todayCd || '(scheduled fallback)',
@@ -26980,10 +27094,16 @@ const gView = document.getElementById('gateView');
                       : (_sameInb && typeof _prev.lat === 'number' ? _prev.lat : null);
               var _ln = (typeof data.inbound._liveLng === 'number') ? data.inbound._liveLng
                       : (_sameInb && typeof _prev.lng === 'number' ? _prev.lng : null);
+              // v24068 — whose: this inbound's. When the merge above can carry
+              // fields of a position written for another leg under the same
+              // flight number, the result keeps that leg's name, so neither
+              // leg's numbers are shown as the other's.
+              var _lpWho = _gateTelemId(data.inbound);
+              if (_sameInb && _prev.who && !_gateTelemSame(_prev.who, _lpWho)) _lpWho = _prev.who;
               window._gateInboundLivePos = (_sp !== null || _al !== null || (_la !== null && _ln !== null))
                 // v23915 — timed and owned (_gateFixCheck ignores a position without both).
                 ? { lat: _la, lng: _ln, speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null,
-                    at: Date.now(), fl: (data.inbound && data.inbound.flight) || '', via: 'flight', cs: '' }
+                    at: Date.now(), fl: (data.inbound && data.inbound.flight) || '', via: 'flight', cs: '', who: _lpWho }
                 : null;
             })();
             if (_prevInboundKey !== _nextInboundKey) changed = true;
@@ -34157,7 +34277,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24066';
+var FIDS_BUILD_TAG = 'v24068';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39680,7 +39800,7 @@ function _icaoCallsign(s) {
   var icao = _IATA_TO_CALLSIGN[m[1]];
   return icao ? icao + m[2] : '';
 }
-async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
+async function _adsbTelemetry(reg, callSign, flightNo, modeS, who) {
   var tries = [];
   // v23331 — CALLSIGN FIRST. A callsign is set per flight; a registration
   // (or Mode-S hex) is the AIRFRAME wherever it is — its previous leg, a
@@ -39773,7 +39893,10 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
       // (flight / callsign / hex / reg), and the callsign it was squawking.
       fl: _fn || _cs,
       via: ((tries[i].match(/^\/(\w+)\//) || [])[1]) || '',
-      cs: String(ac.flight || '').trim().toUpperCase()
+      cs: String(ac.flight || '').trim().toUpperCase(),
+      // v24068 — and the aircraft the gate was showing when it asked
+      // (_gateTelemId): the gate render takes no other aircraft's answer
+      who: who || null
     };
     // Publish under every identifier the caller might hold. The gate RENDER
     // reads this directly rather than trusting that the 60-second poll
@@ -39797,7 +39920,7 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
 // is stale; the lookup re-renders once on success. Throttled per key so a
 // 10-second render tick cannot become a 10-second request rate.
 var _adsbInflight = Object.create(null);
-function _adsbCached(reg, callSign, flightNo, maxAgeMs, modeS) {
+function _adsbCached(reg, callSign, flightNo, maxAgeMs, modeS, who) {
   var keys = [modeS, reg, callSign, flightNo].map(function (k) {
     return String(k || '').trim().toUpperCase().replace(/\s+/g, '');
   }).filter(Boolean);
@@ -39814,7 +39937,7 @@ function _adsbCached(reg, callSign, flightNo, maxAgeMs, modeS) {
     if (!_adsbInflight[ik] || (now - _adsbInflight[ik]) > 20000) {
       _adsbInflight[ik] = now;
       try {
-        _adsbTelemetry(reg, callSign, flightNo, modeS).then(function (r) {
+        _adsbTelemetry(reg, callSign, flightNo, modeS, who).then(function (r) {
           if (r) { try { window._lastGateKey = ''; if (typeof render === 'function') render(); } catch (e) {} }
         }, function () {});
       } catch (e) {}
@@ -59187,7 +59310,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
