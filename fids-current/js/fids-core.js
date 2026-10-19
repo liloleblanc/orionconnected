@@ -12066,6 +12066,17 @@ function aircraftCodeToIata(raw) {
   if (sNoH !== s && _REMAP[sNoH]) return _REMAP[sNoH];
   if (s.length === 3 && /^[A-Z0-9]{3}$/.test(s)) return s;
 
+  // ── Beechcraft ── only the 1900 has a drawing (BEH), so a name with 1900
+  // in it is the 1900 whoever's name is in front: 'Raytheon Beech 1900D' and
+  // 'Hawker Beechcraft 1900D' used to become RAY and HAW (no picture). A King
+  // Air is BEK (Air Inuit's drawing). Every other Beech used to fall through
+  // to the first-three-letters 'BEE' at the bottom and draw a 1900; it now
+  // draws nothing. Runs before every family regex: no Boeing, Airbus or
+  // Embraer name has 1900 in it.
+  if (/1900/.test(s)) return 'BEH';
+  if (/KING[\s-]*AIR/.test(s)) return 'BEK';
+  if (/BEECH/.test(s)) return '';
+
   // ── Compact Boeing dialect (MIA WebFIDS: 'B7374', '7673W', '7773E',
   // 'B777', '7478I'…) — 4-6 chars, no separators. MUST run before the
   // generic family regexes: 'B7377' is a 737-700 in this dialect, but the

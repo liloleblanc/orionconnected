@@ -1072,7 +1072,12 @@ function acType(raw){
     B77W:'77W',B773:'773',E75L:'E75',E75S:'E75',A21N:'32Q',B190:'BEH'};
   if(RE[s]) return RE[s];
   if(/^[A-Z0-9]{3}$/.test(s)) return s;            // already a 3-char code (OAG)
-  if(/BEECH|1900/.test(s)) return 'BEH';           // before the Embraer 190 test below
+  // Beechcraft, before the Embraer 190 test below, the same answers as the
+  // boards: only the 1900 has a drawing; a King Air is Air Inuit's BEK; any
+  // other Beech (Baron, Bonanza, 99) has no picture, never the 1900's.
+  if(/1900/.test(s)) return 'BEH';
+  if(/KING\s*AIR/.test(s)) return 'BEK';
+  if(/BEECH/.test(s)) return '';
   if(/ATR\s*72/.test(s)) return 'AT7';
   if(/DASH\s*8|DHC[- ]?8|Q400|DHC-8-400/.test(s)) return 'DH4';
   s=s.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|DE HAVILLAND CANADA|DE HAVILLAND)\s*/,'').trim();

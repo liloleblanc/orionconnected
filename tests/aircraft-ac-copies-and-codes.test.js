@@ -9,8 +9,8 @@
 //    (the TV gate asks for the GE90 file, and every Air Canada -300ER is a
 //    GE90) and AC/773.png (Air Canada flies only the -300ER). The E175 is
 //    AC/E75.png and AC/E7W.png (the code 'E7W', and the ICAO 'E170', resolve
-//    to E7W). The Beech 1900D is AC/BEE.png (a model name like 'Beech 1900D'
-//    resolves to BEE) and AC/BEH.png (the IATA code). When the E175 was
+//    to E7W). The Beech 1900D is AC/BEH.png (its IATA code, and every name
+//    with 1900 in it) and AC/BEE.png (the code 'BEE'). When the E175 was
 //    redrawn only AC/E75.png was replaced, so a flight coded E7W still showed
 //    the old drawing, facing the other way. The copies must stay identical.
 //
@@ -19,6 +19,13 @@
 //    jet in the phone app (its /190/ test fired first). 'A321-271NX', an
 //    A321neo model number, landed on the A321ceo picture on both. The app
 //    knew none of B77W, E75L or A21N. These now resolve to the art we have.
+//
+// 3. One Beech is not every Beech. The first app fix sent any name with
+//    BEECH in it to the 1900, so a King Air, a Baron or a Beech 99 drew a
+//    1900D; the boards had long done the same through their first-three-
+//    letters fallback ('BEE'). Only names with 1900 in them are the 1900 now,
+//    whoever's name is in front (Raytheon and Hawker used to draw nothing). A
+//    King Air is Air Inuit's BEK. Every other Beech draws nothing.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -64,10 +71,22 @@ test('every copy of one Air Canada drawing is the same file', () => {
   }
 });
 
+const BEECH_1900 = ['BEH', 'B190', 'b190', 'Beech 1900D', 'Beechcraft 1900D', 'Beechcraft 1900', 'BEECH 1900C', 'Raytheon Beech 1900D', 'Hawker Beechcraft 1900D', 'Beechcraft B1900D'];
+const KING_AIR = ['Beechcraft King Air 350', 'Beech King Air B200', 'Beechcraft C90 King Air', 'Beech KingAir 200'];
+const OTHER_BEECH = ['Beech 99', 'Beech Baron', 'Beechcraft Bonanza', 'Beech 18', 'Beechcraft Baron 58'];
+
 test('the Beech 1900D codes and names reach the Air Canada Beech on the boards', () => {
-  for (const s of ['BEH', 'B190', 'b190']) assert.equal(boardCode(s), 'BEH', s);
-  for (const s of ['Beech 1900D', 'Beechcraft 1900D', 'BEE']) assert.equal(boardCode(s), 'BEE', s);
+  for (const s of BEECH_1900) assert.equal(boardCode(s), 'BEH', s);
+  assert.equal(boardCode('BEE'), 'BEE');
   assert.ok(hasArt('BEH') && hasArt('BEE'));
+});
+
+test('no other Beechcraft borrows the 1900 picture, on the boards or the phone app', () => {
+  for (const s of KING_AIR) { assert.equal(boardCode(s), 'BEK', s); assert.equal(appCode(s), 'BEK', s); }
+  for (const s of OTHER_BEECH) { assert.equal(boardCode(s), '', s); assert.equal(appCode(s), '', s); }
+  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', 'aircraft', '3H', 'BEK.png')), "Air Inuit's King Air");
+  assert.equal(srcOf(appImg('3H', 'Beechcraft King Air 350', '', '')), '/aircraft/3H/BEK.png');
+  for (const s of [...KING_AIR, ...OTHER_BEECH]) assert.notEqual(srcOf(appImg('AC', s, '', '')), '/aircraft/AC/BEH.png', s);
 });
 
 test('A321neo model numbers reach the A321neo picture on the boards, A321ceo ones do not', () => {
@@ -83,7 +102,7 @@ test('the phone app resolves the same ICAO codes the boards do, for the types we
 });
 
 test('the phone app draws a Beech for a Beech, and an A321neo for an A321neo', () => {
-  for (const s of ['B190', 'BEH', 'Beech 1900D', 'Beechcraft 1900D', 'Raytheon Beech 1900D']) assert.ok(['BEH', 'BEE'].includes(appCode(s)), s + ' -> ' + appCode(s));
+  for (const s of BEECH_1900) assert.equal(appCode(s), 'BEH', s);
   for (const s of ['Embraer E190', 'Embraer 190', 'E190']) assert.equal(appCode(s), 'E90', s);
   for (const s of ['Airbus A321XLR', 'A321-271NX', 'Airbus A321neo', 'A321 NEO', 'A21N']) assert.equal(appCode(s), '32Q', s);
   for (const s of ['Airbus A321', 'A321-211']) assert.equal(appCode(s), '321', s);
@@ -93,7 +112,7 @@ test('the phone app draws a Beech for a Beech, and an A321neo for an A321neo', (
 
 test('on the phone app an Air Canada flight asks for the batch-3 pictures by any of their names', () => {
   const want = {
-    '/aircraft/AC/BEH.png': ['BEH', 'B190', 'Beech 1900D', 'Beechcraft 1900D'],
+    '/aircraft/AC/BEH.png': BEECH_1900,
     '/aircraft/AC/77W.png': ['77W', 'B77W', 'Boeing 777-300ER'],
     '/aircraft/AC/773.png': ['773', 'B773'],
     '/aircraft/AC/E75.png': ['E75', 'E75L', 'E175', 'Embraer 175'],
