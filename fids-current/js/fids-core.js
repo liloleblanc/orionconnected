@@ -7306,12 +7306,56 @@ window._gateTelemAnim = window._gateTelemAnim || {
   shimmerPh: 0
 };
 
+// v24068 — WHOSE NUMBERS THESE ARE. The telemetry belongs to one aircraft,
+// the gate's inbound: its flight number, else its tail, as a key. Takes a
+// flight row or a flight number; '' when there is none.
+function _gateTelemKey(o) {
+  var s = (o && typeof o === 'object') ? (o.flight || o._reg || o.registration || '') : o;
+  return String(s || '').replace(/\s+/g, '').toUpperCase();
+}
+
+// v24068 — A NEW AIRCRAFT STARTS FROM NOTHING. The whole object is replaced,
+// so every field goes with the aircraft it was measured on. It ran only when
+// the gate's DEPARTURE changed: a gate re-paired to another inbound for the
+// same departure kept the first aircraft's anchor and rate, and its digits
+// stayed on that aircraft.
+function _gateTelemReset(who) {
+  window._gateTelemAnim = { spd: null, alt: null, realSpd: null, realAlt: null, realTs: 0, realSecToArr: null, shimmerPh: 0,
+    who: _gateTelemKey(who) };
+  return window._gateTelemAnim;
+}
+
+// v24068 — the shared live position (window._gateInboundLivePos), only when
+// it is this inbound's. Only a new departure clears it, so after the gate
+// re-paired to another inbound the panel read the aircraft before's speed and
+// altitude from it and handed them on as the new aircraft's first fix, and the
+// model below read the aircraft before's "on the ground" as the new one's.
+// Every writer stamps `fl`, the flight it was asked for.
+function _gateLivePosFor(ib) {
+  var lp = window._gateInboundLivePos;
+  if (!lp || typeof lp !== 'object') return null;
+  if (lp.fl && _gateTelemKey(lp.fl) !== _gateTelemKey(ib)) return null;
+  return lp;
+}
+
 // Re-anchor to a fresh real reading. Called each render with the resolved
 // _liveSpd/_liveAlt; no-ops when the values haven't changed (so the descent
 // time-base isn't reset every re-render), and clears everything when the plane
 // isn't airborne.
-function _gateTelemSetReal(spdKt, altFt) {
+// v24068 — two more arguments. `who`: the aircraft the numbers belong to (a
+// row or a flight, _gateTelemKey); numbers for an aircraft other than the
+// gate's inbound (an answer for the inbound before it, landing after the gate
+// re-paired) are ignored, and an aircraft other than the one measured so far
+// starts from nothing. `fix`: the Flightradar24 answer these numbers are, when
+// they are one; its position finds this reading in the flight's recorded track
+// (_gateTelemTrackSeed). The anchor itself is v24065's, line for line.
+function _gateTelemSetReal(spdKt, altFt, who, fix) {
   var T = window._gateTelemAnim;
+  var w = _gateTelemKey(who);
+  if (w) {
+    if (window._gateTelemOwner && w !== window._gateTelemOwner) return;
+    if (T.who !== w) T = _gateTelemReset(w);
+  }
   var sp = (typeof spdKt === 'number') ? spdKt : null;
   var al = (typeof altFt === 'number') ? altFt : null;
   if (sp === null && al === null) {
@@ -7335,6 +7379,10 @@ function _gateTelemSetReal(spdKt, altFt) {
   var inb = window._gateInbound;
   var arrTs = inb && (inb._revTs || inb._sortTs);
   T.realSecToArr = (arrTs && arrTs > now) ? (arrTs - now) / 1000 : null;
+  // v24068 — which answer this reading is, and the earlier fix the flight's
+  // track holds for it, if any (_gateTelemTrackSeed)
+  T.fix = _gateTelemFixOf(fix, al); T.seed = null;
+  _gateTelemTrackSeed(T);
 }
 
 // Target for right now = the last REAL reading. No fabrication.
@@ -7355,9 +7403,14 @@ function _gateTelemModel() {
   // the ground the digits are the real anchor with no trend: speed as
   // reported, altitude 0 — the displayed number eases down and stays.
   try {
-    var _gp = window._gateInboundLivePos;
+    // v24068 — this aircraft's own position and row (_gateLivePosFor): after
+    // the gate re-paired from an aircraft on the ground to one in the air, the
+    // one before's "on the ground" eased the new one's altitude toward 0 ft.
+    var _gp = T.who ? _gateLivePosFor(T.who) : window._gateInboundLivePos;
+    var _gi = window._gateInbound;
+    if (_gi && T.who && _gateTelemKey(_gi) !== T.who) _gi = null;
     if ((_gp && _gp.onGround === true) ||
-        (window._gateInbound && window._gateInbound._liveOnGround === true)) {
+        (_gi && _gi._liveOnGround === true)) {
       return { spd: (typeof spd === 'number' ? spd : 0), alt: 0 };
     }
   } catch (e) {}
@@ -7407,6 +7460,82 @@ function _gateTelemModel() {
   return { spd: spd, alt: alt };
 }
 
+// ── v24068 — THE FIRST INTERVAL, FROM THE FLIGHT'S OWN TRACK ───────────────
+// After a load the digits sat still for one to three minutes: the model above
+// measures a rate only between TWO different readings, and the Worker hands
+// every screen the same Flightradar24 answer for up to 180 s. The map already
+// holds the flight's recorded track (/fltrack/, _gateFlownPath's
+// _flownCache): every FR24 position the boards were given, each with FR24's
+// own time. While the model holds this one reading and nothing before it, and
+// the reading is an FR24 answer the track holds, the track's latest point 30
+// to 240 s older than it (FR24's times, both) becomes the reading before it,
+// dated that much before this one reached the screen: the model then carries
+// the altitude rate between the two exactly as it carries the rate between two
+// readings that reached this screen. The point is never drawn; the digits
+// start at this screen's own reading.
+// Nothing is set, and the model is v24065's with one reading, when: there is
+// no track, or no point in that window; the reading is not in the track once
+// (its FR24 time unknown); the latest point in the window is on the ground or
+// has no altitude, or a point after it is; the two altitudes are within
+// 200 ft (altitude flicker, not a climb: a level aircraft stays level); the
+// aircraft is on the ground or the feed says Arrived, Landed or Cancelled.
+// Track points carry no speed, and a speed worked out from two points (their
+// distance over their time) moved the speed digits further from the truth than
+// holding them (turns, whole-second times, an acceleration that ended between
+// the points), so the speed holds as in v24065. A reading's own vertical speed
+// is never read.
+function _gateTelemFixOf(fix, al) {
+  // FR24 dated the answer only when its age (seen_pos) is a number
+  if (!fix || typeof fix !== 'object' || typeof fix.age !== 'number') return null;
+  if (typeof al !== 'number' || fix.alt !== al) return null;
+  return { lat: fix.lat, lng: fix.lng, pts: null };
+}
+function _gateTelemTrackSeed(T) {
+  try {
+    if (!T || !T.fix || !T.realTs || !T.who) return;
+    if (typeof T.prevAlt === 'number' || typeof T.prevSpd === 'number') return;   // a reading before this one (or this seed)
+    if (typeof T.realAlt !== 'number' || !(T.realAlt > 0)) return;
+    var lp = _gateLivePosFor(T.who);
+    if (lp && lp.onGround === true) return;
+    var rows = [window._gatePanelInbound, window._gateInbound];
+    for (var i = 0; i < rows.length; i++) {
+      var o = rows[i];
+      if (o && _gateTelemKey(o) === T.who && (o._liveOnGround === true || /arriv|land|cancel/i.test(String(o.status || '')))) return;
+    }
+    var c = (typeof _flownCache !== 'undefined' && _flownCache) ? _flownCache[T.who] : null;
+    var rec = c && c.rec;
+    if (!rec || !Array.isArray(rec.pts) || rec.pts === T.fix.pts) return;   // none, or this one looked at
+    T.fix.pts = rec.pts;
+    // the reading in the track: the Worker rounds the position to 4 places
+    var la = Math.round(T.fix.lat * 1e4) / 1e4, lo = Math.round(T.fix.lng * 1e4) / 1e4;
+    var at = null, n = 0, q, j;
+    for (j = 0; j < rec.pts.length; j++) {
+      q = rec.pts[j];
+      if (q && q[0] === la && q[1] === lo && q[2] === T.realAlt && typeof q[3] === 'number') { at = q[3]; n++; }
+    }
+    if (n !== 1) return;
+    // the latest point 30 to 240 s before it
+    var best = null;
+    for (j = 0; j < rec.pts.length; j++) {
+      q = rec.pts[j];
+      if (!q || typeof q[3] !== 'number') continue;
+      var dt = at - q[3];
+      if (dt >= 30 && dt <= 240 && (!best || q[3] > best[3])) best = q;
+    }
+    if (!best) return;
+    // it, and every point after it before the reading, in the air with an
+    // altitude: else not one climb or descent
+    for (j = 0; j < rec.pts.length; j++) {
+      q = rec.pts[j];
+      if (q && typeof q[3] === 'number' && q[3] >= best[3] && q[3] < at && !(typeof q[2] === 'number' && q[2] > 0)) return;
+    }
+    if (Math.abs(T.realAlt - best[2]) <= 200) return;
+    var span = at - best[3];
+    T.prevAlt = best[2]; T.prevSpd = null; T.prevTs = T.realTs - span * 1000;
+    T.seed = { at: best[3], fixAt: at };
+  } catch (e) {}
+}
+
 // Write the current modeled numbers into every on-screen telemetry span.
 function _writeGateTelemDom() {
   var T = window._gateTelemAnim;
@@ -7428,6 +7557,10 @@ function _writeGateTelemDom() {
 // It evaluates the bounded measured trend directly.
 function _animateGateTelem() {
   var T = window._gateTelemAnim;
+  // v24068 — a track that reached the map after this reading did (the map
+  // asks for it once the reading has placed the aeroplane), before this
+  // second's step (_gateTelemTrackSeed)
+  _gateTelemTrackSeed(T);
   var m = _gateTelemModel();
   if (!m) return;
   // The model is the last real anchor plus its bounded measured trend. The
@@ -7926,7 +8059,7 @@ async function _gateNumbersPoll() {
       if (_adsb && _depGateT && Date.now() < _depGateT - 20 * 60000 && _adsb.onGround !== true) {
         try { console.log('[ADSB]', flt, 'tail is airborne on a PREVIOUS leg (this one departs later) — fix ignored'); } catch (e) {}
         _adsb = null;
-        try { _gateTelemSetReal(null, null); } catch (e) {}
+        try { _gateTelemSetReal(null, null, inb); } catch (e) {}
         try { window._gateInboundLivePos = null; } catch (e) {}
       }
     } catch (e) {}
@@ -7949,7 +8082,7 @@ async function _gateNumbersPoll() {
         if (!_rOk) {
           try { console.log('[ADSB]', flt, 'fix', _adsb.lat.toFixed(2) + ',' + _adsb.lng.toFixed(2), 'is not this leg (unreachable, or a tail with no callsign) — ignored'); } catch (e) {}
           _adsb = null;
-          try { _gateTelemSetReal(null, null); } catch (e) {}
+          try { _gateTelemSetReal(null, null, inb); } catch (e) {}
           try { if (window._gateInboundLivePos && (!window._gateInboundLivePos.fl || window._gateInboundLivePos.fl === flt)) window._gateInboundLivePos = null; } catch (e) {}
         }
       }
@@ -8051,7 +8184,8 @@ async function _gateNumbersPoll() {
           if (_atFilled && typeof requestGateRebuild === 'function') requestGateRebuild();
         } catch (eT) {}
       }
-      try { _gateTelemSetReal(_adsb.spd, _adsb.alt); } catch (e) {}
+      // v24068 — whose numbers, and the answer they are (_gateTelemTrackSeed)
+      try { _gateTelemSetReal(_adsb.spd, _adsb.alt, inb, _adsb); } catch (e) {}
       try { console.log('[ADSB]', flt, '→ spd', _adsb.spd, 'alt', _adsb.alt, 'trk', _adsb.track, 'age', _adsb.age + 's'); } catch (e) {}
       return;   // fresher than anything AeroDataBox can offer
     }
@@ -8076,7 +8210,7 @@ async function _gateNumbersPoll() {
       inb._liveLat = _lpLat; inb._liveLng = _lpLng; inb._liveAt = Date.now();
       window._gateInboundLivePos = { lat: _lpLat, lng: _lpLng, speed: liveSpd, altitude: liveAlt, at: Date.now(), fl: flt, via: 'flight', cs: '' };
     }
-    try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
+    try { _gateTelemSetReal(liveSpd, liveAlt, inb); } catch (e) {}
     try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt, 'pos', _lpLat, _lpLng); } catch (e) {}
   } catch (e) { _gateNumPollBusy = false; }
 }
@@ -15372,7 +15506,9 @@ function _buildV2MapCol(ctx, vars) {
       // Best candidate from this poll: board feed (withLocation) first, then the
       // by-number window cache. Feed it through the sticky smoother so the panel
       // doesn't blink off on polls where ADB omits the position.
-      var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
+      // v24068 — and only when that cache is this inbound's (_gateLivePosFor):
+      // after the gate re-paired, it still held the aircraft before's numbers.
+      var _wpC = _gateLivePosFor(_ib);
       // v22889 — ADS-B FIRST. The 60-second gate poll mutates the inbound
       // object it fetched; the renderer frequently holds a DIFFERENT object
       // for the same flight, so those mutations never arrived and SPD/ALT
@@ -15453,7 +15589,12 @@ function _buildV2MapCol(ctx, vars) {
       // current modeled value, so numbers glide between fixes and a full
       // re-render doesn't snap them back to the last raw fix (see
       // _gateTelemSetReal / _animateGateTelem).
-      try { _gateTelemSetReal(_liveSpd, _liveAlt); } catch (e) {}
+      // v24068 — whose numbers, and the ADS-B answer they are when they are
+      // its numbers (not a held reading or the feed's)
+      try {
+        var _tFix = (_adsbC && _adsbC.onGround !== true && _liveAlt !== null && _liveAlt === _adsbC.alt && _liveSpd === _adsbC.spd) ? _adsbC : null;
+        _gateTelemSetReal(_liveSpd, _liveAlt, _ib, _tFix);
+      } catch (e) {}
       var _tAnim = window._gateTelemAnim || {};
       var _liveSpdD = (_liveSpd !== null && _tAnim.spd != null) ? Math.max(0, Math.round(_tAnim.spd)) : _liveSpd;
       var _liveAltD = (_liveAlt !== null && _tAnim.alt != null) ? Math.max(0, Math.round(_tAnim.alt)) : _liveAlt;
@@ -16997,7 +17138,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17041,7 +17182,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -25887,6 +26028,13 @@ const gView = document.getElementById('gateView');
       // the poll enriches it in place, so the fetched tail is what the next
       // render reads.
       try { window._gatePanelInbound = inboundFlight || null; } catch (e) {}
+      // v24068 — and the speed/altitude digits are this inbound's: another
+      // inbound (for this departure or the next) starts them from nothing,
+      // before this render builds the panel (_gateTelemReset).
+      try {
+        window._gateTelemOwner = _gateTelemKey(inboundFlight);
+        if (window._gateTelemOwner && (window._gateTelemAnim || {}).who !== window._gateTelemOwner) _gateTelemReset(window._gateTelemOwner);
+      } catch (e) {}
 
       if (inboundFlight) {
         console.log('[FIDS] Inbound for', currentFlight.flight, ':',
@@ -25968,7 +26116,7 @@ const gView = document.getElementById('gateView');
                     // v23915 — timed and owned (_gateFixCheck ignores a position without both).
                     at: Date.now(), fl: _capturedInbound, via: 'flight', cs: ''
                   };
-                  try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
+                  try { _gateTelemSetReal(liveSpd, liveAlt, _capturedInbound); } catch (e) {}
                 }
                 console.log('[FIDS] Direct inbound resolved:', _capturedInbound,
                   'reg:', _todayReg || '(pending)', 'type:', _todayAc || _todayCd || '(scheduled fallback)',
@@ -26464,7 +26612,9 @@ const gView = document.getElementById('gateView');
         try { gateMap = null; } catch (eMG2) {}
         // New flight → wipe the live-telemetry animator so the previous plane's
         // gliding speed/altitude don't bleed into the new one.
-        window._gateTelemAnim = { spd:null, alt:null, realSpd:null, realAlt:null, realTs:0, realSecToArr:null, shimmerPh:0 };
+        // (v24068 — every field, _gateTelemReset; a new INBOUND does the same,
+        // above, where this render learns it.)
+        _gateTelemReset(window._gateTelemOwner);
         window._gateLastFlightKey = currentFlight.flight;
         // The ad carousel is preserved across gate rebuilds (videos must not
         // restart) — but a mounted flight-map slide belongs to the PREVIOUS
@@ -34157,7 +34307,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24066';
+var FIDS_BUILD_TAG = 'v24068';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -59187,7 +59337,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
