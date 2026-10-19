@@ -12100,6 +12100,13 @@ function aircraftCodeToIata(raw) {
   if (/DHC[\s-]*8[\s-]*(200|Q200)|DASH[\s-]*8[\s-]*(200|Q200)/i.test(s)) return 'DH2';
   if (/DHC[\s-]*8[\s-]*(100|Q100)|DASH[\s-]*8[\s-]*(100|Q100)/i.test(s)) return 'DH1';
   if (/DHC[\s-]*8|DASH[\s-]*8/i.test(s)) return 'DH4'; // generic Dash 8 → most common Q400
+  // The Q-series by its marketing name alone: 'Bombardier Q400' strips to 'Q400', which matched
+  // nothing above and fell through to the junk code 'Q40' (no picture, the gate hid the aircraft
+  // while the caption, which reads the name, said Dash 8-400).
+  if (/^Q[\s-]*400(?!\d)/.test(s)) return 'DH4';
+  if (/^Q[\s-]*300(?!\d)/.test(s)) return 'DH3';
+  if (/^Q[\s-]*200(?!\d)/.test(s)) return 'DH2';
+  if (/^Q[\s-]*100(?!\d)/.test(s)) return 'DH1';
 
   // ── 737 MAX family (must be before 737NG to avoid false matches) ──
   if (/737[\s-]*(?:MAX[\s-]*)?7(?:\b|[^0-9])|737[\s-]*7[\s-]*MAX/i.test(s)) return '7M7';
@@ -12295,7 +12302,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=205';
+  var _imgCacheBuster = '?v=206';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -12405,9 +12412,9 @@ var PLANE_FACING = {
   'AA/E70.png':'L', 'AA/E75.png':'L', 'AA/ER4.png':'L', 'AA/RJ1.png':'L', 'AB4.png':'L', 'AB6.png':'L',
   'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'L', 'AC/319retired.png':'R', 'AC/320.png':'L',
   'AC/320r.png':'L', 'AC/321.png':'L', 'AC/321r.png':'L', 'AC/32Q.png':'L', 'AC/332.png':'L', 'AC/333.png':'L',
-  'AC/737.png':'L', 'AC/737r.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
+  'AC/737.png':'L', 'AC/737r.png':'L', 'AC/738.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
   'AC/77L-ge.png':'L', 'AC/77L.png':'L', 'AC/77W-ge.png':'L', 'AC/77W.png':'L', 'AC/788.png':'L', 'AC/789.png':'L',
-  'AC/7M8.png':'L', 'AC/7M8r.png':'L', 'AC/BEE.png':'L', 'AC/CR7.png':'R', 'AC/CR9.png':'R', 'AC/DH4.png':'R',
+  'AC/7M8.png':'L', 'AC/7M8r.png':'L', 'AC/BEE.png':'L', 'AC/CR7.png':'R', 'AC/CR9.png':'L', 'AC/DH4.png':'L',
   'AC/E75.png':'R', 'AC/E7W.png':'R', 'AR1.png':'L', 'AR8.png':'L', 'AS/737.png':'L', 'AS/738.png':'L',
   'AS/739.png':'L', 'AS/73H.png':'L', 'AS/73J.png':'L', 'AS/73W.png':'L', 'AS/789.png':'L', 'AS/7M9.png':'L',
   'AS/E75.png':'L', 'AT4.png':'L', 'AT5.png':'L', 'AT7.png':'L', 'ATR.png':'L', 'B6/223.png':'L',
@@ -16909,7 +16916,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24062" src="/textures/gate-sky-shelf.mp4?v=24062" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16953,7 +16960,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24062" src="/textures/gate-sky-shelf.mp4?v=24062" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -34068,7 +34075,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24062';
+var FIDS_BUILD_TAG = 'v24064';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -59025,7 +59032,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24062" src="/textures/gate-sky-shelf.mp4?v=24062"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
