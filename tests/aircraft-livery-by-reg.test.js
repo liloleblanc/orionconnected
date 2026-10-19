@@ -111,3 +111,73 @@ test('every gate surface that draws the aircraft picture passes the registration
   assert.ok(calls.length >= 3, 'found ' + calls.length + ' calls');
   for (const c of calls) assert.match(c[2], /\breg:/, 'a call without the registration: ' + c[0].slice(0, 80));
 });
+
+// ── THE COMPANION APP ──────────────────────────────────────────────────────
+// Every real phone is sent to app.html, which does not load fids-core.js: its
+// flight detail draws the aircraft with its own liveryImg under the 'Reg'
+// line it prints. Without the same rule there, a phone showed the ordinary
+// A220 under 'Reg C-GNBN'.
+const APP = fs.readFileSync(path.join(ROOT, 'fids-current', 'app.html'), 'utf8');
+function liftFrom(src, name) {
+  const at = src.indexOf('function ' + name + '(');
+  assert.ok(at >= 0, 'app.html must define ' + name);
+  let d = 0;
+  for (let k = src.indexOf('{', at); k < src.length; k++) {
+    if (src[k] === '{') d++;
+    else if (src[k] === '}') { d--; if (d === 0) return src.slice(at, k + 1); }
+  }
+  throw new Error('unterminated ' + name);
+}
+function appApi() {
+  const at = APP.indexOf('const LIVERY_BY_REG={');
+  assert.ok(at >= 0, 'app.html must declare LIVERY_BY_REG');
+  const table = APP.slice(at, APP.indexOf('\n};', at) + 3);
+  const code = [table, liftFrom(APP, 'acType'), liftFrom(APP, 'liveryByReg'), liftFrom(APP, 'liveryImg')].join('\n');
+  return new Function(code + '\nreturn { img: liveryImg, table: LIVERY_BY_REG };')();
+}
+const attrOf = (html, a) => (new RegExp('\\s' + a + '="([^"]*)"').exec(html) || [])[1] || '';
+
+test('the companion app holds the same registration liveries as the boards', () => {
+  assert.deepEqual(appApi().table, api().table);
+});
+
+test('the companion app draws C-GNBN in its TCA paint, every other A220 in the ordinary art', () => {
+  const { img } = appApi();
+  for (const reg of ['C-GNBN', 'CGNBN', 'c-gnbn', ' C GNBN ']) {
+    for (const raw of ['223', 'BCS3', 'Airbus A220-300', 'CS300']) {
+      const h = img('AC', raw, '', reg);
+      assert.equal(attrOf(h, 'src'), '/aircraft/AC/223-tca.png', reg + ' / ' + raw);
+      assert.equal(attrOf(h, 'data-fb'), '/aircraft/AC/223.png', 'a failed load steps to the ordinary A220');
+    }
+  }
+  assert.equal(attrOf(img('AC', '223', '', 'C-GUPG'), 'src'), '/aircraft/AC/223.png', 'C-GUPG');
+  assert.equal(attrOf(img('AC', '223', '', ''), 'src'), '/aircraft/AC/223.png', 'no registration');
+  assert.equal(attrOf(img('AC', '223', ''), 'src'), '/aircraft/AC/223.png', 'no registration argument');
+  assert.equal(attrOf(img('AC', 'BCS1', '', 'C-GNBN'), 'src'), '/aircraft/AC/221.png', 'an A220-100 label keeps its picture');
+  assert.equal(attrOf(img('AC', '320', '', 'C-GNBN'), 'src'), '/aircraft/AC/320.png', 'another type keeps its picture');
+  assert.equal(attrOf(img('DL', '223', '', 'C-GNBN'), 'src'), '/aircraft/DL/223.png', 'another carrier keeps its picture');
+  assert.equal(attrOf(img('AC', '320', 'Air Canada Rouge', 'C-FXYZ'), 'src'), '/aircraft/AC/320r.png', 'Rouge unchanged');
+});
+
+test('the companion app hands the flight detail picture the registration it prints', () => {
+  const m = /\+liveryImg\(([^)]*)\)\+/.exec(APP);
+  assert.ok(m, 'the flight detail draws the livery');
+  const args = m[1].split(',').map((x) => x.trim());
+  assert.equal(args[3], 'reg', 'the fourth argument is the printed registration');
+  assert.match(APP, /const aci=ACI\[key\]\|\|null, acRaw=[^;]*, reg=f\.reg\|\|\(aci&&aci\.reg\)\|\|''/, 'the same reg the Reg line prints');
+});
+
+test('the phone gate layout never lets a history tail choose the paint', () => {
+  // the TV gate's aircraft and map columns drop history-sourced tails before
+  // the picture; the <700 px layout must too, or the two disagree
+  const at = SRC.indexOf('function renderMobileGateHtml(');
+  const call = SRC.indexOf('aircraftImgTag(', at);
+  const body = SRC.slice(call, SRC.indexOf('});', call));
+  const reg = /\breg:([\s\S]*?),\s*\n\s*className:/.exec(body);
+  assert.ok(reg, 'the phone gate passes a registration');
+  assert.match(reg[1], /\/\^history\/i?\.test\(String\(currentFlight\._regSource/, 'a history tail is withheld');
+  const f = new Function('currentFlight', 'return (' + reg[1] + ');');
+  assert.equal(f({ _reg: 'C-GNBN', _regSource: 'history:fr24' }), '');
+  assert.equal(f({ _reg: 'C-GNBN', _regSource: 'feed' }), 'C-GNBN');
+  assert.equal(f({ _registration: 'C-GNBN' }), 'C-GNBN');
+});

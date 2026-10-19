@@ -12819,8 +12819,12 @@ function renderMobileGateHtml(ctx) {
       _liveryEqDebug = _liveryEq;
       _acImgHtml = aircraftImgTag(airline, _liveryEq, {
         // the tail, so an aeroplane in its own paint is drawn as it looks
-        // (AIRCRAFT_LIVERY_BY_REG); the same field this layout prints
-        reg: currentFlight._reg || currentFlight._registration || '',
+        // (AIRCRAFT_LIVERY_BY_REG); the same field this layout prints, but
+        // never a tail from history: like the TV gate's aircraft and map
+        // columns, an observation from another day ('expected' under the
+        // registration) is not today's aeroplane and does not choose its paint
+        reg: /^history/i.test(String(currentFlight._regSource || ''))
+          ? '' : (currentFlight._reg || currentFlight._registration || ''),
         className: 'gad-equip-img-mobile',
         style: 'max-width:100%;max-height:120px;height:auto;width:auto;object-fit:contain;display:block;margin:0 auto;'
       });
@@ -58866,7 +58870,7 @@ var HERITAGE_MARKS = [
     // supplied drawing: black 'AIR CANADA' capitals with the red rondelle
     // beside them, over a single red cheatline along the windows that comes
     // to a point at the nose, a black anti-glare nose, a bare-metal belly and
-    // the white rondelle on a red tail. Drawn as CF-TJU, fleet number 861.
+    // the white rondelle on a red tail. Drawn as CF-TJU, with 861 on the fin.
     //
     // THE MODEL IS THE DC-8-61, the stretched Super 60, on three counts:
     //  · its shape. Length over fuselage depth, measured 14–26% behind the
@@ -58880,10 +58884,13 @@ var HERITAGE_MARKS = [
     //    one behind it and the rear door, the -61/-63 layout in that manual;
     //  · its registration: CF-TJU is a DC-8-61, MSN 45891, line 305,
     //    delivered to Air Canada on 4 October 1967, C-FTJU from 1974, sold
-    //    in 1986 (PlaneLogger's registration history; Planespotters), fleet
-    //    number 861 (AirHistory.net, Toronto, March 1978). Air Canada's
-    //    first -61, CF-TJT, arrived in September 1967 and seven more
-    //    followed, CF-TJU to CF-TJZ, before the -63s.
+    //    in 1986 (PlaneLogger's registration history; Planespotters). Air
+    //    Canada's first -61, CF-TJT, arrived in September 1967, and CF-TJU
+    //    to CF-TJZ followed before the -63s (Yesterday's Airlines, which
+    //    counts them as seven; U to Z is six). The fin number 861 is the
+    //    drawing's: no fleet list we could open confirms it (the published
+    //    run CF-TJL 812, TJM 813, TJN 814 does not settle the 86x block), and
+    //    no caption prints it.
     //
     // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Douglas DC-8-61 · 1967–1983 ·
     // 1965 livery', like the DC-9 and 767 cards.

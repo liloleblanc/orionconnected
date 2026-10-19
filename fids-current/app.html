@@ -1065,7 +1065,7 @@ function heroBrand(code,name,light){
 function acType(raw){
   if(!raw) return '';
   let s=String(raw).trim().toUpperCase();
-  const RE={BCS:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752'};
+  const RE={BCS:'223',BCS1:'221',BCS3:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752'};
   if(RE[s]) return RE[s];
   if(/^[A-Z0-9]{3}$/.test(s)) return s;            // already a 3-char code (OAG)
   if(/ATR\s*72/.test(s)) return 'AT7';
@@ -1095,15 +1095,36 @@ function acType(raw){
   if(/787/.test(s)) return '789';
   return '';
 }
+// ONE AEROPLANE, ITS OWN PAINT — the boards' AIRCRAFT_LIVERY_BY_REG
+// (fids-core.js, which this page does not load), the same rows: a few
+// airframes wear something other than their carrier's colours, and when the
+// flight's registration is known the picture shows that aeroplane as it
+// looks. Keyed by the registration with every separator removed (C-GNBN,
+// CGNBN, 'c-gnbn'), and scoped to the carrier folder and the type picture it
+// replaces, so a tail never repaints another carrier or another type.
+// C-GNBN is Air Canada's A220-300 fin 119 in the Trans-Canada Air Lines
+// livery; every other A220 keeps AC/223.png. tests/aircraft-livery-by-reg
+// holds the two tables equal.
+const LIVERY_BY_REG={
+  CGNBN:{folder:'AC',eq:'223',file:'AC/223-tca.png'}
+};
+function liveryByReg(folder,t,reg){
+  const k=String(reg||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const e=k?LIVERY_BY_REG[k]:null;
+  return (e&&e.folder===folder&&e.eq===t)?e.file:'';
+}
 // Real aircraft livery side-view, airline-specific with a generic fallback.
 // Air Canada Rouge has its own paint (e.g. 320r.png) living in the AC folder,
 // so when a flight is operated by Rouge we use the "r" variant and fall back to
-// mainline AC if that particular Rouge art is missing.
-function liveryImg(airline,raw,operatedBy){
+// mainline AC if that particular Rouge art is missing. A registration in its
+// own paint (LIVERY_BY_REG) comes first, as on the boards, and falls back to
+// the same type's ordinary picture.
+function liveryImg(airline,raw,operatedBy,reg){
   const t=acType(raw); if(!t) return '';
   const a=String(airline||'').toUpperCase();
+  const own=liveryByReg(a,t,reg);
   const isRouge=(a==='AC' && /rouge/i.test(operatedBy||''));
-  const primary=isRouge?('/aircraft/AC/'+t+'r.png'):('/aircraft/'+a+'/'+t+'.png');
+  const primary=own?('/aircraft/'+own):isRouge?('/aircraft/AC/'+t+'r.png'):('/aircraft/'+a+'/'+t+'.png');
   return '<img class="dt-illus" src="'+primary+'" data-fb="/aircraft/'+a+'/'+t+'.png" data-fb2="/aircraft/'+t+'.png" alt="" '
     +'onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';}'
     +'else if(this.dataset.fb2){this.src=this.dataset.fb2;this.dataset.fb2=\'\';}else{this.style.display=\'none\';}">';
@@ -1996,7 +2017,7 @@ function openFlight(i){
     '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light)
     +'<div class="flt">'+esc(f.flight)+'</div>'
     +(opLine?'<div class="al-op">'+esc(T('operatedBy'))+' '+(opLogoHtml(f.operatedBy,hc.light)||esc(f.operatedBy))+'</div>':'')
-    +liveryImg(f.airline,acRaw,f.operatedBy)+'</div>'
+    +liveryImg(f.airline,acRaw,f.operatedBy,reg)+'</div>'
     +'<div class="dt-route">'+(isArr?epOther:epHere)
     +'<span class="pl"><span class="tic pln" aria-hidden="true"></span></span>'
     +(isArr?epHere:epOther)+'</div>'
