@@ -7306,6 +7306,24 @@ window._gateTelemAnim = window._gateTelemAnim || {
   shimmerPh: 0
 };
 
+// v24068 — THE GATE'S NAME FOR ITS INBOUND: the flight number, else the tail
+// (v23127's flight-first identity). A change of it is a new inbound: it tears
+// the small map down, and it starts the speed/altitude digits from nothing
+// (the gate render, just before it builds the panel).
+function _gateInbId(inb) {
+  return inb ? String(inb.flight || inb._reg || inb.registration || 'inb') : 'none';
+}
+// v24068 — the shared live position (window._gateInboundLivePos) is this
+// inbound's when it was written for its flight number, or for no flight at
+// all: the board's own test where the poll and the map clear it
+// (!lp.fl || lp.fl === inb.flight). It outlives a swap to another inbound for
+// the same departure (it is cleared when the departure changes), so the two
+// places it feeds these digits ask this first: the render's candidate (_wpC)
+// and the model's on-the-ground test below.
+function _gateLivePosIsFor(lp, inb) {
+  return !!(lp && typeof lp === 'object' && (!lp.fl || (inb && lp.fl === inb.flight)));
+}
+
 // Re-anchor to a fresh real reading. Called each render with the resolved
 // _liveSpd/_liveAlt; no-ops when the values haven't changed (so the descent
 // time-base isn't reset every re-render), and clears everything when the plane
@@ -7355,7 +7373,11 @@ function _gateTelemModel() {
   // the ground the digits are the real anchor with no trend: speed as
   // reported, altitude 0 — the displayed number eases down and stays.
   try {
-    var _gp = window._gateInboundLivePos;
+    // v24068 — the inbound's own position only (_gateLivePosIsFor): after a
+    // swap from an aircraft on the ground, the one before's "on the ground"
+    // eased an airborne aircraft's altitude toward 0 ft until a poll wrote the
+    // new one's position.
+    var _gp = _gateLivePosIsFor(window._gateInboundLivePos, window._gateInbound) ? window._gateInboundLivePos : null;
     if ((_gp && _gp.onGround === true) ||
         (window._gateInbound && window._gateInbound._liveOnGround === true)) {
       return { spd: (typeof spd === 'number' ? spd : 0), alt: 0 };
@@ -15372,7 +15394,9 @@ function _buildV2MapCol(ctx, vars) {
       // Best candidate from this poll: board feed (withLocation) first, then the
       // by-number window cache. Feed it through the sticky smoother so the panel
       // doesn't blink off on polls where ADB omits the position.
-      var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
+      // v24068 — and only when it was written for this inbound (_gateLivePosIsFor):
+      // after a swap it still held the aircraft before's position and numbers.
+      var _wpC = _gateLivePosIsFor(window._gateInboundLivePos, _ib) ? window._gateInboundLivePos : null;
       // v22889 — ADS-B FIRST. The 60-second gate poll mutates the inbound
       // object it fetched; the renderer frequently holds a DIFFERENT object
       // for the same flight, so those mutations never arrived and SPD/ALT
@@ -16997,7 +17021,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17041,7 +17065,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -25887,6 +25911,26 @@ const gView = document.getElementById('gateView');
       // the poll enriches it in place, so the fetched tail is what the next
       // render reads.
       try { window._gatePanelInbound = inboundFlight || null; } catch (e) {}
+      // v24068 — A NEW INBOUND STARTS ITS NUMBERS FROM NOTHING. The digits'
+      // state (window._gateTelemAnim: the last reading, the one before it, and
+      // so the rate between them) was wiped only when the DEPARTURE changed. A
+      // gate that swapped to another inbound for the same departure carried
+      // the aircraft before's reading into the new one's: the new aircraft
+      // showed the old one's altitude, and the "rate" from the old aircraft's
+      // reading to the new one's sent a descending aircraft's digits up. When
+      // the gate's name for its inbound changes (_gateInbId), the state starts
+      // fresh, here, before this render builds the panel. A gate with no
+      // inbound for a moment has not changed its inbound: the name is compared
+      // with the last inbound the gate showed (window._gateTelemInbId).
+      try {
+        var _telemInbId = _gateInbId(inboundFlight);
+        if (_telemInbId !== 'none') {
+          if (window._gateTelemInbId && window._gateTelemInbId !== _telemInbId) {
+            window._gateTelemAnim = { spd:null, alt:null, realSpd:null, realAlt:null, realTs:0, realSecToArr:null, shimmerPh:0 };
+          }
+          window._gateTelemInbId = _telemInbId;
+        }
+      } catch (e) {}
 
       if (inboundFlight) {
         console.log('[FIDS] Inbound for', currentFlight.flight, ':',
@@ -26432,9 +26476,7 @@ const gView = document.getElementById('gateView');
       // flight was tearing its own map down over and over. Flight number
       // first: it never flaps; the reg only identifies reg-lookup records
       // that have no flight number at all.
-      var _newInbId = inboundFlight
-        ? String(inboundFlight.flight || inboundFlight._reg || inboundFlight.registration || 'inb')
-        : 'none';
+      var _newInbId = _gateInbId(inboundFlight);   // (v24068 — the same name, one place)
       // When the flight changes, clear the PREVIOUS flight's stale inbound /
       // live data BEFORE assigning this render's inbound. This block used to
       // run AFTER the assignment below, which nulled the freshly-matched
@@ -34157,7 +34199,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24066';
+var FIDS_BUILD_TAG = 'v24068';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -59187,7 +59229,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24068" src="/textures/gate-sky-shelf.mp4?v=24068"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
