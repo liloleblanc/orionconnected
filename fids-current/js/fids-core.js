@@ -16916,7 +16916,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24063" src="/textures/gate-sky-shelf.mp4?v=24063" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16960,7 +16960,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24063" src="/textures/gate-sky-shelf.mp4?v=24063" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -24910,6 +24910,10 @@ function _autoBandPalette(ap, _tries) {
 // airports are the Y-codes on the roster (as _heritageIsCanadian reads them
 // when AP carries no country). ?holiday=<id> previews a look and
 // ?holiday=none turns it off, for review only.
+// Remembrance Day, Armistice Day, Remembrance Sunday and Veterans Day are
+// decided by js/remembrance.js (FidsRemembrance.lookFor): 'remembrance-ca',
+// 'remembrance-gb', 'remembrance-au' or 'veterans-us', each by the
+// airport's country and that country's switch.
 function _fidsAirportYmd(iata, now) {
   var tz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
   // the airport's own calendar day, as YYYY-MM-DD (fidsLocalDateKey)
@@ -24917,19 +24921,35 @@ function _fidsAirportYmd(iata, now) {
   return { y: +k[0], m: +k[1], d: +k[2] };
 }
 function _fidsHolidayFor(iata, now) {
+  var ap = String(iata || '').toUpperCase();
+  // the airport's country: AP's own, else the roster's (airportCountry),
+  // else the Y-codes are Canadian
+  var cc = (function () {
+    var c = ((typeof AP !== 'undefined' && AP[ap]) || {}).country || '';
+    if (c) return /^(CA|CAN|Canada)$/i.test(String(c)) ? 'CA' : String(c).toUpperCase();
+    try { if (typeof airportCountry === 'function') { var r = airportCountry(ap); if (r) return r; } } catch (eC) {}
+    return /^Y[A-Z]{2}$/.test(ap) ? 'CA' : '';
+  })();
   try {
     var q = new URLSearchParams(location.search).get('holiday');
     if (q === 'none') return '';
-    if (q && /^[a-z0-9-]{3,40}$/.test(q)) return q;
+    if (q && /^[a-z0-9-]{3,40}$/.test(q)) {
+      // ?holiday=remembrance previews the look of the airport's own country
+      // (js/remembrance.js), and none where that country keeps no day
+      if (q === 'remembrance' && typeof FidsRemembrance !== 'undefined') return FidsRemembrance.lookOf(cc);
+      return q;
+    }
   } catch (eQ) {}
-  var ap = String(iata || '').toUpperCase();
-  var canadian = (function () {
-    var c = ((typeof AP !== 'undefined' && AP[ap]) || {}).country || '';
-    if (c) return /^(CA|CAN|Canada)$/i.test(String(c));
-    return /^Y[A-Z]{2}$/.test(ap);
-  })();
-  if (!canadian) return '';
   var t = _fidsAirportYmd(ap, now || new Date());
+  // 11 November (and the United Kingdom's Remembrance Sunday), by the
+  // airport's country and that country's switch (js/remembrance.js)
+  try {
+    if (typeof FidsRemembrance !== 'undefined') {
+      var rem = FidsRemembrance.lookFor(cc, t.y, t.m, t.d);
+      if (rem) return rem;
+    }
+  } catch (eR) {}
+  if (cc !== 'CA') return '';
   // the second Monday of October: the first Monday falls on day 1..7
   if (t.m === 10) {
     var dow = new Date(Date.UTC(t.y, 9, t.d)).getUTCDay();
@@ -25337,7 +25357,10 @@ function _tgBouquet(band, now) {
 }
 function _fidsHolidayLayers() {
   try {
-    var on = !!document.body.dataset.fidsHoliday;
+    // These layers are Thanksgiving's own: made for thanksgiving-ca only.
+    // (Made for any look, they sat unstyled in the gate's flow under
+    // another one, and the bouquet alone squashed the gate by ~172px.)
+    var on = document.body.dataset.fidsHoliday === 'thanksgiving-ca';
     for (var i = 0; i < _HOLIDAY_LAYERS.length; i++) {
       var L = _HOLIDAY_LAYERS[i], hosts = document.querySelectorAll(L[0]);
       for (var j = 0; j < hosts.length; j++) {
@@ -25368,7 +25391,9 @@ function _fidsHolidayLayers() {
       var hr = band.getBoundingClientRect();
       _tgBouquet(band);
       var a = _tgEdges(band, '.g8-r1-logoslot img, .g8-r1-logoslot svg, .g8-r1-logoslot canvas', hr, 'right');
-      var bx = _tgEdges(band, '.octb-apmark, .octb-apsep, .octb-clock', hr, 'left');
+      // the airport's mark: its logo, or its code in letters (.octb-ap) where
+      // it has none (YUL, DCA), so no leaf rests on the letters
+      var bx = _tgEdges(band, '.octb-apmark, .octb-ap, .octb-apsep, .octb-clock', hr, 'left');
       if (bx == null) bx = _tgEdges(band, '.octb-clockrow, .g8-r1-timebox', hr, 'left');
       var rib = band.querySelector(':scope > .tg-ribbon'), rt = rib ? rib.getBoundingClientRect().top - hr.top : hr.height - 32;
       var kc = Math.max(0.6, Math.min(1.2, rt / 106));
@@ -28030,8 +28055,13 @@ const AP = {
   // `subKey` is the store's entry for an airport named by a description
   // ('International'), which each board language writes its own way. The
   // entries below are here for that name only; Linate, Daxing and Belfast
-  // City also carry their zone, for the Earth floor's local times.
-  DAL:{ name:'Dallas Love Field',                                   sub:'Love Field' },
+  // City also carry their zone, for the Earth floor's local times, and Love
+  // Field, Belfast International and Boeing Field theirs because their
+  // countries keep 11 November (js/remembrance.js): the day the look keeps
+  // (_fidsAirportYmd, UTC with no zone) and the clock the silence reads (the
+  // machine's with no zone) must be the airport's own, and the same
+  // (tests/remembrance.test.js holds every such airport to a zone).
+  DAL:{ name:'Dallas Love Field',                                   sub:'Love Field', tz:'America/Chicago' },
   CIA:{ name:'Rome Ciampino Airport',                               sub:'Ciampino' },
   LIN:{ name:'Milan Linate Airport',                                sub:'Linate', tz:'Europe/Rome' },
   BMA:{ name:'Stockholm Bromma Airport',                            sub:'Bromma' },
@@ -28045,10 +28075,10 @@ const AP = {
   SDU:{ name:'Rio de Janeiro Santos Dumont Airport',                sub:'Santos Dumont' },
   CGH:{ name:'São Paulo Congonhas Airport',                         sub:'Congonhas' },
   SAW:{ name:'Istanbul Sabiha Gökçen International Airport',        sub:'Sabiha Gökçen' },
-  BFS:{ name:'Belfast International Airport',                       subKey:'apIntl' },
+  BFS:{ name:'Belfast International Airport',                       subKey:'apIntl', tz:'Europe/London' },
   BHD:{ name:'George Best Belfast City Airport',                    sub:'City', tz:'Europe/London' },
   DWC:{ name:'Dubai Al Maktoum International Airport',              sub:'Al Maktoum' },
-  BFI:{ name:'Seattle Boeing Field (King County International Airport)', sub:'Boeing Field' },
+  BFI:{ name:'Seattle Boeing Field (King County International Airport)', sub:'Boeing Field', tz:'America/Los_Angeles' },
   LBG:{ name:'Paris Le Bourget Airport',                            sub:'Le Bourget' },
   // ── THE EARTH FLOOR'S PLACES: 73 DESTINATIONS THAT HAD NO ZONE ──────────
   // The planet under the departures and arrivals (js/fids-earth.js) prints
@@ -34045,7 +34075,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24063';
+var FIDS_BUILD_TAG = 'v24064';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -59002,7 +59032,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24063" src="/textures/gate-sky-shelf.mp4?v=24063"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

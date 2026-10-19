@@ -1,0 +1,60 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   remembrance.css — 11 NOVEMBER (js/remembrance.js)
+
+   The pieces js/remembrance.js puts on the page on the day, and only then:
+     #fidsBanner > .rem-pin   the poppy (or the flag pin) beside the airport's
+                              logo on the departures banner
+     .g8-r1 > .rem-pin        the poppy (or the laurel wreath) in the gate's
+                              cream band, before the airport's mark
+     .g8-r1 > .rem-day        the day's name in the gate's date bar
+     body > .rem-floor        the silence, on the free floor under the rows
+     body > .rem-still        the silence, held still over the ticker
+     body > .rem-card         the silence, over the gate's centre screen
+   The three silence layers sit over the page, outside every board's own
+   markup, so no repaint of a board can take them away for a moment; under
+   the boot loader (z-index 10000), never over it.
+
+   No words are drawn here, and nothing moves: no animation, no transition.
+   Each piece is put in place, or taken away, in one step.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_) #fidsBanner > .rem-pin,
+html body:not(#_):not(#_):not(#_):not(#_) .g8-r1 > .rem-pin {
+  position: absolute; z-index: 6; pointer-events: none;
+  background: center / contain no-repeat;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35));
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-r1 > .rem-day {
+  position: absolute; z-index: 4; pointer-events: none;
+  display: flex; align-items: center; overflow: hidden;
+}
+html body:not(#_):not(#_):not(#_):not(#_) .g8-r1 > .rem-day .rem-line { line-height: 1.1; }
+html body:not(#_):not(#_):not(#_):not(#_) .rem-line { white-space: nowrap; overflow: hidden; max-width: 100%; }
+html body:not(#_):not(#_):not(#_):not(#_) .rem-u { display: inline-block; white-space: nowrap; }
+html body:not(#_):not(#_):not(#_):not(#_) .rem-line .bs-sep { opacity: .45; font-weight: 400; }
+html body:not(#_):not(#_):not(#_):not(#_) .rem-art { flex: none; background: center / contain no-repeat; }
+
+/* the silence: black, still, the board's own type in warm white */
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-layer {
+  position: fixed; z-index: 9000; pointer-events: none; box-sizing: border-box;
+  background: #0B0B0C; color: #F2EFE8; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-floor { gap: 4.2vw; padding: 0 4vw; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-floor .rem-words { display: flex; flex-direction: column; gap: .32em; min-width: 0; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-floor .rem-time { font-weight: 700; font-size: 1.9em; line-height: 1; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-layer .rem-big { font-weight: 700; letter-spacing: .01em; line-height: 1.12; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-layer .rem-small { font-weight: 500; color: #B9B5AD; line-height: 1.15; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-floor .rem-small { font-size: .62em; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-still { gap: 14px; font-weight: 600; padding: 0 16px; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-still .rem-words { min-width: 0; max-width: calc(100% - 80px); }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-card { flex-direction: column; gap: 2.2vh; text-align: center; padding: 3vh 4%; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-card .rem-words { width: 100%; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+html body:not(#_):not(#_):not(#_):not(#_) > .rem-card .rem-time { font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* nothing of the look moves, whatever the screen's motion setting */
+@media (prefers-reduced-motion: reduce) {
+  html body:not(#_):not(#_):not(#_):not(#_) .rem-pin,
+  html body:not(#_):not(#_):not(#_):not(#_) .rem-day,
+  html body:not(#_):not(#_):not(#_):not(#_) > .rem-layer,
+  html body:not(#_):not(#_):not(#_):not(#_) > .rem-layer * { animation: none !important; transition: none !important; }
+}
