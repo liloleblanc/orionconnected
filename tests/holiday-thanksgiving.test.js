@@ -65,9 +65,13 @@ test('the look is keyed on the holiday, uses no words, and never a box behind a 
   assert.match(block, /\.fids-board-icon \{[^}]*background: transparent !important;/, 'the badge loses its white disc');
 });
 
-test('the gate and baggage layers exist only while the holiday is set', () => {
+test('the gate and baggage layers exist only while Thanksgiving is set', () => {
   const layers = fn('_fidsHolidayLayers');
-  assert.match(layers, /var on = !!document\.body\.dataset\.fidsHoliday;/);
+  // Thanksgiving's own layers, for thanksgiving-ca only: made for any look,
+  // they sat unstyled in the gate's flow under another one (the bouquet
+  // alone squashed the gate by ~172px)
+  assert.match(layers, /var on = document\.body\.dataset\.fidsHoliday === 'thanksgiving-ca';/);
+  assert.doesNotMatch(layers, /var on = !!document\.body\.dataset\.fidsHoliday;/);
   assert.match(layers, /if \(!on\) \{ if \(el\) el\.parentNode\.removeChild\(el\); continue; \}/);
   assert.match(CORE, /_ocEvery\(_fidsHolidayLayers, 2000\)/);
 });
@@ -127,7 +131,8 @@ test('every extra leaf is a holiday layer, placed by measuring, and nothing move
   // banner the title, the airport's logo and the clock; baggage the
   // "Baggage claim" line, the welcome line and the clock glass
   assert.match(layers, /_tgEdges\(band, '\.g8-r1-logoslot img, \.g8-r1-logoslot svg, \.g8-r1-logoslot canvas', hr, 'right'\)/);
-  assert.match(layers, /_tgEdges\(band, '\.octb-apmark, \.octb-apsep, \.octb-clock', hr, 'left'\)/);
+  // the airport's mark is its logo or, where it has none, its code in letters
+  assert.match(layers, /_tgEdges\(band, '\.octb-apmark, \.octb-ap, \.octb-apsep, \.octb-clock', hr, 'left'\)/);
   assert.match(layers, /_tgEdges\(fb, '#fidsAirportPill', fr, 'left'\)/);
   assert.match(layers, /_tgEdges\(fb, '#clock, #clockDate > \*, \.fids-banner-time', fr, 'left'\)/);
   assert.match(layers, /_tgEdges\(bb, '\.b5-clockwx', br, 'left'\)/);

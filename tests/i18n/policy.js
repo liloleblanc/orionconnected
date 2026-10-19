@@ -40,6 +40,9 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/fids-v2.js',
   'fids-current/js/gate-date-context.js',
   'fids-current/js/fids-sun.js',
+  // 11 November: the poppy, the day's name and the silence (its words are
+  // the store's)
+  'fids-current/js/remembrance.js',
   'fids-current/js/boarding-sequence.js',
   // the Earth floor under the departures and arrivals: names from the rows,
   // times from the store, no words of its own
@@ -74,6 +77,8 @@ const PASSENGER_STYLES = [
   'fids-current/css/gids-mobile.css', 'fids-current/css/entry.css', 'fids-current/css/heritage-board.css',
   'fids-current/css/studio-modules.css', 'fids-current/css/studio-canvas.css', 'fids-current/css/studio-player.css',
   'fids-current/css/phone.css',
+  // 11 November (no words drawn by CSS)
+  'fids-current/css/remembrance.css',
   // the homepage and the credits page
   'fids-current/css/home.css'
 ];
@@ -368,7 +373,6 @@ const SAME_ACROSS = {
   'King Bed': { langs: ['es', 'pt'], why: 'code: Cama King, as hotels in both write it' },
   'Date': { langs: ['it', 'pt'], why: 'code: Data in both' },
   'Sched.': { langs: ['es', 'pt'], why: 'code: Prog. (Programado) in both' },
-  'MINUTE': { langs: ['es', 'it', 'pt'], why: 'code: MINUTO in all three' },
   'Restaurants': { langs: ['es', 'pt'], why: 'code: Restaurantes in both' },
   'Ecocertified': { langs: ['es', 'pt'], why: 'code: Ecocertificado in both' },
   'Language': { langs: ['es', 'pt'], why: 'code: Idioma in both' },
