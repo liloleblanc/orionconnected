@@ -11973,6 +11973,40 @@ var BOEING_ENGINE_BY_REG = {
   // 'G-VBOW': 'rr',   // Virgin Atlantic 787-9 Trent 1000
 };
 
+// ── ONE AEROPLANE, ITS OWN PAINT ─────────────────────────────────────────
+// A type picture stands for every aeroplane of that type in the carrier's
+// colours. A few airframes wear something else, and when the gate KNOWS the
+// registration it can draw that aeroplane as it really looks. Keyed by the
+// registration with every separator removed (C-GNBN, CGNBN and 'c-gnbn' are
+// the same tail), and scoped to the livery folder and the type picture it
+// replaces, so a tail can never repaint another carrier or another type:
+// the picture still has to mean the aircraft the label names.
+//
+// C-GNBN — Air Canada's Airbus A220-300, fin 119, in the Trans-Canada Air
+// Lines livery (Air Canada's release of March 2021: fin 119, registration
+// C-GNBN, first flight that month; the scheme first flew in August 1997 on
+// the A319 C-FZUH, fin 264, retired January 2021). The supplied drawing;
+// every other A220 keeps AC/223.png.
+//
+// The file is named <type>-<livery>.png: if it ever fails to load, the
+// fallback chain steps down to the same type's ordinary picture (the
+// '-xxx.png' rule below), never to another aircraft.
+var AIRCRAFT_LIVERY_BY_REG = {
+  CGNBN: { folder: 'AC', eq: '223', file: 'AC/223-tca.png' }
+};
+function _aircraftRegKey(reg) {
+  return String(reg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+// The picture this registration wears in this livery folder for this type,
+// as a path under aircraft/, or '' when it wears the ordinary one.
+function aircraftLiveryByReg(folder, eq, reg) {
+  var k = _aircraftRegKey(reg);
+  if (!k) return '';
+  var e = AIRCRAFT_LIVERY_BY_REG[k];
+  if (!e || e.folder !== String(folder || '') || e.eq !== String(eq || '')) return '';
+  return e.file;
+}
+
 // Map ADB display names / various raw strings to the 3-char IATA code used for PNG filenames.
 // ADB often returns "Bombardier CRJ900" or "DHC-8-400" or "Boeing 737 MAX 8" — those don't
 // match any file. This normalizer produces the filename stem we actually ship.
@@ -12289,6 +12323,9 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     _heritageFolder = (typeof _heritageHasLivery === 'function') && _heritageHasLivery(_alFolder);
   } catch (e) {}
   if (LIVERY_FOLDERS[_alFolder] || _heritageFolder) {
+    // A known registration in its own paint comes first (AIRCRAFT_LIVERY_BY_REG).
+    var _regLivery = aircraftLiveryByReg(_alFolder, eq, opts.reg);
+    if (_regLivery) paths.push('aircraft/' + _regLivery);
     if (engineCode) paths.push('aircraft/' + _alFolder + '/' + eq + '-' + engineCode + '.png');
     for (var _vi = 0; _vi < _variants.length; _vi++) paths.push('aircraft/' + _alFolder + '/' + _variants[_vi] + '.png');
   }
@@ -12302,7 +12339,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=206';
+  var _imgCacheBuster = '?v=207';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -12312,8 +12349,11 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // (77W.png, 777.png, 321r.png): a single transient network blip used to mark
   // a good file missing for the whole session, which is why the plane stuck on
   // a broken image. Real files just retry their chain on the next render.
+  // The engine codes are named (engineVariantSuffix, BOEING_ENGINE_BY_REG): a
+  // registration's own livery (AC/223-tca.png) is dash-suffixed too, and it is
+  // a real file, so it is never remembered as missing either.
   var _markMiss = "var _p=this.getAttribute('src').split('?')[0];"
-    + "if(/-[a-z]{2,4}\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
+    + "if(/-(ge|rr|pw|cfm|iae|leap|gtf)\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
   var onerror;
   if (fbList.length > 0) {
     // HTML-escape the double quotes — this JSON sits inside a double-quoted
@@ -12410,7 +12450,7 @@ var PLANE_FACING = {
   'AA/772.png':'L', 'AA/773.png':'L', 'AA/777.png':'L', 'AA/77L.png':'L', 'AA/77W.png':'L', 'AA/788.png':'L',
   'AA/789.png':'L', 'AA/7M8.png':'L', 'AA/CAN.png':'L', 'AA/CR2.png':'L', 'AA/CR7.png':'L', 'AA/CR9.png':'L',
   'AA/E70.png':'L', 'AA/E75.png':'L', 'AA/ER4.png':'L', 'AA/RJ1.png':'L', 'AB4.png':'L', 'AB6.png':'L',
-  'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'L', 'AC/319retired.png':'R', 'AC/320.png':'L',
+  'AC/221.png':'L', 'AC/223.png':'L', 'AC/223-tca.png':'L', 'AC/319.png':'R', 'AC/319r.png':'L', 'AC/319retired.png':'R', 'AC/320.png':'L',
   'AC/320r.png':'L', 'AC/321.png':'L', 'AC/321r.png':'L', 'AC/32Q.png':'L', 'AC/332.png':'L', 'AC/333.png':'L',
   'AC/737.png':'L', 'AC/737r.png':'L', 'AC/738.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
   'AC/77L-ge.png':'L', 'AC/77L.png':'L', 'AC/77W-ge.png':'L', 'AC/77W.png':'L', 'AC/788.png':'L', 'AC/789.png':'L',
@@ -12778,6 +12818,9 @@ function renderMobileGateHtml(ctx) {
       }
       _liveryEqDebug = _liveryEq;
       _acImgHtml = aircraftImgTag(airline, _liveryEq, {
+        // the tail, so an aeroplane in its own paint is drawn as it looks
+        // (AIRCRAFT_LIVERY_BY_REG); the same field this layout prints
+        reg: currentFlight._reg || currentFlight._registration || '',
         className: 'gad-equip-img-mobile',
         style: 'max-width:100%;max-height:120px;height:auto;width:auto;object-fit:contain;display:block;margin:0 auto;'
       });
@@ -58750,7 +58793,18 @@ var HERITAGE_MARKS = [
     // folder's pictures stand for EVERY DC-9, and this one is Air Canada's.
     // The supplied AC87 drawing: mixed-case 'Air Canada' titles over the
     // double cheatline, the livery that went with this stacked mark.
-    aircraft: '/aircraft/heritage/air-canada-dc9-ac87.svg',
+    // NOW A NEWER SUPPLIED DRAWING, as a PNG (the SVG stays on disk): the same 1987
+    // livery on C-FTML, fleet 726, from the same C-FTLx/C-FTMx block of
+    // Air Canada DC-9-32s (photo records list C-FTML as a DC-9-32 at
+    // Vancouver in January 1988), so the caption stands. Used AS DRAWN: length over fuselage
+    // depth, measured 14–26% behind the nose, is 10.02 against a real
+    // DC-9-32's 10.07 (119 ft 3.6 in, 36.36 m, over a fuselage 11 ft 10 in,
+    // 3.61 m, deep in the side view: Douglas, DC-9 Airplane Characteristics
+    // for Airport Planning, MDC J2904, section 2.2), 0.6% short, inside the
+    // 4% the boards resize at. Framed as the SVG was, the aeroplane edge to
+    // edge in its picture, so it flies at the same size on the card; fully
+    // opaque, so no artboard backing is needed.
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac87.png',
     // The DC-9 was the domestic workhorse; Canadian airports only, the same
     // scope as the Canadian Airlines card.
     airports: '*CA'
@@ -58805,6 +58859,65 @@ var HERITAGE_MARKS = [
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-767.png',
     credit: true,
+    airports: '*CA'
+  },
+  {
+    // AND THE DOUGLAS DC-8, IN THE LIVERY THE RONDELLE CAME IN WITH. The
+    // supplied drawing: black 'AIR CANADA' capitals with the red rondelle
+    // beside them, over a single red cheatline along the windows that comes
+    // to a point at the nose, a black anti-glare nose, a bare-metal belly and
+    // the white rondelle on a red tail. Drawn as CF-TJU, fleet number 861.
+    //
+    // THE MODEL IS THE DC-8-61, the stretched Super 60, on three counts:
+    //  · its shape. Length over fuselage depth, measured 14–26% behind the
+    //    nose, is 13.59; a DC-8-61 is 13.83 (187.4 ft, 57.12 m, over a
+    //    fuselage 13.55 ft, 4.13 m, deep in the side view) and the short
+    //    -40/-50 is 11.12 (150.7 ft, 45.93 m, over the same 4.13 m): Douglas,
+    //    DC-8 Airplane Characteristics for Airport Planning, MDC K0369 rev A,
+    //    section 2.2. 1.7% short of the -61, 22% too long for the short
+    //    body. Inside the 4% the boards resize at, so it is used AS DRAWN;
+    //  · its doors: the main door, an exit ahead of the wing, two over it,
+    //    one behind it and the rear door, the -61/-63 layout in that manual;
+    //  · its registration: CF-TJU is a DC-8-61, MSN 45891, line 305,
+    //    delivered to Air Canada on 4 October 1967, C-FTJU from 1974, sold
+    //    in 1986 (PlaneLogger's registration history; Planespotters), fleet
+    //    number 861 (AirHistory.net, Toronto, March 1978). Air Canada's
+    //    first -61, CF-TJT, arrived in September 1967 and seven more
+    //    followed, CF-TJU to CF-TJZ, before the -63s.
+    //
+    // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Douglas DC-8-61 · 1967–1983 ·
+    // 1965 livery', like the DC-9 and 767 cards.
+    // CHECKED, the -61's own years: Air Canada introduced the stretched
+    // DC-8-61/63 in 1967 (Henry Tenby, Captain's Log, spring 1984; CF-TJU's
+    // delivery above), and the stretched DC-8s flew their last passenger
+    // flights for Air Canada on 23 April 1983 (Tenby; Wikipedia's Air Canada
+    // fleet: withdrawn from passenger service in 1983), with a -61 still in
+    // service that year (C-FTJZ retired and stored at Marana in January
+    // 1983). No day or month is printed. Air Canada's DC-8 FREIGHTERS (-54F,
+    // and the -73F conversions into the 1990s) are other models and do not
+    // change these years.
+    // THE LIVERY is named by the year it came in: 1965, the black-nose, red
+    // stripe scheme (Norebbo's Air Canada livery history: one red stripe
+    // along the window line curving to a point at the nose, the red tail
+    // with the white maple leaf; in 1980 the titles turned from black to red
+    // and the red maple leaf beside them went), introduced with the rondelle,
+    // which made its official debut at the rebranding on 1 January 1965
+    // (Air Canada's 60th-anniversary release for the rondelle, January 2025,
+    // as Open Jaw reported it on 6 January 2025). One
+    // DC-8 wore Air Canada titles for a royal flight in October 1964
+    // (Tenby): an unveiling, not the livery coming in. The year it went out
+    // is not printed.
+    //
+    // THE MARK is the stacked capitals lockup of the same identity, AIR
+    // CANADA over the rondelle: the supplied air-canada-logo-1965-1987.png,
+    // on disk since the caps card moved to the 1980 mark. Its filename's
+    // dates are the artwork's name and none is printed. (The heritage
+    // folder's air-canada-1964.svg is the same design and stays unused, a
+    // recorded decision in tests/heritage-card.test.js.)
+    key: 'air-canada-dc8',
+    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-dc8.png',
     airports: '*CA'
   }
 ];

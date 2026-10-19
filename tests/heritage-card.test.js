@@ -276,7 +276,9 @@ test('every card that names its own aeroplane has the file on disk', () => {
   // Two liveries, two cards: the 1987 mark with the AC87 drawing, the
   // capitals mark with the AC80 drawing.
   const byK = Object.fromEntries(named.map((m) => [m.key, m]));
-  assert.equal(byK['air-canada'].aircraft, '/aircraft/heritage/air-canada-dc9-ac87.svg');
+  // A later drawing of the same 1987 livery (C-FTML, fleet 726) replaced the
+  // AC87 SVG as a PNG; the SVG stays on disk.
+  assert.equal(byK['air-canada'].aircraft, '/aircraft/heritage/air-canada-dc9-ac87.png');
   assert.match(byK['air-canada'].file, /AC-1987-LOGO\.svg$/);
   assert.equal(byK['air-canada-caps'].aircraft, '/aircraft/heritage/air-canada-dc9-ac80.svg');
   assert.match(byK['air-canada-caps'].file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark (v24021)');
@@ -376,6 +378,30 @@ test('the 767 card: the capitals livery and mark, a year every source agrees on,
   assert.ok(fs.existsSync(path.join(ROOT, 'docs', 'licenses', '3d-models.md')), 'the full notice is filed');
   // only a mark that asks for a credit gets one: the drawn aeroplanes are the supplied artwork
   for (const k of ['air-canada', 'air-canada-caps', 'canadian-airlines']) assert.ok(!byK[k].credit, k + ' carries no credit line');
+});
+
+test('the DC-8 card: the -61 drawn, its own checked years, the 1965 livery and the mark it came in with', () => {
+  // The drawing is CF-TJU, fleet 861: a DC-8-61 (MSN 45891, delivered 4 October
+  // 1967). Its shape agrees: length over fuselage depth 13.59 against the -61's
+  // 13.83 (Douglas, MDC K0369, 2.2), 22% too long for the short-body -50.
+  const byK = Object.fromEntries(marks().map((m) => [m.key, m]));
+  const m = byK['air-canada-dc8'];
+  assert.ok(m, 'the DC-8 card exists');
+  assert.equal(m.aircraft, '/aircraft/heritage/air-canada-dc8.png');
+  assert.match(m.file, /retro-airlines\/air-canada-logo-1965-1987\.png$/, 'the stacked capitals mark of the 1965 identity');
+  assert.equal(m.airports, '*CA');
+  assert.ok(!m.credit, 'a supplied drawing: no credit line');
+  for (const f of [m.aircraft, m.file]) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', f.replace(/^\//, ''))), f + ' is on disk');
+  }
+  for (const l of STORE.LANGS) {
+    const cap = STORE.bs('heritage:air-canada-dc8', l);
+    assert.match(cap, /DC-8-61 · 1967–1983 · /, 'the model drawn and its checked years, in ' + l);
+    assert.match(cap, /1965/, 'the livery by the year it came in, in ' + l);
+    const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => !['1967', '1983', '1965'].includes(y));
+    assert.deepEqual(years, [], 'no other year (not the October 1964 unveiling, not when the livery went out), in ' + l);
+    assert.doesNotMatch(cap, /Montr[eé]al|モントリオール|蒙特利尔|مونتريال/, 'no city: the card names the aeroplane, in ' + l);
+  }
 });
 
 // ── v24042 — Air Canada gates only ──────────────────────────────────────────
