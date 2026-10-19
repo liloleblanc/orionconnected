@@ -262,9 +262,18 @@
       // French whatever the board spoke).
       var ap = String(window._gateIata || (document.getElementById('apSel') || {}).value || '').toUpperCase();
       var frF = typeof window.frFirstAirport === 'function' && window.frFirstAirport(ap);
-      holder.innerHTML = typeof window._gateLbl === 'function'
-        ? window._gateLbl('acImgPending', frF, function (w) { return w; }, ' <span>|</span> ')
+      // v24066 — each language one whole phrase (.fx-unit, marked with its
+      // language by _gateLbl), the bar between them dropped if the pair
+      // stacks (.fx-brk), in one line of text the shared fitter sizes to the
+      // sky the caption band leaves (FIDS_FIT_RULES:
+      // .v2-rc-aircraft-pending-txt; display-overrides.css, v24066). It was
+      // bare text that wrapped wherever it ran out of room, centred in the
+      // whole panel, so its second line was drawn under the band: 'Aircraft
+      // image pending | Image de l'appareil à' with 'venir' hidden.
+      var words = typeof window._gateLbl === 'function'
+        ? window._gateLbl('acImgPending', frF, function (w) { return '<span class="fx-unit">' + w + '</span>'; }, ' <span class="bs-sep fx-brk">|</span> ')
         : '';
+      holder.innerHTML = words ? '<span class="v2-rc-aircraft-pending-txt">' + words + '</span>' : '';
     }, 0);
   }, true);
 })();

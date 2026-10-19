@@ -3641,6 +3641,18 @@ var FIDS_FIT_RULES = [
   { sel: '.gl-strip .gl-sub', box: '.gl-slot', lines: 2, hWrap: true, group: '.gl-list', h: function (el) { return _GL_FIT_SUB.h(el); } },
   // the destination's code in the left rail's round badge (YMM, MET)
   { sel: '.v2-fi-orbcode', box: '.v2-fi-icon-badge', lines: 1 },
+  // v24066 — the aircraft shelf's 'image pending' notice (gate-visual-
+  // integrity.js), in the sky the caption band leaves (its box is that sky:
+  // display-overrides.css, v24066): the pair on one line at its size while
+  // it fits, else one language a line, each a whole phrase (.fx-unit) and
+  // the '|' dropped, held inside the sky's height. It was centred in the
+  // whole panel and wrapped anywhere, so it read 'Aircraft image pending |
+  // Image de l'appareil à' with 'venir' under the band.
+  { sel: '.gad-map-col-v2 .v2-rc-aircraft-pending > .v2-rc-aircraft-pending-txt', box: '.v2-rc-aircraft-pending', lines: 2, units: true,
+    h: function (el, box) {
+      var cs = getComputedStyle(box);
+      return Math.max(0, box.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0));
+    } },
   // v24006 — the boarding screen's band (_gateBandHtml): each language's
   // line in its half, beside its pictograms, in the room the sign leaves it
   // (_g8BandLineRoom); each half's lines at one size of their own (the
@@ -16916,7 +16928,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16960,7 +16972,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -22796,11 +22808,12 @@ function gateAutofit(root) {
       _fitTypePanel(el);
       _fitTypePanel(el);
     });
-    // Image-pending pill fills its cloud shelf instead of whispering.
-    root.querySelectorAll('.gad-map-col-v2 .v2-rc-aircraft-pending').forEach(function (el) {
-      var shelf = el.closest('.v2-rc-shelf-illus'); if (!shelf) return;
-      _boxAssign(el, Math.floor(shelf.clientWidth * 0.88), Math.floor(shelf.clientHeight * 0.7), null, false);
-    });
+    // (v24066 — the image-pending notice is fitted by the shared fitter,
+    // FIDS_FIT_RULES: .v2-rc-aircraft-pending-txt, in the sky the band
+    // leaves. Sized here to 70% of the whole panel's height, it was fitted to
+    // room under the caption band and the Your Aircraft lines; and it is
+    // drawn after this pass, once the picture has failed, so it was mostly
+    // never fitted at all.)
     // v22686 — THE THIRD PANEL MATCHES THE OTHER TWO BY MEASUREMENT.
     // + 'The panels are not
     // the same size either'. CSS could not deliver this: the fi-table
@@ -34075,7 +34088,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24064';
+var FIDS_BUILD_TAG = 'v24066';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -59032,7 +59045,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24066" src="/textures/gate-sky-shelf.mp4?v=24066"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
