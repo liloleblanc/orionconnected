@@ -418,3 +418,20 @@ test('the fixture is the page this build reads: rows with no code the map now re
   // and to Inuvik via Yellowknife and Norman Wells keep no code
   for (const id of ['run/YEG', 'recheckA/YEG', 'recheckB/YEG']) for (const c of ['YXY', 'YEV']) assert.ok(!codes(id).includes(c), id + ' ' + c);
 });
+
+test('every recorded map has its next flight: where the map drew no name larger, the one place the board\'s strip named in the same second', () => {
+  // the fixture read the next flight off the larger name only, and six
+  // full maps drew none (Chicago, Miami's next flight, was past the page's
+  // room; Toronto's two airports at Montréal and Québec share one name)
+  const want = { 'run/MIA': 'ORD', 'run/DTW': 'ATL', 'run/MSP': 'ORD', 'run/YUL': 'YYZ', 'recheckA/YQB': 'YYZ', 'recheckB/MIA': 'ATL' };
+  for (const [id, c] of Object.entries(want)) assert.deepEqual(by(id).places.filter((p) => p[8]).map((p) => p[0]), [c], id);
+  for (const fl of FLOORS) assert.ok(fl.places.filter((p) => p[8]).length <= 1, fl.id + ': one next flight at most');
+  assert.match(FX.about, /the one place the same board's strip named in the same second/);
+  // Miami: Chicago, its next flight, is named first and larger (its name
+  // 1.08 times the others', its dot and route the next flight's)
+  const L = by('run/MIA').out.L, ord = L.labels.find((l) => l.code === 'ORD'), fsOf = (l) => l.rows[0].texts[0].fs;
+  assert.ok(ord, 'Miami names Chicago');
+  for (const l of L.labels) if (l !== ord) assert.ok(fsOf(ord) > fsOf(l), `'Chicago' ${fsOf(ord)} px, '${l.code}' ${fsOf(l)} px`);
+  assert.equal(namedCodes(L)[0], 'ORD');
+  assert.equal(L.dots.find((d) => d.code === 'ORD').r, 6);
+});

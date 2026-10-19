@@ -232,6 +232,57 @@
     return codes.map(function (c) { return by[c]; }).filter(Boolean);
   }
 
+  // ── A PLACE'S NAME ON THE FLOOR (v24067) ──────────────────────────────────
+  // B is the board's own city helpers (the browser: fids-core.js's, boardFns
+  // below; the tests: the same functions out of fids-core.js):
+  //   B.formatCityIata(raw, code, l)   B.stripCode(s)   B.tableCity(code, l)
+  //   B.normalize(name, code)          B.inTables(code) → CITY or CITY_FR has it
+  // the board's name for a code, as the rows write it
+  function tableNameOf(B, code, l) {
+    var n = '';
+    try { if (B.tableCity) n = B.tableCity(code, l) || ''; } catch (e) { n = ''; }
+    try { if (n && B.normalize) n = B.normalize(n, code) || n; } catch (e) {}
+    try { if (n && B.stripCode) n = B.stripCode(n) || n; } catch (e) {}
+    return n;
+  }
+  // The city exactly as the row prints it in a language: the row's own
+  // formatCityIata, without the airport's name and without the code. Where
+  // the row's words hold a comma they are a list of stops (Orlando's 'Chicago,
+  // Wichita, Las Vegas, Burbank', coded BUR; 'Denver, Lihue', LIH) or a city
+  // and its region, and the floor names the place the row's code is, by the
+  // board's name for it ('Burbank'); it drew the whole list. No table name
+  // has a comma (tests/earth-floor-places.test.js).
+  function cityNameOf(B, code, raw, l) {
+    var n = '';
+    try {
+      if (raw && B.formatCityIata) {
+        n = String(B.formatCityIata(raw, code, l) || '');
+        if (B.stripCode) n = B.stripCode(n) || n;
+        n = n.split(' · ')[0].trim();
+        if (n && n !== '—') {
+          if (code && n.indexOf(',') >= 0) { var t = tableNameOf(B, code, l); if (t) return t; }
+          return n;
+        }
+      }
+    } catch (e) {}
+    return tableNameOf(B, code, l) || code;
+  }
+  // A PLACE IS NAMED, OR IT IS NOT ON THE MAP. A place is named when the
+  // board's tables have a name for its code (Umeå's UME, Van's VAN, Iki's
+  // IKI: names of three letters, or with letters outside A to Z), or when
+  // the row's own words give a name that is not just its code, compared
+  // without case and without taking any letter out. A place the board can
+  // name only by its code ('Xpl', a code with no table name) is left off the
+  // map; the rows still list it. (It once took out every letter outside A to
+  // Z first, so 'Umeå' read 'UME', and Umeå, Höfn, Van, Iki and Eek were
+  // never drawn.)
+  function namedBy(B, code, text) {
+    var c = String(code || '').toUpperCase();
+    try { if (B.inTables && B.inTables(c)) return true; } catch (e) {}
+    var n = String(cityNameOf(B, c, text, 'en') || '').replace(/\s+/g, ' ').trim();
+    return !!n && n.toUpperCase() !== c;
+  }
+
   // ── THE TIME THERE: THE ZONES OF THE PLACES AP DOES NOT KNOW ─────────────
   // A place's zone comes from AP (fids-core.js) first, then from here, and a
   // place found in neither gets no time, never a guess. These are the 453
@@ -1128,6 +1179,7 @@
   var Core = {
     EARTH_FLOOR_ON: EARTH_FLOOR_ON, BASE: BASE,
     namedCodes: namedCodes, fillNames: fillNames, rowCode: rowCode,
+    cityNameOf: cityNameOf, tableNameOf: tableNameOf, namedBy: namedBy,
     MIN_ANY: MIN_ANY, MIN_ROUTES: MIN_ROUTES, MIN_FULL: MIN_FULL, MIN_W: MIN_W, MIN_PAGE_W: MIN_PAGE_W,
     SLICE_MS: SLICE_MS, MAX_PLACES: MAX_PLACES,
     capFor: capFor, modeFor: modeFor, placesFrom: placesFrom, onPage: onPage, ZONES: ZONES, zoneOf: zoneOf,
@@ -1188,24 +1240,23 @@
     var cur = shownLang(); if (cur && out.indexOf(cur) < 0) out.push(cur);
     return out;
   }
-  // the city exactly as the row prints it in a language: the row's own
-  // formatCityIata, without the airport's name and without the code
-  function cityName(code, raw, l) {
-    var n = '';
-    try {
-      if (raw && typeof formatCityIata === 'function') {
-        n = String(formatCityIata(raw, code, l) || '');
-        if (typeof _stripCityCode === 'function') n = _stripCityCode(n) || n;
-        n = n.split(' · ')[0].trim();
-        if (n && n !== '—') return n;
-      }
-    } catch (e) {}
-    n = '';
-    try { if (typeof airportCityNameSafe_v21877 === 'function') n = airportCityNameSafe_v21877(code, l); } catch (e) {}
-    try { if (n && typeof normalizeDisplayCity === 'function') n = normalizeDisplayCity(n, code); } catch (e) {}
-    try { if (n && typeof _stripCityCode === 'function') n = _stripCityCode(n) || n; } catch (e) {}
-    return n || code;
+  // the board's own city helpers (fids-core.js), for cityNameOf and namedBy
+  var BFN = null;
+  function boardFns() {
+    if (BFN) return BFN;
+    /* global formatCityIata, _stripCityCode, airportCityNameSafe_v21877, normalizeDisplayCity, CITY, CITY_FR */
+    BFN = {
+      formatCityIata: typeof formatCityIata === 'function' ? formatCityIata : null,
+      stripCode: typeof _stripCityCode === 'function' ? _stripCityCode : null,
+      tableCity: typeof airportCityNameSafe_v21877 === 'function' ? airportCityNameSafe_v21877 : null,
+      normalize: typeof normalizeDisplayCity === 'function' ? normalizeDisplayCity : null,
+      inTables: function (c) { try { return !!((typeof CITY !== 'undefined' && CITY[c]) || (typeof CITY_FR !== 'undefined' && CITY_FR[c])); } catch (e) { return false; } }
+    };
+    return BFN;
   }
+  // the city exactly as the row prints it in a language (cityNameOf: a list
+  // of stops is named by the row's code)
+  function cityName(code, raw, l) { return cityNameOf(boardFns(), code, raw, l); }
   // the instant the board's clocks show (the 10:10 demo clock on an example board)
   function nowFor(tz) {
     try { var B = S(); if (B && B.clockNow) return B.clockNow(new Date(), tz); } catch (e) {}
@@ -1717,16 +1768,16 @@
   // board's tables has a name (tests/earth-floor-places.test.js), but a row
   // can carry a code whose name the board cannot give (a code with a digit,
   // a table entry on the wrong place), and the floor drew it under its code
-  // as a word ('Ebm', 'Km8'). A place whose name, as the row prints it, is
-  // only its code is left off the map; the rows still list it. (Once per
+  // as a word ('Ebm', 'Km8'). A place the board names only by its code is
+  // left off the map; the rows still list it (namedBy: a table name counts,
+  // and so do the row's words when they are more than the code). (Once per
   // row and its words.)
   var nameSeen = {}, nameSeenN = 0;
   function hasName(code, text) {
     var k = code + '|' + text;
     if (Object.prototype.hasOwnProperty.call(nameSeen, k)) return nameSeen[k];
     if (++nameSeenN > 800) { nameSeen = {}; nameSeenN = 1; }
-    var n = String(cityName(code, text, 'en') || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    return (nameSeen[k] = !!n && n !== String(code).toUpperCase());
+    return (nameSeen[k] = namedBy(boardFns(), code, text));
   }
   // the places one floor draws, each with its name in every language
   // the places a floor shows: on a full floor the rows above it, on a strip
