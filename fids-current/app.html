@@ -15,7 +15,7 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=24064"></script>
+<script src="js/host-airport.js?v=24065"></script>
 <title>Airport Companion</title>
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
@@ -526,10 +526,10 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24064"></script>
-<script src="js/shared-names.js?v=24064"></script>
-<script src="data/airline-colors.js?v=24064"></script>
-<script src="js/feed-router.js?v=24064"></script>
+<script src="js/board-strings.js?v=24065"></script>
+<script src="js/shared-names.js?v=24065"></script>
+<script src="data/airline-colors.js?v=24065"></script>
+<script src="js/feed-router.js?v=24065"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1065,9 +1065,19 @@ function heroBrand(code,name,light){
 function acType(raw){
   if(!raw) return '';
   let s=String(raw).trim().toUpperCase();
-  const RE={BCS:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752'};
+  // ICAO codes (FR24 and /acinfo give these) for the types we have art for,
+  // the same answers as the boards' aircraftCodeToIata: B77W, E75L, A21N and
+  // B190 used to give no picture, and B190 drew an Embraer jet.
+  const RE={BCS:'223',BCS1:'221',BCS3:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752',
+    B77W:'77W',B773:'773',E75L:'E75',E75S:'E75',A21N:'32Q',B190:'BEH'};
   if(RE[s]) return RE[s];
   if(/^[A-Z0-9]{3}$/.test(s)) return s;            // already a 3-char code (OAG)
+  // Beechcraft, before the Embraer 190 test below, the same answers as the
+  // boards: only the 1900 has a drawing; a King Air is Air Inuit's BEK; any
+  // other Beech (Baron, Bonanza, 99) has no picture, never the 1900's.
+  if(/1900/.test(s)) return 'BEH';
+  if(/KING[\s-]*AIR/.test(s)) return 'BEK';
+  if(/BEECH/.test(s)) return '';
   if(/ATR\s*72/.test(s)) return 'AT7';
   if(/DASH\s*8|DHC[- ]?8|Q400|DHC-8-400/.test(s)) return 'DH4';
   s=s.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|DE HAVILLAND CANADA|DE HAVILLAND)\s*/,'').trim();
@@ -1080,7 +1090,7 @@ function acType(raw){
   if(/319/.test(s)) return '319';
   if(/320\s*NEO/.test(s)) return '32N';
   if(/320/.test(s)) return '320';
-  if(/321\s*NEO/.test(s)) return '32Q';
+  if(/321\s*(NEO|XLR|LR)|321-?\d{3}N/.test(s)) return '32Q';   // neo model numbers end in N, NX or NY
   if(/321/.test(s)) return '321';
   if(/330/.test(s)) return '332';
   if(/CRJ-?900|CRJ9/.test(s)) return 'CR9';
@@ -1095,15 +1105,36 @@ function acType(raw){
   if(/787/.test(s)) return '789';
   return '';
 }
+// ONE AEROPLANE, ITS OWN PAINT — the boards' AIRCRAFT_LIVERY_BY_REG
+// (fids-core.js, which this page does not load), the same rows: a few
+// airframes wear something other than their carrier's colours, and when the
+// flight's registration is known the picture shows that aeroplane as it
+// looks. Keyed by the registration with every separator removed (C-GNBN,
+// CGNBN, 'c-gnbn'), and scoped to the carrier folder and the type picture it
+// replaces, so a tail never repaints another carrier or another type.
+// C-GNBN is Air Canada's A220-300 fin 119 in the Trans-Canada Air Lines
+// livery; every other A220 keeps AC/223.png. tests/aircraft-livery-by-reg
+// holds the two tables equal.
+const LIVERY_BY_REG={
+  CGNBN:{folder:'AC',eq:'223',file:'AC/223-tca.png'}
+};
+function liveryByReg(folder,t,reg){
+  const k=String(reg||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const e=k?LIVERY_BY_REG[k]:null;
+  return (e&&e.folder===folder&&e.eq===t)?e.file:'';
+}
 // Real aircraft livery side-view, airline-specific with a generic fallback.
 // Air Canada Rouge has its own paint (e.g. 320r.png) living in the AC folder,
 // so when a flight is operated by Rouge we use the "r" variant and fall back to
-// mainline AC if that particular Rouge art is missing.
-function liveryImg(airline,raw,operatedBy){
+// mainline AC if that particular Rouge art is missing. A registration in its
+// own paint (LIVERY_BY_REG) comes first, as on the boards, and falls back to
+// the same type's ordinary picture.
+function liveryImg(airline,raw,operatedBy,reg){
   const t=acType(raw); if(!t) return '';
   const a=String(airline||'').toUpperCase();
+  const own=liveryByReg(a,t,reg);
   const isRouge=(a==='AC' && /rouge/i.test(operatedBy||''));
-  const primary=isRouge?('/aircraft/AC/'+t+'r.png'):('/aircraft/'+a+'/'+t+'.png');
+  const primary=own?('/aircraft/'+own):isRouge?('/aircraft/AC/'+t+'r.png'):('/aircraft/'+a+'/'+t+'.png');
   return '<img class="dt-illus" src="'+primary+'" data-fb="/aircraft/'+a+'/'+t+'.png" data-fb2="/aircraft/'+t+'.png" alt="" '
     +'onerror="if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb=\'\';}'
     +'else if(this.dataset.fb2){this.src=this.dataset.fb2;this.dataset.fb2=\'\';}else{this.style.display=\'none\';}">';
@@ -1382,7 +1413,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24064';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24065';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -1996,7 +2027,7 @@ function openFlight(i){
     '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light)
     +'<div class="flt">'+esc(f.flight)+'</div>'
     +(opLine?'<div class="al-op">'+esc(T('operatedBy'))+' '+(opLogoHtml(f.operatedBy,hc.light)||esc(f.operatedBy))+'</div>':'')
-    +liveryImg(f.airline,acRaw,f.operatedBy)+'</div>'
+    +liveryImg(f.airline,acRaw,f.operatedBy,reg)+'</div>'
     +'<div class="dt-route">'+(isArr?epOther:epHere)
     +'<span class="pl"><span class="tic pln" aria-hidden="true"></span></span>'
     +(isArr?epHere:epOther)+'</div>'

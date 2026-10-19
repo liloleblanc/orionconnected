@@ -11973,6 +11973,40 @@ var BOEING_ENGINE_BY_REG = {
   // 'G-VBOW': 'rr',   // Virgin Atlantic 787-9 Trent 1000
 };
 
+// ── ONE AEROPLANE, ITS OWN PAINT ─────────────────────────────────────────
+// A type picture stands for every aeroplane of that type in the carrier's
+// colours. A few airframes wear something else, and when the gate KNOWS the
+// registration it can draw that aeroplane as it really looks. Keyed by the
+// registration with every separator removed (C-GNBN, CGNBN and 'c-gnbn' are
+// the same tail), and scoped to the livery folder and the type picture it
+// replaces, so a tail can never repaint another carrier or another type:
+// the picture still has to mean the aircraft the label names.
+//
+// C-GNBN — Air Canada's Airbus A220-300, fin 119, in the Trans-Canada Air
+// Lines livery (Air Canada's release of March 2021: fin 119, registration
+// C-GNBN, first flight that month; the scheme first flew in August 1997 on
+// the A319 C-FZUH, fin 264, retired January 2021). The supplied drawing;
+// every other A220 keeps AC/223.png.
+//
+// The file is named <type>-<livery>.png: if it ever fails to load, the
+// fallback chain steps down to the same type's ordinary picture (the
+// '-xxx.png' rule below), never to another aircraft.
+var AIRCRAFT_LIVERY_BY_REG = {
+  CGNBN: { folder: 'AC', eq: '223', file: 'AC/223-tca.png' }
+};
+function _aircraftRegKey(reg) {
+  return String(reg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+// The picture this registration wears in this livery folder for this type,
+// as a path under aircraft/, or '' when it wears the ordinary one.
+function aircraftLiveryByReg(folder, eq, reg) {
+  var k = _aircraftRegKey(reg);
+  if (!k) return '';
+  var e = AIRCRAFT_LIVERY_BY_REG[k];
+  if (!e || e.folder !== String(folder || '') || e.eq !== String(eq || '')) return '';
+  return e.file;
+}
+
 // Map ADB display names / various raw strings to the 3-char IATA code used for PNG filenames.
 // ADB often returns "Bombardier CRJ900" or "DHC-8-400" or "Boeing 737 MAX 8" — those don't
 // match any file. This normalizer produces the filename stem we actually ship.
@@ -12021,12 +12055,27 @@ function aircraftCodeToIata(raw) {
                  'AT43':'AT4', 'AT45':'AT5', 'AT46':'AT5',
                  'AT72':'AT7', 'AT75':'AT7', 'AT76':'AT7',
                  'CRJ2':'CR2', 'CRJ7':'CR7', 'CRJ9':'CR9', 'CRJX':'CRK',
-                 'BCS1':'221', 'BCS3':'223' };
+                 'BCS1':'221', 'BCS3':'223',
+                 // Beechcraft 1900D: ICAO 'B190' (FR24, /acinfo) is the IATA 'BEH'.
+                 // It used to fall through to 'B19', a file nobody has, so the
+                 // gate hid the aircraft and printed the raw code.
+                 'B190':'BEH' };
   if (_REMAP[s]) return _REMAP[s];
   // Try without hyphens: "DHC-3" → "DHC3" → REMAP
   var sNoH = s.replace(/-/g, '');
   if (sNoH !== s && _REMAP[sNoH]) return _REMAP[sNoH];
   if (s.length === 3 && /^[A-Z0-9]{3}$/.test(s)) return s;
+
+  // ── Beechcraft ── only the 1900 has a drawing (BEH), so a name with 1900
+  // in it is the 1900 whoever's name is in front: 'Raytheon Beech 1900D' and
+  // 'Hawker Beechcraft 1900D' used to become RAY and HAW (no picture). A King
+  // Air is BEK (Air Inuit's drawing). Every other Beech used to fall through
+  // to the first-three-letters 'BEE' at the bottom and draw a 1900; it now
+  // draws nothing. Runs before every family regex: no Boeing, Airbus or
+  // Embraer name has 1900 in it.
+  if (/1900/.test(s)) return 'BEH';
+  if (/KING[\s-]*AIR/.test(s)) return 'BEK';
+  if (/BEECH/.test(s)) return '';
 
   // ── Compact Boeing dialect (MIA WebFIDS: 'B7374', '7673W', '7773E',
   // 'B777', '7478I'…) — 4-6 chars, no separators. MUST run before the
@@ -12135,14 +12184,21 @@ function aircraftCodeToIata(raw) {
   if (/A[\s-]*319/i.test(s)) return '319';
   if (/A[\s-]*320[\s-]*NEO|A20N|A320N/i.test(s)) return '32N';
   if (/A[\s-]*320/i.test(s)) return '320';
-  if (/A[\s-]*321[\s-]*(NEO|XLR|LR)|A21N|A321N/i.test(s)) return '32Q';  // A321neo livery files are stored as 32Q (no 32R image exists)
+  // A321neo livery files are stored as 32Q (no 32R image exists). Airbus's neo
+  // model numbers end in N, NX or NY ('A321-271NX', 'A321-253NY'), the same
+  // rule engineVariantSuffix reads; they used to land on the A321ceo picture.
+  if (/A[\s-]*321[\s-]*(NEO|XLR|LR|\d{3}N)|A21N|A321N/i.test(s)) return '32Q';
   if (/A[\s-]*321/i.test(s)) return '321';
 
   // ── 777 ──
-  if (/777[\s-]*300[\s-]*ER|77W/i.test(s)) return '77W';
-  if (/777[\s-]*300/i.test(s)) return '773';
-  if (/777[\s-]*200[\s-]*LR|77L/i.test(s)) return '77L';
-  if (/777[\s-]*200/i.test(s)) return '772';
+  // Boeing's model numbers put the customer's two-character code in place of
+  // the 00 (Air Canada's 777-300ER is the 777-333ER, its 777-200LR the
+  // 777-233LR), so a feed that sent '777-333ER' missed every rule here and
+  // the gate drew no aircraft at all.
+  if (/777[\s-]*3(00|[0-9A-Z]{2})[\s-]*\(?ER\)?|77W/i.test(s)) return '77W';
+  if (/777[\s-]*3(00|[0-9A-Z]{2})/i.test(s)) return '773';
+  if (/777[\s-]*2(00|[0-9A-Z]{2})[\s-]*\(?LR\)?|77L/i.test(s)) return '77L';
+  if (/777[\s-]*2(00|[0-9A-Z]{2})/i.test(s)) return '772';
   if (/777[\s-]*X|777[\s-]*9/i.test(s)) return '779';
   if (/777[\s-]*8/i.test(s)) return '778';
 
@@ -12289,6 +12345,9 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
     _heritageFolder = (typeof _heritageHasLivery === 'function') && _heritageHasLivery(_alFolder);
   } catch (e) {}
   if (LIVERY_FOLDERS[_alFolder] || _heritageFolder) {
+    // A known registration in its own paint comes first (AIRCRAFT_LIVERY_BY_REG).
+    var _regLivery = aircraftLiveryByReg(_alFolder, eq, opts.reg);
+    if (_regLivery) paths.push('aircraft/' + _regLivery);
     if (engineCode) paths.push('aircraft/' + _alFolder + '/' + eq + '-' + engineCode + '.png');
     for (var _vi = 0; _vi < _variants.length; _vi++) paths.push('aircraft/' + _alFolder + '/' + _variants[_vi] + '.png');
   }
@@ -12302,7 +12361,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=206';
+  var _imgCacheBuster = '?v=207';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -12312,8 +12371,11 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // (77W.png, 777.png, 321r.png): a single transient network blip used to mark
   // a good file missing for the whole session, which is why the plane stuck on
   // a broken image. Real files just retry their chain on the next render.
+  // The engine codes are named (engineVariantSuffix, BOEING_ENGINE_BY_REG): a
+  // registration's own livery (AC/223-tca.png) is dash-suffixed too, and it is
+  // a real file, so it is never remembered as missing either.
   var _markMiss = "var _p=this.getAttribute('src').split('?')[0];"
-    + "if(/-[a-z]{2,4}\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
+    + "if(/-(ge|rr|pw|cfm|iae|leap|gtf)\\.png$/i.test(_p)){try{(window.AIRCRAFT_IMG_MISSING=window.AIRCRAFT_IMG_MISSING||{})[_p]=1;}catch(e){}}";
   var onerror;
   if (fbList.length > 0) {
     // HTML-escape the double quotes — this JSON sits inside a double-quoted
@@ -12410,12 +12472,12 @@ var PLANE_FACING = {
   'AA/772.png':'L', 'AA/773.png':'L', 'AA/777.png':'L', 'AA/77L.png':'L', 'AA/77W.png':'L', 'AA/788.png':'L',
   'AA/789.png':'L', 'AA/7M8.png':'L', 'AA/CAN.png':'L', 'AA/CR2.png':'L', 'AA/CR7.png':'L', 'AA/CR9.png':'L',
   'AA/E70.png':'L', 'AA/E75.png':'L', 'AA/ER4.png':'L', 'AA/RJ1.png':'L', 'AB4.png':'L', 'AB6.png':'L',
-  'AC/221.png':'L', 'AC/223.png':'L', 'AC/319.png':'R', 'AC/319r.png':'L', 'AC/319retired.png':'R', 'AC/320.png':'L',
+  'AC/221.png':'L', 'AC/223.png':'L', 'AC/223-tca.png':'L', 'AC/319.png':'R', 'AC/319r.png':'L', 'AC/319retired.png':'R', 'AC/320.png':'L',
   'AC/320r.png':'L', 'AC/321.png':'L', 'AC/321r.png':'L', 'AC/32Q.png':'L', 'AC/332.png':'L', 'AC/333.png':'L',
   'AC/737.png':'L', 'AC/737r.png':'L', 'AC/738.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
   'AC/77L-ge.png':'L', 'AC/77L.png':'L', 'AC/77W-ge.png':'L', 'AC/77W.png':'L', 'AC/788.png':'L', 'AC/789.png':'L',
-  'AC/7M8.png':'L', 'AC/7M8r.png':'L', 'AC/BEE.png':'L', 'AC/CR7.png':'R', 'AC/CR9.png':'L', 'AC/DH4.png':'L',
-  'AC/E75.png':'R', 'AC/E7W.png':'R', 'AR1.png':'L', 'AR8.png':'L', 'AS/737.png':'L', 'AS/738.png':'L',
+  'AC/7M8.png':'L', 'AC/7M8r.png':'L', 'AC/BEE.png':'L', 'AC/BEH.png':'L', 'AC/CR7.png':'R', 'AC/CR9.png':'L', 'AC/DH4.png':'L',
+  'AC/E75.png':'L', 'AC/E7W.png':'L', 'AR1.png':'L', 'AR8.png':'L', 'AS/737.png':'L', 'AS/738.png':'L',
   'AS/739.png':'L', 'AS/73H.png':'L', 'AS/73J.png':'L', 'AS/73W.png':'L', 'AS/789.png':'L', 'AS/7M9.png':'L',
   'AS/E75.png':'L', 'AT4.png':'L', 'AT5.png':'L', 'AT7.png':'L', 'ATR.png':'L', 'B6/223.png':'L',
   'B6/320.png':'L', 'B6/321.png':'L', 'B6/32A.png':'L', 'B6/32Q.png':'L', 'BCS.png':'L', 'BEE.png':'L',
@@ -12778,6 +12840,13 @@ function renderMobileGateHtml(ctx) {
       }
       _liveryEqDebug = _liveryEq;
       _acImgHtml = aircraftImgTag(airline, _liveryEq, {
+        // the tail, so an aeroplane in its own paint is drawn as it looks
+        // (AIRCRAFT_LIVERY_BY_REG); the same field this layout prints, but
+        // never a tail from history: like the TV gate's aircraft and map
+        // columns, an observation from another day ('expected' under the
+        // registration) is not today's aeroplane and does not choose its paint
+        reg: /^history/i.test(String(currentFlight._regSource || ''))
+          ? '' : (currentFlight._reg || currentFlight._registration || ''),
         className: 'gad-equip-img-mobile',
         style: 'max-width:100%;max-height:120px;height:auto;width:auto;object-fit:contain;display:block;margin:0 auto;'
       });
@@ -16916,7 +16985,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24065" src="/textures/gate-sky-shelf.mp4?v=24065" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -16960,7 +17029,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24065" src="/textures/gate-sky-shelf.mp4?v=24065" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -34075,7 +34144,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24064';
+var FIDS_BUILD_TAG = 'v24065';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -58780,7 +58849,18 @@ var HERITAGE_MARKS = [
     // folder's pictures stand for EVERY DC-9, and this one is Air Canada's.
     // The supplied AC87 drawing: mixed-case 'Air Canada' titles over the
     // double cheatline, the livery that went with this stacked mark.
-    aircraft: '/aircraft/heritage/air-canada-dc9-ac87.svg',
+    // NOW A NEWER SUPPLIED DRAWING, as a PNG (the SVG stays on disk): the same 1987
+    // livery on C-FTML, fleet 726, from the same C-FTLx/C-FTMx block of
+    // Air Canada DC-9-32s (photo records list C-FTML as a DC-9-32 at
+    // Vancouver in January 1988), so the caption stands. Used AS DRAWN: length over fuselage
+    // depth, measured 14–26% behind the nose, is 10.02 against a real
+    // DC-9-32's 10.07 (119 ft 3.6 in, 36.36 m, over a fuselage 11 ft 10 in,
+    // 3.61 m, deep in the side view: Douglas, DC-9 Airplane Characteristics
+    // for Airport Planning, MDC J2904, section 2.2), 0.6% short, inside the
+    // 4% the boards resize at. Framed as the SVG was, the aeroplane edge to
+    // edge in its picture, so it flies at the same size on the card; fully
+    // opaque, so no artboard backing is needed.
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac87.png',
     // The DC-9 was the domestic workhorse; Canadian airports only, the same
     // scope as the Canadian Airlines card.
     airports: '*CA'
@@ -58835,6 +58915,68 @@ var HERITAGE_MARKS = [
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-767.png',
     credit: true,
+    airports: '*CA'
+  },
+  {
+    // AND THE DOUGLAS DC-8, IN THE LIVERY THE RONDELLE CAME IN WITH. The
+    // supplied drawing: black 'AIR CANADA' capitals with the red rondelle
+    // beside them, over a single red cheatline along the windows that comes
+    // to a point at the nose, a black anti-glare nose, a bare-metal belly and
+    // the white rondelle on a red tail. Drawn as CF-TJU, with 861 on the fin.
+    //
+    // THE MODEL IS THE DC-8-61, the stretched Super 60, on three counts:
+    //  · its shape. Length over fuselage depth, measured 14–26% behind the
+    //    nose, is 13.59; a DC-8-61 is 13.83 (187.4 ft, 57.12 m, over a
+    //    fuselage 13.55 ft, 4.13 m, deep in the side view) and the short
+    //    -40/-50 is 11.12 (150.7 ft, 45.93 m, over the same 4.13 m): Douglas,
+    //    DC-8 Airplane Characteristics for Airport Planning, MDC K0369 rev A,
+    //    section 2.2. 1.7% short of the -61, 22% too long for the short
+    //    body. Inside the 4% the boards resize at, so it is used AS DRAWN;
+    //  · its doors: the main door, an exit ahead of the wing, two over it,
+    //    one behind it and the rear door, the -61/-63 layout in that manual;
+    //  · its registration: CF-TJU is a DC-8-61, MSN 45891, line 305,
+    //    delivered to Air Canada on 4 October 1967, C-FTJU from 1974, sold
+    //    in 1986 (PlaneLogger's registration history; Planespotters). Air
+    //    Canada's first -61, CF-TJT, arrived in September 1967, and CF-TJU
+    //    to CF-TJZ followed before the -63s (Yesterday's Airlines, which
+    //    counts them as seven; U to Z is six). The fin number 861 is the
+    //    drawing's: no fleet list we could open confirms it (the published
+    //    run CF-TJL 812, TJM 813, TJN 814 does not settle the 86x block), and
+    //    no caption prints it.
+    //
+    // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Douglas DC-8-61 · 1967–1983 ·
+    // 1965 livery', like the DC-9 and 767 cards.
+    // CHECKED, the -61's own years: Air Canada introduced the stretched
+    // DC-8-61/63 in 1967 (Henry Tenby, Captain's Log, spring 1984; CF-TJU's
+    // delivery above), and the stretched DC-8s flew their last passenger
+    // flights for Air Canada on 23 April 1983 (Tenby; Wikipedia's Air Canada
+    // fleet: withdrawn from passenger service in 1983), with a -61 still in
+    // service that year (C-FTJZ retired and stored at Marana in January
+    // 1983). No day or month is printed. Air Canada's DC-8 FREIGHTERS (-54F,
+    // and the -73F conversions into the 1990s) are other models and do not
+    // change these years.
+    // THE LIVERY is named by the year it came in: 1965, the black-nose, red
+    // stripe scheme (Norebbo's Air Canada livery history: one red stripe
+    // along the window line curving to a point at the nose, the red tail
+    // with the white maple leaf; in 1980 the titles turned from black to red
+    // and the red maple leaf beside them went), introduced with the rondelle,
+    // which made its official debut at the rebranding on 1 January 1965
+    // (Air Canada's 60th-anniversary release for the rondelle, January 2025,
+    // as Open Jaw reported it on 6 January 2025). One
+    // DC-8 wore Air Canada titles for a royal flight in October 1964
+    // (Tenby): an unveiling, not the livery coming in. The year it went out
+    // is not printed.
+    //
+    // THE MARK is the stacked capitals lockup of the same identity, AIR
+    // CANADA over the rondelle: the supplied air-canada-logo-1965-1987.png,
+    // on disk since the caps card moved to the 1980 mark. Its filename's
+    // dates are the artwork's name and none is printed. (The heritage
+    // folder's air-canada-1964.svg is the same design and stays unused, a
+    // recorded decision in tests/heritage-card.test.js.)
+    key: 'air-canada-dc8',
+    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-dc8.png',
     airports: '*CA'
   }
 ];
@@ -59032,7 +59174,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24064" src="/textures/gate-sky-shelf.mp4?v=24064"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24065" src="/textures/gate-sky-shelf.mp4?v=24065"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
