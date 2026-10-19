@@ -194,3 +194,19 @@ test('the belts and the phone screens read a codeless row the same way as the bo
   assert.doesNotMatch(js, /f\._locIata \? formatCityIata\([^;]*: normalizeDisplayCity\(/,
     'a row with no code is formatted, not just cased (the bare casing drops a code already on its label)');
 });
+
+// v24067 — the map under the rows reads some rows with no code from their
+// words (fids-core.js _iataFromRowName: 'Harrisburg, PA', 'St Hubert'); the
+// rows themselves do not. A row of a list of stops kept its whole list on the
+// board, so a passenger for a stop can find it (5T244 'Inuvik, Yellowknife,
+// Norman Wells' and 4N702 'Whitehorse, Calgary' at Edmonton); a reading of
+// the first stop shrank them to 'Inuvik | YEV' and 'Whitehorse | YXY'.
+test('a row only the map reads keeps the feed\'s words and no code, as before (Edmonton\'s lists of stops among them)', () => {
+  const { parseLoc } = helpers();
+  for (const name of ['Inuvik, Yellowknife, Norman Wells', 'Whitehorse, Calgary', 'Harrisburg, PA', 'Cincinnati, OH',
+    'St Hubert', 'Toronto Centre-Ville', 'Ft Mackay/Firebag', 'Montreal-Trdeau']) {
+    const r = parseLoc('', name);
+    assert.equal(r.locIata, '', name + ': no code on the row');
+    assert.equal(r.locName, name, name + ': the feed\'s own words');
+  }
+});

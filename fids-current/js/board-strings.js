@@ -10,7 +10,7 @@
    This file holds:
      LANGS       the only copy of that list
      META        per-language settings: direction, Intl locale, 24-hour clock
-     FR_FIRST    the only list of Québec airports (French leads there)
+     FR_FIRST    the Québec airports, the only list (French leads there)
      STR         one entry per phrase, each carrying all nine languages
      LISTS       per-language lists of equal length (tickers)
    and the only helpers that may index an entry by language.
@@ -135,16 +135,25 @@
   // The rule, applied by resolveLangs() and pairLangs(): at one of these
   // airports French leads IF it is selected. It is never added when it is not.
   //
-  // v24067 — Roberval (YRJ) added: it is in the airport picker and was the
-  // one Québec board that led in English (with 12-hour times). YHA left the
+  // v24067 — EVERY QUÉBEC AIRPORT. The list held 26 codes and the board can
+  // be opened on any airport by URL, so a Québec airport off the list led in
+  // English with 12-hour times (Roberval, in the airport picker, did; so
+  // would Îles-de-la-Madeleine or Mont-Joli). It now holds every IATA code
+  // that OurAirports (ourairports.com/data, public domain) places in Québec
+  // (iso_region CA-QC), and YMY, Montréal's central station. YHA left the
   // list: it is Port Hope Simpson, in Labrador (Quaqtaq, whose ICAO code is
-  // CYHA, is YQC, already here). Every code here is a Québec airport by
-  // OurAirports' region (CA-QC), except YMY, Montréal's central station, and
-  // every Québec airport the board can open is here
-  // (tests/earth-floor-places.test.js).
-  var FR_FIRST = ['YUL', 'YQB', 'YHU', 'YRJ', 'YMX', 'YMY', 'YBG', 'YVO', 'YZV', 'YUY',
-    'YGP', 'YGL', 'YGW', 'YKQ', 'YPX', 'YVP', 'YHR', 'YNA', 'YBC', 'YTF', 'AKV',
-    'YIK', 'YZG', 'YQC', 'YKG', 'XGR'];
+  // CYHA, is YQC). tests/earth-floor-places.test.js holds it to that list.
+  var FR_FIRST = [
+    'YUL', 'YQB', 'YHU', 'YRJ', 'YMX', 'YMY', 'YBG', 'YVO', 'YZV', 'YUY', 'YGP',
+    'YGL', 'YGW', 'YKQ', 'YPX', 'YVP', 'YHR', 'YNA', 'YBC', 'YTF', 'AKV', 'YIK',
+    'YZG', 'YQC', 'YKG', 'XGR',
+    // the rest of Québec's airports, by code
+    'SSQ', 'YAH', 'YAR', 'YAU', 'YBJ', 'YBX', 'YDO', 'YEY', 'YFE', 'YFG', 'YGR',
+    'YGV', 'YIF', 'YJN', 'YKL', 'YKU', 'YLP', 'YLQ', 'YLS', 'YME', 'YML', 'YMT',
+    'YMW', 'YNC', 'YND', 'YNM', 'YNS', 'YOI', 'YPH', 'YPJ', 'YPN', 'YRI', 'YRQ',
+    'YSC', 'YTM', 'YTQ', 'YUD', 'YVB', 'YWB', 'YWQ', 'YXK', 'YYY', 'ZBM', 'ZEM',
+    'ZGS', 'ZKG', 'ZLT', 'ZTB'
+  ];
   var _frFirstSet = Object.create(null);
   FR_FIRST.forEach(function (c) { _frFirstSet[c] = true; });
 

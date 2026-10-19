@@ -5,9 +5,14 @@
 //
 // On 2026-10-19 every airport's live departures board was loaded at
 // 1920x1080 (build v24064) and its floor recorded: the view it was drawn in,
-// its size, the page's places in row order, the moment and the board's
-// languages (tests/fixtures/earth-sweep-2026-10-19.json, 90 floors with
-// rows: 65 full maps, 25 strips). Laid out again here, on those very views:
+// its size, the page's rows, the moment and the board's languages
+// (tests/fixtures/earth-sweep-2026-10-19.json, 90 floors with rows: 65 full
+// maps, 25 strips). The fixture holds each page's places AS THIS BUILD READS
+// THEM: the coded rows as recorded, then the rows with no code the map now
+// reads, with this build's positions and zones (Yellowknife's Norman Wells,
+// Taloyoak and Kugluktuk, LaGuardia's West Palm Beach, the rows at
+// Philadelphia and Québec), so what is checked is what ships. Laid out again
+// here, on those very views:
 //
 //   · no name stands clearly nearer another place's dot than its own (more
 //     than AMBIG px): it read as that place's (Kelowna's Nanaimo, Comox and
@@ -15,8 +20,13 @@
 //   · no route leaves the lens between its airport and its place: never
 //     farther from either than they are from each other (Yellowknife's line
 //     to Calgary climbed 95 px to the Arctic and came back down);
-//   · no leader line crosses another, or passes by another place's dot
-//     (Edmonton's Toronto and Ottawa lines crossed in an X);
+//   · no leader line crosses another, passes by another place's dot, or
+//     runs through another place's name (Edmonton's Toronto and Ottawa lines
+//     crossed in an X; Albany's ran up through 'Cleveland' at Washington
+//     National);
+//   · the page's order decides who gives way: a place is left off for one
+//     before it on the page, never for one after it (Fort Simpson, fourth on
+//     Yellowknife's page, gave way to Norman Wells, fifth);
 //   · no two names touch;
 //   · every floor names as many places as main did, less the names that
 //     stood by another place's dot (those are left off now: the rows list
@@ -104,7 +114,7 @@ test('no route leaves the lens between its airport and its place (no loop to the
   assert.deepEqual(bad, []);
 });
 
-test('no leader line crosses another, or passes by another place\'s dot', () => {
+test('no leader line crosses another, passes by another place\'s dot, or runs through another place\'s name', () => {
   const cross = (p, q) => {
     const rx = p[2] - p[0], ry = p[3] - p[1], sx = q[2] - q[0], sy = q[3] - q[1], den = rx * sy - ry * sx;
     if (Math.abs(den) < 1e-9) return false;
@@ -122,9 +132,46 @@ test('no leader line crosses another, or passes by another place\'s dot', () => 
         const vx = l[2] - l[0], vy = l[3] - l[1], t = Math.min(1, Math.max(0, ((d.x - l[0]) * vx + (d.y - l[1]) * vy) / (vx * vx + vy * vy || 1)));
         if (Math.hypot(l[0] + vx * t - d.x, l[1] + vy * t - d.y) < 6) bad.push(`${fl.id}: a leader line passes ${d.code}'s dot`);
       }
+      // a segment through a name's box (the leader's own name, at its dot end, aside)
+      for (const lab of L.labels) {
+        if (Math.hypot(lab.at.x - l[0], lab.at.y - l[1]) < 9) continue;
+        if (segThrough(l, lab.box)) bad.push(`${fl.id}: a leader line runs through ${lab.code}'s name`);
+      }
     });
   }
   assert.deepEqual(bad, []);
+});
+function segThrough(l, b) {
+  const dx = l[2] - l[0], dy = l[3] - l[1]; let t0 = 0, t1 = 1;
+  const p = [-dx, dx, -dy, dy], q = [l[0] - b.x0, b.x1 - l[0], l[1] - b.y0, b.y1 - l[1]];
+  for (let i = 0; i < 4; i++) {
+    if (p[i] === 0) { if (q[i] < 0) return false; continue; }
+    const r = q[i] / p[i];
+    if (p[i] < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t0 <= t1;
+}
+
+test('the page\'s order decides who gives way: a place is left off only for one before it on the page', () => {
+  let n = 0;
+  for (const fl of FLOORS) {
+    const runs = [fl.out.L].concat(fl.out.full ? [fl.out.run(fl.out.pool.slice(0, E.capFor(fl.H)))] : []);
+    for (const L of runs) for (const [code, to] of L.gaveWay || []) {
+      const at = (c) => fl.out.pool.findIndex((p) => p.code === c);
+      assert.ok(at(to) >= 0 && at(to) < at(code), `${fl.id}: ${code} gave way to ${to}, which comes after it`);
+      assert.ok(namedCodes(L).includes(to) && !namedCodes(L).includes(code), `${fl.id}: ${code} gave way to ${to}`);
+      n++;
+    }
+  }
+  assert.ok(n >= 5, n + ' places gave way');
+  const by = (id) => FLOORS.find((f) => f.id === id);
+  // the cases a checker found: a place left off for the dot of one after it
+  // on the page, that was itself then left off
+  const named = (id) => namedCodes(by(id).out.L);
+  assert.ok(named('recheckA/LGA').includes('CVG'), 'LaGuardia: Cincinnati is named (Memphis, after it, gives way)');
+  assert.equal(named('recheckA/LGA').length, 9, 'LaGuardia names 9');
+  assert.ok(named('run/LGA').includes('CLT'), 'LaGuardia: Charlotte is named (Greensboro and Charlottesville, after it, give way)');
+  assert.equal(named('run/LGA').length, 7);
 });
 
 test('no two names touch on any recorded floor', () => {
@@ -179,19 +226,46 @@ test('Yellowknife: the line to Calgary no longer climbs to the Arctic, and the N
     assert.ok(rr, id + ': Calgary is drawn when Edmonton is its only neighbour');
     const climb = hub.y - Math.min(...rr.runs.flat().map((s) => s.y));
     assert.ok(climb < 40, `${id}: Calgary's line climbs ${Math.round(climb)} px over the airport`);
-    for (const c of ['YVR', 'YEG', 'YCB', 'YFS']) assert.ok(namedCodes(L).includes(c), `${id}: ${c} is named`);
+    for (const c of ['YVR', 'YEG', 'YCB', 'YFS', 'YYH', 'YCO']) assert.ok(namedCodes(L).includes(c), `${id}: ${c} is named`);
+    // the North's new places are on this floor's page; Norman Wells, after
+    // Fort Simpson on it, is the one that gives way
+    for (const c of ['YVQ', 'YYH', 'YCO']) assert.ok(fl.out.pool.some((p) => p.code === c), `${id}: ${c} is on the page`);
+    assert.deepEqual(L.gaveWay, [['YVQ', 'YFS']], id + ': Norman Wells gives way to Fort Simpson');
   }
   assert.match(MOD, /Math\.hypot\(q\.x - a\.x, q\.y - a\.y\) > reach \|\| Math\.hypot\(q\.x - m\.q\.x, q\.y - m\.q\.y\) > reach\) bad = true;/, 'the lens is both circles');
 });
 
-test('a row with no code of its own is read from the code its city label ends with', () => {
+test('a row with no code of its own is read from the code its city label ends with, else from its words, for the map', () => {
   assert.equal(typeof E.rowCode, 'function', 'fids-earth.js exports rowCode');
   assert.equal(E.rowCode('', "Chicago · O'Hare | ORD"), 'ORD');
   assert.equal(E.rowCode('', 'New York · Kennedy | JFK'), 'JFK');
   assert.equal(E.rowCode('ord', 'Chicago · Midway | MDW'), 'ORD', 'the row\'s own code comes first');
   assert.equal(E.rowCode('', 'Montreal | MET'), 'MET', '(the board turns MET back into YHU: _realIata)');
   assert.equal(E.rowCode('', 'Dallas'), '');
-  assert.equal(E.rowCode('', 'Harrisburg, PA'), '');
+  assert.equal(E.rowCode('', 'Harrisburg, PA'), '', 'no reader, no code');
+  assert.equal(E.rowCode('', 'Harrisburg, PA', (w) => (w === 'Harrisburg, PA' ? 'mdt' : '')), 'MDT', 'the reader (the board\'s _iataFromRowName) reads the words');
+  assert.equal(E.rowCode('', 'Hartford | BDL', () => 'XXX'), 'BDL', 'the label\'s code before the words');
+  assert.equal(E.rowCode('', 'Harrisburg, PA', () => { throw new Error('x'); }), '');
   assert.equal(E.rowCode(null, null), '');
-  assert.match(MOD, /function pageCodes\(\) \{[\s\S]{0,400}realCode\(rowCode\(tr\.getAttribute\('data-iata'\), tr\.getAttribute\('data-loc'\)\)\)/, 'the page\'s places read it');
+  assert.match(MOD, /function pageCodes\(\) \{[\s\S]{0,400}realCode\(rowCode\(tr\.getAttribute\('data-iata'\), tr\.getAttribute\('data-loc'\), rowWords\)\)/, 'the page\'s places read it');
+  assert.match(MOD, /placesFrom\(boardRows\(dir\), \{[^}]*codeOf: rowWords \}\)/, 'and so do the day\'s places');
+  assert.match(MOD, /function rowWords\(t\) \{[^\n]*_iataFromRowName\(t\)/);
+  // placesFrom: a row with no code is read for the map, and named by the board's own name for it
+  const P = E.placesFrom([{ dest: 'Harrisburg, PA', status: 'scheduled', _revTs: 2e12 }, { dest: 'Whitehorse, Calgary', status: 'scheduled', _revTs: 2e12 }],
+    { dir: 'dep', ap0: 'PHL', now: 1e12, coords: () => [40, -76], codeOf: (t) => (t === 'Harrisburg, PA' ? 'MDT' : '') });
+  assert.deepEqual(P.list.map((p) => [p.code, p.read]), [['MDT', true]]);
+});
+
+test('the fixture is the page this build reads: rows with no code the map now reads, places with new positions, West Palm Beach named', () => {
+  const by = (id) => FLOORS.find((f) => f.id === id), codes = (id) => by(id).places.map((p) => p[0]), nm = (id, c) => (by(id).places.find((p) => p[0] === c) || [])[4];
+  for (const c of ['MDT', 'CVG', 'YUL', 'RIC', 'CLT']) assert.ok(codes('recheckA/PHL').includes(c), 'Philadelphia reads ' + c);
+  assert.equal(nm('recheckA/PHL', 'YUL'), 'Montréal', '\'Montreal-Trdeau\' is named as the board names Montréal');
+  assert.equal(nm('recheckA/PHL', 'MDT'), 'Harrisburg');
+  for (const c of ['YTZ', 'YHU']) assert.ok(codes('recheckA/YQB').includes(c), 'Québec reads ' + c);
+  assert.ok(codes('recheckA/YEG').includes('YFI'), 'Edmonton reads Firebag');
+  assert.equal(nm('run/LGA', 'DJT'), 'West Palm Beach', 'DJT is named as PBI is');
+  for (const fl of FLOORS) for (const p of fl.places) assert.ok(!/Djt|Donald J/.test(p[4]), fl.id + ': ' + p[4]);
+  // a list of stops is not read: Edmonton's rows to Whitehorse via Calgary
+  // and to Inuvik via Yellowknife and Norman Wells keep no code
+  for (const id of ['run/YEG', 'recheckA/YEG', 'recheckB/YEG']) for (const c of ['YXY', 'YEV']) assert.ok(!codes(id).includes(c), id + ' ' + c);
 });

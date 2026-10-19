@@ -6,15 +6,20 @@
 // The overnight sweep of every airport's live board (2026-10-19) found:
 //   · Roberval (YRJ), in the airport picker, opened with no position for
 //     itself: the old dotted globe under its notice, and English first on a
-//     Québec board;
+//     Québec board (and so would any Québec airport off the French-first
+//     list: the board opens on any airport by URL);
 //   · 41 places the boards listed with no position in any table, so no route
-//     (West Palm Beach now arrives as DJT, its new code since August 2026);
+//     (West Palm Beach now arrives as DJT, its new code since August 2026,
+//     with no name either: 'Djt', 'West Palm Beach Donald J. Trump Intl');
 //   · rows with no code at all because the feed wrote the name in a way no
 //     whole name in our tables matches: 'Harrisburg, PA', 'St Hubert',
-//     'Toronto Centre-Ville', 'Ft McMurray', 'Whitehorse, Calgary',
-//     'Montreal-Trdeau'.
-// The positions are OurAirports' (ourairports.com/data, public domain); the
-// lists below are taken from the same data.
+//     'Toronto Centre-Ville', 'Ft McMurray', 'Montreal-Trdeau'. The map
+//     reads these (_iataFromRowName); the rows themselves keep their words
+//     and their missing code (_iataFromCityName is main's), so nothing else
+//     on the board changes. A list of stops ('Whitehorse, Calgary') is not
+//     read at all: the feeds disagree on which name is the destination.
+// The positions and regions are OurAirports' (ourairports.com/data, public
+// domain); the lists below are taken from the same data.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -90,92 +95,143 @@ test('the places the sweep found unplaceable have OurAirports\' positions, the s
   assert.equal(E.ZONES.DJT, 'America/New_York');
 });
 
-test('French leads at every Québec airport the board can open, and the list holds Québec only', () => {
+test('French leads at every Québec airport (the board opens on any airport by URL), and the list holds Québec only', () => {
   const qc = new Set(QUEBEC);
-  for (const c of OPENABLE) if (qc.has(c)) assert.ok(BS.FR_FIRST.includes(c), c + ' is in Québec and must lead in French');
+  assert.equal(QUEBEC.length, 73);
+  for (const c of QUEBEC) assert.ok(BS.FR_FIRST.includes(c), c + ' is in Québec and must lead in French');
   for (const c of BS.FR_FIRST) if (c !== 'YMY') assert.ok(qc.has(c), c + ' is not a Québec airport');   // YMY: Montréal's central station
+  assert.equal(new Set(BS.FR_FIRST).size, BS.FR_FIRST.length, 'each code once');
   assert.ok(!BS.FR_FIRST.includes('YHA'), 'YHA is Port Hope Simpson, Labrador');
-  assert.deepEqual(BS.resolveLangs({ iata: 'YRJ' }).langs, ['fr', 'en'], 'Roberval reads French first');
+  // the ones in the board's own tables that the list missed: in the airport
+  // table (Îles-de-la-Madeleine, Mont-Joli) and the gate table (Chibougamau,
+  // Schefferville)
+  for (const c of ['YRJ', 'YGR', 'YYY', 'YMT', 'YKL']) {
+    assert.ok(AP[c] || GATE_AP[c] || CITY[c], c + ' is one of ours');
+    assert.deepEqual(BS.resolveLangs({ iata: c }).langs, ['fr', 'en'], c + ' reads French first');
+  }
   assert.equal(BS.boardClock24(['fr', 'en']), true, 'and so its clock is 24-hour');
+  assert.deepEqual(BS.resolveLangs({ iata: 'YQM' }).langs[0], 'en', 'Moncton, in New Brunswick, is not on it');
 });
 
-// the board's name lookup and its rules, out of fids-core.js, with its tables
+// the board's name lookup (the rows': _iataFromCityName) and the map's
+// reading of a row with no code (_iataFromRowName), out of fids-core.js,
+// with their tables
 let NAMES_ = null;
 const names = () => NAMES_ || (NAMES_ = (() => {
   const block = CORE.slice(CORE.indexOf('\nvar _CITY2IATA = null;') + 1, CORE.indexOf('\nfunction formatCityIata(') + 1);
-  return new Function('CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window',
-    block + '\nreturn { look: _iataFromCityName, key: _normCityKey, box: _REGION_BOX, notAStop: _NOT_A_STOP, alias: _CITY2IATA_ALIAS, index: function () { _cityIndex(); return _CITY2IATA; } };')(
-    CITY, CITY_FR, AP, AP_LIST, COORDS, GATE_AP, { AIRPORT_COORDS });
+  return new Function('CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window', 'BoardStrings',
+    block + '\nreturn { look: _iataFromCityName, row: _iataFromRowName, key: _normCityKey, region: _ROW_REGION, alias: _CITY2IATA_ALIAS, rowAlias: _ROW_NAME_ALIAS, renamed: _IATA_RENAMED, index: function () { _iataFromCityName(\'xxx\'); return _CITY2IATA; } };')(
+    CITY, CITY_FR, AP, AP_LIST, COORDS, GATE_AP, { AIRPORT_COORDS }, BS);
 })());
+// main's own lookup, as it was before v24067: a whole name, or one of its aliases
+const MAIN_ALIAS = { gulfportbiloxi: 'GPT', gulfport: 'GPT', bentonvillefayetteville: 'XNA', northwestarkansas: 'XNA',
+  pensacola: 'PNS', syracuse: 'SYR', raleighdurham: 'RDU', raleighdurhamnc: 'RDU' };
 // every name of ours, with every code it is ours for
 function allNames() {
   const ALL = new Map(), key = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
   const addName = (c, n) => { if (!n) return; const k = key(n); if (k.length < 3) return; if (!ALL.has(k)) ALL.set(k, { name: n, codes: new Set() }); ALL.get(k).codes.add(String(c).toUpperCase()); };
-  AP_LIST.forEach((a) => addName(a.c, a.n)); Object.keys(CITY).forEach((c) => addName(c, CITY[c])); Object.keys(CITY_FR).forEach((c) => addName(c, CITY_FR[c]));
+  // (DJT is PBI's new code: one airport, named as PBI is)
+  AP_LIST.forEach((a) => addName(a.c, a.n)); Object.keys(CITY).forEach((c) => c !== 'DJT' && addName(c, CITY[c])); Object.keys(CITY_FR).forEach((c) => c !== 'DJT' && addName(c, CITY_FR[c]));
   return ALL;
 }
 
-test('the rows the sweep found with no code now read their airport', () => {
+test('the rows the sweep found with no code: the map reads their airport, the rows keep their words and no code', () => {
   const NAMES = names();
   const want = {
     'Harrisburg, PA': 'MDT', 'Richmond, VA': 'RIC', 'Charlotte, NC': 'CLT', 'Burlington, VT': 'BTV', 'Pensacola, FL': 'PNS',
-    'Birmingham, AL': 'BHM', 'Cincinnati, OH': 'CVG', 'St Hubert': 'YHU', 'Saint-Hubert': 'YHU', 'Toronto Centre-Ville': 'YTZ',
-    'Ft Mackay/Firebag': 'YFI', 'Ft McMurray': 'YMM', 'Whitehorse, Calgary': 'YXY', 'Inuvik, Yellowknife, Norman Wells': 'YEV',
-    'Montreal-Trdeau': 'YUL', 'Portland, ME': 'PWM', 'Portland, OR': 'PDX', 'London, ON': 'YXU', 'Hamilton, ON': 'YHM', 'Victoria, BC': 'YYJ',
-    'Saint Louis': 'STL', 'Ft Lauderdale': 'FLL'
+    'Birmingham, AL': 'BHM', 'Cincinnati, OH': 'CVG', 'Cincinnati, KY': 'CVG', 'St Hubert': 'YHU', 'Saint-Hubert': 'YHU', 'Toronto Centre-Ville': 'YTZ',
+    'Ft Mackay/Firebag': 'YFI', 'Ft McMurray': 'YMM', 'Montreal-Trdeau': 'YUL', 'Portland, ME': 'PWM', 'Portland, OR': 'PDX',
+    'London, ON': 'YXU', 'Hamilton, ON': 'YHM', 'Victoria, BC': 'YYJ', 'Saint Louis': 'STL', 'Ft Lauderdale': 'FLL', 'Norman Wells': 'YVQ'
   };
-  for (const [name, code] of Object.entries(want)) assert.equal(NAMES.look(name), code, name);
+  for (const [name, code] of Object.entries(want)) {
+    assert.equal(NAMES.row(name), code, 'the map reads ' + name);
+    assert.equal(NAMES.look(name), '', 'the row of ' + name + ' keeps no code (as on main)');
+  }
 });
 
-test('and never a wrong airport: a name with two of ours, or a place we do not hold, stays code-less', () => {
+test('and never a wrong airport: a name with two of ours, a place in another state, or a list of stops stays code-less', () => {
   const NAMES = names();
   for (const name of ['Montreal', 'Toronto', 'Houston', 'Chicago, IL', 'New York, NY', 'Houston, TX', 'Columbus, OH',
     'Washington, DC',            // Reagan or Dulles
     'Jacksonville, NC',          // not Jacksonville, Florida
     'Paris, TX', 'Rome, GA',     // not Paris or Rome
-    'Hamilton, Bermuda',         // Bermuda is where Hamilton is, not a second stop
-    'Ottawa, Ontario', 'Victoria, Seychelles', 'Kingston, Jamaica', 'Punta Cana, Rd', 'Montreal-Trudeaux International']) {
+    'Ottawa, Ontario', 'Victoria, Seychelles', 'Kingston, Jamaica', 'Punta Cana, Rd', 'Montreal-Trudeaux International',
+    // a name of ours, in a state or province its airport is not in
+    // (OurAirports' regions, not boxes: neighbouring boxes overlap)
+    'Waterloo, ON',              // Waterloo, Iowa is ALO; Ontario's is Kitchener-Waterloo
+    'Victoria, WA', 'Greenville, TN', 'Columbia, GA', 'Jackson, LA', 'Moncton, NS', 'Ottawa, QC',
+    // a list of stops: which is the destination, the feeds disagree
+    // (Edmonton writes it first, Orlando's coded rows last)
+    'Whitehorse, Calgary', 'Inuvik, Yellowknife, Norman Wells', 'Brussels, Charleroi', 'Venice, Treviso',
+    'Barcelona, Girona', 'Tampa, St Pete', 'Los Angeles, Burbank', 'San Francisco, Oakland', 'Vancouver, Abbotsford',
+    'Raleigh, Ogdensburg', 'Myrtle Beach, White Plains', 'Hamilton, Bermuda']) {
+    assert.equal(NAMES.row(name), '', name);
     assert.equal(NAMES.look(name), '', name);
   }
 });
 
-test('the new spellings change no whole name\'s answer, and each rule holds over the whole index', () => {
+test('the rows\' own lookup is main\'s, and the map reads every whole name as the rows do', () => {
   const NAMES = names(), ALL = allNames();
-  // 1 · a whole name answers as it did: its one code, or nothing for two
   for (const [k, v] of ALL) {
-    const exact = NAMES.alias[k] || (v.codes.size === 1 ? [...v.codes][0] : '');
+    const exact = MAIN_ALIAS[k] || (v.codes.size === 1 ? [...v.codes][0] : '');
     assert.equal(NAMES.look(v.name), exact, v.name);
+    if (exact) assert.equal(NAMES.row(v.name), exact, 'the map reads ' + v.name);
   }
-  // 2 · St/Ste/Ft/Mt and Saint/Sainte/Fort/Mount never turn one place's name into another's
+  assert.deepEqual(NAMES.alias, MAIN_ALIAS, 'the rows\' aliases are main\'s');
+  assert.equal(NAMES.look('West Palm Beach'), 'PBI', 'West Palm Beach reads PBI, as it did');
+  assert.equal(NAMES.index().westpalmbeach, 'PBI', 'not a name with two codes');
+  // the feed mapper reads the rows' lookup, and nothing on the board but the map reads the map's
+  assert.match(CORE, /if \(!locIata && typeof _iataFromCityName === 'function'\) locIata = _iataFromCityName\(cityName\) \|\| '';\s*\}\s*let locName=formatCityIata\(CITY\[locIata\] \|\| cityName \|\| locIata \|\| '—', locIata\);/);
+  assert.equal((CORE.match(/_iataFromRowName\(/g) || []).length, 1, 'fids-core.js defines _iataFromRowName and never calls it');
+});
+
+test('each of the map\'s rules holds over the whole index', () => {
+  const NAMES = names(), ALL = allNames();
+  // 1 · St/Ste/Ft/Mt and Saint/Sainte/Fort/Mount never turn one place's name into another's
   const swaps = [[/ st /gi, ' saint '], [/ ste /gi, ' sainte '], [/ ft /gi, ' fort '], [/ mt /gi, ' mount '], [/ saint /gi, ' st '], [/ sainte /gi, ' ste '], [/ fort /gi, ' ft '], [/ mount /gi, ' mt ']];
   for (const [, v] of ALL) {
     const t = ' ' + v.name.replace(/[.\-‐-―]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
     for (const [re, to] of swaps) {
       const s = t.replace(re, to).trim(); if (s === t.trim()) continue;
-      const got = NAMES.look(s), other = ALL.get(NAMES.key(s));
+      const got = NAMES.row(s), other = ALL.get(NAMES.key(s));
       if (got && !other) assert.ok(v.codes.has(got), `${v.name} spelt "${s}" reads ${got}`);
     }
   }
-  // 3 · 'Name, ST' reads only an airport of that name inside that state or province
-  const at = (c) => coordsOf(c);
+  // 2 · 'Name, ST' reads only one of that name's airports, and only one
+  // OurAirports places in that state or province
+  const regionOf = {};
+  Object.entries(NAMES.region).forEach(([r, list]) => list.split(' ').forEach((c) => { assert.ok(!regionOf[c], c + ' in two regions'); regionOf[c] = r; }));
+  // Québec's are the board's one list of them (BoardStrings.FR_FIRST)
+  assert.ok(!('QC' in NAMES.region), 'no second list of Québec airports');
+  BS.FR_FIRST.forEach((c) => { assert.ok(!regionOf[c], c + ' is in Québec and in ' + regionOf[c]); regionOf[c] = 'QC'; });
+  assert.equal(NAMES.row('Rouyn-Noranda, QC'), 'YUY');
+  assert.equal(NAMES.row('Sept-Iles, QC'), 'YZV');
   let n = 0;
-  for (const [k, v] of ALL) for (const st of Object.keys(NAMES.box)) {
-    const got = NAMES.look(v.name + ', ' + st); if (!got) continue;
-    if (got === (NAMES.index()[NAMES.key(v.name + ', ' + st)] || '')) continue;   // a whole name of its own ('Lisbonne')
-    const b = NAMES.box[st], p = at(got);
-    assert.ok(p && p[0] >= b[0] && p[0] <= b[1] && p[1] >= b[2] && p[1] <= b[3], `${v.name}, ${st} reads ${got}, outside ${st}`);
-    assert.ok(v.codes.has(got) || NAMES.alias[NAMES.key(v.name + st)] === got || NAMES.look(v.name) === got, `${v.name}, ${st} reads ${got}, not one of its airports`);
+  for (const [, v] of ALL) for (const st of Object.keys(REGION_EXTENTS).concat(['DC'])) {
+    const got = NAMES.row(v.name + ', ' + st); if (!got) continue;
+    if (got === (NAMES.index()[NAMES.key(v.name + ', ' + st)] || '')) continue;   // a whole name of its own
+    if (NAMES.rowAlias[NAMES.key(v.name + ', ' + st)] === got) continue;          // 'Cincinnati, OH'
+    assert.equal(regionOf[got], st, `${v.name}, ${st} reads ${got}, which OurAirports places in ${regionOf[got] || 'no state or province'}`);
+    const spelt = (NAMES.row(v.name) === got);
+    assert.ok(v.codes.has(got) || spelt, `${v.name}, ${st} reads ${got}, not one of its airports`);
     n++;
   }
-  assert.ok(n > 1000, n + ' state and province readings checked');
-  assert.ok(!('DC' in NAMES.box), 'Washington, DC stays code-less');
-  // 4 · a name of ours that is also a country's, territory's, state's or
-  // province's is never read as a second stop
-  for (const nm of COUNTRIES_AND_REGIONS) {
-    const k = NAMES.key(nm);
-    if (ALL.has(k)) assert.ok(NAMES.notAStop[k], `"${nm}" is one of our names (${[...ALL.get(k).codes]}) and a country or region: add it to _NOT_A_STOP`);
+  assert.ok(n > 700, n + ' state and province readings checked');
+  assert.ok(!('DC' in NAMES.region), 'Washington, DC stays code-less');
+  // 3 · and the regions agree with the board's own positions: each code
+  // stands inside its state's or province's airports (OurAirports' extents),
+  // two sources that must not disagree (YMU, where they do, is left out)
+  let k = 0;
+  for (const [c, r] of Object.entries(regionOf)) {
+    const p = coordsOf(c), b = REGION_EXTENTS[r];
+    assert.ok(b, r + ' has its extents');
+    if (!p) continue;
+    assert.ok(p[0] >= b[0] - 0.5 && p[0] <= b[1] + 0.5 && p[1] >= b[2] - 0.5 && p[1] <= b[3] + 0.5, `${c} stands at ${p}, outside ${r}`);
+    k++;
   }
-  // 5 · the airports of one city have short names at least 3 letters apart,
+  assert.ok(k > 700, k + ' codes checked against their positions');
+  assert.ok(!regionOf.YMU, 'YMU: OurAirports and our tables disagree on what it is');
+  // 4 · the airports of one city have short names at least 3 letters apart,
   // so a name one letter off reads one of them, never either
   const ed = (a, b) => { const d = []; for (let i = 0; i <= a.length; i++) d[i] = [i]; for (let j = 0; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; };
   for (const [, v] of ALL) {
@@ -184,50 +240,49 @@ test('the new spellings change no whole name\'s answer, and each rule holds over
   }
 });
 
-// OurAirports' countries and territories, and the US states' and Canadian provinces' names
-const COUNTRIES_AND_REGIONS = [
-  "(unassigned)", "Afghanistan", "Alabama", "Alaska", "Albania", "Alberta", "Algeria", "American Samoa",
-  "Andorra", "Angola", "Anguilla", "Antarctica", "Antigua and Barbuda", "Argentina", "Arizona", "Arkansas",
-  "Armenia", "Aruba", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados",
-  "Belarus", "Belgium", "Belize", "Benin", "Bermuda", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
-  "Botswana", "Brazil", "British Columbia", "British Indian Ocean Territory", "British Virgin Islands",
-  "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "California", "Cambodia", "Cameroon", "Canada",
-  "Cape Verde", "Caribbean Netherlands", "Cayman Islands", "Central African Republic", "Chad", "Chile",
-  "China", "Christmas Island", "Cocos (Keeling) Islands", "Colombia", "Colorado", "Comoros", "Connecticut",
-  "Cook Islands", "Costa Rica", "Croatia", "Cuba", "Curaçao", "Cyprus", "Czech Republic", "Côte d'Ivoire",
-  "Delaware", "Democratic Republic of the Congo", "Denmark", "District of Columbia", "Djibouti", "Dominica",
-  "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia",
-  "Eswatini", "Ethiopia", "Falkland Islands", "Faroe Islands", "Fiji", "Finland", "Florida", "France",
-  "French Guiana", "French Polynesia", "French Southern and Antarctic Lands", "Gabon", "Gambia", "Georgia",
-  "Germany", "Ghana", "Gibraltar", "Greece", "Greenland", "Grenada", "Guadeloupe", "Guam", "Guatemala",
-  "Guernsey", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Hawaii", "Heard and McDonald Islands",
-  "Honduras", "Hong Kong", "Hungary", "Iceland", "Idaho", "Illinois", "India", "Indiana", "Indonesia",
-  "Iowa", "Iran", "Iraq", "Ireland", "Isle of Man", "Israel", "Italy", "Jamaica", "Japan", "Jersey",
-  "Jordan", "Kansas", "Kazakhstan", "Kentucky", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan",
-  "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Louisiana",
-  "Luxembourg", "Macau", "Madagascar", "Maine", "Malawi", "Malaysia", "Maldives", "Mali", "Malta",
-  "Manitoba", "Marshall Islands", "Martinique", "Maryland", "Massachusetts", "Mauritania", "Mauritius",
-  "Mayotte", "Mexico", "Michigan", "Micronesia", "Minnesota", "Mississippi", "Missouri", "Moldova", "Monaco",
-  "Mongolia", "Montana", "Montenegro", "Montserrat", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru",
-  "Nebraska", "Nepal", "Netherlands", "Nevada", "New Brunswick", "New Caledonia", "New Hampshire",
-  "New Jersey", "New Mexico", "New York", "New Zealand", "Newfoundland and Labrador", "Nicaragua", "Niger",
-  "Nigeria", "Niue", "Norfolk Island", "North Carolina", "North Dakota", "North Korea", "North Macedonia",
-  "Northern Mariana Islands", "Northwest Territories", "Norway", "Nova Scotia", "Nunavut", "Ohio",
-  "Oklahoma", "Oman", "Ontario", "Oregon", "Pakistan", "Palau", "Palestinian Territory", "Panama",
-  "Papua New Guinea", "Paracel Islands (disputed)", "Paraguay", "Pennsylvania", "Peru", "Philippines",
-  "Pitcairn", "Poland", "Portugal", "Prince Edward Island", "Puerto Rico", "Qatar", "Quebec",
-  "Republic of the Congo", "Rhode Island", "Romania", "Russia", "Rwanda", "Réunion", "Saint Barthélemy",
-  "Saint Helena, Ascension and Tristan da Cunha", "Saint Kitts and Nevis", "Saint Lucia", "Saint Martin",
-  "Saint Pierre and Miquelon", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Saskatchewan",
-  "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Sint Maarten", "Slovakia",
-  "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Carolina", "South Dakota",
-  "South Georgia and the South Sandwich Islands", "South Korea", "South Sudan", "Spain", "Sri Lanka",
-  "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "São Tomé and Principe", "Taiwan", "Tajikistan",
-  "Tanzania", "Tennessee", "Texas", "Thailand", "Timor-Leste", "Togo", "Tokelau", "Tonga",
-  "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Turks and Caicos Islands", "Tuvalu",
-  "U.S. Virgin Islands", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
-  "United States Minor Outlying Islands", "Unknown or unassigned country", "Uruguay", "Utah", "Uzbekistan",
-  "Vanuatu", "Vatican City", "Venezuela", "Vermont", "Vietnam", "Virginia", "Wallis and Futuna",
-  "Washington", "West Virginia", "Western Sahara (disputed territory)", "Wisconsin", "Wyoming", "Yemen",
-  "Yukon", "Zambia", "Zimbabwe",
-];
+test('West Palm Beach\'s new code is named in every table as PBI is', () => {
+  const SHARED = {}; vm.runInNewContext(fs.readFileSync(path.join(JS, 'shared-names.js'), 'utf8'), { window: SHARED });
+  assert.equal(CITY.DJT, CITY.PBI);
+  assert.equal(CITY_FR.DJT, CITY_FR.PBI);
+  assert.equal(SHARED.FIDS_SHARED_CITY.DJT, SHARED.FIDS_SHARED_CITY.PBI, 'the companion app\'s copy');
+  assert.equal(CITY.DJT, 'WEST PALM BEACH');
+  assert.deepEqual(names().renamed, { DJT: 'PBI' });
+});
+
+// OurAirports' extents of each US state's and Canadian province's airports
+// (every airport in it, its furthest south, north, west and east, rounded
+// out to 0.1 degree): [south, north, west, east]
+const REGION_EXTENTS = {
+  AB: [48.9, 59.7, -119.9, -109.9], AK: [51.8, 71.4, -176.7, -129.9], AL: [30.1, 35.1, -88.5, -84.8],
+  AR: [32.9, 36.6, -94.7, -89.7], AZ: [31.2, 37.1, -114.8, -109], BC: [48.3, 59.9, -136.7, -114.8],
+  CA: [32.5, 42, -124.3, -114.1], CO: [37, 41.1, -109.1, -102], CT: [41.1, 42.1, -73.6, -71.7],
+  DE: [38.4, 39.8, -75.8, -75], FL: [24.5, 31.1, -87.6, -80], GA: [30.6, 35.1, -85.6, -81],
+  HI: [19.6, 24, -159.9, -154.9], IA: [40.4, 43.6, -96.5, -90.1], ID: [41.9, 49.1, -117.2, -111],
+  IL: [37, 42.6, -91.5, -87.4], IN: [37.8, 41.9, -88, -84.7], KS: [36.9, 40, -102.1, -94.5],
+  KY: [36.4, 39.1, -89.4, -82.2], LA: [28.9, 33.1, -94.1, -89.1], MA: [41.2, 43, -73.5, -69.9],
+  MB: [49, 59.8, -101.9, -90], MD: [37.9, 39.8, -79.6, -75], ME: [43, 47.5, -71.1, -66.9],
+  MI: [41.6, 47.3, -90.2, -82.4], MN: [43.4, 49.4, -97.1, -90.3], MO: [35.9, 40.7, -95.7, -89.1],
+  MS: [30.2, 35.1, -91.4, -88.1], MT: [44.6, 49.1, -116.1, -104], NB: [44.6, 48.1, -68.6, -64.3],
+  NC: [33.8, 36.6, -84, -75.5], ND: [45.9, 49.1, -104.1, -96.5], NE: [39.9, 43, -104.1, -95.5],
+  NH: [42.6, 45, -72.5, -70.7], NJ: [38.9, 41.3, -75.6, -73.9], NL: [47, 58.6, -67, -52.7],
+  NM: [31.4, 37.1, -109.1, -103], NS: [43.5, 46.4, -66.5, -59.8], NT: [59.8, 72.1, -135.1, -102.4],
+  NU: [61, 83.2, -116.3, -62.2], NV: [35.2, 42.1, -120.1, -114], NY: [40.5, 45.1, -79.8, -71.8],
+  OH: [38.3, 41.9, -84.9, -80.4], OK: [33.7, 37.1, -102.6, -94.4], ON: [41.7, 56.1, -94.8, -74.3],
+  OR: [41.9, 46.3, -124.6, -116.4], PA: [39.6, 42.3, -80.6, -74.8], PE: [46.2, 46.5, -63.9, -62.5],
+  QC: [44.9, 62.5, -79.5, -57.1], RI: [41.1, 42, -71.9, -71], SC: [32, 35.3, -83.1, -78.6],
+  SD: [42.4, 46.1, -104.1, -96.4], SK: [48.9, 59.9, -110, -101.4], TN: [34.9, 36.7, -90.2, -81.7],
+  TX: [25.8, 36.6, -106.5, -93.6], UT: [36.9, 42.1, -114.1, -109], VA: [36.4, 39.5, -83.3, -75.3],
+  VT: [42.7, 45.1, -73.5, -71.7], WA: [45.5, 49.1, -124.7, -116.9], WI: [42.4, 47, -92.9, -86.8],
+  WV: [37.2, 40.7, -82.7, -77.7], WY: [40.9, 45.1, -111.1, -104], YT: [60, 69.7, -141, -128.2]
+};
+
+
+test('Kuujjuarapik is named as itself: YGW was written Chisasibi, which is YKU', () => {
+  const SHARED = {}; vm.runInNewContext(fs.readFileSync(path.join(JS, 'shared-names.js'), 'utf8'), { window: SHARED });
+  assert.equal(CITY.YGW, 'KUUJJUARAPIK');
+  assert.equal(SHARED.FIDS_SHARED_CITY.YGW, 'KUUJJUARAPIK');
+  assert.ok(!CITY_FR.YGW || CITY_FR.YGW === 'KUUJJUARAPIK');
+  const p = coordsOf('YGW');
+  assert.ok(Math.abs(p[0] - 55.28) < 0.05 && Math.abs(p[1] + 77.77) < 0.05, 'YGW stands at Kuujjuarapik (OurAirports CYGW 55.28, -77.77)');
+  assert.equal(names().look('Chisasibi'), 'YKU', 'and the name Chisasibi is no longer two codes');
+});

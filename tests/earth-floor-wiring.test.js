@@ -217,12 +217,35 @@ test('the names and times on the floor are always the board\'s languages, also w
   // while the next floor is still being lit (the CI failure of 2026-10-19:
   // '9:10 AM' on a French board). tests/earth-floor-langs-render.test.js
   // holds that moment open in a browser.
-  assert.match(MOD, /function drawOverlay\(\) \{\s*var e = showE;/, 'the names are the floor on screen\'s');
+  assert.match(MOD, /function drawOverlay\(quick\) \{\s*var e = showE;/, 'the names are the floor on screen\'s');
   assert.match(MOD, /function wordsSig\(\) \{[\s\S]{0,200}shownLang\(\) \+ '\|' \+ boardLangsNow\(\)\.join\(','\) \+ '\|' \+ \(clock24\(\) \? 24 : 12\)/);
-  assert.match(MOD, /drawn = \{ e: e, list: list, wsig: wsig \};/);
-  assert.match(MOD, /function refreshWords\(\) \{\s*if \(!drawn \|\| drawn\.wsig === wordsSig\(\)\) return;/);
+  assert.match(MOD, /drawn = \{ e: e, list: list, wsig: wsig, pk: pk \};/);
+  assert.match(MOD, /function refreshWords\(\) \{\s*if \(!drawn \|\| drawn\.wsig === wordsSig\(\)\) return;\s*if \(drawn\.e !== showE\) \{ render\(null\); drawn = null; return; \}\s*drawOverlay\(true\);/);
   assert.match(MOD, /if \(!cur \|\| !cur\.ready \|\| cur !== showE\) \{ refreshWords\(\); return; \}/, 'checked every second while the next floor is lit');
   assert.match(MOD, /B0\.onLangs\(function \(\) \{ if \(disabled \|\| !layer\) return; try \{ refreshWords\(\); \}/, 'drawn again inside a change of languages');
   assert.match(MOD, /function showCanvas\(e\) \{\s*var cv = e \? e\.cv : null;\s*showE = e \|\| null;/);
   assert.doesNotMatch(MOD, /showCanvas\([a-z]+\.cv\)/, 'every caller hands showCanvas its floor');
+});
+
+test('a change of languages draws the words at once and never runs the refill inside it; the language on screen turning is drawn at once too', () => {
+  // quick: the places the floor named, or its page's first up to the cap;
+  // the refill (up to 7 layouts) at the next one-second look (LSIG = '')
+  assert.match(MOD, /else if \(quick\) \{ list = \(drawn && drawn\.e === e && drawn\.pk === pk\) \? drawn\.list : pool\.slice\(0, capFor\(e\.H\)\); lastLayout = run\(list\); later = true; \}/);
+  assert.match(MOD, /if \(e === cur\) LSIG = later \? '' : layoutSig\(\);/);
+  // refills are kept per floor, page and set of languages (not the one on
+  // screen, not the minute), up to 24
+  assert.match(MOD, /var fk = pk \+ '\|' \+ boardLangsNow\(\)\.join\(','\) \+ '\|' \+ \(clock24\(\) \? 24 : 12\), hit = full \? memoGet\(fk\) : null;/);
+  assert.match(MOD, /if \(fillKeys\.length > 24\) delete fillMemo\[fillKeys\.shift\(\)\];/);
+  // the board's paging clock and its rotation timer turn the language on
+  // screen without a change of the board's languages: they call the floor
+  const CORE = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
+  assert.match(MOD, /root\.ocfEarthWords = function \(\) \{ if \(disabled \|\| !layer\) return; try \{ refreshWords\(\); \}/);
+  assert.match(CORE, /function _shownLangChanged\(\) \{\s*try \{ if \(typeof window !== 'undefined' && typeof window\.ocfEarthWords === 'function'\) window\.ocfEarthWords\(\); \} catch \(e\) \{\}/);
+  const tick = CORE.slice(CORE.indexOf('function tick_carousel() {'), CORE.indexOf('function startPaging() {'));
+  assert.match(tick, /lang = \(langs && langs\[_slideIdx\]\) \|\| 'en';[\s\S]*render\(\);[\s\S]*_shownLangChanged\(\);\s*\}/);
+  const rot = CORE.slice(CORE.indexOf('function startLangRotation() {'), CORE.indexOf('function _startLangRotation_WITHDRAWN() {'));
+  assert.match(rot, /lang = langs\[langIdx\];\s*updateTicker\(\);\s*if \(data\.dep\.length \|\| data\.arr\.length\) render\(\);\s*_shownLangChanged\(\);/);
+  // and a change of the board's languages reaches the floor whatever the
+  // buttons, the ticker or the rotation do before it
+  assert.match(CORE, /function _applyBoardLangs\(\) \{[\s\S]{0,600}try \{\s*updateLangButtons\(\);\s*updateTicker\(\);\s*startLangRotation\(\);\s*\} finally \{\s*try \{ BoardStrings\.langsChanged\(\); \} catch \(eS\) \{\}\s*\}/);
 });

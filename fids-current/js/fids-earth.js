@@ -45,7 +45,9 @@
        it; a place with no room for its name is left out with its route and
        dot, so every line carries a name. A name reads as its own dot's: where
        another dot stands as near, a leader line joins it to its own, or it
-       goes elsewhere; of two dots that would touch, only the first is drawn. Names keep 10 px under the last row. The airport's ring
+       goes elsewhere; of two dots that would touch, only the first is drawn.
+       Where two places' names cannot both be read clearly, the page's order
+       decides: a place gives way only to one before it. Names keep 10 px under the last row. The airport's ring
        keeps a clear zone. Places beyond the picture are named where their
        route leaves it, an arrow there pointing on; several leaving at one
        spot share one route, one arrow and one list.
@@ -183,14 +185,17 @@
   //   o.dir     'dep' | 'arr'      o.ap0   this airport
   //   o.now     ms                 o.coords(code) → [lat, lon] | null
   //   o.tz(code) → zone | null     o.real(code) → the real code for a shown one
+  //   o.codeOf(text) → the code the map reads from a row's words when the row
+  //                has none of its own ('Harrisburg, PA': rowCode)
   var GONE = /departed|active|enroute|airborne|landed|arrived|atbelt|baggage|diverted/;
   function placesFrom(rows, o) {
     var dir = o.dir === 'arr' ? 'arr' : 'dep', now = +o.now, by = {}, next = null;
     (rows || []).forEach(function (f) {
       if (!f) return;
       var text = String((dir === 'dep' ? f.dest : f.origin) || f.dest || f.origin || '');
-      var lc = String(f._locIata || '').toUpperCase();
+      var lc = String(f._locIata || '').toUpperCase(), read = false;
       if (!lc) { var mt = /\|\s*([A-Z]{3})\s*$/.exec(text); if (mt) lc = mt[1]; }
+      if (!lc && o.codeOf) { lc = String(o.codeOf(text) || '').toUpperCase(); read = !!lc; }
       var c = lc && o.real ? String(o.real(lc) || lc).toUpperCase() : lc;
       if (!c || c === o.ap0) return;
       var at = o.coords(c); if (!at) return;
@@ -198,7 +203,7 @@
       // the zone: the board's AP table, else the row's own arrival zone (a
       // departure's). Never the feed's own offset, which is the departure
       // airport's.
-      var p = by[c] || (by[c] = { code: c, lat: +at[0], lon: +at[1], n: 0, gone: 0, cxl: 0, soon: Infinity, tz: (o.tz && o.tz(c)) || (dir === 'dep' ? f._arrTz || null : null), raw: text });
+      var p = by[c] || (by[c] = { code: c, lat: +at[0], lon: +at[1], n: 0, gone: 0, cxl: 0, soon: Infinity, tz: (o.tz && o.tz(c)) || (dir === 'dep' ? f._arrTz || null : null), raw: text, read: read });
       p.n++;
       if (/cancel/.test(st)) { p.cxl++; return; }
       if (GONE.test(st)) { p.gone++; return; }
@@ -594,7 +599,7 @@
   //   o.measure(text, px) → width in px
   function layout(o) {
     var view = o.view, W = o.W, H = o.H, full = !!o.full, measure = o.measure, top = Math.max(0, +o.top || 0);
-    var out = { full: full, hub: null, routes: [], dots: [], arrows: [], leaders: [], labels: [], knockouts: [], unplaced: [], tooNear: [], placed: 0 };
+    var out = { full: full, hub: null, routes: [], dots: [], arrows: [], leaders: [], labels: [], knockouts: [], unplaced: [], tooNear: [], gaveWay: [], placed: 0 };
     var A = vec(o.here[0], o.here[1]), a = toScreen(A, view);
     // ONE route and one name per place: places that share every language's
     // name and stand together (Montréal: YUL and MET) are one
@@ -784,33 +789,43 @@
     var hz = full ? 40 : 16;                                   // the airport's clear zone
     if (!a.hidden) boxes.push({ x0: a.x - hz, y0: a.y - hz, x1: a.x + hz, y1: a.y + hz });
     var dots = groups.filter(inPicture);
-    dots.forEach(function (g) { boxes.push({ x0: g.q.x - 7, y0: g.q.y - 7, x1: g.q.x + 7, y1: g.q.y + 7, own: g }); });
+    dots.forEach(function (g) { boxes.push({ x0: g.q.x - 7, y0: g.q.y - 7, x1: g.q.x + 7, y1: g.q.y + 7, own: g, mark: true }); });
     // every place's dot in the picture: a name must read as its own place's,
     // never as the name of a dot nearer it
     var dotAt = dots.map(function (g) { return { g: g, x: g.q.x, y: g.q.y }; });
     // the arrow where a route leaves the picture is kept clear of other names
-    signs.forEach(function (sg) { var e = sg.lead.edge; boxes.push({ x0: e.x - 8, y0: e.y - 8, x1: e.x + 8, y1: e.y + 8, own: sg.lead }); });
-    function free(b, self) {
+    signs.forEach(function (sg) { var e = sg.lead.edge; boxes.push({ x0: e.x - 8, y0: e.y - 8, x1: e.x + 8, y1: e.y + 8, own: sg.lead, mark: true }); });
+    // (`give`: a place's second search, below; a dot or arrow of a place left
+    // off is not drawn, and keeps nothing clear)
+    function free(b, self, give) {
       // a name stands NAME_TOP px under the last row: never read as a row's
       if (b.x0 < 10 || b.x1 > W - 10 || b.y0 < top + NAME_TOP || b.y1 > H - 2) return false;
       for (var i = 0; i < boxes.length; i++) {
-        var q = boxes[i]; if (q.own === self) continue;
+        var q = boxes[i]; if (q.own === self || (q.mark && q.own.unplaced)) continue;
         // two names keep a word space apart, and a line apart
-        if (b.x0 < q.x1 + 12 && b.x1 > q.x0 - 12 && b.y0 < q.y1 + 4 && b.y1 > q.y0 - 4) return false;
+        if (b.x0 < q.x1 + 12 && b.x1 > q.x0 - 12 && b.y0 < q.y1 + 4 && b.y1 > q.y0 - 4) {
+          if (give && q.mark && q.own.ord > self.ord) { if (give.indexOf(q.own) < 0) give.push(q.own); continue; }
+          return false;
+        }
       }
       return true;
     }
     signs.forEach(function (sg) { dots.push(sg.lead); });
     dots.sort(function (x, y) { return x.rank - y.rank; });
+    dots.forEach(function (g, i) { g.ord = i; });               // the page's order: who gives way to whom
     function boxDist(b, x, y) { return Math.hypot(clamp(x, b.x0, b.x1) - x, clamp(y, b.y0, b.y1) - y); }
     // the nearest OTHER dot to a name, when it is as near as the name's own
-    // point (or nearer, less AMBIG px): the name could be read as that place's
-    function rival(b, g, pt) {
+    // point (or nearer, less AMBIG px): the name could be read as that place's.
+    // With `give` (a place's second search), the dots of places after it on
+    // the page are passed over and listed there instead: they give way.
+    function rival(b, g, pt, give) {
       var own = boxDist(b, pt.x, pt.y), mates = g.sign ? g.sign.members : [g], hit = null;
       dotAt.forEach(function (d) {
         if (mates.indexOf(d.g) >= 0 || d.g.unplaced) return;
         var dd = boxDist(b, d.x, d.y);
-        if (dd < own + AMBIG && (!hit || dd < hit.d)) hit = { d: dd, own: own };
+        if (!(dd < own + AMBIG)) return;
+        if (give && d.g.ord > g.ord) { if (give.indexOf(d.g) < 0) give.push(d.g); return; }
+        if (!hit || dd < hit.d) hit = { d: dd, own: own };
       });
       return hit;
     }
@@ -838,16 +853,35 @@
       var t = ((q[0] - p[0]) * sy - (q[1] - p[1]) * sx) / den, u = ((q[0] - p[0]) * ry - (q[1] - p[1]) * rx) / den;
       return t > 0 && t < 1 && u > 0 && u < 1;
     }
-    function leaderWrong(l, g) {
+    function leaderWrong(l, g, give) {
       var mates = g.sign ? g.sign.members : [g], vx = l[2] - l[0], vy = l[3] - l[1], L2 = vx * vx + vy * vy;
       for (var i = 0; i < dotAt.length; i++) {
         var d = dotAt[i]; if (mates.indexOf(d.g) >= 0 || d.g.unplaced) continue;
         var t = clamp(((d.x - l[0]) * vx + (d.y - l[1]) * vy) / (L2 || 1), 0, 1);
-        if (Math.hypot(l[0] + vx * t - d.x, l[1] + vy * t - d.y) < 6) return true;
+        if (Math.hypot(l[0] + vx * t - d.x, l[1] + vy * t - d.y) < 6) {
+          if (give && d.g.ord > g.ord) { if (give.indexOf(d.g) < 0) give.push(d.g); continue; }
+          return true;
+        }
       }
       for (var j = 0; j < out.leaders.length; j++) { var o = out.leaders[j]; if (segsCross(l, [o.x1, o.y1, o.x2, o.y2])) return true; }
       return false;
     }
+    // v24067 — and a leader line never runs through another place's name,
+    // nor a name over another place's leader line (Albany's line ran up
+    // through 'Cleveland' at Washington National): a segment through a box,
+    // `pad` px round it
+    function segHits(l, b, pad) {
+      var dx = l[2] - l[0], dy = l[3] - l[1], t0 = 0, t1 = 1;
+      var p = [-dx, dx, -dy, dy], q = [l[0] - (b.x0 - pad), (b.x1 + pad) - l[0], l[1] - (b.y0 - pad), (b.y1 + pad) - l[1]];
+      for (var i = 0; i < 4; i++) {
+        if (p[i] === 0) { if (q[i] < 0) return false; continue; }
+        var r = q[i] / p[i];
+        if (p[i] < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+      }
+      return t0 <= t1;
+    }
+    function leaderThroughName(l) { for (var i = 0; i < out.labels.length; i++) if (segHits(l, out.labels[i].box, 2)) return true; return false; }
+    function onLeader(b) { for (var i = 0; i < out.leaders.length; i++) { var o = out.leaders[i]; if (segHits([o.x1, o.y1, o.x2, o.y2], b, 2)) return true; } return false; }
     // the widest of the board's languages: a name keeps its place as the
     // board turns language
     function nameW(g, f) { var w = 0; g.names.forEach(function (s) { w = Math.max(w, measure(s, f)); }); return w; }
@@ -878,33 +912,50 @@
         dirs.forEach(function (c, ci) { cand.push({ al: c[0], dx: c[1], dy: c[2], cost: di * (full ? 6 : 10) + ci }); });
       });
       var spot = null, best = 1e12;
+      // a place an earlier one's name left off (below)
+      if (g.gaveWay) { out.unplaced.push(g.code); out.gaveWay.push([g.code, g.gaveWay]); return; }
       // two dots this close cannot be told apart: the place named first keeps
       // the spot, the other is left out with its route (the rows list it)
       var crowded = !isEdge && out.dots.some(function (d) { return Math.hypot(d.x - pt.x, d.y - pt.y) < DOT_GAP; });
-      if (out.placed < maxNames && !crowded) cand.forEach(function (c) {
-        var b = { x0: pt.x + c.dx, y0: pt.y + c.dy, x1: pt.x + c.dx + lw, y1: pt.y + c.dy + lh, own: g, al: c.al, px: pt.x, py: pt.y };
-        if (!free(b, g)) return;
-        var cost = crossings(b, g) * 1000 + c.cost;              // on a route: only if there is nowhere else
-        // another place's dot as near as this name's own: a leader line must
-        // say which dot it names, else the spot is not taken
-        var rv = rival(b, g, pt), lead = leaderOf(b, pt, !!rv && !isEdge);
-        if (rv) {
-          // v24067 — another place's dot CLEARLY nearer than the name's own
-          // (more than AMBIG px): at a glance the name is that dot's, line or
-          // no line ('Cincinnati' 13 px from St Louis's dot and 45 px from
-          // its own). Never there: elsewhere, or the place is left out (the
-          // rows list it). And a name at an arrow (which has no line to say
-          // which) never stands as near another dot as its arrow ('San Pedro
-          // Sula' read as Cancún's dot).
-          if (rv.d + AMBIG < rv.own) return;
-          if (isEdge) return;
-          if (!lead) return;
-          else cost += 150;
-        }
-        if (lead && !isEdge && leaderWrong(lead, g)) return;
-        if (lead && leaderCrosses(lead, g)) cost += 300;
-        if (cost < best) { best = cost; spot = b; spot.lead = lead; }
-      });
+      var search = function (give) {
+        if (out.placed >= maxNames || crowded) return;
+        cand.forEach(function (c) {
+          var b = { x0: pt.x + c.dx, y0: pt.y + c.dy, x1: pt.x + c.dx + lw, y1: pt.y + c.dy + lh, own: g, al: c.al, px: pt.x, py: pt.y };
+          var gv = give ? [] : null;
+          if (!free(b, g, gv) || onLeader(b)) return;
+          var cr = crossings(b, g), cost = cr * 1000 + c.cost;      // on a route: only if there is nowhere else
+          // another place's dot as near as this name's own: a leader line must
+          // say which dot it names, else the spot is not taken
+          var rv = rival(b, g, pt, gv), lead = leaderOf(b, pt, !!rv && !isEdge);
+          if (rv) {
+            // v24067 — another place's dot CLEARLY nearer than the name's own
+            // (more than AMBIG px): at a glance the name is that dot's, line or
+            // no line ('Cincinnati' 13 px from St Louis's dot and 45 px from
+            // its own). Never there: elsewhere, or the place is left out (the
+            // rows list it). And a name at an arrow (which has no line to say
+            // which) never stands as near another dot as its arrow ('San Pedro
+            // Sula' read as Cancún's dot).
+            if (rv.d + AMBIG < rv.own) return;
+            if (isEdge) return;
+            if (!lead) return;
+            else cost += 150;
+          }
+          if (lead && !isEdge && (leaderWrong(lead, g, gv) || leaderThroughName(lead))) return;
+          if (lead && leaderCrosses(lead, g)) cost += 300;
+          if (gv) cost += gv.length * 1e7;                         // as few as can be give way
+          if (cost < best) { best = cost; spot = b; spot.lead = lead; spot.give = gv; spot.cross = cr; }
+        });
+      };
+      // THE PAGE'S ORDER DECIDES WHO GIVES WAY (v24067). A name takes a spot
+      // that no other place's dot or arrow is in the way of or makes
+      // ambiguous; failing that, one where only those of places after it on
+      // the page are, and those places are left off instead (the fewest of
+      // them). A place never gives way to one after it (Fort Simpson, fourth
+      // on Yellowknife's page, was left off for Norman Wells, fifth, and
+      // Kugluktuk, ninth).
+      search(false);
+      if (!spot) search(true);
+      if (spot && spot.give) spot.give.forEach(function (h) { h.gaveWay = g.code; (h.sign ? h.sign.members : [h]).forEach(function (m) { m.unplaced = true; }); });
       var op = g.done && !g.isNext ? 0.55 : 1;
       // no room for the name: its route and dot are not drawn either
       if (!spot) { g.unplaced = true; (g.sign ? g.sign.members : [g]).forEach(function (m) { m.unplaced = true; }); out.unplaced.push(g.code); return; }
@@ -915,7 +966,7 @@
       else out.arrows.push({ x: pt.x, y: pt.y, ang: g.edgeAng || 0, len: full ? 13 : 10, op: list ? 1 : op, code: g.code });
       if (spot.lead && !isEdge) out.leaders.push({ x1: spot.lead[0], y1: spot.lead[1], x2: spot.lead[2], y2: spot.lead[3], op: op });
       // never a name on a visible line: the routes are cut away under it
-      if (best >= 1000) out.knockouts.push({ x0: spot.x0 - 5, y0: spot.y0 - 4, x1: spot.x1 + 5, y1: spot.y1 + 4 });
+      if (spot.cross) out.knockouts.push({ x0: spot.x0 - 5, y0: spot.y0 - 4, x1: spot.x1 + 5, y1: spot.y1 + 4 });
       var L = { code: g.code, at: { x: pt.x, y: pt.y }, edge: isEdge, box: { x0: spot.x0, y0: spot.y0, x1: spot.x1, y1: spot.y1 }, op: list ? 1 : op, rows: [] };
       var clockAt = function (cx, cy, rr, s) { return { cx: cx, cy: cy, r: rr, hands: handsOf(s) }; };
       if (list) {
@@ -991,12 +1042,15 @@
   }
   // the code a row names: its own (data-iata), else the code its city label
   // ends with ('Chicago · O'Hare | ORD': the board found it from the name
-  // for the row's code chip, and not for the row itself)
-  function rowCode(iata, loc) {
+  // for the row's code chip, and not for the row itself), else the one
+  // `read(words)` finds in its words (the board's _iataFromRowName:
+  // 'Harrisburg, PA', 'St Hubert'), for the map only
+  function rowCode(iata, loc, read) {
     var c = String(iata || '').trim().toUpperCase();
     if (c) return c;
     var m = /\|\s*([A-Z]{3})\s*$/.exec(String(loc || ''));
-    return m ? m[1] : '';
+    if (m) return m[1];
+    try { return read ? String(read(String(loc || '')) || '').toUpperCase() : ''; } catch (e) { return ''; }
   }
 
   var Core = {
@@ -1042,6 +1096,9 @@
   function boardDir() { try { /* global mode */ return (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep'; } catch (e) { return 'dep'; } }
   function boardRows(dir) { try { /* global data */ return (typeof data !== 'undefined' && data && data[dir]) || []; } catch (e) { return []; } }
   function realCode(c) { try { if (typeof _realIata === 'function') return String(_realIata(c) || c).toUpperCase(); } catch (e) {} return c; }
+  // the code the board's map reading finds in a row's words (fids-core.js
+  // _iataFromRowName), for a row with no code of its own
+  function rowWords(t) { try { /* global _iataFromRowName */ if (typeof _iataFromRowName === 'function') return _iataFromRowName(t) || ''; } catch (e) {} return ''; }
   function S() { return root.BoardStrings || null; }
   // the language on screen, and the board's languages (a name is placed by
   // the widest of them)
@@ -1486,8 +1543,18 @@
   var cur = null, P = null, here = null, ground = [16, 40, 80], painted = false, retryAt = 0, lastLayout = null, bare = false;
   var pend = null, viewMemo = {}, shapeStore = { dep: {}, arr: {} }, shapeDay = '', spaceH = 0, fitSig = '';
   //   showE    the floor whose planet is on screen (its names are the ones drawn)
-  //   drawn    what the names on screen were drawn for: { e, list, wsig }
-  var showE = null, drawn = null, fillMemo = { key: '', list: null };
+  //   drawn    what the names on screen were drawn for: { e, list, wsig, pk }
+  //            (pk: the floor and page its places were chosen for)
+  var showE = null, drawn = null;
+  // the places each page's floor names (fillNames: up to 7 layouts), kept
+  // per floor, page and set of languages, so a board turning its pages round
+  // or its languages back and forth lays each out once
+  var fillMemo = {}, fillKeys = [];
+  function memoGet(k) { return Object.prototype.hasOwnProperty.call(fillMemo, k) ? fillMemo[k] : null; }
+  function memoSet(k, v) {
+    if (!memoGet(k)) { fillKeys.push(k); if (fillKeys.length > 24) delete fillMemo[fillKeys.shift()]; }
+    fillMemo[k] = v;
+  }
   // a planet goes on screen in place of the one there, in one step: it stands
   // at the foot of the layer at its own size, so a floor kept up while the
   // next is built is never stretched (a taller one is cut at its top edge, a
@@ -1557,7 +1624,7 @@
     var out = [], seen = {};
     try {
       Array.prototype.forEach.call(doc.querySelectorAll('#fidsTable tr[data-flight][data-iata]'), function (tr) {
-        var c = realCode(rowCode(tr.getAttribute('data-iata'), tr.getAttribute('data-loc')));
+        var c = realCode(rowCode(tr.getAttribute('data-iata'), tr.getAttribute('data-loc'), rowWords));
         if (c && !seen[c]) { seen[c] = 1; out.push(c); }
       });
     } catch (e) {}
@@ -1565,7 +1632,7 @@
   }
   function placesNow() {
     var dir = boardDir();
-    return placesFrom(boardRows(dir), { dir: dir, ap0: AP0, now: Date.now(), coords: coordsOf, tz: apTz, real: realCode });
+    return placesFrom(boardRows(dir), { dir: dir, ap0: AP0, now: Date.now(), coords: coordsOf, tz: apTz, real: realCode, codeOf: rowWords });
   }
   // the places one floor draws, each with its name in every language
   // the places a floor shows: on a full floor the rows above it, on a strip
@@ -1577,11 +1644,21 @@
     var pg = onPage(P.list, pageCodes());
     return all ? pg : pg.slice(0, capFor(h));
   }
+  // a place the map read from a row's words ('Montreal-Trdeau', 'Harrisburg,
+  // PA') is named as the board names its airport, through formatCityIata in
+  // the language on screen like every name here; the row's words only where
+  // the board has no name for it ('Ft Mackay/Firebag')
+  function ownName(p) {
+    if (!p.read) return p.raw;
+    var n = ''; try { if (typeof airportCityNameSafe_v21877 === 'function') n = airportCityNameSafe_v21877(p.code, 'en'); } catch (e) {}
+    return n || p.raw;
+  }
   function named(list) {
     var langs = boardLangsNow(), cur0 = shownLang();
     return list.map(function (p) {
-      var names = langs.map(function (l) { return cityName(p.code, p.raw, l); });
-      var name = cityName(p.code, p.raw, cur0 || undefined);
+      var raw = ownName(p);
+      var names = langs.map(function (l) { return cityName(p.code, raw, l); });
+      var name = cityName(p.code, raw, cur0 || undefined);
       if (names.indexOf(name) < 0) names.push(name);
       return { code: p.code, lat: p.lat, lon: p.lon, tz: p.tz, isNext: p.isNext, done: p.done, rank: p.rank, n: p.n, name: name, names: names };
     });
@@ -1608,7 +1685,10 @@
     var dir = P ? P.dir : boardDir(), rows = boardRows(dir);
     return dir + '|' + rows.map(function (f) { return f._locIata + ':' + f.status; }).join(',') + '|' + shownLang() + '|' + boardLangsNow().join(',') + '|' + (P && P.next ? P.next.code : '') + '|' + pageCodes().join(',') + '|' + Math.round(hiddenTop());
   }
-  function drawOverlay() {
+  // quick: inside a change of languages, or a check of the words: never a
+  // refill there (the words at once; the places the floor named, or its
+  // page's first up to the cap, and the refill at the next one-second look)
+  function drawOverlay(quick) {
     var e = showE;
     if (!e || !e.ready || !P || !here || e.H < MIN_ROUTES) { render(null); drawn = null; return; }
     var at = nowFor(apTz(AP0)), t0 = performance.now(), wsig = wordsSig(), full = e.H >= MIN_FULL;
@@ -1623,16 +1703,19 @@
     // the current floor names this page's places (up to its cap of names:
     // fillNames); a floor kept up while the next is lit keeps the places it
     // named (only its words follow the board)
-    var list;
+    var list, pk = '', later = false;
     if (e === cur || !drawn || drawn.e !== e) {
-      var pool = viewPlaces(e.md, e.H, true), fk = e.key + '|' + hiddenTop(e) + '|' + pool.map(function (p) { return p.code + (p.done ? '~' : '') + (p.isNext ? '!' : ''); }).join(',') + '|' + wsig.replace(/\|\d+$/, '');
-      if (full && fillMemo.key === fk) { list = fillMemo.list; lastLayout = run(list); }
-      else if (full) { var fl = fillNames(pool, capFor(e.H), run); list = fl.list; lastLayout = fl.L; fillMemo = { key: fk, list: list }; }
-      else { list = pool; lastLayout = run(list); }
-    } else { list = drawn.list; lastLayout = run(list); }
+      var pool = viewPlaces(e.md, e.H, true);
+      pk = e.key + '|' + hiddenTop(e) + '|' + pool.map(function (p) { return p.code + (p.done ? '~' : '') + (p.isNext ? '!' : ''); }).join(',');
+      var fk = pk + '|' + boardLangsNow().join(',') + '|' + (clock24() ? 24 : 12), hit = full ? memoGet(fk) : null;
+      if (!full) { list = pool; lastLayout = run(list); }
+      else if (hit) { list = hit; lastLayout = run(list); }
+      else if (quick) { list = (drawn && drawn.e === e && drawn.pk === pk) ? drawn.list : pool.slice(0, capFor(e.H)); lastLayout = run(list); later = true; }
+      else { var fl = fillNames(pool, capFor(e.H), run); list = fl.list; lastLayout = fl.L; memoSet(fk, list); }
+    } else { list = drawn.list; pk = drawn.pk; lastLayout = run(list); }
     render(lastLayout, e.W, e.H);
-    drawn = { e: e, list: list, wsig: wsig };
-    if (e === cur) LSIG = layoutSig();
+    drawn = { e: e, list: list, wsig: wsig, pk: pk };
+    if (e === cur) LSIG = later ? '' : layoutSig();
     stats.overlays++; stats.overlayMs += performance.now() - t0;
   }
   // the words on the floor on screen, drawn again when the board's languages,
@@ -1640,7 +1723,7 @@
   function refreshWords() {
     if (!drawn || drawn.wsig === wordsSig()) return;
     if (drawn.e !== showE) { render(null); drawn = null; return; }
-    drawOverlay();
+    drawOverlay(true);
   }
   // THE PLAN FOR A FLOOR SIZE: what it shows and the view it is drawn in.
   // A full floor is framed for its direction's places (shapersOf: the whole
@@ -1814,6 +1897,9 @@
       var B0 = S();
       if (B0 && typeof B0.onLangs === 'function') B0.onLangs(function () { if (disabled || !layer) return; try { refreshWords(); } catch (err) { fail(err); } });
     } catch (e) {}
+    // and the language on screen turned (the board's paging clock and its
+    // rotation timer call this: fids-core.js _shownLangChanged)
+    root.ocfEarthWords = function () { if (disabled || !layer) return; try { refreshWords(); } catch (err) { fail(err); } };
     // review aids
     root.__ocfEarth = function () {
       var mem = blobBytes;
@@ -1824,7 +1910,7 @@
         view: cur && cur.view ? { psi: cur.view.psi, delta: cur.view.delta, R: Math.round(cur.view.R), cx: Math.round(cur.view.cx), cy: Math.round(cur.view.cy) } : null,
         cache: cache.map(function (x) { return x.key.split('|')[0] + (x.ready ? '' : '~') + (x.day ? '' : '-'); }),
         // labels: [code, x0, y0, x1, y1, at an arrow (1) or a dot (0), its point x, y]
-        layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1), l.edge ? 1 : 0, Math.round(l.at.x), Math.round(l.at.y)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear,
+        layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1), l.edge ? 1 : 0, Math.round(l.at.x), Math.round(l.at.y)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear, gaveWay: lastLayout.gaveWay,
           dots: lastLayout.dots.map(function (d) { return [d.code, Math.round(d.x), Math.round(d.y)]; }), arrows: (lastLayout.arrows || []).map(function (w) { return [w.code, Math.round(w.x), Math.round(w.y)]; }), leaders: lastLayout.leaders.length } : null,
         stats: stats };
     };

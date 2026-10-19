@@ -28322,6 +28322,8 @@ const CITY = {
   PHX:'PHOENIX',        SFO:'SAN FRANCISCO',  IAD:'WASHINGTON',  DCA:'WASHINGTON',
   DTW:'DETROIT',        MSP:'MINNEAPOLIS',    CLT:'CHARLOTTE',    IAH:'HOUSTON',
   MCO:'ORLANDO',        TPA:'TAMPA',          FLL:'FORT LAUDERDALE',PBI:'WEST PALM BEACH',
+  // v24067 — West Palm Beach's code since 18 August 2026 (_IATA_RENAMED)
+  DJT:'WEST PALM BEACH',
   RSW:'FORT MYERS',     SRQ:'SARASOTA',       PHL:'PHILADELPHIA', BWI:'BALTIMORE',
   RDU:'RALEIGH',        BNA:'NASHVILLE',      AUS:'AUSTIN',       SAN:'SAN DIEGO',
   PDX:'PORTLAND',    SLC:'SALT LAKE CITY', HNL:'HONOLULU',     OGG:'MAUI',
@@ -28416,7 +28418,8 @@ const CITY = {
   SAW:'ISTANBUL',TIJ:'TIJUANA',
   YBR:'BRANDON',        YCB:'CAMBRIDGE BAY',     YCG:'CASTLEGAR',
   YCH:'MIRAMICHI',      YDA:'DAWSON CITY',       YEK:'ARVIAT',
-  YEV:'INUVIK',         YGW:'CHISASIBI',         YHU:'MONTRÉAL',
+  // v24067 — YGW is Kuujjuarapik (where its position always stood); Chisasibi is YKU
+  YEV:'INUVIK',         YGW:'KUUJJUARAPIK',      YHU:'MONTRÉAL',
   YHY:'HAY RIVER',      YKL:'SCHEFFERVILLE',     YKZ:'BUTTONVILLE',
   YLL:'LLOYDMINSTER',   YMJ:'MOOSE JAW',         YMO:'MOOSONEE',
   YNA:'NATASHQUAN',     YOC:'OLD CROW',          YOJ:'HIGH LEVEL',
@@ -29166,6 +29169,8 @@ const CITY_FR = {
   DCA:'WASHINGTON',    DTW:'DÉTROIT',            MSP:'MINNEAPOLIS',
   CLT:'CHARLOTTE',         IAH:'HOUSTON',            MCO:'ORLANDO',
   TPA:'TAMPA',             FLL:'FORT LAUDERDALE',     PBI:'WEST PALM BEACH',
+  // v24067 — West Palm Beach's code since 18 August 2026 (_IATA_RENAMED)
+  DJT:'WEST PALM BEACH',
   PHL:'PHILADELPHIE',      BWI:'BALTIMORE',          RDU:'RALEIGH',
   BNA:'NASHVILLE',         AUS:'AUSTIN',             SAN:'SAN DIEGO',
   PDX:'PORTLAND',          SLC:'SALT LAKE CITY',     HNL:'HONOLULU',
@@ -32770,73 +32775,21 @@ function normalizeDisplayCity(raw, iata) {
 // blemish, a WRONG airport code on a departure board is a passenger in the
 // wrong city.
 var _CITY2IATA = null;
+// v24067 — DJT is West Palm Beach's code since 18 August 2026 (PBI before
+// it): one airport, named in every table as PBI is (CITY.DJT, CITY_FR.DJT).
+// The feeds now send DJT, with words no city reads ('Djt', 'West Palm Beach
+// Donald J. Trump Intl'); a row of it now prints 'West Palm Beach'. The name
+// index below keeps reading 'West Palm Beach' as PBI, as it did, rather than
+// as a name with two codes.
+var _IATA_RENAMED = { DJT: 'PBI' };
 // Feed phrasings that aren't in our display tables at all (their airports had
 // no entry, which is why these rows arrived raw and code-less).
 var _CITY2IATA_ALIAS = {
   gulfportbiloxi: 'GPT', gulfport: 'GPT',
   bentonvillefayetteville: 'XNA', northwestarkansas: 'XNA',
   pensacola: 'PNS', syracuse: 'SYR',
-  raleighdurham: 'RDU', raleighdurhamnc: 'RDU',
-  // v24067 — rows the overnight sweep of every airport's board found with no
-  // code (2026-10-19): Pascan's 'St Hubert' at Québec is Montréal
-  // Saint-Hubert; Porter's 'Toronto Centre-Ville' is Billy Bishop (the city
-  // centre airport); 'Ft Mackay/Firebag' is the Firebag aerodrome; Norman
-  // Wells has no name of its own in our tables. 'Cincinnati, OH' is the
-  // Cincinnati airport (CVG, across the river in Kentucky): the state does
-  // not settle it, because Lunken (LUK), also named Cincinnati, is in Ohio.
-  sthubert: 'YHU', sainthubert: 'YHU', torontocentreville: 'YTZ',
-  ftmackayfirebag: 'YFI', fortmackayfirebag: 'YFI', firebag: 'YFI',
-  normanwells: 'YVQ', cincinnatioh: 'CVG'
+  raleighdurham: 'RDU', raleighdurhamnc: 'RDU'
 };
-// v24067 — THE SPELLINGS FEEDS WRITE THAT NO WHOLE NAME MATCHES. Each is
-// tried only when the whole name finds nothing, and none ever picks one
-// airport of a name that has two (tests/earth-floor-places.test.js holds
-// every rule to the whole index):
-//   'Harrisburg, PA'   the US state or Canadian province after a comma:
-//                      only an airport of that name inside that state
-//                      (its box, _REGION_BOX), and only if exactly one is.
-//                      Washington, DC is left out (Reagan and Dulles).
-//   'Ft McMurray'      St/Ste/Ft/Mt and Saint/Sainte/Fort/Mount, either way
-//   'Whitehorse, Calgary', 'Inuvik, Yellowknife, Norman Wells'
-//                      a list of stops: the first, when every one is a place
-//                      we know and none is a country or a province
-//                      ('Hamilton, Bermuda' is not two stops: _NOT_A_STOP)
-//   'Montreal-Trdeau'  a city and its airport's own short name (AP sub)
-//                      one letter off, among that city's airports only
-// The boxes: each state's and province's airports in OurAirports
-// (ourairports.com/data, public domain), their furthest north, south, east
-// and west, rounded out to 0.1 degree: [south, north, west, east].
-var _REGION_BOX = {
-  AB: [48.9, 59.7, -119.9, -109.9], AK: [51.8, 71.4, -176.7, -129.9], AL: [30.1, 35.1, -88.5, -84.8],
-  AR: [32.9, 36.6, -94.7, -89.7], AZ: [31.2, 37.1, -114.8, -109], BC: [48.3, 59.9, -136.7, -114.8],
-  CA: [32.5, 42, -124.3, -114.1], CO: [37, 41.1, -109.1, -102], CT: [41.1, 42.1, -73.6, -71.7],
-  DE: [38.4, 39.8, -75.8, -75], FL: [24.5, 31.1, -87.6, -80], GA: [30.6, 35.1, -85.6, -81],
-  HI: [19.6, 24, -159.9, -154.9], IA: [40.4, 43.6, -96.5, -90.1], ID: [41.9, 49.1, -117.2, -111],
-  IL: [37, 42.6, -91.5, -87.4], IN: [37.8, 41.9, -88, -84.7], KS: [36.9, 40, -102.1, -94.5],
-  KY: [36.4, 39.1, -89.4, -82.2], LA: [28.9, 33.1, -94.1, -89.1], MA: [41.2, 43, -73.5, -69.9],
-  MB: [49, 59.8, -101.9, -90], MD: [37.9, 39.8, -79.6, -75], ME: [43, 47.5, -71.1, -66.9],
-  MI: [41.6, 47.3, -90.2, -82.4], MN: [43.4, 49.4, -97.1, -90.3], MO: [35.9, 40.7, -95.7, -89.1],
-  MS: [30.2, 35.1, -91.4, -88.1], MT: [44.6, 49.1, -116.1, -104], NB: [44.6, 48.1, -68.6, -64.3],
-  NC: [33.8, 36.6, -84, -75.5], ND: [45.9, 49.1, -104.1, -96.5], NE: [39.9, 43, -104.1, -95.5],
-  NH: [42.6, 45, -72.5, -70.7], NJ: [38.9, 41.3, -75.6, -73.9], NL: [47, 58.6, -67, -52.7],
-  NM: [31.4, 37.1, -109.1, -103], NS: [43.5, 46.4, -66.5, -59.8], NT: [59.8, 72.1, -135.1, -102.4],
-  NU: [61, 83.2, -116.3, -62.2], NV: [35.2, 42.1, -120.1, -114], NY: [40.5, 45.1, -79.8, -71.8],
-  OH: [38.3, 41.9, -84.9, -80.4], OK: [33.7, 37.1, -102.6, -94.4], ON: [41.7, 56.1, -94.8, -74.3],
-  OR: [41.9, 46.3, -124.6, -116.4], PA: [39.6, 42.3, -80.6, -74.8], PE: [46.2, 46.5, -63.9, -62.5],
-  QC: [44.9, 62.5, -79.5, -57.1], RI: [41.1, 42, -71.9, -71], SC: [32, 35.3, -83.1, -78.6],
-  SD: [42.4, 46.1, -104.1, -96.4], SK: [48.9, 59.9, -110, -101.4], TN: [34.9, 36.7, -90.2, -81.7],
-  TX: [25.8, 36.6, -106.5, -93.6], UT: [36.9, 42.1, -114.1, -109], VA: [36.4, 39.5, -83.3, -75.3],
-  VT: [42.7, 45.1, -73.5, -71.7], WA: [45.5, 49.1, -124.7, -116.9], WI: [42.4, 47, -92.9, -86.8],
-  WV: [37.2, 40.7, -82.7, -77.7], WY: [40.9, 45.1, -111.1, -104], YT: [60, 69.7, -141, -128.2]
-};
-// Names in our tables (written here as the tables write them) that are also
-// a country's, a territory's, a state's or a province's (OurAirports'
-// lists): in a comma list they are where a place is, not another stop
-var _NOT_A_STOP = {};
-['ANGUILLA', 'ARMENIA', 'ARUBA', 'BAHRAIN', 'BARBADOS', 'BELIZE', 'BERMUDA', 'CURACAO', 'DOMINICA', 'EL SALVADOR',
- 'FAROE ISLANDS', 'GIBRALTAR', 'GRENADA', 'GUATEMALA', 'GUERNSEY', 'HONG KONG', 'ISLE OF MAN', 'Kuwait', 'LEBANON',
- 'LIBERIA', 'LUXEMBOURG', 'MALTA', 'MEXICO', 'NEW YORK', 'ONTARIO', 'QUÉBEC', 'SAINT-MARTIN', 'SINGAPORE',
- 'WASHINGTON'].forEach(function (n) { _NOT_A_STOP[_normCityKey(n)] = 1; });
 // Accents are folded before anything else is dropped. Without that, the
 // accented letter itself was dropped: our tables write 'ÎLES-DE-LA-MADELEINE',
 // 'SEPT-ÎLES' and 'MONTRÉAL', which keyed as 'lesdelamadeleine', 'septles',
@@ -32849,18 +32802,11 @@ function _normCityKey(s) {
 function _iataFromCityName(name) {
   var k = _normCityKey(name);
   if (k.length < 3) return '';
-  _cityIndex();
-  if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
-  var hit = _CITY2IATA[k];
-  if (hit === '!') return '';
-  return hit || _iataFromSpelling(String(name == null ? '' : name));
-}
-function _cityIndex() {
   if (!_CITY2IATA) {
     _CITY2IATA = {};
     var add = function (code, nm) {
       var kk = _normCityKey(nm);
-      if (!kk || kk.length < 3) return;
+      if (!kk || kk.length < 3 || _IATA_RENAMED[String(code).toUpperCase()]) return;
       if (!_CITY2IATA[kk]) _CITY2IATA[kk] = String(code).toUpperCase();
       else if (_CITY2IATA[kk] !== String(code).toUpperCase()) _CITY2IATA[kk] = '!'; // ambiguous — never resolve
     };
@@ -32868,54 +32814,172 @@ function _cityIndex() {
     try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
     try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
   }
-  return _CITY2IATA;
+  if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
+  var hit = _CITY2IATA[k];
+  return (hit && hit !== '!') ? hit : '';
 }
-// every code a name is ours for (the index keeps only one, or '!')
-var _CITY2IATA_ALL = null;
-function _cityCodesAll(k) {
-  if (!_CITY2IATA_ALL) {
-    _CITY2IATA_ALL = {};
+
+// v24067 — THE MAP'S READING OF A ROW WITH NO CODE (fids-earth.js rowCode).
+// Some feeds write a destination in a way no whole name of ours matches, so
+// the row has no code and the map under the rows drew no route to it (the
+// overnight sweep of every airport's board, 2026-10-19). _iataFromRowName
+// reads these FOR THE MAP ONLY: the rows keep their own words and their
+// missing code (_iataFromCityName above is unchanged), so a row's weather,
+// gate, aircraft and route checks are what they were. Each rule is tried
+// only when the whole name finds nothing, and none ever picks one airport of
+// a name that has two (tests/earth-floor-places.test.js holds every rule to
+// the whole index):
+//   'Harrisburg, PA'   a US state or Canadian province after a comma: the
+//                      one airport of that name that OurAirports places in
+//                      that state or province (_ROW_REGION), if exactly one
+//                      is. Washington, DC is left out (Reagan and Dulles).
+//   'Ft McMurray'      St/Ste/Ft/Mt and Saint/Sainte/Fort/Mount, either way
+//   'Montreal-Trdeau'  a city and its airport's own short name (AP sub)
+//                      one letter off, among that city's airports only
+//   and the spellings in _ROW_NAME_ALIAS.
+// A list of stops ('Whitehorse, Calgary') is not read: the feeds disagree
+// on which of its names is the destination (Edmonton's writes it first,
+// Orlando's coded rows last), so the map draws no route rather than a wrong
+// one.
+// Pascan's 'St Hubert' at Québec is Montréal Saint-Hubert; Porter's 'Toronto
+// Centre-Ville' is Billy Bishop (the city centre airport); 'Ft Mackay/
+// Firebag' is the Firebag aerodrome; Norman Wells has no name of its own in
+// our tables. 'Cincinnati, OH' is the Cincinnati airport (CVG, across the
+// river in Kentucky): read by its state, it would be Lunken (LUK), the one
+// airport named Cincinnati in Ohio.
+var _ROW_NAME_ALIAS = {
+  sthubert: 'YHU', sainthubert: 'YHU', torontocentreville: 'YTZ',
+  ftmackayfirebag: 'YFI', fortmackayfirebag: 'YFI', firebag: 'YFI',
+  normanwells: 'YVQ', cincinnatioh: 'CVG'
+};
+// Each US state's and Canadian province's airports among ours, by
+// OurAirports' region (ourairports.com/data, public domain, iso_region), and
+// only where the board's own position for the code agrees (YMU is left out:
+// OurAirports gives it to a seaplane base in British Columbia, our tables to
+// Musselwhite, Ontario). Québec's are BoardStrings.FR_FIRST, the board's one
+// list of them (the same OurAirports region).
+var _ROW_REGION = {
+  AB: 'YEG YLL YMM YOJ YPE YPY YQF YQL YQU YXH YYC',
+  AK: 'ABL ADK ADQ AET AGN AIN AKB AKI AKK AKN AKP ALZ ANC ANI ANV AOS ARC ATK ATT AUK BET BKC BKF BRW ' +
+      'BTI BTT CDB CDV CEM CGA CHU CIK CKD CKX CLP CYF CYM CYT DIO DLG DRG DUT EAA EDA EEK EGX ELI ELV ' +
+      'EMK ENA EXI FAI FNR FYU GAL GAM GKN GLV GNU GST HCR HNH HNS HOM HPB HSL HUS HYG HYL IAN IGG IKO ' +
+      'ILI IRC JNU KAE KAL KBC KCC KCG KCQ KEB KFP KGK KGX KKA KKB KKH KKI KLG KLN KLW KMO KMY KNK KNW ' +
+      'KOT KOY KOZ KPB KPN KPR KPV KPY KQA KSM KTB KTN KTS KUK KVC KVL KWK KWN KWP KWT KXA KYK KYU KZB ' +
+      'LMA LUR MCG MLL MLY MNT MOU MRI MTM MYK MYU NCN NIB NKI NLG NME NUI NUL NUP OBU OLH OME OOK ORI ' +
+      'ORT ORV OTZ PDB PEC PGM PHO PIP PIZ PKA PPV PQS PSG PTA PTD PTH PTU RBY RDV RMP RSH SCC SCM SDP ' +
+      'SGY SHG SHH SIT SKK SLQ SMK SNP SOV SRV STG SVA SVS SXP SYB TAL TCT TEK TKE TKJ TLA TLT TNC TNK ' +
+      'TOG TWA UGI UNK UTO VAK VDZ VEE WAA WBB WBQ WFB WHD WKK WLK WMO WNA WRG WSN WTK WTL WWP WWT YAK',
+  AL: 'BHM DHN HSV MGM MOB MSL',
+  AR: 'ELD FSM HOT HRO JBR LIT TXK XNA',
+  AZ: 'AZA FLG GCN HII PGA PHX PRC SOW TUS YUM',
+  BC: 'YAZ YBL YCD YCG YDQ YKA YLW YPR YQQ YVR YXC YXJ YXS YXT YXX YYD YYF YYJ YZP YZT',
+  CA: 'ACV BFL BIH BUR CCR CEC CLD FAT HHR IPL LAX LGB MCE MMH MRY OAK ONT PSP RDD SAN SBA SBD SBP SCK ' +
+      'SFO SJC SMF SMX SNA SQL STS TKF',
+  CO: 'ALS ASE BJC CEZ COS DEN DRO EGE GJT GUC HDN MTJ PUB TEX',
+  CT: 'BDL HVN',
+  DE: 'DOV ILG',
+  FL: 'DAB DSI ECP EYW FLL GNV JAX LAL MCO MIA MLB OPF PGD PIE PNS RSW SFB SRQ TLH TPA UST VPS VRB',
+  GA: 'ABY AGS ATL BQK CSG MCN PDK SAV VLD',
+  HI: 'HNL HNM ITO JHM KOA LIH LNY LUP MKK MUE OGG',
+  IA: 'ALO BRL CID DBQ DSM FOD MCW SUX',
+  ID: 'BOI IDA LWS MYL PIH SMN SUN TWF',
+  IL: 'BLV BMI CMI DEC MDW MLI MWA ORD PIA RFD SPI UIN',
+  IN: 'EVV FWA GYY IND LAF MGC SBN',
+  KS: 'DDC GCK HYS ICT LBL MHK SLN',
+  KY: 'CVG LEX OWB PAH SDF',
+  LA: 'AEX BTR LCH LFT MLU MSY SHV',
+  MA: 'ACK BED BOS EWB HYA MVY ORH PVC',
+  MB: 'YBR YTH YWG',
+  MD: 'BWI HGR OCE SBY',
+  ME: 'AUG BGR BHB PQI PWM RKD',
+  MI: 'APN AZO CIU CMX DTW ESC FNT GRR IMT IWD LAN MBL MBS MKG MQT PLN TVC',
+  MN: 'BJI BRD DLH HIB INL MSP RST STC TVF',
+  MO: 'BKG CGI COU IRK JLN MCI SGF STL TBN',
+  MS: 'GLH GPT GTR JAN MEI PIB TUP',
+  MT: 'BIL BTM BZN FCA GDV GGW GTF HLN HVR MSO OLF SDY WYS',
+  NB: 'YCH YFC YQM YSJ',
+  NC: 'AVL CLT EWN FAY GSO ILM OAJ PGV RDU USA',
+  ND: 'BIS DIK DVL FAR GFK JMS MOT XWA',
+  NE: 'AIA BFF CDR EAR GRI LBF LNK MCK OMA',
+  NH: 'LEB MHT PSM',
+  NJ: 'ACY EWR TEB TTN',
+  NL: 'YAY YDF YQX YWK YYR YYT',
+  NM: 'ABQ CNM CVN FMN GUP HOB LRU ROW SAF SVC TSM',
+  NS: 'YHZ YQI YQY',
+  NT: 'YEV YFS YHY YSM YSY YZF',
+  NU: 'YBK YCB YEK YFB YLC YRT',
+  NV: 'BLD EKO LAS RNO',
+  NY: 'ALB ART BGM BUF ELM HPN IAG ISP ITH JFK JRA LGA MSS MTP NYS OGS PBG ROC SLK SWF SYR TSS',
+  OH: 'CAK CLE CMH DAY LCK LUK TOL',
+  OK: 'LAW OKC SWO TUL',
+  ON: 'YAG YAM YGK YHM YKF YMO YOW YPQ YQG YQK YQT YSB YTS YTZ YXL YXU YYB YYZ YZR',
+  OR: 'EUG MFR OTH PDT PDX RDM SLE',
+  PA: 'ABE AOO AVP BFD DUJ ERI IPT JST LBE LNS MDT PHL PIT SCE',
+  PE: 'YYG',
+  RI: 'BID NPT PVD WST',
+  SC: 'CAE CHS FLO GSP HHH MYR',
+  SD: 'ABR ATY FSD PIR RAP',
+  SK: 'YMJ YPA YQR YXE YYN',
+  TN: 'BNA CHA MEM MKL TRI TYS',
+  TX: 'ABI ACT ADS AMA AUS BPT BRO CLL CRP DAL DFW ELP FTW GGG GRK HOU HRL IAH LBB LRD MAF MFE MWL SAT ' +
+      'SJT SPS TYR VCT',
+  UT: 'CDC CNY OGD PVU SGU SLC VEL',
+  VA: 'CHO IAD LYH ORF PHF RIC ROA SHD',
+  VT: 'BTV RUT',
+  WA: 'ALW BFI BLI BYW CWS DHB DTR EAT ESD FBS FRD GEG KEH LKE LPS OLM OTS PAE PSC PUW RCE RSJ SEA SSW ' +
+      'TIW WDN WSX YKM',
+  WI: 'ATW CWA EAU GRB LSE MKE MSN RHI',
+  WV: 'BKW CKB CRW HTS LWB MGW PKB',
+  WY: 'COD CPR CYS GCC JAC LAR RIW RKS SHR',
+  YT: 'YDA YOC YXY'
+};
+var _ROW_REGION_OF = null;
+function _rowRegion(c) {
+  if (!_ROW_REGION_OF) {
+    _ROW_REGION_OF = {};
+    Object.keys(_ROW_REGION).forEach(function (r) { _ROW_REGION[r].split(' ').forEach(function (x) { if (x) _ROW_REGION_OF[x] = r; }); });
+    try { if (typeof BoardStrings !== 'undefined' && BoardStrings.FR_FIRST) BoardStrings.FR_FIRST.forEach(function (x) { if (!_ROW_REGION_OF[x]) _ROW_REGION_OF[x] = 'QC'; }); } catch (e) {}
+  }
+  return _ROW_REGION_OF[String(c).toUpperCase()] || '';
+}
+// every code a name is ours for (the index keeps one, or '!' for two)
+var _ROW_CODES = null;
+function _rowCodesAll(k) {
+  if (!_ROW_CODES) {
+    _ROW_CODES = {};
     var add = function (code, nm) {
       var kk = _normCityKey(nm), c = String(code).toUpperCase();
-      if (!kk || kk.length < 3) return;
-      var L = _CITY2IATA_ALL[kk] || (_CITY2IATA_ALL[kk] = []);
+      if (!kk || kk.length < 3 || _IATA_RENAMED[c]) return;
+      var L = _ROW_CODES[kk] || (_ROW_CODES[kk] = []);
       if (L.indexOf(c) < 0) L.push(c);
     };
     try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) add(a.c, a.n); }); } catch (e) {}
     try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
     try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
-    Object.keys(_CITY2IATA_ALIAS).forEach(function (kk) { var L = _CITY2IATA_ALL[kk] || (_CITY2IATA_ALL[kk] = []); if (L.indexOf(_CITY2IATA_ALIAS[kk]) < 0) L.push(_CITY2IATA_ALIAS[kk]); });
+    [_CITY2IATA_ALIAS, _ROW_NAME_ALIAS].forEach(function (T) { Object.keys(T).forEach(function (kk) { add(T[kk], kk); }); });
   }
-  return _CITY2IATA_ALL[k] || [];
+  return _ROW_CODES[k] || [];
 }
 // a whole name, or its St/Ft/Mt spelling: one code, '' for none, '!' for a
 // name that has two
-function _iataWholeOrSpelt(s) {
+function _rowWholeOrSpelt(s) {
   var k = _normCityKey(s);
   if (k.length < 3) return '';
-  if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
-  var hit = _cityIndex()[k];
+  if (!_CITY2IATA) _iataFromCityName(s);      // the index, built once
+  var one = function (kk) { return _CITY2IATA_ALIAS[kk] || _ROW_NAME_ALIAS[kk] || (_CITY2IATA && _CITY2IATA[kk]) || ''; };
+  var hit = one(k);
   if (hit) return hit;
-  var t = ' ' + String(s).replace(/[.\-\u2010-\u2015]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', got = '';
+  var t = ' ' + String(s).replace(/[.\-‐-―]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', got = '';
   [[/ st /gi, ' saint '], [/ ste /gi, ' sainte '], [/ ft /gi, ' fort '], [/ mt /gi, ' mount '],
    [/ saint /gi, ' st '], [/ sainte /gi, ' ste '], [/ fort /gi, ' ft '], [/ mount /gi, ' mt ']].forEach(function (r) {
     if (got === '!') return;
     var v = t.replace(r[0], r[1]); if (v === t) return;
-    var vk = _normCityKey(v), h = _CITY2IATA_ALIAS[vk] || _cityIndex()[vk];
+    var h = one(_normCityKey(v));
     if (!h) return;
     if (h === '!' || (got && got !== h)) { got = '!'; return; }
     got = h;
   });
   return got;
-}
-function _ptOf(c) {
-  var v = null;
-  try { if (typeof COORDS !== 'undefined' && COORDS[c]) v = COORDS[c]; } catch (e) {}
-  try { if (!v && typeof window !== 'undefined' && window.AIRPORT_COORDS && window.AIRPORT_COORDS[c]) v = window.AIRPORT_COORDS[c]; } catch (e) {}
-  try { if (!v && typeof GATE_AP !== 'undefined' && GATE_AP[c]) v = GATE_AP[c]; } catch (e) {}
-  if (!v) return null;
-  var la = +(v.lat != null ? v.lat : v[0]), lo = +(v.lon != null ? v.lon : (v.lng != null ? v.lng : v[1]));
-  return (isFinite(la) && isFinite(lo)) ? [la, lo] : null;
 }
 function _editsApart(a, b) {
   if (Math.abs(a.length - b.length) > 1) return 2;
@@ -32924,41 +32988,30 @@ function _editsApart(a, b) {
   for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
   return d[a.length][b.length];
 }
-function _iataFromSpelling(s) {
-  s = String(s || '').replace(/\s+/g, ' ').trim();
-  if (!s) return '';
-  // 'Harrisburg, PA': that name's airport in that state, one or none
+function _iataFromRowName(name) {
+  var s = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
+  if (_normCityKey(s).length < 3) return '';
+  var whole = _iataFromCityName(s);
+  if (whole) return whole;
+  // 'Harrisburg, PA': that name's one airport in that state or province
   var st = /^(.+?)\s*,\s*([A-Za-z]{2})\.?$/.exec(s);
   if (st) {
-    var box = _REGION_BOX[st[2].toUpperCase()];
-    if (!box) return '';
-    var base = st[1], codes = [], bk = _normCityKey(base);
-    _cityCodesAll(bk).forEach(function (c) { if (codes.indexOf(c) < 0) codes.push(c); });
-    var sp = _iataWholeOrSpelt(base); if (sp && sp !== '!' && codes.indexOf(sp) < 0) codes.push(sp);
-    var inside = codes.filter(function (c) { var p = _ptOf(c); return p && p[0] >= box[0] && p[0] <= box[1] && p[1] >= box[2] && p[1] <= box[3]; });
+    var reg = st[2].toUpperCase(), al = _ROW_NAME_ALIAS[_normCityKey(s)];
+    if (al) return al;
+    if (reg === 'DC' || !(_ROW_REGION[reg] || reg === 'QC')) return '';
+    var codes = _rowCodesAll(_normCityKey(st[1])).slice(), sp = _rowWholeOrSpelt(st[1]);
+    if (sp && sp !== '!' && codes.indexOf(sp) < 0) codes.push(sp);
+    var inside = codes.filter(function (c) { return _rowRegion(c) === reg; });
     return inside.length === 1 ? inside[0] : '';
   }
-  // 'Ft McMurray'
-  var one = _iataWholeOrSpelt(s);
+  // 'St Hubert', 'Ft McMurray'
+  var one = _rowWholeOrSpelt(s);
   if (one === '!') return '';
   if (one) return one;
-  // 'Whitehorse, Calgary': the first stop of a list of stops we all know
-  if (s.indexOf(',') > 0) {
-    var parts = s.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
-    if (parts.length < 2) return '';
-    var stops = [];
-    for (var i = 0; i < parts.length; i++) {
-      if (_NOT_A_STOP[_normCityKey(parts[i])]) return '';
-      var c1 = _iataWholeOrSpelt(parts[i]);
-      if (!c1 || c1 === '!') return '';
-      stops.push(c1);
-    }
-    return stops[0];
-  }
   // 'Montreal-Trdeau': the city's own airports, its short name one letter off
-  var q = /^(.+?)\s*[-\u2010-\u2015]\s*(.+)$/.exec(s);
-  if (q) {
-    var qk = _normCityKey(q[2]), cands = _cityCodesAll(_normCityKey(q[1]));
+  var q = /^(.+?)\s*[-‐-―]\s*(.+)$/.exec(s);
+  if (q && q[2].indexOf(',') < 0) {
+    var qk = _normCityKey(q[2]), cands = _rowCodesAll(_normCityKey(q[1]));
     if (qk.length < 5 || !cands.length) return '';
     var near = cands.filter(function (c) { var sub = (typeof AP !== 'undefined' && AP[c] && AP[c].sub) ? _normCityKey(AP[c].sub) : ''; return sub.length >= 5 && _editsApart(qk, sub) <= 1; });
     return near.length === 1 ? near[0] : '';
@@ -33480,6 +33533,7 @@ function startLangRotation() {
     lang = langs[langIdx];
     updateTicker();
     if (data.dep.length || data.arr.length) render();
+    _shownLangChanged();
   }, 15000);
 }
 function _startLangRotation_WITHDRAWN() {
@@ -33557,12 +33611,18 @@ function setBoardLangs(list) {
   _applyBoardLangs();
 }
 function _applyBoardLangs() {
-  updateLangButtons();
-  updateTicker();
-  startLangRotation();
   // v23970 — static page words (data-i18n) follow the new languages too;
   // v23995 — and so does the boot loader, still up or fading (BoardStrings.onLangs)
-  try { BoardStrings.langsChanged(); } catch (eS) {}
+  // v24067 — whatever the three before it do: the words painted by
+  // langsChanged (the floor's times among them, fids-earth.js) never wait
+  // for another change of language because one of them threw
+  try {
+    updateLangButtons();
+    updateTicker();
+    startLangRotation();
+  } finally {
+    try { BoardStrings.langsChanged(); } catch (eS) {}
+  }
   const testBtn = document.getElementById('testFlightBtn');
   if (testBtn) testBtn.textContent = TL('addFlight');
   // v22957 — the v22955 double-render workaround is WITHDRAWN. It forced two
@@ -42664,6 +42724,13 @@ function tick_carousel() {
   render();
   _slideIdx++;
   if (_slideIdx >= _n) { _slideIdx = 0; advancePage(); }
+  _shownLangChanged();
+}
+// v24067 — the language on screen turned (the paging clock, the rotation
+// timer): the names on the map under the rows are drawn in it at once, not
+// at the map's next one-second look (fids-earth.js ocfEarthWords)
+function _shownLangChanged() {
+  try { if (typeof window !== 'undefined' && typeof window.ocfEarthWords === 'function') window.ocfEarthWords(); } catch (e) {}
 }
 
 function startPaging() {

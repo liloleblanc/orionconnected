@@ -17,7 +17,9 @@
 //   · the floor ready: the board turned to French reads 24-hour at once,
 //     inside the change, and back to English 12-hour;
 //   · the next floor held half-lit: the same, at once and 1.5 s later;
-//   · let go: the next floor comes up in the board's language.
+//   · let go: the next floor comes up in the board's language;
+//   · the board's paging clock turning the language on screen: the floor's
+//     words follow inside the turn.
 //
 // It opens the departures board at Moncton on its demonstration rows under
 // the 10:10 demo clock, with every host but this checkout unreachable
@@ -130,6 +132,16 @@ test('the floor\'s times follow the board\'s languages at once, also while the n
     const lit = await until('the next floor lit', (r) => r.ready === true && r.times.length >= 1, 60000);
     allIn(lit, 24, 'the next floor, French');
     allIn(await ev(SWITCH(['en'])), 12, 'the next floor, back to English, read at once');
+
+    // 4 · the language on screen turned by the board's own paging clock (no
+    // change of its languages): the floor's words are drawn in it at once,
+    // inside the turn, not at the floor's next one-second look
+    await ev(`(function () { setBoardLangs(['en', 'fr']); return 1; })()`);
+    await until('settled in English and French', (r) => r.ready === true && r.times.length >= 1, 30000);
+    for (let i = 0; i < 3; i++) {
+      const turn = await ev(`(function () { tick_carousel(); var w = (window.__ocfEarth() || {}).words || ''; return { lang: lang, words: w }; })()`);
+      assert.equal(turn.words.split('|')[0], turn.lang, 'the paging clock turned the board to ' + turn.lang + ', and the floor\'s words are drawn in it at once (' + turn.words + ')');
+    }
   } finally {
     b.close();
     server.close();
