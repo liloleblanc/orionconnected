@@ -43,6 +43,15 @@ function lift(src, name) {
 }
 const boardCode = new Function('return (' + lift(CORE, 'aircraftCodeToIata') + ')')();
 const appCode = new Function('return (' + lift(APP, 'acType') + ')')();
+// the app's whole picture path: its type, its registration paint, its <img>
+const appImg = (() => {
+  const at = APP.indexOf('const LIVERY_BY_REG={');
+  assert.ok(at >= 0, 'app.html must declare LIVERY_BY_REG');
+  const table = APP.slice(at, APP.indexOf('\n};', at) + 3);
+  const code = [table, lift(APP, 'acType'), lift(APP, 'liveryByReg'), lift(APP, 'liveryImg')].join('\n');
+  return new Function(code + '\nreturn liveryImg;')();
+})();
+const srcOf = (html) => (/\ssrc="([^"]*)"/.exec(html) || [])[1] || '';
 const sha = (f) => crypto.createHash('sha256').update(fs.readFileSync(path.join(AC, f))).digest('hex');
 const hasArt = (code) => fs.existsSync(path.join(AC, code + '.png'));
 
@@ -80,4 +89,18 @@ test('the phone app draws a Beech for a Beech, and an A321neo for an A321neo', (
   for (const s of ['Airbus A321', 'A321-211']) assert.equal(appCode(s), '321', s);
   assert.equal(appCode('Boeing 777-300ER'), '77W');
   assert.equal(appCode('Embraer 175'), 'E75');
+});
+
+test('on the phone app an Air Canada flight asks for the batch-3 pictures by any of their names', () => {
+  const want = {
+    '/aircraft/AC/BEH.png': ['BEH', 'B190', 'Beech 1900D', 'Beechcraft 1900D'],
+    '/aircraft/AC/77W.png': ['77W', 'B77W', 'Boeing 777-300ER'],
+    '/aircraft/AC/773.png': ['773', 'B773'],
+    '/aircraft/AC/E75.png': ['E75', 'E75L', 'E175', 'Embraer 175'],
+    '/aircraft/AC/32Q.png': ['32Q', 'A21N', 'Airbus A321XLR', 'A321-271NX', 'Airbus A321neo'],
+  };
+  for (const [src, raws] of Object.entries(want)) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', src)), src + ' must exist');
+    for (const raw of raws) assert.equal(srcOf(appImg('AC', raw, '', '')), src, raw);
+  }
 });
