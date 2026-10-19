@@ -1076,7 +1076,7 @@ function acType(raw){
   // boards: only the 1900 has a drawing; a King Air is Air Inuit's BEK; any
   // other Beech (Baron, Bonanza, 99) has no picture, never the 1900's.
   if(/1900/.test(s)) return 'BEH';
-  if(/KING\s*AIR/.test(s)) return 'BEK';
+  if(/KING[\s-]*AIR/.test(s)) return 'BEK';
   if(/BEECH/.test(s)) return '';
   if(/ATR\s*72/.test(s)) return 'AT7';
   if(/DASH\s*8|DHC[- ]?8|Q400|DHC-8-400/.test(s)) return 'DH4';

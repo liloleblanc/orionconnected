@@ -12191,10 +12191,14 @@ function aircraftCodeToIata(raw) {
   if (/A[\s-]*321/i.test(s)) return '321';
 
   // ── 777 ──
-  if (/777[\s-]*300[\s-]*ER|77W/i.test(s)) return '77W';
-  if (/777[\s-]*300/i.test(s)) return '773';
-  if (/777[\s-]*200[\s-]*LR|77L/i.test(s)) return '77L';
-  if (/777[\s-]*200/i.test(s)) return '772';
+  // Boeing's model numbers put the customer's two-character code in place of
+  // the 00 (Air Canada's 777-300ER is the 777-333ER, its 777-200LR the
+  // 777-233LR), so a feed that sent '777-333ER' missed every rule here and
+  // the gate drew no aircraft at all.
+  if (/777[\s-]*3(00|[0-9A-Z]{2})[\s-]*\(?ER\)?|77W/i.test(s)) return '77W';
+  if (/777[\s-]*3(00|[0-9A-Z]{2})/i.test(s)) return '773';
+  if (/777[\s-]*2(00|[0-9A-Z]{2})[\s-]*\(?LR\)?|77L/i.test(s)) return '77L';
+  if (/777[\s-]*2(00|[0-9A-Z]{2})/i.test(s)) return '772';
   if (/777[\s-]*X|777[\s-]*9/i.test(s)) return '779';
   if (/777[\s-]*8/i.test(s)) return '778';
 

@@ -72,7 +72,7 @@ test('every copy of one Air Canada drawing is the same file', () => {
 });
 
 const BEECH_1900 = ['BEH', 'B190', 'b190', 'Beech 1900D', 'Beechcraft 1900D', 'Beechcraft 1900', 'BEECH 1900C', 'Raytheon Beech 1900D', 'Hawker Beechcraft 1900D', 'Beechcraft B1900D'];
-const KING_AIR = ['Beechcraft King Air 350', 'Beech King Air B200', 'Beechcraft C90 King Air', 'Beech KingAir 200'];
+const KING_AIR = ['Beechcraft King Air 350', 'Beech King Air B200', 'Beechcraft C90 King Air', 'Beech KingAir 200', 'Beech King-Air 350'];
 const OTHER_BEECH = ['Beech 99', 'Beech Baron', 'Beechcraft Bonanza', 'Beech 18', 'Beechcraft Baron 58'];
 
 test('the Beech 1900D codes and names reach the Air Canada Beech on the boards', () => {
@@ -122,4 +122,22 @@ test('on the phone app an Air Canada flight asks for the batch-3 pictures by any
     assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', src)), src + ' must exist');
     for (const raw of raws) assert.equal(srcOf(appImg('AC', raw, '', '')), src, raw);
   }
+});
+
+// 3. Boeing's model numbers carry the customer's code in place of the 00:
+//    Air Canada's 777-300ER is the 777-333ER and its 777-200LR the 777-233LR.
+//    '777-333ER' used to miss every 777 rule, so the gate drew no aircraft.
+test('a 777 sent as a Boeing model number reaches its picture on the boards', () => {
+  const want = {
+    '77W': ['Boeing 777-333ER', '777-333ER', 'Boeing 777-333(ER)', '777-36NER', 'B777-31H ER', 'Boeing 777-300ER', '777 300ER', 'B77W'],
+    '773': ['Boeing 777-333', '777-31H', 'Boeing 777-300'],
+    '77L': ['Boeing 777-233LR', '777-233(LR)', 'Boeing 777-200LR'],
+    '772': ['Boeing 777-2B5ER', '777-232', 'Boeing 777-200ER', 'Boeing 777-200'],
+    '779': ['Boeing 777-9', 'Boeing 777X'],
+    '778': ['Boeing 777-8'],
+  };
+  for (const [code, raws] of Object.entries(want)) {
+    for (const raw of raws) assert.equal(boardCode(raw), code, raw);
+  }
+  for (const code of ['77W', '773', '77L', '772']) assert.ok(hasArt(code), 'AC/' + code + '.png must exist');
 });
