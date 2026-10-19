@@ -149,7 +149,7 @@ test('the rows the sweep found with no code: the map reads their airport, the ro
   }
   // a place that has its own name now (CITY, v24067) is read by that name,
   // by the rows as by the map, as every city in the table is
-  for (const [name, code] of [['Norman Wells', 'YVQ'], ['Firebag', 'YFI'], ['Managua', 'MGA'], ['Comayagua', 'XPL']]) {
+  for (const [name, code] of [['Norman Wells', 'YVQ'], ['Firebag', 'YFI'], ['Managua', 'MGA'], ['Tegucigalpa', 'XPL']]) {
     assert.equal(NAMES.row(name), code, name);
     assert.equal(NAMES.look(name), code, name);
   }
@@ -300,10 +300,11 @@ test('Kuujjuarapik is named as itself: YGW was written Chisasibi, which is YKU',
 test('every place the map can draw has a city name, in English and in French, and in the companion app\'s copy', () => {
   const SHARED = {}; vm.runInNewContext(fs.readFileSync(path.join(JS, 'shared-names.js'), 'utf8'), { window: SHARED });
   const S = SHARED.FIDS_SHARED_CITY;
-  // EBM: the gate table's EBM stands at Pamplona, not at El Borma, its
-  // code's airport, so it is given no name (a row of it would be wrong anyway)
-  const SKIP = new Set(['EBM']);
-  const all = [...new Set(Object.keys(COORDS).concat(Object.keys(AIRPORT_COORDS), Object.keys(GATE_AP)))].filter((c) => !SKIP.has(c));
+  // (the gate table's EBM, El Borma's code, stood on Pamplona, whose code is
+  // PNA: the row is gone, and EBM has no position)
+  assert.ok(!GATE_AP.EBM && !coordsOf('EBM'), 'EBM is not on the map at Pamplona');
+  assert.deepEqual(coordsOf('PNA'), [42.77, -1.65], 'Pamplona is PNA');
+  const all = [...new Set(Object.keys(COORDS).concat(Object.keys(AIRPORT_COORDS), Object.keys(GATE_AP)))];
   assert.ok(all.length > 2400, all.length + ' places with a position');
   const noName = all.filter((c) => !CITY[c]), noFr = all.filter((c) => !CITY_FR[c]);
   const noApp = all.filter((c) => String(S[c] || '').toUpperCase() !== String(CITY[c] || '').toUpperCase());
@@ -316,11 +317,151 @@ test('every place the map can draw has a city name, in English and in French, an
   const FX = require('./fixtures/earth-sweep-2026-10-19.json');
   for (const fl of FX.floors) for (const p of fl.places) assert.ok(CITY[p[0]] && CITY_FR[p[0]], fl.id + ': ' + p[0]);
   // the cases the checker found, and the French that differs
-  const want = { XPL: ['COMAYAGUA', 'COMAYAGUA'], MGA: ['MANAGUA', 'MANAGUA'], CAP: ['CAP-HAÏTIEN', 'CAP-HAÏTIEN'], GYD: ['BAKU', 'BAKOU'],
+  const want = { XPL: ['TEGUCIGALPA', 'TEGUCIGALPA'], MGA: ['MANAGUA', 'MANAGUA'], CAP: ['CAP-HAÏTIEN', 'CAP-HAÏTIEN'], GYD: ['BAKU', 'BAKOU'],
     MLE: ['MALÉ', 'MALÉ'], JER: ['JERSEY', 'JERSEY'], YVQ: ['NORMAN WELLS', 'NORMAN WELLS'], YYE: ['FORT NELSON', 'FORT NELSON'],
     ZAG: ['ZAGREB', 'ZAGREB'], MCT: ['MUSCAT', 'MASCATE'], MLA: ['MALTA', 'MALTE'], STX: ['ST CROIX', 'SAINTE-CROIX'] };
   for (const [c, [en, fr]] of Object.entries(want)) { assert.equal(CITY[c], en, c); assert.equal(CITY_FR[c], fr, c + ' in French'); }
-  assert.ok(!CITY.EBM, 'EBM is given no name');
+});
+
+// ── v24067, fourth review ─────────────────────────────────────────────────
+
+// the board's own city helpers, out of fids-core.js, with its tables (as
+// tests/quebec-names-codeless-rows.test.js builds them), and the floor's
+// reading of a row's name (fids-earth.js cityName)
+let BOARD_ = null;
+function board() {
+  if (BOARD_) return BOARD_;
+  const blockFrom = (src, at) => { let d = 0, j = src.indexOf('{', at); for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}' && --d === 0) break; } return src.slice(at, j + 1); };
+  const fn = (name) => { const i = CORE.lastIndexOf('\nfunction ' + name + '('); assert.ok(i >= 0, name); return blockFrom(CORE, i + 1); };
+  const between = (a, b) => { const i = CORE.indexOf(a), j = CORE.indexOf(b, i); assert.ok(i >= 0 && j > i, a); return CORE.slice(i, j); };
+  const upAt = CORE.indexOf('const _UPPER_TOKENS');
+  const src = [
+    'var AIRPORT_DISPLAY_IATA = { YHU: "MET" };',
+    CORE.slice(upAt, CORE.indexOf(']);', upAt) + 3),
+    CORE.slice(CORE.indexOf('var _CITY_CODE_TAIL = '), CORE.indexOf('\n', CORE.indexOf('var _CITY_CODE_TAIL = '))),
+    CORE.slice(CORE.indexOf('\nvar _CITY2IATA = null;') + 1, CORE.indexOf('\nfunction formatCityIata(') + 1),
+    ...['_dispIata', '_realIata', 'tc', 'airportCityNameSafe_v21877', '_isRealApCode', '_cityWholeName', '_cityWordIsCode', 'normalizeDisplayCity',
+      'formatCityIata', '_stripCityCode', '_cityHasCode', 'cityCode'].map(fn),
+    'function rowCity(f, isDep, lang) {',
+    between('    const loc       = isDep ? f.dest : f.origin;', '    // v23925 — the row as shown (_fidsShownRow)'),
+    '  return cityDisp;',
+    '}',
+    // fids-earth.js cityName: the city as the row prints it, without its code
+    'function floorName(code, raw, l) { var n = String(formatCityIata(raw, code, l) || ""); n = _stripCityCode(n) || n; return n.split(" · ")[0].trim(); }',
+    'return { tc, formatCityIata, rowCity, floorName, airportCityNameSafe_v21877 };'
+  ].join('\n');
+  BOARD_ = new Function('CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window', 'BoardStrings', 'getLang', src)(CITY, CITY_FR, AP, AP_LIST, COORDS, GATE_AP, { AIRPORT_COORDS }, BS, () => 'en');
+  return BOARD_;
+}
+
+test('a name is the place, as travellers know it: no county or region after a comma, never the word Airport, one spelling in both tables', () => {
+  const placed = [...new Set(Object.keys(COORDS).concat(Object.keys(AIRPORT_COORDS), Object.keys(GATE_AP)))];
+  const TAIL = /,|\b(AIRPORT|AIRFIELD|AERODROME|AIRSTRIP|HELIPORT|AIR BASE|ARMY AVIATION|AUTONOMOUS COUNTY)\b/;
+  const bad = [];
+  for (const c of placed) for (const [t, n] of [['CITY', CITY[c]], ['CITY_FR', CITY_FR[c]]]) if (TAIL.test(String(n))) bad.push(`${t}.${c} '${n}'`);
+  assert.deepEqual(bad, [], 'names with a county, a region or the word Airport');
+  // the ones on the sweep's pages, and others like them
+  const want = { LSI: 'LERWICK', KOI: 'KIRKWALL', SYY: 'STORNOWAY', LDY: 'DERRY', ILY: 'ISLAY', TRE: 'TIREE', NWI: 'NORWICH', PIK: 'PRESTWICK',
+    MME: 'DARLINGTON', HUY: 'GRIMSBY', SEN: 'SOUTHEND-ON-SEA', RNS: 'RENNES', TLN: 'TOULON', TUF: 'TOURS', LME: 'LE MANS', SPC: 'LA PALMA',
+    BQL: 'BOULIA', KNS: 'KING ISLAND', TIU: 'TIMARU', HKK: 'HOKITIKA', JNH: 'JIAXING', CHG: 'CHAOYANG', FUG: 'FUYANG', XPL: 'TEGUCIGALPA',
+    // and names that were an airport's own, or two places joined
+    LEU: "LA SEU D'URGELL", YSQ: 'SONGYUAN', TRS: 'TRIESTE', MPL: 'MONTPELLIER', LDE: 'TARBES', OKY: 'OAKEY', CPC: 'SAN MARTÍN DE LOS ANDES',
+    JYV: 'JYVÄSKYLÄ', GCN: 'GRAND CANYON', MYG: 'MAYAGUANA' };
+  for (const [c, n] of Object.entries(want)) { assert.equal(CITY[c], n, c); assert.equal(CITY_FR[c], n, c + ' in French'); }
+  for (const [c, n] of [['NCL', 'NEWCASTLE'], ['EXT', 'EXETER'], ['LBA', 'LEEDS'], ['EMA', 'EAST MIDLANDS'], ['LIH', 'LIHUE']]) assert.equal(CITY_FR[c], n, c + ' in French');
+  // one spelling of Fort St John in both halves of a board (the row reads 'Fort St John | YXJ')
+  assert.equal(CITY.YXJ, 'FORT ST JOHN'); assert.equal(CITY_FR.YXJ, CITY.YXJ);
+  // no stray characters (Cayo Coco was 'CAY0 COCO' in French) and no airline in the city table
+  for (const [t, T] of [['CITY', CITY], ['CITY_FR', CITY_FR]]) for (const [c, n] of Object.entries(T)) {
+    assert.ok(/^[A-Z0-9]{3}$/.test(c), `${t} key ${c}`);
+    assert.doesNotMatch(String(n), /[0-9|()]/, `${t}.${c} '${n}'`);
+  }
+  const SHARED = {}; vm.runInNewContext(fs.readFileSync(path.join(JS, 'shared-names.js'), 'utf8'), { window: SHARED });
+  for (const c of Object.keys(want)) assert.equal(SHARED.FIDS_SHARED_CITY[c], CITY[c], 'shared-names.js ' + c);
+});
+
+test('Dar es Salaam keeps its small word small, in English and in French, on every board', () => {
+  const B = board();
+  assert.equal(B.tc('DAR ES SALAAM'), 'Dar es Salaam');
+  assert.equal(B.tc('DAR ES SALAM'), 'Dar es Salam');
+  for (const l of ['en', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.equal(B.rowCity({ dest: 'DAR', _locIata: 'DAR' }, true, l), 'Dar es Salaam | DAR', l);
+  assert.equal(B.rowCity({ dest: 'DAR', _locIata: 'DAR' }, true, 'fr'), 'Dar es Salam | DAR');
+  // a first word stays a name, as before
+  assert.equal(B.tc('DES MOINES'), 'Des Moines');
+  assert.equal(B.tc('RIO DE JANEIRO'), 'Rio de Janeiro');
+});
+
+test('a word of a whole name is never read as an airport code: \'Le Cap\' is Cape Town, not \'Le\' at Cap-Haïtien', () => {
+  const B = board();
+  // the cases the checker found (this build gave CAP, MAR and others names),
+  // and the older ones of the same kind (Manchester for the Isle of Man, Poza
+  // Rica for La Paz, Mount Isa cut to 'Mount')
+  const want = [
+    ['Le Cap', '', 'Le Cap | CPT'], ['LE CAP', '', 'Le Cap | CPT'], ['Viña del Mar', '', 'Viña del Mar'], ['Del Mar', '', 'Del Mar'],
+    ['Isle of Man', '', 'Isle of Man | IOM'], ['La Paz', '', 'La Paz'], ['Mount Isa', '', 'Mount Isa | ISA'], ['Mount Isa', 'ISA', 'Mount Isa | ISA'],
+    ['Al Ain', '', 'Al Ain | AAN'], ['Hua Hin', '', 'Hua Hin | HHQ'], ['Nan', '', 'Nan | NNT'],
+    // and a code is still read where it is one
+    ['Toronto-YYZ', '', 'Toronto | YYZ'], ['TORONTO YYZ', '', 'Toronto | YYZ'], ['Atlanta (ATL) ATL', 'ATL', 'Atlanta | ATL'], ['YYZ', '', 'Toronto | YYZ'],
+    ['NAN', '', 'Nadi | NAN'], ['Goose Bay', '', 'Goose Bay | YYR'], ['Montreal | MET', '', 'Montréal | MET']
+  ];
+  for (const [dest, code, row] of want) for (const l of ['en', 'fr']) {
+    const got = B.rowCity({ dest, _locIata: code }, true, l);
+    if (l === 'fr' && dest === 'Isle of Man') assert.equal(got, 'Île de Man | IOM'); else assert.equal(got, row, `${dest} (${l})`);
+  }
+  assert.equal(B.floorName('', 'Le Cap', 'fr'), 'Le Cap', 'the map names it as the row does');
+  // every name of ours, written as a name, reads as itself and never with
+  // another airport's code (in capitals too, but for a word of three letters:
+  // in capitals that is a code, as it always was)
+  const key = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+  const codes = new Map();
+  for (const T of [CITY, CITY_FR]) for (const [c, n] of Object.entries(T)) { const k = key(n); if (k.length < 3) continue; if (!codes.has(k)) codes.set(k, new Set()); codes.get(k).add(c); }
+  const bad = [];
+  let n = 0;
+  for (const T of [CITY, CITY_FR]) for (const nm of Object.values(T)) for (const form of [B.tc(nm), nm]) {
+    if (form === nm && /^[A-Z]{3}$/.test(nm)) continue;
+    for (const l of ['en', 'fr']) {
+      n++;
+      const out = B.formatCityIata(form, '', l), m = /^(.*?) \| ([A-Z0-9]{3})$/.exec(out), city = m ? m[1] : out, code = m ? m[2] : '';
+      const own = codes.get(key(nm)) || new Set();
+      if (code && !own.has(code) && !(code === 'MET' && own.has('YHU'))) bad.push(`${l} '${form}' -> '${out}'`);
+      else if (key(city.split(' · ')[0]) !== key(nm) && !(code && key(B.airportCityNameSafe_v21877(code, l)) === key(city.split(' · ')[0]))) bad.push(`${l} '${form}' -> '${out}' (cut)`);
+    }
+  }
+  assert.ok(n > 19000, n + ' names read');
+  assert.deepEqual(bad, []);
+});
+
+test('Musselwhite\'s code, KM8, has a digit in it and stays whole: the row and the map read Musselwhite', () => {
+  const B = board();
+  assert.equal(CITY.KM8, 'MUSSELWHITE');
+  for (const l of ['en', 'fr']) {
+    assert.equal(B.rowCity({ dest: 'KM8', _locIata: 'KM8' }, true, l), 'Musselwhite | KM8', 'was \'KM\'');
+    assert.equal(B.rowCity({ dest: 'Musselwhite | KM8', _locIata: 'KM8' }, true, l), 'Musselwhite | KM8', 'was \'Musselwhite | Km8 | KM\'');
+    assert.equal(B.rowCity({ dest: 'KM8', _locIata: '' }, true, l), 'Musselwhite | KM8');
+    assert.equal(B.floorName('KM8', 'Musselwhite | KM8', l), 'Musselwhite', 'was \'Musselwhite | Km8\'');
+  }
+  assert.equal(B.tc('MUSSELWHITE | KM8'), 'Musselwhite | KM8');
+  // a code of three letters is as it was
+  assert.equal(B.rowCity({ dest: 'YQT', _locIata: 'YQT' }, true, 'en'), 'Thunder Bay | YQT');
+});
+
+test('a place the board can name only by its code is not on the map (its position from the gate table or the airport cache, and no name)', () => {
+  const rows = [{ dest: 'EBM', _locIata: 'EBM', status: 'scheduled', _revTs: 2e12 }, { dest: 'Pamplona', _locIata: 'PNA', status: 'scheduled', _revTs: 2e12 + 6e4 }];
+  const opts = { dir: 'dep', ap0: 'MAD', now: 1e12, coords: () => [42.8, -1.65] };
+  assert.deepEqual(E.placesFrom(rows, opts).list.map((p) => p.code), ['EBM', 'PNA'], 'without the check, both');
+  const B = board(), named = (c, t) => String(B.floorName(c, t, 'en')).replace(/[^A-Za-z0-9]/g, '').toUpperCase() !== c;
+  const P = E.placesFrom(rows, Object.assign({ named }, opts));
+  assert.deepEqual(P.list.map((p) => p.code), ['PNA'], '\'Ebm\' is not drawn');
+  assert.equal(P.next.code, 'PNA', 'and the next flight is the next one it can name');
+  const MOD = fs.readFileSync(path.join(JS, 'fids-earth.js'), 'utf8');
+  assert.match(MOD, /function hasName\(code, text\) \{[\s\S]{0,400}cityName\(code, text, 'en'\)[\s\S]{0,200}!== String\(code\)\.toUpperCase\(\)/);
+  assert.match(MOD, /if \(o\.named && !o\.named\(c, text\)\) return;/);
+  // and its positions are the board's own tables as the page loaded them,
+  // never the airport cache the gate map fills at run time (from the
+  // AeroDataBox passthrough the boards no longer use)
+  assert.doesNotMatch(MOD, /_lookupAirport\(/, 'the map never reads the board\'s airport cache');
+  assert.match(MOD, /var GATE0 = \{\};\s*try \{[^\n]*Object\.keys\(GATE_AP\)\.forEach\(function \(k\) \{ GATE0\[k\] = GATE_AP\[k\]; \}\)/);
+  assert.match(MOD, /function coordsOf\(c\) \{[\s\S]{0,400}GATE0\[c\][\s\S]{0,40}return v;/);
 });
 
 test('every Québec airport on the French-first list that has a position has a zone and a name', () => {

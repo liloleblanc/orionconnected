@@ -628,7 +628,7 @@ window.AIRPORT_COORDS = {
   PVC:[42.072,-70.221],   // Provincetown, Massachusetts (KPVC)
   FMN:[36.741,-108.230],  // Farmington, New Mexico (KFMN)
   BZE:[17.540,-88.304],   // Belize City (MZBZ)
-  XPL:[14.382,-87.621],   // Comayagua (Palmerola), Honduras (MHSC)
+  XPL:[14.382,-87.621],   // Palmerola, Honduras (MHSC): serves Tegucigalpa
   RTB:[16.317,-86.523],   // Roatan, Honduras (MHRO)
   SAP:[15.453,-87.924],   // San Pedro Sula, Honduras (MHLM)
   MGA:[12.142,-86.168],   // Managua, Nicaragua (MNMG)

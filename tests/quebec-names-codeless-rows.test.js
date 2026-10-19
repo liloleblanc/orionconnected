@@ -81,7 +81,7 @@ function helpers() {
     // the board's name index and its rules for spellings no whole name
     // matches (v24067), as one piece: its tables and helpers
     CORE.slice(CORE.indexOf('\nvar _CITY2IATA = null;') + 1, CORE.indexOf('\nfunction formatCityIata(') + 1),
-    ...['_dispIata', '_realIata', 'tc', 'airportCityNameSafe_v21877', '_isRealApCode', 'normalizeDisplayCity',
+    ...['_dispIata', '_realIata', 'tc', 'airportCityNameSafe_v21877', '_isRealApCode', '_cityWholeName', '_cityWordIsCode', 'normalizeDisplayCity',
       'formatCityIata', '_stripCityCode', '_cityHasCode', 'cityCode'].map(fnSource),
     // the feed parser's lookup for a row with no code (fetchLive's ADB parse)
     'function parseLoc(locIata, cityName) {',

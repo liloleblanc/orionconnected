@@ -6,12 +6,15 @@
 // On 2026-10-19 every airport's live departures board was loaded at
 // 1920x1080 (build v24064) and its floor recorded: the view it was drawn in,
 // its size, the page's rows, the moment and the board's languages
-// (tests/fixtures/earth-sweep-2026-10-19.json, 90 floors with rows: 65 full
-// maps, 25 strips). The fixture holds each page's places AS THIS BUILD READS
-// THEM: the coded rows as recorded, then the rows with no code the map now
-// reads, with this build's positions, zones and names (Yellowknife's Norman
-// Wells, Taloyoak and Kugluktuk, LaGuardia's West Palm Beach, the rows at
-// Philadelphia and Québec), so what is checked is what ships. It also holds
+// (tests/fixtures/earth-sweep-2026-10-19.json, 94 floors with rows from the
+// sweep, its two rechecks and its reruns: 67 full maps, 27 strips). The
+// fixture holds each page's places AS THIS BUILD READS THEM, IN THE ORDER OF
+// THE PAGE'S ROWS: a row with no code that the map now reads stands where it
+// stood on the page (read off the floor's full-board screenshot: Philadelphia's
+// 'Harrisburg, PA' and 'Cincinnati, OH' are its first two rows), with this
+// build's positions, zones and names (Yellowknife's Norman Wells, Taloyoak
+// and Kugluktuk, LaGuardia's West Palm Beach, the rows at Philadelphia and
+// Québec), so what is checked is what ships. It also holds
 // the board's font as the floor measures it (Bricolage Grotesque at weight
 // 700: each character's advance and each pair's kerning, from the repo's
 // woff2), so every width here is the width on the board (Chrome's own
@@ -35,12 +38,19 @@
 //     crossed in an X; Albany's ran up through 'Cleveland' at Washington
 //     National).
 //   · No two names touch.
-//   · NO NAME IS BOUGHT WITH ANOTHER. A floor names fewer places than main
-//     only where every name it lost was in a conflict on main, and no name
-//     it lost has a clear spot on its floor now. Boston at Washington
-//     National, Nice at Heathrow, Cancún at Miami, Indianapolis and Austin at
-//     Phoenix and the others the second review's give-way left off are
-//     named again.
+//   · A FLOOR NAMES FEWER PLACES THAN MAIN only where every name it lost was
+//     in a conflict on main, and no name it lost has a clear spot on its
+//     floor now. A name that stood clear on main is lost for one of four
+//     reasons, each checked: the rows above it, read now, fill the floor
+//     (Philadelphia: Nashville, Toronto); its dot would cost the name of a
+//     row above it (New Orleans: Boston's dot and Philadelphia's name); a
+//     city newly on the map has its dot where the name would stand
+//     (Yellowknife: Norman Wells and Fort Simpson; Miami: Cap-Haïtien and
+//     Bogotá; there the other choice names as many, an open choice); or
+//     naming it costs two (Sydney: Doha). A dot is never taken away for a
+//     name. Boston at Washington National, Nice at Heathrow, Cancún at
+//     Miami, Indianapolis and Austin at Phoenix and the others the second
+//     review's give-way left off are named.
 //   · The cap counts names, not places tried: places the floor cannot name
 //     give their slots to the next ones on the page (Ottawa named 3 of 5).
 // ═══════════════════════════════════════════════════════════════════════════
@@ -74,6 +84,14 @@ const measure = (s, fs0) => {
 };
 const namedCodes = E.namedCodes;
 const fillNames = E.fillNames;
+// the places a floor names: each name's own, and a place drawn under another's
+// name (the same name in every language, within 40 px: Houston's IAH and HOU
+// at New Orleans, one route and one name) is named by it
+const placesNamed = (L) => {
+  const o = namedCodes(L);
+  for (const l of L.labels) { const g = l.g; if (g && g.members && !(g.sign && g.sign.members.length > 1)) for (const m of g.members) if (!o.includes(m.code)) o.push(m.code); }
+  return o;
+};
 
 function lay(fl) {
   const [psi, delta, R, cx, cy] = fl.view, A = fl.here, H = fl.H, W = fl.W, full = H >= E.MIN_FULL;
@@ -94,9 +112,10 @@ const named = (id) => namedCodes(by(id).out.L);
 const marksOf = (L) => L.dots.map((d) => ({ code: d.code, x: d.x, y: d.y, what: 'dot' })).concat(L.arrows.map((a) => ({ code: a.code, x: a.x, y: a.y, what: 'arrow' })));
 const rowsOf = (lab) => lab.rows.map((r) => r.texts[0] && r.texts[0].code).filter(Boolean);
 
-test('the recorded floors are all here: 90 with rows, 65 of them full maps, measured in the board\'s font', () => {
-  assert.equal(FLOORS.length, 90);
-  assert.equal(FLOORS.filter((f) => f.H >= E.MIN_FULL).length, 65);
+test('the recorded floors are all here: 94 with rows, 67 of them full maps, measured in the board\'s font', () => {
+  assert.equal(FLOORS.length, 94);
+  assert.equal(FLOORS.filter((f) => f.H >= E.MIN_FULL).length, 67);
+  for (const id of ['rerun/YVR', 'rerun1/LGA', 'rerun1/MSP', 'rerun1/YHU']) assert.ok(by(id), id + ' (the reruns)');
   assert.deepEqual([...missing], [], 'characters the fixture\'s font lacks');
   // Chrome's canvas measureText, '700 <px>px "Bricolage Grotesque"' (2026-10-19)
   const chrome = [['Toronto', 24, 89.67], ['Montréal', 24, 105.28], ['Îles-de-la-Madeleine', 19, 187.76], ['Genève', 28, 100.33], ['Southampton', 24, 159.11]];
@@ -221,48 +240,91 @@ test('no two names touch on any recorded floor', () => {
 function clearSpotFor(fl, code) {
   const { list, pool, run, L } = fl.out, p = pool.find((x) => x.code === code);
   if (!p) return false;
-  const now = namedCodes(L), L2 = run(list.filter((x) => x.code !== code).concat([p]), 99), n2 = namedCodes(L2);
+  const now = placesNamed(L), L2 = run(list.filter((x) => x.code !== code).concat([p]), 99), n2 = placesNamed(L2);
   return n2.includes(code) && now.every((c) => n2.includes(c));
 }
+// the floor's list with one place more (at its row) and one fewer
+function tryWith(fl, add, drop) {
+  const { list, pool, run } = fl.out, at = (c) => pool.findIndex((x) => x.code === c);
+  const l2 = list.filter((x) => x.code !== drop), p = pool.find((x) => x.code === add);
+  if (p && !l2.includes(p)) { let k = 0; while (k < l2.length && at(l2[k].code) < at(add)) k++; l2.splice(k, 0, p); }
+  return run(l2);
+}
 
-test('no name is bought with another: a floor names fewer places than main only where each name it lost was in a conflict on main, and no lost name has a clear spot now', () => {
+test('a floor names fewer places than main only where each name it lost was in a conflict on main; every other name lost is accounted for', () => {
   const bad = [], clean = [];
   let lost = 0;
   for (const fl of FLOORS) {
     if (!fl.out.full) continue;
-    const now = namedCodes(fl.out.L), gone = fl.main.named.filter((c) => !now.includes(c));
+    const now = placesNamed(fl.out.L), gone = fl.main.named.filter((c) => !now.includes(c));
+    const at = (c) => fl.out.pool.findIndex((x) => x.code === c), full = namedCodes(fl.out.L).length >= E.capFor(fl.H);
     for (const c of gone) {
       lost++;
-      if (clearSpotFor(fl, c)) bad.push(`${fl.id}: ${c} has a clear spot and is not named`);
+      // (a floor at its cap, every place it names on a row above, has no room: the rows come first)
+      const below = full && namedCodes(fl.out.L).every((x) => at(x) < at(c));
+      if (!below && clearSpotFor(fl, c)) bad.push(`${fl.id}: ${c} has a clear spot and is not named`);
       if (!fl.main.inConflict.includes(c)) {
-        if (now.length < fl.main.named.length) bad.push(`${fl.id}: names ${now.length} (main ${fl.main.named.length}) and lost ${c}, which stood clear on main`);
+        if (namedCodes(fl.out.L).length < fl.main.named.length) bad.push(`${fl.id}: names ${namedCodes(fl.out.L).length} (main ${fl.main.named.length}) and lost ${c}, which stood clear on main`);
         clean.push(fl.id + ' ' + c);
       }
     }
   }
   assert.deepEqual(bad, []);
-  assert.ok(lost < 25, lost + ' names lost in all');
-  // the names lost that stood clear on main, all on floors that name more
-  // places than main or as many: a place that had no position on main now
-  // has its dot where the name stood (Yellowknife: Norman Wells's where Fort
-  // Simpson's stood, Vancouver's, the next flight's, on its other side;
-  // Miami: Cap-Haïtien's where Bogotá's stood), and a dot is never taken
-  // away for a name; or naming it costs two (Sydney: Doha leaves in the list
-  // Delhi leads, and Delhi's name stands as near Tokyo's arrow; on its own
-  // it costs Seoul and Taipei)
-  assert.deepEqual(clean.sort(), ['recheckA/SYD DOH', 'recheckA/YZF YFS', 'recheckB/MIA BOG', 'recheckB/YZF YFS', 'run/YZF YFS']);
-  for (const id of ['recheckA/SYD', 'recheckB/MIA', 'run/YZF', 'recheckA/YZF', 'recheckB/YZF']) assert.ok(named(id).length >= by(id).main.named.length, id);
-  // and it is the new dot that keeps the name off: without it, it is named
-  for (const [id, gone, dot] of [['run/YZF', 'YFS', 'YVQ'], ['recheckB/MIA', 'BOG', 'CAP']]) {
-    const fl = by(id), L2 = fl.out.run(fl.out.list.filter((p) => p.code !== dot).concat(fl.out.pool.filter((p) => p.code === gone && !fl.out.list.includes(p))));
-    assert.ok(namedCodes(L2).includes(gone), `${id}: ${gone} is named without ${dot}'s dot`);
+  assert.ok(lost < 32, lost + ' names lost in all');
+  // the names lost that stood clear on main, each for its reason, all on
+  // floors that name as many places as main or more
+  assert.deepEqual(clean.sort(), ['recheckA/PHL BNA', 'recheckA/PHL YYZ', 'recheckA/SYD DOH', 'recheckA/YZF YFS', 'recheckB/MIA BOG', 'recheckB/YZF YFS', 'run/MSY BOS', 'run/YZF YFS']);
+  for (const id of ['recheckA/PHL', 'recheckA/SYD', 'recheckB/MIA', 'run/MSY', 'run/YZF', 'recheckA/YZF', 'recheckB/YZF']) assert.ok(namedCodes(by(id).out.L).length >= by(id).main.named.length, id);
+  // 1. the rows above it, read now, fill the floor: Philadelphia (recheck A)
+  //    names its 6 from rows 2 to 7 ('Cincinnati, OH', Miami, Québec,
+  //    Chicago, 'Hartford | BDL', 'Montreal-Trdeau'); Nashville is row 8,
+  //    Toronto row 10
+  {
+    const fl = by('recheckA/PHL'), at = (c) => fl.out.pool.findIndex((x) => x.code === c), now = namedCodes(fl.out.L);
+    assert.equal(now.length, E.capFor(fl.H), 'at its cap');
+    for (const c of ['BNA', 'YYZ']) for (const x of now) assert.ok(at(x) < at(c), `${x} is on a row above ${c}`);
+  }
+  // 2. its dot would cost the name of a row above it: New Orleans, where
+  //    Baltimore's and Philadelphia's names stood nearer Boston's dot on
+  //    main, and Boston (row 12) comes after the rows main never read
+  {
+    const fl = by('run/MSY'), n2 = namedCodes(tryWith(fl, 'BOS'));
+    assert.ok(!n2.includes('PHL') || !n2.includes('BOS'), 'Boston and Philadelphia are not both named');
+    assert.ok(fl.out.pool.findIndex((x) => x.code === 'PHL') < fl.out.pool.findIndex((x) => x.code === 'BOS'));
+  }
+  // 3. a city newly on the map has its dot where the name would stand, and a
+  //    dot is never taken away for a name: Norman Wells (row 5) and Fort
+  //    Simpson (row 4) at Yellowknife, Cap-Haïtien (row 4) and Bogotá (row
+  //    3) at Miami. The other choice names as many places, with every name
+  //    main had (an open choice); the rule that would take it (the sooner
+  //    row's name over a later row's dot when the count is the same) would
+  //    also take Boston off Washington National, Cancún off Miami, Austin off
+  //    Phoenix, LaGuardia off Tampa and Birmingham off LaGuardia (recheck B),
+  //    the names the second review asked to keep
+  for (const [id, gone, dot] of [['run/YZF', 'YFS', 'YVQ'], ['recheckA/YZF', 'YFS', 'YVQ'], ['recheckB/YZF', 'YFS', 'YVQ'], ['recheckB/MIA', 'BOG', 'CAP']]) {
+    const fl = by(id), L2 = tryWith(fl, gone, dot), n2 = namedCodes(L2);
+    assert.ok(n2.includes(gone), `${id}: ${gone} is named without ${dot}'s dot`);
+    assert.equal(n2.length, namedCodes(fl.out.L).length, `${id}: as many names either way`);
+    assert.ok(fl.main.named.every((c) => n2.includes(c)), `${id}: and every name main had`);
+    assert.ok(namedCodes(fl.out.L).includes(dot), `${id}: ${dot} is named`);
+  }
+  // 4. naming it costs two: Sydney (recheck A), Doha, under Delhi's arrow,
+  //    whose name stood as near Tokyo's arrow; on its own it costs Seoul and
+  //    Taipei
+  {
+    const fl = by('recheckA/SYD'), n2 = namedCodes(fl.out.run(fl.out.list.concat(fl.out.pool.filter((p) => p.code === 'DOH')), 99));
+    assert.ok(!n2.includes('DOH') || !n2.includes('ICN') || !n2.includes('TPE'), 'Doha costs a name');
   }
 });
 
-test('the names the second review\'s give-way left off are named again, and no place gives way to another', () => {
+test('the names the second review\'s give-way left off are named, and no place gives way to another', () => {
   const want = { 'run/DCA': ['BOS'], 'run/LHR': ['NCE'], 'run/MIA': ['CUN'], 'run/PHX': ['IND', 'AUS'], 'run/SAN': ['RNO', 'SMF'],
-    'run/TPA': ['LGA'], 'recheckA/PHL': ['BNA'], 'recheckB/EDI': ['LCY'], 'recheckB/LGA': ['BHM'] };
+    'run/TPA': ['LGA'], 'recheckB/EDI': ['LCY'], 'recheckB/LGA': ['BHM'] };
   for (const [id, codes] of Object.entries(want)) for (const c of codes) assert.ok(named(id).includes(c), `${id}: ${c} is named (${named(id).join(' ')})`);
+  // Nashville at Philadelphia (recheck A) is not: on the page as it was, the
+  // rows above it (four of them with no code, which main never read) fill
+  // the floor's 6 places (the test above)
+  assert.ok(!named('recheckA/PHL').includes('BNA'));
   // Phoenix names more than main's 7, not 5
   assert.ok(named('run/PHX').length >= 7, 'Phoenix names ' + named('run/PHX').length);
   assert.doesNotMatch(MOD, /gaveWay|search\(true\)/, 'there is no give-way');
@@ -324,7 +386,7 @@ test('a row with no code of its own is read from the code its city label ends wi
   assert.equal(E.rowCode('', 'Harrisburg, PA', () => { throw new Error('x'); }), '');
   assert.equal(E.rowCode(null, null), '');
   assert.match(MOD, /function pageCodes\(\) \{[\s\S]{0,400}realCode\(rowCode\(tr\.getAttribute\('data-iata'\), tr\.getAttribute\('data-loc'\), rowWords\)\)/, 'the page\'s places read it');
-  assert.match(MOD, /placesFrom\(boardRows\(dir\), \{[^}]*codeOf: rowWords \}\)/, 'and so do the day\'s places');
+  assert.match(MOD, /placesFrom\(boardRows\(dir\), \{[^}]*codeOf: rowWords, named: hasName \}\)/, 'and so do the day\'s places');
   assert.match(MOD, /function rowWords\(t\) \{[^\n]*_iataFromRowName\(t\)/);
   // placesFrom: a row with no code is read for the map, and named by the board's own name for it
   const P = E.placesFrom([{ dest: 'Harrisburg, PA', status: 'scheduled', _revTs: 2e12 }, { dest: 'Whitehorse, Calgary', status: 'scheduled', _revTs: 2e12 }],
@@ -340,6 +402,13 @@ test('the fixture is the page this build reads: rows with no code the map now re
   for (const c of ['YTZ', 'YHU']) assert.ok(codes('recheckA/YQB').includes(c), 'Québec reads ' + c);
   assert.ok(codes('recheckA/YEG').includes('YFI'), 'Edmonton reads Firebag');
   assert.equal(nm('run/LGA', 'DJT'), 'West Palm Beach', 'DJT is named as PBI is');
+  // the page in the order of its rows: a row with no code where it stood
+  assert.deepEqual(codes('recheckA/PHL').slice(0, 8), ['MDT', 'CVG', 'MIA', 'YQB', 'ORD', 'BDL', 'YUL', 'BNA'], 'Philadelphia\'s first rows: Harrisburg, PA and Cincinnati, OH');
+  assert.deepEqual(codes('run/DCA').slice(5, 8), ['CLT', 'ORD', 'MIA'], 'Washington National: United 2803 to O\'Hare is the 7th row');
+  assert.deepEqual(codes('run/MSY').slice(0, 4), ['MCO', 'DAL', 'IAH', 'HOU'], 'New Orleans: Love Field and Intercontinental are rows 2 and 3');
+  assert.deepEqual(codes('recheckA/DCA').slice(0, 3), ['MIA', 'RDU', 'LGA']);
+  assert.deepEqual(codes('recheckA/YQB').slice(0, 4), ['ORD', 'JFK', 'YUL', 'YTZ']);
+  assert.equal(codes('recheckA/YEG').indexOf('YFI'), codes('recheckA/YEG').indexOf('YLW') + 1, 'Edmonton: Firebag after Kelowna');
   // no place is named by its code ('Xpl', 'Mga', 'Djt'), or by an airport's name
   for (const fl of FLOORS) for (const p of fl.places) {
     assert.ok(!/Djt|Donald J/.test(p[4]), fl.id + ': ' + p[4]);

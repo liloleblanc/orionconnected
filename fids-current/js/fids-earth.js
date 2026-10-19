@@ -47,12 +47,14 @@
        mark (its dot, or the arrow where its route leaves): where another
        mark stands as near, a leader line joins it to its own dot, or it goes
        elsewhere; an arrow's own name is the nearest to it; of two dots that
-       would touch, only the first is drawn. No name is bought with another:
-       a dot is never taken away to make room for a name, and a place left
-       off is tried again only where every name stays (fillNames). Names keep
-       10 px under the last row. The airport's ring keeps a clear zone. Places beyond the picture are named where their
-       route leaves it, an arrow there pointing on; several leaving at one
-       spot share one route, one arrow and one list.
+       would touch, only the first is drawn. A name is never given up for
+       another and a dot is never taken away to make room for a name; a
+       place left off is tried again only where every name stays
+       (fillNames). A place the board can name only by its code is not
+       drawn (hasName). Names keep 10 px under the last row. The airport's
+       ring keeps a clear zone. Places beyond the picture are named where
+       their route leaves it, an arrow there pointing on; several leaving at
+       one spot share one route, one arrow and one list.
      · The time there is the board's own clock (BoardStrings.boardTime: the
        format its rows use), printed only where it differs from this
        airport's, and only for a place whose zone is known: the AP table's,
@@ -189,6 +191,8 @@
   //   o.tz(code) → zone | null     o.real(code) → the real code for a shown one
   //   o.codeOf(text) → the code the map reads from a row's words when the row
   //                has none of its own ('Harrisburg, PA': rowCode)
+  //   o.named(code, text) → false for a place the board can name only by its
+  //                code: it is not on the map (v24067: hasName)
   var GONE = /departed|active|enroute|airborne|landed|arrived|atbelt|baggage|diverted/;
   function placesFrom(rows, o) {
     var dir = o.dir === 'arr' ? 'arr' : 'dep', now = +o.now, by = {}, next = null;
@@ -201,6 +205,7 @@
       var c = lc && o.real ? String(o.real(lc) || lc).toUpperCase() : lc;
       if (!c || c === o.ap0) return;
       var at = o.coords(c); if (!at) return;
+      if (o.named && !o.named(c, text)) return;
       var st = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
       // the zone: the board's AP table, else the row's own arrival zone (a
       // departure's). Never the feed's own offset, which is the departure
@@ -1041,14 +1046,16 @@
   // places of its 5 while more waited on the page. Now the next places on
   // the page are tried in their place, and a try is kept only when it names
   // every place the one before named, and more.
-  // AND NO NAME COSTS ANOTHER ITS PLACE (v24067). A place left off because
-  // names placed before it took its room (layout's blockedBy) is tried again
-  // just before the first of them; that order is kept only when the floor
-  // then names every place it named, and more (Yellowknife: Fort Simpson
-  // and Norman Wells both, where one had been named for the other). A name
-  // is never bought with another: the page's later places keep the names
-  // they can have (Boston at Washington National, Nice at Heathrow), and a
-  // place that cannot stand clear of them is left off (the rows list it).
+  // AND A NAME IS NEVER GIVEN UP FOR ANOTHER (v24067). A place left off
+  // because names placed before it took its room (layout's blockedBy) is
+  // tried again just before the first of them; that order is kept only when
+  // the floor then names every place it named, and more (Yellowknife:
+  // Calgary, tried before Vancouver, is named, and Vancouver still is). The
+  // page's later places keep the names they can have (Boston at Washington
+  // National, Nice at Heathrow), a dot is never taken away for a name (where
+  // a later row's dot stands where an earlier row's name would go, the dot
+  // stays: Norman Wells and Fort Simpson at Yellowknife), and a place that
+  // cannot stand clear of them is left off (the rows list it).
   // A place whose arrow leads a list of places leaving at one spot takes the
   // list with it when it cannot be named: the list is tried without it. And
   // a place left off on the way is tried once more after all the others.
@@ -1143,7 +1150,15 @@
   var doc = root.document, HTML = doc.documentElement;
 
   // a place's latitude and longitude, from the same tables, in the same
-  // order, as the board's own sun (fids-sun.js boardCoords)
+  // order, as the board's own sun (fids-sun.js boardCoords), but only as the
+  // page loaded them (v24067): the gate map adds to GATE_AP at run time from
+  // the board's airport cache (_lookupAirport), which it fills from the
+  // AeroDataBox passthrough the boards no longer use and from an airport
+  // list we do not credit. The map under the rows draws a place only where
+  // the board's own tables put it (OurAirports for the places this build
+  // added), and only a place it can name (hasName).
+  var GATE0 = {};
+  try { /* global GATE_AP */ if (typeof GATE_AP !== 'undefined' && GATE_AP) Object.keys(GATE_AP).forEach(function (k) { GATE0[k] = GATE_AP[k]; }); } catch (e) {}
   function asPair(v) {
     if (!v) return null;
     var lat = Number(v.lat != null ? v.lat : v[0]), lon = Number(v.lon != null ? v.lon : (v.lng != null ? v.lng : v[1]));
@@ -1153,8 +1168,7 @@
     var v = null;
     try { /* global COORDS */ if (typeof COORDS !== 'undefined' && COORDS[c]) v = asPair(COORDS[c]); } catch (e) {}
     try { if (!v && root.AIRPORT_COORDS && root.AIRPORT_COORDS[c]) v = asPair(root.AIRPORT_COORDS[c]); } catch (e) {}
-    try { /* global GATE_AP */ if (!v && typeof GATE_AP !== 'undefined' && GATE_AP[c]) v = asPair(GATE_AP[c]); } catch (e) {}
-    try { if (!v && typeof _lookupAirport === 'function') v = asPair(_lookupAirport(c)); } catch (e) {}
+    if (!v && Object.prototype.hasOwnProperty.call(GATE0, c)) v = asPair(GATE0[c]);
     return v;
   }
   function apTz(c) { var z = null; try { /* global AP */ z = (typeof AP !== 'undefined' && AP[c] && AP[c].tz) || null; } catch (e) { z = null; } return zoneOf(c, z); }
@@ -1697,7 +1711,22 @@
   }
   function placesNow() {
     var dir = boardDir();
-    return placesFrom(boardRows(dir), { dir: dir, ap0: AP0, now: Date.now(), coords: coordsOf, tz: apTz, real: realCode, codeOf: rowWords });
+    return placesFrom(boardRows(dir), { dir: dir, ap0: AP0, now: Date.now(), coords: coordsOf, tz: apTz, real: realCode, codeOf: rowWords, named: hasName });
+  }
+  // A PLACE IS NAMED, OR IT IS NOT ON THE MAP (v24067). Every place in the
+  // board's tables has a name (tests/earth-floor-places.test.js), but a row
+  // can carry a code whose name the board cannot give (a code with a digit,
+  // a table entry on the wrong place), and the floor drew it under its code
+  // as a word ('Ebm', 'Km8'). A place whose name, as the row prints it, is
+  // only its code is left off the map; the rows still list it. (Once per
+  // row and its words.)
+  var nameSeen = {}, nameSeenN = 0;
+  function hasName(code, text) {
+    var k = code + '|' + text;
+    if (Object.prototype.hasOwnProperty.call(nameSeen, k)) return nameSeen[k];
+    if (++nameSeenN > 800) { nameSeen = {}; nameSeenN = 1; }
+    var n = String(cityName(code, text, 'en') || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    return (nameSeen[k] = !!n && n !== String(code).toUpperCase());
   }
   // the places one floor draws, each with its name in every language
   // the places a floor shows: on a full floor the rows above it, on a strip
