@@ -255,7 +255,10 @@ test('the fixture is the boards\' own geometry, at every size, for every surface
   for (const sh of ['board', 'belt', 'plate', 'dest', 'note', 'cap']) assert.ok(shapes.has(sh), 'no ' + sh + ' surface');
   for (const s of MODEL.surfaces) assert.ok(MODEL.fonts[s.font], s.surface + ' ' + s.size + ': no widths for ' + s.font);
   assert.equal(LONGEST.length, 20);
-  assert.ok(LONGEST[0].name.length >= 40, 'the longest name is ' + LONGEST[0].name);
+  // (v24067: the longest names were an airport's own name or a county after
+  // a comma, 'La Seu D'Urgell Pyrenees and Andorra', 'Saint-Jacques-de-la-Lande,
+  // Ille-et-Vilaine'; the tables now hold the city, and the longest is 26 letters)
+  assert.ok(LONGEST[0].name.length >= 24, 'the longest name is ' + LONGEST[0].name);
 });
 
 test('the 20 longest names in our city tables and every airport under-name fit every surface, at every size, never under the floor', () => {

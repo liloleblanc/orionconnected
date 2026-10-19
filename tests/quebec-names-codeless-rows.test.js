@@ -78,10 +78,11 @@ function helpers() {
     CORE.slice(upAt, CORE.indexOf(']);', upAt) + 3),
     CORE.slice(CORE.indexOf('var _CITY_CODE_TAIL = '), CORE.indexOf('\n', CORE.indexOf('var _CITY_CODE_TAIL = '))),
     'var AP_LIST = ' + CORE.slice(CORE.indexOf('[', CORE.indexOf('const AP_LIST = [')), CORE.indexOf('\n];', CORE.indexOf('const AP_LIST = [')) + 2) + ';',
-    'var _CITY2IATA = null;',
-    'var _CITY2IATA_ALIAS = ' + tableSource(CORE, 'var _CITY2IATA_ALIAS = {') + ';',
-    ...['_dispIata', '_realIata', 'tc', 'airportCityNameSafe_v21877', '_isRealApCode', 'normalizeDisplayCity',
-      '_normCityKey', '_iataFromCityName', 'formatCityIata', '_stripCityCode', '_cityHasCode', 'cityCode'].map(fnSource),
+    // the board's name index and its rules for spellings no whole name
+    // matches (v24067), as one piece: its tables and helpers
+    CORE.slice(CORE.indexOf('\nvar _CITY2IATA = null;') + 1, CORE.indexOf('\nfunction formatCityIata(') + 1),
+    ...['_dispIata', '_realIata', 'tc', 'airportCityNameSafe_v21877', '_isRealApCode', '_cityWholeName', '_cityWordIsCode', 'normalizeDisplayCity',
+      'formatCityIata', '_stripCityCode', '_cityHasCode', 'cityCode'].map(fnSource),
     // the feed parser's lookup for a row with no code (fetchLive's ADB parse)
     'function parseLoc(locIata, cityName) {',
     between('    if (!locIata && cityName) {', '    let locName=formatCityIata('),
@@ -192,4 +193,20 @@ test('the belts and the phone screens read a codeless row the same way as the bo
   const js = CORE.replace(/^\s*\/\/.*$/gm, '');
   assert.doesNotMatch(js, /f\._locIata \? formatCityIata\([^;]*: normalizeDisplayCity\(/,
     'a row with no code is formatted, not just cased (the bare casing drops a code already on its label)');
+});
+
+// v24067 — the map under the rows reads some rows with no code from their
+// words (fids-core.js _iataFromRowName: 'Harrisburg, PA', 'St Hubert'); the
+// rows themselves do not. A row of a list of stops kept its whole list on the
+// board, so a passenger for a stop can find it (5T244 'Inuvik, Yellowknife,
+// Norman Wells' and 4N702 'Whitehorse, Calgary' at Edmonton); a reading of
+// the first stop shrank them to 'Inuvik | YEV' and 'Whitehorse | YXY'.
+test('a row only the map reads keeps the feed\'s words and no code, as before (Edmonton\'s lists of stops among them)', () => {
+  const { parseLoc } = helpers();
+  for (const name of ['Inuvik, Yellowknife, Norman Wells', 'Whitehorse, Calgary', 'Harrisburg, PA', 'Cincinnati, OH',
+    'St Hubert', 'Toronto Centre-Ville', 'Ft Mackay/Firebag', 'Montreal-Trdeau']) {
+    const r = parseLoc('', name);
+    assert.equal(r.locIata, '', name + ': no code on the row');
+    assert.equal(r.locName, name, name + ': the feed\'s own words');
+  }
 });
