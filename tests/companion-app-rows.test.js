@@ -43,10 +43,12 @@ const line = (re) => { const m = APP.match(re); assert.ok(m, String(re)); return
 // The app's city table as the page builds it (its own names, then the boards'
 // table from shared-names.js, then the airport catalogue), with the code
 // lookup and the row's parts, in one context like the page's globals
-function page() {
+function page(v66) {
   const ctx = { console };
   ctx.window = ctx;
   vm.runInNewContext(SHARED, ctx);
+  // (v24066's app: its own copy of the boards' names, and no v24066 list)
+  if (v66) { ctx.FIDS_SHARED_CITY = vm.runInNewContext('(' + JSON.stringify(Object.fromEntries(v66)) + ')'); delete ctx.FIDS_SHARED_CITY_V24066; }
   vm.runInNewContext(
     'var T=function(k){return k==="via"?"via":k;};'
     + 'var dispIata=function(c){return c;};'
@@ -142,6 +144,41 @@ test('a far end the feed names without its code gets the code from the boards\' 
   // fetchDir fills it before the list is made
   const fd = fn('fetchDir');
   assert.ok(fd.indexOf('f.cityIata=cityCodeOf(f.cityName)') > 0 && fd.indexOf('f.cityIata=cityCodeOf(f.cityName)') < fd.indexOf('return cardList('));
+});
+
+// v24067 — this build renames places in the boards' table (FIDS_SHARED_CITY,
+// as in CITY) and names others. The app finds a flight's code by those
+// names, so it reads each changed entry as v24066 had it
+// (FIDS_SHARED_CITY_V24066): every name of either build reads the code it
+// read in v24066's app, whose table is tests/fixtures/city-tables-v24066.json
+// (verbatim from main at fd928aac).
+test('a name with no code reads on the app as it did in v24066, every name of either build', () => {
+  const V66 = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'city-tables-v24066.json'), 'utf8')).FIDS_SHARED_CITY;
+  const now = page(), then = page(V66);
+  const key = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+(international\s+|regional\s+)?airport$/, '').replace(/[^a-z]/g, '');
+  // each entry this build changed is there, as the letters of v24066's name
+  const was = now.FIDS_SHARED_CITY_V24066, v66 = Object.fromEntries(V66), sh = now.FIDS_SHARED_CITY;
+  for (const c of new Set(Object.keys(sh).concat(Object.keys(v66)))) {
+    if (key(sh[c]) === key(v66[c])) assert.ok(!(c in was) || was[c] === key(v66[c]), c);
+    else assert.equal(was[c], key(v66[c]), 'FIDS_SHARED_CITY_V24066.' + c);
+  }
+  const strip = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const names = new Set(['Eagle', 'Beaver', 'Leon', 'León', 'West Palm Beach', 'Savoy', 'Champaign', 'Turin', 'Chisasibi', 'Kuujjuarapik', 'Fort Worth', 'Tacoma']);
+  for (const X of [now, then]) { for (const c in X.FIDS_SHARED_CITY) names.add(X.FIDS_SHARED_CITY[c]); for (const c in X.CITY) names.add(X.CITY[c]); }
+  const bad = [];
+  let n = 0;
+  for (const nm of names) for (const x of [nm, strip(nm), nm.toUpperCase(), nm.toLowerCase(), nm + ' Airport']) {
+    n++;
+    if (now.cityCodeOf(x) !== then.cityCodeOf(x)) bad.push(`'${x}': ${then.cityCodeOf(x) || '-'} -> ${now.cityCodeOf(x) || '-'}`);
+  }
+  assert.ok(n > 20000, n + ' names');
+  assert.deepEqual(bad, []);
+  // the review's cases: West Palm Beach is PBI (its new code DJT is the same
+  // airport, and was no name of v24066's), the old names keep their codes,
+  // and a new name is no code yet
+  for (const [x, code] of [['West Palm Beach', 'PBI'], ['Savoy', 'CMI'], ['Sarasota', 'SRQ'], ['Beaver', ''], ['Champaign', ''], ['Turin', ''], ['Kuujjuarapik', '']]) {
+    assert.equal(now.cityCodeOf(x), code, x);
+  }
 });
 
 // ── 2. CODESHARES ──────────────────────────────────────────────────────────

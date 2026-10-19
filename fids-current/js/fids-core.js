@@ -32846,13 +32846,14 @@ function _isRealApCode(code) {
 // letters, only when the word is in capitals ('Toronto YYZ', never 'Del
 // Mar'). `m` is the split: [, the words before, the last word]. A name of
 // three letters, written as a name, is that place too ('Nan' is Nan, not
-// Nadi's NAN); in capitals it stays a code, as before.
+// Nadi's NAN); in capitals it stays a code, as before. A whole name is any
+// name of ours, as the tables write it now or the rows read it (_rowIndex).
 // (tests/earth-floor-places.test.js)
 function _cityWholeName(s) {
   try {
     if (typeof _iataFromCityName !== 'function') return false;
     if (_iataFromCityName(s)) return true;
-    return !!(typeof _CITY2IATA !== 'undefined' && _CITY2IATA && _CITY2IATA[_normCityKey(s)]);
+    return !!(typeof _rowIndex === 'function' && _rowIndex()[_normCityKey(s)]);
   } catch (e) { return false; }
 }
 function _cityWordIsCode(whole, m) {
@@ -32975,6 +32976,141 @@ var _CITY2IATA_ALIAS = {
   pensacola: 'PNS', syracuse: 'SYR',
   raleighdurham: 'RDU', raleighdurhamnc: 'RDU'
 };
+// v24067 — THE ROWS READ THE NAMES THEY READ IN v24066. This build gives
+// CITY and CITY_FR a name for places that had none and a better name for
+// others (two places joined, a suburb or village where the airport is named
+// for a city, an island's town for the island), for the map under the rows
+// (fids-earth.js), and every surface prints the new names. But a row with
+// no code finds its code by its words in these same tables (the name index
+// here, and the feed parser's own reading in fetchLive), and a new name
+// there was a new answer for a row: 'Eagle' read Eagle, Alaska once Vail's
+// French name was no longer 'Eagle', 'Beaver' read Beaver, Alaska, 'León'
+// read León, Spain (León in Mexico, BJX, is 'Silao' in the tables), and
+// 'Sarasota/Bradenton', 'Providence/Warwick' and every other old name lost
+// its code. So the rows read each entry below as it was in v24066: a row's
+// code, and with it its weather, gate, aircraft and route checks, is what it
+// was for every name, but for 'Fort Worth' (_cityIndex). The map reads the
+// names now and these both (_iataFromRowName). These are the entries of
+// CITY and CITY_FR that this build added or renamed (other than in capitals
+// and accents), each as the letters the name index reads of its v24066 name
+// (_normCityKey; '' where the table had no name for the code then). They
+// are never shown: what a passenger reads is CITY and CITY_FR. A later
+// change to one of these codes' names reaches the map and not the rows.
+// (tests/earth-floor-places.test.js holds the rows' answer for every name,
+// old and new, to v24066's: tests/fixtures/city-tables-v24066.json.)
+var _CITY_V24066 = {
+  ABX: 'eastalbury', AKJ: 'higashikagura', AKV: '', ALP: '', AVV: 'geelongmelbourne', BEB: 'balivanich',
+  BEM: 'ouladyaich', BEY: '', BGW: '', BKH: '', BKW: 'beaver', BON: '', BQL: 'bouliaairport',
+  BRK: 'bourkeairport', BRR: 'eoligarry', BSR: '', BTS: '', BVI: 'birdsvilleairport', BVL: '', CAP: '',
+  CAZ: 'cobarairport', CED: 'cedunaairport', CHG: 'shuangtachaoyang', CHQ: 'souda', CHT: 'teone',
+  CMA: 'cunnamullaairport', CMI: 'savoy', CNB: 'coonambleairport', CPC: 'chapelcosanmartindelosandes',
+  CTN: 'cooktownairport', CYA: '', CYB: 'westend', CZL: '', DAM: '', DAR: '', DJT: '', EAS: 'hondarribia',
+  EBB: '', EBL: '', ETZ: 'goin', FCN: 'wursternordseekuste', FIZ: 'fitzroycrossingairport',
+  FKB: 'rheinmunster', FMO: 'greven', FNI: 'nimesgarons', FSZ: 'makinoharashimada', FUE: 'elmatorral',
+  FUG: 'yingzhoufuyang', GAJ: 'higashine', GBE: '', GCN: 'grandcanyontusayan', GET: 'moonyoonooka',
+  GGT: 'mosstown', GRY: 'grimseysandvik', GRZ: 'feldkirchenbeigraz', GUM: '', GYD: '', HDF: 'zirchow', HDH: '',
+  HKK: 'hokitikaairfield', HRE: '', HUY: 'grimsbylincolnshire', IEG: 'nowekramsko',
+  ILY: 'isleofislayargyllandbute', IMT: 'kingsford', JER: '', JNH: 'xiuzhouhangzhou', JRF: '',
+  JSA: 'jaisalmerairport', JSH: 'creteisland', JYV: 'jyvaskylanmaalaiskunta', KAT: 'awanui', KEM: 'kemitornio',
+  KGC: 'kingscoteairport', KGI: 'broadwood', KJB: 'orvakal', KNS: 'kingislandairport',
+  KOI: 'kirkwallorkneyislands', KOK: 'kokkolakruunupyy', KRF: 'nyland', KSF: 'calden',
+  KUO: 'kuopiosiilinjarvi', KUU: 'bhuntar', LAD: '', LCA: '', LCG: 'culleredo', LDE: 'tarbeslourdespyrenees',
+  LDY: 'derryderryandstrabane', LEJ: 'schkeuditz', LEN: 'lavirgendelcamino', LER: 'leinsterairport',
+  LEU: 'laseudurgellpyreneesandandorra', LGG: 'gracehollogne', LHG: 'lightningridgeairport',
+  LIG: 'limogesbellegarde', LIL: 'lesquin', LME: 'lemanssarthe', LOE: 'loeiairport', LPT: 'lampangairport',
+  LRT: 'lorientlannbihoue', LSC: 'laserenacoquimbo', LSI: 'lerwickshetland', LUG: 'agno', LUN: '',
+  MAQ: 'maesotairport', MAR: '', MBA: '', MGA: '', MKR: 'meekatharraairport', MLE: '', MME: 'darlingtondurham',
+  MMG: 'mountmagnetairport', MPL: 'montpelliermediterranee', MPM: '', MQT: 'gwinn', MRU: '',
+  MTT: 'cosoleacaque', MYG: 'abrahambaysettlement', NAN: '', NAW: 'narathiwatairport', NNT: 'nanairport',
+  NOC: 'charlestown', NOU: '', NWI: 'norwichnorfolk', OAG: '', OKE: 'wadomari', OKY: 'oakeyarmyaviationcentre',
+  ORN: '', OSR: 'mosnov', OUD: 'ahlangad', OUL: 'ouluoulunsalo', OVD: 'ranon', PAD: 'buren', PAK: '',
+  PGF: 'perpignanrivesaltes', PHY: 'phetchabunairport', PIB: 'moselle', PIK: 'prestwicksouthayrshire',
+  PIS: 'poitiersbiard', POM: '', PPG: '', PRN: '', PSO: 'chachagui', PTJ: 'portlandairport',
+  PUG: 'portaugustaairport', RDZ: 'rodezmarcillac', RJA: 'madhurapudi',
+  RNS: 'saintjacquesdelalandeilleetvilaine', RUN: '', SAG: 'kakadi', SAH: '', SDJ: 'natori',
+  SDL: 'sundsvallharnosand', SDW: 'chipi', SEN: 'southendonseaessex', SEZ: '', SFJ: '', SGN: '', SJJ: '',
+  SKN: 'hadsel', SKP: '', SNO: 'sakonnakhonairport', SNR: 'saintnazairemontoir',
+  SPC: 'stacruzdelapalmalapalmaisland', SPN: '', SRP: 'leirvik', SSJ: 'alstahaug', SVD: '',
+  SYY: 'stornowaywesternisles', SZY: 'szymany', TCI: '', TDX: 'laemngop', TEZ: 'tezpurairport', TGD: '',
+  THS: 'sukhothaiairport', TIU: 'timaruairport', TIV: '', TKN: 'amagi', TLL: '', TLN: 'hyeresvar',
+  TMP: 'tamperepirkkala', TNR: '', TRE: 'balemartineargyllandbute', TRN: 'caselletorinese',
+  TRS: 'ronchideilegionaritrieste', TTN: 'ewingtownship', TUF: 'toursindreetloire', TUN: '',
+  ULP: 'quilpieairport', UPP: '', VDM: 'viedmacarmendepatagones', VIT: 'alava', VNO: '',
+  VST: 'stockholmvasteras', WDH: '', WGA: 'foresthill', WGE: 'walgettairport', WIN: 'wintonairport',
+  WOL: 'albionparkrail', WUN: 'wilunaairport', WUZ: 'tangbu', XCR: 'chalonsenchampagne', XGR: '', XPL: '',
+  XQU: '', YAA: '', YCO: '', YFI: '', YGW: 'chisasibi', YIK: '', YIW: 'yiwujinhua', YKG: '', YNY: 'gonghangro',
+  YPW: '', YSQ: 'qiangorlosmongolautonomouscounty', YTF: '', YVQ: '', YWL: '', YYE: '', YYH: '', YZZ: '',
+  ZAG: '', ZEL: '', ZFD: '', ZMT: '', ZNZ: ''
+};
+var _CITY_FR_V24066 = {
+  ABE: 'allentownbethlehem', ABX: 'eastalbury', ACE: 'sanbartolome', ADB: 'gaziemir', AKJ: 'higashikagura',
+  AKV: '', ALP: '', AVV: 'geelongmelbourne', BCM: '', BEB: 'balivanich', BEG: '', BEM: 'ouladyaich', BEY: '',
+  BGW: '', BGY: 'orioalserio', BKH: '', BKW: 'beaver', BOJ: '', BON: '', BQL: 'bouliaairport',
+  BRK: 'bourkeairport', BRR: 'eoligarry', BSR: '', BTS: '', BVI: 'birdsvilleairport', BVL: '', CAP: '',
+  CAZ: 'cobarairport', CBB: '', CCC: 'caycoco', CCS: '', CED: 'cedunaairport', CHG: 'shuangtachaoyang',
+  CHQ: 'souda', CHT: 'teone', CIJ: '', CIU: 'kincheloe', CLJ: '', CMA: 'cunnamullaairport', CMI: 'savoy',
+  CNB: 'coonambleairport', CPC: 'chapelcosanmartindelosandes', CTN: 'cooktownairport', CYA: '', CYB: 'westend',
+  CZL: '', DAM: '', DAR: '', DJT: '', EAS: 'hondarribia', EBB: '', EBL: '', EGE: 'eagle', EI: 'aerlingus',
+  EIS: '', EMA: 'nottinghamleicestershire', ETZ: 'goin', EXT: 'exeterdevon', FAE: '',
+  FCN: 'wursternordseekuste', FIZ: 'fitzroycrossingairport', FKB: 'rheinmunster', FMN: '', FMO: 'greven',
+  FNI: 'nimesgarons', FSP: '', FSZ: 'makinoharashimada', FUE: 'elmatorral', FUG: 'yingzhoufuyang',
+  GAJ: 'higashine', GBE: '', GCI: '', GCN: 'grandcanyontusayan', GET: 'moonyoonooka', GGT: 'mosstown', GIB: '',
+  GRY: 'grimseysandvik', GRZ: 'feldkirchenbeigraz', GUM: '', GYA: '', GYD: '', HAN: '', HDF: 'zirchow',
+  HDH: '', HKK: 'hokitikaairfield', HRE: '', HUY: 'grimsbylincolnshire', IEG: 'nowekramsko',
+  ILY: 'isleofislayargyllandbute', IMT: 'kingsford', IOM: '', ISP: 'islip', JAC: 'jackson', JER: '',
+  JNH: 'xiuzhouhangzhou', JRF: '', JSA: 'jaisalmerairport', JSH: 'creteisland', JYV: 'jyvaskylanmaalaiskunta',
+  KAT: 'awanui', KEM: 'kemitornio', KGC: 'kingscoteairport', KGI: 'broadwood', KGL: '', KIR: 'farranfore',
+  KJB: 'orvakal', KNS: 'kingislandairport', KOA: 'kailuakona', KOI: 'kirkwallorkneyislands',
+  KOK: 'kokkolakruunupyy', KRF: 'nyland', KRK: 'balice', KSC: '', KSF: 'calden', KUO: 'kuopiosiilinjarvi',
+  KUU: 'bhuntar', LAD: '', LBA: 'leedswestyorkshire', LCA: '', LCG: 'culleredo', LDE: 'tarbeslourdespyrenees',
+  LDY: 'derryderryandstrabane', LEJ: 'schkeuditz', LEN: 'lavirgendelcamino', LER: 'leinsterairport',
+  LEU: 'laseudurgellpyreneesandandorra', LGG: 'gracehollogne', LHE: '', LHG: 'lightningridgeairport',
+  LIG: 'limogesbellegarde', LIH: 'lihuekauai', LIL: 'lesquin', LJU: '', LME: 'lemanssarthe',
+  LOE: 'loeiairport', LPT: 'lampangairport', LRT: 'lorientlannbihoue', LSC: 'laserenacoquimbo',
+  LSI: 'lerwickshetland', LUG: 'agno', LUN: '', LUX: '', MAQ: 'maesotairport', MAR: '', MBA: '',
+  MBS: 'freeland', MCT: '', MGA: '', MKR: 'meekatharraairport', MLA: '', MLE: '', MME: 'darlingtondurham',
+  MMG: 'mountmagnetairport', MPL: 'montpelliermediterranee', MPM: '', MQT: 'gwinn', MRU: '',
+  MTT: 'cosoleacaque', MYG: 'abrahambaysettlement', NAN: '', NAW: 'narathiwatairport',
+  NCL: 'newcastleupontynetyneandwear', NNT: 'nanairport', NOC: 'charlestown', NOU: '', NWI: 'norwichnorfolk',
+  OAG: '', OKE: 'wadomari', OKY: 'oakeyarmyaviationcentre', ORN: '', OSR: 'mosnov', OTP: '', OUD: 'ahlangad',
+  OUL: 'ouluoulunsalo', OVD: 'ranon', PAD: 'buren', PAK: '', PFO: '', PGF: 'perpignanrivesaltes',
+  PHY: 'phetchabunairport', PIB: 'moselle', PIE: 'pinellaspark', PIK: 'prestwicksouthayrshire',
+  PIS: 'poitiersbiard', POI: '', POM: '', POP: '', PPG: '', PPT: '', PRN: '', PSO: 'chachagui',
+  PTJ: 'portlandairport', PUG: 'portaugustaairport', PVC: '', PVD: 'providencewarwick', RDZ: 'rodezmarcillac',
+  RIB: '', RIX: '', RJA: 'madhurapudi', RMO: '', RMU: 'corvera', RNS: 'saintjacquesdelalandeilleetvilaine',
+  RUN: '', SAG: 'kakadi', SAH: '', SAL: '', SDJ: 'natori', SDL: 'sundsvallharnosand', SDW: 'chipi',
+  SEN: 'southendonseaessex', SEZ: '', SFJ: '', SGN: '', SJJ: '', SKN: 'hadsel', SKP: '',
+  SNO: 'sakonnakhonairport', SNR: 'saintnazairemontoir', SOF: '', SPC: 'stacruzdelapalmalapalmaisland',
+  SPN: '', SRE: '', SRP: 'leirvik', SRQ: 'sarasotabradenton', SRZ: '', SSJ: 'alstahaug', STX: '',
+  SUN: 'hailey', SVD: '', SYY: 'stornowaywesternisles', SZY: 'szymany', TCI: '', TDD: '', TDX: 'laemngop',
+  TEZ: 'tezpurairport', TGD: '', THS: 'sukhothaiairport', TIA: '', TIU: 'timaruairport', TIV: '', TJA: '',
+  TKN: 'amagi', TLL: '', TLN: 'hyeresvar', TMP: 'tamperepirkkala', TNR: '', TRE: 'balemartineargyllandbute',
+  TRN: 'caselletorinese', TRS: 'ronchideilegionaritrieste', TTN: 'ewingtownship', TUF: 'toursindreetloire',
+  TYS: 'knoxvillemaryville', ULP: 'quilpieairport', UPP: '', UYU: '', VDM: 'viedmacarmendepatagones',
+  VIT: 'alava', VNO: '', VPS: 'valparaiso', VRN: 'caselle', VST: 'stockholmvasteras', VVI: '', WDH: '',
+  WGA: 'foresthill', WGE: 'walgettairport', WIN: 'wintonairport', WOL: 'albionparkrail', WUN: 'wilunaairport',
+  WUZ: 'tangbu', XCR: 'chalonsenchampagne', XGR: '', XPL: '', XQU: '', YAA: '', YBR: '', YCG: '', YCH: '',
+  YCO: '', YEK: '', YFI: '', YFS: '', YGW: '', YHR: '', YIK: '', YIW: 'yiwujinhua', YKG: '', YKL: '', YKZ: '',
+  YLL: '', YMJ: '', YMO: '', YNA: '', YNY: 'gonghangro', YOJ: '', YPA: '', YPE: '', YPW: '', YQI: '', YQQ: '',
+  YRJ: '', YSQ: 'qiangorlosmongolautonomouscounty', YTF: '', YVQ: '', YWK: '', YWL: '', YXC: '', YXJ: '',
+  YYE: '', YYH: '', YYY: '', YZP: '', YZV: '', YZZ: '', ZAG: '', ZEL: '', ZFD: '', ZMT: '', ZNZ: ''
+};
+// a table as the rows read it: its v24066 entry where it has one
+function _cityAsRowsRead(T, W) {
+  var out = {}, own = Object.prototype.hasOwnProperty;
+  Object.keys(T || {}).forEach(function (c) { var n = own.call(W, c) ? W[c] : T[c]; if (n) out[c] = n; });
+  Object.keys(W).forEach(function (c) { if (W[c] && !own.call(out, c)) out[c] = W[c]; });
+  return out;
+}
+var _CITY_ROWS = null, _CITY_FR_ROWS = null;
+function _rowsCity() {
+  if (!_CITY_ROWS) _CITY_ROWS = _cityAsRowsRead(typeof CITY !== 'undefined' ? CITY : {}, _CITY_V24066);
+  return _CITY_ROWS;
+}
+function _rowsCityFr() {
+  if (!_CITY_FR_ROWS) _CITY_FR_ROWS = _cityAsRowsRead(typeof CITY_FR !== 'undefined' ? CITY_FR : {}, _CITY_FR_V24066);
+  return _CITY_FR_ROWS;
+}
 // Accents are folded before anything else is dropped. Without that, the
 // accented letter itself was dropped: our tables write 'ÎLES-DE-LA-MADELEINE',
 // 'SEPT-ÎLES' and 'MONTRÉAL', which keyed as 'lesdelamadeleine', 'septles',
@@ -32984,39 +33120,73 @@ var _CITY2IATA_ALIAS = {
 function _normCityKey(s) {
   return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 }
+// A name index over AP_LIST and the given tables: each whole name and its
+// one code, '!' for a name with two. `seconds`, when given, collects the
+// second names (below).
+function _cityIndex(tables, seconds) {
+  var I = {};
+  var each = function (f) {
+    try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) f(a.c, a.n); }); } catch (e) {}
+    tables.forEach(function (T) { Object.keys(T || {}).forEach(function (c) { f(c, T[c]); }); });
+  };
+  each(function (code, nm) {
+    var kk = _normCityKey(nm), c = String(code).toUpperCase();
+    if (!kk || kk.length < 3 || _IATA_RENAMED[c]) return;
+    if (!I[kk]) I[kk] = c;
+    else if (I[kk] !== c) I[kk] = '!'; // ambiguous — never resolve
+  });
+  // v24067 — A SECOND NAME IS NOT ANOTHER AIRPORT. 'Dallas/Fort Worth' is
+  // DFW's name, and 'Fort Worth' alone is Meacham's (FTW), which has no
+  // airline service: a row or a map reading of 'Fort Worth' read FTW. A
+  // later part of a joined name that is another airport's name is a name
+  // with two airports, and so no one of them, as 'Houston' is. 'Fort Worth'
+  // is the only one in the tables, old names or new; the airport table's
+  // own names add 'Tacoma' (Seattle-Tacoma) and 'Bradford' (Leeds Bradford),
+  // for the map (_ROW_ALSO below; tests/earth-floor-places.test.js scans
+  // every joined name).
+  each(function (code, nm) {
+    var c = String(code).toUpperCase();
+    if (_IATA_RENAMED[c]) return;
+    String(nm || '').split(/\s*\/\s*/).slice(1).forEach(function (part) {
+      var kk = _normCityKey(part);
+      if (kk.length >= 3 && I[kk] && I[kk] !== c) { I[kk] = '!'; if (seconds) seconds[kk] = 1; }
+    });
+  });
+  return I;
+}
+// The rows' index: AP_LIST, and CITY and CITY_FR as the rows read them
+var _CITY_SECOND = null;
 function _iataFromCityName(name) {
   var k = _normCityKey(name);
   if (k.length < 3) return '';
-  if (!_CITY2IATA) {
-    _CITY2IATA = {};
-    var add = function (code, nm) {
-      var kk = _normCityKey(nm);
-      if (!kk || kk.length < 3 || _IATA_RENAMED[String(code).toUpperCase()]) return;
-      if (!_CITY2IATA[kk]) _CITY2IATA[kk] = String(code).toUpperCase();
-      else if (_CITY2IATA[kk] !== String(code).toUpperCase()) _CITY2IATA[kk] = '!'; // ambiguous — never resolve
-    };
-    try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) add(a.c, a.n); }); } catch (e) {}
-    try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
-    try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
-    // v24067 — A SECOND NAME IS NOT ANOTHER AIRPORT. 'Dallas/Fort Worth' is
-    // DFW's name, and 'Fort Worth' alone is Meacham's (FTW), which has no
-    // airline service: a row or a map reading of 'Fort Worth' read FTW. A
-    // later part of a joined name that is another airport's name is a name
-    // with two airports, and so no one of them, as 'Houston' is (the only
-    // one in the tables: tests/earth-floor-places.test.js).
-    var second = function (code, nm) {
-      String(nm || '').split(/\s*\/\s*/).slice(1).forEach(function (part) {
-        var kk = _normCityKey(part);
-        if (kk.length >= 3 && _CITY2IATA[kk] && _CITY2IATA[kk] !== String(code).toUpperCase() && !_IATA_RENAMED[String(code).toUpperCase()]) _CITY2IATA[kk] = '!';
-      });
-    };
-    try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) second(a.c, a.n); }); } catch (e) {}
-    try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { second(c, CITY[c]); }); } catch (e) {}
-    try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { second(c, CITY_FR[c]); }); } catch (e) {}
-  }
+  if (!_CITY2IATA) { _CITY_SECOND = {}; _CITY2IATA = _cityIndex([_rowsCity(), _rowsCityFr()], _CITY_SECOND); }
   if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
   var hit = _CITY2IATA[k];
   return (hit && hit !== '!') ? hit : '';
+}
+// a later part of a joined name that is another airport's ('Fort Worth'):
+// the feed parser's reading in fetchLive passes over it, as the index does
+function _cityIsSecondName(nm) {
+  if (!_CITY2IATA) _iataFromCityName('xxx');
+  return !!(_CITY_SECOND && _CITY_SECOND[_normCityKey(nm)]);
+}
+// The feed parser's reading of one entry of the rows' CITY (fetchLive): does
+// its name read `cn`, the feed's words as the parser folds them (capitals,
+// accents and a last word 'Airport' dropped)? Never a second name. A name
+// of v24066's is known here by its letters (_CITY_V24066): one that lost its
+// word 'Airport' since ('KING ISLAND AIRPORT', now 'KING ISLAND') is spelt
+// as the name now; one whose letters are this airport's alone is read by
+// its letters, as the parser's last reading (the name index) gives them
+// this airport anyway; one whose letters are two airports' ('BEAVER') is
+// one word, spelt so. (tests/earth-floor-places.test.js tries every name of
+// both builds, and their spellings, against v24066's parser.)
+function _rowsCityIs(code, name, cn, fold) {
+  if (!Object.prototype.hasOwnProperty.call(_CITY_V24066, code)) return fold(name) === cn && !_cityIsSecondName(name);
+  var full = _CITY_V24066[code], w = String(full || '').replace(/(international|regional)?airport$/, '');
+  if (!w || _normCityKey(cn) !== w) return false;
+  if (full !== w) return cn === fold((typeof CITY !== 'undefined' && CITY[code]) || '');
+  if (!_CITY2IATA) _iataFromCityName('xxx');
+  return _CITY2IATA[full] === code || cn === w.toUpperCase();
 }
 
 // v24067 — THE MAP'S READING OF A ROW WITH NO CODE (fids-earth.js rowCode).
@@ -33024,11 +33194,14 @@ function _iataFromCityName(name) {
 // the row has no code and the map under the rows drew no route to it (the
 // overnight sweep of every airport's board, 2026-10-19). _iataFromRowName
 // reads these FOR THE MAP ONLY: the rows keep their own words and their
-// missing code (_iataFromCityName above is unchanged), so a row's weather,
-// gate, aircraft and route checks are what they were. Each rule is tried
-// only when the whole name finds nothing, and none ever picks one airport of
-// a name that has two (tests/earth-floor-places.test.js holds every rule to
-// the whole index):
+// missing code (_iataFromCityName above reads as v24066 did), so a row's
+// weather, gate, aircraft and route checks are what they were. The map's
+// whole names are every name the tables write now, every name the rows read
+// (v24066's) and _ROW_ALSO (_rowIndex below): a name the rows read as one
+// airport the map reads as that airport or as none, never another. Each rule
+// is tried only when the whole name finds nothing, and none ever picks one
+// airport of a name that has two (tests/earth-floor-places.test.js holds
+// every rule to the whole index):
 //   'Harrisburg, PA'   a US state or Canadian province after a comma: the
 //                      one airport of that name that OurAirports places in
 //                      that state or province (_ROW_REGION), if exactly one
@@ -33043,8 +33216,9 @@ function _iataFromCityName(name) {
 // one.
 // Pascan's 'St Hubert' at Québec is Montréal Saint-Hubert; Porter's 'Toronto
 // Centre-Ville' is Billy Bishop (the city centre airport); 'Ft Mackay/
-// Firebag' is the Firebag aerodrome; Norman Wells has no name of its own in
-// our tables. 'Cincinnati, OH' is the Cincinnati airport (CVG, across the
+// Firebag' is the Firebag aerodrome; Norman Wells and Firebag had no name of
+// their own in v24066's tables (the rows read them as it did, with no code).
+// 'Cincinnati, OH' is the Cincinnati airport (CVG, across the
 // river in Kentucky): read by its state, it would be Lunken (LUK), the one
 // airport named Cincinnati in Ohio.
 var _ROW_NAME_ALIAS = {
@@ -33052,6 +33226,44 @@ var _ROW_NAME_ALIAS = {
   ftmackayfirebag: 'YFI', fortmackayfirebag: 'YFI', firebag: 'YFI',
   normanwells: 'YVQ', cincinnatioh: 'CVG'
 };
+// A second name of an airport that no table writes, and that is another
+// airport's name: the map reads it as a name with two airports, and so no
+// one of them, as it does 'Fort Worth' (_cityIndex). The airport table's
+// own names join two places twice where the later is another airport's:
+// 'Tacoma' is Seattle-Tacoma's (SEA) and Tacoma Narrows' (TIW), which has no
+// airline service, and 'Bradford' is Leeds Bradford's (LBA) and Bradford,
+// Pennsylvania's (BFD; 'Bradford, PA' still reads BFD). 'León' is León,
+// Spain (LEN) and León, Mexico (BJX, which the tables name by its
+// municipality, Silao). Each is written as the letters the name index reads
+// (as _CITY_V24066 is). The rows read these as v24066 did (Tacoma TIW,
+// Bradford BFD, León no code).
+var _ROW_ALSO = { SEA: 'tacoma', LBA: 'bradford', BJX: 'leon' };
+// v24066's names as the map reads them, and _ROW_ALSO: all but YGW's, which
+// was a mistake (YGW, Kuujjuarapik, was written Chisasibi, YKU's name: the
+// rows read 'Chisasibi' as v24066 did, a name with two codes; the map, YKU)
+var _ROW_OLD = null;
+function _rowOldNames() {
+  if (!_ROW_OLD) {
+    _ROW_OLD = [_CITY_V24066, _CITY_FR_V24066].map(function (W) {
+      var o = {}; Object.keys(W).forEach(function (c) { if (c !== 'YGW') o[c] = W[c]; }); return o;
+    }).concat([_ROW_ALSO]);
+  }
+  return _ROW_OLD;
+}
+var _ROW2IATA = null;
+// The map's whole names: the tables now, v24066's names, and _ROW_ALSO
+function _rowIndex() {
+  if (!_ROW2IATA) _ROW2IATA = _cityIndex([typeof CITY !== 'undefined' ? CITY : {}, typeof CITY_FR !== 'undefined' ? CITY_FR : {}].concat(_rowOldNames()));
+  return _ROW2IATA;
+}
+// a whole name, on the map: its one code, or ''
+function _rowWhole(s) {
+  var k = _normCityKey(s);
+  if (k.length < 3) return '';
+  if (_CITY2IATA_ALIAS[k]) return _CITY2IATA_ALIAS[k];
+  var hit = _rowIndex()[k];
+  return (hit && hit !== '!') ? hit : '';
+}
 // Each US state's and Canadian province's airports among ours, by
 // OurAirports' region (ourairports.com/data, public domain, iso_region), and
 // only where the board's own position for the code agrees (YMU is left out:
@@ -33142,7 +33354,8 @@ function _rowRegion(c) {
   }
   return _ROW_REGION_OF[String(c).toUpperCase()] || '';
 }
-// every code a name is ours for (the index keeps one, or '!' for two)
+// every code a name is ours for, on the map (the index keeps one, or '!'
+// for two)
 var _ROW_CODES = null;
 function _rowCodesAll(k) {
   if (!_ROW_CODES) {
@@ -33156,6 +33369,7 @@ function _rowCodesAll(k) {
     try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a && a.c && a.n) add(a.c, a.n); }); } catch (e) {}
     try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
     try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
+    _rowOldNames().forEach(function (T) { Object.keys(T).forEach(function (c) { add(c, T[c]); }); });
     [_CITY2IATA_ALIAS, _ROW_NAME_ALIAS].forEach(function (T) { Object.keys(T).forEach(function (kk) { add(T[kk], kk); }); });
   }
   return _ROW_CODES[k] || [];
@@ -33165,8 +33379,8 @@ function _rowCodesAll(k) {
 function _rowWholeOrSpelt(s) {
   var k = _normCityKey(s);
   if (k.length < 3) return '';
-  if (!_CITY2IATA) _iataFromCityName(s);      // the index, built once
-  var one = function (kk) { return _CITY2IATA_ALIAS[kk] || _ROW_NAME_ALIAS[kk] || (_CITY2IATA && _CITY2IATA[kk]) || ''; };
+  var I = _rowIndex();
+  var one = function (kk) { return _CITY2IATA_ALIAS[kk] || _ROW_NAME_ALIAS[kk] || I[kk] || ''; };
   var hit = one(k);
   if (hit) return hit;
   var t = ' ' + String(s).replace(/[.\-‐-―]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', got = '';
@@ -33201,6 +33415,7 @@ function _rowMetro(city, reg) {
     try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a) add(a.c, a.n); }); } catch (e) {}
     try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
     try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
+    _rowOldNames().forEach(function (T) { Object.keys(T).forEach(function (c) { add(c, T[c]); }); });
   }
   var w = low(city), out = [];
   if (w.length < 3) return out;
@@ -33213,7 +33428,7 @@ function _rowMetro(city, reg) {
 function _iataFromRowName(name) {
   var s = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
   if (_normCityKey(s).length < 3) return '';
-  var whole = _iataFromCityName(s);
+  var whole = _rowWhole(s);
   if (whole) return whole;
   // 'Harrisburg, PA': that name's one airport in that state or province
   var st = /^(.+?)\s*,\s*([A-Za-z]{2})\.?$/.exec(s);
@@ -41203,13 +41418,15 @@ function mapADB(raw, mode, kept) {
     // case- and accent-insensitive (CITY values are ALL-CAPS, the API sends
     // mixed case, so a strict === never matched). Restoring the code also
     // reconnects the weather column, which keys off _locIata via COORDS.
+    // (v24067: CITY as the rows read it, v24066's names, and never a second
+    // name, 'Fort Worth': _rowsCity, _rowsCityIs)
     if (!locIata && cityName) {
       const _fold = s => String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/['\u2019\u02bc]/g, "'")
         .replace(/\s+(INTERNATIONAL\s+|REGIONAL\s+)?AIRPORT$/,'').replace(/\s+/g, ' ').trim();
       const _lookup = (cn) => {
         if (!cn) return '';
-        for (const [k, v] of Object.entries(CITY)) { if (_fold(v) === cn) return k; }
+        for (const [k, v] of Object.entries(_rowsCity())) { if (_rowsCityIs(k, v, cn, _fold)) return k; }
         if (typeof AP !== 'undefined') {
           for (const k of Object.keys(AP)) { if (_fold(AP[k].name) === cn) return k; }
         }
@@ -41232,7 +41449,7 @@ function mapADB(raw, mode, kept) {
           const _citySeg = _fold(_parts[0]);
           const _qualSeg = _fold(_parts.slice(1).join(' '));
           const _cands = [];
-          for (const [k, v] of Object.entries(CITY)) { if (_fold(v) === _citySeg) _cands.push(k); }
+          for (const [k, v] of Object.entries(_rowsCity())) { if (_rowsCityIs(k, v, _citySeg, _fold)) _cands.push(k); }
           if (typeof AP !== 'undefined') {
             for (const k of Object.keys(AP)) {
               if (_fold(AP[k].name).indexOf(_citySeg) === 0 && _cands.indexOf(k) === -1) _cands.push(k);

@@ -731,8 +731,17 @@ function cityCodeOf(name){
     const add=function(c,n){const kk=_cityKey(n),cc=String(c).toUpperCase();if(kk.length<3)return;
       if(!_CITY_CODE[kk])_CITY_CODE[kk]=cc;else if(_CITY_CODE[kk]!==cc)_CITY_CODE[kk]='!';};
     const sh=window.FIDS_SHARED_CITY||{};
-    for(const c in sh)add(c,sh[c]);
-    for(const c in CITY)add(c,CITY[c]);
+    // v24067 — the boards' names as v24066 had them, where this build changed
+    // one (shared-names.js FIDS_SHARED_CITY_V24066, the letters this lookup
+    // reads): a flight's code is what it was for every name. An entry of
+    // CITY taken from the boards' table is that name; one v24066's table
+    // did not have came from the airport catalogue then, or not at all.
+    const was=window.FIDS_SHARED_CITY_V24066||{},own=Object.prototype.hasOwnProperty;
+    for(const c in sh)add(c,own.call(was,c)?was[c]:sh[c]);
+    for(const c in CITY){
+      if(own.call(was,c)&&CITY[c]===_tcCity(sh[c])){if(!was[c]&&AIRPORTS[c])add(c,String(AIRPORTS[c].n).split(' · ')[0]);continue;}
+      add(c,CITY[c]);
+    }
   }
   const hit=_CITY_CODE[k];
   return (hit&&hit!=='!')?hit:'';

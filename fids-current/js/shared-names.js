@@ -836,6 +836,50 @@ window.FIDS_SHARED_CITY = {
   YZZ:'TRAIL',              ZAG:'ZAGREB',             ZEL:'BELLA BELLA',        ZFD:'FOND-DU-LAC',
   ZMT:'MASSET',             ZNZ:'ZANZIBAR',
 };
+// v24067 — THE APP'S ROWS READ THE NAMES THEY READ IN v24066. This build
+// renames places in FIDS_SHARED_CITY (as in the boards' CITY) and names
+// others, and the app finds the code of a flight its feed names but does not
+// code by those names (app.html cityCodeOf). So the app reads each entry
+// below as it was in v24066: the letters its lookup reads of v24066's name
+// ('' where the table had no name for the code then); never shown. The
+// boards' rows do the same (fids-core.js _CITY_V24066). A later change to
+// one of these codes' names is not read by the app's lookup.
+// (tests/companion-app-rows.test.js)
+window.FIDS_SHARED_CITY_V24066 = {
+  ABX:'eastalbury', ACE:'sanbartolome', ADB:'gaziemir', AKJ:'higashikagura', AKV:'', ALP:'',
+  AVV:'geelongmelbourne', BCM:'', BEB:'balivanich', BEM:'ouladyaich', BEY:'', BGW:'', BGY:'orioalserio',
+  BKH:'', BKW:'beaver', BON:'', BRR:'eoligarry', BSR:'', BTS:'', BVL:'', CAP:'', CHG:'shuangtachaoyang',
+  CHQ:'souda', CHT:'teone', CLJ:'', CMI:'savoy', CPC:'chapelcosanmartindelosandes', CYA:'', CYB:'westend',
+  CZL:'', DAM:'', DAR:'', DJT:'', EAS:'hondarribia', EBB:'', EBL:'', EMA:'nottinghamleicestershire',
+  ETZ:'goin', EXT:'exeterdevon', FCN:'wursternordseekuste', FKB:'rheinmunster', FMO:'greven',
+  FNI:'nimesgarons', FSZ:'makinoharashimada', FUE:'elmatorral', FUG:'yingzhoufuyang', GAJ:'higashine', GBE:'',
+  GCN:'grandcanyontusayan', GET:'moonyoonooka', GGT:'mosstown', GRY:'grimseysandvik', GRZ:'feldkirchenbeigraz',
+  GUM:'', GYD:'', HDF:'zirchow', HDH:'', HKK:'hokitikaairfield', HRE:'', HUY:'grimsbylincolnshire',
+  IEG:'nowekramsko', ILY:'isleofislayargyllandbute', IMT:'kingsford', JER:'', JNH:'xiuzhouhangzhou', JRF:'',
+  JSH:'creteisland', JYV:'jyvaskylanmaalaiskunta', KAT:'awanui', KEM:'kemitornio', KGI:'broadwood',
+  KIR:'farranfore', KJB:'orvakal', KOI:'kirkwallorkneyislands', KOK:'kokkolakruunupyy', KRF:'nyland',
+  KRK:'balice', KSF:'calden', KUO:'kuopiosiilinjarvi', KUU:'bhuntar', LAD:'', LBA:'leedswestyorkshire', LCA:'',
+  LCG:'culleredo', LDE:'tarbeslourdespyrenees', LDY:'derryderryandstrabane', LEJ:'schkeuditz',
+  LEN:'lavirgendelcamino', LEU:'laseudurgellpyreneesandandorra', LGG:'gracehollogne', LIG:'limogesbellegarde',
+  LIL:'lesquin', LME:'lemanssarthe', LRT:'lorientlannbihoue', LSC:'laserenacoquimbo', LSI:'lerwickshetland',
+  LUG:'agno', LUN:'', MAR:'', MBA:'', MGA:'', MLE:'', MME:'darlingtondurham', MPL:'montpelliermediterranee',
+  MPM:'', MQT:'gwinn', MRU:'', MTT:'cosoleacaque', MYG:'abrahambaysettlement', NAN:'',
+  NCL:'newcastleupontynetyneandwear', NOC:'charlestown', NOU:'', NWI:'norwichnorfolk', OAG:'', OKE:'wadomari',
+  OKY:'oakeyarmyaviationcentre', ORN:'', OSR:'mosnov', OTP:'', OUD:'ahlangad', OUL:'ouluoulunsalo',
+  OVD:'ranon', PAD:'buren', PAK:'', PGF:'perpignanrivesaltes', PIB:'moselle', PIK:'prestwicksouthayrshire',
+  PIS:'poitiersbiard', POM:'', PPG:'', PRN:'', PSO:'chachagui', RDZ:'rodezmarcillac', RJA:'madhurapudi',
+  RMO:'', RMU:'corvera', RNS:'saintjacquesdelalandeilleetvilaine', RUN:'', SAG:'kakadi', SAH:'', SDJ:'natori',
+  SDL:'sundsvallharnosand', SDW:'chipi', SEN:'southendonseaessex', SEZ:'', SFJ:'', SGN:'', SJJ:'',
+  SKN:'hadsel', SKP:'', SNR:'saintnazairemontoir', SPC:'stacruzdelapalmalapalmaisland', SPN:'', SRP:'leirvik',
+  SSJ:'alstahaug', SVD:'', SYY:'stornowaywesternisles', SZY:'szymany', TCI:'', TDX:'laemngop', TGD:'', TIA:'',
+  TIV:'', TKN:'amagi', TLL:'', TLN:'hyeresvar', TMP:'tamperepirkkala', TNR:'', TRE:'balemartineargyllandbute',
+  TRN:'caselletorinese', TRS:'ronchideilegionaritrieste', TTN:'ewingtownship', TUF:'toursindreetloire', TUN:'',
+  UPP:'', VDM:'viedmacarmendepatagones', VIT:'alava', VNO:'', VRN:'caselle', VST:'stockholmvasteras', WDH:'',
+  WGA:'foresthill', WOL:'albionparkrail', WUZ:'tangbu', XGR:'', XPL:'', XQU:'', YAA:'', YCO:'', YFI:'',
+  YGW:'chisasibi', YIK:'', YIW:'yiwujinhua', YKG:'', YNY:'gonghangro', YPW:'',
+  YSQ:'qiangorlosmongolautonomouscounty', YTF:'', YVQ:'', YWL:'', YYE:'', YYH:'', YZZ:'', ZAG:'', ZEL:'',
+  ZFD:'', ZMT:'', ZNZ:''
+};
 window.FIDS_SHARED_AIRLINE = {
   // Regionals/internationals the map lacked — without an entry here the
   // prefix-first branding can't recognize the code and a feed row marked

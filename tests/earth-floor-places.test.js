@@ -120,18 +120,26 @@ let NAMES_ = null;
 const names = () => NAMES_ || (NAMES_ = (() => {
   const block = CORE.slice(CORE.indexOf('\nvar _CITY2IATA = null;') + 1, CORE.indexOf('\nfunction formatCityIata(') + 1);
   return new Function('CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window', 'BoardStrings',
-    block + '\nreturn { look: _iataFromCityName, row: _iataFromRowName, key: _normCityKey, region: _ROW_REGION, alias: _CITY2IATA_ALIAS, rowAlias: _ROW_NAME_ALIAS, renamed: _IATA_RENAMED, index: function () { _iataFromCityName(\'xxx\'); return _CITY2IATA; } };')(
+    block + '\nreturn { look: _iataFromCityName, row: _iataFromRowName, key: _normCityKey, region: _ROW_REGION, alias: _CITY2IATA_ALIAS, rowAlias: _ROW_NAME_ALIAS, renamed: _IATA_RENAMED, index: function () { _iataFromCityName(\'xxx\'); return _CITY2IATA; },' +
+    ' mapIndex: _rowIndex, V: _CITY_V24066, VFR: _CITY_FR_V24066, also: _ROW_ALSO, rowsCity: _rowsCity, rowsCityFr: _rowsCityFr };')(
     CITY, CITY_FR, AP, AP_LIST, COORDS, GATE_AP, { AIRPORT_COORDS }, BS);
 })());
 // main's own lookup, as it was before v24067: a whole name, or one of its aliases
 const MAIN_ALIAS = { gulfportbiloxi: 'GPT', gulfport: 'GPT', bentonvillefayetteville: 'XNA', northwestarkansas: 'XNA',
   pensacola: 'PNS', syracuse: 'SYR', raleighdurham: 'RDU', raleighdurhamnc: 'RDU' };
-// every name of ours, with every code it is ours for
+// the board's name tables as v24066 had them, verbatim (main at fd928aac)
+const V66 = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'city-tables-v24066.json'), 'utf8'));
+const V66_CITY = Object.fromEntries(V66.CITY), V66_CITY_FR = Object.fromEntries(V66.CITY_FR);
+// every name the map reads, with every code it is ours for: the tables now,
+// v24066's names (but YGW's mistaken 'Chisasibi') and _ROW_ALSO
 function allNames() {
   const ALL = new Map(), key = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
   const addName = (c, n) => { if (!n) return; const k = key(n); if (k.length < 3) return; if (!ALL.has(k)) ALL.set(k, { name: n, codes: new Set() }); ALL.get(k).codes.add(String(c).toUpperCase()); };
   // (DJT is PBI's new code: one airport, named as PBI is)
   AP_LIST.forEach((a) => addName(a.c, a.n)); Object.keys(CITY).forEach((c) => c !== 'DJT' && addName(c, CITY[c])); Object.keys(CITY_FR).forEach((c) => c !== 'DJT' && addName(c, CITY_FR[c]));
+  const N = names();
+  for (const [V, T] of [[N.V, V66_CITY], [N.VFR, V66_CITY_FR]]) for (const c of Object.keys(V)) if (c !== 'YGW' && V[c]) addName(c, T[c]);
+  Object.entries(N.also).forEach(([c, k]) => addName(c, k));
   return ALL;
 }
 
@@ -147,11 +155,11 @@ test('the rows the sweep found with no code: the map reads their airport, the ro
     assert.equal(NAMES.row(name), code, 'the map reads ' + name);
     assert.equal(NAMES.look(name), '', 'the row of ' + name + ' keeps no code (as on main)');
   }
-  // a place that has its own name now (CITY, v24067) is read by that name,
-  // by the rows as by the map, as every city in the table is
+  // a place that has its own name now (CITY, v24067) is read by that name on
+  // the map; the rows read it as v24066 did, with no code (it had no name)
   for (const [name, code] of [['Norman Wells', 'YVQ'], ['Firebag', 'YFI'], ['Managua', 'MGA'], ['Tegucigalpa', 'XPL']]) {
     assert.equal(NAMES.row(name), code, name);
-    assert.equal(NAMES.look(name), code, name);
+    assert.equal(NAMES.look(name), '', name + ' (the rows, as v24066)');
   }
 });
 
@@ -177,23 +185,169 @@ test('and never a wrong airport: a name with two of ours, a place in another sta
   }
 });
 
-// (but for one name: 'Fort Worth' is Dallas/Fort Worth's second name and
-// Meacham's, FTW, which has no airline service; it has no code now, as
-// 'Houston' has none: the fifth review, below)
-const SECOND_NAMES = { fortworth: ['DFW', 'FTW'] };
-test('the rows\' own lookup is main\'s, and the map reads every whole name as the rows do', () => {
-  const NAMES = names(), ALL = allNames();
-  for (const [k, v] of ALL) {
-    const exact = MAIN_ALIAS[k] || (v.codes.size === 1 && !SECOND_NAMES[k] ? [...v.codes][0] : '');
-    assert.equal(NAMES.look(v.name), exact, v.name);
-    if (exact) assert.equal(NAMES.row(v.name), exact, 'the map reads ' + v.name);
+// ── v24067, sixth review: the rows read every name as v24066 did ─────────
+// This build renames places in CITY and CITY_FR and names others for the
+// map. The rows find a code for a row with no code by its words in those
+// tables (the name index, _iataFromCityName; and the feed parser's own
+// reading in fetchLive), so the rows read each changed entry as v24066 had
+// it (fids-core.js _CITY_V24066, _CITY_FR_V24066). These tests hold the
+// rows' answer for every name of either build to v24066's, read from v24066's
+// own tables (tests/fixtures/city-tables-v24066.json, verbatim from main at
+// fd928aac). The one difference on purpose: 'Fort Worth' (and its
+// spellings), Dallas/Fort Worth's second name and Meacham's, no longer reads
+// FTW, Meacham (no airline service).
+const keyOf = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+const foldOf = (s) => String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['\u2019\u02bc]/g, "'")
+  .replace(/\s+(INTERNATIONAL\s+|REGIONAL\s+)?AIRPORT$/, '').replace(/\s+/g, ' ').trim();
+// v24066's name index, as its _iataFromCityName built it: every whole name in
+// AP_LIST, CITY and CITY_FR, its one code, '!' for a name with two; its
+// aliases first
+let V66_INDEX_ = null;
+function v66Index() {
+  if (V66_INDEX_) return V66_INDEX_;
+  const I = {};
+  const add = (c, n) => { const k = keyOf(n); if (k.length < 3) return; c = String(c).toUpperCase(); if (!I[k]) I[k] = c; else if (I[k] !== c) I[k] = '!'; };
+  V66.AP_LIST.forEach(([c, n]) => add(c, n)); V66.CITY.forEach(([c, n]) => add(c, n)); V66.CITY_FR.forEach(([c, n]) => add(c, n));
+  return (V66_INDEX_ = I);
+}
+function v66Look(name) { const k = keyOf(name); if (k.length < 3) return ''; if (MAIN_ALIAS[k]) return MAIN_ALIAS[k]; const h = v66Index()[k]; return h && h !== '!' ? h : ''; }
+// the feed parser's reading of a row with no code (fetchLive), as the board
+// has it now and as v24066 had it: the same code, over v24066's CITY and
+// index, with this build's two changes to it undone (its CITY read as the
+// rows read it, and never a second name)
+function parsers() {
+  const between = (x, y) => { const i = CORE.indexOf(x), j = CORE.indexOf(y, i); assert.ok(i >= 0 && j > i, x); return CORE.slice(i, j); };
+  const body = between('    if (!locIata && cityName) {', '    let locName=formatCityIata(');
+  let old = body;
+  for (const [x, y, n] of [['Object.entries(_rowsCity())', 'Object.entries(CITY)', 2], ['_rowsCityIs(k, v, cn, _fold)', '_fold(v) === cn', 1],
+    ['_rowsCityIs(k, v, _citySeg, _fold)', '_fold(v) === _citySeg', 1]]) { assert.equal(old.split(x).length - 1, n, x); old = old.split(x).join(y); }
+  assert.doesNotMatch(old, /_rowsCity|_cityIsSecondName|_CITY_V24066/, 'v24066\'s parser reads CITY and the index only');
+  const block = CORE.slice(CORE.indexOf('\nvar _CITY2IATA = null;') + 1, CORE.indexOf('\nfunction formatCityIata(') + 1);
+  const now = new Function('CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window', 'BoardStrings',
+    block + '\nreturn function (locIata, cityName) {\n' + body + '\nreturn locIata; };')(CITY, CITY_FR, AP, AP_LIST, COORDS, GATE_AP, { AIRPORT_COORDS }, BS);
+  const then = new Function('CITY', 'AP', '_iataFromCityName', 'return function (locIata, cityName) {\n' + old + '\nreturn locIata; };')(V66_CITY, AP, v66Look);
+  return { now, then };
+}
+// every name of either build: v24066's tables, the tables now, the airport
+// table's own names and the later parts of joined names, and the review's
+// own; each as written, without its accents, in capitals, in small letters,
+// as the board cases it, with 'Airport' after it and with its airport's
+// state or province ('City, ST')
+function regionOfCodes() {
+  const regionOf = {};
+  Object.entries(names().region).forEach(([r, l]) => l.split(' ').forEach((c) => { if (c) regionOf[c] = r; }));
+  BS.FR_FIRST.forEach((c) => { if (!regionOf[c]) regionOf[c] = 'QC'; });
+  return regionOf;
+}
+let EVERY_ = null;
+function everyName() {
+  if (EVERY_) return EVERY_;
+  const regionOf = regionOfCodes(), named = new Map();
+  const put = (c, n) => { if (n && !named.has(n)) named.set(n, c); };
+  V66.AP_LIST.forEach(([c, n]) => put(c, n)); V66.CITY.forEach(([c, n]) => put(c, n)); V66.CITY_FR.forEach(([c, n]) => put(c, n));
+  AP_LIST.forEach((a) => put(a.c, a.n)); Object.entries(CITY).forEach(([c, n]) => put(c, n)); Object.entries(CITY_FR).forEach(([c, n]) => put(c, n));
+  Object.entries(AP).forEach(([c, a]) => { put(c, a.name); put(c, a.sub); });
+  for (const [n, c] of [...named]) String(n).split(/\s*\/\s*|\s+-\s+/).slice(1).forEach((x) => put(c, x));
+  for (const n of ['Eagle', 'Beaver', 'Leon', 'León', 'Silao', 'Sarasota/Bradenton', 'Providence/Warwick', 'Allentown/Bethlehem', 'Knoxville/Maryville',
+    'Gulfport/Biloxi', 'Raleigh/Durham', 'Northwest Arkansas', 'Bentonville/Fayetteville', 'Tacoma', 'Bradford', 'Chisasibi', 'Fort Worth', 'Ft Worth']) put('', n);
+  const strip = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, ''), B = board();
+  const look = new Set(), parse = new Set();
+  for (const [n, c] of named) {
+    for (const v of [n, strip(n), n.toUpperCase(), n.toLowerCase(), B.tc(n.toUpperCase())]) { look.add(v); look.add(v + ' Airport'); if (regionOf[c]) look.add(v + ', ' + regionOf[c]); }
+    // the parser reads a name by its fold (capitals and accents dropped) and its letters: one spelling of each is enough
+    parse.add(n); parse.add(n + ' Airport'); parse.add(n + ' International Airport'); if (regionOf[c]) parse.add(n + ', ' + regionOf[c]);
   }
-  assert.deepEqual(NAMES.alias, MAIN_ALIAS, 'the rows\' aliases are main\'s');
-  assert.equal(NAMES.look('West Palm Beach'), 'PBI', 'West Palm Beach reads PBI, as it did');
-  assert.equal(NAMES.index().westpalmbeach, 'PBI', 'not a name with two codes');
+  return (EVERY_ = { names: named, look: [...look], parse: [...parse] });
+}
+const isFortWorth = (x) => /^fortworth|^ftworth/.test(keyOf(x));
+
+test('the rows read every entry of CITY and CITY_FR this build changed as v24066 had it', () => {
+  const N = names();
+  // each kept as the letters the name index reads of v24066's name ('' where it had none)
+  for (const [V, T, t] of [[N.V, V66_CITY, 'CITY'], [N.VFR, V66_CITY_FR, 'CITY_FR']]) for (const [c, k] of Object.entries(V)) assert.equal(k, keyOf(T[c] || ''), `_${t}_V24066.${c}`);
+  // and every entry this build changed is there: the rows' CITY is v24066's
+  // name for name (its letters, and its spelling for the feed parser: a name
+  // of v24066's that lost its word 'Airport' is spelt as the name now), and
+  // its CITY_FR letter for letter; a code v24066 did not name is not read
+  const rows = N.rowsCity(), rowsFr = N.rowsCityFr();
+  for (const c of new Set(Object.keys(CITY).concat(Object.keys(V66_CITY)))) {
+    const want = V66_CITY[c] || '', got = rows[c] || '';
+    assert.equal(keyOf(got), keyOf(want), 'CITY.' + c + ' as the rows read it');
+    if (!(c in N.V)) assert.equal(foldOf(got), foldOf(want), 'CITY.' + c + ', spelt');
+    else if (want && keyOf(want) !== keyOf(foldOf(want))) assert.equal(foldOf(CITY[c]), foldOf(want), 'CITY.' + c + ': the name now is v24066\'s less its word Airport');
+  }
+  for (const c of new Set(Object.keys(CITY_FR).concat(Object.keys(V66_CITY_FR)))) assert.equal(keyOf(rowsFr[c] || ''), keyOf(V66_CITY_FR[c] || ''), 'CITY_FR.' + c + ' as the rows read it');
+  assert.equal(JSON.stringify(AP_LIST.filter((x) => x && x.c && x.n).map((x) => [x.c, x.n])), JSON.stringify(V66.AP_LIST), 'AP_LIST is v24066\'s');
+  // the rows' index is v24066's, key for key, but for 'Fort Worth'
+  const I = N.index(), I66 = v66Index(), diff = [];
+  for (const k of new Set(Object.keys(I).concat(Object.keys(I66)))) if ((I[k] || '') !== (I66[k] || '')) diff.push(`${k}: ${I66[k] || '-'} -> ${I[k] || '-'}`);
+  assert.deepEqual(diff, ['fortworth: FTW -> !']);
+  assert.deepEqual(N.alias, MAIN_ALIAS, 'the rows\' aliases are v24066\'s');
+  assert.equal(N.look('West Palm Beach'), 'PBI', 'West Palm Beach reads PBI, as it did');
   // the feed mapper reads the rows' lookup, and nothing on the board but the map reads the map's
   assert.match(CORE, /if \(!locIata && typeof _iataFromCityName === 'function'\) locIata = _iataFromCityName\(cityName\) \|\| '';\s*\}\s*let locName=formatCityIata\(CITY\[locIata\] \|\| cityName \|\| locIata \|\| '—', locIata\);/);
   assert.equal((CORE.match(/_iataFromRowName\(/g) || []).length, 1, 'fids-core.js defines _iataFromRowName and never calls it');
+});
+
+test('every name of either build reads on the rows as it did in v24066, but Fort Worth: the name index and the feed parser', () => {
+  const N = names(), E = everyName(), P = parsers();
+  const bad = [];
+  let n = 0;
+  for (const x of E.look) {
+    n++;
+    const got = N.look(x), want = v66Look(x);
+    if (got === want) continue;
+    if (isFortWorth(x) && want === 'FTW' && got === '') continue;
+    bad.push(`look '${x}': ${want || '-'} -> ${got || '-'}`);
+  }
+  assert.ok(n > 20000, n + ' names read by the index');
+  const gained = [];
+  let m = 0;
+  for (const x of E.parse) {
+    m++;
+    const got = P.now('', x), want = P.then('', x);
+    if (got === want) continue;
+    if (isFortWorth(x) && want === 'FTW' && got === '') continue;
+    // Châlons-en-Champagne's name now ('CHÂLONS-EN-CHAMPAGNE', v24066
+    // 'CHALONS EN CHAMPAGNE') with 'Airport' after it: v24066's parser read
+    // no code for it (its letters with 'Airport' are no name of ours); the
+    // rows' reading knows v24066's name by its letters and reads its airport
+    if (!want && got === 'XCR' && /^CHÂLONS-EN-CHAMPAGNE (International )?Airport$/.test(x)) { gained.push(x); continue; }
+    bad.push(`parse '${x}': ${want || '-'} -> ${got || '-'}`);
+  }
+  assert.ok(m > 10000, m + ' names read by the feed parser');
+  assert.deepEqual(bad, []);
+  assert.deepEqual(gained.sort(), ['CHÂLONS-EN-CHAMPAGNE Airport', 'CHÂLONS-EN-CHAMPAGNE International Airport']);
+  // the review's cases
+  for (const [x, code] of [['Eagle', ''], ['Beaver', ''], ['Leon', ''], ['León', ''], ['Silao', 'BJX'], ['Sarasota/Bradenton', 'SRQ'],
+    ['Providence/Warwick', 'PVD'], ['Allentown/Bethlehem', 'ABE'], ['Knoxville/Maryville', 'TYS'], ['Savoy', 'CMI'], ['Champaign', ''], ['Turin', ''],
+    ['Caselle Torinese', 'TRN'], ['Tacoma', 'TIW'], ['Fort Worth', ''], ['FORT WORTH', ''], ['Dallas/Fort Worth', 'DFW']]) {
+    assert.equal(N.look(x), code, 'the rows read ' + x);
+  }
+  for (const [x, code] of [['Eagle', 'EAA'], ['Beaver', 'BKW'], ['Leon', ''], ['Savoy', 'CMI'], ['Turin', ''], ['Sarasota / Bradenton', 'SRQ'], ['Fort Worth', ''], ['Fort Worth - Meacham', '']]) {
+    assert.equal(P.now('', x), code, 'the feed parser reads ' + x);
+  }
+});
+
+test('the map reads every name the rows read as one airport as that airport, or as none; and the names this build gave', () => {
+  const N = names(), E = everyName();
+  const none = new Set();
+  for (const x of E.look) {
+    const r = N.look(x), m = N.row(x);
+    if (!r) continue;
+    if (m === r) continue;
+    assert.equal(m, '', `'${x}': the rows read ${r}, the map ${m}`);
+    none.add(keyOf(x).replace(/airport$/, ''));
+  }
+  // but a second name the tables do not write (_ROW_ALSO): Seattle-Tacoma's
+  // and Leeds Bradford's
+  assert.deepEqual([...none].sort(), ['bradford', 'tacoma']);
+  for (const [x, code] of [['Turin', 'TRN'], ['Champaign', 'CMI'], ['Champaign, IL', 'CMI'], ['Savoy, IL', 'CMI'], ['Norman Wells', 'YVQ'],
+    ['Chisasibi', 'YKU'], ['Eagle', ''], ['Eagle, CO', 'EGE'], ['Eagle, AK', 'EAA'], ['Beaver', ''], ['Beaver, AK', 'WBQ'], ['Beaver, WV', 'BKW'],
+    ['León', ''], ['Leon', ''], ['Silao', 'BJX'], ['Tacoma', ''], ['Tacoma, WA', ''], ['Bradford', ''], ['Bradford, PA', 'BFD'],
+    ['Fort Worth', ''], ['Fort Worth, TX', ''], ['Dallas/Fort Worth', 'DFW']]) {
+    assert.equal(N.row(x), code, 'the map reads ' + x);
+  }
 });
 
 test('each of the map\'s rules holds over the whole index', () => {
@@ -220,7 +374,7 @@ test('each of the map\'s rules holds over the whole index', () => {
   let n = 0;
   for (const [, v] of ALL) for (const st of Object.keys(REGION_EXTENTS).concat(['DC'])) {
     const got = NAMES.row(v.name + ', ' + st); if (!got) continue;
-    if (got === (NAMES.index()[NAMES.key(v.name + ', ' + st)] || '')) continue;   // a whole name of its own
+    if (got === (NAMES.mapIndex()[NAMES.key(v.name + ', ' + st)] || '')) continue;   // a whole name of its own
     if (NAMES.rowAlias[NAMES.key(v.name + ', ' + st)] === got) continue;          // 'Cincinnati, OH'
     assert.equal(regionOf[got], st, `${v.name}, ${st} reads ${got}, which OurAirports places in ${regionOf[got] || 'no state or province'}`);
     const spelt = (NAMES.row(v.name) === got);
@@ -295,7 +449,10 @@ test('Kuujjuarapik is named as itself: YGW was written Chisasibi, which is YKU',
   assert.ok(!CITY_FR.YGW || CITY_FR.YGW === 'KUUJJUARAPIK');
   const p = coordsOf('YGW');
   assert.ok(Math.abs(p[0] - 55.28) < 0.05 && Math.abs(p[1] + 77.77) < 0.05, 'YGW stands at Kuujjuarapik (OurAirports CYGW 55.28, -77.77)');
-  assert.equal(names().look('Chisasibi'), 'YKU', 'and the name Chisasibi is no longer two codes');
+  // the map reads Chisasibi as Chisasibi; the rows read it as v24066 did, a
+  // name with two codes (YGW's name was Chisasibi then)
+  assert.equal(names().row('Chisasibi'), 'YKU', 'and the map reads the name Chisasibi as YKU');
+  assert.equal(names().look('Chisasibi'), '', 'the rows, as v24066 did');
 });
 
 
@@ -409,7 +566,9 @@ test('a word of a whole name is never read as an airport code: \'Le Cap\' is Cap
   const want = [
     ['Le Cap', '', 'Le Cap | CPT'], ['LE CAP', '', 'Le Cap | CPT'], ['Viña del Mar', '', 'Viña del Mar'], ['Del Mar', '', 'Del Mar'],
     ['Isle of Man', '', 'Isle of Man | IOM'], ['La Paz', '', 'La Paz'], ['Mount Isa', '', 'Mount Isa | ISA'], ['Mount Isa', 'ISA', 'Mount Isa | ISA'],
-    ['Al Ain', '', 'Al Ain | AAN'], ['Hua Hin', '', 'Hua Hin | HHQ'], ['Nan', '', 'Nan | NNT'],
+    // ('Nan' is NNT's name since this build: the rows read v24066's, 'Nan
+    // Airport', so 'Nan' has no code, and never Nadi's)
+    ['Al Ain', '', 'Al Ain | AAN'], ['Hua Hin', '', 'Hua Hin | HHQ'], ['Nan', '', 'Nan'],
     // and a code is still read where it is one
     ['Toronto-YYZ', '', 'Toronto | YYZ'], ['TORONTO YYZ', '', 'Toronto | YYZ'], ['Atlanta (ATL) ATL', 'ATL', 'Atlanta | ATL'], ['YYZ', '', 'Toronto | YYZ'],
     ['NAN', '', 'Nadi | NAN'], ['Goose Bay', '', 'Goose Bay | YYR'], ['Montreal | MET', '', 'Montréal | MET']
@@ -695,14 +854,19 @@ test('Fort Worth is Dallas/Fort Worth\'s second name, and never Meacham (FTW, no
   assert.equal(NAMES.index().fortworth, '!', 'a name with two airports');
   // the same for every joined name of ours: its later parts, alone, St/Ft
   // spelt, and with the state or province of the airport, never read
-  // another airport (Dallas/Fort Worth's is the only joined name the tables
-  // hold; the region table's airports of one city, read by state, are no
-  // one of them: 'Dallas, TX', 'Houston, TX' above)
+  // another airport, on the map or the rows (Dallas/Fort Worth's is the only
+  // name the tables now join with a slash; v24066's, which the rows read,
+  // joined four more; the region table's airports of one city, read by
+  // state, are no one of them: 'Dallas, TX', 'Houston, TX' above)
   const regionOf = {};
   Object.entries(NAMES.region).forEach(([r, l]) => l.split(' ').forEach((c) => { if (c) regionOf[c] = r; }));
   BS.FR_FIRST.forEach((c) => { if (!regionOf[c]) regionOf[c] = 'QC'; });
-  const joined = AP_LIST.map((a) => [a.c, a.n]).concat(Object.entries(CITY), Object.entries(CITY_FR)).filter(([, nm]) => /\//.test(String(nm)));
-  assert.deepEqual([...new Set(joined.map(([c]) => c))], ['DFW']);
+  const joinedNow = AP_LIST.map((a) => [a.c, a.n]).concat(Object.entries(CITY), Object.entries(CITY_FR)).filter(([, nm]) => /\//.test(String(nm)));
+  assert.deepEqual([...new Set(joinedNow.map(([c]) => c))], ['DFW']);
+  // and v24066's, which the rows still read (French 'Sarasota / Bradenton' and three more)
+  const joined66 = V66.AP_LIST.concat(V66.CITY, V66.CITY_FR).filter(([, nm]) => /\//.test(String(nm)));
+  assert.deepEqual([...new Set(joined66.map(([c]) => c))].sort(), ['ABE', 'DFW', 'PVD', 'SRQ', 'TYS']);
+  const joined = joinedNow.concat(joined66);
   const bad = [];
   let k = 0;
   for (const [c, nm] of joined) for (const part of String(nm).split(/\s*\/\s*/).slice(1)) {
@@ -713,8 +877,40 @@ test('Fort Worth is Dallas/Fort Worth\'s second name, and never Meacham (FTW, no
       if (got && got !== c) bad.push(`'${f}' (${c} '${nm}') reads ${got}`);
     }
   }
-  assert.ok(k >= 10, k + ' readings');
+  assert.ok(k >= 30, k + ' readings');
   assert.deepEqual(bad, []);
+  // a name joined with a hyphen, in the tables now or in v24066's: no later
+  // part is another airport's but Saint-Pierre's, which is one town's name
+  // (Pierre is Pierre, South Dakota)
+  const hyph = {};
+  for (const [c, nm] of AP_LIST.map((a) => [a.c, a.n]).concat(Object.entries(CITY), Object.entries(CITY_FR), V66.CITY, V66.CITY_FR)) {
+    for (const part of String(nm || '').split(/\s*[-‐-―]\s*/).slice(1)) {
+      const got = NAMES.row(part), st = regionOf[c];
+      if (got && got !== c) hyph[part.toUpperCase()] = c;
+      if (st && NAMES.row(part + ', ' + st) && NAMES.row(part + ', ' + st) !== c) hyph[part.toUpperCase() + ', ' + st] = c;
+    }
+  }
+  assert.deepEqual(hyph, { PIERRE: 'FSP' });
+  // the airport table's own names, word by word: a later word that is another
+  // airport's name is the airport's second name (Seattle-Tacoma, Leeds
+  // Bradford: the map reads it as no one airport, _ROW_ALSO) or not a place
+  // the airport is named for: a province ('London International Airport
+  // (Ontario)'), a person (Billy Bishop, Kingsford Smith, George Enescu) and
+  // a district of the city (Bole, Addis Ababa)
+  const later = {};
+  for (const [c, a] of Object.entries(AP)) for (const nm of [a.name, a.sub]) {
+    const w = String(nm || '').replace(/\b(International|Intl|Regional|Municipal|County|Airport|Airfield|Field)\b\.?/gi, ' ').split(/[\s\/\-–—,()]+/).filter(Boolean);
+    for (let i = 1; i < w.length; i++) for (let j = i + 1; j <= w.length; j++) {
+      const part = w.slice(i, j).join(' ');
+      if (keyOf(part).length < 4) continue;
+      const got = NAMES.row(part);
+      if (got && got !== c) later[part.toUpperCase()] = c;
+    }
+  }
+  assert.deepEqual(later, { ONTARIO: 'YXU', BISHOP: 'YTZ', KINGSFORD: 'SYD', GEORGE: 'BCM', BOLE: 'ADD' });
+  for (const x of ['Tacoma', 'TACOMA', 'Tacoma, WA', 'Bradford']) assert.equal(NAMES.row(x), '', 'the map reads ' + x);
+  assert.equal(NAMES.look('Tacoma'), 'TIW', 'the rows read Tacoma as v24066 did');
+  assert.equal(NAMES.row('Bradford, PA'), 'BFD');
 });
 
 test('a coded row whose words list its stops is named on the map by its code: Orlando\'s \'Chicago, Wichita, Las Vegas, Burbank\' is Burbank', () => {
