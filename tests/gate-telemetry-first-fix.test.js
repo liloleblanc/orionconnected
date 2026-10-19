@@ -3,30 +3,33 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // v24068 — THE GATE MAP'S ALTITUDE MOVES FROM THE FIRST FIX.
 //
-// After a gate screen loaded, the inbound's speed and altitude digits sat still
-// for minutes, then lurched. The model (_gateTelemModel) carries a rate only
+// After a gate screen loaded, the inbound's altitude digits sat still for
+// minutes, then lurched. The model (_gateTelemModel) carries a rate only
 // between TWO different fixes, and the Worker hands every screen the same
 // Flightradar24 answer for up to 180 s, so a fresh screen held one fix and had
 // nothing to carry until the second one arrived.
 //
 // What the board does now, and what these tests hold it to:
-//   - while the screen holds ONE fix for this aircraft (airborne, not
-//     Arrived), the altitude carries that fix's own vertical speed: only
-//     500 ft/min or more (1,000 or more on a reading within 150 ft of a whole
-//     thousand, where turbulence and level captures read a few hundred),
-//     at most 1,800 ft/min, for at most 150 s and the fix's expected life;
-//     never below 1,000 ft or half the reading, never above FL410; the speed
-//     holds;
+//   - on the aircraft's FIRST fix on this screen (airborne, not Arrived), and
+//     only then, the altitude carries that fix's own vertical speed: only
+//     1,000 ft/min or more (a level aircraft reads ±256 to ±768 in turbulence
+//     at any level), at most 1,800 ft/min, for at most 150 s and the fix's
+//     expected life; never below 1,000 ft or half the reading, never above
+//     FL410; the speed holds;
 //   - from the second different fix on, the model is v24065's own function,
-//     character for character, the speed digits are v24065's at every second,
-//     and the altitude digits blend into v24065's (never back while the latest
-//     fix says the aircraft is still going that way, otherwise back no faster
-//     than 30 ft/s) and are v24065's, number for number, once they meet;
-//   - on the ground nothing moves (v24065's own ground rule, and airborne
-//     numbers held by the render after a ground fix are not news); after the
-//     feed's Arrived with no ground fix, nothing moves;
-//   - a different inbound starts from nothing (every field), and an answer
-//     for the inbound before it is ignored;
+//     character for character, and the speed digits are v24065's; the
+//     altitude digits ease onto v24065's with its own 22 % step, but never
+//     against the way the model is carrying the aircraft (500 ft/min or more,
+//     with the newest reading agreeing) and never more than 30 ft in a second
+//     beyond the model's own rate unless v24065's own digits move further,
+//     and they are v24065's, number for number, from the second they meet;
+//   - no one-second change is larger than v24065's that second, or 30 ft;
+//   - on the ground the speed goes only to a ground fix's own speed (v24065
+//     eased it back up to the panel's held airborne reading, at 0 ft); after
+//     the feed's Arrived with no ground fix, nothing moves;
+//   - a different inbound starts from nothing (every field), an answer for the
+//     inbound before it is ignored, and the render no longer hands the new
+//     inbound the shared live position of the one before;
 //   - nothing here asks for anything: no request, no change to the Worker.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -97,8 +100,8 @@ const V65_HASH = {
   _writeGateTelemDom: 'c756a96824660de8ec9380b8614795e3a4bdcf189a16bb8f37d546d9444106ee'
 };
 
-const NEW_NAMES = ['_gateTelemKey', '_gateTelemReset', '_gateTelemSetReal', '_gateTelemModel', '_gateTelemFirstVs', '_gateTelemFirstAlt',
-  '_gateTelemWay', '_gateTelemDown', '_gateTelemAltStep', '_writeGateTelemDom', '_animateGateTelem'];
+const NEW_NAMES = ['_gateTelemKey', '_gateTelemReset', '_gateLivePosFor', '_gateTelemSetReal', '_gateTelemModel', '_gateTelemFirstVs',
+  '_gateTelemFirstAlt', '_gateTelemOnGround', '_gateTelemStill', '_gateTelemRate', '_gateTelemAltStep', '_writeGateTelemDom', '_animateGateTelem'];
 const BUILDS = {
   now: { names: NEW_NAMES, src: NEW_NAMES.map(fnSource).join('\n') },
   v24065: { names: ['_gateTelemSetReal', '_gateTelemModel', '_writeGateTelemDom', '_animateGateTelem'],
@@ -234,6 +237,67 @@ function blended(a, b) {
 const steady = (vs, alt) => flight({ alt, spd: 400, from: -120, plan: () => ({ vs, level: vs < 0 ? 0 : 45000, ds: vs < 0 ? -0.08 : 0.08 }) });
 const LOADS = [['the Worker\'s copy 60 s old', { kv: 60 }], ['170 s old', { kv: 170 }], ['other screens refreshing it', { kv: 10, others: true }]];
 
+// The largest one-second change of the digits, and every second where the
+// new build's digits moved further than v24065's did that same second (by
+// more than 30 ft).
+function stepsVs65(a, b, from, to) {
+  let worstA = 0, worstB = 0;
+  const over = [];
+  for (let i = Math.max(1, from || 1); i < Math.min(b.length, to || b.length); i++) {
+    if (a[i].ft === null || a[i - 1].ft === null || b[i].ft === null || b[i - 1].ft === null) continue;
+    const da = Math.abs(a[i].ft - a[i - 1].ft), db = Math.abs(b[i].ft - b[i - 1].ft);
+    worstA = Math.max(worstA, da); worstB = Math.max(worstB, db);
+    if (db > Math.max(da, 30) + 1) over.push(`second ${i}: ${b[i - 1].ft} → ${b[i].ft} (v24065 ${a[i - 1].ft} → ${a[i].ft})`);
+  }
+  return { worstA, worstB, over };
+}
+
+// The real render lines of _buildV2MapCol that feed the digits: the
+// candidates (the ADS-B answer, the row's own numbers, the shared live
+// position), the sticky fix, the 3-minute hold and the anchor call, lifted
+// verbatim and run after the gate render's line that records whose numbers
+// these are (_gateTelemOwner).
+function renderScreen() {
+  const a = CORE.indexOf('      var _wpC = ');
+  const b = CORE.indexOf('      var _tAnim = window._gateTelemAnim || {};', a);
+  assert.ok(a > 0 && b > a, 'the render\'s telemetry lines');
+  let now = T0;
+  const spans = { 'spd-kph': '', 'alt-ft': '' };
+  const els = Object.keys(spans).map((k) => ({ getAttribute: () => k, set textContent(v) { spans[k] = v; }, get textContent() { return spans[k]; } }));
+  const win = { _gateTelemAnim: { spd: null, alt: null, realSpd: null, realAlt: null, realTs: 0, realSecToArr: null, shimmerPh: 0 }, _adsbLast: {} };
+  const names = NEW_NAMES.concat(['_gateStickyFix']);
+  const src = 'var _gateFixCache = null; var _GATE_FIX_TTL = 240000; var ARR_CONFIRM_MIN = 30;\n'
+    + 'function _gateTrackPush(){}\nfunction _gateLegWindowOpen(){ return true; }\nfunction _gateLiveFix(){ return null; }\nfunction _liveFixPhysOk(){ return true; }\n'
+    + 'function _adsbCached(reg, cs, fl){ var v = window._adsbLast[String(fl || "")]; return (v && Date.now() - v.at < 90000) ? v : null; }\n'
+    + names.map(fnSource).join('\n')
+    + '\nfunction renderTelem(vars){ var _liveSpd = null, _liveAlt = null; var _ib = vars.inboundFlight;\n' + CORE.slice(a, b)
+    + '\n return { liveSpd: _liveSpd, liveAlt: _liveAlt }; }\n'
+    + 'return { renderTelem: renderTelem, ' + names.join(',') + ' };';
+  const api = new Function('window', 'document', 'BoardStrings', 'Date', src)(win, { querySelectorAll: () => els }, { num: (v) => String(v) }, { now: () => now });
+  return {
+    api, win, spans,
+    tick(sec) { now += sec * 1000; },
+    step(n) { for (let k = 0; k < (n || 1); k++) { now += 1000; api._animateGateTelem(); } },
+    // the gate render: whose numbers these are (before the panel is built), then the panel's telemetry lines
+    render(inbound) {
+      win._gatePanelInbound = inbound;
+      win._gateTelemOwner = api._gateTelemKey(inbound);
+      if (win._gateTelemOwner && (win._gateTelemAnim || {}).who !== win._gateTelemOwner) api._gateTelemReset(win._gateTelemOwner);
+      win._gateInbound = inbound;
+      return api.renderTelem({ inboundFlight: inbound, iata: 'YQM' });
+    },
+    // the 60 s poll's ADS-B branch for `inb`, in its own order: the shared
+    // live position first (stamped with the flight), the row, then the anchor
+    poll(inb, ans) {
+      win._adsbLast[inb.flight] = Object.assign({ at: now, fl: inb.flight, via: 'flight', cs: '' }, ans);
+      inb._liveAlt = ans.alt; inb._liveSpd = ans.spd;
+      win._gateInboundLivePos = { lat: 46, lng: -64, speed: ans.spd, altitude: ans.alt, onGround: false, at: now - ans.age * 1000, fl: inb.flight, via: 'flight', cs: '' };
+      api._gateTelemSetReal(ans.spd, ans.alt, ans.vs, ans.age, inb);
+    },
+    ft: () => (spans['alt-ft'] === '' ? null : Number(spans['alt-ft']))
+  };
+}
+
 // ── v24065, kept ────────────────────────────────────────────────────────────
 
 test('the model and the digit writer are v24065\'s, character for character', () => {
@@ -243,33 +307,36 @@ test('the model and the digit writer are v24065\'s, character for character', ()
   assert.equal(sha(fnSource('_writeGateTelemDom')), V65_HASH._writeGateTelemDom, '_writeGateTelemDom is unchanged');
 });
 
-test('the telemetry code asks for nothing: no request, no timer', () => {
+test('the telemetry code asks for nothing: no request, no timer, and the earlier rounds\' helpers are gone', () => {
   for (const n of NEW_NAMES) {
     const s = fnSource(n);
-    assert.doesNotMatch(s, /\bfetch\(|_adsbTelemetry|_adsbFetchOne|_adsbCached|XMLHttpRequest|setTimeout|setInterval|_flownCache/, n);
+    assert.doesNotMatch(s, /\bfetch\(|_adsbTelemetry|_adsbFetchOne|_adsbCached|XMLHttpRequest|setTimeout|setInterval|_flownCache|requestGateRebuild/, n);
   }
-  // the round-1 and round-2 helpers are gone
-  for (const gone of ['_gateTelemFix', '_gateTelemCarry', '_gateTelemTrackPrev', '_gateTelemStep']) {
+  for (const gone of ['_gateTelemFix', '_gateTelemCarry', '_gateTelemTrackPrev', '_gateTelemStep', '_gateTelemWay', '_gateTelemDown']) {
     assert.equal(CORE.indexOf('function ' + gone + '('), -1, gone + ' must be gone');
   }
   assert.doesNotMatch(fnSource('_adsbFetchOne'), /_rxAt/);
   assert.doesNotMatch(fnSource('_adsbTelemetry'), /taken:/);
 });
 
-test('without a vertical speed the digits are v24065\'s at every second (feed readings, held readings)', () => {
-  // the feed's own position and the render's held numbers carry no vertical speed
-  for (const [vs, alt] of [[-1500, 24000], [2000, 9000], [0, 37000]]) {
+test('with no vertical speed, or one under 1,000 ft/min, the digits are v24065\'s at every second', () => {
+  // the feed's own position and the render's held numbers carry no vertical
+  // speed; a level aircraft or a slow climb reads under 1,000
+  for (const [vs, alt, withVs] of [[-1500, 24000, false], [2000, 9000, false], [0, 37000, true], [-768, 11275, true], [640, 3300, true], [-960, 20000, true]]) {
     const f = steady(vs, alt);
     const run = (build) => {
       const S = screen(build);
       const out = [];
       for (let s = 0; s <= 600; s++) {
-        if (s >= 2 && (s - 2) % 180 === 0) { const r = f(s - 60); S.api._gateTelemSetReal(r.spd, r.alt, null, null, S.inb); }
+        if (s >= 2 && (s - 2) % 120 === 0) {
+          const r = f(s - 60);
+          S.api._gateTelemSetReal(r.spd, r.alt, withVs ? vs : null, withVs ? 60 : null, S.inb);
+        }
         S.api._animateGateTelem(); out.push(S.ft() + '/' + S.kph()); S.tick(1);
       }
       return out;
     };
-    assert.deepEqual(run('now'), run('v24065'), `vs ${vs}`);
+    assert.deepEqual(run('now'), run('v24065'), `vs ${vs}, ${withVs ? 'with' : 'without'} the reading`);
   }
 });
 
@@ -316,49 +383,81 @@ test('the speed holds through the first interval and is v24065\'s digit for digi
 
 // ── from the second fix: v24065 ────────────────────────────────────────────
 
-test('from the second fix: v24065\'s model at every second, and its altitude digits once blended (within 25 s)', () => {
+test('from the second fix: v24065\'s model at every second, and its altitude digits within 40 s', () => {
   for (const [vs, alt] of [[-1000, 30000], [-1500, 30000], [-1800, 33000], [-2500, 36000], [1500, 3000], [2500, 3000], [-700, 20000]]) {
     for (const [name, o] of LOADS) {
       const { a, b } = both(steady(vs, alt), Object.assign({ secs: 700 }, o));
       const { i2, from } = blended(a, b);
       for (let i = i2; i < b.length; i++) assert.equal(b[i].model, a[i].model, `${vs} ${name}: the model at second ${i}`);
-      assert.ok(from - i2 <= 25, `${vs} ${name}: blended ${from - i2} s after the second fix`);
+      assert.ok(from - i2 <= 40, `${vs} ${name}: blended ${from - i2} s after the second fix`);
       for (let i = from; i < b.length; i++) assert.equal(b[i].ft, a[i].ft, `${vs} ${name}: the digits at second ${i}`);
     }
   }
 });
 
-test('the second fix blends in: never back up a steady descent or down a steady climb, and no lurch larger than v24065\'s', () => {
-  // (later, v24065's own rate rule can run past the aircraft and come back:
-  // from the blend on that is v24065's, and the same seconds in both builds)
-  for (const [vs, alt] of [[-1000, 30000], [-1500, 30000], [-1800, 33000], [1500, 3000], [2200, 3000]]) {
-    for (const [name, o] of LOADS) {
-      const { a, b } = both(steady(vs, alt), Object.assign({ secs: 500 }, o));
-      const { from } = blended(a, b);
-      const ma = moves(a, Math.sign(vs)), mb = moves(b, Math.sign(vs), 0, from);
-      assert.equal(mb.back, 0, `${vs} ${name}: wound back ${mb.back} ft before the blend ended`);
-      assert.ok(moves(b, Math.sign(vs)).worst <= ma.worst, `${vs} ${name}: largest one-second change ${moves(b, Math.sign(vs)).worst} ft (v24065: ${ma.worst})`);
-      assert.equal(moves(b, Math.sign(vs)).back, ma.back, `${vs} ${name}: and any wind-back after it is v24065's`);
+test('no one-second change is larger than v24065\'s that second, or 30 ft, and nothing goes back up a descent or down a climb that v24065 did not', () => {
+  // steady, and slowing between the first fix and the second (the carry ends
+  // up ahead of the second fix: the digits wait for the model)
+  const profiles = [];
+  for (const [vs, alt] of [[-1000, 30000], [-1800, 33000], [1500, 3000], [2200, 3000]]) profiles.push([Math.sign(vs), steady(vs, alt)]);
+  for (const dir of [-1, 1]) {
+    for (const [v1, v2, sw] of [[3000, 1000, 0], [1800, 900, -10], [2000, 500, -60], [2400, 1200, -20], [1500, 700, 60]]) {
+      const a0 = dir < 0 ? 33000 : 4000;
+      profiles.push([dir, flight({ alt: a0, spd: 380, from: -400, plan: (t) => ({ vs: dir * (t < sw ? v1 : v2), level: dir < 0 ? 2000 : 41000 }) })]);
+    }
+  }
+  for (const [dir, f] of profiles) {
+    for (const [name, o] of LOADS.concat([['10 s old', { kv: 10 }], ['5 s old, refreshed', { kv: 5, others: true }]])) {
+      const { a, b } = both(f, Object.assign({ secs: 700 }, o));
+      const st = stepsVs65(a, b);
+      assert.deepEqual(st.over, [], `${name}: a one-second change larger than v24065's`);
+      assert.ok(moves(b, dir).back <= moves(a, dir).back, `${name}: went back ${moves(b, dir).back} ft against the aircraft (v24065 ${moves(a, dir).back})`);
     }
   }
 });
 
-test('a fix that lands SHORT of the digits (the descent eased off but goes on) never winds them back up', () => {
-  // −1,800 ft/min until 30 s before the load, then −600: the next fix is
-  // above where the first fix's vertical speed carried the digits
+test('the second fix lands behind the carried digits: they wait, never jump on or back (the round-3 jump)', () => {
+  // first fix 20,000 ft at −3,000 ft/min (carried at 1,800), the second 182 s
+  // later at 17,000 ft and −1,000 ft/min: v24065 moves toward 17,000; the
+  // carried digits are already at 15,500 and wait for the model there
+  const run = (build) => {
+    const S = screen(build);
+    S.api._gateTelemSetReal(330, 20000, -3000, 5, S.inb);
+    const out = [];
+    for (let s = 1; s <= 400; s++) {
+      S.tick(1);
+      if (s === 182) S.api._gateTelemSetReal(328, 17000, -1000, 5, S.inb);
+      S.api._animateGateTelem();
+      out.push(S.ft());
+    }
+    return out;
+  };
+  const a = run('v24065'), b = run('now');
+  assert.equal(b[180], 15500, 'set-up: carried to 15,500 ft');
+  for (let i = 181; i < b.length; i++) {
+    assert.ok(b[i] <= b[i - 1], `second ${i + 1}: ${b[i - 1]} → ${b[i]}, never back up`);
+    assert.ok(b[i - 1] - b[i] <= Math.max(30, Math.abs(a[i] - a[i - 1])) + 1, `second ${i + 1}: no lurch on (${b[i - 1]} → ${b[i]})`);
+  }
+  const from = b.findIndex((x, i) => i > 181 && x === a[i]);
+  assert.ok(from > 181 && from < 300, `v24065's digits from second ${from + 1}`);
+  for (let i = from; i < b.length; i++) assert.equal(b[i], a[i], `second ${i + 1}`);
+});
+
+test('a fix that lands SHORT of the digits (the descent eased off but goes on) never winds them back up, and they are v24065\'s within 2 minutes', () => {
+  // −1,800 ft/min until 30 s before the load, then −600
   const eased = flight({ alt: 30000, spd: 420, plan: (t) => (t < -30 ? { vs: -1800, level: 5000 } : { vs: -600, level: 5000 }) });
   const { a, b } = both(eased, { kv: 60, secs: 700 });
   const i2 = b.findIndex((r) => r.two);
   assert.ok(b[i2].ft < eased(i2 - 5).alt - 300, `set-up: the digits (${b[i2].ft}) are below the new fix's ${eased(i2 - 5).alt}`);
-  assert.equal(moves(b, -1).back, 0, 'not one second back up');
+  assert.equal(moves(b, -1, 0, i2 + 120).back, moves(a, -1, 0, i2 + 120).back, 'no second back up that v24065 did not have');
   const { from } = blended(a, b);
-  assert.ok(from < 700, 'and they become v24065\'s');
+  assert.ok(from - i2 <= 120, `v24065's digits ${from - i2} s after the second fix`);
 });
 
-// The same level-offs the previous round of this change replayed. Each one
-// levels AFTER the second fix of a load whose Worker copy was 60 s old: the
-// digits are v24065's from the blend on, wind-back included (v24065's own rate
-// rule runs past a level between two fixes, and that is unchanged here).
+// The same level-offs the previous rounds replayed. Each one levels AFTER the
+// second fix of a load whose Worker copy was 60 s old: the digits are
+// v24065's from the blend on, wind-back included (v24065's own rate rule runs
+// past a level between two fixes, and that is unchanged here).
 const LEVEL_OFFS = [
   ['a descent levelling at 17,700 ft', -1, { alt: 32450, spd: 470, plan: (t) => ({ vs: -1500, level: 17700, ds: t < 190 ? -0.12 : 0 }) }],
   ['a climb levelling at 38,400 ft', 1, { alt: 14400, spd: 400, plan: (t) => ({ vs: 2400, level: 38400, ds: t < 200 ? 0.1 : 0 }) }],
@@ -377,15 +476,13 @@ for (const [name, dir, o] of LEVEL_OFFS) {
   });
 }
 
-test('a level-off INSIDE the first interval: back at 1,800 ft/min at most, then v24065\'s digits', () => {
+test('a level-off INSIDE the first interval: past the level by at most the carry, back at 30 ft/s at most, then v24065\'s digits', () => {
   // the aircraft levels 10 to 90 s after the load, after the fix the screen
-  // carries was taken: the digits go past the level, and come back at an
-  // aircraft's own pace once the next fix says it is level
+  // carries was taken: the digits go past the level, and come back no faster
+  // than an aircraft's own 1,800 ft/min once the next fix says it is level
   for (const L of [10, 40, 90]) {
     for (const [dir, start] of [[-1, 30000], [1, 12000]]) {
       const lvl = start + dir * 25 * (L + 120);
-      // with the speed changing (every answer a new fix) and without (the
-      // level answers repeat the numbers, only the vertical speed changes)
       for (const ds of [-0.05, 0]) {
         const truth = flight({ alt: start, spd: 380, from: -120, plan: () => ({ vs: dir * 1500, level: lvl, ds }) });
         const { a, b } = both(truth, { kv: 10, others: true, secs: 900 });
@@ -395,20 +492,50 @@ test('a level-off INSIDE the first interval: back at 1,800 ft/min at most, then 
         for (let i = end; i < b.length; i++) assert.equal(b[i].ft, a[i].ft, `L ${L} dir ${dir} ds ${ds}: v24065's digits at second ${i}`);
         const carried = Math.max(...b.filter((r) => !r.two && r.ft !== null).map((r) => (r.ft - b[2].ft) * dir));
         assert.ok(carried > 0 && carried <= 150 * 25 + 1, `carried ${carried} ft: never more than 150 s of the fix's vertical speed`);
-        if (b.some((r) => r.two)) {
-          const { from } = blended(a, b);
-          assert.ok(from < 900, `L ${L} dir ${dir}: v24065's digits from second ${from}`);
-        } else {
-          assert.equal(b[900].ft, a[900].ft, `L ${L} dir ${dir}: back on the reading v24065 shows`);
-        }
+        assert.ok(end < 900, `L ${L} dir ${dir}: v24065's digits from second ${end}`);
       }
     }
   }
 });
 
+test('a level-off before the second fix: the newest reading says level, so the digits come back (30 ft/s at most) instead of waiting', () => {
+  // descending 1,800 ft/min, levelling 0 to 20 s before the load; the fix the
+  // screen carries is 65 s old, so the model's own rate between the two fixes
+  // still says descending, and only the newest reading's vertical speed (0)
+  // says the aircraft has stopped
+  for (const lv of [-20, -10, 0]) {
+    const at = flight({ alt: 30000, spd: 420, from: -400, plan: (t) => (t < lv ? { vs: -1800, level: 2000 } : { vs: 0, level: 0 }) })(lv).alt;
+    const f = flight({ alt: 30000, spd: 420, from: -400, plan: () => ({ vs: -1800, level: at, cap: 3 }) });
+    const { a, b } = both(f, { kv: 60, secs: 700 });
+    const { i2, from } = blended(a, b);
+    assert.ok(b[i2].ft < at - 1000, `set-up (level ${lv} s): carried past the level, to ${b[i2].ft}`);
+    assert.ok(b[i2 + 30].ft > b[i2].ft + 500, `level ${lv} s: coming back up (${b[i2].ft} → ${b[i2 + 30].ft})`);
+    assert.ok(moves(b, -1, i2, from).worstBack <= 30, `level ${lv} s: no faster than 30 ft/s`);
+    assert.ok(from - i2 <= 90, `level ${lv} s: v24065's digits ${from - i2} s after the second fix`);
+  }
+});
+
+test('an airborne first fix next to a ground fix the row still carries is not carried, then or once the flag goes', () => {
+  // the board calls the aircraft on the ground (its row's ground flag) while
+  // the answer says airborne: v24065's model holds 0 ft; nothing is carried,
+  // and when the feed rebuilds the row the digits are v24065's
+  const run = (build) => {
+    const S = screen(build);
+    S.inb._liveOnGround = true;
+    S.poll({ spd: 160, alt: 1500, vs: 2500, age: 5 });
+    const out = [];
+    for (let s = 0; s <= 400; s++) {
+      if (s === 120) { const nr = { flight: 'WS812', status: 'En route' }; S.win._gateInbound = nr; S.win._gatePanelInbound = nr; }
+      S.api._animateGateTelem(); out.push(S.ft() + '/' + S.kph()); S.tick(1);
+    }
+    return out;
+  };
+  assert.deepEqual(run('now'), run('v24065'));
+});
+
 // ── the carry's bounds ─────────────────────────────────────────────────────
 
-test('the carry: the fix\'s own vertical speed, 500 ft/min or more, at most 1,800, for at most 150 s and its expected life', () => {
+test('the carry: the fix\'s own vertical speed, 1,000 ft/min or more, at most 1,800, for at most 150 s and its expected life', () => {
   const carried = (vs, age, alt, sec) => {
     const S = screen();
     S.poll({ spd: 400, alt: alt || 20500, vs, age: age || 0 });
@@ -421,38 +548,31 @@ test('the carry: the fix\'s own vertical speed, 500 ft/min or more, at most 1,80
   assert.equal(carried(2400, 0, 20500, 200), 150 * 30, 'at most 150 s');
   assert.equal(carried(-1200, 150, 20500, 200), -60 * 20, 'and never past the expected life: 210 s less the answer\'s 150 s');
   assert.equal(carried(-1200, 230, 20500, 200), 0, 'an answer older than its life carries nothing');
-  assert.equal(carried(-448, 0, 20500, 60), 0, 'under 500 ft/min is level');
-  assert.equal(carried(512, 0, 20500, 60), 512, '512 ft/min off a whole thousand is a climb');
-  assert.equal(carried(768, 0, 37000, 60), 0, '768 ft/min at 37,000 is turbulence');
-  assert.equal(carried(-960, 0, 9900, 60), 0, '−960 ft/min 100 ft above a whole thousand is a capture');
-  assert.equal(carried(-1024, 0, 9900, 60), -1024, 'a real descent through a whole thousand still carries');
+  assert.equal(carried(-960, 0, 20500, 60), 0, 'under 1,000 ft/min is not carried');
+  assert.equal(carried(768, 0, 10700, 60), 0, '768 ft/min at 10,700 ft (a level read as pressure altitude) is turbulence');
+  assert.equal(carried(1024, 0, 9900, 60), 1024, '1,024 ft/min is a climb');
 });
 
-test('cruise turbulence of ±256 to ±768 ft/min stays level, on every load', () => {
-  for (const alt of [37000, 36975, 37050, 35000, 24000, 11000]) {
-    for (const bump of [256, 320, 448, 512, 640, 768]) {
-      for (const sgn of [1, -1]) {
-        const truth = (t) => { const k = Math.floor((t + 9000) / 60) % 3; return { alt, spd: 465, vs: k === 0 ? sgn * bump : (k === 1 ? -sgn * bump : 0) }; };
+test('turbulence of ±256 to ±768 ft/min stays level at any level, on every load, and is v24065\'s digit for digit', () => {
+  // below the transition level the altitude is pressure altitude: a level
+  // aircraft reads 10,700, 11,275 or 3,300 ft as readily as 11,000
+  for (const alt of [37000, 36975, 24500, 11275, 11000, 10700, 6400, 3300]) {
+    for (const bump of [256, 512, 640, 768]) {
+      for (const pat of ['same', 'alternate']) {
+        const truth = (t) => {
+          const k = Math.floor((t + 9000) / 60);
+          return { alt, spd: 300, vs: pat === 'same' ? bump : ((k % 2) ? bump : -bump) };
+        };
         for (const [name, o] of LOADS.concat([['5 s old', { kv: 5 }]])) {
-          const rows = replay('now', truth, Object.assign({ secs: 600 }, o));
-          for (const r of rows) if (r.ft !== null) assert.equal(r.ft, alt, `${alt} ft, ±${bump}, ${name}, second ${r.s}`);
+          const { a, b } = both(truth, Object.assign({ secs: 900 }, o));
+          for (let i = 0; i < b.length; i++) {
+            if (b[i].ft !== null) assert.equal(b[i].ft, alt, `${alt} ft, ${pat} ±${bump}, ${name}, second ${i}`);
+            assert.equal(b[i].ft, a[i].ft, `${alt} ft, ${pat} ±${bump}, ${name}, second ${i}: v24065's`);
+          }
         }
       }
     }
   }
-});
-
-test('a capture: the same numbers again with another vertical speed stop the carry, back at 30 ft/s at most', () => {
-  const S = screen();
-  S.poll({ spd: 300, alt: 10400, vs: -1088, age: 5 });   // passing 10,400 ft, capturing 10,000
-  S.step(40);
-  const low = S.ft();
-  assert.ok(low < 10400 - 400, `set-up: carried down to ${low}`);
-  // the next answer: same numbers, level (the aircraft levelled at 10,400)
-  S.api._gateTelemSetReal(300, 10400, 0, 5, S.inb);
-  let prev = S.ft();
-  for (let i = 0; i < 120; i++) { S.step(); assert.ok(S.ft() - prev <= 30, `${i} s: ${prev} → ${S.ft()}`); assert.ok(S.ft() >= prev); prev = S.ft(); }
-  assert.equal(S.ft(), 10400, 'back on the reading');
 });
 
 test('floors: never below 1,000 ft or half the reading, never 0 airborne, never above FL410', () => {
@@ -465,7 +585,7 @@ test('floors: never below 1,000 ft or half the reading, never 0 airborne, never 
   };
   assert.equal(run(3000, -2500).lo, 1500, 'half of 3,000');
   assert.equal(run(1700, -1500).lo, 1000, '1,000 ft, more than half of 1,700');
-  assert.deepEqual(run(900, -900), { lo: 900, hi: 900 }, 'a reading under 1,000 ft is not carried down');
+  assert.deepEqual(run(900, -1200), { lo: 900, hi: 900 }, 'a reading under 1,000 ft is not carried down');
   assert.equal(run(40000, 1800).hi, 41000, 'a climb stops at FL410');
   assert.deepEqual(run(41500, 1800), { lo: 41500, hi: 41500 }, 'and above it nothing climbs');
 });
@@ -480,23 +600,44 @@ test('a feed gap right after the first fix: carried at most 150 s, then held, ne
   }
 });
 
+test('only the aircraft\'s first fix on this screen is carried: after a gap that dropped the numbers, the next fix is v24065\'s', () => {
+  const f = steady(-1800, 33000);
+  const run = (build) => {
+    const S = screen(build);
+    const out = [];
+    for (let s = 0; s <= 700; s++) {
+      if (s === 2 || s === 182) { const r = f(s - 10); S.poll({ spd: r.spd, alt: r.alt, vs: r.vs, age: 10 }); }
+      if (s === 300) S.api._gateTelemSetReal(null, null, null, null, S.inb);    // the panel lost the fix (gap past the hold)
+      if (s === 420 || s === 600) { const r = f(s - 10); S.poll({ spd: r.spd, alt: r.alt, vs: r.vs, age: 10 }); }
+      S.api._animateGateTelem(); out.push(S.ft()); S.tick(1);
+    }
+    return out;
+  };
+  const a = run('v24065'), b = run('now');
+  assert.ok(b[100] < a[100] - 1000, 'set-up: the first fix was carried');
+  for (let i = 420; i < b.length; i++) assert.equal(b[i], a[i], `second ${i}: v24065's after the gap`);
+});
+
 // ── the ground, Arrived ────────────────────────────────────────────────────
 
-test('touchdown in the first interval: 0 ft only after the ground fix, then nothing moves, and the held airborne numbers are not news', () => {
-  const fin = flight({ alt: 2600, spd: 150, from: -60, plan: (t) => (t < 100 ? { vs: -800, level: 0, cap: 1, ds: -0.05 } : { ground: true, spd: 20 }) });
-  const rows = replay('now', fin, {
-    kv: 20, secs: 600,
-    // the render's sticky fix and 3-minute hold hand the last airborne numbers back
-    every(S, s) { if (s > 190 && s % 10 === 0) S.api._gateTelemSetReal(140, 780, null, null, S.inb); }
-  });
-  for (const r of rows) if (r.ft === 0) assert.ok(r.truth.ground, `second ${r.s}: 0 ft before the ground fix`);
-  for (const r of rows) if (r.ft !== null && !r.truth.ground) assert.ok(r.ft >= 1000, `second ${r.s}: ${r.ft} ft airborne`);
-  const g = rows.findIndex((r) => r.two && r.truth.ground);
-  for (const r of rows.slice(g + 40)) {
-    assert.equal(r.ft, 0, `second ${r.s}: on the ground`);
-    assert.equal(r.kph, rows[g + 40].kph, `second ${r.s}: the ground speed as reported, not eased back up`);
+test('touchdown in the first interval: 0 ft only after the ground fix, then the ground fix\'s own speed, not the held airborne one', () => {
+  for (const vs of [-800, -1100]) {
+    const fin = flight({ alt: 3000, spd: 150, from: -60, plan: (t) => (t < 100 ? { vs, level: 0, cap: 1, ds: -0.05 } : { ground: true, spd: 20 }) });
+    const { a, b } = both(fin, {
+      kv: 20, secs: 600,
+      // the render's sticky fix and 3-minute hold hand the last airborne numbers back
+      every(S, s) { if (s > 190 && s % 10 === 0) S.api._gateTelemSetReal(140, 780, null, null, S.inb); }
+    });
+    for (const r of b) if (r.ft === 0) assert.ok(r.truth.ground, `vs ${vs}, second ${r.s}: 0 ft before the ground fix`);
+    for (const r of b) if (r.ft !== null && !r.truth.ground) assert.ok(r.ft >= 1000, `vs ${vs}, second ${r.s}: ${r.ft} ft airborne`);
+    const g = b.findIndex((r) => r.two && r.truth.ground);
+    for (const r of b.slice(g + 40)) {
+      assert.equal(r.ft, 0, `vs ${vs}, second ${r.s}: on the ground`);
+      assert.equal(r.kph, b[g + 40].kph, `vs ${vs}, second ${r.s}: the ground speed as reported, not eased back up`);
+    }
+    assert.ok(a[500].kph > b[500].kph + 100, `set-up: v24065 eased the speed back up to ${a[500].kph} km/h at 0 ft`);
+    assert.equal(moves(b, -1).back, 0, 'never back up');
   }
-  assert.equal(moves(rows, -1).back, 0, 'never back up');
 });
 
 test('a load while the aircraft is on the ground paints 0 at once and holds it', () => {
@@ -505,6 +646,37 @@ test('a load while the aircraft is on the ground paints 0 at once and holds it',
   S.api._animateGateTelem();
   assert.equal(S.ft(), 0);
   for (let i = 0; i < 300; i++) { S.step(); assert.equal(S.ft(), 0); assert.equal(S.kph(), 0); }
+});
+
+test('a take-off after a ground fix at the origin: every airborne answer is anchored as v24065 anchors it, the altitude is v24065\'s every second', () => {
+  // taxiing at the origin when the gate loads (the row keeps its ground flag
+  // until the feed rebuilds it, here at 300 s), off at 120 s, 2,500 ft/min
+  const f = flight({ alt: 0, spd: 0, from: -600, plan: (t) => (t < 120 ? { ground: true, spd: 15 } : { vs: 2500, level: 33000, ds: 0.6 }) });
+  const run = (build) => {
+    const S = screen(build);
+    const out = [];
+    for (let s = 0; s <= 700; s++) {
+      if (s === 300) { const nr = { flight: 'WS812', status: 'En route' }; S.win._gateInbound = nr; S.win._gatePanelInbound = nr; }
+      if (s >= 2 && (s - 2) % 60 === 0) { const r = f(s - 20); S.poll({ spd: r.spd, alt: r.alt, vs: r.vs, ground: !!r.ground, age: 20 }); }
+      S.api._animateGateTelem();
+      const T = S.win._gateTelemAnim;
+      out.push({ ft: S.ft(), kph: S.kph(), anchor: T.realTs + ':' + T.realAlt + ':' + T.realSpd + ':' + T.prevAlt, exact: (build === 'now') ? T.spd === T.spd65 : true });
+      S.tick(1);
+    }
+    return out;
+  };
+  const a = run('v24065'), b = run('now');
+  for (let i = 0; i < b.length; i++) {
+    assert.equal(b[i].anchor, a[i].anchor, `second ${i}: the same anchor`);
+    assert.equal(b[i].ft, a[i].ft, `second ${i}: the same altitude`);
+  }
+  // while the board still calls it on the ground, the speed holds the ground
+  // fix's (v24065 eased it up at 0 ft); airborne, it is v24065's within 30 s
+  for (let i = 3; i < 300; i++) assert.equal(b[i].kph, b[2].kph, `second ${i}: on the ground, the taxi speed`);
+  for (let i = 330; i < b.length; i++) {
+    assert.equal(b[i].kph, a[i].kph, `second ${i}: airborne, v24065's speed`);
+    assert.ok(b[i].exact, `second ${i}: v24065's number exactly, not one that rounds the same`);
+  }
 });
 
 test('once the feed says Arrived with no ground fix, nothing moves (v24065 went on carrying)', () => {
@@ -544,8 +716,57 @@ test('another inbound for the same departure starts from nothing, and an answer 
   S.api._animateGateTelem();
   assert.equal(S.ft(), 31000, 'the first paint is AC200\'s reading');
   S.step(60);
-  assert.equal(S.ft() < 31000 - 1000 && S.ft() > 31000 - 1600, true, `and it descends at AC200's own rate (${S.ft()})`);
+  assert.ok(S.ft() < 31000 - 1000 && S.ft() > 31000 - 1600, `and it descends at AC200's own rate (${S.ft()})`);
   assert.notEqual(typeof S.win._gateTelemAnim.prevAlt, 'number', 'one fix only: AC100\'s is not the fix before');
+});
+
+test('the render, on an inbound swap: the aircraft before\'s numbers are not handed to the new one, from the shared live position or a late answer', () => {
+  const R = renderScreen();
+  const A = { flight: 'WS812', status: 'En route' };
+  const B = { flight: 'PD522', status: 'En route' };
+  R.render(A);
+  R.poll(A, { spd: 250, alt: 9000, vs: -1024, age: 5 });
+  for (let s = 0; s < 100; s++) { if (s % 10 === 0) R.render(A); R.step(); }
+  assert.ok(R.ft() < 9000, `set-up: WS812 shown descending (${R.ft()})`);
+  // the gate re-pairs to PD522 for the same departure; PD522 has no answer
+  // yet, and the shared live position is still WS812's
+  let p = R.render(B);
+  assert.equal(R.win._gateInboundLivePos.fl, 'WS812', 'set-up: the shared position is still the aircraft before\'s');
+  assert.equal(p.liveAlt, null, 'the panel shows no altitude for PD522');
+  assert.equal(R.win._gateTelemAnim.who, 'PD522');
+  assert.equal(R.win._gateTelemAnim.realAlt, null, 'and nothing of WS812\'s is anchored');
+  // WS812's poll was in flight: it lands 3 s later and writes the shared position again
+  R.tick(3);
+  R.poll(A, { spd: 248, alt: 8000, vs: -1024, age: 5 });
+  p = R.render(B);
+  assert.equal(p.liveAlt, null, 'still nothing on PD522\'s panel');
+  assert.equal(R.win._gateTelemAnim.realAlt, null, 'and nothing anchored');
+  for (let s = 0; s < 57; s++) { if (s % 10 === 0) R.render(B); R.step(); }
+  // PD522's own first answer: descending through 31,000
+  R.poll(B, { spd: 460, alt: 31000, vs: -1536, age: 5 });
+  R.render(B);
+  const T = R.win._gateTelemAnim;
+  assert.equal(T.nFix, 1, 'PD522\'s first fix is its first');
+  assert.notEqual(typeof T.prevAlt, 'number');
+  let prev = 31000;
+  for (let s = 0; s < 120; s++) {
+    if (s % 10 === 0) R.render(B);
+    R.step();
+    if (s > 2) assert.ok(R.ft() <= prev, `second ${s}: ${prev} → ${R.ft()}, descending, never the aircraft before's rate`);
+    prev = R.ft();
+  }
+  assert.ok(prev < 31000 - 2500 && prev > 31000 - 3200, `PD522 descends at its own 1,536 ft/min (${prev} after 120 s)`);
+});
+
+test('_gateLivePosFor: the shared live position only for the flight it was asked for', () => {
+  const R = renderScreen();
+  R.win._gateInboundLivePos = { speed: 250, altitude: 9000, fl: 'WS812' };
+  assert.equal(R.api._gateLivePosFor({ flight: 'WS 812' }), R.win._gateInboundLivePos, 'the same flight, spaced');
+  assert.equal(R.api._gateLivePosFor({ flight: 'PD522' }), null, 'another flight');
+  R.win._gateInboundLivePos = { speed: 250, altitude: 9000 };
+  assert.equal(R.api._gateLivePosFor({ flight: 'PD522' }), R.win._gateInboundLivePos, 'unstamped, as before');
+  R.win._gateInboundLivePos = null;
+  assert.equal(R.api._gateLivePosFor({ flight: 'PD522' }), null);
 });
 
 test('numbers for another aircraft with no inbound on the gate (the poll\'s departure fallback) start from nothing too', () => {
@@ -592,6 +813,9 @@ test('the poll and the render hand over the answer\'s vertical speed and age onl
   assert.equal((poll.match(/_gateTelemSetReal\(null, null, null, null, inb\)/g) || []).length, 2);
   const at = CORE.indexOf('function _buildV2MapCol(');
   const col = CORE.slice(at, CORE.indexOf('var _tAnim = window._gateTelemAnim', at));
+  assert.match(col, /var _wpC = _gateLivePosFor\(_ib\);/, 'the shared live position only when it is this inbound\'s');
+  const toAnchor = col.slice(col.indexOf('var _ib = vars.inboundFlight;')).replace(/\/\/[^\n]*/g, '');
+  assert.doesNotMatch(toAnchor, /window\._gateInboundLivePos/, 'and no other read of it on the way to the anchor');
   assert.match(col, /var _tFix = \(_adsbC && _adsbC\.onGround !== true && _liveAlt !== null && _liveAlt === _adsbC\.alt && _liveSpd === _adsbC\.spd\) \? _adsbC : null;/,
     'only when the numbers ARE the ADS-B answer, never a held reading');
   assert.match(col, /_gateTelemSetReal\(_liveSpd, _liveAlt, _tFix \? _tFix\.vs : null,/);
