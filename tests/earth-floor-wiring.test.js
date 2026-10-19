@@ -213,10 +213,10 @@ test('the names and times on the floor are always the board\'s languages, also w
   // they are drawn for the floor ON SCREEN (showE), remembering the words they
   // were drawn in (drawn.wsig: the languages, the one on screen, the clock,
   // the minute); a change of languages draws them again inside the change
-  // (BoardStrings.onLangs), and every second they are checked again, also
-  // while the next floor is still being lit (the CI failure of 2026-10-19:
-  // '9:10 AM' on a French board). tests/earth-floor-langs-render.test.js
-  // holds that moment open in a browser.
+  // (BoardStrings.onLangs), and while the next floor is still being lit the
+  // one-second look checks them again (the CI failure of 2026-10-19: '9:10
+  // AM' on a French board). tests/earth-floor-langs-render.test.js holds that
+  // moment open in a browser.
   assert.match(MOD, /function drawOverlay\(quick\) \{\s*var e = showE;/, 'the names are the floor on screen\'s');
   assert.match(MOD, /function wordsSig\(\) \{[\s\S]{0,200}shownLang\(\) \+ '\|' \+ boardLangsNow\(\)\.join\(','\) \+ '\|' \+ \(clock24\(\) \? 24 : 12\)/);
   assert.match(MOD, /drawn = \{ e: e, list: list, wsig: wsig, pk: pk \};/);
@@ -229,7 +229,8 @@ test('the names and times on the floor are always the board\'s languages, also w
 
 test('a change of languages draws the words at once and never runs the refill inside it; the language on screen turning is drawn at once too', () => {
   // quick: the places the floor named, or its page's first up to the cap;
-  // the refill (up to 7 layouts) at the next one-second look (LSIG = '')
+  // the refill at the first one-second look that finds this floor lit and on
+  // screen (LSIG = '')
   assert.match(MOD, /else if \(quick\) \{ list = \(drawn && drawn\.e === e && drawn\.pk === pk\) \? drawn\.list : pool\.slice\(0, capFor\(e\.H\)\); lastLayout = run\(list\); later = true; \}/);
   assert.match(MOD, /if \(e === cur\) LSIG = later \? '' : layoutSig\(\);/);
   // refills are kept per floor, page and set of languages (not the one on
@@ -248,4 +249,25 @@ test('a change of languages draws the words at once and never runs the refill in
   // and a change of the board's languages reaches the floor whatever the
   // buttons, the ticker or the rotation do before it
   assert.match(CORE, /function _applyBoardLangs\(\) \{[\s\S]{0,600}try \{\s*updateLangButtons\(\);\s*updateTicker\(\);\s*startLangRotation\(\);\s*\} finally \{\s*try \{ BoardStrings\.langsChanged\(\); \} catch \(eS\) \{\}\s*\}/);
+});
+
+
+test('restoring an airport\'s saved languages tells the floor even when the buttons or the ticker throw (_restoreApLangs)', () => {
+  const CORE = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
+  const a = CORE.indexOf('function _restoreApLangs() {'), b = CORE.indexOf('\nfunction changeScreenType(', a);
+  assert.ok(a > 0 && b > a, 'fids-core.js declares _restoreApLangs');
+  for (const which of ['updateLangButtons', 'updateTicker']) {
+    let told = 0;
+    const box = {
+      document: { getElementById: () => ({ value: 'YUL' }) },
+      localStorage: { getItem: () => null }, window: { location: { search: '?langs=fr,en' } },
+      BoardStrings: { resolveLangs: () => ({ source: 'url', langs: ['fr', 'en'] }), langsChanged: () => { told++; } },
+      langs: ['en', 'fr'], langIdx: 1, lang: 'fr',
+      updateLangButtons: () => { if (which === 'updateLangButtons') throw new Error('buttons'); },
+      updateTicker: () => { if (which === 'updateTicker') throw new Error('ticker'); }
+    };
+    require('node:vm').runInNewContext(CORE.slice(a, b) + '\n_restoreApLangs();', box);
+    assert.deepEqual(box.langs, ['fr', 'en']);
+    assert.equal(told, 1, 'langsChanged runs (the floor redraws its words) though ' + which + ' threw');
+  }
 });

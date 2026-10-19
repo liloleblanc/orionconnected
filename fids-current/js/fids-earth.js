@@ -43,12 +43,14 @@
        moves when the board turns language: only its text changes. A name
        never sits on a route (6 px clear), or the routes are cut away under
        it; a place with no room for its name is left out with its route and
-       dot, so every line carries a name. A name reads as its own dot's: where
-       another dot stands as near, a leader line joins it to its own, or it
-       goes elsewhere; of two dots that would touch, only the first is drawn.
-       Where two places' names cannot both be read clearly, the page's order
-       decides: a place gives way only to one before it. Names keep 10 px under the last row. The airport's ring
-       keeps a clear zone. Places beyond the picture are named where their
+       dot, so every line carries a name. A name reads as its own place's
+       mark (its dot, or the arrow where its route leaves): where another
+       mark stands as near, a leader line joins it to its own dot, or it goes
+       elsewhere; an arrow's own name is the nearest to it; of two dots that
+       would touch, only the first is drawn. No name is bought with another:
+       a dot is never taken away to make room for a name, and a place left
+       off is tried again only where every name stays (fillNames). Names keep
+       10 px under the last row. The airport's ring keeps a clear zone. Places beyond the picture are named where their
        route leaves it, an arrow there pointing on; several leaving at one
        spot share one route, one arrow and one list.
      · The time there is the board's own clock (BoardStrings.boardTime: the
@@ -246,9 +248,10 @@
   // Jamestown), Dickinson west of it Mountain; Fort Nelson keeps year-round
   // Mountain time (America/Fort_Nelson) and Whitehorse its own; Kugluktuk
   // and Taloyoak are Nunavut's Mountain time; Chevery is on the Lower North
-  // Shore's Atlantic time (ZONE_ONE). Left out on purpose, so they print no
-  // time rather than a guess: Natashquan (sources disagree on its summer
-  // time) and YMU (Thunder Bay's feed means Musselwhite by it, which is
+  // Shore's Atlantic time (ZONE_ONE); Natashquan is Eastern, the last place
+  // on that shore before it (the IANA tz database: Atlantic time is east of
+  // Natashquan). Left out on purpose, so it prints no time rather than a
+  // guess: YMU (Thunder Bay's feed means Musselwhite by it, which is
   // Eastern; the code is a seaplane base in British Columbia elsewhere).
   // tests/earth-zones.test.js holds every zone to one the browser knows, no
   // code to two zones or to another zone than AP's, and the hard cases.
@@ -384,6 +387,12 @@
   // the order of its languages (BoardStrings.FR_FIRST); this says only where
   // their clocks are
   var ZONE_ONE = {
+    // v24067 — Chisasibi, Rivière-du-Loup, Chibougamau and Natashquan, on the
+    // French-first list with a position and no zone: Eastern, as the IANA tz
+    // database has every Québec airport but the Îles-de-la-Madeleine (YGR,
+    // Halifax) and those east of Natashquan ('See America/Puerto_Rico for
+    // east of Natashquan', northamerica, 2020-01-10)
+    YKU: 'America/Toronto', YRI: 'America/Toronto', YMT: 'America/Toronto', YNA: 'America/Toronto',
     AKV: 'America/Toronto', XGR: 'America/Toronto', YBC: 'America/Toronto', YGL: 'America/Toronto',
     YGP: 'America/Toronto', YGW: 'America/Toronto', YHR: 'America/Blanc-Sablon',
     YIK: 'America/Toronto', YKG: 'America/Toronto', YKL: 'America/Toronto', YKQ: 'America/Toronto',
@@ -597,9 +606,10 @@
   //   o.timeOf(tz) → the time there in the board's clock ('' for none)
   //   o.hereTz   this airport's zone
   //   o.measure(text, px) → width in px
+  //   o.cap      the most names (capFor(H) on a full floor, 1 on a strip)
   function layout(o) {
     var view = o.view, W = o.W, H = o.H, full = !!o.full, measure = o.measure, top = Math.max(0, +o.top || 0);
-    var out = { full: full, hub: null, routes: [], dots: [], arrows: [], leaders: [], labels: [], knockouts: [], unplaced: [], tooNear: [], gaveWay: [], placed: 0 };
+    var out = { full: full, hub: null, routes: [], dots: [], arrows: [], leaders: [], labels: [], knockouts: [], unplaced: [], tooNear: [], blockedBy: {}, lostWith: {}, placed: 0 };
     var A = vec(o.here[0], o.here[1]), a = toScreen(A, view);
     // ONE route and one name per place: places that share every language's
     // name and stand together (Montréal: YUL and MET) are one
@@ -790,44 +800,57 @@
     if (!a.hidden) boxes.push({ x0: a.x - hz, y0: a.y - hz, x1: a.x + hz, y1: a.y + hz });
     var dots = groups.filter(inPicture);
     dots.forEach(function (g) { boxes.push({ x0: g.q.x - 7, y0: g.q.y - 7, x1: g.q.x + 7, y1: g.q.y + 7, own: g, mark: true }); });
-    // every place's dot in the picture: a name must read as its own place's,
-    // never as the name of a dot nearer it
+    // EVERY PLACE'S MARK: its dot, or the arrow where its route leaves the
+    // picture (v24067: an arrow counts as a dot here). A name must read as
+    // its own place's, never as the name of another place's mark nearer it,
+    // and a leader line never passes by another place's mark
     var dotAt = dots.map(function (g) { return { g: g, x: g.q.x, y: g.q.y }; });
+    signs.forEach(function (sg) { var e = sg.lead.edge; dotAt.push({ g: sg.lead, x: e.x, y: e.y, arrow: true }); });
     // the arrow where a route leaves the picture is kept clear of other names
     signs.forEach(function (sg) { var e = sg.lead.edge; boxes.push({ x0: e.x - 8, y0: e.y - 8, x1: e.x + 8, y1: e.y + 8, own: sg.lead, mark: true }); });
-    // (`give`: a place's second search, below; a dot or arrow of a place left
-    // off is not drawn, and keeps nothing clear)
-    function free(b, self, give) {
+    // (a dot or arrow of a place left off is not drawn, and keeps nothing
+    // clear; `why`: the places whose names keep this one from a spot)
+    function free(b, self, why) {
       // a name stands NAME_TOP px under the last row: never read as a row's
       if (b.x0 < 10 || b.x1 > W - 10 || b.y0 < top + NAME_TOP || b.y1 > H - 2) return false;
       for (var i = 0; i < boxes.length; i++) {
         var q = boxes[i]; if (q.own === self || (q.mark && q.own.unplaced)) continue;
         // two names keep a word space apart, and a line apart
-        if (b.x0 < q.x1 + 12 && b.x1 > q.x0 - 12 && b.y0 < q.y1 + 4 && b.y1 > q.y0 - 4) {
-          if (give && q.mark && q.own.ord > self.ord) { if (give.indexOf(q.own) < 0) give.push(q.own); continue; }
-          return false;
-        }
+        if (b.x0 < q.x1 + 12 && b.x1 > q.x0 - 12 && b.y0 < q.y1 + 4 && b.y1 > q.y0 - 4) { if (q.own && !q.mark) why(q.own); return false; }
       }
       return true;
     }
     signs.forEach(function (sg) { dots.push(sg.lead); });
     dots.sort(function (x, y) { return x.rank - y.rank; });
-    dots.forEach(function (g, i) { g.ord = i; });               // the page's order: who gives way to whom
     function boxDist(b, x, y) { return Math.hypot(clamp(x, b.x0, b.x1) - x, clamp(y, b.y0, b.y1) - y); }
-    // the nearest OTHER dot to a name, when it is as near as the name's own
-    // point (or nearer, less AMBIG px): the name could be read as that place's.
-    // With `give` (a place's second search), the dots of places after it on
-    // the page are passed over and listed there instead: they give way.
-    function rival(b, g, pt, give) {
+    // the nearest OTHER mark to a name, when it is as near as the name's own
+    // point (or nearer, less AMBIG px): the name could be read as that place's
+    function rival(b, g, pt) {
       var own = boxDist(b, pt.x, pt.y), mates = g.sign ? g.sign.members : [g], hit = null;
       dotAt.forEach(function (d) {
         if (mates.indexOf(d.g) >= 0 || d.g.unplaced) return;
         var dd = boxDist(b, d.x, d.y);
         if (!(dd < own + AMBIG)) return;
-        if (give && d.g.ord > g.ord) { if (give.indexOf(d.g) < 0) give.push(d.g); return; }
-        if (!hit || dd < hit.d) hit = { d: dd, own: own };
+        if (!hit || dd < hit.d) hit = { d: dd, own: own, arrow: !!d.arrow };
       });
       return hit;
+    }
+    // AN ARROW HAS NO LEADER LINE, SO ITS OWN NAME IS THE NEAREST TO IT
+    // (v24067). Another place's name as near an arrow as the arrow's own
+    // name (or nearer, less AMBIG px) reads as the arrow's: at Edinburgh,
+    // Palma's arrow stood 30 px from 'Southampton' and 68 px from 'Palma';
+    // at Heathrow, Madrid's 24 px from 'Genève' and 34 px from 'Madrid'.
+    // A name at an arrow keeps the names already placed farther from its
+    // arrow than itself, and a later name keeps out of that reach.
+    function arrowClash(b, g, pt, isEdge, why) {
+      var mates = g.sign ? g.sign.members : [g], own = isEdge ? boxDist(b, pt.x, pt.y) : 0;
+      for (var i = 0; i < out.labels.length; i++) {
+        var lab = out.labels[i];
+        if (mates.indexOf(lab.g) >= 0) continue;
+        if (isEdge && boxDist(lab.box, pt.x, pt.y) < own + AMBIG) { why(lab.g); return true; }
+        if (lab.edge && boxDist(b, lab.at.x, lab.at.y) < lab.reach + AMBIG) { why(lab.g); return true; }
+      }
+      return false;
     }
     // a leader line joins a name to its dot when they stand apart (30 px), or
     // nearer when another dot stands as close: then the line says which
@@ -853,17 +876,14 @@
       var t = ((q[0] - p[0]) * sy - (q[1] - p[1]) * sx) / den, u = ((q[0] - p[0]) * ry - (q[1] - p[1]) * rx) / den;
       return t > 0 && t < 1 && u > 0 && u < 1;
     }
-    function leaderWrong(l, g, give) {
+    function leaderWrong(l, g, why) {
       var mates = g.sign ? g.sign.members : [g], vx = l[2] - l[0], vy = l[3] - l[1], L2 = vx * vx + vy * vy;
       for (var i = 0; i < dotAt.length; i++) {
         var d = dotAt[i]; if (mates.indexOf(d.g) >= 0 || d.g.unplaced) continue;
         var t = clamp(((d.x - l[0]) * vx + (d.y - l[1]) * vy) / (L2 || 1), 0, 1);
-        if (Math.hypot(l[0] + vx * t - d.x, l[1] + vy * t - d.y) < 6) {
-          if (give && d.g.ord > g.ord) { if (give.indexOf(d.g) < 0) give.push(d.g); continue; }
-          return true;
-        }
+        if (Math.hypot(l[0] + vx * t - d.x, l[1] + vy * t - d.y) < 6) return true;
       }
-      for (var j = 0; j < out.leaders.length; j++) { var o = out.leaders[j]; if (segsCross(l, [o.x1, o.y1, o.x2, o.y2])) return true; }
+      for (var j = 0; j < out.leaders.length; j++) { var o = out.leaders[j]; if (segsCross(l, [o.x1, o.y1, o.x2, o.y2])) { why(o.g); return true; } }
       return false;
     }
     // v24067 — and a leader line never runs through another place's name,
@@ -880,12 +900,12 @@
       }
       return t0 <= t1;
     }
-    function leaderThroughName(l) { for (var i = 0; i < out.labels.length; i++) if (segHits(l, out.labels[i].box, 2)) return true; return false; }
-    function onLeader(b) { for (var i = 0; i < out.leaders.length; i++) { var o = out.leaders[i]; if (segHits([o.x1, o.y1, o.x2, o.y2], b, 2)) return true; } return false; }
+    function leaderThroughName(l, why) { for (var i = 0; i < out.labels.length; i++) if (segHits(l, out.labels[i].box, 2)) { why(out.labels[i].g); return true; } return false; }
+    function onLeader(b, why) { for (var i = 0; i < out.leaders.length; i++) { var o = out.leaders[i]; if (segHits([o.x1, o.y1, o.x2, o.y2], b, 2)) { why(o.g); return true; } } return false; }
     // the widest of the board's languages: a name keeps its place as the
     // board turns language
     function nameW(g, f) { var w = 0; g.names.forEach(function (s) { w = Math.max(w, measure(s, f)); }); return w; }
-    var maxNames = full ? capFor(H) : 1;
+    var maxNames = o.cap != null ? o.cap : full ? capFor(H) : 1;   // (o.cap: the review tools' "is there room for one more")
     dots.forEach(function (g) {
       var pt = g.edge || g.q, isEdge = !!g.edge;
       var f = (g.isNext && full) ? Math.round(fs * 1.08) : fs, ts = Math.round(f * (full ? 0.8 : 0.9));
@@ -912,62 +932,58 @@
         dirs.forEach(function (c, ci) { cand.push({ al: c[0], dx: c[1], dy: c[2], cost: di * (full ? 6 : 10) + ci }); });
       });
       var spot = null, best = 1e12;
-      // a place an earlier one's name left off (below)
-      if (g.gaveWay) { out.unplaced.push(g.code); out.gaveWay.push([g.code, g.gaveWay]); return; }
       // two dots this close cannot be told apart: the place named first keeps
       // the spot, the other is left out with its route (the rows list it)
       var crowded = !isEdge && out.dots.some(function (d) { return Math.hypot(d.x - pt.x, d.y - pt.y) < DOT_GAP; });
-      var search = function (give) {
-        if (out.placed >= maxNames || crowded) return;
-        cand.forEach(function (c) {
-          var b = { x0: pt.x + c.dx, y0: pt.y + c.dy, x1: pt.x + c.dx + lw, y1: pt.y + c.dy + lh, own: g, al: c.al, px: pt.x, py: pt.y };
-          var gv = give ? [] : null;
-          if (!free(b, g, gv) || onLeader(b)) return;
-          var cr = crossings(b, g), cost = cr * 1000 + c.cost;      // on a route: only if there is nowhere else
-          // another place's dot as near as this name's own: a leader line must
-          // say which dot it names, else the spot is not taken
-          var rv = rival(b, g, pt, gv), lead = leaderOf(b, pt, !!rv && !isEdge);
-          if (rv) {
-            // v24067 — another place's dot CLEARLY nearer than the name's own
-            // (more than AMBIG px): at a glance the name is that dot's, line or
-            // no line ('Cincinnati' 13 px from St Louis's dot and 45 px from
-            // its own). Never there: elsewhere, or the place is left out (the
-            // rows list it). And a name at an arrow (which has no line to say
-            // which) never stands as near another dot as its arrow ('San Pedro
-            // Sula' read as Cancún's dot).
-            if (rv.d + AMBIG < rv.own) return;
-            if (isEdge) return;
-            if (!lead) return;
-            else cost += 150;
-          }
-          if (lead && !isEdge && (leaderWrong(lead, g, gv) || leaderThroughName(lead))) return;
-          if (lead && leaderCrosses(lead, g)) cost += 300;
-          if (gv) cost += gv.length * 1e7;                         // as few as can be give way
-          if (cost < best) { best = cost; spot = b; spot.lead = lead; spot.give = gv; spot.cross = cr; }
-        });
-      };
-      // THE PAGE'S ORDER DECIDES WHO GIVES WAY (v24067). A name takes a spot
-      // that no other place's dot or arrow is in the way of or makes
-      // ambiguous; failing that, one where only those of places after it on
-      // the page are, and those places are left off instead (the fewest of
-      // them). A place never gives way to one after it (Fort Simpson, fourth
-      // on Yellowknife's page, was left off for Norman Wells, fifth, and
-      // Kugluktuk, ninth).
-      search(false);
-      if (!spot) search(true);
-      if (spot && spot.give) spot.give.forEach(function (h) { h.gaveWay = g.code; (h.sign ? h.sign.members : [h]).forEach(function (m) { m.unplaced = true; }); });
+      // the names already placed that keep this one from a spot (fillNames
+      // tries the place again before them)
+      var by = [], why = function (h) { if (h && h !== g && by.indexOf(h.code) < 0) by.push(h.code); };
+      if (out.placed < maxNames && !crowded) cand.forEach(function (c) {
+        var b = { x0: pt.x + c.dx, y0: pt.y + c.dy, x1: pt.x + c.dx + lw, y1: pt.y + c.dy + lh, own: g, al: c.al, px: pt.x, py: pt.y };
+        if (!free(b, g, why) || onLeader(b, why) || arrowClash(b, g, pt, isEdge, why)) return;
+        var cr = crossings(b, g), cost = cr * 1000 + c.cost;      // on a route: only if there is nowhere else
+        // another place's mark as near as this name's own: a leader line must
+        // say which dot it names, else the spot is not taken
+        var rv = rival(b, g, pt), lead = leaderOf(b, pt, !!rv && !isEdge);
+        if (rv) {
+          // v24067 — another place's mark CLEARLY nearer than the name's own
+          // (more than AMBIG px): at a glance the name is that place's, line
+          // or no line ('Cincinnati' 13 px from St Louis's dot and 45 px from
+          // its own). Never there: elsewhere, or the place is left out (the
+          // rows list it). A name at an arrow (which has no line to say
+          // which) never stands as near another place's mark as its arrow
+          // ('San Pedro Sula' read as Cancún's dot), and a leader line
+          // settles a dot, never an arrow.
+          if (rv.d + AMBIG < rv.own) return;
+          if (isEdge || rv.arrow) return;
+          if (!lead) return;
+          else cost += 150;
+        }
+        if (lead && !isEdge && (leaderWrong(lead, g, why) || leaderThroughName(lead, why))) return;
+        if (lead && leaderCrosses(lead, g)) cost += 300;
+        if (cost < best) { best = cost; spot = b; spot.lead = lead; spot.cross = cr; }
+      });
       var op = g.done && !g.isNext ? 0.55 : 1;
       // no room for the name: its route and dot are not drawn either
-      if (!spot) { g.unplaced = true; (g.sign ? g.sign.members : [g]).forEach(function (m) { m.unplaced = true; }); out.unplaced.push(g.code); return; }
+      if (!spot) {
+        g.unplaced = true; (g.sign ? g.sign.members : [g]).forEach(function (m) { m.unplaced = true; }); out.unplaced.push(g.code);
+        if (by.length && !crowded && out.placed < maxNames) out.blockedBy[g.code] = by;
+        // the places listed under its arrow go with it (fillNames tries them without it)
+        if (g.sign && g.sign.members.length > 1) out.lostWith[g.code] = g.sign.members.slice(1).map(function (m) { return m.code; });
+        return;
+      }
       boxes.push(spot); out.placed++;
       if (!isEdge) out.dots.push({ x: pt.x, y: pt.y, r: g.isNext ? 6 : 4.6, op: op, code: g.code });
       // a place beyond the picture: an arrow on its route where it leaves,
       // pointing on (a symbol, no words)
       else out.arrows.push({ x: pt.x, y: pt.y, ang: g.edgeAng || 0, len: full ? 13 : 10, op: list ? 1 : op, code: g.code });
-      if (spot.lead && !isEdge) out.leaders.push({ x1: spot.lead[0], y1: spot.lead[1], x2: spot.lead[2], y2: spot.lead[3], op: op });
+      if (spot.lead && !isEdge) { var ld = { x1: spot.lead[0], y1: spot.lead[1], x2: spot.lead[2], y2: spot.lead[3], op: op }; Object.defineProperty(ld, 'g', { value: g, enumerable: false }); out.leaders.push(ld); }
       // never a name on a visible line: the routes are cut away under it
       if (spot.cross) out.knockouts.push({ x0: spot.x0 - 5, y0: spot.y0 - 4, x1: spot.x1 + 5, y1: spot.y1 + 4 });
       var L = { code: g.code, at: { x: pt.x, y: pt.y }, edge: isEdge, box: { x0: spot.x0, y0: spot.y0, x1: spot.x1, y1: spot.y1 }, op: list ? 1 : op, rows: [] };
+      // (for the layout only: who the name is, and how far it stands from its arrow)
+      Object.defineProperty(L, 'g', { value: g, enumerable: false });
+      if (isEdge) Object.defineProperty(L, 'reach', { value: boxDist(L.box, pt.x, pt.y), enumerable: false });
       var clockAt = function (cx, cy, rr, s) { return { cx: cx, cy: cy, r: rr, hands: handsOf(s) }; };
       if (list) {
         list.forEach(function (m, li) {
@@ -1024,10 +1040,53 @@
   // name, one name with another) used to keep their slots: Ottawa named 3
   // places of its 5 while more waited on the page. Now the next places on
   // the page are tried in their place, and a try is kept only when it names
-  // every place the one before named, and more. `run(list)` is the layout
-  // of a list of places.
+  // every place the one before named, and more.
+  // AND NO NAME COSTS ANOTHER ITS PLACE (v24067). A place left off because
+  // names placed before it took its room (layout's blockedBy) is tried again
+  // just before the first of them; that order is kept only when the floor
+  // then names every place it named, and more (Yellowknife: Fort Simpson
+  // and Norman Wells both, where one had been named for the other). A name
+  // is never bought with another: the page's later places keep the names
+  // they can have (Boston at Washington National, Nice at Heathrow), and a
+  // place that cannot stand clear of them is left off (the rows list it).
+  // A place whose arrow leads a list of places leaving at one spot takes the
+  // list with it when it cannot be named: the list is tried without it. And
+  // a place left off on the way is tried once more after all the others.
+  // `run(list)` is the layout of a list of places; the list returned is in
+  // the order that names them (the floor draws it again in that order).
+  var REPAIRS = 10;
   function fillNames(pool, cap, run) {
-    var list = pool.slice(0, cap), L = run(list), next = list.length;
+    var list = pool.slice(0, cap), L = run(list), next = list.length, left = REPAIRS;
+    var more = function (L2, named) {
+      var n2 = namedCodes(L2);
+      return n2.length > named.length && n2.length <= cap && named.every(function (c) { return n2.indexOf(c) >= 0; });
+    };
+    var tryList = function (l2) {
+      if (left <= 0) return false;
+      left--;
+      var L2 = run(l2);
+      if (!more(L2, namedCodes(L))) return false;
+      list = l2; L = L2; return true;
+    };
+    var rescue = function () {
+      var lead = Object.keys(L.lostWith || {});
+      if (lead.length && tryList(list.filter(function (p) { return lead.indexOf(p.code) < 0; }))) repair();
+    };
+    var repair = function () {
+      for (var moved = true; moved && left > 0;) {
+        moved = false;
+        var named = namedCodes(L), by = L.blockedBy || {};
+        for (var i = 1; i < list.length && !moved && left > 0; i++) {
+          var b = by[list[i].code]; if (!b) continue;
+          var at = -1;
+          for (var j = 0; j < i && at < 0; j++) if (b.indexOf(list[j].code) >= 0) at = j;
+          if (at < 0) continue;
+          var l2 = list.slice(), x = l2.splice(i, 1)[0]; l2.splice(at, 0, x);
+          if (tryList(l2)) moved = true;
+        }
+      }
+    };
+    repair(); rescue();
     for (var tries = 0; tries < 6 && next < pool.length; tries++) {
       var named = namedCodes(L);
       if (named.length >= cap) break;
@@ -1035,9 +1094,15 @@
       var list2 = list.filter(function (p) { return !lost[p.code]; }), added = 0;
       while (next < pool.length && added < cap - named.length) { list2.push(pool[next++]); added++; }
       if (!added) break;
-      var L2 = run(list2), named2 = namedCodes(L2);
-      if (named2.length > named.length && named2.length <= cap && named.every(function (c) { return named2.indexOf(c) >= 0; })) { list = list2; L = L2; }
+      var L2 = run(list2);
+      if (more(L2, named)) { list = list2; L = L2; repair(); rescue(); }
     }
+    // a second chance, after all the others, for the places left off on the way
+    pool.slice(0, next).forEach(function (p) {
+      var now = namedCodes(L);
+      if (now.length >= cap || now.indexOf(p.code) >= 0) return;
+      tryList(list.filter(function (x) { return x !== p; }).concat([p]));
+    });
     return { list: list, L: L };
   }
   // the code a row names: its own (data-iata), else the code its city label
@@ -1671,9 +1736,14 @@
   // being lit, the one on screen stays up, and so did the words it was drawn
   // with — a board turned to French kept "9:10 AM" under its rows until the
   // next floor was lit, seconds later on a slow screen (the rendered language
-  // check failed on it in CI, 2026-10-19). Now a change of language is drawn
-  // at once, inside the change itself (BoardStrings.onLangs), whatever is
-  // being lit, and every second the words are checked again (refreshWords).
+  // check failed on it in CI, 2026-10-19). Now a change of the board's
+  // languages is drawn at once, inside the change itself (BoardStrings.onLangs),
+  // and so is a turn of the language on screen (ocfEarthWords, called by the
+  // board's paging clock and rotation timer), whatever is being lit. Besides
+  // those, the one-second look compares the words with wordsSig while the
+  // next floor is being lit (refreshWords), and on a lit floor redraws them
+  // when its layout's languages differ (layoutSig) or at the re-light (each
+  // minute, or each 5 on a slow screen).
   function clock24() { try { var B = S(); return !!(B && B.boardClock24 && B.boardClock24()); } catch (e) { return false; } }
   function wordsSig() {
     var mn = 0; try { mn = Math.floor(nowFor(apTz(AP0)).getTime() / 60000); } catch (e) {}
@@ -1687,7 +1757,8 @@
   }
   // quick: inside a change of languages, or a check of the words: never a
   // refill there (the words at once; the places the floor named, or its
-  // page's first up to the cap, and the refill at the next one-second look)
+  // page's first up to the cap; the refill comes at the first one-second look
+  // after it that finds this floor lit and on screen, LSIG = '')
   function drawOverlay(quick) {
     var e = showE;
     if (!e || !e.ready || !P || !here || e.H < MIN_ROUTES) { render(null); drawn = null; return; }
@@ -1910,7 +1981,7 @@
         view: cur && cur.view ? { psi: cur.view.psi, delta: cur.view.delta, R: Math.round(cur.view.R), cx: Math.round(cur.view.cx), cy: Math.round(cur.view.cy) } : null,
         cache: cache.map(function (x) { return x.key.split('|')[0] + (x.ready ? '' : '~') + (x.day ? '' : '-'); }),
         // labels: [code, x0, y0, x1, y1, at an arrow (1) or a dot (0), its point x, y]
-        layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1), l.edge ? 1 : 0, Math.round(l.at.x), Math.round(l.at.y)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear, gaveWay: lastLayout.gaveWay,
+        layout: lastLayout ? { routes: lastLayout.routes.map(function (r) { return r.code; }), labels: lastLayout.labels.map(function (l) { return [l.code, Math.round(l.box.x0), Math.round(l.box.y0), Math.round(l.box.x1), Math.round(l.box.y1), l.edge ? 1 : 0, Math.round(l.at.x), Math.round(l.at.y)]; }), knockouts: lastLayout.knockouts.length, unplaced: lastLayout.unplaced, tooNear: lastLayout.tooNear, blockedBy: lastLayout.blockedBy,
           dots: lastLayout.dots.map(function (d) { return [d.code, Math.round(d.x), Math.round(d.y)]; }), arrows: (lastLayout.arrows || []).map(function (w) { return [w.code, Math.round(w.x), Math.round(w.y)]; }), leaders: lastLayout.leaders.length } : null,
         stats: stats };
     };

@@ -19,6 +19,18 @@ Black Marble 2016 is NASA's newest colour night map; later Black Marble years
 are science data, not pictures. There are no clouds on purpose: weather on the
 boards comes from MET Norway only.
 
+### The places on the floor
+
+| what | source | licence |
+|---|---|---|
+| Positions of the places added in v24067 (`COORDS` in `fids-core.js`, `AIRPORT_COORDS` in `airport-coords.js`), the US state or Canadian province of each code (`_ROW_REGION`), the list of Québec airports (`BoardStrings.FR_FIRST`), and the English city names added to `CITY` in v24067 | **OurAirports**, ourairports.com/data (`airports.csv`, `regions.csv`; read 2026-10-19). The runway ends in `airport-runways.js` come from the same data. | Public domain (OurAirports dedicates its data to the public domain). No credit is required; it is credited here and in `docs/licenses/places-data.md`. |
+| The clock of each place (`ZONE_LIST`, `ZONE_ONE` in `fids-earth.js`) | The **IANA tz database** (tz zone names; its `northamerica` file for Québec: Atlantic time east of Natashquan) | Public domain |
+| French city names that differ from the English (`CITY_FR`, v24067 additions: Bakou, Beyrouth, Mascate, Malte …) | **Wikidata**, the French label of the place each airport serves | CC0 (public domain dedication) |
+
+No screen reads any of these: they are copied into the tables by hand, and
+`tests/earth-floor-places.test.js` and `tests/earth-zones.test.js` hold the
+tables to them.
+
 ## Licence and credit
 
 - Both are NASA images and **in the public domain** (works of the United

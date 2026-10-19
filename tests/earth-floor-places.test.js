@@ -141,17 +141,24 @@ test('the rows the sweep found with no code: the map reads their airport, the ro
     'Harrisburg, PA': 'MDT', 'Richmond, VA': 'RIC', 'Charlotte, NC': 'CLT', 'Burlington, VT': 'BTV', 'Pensacola, FL': 'PNS',
     'Birmingham, AL': 'BHM', 'Cincinnati, OH': 'CVG', 'Cincinnati, KY': 'CVG', 'St Hubert': 'YHU', 'Saint-Hubert': 'YHU', 'Toronto Centre-Ville': 'YTZ',
     'Ft Mackay/Firebag': 'YFI', 'Ft McMurray': 'YMM', 'Montreal-Trdeau': 'YUL', 'Portland, ME': 'PWM', 'Portland, OR': 'PDX',
-    'London, ON': 'YXU', 'Hamilton, ON': 'YHM', 'Victoria, BC': 'YYJ', 'Saint Louis': 'STL', 'Ft Lauderdale': 'FLL', 'Norman Wells': 'YVQ'
+    'London, ON': 'YXU', 'Hamilton, ON': 'YHM', 'Victoria, BC': 'YYJ', 'Saint Louis': 'STL', 'Ft Lauderdale': 'FLL'
   };
   for (const [name, code] of Object.entries(want)) {
     assert.equal(NAMES.row(name), code, 'the map reads ' + name);
     assert.equal(NAMES.look(name), '', 'the row of ' + name + ' keeps no code (as on main)');
+  }
+  // a place that has its own name now (CITY, v24067) is read by that name,
+  // by the rows as by the map, as every city in the table is
+  for (const [name, code] of [['Norman Wells', 'YVQ'], ['Firebag', 'YFI'], ['Managua', 'MGA'], ['Comayagua', 'XPL']]) {
+    assert.equal(NAMES.row(name), code, name);
+    assert.equal(NAMES.look(name), code, name);
   }
 });
 
 test('and never a wrong airport: a name with two of ours, a place in another state, or a list of stops stays code-less', () => {
   const NAMES = names();
   for (const name of ['Montreal', 'Toronto', 'Houston', 'Chicago, IL', 'New York, NY', 'Houston, TX', 'Columbus, OH',
+    'Dallas, TX', 'Orlando, FL', 'Miami, FL', 'Phoenix, AZ', 'Atlanta, GA', 'Seattle, WA', 'Denver, CO',   // a city with two or more of ours there
     'Washington, DC',            // Reagan or Dulles
     'Jacksonville, NC',          // not Jacksonville, Florida
     'Paris, TX', 'Rome, GA',     // not Paris or Rome
@@ -285,4 +292,92 @@ test('Kuujjuarapik is named as itself: YGW was written Chisasibi, which is YKU',
   const p = coordsOf('YGW');
   assert.ok(Math.abs(p[0] - 55.28) < 0.05 && Math.abs(p[1] + 77.77) < 0.05, 'YGW stands at Kuujjuarapik (OurAirports CYGW 55.28, -77.77)');
   assert.equal(names().look('Chisasibi'), 'YKU', 'and the name Chisasibi is no longer two codes');
+});
+
+
+// ── v24067, third review ──────────────────────────────────────────────────
+
+test('every place the map can draw has a city name, in English and in French, and in the companion app\'s copy', () => {
+  const SHARED = {}; vm.runInNewContext(fs.readFileSync(path.join(JS, 'shared-names.js'), 'utf8'), { window: SHARED });
+  const S = SHARED.FIDS_SHARED_CITY;
+  // EBM: the gate table's EBM stands at Pamplona, not at El Borma, its
+  // code's airport, so it is given no name (a row of it would be wrong anyway)
+  const SKIP = new Set(['EBM']);
+  const all = [...new Set(Object.keys(COORDS).concat(Object.keys(AIRPORT_COORDS), Object.keys(GATE_AP)))].filter((c) => !SKIP.has(c));
+  assert.ok(all.length > 2400, all.length + ' places with a position');
+  const noName = all.filter((c) => !CITY[c]), noFr = all.filter((c) => !CITY_FR[c]);
+  const noApp = all.filter((c) => String(S[c] || '').toUpperCase() !== String(CITY[c] || '').toUpperCase());
+  assert.deepEqual(noName, [], 'places the map can draw with no name: the floor would print the code ("Xpl")');
+  assert.deepEqual(noFr, [], 'places with no French name');
+  assert.deepEqual(noApp, [], 'the companion app\'s copy of CITY (shared-names.js) differs');
+  // the 50 positions this build adds, and every place the sweep's pages
+  // carry, by name in both tables
+  for (const c of Object.keys(OURAIRPORTS)) assert.ok(CITY[c] && CITY_FR[c], c + ' (a new position)');
+  const FX = require('./fixtures/earth-sweep-2026-10-19.json');
+  for (const fl of FX.floors) for (const p of fl.places) assert.ok(CITY[p[0]] && CITY_FR[p[0]], fl.id + ': ' + p[0]);
+  // the cases the checker found, and the French that differs
+  const want = { XPL: ['COMAYAGUA', 'COMAYAGUA'], MGA: ['MANAGUA', 'MANAGUA'], CAP: ['CAP-HAÏTIEN', 'CAP-HAÏTIEN'], GYD: ['BAKU', 'BAKOU'],
+    MLE: ['MALÉ', 'MALÉ'], JER: ['JERSEY', 'JERSEY'], YVQ: ['NORMAN WELLS', 'NORMAN WELLS'], YYE: ['FORT NELSON', 'FORT NELSON'],
+    ZAG: ['ZAGREB', 'ZAGREB'], MCT: ['MUSCAT', 'MASCATE'], MLA: ['MALTA', 'MALTE'], STX: ['ST CROIX', 'SAINTE-CROIX'] };
+  for (const [c, [en, fr]] of Object.entries(want)) { assert.equal(CITY[c], en, c); assert.equal(CITY_FR[c], fr, c + ' in French'); }
+  assert.ok(!CITY.EBM, 'EBM is given no name');
+});
+
+test('every Québec airport on the French-first list that has a position has a zone and a name', () => {
+  const bad = [];
+  for (const c of BS.FR_FIRST) {
+    if (!coordsOf(c)) continue;
+    const zone = (AP[c] && AP[c].tz) || E.ZONES[c];
+    if (!zone) bad.push(c + ' has no zone');
+    if (!CITY[c] || !CITY_FR[c]) bad.push(c + ' has no name');
+  }
+  assert.deepEqual(bad, []);
+  for (const c of ['YKU', 'YRI', 'YMT', 'YNA']) assert.equal(E.ZONES[c], 'America/Toronto', c);
+  for (const [c, n] of [['YTF', 'ALMA'], ['AKV', 'AKULIVIK'], ['YIK', 'IVUJIVIK'], ['YKG', 'KANGIRSUK']]) assert.equal(CITY[c], n);
+});
+
+test('DJT is West Palm Beach wherever PBI is: a US airport, its runways, Florida', () => {
+  const pick = (name) => { const a = CORE.indexOf(name); assert.ok(a >= 0, name); return a; };
+  const start = pick('const _IATA_CC_GROUPS = {'), end = CORE.indexOf('\nfunction flightRegionKey(', start);
+  const tail = CORE.indexOf('\n}\n', end) + 3;
+  const box = new Function('COORDS', CORE.slice(start, tail) + '\nreturn { airportCountry: airportCountry, flightRegionKey: flightRegionKey };')(COORDS);
+  assert.equal(box.airportCountry('PBI'), 'US');
+  assert.equal(box.airportCountry('DJT'), 'US', 'DJT is in the US group, beside PBI');
+  // a West Palm Beach row at a US airport is domestic, not international
+  assert.equal(box.flightRegionKey({ _locIata: 'DJT' }, 'LGA'), 'dom');
+  assert.equal(box.flightRegionKey({ _locIata: 'DJT' }, 'YYZ'), 'trans');
+  const RW = {}; vm.runInNewContext(fs.readFileSync(path.join(JS, 'airport-runways.js'), 'utf8').replace('var AIRPORT_RUNWAYS', 'this.AIRPORT_RUNWAYS'), RW);
+  assert.deepEqual(RW.AIRPORT_RUNWAYS.DJT, RW.AIRPORT_RUNWAYS.PBI, 'the gate map\'s runways');
+  assert.equal(names().row('West Palm Beach, FL'), 'PBI', 'Florida has West Palm Beach (as PBI, the name\'s code)');
+  assert.equal(E.ZONES.DJT, E.ZONES.PBI);
+});
+
+test('\'City, ST\' never reads the wrong one of a city\'s airports: the feeds\' own samples', () => {
+  // Kennedy's feed (originName + its code) and Raleigh-Durham's (FlightView:
+  // the city cell + the flight's own two codes), as recorded in the repo
+  const seen = new Map();
+  const add = (n, c) => { if (!/, [A-Z]{2}$/.test(n)) return; if (!seen.has(n)) seen.set(n, new Set()); seen.get(n).add(c); };
+  for (const f of ['jfk-arr-sample.json', 'jfk-dep-sample.json']) {
+    const d = require('./fixtures/' + f).data;
+    for (const k of Object.keys(d)) for (const r of d[k].data) add(r.originName || r.destinationName || '', r.originAirportCode || r.destinationAirportCode || '');
+  }
+  for (const f of ['rdu-arr-sample.html', 'rdu-dep-sample.html']) {
+    const s = fs.readFileSync(path.join(__dirname, 'fixtures', f), 'utf8');
+    for (const m of s.matchAll(/<td class="c3">([^<]+)<\/td>\s*<td class="c4[^"]*"><a [^>]*ffDtNm\('[^']*','[^']*','[^']*','([A-Z]{3})','([A-Z]{3})'/g)) add(m[1], m[2] === 'RDU' ? m[3] : m[2]);
+  }
+  assert.ok(seen.size > 60, seen.size + ' names');
+  const NAMES = names(), bad = [];
+  let read = 0;
+  // (DJT is PBI's new code: one airport; the name reads PBI, as the rows do)
+  for (const [n, set] of seen) {
+    const codes = new Set([...set].map((c) => NAMES.renamed[c] || c)), got = NAMES.row(n);
+    if (codes.size > 1 && got) bad.push(`${n} means ${[...codes].join(' or ')} in these feeds, and reads ${got}`);
+    if (codes.size === 1 && got && !codes.has(got)) bad.push(`${n} is ${[...codes][0]} in these feeds, and reads ${got}`);
+    if (got) read++;
+  }
+  assert.deepEqual(bad, []);
+  assert.ok(read > 40, read + ' read');
+  assert.deepEqual(seen.get('Dallas, TX'), new Set(['DAL', 'DFW']), 'Love Field at Raleigh-Durham, Dallas/Fort Worth at Kennedy');
+  assert.equal(NAMES.row('Dallas, TX'), '');
+  assert.equal(NAMES.row('Dallas-Fort Worth, TX'), 'DFW');
 });

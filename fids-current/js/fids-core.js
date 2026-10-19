@@ -4593,10 +4593,16 @@ function _restoreApLangs() {
     langs = _arrL;
     langIdx = 0;
     lang = langs[0];
-    if (typeof updateLangButtons === 'function') updateLangButtons();
-    if (typeof updateTicker === 'function') updateTicker();
-    // v23995 — the boot loader and the static page words follow (BoardStrings.onLangs)
-    try { BoardStrings.langsChanged(); } catch (eL) {}
+    try {
+      if (typeof updateLangButtons === 'function') updateLangButtons();
+      if (typeof updateTicker === 'function') updateTicker();
+    } finally {
+      // v23995 — the boot loader and the static page words follow (BoardStrings.onLangs);
+      // v24067 — whatever the two before it do, as in _applyBoardLangs: the
+      // words langsChanged paints (the floor's times among them,
+      // fids-earth.js) never wait for another change because one of them threw
+      try { BoardStrings.langsChanged(); } catch (eL) {}
+    }
   } catch (e) {}
 }
 function changeScreenType(val) {
@@ -29138,6 +29144,39 @@ const CITY = {
   LBA: 'Leeds',
   EXT: 'Exeter',
   CLJ: 'Cluj-Napoca',
+  // ── v24067 — EVERY PLACE THE MAP UNDER THE ROWS CAN DRAW HAS A NAME ────
+  // The overnight sweep of every board (2026-10-19) found places with a
+  // position and no name (Houston's rows to XPL and MGA printed 'Xpl' and
+  // 'Mga', and so would the map), most of them added to the map's positions
+  // in this build. Each name is the city the airport serves, from OurAirports
+  // (ourairports.com/data, public domain): its municipality, or, where that
+  // is a suburb or a district, the city or island the airport's own name
+  // gives (Zagreb for Velika Gorica, Skopje for Ilinden, Jersey for St.
+  // Peter, Oran for Es-Sénia, Comayagua for Palmerola, Mauritius for Plaine
+  // Magnien). Their French names are in CITY_FR. EBM is left out: the gate
+  // table's EBM stands at Pamplona, not at El Borma, its code's airport.
+  // tests/earth-floor-places.test.js holds every place with a position to a
+  // name in both tables.
+  AKV:'AKULIVIK',           ALP:'ALEPPO',             BEY:'BEIRUT',             BGW:'BAGHDAD',
+  BKH:'KEKAHA',             BON:'BONAIRE',            BSR:'BASRA',              BTS:'BRATISLAVA',
+  BVL:'BAURES',             CAP:'CAP-HAÏTIEN',        CYA:'LES CAYES',          CZL:'CONSTANTINE',
+  DAM:'DAMASCUS',           DAR:'DAR ES SALAAM',      EBB:'ENTEBBE',            EBL:'ERBIL',
+  GBE:'GABORONE',           GUM:'GUAM',               GYD:'BAKU',               HDH:'MOKULEIA',
+  HRE:'HARARE',             JER:'JERSEY',             JRF:'KAPOLEI',            LAD:'LUANDA',
+  LCA:'LARNACA',            LUN:'LUSAKA',             MAR:'MARACAIBO',          MBA:'MOMBASA',
+  MGA:'MANAGUA',            MLE:'MALÉ',               MPM:'MAPUTO',             MRU:'MAURITIUS',
+  NAN:'NADI',               NOU:'NOUMÉA',             OAG:'ORANGE',             ORN:'ORAN',
+  PAK:'HANAPEPE',           POM:'PORT MORESBY',       PPG:'PAGO PAGO',          PRN:'PRISTINA',
+  RUN:'RÉUNION',            SAH:'SANAA',              SEZ:'SEYCHELLES',         SFJ:'KANGERLUSSUAQ',
+  SGN:'HO CHI MINH CITY',   SJJ:'SARAJEVO',           SKP:'SKOPJE',             SPN:'SAIPAN',
+  SVD:'ST VINCENT',         TCI:'TENERIFE',           TGD:'PODGORICA',          TIV:'TIVAT',
+  TLL:'TALLINN',            TNR:'ANTANANARIVO',       TUN:'TUNIS',              UPP:'HAWI',
+  VNO:'VILNIUS',            WDH:'WINDHOEK',           XGR:'KANGIQSUALUJJUAQ',   XPL:'COMAYAGUA',
+  XQU:'QUALICUM BEACH',     YAA:'ANAHIM LAKE',        YCO:'KUGLUKTUK',          YFI:'FIREBAG',
+  YIK:'IVUJIVIK',           YKG:'KANGIRSUK',          YPW:'POWELL RIVER',       YTF:'ALMA',
+  YVQ:'NORMAN WELLS',       YWL:'WILLIAMS LAKE',      YYE:'FORT NELSON',        YYH:'TALOYOAK',
+  YZZ:'TRAIL',              ZAG:'ZAGREB',             ZEL:'BELLA BELLA',        ZFD:'FOND-DU-LAC',
+  ZMT:'MASSET',             ZNZ:'ZANZIBAR',
 };
 
 // French city name overrides (used when lang === 'fr')
@@ -29958,6 +29997,48 @@ const CITY_FR = {
   ZSA:'SAN SALVADOR', ZTH:'ZAKYNTHOS', ZUH:'ZHUHAI',
   ZYI:'ZUNYI',
 
+  // ── v24067 — EVERY PLACE THE MAP UNDER THE ROWS CAN DRAW HAS ITS FRENCH NAME
+  // (the CITY additions of v24067, and the places with a position that had
+  // an English name only). Where French differs, the French label Wikidata
+  // (CC0) gives the place the airport serves: Bakou, Beyrouth, Bagdad,
+  // Bassorah, Damas, Alep, Mascate, Malte, Bucarest, Hanoï, Île de Man, Îles
+  // Féroé, Guernesey, Sainte-Croix, Saint-Vincent, Maurice, La Réunion.
+  AKV:'AKULIVIK',           ALP:'ALEP',               BCM:'BACĂU',              BEG:'BELGRADE',
+  BEY:'BEYROUTH',           BGW:'BAGDAD',             BKH:'KEKAHA',             BOJ:'BOURGAS',
+  BON:'BONAIRE',            BSR:'BASSORAH',           BTS:'BRATISLAVA',         BVL:'BAURES',
+  CAP:'CAP-HAÏTIEN',        CBB:'COCHABAMBA',         CCS:'CARACAS',            CIJ:'COBIJA',
+  CLJ:'CLUJ-NAPOCA',        CYA:'LES CAYES',          CZL:'CONSTANTINE',        DAM:'DAMAS',
+  DAR:'DAR ES SALAM',       EBB:'ENTEBBE',            EBL:'ERBIL',              EIS:'TORTOLA',
+  FAE:'ÎLES FÉROÉ',         FMN:'FARMINGTON',         FSP:'SAINT-PIERRE',       GBE:'GABORONE',
+  GCI:'GUERNESEY',          GIB:'GIBRALTAR',          GUM:'GUAM',               GYA:'GUAYARAMERÍN',
+  GYD:'BAKOU',              HAN:'HANOÏ',              HDH:'MOKULEIA',           HRE:'HARARE',
+  IOM:'ÎLE DE MAN',         JER:'JERSEY',             JRF:'KAPOLEI',            KGL:'KIGALI',
+  KSC:'KOŠICE',             LAD:'LUANDA',             LCA:'LARNACA',            LHE:'LAHORE',
+  LJU:'LJUBLJANA',          LUN:'LUSAKA',             LUX:'LUXEMBOURG',         MAR:'MARACAIBO',
+  MBA:'MOMBASA',            MCT:'MASCATE',            MGA:'MANAGUA',            MLA:'MALTE',
+  MLE:'MALÉ',               MPM:'MAPUTO',             MRU:'MAURICE',            NAN:'NADI',
+  NOU:'NOUMÉA',             OAG:'ORANGE',             ORN:'ORAN',               OTP:'BUCAREST',
+  PAK:'HANAPEPE',           PFO:'PAPHOS',             POI:'POTOSÍ',             POM:'PORT MORESBY',
+  POP:'PUERTO PLATA',       PPG:'PAGO PAGO',          PPT:'PAPEETE',            PRN:'PRISTINA',
+  PVC:'PROVINCETOWN',       RIB:'RIBERALTA',          RIX:'RIGA',               RMO:'CHIȘINĂU',
+  RUN:'LA RÉUNION',         SAH:'SANAA',              SAL:'SAN SALVADOR',       SEZ:'SEYCHELLES',
+  SFJ:'KANGERLUSSUAQ',      SGN:'HÔ CHI MINH-VILLE',  SJJ:'SARAJEVO',           SKP:'SKOPJE',
+  SOF:'SOFIA',              SPN:'SAÏPAN',             SRE:'SUCRE',              SRZ:'SANTA CRUZ',
+  STX:'SAINTE-CROIX',       SVD:'SAINT-VINCENT',      TCI:'TENERIFE',           TDD:'TRINIDAD',
+  TGD:'PODGORICA',          TIA:'TIRANA',             TIV:'TIVAT',              TJA:'TARIJA',
+  TLL:'TALLINN',            TNR:'ANTANANARIVO',       UPP:'HAWI',               UYU:'UYUNI',
+  VNO:'VILNIUS',            VVI:'SANTA CRUZ DE LA SIERRA',WDH:'WINDHOEK',           XGR:'KANGIQSUALUJJUAQ',
+  XPL:'COMAYAGUA',          XQU:'QUALICUM BEACH',     YAA:'ANAHIM LAKE',        YBR:'BRANDON',
+  YCG:'CASTLEGAR',          YCH:'MIRAMICHI',          YCO:'KUGLUKTUK',          YEK:'ARVIAT',
+  YFI:'FIREBAG',            YFS:'FORT SIMPSON',       YGW:'KUUJJUARAPIK',       YHR:'CHEVERY',
+  YIK:'IVUJIVIK',           YKG:'KANGIRSUK',          YKL:'SCHEFFERVILLE',      YKZ:'BUTTONVILLE',
+  YLL:'LLOYDMINSTER',       YMJ:'MOOSE JAW',          YMO:'MOOSONEE',           YNA:'NATASHQUAN',
+  YOJ:'HIGH LEVEL',         YPA:'PRINCE ALBERT',      YPE:'PEACE RIVER',        YPW:'POWELL RIVER',
+  YQI:'YARMOUTH',           YQQ:'COMOX',              YRJ:'ROBERVAL',           YTF:'ALMA',
+  YVQ:'NORMAN WELLS',       YWK:'WABUSH',             YWL:'WILLIAMS LAKE',      YXC:'CRANBROOK',
+  YXJ:'FORT ST. JOHN',      YYE:'FORT NELSON',        YYH:'TALOYOAK',           YYY:'MONT-JOLI',
+  YZP:'SANDSPIT',           YZV:'SEPT-ÎLES',          YZZ:'TRAIL',              ZAG:'ZAGREB',
+  ZEL:'BELLA BELLA',        ZFD:'FOND-DU-LAC',        ZMT:'MASSET',             ZNZ:'ZANZIBAR',
 };
 
 // ── AIRPORT COORDINATES ─────────────────────────────
@@ -32891,7 +32972,7 @@ var _ROW_REGION = {
   CO: 'ALS ASE BJC CEZ COS DEN DRO EGE GJT GUC HDN MTJ PUB TEX',
   CT: 'BDL HVN',
   DE: 'DOV ILG',
-  FL: 'DAB DSI ECP EYW FLL GNV JAX LAL MCO MIA MLB OPF PGD PIE PNS RSW SFB SRQ TLH TPA UST VPS VRB',
+  FL: 'DAB DSI DJT ECP EYW FLL GNV JAX LAL MCO MIA MLB OPF PBI PGD PIE PNS RSW SFB SRQ TLH TPA UST VPS VRB',   // (DJT and PBI: West Palm Beach)
   GA: 'ABY AGS ATL BQK CSG MCN PDK SAV VLD',
   HI: 'HNL HNM ITO JHM KOA LIH LNY LUP MKK MUE OGG',
   IA: 'ALO BRL CID DBQ DSM FOD MCW SUX',
@@ -33001,6 +33082,25 @@ function _editsApart(a, b) {
   for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
   return d[a.length][b.length];
 }
+// our airports in a state or province whose name is the city's, or begins
+// with it as a word ('Dallas/Fort Worth', 'Dallas Addison' for 'Dallas')
+var _ROW_NAMES = null;
+function _rowMetro(city, reg) {
+  var low = function (x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, ' ').trim(); };
+  if (!_ROW_NAMES) {
+    _ROW_NAMES = [];
+    var add = function (c, n) { if (c && n && !_IATA_RENAMED[String(c).toUpperCase()]) _ROW_NAMES.push([String(c).toUpperCase(), low(n)]); };
+    try { if (typeof AP_LIST !== 'undefined' && AP_LIST.forEach) AP_LIST.forEach(function (a) { if (a) add(a.c, a.n); }); } catch (e) {}
+    try { if (typeof CITY !== 'undefined') Object.keys(CITY).forEach(function (c) { add(c, CITY[c]); }); } catch (e) {}
+    try { if (typeof CITY_FR !== 'undefined') Object.keys(CITY_FR).forEach(function (c) { add(c, CITY_FR[c]); }); } catch (e) {}
+  }
+  var w = low(city), out = [];
+  if (w.length < 3) return out;
+  _ROW_NAMES.forEach(function (x) {
+    if ((x[1] === w || x[1].indexOf(w + ' ') === 0) && _rowRegion(x[0]) === reg && out.indexOf(x[0]) < 0) out.push(x[0]);
+  });
+  return out;
+}
 function _iataFromRowName(name) {
   var s = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
   if (_normCityKey(s).length < 3) return '';
@@ -33015,7 +33115,13 @@ function _iataFromRowName(name) {
     var codes = _rowCodesAll(_normCityKey(st[1])).slice(), sp = _rowWholeOrSpelt(st[1]);
     if (sp && sp !== '!' && codes.indexOf(sp) < 0) codes.push(sp);
     var inside = codes.filter(function (c) { return _rowRegion(c) === reg; });
-    return inside.length === 1 ? inside[0] : '';
+    if (inside.length !== 1) return '';
+    // a city with more than one airport of ours in that state is no one of
+    // them: 'Dallas, TX' is Love Field in Raleigh-Durham's feed and
+    // Dallas/Fort Worth in Kennedy's (both feeds' own samples), while our
+    // names are 'Dallas' (DAL), 'Dallas/Fort Worth' (DFW) and 'Dallas
+    // Addison' (ADS)
+    return _rowMetro(st[1], reg).length > 1 ? '' : inside[0];
   }
   // 'St Hubert', 'Ft McMurray'
   var one = _rowWholeOrSpelt(s);
@@ -42772,6 +42878,8 @@ function startPaging() {
 // It also makes the classifier work for ANY home airport rather than just
 // Canadian and US ones — MCO, TPA, LGA and the rest now classify their own
 // traffic correctly instead of falling through to 'international'.
+// v24067 — DJT is West Palm Beach (PBI's code since 18 August 2026): in 'US'
+// beside PBI, so its rows are domestic at a US airport (flightRegionKey).
 const _IATA_CC_GROUPS = {
   AE: 'AAN AUH DWC DXB FJR RKT SHJ XNB',
   AF: 'HEA JAA KBL KDH MZR ZAJ',
@@ -43135,7 +43243,7 @@ const _IATA_CC_GROUPS = {
     'LUP LUR LWB LWS LYH MAF MBL MBS MCE MCI MCK MCN MCO MCW MDT MDW MEI MEM MFE MFR MGM MGW ' +
     'MHK MHT MIA MKE MKG MKK MKL MLB MLI MLL MLU MMH MOB MOT MOU MQT MRY MSL MSN MSO MSP MSS ' +
     'MSY MTJ MTM MUE MVY MWA MYR MYU NKI NLG NNL NUI NUL OAJ OAK OBU OGD OGG OGS OKC OLF OLH ' +
-    'OMA OME ONT OOK OPF ORD ORF ORH ORI ORT ORV OTH OTZ OWB OWD PAE PAH PBG PBI PDB PDT PDX ' +
+    'OMA OME ONT OOK OPF ORD ORF ORH ORI ORT ORV OTH OTZ OWB OWD PAE PAH PBG PBI DJT PDB PDT PDX ' +
     'PEC PGA PGD PGV PHF PHL PHO PHX PIA PIB PIE PIH PIR PIT PIZ PKB PLN PNS PPV PQI PQS PRC ' +
     'PSC PSG PSM PSP PTA PTH PUB PUW PVC PVD PVU PWM RAP RBY RDD RDM RDU RDV RFD RHI RIC RIW ' +
     'RKD RKS RNO ROA ROC ROW RSH RST RSW RUT SAF SAN SAT SAV SBA SBD SBN SBP SBY SCC SCE SCK ' +

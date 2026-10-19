@@ -103,9 +103,14 @@ test('the zones that are easy to get wrong', () => {
     DIK: 'America/Denver', PRC: 'America/Phoenix', YYE: 'America/Fort_Nelson', YXY: 'America/Whitehorse',
     YCO: 'America/Cambridge_Bay', YYH: 'America/Cambridge_Bay', YVQ: 'America/Inuvik', YHR: 'America/Blanc-Sablon',
     YKL: 'America/Toronto', SFJ: 'America/Nuuk', CAP: 'America/Port-au-Prince', BON: 'America/Kralendijk',
-    FNC: 'Atlantic/Madeira', FAE: 'Atlantic/Faroe', DJT: 'America/New_York'
+    FNC: 'Atlantic/Madeira', FAE: 'Atlantic/Faroe', DJT: 'America/New_York',
+    // third review: the French-first airports with a position and no zone.
+    // Natashquan is Eastern: the IANA tz database puts Atlantic time east of
+    // it ('See America/Puerto_Rico for east of Natashquan'); Chevery, east of
+    // it, keeps Blanc-Sablon's (above)
+    YKU: 'America/Toronto', YRI: 'America/Toronto', YMT: 'America/Toronto', YNA: 'America/Toronto'
   };
-  for (const c of ['YNA', 'YMU']) assert.equal(E.ZONES[c], undefined, c + ' is left with no zone on purpose (no time, not a guess)');
+  assert.equal(E.ZONES.YMU, undefined, 'YMU is left with no zone on purpose (no time, not a guess)');
   for (const [c, z] of Object.entries(want)) assert.equal(E.ZONES[c], z, c);
 });
 
