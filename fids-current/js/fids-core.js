@@ -7267,7 +7267,7 @@ function _b5RenderKey(iata) {
     langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '',
     hall: s.hall.map(row), later: s.later.map(row), kind: s.kind, belts: s.belts,
     wx: w ? [Math.round(w.temp), w.code, Math.round(w.feelsLike || 0)] : null,
-    unit: (typeof tempUnit !== 'undefined') ? tempUnit : '', portrait: _b5Portrait(),
+    unit: _boardTempUnit(), portrait: _b5Portrait(),
     feed: _fidsFeedDownKey(iata, 'arr') });
 }
 function _b5Render(view, iata, now) {
@@ -17003,7 +17003,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24067" src="/textures/gate-sky-shelf.mp4?v=24067" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24069" src="/textures/gate-sky-shelf.mp4?v=24069" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17047,7 +17047,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24067" src="/textures/gate-sky-shelf.mp4?v=24067" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24069" src="/textures/gate-sky-shelf.mp4?v=24069" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -25738,7 +25738,12 @@ const gView = document.getElementById('gateView');
         // Local SVG wordmark — preferred. Use the DARK variant since the gate-screen
         // banner sits on a WHITE card (line 3858 white logo card).
         const _wmBase = IATA_TO_WORDMARK[bannerLogoCode];
-        const _localWordmark = (typeof logoPath === 'function')
+        // v24069 — a carrier filed in WORDMARK_RASTER (Air Inuit) takes its
+        // own colour file, as the rows do; the hand-built '-wordmark-dark'
+        // name does not exist for it
+        const _localWordmark = (typeof WORDMARK_RASTER !== 'undefined' && WORDMARK_RASTER[_wmBase])
+          ? WORDMARK_RASTER[_wmBase].dark
+          : (typeof logoPath === 'function')
           ? logoPath(_wmBase + '-wordmark-dark.svg')
           : ('/logos/' + _wmBase + '-wordmark-dark.svg');
         // No wway.io fallback — text only if local file unavailable.
@@ -27466,7 +27471,8 @@ const gView = document.getElementById('gateView');
             +   (_lg ? '<img class="fids-airport-logo-img" src="' + fidsEscHtml(_lg) + '" alt="" onerror="this.style.display=\'none\'">' : '')
             +   '<div class="fids-airport-text">'
             +     '<div class="fids-airport-iata">' + _dispIata(iata) + '</div>'
-            +     '<div class="fids-airport-name">' + ((AP[iata] || {}).name || iata) + '</div>'
+            // v24069 — the store's name in the board's languages, as the board's pill
+            +     '<div class="fids-airport-name">' + (_apHeaderNameHtml(iata) || fidsEscHtml((AP[iata] || {}).name || iata)) + '</div>'
             +   '</div>'
             + '</div>'
             + '<div class="fids-banner-board">'
@@ -27910,17 +27916,17 @@ var _BIDS_FIT_TBA = { key: '', n: 0, capped: false };   // v24005 — the "to be
 const AP = {
   YYZ:{ name:'Toronto Pearson International Airport',                tz:'America/Toronto', sub:'Pearson' },
   YTZ:{ name:'Billy Bishop Toronto City Airport',                   tz:'America/Toronto', sub:'Billy Bishop' },
-  YHU:{ name:'Montréal Metropolitan Airport (MET)',                 tz:'America/Toronto', sub:'Métropolitain' },
-  YUL:{ name:'Montréal-Trudeau International Airport',               tz:'America/Toronto', sub:'Trudeau' },
+  YHU:{ name:'Montréal Metropolitan Airport (MET)',                 tz:'America/Toronto', sub:'Métropolitain', hdrKey:'apHdrYHU' },
+  YUL:{ name:'Montréal-Trudeau International Airport',               tz:'America/Toronto', sub:'Trudeau', hdrKey:'apHdrYUL' },
   YVR:{ name:'Vancouver International Airport',                      tz:'America/Vancouver'  },
   YYC:{ name:'Calgary International Airport',                        tz:'America/Edmonton'   },
   YEG:{ name:'Edmonton International Airport',                       tz:'America/Edmonton'   },
   YOW:{ name:'Ottawa Macdonald-Cartier International Airport',       tz:'America/Toronto'    },
   YQM:{ name:'Greater Moncton Roméo LeBlanc International Airport',  tz:'America/Moncton'    },
   YHZ:{ name:'Halifax Stanfield International Airport',              tz:'America/Halifax'    },
-  YQB:{ name:'Québec City Jean Lesage International Airport',        tz:'America/Toronto'    },
+  YQB:{ name:'Québec City Jean Lesage International Airport',        tz:'America/Toronto', hdrKey:'apHdrYQB' },
   YWG:{ name:'Winnipeg James Armstrong Richardson International',    tz:'America/Winnipeg'   },
-  YXX:{ name:'Abbotsford International Airport',                     tz:'America/Vancouver'  },
+  YXX:{ name:'Abbotsford International Airport',                     tz:'America/Vancouver', hdrKey:'apHdrYXX' },
   JFK:{ name:'John F. Kennedy International Airport',                tz:'America/New_York', sub:'Kennedy' },
   LGA:{ name:'New York LaGuardia Airport',                           tz:'America/New_York', sub:'LaGuardia' },
   EWR:{ name:'Newark Liberty International Airport',                 tz:'America/New_York'   },
@@ -27943,18 +27949,18 @@ const AP = {
   // never named here, so their boards showed a bare IATA code. Found by the new
   // tests/live-airports.test.js, which now fails if an offered airport is unnamed.
   YHM:{ name:'John C. Munro Hamilton International Airport',         tz:'America/Toronto'    },
-  YLW:{ name:'Kelowna International Airport',                        tz:'America/Vancouver'  },
-  YQR:{ name:'Regina International Airport',                         tz:'America/Regina'     },
-  MCI:{ name:'Kansas City International Airport',                    tz:'America/Chicago'    },
-  MSY:{ name:'Louis Armstrong New Orleans International Airport',    tz:'America/Chicago'    },
+  YLW:{ name:'Kelowna International Airport',                        tz:'America/Vancouver', hdrKey:'apHdrIntl', hdrName:'Kelowna' },
+  YQR:{ name:'Regina International Airport',                         tz:'America/Regina', hdrKey:'apHdrIntl', hdrName:'Regina' },
+  MCI:{ name:'Kansas City International Airport',                    tz:'America/Chicago', hdrKey:'apHdrIntl', hdrName:'Kansas City' },
+  MSY:{ name:'Louis Armstrong New Orleans International Airport',    tz:'America/Chicago', hdrKey:'apHdrMSY' },
   DXB:{ name:'Dubai International Airport',                          tz:'Asia/Dubai', subKey:'apIntl' },
   DOH:{ name:'Hamad International Airport',                          tz:'Asia/Qatar'         },
   NRT:{ name:'Tokyo Narita International Airport',                   tz:'Asia/Tokyo', sub:'Narita' },
   SYD:{ name:'Sydney Kingsford Smith International Airport',         tz:'Australia/Sydney'   },
   // Added airports
   YYJ:{ name:'Victoria International Airport',                       tz:'America/Vancouver'  },
-  DCA:{ name:'Ronald Reagan Washington National Airport',             tz:'America/New_York', sub:'Reagan National' },
-  IAD:{ name:'Washington Dulles International Airport',               tz:'America/New_York', sub:'Dulles' },
+  DCA:{ name:'Ronald Reagan Washington National Airport',             tz:'America/New_York', sub:'Reagan National', hdrKey:'apHdrDCA' },
+  IAD:{ name:'Washington Dulles International Airport',               tz:'America/New_York', sub:'Dulles', hdrKey:'apHdrIntl', hdrName:'Washington Dulles' },
   CLT:{ name:'Charlotte Douglas International Airport',              tz:'America/New_York'   },
   TPA:{ name:'Tampa International Airport',                          tz:'America/New_York'   },
   FLL:{ name:'Fort Lauderdale-Hollywood International Airport',      tz:'America/New_York'   },
@@ -27966,7 +27972,7 @@ const AP = {
   DEN:{ name:'Denver International Airport',                         tz:'America/Denver'     },
   PHX:{ name:'Phoenix Sky Harbor International Airport',             tz:'America/Phoenix'    },
   LAS:{ name:'Harry Reid International Airport',                     tz:'America/Los_Angeles'},
-  SAN:{ name:'San Diego International Airport',                      tz:'America/Los_Angeles'},
+  SAN:{ name:'San Diego International Airport',                      tz:'America/Los_Angeles', hdrKey:'apHdrIntl', hdrName:'San Diego' },
   HNL:{ name:'Daniel K. Inouye International Airport',              tz:'Pacific/Honolulu'   },
   OGG:{ name:'Kahului Airport — Maui',                               tz:'Pacific/Honolulu'   },
   CUN:{ name:'Cancún International Airport',                         tz:'America/Cancun'     },
@@ -27992,9 +27998,9 @@ const AP = {
   MDW:{ name:'Chicago Midway International Airport',                 tz:'America/Chicago', sub:'Midway' },
   IAH:{ name:'Houston George Bush Intercontinental Airport',         tz:'America/Chicago', sub:'Intercontinental' },
   HOU:{ name:'Houston William P. Hobby Airport',                     tz:'America/Chicago', sub:'Hobby' },
-  AUS:{ name:'Austin-Bergstrom International Airport',               tz:'America/Chicago'    },
+  AUS:{ name:'Austin-Bergstrom International Airport',               tz:'America/Chicago', hdrKey:'apHdrAUS' },
   SLC:{ name:'Salt Lake City International Airport',                 tz:'America/Denver'     },
-  PDX:{ name:'Portland International Airport',                       tz:'America/Los_Angeles'},
+  PDX:{ name:'Portland International Airport',                       tz:'America/Los_Angeles', hdrKey:'apHdrIntl', hdrName:'Portland' },
   LCY:{ name:'London City Airport',                                  tz:'Europe/London', sub:'City' },
   ORY:{ name:'Paris Orly Airport',                                   tz:'Europe/Paris', sub:'Orly' },
   MXP:{ name:'Milan Malpensa Airport',                               tz:'Europe/Rome', sub:'Malpensa' },
@@ -28021,7 +28027,7 @@ const AP = {
   CGK:{ name:'Soekarno-Hatta International Airport',                 tz:'Asia/Jakarta'       },
   KUL:{ name:'Kuala Lumpur International Airport',                   tz:'Asia/Kuala_Lumpur'  },
   MEL:{ name:'Melbourne Airport',                                    tz:'Australia/Melbourne'},
-  HBA:{ name:'Hobart International Airport',                         tz:'Australia/Hobart'   },
+  HBA:{ name:'Hobart International Airport',                         tz:'Australia/Hobart', hdrKey:'apHdrIntl', hdrName:'Hobart' },
   AKL:{ name:'Auckland Airport',                                     tz:'Pacific/Auckland'   },
   MNL:{ name:'Ninoy Aquino International Airport',                   tz:'Asia/Manila'        },
   GCM:{ name:'Owen Roberts International Airport — Grand Cayman',    tz:'America/Cayman'     },
@@ -28035,20 +28041,20 @@ const AP = {
   LPB:{ name:'El Alto International Airport — La Paz',              tz:'America/La_Paz'     },
   EZE:{ name:'Ministro Pistarini International Airport — Buenos Aires', tz:'America/Argentina/Buenos_Aires', sub:'Ezeiza' },
   YFC:{ name:'Fredericton International Airport',                    tz:'America/Moncton'    },
-  YRJ:{ name:'Roberval Airport',                                     tz:'America/Toronto'    },
+  YRJ:{ name:'Roberval Airport',                                     tz:'America/Toronto', hdrKey:'apHdrAirport', hdrName:'Roberval' },
   YXE:{ name:'Saskatoon John G. Diefenbaker International Airport',  tz:'America/Regina'     },
   YYG:{ name:'Charlottetown Airport',                                tz:'America/Halifax'    },
   YYT:{ name:"St. John's International Airport",                     tz:'America/St_Johns'   },
   YQT:{ name:'Thunder Bay International Airport',                       tz:'America/Toronto'     },
   YSJ:{ name:'Saint John Airport',                                    tz:'America/Moncton'    },
   YYR:{ name:'Goose Bay Airport',                                     tz:'America/Goose_Bay'  },
-  YDF:{ name:'Deer Lake Regional Airport',                            tz:'America/St_Johns'   },
-  YQX:{ name:'Gander International Airport',                          tz:'America/St_Johns'   },
+  YDF:{ name:'Deer Lake Regional Airport',                            tz:'America/St_Johns', hdrKey:'apHdrRegional', hdrName:'Deer Lake' },
+  YQX:{ name:'Gander International Airport',                          tz:'America/St_Johns', hdrKey:'apHdrIntl', hdrName:'Gander' },
   YQY:{ name:'Sydney / J.A. Douglas McCurdy Airport',                 tz:'America/Halifax'    },
   YZF:{ name:'Yellowknife Airport',                                  tz:'America/Yellowknife'},
-  YKA:{ name:'Kamloops Airport',                                     tz:'America/Vancouver'  },   // v23334 — wave 5 authority feeds
-  YXS:{ name:'Prince George Airport',                                tz:'America/Vancouver'  },
-  YMM:{ name:'Fort McMurray International Airport',                  tz:'America/Edmonton'   },
+  YKA:{ name:'Kamloops Airport',                                     tz:'America/Vancouver', hdrKey:'apHdrAirport', hdrName:'Kamloops' },   // v23334 — wave 5 authority feeds
+  YXS:{ name:'Prince George Airport',                                tz:'America/Vancouver', hdrKey:'apHdrAirport', hdrName:'Prince George' },
+  YMM:{ name:'Fort McMurray International Airport',                  tz:'America/Edmonton', hdrKey:'apHdrIntl', hdrName:'Fort McMurray' },
 
   // ── v23688 — THE SIXTY EUROPEAN DESTINATIONS THAT HAD NO TIMEZONE ────────
   //
@@ -28176,11 +28182,11 @@ const AP = {
   // none of them overrides an existing value. Each is the airport's own
   // name and the zone the airport is in (tests/ap-timezones.test.js checks
   // every zone and that no two airports fold to one name).
-  YYY:{ name:'Mont-Joli Airport',                                 tz:'America/Toronto' },
-  YGR:{ name:'Îles-de-la-Madeleine Airport',                      tz:'America/Halifax' },
-  YPX:{ name:'Puvirnituq Airport',                                tz:'America/Toronto' },
-  YBG:{ name:'Saguenay-Bagotville Airport',                       tz:'America/Toronto' },
-  YVO:{ name:"Val-d'Or Airport",                                  tz:'America/Toronto' },
+  YYY:{ name:'Mont-Joli Airport',                                 tz:'America/Toronto', hdrKey:'apHdrAirport', hdrName:'Mont-Joli' },
+  YGR:{ name:'Îles-de-la-Madeleine Airport',                      tz:'America/Halifax', hdrKey:'apHdrYGR' },
+  YPX:{ name:'Puvirnituq Airport',                                tz:'America/Toronto', hdrKey:'apHdrAirport', hdrName:'Puvirnituq' },
+  YBG:{ name:'Saguenay-Bagotville Airport',                       tz:'America/Toronto', hdrKey:'apHdrAirport', hdrName:'Saguenay-Bagotville' },
+  YVO:{ name:"Val-d'Or Airport",                                  tz:'America/Toronto', hdrKey:'apHdrAirport', hdrName:'Val-d’Or' },
   YWK:{ name:'Wabush Airport',                                    tz:'America/Goose_Bay' },
   YAM:{ name:'Sault Ste. Marie Airport',                          tz:'America/Toronto' },
   YSB:{ name:'Greater Sudbury Airport',                           tz:'America/Toronto' },
@@ -32626,9 +32632,10 @@ let langIdx = 0; // current rotation index
 let lang = 'en';
 
 // ── Per-airport board language + units ──────────────────────────────────
-// Spanish-speaking airports rotate English + Spanish (and use Celsius)
-// instead of the Canada default of English + French. Add IATA codes here
-// to switch a station's displays to ES. (Bolivia network for now.)
+// Spanish-speaking airports rotate English + Spanish instead of the Canada
+// default of English + French. Add IATA codes here to switch a station's
+// displays to ES. (Bolivia network for now.) Their temperatures are Celsius
+// because Bolivia's are (boardTempUnitFor), not because of the language.
 const ES_BOARD_AIRPORTS = new Set(BoardStrings.ES_AIRPORTS);
 // v23076 — per-airport language DEFAULT, baked into the code.
 //
@@ -32644,7 +32651,9 @@ const ES_BOARD_AIRPORTS = new Set(BoardStrings.ES_AIRPORTS);
 // saved choice still sit above it, so anyone can still override per screen.
 //
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
-// drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
+// drove the board's units then (boardMetricFor, gone in v24069: the unit is
+// the airport's country's now), and Orlando is a US board that keeps
+// Fahrenheit.
 //
 // v23970 — THE TABLE MOVED TO board-strings.js (BoardStrings.LANG_DEFAULTS),
 // beside the one Québec list it is now derived from. v23767 named YUL and YQB
@@ -32683,21 +32692,43 @@ function _boardLangPair() {
   // render a monolingual card, not have a second language invented for it.
   return BoardStrings.pairLangs(langs);
 }
-// Metric (Celsius) for Spanish-language stations; Canada keeps the C/F flip.
-function boardMetricFor(iata) {
-  return ES_BOARD_AIRPORTS.has(String(iata || '').toUpperCase());
+// v24069 — °C OR °F IS THE AIRPORT'S COUNTRY'S, ON EVERY SLIDE.
+// The unit used to follow the language slide: the first language read °C and
+// every later one °F, unless the airport was a Spanish-speaking one. So
+// Québec City (French, then English) read 16°C in French and 61°F in English,
+// Halifax read °F in French, and Chicago read °C in English. A board now
+// prints every temperature in the unit its own country reads, whichever
+// language is on the screen: Fahrenheit in the United States and its
+// territories, Celsius everywhere else (BoardStrings.tempUnit). The country
+// is the airport's own (airportCountry, the ISO table below; Puerto Rico,
+// Guam and the other territories fold into US there), its time zone only when
+// the table does not know the code.
+function boardTempUnitFor(iata) {
+  var k = String(iata || '').toUpperCase();
+  var cc = '', tz = '';
+  try { cc = airportCountry(k); } catch (e) { cc = ''; }
+  try { tz = (typeof AP !== 'undefined' && AP[k] && AP[k].tz) || ''; } catch (e2) { tz = ''; }
+  return BoardStrings.tempUnit(cc, tz);
 }
+// The unit of the board on this page: the airport its apSel names (every
+// board, gate and belt page carries one), else the gate's own airport.
+function _boardTempUnit() {
+  var ap = _pageAirport();
+  try { if (!ap && typeof window !== 'undefined') ap = String(window._gateIata || ''); } catch (e) {}
+  return boardTempUnitFor(ap);
+}
+try { if (typeof window !== 'undefined') window.boardTempUnitFor = boardTempUnitFor; } catch (e) {}
 
 let langRotateTimer = null;
 let mode = 'dep';
 let currentPage = 0;
-let tempUnit = 'C';
+let tempUnit = 'C';   // the board's unit (boardTempUnitFor), set by the paging clock
 let data = { dep:[], arr:[] };
 let currentTheme = 'gold';
 
+// v24069 — the airport's unit, whichever language is on the screen
 function displayTemp(c) {
-  if (tempUnit === 'F') return Math.round(c * 9/5 + 32) + '°F';
-  return c + '°C';
+  return BoardStrings.temp(c, _boardTempUnit());
 }
 
 // Title case converter for city names and labels
@@ -34551,6 +34582,11 @@ function _fidsBoardWordsFollowLangs() {
     // The banner's date (and the gate's) at once, not on the clock's next
     // second: its weekday and month are words too.
     try { tick(); } catch (eT) {}
+    // v24069 — and the airport's name under its code, in the new languages
+    try {
+      var _hn = document.getElementById('hdrApName');
+      if (_hn && ap) _apHeaderNameSet(_hn, ap, (typeof getAirportConfig === 'function') ? getAirportConfig(ap) : null);
+    } catch (eN) {}
     var rows = !!(typeof data !== 'undefined' && data && ((data.dep && data.dep.length) || (data.arr && data.arr.length)));
     if (!rows && window._initialFetchDone === true) {
       try { dedicatedRenderKey = null; } catch (eK) {}
@@ -34880,7 +34916,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24067';
+var FIDS_BUILD_TAG = 'v24069';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -36356,13 +36392,19 @@ function _fidsAirportHasFeed(code) {
     return FIDS_LIVE_AIRPORTS.has(c);
   } catch (e) { return true; }
 }
+// v24069 — the no-feed notice ("No live data for this airport") is drawn as
+// the feed-down one is: in the board's own notice box (.ffn-box, light ink on
+// a dark plate; .fids-no-feed), so it reads on every ground a theme paints
+// under it. It was the bare status-message grey, about 1.1:1 on Roberval's
+// blue. Its words are unchanged.
 function setState(which, show) {
   ['empty','loading','error'].forEach(id => {
     document.getElementById('panel'+id.charAt(0).toUpperCase()+id.slice(1)).style.display =
       (id === which && show) ? 'block' : 'none';
   });
-  if (which === 'empty' && !show) { try { document.getElementById('panelEmpty').classList.remove('fids-feed-down'); } catch (e) {} }
+  if (which === 'empty' && !show) { try { var _pe = document.getElementById('panelEmpty'); _pe.classList.remove('fids-feed-down'); _pe.classList.remove('fids-no-feed'); } catch (e) {} }
   if (which === 'empty' && show) {
+    try { document.getElementById('panelEmpty').classList.remove('fids-no-feed'); } catch (e) {}
     try {
       var el = document.getElementById('panelEmpty');
       var ap = (document.getElementById('apSel') || {}).value || '';
@@ -36387,11 +36429,12 @@ function setState(which, show) {
             + '<div class="sub">' + BoardStrings.pair('noFlightsWindowSub', { iata: ap, upper: true }) + '</div>';
         } else {
           var _apTxt = String(ap).toUpperCase();
-          el.innerHTML = BoardStrings.pair('noLiveData', { iata: ap, upper: true });
+          el.innerHTML = '<div class="ffn-box">' + BoardStrings.pair('noLiveData', { iata: ap, upper: true }) + '</div>';
           var _sub = document.createElement('div');
           _sub.className = 'sub';
           _sub.textContent = BoardStrings.pair('noFeedYet', { iata: ap, upper: true, plain: true, raw: true, fields: { AIRPORT: _apTxt } });
-          el.appendChild(_sub);
+          el.firstChild.appendChild(_sub);
+          el.classList.add('fids-no-feed');
         }
       }
       // v23430 — A DEAD BOARD SENDS ITSELF TO THE TOUR.
@@ -41987,6 +42030,39 @@ const V2_AIRPORT_SHORT_NAME = {
   'YHM': 'Hamilton'
 };
 
+// v24069 — THE AIRPORT'S NAME IN THE HEADER SPEAKS THE BOARD'S LANGUAGES.
+// The pill under the airport's code printed AP's English name on every board,
+// so Roberval's French-first header read 'Roberval Airport' beside
+// 'Départs / Departures'. A name the store carries (AP's hdrKey, with the
+// place as the airport writes it in hdrName for a '<place> Airport' template)
+// is now a pair in the board's languages, French first in Québec, through
+// BoardStrings.pair like the date beside it. An operator's display name and
+// the city short names above read the same in every language and stay
+// first; an airport the store does not name yet keeps AP's name.
+// Returns markup ('' when the store has no name for the airport).
+function _apHeaderNameHtml(iata) {
+  try {
+    var k = String(iata || '').toUpperCase();
+    var a = (typeof AP !== 'undefined' && AP[k]) || null;
+    if (!a || !a.hdrKey) return '';
+    return BoardStrings.pair(a.hdrKey, {
+      langs: (typeof langs !== 'undefined') ? langs : null, iata: k,
+      fields: a.hdrName ? { NAME: a.hdrName } : null, cls: 'ap-hdr-h'
+    }) || '';
+  } catch (e) { return ''; }
+}
+// The header pill's name: the operator's display name, the city short name,
+// the store's pair, else AP's name. Set as text unless it is the store's pair.
+function _apHeaderNameSet(el, iata, adminCfg) {
+  if (!el) return;
+  var k = String(iata || '').toUpperCase();
+  var a = (typeof AP !== 'undefined' && AP[k]) || {};
+  var fixed = (adminCfg && adminCfg.displayName) || V2_AIRPORT_SHORT_NAME[k] || '';
+  var html = fixed ? '' : _apHeaderNameHtml(k);
+  if (html) { el.innerHTML = html; return; }
+  el.textContent = fixed || a.shortName || a.name || k;
+}
+
 // ── PHASE 4: APPLY ADMIN-SAVED CONFIG TO LIVE BOARD ───────────────────────
 // This runs both immediately on airport change AND again later when the
 // async config load completes — keeping the board in sync whether config
@@ -42094,8 +42170,9 @@ function applyAirportConfigToBoard(iata) {
   // pinning it in the URL is deterministic — it survives a profile wipe, a
   // droplet rebuild and an admin-config change, none of which localStorage or
   // the saved-per-airport layer do. Deliberately NOT done by adding MCO to
-  // ES_BOARD_AIRPORTS: that set also drives boardMetricFor(), so it would
-  // flip a US board to Celsius.
+  // ES_BOARD_AIRPORTS: that set also drove boardMetricFor() then, so it would
+  // have flipped a US board to Celsius (since v24069 the unit is the
+  // airport's country's, boardTempUnitFor).
   // Accepts ?langs=en,es (or ?lang=en,es), two codes max, same shape as the
   // saved layer.
   //
@@ -42136,12 +42213,8 @@ function applyAirportConfigToBoard(iata) {
     try { BoardStrings.langsChanged(); } catch (eL) {}
   } catch (e) {}
 
-  // Display name (pill sub-label)
-  const _aName = document.getElementById('hdrApName');
-  if (_aName) {
-    const _short = (_adminCfg && _adminCfg.displayName) || V2_AIRPORT_SHORT_NAME[iata] || apData.shortName || apData.name || iata;
-    _aName.textContent = _short;
-  }
+  // Display name (pill sub-label) — in the board's languages (v24069)
+  _apHeaderNameSet(document.getElementById('hdrApName'), iata, _adminCfg);
 
   // Theme + layout — user customize > admin KV > built-in defaults
   const _builtin = V2_AIRPORT_THEME[iata] || { theme: 'tus-teal', layout: 'left' };
@@ -42738,7 +42811,9 @@ function onApChange() {
   const apData = AP[iata] || { name: iata };
   // Legacy hdrApName still updated (some other code paths read it),
   // but the v2 banner now displays this through .fids-airport-name.
-  document.getElementById('hdrApName').textContent = apData.name;
+  // v24069 — the same name the pill settles on (applyAirportConfigToBoard
+  // below sets it again once the airport's config is known)
+  _apHeaderNameSet(document.getElementById('hdrApName'), iata, null);
   // ── v2 banner update ──────────────────────────────────────────────
   // Set the airport pill (IATA + short name) and apply per-airport theme
   // / layout to <body>. Theme presets live in fids-v2.css (navy/grey/
@@ -43166,21 +43241,21 @@ var _slideIdx = 0;
 function tick_carousel() {
   if (screenType !== 'main') return;
   var _ap = (document.getElementById('apSel') || {}).value || '';
-  var _metric  = boardMetricFor(_ap);
   // v23239 — A SLIDE PER ASSIGNED LANGUAGE, however many are assigned
   //
   //
   // The old clock hard-coded a primary/second pair, so a board
   // assigned three or more languages never showed the ones past langs[1].
   // The clock now walks langs[] in order — one full slide per language —
-  // and advances the page after the last one. The first slide keeps °C;
-  // later slides show °F where the C/F flip applies, so a two-language
-  // Canadian board behaves exactly as before.
+  // and advances the page after the last one. Every slide prints its
+  // temperatures in the airport's own unit (v24069: the first slide read °C
+  // and the later ones °F, so a Canadian board turned to Fahrenheit for its
+  // second language and an American one read Celsius in English).
   var _n = Math.max(1, (langs || []).length);
   if (_slideIdx >= _n) _slideIdx = 0;
   lang = (langs && langs[_slideIdx]) || 'en';
   langPhase = (_slideIdx === 0) ? 'primary' : 'second';
-  tempUnit = (_slideIdx === 0) ? 'C' : (_metric ? 'C' : 'F');
+  tempUnit = boardTempUnitFor(_ap);
   render();
   _slideIdx++;
   if (_slideIdx >= _n) { _slideIdx = 0; advancePage(); }
@@ -43953,6 +44028,18 @@ function mkCardLogo(code, airlineName) {
     var _altFname  = _base + '-wordmark-' + _other + '.svg';
     var _mainSrc = (typeof logoPath === 'function') ? logoPath(_mainFname) : ('/logos/' + _mainFname);
     var _altSrc  = (typeof logoPath === 'function') ? logoPath(_altFname)  : ('/logos/' + _altFname);
+    // v24069 — A CARRIER WHOSE LETTERING IS NOT A '-wordmark-' PAIR. Air
+    // Inuit's lettering (and Caribbean's and World Atlantic's) is filed under
+    // its own names in WORDMARK_RASTER, which wordmarkSrc reads for the wall
+    // board's rows; this card built the pair's file names by hand, so the
+    // phone's Québec City rows asked for /logos/airinuit-wordmark-light.svg
+    // and -dark.svg, got two 404s and fell back to the typed name. The card
+    // takes the same files the rows do now ('light' = white lettering for a
+    // dark card, 'dark' = the carrier's colours for a light one).
+    if (typeof WORDMARK_RASTER !== 'undefined' && WORDMARK_RASTER[_base]) {
+      _mainSrc = WORDMARK_RASTER[_base][_v];
+      _altSrc  = WORDMARK_RASTER[_base][_other];
+    }
     // Try matching variant first; if 404, fall back to opposite variant
     // (so airlines with only one variant — e.g. Flair — still display).
     return `<img class="card-logo card-wordmark" data-code="${c}" alt="${displayName}"
@@ -45068,8 +45155,10 @@ window.addEventListener('DOMContentLoaded', () => {
     var apInit = document.getElementById('apSel');
     var hdrInit = document.getElementById('hdrApName');
     if (apInit && hdrInit && apInit.value) {
-      var apRec = (typeof AP !== 'undefined' && AP[apInit.value]) || null;
-      hdrInit.textContent = apRec ? apRec.name : apInit.value;
+      // v24069 — the same name the pill settles on, in the board's languages
+      var _cfgInit = null;
+      try { _cfgInit = (typeof getAirportConfig === 'function') ? getAirportConfig(apInit.value) : null; } catch (eC) {}
+      _apHeaderNameSet(hdrInit, apInit.value, _cfgInit);
     }
   } catch(e) {}
 });
@@ -59924,7 +60013,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24067" src="/textures/gate-sky-shelf.mp4?v=24067"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24069" src="/textures/gate-sky-shelf.mp4?v=24069"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -60651,27 +60740,12 @@ function _renderWxCard(el) {
     // v23865 — FAHRENHEIT ON AN AMERICAN BOARD. `tempUnit` is only ever set
     // by the main board's language carousel, which a gate board never runs,
     // so it stayed at its initial 'C' and Orlando read 30°C. The card takes
-    // the unit from its own airport instead: the United States and its
-    // territories are the places that read Fahrenheit, and the timezone
-    // already on every airport row is what says so — no second table to
-    // fall out of step with the first.
-    var _WX_F_TZ = {
-      'America/New_York':1, 'America/Detroit':1, 'America/Chicago':1, 'America/Denver':1,
-      'America/Phoenix':1, 'America/Los_Angeles':1, 'America/Boise':1, 'America/Menominee':1,
-      'America/Indiana/Indianapolis':1, 'America/Kentucky/Louisville':1, 'America/North_Dakota/Center':1,
-      'America/Anchorage':1, 'America/Juneau':1, 'America/Sitka':1, 'America/Nome':1,
-      'America/Adak':1, 'America/Yakutat':1, 'America/Metlakatla':1,
-      'America/Puerto_Rico':1, 'America/St_Thomas':1,
-      'Pacific/Honolulu':1, 'Pacific/Guam':1, 'Pacific/Saipan':1, 'Pacific/Pago_Pago':1
-    };
-    var _wxUsesF = (function () {
-      try { return !!_WX_F_TZ[(AP[String(window._gateIata || '').toUpperCase()] || {}).tz]; }
-      catch (eU) { return false; }
-    })();
-    var dT = function (v) {
-      var c = Math.round(v);
-      return _wxUsesF ? (Math.round(c * 9 / 5 + 32) + '°F') : (c + '°C');
-    };
+    // the unit from its own airport instead.
+    // v24069 — through the one rule every surface uses (boardTempUnitFor:
+    // the airport's country, Fahrenheit only in the United States and its
+    // territories); the time-zone table that was here moved into it.
+    var _wxUnit = boardTempUnitFor(window._gateIata || _pageAirport());
+    var dT = function (v) { return BoardStrings.temp(v, _wxUnit); };
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
     // v22971 — THE CARD FOLLOWS THE SELECTED LANGUAGES

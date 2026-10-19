@@ -5311,6 +5311,26 @@ html body:not(#_) .fids-airport-iata,
 html body:not(#_) .fids-airport-name {
   color: #ffffff !important;
 }
+/* v24069 — the airport's name under its code, in the board's languages
+   (_apHeaderNameHtml): a language a line, French first in Québec, as the
+   board's label beside it ('Départs / Departures'). Each name is whole on its
+   line and the pill is never wider than its longest language, so a pair takes
+   no more room across than one name did (the bar is dropped). */
+html body .fids-airport-name .ap-hdr-h {
+  display: block;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+html body .fids-airport-name .bs-sep {
+  display: none;
+}
+/* A phone's narrow header (phone.css, mobile.css: up to 800px) lets a name
+   longer than its pill wrap at its own spaces, as the one name did there. */
+@media (max-width: 800px) {
+  html body .fids-airport-name .ap-hdr-h {
+    white-space: normal;
+  }
+}
 
 /* ── v22622: the supplied stacked YQM artwork, keyed to transparency. The file
    was white-on-white with no alpha, so dropped in raw it would have
@@ -19917,11 +19937,18 @@ html body .mobile-empty .bs-sep {
   opacity: 0.55;
   margin: 0 0.6em;
 }
-html body #panelEmpty.fids-feed-down {
+/* The no-feed notice ("No live data for this airport", Roberval; v24069)
+   is drawn in the same box: it was the bare status-message grey straight on
+   the board's ground, about 1.1:1 on the teal theme's blue. The box is light
+   ink on a dark plate that is 84% opaque, so the words read at well over
+   4.5:1 on any ground a theme paints under them, white included. */
+html body #panelEmpty.fids-feed-down,
+html body #panelEmpty.fids-no-feed {
   text-transform: none !important;
   animation: none !important;
 }
-html body #panelEmpty.fids-feed-down .ffn-box {
+html body #panelEmpty.fids-feed-down .ffn-box,
+html body #panelEmpty.fids-no-feed .ffn-box {
   display: inline-block;
   padding: 20px 36px;
   border-radius: 8px;
@@ -19933,13 +19960,29 @@ html body #panelEmpty.fids-feed-down .ffn-box {
   letter-spacing: 0.3px !important;
   text-transform: none !important;
 }
-html body #panelEmpty.fids-feed-down .ffn-box .sub {
+html body #panelEmpty.fids-feed-down .ffn-box .sub,
+html body #panelEmpty.fids-no-feed .ffn-box .sub {
   margin-top: 8px;
   color: rgba(244, 246, 248, 0.78) !important;
   font-size: 18px !important;
   font-weight: 500 !important;
   letter-spacing: 0.3px !important;
   text-transform: none !important;
+}
+/* The no-feed pair's halves as the feed-down pair's: the bar quieter, each
+   language whole on its line (it breaks between the two, never inside one),
+   unless one language alone is wider than a phone. */
+html body #panelEmpty.fids-no-feed .bs-sep {
+  opacity: 0.55;
+  margin: 0 0.6em;
+}
+html body #panelEmpty.fids-no-feed .bs-h {
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  html body #panelEmpty.fids-no-feed .bs-h {
+    white-space: normal;
+  }
 }
 /* v23998 — the gate's and the belt's own empty line, while the feed it reads
    is down (_fidsFeedDownInView): "Live data unavailable" where "Awaiting Next
@@ -22730,7 +22773,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24067') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24069') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }

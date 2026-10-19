@@ -258,6 +258,39 @@
       $ctx: 'airport' },
     apIstanbul: { en: 'Istanbul Airport', fr: 'Aéroport d’Istanbul', es: 'Aeropuerto de Estambul', de: 'Flughafen Istanbul', it: 'Aeroporto di Istanbul', pt: 'Aeroporto de Istambul', ja: 'イスタンブール空港', zh: '伊斯坦布尔机场', ar: 'مطار إسطنبول' },
 
+    // ── THE AIRPORT'S NAME UNDER ITS CODE, IN THE HEADER ──────────────────
+    // v24069 — the departures and baggage headers print the airport's name
+    // under its code, in the board's languages, French first in Québec, as the
+    // board's own label beside it is (fids-core.js _apHeaderNameHtml). It was
+    // AP's English name on every board: Roberval's French-first header read
+    // 'Roberval Airport'. An airport named '<place> Airport' takes the
+    // template with its place as {NAME}, kept as the airport writes it in
+    // every language (AP's hdrName); one whose name is built differently in
+    // French, or holds a word a template cannot carry, has its own entry
+    // (AP's hdrKey).
+    apHdrAirport: { en: '{NAME} Airport', fr: 'Aéroport de {NAME}', es: 'Aeropuerto de {NAME}', de: 'Flughafen {NAME}', it: 'Aeroporto di {NAME}', pt: 'Aeroporto de {NAME}', ja: '{NAME}空港', zh: '{NAME}机场', ar: 'مطار {NAME}',
+      $ctx: 'airport' },
+    apHdrIntl: { en: '{NAME} International Airport', fr: 'Aéroport international de {NAME}', es: 'Aeropuerto Internacional de {NAME}', de: 'Internationaler Flughafen {NAME}', it: 'Aeroporto internazionale di {NAME}', pt: 'Aeroporto Internacional de {NAME}', ja: '{NAME}国際空港', zh: '{NAME}国际机场', ar: 'مطار {NAME} الدولي',
+      $ctx: 'airport' },
+    apHdrRegional: { en: '{NAME} Regional Airport', fr: 'Aéroport régional de {NAME}', es: 'Aeropuerto Regional de {NAME}', de: 'Regionalflughafen {NAME}', it: 'Aeroporto regionale di {NAME}', pt: 'Aeroporto Regional de {NAME}', ja: '{NAME}地方空港', zh: '{NAME}地区机场', ar: 'مطار {NAME} الإقليمي',
+      $ctx: 'airport' },
+    apHdrYUL: { en: 'Montréal-Trudeau International Airport', fr: 'Aéroport international Montréal-Trudeau', es: 'Aeropuerto Internacional Montréal-Trudeau', de: 'Internationaler Flughafen Montréal-Trudeau', it: 'Aeroporto internazionale Montréal-Trudeau', pt: 'Aeroporto Internacional Montréal-Trudeau', ja: 'Montréal-Trudeau国際空港', zh: 'Montréal-Trudeau国际机场', ar: 'مطار Montréal-Trudeau الدولي',
+      $ctx: 'airport' },
+    apHdrYQB: { en: 'Québec City Jean Lesage International Airport', fr: 'Aéroport international Jean-Lesage de Québec', es: 'Aeropuerto Internacional Jean-Lesage de Québec', de: 'Internationaler Flughafen Québec Jean-Lesage', it: 'Aeroporto internazionale Jean-Lesage di Québec', pt: 'Aeroporto Internacional Jean-Lesage de Québec', ja: 'Québec Jean-Lesage国際空港', zh: 'Québec Jean-Lesage国际机场', ar: 'مطار Québec Jean-Lesage الدولي',
+      $ctx: 'airport' },
+    apHdrYHU: { en: 'Montréal Metropolitan Airport', fr: 'Aéroport Montréal Métropolitain', es: 'Aeropuerto Metropolitano de Montréal', de: 'Flughafen Montréal Métropolitain', it: 'Aeroporto metropolitano di Montréal', pt: 'Aeroporto Metropolitano de Montréal', ja: 'Montréal Métropolitain空港', zh: 'Montréal Métropolitain机场', ar: 'مطار Montréal Métropolitain',
+      $ctx: 'airport' },
+    apHdrYGR: { en: 'Îles-de-la-Madeleine Airport', fr: 'Aéroport des Îles-de-la-Madeleine', es: 'Aeropuerto de las Islas de la Magdalena', de: 'Flughafen Magdalenen-Inseln', it: 'Aeroporto delle Îles-de-la-Madeleine', pt: 'Aeroporto das Ilhas da Madalena', ja: 'Îles-de-la-Madeleine空港', zh: 'Îles-de-la-Madeleine机场', ar: 'مطار Îles-de-la-Madeleine',
+      $ctx: 'airport' },
+    apHdrYXX: { en: 'Abbotsford International Airport', fr: 'Aéroport international d’Abbotsford', es: 'Aeropuerto Internacional de Abbotsford', de: 'Internationaler Flughafen Abbotsford', it: 'Aeroporto internazionale di Abbotsford', pt: 'Aeroporto Internacional de Abbotsford', ja: 'Abbotsford国際空港', zh: 'Abbotsford国际机场', ar: 'مطار Abbotsford الدولي',
+      $ctx: 'airport' },
+    apHdrAUS: { en: 'Austin-Bergstrom International Airport', fr: 'Aéroport international d’Austin-Bergstrom', es: 'Aeropuerto Internacional de Austin-Bergstrom', de: 'Internationaler Flughafen Austin-Bergstrom', it: 'Aeroporto internazionale di Austin-Bergstrom', pt: 'Aeroporto Internacional de Austin-Bergstrom', ja: 'Austin-Bergstrom国際空港', zh: 'Austin-Bergstrom国际机场', ar: 'مطار Austin-Bergstrom الدولي',
+      $ctx: 'airport' },
+    apHdrDCA: { en: 'Ronald Reagan Washington National Airport', fr: 'Aéroport Ronald-Reagan de Washington', es: 'Aeropuerto Nacional Ronald Reagan de Washington', de: 'Nationalflughafen Ronald Reagan Washington', it: 'Aeroporto nazionale Ronald Reagan di Washington', pt: 'Aeroporto Nacional Ronald Reagan de Washington', ja: 'ロナルド・レーガン・ワシントン・ナショナル空港', zh: '罗纳德·里根华盛顿国家机场', ar: 'مطار رونالد ريغان واشنطن الوطني',
+      $ctx: 'airport' },
+    apHdrMSY: { en: 'Louis Armstrong New Orleans International Airport', fr: 'Aéroport international Louis-Armstrong de La Nouvelle-Orléans', es: 'Aeropuerto Internacional Louis Armstrong de Nueva Orleans', de: 'Internationaler Flughafen Louis Armstrong New Orleans', it: 'Aeroporto internazionale Louis Armstrong di New Orleans', pt: 'Aeroporto Internacional Louis Armstrong de Nova Orleans', ja: 'ルイ・アームストロング・ニューオーリンズ国際空港', zh: '路易斯·阿姆斯特朗新奥尔良国际机场', ar: 'مطار لويس آرمسترونغ نيو أورليانز الدولي',
+      $ctx: 'airport' },
+
     // ── GATE ──────────────────────────────────────────────────────────────
     // The aircraft panel's qualifier for a registration or type taken from
     // the aircraft's usual rotation rather than confirmed: 'C-GWJO expected'.
@@ -1874,6 +1907,41 @@
     return date(d, l, { weekday: style === 'long' ? 'long' : 'short' }, tz);
   }
 
+  // ── TEMPERATURES: THE AIRPORT'S COUNTRY CHOOSES °C OR °F ────────────────
+  // v24069 — a board prints every temperature in the unit its own country
+  // reads, in every language it turns through: Fahrenheit in the United
+  // States and its territories (Puerto Rico, the US Virgin Islands, Guam, the
+  // Northern Mariana Islands, American Samoa, the minor outlying islands),
+  // Celsius everywhere else. The unit used to follow the language slide (°C
+  // on the first language, °F on the second), so Québec City read 16°C in
+  // French and 61°F in English, and Chicago read °C in English.
+  //   country  ISO code of the airport's country (fids-core.js airportCountry)
+  //   tz       its IANA time zone, used only when the country is not known
+  //            (the companion app, which carries no country table): every
+  //            zone below lies in the United States or one of its territories
+  var FAHRENHEIT_CC = Object.freeze(['US', 'PR', 'VI', 'GU', 'MP', 'AS', 'UM']);
+  var FAHRENHEIT_TZ = Object.freeze([
+    'America/New_York', 'America/Detroit', 'America/Chicago', 'America/Denver',
+    'America/Phoenix', 'America/Los_Angeles', 'America/Boise', 'America/Menominee',
+    'America/Indiana/Indianapolis', 'America/Kentucky/Louisville', 'America/North_Dakota/Center',
+    'America/Anchorage', 'America/Juneau', 'America/Sitka', 'America/Nome',
+    'America/Adak', 'America/Yakutat', 'America/Metlakatla',
+    'America/Puerto_Rico', 'America/St_Thomas',
+    'Pacific/Honolulu', 'Pacific/Guam', 'Pacific/Saipan', 'Pacific/Pago_Pago'
+  ]);
+  function tempUnit(country, tz) {
+    var cc = String(country || '').toUpperCase();
+    if (cc) return FAHRENHEIT_CC.indexOf(cc) >= 0 ? 'F' : 'C';
+    return FAHRENHEIT_TZ.indexOf(String(tz || '')) >= 0 ? 'F' : 'C';
+  }
+  // A temperature given in °C, as the board prints it in that unit: whole
+  // degrees, Celsius rounded first, as the boards always have.
+  function temp(c, unit) {
+    var n = Math.round(Number(c));
+    if (!isFinite(n)) return '';
+    return unit === 'F' ? Math.round(n * 9 / 5 + 32) + '°F' : n + '°C';
+  }
+
   // ── WHICH LANGUAGES A BOARD SPEAKS ──────────────────────────────────────
   function defaultLangs(iata) {
     var k = String(iata || '').toUpperCase();
@@ -2091,6 +2159,9 @@
   api.intl = intl;
   api.num = num;
   api.weekday = weekday;
+  api.tempUnit = tempUnit;
+  api.temp = temp;
+  api.FAHRENHEIT_CC = FAHRENHEIT_CC;
   api.defaultLangs = defaultLangs;
   api.parseList = parseList;
   api.resolveLangs = resolveLangs;
