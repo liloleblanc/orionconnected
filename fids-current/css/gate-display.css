@@ -4739,21 +4739,12 @@ The
 .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > * { position: relative; z-index: 1; }
 
 /* Stable honest fallback when aircraft enrichment is delayed. Keeping this
-   small label inside the cloud shelf is preferable to removing rows 5–6 and
-   making the entire rail jump. */
-.g8-wrap .gad-map-col-v2 .v2-rc-aircraft-pending {
-  align-self: center !important;
-  max-width: 88% !important;
-  padding: 0.45em 0.8em !important;
-  border-radius: 999px !important;
-  background: rgba(255,255,255,0.72) !important;
-  color: #24364b !important;
-  font-size: clamp(10px,1.35vh,17px) !important;
-  font-weight: 750 !important;
-  line-height: 1.2 !important;
-  text-align: center !important;
-  white-space: normal !important;
-}
+   label inside the cloud shelf is preferable to removing rows 5–6 and
+   making the entire rail jump.
+   v24066 — laid out in display-overrides.css (THE AIRCRAFT-PENDING NOTICE
+   FITS WHOLE): in the sky the caption band leaves, sized by the shared
+   fitter. The pill that was here (centred in the whole panel, wrapping
+   anywhere, 14.6px) had its second line drawn under the band. */
 
 /* Clouds drift follows the plane's heading. Facing varies by aircraft type,
    not airline (AC mainline faces left, AC regional faces right), so it's
