@@ -1065,9 +1065,14 @@ function heroBrand(code,name,light){
 function acType(raw){
   if(!raw) return '';
   let s=String(raw).trim().toUpperCase();
-  const RE={BCS:'223',BCS1:'221',BCS3:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752'};
+  // ICAO codes (FR24 and /acinfo give these) for the types we have art for,
+  // the same answers as the boards' aircraftCodeToIata: B77W, E75L, A21N and
+  // B190 used to give no picture, and B190 drew an Embraer jet.
+  const RE={BCS:'223',BCS1:'221',BCS3:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752',
+    B77W:'77W',B773:'773',E75L:'E75',E75S:'E75',A21N:'32Q',B190:'BEH'};
   if(RE[s]) return RE[s];
   if(/^[A-Z0-9]{3}$/.test(s)) return s;            // already a 3-char code (OAG)
+  if(/BEECH|1900/.test(s)) return 'BEH';           // before the Embraer 190 test below
   if(/ATR\s*72/.test(s)) return 'AT7';
   if(/DASH\s*8|DHC[- ]?8|Q400|DHC-8-400/.test(s)) return 'DH4';
   s=s.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|DE HAVILLAND CANADA|DE HAVILLAND)\s*/,'').trim();
@@ -1080,7 +1085,7 @@ function acType(raw){
   if(/319/.test(s)) return '319';
   if(/320\s*NEO/.test(s)) return '32N';
   if(/320/.test(s)) return '320';
-  if(/321\s*NEO/.test(s)) return '32Q';
+  if(/321\s*(NEO|XLR|LR)|321-?\d{3}N/.test(s)) return '32Q';   // neo model numbers end in N, NX or NY
   if(/321/.test(s)) return '321';
   if(/330/.test(s)) return '332';
   if(/CRJ-?900|CRJ9/.test(s)) return 'CR9';

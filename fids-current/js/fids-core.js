@@ -12055,7 +12055,11 @@ function aircraftCodeToIata(raw) {
                  'AT43':'AT4', 'AT45':'AT5', 'AT46':'AT5',
                  'AT72':'AT7', 'AT75':'AT7', 'AT76':'AT7',
                  'CRJ2':'CR2', 'CRJ7':'CR7', 'CRJ9':'CR9', 'CRJX':'CRK',
-                 'BCS1':'221', 'BCS3':'223' };
+                 'BCS1':'221', 'BCS3':'223',
+                 // Beechcraft 1900D: ICAO 'B190' (FR24, /acinfo) is the IATA 'BEH'.
+                 // It used to fall through to 'B19', a file nobody has, so the
+                 // gate hid the aircraft and printed the raw code.
+                 'B190':'BEH' };
   if (_REMAP[s]) return _REMAP[s];
   // Try without hyphens: "DHC-3" → "DHC3" → REMAP
   var sNoH = s.replace(/-/g, '');
@@ -12169,7 +12173,10 @@ function aircraftCodeToIata(raw) {
   if (/A[\s-]*319/i.test(s)) return '319';
   if (/A[\s-]*320[\s-]*NEO|A20N|A320N/i.test(s)) return '32N';
   if (/A[\s-]*320/i.test(s)) return '320';
-  if (/A[\s-]*321[\s-]*(NEO|XLR|LR)|A21N|A321N/i.test(s)) return '32Q';  // A321neo livery files are stored as 32Q (no 32R image exists)
+  // A321neo livery files are stored as 32Q (no 32R image exists). Airbus's neo
+  // model numbers end in N, NX or NY ('A321-271NX', 'A321-253NY'), the same
+  // rule engineVariantSuffix reads; they used to land on the A321ceo picture.
+  if (/A[\s-]*321[\s-]*(NEO|XLR|LR|\d{3}N)|A21N|A321N/i.test(s)) return '32Q';
   if (/A[\s-]*321/i.test(s)) return '321';
 
   // ── 777 ──
@@ -12454,8 +12461,8 @@ var PLANE_FACING = {
   'AC/320r.png':'L', 'AC/321.png':'L', 'AC/321r.png':'L', 'AC/32Q.png':'L', 'AC/332.png':'L', 'AC/333.png':'L',
   'AC/737.png':'L', 'AC/737r.png':'L', 'AC/738.png':'L', 'AC/73H.png':'L', 'AC/73Hr.png':'L', 'AC/772.png':'L', 'AC/773.png':'L',
   'AC/77L-ge.png':'L', 'AC/77L.png':'L', 'AC/77W-ge.png':'L', 'AC/77W.png':'L', 'AC/788.png':'L', 'AC/789.png':'L',
-  'AC/7M8.png':'L', 'AC/7M8r.png':'L', 'AC/BEE.png':'L', 'AC/CR7.png':'R', 'AC/CR9.png':'L', 'AC/DH4.png':'L',
-  'AC/E75.png':'R', 'AC/E7W.png':'R', 'AR1.png':'L', 'AR8.png':'L', 'AS/737.png':'L', 'AS/738.png':'L',
+  'AC/7M8.png':'L', 'AC/7M8r.png':'L', 'AC/BEE.png':'L', 'AC/BEH.png':'L', 'AC/CR7.png':'R', 'AC/CR9.png':'L', 'AC/DH4.png':'L',
+  'AC/E75.png':'L', 'AC/E7W.png':'L', 'AR1.png':'L', 'AR8.png':'L', 'AS/737.png':'L', 'AS/738.png':'L',
   'AS/739.png':'L', 'AS/73H.png':'L', 'AS/73J.png':'L', 'AS/73W.png':'L', 'AS/789.png':'L', 'AS/7M9.png':'L',
   'AS/E75.png':'L', 'AT4.png':'L', 'AT5.png':'L', 'AT7.png':'L', 'ATR.png':'L', 'B6/223.png':'L',
   'B6/320.png':'L', 'B6/321.png':'L', 'B6/32A.png':'L', 'B6/32Q.png':'L', 'BCS.png':'L', 'BEE.png':'L',
