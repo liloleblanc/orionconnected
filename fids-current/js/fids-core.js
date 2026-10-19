@@ -7360,7 +7360,6 @@ function _gateTelemSetReal(spdKt, altFt, who, fix) {
   var al = (typeof altFt === 'number') ? altFt : null;
   if (sp === null && al === null) {
     T.spd = null; T.alt = null; T.realSpd = null; T.realAlt = null; T.realSecToArr = null;
-    T.fix = null;   // v24068
     return;
   }
   if (sp === T.realSpd && al === T.realAlt) return;   // unchanged fix → keep drifting
@@ -7468,30 +7467,33 @@ function _gateTelemModel() {
 // holds the flight's recorded track (/fltrack/, _gateFlownPath's
 // _flownCache): every FR24 position the boards were given, each with FR24's
 // own time. While the model holds this one reading and nothing before it, and
-// the reading is an FR24 answer the track holds, the track's latest airborne
-// point 30 to 240 s older than it (FR24's times, both) becomes the reading
-// before it, dated that much before this one reached the screen: the model
-// then carries the rate between the two exactly as it carries the rate
-// between two readings that reached this screen, and nothing else changes.
-// When the point's numbers are this reading's own, the two are one reading,
-// as v24065 treats an answer repeated with the same numbers: it keeps its
-// first time, the point's (a level aircraft stays level, whatever the
-// answer's own vertical speed says). Track points carry no speed: the ground
-// speed between the two points stands in when it is within 25 % of the
-// reading's own, else the speed holds. A reading's own vertical speed is
-// never carried. No track, no such point, the reading not in the track (its
-// time unknown), on the ground, or the feed saying Arrived, Landed or
-// Cancelled: nothing is set, and the model is v24065's with one reading.
+// the reading is an FR24 answer the track holds, the track's latest point 30
+// to 240 s older than it (FR24's times, both) becomes the reading before it,
+// dated that much before this one reached the screen: the model then carries
+// the altitude rate between the two exactly as it carries the rate between two
+// readings that reached this screen. The point is never drawn; the digits
+// start at this screen's own reading.
+// Nothing is set, and the model is v24065's with one reading, when: there is
+// no track, or no point in that window; the reading is not in the track once
+// (its FR24 time unknown); the latest point in the window is on the ground or
+// has no altitude, or a point after it is; the two altitudes are within
+// 200 ft (altitude flicker, not a climb: a level aircraft stays level); the
+// aircraft is on the ground or the feed says Arrived, Landed or Cancelled.
+// Track points carry no speed, and a speed worked out from two points (their
+// distance over their time) moved the speed digits further from the truth than
+// holding them (turns, whole-second times, an acceleration that ended between
+// the points), so the speed holds as in v24065. A reading's own vertical speed
+// is never read.
 function _gateTelemFixOf(fix, al) {
   // FR24 dated the answer only when its age (seen_pos) is a number
   if (!fix || typeof fix !== 'object' || typeof fix.age !== 'number') return null;
-  if (typeof fix.lat !== 'number' || typeof fix.lng !== 'number' || typeof al !== 'number' || fix.alt !== al) return null;
+  if (typeof al !== 'number' || fix.alt !== al) return null;
   return { lat: fix.lat, lng: fix.lng, pts: null };
 }
 function _gateTelemTrackSeed(T) {
   try {
-    if (!T || !T.fix || !T.realTs || !T.who || T.seed) return;
-    if (typeof T.prevAlt === 'number' || typeof T.prevSpd === 'number') return;   // a reading before this one
+    if (!T || !T.fix || !T.realTs || !T.who) return;
+    if (typeof T.prevAlt === 'number' || typeof T.prevSpd === 'number') return;   // a reading before this one (or this seed)
     if (typeof T.realAlt !== 'number' || !(T.realAlt > 0)) return;
     var lp = _gateLivePosFor(T.who);
     if (lp && lp.onGround === true) return;
@@ -7512,20 +7514,25 @@ function _gateTelemTrackSeed(T) {
       if (q && q[0] === la && q[1] === lo && q[2] === T.realAlt && typeof q[3] === 'number') { at = q[3]; n++; }
     }
     if (n !== 1) return;
+    // the latest point 30 to 240 s before it
     var best = null;
     for (j = 0; j < rec.pts.length; j++) {
       q = rec.pts[j];
-      if (!q || typeof q[0] !== 'number' || typeof q[1] !== 'number' || typeof q[2] !== 'number' || !(q[2] > 0) || typeof q[3] !== 'number') continue;
+      if (!q || typeof q[3] !== 'number') continue;
       var dt = at - q[3];
       if (dt >= 30 && dt <= 240 && (!best || q[3] > best[3])) best = q;
     }
     if (!best) return;
+    // it, and every point after it before the reading, in the air with an
+    // altitude: else not one climb or descent
+    for (j = 0; j < rec.pts.length; j++) {
+      q = rec.pts[j];
+      if (q && typeof q[3] === 'number' && q[3] >= best[3] && q[3] < at && !(typeof q[2] === 'number' && q[2] > 0)) return;
+    }
+    if (Math.abs(T.realAlt - best[2]) <= 200) return;
     var span = at - best[3];
-    var gs = _gcNm([best[0], best[1]], [la, lo]) / span * 3600;
-    var sp = (typeof T.realSpd === 'number' && T.realSpd > 0 && Math.abs(gs - T.realSpd) <= 0.25 * T.realSpd) ? Math.round(gs) : null;
-    if (sp === T.realSpd && best[2] === T.realAlt) T.realTs -= span * 1000;
-    else { T.prevSpd = sp; T.prevAlt = best[2]; T.prevTs = T.realTs - span * 1000; }
-    T.seed = { at: best[3], fixAt: at, spd: sp };
+    T.prevAlt = best[2]; T.prevSpd = null; T.prevTs = T.realTs - span * 1000;
+    T.seed = { at: best[3], fixAt: at };
   } catch (e) {}
 }
 
