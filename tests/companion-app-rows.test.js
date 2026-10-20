@@ -44,7 +44,8 @@ const line = (re) => { const m = APP.match(re); assert.ok(m, String(re)); return
 // table from shared-names.js, then the airport catalogue), with the code
 // lookup and the row's parts, in one context like the page's globals
 function page(v66) {
-  const ctx = { console };
+  // (v24069: the temperature's unit is the store's, by the app's airport)
+  const ctx = { console, BoardStrings: require(path.join(ROOT, 'fids-current/js/board-strings.js')) };
   ctx.window = ctx;
   vm.runInNewContext(SHARED, ctx);
   // (v24066's app: its own copy of the boards' names, and no v24066 list)
@@ -52,7 +53,7 @@ function page(v66) {
   vm.runInNewContext(
     'var T=function(k){return k==="via"?"via":k;};'
     + 'var dispIata=function(c){return c;};'
-    + 'var WX_ON=true;var WX={};'
+    + 'var WX_ON=true;var WX={};var CURAP=\'YQM\';'
     + fn('esc')
     + line(/^const AIRPORTS=\{[\s\S]*?\n\};/m).replace('const AIRPORTS', 'var AIRPORTS')
     + line(/^const CITY=\{[\s\S]*?\};/m).replace('const CITY', 'var CITY')
@@ -60,7 +61,7 @@ function page(v66) {
     + line(/^if\(window\.FIDS_SHARED_CITY\)[^\n]*/m)
     + line(/^for\(var _ck in AIRPORTS\)[^\n]*/m)
     + 'var _CITY_CODE=null;' + fn('_cityKey') + fn('cityCodeOf')
-    + fn('wxTemp') + fn('wxHtml') + fn('rowSubParts'),
+    + fn('wxUnit') + fn('wxTemp') + fn('wxHtml') + fn('rowSubParts'),
     ctx);
   return ctx;
 }
