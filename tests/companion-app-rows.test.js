@@ -89,6 +89,7 @@ function feedRow(o) {
   const other = { airport: { iata: o.to || null, icao: null, name: o.toName || null }, scheduledTime: t, airline: air };
   const f = { number: o.number, status: o.status || 'scheduled', codeshareStatus: 'IsOperator', airline: air };
   if (o.aircraft || o.reg) f.aircraft = { model: o.aircraft || '', reg: o.reg || '' };
+  if (o.csKey) f._csKey = o.csKey;
   if (o.dir === 'arr') { f.arrival = home; f.departure = other; } else { f.departure = home; f.arrival = other; }
   return f;
 }
@@ -184,7 +185,7 @@ test('a name with no code reads on the app as it did in v24066, every name of ei
 
 // ── 2. CODESHARES ──────────────────────────────────────────────────────────
 
-const cardList = new Function(fn('_cityKey') + fn('_fltNum') + fn('sameFlight') + fn('oneRowPerFlight') + fn('cardList') + '; return cardList;')();
+const cardList = new Function(fn('_cityKey') + fn('_fltNum') + fn('sameFlight') + fn('_appCsLearn') + fn('oneRowPerFlight') + fn('cardList') + '; return cardList;')();
 const NOW = Date.parse('2026-10-12T11:05:00-07:00');
 const list = (rows, dir) => cardList(rows.map((r) => card(r, dir || 'dep')).filter(Boolean), dir || 'dep', NOW);
 const flights = (out) => out.map((f) => f.schedTime + ' ' + f.flight);
@@ -265,6 +266,50 @@ test('one carrier\'s two rows, or two rows whose state or time differ, are two f
   const sf = fn('sameFlight');
   assert.match(sf, /v\(a\.airline\)===v\(b\.airline\)\)return false/);
   assert.match(sf, /v\(a\.state\)!==v\(b\.state\)/);
+});
+
+test('v24071 — Sea-Tac\'s own record ties a flight\'s sellers before any gate is given, and keeps two flights apart', () => {
+  // tomorrow's 1:45 PM to Amsterdam: no gate yet, one record (as the worker serves it, _csKey)
+  const ams = [['AF5597', 'AF'], ['DL142', 'DL'], ['KL6032', 'KL'], ['SV4469', 'SV'], ['VS3936', 'VS']].map(([number, code]) =>
+    feedRow({ number, code, to: 'AMS', toName: 'Amsterdam', at: '2026-10-13 13:45', csKey: 'SEA:1900077479' }));
+  const out = list(ams);
+  assert.deepEqual(flights(out), ['13:45 DL142']);
+  assert.deepEqual(out[0].codeshares.slice().sort(), ['AF5597', 'KL6032', 'SV4469', 'VS3936']);
+  // two records at one gate, minute and city, nothing else apart: two flights
+  const msp = [feedRow({ number: 'AS555', code: 'AS', gate: 'D2', to: 'MSP', toName: 'Minneapolis', at: '2026-10-13 08:25', csKey: 'SEA:1' }),
+    feedRow({ number: 'DL5360', code: 'DL', gate: 'D2', to: 'MSP', toName: 'Minneapolis', at: '2026-10-13 08:25', csKey: 'SEA:2' })];
+  assert.equal(list(msp).length, 2);
+  // one record, but the state differs: still apart
+  assert.equal(list([ams[0], feedRow({ number: 'DL142', code: 'DL', to: 'AMS', toName: 'Amsterdam', at: '2026-10-13 13:45', csKey: 'SEA:1900077479', status: 'Cancelled' })]).length, 2);
+  // a feed with no records: the gate rule, unchanged
+  assert.equal(list(ams.map((f) => Object.assign({}, f, { _csKey: undefined }))).length, 5);
+});
+
+test('v24071 — one record with no mainline number folds only onto the carrier the records show operating', () => {
+  const row = (number, code, at, to, toName, csKey) => feedRow({ number, code, to, toName, at, csKey });
+  // Delta operates records others sell (DL142 to Amsterdam, a mainline number)
+  const ams = [['DL142', 'DL'], ['AF5597', 'AF'], ['KL6032', 'KL']].map(([n, c]) => row(n, c, '2026-10-12 13:45', 'AMS', 'Amsterdam', 'SEA:1'));
+  // the 9:43 PM to Anchorage: Delta's DL2367, over 1000, with its sellers
+  const anc = [['AF6814', 'AF'], ['DL2367', 'DL'], ['KL5382', 'KL'], ['WS8069', 'WS']].map(([n, c]) => row(n, c, '2026-10-12 21:43', 'ANC', 'Anchorage', 'SEA:2'));
+  const out = list([...ams, ...anc]);
+  assert.deepEqual(flights(out), ['13:45 DL142', '21:43 DL2367']);
+  assert.deepEqual(out[1].codeshares.slice().sort(), ['AF6814', 'KL5382', 'WS8069']);
+  // Delta's own row absent (the 8:15 PM to Phoenix: Air France and WestJet
+  // only): no row is the operator's, and both stay, as on the boards
+  const phx = [['AF3692', 'AF'], ['WS7631', 'WS']].map(([n, c]) => row(n, c, '2026-10-12 20:15', 'PHX', 'Phoenix', 'SEA:3'));
+  assert.deepEqual(flights(list([...ams, ...phx])).sort(), ['13:45 DL142', '20:15 AF3692', '20:15 WS7631']);
+  // nothing in the records says who operates: the group stays whole
+  assert.equal(list(anc).length, 4);
+});
+
+test('v24071 — a flight number is the digits after the carrier\'s code: JetBlue\'s B6073 and Delta\'s DL208 at one belt are two flights', () => {
+  const num = new Function(fn('_fltNum') + '; return _fltNum;')();
+  for (const [f, want] of [['B6073', 73], ['F93406', 3406], ['DL208', 208], ['AC2040Z', 2040], ['9E5012', 5012], ['1234', 1234], ['', 1e9]]) {
+    assert.equal(num({ flight: f }), want, f);
+  }
+  // Edinburgh, 2026-10-20 09:20 from New York JFK, belt 8
+  const edi = (number, code) => feedRow({ dir: 'arr', number, code, belt: '8', home: 'EDI', to: 'JFK', toName: 'New York', at: '2026-10-20 09:20' });
+  assert.deepEqual(list([edi('DL208', 'DL'), edi('B6073', 'B6')], 'arr').map((f) => f.flight).sort(), ['B6073', 'DL208']);
 });
 
 test('arrivals: one belt and one minute from one city is one flight, two belts are two', () => {
