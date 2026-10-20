@@ -942,6 +942,45 @@ function ytzToAdbFlight(f) {
     arrival: isDep ? otherSide : homeSide
   };
 }
+// v24071 — WHO FLIES A FLIGHT THAT A FEED LISTS UNDER SEVERAL NUMBERS. The
+// Port Authority rule, measured against the New York boards (the PANYNJ block
+// below says how), now one function for the two places that pick a flight's
+// operator out of its codeshare rows: the New York feeds here, and the boards'
+// own pass for every other feed (fids-core.js _fidsOneRowPerFlight, Sea-Tac's
+// five rows for one Amsterdam departure).
+//   `rows`   every row of the feed: who flies here, and how much, is counted
+//            over all of them, never over one group;
+//   `codeOf` a row's carrier, `numOf` its flight number as a number.
+// pick(group): a number under 1000 is the operator (mainline international
+// flights fly 1-999, marketing codeshares essentially never do); then the
+// carrier with the most such numbers in the feed (mainline presence: raw row
+// counts lie once codeshares inflate a marketing carrier), then the most rows,
+// then the lowest number. beats(f, a) is the same without the first step, for
+// comparing two groups' operators.
+function fidsOperatorRanker(rows, codeOf, numOf) {
+  var pres = Object.create(null), low = Object.create(null);
+  (rows || []).forEach(function (f) {
+    var c = codeOf(f);
+    pres[c] = (pres[c] || 0) + 1;
+    if (numOf(f) < 1000) low[c] = (low[c] || 0) + 1;
+  });
+  var presOf = function (f) { return pres[codeOf(f)] || 0; };
+  var lowPresOf = function (f) { return low[codeOf(f)] || 0; };
+  var beats = function (f, a) {
+    var lf = lowPresOf(f), la = lowPresOf(a);
+    if (lf !== la) return lf > la;
+    var pf = presOf(f), pa = presOf(a);
+    if (pf !== pa) return pf > pa;
+    return numOf(f) < numOf(a);
+  };
+  var pick = function (b) {
+    var mainline = b.filter(function (f) { return numOf(f) < 1000; });
+    var cands = mainline.length ? mainline : b;
+    return cands.reduce(function (a, f) { return beats(f, a) ? f : a; });
+  };
+  return { beats: beats, pick: pick, presOf: presOf, lowPresOf: lowPresOf };
+}
+try { if (typeof window !== 'undefined') window.fidsOperatorRanker = fidsOperatorRanker; } catch (e) {}
 // ── PANYNJ (LGA / JFK / EWR) — Port Authority GraphQL boards ────────────
 // All three NY-area airports share one platform; the fids-proxy worker's
 // /flights/panynj route speaks its dialect (LZ-compressed GraphQL, no CORS)
@@ -1331,12 +1370,6 @@ async function _adbFetchRaw(iata, direction) {
         // case, including keeping Aeroméxico's REAL JFK flights while
         // dropping its 30 Delta-metal codeshare rows.
         const _numOf = (f) => parseInt(f.flightNumber, 10) || 1e9;
-        const _presence = {};
-        for (const f of rows) {
-          const c = String(f.airlineCode || '').toUpperCase();
-          _presence[c] = (_presence[c] || 0) + 1;
-        }
-        const _presOf = (f) => _presence[String(f.airlineCode || '').toUpperCase()] || 0;
         // MAINLINE presence (rows numbered <1000) is the honest signal:
         // raw row counts lie once codeshares inflate a marketing carrier
         // past the operator (Qatar's 205 paper rows at JFK vs JetBlue's
@@ -1346,31 +1379,17 @@ async function _adbFetchRaw(iata, direction) {
         // → lowest number. One exclusion: a bucket containing a sub-1000
         // flight drops its 7000+ rows first, so Aeroméxico 405 beats the
         // Delta 8xxx riding on it despite Delta's fleet size.
-        const _lowPresence = {};
-        for (const f of rows) {
-          if (_numOf(f) < 1000) {
-            const c = String(f.airlineCode || '').toUpperCase();
-            _lowPresence[c] = (_lowPresence[c] || 0) + 1;
-          }
-        }
-        const _lowPresOf = (f) => _lowPresence[String(f.airlineCode || '').toUpperCase()] || 0;
-        const _beats = (f, a) => {
-          const lf = _lowPresOf(f), la = _lowPresOf(a);
-          if (lf !== la) return lf > la;
-          const pf = _presOf(f), pa = _presOf(a);
-          if (pf !== pa) return pf > pa;
-          return _numOf(f) < _numOf(a);
-        };
-        const _pickOperator = (b) => {
-          // A sub-1000 number in the bucket IS the operator: mainline
-          // international flights fly 1–999 (QR 706, VS 4, AM 405, BA 112)
-          // and marketing codeshares essentially never do — without this,
-          // JetBlue's codeshare "B6 6595" on Qatar's own Doha departure
-          // outweighs QR 706 on fleet size alone.
-          const low = b.filter((f) => _numOf(f) < 1000);
-          const cands = low.length ? low : b;
-          return cands.reduce((a, f) => (_beats(f, a) ? f : a));
-        };
+        // v24071 — the rule is fidsOperatorRanker (above), shared with the
+        // boards' codeshare pass for the other feeds; the same counts, the
+        // same order. A sub-1000 number in the bucket IS the operator:
+        // mainline international flights fly 1–999 (QR 706, VS 4, AM 405,
+        // BA 112) and marketing codeshares essentially never do — without
+        // this, JetBlue's codeshare "B6 6595" on Qatar's own Doha departure
+        // outweighs QR 706 on fleet size alone.
+        const _rank = fidsOperatorRanker(rows, (f) => String(f.airlineCode || '').toUpperCase(), _numOf);
+        const _lowPresOf = _rank.lowPresOf;
+        const _beats = _rank.beats;
+        const _pickOperator = _rank.pick;
         const buckets = {};
         for (const f of rows) {
           const k = [f.dateScheduled, f.timeScheduled,

@@ -436,7 +436,12 @@ test('the share interval follows each feed: three minutes by default, five for t
   // The fast path is asked on every request: the guard neither memoises nor serves the shared copy for it.
   const g = WORKER_SRC.slice(WORKER_SRC.indexOf('async function feedGuard('), WORKER_SRC.indexOf('__name(feedGuard'));
   assert.match(g, /if \(!opts\.force && !fast\) \{\n\s*const m = _feedMemoGet/);
-  assert.match(g, /if \(doc && !opts\.force && !fast && now - doc\.at < shareS \* 1000\)/);
+  // v24071 — a caller may take an older shared copy (opts.acceptS, a far-end
+  // lookup riding on the boards' renewals), never a younger one: the share
+  // interval stays the floor, and the boards' own route passes no acceptS.
+  assert.match(g, /const acceptS = Math\.max\(shareS, Number\(opts\.acceptS\) \|\| 0\);\n\s*if \(doc && !opts\.force && !fast && now - doc\.at < acceptS \* 1000\)/);
+  const win = WORKER_SRC.slice(WORKER_SRC.indexOf('async function maybeServeAuthorityWindow('), WORKER_SRC.indexOf('__name(maybeServeAuthorityWindow'));
+  assert.match(win, /feedGuard\(env, ctx, code, dir, "win", \(\) => h\.list\(dir, env\)\);/);
 });
 
 // ── 4. health, auto-dock, auto-undock ───────────────────────────────────────

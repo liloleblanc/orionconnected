@@ -5511,7 +5511,9 @@ function _gateFlightsAt(sub, nowMs, iata) {
   var all = data.dep || [];
   return _gateCsPick(all
     .filter(function (f) {
-      if (f.gate !== sub && f.flight !== sub) return false;
+      // v24071 — or by any number the flight is sold under (_fidsSoldAs):
+      // the gate opened by "KL6053" is Delta's DL144 the pass kept
+      if (f.gate !== sub && f.flight !== sub && !(typeof _fidsSoldAs === 'function' && _fidsSoldAs(f, sub))) return false;
       return _gateFlightLive(f, now) && !_gateHoldYields(f, all, now, iata);
     })
     .sort(function (a, b) { return a._sortTs - b._sortTs; }));
@@ -6434,7 +6436,8 @@ function _bidsUnassigned(f) {
 function _bidsOnScreen(f, sub) {
   if (!f) return false;
   if (sub === BIDS_UNASSIGNED) return _bidsUnassigned(f);
-  return f._belt === sub || f.flight === sub;
+  // v24071 — a flight number: any it is sold under (_fidsSoldAs)
+  return f._belt === sub || f.flight === sub || (typeof _fidsSoldAs === 'function' && _fidsSoldAs(f, sub));
 }
 var BIDS_WINDOW_TRAIL_MS = 45 * 60000;
 function _bidsInWindow(f, nowTs) {
@@ -41306,6 +41309,259 @@ function _fidsDedupeRows(rows, mode) {
   }
   return out;
 }
+// v24071 — A CODESHARE IS ONE FLIGHT, LISTED ONCE, ON THE BOARDS TOO.
+// Sea-Tac's page gives every carrier selling a seat its own row and never says
+// who flies it: the 1:45 PM to Amsterdam from gate A8 was five rows on the
+// departures board (AF5597, DL142, KL6032, SV4469, VS3936), the 5:45 PM from
+// A4 five more. _fidsDedupeRows above needs the same flight number, so they
+// all stood. The companion app merges them with the same test of "one flight"
+// (app.html sameFlight); the New York feeds have their own pass before this
+// one (feed-router.js, PANYNJ), the worker collapses Detroit's and JFK's
+// registry rows, and Sydney and Toronto send one row per aircraft.
+//
+// Rows are ONE flight when they leave (or arrive) on the same day at the same
+// minute, to (or from) the same airport, and are tied together:
+//   - by THE AIRPORT'S OWN RECORD (v24071): Sea-Tac's rows of one flight all
+//     open the same record, which the worker serves as _csKey (fids-proxy.js
+//     seaParsePage). Rows of one record are one flight with or without a
+//     gate (tomorrow's 1:45 PM to Amsterdam has none yet, and stood five
+//     times); rows of two records are two flights, whatever else they share
+//     (Alaska's AS555 and Delta's DL536 to Minneapolis at 8:25 AM);
+//   - else by the same gate or the same belt, AND the same aircraft type on
+//     both rows. Rows with no gate and no belt are never merged: two real
+//     flights to one city at one minute look exactly like that. A belt the
+//     board worked out itself (Moncton's, _yqmAssignBelts) ties nothing: only
+//     the feed's own does. The type is needed because a gate alone is not
+//     proof: Phoenix lists Southwest's WN2019 and American's AA4248 from
+//     Tucson at gate D12 at the same minute (2026-10-20), two aircraft, and
+//     Phoenix, like most of the airports' own feeds, sends no type. Vancouver's
+//     codeshares (UA550 with AC5133 and EK6676 from Chicago, Porter's PD481
+//     with Air Transat's TS7067) carry their type on every row;
+// and nothing on them tells them apart: no gate, terminal, belt, operator,
+// aircraft type or registration that both carry and that differs (the app's
+// test), and, on the boards, no status or revised time that differs either.
+// Two flights cannot leave one gate for one city in the same minute (the Port
+// Authority pass's own test). Never merged either:
+//   - two rows of ONE carrier: a carrier does not sell its own seat twice.
+//     Moncton lists PAL's PB924 from Mont-Joli "Arrived" and PB9241 at the
+//     same minute and gate "Delayed until 7:30 PM": two operations, and the
+//     second is the one people are waiting for. A revision (AC2040Z) is
+//     _fidsCollapseRevisions' to settle, by its own rule;
+//   - two numbers under 1000 of two carriers: each is somebody's own aircraft
+//     (Edinburgh, 2026-10-20: Delta's DL208 and JetBlue's B6073 from New York,
+//     belt 8, one minute). The number is the digits after the carrier's code
+//     (_fidsCsNum): JetBlue's B6073 is flight 73, not 6073.
+// AND ONLY ONTO THE OPERATOR'S OWN ROW. The group is folded onto:
+//   1. a number under 1000: mainline flights fly 1-999 and marketing
+//      codeshares essentially never do (the worker's JFK count, 2,599 + 2,868
+//      rows: never two such numbers in one group), so that row is the
+//      operator's. Which one: the Port Authority rule (fidsOperatorRanker,
+//      feed-router.js), whose first step is that number;
+//   2. (v24071) in a group the airport itself tied (one record), the row of
+//      the one carrier in it that this airport's records show OPERATING:
+//      it keeps a number under 1000 that other carriers' rows ride on, in a
+//      record of its own, and never rides on another carrier's
+//      (_fidsCsLearn). Most of Sea-Tac's codeshares fly on numbers over 1000
+//      (Delta's DL2367 to Anchorage, sold by Air France, Aeroméxico, KLM,
+//      Virgin Atlantic and WestJet; United's UA4796 to Los Angeles, sold by
+//      five Star partners). Over every row Sea-Tac listed on 2026-10-12 for
+//      that day and the next, Delta and United were the only carriers that
+//      operated a record others sold, they never rode on anyone's, and the
+//      only records left without them were ones whose Delta row had moved
+//      between pages while they were read; their sellers all ride on Delta.
+//      A carrier that is not seen, or is seen doing both, decides nothing.
+// A group with neither is left as the feed sent it, every row showing: the
+// operator's own row was not sent, and folding the group onto one partner's
+// number would print that partner's name on another airline's aircraft —
+// Detroit's 34 codeshare-only groups of Delta metal are kept whole for exactly
+// that reason (fids-proxy.js dtwParseFeed). No count of who flies the most
+// decides it, and a gate alone never does: Vancouver lists United's UA2048
+// with Air Canada's AC4876 at one gate, and at Air Canada's own hub a count
+// would print Air Canada on United's aircraft.
+// The kept row's status and times are its own; a gate, terminal, belt,
+// aircraft or registration only another row has is taken from it. The other
+// numbers stay on the row (_codeshares, and who sells each:
+// _codeshareSellers): the board prints the operator only, as it always has
+// (its "Operated by" comes from the feed's operator), and a passenger's
+// ticket number still finds the flight in the search, the airline filter, the
+// gate screen and the belt screen (_fidsRowSellers). Rows not merged keep
+// their order exactly.
+// The flight number: the digits after the carrier's code (two letters, a
+// letter and a digit, a digit and a letter, or three letters), a revision
+// letter aside. Read as the trailing run of digits, a code that ends in a
+// digit was read into the number: JetBlue's B6073 as 6073, Frontier's F91175
+// as 91175, every B6, F9, G4, Y4, A3, S4, M6, C3, P6 or 9E number over 1000.
+// No number: 1e9, never under 1000.
+function _fidsCsNum(f) {
+  var s = String((f && f.flight) || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var m = s.match(/^(?:[A-Z]{2,3}|[A-Z]\d|\d[A-Z])?(\d{1,5})[A-Z]?$/);
+  return m ? +m[1] : 1e9;
+}
+// A flight number's carrier, as mapADB brands a row: the prefix, an
+// affiliate folded onto its parent (PARENT).
+function _fidsCsCarrier(flight) {
+  var m = String(flight || '').toUpperCase().replace(/\s+/g, '').match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(?=\d)/);
+  var c = m ? m[1] : '';
+  try { if (c && typeof PARENT === 'object' && PARENT && PARENT[c]) c = PARENT[c]; } catch (e) {}
+  return c;
+}
+// A field as the rule compares it: the board writes '—' for "none".
+function _fidsCsVal(x) {
+  var s = String(x == null ? '' : x).trim().toUpperCase();
+  return /^[—\-]*$/.test(s) ? '' : s;
+}
+var _FIDS_CS_TELLS = ['gate', 'terminal', '_belt', '_opCode', '_aircraft', '_reg', 'status', 'upd'];
+function _fidsCsSameFlight(a, b) {
+  var v = _fidsCsVal;
+  if (String(a.airline || '').toUpperCase() === String(b.airline || '').toUpperCase()) return false;
+  var ka = v(a._csKey), kb = v(b._csKey);
+  if (ka && kb) {
+    if (ka !== kb) return false;
+  } else {
+    var ga = v(a.gate), ba = (a._yqmBelt || b._yqmBelt) ? '' : v(a._belt);
+    if (!((ga && ga === v(b.gate)) || (ba && ba === v(b._belt)))) return false;
+    // and the same aircraft type, carried by both
+    var ta = v(a._aircraft);
+    if (!ta || ta !== v(b._aircraft)) return false;
+  }
+  for (var i = 0; i < _FIDS_CS_TELLS.length; i++) {
+    var k = _FIDS_CS_TELLS[i], x = v(a[k]), y = v(b[k]);
+    if (x && y && x !== y) return false;
+  }
+  return !(_fidsCsNum(a) < 1000 && _fidsCsNum(b) < 1000);
+}
+// The far end as one key: the airport code, else the place's name folded.
+function _fidsCsFar(f, mode) {
+  var c = String(f._locIata || '').trim().toUpperCase();
+  if (c) return c;
+  return String((mode === 'arr' ? f.origin : f.dest) || '').normalize('NFD')
+    .replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+}
+// v24071 — WHO OPERATES, IN THE AIRPORT'S OWN RECORDS. items: { flight, key }
+// (a flight number and the record it opens). For every record that two or
+// more carriers sell and that holds exactly one number under 1000, that
+// number's carrier OPERATES (op) and every other carrier in it RIDES (rides).
+// Counts, by carrier.
+function _fidsCsLearn(items) {
+  var ev = { op: Object.create(null), rides: Object.create(null) }, byKey = Object.create(null), keys = [];
+  (items || []).forEach(function (it) {
+    var k = _fidsCsVal(it && it.key), c = _fidsCsCarrier(it && it.flight);
+    if (!k || !c) return;
+    if (!byKey[k]) { byKey[k] = []; keys.push(k); }
+    byKey[k].push({ c: c, n: _fidsCsNum({ flight: it.flight }) });
+  });
+  keys.forEach(function (k) {
+    var g = byKey[k], cars = Object.create(null), nc = 0, low = [];
+    g.forEach(function (x) { if (!cars[x.c]) { cars[x.c] = 1; nc++; } if (x.n < 1000) low.push(x); });
+    if (nc < 2 || low.length !== 1) return;
+    var opC = low[0].c;
+    ev.op[opC] = (ev.op[opC] || 0) + 1;
+    for (var c in cars) if (c !== opC) ev.rides[c] = (ev.rides[c] || 0) + 1;
+  });
+  return ev;
+}
+// What the airport's records have shown, kept per airport for a day and a
+// half: United operates a record others ride on only a few times a day at
+// Sea-Tac, so one refresh's lists may hold none; what was seen stays seen.
+var _FIDS_CS_SEEN = Object.create(null);
+var _FIDS_CS_SEEN_MS = 36 * 3600000;
+function _fidsCsEvidence(list, mode, nowTs) {
+  var items = [], home = '';
+  (list || []).forEach(function (f) {
+    if (!f || !f._csKey) return;
+    var side = mode === 'dep' ? f.departure : f.arrival;
+    if (!home) home = String((side && side.airport && side.airport.iata) || '').trim().toUpperCase();
+    items.push({ flight: f.number, key: f._csKey });
+  });
+  var now = Number(nowTs) || Date.now(), learnt = _fidsCsLearn(items);
+  var mem = home ? (_FIDS_CS_SEEN[home] || (_FIDS_CS_SEEN[home] = { op: Object.create(null), rides: Object.create(null) })) : null;
+  var ev = { op: Object.create(null), rides: Object.create(null) };
+  ['op', 'rides'].forEach(function (w) {
+    for (var c in learnt[w]) { ev[w][c] = learnt[w][c]; if (mem) mem[w][c] = now; }
+    if (!mem) return;
+    for (var c2 in mem[w]) {
+      if (now - mem[w][c2] > _FIDS_CS_SEEN_MS) { delete mem[w][c2]; continue; }
+      ev[w][c2] = ev[w][c2] || 1;
+    }
+  });
+  return ev;
+}
+var _FIDS_CS_FILL = ['gate', 'terminal', '_belt', '_aircraft', '_aircraftCode', '_feedAcCode', '_reg', '_checkIn'];
+function _fidsOneRowPerFlight(rows, mode, ev) {
+  if (!Array.isArray(rows) || rows.length < 2 || typeof fidsOperatorRanker !== 'function') return rows;
+  var groups = [], byKey = Object.create(null);
+  for (var i = 0; i < rows.length; i++) {
+    var f = rows[i], g = null;
+    var far = _fidsCsFar(f, mode), ts = Number(f._sortTs) || 0;
+    var k = (far && ts) ? Math.round(ts / 60000) + '|' + far : '';
+    if (!k) continue;
+    var cands = byKey[k] || (byKey[k] = []);
+    for (var j = 0; j < cands.length && !g; j++) {
+      if (cands[j].every(function (r) { return _fidsCsSameFlight(r, f); })) g = cands[j];
+    }
+    if (g) g.push(f);
+    else { g = [f]; cands.push(g); groups.push(g); }
+  }
+  var rank = null, drop = new Set(), merged = [];
+  // who operates, by the airport's records: the caller's (mapADB: the whole
+  // list it was sent, and what this airport showed before), else these rows'
+  if (!ev) ev = _fidsCsLearn(rows.map(function (r) { return { flight: r.flight, key: r._csKey }; }));
+  var carOf = function (r) { return _fidsCsCarrier(r.flight) || String(r.airline || '').toUpperCase(); };
+  for (var gi = 0; gi < groups.length; gi++) {
+    var grp = groups[gi];
+    if (grp.length < 2) continue;
+    var keep = null;
+    if (grp.some(function (r) { return _fidsCsNum(r) < 1000; })) {
+      // 1. the operator's own number, under 1000
+      rank = rank || fidsOperatorRanker(rows, function (r) { return String(r.airline || '').toUpperCase(); }, _fidsCsNum);
+      keep = rank.pick(grp);
+    } else if (_fidsCsVal(grp[0]._csKey) && grp.every(function (r) { return _fidsCsVal(r._csKey) === _fidsCsVal(grp[0]._csKey); })) {
+      // 2. one record: the one carrier in it seen operating and never riding
+      var ops = grp.filter(function (r) { var c = carOf(r); return !!ev.op[c] && !ev.rides[c]; });
+      if (ops.length === 1) keep = ops[0];
+    }
+    // neither: the group stays whole
+    if (!keep) continue;
+    for (var m = 0; m < grp.length; m++) {
+      if (grp[m] === keep) continue;
+      drop.add(grp[m]);
+      for (var n = 0; n < _FIDS_CS_FILL.length; n++) {
+        var fk = _FIDS_CS_FILL[n];
+        if (!_fidsCsVal(keep[fk]) && _fidsCsVal(grp[m][fk])) keep[fk] = grp[m][fk];
+      }
+    }
+    var others = grp.filter(function (r) { return r !== keep; });
+    keep._codeshares = others.map(function (r) { return r.flight; });
+    keep._codeshareSellers = others.map(function (r) { return { flight: r.flight, airline: r.airline, name: r._airlineName || '' }; });
+    merged.push(keep.flight + ' (' + keep._codeshares.join(', ') + ')');
+  }
+  if (!drop.size) return rows;
+  var out = rows.filter(function (r) { return !drop.has(r); });
+  console.log('[FIDS] codeshare rows: ' + rows.length + ' → ' + out.length + ' — ' + merged.join('; '));
+  return out;
+}
+// v24071 — EVERY NUMBER A ROW IS SOLD UNDER: its own first, then those the
+// codeshare pass folded into it. Sea-Tac's 1:45 PM to Amsterdam is DL142 on
+// the board, and a passenger's ticket says KL6032 or AF5597: the search box,
+// the airline filter (?airline=KL), the gate screen opened by flight number
+// and the belt screen find it by any of them (applySearch, _gateFlightsAt,
+// _bidsOnScreen). { flight, airline, name } each.
+function _fidsRowSellers(f) {
+  if (!f) return [];
+  var out = [{ flight: f.flight, airline: f.airline, name: f._airlineName || '' }];
+  var cs = Array.isArray(f._codeshareSellers) ? f._codeshareSellers : [];
+  if (cs.length) return out.concat(cs);
+  (Array.isArray(f._codeshares) ? f._codeshares : []).forEach(function (n) {
+    out.push({ flight: n, airline: _fidsCsCarrier(n), name: '' });
+  });
+  return out;
+}
+// The row is sold under this flight number (spaces and case aside).
+function _fidsSoldAs(f, num) {
+  var want = String(num == null ? '' : num).toUpperCase().replace(/\s+/g, '');
+  if (!want || !f) return false;
+  return _fidsRowSellers(f).some(function (s) { return String(s.flight || '').toUpperCase().replace(/\s+/g, '') === want; });
+}
 // v23270 — HOW BUSY IS THIS AIRPORT, MEASURED INDEPENDENTLY OF THE ANSWER.
 //
 // Counts movements in the next 12 hours straight off the RAW feed. A fixed
@@ -41353,9 +41609,12 @@ function _fidsSetLookahead(depRaw, arrRaw) {
 // them (_gateFeedKept). They are evidence for the gate maps, never board rows,
 // so they skip the board's three-hour trail and are kept for the 30 hours the
 // memory itself keeps; every other rule is the same.
+// v24071 — and then one row per flight where a feed lists every seller
+// (_fidsOneRowPerFlight), with who operates read off the whole list the feed
+// sent (_fidsCsEvidence), not only the rows in the board's hours.
 function mapADB(raw, mode, kept) {
   const nowTs=Date.now(), list=mode==='dep'?(raw.departures||[]):(raw.arrivals||[]);
-  return _fidsDedupeRows(list.map(f => {
+  return _fidsOneRowPerFlight(_fidsDedupeRows(list.map(f => {
     const sL=mode==='dep'?(f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc):(f.arrival?.scheduledTime?.local||f.arrival?.scheduledTime?.utc);
     if(!sL)return null;
     const schedTs=adbTs(sL); if(!schedTs)return null;
@@ -41768,8 +42027,11 @@ function mapADB(raw, mode, kept) {
     fidsApplyOperator(_row, (mode==='dep' ? f.departure?.airport?.iata : f.arrival?.airport?.iata) || (document.getElementById('apSel') || {}).value || '');
     // v24042 — Moncton's belt pass reads this (_yqmAssignBelts).
     if (_yqmBeltKind) _row._yqmBelt = _yqmBeltKind;
+    // v24071 — the airport's own record of the flight (Sea-Tac's, which
+    // every seller's row opens): the codeshare pass reads it.
+    if (f._csKey) _row._csKey = String(f._csKey);
     return _row;
-  }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
+  }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode), mode, _fidsCsEvidence(list, mode, nowTs));
 }
 
 // OAG via the same-origin worker route, returned in ADB shape so mapADB can
@@ -43795,40 +44057,45 @@ function applySearch(flights) {
   // it against the airline name, which would make "AS" match "Alaska" but ALSO
   // unexpectedly match Mokulele if the API returned a name containing "as".
   // For LONGER queries (4+ chars), allow substring on city + airline name + flight.
+  // v24071 — a row is every number it is sold under (_fidsRowSellers): the
+  // codeshare pass shows Sea-Tac's 1:45 PM to Amsterdam once, as DL142, and a
+  // search for KL6032 or "virgin", or a board filtered to ?airline=AF, still
+  // finds it.
   if (searchQuery) {
     const q = searchQuery.toLowerCase().replace(/\s/g,'');
     const qUpper = q.toUpperCase();
     const isShort = qUpper.length <= 3;
     list = list.filter(f => {
       const loc = (f.dest || f.origin || '').toLowerCase();
-      const fl  = (f.flight || '').toLowerCase().replace(/\s/g,'');
-      const flUpper = fl.toUpperCase();
-      const airlineCode = (f.airline || '').toUpperCase();
-      const airlineParent = parentCode(f.airline).toUpperCase();
-      const airlineName = (f._airlineName || AIRLINE_NAME[parentCode(f.airline)] || AIRLINE_NAME[f.airline] || f.airline || '').toLowerCase();
-      if (isShort) {
-        // Short queries: exact airline code, or flight number starts with the query
-        return airlineCode === qUpper
-            || airlineParent === qUpper
-            || flUpper.startsWith(qUpper);
-      }
-      // Long queries: substring everywhere
-      return loc.includes(searchQuery)
-          || fl.includes(q)
-          || airlineName.includes(searchQuery);
+      return (isShort ? false : loc.includes(searchQuery)) || _fidsRowSellers(f).some(s => {
+        const fl  = (s.flight || '').toLowerCase().replace(/\s/g,'');
+        const flUpper = fl.toUpperCase();
+        const airlineCode = (s.airline || '').toUpperCase();
+        const airlineParent = parentCode(s.airline).toUpperCase();
+        const airlineName = (s.name || AIRLINE_NAME[parentCode(s.airline)] || AIRLINE_NAME[s.airline] || s.airline || '').toLowerCase();
+        if (isShort) {
+          // Short queries: exact airline code, or flight number starts with the query
+          return airlineCode === qUpper
+              || airlineParent === qUpper
+              || flUpper.startsWith(qUpper);
+        }
+        // Long queries: substring everywhere
+        return fl.includes(q)
+            || airlineName.includes(searchQuery);
+      });
     });
   }
 
   // Airline filter (child code, parent code, flight prefix, or airline name)
   if (filterAirline) {
     const af = normalizeCode(filterAirline);
-    list = list.filter(f => {
-      const code = normalizeCode(f.airline);
+    list = list.filter(f => _fidsRowSellers(f).some(s => {
+      const code = normalizeCode(s.airline);
       const parent = parentCode(code);
-      const flight = normalizeCode(f.flight).replace(/\s/g,'');
-      const airlineName = (f._airlineName || AIRLINE_NAME[parent] || AIRLINE_NAME[code] || '').toUpperCase();
+      const flight = normalizeCode(s.flight).replace(/\s/g,'');
+      const airlineName = (s.name || AIRLINE_NAME[parent] || AIRLINE_NAME[code] || '').toUpperCase();
       return code.startsWith(af) || parent.startsWith(af) || flight.startsWith(af) || airlineName.includes(af);
-    });
+    }));
   }
 
   // Terminal filter. Accepts '1' or 'T1' either way round — the feeds are

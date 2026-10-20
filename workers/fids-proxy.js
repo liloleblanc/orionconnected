@@ -2856,7 +2856,9 @@ async function opevForLegs(ap, legs, env, deps) {
           let ix = null;
           try { const hit = await caches.default.match(ixKey); if (hit) ix = await hit.json(); } catch (e) {}
           if (!ix) {
-            ix = opevIndexRows(await h.list(theirDir, env), theirDir);
+            // v24071 — through authorityFarList: a page-by-page feed is read
+            // from the boards' shared copy, never walked again
+            ix = opevIndexRows(await authorityFarList(env, other, theirDir), theirDir);
             try { await caches.default.put(ixKey, new Response(JSON.stringify(ix), { headers: {
               "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } })); } catch (e) {}
           }
@@ -3211,6 +3213,36 @@ __name(farArrHas, "farArrHas");
 // treats a pick that would fall on that day as unavailable, never as no such
 // flight (farArrOnMissingDay). A missing day with no known start makes the
 // whole list unavailable.
+// v24071 — ANOTHER AIRPORT'S LIST, READ AS A FAR END (/fararr, /acinfo, the
+// operator evidence). For a feed read page by page (h.farShared: Sea-Tac, a
+// dozen pages and more each time) it is the boards' own shared copy
+// (feedGuard, the same key the boards' window route reads), so a gate
+// elsewhere showing a flight to that airport never walks its site again, from
+// any colo; every other feed is asked through its handler, as before. Not
+// live (failing, or only the last good list): null. Live with its later day
+// left out: today's rows, and the later day is marked failed from its
+// midnight (feedLaterDay), exactly as when the list is read directly, so
+// /fararr still tells a flight landing tomorrow from no such flight.
+const FAR_SHARED_ACCEPT_S = 360;
+async function authorityFarList(env, code, dir) {
+  const h = AUTHORITY_HANDLERS[String(code || "").toLowerCase()];
+  if (!h) return null;
+  if (!h.farShared) return h.list(dir, env);
+  // A board renews its list every five minutes: a copy younger than six is
+  // one a board is keeping fresh, and a far-end lookup takes it as it is
+  // rather than asking the airport again.
+  const g = await feedGuard(env, null, String(code).toUpperCase(), dir, "win", () => h.list(dir, env), { acceptS: FAR_SHARED_ACCEPT_S });
+  if (!g || g.state !== "ok" || !Array.isArray(g.payload)) {
+    feedNote("error", "the shared copy is not live");
+    return null;
+  }
+  if (g.partial) {
+    await feedLaterDay(async () => { feedNote("error", "the later day is not in the shared copy"); return null; },
+      h.tz, feedLocalDay(h.tz, Date.now(), 1));
+  }
+  return g.payload;
+}
+__name(authorityFarList, "authorityFarList");
 async function farArrList(code, env, info) {
   const k = String(code || "").toLowerCase();
   const own = async (fn, ...rest) => {
@@ -3235,9 +3267,8 @@ async function farArrList(code, env, info) {
       try { rows = txt ? JSON.parse(txt) : null; } catch (e) { rows = null; }
       return farArrYqmRows(rows);
     }
-    const h = AUTHORITY_HANDLERS[k];
-    if (!h) return null;
-    return farArrFromAdb(await h.list("arr", env));
+    if (!AUTHORITY_HANDLERS[k]) return null;
+    return farArrFromAdb(await authorityFarList(env, k, "arr"));
   };
   const store = { notes: [] };
   let rows = null, threw = null;
@@ -3971,6 +4002,10 @@ __name(_feedResetMemory, "_feedResetMemory");
  *   producer async () => payload | null, run with its upstream answers labelled
  *   opts.rows    payload => row count (default: array length)
  *   opts.force   skip the memo and the shared copy (the dock probe)
+ *   opts.acceptS v24071: a shared copy up to this old (seconds) is answer
+ *                enough for this caller, when longer than the share interval
+ *                (a far-end lookup riding on the boards' renewals,
+ *                authorityFarList); it is not renewed for it
  * Returns { state: "ok"|"stale"|"blocked"|"error", failure, payload, rows, asOf, via }.
  * payload is null only when there is nothing honest to show.
  */
@@ -3997,7 +4032,8 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
   let doc = null;
   try { doc = kv ? await kv.get(key, { type: "json", cacheTtl: 60 }) : null; } catch (e) { doc = null; }
   if (!doc || typeof doc !== "object" || typeof doc.at !== "number" || !("p" in doc)) doc = null;
-  if (doc && !opts.force && !fast && now - doc.at < shareS * 1000) {
+  const acceptS = Math.max(shareS, Number(opts.acceptS) || 0);
+  if (doc && !opts.force && !fast && now - doc.at < acceptS * 1000) {
     _feedSawGood(code, doc.at, !!doc.pt, dir);
     const res = { state: "ok", failure: null, payload: doc.p, rows: doc.n || 0, asOf: doc.at, via: "shared", ...(doc.pt ? { partial: true } : {}) };
     _feedMemoSet(key, res, Math.min(FEED_MEMO_OK_S, shareS - Math.floor((now - doc.at) / 1000)), now);
@@ -5410,8 +5446,32 @@ __name(_adbDeadEnrichment, "_adbDeadEnrichment");
 
 
 // SEA — Sea-Tac's Drupal flight-status page, server-rendered rows with a
-// per-row DATE column (mm-dd-yyyy) and 12-hour clocks. The page serves a
-// window of rows around now, which is exactly a board's appetite.
+// per-row DATE column (mm-dd-yyyy) and 12-hour clocks, fifty rows a page.
+// The worker asks for the board's hours page by page (seaWindowParts,
+// AUTHORITY_HANDLERS.sea).
+//
+// v24071 — TWO THINGS EVERY ROW SAYS THAT WERE THROWN AWAY.
+//   - THE NEW TIME. Sea-Tac writes a revised time into the status column
+//     ("Now 6:25 PM": 97 of the 1,558 departure rows and 815 of the 1,644
+//     arrival rows it listed on 2026-10-12 for that day and the next). It went
+//     to yhzStatus, which knows no such word, so the row was served
+//     "scheduled" with no revised time: the 1:45 PM to Amsterdam, four hours
+//     forty late, read Scheduled and left the board half an hour after 1:45.
+//     It is the revisedTime now, on the scheduled date or the day after or
+//     before, whichever is nearest (an 11:50 PM flight "Now 12:30 AM" is the
+//     next day's 12:30), and the board reads Delayed or Early from it as it
+//     does for every feed.
+//   - WHICH ROWS ARE ONE FLIGHT. Sea-Tac lists every carrier that sells a seat
+//     as its own row, and each row's Details link names the record it opens
+//     ("#modalAirline" + record + digits + carrier + city): every seller of
+//     one flight opens the SAME record. Over those 3,202 rows, every record
+//     that two carriers sell (185 departures, 209 arrivals) was one date,
+//     minute, city, gate, status and belt, and two flights in one slot never
+//     shared one; the only records with several rows of ONE carrier are a
+//     multi-stop flight's stops (AS61 to Anchorage, Juneau, Yakutat,
+//     Cordova). The record is the row's _csKey, the airport's own word that
+//     the boards' codeshare pass reads (fids-core.js _fidsOneRowPerFlight):
+//     tomorrow's 1:45 PM to Amsterdam is one flight before any gate is given.
 function seaParsePage(html, dir, nowMs) {
   const out = [];
   const rows = String(html || "").match(/<tr[^>]*class="(?:ItemStyleClass|AltItemStyleClass)"[\s\S]*?<\/tr>/g)
@@ -5421,12 +5481,15 @@ function seaParsePage(html, dir, nowMs) {
     const cells = authorityCellsText(row);
     if (cells.length < 6) continue;
     const cityRaw = cells[0];
-    const nm = cells[2].replace(/\s+/g, "").match(/^([A-Z0-9]{2})(\d{1,4})$/);
+    // v24071 — Frontier's rows are written with a dot ("F9.3406", "F9.1175",
+    // to and from Denver): the same number, and they were dropped.
+    const nm = cells[2].replace(/[\s.]+/g, "").match(/^([A-Z0-9]{2})(\d{1,4})$/);
     const dm = cells[3].match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
     const tm = cells[4].match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
     if (!nm || !dm || !tm) continue;
     let hh = Number(tm[1]) % 12; if (/pm/i.test(tm[3])) hh += 12;
-    const sched = localTimeObjIn("America/Los_Angeles", Number(dm[3]), Number(dm[1]), Number(dm[2]), hh, Number(tm[2]));
+    const y = Number(dm[3]), mo = Number(dm[1]), d = Number(dm[2]);
+    const sched = localTimeObjIn("America/Los_Angeles", y, mo, d, hh, Number(tm[2]));
     const paren = cityRaw.match(/\(([A-Z]{3})\)/);
     const fl = authorityFlight({
       dir, number: `${nm[1]}${nm[2]}`,
@@ -5436,14 +5499,203 @@ function seaParsePage(html, dir, nowMs) {
       otherIata: paren ? paren[1] : null,
       otherName: cityRaw.replace(/\s*\([A-Z]{3}\)\s*/, "").trim() || null,
       airlineIata: nm[1], airlineName: cells[1] || null,
-      sched, revised: null
+      sched, revised: seaRevisedTime(cells[5], y, mo, d, sched.ts)
     });
     if (dir === "arr" && cells[7] && /^\d{1,2}$/.test(cells[7].trim())) fl.arrival.baggageBelt = cells[7].trim();
+    // The record id is what is left of the Details target once the row's own
+    // digits, carrier and city are taken off its end; a target that does not
+    // end in them is not trusted. Frontier's carries the dot too
+    // ("#modalAirline1920526536.3406F9DEN").
+    const rec = row.match(/data-target="#modalAirline(\d+(?:\.\d+)?)([A-Z0-9]{2})([A-Z]{3})"/);
+    const recDigits = rec ? rec[1].replace(".", "") : "";
+    if (rec && rec[2] === nm[1] && recDigits.length > nm[2].length && recDigits.endsWith(nm[2])) {
+      fl._csKey = `SEA:${recDigits.slice(0, recDigits.length - nm[2].length)}`;
+    }
     out.push(fl);
   }
   return out;
 }
 __name(seaParsePage, "seaParsePage");
+// "Now 6:25 PM" in the status column: the new time, on whichever of the
+// scheduled date, the day after or the day before is nearest the scheduled
+// instant. Anything else (On-Time, Departed, Landed): no revised time.
+function seaRevisedTime(status, y, mo, d, schedTs) {
+  const m = String(status || "").match(/\bnow\s+(\d{1,2}):(\d{2})\s*(AM|PM)\b/i);
+  if (!m) return null;
+  let hh = Number(m[1]) % 12; if (/pm/i.test(m[3])) hh += 12;
+  let best = null;
+  for (const k of [0, 1, -1]) {
+    const t = localTimeObjIn("America/Los_Angeles", y, mo, d + k, hh, Number(m[2]));
+    if (!best || Math.abs(t.ts - schedTs) < Math.abs(best.ts - schedTs)) best = t;
+  }
+  return best.ts === schedTs ? null : best;
+}
+__name(seaRevisedTime, "seaRevisedTime");
+// The rows on one page (fifty when the list goes on).
+function seaPageRowCount(html) {
+  return (String(html || "").match(/<tr[^>]*class="(?:ItemStyleClass|AltItemStyleClass)"/g) || []).length;
+}
+__name(seaPageRowCount, "seaPageRowCount");
+// v24071 — WHICH HOURS TO ASK SEA-TAC FOR, AND HOW OFTEN.
+// The page lists both days, fifty rows a page, and its default order is by
+// city: the first page is Albuquerque, Amsterdam and part of Anchorage, about
+// fifty of the ~800 departures a day, which is all the worker used to read.
+// It now asks by date and hour (flight_date, datetime_start, datetime_end:
+// both hours inclusive at :00) in flight-number order, and only for the hours
+// a board shows:
+//   - FROM the hour two hours back: the boards ask the worker from two hours
+//     back (feed-router.js, the adbFetchWindow calls), and a row scheduled
+//     earlier is never served;
+//   - TO the hour holding twelve hours and five minutes ahead: Sea-Tac is a
+//     large airport and the boards show such an airport twelve hours ahead
+//     (fids-core.js _fidsSetLookahead); an answer is shared for up to five
+//     minutes (feedGuard, the edge), so the last board to read it still has
+//     its twelve hours.
+// In two parts, each one ask per date:
+//   - NOW: the trail and the next three hours, where times, gates and states
+//     change. Asked again every time the shared copy is renewed (two minutes);
+//   - LATER: the rest of the twelve hours, kept fifteen minutes.
+// Every page of a part is asked in the same moment and kept under the same
+// key (`gen`, the part's two- or fifteen-minute slot), so a part is always
+// one reading of the list: a row cannot slip between two pages read at
+// different times. In flight-number order a page break never falls inside
+// one flight's rows at one minute the way a time order would.
+// The pages are numbered from 1, and page=0 is page 1 again: a walk that
+// asks for 0 and then for the pager's pages reads every first page twice.
+// Measured against Sea-Tac's own pages of 2026-10-19 from 6:20 PM, both
+// directions, a board renewing its list every five minutes for an hour: 16.5
+// pages a renewal (21 when the quarter hour turns, 13 or 14 otherwise), and
+// every one of the 367 departures and 466 arrivals in the board's hours
+// served. The one city-ordered page a direction read before was 2 pages a
+// renewal and held 15 and 20 of them.
+const SEA_TZ = "America/Los_Angeles";
+const SEA_BACK_MS = 2 * 3600000;
+const SEA_AHEAD_MS = 12 * 3600000 + 5 * 60000;
+const SEA_NOW_AHEAD_MS = 3 * 3600000;
+const SEA_NOW_TTL_S = 120, SEA_LATER_TTL_S = 900;
+// The local hour holding ts: its date, hour and the instant it begins.
+function seaHourOf(ts) {
+  const loc = localTimeObjFromTs(SEA_TZ, ts).local;   // "YYYY-MM-DD HH:MM:00-07:00"
+  const day = loc.slice(0, 10), hour = Number(loc.slice(11, 13));
+  const start = localTimeObjIn(SEA_TZ, Number(day.slice(0, 4)), Number(day.slice(5, 7)), Number(day.slice(8, 10)), hour, 0).ts;
+  return { day, hour, start };
+}
+__name(seaHourOf, "seaHourOf");
+// The parts to ask at nowMs, in time order: { day, from, to, hot }, hours
+// from:00 to to:00 of one date (to 24: to the end of the day). They are
+// worked out for the whole quarter hour nowMs is in (the LATER part's slot),
+// so the parts and their keys change only when that slot does: the later
+// part is read once a quarter hour, not again each time the hour turns.
+function seaWindowParts(nowMs) {
+  const hours = [], seen = new Set();
+  const slot = SEA_LATER_TTL_S * 1000;
+  const q0 = Math.floor(nowMs / slot) * slot, q1 = q0 + slot;
+  const first = seaHourOf(q0 - SEA_BACK_MS).start;
+  for (let t = first; t < q1 + SEA_AHEAD_MS; t += 3600000) {
+    const h = seaHourOf(t);
+    const k = `${h.day}|${h.hour}`;
+    if (seen.has(k)) continue;   // the hour that repeats when the clocks go back
+    seen.add(k);
+    hours.push({ day: h.day, hour: h.hour, hot: h.start < q1 + SEA_NOW_AHEAD_MS });
+  }
+  const out = [];
+  for (const h of hours) {
+    // one part per date and kind; an hour the clocks skip has no flights
+    const p = out[out.length - 1];
+    if (p && p.day === h.day && p.hot === h.hot) p.to = h.hour + 1;
+    else out.push({ day: h.day, from: h.hour, to: h.hour + 1, hot: h.hot });
+  }
+  return out;
+}
+__name(seaWindowParts, "seaWindowParts");
+function seaPageUrl(dir, part, page) {
+  const p2 = (n) => String(n).padStart(2, "0");
+  return "https://www.portseattle.org/sea/flight-status?flightNo=&airline=&city="
+    + `&arr_or_depart=${dir === "dep" ? "D" : "A"}&flight_date=${part.day}`
+    + `&datetime_start=${p2(part.from)}&datetime_end=${part.to >= 24 ? "" : p2(part.to)}`
+    + `&orderby=FlightNumberSort&page=${page}`;
+}
+__name(seaPageUrl, "seaPageUrl");
+// The last page the pager links to (page=N), 0 when it links to none.
+function seaPageLast(html) {
+  let max = 0;
+  for (const m of String(html || "").matchAll(/[?&](?:amp;)?page=(\d+)/g)) max = Math.max(max, Number(m[1]));
+  return max;
+}
+__name(seaPageLast, "seaPageLast");
+// v24071 — POLITE: at most three of Sea-Tac's pages open at once in one
+// reading of a direction, its parts and their pages together. A page takes
+// the site about three seconds to make; asked all at once, one renewal had
+// eight open. Replayed against its pages of 2026-10-19 (a page answered in a
+// tenth of the real time), a direction's renewal now takes about 3.6 rounds
+// of one page's time instead of 2.1 (some 11 s instead of 6), and the
+// quarter-hour one about 5.2 instead of 3.7. One reading's own queue:
+// nothing is shared between requests.
+const SEA_OPEN_PAGES = 3;
+function seaLimiter(n) {
+  let open = 0;
+  const waiting = [];
+  const next = () => { while (open < n && waiting.length) { open++; waiting.shift()(); } };
+  return async (task) => {
+    await new Promise((go) => { waiting.push(go); next(); });
+    try { return await task(); } finally { open--; next(); }
+  };
+}
+__name(seaLimiter, "seaLimiter");
+// One part: page 1, then the pages its pager links to, together (a page
+// takes Sea-Tac about three seconds to make), and on past them only while the
+// last one is still full and the pager did not reach it. `ask(url, page)`
+// returns the page's text, or null when it failed (the guard has its note).
+// null when page 1 or a page the pager linked to failed: the part is not
+// whole, and its day fails (feedVerdict, feedLaterDay). A page past the
+// pager's last that is not a list is where the list ends (feedEndOfList).
+// SEA_PART_PAGES bounds a part, whatever the pager says: the busiest twelve
+// hours at Sea-Tac are about eleven pages, all parts together.
+const SEA_PAGE_ROWS = 50, SEA_PART_PAGES = 16;
+async function seaWalkPart(ask, dir, part, nowMs) {
+  const first = await ask(seaPageUrl(dir, part, 1), 1);
+  if (first == null) return null;
+  const rows = seaParsePage(first, dir, nowMs);
+  if (seaPageRowCount(first) < SEA_PAGE_ROWS) return rows;
+  const upto = Math.min(seaPageLast(first), SEA_PART_PAGES);
+  const pages = [];
+  for (let k = 2; k <= upto; k++) pages.push(k);
+  const texts = await Promise.all(pages.map((k) => ask(seaPageUrl(dir, part, k), k)));
+  if (texts.some((t) => t == null)) return null;
+  let last = first;
+  for (const t of texts) { rows.push(...seaParsePage(t, dir, nowMs)); last = t; }
+  for (let p = Math.max(upto, 1) + 1; p <= SEA_PART_PAGES && seaPageRowCount(last) >= SEA_PAGE_ROWS; p++) {
+    const t = await ask(seaPageUrl(dir, part, p), p);
+    if (t == null) { feedEndOfList(); break; }
+    rows.push(...seaParsePage(t, dir, nowMs));
+    last = t;
+  }
+  return rows;
+}
+__name(seaWalkPart, "seaWalkPart");
+// Every part's rows once, the first reading kept: an hour's :00 rows are in
+// two parts, and a multi-stop flight is one row per stop (number, time and
+// city together).
+function seaMergeRows(lists) {
+  const out = [], seen = new Set();
+  for (const list of lists) {
+    for (const f of list || []) {
+      const far = seaFarIata(f);
+      const k = `${f.number}|${f._authTs}|${far}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(f);
+    }
+  }
+  return out;
+}
+__name(seaMergeRows, "seaMergeRows");
+function seaFarIata(f) {
+  const a = (f && f.departure && f.departure.airport && f.departure.airport.iata) || "";
+  const b = (f && f.arrival && f.arrival.airport && f.arrival.airport.iata) || "";
+  return a === "SEA" ? b : a;
+}
+__name(seaFarIata, "seaFarIata");
 
 // YVR — the Sitecore OData endpoint behind yvr.ca. Cloudflare 403s every
 // curl we tried, but the Worker's egress is a different animal: this
@@ -9608,10 +9860,43 @@ const AUTHORITY_HANDLERS = {
     const f = sfoParseFeed(t, dir, Date.now());
     return f.length ? f : null;
   } },
-  sea: { tz: "America/Los_Angeles", source: "sea-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText(`sea/${dir}`, `https://www.portseattle.org/sea-tac/flight-status?flightNo=&airline=&city=&arr_or_depart=${dir === "dep" ? "D" : "A"}&flight_date=`, "flight-status", 120);
-    if (!t) return null;
-    const f = seaParsePage(t, dir, Date.now());
+  // v24071 — farShared: a far-end lookup (/fararr, /acinfo, the operator
+  // evidence) reads this airport from the boards' shared copy
+  // (authorityFarList), never by walking its pages again. noAircraft: its rows
+  // carry no aircraft type or registration, so /acinfo has nothing to read
+  // there and never asks for its list.
+  sea: { tz: "America/Los_Angeles", source: "sea-authority", farShared: true, noAircraft: true, list: async (dir, env) => {
+    // v24071 — the board's hours, page by page (seaWindowParts); it was the
+    // first page of the city order, three cities. Tomorrow's parts are a
+    // later day (feedLaterDay): whole or not at all, and their failure
+    // leaves today's rows live.
+    const now = Date.now();
+    const today = feedLocalDay(SEA_TZ, now);
+    const parts = seaWindowParts(now);
+    // Every page of a part under one key for the part's slot (see above).
+    // At most SEA_OPEN_PAGES of its pages open at once (seaLimiter).
+    const lim = seaLimiter(SEA_OPEN_PAGES);
+    const ask = (pt) => {
+      const ttl = pt.hot ? SEA_NOW_TTL_S : SEA_LATER_TTL_S;
+      const gen = Math.floor(now / (ttl * 1000));
+      return (url, p) => lim(() => fetchAuthorityText(`sea/${dir}/${pt.day}/${pt.from}-${pt.to}/${gen}/${p}`, url, "flight-status", ttl));
+    };
+    // The parts together; a dead one fails its day: today's makes the answer
+    // fail (the board keeps its last good list), tomorrow's leaves tomorrow
+    // out. In time order, so an hour's :00 rows read in two parts are kept
+    // from the earlier one, the part asked more often (seaMergeRows).
+    const walk = async (ps) => {
+      const got = await Promise.all(ps.map((pt) => seaWalkPart(ask(pt), dir, pt, now)));
+      return got.some((r) => r == null) ? null : got;
+    };
+    const lists = await walk(parts.filter((x) => x.day <= today));
+    if (!lists) return null;
+    const later = parts.filter((x) => x.day > today);
+    if (later.length) {
+      const tm = await feedLaterDay(() => walk(later), SEA_TZ, later[0].day);
+      if (tm.whole && tm.value) lists.push(...tm.value);
+    }
+    const f = seaMergeRows(lists);
     return f.length ? f : null;
   } },
   yvr: { tz: "America/Vancouver", source: "yvr-authority", list: async (dir, env) => {
@@ -12303,15 +12588,18 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           "Content-Type": "application/json", "Cache-Control": "public, max-age=300", "X-Acinfo-Cache": "hit", ...corsHeaders(origin) } });
       } catch (e) {}
       const out = { f, type: null, reg: null, source: null, basis: null };
+      // v24071 — a feed whose rows carry no aircraft (h.noAircraft: Sea-Tac)
+      // is not read for one
       const h = other && AUTHORITY_HANDLERS[other];
-      if (h) {
+      if (h && !h.noAircraft) {
         try {
           const _ixKey = new Request(`https://acinfo-index/v1/${other}/${at}`);
           let index = null;
           const ih = await _acCache.match(_ixKey);
           if (ih) index = await ih.json();
           else {
-            index = acFeedIndexRows(await h.list(at, env));
+            // v24071 — through authorityFarList (the shared copy of a page-by-page feed)
+            index = acFeedIndexRows(await authorityFarList(env, other, at));
             await _acCache.put(_ixKey, new Response(JSON.stringify(index), { headers: {
               "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } }));
           }
@@ -13732,6 +14020,14 @@ export {
   sfoParseFeed,
   _adbDeadEnrichment,
   seaParsePage,
+  seaRevisedTime,
+  seaPageRowCount,
+  seaWindowParts,
+  seaPageUrl,
+  seaPageLast,
+  seaWalkPart,
+  seaLimiter,
+  seaMergeRows,
   yvrParseFeed,
   ylwParseFeed,
   yxxParseFeed,
