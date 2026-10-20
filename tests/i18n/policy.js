@@ -64,6 +64,10 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/shared-names.js',
   'fids-current/js/airport-coords.js',
   'fids-current/js/airport-runways.js',
+  // the positions, clocks and names of every other place the boards can
+  // meet (v24070; the Earth floor loads it at run time and alone reads it):
+  // codes, numbers, zone names and place names, no words of its own
+  'fids-current/js/earth-places.js',
   'fids-current/js/studio-airports.js',
   'fids-current/data/airline-colors.js'
 ];
@@ -229,6 +233,9 @@ const DATA_TABLES = {
     FIDS_SHARED_WORDMARK: 'data: airline wordmark files'
   },
   'fids-current/js/airport-coords.js': { AIRPORT_COORDS: 'data: airport positions' },
+  // (v24070: the names of the places CITY and CITY_FR do not name, which only
+  // the map under the rows reads; decision D2)
+  'fids-current/js/earth-places.js': { NAME: 'data: city names, the map\'s own (decision D2)' },
   'fids-current/js/airport-runways.js': { AIRPORT_RUNWAYS: 'data: runway geometry' },
   'fids-current/js/studio-airports.js': { AIRPORTS: 'data: airport names for the Studio (decision D2)' },
   'fids-current/data/airline-colors.js': { AIRLINE_BRAND_COLORS: 'data: airline colours' },

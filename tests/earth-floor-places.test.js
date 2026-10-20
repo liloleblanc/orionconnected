@@ -623,14 +623,17 @@ test('a place the board can name only by its code is not on the map (its positio
   assert.deepEqual(P.list.map((p) => p.code), ['PNA'], '\'Ebm\' is not drawn');
   assert.equal(P.next.code, 'PNA', 'and the next flight is the next one it can name');
   const MOD = fs.readFileSync(path.join(JS, 'fids-earth.js'), 'utf8');
-  assert.match(MOD, /function hasName\(code, text\) \{[\s\S]{0,300}return \(nameSeen\[k\] = namedBy\(boardFns\(\), code, text\)\);/);
+  assert.match(MOD, /function hasName\(code, text\) \{[\s\S]{0,600}var B = boardFns\(\);\s*return \(nameSeen\[k\] = namedBy\(B, code, text\) && !misread\(B, code, text\)\);/);
   assert.match(MOD, /if \(o\.named && !o\.named\(c, text\)\) return;/);
   // and its positions are the board's own tables as the page loaded them,
   // never the airport cache the gate map fills at run time (from the
   // AeroDataBox passthrough the boards no longer use)
   assert.doesNotMatch(MOD, /_lookupAirport\(/, 'the map never reads the board\'s airport cache');
   assert.match(MOD, /var GATE0 = \{\};\s*try \{[^\n]*Object\.keys\(GATE_AP\)\.forEach\(function \(k\) \{ GATE0\[k\] = GATE_AP\[k\]; \}\)/);
-  assert.match(MOD, /function coordsOf\(c\) \{[\s\S]{0,400}GATE0\[c\][\s\S]{0,40}return v;/);
+  // (v24070: the board's tables first, boardAt, then the floor's own,
+  // js/earth-places.js: tests/earth-places.test.js)
+  assert.match(MOD, /function boardAt\(c\) \{[\s\S]{0,400}GATE0\[c\][\s\S]{0,40}return v;/);
+  assert.match(MOD, /function coordsOf\(c\) \{\s*var v = boardAt\(c\);\s*if \(!v && PLACES && PLACES\.AT && Object\.prototype\.hasOwnProperty\.call\(PLACES\.AT, c\)\) v = asPair\(PLACES\.AT\[c\]\);\s*return v;/);
 });
 
 test('every Québec airport on the French-first list that has a position has a zone and a name', () => {
@@ -722,7 +725,7 @@ test('a place is named when the board\'s tables name its code, or its row gives 
   assert.equal(E.namedBy(BF, 'KM8', 'Musselwhite | KM8'), true, 'KM8, as before');
   // the browser's hasName is this rule, over the board's own tables
   const MOD = fs.readFileSync(path.join(JS, 'fids-earth.js'), 'utf8');
-  assert.match(MOD, /function hasName\(code, text\) \{[\s\S]{0,300}return \(nameSeen\[k\] = namedBy\(boardFns\(\), code, text\)\);/);
+  assert.match(MOD, /function hasName\(code, text\) \{[\s\S]{0,600}var B = boardFns\(\);\s*return \(nameSeen\[k\] = namedBy\(B, code, text\) && !misread\(B, code, text\)\);/);
   assert.match(MOD, /inTables: function \(c\) \{ try \{ return !!\(\(typeof CITY !== 'undefined' && CITY\[c\]\) \|\| \(typeof CITY_FR !== 'undefined' && CITY_FR\[c\]\)\); \}/);
   assert.doesNotMatch(MOD, /replace\(\/\[\^A-Za-z0-9\]\/g, ''\)/, 'no letter is taken out of a name');
 });
@@ -935,8 +938,9 @@ test('a coded row whose words list its stops is named on the map by its code: Or
   assert.equal(E.cityNameOf(BF, 'TRS', '', 'en'), 'Trieste', 'and a row with no words by its table name');
   // the browser's cityName is this one, and it names every place the floor draws
   const MOD = fs.readFileSync(path.join(JS, 'fids-earth.js'), 'utf8');
-  assert.match(MOD, /function cityName\(code, raw, l\) \{ return cityNameOf\(boardFns\(\), code, raw, l\); \}/);
-  assert.match(MOD, /var names = langs\.map\(function \(l\) \{ return cityName\(p\.code, raw, l\); \}\);/);
+  // (v24073: and the brief form of a next flight's name with its country, 'Hamilton, AU')
+  assert.match(MOD, /function cityName\(code, raw, l, brief\) \{ return cityNameOf\(boardFns\(\), code, raw, l, brief\); \}/);
+  assert.match(MOD, /var names = langs\.map\(function \(l\) \{ return cityName\(p\.code, raw, l, p\.brief\); \}\);/);
   // no name the sweep's floors draw is a list
   const FX = require('./fixtures/earth-sweep-2026-10-19.json');
   for (const fl of FX.floors) for (const p of fl.places) for (const nm of [p[4]].concat(p[5])) assert.doesNotMatch(nm, /,/, fl.id + ' ' + p[0]);

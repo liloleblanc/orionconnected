@@ -151,20 +151,25 @@ const SCENES = [
 
 function inside(b, x, y, pad) { return x > b.x0 - pad && x < b.x1 + pad && y > b.y0 - pad && y < b.y1 + pad; }
 
-test('every name lies inside the floor, off every route (or the route is cut away), and clear of every other name', () => {
+// (v24070: no other place's route passes under a name, as no other place's
+// dot does: within 2 px of its box, the route's points standing 3 px apart.
+// Its own route is cut away under it, and no other route is: each route has
+// its own mask, so a route beside a name is never cut short)
+test('every name lies inside the floor, no other place\'s route runs under it, its own is cut away, and it is clear of every other name', () => {
   for (const s of SCENES) {
     const places = placesFor(s.ap, s.codes, NAMES, s.now);
     const L = draw(s.ap, places, s.W, s.H, 'en', ['en', 'fr'], s.now);
     const tag = s.ap + ' ' + s.W + 'x' + s.H;
     assert.ok(L.labels.length >= 1, tag + ': names something');
-    const CLEAR = L.full ? 6 : 4;
+    assert.ok(L.knockouts.every((k) => L.labels.some((lab) => lab.code === k.code)), tag + ': every cut is a name\'s own');
     L.labels.forEach((lab, i) => {
       const b = lab.box;
       assert.ok(b.x0 >= 0 && b.y0 >= 0 && b.x1 <= s.W && b.y1 <= s.H, `${tag}: ${lab.code} is cut by the floor's edge ${JSON.stringify(b)}`);
       for (const m of L.marks) {
-        if (!inside(b, m.x, m.y, CLEAR)) continue;
-        if (m.code === lab.code && Math.hypot(m.x - lab.at.x, m.y - lab.at.y) < 14) continue;   // its own route, into its own dot
-        assert.ok(L.knockouts.some((k) => inside(k, m.x, m.y, 0)), `${tag}: a route runs under ${lab.code} and is not cut away`);
+        if (m.code !== lab.code) { assert.ok(!inside(b, m.x, m.y, 2), `${tag}: ${m.code}'s route runs under ${lab.code}`); continue; }
+        if (!inside(b, m.x, m.y, 4)) continue;
+        if (Math.hypot(m.x - lab.at.x, m.y - lab.at.y) < 14) continue;   // its own route, into its own dot
+        assert.ok(L.knockouts.some((k) => k.code === lab.code && inside(k, m.x, m.y, 0)), `${tag}: ${lab.code}'s own route runs under it and is not cut away`);
       }
       L.labels.forEach((o, j) => {
         if (j <= i) return;
