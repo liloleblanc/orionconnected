@@ -325,7 +325,10 @@ test("each airline's cabins, named the way it names them", () => {
   assert.match(subs('UA', { cat: 'widebody' }), / 1=- /, 'a widebody: Polaris or Business, never guessed');
   assert.match(subs('UA', {}), / 1=- /, 'an unknown type: none');
   assert.ok(!/cabinFirst|cabinEcon\b/.test(subs('DL')), "Delta: no 'First Class' or 'Economy Class'");
-  assert.match(subs('AA'), / 1=- 2=- 3=- 4=- 5=cabinMainAA 6=cabinMainAA 7•8=cabinMainAA 9=cabinMainAA/, "American: Main Cabin, its word");
+  // (2026-10-20: American's table names the Main Cabin for Groups 7 and 8
+  // only; Group 5 is Preferred boarding, Group 6 its members, Group 9 Basic
+  // Economy, each named in its list or at the switch)
+  assert.match(subs('AA'), / 1=- 2=- 3=- 4=- 5=- 6=- 7•8=cabinMainAA 9=-$/, "American: Main Cabin, its word, where its table says it");
   assert.ok(!/cabinFirst|cabinEcon\b/.test(subs('AS')), 'Alaska: named in the who-lists');
   assert.deepEqual(SEQ.plan('PD').cabins, ['pdReserve', 'pdClassic'], "Porter's cabins by its own names");
   assert.deepEqual(SEQ.plan('ZZ', { cabins: ['cabinFirst', 'cabinEcon'] }).cabins, ['cabinFirst', 'cabinEcon'], 'a carrier with no table gets the map');

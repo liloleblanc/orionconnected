@@ -51,6 +51,11 @@
   // names Premium Economy only on a widebody (prioWhoAA4w), and United's
   // Group 1 names its premium cabins in its own words where no cabin line
   // does (prioWhoUA1w, prioWhoUA1c).
+  // A GENERAL CALL NAMES WHO IT IS FOR TOO, where the airline's page says
+  // it (genWho* in the store): Delta's Zones 5 to 7, American's Groups 5
+  // and 6, Southwest's Groups 3 to 7, Frontier's Groups 2 to 5. The last
+  // call is the switch to everyone (GENERAL BOARDING / ALL ZONES), which
+  // names nobody: everyone still waiting may board.
   //
   // EACH STAGE NAMES ITS OWN CABIN, OR NONE. A sub is a key, or a list of
   // [condition, key] read in order (the first that holds wins, none: no
@@ -69,7 +74,7 @@
   function pre(who, sub) { return { kind: 'pre', title: 'preboard', who: who || '', sub: sub || '' }; }
   function prio(label, value, sub, who) { return { kind: 'prio', label: label || '', value: value || '', sub: sub || '', who: who || '' }; }
   function fam(title, who) { return { kind: 'fam', title: title, who: who || '' }; }
-  function gen(label, value, sub) { return { kind: 'gen', label: label || '', value: value || '', sub: sub || '' }; }
+  function gen(label, value, sub, who) { return { kind: 'gen', label: label || '', value: value || '', sub: sub || '', who: who || '' }; }
   function gens(label, values, sub) { return values.map(function (v) { return gen(label, v, sub); }); }
   function allPax(sub) { return { kind: 'gen', title: 'allPax', sub: sub || '' }; }
 
@@ -192,15 +197,23 @@
     // Medallion, Delta Premium Select), Early Access (car seats and
     // strollers, an unlabeled row between Zone 2 and Zone 3), Zone 3 ("Delta
     // Comfort customers"), Zone 4 (Medallion elites, Sky Priority lane),
-    // Zones 5 to 8 (Delta Main Extra, Classic and Basic). Delta's cabins are
-    // brands, so they are named in the who-lists.
+    // then the General Boarding lane: Zone 5 (Silver Medallion, Delta
+    // Corporate Travelers, the Delta SkyMiles Gold, Platinum and Reserve
+    // American Express Card Members, the partner Silver tiers, Delta Main
+    // Extra), Zone 6 (SkyMiles members in Delta Main Classic), Zone 7
+    // (non-members in Delta Main Classic), Zone 8 (Delta Main Basic, the
+    // last call: the switch to everyone). Delta's cabins are brands, so they
+    // are named in the who-lists. Zones 5 to 8 read 2026-10-20 (boarding
+    // priority, en, fr-ca, es, pt, ja, zh; the Silver Medallion page puts
+    // Zone 5 in the General Boarding lane, the Sky Priority page puts Zones 1
+    // to 4 in its own).
     DL: {
       src: 'https://www.delta.com/us/en/check-in-security/boarding-priority',
       srcFr: 'https://fr.delta.com/ca/fr/check-in-security/boarding-priority',
-      checked: '2026-10-12', conf: 'high', prioAnyTime: false,
+      checked: '2026-10-20', conf: 'high', prioAnyTime: false,
       stages: [pre('preboardWhoDL'), prio('zone', '1', '', 'prioWhoDL1'), prio('zone', '2', '', 'prioWhoDL2'),
-        fam('earlyAccess', 'earlyAccessWhoDL'), prio('zone', '3', '', 'prioWhoDL3'), prio('zone', '4', '', 'prioWhoDL4')]
-        .concat(gens('zone', ['5', '6', '7', '8']))
+        fam('earlyAccess', 'earlyAccessWhoDL'), prio('zone', '3', '', 'prioWhoDL3'), prio('zone', '4', '', 'prioWhoDL4'),
+        gen('zone', '5', '', 'genWhoDL5'), gen('zone', '6', '', 'genWhoDL6'), gen('zone', '7', '', 'genWhoDL7'), gen('zone', '8')]
     },
     // American: special assistance, then ConciergeKey, First and Business
     // (three rows on American's table, called as one step here: one after
@@ -208,17 +221,22 @@
     // families with children under 2, then Groups 1 to 9 (Groups 1 to 4 the
     // elites and oneworld tiers, so no cabin line; Group 4 names Premium
     // Economy in its list only on a widebody, the only aircraft American
-    // flies it on; 7 and 8 are one row on American's table; Groups 5 to 9
-    // board the Main Cabin).
+    // flies it on). Then general boarding, as American's table words it
+    // (read 2026-10-20 in each of its languages): Group 5, "Preferred
+    // boarding" (Main Cabin Extra, members who earn 15,000 Loyalty Points,
+    // eligible cardmembers, Business Select), no cabin line, its list names
+    // them; Group 6, "AAdvantage members"; Groups 7 and 8, one row, "Main
+    // cabin", its cabin line; Group 9, "Basic Economy", the last call: the
+    // switch to everyone.
     AA: {
       src: 'https://www.aa.com/web/i18n/travel-info/boarding-process.html',
       srcFr: 'https://www.aa.com/web/i18n/travel-info/boarding-process.html?locale=fr_CA',
-      checked: '2026-10-12', conf: 'high', prioAnyTime: false,
+      checked: '2026-10-20', conf: 'high', prioAnyTime: false,
       stages: [pre('preboardWhoAA'), prio('', '', '', 'prioWhoAA'), fam('familyBoard', 'familyWhoAA'),
         prio('groupLabel', '1', '', 'prioWhoAA1'), prio('groupLabel', '2', '', 'prioWhoAA2'), prio('groupLabel', '3', '', 'prioWhoAA3'), prio('groupLabel', '4', '', [['wide', 'prioWhoAA4w'], ['*', 'prioWhoAA4']]),
-        gen('groupLabel', '5', 'cabinMainAA'), gen('groupLabel', '6', 'cabinMainAA'),
+        gen('groupLabel', '5', '', 'genWhoAA5'), gen('groupLabel', '6', '', 'genWhoAA6'),
         { kind: 'gen', label: 'groupLabel', values: ['7', '8'], sub: 'cabinMainAA' },
-        gen('groupLabel', '9', 'cabinMainAA')]
+        gen('groupLabel', '9')]
     },
     // Alaska, and Hawaiian since 2026-04-22: Preboarding, Priority Boarding
     // ("First Class", "Atmos Titanium"), Group A (Atmos Million Milers,
@@ -236,12 +254,19 @@
     },
     // Southwest (assigned seats since 2026-01-27): Preboarding, Priority
     // Boarding (with active-duty military), A-List Preferred (its own row,
-    // before Group 1), Groups 1 and 2, then Groups 3 to 8.
+    // before Group 1), Groups 1 and 2, then Groups 3 to 8 (assigned-seating
+    // page, read 2026-10-20): Choice Preferred fares board in Groups 3 and
+    // 4, Rapid Rewards Credit Cardmembers in Group 5, Choice fares anywhere
+    // from Group 3 to Group 7 by seat (so Groups 3 to 7 each name them),
+    // Basic fares last, Group 8: the switch to everyone. A reservation
+    // boards together; there is no family call.
     WN: {
       src: 'https://support.southwest.com/helpcenter/article/boarding-process',
-      checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoWN'), prio('', '', '', 'prioWhoWN'), prio('', '', '', 'prioWhoWNalp'), prio('groupLabel', '1', '', 'prioWhoWN1'), prio('groupLabel', '2', '', 'prioWhoWN2')]
-        .concat(gens('groupLabel', ['3', '4', '5', '6', '7', '8']))
+      srcGroups: 'https://www.southwest.com/customer-enhancements/assigned-seating/',
+      checked: '2026-10-20', conf: 'high', prioAnyTime: false,
+      stages: [pre('preboardWhoWN'), prio('', '', '', 'prioWhoWN'), prio('', '', '', 'prioWhoWNalp'), prio('groupLabel', '1', '', 'prioWhoWN1'), prio('groupLabel', '2', '', 'prioWhoWN2'),
+        gen('groupLabel', '3', '', 'genWhoWN34'), gen('groupLabel', '4', '', 'genWhoWN34'), gen('groupLabel', '5', '', 'genWhoWN5'),
+        gen('groupLabel', '6', '', 'genWhoWN67'), gen('groupLabel', '7', '', 'genWhoWN67'), gen('groupLabel', '8')]
     },
     // JetBlue: Pre-boarding, Groups 1 to 3, Courtesy Boarding (military, car
     // seats and strollers), then Groups 4 to 8.
@@ -253,13 +278,17 @@
         fam('courtesyBoard', 'courtesyWhoB6')].concat(gens('groupLabel', ['4', '5', '6', '7', '8']))
     },
     // Frontier: Preboarding (with Elite Diamond), Group 1, Groups 2 to 7 (6
-    // and 7 are one row on Frontier's page).
+    // and 7 are one row on Frontier's page). Who Groups 2 to 5 are for is
+    // Frontier's own list (read 2026-10-20, en and es, last modified
+    // 2026-02-20); Groups 6 and 7, "Remaining passengers with Basic fares",
+    // are the last call: the switch to everyone.
     F9: {
       src: 'https://faq.flyfrontier.com/help/frontier-boarding-process',
-      checked: '2026-10-12', conf: 'high', prioAnyTime: false,
-      stages: [pre('preboardWhoF9'), prio('groupLabel', '1', '', 'prioWhoF9g1')]
-        .concat(gens('groupLabel', ['2', '3', '4', '5']))
-        .concat([{ kind: 'gen', label: 'groupLabel', values: ['6', '7'] }])
+      srcEs: 'https://es.flyfrontier.com/sdfaq/help/frontier-boarding-process',
+      checked: '2026-10-20', conf: 'high', prioAnyTime: false,
+      stages: [pre('preboardWhoF9'), prio('groupLabel', '1', '', 'prioWhoF9g1'),
+        gen('groupLabel', '2', '', 'genWhoF9g2'), gen('groupLabel', '3', '', 'genWhoF9g3'), gen('groupLabel', '4', '', 'genWhoF9g4'), gen('groupLabel', '5', '', 'genWhoF9g5'),
+        { kind: 'gen', label: 'groupLabel', values: ['6', '7'] }]
     },
     // Calm Air: "Pre-boarding is offered to passengers traveling with small
     // children, unaccompanied minors, persons with disabilities, or for those
@@ -519,7 +548,14 @@
     while (i < st.length) {
       var a = st[i], b = st[i + 1];
       if (a.kind === 'gen' && b && b.kind === 'gen' && a.values.length && b.values.length && !a.merged && !b.merged) {
-        out.push({ kind: 'gen', label: a.label, values: coverPlus(a.values.concat(b.values)), sub: common([a, b], 'sub'), side: 'R', merged: true });
+        // WHO A MERGED GENERAL CALL IS FOR, as mergePrio does it: the one
+        // list both calls share (Southwest's Groups 3 • 4), or each call's
+        // own (Delta's Zones 5 • 6, joined per language on the sign); none
+        // when one of them names nobody, so a list never stands for a call
+        // it leaves out.
+        var cw = common([a, b], 'who');
+        var ws = (!cw && a.who && b.who) ? [a.who, b.who] : [];
+        out.push({ kind: 'gen', label: a.label, values: coverPlus(a.values.concat(b.values)), sub: common([a, b], 'sub'), who: cw, whos: ws, side: 'R', merged: true });
         i += 2; did = true;
       } else { out.push(a); i++; }
     }
