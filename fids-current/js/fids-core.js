@@ -34553,7 +34553,16 @@ function _fidsFeedNoticeUpdate() {
 try {
   if (typeof window !== 'undefined') {
     window._fidsFeedNoticeUpdate = _fidsFeedNoticeUpdate;
-    window.addEventListener('fids-feed-status', function () { try { _fidsFeedNoticeUpdate(); } catch (e) {} });
+    window.addEventListener('fids-feed-status', function () {
+      try { _fidsFeedNoticeUpdate(); } catch (e) {}
+      // v24074 — a board still saying it is loading hears at once that the
+      // feed of the direction on screen is down (render: _fidsFeedKnownDown),
+      // not only once the other direction has answered too
+      try {
+        var _pl = document.getElementById('panelLoading');
+        if (_pl && _pl.style.display === 'block' && typeof render === 'function') render();
+      } catch (e) {}
+    });
   }
 } catch (e) {}
 
@@ -34600,6 +34609,9 @@ function _fidsBoardWordsFollowLangs() {
     if (hb && hb.firstChild && typeof mode !== 'undefined') hb.innerHTML = _boardLabelBilingual(mode);
     var pe = document.getElementById('panelEmpty');
     if (pe && pe.style.display === 'block') setState('empty', true);
+    // v24074 — the loading notice, while the first list is still coming
+    var pl = document.getElementById('panelLoading');
+    if (pl && pl.style.display === 'block') _fidsLoadingPanel(pl);
     // The cold-start error panel: its pair again, the operator's line kept.
     var px = document.getElementById('panelError');
     var pxOp = px && px.querySelector('.sub[data-operator]');
@@ -35789,11 +35801,16 @@ function render() {
   // panel shows immediately, and setState() gives it the "no live data"
   // wording rather than "no flights in window".
   var _apNow = (document.getElementById('apSel') || {}).value || '';
-  setState('empty',   !allFiltered.length && (window._initialFetchDone === true || !_fidsAirportHasFeed(_apNow)));
+  // v24074 — until the first list of this airport is in, the board says it
+  // is loading (_fidsFirstListPending); a direction already known to be down
+  // says so at once; a cold start that failed keeps its error panel up.
+  if (!allFiltered.length && _fidsFirstListPending(_apNow)) setState('loading', true);
+  else if (!allFiltered.length && window._initialFetchDone !== true && window._fidsColdFailAp === String(_apNow).toUpperCase()) setState('error', true);
+  else setState('empty', !allFiltered.length && (window._initialFetchDone === true || !_fidsAirportHasFeed(_apNow) || _fidsFeedKnownDown(_apNow)));
   _fidsFeedNoticeUpdate();   // v23996 — the stale strip follows what is on screen
   // Until the first fetch resolves, the empty array is just "still loading",
   // not "no flights". Don't flash "No Flights" prematurely. The loading
-  // panel stays visible (set by the caller) until data arrives.
+  // panel stays visible (set just above, v24074) until data arrives.
   if (!allFiltered.length && window._initialFetchDone !== true) {
     tbl.style.display = 'none';
     return;
@@ -36395,6 +36412,54 @@ function _fidsAirportHasFeed(code) {
     return FIDS_LIVE_AIRPORTS.has(c);
   } catch (e) { return true; }
 }
+// v24074 — A NEW SCREEN SAYS IT IS LOADING WHILE ITS FIRST FLIGHTS ARRIVE.
+// Seattle's first answer takes the worker 23.5 s for departures and 34 s for
+// arrivals, one after the other, when its shared copy has expired (measured
+// 2026-10-20; it reads about 16 of Sea-Tac's pages). A brand-new screen sat
+// all that time on the old world-network picture with no rows and no words:
+// the boot loader leaves after 8 s, fetchLive put the loading panel up, and
+// the next render() took it down again, because setState('empty', false)
+// hides every panel and render() runs within half a second of boot.
+// The board now says it is loading, in its own notice box and its
+// languages, French first in Québec (_fidsLoadingPanel), for as long as it
+// waits for the first list of the airport on screen:
+//   · a live board only: a demonstration board's rows are its own, at once;
+//   · an airport with a feed: one with none says so at once (setState);
+//   · until that first list is in (_initialFetchDone), or the direction on
+//     screen is known to be down with nothing to show (then it says the live
+//     data is unavailable, as it would after the first answer), or the first
+//     fetch failed outright (the error panel stays up: _fidsColdFailAp);
+//   · and again when the airport is changed on the screen, which clears its
+//     rows, until that airport's own first list is in (_fidsRefillAp).
+// Never on a renewal: a board with rows keeps them while it renews, and one
+// that has had its first answer goes on saying what that answer said.
+function _fidsFirstListPending(ap) {
+  try {
+    var code = String(ap || '').toUpperCase();
+    if (!code || (typeof LIVE_MODE !== 'undefined' && !LIVE_MODE)) return false;
+    if (!_fidsAirportHasFeed(code)) return false;
+    if (window._fidsColdFailAp === code) return false;
+    if (window._initialFetchDone === true && window._fidsRefillAp !== code) return false;
+    return !_fidsFeedKnownDown(code);
+  } catch (e) { return false; }
+}
+// The direction on screen has nothing, and its feed has said it cannot give
+// anything (no last good list either): the board says so before the other
+// direction has answered.
+function _fidsFeedKnownDown(ap) {
+  var fd = _fidsFeedDownFor(ap, (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep');
+  return !!(fd && fd.state === 'unavailable');
+}
+// The loading notice: the store's words (appLoading, the companion app's
+// 'Loading flights…'), one pair in the board's languages, each half whole on
+// its line, in the feed notices' box (.ffn-box: light ink on a dark plate).
+// Nothing in it moves.
+function _fidsLoadingPanel(el) {
+  if (!el) return;
+  var html = '<div class="ffn-box">' + _fidsFeedPairHtml('appLoading') + '</div>';
+  if (el._fidsHtml !== html || !el.firstChild) { el.innerHTML = html; el._fidsHtml = html; }
+  el.classList.add('fids-loading');
+}
 // v24069 — the no-feed notice ("No live data for this airport") is drawn as
 // the feed-down one is: in the board's own notice box (.ffn-box, light ink on
 // a dark plate; .fids-no-feed), so it reads on every ground a theme paints
@@ -36405,6 +36470,7 @@ function setState(which, show) {
     document.getElementById('panel'+id.charAt(0).toUpperCase()+id.slice(1)).style.display =
       (id === which && show) ? 'block' : 'none';
   });
+  if (which === 'loading' && show) { try { _fidsLoadingPanel(document.getElementById('panelLoading')); } catch (e) {} }
   if (which === 'empty' && !show) { try { var _pe = document.getElementById('panelEmpty'); _pe.classList.remove('fids-feed-down'); _pe.classList.remove('fids-no-feed'); } catch (e) {} }
   if (which === 'empty' && show) {
     try { document.getElementById('panelEmpty').classList.remove('fids-no-feed'); } catch (e) {}
@@ -42080,6 +42146,7 @@ async function fetchLive() {
       clearInterval(autoRefreshTimer);
       autoRefreshTimer = null;
     }
+    window._fidsRefillAp = null;   // v24074 — no list is coming: nothing to wait for
     return;
   }
   const iata = document.getElementById('apSel').value;
@@ -42090,7 +42157,10 @@ async function fetchLive() {
   // screen; the loader only covers the genuine cold start.
   if (window._initialFetchDone !== true) {
     document.getElementById('fidsTable').style.display = 'none';
-    setState('loading', true);
+    // v24074 — only a board that is waiting for its first list says so
+    // (_fidsFirstListPending): an airport with no feed says that instead, and
+    // the retry after a cold start that failed keeps its error panel up
+    if (_fidsFirstListPending(iata)) setState('loading', true);
   }
   document.getElementById('liveLabel').textContent = 'LIVE'; // i18n-ok: operator
 
@@ -42208,6 +42278,10 @@ async function fetchLive() {
     mode = 'dep';
     setState('loading', false);
     window._initialFetchDone = true;
+    // v24074 — this airport's first list is in: the board stops waiting for
+    // it (_fidsFirstListPending), and a cold start that failed earlier is over
+    if (window._fidsRefillAp === String(iata || '').toUpperCase()) window._fidsRefillAp = null;
+    window._fidsColdFailAp = null;
     document.getElementById('lastUp').textContent =
       'LIVE · ' + new Date().toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' }); // i18n-ok: operator
     // v23996 — …unless the feed is not live: then the toolbar says so too,
@@ -42231,7 +42305,12 @@ async function fetchLive() {
     // 5-min background refresh must NOT flash the error over a live gate/board
     // (part of the recurring 'glitch' — a transient network blip covered the
     // screen). Keep the last good screen; just log it and try again next cycle.
+    // v24074 — and the board stops saying it is loading: a cold start that
+    // failed keeps this panel up (render), an airport just changed to says
+    // what an answer with nothing in it says
+    if (window._fidsRefillAp === String(iata || '').toUpperCase()) window._fidsRefillAp = null;
     if (window._initialFetchDone !== true) {
+      window._fidsColdFailAp = String(iata || '').toUpperCase();
       const p = document.getElementById('panelError');
       // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
       // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
@@ -43087,6 +43166,11 @@ function onApChange() {
   applyAirportConfigToBoard(iata);
   changesFeed.length = 0;
   Object.keys(prevFlightStates).forEach(k => delete prevFlightStates[k]);
+  // v24074 — a board that had its first list starts over here: its rows are
+  // cleared, and until this airport's own first list is in it says it is
+  // loading, not "no flights in window" (_fidsFirstListPending). At boot the
+  // first list is not in yet, which says the same.
+  if (LIVE_MODE && window._initialFetchDone === true) window._fidsRefillAp = iata;
   // Clear stale flights from the previous airport — without this, old
   // flights linger on the board until the fetch for the new airport
   // returns. User would see e.g. Moncton flights with a Honolulu header.
@@ -43094,7 +43178,9 @@ function onApChange() {
   data.arr = [];
   // Show the loading screen so the user knows new data is being fetched
   // (instead of seeing the old data quietly persist).
-  setState('loading', true);
+  // v24074 — when this airport has a list to wait for (an airport with no
+  // feed says so at once: render below)
+  if (_fidsFirstListPending(iata)) setState('loading', true);
   // Re-render now to clear the table immediately
   try { render(); } catch(e) {}
   currentPage = 0; mobileCurrentPage = 0;
