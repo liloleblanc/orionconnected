@@ -1,58 +1,67 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// EARTH, NOW — EVERY FLOOR THE OVERNIGHT SWEEP RECORDED, LAID OUT AGAIN
+// EARTH, NOW — EVERY FLOOR RECORDED, LAID OUT AGAIN
 //
-// On 2026-10-19 every airport's live departures board was loaded at
-// 1920x1080 (build v24064) and its floor recorded: the view it was drawn in,
-// its size, the page's rows, the moment and the board's languages
-// (tests/fixtures/earth-sweep-2026-10-19.json, 94 floors with rows from the
-// sweep, its two rechecks and its reruns: 67 full maps, 27 strips). The
-// fixture holds each page's places AS THIS BUILD READS THEM, IN THE ORDER OF
-// THE PAGE'S ROWS: a row with no code that the map now reads stands where it
-// stood on the page (read off the floor's full-board screenshot: Philadelphia's
-// 'Harrisburg, PA' and 'Cincinnati, OH' are its first two rows), with this
-// build's positions, zones and names (Yellowknife's Norman Wells, Taloyoak
-// and Kugluktuk, LaGuardia's West Palm Beach, the rows at Philadelphia and
-// Québec), so what is checked is what ships. It also holds
-// the board's font as the floor measures it (Bricolage Grotesque at weight
-// 700: each character's advance and each pair's kerning, from the repo's
-// woff2), so every width here is the width on the board (Chrome's own
-// canvas agrees within 0.15 px), and what main named on main's own page with
-// those widths, and which of those names were in a conflict. Laid out again
-// here, on those very views:
+// Two sets of recorded floors, each with the view it was drawn in, its size,
+// the page's rows, the moment and the board's languages:
+//   · tests/fixtures/earth-sweep-2026-10-19.json: the overnight sweep of
+//     every airport's live departures board at 1920x1080 (build v24064),
+//     its two rechecks and its reruns: 94 floors with rows, 67 full maps
+//     and 27 strips;
+//   · tests/fixtures/earth-live-2026-10-19.json: every board's floor
+//     recorded live on v24067 the same day (31 boards with rows; the 32nd,
+//     Roberval's, showed no flights) and the 14 floors the second pass, its
+//     arrivals pass and the rechecks recorded on v24067 that evening: 45
+//     floors, 37 full maps.
+// Each holds the page's places AS THIS BUILD READS THEM, IN THE ORDER OF THE
+// PAGE'S ROWS (a row with no code that the map now reads stands where it
+// stood on the page: Philadelphia's 'Harrisburg, PA' and 'Cincinnati, OH'
+// are its first two rows), with this build's positions, zones and names, so
+// what is checked is what ships. Each also holds the board's font as the
+// floor measures it (Bricolage Grotesque at weight 700: each character's
+// advance and each pair's kerning, from the repo's woff2), so every width
+// here is the width on the board (Chrome's own canvas agrees within 0.15
+// px); what main (v24067) named on main's own page with those widths; which
+// of those names were in a conflict there; and each route of another place
+// that ran under one of main's names. Laid out again here, on those views:
 //
+//   · NO ROUTE RUNS UNDER ANOTHER PLACE'S NAME (v24070). A name crossed by
+//     another place's route is in a conflict, as a name by another place's
+//     dot is: it takes a clear spot, or it gives way as the rows' order
+//     says. Main drew 85 such crossings on these floors (main.under):
+//     Adelaide's and Perth's lines under 'Melbourne' at Sydney, Hobart's
+//     under 'Canberra', Auckland's under 'Christchurch', Birmingham's
+//     under 'Pittsburgh' at LaGuardia,
+//     Houston's and Dallas's under 'Atlanta' at Miami, Boston's under
+//     'Richmond' at New Orleans, Vancouver's under 'Montréal' at Halifax,
+//     Milan's and Munich's under 'Stockholm' at Keflavík. A name's own route
+//     is cut away under it, and no other route is.
 //   · A PLACE'S MARK is its dot, or the arrow where its route leaves the
-//     picture. No name stands clearly nearer another place's mark than its
-//     own (more than AMBIG px): it read as that place's (Kelowna's Nanaimo,
-//     Comox and Vancouver; LaGuardia's 'Cincinnati' 13 px from St Louis's
-//     dot). No name stands as near another place's mark as its own without a
-//     leader line to say which, and a name at an arrow never has one.
+//     picture. No name stands nearer another place's mark than its own, by
+//     any distance (v24070: v24067 let a name stand up to 6 px nearer, and it
+//     read as the neighbour's: Vancouver by Nanaimo's dot at Kelowna,
+//     Portland and Pittsburgh at LaGuardia, Hamilton at Edmonton, Canberra
+//     at Sydney). No name stands as near another place's mark as its own
+//     without a leader line to say which, and a name at an arrow never has
+//     one. What the rule costs is weighed here: a few names, against every
+//     name on these floors that stood nearer its neighbour's mark.
 //   · An arrow's own name is the nearest name to it (Heathrow: Madrid's arrow
 //     stood 24 px from 'Genève' and 34 px from 'Madrid').
 //   · No route leaves the lens between its airport and its place: never
 //     farther from either than they are from each other (Yellowknife's line
 //     to Calgary climbed 95 px to the Arctic and came back down).
 //   · No leader line crosses another, passes by another place's mark, or
-//     runs through another place's name (Edmonton's Toronto and Ottawa lines
-//     crossed in an X; Albany's ran up through 'Cleveland' at Washington
-//     National).
+//     runs through another place's name.
 //   · No two names touch.
-//   · A FLOOR NAMES FEWER PLACES THAN MAIN only where every name it lost was
-//     in a conflict on main, and no name it lost has a clear spot on its
-//     floor now. A name that stood clear on main is lost for one of four
-//     reasons, each checked: the rows above it, read now, fill the floor
-//     (Philadelphia: Nashville, Toronto); its dot would cost the name of a
-//     row above it (New Orleans: Boston's dot and Philadelphia's name); a
-//     city newly on the map has its dot where the name would stand
-//     (Yellowknife: Norman Wells and Fort Simpson; Miami: Cap-Haïtien and
-//     Bogotá; there the other choice names as many, an open choice); or
-//     naming it costs two (Sydney: Doha). A dot is never taken away for a
-//     name. Boston at Washington National, Nice at Heathrow, Cancún at
-//     Miami, Indianapolis and Austin at Phoenix and the others the second
-//     review's give-way left off are named.
-//   · The cap counts names, not places tried: places the floor cannot name
-//     give their slots to the next ones on the page (Ottawa named 3 of 5).
+//   · A FLOOR NAMES FEWER PLACES THAN MAIN only where each place it lost was
+//     in a conflict on main (a route under its name, a mark nearer it than
+//     its own, ...) and has no clear spot on the floor now, or is on a row
+//     below every place a floor at its cap names (the rows come first), or
+//     is the strict rule's cost (named only where a name may stand 6 px
+//     nearer another place's mark). No name lost anywhere has a clear spot.
+//   · The cap counts names, not places tried, and a place that shares a
+//     name already on the floor (London for City and Heathrow) costs none.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -65,12 +74,13 @@ const E = require(path.join(ROOT, 'fids-current', 'js', 'fids-earth.js'));
 const BS = require(path.join(ROOT, 'fids-current', 'js', 'board-strings.js'));
 const MOD = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-earth.js'), 'utf8');
 const FX = require('./fixtures/earth-sweep-2026-10-19.json');
+const LIVE = require('./fixtures/earth-live-2026-10-19.json');
 
 // the board's own widths: what fids-earth.js textW gets from the canvas
 // (the glyphs and their kerning), plus the 0.01 em the stylesheet adds to
-// each letter and 0.2 em of halo
-const FONT = FX.font, missing = new Set();
-const measure = (s, fs0) => {
+// each letter and 0.2 em of halo (each fixture carries the letters it uses)
+const missing = new Set();
+const measureIn = (FONT) => (s, fs0) => {
   s = String(s);
   const t = FONT.sizes[Math.round(fs0)];
   if (!t) throw new Error('the fixture\'s font has no size ' + fs0);
@@ -82,6 +92,7 @@ const measure = (s, fs0) => {
   }
   return u * fs0 / FONT.upm + s.length * fs0 * 0.01 + fs0 * 0.2;
 };
+const measure = measureIn(FX.font);
 const namedCodes = E.namedCodes;
 const fillNames = E.fillNames;
 // the places a floor names: each name's own, and a place drawn under another's
@@ -93,29 +104,39 @@ const placesNamed = (L) => {
   return o;
 };
 
-function lay(fl) {
+// (nearBy: how much nearer another place's mark than its own a name may
+// stand; 0 on the board, E.AMBIG on v24067: to weigh what the rule costs)
+function lay(fl, font, nearBy) {
   const [psi, delta, R, cx, cy] = fl.view, A = fl.here, H = fl.H, W = fl.W, full = H >= E.MIN_FULL;
   const yl = Math.round(Math.min(70, Math.max(22, H * 0.13)));
   const view = { B: E.frameBasis(A, psi, delta), R, cx, cy, yl, psi, delta };
   const at = new Date(fl.at);
   const pool = fl.places.map(([code, lat, lon, tz, name, names, n, done, isNext], i) => ({ code, lat, lon, tz: tz || null, name, names, n, done, isNext, rank: i }));
-  const run = (lst, cap) => E.layout({ view, W, H, top: 0, here: A, full, places: lst, cap,
-    timeOf: (z) => (z ? BS.boardTime(at, z, { list: fl.langs }) : ''), hereTz: fl.hereTz, measure });
+  const run = (lst, cap) => E.layout({ view, W, H, top: 0, here: A, full, places: lst, cap, nearBy,
+    timeOf: (z) => (z ? BS.boardTime(at, z, { list: fl.langs }) : ''), hereTz: fl.hereTz, measure: measureIn(font) });
   const r = full ? fillNames(pool, E.capFor(H), (l) => run(l)) : { list: pool.slice(0, 1), L: run(pool.slice(0, 1)) };
   return { L: r.L, list: r.list, pool, run, full, view, hub: E.toScreen(E.vec(A[0], A[1]), view) };
 }
 const boxDist = (b, x, y) => Math.hypot(Math.max(b.x0, Math.min(x, b.x1)) - x, Math.max(b.y0, Math.min(y, b.y1)) - y);
-const FLOORS = FX.floors.map((fl) => Object.assign({ out: lay(fl) }, fl));
+const FLOORS = FX.floors.map((fl) => Object.assign({ set: 'sweep', font: FX.font, out: lay(fl, FX.font) }, fl))
+  .concat(LIVE.floors.map((fl) => Object.assign({ set: 'live', font: LIVE.font, out: lay(fl, LIVE.font) }, fl)));
+const SWEEP = FLOORS.filter((f) => f.set === 'sweep');
 const by = (id) => FLOORS.find((f) => f.id === id);
 const named = (id) => namedCodes(by(id).out.L);
 // every place's mark on a laid-out floor
 const marksOf = (L) => L.dots.map((d) => ({ code: d.code, x: d.x, y: d.y, what: 'dot' })).concat(L.arrows.map((a) => ({ code: a.code, x: a.x, y: a.y, what: 'arrow' })));
 const rowsOf = (lab) => lab.rows.map((r) => r.texts[0] && r.texts[0].code).filter(Boolean);
 
-test('the recorded floors are all here: 94 with rows, 67 of them full maps, measured in the board\'s font', () => {
-  assert.equal(FLOORS.length, 94);
-  assert.equal(FLOORS.filter((f) => f.H >= E.MIN_FULL).length, 67);
+test('the recorded floors are all here: the sweep\'s 94 (67 full maps) and v24067\'s own 45 (37), measured in the board\'s font', () => {
+  assert.equal(SWEEP.length, 94);
+  assert.equal(SWEEP.filter((f) => f.H >= E.MIN_FULL).length, 67);
   for (const id of ['rerun/YVR', 'rerun1/LGA', 'rerun1/MSP', 'rerun1/YHU']) assert.ok(by(id), id + ' (the reruns)');
+  const live = FLOORS.filter((f) => f.set === 'live');
+  assert.equal(live.length, 45);
+  assert.equal(live.filter((f) => /^live\//.test(f.id)).length, 31, 'every board tonight with rows');
+  assert.equal(live.filter((f) => f.H >= E.MIN_FULL).length, 37);
+  for (const id of ['live/YQM', 'live/KEF', 'live/LGA', 'extra/pass2/SYD', 'extra/pass2arr/MIA', 'extra/skeptic/run2/YHZ']) assert.ok(by(id), id);
+  assert.match(LIVE.about, /recorded live on 2026-10-19 on v24067/);
   assert.deepEqual([...missing], [], 'characters the fixture\'s font lacks');
   // Chrome's canvas measureText, '700 <px>px "Bricolage Grotesque"' (2026-10-19)
   const chrome = [['Toronto', 24, 89.67], ['Montréal', 24, 105.28], ['Îles-de-la-Madeleine', 19, 187.76], ['Genève', 28, 100.33], ['Southampton', 24, 159.11]];
@@ -125,16 +146,84 @@ test('the recorded floors are all here: 94 with rows, 67 of them full maps, meas
   }
 });
 
-test('no name stands clearly nearer another place\'s dot or arrow than its own', () => {
+test('no name stands nearer another place\'s dot or arrow than its own, by any distance', () => {
   const bad = [];
   for (const fl of FLOORS) {
     const L = fl.out.L, marks = marksOf(L);
     for (const lab of L.labels) {
       const own = boxDist(lab.box, lab.at.x, lab.at.y), mates = rowsOf(lab);
-      for (const m of marks) if (m.code !== lab.code && !mates.includes(m.code) && boxDist(lab.box, m.x, m.y) + E.AMBIG < own) bad.push(`${fl.id}: ${lab.code} by ${m.code}'s ${m.what}`);
+      for (const m of marks) if (m.code !== lab.code && !mates.includes(m.code) && boxDist(lab.box, m.x, m.y) < own) bad.push(`${fl.id}: ${lab.code} ${boxDist(lab.box, m.x, m.y).toFixed(1)} px from ${m.code}'s ${m.what}, ${own.toFixed(1)} from its own`);
     }
   }
   assert.deepEqual(bad, [], 'names that read as another place\'s');
+  assert.match(MOD, /if \(rv\.d \+ nearBy < rv\.own\) return;/);
+  assert.match(MOD, /nearBy = Math\.max\(0, \+o\.nearBy \|\| 0\)/, 'the board allows none (0)');
+});
+
+// a route through a name's box, or a point of it within `pad` px of the box
+const inBox = (b, q, pad) => q.x > b.x0 - pad && q.x < b.x1 + pad && q.y > b.y0 - pad && q.y < b.y1 + pad;
+const crosses = (r, b, pad) => r.runs.some((run) => run.some((q, i) => inBox(b, q, pad || 0) || (i > 0 && segThrough([run[i - 1].x, run[i - 1].y, q.x, q.y], b))));
+
+test('no other place\'s route runs under a name, and a name\'s own route is cut away under it alone', () => {
+  const bad = [];
+  let names = 0, cuts = 0;
+  for (const fl of FLOORS) {
+    const L = fl.out.L;
+    for (const k of L.knockouts) { cuts++; if (!L.labels.some((lab) => lab.code === k.code)) bad.push(`${fl.id}: a cut that is no name's own`); }
+    for (const lab of L.labels) {
+      names++;
+      const b = lab.box, mates = rowsOf(lab).concat([lab.code]);
+      // (2 px: a route's points stand 3 px apart)
+      for (const r of L.routes) if (!mates.includes(r.code) && crosses(r, b, 2)) bad.push(`${fl.id}: ${r.code}'s route runs under ${lab.code}'s name`);
+      for (const m of L.marks) {
+        if (m.code !== lab.code || !inBox(b, m, 4) || Math.hypot(m.x - lab.at.x, m.y - lab.at.y) < 14) continue;
+        if (!L.knockouts.some((k) => k.code === lab.code && inBox(k, m, 0))) bad.push(`${fl.id}: ${lab.code}'s own route runs under it and is not cut away`);
+      }
+    }
+  }
+  assert.deepEqual(bad, []);
+  assert.ok(names > 600 && cuts > 10, names + ' names, ' + cuts + ' cuts');
+  // each route its own mask: a cut is its name's route's alone
+  assert.match(MOD, /L\.knockouts\.forEach\(function \(b\) \{ var k = b\.code \|\| '\*'; \(kos\[k\] \|\| \(kos\[k\] = \[\]\)\)\.push\(b\); \}\);/);
+  assert.match(MOD, /L\.routes\.forEach\(function \(r\) \{\s*var m = maskFor\(r\.code\)/);
+});
+
+test('the routes main ran under names, which the reviews found, run under none now', () => {
+  const want = [['extra/pass2/SYD', 'MEL', 'ADL'], ['extra/pass2/SYD', 'MEL', 'PER'], ['extra/pass2/SYD', 'CBR', 'HBA'], ['extra/pass2/SYD', 'CHC', 'AKL'],
+    ['live/LGA', 'PIT', 'BHM'], ['extra/pass2arr/MIA', 'ATL', 'HOU'], ['extra/pass2arr/MIA', 'ATL', 'DFW'], ['live/MSY', 'RIC', 'BOS'],
+    ['live/YHZ', 'YUL', 'YVR'], ['live/KEF', 'ARN', 'MXP'], ['live/KEF', 'ARN', 'MUC']];
+  for (const [id, name, route] of want) {
+    const fl = by(id), L = fl.out.L;
+    assert.ok(fl.main.under.some(([n, r]) => n === name && r === route), `${id}: main ran ${route}'s route under ${name}'s name`);
+    const lab = L.labels.find((l) => l.code === name || rowsOf(l).includes(name)), r = L.routes.find((x) => x.code === route);
+    if (lab && r) assert.ok(!crosses(r, lab.box, 2), `${id}: ${route}'s route runs under ${name}'s name`);
+  }
+  assert.equal(FLOORS.reduce((a, f) => a + f.main.under.length, 0), 85, 'routes main ran under names on these floors');
+  // and the names stay: Melbourne, Adelaide and Perth at Sydney, Atlanta's
+  // routes' places at Miami, Boston at New Orleans, Montréal and Vancouver
+  // at Halifax, Milan and Munich at Keflavík (Munich's own name stood clear:
+  // v24067's spots first, layout). At New Orleans, Richmond (row 7), whose
+  // name Boston's route ran under, gives way to Raleigh-Durham (row 4)
+  for (const [id, codes] of [['extra/pass2/SYD', ['MEL', 'ADL', 'PER', 'CBR', 'AKL']], ['live/MSY', ['BOS', 'RDU']], ['live/YHZ', ['YUL', 'YVR']], ['live/KEF', ['MXP', 'MUC']]]) {
+    for (const c of codes) assert.ok(placesNamed(by(id).out.L).includes(c), `${id}: ${c} is named`);
+  }
+});
+
+test('the strict rule costs a few names, against every name that stood nearer its neighbour\'s mark', () => {
+  let strict = 0, allowed = 0, tight = 0;
+  for (const fl of FLOORS) {
+    if (!fl.out.full) continue;
+    const A2 = lay(fl, fl.font, E.AMBIG).L, marks = marksOf(A2);
+    strict += namedCodes(fl.out.L).length; allowed += namedCodes(A2).length;
+    for (const lab of A2.labels) {
+      const own = boxDist(lab.box, lab.at.x, lab.at.y), mates = rowsOf(lab);
+      if (marks.some((m) => m.code !== lab.code && !mates.includes(m.code) && boxDist(lab.box, m.x, m.y) < own)) tight++;
+    }
+  }
+  // (on 2026-10-19's floors: 6 names fewer, and 32 names spared that would
+  // stand up to 6 px nearer another place's mark than their own)
+  assert.ok(allowed - strict <= 6, `the strict rule costs ${allowed - strict} names (${strict} here, ${allowed} with 6 px)`);
+  assert.ok(tight >= 30, tight + ' names nearer another place\'s mark with 6 px allowed');
 });
 
 test('no name stands as near another place\'s dot or arrow as its own with no line to say which (a name at an arrow has none)', () => {
@@ -251,73 +340,64 @@ function tryWith(fl, add, drop) {
   return run(l2);
 }
 
-test('a floor names fewer places than main only where each name it lost was in a conflict on main; every other name lost is accounted for', () => {
-  const bad = [], clean = [];
+test('a floor names fewer places than main only where each place it lost was in a conflict there, below its cap\'s rows, or the strict rule\'s cost', () => {
+  const bad = [], fewer = [], strictCost = [], traded = [];
   let lost = 0;
   for (const fl of FLOORS) {
     if (!fl.out.full) continue;
     const now = placesNamed(fl.out.L), gone = fl.main.named.filter((c) => !now.includes(c));
-    const at = (c) => fl.out.pool.findIndex((x) => x.code === c), full = namedCodes(fl.out.L).length >= E.capFor(fl.H);
+    const at = (c) => fl.out.pool.findIndex((x) => x.code === c), atCap = namedCodes(fl.out.L).length >= E.capFor(fl.H);
+    const isNext = (c) => fl.out.pool.some((x) => x.code === c && x.isNext);
+    const short = now.length < fl.main.named.length;
+    let allowed = null;
     for (const c of gone) {
       lost++;
-      // (a floor at its cap, every place it names on a row above, has no room: the rows come first)
-      const below = full && namedCodes(fl.out.L).every((x) => at(x) < at(c));
+      // (a floor at its cap, every place it names on a row above, has no
+      // room: the rows come first; and the next flight still to come before
+      // them, v24073)
+      const below = atCap && namedCodes(fl.out.L).every((x) => at(x) < at(c) || isNext(x));
+      // (v24073: a place that gave way to the next flight)
+      if (fl.out.L.gaveWay && fl.out.L.gaveWay[c]) { traded.push(fl.id + ' ' + c + ' (gave way to ' + fl.out.L.gaveWay[c] + ')'); continue; }
       if (!below && clearSpotFor(fl, c)) bad.push(`${fl.id}: ${c} has a clear spot and is not named`);
-      if (!fl.main.inConflict.includes(c)) {
-        if (namedCodes(fl.out.L).length < fl.main.named.length) bad.push(`${fl.id}: names ${namedCodes(fl.out.L).length} (main ${fl.main.named.length}) and lost ${c}, which stood clear on main`);
-        clean.push(fl.id + ' ' + c);
-      }
+      if (below || fl.main.inConflict.includes(c)) continue;
+      if (!short) { traded.push(fl.id + ' ' + c); continue; }
+      // a name that stood clear on main, on a floor that names fewer: only
+      // where it is named when a name may stand 6 px nearer another
+      // place's mark (the strict rule's cost, weighed above)
+      allowed = allowed || placesNamed(lay(fl, fl.font, E.AMBIG).L);
+      if (allowed.includes(c)) strictCost.push(fl.id + ' ' + c);
+      else bad.push(`${fl.id}: names ${now.length} (main ${fl.main.named.length}) and lost ${c}, which stood clear on main`);
     }
+    if (short) fewer.push(`${fl.id} ${fl.main.named.length}->${now.length} ${gone.join(' ')}`);
   }
   assert.deepEqual(bad, []);
-  assert.ok(lost < 32, lost + ' names lost in all');
-  // the names lost that stood clear on main, each for its reason, all on
-  // floors that name as many places as main or more
-  assert.deepEqual(clean.sort(), ['recheckA/PHL BNA', 'recheckA/PHL YYZ', 'recheckA/SYD DOH', 'recheckA/YZF YFS', 'recheckB/MIA BOG', 'recheckB/YZF YFS', 'run/MSY BOS', 'run/YZF YFS']);
-  for (const id of ['recheckA/PHL', 'recheckA/SYD', 'recheckB/MIA', 'run/MSY', 'run/YZF', 'recheckA/YZF', 'recheckB/YZF']) assert.ok(namedCodes(by(id).out.L).length >= by(id).main.named.length, id);
-  // 1. the rows above it, read now, fill the floor: Philadelphia (recheck A)
-  //    names its 6 from rows 2 to 7 ('Cincinnati, OH', Miami, Québec,
-  //    Chicago, 'Hartford | BDL', 'Montreal-Trdeau'); Nashville is row 8,
-  //    Toronto row 10
-  {
-    const fl = by('recheckA/PHL'), at = (c) => fl.out.pool.findIndex((x) => x.code === c), now = namedCodes(fl.out.L);
-    assert.equal(now.length, E.capFor(fl.H), 'at its cap');
-    for (const c of ['BNA', 'YYZ']) for (const x of now) assert.ok(at(x) < at(c), `${x} is on a row above ${c}`);
-  }
-  // 2. its dot would cost the name of a row above it: New Orleans, where
-  //    Baltimore's and Philadelphia's names stood nearer Boston's dot on
-  //    main, and Boston (row 12) comes after the rows main never read
-  {
-    const fl = by('run/MSY'), n2 = namedCodes(tryWith(fl, 'BOS'));
-    assert.ok(!n2.includes('PHL') || !n2.includes('BOS'), 'Boston and Philadelphia are not both named');
-    assert.ok(fl.out.pool.findIndex((x) => x.code === 'PHL') < fl.out.pool.findIndex((x) => x.code === 'BOS'));
-  }
-  // 3. a city newly on the map has its dot where the name would stand, and a
-  //    dot is never taken away for a name: Norman Wells (row 5) and Fort
-  //    Simpson (row 4) at Yellowknife, Cap-Haïtien (row 4) and Bogotá (row
-  //    3) at Miami. The other choice names as many places, with every name
-  //    main had (an open choice); the rule that would take it (the sooner
-  //    row's name over a later row's dot when the count is the same) would
-  //    also take Boston off Washington National, Cancún off Miami, Austin off
-  //    Phoenix, LaGuardia off Tampa and Birmingham off LaGuardia (recheck B),
-  //    the names the second review asked to keep
-  for (const [id, gone, dot] of [['run/YZF', 'YFS', 'YVQ'], ['recheckA/YZF', 'YFS', 'YVQ'], ['recheckB/YZF', 'YFS', 'YVQ'], ['recheckB/MIA', 'BOG', 'CAP']]) {
-    const fl = by(id), L2 = tryWith(fl, gone, dot), n2 = namedCodes(L2);
-    assert.ok(n2.includes(gone), `${id}: ${gone} is named without ${dot}'s dot`);
-    assert.equal(n2.length, namedCodes(fl.out.L).length, `${id}: as many names either way`);
-    assert.ok(fl.main.named.every((c) => n2.includes(c)), `${id}: and every name main had`);
-    assert.ok(namedCodes(fl.out.L).includes(dot), `${id}: ${dot} is named`);
-  }
-  // 4. naming it costs two: Sydney (recheck A), Doha, under Delhi's arrow,
-  //    whose name stood as near Tokyo's arrow; on its own it costs Seoul and
-  //    Taipei
-  {
-    const fl = by('recheckA/SYD'), n2 = namedCodes(fl.out.run(fl.out.list.concat(fl.out.pool.filter((p) => p.code === 'DOH')), 99));
-    assert.ok(!n2.includes('DOH') || !n2.includes('ICN') || !n2.includes('TPE'), 'Doha costs a name');
-  }
+  assert.ok(lost < 70, lost + ' names lost in all');
+  // the floors that name fewer, each place lost in a conflict on main: a
+  // route under its name (Boston's Orlando and Chicago, Sydney's Dubai,
+  // Edmonton's Ottawa, Keflavík's Stockholm, ...) or its name
+  // nearer another place's mark (LaGuardia's Pittsburgh and Burlington),
+  // with no clear spot now; and Vancouver at Kelowna, whose every spot
+  // stands nearer Nanaimo's or Victoria's dot than its own
+  assert.deepEqual(fewer.sort(), [
+    'extra/pass2/SYD 10->8 CHC HBA', 'live/KEF 10->9 ARN', 'live/LGA 10->8 PIT BTV', 'recheckA/SYD 9->8 DXB', 'recheckA/YEG 7->6 YOW',
+    'recheckA/YLW 7->6 YVR YCD', 'recheckA/YVR 8->7 YYC', 'recheckB/YEG 7->6 YOW', 'run/BOS 10->8 MCO ORD', 'run/LGA 8->7 GSO',
+    'run/SAN 11->10 IAD', 'run/YLW 7->6 YVR YCD'
+  ]);
+  assert.deepEqual(strictCost.sort(), ['recheckA/YLW YVR', 'run/YLW YVR']);
+  // the names lost that stood clear on main, on floors that name as many
+  // places or more: the rows above them, or a place newly on the map, took
+  // their room (none has a clear spot); and (v24073) the next flight still
+  // to come, now always named, took Vancouver's at Edmonton (Abbotsford,
+  // whose dot stands too near Vancouver's to draw both) and Newark's at
+  // Québec (Toronto). Kugluktuk at Yellowknife and Vancouver at Prince
+  // George, each the next flight, are named again.
+  assert.deepEqual(traded.sort(), [
+    'extra/pass2/YEG YYJ', 'live/DEN SLC', 'live/JFK BTV', 'live/JFK EZE', 'live/MSY MCI', 'live/YEG YVR', 'recheckA/YQB EWR',
+    'run/DCA DSM', 'run/DTW RDU', 'run/LHR GLA', 'run/PHX TYS'
+  ]);
 });
 
-test('the names the second review\'s give-way left off are named, and no place gives way to another', () => {
+test('the names the second review\'s give-way left off are named, and no place gives way to another but to the next flight', () => {
   const want = { 'run/DCA': ['BOS'], 'run/LHR': ['NCE'], 'run/MIA': ['CUN'], 'run/PHX': ['IND', 'AUS'], 'run/SAN': ['RNO', 'SMF'],
     'run/TPA': ['LGA'], 'recheckB/EDI': ['LCY'], 'recheckB/LGA': ['BHM'] };
   for (const [id, codes] of Object.entries(want)) for (const c of codes) assert.ok(named(id).includes(c), `${id}: ${c} is named (${named(id).join(' ')})`);
@@ -327,20 +407,123 @@ test('the names the second review\'s give-way left off are named, and no place g
   assert.ok(!named('recheckA/PHL').includes('BNA'));
   // Phoenix names more than main's 7, not 5
   assert.ok(named('run/PHX').length >= 7, 'Phoenix names ' + named('run/PHX').length);
-  assert.doesNotMatch(MOD, /gaveWay|search\(true\)/, 'there is no give-way');
-  for (const fl of FLOORS) assert.ok(!('gaveWay' in fl.out.L), fl.id);
+  // (v24073) a place gives way only to the next flight still to come, and
+  // only on a floor that would otherwise leave the next flight off: Victoria
+  // to Vancouver at Prince George (both rechecks), Gjoa Haven to Kugluktuk
+  // at Yellowknife
+  assert.doesNotMatch(MOD, /search\(true\)/, 'there is no other give-way');
+  const gave = [];
+  for (const fl of FLOORS) {
+    const G = fl.out.L.gaveWay || {}, nx = fl.out.pool.find((p) => p.isNext);
+    for (const [c, to] of Object.entries(G)) {
+      assert.ok(nx && to === nx.code, `${fl.id}: ${c} gave way to ${to}, not the next flight`);
+      gave.push(`${fl.id} ${c}>${to}`);
+    }
+  }
+  assert.deepEqual(gave.sort(), ['extra/skeptic/run/YZF YHK>YCO', 'recheckA/YXS YYJ>YVR', 'recheckB/YXS YYJ>YVR']);
+});
+
+// v24073 — THE NEXT FLIGHT STILL TO COME IS ALWAYS NAMED: placed first,
+// the places in its way give way to it, and on a row below the cap's it
+// takes the cap's last slot. Where the floor as filled before (no place
+// giving way, the rows first) named it, the floor is exactly that floor.
+test('the next flight still to come is named on every recorded floor whose page has it, its route the bold one, and nothing else moves where it was named before', () => {
+  const withNext = [], again = [], v67had = [];
+  for (const fl of FLOORS) {
+    const nx = fl.out.pool.find((p) => p.isNext);
+    if (!nx) continue;
+    withNext.push(fl.id);
+    const L = fl.out.L;
+    assert.ok(E.placesIn(L).includes(nx.code), `${fl.id}: the next flight ${nx.code} is named (${E.placesIn(L).join(' ')})`);
+    const lab = L.labels.find((l) => l.code === nx.code || (l.g && l.g.members && l.g.members.some((m) => m.code === nx.code)));
+    assert.ok(lab && L.routes.some((r) => r.code === lab.code && r.w > 3), `${fl.id}: its route is the bold one`);
+    if (fl.main.named.includes(nx.code)) v67had.push(fl.id);
+    if (!fl.out.full) continue;
+    const before = E.fillAsBefore(fl.out.pool, E.capFor(fl.H), (l) => fl.out.run(l));
+    if (E.placesIn(before.L).includes(nx.code)) assert.equal(JSON.stringify(L), JSON.stringify(before.L), fl.id + ': laid out as before');
+    else again.push(fl.id + ' ' + nx.code);
+  }
+  assert.equal(withNext.length, 99, 'the recorded floors whose page has the next flight');
+  // v24067 named it on 93 of them, and so does this build, with 6 more:
+  // the ones filled again, where the floor as before left it off
+  assert.equal(v67had.length, 93);
+  assert.deepEqual(again.sort(), ['extra/skeptic/run/YZF YCO', 'live/YEG YXX', 'recheckA/YQB YYZ', 'recheckA/YXS YVR', 'recheckB/MIA ATL', 'recheckB/YXS YVR', 'run/DTW ATL']);
+  // Prince George: Victoria's route ran under every spot Vancouver, its next
+  // flight, had; Victoria gives way, and the floor names what v24067 named
+  for (const id of ['recheckA/YXS', 'recheckB/YXS']) {
+    assert.deepEqual(by(id).out.L.gaveWay, { YYJ: 'YVR' }, id);
+    assert.deepEqual(E.placesIn(by(id).out.L).sort(), by(id).main.named.slice().sort(), id);
+  }
+  assert.match(MOD, /if \(!spot && g\.isNext && full && !crowded && out\.placed < maxNames && !noYield\) \{/);
+});
+
+// v24073: a next flight whose name carries its country's (a name another
+// place has too) and fits nowhere is tried once more with the country's two
+// letters, as the board writes a state or a province
+const PLACES = require(path.join(ROOT, 'fids-current', 'js', 'earth-places.js'));
+const BFP = { inTables: (c) => !Object.prototype.hasOwnProperty.call(PLACES.NAME, c), placeName: PLACES.nameOf, placeIn: PLACES.inOf,
+  regionName: (cc, l) => { try { return new Intl.DisplayNames([BS.intl(l)], { type: 'region' }).of(cc) || cc; } catch (e) { return cc; } } };
+// (the board's own brief: fids-earth.js briefOf, its names as named() gives them)
+const briefIn = (langs) => (p) => {
+  const b = E.briefOf(BFP, p);
+  if (!b) return null;
+  const names = [...new Set(langs.map((l) => E.cityNameOf(BFP, p.code, p.code, l, true)))];
+  return Object.assign(b, { name: names[0], names });
+};
+test('a next flight whose name with its country fits nowhere is named with the country\'s two letters: Hamilton, AU at Victoria; no recorded floor changes', () => {
+  const fl = by('live/YYJ'), [psi, delta, R, cx, cy] = fl.view, A = fl.here;
+  const view = { B: E.frameBasis(A, psi, delta), R, cx, cy, yl: Math.round(Math.min(70, Math.max(22, fl.H * 0.13))), psi, delta };
+  const at = new Date(fl.at);
+  const run = (l) => E.layout({ view, W: fl.W, H: fl.H, top: 0, here: A, full: true, places: l, timeOf: (z) => (z ? BS.boardTime(at, z, { list: fl.langs }) : ''), hereTz: fl.hereTz, measure: measureIn(LIVE.font) });
+  const ll = PLACES.AT.HLT, names = [...new Set(fl.langs.map((l) => E.cityNameOf(BFP, 'HLT', 'HLT', l)))];
+  assert.deepEqual(names, ['Hamilton, Australia', 'Hamilton, Australie']);
+  const pool = [{ code: 'HLT', lat: ll[0], lon: ll[1], tz: 'Australia/Melbourne', name: names[0], names, n: 1, done: false, isNext: true, rank: 0 }]
+    .concat(fl.out.pool.map((p, i) => Object.assign({}, p, { isNext: false, rank: i + 1 })));
+  // with its country's name it fits nowhere (beyond the picture, at its arrow)
+  assert.ok(!E.placesIn(E.fillNames(pool, E.capFor(fl.H), run).L).includes('HLT'));
+  const r = E.fillNames(pool, E.capFor(fl.H), run, briefIn(fl.langs));
+  const lab = r.L.labels.find((l) => l.code === 'HLT');
+  assert.ok(lab, 'named');
+  assert.equal(lab.rows[0].texts[0].s, 'Hamilton, AU');
+  assert.ok(r.L.routes.some((q) => q.code === 'HLT' && q.w > 3), 'its route the bold one');
+  assert.equal(r.list.find((p) => p.code === 'HLT').brief, true, 'the floor draws it so again');
+  // only a country is written so: a state, a province, a name CITY gives, or none, never
+  for (const c of ['LOZ', 'YHG', 'YYG', 'YQM', 'ABJ']) assert.equal(E.briefOf(BFP, { code: c }), null, c);
+  assert.equal(E.cityNameOf(BFP, 'VLN', 'VLN', 'ja', true), 'Valencia, VE');
+  // no recorded floor's next flight carries a country: every floor is as it was
+  for (const f of FLOORS) {
+    if (!f.out.full) continue;
+    const again = E.fillNames(f.out.pool, E.capFor(f.H), (l) => f.out.run(l), briefIn(f.langs));
+    assert.equal(JSON.stringify(again.L), JSON.stringify(f.out.L), f.id);
+  }
+  // and the board passes it its own brief
+  assert.match(MOD, /fillNames\(pool, capFor\(e\.H\), run, function \(p\) \{ return briefOf\(boardFns\(\), p\); \}\)/);
+  assert.match(MOD, /var names = langs\.map\(function \(l\) \{ return cityName\(p\.code, raw, l, p\.brief\); \}\);/);
 });
 
 test('the cap counts names, not places tried: Ottawa names 5 (it named 3), Detroit 6 (4)', () => {
   assert.equal(named('run/YOW').length, 5, 'Ottawa');
   assert.equal(named('run/DTW').length, 6, 'Detroit');
-  // a refill never costs a place the first try named, and never names past the cap
+  // a refill never costs a place the first try named but for a sooner row
+  // (v24070: where the route that ran under the sooner row's name is gone
+  // with its place: San Diego names Oakland, row 2, not San Jose, row 6, as
+  // it would with San Francisco, row 7, never tried), and never names past
+  // the cap
+  const sooner = [];
   for (const fl of FLOORS) {
     if (!fl.out.full) continue;
     const cap = E.capFor(fl.H), first = namedCodes(fl.out.run(fl.out.pool.slice(0, cap))), now = namedCodes(fl.out.L);
-    for (const c of first) assert.ok(now.includes(c), `${fl.id}: ${c} was named before the refill`);
+    const at = (c) => fl.out.pool.findIndex((x) => x.code === c);
+    const isNext = (c) => fl.out.pool.some((x) => x.code === c && x.isNext);
+    for (const c of first) {
+      if (now.includes(c)) continue;
+      // (v24073: or the next flight still to come, which the first try left off)
+      assert.ok(now.some((x) => !first.includes(x) && (at(x) < at(c) || isNext(x))), `${fl.id}: ${c} was named before the refill`);
+      sooner.push(fl.id + ' ' + c);
+    }
     assert.ok(now.length <= cap, `${fl.id}: ${now.length} names over the cap of ${cap}`);
   }
+  assert.deepEqual(sooner.sort(), ['live/YEG YVR', 'run/SAN SJC']);
 });
 
 test('the floor is drawn again in the order fillNames found: the same layout, at once', () => {
@@ -348,7 +531,7 @@ test('the floor is drawn again in the order fillNames found: the same layout, at
     if (!fl.out.full) continue;
     assert.deepEqual(namedCodes(fl.out.run(fl.out.list)), namedCodes(fl.out.L), fl.id);
   }
-  assert.match(MOD, /else \{ var fl = fillNames\(pool, capFor\(e\.H\), run\); list = fl\.list; lastLayout = fl\.L; memoSet\(fk, list\); \}/);
+  assert.match(MOD, /else \{ var fl = fillNames\(pool, capFor\(e\.H\), run, function \(p\) \{ return briefOf\(boardFns\(\), p\); \}\); list = fl\.list; lastLayout = fl\.L; memoSet\(fk, list\); \}/);
   assert.match(MOD, /else if \(hit\) \{ list = hit; lastLayout = run\(list\); \}/);
 });
 
