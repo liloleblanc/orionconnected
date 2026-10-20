@@ -34,8 +34,8 @@
        by height, on a planet framed once for the direction (every place its
        rows list, all pages: shapersOf), so the planet stays put as the pages
        turn. A board showing no rows but its own notice (no flights in its
-       window, its feed down) has the planet and the airport under the
-       notice, no routes.
+       window, its feed down, its first list still coming) has the planet
+       and the airport under the notice, no routes.
      · The next flight is the earliest whose time (revised, else scheduled)
        is now or later, not gone, not cancelled. An overdue row is never it.
      · Names are the rows' own (formatCityIata, the language on screen). They
@@ -1961,10 +1961,11 @@
       var caR = ca.getBoundingClientRect(), tbR = tb ? tb.getBoundingClientRect() : null;
       var tableShown = !!(tb && tb.offsetParent && tbR && tbR.height);
       // no rows on the board, but its own notice instead (no flights in its
-      // window, its feed down): the floor goes under the notice. Anything
-      // else in the place of the rows (a Studio template) leaves it idle.
+      // window, its feed down, its first list still coming): the floor goes
+      // under the notice. Anything else in the place of the rows (a Studio
+      // template) leaves it idle.
       var panel = null;
-      if (!tableShown) ['panelEmpty', 'panelError'].forEach(function (id) {
+      if (!tableShown) ['panelEmpty', 'panelError', 'panelLoading'].forEach(function (id) {
         var pn = doc.getElementById(id);
         if (!panel && pn && pn.offsetParent && pn.getBoundingClientRect().height) panel = pn;
       });
