@@ -69,11 +69,15 @@ test('no listed place disagrees with AP, and every one can be drawn', () => {
   }
 });
 
-test('AP comes first, then the list, then nothing', () => {
+test('AP comes first, then the list, then the table of every other place (v24070), then nothing', () => {
   assert.equal(E.zoneOf('YQM', 'America/Halifax'), 'America/Halifax');
   assert.equal(E.zoneOf('PER', null), 'Australia/Perth');
   assert.equal(E.zoneOf('ZZZ', null), null);
-  assert.match(MOD, /function apTz\(c\) \{[^\n]*return zoneOf\(c, z\); \}/, 'the board reads AP, then the list');
+  // (js/earth-places.js, which the floor loads itself: tests/earth-places.test.js)
+  assert.equal(E.zoneOf('ABJ', null, { ABJ: 'Africa/Abidjan' }), 'Africa/Abidjan');
+  assert.equal(E.zoneOf('PER', null, { PER: 'Asia/Tokyo' }), 'Australia/Perth', 'the list before the table');
+  assert.equal(E.zoneOf('YQM', 'America/Halifax', { YQM: 'Asia/Tokyo' }), 'America/Halifax', 'AP before both');
+  assert.match(MOD, /function apTz\(c\) \{[^\n]*return zoneOf\(c, z, PLACES && PLACES\.zones\); \}/, 'the board reads AP, then the list, then the table');
 });
 
 test('the zones that are easy to get wrong', () => {
