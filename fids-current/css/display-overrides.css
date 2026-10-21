@@ -14380,6 +14380,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 0 auto !important;
   min-width: 0 !important;
 }
+/* v24076 — a board in one language says its status once, at the left end.
+   The right end carries the same words unseen (aria-hidden in the markup),
+   so the headline between them stays centred. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-end.g8-bw-end-mirror,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-end.g8-bw-end-mirror * {
+  visibility: hidden !important;
+}
 /* Delayed reads YELLOW here like everywhere else on the board — the same
    warn yellow the revised times wear — with a whisper of shadow so it
    holds on the white band. */

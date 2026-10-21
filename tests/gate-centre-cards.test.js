@@ -619,6 +619,63 @@ test('while the lists are up the centre deck is the list alone; the full deck co
   assert.ok(tick.indexOf('ocGateBoundary') < stay);
 });
 
+test('a turn that draws the slide already up leaves it up: a card or an ad is never crossfaded into a copy of itself', () => {
+  // 2026-10-20: under the ?scene= review pin every turn of the deck drew the
+  // pinned card again, and the turn lifted the card going out into the
+  // dissolving overlay over a fresh copy of it: for a second both were on the
+  // screen, and a one-language gate read its documents card twice (a pt gate
+  // in CI). A deck of one ad (the Welcome card alone) did the same on every
+  // turn. The lists stayed put only when the deck was the list alone.
+  const tick = fn('_restartGateAdsTimer');
+  const lift = tick.indexOf('while (el3.firstChild) _old.appendChild(el3.firstChild);');
+  const seen = tick.indexOf("var _oc = el3.querySelector(':scope > .gcard[data-gcard]');");
+  const paint = tick.indexOf('try { renderGateAd(_gateAdIndex); } catch (e) {}', lift);
+  const a = tick.indexOf('var _kept = false;');
+  const b = tick.indexOf('if (_old || _kept) {');
+  const fade = tick.indexOf("_old.style.opacity = '0';");
+  assert.ok(seen > 0 && seen < lift, 'what goes out is read before it is lifted');
+  assert.ok(paint > lift && a > paint && b > a && fade > b, 'what comes in is compared once it is painted, before anything dissolves');
+  assert.match(tick.slice(seen, lift), /else if \(el3\._lastKey && el3\.__gadNode && el3\.__gadNode === el3\.firstChild\) _outKey = el3\._lastKey;/,
+    'an ad\'s key is trusted only while its painter\'s own paint is what is up');
+  assert.match(tick.slice(b, b + 120), /if \(_old \|\| _kept\) \{\s*el3\.style\.transition = 'none';\s*el3\.style\.opacity = '1';/, 'a slide that stays is not faded in either');
+  // both ad painters record what they put up beside their key
+  const ad = fn('renderGateAd');
+  assert.equal((ad.match(/el\.innerHTML = (?:customHtml|html)[\s\S]{0,420}?el\.__gadNode = el\.firstChild;/g) || []).length, 2, 'the uploaded-media and the standard ad painter');
+  // the comparison, run as written, on stand-in nodes
+  const keep = new Function('_old', '_outCard', '_outHtml', '_outKey', 'el3', tick.slice(a, b) + '\nreturn { old: _old, kept: _kept };');
+  const box = (html, key) => {
+    const b2 = { kids: [], __gcardHtml: html, _lastKey: key || null, __gadNode: null };
+    b2.querySelector = (q) => { assert.equal(q, ':scope > .gcard[data-gcard]'); return b2.kids.find((k) => k.card) || null; };
+    Object.defineProperty(b2, 'firstChild', { get: () => b2.kids[0] || null });
+    Object.defineProperty(b2, 'innerHTML', { set: () => { b2.kids.forEach((k) => { k.parent = null; }); b2.kids = []; } });
+    b2.appendChild = (n) => { if (n.parent) n.parent.kids.splice(n.parent.kids.indexOf(n), 1); n.parent = b2; b2.kids.push(n); return n; };
+    b2.remove = () => { b2.removed = true; };
+    return b2;
+  };
+  const card = (type, name) => ({ card: type, name, getAttribute: (k) => (k === 'data-gcard' ? type : null) });
+  // out / in: { card, html } or { key } (an ad, as its painter left it)
+  const turn = (out, inn) => {
+    const cover = box(null), el3 = box(inn.html || null, inn.key);
+    cover.appendChild(out.card ? card(out.card, 'out') : { name: 'out' });
+    const n = el3.appendChild(inn.card ? card(inn.card, 'in') : { name: 'in' });
+    if (inn.key) el3.__gadNode = inn.stale ? null : n;
+    const r = keep(cover, out.card || '', out.card ? out.html : null, out.key || null, el3);
+    return { kept: r.kept, coverLeft: r.old === cover && !cover.removed, shown: el3.kids.map((k) => k.name).join(','), ownNode: !!el3.__gadNode && el3.__gadNode === el3.firstChild };
+  };
+  for (const t of ['ovcard', 'docscard', 'closecard', 'sbcard']) {
+    assert.deepEqual(turn({ card: t, html: '<x>' }, { card: t, html: '<x>' }), { kept: true, coverLeft: false, shown: 'out', ownNode: false }, t + ': nothing changed, its own nodes stay');
+    assert.deepEqual(turn({ card: t, html: '<x>' }, { card: t, html: '<y>' }), { kept: true, coverLeft: false, shown: 'in', ownNode: false }, t + ': a word changed, repainted in place');
+  }
+  assert.deepEqual(turn({ card: 'ovcard', html: '<x>' }, { card: 'docscard', html: '<y>' }).coverLeft, true, 'another card: the crossfade');
+  assert.deepEqual(turn({ key: '0|pt|900|<div' }, { key: '0|pt|900|<div' }), { kept: true, coverLeft: false, shown: 'out', ownNode: true }, 'the same ad: its own nodes stay, still its painter\'s');
+  assert.deepEqual(turn({ key: '0|pt|900|<div' }, { key: '1|pt|900|<div' }).coverLeft, true, 'another ad: the crossfade');
+  assert.deepEqual(turn({ key: '0|pt|900|<div' }, { key: '0|pt|900|<div', stale: true }).coverLeft, true, 'something its painter did not put up: the crossfade');
+  assert.deepEqual(turn({ key: '0|pt|900|<div' }, { card: 'docscard', html: '<y>' }).coverLeft, true, 'an ad going out, a card coming in: the crossfade');
+  assert.deepEqual(turn({ card: 'docscard', html: '<x>' }, { key: '0|pt|900|<div' }).coverLeft, true, 'a card going out, an ad coming in: the crossfade');
+  assert.deepEqual(turn({}, { card: 'docscard', html: '<y>' }).coverLeft, true, 'the archive or the weather card going out: the crossfade, as before');
+  assert.deepEqual(keep(null, 'docscard', '<x>', null, box('<x>')), { old: null, kept: false }, 'nothing went out: nothing to keep');
+});
+
 test('the list takes the centre on its minute: the slide up gives way at boarding minus 15, once, not at its own turn', () => {
   // 2026-10-13: the list came in at the deck's next turn, 4-8 s late behind
   // the map or a card, up to a minute behind the weather card, and up to ten

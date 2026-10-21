@@ -18152,15 +18152,18 @@ function uxgGateHtml(ctx) {
     //   \u00b7 delayed/cancelled/diverted: a Status pair sits inboard of each
     //     clock \u2014 first language on the left, second on the right \u2014 so the
     //     abnormal state reads from either end of the strip.
-    // One board language \u2192 the SAME words on both sides
-    // 
+    // v24076 — one board language: each word once. The right end used to
+    // repeat the left end's words as if they were a second language (and the
+    // middle read 'Now Boarding | Now Boarding'). It now holds the same words
+    // unseen (aria-hidden, visibility:hidden), only so the headline stays
+    // centred between two ends of the same width.
     var _bwClock = '';
     try {
       var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
       // v23970 — the board's pair through the one chooser (BoardStrings).
       var _bwLangs = BoardStrings.pairLangs(langs, _frF);
       var _bwL1 = _bwLangs[0] || 'en';
-      var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
+      var _bwL2 = _bwLangs[1] || '';                    // one language: none
       // Status word for the strip: the same normalized vocabulary the plates
       // use, one word per language, sentence case.
       // v23116 — the pair is the SCHEDULE state, never the phase
@@ -18187,7 +18190,7 @@ function uxgGateHtml(ctx) {
           return w ? w.charAt(0).toLocaleUpperCase(BoardStrings.META[lang] ? BoardStrings.META[lang].intl : 'en') + w.slice(1) : '';
         } catch (e) { return ''; }
       };
-      var _bwSide = function (lang, cls) {
+      var _bwSide = function (lang, cls, mirror) {
         // v23211 — NO CLOCK IN THE STRIP
         // : the flanks carry
         // the status pair only, the middle banner takes the width the two
@@ -18201,23 +18204,19 @@ function uxgGateHtml(ctx) {
             + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
             + '</div>', lang);
         }
-        return '<div class="g8-bw-end ' + cls + '">' + _stHtml + '</div>';
+        return '<div class="g8-bw-end ' + cls + (mirror && _stHtml ? ' g8-bw-end-mirror" aria-hidden="true' : '') + '">' + _stHtml + '</div>';
       };
-      _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + _bwSide(_bwL2, 'g8-bw-end-r');
+      _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + (_bwL2 ? _bwSide(_bwL2, 'g8-bw-end-r') : _bwSide(_bwL1, 'g8-bw-end-r', true));
     } catch (e) { _bwClock = '::MID::'; }
     // Middle: NOW BOARDING while boarding is actually on; Welcome otherwise.
     var _bwMidWords;
     if (/^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
-      // Built from the LANGUAGE PAIR (var-hoisted from the clock block above),
-      // not the dedup'd label helper — one selected language shows TWICE
-      // ('Now Boarding | Now Boarding') for symmetry. Quebec airports
-      // put French first via the same pair.
-      var _bwNB = _lblEntry('nowBoarding');
-      var _bwNBl1 = (typeof _bwL1 === 'string' && _bwL1) ? _bwL1 : 'en';
-      var _bwNBl2 = (typeof _bwL2 === 'string' && _bwL2) ? _bwL2 : _bwNBl1;
-      var _bwNB1 = _bwNB[_bwNBl1] || '';
-      var _bwNB2 = _bwNB[_bwNBl2] || _bwNB1;
-      _bwMidWords = BoardStrings.markHalf(_bwNB1, _bwNBl1) + ' <span class="g8-bw-sep">|</span> ' + BoardStrings.markHalf(_bwNB2, _bwNBl2);
+      // v24076 — through the pair helper like every other label, keepDup on:
+      // two languages print both halves even when they share the word (for
+      // symmetry), and ONE language prints its words once, with no bar. This
+      // used to pair the one language with itself ('Now Boarding | Now
+      // Boarding'). Quebec airports put French first via the same pair.
+      _bwMidWords = _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bw-sep">|</span> ', true);
     } else {
       _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
     }
@@ -55869,6 +55868,8 @@ function renderGateAd(index) {
       el.style.overflow = 'hidden';
       el.innerHTML = customHtml
         || ('<div style="position:absolute;inset:0;background:#0b1020;"></div>' + _adGlobeBackdrop());
+      // what this painter put up, under its key (the deck's turn reads both)
+      el.__gadNode = el.firstChild;
       el.style.opacity = '1';
       // Clear the logo rail for custom slides — they're meant to be full-bleed
       var logoEl0 = document.getElementById('gateAdLogo');
@@ -55932,6 +55933,9 @@ function renderGateAd(index) {
   el.innerHTML = html
     ? '<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;">' + html + '</div>'
     : '';
+  // 2026-10-20 — what this painter put up, under its key: the deck's turn
+  // reads both to tell the slide already up drawn again (_restartGateAdsTimer)
+  el.__gadNode = el.firstChild;
   el.style.opacity = '1';
   // Select the resumed page in the SAME task as the write, before the browser
   // paints. Left to the 250ms poll, every repaint of a live hotel card showed
@@ -57275,6 +57279,12 @@ function _restartGateAdsTimer() {
       // new slide only ever appears as the old DISSOLVES over it — one clean
       // crossfade, no flash.
       var _old = null;
+      // 2026-10-20 — what is up as the turn begins, read before it is lifted
+      // and compared below once the next slide is painted: a centre card and
+      // its markup, or an ad and the key its painter gave it (only while that
+      // painter's own paint is what is up: a card, the archive or the weather
+      // card drawn since then leaves the old key behind)
+      var _outCard = '', _outHtml = null, _outKey = null;
       try {
         if (el3.firstChild) {
           var _pr = el3.parentNode;
@@ -57286,6 +57296,11 @@ function _restartGateAdsTimer() {
             _old.setAttribute('data-ad-fading', '1');
             _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
               + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
+            try {
+              var _oc = el3.querySelector(':scope > .gcard[data-gcard]');
+              if (_oc) { _outCard = _oc.getAttribute('data-gcard') || ''; _outHtml = el3.__gcardHtml || null; }
+              else if (el3._lastKey && el3.__gadNode && el3.__gadNode === el3.firstChild) _outKey = el3._lastKey;
+            } catch (eOc) {}
             while (el3.firstChild) _old.appendChild(el3.firstChild);
             // v23780 — THE WEATHER CARD LEAVES THE WAY IT ARRIVED.
             // Every other slide dissolves as one rectangle, which is right for
@@ -57332,7 +57347,46 @@ function _restartGateAdsTimer() {
       window._gateAdAuthChange = true;
       try { renderGateAd(_gateAdIndex); } catch (e) {}
       window._gateAdAuthChange = false;
-      if (_old) {
+      // 2026-10-20 — A TURN THAT DRAWS THE SLIDE ALREADY UP LEAVES IT UP.
+      // When the turn draws the centre card that was already up (the same
+      // card under the ?scene= review pin, or a deck where everything else
+      // skipped itself), or the same ad with the same words (a deck of one
+      // ad: the Welcome card alone, one hotel, one uploaded picture; or the
+      // ad under the pin), it is not crossfaded into a copy of itself: its
+      // own nodes go back where they were, or a card is repainted in place
+      // when a word or a time in it changed (as _gateCardsRefreshSoon does),
+      // and the cover goes in the same frame, before anything is painted.
+      // The lists already stayed put when the deck was the list alone
+      // (above), but not under the pin, and nothing else ever did: for a
+      // second both copies were on the screen, the old one dissolving over
+      // the new, and a one-language gate read its documents card twice
+      // ("Antes do embarque … Antes do embarque …", a pt gate in CI). The
+      // archive card (the airport's next mark on each visit) and the weather
+      // card (under its pin a turn is an arrival, v23777) turn as they did.
+      var _kept = false;
+      try {
+        if (_old && (_outCard || _outKey)) {
+          var _inCard = el3.querySelector(':scope > .gcard[data-gcard]');
+          var _same = false, _back = false;
+          if (_outCard) {
+            _same = !!(_inCard && _inCard.getAttribute('data-gcard') === _outCard);
+            _back = _same && !!_outHtml && el3.__gcardHtml === _outHtml;
+          } else {
+            _same = _back = !_inCard && !!el3.firstChild && el3.__gadNode === el3.firstChild && el3._lastKey === _outKey;
+          }
+          if (_same) {
+            if (_back) {
+              el3.innerHTML = '';
+              while (_old.firstChild) el3.appendChild(_old.firstChild);
+              if (_outKey) el3.__gadNode = el3.firstChild;
+            }
+            _old.remove();
+            _old = null;
+            _kept = true;
+          }
+        }
+      } catch (eKeep) {}
+      if (_old || _kept) {
         el3.style.transition = 'none';
         el3.style.opacity = '1';
       } else {
