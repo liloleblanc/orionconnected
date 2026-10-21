@@ -207,8 +207,9 @@ before). If anything does not match, stop and sort that out first.
 6. After it is merged: the Worker build can take 5 to 10 minutes to go live.
    Then, within about 2 minutes, `/osky/status` shows `"on":true` and the
    relay's state turns from `off` to `idle` (nothing wanted yet) or `ready`.
-   It must answer 200, not 410. (The boards start asking for flights in a
-   later change; until then the relay calls nothing.)
+   It must answer 200, not 410. The relay calls OpenSky only for the boxes
+   the boards ask for (`/oskypos`, below); with no gate showing a flight it
+   calls nothing.
 
 ### 6. If OpenSky extends the term (or moves its start)
 
@@ -300,6 +301,20 @@ Remove these, after an explicit yes:
 | `GET /osky/wanted` | the relay, `OPENSKY_ON=1` | the boxes and flights the boards want (`oskyWant`), each lapsing after 10 minutes |
 | `POST /osky/put` | the relay, `OPENSKY_ON=1`, a JSON body | reduced positions for a wanted box, checked field by field, kept 180 s in KV `osky:pos:<box>` and nowhere else |
 | `GET /osky/status` | anyone | counts and yes/no only: on/off, pin set, registered, creds set, stop date, wanted boxes, the relay's last report. Never the address. |
+
+**The boards' side** (v24078): `GET /oskypos?ap=&f=&cs=&hex=&p=` (`handleOskyPos`),
+outside `/osky/` because it answers our own pages (the board hosts, by name,
+never `*`; any other page gets a bare 403). A gate asks it for its own
+flight's position before Flightradar24, and asks Flightradar24 only when it
+has nothing. The Worker draws the box itself, around the board's airport
+(25 sq deg or less, on a half-degree grid, shared by an airport well inside
+another's box), opens a new box only while the relay has room at its pace
+(`oskyBoxBudget`: the calls left today over the hours left, from the relay's
+report; 2 boxes without one), hands the relay the boxes with a gate's tracked
+flight first, and answers one flight, reduced (position, altitude in feet,
+speed in knots, the fix's age, its callsign). `{ "on": false }` while
+`OPENSKY_ON` is not `1` or after `OSKY_STOP_AT`: the boards then stop asking
+for 10 minutes and use Flightradar24. Tests: `tests/opensky-boards.test.js`.
 
 Every locked route needs the caller to be at the pinned address
 (`CF-Connecting-IP`, set by Cloudflare), a registration from that address,

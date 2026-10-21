@@ -160,6 +160,10 @@
     var x = own ? Object.assign({}, f, { N: own }) : f;
     var city = el.getAttribute('data-i18n-city');
     if (city) x = Object.assign({}, x, { CITY: cityName(city, l) });
+    // a paper's own record, kept as published (credits.html, credOskyCite)
+    if (el.hasAttribute('data-cite-paper')) {
+      x = Object.assign({}, x, { AUTHORS: el.getAttribute('data-cite-authors') || '', PAPER: el.getAttribute('data-cite-paper') || '', VENUE: el.getAttribute('data-cite-venue') || '' });
+    }
     return S.fmt(key, l, x, true);
   }
   function cityName(code, l) {

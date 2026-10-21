@@ -284,7 +284,10 @@ test('the English written into the pages, for a reader without script, is the st
   for (const [name, html] of Object.entries(PAGES)) {
     for (const m of html.matchAll(/<\w+\b([^>]*?)data-i18n="([^"]+)"([^>]*)>([^<]*)</g)) {
       const own = /data-i18n-n="(\d+)"/.exec(m[1] + m[3]);
-      assert.equal(dec(m[4]), BS.fmt(m[2], 'en', Object.assign({}, F, own ? { N: own[1] } : {}), true), `${name} ${m[2]}`);
+      // a paper's own record rides on its element (data-cite-*), as home.js fills it (v24078)
+      const cite = {};
+      for (const c of (m[1] + m[3]).matchAll(/data-cite-(authors|paper|venue)="([^"]*)"/g)) cite[c[1].toUpperCase()] = c[2];
+      assert.equal(dec(m[4]), BS.fmt(m[2], 'en', Object.assign({}, F, own ? { N: own[1] } : {}, cite), true), `${name} ${m[2]}`);
       n++;
     }
     for (const m of html.matchAll(/(alt|aria-label|content)="([^"]*)"\s+data-i18n-(?:alt|label|content)="([^"]+)"([^>]*)/g)) {

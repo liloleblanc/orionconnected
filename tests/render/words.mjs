@@ -467,13 +467,17 @@ const PAIRS = String.raw`(function () {
     }
     // 3. the same words in two parts of one small holder (the two ends of
     // a strip, two halves of a pair built as blocks): a holder of 2 to 6
-    // visible children, two of which read the same
+    // visible children, two of which read the same. Only what the walk
+    // reached (idx): nothing inside a hidden parent or operator UI. The
+    // closed settings console is opacity 0 with its tabs at full opacity
+    // inside it, and its "DISPLAY" heading over its "Display" tab was judged
+    // as a strip (tour de, 2026-10-21).
     var holders = doc.body.querySelectorAll('*');
     for (var h = 0; h < holders.length; h++) {
       var ho = holders[h], kids = [];
-      if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|SELECT|svg|SVG)$/.test(ho.tagName) || hidden(cs(ho))) continue;
+      if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|SELECT|svg|SVG)$/.test(ho.tagName) || !idx.has(ho)) continue;
       for (var ch = ho.firstElementChild; ch; ch = ch.nextElementSibling) {
-        if (hidden(cs(ch))) continue;
+        if (!idx.has(ch)) continue;
         var rr = ch.getBoundingClientRect();
         if (rr.width < 1 || rr.height < 1 || !onScreen(rr)) continue;
         var tx = norm(ch.innerText || '');
@@ -1624,8 +1628,10 @@ const INJECT = `(function () {
 // either side of its bar, a label stacked over itself, a strip that says the
 // same at both ends, a bar at the end of a line and at its start, and two
 // bars with nothing between them; and, beside them, what is right: one word
-// with no bar, a list whose dots stay with the item before them, and an
-// airport mark beside its clock (PAIRS_OK, which must not be seen).
+// with no bar, a list whose dots stay with the item before them, an airport
+// mark beside its clock, and a strip saying the same at both ends inside a
+// parent at opacity 0, as the closed settings console is (PAIRS_OK, which
+// must not be seen).
 const PAIR_INJECT = `(function () {
   var host = document.createElement('div');
   host.id = '__wsPairs';
@@ -1638,7 +1644,8 @@ const PAIR_INJECT = `(function () {
     + '<div><span>Flugsteig</span> | | <span>Zone</span></div>'
     + '<div>PAIRS_OK Sitzplatz</div>'
     + '<div><span style="display:inline-block">PAIRS_OK Eins&nbsp;\u00b7</span> <span style="display:inline-block">Zwei</span></div>'
-    + '<div><span role="img" aria-label="YQM" style="display:inline-block;width:30px;height:20px;background:#fff"></span><span>|</span><span>PAIRS_OK 10:10</span></div>';
+    + '<div><span role="img" aria-label="YQM" style="display:inline-block;width:30px;height:20px;background:#fff"></span><span>|</span><span>PAIRS_OK 10:10</span></div>'
+    + '<div style="opacity:0"><div style="display:flex;gap:20px"><div>PAIRS_OK Anzeige</div><div>Suche</div><div>PAIRS_OK Anzeige</div></div></div>';
   document.body.appendChild(host);
   return 1;
 })()`;
