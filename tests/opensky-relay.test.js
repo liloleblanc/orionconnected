@@ -674,10 +674,11 @@ test('no CORS and no caching anywhere under /osky/, the routes sit before the CO
   assert.doesNotMatch(WORKER_SRC, /\/adsb\/osky|\/adsb\/opensky/i);
 });
 
-test('the board-side change is told its rules where it will read them (oskyWant)', () => {
+test('the boards\' side keeps its rules, written where it is read (oskyWant; v24078: tests/opensky-boards.test.js)', () => {
   const at = WORKER_SRC.indexOf('async function oskyWant(');
-  const note = WORKER_SRC.slice(WORKER_SRC.lastIndexOf('// The boards\' side:', at), at);
-  assert.match(note, /never with a box or a flight taken from a public request/);
+  const note = WORKER_SRC.slice(WORKER_SRC.lastIndexOf('// THE RULES THE BOARDS\' SIDE', at), at);
+  assert.match(note, /never with a box taken from a public request/);
+  assert.match(note, /their own digits|its own digits/);
   assert.match(note, /oskyStopMs\(env\)/);
   assert.match(note, /Data: OpenSky Network/);
   assert.match(note, /Schäfer et al\. \(IPSN 2014\)/);

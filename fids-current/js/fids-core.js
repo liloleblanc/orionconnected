@@ -7918,7 +7918,8 @@ async function _gateNumbersPoll() {
       try { window._gateInboundLivePos = null; } catch (e) {}
       return;
     }
-    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex); } catch (e) {}
+    // v24078 — true: this gate's own flight, tracked (OpenSky gives it first call on the relay's boxes)
+    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex, true); } catch (e) {}
     // v23103 — THE TAIL IS NOT THE FLIGHT. Registration matching finds the
     // airframe wherever it is — including mid-air on its PREVIOUS leg.
     // On gate 4: AC1984 hadn't left Toronto (departs ~90 min later) yet
@@ -7974,10 +7975,13 @@ async function _gateNumbersPoll() {
         var _fxAt = (typeof _adsb.at === 'number' ? _adsb.at : Date.now())
                   - ((typeof _adsb.age === 'number' && _adsb.age > 0) ? _adsb.age * 1000 : 0);
         inb._liveLat = _adsb.lat; inb._liveLng = _adsb.lng; inb._liveAt = _fxAt;
+        // v24078 — whose position it is: OpenSky's carries its credit to the board
+        inb._liveOsky = _adsb.osky === true;
         // onGround rides along so the map glide can be suppressed — see the
         // dead-reckoning guard in the map tick.
         window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt, onGround: _adsb.onGround === true,
-                                       at: _fxAt, fl: flt, via: _adsb.via || '', cs: _adsb.cs || '' };
+                                       at: _fxAt, fl: flt, via: _adsb.via || '', cs: _adsb.cs || '', osky: _adsb.osky === true };
+        if (_adsb.osky === true) _oskyShown();
       }
       // The aircraft's REAL track over the ground. Published globally as well as
       // on the row, because the map markers draw from a different scope and had
@@ -17006,7 +17010,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24076" src="/textures/gate-sky-shelf.mp4?v=24076" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24078" src="/textures/gate-sky-shelf.mp4?v=24078" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17050,7 +17054,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24076" src="/textures/gate-sky-shelf.mp4?v=24076" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24078" src="/textures/gate-sky-shelf.mp4?v=24078" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -34930,7 +34934,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24076';
+var FIDS_BUILD_TAG = 'v24078';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -40362,10 +40366,11 @@ function _gateLiveFix(row) {
   // The provider's own age (seen_pos, in seconds) — an old fix is not a position.
   if (c && typeof c.age === 'number' && c.age * 1000 > _FIX_MAX_AGE_MS) c = null;
   var lat = null, lng = null, src = '';
-  if (c && typeof c.lat === 'number' && typeof c.lng === 'number') { lat = c.lat; lng = c.lng; src = 'adsb'; }
+  var osky = false;
+  if (c && typeof c.lat === 'number' && typeof c.lng === 'number') { lat = c.lat; lng = c.lng; src = 'adsb'; osky = c.osky === true; }
   else if (typeof row._liveLat === 'number' && typeof row._liveLng === 'number'
            && !(typeof row._liveAt === 'number' && (Date.now() - row._liveAt) > _FIX_MAX_AGE_MS)) {
-    lat = row._liveLat; lng = row._liveLng; src = 'feed';
+    lat = row._liveLat; lng = row._liveLng; src = 'feed'; osky = row._liveOsky === true;
   }
   if (lat === null || lng === null) return null;
   if (!_fixPlausibleForLeg(row, lat, lng, src === 'adsb' ? !!(c && c.onGround === true) : row._liveOnGround === true)) {
@@ -40373,7 +40378,8 @@ function _gateLiveFix(row) {
     if (_gateFixCache && _gateFixCache.key === key) _gateFixCache = null;
     return null;
   }
-  return { lat: lat, lng: lng, onGround: !!(c && c.onGround === true), src: src };
+  if (osky) _oskyShown();
+  return { lat: lat, lng: lng, onGround: !!(c && c.onGround === true), src: src, osky: osky };
 }
 
 // ── Actual-track recorder + deviation helper ──────────────────────────────
@@ -40514,7 +40520,112 @@ function _icaoCallsign(s) {
   var icao = _IATA_TO_CALLSIGN[m[1]];
   return icao ? icao + m[2] : '';
 }
-async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
+// ── v24078 — THE OPENSKY NETWORK FIRST, FLIGHTRADAR24 ONLY WHEN IT HAS NOTHING ──
+// Live positions under OpenSky's licence come through our own server (the
+// relay, stream-server/opensky-relay/) and the Worker's /oskypos route, which
+// draws the box around this airport itself, shares it with every screen and
+// airport that can use it, and opens one only while the relay has room for it
+// in its 1,500 calls a day. Flightradar24 is paid per row, so it is asked only
+// when OpenSky has no answer for the flight: it can only be asked less, never
+// more. The answer's credit ("Flight positions: The OpenSky Network",
+// mapCreditOsky) shows on the board while anything it gave is drawn
+// (_oskyShown, _gatePhotoCredit). Nothing of it is kept beyond this page's
+// memory: never /fltrack/, the aircraft memory or a log.
+// { on:false } (switched off, past the licence's end, or not our page): no
+// asking for 10 minutes, and Flightradar24 as before, silently.
+var _OSKY_URL = _ADSB_BASE.replace(/\/adsb$/, '/oskypos');
+var _OSKY_TTL_MS = 45000;
+var _OSKY_CREDIT_MS = 120000;
+var _oskyCache = Object.create(null);
+var _oskyOffUntil = 0, _oskyStopAt = 0, _oskyShownAt = 0;
+var _oskyHexOf = Object.create(null);   // flight -> icao24, from an answer that named it
+function _oskyAsking(now) { return now >= _oskyOffUntil && !(_oskyStopAt > 0 && now >= _oskyStopAt); }
+// One flight's position from OpenSky, shaped as _adsbTelemetry's answer, or
+// null (no answer, or not this flight).
+async function _oskyTelemetry(fl, names, hexId, tracked, ourDigits) {
+  var now = Date.now();
+  var ap = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+  fl = String(fl || '').toUpperCase();
+  if (!/^[A-Z]{3}$/.test(ap) || !fl || !_oskyAsking(now)) return null;
+  var cs = [];
+  names.forEach(function (c) {
+    c = String(c || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(c) && cs.indexOf(c) < 0 && cs.length < 3) cs.push(c);
+  });
+  var hex = String(hexId || _oskyHexOf[fl] || '').toLowerCase();
+  if (!/^[0-9a-f]{6}$/.test(hex)) hex = '';
+  if (!hex && !cs.length) return null;
+  var q = '?ap=' + ap + '&f=' + encodeURIComponent(fl) + (cs.length ? '&cs=' + cs.join(',') : '') + (hex ? '&hex=' + hex : '') + '&p=' + (tracked ? 2 : 1);
+  var hit = _oskyCache[q], ac = null;
+  if (hit && (now - hit.at) < _OSKY_TTL_MS) ac = hit.ac;
+  else {
+    var ctl = null, timer = null;
+    try {
+      if (typeof AbortController === 'function') {
+        ctl = new AbortController();
+        timer = setTimeout(function () { try { ctl.abort(); } catch (e) {} }, 2500);
+      }
+      var r = await fetch(_OSKY_URL + q, ctl ? { signal: ctl.signal, cache: 'no-store' } : { cache: 'no-store' });
+      if (timer) clearTimeout(timer);
+      if (!r.ok) {
+        // a flight it cannot read is that flight's miss; anything else, a pause
+        if (r.status === 400) _oskyCache[q] = { at: Date.now(), ac: null };
+        else _oskyOffUntil = Date.now() + (r.status === 403 ? 600000 : 300000);
+        return null;
+      }
+      var j = await r.json();
+      var stop = j && typeof j.stop_at === 'string' ? Date.parse(j.stop_at) : NaN;
+      if (stop > 0) _oskyStopAt = stop;
+      if (!j || j.on !== true) { _oskyOffUntil = Date.now() + 600000; return null; }
+      ac = (Array.isArray(j.ac) && j.ac[0]) || null;
+      _oskyCache[q] = { at: Date.now(), ac: ac };
+    } catch (e) {
+      if (timer) clearTimeout(timer);
+      _oskyOffUntil = Date.now() + 300000;
+      return null;
+    }
+  }
+  if (!ac || typeof ac.lat !== 'number' || typeof ac.lon !== 'number') return null;
+  if (typeof ac.seen_pos === 'number' && ac.seen_pos > 900) return null;
+  // the aircraft squawking another flight's number is not this flight
+  var acCs = String(ac.flight || '').trim().toUpperCase();
+  var acDigits = acCs.replace(/^\D+/, '').replace(/\D+$/, '');
+  if (acDigits && ourDigits && acDigits !== ourDigits) return null;
+  var onGround = (ac.alt_baro === 'ground');
+  var alt = (typeof ac.alt_baro === 'number') ? Math.round(ac.alt_baro) : null;
+  var spd = (typeof ac.gs === 'number') ? Math.round(ac.gs) : null;
+  if (alt === null && spd === null && !onGround) return null;
+  if (typeof ac.hex === 'string' && /^[0-9a-f]{6}$/.test(ac.hex)) _oskyHexOf[fl] = ac.hex;
+  return {
+    alt: onGround ? 0 : alt, spd: spd, lat: ac.lat, lng: ac.lon,
+    track: (typeof ac.track === 'number') ? ac.track : null, vs: null, onGround: onGround,
+    reg: null, type: null, desc: null,
+    age: (typeof ac.seen_pos === 'number') ? ac.seen_pos : null, at: Date.now(),
+    // found by its icao24 reads as a tail ('hex'): the maps' evidence test
+    // then asks for our number on it, as for Flightradar24's
+    via: ac.by === 'icao24' ? 'hex' : 'callsign', cs: acCs, osky: true
+  };
+}
+// Something OpenSky gave is on the board: its credit shows (for 2 minutes
+// after the last time, or while the gate's live position is OpenSky's). The
+// line is drawn again whenever it is not up: the first position can arrive
+// before the board has a centre panel or a map on screen to hold it.
+function _oskyShown() {
+  var was = _oskyCreditOn();
+  _oskyShownAt = Date.now();
+  var up = false;
+  try { var el = document.querySelector('.gate-photo-credit'); up = !!(el && !el.hidden); } catch (e) {}
+  if (!was || !up) { try { if (typeof _gatePhotoCredit === 'function') _gatePhotoCredit(null); } catch (e) {} }
+}
+function _oskyCreditOn() {
+  var now = Date.now();
+  if (now - _oskyShownAt < _OSKY_CREDIT_MS) return true;
+  try {
+    var lp = window._gateInboundLivePos;
+    return !!(lp && lp.osky === true && typeof lp.at === 'number' && now - lp.at < 15 * 60000);
+  } catch (e) { return false; }
+}
+async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
   var tries = [];
   // v23331 — CALLSIGN FIRST. A callsign is set per flight; a registration
   // (or Mode-S hex) is the AIRFRAME wherever it is — its previous leg, a
@@ -40556,6 +40667,16 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
   if (/^[A-Z0-9-]{4,10}$/.test(_r)) tries.push('/reg/' + encodeURIComponent(_r));
   // Our flight's digits, for the tail guard ('JZA7992' still matches 'AC7992').
   var _ourDigits = (_fn || _cs).replace(/^\D+/, '').replace(/\D+$/, '');
+  // v24078 — OpenSky first (above): the callsigns are the ones the lookups
+  // below would try, so it finds the flight Flightradar24 would.
+  var _oskFl = _iataFn || _fn || _cs;
+  var _osk = null;
+  try { _osk = await _oskyTelemetry(_oskFl, [_cs, _fn, _icaoCallsign(_cs), _icaoCallsign(_fn)], _hexId, tracked === true, _ourDigits); } catch (e) { _osk = null; }
+  if (_osk) {
+    _osk.fl = _fn || _cs;
+    _adsbPublish(_osk, _r, _cs, _fn);
+    return _osk;
+  }
   var _numberQuiet = false;
   for (var i = 0; i < tries.length; i++) {
     // FR24 already said nothing is flying under our number: a guessed
@@ -40609,21 +40730,26 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
       via: ((tries[i].match(/^\/(\w+)\//) || [])[1]) || '',
       cs: String(ac.flight || '').trim().toUpperCase()
     };
-    // Publish under every identifier the caller might hold. The gate RENDER
-    // reads this directly rather than trusting that the 60-second poll
-    // happened to mutate the same inbound object the renderer is holding —
-    // it often is not the same object, which is why SPD/ALT stayed blank
-    // even with live data arriving.
-    try {
-      window._adsbLast = window._adsbLast || Object.create(null);
-      if (_r)  window._adsbLast[_r]  = _res;
-      if (_cs) window._adsbLast[_cs] = _res;
-      if (_fn) window._adsbLast[_fn] = _res;
-      if (_res.reg) window._adsbLast[String(_res.reg).toUpperCase()] = _res;
-    } catch (e2) {}
+    // v24078 — the aircraft's icao24, for OpenSky's next answer (memory only)
+    if (/^\/(callsign|flight)\//.test(tries[i]) && typeof ac.hex === 'string' && /^[0-9a-f]{6}$/.test(ac.hex)) _oskyHexOf[_oskFl] = ac.hex;
+    _adsbPublish(_res, _r, _cs, _fn);
     return _res;
   }
   return null;
+}
+// Publish under every identifier the caller might hold. The gate RENDER
+// reads this directly rather than trusting that the 60-second poll
+// happened to mutate the same inbound object the renderer is holding —
+// it often is not the same object, which is why SPD/ALT stayed blank
+// even with live data arriving.
+function _adsbPublish(_res, _r, _cs, _fn) {
+  try {
+    window._adsbLast = window._adsbLast || Object.create(null);
+    if (_r)  window._adsbLast[_r]  = _res;
+    if (_cs) window._adsbLast[_cs] = _res;
+    if (_fn) window._adsbLast[_fn] = _res;
+    if (_res.reg) window._adsbLast[String(_res.reg).toUpperCase()] = _res;
+  } catch (e2) {}
 }
 
 // Sync read for the render path, with a fire-and-forget refresh. The render
@@ -40643,6 +40769,7 @@ function _adsbCached(reg, callSign, flightNo, maxAgeMs, modeS) {
       if (v && (now - v.at) < (maxAgeMs || 90000)) { best = v; break; }
     }
   } catch (e) {}
+  if (best && best.osky) _oskyShown();
   if (!best && keys.length) {
     var ik = keys.join('|');
     if (!_adsbInflight[ik] || (now - _adsbInflight[ik]) > 20000) {
@@ -45645,6 +45772,10 @@ function _gatePhotoAdd(m) {
 // not fit under the panel on a 1280x720 board, and the maps cannot spare the
 // room. It shows while any map on the board has the photo in view, and goes
 // with the photo. A board with no centre panel keeps it in the map's corner.
+// v24078 — the same line carries OpenSky's credit (mapCreditOsky) while a
+// position it gave is on the board (_oskyCreditOn), on the gate map's or the
+// takeover map's corner when there is no centre panel; with both credits
+// due, the line takes them in turn, each in every language.
 var _GATE_PHOTO_MAPS = [];
 var _gatePhotoCreditTurn = 0, _gatePhotoCreditTimer = null;
 function _gatePhotoInView(m) {
@@ -45663,11 +45794,20 @@ function _gatePhotoCredit(m) {
       if (box.offsetWidth > 0 && _gatePhotoInView(mm)) { on = true; if (!mapBox) mapBox = box; }
       return true;
     });
+    var keys = on ? ['mapCreditOglNb'] : [];
+    if (typeof _oskyCreditOn === 'function' && _oskyCreditOn()) {
+      keys.push('mapCreditOsky');
+      if (!mapBox) ['gateMapBox', 'bigCraftMap'].some(function (id) {
+        var b = document.getElementById(id);
+        if (b && b.offsetWidth > 0) { mapBox = b; return true; }
+        return false;
+      });
+    }
     var col = document.querySelector('.g8-wrap .gad-media-col');
     var host = col || mapBox;
     var el = document.querySelector('.gate-photo-credit');
     if (el && (!host || el.parentNode !== host)) { el.parentNode.removeChild(el); el = null; }
-    if (!on || !host) {
+    if (!keys.length || !host) {
       if (el) el.hidden = true;
       if (_gatePhotoCreditTimer) { clearInterval(_gatePhotoCreditTimer); _gatePhotoCreditTimer = null; }
       return;
@@ -45680,8 +45820,9 @@ function _gatePhotoCredit(m) {
       host.appendChild(el);
     }
     var langs = BoardStrings.pairLangs(null, window._gateIata || '');
-    var lang = langs[_gatePhotoCreditTurn % Math.max(1, langs.length)];
-    var html = BoardStrings.pair('mapCreditOglNb', { langs: [lang] });
+    var turn = _gatePhotoCreditTurn % (keys.length * Math.max(1, langs.length));
+    var lang = langs[Math.floor(turn / keys.length) % Math.max(1, langs.length)];
+    var html = BoardStrings.pair(keys[turn % keys.length], { langs: [lang] });
     el.hidden = false;
     if (el.innerHTML !== html) {
       el.innerHTML = html;
@@ -47757,7 +47898,7 @@ function _gateFixFor(inb, ap, now) {
   try {
     var lp = window._gateInboundLivePos;
     if (lp) cands.push({ lat: lp.lat, lng: lp.lng, onGround: lp.onGround === true, alt: lp.altitude, spd: lp.speed,
-                         at: lp.at, fl: lp.fl, via: lp.via, cs: lp.cs, src: 'poll' });
+                         at: lp.at, fl: lp.fl, via: lp.via, cs: lp.cs, src: 'poll', osky: lp.osky === true });
   } catch (e) {}
   try {
     var store = window._adsbLast || {};
@@ -47767,17 +47908,18 @@ function _gateFixFor(inb, ap, now) {
       if (!v) return;
       cands.push({ lat: v.lat, lng: v.lng, onGround: v.onGround === true, alt: v.alt, spd: v.spd,
                    at: (typeof v.at === 'number') ? v.at - ((typeof v.age === 'number' && v.age > 0) ? v.age * 1000 : 0) : null,
-                   fl: v.fl, via: v.via, cs: v.cs, src: 'adsb' });
+                   fl: v.fl, via: v.via, cs: v.cs, src: 'adsb', osky: v.osky === true });
     });
   } catch (e) {}
   if (typeof inb._liveLat === 'number' && typeof inb._liveLng === 'number') {
     cands.push({ lat: inb._liveLat, lng: inb._liveLng, onGround: inb._liveOnGround === true, alt: inb._liveAlt,
-                 spd: inb._liveSpd, at: inb._liveAt, fl: inb.flight, via: 'feed', src: 'feed' });
+                 spd: inb._liveSpd, at: inb._liveAt, fl: inb.flight, via: 'feed', src: 'feed', osky: inb._liveOsky === true });
   }
   var best = null;
   for (var i = 0; i < cands.length; i++) {
     if (_gateFixCheck(cands[i], inb, ap, now) && (!best || cands[i].at > best.at)) best = cands[i];
   }
+  if (best && best.osky) _oskyShown();
   return best;
 }
 // ── WHICH ARRIVAL IS THIS DEPARTURE'S AEROPLANE (the gate-match) ─────────
@@ -60420,7 +60562,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24076" src="/textures/gate-sky-shelf.mp4?v=24076"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24078" src="/textures/gate-sky-shelf.mp4?v=24078"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
