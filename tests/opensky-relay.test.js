@@ -1145,7 +1145,7 @@ test('daily cap: counted on disk before each call, kept across a restart, paced 
     r.setClock(Date.UTC(2026, 9, 21, 8, 0, 30) / 1000);    // ceil(3 * 9 / 24) = 2
     await until(() => fake.statesCalls === 5, 'the next share at hour 8');
     writeConf(r.dir, [`STOP_AT=${FAR_STOP}`, 'DAILY_CAP=99999']);
-    await until(() => r.status().cap === 1500, 'the config may lower the cap, never raise it');
+    await until(() => r.status().cap === 12000, 'the config may lower the cap, never raise it');
   } finally { await r.stop(); await fake.close(); await w.close(); }
 });
 
@@ -1587,7 +1587,7 @@ test('install.sh: a re-run keeps the saved stop date and settings; an unclear st
   let r = sb.run(`write_config ${DEF}`);
   assert.equal(r.status, 0, r.stderr);
   const conf = sb.conf();
-  for (const line of [`STOP_AT=${DEF}`, 'DAILY_CAP=1500', 'CACHE_SECONDS=120', 'HEADING=0', 'WORKER_URL=' + WORKER_URL]) {
+  for (const line of [`STOP_AT=${DEF}`, 'DAILY_CAP=12000', 'CACHE_SECONDS=120', 'HEADING=1', 'WORKER_URL=' + WORKER_URL]) {
     assert.match(conf, unitLine(line), line);
   }
   assert.match(sb.timer(), /^OnCalendar=2026-11-12 22:59:59 UTC$/m);
@@ -1598,6 +1598,11 @@ test('install.sh: a re-run keeps the saved stop date and settings; an unclear st
   r = sb.run(`write_config ${DEF}`);
   assert.equal(r.status, 0, r.stderr);
   assert.equal(sb.conf(), '# mine\nSTOP_AT=2026-12-12T22:59:59Z\nDAILY_CAP=700\nHEADING=1\nCACHE_SECONDS=60\n', 'kept exactly');
+  // the two retired defaults are raised on a re-run; anything set by hand stays
+  fs.writeFileSync(path.join(sb.tmp, 'etc', 'relay.conf'), '# old\nSTOP_AT=2026-12-12T22:59:59Z\nDAILY_CAP=1500\nHEADING=0\nCACHE_SECONDS=120\n');
+  r = sb.run(`write_config ${DEF}`);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(sb.conf(), '# old\nSTOP_AT=2026-12-12T22:59:59Z\nDAILY_CAP=12000\nHEADING=1\nCACHE_SECONDS=120\n', 'the old 1500 cap and HEADING=0 move to 12000 and 1');
   assert.match(sb.timer(), /^OnCalendar=2026-12-12 22:59:59 UTC$/m, 'the timer follows the saved date');
   // two STOP_AT lines (or none): the original date, once, and every other line kept
   for (const bad of ['STOP_AT=2026-12-12T22:59:59Z\nDAILY_CAP=700\n stop_at=2027-01-01T00:00:00Z\n', 'DAILY_CAP=700\n']) {
