@@ -522,6 +522,17 @@ function lift(src, head) {
   }
   throw new Error('no end for ' + head);
 }
+// The words of a credit line the board wrote (the text outside its tags), to
+// compare what it says; it reads markup the board made, and cleans nothing.
+function wordsOf(html) {
+  let out = '', inTag = false;
+  for (const ch of html) {
+    if (ch === '<') inTag = true;
+    else if (ch === '>') inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+}
 function creditBoard({ col = true, oskyOn = true } = {}) {
   const made = [];
   const node = (cls) => {
@@ -574,7 +585,7 @@ test('the board\'s credit: "Flight positions: The OpenSky Network" while a posit
   const both = creditBoard();
   both.credit(both.photoMap(17));
   const seen = [];
-  for (let i = 0; i < 4; i++) { seen.push(both.line().innerHTML.replace(/<[^>]+>/g, '').slice(0, 16)); both.tick(); }
+  for (let i = 0; i < 4; i++) { seen.push(wordsOf(both.line().innerHTML).slice(0, 16)); both.tick(); }
   assert.deepEqual(seen, ['Contains informa', 'Flight positions', 'Contient de l’in', 'Positions des vo']);
   // and the photo's own line is untouched without OpenSky
   const photo = creditBoard({ oskyOn: false });
