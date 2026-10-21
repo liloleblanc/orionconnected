@@ -53,3 +53,12 @@ test('a named MAX variant keeps its own name', () => {
 test('a maker-less 7x7 dash variant from an authority feed keeps its maker', () => {
   assert.equal(formatAircraft('747-100'), 'Boeing 747-100');
 });
+
+test('a DC-9 code names the DC-9, never the raw code (v24077)', () => {
+  // The board sizes these four DC-9 codes; a D9S gate's caption printed 'D9S'.
+  assert.equal(formatAircraft('D9S'), 'McDonnell Douglas DC-9');
+  assert.equal(formatAircraft('DC9'), 'McDonnell Douglas DC-9');
+  assert.equal(formatAircraft('D93'), 'McDonnell Douglas DC-9-30');
+  assert.equal(formatAircraft('D95'), 'McDonnell Douglas DC-9-50');
+  assert.equal(formatAircraft('M80'), 'McDonnell Douglas MD-80', 'the MD-80s are untouched');
+});

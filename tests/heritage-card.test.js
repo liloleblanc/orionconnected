@@ -280,7 +280,10 @@ test('every card that names its own aeroplane has the file on disk', () => {
   // AC87 SVG as a PNG; the SVG stays on disk.
   assert.equal(byK['air-canada'].aircraft, '/aircraft/heritage/air-canada-dc9-ac87.png');
   assert.match(byK['air-canada'].file, /AC-1987-LOGO\.svg$/);
-  assert.equal(byK['air-canada-caps'].aircraft, '/aircraft/heritage/air-canada-dc9-ac80.svg');
+  // v24077 — the caps card's supplied polished drawing, a PNG too; its SVG is gone.
+  assert.equal(byK['air-canada-caps'].aircraft, '/aircraft/heritage/air-canada-dc9-ac80.png');
+  assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current', 'aircraft', 'heritage', 'air-canada-dc9-ac80.svg')),
+    'the replaced caps SVG is not left on disk: nothing uses it');
   assert.match(byK['air-canada-caps'].file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark (v24021)');
   for (const k of ['air-canada', 'air-canada-caps']) {
     assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', byK[k].file.replace(/^\//, ''))), k + ' mark on disk');
@@ -303,7 +306,9 @@ test('a heritage aeroplane drawn as SVG is all shapes, with no picture inside it
   for (const m of marks()) {
     if (m.aircraft && /\.svg$/.test(m.aircraft)) files.add(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, '')));
   }
-  assert.ok(files.size >= 2, 'the Air Canada DC-9 drawings are found');
+  // v24077 — the caps-livery DC-9 is a PNG now and its SVG is deleted; the 1987
+  // drawing's SVG is still on disk, so this keeps checking whatever SVG is left.
+  assert.ok(files.size >= 1, 'the heritage SVG drawings are found');
   for (const f of files) {
     const svg = fs.readFileSync(f, 'utf8');
     assert.doesNotMatch(svg, /<image\b/, path.basename(f) + ' has a bitmap pasted into it');
@@ -354,13 +359,15 @@ test('a shape drawn see-through in a heritage aeroplane has the artboard behind 
 test('the 767 card: the capitals livery and mark, a year every source agrees on, and its maker credited', () => {
   // v24015 — the aeroplane is a render of a CC BY 3D model, so the card names
   // the model's maker where the picture is seen, in all nine languages.
+  // v24077 — the picture is now a drawing made over that render (its windows,
+  // doors, wing and engine sit where the render's do), so the credit stays.
   const byK = Object.fromEntries(marks().map((m) => [m.key, m]));
   const m = byK['air-canada-767'];
   assert.ok(m, 'the 767 card exists');
   assert.equal(m.aircraft, '/aircraft/heritage/air-canada-767.png');
   assert.match(m.file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark, as the caps DC-9 card does');
   assert.equal(m.airports, '*CA');
-  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''))), 'the render is on disk');
+  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''))), 'the picture is on disk');
   for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
     const cap = STORE.bs('heritage:air-canada-767', l);
     assert.match(cap, /767-233/, 'the type prints as Air Canada\'s own designation, in ' + l);
