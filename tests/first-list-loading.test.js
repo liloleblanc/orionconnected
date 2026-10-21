@@ -148,12 +148,16 @@ test('the notice: the store\'s words in the board\'s notice box, render() keeps 
 // /flights/ and /yqm/ answers) is held until the test lets it go, answered at
 // once with ten flights of the airport asked for, or refused ('down': the
 // worker's 503 for a feed that failed; 'depdown': departures refused,
-// arrivals held). The mode is read from the page's hash (#ln=...). Nothing
-// from this file reaches page code but these constants.
+// arrivals held). The mode is read from the page's hash (#ln=...). Letting
+// the held answers go never mends a refused direction: a 'depdown' board's
+// departures stay refused after the release, as a feed that failed does, so
+// a retry on a slow runner cannot turn its notice into a list. Nothing from
+// this file reaches page code but these constants.
 const STUB = `(function () {
   var real = window.fetch;
   var m0 = /[#&]ln=(\\w+)/.exec(location.hash || '');
   var ln = window.__ln = { mode: m0 ? m0[1] : 'hold', held: 0, asked: 0 };
+  var depDown = ln.mode === 'depdown';
   var waiting = [];
   window.__lnRelease = function () { ln.mode = 'go'; var w = waiting; waiting = []; w.forEach(function (f) { f(); }); return w.length; };
   window.__lnHold = function () { ln.mode = 'hold'; return 1; };
@@ -180,7 +184,7 @@ const STUB = `(function () {
   }
   function answer(u) {
     var w = /\\/flights\\/airports\\/iata\\/([A-Z]{3})\\//.exec(u), arr = /direction=Arrival/.test(u);
-    if (ln.mode === 'down' || (ln.mode === 'depdown' && w && !arr)) return Promise.resolve(new Response('{"error":"error"}', { status: 503, headers: { 'Content-Type': 'application/json' } }));
+    if (ln.mode === 'down' || (depDown && w && !arr)) return Promise.resolve(new Response('{"error":"error"}', { status: 503, headers: { 'Content-Type': 'application/json' } }));
     var body = w ? JSON.stringify(rows(w[1], arr)) : '{"list":[]}';
     var res = function () { return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'X-Feed-State': 'live' } }); };
     if (ln.mode === 'go') return Promise.resolve(res());
