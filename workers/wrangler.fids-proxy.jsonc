@@ -117,7 +117,7 @@
     // added in the Cloudflare dashboard (fids-proxy -> Settings -> Variables
     // and Secrets -> Add, type Secret). Never here, and never as plain
     // dashboard vars: a deploy of this file wipes those.
-    "OPENSKY_ON": "0",
+    "OPENSKY_ON": "1",
     // The end of the licence term: 12 Nov 2026, 23:59:59 Swiss time. After
     // it every /osky/ route answers 410. Moved only with a signed extension,
     // at most 40 days at a time and before it is reached: the relay takes a
