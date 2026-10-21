@@ -610,3 +610,17 @@ test('the credit, the credits page and its citation, in all nine languages', () 
   for (const l of LANGS) assert.ok(BS.STR.credLead[l].includes(lead[l]), l);
   assert.match(CREDITS, /<meta name="description" content="[^"]*flight positions/);
 });
+
+test('the icao24 a board remembers for a flight number is good for its UTC day only', () => {
+  const pick = (name) => { const m = CORE.match(new RegExp('function ' + name + '\\([^)]*\\) \\{[^\\n]*\\}')); assert.ok(m, name); return m[0]; };
+  const run = new Function('clock', `var _oskyHexOf = Object.create(null); var Date = { now: function () { return clock.t; } };
+    ${pick('_oskyUtcDay')} ${pick('_oskyHexSet')} ${pick('_oskyHexGet')}
+    return { set: _oskyHexSet, get: _oskyHexGet };`);
+  const clock = { t: Date.UTC(2026, 9, 21, 23, 50) };
+  const m = run(clock);
+  m.set('AC123', 'c0ffee');
+  assert.equal(m.get('AC123'), 'c0ffee', 'the same day: remembered');
+  clock.t = Date.UTC(2026, 9, 22, 0, 10);
+  assert.equal(m.get('AC123'), '', 'after midnight UTC: forgotten, so the callsigns are asked again');
+  assert.doesNotMatch(CORE, /_oskyHexOf\[[^\]]+\]\s*=\s*ac\.hex/, 'every write goes through _oskyHexSet');
+});

@@ -40538,7 +40538,13 @@ var _OSKY_TTL_MS = 45000;
 var _OSKY_CREDIT_MS = 120000;
 var _oskyCache = Object.create(null);
 var _oskyOffUntil = 0, _oskyStopAt = 0, _oskyShownAt = 0;
-var _oskyHexOf = Object.create(null);   // flight -> icao24, from an answer that named it
+var _oskyHexOf = Object.create(null);   // flight -> { h: icao24, d: UTC day }, from an answer that named it
+// A flight number is flown by another aircraft tomorrow: the remembered icao24
+// is good for the UTC day it was learned on only, so a board left running past
+// midnight never asks OpenSky for yesterday's aircraft by its code alone.
+function _oskyUtcDay(ms) { return Math.floor((ms == null ? Date.now() : ms) / 86400000); }
+function _oskyHexSet(fl, hex) { _oskyHexOf[fl] = { h: hex, d: _oskyUtcDay() }; }
+function _oskyHexGet(fl) { var e = _oskyHexOf[fl]; return e && e.d === _oskyUtcDay() ? e.h : ''; }
 function _oskyAsking(now) { return now >= _oskyOffUntil && !(_oskyStopAt > 0 && now >= _oskyStopAt); }
 // One flight's position from OpenSky, shaped as _adsbTelemetry's answer, or
 // null (no answer, or not this flight).
@@ -40552,7 +40558,7 @@ async function _oskyTelemetry(fl, names, hexId, tracked, ourDigits) {
     c = String(c || '').trim().toUpperCase().replace(/\s+/g, '');
     if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(c) && cs.indexOf(c) < 0 && cs.length < 3) cs.push(c);
   });
-  var hex = String(hexId || _oskyHexOf[fl] || '').toLowerCase();
+  var hex = String(hexId || _oskyHexGet(fl) || '').toLowerCase();
   if (!/^[0-9a-f]{6}$/.test(hex)) hex = '';
   if (!hex && !cs.length) return null;
   var q = '?ap=' + ap + '&f=' + encodeURIComponent(fl) + (cs.length ? '&cs=' + cs.join(',') : '') + (hex ? '&hex=' + hex : '') + '&p=' + (tracked ? 2 : 1);
@@ -40595,7 +40601,7 @@ async function _oskyTelemetry(fl, names, hexId, tracked, ourDigits) {
   var alt = (typeof ac.alt_baro === 'number') ? Math.round(ac.alt_baro) : null;
   var spd = (typeof ac.gs === 'number') ? Math.round(ac.gs) : null;
   if (alt === null && spd === null && !onGround) return null;
-  if (typeof ac.hex === 'string' && /^[0-9a-f]{6}$/.test(ac.hex)) _oskyHexOf[fl] = ac.hex;
+  if (typeof ac.hex === 'string' && /^[0-9a-f]{6}$/.test(ac.hex)) _oskyHexSet(fl, ac.hex);
   return {
     alt: onGround ? 0 : alt, spd: spd, lat: ac.lat, lng: ac.lon,
     track: (typeof ac.track === 'number') ? ac.track : null, vs: null, onGround: onGround,
@@ -40731,7 +40737,7 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
       cs: String(ac.flight || '').trim().toUpperCase()
     };
     // v24078 — the aircraft's icao24, for OpenSky's next answer (memory only)
-    if (/^\/(callsign|flight)\//.test(tries[i]) && typeof ac.hex === 'string' && /^[0-9a-f]{6}$/.test(ac.hex)) _oskyHexOf[_oskFl] = ac.hex;
+    if (/^\/(callsign|flight)\//.test(tries[i]) && typeof ac.hex === 'string' && /^[0-9a-f]{6}$/.test(ac.hex)) _oskyHexSet(_oskFl, ac.hex);
     _adsbPublish(_res, _r, _cs, _fn);
     return _res;
   }
