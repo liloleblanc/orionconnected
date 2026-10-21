@@ -943,7 +943,9 @@ test('the status bar: NOW BOARDING for the whole of boarding, FINAL CALL and GAT
   assert.match(asm, /\+ _boardWelcomeStripHtml\('boarding'\)\s*\+ _boardBandHtml\(\)/);
   assert.doesNotMatch(asm.split("_boardWelcomeStripHtml('boarding')")[0], /_seq/, 'the bar does not follow the queue');
   const strip = inner('_boardWelcomeStripHtml');
-  assert.match(strip, /var _bwNB = _lblEntry\('nowBoarding'\);/);
+  // (v24076: through the pair helper, both halves kept on a two-language
+  // board and the words once on a one-language board)
+  assert.match(strip, /_bwMidWords = _gateLbl\('nowBoarding', _frF, /);
   // the final call and gate closed replace it, in their own words
   assert.match(UXG, /var finalHdr = _gateLbl\(isGateClosed \? 'gateClosed' : 'finalCall', _frF,/);
   // the words, in nine languages (the reviewed wording)

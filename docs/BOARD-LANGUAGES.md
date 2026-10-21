@@ -118,6 +118,10 @@ Never:
   or with the French-first flag (`_frF ? 'Vol' : 'Flight'`);
 * slice `langs` (`langs.slice(0, 2)`), read `boardLangsFor(iata)[1]`, or keep a
   private list of language codes;
+* pair a language with itself: on a board set to one language a pair is its
+  words once, with no bar (never `L[1] || L[0]` as the second half). Build a
+  pair with `bsPair` or `_gateLbl`; `keepDup` keeps both halves on a
+  two-language board when they share a word ('Zones | Zones');
 * format a time with a literal locale (`toLocaleTimeString('en-US', …)`,
   `hour12: true`);
 * rewrite text on a timer after render.
@@ -203,8 +207,11 @@ iframes. It fails on any word that is not one of the board's languages or
 data, a 12-hour clock on a board not led by English, feed text marked with
 a language it is not in, Arabic, Japanese or Chinese not marked with its
 language and direction, and any key the store was asked for and does not
-have (`BoardStrings.misses`: a key held in a variable renders blank). A
-language's words are the store's — but an English word (the store's
+have (`BoardStrings.misses`: a key held in a variable renders blank). On a
+board in one language it also fails a label printed twice (either side of
+one bar, one over the other, or at both ends of one strip) and a separator
+with nothing on one side, two with nothing between them, or one alone on its
+row. A language's words are the store's — but an English word (the store's
 English, or everyday English) counts as another language's only when the
 store's translations use it in two entries or a reviewed list says so, so an
 English word slipped into one translation is not vouched for by the store

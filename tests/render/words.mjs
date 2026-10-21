@@ -24,8 +24,11 @@
 //   variable, a helper copied under another name) fails too: it rendered
 //   blank on that screen.
 //
-//   What is shown: the gate (its whole centre deck, its three information
-//   cards each through its own ?scene=, its standby lists (every row whole,
+//   What is shown: the gate (its whole centre deck, turned by this check and
+//   never by the clock, every turn read in its middle, the deck again with
+//   every card due; its three information
+//   cards each through its own ?scene= and through the turn that brings each
+//   back, which leaves it up; its standby lists (every row whole,
 //   with Later at this gate up and without; with eight names on the full
 //   panel, the documents kept; painted while a face is still loading,
 //   fitted in their first frame; and their window, not in the deck a minute
@@ -327,6 +330,183 @@ const READ = `(function () {
   var M = []; try { M = (window.BoardStrings && BoardStrings.misses) ? BoardStrings.misses.slice() : []; } catch (e) {}
   return JSON.stringify({ langs: L, texts: out, misses: M });
 })()`;
+
+// ── A BOARD IN ONE LANGUAGE SAYS EACH LABEL ONCE ────────────────────────────
+// v24076 — a gate set to one language read "Now Boarding | Now Boarding"
+// across its boarding sign: the strip paired the one language with itself.
+// On a one-language board this reads the screen (every same-origin frame
+// too) for a label printed twice — either side of one separator, one over
+// the other in one small holder, or as two parts of one strip (its two ends)
+// — and for a separator ('|', '·', '•') with nothing on one side in its
+// line, two separators with nothing between them, or a separator alone on
+// its row. Icons count as something (an airport mark beside its clock).
+const PAIRS = String.raw`(function () {
+  var found = [];
+  function where(el) {
+    var p = [];
+    for (var e = el; e && e.nodeType === 1 && p.length < 5; e = e.parentElement)
+      p.unshift(e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\s+/).slice(0, 3).join('.') : ''));
+    return p.join(' > ');
+  }
+  function run(doc, win, tag) {
+    if (!doc.body) return;
+    var SEPC = '|\u00B7\u2022';
+    var SEP_RUN = new RegExp('^[\\s' + SEPC + '/]+$');
+    var SPLIT = new RegExp('([' + SEPC + '])');
+    var csCache = new Map();
+    function cs(el) { var c = csCache.get(el); if (!c) { c = win.getComputedStyle(el); csCache.set(el, c); } return c; }
+    function hidden(c) { return c.display === 'none' || c.visibility === 'hidden' || parseFloat(c.opacity) < 0.05; }
+    function inline(el) { return /^(inline|contents|inline-block|inline-flex|inline-grid)$/.test(cs(el).display); }
+    function pseudo(el, pe) {
+      var c = win.getComputedStyle(el, pe), ct = c.content;
+      if (!ct || ct === 'none' || ct === 'normal' || hidden(c)) return '';
+      var txt = '', re = /"((?:[^"\\]|\\.)*)"|attr\(\s*([\w-]+)\s*\)/g, m;
+      while ((m = re.exec(ct))) txt += m[1] != null ? m[1].replace(/\\([0-9a-fA-F]{1,6})\s?/g, function (x, h) { return String.fromCodePoint(parseInt(h, 16)); }).replace(/\\(.)/g, '$1') : (el.getAttribute(m[2]) || '');
+      return txt;
+    }
+    // ── atoms in document order: words, separators, icons, line breaks
+    var atoms = [];
+    function rectOf(node, a, b) {
+      try { var r = doc.createRange(); r.setStart(node, a); r.setEnd(node, b); var rs = r.getClientRects(); var f0 = rs.length ? rs[0] : r.getBoundingClientRect(); f0.__last = rs.length ? rs[rs.length - 1] : f0; return f0; } catch (e) { return null; }
+    }
+    function pushText(s, el, node, pe) {
+      if (!s) return;
+      var pieces = s.split(SPLIT), off = 0;
+      for (var i = 0; i < pieces.length; i++) {
+        var piece = pieces[i], start = off; off += piece.length;
+        if (!piece) continue;
+        var isSep = piece.length === 1 && SEPC.indexOf(piece) >= 0;
+        if (!isSep && !/\S/.test(piece)) continue;
+        if (!isSep && SEP_RUN.test(piece)) isSep = true;  // ' / '
+        var rect = null;
+        if (node) rect = rectOf(node, start, start + piece.length);
+        else { var rs = el.getClientRects(); var r0 = rs.length ? (pe === '::before' ? rs[0] : rs[rs.length - 1]) : el.getBoundingClientRect(); rect = { top: r0.top, bottom: r0.bottom, left: pe === '::before' ? r0.left : r0.right, right: pe === '::before' ? r0.left : r0.right, width: 0, height: r0.height }; }
+        atoms.push({ t: isSep ? 'sep' : 'w', v: piece.trim(), el: el, rect: rect });
+      }
+    }
+    function walk(el) {
+      var c = cs(el);
+      if (hidden(c) || el.closest('[data-operator]')) return;
+      var blk = !inline(el);
+      atoms.push({ t: 'mk', el: el });
+      if (blk) atoms.push({ t: 'br', el: el });
+      var tagn = el.tagName;
+      if (tagn === 'IMG' || tagn === 'svg' || tagn === 'SVG' || tagn === 'CANVAS' || tagn === 'VIDEO' || el.getAttribute('role') === 'img') {
+        var r = el.getBoundingClientRect();
+        if (r.width > 2 && r.height > 2) atoms.push({ t: 'i', el: el, rect: r });
+        if (blk) atoms.push({ t: 'br', el: el });
+        return;
+      }
+      pushText(pseudo(el, '::before'), el, null, '::before');
+      for (var n = el.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3) pushText(n.nodeValue, el, n);
+        else if (n.nodeType === 1 && !/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|OPTION)$/.test(n.tagName)) walk(n);
+      }
+      pushText(pseudo(el, '::after'), el, null, '::after');
+      if (blk) atoms.push({ t: 'br', el: el });
+    }
+    walk(doc.body);
+    var vw = win.innerWidth, vh = win.innerHeight;
+    function onScreen(r) { return r && !(r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) && r.height > 0; }
+    function sameRow(a, b) { return a && b && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > Math.min(a.height, b.height) * 0.3; }
+    var idx = new Map(); atoms.forEach(function (a, i) { if (!idx.has(a.el)) idx.set(a.el, i); });
+    // the atoms inside an element: its range in document order
+    function span(el) {
+      var s = -1, e = -1;
+      for (var i = idx.get(el) || 0; i < atoms.length; i++) {
+        if (el.contains(atoms[i].el)) { if (s < 0) s = i; e = i; }
+        else if (s >= 0) break;
+      }
+      return [s, e];
+    }
+    var norm = function (s) { return String(s).replace(/\s+/g, ' ').trim().replace(/[:\uFF1A.,;!?]+$/, '').toLocaleLowerCase(); };
+    var hasL = function (s) { return /\p{L}/u.test(s); };
+    // 1. separators: one with nothing on one side in its line's scope
+    for (var i = 0; i < atoms.length; i++) {
+      var a = atoms[i];
+      if (a.t !== 'sep' || !onScreen(a.rect)) continue;
+      // the scope: the nearest block that holds something besides separators
+      var sc = a.el, rng = null;
+      for (var e2 = a.el; e2 && e2 !== doc.body; e2 = e2.parentElement) {
+        if (inline(e2)) continue;
+        var sp = span(e2), any = false;
+        for (var k = sp[0]; k <= sp[1] && k >= 0; k++) if (atoms[k].t === 'w' || atoms[k].t === 'i') { any = true; break; }
+        if (any) { sc = e2; rng = sp; break; }
+      }
+      if (!rng) continue;
+      // (a word scrolled or clipped out of view still counts: a ticker's
+      // next message is past the edge of the screen, not missing)
+      var prev = null, next = null, dbl = false;
+      for (var k2 = i - 1; k2 >= rng[0]; k2--) { var x = atoms[k2]; if (x.t === 'w' || x.t === 'i') { prev = x; break; } else if (x.t === 'sep' && !prev) { dbl = true; } }
+      for (var k3 = i + 1; k3 <= rng[1]; k3++) { var y = atoms[k3]; if (y.t === 'w' || y.t === 'i') { next = y; break; } }
+      var text = (sc.innerText || sc.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+      if (!prev || !next) found.push({ kind: 'dangling', text: text, sep: a.v, where: tag + where(sc), at: !prev ? 'start' : 'end' });
+      else if (onScreen(prev.rect) && onScreen(next.rect) && !sameRow(a.rect, prev.rect.__last || prev.rect) && !sameRow(a.rect, next.rect)) found.push({ kind: 'stranded', text: text, sep: a.v, where: tag + where(sc) });
+      if (dbl) found.push({ kind: 'double-sep', text: text, where: tag + where(sc) });
+    }
+    // 2. the same words either side of one separator, or stacked one over
+    // the other with nothing between, inside one block
+    var dupHits = [];
+    for (var j = 0; j < atoms.length; j++) {
+      var w1 = atoms[j];
+      if (w1.t !== 'w' || !hasL(w1.v) || !onScreen(w1.rect)) continue;
+      var m2 = j + 1, seps = 0, brs = 0, stop = false;
+      while (m2 < atoms.length && atoms[m2].t !== 'w') { if (atoms[m2].t === 'i') { stop = true; break; } if (atoms[m2].t === 'sep') seps++; else if (atoms[m2].t === 'br') brs++; m2++; }
+      if (stop || m2 >= atoms.length || seps > 1) continue;
+      var w2 = atoms[m2];
+      if (!onScreen(w2.rect)) continue;
+      if (norm(w1.v).length >= 2 && norm(w1.v) === norm(w2.v)) {
+        // the smallest element holding both
+        var c2 = w1.el; while (c2 && !c2.contains(w2.el)) c2 = c2.parentElement;
+        // a list of rows (two rows saying 'On time') is not a pair: only a
+        // pair-sized holder counts (fewer than 12 atoms)
+        var sp2 = c2 ? span(c2) : [0, 0];
+        var size = sp2[1] - sp2[0];
+        found.push({ kind: seps ? 'twice' : (brs ? 'twice-stacked' : 'twice-joined'), text: (c2 && (c2.innerText || c2.textContent) || '').replace(/\s+/g, ' ').trim().slice(0, 200), word: w1.v, where: tag + where(c2 || w1.el), small: size < 12 });
+      }
+    }
+    // 3. the same words in two parts of one small holder (the two ends of
+    // a strip, two halves of a pair built as blocks): a holder of 2 to 6
+    // visible children, two of which read the same
+    var holders = doc.body.querySelectorAll('*');
+    for (var h = 0; h < holders.length; h++) {
+      var ho = holders[h], kids = [];
+      if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|SELECT|svg|SVG)$/.test(ho.tagName) || hidden(cs(ho))) continue;
+      for (var ch = ho.firstElementChild; ch; ch = ch.nextElementSibling) {
+        if (hidden(cs(ch))) continue;
+        var rr = ch.getBoundingClientRect();
+        if (rr.width < 1 || rr.height < 1 || !onScreen(rr)) continue;
+        var tx = norm(ch.innerText || '');
+        if (tx && hasL(tx)) kids.push(tx);
+      }
+      if (kids.length < 2 || kids.length > 6) continue;
+      for (var u = 0; u < kids.length; u++) for (var v = u + 1; v < kids.length; v++) if (kids[u] === kids[v] && kids[u].length >= 2)
+        found.push({ kind: 'twice-parts', text: (ho.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 200), word: kids[u].slice(0, 60), where: tag + where(ho) });
+    }
+    var frames = doc.querySelectorAll('iframe');
+    for (var f = 0; f < frames.length; f++) {
+      try { var d2 = frames[f].contentDocument; var r = frames[f].getBoundingClientRect(); if (d2 && d2.body && r.width > 1 && r.height > 1) run(d2, frames[f].contentWindow, tag + 'iframe(' + (frames[f].getAttribute('src') || '').split('?')[0] + ') > '); } catch (e) {}
+    }
+  }
+  run(document, window, '');
+  var seen = {}, out = [];
+  found.forEach(function (x) { var k = JSON.stringify(x); if (!seen[k]) { seen[k] = 1; out.push(x); } });
+  return JSON.stringify(out);
+})()`;
+const PAIR_KINDS = {
+  twice: 'a label printed twice', 'twice-stacked': 'a label printed twice, one over the other', 'twice-joined': 'a label printed twice',
+  'twice-parts': 'the same words twice in one strip', dangling: 'a separator with nothing on one side', 'double-sep': 'two separators with nothing between them',
+  stranded: 'a separator alone on its row'
+};
+// The findings for one reading, on a board showing the one language of `set`
+// (a board in two or more languages may repeat a word on purpose: the two
+// halves of 'Zones | Zones' are two languages).
+export function judgePairs(found, set) {
+  if (!Array.isArray(found) || set.length !== 1) return [];
+  return found.filter((f) => PAIR_KINDS[f.kind] && f.small !== false)
+    .map((f) => `${PAIR_KINDS[f.kind]} on a ${set[0]} board: "${String(f.text).slice(0, 90)}" (${f.where})`);
+}
+// ── end of the one-language pair check
 
 // Text drawn on a canvas never reaches the DOM: record it as it is drawn.
 const CANVAS_HOOK = `(function () {
@@ -769,6 +949,52 @@ const CARD_CHECK = (t) => `(function (t) {
   } catch (e) { return 'error ' + e.message; }
 })(${jsWord(t)})`;
 const CARD_RESET = `(function () { try { var u = new URL(location.href); u.searchParams.delete('scene'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`;
+// 2026-10-20 — THE DECK TURNS WHEN THIS CHECK TURNS IT, AND EVERY TURN IS
+// READ. The gate's centre deck turns on its own clock (a turn at least every
+// 22 s, _restartGateAdsTimer), and for about a second of each turn the slide
+// going out dissolves over the one coming in: both are on the screen. Left to
+// the clock, a reading caught a turn only now and then, so what was read
+// depended on when CI ran (a pt gate read the documents card twice in one run
+// of many: under its ?scene= pin the turn drew the same card again and
+// crossfaded it into a copy of itself, which the gate no longer does). So on
+// the gate the deck's own timed turn is held for the whole visit (DECK_HOLD:
+// the pending turn is cancelled as soon as one is set, nothing else changes;
+// the deck's turn itself still works), and the check takes each turn itself
+// (DECK_TURN, the turn the clock would take, _gateAdTurnNow) and reads the
+// screen in the middle of it (DECK_TURN_MS), then waits for the overlay to go
+// (DECK_TURN_DONE): every slide of the deck into the next (the day's deck,
+// and again with every card due, whatever the hour), and every centre card
+// under its own ?scene= pin into the turn that brings it back, where it stays
+// up with no overlay.
+const DECK_HOLD = `(function () {
+  try {
+    var hold = function () { try { if (_gateAdTimer !== -1) { clearTimeout(_gateAdTimer); _gateAdTimer = -1; } } catch (e) {} };
+    hold();
+    if (!window.__wordsDeckHold) window.__wordsDeckHold = setInterval(hold, 100);
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const DECK_TURN = `(function () {
+  try {
+    if (document.querySelector('[data-ad-fading]')) return 'a turn was still dissolving';
+    if (!(typeof _gateAdTurnNow === 'function' && _gateAdTurnNow())) {
+      stopGateAds(); _restartGateAdsTimer();
+      if (!(typeof _gateAdTurnNow === 'function' && _gateAdTurnNow())) return 'the deck would not turn';
+    }
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})()`;
+const DECK_TURN_MS = 300;
+// the whole deck, whatever the lists' window (CARD_RESET takes the pin off)
+const DECK_PIN = `(function () { try { var u = new URL(location.href); u.searchParams.set('scene', 'deck'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`;
+const DECK_LEN = `(function () { try { return _buildGateAdSlideList().length; } catch (e) { return 0; } })()`;
+// slide i of the deck, put up as the deck's own turn would (its type back)
+const DECK_SLIDE = (i) => `(function (i) { try { var sl = _buildGateAdSlideList()[i]; _gateAdIndex = i; window._gateAdAuthChange = true; renderGateAd(i); window._gateAdAuthChange = false; return (sl && sl.type) || ''; } catch (e) { window._gateAdAuthChange = false; return 'error ' + e.message; } })(${Number(i) | 0})`;
+const DECK_TURN_DONE = `new Promise(function (res) { var t0 = Date.now(); (function poll() {
+  if (!document.querySelector('[data-ad-fading]')) return res('ok');
+  if (Date.now() - t0 > 8000) return res('the slide going out was still on the screen 8 s after the turn');
+  setTimeout(poll, 100);
+})(); })`;
 // 2026-10-13 — the standby lists' window, on the board itself: they come up
 // 15 minutes before the printed boarding time (the 90 or 120 minutes before
 // the departure they had was far too early). A minute before it opens the
@@ -1115,6 +1341,8 @@ async function runChunk(port, name, spec, sets) {
       if (spec.phone && r.langs && String(r.langs) !== String(label)) out.push(`the phone shows ${r.langs}, not ${label.join(',')}`);
       out.push(...judge(r.texts, label, spec.ap).map((p) => (tag ? `[${tag}] ` : '') + p));
       for (const m of r.misses || []) if (!seenMiss.has(m)) { seenMiss.add(m); out.push(`the store was asked for ${m}, which it does not have: it rendered blank`); }
+      // one language: each label once, no separator left hanging (v24076)
+      if (label.length === 1) out.push(...judgePairs(JSON.parse(await evalv(PAIRS) || '[]'), label).map((p) => (tag ? `[${tag}] ` : '') + p));
       return out;
     };
     // a page that does not come up is loaded once more before it counts
@@ -1155,10 +1383,26 @@ async function runChunk(port, name, spec, sets) {
           if (/'arr'/.test(spec.prep) && (await evalv(`(function () { try { return mode; } catch (e) { return ''; } })()`)) !== 'arr') problems.push('the board did not turn to its arrivals');
         }
       }
+      // the gate's centre deck turns only when this check turns it (DECK_HOLD)
+      if (spec.deck) {
+        const h = await evalv(DECK_HOLD);
+        if (h !== 'ok') problems.push(`the deck's own turn was not held: ${h}`);
+      }
       if (!spec.perSet) {
         // two readings: the gate's panels and the board's paging move on
         for (const wait of [1500, 3000]) { await evalv(SETTLE(wait)); problems.push(...await read(set)); }
       }
+      // a turn of the deck, taken now and read in its middle (DECK_TURN)
+      // (`stays`: the turn brings back the card already up, which stays)
+      const turnRead = async (tag, stays) => {
+        const tr = await evalv(DECK_TURN);
+        if (tr !== 'ok') { problems.push(`${tag}: ${tr}`); return; }
+        await evalv(SETTLE(DECK_TURN_MS));
+        if (stays && await evalv(`!!document.querySelector('[data-ad-fading]')`)) problems.push(`${tag}: the card was crossfaded into a copy of itself`);
+        problems.push(...await read(set, tag));
+        const done = await evalv(DECK_TURN_DONE, 15000);
+        if (done !== 'ok') problems.push(`${tag}: ${done}`);
+      };
       // the gate's centre panel: every slide of its deck in turn — the
       // welcome, the airline ads, the hotel, the map takeover, and the
       // weather card through its three screens (?wxspeed=0.5 runs it at
@@ -1168,10 +1412,10 @@ async function runChunk(port, name, spec, sets) {
         // the list alone (_buildGateAdSlideList); a review pin that names no
         // scene (?scene=deck) gives the whole deck back, the list in it, so
         // every slide is still read (CARD_RESET takes the pin off again)
-        await evalv(`(function () { try { var u = new URL(location.href); u.searchParams.set('scene', 'deck'); history.replaceState(null, '', u.toString()); } catch (e) {} })()`);
-        const n = await evalv(`(function () { try { return _buildGateAdSlideList().length; } catch (e) { return 0; } })()`);
+        await evalv(DECK_PIN);
+        const n = await evalv(DECK_LEN);
         for (let i = 0; i < Math.min(n || 0, 10); i++) {
-          const type = await evalv(`(function () { try { var sl = _buildGateAdSlideList()[${i}]; _gateAdIndex = ${i}; window._gateAdAuthChange = true; renderGateAd(${i}); window._gateAdAuthChange = false; return (sl && sl.type) || ''; } catch (e) { window._gateAdAuthChange = false; return 'error ' + e.message; } })()`);
+          const type = await evalv(DECK_SLIDE(i));
           if (/^error/.test(type)) { problems.push(`slide ${i} did not render: ${type}`); continue; }
           for (const wait of (type === 'wxcard' ? (process.env.WX_WAITS ? process.env.WX_WAITS.split(',').map(Number) : [2500, 3000, 1000, 1000, 1000, 1000, 1000]) : [1500])) {
             await evalv(SETTLE(wait));
@@ -1185,6 +1429,8 @@ async function runChunk(port, name, spec, sets) {
               problems.push(...await read(set, `${type || 'slide'} ${i}${pages ? ' p' + pg : ''}`));
             }
           }
+          // and its turn into the next slide, read while both are up
+          await turnRead(`${type || 'slide'} ${i} turning`);
         }
         await evalv(CARD_RESET);
       }
@@ -1202,6 +1448,11 @@ async function runChunk(port, name, spec, sets) {
             problems.push(...await read(set, t));
             const c = await evalv(CARD_CHECK(t));
             if (c !== 'ok') problems.push(`scene ${t}: ${c}`);
+            // the deck's turn under the pin brings the same card back: it
+            // stays, never crossfaded into a copy of itself (2026-10-20)
+            await turnRead(t + ' turning', true);
+            const ct = await evalv(CARD_CHECK(t));
+            if (ct !== 'ok') problems.push(`scene ${t} after its turn: ${ct}`);
             if (t === 'sbcard') {
               const sb = await evalv(SB_CHECK);
               if (sb !== 'ok') problems.push(`scene ${t}: ${sb}`);
@@ -1246,6 +1497,24 @@ async function runChunk(port, name, spec, sets) {
               if (sb2 !== 'ok') problems.push(`scene ${t} with Later at this gate: ${sb2}`);
               await evalv(SB_UNSHORT);
             }
+          }
+          // and every turn of the deck with every card due, whatever the
+          // hour the check runs at (the deck read above is the day's own):
+          // each slide put up and its turn into the next read in its middle
+          const prep2 = await evalv(CARD_PREP);
+          if (prep2 !== 'ok') problems.push(`the deck with every card due: ${prep2}`);
+          else {
+            await evalv(DECK_PIN);
+            const n2 = await evalv(DECK_LEN);
+            const types = [];
+            for (let i = 0; i < Math.min(n2 || 0, 10); i++) {
+              const type = await evalv(DECK_SLIDE(i));
+              if (/^error/.test(type)) { problems.push(`slide ${i} of the deck with every card due did not render: ${type}`); continue; }
+              types.push(type);
+              await evalv(SETTLE(500));
+              await turnRead(`deck with every card due: ${type || 'slide'} ${i} turning`);
+            }
+            for (const t of CARD_SCENES) if (!types.includes(t)) problems.push(`the deck with every card due has no ${t} (${types.join(',')})`);
           }
         }
         await evalv(CARD_RESET);
@@ -1348,6 +1617,31 @@ const INJECT = `(function () {
   try { BoardStrings.bs('selfTestNoSuchKey', 'de'); } catch (e) {}
   return 1;
 })()`;
+// A one-language board's pairs, made wrong on purpose (v24076): a label
+// either side of its bar, a label stacked over itself, a strip that says the
+// same at both ends, a bar at the end of a line and at its start, and two
+// bars with nothing between them; and, beside them, what is right: one word
+// with no bar, a list whose dots stay with the item before them, and an
+// airport mark beside its clock (PAIRS_OK, which must not be seen).
+const PAIR_INJECT = `(function () {
+  var host = document.createElement('div');
+  host.id = '__wsPairs';
+  host.style.cssText = 'position:fixed;left:700px;top:300px;z-index:99999;background:#000;color:#fff;font:24px sans-serif;padding:8px;width:640px';
+  host.innerHTML = '<div><span>Abflug</span> <span class="x-sep">|</span> <span>Abflug</span></div>'
+    + '<div class="x-stack"><div>Ankunft</div><div>Ankunft</div></div>'
+    + '<div class="x-strip" style="display:flex;gap:20px"><div>Status Pünktlich</div><div>Willkommen</div><div>Status Pünktlich</div></div>'
+    + '<div><span>Gepäckband</span> <span>|</span></div>'
+    + '<div><span>|</span> <span>Ausgang</span></div>'
+    + '<div><span>Flugsteig</span> | | <span>Zone</span></div>'
+    + '<div>PAIRS_OK Sitzplatz</div>'
+    + '<div><span style="display:inline-block">PAIRS_OK Eins&nbsp;\u00b7</span> <span style="display:inline-block">Zwei</span></div>'
+    + '<div><span role="img" aria-label="YQM" style="display:inline-block;width:30px;height:20px;background:#fff"></span><span>|</span><span>PAIRS_OK 10:10</span></div>';
+  document.body.appendChild(host);
+  return 1;
+})()`;
+const PAIR_MUST_SEE = [/a label printed twice on a de board: "Abflug \| Abflug"/, /a label printed twice, one over the other on a de board: "Ankunft Ankunft"/,
+  /the same words twice in one strip on a de board: "Status Pünktlich/, /a separator with nothing on one side on a de board: "Gepäckband \|"/,
+  /a separator with nothing on one side on a de board: "\| Ausgang"/, /two separators with nothing between them on a de board: "Flugsteig \| \| Zone"/];
 const MUST_SEE = [/'Flight' is not a word of de/, /'Delay' is not a word of de/, /'delayed' is not a word of de/, /'closes' is not a word of de/,
   /'Search' is not a word of de/, /'pass' is not a word of de/, /selfTestNoSuchKey/, /'LATE' is not a word of de/, /a placeholder on screen: "\?\?\?"/];
 async function selftest(port) {
@@ -1369,7 +1663,15 @@ async function selftest(port) {
     await evalv(SETTLE(300));
     const r = JSON.parse(await evalv(READ));
     const got = judge(r.texts, ['de']).concat((r.misses || []).map((m) => 'miss ' + m));
-    return MUST_SEE.filter((re) => !got.some((p) => re.test(p))).map((re) => 'the check did not see ' + re);
+    await evalv(PAIR_INJECT);
+    await evalv(SETTLE(300));
+    const pairs = judgePairs(JSON.parse(await evalv(PAIRS) || '[]'), ['de']);
+    // and on two languages the same screen is no finding of this check
+    const pairs2 = judgePairs(JSON.parse(await evalv(PAIRS) || '[]'), ['de', 'fr']);
+    return MUST_SEE.filter((re) => !got.some((p) => re.test(p))).map((re) => 'the check did not see ' + re)
+      .concat(PAIR_MUST_SEE.filter((re) => !pairs.some((p) => re.test(p))).map((re) => 'the pair check did not see ' + re))
+      .concat(pairs.filter((p) => /PAIRS_OK/.test(p)).map((p) => 'the pair check saw a pair that is not one: ' + p))
+      .concat(pairs2.length ? ['the pair check judged a two-language board: ' + pairs2[0]] : []);
   } finally { b.close(); }
 }
 
@@ -1380,7 +1682,7 @@ async function main() {
     const blind = await selftest(server0.address().port).catch((e) => ['self-test failed: ' + e.message]);
     server0.close();
     if (blind.length) { for (const l of blind) console.log('✖ self-test: ' + l); process.exit(1); }
-    console.log('✔ self-test: injected English seen in every form (text, label, capitals, ::after, placeholder, canvas, a missing key)');
+    console.log('✔ self-test: injected English seen in every form (text, label, capitals, ::after, placeholder, canvas, a missing key); a one-language pair printed twice and a separator left hanging, seen');
     if (onlySurface === '--selftest') process.exit(0);
   }
   const server = await serve();
