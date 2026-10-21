@@ -164,7 +164,7 @@ when any is known only by callsign (OpenSky has no callsign filter), the
 answer holds every aircraft in the box, which stays in the relay's memory
 for at most 120 s and is filtered there. Only the wanted flights, reduced,
 leave the server (`/osky/put`, 180 s in KV `osky:pos:*`). It caps itself at
-1,500 calls a UTC day and stops by itself at the end of the term (or at the
+12,000 calls a UTC day and stops by itself at the end of the term (or at the
 Worker's `OSKY_STOP_AT`). Everything stays off until `OPENSKY_ON` is `1` in
 `workers/wrangler.fids-proxy.jsonc` (it is `0`), and `/osky/status` shows the
 state with counts and yes/no answers only. The first design (a Cloudflare Tunnel, #1049) was

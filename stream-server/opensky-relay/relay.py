@@ -56,7 +56,8 @@ The licence limits it enforces:
       only a change to the Worker. The Worker's date has to move BEFORE the
       relay's own stop is reached: a stopped relay has exited.
       later by more than 40 days: ignored (a mistyped year never extends it).
-  - A daily cap of 1500 upstream calls per UTC day, paced across the hours
+  - A daily cap of 12000 upstream calls per UTC day (the licence allows
+    14,400 credits; a box of 25 sq deg or less costs 1), paced across the hours
     (hour h may have used at most cap * (h + 1) / 24). The count is saved to
     a small state file before every call, so a restart cannot reset it. A
     clock stepped back to an earlier day does not reset it either: until the
@@ -122,7 +123,7 @@ EXTEND_FILE = 'extended'               # in the state directory: "extended to <S
 KEY_CREDENTIAL = 'relay-key'           # LoadCredential=relay-key:/etc/opensky-relay/relay-key
 LOOP_S = 60
 MAX_BOX_SQ_DEG = 25.0              # 25 sq deg or less = 1 credit per call
-MAX_DAILY_CAP = 1500               # the config may lower it, never raise it
+MAX_DAILY_CAP = 12000              # the config may lower it, never raise it (licence: 14,400 credits/day)
 DEFAULT_CACHE_S = 120
 MIN_CACHE_S = 10
 MAX_CACHE_S = 120                  # the Worker keeps a put 180 s: the next one must land first
