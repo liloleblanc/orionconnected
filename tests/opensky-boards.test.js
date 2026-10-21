@@ -5,7 +5,7 @@
 // OpenSky Network first, Flightradar24 only when OpenSky has nothing.
 //
 // The relay (stream-server/opensky-relay/, tested in opensky-relay.test.js)
-// makes every OpenSky call, at most 1,500 a day, each wanted box asked again
+// makes every OpenSky call, at most 12,000 a day, each wanted box asked again
 // every 2 minutes. The Worker's /oskypos route is what the boards reach:
 //
 //   · the BOX PLANNER: a box of 25 sq deg or less drawn around one of our
@@ -13,8 +13,9 @@
 //     by every screen and by an airport well inside another's box; a new box
 //     only while the relay has room at its pace; a gate's tracked flight
 //     first; a wish lapsing when no screen asks. Simulated over a day of
-//     screens: never more calls than the relay's 1,500, never ahead of its
-//     hourly pace.
+//     screens: never more calls than the relay's cap, never ahead of its
+//     hourly pace; at 12,000 a day no box ever waits, at an older relay's
+//     1,500 the day's allowance is used and not passed.
 //   · MATCHING: the board's own flight, by icao24 or by a callsign carrying
 //     its digits (the callsigns the board makes for Flightradar24, and the
 //     one Flightradar24 saw today); reduced to what the board draws.
@@ -122,23 +123,31 @@ test('each board airport has one box: 25 sq deg or less, around it, centred on t
 test('the box budget: what the relay can serve at its pace, from its own report', async () => {
   const m = await mod();
   const at = (h, min = 0) => Date.UTC(2026, 9, 22, h, min);
-  const rep = (calls, when, cap = 1500) => ({ at: new Date(when).toISOString().replace(/\.\d{3}Z$/, 'Z'), cap, calls_today: calls });
-  assert.equal(m.oskyBoxBudget(null, at(12)), 2, 'no report: 1,500 a day is 62.5 an hour, two boxes at 30 an hour');
-  assert.equal(m.oskyBoxBudget(rep(0, at(12)), at(12, 5)), 4, 'a quiet morning leaves room for more in the afternoon');
-  assert.equal(m.oskyBoxBudget(rep(1490, at(20)), at(20, 5)), 0, 'the day spent: no new box');
-  assert.equal(m.oskyBoxBudget(rep(0, at(11)), at(12)), 2, 'a report 1 h old is not read');
-  assert.equal(m.oskyBoxBudget(rep(0, Date.UTC(2026, 9, 21, 23, 50)), at(0, 5)), 2, 'yesterday\'s count is not today\'s');
+  const rep = (calls, when, cap = 12000) => ({ at: new Date(when).toISOString().replace(/\.\d{3}Z$/, 'Z'), cap, calls_today: calls });
+  assert.equal(m.oskyBoxBudget(null, at(12)), 8, 'no report: 12,000 a day is 500 an hour, room for 16 boxes at 30 an hour; 8 at most');
+  assert.equal(m.oskyBoxBudget(rep(0, at(12)), at(12, 5)), 8, 'a quiet day at 12,000: every box');
+  assert.equal(m.oskyBoxBudget(rep(11500, at(20)), at(20, 5)), 4, 'late on a busy day: fewer boxes');
+  assert.equal(m.oskyBoxBudget(rep(11990, at(20)), at(20, 5)), 0, 'the day spent: no new box');
+  assert.equal(m.oskyBoxBudget(rep(11990, at(11)), at(12)), 8, 'a report 1 h old is not read');
+  assert.equal(m.oskyBoxBudget(rep(11990, Date.UTC(2026, 9, 21, 23, 50)), at(0, 5)), 8, 'yesterday\'s count is not today\'s');
+  // a relay reporting a lower cap is planned at its own: the 1,500 it ran at
+  // before 2026-10-21 (until opensky-update), or a lower one in its config
+  assert.equal(m.oskyBoxBudget(rep(0, at(12), 1500), at(12, 5)), 4, 'at 1,500 a quiet morning leaves room for more in the afternoon');
+  assert.equal(m.oskyBoxBudget(rep(1490, at(20), 1500), at(20, 5)), 0, 'at 1,500 the day spent: no new box');
   assert.equal(m.oskyBoxBudget(rep(0, at(12), 300), at(12, 5)), 0, 'a lower cap on the relay is obeyed');
-  assert.equal(m.oskyBoxBudget(rep(0, at(23, 30), 99999), at(23, 40)), 8, 'never over the relay\'s 1,500, and 8 boxes at most');
+  assert.equal(m.oskyBoxBudget(rep(0, at(23, 30), 99999), at(23, 40)), 8, 'never over the relay\'s 12,000, and 8 boxes at most');
   // whatever the report says, the boxes it allows, kept to the end of the day, fit what is left
-  for (let h = 0; h < 24; h++) for (const used of [0, 200, 700, 1200, 1499]) {
-    const now = at(h, 7);
-    const n = m.oskyBoxBudget(rep(used, now - 60000), now);
-    const hoursLeft = (Date.UTC(2026, 9, 23) - now) / 3600000;
-    assert.ok(n * 30 * Math.max(1, hoursLeft) <= 1500 - used + 1e-6, `h${h} used ${used}: ${n} boxes`);
+  for (const cap of [1500, 12000]) for (const f of [0, 0.13, 0.47, 0.8, 0.9999]) {
+    const used = Math.round(cap * f);
+    for (let h = 0; h < 24; h++) {
+      const now = at(h, 7);
+      const n = m.oskyBoxBudget(rep(used, now - 60000, cap), now);
+      const hoursLeft = (Date.UTC(2026, 9, 23) - now) / 3600000;
+      assert.ok(n * 30 * Math.max(1, hoursLeft) <= cap - used + 1e-6, `cap ${cap} h${h} used ${used}: ${n} boxes`);
+    }
   }
-  assert.match(WORKER_SRC, /^const OSKY_RELAY_CAP = 1500; +\/\/ relay\.py MAX_DAILY_CAP$/m);
-  assert.match(rd('stream-server/opensky-relay/relay.py'), /^MAX_DAILY_CAP = 1500 /m, 'the Worker plans with the relay\'s own cap');
+  assert.match(WORKER_SRC, /^const OSKY_RELAY_CAP = 12000; +\/\/ relay\.py MAX_DAILY_CAP$/m);
+  assert.match(rd('stream-server/opensky-relay/relay.py'), /^MAX_DAILY_CAP = 12000 /m, 'the Worker plans with the relay\'s own cap');
   assert.match(rd('stream-server/opensky-relay/relay.py'), /^DEFAULT_CACHE_S = 120$/m, 'and its own pace');
 });
 
@@ -178,7 +187,9 @@ test('every screen at an airport names the same box; airports well inside one bo
 
 test('no more boxes than the relay can serve; a gate\'s tracked flight first', async () => {
   const w = world();
-  // two boxes fill the budget with no report (2)
+  // a relay reporting 1,500 a day at the start of the day has room for two
+  // boxes (62.5 calls an hour, 30 an hour a box); two fill it
+  w.kv.m.set('osky:report', JSON.stringify({ at: '2026-10-22T00:00:30Z', cap: 1500, calls_today: 0 }));
   await ask(w, { ap: 'YYZ', f: 'AC100', cs: 'ACA100' });
   await ask(w, { ap: 'YVR', f: 'AC200', cs: 'ACA200' }, { now: T + 1000 });
   assert.equal(wantedBoxes(w.kv, T + 2000).length, 2);
@@ -221,7 +232,7 @@ test('the relay is handed the boxes with tracked flights first', async () => {
   await call('POST', '/osky/register', { relayKey: key });
   const now = Date.now();
   // a report saying the relay has the whole day ahead: room for more boxes
-  w.kv.m.set('osky:report', JSON.stringify({ at: new Date(now).toISOString().replace(/\.\d{3}Z$/, 'Z'), cap: 1500, calls_today: 0 }));
+  w.kv.m.set('osky:report', JSON.stringify({ at: new Date(now).toISOString().replace(/\.\d{3}Z$/, 'Z'), cap: 12000, calls_today: 0 }));
   await ask(w, { ap: 'YYZ', f: 'AC100', cs: 'ACA100' }, { now });
   await ask(w, { ap: 'YYZ', f: 'AC101', cs: 'ACA101' }, { now: now + 1 });
   await ask(w, { ap: 'YVR', f: 'AC200', cs: 'ACA200', p: '2' }, { now: now + 2 });
@@ -229,13 +240,15 @@ test('the relay is handed the boxes with tracked flights first', async () => {
   assert.deepEqual(got.boxes.map((b) => b.callsign), [['ACA200'], ['ACA100', 'ACA101']]);
 });
 
-test('a day of screens: never more OpenSky calls than the relay\'s 1,500, never ahead of its pace', async () => {
+// eight airports' gates, each tracking a flight all day, and a lookup each,
+// against a relay at its cap: once a minute, each wanted box in order, again
+// every 120 s, within its paced allowance; its report every 10 minutes
+async function dayOfScreens(cap) {
   const m = await mod();
   const w = world();
-  // eight airports' gates, each tracking a flight all day, and a lookup each
   const aps = ['YQM', 'YHZ', 'YYZ', 'YUL', 'YVR', 'MIA', 'SYD', 'ZRH'];
   const day0 = Date.UTC(2026, 9, 22);
-  let calls = 0;
+  let calls = 0, waited = 0;
   const relayCache = {};
   // every write of the wanted list holds no more boxes than the relay has room for
   let writes = 0, clock = day0;
@@ -254,20 +267,32 @@ test('a day of screens: never more OpenSky calls than the relay\'s 1,500, never 
       await ask(w, { ap, f: 'AC' + (100 + i), cs: 'ACA' + (100 + i), p: '2' }, { now: t });
       if (t % 300000 === 0) await ask(w, { ap, f: 'AC' + (500 + i), cs: 'ACA' + (500 + i) }, { now: t });
     }
-    // the relay: once a minute, each wanted box in order, again every 120 s,
-    // within its paced allowance; its report every 10 minutes
     const h = new Date(t).getUTCHours();
-    const paced = Math.min(1500, Math.ceil(1500 * (h + 1) / 24));
+    const paced = Math.min(cap, Math.ceil(cap * (h + 1) / 24));
     for (const b of wantedBoxes(w.kv, t)) {
       if (relayCache[b.key] && t - relayCache[b.key] < 120000) continue;
-      if (calls >= paced) break;
+      if (calls >= paced) { waited++; break; }
       calls++; relayCache[b.key] = t;
     }
     assert.ok(calls <= paced, `ahead of the pace at ${new Date(t).toISOString()}`);
-    if (t % 600000 === 0) w.kv.m.set('osky:report', JSON.stringify({ at: new Date(t).toISOString().replace(/\.\d{3}Z$/, 'Z'), cap: 1500, calls_today: calls }));
+    if (t % 600000 === 0) w.kv.m.set('osky:report', JSON.stringify({ at: new Date(t).toISOString().replace(/\.\d{3}Z$/, 'Z'), cap, calls_today: calls }));
   }
-  assert.ok(calls <= 1500, `${calls} calls`);
-  assert.ok(writes < 24 * 60 * 2, `${writes} writes of the wanted list: a few a minute at most`);
+  assert.ok(calls <= cap, `${calls} calls`);
+  // each wish (a gate's flight and a lookup per airport) written again at
+  // most every 5 minutes (OSKY_REWANT_S): a few a minute at most
+  const wishes = aps.length * 2;
+  assert.ok(writes <= wishes * (86400 / 300 + 1), `${writes} writes of the wanted list`);
+  return { calls, waited };
+}
+
+test('a day of screens at 12,000: every wanted box served every 2 minutes, none ever waits, never ahead of the pace', async () => {
+  const { calls, waited } = await dayOfScreens(12000);
+  assert.equal(waited, 0, 'no box waited for the pace');
+  assert.ok(calls >= 4 * 720 * 0.95, `${calls} calls: the boxes these airports open, each asked all day`);
+});
+
+test('a day of screens at an older relay\'s 1,500: never more calls than its cap, never ahead of its pace', async () => {
+  const { calls } = await dayOfScreens(1500);
   assert.ok(calls >= 1200, `${calls} calls: the day's allowance is used, not wasted`);
 });
 

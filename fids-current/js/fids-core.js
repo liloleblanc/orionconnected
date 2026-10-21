@@ -40529,7 +40529,7 @@ function _icaoCallsign(s) {
 // relay, stream-server/opensky-relay/) and the Worker's /oskypos route, which
 // draws the box around this airport itself, shares it with every screen and
 // airport that can use it, and opens one only while the relay has room for it
-// in its 1,500 calls a day. Flightradar24 is paid per row, so it is asked only
+// in its 12,000 calls a day. Flightradar24 is paid per row, so it is asked only
 // when OpenSky has no answer for the flight: it can only be asked less, never
 // more. The answer's credit ("Flight positions: The OpenSky Network",
 // mapCreditOsky) shows on the board while anything it gave is drawn

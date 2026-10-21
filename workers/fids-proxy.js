@@ -11820,9 +11820,12 @@ async function oskyWant(env, box, filters, now = Date.now()) {
 // feet or "ground", speed in knots, the fix's age, the callsign it squawks),
 // or nothing yet.
 //
-// THE BOX PLANNER. The relay makes at most 1,500 calls a day (relay.py's
-// MAX_DAILY_CAP; raising it takes a server update) and asks OpenSky again for
-// a wanted box every 2 minutes (CACHE_SECONDS): 30 calls an hour a box. So:
+// THE BOX PLANNER. The relay makes at most 12,000 calls a day (relay.py's
+// MAX_DAILY_CAP, of the licence's 14,400 credits; raising it takes a server
+// update) and asks OpenSky again for a wanted box every 2 minutes
+// (CACHE_SECONDS): 30 calls an hour a box. Eight boxes all day are 5,760
+// calls, so at 12,000 the eight boxes are the limit; a relay reporting a lower
+// cap (the 1,500 it ran at before 2026-10-21) is planned at its own. So:
 //   - a box is 25 sq deg or less (1 credit), about square on the ground,
 //     centred on the half-degree grid point nearest the airport, so every
 //     screen at an airport names the same box;
@@ -11830,14 +11833,14 @@ async function oskyWant(env, box, filters, now = Date.now()) {
 //     already wants shares it: one call serves both;
 //   - a new box opens only while the relay has room for it at its pace
 //     (oskyBoxBudget: the calls left today over the hours left, from the
-//     relay's own report; 2 boxes when there is none). With no room, a gate's
-//     own tracked flight may take the place of a box that holds none, and
-//     otherwise the board keeps Flightradar24;
+//     relay's own report; its MAX_DAILY_CAP over the day when there is
+//     none). With no room, a gate's own tracked flight may take the place of
+//     a box that holds none, and otherwise the board keeps Flightradar24;
 //   - the relay is handed the boxes with tracked flights first (oskyWanted);
 //   - a wish lapses 10 minutes after the last screen asked (OSKY_WANT_TTL_S),
 //     and is written again at most every 5 minutes (OSKY_REWANT_S); an answer
 //     is shared by every screen at a Cloudflare location for 30 s.
-const OSKY_RELAY_CAP = 1500;             // relay.py MAX_DAILY_CAP
+const OSKY_RELAY_CAP = 12000;            // relay.py MAX_DAILY_CAP
 const OSKY_RELAY_CACHE_S = 120;          // relay.py DEFAULT_CACHE_S: a box asked again every 2 minutes
 const OSKY_GRID_DEG = 0.5;
 const OSKY_SHARE_MARGIN_DEG = 1.25;
