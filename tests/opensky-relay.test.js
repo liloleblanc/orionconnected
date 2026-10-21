@@ -363,8 +363,9 @@ test('the relay\'s routes need the pinned address AND the key; every refusal loo
   assert.equal(tp.status, 415);
 });
 
-test('OFF by default: only OPENSKY_ON === "1" switches OpenSky on, and the config keeps it "0"', async () => {
-  assert.match(WRANGLER, /"OPENSKY_ON":\s*"0"/, 'workers/wrangler.fids-proxy.jsonc keeps it off in this change');
+test('only OPENSKY_ON === "1" switches OpenSky on; the config switches it on (2026-10-21, the licence key is in) with a whole stop date', async () => {
+  assert.match(WRANGLER, /"OPENSKY_ON":\s*"1"/, 'workers/wrangler.fids-proxy.jsonc switches it on');
+  assert.match(WRANGLER, /"OSKY_STOP_AT":\s*"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ"/, 'the stop date is a whole date (a value that cannot be read stops every route)');
   for (const on of [undefined, '0', 'true', 'yes', ' 1', 1, true]) {
     const w = await worldW(on === undefined ? {} : { OPENSKY_ON: on });
     assert.equal((await w.register()).status, 200, 'registering works while off');
