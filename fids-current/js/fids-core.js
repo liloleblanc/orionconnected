@@ -11712,6 +11712,10 @@ const IATA_AIRCRAFT = {
   'M80':'McDonnell Douglas MD-80','M81':'McDonnell Douglas MD-81','M82':'McDonnell Douglas MD-82',
   'M83':'McDonnell Douglas MD-83','M87':'McDonnell Douglas MD-87','M88':'McDonnell Douglas MD-88',
   'M11':'McDonnell Douglas MD-11',
+  // v24077 — the DC-9 codes the board already sizes (DC9, D93, D95, D9S) had no
+  // name here, so a DC-9 gate's caption printed the raw code ('D9S').
+  'DC9':'McDonnell Douglas DC-9','D9S':'McDonnell Douglas DC-9',
+  'D93':'McDonnell Douglas DC-9-30','D95':'McDonnell Douglas DC-9-50',
   '787':'Boeing 787','788':'Boeing 787-8','789':'Boeing 787-9','78J':'Boeing 787-10',
   'AT7':'ATR 72-600','CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550','CRJ':'Mitsubishi CRJ','CRK':'Mitsubishi CRJ-1000',
   // v218.99.60 — Long-form CRJ keys so when API returns "Bombardier CRJ-900"
@@ -12386,7 +12390,7 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   var src = paths[0];
   // Build a chained-fallback onerror that walks through the remaining paths
   var fbList = paths.slice(1);
-  var _imgCacheBuster = '?v=207';
+  var _imgCacheBuster = '?v=208';
   var srcWithBust = src + _imgCacheBuster;
   var cls = opts.className || 'g8-aircraft-img';
   var style = opts.style || '';
@@ -60273,10 +60277,26 @@ var HERITAGE_MARKS = [
     // rondelle beside AIR CANADA in red capitals, one red, all shapes), the
     // mark of the livery this card and the 767 card show; it replaces the
     // stacked capitals bitmap (air-canada-logo-1965-1987.png, kept on disk).
+    // v24077 — NOW THE SUPPLIED POLISHED DRAWING, as a PNG: the same C-FTMA in
+    // the same capitals livery (726 on the fin is the drawing's; no caption
+    // prints it). The SVG it replaces is deleted: nothing else used it.
+    //  · Its model is the DC-9-32, by its windows and exits: 20 windows, an
+    //    exit, one window, a second exit, 11 windows, exactly the -32's side
+    //    view in Douglas MDC J2904 section 2.2. The -14/-15 has one exit over
+    //    the wing. So the caption's '-32' and its 1968–2002 stand.
+    //  · Its shape: length over fuselage depth, measured 14–26% behind the
+    //    nose, was drawn 9.57 against the -32's 10.07 (36.36 m over 3.61 m, the
+    //    same manual), 5.0% short. More than the 4% the boards allow, so it is
+    //    stretched horizontally by 1.052 to 10.07; nothing is resampled
+    //    vertically, redrawn or recoloured.
+    //  · It was exported slightly see-through (alpha 251–254 all over), so the
+    //    body is made solid, each pixel as it looked on the white it was drawn
+    //    on, and about 590 faint specks around the aeroplane (alpha 6 or less)
+    //    are removed. Cropped to its own edges, as the 1987 drawing is.
     key: 'air-canada-caps',
     file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
     name: 'Air Canada',
-    aircraft: '/aircraft/heritage/air-canada-dc9-ac80.svg',
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac80.png',
     airports: '*CA'
   },
   {
@@ -60290,6 +60310,24 @@ var HERITAGE_MARKS = [
     // removed so it flies. CC BY asks for the maker's credit where the work is
     // seen, so this card carries a credit line ('heritageCredit:<key>'), and
     // docs/licenses/3d-models.md holds the full notice.
+    // v24077 — NOW A REALISTIC DRAWING MADE OVER THAT RENDER: the supplied
+    // 762.png, the same C-GAUN, fleet 604. Laid over the render, its windows,
+    // doors, wing and engine sit where the render's do, so it is still an
+    // adaptation of the model and the credit line stays ('modified' already
+    // says so). Only its tailplane tip is not its own: the export cut 5 px off
+    // at the right edge, and those 31 pixels come from an earlier save of the
+    // same drawing (604.png, scaled 0.837 and fitted at the nose and fuselage);
+    // every other pixel is 762's. Cropped to its own edges like the other cards.
+    // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose,
+    // was drawn 9.38 against a 767-200's 8.97 (159 ft 2 in, 48.51 m, over a
+    // fuselage 17 ft 9 in, 5.41 m, deep in the side view: Boeing, 767
+    // Airplane Characteristics for Airport Planning, D6-58328 rev K, section
+    // 2.2.1), 4.6% long. About half of that is the tailplane tip reaching
+    // further back than the fin's top, which a real 767 does not do. More than
+    // the 4% the boards allow, so it is narrowed horizontally by 0.956 to 8.97;
+    // nothing is resampled vertically, redrawn or recoloured. Its doors are the
+    // -200's (a door at each end and one exit over the wing), so the caption
+    // below stands.
     //
     // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Boeing 767-233 · 1982–2008 ·
     // 1980 livery'. 233 is Air Canada's own customer number, so the designation

@@ -73,7 +73,7 @@ main() {
   local RELAY_URL="https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/relay.py"
   # The relay.py this installer was written with (tests/opensky-relay.test.js
   # fails when it drifts). A download that does not match is never installed.
-  local RELAY_SHA256="177ffc6f99c7f275aad36fd138cb1de24272ca47a54a0cfd374982266b34e1fb"
+  local RELAY_SHA256="892931a98aeae51e9b7d609fa8fd78cadf70676b93f3024f5a0c611f7e3b4bdc"
 
   install -d -m 0755 -o root -g root /usr/local/lib/opensky-relay
   write_common
@@ -201,7 +201,14 @@ write_config() {
     stop="$(osky_stop_at)"
   fi
   if [ -f "$OSKY_CONF" ] && osky_valid_stop "$stop"; then
-    : # keep the saved settings and the saved stop date as they are
+    # keep the saved settings and the saved stop date as they are, except two
+    # old defaults that OpenSky's answers of 2026-10-20 retired: the 1500-a-day
+    # cap (the licence allows 14,400 credits) and the heading held back until
+    # confirmed. A value someone set by hand is left alone.
+    local tmp
+    tmp="$(mktemp "$OSKY_ETC/.relay.conf.XXXXXX")"
+    sed -e 's/^DAILY_CAP=1500$/DAILY_CAP=12000/' -e 's/^HEADING=0$/HEADING=1/' "$OSKY_CONF" > "$tmp"
+    mv -f "$tmp" "$OSKY_CONF"
   elif [ -f "$OSKY_CONF" ]; then
     # no clear stop date (missing, or written twice): the original one, once
     local tmp
@@ -217,13 +224,15 @@ write_config() {
 # one (40 days later at most) moves its stop, saved in its state directory.
 # On the server console only, if it is ever needed: opensky-extend YYYY-MM-DD
 STOP_AT=$default_stop
-# Upstream calls per UTC day, paced across the hours (1500 at most).
-DAILY_CAP=1500
+# Upstream calls per UTC day, paced across the hours (12000 at most; the
+# licence allows 14,400 credits a day).
+DAILY_CAP=12000
 # Seconds an identical box shares one OpenSky call (120 at most: the Worker
 # keeps a put 180 s, and the next one has to land first).
 CACHE_SECONDS=120
-# 1 = also send the heading (true_track). 0 until OpenSky confirms it is covered.
-HEADING=0
+# 1 = also send the heading (true_track). OpenSky confirmed on 2026-10-20 that
+# pointing the plane icon with it is covered.
+HEADING=1
 # The boards' Worker the relay polls: https://<host> only.
 WORKER_URL=$OSKY_DEFAULT_WORKER_URL
 EOF
