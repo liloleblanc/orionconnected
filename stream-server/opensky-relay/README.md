@@ -24,7 +24,7 @@ no tunnel and no token for anyone to copy.
 - Nothing goes to OpenSky until the Worker's `OPENSKY_ON` is `1`, which is set
   in a change after the agreement is signed and paid.
 - It asks OpenSky only about the flights on screen: one box of at most 25
-  square degrees per airport, at most 1,500 calls a day. When a flight is
+  square degrees per airport, at most 12,000 calls a day (the licence allows 14,400 credits). When a flight is
   known only by its callsign, OpenSky's answer holds every aircraft in that
   box (it has no callsign filter); the relay keeps that answer in memory for
   at most 2 minutes and passes on only the flights asked for.
@@ -166,7 +166,7 @@ single OAuth2 client, keeps each answer in memory for at most 2 minutes and
 shares it across all screens. It only calls /states/all with one box of at
 most 25 square degrees per airport shown, filtered by icao24 when the
 aircraft is known and otherwise filtered on the server, so that only the
-flights being shown are kept. At most 1,500 calls a day, and it turns
+flights being shown are kept. At most 12,000 calls a day, and it turns
 itself off at the end of the term (12 November 2026, 23:59 Swiss time).
 
 Could you whitelist that address?
@@ -194,7 +194,7 @@ before). If anything does not match, stop and sort that out first.
 3. `/osky/status` then shows `"creds_set":true`.
 4. Before switching on, Claude checks the Cloudflare plan (**Workers & Pages
    → Plans**, or the account's billing page). Once on, the relay stores one
-   position document per OpenSky call (up to 1,500 a day) in the same KV
+   position document per OpenSky call (up to 12,000 a day; about 360,000 a month, inside Workers Paid's million) in the same KV
    namespace as the FR24 budget counters. Workers Paid allows a million KV
    writes a month; Workers Free allows 1,000 a day for the whole account,
    which this would use up (and the FR24 counters would quietly stop being
@@ -319,8 +319,8 @@ every route answers 410.
 - **The Worker's stop date**: an earlier one, or any 410, stops it for now
   (nothing to OpenSky; it keeps asking the Worker, so a corrected date
   resumes it). A later one, by at most 40 days, becomes its own stop date.
-- **1,500 calls per UTC day**, paced across the hours (hour *h* of the day may
-  have used at most 1500 × (*h* + 1) / 24). The count is saved before every
+- **12,000 calls per UTC day**, paced across the hours (hour *h* of the day may
+  have used at most 12000 × (*h* + 1) / 24). The count is saved before every
   call, so a restart cannot reset it, and a clock set back to an earlier day
   does not reset it either.
 - **OpenSky's 429** is obeyed (`X-Rate-Limit-Retry-After-Seconds`, or
