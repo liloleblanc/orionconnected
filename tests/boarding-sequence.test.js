@@ -134,7 +134,10 @@ test('every key a table names exists where the gate looks, in all nine languages
     'preboardWhoTSus', 'preboardWhoUA', 'preboardWhoDL', 'earlyAccessWhoDL', 'preboardWhoAA', 'prioWhoAA', 'familyWhoAA',
     'preboardWhoAS', 'preboardWhoB6', 'courtesyWhoB6', 'preboardWhoWN', 'prioWhoWN', 'preboardWhoF9',
     'cabinPremEconAC', 'cabinExtComfortWS', 'cabinMainAA', 'prioWhoDL1', 'prioWhoDL2', 'prioWhoDL3', 'prioWhoAS', 'prioWhoASa',
-    'prioWhoASb', 'prioWhoASc', 'prioWhoWNalp', 'preboardWhoMO', 'preboardWhoIB']) {
+    'prioWhoASb', 'prioWhoASc', 'prioWhoWNalp', 'preboardWhoMO', 'preboardWhoIB',
+    // who each general call is for (2026-10-20)
+    'genWhoDL5', 'genWhoDL6', 'genWhoDL7', 'genWhoAA5', 'genWhoAA6', 'genWhoWN34', 'genWhoWN5', 'genWhoWN67',
+    'genWhoF9g2', 'genWhoF9g3', 'genWhoF9g4', 'genWhoF9g5']) {
     const e = STORE.entry(k);
     assert.ok(e && e.$src, k + ' carries $src');
     for (const l of LANGS) assert.ok(e.$src[l], k + ' $src ' + l);
@@ -161,7 +164,9 @@ test('every key a table names exists where the gate looks, in all nine languages
 
 test('a programme name never stands on its own: only inside a translated who-list', () => {
   const NAMES = ['Aeroplan', 'ConciergeKey', 'A-List Preferred', 'Global Services', 'Premier 1K', 'Medallion', 'Elite Diamond',
-    'Delta One', 'Delta First', 'Delta Comfort', 'Premium Select', 'Atmos', 'Polaris'];
+    'Delta One', 'Delta First', 'Delta Comfort', 'Premium Select', 'Atmos', 'Polaris',
+    // the general calls' (2026-10-20)
+    'Delta Main', 'Main Cabin Extra', 'Basic Economy', 'Business Select', 'Loyalty Points', 'Choice', 'Cardmember', 'Frontier Miles', 'Elite Silver', 'Mastercard'];
   for (const [key, T] of Object.entries(SEQ.SEQ)) {
     for (const s of T.stages) {
       for (const k of [s.title, s.label, ...subKeys(s.sub)]) {
@@ -657,13 +662,17 @@ test('no missing label key on any stage, in any language, in either layout: ever
             // the instruction line, once, never empty
             assert.equal((html.match(/class="g8-sign-instr/g) || []).length, 1, where + ': one instruction line');
             assert.ok(instrOf(html).length > 8, where + ': the instruction line says something');
-            // a who-list where the stage names one, in each of the board's languages
-            if (!isFinal && st.cur.side === 'L' && st.cur.who) {
+            // a who-list where the stage names one, in each of the board's
+            // languages: a priority call, and a general call before the
+            // switch to everyone (2026-10-20: Delta's Zones 5 to 7,
+            // American's Groups 5 and 6, Southwest's 3 to 7, Frontier's 2 to 5)
+            const listed = !isFinal && !SEQ.isSwitch(p, st);
+            if (listed && st.cur.who) {
               const e = STORE.entry(st.cur.who);
               for (const l of STORE.pairLangs(langs, frF)) assert.ok(text.includes(e[l].split(' · ')[0]), `${where}: who is called (${st.cur.who}, ${l})`);
             }
             // a merged call: each of its calls' lists
-            if (!isFinal && st.cur.side === 'L' && !st.cur.who && (st.cur.whos || []).length) {
+            if (listed && !st.cur.who && (st.cur.whos || []).length) {
               for (const k of st.cur.whos) {
                 const e = STORE.entry(k);
                 for (const l of STORE.pairLangs(langs, frF)) assert.ok(text.includes(e[l].split(' · ')[0]), `${where}: who is called (${k}, ${l})`);
@@ -812,7 +821,21 @@ test('the panels say the right thing at the right stage', () => {
   assert.doesNotMatch(at('DL', {}, when('DL', {}, (s) => s.values.includes('6'))), /Economy Class/, 'Delta Main is not called Economy Class');
   assert.match(at('AS', {}, when('AS', {}, (s) => s.who === 'prioWhoAS')), /First Class · Atmos Titanium members/);
   assert.match(at('AS', {}, when('AS', {}, (s) => s.values.includes('A'))), /Families with children under the age of 2/);
-  assert.match(at('AA', {}, when('AA', {}, (s) => s.values.includes('5'))), /Main Cabin \| Cabine principale/);
+  // 2026-10-20 — American's Group 5 is "Preferred boarding", in American's
+  // own words in both languages, never "Main Cabin" (its table names the
+  // Main Cabin for Groups 7 and 8 only)
+  const aa5 = at('AA', {}, when('AA', {}, (s) => s.values.includes('5')));
+  assert.match(aa5, /Main Cabin Extra \(excluding Basic Economy\) · AAdvantage members who earn 15,000 Loyalty Points · Eligible AAdvantage credit cardmembers · AAdvantage Business Select travelers/);
+  assert.match(aa5, /Main Cabin Extra \(hors Basic Economy\) · Membres AAdvantage qui gagnent 15[\u00A0 ]000 Loyalty Points/, "American's French");
+  assert.doesNotMatch(aa5, /Cabine principale/, 'Group 5 is not the Main Cabin call');
+  assert.match(aa5, /AAdvantage members(?! who)/, 'Groups 5 • 6 on a 30-minute window: both lists');
+  {
+    const p = planFor('AA', {}, 35, 15);
+    const atS = (v) => textOf(render({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes(v)).ts + 1000) }, false));
+    assert.match(atS('6'), /Group \| Groupe 6 AAdvantage members Membres AAdvantage/, 'Group 6: AAdvantage members, no cabin line');
+    assert.doesNotMatch(atS('6'), /Main Cabin|Cabine principale/);
+    assert.match(atS('7'), /Main Cabin \| Cabine principale/, 'Groups 7 • 8: the Main Cabin, its cabin line');
+  }
   assert.doesNotMatch(at('AA', {}, when('AA', {}, (s) => s.values.includes('1'))), /First Class/, "American's Group 1 is no cabin");
   assert.match(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1'))), /United First/);
   assert.doesNotMatch(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('2'))), /United First/, "United's Group 2 is Premier Silver and Premier Access");
@@ -1418,4 +1441,149 @@ test('a merged call names everyone in each of its calls, an item they share once
   const wsH = signRenderer(['en', 'fr'], false, 'centre')({ p: ws, st: SEQ.stageAt(ws, wsm.ts + 1000) }, false);
   assert.match(textOf(wsH), /Premium · Extended Comfort \| Privilège · Confort accru/);
   assert.match(wsH, /<span class="g8-pair-h" lang="en">Premium · Extended Comfort<\/span><span class="g8-pair-sep">\|<\/span><span class="g8-pair-h" lang="fr">/);
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// WHO EACH GENERAL CALL IS FOR (2026-10-20)
+// The general calls after the priority ones named nobody: Delta's Zones 5 to
+// 7, American's Groups 5 and 6, Southwest's Groups 3 to 7 and Frontier's
+// Groups 2 to 5 showed only their number. Each now names who it is for, from
+// the airline's own page (read 2026-10-20), the way the priority calls do.
+// The last call is the switch to everyone (GENERAL BOARDING / ALL ZONES):
+// it names nobody, since everyone still waiting may board.
+// ════════════════════════════════════════════════════════════════════════════
+
+const GEN_WHO = {
+  DL: [['5', 'genWhoDL5', ''], ['6', 'genWhoDL6', ''], ['7', 'genWhoDL7', ''], ['8', '', '']],
+  AA: [['5', 'genWhoAA5', ''], ['6', 'genWhoAA6', ''], ['7•8', '', 'cabinMainAA'], ['9', '', '']],
+  WN: [['3', 'genWhoWN34', ''], ['4', 'genWhoWN34', ''], ['5', 'genWhoWN5', ''], ['6', 'genWhoWN67', ''], ['7', 'genWhoWN67', ''], ['8', '', '']],
+  F9: [['2', 'genWhoF9g2', ''], ['3', 'genWhoF9g3', ''], ['4', 'genWhoF9g4', ''], ['5', 'genWhoF9g5', ''], ['6•7', '', '']]
+};
+const GEN_KEYS = [...new Set(Object.values(GEN_WHO).flatMap((r) => r.map((x) => x[1]).filter(Boolean)))];
+
+test('every general call names who it is for, in the airline\'s own words, until the switch to everyone', () => {
+  for (const [code, want] of Object.entries(GEN_WHO)) {
+    const gen = SEQ.plan(code).full.filter((s) => s.kind === 'gen');
+    assert.deepEqual(gen.map((s) => [s.values.join('•'), s.who, s.sub]), want, code + ': each general call, who it is for, its cabin line');
+    // every call before the switch names someone (its list, or American's
+    // Main Cabin as its cabin line); the switch names nobody
+    for (const s of gen.slice(0, -1)) assert.ok(s.who || s.sub, `${code} ${s.values.join('•')}: who it is for`);
+    const last = gen[gen.length - 1];
+    assert.ok(!last.who && !(last.whos || []).length, code + ': the last call is the switch to everyone, with no list');
+  }
+  // nine languages, each with where it comes from
+  for (const k of GEN_KEYS) {
+    const e = STORE.entry(k);
+    assert.ok(e && e.$src, k + ' carries $src');
+    for (const l of LANGS) assert.ok(typeof e[l] === 'string' && e[l].trim() && e.$src[l], k + ' ' + l);
+    for (const l of LANGS) if (l !== 'en') assert.notEqual(e[l], e.en, `${k} ${l} is its own`);
+    assert.equal(e.$src.en, 'airline:' + k.replace(/^genWho([A-Z0-9]{2}).*$/, '$1'), k + ': the airline\'s own English');
+  }
+  // Delta (delta.com, Boarding priority): Zone 5's nine rows, in its order
+  assert.equal(STORE.bs('genWhoDL5', 'en'), 'Silver Medallion members · Delta Corporate Travelers · Delta SkyMiles Gold, Platinum and Reserve American Express Card Members · Flying Blue Silver · Virgin Atlantic Flying Club Silver · SkyTeam Elite · LATAM Gold+ Elite · WestJet Rewards Silver Elite · Delta Main Extra customers');
+  assert.match(STORE.bs('genWhoDL5', 'fr'), /^Membres Silver Medallion · Voyageurs d’affaires Delta · Titulaires des cartes Gold, Platinum et Reserve Delta SkyMiles d’American Express · .* · Clients Delta Main Extra$/, "Delta's French");
+  assert.equal(STORE.bs('genWhoDL6', 'en'), 'SkyMiles members in Delta Main Classic');
+  assert.equal(STORE.bs('genWhoDL7', 'fr'), 'Non-membres SkyMiles en classe Delta Main Classic', "Delta's French");
+  assert.equal(STORE.bs('genWhoDL7', 'es'), 'Pasajeros que no son miembros de SkyMiles en Delta Main Classic', "Delta's Spanish");
+  assert.equal(STORE.entry('genWhoDL5').$src.fr, 'airline:DL');
+  // the 'LATAM Pass' trap: the programme's name made "pass" a word of every
+  // language on screen; Zone 5 writes LATAM Gold+ Elite, as Zone 4 does
+  for (const k of GEN_KEYS) for (const l of LANGS) assert.doesNotMatch(STORE.bs(k, l), /\bPass\b/, `${k} ${l}`);
+  // Delta's pre-boarding row as Delta words it, and its French for Zones 1
+  // to 3, word for word
+  assert.equal(STORE.bs('preboardWhoDL', 'en'), 'Customers needing assistance or additional time to board · Active-duty U.S. military with ID');
+  assert.equal(STORE.bs('prioWhoDL1', 'fr'), 'Clients Delta One · Clients en Delta First');
+  for (const k of ['prioWhoDL1', 'prioWhoDL2', 'prioWhoDL3']) assert.equal(STORE.entry(k).$src.fr, 'airline:DL', k);
+  // American (aa.com, Boarding process), in each language it publishes
+  assert.equal(STORE.bs('genWhoAA5', 'en'), 'Main Cabin Extra (excluding Basic Economy) · AAdvantage members who earn 15,000 Loyalty Points · Eligible AAdvantage credit cardmembers · AAdvantage Business Select travelers');
+  assert.match(STORE.bs('genWhoAA5', 'de'), /^Passagiere der Main Cabin Extra \(ausgenommen Basic Economy\) · AAdvantage Mitglieder mit 15\.000 gesammelten Loyalty Points/, "American's German");
+  assert.equal(STORE.entry('genWhoAA5').$src.es, 'careful', "American's Spanish row reads Cabina Principal for Main Cabin Extra: not copied");
+  assert.equal(STORE.entry('genWhoAA5').$src.zh, 'careful', "American's Chinese row runs two lines into one: not copied");
+  assert.deepEqual(LANGS.map((l) => STORE.bs('genWhoAA6', l)).slice(0, 6), ['AAdvantage members', 'Membres AAdvantage', 'Socios AAdvantage', 'AAdvantage Mitglieder', 'Soci AAdvantage', 'Associados AAdvantage']);
+  // Southwest (southwest.com, Assigned seating): its 2026 groups, never the
+  // old A, B and C; Choice fares board anywhere from Group 3 to Group 7
+  assert.equal(STORE.bs('genWhoWN34', 'en'), 'Customers on Choice Preferred fares · Customers on Choice fares');
+  assert.equal(STORE.bs('genWhoWN5', 'en'), 'Rapid Rewards Credit Cardmembers · Customers on Choice fares');
+  assert.equal(STORE.bs('genWhoWN67', 'en'), 'Customers on Choice fares');
+  assert.deepEqual(SEQ.plan('WN').full.filter((s) => s.kind === 'gen').map((s) => s.values.join('')), ['3', '4', '5', '6', '7', '8']);
+  // Frontier (faq.flyfrontier.com, Frontier boarding process)
+  assert.equal(STORE.bs('genWhoF9g2', 'en'), 'Frontier Miles Elite Silver and Frontier Miles members who bought a carry-on bag or the Economy bundle');
+  assert.equal(STORE.bs('genWhoF9g3', 'en'), 'All other customers who bought a carry-on bag or the Economy bundle');
+  assert.equal(STORE.bs('genWhoF9g4', 'en'), 'Frontier Airlines World Mastercard cardmembers · Frontier Miles Elite Silver members · Customers who bought Priority Boarding · Customers in Premium or Exit Row seats');
+  assert.equal(STORE.bs('genWhoF9g5', 'en'), 'Frontier Miles members');
+  assert.match(STORE.bs('genWhoF9g4', 'es'), /^Titulares de tarjetas Frontier Airlines World Mastercard · Miembros Elite Silver de Frontier Miles/, "Frontier's Spanish");
+  // the fare that boards last is the switch's, and no list names it
+  for (const k of GEN_KEYS) assert.doesNotMatch(STORE.bs(k, 'en'), /Basic fare|Delta Main Basic|^Basic Economy/, k + ': the last fare is not called before the switch');
+});
+
+test('a merged general call names everyone in each of its calls, an item they share once', () => {
+  const merged = (code, L, C) => planFor(code, {}, L, C).stages.filter((s) => s.kind === 'gen' && s.merged);
+  // Delta, a 25-minute window: Zones 5 • 6 name both lists; 7 • 8 is the switch
+  const dl = merged('DL', 25, 10);
+  assert.deepEqual(dl.map((s) => [s.values.join('•'), s.who, s.whos]), [['5•6', '', ['genWhoDL5', 'genWhoDL6']], ['7•8', '', []]]);
+  // Southwest: Groups 3 • 4 share one list; 5 • 6 each name their own
+  const wn = merged('WN', 25, 10);
+  assert.deepEqual(wn.map((s) => [s.values.join('•'), s.who, s.whos]), [['3•4', 'genWhoWN34', []], ['5•6', '', ['genWhoWN5', 'genWhoWN67']], ['7•8', '', []]]);
+  // Frontier and American on short windows
+  assert.deepEqual(merged('F9', 20, 10).map((s) => [s.values.join('•'), s.whos]), [['2•3', ['genWhoF9g2', 'genWhoF9g3']], ['4•5', ['genWhoF9g4', 'genWhoF9g5']]]);
+  assert.deepEqual(merged('AA', 30, 15).map((s) => [s.values.join('•'), s.whos, s.sub]), [['5•6', ['genWhoAA5', 'genWhoAA6'], ''], ['7•8•9', [], '']]);
+  // an airline whose general calls name nobody names nobody merged
+  for (const s of merged('AC', 26, 15)) assert.deepEqual([s.who, s.whos], ['', []]);
+  // a pair where one call names nobody keeps none: a list never stands for
+  // a call it leaves out
+  const g = (v, who) => ({ kind: 'gen', label: 'groupLabel', values: [v], who, sub: '', side: 'R' });
+  const run = SEQ.pace([{ kind: 'pre', title: 'preboard', who: '', sub: '', values: [], side: 'L' }, g('3', 'genWhoWN34'), g('4', ''), g('5', 'genWhoWN5'), g('6', 'genWhoWN67')], 9, 0).stages
+    .find((s) => s.merged && s.values[0] === '3');
+  assert.ok(run, 'a merged general call with one list');
+  assert.deepEqual([run.who, run.whos], ['', []]);
+  // on the sign, in both layouts: every item of each list, in each of the
+  // board's languages, the one they share said once
+  const p = planFor('WN', {}, 25, 10);
+  const m = p.stages.find((s) => s.merged && s.values.join('•') === '5•6');
+  const st = SEQ.stageAt(p, m.ts + 1000);
+  for (const layout of LAYOUTS) {
+    const html = signRenderer(['en', 'fr'], false, layout)({ p, st }, false);
+    const text = textOf(html);
+    for (const k of ['genWhoWN5', 'genWhoWN67']) for (const l of ['en', 'fr']) for (const it of STORE.bs(k, l).split(' · ')) assert.ok(text.includes(it), `${layout}: ${it}`);
+    for (const it of ['Customers on Choice fares', 'Clients avec un tarif Choice']) assert.equal(text.split(it).length - 1, 1, `${layout}: ${it} once`);
+    assert.equal((html.match(/class="g8-who-blk"/g) || []).length, 2, layout + ': one list per language');
+    assert.match(text, /Groups \| Groupes 5 • 6/, layout + ': the merged call');
+  }
+  // Delta's Zone 5 on the sign, alone on a 35-minute window, in the board's
+  // two languages and a French-first airport's order
+  const d = planFor('DL', {}, 35, 10);
+  const z5 = SEQ.stageAt(d, d.stages.find((s) => s.values.includes('5')).ts + 1000);
+  for (const layout of LAYOUTS) {
+    for (const frF of [false, true]) {
+      const text = textOf(signRenderer(['en', 'fr'], frF, layout)({ p: d, st: z5 }, false));
+      const en = text.indexOf('Silver Medallion members'), fr = text.indexOf('Membres Silver Medallion');
+      assert.ok(en >= 0 && fr >= 0, `${layout}${frF ? ' French first' : ''}: both lists`);
+      assert.equal(fr < en, frF, `${layout}: French leads only at a French-first airport`);
+      assert.match(text, /Zones 6, 7 and 8: please remain seated/, layout + ': who still waits');
+    }
+  }
+});
+
+test('every new list passes the rendered-word check in its own language, and the check still sees English', async () => {
+  // tests/render/words.mjs reads the screens in every language; its judge()
+  // is run here on each list, item by item, as the sign shows them (a half
+  // marked with its language). A word an English name brings into another
+  // language's list becomes a word of that language on screen: "LATAM Pass"
+  // made "pass" one, and the check's own self-test (an English "Boarding
+  // pass" on a German board) went blind. The self-test words must still be
+  // seen.
+  const { judge } = await import(require('node:url').pathToFileURL(path.join(ROOT, 'tests', 'render', 'words.mjs')).href);
+  const rec = (t, lang) => ({ t, lang: lang || '', own: !!lang, data: false, all: false, feed: false, dir: lang === 'ar' ? 'rtl' : 'ltr', where: 'sign' });
+  for (const t of ['Flight status', 'Delay: 45 min', 'DELAYED', 'Gate closes', 'Search flights', 'Boarding pass', 'LATE']) {
+    assert.ok(judge([rec(t)], ['de']).length, `"${t}" on a German board is still seen as English`);
+  }
+  const problems = [];
+  for (const k of GEN_KEYS.concat(['preboardWhoDL', 'prioWhoDL1'])) {
+    for (const l of LANGS) {
+      for (const item of STORE.bs(k, l).split(' · ')) problems.push(...judge([rec(item, l)], [l]).map((x) => `${k} ${l}: ${x}`));
+    }
+    // and as the pair the sign shows (en+fr, either order)
+    for (const set of [['en', 'fr'], ['fr', 'en']]) problems.push(...judge(set.map((l) => rec(STORE.bs(k, l), l)), set).map((x) => `${k} ${set.join('+')}: ${x}`));
+  }
+  assert.deepEqual(problems, []);
 });
