@@ -92,7 +92,7 @@ function board({ now, dep, hist = {}, langs = ['en', 'fr'], ap = 'YQM', extra = 
     '_gateMovedAway', '_gateLaterTz', '_gateLaterDay', '_gateLaterModel', '_gateLaterHHMM', '_gateLaterTs',
     '_gateLaterClock', '_gateLaterPlace', '_gateLaterPlaceHtml', '_gateLaterDayWords', '_gateLaterKey',
     '_apSublineForms', '_apSublineNames', '_apQcBoard', '_apSubLang', '_apSubline', '_apCitySpelling', '_cityAp', '_cityApHtml',
-    '_gateLaterPairHtml', '_gateLaterSlotHtml', '_gateLaterStripHtml', '_gateChangeAccent', '_gateChangeAccent3', '_gateChangeOrbHtml',
+    '_gateLaterPairHtml', '_gateLaterSlotHtml', '_gateLaterStripHtml', '_gateChangeAccent', '_gateChangeAccent3', '_orbEmblemCarrier', '_orbMono', '_gateChangeOrbHtml',
     '_gateChangeNoticeHtml', '_gateLaterFitBox', '_gateLaterScale', '_gateLaterInkOver', '_gateLaterAlign',
     '_gateChangeSoloHtml'];
   const code = [CORE.match(/^var _GATE_HISTORY_KEY = .*;$/m)[0], CORE.match(/^var _CITY_CODE_TAIL = .*;$/m)[0], src('var _GATE_LBL = {'),

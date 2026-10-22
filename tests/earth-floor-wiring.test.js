@@ -7,7 +7,10 @@
 //     coordinates, on the build's own version;
 //   · it has its off switch, and it pauses with the board (_ocEvery, _ocIdle);
 //   · no screen ever asks NASA for anything: the pictures are ours;
-//   · its stylesheet retires the old backdrop only behind data-fids-floor,
+//   · its stylesheet retires the old backdrop only behind data-fids-floor
+//     (a planet up) or data-fids-floor-wait (the page's own stamp while the
+//     first planet is on its way, so a board just opened never shows the old
+//     picture for a moment first),
 //     leaves Orlando and the belts alone, never animates, gives way to reduced
 //     motion, and sits before the weather card's block, which stays last;
 //   · the Customize choice travels: panel, cloud fields, the core's layers.
@@ -115,9 +118,19 @@ test('the stylesheet: behind the switch, Orlando and the belts untouched, still,
   assert.doesNotMatch(rules, /bidsv2-screen/, 'the belts keep their backdrop');
   for (const m of rules.matchAll(/([^{}]+)\{([^{}]*background-image[^{}]*)\}/g)) {
     for (const sel of m[1].split(',')) {
-      assert.match(sel, /^\s*html\[data-fids-floor=earth\]/, 'behind the switch: ' + sel.trim().slice(0, 60));
+      assert.match(sel, /^\s*html\[data-fids-floor(-wait)?=earth\]/, 'behind the switch: ' + sel.trim().slice(0, 60));
       assert.match(sel, /data-fids-ap=YQM|:not\(\[data-fids-ap=MCO\]\)/, 'Moncton, or anywhere but Orlando: ' + sel.trim().slice(0, 60));
     }
+  }
+  // each old picture is off both while a planet is up and while the first one
+  // is on its way, with the same reach (the same selector but the attribute)
+  const sels = [];
+  for (const m of rules.matchAll(/([^{}]+)\{([^{}]*background-image: none[^{}]*)\}/g)) sels.push(...m[1].split(',').map((x) => x.trim()));
+  for (const ap of ['body[data-fids-ap=YQM]', 'body[data-fids-theme]:not([data-fids-ap=MCO])']) {
+    const up = sels.find((x) => x.startsWith('html[data-fids-floor=earth] ' + ap));
+    const wait = sels.find((x) => x.startsWith('html[data-fids-floor-wait=earth] ' + ap));
+    assert.ok(up && wait, 'both attributes retire ' + ap);
+    assert.equal(wait.replace('data-fids-floor-wait=earth', 'data-fids-floor=earth'), up, 'the same reach: ' + ap);
   }
   // and both old pictures are still in the file, for rollback
   assert.match(CSS, /moncton-skyline\.svg/);
@@ -270,4 +283,23 @@ test('restoring an airport\'s saved languages tells the floor even when the butt
     assert.deepEqual(box.langs, ['fr', 'en']);
     assert.equal(told, 1, 'langsChanged runs (the floor redraws its words) though ' + which + ' threw');
   }
+});
+
+test('a board just opened shows its plain ground until the planet is up, never the old picture first (v24079)', () => {
+  const html = rd('fids-current/fids.html');
+  const head = html.slice(0, html.indexOf('</head>'));
+  const at = head.indexOf("setAttribute('data-fids-floor-wait', 'earth')");
+  assert.ok(at > 0, 'fids.html stamps the wait in its head, before the first frame');
+  const stamp = head.slice(head.lastIndexOf('<script>', at), head.indexOf('</script>', at));
+  assert.match(stamp, /get\('floor'\) !== 'classic'/, '?floor=classic is never stamped');
+  assert.match(stamp, /window\.innerWidth \|\| 0\) >= 800/, 'nor a screen too narrow for a planet (MIN_PAGE_W)');
+  assert.match(stamp, /if \(!window\.__ocFloor\) document\.documentElement\.removeAttribute\('data-fids-floor-wait'\); \}, 30000\)/, 'a page whose module never runs loses it');
+  assert.match(MOD, /var MIN_ANY = 28, MIN_ROUTES = 60, MIN_FULL = 150, MIN_W = 400, MIN_PAGE_W = 800;/, 'the same 800 px as the module');
+  // the module ends it either way: a planet up, or a floor torn down
+  assert.match(MOD, /function setPainted\(on\) \{\s*painted = !!on;\s*if \(on\) HTML\.setAttribute\('data-fids-floor', 'earth'\); else HTML\.removeAttribute\('data-fids-floor'\);\s*endWait\(\);\s*\}/);
+  assert.match(MOD, /function teardown\(\) \{ clearLayer\(\); curKey = ''; setPainted\(false\); \}/, 'a failure, an error or a classic airport brings the old backdrop back');
+  assert.match(MOD, /if \(!wanted\(\)\) \{ if \(painted \|\| cur\) teardown\(\); endWait\(\); return; \}/, 'the airport chose Classic before any planet');
+  assert.match(MOD, /if \(!painted && \(pageW < MIN_PAGE_W \|\| now - bornAt > WAIT_MS\)\) endWait\(\);/, 'too narrow, or no planet in a minute');
+  assert.match(MOD, /var WAIT_MS = 60000;/);
+  assert.match(MOD, /if \(!EARTH_FLOOR_ON\) \{ try \{ root\.document\.documentElement\.removeAttribute\('data-fids-floor-wait'\); \} catch \(e\) \{\} \}/, 'switched off: the old backdrop at once');
 });
