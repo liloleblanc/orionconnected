@@ -13492,8 +13492,11 @@ function _gateChangeOrbHtml(code) {
     var parts = (typeof window !== 'undefined' && typeof window._gateOrbParts === 'function') ? window._gateOrbParts(c) : null;
     var path = (parts && parts.path) || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(c) : '');
     if (!parts || !path) return '';
+    // v24079 — a symbol that was never drawn (Alaska has no AS.svg) tries the
+    // row tile, then the letters, as every other round orb does
+    // (_orbArtFailed); it used to hide itself and leave an empty disc
     return '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (parts.native ? ' v2-fi-emblem-native' : '') + '" style="' + parts.badge + '">'
-      + '<img src="' + fidsEscHtml(path) + '" alt="" class="v2-fi-emblem-img" style="' + parts.imgStyle + '" onerror="this.style.display=\'none\'">'
+      + '<img src="' + fidsEscHtml(path) + '" alt="" class="v2-fi-emblem-img" style="' + parts.imgStyle + '" onerror="window._orbArtFailed(this,&quot;' + _orbMono(c) + '&quot;)">'
       + '</span></span>';
   } catch (e) { return ''; }
 }
@@ -17014,7 +17017,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24078" src="/textures/gate-sky-shelf.mp4?v=24078" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24079" src="/textures/gate-sky-shelf.mp4?v=24079" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17058,7 +17061,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24078" src="/textures/gate-sky-shelf.mp4?v=24078" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24079" src="/textures/gate-sky-shelf.mp4?v=24079" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -17099,8 +17102,16 @@ function _buildV2MapCol(ctx, vars) {
   // fixed two call sites and the rest were never enumerated.
   var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
     || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_mapLifeCode) : '') || '';
+  // v24079 — and its miss tries the row tile before the letters, as the
+  // aircraft plate does (_holdArtFailed, v23440). The resolver hands back
+  // /logos/symbols/airlines/XX.svg for any two-letter code whether or not it
+  // was drawn: Alaska has no AS.svg, so during the map takeover this hold
+  // printed the letters AS on a disc (SEA gate N20) while the header, the
+  // plate and the flight orb beside it all wore the Alaska tile (ASA.svg).
+  // (No apostrophes in this note: tests lift this function by matching its
+  // braces, and a lone quote mark in a comment throws that count off.)
   var _mapLifeHtml = _mapLifeSrc
-    ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
+    ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="window._holdArtFailed(this,\'' + _orbMono(_mapLifeCode) + '\')">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
     : '<span class="v2-rc-map-life-code">' + (_mapLifeCode || '&#9992;') + '</span>';
   // v23192 — THE STRIP IS DOCKED UNDER THE MAP, MEASURED OFF THE REFERENCE DESIGN.
@@ -34938,7 +34949,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24078';
+var FIDS_BUILD_TAG = 'v24079';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -60606,7 +60617,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24078" src="/textures/gate-sky-shelf.mp4?v=24078"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24079" src="/textures/gate-sky-shelf.mp4?v=24079"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

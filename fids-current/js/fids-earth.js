@@ -131,6 +131,7 @@
   var SETTLE_MS = 3000;             // a new floor size is built once it has held this long
   var BLOB_BUDGET = 8e6;            // compressed pictures kept at hand, bytes
   var RETRY_MS = 600000;            // a floor with no picture is tried again after this
+  var WAIT_MS = 60000;              // a planet not up by then: the old backdrop meanwhile
   var HALO = '#020a1c';
 
   // ── small sums ─────────────────────────────────────────────────────────────
@@ -1193,6 +1194,8 @@
   if (typeof module === 'object' && module.exports) module.exports = Core;
   if (!root || !root.document || !root.document.documentElement) return;
   root.FidsEarth = Core;
+  // (switched off: the old backdrop at once, not after the page's own wait)
+  if (!EARTH_FLOOR_ON) { try { root.document.documentElement.removeAttribute('data-fids-floor-wait'); } catch (e) {} }
   if (!EARTH_FLOOR_ON || root.__ocFloor) return;
   root.__ocFloor = 'earth';
 
@@ -1670,7 +1673,7 @@
   //            lit floor of that size is at hand)
   //   shown    the planet on screen; it stays until the next one is lit
   var layer = null, svg = null, shown = null, W = 0, H = 0, AP0 = '', curKey = '', LSIG = '', lastBucket = -1;
-  var cur = null, P = null, here = null, ground = [16, 40, 80], painted = false, retryAt = 0, lastLayout = null, bare = false;
+  var cur = null, P = null, here = null, ground = [16, 40, 80], painted = false, retryAt = 0, lastLayout = null, bare = false, bornAt = Date.now();
   var pend = null, viewMemo = {}, shapeStore = { dep: {}, arr: {} }, shapeDay = '', spaceH = 0, fitSig = '';
   //   showE    the floor whose planet is on screen (its names are the ones drawn)
   //   drawn    what the names on screen were drawn for: { e, list, wsig, pk }
@@ -1724,10 +1727,17 @@
     layer.style.backgroundImage = bg;
     layer.style.webkitMaskImage = mask; layer.style.maskImage = mask;
   }
+  // v24079 — and the page's own wait (data-fids-floor-wait, stamped in
+  // fids.html's head so the old backdrop never shows for a moment before the
+  // first planet) ends either way: a planet up takes its place, a floor torn
+  // down (not wanted, its pictures failed, an error) brings the old backdrop
+  // back as before
   function setPainted(on) {
     painted = !!on;
     if (on) HTML.setAttribute('data-fids-floor', 'earth'); else HTML.removeAttribute('data-fids-floor');
+    endWait();
   }
+  function endWait() { if (HTML.hasAttribute('data-fids-floor-wait')) HTML.removeAttribute('data-fids-floor-wait'); }
   // the floor appears: at once on a screen that asks for reduced motion, and
   // the first time otherwise with one 2.4 s fade (never again for a page or
   // a size change: a ready floor swaps its pictures in)
@@ -1954,7 +1964,7 @@
     if (disabled || !layer) return;
     try {
       if (hidden()) return;
-      if (!wanted()) { if (painted || cur) teardown(); return; }
+      if (!wanted()) { if (painted || cur) teardown(); endWait(); return; }
       var board = doc.getElementById('fidsBoard'), ca = board && board.querySelector(':scope > .content-area'), tb = doc.getElementById('fidsTable');
       if (!ca) return;
       if (layer.parentNode !== ca) ca.insertBefore(layer, ca.firstChild);   // a render dropped it: put back
@@ -1996,6 +2006,9 @@
       fitShown();
       P = placesNow();
       var pageW = root.innerWidth || w;
+      // no planet is coming (a screen too narrow for one), or none has come in
+      // WAIT_MS: the old backdrop, as before, until one is up
+      if (!painted && (pageW < MIN_PAGE_W || now - bornAt > WAIT_MS)) endWait();
       bare = !tableShown;
       // A NEW SIZE (a page with more rows or fewer, the other direction, the
       // board settling its rows) is acted on once it has held SETTLE_MS, so

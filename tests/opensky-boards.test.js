@@ -436,9 +436,11 @@ test('the board asks OpenSky first, and Flightradar24 not at all when OpenSky ha
   assert.equal(r.via, 'callsign'); assert.equal(r.cs, 'JZA8890'); assert.equal(r.fl, 'AC8890');
   assert.equal(r.reg, null, 'OpenSky gives no registration: the airport\'s own stays');
   assert.equal(b.win._adsbLast.AC8890, r, 'published where the maps read it');
-  assert.equal(b.api.creditOn(), false, 'fetched is not drawn: no credit yet');
-  b.api.cached(null, '', 'AC8890');
-  assert.equal(b.api.creditOn(), true, 'drawn: the credit is due');
+  assert.equal(await at(T, () => b.api.creditOn()), false, 'fetched is not drawn: no credit yet');
+  // drawn a moment later, all on the test clock (on the real clock, once it
+  // had passed T, the credit read as long gone and was never due)
+  await at(T + 1000, () => b.api.cached(null, '', 'AC8890'));
+  assert.equal(await at(T + 2000, () => b.api.creditOn()), true, 'drawn: the credit is due');
 });
 
 test('Flightradar24 is asked exactly as before whenever OpenSky has nothing, is off, stopped or unreachable', async () => {
