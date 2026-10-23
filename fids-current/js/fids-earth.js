@@ -1227,7 +1227,13 @@
     return v;
   }
   function apTz(c) { var z = null; try { /* global AP */ z = (typeof AP !== 'undefined' && AP[c] && AP[c].tz) || null; } catch (e) { z = null; } return zoneOf(c, z); }
-  function boardDir() { try { /* global mode */ return (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep'; } catch (e) { return 'dep'; } }
+  // the direction of the rows on screen (fids-core.js render stamps it,
+  // v24080), not the board's next one: `mode` turns a slide before its rows
+  // are drawn
+  function boardDir() {
+    try { var sd = root._fidsShownDir; if (sd === 'arr' || sd === 'dep') return sd; } catch (e) {}
+    try { /* global mode */ return (typeof mode !== 'undefined' && mode === 'arr') ? 'arr' : 'dep'; } catch (e) { return 'dep'; }
+  }
   function boardRows(dir) { try { /* global data */ return (typeof data !== 'undefined' && data && data[dir]) || []; } catch (e) { return []; } }
   function realCode(c) { try { if (typeof _realIata === 'function') return String(_realIata(c) || c).toUpperCase(); } catch (e) {} return c; }
   // the code the board's map reading finds in a row's words (fids-core.js

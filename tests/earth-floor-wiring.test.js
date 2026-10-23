@@ -303,3 +303,19 @@ test('a board just opened shows its plain ground until the planet is up, never t
   assert.match(MOD, /var WAIT_MS = 60000;/);
   assert.match(MOD, /if \(!EARTH_FLOOR_ON\) \{ try \{ root\.document\.documentElement\.removeAttribute\('data-fids-floor-wait'\); \} catch \(e\) \{\} \}/, 'switched off: the old backdrop at once');
 });
+
+test('the planet follows the direction of the rows on screen, not the next one (v24080)', () => {
+  // the board turns `mode` at the end of the last language slide of a page
+  // (advancePage, after render) and draws its rows only at the next slide:
+  // for one slide `mode` names a direction that is not on screen
+  const tick = CORE.slice(CORE.indexOf('function tick_carousel() {'), CORE.indexOf('function tick_carousel() {') + 2000);
+  assert.ok(tick.indexOf('render();') > 0 && tick.indexOf('advancePage();') > tick.indexOf('render();'), 'render, then advancePage: mode leads the rows by a slide');
+  // render stamps the direction it draws, at the point it commits to it
+  const r0 = CORE.indexOf('\nfunction render() {\n  if (_renderBlocked) return;');
+  assert.ok(r0 > 0, 'the board render');
+  const head = CORE.slice(r0, r0 + 2500);
+  assert.match(head, /const isDep {2}= mode === 'dep';[\s\S]*?window\._fidsShownDir = mode;/);
+  assert.ok(head.indexOf('window._fidsShownDir = mode;') < head.indexOf('const all = data[mode]') || head.indexOf('const all = data[mode]') < 0, 'before the rows are read');
+  // and the floor reads it first, falling back to mode only before any render
+  assert.match(MOD, /function boardDir\(\) \{\s*try \{ var sd = root\._fidsShownDir; if \(sd === 'arr' \|\| sd === 'dep'\) return sd; \} catch \(e\) \{\}\s*try \{ \/\* global mode \*\/ return \(typeof mode !== 'undefined' && mode === 'arr'\) \? 'arr' : 'dep'; \} catch \(e\) \{ return 'dep'; \}\s*\}/);
+});
