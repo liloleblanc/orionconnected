@@ -67,6 +67,16 @@
       var q = new URLSearchParams(window.location.search);
 
       var rot = (q.get('rotate') || 'fids,gids,bids').trim();
+      // v24081 — THE MONCTON STREAM GIVES DEPARTURES MORE TIME. Box 1 runs one
+      // address for weeks, typed on the server: ap=YQM ... stream=1 ...
+      // rotate=fids,gids,bids,gids. Departures, the only board with Earth, now
+      // (the routes and the cities under the rows), was on air one minute in
+      // four. The account holder chose departures, gate, departures, gate,
+      // baggage instead: departures two minutes in five, the gate the same,
+      // baggage one. That exact address now runs the new order, so nothing on
+      // the server changes; any other rotate= is read as it is written.
+      if (q.get('stream') === '1' && String(q.get('ap') || '').trim().toUpperCase() === 'YQM'
+          && rot.replace(/\s+/g, '').toLowerCase() === 'fids,gids,bids,gids') rot = 'fids,gids,fids,gids,bids';
       var dwell = parseInt(q.get('dwell') || q.get('every') || '60', 10);
       if (!(dwell > 0)) dwell = 60;
 
@@ -510,7 +520,7 @@
       // running boxes swap to this copy within minutes of the deploy: the copy
       // they run now reloads on Cloudflare's edits rather than on ours (see
       // selfSigOf below).
-      try { window.__ocRotatorVer = 24025; } catch (e) {}
+      try { window.__ocRotatorVer = 24081; } catch (e) {}
       var selfSig = null, reloadPending = false;
       // v23518 — THE SELF-REFRESH WAS INERT IN PRODUCTION. Measured on the live
       // site: https://fids.orionconnected.com/rotate answers 200 with
