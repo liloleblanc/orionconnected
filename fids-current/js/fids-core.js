@@ -12144,6 +12144,11 @@ function aircraftCodeToIata(raw) {
   s = s.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|ATR|DE HAVILLAND CANADA|DE HAVILLAND|SAAB|FOKKER|MCDONNELL DOUGLAS|LOCKHEED|BAE SYSTEMS|BAE|BRITISH AEROSPACE)\s*/i, '').trim();
 
   // ── Bare Embraer numbers (after stripping "Embraer": "175" / "190" / "195") ──
+  // v24083 — an E2 first: "Embraer 195-E2" matched the bare 195 below and was
+  // drawn, and seated, as the first-generation E195
+  if (/^195[\s-]*E2\b/.test(s)) return '295';
+  if (/^190[\s-]*E2\b/.test(s)) return '290';
+  if (/^175[\s-]*E2\b/.test(s)) return '297';
   if (/^175\b/.test(s)) return 'E75';
   if (/^170\b/.test(s)) return 'E7W';
   if (/^190\b/.test(s)) return 'E90';
@@ -14515,15 +14520,10 @@ window._orbArtFailed = function (img, code) {
   wrap.appendChild(span);
 };
 
-function _buildV2AircraftCol(ctx, vars) {
-  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
-  var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
-  var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
-  var _inbOperating = vars._inbOperating;
-  var airlineCode = vars.airlineCode;
-  var equipRaw = vars.equipRaw, equipName = vars.equipName;
-
-  var _hasInb = !!(inboundFlight && _inbOperating);
+// v24083 — THE AEROPLANE THE GATE SHOWS, in one place: the aircraft panel
+// (_buildV2AircraftCol) names it and the standby lists draw their seats from
+// it (_gateCardsBuild), so the two can never disagree. { cd, nm, reg }.
+function _gateAcShown(currentFlight, inboundFlight, equipRaw, equipName) {
   var _anyInb = !!inboundFlight;
   // Aircraft truth is source-ordered, never flight-number guessed:
   // confirmed registration > current inbound/live equipment > today's schedule.
@@ -14575,8 +14575,22 @@ function _buildV2AircraftCol(ctx, vars) {
       var _confirmedCode = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_confirmedType) : '';
       if (_confirmedCode) _equipCd = _confirmedCode;
     }
-    if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg;
   } catch (e) {}
+  return { cd: _equipCd || '', nm: _equipNm || '', reg: _reg || '' };
+}
+function _buildV2AircraftCol(ctx, vars) {
+  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
+  var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
+  var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
+  var _inbOperating = vars._inbOperating;
+  var airlineCode = vars.airlineCode;
+  var equipRaw = vars.equipRaw, equipName = vars.equipName;
+
+  var _hasInb = !!(inboundFlight && _inbOperating);
+  var _anyInb = !!inboundFlight;
+  var _shown = _gateAcShown(currentFlight, inboundFlight, equipRaw, equipName);
+  var _equipCd = _shown.cd, _equipNm = _shown.nm, _reg = _shown.reg;
+  try { if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg; } catch (e) {}
 
   // Operating carrier. Keep marketing airline and true operator separate.
   // Same-carrier flights get a clean airline brand block; different operators
@@ -17017,7 +17031,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24082" src="/textures/gate-sky-shelf.mp4?v=24082" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24083" src="/textures/gate-sky-shelf.mp4?v=24083" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17061,7 +17075,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24082" src="/textures/gate-sky-shelf.mp4?v=24082" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24083" src="/textures/gate-sky-shelf.mp4?v=24083" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -17788,7 +17802,9 @@ function uxgGateHtml(ctx) {
       // prints the airport's new time, and the flight closes on that one
       depEnd: (_door.kept && _gateDelayHasTime(currentFlight) && currentFlight._revTs) || 0,
       arr: arrTimeStr ? { ts: ctx.arrInstant, tz: ctx.arrTz || tz, revised: !!ctx.arrRevised, early: !!ctx.arrEarly } : null,
-      iata: iata, airline: airlineCode, tz: tz, frF: _frF, city: displayLoc, code: _dispIata(locIata || ''), flight: currentFlight.flight
+      iata: iata, airline: airlineCode, tz: tz, frF: _frF, city: displayLoc, code: _dispIata(locIata || ''), flight: currentFlight.flight,
+      acType: (function () { try { var _sh = _gateAcShown(currentFlight, inboundFlight, equipRaw, equipName); return _sh.cd || _sh.nm || ''; } catch (eSh) { return equipRaw || equipName || ''; } })(),
+      op: (function () { try { var _r = (typeof fidsResolveOperator === 'function') ? fidsResolveOperator(currentFlight, iata) : null; return (_r && _r.op) || ''; } catch (eOp) { return ''; } })()
     });
   } catch (eCM) { window._gateCardsModel = null; }
   _gateCardsRefreshSoon();
@@ -34949,7 +34965,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24082';
+var FIDS_BUILD_TAG = 'v24083';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38739,7 +38755,10 @@ function _gateCardsBuild(o) {
     close: firm && o.close && o.close.ts ? o.close : null,
     arr: arr,
     docs: docs,
-    pretend: pretend
+    pretend: pretend,
+    // v24083 — the aeroplane and its operator, for the lists' seats
+    acType: String(o.acType || '').toUpperCase(),
+    op: String(o.op || '').toUpperCase()
   };
 }
 // Which cards are due now. Pure: the deck builder and the renderer both ask.
@@ -38848,8 +38867,176 @@ var GATE_SB_NAME_FMT = { AC: 'sur3' };
 var _GATE_SB_SUR = ['BER', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'LAP', 'COT', 'PEL', 'BEL', 'GIR', 'SIM', 'POI',
   'OUE', 'SMI', 'BRO', 'WIL', 'MAR', 'TAY', 'CAM', 'BEA', 'JOH', 'THO', 'WHI', 'CLA', 'HAL', 'KIN', 'SCO', 'REI', 'GRA',
   'MIL', 'NGU', 'WON', 'GON', 'PAT', 'MAC', 'ROB', 'EVA', 'HUN', 'FRA', 'LEF', 'STE', 'RIC', 'COL', 'DAV', 'LAM', 'HAR'];
-// premium seat letters (A C D F) and the main cabin's (A to F), as char codes
-var _GATE_SB_SEATS = { up: [65, 67, 68, 70], sb: [65, 66, 67, 68, 69, 70] };
+// v24083 — SEATS THAT EXIST ON THE AEROPLANE AT THE GATE. A cleared name
+// printed a seat from rows 1-4 (A C D F) for an upgrade and 12-31 (A to F)
+// for standby and seat changes, on every aeroplane, so an Air Canada Express
+// CRJ900 (rows 1-4 and 12-27, no C in business) showed a passenger in row 30.
+// Each list now draws from the cabin of the aeroplane the gate shows
+// (_gateAcShown, the same one the aircraft panel names), for its airline:
+// 'premium' for the upgrade list, 'main' for standby and seat changes.
+//
+// The table is the seats that exist on EVERY current layout of that type for
+// that airline (October 2026): aeroLOPA's seat-by-seat data and SeatMaps.com,
+// with the airlines' own seat maps, each range confirmed from a second source.
+// A partial row (an exit, a galley, the last row) is left out, so a range never
+// prints a seat a layout lacks. Air Canada numbers economy from row 12 on its
+// narrowbodies and Express jets and from 18 on its widebodies; a Q400 for Air
+// Canada has no business cabin, so it shows no upgrade list.
+//
+// A seat is printed only from this table. An airline or a type it does not
+// hold, or a gate that does not know its aeroplane yet, prints the name and
+// its tick with no seat: no airline numbers its rows like another (Southwest
+// has no rows 10 to 13 on its 737-700, British Airways puts premium economy in
+// rows 30 to 34), so a guess would print seats that do not exist.
+//
+// Each cabin is written 'rows:letters', then '-row' for a row that is not
+// there and '+seat' for a seat outside the block that is: '12-33:ABCDEF -18'
+// is rows 12 to 33 without 18, every row A to F. null is no such cabin.
+var GATE_SB_SEATMAP = {
+  // Air Canada mainline, with Rouge where the type flies both ways (a Rouge
+  // aeroplane flies on AC numbers): economy from row 12 on every narrowbody
+  // and the Express jets, from 18 on the widebodies; row 13 exists. The 737
+  // MAX 8 keeps its business rows although seven ex-Lynx all-economy jets fly
+  // the type: on those the seats exist, in economy.
+  'AC:223': ['1-3:ACDF', '12-36:ACDEF'], 'AC:319': ['1-3:ACDF', '12-32:ABCDEF -18'],
+  'AC:320': ['2:ACDF +1D +1F', '12-33:ABCDEF -18'],
+  'AC:321': ['1-2:ACDF', '12-41:ABCDEF -16 -17 -28 -29 -30'], 'AC:32Q': ['1-7:AF', '12-39:ABCDEF'],
+  'AC:333': ['1-5:AK', '18-37:ACDEGHK -32'],
+  'AC:77L': ['1-11:ADGK -7 -8 +7A +7K +8D +8G', '18-40:ABCDEFGHJK -27 -28 -29 -30'],
+  'AC:77W': ['1-6:ADGK +7A +7K', '18-59:ABCDEFGHJK -24 -25 -26 -27 -28 -29 -30 -44 -45 -46 -47 -48 -49 -50'],
+  'AC:781': ['2-10:ADGK +1A +1K +11A +11K', '18-46:ABCDEHJK -29'],
+  'AC:788': ['1-5:ADGK', '18-40:ABCDEGHJK -30'], 'AC:789': ['2-8:ADGK +1A +1K', '18-44:ABCDEGHJK -30'],
+  'AC:7M8': ['2-3:ACDF +1D +1F', '12-32:ABCDEF'], 'AC:CR9': ['1-4:ADF', '12-27:ACDF'],
+  'AC:DH4': [null, '2-19:AD'], 'AC:E75': ['1-4:ADF', '12-27:ACDF'],
+  // Air Canada Rouge, when the row or its operator names Rouge
+  'RV:319': ['1-3:ACDF', '12-32:ABCDEF -18'], 'RV:320': ['1-3:ACDF', '12-37:ABCDEF'],
+  'RV:321': ['1-2:ACDF', '12-41:ABCDEF -17 -29 -30'], 'RV:7M8': ['2-3:ACDF', '12-32:ABCDEF'],
+  // Jazz (Air Canada Express): CRJ900 and E175 business rows 1-4 (A D F),
+  // economy 12-27; the Q400 has no business cabin
+  'QK:CR9': ['1-4:ADF', '12-27:ACDF'], 'QK:DH4': [null, '2-20:ACDF'], 'QK:DH8': [null, '2-20:ACDF'],
+  'QK:E75': ['1-4:ADF', '12-27:ACDF'],
+  // PAL Airlines: the Q400, its own flights and Air Canada Express, no
+  // business cabin. Its Dash 8-100 and -300 fly passenger and combi layouts
+  // with no published row plan, so they print no seat.
+  'PB:DH4': [null, '2-19:AD'],
+  // WestJet (and Encore): Premium rows 1-3, economy from row 4
+  'WS:738': ['1-3:ACDF', '4-30:ABCDEF'], 'WS:73G': ['1-3:ACDF', '4-23:ABCDEF'],
+  'WS:789': ['1-4:ADFK', '9-39:ABCDEFHJK -25'], 'WS:7M8': ['1-3:ACDF', '4-30:ABCDEF'],
+  'WS:DH4': ['2-3:ABCD +1A +1B', '4-20:ABCD'], 'WS:DH8': ['2-3:ABCD +1A +1B', '4-20:ABCD'],
+  // Porter: PorterReserve at the front, one 2-2 cabin; E95 is an E195-E2 here
+  // (Porter flies no other E195)
+  'PD:295': ['1-4:ABCD', '5-33:ABCD'], 'PD:DH4': ['2:ABCD +1A +1B', '3-20:ABCD'],
+  'PD:DH8': ['2:ABCD +1A +1B', '3-20:ABCD'], 'PD:E95': ['1-4:ABCD', '5-33:ABCD'],
+  // Flair: one cabin
+  'F8:738': [null, '2-32:ABCDEF'], 'F8:7M8': [null, '2-32:ABCDEF'],
+  // Air Transat: Club at the front, letters A B C | H J K; the feeds swap its
+  // A321LR and A321ceo codes, so both draw rows each of them has (the ceo has
+  // no Club)
+  'TS:321': [null, '15-35:ABCHJK -25 -26 -27 -28'], 'TS:32Q': ['1-3:ACHK', '15-35:ABCHJK -25 -26 -27 -28'],
+  'TS:332': ['1-2:ACDGK', '14-41:ABCDFGHJK -29 -30 -31 -32 -33 -34 -35'],
+  'TS:333': ['1-2:ACDGK', '16-44:ACDFGHK -32 -33 -34 -35 -36'],
+  // United: economy from row 7 or 8, no row 13; a CR7 may be a CRJ550, so it
+  // draws the rows both have
+  'UA:319': ['1-3:ABEF', '7-35:ABCDEF -9 -12 -13 -14 -16 -17 -18 -19 -20 -33'],
+  'UA:320': ['1-3:ABEF', '7-38:ABCDEF -9 -13 -14 -15 -16 -17 -18 -19 -33'],
+  'UA:32Q': ['1-5:AF', '30-41:ABCDEF -32 -33'],
+  'UA:738': ['1-4:ABEF', '7-38:ABCDEF -9 -13 -16 -17 -18 -19 -33'],
+  'UA:739': ['1-5:ABEF', '8-39:ABCDEF -13 -16 -17 -18 -19 -33'],
+  'UA:73G': ['1-3:ABEF', '7-34:ABCDEF -9 -13 -14 -16 -17 -18 -19 -20 -33'],
+  'UA:752': ['1-4:ABEF', '7-41:ABCDEF -13 -14 -15 -16 -17 -18 -19 -21 -33'],
+  'UA:753': ['1-6:ABEF', '8-43:ABCDEF -13 -22'], 'UA:763': ['2-10:ADL -3 -5 -7 -9', '31-44:ABDEFKL -42'],
+  'UA:764': ['1-11:AFL -2 -4 -6 -8 -10', '30-53:ABDEFKL'],
+  'UA:772': ['1-3:ADGL', '31-47:ABCDEFGJKL -37 -38 -39 -40'],
+  'UA:77W': ['1-18:ADGL -7 -8 -13 -14', '30-55:ABCDEFGJKL -44 -45'],
+  'UA:781': ['1-11:ADFL', '30-58:ABCDEFJKL -40 -41 -42 -43'],
+  'UA:788': ['1-7:ADFL', '30-51:ABCDEFJKL -40 -41'],
+  'UA:789': ['1-12:ADFL', '30-43:ABCJKL -36 -37 -38 -39 -40 -41'],
+  'UA:7M8': ['1-4:ABEF', '7-38:ABCDEF -9 -13 -16 -17 -18 -19 -33'],
+  'UA:7M9': ['1-5:ABEF', '8-39:ABCDEF -13 -16 -17 -18 -19 -33'], 'UA:CR2': [null, '1-12:ABCD'],
+  'UA:CR5': ['1-3:ACD', '7-17:ABCD -13'], 'UA:CR7': ['1-2:ACD', '7-17:ABCD -13'],
+  'UA:E70': ['1-2:ACD', '7-24:ABCD -13 -14 -22'], 'UA:E75': ['1-4:ACD', '7-22:ABCD -13 -14'],
+  'UA:ER4': [null, '3-24:ACD -12 -13 -14 -15 -16 -17'],
+  // Delta: economy from row 10 on the narrowbodies, 30 on the widebodies; CR7
+  // as for United
+  'DL:221': ['1-3:ABCD', '10-28:ABCDE -15'], 'DL:223': ['1-3:ABCD', '10-33:ABCDE -17'],
+  'DL:319': ['1-3:ABCD', '10-29:ABCDEF'], 'DL:320': ['1-4:ABCD', '10-32:ABCDEF'],
+  'DL:321': ['1-5:ABCD', '10-38:ABCDEF -13 -25 -26'], 'DL:32Q': ['1-5:AD', '13-33:ABCDEF -22 -23'],
+  'DL:332': ['2-9:ACGJ', '30-50:ABCDGHJ'], 'DL:333': ['2-9:ACGJ', '30-58:ABCDGHJ -42'],
+  'DL:339': ['1-7:ACGJ', '30-54:ABCDFGHJ'], 'DL:351': ['1-14:ABCD -12', '30-53:ABCDEFGHJ -35 -36'],
+  'DL:359': ['2-8:ABCD', '30-51:ABCDEFGHJ -37 -40'], 'DL:717': ['1-3:ABCD', '10-29:ABCDE -20'],
+  'DL:738': ['1-4:ABCD', '10-33:ABCDEF'], 'DL:739': ['1-3:ABCD', '11-36:ABCDEF -20 -29'],
+  'DL:752': ['1-4:ABCD', '19-44:ABCDEF -34 -35'], 'DL:753': ['1-6:ABCD', '15-49:ABCDEF -28'],
+  'DL:763': ['1-6:ABCD', '30-41:ABCDEFG -33 -34'], 'DL:764': ['1-8:ABCD', '30-55:ABCDEFG -39 -40'],
+  'DL:CR5': ['1-3:ACD', '7-16:ABCD'], 'DL:CR7': ['1-3:ACD', '7-16:ABCD'], 'DL:CR9': ['1-4:ACD', '5-18:ABCD'],
+  'DL:E70': ['1-3:ACD', '4-18:ABCD'], 'DL:E75': ['1-4:ACD', '5-18:ABCD'],
+  // American: economy from row 8 on most narrowbodies
+  'AA:319': ['1-2:ACDF', '8-27:ABCDEF'], 'AA:320': ['1-3:ACDF', '9-26:ABCDEF'],
+  'AA:321': ['1-5:AF', '11-22:ABCDEF'], 'AA:32Q': ['1-5:AF', '14-33:ABCDEF -23 -26 -27'],
+  'AA:738': ['1-4:ABEF', '8-33:ABCDEF'], 'AA:772': ['1-10:ADHL -6', '18-35:ABCDEGHJKL -25'],
+  'AA:77W': ['1-15:AD -6 -7', '26-43:ACDEGHJL -30 -31 -32 -34'],
+  'AA:788': ['1-5:ADHL', '10-29:ABCDEHJKL -19'], 'AA:789': ['2-7:ADHL', '21-36:ABCDEHJKL -23'],
+  'AA:7M8': ['1-4:ABEF', '8-33:ABCDEF'], 'AA:CR7': ['1-3:AD', '8-17:ACD'], 'AA:CR9': ['1-3:AD', '8-20:ACD'],
+  'AA:E70': ['1-4:ADF', '8-20:ACDF'], 'AA:E75': ['1-4:ADF', '8-23:ACDF'], 'AA:ER4': [null, '3-18:ABC'],
+  // Alaska: economy from row 6; most 737s skip row 13 or 14
+  'AS:32Q': ['1-4:ABHJ', '11-45:ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
+  'AS:332': ['1-3:ABCGHJ', '11-46:ABCEGHJ -12 -13 -31 -32 -33'], 'AS:717': ['1-2:ABEF', '4-27:ABDEF'],
+  'AS:738': ['1-3:ACDF', '6-31:ABCDEF -12 -13 -14 -17'], 'AS:739': ['1-4:ACDF', '6-32:ABCDEF -10 -14 -17'],
+  'AS:73G': ['1-3:ACDF', '6-28:ABCDEF -11 -12 -13 -14 -16'],
+  'AS:789': ['2-9:ACGJ', '14-45:ABCDEFGHJ -25 -29 -30 -31 -32 -33'],
+  'AS:7M8': ['1-3:ACDF', '6-31:ABCDEF -12 -13 -14 -17'], 'AS:7M9': ['1-4:ACDF', '6-32:ABCDEF -14 -17'],
+  'AS:E75': ['1-4:ACD', '6-21:ABCD'],
+  // Hawaiian (now flown as Alaska too)
+  'HA:32Q': ['1-4:ABHJ', '11-45:ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
+  'HA:332': ['1-3:ABCGHJ', '11-46:ABCEGHJ -12 -13 -31 -32 -33'], 'HA:717': ['1-2:ABEF', '4-27:ABDEF'],
+  'HA:789': ['2-9:ACGJ', '14-45:ABCDEFGHJ -25 -29 -30 -31 -32 -33']
+};
+// Codes the feeds send for a type the table holds under another code, after
+// aircraftCodeToIata (which turns ICAO designators and names into these). E7W
+// is IATA's E175 with the new wingtips, as the board names it everywhere.
+var _GATE_SB_TYPE_ALIAS = { '73H': '738', '73W': '73G', '73J': '739', '32A': '320', '32B': '321', '32S': '320',
+  '32D': '319', 'E7W': 'E75', 'CS3': '223', 'BCS': '223', 'CS1': '221', '76W': '763', '78J': '781' };
+var _GATE_SB_AL_ALIAS = { ACA: 'AC', JZA: 'QK', ROU: 'RV', WJA: 'WS', WEN: 'WS', WR: 'WS', POE: 'PD', FLE: 'F8',
+  TSC: 'TS', UAL: 'UA', DAL: 'DL', AAL: 'AA', ASA: 'AS', HAL: 'HA' };
+// One cabin's seats, in order, from its 'rows:letters -row +seat' form.
+function _gateSbSeatsOf(spec) {
+  if (!spec) return null;
+  var parts = String(spec).split(' '), head = (parts[0] || '').split(':');
+  var m = /^(\d+)(?:-(\d+))?$/.exec(head[0] || '');
+  if (!m) return null;
+  var a = +m[1], b = m[2] ? +m[2] : a, L = head[1] || '', skip = {}, out = [];
+  for (var i = 1; i < parts.length; i++) if (parts[i].charAt(0) === '-') skip[+parts[i].slice(1)] = 1;
+  for (var r = a; r <= b; r++) if (!skip[r]) for (var k = 0; k < L.length; k++) out.push(r + L.charAt(k));
+  for (var j = 1; j < parts.length; j++) if (parts[j].charAt(0) === '+') out.push(parts[j].slice(1));
+  return out.length ? out : null;
+}
+// The two cabins for a flight: { up: [seats] | null, sb: [seats], basis }, the
+// operator first (a Q400 flown by Jazz for Air Canada is lettered A C D F, so
+// QK:DH4 before AC:DH4, which only has what Jazz and PAL share), then the
+// airline. Not in the table: { up: [], sb: [], basis: '' }, the lists drawn
+// with no seats; null for up is an aeroplane with no premium cabin.
+function _gateSbSeatMap(airline, op, type) {
+  var al = String(airline || '').toUpperCase(), o = String(op || '').toUpperCase();
+  al = _GATE_SB_AL_ALIAS[al] || al;
+  o = _GATE_SB_AL_ALIAS[o] || o;
+  var raw = String(type || '').trim().toUpperCase(), t = raw;
+  // an E170 is its own aeroplane here: the type normaliser draws it with the
+  // E175's picture (E7W), and its rows are not the E175's
+  if (/^(?:E70|E170|ERJ[\s-]*170|EMBRAER[\s-]*(?:ERJ[\s-]*)?170)\b/.test(raw)) t = 'E70';
+  else {
+    try { if (t && typeof aircraftCodeToIata === 'function') t = aircraftCodeToIata(t) || t; } catch (e) {}
+    t = _GATE_SB_TYPE_ALIAS[t] || t;
+  }
+  var keys = [];
+  if (t) {
+    if (o && o !== al) keys.push(o + ':' + t);
+    keys.push(al + ':' + t);
+  }
+  for (var i = 0; i < keys.length; i++) {
+    var e = GATE_SB_SEATMAP[keys[i]];
+    if (e) return { up: _gateSbSeatsOf(e[0]), sb: _gateSbSeatsOf(e[1]), basis: keys[i] };
+  }
+  return { up: [], sb: [], basis: '' };
+}
 
 function _gateSbPretendOn(cf) {
   if (GATE_SB_PRETEND_EVERYWHERE) return true;
@@ -38897,8 +39084,14 @@ function _gateSbLists(m, nowMs) {
   var rnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|' + new Date(Number(m.schedAt) || dep).toISOString().slice(0, 10)));
   var air = String(m.airline || '').toUpperCase();
   var cab = GATE_SB_CABINS[air] || GATE_SB_CABINS[_GATE_CARD_ALIAS[air]] || [null, 'cabinEcon'];
+  // a Rouge aeroplane on an Air Canada number: Premium Rouge, not Business
+  if (String(m.op || '').toUpperCase() === 'RV' && GATE_SB_CABINS.RV) cab = GATE_SB_CABINS.RV;
   var fmt = GATE_SB_NAME_FMT[air] || GATE_SB_NAME_FMT[_GATE_CARD_ALIAS[air]] || 'sur3';
   var used = {}, seats = {};
+  // v24083 — the seats come from the aeroplane on the gate, on their own
+  // stream, so the names stay the same when the type or the operator arrives
+  var sm = _gateSbSeatMap(air, m.op, m.acType);
+  var srnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|seat|' + new Date(Number(m.schedAt) || dep).toISOString().slice(0, 10)));
   function name() {
     var s = _GATE_SB_SUR[0];
     for (var k = 0; k < 40; k++) { s = _GATE_SB_SUR[Math.floor(rnd() * _GATE_SB_SUR.length)]; if (!used[s]) break; }
@@ -38907,13 +39100,11 @@ function _gateSbLists(m, nowMs) {
     // 'sur3' is the only format any airline has asked for so far
     return fmt === 'sur3' ? s + ', ' + ini + '.' : s;
   }
+  // drawn without repeating: never two passengers in one seat
   function seat(which) {
-    var L = _GATE_SB_SEATS[which], s = '';
-    for (var k = 0; k < 40; k++) {
-      var r = which === 'up' ? 1 + Math.floor(rnd() * 4) : 12 + Math.floor(rnd() * 20);
-      s = r + String.fromCharCode(L[Math.floor(rnd() * L.length)]);
-      if (!seats[s]) break;
-    }
+    var L = (sm[which] || []).filter(function (x) { return !seats[x]; });
+    if (!L.length) return '';
+    var s = L[Math.floor(srnd() * L.length)];
     seats[s] = 1;
     return s;
   }
@@ -38934,7 +39125,11 @@ function _gateSbLists(m, nowMs) {
     return { cabin: cabin, rows: rows };
   }
   var nUp = 2 + Math.floor(rnd() * 2), nSb = 3 + Math.floor(rnd() * 2);
-  var up = cab[0] ? list(cab[0], nUp, 1, 'up') : null;
+  // the upgrade names are drawn whatever the aeroplane, so the other lists'
+  // names never move; an aeroplane with no premium cabin (a Q400 for Air
+  // Canada) then shows no upgrade list
+  var upL = cab[0] ? list(cab[0], nUp, 1, 'up') : null;
+  var up = (upL && sm.up !== null) ? upL : null;
   var sb = list(cab[1] || 'cabinEcon', nSb, 0, 'sb');
   return { upgrade: up, standby: sb, seats: list(null, 2, 0, 'sb') };
 }
@@ -60690,7 +60885,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24082" src="/textures/gate-sky-shelf.mp4?v=24082"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24083" src="/textures/gate-sky-shelf.mp4?v=24083"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

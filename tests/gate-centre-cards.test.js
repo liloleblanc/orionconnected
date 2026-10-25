@@ -102,7 +102,9 @@ function engine(langs) {
     block('var GATE_SB_CABINS = {'),
     block('var GATE_SB_NAME_FMT = {'),
     line(/^var _GATE_SB_SUR = \[[^\]]*\];/m),
-    block('var _GATE_SB_SEATS = {'),
+    block('var GATE_SB_SEATMAP = {'),
+    block('var _GATE_SB_TYPE_ALIAS = {'),
+    block('var _GATE_SB_AL_ALIAS = {'),
     block('var _GATE_CARD_TINT = {'),
     block('var _GATE_CARD_ALIAS = {'),
     block('var _GATE_CARD_EMBLEM = {'),
@@ -111,10 +113,11 @@ function engine(langs) {
     block('var _GC_STATUS = {'),
     ...['_gateDelayHasTime', 'airportCountry', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseCarrier', '_gateCloseInfo',
       '_gateDocsVariant', '_ssEntry', 'SLpair', '_rc2Rgb', '_rc2Lin', '_rc2Contrast', '_rc2DeltaE', '_rc2StatusLike',
-      '_gateDayWords', 'flightRegionKey', '_gateSbPretendOn', '_gateSbRand', '_gateSbSeed', '_gateSbLists', '_gateCardsBuild', '_gateCardsDue', '_gateCardTint', '_gateCardEmblem', '_gcPair', '_gcStatusPair', '_gcDayPair',
+      '_gateDayWords', 'flightRegionKey', '_gateSbPretendOn', '_gateSbRand', '_gateSbSeed', 'aircraftCodeToIata', '_gateSbSeatsOf', '_gateSbSeatMap', '_gateSbLists', '_gateCardsBuild', '_gateCardsDue', '_gateCardTint', '_gateCardEmblem', '_gcPair', '_gcStatusPair', '_gcDayPair',
       '_gcTime', '_gcCloseLabel', '_gcRow', '_gateCardHtml', '_gcSbFoot', '_gateSbColHtml'].map(fn),
     'return { GATE_CLOSE_WORDS, _GATE_DOCS, _GATE_CARD_TYPES, _GATE_CARD_DWELL_MS, _GATE_CARD_CLOSE_WINDOW_MS, _gateCloseInfo, _gateDocsVariant,'
-      + ' _gateCardsBuild, _gateCardsDue, _gateCardTint, _gateCardEmblem, _gcCloseLabel, _gateCardHtml, _gateSbLists, GATE_SB_CABINS, _gcSbFoot, _gateSbColHtml };'
+      + ' _gateCardsBuild, _gateCardsDue, _gateCardTint, _gateCardEmblem, _gcCloseLabel, _gateCardHtml, _gateSbLists, GATE_SB_CABINS, _gcSbFoot, _gateSbColHtml,'
+      + ' GATE_SB_SEATMAP, _gateSbSeatsOf, _gateSbSeatMap, aircraftCodeToIata };'
   ].join('\n'));
   const win = { FIDSGateDate: GD, _gateOrbParts: () => null };
   // (fidsEscHtml is the board's own escape; its regex literals hold quotes the
@@ -1608,7 +1611,8 @@ test('the lists in the centre: the stylesheet gives every row a set height and a
 
 test('names clear one by one as boarding comes closer, the next one called', () => {
   const E = engine();
-  const m = E._gateCardsBuild(facts({ cf: testRow() }));
+  // v24083 — on a known aeroplane (an Air Canada A320), so every name has a seat
+  const m = E._gateCardsBuild(facts({ cf: testRow(), acType: '320' }));
   const first = E._gateSbLists(m, DEP - 50 * MIN);
   const last = E._gateSbLists(m, DEP - 46 * MIN);
   const n = (L, st) => L.rows.filter((r) => r.st === st).length;
@@ -1626,7 +1630,7 @@ test('names clear one by one as boarding comes closer, the next one called', () 
     assert.ok(n(L, 'called') <= 1, 'one name called at a time');
     for (const r of L.rows) {
       assert.match(r.name, /^[A-Z]{3}, [A-Z]\.$/, 'the masked name: three letters of the surname and an initial');
-      assert.match(r.seat, /^\d{1,2}[A-F]$/);
+      assert.match(r.seat, /^\d{1,2}[A-K]$/);
     }
     // the queue numbers count only who is still waiting
     assert.deepEqual(L.rows.filter((r) => r.st !== 'cleared').map((r) => r.pos), L.rows.filter((r) => r.st !== 'cleared').map((_, i) => i + 1));
@@ -1635,6 +1639,150 @@ test('names clear one by one as boarding comes closer, the next one called', () 
   assert.deepEqual(E._gateSbLists(m, DEP - 48 * MIN), E._gateSbLists(m, DEP - 48 * MIN));
   const names = (L) => L.rows.map((r) => r.name);
   assert.deepEqual(names(first.standby), names(last.standby), 'the names stay; only their status moves');
+});
+
+// ── v24083 — the seats exist on the aeroplane at the gate ───────────────────
+//
+// An Air Canada Express CRJ900 out of Moncton (AC7897 to Toronto) showed a
+// cleared passenger in row 30: every aeroplane drew upgrades from rows 1-4,
+// A C D F, and standby from rows 12-31, A to F. The CRJ900 has business in
+// rows 1-4 lettered A D F and economy in rows 12-27, A C D F.
+
+const seatsOf = (L) => [L.upgrade, L.standby, L.seats].filter(Boolean).flatMap((x) => x.rows.filter((r) => r.st === 'cleared').map((r) => r.seat));
+const allSeats = (L) => [L.upgrade, L.standby, L.seats].filter(Boolean).flatMap((x) => x.rows.map((r) => r.seat));
+// many flights and days, late in the window so most names have cleared
+function draws(E, o, days) {
+  const out = [];
+  for (let d = 0; d < (days || 40); d++) {
+    const dep = DEP + d * 86400000;
+    const m = E._gateCardsBuild(facts(Object.assign({ cf: row({ _sortTs: dep, flight: o.flight || 'AC7897', airline: o.airline || 'AC' }), depTs: dep, boardTs: dep - 35 * MIN }, o.facts || {})));
+    out.push(E._gateSbLists(m, dep - 46 * MIN));
+  }
+  return out;
+}
+
+test('a CRJ900 prints only seats a CRJ900 has: business 1-4 A D F, economy 12-27 A C D F', () => {
+  const E = engine();
+  const biz = new Set(E._gateSbSeatsOf('1-4:ADF')), econ = new Set(E._gateSbSeatsOf('12-27:ACDF'));
+  for (const L of draws(E, { facts: { acType: 'CR9', op: 'QK' } })) {
+    assert.ok(L.upgrade, 'the CRJ900 has a business cabin, so an upgrade list');
+    for (const r of L.upgrade.rows) assert.ok(biz.has(r.seat), 'upgrade seat ' + r.seat + ' is in business');
+    for (const x of [L.standby, L.seats]) for (const r of x.rows) {
+      assert.ok(econ.has(r.seat), 'seat ' + r.seat + ' is in economy');
+      assert.ok(Number(r.seat.slice(0, -1)) <= 27, 'no row past 27');
+    }
+  }
+  // the ICAO designator a feed or FR24 sends reaches the same cabin
+  const icao = E._gateSbSeatMap('AC', '', 'CRJ9');
+  assert.equal(icao.basis, 'AC:CR9');
+});
+
+test('a Q400 or any Dash 8 has no business cabin, so no upgrade list, and each operator keeps its own letters', () => {
+  const E = engine();
+  for (const L of draws(E, { flight: 'AC8875', facts: { acType: 'DH4' } }, 12)) {
+    assert.equal(L.upgrade, null, 'no upgrade list on a Q400');
+    for (const s of allSeats(L)) assert.match(s, /^(?:[2-9]|1[0-9])[AD]$/, 'Jazz or PAL: rows 2-19, A or D, ' + s);
+  }
+  assert.deepEqual(E._gateSbSeatMap('AC', 'QK', 'DH4').sb.slice(0, 4), ['2A', '2C', '2D', '2F'], 'Jazz letters its Q400 A C | D F');
+  assert.equal(E._gateSbSeatMap('AC', 'QK', 'DH4').basis, 'QK:DH4', 'the operator first');
+  // PAL's Q400 is lettered A B | D E on one source and has no second, so only
+  // what every reading shares: A and D
+  assert.deepEqual(E._gateSbSeatMap('AC', 'PB', 'DH4').sb.slice(0, 4), ['2A', '2D', '3A', '3D']);
+  // PAL's Dash 8-100 and -300 fly combi layouts with no row plan: no seat at all
+  assert.deepEqual(E._gateSbSeatMap('PB', '', 'DH3'), { up: [], sb: [], basis: '' });
+});
+
+test('Air Canada starts economy at row 12 on its narrowbodies and Express jets, at 18 on the widebodies', () => {
+  const E = engine();
+  for (const t of ['223', '319', '320', '321', '32Q', '7M8', 'CR9', 'E75']) {
+    const sb = E._gateSbSeatMap('AC', '', t).sb;
+    assert.equal(Math.min(...sb.map((s) => Number(s.slice(0, -1)))), 12, t + ': economy from row 12');
+  }
+  for (const t of ['788', '789', '781', '77W', '77L', '333']) {
+    const sb = E._gateSbSeatMap('AC', '', t).sb;
+    assert.equal(Math.min(...sb.map((s) => Number(s.slice(0, -1)))), 18, t + ': economy from row 18');
+  }
+  // no B on the A220, whose economy is A C | D E F
+  assert.ok(!E._gateSbSeatMap('AC', '', '223').sb.some((s) => /B$/.test(s)));
+});
+
+test('every cabin in the table parses, sits inside its own rows, and holds the names a list can draw', () => {
+  const E = engine();
+  for (const [k, e] of Object.entries(E.GATE_SB_SEATMAP)) {
+    for (const [i, spec] of e.entries()) {
+      if (spec === null) { assert.equal(i, 0, k + ': only a premium cabin may be missing'); continue; }
+      const seats = E._gateSbSeatsOf(spec);
+      assert.ok(seats && seats.length, k + ' ' + spec + ' parses');
+      assert.equal(new Set(seats).size, seats.length, k + ': no seat twice');
+      for (const s of seats) assert.match(s, /^\d{1,2}[A-L]$/, k + ': ' + s);
+      const skipped = (spec.match(/ -(\d+)/g) || []).map((x) => Number(x.slice(2)));
+      for (const s of seats) if (!/\+/.test(spec)) assert.ok(!skipped.includes(Number(s.slice(0, -1))), k + ': ' + s + ' is in a row that is not there');
+      // a standby list (4) and seat changes (2), or an upgrade list (3), draw
+      // without repeating
+      if (i === 1) assert.ok(seats.length >= 6, k + ': at least six economy seats');
+      else assert.ok(seats.length >= 3, k + ': at least three premium seats');
+    }
+  }
+});
+
+test('a seat is printed only from the table: an aeroplane not known yet, or not in it, prints the name and its tick alone', () => {
+  const E = engine();
+  for (const [al, t] of [['AC', ''], ['QK', ''], ['WN', '73G'], ['BA', '77W'], ['ZZ', ''], ['AC', 'BEH']]) {
+    assert.deepEqual(E._gateSbSeatMap(al, '', t), { up: [], sb: [], basis: '' }, al + ' ' + t);
+  }
+  const L = draws(E, { facts: { acType: '' } }, 3)[0];
+  assert.ok(L.upgrade, 'the upgrade list still shows while the aeroplane is not known');
+  for (const s of allSeats(L)) assert.equal(s, '', 'and no seat is printed');
+  // the names do not move when the type or the operator arrives, nor when it
+  // turns out to have no business cabin: the seats have their own stream
+  const names = (X) => [X.standby, X.seats].map((x) => x.rows.map((r) => r.name).join());
+  const base = draws(E, { facts: { acType: '' } }, 8);
+  for (const f of [{ acType: 'CR9' }, { acType: 'DH8D' }, { acType: 'DH4', op: 'PB' }, { acType: '', op: 'PB' }]) {
+    const other = draws(E, { facts: f }, 8);
+    for (let i = 0; i < base.length; i++) assert.deepEqual(names(other[i]), names(base[i]), JSON.stringify(f));
+  }
+  // never two passengers in one seat
+  for (const X of draws(E, { facts: { acType: 'CR9' } }, 60)) {
+    const s = allSeats(X).filter(Boolean);
+    assert.equal(new Set(s).size, s.length);
+  }
+});
+
+test('the codes the feeds send reach the right cabin', () => {
+  const E = engine();
+  // E7W is the E175 with the new wingtips, as the board names it; an E170 is its own aeroplane
+  assert.equal(E._gateSbSeatMap('AC', 'QK', 'E7W').basis, 'QK:E75');
+  assert.equal(E._gateSbSeatMap('UA', '', 'E170').basis, 'UA:E70');
+  assert.equal(E._gateSbSeatMap('AC', '', 'Bombardier CRJ900').basis, 'AC:CR9');
+  assert.equal(E._gateSbSeatMap('AC', '', 'DH8D').basis, 'AC:DH4');
+  assert.equal(E._gateSbSeatMap('AC', '', 'B38M').basis, 'AC:7M8');
+  // "Embraer 195-E2" was read as the first-generation E195
+  assert.equal(E.aircraftCodeToIata('Embraer 195-E2'), '295');
+  assert.equal(E._gateSbSeatMap('PD', '', 'Embraer 195-E2').basis, 'PD:295');
+  // a CRJ550 is reported as a CR7: United's and Delta's CR7 draw rows both have
+  assert.ok(!E._gateSbSeatMap('UA', '', 'CR7').sb.some((s) => Number(s.slice(0, -1)) > 17));
+  assert.ok(!E._gateSbSeatMap('DL', '', 'CR7').sb.some((s) => Number(s.slice(0, -1)) > 16 || Number(s.slice(0, -1)) < 7));
+  // Transat's A321LR and A321ceo codes are swapped by the feeds: either draws rows both have
+  assert.deepEqual(E._gateSbSeatMap('TS', '', '321').sb, E._gateSbSeatMap('TS', '', '32Q').sb);
+});
+
+test('the lists draw from the aeroplane the aircraft panel shows: the inbound first, a confirmed tail over both', () => {
+  // one helper for both: the panel names it, the lists take its code
+  assert.match(fn('_buildV2AircraftCol'), /var _shown = _gateAcShown\(currentFlight, inboundFlight, equipRaw, equipName\);/);
+  assert.match(fn('uxgGateHtml'), /acType: \(function \(\) \{ try \{ var _sh = _gateAcShown\(currentFlight, inboundFlight, equipRaw, equipName\);/);
+  const shown = (types) => new Function('formatAircraft', '_acResolvedGet', '_regTrueType', 'aircraftCodeToIata', 'window',
+    fn('_gateAcShown') + '\nreturn _gateAcShown;')((c) => 'name ' + c, () => null, (reg) => types[reg] || '', (n) => n === 'Embraer 175' ? 'E75' : '', {});
+  const out = { flight: 'AC7897', _aircraftCode: 'CR9' };
+  assert.equal(shown({})(out, null, 'CR9', '').cd, 'CR9', 'no inbound: the outbound row');
+  assert.equal(shown({})(out, { flight: 'AC7896', _aircraftCode: 'DH4' }, 'CR9', '').cd, 'DH4', 'the inbound is the aeroplane that becomes this flight');
+  assert.equal(shown({ 'C-FUJZ': 'Embraer 175' })(Object.assign({ _reg: 'C-FUJZ' }, out), null, 'CR9', '').cd, 'E75', 'a confirmed tail wins');
+});
+
+test('a Rouge aeroplane on an Air Canada number calls its front cabin Premium Rouge', () => {
+  const E = engine();
+  const m = E._gateCardsBuild(facts({ cf: testRow(), acType: '320', op: 'RV' }));
+  const L = E._gateSbLists(m, DEP - 48 * MIN);
+  assert.equal(L.upgrade.cabin, E.GATE_SB_CABINS.RV[0]);
 });
 
 test('an airline with no premium cabin shows the standby list alone', () => {
