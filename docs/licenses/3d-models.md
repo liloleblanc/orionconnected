@@ -6,7 +6,9 @@ on screen wherever the picture is shown, and in full here.
 ## boeing 767
 
 - **Used as:** `fids-current/aircraft/heritage/air-canada-767.png`, the aeroplane on the
-  "From the archive" card for Air Canada's Boeing 767 (`HERITAGE_MARKS`, key `air-canada-767`).
+  "From the archive" card for Air Canada's Boeing 767 (`HERITAGE_MARKS`, key `air-canada-767`),
+  and since v24082 `fids-current/aircraft/heritage/air-canada-767-ac87.png`, the same
+  aeroplane in the 1987 livery on a second card (key `air-canada-767-87`).
 - **Model:** "boeing 767" by 1883 — https://sketchfab.com/3d-models/boeing-767-5c79b4502bb9415a9ce5aa30d93767af
 - **Author:** 1883 — https://sketchfab.com/1883
 - **Licence:** Creative Commons Attribution 4.0 International (CC BY 4.0) —
@@ -17,7 +19,11 @@ on screen wherever the picture is shown, and in full here.
   realistic drawing made over that render (new paint, shading and titles), not the
   render itself: laid over the render, its windows, doors, wing and engine sit where
   the render's do, so it is still an adaptation of the model and keeps the credit. It is
-  narrowed horizontally by 4.4% to the real 767-200's length over fuselage depth
-  (48.51 m over 5.41 m, Boeing D6-58328 rev K, section 2.2.1).
+  used at the size it was drawn: to the fin's top it is 2.6% longer, for its fuselage
+  depth, than the real 767-200 (48.51 m over 5.41 m, Boeing D6-58328 rev K, section
+  2.2.1), inside the 4% the boards allow. Since v24082 its reds are warmed by its artist.
+  The 1987-livery card's picture is a second drawing of the same aeroplane in the same
+  pose and light, following the first, so it carries the same credit.
 - **On screen:** "3D model: “1883” on Sketchfab · CC BY 4.0 · modified", in the board's
-  languages (`heritageCredit:air-canada-767` in `fids-current/js/board-strings.js`).
+  languages (`heritageCredit:air-canada-767` and `heritageCredit:air-canada-767-87` in
+  `fids-current/js/board-strings.js`).
