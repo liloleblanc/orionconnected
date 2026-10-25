@@ -194,6 +194,7 @@ test('iah: status folding — Boarding, airline DELAYED text, hidden rows, codes
   const st = (patch) => parseIahFeed(payload([row(patch)]), 'dep', NOW)[0].status;
   assert.equal(st({ status: 'Boarding', originalStatus: 'Boarding' }), 'boarding');
   assert.equal(st({ status: 'Boarding', originalStatus: 'BRD @ 830PM' }), 'boarding');
+  assert.equal(st({ status: 'Boarding', originalStatus: 'FINAL CALL' }), 'final');   // v24083 — the airport's word, not folded into boarding
   assert.equal(st({ status: 'Scheduled', originalStatus: 'DELAYED', isDelayed: false }), 'delayed');
   assert.equal(st({ status: 'Scheduled', originalStatus: 'ON TIME', isDelayed: true }), 'delayed');
   assert.equal(st({ status: 'Scheduled', originalStatus: 'InGate', isDelayed: false }), 'scheduled');

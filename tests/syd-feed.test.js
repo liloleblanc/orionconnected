@@ -264,7 +264,8 @@ test('syd: status vocabulary — the four live, the seven archived, whole-word s
   assert.equal(sydStatus('Delayed'), 'delayed');
   assert.equal(sydStatus('Gate Open'), 'boarding');
   assert.equal(sydStatus('Boarding'), 'boarding');
-  assert.equal(sydStatus('Final Call'), 'boarding');
+  assert.equal(sydStatus('Final Call'), 'final');   // v24083 — the airport's word, not folded into boarding
+  assert.equal(sydStatus('final call now'), 'final');
   assert.equal(sydStatus('Gate Closed'), 'gateclosed');
   assert.equal(sydStatus('Diverted'), 'diverted');
   assert.equal(sydStatus(' gate  closed '), 'gateclosed');
