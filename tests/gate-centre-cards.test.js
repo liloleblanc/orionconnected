@@ -1663,7 +1663,7 @@ function draws(E, o, days) {
 
 test('a CRJ900 prints only seats a CRJ900 has: business 1-4 A D F, economy 12-27 A C D F', () => {
   const E = engine();
-  const biz = new Set(E._gateSbSeatsOf('1-4 ADF')), econ = new Set(E._gateSbSeatsOf('12-27 ACDF'));
+  const biz = new Set(E._gateSbSeatsOf('1-4:ADF')), econ = new Set(E._gateSbSeatsOf('12-27:ACDF'));
   for (const L of draws(E, { facts: { acType: 'CR9', op: 'QK' } })) {
     assert.ok(L.upgrade, 'the CRJ900 has a business cabin, so an upgrade list');
     for (const r of L.upgrade.rows) assert.ok(biz.has(r.seat), 'upgrade seat ' + r.seat + ' is in business');

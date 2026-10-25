@@ -38889,8 +38889,8 @@ var _GATE_SB_SUR = ['BER', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'LAP', 'COT
 // has no rows 10 to 13 on its 737-700, British Airways puts premium economy in
 // rows 30 to 34), so a guess would print seats that do not exist.
 //
-// Each cabin is written 'rows letters', then '-row' for a row that is not
-// there and '+seat' for a seat outside the block that is: '12-33 ABCDEF -18'
+// Each cabin is written 'rows:letters', then '-row' for a row that is not
+// there and '+seat' for a seat outside the block that is: '12-33:ABCDEF -18'
 // is rows 12 to 33 without 18, every row A to F. null is no such cabin.
 var GATE_SB_SEATMAP = {
   // Air Canada mainline, with Rouge where the type flies both ways (a Rouge
@@ -38898,97 +38898,97 @@ var GATE_SB_SEATMAP = {
   // and the Express jets, from 18 on the widebodies; row 13 exists. The 737
   // MAX 8 keeps its business rows although seven ex-Lynx all-economy jets fly
   // the type: on those the seats exist, in economy.
-  'AC:223': ['1-3 ACDF', '12-36 ACDEF'], 'AC:319': ['1-3 ACDF', '12-32 ABCDEF -18'],
-  'AC:320': ['2 ACDF +1D +1F', '12-33 ABCDEF -18'],
-  'AC:321': ['1-2 ACDF', '12-41 ABCDEF -16 -17 -28 -29 -30'], 'AC:32Q': ['1-7 AF', '12-39 ABCDEF'],
-  'AC:333': ['1-5 AK', '18-37 ACDEGHK -32'],
-  'AC:77L': ['1-11 ADGK -7 -8 +7A +7K +8D +8G', '18-40 ABCDEFGHJK -27 -28 -29 -30'],
-  'AC:77W': ['1-6 ADGK +7A +7K', '18-59 ABCDEFGHJK -24 -25 -26 -27 -28 -29 -30 -44 -45 -46 -47 -48 -49 -50'],
-  'AC:781': ['2-10 ADGK +1A +1K +11A +11K', '18-46 ABCDEHJK -29'],
-  'AC:788': ['1-5 ADGK', '18-40 ABCDEGHJK -30'], 'AC:789': ['2-8 ADGK +1A +1K', '18-44 ABCDEGHJK -30'],
-  'AC:7M8': ['2-3 ACDF +1D +1F', '12-32 ABCDEF'], 'AC:CR9': ['1-4 ADF', '12-27 ACDF'],
-  'AC:DH4': [null, '2-19 AD'], 'AC:E75': ['1-4 ADF', '12-27 ACDF'],
+  'AC:223': ['1-3:ACDF', '12-36:ACDEF'], 'AC:319': ['1-3:ACDF', '12-32:ABCDEF -18'],
+  'AC:320': ['2:ACDF +1D +1F', '12-33:ABCDEF -18'],
+  'AC:321': ['1-2:ACDF', '12-41:ABCDEF -16 -17 -28 -29 -30'], 'AC:32Q': ['1-7:AF', '12-39:ABCDEF'],
+  'AC:333': ['1-5:AK', '18-37:ACDEGHK -32'],
+  'AC:77L': ['1-11:ADGK -7 -8 +7A +7K +8D +8G', '18-40:ABCDEFGHJK -27 -28 -29 -30'],
+  'AC:77W': ['1-6:ADGK +7A +7K', '18-59:ABCDEFGHJK -24 -25 -26 -27 -28 -29 -30 -44 -45 -46 -47 -48 -49 -50'],
+  'AC:781': ['2-10:ADGK +1A +1K +11A +11K', '18-46:ABCDEHJK -29'],
+  'AC:788': ['1-5:ADGK', '18-40:ABCDEGHJK -30'], 'AC:789': ['2-8:ADGK +1A +1K', '18-44:ABCDEGHJK -30'],
+  'AC:7M8': ['2-3:ACDF +1D +1F', '12-32:ABCDEF'], 'AC:CR9': ['1-4:ADF', '12-27:ACDF'],
+  'AC:DH4': [null, '2-19:AD'], 'AC:E75': ['1-4:ADF', '12-27:ACDF'],
   // Air Canada Rouge, when the row or its operator names Rouge
-  'RV:319': ['1-3 ACDF', '12-32 ABCDEF -18'], 'RV:320': ['1-3 ACDF', '12-37 ABCDEF'],
-  'RV:321': ['1-2 ACDF', '12-41 ABCDEF -17 -29 -30'], 'RV:7M8': ['2-3 ACDF', '12-32 ABCDEF'],
+  'RV:319': ['1-3:ACDF', '12-32:ABCDEF -18'], 'RV:320': ['1-3:ACDF', '12-37:ABCDEF'],
+  'RV:321': ['1-2:ACDF', '12-41:ABCDEF -17 -29 -30'], 'RV:7M8': ['2-3:ACDF', '12-32:ABCDEF'],
   // Jazz (Air Canada Express): CRJ900 and E175 business rows 1-4 (A D F),
   // economy 12-27; the Q400 has no business cabin
-  'QK:CR9': ['1-4 ADF', '12-27 ACDF'], 'QK:DH4': [null, '2-20 ACDF'], 'QK:DH8': [null, '2-20 ACDF'],
-  'QK:E75': ['1-4 ADF', '12-27 ACDF'],
+  'QK:CR9': ['1-4:ADF', '12-27:ACDF'], 'QK:DH4': [null, '2-20:ACDF'], 'QK:DH8': [null, '2-20:ACDF'],
+  'QK:E75': ['1-4:ADF', '12-27:ACDF'],
   // PAL Airlines: the Q400, its own flights and Air Canada Express, no
   // business cabin. Its Dash 8-100 and -300 fly passenger and combi layouts
   // with no published row plan, so they print no seat.
-  'PB:DH4': [null, '2-19 AD'],
+  'PB:DH4': [null, '2-19:AD'],
   // WestJet (and Encore): Premium rows 1-3, economy from row 4
-  'WS:738': ['1-3 ACDF', '4-30 ABCDEF'], 'WS:73G': ['1-3 ACDF', '4-23 ABCDEF'],
-  'WS:789': ['1-4 ADFK', '9-39 ABCDEFHJK -25'], 'WS:7M8': ['1-3 ACDF', '4-30 ABCDEF'],
-  'WS:DH4': ['2-3 ABCD +1A +1B', '4-20 ABCD'], 'WS:DH8': ['2-3 ABCD +1A +1B', '4-20 ABCD'],
+  'WS:738': ['1-3:ACDF', '4-30:ABCDEF'], 'WS:73G': ['1-3:ACDF', '4-23:ABCDEF'],
+  'WS:789': ['1-4:ADFK', '9-39:ABCDEFHJK -25'], 'WS:7M8': ['1-3:ACDF', '4-30:ABCDEF'],
+  'WS:DH4': ['2-3:ABCD +1A +1B', '4-20:ABCD'], 'WS:DH8': ['2-3:ABCD +1A +1B', '4-20:ABCD'],
   // Porter: PorterReserve at the front, one 2-2 cabin; E95 is an E195-E2 here
   // (Porter flies no other E195)
-  'PD:295': ['1-4 ABCD', '5-33 ABCD'], 'PD:DH4': ['2 ABCD +1A +1B', '3-20 ABCD'],
-  'PD:DH8': ['2 ABCD +1A +1B', '3-20 ABCD'], 'PD:E95': ['1-4 ABCD', '5-33 ABCD'],
+  'PD:295': ['1-4:ABCD', '5-33:ABCD'], 'PD:DH4': ['2:ABCD +1A +1B', '3-20:ABCD'],
+  'PD:DH8': ['2:ABCD +1A +1B', '3-20:ABCD'], 'PD:E95': ['1-4:ABCD', '5-33:ABCD'],
   // Flair: one cabin
-  'F8:738': [null, '2-32 ABCDEF'], 'F8:7M8': [null, '2-32 ABCDEF'],
+  'F8:738': [null, '2-32:ABCDEF'], 'F8:7M8': [null, '2-32:ABCDEF'],
   // Air Transat: Club at the front, letters A B C | H J K; the feeds swap its
   // A321LR and A321ceo codes, so both draw rows each of them has (the ceo has
   // no Club)
-  'TS:321': [null, '15-35 ABCHJK -25 -26 -27 -28'], 'TS:32Q': ['1-3 ACHK', '15-35 ABCHJK -25 -26 -27 -28'],
-  'TS:332': ['1-2 ACDGK', '14-41 ABCDFGHJK -29 -30 -31 -32 -33 -34 -35'],
-  'TS:333': ['1-2 ACDGK', '16-44 ACDFGHK -32 -33 -34 -35 -36'],
+  'TS:321': [null, '15-35:ABCHJK -25 -26 -27 -28'], 'TS:32Q': ['1-3:ACHK', '15-35:ABCHJK -25 -26 -27 -28'],
+  'TS:332': ['1-2:ACDGK', '14-41:ABCDFGHJK -29 -30 -31 -32 -33 -34 -35'],
+  'TS:333': ['1-2:ACDGK', '16-44:ACDFGHK -32 -33 -34 -35 -36'],
   // United: economy from row 7 or 8, no row 13; a CR7 may be a CRJ550, so it
   // draws the rows both have
-  'UA:319': ['1-3 ABEF', '7-35 ABCDEF -9 -12 -13 -14 -16 -17 -18 -19 -20 -33'],
-  'UA:320': ['1-3 ABEF', '7-38 ABCDEF -9 -13 -14 -15 -16 -17 -18 -19 -33'],
-  'UA:32Q': ['1-5 AF', '30-41 ABCDEF -32 -33'],
-  'UA:738': ['1-4 ABEF', '7-38 ABCDEF -9 -13 -16 -17 -18 -19 -33'],
-  'UA:739': ['1-5 ABEF', '8-39 ABCDEF -13 -16 -17 -18 -19 -33'],
-  'UA:73G': ['1-3 ABEF', '7-34 ABCDEF -9 -13 -14 -16 -17 -18 -19 -20 -33'],
-  'UA:752': ['1-4 ABEF', '7-41 ABCDEF -13 -14 -15 -16 -17 -18 -19 -21 -33'],
-  'UA:753': ['1-6 ABEF', '8-43 ABCDEF -13 -22'], 'UA:763': ['2-10 ADL -3 -5 -7 -9', '31-44 ABDEFKL -42'],
-  'UA:764': ['1-11 AFL -2 -4 -6 -8 -10', '30-53 ABDEFKL'],
-  'UA:772': ['1-3 ADGL', '31-47 ABCDEFGJKL -37 -38 -39 -40'],
-  'UA:77W': ['1-18 ADGL -7 -8 -13 -14', '30-55 ABCDEFGJKL -44 -45'],
-  'UA:781': ['1-11 ADFL', '30-58 ABCDEFJKL -40 -41 -42 -43'],
-  'UA:788': ['1-7 ADFL', '30-51 ABCDEFJKL -40 -41'],
-  'UA:789': ['1-12 ADFL', '30-43 ABCJKL -36 -37 -38 -39 -40 -41'],
-  'UA:7M8': ['1-4 ABEF', '7-38 ABCDEF -9 -13 -16 -17 -18 -19 -33'],
-  'UA:7M9': ['1-5 ABEF', '8-39 ABCDEF -13 -16 -17 -18 -19 -33'], 'UA:CR2': [null, '1-12 ABCD'],
-  'UA:CR5': ['1-3 ACD', '7-17 ABCD -13'], 'UA:CR7': ['1-2 ACD', '7-17 ABCD -13'],
-  'UA:E70': ['1-2 ACD', '7-24 ABCD -13 -14 -22'], 'UA:E75': ['1-4 ACD', '7-22 ABCD -13 -14'],
-  'UA:ER4': [null, '3-24 ACD -12 -13 -14 -15 -16 -17'],
+  'UA:319': ['1-3:ABEF', '7-35:ABCDEF -9 -12 -13 -14 -16 -17 -18 -19 -20 -33'],
+  'UA:320': ['1-3:ABEF', '7-38:ABCDEF -9 -13 -14 -15 -16 -17 -18 -19 -33'],
+  'UA:32Q': ['1-5:AF', '30-41:ABCDEF -32 -33'],
+  'UA:738': ['1-4:ABEF', '7-38:ABCDEF -9 -13 -16 -17 -18 -19 -33'],
+  'UA:739': ['1-5:ABEF', '8-39:ABCDEF -13 -16 -17 -18 -19 -33'],
+  'UA:73G': ['1-3:ABEF', '7-34:ABCDEF -9 -13 -14 -16 -17 -18 -19 -20 -33'],
+  'UA:752': ['1-4:ABEF', '7-41:ABCDEF -13 -14 -15 -16 -17 -18 -19 -21 -33'],
+  'UA:753': ['1-6:ABEF', '8-43:ABCDEF -13 -22'], 'UA:763': ['2-10:ADL -3 -5 -7 -9', '31-44:ABDEFKL -42'],
+  'UA:764': ['1-11:AFL -2 -4 -6 -8 -10', '30-53:ABDEFKL'],
+  'UA:772': ['1-3:ADGL', '31-47:ABCDEFGJKL -37 -38 -39 -40'],
+  'UA:77W': ['1-18:ADGL -7 -8 -13 -14', '30-55:ABCDEFGJKL -44 -45'],
+  'UA:781': ['1-11:ADFL', '30-58:ABCDEFJKL -40 -41 -42 -43'],
+  'UA:788': ['1-7:ADFL', '30-51:ABCDEFJKL -40 -41'],
+  'UA:789': ['1-12:ADFL', '30-43:ABCJKL -36 -37 -38 -39 -40 -41'],
+  'UA:7M8': ['1-4:ABEF', '7-38:ABCDEF -9 -13 -16 -17 -18 -19 -33'],
+  'UA:7M9': ['1-5:ABEF', '8-39:ABCDEF -13 -16 -17 -18 -19 -33'], 'UA:CR2': [null, '1-12:ABCD'],
+  'UA:CR5': ['1-3:ACD', '7-17:ABCD -13'], 'UA:CR7': ['1-2:ACD', '7-17:ABCD -13'],
+  'UA:E70': ['1-2:ACD', '7-24:ABCD -13 -14 -22'], 'UA:E75': ['1-4:ACD', '7-22:ABCD -13 -14'],
+  'UA:ER4': [null, '3-24:ACD -12 -13 -14 -15 -16 -17'],
   // Delta: economy from row 10 on the narrowbodies, 30 on the widebodies; CR7
   // as for United
-  'DL:221': ['1-3 ABCD', '10-28 ABCDE -15'], 'DL:223': ['1-3 ABCD', '10-33 ABCDE -17'],
-  'DL:319': ['1-3 ABCD', '10-29 ABCDEF'], 'DL:320': ['1-4 ABCD', '10-32 ABCDEF'],
-  'DL:321': ['1-5 ABCD', '10-38 ABCDEF -13 -25 -26'], 'DL:32Q': ['1-5 AD', '13-33 ABCDEF -22 -23'],
-  'DL:332': ['2-9 ACGJ', '30-50 ABCDGHJ'], 'DL:333': ['2-9 ACGJ', '30-58 ABCDGHJ -42'],
-  'DL:339': ['1-7 ACGJ', '30-54 ABCDFGHJ'], 'DL:351': ['1-14 ABCD -12', '30-53 ABCDEFGHJ -35 -36'],
-  'DL:359': ['2-8 ABCD', '30-51 ABCDEFGHJ -37 -40'], 'DL:717': ['1-3 ABCD', '10-29 ABCDE -20'],
-  'DL:738': ['1-4 ABCD', '10-33 ABCDEF'], 'DL:739': ['1-3 ABCD', '11-36 ABCDEF -20 -29'],
-  'DL:752': ['1-4 ABCD', '19-44 ABCDEF -34 -35'], 'DL:753': ['1-6 ABCD', '15-49 ABCDEF -28'],
-  'DL:763': ['1-6 ABCD', '30-41 ABCDEFG -33 -34'], 'DL:764': ['1-8 ABCD', '30-55 ABCDEFG -39 -40'],
-  'DL:CR5': ['1-3 ACD', '7-16 ABCD'], 'DL:CR7': ['1-3 ACD', '7-16 ABCD'], 'DL:CR9': ['1-4 ACD', '5-18 ABCD'],
-  'DL:E70': ['1-3 ACD', '4-18 ABCD'], 'DL:E75': ['1-4 ACD', '5-18 ABCD'],
+  'DL:221': ['1-3:ABCD', '10-28:ABCDE -15'], 'DL:223': ['1-3:ABCD', '10-33:ABCDE -17'],
+  'DL:319': ['1-3:ABCD', '10-29:ABCDEF'], 'DL:320': ['1-4:ABCD', '10-32:ABCDEF'],
+  'DL:321': ['1-5:ABCD', '10-38:ABCDEF -13 -25 -26'], 'DL:32Q': ['1-5:AD', '13-33:ABCDEF -22 -23'],
+  'DL:332': ['2-9:ACGJ', '30-50:ABCDGHJ'], 'DL:333': ['2-9:ACGJ', '30-58:ABCDGHJ -42'],
+  'DL:339': ['1-7:ACGJ', '30-54:ABCDFGHJ'], 'DL:351': ['1-14:ABCD -12', '30-53:ABCDEFGHJ -35 -36'],
+  'DL:359': ['2-8:ABCD', '30-51:ABCDEFGHJ -37 -40'], 'DL:717': ['1-3:ABCD', '10-29:ABCDE -20'],
+  'DL:738': ['1-4:ABCD', '10-33:ABCDEF'], 'DL:739': ['1-3:ABCD', '11-36:ABCDEF -20 -29'],
+  'DL:752': ['1-4:ABCD', '19-44:ABCDEF -34 -35'], 'DL:753': ['1-6:ABCD', '15-49:ABCDEF -28'],
+  'DL:763': ['1-6:ABCD', '30-41:ABCDEFG -33 -34'], 'DL:764': ['1-8:ABCD', '30-55:ABCDEFG -39 -40'],
+  'DL:CR5': ['1-3:ACD', '7-16:ABCD'], 'DL:CR7': ['1-3:ACD', '7-16:ABCD'], 'DL:CR9': ['1-4:ACD', '5-18:ABCD'],
+  'DL:E70': ['1-3:ACD', '4-18:ABCD'], 'DL:E75': ['1-4:ACD', '5-18:ABCD'],
   // American: economy from row 8 on most narrowbodies
-  'AA:319': ['1-2 ACDF', '8-27 ABCDEF'], 'AA:320': ['1-3 ACDF', '9-26 ABCDEF'],
-  'AA:321': ['1-5 AF', '11-22 ABCDEF'], 'AA:32Q': ['1-5 AF', '14-33 ABCDEF -23 -26 -27'],
-  'AA:738': ['1-4 ABEF', '8-33 ABCDEF'], 'AA:772': ['1-10 ADHL -6', '18-35 ABCDEGHJKL -25'],
-  'AA:77W': ['1-15 AD -6 -7', '26-43 ACDEGHJL -30 -31 -32 -34'],
-  'AA:788': ['1-5 ADHL', '10-29 ABCDEHJKL -19'], 'AA:789': ['2-7 ADHL', '21-36 ABCDEHJKL -23'],
-  'AA:7M8': ['1-4 ABEF', '8-33 ABCDEF'], 'AA:CR7': ['1-3 AD', '8-17 ACD'], 'AA:CR9': ['1-3 AD', '8-20 ACD'],
-  'AA:E70': ['1-4 ADF', '8-20 ACDF'], 'AA:E75': ['1-4 ADF', '8-23 ACDF'], 'AA:ER4': [null, '3-18 ABC'],
+  'AA:319': ['1-2:ACDF', '8-27:ABCDEF'], 'AA:320': ['1-3:ACDF', '9-26:ABCDEF'],
+  'AA:321': ['1-5:AF', '11-22:ABCDEF'], 'AA:32Q': ['1-5:AF', '14-33:ABCDEF -23 -26 -27'],
+  'AA:738': ['1-4:ABEF', '8-33:ABCDEF'], 'AA:772': ['1-10:ADHL -6', '18-35:ABCDEGHJKL -25'],
+  'AA:77W': ['1-15:AD -6 -7', '26-43:ACDEGHJL -30 -31 -32 -34'],
+  'AA:788': ['1-5:ADHL', '10-29:ABCDEHJKL -19'], 'AA:789': ['2-7:ADHL', '21-36:ABCDEHJKL -23'],
+  'AA:7M8': ['1-4:ABEF', '8-33:ABCDEF'], 'AA:CR7': ['1-3:AD', '8-17:ACD'], 'AA:CR9': ['1-3:AD', '8-20:ACD'],
+  'AA:E70': ['1-4:ADF', '8-20:ACDF'], 'AA:E75': ['1-4:ADF', '8-23:ACDF'], 'AA:ER4': [null, '3-18:ABC'],
   // Alaska: economy from row 6; most 737s skip row 13 or 14
-  'AS:32Q': ['1-4 ABHJ', '11-45 ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
-  'AS:332': ['1-3 ABCGHJ', '11-46 ABCEGHJ -12 -13 -31 -32 -33'], 'AS:717': ['1-2 ABEF', '4-27 ABDEF'],
-  'AS:738': ['1-3 ACDF', '6-31 ABCDEF -12 -13 -14 -17'], 'AS:739': ['1-4 ACDF', '6-32 ABCDEF -10 -14 -17'],
-  'AS:73G': ['1-3 ACDF', '6-28 ABCDEF -11 -12 -13 -14 -16'],
-  'AS:789': ['2-9 ACGJ', '14-45 ABCDEFGHJ -25 -29 -30 -31 -32 -33'],
-  'AS:7M8': ['1-3 ACDF', '6-31 ABCDEF -12 -13 -14 -17'], 'AS:7M9': ['1-4 ACDF', '6-32 ABCDEF -14 -17'],
-  'AS:E75': ['1-4 ACD', '6-21 ABCD'],
+  'AS:32Q': ['1-4:ABHJ', '11-45:ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
+  'AS:332': ['1-3:ABCGHJ', '11-46:ABCEGHJ -12 -13 -31 -32 -33'], 'AS:717': ['1-2:ABEF', '4-27:ABDEF'],
+  'AS:738': ['1-3:ACDF', '6-31:ABCDEF -12 -13 -14 -17'], 'AS:739': ['1-4:ACDF', '6-32:ABCDEF -10 -14 -17'],
+  'AS:73G': ['1-3:ACDF', '6-28:ABCDEF -11 -12 -13 -14 -16'],
+  'AS:789': ['2-9:ACGJ', '14-45:ABCDEFGHJ -25 -29 -30 -31 -32 -33'],
+  'AS:7M8': ['1-3:ACDF', '6-31:ABCDEF -12 -13 -14 -17'], 'AS:7M9': ['1-4:ACDF', '6-32:ABCDEF -14 -17'],
+  'AS:E75': ['1-4:ACD', '6-21:ABCD'],
   // Hawaiian (now flown as Alaska too)
-  'HA:32Q': ['1-4 ABHJ', '11-45 ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
-  'HA:332': ['1-3 ABCGHJ', '11-46 ABCEGHJ -12 -13 -31 -32 -33'], 'HA:717': ['1-2 ABEF', '4-27 ABDEF'],
-  'HA:789': ['2-9 ACGJ', '14-45 ABCDEFGHJ -25 -29 -30 -31 -32 -33']
+  'HA:32Q': ['1-4:ABHJ', '11-45:ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
+  'HA:332': ['1-3:ABCGHJ', '11-46:ABCEGHJ -12 -13 -31 -32 -33'], 'HA:717': ['1-2:ABEF', '4-27:ABDEF'],
+  'HA:789': ['2-9:ACGJ', '14-45:ABCDEFGHJ -25 -29 -30 -31 -32 -33']
 };
 // Codes the feeds send for a type the table holds under another code, after
 // aircraftCodeToIata (which turns ICAO designators and names into these). E7W
@@ -38997,15 +38997,16 @@ var _GATE_SB_TYPE_ALIAS = { '73H': '738', '73W': '73G', '73J': '739', '32A': '32
   '32D': '319', 'E7W': 'E75', 'CS3': '223', 'BCS': '223', 'CS1': '221', '76W': '763', '78J': '781' };
 var _GATE_SB_AL_ALIAS = { ACA: 'AC', JZA: 'QK', ROU: 'RV', WJA: 'WS', WEN: 'WS', WR: 'WS', POE: 'PD', FLE: 'F8',
   TSC: 'TS', UAL: 'UA', DAL: 'DL', AAL: 'AA', ASA: 'AS', HAL: 'HA' };
-// One cabin's seats, in order, from its 'rows letters -row +seat' form.
+// One cabin's seats, in order, from its 'rows:letters -row +seat' form.
 function _gateSbSeatsOf(spec) {
   if (!spec) return null;
-  var parts = String(spec).split(' '), m = /^(\d+)(?:-(\d+))?$/.exec(parts[0] || '');
+  var parts = String(spec).split(' '), head = (parts[0] || '').split(':');
+  var m = /^(\d+)(?:-(\d+))?$/.exec(head[0] || '');
   if (!m) return null;
-  var a = +m[1], b = m[2] ? +m[2] : a, L = parts[1] || '', skip = {}, out = [];
-  for (var i = 2; i < parts.length; i++) if (parts[i].charAt(0) === '-') skip[+parts[i].slice(1)] = 1;
+  var a = +m[1], b = m[2] ? +m[2] : a, L = head[1] || '', skip = {}, out = [];
+  for (var i = 1; i < parts.length; i++) if (parts[i].charAt(0) === '-') skip[+parts[i].slice(1)] = 1;
   for (var r = a; r <= b; r++) if (!skip[r]) for (var k = 0; k < L.length; k++) out.push(r + L.charAt(k));
-  for (var j = 2; j < parts.length; j++) if (parts[j].charAt(0) === '+') out.push(parts[j].slice(1));
+  for (var j = 1; j < parts.length; j++) if (parts[j].charAt(0) === '+') out.push(parts[j].slice(1));
   return out.length ? out : null;
 }
 // The two cabins for a flight: { up: [seats] | null, sb: [seats], basis }, the
