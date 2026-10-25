@@ -12144,6 +12144,11 @@ function aircraftCodeToIata(raw) {
   s = s.replace(/^(BOEING|AIRBUS|EMBRAER|BOMBARDIER|ATR|DE HAVILLAND CANADA|DE HAVILLAND|SAAB|FOKKER|MCDONNELL DOUGLAS|LOCKHEED|BAE SYSTEMS|BAE|BRITISH AEROSPACE)\s*/i, '').trim();
 
   // ── Bare Embraer numbers (after stripping "Embraer": "175" / "190" / "195") ──
+  // v24083 — an E2 first: "Embraer 195-E2" matched the bare 195 below and was
+  // drawn, and seated, as the first-generation E195
+  if (/^195[\s-]*E2\b/.test(s)) return '295';
+  if (/^190[\s-]*E2\b/.test(s)) return '290';
+  if (/^175[\s-]*E2\b/.test(s)) return '297';
   if (/^175\b/.test(s)) return 'E75';
   if (/^170\b/.test(s)) return 'E7W';
   if (/^190\b/.test(s)) return 'E90';
@@ -14515,15 +14520,10 @@ window._orbArtFailed = function (img, code) {
   wrap.appendChild(span);
 };
 
-function _buildV2AircraftCol(ctx, vars) {
-  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
-  var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
-  var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
-  var _inbOperating = vars._inbOperating;
-  var airlineCode = vars.airlineCode;
-  var equipRaw = vars.equipRaw, equipName = vars.equipName;
-
-  var _hasInb = !!(inboundFlight && _inbOperating);
+// v24083 — THE AEROPLANE THE GATE SHOWS, in one place: the aircraft panel
+// (_buildV2AircraftCol) names it and the standby lists draw their seats from
+// it (_gateCardsBuild), so the two can never disagree. { cd, nm, reg }.
+function _gateAcShown(currentFlight, inboundFlight, equipRaw, equipName) {
   var _anyInb = !!inboundFlight;
   // Aircraft truth is source-ordered, never flight-number guessed:
   // confirmed registration > current inbound/live equipment > today's schedule.
@@ -14575,8 +14575,22 @@ function _buildV2AircraftCol(ctx, vars) {
       var _confirmedCode = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_confirmedType) : '';
       if (_confirmedCode) _equipCd = _confirmedCode;
     }
-    if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg;
   } catch (e) {}
+  return { cd: _equipCd || '', nm: _equipNm || '', reg: _reg || '' };
+}
+function _buildV2AircraftCol(ctx, vars) {
+  var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
+  var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
+  var iata = vars.iata, tz = vars.tz, locIata = vars.locIata;
+  var _inbOperating = vars._inbOperating;
+  var airlineCode = vars.airlineCode;
+  var equipRaw = vars.equipRaw, equipName = vars.equipName;
+
+  var _hasInb = !!(inboundFlight && _inbOperating);
+  var _anyInb = !!inboundFlight;
+  var _shown = _gateAcShown(currentFlight, inboundFlight, equipRaw, equipName);
+  var _equipCd = _shown.cd, _equipNm = _shown.nm, _reg = _shown.reg;
+  try { if (typeof window !== 'undefined' && _reg) window._gateAcRegShown = _reg; } catch (e) {}
 
   // Operating carrier. Keep marketing airline and true operator separate.
   // Same-carrier flights get a clean airline brand block; different operators
@@ -17789,7 +17803,7 @@ function uxgGateHtml(ctx) {
       depEnd: (_door.kept && _gateDelayHasTime(currentFlight) && currentFlight._revTs) || 0,
       arr: arrTimeStr ? { ts: ctx.arrInstant, tz: ctx.arrTz || tz, revised: !!ctx.arrRevised, early: !!ctx.arrEarly } : null,
       iata: iata, airline: airlineCode, tz: tz, frF: _frF, city: displayLoc, code: _dispIata(locIata || ''), flight: currentFlight.flight,
-      acType: equipRaw || '',
+      acType: (function () { try { var _sh = _gateAcShown(currentFlight, inboundFlight, equipRaw, equipName); return _sh.cd || _sh.nm || ''; } catch (eSh) { return equipRaw || equipName || ''; } })(),
       op: (function () { try { var _r = (typeof fidsResolveOperator === 'function') ? fidsResolveOperator(currentFlight, iata) : null; return (_r && _r.op) || ''; } catch (eOp) { return ''; } })()
     });
   } catch (eCM) { window._gateCardsModel = null; }
@@ -38857,27 +38871,33 @@ var _GATE_SB_SUR = ['BER', 'GAG', 'ROY', 'BOU', 'GAU', 'MOR', 'LAV', 'LAP', 'COT
 // printed a seat from rows 1-4 (A C D F) for an upgrade and 12-31 (A to F)
 // for standby and seat changes, on every aeroplane, so an Air Canada Express
 // CRJ900 (rows 1-4 and 12-27, no C in business) showed a passenger in row 30.
-// Each list now draws from the cabin of the type on the gate, for its airline:
+// Each list now draws from the cabin of the aeroplane the gate shows
+// (_gateAcShown, the same one the aircraft panel names), for its airline:
 // 'premium' for the upgrade list, 'main' for standby and seat changes.
 //
 // The table is the seats that exist on EVERY current layout of that type for
 // that airline (October 2026): aeroLOPA's seat-by-seat data and SeatMaps.com,
-// with the airline's own seat maps, each range confirmed from a second source.
+// with the airlines' own seat maps, each range confirmed from a second source.
 // A partial row (an exit, a galley, the last row) is left out, so a range never
-// prints a seat a layout lacks. Air Canada numbers economy from row 12 on
-// every narrowbody and on the Express jets, and from 18 on the widebodies;
-// the Q400 and the other Dash 8s have no business cabin at all, so they show
-// no upgrade list. Row 13 exists at Air Canada; United and Alaska skip it.
+// prints a seat a layout lacks. Air Canada numbers economy from row 12 on its
+// narrowbodies and Express jets and from 18 on its widebodies; a Q400 for Air
+// Canada has no business cabin, so it shows no upgrade list.
+//
+// A seat is printed only from this table. An airline or a type it does not
+// hold, or a gate that does not know its aeroplane yet, prints the name and
+// its tick with no seat: no airline numbers its rows like another (Southwest
+// has no rows 10 to 13 on its 737-700, British Airways puts premium economy in
+// rows 30 to 34), so a guess would print seats that do not exist.
 //
 // Each cabin is written 'rows letters', then '-row' for a row that is not
 // there and '+seat' for a seat outside the block that is: '12-33 ABCDEF -18'
-// is rows 12 to 33 without 18, every row A to F. 'XX:*' is what every one of
-// that airline's narrowbodies and regionals has, for a gate that does not know
-// its aeroplane yet. null is no such cabin.
+// is rows 12 to 33 without 18, every row A to F. null is no such cabin.
 var GATE_SB_SEATMAP = {
   // Air Canada mainline, with Rouge where the type flies both ways (a Rouge
   // aeroplane flies on AC numbers): economy from row 12 on every narrowbody
-  // and the Express jets, row 18 on the widebodies; row 13 exists
+  // and the Express jets, from 18 on the widebodies; row 13 exists. The 737
+  // MAX 8 keeps its business rows although seven ex-Lynx all-economy jets fly
+  // the type: on those the seats exist, in economy.
   'AC:223': ['1-3 ACDF', '12-36 ACDEF'], 'AC:319': ['1-3 ACDF', '12-32 ABCDEF -18'],
   'AC:320': ['2 ACDF +1D +1F', '12-33 ABCDEF -18'],
   'AC:321': ['1-2 ACDF', '12-41 ABCDEF -16 -17 -28 -29 -30'], 'AC:32Q': ['1-7 AF', '12-39 ABCDEF'],
@@ -38887,40 +38907,36 @@ var GATE_SB_SEATMAP = {
   'AC:781': ['2-10 ADGK +1A +1K +11A +11K', '18-46 ABCDEHJK -29'],
   'AC:788': ['1-5 ADGK', '18-40 ABCDEGHJK -30'], 'AC:789': ['2-8 ADGK +1A +1K', '18-44 ABCDEGHJK -30'],
   'AC:7M8': ['2-3 ACDF +1D +1F', '12-32 ABCDEF'], 'AC:CR9': ['1-4 ADF', '12-27 ACDF'],
-  'AC:DH1': [null, '1-8 AD'], 'AC:DH3': [null, '2-12 AD'], 'AC:DH4': [null, '2-19 AD'],
-  'AC:DH8': [null, '2-8 AD'], 'AC:E75': ['1-4 ADF', '12-27 ACDF'],
-  'AC:*': ['1-2 F +2A', '12-19 AD -16 -17 -18'],
-  // Air Canada Rouge, when the row names Rouge
+  'AC:DH4': [null, '2-19 AD'], 'AC:E75': ['1-4 ADF', '12-27 ACDF'],
+  // Air Canada Rouge, when the row or its operator names Rouge
   'RV:319': ['1-3 ACDF', '12-32 ABCDEF -18'], 'RV:320': ['1-3 ACDF', '12-37 ABCDEF'],
   'RV:321': ['1-2 ACDF', '12-41 ABCDEF -17 -29 -30'], 'RV:7M8': ['2-3 ACDF', '12-32 ABCDEF'],
-  'RV:*': ['2 ACDF', '12-32 ABCDEF -17 -18 -29 -30'],
   // Jazz (Air Canada Express): CRJ900 and E175 business rows 1-4 (A D F),
   // economy 12-27; the Q400 has no business cabin
   'QK:CR9': ['1-4 ADF', '12-27 ACDF'], 'QK:DH4': [null, '2-20 ACDF'], 'QK:DH8': [null, '2-20 ACDF'],
   'QK:E75': ['1-4 ADF', '12-27 ACDF'],
-  'QK:*': ['1-4 ADF', '12-20 ACDF'],
-  // PAL Airlines (its own flights, and Air Canada Express): no business cabin
-  // on any Dash 8
-  'PB:DH1': [null, '1-8 AD'], 'PB:DH3': [null, '2-12 AD'], 'PB:DH4': [null, '2-19 ABDE'],
-  'PB:DH8': [null, '2-8 AD'],
-  'PB:*': [null, '2-8 AD'],
+  // PAL Airlines: the Q400, its own flights and Air Canada Express, no
+  // business cabin. Its Dash 8-100 and -300 fly passenger and combi layouts
+  // with no published row plan, so they print no seat.
+  'PB:DH4': [null, '2-19 AD'],
   // WestJet (and Encore): Premium rows 1-3, economy from row 4
   'WS:738': ['1-3 ACDF', '4-30 ABCDEF'], 'WS:73G': ['1-3 ACDF', '4-23 ABCDEF'],
   'WS:789': ['1-4 ADFK', '9-39 ABCDEFHJK -25'], 'WS:7M8': ['1-3 ACDF', '4-30 ABCDEF'],
-  'WS:DH4': ['2-3 ABCD +1A +1B', '4-20 ABCD'],
-  'WS:*': ['1-3 A +2C +2D +3C +3D', '4-20 ABCD'],
-  // Porter: PorterReserve at the front, one 2-2 cabin
+  'WS:DH4': ['2-3 ABCD +1A +1B', '4-20 ABCD'], 'WS:DH8': ['2-3 ABCD +1A +1B', '4-20 ABCD'],
+  // Porter: PorterReserve at the front, one 2-2 cabin; E95 is an E195-E2 here
+  // (Porter flies no other E195)
   'PD:295': ['1-4 ABCD', '5-33 ABCD'], 'PD:DH4': ['2 ABCD +1A +1B', '3-20 ABCD'],
-  'PD:*': ['1-2 AB +2C +2D', '5-20 ABCD'],
+  'PD:DH8': ['2 ABCD +1A +1B', '3-20 ABCD'], 'PD:E95': ['1-4 ABCD', '5-33 ABCD'],
   // Flair: one cabin
   'F8:738': [null, '2-32 ABCDEF'], 'F8:7M8': [null, '2-32 ABCDEF'],
-  'F8:*': [null, '2-32 ABCDEF'],
-  // Air Transat: Club at the front; letters A B C | H J K on the narrowbodies
-  'TS:321': [null, '15-37 ABCHJK -25 -27 -28'], 'TS:32Q': ['1-3 ACHK', '4-35 ABCHJK -25 -26'],
+  // Air Transat: Club at the front, letters A B C | H J K; the feeds swap its
+  // A321LR and A321ceo codes, so both draw rows each of them has (the ceo has
+  // no Club)
+  'TS:321': [null, '15-35 ABCHJK -25 -26 -27 -28'], 'TS:32Q': ['1-3 ACHK', '15-35 ABCHJK -25 -26 -27 -28'],
   'TS:332': ['1-2 ACDGK', '14-41 ABCDFGHJK -29 -30 -31 -32 -33 -34 -35'],
   'TS:333': ['1-2 ACDGK', '16-44 ACDFGHK -32 -33 -34 -35 -36'],
-  'TS:*': ['1-3 ACHK', '15-35 ABCHJK -25 -26 -27 -28'],
-  // United: economy from row 7 or 8, no row 13
+  // United: economy from row 7 or 8, no row 13; a CR7 may be a CRJ550, so it
+  // draws the rows both have
   'UA:319': ['1-3 ABEF', '7-35 ABCDEF -9 -12 -13 -14 -16 -17 -18 -19 -20 -33'],
   'UA:320': ['1-3 ABEF', '7-38 ABCDEF -9 -13 -14 -15 -16 -17 -18 -19 -33'],
   'UA:32Q': ['1-5 AF', '30-41 ABCDEF -32 -33'],
@@ -38937,10 +38953,11 @@ var GATE_SB_SEATMAP = {
   'UA:789': ['1-12 ADFL', '30-43 ABCJKL -36 -37 -38 -39 -40 -41'],
   'UA:7M8': ['1-4 ABEF', '7-38 ABCDEF -9 -13 -16 -17 -18 -19 -33'],
   'UA:7M9': ['1-5 ABEF', '8-39 ABCDEF -13 -16 -17 -18 -19 -33'], 'UA:CR2': [null, '1-12 ABCD'],
-  'UA:CR5': ['1-3 ACD', '7-17 ABCD -13'], 'UA:CR7': ['1-2 ACD', '7-23 ABCD -13'],
+  'UA:CR5': ['1-3 ACD', '7-17 ABCD -13'], 'UA:CR7': ['1-2 ACD', '7-17 ABCD -13'],
   'UA:E70': ['1-2 ACD', '7-24 ABCD -13 -14 -22'], 'UA:E75': ['1-4 ACD', '7-22 ABCD -13 -14'],
   'UA:ER4': [null, '3-24 ACD -12 -13 -14 -15 -16 -17'],
-  // Delta: economy from row 10 on the narrowbodies, 30 on the widebodies
+  // Delta: economy from row 10 on the narrowbodies, 30 on the widebodies; CR7
+  // as for United
   'DL:221': ['1-3 ABCD', '10-28 ABCDE -15'], 'DL:223': ['1-3 ABCD', '10-33 ABCDE -17'],
   'DL:319': ['1-3 ABCD', '10-29 ABCDEF'], 'DL:320': ['1-4 ABCD', '10-32 ABCDEF'],
   'DL:321': ['1-5 ABCD', '10-38 ABCDEF -13 -25 -26'], 'DL:32Q': ['1-5 AD', '13-33 ABCDEF -22 -23'],
@@ -38950,7 +38967,7 @@ var GATE_SB_SEATMAP = {
   'DL:738': ['1-4 ABCD', '10-33 ABCDEF'], 'DL:739': ['1-3 ABCD', '11-36 ABCDEF -20 -29'],
   'DL:752': ['1-4 ABCD', '19-44 ABCDEF -34 -35'], 'DL:753': ['1-6 ABCD', '15-49 ABCDEF -28'],
   'DL:763': ['1-6 ABCD', '30-41 ABCDEFG -33 -34'], 'DL:764': ['1-8 ABCD', '30-55 ABCDEFG -39 -40'],
-  'DL:CR5': ['1-3 ACD', '7-16 ABCD'], 'DL:CR7': ['1-3 ACD', '4-17 ABCD'], 'DL:CR9': ['1-4 ACD', '5-18 ABCD'],
+  'DL:CR5': ['1-3 ACD', '7-16 ABCD'], 'DL:CR7': ['1-3 ACD', '7-16 ABCD'], 'DL:CR9': ['1-4 ACD', '5-18 ABCD'],
   'DL:E70': ['1-3 ACD', '4-18 ABCD'], 'DL:E75': ['1-4 ACD', '5-18 ABCD'],
   // American: economy from row 8 on most narrowbodies
   'AA:319': ['1-2 ACDF', '8-27 ABCDEF'], 'AA:320': ['1-3 ACDF', '9-26 ABCDEF'],
@@ -38960,8 +38977,7 @@ var GATE_SB_SEATMAP = {
   'AA:788': ['1-5 ADHL', '10-29 ABCDEHJKL -19'], 'AA:789': ['2-7 ADHL', '21-36 ABCDEHJKL -23'],
   'AA:7M8': ['1-4 ABEF', '8-33 ABCDEF'], 'AA:CR7': ['1-3 AD', '8-17 ACD'], 'AA:CR9': ['1-3 AD', '8-20 ACD'],
   'AA:E70': ['1-4 ADF', '8-20 ACDF'], 'AA:E75': ['1-4 ADF', '8-23 ACDF'], 'AA:ER4': [null, '3-18 ABC'],
-  'AA:*': ['1-2 A', '14-17 AC'],
-  // Alaska: economy from row 6, no row 13 or 14 on most 737s
+  // Alaska: economy from row 6; most 737s skip row 13 or 14
   'AS:32Q': ['1-4 ABHJ', '11-45 ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
   'AS:332': ['1-3 ABCGHJ', '11-46 ABCEGHJ -12 -13 -31 -32 -33'], 'AS:717': ['1-2 ABEF', '4-27 ABDEF'],
   'AS:738': ['1-3 ACDF', '6-31 ABCDEF -12 -13 -14 -17'], 'AS:739': ['1-4 ACDF', '6-32 ABCDEF -10 -14 -17'],
@@ -38969,41 +38985,18 @@ var GATE_SB_SEATMAP = {
   'AS:789': ['2-9 ACGJ', '14-45 ABCDEFGHJ -25 -29 -30 -31 -32 -33'],
   'AS:7M8': ['1-3 ACDF', '6-31 ABCDEF -12 -13 -14 -17'], 'AS:7M9': ['1-4 ACDF', '6-32 ABCDEF -14 -17'],
   'AS:E75': ['1-4 ACD', '6-21 ABCD'],
-  'AS:*': ['1-2 A', '15-21 AB -16 -17'],
   // Hawaiian (now flown as Alaska too)
   'HA:32Q': ['1-4 ABHJ', '11-45 ABCGHJ -13 -16 -28 -29 -30 -31 -32 -33'],
   'HA:332': ['1-3 ABCGHJ', '11-46 ABCEGHJ -12 -13 -31 -32 -33'], 'HA:717': ['1-2 ABEF', '4-27 ABDEF'],
-  'HA:789': ['2-9 ACGJ', '14-45 ABCDEFGHJ -25 -29 -30 -31 -32 -33'],
-  'HA:*': ['1-2 AB', '11-27 AB -13 -16']
+  'HA:789': ['2-9 ACGJ', '14-45 ABCDEFGHJ -25 -29 -30 -31 -32 -33']
 };
-var GATE_SB_SEATGEN = {
-  '221': [17, 'ACDE', 'ACD'], '223': [21, 'ACDE', 'ACD'], '290': [20, 'AC', 'A'], '295': [26, 'ACD', 'AC'],
-  '319': [14, 'ABC', 'AC'], '320': [19, 'ABC', 'AC'], '321': [20, 'ABC', 'AC'], '32N': [18, 'ABC', 'AC'],
-  '32Q': [20, 'ABC', 'A'], '332': [21, 'AD', 'A'], '333': [21, 'AD', 'A'], '339': [20, 'ACDH', 'A'],
-  '359': [16, 'ABCDH', 'A'], '388': [28, 'ABCDEFGHJK', 'A'], '738': [20, 'ABC', 'A'],
-  '739': [25, 'ABC', 'A'], '73G': [16, 'ABC', 'A'], '744': [23, 'ABCDEFHJK', 'AC'],
-  '752': [24, 'ABCDEF', 'A'], '763': [22, 'AC', 'A'], '772': [17, 'ABCDEJ', 'A'], '77W': [8, 'ABCDHJ', 'A'],
-  '781': [16, 'ABCDH', 'A'], '788': [16, 'ACD', 'A'], '789': [13, 'ACD', 'A'], '7M8': [22, 'ABC', 'A'],
-  '7M9': [25, 'ABCDEF', 'A'], 'AT5': [10, 'AC'], 'AT7': [14, 'ACD', 'AC'], 'CR2': [12, 'ACD'],
-  'CR7': [10, 'ACD', 'AD'], 'CR9': [14, 'ACD', 'AD'], 'DH1': [9, 'AD'], 'DH3': [12, 'ABCD'],
-  'DH4': [15, 'ACD', 'A'], 'DH8': [8, 'AD'], 'E70': [13, 'ACD', 'AD'], 'E75': [14, 'ACD', 'AD'],
-  'E90': [17, 'AC', 'A'], 'E95': [22, 'ACD', 'AD'], 'ER4': [16, 'AC']
-};
-
-// Any other airline: by type, the rows every common layout has at least and
-// the letters they share (premium letters third, where the type has one).
-var _GATE_SB_WIDE = { '332': 1, '333': 1, '339': 1, '359': 1, '351': 1, '388': 1, '744': 1, '748': 1,
-  '763': 1, '764': 1, '772': 1, '773': 1, '77L': 1, '77W': 1, '788': 1, '789': 1, '781': 1 };
-// Codes the feeds send for a type the table holds under another code (after
-// aircraftCodeToIata, which turns ICAO designators and names into these).
-var _GATE_SB_TYPE_ALIAS = { '73H': '738', '73W': '73G', '73C': '73G', '73J': '739', '32A': '320', '32B': '321',
-  '32S': '320', '32D': '319', 'E7W': 'E70', 'CS3': '223', 'BCS': '223', 'CS1': '221', '76W': '763', '78J': '781' };
+// Codes the feeds send for a type the table holds under another code, after
+// aircraftCodeToIata (which turns ICAO designators and names into these). E7W
+// is IATA's E175 with the new wingtips, as the board names it everywhere.
+var _GATE_SB_TYPE_ALIAS = { '73H': '738', '73W': '73G', '73J': '739', '32A': '320', '32B': '321', '32S': '320',
+  '32D': '319', 'E7W': 'E75', 'CS3': '223', 'BCS': '223', 'CS1': '221', '76W': '763', '78J': '781' };
 var _GATE_SB_AL_ALIAS = { ACA: 'AC', JZA: 'QK', ROU: 'RV', WJA: 'WS', WEN: 'WS', WR: 'WS', POE: 'PD', FLE: 'F8',
   TSC: 'TS', UAL: 'UA', DAL: 'DL', AAL: 'AA', ASA: 'AS', HAL: 'HA' };
-// a gate that knows nothing of the airline or the aeroplane: rows 10 and 11,
-// A C D, there on nearly every narrowbody and regional jet whose economy
-// starts by row 10
-var _GATE_SB_SEAT_ANY = '10-11 ACD';
 // One cabin's seats, in order, from its 'rows letters -row +seat' form.
 function _gateSbSeatsOf(spec) {
   if (!spec) return null;
@@ -39015,17 +39008,23 @@ function _gateSbSeatsOf(spec) {
   for (var j = 2; j < parts.length; j++) if (parts[j].charAt(0) === '+') out.push(parts[j].slice(1));
   return out.length ? out : null;
 }
-// The two cabins for a flight: { up: [seats] | null, sb: [seats], basis }.
-// The operator first (a Q400 flown by PAL for Air Canada is lettered A B D E,
-// Jazz's A C D F), then the airline, then the type for any airline, then the
-// airline's own common seats while the type is not known.
+// The two cabins for a flight: { up: [seats] | null, sb: [seats], basis }, the
+// operator first (a Q400 flown by Jazz for Air Canada is lettered A C D F, so
+// QK:DH4 before AC:DH4, which only has what Jazz and PAL share), then the
+// airline. Not in the table: { up: [], sb: [], basis: '' }, the lists drawn
+// with no seats; null for up is an aeroplane with no premium cabin.
 function _gateSbSeatMap(airline, op, type) {
   var al = String(airline || '').toUpperCase(), o = String(op || '').toUpperCase();
   al = _GATE_SB_AL_ALIAS[al] || al;
   o = _GATE_SB_AL_ALIAS[o] || o;
-  var t = String(type || '').toUpperCase();
-  try { if (t && typeof aircraftCodeToIata === 'function') t = aircraftCodeToIata(t) || t; } catch (e) {}
-  t = _GATE_SB_TYPE_ALIAS[t] || t;
+  var raw = String(type || '').trim().toUpperCase(), t = raw;
+  // an E170 is its own aeroplane here: the type normaliser draws it with the
+  // E175's picture (E7W), and its rows are not the E175's
+  if (/^(?:E70|E170|ERJ[\s-]*170|EMBRAER[\s-]*(?:ERJ[\s-]*)?170)\b/.test(raw)) t = 'E70';
+  else {
+    try { if (t && typeof aircraftCodeToIata === 'function') t = aircraftCodeToIata(t) || t; } catch (e) {}
+    t = _GATE_SB_TYPE_ALIAS[t] || t;
+  }
   var keys = [];
   if (t) {
     if (o && o !== al) keys.push(o + ':' + t);
@@ -39035,19 +39034,7 @@ function _gateSbSeatMap(airline, op, type) {
     var e = GATE_SB_SEATMAP[keys[i]];
     if (e) return { up: _gateSbSeatsOf(e[0]), sb: _gateSbSeatsOf(e[1]), basis: keys[i] };
   }
-  var g = t ? GATE_SB_SEATGEN[t] : null;
-  if (g) {
-    // the type's shortest common economy, numbered from wherever an airline
-    // starts it: a narrowbody's rows up to its count (row 10 on, or the last
-    // few on a short cabin), no 13 or 17; a widebody's economy runs past 30
-    // on almost every airline
-    var lo = Math.min(10, Math.max(2, g[0] - 4));
-    var sb = _gateSbSeatsOf(_GATE_SB_WIDE[t] ? ('31-38 ' + g[1]) : (lo + '-' + g[0] + ' ' + g[1] + ' -13 -17'));
-    return { up: g[2] ? _gateSbSeatsOf('1-2 ' + g[2]) : null, sb: sb, basis: '*:' + t };
-  }
-  var d = !t ? (GATE_SB_SEATMAP[(o && GATE_SB_SEATMAP[o + ':*']) ? o + ':*' : al + ':*']) : null;
-  if (d && d[1]) return { up: _gateSbSeatsOf(d[0]), sb: _gateSbSeatsOf(d[1]), basis: (o && GATE_SB_SEATMAP[o + ':*']) ? o + ':*' : al + ':*' };
-  return { up: null, sb: _gateSbSeatsOf(_GATE_SB_SEAT_ANY), basis: '' };
+  return { up: [], sb: [], basis: '' };
 }
 
 function _gateSbPretendOn(cf) {
@@ -39096,10 +39083,12 @@ function _gateSbLists(m, nowMs) {
   var rnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|' + new Date(Number(m.schedAt) || dep).toISOString().slice(0, 10)));
   var air = String(m.airline || '').toUpperCase();
   var cab = GATE_SB_CABINS[air] || GATE_SB_CABINS[_GATE_CARD_ALIAS[air]] || [null, 'cabinEcon'];
+  // a Rouge aeroplane on an Air Canada number: Premium Rouge, not Business
+  if (String(m.op || '').toUpperCase() === 'RV' && GATE_SB_CABINS.RV) cab = GATE_SB_CABINS.RV;
   var fmt = GATE_SB_NAME_FMT[air] || GATE_SB_NAME_FMT[_GATE_CARD_ALIAS[air]] || 'sur3';
   var used = {}, seats = {};
   // v24083 — the seats come from the aeroplane on the gate, on their own
-  // stream, so the names stay the same when the type arrives after them
+  // stream, so the names stay the same when the type or the operator arrives
   var sm = _gateSbSeatMap(air, m.op, m.acType);
   var srnd = _gateSbRand(_gateSbSeed(String(m.flight) + '|seat|' + new Date(Number(m.schedAt) || dep).toISOString().slice(0, 10)));
   function name() {
@@ -39110,12 +39099,11 @@ function _gateSbLists(m, nowMs) {
     // 'sur3' is the only format any airline has asked for so far
     return fmt === 'sur3' ? s + ', ' + ini + '.' : s;
   }
+  // drawn without repeating: never two passengers in one seat
   function seat(which) {
-    var L = sm[which] || sm.sb || [], s = '';
-    for (var k = 0; k < 40 && L.length; k++) {
-      s = L[Math.floor(srnd() * L.length)];
-      if (!seats[s]) break;
-    }
+    var L = (sm[which] || []).filter(function (x) { return !seats[x]; });
+    if (!L.length) return '';
+    var s = L[Math.floor(srnd() * L.length)];
     seats[s] = 1;
     return s;
   }
@@ -39136,8 +39124,11 @@ function _gateSbLists(m, nowMs) {
     return { cabin: cabin, rows: rows };
   }
   var nUp = 2 + Math.floor(rnd() * 2), nSb = 3 + Math.floor(rnd() * 2);
-  // an aeroplane with no premium cabin (a Q400, a Dash 8) has no upgrade list
-  var up = (cab[0] && sm.up) ? list(cab[0], Math.min(nUp, sm.up.length), 1, 'up') : null;
+  // the upgrade names are drawn whatever the aeroplane, so the other lists'
+  // names never move; an aeroplane with no premium cabin (a Q400 for Air
+  // Canada) then shows no upgrade list
+  var upL = cab[0] ? list(cab[0], nUp, 1, 'up') : null;
+  var up = (upL && sm.up !== null) ? upL : null;
   var sb = list(cab[1] || 'cabinEcon', nSb, 0, 'sb');
   return { upgrade: up, standby: sb, seats: list(null, 2, 0, 'sb') };
 }
