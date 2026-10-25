@@ -251,7 +251,7 @@ test('yxs status vocabulary', () => {
   assert.equal(yxsStatus('Cancelled'), 'cancelled');
   assert.equal(yxsStatus('Diverted'), 'diverted');
   assert.equal(yxsStatus('Boarding'), 'boarding');
-  assert.equal(yxsStatus('Final Call'), 'boarding');
+  assert.equal(yxsStatus('Final Call'), 'final');   // v24083 — the airport's word, not folded into boarding
   assert.equal(yxsStatus('Gate Closed'), 'gateclosed');
   assert.equal(yxsStatus('', 'on-time'), 'ontime');
   assert.equal(yxsStatus(null), 'scheduled');

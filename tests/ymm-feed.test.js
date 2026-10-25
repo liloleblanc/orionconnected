@@ -117,7 +117,8 @@ test('ymm: status words map onto the board keys; novel wording passes through', 
   assert.equal(ymmStatus('Arrived'), 'arrived');
   assert.equal(ymmStatus('Landed'), 'arrived');
   assert.equal(ymmStatus('Boarding'), 'boarding');
-  assert.equal(ymmStatus('Final Call'), 'boarding');
+  assert.equal(ymmStatus('Final Call'), 'final');   // v24083 — the airport's word, not folded into boarding
+  assert.equal(ymmStatus('Last Call'), 'final');
   assert.equal(ymmStatus('Gate Closed'), 'gateclosed');
   assert.equal(ymmStatus('Diverted'), 'diverted');
   assert.equal(ymmStatus('  now   boarding '), 'boarding');    // substring fallbacks

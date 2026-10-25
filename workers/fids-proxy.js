@@ -7244,7 +7244,9 @@ function yxeStatus(txt) {
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("divert")) return "diverted";
   if (s.includes("gate closed")) return "gateclosed";
-  if (s.includes("final call") || s.includes("boarding")) return "boarding";
+  // v24083 — the airport's own Final call is FINAL CALL, as at Hobart and Moncton
+  if (s.includes("final call") || s.includes("last call")) return "final";
+  if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay")) return "delayed";
@@ -8160,7 +8162,9 @@ function yxsStatus(txt, cls) {
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("divert")) return "diverted";
   if (s.includes("gate closed") || s.includes("gate-closed")) return "gateclosed";
-  if (s.includes("final call") || s.includes("boarding")) return "boarding";
+  // v24083 — the airport's own Final call is FINAL CALL, as at Hobart and Moncton
+  if (s.includes("final call") || s.includes("last call")) return "final";
+  if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
@@ -8260,7 +8264,7 @@ const YMM_STATUS = {
   "DELAYED": "delayed", "LATE": "delayed",
   "CANCELLED": "cancelled", "CANCELED": "cancelled",
   "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
-  "BOARDING": "boarding", "FINAL CALL": "boarding", "LAST CALL": "boarding",
+  "BOARDING": "boarding", "FINAL CALL": "final", "LAST CALL": "final",
   "GATE CLOSED": "gateclosed", "DIVERTED": "diverted"
 };
 function ymmStatus(txt) {
@@ -8544,7 +8548,9 @@ function yzfStatus(txt) {
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("divert")) return "diverted";
   if (s.includes("gate closed")) return "gateclosed";
-  if (s.includes("final call") || s.includes("boarding")) return "boarding";
+  // v24083 — the airport's own Final call is FINAL CALL, as at Hobart and Moncton
+  if (s.includes("final call") || s.includes("last call")) return "final";
+  if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
@@ -8975,7 +8981,9 @@ function iahStatus(r) {
   const o = String(r.originalStatus || "").toLowerCase();
   if (s.includes("cancel") || o.includes("cancel")) return "cancelled";
   if (s.includes("divert") || o.includes("divert")) return "diverted";
-  if (s.includes("board") || /\bbrd\b|board|final call/.test(o)) return "boarding";
+  // v24083 — the airport's own Final call is FINAL CALL, as at Hobart and Moncton
+  if (/final call|last call/.test(s) || /final call|last call/.test(o)) return "final";
+  if (s.includes("board") || /\bbrd\b|board/.test(o)) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("land") || s.includes("arriv")) return "arrived";
   if (r.isDelayed === true || o.includes("delay")) return "delayed";
@@ -9400,11 +9408,12 @@ __name(jfkFetchList, "jfkFetchList");
 const SYD_TZ = "Australia/Sydney";
 // "On Time" stays scheduled — the boards derive early/delayed from the
 // revision. Landed is on the ground short of the gate, which the boards
-// fold to arrived anyway; Gate Open and Final Call sit inside boarding.
+// fold to arrived anyway; Gate Open sits inside boarding, and Final Call is
+// FINAL CALL (v24083).
 const SYD_STATUS = {
   "ON TIME": "ontime", "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
   "CANCELLED": "cancelled", "DELAYED": "delayed", "DIVERTED": "diverted",
-  "GATE OPEN": "boarding", "BOARDING": "boarding", "FINAL CALL": "boarding", "GATE CLOSED": "gateclosed"
+  "GATE OPEN": "boarding", "BOARDING": "boarding", "FINAL CALL": "final", "GATE CLOSED": "gateclosed"
 };
 // Outside the map, whole words only: "Check-in Closed" is not the gate,
 // "Not Departed" is still on the ground, "Landing" is not yet arrived.
@@ -9416,7 +9425,9 @@ function sydStatus(text) {
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("divert")) return "diverted";
   if (/\bgate closed\b/.test(s)) return "gateclosed";
-  if (/\bboard|\bfinal call\b|\bgate open\b/.test(s)) return "boarding";
+  // v24083 — the airport's own Final call is FINAL CALL, as at Hobart and Moncton
+  if (/\bfinal call\b|\blast call\b/.test(s)) return "final";
+  if (/\bboard|\bgate open\b/.test(s)) return "boarding";
   if (/\bdelay/.test(s)) return "delayed";
   if (/\bnot\b/.test(s)) return "scheduled";
   if (/\bdeparted\b/.test(s)) return "departed";

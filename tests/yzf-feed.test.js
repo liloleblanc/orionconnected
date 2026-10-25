@@ -239,7 +239,7 @@ test('yzf synthetic: winter offset, unknown city borrows the code flyyzf.ca prin
   assert.deepEqual(parseYzfPage(page('arr', row({ ad: 'D' })), 'arr', NOW), []);
   // Statuses the terminal FIDS could emit beyond the three seen live.
   for (const [txt, want] of [['Cancelled', 'cancelled'], ['Late', 'delayed'], ['Delayed', 'delayed'], ['Arrived', 'arrived'],
-    ['Landed', 'arrived'], ['Departed', 'departed'], ['Boarding', 'boarding'], ['Final Call', 'boarding'],
+    ['Landed', 'arrived'], ['Departed', 'departed'], ['Boarding', 'boarding'], ['Final Call', 'final'],
     ['Gate Closed', 'gateclosed'], ['Diverted', 'diverted'], ['On Time', 'ontime'], ['Expected', 'expected'], ['Early', 'scheduled'], ['Scheduled', 'scheduled']]) {
     assert.equal(parseYzfPage(page('arr', row({ status: txt })), 'arr', NOW)[0].status, want, txt);
   }
