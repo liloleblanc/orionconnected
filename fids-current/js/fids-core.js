@@ -17017,7 +17017,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24081" src="/textures/gate-sky-shelf.mp4?v=24081" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24082" src="/textures/gate-sky-shelf.mp4?v=24082" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17061,7 +17061,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24081" src="/textures/gate-sky-shelf.mp4?v=24081" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24082" src="/textures/gate-sky-shelf.mp4?v=24082" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -34949,7 +34949,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24081';
+var FIDS_BUILD_TAG = 'v24082';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -60277,6 +60277,9 @@ var HERITAGE_MARKS = [
     // 4% the boards resize at. Framed as the SVG was, the aeroplane edge to
     // edge in its picture, so it flies at the same size on the card; fully
     // opaque, so no artboard backing is needed.
+    // v24082 — the 1987 mark is now the supplied adjusted drawing of it: a
+    // larger rondelle over a tighter 'Air Canada', the lettering the 1987 767
+    // drawing carries. Same file, so Air Nova's endorsement changes with it.
     aircraft: '/aircraft/heritage/air-canada-dc9-ac87.png',
     // The DC-9 was the domestic workhorse; Canadian airports only, the same
     // scope as the Canadian Airlines card.
@@ -60338,15 +60341,19 @@ var HERITAGE_MARKS = [
     // same drawing (604.png, scaled 0.837 and fitted at the nose and fuselage);
     // every other pixel is 762's. Cropped to its own edges like the other cards.
     // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose,
-    // was drawn 9.38 against a 767-200's 8.97 (159 ft 2 in, 48.51 m, over a
-    // fuselage 17 ft 9 in, 5.41 m, deep in the side view: Boeing, 767
-    // Airplane Characteristics for Airport Planning, D6-58328 rev K, section
-    // 2.2.1), 4.6% long. About half of that is the tailplane tip reaching
-    // further back than the fin's top, which a real 767 does not do. More than
-    // the 4% the boards allow, so it is narrowed horizontally by 0.956 to 8.97;
-    // nothing is resampled vertically, redrawn or recoloured. Its doors are the
-    // -200's (a door at each end and one exit over the wing), so the caption
-    // below stands.
+    // is 9.36 to the tailplane tip against a 767-200's 8.97 (159 ft 2 in,
+    // 48.51 m, over a fuselage 17 ft 9 in, 5.41 m, deep in the side view:
+    // Boeing, 767 Airplane Characteristics for Airport Planning, D6-58328 rev
+    // K, section 2.2.1). The tip reaches further back than the fin's top,
+    // which a real 767's does not; to the fin's top it is 2.6% long, inside
+    // the 4% the boards allow, so it is used AS DRAWN, not resized. Its doors
+    // are the -200's (a door at each end and one exit over the wing), so the
+    // caption below stands.
+    // v24082 — RECOLOURED BY ITS ARTIST: the supplied 762.png again, the same
+    // drawing with the same outline pixel for pixel, its reds warmed toward
+    // the orange red of the period (the fin reads about 165,32,0 where it read
+    // 157,0,39). The 31 tip pixels from 604.png get the same shift, fitted on
+    // the tailplane's light pixels beside them.
     //
     // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Boeing 767-233 · 1982–2008 ·
     // 1980 livery'. 233 is Air Canada's own customer number, so the designation
@@ -60428,6 +60435,64 @@ var HERITAGE_MARKS = [
     file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc8.png',
+    airports: '*CA'
+  },
+  {
+    // v24082 — THE DC-9 IN THE LIVERY THAT FOLLOWED: a white aeroplane, the
+    // titles in spaced red capitals behind a small red rondelle, and a dark
+    // green tail with a red maple leaf. The supplied drawing is the same
+    // C-FTMA, fleet 726, as the capitals card (no caption prints either), with
+    // that card's windows and its two exits over the wing, so the model is
+    // still the DC-9-32 and the caption keeps its 1968–2002.
+    //
+    // THE LIVERY is named by the year it came in, 1993: Air Canada's own
+    // 60th-anniversary release for the rondelle says it was first updated in
+    // 1993 (Open Jaw, 6 January 2025), and Skies Magazine calls this the
+    // colour scheme presented in 1993. The supplied mark's FILENAME says 1994;
+    // that is the artwork's name, and it is filed as AC-1993-LOGO.svg beside
+    // the 1980 and 1987 marks. The year the livery went out is not printed.
+    // THE MARK is the stacked lockup of the same identity: the rondelle redrawn
+    // as an open ring over AIR CANADA in the new capitals, one red, one shape.
+    //
+    // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose,
+    // is 9.87 against the -32's 10.07 (Douglas MDC J2904, section 2.2), 1.9%
+    // short, inside the 4% the boards allow, so it is used AS DRAWN. It came at
+    // 4329 x 1837, twice the size of the other cards, so it is cropped to its
+    // own edges and scaled to the capitals DC-9's width (2272 px). About 12,000
+    // body pixels were a shade see-through (alpha 251–254) and are made solid
+    // as they looked on white; 134 faint specks off the aeroplane are removed.
+    key: 'air-canada-dc9-93',
+    file: '/logos/advertisements/retro-airlines/AC-1993-LOGO.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac93.png',
+    airports: '*CA'
+  },
+  {
+    // v24082 — AND THE 767 IN THE 1987 LIVERY: the dual stripe with 'Air
+    // Canada' in mixed case, so it carries the 1987 mark, as the 1987 DC-9
+    // card does. The supplied drawing is the same C-GAUN, fleet 604, as the
+    // 1980 card, drawn in the same pose and light. It is a new drawing, not a
+    // recolour (its tailplane tip no longer passes the fin's top), but it
+    // follows the 1980 drawing, which follows the 3D model, so it keeps the
+    // model's credit line.
+    //
+    // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose,
+    // is 8.86 against a 767-200's 8.97 (Boeing, D6-58328 rev K, 2.2.1), 1.2%
+    // short, inside the 4%, so it is used AS DRAWN. Its doors are the -200's.
+    // It was exported a shade see-through (alpha 251–254 over the whole body),
+    // so the body is made solid as it looked on white, and about 16,400 faint
+    // pixels (alpha 8 or less) more than 3 px off the aeroplane are removed:
+    // the haze a cut-out leaves along the roof. Cropped to its own edges.
+    //
+    // THE CAPTION: 'Boeing 767-233 · 1982–2008 · 1987 livery', the 1980
+    // card's checked years with this livery's year.
+    // Last in the set on purpose: the rotation runs in this order, so the
+    // two 767s are never back to back.
+    key: 'air-canada-767-87',
+    file: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-767-ac87.png',
+    credit: true,
     airports: '*CA'
   }
 ];
@@ -60625,7 +60690,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24081" src="/textures/gate-sky-shelf.mp4?v=24081"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24082" src="/textures/gate-sky-shelf.mp4?v=24082"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

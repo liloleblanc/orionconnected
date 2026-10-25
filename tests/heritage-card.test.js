@@ -83,7 +83,10 @@ test('no card claims a date its sources disagree on', () => {
   // names the aeroplane and its livery by the year the livery came in (1987
   // dual stripe, 1980 simplified red stripe), not a city; the year a livery
   // went out is disputed (1992/93/94) and never printed.
-  const LIVERY = { 'air-canada': '1987', 'air-canada-caps': '1980' };
+  // v24082 — and the green-tail livery that followed, by the year it came in:
+  // 1993 in Air Canada's own rondelle history (Open Jaw, January 2025) and in
+  // Skies Magazine. The supplied mark's filename says 1994; it is not printed.
+  const LIVERY = { 'air-canada': '1987', 'air-canada-caps': '1980', 'air-canada-dc9-93': '1993' };
   for (const k of Object.keys(LIVERY)) {
     const acm = byKey[k];
     assert.ok(acm, k + ': the Air Canada DC-9 card exists');
@@ -285,7 +288,10 @@ test('every card that names its own aeroplane has the file on disk', () => {
   assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current', 'aircraft', 'heritage', 'air-canada-dc9-ac80.svg')),
     'the replaced caps SVG is not left on disk: nothing uses it');
   assert.match(byK['air-canada-caps'].file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark (v24021)');
-  for (const k of ['air-canada', 'air-canada-caps']) {
+  // v24082 — the third DC-9 card: the 1993 livery with the 1993 mark.
+  assert.equal(byK['air-canada-dc9-93'].aircraft, '/aircraft/heritage/air-canada-dc9-ac93.png');
+  assert.match(byK['air-canada-dc9-93'].file, /retro-airlines\/AC-1993-LOGO\.svg$/, 'the 1993 livery carries the 1993 mark');
+  for (const k of ['air-canada', 'air-canada-caps', 'air-canada-dc9-93']) {
     assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', byK[k].file.replace(/^\//, ''))), k + ' mark on disk');
   }
   for (const m of named) {
@@ -384,7 +390,34 @@ test('the 767 card: the capitals livery and mark, a year every source agrees on,
   assert.match(SRC, /'<div class="hcard-credit">' \+ _credit\.join\('<br>'\)/, 'and placed on the card');
   assert.ok(fs.existsSync(path.join(ROOT, 'docs', 'licenses', '3d-models.md')), 'the full notice is filed');
   // only a mark that asks for a credit gets one: the drawn aeroplanes are the supplied artwork
-  for (const k of ['air-canada', 'air-canada-caps', 'canadian-airlines']) assert.ok(!byK[k].credit, k + ' carries no credit line');
+  for (const k of ['air-canada', 'air-canada-caps', 'air-canada-dc9-93', 'canadian-airlines']) assert.ok(!byK[k].credit, k + ' carries no credit line');
+});
+
+test('the 1987 767 card: the dual-stripe livery and its mark, the same checked years, and the same credit', () => {
+  // v24082 — a second drawing of C-GAUN, in the 1987 livery. It follows the
+  // 1980 drawing, which follows the CC BY model, so it names the maker too.
+  const byK = Object.fromEntries(marks().map((m) => [m.key, m]));
+  const m = byK['air-canada-767-87'];
+  assert.ok(m, 'the 1987 767 card exists');
+  assert.equal(m.aircraft, '/aircraft/heritage/air-canada-767-ac87.png');
+  assert.match(m.file, /AC-1987-LOGO\.svg$/, 'the 1987 livery carries the 1987 mark, as the 1987 DC-9 card does');
+  assert.equal(m.airports, '*CA');
+  assert.equal(m.credit, true, 'the card asks for its credit line');
+  for (const f of [m.aircraft, m.file]) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', f.replace(/^\//, ''))), f + ' is on disk');
+  }
+  for (const l of STORE.LANGS) {
+    const cap = STORE.bs('heritage:air-canada-767-87', l);
+    assert.match(cap, /767-233 · 1982–2008 · /, 'the type and its checked years, in ' + l);
+    assert.match(cap, /1987/, 'the livery by the year it came in, in ' + l);
+    const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => !['1982', '2008', '1987'].includes(y));
+    assert.deepEqual(years, [], 'no other year, in ' + l);
+    const cr = STORE.bs('heritageCredit:air-canada-767-87', l);
+    assert.equal(cr, STORE.bs('heritageCredit:air-canada-767', l), 'the same credit as the 1980 card, in ' + l);
+  }
+  // The two 767s never come up back to back: the rotation runs in set order.
+  const keys = marks().map((k) => k.key);
+  assert.ok(Math.abs(keys.indexOf('air-canada-767') - keys.indexOf('air-canada-767-87')) > 1, 'the two 767 cards are apart in the rotation');
 });
 
 test('the DC-8 card: the -61 drawn, its own checked years, the 1965 livery and the mark it came in with', () => {
