@@ -59,23 +59,29 @@ test('the worker keeps the last stretch of the pace line for a board\'s own arri
   // the first minutes of the UTC day are never held up by more than half the line
   assert.ok(f.reserve(cap, at(0, 0)) <= f.paced(cap, at(0, 0)) / 2);
   assert.match(WORKER, /const _near = url\.searchParams\.get\("near"\) === "1";/);
-  assert.match(WORKER, /_used < fr24PacedAllowance\(_cap\) - \(_near \? 0 : fr24NearHeld\(_cap, _nearUsed\)\)\) \{/);
-  assert.match(WORKER, /used \+ DTW_FR24_PAGE_CREDITS <= Math\.min\(cap, fr24PacedAllowance\(cap\) - fr24NearHeld\(cap, nearUsed\)\)/,
+  assert.match(WORKER, /_used < fr24PacedAllowance\(_cap\) - \(_near \? 0 : fr24NearHeld\(_cap, _nearDoc\)\)\) \{/);
+  assert.match(WORKER, /used \+ DTW_FR24_PAGE_CREDITS <= Math\.min\(cap, fr24PacedAllowance\(cap\) - fr24NearHeld\(cap, nearDoc\)\)/,
     'the bulk sweep stays behind the reserve too');
   assert.match(WORKER, /if \(_used < _cap && Date\.now\(\) >= _coolUntil/, 'the cap itself is untouched');
 });
 
-test('the arrivals\' reserve is counted per 90-minute window', () => {
-  const f = new Function(fnSource(WORKER, 'fr24PacedAllowance') + '\n' + fnSource(WORKER, 'fr24NearReserve') + '\n' +
-    fnSource(WORKER, 'fr24NearKey') + '\n' + fnSource(WORKER, 'fr24NearHeld') + '\nreturn { held: fr24NearHeld, key: fr24NearKey, reserve: fr24NearReserve };')();
-  const at = Date.UTC(2026, 9, 26, 20, 30);
-  const R = f.reserve(1900, at);
-  assert.equal(f.held(1900, 0, at), R, 'nothing spent: the whole reserve waits');
-  assert.equal(f.held(1900, 20, at), R - 20);
-  assert.equal(f.held(1900, R + 50, at), 0, 'spent: everyone shares the line as before');
-  assert.equal(f.key(at), 'fr24:near:2026-10-26:13');
-  assert.equal(f.key(Date.UTC(2026, 9, 26, 21, 0)), 'fr24:near:2026-10-26:14');
-  assert.match(WORKER, /if \(_near && _spend > _used\) \{\s*try \{ ctx\.waitUntil\(env\.FIDS_LIVE_FLIGHTS\.put\(_nearKey, String\(_nearUsed \+ \(_spend - _used\)\), \{ expirationTtl: 7200 \}\)\); \} catch \(e\) \{\}/);
+test('the arrivals\' reserve is a bucket that refills at half the line\'s rate, never snapping back', () => {
+  const f = new Function('const FR24_NEAR_KEY = "fr24:nearb:v1";\n' + fnSource(WORKER, 'fr24PacedAllowance') + '\n' + fnSource(WORKER, 'fr24NearReserve') + '\n' +
+    fnSource(WORKER, 'fr24NearBucket') + '\n' + fnSource(WORKER, 'fr24NearHeld') + '\nreturn { held: fr24NearHeld, bucket: fr24NearBucket, reserve: fr24NearReserve };')();
+  const at = Date.UTC(2026, 9, 26, 20, 30), cap = 1900;
+  const R = f.reserve(cap, at);
+  assert.equal(f.held(cap, null, at), R, 'no doc: a full bucket waits');
+  assert.equal(f.held(cap, { b: 4, at }, at), 4, 'just spent: almost nothing held back');
+  // ten minutes later it has refilled by half the line's rise (0.66 credits a minute)
+  const ten = f.bucket(cap, { b: 4, at }, at + 600000);
+  assert.ok(Math.abs(ten - (4 + 0.5 * cap / 1440 * 10)) < 1e-9, ten.toFixed(2));
+  assert.equal(f.held(cap, { b: 4, at }, at + 6 * 3600000), R, 'never above the reserve');
+  // whoever else asks keeps at least half the line's rise while it refills
+  const lineRise = cap / 1440 * 10, heldRise = f.held(cap, { b: 4, at }, at + 600000) - 4;
+  assert.ok(lineRise - heldRise >= lineRise / 2 - 1);
+  assert.match(WORKER, /const _nb = Math\.max\(0, fr24NearBucket\(_cap, _nearDoc\) - \(_spend - _used\)\);/);
+  assert.match(WORKER, /env\.FIDS_LIVE_FLIGHTS\.put\(FR24_NEAR_KEY, JSON\.stringify\(\{ b: _nb, at: Date\.now\(\) \}\), \{ expirationTtl: 172800 \}\)/);
+  assert.doesNotMatch(WORKER, /fr24NearKey|fr24:near:\$\{/, 'no per-window counter left');
 });
 
 test('an older fix never replaces a newer one, and is not news', () => {
@@ -212,12 +218,20 @@ test('a board asks with ?near=1 for its own inbound in its last half hour, or wi
   const eta = Date.UTC(2026, 9, 26, 20, 30);
   const inb = { flight: 'AC7894', _revTs: eta, _sortTs: eta + 7 * 60000, status: 'Early' };
   const win = { _gateInbound: inb, _gateIata: 'YQM', _adsbLast: {} };
-  assert.equal(nearSandbox(win, eta - 25 * 60000)('AC7894'), true, '25 minutes out');
-  assert.equal(nearSandbox(win, eta - 25 * 60000)('JZA7894'), true, 'by its callsign too (the digits)');
-  assert.equal(nearSandbox(win, eta - 25 * 60000)('AC7897'), false, 'another flight');
+  assert.equal(nearSandbox(win, eta - 12 * 60000)('AC7894'), true, '12 minutes out');
+  assert.equal(nearSandbox(win, eta - 12 * 60000)('JZA7894'), true, 'by its callsign too (the digits)');
+  assert.equal(nearSandbox(win, eta - 12 * 60000)('AC7897'), false, 'another flight');
+  assert.equal(nearSandbox(win, eta - 25 * 60000)('AC7894'), false, '25 minutes out is not the final stretch');
   assert.equal(nearSandbox(win, eta - 90 * 60000)('AC7894'), false, 'an hour and a half out, far away');
   win._adsbLast.AC7894 = { lat: 46.0, lng: -65.6, onGround: false, at: eta - 90 * 60000 - 30000, age: 10, fl: 'AC7894' };
-  assert.equal(nearSandbox(win, eta - 90 * 60000)('AC7894'), true, 'early, but already within 60 nm');
+  assert.equal(nearSandbox(win, eta - 90 * 60000)('AC7894'), true, 'early, but already within 40 nm');
+  win._adsbLast.AC7894 = { lat: 46.0, lng: -66.4, onGround: false, at: eta - 90 * 60000 - 30000, age: 10, fl: 'AC7894', alt: 8000 };
+  assert.equal(nearSandbox(win, eta - 90 * 60000)('AC7894'), true, '65 nm out but below 10,000 ft');
+  win._adsbLast.AC7894.alt = 24000;
+  assert.equal(nearSandbox(win, eta - 90 * 60000)('AC7894'), false, '65 nm out at 24,000 ft: not yet');
+  win._adsbLast.AC7894 = { lat: 43.7, lng: -79.6, onGround: false, at: eta - 90 * 60000 - 30000, age: 10, fl: 'AC7894', alt: 3000 };
+  assert.equal(nearSandbox(win, eta - 90 * 60000)('AC7894'), false, 'climbing out of Toronto: never');
+  win._adsbLast.AC7894 = { lat: 46.0, lng: -65.6, onGround: false, at: eta - 90 * 60000 - 30000, age: 10, fl: 'AC7894' };
   inb.status = 'Arrived';
   assert.equal(nearSandbox(win, eta)('AC7894'), false, 'landed');
   assert.equal(nearSandbox({ _gateInbound: { flight: 'AC7897', dest: 'YYZ' }, _gateIata: 'YQM' }, eta)('AC7897'), false, 'an outbound');
@@ -243,7 +257,7 @@ test('the glide measures a re-anchor against the fix carried forward for its age
   assert.ok(ahead > 1.9 && ahead < 5.2, ahead.toFixed(2) + ' nm');
 });
 
-test('the approach model: the fix\'s speed beyond 40 nm, slowing evenly with distance to 140 kt at the end', () => {
+test('the approach model: the fix\'s speed beyond the ramp, slowing evenly with distance to 140 kt at the end', () => {
   assert.ok(Math.abs(flown(150, 0.1, 40, 450, 140) - 45) < 1e-9, 'beyond the ramp, the fix\'s own speed');
   let last = 0, lastStep = Infinity;
   for (let s = 30; s <= 1200; s += 30) {
@@ -261,7 +275,7 @@ test('the approach model: the fix\'s speed beyond 40 nm, slowing evenly with dis
   assert.equal(flown(10, 1, 10, 0, 140), 0);
   const glide = fnSource(CORE, '_startGateMapGlide');
   assert.match(glide, /var _flown = function \(dStart, ms\) \{ return _glideFlownNm\(dStart, ms \/ 3600000, _dRamp, speedKts, _vMin\); \};/);
-  assert.match(glide, /var _dRamp = Math\.min\(_dFix, 40\);/);
+  assert.match(glide, /var _dRamp = Math\.min\(_dFix, 80, _routeNm \/ 2\);/, 'from 80 nm (a jet slows from the top of its descent), never the first half of a short hop');
   assert.doesNotMatch(glide, /_p0 > 0\.82|0\.62 \+ 0\.38|_close|fixHist|_gateHeading\(null\)/, 'no route-share profile, no track or fix-history factors');
 });
 
@@ -338,4 +352,21 @@ test('the watchdog knows a marker held on purpose', () => {
   assert.match(CORE, /Date\.now\(\) - _gateGlide\.fixAt > \(_gateGlide\.drMaxMs \|\| _GLIDE_DR_MAX_MS\)\)/);
   assert.match(fnSource(CORE, '_stopGateMapGlide'), /_gateGlide\.holding = false;/);
   assert.match(CORE, /var _GLIDE_DR_MAX_MS = 8 \* 60000;/);
+});
+
+test('an aeroplane established on final is carried on to touchdown', () => {
+  const on = new Function(fnSource(CORE, '_gateOnFinal') + '\nreturn _gateOnFinal;')();
+  // Moncton runway 24: the threshold at the north-east end, landing south-west
+  const THR = [46.1262, -64.66766], TDZ = [46.1209, -64.6772];
+  // points out along the extended centreline (the reverse of the landing direction)
+  const kx = Math.cos(THR[0] * Math.PI / 180), ex = (THR[1] - TDZ[1]) * kx, ey = THR[0] - TDZ[0], el = Math.hypot(ex, ey);
+  const out = (nm) => [THR[0] + ey / el * nm / 60, THR[1] + ex / el * nm / 60 / kx];
+  assert.equal(on(out(5), THR, TDZ, 1600), true, '5 nm out on the centreline at 1,600 ft');
+  assert.equal(on(out(5), THR, TDZ, null), true, 'no altitude known');
+  assert.equal(on(out(5), THR, TDZ, 4000), false, 'too high to be on final');
+  assert.equal(on(out(14), THR, TDZ, 2500), false, 'beyond 12 nm');
+  assert.equal(on([out(5)[0] + 0.02, out(5)[1]], THR, TDZ, 1600), false, '1.2 nm off the centreline');
+  assert.equal(on([THR[0] - (out(3)[0] - THR[0]), THR[1] - (out(3)[1] - THR[1])], THR, TDZ, 500), false, 'past the threshold, the other side');
+  assert.equal(on(FIX_1728, THR, TDZ, 4300), false, 'the 17:28:49 fix, 19 km north at 4,300 ft, is not');
+  assert.match(fnSource(CORE, '_startGateMapGlide'), /if \(_rwFinal && n >= 3 && !_gateOnFinal\(_pl, route\[n - 2\], route\[n - 1\], _gateMapFixAlt\(planeLat, planeLng\)\)\) \{/);
 });

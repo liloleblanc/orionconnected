@@ -6090,30 +6090,33 @@ __name(fr24PacedAllowance, "fr24PacedAllowance");
 // only as the line moves: about one position every six minutes for every
 // screen together. AC7894 into Moncton on 2026-10-26 got one at 17:28:49
 // (19 km out, 4,300 ft) and the next at 17:32:56, and the gate drew it over
-// Saint-Antoine while it landed. Every lookup but a board's own inbound in
-// its last half hour (?near=1) now stops short of the line by what is left of
-// the arrivals' reserve, so that stretch of the line waits for them. The
-// reserve is counted per 90-minute window and is HALF of what the line gives
-// in one (45 minutes' share; at most half the line, so the start of the UTC
-// day is not held up): once the arrivals have spent it, everyone shares the
-// line as before. A whole window's share made the reserve a debt the rest
-// paid back at every window boundary, refused for 1.5–3 hours after one
-// approach (review of #1086). The line and the day's cap are unchanged, so
-// nothing is spent sooner.
+// Saint-Antoine while it landed. Every lookup but a board's own inbound on
+// its final stretch (?near=1) now stops short of the line by what is in the
+// arrivals' reserve, so that stretch of the line waits for them.
+// The reserve is a BUCKET (KV fr24:nearb:v1, { b, at }): it holds at most 45
+// minutes' share of the line (at most half the line, so the start of the UTC
+// day is not held up), an arrival's lookup spends from it, and it refills at
+// half the line's rate. So everyone else always keeps at least half of what
+// the line gives while it refills, and it never snaps back to full: a reserve
+// reset per window made the rest pay back the arrivals' spend all at once at
+// the boundary, refused for up to an hour (reviews of #1086). The line and
+// the day's cap are unchanged, so nothing is spent sooner.
+const FR24_NEAR_KEY = "fr24:nearb:v1";
 function fr24NearReserve(cap, now) {
   return Math.min(Math.ceil(cap * 45 / 1440), Math.floor(fr24PacedAllowance(cap, now) / 2));
 }
 __name(fr24NearReserve, "fr24NearReserve");
-// The KV counter of what ?near=1 lookups spent in this 90-minute UTC window.
-function fr24NearKey(now) {
-  const d = new Date(now || Date.now());
-  return `fr24:near:${d.toISOString().slice(0, 10)}:${Math.floor((d.getUTCHours() * 60 + d.getUTCMinutes()) / 90)}`;
+// What the bucket holds now: its last level plus the refill since, never over
+// the reserve; a missing or unreadable doc is a full bucket.
+function fr24NearBucket(cap, doc, now) {
+  const t = now || Date.now(), R = fr24NearReserve(cap, t);
+  if (!doc || typeof doc.b !== "number" || typeof doc.at !== "number" || !(doc.at <= t)) return R;
+  return Math.max(0, Math.min(R, doc.b + 0.5 * cap / 1440 * (t - doc.at) / 60000));
 }
-__name(fr24NearKey, "fr24NearKey");
-// How far short of the line every other lookup stops: the reserve, less what
-// the arrivals have already spent of it in this window.
-function fr24NearHeld(cap, nearUsed, now) {
-  return Math.max(0, fr24NearReserve(cap, now) - Math.max(0, Number(nearUsed) || 0));
+__name(fr24NearBucket, "fr24NearBucket");
+// How far short of the line every other lookup stops.
+function fr24NearHeld(cap, doc, now) {
+  return Math.floor(fr24NearBucket(cap, doc, now));
 }
 __name(fr24NearHeld, "fr24NearHeld");
 
@@ -6234,10 +6237,11 @@ async function dtwFr24Schedule(env) {
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return serve();
     // The whole page must fit under the pace line, not merely start below it.
-    // v24088 — behind the line by what is left of the arrivals' reserve, like
-    // every other lookup (fr24NearHeld)
-    const nearUsed = Number(await env.FIDS_LIVE_FLIGHTS.get(fr24NearKey())) || 0;
-    const fits = () => used + DTW_FR24_PAGE_CREDITS <= Math.min(cap, fr24PacedAllowance(cap) - fr24NearHeld(cap, nearUsed));
+    // v24088 — behind the line by what is in the arrivals' reserve, like every
+    // other lookup (fr24NearHeld)
+    let nearDoc = null;
+    try { nearDoc = await env.FIDS_LIVE_FLIGHTS.get(FR24_NEAR_KEY, { type: "json" }); } catch (e) { nearDoc = null; }
+    const fits = () => used + DTW_FR24_PAGE_CREDITS <= Math.min(cap, fr24PacedAllowance(cap) - fr24NearHeld(cap, nearDoc));
     if (!fits()) return serve();
     // One sweeper at a time (KV is no lock, but it stops nearly every overlap).
     const lockKey = "dtw:fr24:lock";
@@ -13186,10 +13190,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
           // A recent 429/403 sets a short cool-off instead of burning the day.
           const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
-          // v24088 — what the arrivals have spent of their reserve in this window
-          const _nearKey = fr24NearKey();
-          const _nearUsed = Number(await env.FIDS_LIVE_FLIGHTS.get(_nearKey)) || 0;
-          if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap) - (_near ? 0 : fr24NearHeld(_cap, _nearUsed))) {
+          // v24088 — what is in the arrivals' reserve
+          let _nearDoc = null;
+          try { _nearDoc = await env.FIDS_LIVE_FLIGHTS.get(FR24_NEAR_KEY, { type: "json" }); } catch (e) { _nearDoc = null; }
+          if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap) - (_near ? 0 : fr24NearHeld(_cap, _nearDoc))) {
             const _param = kind === "callsign" ? "callsigns" : kind === "flight" ? "flights" : "registrations";
             const _fr = await fetch(
               `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
@@ -13238,7 +13242,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               : _used + fr24Charge("live/flight-positions/full", _rows.length);
             try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
             if (_near && _spend > _used) {
-              try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_nearKey, String(_nearUsed + (_spend - _used)), { expirationTtl: 7200 })); } catch (e) {}
+              const _nb = Math.max(0, fr24NearBucket(_cap, _nearDoc) - (_spend - _used));
+              try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(FR24_NEAR_KEY, JSON.stringify({ b: _nb, at: Date.now() }), { expirationTtl: 172800 })); } catch (e) {}
             }
             if (!_hardStop && (_fr.status === 429 || _fr.status === 403)) {
               // Cool off for 5 minutes rather than for the day.

@@ -41,7 +41,7 @@ function build({ kv, fetchImpl, now }) {
     constLine('DTW_FR24_CACHE_KEY'), constLine('DTW_FR24_MAX_CALLS'), constLine('DTW_FR24_REFRESH_MS'),
     constLine('DTW_FR24_PAGE_CREDITS'), 'const FR24_ROW_PRICE = ' + SRC.match(/const FR24_ROW_PRICE = (\{[\s\S]*?\});/)[1] + ';',
     constLine('FR24_PROMO_ENDS'), constLine('FR24_PERMANENT_DAILY_CAP'),
-    fnSource('fr24EffectiveCap'), fnSource('fr24PacedAllowance'), fnSource('fr24NearReserve'), fnSource('fr24NearKey'), fnSource('fr24NearHeld'), fnSource('fr24Charge'), fnSource('dtwLocalMinutes'),
+    fnSource('fr24EffectiveCap'), fnSource('fr24PacedAllowance'), constLine('FR24_NEAR_KEY'), fnSource('fr24NearReserve'), fnSource('fr24NearBucket'), fnSource('fr24NearHeld'), fnSource('fr24Charge'), fnSource('dtwLocalMinutes'),
     fnSource('dtwFr24Schedule').replace(/^async function/, 'return async function'),
   ].join('\n');
   const RealDate = Date;

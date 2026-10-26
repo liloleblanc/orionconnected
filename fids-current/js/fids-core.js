@@ -41453,10 +41453,12 @@ var _ADSB_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/adsb';
 var _adsbCache = Object.create(null);
 var _ADSB_TTL_MS = 45000;
 
-// v24088 — a board's own inbound in its last half hour, or already within
-// 60 nm of this field: the worker keeps the last stretch of Flightradar24's
-// daily pace line for these lookups (fr24NearReserve), and holds their
-// approach positions 90 s instead of 180.
+// v24088 — a board's own inbound on its final stretch: under 13 minutes from
+// its arrival time, or on a recent fix of this flight within 40 nm of this
+// field (80 nm once below 10,000 ft; never a climb out of its origin). The worker keeps a reserve of Flightradar24's
+// pace line for these lookups (fr24NearReserve) and holds their positions
+// 90 s, not 180. (A 30-minute window spent the reserve in cruise, 180 s a
+// fix, and left the last 10 minutes competing at the line again.)
 function _adsbNearFinal(fl) {
   try {
     var inb = window._gateInbound;
@@ -41465,7 +41467,7 @@ function _adsbNearFinal(fl) {
     if (!fl || dg(fl) !== dg(inb.flight)) return false;
     if (typeof _gateRawLanded === 'function' && _gateRawLanded(inb)) return false;
     var arr = inb._revTs || inb._sortTs || 0, left = arr - Date.now();
-    if (arr && left < 30 * 60000 && left > -20 * 60000) return true;
+    if (arr && left < 13 * 60000 && left > -20 * 60000) return true;
     // (a held fix only when it is this flight's and under 10 minutes old: a
     // board left running holds yesterday's last fix for the same number)
     var last = window._adsbLast && window._adsbLast[String(inb.flight).toUpperCase().replace(/\s+/g, '')];
@@ -41473,7 +41475,7 @@ function _adsbNearFinal(fl) {
     return !!(last && h && typeof last.lat === 'number' && typeof last.lng === 'number' && !last.onGround
       && typeof last.at === 'number' && Date.now() - _adsbFixAt(last) < 10 * 60000
       && (!last.fl || dg(last.fl) === dg(inb.flight))
-      && _gcNm([last.lat, last.lng], h) < 60);
+      && (function (nm) { return nm < 40 || (nm < 80 && typeof last.alt === 'number' && last.alt < 10000); })(_gcNm([last.lat, last.lng], h)));
   } catch (e) { return false; }
 }
 async function _adsbFetchOne(path, near) {
@@ -48304,6 +48306,29 @@ function _gateMapFixSpd(lat, lng) {
   return (mf && typeof mf.spd === 'number' && mf.spd > 0 && typeof lat === 'number' && typeof lng === 'number'
           && Math.abs(mf.lat - lat) < 1e-4 && Math.abs(mf.lng - lng) < 1e-4) ? mf.spd : null;
 }
+// v24088 — the altitude (ft) of the fix the map is drawing at (lat, lng), or null.
+function _gateMapFixAlt(lat, lng) {
+  var mf = window._gateMapFix;
+  return (mf && typeof mf.alt === 'number' && typeof lat === 'number' && typeof lng === 'number'
+          && Math.abs(mf.lat - lat) < 1e-4 && Math.abs(mf.lng - lng) < 1e-4) ? mf.alt : null;
+}
+// v24088 — is a fix at `pl` established on the final to the threshold `thr`
+// (landing towards `tdz`): inside 12 nm of it, on the approach side, within
+// 0.5 nm of the extended centreline, and below 3,000 ft when its altitude is
+// known. Flat-earth across those few miles.
+function _gateOnFinal(pl, thr, tdz, altFt) {
+  try {
+    if (!pl || !thr || !tdz) return false;
+    if (typeof altFt === 'number' && altFt > 3000) return false;
+    var kx = Math.cos(thr[0] * Math.PI / 180);
+    var ux = (tdz[1] - thr[1]) * kx, uy = tdz[0] - thr[0], ul = Math.sqrt(ux * ux + uy * uy);
+    if (!(ul > 0)) return false;
+    ux /= ul; uy /= ul;
+    var px = (pl[1] - thr[1]) * kx, py = pl[0] - thr[0];
+    var along = -(px * ux + py * uy) * 60, cross = Math.abs(px * uy - py * ux) * 60;   // nm
+    return along > 0 && along < 12 && cross < 0.5;
+  } catch (e) { return false; }
+}
 // v24088 — HOW FAR AN ARRIVING AEROPLANE FLIES IN tH HOURS from dStart nm
 // before its route's end: vs kt while more than ds nm out, and inside ds
 // slowing evenly with the distance left to vmin at the end (dD/dt =
@@ -50848,7 +50873,11 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // miles from the straight route, and the marker waits short of the field
   // for the next fix instead of reading as landed (replayed: 0.4 nm out while
   // it was 9 nm out downwind).
-  if (_rwFinal && n >= 3) {
+  // An aeroplane already ESTABLISHED on that final (inside 12 nm of the
+  // threshold, within half a mile of its extended centreline, below 3,000 ft
+  // when the fix says) is carried on to touchdown: it can only be landing, and
+  // held short it hovered at a few hundred feet until the feed said Arrived.
+  if (_rwFinal && n >= 3 && !_gateOnFinal(_pl, route[n - 2], route[n - 1], _gateMapFixAlt(planeLat, planeLng))) {
     var _thrNm = _cum[n - 2], _seedNm = _seedP * _routeNm;
     var _preP = (_thrNm - Math.max(1, 0.25 * (_thrNm - _seedNm))) / _routeNm, _thrP = _thrNm / _routeNm;
     // (a fix already inside that point may be carried on to the threshold)
@@ -50857,12 +50886,16 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // v24088 — AND THE AEROPLANE SLOWS FOR ITS APPROACH. Carried on at the
   // speed of a fix 4–6 minutes old, a descending arrival ran kilometres
   // ahead of itself between fixes and was pulled back at each one. Within
-  // 40 nm of the route's end (or from the fix, when it is nearer) the glide
+  // 80 nm of the route's end (or from the fix, when it is nearer) the glide
   // slows evenly with the distance left, from the fix's own ground speed to
   // 140 kt at touchdown (_glideFlownNm); further out it keeps the fix's speed.
+  // (80, not 40: a jet loses speed from the top of its descent, and a 40 nm
+  // ramp left it 5–7 nm ahead at the next fix, 40–70 nm out. Never more than
+  // the second half of the route: on a short hop the aeroplane is still
+  // climbing and speeding up through its first half.)
   var _vMin = 140;
   var _dFix = Math.max(0, (1 - _seedP) * _routeNm);
-  var _dRamp = Math.min(_dFix, 40);
+  var _dRamp = Math.min(_dFix, 80, _routeNm / 2);
   var _flown = function (dStart, ms) { return _glideFlownNm(dStart, ms / 3600000, _dRamp, speedKts, _vMin); };
   var _nowP = Math.min(_drCapP, _seedP + _flown(_dFix, _fixAgeMs) / _routeNm);
   var p = _nowP;
