@@ -6093,13 +6093,15 @@ __name(fr24PacedAllowance, "fr24PacedAllowance");
 // Saint-Antoine while it landed. Every lookup but a board's own inbound in
 // its last half hour (?near=1) now stops short of the line by what is left of
 // the arrivals' reserve, so that stretch of the line waits for them. The
-// reserve is an hour and a half's share (at most half the line, so the start
-// of the UTC day is not held up) and is counted per 90-minute window: once
-// the arrivals have spent it in a window, everyone shares the line as before,
-// so a busy afternoon of approaches can never lock the rest out for hours.
-// The line and the day's cap are unchanged, so nothing is spent sooner.
+// reserve is counted per 90-minute window and is HALF of what the line gives
+// in one (45 minutes' share; at most half the line, so the start of the UTC
+// day is not held up): once the arrivals have spent it, everyone shares the
+// line as before. A whole window's share made the reserve a debt the rest
+// paid back at every window boundary, refused for 1.5–3 hours after one
+// approach (review of #1086). The line and the day's cap are unchanged, so
+// nothing is spent sooner.
 function fr24NearReserve(cap, now) {
-  return Math.min(Math.ceil(cap * 90 / 1440), Math.floor(fr24PacedAllowance(cap, now) / 2));
+  return Math.min(Math.ceil(cap * 45 / 1440), Math.floor(fr24PacedAllowance(cap, now) / 2));
 }
 __name(fr24NearReserve, "fr24NearReserve");
 // The KV counter of what ?near=1 lookups spent in this 90-minute UTC window.
