@@ -1,0 +1,436 @@
+{
+  "dark": {
+    "cloud": "#FFFFFF",
+    "cloud-back": "#CCCCCC",
+    "sun": "#F2A844",
+    "ray": "#F2A844",
+    "moon": "#F2A844",
+    "star": "#FFFFFF",
+    "drop": "#FFFFFF",
+    "flake": "#FFFFFF",
+    "hail": "#FFFFFF",
+    "line": "#FFFFFF",
+    "bolt": "#F2A844",
+    "therm": "#FFFFFF",
+    "therm-fill": "#F2A844",
+    "umbrella": "#FFFFFF",
+    "tornado": "#FFFFFF",
+    "horizon": "#FFFFFF",
+    "arrow": "#FFFFFF"
+  },
+  "light": {
+    "cloud": "#034C76",
+    "cloud-back": "#307895",
+    "sun": "#A0610B",
+    "ray": "#A0610B",
+    "moon": "#A0610B",
+    "star": "#A0610B",
+    "drop": "#034C76",
+    "flake": "#034C76",
+    "hail": "#034C76",
+    "line": "#034C76",
+    "bolt": "#A0610B",
+    "therm": "#034C76",
+    "therm-fill": "#F2A844",
+    "umbrella": "#034C76",
+    "tornado": "#034C76",
+    "horizon": "#034C76",
+    "arrow": "#034C76"
+  },
+  "mono": {
+    "cloud": "#034C76",
+    "cloud-back": "#034C76",
+    "sun": "#034C76",
+    "ray": "#034C76",
+    "moon": "#034C76",
+    "star": "#034C76",
+    "drop": "#034C76",
+    "flake": "#034C76",
+    "hail": "#034C76",
+    "line": "#034C76",
+    "bolt": "#034C76",
+    "therm": "#034C76",
+    "therm-fill": "#034C76",
+    "umbrella": "#034C76",
+    "tornado": "#034C76",
+    "horizon": "#034C76",
+    "arrow": "#034C76"
+  },
+  "ratios": {
+    "dark": {
+      "arrow": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "bolt": {
+        "#1B1B1B": 8.58,
+        "#0B2341": 7.86,
+        "#2A2A2A (circle)": 7.15,
+        "#B3261E (red row)": 3.26,
+        "#FF6600 (orange row, not for this set)": 1.46
+      },
+      "cloud": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "cloud-back": {
+        "#1B1B1B": 10.73,
+        "#0B2341": 9.82,
+        "#2A2A2A (circle)": 8.94,
+        "#B3261E (red row)": 4.07,
+        "#FF6600 (orange row, not for this set)": 1.83
+      },
+      "drop": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "flake": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "hail": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "horizon": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "line": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "moon": {
+        "#1B1B1B": 8.58,
+        "#0B2341": 7.86,
+        "#2A2A2A (circle)": 7.15,
+        "#B3261E (red row)": 3.26,
+        "#FF6600 (orange row, not for this set)": 1.46
+      },
+      "ray": {
+        "#1B1B1B": 8.58,
+        "#0B2341": 7.86,
+        "#2A2A2A (circle)": 7.15,
+        "#B3261E (red row)": 3.26,
+        "#FF6600 (orange row, not for this set)": 1.46
+      },
+      "star": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "sun": {
+        "#1B1B1B": 8.58,
+        "#0B2341": 7.86,
+        "#2A2A2A (circle)": 7.15,
+        "#B3261E (red row)": 3.26,
+        "#FF6600 (orange row, not for this set)": 1.46
+      },
+      "therm": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "therm-fill": {
+        "#1B1B1B": 8.58,
+        "#0B2341": 7.86,
+        "#2A2A2A (circle)": 7.15,
+        "#B3261E (red row)": 3.26,
+        "#FF6600 (orange row, not for this set)": 1.46
+      },
+      "tornado": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      },
+      "umbrella": {
+        "#1B1B1B": 17.22,
+        "#0B2341": 15.78,
+        "#2A2A2A (circle)": 14.35,
+        "#B3261E (red row)": 6.54,
+        "#FF6600 (orange row, not for this set)": 2.94
+      }
+    },
+    "light": {
+      "arrow": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "bolt": {
+        "#FFFFFF": 4.99,
+        "#F5C400 (yellow row)": 3.04,
+        "#FF6600 (orange row, not for this set)": 1.7
+      },
+      "cloud": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "cloud-back": {
+        "#FFFFFF": 4.95,
+        "#F5C400 (yellow row)": 3.01,
+        "#FF6600 (orange row, not for this set)": 1.68
+      },
+      "drop": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "flake": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "hail": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "horizon": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "line": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "moon": {
+        "#FFFFFF": 4.99,
+        "#F5C400 (yellow row)": 3.04,
+        "#FF6600 (orange row, not for this set)": 1.7
+      },
+      "ray": {
+        "#FFFFFF": 4.99,
+        "#F5C400 (yellow row)": 3.04,
+        "#FF6600 (orange row, not for this set)": 1.7
+      },
+      "star": {
+        "#FFFFFF": 4.99,
+        "#F5C400 (yellow row)": 3.04,
+        "#FF6600 (orange row, not for this set)": 1.7
+      },
+      "sun": {
+        "#FFFFFF": 4.99,
+        "#F5C400 (yellow row)": 3.04,
+        "#FF6600 (orange row, not for this set)": 1.7
+      },
+      "therm": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "therm-fill": {
+        "#FFFFFF": 2.01,
+        "#F5C400 (yellow row)": 1.22,
+        "#FF6600 (orange row, not for this set)": 1.46
+      },
+      "tornado": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      },
+      "umbrella": {
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56,
+        "#FF6600 (orange row, not for this set)": 3.11
+      }
+    },
+    "mono": {
+      "arrow": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "bolt": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "cloud": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "cloud-back": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "drop": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "flake": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "hail": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "horizon": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "line": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "moon": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "ray": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "star": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "sun": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "therm": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "therm-fill": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "tornado": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      },
+      "umbrella": {
+        "#FF6600 (orange row)": 3.11,
+        "#F47920 (orange row)": 3.31,
+        "#FF8200 (orange row)": 3.67,
+        "#E87722 (orange row)": 3.08,
+        "#FFFFFF": 9.13,
+        "#F5C400 (yellow row)": 5.56
+      }
+    },
+    "info": {
+      "sets": {
+        "dark": "dark rows and the night circle (the pack colours as drawn)",
+        "light": "white, yellow and other light rows: holds >= 3:1 on #FFFFFF and on #F5C400",
+        "mono": "OPTIONAL, orange rows only, not built: every part in #034C76, because no orange or mid blue reaches 3:1 on orange. Overlapping parts merge into one silhouette (cloud pair, sun or moon behind cloud) and the thermometer mercury disappears into its tube, so warmer/colder differ by the arrow only."
+      },
+      "light orange": {
+        "hex": "#A0610B",
+        "hue_deg": 34.63,
+        "pack #F2A844 hue_deg": 34.48,
+        "method": "same HLS hue and saturation as #F2A844, lightness lowered until it holds 3:1 on #F5C400 (yellow), which also gives ~5:1 on #FFFFFF; revision 0 used #CB7A0E (3.32 white, 2.02 yellow)"
+      },
+      "light cloud-back": {
+        "hex": "#307895",
+        "hue_deg": 197.23,
+        "pack #3990B2 hue_deg": 196.86,
+        "method": "pack blue #3990B2 deepened at the same hue until it holds 3:1 on #F5C400; revision 0 used #3990B2 (2.20 on yellow)"
+      },
+      "internal (overlapping parts)": {
+        "dark cloud #FFFFFF vs cloud-back #CCCCCC (the pack)": 1.61,
+        "light cloud #034C76 vs cloud-back #307895": 1.85,
+        "dark sun #F2A844 vs cloud-back #CCCCCC (the pack)": 1.25,
+        "light sun vs cloud-back (separated by hue, not luminance)": 1.01,
+        "light sun vs cloud #034C76": 1.83,
+        "dark therm-fill #F2A844 vs therm #FFFFFF": 2.01,
+        "light therm-fill #F2A844 vs therm #034C76": 4.55
+      },
+      "method": "WCAG 2.x relative luminance contrast (L1+0.05)/(L2+0.05)"
+    }
+  }
+}

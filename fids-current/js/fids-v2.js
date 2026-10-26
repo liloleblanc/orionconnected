@@ -168,12 +168,13 @@
   // sunset: html.fids-day / html.fids-night from js/fids-sun.js).
   // v24042 — Day & night is the default: a page with no look stamped yet
   // draws it too, the same as an airport that has chosen nothing.
-  //   - The departures and arrivals ROWS take the icons drawn for Orion
-  //     Connected, no circle (v24054, wxRowHtml below): the white set on a
-  //     dark row, the colour set on a light one, picked per row by
-  //     fids-core.js _fidsRowWxSet: the colour set wherever white would not
-  //     hold 3:1 on the row's real ground, otherwise the side its own ink
-  //     takes (dark text: colour).
+  //   - The departures and arrivals ROWS take their own two sets, no circle
+  //     (v24054; v24086 the flat set in the style of Vecteezy pack 98703,
+  //     wxRowHtml below): the white set on a dark row, the colour set on a
+  //     light one, picked per row by fids-core.js _fidsRowWxSet: the colour
+  //     set wherever white would not hold 3:1 on the row's real ground,
+  //     otherwise the side its own ink takes (dark text: colour); a drawing
+  //     neither set can show whole there, in the row's ink.
   //   - The GATE screens take a circle: Colour = the colour icon on white,
   //     Solid = the glyph in the airline's brand colour on its deep colour
   //     (fids-core.js _wxDiscPair: WestJet teal on navy).
@@ -198,8 +199,7 @@
     return { disc: '#033F77', ink: '#FFFFFF' };
   }
   // v24054 — the night circle for the gate airline (fids-core.js _wxNightDisc:
-  // the ground under it lifted toward the airline's tint, or the charcoal the
-  // night icons were drawn on)
+  // the ground under it lifted toward the airline's tint, or a charcoal)
   function wxGateNightDisc() {
     try {
       const code = String(window._gateCurrentAirline || document.body.getAttribute('data-gate-airline') || '').trim().toUpperCase();
@@ -207,33 +207,39 @@
     } catch (e) {}
     return '#2B2B2A';
   }
-  // ── v24054 — THE ROWS WEAR THE TWO SETS DRAWN FOR ORION CONNECTED ─────
-  // One set is for a dark ground, one for a light ground: white shapes with
-  // a thin blue edge (rows-line-white/), and gradient shapes with dark navy
-  // rain and storm clouds (rows-line-color/). Both are the 20 drawings of
-  // the night set (night-line/) without its circles, under the same names,
-  // and every file shares one frame, so a row that changes set never moves
-  // (scripts/wx-icons/rows-line.py).
+  // ── v24054 — THE ROWS WEAR TWO SETS, ONE FOR A DARK ROW, ONE FOR A LIGHT ROW ──
+  // v24086 — both are the flat set in the style of Vecteezy pack 98703
+  // (licensed), the same shapes in two colourways: the pack's own colours
+  // for a dark ground (rows-flat-white/: white clouds, drops, flakes and
+  // lines, a #CCCCCC cloud behind, a #F2A844 sun, moon and bolt), and navy
+  // for a light ground (rows-flat-color/: #034C76 clouds, drops, flakes and
+  // lines, a #307895 cloud behind, a #A0610B sun, moon and bolt). The same
+  // drawings as the night set (night-flat/) under the same names, and every
+  // row file shares one frame, so a row that changes set never moves
+  // (scripts/wx-icons/flat.py).
   //   - The icon is the element's own background: the white file by
-  //     default, the colour file where the row is light and that drawing
-  //     can be seen there, and where neither can (the colour set's gold sun
-  //     and moon, pale clouds, white snow and fog on yellow Delayed, orange
-  //     Final call and the light rows; the white set's thin lines on red
-  //     Cancelled) the white file's own shapes as a mask, filled with the
-  //     row's text colour (navy on yellow and orange, white on red).
+  //     default, the colour file where the row is light and every part of
+  //     that drawing can be seen there, and where neither can (a sun, moon,
+  //     bolt or cloud behind under 3:1: on the darker Delayed yellow, orange
+  //     Final call, red Cancelled and the mid-tone teal, cyan, blue and gold
+  //     rows) the ink copy: the drawing's own shapes as a mask, each part cut
+  //     back from the parts in front of it (rows-flat-ink/, --wxr-m), filled
+  //     with the row's text colour (navy on yellow and orange, white on blue
+  //     and red).
   //     fids-core.js _fidsRowWxSet decides, icon by icon, on the colour it
   //     really sits on, once per render, and writes data-wx-set=
   //     "white|colour|ink" on the icon (css/display-overrides.css, the
   //     v24054 block). Nothing is redrawn: an operator's new colours
   //     re-render the rows and the icons follow.
   //   - The name comes from the code by fids-core.js _wxAnimIcon, the
-  //     mapping every set drawn for Orion Connected shares: MET's 'fair' is
+  //     mapping the row and night sets share: MET's 'fair' is
   //     a clear sky, 'cloudy' the two clouds (overcast), and the clear and
   //     partly cloudy skies take their night form (moon) while it is dark at
   //     the place the weather is for (js/fids-sun.js, the destination's own
   //     sunrise and sunset; the board's own day or night without one).
-  const WX_ROW_WHITE = '/logos/weather/rows-line-white/';
-  const WX_ROW_COLOUR = '/logos/weather/rows-line-color/';
+  const WX_ROW_WHITE = '/logos/weather/rows-flat-white/';
+  const WX_ROW_COLOUR = '/logos/weather/rows-flat-color/';
+  const WX_ROW_INK = '/logos/weather/rows-flat-ink/';
   const WX_ROW_NAMES = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'lightning-bolt':1,'mist':1,'overcast-day':1,'overcast-night':1,'overcast':1,'partly-cloudy-day-snow':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'snowflake':1,'sunrise':1,'thermometer-colder':1,'thermometer-warmer':1,'thunderstorms-day-rain':1,'thunderstorms-night-rain':1,'thunderstorms-rain':1,'thunderstorms':1,'tornado':1,'umbrella':1,'wind-cloud':1,'wind':1 };
   // dark at the place the weather is for (an IATA code), else at the board
   function wxRowNight(at) {
@@ -265,7 +271,8 @@
   function wxRowHtml(name, size) {
     const v = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
     return '<span class="fids-wx-cell fids-wx-row" data-wxg="' + name + '" aria-hidden="true" style="display:inline-block;width:' + size + 'px;height:' + size + 'px;flex-shrink:0;vertical-align:middle;'
-      + '--wxr-w:url(' + WX_ROW_WHITE + name + '.svg' + v + ');--wxr-c:url(' + WX_ROW_COLOUR + name + '.svg' + v + ');"></span>';
+      + '--wxr-w:url(' + WX_ROW_WHITE + name + '.svg' + v + ');--wxr-c:url(' + WX_ROW_COLOUR + name + '.svg' + v + ');'
+      + '--wxr-m:url(' + WX_ROW_INK + name + '.svg' + v + ');"></span>';
   }
   function wxLookHtml(look, nameKey, size) {
     const v = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
@@ -273,17 +280,17 @@
     if (look === 'colour') {
       return '<img class="fids-wx-cell fids-wx-disc" data-wxg="' + nameKey + '" src="/logos/weather/disc-day/' + nameKey + '.svg' + v + '" alt="" aria-hidden="true" style="' + box + '">';
     }
-    // v24054 — at night the circle look draws the night icons drawn for
-    // Orion Connected (logos/weather/night-line/): the element's round
+    // v24054 — at night the circle look draws the night icons
+    // (logos/weather/night-flat/, v24086 the flat set): the element's round
     // background is the night circle, the icon its ::after on the whole of
-    // it, each file's frame being the circle it was drawn on
+    // it, each file's frame being the circle
     // (css/display-overrides.css .fids-wx-line). A Solid chosen by day keeps
     // the glyph below. No element of today's gate layout shows this circle
     // (its header #hdrTemp is hidden); it is wired so the gate and the card
     // agree if one does.
     if (look === 'solid' && document.documentElement.classList.contains('fids-night')) {
       return '<span class="fids-wx-cell fids-wx-disc fids-wx-line" data-wxg="' + nameKey + '" aria-hidden="true" style="' + box
-        + '--wxn-disc:' + wxGateNightDisc() + ';--wxn-icon:url(/logos/weather/night-line/' + nameKey + '.svg' + v + ');"></span>';
+        + '--wxn-disc:' + wxGateNightDisc() + ';--wxn-icon:url(/logos/weather/night-flat/' + nameKey + '.svg' + v + ');"></span>';
     }
     // the circle is the element's own round background; the glyph a mask
     // painted in the brand colour (css/display-overrides.css .fids-wx-pair)
@@ -321,7 +328,7 @@
       }
     }
     const _look = wxLook(opts);
-    // v24054 — the rows: the sets drawn for Orion Connected (wxRowHtml)
+    // v24054 — the rows: their two sets (wxRowHtml)
     if (_look === 'row') {
       const rn = wxRowName(code, opts && opts.at);
       if (rn) return wxRowHtml(rn, size);
