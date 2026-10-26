@@ -180,3 +180,24 @@ test('the distance is measured from the drawn aeroplane, every second', () => {
   assert.match(CORE, /<span data-gtelem="dist-km">' \+ BoardStrings\.num\(_distKm\) \+ '<\/span>/);
   assert.match(fnSource(CORE, '_writeGateTelemDom'), /else if \(kind === 'dist-km'\) v = distKm;/);
 });
+
+test('a re-anchor resumes only from a spot on the new route, never onto the runway from miles off', () => {
+  const frac = new Function(fnSource(CORE, '_gateRouteFrac') + '\nreturn _gateRouteFrac;')();
+  // the route rebuilt through the 17:28:49 fix, ending at the touchdown point
+  const route = [[45.6729, -68.372], FIX_1728, [46.19, -64.50], [46.124, -64.655], [46.112, -64.678]];
+  const nm = (a, b) => { const r = Math.PI / 180, dl = (b[0] - a[0]) * r, dn = (b[1] - a[1]) * r;
+    const h = Math.sin(dl / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dn / 2) ** 2;
+    return 2 * 3440.065 * Math.asin(Math.sqrt(h)); };
+  const cum = [0]; for (let i = 1; i < route.length; i++) cum.push(cum[i - 1] + nm(route[i - 1], route[i]));
+  const total = cum[cum.length - 1];
+  // the marker had glided from OpenSky's last position towards runway 11, west of the field
+  const out = {};
+  const f = frac(route, cum, total, [46.1173, -64.8661], out);
+  assert.ok(f > 0.99, 'its nearest point on the new route is the runway end');
+  assert.ok(out.offNm > 2, 'and it is ' + out.offNm.toFixed(1) + ' nm off the route: no resume');
+  const on = {};
+  frac(route, cum, total, [46.2525, -64.6583], on);
+  assert.ok(on.offNm < 2, 'a marker on the new final resumes as before');
+  assert.equal(frac(route, cum, total, [44.9, -73.0]) >= 0, true, 'the fourth argument stays optional');
+  assert.match(fnSource(CORE, '_startGateMapGlide'), /if \(Math\.abs\(_dp\) \* totalNm < 40 && !\(typeof _rOff\.offNm === 'number' && _rOff\.offNm > 2\)\) \{/);
+});

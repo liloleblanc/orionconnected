@@ -48260,7 +48260,9 @@ var _GLIDE_DR_MAX_MS = 5 * 60000;
 // route's length: the nearest point on any segment (flat-earth inside a
 // segment, which is metres-exact at map scale). The glide resumes a new fix
 // from where the marker is DRAWN, measured on the NEW route (_startGateMapGlide).
-function _gateRouteFrac(route, cum, totalNm, pt) {
+// v24088 — `out`, when given, also gets offNm: how far the point is from the
+// route (nautical miles; 60 to a degree on the flat-earth scale used here).
+function _gateRouteFrac(route, cum, totalNm, pt, out) {
   if (!route || route.length < 2 || !pt || !(totalNm > 0)) return null;
   var kx = Math.cos(pt[0] * Math.PI / 180), best = Infinity, bestNm = 0;
   for (var k = 0; k < route.length - 1; k++) {
@@ -48271,6 +48273,7 @@ function _gateRouteFrac(route, cum, totalNm, pt) {
     var cx = ax + t * dx, cy = ay + t * dy, d2 = cx * cx + cy * cy;
     if (d2 < best) { best = d2; bestNm = cum[k] + t * (cum[k + 1] - cum[k]); }
   }
+  if (out) out.offNm = Math.sqrt(best) * 60;
   return Math.max(0, Math.min(1, bestNm / totalNm));
 }
 function _stopGateMapGlide() {
@@ -50817,9 +50820,10 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // sideways and cutting sharp turns (Moncton, AC1986, 2026-10-11).
       // Measure the drawn point on the new route instead.
       var _pRes = _gateGlide.p;
+      var _rOff = {};
       try {
         if (_gateGlide.ll) {
-          var _pDrawn = _gateRouteFrac(route, _cum, _routeNm, _gateGlide.ll);
+          var _pDrawn = _gateRouteFrac(route, _cum, _routeNm, _gateGlide.ll, _rOff);
           if (typeof _pDrawn === 'number') _pRes = _pDrawn;
         }
       } catch (eRes) {}
@@ -50827,7 +50831,14 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // Tolerance in NAUTICAL MILES, not route fraction: the route is rebuilt
       // through the live position on every fix, so totalNm shrinks on approach
       // and a fixed fraction stops meaning the same thing (v22927).
-      if (Math.abs(_dp) * totalNm < 40) {
+      // v24088 — AND ONLY FROM A SPOT ON THE NEW ROUTE. A marker that dead-
+      // reckoned towards the wrong runway (OpenSky's last position, then a
+      // Flightradar24 fix from the other side of the field) is miles off the
+      // route rebuilt through the new fix, and its nearest point there can be
+      // the touchdown point: the aeroplane was planted on the runway at
+      // 4,000 ft with "1 km" (replayed, 2026-10-26). Over 2 nm off the route,
+      // the marker goes to where the fix puts the aeroplane now.
+      if (Math.abs(_dp) * totalNm < 40 && !(typeof _rOff.offNm === 'number' && _rOff.offNm > 2)) {
         p = _pRes;
         _errP = _dp;
       }
