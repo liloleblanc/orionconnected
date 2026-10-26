@@ -22813,7 +22813,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24086') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24087') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
@@ -25934,11 +25934,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    for the whole boarding period (FINAL CALL and GATE CLOSED replace it only
    with the flight); the sign under it shows who may line up: pictograms and
    huge numbers first, words second.
-   · ONE CENTRE (.g8-sign-one, the default): the sign one panel wide, the
+   · ONE CENTRE (.g8-sign-one, ?sign=centre): the sign one panel wide, the
      same frame and the same two discs; the panel in the airline's priority
      colour (now) for the left-lane calls and its general colour (next) for
      the general ones, as the two panels are. THE TWO PANELS (.g8-sign-two,
-     ?sign=panels) adapt the same calls to the frame the sign had.
+     the default again since 2026-10-25: priority on the left for the whole
+     of boarding, the current call on the right, the block at the end of
+     the sign's rules) adapt the same calls to the frame the sign had.
    · THE UNIT AND ITS NUMBER in capitals (ZONE 1, GROUP 4), the switch's
      words too (GENERAL BOARDING, ALL ZONES); text-transform touches Latin
      script only, Japanese, Chinese and Arabic are left as written.
@@ -26189,7 +26191,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-closed-body .g8-sign-go { font-size: min(5vh, 3.6vw) !important; }
 
 /* ══ BOARDING SEQUENCES — A LONG LIST IN THE TWO PANELS, ONE LANGUAGE AT A TIME ══
-   In the two panels (?sign=panels) a panel is half the screen, and a long
+   In the two panels (the default) a panel is half the screen, and a long
    who-list in both of the board's languages, one under the other, ran under
    the arrow discs (American's Groups 1-4 called together on an E175, twelve
    items a language, at 1680x1050) and brought the call's number down with
@@ -26203,6 +26205,102 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt > .g8-who-blk { grid-area: 1 / 1 !important; margin-top: 0 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt:not(.alt-b) > .g8-who-blk ~ .g8-who-blk,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-alt.alt-b > .g8-who-blk:first-child { visibility: hidden !important; }
+
+/* ══ 2026-10-25 — THE TWO PANELS, THE DEFAULT AGAIN: PRIORITY STAYS ON SCREEN ══
+   (fids-core.js, _G8_SIGN_LAYOUT.) Real gates keep who boards in priority on
+   the screen for the whole of boarding. LEFT, the airline's priority group
+   from pre-boarding to the final call (_g8SeqPrio): Priority, its own unit
+   and numbers, who it is for, "Boarding next" until its first call and the
+   check with "Boarding now" from it (.g8-sign-status), each number not yet
+   called faint (.g8-v-wait). RIGHT,
+   the current call exactly as the one centre shows it (_g8SeqCentre), its
+   unit and number at the one centre's own sizes (ZONE 3 at 216 px at
+   1920x1080; a panel is a size container, .g8-board-col, so its cqw is the
+   panel's own width). Every list at a readable size, never squeezed: when a
+   panel is short it pages (_fidsSignColPage: one language at a time, then
+   whole items a page, ten seconds a page), the box as tall as its tallest
+   page.
+   Layout only: no colour of its own (every airline's panels keep theirs,
+   WestJet's navy lettering on its teal and the switch's violet included),
+   and nothing moves or flashes. ×17, over the two panels' ×16 rules above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-right .g8-sign-row .g8-sign-value:not(.g8-grp-txt) { font-size: min(20vh, 36cqw, 35.6vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-right .g8-sign-row .g8-sign-label { font-size: min(10vh, 18cqw, 17.8vw) !important; font-weight: 900 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-right .g8-sign-row { gap: min(2.6vh, 4.4cqw, 4.6vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-sign-row .g8-sign-value:not(.g8-grp-txt) { font-size: min(12.5vh, 22cqw, 22.2vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-sign-row .g8-sign-label { font-size: min(6.25vh, 11cqw, 11.1vw) !important; font-weight: 900 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-sign-row { gap: min(2vh, 3.4cqw, 3.6vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-who { font-size: min(3.6vh, 5.9cqw, 6.4vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster { font-size: min(2.6vh, 4.8cqw, 4.6vw) !important; line-height: 1.2 !important; max-width: 96% !important; flex: 0 0 auto !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster .g8-who-blk + .g8-who-blk { margin-top: .4em !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-chk { display: inline-block !important; vertical-align: -.08em !important; margin: 0 .3em 0 0 !important; line-height: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-chk .g8-picto { display: block !important; height: .86em !important; width: .86em !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-v-wait { opacity: .4 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-status { font-size: min(3.4vh, 6cqw, 6vw) !important; font-weight: 800 !important; line-height: 1.08 !important; max-width: 100% !important; flex: 0 0 auto !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-paged .g8-pg-off { display: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-roster.is-paged .g8-pg-last > .g8-who-d { display: none !important; }
+/* a word over the current call's number where beside it the number would
+   come under 80% (is-col, _fidsSignRowFit): one line of its own, the number
+   under it at its size */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-right .g8-sign-row.is-col { flex-direction: column !important; gap: min(.6vh, 1cqw, 1.1vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-right .g8-sign-row.is-col .g8-sign-label { font-size: min(5.6vh, 9cqw, 10vw) !important; }
+/* the panels' own top: the title closer to the band over it */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-col { padding-top: min(2.2vh, 3.9vw) !important; }
+
+/* ══ 2026-10-26 — THE TWO PANELS AFTER REVIEW: MARKS, ONE FORM, THE SWITCH LEADS ══
+   (fids-core.js: _g8SeqPrio, _g8SeqPrioVal, _g8SeqPrioWho, _fidsSignRowFit,
+   _fidsSignPaginate, _fidsSignWhoAlt, _fidsSignSwitchLead.)
+   · A name in the priority group's list not called yet is faint, as its
+     number is (.g8-who-wait), so « Boarding now » never stands over a tier
+     still to come; an un-numbered priority call (American's ConciergeKey,
+     Alaska's and Southwest's Priority Boarding) is its symbol in the row,
+     the height of a digit, marked the same way (.g8-v-sym).
+   · The group's numbers in one written form (1 • 2 • 3 • 4) on one line
+     (.g8-v-seq), only their ink changing.
+   · A who-item that wraps has balanced lines (its last two words are held
+     together in fids-core.js), never one word alone on its last line.
+   · Beside the priority group's number its word gives way first (to 60%);
+     where the number would still come under 65% (American's symbol and
+     four groups, Delta's four zones in German), the word goes over it on
+     its own line, as the right panel's does (is-col), except on a short
+     panel (the final call's, under its taller bar), where a number half its
+     size or more keeps its word beside it and its list the room.
+   · THE SWITCH'S GROUP OF PASSENGERS THE SIZE OF A CALL'S NUMBER (20vh, as
+     wide as the panel allows), so the call to most passengers leads the
+     sign; its words fill its panel's width (the pair pass).
+   · The list and the line under the number sized by the panel's own width
+     (a panel is a size container), not the screen's: on a portrait screen
+     1.7vw held the list at 14.7 px in a 540 px panel.
+   Layout and ink only (opacity): no colour of its own, nothing moves or
+   flashes. ×17, as the block above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-who-i.g8-who-wait { opacity: .65 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value .g8-v-seq { display: inline-block !important; white-space: nowrap !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value .g8-v-sym { display: inline-block !important; line-height: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value .g8-v-sym .g8-picto { display: inline-block !important; height: .74em !important; width: .74em !important; vertical-align: baseline !important; fill: currentColor !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-v-sym.is-wait { opacity: .4 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-roster .g8-who-i { text-wrap: balance !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-sign-row.is-col { flex-direction: column !important; gap: min(.4vh, .7cqw, .8vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-sign-row.is-col .g8-sign-label { font-size: min(4.2vh, 7.4cqw, 7.5vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .is-switch .g8-sign-picto .g8-picto { height: min(20vh, 30cqw, 26.7vw) !important; }
+/* the height the lists need, won back before a list takes another page: the
+   panels' top and the gaps between their lines tighter, a number's line box
+   no taller than its digits need (a numeral has no descender), the panel's
+   foot down to the discs' own top */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-col { padding-top: min(1.4vh, 2.5vw) !important; padding-bottom: calc(min(2.4vh, 4.3vw) + min(11vh, 20cqw, 19.6vw) + min(.5vh, .9vw)) !important; gap: min(.6vh, 1vw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-col.has-note .g8-sign-row { margin: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-left .g8-sign-row .g8-sign-value:not(.g8-grp-txt) { line-height: .8 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-right .g8-sign-row .g8-sign-value:not(.g8-grp-txt) { line-height: .82 !important; }
+/* the lane line between the discs at the list's size at least (it measured
+   20 px at 1680x1050, under the lists' 21.8 px floor): the discs a little
+   nearer the panel's edges and the line right up to them, its size from
+   the panel's width */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-arrow.l { left: 2% !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-arrow.r { right: 2% !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two.has-instr .g8-sign-col .g8-sign-lanes { left: calc(2% + min(11vh, 20cqw, 19.6vw) + min(.3vh, .5vw)) !important; right: calc(2% + min(11vh, 20cqw, 19.6vw) + min(.3vh, .5vw)) !important; font-size: min(3.2vh, 4cqw, 5.7vw) !important; }
+/* the state line's height the same whatever its words ("Nächstes Boarding"
+   and "✓ Jetzt Boarding" are fitted to different sizes): the list's room,
+   so its pages and the number beside them, do not change when the first
+   call is made */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign.g8-sign-two .g8-sign-status { line-height: calc(min(3.4vh, 6cqw, 6vw) * 1.08) !important; }
 
 /* ══ EARTH, NOW — THE PLANET UNDER THE DEPARTURES AND ARRIVALS ══════════════
    js/fids-earth.js draws the space under the flight rows as the Earth from
