@@ -500,8 +500,9 @@ test('both small-map controllers and the big map take the aeroplane from the one
   }
 });
 
-test('the glide stops dead-reckoning 5 minutes after its last real fix, and "healthy" means a fresh fix on this leg', () => {
-  assert.match(CORE, /var _GLIDE_DR_MAX_MS = 5 \* 60000;/);
+test('the glide stops dead-reckoning 8 minutes after its last real fix, and "healthy" means a fresh fix on this leg', () => {
+  // v24088 — 8, not 5: fixes reach a gate every 4–6 minutes, already 1–3 minutes old
+  assert.match(CORE, /var _GLIDE_DR_MAX_MS = 8 \* 60000;/);
   const glide = fnSource('_startGateMapGlide');
   assert.match(glide, /^function _startGateMapGlide\(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata, fixAt\)/);
   assert.match(glide, /if \(elapsed > _drLeftMs\) elapsed = _drLeftMs;/);

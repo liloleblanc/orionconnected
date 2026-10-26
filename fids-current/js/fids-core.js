@@ -7845,9 +7845,11 @@ function _gateTelemModel() {
           // while it was at 4,300 ft and then 1,900 ft (2026-10-26). A
           // carried descent now stops at a 3° path to this field (300 ft a
           // nautical mile) from where the map draws the aeroplane.
+          // (and never above the digits already on screen: a floor that
+          // switches on at 40 nm must not make a descent read as a climb)
           if (altRate < 0) {
             var _flr = _gateTelemPathFloorFt();
-            if (_flr !== null) alt = Math.max(alt, Math.min(altReal, _flr));
+            if (_flr !== null) alt = Math.max(alt, Math.min(altReal, _flr, typeof T.alt === 'number' ? T.alt : altReal));
           }
         }
         if (typeof T.prevSpd === 'number' && typeof spd === 'number') {
@@ -7868,14 +7870,28 @@ function _gateTelemPathFloorFt() {
   try {
     var h = _lookupAirport(window._gateIata);
     if (!h) return null;
-    var ll = (typeof _gateGlide !== 'undefined' && _gateGlide && _gateGlide.raf && _gateGlide.ll) ? _gateGlide.ll : null;
-    var mf = window._gateMapFix;
-    if (!ll && mf && typeof mf.lat === 'number' && typeof mf.lng === 'number') ll = [mf.lat, mf.lng];
-    if (!ll) return null;
-    var nm = _gcNm(ll, h);
+    var nm = _gateTelemSpotNm(h, false);
     if (!(nm < 40)) return null;
     return Math.max(0, (nm - 1) * 300);
   } catch (e) { return null; }
+}
+// v24088 — how far the aeroplane the map draws is from `h` (nm): the glide's
+// spot, but never closer than the newest real fix allows at its own speed, so
+// a marker that outruns the aeroplane (a hold, vectors) cannot pull the
+// distance or the approach floor down with it; the fix itself with no glide
+// (null when `glideOnly`). Only for this gate's inbound.
+function _gateTelemSpotNm(h, glideOnly) {
+  var nm = null;
+  if (typeof _gateGlide !== 'undefined' && _gateGlide && _gateGlide.raf && _gateGlide.ll) nm = _gcNm(_gateGlide.ll, h);
+  else if (glideOnly) return null;
+  var mf = window._gateMapFix, inb = window._gateInbound;
+  if (mf && typeof mf.lat === 'number' && typeof mf.lng === 'number' && (!mf.key || !inb || mf.key === String(inb.flight || ''))) {
+    var fx = _gcNm([mf.lat, mf.lng], h);
+    var flown = (typeof mf.spd === 'number' && mf.spd > 0 && typeof mf.ts === 'number' && mf.ts > 0)
+      ? mf.spd * Math.max(0, Date.now() - mf.ts) / 3600000 : 0;
+    nm = (nm === null) ? fx : Math.max(nm, fx - flown);
+  }
+  return nm;
 }
 // v24088 — THE DISTANCE FOLLOWS THE AEROPLANE THE MAP DRAWS. It was worked
 // out once, from the fix the panel was built on, and the panel is not rebuilt
@@ -7887,7 +7903,8 @@ function _gateTelemDistKm() {
     if (typeof _gateGlide === 'undefined' || !_gateGlide || !_gateGlide.raf || !_gateGlide.ll || !_gateGlide.d) return null;
     var dc = (typeof AIRPORT_COORDS !== 'undefined') ? AIRPORT_COORDS[String(window._gateIata || '').toUpperCase()] : null;
     if (!dc || _gcNm(_gateGlide.d, dc) > 5) return null;
-    return Math.round(_gcNm(_gateGlide.ll, dc) * 1.852);
+    var nm = _gateTelemSpotNm(dc, true);
+    return (nm === null) ? null : Math.round(nm * 1.852);
   } catch (e) { return null; }
 }
 // Write the current modeled numbers into every on-screen telemetry span.
@@ -8611,7 +8628,11 @@ try {
                       // glide stops dead-reckoning 5 minutes after the last real
                       // fix (_GLIDE_DR_MAX_MS) and waits for the next one.
                       || !!(typeof _gateGlide !== 'undefined' && _gateGlide.fixAt > 0
-                            && Date.now() - _gateGlide.fixAt > _GLIDE_DR_MAX_MS);
+                            && Date.now() - _gateGlide.fixAt > (_gateGlide.drMaxMs || _GLIDE_DR_MAX_MS))
+                      // v24088 — nor one the glide holds: nothing gained along the
+                      // route, waiting for the aeroplane to catch it up, or
+                      // stopped a mile before the threshold
+                      || !!(typeof _gateGlide !== 'undefined' && (_gateGlide.still === true || _gateGlide.holding === true));
             if (!_mwPrev || _mwPrev.key !== _mwKey) {
               window._gateMarkerMotion = { key: _mwKey, ts: Date.now() };
             } else if (!_mwOnG && Date.now() - _mwPrev.ts > 60000) {
@@ -16512,6 +16533,9 @@ function _buildV2MapCol(ctx, vars) {
                     * Math.sin(_dLo / 2) * Math.sin(_dLo / 2);
             _distKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(_ha), Math.sqrt(1 - _ha)));
           }
+          // v24088 — a repaint prints the live value too, not the fix's
+          var _dLive = _gateTelemDistKm();
+          if (_distKm !== null && _dLive !== null) _distKm = _dLive;
         } catch (e) {}
         // v23202 — labels and the altitude unit follow the CHOSEN languages
         // via _gateLbl, like every other label on the board. A single-language
@@ -41449,15 +41473,25 @@ function _adsbNearFinal(fl) {
     if (typeof _gateRawLanded === 'function' && _gateRawLanded(inb)) return false;
     var arr = inb._revTs || inb._sortTs || 0, left = arr - Date.now();
     if (arr && left < 30 * 60000 && left > -20 * 60000) return true;
+    // (a held fix only when it is this flight's and under 10 minutes old: a
+    // board left running holds yesterday's last fix for the same number)
     var last = window._adsbLast && window._adsbLast[String(inb.flight).toUpperCase().replace(/\s+/g, '')];
     var h = (typeof _lookupAirport === 'function') ? _lookupAirport(window._gateIata) : null;
-    return !!(last && h && typeof last.lat === 'number' && typeof last.lng === 'number' && !last.onGround && _gcNm([last.lat, last.lng], h) < 60);
+    return !!(last && h && typeof last.lat === 'number' && typeof last.lng === 'number' && !last.onGround
+      && typeof last.at === 'number' && Date.now() - _adsbFixAt(last) < 10 * 60000
+      && (!last.fl || dg(last.fl) === dg(inb.flight))
+      && _gcNm([last.lat, last.lng], h) < 60);
   } catch (e) { return false; }
 }
 async function _adsbFetchOne(path, near) {
   var key = String(path);
   var hit = _adsbCache[key];
-  if (hit && (Date.now() - hit.at) < _ADSB_TTL_MS) return hit.ac;
+  // v24088 — a cached answer is older by its time in the cache: its fix time
+  // (at − seen_pos) must not move forward on every re-read (_adsbNewerHeld)
+  if (hit && (Date.now() - hit.at) < _ADSB_TTL_MS) {
+    return (hit.ac && typeof hit.ac.seen_pos === 'number')
+      ? Object.assign({}, hit.ac, { seen_pos: hit.ac.seen_pos + (Date.now() - hit.at) / 1000 }) : hit.ac;
+  }
   var ctl = null, timer = null;
   try {
     // A stalled community endpoint must never hold up the gate poll.
@@ -41561,7 +41595,11 @@ async function _oskyTelemetry(fl, names, hexId, tracked, ourDigits) {
   if (!hex && !cs.length) return null;
   var q = '?ap=' + ap + '&f=' + encodeURIComponent(fl) + (cs.length ? '&cs=' + cs.join(',') : '') + (hex ? '&hex=' + hex : '') + '&p=' + (tracked ? 2 : 1);
   var hit = _oskyCache[q], ac = null;
-  if (hit && (now - hit.at) < _OSKY_TTL_MS) ac = hit.ac;
+  // v24088 — aged by its time in this cache, as _adsbFetchOne's
+  if (hit && (now - hit.at) < _OSKY_TTL_MS) {
+    ac = (hit.ac && typeof hit.ac.seen_pos === 'number')
+      ? Object.assign({}, hit.ac, { seen_pos: hit.ac.seen_pos + (now - hit.at) / 1000 }) : hit.ac;
+  }
   else {
     var ctl = null, timer = null;
     try {
@@ -41677,18 +41715,20 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
   var _osk = null;
   try { _osk = await _oskyTelemetry(_oskFl, [_cs, _fn, _icaoCallsign(_cs), _icaoCallsign(_fn)], _hexId, tracked === true, _ourDigits); } catch (e) { _osk = null; }
   // v24088 — AN OLD OPENSKY POSITION DOES NOT END THE SEARCH. OpenSky's box
-  // is asked every 2 minutes and shared 30 s, so a position older than 150 s
-  // means it has lost the aeroplane (Moncton's approach is below its
-  // receivers): Flightradar24 is asked as well, and the old position is kept
-  // only when Flightradar24 has nothing.
-  if (_osk && !(typeof _osk.age === 'number' && _osk.age > 150)) {
+  // is asked every 2 minutes, then waits in KV and two caches, so a position
+  // older than that means it has lost the aeroplane (Moncton's approach is
+  // below its receivers): Flightradar24 is asked as well, and the old
+  // position is kept only when Flightradar24 has nothing.
+  var _near = _adsbNearFinal(_fn || _cs);
+  // (240 s: past the relay's 2-minute round, KV and the edge cache on a
+  // healthy track; 150 s for the gate's own arrival near the field)
+  if (_osk && !(typeof _osk.age === 'number' && _osk.age > (_near ? 150 : 240))) {
     _osk.fl = _fn || _cs;
     var _okH = _adsbNewerHeld(_osk, [_r, _cs, _fn]);
     if (_okH) return _okH;
     _adsbPublish(_osk, _r, _cs, _fn);
     return _osk;
   }
-  var _near = _adsbNearFinal(_fn || _cs);
   var _numberQuiet = false;
   for (var i = 0; i < tries.length; i++) {
     // FR24 already said nothing is flying under our number: a guessed
@@ -48252,9 +48292,15 @@ function _gateGlideFixFresh(now) {
     return !wh || wh.kind === 'fix' || wh.kind === 'origin-ground';
   } catch (e) { return false; }
 }
-// Dead reckoning stops advancing 5 minutes after the last real fix: past that
+// Dead reckoning stops advancing 8 minutes after the last real fix: past that
 // a moving marker is a guess about an aeroplane nobody has heard from.
-var _GLIDE_DR_MAX_MS = 5 * 60000;
+// v24088 — 8, not 5: Flightradar24's fixes reach a gate every 4–6 minutes and
+// already 1–3 minutes old, so a 5-minute limit stopped the marker for the last
+// minute or two of nearly every gap (replayed: 2.6 nm behind at each fix). The
+// approach can no longer be flown on to the runway by it (_startGateMapGlide
+// stops a mile before the threshold without a fix inside it), and a fix stays
+// evidence for 15 minutes (_gateFixCheck).
+var _GLIDE_DR_MAX_MS = 8 * 60000;
 
 // v24034 — WHERE A DRAWN POINT SITS ALONG A ROUTE, as a fraction of the
 // route's length: the nearest point on any segment (flat-earth inside a
@@ -48284,6 +48330,7 @@ function _stopGateMapGlide() {
   try { if (_gateGlide.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateGlide.raf); } catch (e) {}
   _gateGlide.timer = null;
   _gateGlide.raf = null;
+  _gateGlide.holding = false; _gateGlide.still = false;   // v24088 — a stopped glide holds nothing
 }
 
 // v23905 — PARKED AT THE ORIGIN. A live fix on the ground within 5 nm of the
@@ -50722,7 +50769,8 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
   // line and the animated line stay one line.
-  var _legB = _runwayFinalPath(_pl, d, destIata) || _gcFullRoute(_pl, d, _vB);
+  var _rwFinal = _runwayFinalPath(_pl, d, destIata);
+  var _legB = _rwFinal || _gcFullRoute(_pl, d, _vB);
   var route = _legA.concat(_legB.slice(1));
   var n = route.length;
   // ── v22952 — WALK THE ROUTE BY DISTANCE, NOT BY VERTEX INDEX.
@@ -50764,9 +50812,64 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // the field from about 17:30 while it flew the approach. The truth is now
   // the fix carried along the route for its age at its own speed (no further
   // than the glide may dead-reckon, _GLIDE_DR_MAX_MS).
+  // (this glide's dead-reckoning limit; holds and vectors are handled by
+  // what the fixes say the aeroplane gained, below, not by a shorter limit:
+  // with Flightradar24's allowance this tight, approach fixes still come
+  // 4–6 minutes apart once the arrivals' reserve is spent)
+  var _drMax = _GLIDE_DR_MAX_MS;
   var _fixAgeMs = (typeof fixAt === 'number' && isFinite(fixAt) && fixAt > 0)
-    ? Math.max(0, Math.min(_GLIDE_DR_MAX_MS, Date.now() - fixAt)) : 0;
-  var _nowP = Math.min(Math.max(_seedP, 1 - 0.05 / _routeNm), _seedP + (speedKts / 3600000 / _routeNm) * _fixAgeMs);
+    ? Math.max(0, Math.min(_drMax, Date.now() - fixAt)) : 0;
+  // And never past a mile before the runway threshold without a fix inside
+  // it: dead reckoning that outruns the aeroplane (a hold, vectors, a downwind
+  // longer than the drawn final) stops short of the field instead of sitting
+  // on the touchdown point reading "1 km". Touchdown itself comes from a
+  // ground fix or the feed's Arrived (v24034).
+  var _drCapP = Math.max(0.9, _seedP, 1 - 0.05 / _routeNm);
+  if (_rwFinal && n >= 3) {
+    var _preP = (_cum[n - 2] - 1) / _routeNm, _thrP = _cum[n - 2] / _routeNm;
+    // (a fix already inside that mile may be carried on to the threshold)
+    _drCapP = Math.min(_drCapP, _seedP >= _preP ? Math.max(_seedP, _thrP) : _preP);
+  }
+  // v24088 — THE ROUTE GAINS ONLY WHAT THE AEROPLANE FLIES ALONG IT. The
+  // route runs straight to the runway, the aeroplane does not: outbound in a
+  // hold, downwind, on a vector away, its own track points across or away
+  // from the line and it gains nothing along it, yet the marker was carried
+  // towards the field at full speed (replayed: drawn 4.5 nm out while it held
+  // 22 nm out). The glide's speed is the part of the live track along the
+  // route here (cos of the angle; none when it points away), the full speed
+  // when there is no live track.
+  var _close = 1;
+  try {
+    var _trk = (typeof _gateHeading === 'function') ? _gateHeading(null) : null;
+    if (typeof _trk === 'number' && isFinite(_trk)) {
+      var _sNm = _seedP * _routeNm;
+      var _rHdg = bearingBetween(_ptAtNm(_sNm), _ptAtNm(Math.min(_routeNm, _sNm + 2)));
+      if (isFinite(_rHdg)) _close = Math.max(0, Math.min(1, Math.cos(((_trk - _rHdg + 540) % 360 - 180) * Math.PI / 180)));
+    }
+  } catch (eC) { _close = 1; }
+  // ...and no more than the fixes themselves say it gained: the distance to
+  // the field at this fix and at the one before (30 s to 10 minutes apart,
+  // same leg). A track caught on a hold's inbound leg points at the field
+  // while the aeroplane goes round and gains nothing (replayed: still drawn
+  // 1.7 nm out while it held 25 nm out).
+  try {
+    var _fxA = (typeof fixAt === 'number' && isFinite(fixAt) && fixAt > 0) ? fixAt : null;
+    var _fh = _gateGlide.fixHist || [];
+    var _fl = _fh.length ? _fh[_fh.length - 1] : null;
+    if (_fxA !== null && !(_fl && Math.abs(_fl.at - _fxA) < 1000 && Math.abs(_fl.lat - planeLat) < 1e-4 && Math.abs(_fl.lng - planeLng) < 1e-4)) {
+      _fh = _fh.filter(function (h) { return h.at < _fxA && _fxA - h.at < 15 * 60000; })
+               .concat([{ lat: planeLat, lng: planeLng, at: _fxA, d: d }]).slice(-2);
+      _gateGlide.fixHist = _fh;
+    }
+    if (_fh.length === 2 && _fxA !== null && _fh[1].at === _fxA && _gateGlideSameLeg(_fh[0].d, d)) {
+      var _fdH = (_fh[1].at - _fh[0].at) / 3600000;
+      if (_fdH > 30 / 3600 && _fdH < 10 / 60) {
+        var _gainKt = (_gcNm([_fh[0].lat, _fh[0].lng], d) - _gcNm([_fh[1].lat, _fh[1].lng], d)) / _fdH;
+        _close = Math.min(_close, Math.max(0, Math.min(1, _gainKt / speedKts)));
+      }
+    }
+  } catch (eH) {}
+  var _nowP = Math.min(_drCapP, _seedP + (speedKts * _close / 3600000 / _routeNm) * _fixAgeMs);
   var p = _nowP;
   // v22748 — EASE THE CORRECTION, DON'T SNAP IT
   // Every real ADS-B fix
@@ -50838,7 +50941,14 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // the touchdown point: the aeroplane was planted on the runway at
       // 4,000 ft with "1 km" (replayed, 2026-10-26). Over 2 nm off the route,
       // the marker goes to where the fix puts the aeroplane now.
-      if (Math.abs(_dp) * totalNm < 40 && !(typeof _rOff.offNm === 'number' && _rOff.offNm > 2)) {
+      // v24088 — nor from a spot more than 3 nm (or the convergence horizon)
+      // AHEAD of where the fix puts the aeroplane now: in a hold or on long
+      // vectors the drawn marker had been carried miles towards the field,
+      // and holding it there showed the aeroplane 4.5 nm out while it circled
+      // 22 nm out (replayed). It goes back to the aeroplane instead.
+      var _leadMax = Math.max(3, speedKts * 45000 / 3600000);   // (_CONVERGE_MS is set further down)
+      if (Math.abs(_dp) * totalNm < 40 && !(typeof _rOff.offNm === 'number' && _rOff.offNm > 2)
+          && !(_dp < 0 && -_dp * _routeNm > _leadMax)) {
         p = _pRes;
         _errP = _dp;
       }
@@ -50880,7 +50990,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _MAX_SLEW_DPS = 60;        // deg/sec — a backstop now, not a smoother
   var _t0 = _nowFn();            // anchor time
   var _p0 = p;                   // anchor position (what is drawn right now)
-  var _baseRate = speedKts / 3600000 / totalNm;   // route-fraction per ms
+  // v24088 — per nautical mile of the route DRAWN (the runway-shaped final
+  // included), the same length p and every fix error are measured on
+  var _baseRate = speedKts * _close / 3600000 / _routeNm;   // route-fraction per ms
   // Flight-phase profile — accelerating off the origin, bleeding speed down
   // the glideslope. Evaluated ONCE, at this glide's anchor, and folded into
   // the rate. It deliberately is not re-evaluated per frame: a multiplier that
@@ -50930,15 +51042,26 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // answer (_gateAircraftWhere) retires the position once it is too old to be
   // evidence, instead of flying it on to our runway and parking it there.
   var _drLeftMs = Math.max(0, ((typeof fixAt === 'number' && isFinite(fixAt) && fixAt > 0) ? fixAt : Date.now())
-                              + _GLIDE_DR_MAX_MS - Date.now());
+                              + _drMax - Date.now());
   var _rateRaw = _baseRate * _phase + (_errP / _CONVERGE_MS);
   var _rateCap = Math.max(_baseRate, _baseRate * _phase) * _MAX_RATE_MULT;
-  // v24088 — and never to a standstill in the air: a marker ahead of the
-  // truth slows to a third of the aeroplane's speed and lets it catch up. Held
-  // at zero, a drawn spot more than the convergence horizon ahead (2 nm at
-  // approach speed, easily reached round a base turn the route cuts across)
-  // stood still until the next fix, minutes away on Moncton's approach.
-  var _rate = Math.max(_errP < 0 ? _baseRate * _phase * 0.35 : 0, Math.min(_rateRaw, _rateCap));
+  // v24088 — a marker a little ahead of the truth (up to the convergence
+  // horizon, about 2 nm at approach speed: a base turn the route cuts across)
+  // slows to a third of the aeroplane's speed instead of standing still; one
+  // further ahead (a hold, long vectors) holds as before, so it cannot creep
+  // on to the field.
+  var _hon = _baseRate * _phase;
+  var _lead = _errP < 0 ? -_errP * _routeNm : 0;
+  var _rate = Math.max((_errP < 0 && _lead < Math.max(1, speedKts * _CONVERGE_MS / 3600000)) ? _hon * 0.35 : 0,
+                       Math.min(_rateRaw, _rateCap));
+  // v24088 — AND THE CORRECTION LASTS ONLY AS LONG AS THE ERROR IT FLIES OFF.
+  // The corrected rate used to run for the whole glide (up to 5 minutes with
+  // fixes this sparse), so a marker 1 nm behind ended 6 nm ahead, and one
+  // 3 nm behind on Moncton's final ran on to the runway at 1.6 times the
+  // speed (review of #1086). Once the error is flown off the marker goes on
+  // at the aeroplane's own speed; p is still a pure, rising function of time.
+  var _corrMs = (_errP !== 0 && Math.abs(_rate - _hon) > 0)
+    ? Math.min(_drMax, Math.abs(_errP) / Math.abs(_rate - _hon)) : 0;
   var _myGen = _gateGlide.gen;   // claimed below, after the last early return
   // v23099 — heading, sub-pixel offset, segment hint and arc split are all
   // PER-VIEW now (each surface has its own marker, zoom and arcs); they live
@@ -51015,7 +51138,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       var now = _nowFn();
       var elapsed = now - _t0;
       if (!(elapsed > 0)) elapsed = 0;   // a non-monotonic clock cannot rewind us
-      if (elapsed > _drLeftMs) elapsed = _drLeftMs;   // v23915 — no dead reckoning past 5 min
+      if (elapsed > _drLeftMs) elapsed = _drLeftMs;   // v23915 — no dead reckoning past its limit (_GLIDE_DR_MAX_MS)
 
       // POSITION IS A PURE FUNCTION OF ELAPSED TIME. _rate is fixed for the
       // life of this glide and clamped >= 0, and elapsed only grows, so p can
@@ -51026,7 +51149,10 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // mathematically never be drawn (the aircraft never reached a runway).
       // The route already terminates at the touchdown point, so letting p
       // reach it cannot overrun anything.
-      p = Math.min(Math.max(0.9, 1 - 0.05 / _routeNm), _p0 + _rate * elapsed);
+      // v24088 — the correction for its own time, then the aeroplane's speed,
+      // and never past the dead-reckoning cap (_drCapP; nor behind _p0)
+      p = Math.max(_p0, Math.min(_drCapP, _p0 + _rate * Math.min(elapsed, _corrMs) + _hon * Math.max(0, elapsed - _corrMs)));
+      _gateGlide.holding = (p >= _drCapP) || (_rate === 0 && elapsed < _corrMs) || elapsed >= _drLeftMs;
 
       // Publish, and never publish a value lower than the last one: a belt to
       // the braces, so even a future caller mutating _gateGlide.p cannot make
@@ -51168,6 +51294,11 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   _gateGlide.gen = (_gateGlide.gen + 1) | 0;
   _myGen = _gateGlide.gen;
   _gateGlide.p = _p0;
+  // v24088 — for the marker watchdog: this glide's own limit, and whether it
+  // was started to stand still (nothing gained along the route) — a marker
+  // held on purpose is not wedged
+  _gateGlide.drMaxMs = _drMax;
+  _gateGlide.still = !(_hon > 0);
   if (typeof requestAnimationFrame === 'function') {
     _gateGlide.raf = requestAnimationFrame(frame);
   } else {

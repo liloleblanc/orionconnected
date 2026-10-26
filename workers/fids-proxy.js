@@ -6091,14 +6091,29 @@ __name(fr24PacedAllowance, "fr24PacedAllowance");
 // screen together. AC7894 into Moncton on 2026-10-26 got one at 17:28:49
 // (19 km out, 4,300 ft) and the next at 17:32:56, and the gate drew it over
 // Saint-Antoine while it landed. Every lookup but a board's own inbound in
-// its last half hour (?near=1) now stops this far short of the line, so the
-// last stretch of the line is kept for those. The line and the day's cap are
-// unchanged, so nothing is spent sooner: the rest of the estate gives way.
-// (At most half the line, so the start of the UTC day is not held up.)
+// its last half hour (?near=1) now stops short of the line by what is left of
+// the arrivals' reserve, so that stretch of the line waits for them. The
+// reserve is an hour and a half's share (at most half the line, so the start
+// of the UTC day is not held up) and is counted per 90-minute window: once
+// the arrivals have spent it in a window, everyone shares the line as before,
+// so a busy afternoon of approaches can never lock the rest out for hours.
+// The line and the day's cap are unchanged, so nothing is spent sooner.
 function fr24NearReserve(cap, now) {
   return Math.min(Math.ceil(cap * 90 / 1440), Math.floor(fr24PacedAllowance(cap, now) / 2));
 }
 __name(fr24NearReserve, "fr24NearReserve");
+// The KV counter of what ?near=1 lookups spent in this 90-minute UTC window.
+function fr24NearKey(now) {
+  const d = new Date(now || Date.now());
+  return `fr24:near:${d.toISOString().slice(0, 10)}:${Math.floor((d.getUTCHours() * 60 + d.getUTCMinutes()) / 90)}`;
+}
+__name(fr24NearKey, "fr24NearKey");
+// How far short of the line every other lookup stops: the reserve, less what
+// the arrivals have already spent of it in this window.
+function fr24NearHeld(cap, nearUsed, now) {
+  return Math.max(0, fr24NearReserve(cap, now) - Math.max(0, Number(nearUsed) || 0));
+}
+__name(fr24NearHeld, "fr24NearHeld");
 
 // v23910 — THE SWEEP FOLLOWS THE PACE LINE, AND RESUMES INSTEAD OF RESTARTING.
 //
@@ -6217,8 +6232,10 @@ async function dtwFr24Schedule(env) {
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return serve();
     // The whole page must fit under the pace line, not merely start below it.
-    // v24088 — behind the line by the arrivals' reserve, like every other lookup
-    const fits = () => used + DTW_FR24_PAGE_CREDITS <= Math.min(cap, fr24PacedAllowance(cap) - fr24NearReserve(cap));
+    // v24088 — behind the line by what is left of the arrivals' reserve, like
+    // every other lookup (fr24NearHeld)
+    const nearUsed = Number(await env.FIDS_LIVE_FLIGHTS.get(fr24NearKey())) || 0;
+    const fits = () => used + DTW_FR24_PAGE_CREDITS <= Math.min(cap, fr24PacedAllowance(cap) - fr24NearHeld(cap, nearUsed));
     if (!fits()) return serve();
     // One sweeper at a time (KV is no lock, but it stops nearly every overlap).
     const lockKey = "dtw:fr24:lock";
@@ -13086,7 +13103,20 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       try {
         const hit = await cache.match(cacheKey);
         if (hit) {
-          const body = await hit.text();
+          let body = await hit.text();
+          // v24088 — this location's copy is older by its time here, as the
+          // KV copy below is: a fix must never come back looking newer
+          const _hAt = Number(hit.headers.get("X-Adsb-At")) || 0;
+          if (_hAt > 0) {
+            try {
+              const _hj = JSON.parse(body);
+              const _hAge = Math.max(0, Math.round((Date.now() - _hAt) / 1000));
+              if (Array.isArray(_hj.ac) && _hj.ac.length) {
+                _hj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _hAge; });
+                body = JSON.stringify(_hj);
+              }
+            } catch (e) {}
+          }
           return new Response(body, { status: 200, headers: {
             "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
             "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
@@ -13112,7 +13142,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               const _gBody = JSON.stringify(_gj);
               const _gLeft = Math.max(1, _gMax - _gAge);
               try { await cache.put(cacheKey, new Response(_gBody, { headers: {
-                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}` } })); } catch (e) {}
+                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`, "X-Adsb-At": String(Date.now()) } })); } catch (e) {}
               return new Response(_gBody, { status: 200, headers: {
                 "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`,
                 "X-Adsb-Cache": "shared", ...corsHeaders(origin) } });
@@ -13154,7 +13184,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
           // A recent 429/403 sets a short cool-off instead of burning the day.
           const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
-          if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap) - (_near ? 0 : fr24NearReserve(_cap))) {
+          // v24088 — what the arrivals have spent of their reserve in this window
+          const _nearKey = fr24NearKey();
+          const _nearUsed = Number(await env.FIDS_LIVE_FLIGHTS.get(_nearKey)) || 0;
+          if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap) - (_near ? 0 : fr24NearHeld(_cap, _nearUsed))) {
             const _param = kind === "callsign" ? "callsigns" : kind === "flight" ? "flights" : "registrations";
             const _fr = await fetch(
               `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
@@ -13202,6 +13235,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               ? _cap
               : _used + fr24Charge("live/flight-positions/full", _rows.length);
             try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
+            if (_near && _spend > _used) {
+              try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_nearKey, String(_nearUsed + (_spend - _used)), { expirationTtl: 7200 })); } catch (e) {}
+            }
             if (!_hardStop && (_fr.status === 429 || _fr.status === 403)) {
               // Cool off for 5 minutes rather than for the day.
               try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
@@ -13242,7 +13278,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), hold: _hold, body: _frBody }), { expirationTtl: Math.max(60, _hold) })); } catch (e) {}
                 try {
                   await cache.put(cacheKey, new Response(_frBody, { headers: {
-                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}` } }));
+                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}`, "X-Adsb-At": String(Date.now()) } }));
                 } catch (e) {}
                 return new Response(_frBody, { status: 200, headers: {
                   "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}`,
