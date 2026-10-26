@@ -17032,7 +17032,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24085" src="/textures/gate-sky-shelf.mp4?v=24085" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24086" src="/textures/gate-sky-shelf.mp4?v=24086" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17076,7 +17076,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24085" src="/textures/gate-sky-shelf.mp4?v=24085" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24086" src="/textures/gate-sky-shelf.mp4?v=24086" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -23789,10 +23789,13 @@ function _fidsRowInk(root) {
 }
 
 // ══ v24054 — EACH ROW'S WEATHER ICON: THE DRAWING WHERE IT CAN BE SEEN, ELSE ITS INK COPY ══
-// The row icons drawn for Orion Connected come in two sets, one for a dark
-// ground and one for a light ground (fids-v2.js wxRowHtml): the white set
-// (white shapes, a thin blue edge) and the colour set (gold suns, moons and
-// bolts, blue clouds, dark navy rain and storm clouds). What each icon wears
+// The row icons come in two sets, one for a dark ground and one for a light
+// ground (fids-v2.js wxRowHtml). v24086 — both are the flat set in the style
+// of Vecteezy pack 98703 (licensed, scripts/wx-icons/flat.py), the same
+// shapes in two colourways: the white set (the pack's own colours: white
+// clouds, drops, flakes and lines, a #CCCCCC cloud behind, a #F2A844 sun,
+// moon and bolt) and the colour set (navy #034C76 clouds, drops, flakes and
+// lines, a #307895 cloud behind, a #A0610B sun, moon and bolt). What each icon wears
 // is read from the page, not from a list of themes or carriers, so it covers
 // the airport's theme, Customize's custom row colours, the alternate rows, a
 // light board, a board painted in an airline's colours, and the status rows
@@ -23815,20 +23818,30 @@ function _fidsRowInk(root) {
 //
 // THEN, ICON BY ICON, WHETHER THAT DRAWING CAN BE SEEN THERE (_wxRowWear).
 // Each drawing is known by its pixels at the rows' 38 px (_WX_ROW_PX: the
-// pixels at least half covered, in colour groups), painted on the row's own
-// ground as the page paints it:
-//  a. a drawing is worn where at least half of what it draws stands at 3:1
-//     or more against the ground (_WX_ROW_SEEN: its median contrast reaches
-//     the floor): the set the row calls for first, then the other one. On a
-//     navy or black row that is the white set; on a light or yellow row the
-//     colour set's dark navy rain and storm clouds;
-//  b. where neither does (the colour set's gold sun and moon, its pale
-//     clouds, its white snow and fog on yellow Delayed, orange Final call and
-//     every light row; the white set's thin lines where its blue edge sinks
-//     into a red Cancelled row), the row wears the INK COPY: the same drawing,
-//     the white set's own shapes, painted in the colour of the row's own text
-//     (navy on yellow and orange, white on red), wherever a quarter of it
-//     stands at 3:1 (_WX_ROW_COPY) and it shows more than either drawing;
+// pixels at least half covered, in colour groups, part by part: a part is
+// each colour the file is filled with), painted on the row's own ground as
+// the page paints it:
+//  a. a drawing is worn where at least half of EACH of its parts that meets
+//     the ground stands at 3:1 or more against it (_wxRowSeen, _WX_ROW_SEEN):
+//     the sun, moon and bolt and the cloud behind must hold there as well as
+//     the cloud, or partly cloudy reads as plain cloud and a storm as rain.
+//     The set the row calls for first, then the other one. On a navy or black
+//     row, and on the darker reds, that is the white set; on a white, light or
+//     yellow row the colour set, every drawing. (v24086 — the flat set's
+//     second colours hold 3:1 only on dark and on light grounds: on a mid
+//     ground a drawing could pass on its cloud alone with its brown sun at
+//     1.7:1.)
+//  b. where neither does (the drawings with a sun, moon, bolt or cloud
+//     behind on the darker Delayed yellow, orange Final call, Moncton's blue
+//     and teal stripes and an airline's teal, cyan, blue or gold; those with
+//     an orange part on red Cancelled), the row wears the INK COPY: the same
+//     drawing in one colour, the colour of the row's own text (navy on
+//     yellow and orange, white on blue and red), wherever a quarter of it
+//     stands at 3:1 (_WX_ROW_COPY) and it shows more than either drawing.
+//     Its mask (rows-flat-ink/, scripts/wx-icons/flat.py) is the drawing's
+//     own shapes with each part cut back from the parts in front of it, so
+//     one colour still shows the sun behind the cloud, the bolt under it and
+//     the mercury in its tube, as the Solid look's glyphs do;
 //  c. where the row's text colour is itself too faint for that (the board
 //     keeps an operator's white text on a teal or gold row below 3:1), the
 //     most legible of the drawings and the ink copies in the row's ink and
@@ -23836,7 +23849,7 @@ function _fidsRowInk(root) {
 // It writes data-wx-set="white|colour|ink" on the icon, and the ink as
 // --wxr-k (css/display-overrides.css, the v24054 block). Nothing is redrawn
 // and no filter is laid on a drawing: the ink copy is the drawing's own
-// outline filled with one colour, as a mask.
+// shapes filled with one colour, as a mask.
 //
 // Painted colours (_wxRowLayers): every background from the page down to the
 // element, each over the one beneath it by its alpha, then every opacity on
@@ -23851,99 +23864,145 @@ function _fidsRowInk(root) {
 // right drawing) and on the 5 s heartbeat, works on a few dozen colour groups
 // per icon, writes only when a row's ground or ink has changed, and swaps a
 // background inside a box of fixed size, so nothing moves.
-var _WX_ROW_WHITE = [255, 255, 255];   // the white set's shapes (fill #ffffff in every file)
+var _WX_ROW_WHITE = [255, 255, 255];   // the white set's white (its clouds, drops, flakes and lines)
 var _WX_ROW_WHITE_MIN = 3;             // below this against the ground, the white set vanishes
 var _WX_ROW_SEEN = 0.5;                // a drawing is worn where half of it stands at 3:1
 var _WX_ROW_COPY = 0.25;               // the ink copy in the row's ink, where a quarter of it does
 var _WX_ROW_INKS = [[255, 255, 255, 1], [17, 17, 17, 1]];   // the board's two inks (_fidsInk)
 // Each file's pixels at 38 px that are at least half covered, as colour
 // groups: 'sha1:' (the first 10 hex digits of the file, so a redrawn file
-// without a new table fails tests/weather-rows-line.test.js), then each group
-// as rrggbbaa and its share of the pixels in 255ths. Made by
-// scripts/wx-icons/rows-line-pixels.js in headless Chrome.
+// without a new table fails tests/weather-rows-flat.test.js), then its parts
+// (the colours it is filled with; the mask, one) with '/' between them, a
+// part that never meets the ground (the mercury inside its tube) marked '~',
+// each group as rrggbbaa and its share of the drawing's pixels in 255ths.
+// Made by scripts/wx-icons/rows-pixels.js in headless Chrome.
 var _WX_ROW_PX = {
-  // the white set (rows-line-white/)
+  // the white set (rows-flat-white/, the dark colourway)
   w: {
-    'clear-day': '2a066872e0:c0dbe8870cc2dce98c0cc6dce99206c5dfec9109c6deea9209c9e0eb8610c9dfec9d06cce0ec9013cfe2ee9706d3e5ef9606d2e4ef9e10d0e4eda810d8e7f1b609d8e7f1be09dce8f1cc06dae9f2c806dfecf3bf06e1edf4cc0ce2edf5e710dfecf3dc10e4eff6f406e6f1f6ef13ebf3f8f209edf4f8e906',
-    'clear-night': 'a6b1129afc:b9d5e68e0acaddeb9603cce1ed880dcfe2ee9510d0e4eea20ad9e7f1ad0ad7e6f0b70ddceaf3b710e0edf4d90dd8e8f1ca06dfecf3b00ae2edf4b906e2eef4c50ae5f0f6f510e4eef4d20aeef6fac103e6f0f5fd1ae4eff5e906e4eff4ef10e9f1f6eb03e8f2f7e80deaf2f8ef0decf4f8e406f2f7fbf306',
-    'cloudy': 'c5cd2c0eb4:ccdfeda004cce0ed8e13cfe2ef950ccfe3ee9904d1e5ed9c04d3e5ef9e08d6e6f0ae0fd6e8f29c04d9e7f0cc0cdceaf2c213dbe9f1c804dbe9f2c727d9e8f2b713dceaf2eb04e0ecf4d708dfecf4df04e2edf4cf13e0ecf3e50ce1edf4f10ce6eff6e10ce9f1f6eb0fe8f1f8f104ebf3f8f604',
-    'drizzle': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
-    'extreme-rain': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
-    'extreme-snow': 'e78048ce84:c5dfeb8f06cadeea8c09cbe0eb8a03cee1ec950ecce1ed8f09cbe0ec820ec9ddeaa206d2e4efa90bd1e4ef9f0ed5e5efc00ed5e7f1b80bdae9f2b109dae9f2c811dcebf4b403e1edf3f111dfedf4d406e2edf4cd06dfecf4c417e1eef4ff06e6f0f6ee0ee6f0f7d90be7f1f6fe0bebf3f8eb0bf7fafcfd0b',
-    'fog': 'a6c2ae181f:c3dcea9102c8ddea9019c8ddec900dcce1ec9202cadfec901bcbdfeb8404cce0ed9d08cfe2ed9406cfe2ed8f0fd2e4ef9706d9e8f2b30ad7e7f1a60dd8e8f1be0ddbe9f2c508d9e8f1c836dde9f2d004e1ecf5e30ae0ecf3d702e0edf4ce0ae5eff6d704e6f0f6f211',
-    'hail': 'e78048ce84:c5dfeb8f06cadeea8c09cbe0eb8a03cee1ec950ecce1ed8f09cbe0ec820ec9ddeaa206d2e4efa90bd1e4ef9f0ed5e5efc00ed5e7f1b80bdae9f2b109dae9f2c811dcebf4b403e1edf3f111dfedf4d406e2edf4cd06dfecf4c417e1eef4ff06e6f0f6ee0ee6f0f7d90be7f1f6fe0bebf3f8eb0bf7fafcfd0b',
-    'lightning-bolt': 'f574d98d10:bbd7e6850dc9deeb850dcde1ec970acce1ed8d07d1e2ef8f03d1e4eea40ad5e6efad0ad8e8f1b00ad6e6f0aa14d7e7f0b90adceaf3d611d9e9f1c107dceaf2c607dfebf4fb07deebf3b90ae2edf4cb11e1edf3c203dfebf3e60ae4eff6df0de6f0f6ed11e1edf4ef0debf2f7fd0de8f2f7f60dfafcfdff03',
-    'mist': 'a6c2ae181f:c3dcea9102c8ddea9019c8ddec900dcce1ec9202cadfec901bcbdfeb8404cce0ed9d08cfe2ed9406cfe2ed8f0fd2e4ef9706d9e8f2b30ad7e7f1a60dd8e8f1be0ddbe9f2c508d9e8f1c836dde9f2d004e1ecf5e30ae0ecf3d702e0edf4ce0ae5eff6d704e6f0f6f211',
-    'overcast-day': 'd83c222cf1:bfd8e78507c6deea8607c1dbe89807c8ddea9018cadfec8407cae1eb8f02cadfec9018cde1ee8d09cce1ed9009d2e2eec705d0e4ed9405cee3ee9911d3e4efa40ed3e5f0b307d8e8f1a907dbe9f2ae05dceaf3c013deebf3d513dfedf4e10ce4eff5f011ecf3f9d202e7f1f6e207eaf3f7e70eedf4f9f809',
-    'overcast-night': 'd83c222cf1:bfd8e78507c6deea8607c1dbe89807c8ddea9018cadfec8407cae1eb8f02cadfec9018cde1ee8d09cce1ed9009d2e2eec705d0e4ed9405cee3ee9911d3e4efa40ed3e5f0b307d8e8f1a907dbe9f2ae05dceaf3c013deebf3d513dfedf4e10ce4eff5f011ecf3f9d202e7f1f6e207eaf3f7e70eedf4f9f809',
-    'overcast': 'd83c222cf1:bfd8e78507c6deea8607c1dbe89807c8ddea9018cadfec8407cae1eb8f02cadfec9018cde1ee8d09cce1ed9009d2e2eec705d0e4ed9405cee3ee9911d3e4efa40ed3e5f0b307d8e8f1a907dbe9f2ae05dceaf3c013deebf3d513dfedf4e10ce4eff5f011ecf3f9d202e7f1f6e207eaf3f7e70eedf4f9f809',
-    'partly-cloudy-day-snow': 'cc0aeb0571:b9d4e58406c2dbe89508cbdfec990acbdfecbf04c9dfeb8913cfe2eeee02d4e4f0ab13cadfeaa40ad5e6f19d08d3e5efbc0ad6e6f0c40cdbeaf2c70edae8f0c715d8e8f1b30addeaf3bd0cdfecf3cd06e1eef4d508e7f2f6c102e3eef4dc08e2edf5f410e9f2f7e708e0ecf3e810e8f1f6d606e8f1f7f310',
-    'partly-cloudy-day': '5fea6bf2be:b3d2e3850bc0d7e68506c3dbeb9406cadfec8306c6deeb8c06cadfec9018cee2ec8904cfe3ed9002cde1ed8f1ad1e4ef9709c5ddeba806d3e4eeab09d3e5efa609d6e6f0b911d1e2eee006d8e8f1c711dbeaf2cf04dfecf3d51ae0ecf4f206e2eef5fd04e4eef5c706e7f1f7f40fe6f0f6dc0be7f1f6e811',
-    'partly-cloudy-night': '88c556d9c9:c2dae9880dcde2ece106c8dfeb9104cee1ed8a0bcadfec901bcadfec9117cbe0edcf04cde2ec9708cbdfeca508cfe3ed9e0dc9dfedb704d3e4eebe04d4e6efa508d6e6f0cb0bd7e7f1b508d8e7f1bc0dd8e9f2aa04dfecf4c00fe0ecf4d50fd8e7f1e30be4eff6f611e6f0f6cf08e3eef5e40be7f0f6eb08',
-    'rain': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
-    'sleet': '68ca259c21:c7deea8609c8deeb920dcee1ed8806d0e3ee9b13d3e4eea813d2e4f18f03d2e5f0c103d8e7f1b30ddae9f1be13d9e7f1ca0ddce9f1e806d9e8f1d209ddeaf2dc09dfecf3c910e0ecf3f206e1edf4ed09e2eef5f803e9f2f7fe03e1edf3fe03e2edf4ff1fe2edf5e709e8f1f6eb13e7f0f6e206eaf2f8d706',
-    'snow': 'e78048ce84:c5dfeb8f06cadeea8c09cbe0eb8a03cee1ec950ecce1ed8f09cbe0ec820ec9ddeaa206d2e4efa90bd1e4ef9f0ed5e5efc00ed5e7f1b80bdae9f2b109dae9f2c811dcebf4b403e1edf3f111dfedf4d406e2edf4cd06dfecf4c417e1eef4ff06e6f0f6ee0ee6f0f7d90be7f1f6fe0bebf3f8eb0bf7fafcfd0b',
-    'snowflake': '463ce65385:c7ddea9006c7dfea8303cde0ec9509cadfeb8e07cce1ed901acde1edb004c8ddeb9f04cfe2ee981ed1e2efb707d0e2eea40ad7e7f1b506daeaf2b307d9e9f2af04d9e8f1c922e2edf4c106e3eef5e706e2eef4ef0be6f0f6d50de8f1f7dd0deff5f9e70aeef5f9e00df0f7faf211f9fcfdf206fbfcfeff06',
-    'sunrise': 'cd67354b97:c3dbea9807c5dcea850dc6deea8e07cbe0ec8a07cadfec9021c8dfec9102cadfec9116cce0ec9509cae1ea9018cae1ec900fcfe1eda002cde2ed8f12d0e4ee9c09d1e4efa506d1e3ee8b02d0e4ef8e18d4e6f0c409dceaf2cd0deaf3f8f907e5f0f6e812ecf4f9d006',
-    'thermometer-colder': '722283ff0d:b3d2e29209c8dfec870dcfe3ed9b11cde0ecab09d6e5f0aa07d5e5f0c802d7e7f1ba14d7e8f1c80fd8e8f1c307dae9f2ca0dd9e8f1d707dbe9f2d914dbe9f2df04dbe9f2dd0fe3eef5c802ddebf3e30ddeebf3d211deecf4db0be3eef4ff09e4eff6e70be5eff5dd04e0ecf4f20bedf4f9f60dfeffffff07',
-    'thermometer-warmer': 'd826bab594:d5e6f18d03d5e7ee8b1ed8e8f1910ad8e7f1a00adae7f2ab03d9e8f1a807d9e8f1a72ed7e8f08a07dbe9f2990dddebf3cb0adcebf1a407e3eef4da14e0ebf3fa0de0ebf39007dfecf3ae07e0edf49d0adfeef48903e2eef4c611e1eef4b914e7f0f59e03e9f1f9c60a',
-    'thunderstorms-day-rain': '174c5808d1:c9e0ec8a08cee1ed920ed2e3ef9b11d3e5efab08d4e5eeb306d3e5efa108d8e8f1b80ed9e9f0af03d8e7f1c50bdae9f1c711dfecf3ed08deecf3ce0edeebf3bf0bdfecf4db0ee1edf4e40be3eef5d408e5eff5f508e6f0f6e90bebf3f8eb06ffffff9b11ffffffc00effffffc808ffffffde08ffffffff0b',
-    'thunderstorms-night-rain': 'ca7cb37c55:c9e0ec8a08cee1ed920ed2e3ef9b11d3e5efab08d4e5eeb306d3e5efa108d8e8f1b80ed9e9f0af03d8e7f1c50bdae9f1c711dfecf3ed08deecf3ce0edeebf3bf0bdfecf4db0ee1edf4e40be3eef5d408e5eff5f508e6f0f6e90bebf3f8eb06ffffff9b11ffffffc00effffffc808ffffffde08ffffffff0b',
-    'thunderstorms-rain': '766dec35ae:c9e0ec8a08cee1ed920ed2e3ef9b11d3e5efab08d4e5eeb306d3e5efa108d8e8f1b80ed9e9f0af03d8e7f1c50bdae9f1c711dfecf3ed08deecf3ce0edeebf3bf0bdfecf4db0ee1edf4e40be3eef5d408e5eff5f508e6f0f6e90bebf3f8eb06ffffff9b11ffffffc00effffffc808ffffffde08ffffffff0b',
-    'thunderstorms': 'ebf25fbe63:c8deea850ccadfec920ccbe0ec8d07d0e2ef9c05cee2ed9013d4e5f09e0fd3e4f09702d4e4efa90ad7e8f1b00cdae9f2c61be0ecf4c007dceaf2b707d6e7f0bc0cdceaf1ce0adceaf2e107e1edf4d90ae0ecf3ee0ae1edf4ec07e1edf5e60ae6f0f6e00ae4eff5cd0fe8f1f7f40fe9f2f7ea0af4f8fbf905',
-    'tornado': '416d6a372a:b2d1e39f0ab2d1e29008b8d4e4ae05bed7e8c90ac0d8e7a103c2dbe8931ec5dde99b08bed8e6860ac7deea910fcce1ec8e0ccadfec9e08cce1edac08cde1edbc07cbe1ec8405d2e4efb70dd3e4edc908d3e4efca17d5e6f0d90dd2e4efc508d5e6f0c90fe2edf4ca03d1e3efe40cdbe9f3f10de8f0f5fe08',
-    'umbrella': '21ba35e3fe:b6d2e49e0fc0d9e88205c5dde99007c7deeb860cc8deeb9c0acbe1ed910acfe2ed9a0ccce0ecaa14d4e5f0af0fd4e5eebf05d4e5f0ba0cd9e9f2b602d4e5f0ca0adbe9f2ce0cd7e7f1c40ad9e8f1c80cdae7f2c107d9e8f0dc11deebf3d60fe3eef5d102e1edf4c50ae2edf5dd11e9f2f8eb05ebf3f8fa0c',
-    'wind-cloud': '3a5b8a0937:c4dbe98104cadeeb8c04cae1ec9034cce1ec9104cce1ec9034cfe2ec9404cfe4efb507d5e6f0b40bd5e5f0a507e1edf4ea0be2edf3ff1ee1edf4ff04e3eff4fc04e2edf4ff25e5eff7f707e4eff5dd12',
-    'wind': '3a5b8a0937:c4dbe98104cadeeb8c04cae1ec9034cce1ec9104cce1ec9034cfe2ec9404cfe4efb507d5e6f0b40bd5e5f0a507e1edf4ea0be2edf3ff1ee1edf4ff04e3eff4fc04e2edf4ff25e5eff7f707e4eff5dd12'
+    'clear-day': '7797e099cf:f2a744bd11f2a843a110f2a743860bf2a844d207f2a843f604f2a843fe08f2a844fb0cf2a844ffb4',
+    'clear-night': '5fba56c4ea:f2a743b20af2a843930df2a744e40df1a843f50cf2a843fe01f2a844ffb2/ffffffab0bfffffff211',
+    'cloudy': '75000bcce4:cdcdcd9a06ccccccc407ccccccf803d4d4d4ff02ccccccff30/ecececfa05ffffff9808ffffffbf17fffffff104fefefefa02fefefeff01ffffffff93',
+    'drizzle': 'a647f8d46c:ffffffa106ffffff810fffffffb603ffffffd705f5f5f5ff03fefefef007fffffff902fffffffe03ffffffff92/cececea70adadadaff03cbcbcbf105ccccccff31',
+    'extreme-rain': '3265926484:fefefe8d0cffffffb709ffffffcf05ffffffe204f5f5f5ff03fffffff006fffffff903fffffffd03ffffffff99/cccccca003ccccccd304cececeff02ccccccff2ce1e1e1f904',
+    'extreme-snow': '1d46ef3d07:ffffff810dffffff9605ffffffab09ffffffce0affffffdf0dffffffec07fffffff506f2f2f2ff01fdfdfdff01fffffffd04ffffffff86/cececea707dcdcdcf603cbcbcbf104ccccccff25',
+    'fog': '590e033899:ffffffa803ffffff9202ffffff801affffffcd06ffffffea04f2f2f2ff01fdfdfdff01fffffffd02ffffffff9e/cececea707dcdcdcf603cbcbcbf104ccccccff25',
+    'hail': '6f492e08e6:ffffff9006ffffffaf09ffffffbf12ffffffd507ffffffe506f5f5f5fd03fffffff003fffffffa02fffffffe01ffffffff8c/cdcdcdb009cececedc04dadadaff03ccccccff2c',
+    'lightning-bolt': '31dac5aeb3:f2a7438a05f1a744800ff2a843c506f2a844a404f2a843dd06f2a844eb03f2a843f607f2a844ffd0',
+    'mist': '648f125a97:ecececff04ffffff8504ffffffd502ffffffb106ffffffc302ffffffc031fffffff203fffffffa02fbfbfbff01fefefeff01ffffffff81/cccccca606ccccccef02d2d2d2ff02ccccccff29',
+    'overcast-day': 'f0aa911755:f2a844a106f0aa4cfc15/cfcfcf8d03ccccccbf06d7c2a6ff01ccccccf303cccbcbe504d5d5d5ff02cec9c2fc01ccccccff4ae0e0dff503/eeeeeeff06ffffffb80ffefefeed02f6f6f6ff01fefefeff01fffffffa01ffffffff69',
+    'overcast-night': 'c5ab238aae:f1a948e410/dcbb8fff01cccccca308ccccccc207d3d3d3ff03cccac7e902cdcdcdff01cdcbc9ff01ccccccff4cdfdedcff01/edededfd09ffffff9504ffffffc10efffffff103fcfcfcfa01fefefeff01ffffffff6b',
+    'overcast': '91c137e64a:cdcdcdb20ccececef202d1d1d1ff02ccccccf903cdcdcdff01ccccccfd02ccccccff52dadadafe08/ffffff9e02fbfbfbd103f4f4f4ff03fbfbfbff02fffffff002fefefefe02ffffffff80',
+    'partly-cloudy-day-snow': 'e872499af7:fce9d0ff01ffffff830fffffffa009ffffffc70bfffdfbdc09fffffee905fef8efff01fffefdff01fffffff606fffffffb03ffffffff79/dfc097f80cdad3c9ec0d/f2a7439c04f2a744e304f2a845ff22ebb367fe05',
+    'partly-cloudy-day': 'd68b01e337:e0c7a4fe0bcfccc8e010/f2a7439d0af1ac4eff04f2a743f701f2a844ff24eab46df90a/fdefddf405ffffffb513fffbf6d104fefaf5ec01fffffffa03ffffffff88',
+    'partly-cloudy-night': '116eee4f1c:e6c290fb04cecac6b307d9cbb9ff05ccccccfd22/f2aa4ab006edb262ff04f2a844fd22f2bf79ff05/ffffff9b04ffffffd304fef2e1ff02fffffff303fffaf4ff02fffffeff02ffffffff8b',
+    'rain': '66ec367ea2:e8e8e8ff03ffffff9a0affffffcc09fffffff106fafafaff02fffffff904fefefeff01ffffffff9e/cccccca607e1e1e1ff02ccccccef03cececeff03ccccccff30',
+    'sleet': 'd04f3a6a44:ffffff930affffffba0bffffffcf08ffffffe707e9e9e9ff03fffffff504fafafaff02fffffffb04ffffffff95/cccccc9603cbcbcbd203e0e0e0ff03ccccccee04ccccccff2e',
+    'snow': 'addcd7e2fb:edededfa04ffffff890affffffa80cffffffc113ffffffdd07ffffffed08fffffff506fefefeff01fefefefa02fffffffd02ffffffff80/cdcdcda909cccccce003d4d4d4ff02ccccccfa01ccccccff28',
+    'snowflake': '8c0a84ee4c:ffffff8c0dffffff9c0dffffffad05ffffffb60bffffffbf0bffffffcc06ffffffe111fffffff00efffffffa07fffffffd06ffffffff98',
+    'sunrise': '90b25313fd:f1a843a213f2a7438708f2a844ed05f2a843f508f2a844ff63/ffffffa306ffffffc026ffffffcc0dffffffe80dfffffff603ffffffff2a',
+    'thermometer-colder': 'b7b650351b:fadbb1ff03fef5e8ff0affffff8706ffffff911bffffffac06ffffffd903ffffffef09fffffff807fffbf6ff04fffffffd09ffffffff7b/~f2a844ff1cf2ab4cff06f4b560ff04f6c582ff09',
+    'thermometer-warmer': 'd4bb559c24:fadeb8ff06fef5e8ff03fef6eaff15ffffff8706ffffff9117ffffffac09ffffffc207ffffffd406fffbf7ff03ffffffef06fffffffb04ffffffff55/~f2a743ff01f2a844ff2bf4b35cff04f2ac4dff13f6c582ff09',
+    'thunderstorms-day-rain': '5516db6a05:f2a7449f06f2a843cd08f2a845fd1c/fffefe8708ffffffc505fefefee704f9f2eaff02fffffff802fbfaf8ff02fffffeff02ffffffff7d/cdcdcd8e06ddddddff02cececec304ccccccfe2bfadaaef607',
+    'thunderstorms-night-rain': '25bc8216bd:f2a7439c07f2a843d006f4ba6cf602f2a844fe1d/ffffffd205fffffe8e0bf5f0eaff02fefdfcff02ffffffec05fffffffe02ffffffff80/d3d0cda908dcdcdcf603cbcbcbf104ccccccff28f9d4a3fc04',
+    'thunderstorms-rain': '3061c2d5a6:f2a844b307f2a844fc15/fcebd4f905ffffff9805ffffffbf10ffffffe603f5f5f5fd03fffffff403fffffffa02ffffffff83/cdcdcdac09cececedc04dadadaff03ccccccff2b',
+    'thunderstorms': '5630dee300:f1a7439607f2a744c605f1a744ec03f2a844ff1f/d3d2cfa909ddddddff02cbcbcbf104ccccccff29f9d5a5f806/ffffff9009ffffffd506f1f1f1ff02fdfdfdff02ffffffef03fffffffd02ffffffff7b',
+    'tornado': '751dda1239:ffffff9403ffffff8201ffffff8068ffffffef09fffffff603fffffffd03ffffffff83',
+    'umbrella': 'd5304fd43f:ffffff8609ffffff9d09ffffffba05ffffffc80affffffd51bffffffdf03ffffffe90dfffffff704fffffffd03ffffffffae',
+    'wind-cloud': 'f7558aa924:ffffff810affffff9a04ffffffb104ffffffc012ffffffe906e9e9e9ff02fffffff806fafafaff02ffffffff98/cccccca105e0e0e0ff02cbcbcbdf03ccccccff29',
+    'wind': '62a082608b:ffffff8808ffffff8030ffffff9506ffffffa60affffffc90dffffffe605fffffff208fffffffa02fffffffe03ffffffff98'
   },
-  // the colour set (rows-line-color/)
+  // the colour set (rows-flat-color/, the light colourway)
   c: {
-    'clear-day': 'fabc674ba0:ffad2c8a08ffac2c8008ffad2d9b0fffae2cee17ffad2e8004ffb22ac60cffbb24df0cffb329b60cffc0238508ffca1eb517ffc71e800cffc71e8904ffcc1c8104ffcd1c8904ffd119e808ffd717e508ffd715ef08ffd715c513ffe011f308ffde12950fffdf11d90cffe30f8a0fffe60def08fff3068008',
-    'clear-night': 'caf61d37f1:f4b53fb207f5b43ff807f4b540c10ef4b8428707f3b540ed12f4b6428f04f3b9459a0bf4b742e70bf3b943ab19f2bc47860bf3bc47f607f3bb46e60bf3bd48ee0ef3bd48b80ef2bf49e307f3bc46fe0ef3bd47d315f2c650c904f2c44efd0bf2c24daa0ef2c54f9f04f2c54f8504f2c651f40ef2c852e304',
-    'cloudy': 'daae049733:0d83adbb081589b1e1081387b1940c2c92b9960f2290b6e30f3096bbda043798bfeb044ba3c3d70c3c9cbfb80f59a9c8c00f5aa9c9960868b1cec80c76b9d1c70483bed5ca0c7dbbd4ec0c9dcadebf17a5d0dfea04afd4e4e208acd4e3ec04b2d6e5cd0cd1e6eff10cd1e4eebd0fbedae89813d6e9efcf04',
-    'drizzle': '4221995672:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
-    'extreme-rain': '935257e524:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
-    'extreme-snow': 'caff683253:0f80c3ad0b1182c38f091784c480062f8fc99c0b1385c8e50b2991cdf8063093cdca17449acf8a0653a1d3940952a5d5b70952a4d5dc0965afdced116fb1d98c0e6fb3def40b74b7e0ff097db9e0c51188bfe1a30995c7e7f31192c5e5a60ea3cdeacd0398c7e6c409a3cbe78906b1d3ecc90bb0d4ecb70b',
-    'fog': '4b70565281:1f89c7c8081f89c79f0f3996cecb0c3b97cd94062b90cdf6084fa3d5c90f67aed9910865add9c70f8fc3e5d21185bde3eb06a8d0eded069ac7e58a04a7c5d89102acc8d89025aecdd69d02aecada9019b2cbda8f0c99c8e6a70cbad0ddc821add1ecbc0a',
-    'hail': '1930d37845:0f80c3ad0b1182c38f091784c480062f8fc99c0b1385c8e50b2991cdf8063093cdca17449acf8a0653a1d3940952a5d5b70952a4d5dc0965afdced116fb1d98c0e6fb3def40b74b7e0ff097db9e0c51188bfe1a30995c7e7f31192c5e5a60ea3cdeacd0398c7e6c409a3cbe78906b1d3ecc90bb0d4ecb70b',
-    'lightning-bolt': 'b4463bd032:f7d0009904f7d202a013f7d302fd0ff6d2029204f7d202e108f8d201ce04f7d3028208f7d202ec0ff6d302b313f6d4048e04f8d202f508f6d504cd04f4d9059f17f6d905fd08f5da05f608f6d604c117f6d704a808f3dd07af0bf4d905ea13f4da05d70ff3dd07df08f2e009f008f2e009ca0bf2df078208',
-    'mist': '4aa303bd0f:1f89c7c8081f89c79f0f3996cecb0c3b97cd94062b90cdf6084fa3d5c90f67aed9910865add9c70f8fc3e5d21185bde3eb06a8d0eded069ac7e58a04a7c5d89102acc8d89025aecdd69d02aecada9019b2cbda8f0c99c8e6a70cbad0ddc821add1ecbc0a',
-    'overcast-day': '4988cbfe05:097dab83050c80af84090b80ae8e090a80ad9f111086b0c1110d83aeae0c0a84aee1180c84b0f0091786b285023399bde605288fb8960c3695bb91093f9bbe900551a3c4921573b4cf92134fa5c5cf0c60accae80595c4da921373b9d2fc0597c9ddf405aad1e3cc0ccae0ec9e09d0e5eee909d8e9f1d305',
-    'overcast-night': '0be6126bee:097dab83050c80af84090b80ae8e090a80ad9f111086b0c1110d83aeae0c0a84aee1180c84b0f0091786b285023399bde605288fb8960c3695bb91093f9bbe900551a3c4921573b4cf92134fa5c5cf0c60accae80595c4da921373b9d2fc0597c9ddf405aad1e3cc0ccae0ec9e09d0e5eee909d8e9f1d305',
-    'overcast': '9f6de83272:097dab83050c80af84090b80ae8e090a80ad9f111086b0c1110d83aeae0c0a84aee1180c84b0f0091786b285023399bde605288fb8960c3695bb91093f9bbe900551a3c4921573b4cf92134fa5c5cf0c60accae80595c4da921373b9d2fc0597c9ddf405aad1e3cc0ccae0ec9e09d0e5eee909d8e9f1d305',
-    'partly-cloudy-day-snow': '88cde0a143:3a89b7f2063c89b6940f3988b5bf0b3d8ab7da0b4991bac50b5295bcc80f5094b9e30b5b9abec7095797bcaa0d5596bef40b649ec09213629dbfd6066ea4c3ec0670a5c3c51176a8c5f10fadc6c8b802a6b77feb02f7d63ab30ff8d31d9c09f7d849e40bf7db58b709f7de748b0df6e39aa20bf6e8bcc30b',
-    'partly-cloudy-day': '992a37eaf2:0b80ae8d130b82aea9070d85b0ef0c0a83aecb050982aed6110a82aebc07258db5900c3995a8d307699b81da05449cc18f0c61accb980c5baac9f6077ebad39c0e8dc2d78e0cffb02bc90e9acaddd30ceebf29b407ffd01ae90cffb22b9105ffe111b00affdc13cf0cffd8159011cde4eef00ed8e8f1d505',
-    'partly-cloudy-night': '4d9cd30b37:09648bd30f0b658cf10f08648e93090b668f88090e668db90f0d668e9e041b6c92940b2671949104307695900b387894aa07407c98900b50839b930b5e889d8d0d5c8797e40b688d9eb3098197a1ab0f87999ae80decb648da0df3b9459907f3b843a904f4ba46ca0ff3c34eb511f4be498807f3c753e109',
-    'rain': 'd382da3423:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
-    'sleet': '9d0d5a7431:010e15d603021722ff0d051721a20603141dea13041b28de06041926cb10041c288f0906273acd10051f2eac06042030ff10052435ea0d05283cff09052b42e806072d478606063149f409073147950608334bea0908344ea90d07314ab710073752d50d083c5ac213093c599c06093e5a86060a405f950d',
-    'snow': '2690fb0514:0f80c3ad0b1182c38f091784c480062f8fc99c0b1385c8e50b2991cdf8063093cdca17449acf8a0653a1d3940952a5d5b70952a4d5dc0965afdced116fb1d98c0e6fb3def40b74b7e0ff097db9e0c51188bfe1a30995c7e7f31192c5e5a60ea3cdeacd0398c7e6c409a3cbe78906b1d3ecc90bb0d4ecb70b',
-    'snowflake': '5bf1fe970f:1f8ab49f041e8bb58303208db78f0b1e8cb6901b208cb6b60b1f8cb6a6041f8db7a306208db697151e8eb69711218fb6c70e208eb7af09218fb7b409218fb8c90e2290b7bf042090b8ee04218fb8cf0d2191b8e80a218fb7f10a2190b9ef032291b8e5062290b8d90d2291b9f2112291b8e0142393baff06',
-    'sunrise': '81b27fbcf6:ffaf2be50cffad2c8e08ffad2c8117ffaf2cc008ffc71ec106ffb428800fffb7288006ffbb258311ffc3208006ffbf22800cffcd1bea08ffc5208006ffc71e800fffcd1c800cffd1198311ffe110f308ffdf11cb0fffd518800cffde128108ffd915800affdc149f08ffe50d8a06ffe20f810affeb0b8004',
-    'thermometer-colder': 'f59fb00967:1d87b68404218db783071e8bb6910b208db69e14228fb7d904208eb8d90b218eb7ba162190b8d40d228fb9e20d208fb7dd14228fb7f902208eb7ac0d218fb8ff07228fb8ca092290b8cf0b2190b8ee072190b8c71a2191b9f8072090b9ff02228fb9da0f2391b8df072191b8e80b2190b8f4092495bbff07',
-    'thermometer-warmer': '5a65dd6658:d78d22b307c293448b0ed69739c407e29425e30cd6993cae0cd4a049a102e29c34c102d79f44c107d9a044cf1adea347c907d6a655be1ad4a95caa0aceab669005e0a447e10ae0a64af80ed8ae60ce18e0b262da05deb86dc807e2b05be70cceb675a207d4b36db50ac8b77d8807e3bc71e00ae3c27bd50a',
-    'thunderstorms-day-rain': '898a2867d0:041118ee06051a25a00b08202aea11051721c91109243197080a2835cc0e113746ec0b0b2836ae080e3748a006113a4bcb08113f53910816495eb40e184f64e90b164c60c8111a556cda0e1b5972bd0b19556e8e061b5c768d031a5a739a08f7d847e60bf7da54bf13f6df74950bf6e082ff08f6e18ab908',
-    'thunderstorms-night-rain': '91130a688d:041118ee06051a25a00b08202aea11051721c91109243197080a2835cc0e113746ec0b0b2836ae080e3748a006113a4bcb08113f53910816495eb40e184f64e90b164c60c8111a556cda0e1b5972bd0b19556e8e061b5c768d031a5a739a08f7d847e60bf7da54bf13f6df74950bf6e082ff08f6e18ab908',
-    'thunderstorms-rain': '38dc3ef4cf:041118ee06051a25a00b08202aea11051721c91109243197080a2835cc0e113746ec0b0b2836ae080e3748a006113a4bcb08113f53910816495eb40e184f64e90b164c60c8111a556cda0e1b5972bd0b19556e8e061b5c768d031a5a739a08f7d847e60bf7da54bf13f6df74950bf6e082ff08f6e18ab908',
-    'thunderstorms': 'e534aa0b18:04243ae71105243bcb0506283fd705072b449b0a09304a8e0a062c45c80c072b43b70f08324cec0c093956ef0a073955c81b073855db05093d5aad070b41609e050b41619407c6c146990cd4c427b305d1c647bc0cc8cc7e8c0cddcc3ce411c9d19c8c07d5d17ab30acdd9bf920ce0e7d2d70ae7e2a2ee0a',
-    'tornado': '98b967a01d:26323abe0c213036930736434cf705263037e10c2d3d49990a32434d8e0c334853a30335444dca15384c58940d405460c9153d505c900a405662940d3f57638605465e6cae08465b6a960d4a65728e05516976cc1a54707e8b075872819d03597685b5085f7988ee0a6382929b086c8a9bf60a6e8d9fc10d',
-    'umbrella': '52c0ea4203:6481cf870a6982cea90f7382bc90057d83b0ae077784c5df0f878396a40a8284b1d1119b857387078b859fcc0aa786629c11aa8767b10a97868dc20aa48779bc059f867cc7079486a6fc0ab085489214ab8770d50ab38658b605bd884ed20cbd8954e10ac0873fb60ccf8722ab05cc8933cc14d98a20dd07',
-    'wind-cloud': '72445765c3:1182c28f0b1a87c6910f1686c9e007218ac8ad0f208bcaed042e90c98d122c91cde50b439bd097123897d0fb0f3998d3da04449dd3d80450a2d5fe075da9d690165ca9d8ff0767aed9ff0467afdbff0479b8deff0f79b6dd900f88bde090078bc1e3ff0797c6e3900fabcfebb5079cc9e8ff0faed2ecff07',
-    'wind': '3045cd2e78:1182c28f0b1a87c6910f1686c9e007218ac8ad0f208bcaed042e90c98d122c91cde50b439bd097123897d0fb0f3998d3da04449dd3d80450a2d5fe075da9d690165ca9d8ff0767aed9ff0467afdbff0479b8deff0f79b6dd900f88bde090078bc1e3ff0797c6e3900fabcfebb5079cc9e8ff0faed2ecff07'
+    'clear-day': '3cf4098b40:9f600a860ba0610bd207a0600afc0aa0610ba30da0610af8079f610bbd11a0600a9802a0600afe07a0610bffb4',
+    'clear-night': '05afa3ad33:9f600aa70ea0610bc108a0600af709a0610ae00ea0610bee0ba0600a8d0ca0600afe01a0610bffbb',
+    'cloudy': '4fafb75747:2e759396052f7795c1082c7593fb05307895ff30/024b759808034c75be16024b76dd02024d76f705034d77ff01034c76ff93135c81fa05',
+    'drizzle': '4eb3f22ccb:024c76d406024b75a508024c76810f024c76f0070b547cff03024c76f902024b75fe03034c76ff92/2c7592c0052c75938e052f7895f105236c8cff032f7794ff01307895ff30',
+    'extreme-rain': 'ed6f4a99a6:034c75b709034c768d0c024b76e204024c76cf05155e83ff02024b75f006085179ff02024b76f903024b75fd03034c76ff99/2f7795b505256d8df0062e7694ff03307895ff2a',
+    'extreme-snow': '9f650c0e51:034c75bc03024c76ec07024b75e00d024b76d009044d77a20d024c76810e0f587eff01024b75f506044e77ff01024c75fd05034c76ff86/2f7894920420688aff022d7593d204307895fe28',
+    'fog': '1cd3a60a50:024c75cd06075079a804024c759202024c76801a024c76ea04024c75fd030f587eff01044e77ff01034c76ff9e/2f7894920420688aff022d7693d204307895fe28',
+    'hail': '89d1089e60:024c76de07024b759408024c76d003034c75bc19024b76ec060d567dff03034d77f903024b75fe01034c76ff8c/2f7794b0092d7593dc04236b8cff032f7794ff01307895ff2b',
+    'lightning-bolt': '675e06bda5:9f600a8213a0600aa005a0610ae207a0600bc707a0600af508a0610bffd0',
+    'mist': '48af658b09:024c769c02034c76b305024c76d502034c75be03034c75c02f024b768103024c76f203054f78ff01024b76fa02034d77ff01034c76ff81135c82ff04/307895a6062f7794ef02297291ff02307895ff29',
+    'overcast-day': 'ff957ad906:a0600aa106996213fc15/4f716eff012c75938d032d7693c308216a8bff03307794ed0631748efe012f7794fe04307895ff46/034c75b80f034d76ed020b547bff01024c76fa01034d77ff01034c76ff69115a80ff06',
+    'overcast-night': '6c464059c1:9c610fe410/2f7795c207307795a308616e57ff0133768fe902216787ff01307894f901287190ff032f7793ff03307895ff4a/024b759504034c75c10e024c76f103044f77fa01034d77ff01034c76ff6b125b80fd09',
+    'overcast': '79ebc35ace:236b8cfe082e7694b20c2e7693f3032a7391ff022f7894fb042f7794ff03307895ff50/024b769e02054f77d103075079ff02024b76f002024c76fe02034c76ff800d577dff02',
+    'partly-cloudy-day-snow': 'fb924f9155:034c75c70b024b769407024b75a605054c73dc09024c76800c024b75e905104d6bff01024c76f606024b76fb03034c75ff01034c76ff79325255f805/44737bf312/6b6643fe04945e12a005976012f109a0610bff20',
+    'partly-cloudy-day': 'accac35b92:35768eb505407481fd12/796636f708a0610a9d0a855d1dff04a0600af7019f610bff27/0d4d6ed304054c74b4140a4c6fec01024b76fa03034c76ff8826505cfa06',
+    'partly-cloudy-night': '94763a767d:34768eb307576f63ff04307895f004317894ff22/935f139303a0600bce05745e2efd0a9f610cfe21/024c769b042b525cff02024c76d3040e4d6dff03024b76f303044c75ff02034c76ff8b',
+    'rain': '283b4b85da:024c76f106024b769a0a034c76cc09165f84ff03024b76f904075079ff02024c76ff01034c76ff9e/307895a6071d6688ff022f7794ef032d7593ff03307895ff30',
+    'sleet': '7a16d793a1:024c75930a024b75cf08024c76e707034c76ba0b165e83ff03075079ff02024b75f504024b75fb04034c76ff95/2f7895ad04297190f2072e7694ff03307895ff2c',
+    'snow': 'fb0b3b48c7:054e77e805024b76dd06024c76890a024b75a80c034c75c113024b76ef05024c76f608034d77ff01024c75fd02034c76ff80125b81ff03/2e7694a909307795e003287190ff02307795fa01307895ff28',
+    'snowflake': '7d3220c509:024c76cc06024b75fb09024c768606024c76f10b034b76bf0b024b76e60a034c75b806024c769913024c75dd08034c75b00a024b75fe04034c76ff98',
+    'sunrise': 'b3229c4b97:a0600a980aa0610ba406a0610a8708a0610bbb03a0610af20da0610bff63/024b75cc0d034b76a306024c75e80d034c75c026024c76f603034c76ff2a',
+    'thermometer-colder': 'f8c6f45995:024b76ef09024c75ac06024c75d903024b768706024c769118024c769603024b76f807024c75ff030e5073ff04024c76fd09034c76ff7820576fff0a677261ff03/~a28954ff09ce9a4bff04e7a346ff06f2a844ff1c',
+    'thermometer-warmer': 'f72a4110d4:024c76ef06024c75ce0a024c75b00c024b768706024c769117024c76fb040e5073ff03024c75ff03034c76ff521d566fff031d5670ff155d6e62ff06/~a28954ff09d29c4aff04e5a346ff13f2a743ff03f2a844ff29',
+    'thunderstorms-day-rain': '0492e3491c:a0600a9f06a0600acd089f610bfd1c/034c758708034c75c505164e68ff02034c76e7040b547cff02024c76f8020a4c70ff01034c75ff02034c76ff7d465447f607/2e76948e062c7592be03236c8cff022f7795e402307895ff29',
+    'thunderstorms-night-rain': 'e27d991b59:9f610ad0069f610a9c077e5c21f602a0610bfe1d/094c71c706044e778e0b024b76ea06214f61ff01024b75fe02074c72ff010f587eff02044e78ff01034c76ff80505641fc04/2f7894a70620698bf6032f7895f104307895ff28',
+    'thunderstorms-rain': 'f2df715271:a0600ab307a0610bfc15/034c77f503024b75e204034c75b4150d567dff03024c76fa02034c76ff8327515cf905/2e7694ac092d7593dc04236b8cff032f7794ff01307895ff2a',
+    'thunderstorms': '0bf712d0f0:a0610bc6059f600a9607a0600bec03a0610bff1f/2e7693a9072f7895f10420688aff022b7391ff02307895ff27/094c71cc05044e77920a024c76ea05024c75fd0310587fff02044e77ff01034c76ff7b4e5642f806',
+    'tornado': 'abcfae6bce:024b759403024b768201024c768068024c76f10c024c76fd03034c76ff83',
+    'umbrella': '510ac56f41:034b76c80a024b75d40f024c76f704024b76d60b024b75e105024c768e0f034b75b308024b75eb0a024b75fe06024c76ff01034c76ffa9',
+    'wind-cloud': 'dc5d8d9846:024b76e906034c75a606034c75c013024c76820b165e83ff02024b76f806075079ff02034c76ff98/2f7895a1052f7794df031e6688ff02307895ff29',
+    'wind': 'c8eada0b6a:024c75a40b024b75fe02024b76ee0d034c75c90d024b768706024c768030024b769106024c76fc03034c76ff98'
+  },
+  // the ink copy's mask (rows-flat-ink/, one part)
+  k: {
+    'clear-day': 'aaa091093b:ffffff860bffffffa110ffffffb907ffffffc00affffffd207fffffff705fffffffb0bfffffffe08ffffffffb4',
+    'clear-night': '43c6cf42fd:ffffff8d0cffffffa60dffffffbe08ffffffd706ffffffe60efffffff50efffffffe01ffffffffbb',
+    'cloudy': '9048bf7f7e:ffffff8b09ffffffa007ffffffae07ffffffc018ffffffd203fffffff107fffffff905ffffffffc0',
+    'drizzle': 'ebdfb02a85:ffffff800fffffff9105ffffffa80affffffca0affffffe009fffffff308fffffffa04fffffffe03ffffffffbe',
+    'extreme-rain': 'fd5701aa0b:ffffff8508ffffff9709ffffffb80cffffffce08ffffffe10bfffffff007fffffff904fffffffd03ffffffffc2',
+    'extreme-snow': '93bcae5170:ffffff810fffffff9607ffffffa90bffffffc60bffffffd408ffffffe00effffffed09fffffff507fffffffc05fffffffe02ffffffffa7',
+    'fog': '6316443dc9:ffffff8110ffffffa308ffffffc709ffffffda07fffffff106fffffffc03fffffffe02ffffffffcb',
+    'hail': 'c4f06de30b:ffffff8f07ffffffab0bffffffcc04ffffffbf19ffffffda0bffffffe505ffffffee05fffffff803fffffffe01ffffffffb7',
+    'lightning-bolt': 'f03c6e5a66:ffffff8213ffffffa005ffffffc506ffffffe008fffffff508ffffffffd0',
+    'mist': 'e898f44b1f:ffffff8708ffffff9c08ffffffb208ffffffd502ffffffbe04ffffffc503ffffffc02fffffffeb03fffffff70affffffffa4',
+    'overcast-day': '301a574669:ffffff8d0cffffffae0affffffc010ffffffca05ffffffdc06ffffffe805fffffff307fffffff904fffffffd03ffffffffbb',
+    'overcast-night': 'd8c4bd5570:ffffff8708ffffff9f09ffffffb009ffffffc018ffffffd305ffffffeb05fffffff609fffffffd02ffffffffb9',
+    'overcast': '8eadb9c84e:ffffff9c0affffffc40effffffd807fffffff004fffffffa08fffffffd04ffffffffd0',
+    'partly-cloudy-day-snow': '3ca700c13a:ffffff8010ffffff8e08ffffff9e0dffffffb306ffffffc40bffffffd30dffffffdf08ffffffeb09fffffff607fffffffc07ffffffff9d',
+    'partly-cloudy-day': '3f2a61f6d8:ffffff8b0affffffa60affffffb508ffffffcb02ffffffbf16ffffffdc08ffffffee02fffffff805fffffffe01ffffffffb9',
+    'partly-cloudy-night': '7952b0d1ed:ffffff8c0affffffaf0affffffce0dffffffe006fffffff109fffffff702fffffffd04ffffffffca',
+    'rain': '3f98898953:ffffff8a0affffffa30effffffc107ffffffd806ffffffeb05fffffff70effffffffc9',
+    'sleet': '82e273620f:ffffff8807ffffff9c0bffffffbb0cffffffcf0cffffffe60cfffffff204fffffffa06ffffffffbf',
+    'snow': '7e426fb587:ffffff890dffffff9e09ffffffad0affffffbc04ffffffc113ffffffdc08ffffffea0afffffff408fffffff904fffffffd03ffffffffa6',
+    'snowflake': 'bb1ec74f4d:ffffff8c0dffffff9c0dffffffad05ffffffb60bffffffbf0bffffffcc06ffffffe111fffffff00efffffffa07fffffffd06ffffffff98',
+    'sunrise': '55f65e315b:ffffff8708ffffff990dffffffa60affffffbb03ffffffc026ffffffcc0dffffffe80effffffee03fffffff50bffffffff8d',
+    'thermometer-colder': '9a5d24ab2a:ffffff890effffff8e04ffffff9002ffffff9117ffffff990cffffffac0bffffffc007ffffffdb07fffffff10cfffffff80bfffffffd07ffffffff92',
+    'thermometer-warmer': '7c09531a2d:ffffff880fffffff900bffffff9609ffffffa10bffffffab07ffffffb109ffffffbf0fffffffce0bffffffe204fffffff802ffffffef04fffffff21dfffffff902fffffffe02ffffffff7b',
+    'thunderstorms-day-rain': '6a29bab45c:ffffff8010ffffff8c04ffffffa609ffffffc30dffffffda09ffffffe508fffffff30afffffffb03fffffffd03ffffffffb6',
+    'thunderstorms-night-rain': '99d1cb588d:ffffff810effffff9608ffffffaa08ffffffc70dffffffde09fffffff208fffffffb05fffffffe03ffffffffbc',
+    'thunderstorms-rain': '446a349792:ffffff8c05ffffffaa0dffffffcc05ffffffbf17ffffffe107ffffffed05fffffff605fffffffc03ffffffffbe',
+    'thunderstorms': 'f2d3bb16cb:ffffff8010ffffff9504ffffffa90affffffca0effffffdf07fffffff109fffffffc06fffffffe02ffffffffbc',
+    'tornado': '1c96f945e3:ffffff9403ffffff8201ffffff8068ffffffef09fffffff603fffffffd03ffffffff83',
+    'umbrella': 'd57842e013:ffffff8609ffffff9d09ffffffba05ffffffc80affffffd51bffffffdf03ffffffe90dfffffff704fffffffd03ffffffffae',
+    'wind-cloud': '7231c4b701:ffffff820dffffff9a09ffffffb006ffffffc013ffffffcf03ffffffe80afffffff708ffffffffbb',
+    'wind': 'a788f12bbc:ffffff8808ffffff8030ffffff9506ffffffa60affffffc90dffffffe605fffffff208fffffffa02fffffffe03ffffffff98'
   }
 };
 var _wxRowPxCache = {};
-function _wxRowPx(set, name) {
+// a file's parts as written in the table: [{ px: its groups, out: whether
+// it meets the ground }] (set: 'white', 'colour' or 'ink', the copy's mask)
+function _wxRowParts(set, name) {
   var k = set + '/' + name;
   if (Object.prototype.hasOwnProperty.call(_wxRowPxCache, k)) return _wxRowPxCache[k];
-  var t = _WX_ROW_PX[set === 'colour' ? 'c' : 'w'], s = t && Object.prototype.hasOwnProperty.call(t, name) ? t[name] : '', out = null;
+  var t = _WX_ROW_PX[set === 'colour' ? 'c' : set === 'ink' ? 'k' : 'w'], s = t && Object.prototype.hasOwnProperty.call(t, name) ? t[name] : '', out = null;
   if (s) {
-    var d = s.slice(s.indexOf(':') + 1);
-    out = [];
-    for (var i = 0; i + 10 <= d.length; i += 10) {
-      out.push([0, 2, 4, 6, 8].map(function (j) { return parseInt(d.substr(i + j, 2), 16); }));
-    }
+    out = s.slice(s.indexOf(':') + 1).split('/').map(function (d) {
+      var part = { px: [], out: d.charAt(0) !== '~' };
+      if (!part.out) d = d.slice(1);
+      for (var i = 0; i + 10 <= d.length; i += 10) {
+        part.px.push([0, 2, 4, 6, 8].map(function (j) { return parseInt(d.substr(i + j, 2), 16); }));
+      }
+      return part;
+    });
   }
   return (_wxRowPxCache[k] = out);
+}
+// every group of a file, its parts together
+function _wxRowPx(set, name) {
+  var parts = _wxRowParts(set, name);
+  return parts ? [].concat.apply([], parts.map(function (p) { return p.px; })) : null;
 }
 function _wxRowWhiteVanishes(ground) {
   return _ocCr(_WX_ROW_WHITE, ground) < _WX_ROW_WHITE_MIN;
@@ -24033,14 +24092,30 @@ function _wxRowShare(px, L, ink) {
   }
   return all ? on / all : 0;
 }
+// how much of a drawing can be seen on the ground: the share at 3:1 of its
+// least-seen part, of the parts that meet the ground (each colour it is
+// drawn in: the sun, moon or bolt must hold there as well as the cloud, or
+// partly cloudy reads as cloud and a storm as rain). A part enclosed by
+// another (the mercury in its tube) is the palette's to set against that
+// part, not the row's.
+function _wxRowSeen(set, name, L) {
+  var parts = _wxRowParts(set, name), least = null;
+  if (!parts) return 0;
+  for (var i = 0; i < parts.length; i++) {
+    if (!parts[i].out) continue;
+    var s = _wxRowShare(parts[i].px, L);
+    if (least === null || s < least) least = s;
+  }
+  return least === null ? _wxRowShare(_wxRowPx(set, name), L) : least;
+}
 // what one icon wears on its row: { set: 'white' | 'colour' | 'ink', ink }
 function _wxRowWear(name, L, prefer, ink) {
   var order = prefer === 'colour' ? ['colour', 'white'] : ['white', 'colour'];
-  var shape = _wxRowPx('white', name);
-  if (!shape || !_wxRowPx('colour', name)) return { set: order[0] };   // a file the table does not know
+  var shape = _wxRowPx('ink', name);
+  if (!shape || !_wxRowPx('white', name) || !_wxRowPx('colour', name)) return { set: order[0] };   // a file the table does not know
   var tried = [];
   for (var i = 0; i < order.length; i++) {
-    var s = _wxRowShare(_wxRowPx(order[i], name), L);
+    var s = _wxRowSeen(order[i], name, L);
     if (s >= _WX_ROW_SEEN) return { set: order[i] };
     tried.push({ set: order[i], s: s });
   }
@@ -34970,7 +35045,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24085';
+var FIDS_BUILD_TAG = 'v24086';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -59775,8 +59850,8 @@ var _WX_ICON_STYLES = ['daynight', 'classic', 'colour', 'solid'];
 // over a night photograph whenever the board's own airport was in daylight.
 // Without a flag (the day forecasts, which are daytime forecasts with no
 // hour) the board's own day or night decides, as on the gate screen.
-// v24054 — at night the circle look draws the night icons drawn for Orion
-// Connected (_WX_NIGHT_DIR, below): a plate or an hour in darkness, or with
+// v24054 — at night the circle look draws the night icons (_WX_NIGHT_DIR,
+// below; v24086 the flat set): a plate or an hour in darkness, or with
 // no flag the board's own night. A Solid chosen by day keeps its glyphs.
 function _wxCardIconDir(night) {
   var look = (typeof window.fidsWxLook === 'function') ? window.fidsWxLook() : '';
@@ -59878,20 +59953,21 @@ function _wxDiscTint(f, dh) {
   }
   return _wxHex(_wxFromOklab([L, c * Math.cos(h), c * Math.sin(h)]));
 }
-// ══ v24054 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED ═════════════════════
+// ══ v24054 — THE NIGHT ICONS ═════════════════════════════════════════════
 // At night, wherever the look draws its weather icons in a circle (Day &
-// night after dark, and Solid at night), the icons are the set drawn for
-// Orion Connected, one file per condition in logos/weather/night-line/
-// (scripts/wx-icons/night-line.py). The weather card draws them; the gate's
-// circle look (fids-v2.js wxIconHtml) is wired the same way, though no
-// element of today's gate layout shows it (its header #hdrTemp is hidden).
-// The files carry no circle: the boards draw it (_wxNightLineDisc on the
-// card, .fids-wx-line on the gate). Each file's frame IS the circle the icon
-// was drawn on, so the board's circle, drawn on that frame, puts every icon
-// exactly as large and exactly where it was drawn: nothing re-centred,
-// nothing scaled (_WX_NIGHT_ICON = 100). As drawn, the farthest point of any
-// icon (the moon's tip in partly cloudy night) is at 92.06 % of the radius:
-// the boards' 92 % rule to 0.06 % (tests/weather-night-line.test.js). The
+// night after dark, and Solid at night), the icons are the night set, one
+// file per condition in logos/weather/night-flat/. v24086 — the flat set in
+// the style of Vecteezy pack 98703 (licensed, scripts/wx-icons/flat.py), in
+// the pack's own colours: white clouds, a #CCCCCC cloud behind, a #F2A844
+// sun, moon and bolt. The weather card draws them; the gate's circle look
+// (fids-v2.js wxIconHtml) is wired the same way, though no element of
+// today's gate layout shows it (its header #hdrTemp is hidden). The files
+// carry no circle: the boards draw it (_wxNightLineDisc on the card,
+// .fids-wx-line on the gate). Each file's frame IS the circle, one frame for
+// every icon (_WX_NIGHT_ICON = 100): the cloud pair spans 64 % of the
+// circle's diameter, as the pack's icons sit in their tiles, every icon at
+// one scale, and no point past 92 % of the radius, the boards' rule for
+// circle sets (tests/weather-night-flat.test.js). The
 // circle's colour is ONE choice, _WX_NIGHT_DISC:
 //   'airline'  (B, the default) the card's own ground under the circle, a
 //              step lighter, toward a light tint of the airline
@@ -59906,19 +59982,19 @@ function _wxDiscTint(f, dh) {
 //              what is there keeps it one step lighter on any take (about
 //              1.3:1; measured on the card at 1920: Air Canada 1.25 to 1.29,
 //              Porter 1.28 to 1.34, WestJet 1.30 to 1.34), so it always reads as a circle and always
-//              blends; the icons' gold, blue and white keep 3:1 or more on
+//              blends; the icons' orange, grey and white keep 3:1 or more on
 //              it. Air Canada's lifts toward a faint wine, WestJet's a faint
 //              teal, Porter's a faint navy;
-//   'charcoal' (A) the charcoal circle the icons were drawn on, as drawn.
+//   'charcoal' (A) a charcoal circle, #2B2B2A.
 var _WX_NIGHT_DISC = 'airline';
-var _WX_NIGHT_DIR = '/logos/weather/night-line/';
-var _WX_NIGHT_CHARCOAL = '#2B2B2A';   // the circle on the sheet the icons were drawn on
+var _WX_NIGHT_DIR = '/logos/weather/night-flat/';
+var _WX_NIGHT_CHARCOAL = '#2B2B2A';   // the charcoal circle (A)
 var _WX_NIGHT_ICON = 100;             // the file's frame, as a share of the circle's diameter: the frame is the circle
 var _WX_NIGHT_C = 0.035;              // at most this much colour in the airline's tint
 var _WX_NIGHT_LIFT = 0.10;            // the circle: what is painted under it, this much toward the tint
-// the colours the icons are drawn in: both ends of the gold gradient, the
-// blue, the white, the grey
-var _WX_NIGHT_INKS = ['#FFF406', '#FFAC2D', '#25B4E4', '#FEFEFE', '#D5D5D5'];
+// the colours the icons are drawn in (scripts/wx-icons/flat/palette.json,
+// "dark"): the white, the grey of the cloud behind, the orange
+var _WX_NIGHT_INKS = ['#FFFFFF', '#CCCCCC', '#F2A844'];
 // f: the colour the card tints its ground with. The day circle's warm hue
 // for Air Canada (dh) is the daylight footage under its ground; at night its
 // ground reads as its own wine, so the night circle takes f's hue for every
@@ -59935,9 +60011,9 @@ function _wxNightDisc(code) {
   if (_WX_NIGHT_DISC !== 'airline') return _WX_NIGHT_CHARCOAL;
   return _wxAirlineLook(code).nk;
 }
-// a night-line file, inlined on the card, inside its circle: the file's own
+// a night-flat file, inlined on the card, inside its circle: the file's own
 // frame placed at _WX_NIGHT_ICON % of a 100-unit circle, centred (at 100 the
-// frame is the circle, as on the sheet)
+// frame is the circle)
 function _wxNightLineDisc(txt) {
   var s = String(txt || '');
   var m = /^\s*<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="([^"]+)">/.exec(s);
@@ -60225,10 +60301,10 @@ function _wxHydrateSvgs(root) {
           if (!img.parentNode) return;
           // v24014 — on the weather card the icons are white and still
           // (v24035: not the Colour / Solid circles, which keep their own colours)
-          if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-line)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
-          // v24054 — the night icons drawn for Orion Connected come without a
+          if (img.closest && img.closest('.wxcard-wrap') && !/\/(disc-(day|night)|night-flat)\//.test(img.getAttribute('src') || '')) rawTxt = _wxWhiteStill(rawTxt, name);
+          // v24054 — the night icons come without a
           // circle: they are set in the night circle here (--wxn-disc)
-          if (/\/night-line\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightLineDisc(rawTxt);
+          if (/\/night-flat\//.test(img.getAttribute('src') || '')) rawTxt = _wxNightLineDisc(rawTxt);
           // Uniquify the SVG's internal IDs per instance. Animated Meteocons
           // carry <defs> gradients / clipPaths / <animate> targets referenced
           // by url(#id) and href="#id". Inlining the SAME icon more than once
@@ -60996,7 +61072,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24085" src="/textures/gate-sky-shelf.mp4?v=24085"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24086" src="/textures/gate-sky-shelf.mp4?v=24086"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

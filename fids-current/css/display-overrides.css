@@ -22813,7 +22813,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24085') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24086') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
@@ -23100,8 +23100,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 /* ══ v24035 — THE WEATHER ICONS' LOOK (Customize → Weather icons) ══════════════
-   fids-v2.js wxIconHtml. (The departures and arrivals rows wear the sets
-   drawn for Orion Connected since v24054: see that block.) On the gate
+   fids-v2.js wxIconHtml. (The departures and arrivals rows wear their own
+   two sets since v24054: see that block.) On the gate
    screens the icon's own round background is the circle: white with
    the colour icon baked in, or the airline's deep colour (--wx-disc) with
    the glyph as a mask painted in its brand colour (--wx-ink). */
@@ -23124,15 +23124,15 @@ img.fids-wx-disc {
   mask: var(--wx-glyph) center / contain no-repeat;
 }
 
-/* ══ v24054 — THE NIGHT ICONS DRAWN FOR ORION CONNECTED, ON THE GATE ══════════
+/* ══ v24054 — THE NIGHT ICONS, ON THE GATE ═══════════════════════════════════
    fids-v2.js wxIconHtml at night. The element's own round background is the
    night circle (--wxn-disc, fids-core.js _wxNightDisc: what is painted under
-   it lifted toward the airline's tint, or the charcoal the icons were drawn
-   on) and the icon
-   (logos/weather/night-line/, in its colours as drawn) is its ::after on the
-   whole circle: each file's frame is the circle the icon was drawn on, so the
-   icon sits as large and where it was drawn (_WX_NIGHT_ICON = 100). No
-   element of today's gate layout shows it (#hdrTemp is hidden). */
+   it lifted toward the airline's tint, or a charcoal) and the icon
+   (logos/weather/night-flat/, v24086 the flat set in the style of Vecteezy
+   pack 98703, in the pack's own colours) is its ::after on the whole circle:
+   each file's frame is the circle, so every icon sits at one scale, the
+   cloud pair across 64 % of it (_WX_NIGHT_ICON = 100). No element of
+   today's gate layout shows it (#hdrTemp is hidden). */
 .fids-wx-line {
   position: relative;
   border-radius: 50% !important;
@@ -25732,19 +25732,24 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 
-/* ══ v24054 — THE ROW WEATHER ICONS DRAWN FOR ORION CONNECTED, BY THE ROW'S GROUND ══
+/* ══ v24054 — THE ROW WEATHER ICONS, BY THE ROW'S GROUND ══════════════════════
    fids-v2.js wxRowHtml: in every look but Classic the departures and arrivals
-   rows draw one of two sets, no circle. The icon is the element's own
-   background, its two files given on the element (--wxr-w, the white set
-   for a dark ground; --wxr-c, the colour set for a light ground), and
+   rows draw one of two sets, no circle (v24086: the flat set in the style of
+   Vecteezy pack 98703, the same shapes in two colourways). The icon is the
+   element's own background, its files given on the element (--wxr-w,
+   the white set for a dark ground, rows-flat-white/; --wxr-c, the colour
+   set for a light ground, rows-flat-color/; --wxr-m, the ink copy's mask,
+   rows-flat-ink/), and
    fids-core.js _fidsRowWxSet writes, icon by icon, what it wears on the
    colour it really sits on: data-wx-set="colour" where the row is light and
-   that drawing can be seen there, "white" (or nothing yet) for the white
-   file, and "ink" where neither drawing can be seen (the colour set's gold
-   sun and moon and pale clouds on yellow Delayed, orange Final call and the
-   light rows; the white set's thin lines on red Cancelled). The ink copy is
-   the same drawing: the white file's own shapes as a mask, filled with the
-   row's own text colour (--wxr-k; navy on yellow and orange, white on red).
+   every part of that drawing can be seen there, "white" (or nothing yet)
+   for the white file, and "ink" where neither drawing can be seen whole (a
+   sun, moon, bolt or cloud behind under 3:1: the darker Delayed yellow,
+   orange Final call, red Cancelled, the mid-tone teal, cyan, blue and gold
+   rows). The ink copy is the same drawing in one colour: its mask is the
+   drawing's own shapes, each part cut back from the parts in front of it,
+   filled with the row's own text colour (--wxr-k; navy on yellow and
+   orange, white on blue and red).
    The box keeps its size whatever it wears, so a swap never moves
    anything. Without a pick (before the first pass) it shows the white file,
    the set for the dark boards most airports run. No filter is ever laid on
@@ -25758,8 +25763,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 #fidsTable .fids-wx-row[data-wx-set="ink"] {
   background: var(--wxr-k, #111111) !important;
-  -webkit-mask: var(--wxr-w) center / contain no-repeat !important;
-  mask: var(--wxr-w) center / contain no-repeat !important;
+  -webkit-mask: var(--wxr-m, var(--wxr-w)) center / contain no-repeat !important;
+  mask: var(--wxr-m, var(--wxr-w)) center / contain no-repeat !important;
 }
 
 /* ══ v24041 — A HOLIDAY LOOK: THANKSGIVING, "HARVEST SILK" ═══════════════════
