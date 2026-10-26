@@ -602,11 +602,13 @@ test('the memo never steps back, whatever the plan is rebuilt from', () => {
 // helpers they call, run over every stage. A key that does not resolve
 // renders as nothing or as its own name; either fails here. THE FINAL
 // DESIGN: two layouts carry the same calls, the one centre display
-// ('centre', the default) and the two lane panels it adapts ('panels').
+// ('centre', ?sign=centre) and the two lane panels ('panels', the default
+// again since 2026-10-25: the priority group on the left for the whole of
+// boarding, the current call on the right).
 function signRenderer(langs, frF, layout) {
   const helpers = ['_g8GrpValCls', '_g8SignPair', '_g8SignLanes', '_g8SignLines', '_g8Picto', '_g8SeatList', '_g8SeatKey', '_g8SignGo',
     '_g8SignInstr', '_g8ArrowDisc', '_g8ArrowGlyph', '_g8SignCol', '_g8SignHtml', '_g8SignCentreHtml', '_g8SeqLabelKey', '_g8SeqValue',
-    '_g8SeqWhoBlk', '_g8SeqWho', '_g8SeqCab', '_g8SeqCabS', '_g8SeqCabOf', '_g8SeqSeated', '_g8SeqAll', '_g8SeqPanels', '_g8SeqCentre'].map(inner);
+    '_g8WhoBind', '_g8SeqWhoBlk', '_g8SeqWho', '_g8SeqCab', '_g8SeqCabS', '_g8SeqSeated', '_g8SeqAll', '_g8SeqPanels', '_g8SeqPrioVal', '_g8SeqPrioWho', '_g8SeqPrio', '_g8SeqCentre'].map(inner);
   const arrow = (UXG.match(/  var _G8_ARROW_PATH = [^;]+;/) || [])[0];
   assert.ok(arrow, 'the arrow path');
   const picto = braceFrom(UXG, UXG.indexOf('  var _G8_PICTO = {'), '_G8_PICTO') + ';';
@@ -689,91 +691,120 @@ test('no missing label key on any stage, in any language, in either layout: ever
   assert.ok(frames > 1000, 'frames rendered: ' + frames);
 });
 
+// the two panels' halves on their own: the left (the priority group), the
+// right (the current call), the band under both
+const sides = (html) => {
+  const cols = html.split('<div class="g8-board-col ');
+  const band = (cols[2] || '').split('<div class="g8-sign-instr g8-sign-instr-band">');
+  return { L: textOf('<x ' + (cols[1] || '')), R: textOf('<x ' + band[0]), I: textOf(band[1] || ''),
+    hL: '<div class="g8-board-col ' + (cols[1] || ''), hR: '<div class="g8-board-col ' + (band[0] || '') };
+};
+// the current call alone: the one centre's panel, or the two panels' right
+// (the left is the priority group for the whole of boarding)
+const callOf = (layout, html) => (layout === 'panels' ? sides(html).hR : html);
 test('the panels say the right thing at the right stage', () => {
   const render = signRenderer(['en', 'fr'], false, 'panels');
   const planOf = (code, ctx) => planFor(code, ctx, 30, 15);
-  const at = (code, ctx, mins, isFinal) => {
-    const p = planOf(code, ctx);
-    return textOf(render({ p, st: SEQ.stageAt(p, T0 + mins * MIN) }, !!isFinal));
-  };
   const htmlAt = (code, ctx, mins, isFinal) => {
     const p = planOf(code, ctx);
     return render({ p, st: SEQ.stageAt(p, T0 + mins * MIN) }, !!isFinal);
   };
+  const at = (code, ctx, mins, isFinal) => textOf(htmlAt(code, ctx, mins, isFinal));
+  // the current call (the right) and the priority group (the left) alone
+  const right = (code, ctx, mins, isFinal) => sides(htmlAt(code, ctx, mins, isFinal)).R;
+  const left = (code, ctx, mins, isFinal) => sides(htmlAt(code, ctx, mins, isFinal)).L;
   // the minute a stage is live, by what it calls
   const when = (code, ctx, pick) => { const s = planOf(code, ctx).stages.find(pick); assert.ok(s, code + ': the stage'); return s.at + 0.3; };
   // Air Canada A320, 30-minute window
   const pre = at('AC', {}, 1);
-  assert.match(pre, /Pre-boarding \| Préembarquement/);
-  assert.match(pre, /wheelchair/, "Air Canada's own words for who pre-boards");
-  assert.match(pre, /fauteuil roulant/, 'and in French too: the gate has no language rotation, both are shown');
-  assert.doesNotMatch(pre, /Next|Prochain/, 'the Next line is gone');
+  const preS = sides(htmlAt('AC', {}, 1));
+  assert.match(preS.R, /^Pre-boarding \| Préembarquement/, 'the right: the current call, pre-boarding');
+  assert.match(preS.R, /wheelchair/, "Air Canada's own words for who pre-boards");
+  assert.match(preS.R, /fauteuil roulant/, 'and in French too: the gate has no language rotation, both are shown');
+  assert.match(preS.hR, /class="g8-sign-picto g8-picto-pre"/, 'with its pictograms');
+  assert.doesNotMatch(pre.replace('Boarding next | Prochain embarquement', ''), /Next|Prochain/, 'the Next line is gone (the priority group\'s own state aside)');
   assert.doesNotMatch(pre, /General boarding/, 'General boarding is said only at the switch');
-  assert.match(pre, /Boarding Will Begin Shortly/, 'general boarding is not called yet');
+  assert.doesNotMatch(pre, /Boarding Will Begin Shortly/, 'no waiting panel: the right is the current call');
   assert.doesNotMatch(pre, /Zones? [\d–, and]+: please remain seated/, 'pre-boarding numbers no one: the instruction line says it');
-  assert.match(pre, /Please remain seated until your zone is called.*Veuillez rester assis jusqu’à l’appel de votre zone/);
-  // the waiting panel never reads as a live call: no number, no arrow; its
-  // title is the cabin its first call is for
-  const preH = htmlAt('AC', {}, 1);
-  const right = preH.split('g8-sign-right')[1];
-  assert.match(preH, /g8-sign-right[^"]*is-waiting/, 'the waiting panel says so in its class');
-  assert.doesNotMatch(right, /g8-sign-valarrow/, 'no arrow while it waits');
-  assert.doesNotMatch(right, /g8-sign-row/, 'no number on a row while it waits');
-  assert.match(textOf(right.slice(right.indexOf('>') + 1)), /^Economy Class \| Classe économique Boarding Will Begin Shortly/, 'the cabin it will call, then "will begin shortly"');
-  const z1 = at('AC', {}, when('AC', {}, (s) => s.values.includes('1')));
-  assert.match(z1, /Priority \| Prioritaire/);
-  assert.match(z1, /Business Class \| Classe affaires/, 'Zone 1: Business Class');
-  assert.match(z1, /Zone 1/);
-  assert.match(z1, /Zones 2–6: please remain seated Zones 2–6 : veuillez rester assis/, 'who still waits, each language a whole line, a run of five as a range');
-  const z2 = at('AC', {}, when('AC', {}, (s) => s.values.includes('2')));
-  assert.doesNotMatch(z2, /Business Class|Premium Economy/, 'Zone 2 on an A320 names no cabin: Premium Economy flies only on widebodies');
-  const z2w = at('AC', { cat: 'widebody' }, when('AC', { cat: 'widebody' }, (s) => s.values.includes('2')));
+  assert.match(preS.I, /Please remain seated until your zone is called.*Veuillez rester assis jusqu’à l’appel de votre zone/);
+  // THE LEFT IS PRIORITY FROM THE FIRST MINUTE: its unit and numbers, who
+  // it is for (its cabins first), not called yet
+  assert.match(preS.L, /^Priority \| Prioritaire Zones 1 • 2 Boarding next \| Prochain embarquement Business Class · Aeroplan Super Elite members/, 'its numbers, "Boarding next", then who it is for');
+  assert.match(preS.L, /Classe affaires · Membres de statut Aéroplan Super Élite/, 'in French too');
+  assert.match(preS.L, /Premium Aeroplan credit cardholders/, "and Zone 2's list");
+  assert.match(preS.hL, /is-prio prio-ahead/);
+  assert.doesNotMatch(preS.hL, /g8-sign-chk/, 'no check before its first call');
+  assert.match(preS.hL, /<div class="g8-sign-value"><span class="g8-v-seq"><span class="g8-v-wait">1<\/span> • <span class="g8-v-wait">2<\/span><\/span><\/div>/, 'both numbers faint: not called yet');
+  // 2026-10-26 — and every name in its list, faint until its call is made
+  assert.doesNotMatch(preS.hL, /class="g8-who-i"/, 'no name lit before its call');
+  const z1H = htmlAt('AC', {}, when('AC', {}, (s) => s.values.includes('1')));
+  const z1 = sides(z1H);
+  assert.match(z1.R, /^Zone 1 Business Class \| Classe affaires Aeroplan Super Elite members/, 'Zone 1: the call, Business Class, who');
+  assert.match(z1.hR, /g8-board-col now g8-sign-col g8-sign-right/, 'a priority call in the priority colour');
+  assert.match(z1.hR, /g8-sign-valarrow/, 'its arrow: the current call');
+  assert.match(z1.I, /Zones 2–6: please remain seated Zones 2–6 : veuillez rester assis/, 'who still waits, each language a whole line, a run of five as a range');
+  assert.match(z1.hL, /is-prio prio-part/);
+  assert.match(z1.hL, /<div class="g8-sign-status g8-pair"><span class="g8-sign-chk"><svg class="g8-picto g8-picto-chk"/, 'the check, once its first call is made');
+  assert.match(z1.L, /Zones 1 • 2 Boarding now \| Embarquement en cours /, 'and "Boarding now" beside it');
+  assert.match(z1.hL, /<span class="g8-v-on">1<\/span> • <span class="g8-v-wait">2<\/span>/, 'Zone 1 called, Zone 2 still faint');
+  assert.doesNotMatch(right('AC', {}, when('AC', {}, (s) => s.values.includes('2'))), /Business Class|Premium Economy/, 'Zone 2 on an A320 names no cabin: Premium Economy flies only on widebodies');
+  const z2w = right('AC', { cat: 'widebody' }, when('AC', { cat: 'widebody' }, (s) => s.values.includes('2')));
   assert.match(z2w, /Premium Economy \| Économique Privilège/, 'Zone 2 on a widebody: Premium Economy, in Air Canada\'s French');
   assert.doesNotMatch(z2w, /Business Class/, 'never the first priority call\'s cabin');
-  const fam = at('AC', {}, when('AC', {}, (s) => s.title === 'familyBoard'));
-  assert.match(fam, /Family boarding \| Embarquement des familles/);
-  assert.match(fam, /under the age of 6 or who need more time to board/);
-  assert.match(fam, /musical instruments/, "Air Canada's whole step");
-  assert.doesNotMatch(fam, /: please remain seated/, 'a family call numbers no one');
-  const z3 = at('AC', {}, when('AC', {}, (s) => s.values.includes('3')));
-  assert.match(z3, /Priority \| Prioritaire.*Zones 1 • 2/, 'the priority values called stay listed');
-  assert.doesNotMatch(z3.split('Economy Class')[0], /Business Class/, 'Zones 1 • 2 share no cabin: none is named');
-  assert.match(z3, /Board at your convenience/, "Air Canada's footnote: priority may board at any time");
-  assert.match(z3, /Economy Class \| Classe économique Zone 3/, 'the cabin over the number, never General boarding over one zone');
-  assert.doesNotMatch(z3, /General boarding/);
-  assert.match(z3, /Zones 4, 5 and 6: please remain seated Zones 4, 5 et 6 : veuillez rester assis/);
-  const z5 = at('AC', {}, when('AC', {}, (s) => s.values.includes('5')));
-  assert.match(z5, /Zone 6: please remain seated Zone 6 : veuillez rester assis/, 'one zone left: the singular');
+  assert.match(left('AC', { cat: 'widebody' }, 1), /^Priority \| Prioritaire Zones 1 • 2 Boarding next \| Prochain embarquement Business Class · Aeroplan Super Elite members · .*· Premium Economy · Aeroplan 75K/, 'the priority group names every cabin its calls name, call by call');
+  const famH = htmlAt('AC', {}, when('AC', {}, (s) => s.title === 'familyBoard'));
+  const fam = sides(famH);
+  assert.match(fam.R, /Family boarding \| Embarquement des familles/);
+  assert.match(fam.R, /under the age of 6 or who need more time to board/);
+  assert.match(fam.R, /musical instruments/, "Air Canada's whole step");
+  assert.doesNotMatch(textOf(famH), /: please remain seated/, 'a family call numbers no one');
+  assert.match(fam.hL, /is-prio prio-called/, 'Zones 1 and 2 both called');
+  assert.match(fam.hL, /<span class="g8-v-on">1<\/span> • <span class="g8-v-on">2<\/span>/, 'each number written out, in one form for the whole of boarding');
+  assert.doesNotMatch(fam.hL, /g8-who-wait/, 'every name lit once every call is made');
+  assert.doesNotMatch(fam.hL, /g8-v-wait/, 'never faint again once called');
+  const z3S = sides(htmlAt('AC', {}, when('AC', {}, (s) => s.values.includes('3'))));
+  assert.match(z3S.L, /^Priority \| Prioritaire Zones 1 • 2 Boarding now \| Embarquement en cours Business Class · Aeroplan Super Elite members/, 'the priority group stays up, called, with who it is for');
+  assert.match(z3S.hL, /g8-sign-chk/);
+  assert.match(z3S.R, /^Zone 3 Economy Class \| Classe économique Use Lanes 3 • 4 \| Utilisez les voies 3 • 4$/, 'the call, its cabin under the number, its lanes, never General boarding over one zone');
+  assert.match(z3S.hR, /g8-board-col next g8-sign-col g8-sign-right/, "a general call in the airline's general colour");
+  assert.doesNotMatch(z3S.L + z3S.R, /General boarding|Board at your convenience/);
+  assert.match(z3S.I, /Zones 4, 5 and 6: please remain seated Zones 4, 5 et 6 : veuillez rester assis/);
+  assert.match(sides(htmlAt('AC', {}, when('AC', {}, (s) => s.values.includes('5')))).I, /Zone 6: please remain seated Zone 6 : veuillez rester assis/, 'one zone left: the singular');
   // THE SWITCH: the last call takes everyone still waiting
-  const z6 = at('AC', {}, 20);
-  assert.match(z6, /General boarding \| Embarquement général All zones \| Toutes les zones/);
-  assert.match(z6, /All remaining passengers, please proceed to the gate Tous les autres passagers sont priés de se présenter à la porte/);
-  assert.doesNotMatch(z6, /Zone 6|remain seated|rester assis/, 'never one more number, and no one is left waiting');
   const z6H = htmlAt('AC', {}, 20);
-  assert.match(z6H, /g8-sign-right[^"]*is-switch/, 'the switch in its own colour (is-switch)');
-  assert.match(z6H, /class="g8-sign-picto g8-picto-all"/, 'with the group of passengers');
-  const fc = at('AC', {}, 20, true);
-  assert.match(fc, /All zones \| Toutes les zones/, 'the final call keeps ALL ZONES');
-  assert.doesNotMatch(fc, /Zones 3 • 4 • 5 • 6/, 'not the list of numbers under it');
-  assert.doesNotMatch(fc, /Pre-boarding|wheelchair|Next/, 'the final call: no pre-boarding words, no Next line');
+  const z6 = sides(z6H);
+  assert.match(z6.R, /General boarding \| Embarquement général All zones \| Toutes les zones/);
+  assert.match(z6.I, /All remaining passengers, please proceed to the gate Tous les autres passagers sont priés de se présenter à la porte/);
+  assert.doesNotMatch(textOf(z6H), /Zone 6|remain seated|rester assis/, 'never one more number, and no one is left waiting');
+  assert.match(z6.hR, /g8-sign-right[^"]*is-switch/, 'the switch in its own colour (is-switch)');
+  assert.match(z6.hR, /class="g8-sign-picto g8-picto-all"/, 'with the group of passengers');
+  assert.match(z6.L, /^Priority \| Prioritaire Zones 1 • 2 Boarding now \| Embarquement en cours Business Class/, 'priority stays on screen beside the switch');
+  assert.match(z6.hL, /prio-called/);
+  const fcS = sides(htmlAt('AC', {}, 20, true));
+  assert.match(fcS.R, /All zones \| Toutes les zones/, 'the final call keeps ALL ZONES');
+  assert.doesNotMatch(fcS.R, /Zones 3 • 4 • 5 • 6/, 'not the list of numbers under it');
+  assert.doesNotMatch(fcS.L + fcS.R, /Pre-boarding|wheelchair|Next/, 'the final call: no pre-boarding words, no Next line');
+  assert.match(fcS.L, /^Priority \| Prioritaire Zones 1 • 2/, 'and priority at the final call');
+  assert.match(fcS.hL, /prio-called/);
   // Rouge: Premium Rouge in Zone 1 on a Caribbean flight, Zone 2 on an international one
-  assert.match(at('RV', { region: 'carib' }, when('RV', { region: 'carib' }, (s) => s.values.includes('1'))), /Premium Rouge/);
-  assert.doesNotMatch(at('RV', { region: 'carib' }, when('RV', { region: 'carib' }, (s) => s.values.includes('2'))), /Premium Rouge/);
-  assert.doesNotMatch(at('RV', { region: 'intl' }, when('RV', { region: 'intl' }, (s) => s.values.includes('1'))), /Premium Rouge/);
-  assert.match(at('RV', { region: 'intl' }, when('RV', { region: 'intl' }, (s) => s.values.includes('2'))), /Premium Rouge/);
+  assert.match(right('RV', { region: 'carib' }, when('RV', { region: 'carib' }, (s) => s.values.includes('1'))), /Premium Rouge/);
+  assert.doesNotMatch(right('RV', { region: 'carib' }, when('RV', { region: 'carib' }, (s) => s.values.includes('2'))), /Premium Rouge/);
+  assert.doesNotMatch(right('RV', { region: 'intl' }, when('RV', { region: 'intl' }, (s) => s.values.includes('1'))), /Premium Rouge/);
+  assert.match(right('RV', { region: 'intl' }, when('RV', { region: 'intl' }, (s) => s.values.includes('2'))), /Premium Rouge/);
   assert.doesNotMatch(at('RV', { region: 'na' }, when('RV', { region: 'na' }, (s) => s.values.includes('1'))), /Premium Rouge/, 'a U.S. or Mexican flight: neither, so none');
   // WestJet: Premium, Extended Comfort, special boarding, Zone 3 then Zone 3+
-  assert.match(at('WS', {}, when('WS', {}, (s) => s.values.includes('1'))), /Premium \| Privilège/);
-  assert.match(at('WS', {}, when('WS', {}, (s) => s.values.includes('2'))), /Extended Comfort \| Confort accru/, "WestJet's Zone 2 seats");
+  assert.match(right('WS', {}, when('WS', {}, (s) => s.values.includes('1'))), /Premium \| Privilège/);
+  assert.match(right('WS', {}, when('WS', {}, (s) => s.values.includes('2'))), /Extended Comfort \| Confort accru/, "WestJet's Zone 2 seats");
   assert.doesNotMatch(at('WR', {}, when('WR', {}, (s) => s.values.includes('2'))), /Extended Comfort/, 'no page says Encore sells it');
-  assert.match(at('WR', {}, when('WR', {}, (s) => s.values.includes('1'))), /Premium \| Privilège/, 'Encore sells Premium');
+  assert.match(right('WR', {}, when('WR', {}, (s) => s.values.includes('1'))), /Premium \| Privilège/, 'Encore sells Premium');
   const wsSp = when('WS', {}, (s) => s.title === 'specialBoard');
-  assert.match(at('WS', {}, wsSp), /Special boarding \| Embarquement spécial/);
-  assert.match(at('WS', {}, wsSp), /under five/);
-  const wsZ3 = at('WS', {}, when('WS', {}, (s) => s.values.includes('3')));
-  assert.match(wsZ3, /Zone 3/, 'Zone 3, then Zone 3+');
-  assert.doesNotMatch(wsZ3, /3\+/, 'never "Zone 3+: please remain seated" under ZONE 3: Zone 3+ is Zone 3 and up');
-  assert.match(wsZ3, /Please remain seated until your zone is called/, 'nothing numbered is left to name: the instruction line says it');
+  assert.match(right('WS', {}, wsSp), /Special boarding \| Embarquement spécial/);
+  assert.match(right('WS', {}, wsSp), /under five/);
+  const wsZ3 = sides(htmlAt('WS', {}, when('WS', {}, (s) => s.values.includes('3'))));
+  assert.match(wsZ3.R, /^Zone 3/, 'Zone 3, then Zone 3+');
+  assert.doesNotMatch(wsZ3.L + wsZ3.R + wsZ3.I, /3\+/, 'never "Zone 3+: please remain seated" under ZONE 3: Zone 3+ is Zone 3 and up');
+  assert.match(wsZ3.I, /Please remain seated until your zone is called/, 'nothing numbered is left to name: the instruction line says it');
+  assert.match(wsZ3.L, /^Priority \| Prioritaire Zones 1 • 2 Boarding now \| Embarquement en cours Premium · Platinum Rewards members · Travel companions on the same reservation · Extended Comfort · Gold and Silver Rewards members/, "WestJet's priority group, call by call: each call's cabin, then who else it takes");
   assert.match(at('WS', {}, 20, true), /All zones \| Toutes les zones/);
   assert.doesNotMatch(at('WS', {}, 20, true), /Zones? 3–9|Zones? [4-9]\b/, 'never a zone WestJet does not publish');
   // Porter: pre-boarding keeps PorterReserve; the rows; ALL ROWS at the switch
@@ -783,10 +814,11 @@ test('the panels say the right thing at the right stage', () => {
   assert.match(pd, /Unaccompanied minors/, "Porter's published roster");
   assert.match(pd, /Mineurs non accompagnés/, 'in French as well');
   assert.match(pd, /Please remain seated until your row is called.*Veuillez rester assis jusqu’à l’appel de votre rangée/, "Porter's unit: the row");
-  const pdLive = at('PD', { pdDash: true }, when('PD', { pdDash: true }, (s) => s.values.includes('14–20')));
-  assert.match(pdLive, /Rows \| Rangées 14–20/);
-  assert.match(pdLive, /Rows 1–13: please remain seated Rangées 1–13 : veuillez rester assis/, 'the bands still to come, as one range');
-  assert.doesNotMatch(pdLive, /Board at your convenience|Priority/, 'Porter publishes neither: the sign says neither');
+  const pdLive = sides(htmlAt('PD', { pdDash: true }, when('PD', { pdDash: true }, (s) => s.values.includes('14–20'))));
+  assert.match(pdLive.R, /^Rows \| Rangées 14–20/);
+  assert.match(pdLive.I, /Rows 1–13: please remain seated Rangées 1–13 : veuillez rester assis/, 'the bands still to come, as one range');
+  assert.doesNotMatch(pdLive.L + pdLive.R, /Board at your convenience|Priority/, 'Porter publishes neither: the sign says neither');
+  assert.match(pdLive.L, /^Pre-boarding \| Préembarquement .*Premium VIPorter members/, "Porter's priority group is its pre-boarding: the VIPorter tiers and PorterReserve board there");
   assert.match(at('PD', { pdDash: true }, 20, true), /All rows \| Toutes les rangées/, '« TOUTES LES RANGÉES »');
   // the generic plan: All passengers, never an invented group number
   const g = at('ZZ', { legalPre: true }, 12);
@@ -796,64 +828,67 @@ test('the panels say the right thing at the right stage', () => {
   assert.match(at('ZZ', { legalPre: true }, 1), /Please remain seated until all passengers are called/, 'nothing numbered: until all passengers are called');
   assert.doesNotMatch(at('ZZ', { legalPre: true }, 1), /general boarding|embarquement général/i, 'General boarding is said only at the switch');
   assert.doesNotMatch(at('ZZ', { legalPre: true }, 20, true), /Pre-boarding|need assistance/);
+  assert.match(left('ZZ', { legalPre: true }, 20, true), /^Priority \| Prioritaire Boarding now \| Embarquement en cours Use Lanes 1 • 2 \| Utilisez les voies 1 • 2$/, "the generic plan's priority, its symbol and its word, nothing invented under it");
   // PAL: one lane, its own two steps
   assert.match(at('PB', {}, 1), /Use Lane 1 \| Utilisez la voie 1/);
   assert.match(at('PB', {}, 8), /All passengers/);
   assert.match(at('PB', {}, 1), /Pre-boarding.*Unaccompanied minors/, "PAL's own pre-boarding list");
-  // An airline with no priority step is never given one, and once its
-  // pre-boarding is over (and at the final call) its left lanes serve the
-  // same call as the right: never 'Pre-boarding' at the final call
+  // An airline with no priority step is never given one: its left lanes
+  // keep its pre-boarding group, in its own word, called from the first
+  // minute, for the whole of boarding; the right is the current call
   for (const [code, ctx, mins, fin] of [['PB', {}, 8, false], ['PB', {}, 20, true], ['4N', { legalPre: true }, 8, false],
     ['MO', {}, 8, false], ['PD', { pdDash: true }, 20, true]]) {
-    const x = at(code, ctx, mins, fin);
+    const h = htmlAt(code, ctx, mins, fin), S = sides(h);
     const where = code + (fin ? ' final' : ' at ' + mins);
-    assert.doesNotMatch(x, /Priority|Prioritaire/, where + ': no priority step is invented');
-    assert.doesNotMatch(x, /Pre-boarding|Préembarquement/, where + ': not a pre-boarding panel once pre-boarding is over');
-    assert.equal((x.match(/General boarding \| Embarquement général/g) || []).length, 2, where + ': both lanes serve the general call');
-    assert.equal((x.match(/All remaining passengers/g) || []).length, 1, where + ': the instruction line once, under both');
-    assert.doesNotMatch(x, /Unaccompanied minors|need assistance/, where + ': without the list');
+    assert.doesNotMatch(textOf(h), /Priority|Prioritaire/, where + ': no priority step is invented');
+    assert.match(S.L, /^Pre-boarding \| Préembarquement/, where + ': the left is its pre-boarding group');
+    assert.match(S.hL, /prio-called/, where + ': called');
+    assert.match(S.hL, /g8-sign-chk/, where + ': its check');
+    assert.match(S.R, /General boarding \| Embarquement général/, where + ': the right is the call');
+    assert.doesNotMatch(S.R, /Pre-boarding|Préembarquement/, where + ': not pre-boarding once pre-boarding is over');
+    assert.equal((textOf(h).match(/All remaining passengers/g) || []).length, 1, where + ': the instruction line once, under both');
   }
   // Delta and Alaska: their cabins are brands, named in who each call is for
-  const dl1 = at('DL', {}, when('DL', {}, (s) => s.values.includes('1')));
+  const dl1 = right('DL', {}, when('DL', {}, (s) => s.values.includes('1')));
   assert.match(dl1, /Delta One customers · Delta First customers/);
-  assert.doesNotMatch(dl1, /First Class|Première classe/, "never 'First Class' for Delta");
-  assert.match(at('DL', {}, when('DL', {}, (s) => s.values.includes('3'))), /Delta Comfort customers/);
+  assert.doesNotMatch(at('DL', {}, when('DL', {}, (s) => s.values.includes('1'))), /First Class|Première classe/, "never 'First Class' for Delta");
+  assert.match(right('DL', {}, when('DL', {}, (s) => s.values.includes('3'))), /Delta Comfort customers/);
   assert.doesNotMatch(at('DL', {}, when('DL', {}, (s) => s.values.includes('6'))), /Economy Class/, 'Delta Main is not called Economy Class');
-  assert.match(at('AS', {}, when('AS', {}, (s) => s.who === 'prioWhoAS')), /First Class · Atmos Titanium members/);
-  assert.match(at('AS', {}, when('AS', {}, (s) => s.values.includes('A'))), /Families with children under the age of 2/);
+  assert.match(right('AS', {}, when('AS', {}, (s) => s.who === 'prioWhoAS')), /First Class · Atmos Titanium members/);
+  assert.match(right('AS', {}, when('AS', {}, (s) => s.values.includes('A'))), /Families with children under the age of 2/);
   // 2026-10-20 — American's Group 5 is "Preferred boarding", in American's
   // own words in both languages, never "Main Cabin" (its table names the
   // Main Cabin for Groups 7 and 8 only)
-  const aa5 = at('AA', {}, when('AA', {}, (s) => s.values.includes('5')));
+  const aa5 = right('AA', {}, when('AA', {}, (s) => s.values.includes('5')));
   assert.match(aa5, /Main Cabin Extra \(excluding Basic Economy\) · AAdvantage members who earn 15,000 Loyalty Points · Eligible AAdvantage credit cardmembers · AAdvantage Business Select travelers/);
-  assert.match(aa5, /Main Cabin Extra \(hors Basic Economy\) · Membres AAdvantage qui gagnent 15[\u00A0 ]000 Loyalty Points/, "American's French");
+  assert.match(aa5, /Main Cabin Extra \(hors Basic Economy\) · Membres AAdvantage qui gagnent 15[  ]000 Loyalty Points/, "American's French");
   assert.doesNotMatch(aa5, /Cabine principale/, 'Group 5 is not the Main Cabin call');
   assert.match(aa5, /AAdvantage members(?! who)/, 'Groups 5 • 6 on a 30-minute window: both lists');
   {
     const p = planFor('AA', {}, 35, 15);
-    const atS = (v) => textOf(render({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes(v)).ts + 1000) }, false));
-    assert.match(atS('6'), /Group \| Groupe 6 AAdvantage members Membres AAdvantage/, 'Group 6: AAdvantage members, no cabin line');
+    const atS = (v) => sides(render({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes(v)).ts + 1000) }, false)).R;
+    assert.match(atS('6'), /^Group \| Groupe 6 AAdvantage members Membres AAdvantage Use Lanes/, 'Group 6: AAdvantage members, no cabin line');
     assert.doesNotMatch(atS('6'), /Main Cabin|Cabine principale/);
     assert.match(atS('7'), /Main Cabin \| Cabine principale/, 'Groups 7 • 8: the Main Cabin, its cabin line');
   }
   assert.doesNotMatch(at('AA', {}, when('AA', {}, (s) => s.values.includes('1'))), /First Class/, "American's Group 1 is no cabin");
-  assert.match(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1'))), /United First/);
-  assert.doesNotMatch(at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('2'))), /United First/, "United's Group 2 is Premier Silver and Premier Access");
+  assert.match(right('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1'))), /United First/);
+  assert.doesNotMatch(right('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('2'))), /United First/, "United's Group 2 is Premier Silver and Premier Access");
   assert.doesNotMatch(at('UA', { cat: 'widebody' }, when('UA', { cat: 'widebody' }, (s) => s.values.includes('1'))), /United First/, 'a widebody: United Polaris or Business, so none is guessed');
   // 2026-10-13 — who else Group 1 calls: a widebody's premium cabins in the
   // list (no cabin line names them), United's whole row when the type is not
   // known, the cabin line alone on a narrowbody and a two-cabin regional jet
-  assert.match(at('UA', { cat: 'widebody' }, when('UA', { cat: 'widebody' }, (s) => s.values.includes('1'))),
+  assert.match(right('UA', { cat: 'widebody' }, when('UA', { cat: 'widebody' }, (s) => s.values.includes('1'))),
     /Travelers in United Polaris or United Business.*Voyageurs en United Polaris ou United Business/);
-  assert.match(at('UA', {}, when('UA', {}, (s) => s.values.includes('1'))), /Travelers in United Polaris, United First and United Business cabins/);
-  const uaN = at('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1')));
+  assert.match(right('UA', {}, when('UA', {}, (s) => s.values.includes('1'))), /Travelers in United Polaris, United First and United Business cabins/);
+  const uaN = right('UA', { cat: 'narrowbody' }, when('UA', { cat: 'narrowbody' }, (s) => s.values.includes('1')));
   assert.equal(uaN.split('United First').length - 1, 1, 'a narrowbody: United First once, as its cabin line');
-  assert.match(at('UA', { cat: 'regional', twoCabin: true }, when('UA', { cat: 'regional', twoCabin: true }, (s) => s.values.includes('1'))), /United First/, 'a two-cabin regional jet: United First');
+  assert.match(right('UA', { cat: 'regional', twoCabin: true }, when('UA', { cat: 'regional', twoCabin: true }, (s) => s.values.includes('1'))), /United First/, 'a two-cabin regional jet: United First');
   assert.doesNotMatch(at('UA', { cat: 'regional' }, when('UA', { cat: 'regional' }, (s) => s.values.includes('1'))), /United First|Polaris/, 'a one-cabin regional jet: no premium cabin');
   assert.doesNotMatch(at('AA', { cat: 'regional', twoCabin: true }, when('AA', { cat: 'regional', twoCabin: true }, (s) => s.values.includes('4'))), /Premium Economy/, "American's Group 4 on an E175: no Premium Economy");
-  assert.match(at('AA', { cat: 'widebody' }, when('AA', { cat: 'widebody' }, (s) => s.values.includes('4'))), /AirPass · Premium Economy/, 'on a widebody: named');
+  assert.match(right('AA', { cat: 'widebody' }, when('AA', { cat: 'widebody' }, (s) => s.values.includes('4'))), /AirPass · Premium Economy/, 'on a widebody: named');
   assert.doesNotMatch(at('IB', {}, when('IB', {}, (s) => s.values.includes('2'))), /Premium Economy/, "Iberia's Group 2 on a narrowbody: no Premium Economy");
-  assert.match(at('IB', { cat: 'widebody' }, when('IB', { cat: 'widebody' }, (s) => s.values.includes('2'))), /Premium Economy customers/);
+  assert.match(right('IB', { cat: 'widebody' }, when('IB', { cat: 'widebody' }, (s) => s.values.includes('2'))), /Premium Economy customers/);
   assert.match(at('FR', {}, 1), /Customers with Priority Boarding · Customers on Regular, Flexi Plus and Time Saver fares/, "Ryanair's priority queue");
   assert.match(at('DY', {}, 1), /Passengers with a Flex ticket/, "Norwegian's Group A");
   assert.match(at('UA', {}, 1), /Please remain seated until your group is called/, "United's unit: the group");
@@ -861,6 +896,189 @@ test('the panels say the right thing at the right stage', () => {
   // Ryanair: no pre-boarding step at all
   assert.doesNotMatch(at('FR', {}, 1) + at('FR', {}, 20, true), /Pre-boarding|Préembarquement/);
   assert.match(at('FR', {}, 1), /Priority \| Prioritaire/);
+});
+
+// 2026-10-25 — THE DECISION: real gates keep the priority boarding
+// information on screen for the whole of boarding. The left panel is the
+// airline's priority group for the WHOLE of boarding:
+// pre-boarding, each priority call, each general call, the switch and the
+// final call; its own unit and numbers and who it is for; a check once its
+// first call is made, a number faint only until it is called, never faint
+// again. The right is the current call, as the one centre shows it.
+test('the left panel carries priority at every stage, marked as called once called, for every airline', () => {
+  const render = signRenderer(['en', 'fr'], false, 'panels');
+  const centre = signRenderer(['en', 'fr'], false, 'centre');
+  // the airline, its group's title, its unit and numbers, a who it is for (each language)
+  const CASES = [
+    ['AC', {}, 'Priority | Prioritaire', ['Zones', '1 2'], ['prioWhoAC1', 'prioWhoAC2']],
+    ['WS', {}, 'Priority | Prioritaire', ['Zones', '1 2'], ['prioWhoWS1', 'prioWhoWS2']],
+    ['PD', { pdDash: true }, 'Pre-boarding | Préembarquement', null, ['preboardList']],
+    ['UA', { cat: 'narrowbody' }, 'Priority | Prioritaire', ['Groups | Groupes', '1 2'], ['prioWhoUA1', 'prioWhoUA2']],
+    ['AA', { cat: 'regional', twoCabin: true }, 'Priority | Prioritaire', ['Groups | Groupes', '1 2 3 4'], ['prioWhoAA', 'prioWhoAA1', 'prioWhoAA4']],
+    ['DL', {}, 'Priority | Prioritaire', ['Zones', '1 2 3 4'], ['prioWhoDL1', 'prioWhoDL4']],
+    ['TS', {}, 'Priority | Prioritaire', null, ['prioWhoTS']],
+    ['ZZ', { legalPre: true }, 'Priority | Prioritaire', null, []]
+  ];
+  // the plain values a number span holds ('1 • 2', '2–4' as 2 3 4)
+  const valuesIn = (t) => t.split('•').map((x) => x.trim()).filter(Boolean).flatMap((x) => {
+    const m = /^(\d+)–(\d+)$/.exec(x);
+    if (!m) return [x];
+    const out = []; for (let k = +m[1]; k <= +m[2]; k++) out.push(String(k)); return out;
+  });
+  const spans = (h, cls) => [...h.matchAll(new RegExp('<span class="' + cls + '">([^<]*)</span>', 'g'))].flatMap((m) => valuesIn(m[1]));
+  for (const lead of [35, 25, 20]) {
+    for (const [code, ctx, title, num, whos] of CASES) {
+      const p = planFor(code, ctx, lead, 15);
+      const stamps = p.stages.map((s, i) => ({ i, at: s.ts + 1000 }));
+      let seenOn = new Set(), rank = 0, sawGen = false, sawPrio = false, sawSwitch = false;
+      const RANK = { 'prio-ahead': 0, 'prio-part': 1, 'prio-called': 2 };
+      const look = (st, fin) => {
+        const html = render({ p, st }, fin), S = sides(html);
+        const where = `${code}${JSON.stringify(ctx)} ${lead} min, ${fin ? 'final call' : 'stage ' + st.i + ' (' + (st.cur.kind) + ')'}`;
+        // the frame: two panels, the left the priority group, in its own word
+        assert.equal(html.split('class="g8-board-col ').length - 1, 2, where + ': two panels');
+        assert.match(S.hL, /g8-sign-left[^"]* is-prio prio-(ahead|part|called)/, where + ': the left is the priority group');
+        assert.ok(S.L.startsWith(title), `${where}: the left says ${title} (${S.L.slice(0, 60)})`);
+        if (num) {
+          const row = S.hL.match(/<div class="g8-sign-row"><div class="g8-sign-label g8-pair">([\s\S]*?)<\/div><div class="g8-sign-value">([\s\S]*?)<\/div><\/div>/);
+          assert.ok(row, where + ': its unit beside its numbers');
+          assert.equal(textOf(row[1]), num[0], where + ': its own unit');
+          assert.equal(valuesIn(textOf(row[2])).join(' '), num[1], where + ': all its numbers');
+        } else assert.doesNotMatch(S.hL, /g8-sign-row/, where + ': no number is invented');
+        for (const k of whos) for (const l of ['en', 'fr']) assert.ok(S.L.includes(STORE.bs(k, l).split(' · ')[0]), `${where}: who it is for (${k}, ${l})`);
+        // the marks
+        const state = (S.hL.match(/prio-(ahead|part|called)/) || [])[0];
+        assert.ok(RANK[state] >= rank, `${where}: never back to "not yet" (${state} after rank ${rank})`);
+        rank = RANK[state];
+        assert.equal(/class="g8-sign-chk"/.test(S.hL), state !== 'prio-ahead', where + ': the check, once its first call is made');
+        assert.ok(S.L.includes(state === 'prio-ahead' ? 'Boarding next | Prochain embarquement' : 'Boarding now | Embarquement en cours'), where + ': its state in words');
+        // never word for word the current call beside it (a one-language
+        // board's rendered check reads the two panels as two ends of one strip)
+        assert.notEqual(S.L, S.R, where + ': the two panels read the same');
+        const on = new Set(spans(S.hL, 'g8-v-on')), wait = spans(S.hL, 'g8-v-wait');
+        for (const v of seenOn) assert.ok(on.has(v), `${where}: ${v} was called and is no longer marked called`);
+        for (const v of wait) assert.ok(!seenOn.has(v), `${where}: ${v} faint after its call`);
+        seenOn = new Set([...seenOn, ...on]);
+        if (state === 'prio-called' || fin) assert.equal(wait.length, 0, where + ': nothing faint once every call is made');
+        if (fin) assert.equal(state, 'prio-called', where + ': everything called at the final call');
+        // the right: the current call, as the one centre shows it
+        // (the half-width panel writes a run of four as a range: Groups 1–4,
+        // where the one centre writes 1 • 2 • 3 • 4)
+        const runs = (t) => t.replace(/\b(\d+)–(\d+)\b/g, (m, a, z) => { const o = []; for (let k = +a; k <= +z; k++) o.push(k); return o.join(' • '); });
+        const C = textOf(centre({ p, st }, fin));
+        assert.equal(runs(S.R + (S.I ? ' ' + S.I : '')), runs(C), where + ': the right is the one centre\'s call');
+        return { st, S };
+      };
+      for (const { at } of stamps) {
+        const st = SEQ.stageAt(p, at);
+        const r = look(st, false);
+        if (st.cur.kind === 'prio') { sawPrio = true; assert.match(r.S.hR, /g8-board-col now g8-sign-col g8-sign-right/, `${code} stage ${st.i}: a priority call in the priority colour`); }
+        if (st.cur.kind === 'gen' && !SEQ.isSwitch(p, st)) sawGen = true;
+        if (SEQ.isSwitch(p, st)) { sawSwitch = true; assert.match(r.S.hR, /is-switch/, `${code}: the switch on the right`); }
+      }
+      look(SEQ.stageAt(p, T0), true);
+      assert.ok(sawSwitch, `${code} ${lead}: the switch was shown`);
+      if (whos.length && code !== 'PD' && lead === 35) assert.ok(sawPrio, `${code}: a priority call was shown`);
+      if (lead === 35 && !['TS', 'ZZ'].includes(code)) assert.ok(sawGen, `${code}: a general call was shown`);
+    }
+  }
+});
+
+// 2026-10-26 — AFTER REVIEW: « Boarding now » stood over the whole of the
+// priority group's list while only part of it had been called (United's
+// Premier Silver under the Group 1 call, while the band under the sign told
+// Group 2 to stay seated). Every name in the list is lit exactly when a call
+// that names it has been made, and faint until then; the check never stands
+// under a row that is all faint (an un-numbered call ahead of the numbers,
+// American's ConciergeKey, First and Business, is its own symbol in the
+// row, lit once it is made); and the numbers keep one written form for the
+// whole of boarding (Delta's 1–4, 1 • 2–4, 1 • 2 • 3 • 4, 1–3 • 4 before).
+test('the priority group: a name lit only once its call is made, one written form, never a check over a faint row', () => {
+  const render = signRenderer(['en', 'fr'], false, 'panels');
+  // the items the left's list draws: [text, lit]
+  const itemsOf = (hL) => {
+    const ro = (hL.split('<div class="g8-sign-roster">')[1] || '').split('<div class="g8-sign-lanes')[0];
+    return ro.split('<span class="g8-who-i').slice(1).map((seg) => [textOf('<x' + seg).replace(/ ·$/, ''), !/^ g8-who-wait"/.test(seg)]);
+  };
+  const CASES = [['UA', { cat: 'narrowbody' }], ['UA', { cat: 'widebody' }], ['AC', { cat: 'widebody' }], ['WS', {}], ['DL', {}],
+    ['AA', { cat: 'regional', twoCabin: true }], ['AA', { cat: 'widebody' }], ['AS', {}], ['WN', {}], ['B6', {}], ['IB', { cat: 'widebody' }],
+    ['PD', { pdDash: true }], ['TS', {}], ['F8', {}], ['FR', {}], ['DY', {}], ['QK', { express: true }]];
+  for (const lead of [35, 20]) {
+    for (const [code, ctx] of CASES) {
+      const p = planFor(code, ctx, lead, 15);
+      let grp = p.full.filter((s) => s.kind === 'prio');
+      const pre = !grp.length;
+      if (pre) grp = p.full.filter((s) => s.kind === 'pre');
+      let form = null;
+      const moments = p.stages.map((s) => [SEQ.stageAt(p, s.ts + 1000), false]).concat([[SEQ.stageAt(p, T0), true]]);
+      for (const [st, fin] of moments) {
+        const S = sides(render({ p, st }, fin));
+        const where = `${code}${JSON.stringify(ctx)} ${lead} min, ${fin ? 'final call' : 'stage ' + st.i}`;
+        // what has been called, by the sequence's own memory
+        const called = fin ? null : SEQ.calledThrough(p, st.i);
+        const on = (s) => !called || SEQ.atomsOf(s).some((a) => called[a]);
+        // each name, lit exactly when a call that names it has been made
+        const lit = {}, named = {};
+        for (const s of grp) {
+          const keys = (pre ? [] : [s.sub]).concat([s.who]).filter(Boolean);
+          for (const k of keys) for (const l of ['en', 'fr']) for (const it of STORE.bs(k, l).split(' · ')) {
+            const t = it.toLowerCase();
+            named[t] = 1; lit[t] = lit[t] || on(s);
+          }
+        }
+        const items = itemsOf(S.hL);
+        if (grp.some((s) => s.who || (!pre && s.sub))) assert.ok(items.length, where + ': who the group is for');
+        for (const [t, isLit] of items) {
+          const k = t.toLowerCase();
+          assert.ok(named[k], `${where}: "${t}" is named by one of the group's calls`);
+          assert.equal(isLit, !!lit[k], `${where}: "${t}" ${lit[k] ? 'was called and is faint' : 'is lit before its call'}`);
+        }
+        // the check never stands under a row that is all faint
+        const state = (S.hL.match(/prio-(ahead|part|called)/) || [])[1];
+        const row = (S.hL.match(/<div class="g8-sign-value">([\s\S]*?)<\/div><\/div>/) || [])[1] || '';
+        if (row && state !== 'ahead') assert.match(row, /class="g8-v-on"|class="g8-v-sym"/, where + ': something in the row is lit under the check');
+        if (row) {
+          // one written form: every number written out, the same at every call
+          const f = textOf(row);
+          if (form === null) form = f;
+          assert.equal(f, form, where + ': the same numbers, written the same way, at every call');
+          assert.doesNotMatch(f, /–/, where + ': never a range');
+        }
+      }
+    }
+  }
+  // the symbol: American's ConciergeKey, First and Business, ahead of its numbers
+  const aa = planFor('AA', {}, 35, 15);
+  const ck = sides(render({ p: aa, st: SEQ.stageAt(aa, aa.stages.find((s) => s.kind === 'prio' && !s.values.length).ts + 1000) }, false));
+  assert.match(ck.hL, /<span class="g8-v-seq"><span class="g8-v-sym"><svg class="g8-picto"[\s\S]*?<\/svg><\/span> • <span class="g8-v-wait">1<\/span> • <span class="g8-v-wait">2<\/span> • <span class="g8-v-wait">3<\/span> • <span class="g8-v-wait">4<\/span><\/span>/, 'its symbol lit first, Groups 1 to 4 faint');
+  assert.match(ck.L, /Boarding now \| Embarquement en cours ConciergeKey members · First · Business/);
+  const aaPre = sides(render({ p: aa, st: SEQ.stageAt(aa, T0 + 1000) }, false));
+  assert.match(aaPre.hL, /<span class="g8-v-sym is-wait">/, 'faint before its call');
+  // United's Group 1: Premier Silver (Group 2) faint under the check
+  const ua = planFor('UA', { cat: 'narrowbody' }, 35, 15);
+  const g1 = sides(render({ p: ua, st: SEQ.stageAt(ua, ua.stages.find((s) => s.values.includes('1')).ts + 1000) }, false));
+  const g1i = itemsOf(g1.hL);
+  assert.deepEqual(g1i.filter(([t]) => /Premier Silver/.test(t)).map(([, l]) => l), [false, false], 'Premier Silver faint in both languages at the Group 1 call');
+  assert.ok(g1i.some(([t, l]) => /United First/.test(t) && l), 'United First lit');
+});
+
+// The sequence file did not load: one generic call, in the one centre,
+// whatever the layout (2026-10-26: with the two panels the default, the
+// fallback drew a Priority panel for Porter, PAL and Calm Air, which
+// publish no priority step).
+test('the fallback, the sequence file not loaded: the one centre, nothing invented', () => {
+  const src = [block('var _GATE_LBL = {'), top('_lblEntry'), top('_gateLbl'),
+    (UXG.match(/  var _G8_ARROW_PATH = [^;]+;/) || [])[0], braceFrom(UXG, UXG.indexOf('  var _G8_PICTO = {'), '_G8_PICTO') + ';',
+    ...['_g8GrpValCls', '_g8SignPair', '_g8SignLanes', '_g8Picto', '_g8SignGo', '_g8SignInstr', '_g8ArrowDisc', '_g8ArrowGlyph', '_g8SignCol',
+      '_g8SignCentreHtml', '_g8SeqAll', '_g8SignFallback'].map(inner),
+    'return _g8SignFallback();'].join('\n');
+  const html = new Function('langs', '_frF', 'BoardStrings', 'FIDSBoardSeq', src)(['en', 'fr'], false, STORE, SEQ);
+  assert.match(html, /^<div class="g8-board-body g8-sign g8-sign-one"/, 'the one centre');
+  assert.doesNotMatch(textOf(html), /Priority|Prioritaire/, 'no priority step is invented');
+  assert.match(textOf(html), /General boarding \| Embarquement général All passengers \| Tous les passagers/);
+  assert.doesNotMatch(inner('_g8SignFallback'), /_g8SignHtml\(/, 'never the two panels');
+  assert.match(UXG, /if \(!_seq \|\| !_seq\.st \|\| !_seq\.st\.cur\) return _g8SignFallback\(\);/);
+  assert.match(UXG, /if \(!_seq \|\| !_seq\.p\) return _g8SignFallback\(\);/);
 });
 
 test('the one centre says who may line up now: pictograms and huge numbers first', () => {
@@ -893,11 +1111,39 @@ test('the one centre says who may line up now: pictograms and huge numbers first
     assert.match(instrOf(sw), /^All remaining passengers, please proceed to the gate Tous les autres passagers/);
     assert.doesNotMatch(sw, /g8-sign-wait/);
   }
-  // the default layout is the one centre; a screen may ask for the panels
-  const lay = inner('_g8SignLayout');
-  assert.match(UXG, /var _G8_SIGN_LAYOUT = 'centre';/);
-  assert.match(lay, /\[\?&\]sign=\(centre\|center\|panels\)/);
+  // 2026-10-25 — the one centre is no longer the default; ?sign=centre
+  // still asks for it (the next test)
   assert.match(UXG, /if \(_signOne\) return _g8SignCentreHtml\(_g8SeqCentre\(_seq, false\), _seq\.st\.nextTs\);/);
+});
+
+// 2026-10-25 — THE DECISION: priority stays on screen for the whole of
+// boarding, so the two panels are the default again; a screen that asks for
+// the one centre (?sign=centre, or the fids_sign_layout setting) keeps it.
+test('the two panels are the default, and ?sign=centre still gives the one centre', () => {
+  assert.match(UXG, /var _G8_SIGN_LAYOUT = 'panels';/, 'the default');
+  const lay = inner('_g8SignLayout');
+  assert.match(lay, /\[\?&\]sign=\(centre\|center\|panels\)/);
+  const layoutFor = (search, stored) => new Function('location', 'localStorage', "var _G8_SIGN_LAYOUT = 'panels';\n" + lay + '\nreturn _g8SignLayout();')(
+    { search }, { getItem: () => (stored == null ? null : stored) });
+  assert.equal(layoutFor('?ap=YHZ&gate=99', null), 'panels', 'a gate that asks for nothing: the two panels');
+  assert.equal(layoutFor('?ap=YHZ&sign=centre', null), 'centre', '?sign=centre: the one centre');
+  assert.equal(layoutFor('?sign=center&ap=YUL', null), 'centre', 'either spelling');
+  assert.equal(layoutFor('?ap=YHZ', 'centre'), 'centre', 'the stored setting');
+  assert.equal(layoutFor('?ap=YHZ&sign=panels', 'centre'), 'panels', 'the address outranks the setting');
+  assert.equal(layoutFor('?ap=YHZ', 'bogus'), 'panels', 'anything else: the default');
+  // the gate paints what the layout says, at boarding and at the final call
+  assert.match(UXG, /var _signOne = _g8SignLayout\(\) === 'centre';/);
+  assert.match(UXG, /var _P = _g8SeqPanels\(_seq, false\);\s*return _g8SignHtml\(_P\.L, _P\.R, _seq\.st\.nextTs\);/);
+  assert.match(UXG, /if \(_signOne\) return _g8SignCentreHtml\(_g8SeqCentre\(_seq, true\)\);\s*var _P = _g8SeqPanels\(_seq, true\);\s*return _g8SignHtml\(_P\.L, _P\.R\);/);
+  // the one centre, asked for, renders as before: one panel, the call alone
+  const p = planFor('AC', {}, 30, 15);
+  const centre = signRenderer(['en', 'fr'], false, 'centre')({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes('3')).ts + 1000) }, false);
+  assert.equal(centre.split('class="g8-board-col ').length - 1, 1, 'one panel');
+  assert.match(centre, /class="g8-board-body g8-sign g8-sign-one"/);
+  assert.doesNotMatch(textOf(centre), /Priority|Prioritaire/, 'the centre says the call, nothing else');
+  const two = signRenderer(['en', 'fr'], false, 'panels')({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes('3')).ts + 1000) }, false);
+  assert.match(two, /class="g8-board-body g8-sign g8-sign-two has-instr"/);
+  assert.equal(two.split('class="g8-board-col ').length - 1, 2, 'two panels');
 });
 
 test('never a bare All: every carrier says its own unit at the switch and the final call, in nine languages', () => {
@@ -1097,14 +1343,73 @@ test('a who-list never runs off its panel, and a group code shares the row with 
   assert.match(fit, /var steps = \[\[0\.92, 1\], \[0\.84, 1\], \[0\.75, 1\], \[0\.75, 0\.85\], \[0\.75, 0\.72\], \[0\.75, 0\.6\], \[0\.65, 0\.6\], \[0\.55, 0\.6\]\];/, 'the list first, then the number, then the list again');
   assert.match(fit, /if \(ro && rb\) ro\.style\.setProperty\('font-size', rb \+ 'px', 'important'\);/, 'every pass starts from the stylesheet size');
   assert.match(fit, /if \(pic\) pic\.style\.setProperty\('zoom'/, 'the pictograms come down with the number');
-  // 2026-10-13 — in the two panels a long list shows one language at a time
-  // once the list alone has come down, before the number does
-  assert.match(fit, /var alt = !!\(ro && col\.closest\('\.g8-sign-two'\) && ro\.querySelectorAll\(':scope > \.g8-who-blk'\)\.length > 1\);/, 'the two panels only, a list in two languages');
-  assert.match(fit, /for \(; k < \(alt \? 3 : steps\.length\) && over\(\); k\+\+\) step\(k\);/, 'the list alone first');
-  assert.match(fit, /if \(alt && over\(\)\) \{\s*ro\.classList\.add\('is-alt'\);\s*_fidsSignWhoAlt\(ro\);[\s\S]{0,120}for \(k = 0; k < steps\.length && over\(\); k\+\+\) step\(k\);/, 'then one at a time, the steps again from the start');
-  assert.match(fit, /if \(ro\) ro\.classList\.remove\('is-alt'\);/, 'judged afresh on every pass');
-  // ten seconds each, by the clock: a rebuilt sign carries on where it was
-  assert.match(top('_fidsSignWhoAlt'), /var b = Math\.floor\(Date\.now\(\) \/ _G8_WHO_ALT_MS\) % 2 === 1;/);
+  // the one centre: the list first, then the number, then the list again
+  assert.match(fit, /for \(var k = 0; k < steps\.length && over\(\); k\+\+\) step\(k\);/, 'the one centre keeps its steps');
+  // 2026-10-25 — THE TWO PANELS: A LONG LIST PAGES, IT IS NEVER SQUEEZED
+  // (the 2026-10-13 build brought American's E175 Groups 1-4 to a 16 px
+  // list beside a 72 px number): the list from its size to its floor, then
+  // one language at a time, then pages of whole items at the floor; the
+  // number gives way only when a panel cannot hold one item
+  assert.match(fit, /if \(col\.closest\('\.g8-sign-two'\)\) \{\s*if \(ro\) _fidsSignPagesClear\(ro\);/, 'the two panels page, judged afresh on every pass');
+  assert.match(fit, /_fidsSignColPage\(col, ro, rb, over, function \(f\) \{/);
+  assert.match(CORE, /var _G8_WHO_FLOOR = 0\.8;/, 'the floor: 80% of the list\'s size, 22 px at 1920x1080');
+  const page = top('_fidsSignColPage');
+  assert.match(page, /var FS = \[1, 0\.92, 0\.86, _G8_WHO_FLOOR\], NUM = \[1, 0\.85, 0\.72, 0\.6\]/);
+  assert.match(page, /ro\.classList\.add\('is-alt'\);\s*_fidsSignWhoAlt\(ro\);/, 'one language at a time');
+  assert.match(page, /setF\(_G8_WHO_FLOOR\);\s*var n = _fidsSignPaginate\(ro, over\);/, 'then pages at the floor, never under it');
+  assert.doesNotMatch(page, /_G8_WHO_FLOOR \*|0\.75|0\.65|0\.55/, 'no step under the floor');
+  assert.match(page, /if \(!over\(\) && \(!few \|\| \(perLang\(\) <= few && !thin\(n\)\) \|\| NUM\[k\] <= 0\.72\)\) \{ keep\(k\); return; \}/, 'the current call\'s list turns in two pages a language, its number no smaller than 72% for it');
+  // 2026-10-26 — the priority group's step only goes down while one flight
+  // boards (a pixel or two decided it: 87 px at every call, 102 px at the
+  // switch, on some screens): kept per flight, screen size and languages, a
+  // step each for boarding and the final call, and the next pass starts
+  // from it; kept only once two passes in a row took it with the fonts in,
+  // never the last resort, and nothing kept with no current flight
+  assert.match(page, /var memo = null, ph = '', k0 = 0;\s*if \(!cur\) \{/, 'the priority group only: the current call is judged afresh');
+  assert.match(page, /if \(cf\) \{\s*var mk = _gateRowKey\(cf\) \+ '\|' \+ innerWidth \+ 'x' \+ innerHeight \+ '\|' \+ \(typeof langs !== 'undefined' && langs \? langs\.join\(','\) : ''\);/, 'kept per flight, screen and languages; none with no flight');
+  assert.match(page, /ph = col\.closest\('\.g8-final'\) \? 'final' : 'boarding';/, 'a step each for boarding and the final call');
+  assert.match(page, /if \(!memo \|\| memo\.k !== mk\) memo = window\._g8PrioStep = \{ k: mk, n: \{\}, seen: \{\} \};\s*k0 = memo\.n\[ph\] \|\| 0;/);
+  assert.match(page, /var settled = !\(document\.fonts && document\.fonts\.status !== 'loaded'\);/, 'with the fonts in');
+  assert.match(page, /if \(memo\.seen\[ph\] === n\) memo\.n\[ph\] = n;\s*else memo\.seen\[ph\] = n;/, 'two passes in a row');
+  assert.doesNotMatch(page, /keep\(NUM\.length - 1\)/, 'never the last resort');
+  assert.match(page, /for \(k = k0; k < NUM\.length; k\+\+\) \{/, 'the next pass starts from the step kept');
+  // the row's number found where it is set (measured on one line at each
+  // size tried, from its stylesheet size), and the panel's fitter starts from
+  // what the row gave it on this very pass
+  const rowfit = top('_fidsSignRowFit');
+  assert.match(rowfit, /val\.style\.setProperty\('white-space', 'nowrap', 'important'\);\s*rgv\.selectNodeContents\(val\);/, 'the text on one line, not its capped box');
+  assert.match(rowfit, /var t = vbase, w = wAt\(t\);/, 'from its stylesheet size every pass');
+  assert.match(rowfit, /val\.setAttribute\('data-g8-rfp', String\(_fidsSignPassN\)\);/);
+  assert.match(fit, /var rowFit = val\.getAttribute\('data-g8-rfp'\) === String\(_fidsSignPassN\);/, 'only a number the row reached on this pass');
+  assert.match(CORE, /var _fidsSignPassN = 0;\nfunction _fidsPairSeparators\(root\) \{\n  try \{\n    var scope = root \|\| document;\n    _fidsSignPassN\+\+;/);
+  // and the switch's caps come off as every pass begins (_fidsSignSwitchUncap)
+  assert.match(CORE, /\/\/ \(the switch's caps off first: every pass fits from where the first did\)\n    try \{ _fidsSignSwitchUncap\(scope\); \} catch \(eU\) \{\}\n    try \{ _fidsSignRowFit\(scope\); \} catch \(eR\) \{\}/);
+  assert.match(top('_fidsSignSwitchLead'), /if \(keep && !e\.hasAttribute\('data-g8-swcap'\)\) e\.setAttribute\('data-g8-swcap'/);
+  assert.match(top('_fidsSignSwitchLead'), /capTo\(oc\.querySelector\('\.g8-sign-sub'\), capV, 0, true\);/);
+  const uncap = top('_fidsSignSwitchUncap');
+  assert.match(uncap, /if \(was\) els\[i\]\.style\.setProperty\('font-size', was, 'important'\);\s*else els\[i\]\.style\.removeProperty\('font-size'\);\s*els\[i\]\.removeAttribute\('data-g8-swcap'\);/, 'each put back as it was, its mark taken off');
+  assert.match(top('_fidsPairSeparators'), /\} catch \(e\) \{[\s\S]*?_fidsSignSwitchLead\(scope \|\| document\);/, 'a pass cut short puts the caps back on');
+  // 2026-10-26 — the current call's never in pages of one item each
+  // (United's Group 1, four pages of one name beside the full-size number);
+  // the priority group's number one size for the whole of boarding
+  assert.match(page, /var few = \(cur && ro\) \? 2 : 0;/);
+  assert.match(page, /var thin = function \(n\) \{ return !!cur && n > nb && ro\.querySelectorAll\('\.g8-who-i'\)\.length < n \* 1\.5; \};/);
+  const pg = top('_fidsSignPaginate');
+  assert.match(pg, /ro\.style\.setProperty\('min-height', Math\.ceil\(hmax\) \+ 'px', 'important'\);/, 'the box as tall as its tallest page: nothing moves as they turn');
+  // 2026-10-26 — evenly: from the last page back, a page takes the item
+  // before it while it holds fewer and still fits; each language's pages
+  // kept on the list (data-g8-pgl)
+  assert.match(pg, /while \(A\[1\] - A\[0\] > Z\[1\] - Z\[0\] \+ 1\) \{\s*showRange\(items, A\[1\], Z\[1\]\);\s*if \(over\(\)\) break;/, 'a short last page takes from the one before it');
+  assert.match(pg, /ro\.setAttribute\('data-g8-pgl', pgl\.join\(','\)\);/);
+  // ten seconds each, by the clock: a rebuilt sign carries on where it was;
+  // ONE LANGUAGE CLOCK FOR THE WHOLE SIGN (2026-10-26: the left showed
+  // French while the right showed English)
+  const alt = top('_fidsSignWhoAlt');
+  assert.match(alt, /var t = Math\.floor\(Date\.now\(\) \/ _G8_WHO_ALT_MS\);/);
+  assert.match(alt, /var rs = signs\[g\]\.querySelectorAll\('\.g8-sign-roster\.is-alt, \.g8-sign-roster\.is-paged'\);/, 'every list of a sign together');
+  assert.match(alt, /slots\[pl\[j\]\.l\] = Math\.max\(slots\[pl\[j\]\.l\], pl\[j\]\.n\);/, 'each language held as long as its longest list needs');
+  assert.match(alt, /var pg = mine\.a \+ \(s % mine\.n\);/, 'a page a turn, in the language on screen');
+  assert.match(fit, /_fidsSignWhoAlt\(_sg\[s\]\)/, 'once every panel of a sign is fitted');
   assert.match(CORE, /var _G8_WHO_ALT_MS = 10000;/);
   assert.match(top('updateDedicatedTimeOnly'), /try \{ _fidsSignWhoAlt\(\); \} catch \(eWa\) \{\}/, 'the gate clock turns it');
   const CSSF = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
@@ -1113,7 +1418,24 @@ test('a who-list never runs off its panel, and a group code shares the row with 
   const sBlk = CSSF.slice(sAt, CSSF.indexOf('v24014 — THE WEATHER CARD')).replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(sBlk, /(:not\(#_\)){16} \.g8-sign\.g8-sign-two \.g8-sign-roster\.is-alt > \.g8-who-blk \{ grid-area: 1 \/ 1 !important;/, 'both in one cell: the panel as tall as the longer');
   assert.match(sBlk, /\.is-alt:not\(\.alt-b\) > \.g8-who-blk ~ \.g8-who-blk,[\s\S]*?\.is-alt\.alt-b > \.g8-who-blk:first-child \{ visibility: hidden !important; \}/, 'one shown at a time');
+  // and the pages: the items of the page on screen, its last one without its dot
+  assert.match(sBlk, /(:not\(#_\)){17} \.g8-sign\.g8-sign-two \.g8-sign-roster\.is-paged \.g8-pg-off \{ display: none !important; \}/);
+  assert.match(sBlk, /\.g8-sign-roster\.is-paged \.g8-pg-last > \.g8-who-d \{ display: none !important; \}/);
   assert.doesNotMatch(sBlk, /animation|transition|@keyframes/, 'nothing moves');
+  // 2026-10-26 — THE PRIORITY GROUP'S NUMBER COMES FIRST: on the left its
+  // word gives way to 60% before the number does; under 65% the word goes
+  // over it (Delta's four zones in German, American's symbol and four
+  // groups), except on a short panel (the final call's) where a number of
+  // half its size keeps the word beside it; the choice made on what was
+  // measured on the first pass (the word's width and the gap beside the
+  // number), so it never flips from one pass to the next
+  const rowFit = top('_fidsSignRowFit');
+  assert.match(rowFit, /var room = avail - gap - lw \* \(leftP \? 0\.6 : \(kids\.length >= 2 \? 0\.85 : 1\)\);/);
+  assert.match(rowFit, /var colWise = !!\(two && \(leftP \? vt < vbase \* 0\.65 : \(vt < vbase \* 0\.8 && col\.classList\.contains\('g8-sign-right'\)\)\)\);/);
+  assert.match(rowFit, /if \(cH > 0 && cH < vbase \* 2\.4\) colWise = false;/);
+  assert.match(rowFit, /if \(rlw\) lw = rlw;\s*else row\.setAttribute\('data-g8-rlw', String\(lw\)\);/, 'the word\'s width from the first pass');
+  assert.match(rowFit, /if \(!isNaN\(rgap\)\) gap = rgap;/, 'and the gap beside the number');
+  assert.match(CORE, /_sc\[_c\]\.removeAttribute\('data-g8-rgap'\);/, 'a resize measures them afresh');
   const pass = top('_fidsPairSeparators');
   assert.ok(pass.indexOf('_fidsSignColFit(scope)') > pass.indexOf("el.classList.toggle('is-stacked', stacked)"), 'after the pairs are fitted');
   assert.ok(pass.indexOf('_fidsSignLineFit(scope)') < pass.indexOf('_fidsSignColFit(scope)'), 'the whole lines to their width first');
@@ -1127,10 +1449,16 @@ test('a who-list never runs off its panel, and a group code shares the row with 
   assert.match(fit, /if \(lbl && lb0\) setL\(lb0 \* steps\[k\]\[1\]\);/, 'every step the number takes');
   assert.match(fit, /lb0 = \(lset && lfit && Math\.abs\(lcur - lset\) < 0\.5\) \? lfit : lcur;/, 'from the size it started at, never from its own shrink');
   assert.match(CORE, /var _sw = document\.querySelectorAll\('\.g8-sign \[data-g8-lfit\]'\);/, 'a resize measures it afresh');
-  // the switch leads the two panels: no number beside it is bigger than it
+  // the switch leads the two panels (2026-10-26: by its own size, its
+  // group of passengers as big as a call's number; the other panel keeps its
+  // number, its words no bigger than the switch's)
   const lead = top('_fidsSignSwitchLead');
   assert.match(lead, /querySelectorAll\('\.g8-sign\.g8-sign-two\.has-switch'\)/);
-  assert.match(lead, /if \(fs > cap \+ 0\.5\) v\.style\.setProperty\('font-size', cap \+ 'px', 'important'\);/);
+  assert.match(lead, /capTo\(oc\.querySelector\('\.g8-sign-title'\), capV, 0, true\);/, 'its title no bigger than ALL ZONES (a cap the next pass takes off first)');
+  assert.match(lead, /capTo\(oc\.querySelector\('\.g8-sign-status'\), capT \|\| capV, 0, true\);/, 'its state line no bigger than GENERAL BOARDING (likewise)');
+  assert.match(lead, /if \(ro\) capTo\(ro, capT \|\| capV, \(parseFloat\(ro\.getAttribute\('data-g8-rbase'\)\) \|\| 0\) \* _G8_WHO_FLOOR\);/, 'its list neither, never under its floor');
+  assert.doesNotMatch(lead, /\.g8-sign-value:not\(\.g8-grp-txt\)/, 'the other panel\'s number is never held to the switch\'s words');
+  assert.doesNotMatch(fit, /swCap/, 'nor before its list is measured');
   assert.ok(pass.indexOf('_fidsSignSwitchLead(scope)') > pass.indexOf('_fidsSignColFit(scope)'), 'last, on what the fitters settled');
   assert.match(line, /Math\.max\(0\.55, \(avail \/ need\) \* 0\.985\)/);
   assert.match(line, /classList\.add\('is-wrapped'\)/);
@@ -1138,7 +1466,8 @@ test('a who-list never runs off its panel, and a group code shares the row with 
   const render = signRenderer(['en', 'fr'], false);
   const p = planFor('AS', {}, 35, 10);
   const html = render({ p, st: SEQ.stageAt(p, p.stages.find((s) => s.values.includes('A')).ts + 1000) }, false);
-  assert.match(html, /<div class="g8-sign-row"><div class="g8-sign-label g8-pair">[\s\S]*?<\/div><div class="g8-sign-value">A<\/div><\/div>/, 'Group | Groupe  A on one row');
+  assert.match(html, /<div class="g8-sign-row"><div class="g8-sign-label g8-pair">[\s\S]*?<\/div><div class="g8-sign-value">A<span class="g8-sign-valarrow">[\s\S]*?<\/span><\/div><\/div>/, 'Group | Groupe  A on one row, the current call with its arrow');
+  assert.match(html, /<div class="g8-sign-value"><span class="g8-v-seq"><span class="g8-v-sym"><svg[\s\S]*?<\/svg><\/span> • <span class="g8-v-on">A<\/span> • <span class="g8-v-wait">B<\/span> • <span class="g8-v-wait">C<\/span><\/span><\/div>/, 'and the priority group: its Priority Boarding as its symbol, then A called, B and C still to come, each written out');
   const ws = planFor('WS', {}, 35, 15);
   const wsH = render({ p: ws, st: SEQ.stageAt(ws, ws.stages[ws.stages.length - 2].ts + 1000) }, false);
   assert.match(wsH, /<div class="g8-sign-value">3<span class="g8-sign-valarrow">/, 'Zone 3 is a numeral, with its arrow');
@@ -1412,7 +1741,7 @@ test('a merged call names everyone in each of its calls, an item they share once
   assert.deepEqual(m.whos, ['prioWhoAC1', 'prioWhoAC2']);
   const st = SEQ.stageAt(p, m.ts + 1000);
   for (const layout of LAYOUTS) {
-    const html = signRenderer(['en', 'fr'], false, layout)({ p, st }, false);
+    const html = callOf(layout, signRenderer(['en', 'fr'], false, layout)({ p, st }, false));
     const text = textOf(html);
     for (const k of ['prioWhoAC1', 'prioWhoAC2']) {
       for (const l of ['en', 'fr']) for (const it of STORE.bs(k, l).split(' · ')) assert.ok(text.includes(it), `${layout}: ${it}`);
@@ -1435,7 +1764,7 @@ test('a merged call names everyone in each of its calls, an item they share once
   const wr = planFor('WR', {}, 20, 15);
   const wrm = wr.stages.find((s) => s.kind === 'prio' && s.merged);
   for (const layout of LAYOUTS) {
-    const text = textOf(signRenderer(['en', 'fr'], false, layout)({ p: wr, st: SEQ.stageAt(wr, wrm.ts + 1000) }, false));
+    const text = textOf(callOf(layout, signRenderer(['en', 'fr'], false, layout)({ p: wr, st: SEQ.stageAt(wr, wrm.ts + 1000) }, false)));
     assert.match(text, /Premium \| Privilège/, layout + ': Zone 1\'s cabin');
     assert.match(text, /Platinum Rewards members · Gold and Silver Rewards members · Travel companions on the same reservation · Delta Gold Medallion members/, layout);
     for (const comp of ['Travel companions on the same reservation', 'Personnes voyageant sur la même réservation']) assert.equal(text.split(comp).length - 1, 1, layout + ': ' + comp + ' once');
@@ -1547,7 +1876,7 @@ test('a merged general call names everyone in each of its calls, an item they sh
   const m = p.stages.find((s) => s.merged && s.values.join('•') === '5•6');
   const st = SEQ.stageAt(p, m.ts + 1000);
   for (const layout of LAYOUTS) {
-    const html = signRenderer(['en', 'fr'], false, layout)({ p, st }, false);
+    const html = callOf(layout, signRenderer(['en', 'fr'], false, layout)({ p, st }, false));
     const text = textOf(html);
     for (const k of ['genWhoWN5', 'genWhoWN67']) for (const l of ['en', 'fr']) for (const it of STORE.bs(k, l).split(' · ')) assert.ok(text.includes(it), `${layout}: ${it}`);
     for (const it of ['Customers on Choice fares', 'Clients avec un tarif Choice']) assert.equal(text.split(it).length - 1, 1, `${layout}: ${it} once`);
@@ -1560,7 +1889,8 @@ test('a merged general call names everyone in each of its calls, an item they sh
   const z5 = SEQ.stageAt(d, d.stages.find((s) => s.values.includes('5')).ts + 1000);
   for (const layout of LAYOUTS) {
     for (const frF of [false, true]) {
-      const text = textOf(signRenderer(['en', 'fr'], frF, layout)({ p: d, st: z5 }, false));
+      const html = signRenderer(['en', 'fr'], frF, layout)({ p: d, st: z5 }, false);
+      const text = textOf(callOf(layout, html)) + ' ' + (layout === 'panels' ? sides(html).I : '');
       const en = text.indexOf('Silver Medallion members'), fr = text.indexOf('Membres Silver Medallion');
       assert.ok(en >= 0 && fr >= 0, `${layout}${frF ? ' French first' : ''}: both lists`);
       assert.equal(fr < en, frF, `${layout}: French leads only at a French-first airport`);

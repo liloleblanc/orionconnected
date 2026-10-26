@@ -1926,12 +1926,30 @@ function _fidsSignRowFit(scope) {
       if (!vbase) continue;
       val.setAttribute('data-g8-vbase', String(vbase));
     }
-    var vcur = parseFloat(getComputedStyle(val).fontSize) || vbase;
     var cs = getComputedStyle(col);
     var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
     var gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+    // (2026-10-26: the gap beside the number, kept from the first pass: a
+    // word over its number has a gap of its own, and measured there the
+    // choice flipped back on the next pass, and over again on the one after)
+    var rgap = parseFloat(row.getAttribute('data-g8-rgap'));
+    if (!isNaN(rgap)) gap = rgap;
+    else if (!row.classList.contains('is-col')) row.setAttribute('data-g8-rgap', String(gap));
+    var two = row.closest('.g8-sign-two');
+    var leftP = !!(two && col.classList.contains('g8-sign-left'));
     // the word's own width at its stylesheet size, whatever it is squeezed to
-    var lbase = parseFloat(lbl.getAttribute('data-g8-base')) || parseFloat(getComputedStyle(lbl).fontSize) || 0;
+    // (2026-10-26: a word printed once on the left is sized here, below, so
+    // its own size is kept here: data-g8-rlb)
+    var one = lbl.children.length < 2, rlb = 0;
+    if (leftP && one) {
+      rlb = parseFloat(lbl.getAttribute('data-g8-rlb')) || 0;
+      if (!rlb) {
+        lbl.style.removeProperty('font-size');
+        rlb = parseFloat(getComputedStyle(lbl).fontSize) || 0;
+        if (rlb) lbl.setAttribute('data-g8-rlb', String(rlb));
+      }
+    }
+    var lbase = rlb || parseFloat(lbl.getAttribute('data-g8-base')) || parseFloat(getComputedStyle(lbl).fontSize) || 0;
     var lcur = parseFloat(getComputedStyle(lbl).fontSize) || lbase;
     // (measured by its text, not its box: a squeezed half's box is narrower
     // than the words in it)
@@ -1946,16 +1964,114 @@ function _fidsSignRowFit(scope) {
       rg.selectNodeContents(lbl); lw = rg.getBoundingClientRect().width;
     }
     if (lcur && lbase) lw = lw * lbase / lcur;
-    var vw = val.getBoundingClientRect().width * (vbase / vcur);
+    // (a word set over its number, below, keeps the width it has beside it:
+    // the choice is made on that width, so it holds from pass to pass)
+    // 2026-10-26 — AND THE WIDTH IS THE ONE MEASURED AT ITS OWN SIZE, on the
+    // first pass (a new sign, or a resize, which clears it): measured again
+    // once the pair pass had shrunk it, ZONEN | ZONES read 4% wider (476 px
+    // at its size, 496 px from 38 px), and Delta's German row went over its
+    // number and back between two passes of the same call
+    var rlw = parseFloat(row.getAttribute('data-g8-rlw')) || 0;
+    if (rlw) lw = rlw;
+    else row.setAttribute('data-g8-rlw', String(lw));
+    // 2026-10-26 — THE NUMBER'S SIZE IS FOUND WHERE IT IS SET. Its width
+    // was measured at the size it had and scaled to the size wanted, but a
+    // number is not all as wide as its size says: the priority symbol before
+    // American's groups and the gaps between its numbers keep their width.
+    // So the size it came to hung on the size it started from, and how many
+    // passes the paint had: 87 px on one screen, 102 px on another, for the
+    // same call (at the switch, on a slower machine), and United's first call
+    // 112 px against 131 px for the rest. Here the number is measured at its
+    // stylesheet size, then at each size tried, until it holds: one answer
+    // for one call, however it got there.
+    // (the text's own width, held on one line while it is measured: the
+    // number's box is no wider than its panel, and a range such as 14-20
+    // wrapped inside it read as fitting, then stood on two lines until the
+    // panel's fitter took a step for it, Porter's ROWS | RANGÉES 15% smaller
+    // at one call at 1680x1050)
+    var rgv = document.createRange();
+    var wAt = function (t) {
+      val.style.setProperty('font-size', t + 'px', 'important');
+      val.style.setProperty('white-space', 'nowrap', 'important');
+      rgv.selectNodeContents(val);
+      var w = rgv.getBoundingClientRect().width;
+      val.style.removeProperty('white-space');
+      return w;
+    };
+    // (its floor: 55% of its size)
+    var vmin = vbase * 0.55;
+    var solve = function (roomPx) {
+      var t = vbase, w = wAt(t);
+      for (var it = 0; it < 6 && w > roomPx && t > vmin + 0.01; it++) {
+        var nt = Math.max(vmin, t * roomPx / w * 0.985);
+        if (Math.abs(nt - t) < 0.25) break;
+        t = nt; w = wAt(t);
+      }
+      return t;
+    };
     // (a pair can still shrink in the pass below; a single word cannot)
-    var room = avail - gap - lw * (kids.length >= 2 ? 0.85 : 1);
-    var vt = vw > room ? Math.max(vbase * 0.55, vbase * room / vw * 0.985) : vbase;
-    if (Math.abs(vt - vcur) > 0.5) val.style.setProperty('font-size', vt + 'px', 'important');
+    // 2026-10-26 — THE PRIORITY GROUP'S NUMBER COMES FIRST. On the two
+    // panels' left, GROUPS | GROUPES beside 1 • 2 held the word at 85% and
+    // brought the number down to 72 px at 1680x1050 (ZONES 1 • 2 had
+    // 131 px): words first, the number second, and a frame that differed by
+    // airline. There the word gives way first, down to 60% of its size (a
+    // pair in the pass below, a word printed once here), and only then the
+    // number.
+    var room = avail - gap - lw * (leftP ? 0.6 : (kids.length >= 2 ? 0.85 : 1));
+    var vt = solve(room);
+    // 2026-10-25 — THE CURRENT CALL'S NUMBER KEEPS ITS SIZE. In the two
+    // panels the right panel is half the sign, and a word beside a number
+    // at the one centre's size can need more than the panel (GROUP | GROUPE,
+    // ROWS | RANGÉES, ZONES 1 • 2 on a short window): the number came down to
+    // 55% and a pair was drawn over it. Where the number would come under
+    // 80% of its size, the word goes over it instead (is-col), on one line
+    // of its own as every pair, and the number keeps its size (as wide as
+    // the panel at most).
+    // (2026-10-26: the left's priority group too, where its word, at 60%,
+    // still leaves the number under 80%: Delta's ZONES over 1 • 2 • 3 • 4,
+    // American's GROUPS | GROUPES over its symbol and four numbers)
+    // (on the left at 65%: a word on a line of its own takes a line from
+    // who the group is for, so the number gives way a little more first)
+    var colWise = !!(two && (leftP ? vt < vbase * 0.65 : (vt < vbase * 0.8 && col.classList.contains('g8-sign-right'))));
+    // (and on a short panel, the final call's under its taller bar, the
+    // word stays beside a number of half its size or more: on a line of its
+    // own it left Delta's German list one line a page, 17 pages)
+    if (leftP && colWise && vt >= vbase * 0.5) {
+      var pcs = getComputedStyle(col);
+      var cH = col.clientHeight - (parseFloat(pcs.paddingTop) || 0) - (parseFloat(pcs.paddingBottom) || 0);
+      if (cH > 0 && cH < vbase * 2.4) colWise = false;
+    }
+    if (row.classList.contains('is-col') !== colWise) {
+      row.classList.toggle('is-col', colWise);
+      // (the word is measured afresh in its new place by the pair pass)
+      lbl.removeAttribute('data-g8-base'); lbl.removeAttribute('data-g8-lfit'); lbl.removeAttribute('data-g8-lset');
+      lbl.style.removeProperty('font-size');
+      val.removeAttribute('data-g8-nbase');
+    }
+    if (colWise) vt = solve(avail);
+    // (the number at the size found, measured there: what it leaves the word)
+    var wv = wAt(vt);
+    // (what the panel's fitter reads on this pass: _fidsSignColFit)
+    val.setAttribute('data-g8-rfp', String(_fidsSignPassN));
+    // the word printed once beside the left's number: what the number leaves
+    if (leftP && one && rlb) {
+      if (colWise) lbl.style.removeProperty('font-size');
+      else {
+        var lt = rlb * Math.max(0.6, Math.min(1, (avail - gap - wv) / lw * 0.985));
+        if (Math.abs(lt - lcur) > 0.5) lbl.style.setProperty('font-size', lt + 'px', 'important');
+      }
+    }
   }
 }
+// (each pass counted: a number the row's fitter reached on this pass carries
+// it, data-g8-rfp)
+var _fidsSignPassN = 0;
 function _fidsPairSeparators(root) {
   try {
     var scope = root || document;
+    _fidsSignPassN++;
+    // (the switch's caps off first: every pass fits from where the first did)
+    try { _fidsSignSwitchUncap(scope); } catch (eU) {}
     try { _fidsSignRowFit(scope); } catch (eR) {}
     var SEL = '.v2-rc-fi-stline, .v2-fi-mlbl, .v2-rc-fi-tlbl, .wxc-title, .wxc-stk, .g8-pair';
     var nodes = scope.querySelectorAll(SEL);
@@ -2003,7 +2119,8 @@ function _fidsPairSeparators(root) {
             var ks = getComputedStyle(kids[k]);
             need += kids[k].getBoundingClientRect().width + (parseFloat(ks.marginLeft) || 0) + (parseFloat(ks.marginRight) || 0);
           }
-          if (rowEl) {
+          // (2026-10-25: not a word set over its number, is-col)
+          if (rowEl && !rowEl.classList.contains('is-col')) {
             var sib = rowEl.querySelector('.g8-sign-value');
             if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
           }
@@ -2019,7 +2136,10 @@ function _fidsPairSeparators(root) {
           // général", "All passengers | Tous les passagers") stacked at 68%
           // at 1680x1050, the switch among them: there too a pair comes down
           // to half its size before it may stack (one line is the sign's rule)
-          if (ratio < 1 && el.closest('.g8-sign-two')) target = Math.max(base * 0.5, base * ratio * 0.985);
+          // (2026-10-25: to 42% beside the standby lists' column: the
+          // switch's ALLGEMEINES BOARDING | EMBARQUEMENT GÉNÉRAL, in capitals,
+          // needs 44% of its size at 1680x1050)
+          if (ratio < 1 && el.closest('.g8-sign-two')) target = Math.max(base * (el.closest('.g8-sbcol-on') ? 0.42 : 0.5), base * ratio * 0.985);
           // the stylesheet's size is !important (it has to outrank the brand
           // skins), so a plain inline value would lose to it
           if (Math.abs(target - cur) > 0.5) el.style.setProperty('font-size', target + 'px', 'important');
@@ -2039,7 +2159,11 @@ function _fidsPairSeparators(root) {
     try { _fidsSignColFit(scope); } catch (eC) {}
     try { _fidsSignSwitchLead(scope); } catch (eS) {}
     try { _fidsSignChipAway(); } catch (eA) {}
-  } catch (e) {}
+  } catch (e) {
+    // (a pass cut short still puts the switch's caps back on: they came off
+    // as it began)
+    try { _fidsSignSwitchLead(scope || document); } catch (eS2) {}
+  }
 }
 try { if (typeof window !== 'undefined') window._fidsPairSeparators = _fidsPairSeparators; } catch (e) {}
 // THE FINAL DESIGN — A WHOLE SENTENCE KEEPS ITS LINE. The line of who still
@@ -2108,7 +2232,19 @@ function _fidsSignColFit(scope) {
     }
     var nb = 0;
     if (val) {
-      nb = parseFloat(val.getAttribute('data-g8-nbase')) || 0;
+      // 2026-10-26 — A NUMBER ITS ROW FITS STARTS FROM WHAT THE ROW GAVE IT
+      // ON THIS PASS. The row's fitter (_fidsSignRowFit, earlier in the same
+      // pass) sizes it afresh from its own stylesheet size every time; kept
+      // from the first pass instead, its size was the one the row gave
+      // before the lists' column beside the sign had its width, and on a
+      // slower screen that first size stayed: American's priority group at
+      // 102 px at the switch against 87 px at every other call. A number no
+      // row fits keeps the size it was first seen at (data-g8-nbase).
+      // (only a number the row's fitter reached on this pass: one it did
+      // not, a pass cut short, keeps the size it was first seen at, or it
+      // would take this fitter's step again on top of the last one)
+      var rowFit = val.getAttribute('data-g8-rfp') === String(_fidsSignPassN);
+      nb = rowFit ? (parseFloat(getComputedStyle(val).fontSize) || 0) : (parseFloat(val.getAttribute('data-g8-nbase')) || 0);
       if (!nb) { nb = parseFloat(getComputedStyle(val).fontSize) || 0; if (nb) val.setAttribute('data-g8-nbase', String(nb)); }
     }
     // THE WORD COMES DOWN WITH ITS NUMBER. Delta's Zone 1 carries a long
@@ -2149,41 +2285,287 @@ function _fidsSignColFit(scope) {
       // number: with its list)
       if (pic) pic.style.setProperty('zoom', String(val ? steps[k][1] : steps[k][0]), 'important');
     };
-    // 2026-10-13 — A LONG LIST IN THE TWO PANELS: ONE LANGUAGE AT A TIME.
-    // A panel is half the screen there, and a list in both of the board's
-    // languages one under the other ran under the arrow discs even at the
-    // last step (American's Groups 1-4 called together on an E175: twelve
-    // items in each, 13.8px), and every long list brought the call's number
-    // down to 72px (American's Group 4, 126px without it). Side by side
-    // did not help: in half a panel each item wraps to more lines. Once the
-    // list alone has come down (to 75%) and the panel is still too short,
-    // its two languages take turns in one place (is-alt: both blocks in one
-    // cell, the panel as tall as the longer, ten seconds each by the clock,
-    // _fidsSignWhoAlt), and the steps start again from the stylesheet's
-    // sizes, so the number keeps its size first. Nothing moves: one block
-    // is shown, then the other. The one centre keeps both at once.
-    var alt = !!(ro && col.closest('.g8-sign-two') && ro.querySelectorAll(':scope > .g8-who-blk').length > 1);
-    if (ro) ro.classList.remove('is-alt');
-    var k = 0;
-    for (; k < (alt ? 3 : steps.length) && over(); k++) step(k);
-    if (alt && over()) {
+    // 2026-10-25 — THE TWO PANELS: A LONG LIST PAGES, IT IS NEVER SQUEEZED
+    // (_fidsSignColPage). The one centre keeps the steps above.
+    if (col.closest('.g8-sign-two')) {
+      if (ro) _fidsSignPagesClear(ro);
+      // (2026-10-26: the priority group's number keeps its size at the
+      // switch too; the switch leads by its own size, _fidsSignSwitchLead)
+      // the number, its word and its pictograms at f of the size the
+      // stylesheet and the row gave them
+      _fidsSignColPage(col, ro, rb, over, function (f) {
+        if (val && nb) val.style.setProperty('font-size', (nb * f) + 'px', 'important');
+        if (lbl && lb0) setL(lb0 * f);
+        if (pic) { if (f < 1) pic.style.setProperty('zoom', String(f), 'important'); else pic.style.removeProperty('zoom'); }
+      }, col.classList.contains('g8-sign-right'));
+      continue;
+    }
+    for (var k = 0; k < steps.length && over(); k++) step(k);
+  }
+  // (every sign's pages once all its panels are fitted: one language at a
+  // time across the whole sign, _fidsSignWhoAlt)
+  try { var _sg = scope.querySelectorAll('.g8-sign.g8-sign-two'); for (var s = 0; s < _sg.length; s++) _fidsSignWhoAlt(_sg[s]); } catch (eW) {}
+}
+// 2026-10-25 — THE TWO PANELS: A LONG LIST PAGES, IT IS NEVER SQUEEZED. A
+// panel is half the sign, and with the current call's number at the one
+// centre's size (the right) and the priority group's whole list (the left),
+// a list in both of the board's languages did not fit: it came down to
+// 16 px and the number to 72 px (American's Groups 1-4 on an E175, the
+// 2026-10-13 build). Now the number, its word and the pictograms keep the
+// sizes the stylesheet and the row gave them, and the list, measured as
+// drawn, takes the first of these that fits:
+//   1. both languages, from its size down to its floor (_G8_WHO_FLOOR, 80%
+//      of it: 22 px at 1920x1080, 21.8 px at 1680x1050);
+//   2. one language at a time (is-alt: both blocks in one cell, the box as
+//      tall as the longer), ten seconds each, from its size to its floor;
+//   3. pages of whole items at its floor (is-paged): one language at a time,
+//      as many whole items as the panel holds on each page, ten seconds a
+//      page by the clock (_fidsSignWhoAlt), every item on one page of its
+//      own language, in order. The box keeps the height of its tallest page,
+//      so nothing in the panel moves as the pages turn, and a page's last
+//      item drops its dot.
+// A panel that cannot hold one item at its floor brings its number down a
+// step (85%, 72%, 60%) and tries the three again; the list never goes under
+// its floor. Nothing flashes: a page is shown, then the next, every ten
+// seconds.
+var _G8_WHO_FLOOR = 0.8;
+function _fidsSignColPage(col, ro, rb, over, numAt, cur) {
+  // 2026-10-26 — THE PRIORITY GROUP'S STEP ONLY GOES DOWN, FOR ONE FLIGHT.
+  // Whether its list needs the number a step down came to a pixel or two
+  // (a 502 px panel against 504 px drawn, its tallest page 105 px on one
+  // paint and 88 px on the next), so a paint could drop the step the calls
+  // before had taken: American's priority group 87 px at every call and
+  // 102 px at the switch, on some screens and not others. The step a flight's
+  // priority group took is kept (window._g8PrioStep: the flight, the screen's
+  // size and the board's languages, a step each for boarding and for the
+  // final call) and the next pass starts from it: the number can come down
+  // for a list that needs it, never back up while that flight boards. A step
+  // is kept only once two passes in a row have taken it with the fonts in
+  // (a screen that reloads mid-boarding paints first in a stand-in font, and
+  // one such paint would have kept the number small to the last call), and
+  // never the last resort, nothing having fitted. No current flight, nothing
+  // kept.
+  var memo = null, ph = '', k0 = 0;
+  if (!cur) {
+    try {
+      var cf = window._gateCurrentFlight;
+      if (cf) {
+        var mk = _gateRowKey(cf) + '|' + innerWidth + 'x' + innerHeight + '|' + (typeof langs !== 'undefined' && langs ? langs.join(',') : '');
+        ph = col.closest('.g8-final') ? 'final' : 'boarding';
+        memo = window._g8PrioStep;
+        if (!memo || memo.k !== mk) memo = window._g8PrioStep = { k: mk, n: {}, seen: {} };
+        k0 = memo.n[ph] || 0;
+      }
+    } catch (eM) { memo = null; k0 = 0; }
+  }
+  var keep = function (n) {
+    if (!memo) return;
+    try {
+      var settled = !(document.fonts && document.fonts.status !== 'loaded');
+      if (!settled || n <= (memo.n[ph] || 0)) { memo.seen[ph] = -1; return; }
+      if (memo.seen[ph] === n) memo.n[ph] = n;
+      else memo.seen[ph] = n;
+    } catch (eK) {}
+  };
+  if (!k0 && !over()) { keep(0); return; }
+  var FS = [1, 0.92, 0.86, _G8_WHO_FLOOR], NUM = [1, 0.85, 0.72, 0.6], i, k;
+  var setF = function (f) { if (ro && rb) ro.style.setProperty('font-size', (rb * f) + 'px', 'important'); };
+  var two = !!(ro && ro.querySelectorAll(':scope > .g8-who-blk').length > 1);
+  // THE CURRENT CALL'S LIST TURNS QUICKLY: a call is live for a few
+  // minutes, so the right panel's number gives up a step (to 72% at most,
+  // 156 px at 1920x1080) before its list would take more than two pages a
+  // language (American's Groups 1-4 called together: one item a page beside
+  // the full-size number), and before its pages would hold one item each
+  // (2026-10-26: United's Group 1 turned four pages of one name beside the
+  // full-size number). The priority panel, up for the whole of boarding,
+  // keeps its number and pages as long as its list needs: its number is
+  // one size from the first call to the last (2026-10-26: a step taken for
+  // a page more brought Delta's German 131 px down to 112 px at the switch,
+  // when the band over the sign grew by 6 px).
+  var nb = ro ? Math.max(1, ro.querySelectorAll(':scope > .g8-who-blk').length) : 1;
+  var few = (cur && ro) ? 2 : 0;
+  var perLang = function () { return _fidsSignPgl(ro).reduce(function (m, x) { return Math.max(m, x.n); }, 0); };
+  var thin = function (n) { return !!cur && n > nb && ro.querySelectorAll('.g8-who-i').length < n * 1.5; };
+  for (k = k0; k < NUM.length; k++) {
+    numAt(NUM[k]);
+    // (every try starts from the whole list at its size: a page left from
+    // the last try would measure as if it were the list)
+    if (ro && rb) { _fidsSignPagesClear(ro); setF(1); }
+    if (!over()) { keep(k); return; }
+    if (!ro || !rb) continue;
+    for (i = 1; i < FS.length; i++) { setF(FS[i]); if (!over()) { keep(k); return; } }
+    if (two) {
       ro.classList.add('is-alt');
       _fidsSignWhoAlt(ro);
-      if (rb) ro.style.setProperty('font-size', rb + 'px', 'important');
-      for (k = 0; k < steps.length && over(); k++) step(k);
+      for (i = 0; i < FS.length; i++) { setF(FS[i]); if (!over()) { keep(k); return; } }
+      ro.classList.remove('is-alt', 'alt-b');
     }
+    setF(_G8_WHO_FLOOR);
+    var n = _fidsSignPaginate(ro, over);
+    if (!over() && (!few || (perLang() <= few && !thin(n)) || NUM[k] <= 0.72)) { keep(k); return; }
   }
 }
-// Which of a long list's two languages is shown (is-alt): ten seconds each,
-// by the clock, so a sign rebuilt between two turns carries on where it was
-// (the gate rebuilds its sign on every telemetry tick). Set by the column
-// fitter when it turns a list to is-alt, and every second by the gate's
-// clock (updateDedicatedTimeOnly).
+// Every mark the pages left, so each pass judges the list afresh.
+function _fidsSignPagesClear(ro) {
+  ro.classList.remove('is-alt', 'alt-b', 'is-paged');
+  ro.removeAttribute('data-g8-pages');
+  ro.removeAttribute('data-g8-pgl');
+  ro.removeAttribute('data-g8-pg-on');
+  ro.style.removeProperty('min-height');
+  var xs = ro.querySelectorAll('[data-g8-pg], .g8-pg-off, .g8-pg-last');
+  for (var i = 0; i < xs.length; i++) {
+    xs[i].removeAttribute('data-g8-pg');
+    xs[i].classList.remove('g8-pg-off', 'g8-pg-last');
+  }
+}
+// The pages, measured as drawn: each language's whole items in order, as
+// many on a page as the panel holds (an item alone is a page of its own).
+// 2026-10-26 — AND EVENLY. Filled in turn, the last page of a language held
+// what was left (« Travel companions on the same reservation » alone, 75 px
+// spare; United's pages 7, 5 and 2): from the last page back, a page takes
+// the item before it while it holds fewer and still fits, until the pages
+// of a language hold as many as each other, one more at most. Each
+// language's pages are kept on the list (data-g8-pgl: language, first page,
+// how many), so the sign shows one language at a time on all its panels
+// (_fidsSignWhoAlt).
+function _fidsSignPaginate(ro, over) {
+  var blks = ro.querySelectorAll(':scope > .g8-who-blk');
+  if (!blks.length) return 0;
+  ro.classList.add('is-paged');
+  var lists = [], b, j, n = 0, pgl = [];
+  for (b = 0; b < blks.length; b++) {
+    lists.push(blks[b].querySelectorAll('.g8-who-i'));
+    blks[b].classList.add('g8-pg-off');
+    for (j = 0; j < lists[b].length; j++) lists[b][j].classList.add('g8-pg-off');
+  }
+  // items a..z of a language on screen, the rest of it off
+  var showRange = function (items, a, z) {
+    for (var q = 0; q < items.length; q++) {
+      items[q].classList.toggle('g8-pg-off', q < a || q > z);
+      items[q].classList.toggle('g8-pg-last', q === z);
+    }
+  };
+  for (b = 0; b < blks.length; b++) {
+    var items = lists[b], from = 0, pages = [];
+    blks[b].classList.remove('g8-pg-off');
+    while (from < items.length) {
+      var to = from;
+      showRange(items, from, to);
+      while (to + 1 < items.length) {
+        showRange(items, from, to + 1);
+        if (over()) { showRange(items, from, to); break; }
+        to++;
+      }
+      pages.push([from, to]);
+      from = to + 1;
+    }
+    for (var pass = 0; pass < items.length; pass++) {
+      var moved = false;
+      for (var q = pages.length - 1; q > 0; q--) {
+        var A = pages[q - 1], Z = pages[q];
+        while (A[1] - A[0] > Z[1] - Z[0] + 1) {
+          showRange(items, A[1], Z[1]);
+          if (over()) break;
+          A[1]--; Z[0]--; moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+    pgl.push((blks[b].getAttribute('lang') || String(b)) + ':' + n + ':' + pages.length);
+    for (var p = 0; p < pages.length; p++) {
+      for (j = pages[p][0]; j <= pages[p][1]; j++) items[j].setAttribute('data-g8-pg', String(n));
+      n++;
+    }
+    showRange(items, items.length, -1);
+    blks[b].classList.add('g8-pg-off');
+  }
+  ro.setAttribute('data-g8-pages', String(n));
+  ro.setAttribute('data-g8-pgl', pgl.join(','));
+  // the box as tall as the tallest page: nothing moves as they turn
+  var hmax = 0;
+  for (var k = 0; k < n; k++) { _fidsSignPageShow(ro, k); hmax = Math.max(hmax, ro.getBoundingClientRect().height); }
+  if (hmax > 0) ro.style.setProperty('min-height', Math.ceil(hmax) + 'px', 'important');
+  ro.removeAttribute('data-g8-pg-on');
+  _fidsSignWhoAlt(ro);
+  return n;
+}
+// Page k of a paged list on screen, its own language's block only.
+function _fidsSignPageShow(ro, k) {
+  var blks = ro.querySelectorAll(':scope > .g8-who-blk');
+  for (var b = 0; b < blks.length; b++) {
+    var items = blks[b].querySelectorAll('.g8-who-i'), last = null;
+    for (var j = 0; j < items.length; j++) {
+      var on = items[j].getAttribute('data-g8-pg') === String(k);
+      items[j].classList.toggle('g8-pg-off', !on);
+      items[j].classList.remove('g8-pg-last');
+      if (on) last = items[j];
+    }
+    if (last) last.classList.add('g8-pg-last');
+    blks[b].classList.toggle('g8-pg-off', !last);
+  }
+}
+// Which of a long list's two languages is shown (is-alt), or which of its
+// pages (is-paged): ten seconds each, by the clock, so a sign rebuilt
+// between two turns carries on where it was (the gate rebuilds its sign on
+// every telemetry tick). Set by the column fitter when it turns a list to
+// is-alt or is-paged, and every second by the gate's clock
+// (updateDedicatedTimeOnly).
+// 2026-10-26 — ONE LANGUAGE CLOCK FOR THE WHOLE SIGN. Each list turned on
+// its own count (American's priority group six pages, its current call
+// five), so the left showed French while the right showed English and a
+// reader of one language hunted across both panels. The sign now turns as
+// one: its languages in turn (the order its lists give them), each held for
+// as many turns as the list with the most pages in it needs; every list
+// shows that language, page by page (a list with fewer pages in it starts
+// again), and a list without it shows its own first language.
 var _G8_WHO_ALT_MS = 10000;
+// A list's pages by language: [{l, a (its first page), n (how many)}]; a
+// list shown one language at a time (is-alt) has one page a language.
+function _fidsSignPgl(ro) {
+  if (ro.classList.contains('is-paged')) {
+    return String(ro.getAttribute('data-g8-pgl') || '').split(',').filter(Boolean).map(function (x) {
+      var f = x.split(':');
+      return { l: f[0], a: parseInt(f[1], 10) || 0, n: parseInt(f[2], 10) || 0 };
+    }).filter(function (x) { return x.n > 0; });
+  }
+  var bl = ro.querySelectorAll(':scope > .g8-who-blk'), out = [];
+  for (var i = 0; i < bl.length && i < 2; i++) out.push({ l: bl[i].getAttribute('lang') || String(i), a: i, n: 1 });
+  return out;
+}
 function _fidsSignWhoAlt(el) {
-  var b = Math.floor(Date.now() / _G8_WHO_ALT_MS) % 2 === 1;
-  var rs = el ? [el] : document.querySelectorAll('.g8-sign .g8-sign-roster.is-alt');
-  for (var i = 0; i < rs.length; i++) rs[i].classList.toggle('alt-b', b);
+  var t = Math.floor(Date.now() / _G8_WHO_ALT_MS);
+  var signs = el ? [(el.closest && el.closest('.g8-sign')) || el] : document.querySelectorAll('.g8-sign');
+  for (var g = 0; g < signs.length; g++) {
+    var rs = signs[g].querySelectorAll('.g8-sign-roster.is-alt, .g8-sign-roster.is-paged');
+    if (!rs.length) continue;
+    var order = [], slots = {}, per = [], i, j;
+    for (i = 0; i < rs.length; i++) {
+      var pl = _fidsSignPgl(rs[i]);
+      per.push(pl);
+      for (j = 0; j < pl.length; j++) {
+        if (!(pl[j].l in slots)) { order.push(pl[j].l); slots[pl[j].l] = 0; }
+        slots[pl[j].l] = Math.max(slots[pl[j].l], pl[j].n);
+      }
+    }
+    var C = 0;
+    for (j = 0; j < order.length; j++) C += slots[order[j]];
+    if (!C) continue;
+    var s = t % C, L = order[0];
+    for (j = 0; j < order.length; j++) { if (s < slots[order[j]]) { L = order[j]; break; } s -= slots[order[j]]; }
+    for (i = 0; i < rs.length; i++) {
+      var mine = null;
+      for (j = 0; j < per[i].length; j++) if (per[i][j].l === L) mine = per[i][j];
+      if (!mine) mine = per[i][0];
+      if (!mine) continue;
+      var pg = mine.a + (s % mine.n);
+      if (rs[i].classList.contains('is-paged')) {
+        if (rs[i].getAttribute('data-g8-pg-on') !== String(pg)) {
+          _fidsSignPageShow(rs[i], pg);
+          rs[i].setAttribute('data-g8-pg-on', String(pg));
+        }
+      } else rs[i].classList.toggle('alt-b', pg === 1);
+    }
+  }
 }
 
 // THE FINAL DESIGN — THE SWITCH LEADS THE TWO PANELS. Once the switch is on
@@ -2193,25 +2575,70 @@ function _fidsSignWhoAlt(el) {
 // call already made. A number on a panel that is not the switch is drawn no
 // bigger than the switch's own value, and its word no bigger than 85% of
 // that. Runs last, on what the fitters above settled.
+// 2026-10-26 — THE SWITCH LEADS BY ITS OWN SIZE. Holding the priority
+// group's number to ALL ZONES (39 px at 1680x1050 in a half panel) put the
+// left's number at list size, and still the switch's words were the
+// smallest on the sign beside the left's 48 px title. Now the switch's group
+// of passengers is drawn the size of a call's number (the stylesheet, 20vh)
+// and its words fill its panel's width (the pair pass); the other panel
+// keeps its number (never under its own title) and its words come down to
+// the switch's: its title and its unit word no bigger than ALL ZONES, its
+// state line and its list no bigger than GENERAL BOARDING (the list never
+// under its floor, _G8_WHO_FLOOR).
+// 2026-10-26 — THE SWITCH'S CAPS COME OFF AT THE START OF EVERY PASS. The
+// caps above are the pass's last word, but the title, the line under it and
+// the state line kept theirs into the next pass, so the panel's fitter
+// (_fidsSignColFit) measured the priority group's panel shorter than the
+// first pass had: its number kept the step its list needed on one pass (87
+// px, as at every other call) and dropped it on the next (102 px), and how
+// many passes a screen ran decided which (a slower screen, or the lists'
+// column taking its width late, ran one more). The list and the word on the
+// number's row start from their own sizes in that fitter already
+// (data-g8-rbase, data-g8-lfit); these three are put back here as the pass
+// begins (data-g8-swcap: the size each had before its cap), so every pass
+// fits from where the first one did, and the caps go on again at its end.
+function _fidsSignSwitchUncap(scope) {
+  var els = scope.querySelectorAll('.g8-sign [data-g8-swcap]');
+  for (var i = 0; i < els.length; i++) {
+    var was = els[i].getAttribute('data-g8-swcap');
+    if (was) els[i].style.setProperty('font-size', was, 'important');
+    else els[i].style.removeProperty('font-size');
+    els[i].removeAttribute('data-g8-swcap');
+  }
+}
 function _fidsSignSwitchLead(scope) {
   var signs = scope.querySelectorAll('.g8-sign.g8-sign-two.has-switch');
+  var fsOf = function (e) { return e ? (parseFloat(getComputedStyle(e).fontSize) || 0) : 0; };
+  var capTo = function (e, cap, floor, keep) {
+    if (!e || !cap) return;
+    var c = Math.max(cap, floor || 0);
+    if (fsOf(e) > c + 0.5) {
+      // (a cap the next pass takes off first, _fidsSignSwitchUncap: what
+      // the element had before it)
+      if (keep && !e.hasAttribute('data-g8-swcap')) e.setAttribute('data-g8-swcap', e.style.getPropertyValue('font-size') || '');
+      e.style.setProperty('font-size', c + 'px', 'important');
+    }
+  };
   for (var i = 0; i < signs.length; i++) {
-    var sv = signs[i].querySelector('.g8-sign-col.is-switch .g8-sign-value');
-    var cap = sv ? (parseFloat(getComputedStyle(sv).fontSize) || 0) : 0;
-    if (!cap) continue;
-    var vals = signs[i].querySelectorAll('.g8-sign-col:not(.is-switch) .g8-sign-value:not(.g8-grp-txt)');
-    for (var k = 0; k < vals.length; k++) {
-      var v = vals[k], fs = parseFloat(getComputedStyle(v).fontSize) || 0;
-      if (fs > cap + 0.5) v.style.setProperty('font-size', cap + 'px', 'important');
-      var row = v.parentElement;
-      var lb = (row && row.classList.contains('g8-sign-row')) ? row.querySelector('.g8-sign-label') : null;
-      var lf = lb ? (parseFloat(getComputedStyle(lb).fontSize) || 0) : 0;
-      if (lf > cap * 0.85 + 0.5) {
-        lb.style.setProperty('font-size', (cap * 0.85) + 'px', 'important');
+    var sw = signs[i].querySelector('.g8-sign-col.is-switch');
+    if (!sw) continue;
+    var capV = fsOf(sw.querySelector('.g8-sign-value')), capT = fsOf(sw.querySelector('.g8-sign-title'));
+    if (!capV) continue;
+    var others = signs[i].querySelectorAll('.g8-sign-col:not(.is-switch)');
+    for (var k = 0; k < others.length; k++) {
+      var oc = others[k];
+      capTo(oc.querySelector('.g8-sign-title'), capV, 0, true);
+      capTo(oc.querySelector('.g8-sign-sub'), capV, 0, true);
+      var lb = oc.querySelector('.g8-sign-row .g8-sign-label');
+      if (lb && fsOf(lb) > capV + 0.5) {
+        capTo(lb, capV);
         // (the column fitter's record: the next pass starts from its own
         // size, not from this cap)
-        if (lb.hasAttribute('data-g8-lfit')) lb.setAttribute('data-g8-lset', String(parseFloat(getComputedStyle(lb).fontSize) || cap * 0.85));
+        if (lb.hasAttribute('data-g8-lfit')) lb.setAttribute('data-g8-lset', String(fsOf(lb)));
       }
+      capTo(oc.querySelector('.g8-sign-status'), capT || capV, 0, true);
+      var ro = oc.querySelector('.g8-sign-roster');
+      if (ro) capTo(ro, capT || capV, (parseFloat(ro.getAttribute('data-g8-rbase')) || 0) * _G8_WHO_FLOOR);
     }
     // (a pictogram on such a panel is the priority symbol: drawn no taller
     // than the switch's own group of passengers)
@@ -4159,6 +4586,12 @@ try {
         // and the word beside a number (_fidsSignColFit's record)
         var _sw = document.querySelectorAll('.g8-sign [data-g8-lfit]');
         for (var _w = 0; _w < _sw.length; _w++) { _sw[_w].removeAttribute('data-g8-lfit'); _sw[_w].removeAttribute('data-g8-lset'); _sw[_w].style.removeProperty('font-size'); }
+        // and a word set over its number (_fidsSignRowFit, 2026-10-25)
+        var _sc = document.querySelectorAll('.g8-sign .g8-sign-row[data-g8-rlw]');
+        for (var _c = 0; _c < _sc.length; _c++) { _sc[_c].removeAttribute('data-g8-rlw'); _sc[_c].removeAttribute('data-g8-rgap'); _sc[_c].classList.remove('is-col'); }
+        // and a word printed once beside the left's number (2026-10-26)
+        var _sr = document.querySelectorAll('.g8-sign [data-g8-rlb]');
+        for (var _r = 0; _r < _sr.length; _r++) { _sr[_r].removeAttribute('data-g8-rlb'); _sr[_r].style.removeProperty('font-size'); }
         // and the whole-sentence lines' (_fidsSignLineFit)
         var _sl = document.querySelectorAll('[data-g8-lbase]');
         for (var _m = 0; _m < _sl.length; _m++) { _sl[_m].removeAttribute('data-g8-lbase'); _sl[_m].style.removeProperty('font-size'); }
@@ -17032,7 +17465,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24086" src="/textures/gate-sky-shelf.mp4?v=24086" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24087" src="/textures/gate-sky-shelf.mp4?v=24087" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17076,7 +17509,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24086" src="/textures/gate-sky-shelf.mp4?v=24086" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24087" src="/textures/gate-sky-shelf.mp4?v=24087" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19043,8 +19476,35 @@ function uxgGateHtml(ctx) {
   // adapts ('panels': priority lanes 1 • 2 on the left, general lanes 3 • 4
   // on the right). ?sign=centre or ?sign=panels picks one on a screen (and
   // the fids_sign_layout setting); _G8_SIGN_LAYOUT is the default.
+  //
+  // 2026-10-25 — THE TWO PANELS ARE THE DEFAULT AGAIN: PRIORITY STAYS ON
+  // SCREEN. Real gates keep who boards in priority on the screen for the
+  // whole of boarding: priority passengers may board at any time once their
+  // call has been made, so the one centre, which showed priority only while
+  // its own zones were called, told them nothing for most of boarding. Now:
+  //   LEFT   the airline's priority group for the whole of boarding
+  //          (_g8SeqPrio): Priority, its own unit and numbers (Zones 1 • 2,
+  //          Groups 1–4), who it is for (the researched who-lists, its
+  //          cabins first), "Boarding next" until its first call, then a
+  //          check and "Boarding now", each number not yet called drawn
+  //          faint, never faint again once called (the sequence never steps
+  //          back), and so is every name in its list (2026-10-26), its
+  //          numbers written the same way at every call. An airline that
+  //          publishes no priority step (Porter puts its elite tiers and
+  //          PorterReserve in pre-boarding, PAL, Calm Air) keeps its
+  //          pre-boarding group there in its own word: never an invented
+  //          Priority.
+  //   RIGHT  the current call, exactly what the one centre shows
+  //          (_g8SeqCentre): the pre-boarding pictograms, each call's unit
+  //          and number at the centre's size, the switch in its violet,
+  //          kept at the final call. While a priority call is live it is
+  //          that call, in the priority colour with its arrow.
+  // The instruction line runs under both. A list too long for its panel
+  // pages (whole items, one language at a time, ten seconds a page) at a
+  // readable size; it is never squeezed (_fidsSignColPage). ?sign=centre
+  // keeps the one centre.
   // ═══════════════════════════════════════════════════════════════════════
-  var _G8_SIGN_LAYOUT = 'centre';
+  var _G8_SIGN_LAYOUT = 'panels';
   function _g8SignLayout() {
     var v = '';
     try {
@@ -19100,6 +19560,11 @@ function uxgGateHtml(ctx) {
     closed: '<svg class="g8-picto" viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
       + '<path d="M32 46 V32 A18 18 0 0 1 68 32 V46" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>'
       + '<path fill="currentColor" fill-rule="evenodd" d="M27 44 H73 A7 7 0 0 1 80 51 V85 A7 7 0 0 1 73 92 H27 A7 7 0 0 1 20 85 V51 A7 7 0 0 1 27 44 Z M50 57 A7 7 0 0 0 46.5 70.1 V80 H53.5 V70.1 A7 7 0 0 0 50 57 Z"/>'
+      + '</svg>',
+    // 2026-10-25 — a check mark, the stroke alone in the panel's own ink (no
+    // disc, no plate behind it): the priority group's call has been made
+    chk: '<svg class="g8-picto g8-picto-chk" viewBox="0 0 100 100" aria-hidden="true" focusable="false">'
+      + '<path d="M14 54 L38 78 L86 24" fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>'
       + '</svg>'
   };
   function _g8Picto(kind) {
@@ -19109,6 +19574,7 @@ function uxgGateHtml(ctx) {
     if (kind === 'all') return P.all;
     if (kind === 'prio') return P.prio;
     if (kind === 'closed') return P.closed;
+    if (kind === 'chk') return P.chk;
     return '';
   }
 
@@ -19216,7 +19682,10 @@ function uxgGateHtml(ctx) {
       + (S.waiting ? ' is-waiting' : '')
       // THE SWITCH TO EVERYONE, its own solid colour; a pictogram; the line
       // of who still waits; the instruction line at its foot
-      + (S.sw ? ' is-switch' : '') + (S.picto ? ' has-picto' : '') + (S.wait ? ' has-wait' : '') + (S.instr ? ' has-instr' : '') + '">';
+      + (S.sw ? ' is-switch' : '') + (S.picto ? ' has-picto' : '') + (S.wait ? ' has-wait' : '') + (S.instr ? ' has-instr' : '')
+      // 2026-10-25 — the priority panel's state: prio-ahead (no call made
+      // yet), prio-part (some of its calls made), prio-called (all of them)
+      + (S.state ? ' is-prio ' + S.state : '') + '">';
     if (S.picto) h += '<div class="g8-sign-picto g8-picto-' + S.picto + '">' + _g8Picto(S.picto) + '</div>';
     // g8-pair puts these on _fidsPairSeparators' radar, so a pair that has
     // to go to two rows loses its bar. g8-board-lane on the lane line gives it
@@ -19229,7 +19698,8 @@ function uxgGateHtml(ctx) {
       // word, it is never set as a phrase under it
       var _vPlain = String(S.value), _vPrev;
       do { _vPrev = _vPlain; _vPlain = _vPlain.replace(/<[^>]*>/g, ''); } while (_vPlain !== _vPrev);
-      var _isCode = /^[A-Z0-9]{1,2}\+?(\s*[\u2022\u2013]\s*[A-Z0-9]{1,2}\+?)*$/.test(_vPlain.trim());
+      // (S.num: the priority group's numbers, its symbol among them)
+      var _isCode = !!S.num || /^[A-Z0-9]{1,2}\+?(\s*[\u2022\u2013]\s*[A-Z0-9]{1,2}\+?)*$/.test(_vPlain.trim());
       var _txt = _isCode ? '' : _g8GrpValCls(S.value);
       var _val = '<div class="g8-sign-value' + _txt + (_txt ? ' g8-pair' : '') + '">' + S.value
         + ((side === 'right' && !_txt) ? '<span class="g8-sign-valarrow">' + _g8ArrowGlyph() + '</span>' : '')
@@ -19242,6 +19712,11 @@ function uxgGateHtml(ctx) {
       h += (S.label && !_txt) ? '<div class="g8-sign-row"><div class="g8-sign-label g8-pair">' + S.label + '</div>' + _val + '</div>'
          : ((S.label ? '<div class="g8-sign-label g8-pair">' + S.label + '</div>' : '') + _val);
     }
+    // 2026-10-25 — THE PRIORITY GROUP'S STATE, a pair on one line under its
+    // numbers: "Boarding next" until its first call, then the check and
+    // "Boarding now" for the rest of boarding (the check a child of the
+    // pair, so the pair pass measures it with the words)
+    if (S.stateLine) h += '<div class="g8-sign-status g8-pair">' + (S.chk ? '<span class="g8-sign-chk">' + _g8Picto('chk') + '</span>' : '') + S.stateLine + '</div>';
     // "Boarding will begin shortly", the waiting panel's main line: a
     // sentence, so each language is a whole line of its own, like the
     // instruction line (a pair of two sentences stacked at half the screen:
@@ -19304,13 +19779,9 @@ function uxgGateHtml(ctx) {
   // sign), and inside it each airline's PUBLISHED order plays in turn,
   // pre-boarding first: js/boarding-sequence.js (FIDSBoardSeq) holds the
   // tables and the pacing; this builds the same two panels from the stage
-  // that is live.
-  //   LEFT  (lanes 1 • 2): pre-boarding, then the airline's priority and
-  //         family calls in its own order; once they are all called, the
-  //         priority values called so far stay listed as callable.
-  //   RIGHT (lanes 3 • 4): general boarding: "Boarding will begin shortly"
-  //         while the left runs, then each zone, group or row band in turn
-  //         with the ones still to come as the Next line.
+  // that is live (2026-10-25: the left is the priority group for the whole
+  // of boarding, the right each call in turn, as the one centre shows it:
+  // _g8SeqPanels).
   // The sequence starts when boarding opened (_gateSeqT0) and runs to the
   // departure the sign keeps (_signDepTs: a delay after boarding began does
   // not restart it), and never steps back (_gateSeqMemo). The airport's
@@ -19410,10 +19881,25 @@ function uxgGateHtml(ctx) {
   // (display rule 2): a line breaks between items, never inside 'Global
   // Services' or 'Premier 1K'; an item wider than the panel wraps on its own
   // words. The dot stays with the item before it.
+  // (2026-10-25: the dot in its own span, so the last item of a page of a
+  // paged list drops it: _fidsSignPaginate)
+  // 2026-10-26 \u2014 AN ITEM THAT WRAPS NEVER LEAVES ONE WORD ON ITS LAST LINE.
+  // \u00AB Passagers voyageant avec des enfants de deux ans ou / moins \u00BB broke
+  // where the panel's edge fell: the item's last two words are held
+  // together (a no-break space; a word in markup is left as it is) and its
+  // lines are balanced (css: text-wrap). w is the list in one language, or
+  // its items ({t, on}): an item not called yet (on === false, the priority
+  // group's) is drawn faint (g8-who-wait), as its number is.
+  function _g8WhoBind(t) {
+    var s = String(t);
+    if (s.indexOf('<') >= 0 || (s.match(/ /g) || []).length < 2) return s;
+    return s.replace(/ (\S+)$/, '\u00A0$1');
+  }
   function _g8SeqWhoBlk(w) {
-    var items = String(w).split(' \u00B7 ');
+    var items = Array.isArray(w) ? w : String(w).split(' \u00B7 ').map(function (t) { return { t: t }; });
     return '<span class="g8-who-blk">' + items.map(function (it, i) {
-      return '<span class="g8-who-i">' + it + (i < items.length - 1 ? '\u00A0\u00B7' : '') + '</span>';
+      return '<span class="g8-who-i' + (it.on === false ? ' g8-who-wait' : '') + '">' + _g8WhoBind(it.t)
+        + (i < items.length - 1 ? '<span class="g8-who-d">\u00A0\u00B7</span>' : '') + '</span>';
     }).join(' ') + '</span>';
   }
   function _g8SeqWho(s) {
@@ -19441,9 +19927,9 @@ function uxgGateHtml(ctx) {
     }
     return out;
   }
-  // A stage's own cabin, as a pair; and the cabin a list of calls shares
-  // (the summed-up panel names one only when every call in it has that same
-  // one; a merged call names every one its calls name: _g8SeqCabS).
+  // A stage's own cabin, as a pair (a merged call names every one its calls
+  // name: _g8SeqCabS; the priority panel lists every one its group's calls
+  // name, with who they are for: _g8SeqPrio).
   function _g8SeqCab(k) { return k ? _g8SignPair(k, false, true) : ''; }
   // A CALL'S CABINS. A merged call (Zones 1 \u2022 2 on a short window)
   // names every cabin its calls name (FIDSBoardSeq: subs): one is its own
@@ -19466,12 +19952,6 @@ function uxgGateHtml(ctx) {
       halves.push(BoardStrings.markHalf('<span class="g8-pair-h">' + w + '</span>', lg, ck));
     }
     return halves.join('<span class="g8-pair-sep">|</span>');
-  }
-  function _g8SeqCabOf(list) {
-    if (!list || !list.length) return '';
-    var v = list[0].sub || '';
-    for (var i = 1; i < list.length; i++) if ((list[i].sub || '') !== v) return '';
-    return v;
   }
   // WHO STILL WAITS after the live call: "Zones 4, 5 and 6: please remain
   // seated" in each of the board's languages, a whole line each, the list in
@@ -19517,83 +19997,133 @@ function uxgGateHtml(ctx) {
     return { cls: 'all', sw: true, picto: 'all', title: _g8SignPair('genboard'), value: _g8SignPair(k),
       instr: _g8SignInstr(p, true), lanes: lanes };
   }
-  // THE TWO LANE PANELS for the live stage, or for the final call.
-  //   LEFT  (lanes 1 • 2): pre-boarding, then the airline's priority and
-  //         family calls in its own order; once they are all called, the
-  //         priority values called so far stay listed as callable.
-  //   RIGHT (lanes 3 • 4): "Boarding will begin shortly" while the left
-  //         runs, then each zone, group or row band in turn, then THE SWITCH.
-  // The live call's panel carries the line of who still waits (a numbered
-  // call); the right-hand panel carries the instruction line at its foot.
+  // THE TWO LANE PANELS for the live stage, or for the final call
+  // (2026-10-25, the default again).
+  //   LEFT  (lanes 1 • 2): the airline's priority group for the whole of
+  //         boarding, from pre-boarding to the final call (_g8SeqPrio).
+  //   RIGHT: the current call, as the one centre shows it (_g8SeqCentre):
+  //         pre-boarding, each priority, family and general call in the
+  //         airline's own order, then THE SWITCH, kept at the final call.
+  // The instruction line (who still waits, or the generic sentence; at the
+  // switch « All remaining passengers ») runs under both (_g8SignHtml).
   function _g8SeqPanels(seq, isFinal) {
-    var p = seq.p, st = seq.st, stg = p.stages, cur = st.cur, B = FIDSBoardSeq;
+    return { L: _g8SeqPrio(seq, isFinal), R: _g8SeqCentre(seq, isFinal, 3) };
+  }
+  // The priority group's numbers, each marked: a number called is drawn in
+  // the panel's full ink, one not yet called faint (g8-v-wait), never faint
+  // again once called.
+  // 2026-10-26 — ONE WRITTEN FORM FOR THE WHOLE OF BOARDING. Delta's zones
+  // read 1–4, then 1 • 2–4, 1 • 2 • 3 • 4, 1–3 • 4 and 1–4 again, the number
+  // a different size at each call: now every number is written out, in
+  // order (1 • 2 • 3 • 4), and only its ink changes. sym: the group's
+  // un-numbered priority call (American's ConciergeKey, First and Business;
+  // Alaska's and Southwest's Priority Boarding) as its own symbol, a
+  // passenger and a star, in its place in the order and marked the same
+  // way, so the row is never all faint once that call is made.
+  function _g8SeqPrioVal(vals, on, sym) {
+    var parts = vals.map(function (v) { return '<span class="g8-v-' + (on[v] ? 'on' : 'wait') + '">' + v + '</span>'; });
+    if (sym) {
+      var sh = '<span class="g8-v-sym' + (sym.on ? '' : ' is-wait') + '">' + _G8_PICTO.prio + '</span>';
+      if (sym.first) parts.unshift(sh); else parts.push(sh);
+    }
+    return '<span class="g8-v-seq">' + parts.join(' \u2022 ') + '</span>';
+  }
+  // WHO THE PRIORITY GROUP IS FOR, in each of the board's languages, call
+  // by call in the airline's order (each call's cabin, then who else it
+  // takes), an item two calls share said once, where it first stands; an
+  // item is drawn faint until a call that names it has been made (onS), so
+  // « Boarding now » never stands over a tier still to be called (United's
+  // Premier Silver under Group 1). The same language pick and the same
+  // one-language-once rule as _g8SeqWho.
+  function _g8SeqPrioWho(grp, onS, pre) {
+    var L = BoardStrings.pairLangs(langs, !!_frF), seen = Object.create(null), out = '', n = 0;
+    for (var i = 0; i < L.length && n < 2; i++) {
+      var lg = L[i], items = [], at = Object.create(null), miss = false, ck = '';
+      grp.forEach(function (s) {
+        var son = onS(s), keys = [];
+        if (!pre && s.sub) keys.push(s.sub);
+        if (s.who) keys.push(s.who);
+        keys.forEach(function (k) {
+          var e = _lblEntry(k) || {};
+          if (!e[lg]) { miss = true; return; }
+          if (!ck || (e.$src && e.$src[lg] === 'careful')) ck = k;
+          String(e[lg]).split(' \u00B7 ').forEach(function (t) {
+            if (!t) return;
+            var lk = t.toLowerCase();
+            if (lk in at) { if (son) items[at[lk]].on = true; return; }
+            at[lk] = items.length;
+            items.push({ t: t, on: son });
+          });
+        });
+      });
+      if (miss || !items.length) continue;
+      var whole = items.map(function (x) { return x.t; }).join(' \u00B7 ').toLowerCase();
+      if (seen[whole]) continue;
+      seen[whole] = 1; n++;
+      out += BoardStrings.markHalf(_g8SeqWhoBlk(items), lg, ck);
+    }
+    return out;
+  }
+  // THE PRIORITY PANEL, the left of the two, for the whole of boarding: the
+  // same panel at every call, only its marks move.
+  //   - the group: the airline's priority calls (Zones 1 • 2 for Air Canada
+  //     and WestJet, Groups 1 • 2 for United, ConciergeKey, First and
+  //     Business then Groups 1–4 for American, Zones 1–4 for Delta, Transat's
+  //     Option Plus); where the airline publishes no priority step, its
+  //     pre-boarding call in its own word (Porter's elite tiers and
+  //     PorterReserve board there; PAL, Calm Air): never an invented Priority;
+  //   - Priority (or Pre-boarding), the unit and its numbers, the symbol for
+  //     a group with no number (a passenger and a star), the pictograms for
+  //     a pre-boarding group;
+  //   - who it is for: call by call, each call's cabin then its who-list,
+  //     in both of the board's languages (an item two share said once),
+  //     paged at a readable size when the panel is short (_fidsSignColPage,
+  //     _g8SeqPrioWho);
+  //   - THE MARKS, symbol first: "Boarding next" under its numbers until
+  //     its first call; from that call to the end of boarding a check and
+  //     "Boarding now" (the board's own words, boardNext and boardNow); a
+  //     number not yet called is faint, and so is every name in its list
+  //     (2026-10-26: the check stood over a whole list while the band under
+  //     the sign told Group 2 to stay seated), and an un-numbered call
+  //     ahead of the numbers is its symbol in the row, marked the same way
+  //     (_g8SeqPrioVal), so the check never stands under a row that is all
+  //     faint. What has been called is the
+  //     sequence's own memory (calledThrough up to the stage shown, which
+  //     never steps back), everything at the final call. The panel staying
+  //     up, checked, is what says priority may board at any time: Air
+  //     Canada's footnote ("Board at your convenience", the old summed-up
+  //     panel's note) took two lines of a half-width panel from who it is
+  //     for. The state line also keeps the panel from reading word for word
+  //     as the current call beside it when that call is the whole group
+  //     (Flair's or Ryanair's one priority call, PAL's pre-boarding).
+  function _g8SeqPrio(seq, isFinal) {
+    var p = seq.p, st = seq.st, B = FIDSBoardSeq;
     var lanesL = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('1 \u2022 2', true);
-    var lanesR = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('3 \u2022 4', true);
-    var sideOf = function (list, side) { return list.filter(function (s) { return s.side === side; }); };
-    var sw = isFinal || B.isSwitch(p, st);
-    var seated = (!sw && cur) ? _g8SeqSeated(p, st) : '';
-    // who still waits IS the instruction line under a numbered call (one
-    // "remain seated", in the band under both panels)
-    var instr = _g8SignInstr(p, sw, seated);
-    var pL, pR;
-    // ── RIGHT ──
-    if (sw) {
-      pR = _g8SeqAll(p, lanesR);
-    } else if (!cur || cur.side === 'L') {
-      // WAITING. General boarding is not called yet, and the panel says so
-      // as its main line: no number, no arrow, so it never reads as a live
-      // call. Its cabin over it; who still waits is the instruction line.
-      // The line is a sentence, each language a whole line (soon).
-      var g0 = sideOf(stg, 'R')[0];
-      pR = { title: _g8SeqCab(g0 && g0.sub), soon: _g8SignGo('boardSoon'), lanes: lanesR, instr: instr, waiting: true };
-    } else {
-      // One call: its cabin, the airline's word and number; who still waits
-      // is the instruction line under both panels.
-      var lv = _g8SeqValue(cur, 4);
-      pR = { title: _g8SeqCab(cur.sub), label: lv.label, value: lv.value, roster: _g8SeqWho(cur), lanes: lanesR, instr: instr };
-    }
-    // ── LEFT ──
-    // An airline that publishes no priority step at all (PAL, Porter, Air
-    // North, Calm Air, Pascan…) is never given one.
-    var anyPrio = p.prioAnyTime || p.full.some(function (s) { return s.kind === 'prio'; });
-    if (!isFinal && cur && cur.side === 'L') {
-      if (cur.kind === 'pre') {
-        // Pre-boarding: the pictograms, the airline's list of who pre-boards
-        // in both of the board's languages, and Porter's PorterReserve.
-        pL = { picto: 'pre', title: _g8SignPair('preboard'), sub: _g8SeqCab(cur.sub), roster: _g8SeqWho(cur), lanes: lanesL };
-      } else if (cur.kind === 'prio') {
-        // The call's own cabin, or none: never the first priority call's.
-        // A call with no number of its own still has its symbol (prio).
-        var pv = cur.values.length ? _g8SeqValue(cur, 3) : { label: '', value: '' };
-        pL = { picto: pv.value ? '' : 'prio', title: _g8SignPair('priority'), sub: _g8SeqCabS(cur),
-              label: pv.label, value: pv.value, roster: _g8SeqWho(cur), lanes: lanesL };
-      } else {
-        // The airline's own family or courtesy call, in its own words.
-        pL = { picto: 'fam', title: _g8SignPair(cur.title), roster: _g8SeqWho(cur), lanes: lanesL };
-      }
-    } else if (!anyPrio) {
-      // Pre-boarding is over (or it is the final call) at an airline with no
-      // priority step: lanes 1 • 2 serve the same call as the right panel,
-      // so the panel says that call, never 'Pre-boarding' or an invented
-      // priority. The instruction line is said once, under both panels.
-      pL = {};
-      for (var kR in pR) if (Object.prototype.hasOwnProperty.call(pR, kR)) pL[kR] = pR[kR];
-      pL.lanes = lanesL; pL.instr = '';
-    } else {
-      // Every left call made: Priority, the cabin all of them share, and the
-      // priority values called so far, still callable (the sign never says a
-      // call is over); "Board at your convenience" only where the airline
-      // publishes it.
-      var made = isFinal ? sideOf(p.full, 'L') : stg.slice(0, Math.max(0, st.i) + 1);
-      var prioMade = made.filter(function (s) { return s.kind === 'prio'; });
-      var prios = prioMade.filter(function (s) { return s.values.length; });
-      var pvals = B.valuesOf(prios);
-      pL = { picto: pvals.length ? '' : 'prio', title: _g8SignPair('priority'), sub: _g8SeqCab(_g8SeqCabOf(prioMade)),
-            label: pvals.length ? _g8SignPair(_g8SeqLabelKey(prios[0].label, pvals.length)) : '',
-            value: pvals.length ? B.fmt(pvals, 3) : '',
-            note: p.prioAnyTime ? _g8SignLines('boardConv') : '', lanes: lanesL };
-    }
-    return { L: pL, R: pR };
+    var grp = p.full.filter(function (s) { return s.kind === 'prio'; });
+    var pre = !grp.length;
+    if (pre) grp = p.full.filter(function (s) { return s.kind === 'pre'; });
+    var called = isFinal ? null : B.calledThrough(p, Math.max(0, (st && st.i) || 0));
+    var isOn = function (a) { return !called || !!called[a]; };
+    var onS = function (s) { return B.atomsOf(s).some(isOn); };
+    var made = grp.filter(onS);
+    var num = grp.filter(function (s) { return s.values.length; });
+    var vals = B.valuesOf(num), on = {};
+    vals.forEach(function (v) { if (isOn('v:' + v)) on[v] = 1; });
+    var state = !made.length ? 'prio-ahead' : (made.length === grp.length ? 'prio-called' : 'prio-part');
+    // the group's un-numbered calls beside its numbers: its symbol in the row
+    var un = vals.length ? grp.filter(function (s) { return !s.values.length; }) : [];
+    var sym = un.length ? { on: un.some(onS), first: grp.indexOf(un[0]) < grp.indexOf(num[0]) } : null;
+    // (a pre-boarding group's own list already names the cabin that boards
+    // with it: Porter's « PorterReserve passengers »)
+    var who = _g8SeqPrioWho(grp, onS, pre);
+    return { cls: 'now', state: state, chk: state !== 'prio-ahead',
+      picto: pre ? 'pre' : (vals.length ? '' : 'prio'),
+      title: _g8SignPair(pre ? 'preboard' : 'priority'),
+      stateLine: _g8SignPair(state === 'prio-ahead' ? 'boardNext' : 'boardNow'),
+      label: vals.length ? _g8SignPair(_g8SeqLabelKey(num[0].label, vals.length)) : '',
+      value: vals.length ? _g8SeqPrioVal(vals, on, sym) : '', num: !!vals.length,
+      roster: who,
+      lanes: lanesL };
   }
   // THE ONE CENTRE DISPLAY for the live stage, or for the final call: who
   // may line up now, and nothing else. Pre-boarding and the airline's family
@@ -19606,7 +20136,9 @@ function uxgGateHtml(ctx) {
   // panel takes the airline's priority colour for the left-lane calls and
   // its general colour for the general ones, as the two panels do; the
   // switch its own.
-  function _g8SeqCentre(seq, isFinal) {
+  // (max: how many numbers are written out before a run becomes a range;
+  // the two panels' half-width panel writes Groups 1–4, the centre 1 • 2 • 3 • 4)
+  function _g8SeqCentre(seq, isFinal, max) {
     var p = seq.p, st = seq.st, cur = st.cur, B = FIDSBoardSeq;
     var lanesL = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('1 \u2022 2', true);
     var lanesR = p.oneLane ? _g8SignLanes('1', false) : _g8SignLanes('3 \u2022 4', true);
@@ -19616,15 +20148,17 @@ function uxgGateHtml(ctx) {
     if (cur.kind === 'pre') return { cls: 'now', picto: 'pre', title: _g8SignPair('preboard'), who: cab, roster: who, lanes: lanesL, instr: instr };
     if (cur.kind === 'fam') return { cls: 'now', picto: 'fam', title: _g8SignPair(cur.title), roster: who, lanes: lanesL, instr: instr };
     if (cur.kind === 'prio' && !cur.values.length) return { cls: 'now', picto: 'prio', value: _g8SignPair('priority'), who: cab, roster: who, lanes: lanesL, instr: instr };
-    var v = cur.values.length ? _g8SeqValue(cur, 4) : { label: '', value: _g8SignPair('allPax') };
+    var v = cur.values.length ? _g8SeqValue(cur, max || 4) : { label: '', value: _g8SignPair('allPax') };
     return { cls: cur.side === 'L' ? 'now' : 'next', label: v.label, value: v.value, who: cab, roster: who,
       lanes: cur.side === 'L' ? lanesL : lanesR, instr: instr };
   }
   // The sequence file did not load: one generic call, nothing invented.
-  function _g8SignFallback(one) {
-    var lanesR = _g8SignLanes('3 \u2022 4', true);
-    if (one) return _g8SignCentreHtml(_g8SeqAll(null, lanesR));
-    return _g8SignHtml({ picto: 'prio', title: _g8SignPair('priority'), lanes: _g8SignLanes('1 \u2022 2', true) }, _g8SeqAll(null, lanesR));
+  // 2026-10-26 — ALWAYS THE ONE CENTRE: with the two panels the default, the
+  // left drew a Priority panel for every airline, Porter, PAL and Calm Air
+  // among them, which publish no priority step (and the plan that would
+  // say so is the file that did not load).
+  function _g8SignFallback() {
+    return _g8SignCentreHtml(_g8SeqAll(null, _g8SignLanes('3 \u2022 4', true)));
   }
 
   // Build boarding panel HTML
@@ -19643,7 +20177,7 @@ function uxgGateHtml(ctx) {
       + _boardBandHtml()
       + (function () {
           // The sequence file did not load: one generic call, nothing invented.
-          if (!_seq || !_seq.st || !_seq.st.cur) return _g8SignFallback(_signOne);
+          if (!_seq || !_seq.st || !_seq.st.cur) return _g8SignFallback();
           // What this paint shows, for the gate's key (_gateStageTerm): a
           // background tab catches up on its next render.
           try { window._gatePaintedStage = { k: _gateRowKey(currentFlight), i: _seq.st.i, next: _seq.st.nextTs || 0 }; } catch (eP) {}
@@ -19706,7 +20240,7 @@ function uxgGateHtml(ctx) {
         // list of numbers under it (ALL ZONES already says every zone); the
         // two panels keep Priority with every priority value on the left.
         + (function () {
-          if (!_seq || !_seq.p) return _g8SignFallback(_signOne);
+          if (!_seq || !_seq.p) return _g8SignFallback();
           if (_signOne) return _g8SignCentreHtml(_g8SeqCentre(_seq, true));
           var _P = _g8SeqPanels(_seq, true);
           return _g8SignHtml(_P.L, _P.R);
@@ -35045,7 +35579,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24086';
+var FIDS_BUILD_TAG = 'v24087';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -61072,7 +61606,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24086" src="/textures/gate-sky-shelf.mp4?v=24086"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24087" src="/textures/gate-sky-shelf.mp4?v=24087"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
