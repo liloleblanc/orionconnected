@@ -29,6 +29,15 @@
 //     flight stays on its gate (its new time plus the grace, or an hour past
 //     its schedule with no new time) unless a later flight the airport is
 //     boarding at that gate takes it.
+// (E) 2026-10-25 — Final call by the clock, at the airline's own close time.
+//     Moncton's cyqm.ca goes from Boarding to Departed and never says Final
+//     call, so a gate that boards by the clock (an airport missing from
+//     FEED_SAYS_GATE_WORDS, or Moncton's gate, GATE_BOARDS_BY_CLOCK) turns NOW
+//     BOARDING into FINAL CALL at the airline's published close time
+//     (GATE_CLOSE_POLICY; 10 minutes for an airline that publishes none),
+//     never sooner than 5 minutes after the sign opened, and the departures
+//     board at those airports says Final call on the same minute. Gate closed
+//     stays the airport's word alone.
 //
 // Everything below RUNS the shipped code: the functions are lifted out of
 // fids-core.js and feed-router.js by brace matching, the rows come from the
@@ -52,6 +61,8 @@ const V2 = fs.readFileSync(path.join(root, 'fids-current', 'js', 'fids-v2.js'), 
 const workerPath = path.join(root, 'workers', 'fids-proxy.js');
 const fixture = (name) => fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
 const MIN = 60000;
+// A boarding sign's word ('boarding', or 'final' since 2026-10-25), or '' for none.
+const signOf = (w) => (/^(boarding|final)$/.test(String(w || '')) ? String(w) : '');
 
 // ── lifting real code ───────────────────────────────────────────────────────
 
@@ -101,7 +112,9 @@ const CORE_FNS = [
   '_gateSignPhase', '_gateDepDisplayState', '_gateBoardingFloorTs', '_boardStripStatusKey', '_gateInbCaptionKey',
   // (D) Option B, the boarding-began memory and the Delayed rules.
   '_feedSaysGateWords', '_gateBoardsByClock', '_pageAirport', '_gateDelayHasTime', '_gateBoardingBeganHere', 'getAircraftCategory', 'getBoardingLeadMins', '_gateBoardingTimes',
-  '_fidsBoardEquip', '_schedBoardingOn', '_schedBoardingWindow', '_gateIsGateFlight', '_fidsShownRow', '_gateDoorBasis', '_gateDoorRecord', '_gateDoor', '_gateDoorFor',
+  '_fidsBoardEquip', '_schedBoardingOn', '_schedBoardingWindow', '_schedBoardingWindowBt', '_gateIsGateFlight', '_fidsShownRow', '_gateDoorBasis', '_gateDoorRecord', '_gateDoor', '_gateDoorFor',
+  // (D) 2026-10-25 — Final call on the airline's close time at a gate that boards by the clock.
+  '_gateCloseCarrier', '_gateFinalCallTs', '_gateFinalCallOn',
   '_gateRowKey', '_gateDepsSeen', '_gateSeenKeepIdentity', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave'
 ];
 // A browser's localStorage, enough for the seen-memory (fids_gate_seen_v1).
@@ -122,6 +135,7 @@ function engine(opts) {
     constLine('DEPART_TRAIL_HRS'),
     constLine('BOARDING_HOLD_MIN'), constLine('GATE_GRACE_MIN'), constLine('BOARD_TRAIL_MIN'), constLine('DELAY_HOLD_MIN'),
     block('var FEED_SAYS_GATE_WORDS = {'), block('var GATE_BOARDS_BY_CLOCK = {'), block('const AIRCRAFT_CATEGORY = {'),
+    block('var GATE_CLOSE_POLICY = {'), block('var _GATE_CLOSE_ALIAS = {'), constLine('GATE_FINAL_DEFAULT_MIN'),
     constLine('_GATE_SEEN_IDENTITY'), constLine('_GATE_DEP_SEEN'), constLine('_GATE_SEEN_KEY'), constLine('_GATE_SEEN_FIELDS'),
     constLine('BIDS_WINDOW_AHEAD_MS'), constLine('BIDS_WINDOW_TRAIL_MS'),
     constLine('_ADB_EXPLICIT_STATUS'), constLine('_CS_REGIONAL_FAM'),
@@ -1096,8 +1110,9 @@ test('(D) Halifax AC2057: Boarding on the gate and the board from its printed bo
   assert.equal(m1.door.word, '');
   assert.equal(sign(m1).showBoarding, false);
   assert.equal(sign(m1).showCountdown, true);
-  // Plus one, and one minute before the departure: Boarding on both screens.
-  for (const x of [at(4, 41), at(5, 14)]) {
+  // Plus one, and one minute before Air Canada's close (05:00): Boarding on
+  // both screens.
+  for (const x of [at(4, 41), at(4, 59)]) {
     assert.equal(x.board.status, 'boarding');
     assert.equal(boardText(x.board, 'en'), 'Boarding');
     assert.equal(boardText(x.board, 'fr'), 'Embarquement');
@@ -1111,6 +1126,23 @@ test('(D) Halifax AC2057: Boarding on the gate and the board from its printed bo
     assert.equal(p.isGateClosedStatus, false);
     assert.equal(x.r.status, 'ontime', 'the row itself keeps the airport\'s word');
   }
+  // (E) From the close, 15 minutes before the departure, to one minute before
+  // it: Final call on both screens, and still never Gate closed.
+  for (const x of [at(5, 0), at(5, 14)]) {
+    assert.equal(x.board.status, 'final');
+    assert.equal(x.board._stInferred, true, 'clock-made');
+    assert.equal(boardText(x.board, 'en'), 'Final call');
+    assert.equal(boardText(x.board, 'fr'), 'Dernier appel');
+    assert.equal(x.door.word, 'final');
+    assert.equal(x.door.kept, false);
+    const p = sign(x);
+    assert.equal(p.isFinalCallStatus, true);
+    assert.equal(p.finalActive, true);
+    assert.equal(p.boardActive, false);
+    assert.equal(p.showCountdown, false);
+    assert.equal(p.isGateClosedStatus, false);
+    assert.equal(x.r.status, 'ontime', 'the row itself keeps the airport\'s word');
+  }
   // At the departure time and five minutes on: no claim, on either screen.
   for (const x of [at(5, 15), at(5, 20)]) {
     assert.equal(x.board, x.r);
@@ -1120,14 +1152,15 @@ test('(D) Halifax AC2057: Boarding on the gate and the board from its printed bo
     assert.equal(sign(x).showBoarding, false);
     assert.equal(sign(x).finalActive, false);
   }
-  // Every minute from 04:00 to 05:40: the two screens agree, and only inside
-  // [04:40, 05:15).
+  // Every minute from 04:00 to 05:40: the two screens agree, Boarding inside
+  // [04:40, 05:00), Final call inside [05:00, 05:15), nothing else.
   for (let t = H(5, 4, 0); t <= H(5, 5, 40); t += MIN) {
     const r = find(mapRows(E, raw.dep, 'dep', t), 'AC2057');
-    const onBoard = E._fidsShownRow(r, t, 'YHZ').status === 'boarding';
-    const onGate = E._gateDoorFor(r, t, 'YHZ').word === 'boarding';
+    const onBoard = signOf(E._fidsShownRow(r, t, 'YHZ').status);
+    const onGate = E._gateDoorFor(r, t, 'YHZ').word;
     assert.equal(onBoard, onGate, hmAdt(t));
-    assert.equal(onBoard, t >= H(5, 4, 40) && t < H(5, 5, 15), hmAdt(t));
+    const want = (t >= H(5, 4, 40) && t < H(5, 5, 0)) ? 'boarding' : (t >= H(5, 5, 0) && t < H(5, 5, 15)) ? 'final' : '';
+    assert.equal(onGate, want, hmAdt(t));
   }
 });
 
@@ -1149,11 +1182,12 @@ test('(D) Halifax F8655, delayed with a new time: the boarding window moves with
     assert.equal(y.board, 'delayed', `${hh}:${mm}`);
     assert.equal(y.door, '', `${hh}:${mm}`);
   }
-  // 22:55 to 23:30, past the 23:00 it was due: Boarding on both.
-  for (const [hh, mm] of [[22, 56], [23, 10], [23, 29]]) {
+  // 22:55 to 23:30, past the 23:00 it was due: Boarding on both, and from
+  // Flair's close (20 minutes) before the NEW time, 23:10, Final call (E).
+  for (const [hh, mm, want] of [[22, 56, 'boarding'], [23, 9, 'boarding'], [23, 10, 'final'], [23, 29, 'final']]) {
     const y = at(4, hh, mm);
-    assert.equal(y.board, 'boarding', `${hh}:${mm}`);
-    assert.equal(y.door, 'boarding', `${hh}:${mm}`);
+    assert.equal(y.board, want, `${hh}:${mm}`);
+    assert.equal(y.door, want, `${hh}:${mm}`);
   }
   // From the new departure time: the airport's Delayed again.
   for (const [hh, mm] of [[23, 30], [23, 35]]) {
@@ -1163,7 +1197,7 @@ test('(D) Halifax F8655, delayed with a new time: the boarding window moves with
   }
 });
 
-test('(D) no schedule boarding on a Delayed with no new time, a Cancelled or a Departed, and never Final call or Gate closed', async () => {
+test('(D) no schedule boarding on a Delayed with no new time, a Cancelled or a Departed; never Gate closed, and Final call only from the close (E)', async () => {
   const { E, raw } = await yhzEngine({ noGateClock: true });
   const sweep = (rows, number, from, to) => {
     const seen = new Set();
@@ -1201,23 +1235,32 @@ test('(D) no schedule boarding on a Delayed with no new time, a Cancelled or a D
         const b = E._fidsShownRow(r, t, ap);
         const d = E._gateDoorFor(r, t, ap);
         n++;
-        assert.ok(b === r || b.status === 'boarding', `${ap} ${r.flight} board ${b.status}`);
-        assert.ok(d.word === '' || d.word === 'boarding', `${ap} ${r.flight} door ${d.word}`);
-        assert.ok(!/^(final|finalcall|gateclosed|departed|arrived|landed)$/.test(b === r ? '' : b.status));
+        assert.ok(b === r || b.status === 'boarding' || b.status === 'final', `${ap} ${r.flight} board ${b.status}`);
+        assert.ok(d.word === '' || d.word === 'boarding' || d.word === 'final', `${ap} ${r.flight} door ${d.word}`);
+        assert.ok(!/^(finalcall|gateclosed|departed|arrived|landed)$/.test(b === r ? '' : b.status));
+        // (E) a clock Final call never before the airline's close
+        if (d.word === 'final' || (b !== r && b.status === 'final')) {
+          const fin = E._gateFinalCallTs(r, 0, ap);
+          assert.ok(fin > 0 && t >= fin, `${ap} ${r.flight} final at ${hmAdt(t)}`);
+        }
         if (ap === 'YQM') { assert.equal(b, r, `${r.flight}: Moncton is strict`); assert.equal(d.word, ''); }
       }
     }
   }
   assert.ok(n > 2000, String(n));
-  // Final call and Gate closed are made by nothing here.
-  for (const name of ['_schedBoardingOn', '_fidsShownRow', '_gateDoor', '_gateBoardingTimes']) {
+  // Gate closed is made by nothing here; Final call only by the door and the
+  // board's row, on the close (E), never by the schedule window itself.
+  for (const name of ['_schedBoardingOn', '_schedBoardingWindowBt', '_gateBoardingTimes']) {
     assert.doesNotMatch(fn(name), /'(?:final|finalcall|gateclosed|departed|arrived|landed)'/, name);
+  }
+  for (const name of ['_fidsShownRow', '_gateDoor', '_gateFinalCallOn', '_gateFinalCallTs']) {
+    assert.doesNotMatch(fn(name), /'(?:finalcall|gateclosed|departed|arrived|landed)'/, name);
   }
 });
 
 test('(D) the schedule boarding is marked clock-made, and the maps, the hold and the memory never see it', async () => {
   const { E, raw } = await yhzEngine();
-  const t = H(5, 5, 0);
+  const t = H(5, 4, 50);
   E.data.dep = mapRows(E, raw.dep, 'dep', t);
   const r = find(E.data.dep, 'AC2057');
   const before = JSON.stringify(E.data.dep);
@@ -1227,11 +1270,19 @@ test('(D) the schedule boarding is marked clock-made, and the maps, the hold and
   assert.equal(shown._stInferred, true);
   assert.equal(shown._stExplicit, false);
   assert.equal(shown._schedBoarding, true);
-  for (let i = 0; i < 5; i++) { E._fidsShownRow(r, t + i * MIN, 'YHZ'); E._gateDoorFor(r, t + i * MIN, 'YHZ'); }
+  // (E) the clock's Final call, from 05:00, is the same kind of copy.
+  const fin = E._fidsShownRow(r, H(5, 5, 5), 'YHZ');
+  assert.notEqual(fin, r, 'a copy');
+  assert.equal(fin.status, 'final');
+  assert.equal(fin._stInferred, true);
+  assert.equal(fin._stExplicit, false);
+  for (let i = 0; i < 20; i++) { E._fidsShownRow(r, t + i * MIN, 'YHZ'); E._gateDoorFor(r, t + i * MIN, 'YHZ'); }
   assert.equal(JSON.stringify(E.data.dep), before, 'the board\'s data keeps the airport\'s word');
   // The maps' evidence refuses it exactly as it refuses any clock-made word.
   assert.equal(E._gateRawStatus(shown), '');
   assert.equal(E._gateOutboundAtGate(shown), false);
+  assert.equal(E._gateRawStatus(fin), '');
+  assert.equal(E._gateOutboundAtGate(fin), false);
   assert.equal(E._gateOutboundAtGate(r), false);
   // The memory of what the airport said never records it.
   E._gateDepsSeen(E.data.dep, 'YHZ', t);
@@ -1255,9 +1306,13 @@ test('(D) the schedule boarding is marked clock-made, and the maps, the hold and
 test('(D) the hour-long hold is the airport\'s word only: a schedule Boarding leaves on the ordinary grace', async () => {
   const { E, raw } = await yhzEngine();
   const rowsAt = (t) => mapRows(E, raw.dep, 'dep', t);
-  const r = find(rowsAt(H(5, 5, 0)), 'AC2057');
-  const shown = E._fidsShownRow(r, H(5, 5, 0), 'YHZ');
+  const r = find(rowsAt(H(5, 4, 50)), 'AC2057');
+  const shown = E._fidsShownRow(r, H(5, 4, 50), 'YHZ');
   assert.equal(shown.status, 'boarding');
+  // (E) nor the clock's Final call
+  const fin = E._fidsShownRow(r, H(5, 5, 5), 'YHZ');
+  assert.equal(fin.status, 'final');
+  assert.equal(E._gateFlightLive(fin, H(5, 5, 26)), false, 'the clock\'s Final call holds nothing either');
   // The gate: AC2057's own +10, as before v23925, whatever the board showed.
   E.data.dep = rowsAt(H(5, 5, 24));
   assert.equal(E._gateFlightsAt('16', H(5, 5, 24))[0].flight, 'AC2057');
@@ -1305,7 +1360,8 @@ test('(D) v24020: Moncton\'s GATE boards by the clock where cyqm.ca has said not
   const q0 = door(deps(E, YQM.dep28, T(9, 29, 4, 0)), T(9, 29, 4, 0));
   const boardAt = q0.d.bt.boardTs;
   assert.equal(hmAdt(boardAt), '04:50');
-  for (const [hh, mm, want] of [[4, 49, ''], [4, 50, 'boarding'], [5, 10, 'boarding'], [5, 24, 'boarding'], [5, 26, '']]) {
+  // (E) and FINAL CALL from Air Canada's close, 15 minutes before 05:25.
+  for (const [hh, mm, want] of [[4, 49, ''], [4, 50, 'boarding'], [5, 9, 'boarding'], [5, 10, 'final'], [5, 24, 'final'], [5, 26, '']]) {
     const t = T(9, 29, hh, mm);
     const { r, d } = door(deps(E, YQM.dep28, t), t);
     if (!r) { assert.equal(want, '', `${hh}:${mm}: gone from the list`); continue; }
@@ -1315,7 +1371,8 @@ test('(D) v24020: Moncton\'s GATE boards by the clock where cyqm.ca has said not
     assert.equal(E._gateDoorBasis(r, t), r, `${hh}:${mm}: nothing for the maps — the row is untouched`);
     const p = E._gateSignPhase(d.word || r.status, Math.round((r._sortTs - t) / MIN), d.bt.lead, r, false);
     assert.equal(p.showBoarding, want === 'boarding', `${hh}:${mm}: NOW BOARDING`);
-    assert.equal(p.isFinalCallStatus || p.isGateClosedStatus, false, `${hh}:${mm}: never Final call or Gate closed by the clock`);
+    assert.equal(p.isFinalCallStatus, want === 'final', `${hh}:${mm}: FINAL CALL only from the close`);
+    assert.equal(p.isGateClosedStatus, false, `${hh}:${mm}: never Gate closed by the clock`);
   }
   // The airport's word wins the moment it says it.
   const at = (said_, hh, mm) => { const t = T(9, 29, hh, mm); const { r, d } = door(deps(E, said_, t), t); return { r, d, p: E._gateSignPhase(d.word || r.status, Math.round(((r._revTs || r._sortTs) - t) / MIN), d.bt.lead, r, false) }; };
@@ -1333,6 +1390,8 @@ test('(D) v24020: Moncton\'s GATE boards by the clock where cyqm.ca has said not
   const late = said(YQM.dep28, 'AC1983', 29, 'Delayed until 5:50 AM', '5:50 AM');
   assert.equal(at(late, 5, 10).d.word, '', 'before the new boarding time');
   assert.equal(at(late, 5, 20).d.word, 'boarding', 'from the new boarding time');
+  assert.equal(at(late, 5, 34).d.word, 'boarding');
+  assert.equal(at(late, 5, 35).d.word, 'final', '(E) and Final call 15 minutes before the new time');
   // An airport not in the table keeps the strict rule on its gate too.
   assert.equal(E._schedBoardingOn(find(deps(E, YQM.dep28, T(9, 29, 5, 0)), 'AC1983', 29), T(9, 29, 5, 0), 'MSP', q0.d.bt, true), false);
 });
@@ -1508,7 +1567,8 @@ test('(D) at an airport whose feed never says Boarding, a Delayed shows the dela
     f.departure.revisedTime = { local: '2026-09-05 05:45:00-03:00', utc: '2026-09-05 08:45:00+00:00' };
     return f;
   });
-  for (const [hh, mm, want] of [[5, 5, ''], [5, 11, 'boarding'], [5, 44, 'boarding'], [5, 45, '']]) {
+  // (E) Final call from 05:30, Air Canada's close before the new time.
+  for (const [hh, mm, want] of [[5, 5, ''], [5, 11, 'boarding'], [5, 29, 'boarding'], [5, 30, 'final'], [5, 44, 'final'], [5, 45, '']]) {
     const t = H(5, hh, mm);
     const r = find(mapRows(E, later, 'dep', t), 'AC2057');
     assert.equal(E._gateDoorFor(r, t, 'YHZ').word, want, `${hh}:${mm}`);
@@ -1627,7 +1687,8 @@ function screensAt(E, rows, gate, t, ap) {
   for (const r of E.data.dep.filter((x) => x.gate === gate)) {
     out[r.flight] = {
       board: E._fidsShownRow(r, t, ap).status,
-      gate: !!first && first.flight === r.flight && door === 'boarding',
+      // the boarding sign this flight's gate shows: 'boarding', 'final' (E) or ''
+      gate: (!!first && first.flight === r.flight) ? signOf(door) : '',
       first: first ? first.flight : ''
     };
   }
@@ -1636,7 +1697,8 @@ function screensAt(E, rows, gate, t, ap) {
 
 test('(D) an Early departure opens its schedule boarding on its revised time, the same morning', async () => {
   const { E, raw } = await yhzEngine();
-  // Halifax AC2057 05:15 revised to 05:05 (Early): Boarding 04:30 to 05:05.
+  // Halifax AC2057 05:15 revised to 05:05 (Early): Boarding 04:30 to 04:50,
+  // then (E) Final call to 05:05.
   const early = alter(raw.dep, 'AC2057', (f) => {
     f.departure.revisedTime = { local: '2026-09-05 05:05:00-03:00', utc: '2026-09-05 08:05:00+00:00' };
     return f;
@@ -1649,10 +1711,10 @@ test('(D) an Early departure opens its schedule boarding on its revised time, th
   assert.equal(bt.effDepForBoard, r0._revTs);
   for (let t = H(5, 4, 0); t <= H(5, 5, 40); t += MIN) {
     const r = find(mapRows(E, early, 'dep', t), 'AC2057');
-    const onBoard = E._fidsShownRow(r, t, 'YHZ').status === 'boarding';
-    const onGate = E._gateDoorFor(r, t, 'YHZ').word === 'boarding';
+    const onBoard = signOf(E._fidsShownRow(r, t, 'YHZ').status);
+    const onGate = E._gateDoorFor(r, t, 'YHZ').word;
     assert.equal(onBoard, onGate, hmAdt(t));
-    assert.equal(onBoard, t >= H(5, 4, 30) && t < H(5, 5, 5), hmAdt(t));
+    assert.equal(onGate, (t >= H(5, 4, 30) && t < H(5, 4, 50)) ? 'boarding' : (t >= H(5, 4, 50) && t < H(5, 5, 5)) ? 'final' : '', hmAdt(t));
   }
   // O'Hare UA3750, the capture's own early row: 02:11 estimated 01:52.
   const W = await import(workerPath);
@@ -1662,15 +1724,20 @@ test('(D) an Early departure opens its schedule boarding on its revised time, th
   const u0 = mapRows(E, ordRaw, 'dep', ORD_NOW).find((r) => r.flight === 'UA3750');
   assert.equal(u0.status, 'early');
   assert.equal(u0.upd, '01:52');
-  let opened = 0;
+  // United publishes only a deadline to be at the gate: (E) Final call ten
+  // minutes before, 01:42.
+  let opened = 0, finals = 0;
   for (let t = C(0, 50); t <= C(2, 20); t += MIN) {
     const r = mapRows(E, ordRaw, 'dep', t).find((x) => x.flight === 'UA3750');
-    const onBoard = E._fidsShownRow(r, t, 'ORD').status === 'boarding';
-    assert.equal(E._gateDoorFor(r, t, 'ORD').word === 'boarding', onBoard, 'ORD ' + t);
-    assert.equal(onBoard, t >= C(1, 17) && t < C(1, 52), 'ORD ' + new Date(t).toISOString());
+    const onBoard = signOf(E._fidsShownRow(r, t, 'ORD').status);
+    assert.equal(E._gateDoorFor(r, t, 'ORD').word, onBoard, 'ORD ' + t);
+    assert.equal(!!onBoard, t >= C(1, 17) && t < C(1, 52), 'ORD ' + new Date(t).toISOString());
+    assert.equal(onBoard === 'final', t >= C(1, 42) && t < C(1, 52), 'ORD final ' + new Date(t).toISOString());
     if (onBoard) opened++;
+    if (onBoard === 'final') finals++;
   }
   assert.equal(opened, 35);
+  assert.equal(finals, 10);
   // A real midnight crossing still wraps: 23:50 revised to 00:20 is thirty
   // minutes late, and 00:10 revised to 23:55 the evening before is fifteen early.
   const late = { status: 'delayed', time: '23:50', upd: '00:20', _sortTs: H(4, 23, 50), _revTs: H(5, 0, 20) };
@@ -1718,13 +1785,14 @@ test('(D) a tight turn at Halifax: the next flight takes its gate on its printed
   for (let t = H(5, 4, 30); t <= H(5, 6, 5); t += MIN) {
     const s = screensAt(E, rows, '16', t, 'YHZ');
     for (const n of ['AC2057', 'AC2061']) {
-      assert.equal(s[n].board === 'boarding', s[n].gate, `${n} ${hmAdt(t)}`);
+      assert.equal(signOf(s[n].board), s[n].gate, `${n} ${hmAdt(t)}`);
     }
   }
-  // 05:14: AC2057 boarding. 05:16, inside AC2057's ten-minute grace: AC2061 on
-  // gate 16 with NOW BOARDING, as the board says — it used to wait to 05:25.
-  assert.deepEqual(screensAt(E, rows, '16', H(5, 5, 14), 'YHZ').AC2057, { board: 'boarding', gate: true, first: 'AC2057' });
-  assert.deepEqual(screensAt(E, rows, '16', H(5, 5, 16), 'YHZ').AC2061, { board: 'boarding', gate: true, first: 'AC2061' });
+  // 05:14: AC2057 on its final call (E). 05:16, inside AC2057's ten-minute
+  // grace: AC2061 on gate 16 with NOW BOARDING, as the board says — it used to
+  // wait to 05:25.
+  assert.deepEqual(screensAt(E, rows, '16', H(5, 5, 14), 'YHZ').AC2057, { board: 'final', gate: 'final', first: 'AC2057' });
+  assert.deepEqual(screensAt(E, rows, '16', H(5, 5, 16), 'YHZ').AC2061, { board: 'boarding', gate: 'boarding', first: 'AC2061' });
   // Every pick path reads the page's own airport: the gate's list, the walking
   // pick and the gids.html boot pick call these without one.
   const was = globalThis.document;
@@ -1753,7 +1821,7 @@ test('(D) a Delayed flight holds its gate, and the board holds the next flight\'
   const rows = yhzAdd(alter(raw.dep, 'AC2057', (f) => { f.status = 'delayed'; return f; }), 'WS3401', 5, 6, 0, 'YYZ');
   for (let t = H(5, 5, 0); t <= H(5, 6, 10); t += MIN) {
     const s = screensAt(E, rows, '16', t, 'YHZ');
-    assert.equal(s.WS3401.board === 'boarding', s.WS3401.gate, hmAdt(t));
+    assert.equal(signOf(s.WS3401.board), s.WS3401.gate, hmAdt(t));
     assert.equal(s.WS3401.board, 'scheduled', hmAdt(t));   // v23968 — the row's word is Scheduled, never the clock's On time
     assert.equal(s.AC2057.first, 'AC2057', hmAdt(t));
     assert.equal(s.AC2057.board, 'delayed', hmAdt(t));
@@ -1761,7 +1829,7 @@ test('(D) a Delayed flight holds its gate, and the board holds the next flight\'
   // The same WS3401 on a gate of its own boards on its time, on both screens.
   const own = yhzAdd(alter(raw.dep, 'AC2057', (f) => { f.status = 'delayed'; return f; }), 'WS3401', 5, 6, 0, 'YYZ')
     .map((f) => (f.number === 'WS3401' ? Object.assign({}, f, { departure: Object.assign({}, f.departure, { gate: '14' }) }) : f));
-  assert.deepEqual(screensAt(E, own, '14', H(5, 5, 40), 'YHZ').WS3401, { board: 'boarding', gate: true, first: 'WS3401' });
+  assert.deepEqual(screensAt(E, own, '14', H(5, 5, 40), 'YHZ').WS3401, { board: 'boarding', gate: 'boarding', first: 'WS3401' });
   // Delayed WITH a new time: the same, and the yield to the airport's own word stands.
   const later = yhzAdd(alter(raw.dep, 'AC2057', (f) => {
     f.status = 'delayed';
@@ -1774,7 +1842,7 @@ test('(D) a Delayed flight holds its gate, and the board holds the next flight\'
     assert.equal(s.AC2057.first, 'AC2057');
   }
   const said16 = later.map((f) => (f.number === 'WS3401' ? Object.assign({}, f, { status: 'boarding' }) : f));
-  assert.deepEqual(screensAt(E, said16, '16', H(5, 5, 40), 'YHZ').WS3401, { board: 'boarding', gate: true, first: 'WS3401' });
+  assert.deepEqual(screensAt(E, said16, '16', H(5, 5, 40), 'YHZ').WS3401, { board: 'boarding', gate: 'boarding', first: 'WS3401' });
 });
 
 test('(B) a delayed flight yields only to a later flight still at the door: Moncton gate 1 with AC2037 left on Boarding', () => {
@@ -1896,5 +1964,201 @@ test('(D) the phone-width gate and the Designer templates say what the TV gate a
     // v23925 or any later build of it
     const v = /js\/template-renderer\.js\?v=(\d+)/.exec(html);
     assert.ok(v && Number(v[1]) >= 23925, page + ' loads the changed renderer');
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// (E) 2026-10-25 — FINAL CALL BY THE CLOCK, AT THE AIRLINE'S OWN CLOSE TIME
+// ════════════════════════════════════════════════════════════════════════════
+
+test('(E) each airline\'s own close; 10 minutes where none is published; never within 5 minutes of the sign opening; none on a Delayed with no new time', () => {
+  const E = engine();
+  const dep = T(10, 25, 18, 20);
+  const row = (extra) => Object.assign({ airline: 'AC', status: 'ontime', _sortTs: dep, _revTs: null, gate: '4' }, extra || {});
+  const before = (ts) => (dep - ts) / MIN;
+  // Air Canada and the airlines that fly as it, WestJet and Encore, Porter,
+  // Flair, Transat, American (GATE_CLOSE_POLICY); PAL, Delta and United publish
+  // only a deadline to be at the gate, and an airline missing from the table
+  // publishes nothing here: 10.
+  for (const [al, m] of [['AC', 15], ['RV', 15], ['QK', 15], ['JZA', 15], ['WS', 15], ['WR', 15], ['PD', 10], ['F8', 20],
+    ['TS', 15], ['TSC', 15], ['AA', 15], ['PB', 10], ['DL', 10], ['UA', 10], ['BA', 10], ['', 10]]) {
+    assert.equal(before(E._gateFinalCallTs(row({ airline: al }), dep - 40 * MIN, 'YQM')), m, al || '(no airline)');
+  }
+  // The airport's new time moves it; a Delayed with no new time has no close.
+  const late = row({ status: 'delayed', upd: '18:50', _revTs: dep + 30 * MIN });
+  assert.equal(E._gateFinalCallTs(late, 0, 'YQM'), dep + 15 * MIN);
+  assert.equal(E._gateFinalCallTs(row({ status: 'delayed' }), 0, 'YQM'), 0);
+  // After a short turn the honesty floor holds boarding to 18:10: NOW BOARDING
+  // first, then Final call at 18:15, never at the boarding minute itself.
+  assert.equal(before(E._gateFinalCallTs(row(), dep - 10 * MIN, 'YQM')), 5);
+  assert.equal(E._gateFinalCallTs(row(), dep - 3 * MIN, 'YQM'), 0, 'held to three minutes out: no final call before the departure');
+  assert.equal(E._gateFinalCallTs(row({ _sortTs: 0 }), 0, 'YQM'), 0, 'no departure time, no close');
+});
+
+test('(E) the final call is laid over NOW BOARDING only, only at a gate that boards by the clock, and never once the flight has left', () => {
+  const E = engine();
+  const dep = T(10, 25, 18, 20);
+  const cf = { airline: 'AC', status: 'ontime', _sortTs: dep, gate: '4' };
+  const door = (word, kept) => ({ word, kept: !!kept, basis: cf, bt: { boardTs: dep - 25 * MIN } });
+  const now = dep - 10 * MIN;
+  assert.equal(E._gateFinalCallOn(cf, door('boarding'), now, 'YQM'), true, 'Moncton\'s gate boards by the clock');
+  assert.equal(E._gateFinalCallOn(cf, door('boarding'), now, 'YHZ'), true, 'Halifax\'s feed never says the words');
+  assert.equal(E._gateFinalCallOn(cf, door('boarding'), now, 'MSP'), false, 'an airport whose feed says the words keeps its own');
+  assert.equal(E._gateFinalCallOn(cf, door('boarding'), dep - 16 * MIN, 'YQM'), false, 'before the close');
+  assert.equal(E._gateFinalCallOn(cf, door(''), now, 'YQM'), false, 'no sign up: nothing');
+  assert.equal(E._gateFinalCallOn(Object.assign({}, cf, { status: 'boarding' }), door(''), now, 'YQM'), true, 'the airport\'s own Boarding');
+  assert.equal(E._gateFinalCallOn(Object.assign({}, cf, { status: 'Boarding' }), door(''), now, 'YQM'), true);
+  // …at Moncton's gate only: elsewhere the departures board lays Final call
+  // over the clock's Boarding alone, so a feed that says Boarding itself
+  // (Pearson's BRD, Tampa's BO) keeps NOW BOARDING on both screens.
+  assert.equal(E._gateFinalCallOn(Object.assign({}, cf, { status: 'boarding' }), door(''), now, 'YHZ'), false);
+  assert.equal(E._gateFinalCallOn(Object.assign({}, cf, { status: 'boarding' }), door(''), now, 'YYZ'), false);
+  for (const w of ['final', 'gateclosed', 'delayed', 'cancelled', 'departed']) {
+    assert.equal(E._gateFinalCallOn(Object.assign({}, cf, { status: w }), door(''), now, 'YQM'), false, w);
+  }
+  assert.equal(E._gateFinalCallOn(cf, door('gateclosed', true), now, 'YQM'), false, 'a kept Gate closed stays Gate closed');
+  assert.equal(E._gateFinalCallOn(cf, door('final', true), now, 'YQM'), false, 'a kept Final call is already one');
+  // A wheels-up on the row's own leg (_gateDepLeft) adds nothing.
+  const up = Object.assign({}, cf, { _actualDepTime: '2026-10-25 18:08:00-03:00' });
+  assert.equal(E._gateFinalCallOn(up, door('boarding'), now, 'YQM'), false);
+  // GATE CLOSED is still made by nothing but the airport.
+  assert.doesNotMatch(fn('_gateFinalCallOn') + fn('_gateFinalCallTs') + fn('_gateDoor'), /'gateclosed'/);
+  // The gate's paint, its keys, its one-second clock and the phone-width gate
+  // all read the door word, which now carries 'final'.
+  assert.match(fn('_gateDoor'), /if \(_gateFinalCallOn\(cf, door, nowMs, iata\)\) door\.word = 'final';/);
+});
+
+test('(E) Moncton AC1983 with cyqm.ca saying Boarding: FINAL CALL from Air Canada\'s close, kept while the airport still says Boarding, gone on Departed', () => {
+  const E = engine();
+  const boarding = said(YQM.dep28, 'AC1983', 29, 'Boarding');
+  const at = (rows, hh, mm) => {
+    const t = T(9, 29, hh, mm);
+    E.data.dep = deps(E, rows, t);
+    const r = find(E.data.dep, 'AC1983', 29);
+    return { t, r, d: r ? E._gateDoorFor(r, t, 'YQM') : null };
+  };
+  // AC1983 05:25 gate 1: the close is 05:10. Each minute the gate paints what
+  // its door says (window._gatePaintedDoor, as uxgGateHtml does).
+  for (const [hh, mm, want] of [[4, 45, ''], [5, 9, ''], [5, 10, 'final'], [5, 24, 'final'], [5, 31, 'final']]) {
+    const x = at(boarding, hh, mm);
+    E.window._gatePaintedDoor = { k: E._gateRowKey(x.r), w: x.d.word };
+    assert.equal(x.r.status, 'boarding', `${hh}:${mm}: cyqm.ca's word`);
+    assert.equal(x.d.word, want, `${hh}:${mm}: the gate's door`);
+    const p = E._gateSignPhase(x.d.word || x.r.status, Math.round((x.r._sortTs - x.t) / MIN), x.d.bt.lead, x.r, false);
+    assert.equal(p.boardActive, want === '', `${hh}:${mm}: NOW BOARDING`);
+    assert.equal(p.isFinalCallStatus, want === 'final', `${hh}:${mm}: FINAL CALL`);
+    assert.equal(p.isGateClosedStatus, false, `${hh}:${mm}: never Gate closed by the clock`);
+    assert.equal(E._fidsShownRow(x.r, x.t, 'YQM'), x.r, `${hh}:${mm}: the departures board keeps cyqm.ca's Boarding`);
+  }
+  // Past its time the gate holds the flight the airport still calls Boarding (B).
+  at(boarding, 5, 31);
+  assert.equal(E._gateFlightsAt('1', T(9, 29, 5, 31))[0].flight, 'AC1983');
+  // Past the departure, with no new time from the airport, the close is not
+  // known: the FINAL CALL this screen shows stays, and a screen switched on
+  // now (nothing painted) opens none.
+  const fresh = engine();
+  const tf = T(9, 29, 5, 31);
+  const rf = find(deps(fresh, boarding, tf), 'AC1983', 29);
+  assert.equal(fresh._gateDoorFor(rf, tf, 'YQM').word, '', 'a fresh screen past 05:25: NOW BOARDING');
+  assert.equal(fresh._gateDoorFor(rf, T(9, 29, 5, 20), 'YQM').word, 'final', 'and before 05:25 the clock\'s close');
+  // "Departed at 5:32 AM": the flight leaves the gate at once.
+  const gone = said(YQM.dep28, 'AC1983', 29, 'Departed at 5:32 AM', '5:32 AM');
+  const g = at(gone, 5, 33);
+  assert.equal(g.r.status, 'departed');
+  assert.equal(g.d.word, '');
+  assert.ok(!E._gateFlightsAt('1', g.t).some((f) => f.flight === 'AC1983'), 'gone from gate 1');
+  // Without the gate clock (the strict rule alone) nothing is laid over it.
+  const S = engine({ noGateClock: true });
+  const t = T(9, 29, 5, 15);
+  const r = find(deps(S, boarding, t), 'AC1983', 29);
+  assert.equal(S._gateDoorFor(r, t, 'YQM').word, '');
+});
+
+test('(E) Moncton AC1983 delayed after cyqm.ca said Boarding: the kept NOW BOARDING turns to FINAL CALL on the close before the NEW time; with no new time it stays NOW BOARDING', () => {
+  const g = engine({ storage: makeStorage() });
+  const t0 = T(9, 29, 5, 0);
+  g.data.dep = deps(g, said(YQM.dep28, 'AC1983', 29, 'Boarding'), t0);
+  g._gateDepsSeen(g.data.dep, 'YQM', t0);
+  const at = (rows, hh, mm) => {
+    const t = T(9, 29, hh, mm);
+    g.data.dep = deps(g, rows, t);
+    g._gateDepsSeen(g.data.dep, 'YQM', t);
+    return g._gateDoorFor(find(g.data.dep, 'AC1983', 29), t, 'YQM');
+  };
+  // "Delayed until 5:50 AM": the old close (05:10) has gone; the new one is 05:35.
+  const delayed = said(YQM.dep28, 'AC1983', 29, 'Delayed until 5:50 AM', '5:50 AM');
+  for (const [hh, mm, want] of [[5, 10, 'boarding'], [5, 20, 'boarding'], [5, 34, 'boarding'], [5, 35, 'final'], [5, 49, 'final']]) {
+    const d = at(delayed, hh, mm);
+    assert.equal(d.kept, true, `${hh}:${mm}: the sign kept through the delay`);
+    assert.equal(d.word, want, `${hh}:${mm}`);
+  }
+  // A plain "Delayed": no new time, no close — NOW BOARDING stays up.
+  const h = engine({ storage: makeStorage() });
+  h.data.dep = deps(h, said(YQM.dep28, 'AC1983', 29, 'Boarding'), t0);
+  h._gateDepsSeen(h.data.dep, 'YQM', t0);
+  const timeless = said(YQM.dep28, 'AC1983', 29, 'Delayed');
+  for (const [hh, mm] of [[5, 15], [5, 40], [6, 10]]) {
+    const t = T(9, 29, hh, mm);
+    h.data.dep = deps(h, timeless, t);
+    h._gateDepsSeen(h.data.dep, 'YQM', t);
+    const d = h._gateDoorFor(find(h.data.dep, 'AC1983', 29), t, 'YQM');
+    assert.equal(d.kept, true, `${hh}:${mm}`);
+    assert.equal(d.word, 'boarding', `${hh}:${mm}`);
+  }
+});
+
+test('(E) NOW BOARDING always shows first: cyqm.ca\'s own Boarding after a Delayed with no new time counts its five minutes from when this screen saw it, and Boarding again past the departure opens no FINAL CALL', () => {
+  // The review's three Moncton sequences, AC1983 05:25 gate 1 (printed
+  // boarding 04:50, Air Canada's close 05:10), each minute as the gate polls,
+  // remembers (_gateDepsSeen) and paints (window._gatePaintedDoor).
+  const run = (steps) => {
+    const g = engine({ storage: makeStorage() });
+    const out = {};
+    for (const [hh, mm, word, actual] of steps) {
+      const t = T(9, 29, hh, mm);
+      g.data.dep = deps(g, word ? said(YQM.dep28, 'AC1983', 29, word, actual) : YQM.dep28, t);
+      g._gateDepsSeen(g.data.dep, 'YQM', t);
+      const r = find(g.data.dep, 'AC1983', 29);
+      const d = g._gateDoorFor(r, t, 'YQM');
+      g.window._gatePaintedDoor = { k: g._gateRowKey(r), w: d.word };
+      const sign = g._gateSignPhase(d.word || r.status, Math.round(((r._revTs || r._sortTs) - t) / MIN), d.bt.lead, d.kept ? d.basis : r, false);
+      out[pad2(hh) + ':' + pad2(mm)] = sign.isFinalCallStatus ? 'FINAL' : sign.boardActive ? 'BOARDING' : '-';
+    }
+    return out;
+  };
+  // A: Delayed (no time) from 04:40, then Boarding at 05:13: NOW BOARDING
+  // 05:13-05:17, FINAL CALL from 05:18 (five minutes after it was seen).
+  const a = run([[4, 40, 'Delayed'], [5, 0, 'Delayed'], [5, 12, 'Delayed'], [5, 13, 'Boarding'], [5, 17, 'Boarding'], [5, 18, 'Boarding'], [5, 24, 'Boarding']]);
+  assert.deepEqual(a, { '04:40': '-', '05:00': '-', '05:12': '-', '05:13': 'BOARDING', '05:17': 'BOARDING', '05:18': 'FINAL', '05:24': 'FINAL' });
+  // B: the same, Boarding only at 05:40, past the 05:25 departure: NOW
+  // BOARDING and no FINAL CALL (its close would be at or after the departure).
+  const b = run([[4, 40, 'Delayed'], [5, 39, 'Delayed'], [5, 40, 'Boarding'], [5, 50, 'Boarding'], [6, 10, 'Boarding']]);
+  assert.deepEqual(b, { '04:40': '-', '05:39': '-', '05:40': 'BOARDING', '05:50': 'BOARDING', '06:10': 'BOARDING' });
+  // C: Boarding at 05:00, Delayed (no time) at 05:08, which keeps NOW
+  // BOARDING and has no close, then Boarding again at 05:40: still NOW
+  // BOARDING, never FINAL CALL on a departure time that has gone by.
+  const c = run([[4, 55, ''], [5, 0, 'Boarding'], [5, 8, 'Delayed'], [5, 30, 'Delayed'], [5, 40, 'Boarding'], [5, 55, 'Boarding']]);
+  assert.deepEqual(c, { '04:55': 'BOARDING', '05:00': 'BOARDING', '05:08': 'BOARDING', '05:30': 'BOARDING', '05:40': 'BOARDING', '05:55': 'BOARDING' });
+  // And the plain morning: the clock opens at 04:50, cyqm.ca says nothing,
+  // FINAL CALL at the close, nothing from the departure on.
+  const d = run([[4, 49, ''], [4, 50, ''], [5, 9, ''], [5, 10, ''], [5, 24, ''], [5, 26, '']]);
+  assert.deepEqual(d, { '04:49': '-', '04:50': 'BOARDING', '05:09': 'BOARDING', '05:10': 'FINAL', '05:24': 'FINAL', '05:26': '-' });
+});
+
+test('(E) the two screens agree at an airport whose feed never says the words, even when its feed says Boarding itself', async () => {
+  const { E, raw } = await yhzEngine();
+  // Halifax AC2057 05:15 gate 16: the clock's Boarding turns to Final call at
+  // 05:00 on both screens; a row whose own word is Boarding (as Pearson's and
+  // Tampa's adapters can give) stays Boarding on both.
+  const own = alter(raw.dep, 'AC2057', (f) => { f.status = 'boarding'; return f; });
+  for (let t = H(5, 4, 30); t <= H(5, 6, 10); t += MIN) {
+    for (const [rows, label] of [[raw.dep, 'clock'], [own, 'own']]) {
+      const r = find(mapRows(E, rows, 'dep', t), 'AC2057');
+      if (!r) continue;
+      const board = signOf(E._fidsShownRow(r, t, 'YHZ').status) || (r.status === 'boarding' ? 'boarding' : '');
+      const gate = E._gateDoorFor(r, t, 'YHZ').word || (r.status === 'boarding' ? 'boarding' : '');
+      assert.equal(board, gate, `${label} ${hmAdt(t)}`);
+      if (label === 'own') assert.notEqual(gate, 'final', `${label} ${hmAdt(t)}`);
+    }
   }
 });
