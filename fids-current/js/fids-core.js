@@ -5294,7 +5294,8 @@ var FEED_SAYS_GATE_WORDS = {
 // in FEED_SAYS_GATE_WORDS, so the departures board keeps the airport's word and
 // the boarding time keeps the type the gate has resolved (a Jazz or PAL Dash 8
 // is not given a jet's 35 minutes because the feed names no type). The clock
-// still never says Final call or Gate closed, and the gate maps put an
+// never says Gate closed, and says Final call only at the airline's own close
+// time (_gateFinalCallOn, decision of 2026-10-25), and the gate maps put an
 // aeroplane at a door only on the airport's own word: they read the row, never
 // the gate's door word (_gateDoor).
 var GATE_BOARDS_BY_CLOCK = {
@@ -17031,7 +17032,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24083" src="/textures/gate-sky-shelf.mp4?v=24083" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24084" src="/textures/gate-sky-shelf.mp4?v=24084" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17075,7 +17076,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24083" src="/textures/gate-sky-shelf.mp4?v=24083" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24084" src="/textures/gate-sky-shelf.mp4?v=24084" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -17642,7 +17643,9 @@ function uxgGateHtml(ctx) {
   //     the Departure field still moves to the feed's new time (depTimeHtml
   //     above reads the real row);
   //   - an airport whose feed never says the gate words: Boarding from this
-  //     boarding time until the departure time (_schedBoardingOn), clock-made.
+  //     boarding time until the departure time (_schedBoardingOn), clock-made;
+  //   - 2026-10-25: at a gate that boards by the clock, Final call over NOW
+  //     BOARDING from the airline's close time (_gateFinalCallOn).
   // (2026-10-13: at one instant, _doorNow, which the countdown below is also
   // decided at, so the one closes on the instant the other opens)
   var _doorNow = Date.now();
@@ -18006,6 +18009,8 @@ function uxgGateHtml(ctx) {
   // flight's word only: GATE CLOSED / FINAL CALL on their words, NOW BOARDING
   // on 'boarding' until the airport says final call or gate closed. Five
   // minutes out this used to swap the sign for FINAL CALL by the clock.
+  // (2026-10-25: at a gate that boards by the clock, FINAL CALL now comes in
+  // as the door word at the airline's own close time, _gateFinalCallOn.)
   // BOARDING SEQUENCES — the calls inside the sign follow the airline's own
   // order from the minute boarding opened (_g8SeqPlan), no longer fixed
   // minutes before departure.
@@ -34965,7 +34970,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24083';
+var FIDS_BUILD_TAG = 'v24084';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39692,7 +39697,8 @@ function _fidsBoardEquip(f, iata) {
 // has left (_gateDepLeft: a wheels-up, an airborne push). It makes Boarding
 // and nothing else: never Final call, never Gate closed, and nothing from the
 // departure time on, so the gate returns to its idle layout and the board to
-// the airport's own word.
+// the airport's own word. (2026-10-25: the final call is laid over this
+// window at the airline's close time by _gateFinalCallOn and _fidsShownRow.)
 // gateSide: asked by the gate's own door (_gateDoor), where an airport in
 // GATE_BOARDS_BY_CLOCK boards by the clock although its feed can say the words.
 function _schedBoardingOn(f, nowMs, iata, bt, gateSide) {
@@ -39712,18 +39718,24 @@ function _schedBoardingOn(f, nowMs, iata, bt, gateSide) {
 // Shared by the board's row (_fidsShownRow) and the gate pick's yield
 // (_gateHoldYields), which must not ask _fidsShownRow: that one asks the pick.
 function _schedBoardingWindow(f, nowMs, iata) {
-  if (!f || _feedSaysGateWords(iata)) return false;
+  return !!_schedBoardingWindowBt(f, nowMs, iata);
+}
+// 2026-10-25 — the same window, answered with the boarding times it opened on
+// (null while it is shut), so the board's row can lay the final call over it
+// from the same boarding time (_fidsShownRow).
+function _schedBoardingWindowBt(f, nowMs, iata) {
+  if (!f || _feedSaysGateWords(iata)) return null;
   var now = nowMs || Date.now();
   var dep = f._revTs || f._sortTs || 0;
   // The window never opens two hours before the departure (the longest lead is
   // 45 minutes; the floor only moves boarding later): skip the work.
-  if (!dep || now >= dep || dep - now > 120 * 60000) return false;
+  if (!dep || now >= dep || dep - now > 120 * 60000) return null;
   var ap = String(iata || '').toUpperCase();
   var tz = '';
   try { tz = (typeof AP !== 'undefined' && AP && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
   var arr = (typeof data !== 'undefined' && data && data.arr) || [];
   var bt = _gateBoardingTimes(f, _fidsBoardEquip(f, ap), null, arr, tz);
-  return _schedBoardingOn(f, now, ap, bt);
+  return _schedBoardingOn(f, now, ap, bt) ? bt : null;
 }
 // v23925 — is this row the flight its gate shows (_gateFlightsAt's first)? The
 // same departure under another number counts (_gateCsPick's test). A row with
@@ -39756,12 +39768,16 @@ function _gateIsGateFlight(f, nowMs, iata) {
 // says. On an ordinary turn the earlier flight gives the gate up at its
 // departure time to a later flight in its window (_gateHoldYields), so this
 // holds nothing back there.
+// 2026-10-25 — and Final call from the airline's close time on
+// (_gateFinalCallTs), the minute the gate's sign turns to FINAL CALL.
 function _fidsShownRow(f, nowMs, iata) {
   if (!f || _feedSaysGateWords(iata)) return f;
   var now = nowMs || Date.now();
-  if (!_schedBoardingWindow(f, now, iata)) return f;
+  var bt = _schedBoardingWindowBt(f, now, iata);
+  if (!bt) return f;
   if (!_gateIsGateFlight(f, now, iata)) return f;
-  return Object.assign({}, f, { status: 'boarding', _stInferred: true, _stExplicit: false, _schedBoarding: true });
+  var fin = _gateFinalCallTs(f, bt.boardTs, iata);
+  return Object.assign({}, f, { status: (fin && now >= fin) ? 'final' : 'boarding', _stInferred: true, _stExplicit: false, _schedBoarding: true });
 }
 // v23925 — the same row for the Designer templates (template-renderer.js reads
 // window.flightsDep, which is data.dep as the feed gave it), so a templated
@@ -39830,13 +39846,105 @@ function _gateDoorRecord(cf) {
     return (m && m._doorSaid) || null;
   } catch (e) { return null; }
 }
+// 2026-10-25 — FINAL CALL ON THE AIRLINE'S OWN CLOSE TIME, AT A GATE THAT
+// BOARDS BY THE CLOCK. Moncton's cyqm.ca goes from "Boarding" straight to
+// "Departed" and has never been recorded saying "Final call", and an airport
+// whose feed never says the gate words never says it either, so under the
+// rule of 2026-09-30 (the clock makes Boarding and nothing else) these gates
+// never showed FINAL CALL: AC7897 at Moncton gate 4 went from NOW BOARDING to
+// the next flight the minute "Departed at 6:18 PM" arrived. Decision of
+// 2026-10-25: at a gate that boards by the clock (an airport missing from
+// FEED_SAYS_GATE_WORDS, or one in GATE_BOARDS_BY_CLOCK), while the sign is
+// NOW BOARDING (the clock's, a sign kept through a delay, or at Moncton's
+// gate the airport's own Boarding), FINAL CALL opens at the airline's
+// published close time,
+// counted back from the departure the airport publishes (its new time when it
+// has posted one; a Delayed with no new time has no close, and keeps NOW
+// BOARDING): the minute the boarding band prints (GATE_CLOSE_POLICY). An
+// airline that publishes no close time (PAL, Delta and United publish only a
+// deadline to be AT the gate; any airline missing from the table) takes 10
+// minutes, the close its boarding sequence already paces its calls to
+// (_g8SeqPlan), so every call is made before it. Never sooner than 5 minutes
+// after the sign opened, so NOW BOARDING always shows first: the printed
+// boarding time (after a short turn the honesty floor can hold it to the
+// close itself), or, for the airport's own Boarding, the moment this screen
+// saw the airport say it when that was later (cyqm.ca saying Boarding only
+// after a Delayed with no new time). A close at or after the departure time
+// is no close. GATE CLOSED stays the airport's word alone; the airports whose
+// feeds say the words keep their own Final call; the maps never read it (they
+// read the row, not the door word).
+var GATE_FINAL_DEFAULT_MIN = 10;
+function _gateFinalCallTs(cf, boardTs, homeIata) {
+  if (!cf) return 0;
+  var w = String(cf.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (w === 'delayed') {
+    try { if (!_gateDelayHasTime(cf)) return 0; } catch (e) { return 0; }
+  }
+  var dep = cf._revTs || cf._sortTs || 0;
+  if (!dep) return 0;
+  var min = GATE_FINAL_DEFAULT_MIN;
+  var code = _gateCloseCarrier(cf.airline);
+  var p = code ? GATE_CLOSE_POLICY[code] : null;
+  if (p && p.kind !== 'gateBeAt') {
+    var ok = true;
+    if (p.route) { try { ok = _gateCloseRouteOk(p, cf, homeIata); } catch (e) { ok = false; } }
+    if (ok) min = p.min;
+  }
+  var ts = dep - min * 60000;
+  var brd = Number(boardTs) || 0;
+  if (brd > 0 && ts < brd + 5 * 60000) ts = brd + 5 * 60000;
+  return ts < dep ? ts : 0;
+}
+// Whether the gate's NOW BOARDING (door, _gateDoor's answer so far) is now the
+// final call. The REAL row's departure decides (cf): on a sign kept through a
+// delay the airport's new time pushes the close, as it pushes the Departure
+// field. Real evidence that the flight has left (_gateDepLeft) adds nothing.
+// The airport's own Boarding takes it only at a gate in GATE_BOARDS_BY_CLOCK
+// (Moncton), where the departures board keeps the airport's word anyway: at
+// the other airports the board's row (_fidsShownRow) lays Final call over the
+// clock's Boarding only, so a feed there that says Boarding itself (Pearson's
+// BRD, Tampa's BO) shows NOW BOARDING on both screens, as before.
+// Once the departure the airport published has gone by with no new time from
+// it, the close is not known, as on a Delayed with no new time: a FINAL CALL
+// this screen already shows for the flight stays up (window._gatePaintedDoor,
+// the word uxgGateHtml and the phone-width gate last painted; the sign never
+// steps back), and none opens (Boarding again after a delay with no time).
+function _gateFinalCallOn(cf, door, nowMs, iata) {
+  if (!cf || !door) return false;
+  var byClock = _gateBoardsByClock(iata);
+  if (_feedSaysGateWords(iata) && !byClock) return false;
+  var own = !door.word && !door.kept;
+  if (own && !byClock) return false;
+  var sign = String(door.word || (own ? cf.status : '') || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (sign !== 'boarding') return false;
+  var now = nowMs || Date.now();
+  try { if (_gateDepLeft(cf, now)) return false; } catch (e) {}
+  var opened = Number(door.bt && door.bt.boardTs) || 0;
+  if (own) {
+    var rec = null;
+    try { rec = _gateDoorRecord(cf); } catch (e) { rec = null; }
+    if (rec && Number(rec.t) > opened) opened = Number(rec.t);
+  }
+  var ts = _gateFinalCallTs(cf, opened, iata);
+  if (!(ts > 0 && now >= ts)) return false;
+  var dep = cf._revTs || cf._sortTs || 0;
+  if (dep && now >= dep && !_gateDelayHasTime(cf)) {
+    var pd = null;
+    try { pd = (typeof window !== 'undefined') ? window._gatePaintedDoor : null; } catch (e) { pd = null; }
+    return !!(pd && pd.k === _gateRowKey(cf) && pd.w === 'final');
+  }
+  return true;
+}
 // v23925 — WHAT THE GATE'S SIGNS SHOW WHEN THE FLIGHT'S OWN WORD DOES NOT OPEN
 // THEM, and the boarding time worked out on the same row:
 //   kept true  — boarding began and the feed now says Delayed (_gateDoorBasis):
 //                the airport's last door word, boarding times from that row;
 //   'boarding' — the schedule boarding at an airport whose feed never says
 //                the gate words (_schedBoardingOn);
-//   ''         — neither: the flight's own word decides, as before.
+//   'final'    — 2026-10-25: either of the two above, or (at Moncton's gate)
+//                the airport's own Boarding, at a gate that boards by the
+//                clock, from the airline's close time (_gateFinalCallOn);
+//   ''         — none: the flight's own word decides, as before.
 // uxgGateHtml paints from this, and the gate's render keys and the
 // once-a-second clock (updateDedicatedTimeOnly, through _gateDoorFor) ask it,
 // so the sign opens and closes at its minute and the key never disagrees with
@@ -39849,8 +39957,11 @@ function _gateDoor(cf, nowMs, iata, gi, arrRows, tz, equip) {
   var basis = _gateDoorBasis(cf, nowMs);
   var eq = (equip == null || !_feedSaysGateWords(iata)) ? _fidsBoardEquip(cf, iata) : equip;
   var bt = _gateBoardingTimes(basis, eq, gi, arrRows, tz);
-  if (basis && basis !== cf) return { word: String(basis.status), kept: true, basis: basis, bt: bt };
-  return { word: _schedBoardingOn(cf, nowMs, iata, bt, true) ? 'boarding' : '', kept: false, basis: cf, bt: bt };
+  var door = (basis && basis !== cf)
+    ? { word: String(basis.status), kept: true, basis: basis, bt: bt }
+    : { word: _schedBoardingOn(cf, nowMs, iata, bt, true) ? 'boarding' : '', kept: false, basis: cf, bt: bt };
+  if (_gateFinalCallOn(cf, door, nowMs, iata)) door.word = 'final';
+  return door;
 }
 // v23925 — _gateDoor with the page's own inputs: the gate's inbound, the
 // arrivals list and the airport's zone.
@@ -60885,7 +60996,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24083" src="/textures/gate-sky-shelf.mp4?v=24083"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24084" src="/textures/gate-sky-shelf.mp4?v=24084"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

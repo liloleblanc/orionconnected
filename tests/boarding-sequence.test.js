@@ -1283,9 +1283,12 @@ test("the window's start and the gate close are unchanged versus main", (t) => {
   // (getBoardingLeadMins: 20 / 25 / 30 / 35 / 45), the printed boarding time
   // (_gateBoardingTimes), the door (_gateDoor, _gateDoorBasis), and the
   // airline's close time (GATE_CLOSE_POLICY, _gateCloseInfo,
-  // _gateCloseBandInfo).
-  for (const name of ['_gateSignPhase', '_schedBoardingOn', '_schedBoardingWindow', 'getBoardingLeadMins', 'getAircraftCategory',
-    '_gateBoardingTimes', '_gateBoardingFloorTs', '_gateDoor', '_gateDoorBasis', '_gateCloseInfo', '_gateCloseBandInfo', '_gateCloseCarrier']) {
+  // _gateCloseBandInfo). 2026-10-25: _gateDoor and _schedBoardingWindow left
+  // this list when the clock's Final call went into them on purpose (the door
+  // turns NOW BOARDING into FINAL CALL at that same close time); the minute
+  // each sign opens is pinned in status-evidence.test.js (E).
+  for (const name of ['_gateSignPhase', '_schedBoardingOn', 'getBoardingLeadMins', 'getAircraftCategory',
+    '_gateBoardingTimes', '_gateBoardingFloorTs', '_gateDoorBasis', '_gateCloseInfo', '_gateCloseBandInfo', '_gateCloseCarrier']) {
     assert.equal(fnIn(CORE, name), fnIn(main, name), name + ' is unchanged');
   }
   for (const prefix of ['var GATE_CLOSE_POLICY = {', 'var GATE_BOARDS_BY_CLOCK = {', 'var FEED_SAYS_GATE_WORDS = {', 'const AIRCRAFT_CATEGORY = {']) {
