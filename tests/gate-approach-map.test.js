@@ -199,7 +199,8 @@ test('a re-anchor resumes only from a spot on the new route, never onto the runw
   frac(route, cum, total, [46.2525, -64.6583], on);
   assert.ok(on.offNm < 2, 'a marker on the new final resumes as before');
   assert.equal(frac(route, cum, total, [44.9, -73.0]) >= 0, true, 'the fourth argument stays optional');
-  assert.match(fnSource(CORE, '_startGateMapGlide'), /if \(Math\.abs\(_dp\) \* totalNm < 40 && !\(typeof _rOff\.offNm === 'number' && _rOff\.offNm > 2\)\s*&& !\(_dp < 0 && -_dp \* _routeNm > _leadMax\)\) \{/);
+  assert.match(fnSource(CORE, '_startGateMapGlide'), /if \(Math\.abs\(_dp\) \* _routeNm <= _leadMax && !\(typeof _rOff\.offNm === 'number' && _rOff\.offNm > 2\)\) \{/,
+    'and only from within 3 nm (or the horizon) of the aeroplane, ahead or behind');
 });
 
 // ── The review of #1086 (ten defects confirmed by replays) ─────────────────
@@ -293,9 +294,11 @@ test('the glide gains along the route only what the aeroplane gains: its track, 
   const glide = fnSource(CORE, '_startGateMapGlide');
   // the live track's part along the route (none when it points away)
   assert.match(glide, /var _trk = \(typeof _gateHeading === 'function'\) \? _gateHeading\(null\) : null;/);
-  assert.match(glide, /_close = Math\.max\(0, Math\.min\(1, Math\.cos\(\(\(_trk - _rHdg \+ 540\) % 360 - 180\) \* Math\.PI \/ 180\)\)\);/);
-  // and what two fixes 30 s to 10 minutes apart say it gained towards the field
-  assert.match(glide, /if \(_fdH > 30 \/ 3600 && _fdH < 10 \/ 60\) \{/);
+  assert.match(glide, /_close = Math\.max\(0\.35, Math\.min\(1, Math\.cos\(\(\(_trk - _rHdg \+ 540\) % 360 - 180\) \* Math\.PI \/ 180\)\)\);/,
+    'never under a third: a wrong-runway guess must not freeze the aeroplane');
+  // and what two fixes 30 s to 10 minutes apart say it gained ALONG THE ROUTE
+  assert.match(glide, /var _fOff = \{\}, _fPrev = _gateRouteFrac\(route, _cum, _routeNm, \[_fh\[0\]\.lat, _fh\[0\]\.lng\], _fOff\);/);
+  assert.match(glide, /if \(_fdH > 30 \/ 3600 && _fdH < 10 \/ 60 && typeof _fPrev === 'number' && _fOff\.offNm < 3\) \{\s*var _gainKt = \(_seedP - _fPrev\) \* _routeNm \/ _fdH;/);
   assert.match(glide, /_close = Math\.min\(_close, Math\.max\(0, Math\.min\(1, _gainKt \/ speedKts\)\)\);/);
   // a marker far ahead (a hold) goes back to the aeroplane rather than waiting there
   assert.match(glide, /var _leadMax = Math\.max\(3, speedKts \* 45000 \/ 3600000\);/);

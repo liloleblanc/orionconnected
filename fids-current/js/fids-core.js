@@ -50836,22 +50836,25 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // from the line and it gains nothing along it, yet the marker was carried
   // towards the field at full speed (replayed: drawn 4.5 nm out while it held
   // 22 nm out). The glide's speed is the part of the live track along the
-  // route here (cos of the angle; none when it points away), the full speed
-  // when there is no live track.
+  // route here (cos of the angle, but never under a third: a route that
+  // guessed the wrong runway must not freeze an aeroplane flying at 200 kt),
+  // the full speed when there is no live track.
   var _close = 1;
   try {
     var _trk = (typeof _gateHeading === 'function') ? _gateHeading(null) : null;
     if (typeof _trk === 'number' && isFinite(_trk)) {
       var _sNm = _seedP * _routeNm;
       var _rHdg = bearingBetween(_ptAtNm(_sNm), _ptAtNm(Math.min(_routeNm, _sNm + 2)));
-      if (isFinite(_rHdg)) _close = Math.max(0, Math.min(1, Math.cos(((_trk - _rHdg + 540) % 360 - 180) * Math.PI / 180)));
+      if (isFinite(_rHdg)) _close = Math.max(0.35, Math.min(1, Math.cos(((_trk - _rHdg + 540) % 360 - 180) * Math.PI / 180)));
     }
   } catch (eC) { _close = 1; }
-  // ...and no more than the fixes themselves say it gained: the distance to
-  // the field at this fix and at the one before (30 s to 10 minutes apart,
-  // same leg). A track caught on a hold's inbound leg points at the field
-  // while the aeroplane goes round and gains nothing (replayed: still drawn
-  // 1.7 nm out while it held 25 nm out).
+  // ...and no more than the fixes themselves say it gained ALONG THE ROUTE:
+  // the fix before this one (30 s to 10 minutes earlier, same leg, within
+  // 3 nm of the route) measured on the route built through this one. A track
+  // caught on a hold's inbound leg points at the field while the aeroplane
+  // goes round and gains nothing (replayed: still drawn 1.7 nm out while it
+  // held 25 nm out). Along the route, not towards the field: an aeroplane
+  // passing beside the field gains little distance to it at full speed.
   try {
     var _fxA = (typeof fixAt === 'number' && isFinite(fixAt) && fixAt > 0) ? fixAt : null;
     var _fh = _gateGlide.fixHist || [];
@@ -50863,8 +50866,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     }
     if (_fh.length === 2 && _fxA !== null && _fh[1].at === _fxA && _gateGlideSameLeg(_fh[0].d, d)) {
       var _fdH = (_fh[1].at - _fh[0].at) / 3600000;
-      if (_fdH > 30 / 3600 && _fdH < 10 / 60) {
-        var _gainKt = (_gcNm([_fh[0].lat, _fh[0].lng], d) - _gcNm([_fh[1].lat, _fh[1].lng], d)) / _fdH;
+      var _fOff = {}, _fPrev = _gateRouteFrac(route, _cum, _routeNm, [_fh[0].lat, _fh[0].lng], _fOff);
+      if (_fdH > 30 / 3600 && _fdH < 10 / 60 && typeof _fPrev === 'number' && _fOff.offNm < 3) {
+        var _gainKt = (_seedP - _fPrev) * _routeNm / _fdH;
         _close = Math.min(_close, Math.max(0, Math.min(1, _gainKt / speedKts)));
       }
     }
@@ -50942,13 +50946,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       // 4,000 ft with "1 km" (replayed, 2026-10-26). Over 2 nm off the route,
       // the marker goes to where the fix puts the aeroplane now.
       // v24088 — nor from a spot more than 3 nm (or the convergence horizon)
-      // AHEAD of where the fix puts the aeroplane now: in a hold or on long
+      // from where the fix puts the aeroplane now. Ahead: in a hold or on long
       // vectors the drawn marker had been carried miles towards the field,
       // and holding it there showed the aeroplane 4.5 nm out while it circled
-      // 22 nm out (replayed). It goes back to the aeroplane instead.
+      // 22 nm out (replayed). Behind: it crawled after the aeroplane for
+      // minutes at the capped catch-up rate. Either way it goes to the
+      // aeroplane instead (the 40 nm along-route tolerance this replaces let
+      // both stand).
       var _leadMax = Math.max(3, speedKts * 45000 / 3600000);   // (_CONVERGE_MS is set further down)
-      if (Math.abs(_dp) * totalNm < 40 && !(typeof _rOff.offNm === 'number' && _rOff.offNm > 2)
-          && !(_dp < 0 && -_dp * _routeNm > _leadMax)) {
+      if (Math.abs(_dp) * _routeNm <= _leadMax && !(typeof _rOff.offNm === 'number' && _rOff.offNm > 2)) {
         p = _pRes;
         _errP = _dp;
       }
