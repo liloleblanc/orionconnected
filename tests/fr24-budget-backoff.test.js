@@ -82,7 +82,7 @@ test('the cool-off is actually honoured before spending', () => {
   assert.ok(at >= 0);
   const readSite = SRC.indexOf('_coolUntil');
   assert.ok(readSite >= 0, 'the cool-off must be read back');
-  assert.match(SRC, /if \(_used < _cap && Date\.now\(\) >= _coolUntil( && _used < fr24PacedAllowance\(_cap\))?\)/,
+  assert.match(SRC, /if \(_used < _cap && Date\.now\(\) >= _coolUntil( && _used < fr24PacedAllowance\(_cap\)( - \(_near \? 0 : fr24NearReserve\(_cap\)\))?)?\)/,
     'the budget gate must check both the cap and the cool-off');
 });
 

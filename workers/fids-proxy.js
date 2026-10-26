@@ -6084,6 +6084,21 @@ function fr24PacedAllowance(cap, now) {
   return Math.min(cap, Math.ceil(cap * (minute + 60) / 1440));
 }
 __name(fr24PacedAllowance, "fr24PacedAllowance");
+// v24088 — THE LAST HALF HOUR OF A BOARD'S OWN ARRIVAL COMES FIRST. The whole
+// estate spends to the pace line by mid-afternoon (1,906 and 1,900 credits on
+// 2026-10-24 and -25, 1,732 by 17:50 ADT on the 26th), so a fix is granted
+// only as the line moves: about one position every six minutes for every
+// screen together. AC7894 into Moncton on 2026-10-26 got one at 17:28:49
+// (19 km out, 4,300 ft) and the next at 17:32:56, and the gate drew it over
+// Saint-Antoine while it landed. Every lookup but a board's own inbound in
+// its last half hour (?near=1) now stops this far short of the line, so the
+// last stretch of the line is kept for those. The line and the day's cap are
+// unchanged, so nothing is spent sooner: the rest of the estate gives way.
+// (At most half the line, so the start of the UTC day is not held up.)
+function fr24NearReserve(cap, now) {
+  return Math.min(Math.ceil(cap * 90 / 1440), Math.floor(fr24PacedAllowance(cap, now) / 2));
+}
+__name(fr24NearReserve, "fr24NearReserve");
 
 // v23910 — THE SWEEP FOLLOWS THE PACE LINE, AND RESUMES INSTEAD OF RESTARTING.
 //
@@ -6202,7 +6217,8 @@ async function dtwFr24Schedule(env) {
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return serve();
     // The whole page must fit under the pace line, not merely start below it.
-    const fits = () => used + DTW_FR24_PAGE_CREDITS <= Math.min(cap, fr24PacedAllowance(cap));
+    // v24088 — behind the line by the arrivals' reserve, like every other lookup
+    const fits = () => used + DTW_FR24_PAGE_CREDITS <= Math.min(cap, fr24PacedAllowance(cap) - fr24NearReserve(cap));
     if (!fits()) return serve();
     // One sweeper at a time (KV is no lock, but it stops nearly every overlap).
     const lockKey = "dtw:fr24:lock";
@@ -13042,6 +13058,11 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // "everyone is rate-limiting us" with "this aeroplane is parked" would
       // turn a transient outage into a five-minute one.
       const ADSB_EMPTY_TTL = 300;
+      // v24088 — and its position is held 90 s, not 180, once it is below
+      // 10,000 ft: the approach is where a three-minute-old fix is a
+      // different place (15 km at approach speed). See fr24NearReserve.
+      const ADSB_NEAR_TTL = 90;
+      const _near = url.searchParams.get("near") === "1";
       // ── BY FLIGHT NUMBER, NOT BY A GUESSED CALLSIGN ────────────────────
       // A callsign is the radio name, and for regional flying it is not the
       // number on the ticket. Measured against Flightradar24 on 2026-09-26:
@@ -13084,7 +13105,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           const _g = await env.FIDS_LIVE_FLIGHTS.get(_gKey, { type: "json" });
           if (_g && typeof _g.body === "string" && typeof _g.at === "number") {
             const _gAge = Math.max(0, Math.round((Date.now() - _g.at) / 1000));
-            const _gMax = _g.quiet ? ADSB_EMPTY_TTL : ADSB_TTL;
+            const _gMax = _g.quiet ? ADSB_EMPTY_TTL : (typeof _g.hold === "number" && _g.hold > 0 ? _g.hold : ADSB_TTL);
             if (_gAge < _gMax) {
               const _gj = JSON.parse(_g.body);
               if (Array.isArray(_gj.ac)) _gj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _gAge; });
@@ -13133,7 +13154,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
           // A recent 429/403 sets a short cool-off instead of burning the day.
           const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
-          if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap)) {
+          if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap) - (_near ? 0 : fr24NearReserve(_cap))) {
             const _param = kind === "callsign" ? "callsigns" : kind === "flight" ? "flights" : "registrations";
             const _fr = await fetch(
               `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
@@ -13215,14 +13236,16 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 // v23906 — and add this position to the flight's flown track.
                 try { ctx.waitUntil(acTrackAppend(env, _p, Date.now())); } catch (e) {}
                 const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
+                // v24088 — a board's own inbound below 10,000 ft is held 90 s
+                const _hold = (_near && typeof _ac.alt_baro === "number" && _ac.alt_baro < 10000) ? ADSB_NEAR_TTL : ADSB_TTL;
                 // v23907 — and for every other location.
-                try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), body: _frBody }), { expirationTtl: ADSB_TTL })); } catch (e) {}
+                try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), hold: _hold, body: _frBody }), { expirationTtl: Math.max(60, _hold) })); } catch (e) {}
                 try {
                   await cache.put(cacheKey, new Response(_frBody, { headers: {
-                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}` } }));
                 } catch (e) {}
                 return new Response(_frBody, { status: 200, headers: {
-                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}`,
                   "X-Adsb-Cache": "miss", "X-Adsb-Provider": "fr24", ...corsHeaders(origin) } });
               }
               // FR24 answered but sees no such aircraft airborne → the ring
