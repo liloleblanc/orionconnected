@@ -15,7 +15,7 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=24091"></script>
+<script src="js/host-airport.js?v=24092"></script>
 <title>Airport Companion</title>
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
@@ -526,10 +526,10 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24091"></script>
-<script src="js/shared-names.js?v=24091"></script>
-<script src="data/airline-colors.js?v=24091"></script>
-<script src="js/feed-router.js?v=24091"></script>
+<script src="js/board-strings.js?v=24092"></script>
+<script src="js/shared-names.js?v=24092"></script>
+<script src="data/airline-colors.js?v=24092"></script>
+<script src="js/feed-router.js?v=24092"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1428,7 +1428,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24091';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24092';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
