@@ -17524,7 +17524,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24088" src="/textures/gate-sky-shelf.mp4?v=24088" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24089" src="/textures/gate-sky-shelf.mp4?v=24089" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17568,7 +17568,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24088" src="/textures/gate-sky-shelf.mp4?v=24088" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24089" src="/textures/gate-sky-shelf.mp4?v=24089" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -35638,7 +35638,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24088';
+var FIDS_BUILD_TAG = 'v24089';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -48299,6 +48299,37 @@ function _gateGlideFixFresh(now) {
 // evidence for 15 minutes (_gateFixCheck).
 var _GLIDE_DR_MAX_MS = 8 * 60000;
 
+// v24089 — A <STYLE> INSIDE AN INLINE SVG IS THE WHOLE PAGE'S. The white
+// hotel logos carry rules such as <style>*{fill:#FFFFFF;stroke:none}</style>
+// (41 Accor monochrome-white files) and path,polygon,…{fill:#FFFFFF !important}
+// (19 Fairmont files); inlined (_applyLockup), the rule applied to every SVG on
+// the board while the logo was up: the gate map's route line was filled solid
+// white and lost its blue stroke, the white wedge fanning out from the
+// aeroplane that came and went with the hotel ads (traced on Moncton gate 4,
+// 2026-10-26), and every icon drawn as SVG turned white with it. Every rule
+// in an inlined SVG's <style> is now scoped to that SVG's own root
+// ([data-lk] prefix; a leading "svg" or ":root" becomes the root itself;
+// CDATA and comments dropped; an at-rule's own wrapper is not kept).
+function _scopeSvgStyles(svg, id) {
+  if (!/<style[\s>]/i.test(svg)) return svg;
+  svg = svg.replace(/<svg\b/i, '<svg data-lk="' + id + '"');
+  var pre = '[data-lk="' + id + '"]';
+  return svg.replace(/<style([^>]*)>([\s\S]*?)<\/style>/gi, function (m, attrs, css) {
+    css = css.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    var out = '', re = /([^{}]+)\{([^{}]*)\}/g, r;
+    while ((r = re.exec(css))) {
+      var sel = r[1].trim();
+      if (!sel || sel.charAt(0) === '@') continue;
+      out += sel.split(',').map(function (x) {
+        x = x.trim();
+        if (/^:root$/i.test(x)) return pre;
+        if (/^svg(?![\w-])/i.test(x)) return pre + x.replace(/^svg/i, '');
+        return pre + ' ' + x;
+      }).join(',') + '{' + r[2] + '}';
+    }
+    return '<style' + attrs + '>' + out + '</style>';
+  });
+}
 // v24088 — the ground speed of the fix the map is drawing at (lat, lng), or
 // null: the 60 s poll's speed can still be the fix before it.
 function _gateMapFixSpd(lat, lng) {
@@ -50719,6 +50750,14 @@ function _runwayFinalPath(pl, d, destIata) {
     // ~90nm the pin-vs-runway difference is invisible at map scale anyway.
     if (!(distNm > 0.3) || distNm > 90) return null;
     var inb = _gcBrgDeg(pl, d);
+    // v24089 — ON THE FIELD, THE TRACK PICKS THE RUNWAY. Within a couple of
+    // miles the bearing to the field's reference point says nothing about the
+    // way the aeroplane is landing (past mid-field it points back the way it
+    // came), so a live track, when there is one, chooses the end.
+    if (distNm < 2.5) {
+      var _trk = (typeof _gateHeading === 'function') ? _gateHeading(null) : null;
+      if (typeof _trk === 'number' && isFinite(_trk)) inb = _trk;
+    }
     var best = null;
     for (var i = 0; i < rws.length; i++) {
       var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]];
@@ -50736,6 +50775,12 @@ function _runwayFinalPath(pl, d, destIata) {
     // Touchdown ~a third down the runway, along the landing direction.
     var rwNm = _gcNm(best.t, best.f);
     var tdz = _gcDestPt(best.t, best.hdg, Math.min(rwNm * 0.35, rwNm));
+    // v24089 — already PAST the threshold (a fix in the flare or the float):
+    // on down the runway, never back to the threshold. Routed back to it the
+    // line doubled on itself and the nose spun round across the runway.
+    var _off = (_gcBrgDeg(best.t, pl) - best.hdg) * Math.PI / 180;
+    var pastNm = dT * Math.cos(_off);
+    if (pastNm > 0.05 && Math.abs(dT * Math.sin(_off)) < 0.3) return [pl, _gcDestPt(best.t, best.hdg, Math.min(rwNm, Math.max(pastNm + 0.05, rwNm * 0.35)))];
     // Short final already: fly straight to the threshold and land.
     if (dT < 1.2) return [pl, best.t, tdz];
     // Join the extended centerline at up to 8nm out (never beyond ~60% of
@@ -50743,6 +50788,28 @@ function _runwayFinalPath(pl, d, destIata) {
     var joinNm = Math.min(8, dT * 0.6);
     var faf = _gcDestPt(best.t, (best.hdg + 180) % 360, joinNm);
     var head = _gcFullRoute(pl, faf, 24);
+    // v24089 — A TURN, NOT A CORNER. The join on to the final was a kink, so
+    // the aeroplane swung its nose round on the spot and slid along the new
+    // line ("it turns but it's dragging"). The last stretch into the join and
+    // the first stretch of the final are now one curve through the join point
+    // (a quadratic, sampled finely: 32 points, so its segments sit well inside
+    // the nose's heading window and the bank holds through the turn instead of
+    // pumping at every vertex), about a rate-one turn's worth either side,
+    // never more than 40% of either leg: the line drawn and the line flown
+    // both turn.
+    var rT = Math.min(1.5, 0.4 * _gcNm(pl, faf), 0.4 * joinNm);
+    if (rT > 0.2) {
+      var cA = _gcDestPt(faf, _gcBrgDeg(faf, pl), rT), cB = _gcDestPt(faf, best.hdg, rT);
+      var kept = head.filter(function (q) { return _gcNm(q, faf) > rT + 1e-6; });
+      if (kept.length) {
+        kept.push(cA);
+        for (var k = 1; k <= 32; k++) {
+          var u = k / 32, wa = (1 - u) * (1 - u), wb = 2 * u * (1 - u), wc = u * u;
+          kept.push([wa * cA[0] + wb * faf[0] + wc * cB[0], wa * cA[1] + wb * faf[1] + wc * cB[1]]);
+        }
+        head = kept;
+      }
+    }
     head.push(best.t, tdz);
     return head;
   } catch (e) { return null; }
@@ -50994,8 +51061,10 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     // where it points (slewed) instead of snapping onto the new route's bend.
     var _oldView = _sameLeg ? _gateGlide.views[_viewKey] : null;
     var _keepHdg = (_oldView && typeof _oldView.hdg === 'number') ? _oldView.hdg : null;
+    // v24089 — and its bank, so a fix mid-turn does not snap the wings level
+    var _keepBank = (_oldView && typeof _oldView.bank === 'number' && isFinite(_oldView.bank)) ? _oldView.bank : 0;
     _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
-      hdg: _keepHdg, kept: _keepHdg !== null, seg: 0, arcIdx: -1, last: 0 };
+      hdg: _keepHdg, kept: _keepHdg !== null, bank: _keepBank, seg: 0, arcIdx: -1, last: 0 };
   } catch (e) {}
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
 
@@ -51101,12 +51170,24 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // that changed as the aircraft flew. The Turf reference looks ahead 0.5%
   // of the total route; same idea here, with a floor so a short leg still gets
   // a usable baseline.
+  // v24089 — THE WAY IT IS GOING HERE, not 0.5% of the route ahead: on
+  // Toronto–Moncton that was 3 nm, so at a turn the nose came round more than
+  // a minute early and the aeroplane slid sideways along the old line into
+  // it. A short window centred on the marker (4 s of flying, 0.15–0.6 nm) is
+  // its own direction of travel; the slew limit below still smooths it.
   function headingAtNm(nmNow) {
-    var _ahead = Math.max(0.5, _routeNm * 0.005);
-    var _t0 = Math.min(_routeNm, nmNow);
-    var _t1 = Math.min(_routeNm, nmNow + _ahead);
-    if (_t1 - _t0 < 1e-6) { _t0 = Math.max(0, _routeNm - _ahead); _t1 = _routeNm; }
-    return bearingBetween(_ptAtNm(_t0), _ptAtNm(_t1));
+    var _h = Math.max(0.15, Math.min(0.6, speedKts * 4 / 3600));
+    var _t0 = Math.max(0, Math.min(_routeNm, nmNow) - _h);
+    var _t1 = Math.min(_routeNm, nmNow + _h);
+    if (_t1 - _t0 < 1e-6) { _t0 = Math.max(0, _routeNm - 2 * _h); _t1 = _routeNm; }
+    var _P0 = _ptAtNm(_t0), _P1 = _ptAtNm(_t1);
+    // (a route that folds back inside the window gives a chord of nothing:
+    // then the way on from the marker)
+    if (_gcNm(_P0, _P1) < 0.5 * (_t1 - _t0)) {
+      var _f1 = Math.min(_routeNm, Math.min(_routeNm, nmNow) + 2 * _h);
+      if (_f1 - Math.min(_routeNm, nmNow) > 1e-6) return bearingBetween(_ptAtNm(Math.min(_routeNm, nmNow)), _ptAtNm(_f1));
+    }
+    return bearingBetween(_P0, _P1);
   }
   // Point at a given distance along the route — the same walk the frame loop
   // does, but standalone so the heading can sample ahead of the marker.
@@ -51228,6 +51309,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
             // rendered angle chases the route heading at no more than
             // _MAX_SLEW_DPS, per view (each icon turns from its own angle).
             var _tgt = headingAtNm(_target);
+            var _turned = 0;   // degrees actually turned this frame (a snap is not a turn)
             if (v.hdg === null || v.hdg === undefined) { v.hdg = _tgt; }
             else {
               var _dh = ((_tgt - v.hdg + 540) % 360) - 180;   // shortest way round
@@ -51247,12 +51329,25 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
                 if (_dh >  _lim) _dh =  _lim;
                 if (_dh < -_lim) _dh = -_lim;
                 v.hdg = (v.hdg + _dh + 360) % 360;
+                _turned = _dh;
               }
             }
+            // v24089 — AND IT BANKS INTO THE TURN. Seen from straight above, an
+            // aeroplane rolling into a turn shows its wings foreshortened: the
+            // north-pointing art is narrowed across its wings (scaleX in its
+            // own turned frame) by the bank, 25° at a rate-one turn (3°/s),
+            // drawn half as deep again so it reads at map size, eased in and
+            // out over about a second, level when the line is straight. (Not a
+            // 3D rotateY: with the icon's drop shadow and true-scale art, the
+            // perspective blew its layer up into a white wedge across the map.)
+            var _dts = _dtMs / 1000;
+            var _bTgt = (_dts > 0) ? Math.max(-25, Math.min(25, (_turned / _dts) * 25 / 3)) : 0;
+            v.bank = (typeof v.bank === 'number' && isFinite(v.bank)) ? v.bank + (_bTgt - v.bank) * Math.min(1, _dts / 0.8) : 0;
             // translate FIRST, then rotate: the offset is in map space, so it
             // must not be spun by the aircraft's own heading.
             div.style.transform = 'translate(' + _subX.toFixed(3) + 'px,' + _subY.toFixed(3) + 'px) '
-                                + 'rotate(' + v.hdg.toFixed(2) + 'deg)';
+                                + 'rotate(' + v.hdg.toFixed(2) + 'deg)'
+                                + (Math.abs(v.bank) > 0.2 ? ' scaleX(' + Math.cos(Math.min(40, Math.abs(v.bank) * 1.5) * Math.PI / 180).toFixed(3) + ')' : '');
           }
         } catch (er) {}
         // Redraw the solid-behind / dashed-ahead split only when we cross a
@@ -59639,6 +59734,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   // CSS that hides the raw <img> until inlined, this removes the pop-in /
   // resize-3x flicker that showed on every slide re-render.
   var _lockupCache = {};
+  var _lockupSeq = 0;
   function _applyLockup(img, svg, isHotelLogo) {
     var span = img.parentNode; if (!span) return;
     span.innerHTML = svg;
@@ -59670,6 +59766,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       svg = svg.replace(/<\?xml[^>]*\?>/, '').trim();
       if (crop) svg = svg.replace(/viewBox="[^"]+"/, 'viewBox="' + crop + '"');
       svg = svg.replace(/<svg /, '<svg preserveAspectRatio="' + (isHotelLogo ? 'xMinYMax meet' : 'xMinYMid meet') + '" ');
+      svg = _scopeSvgStyles(svg, 'lk' + (++_lockupSeq));
       _lockupCache[key] = svg;
       _applyLockup(img, svg, isHotelLogo);
     }).catch(function(){ /* leave the <img> as-is on failure */ });
@@ -61154,7 +61251,8 @@ function _wxHydrateSvgs(root) {
           var span = document.createElement('span');
           span.className = 'wxanim-host ' + (img.className || '');
           span.style.cssText = img.getAttribute('style') || '';
-          span.innerHTML = txt;
+          // v24089 — its own <style> (none today) stays its own (_scopeSvgStyles)
+          span.innerHTML = _scopeSvgStyles(txt, 'lw' + uid);
           var svg = span.querySelector('svg');
           if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); svg.style.display = 'block'; }
           img.parentNode.replaceChild(span, img);
@@ -61895,7 +61993,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24088" src="/textures/gate-sky-shelf.mp4?v=24088"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24089" src="/textures/gate-sky-shelf.mp4?v=24089"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
