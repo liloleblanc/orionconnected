@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2821,
+    "total": 2822,
     "by_category": {
       "ad": 14,
-      "airline": 1177,
+      "airline": 1178,
       "background": 193,
       "brand": 5,
       "hotel": 888,
@@ -6790,6 +6790,17 @@
       "name": "Aerolane / LATAM Ecuador",
       "iata": "XL",
       "country": "Ecuador",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airline-tiles/ASA-orb-glossy.svg",
+      "file": "ASA-orb-glossy.svg",
+      "category": "airline",
+      "subcategory": "tile",
+      "group": "Airline tile logos (row icons)",
+      "name": "ASA orb glossy",
+      "iata": "",
+      "country": "",
       "ext": "svg"
     },
     {
