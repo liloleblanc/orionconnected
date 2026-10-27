@@ -17524,7 +17524,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24088" src="/textures/gate-sky-shelf.mp4?v=24088" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24089" src="/textures/gate-sky-shelf.mp4?v=24089" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17568,7 +17568,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24088" src="/textures/gate-sky-shelf.mp4?v=24088" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24089" src="/textures/gate-sky-shelf.mp4?v=24089" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -35638,7 +35638,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24088';
+var FIDS_BUILD_TAG = 'v24089';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -50743,6 +50743,25 @@ function _runwayFinalPath(pl, d, destIata) {
     var joinNm = Math.min(8, dT * 0.6);
     var faf = _gcDestPt(best.t, (best.hdg + 180) % 360, joinNm);
     var head = _gcFullRoute(pl, faf, 24);
+    // v24089 — A TURN, NOT A CORNER. The join on to the final was a kink, so
+    // the aeroplane swung its nose round on the spot and slid along the new
+    // line ("it turns but it's dragging"). The last stretch into the join and
+    // the first stretch of the final are now one curve through the join point
+    // (a quadratic, sampled), about a rate-one turn's worth either side, never
+    // more than 40% of either leg: the line drawn and the line flown both turn.
+    var rT = Math.min(1.5, 0.4 * _gcNm(pl, faf), 0.4 * joinNm);
+    if (rT > 0.2) {
+      var cA = _gcDestPt(faf, _gcBrgDeg(faf, pl), rT), cB = _gcDestPt(faf, best.hdg, rT);
+      var kept = head.filter(function (q) { return _gcNm(q, faf) > rT + 1e-6; });
+      if (kept.length) {
+        kept.push(cA);
+        for (var k = 1; k <= 8; k++) {
+          var u = k / 8, wa = (1 - u) * (1 - u), wb = 2 * u * (1 - u), wc = u * u;
+          kept.push([wa * cA[0] + wb * faf[0] + wc * cB[0], wa * cA[1] + wb * faf[1] + wc * cB[1]]);
+        }
+        head = kept;
+      }
+    }
     head.push(best.t, tdz);
     return head;
   } catch (e) { return null; }
@@ -51101,11 +51120,16 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // that changed as the aircraft flew. The Turf reference looks ahead 0.5%
   // of the total route; same idea here, with a floor so a short leg still gets
   // a usable baseline.
+  // v24089 — THE WAY IT IS GOING HERE, not 0.5% of the route ahead: on
+  // Toronto–Moncton that was 3 nm, so at a turn the nose came round more than
+  // a minute early and the aeroplane slid sideways along the old line into
+  // it. A short window centred on the marker (4 s of flying, 0.15–0.6 nm) is
+  // its own direction of travel; the slew limit below still smooths it.
   function headingAtNm(nmNow) {
-    var _ahead = Math.max(0.5, _routeNm * 0.005);
-    var _t0 = Math.min(_routeNm, nmNow);
-    var _t1 = Math.min(_routeNm, nmNow + _ahead);
-    if (_t1 - _t0 < 1e-6) { _t0 = Math.max(0, _routeNm - _ahead); _t1 = _routeNm; }
+    var _h = Math.max(0.15, Math.min(0.6, speedKts * 4 / 3600));
+    var _t0 = Math.max(0, Math.min(_routeNm, nmNow) - _h);
+    var _t1 = Math.min(_routeNm, nmNow + _h);
+    if (_t1 - _t0 < 1e-6) { _t0 = Math.max(0, _routeNm - 2 * _h); _t1 = _routeNm; }
     return bearingBetween(_ptAtNm(_t0), _ptAtNm(_t1));
   }
   // Point at a given distance along the route — the same walk the frame loop
@@ -51228,6 +51252,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
             // rendered angle chases the route heading at no more than
             // _MAX_SLEW_DPS, per view (each icon turns from its own angle).
             var _tgt = headingAtNm(_target);
+            var _turned = 0;   // degrees actually turned this frame (a snap is not a turn)
             if (v.hdg === null || v.hdg === undefined) { v.hdg = _tgt; }
             else {
               var _dh = ((_tgt - v.hdg + 540) % 360) - 180;   // shortest way round
@@ -51247,12 +51272,25 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
                 if (_dh >  _lim) _dh =  _lim;
                 if (_dh < -_lim) _dh = -_lim;
                 v.hdg = (v.hdg + _dh + 360) % 360;
+                _turned = _dh;
               }
             }
+            // v24089 — AND IT BANKS INTO THE TURN. Seen from straight above, an
+            // aeroplane rolling into a turn shows its wings foreshortened: the
+            // north-pointing art is narrowed across its wings (scaleX in its
+            // own turned frame) by the bank, 25° at a rate-one turn (3°/s),
+            // drawn half as deep again so it reads at map size, eased in and
+            // out over about a second, level when the line is straight. (Not a
+            // 3D rotateY: with the icon's drop shadow and true-scale art, the
+            // perspective blew its layer up into a white wedge across the map.)
+            var _dts = _dtMs / 1000;
+            var _bTgt = (_dts > 0) ? Math.max(-25, Math.min(25, (_turned / _dts) * 25 / 3)) : 0;
+            v.bank = (typeof v.bank === 'number' && isFinite(v.bank)) ? v.bank + (_bTgt - v.bank) * Math.min(1, _dts / 0.8) : 0;
             // translate FIRST, then rotate: the offset is in map space, so it
             // must not be spun by the aircraft's own heading.
             div.style.transform = 'translate(' + _subX.toFixed(3) + 'px,' + _subY.toFixed(3) + 'px) '
-                                + 'rotate(' + v.hdg.toFixed(2) + 'deg)';
+                                + 'rotate(' + v.hdg.toFixed(2) + 'deg)'
+                                + (Math.abs(v.bank) > 0.2 ? ' scaleX(' + Math.cos(Math.min(40, Math.abs(v.bank) * 1.5) * Math.PI / 180).toFixed(3) + ')' : '');
           }
         } catch (er) {}
         // Redraw the solid-behind / dashed-ahead split only when we cross a
@@ -61895,7 +61933,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24088" src="/textures/gate-sky-shelf.mp4?v=24088"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24089" src="/textures/gate-sky-shelf.mp4?v=24089"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
