@@ -84,3 +84,32 @@ test('it banks into the turn by its rate, 25° at rate one, level when straight'
   for (let f = 0; f < 240; f++) bank += (0 - bank) * Math.min(1, (1 / 60) / 0.8);
   assert.ok(Math.abs(bank) < 1);
 });
+
+test('a fix already past the threshold goes on down the runway, never back to it', () => {
+  // runway 24 lands south-west from its threshold at 46.1262,-64.66766
+  const THR = [46.1262, -64.66766];
+  const past = [THR[0] - 0.003, THR[1] - 0.0055];   // ~0.3 nm down the runway
+  const r = geo.final(past, YQM, 'YQM');
+  assert.equal(r.length, 2, 'the fix and a point further down');
+  const b = geo.brg(r[0], r[1]);
+  assert.ok(Math.abs(((b - 222 + 540) % 360) - 180) < 10, 'heading down runway 24: ' + b.toFixed(0) + '°');
+  assert.ok(geo.nm(r[1], THR) > geo.nm(r[0], THR), 'further from the threshold, not back to it');
+});
+
+test('the curve is sampled finely enough that the bank holds through the turn', () => {
+  const pl = [46.2853, -64.7096];
+  const r = geo.final(pl, YQM, 'YQM');
+  const segs = [];
+  for (let i = 1; i < r.length - 2; i++) segs.push(geo.nm(r[i - 1], r[i]));
+  const curve = segs.slice(-32);
+  assert.ok(Math.max(...curve) < 0.15, 'curve segments under 0.15 nm (the heading window is 0.3-1.2 nm): ' + Math.max(...curve).toFixed(3));
+  const bends = turns(r.slice(0, -2));
+  assert.ok(Math.max(...bends) < 6, 'no bend over 6° on the curve: ' + Math.max(...bends).toFixed(1));
+});
+
+test('a route folding back inside the heading window falls back to the way on; a re-anchor keeps the bank', () => {
+  const glide = fnSource('_startGateMapGlide');
+  assert.match(glide, /if \(_gcNm\(_P0, _P1\) < 0\.5 \* \(_t1 - _t0\)\) \{/);
+  assert.match(glide, /var _keepBank = \(_oldView && typeof _oldView\.bank === 'number' && isFinite\(_oldView\.bank\)\) \? _oldView\.bank : 0;/);
+  assert.match(glide, /hdg: _keepHdg, kept: _keepHdg !== null, bank: _keepBank,/);
+});

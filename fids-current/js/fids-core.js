@@ -50767,6 +50767,11 @@ function _runwayFinalPath(pl, d, destIata) {
     // Touchdown ~a third down the runway, along the landing direction.
     var rwNm = _gcNm(best.t, best.f);
     var tdz = _gcDestPt(best.t, best.hdg, Math.min(rwNm * 0.35, rwNm));
+    // v24089 — already PAST the threshold (a fix in the flare or the float):
+    // on down the runway, never back to the threshold. Routed back to it the
+    // line doubled on itself and the nose spun round across the runway.
+    var pastNm = dT * Math.cos((_gcBrgDeg(best.t, pl) - best.hdg) * Math.PI / 180);
+    if (pastNm > 0.05) return [pl, _gcDestPt(best.t, best.hdg, Math.min(rwNm, Math.max(pastNm + 0.05, rwNm * 0.35)))];
     // Short final already: fly straight to the threshold and land.
     if (dT < 1.2) return [pl, best.t, tdz];
     // Join the extended centerline at up to 8nm out (never beyond ~60% of
@@ -50778,16 +50783,19 @@ function _runwayFinalPath(pl, d, destIata) {
     // the aeroplane swung its nose round on the spot and slid along the new
     // line ("it turns but it's dragging"). The last stretch into the join and
     // the first stretch of the final are now one curve through the join point
-    // (a quadratic, sampled), about a rate-one turn's worth either side, never
-    // more than 40% of either leg: the line drawn and the line flown both turn.
+    // (a quadratic, sampled finely: 32 points, so its segments sit well inside
+    // the nose's heading window and the bank holds through the turn instead of
+    // pumping at every vertex), about a rate-one turn's worth either side,
+    // never more than 40% of either leg: the line drawn and the line flown
+    // both turn.
     var rT = Math.min(1.5, 0.4 * _gcNm(pl, faf), 0.4 * joinNm);
     if (rT > 0.2) {
       var cA = _gcDestPt(faf, _gcBrgDeg(faf, pl), rT), cB = _gcDestPt(faf, best.hdg, rT);
       var kept = head.filter(function (q) { return _gcNm(q, faf) > rT + 1e-6; });
       if (kept.length) {
         kept.push(cA);
-        for (var k = 1; k <= 8; k++) {
-          var u = k / 8, wa = (1 - u) * (1 - u), wb = 2 * u * (1 - u), wc = u * u;
+        for (var k = 1; k <= 32; k++) {
+          var u = k / 32, wa = (1 - u) * (1 - u), wb = 2 * u * (1 - u), wc = u * u;
           kept.push([wa * cA[0] + wb * faf[0] + wc * cB[0], wa * cA[1] + wb * faf[1] + wc * cB[1]]);
         }
         head = kept;
@@ -51044,8 +51052,10 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     // where it points (slewed) instead of snapping onto the new route's bend.
     var _oldView = _sameLeg ? _gateGlide.views[_viewKey] : null;
     var _keepHdg = (_oldView && typeof _oldView.hdg === 'number') ? _oldView.hdg : null;
+    // v24089 — and its bank, so a fix mid-turn does not snap the wings level
+    var _keepBank = (_oldView && typeof _oldView.bank === 'number' && isFinite(_oldView.bank)) ? _oldView.bank : 0;
     _gateGlide.views[_viewKey] = { map: map, marker: marker, a1: a1, a2: a2,
-      hdg: _keepHdg, kept: _keepHdg !== null, seg: 0, arcIdx: -1, last: 0 };
+      hdg: _keepHdg, kept: _keepHdg !== null, bank: _keepBank, seg: 0, arcIdx: -1, last: 0 };
   } catch (e) {}
   var _nowFn = (typeof performance !== 'undefined' && performance.now) ? function () { return performance.now(); } : function () { return Date.now(); };
 
@@ -51161,7 +51171,14 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     var _t0 = Math.max(0, Math.min(_routeNm, nmNow) - _h);
     var _t1 = Math.min(_routeNm, nmNow + _h);
     if (_t1 - _t0 < 1e-6) { _t0 = Math.max(0, _routeNm - 2 * _h); _t1 = _routeNm; }
-    return bearingBetween(_ptAtNm(_t0), _ptAtNm(_t1));
+    var _P0 = _ptAtNm(_t0), _P1 = _ptAtNm(_t1);
+    // (a route that folds back inside the window gives a chord of nothing:
+    // then the way on from the marker)
+    if (_gcNm(_P0, _P1) < 0.5 * (_t1 - _t0)) {
+      var _f1 = Math.min(_routeNm, Math.min(_routeNm, nmNow) + 2 * _h);
+      if (_f1 - Math.min(_routeNm, nmNow) > 1e-6) return bearingBetween(_ptAtNm(Math.min(_routeNm, nmNow)), _ptAtNm(_f1));
+    }
+    return bearingBetween(_P0, _P1);
   }
   // Point at a given distance along the route — the same walk the frame loop
   // does, but standalone so the heading can sample ahead of the marker.
