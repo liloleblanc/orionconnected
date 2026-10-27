@@ -14833,7 +14833,18 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // shared recipe treats it as a finished tile: full-bleed, no whitening,
         // so the orb becomes red with a white cross, the right way round.
         'LX':  '/logos/airline-tiles/SWR.svg',
-        'SWR': '/logos/airline-tiles/SWR.svg'
+        'SWR': '/logos/airline-tiles/SWR.svg',
+        // v24091 — ALASKA HAD NO ORB. It was not in this table, so the orb
+        // asked for /symbols/airlines/AS.svg (never drawn) and fell back to
+        // the row tile: the face on its navy square, cropped to a navy disc
+        // on Alaska's own navy panel, where the disc's edge disappears
+        // (SFO B8). ASA-orb.svg is that same face, cut from the tile, on a
+        // navy roundel inside a white ring: white outer, colour interior, as
+        // American and Qatar wear. In airline-tiles/ so it fills the orb
+        // and is never whitened. The file is itself round (no square
+        // corners) for the surfaces that do not clip it, and the Welcome
+        // card leaves it out (WELCOME_CARD_NO_EMBLEM).
+        'AS':  '/logos/airline-tiles/ASA-orb.svg'
 };
 
 // Gate-only artwork overrides. Keep these separate from AIRLINE_EMBLEM_FILES:
@@ -14886,10 +14897,14 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
 // colours on the white disc, v23444), where by their own codes the symbol
 // was inked white on that white disc: the blank Your Aircraft orb on every
 // American gate they flew to.
+// v24091 — Horizon the same way. It is Alaska's own airline and its E175s
+// fly in Alaska's livery, face on the tail; by its own code the orb printed
+// the letters QX on a blank disc (SFO B3, AS3462).
 function _orbEmblemCarrier(code) {
   var c = String(code == null ? '' : code).trim().toUpperCase();
   if (c === 'ACEX') return 'AC';
   if (c === 'MQ' || c === 'ENY' || c === 'OH' || c === 'PSA' || c === 'PT' || c === 'PDT') return 'AA';
+  if (c === 'QX' || c === 'QXE') return 'AS';
   return c;
 }
 function _airlineOrbEmblem(code) {
@@ -17524,7 +17539,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24090" src="/textures/gate-sky-shelf.mp4?v=24090" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24091" src="/textures/gate-sky-shelf.mp4?v=24091" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17568,7 +17583,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24090" src="/textures/gate-sky-shelf.mp4?v=24090" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24091" src="/textures/gate-sky-shelf.mp4?v=24091" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -35638,7 +35653,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24090';
+var FIDS_BUILD_TAG = 'v24091';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -57947,7 +57962,10 @@ var WELCOME_CARD_NO_EMBLEM = {
   'EW':  "Eurowings' wings sit on a grey square; on their own, their burgundy does not read on the card",
   // v23994 — as Icelandair: the navy square sinks into the card, and so does
   // the dark-blue half of the bird inside it (#1c4093, 1.7:1 on the card).
-  'A3':  "Aegean's navy square and the dark half of its bird sink into the card"
+  'A3':  "Aegean's navy square and the dark half of its bird sink into the card",
+  // v24091 — the orb's ASA-orb.svg (the face in a white ring) would be a
+  // white disc on the card, and the face's own navy square sinks into it.
+  'AS':  "Alaska's face is a navy square that sinks into the card, or a white ring"
 };
 
 // Lettering this card draws where the board's wordmark table names another
@@ -61993,7 +62011,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24090" src="/textures/gate-sky-shelf.mp4?v=24090"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24091" src="/textures/gate-sky-shelf.mp4?v=24091"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
