@@ -574,7 +574,7 @@ function liveWorld(type) {
     '  _gateGlide.views[map === gateMap ? "mini" : "big"] = { map: map, marker: mk, a1: a1, a2: a2 }; mk._map = map; _gateGlide.raf = 1; }',
     ...['aircraftCodeToIata', '_gcNm', '_gateGlideNoteFix', '_gateGlideSameLeg', '_stopGateMapGlide', '_gateParkedAtOrigin',
         '_gateGroundSpeed', '_gateOnGroundNow', '_gateGroundZoomNow', '_gateGroundZoom',
-        '_mapPlaneSpecFor', '_mapPlaneScale', '_mapPlaneFit', 'initGateMapLive', '_bigMapCloneLive'].map(fnSource),
+        '_mapPlaneSpecFor', '_mapPlaneScale', '_mapPlaneFit', '_gateMapFixSpd', 'initGateMapLive', '_bigMapCloneLive'].map(fnSource),
     'return { mini: initGateMapLive, big: _bigMapCloneLive, gateMap: function(){ return gateMap; }, glide: _gateGlide };',
   ].join('\n');
   const api = new Function('L', 'document', 'window', 'console', 'setTimeout', 'AIRPORTS', 'TYPE', 'LOG', src)(

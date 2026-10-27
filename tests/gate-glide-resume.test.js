@@ -80,8 +80,9 @@ test('the old fraction on a rebuilt route lands elsewhere; the drawn spot does n
 
 test('the glide resumes a fix from the drawn spot, keeps the nose, and publishes where it draws', () => {
   const glide = fnSource('_startGateMapGlide');
-  assert.match(glide, /var _pDrawn = _gateRouteFrac\(route, _cum, _routeNm, _gateGlide\.ll\);/);
-  assert.match(glide, /var _dp = _seedP - _pRes;/);
+  assert.match(glide, /var _pDrawn = _gateRouteFrac\(route, _cum, _routeNm, _gateGlide\.ll, _rOff\);/);
+  // v24088 — measured against the fix carried forward for its age (_nowP)
+  assert.match(glide, /var _dp = _nowP - _pRes;/);
   assert.match(glide, /p = _pRes;\s*_errP = _dp;/);
   assert.doesNotMatch(glide, /p = _gateGlide\.p;\s*_errP/, 'never the old route\'s fraction');
   assert.match(glide, /var _keepHdg = \(_oldView && typeof _oldView\.hdg === 'number'\) \? _oldView\.hdg : null;/);

@@ -60,6 +60,7 @@ test('another location\'s answer is reused, aged, and FR24 is not called', async
 });
 
 test('every paid answer is shared: positions and "not transmitting"', () => {
-  assert.match(WORKER, /ctx\.waitUntil\(env\.FIDS_LIVE_FLIGHTS\.put\(_gKey, JSON\.stringify\(\{ at: Date\.now\(\), body: _frBody \}\), \{ expirationTtl: ADSB_TTL \}\)\)/);
+  // v24088 — with the hold it was given (90 s for a near arrival below 10,000 ft)
+  assert.match(WORKER, /ctx\.waitUntil\(env\.FIDS_LIVE_FLIGHTS\.put\(_gKey, JSON\.stringify\(\{ at: Date\.now\(\), hold: _hold, body: _frBody \}\), \{ expirationTtl: Math\.max\(60, _hold\) \}\)\)/);
   assert.match(WORKER, /if \(_fr24SaidNothing && env\.FIDS_LIVE_FLIGHTS\) \{\s*try \{ ctx\.waitUntil\(env\.FIDS_LIVE_FLIGHTS\.put\(_gKey, JSON\.stringify\(\{ at: Date\.now\(\), quiet: true, body: _negBody \}\), \{ expirationTtl: ADSB_EMPTY_TTL \}\)\)/);
 });
