@@ -301,7 +301,7 @@ test('every carrier that can reach the card: its colour emblem, its own coloured
 });
 
 test('the carriers shown with their white lettering alone, and why', () => {
-  assert.deepEqual(Object.keys(NO_EMBLEM).sort(), ['A3', 'AA', 'EW', 'FI', 'MQ', 'NZ', 'OH', 'PD', 'PT', 'QR', 'QTR', 'ROU', 'RV']);
+  assert.deepEqual(Object.keys(NO_EMBLEM).sort(), ['A3', 'AA', 'AS', 'EW', 'FI', 'MQ', 'NZ', 'OH', 'PD', 'PT', 'QR', 'QTR', 'ROU', 'RV']);
   for (const [code, why] of Object.entries(NO_EMBLEM)) assert.ok(why.length > 10, code + ' needs its reason');
   // what each would otherwise draw, and why that is not drawn
   assert.ok(whiteOnly(EMBLEMS.PD), "Porter's p is drawn white");

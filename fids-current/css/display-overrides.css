@@ -14976,6 +14976,29 @@ The art is now the CROPPED ball
   margin-left: 0 !important;
 }
 
+/* ── v24091 — THE ONEWORLD BALL IS SIZED BY THE BAND IT SITS IN, NEVER CUT.
+   The rules above size the ball by viewport height alone (88–104px), but
+   the light band holding it is shorter on most screens: 87px at 1536x800
+   (a 1920x1080 PC at 125% scaling), 90px at 1440x900. The ball stood taller
+   than the band, centred, so the top ran off the screen and the bottom
+   under the date strip (SFO B3, Alaska). The slot now takes the band's full
+   height, and the ball takes that height less a 1px margin each side,
+   capped at its designed 104px, round at every size. Its floor is 82px,
+   the airline tile beside it, so it is never the smaller mark. It may still
+   narrow from 104 to 82 to leave the carrier's lockup room (v23292). ── */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot:has(> .g8-r1-alliance-oneworld) {
+  height: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
+  height: min(104px, calc(100% - 2px)) !important;
+  max-height: calc(100% - 2px) !important;
+  min-height: 0 !important;
+  width: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  min-width: 82px !important;
+  max-width: min(104px, 25%) !important;
+}
+
 /* ── v23252 — THE ONEWORLD DIVIDER BAR (the official co-brand reference:
    ball | thin line | airline mark). Proportions from the sheet: 2px line at
    0.74x the ball, a third-of-a-ball air on each side, all centred. */
@@ -22819,7 +22842,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24090') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24091') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
