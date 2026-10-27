@@ -113,3 +113,24 @@ test('a route folding back inside the heading window falls back to the way on; a
   assert.match(glide, /var _keepBank = \(_oldView && typeof _oldView\.bank === 'number' && isFinite\(_oldView\.bank\)\) \? _oldView\.bank : 0;/);
   assert.match(glide, /hdg: _keepHdg, kept: _keepHdg !== null, bank: _keepBank,/);
 });
+
+test('on the field the live track picks the runway end, not the bearing to the field', () => {
+  // past mid-field the bearing to the reference point points back the way the
+  // aeroplane came: every fix along either runway, either way, with its track
+  const withTrk = (trk) => new Function('AIRPORT_RUNWAYS', '_gateHeading', ['_gcNm', '_gcBrgDeg', '_gcDestPt', '_gcFullRoute', '_runwayFinalPath'].map(fnSource).join('\n') +
+    '\nreturn { final: _runwayFinalPath, nm: _gcNm, brg: _gcBrgDeg, dest: _gcDestPt };')(RUNWAYS, () => trk);
+  for (const r of RUNWAYS.YQM) {
+    for (const [t, f] of [[[r[0], r[1]], [r[2], r[3]]], [[r[2], r[3]], [r[0], r[1]]]]) {
+      const hdg = geo.brg(t, f), len = geo.nm(t, f);
+      for (const past of [0.2, 0.5, 1.0, 1.4]) {
+        if (past > len) continue;
+        const g = withTrk(hdg), pl = g.dest(t, hdg, past), route = g.final(pl, YQM, 'YQM');
+        if (!route) continue;   // a fix on the reference point itself: no shaped final
+        const nose = g.brg(route[0], route[1]);
+        assert.ok(Math.abs(((nose - hdg + 540) % 360) - 180) < 5, 'landing ' + hdg.toFixed(0) + '°, ' + past + ' nm in: nose ' + nose.toFixed(0) + '°');
+      }
+    }
+  }
+  // far out the bearing still decides (a track on a downwind is not the runway)
+  assert.match(fnSource('_runwayFinalPath'), /if \(distNm < 2\.5\) \{\s*var _trk = \(typeof _gateHeading === 'function'\) \? _gateHeading\(null\) : null;/);
+});

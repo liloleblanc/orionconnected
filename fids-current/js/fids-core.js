@@ -50750,6 +50750,14 @@ function _runwayFinalPath(pl, d, destIata) {
     // ~90nm the pin-vs-runway difference is invisible at map scale anyway.
     if (!(distNm > 0.3) || distNm > 90) return null;
     var inb = _gcBrgDeg(pl, d);
+    // v24089 — ON THE FIELD, THE TRACK PICKS THE RUNWAY. Within a couple of
+    // miles the bearing to the field's reference point says nothing about the
+    // way the aeroplane is landing (past mid-field it points back the way it
+    // came), so a live track, when there is one, chooses the end.
+    if (distNm < 2.5) {
+      var _trk = (typeof _gateHeading === 'function') ? _gateHeading(null) : null;
+      if (typeof _trk === 'number' && isFinite(_trk)) inb = _trk;
+    }
     var best = null;
     for (var i = 0; i < rws.length; i++) {
       var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]];
@@ -50770,8 +50778,9 @@ function _runwayFinalPath(pl, d, destIata) {
     // v24089 — already PAST the threshold (a fix in the flare or the float):
     // on down the runway, never back to the threshold. Routed back to it the
     // line doubled on itself and the nose spun round across the runway.
-    var pastNm = dT * Math.cos((_gcBrgDeg(best.t, pl) - best.hdg) * Math.PI / 180);
-    if (pastNm > 0.05) return [pl, _gcDestPt(best.t, best.hdg, Math.min(rwNm, Math.max(pastNm + 0.05, rwNm * 0.35)))];
+    var _off = (_gcBrgDeg(best.t, pl) - best.hdg) * Math.PI / 180;
+    var pastNm = dT * Math.cos(_off);
+    if (pastNm > 0.05 && Math.abs(dT * Math.sin(_off)) < 0.3) return [pl, _gcDestPt(best.t, best.hdg, Math.min(rwNm, Math.max(pastNm + 0.05, rwNm * 0.35)))];
     // Short final already: fly straight to the threshold and land.
     if (dT < 1.2) return [pl, best.t, tdz];
     // Join the extended centerline at up to 8nm out (never beyond ~60% of
