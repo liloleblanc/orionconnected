@@ -150,7 +150,7 @@
   var BLOB_BUDGET = 8e6;            // compressed pictures kept at hand, bytes
   var RETRY_MS = 600000;            // a floor with no picture is tried again after this
   var WAIT_MS = 60000;              // a planet not up by then: the old backdrop meanwhile
-  var PLACES_URL = '/js/earth-places.js?v=24091';   // every other place's position and zone (loadPlaces)
+  var PLACES_URL = '/js/earth-places.js?v=24092';   // every other place's position and zone (loadPlaces)
   var PLACES_WAIT_MS = 6000;        // the most a floor waits for them before it is drawn without
   var HALO = '#020a1c';
 
