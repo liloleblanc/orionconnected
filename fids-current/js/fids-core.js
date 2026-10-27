@@ -48299,6 +48299,37 @@ function _gateGlideFixFresh(now) {
 // evidence for 15 minutes (_gateFixCheck).
 var _GLIDE_DR_MAX_MS = 8 * 60000;
 
+// v24089 — A <STYLE> INSIDE AN INLINE SVG IS THE WHOLE PAGE'S. The white
+// hotel logos carry rules such as <style>*{fill:#FFFFFF;stroke:none}</style>
+// (41 Accor monochrome-white files) and path,polygon,…{fill:#FFFFFF !important}
+// (19 Fairmont files); inlined (_applyLockup), the rule applied to every SVG on
+// the board while the logo was up: the gate map's route line was filled solid
+// white and lost its blue stroke, the white wedge fanning out from the
+// aeroplane that came and went with the hotel ads (traced on Moncton gate 4,
+// 2026-10-26), and every icon drawn as SVG turned white with it. Every rule
+// in an inlined SVG's <style> is now scoped to that SVG's own root
+// ([data-lk] prefix; a leading "svg" or ":root" becomes the root itself;
+// CDATA and comments dropped; an at-rule's own wrapper is not kept).
+function _scopeSvgStyles(svg, id) {
+  if (!/<style[\s>]/i.test(svg)) return svg;
+  svg = svg.replace(/<svg\b/i, '<svg data-lk="' + id + '"');
+  var pre = '[data-lk="' + id + '"]';
+  return svg.replace(/<style([^>]*)>([\s\S]*?)<\/style>/gi, function (m, attrs, css) {
+    css = css.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    var out = '', re = /([^{}]+)\{([^{}]*)\}/g, r;
+    while ((r = re.exec(css))) {
+      var sel = r[1].trim();
+      if (!sel || sel.charAt(0) === '@') continue;
+      out += sel.split(',').map(function (x) {
+        x = x.trim();
+        if (/^:root$/i.test(x)) return pre;
+        if (/^svg(?![\w-])/i.test(x)) return pre + x.replace(/^svg/i, '');
+        return pre + ' ' + x;
+      }).join(',') + '{' + r[2] + '}';
+    }
+    return '<style' + attrs + '>' + out + '</style>';
+  });
+}
 // v24088 — the ground speed of the fix the map is drawing at (lat, lng), or
 // null: the 60 s poll's speed can still be the fix before it.
 function _gateMapFixSpd(lat, lng) {
@@ -59677,6 +59708,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   // CSS that hides the raw <img> until inlined, this removes the pop-in /
   // resize-3x flicker that showed on every slide re-render.
   var _lockupCache = {};
+  var _lockupSeq = 0;
   function _applyLockup(img, svg, isHotelLogo) {
     var span = img.parentNode; if (!span) return;
     span.innerHTML = svg;
@@ -59708,6 +59740,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       svg = svg.replace(/<\?xml[^>]*\?>/, '').trim();
       if (crop) svg = svg.replace(/viewBox="[^"]+"/, 'viewBox="' + crop + '"');
       svg = svg.replace(/<svg /, '<svg preserveAspectRatio="' + (isHotelLogo ? 'xMinYMax meet' : 'xMinYMid meet') + '" ');
+      svg = _scopeSvgStyles(svg, 'lk' + (++_lockupSeq));
       _lockupCache[key] = svg;
       _applyLockup(img, svg, isHotelLogo);
     }).catch(function(){ /* leave the <img> as-is on failure */ });
@@ -61192,7 +61225,8 @@ function _wxHydrateSvgs(root) {
           var span = document.createElement('span');
           span.className = 'wxanim-host ' + (img.className || '');
           span.style.cssText = img.getAttribute('style') || '';
-          span.innerHTML = txt;
+          // v24089 — its own <style> (none today) stays its own (_scopeSvgStyles)
+          span.innerHTML = _scopeSvgStyles(txt, 'lw' + uid);
           var svg = span.querySelector('svg');
           if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); svg.style.display = 'block'; }
           img.parentNode.replaceChild(span, img);
