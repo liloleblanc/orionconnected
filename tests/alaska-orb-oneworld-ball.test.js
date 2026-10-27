@@ -47,6 +47,20 @@ test('the orb file is the row tile\'s own face, on a round white ground', () => 
   assert.deepEqual(paths(orb), paths(tile).filter((p) => !/d="M0 0h100v100H0z"/.test(p)));
 });
 
+// v24093 — the orbs wear a glossy copy, shaded like Delta's and United's.
+test('the orbs wear the glossy face; the coin keeps the flat one', () => {
+  assert.match(SRC, /var GATE_TOP_ROUND_EMBLEM_FILES = \{[\s\S]*?\n\s*'AS': '\/logos\/airline-tiles\/ASA-orb-glossy\.svg'\n\};/);
+  const tile = fs.readFileSync(path.join(PUB, 'logos', 'airline-tiles', 'ASA.svg'), 'utf8');
+  const gloss = fs.readFileSync(path.join(PUB, 'logos', 'airline-tiles', 'ASA-orb-glossy.svg'), 'utf8');
+  const paths = (s) => [...s.matchAll(/<path\b[^>]*\/>/g)].map((m) => m[0]);
+  assert.deepEqual(paths(gloss), paths(tile).filter((p) => !/d="M0 0h100v100H0z"/.test(p)));
+  // round, the navy ground under the face, the shading drawn over it
+  assert.match(gloss, /<circle cx="50" cy="50" r="50" fill="url\(#asa-orb-ring\)"\/>/);
+  assert.match(gloss, /<circle cx="50" cy="50" r="43" fill="#0C4368"\/>/);
+  assert.match(gloss, /<circle cx="50" cy="50" r="43" fill="url\(#asa-orb-shade\)"\/>/);
+  assert.doesNotMatch(gloss, /<style|d="M0 0h100v100H0z"/);
+});
+
 test('the oneworld ball takes the band\'s height and is never the smaller mark', () => {
   const rules = CSS.split('\n').filter((l) => /g8-r1-alliance-oneworld\s*\{$/.test(l) || /:has\(> \.g8-r1-alliance-oneworld\)/.test(l));
   const top = Math.max(...rules.map(ids));
