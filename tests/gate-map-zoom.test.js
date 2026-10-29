@@ -37,6 +37,9 @@ assert.ok(endMark > at, 'the hysteresis line must still follow the hold');
 // line, deliberately excluding the early-return that follows (a separate
 // concern). Close the block so the lifted source is valid on its own.
 const EXPR = SRC.slice(at, SRC.indexOf('\n', endMark) + 1) + '\n}\n';
+// v24095 — the movement test measures longitude the short way (_lngNear).
+const _LN_AT = SRC.indexOf('\nfunction _lngNear(');
+const LNGNEAR = SRC.slice(_LN_AT + 1, SRC.indexOf('\n}\n', _LN_AT) + 2);
 
 // Run it with the surrounding state stubbed. `_liveReuse` true is the steady
 // state on a live leg; the window records stand in for a rebuilt map.
@@ -49,7 +52,7 @@ function holdZoom({ lastView, lastFix, planeLat, planeLng, tierZoom, routeKey = 
   };
   const fn = new Function(
     'gateMap', 'window', '_liveReuse', '_liveRouteKey', 'planeLat', 'planeLng', 'zoom', '_gndZ',
-    EXPR + '\nreturn zoom;');
+    LNGNEAR + EXPR + '\nreturn zoom;');
   return fn(gateMap, window, true, routeKey, planeLat, planeLng, tierZoom, gndZ);
 }
 
@@ -108,7 +111,7 @@ test('a rebuilt map recovers the fix record from the window, keyed by route', ()
 
 test('the glide still owns the camera record — the fix record is written only by the live builder', () => {
   // Direct source assertion: _fidsLastFix must never appear in the glide.
-  const glideAt = SRC.indexOf('_fidsLastView = { lat: lat, lng: lng, zoom: vmap.getZoom() }');
+  const glideAt = SRC.indexOf('_fidsLastView = { lat: lat, lng: vlng, zoom: vmap.getZoom() }');   // v24095 — in this view's world copy
   assert.ok(glideAt > 0, "the glide's follow-pan must still keep the camera record");
   const glideRegion = SRC.slice(glideAt - 2000, glideAt + 2000);
   assert.ok(!glideRegion.includes('_fidsLastFix'),

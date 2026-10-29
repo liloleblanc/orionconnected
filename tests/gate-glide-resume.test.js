@@ -88,7 +88,8 @@ test('the glide resumes a fix from the drawn spot, keeps the nose, and publishes
   assert.match(glide, /var _keepHdg = \(_oldView && typeof _oldView\.hdg === 'number'\) \? _oldView\.hdg : null;/);
   assert.match(glide, /hdg: _keepHdg, kept: _keepHdg !== null,/);
   assert.match(glide, /if \(Math\.abs\(_dh\) > 35 && !v\.kept\) \{ v\.hdg = _tgt; \}/, 'a carried nose turns, never snaps');
-  assert.match(glide, /vmarker\.setLatLng\(\[lat, lng\]\);\s*_gateGlide\.ll = \[lat, lng\];/);
+  // v24095 — drawn in this view's world copy; published in the route's own
+  assert.match(glide, /vmarker\.setLatLng\(\[lat, vlng\]\);\s*_gateGlide\.ll = \[lat, lng\];/);
   // a negative correction is still never flown: the marker holds and the
   // real aeroplane catches up (unchanged from v22927)
   assert.match(glide, /_errP/);

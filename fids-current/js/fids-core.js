@@ -17547,7 +17547,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24094" src="/textures/gate-sky-shelf.mp4?v=24094" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24095" src="/textures/gate-sky-shelf.mp4?v=24095" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17591,7 +17591,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24094" src="/textures/gate-sky-shelf.mp4?v=24094" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24095" src="/textures/gate-sky-shelf.mp4?v=24095" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -35661,7 +35661,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24094';
+var FIDS_BUILD_TAG = 'v24095';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -47803,9 +47803,12 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
   } catch (eR) {}
   // ── Geometry + progressive zoom, computed BEFORE any redraw so we can bail
   //    out when nothing meaningful changed. ──
-  var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
-  var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
-  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2)) || 1;
+  // v24095 — longitudes the short way: across the date line the raw
+  // difference is the long way round (HKG–SFO measured 236.8 degrees, not
+  // 124.6), and every destination zoom step came on twice as far out.
+  var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(_lngNear(planeLng,o[1])-o[1],2));
+  var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(_lngNear(planeLng,d[1])-d[1],2));
+  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(_lngNear(o[1],d[1])-d[1],2)) || 1;
   var cruiseZoom = totalDist < 5 ? 7 : totalDist < 15 ? 6 : totalDist < 30 ? 5 : 4;
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
@@ -47926,7 +47929,7 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
     // when no fix has been recorded yet (first frame of a leg), which is the
     // pre-v23700 behaviour and harmless there because nothing has glided.
     var _ref = _fx || _lv;
-    var _dLat = Math.abs(_ref.lat - planeLat), _dLng = Math.abs(_ref.lng - planeLng);
+    var _dLat = Math.abs(_ref.lat - planeLat), _dLng = Math.abs(_lngNear(_ref.lng, planeLng) - planeLng);
     // v23916 — THE GROUND VIEW'S ZOOM IS NOT CARRIED INTO THE AIR. Standing at
     // the origin the map is at 17 (16 taxiing), deeper than anything the air
     // ladder above gives (15 at most). The first airborne fix is still inside
@@ -47997,11 +48000,15 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
         // Camera: intervene only when the plane is OFF the visible window or
         // the zoom tier genuinely moved — and then ease, never jump.
         try {
-          var _cpt = gateMap.latLngToContainerPoint([planeLat, planeLng]);
+          // v24095 — the fix in the camera's world copy: past the date line the
+          // camera has followed the glide beyond ±180, and the raw fix, one turn
+          // away, read as off the map and flew the camera round the world.
+          var _camFix = [planeLat, _lngNear(planeLng, gateMap.getCenter().lng)];
+          var _cpt = gateMap.latLngToContainerPoint(_camFix);
           var _csz = gateMap.getSize();
           var _offView = _cpt.x < 0 || _cpt.y < 0 || _cpt.x > _csz.x || _cpt.y > _csz.y;
           if (_offView || zoom !== gateMap.getZoom()) {
-            gateMap.flyTo([planeLat, planeLng], zoom, { duration: 1.6 });
+            gateMap.flyTo(_camFix, zoom, { duration: 1.6 });
           }
         } catch (e1) {}
         var _ipSpd = (_gateMapFixSpd(planeLat, planeLng) !== null) ? _gateMapFixSpd(planeLat, planeLng)
@@ -48081,15 +48088,20 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
   var _flownM = _parkedO ? null : _gateFlownPath(o, d, planeLat, planeLng, dst);
   var _a1 = _parkedO ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap)
           : _flownM ? L.polyline(_flownM, {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap)
-          : _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
+          // v24095 — one line in the aeroplane's world copy. _gcAddArc's own
+          // copy for a date-line route was never tracked: once the glide redrew
+          // the live line in this copy, it stayed behind as a second, frozen line.
+          : L.polyline(_lngChain(_gcFullRoute(o,_pp,60),60,planeLng), {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap); if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
   var _rwyP = _gndHere ? null : _runwayFinalPath(_pp, d, dst);
   var _a2 = _gndHere ? L.polyline([], {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap) : null;
-  if (_rwyP) { try { _a2 = L.polyline(_rwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap); } catch (e) { _a2 = null; } }
-  if (!_a2) _a2 = _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
+  if (_rwyP) { try { _a2 = L.polyline(_lngChain(_rwyP,0,planeLng), {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap); } catch (e) { _a2 = null; } }
+  if (!_a2) _a2 = L.polyline(_lngChain(_gcFullRoute(_pp,d,60),0,planeLng), {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap);
   if(_a2)_ov.push(_a2);
-  _ov.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
-  _ov.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
+  // v24095 — the pins in the aeroplane's world copy too, where its lines end.
+  var _oPin = [o[0], _lngNear(o[1], planeLng)], _dPin = [d[0], _lngNear(d[1], planeLng)];
+  _ov.push(L.circleMarker(_oPin,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
+  _ov.push(L.circleMarker(_dPin,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
@@ -48358,13 +48370,13 @@ function _scopeSvgStyles(svg, id) {
 function _gateMapFixSpd(lat, lng) {
   var mf = window._gateMapFix;
   return (mf && typeof mf.spd === 'number' && mf.spd > 0 && typeof lat === 'number' && typeof lng === 'number'
-          && Math.abs(mf.lat - lat) < 1e-4 && Math.abs(mf.lng - lng) < 1e-4) ? mf.spd : null;
+          && Math.abs(mf.lat - lat) < 1e-4 && Math.abs(_lngNear(mf.lng, lng) - lng) < 1e-4) ? mf.spd : null;
 }
 // v24088 — the altitude (ft) of the fix the map is drawing at (lat, lng), or null.
 function _gateMapFixAlt(lat, lng) {
   var mf = window._gateMapFix;
   return (mf && typeof mf.alt === 'number' && typeof lat === 'number' && typeof lng === 'number'
-          && Math.abs(mf.lat - lat) < 1e-4 && Math.abs(mf.lng - lng) < 1e-4) ? mf.alt : null;
+          && Math.abs(mf.lat - lat) < 1e-4 && Math.abs(_lngNear(mf.lng, lng) - lng) < 1e-4) ? mf.alt : null;
 }
 // v24088 — is a fix at `pl` established on the final to the threshold `thr`
 // (landing towards `tdz`): inside 12 nm of it, on the approach side, within
@@ -48405,12 +48417,17 @@ function _glideFlownNm(dStart, tH, ds, vs, vmin) {
 // from where the marker is DRAWN, measured on the NEW route (_startGateMapGlide).
 // v24088 — `out`, when given, also gets offNm: how far the point is from the
 // route (nautical miles; 60 to a degree on the flat-earth scale used here).
+// v24095 — measured the short way round the globe: a route kept continuous
+// across the date line (_lngChain) runs past ±180, while a drawn point can
+// sit in the other world copy, 360 degrees away. A segment's far end is taken
+// from its near end, so a segment is never split by the wrap.
 function _gateRouteFrac(route, cum, totalNm, pt, out) {
   if (!route || route.length < 2 || !pt || !(totalNm > 0)) return null;
   var kx = Math.cos(pt[0] * Math.PI / 180), best = Infinity, bestNm = 0;
   for (var k = 0; k < route.length - 1; k++) {
     var A = route[k], B = route[k + 1];
-    var ax = (A[1] - pt[1]) * kx, ay = A[0] - pt[0], bx = (B[1] - pt[1]) * kx, by = B[0] - pt[0];
+    var dA = ((A[1] - pt[1]) % 360 + 540) % 360 - 180;
+    var ax = dA * kx, ay = A[0] - pt[0], bx = (dA + (B[1] - A[1])) * kx, by = B[0] - pt[0];
     var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
     var t = L2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L2)) : 0;
     var cx = ax + t * dx, cy = ay + t * dy, d2 = cx * cx + cy * cy;
@@ -48540,8 +48557,44 @@ function _gateGroundHeading(lat, lng, fallback) {
 // the stand does while it stands still, and the camera comes down to the
 // ground view's zoom (17 standing, 16 taxiing) — these in-place paths never
 // changed zoom before.
+// v24095 — BACK TO THE RAW WORLD COPY BEFORE STANDING STILL. A camera that
+// followed the glide across the date line stays in the turned copy (each map
+// draws in its own camera's copy). A parked or landed aeroplane is drawn at
+// its raw fix, and the apron's other aircraft at theirs (_gateApronSync), so
+// the whole map is moved back one turn first: every marker and line shifted
+// by whole turns and the camera with them, with no animation. Tiles repeat,
+// so nothing on screen moves. Without it the marker was set 360 degrees from
+// the camera on landing, flyTo flew round the globe, and the flown line was
+// left in the other copy.
+function _mapToRawCopy(vm, lng) {
+  try {
+    if (!vm || !vm.getCenter || !vm.eachLayer || typeof lng !== 'number') return;
+    var k = Math.round((vm.getCenter().lng - lng) / 360) * 360;
+    if (!k) return;
+    var c = vm.getCenter();
+    var sh = function (ll) {
+      if (Array.isArray(ll)) return ll.map(sh);
+      return (ll && typeof ll.lng === 'number') ? L.latLng(ll.lat, ll.lng - k) : ll;
+    };
+    // nearest longitude of a layer to the camera: only what is drawn in the
+    // camera's copy moves (anything already raw stays where it is)
+    var near = function (ll) {
+      if (Array.isArray(ll)) { var m = Infinity; for (var i = 0; i < ll.length; i++) m = Math.min(m, near(ll[i])); return m; }
+      return (ll && typeof ll.lng === 'number') ? Math.abs(ll.lng - c.lng) : Infinity;
+    };
+    vm.eachLayer(function (ly) {
+      try {
+        if (typeof L !== 'undefined' && L.GridLayer && ly instanceof L.GridLayer) return;
+        if (ly.getLatLngs && ly.setLatLngs) { var lls = ly.getLatLngs(); if (near(lls) < 180) ly.setLatLngs(sh(lls)); }
+        else if (ly.getLatLng && ly.setLatLng) { var q = ly.getLatLng(); if (q && Math.abs(q.lng - c.lng) < 180) ly.setLatLng([q.lat, q.lng - k]); }
+      } catch (eL) {}
+    });
+    vm.setView([c.lat, c.lng - k], vm.getZoom(), { animate: false });
+  } catch (e) {}
+}
 function _gateApplyParked(view, lat, lng, d, here) {
   try {
+    _mapToRawCopy(view.map || (view.marker && view.marker._map) || null, lng);
     if (view.marker && view.marker.setLatLng) view.marker.setLatLng([lat, lng]);
     if (here) {
       if (view.a2 && view.a2.setLatLngs) view.a2.setLatLngs([]);
@@ -50708,8 +50761,47 @@ function _gateFlownPath(o, d, planeLat, planeLng, destIata) {
       if (_gcNm(path[path.length - 1], pts[j]) > 0.05) path.push(pts[j]);   // no zero-length steps
     }
     if (_gcNm(path[path.length - 1], pl) > 0.05) path.push(pl); else path[path.length - 1] = pl;
-    return path.length >= 2 ? path : null;
+    // v24095 — the recorded fixes are -180..180 and the joining arc is
+    // unwrapped from the airport: across the date line the line jumped 360
+    // degrees between them. One continuous line, in the aeroplane's frame.
+    return path.length >= 2 ? _lngChain(path, path.length - 1, planeLng) : null;
   } catch (e) { return null; }
+}
+
+// v24095 — ONE LONGITUDE FRAME FOR A WHOLE ROUTE ACROSS THE DATE LINE.
+// Each piece of a route is kept continuous on its own (_gcFullRoute unwraps
+// from its first point), so two pieces joined at the aeroplane disagreed by
+// 360 degrees there: Hong Kong to the plane ran on past +180 to 215.6, the
+// plane to SFO started again at -144.4. Between those two vertices the glide
+// interpolated longitude the long way round the planet, and the marker raced
+// west at 70 km a second (UA878 HKG–SFO at SFO G8, 2026-10-28: the distance
+// climbing 5,246 → 6,238 km in 15 seconds over an empty ocean). Returns a copy
+// in which every longitude is within 180 degrees of the one before, shifted by
+// whole turns so the point at anchorIdx sits within 180 of anchorLng: the
+// aeroplane's own frame, the one its marker is drawn in.
+function _lngChain(pts, anchorIdx, anchorLng) {
+  if (!pts || !pts.length) return pts;
+  var out = new Array(pts.length);
+  out[0] = [pts[0][0], pts[0][1]];
+  for (var i = 1; i < pts.length; i++) {
+    var lng = pts[i][1];
+    while (lng - out[i - 1][1] > 180) lng -= 360;
+    while (lng - out[i - 1][1] < -180) lng += 360;
+    out[i] = [pts[i][0], lng];
+  }
+  var a = Math.max(0, Math.min(out.length - 1, anchorIdx | 0));
+  if (typeof anchorLng === 'number' && isFinite(anchorLng)) {
+    var k = Math.round((anchorLng - out[a][1]) / 360) * 360;
+    if (k) for (var j = 0; j < out.length; j++) out[j][1] += k;
+  }
+  return out;
+}
+
+// v24095 — lng moved by whole turns to within 180 degrees of ref: a raw
+// -180..180 position put in the world copy a camera, or a line, is in.
+function _lngNear(lng, ref) {
+  if (typeof lng !== 'number' || typeof ref !== 'number' || !isFinite(lng) || !isFinite(ref)) return lng;
+  return lng + Math.round((ref - lng) / 360) * 360;
 }
 
 // Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
@@ -50727,7 +50819,9 @@ function _gcFullRoute(o, d, n) {
   } catch (e) { pts = null; }
   if (!pts || pts.length < 2) {
     pts = [];
-    for (var k = 0; k <= n; k++) { var f = k / n; pts.push([o[0] + (d[0] - o[0]) * f, o[1] + (d[1] - o[1]) * f]); }
+    // the short way round, as the arc would go
+    var _dLng = ((d[1] - o[1]) % 360 + 540) % 360 - 180;
+    for (var k = 0; k <= n; k++) { var f = k / n; pts.push([o[0] + (d[0] - o[0]) * f, o[1] + _dLng * f]); }
   }
   return pts;
 }
@@ -50904,7 +50998,10 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // line and the animated line stay one line.
   var _rwFinal = _runwayFinalPath(_pl, d, destIata);
   var _legB = _rwFinal || _gcFullRoute(_pl, d, _vB);
-  var route = _legA.concat(_legB.slice(1));
+  // v24095 — joined in one longitude frame, the aeroplane's (_lngChain): the
+  // two legs are each unwrapped on their own and met 360 degrees apart on a
+  // date-line crossing.
+  var route = _lngChain(_legA.concat(_legB.slice(1)), _legA.length - 1, planeLng);
   var n = route.length;
   // ── v22952 — WALK THE ROUTE BY DISTANCE, NOT BY VERTEX INDEX.
   // and the Turf.js reference
@@ -51308,7 +51405,16 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         var A = route[i0], B = route[i1];
         lat = A[0] + (B[0] - A[0]) * frac;
         lng = A[1] + (B[1] - A[1]) * frac;
-        vmarker.setLatLng([lat, lng]);
+        // v24095 — EACH MAP DRAWS IN ITS OWN CAMERA'S WORLD COPY. The route is
+        // continuous across the date line, so past it the glide runs on beyond
+        // ±180; a camera that followed it is there too, one that was just set
+        // from a raw fix is a turn away. Marker, lines and pan use this view's
+        // copy (the small and big maps can differ), the route keeps its own.
+        var _vk = 0;
+        try { _vk = Math.round((vmap.getCenter().lng - lng) / 360) * 360; } catch (eK) { _vk = 0; }
+        if (_vk !== (v.k || 0)) { v.k = _vk; v.arcIdx = -1; }
+        var vlng = lng + _vk;
+        vmarker.setLatLng([lat, vlng]);
         _gateGlide.ll = [lat, lng];   // v24034 — the drawn spot, for the next re-anchor
         // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
         // Leaflet's Marker._setPos rounds marker positions to WHOLE PIXELS.
@@ -51320,7 +51426,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         var _subX = 0, _subY = 0;
         try {
           if (vmap.latLngToLayerPoint) {
-            var _lp = vmap.latLngToLayerPoint([lat, lng]);
+            var _lp = vmap.latLngToLayerPoint([lat, vlng]);
             _subX = _lp.x - Math.round(_lp.x);
             _subY = _lp.y - Math.round(_lp.y);
           }
@@ -51377,8 +51483,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         // vertex (cheap) — the marker itself glides every frame.
         if (i0 !== v.arcIdx) {
           v.arcIdx = i0;
-          try { if (v.a1 && v.a1.setLatLngs) v.a1.setLatLngs(route.slice(0, i1)); } catch (er) {}
-          try { if (v.a2 && v.a2.setLatLngs) v.a2.setLatLngs(route.slice(i0)); } catch (er) {}
+          var _vsh = function (q) { return [q[0], q[1] + _vk]; };
+          try { if (v.a1 && v.a1.setLatLngs) v.a1.setLatLngs(_vk ? route.slice(0, i1).map(_vsh) : route.slice(0, i1)); } catch (er) {}
+          try { if (v.a2 && v.a2.setLatLngs) v.a2.setLatLngs(_vk ? route.slice(i0).map(_vsh) : route.slice(i0)); } catch (er) {}
         }
         // FOLLOW THE PLANE — keep it in view. Re-centre (eased pan, no tile
         // thrash) only once it drifts past ~42% from centre, so it visibly
@@ -51386,7 +51493,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         try {
           if (vmap.getSize && vmap.latLngToContainerPoint && vmap.getZoom) {
             var _sz = vmap.getSize();
-            var _pt = vmap.latLngToContainerPoint([lat, lng]);
+            var _pt = vmap.latLngToContainerPoint([lat, vlng]);
             // v23106 — 42% let the plane sit in the corner for most of a
             // bigcraft dwell (measured: 19s of drift barely reached 12%
             // off-centre; the video shows it sliding right off the frame
@@ -51404,18 +51511,18 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
                     // v23106 — pan the plane back toward the MIDDLE (34%
                     // padding), not just barely on-screen: with the old 16%
                     // the plane hugged the frame edge between pans.
-                    vmap.panInside([lat, lng], { padding: [Math.round(_sz.x * 0.34), Math.round(_sz.y * 0.34)],
+                    vmap.panInside([lat, vlng], { padding: [Math.round(_sz.x * 0.34), Math.round(_sz.y * 0.34)],
                       animate: true, duration: 2.2, easeLinearity: 0.2 });
                   } else {
-                    vmap.panTo([lat, lng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
+                    vmap.panTo([lat, vlng], { animate: true, duration: 2.2, easeLinearity: 0.2 });
                   }
                 }
               } catch (er2) {
-                try { vmap.setView([lat, lng], vmap.getZoom(), { animate: false }); } catch (er3) {}
+                try { vmap.setView([lat, vlng], vmap.getZoom(), { animate: false }); } catch (er3) {}
               }
               // Save the followed view PER MAP — the old code wrote the mini
               // map's saved view even when the big map's glide was panning.
-              try { vmap._fidsLastView = { lat: lat, lng: lng, zoom: vmap.getZoom() }; } catch (er4) {}
+              try { vmap._fidsLastView = { lat: lat, lng: vlng, zoom: vmap.getZoom() }; } catch (er4) {}
             }
           }
         } catch (er) {}
@@ -62019,7 +62126,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24094" src="/textures/gate-sky-shelf.mp4?v=24094"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24095" src="/textures/gate-sky-shelf.mp4?v=24095"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -63749,7 +63856,11 @@ function _gcAddArc(map, from, to, opts) {
   var endLng = ll.length ? ll[ll.length - 1].lng : 0;
   if (endLng > 180 || endLng < -180) {
     var k = endLng > 180 ? -360 : 360;
-    L.polyline(ll.map(function (q) { return [q.lat, q.lng + k]; }), opts).addTo(map);
+    var _copy = L.polyline(ll.map(function (q) { return [q.lat, q.lng + k]; }), opts).addTo(map);
+    // v24095 — the copy leaves with its arc. It was never returned, so the
+    // overlay wipes missed it: an estimate map's copy outlived the hand-off
+    // to the live map on the same instance and stood beside the live route.
+    try { a.on('remove', function () { try { _copy.remove(); } catch (eR) {} }); } catch (eO) {}
   }
   return a;
 }
@@ -63966,10 +64077,12 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
       try {
         var _bcZ = window._bigCraftMap.getZoom();
         var _bcAirZ = (typeof _bcZ === 'number' && _bcZ > 15) ? 15 : _bcZ;
-        var _bcpt = window._bigCraftMap.latLngToContainerPoint([planeLat, planeLng]);
+        // v24095 — in the camera's world copy, as on the small map.
+        var _bcCamFix = [planeLat, _lngNear(planeLng, window._bigCraftMap.getCenter().lng)];
+        var _bcpt = window._bigCraftMap.latLngToContainerPoint(_bcCamFix);
         var _bcsz = window._bigCraftMap.getSize();
         if (_bcpt.x < 0 || _bcpt.y < 0 || _bcpt.x > _bcsz.x || _bcpt.y > _bcsz.y || _bcAirZ !== _bcZ) {
-          window._bigCraftMap.flyTo([planeLat, planeLng], _bcAirZ, { duration: 1.6 });
+          window._bigCraftMap.flyTo(_bcCamFix, _bcAirZ, { duration: 1.6 });
         }
       } catch (eBC1) {}
       var _bcIpSpd = (_gateMapFixSpd(planeLat, planeLng) !== null) ? _gateMapFixSpd(planeLat, planeLng)
@@ -63986,9 +64099,10 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
   window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
   _bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
-  var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
-  var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
-  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
+  // v24095 — the short way round, as on the small map (initGateMapLive).
+  var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(_lngNear(planeLng,o[1])-o[1],2));
+  var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(_lngNear(planeLng,d[1])-d[1],2));
+  var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(_lngNear(o[1],d[1])-d[1],2));
   var cruiseZoom = totalDist < 5 ? 7 : totalDist < 15 ? 6 : totalDist < 30 ? 5 : 4;
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
@@ -64029,14 +64143,16 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
   var _bcFlown = _bcParked ? null : _gateFlownPath(o, d, planeLat, planeLng, dst);
   var _bcA1 = _bcParked ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap)
             : _bcFlown ? L.polyline(_bcFlown, {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap)
-            : _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+            // v24095 — one line in the aeroplane's world copy (see initGateMapLive).
+            : L.polyline(_lngChain(_gcFullRoute(o,_pp,60),60,planeLng), {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap);
   // Runway-aligned final on the big map too.
   var _bcRwyP = _bcGndHere ? null : _runwayFinalPath(_pp, d, dst);
   var _bcA2 = _bcGndHere ? L.polyline([], {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap) : null;
-  if (_bcRwyP) { try { _bcA2 = L.polyline(_bcRwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap); } catch (e) { _bcA2 = null; } }
-  if (!_bcA2) _bcA2 = _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
-  L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  if (_bcRwyP) { try { _bcA2 = L.polyline(_lngChain(_bcRwyP,0,planeLng), {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap); } catch (e) { _bcA2 = null; } }
+  if (!_bcA2) _bcA2 = L.polyline(_lngChain(_gcFullRoute(_pp,d,60),0,planeLng), {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap);
+  var _bcOPin = [o[0], _lngNear(o[1], planeLng)], _bcDPin = [d[0], _lngNear(d[1], planeLng)];
+  L.circleMarker(_bcOPin,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  L.circleMarker(_bcDPin,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // (Removed the separate 'actual flown track' polyline — it was the SAME blue
   // as the assigned route arc above, so wherever the real path differed from
   // the great-circle it drew a second parallel line = the 'double line for the

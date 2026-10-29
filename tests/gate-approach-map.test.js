@@ -338,7 +338,7 @@ test('the distance is the drawn aeroplane\'s, every second, and only this flight
 });
 
 test('the glide takes its speed from the fix it draws', () => {
-  const spd = new Function('window', fnSource(CORE, '_gateMapFixSpd') + '\nreturn _gateMapFixSpd;')(
+  const spd = new Function('window', fnSource(CORE, '_lngNear') + fnSource(CORE, '_gateMapFixSpd') + '\nreturn _gateMapFixSpd;')(
     { _gateMapFix: { lat: 46.2853, lng: -64.7096, spd: 167 } });
   assert.equal(spd(46.2853, -64.7096), 167);
   assert.equal(spd(46.1844, -64.5908), null, 'not another fix\'s');
