@@ -830,7 +830,9 @@ test('under the countdown, NOW BOARDING and FINAL CALL the list is a column besi
   assert.match(fit, /try \{ _gateSbColSolve\(card\); \} catch \(eS\) \{\}/);
   assert.doesNotMatch(fit, /status !== 'loaded'\) return;/, 'never held back while the fonts load');
   assert.doesNotMatch(fit + fn('_gateSbColSolve'), /0\.04|data-sb-max/, 'never stepped a pass at a time');
-  assert.match(fn('_fidsSchedulePairPass'), /_fidsPairSeparators\(document\);\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*try \{ _gateSbColFit\(\); \} catch \(eSb\) \{\}/);
+  // (2026-10-29: the band over a boarding sign is solved between the two,
+  // _g8BandSettle, tests/boarding-band.test.js)
+  assert.match(fn('_fidsSchedulePairPass'), /_fidsPairSeparators\(document\);\s*(?:\/\/[^\n]*\n\s*)*try \{ _g8BandSettle\(\); \} catch \(eBd\) \{\}\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*try \{ _gateSbColFit\(\); \} catch \(eSb\) \{\}/);
   // a resize keeps the column's scale for the pass to solve in that frame
   const rz = CORE.slice(CORE.indexOf("window.addEventListener('resize', function () {\n      // the sign pairs' stored base size"));
   const rzBody = braceFrom(rz, 0, 'the pairs\' resize handler');

@@ -122,6 +122,15 @@ const PAGE = `(function () {
     return frames(3).then(function () { try { _fidsPairSeparators(document); } catch (e) {} return frames(2); }).then(steady);
   };
   var flight = function () { return (window._testFlights || [])[0] || null; };
+  // (2026-10-29: the band over the sign and the sign's top, as drawn)
+  var bandNow = function () {
+    var band = document.querySelector('.g8-board.active .g8-band, .g8-final.active .g8-band');
+    var sign = document.querySelector('.g8-board.active .g8-sign, .g8-final.active .g8-sign');
+    if (!band || !sign) return null;
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    return { band: r2(band.getBoundingClientRect().height), top: r2(sign.getBoundingClientRect().top), fitted: !!band.style.getPropertyValue('--g8-band-room'),
+      lines: [].map.call(band.querySelectorAll('.g8-band-ln'), function (l) { return r2(parseFloat(getComputedStyle(l).fontSize)); }).join('/') };
+  };
   window.__sgnT = {
     // a new test flight on gate 99 (the one before it taken off)
     make: function (c) {
@@ -151,6 +160,17 @@ const PAGE = `(function () {
     },
     // the same stage painted afresh, for a second reading
     again: function () { return settle().then(function () { return 1; }); },
+    // the band read in the frame that paints it: after the gate paints its
+    // view afresh ('fresh', as on a telemetry tick) or after the pass the
+    // two-second timer asks for ('pass'). The pass is asked for first, so its
+    // frame runs it before this reads.
+    band: function (how) {
+      return new Promise(function (res) {
+        if (how === 'fresh') { inject(); window._lastGateKey = null; renderDedicatedScreen(); }
+        else _fidsSchedulePairPass();
+        Promise.resolve().then(function () {}).then(function () { requestAnimationFrame(function () { res(bandNow()); }); });
+      });
+    },
     judge: function () {
       var out = [], r1 = function (v) { return Math.round(v * 10) / 10; };
       var sign = document.querySelector('.g8-board.active .g8-sign, .g8-final.active .g8-sign');
@@ -459,4 +479,86 @@ test('the priority group\'s number: a panel with more room never takes it down a
   // (and no step kept for the flight: one taken before this began would
   // have held every reading here at the smaller size)
   assert.equal(r.kept, 0, 'a step kept for the priority group\'s number on its first call, where every page fits at its size:\n' + show);
+});
+
+// 2026-10-29 — THE BAND OVER THE SIGN IS ONE HEIGHT FROM THE FRAME IT IS
+// FIRST PAINTED. The gate paints its view afresh on telemetry ticks, and the
+// band (NOW BOARDING's travel documents) measured the room the sign leaves it
+// before the sign was fitted: United in Japanese and Arabic at 1680x1050,
+// 85.84 px in the frame a fresh view was painted and 84.41 px after the next
+// pass, 86.28 against 82.19 at 1720x1055, and the sign under it moved by as
+// much at every rebuild; on other screens the passes after that kept moving
+// it (fids-core.js _g8BandSettle). Here the band is read in the frame that
+// paints it, on fresh paints and after the passes the two-second timer asks
+// for, at every board size and in two language pairs, at the first call, a
+// later one and the final call: one height, and the sign starting at one
+// place.
+test('the band over the sign: one height from the frame it is first painted, whatever passes run after', { timeout: 10 * 60 * 1000 }, async (t) => {
+  const { serve, browser, CHROME } = await import(HARNESS);
+  if (!CHROME) { t.skip('no Chrome or Chromium installed'); return; }
+  const server = await serve();
+  const port = server.address().port;
+  const c = CASES0.find((x) => x.airline === 'UA');
+  const findings = [], seen = [];
+  try {
+    for (const [w, h] of [[1920, 1080], [1680, 1050], [1720, 1055]]) {
+      const b = await browser(330);
+      try {
+        const { targetInfos } = await b.send('Target.getTargets');
+        const page = targetInfos.find((x) => x.type === 'page');
+        const tid = page ? page.targetId : (await b.send('Target.createTarget', { url: 'about:blank' })).targetId;
+        const { sessionId } = await b.send('Target.attachToTarget', { targetId: tid, flatten: true });
+        const S = (m, p, ms) => b.send(m, p, sessionId, ms);
+        const ev = async (expression, ms) => {
+          const x = await S('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, ms);
+          if (x && x.exceptionDetails) throw new Error('page threw: ' + JSON.stringify(x.exceptionDetails).slice(0, 400));
+          return x && x.result && x.result.value;
+        };
+        await S('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+        await S('Emulation.setFocusEmulationEnabled', { enabled: true });
+        await S('Page.enable'); await S('Runtime.enable');
+        await S('Page.navigate', { url: `http://127.0.0.1:${port}/gids.html?ap=YHZ&mode=demo&gate=99` });
+        const up = await ev(`new Promise(function (res) { var t0 = Date.now(); (function poll() {
+          try { if (Date.now() - t0 > 3000 && typeof openTestFlight === 'function' && document.getElementById('tfGate') && typeof renderDedicatedScreen === 'function'
+            && typeof _fidsSignPageShow === 'function' && document.fonts && document.fonts.status === 'loaded') return res(1); } catch (e) {}
+          if (Date.now() - t0 > 60000) return res(0); setTimeout(poll, 400); })(); })`, 70000);
+        assert.equal(up, 1, `${w}x${h}: the gate came up`);
+        assert.equal(await ev(PAGE), 1);
+        assert.equal(await ev(`window.__sgnT.make(${JSON.stringify(c)})`, 30000), 'ok', `${w}x${h}: the test flight is boarding on gate 99`);
+        for (const set of [['en', 'fr'], ['ja', 'ar']]) {
+          await ev(`window.__sgnT.setLangs(${JSON.stringify(set)})`, 20000);
+          for (const st of [0, 2, 'final']) {
+            const at = await ev(`window.__sgnT.stage(${JSON.stringify(st)})`, 20000);
+            const where = `${w}x${h} ${set.join('+')} ${st === 'final' ? 'final call' : 'call ' + st}`;
+            if (st !== 'final' && at !== st) { findings.push(`${where}: the call was not shown (${at})`); continue; }
+            // three fresh paints, two passes, a fresh paint and a pass again
+            // (the demonstration gate paints its idle view for half a second
+            // now and then, two seconds after a call: no band, read again)
+            const reads = [];
+            for (const how of ['fresh', 'fresh', 'fresh', 'pass', 'pass', 'fresh', 'pass']) {
+              let r = null;
+              for (let k = 0; k < 4 && !r; k++) {
+                if (k) await ev('new Promise(function (res) { setTimeout(res, 700); })', 5000);
+                r = await ev(`window.__sgnT.band(${JSON.stringify(how)})`, 20000);
+              }
+              reads.push([how, r]);
+            }
+            const show = reads.map(([how, r]) => `${how} ${r ? `${r.band} px (lines ${r.lines}), sign at ${r.top}` : 'no band'}`).join('; ');
+            seen.push(`${where}: ${show}`);
+            const r0 = reads[0][1];
+            if (reads.some(([, r]) => !r)) { findings.push(`${where}: no band on the screen at some reading: ${show}`); continue; }
+            if (reads.some(([, r]) => !r.fitted)) findings.push(`${where}: read before the pass had fitted the band: ${show}`);
+            if (reads.some(([, r]) => Math.abs(r.band - r0.band) > 0.05 || Math.abs(r.top - r0.top) > 0.05)) findings.push(`${where}: the band changes height: ${show}`);
+          }
+        }
+      } finally {
+        b.close();
+      }
+    }
+  } finally {
+    server.close();
+  }
+  if (process.env.SIGN_RENDER_LOG) fs.writeFileSync(process.env.SIGN_RENDER_LOG, seen.join('\n') + '\n\n' + findings.join('\n') + '\n');
+  assert.equal(seen.length + findings.filter((f) => /was not shown/.test(f)).length, 18, 'every size, language pair and call was read');
+  assert.deepEqual(findings, [], '\n' + findings.join('\n'));
 });

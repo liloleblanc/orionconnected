@@ -2687,6 +2687,9 @@ function _fidsSchedulePairPass() {
   _fidsPairT = requestAnimationFrame(function () {
     _fidsPairT = null; try { fidsFitAll(document); } catch (e) {}
     _fidsPairSeparators(document);
+    // 2026-10-29 — then the band over a boarding sign, solved with the sign
+    // under it in this frame, once (_g8BandSettle)
+    try { _g8BandSettle(); } catch (eBd) {}
     // 2026-10-12 — then the lists' column beside a boarding sign keeps its
     // last row (_gateSbColFit), once its lines have their sizes
     try { _gateSbColFit(); } catch (eSb) {}
@@ -17557,7 +17560,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24098" src="/textures/gate-sky-shelf.mp4?v=24098" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24099" src="/textures/gate-sky-shelf.mp4?v=24099" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17601,7 +17604,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24098" src="/textures/gate-sky-shelf.mp4?v=24098" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24099" src="/textures/gate-sky-shelf.mp4?v=24099" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -35671,7 +35674,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24098';
+var FIDS_BUILD_TAG = 'v24099';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39186,6 +39189,8 @@ function _gateBandHtml(variant, info, tz, frF, light) {
 //   3. and only then are the band's own lines made smaller (the shared fitter,
 //      _g8BandLineRoom), never under the readable floor, never cut.
 // Returns the band's room in px (0 when there is no sign to measure).
+// (2026-10-29: measured by the pass's solve, _g8BandSolve, once a round and
+// from the fitted sign; no longer by each line as it is fitted.)
 function _g8BandRoom(band) {
   try {
     var board = band && band.parentElement;
@@ -39226,24 +39231,31 @@ function _g8BandRoom(band) {
     // close time's half is a second row of the band
     if (_g8BandStacked(band) && band.querySelector('.g8-band-close')) want += 9.5 * vh;
     var give = Math.max(0, Math.min(want - base, (pad0 < Infinity ? pad0 : 3.2 * vh) - 0.8 * vh));
-    if (Math.abs(give - given) > 0.5) {
-      for (var j = 0; j < cols.length; j++) {
-        var q = parseFloat(cols[j].getAttribute('data-pad0')) || 0;
-        if (give > 0.5) cols[j].style.setProperty('padding-top', Math.max(0, q - give).toFixed(2) + 'px', 'important');
-        else cols[j].style.removeProperty('padding-top');
-      }
-      band.setAttribute('data-pad-give', give > 0.5 ? give.toFixed(2) : '0');
-    } else give = given;
+    if (Math.abs(give - given) > 0.5) _g8BandGive(band, cols, give);
+    else give = given;
     var room = Math.max(0, base + give);
     band.style.setProperty('--g8-band-room', room.toFixed(1) + 'px');
     return room;
   } catch (e) { return 0; }
+}
+// The sign's top padding given to the band: `give` px off each column's own
+// (data-pad0), kept on the band (data-pad-give)
+function _g8BandGive(band, cols, give) {
+  for (var j = 0; j < cols.length; j++) {
+    var q = parseFloat(cols[j].getAttribute('data-pad0')) || 0;
+    if (give > 0.5) cols[j].style.setProperty('padding-top', Math.max(0, q - give).toFixed(2) + 'px', 'important');
+    else cols[j].style.removeProperty('padding-top');
+  }
+  band.setAttribute('data-pad-give', give > 0.5 ? give.toFixed(2) : '0');
 }
 // The height one of the band's lines may take (FIDS_FIT_RULES' `h`): the
 // band's room less its half's padding and the breath between languages,
 // shared by the half's lines (one per language). 0 = no limit (no sign to
 // measure); never 0 when there is a sign, so a band with no room at all is
 // fitted to the floor and reported rather than left at its designed size.
+// (2026-10-29: the room is the one the pass solved for this band,
+// _g8BandSolve; a band not solved yet starts from the room the sign leaves
+// it as the gate built it, _g8BandSolved.)
 // On a portrait board the halves are stacked (each takes the band's whole
 // width: side by side, a 540px half held an international flight's documents
 // and the close time beside them to 16.75px with 870px of room unused), and
@@ -39255,7 +39267,7 @@ function _g8BandLineRoom(el) {
   try {
     var band = el.closest('.g8-band'), half = el.closest('.g8-band-half');
     if (!band || !half) return 0;
-    var room = _g8BandRoom(band);
+    var room = _g8BandSolved(band);
     if (!room) return 0;
     var hcs = getComputedStyle(half);
     var padV = (parseFloat(hcs.paddingTop) || 0) + (parseFloat(hcs.paddingBottom) || 0);
@@ -39265,6 +39277,116 @@ function _g8BandLineRoom(el) {
     for (var i = 1; i < lns.length; i++) breath += parseFloat(getComputedStyle(lns[i]).marginTop) || 0;
     return Math.max(1, (room - padV - breath) / Math.max(1, lns.length));
   } catch (e) { return 0; }
+}
+// 2026-10-29 — THE BAND AND THE SIGN ARE SOLVED IN THE FRAME THEY ARE FIRST
+// PAINTED, AND KEPT. The band's lines are fitted with every other line on
+// the board (fidsFitAll), and that runs before the sign's lists are fitted
+// and paged (_fidsPairSeparators). The gate rebuilds its view, band and sign
+// together, on telemetry ticks, so every fresh paint measured a sign not yet
+// fitted: it ran past its foot, and the band was drawn with its lines at
+// their designed size (or, where the overflow left a sliver, at the floor);
+// the next pass, two seconds on, measured the fitted sign and moved the
+// band, and the sign under it moved with it, at every rebuild (United in
+// Japanese and Arabic at 1680x1050: 85.8 px on the paint, 84.4 px from the
+// next pass). Nor did the passes after that agree: each line measured the
+// room again as the line before it changed the band, to the whole pixel
+// (American's close time: one line given 33 px, the next 32), and every pass
+// measured it from a sign fitted under the band the pass before had left,
+// while the sign's lists page to fill the room the band leaves: the band
+// stepped on, pass after pass (American at 1720x1055 86.3, 84.5, 82.8, 82.2
+// px; Transat's two lines of documents 77.7, 99.7, 120.2 px). Which a screen
+// showed hung on how many passes it had run since its last rebuild.
+// Now the pass solves the band once it has fitted the sign, all before the
+// frame is painted. It starts where every fresh paint has always started
+// (the room the sign leaves the band as the gate built it, now measured once
+// for all the band's lines, _g8BandSolved; and the sign fitted under that
+// band), so the band ends where the screens used to settle. Then, a round at
+// a time: the room the fitted sign leaves is measured once (_g8BandRoom), the
+// lines are fitted to it, and where that moved the band (its height, or the
+// padding the sign gives it) the sign is fitted again under it; until a round
+// moves nothing (six at most; a band that comes back to where it stood a
+// round before stays there). The answer is kept on the band (__g8Room), with
+// what it was solved for (__g8Solved: the screen, the fonts, the band's and
+// the sign's widths, their words), and every later pass fits to it and
+// measures nothing. Should any of that change under a band already solved,
+// it is solved again from the start a sign not yet fitted gives it
+// (_g8BandRestart).
+function _g8BandSettle() {
+  try { if (window._ocIdle && window._ocIdle()) return; } catch (e) {}
+  var bands = document.querySelectorAll('.g8-band');
+  for (var i = 0; i < bands.length; i++) {
+    var band = bands[i], board = band.parentElement;
+    var sign = board ? board.querySelector('.g8-board-body.g8-sign') : null;
+    if (!sign || !band.getClientRects().length) continue;
+    if (band.__g8Solved !== _g8BandKey(band, sign)) _g8BandSolve(band, board);
+  }
+}
+function _g8BandSolve(band, board) {
+  var sign = board.querySelector('.g8-board-body.g8-sign');
+  var was = _g8BandHold(band);
+  // (a band solved before, for another screen, other fonts or other widths:
+  // from the start a fresh paint takes where its sign leaves it no room)
+  if (band.__g8Solved) {
+    _g8BandRestart(band, sign);
+    fidsFitAll(band);
+    if (_g8BandHold(band) !== was) _fidsPairSeparators(board);
+    was = _g8BandHold(band);
+  }
+  var seen = {};
+  for (var n = 0; n < 6; n++) {
+    band.__g8Room = _g8BandRoom(band);
+    fidsFitAll(band);
+    var now = _g8BandHold(band);
+    if (now === was) break;
+    _fidsPairSeparators(board);
+    if (seen[now]) break;
+    seen[now] = 1;
+    was = now;
+  }
+  band.__g8Solved = _g8BandKey(band, sign);
+}
+// That start: no room (the lines in their width), and the sign's top padding
+// given all it may (to 0.8vh), as a sign not yet fitted, run past its foot,
+// leaves the band
+function _g8BandRestart(band, sign) {
+  band.__g8Room = 0;
+  var cols = sign.querySelectorAll('.g8-sign-col'), vh = (window.innerHeight || 0) / 100, pad0 = Infinity;
+  for (var c = 0; c < cols.length; c++) {
+    cols[c].style.removeProperty('padding-top');
+    var p0 = parseFloat(getComputedStyle(cols[c]).paddingTop) || 0;
+    cols[c].setAttribute('data-pad0', p0.toFixed(2));
+    if (p0 < pad0) pad0 = p0;
+  }
+  _g8BandGive(band, cols, Math.max(0, (pad0 < Infinity ? pad0 : 3.2 * vh) - 0.8 * vh));
+}
+// The room the band's lines are fitted to (0: none), written for the
+// stylesheet (--g8-band-room) as _g8BandRoom writes it. A band seen for the
+// first time starts from the room the sign leaves it as the gate built it,
+// before any of the sign's fitting (where every fresh paint has always
+// started), measured once for all its lines; the pass then fits the sign
+// under it and solves the band from there (_g8BandSolve).
+function _g8BandSolved(band) {
+  var board = band.parentElement;
+  var sign = board ? board.querySelector('.g8-board-body.g8-sign') : null;
+  if (!sign) return 0;
+  if (typeof band.__g8Room !== 'number') band.__g8Room = _g8BandRoom(band);
+  var room = band.__g8Room > 0 ? band.__g8Room : 0, v = room.toFixed(1) + 'px';
+  if (band.style.getPropertyValue('--g8-band-room') !== v) band.style.setProperty('--g8-band-room', v);
+  return room;
+}
+// What the sign is fitted under: the band's height and the padding the sign
+// gives it (data-pad-give, _g8BandRoom)
+function _g8BandHold(band) {
+  return band.getBoundingClientRect().height.toFixed(2) + '|' + (band.getAttribute('data-pad-give') || '0');
+}
+// What a solved band holds for: the screen, the fonts, the band's and the
+// sign's widths (the lists' column beside them), and their words
+function _g8BandKey(band, sign) {
+  var loading = false;
+  try { loading = !!(document.fonts && document.fonts.status && document.fonts.status !== 'loaded'); } catch (e) {}
+  return (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '|' + (typeof _fxFontsEpoch !== 'undefined' ? _fxFontsEpoch : 0) + (loading ? 'f' : 'F')
+    + '|' + document.documentElement.className + '|' + band.clientWidth + 'x' + sign.clientWidth
+    + '|' + band.className + '|' + sign.className + '|' + band.textContent + '|' + sign.textContent;
 }
 // v24006 — ONE LAYOUT FOR EVERY LANGUAGE OF THE DOCUMENTS. Where a line
 // holds two facts (an international flight's passport, then its visa), the
@@ -62136,7 +62258,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24098" src="/textures/gate-sky-shelf.mp4?v=24098"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24099" src="/textures/gate-sky-shelf.mp4?v=24099"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
