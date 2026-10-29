@@ -373,3 +373,90 @@ test('the two panels on screen: priority for the whole of boarding, every list r
   assert.ok(seen.length >= SIZES.length * CASES.length * 4, 'every case was drawn: ' + seen.length);
   assert.deepEqual(findings, [], '\n' + findings.slice(0, 40).join('\n'));
 });
+
+// 2026-10-29 — MORE ROOM NEVER TAKES THE PRIORITY GROUP'S NUMBER DOWN. The
+// test above failed now and then on CI, United in Japanese and Arabic at
+// 1680x1050: the priority group's number 111.6 px at its first call and
+// 131.3 px at every other. The band over the sign is not the same height
+// from one pass to the next (82.7 to 86.3 px), so the sign was fitted in a
+// panel two or three pixels taller on some passes than on others; on a
+// taller one the list's pages filled it to the fitter's pixel, the box held
+// to the tallest page rounded up came to two past the foot, and the number
+// took a step it did not need (_fidsSignPaginate). Here the same sign, at
+// 1720x1055 where that happened on every taller pass, is fitted again with
+// the band held a quarter of a pixel shorter each time, down to four: the
+// panel only grows, so its number never comes down.
+test('the priority group\'s number: a panel with more room never takes it down a step', { timeout: 5 * 60 * 1000 }, async (t) => {
+  const { serve, browser, CHROME } = await import(HARNESS);
+  if (!CHROME) { t.skip('no Chrome or Chromium installed'); return; }
+  const server = await serve();
+  const port = server.address().port;
+  const [w, h] = [1720, 1055];
+  const c = CASES0.find((x) => x.airline === 'UA');
+  const b = await browser(330);
+  let r;
+  try {
+    const { targetInfos } = await b.send('Target.getTargets');
+    const page = targetInfos.find((x) => x.type === 'page');
+    const tid = page ? page.targetId : (await b.send('Target.createTarget', { url: 'about:blank' })).targetId;
+    const { sessionId } = await b.send('Target.attachToTarget', { targetId: tid, flatten: true });
+    const S = (m, p, ms) => b.send(m, p, sessionId, ms);
+    const ev = async (expression, ms) => {
+      const x = await S('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, ms);
+      if (x && x.exceptionDetails) throw new Error('page threw: ' + JSON.stringify(x.exceptionDetails).slice(0, 400));
+      return x && x.result && x.result.value;
+    };
+    await S('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+    await S('Emulation.setFocusEmulationEnabled', { enabled: true });
+    await S('Page.enable'); await S('Runtime.enable');
+    await S('Page.navigate', { url: `http://127.0.0.1:${port}/gids.html?ap=YHZ&mode=demo&gate=99` });
+    const up = await ev(`new Promise(function (res) { var t0 = Date.now(); (function poll() {
+      try { if (Date.now() - t0 > 3000 && typeof openTestFlight === 'function' && document.getElementById('tfGate') && typeof renderDedicatedScreen === 'function'
+        && typeof _fidsSignPageShow === 'function' && document.fonts && document.fonts.status === 'loaded') return res(1); } catch (e) {}
+      if (Date.now() - t0 > 60000) return res(0); setTimeout(poll, 400); })(); })`, 70000);
+    assert.equal(up, 1, `${w}x${h}: the gate came up`);
+    assert.equal(await ev(PAGE), 1);
+    assert.equal(await ev(`window.__sgnT.make(${JSON.stringify(c)})`, 30000), 'ok', 'the test flight is boarding on gate 99');
+    await ev(`window.__sgnT.setLangs(["ja", "ar"])`, 20000);
+    assert.equal(await ev(`window.__sgnT.stage(0)`, 20000), 0, 'its first call');
+    // (the band held at each height, the sign's passes run twice there: a
+    // step two passes take is kept for the flight)
+    r = await ev(`(function () {
+      var band = document.querySelector('.g8-board.active .g8-band');
+      var L = document.querySelector('.g8-board.active .g8-sign .g8-sign-left');
+      if (!band || !L) return { error: 'no band or no sign: ' + !!band + ' ' + !!L };
+      var ro = L.querySelector('.g8-sign-roster'), lv = L.querySelector('.g8-sign-row .g8-sign-value');
+      var h0 = band.getBoundingClientRect().height, out = [];
+      try {
+        for (var q = 0; q <= 16; q++) {
+          var bh = h0 - q * 0.25;
+          ['height', 'min-height', 'max-height'].forEach(function (p) { band.style.setProperty(p, bh + 'px', 'important'); });
+          _fidsPairSeparators(document); _fidsPairSeparators(document);
+          out.push({ band: Math.round(bh * 100) / 100, panel: L.clientHeight, over: L.scrollHeight - L.clientHeight,
+            paged: !!(ro && ro.classList.contains('is-paged')), prio: Math.round(parseFloat(getComputedStyle(lv).fontSize) * 10) / 10 });
+        }
+      } finally {
+        ['height', 'min-height', 'max-height'].forEach(function (p) { band.style.removeProperty(p); });
+        _fidsPairSeparators(document);
+      }
+      var memo = window._g8PrioStep;
+      return { reads: out, kept: memo && memo.n ? (memo.n.boarding || 0) : 0 };
+    })()`, 60000);
+  } finally {
+    b.close();
+    server.close();
+  }
+  assert.ok(r && !r.error, r && r.error);
+  const reads = r.reads, at0 = reads[0];
+  const show = reads.map((x) => `band ${x.band} px: panel ${x.panel}, number ${x.prio}${x.paged ? ', in pages' : ''}${x.over > 1 ? `, ${x.over} px past its foot` : ''}`).join('\n');
+  // (the case still pages its list here: otherwise this proves nothing)
+  assert.ok(reads.some((x) => x.paged), 'the priority group\'s list in pages at some height:\n' + show);
+  assert.ok(reads[reads.length - 1].panel > at0.panel, 'the panel grew as the band was held shorter:\n' + show);
+  for (const x of reads) {
+    assert.ok(x.over <= 1, `the panel runs ${x.over} px past its foot under a ${x.band} px band:\n` + show);
+    assert.ok(Math.abs(x.prio - at0.prio) <= 0.5, `the priority group's number came down under a band ${Math.round((at0.band - x.band) * 100) / 100} px shorter (${x.prio} against ${at0.prio}):\n` + show);
+  }
+  // (and no step kept for the flight: one taken before this began would
+  // have held every reading here at the smaller size)
+  assert.equal(r.kept, 0, 'a step kept for the priority group\'s number on its first call, where every page fits at its size:\n' + show);
+});
