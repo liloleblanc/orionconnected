@@ -1395,7 +1395,11 @@ test('a who-list never runs off its panel, and a group code shares the row with 
   assert.match(page, /var few = \(cur && ro\) \? 2 : 0;/);
   assert.match(page, /var thin = function \(n\) \{ return !!cur && n > nb && ro\.querySelectorAll\('\.g8-who-i'\)\.length < n \* 1\.5; \};/);
   const pg = top('_fidsSignPaginate');
-  assert.match(pg, /ro\.style\.setProperty\('min-height', Math\.ceil\(hmax\) \+ 'px', 'important'\);/, 'the box as tall as its tallest page: nothing moves as they turn');
+  // (2026-10-29: and as it was measured, not rounded up: a page that fitted
+  // by the fitter's pixel came to two past the foot, and the priority
+  // group's number took a step it did not need)
+  assert.match(pg, /ro\.style\.setProperty\('min-height', hmax \+ 'px', 'important'\);/, 'the box as tall as its tallest page: nothing moves as they turn');
+  assert.doesNotMatch(pg, /Math\.ceil\(hmax\)/, 'the tallest page not rounded up');
   // 2026-10-26 — evenly: from the last page back, a page takes the item
   // before it while it holds fewer and still fits; each language's pages
   // kept on the list (data-g8-pgl)
