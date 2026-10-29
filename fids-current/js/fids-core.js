@@ -13018,7 +13018,7 @@ var PLANE_FACING = {
   'PD/295.png':'L', 'PD/DH4.png':'L', 'PD/E95.png':'L', 'SF3.png':'L', 'TS/321.png':'R', 'TS/32Q.png':'R',
   'TS/332.png':'R', 'TS/333.png':'R', 'UA/319.png':'L', 'UA/320.png':'L', 'UA/32Q.png':'L', 'UA/737.png':'L',
   'UA/738.png':'L', 'UA/73H.png':'L', 'UA/752.png':'L', 'UA/753.png':'L', 'UA/763.png':'L', 'UA/764.png':'L',
-  'UA/772.png':'L', 'UA/777.png':'L', 'UA/77L.png':'L', 'UA/788.png':'L', 'UA/789.png':'L', 'UA/7M8.png':'L',
+  'UA/772.png':'L', 'UA/777.png':'L', 'UA/77L.png':'L', 'UA/77W.png':'L', 'UA/788.png':'L', 'UA/789.png':'L', 'UA/7M8.png':'L',
   'UA/7M9.png':'L', 'UA/CR7.png':'L', 'UA/CRJ.png':'L', 'UA/E75.png':'L', 'WN/737.png':'L', 'WN/738.png':'L',
   'WN/73W.png':'L', 'WN/7M8.png':'L', 'WS/737.png':'L', 'WS/738.png':'L', 'WS/73G.png':'L', 'WS/73H.png':'L',
   'WS/73W.png':'L', 'WS/789.png':'L', 'WS/7M8.png':'L', 'WS/DH4.png':'L',
