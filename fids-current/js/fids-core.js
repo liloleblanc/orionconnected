@@ -13018,7 +13018,7 @@ var PLANE_FACING = {
   'PD/295.png':'L', 'PD/DH4.png':'L', 'PD/E95.png':'L', 'SF3.png':'L', 'TS/321.png':'R', 'TS/32Q.png':'R',
   'TS/332.png':'R', 'TS/333.png':'R', 'UA/319.png':'L', 'UA/320.png':'L', 'UA/32Q.png':'L', 'UA/737.png':'L',
   'UA/738.png':'L', 'UA/73H.png':'L', 'UA/752.png':'L', 'UA/753.png':'L', 'UA/763.png':'L', 'UA/764.png':'L',
-  'UA/772.png':'L', 'UA/777.png':'L', 'UA/77L.png':'L', 'UA/788.png':'L', 'UA/789.png':'L', 'UA/7M8.png':'L',
+  'UA/772.png':'L', 'UA/777.png':'L', 'UA/77L.png':'L', 'UA/77W.png':'L', 'UA/788.png':'L', 'UA/789.png':'L', 'UA/7M8.png':'L',
   'UA/7M9.png':'L', 'UA/CR7.png':'L', 'UA/CRJ.png':'L', 'UA/E75.png':'L', 'WN/737.png':'L', 'WN/738.png':'L',
   'WN/73W.png':'L', 'WN/7M8.png':'L', 'WS/737.png':'L', 'WS/738.png':'L', 'WS/73G.png':'L', 'WS/73H.png':'L',
   'WS/73W.png':'L', 'WS/789.png':'L', 'WS/7M8.png':'L', 'WS/DH4.png':'L',
@@ -17547,7 +17547,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24095" src="/textures/gate-sky-shelf.mp4?v=24095" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24096" src="/textures/gate-sky-shelf.mp4?v=24096" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17591,7 +17591,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24095" src="/textures/gate-sky-shelf.mp4?v=24095" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24096" src="/textures/gate-sky-shelf.mp4?v=24096" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -35661,7 +35661,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24095';
+var FIDS_BUILD_TAG = 'v24096';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -62126,7 +62126,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24095" src="/textures/gate-sky-shelf.mp4?v=24095"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24096" src="/textures/gate-sky-shelf.mp4?v=24096"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -62799,6 +62799,9 @@ var _WX_CITY_NIGHT = {
   // Petitcodiac marsh, a gold afternoon and a night of lit windows under a
   // deep blue starry sky (v24017), supplied without lettering so the board's
   // own words sit on it.
+  // v24096 — redrawn: the same skyline over the Petitcodiac's
+  // red mud banks at low tide instead of the marsh, by day under summer
+  // cloud and by night under stars with the windows lit.
   YQM:1
 };
 // The name the Worker searches by, for an airport outside the curated
