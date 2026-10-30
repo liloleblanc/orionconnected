@@ -47,7 +47,8 @@
 //   document) in each language, and the stream tour. On the boards and the
 //   gate (YQM and YUL), the airport's feed down too — no list, the last
 //   update's time, the last good list with its age — each reached in other
-//   languages and then read after a change to the set's, mid-visit.
+//   languages, an answer of the board's own landing in it, and then read
+//   after a change to the set's, mid-visit.
 //
 // Exit code 1 on any finding. Runs in CI (npm test, through
 // tests/board-languages-render.test.js) on the boards' demonstration data, so
@@ -1217,12 +1218,26 @@ const GATE_RESET = `(function () { try { if (window.__sbListsOrig) { window._gat
 // reached in other languages (FEED_CONTRAST, none of the set's) and the
 // languages are then changed to the set's, mid-visit: a line or a header
 // painted once in the old languages fails here.
+// While a state stands, this check holds the feed: an answer of the board's
+// own that lands then is dropped (_feedSettle answers nothing, as a leg that
+// never came back does, so neither the feed's state nor the lists move), and
+// the state read is the state entered. Offline every answer the board asks
+// for fails, and one can still be on its way when a state is entered: twice
+// in CI (2026-10-26, 2026-10-29) the arrivals board's failed arrivals answer
+// landed a tenth of a second into 'lastupdate' and made it 'unavailable'.
+// The board then said what that state says, "Live data unavailable" with no
+// time (the arrivals had no last list), and this check, still looking for
+// the last update's time, failed on a screen that was right. FEED_LAND puts
+// such an answer in on purpose in every state, so the hold is read too.
 const FEED_STATES = ['unavailable', 'lastupdate', 'stale'];
 const FEED_CONTRAST = [['ja', 'ar'], ['de', 'pt'], ['es', 'it']];
 const FEED_ENTER = (st) => `(function (st) {
   try {
     var ap = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
-    if (!window.__wsFeedOrig) window.__wsFeedOrig = { dep: data.dep, arr: data.arr, live: LIVE_MODE, done: window._initialFetchDone, status: JSON.stringify(window.__fidsFeedStatus || {}) };
+    if (!window.__wsFeedOrig) {
+      window.__wsFeedOrig = { dep: data.dep, arr: data.arr, live: LIVE_MODE, done: window._initialFetchDone, status: JSON.stringify(window.__fidsFeedStatus || {}), settle: window._feedSettle };
+      if (typeof window._feedSettle === 'function') window._feedSettle = function () { return null; };
+    }
     var o = window.__wsFeedOrig;
     var one = st === 'unavailable' ? { state: 'unavailable', asOf: null } : { state: 'stale', asOf: Date.now() - 40 * 60000 };
     window.__fidsFeedStatus = window.__fidsFeedStatus || {};
@@ -1236,6 +1251,24 @@ const FEED_ENTER = (st) => `(function (st) {
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
 })(${jsWord(st)})`;
+// An answer of the board's own landing while the state stands, as one did
+// in CI: the departures and the arrivals, each failed as every answer is
+// offline (at once: _adbFetchRaw stands in for the network for these two
+// calls), through the board's own adbFetch. 'ok' when the feed's state is
+// still the one entered.
+const FEED_LAND = `new Promise(function (res) {
+  var raw = window._adbFetchRaw;
+  function done(r) { window._adbFetchRaw = raw; res(r); }
+  try {
+    var ap = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
+    var before = JSON.stringify((window.__fidsFeedStatus || {})[ap] || null);
+    window._adbFetchRaw = function () { return Promise.reject(new Error('offline')); };
+    Promise.all([adbFetch(ap, 'Departure'), adbFetch(ap, 'Arrival')]).then(function () {
+      var after = JSON.stringify((window.__fidsFeedStatus || {})[ap] || null);
+      done(after === before ? 'ok' : 'it changed the feed state to ' + after);
+    }, function (e) { done('error ' + e.message); });
+  } catch (e) { done('error ' + e.message); }
+})`;
 // What says it on this screen: the board's empty panel, the gate's or the
 // belt's own empty line, or the strip. With the last good list on screen the
 // strip says how old it is — unless this page's own list is empty (a belt
@@ -1264,6 +1297,7 @@ const FEED_RESET = `(function () {
     var o = window.__wsFeedOrig;
     if (!o) return 0;
     data.dep = o.dep; data.arr = o.arr; LIVE_MODE = o.live; window._initialFetchDone = o.done;
+    if (o.settle) window._feedSettle = o.settle;
     window.__fidsFeedStatus = JSON.parse(o.status);
     window.__wsFeedOrig = null;
     try { dedicatedRenderKey = null; } catch (e) {}
@@ -1569,8 +1603,9 @@ async function runChunk(port, name, spec, sets) {
         }
         await evalv(GATE_RESET);
       }
-      // the airport's feed down, each state reached in other languages and
-      // the languages then changed to this set's, mid-visit (FEED_STATES)
+      // the airport's feed down, each state reached in other languages, an
+      // answer of the board's own landed in it (FEED_LAND) and the languages
+      // then changed to this set's, mid-visit (FEED_STATES)
       if (spec.feed) {
         const other = FEED_CONTRAST.find((c) => !c.some((l) => set.includes(l)));
         for (const st of FEED_STATES) {
@@ -1578,6 +1613,8 @@ async function runChunk(port, name, spec, sets) {
           const r = await evalv(FEED_ENTER(st));
           if (r !== 'ok') { problems.push(`feed ${st} did not render: ${r}`); continue; }
           await evalv(SETTLE(400));
+          const landed = await evalv(FEED_LAND, 20000);
+          if (landed !== 'ok') problems.push(`feed ${st}: an answer of the board's own landed while the state stood, and ${landed}`);
           await evalv(`setBoardLangs(${langsJs(set)})`);
           await evalv(SETTLE(800));
           const shown = await evalv(FEED_SHOWN(st));
