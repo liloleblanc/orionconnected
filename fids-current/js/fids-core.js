@@ -17557,7 +17557,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24100" src="/textures/gate-sky-shelf.mp4?v=24100" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24101" src="/textures/gate-sky-shelf.mp4?v=24101" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17601,7 +17601,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24100" src="/textures/gate-sky-shelf.mp4?v=24100" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24101" src="/textures/gate-sky-shelf.mp4?v=24101" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18769,6 +18769,38 @@ function uxgGateHtml(ctx) {
       };
       _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + (_bwL2 ? _bwSide(_bwL2, 'g8-bw-end-r') : _bwSide(_bwL1, 'g8-bw-end-r', true));
     } catch (e) { _bwClock = '::MID::'; }
+    // 2026-10-30 — 100 YEARS OF UNITED. While a United flight boards, up to
+    // 31 Dec 2026 on the airport's own calendar (_uaCentennialOn), the strip
+    // wears United's centenary mark split around the words: United's spinning
+    // globe from their own animation on the left, the Star Alliance star as
+    // the divider between the two languages (after the words when there is
+    // one language), and the 100 YEARS OF UNITED lettering on the right. The
+    // globe grows in once per flight and then turns for as long as the strip
+    // shows. The gate rebuilds this strip many times in one boarding, so the
+    // time since this flight's strip first appeared rides --u100-el and each
+    // rebuild picks the animation up where it was instead of replaying it.
+    var _u100 = /^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))
+      && (typeof _uaCentennialOn === 'function') && _uaCentennialOn(airlineCode, tz, Date.now());
+    var _u100El = 0;
+    if (_u100) {
+      try {
+        var _u100Seen = window._u100Seen || (window._u100Seen = {});
+        var _u100K = _gateRowKey(currentFlight), _u100Now = Date.now();
+        if (!_u100Seen[_u100K]) {
+          // a screen runs for days: forget flights that boarded hours ago
+          Object.keys(_u100Seen).forEach(function (k) { if (_u100Now - _u100Seen[k] > 6 * 3600000) delete _u100Seen[k]; });
+          _u100Seen[_u100K] = _u100Now;
+        }
+        _u100El = Math.max(0, _u100Now - _u100Seen[_u100K]);
+      } catch (eU) { _u100El = 0; }
+      // a row filed under United's ICAO code (UAL) has no ALLIANCE_MAP entry
+      // and so no star of its own; United is a Star Alliance member, so the
+      // divider is still the star
+      if (!_bwStar) {
+        _bwStar = '<img class="g8-r1-star g8-r1-alliance-star" src="' + ALLIANCE_LOGOS.star.replace('star-3d-tile.jpg', 'star-3d-symbol.webp')
+          + '" alt="' + ALLIANCE_NAMES.star + '" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+      }
+    }
     // Middle: NOW BOARDING while boarding is actually on; Welcome otherwise.
     var _bwMidWords;
     if (/^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
@@ -18778,6 +18810,9 @@ function uxgGateHtml(ctx) {
       // used to pair the one language with itself ('Now Boarding | Now
       // Boarding'). Quebec airports put French first via the same pair.
       _bwMidWords = _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bw-sep">|</span> ', true);
+      // On a United gate in its hundredth year the Star Alliance star is the
+      // divider between the two halves instead of the bar.
+      if (_u100 && _bwStar) _bwMidWords = _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bw-star g8-bw-star-mid">' + _bwStar + '</span> ', true);
     } else {
       _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
     }
@@ -18788,11 +18823,21 @@ function uxgGateHtml(ctx) {
     // v24006 — the strip carries the headline alone: Porter's ID reminder
     // (v23773) moved to the band under it (_boardBandHtml), in the words
     // every airline's band uses, and the headline is back at full size.
-    var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
-      + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
+    var _bwMid;
+    if (_u100) {
+      var _u100T = ' style="--u100-el:-' + _u100El + 'ms"';
+      var _u100StarMid = _bwMidWords.indexOf('g8-bw-star-mid') >= 0;
+      _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
+        + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
+        + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24101" width="212" height="161" alt="">';
+    } else {
+      _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
+        + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
+        + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
+    }
     return '<div class="g8-board-welcome g8-bw-clocked">'
-      + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
+      + _bwClock.replace('::MID::', '<div class="g8-bw-mid' + (_u100 ? ' g8-bw-u100-mid' : '') + '">' + _bwMid + '</div>')
       + '</div>';
   }
 
@@ -25341,6 +25386,22 @@ var BANNER_STYLE = {
 // fids_banner_style_YQM = 'silk-acadian' shows the August look on any day,
 // and 'silk' shows the plain band in August.
 var ACADIAN_SEASON = { iata: 'YQM', style: 'silk-acadian', tz: 'America/Moncton', month: 8, from: 1, to: 15 };
+// 2026-10-30 — United's hundredth year. The boarding strip on a United gate
+// wears the 100 YEARS OF UNITED mark (_boardWelcomeStripHtml) through the
+// last day below, on the airport's own calendar, and drops it by itself at
+// that airport's midnight. The strip is rebuilt every few minutes while a
+// flight boards, so a boarding that runs past midnight loses it within
+// minutes. Only United's own codes: the express carriers file under United's
+// code when the flight is sold as United, and a row filed under its operator
+// (OO, YX, G7…) keeps the plain strip. Pure (tests/united-centennial.test.js).
+var UA_CENTENNIAL = { airlines: { UA: 1, UAL: 1 }, last: '2026-12-31' };
+function _uaCentennialOn(airline, tz, ts) {
+  try {
+    if (!UA_CENTENNIAL.airlines[String(airline || '').trim().toUpperCase()]) return false;
+    var key = fidsLocalDateKey(ts, tz);
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(key || '')) && key <= UA_CENTENNIAL.last;
+  } catch (e) { return false; }
+}
 // True when `now` falls on 1–15 August on Moncton's calendar. Pure: the
 // answer depends only on the instant, not on the machine's own time zone.
 // fidsLocalDateKey gives the date in the zone named, as 'YYYY-MM-DD'.
@@ -35671,7 +35732,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24100';
+var FIDS_BUILD_TAG = 'v24101';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -62136,7 +62197,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24100" src="/textures/gate-sky-shelf.mp4?v=24100"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24101" src="/textures/gate-sky-shelf.mp4?v=24101"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
