@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { fixture, fixtureText, fakeFetch, flippRoutes } from './helpers.js';
 import { flyersToMerchants, searchToOffers, createFlipp } from '../src/sources/flipp.js';
 import { suggestToOffers, productsToOffers, slimProduct, createGiantTiger, COLLECTIONS } from '../src/sources/gianttiger.js';
-import { extractNextData, pageDataToOffers } from '../src/sources/walmart.js';
+import { extractNextData, pageDataToOffers, parseUnitPriceText } from '../src/sources/walmart.js';
 import { observationToOffer } from '../src/sources/community.js';
 import { pricesToOffer, createOpenPrices } from '../src/sources/openprices.js';
 import { buildPlan } from '../src/sources/index.js';
@@ -58,6 +58,15 @@ test('Giant Tiger feeder reads a category for catalogue items and search for the
   assert.equal(a.length, 1); assert.match(fetch.calls[0].url, /milk-and-cream/);
   const b = await gt.searchOffers('E1C1E8', 'oat milk', 'en', { line: { key: 'oat milk', generic: true } });
   assert.ok(b.length >= 8); assert.match(fetch.calls[1].url, /suggest\.json/);
+});
+
+test('Walmart unit-price text: cents and dollars, per 100 g or ml, per kg, per each', () => {
+  const near = (a, b) => Math.abs(a - b) < 0.001;
+  assert.ok(near(parseUnitPriceText('16¢/100ml').basePrice, 1.6)); assert.equal(parseUnitPriceText('16¢/100ml').baseUnit, 'l');
+  assert.ok(near(parseUnitPriceText('$1.07/100g').basePrice, 10.7)); assert.equal(parseUnitPriceText('$1.07/100g').baseUnit, 'kg');
+  assert.ok(near(parseUnitPriceText('$2.50/kg').basePrice, 2.5));
+  assert.ok(near(parseUnitPriceText('50¢/each').basePrice, 0.5)); assert.equal(parseUnitPriceText('50¢/each').baseUnit, 'ea');
+  assert.equal(parseUnitPriceText('$$/100g'), null); assert.equal(parseUnitPriceText(''), null); assert.equal(parseUnitPriceText(null), null);
 });
 
 test('Walmart page data parses into offers labelled with the default store', () => {

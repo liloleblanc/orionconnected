@@ -50,13 +50,8 @@ export function pageDataToOffers(data, fetchedAt = new Date()) {
     const parsed = parsePrice({ price, originalPrice: was && was > price ? was : null, name: it.name });
     // Walmart gives a unit price like "16¢/100ml" or "$1.07/100g"; use it when the name had no size.
     if (parsed.basePrice == null && pi.unitPrice) {
-      const u = /(\d+(?:\.\d+)?)\s*(¢|\$)?\s*\/\s*(\d+)?\s*(g|ml|kg|l|ea|unit)/i.exec(pi.unitPrice.replace('$', '').replace(/^\s*/, '')) || /(\d+(?:\.\d+)?)(¢)\/(\d+)?(g|ml|kg|l)/i.exec(pi.unitPrice);
-      if (u) {
-        let v = parseFloat(u[1]); if (u[2] === '¢' || /¢/.test(pi.unitPrice)) v = v / 100;
-        const per = parseFloat(u[3] || '1'); const unit = u[4].toLowerCase();
-        const scale = unit === 'g' || unit === 'ml' ? 1000 / per : 1 / per;
-        parsed.basePrice = v * scale; parsed.baseUnit = unit === 'g' || unit === 'kg' ? 'kg' : unit === 'ml' || unit === 'l' ? 'l' : 'ea';
-      }
+      const u = parseUnitPriceText(pi.unitPrice);
+      if (u) { parsed.basePrice = u.basePrice; parsed.baseUnit = u.baseUnit; }
     }
     out.push({
       id: 'walmart:' + (it.usItemId || it.id),
@@ -78,6 +73,19 @@ export function pageDataToOffers(data, fetchedAt = new Date()) {
     });
   }
   return out;
+}
+
+// "16¢/100ml", "$1.07/100g", "$2.50/kg", "50¢/each" -> price per kg, l or ea; null when unreadable.
+export function parseUnitPriceText(text) {
+  const m = /^\s*\$?\s*(\d+(?:\.\d+)?)\s*(¢)?\s*\/\s*(\d+(?:\.\d+)?)?\s*(g|ml|kg|l|ea|each|unit)\b/i.exec(String(text ?? ''));
+  if (!m) return null;
+  let value = parseFloat(m[1]);
+  if (m[2] === '¢') value /= 100;
+  const per = parseFloat(m[3] || '1');
+  const unit = m[4].toLowerCase();
+  if (!(per > 0)) return null;
+  const scale = unit === 'g' || unit === 'ml' ? 1000 / per : 1 / per;
+  return { basePrice: value * scale, baseUnit: unit === 'g' || unit === 'kg' ? 'kg' : unit === 'ml' || unit === 'l' ? 'l' : 'ea' };
 }
 
 function money(s) {

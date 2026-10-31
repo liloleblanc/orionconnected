@@ -61,7 +61,8 @@ export async function handleRequest(request, env, ctx = {}, overrides = {}) {
   } catch (e) {
     if (e instanceof ApiError) return json({ error: e.code, message: e.message }, e.status);
     console.error(e);
-    return json({ error: 'internal', message: String(e?.message || e) }, 500);
+    // the detail stays in the log; the client gets no error text or stack
+    return json({ error: 'internal', message: 'Something went wrong on our side; try again in a moment' }, 500);
   }
 }
 
