@@ -19156,6 +19156,96 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
     transform: none !important;
   }
 }
+/* ═══════════════════════════════════════════════════════════════════════
+   2026-10-30 — 100 YEARS OF UNITED on the boarding strip: United gates,
+   through 31 Dec 2026 (the switch is _uaCentennialOn in fids-core.js).
+   The globe is United's own animation: 55 of its frames side by side in one
+   file — 1-37 the globe growing in while it turns, 38-55 one turn of its
+   lines, which repeats with no seam — at 60 ms a frame (United's run at
+   40 ms, half again as slow). --u100-el is the time since this flight's
+   strip first appeared, stamped by the builder, so a rebuild resumes the
+   animation where it was. The background position is left without
+   !important on purpose: an !important value would beat the animation.
+   ═══════════════════════════════════════════════════════════════════════ */
+@keyframes u100Grow { from { background-position-x: 0%; } to { background-position-x: calc(37 / 54 * 100%); } }
+@keyframes u100Turn { from { background-position-x: calc(37 / 54 * 100%); } to { background-position-x: calc(55 / 54 * 100%); } }
+@keyframes u100Words { from { clip-path: inset(0 100% 0 0); transform: translateX(-14%); } to { clip-path: inset(0 0 0 0); transform: none; } }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-u100 {
+  --u100-f: 60ms;
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: clamp(44px, 6.4vh, 80px) !important;
+  height: clamp(44px, 6.4vh, 80px) !important;
+  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24101');
+  background-size: 5500% 100%;
+  background-repeat: no-repeat;
+  background-position: 0% 0%;
+  animation: u100Grow calc(37 * var(--u100-f)) steps(37) var(--u100-el, 0ms) 1 both,
+             u100Turn calc(18 * var(--u100-f)) steps(18) calc(37 * var(--u100-f) + var(--u100-el, 0ms)) infinite !important;
+}
+/* the lettering comes out to the right while the globe finishes growing,
+   the way it slides out from behind the globe in United's run (its frames
+   24-37); it is 64/67 of the globe's height, as in United's lockup */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-u100-words {
+  --u100-f: 60ms;
+  display: block !important;
+  flex: 0 0 auto !important;
+  height: calc(clamp(44px, 6.4vh, 80px) * 64 / 67) !important;
+  /* its width is reserved before the file arrives (v22533: an image takes
+     no room until it decodes, and the fitter sizes the words beside it once,
+     at the rebuild) */
+  aspect-ratio: 212 / 161 !important;
+  width: auto !important;
+  max-width: none !important;
+  object-fit: contain !important;
+  clip-path: inset(0 100% 0 0);
+  animation: u100Words calc(14 * var(--u100-f)) cubic-bezier(.25, .7, .2, 1) calc(23 * var(--u100-f) + var(--u100-el, 0ms)) 1 forwards !important;
+}
+/* the row keeps the height the star at its end gave it, so the words keep
+   their size and nothing below moves: the fitter sizes the words to 74% of
+   this row, and with the star moved into the words the globe alone set a
+   shorter row (67 px against 73.5 at 1680x1050) and the words came out at
+   40 px instead of 44. The star's box on the strip is clamp(48px, 7vh,
+   82px) (img.g8-r1-star, which outranks the 73 px takeover rule), so the
+   row takes exactly that at every screen height, as it does on main and on
+   the countdown strip just before boarding. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-mid.g8-bw-u100-mid {
+  min-height: clamp(48px, 7vh, 82px) !important;
+}
+/* the Star Alliance star as the divider between the two languages */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-text .g8-bw-star-mid {
+  /* a box no taller than the words (1em), so the line is no taller than
+     before and the fitter keeps the words their size; the star inside is
+     larger and spills over it evenly, top and bottom */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 1em !important;
+  vertical-align: middle !important;
+  position: relative !important;
+  top: -0.08em !important;
+  width: auto !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  margin: 0 0.2em !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-board-welcome .g8-bw-text .g8-bw-star-mid img {
+  /* sized by the words around it: the banner star's own floor
+     (img.g8-r1-star, min-height 7vh) made the line taller than the strip
+     and the fitter shrank the words to a third to make room */
+  height: 1.3em !important;
+  min-height: 0 !important;
+  flex: 0 0 auto !important;
+  max-height: none !important;
+  width: 1.3em !important;   /* the symbol is square; reserved before it loads */
+  min-width: 0 !important;
+  max-width: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-u100 { animation: none !important; background-position: calc(37 / 54 * 100%) 0%; }
+  html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-u100-words { animation: none !important; clip-path: none; transform: none; }
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    v23762 — QATAR'S SPEED LINES BEHIND THE GATE RAIL'S BADGE COLUMN.
@@ -22842,7 +22932,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24100') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24101') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
