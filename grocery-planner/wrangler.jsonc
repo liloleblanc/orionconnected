@@ -1,0 +1,29 @@
+{
+  // Cloudflare Worker + static assets. See README for setup.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "grocery-planner",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./web", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "vars": {
+    // Feeders. Each one can be switched off without touching code.
+    "FLIPP_ENABLED": "true",
+    "GIANTTIGER_ENABLED": "true",
+    "WALMART_ENABLED": "false",
+    "COMMUNITY_ENABLED": "true",
+    "OPENPRICES_ENABLED": "false",
+    "NOMINATIM_ENABLED": "false",
+    // Default cost, in dollars, of driving to one more store.
+    "DEFAULT_TRIP_COST": "4",
+    // Community price reports count as current for this many days.
+    "COMMUNITY_TTL_DAYS": "14",
+    // Identify the app to the services it calls (Nominatim requires a real contact).
+    "APP_USER_AGENT": "grocery-planner/0.1 (set CONTACT_EMAIL)",
+    "CONTACT_EMAIL": ""
+  },
+  // Uncomment after `wrangler d1 create grocery-planner` and `wrangler kv namespace create CACHE`.
+  // "d1_databases": [{ "binding": "DB", "database_name": "grocery-planner", "database_id": "<id>" }],
+  // "kv_namespaces": [{ "binding": "CACHE", "id": "<id>" }],
+  // Weekly refresh of the regions that were used recently (flyers change on Thursdays).
+  "triggers": { "crons": ["30 10 * * 4"] }
+}

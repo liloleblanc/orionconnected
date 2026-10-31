@@ -1,0 +1,72 @@
+{
+"items": [
+{
+"id": 1050996575,
+"merchant_name": "Sobeys",
+"merchant_id": 2072,
+"name": "MARITIME PRIDE Large White Eggs",
+"current_price": 5.49,
+"original_price": null,
+"pre_price_text": "Verified",
+"post_price_text": null,
+"sale_story": null,
+"item_type": "flyer",
+"_L1": "Food, Beverages & Tobacco",
+"_L2": "Food Items",
+"valid_from": "2026-10-29T04:00:00+00:00",
+"valid_to": "2026-11-05T03:59:59+00:00",
+"flyer_id": 8207454
+},
+{
+"id": 1050190842,
+"merchant_name": "Shoppers Drug Mart",
+"merchant_id": 208,
+"name": "GRADE \"A\" Large White Eggs",
+"current_price": 3.99,
+"original_price": null,
+"pre_price_text": null,
+"post_price_text": "LES SAMEDI 31 OCTOBRE ET DIMANCHE 1ER NOVEMBRE SEULEMENT!",
+"sale_story": null,
+"item_type": "flyer",
+"_L1": "Food, Beverages & Tobacco",
+"_L2": "Food Items",
+"valid_from": "2026-10-31T07:00:00+00:00",
+"valid_to": "2026-11-02T04:59:59+00:00",
+"flyer_id": 8207039
+},
+{
+"id": 1050194214,
+"merchant_name": "Shoppers Drug Mart",
+"merchant_id": 208,
+"name": "NUTRI Free Run Eggs",
+"current_price": 5.49,
+"original_price": null,
+"pre_price_text": null,
+"post_price_text": null,
+"sale_story": null,
+"item_type": "flyer",
+"_L1": "Food, Beverages & Tobacco",
+"_L2": "Food Items",
+"valid_from": "2026-10-31T07:00:00+00:00",
+"valid_to": "2026-11-07T04:59:59+00:00",
+"flyer_id": 8207039
+},
+{
+"id": 1050996612,
+"merchant_name": "Sobeys",
+"merchant_id": 2072,
+"name": "COMPLIMENTS BALANCE Egg Whites",
+"current_price": 4.99,
+"original_price": null,
+"pre_price_text": null,
+"post_price_text": null,
+"sale_story": "50 Scene+ PTS when you buy 1",
+"item_type": "flyer",
+"_L1": "Food, Beverages & Tobacco",
+"_L2": "Food Items",
+"valid_from": "2026-10-29T04:00:00+00:00",
+"valid_to": "2026-11-05T03:59:59+00:00",
+"flyer_id": 8207454
+}
+]
+}

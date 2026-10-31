@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f6f4a">
+  <meta name="description" content="Type your grocery list and a postal code; see this week's best prices nearby and where to shop.">
+  <title>Grocery Planner</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1 data-s="title">Grocery Planner</h1>
+    <p class="tagline" data-s="tagline">Your list, this week's prices nearby, and where to shop.</p>
+  </header>
+
+  <main>
+    <section class="card" id="setup">
+      <div class="row">
+        <label class="grow">
+          <span data-s="postal">Postal code</span>
+          <input id="postal" inputmode="text" autocomplete="postal-code" placeholder="E1C 1E8" maxlength="7">
+        </label>
+        <button id="locate" type="button" class="secondary" data-s="useLocation">Use my location</button>
+      </div>
+      <p class="hint" id="storesHint" hidden></p>
+
+      <label>
+        <span data-s="list">Your list</span>
+        <textarea id="list" rows="4" placeholder="apples
+milk
+cookies"></textarea>
+      </label>
+      <p class="hint" data-s="listHint">One item per line or separated by commas. "2 x milk" works.</p>
+
+      <details class="options">
+        <summary data-s="options">Options</summary>
+        <div class="row">
+          <label><span data-s="tripCost">Cost of one more store</span><input id="tripCost" type="number" min="0" max="100" step="0.5" value="4"></label>
+          <label><span data-s="maxStores">Stores at most</span>
+            <select id="maxStores"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select>
+          </label>
+        </div>
+        <label class="check"><input id="pharmacies" type="checkbox" checked> <span data-s="includePharmacies">Count pharmacies (milk, eggs, bread)</span></label>
+      </details>
+
+      <button id="go" type="button" class="primary" data-s="find">Find prices</button>
+      <p class="error" id="error" hidden></p>
+    </section>
+
+    <section id="results" hidden>
+      <div class="card plan" id="planCard"></div>
+      <div id="itemCards"></div>
+      <p class="hint" id="asOf"></p>
+    </section>
+
+    <section class="card" id="report">
+      <h2 data-s="reportTitle">Saw a price? Report it</h2>
+      <p class="hint" data-s="reportHint">Shelf prices you report count for two weeks for everyone shopping in your area. No photo needed.</p>
+      <div class="row">
+        <label class="grow"><span data-s="store">Store</span><input id="rStore" list="storeList" placeholder="Sobeys"><datalist id="storeList"></datalist></label>
+        <label class="grow"><span data-s="item">Item</span><input id="rItem" placeholder="2% milk"></label>
+      </div>
+      <div class="row">
+        <label><span data-s="price">Price</span><input id="rPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="5.49"></label>
+        <label><span data-s="size">Size</span><input id="rQty" type="number" min="0" step="any" inputmode="decimal" placeholder="4"></label>
+        <label><span data-s="unit">Unit</span>
+          <select id="rUnit"><option value="">—</option><option value="l">L</option><option value="ml">ml</option><option value="kg">kg</option><option value="g">g</option><option value="lb">lb</option><option value="ea">each</option></select>
+        </label>
+      </div>
+      <label class="check"><input id="rSale" type="checkbox"> <span data-s="onSale">It was a sale price</span></label>
+      <button id="send" type="button" class="secondary" data-s="send">Send</button>
+      <p class="hint" id="reportStatus" hidden></p>
+    </section>
+
+    <section class="card about">
+      <h2 data-s="aboutTitle">Where the prices come from</h2>
+      <ul>
+        <li data-s="aboutFlyers">This week's flyers for the grocers around your postal code.</li>
+        <li data-s="aboutRegular">Giant Tiger's regular shelf prices, from its public online listing.</li>
+        <li data-s="aboutReported">Prices other shoppers reported nearby in the last two weeks.</li>
+      </ul>
+      <p class="hint" data-s="aboutCaveat">Flyer prices are the store's advertised sale for the week; a regular price can differ between stores. Always check the shelf.</p>
+    </section>
+  </main>
+
+  <footer><span data-s="footer">Prices are collected automatically and may be wrong or out of date.</span> <a href="#" id="langToggle" hidden></a></footer>
+  <script src="app.js"></script>
+</body>
+</html>

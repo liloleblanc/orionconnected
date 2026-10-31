@@ -1,0 +1,1080 @@
+{
+"flyers": [
+{
+"id": 8207863,
+"merchant": "Ritchie's",
+"merchant_id": 6815,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-12T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207844,
+"merchant": "Rossy",
+"merchant_id": 3544,
+"categories": [
+"All Flyers",
+"General Merchandise"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-12-24T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8130428,
+"merchant": "Long & McQuade Musical Instruments",
+"merchant_id": 486,
+"categories": [
+"All Flyers",
+"Specialty"
+],
+"valid_from": "2026-09-29T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8207848,
+"merchant": "Ren's Pets",
+"merchant_id": 1953,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-11-01T00:00:00-04:00",
+"valid_to": "2026-11-30T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8205847,
+"merchant": "Jean Coutu",
+"merchant_id": 2521,
+"categories": [
+"All Flyers",
+"Specialty",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8214472,
+"merchant": "Best Buy",
+"merchant_id": 210,
+"categories": [
+"All Flyers",
+"Electronics"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-05T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8189239,
+"merchant": "Canadian Tire",
+"merchant_id": 2471,
+"categories": [
+"All Flyers",
+"Home & Garden",
+"Automotive"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-18T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8197376,
+"merchant": "Lawtons Drugs",
+"merchant_id": 3019,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-05T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8208879,
+"merchant": "Pizza Pizza",
+"merchant_id": 6050,
+"categories": [
+"All Flyers",
+"Restaurants"
+],
+"valid_from": "2026-10-27T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8156677,
+"merchant": "Bumper to Bumper",
+"merchant_id": 5478,
+"categories": [
+"All Flyers",
+"Automotive"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8207330,
+"merchant": "Atlantic Superstore",
+"merchant_id": 2336,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T22:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8195258,
+"merchant": "The Brick",
+"merchant_id": 221,
+"categories": [
+"All Flyers",
+"Home & Garden",
+"Electronics"
+],
+"valid_from": "2026-10-27T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8108263,
+"merchant": "Pet Valu",
+"merchant_id": 1995,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-08-28T00:00:00-04:00",
+"valid_to": "2026-11-25T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8195502,
+"merchant": "Harvey's",
+"merchant_id": 4613,
+"categories": [
+"All Flyers",
+"Restaurants"
+],
+"valid_from": "2026-08-24T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207834,
+"merchant": "Familiprix Extra",
+"merchant_id": 7346,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8203646,
+"merchant": "Walmart",
+"merchant_id": 234,
+"categories": [
+"All Flyers",
+"Groceries",
+"General Merchandise"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8212117,
+"merchant": "Staples",
+"merchant_id": 232,
+"categories": [
+"All Flyers",
+"Electronics",
+"Office"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-05T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8195736,
+"merchant": "Linen Chest",
+"merchant_id": 435,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-23T00:00:00-04:00",
+"valid_to": "2026-11-10T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8197648,
+"merchant": "Jean Coutu",
+"merchant_id": 2521,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8211821,
+"merchant": "Mark's ",
+"merchant_id": 1996,
+"categories": [
+"All Flyers",
+"Fashion"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8175206,
+"merchant": "Guardian",
+"merchant_id": 3423,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-26T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8161651,
+"merchant": "Princess Auto",
+"merchant_id": 1331,
+"categories": [
+"All Flyers",
+"Automotive"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8206074,
+"merchant": "Giant Tiger",
+"merchant_id": 991,
+"categories": [
+"All Flyers",
+"Groceries",
+"General Merchandise"
+],
+"valid_from": "2026-10-28T00:00:00-04:00",
+"valid_to": "2026-11-03T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8197783,
+"merchant": "Ren's Pets",
+"merchant_id": 1953,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-11-01T00:00:00-04:00",
+"valid_to": "2026-11-30T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8206121,
+"merchant": "BMR",
+"merchant_id": 2157,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8208128,
+"merchant": "Sleep Country Canada",
+"merchant_id": 2297,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-28T00:00:00-04:00",
+"valid_to": "2026-11-03T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8183742,
+"merchant": "Pet Valu",
+"merchant_id": 1995,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-11T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8210330,
+"merchant": "Princess Auto",
+"merchant_id": 1331,
+"categories": [
+"All Flyers",
+"Automotive"
+],
+"valid_from": "2026-11-01T00:00:00-04:00",
+"valid_to": "2026-11-30T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8164044,
+"merchant": "Home Hardware",
+"merchant_id": 237,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2027-01-30T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8210222,
+"merchant": "PetSmart",
+"merchant_id": 1378,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207426,
+"merchant": "Your Independent Grocer",
+"merchant_id": 2337,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8205867,
+"merchant": "IGA",
+"merchant_id": 4592,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8186428,
+"merchant": "Walmart",
+"merchant_id": 234,
+"categories": [
+"All Flyers",
+"Groceries",
+"General Merchandise"
+],
+"valid_from": "2026-10-15T00:00:00-04:00",
+"valid_to": "2026-11-11T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8197769,
+"merchant": "Kent",
+"merchant_id": 2919,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8191438,
+"merchant": "Showcase",
+"merchant_id": 3684,
+"categories": [
+"All Flyers",
+"Specialty"
+],
+"valid_from": "2026-10-19T00:00:00-04:00",
+"valid_to": "2026-12-25T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8192125,
+"merchant": "Rossy",
+"merchant_id": 3544,
+"categories": [
+"All Flyers",
+"General Merchandise"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8172498,
+"merchant": "Walmart",
+"merchant_id": 234,
+"categories": [
+"All Flyers",
+"Home & Garden",
+"General Merchandise"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8156640,
+"merchant": "Walmart",
+"merchant_id": 234,
+"categories": [
+"All Flyers",
+"Baby & Kids"
+],
+"valid_from": "2026-10-15T00:00:00-04:00",
+"valid_to": "2026-12-23T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8197195,
+"merchant": "M&M Food Market",
+"merchant_id": 2024,
+"categories": [
+"All Flyers",
+"Groceries",
+"Specialty"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8209259,
+"merchant": "Wholehealth Pharmacy",
+"merchant_id": 6627,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-12-30T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207402,
+"merchant": "Home Depot",
+"merchant_id": 236,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-11T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8188833,
+"merchant": "Wholesale Club and Club Entrepôt",
+"merchant_id": 2702,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-22T00:00:00-04:00",
+"valid_to": "2026-11-11T22:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8208125,
+"merchant": "Stokes ",
+"merchant_id": 2608,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-26T00:00:00-04:00",
+"valid_to": "2026-11-22T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8212882,
+"merchant": "IKEA",
+"merchant_id": 220,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8194405,
+"merchant": "Atlantic Superstore",
+"merchant_id": 2336,
+"categories": [
+"All Flyers",
+"General Merchandise"
+],
+"valid_from": "2026-10-22T00:00:00-04:00",
+"valid_to": "2026-12-30T22:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8206936,
+"merchant": "No Frills",
+"merchant_id": 2332,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T22:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8203678,
+"merchant": "Canadian Tire",
+"merchant_id": 2471,
+"categories": [
+"All Flyers",
+"Home & Garden",
+"Automotive",
+"General Merchandise"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8170573,
+"merchant": "Pet Valu",
+"merchant_id": 1995,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8173029,
+"merchant": "Leon's",
+"merchant_id": 2595,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-15T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8193519,
+"merchant": "The Paint Shop",
+"merchant_id": 5749,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-26T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8195860,
+"merchant": "Ecotone",
+"merchant_id": 4845,
+"categories": [
+"All Flyers",
+"Fashion",
+"Sporting Goods"
+],
+"valid_from": "2026-10-27T00:00:00-04:00",
+"valid_to": "2026-11-08T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8181441,
+"merchant": "Cabela's & Bass Pro",
+"merchant_id": 414,
+"categories": [
+"All Flyers",
+"Sporting Goods"
+],
+"valid_from": "2026-10-22T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8162689,
+"merchant": "Princess Auto",
+"merchant_id": 1331,
+"categories": [
+"All Flyers",
+"Home & Garden",
+"Automotive"
+],
+"valid_from": "2026-10-20T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8188920,
+"merchant": "Walmart",
+"merchant_id": 234,
+"categories": [
+"All Flyers",
+"Home & Garden",
+"General Merchandise"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-25T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8209080,
+"merchant": "EB Games Canada",
+"merchant_id": 3046,
+"categories": [
+"All Flyers",
+"Electronics",
+"Specialty"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-12-24T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8205811,
+"merchant": "Jean Coutu",
+"merchant_id": 2521,
+"categories": [
+"All Flyers",
+"Pharmacy",
+"Groceries"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8159586,
+"merchant": "Ashley Homestore Atlantic",
+"merchant_id": 3274,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-09-29T00:00:00-04:00",
+"valid_to": "2026-11-02T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8157928,
+"merchant": "Ren's Pets",
+"merchant_id": 1953,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8196011,
+"merchant": "PetSmart",
+"merchant_id": 1378,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8193613,
+"merchant": "Cabela's & Bass Pro",
+"merchant_id": 414,
+"categories": [
+"All Flyers",
+"Sporting Goods"
+],
+"valid_from": "2026-10-19T00:00:00-04:00",
+"valid_to": "2026-12-25T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8190323,
+"merchant": "Long & McQuade Musical Instruments",
+"merchant_id": 486,
+"categories": [
+"All Flyers",
+"Specialty"
+],
+"valid_from": "2026-10-22T00:00:00-04:00",
+"valid_to": "2027-07-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8186441,
+"merchant": "Guardian",
+"merchant_id": 3423,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-05T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207454,
+"merchant": "Sobeys",
+"merchant_id": 2072,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T22:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8069516,
+"merchant": "Home Hardware",
+"merchant_id": 237,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-08-13T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 7862458,
+"merchant": "Home Hardware",
+"merchant_id": 237,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-04-02T00:00:00-04:00",
+"valid_to": "2026-12-31T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 7757549,
+"merchant": "Bath Depot",
+"merchant_id": 3297,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-02-06T00:00:00-05:00",
+"valid_to": "2026-12-31T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8181080,
+"merchant": "Home Hardware",
+"merchant_id": 237,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-22T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8078973,
+"merchant": "Home Hardware",
+"merchant_id": 237,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-08-27T00:00:00-04:00",
+"valid_to": "2026-11-18T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8205635,
+"merchant": "Bulk Barn",
+"merchant_id": 3426,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-22T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8205805,
+"merchant": "Showcase",
+"merchant_id": 3684,
+"categories": [
+"All Flyers",
+"Specialty"
+],
+"valid_from": "2026-10-19T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8208945,
+"merchant": "Costco",
+"merchant_id": 2596,
+"categories": [
+"All Flyers",
+"Groceries"
+],
+"valid_from": "2026-10-26T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8157929,
+"merchant": "Ren's Pets",
+"merchant_id": 1953,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8166688,
+"merchant": "KentPro",
+"merchant_id": 6294,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8193590,
+"merchant": "Princess Auto",
+"merchant_id": 1331,
+"categories": [
+"All Flyers",
+"Home & Garden",
+"Automotive"
+],
+"valid_from": "2026-10-26T00:00:00-04:00",
+"valid_to": "2026-11-09T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8205854,
+"merchant": "Jean Coutu",
+"merchant_id": 2521,
+"categories": [
+"All Flyers",
+"Specialty",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8170601,
+"merchant": "Pet Valu",
+"merchant_id": 1995,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-01T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8207869,
+"merchant": "Michaels Canada",
+"merchant_id": 2597,
+"categories": [
+"All Flyers",
+"Specialty",
+"Home & Garden"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-05T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207812,
+"merchant": "Familiprix",
+"merchant_id": 1976,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8206932,
+"merchant": "PetSmart",
+"merchant_id": 1378,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-05T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207024,
+"merchant": "Shoppers Drug Mart",
+"merchant_id": 208,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-31T03:00:00-04:00",
+"valid_to": "2026-11-06T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8194383,
+"merchant": "Surplus Furniture & Mattress Warehouse",
+"merchant_id": 2609,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-26T00:00:00-04:00",
+"valid_to": "2026-11-15T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8187505,
+"merchant": "PetSmart",
+"merchant_id": 1378,
+"categories": [
+"All Flyers",
+"Pets"
+],
+"valid_from": "2026-10-19T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8208858,
+"merchant": "Costco",
+"merchant_id": 2596,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-10-26T00:00:00-04:00",
+"valid_to": "2026-11-01T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207830,
+"merchant": "Familiprix Santé",
+"merchant_id": 7344,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8194145,
+"merchant": "PartSource",
+"merchant_id": 3540,
+"categories": [
+"All Flyers",
+"Automotive"
+],
+"valid_from": "2026-10-30T00:00:00-04:00",
+"valid_to": "2026-11-11T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8207816,
+"merchant": "Familiprix Clinique",
+"merchant_id": 7345,
+"categories": [
+"All Flyers",
+"Pharmacy"
+],
+"valid_from": "2026-10-29T00:00:00-04:00",
+"valid_to": "2026-11-04T23:59:59-05:00",
+"is_store_select": true
+},
+{
+"id": 8144347,
+"merchant": "Party City",
+"merchant_id": 3555,
+"categories": [
+"All Flyers",
+"Specialty",
+"Baby & Kids"
+],
+"valid_from": "2026-09-22T00:00:00-04:00",
+"valid_to": "2026-10-31T23:59:59-04:00",
+"is_store_select": true
+},
+{
+"id": 8159833,
+"merchant": "WorldWide Furniture",
+"merchant_id": 3901,
+"categories": [
+"All Flyers",
+"Home & Garden"
+],
+"valid_from": "2026-09-29T00:00:00-04:00",
+"valid_to": "2026-11-02T23:59:59-05:00",
+"is_store_select": true
+}
+]
+}
