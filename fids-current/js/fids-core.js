@@ -7813,7 +7813,8 @@ function _gateTelemModel() {
   try {
     var _gp = window._gateInboundLivePos;
     if ((_gp && _gp.onGround === true) ||
-        (window._gateInbound && window._gateInbound._liveOnGround === true)) {
+        (window._gateInbound && window._gateInbound._liveOnGround === true) ||
+        (typeof _gateTaxiMine === 'function' && _gateTaxiMine())) {   // v24105 — landed and taxiing (or at its stand)
       return { spd: (typeof spd === 'number' ? spd : 0), alt: 0 };
     }
   } catch (e) {}
@@ -8635,6 +8636,7 @@ try {
                       // v23915 — a marker held still on purpose is not wedged: the
                       // glide stops dead-reckoning 5 minutes after the last real
                       // fix (_GLIDE_DR_MAX_MS) and waits for the next one.
+                      || !!(typeof _gateTaxiMine === 'function' && _gateTaxiMine())   // v24105 — taxiing, or at its stand
                       || !!(typeof _gateGlide !== 'undefined' && _gateGlide.fixAt > 0
                             && Date.now() - _gateGlide.fixAt > (_gateGlide.drMaxMs || _GLIDE_DR_MAX_MS))
                       // v24088 — nor one the glide holds a mile before the threshold
@@ -17560,7 +17562,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24104" src="/textures/gate-sky-shelf.mp4?v=24104" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24105" src="/textures/gate-sky-shelf.mp4?v=24105" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17604,7 +17606,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24104" src="/textures/gate-sky-shelf.mp4?v=24104" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24105" src="/textures/gate-sky-shelf.mp4?v=24105" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18833,7 +18835,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24104" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24105" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35735,7 +35737,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24104';
+var FIDS_BUILD_TAG = 'v24105';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -48588,6 +48590,29 @@ function _gateOnFinal(pl, thr, tdz, altFt) {
     return along > 0 && along < 12 && cross < 0.5;
   } catch (e) { return false; }
 }
+// v24105 — WILL THIS ARRIVAL LAND FROM HERE? (_startGateMapGlide carries
+// it to touchdown and the taxi takes it on.) Established on its final
+// (_gateOnFinal), already over the runway (rw.past, from _runwayFinalPath),
+// or closing on its final: inside 10 nm of the threshold, within 2 nm of the
+// extended centreline, not above 4,500 ft, its live track within 30° of the
+// runway's (an intercept, not a downwind or a base leg) — held short of the
+// field, those hovered there until the feed said Arrived. Never one climbing
+// or tracking more than 60° away from the runway: a go-around over the far
+// end is not landing on the reciprocal.
+function _gateLands(pl, rw, thr, tdz, altFt) {
+  try {
+    var trk = (typeof _gateHeading === 'function') ? _gateHeading(null) : null;
+    var vs = (typeof window !== 'undefined' && window._gateInbound && typeof window._gateInbound._liveVs === 'number') ? window._gateInbound._liveVs : null;
+    var off = (typeof trk === 'number' && isFinite(trk)) ? Math.abs(((trk - rw.hdg + 540) % 360) - 180) : null;
+    if ((off !== null && off > 60) || (typeof vs === 'number' && vs > 300)) return false;
+    if (rw.past) return true;
+    if (thr && tdz && _gateOnFinal(pl, thr, tdz, altFt)) return true;
+    if (off === null || off > 30 || (typeof altFt === 'number' && altFt > 4500)) return false;
+    var d = _gcNm(rw.t, pl), b = (_gcBrgDeg(rw.t, pl) - rw.hdg) * Math.PI / 180;
+    var al = -d * Math.cos(b), xt = Math.abs(d * Math.sin(b));
+    return al > 0.5 && al < 10 && xt < 2;
+  } catch (e) { return false; }
+}
 // v24088 — HOW FAR AN ARRIVING AEROPLANE FLIES IN tH HOURS from dStart nm
 // before its route's end: vs kt while more than ds nm out, and inside ds
 // slowing evenly with the distance left to vmin at the end (dD/dt =
@@ -48663,6 +48688,8 @@ function _gateParkedAtOrigin(lat, lng, o) {
 function _gateGroundSpeed() {
   try {
     var wh = window._gateMapWhere;
+    // v24105 — taxiing in: the taxi's own speed (kt)
+    if (wh && wh.kind === 'taxi') return (_gateTaxi.on && _gateTaxi.plan) ? _taxiVAtS(_gateTaxi.plan, _gateTaxi.s) / 0.5144 : 0;
     if (wh && (wh.kind === 'fix' || wh.kind === 'origin-ground') && typeof wh.spd === 'number' && isFinite(wh.spd)) return wh.spd;
     var lp = window._gateInboundLivePos;
     if (lp && typeof lp.speed === 'number' && isFinite(lp.speed)) return lp.speed;
@@ -48679,6 +48706,7 @@ function _gateTrackTrusted() {
 function _gateOnGroundNow() {
   try {
     var wh = window._gateMapWhere;
+    if (wh && wh.kind === 'taxi') return true;   // v24105
     if (wh && (wh.kind === 'fix' || wh.kind === 'origin-ground')) return wh.kind === 'origin-ground' || wh.onGround === true;
     var lp = window._gateInboundLivePos;
     if (lp) return lp.onGround === true;
@@ -49730,7 +49758,11 @@ function _gateAircraftWhere(inb, cf, now) {
   try { deps = _gateDepsSeen(_gateFeedRows('dep'), ap, t); } catch (e) { deps = []; }
   try { arrs = _gateArrsSeen(_gateFeedRows('arr'), ap, t); } catch (e) { arrs = []; }
   try { tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
-  return _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz);
+  var res = _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz);
+  // v24105 — this gate's inbound rolling out or taxiing in (_gateTaxiWhere);
+  // `base` is the answer it stands in for, should the taxi not draw.
+  try { var tx = _gateTaxiWhere(res, inb, t, ap); if (tx) { tx.base = res; return tx; } } catch (eTx) {}
+  return res;
 }
 // v23918 — the answer itself, for lists already gathered: the apron (every
 // aeroplane on the ground, _gateApronCollect) asks it once per departure with
@@ -49862,6 +49894,24 @@ function _gateMapApply(res) {
     var inb = window._gateInbound, lp = window._gateInboundLivePos;
     if (lp && inb && (_gateRawLanded(inb) || _gateLegGone(inb)) && (!lp.fl || lp.fl === inb.flight)) window._gateInboundLivePos = null;
   } catch (e) {}
+  // v24105 — rolling out or taxiing in: the taxi draws it (_gateTaxiApply),
+  // on every tick, so a rebuild that stopped the map's loops never leaves it
+  // standing. Should it not draw (no route to the stand), the answer it
+  // stands in for is drawn instead.
+  if (res.kind === 'taxi') {
+    var _txOk = false;
+    try { window._gateMapWhere = res; window._gateMapFix = null; } catch (eW) {}
+    try { _txOk = _gateTaxiApply(res); } catch (eTx) { _txOk = false; }
+    if (_txOk) {
+      try { if (typeof gateMap !== 'undefined') { _mapPlaneFit(gateMap); _gateApronSync(gateMap); } _mapPlaneFit(window._bigCraftMap); _gateApronSync(window._bigCraftMap); } catch (eF) {}
+      var _txKey = 'taxi|' + res.org + '>' + res.dst + '|' + res.anchor;
+      if (window._lastMapProgKey !== _txKey) { try { console.log('[MAP-WHERE] taxi', res.org + '>' + res.dst, res.why); } catch (eL) {} }
+      window._lastMapProgKey = _txKey; window._lastMapPosKey = _txKey;
+      return;
+    }
+    res = res.base;
+    if (!res) return;
+  }
   var live = res.kind === 'fix' || res.kind === 'origin-ground';
   var note = res.kind === 'none' ? _gateMapNote(res) : '';
   // v23916 — at our stand (or our empty stand) WHERE the aeroplane stands and
@@ -50462,7 +50512,7 @@ function _gateApronOwn(ap, o, f) {
     var wh = window._gateMapWhere;
     var live = !!(wh && wh.kind === 'fix' && wh.onGround === true && typeof wh.lat === 'number' && typeof wh.lng === 'number'
                   && o && _gcNm([wh.lat, wh.lng], o) < 6);
-    own.here = !!(wh && (wh.kind === 'stand' || live));
+    own.here = !!(wh && (wh.kind === 'stand' || wh.kind === 'taxi' || live));   // v24105 — taxiing in is here too
     own.door = _gateApronDoor(_gateOwnGateRef(ap));
     try { own.spec = _mapPlaneSpec(); } catch (eS) { own.spec = null; }
     if (live && f && f.stands) {
@@ -51068,7 +51118,7 @@ function _runwayFinalPath(pl, d, destIata) {
       var _trk = (typeof _gateHeading === 'function') ? _gateHeading(null) : null;
       if (typeof _trk === 'number' && isFinite(_trk)) inb = _trk;
     }
-    var best = null;
+    var best = null, cand = [];
     for (var i = 0; i < rws.length; i++) {
       var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]];
       var ends = [[le, he], [he, le]];
@@ -51076,23 +51126,64 @@ function _runwayFinalPath(pl, d, destIata) {
         var t = ends[j][0], f = ends[j][1];
         var hdg = _gcBrgDeg(t, f);
         var diff = Math.abs(((inb - hdg + 540) % 360) - 180);
-        if (!best || diff < best.diff) best = { t: t, f: f, hdg: hdg, diff: diff };
+        cand.push({ t: t, f: f, hdg: hdg, diff: diff });
+        if (!best || diff < best.diff) best = cand[cand.length - 1];
       }
     }
     if (!best) return null;
+    // v24105 — OF PARALLEL RUNWAYS, THE ONE IT IS LINED UP WITH. Orlando's
+    // four run 359.39° to 359.54° by their survey, so the smallest difference
+    // from the bearing to the field always picked the same one: UA2779,
+    // 36 m off 35R's centreline 8.3 nm out, was routed to 36L 4 km west,
+    // was not "established" on it, and waited 2.2 nm short of a runway it was
+    // never landing on (2026-10-31). 907 of 2,884 final-approach fixes at
+    // every airport in the table went to another runway end. The direction
+    // is chosen as before; of the ends that way (headings within 3°), the
+    // aeroplane gets the one nearest its own extended centreline. And one
+    // already ON an extended centreline (within 0.3 nm of it, 0.3-12 nm out,
+    // facing within 60° of the bearing to the field) lands on that runway even
+    // where it is not parallel to the rest (Salt Lake City's 17 beside
+    // 16L/16R) or lies well off the field's reference point (Amsterdam's
+    // Polderbaan, 33° off it from 4 nm out). Neither when the live track says
+    // the aeroplane is not flying that way (a downwind passing the extended
+    // centreline of a parallel): then it is as it was.
+    var _trkF = null;
+    try { _trkF = (typeof _gateHeading === 'function') ? _gateHeading(null) : null; } catch (eTk) { _trkF = null; }
+    var _facing = function (c) { return !(typeof _trkF === 'number' && isFinite(_trkF)) || Math.abs(((_trkF - c.hdg + 540) % 360) - 180) <= 60; };
+    var _xt = function (c) { return Math.abs(_gcNm(c.t, pl) * Math.sin((_gcBrgDeg(c.t, pl) - c.hdg) * Math.PI / 180)); };
+    var _onC = null, _onX = 0.3;
+    for (var q0 = 0; q0 < cand.length; q0++) {
+      var c0 = cand[q0];
+      if (c0.diff > 60 || !_facing(c0)) continue;
+      var a0 = -_gcNm(c0.t, pl) * Math.cos((_gcBrgDeg(c0.t, pl) - c0.hdg) * Math.PI / 180), x0 = _xt(c0);
+      if (a0 > 0.3 && a0 < 12 && x0 < _onX) { _onC = c0; _onX = x0; }
+    }
+    if (_onC) best = _onC;
+    var _bx = _xt(best);
+    for (var q = 0; q < cand.length && !_onC && _facing(best); q++) {
+      var cq = cand[q];
+      if (cq === best || Math.abs(((cq.hdg - best.hdg + 540) % 360) - 180) > 3) continue;
+      var xq = _xt(cq);
+      if (xq < _bx) { best = cq; _bx = xq; }
+    }
     var dT = _gcNm(pl, best.t);
     if (!(dT > 0.05)) return null;
-    // Touchdown ~a third down the runway, along the landing direction.
+    // v24105 — touchdown where aeroplanes touch down: 450 m in (18% of a
+    // runway shorter than 2.5 km), not a third of the way down. The roll-out
+    // from there is the taxi's (_taxiPlan), which the route hands on to
+    // through `rw`: the end it lands on.
     var rwNm = _gcNm(best.t, best.f);
-    var tdz = _gcDestPt(best.t, best.hdg, Math.min(rwNm * 0.35, rwNm));
+    var tdNm = Math.min(450 / 1852, rwNm * 0.18);
+    var tdz = _gcDestPt(best.t, best.hdg, tdNm);
+    var _rw = function (r, past) { r.rw = { t: best.t, f: best.f, hdg: best.hdg, nm: rwNm, past: !!past }; return r; };
     // v24089 — already PAST the threshold (a fix in the flare or the float):
     // on down the runway, never back to the threshold. Routed back to it the
     // line doubled on itself and the nose spun round across the runway.
     var _off = (_gcBrgDeg(best.t, pl) - best.hdg) * Math.PI / 180;
     var pastNm = dT * Math.cos(_off);
-    if (pastNm > 0.05 && Math.abs(dT * Math.sin(_off)) < 0.3) return [pl, _gcDestPt(best.t, best.hdg, Math.min(rwNm, Math.max(pastNm + 0.05, rwNm * 0.35)))];
+    if (pastNm > 0.05 && Math.abs(dT * Math.sin(_off)) < 0.3) return _rw([pl, _gcDestPt(best.t, best.hdg, Math.min(rwNm, Math.max(pastNm + 0.05, rwNm * 0.35)))], true);
     // Short final already: fly straight to the threshold and land.
-    if (dT < 1.2) return [pl, best.t, tdz];
+    if (dT < 1.2) return _rw([pl, best.t, tdz]);
     // Join the extended centerline at up to 8nm out (never beyond ~60% of
     // what's left, so the join point is always AHEAD of the aircraft).
     var joinNm = Math.min(8, dT * 0.6);
@@ -51121,8 +51212,833 @@ function _runwayFinalPath(pl, d, destIata) {
       }
     }
     head.push(best.t, tdz);
-    return head;
+    return _rw(head);
   } catch (e) { return null; }
+}
+
+// ── v24105 — LANDING, ROLL-OUT AND TAXI-IN ─────────────────────────────────
+// UA2779 into Orlando, 2026-10-31: the gate-42 map held the aeroplane short
+// of the field at 315 ft, then put it on the runway and at the gate within
+// ten seconds, with no landing drawn at all. Now an arrival lands on its
+// runway, rolls out, turns off at a real exit and taxis to its stand along
+// the airport's own taxiways
+// (/data/taxi/<IATA>.json, built from OpenStreetMap by
+// scripts/gates/build-taxi.py), then stands where the parked view puts it.
+//
+// When it plays, by evidence (the evidence-only rule of v23915):
+//   • an aeroplane ESTABLISHED on its final (_gateOnFinal) is carried on to
+//     touchdown and keeps going: down the runway, off at the exit, to the
+//     stand (it can only be landing; a newer airborne fix — a go-around —
+//     ends the taxi and the glide takes the aeroplane back);
+//   • the feed's Arrived / Landed (its time is the touchdown, _gateLandedAt)
+//     plays it from that time: a screen that only hears of it late starts
+//     mid-taxi at the elapsed-time spot, never a landing that has not
+//     happened;
+//   • a live fix on the ground at our field re-times it from where the fix
+//     puts the aeroplane, or routes it on from there when it took another
+//     way.
+// The marker is never planted: a new time is flown off from where it is
+// drawn (at most 1.6 times the model's speed, as the glide's corrections,
+// at least a third of it), and a later fix on the ground re-times the route
+// drawn rather than moving the marker off it, so nothing jumps from the air
+// to the gate and nothing drives backwards.
+//
+// The runway is the one the approach was flown to (_runwayFinalPath, kept on
+// _gateGlide.rw); without an approach on this screen, the end most nearly
+// into the wind (MET Norway's, as the weather card has it), else facing the
+// way the flight came; of parallel runways, the one with the shorter taxi.
+// Touchdown is 450 m in (or 18% of a short runway); the roll-out slows
+// evenly from 136 kt to about 30 kt at an exit at least 500-1,500 m on (the
+// first one whose taxi to the stand plus the extra roll is shortest, never
+// one that turns back against the landing direction); taxiways at 19 kt,
+// slower through bends (1.2 m/s² sideways) and into the stand.
+var _AP_TAXI = {};           // IATA -> taxi file, or null when there is none
+var _AP_TAXI_WAIT = {};      // IATA -> [callbacks] while the file is loading
+var _AP_TAXI_RETRY = {};     // IATA -> time a failed fetch may be tried again
+function _apTaxiFor(iata, onReady) {
+  var k = String(iata || '').toUpperCase();
+  if (!/^[A-Z0-9]{3}$/.test(k)) return null;
+  if (Object.prototype.hasOwnProperty.call(_AP_TAXI, k)) return _AP_TAXI[k];
+  if (_AP_TAXI_WAIT[k]) { if (onReady) _AP_TAXI_WAIT[k].push(onReady); return null; }
+  if (_AP_TAXI_RETRY[k] && Date.now() < _AP_TAXI_RETRY[k]) return null;
+  _AP_TAXI_WAIT[k] = onReady ? [onReady] : [];
+  // As the gate files (_apGatesFor): only a 404 is "none" for the page's life.
+  var done = function (f, known) {
+    var cbs = _AP_TAXI_WAIT[k] || [];
+    delete _AP_TAXI_WAIT[k];
+    if (known) { _AP_TAXI[k] = f; delete _AP_TAXI_RETRY[k]; }
+    else _AP_TAXI_RETRY[k] = Date.now() + 5 * 60000;
+    if (f) cbs.forEach(function (cb) { try { cb(f); } catch (e) {} });
+  };
+  try {
+    fetch('/data/taxi/' + k + '.json').then(function (r) {
+      if (r.status === 404) return done(null, true);
+      if (!r.ok) return done(null, false);
+      return r.json().then(function (f) { done(f && f.nodes && f.ways ? f : null, !!(f && typeof f === 'object')); }, function () { done(null, false); });
+    }, function () { done(null, false); });
+  } catch (e) { done(null, false); }
+  return null;
+}
+// Metres east/north of `o`, and back: flat across an airport.
+function _taxiXY(p, o) {
+  return [(p[1] - o[1]) * 111194.9 * Math.cos(o[0] * Math.PI / 180), (p[0] - o[0]) * 111194.9];
+}
+function _taxiLL(q, o) {
+  return [o[0] + q[1] / 111194.9, o[1] + q[0] / (111194.9 * Math.cos(o[0] * Math.PI / 180))];
+}
+// The taxi file as a graph, once per file. A lead-in line costs four times
+// its length, so a route only uses its own stand's (never another stand as a
+// short cut); a taxilane a little more than a taxiway.
+function _taxiGraph(f) {
+  if (!f || !f.nodes || !f.ways || !f.nodes.length) return null;
+  if (f._g) return f._g;
+  var o = f.nodes[0], n = f.nodes.length, xy = new Array(n), adj = new Array(n), edges = [];
+  for (var i = 0; i < n; i++) { xy[i] = _taxiXY(f.nodes[i], o); adj[i] = []; }
+  for (var w = 0; w < f.ways.length; w++) {
+    var row = f.ways[w], mult = row[0] === 2 ? 4 : row[0] === 1 ? 1.2 : 1;
+    for (var j = 1; j < row.length - 1; j++) {
+      var a = row[j], b = row[j + 1];
+      if (a === b || !(a >= 0 && a < n) || !(b >= 0 && b < n)) continue;
+      var len = Math.hypot(xy[b][0] - xy[a][0], xy[b][1] - xy[a][1]);
+      adj[a].push([b, len * mult]); adj[b].push([a, len * mult]);
+      edges.push([a, b, mult]);
+    }
+  }
+  var rwn = {};
+  (f.rwn || []).forEach(function (q) { rwn[q] = 1; });
+  // the network's connected pieces: a stand is joined to one that reaches the
+  // runways (the main network, or any piece at least a quarter its length),
+  // never to an apron OpenStreetMap left unconnected
+  var comp = new Array(n), clen = [], cn = 0;
+  for (var c0 = 0; c0 < n; c0++) comp[c0] = -1;
+  for (var s0 = 0; s0 < n; s0++) {
+    if (comp[s0] >= 0) continue;
+    var stack = [s0]; comp[s0] = cn; clen[cn] = 0;
+    while (stack.length) {
+      var u = stack.pop();
+      for (var k = 0; k < adj[u].length; k++) {
+        var v = adj[u][k][0];
+        clen[cn] += adj[u][k][1] / 2;
+        if (comp[v] < 0) { comp[v] = cn; stack.push(v); }
+      }
+    }
+    cn++;
+  }
+  var big = Math.max.apply(null, clen.concat([0])), main = {};
+  for (var m = 0; m < cn; m++) if (clen[m] >= 0.25 * big) main[m] = 1;
+  f._g = { o: o, xy: xy, n: n, adj: adj, edges: edges, rwn: rwn, comp: comp, main: main };
+  return f._g;
+}
+// The nearest point of the network to q (metres): { a, b, f, d, p, mult } —
+// on the main network (_taxiGraph) when one is within 250 m.
+function _taxiNear(g, q, any) {
+  var best = null;
+  for (var e = 0; e < g.edges.length; e++) {
+    if (!any && g.main && !g.main[g.comp[g.edges[e][0]]]) continue;
+    var A = g.xy[g.edges[e][0]], B = g.xy[g.edges[e][1]];
+    var dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy;
+    var f = L2 > 0 ? Math.max(0, Math.min(1, ((q[0] - A[0]) * dx + (q[1] - A[1]) * dy) / L2)) : 0;
+    var px = A[0] + dx * f, py = A[1] + dy * f, d = Math.hypot(q[0] - px, q[1] - py);
+    if (!best || d < best.d) best = { a: g.edges[e][0], b: g.edges[e][1], f: f, d: d, p: [px, py], mult: g.edges[e][2] };
+  }
+  if (!any && (!best || best.d > 250)) return _taxiNear(g, q, true);
+  return best;
+}
+// Shortest ways from one point of the network (an _taxiNear answer) to every
+// node: dist (cost) and prev (the next node towards the point; -2 = the point).
+function _taxiDijkstra(g, at) {
+  var dist = new Array(g.n), prev = new Array(g.n), heap = [];
+  for (var i = 0; i < g.n; i++) { dist[i] = Infinity; prev[i] = -1; }
+  var push = function (d, v) {
+    heap.push([d, v]);
+    for (var c = heap.length - 1; c > 0;) {
+      var p = (c - 1) >> 1;
+      if (heap[p][0] <= heap[c][0]) break;
+      var t = heap[p]; heap[p] = heap[c]; heap[c] = t; c = p;
+    }
+  };
+  var pop = function () {
+    var top = heap[0], last = heap.pop();
+    if (heap.length) {
+      heap[0] = last;
+      for (var c = 0;;) {
+        var l = 2 * c + 1, r = l + 1, m = c;
+        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+        if (m === c) break;
+        var t = heap[m]; heap[m] = heap[c]; heap[c] = t; c = m;
+      }
+    }
+    return top;
+  };
+  var A = g.xy[at.a], B = g.xy[at.b], len = Math.hypot(B[0] - A[0], B[1] - A[1]) * at.mult;
+  dist[at.a] = at.f * len; prev[at.a] = -2; push(dist[at.a], at.a);
+  if ((1 - at.f) * len < dist[at.b]) { dist[at.b] = (1 - at.f) * len; prev[at.b] = -2; push(dist[at.b], at.b); }
+  while (heap.length) {
+    var top = pop(), u = top[1];
+    if (top[0] > dist[u]) continue;
+    var nb = g.adj[u];
+    for (var k = 0; k < nb.length; k++) {
+      var v = nb[k][0], nd = dist[u] + nb[k][1];
+      if (nd < dist[v]) { dist[v] = nd; prev[v] = u; push(nd, v); }
+    }
+  }
+  return { dist: dist, prev: prev, at: at };
+}
+// A runway end in the network's metres: threshold T, unit vector u along the
+// landing direction, length L, and the centreline as OpenStreetMap draws it
+// (the runway table's thresholds can sit metres to one side of the drawn
+// runway: the mean offset of the network's own on-runway nodes moves it).
+function _taxiRunway(g, rw) {
+  var T = _taxiXY(rw.t, g.o), F = _taxiXY(rw.f, g.o);
+  var ux = F[0] - T[0], uy = F[1] - T[1], L = Math.hypot(ux, uy);
+  if (!(L > 300)) return null;
+  ux /= L; uy /= L;
+  var sum = 0, cnt = 0, nodes = [];
+  for (var i = 0; i < g.n; i++) {
+    var vx = g.xy[i][0] - T[0], vy = g.xy[i][1] - T[1];
+    var al = vx * ux + vy * uy, xt = vx * uy - vy * ux;   // xt > 0: right of the landing direction
+    if (al < -50 || al > L + 50) continue;
+    if (g.rwn[i] && Math.abs(xt) < 45) { sum += xt; cnt++; }
+    nodes.push([i, al, xt]);
+  }
+  var off = cnt ? sum / cnt : 0;
+  T = [T[0] + uy * off, T[1] - ux * off];
+  // the nodes on the centreline; where the taxiways stop at the runway's
+  // edge instead (not on it), the nearest within 100 m
+  var on = [];
+  for (var pass = 0; pass < 2 && !on.length; pass++) {
+    for (var j = 0; j < nodes.length; j++) {
+      var x2 = Math.abs(nodes[j][2] - off);
+      if ((pass ? x2 < 100 : x2 < (g.rwn[nodes[j][0]] ? 30 : 20)) && nodes[j][1] > 0 && nodes[j][1] < L) on.push({ i: nodes[j][0], along: nodes[j][1] });
+    }
+  }
+  return { T: T, u: [ux, uy], L: L, on: on, hdg: (Math.atan2(ux, uy) * 180 / Math.PI + 360) % 360 };
+}
+// Round the corners of a polyline (metres) so the nose turns through a bend
+// instead of on the spot: a quadratic through each vertex, `r` metres either
+// side (never more than 45% of either leg).
+function _taxiRound(pts, rFor) {
+  if (pts.length < 3) return pts.slice();
+  var out = [pts[0]];
+  for (var i = 1; i < pts.length - 1; i++) {
+    var P = pts[i], A = pts[i - 1], B = pts[i + 1];
+    var l1 = Math.hypot(P[0] - A[0], P[1] - A[1]), l2 = Math.hypot(B[0] - P[0], B[1] - P[1]);
+    if (!(l1 > 0.5) || !(l2 > 0.5)) { out.push(P); continue; }
+    var a1 = Math.atan2(P[1] - A[1], P[0] - A[0]), a2 = Math.atan2(B[1] - P[1], B[0] - P[0]);
+    var th = Math.abs(((a2 - a1) * 180 / Math.PI + 540) % 360 - 180);
+    if (th < 8) { out.push(P); continue; }
+    var r = Math.min(rFor(i), 0.45 * l1, 0.45 * l2);
+    if (!(r > 1)) { out.push(P); continue; }
+    var S = [P[0] - (P[0] - A[0]) / l1 * r, P[1] - (P[1] - A[1]) / l1 * r];
+    var E = [P[0] + (B[0] - P[0]) / l2 * r, P[1] + (B[1] - P[1]) / l2 * r];
+    var k = Math.max(3, Math.round(th / 9));
+    for (var s = 0; s <= k; s++) {
+      var t = s / k, wa = (1 - t) * (1 - t), wb = 2 * t * (1 - t), wc = t * t;
+      out.push([wa * S[0] + wb * P[0] + wc * E[0], wa * S[1] + wb * P[1] + wc * E[1]]);
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+// The speeds along a path (metres, sampled every `step`): what the aeroplane
+// may do at each sample, then accelerations and braking it can make, then
+// the time at each sample. `roll` = { s0, s1, v0 }: on the runway from s0 to
+// the exit at s1, slowing evenly from v0 (m/s).
+function _taxiProfile(xy, roll, vStart) {
+  var step = 3, S = [0], P = [xy[0]];
+  var acc = 0;
+  for (var i = 1; i < xy.length; i++) {
+    var A = xy[i - 1], B = xy[i], L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+    if (!(L > 1e-6)) continue;
+    while (acc + step <= L) {
+      acc += step;
+      P.push([A[0] + (B[0] - A[0]) * acc / L, A[1] + (B[1] - A[1]) * acc / L]);
+      S.push(S[S.length - 1] + step);
+    }
+    var rest = L - acc;
+    if (rest > 0.05 || i === xy.length - 1) { P.push(B); S.push(S[S.length - 1] + rest); }
+    acc = 0;
+  }
+  var n = P.length, total = S[n - 1], cap = new Array(n), v = new Array(n), t = new Array(n);
+  var ang = function (k) {
+    var a = Math.max(0, k - 2), b = Math.min(n - 1, k + 2);
+    return Math.atan2(P[b][1] - P[a][1], P[b][0] - P[a][0]);
+  };
+  var aR = roll ? Math.max(0.9, Math.min(2.6, (roll.v0 * roll.v0 - 225) / (2 * Math.max(50, roll.s1 - roll.s0)))) : 0;
+  for (var k = 0; k < n; k++) {
+    var s = S[k], c = 10.3;
+    if (roll && s <= roll.s1 + 1) {
+      c = s <= roll.s0 ? roll.v0 : Math.sqrt(Math.max(225, roll.v0 * roll.v0 - 2 * aR * (s - roll.s0)));
+    }
+    // bends: the heading change over ±6 m gives the radius
+    var a0 = ang(Math.max(0, k - 2)), a1 = ang(Math.min(n - 1, k + 2));
+    var dth = Math.abs(((a1 - a0) * 180 / Math.PI + 540) % 360 - 180) * Math.PI / 180;
+    var span = S[Math.min(n - 1, k + 2)] - S[Math.max(0, k - 2)];
+    if (dth > 0.02 && span > 0) c = Math.min(c, Math.max(3, Math.sqrt(1.2 * span / dth)));
+    if (total - s < 220) c = Math.min(c, 6);
+    cap[k] = c;
+  }
+  v[0] = Math.min(cap[0], vStart);
+  for (var f = 1; f < n; f++) v[f] = Math.min(cap[f], Math.sqrt(v[f - 1] * v[f - 1] + 2 * 0.6 * (S[f] - S[f - 1])));
+  v[n - 1] = 0;
+  for (var b = n - 2; b >= 0; b--) {
+    var dec = (roll && S[b] <= roll.s1) ? 2.6 : 0.9;
+    v[b] = Math.min(v[b], Math.sqrt(v[b + 1] * v[b + 1] + 2 * dec * (S[b + 1] - S[b])));
+  }
+  t[0] = 0;
+  for (var q = 1; q < n; q++) t[q] = t[q - 1] + (S[q] - S[q - 1]) / Math.max(0.8, (v[q - 1] + v[q]) / 2);
+  return { xy: P, s: S, v: v, t: t, total: total, tTotal: t[n - 1] };
+}
+// THE ROUTE. `g` the network, `rw` a runway end { t, f } (lat/lng threshold
+// and far end), `end` the stand { lat, lng, hdg } (the parked view's centre,
+// _gateParkPlace), `opt.dj` a Dijkstra from the stand (shared by every
+// runway tried), `opt.from` a spot on the ground to start from instead of the
+// touchdown ({ ll, v } — on this runway and fast it rolls out from there),
+// `opt.td` the touchdown point the approach was flown to (the roll-out joins
+// the drawn runway from it). Returns the path sampled every 3 m with its
+// speeds and times (lat/lng in `pts`), or null when no way to the stand.
+function _taxiPlan(g, rw, end, opt) {
+  try {
+    opt = opt || {};
+    var E = _taxiXY([end.lat, end.lng], g.o);
+    var dj = opt.dj;
+    if (!dj) {
+      var at = _taxiNear(g, E);
+      if (!at || at.d > 250) return null;
+      dj = _taxiDijkstra(g, at);
+    }
+    var tail = function (i) {   // node i → … → the stand
+      var out = [], guard = 0;
+      while (i >= 0 && guard++ < 100000) { out.push(g.xy[i]); i = dj.prev[i]; }
+      out.push(dj.at.p);
+      if (Math.hypot(E[0] - dj.at.p[0], E[1] - dj.at.p[1]) > 0.5) out.push(E);
+      return out;
+    };
+    var path, roll = null, v0, rFor;
+    var R = rw ? _taxiRunway(g, rw) : null;
+    var F0 = opt.from ? _taxiXY(opt.from.ll, g.o) : null;
+    var onRw = null;
+    if (F0 && R) {
+      var fx = F0[0] - R.T[0], fy = F0[1] - R.T[1], fal = fx * R.u[0] + fy * R.u[1], fxt = Math.abs(fx * R.u[1] - fy * R.u[0]);
+      var ftr = opt.from.trk, fok = !(typeof ftr === 'number' && isFinite(ftr)) || Math.cos((ftr - R.hdg) * Math.PI / 180) > 0.7;
+      if (fxt < 45 && fal > -30 && fal < R.L - 30 && (opt.from.v || 0) > 12 && fok) onRw = Math.max(0, fal);
+    }
+    if (F0 && onRw === null) {
+      // on a taxiway: on from the nearer end of its edge, the way the stand is
+      var fa = _taxiNear(g, F0);
+      if (!fa || fa.d > 150) return null;
+      var ca = dj.dist[fa.a] + Math.hypot(F0[0] - g.xy[fa.a][0], F0[1] - g.xy[fa.a][1]);
+      var cb = dj.dist[fa.b] + Math.hypot(F0[0] - g.xy[fa.b][0], F0[1] - g.xy[fa.b][1]);
+      if (!isFinite(ca) && !isFinite(cb)) return null;
+      path = [F0, fa.p].concat(tail(ca <= cb ? fa.a : fa.b));
+      v0 = Math.min(10.3, Math.max(2, opt.from.v || 6));
+      rFor = function () { return 30; };
+    } else {
+      if (!R) return null;
+      var s0 = onRw !== null ? onRw : Math.min(450, 0.18 * R.L);
+      v0 = onRw !== null ? Math.min(70, opt.from.v) : 70;
+      // a jet needs half of what is left (600-1,400 m), a turboprop a third
+      // (400-800 m): a Dash 8 is off Moncton's 11 at B, a jet rolls on
+      var rollMin = (opt.prop ? Math.max(400, Math.min(800, 0.35 * (R.L - s0))) : Math.max(600, Math.min(1400, 0.5 * (R.L - s0)))) * (v0 * v0) / 4900;
+      rollMin = Math.max(80, rollMin);
+      var pick = null;
+      for (var pass = 0; pass < 2 && !pick; pass++) {
+        var lo = s0 + (pass ? 0.5 : 1) * rollMin;
+        for (var c = 0; c < R.on.length; c++) {
+          var x = R.on[c];
+          if (x.along < lo || x.along > R.L - 20 || !isFinite(dj.dist[x.i])) continue;
+          if (!pass) {
+            // never an exit that turns back against the landing direction
+            var j = x.i, walked = 0, P0 = g.xy[x.i], Pn = P0, guard2 = 0;
+            while (walked < 25 && j >= 0 && guard2++ < 1000) {
+              var nj = dj.prev[j];
+              var Q = nj >= 0 ? g.xy[nj] : nj === -2 ? dj.at.p : null;
+              if (!Q) break;
+              walked += Math.hypot(Q[0] - Pn[0], Q[1] - Pn[1]); Pn = Q; j = nj;
+              if (nj === -2) break;
+            }
+            var dx = Pn[0] - P0[0], dy = Pn[1] - P0[1], dl = Math.hypot(dx, dy);
+            if (dl > 1 && (dx * R.u[0] + dy * R.u[1]) / dl < -0.2) continue;
+          }
+          var cost = dj.dist[x.i] + 0.5 * (x.along - lo);
+          if (!pick || cost < pick.cost) pick = { i: x.i, along: x.along, cost: cost };
+        }
+      }
+      // A runway whose exits are all behind the roll-out (none mapped further
+      // down): it slows, turns round on the runway and backtracks to the exit
+      // whose taxi is shortest.
+      var back = null;
+      if (!pick) {
+        for (var c2 = 0; c2 < R.on.length; c2++) {
+          var x2 = R.on[c2];
+          if (x2.along > R.L - 20 || !isFinite(dj.dist[x2.i])) continue;
+          if (!pick || dj.dist[x2.i] < pick.cost) pick = { i: x2.i, along: x2.along, cost: dj.dist[x2.i] };
+        }
+        if (!pick) return null;
+        back = Math.max(pick.along + 80, Math.min(R.L - 60, s0 + rollMin));
+      }
+      // one straight roll from touchdown (the approach's own point, or the
+      // fix's) to the exit on the drawn centreline: a separate step on to
+      // that centreline, metres to one side, was a corner that nearly
+      // stopped the aeroplane as it touched down
+      var TD = [R.T[0] + R.u[0] * s0, R.T[1] + R.u[1] * s0];
+      var RX = [R.T[0] + R.u[0] * pick.along, R.T[1] + R.u[1] * pick.along];
+      var start = (opt.td && onRw === null) ? _taxiXY(opt.td, g.o) : (F0 || TD);
+      if (back !== null) {
+        // the turn: out to one side and round, back up the runway
+        var RT = [R.T[0] + R.u[0] * back, R.T[1] + R.u[1] * back];
+        var RT2 = [R.T[0] + R.u[0] * (back - 30) + R.u[1] * 25, R.T[1] + R.u[1] * (back - 30) - R.u[0] * 25];
+        path = [start, RT, RT2, RX].concat(tail(pick.i));
+        roll = { s1: Math.hypot(RT[0] - start[0], RT[1] - start[1]), s0: 0, v0: v0 };
+      } else {
+        path = [start, RX].concat(tail(pick.i));
+        roll = { s1: Math.hypot(RX[0] - start[0], RX[1] - start[1]), s0: 0, v0: v0 };
+      }
+    }
+    // drop repeated points, then round the corners
+    var clean = [path[0]];
+    for (var p = 1; p < path.length; p++) {
+      var L0 = clean[clean.length - 1];
+      if (Math.hypot(path[p][0] - L0[0], path[p][1] - L0[1]) > 0.5) clean.push(path[p]);
+    }
+    if (clean.length < 2) return null;
+    if (roll) {
+      var exitK = clean.indexOf(RX);
+      rFor = function (k) { return k === exitK ? 55 : 30; };
+    }
+    // t = 0 where the path starts: the touchdown, or the fix
+    var rounded = _taxiRound(clean, function (k) { return rFor(k); });
+    var prof = _taxiProfile(rounded, roll, v0);
+    var pts = new Array(prof.xy.length), tt = prof.t;
+    for (var y = 0; y < prof.xy.length; y++) pts[y] = _taxiLL(prof.xy[y], g.o);
+    return { pts: pts, s: prof.s, v: prof.v, t: tt, total: prof.total, tStart: tt[0], tEnd: tt[tt.length - 1],
+             hdg: (typeof end.hdg === 'number' && isFinite(end.hdg)) ? end.hdg : null,
+             rollEnd: roll ? roll.s1 : 0, cost: prof.tTotal };
+  } catch (e) { return null; }
+}
+// Along a plan: the distance at a time (seconds from its zero), the speed and
+// the spot (with the way it points) at a distance.
+function _taxiSAtT(plan, tSec) {
+  var t = plan.t, n = t.length;
+  if (!(tSec > t[0])) return 0;
+  if (tSec >= t[n - 1]) return plan.total;
+  var lo = 0, hi = n - 1;
+  while (hi - lo > 1) { var m = (lo + hi) >> 1; if (t[m] <= tSec) lo = m; else hi = m; }
+  var f = (t[hi] - t[lo]) > 1e-9 ? (tSec - t[lo]) / (t[hi] - t[lo]) : 0;
+  return plan.s[lo] + (plan.s[hi] - plan.s[lo]) * f;
+}
+function _taxiIdx(plan, s) {
+  var S = plan.s, lo = 0, hi = S.length - 1;
+  if (s <= 0) return 0;
+  if (s >= S[hi]) return hi - 1;
+  while (hi - lo > 1) { var m = (lo + hi) >> 1; if (S[m] <= s) lo = m; else hi = m; }
+  return lo;
+}
+function _taxiVAtS(plan, s) {
+  var i = _taxiIdx(plan, s), j = Math.min(plan.s.length - 1, i + 1);
+  var f = (plan.s[j] - plan.s[i]) > 1e-9 ? Math.max(0, Math.min(1, (s - plan.s[i]) / (plan.s[j] - plan.s[i]))) : 0;
+  return plan.v[i] + (plan.v[j] - plan.v[i]) * f;
+}
+function _taxiAtS(plan, s) {
+  var i = _taxiIdx(plan, s), j = Math.min(plan.pts.length - 1, i + 1);
+  var f = (plan.s[j] - plan.s[i]) > 1e-9 ? Math.max(0, Math.min(1, (s - plan.s[i]) / (plan.s[j] - plan.s[i]))) : 0;
+  var A = plan.pts[i], B = plan.pts[j];
+  var ll = [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f];
+  // the way it points: across ±8 m of path, held at the stand's own heading
+  // over the last few metres in
+  var a = plan.pts[_taxiIdx(plan, s - 8)], b = plan.pts[Math.min(plan.pts.length - 1, _taxiIdx(plan, s + 8) + 1)];
+  var hdg = _gcBrgDeg(a, b);
+  var left = plan.total - s;
+  if (plan.hdg !== null && left < 25) {
+    var w = Math.max(0, Math.min(1, (25 - left) / 20)), dh = ((plan.hdg - hdg + 540) % 360) - 180;
+    hdg = (hdg + dh * w + 360) % 360;
+  }
+  return { ll: ll, hdg: hdg };
+}
+// A path drawn ahead of the aeroplane can join from where it is now: `from`
+// (lat/lng) to the plan's first point at `vMs`, with the plan's times kept
+// (what is added comes before them).
+function _taxiPrefix(plan, pre, vMs) {
+  if (!pre || !pre.length) return plan;
+  var pts = pre.concat([plan.pts[0]]), add = [], s = [], acc = 0;
+  for (var i = 0; i < pts.length - 1; i++) {
+    var L = _gcNm(pts[i], pts[i + 1]) * 1852, k = Math.max(1, Math.ceil(L / 10));
+    for (var j = 0; j < k; j++) {
+      add.push([pts[i][0] + (pts[i + 1][0] - pts[i][0]) * j / k, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * j / k]);
+      s.push(acc + L * j / k);
+    }
+    acc += L;
+  }
+  if (!(acc > 1)) return plan;
+  var out = { pts: add.concat(plan.pts), s: [], v: [], t: [], total: plan.total + acc, hdg: plan.hdg,
+              rollEnd: plan.rollEnd + acc, cost: plan.cost };
+  for (var a = 0; a < add.length; a++) { out.s.push(s[a]); out.v.push(vMs); out.t.push(plan.t[0] - (acc - s[a]) / vMs); }
+  for (var b = 0; b < plan.pts.length; b++) { out.s.push(plan.s[b] + acc); out.v.push(plan.v[b]); out.t.push(plan.t[b]); }
+  out.tStart = out.t[0]; out.tEnd = out.t[out.t.length - 1];
+  return out;
+}
+// The ends of runways an arrival with no approach on this screen lands on,
+// best first: into the wind (MET Norway's direction, as the weather card has
+// it), else facing the way the flight came (from `org`), with its parallels.
+function _gateTaxiRunwayEnds(ap, org) {
+  var rws = (typeof AIRPORT_RUNWAYS !== 'undefined' && AIRPORT_RUNWAYS[ap]) || null;
+  if (!rws || !rws.length) return [];
+  var dir = null;
+  try {
+    var w = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[ap] && TOMORROW_WX[ap].current) || null;
+    if (w && typeof w.windDir === 'number' && isFinite(w.windDir) && typeof w.windSpeed === 'number' && w.windSpeed >= 1) dir = w.windDir;
+  } catch (e) { dir = null; }
+  if (dir === null) {
+    var oC = _lookupAirport(org), hC = _lookupAirport(ap);
+    if (oC && hC && _gcNm(oC, hC) > 5) dir = _gcBrgDeg(oC, hC);
+  }
+  var ends = [];
+  for (var i = 0; i < rws.length; i++) {
+    var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]];
+    ends.push({ t: le, f: he, hdg: _gcBrgDeg(le, he) }, { t: he, f: le, hdg: _gcBrgDeg(he, le) });
+  }
+  if (dir === null) return ends;
+  var dif = function (e) { return Math.abs(((dir - e.hdg + 540) % 360) - 180); };
+  ends.sort(function (a, b) { return dif(a) - dif(b); });
+  return ends.filter(function (e) { return Math.abs(((e.hdg - ends[0].hdg + 540) % 360) - 180) <= 3; });
+}
+// The taxi state: one taxiing aeroplane per screen, this gate's inbound.
+//   on, fl, key (flight|stand), plan, t0 (epoch ms at the plan's t = 0),
+//   s (metres drawn along it), anchor ('model' | 'land' | 'fix' + its time),
+//   views (the surfaces it draws on: the glide's view objects), done.
+var _gateTaxi = { on: false, fl: '', key: '', plan: null, t0: 0, s: 0, anchor: '', anchorAt: 0, views: {}, gen: 0,
+                  raf: null, done: false, since: 0, last: 0, cache: {} };
+// This gate's inbound is the one taxiing (or standing where its taxi ended).
+function _gateTaxiMine() {
+  // (asked from code that can run before this part of the file has: the
+  // state is not there yet)
+  if (typeof _gateTaxi === 'undefined' || !_gateTaxi) return false;
+  return !!(_gateTaxi.on && _gateTaxi.fl && typeof window !== 'undefined' && window._gateInbound
+            && _gateTaxi.fl === String(window._gateInbound.flight || ''));
+}
+function _gateTaxiEnd() {
+  _gateTaxi.gen = (_gateTaxi.gen + 1) | 0;
+  try { if (_gateTaxi.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateTaxi.raf); } catch (e) {}
+  _gateTaxi.raf = null; _gateTaxi.on = false; _gateTaxi.plan = null; _gateTaxi.views = {}; _gateTaxi.done = false;
+  _gateTaxi.key = ''; _gateTaxi.fl = '';
+}
+// The stand this board's inbound taxis to, and the route there from each
+// candidate runway (cached per stand and runway; the network's Dijkstra once
+// per stand). Null while the files load or when there is no way there.
+function _gateTaxiRoute(ap, org, rwPref, from, td) {
+  var tf = _apTaxiFor(ap), gf = _apGatesFor(ap);
+  if (!tf || !gf) return null;
+  var g = _taxiGraph(tf);
+  var hC = _lookupAirport(ap);
+  if (!g || !hC) return null;
+  var spot = _gateOwnParkSpot(ap, [hC[0], hC[1]]);
+  if (!spot || (spot.src !== 'stand' && spot.src !== 'gate')) return null;
+  var dOut = null;
+  try { var cf = window._gateCurrentFlight; dOut = cf && cf._locIata ? _lookupAirport(cf._locIata) : null; } catch (e) { dOut = null; }
+  var end = _gateParkPlace(spot, dOut);
+  if (!end || typeof end.lat !== 'number') return null;
+  var sk = ap + '|' + end.lat.toFixed(6) + ',' + end.lng.toFixed(6);
+  var C = _gateTaxi.cache;
+  if (!C[sk]) {
+    var at = _taxiNear(g, _taxiXY([end.lat, end.lng], g.o));
+    C[sk] = (at && at.d <= 250) ? { dj: _taxiDijkstra(g, at) } : { dj: null };
+  }
+  if (!C[sk].dj) return null;
+  var ends = rwPref ? [rwPref] : _gateTaxiRunwayEnds(ap, org);
+  var best = null;
+  for (var i = 0; i < ends.length; i++) {
+    var pl = _taxiPlan(g, ends[i], end, { dj: C[sk].dj, from: from || null, td: td || null, prop: !!(spot.ac && spot.ac.prop) });
+    if (pl && (!best || pl.cost < best.cost)) best = pl;
+    if (from && pl && !rwPref) break;
+  }
+  if (!best && from) best = _taxiPlan(g, null, end, { dj: C[sk].dj, from: from, prop: !!(spot.ac && spot.ac.prop) });
+  if (best) { best.standKey = sk + '|' + (spot.ref || ''); best.standRef = spot.ref || ''; }
+  return best;
+}
+// THE ANSWER ON THE GROUND (called by _gateAircraftWhere for this gate's
+// inbound): 'taxi' while the inbound is rolling out or taxiing in by the
+// rules above, else null (the answer stands as it was).
+function _gateTaxiWhere(res, inb, t, ap) {
+  if (!res || !inb || (res.leg === 'out' && res.why !== 'landed')) return null;
+  if (String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase() !== ap) return null;
+  if (inb !== window._gateInbound) return null;
+  // the files load ahead of the landing (each a few kilobytes, once a page)
+  try { _apTaxiFor(ap, function () { window._lastMapProgKey = null; }); } catch (eF) {}
+  var org = String(inb._locIata || '').toUpperCase(), fl = String(inb.flight || '');
+  var hC = _lookupAirport(ap);
+  if (!org || !hC) return null;
+  var st = _gateTaxi, mine = st.on && st.fl === fl;
+  // a taxi that has run 5 minutes past its own end (a screen in the
+  // background, its frames held) is at its stand
+  if (mine && !st.done && st.plan && t - st.t0 > (st.plan.tEnd + 300) * 1000) st.done = true;
+  var mk = function (anchor, at, extra) {
+    var r = { kind: 'taxi', leg: 'in', org: org, dst: ap, other: org, onGround: true, at: at, anchor: anchor, why: 'taxi-' + anchor };
+    if (mine && st.ll) { r.lat = st.ll[0]; r.lng = st.ll[1]; }
+    for (var k in (extra || {})) if (Object.prototype.hasOwnProperty.call(extra, k)) r[k] = extra[k];
+    return r;
+  };
+  // a live fix on the ground at our field, still moving
+  if (res.kind === 'fix' && res.onGround && _gcNm([res.lat, res.lng], hC) < 6) {
+    if (typeof res.spd === 'number' && res.spd < 3 && !mine) return null;   // standing: the fix says where
+    return mk('fix', res.at, { fix: { lat: res.lat, lng: res.lng, at: res.at, spd: res.spd } });
+  }
+  // the feed's landing
+  if (res.kind === 'stand' && res.why === 'landed') {
+    var land = _gateLandedAt(inb, t);
+    if (!land) return null;
+    if (mine && st.done) return null;
+    if (mine) return mk(st.anchor === 'fix' ? 'keep' : 'land', land, { land: land });
+    if (t - land > 20 * 60000) return null;
+    var rwP = (_gateGlide.rw && _gateGlide.rwFl === fl && t - (_gateGlide.rwAt || 0) < 40 * 60000) ? _gateGlide.rw : null;
+    var plan = _gateTaxiRoute(ap, org, rwP, null, null);
+    if (!plan || t - land > (plan.tEnd + 60) * 1000) return null;
+    return mk('land', land, { land: land });
+  }
+  // the aeroplane landed on the model (an established final): the airborne
+  // fix it was carried on from is older than the landing
+  // (and stays where its taxi ended until the evidence comes)
+  if (mine && res.kind === 'fix' && !res.onGround && !(res.at > st.since)) return mk('model', st.anchorAt);
+  return null;
+}
+// Draw the 'taxi' answer: start, re-time or re-route the taxi, and make sure
+// a live map with this aeroplane's marker is up for it to drive.
+function _gateTaxiApply(res) {
+  var st = _gateTaxi, fl = String((window._gateInbound && window._gateInbound.flight) || '');
+  var o = _lookupAirport(res.org), d = _lookupAirport(res.dst);
+  if (!o || !d) return false;
+  var now = Date.now();
+  var mine = st.on && st.fl === fl;
+  if (st.on && !mine) _gateTaxiEnd();
+  if (mine && (res.anchor === 'model' || res.anchor === 'keep')) { _gateTaxiMap(res, o, d); _gateTaxiRun(); return true; }
+  if (mine && res.anchor === 'land') {
+    // the feed's time replaces the model's unless the two are far apart
+    // (a feed whose "arrived" is the aeroplane on its blocks)
+    if (st.anchor === 'model' && Math.abs(res.land - st.t0) < 3 * 60000) { st.t0 = res.land; st.anchor = 'land'; st.anchorAt = res.land; }
+    _gateTaxiMap(res, o, d);
+    _gateTaxiRun();
+    return true;
+  }
+  var rwG = (_gateGlide.rw && _gateGlide.rwFl === fl) ? _gateGlide.rw : null;
+  var fixPlan = null;
+  if (res.anchor === 'fix' && res.fix) {
+    if (mine && st.anchorAt === res.fix.at) { _gateTaxiMap(res, o, d); _gateTaxiRun(); return true; }
+    var fromV = (typeof res.fix.spd === 'number' ? res.fix.spd : 10) * 0.5144, trk = null;
+    try { trk = (typeof _gateHeading === 'function') ? _gateHeading(null) : null; } catch (eH) { trk = null; }
+    fixPlan = _gateTaxiRoute(res.dst, res.org, rwG, { ll: [res.fix.lat, res.fix.lng], v: fromV, trk: trk }, null);
+    if (mine && st.plan) {
+      // Already taxiing: the fix re-times the route drawn, never moves the
+      // marker off it. On that route, by where the fix is on it; off it (the
+      // aeroplane took another exit or taxiway), by when the fix's own way
+      // reaches the stand — the marker keeps its way and arrives then.
+      var bi = -1, bd = 60;
+      for (var i = 0; i < st.plan.pts.length; i += 2) {
+        var dm = _gcNm(st.plan.pts[i], [res.fix.lat, res.fix.lng]) * 1852;
+        if (dm < bd) { bd = dm; bi = i; }
+      }
+      if (bi >= 0) st.t0 = res.fix.at - st.plan.t[bi] * 1000;
+      else if (fixPlan) st.t0 = res.fix.at + (fixPlan.tEnd - st.plan.tEnd) * 1000;
+      st.anchor = 'fix'; st.anchorAt = res.fix.at;
+      _gateTaxiMap(res, o, d);
+      _gateTaxiRun();
+      return true;
+    }
+  }
+  // A NEW TAXI. The approach marker still drawn near the field (the glide's,
+  // held short or landing) lands from where it is: the route starts there,
+  // runs to the touchdown point and on, and is flown at the model's pace
+  // from the evidence's time — never planted on the elapsed-time spot.
+  var air = null;
+  try {
+    var mv0 = _gateGlide.views && _gateGlide.views.mini;
+    if (mv0 && mv0.marker && mv0.marker._map && typeof gateMap !== 'undefined' && mv0.marker._map === gateMap && _gateGlide.ll) air = _gateGlide.ll;
+  } catch (e) { air = null; }
+  var plan = null, t0 = now;
+  if (res.anchor === 'land' || (res.anchor === 'fix' && res.fix && air)) {
+    plan = _gateTaxiRoute(res.dst, res.org, rwG, null, null);
+    if (!plan) plan = fixPlan;
+    if (!plan) return false;
+    t0 = res.anchor === 'land' ? res.land
+       : (fixPlan && plan !== fixPlan) ? res.fix.at + (fixPlan.tEnd - plan.tEnd) * 1000 : res.fix.at;
+  } else if (res.anchor === 'fix' && fixPlan) {
+    plan = fixPlan; t0 = res.fix.at;
+  } else return false;
+  var s = _taxiSAtT(plan, (now - t0) / 1000);
+  if (air && _gcNm(air, plan.pts[0]) * 1852 < 6000) { plan = _taxiPrefix(plan, [air], 70); s = 0; }
+  // the approach glide stops (it would go on holding the marker short of the
+  // field); the taxi takes every surface the glide was drawing on
+  try { _stopGateMapGlide(); } catch (eS) {}
+  st.views = {};
+  try {
+    for (var vk in _gateGlide.views) {
+      if (!Object.prototype.hasOwnProperty.call(_gateGlide.views, vk)) continue;
+      var gv = _gateGlide.views[vk];
+      if (gv && gv.marker && gv.marker._map) st.views[vk] = gv;
+    }
+  } catch (eV) {}
+  st.on = true; st.fl = fl; st.done = false; st.key = fl + '|' + (plan.standKey || '');
+  st.anchor = res.anchor; st.anchorAt = res.at || now; st.since = now;
+  st.plan = plan; st.t0 = t0; st.s = Math.max(0, Math.min(plan.total, s));
+  _gateTaxiMap(res, o, d);
+  _gateTaxiRun();
+  return true;
+}
+// The live map the taxi drives: this map's marker when it is up, else a live
+// map built at the taxi's spot (initGateMapLive, whose glide start joins it).
+function _gateTaxiMap(res, o, d) {
+  try {
+    var mv = _gateGlide.views && _gateGlide.views.mini;
+    if (mv && mv.marker && typeof gateMap !== 'undefined' && gateMap && mv.marker._map === gateMap && gateMap._fidsLive === true) {
+      if (_gateTaxi.views.mini !== mv) { try { _stopGateMapGlide(); } catch (eS) {} }
+      _gateTaxi.views.mini = mv;
+      try { window._gatePlaneMk = mv.marker; } catch (eP) {}
+      return;
+    }
+    var at = _taxiAtS(_gateTaxi.plan, _gateTaxi.s);
+    _gateTaxi.ll = at.ll;
+    initGateMapLive(res.org, res.dst, at.ll[0], at.ll[1], Date.now());
+  } catch (e) {}
+}
+// A glide start on a surface while a taxi is on joins the taxi instead
+// (_startGateMapGlide's first test). A newer fix in the air ends it.
+function _gateTaxiJoin(map, marker, a1, a2, o, d, fixAt) {
+  var st = _gateTaxi;
+  if (!st.on || !st.plan) return false;
+  if (st.fl !== String(((typeof window !== 'undefined' && window._gateInbound) || {}).flight || '')) { _gateTaxiEnd(); return false; }
+  var wh = (typeof window !== 'undefined') ? window._gateMapWhere : null;
+  if (!(wh && wh.kind === 'taxi') && typeof fixAt === 'number' && fixAt > st.since) { _gateTaxiEnd(); return false; }
+  var key = (typeof window !== 'undefined' && map === window._bigCraftMap) ? 'big' : 'mini';
+  var v = { map: map, marker: marker, a1: a1, a2: a2, hdg: null, seg: -1 };
+  st.views[key] = v;
+  try { _gateGlide.views[key] = v; } catch (e) {}
+  if (key === 'mini') { try { window._gatePlaneMk = marker; } catch (e) {} }
+  _gateTaxiRun();
+  return true;
+}
+// Called by the approach glide when an established aeroplane reaches its
+// touchdown point: the roll-out and taxi take its views from there.
+function _gateTaxiFromGlide(destIata, rw, td) {
+  try {
+    var ap = String(destIata || '').toUpperCase();
+    if (ap !== String(window._gateIata || '').toUpperCase() || !rw) return false;
+    var inb = window._gateInbound;
+    if (!inb) return false;
+    var plan = rw.past ? _gateTaxiRoute(ap, String(inb._locIata || '').toUpperCase(), rw, { ll: td, v: 65, trk: rw.hdg }, null)
+                       : _gateTaxiRoute(ap, String(inb._locIata || '').toUpperCase(), rw, null, td);
+    if (!plan) return false;
+    var st = _gateTaxi, now = Date.now();
+    st.on = true; st.fl = String(inb.flight || ''); st.done = false; st.key = st.fl + '|' + (plan.standKey || '');
+    st.plan = plan; st.t0 = now; st.s = _taxiSAtT(plan, 0); st.anchor = 'model'; st.anchorAt = now; st.since = now;
+    st.views = {};
+    for (var k in _gateGlide.views) if (Object.prototype.hasOwnProperty.call(_gateGlide.views, k)) st.views[k] = _gateGlide.views[k];
+    _stopGateMapGlide();
+    _gateTaxiRun();
+    try { console.log('[TAXI] touchdown on the model — rolling out,', Math.round(plan.total), 'm to the stand'); } catch (e) {}
+    return true;
+  } catch (e) { return false; }
+}
+// The frame loop. Its own generation: the glide's stops (every rebuild calls
+// _stopGateMapGlide) do not stop a taxi; only _gateTaxiEnd does.
+function _gateTaxiRun() {
+  var st = _gateTaxi;
+  if (!st.on || !st.plan) return;
+  if (st.raf) return;
+  var myGen = st.gen = (st.gen + 1) | 0;
+  st.last = 0;
+  var frame = function () {
+    try {
+      if (myGen !== st.gen || !st.on) return;
+      st.raf = null;
+      var keys = Object.keys(st.views), live = [];
+      for (var i = 0; i < keys.length; i++) {
+        var v = st.views[keys[i]];
+        if (!v || !v.marker || !v.marker._map) { delete st.views[keys[i]]; continue; }
+        live.push(v);
+      }
+      if (!live.length) return;   // a surface rejoins through _gateTaxiJoin / _gateTaxiMap
+      var now = Date.now(), plan = st.plan;
+      var dt = st.last ? Math.max(0, Math.min(0.25, (now - st.last) / 1000)) : 0;
+      st.last = now;
+      var tgt = _taxiSAtT(plan, (now - st.t0) / 1000);
+      var vm = Math.max(0.8, _taxiVAtS(plan, st.s));
+      var k = Math.max(0.35, Math.min(1.6, 1 + (tgt - st.s) / Math.max(20, vm * 10)));
+      if (!st.done) st.s = Math.min(plan.total, st.s + vm * k * dt);
+      var at = _taxiAtS(plan, st.s);
+      st.ll = at.ll;
+      try { _gateGlide.ll = at.ll; _gateGlide.at = now; } catch (e) {}
+      var left = plan.total - st.s;
+      for (var r = 0; r < live.length; r++) _gateTaxiDraw(live[r], at, plan, left, dt);
+      if (left < 0.3 && !st.done) {
+        st.done = true;
+        try { console.log('[TAXI] at the stand'); } catch (e) {}
+        // the parked view takes over in the same spot
+        setTimeout(function () {
+          try { window._lastMapProgKey = null; window._lastMapPosKey = null; _gateMapApply(_gateAircraftWhere(window._gateInbound, window._gateCurrentFlight, Date.now())); } catch (e) {}
+        }, 400);
+        return;
+      }
+      if (st.done) return;
+      if (typeof requestAnimationFrame === 'function') st.raf = requestAnimationFrame(frame);
+      else st.raf = setTimeout(frame, 50);
+    } catch (e) { st.raf = null; }
+  };
+  if (typeof requestAnimationFrame === 'function') st.raf = requestAnimationFrame(frame);
+  else st.raf = setTimeout(frame, 50);
+}
+// One surface's frame: the marker, the way its nose points (turning at most
+// 45°/s), the route still to go dashed ahead of it, and the camera: down to
+// the ground as it lands, in to the stand as it arrives, following between.
+function _gateTaxiDraw(v, at, plan, left, dt) {
+  var vmap = v.map || v.marker._map, ll = at.ll;
+  var vk = 0;
+  try { vk = Math.round((vmap.getCenter().lng - ll[1]) / 360) * 360; } catch (e) { vk = 0; }
+  v.marker.setLatLng([ll[0], ll[1] + vk]);
+  try {
+    var div = (v.marker._icon && v.marker._icon.querySelector) ? v.marker._icon.querySelector('div') : null;
+    if (div) {
+      if (typeof v.hdg !== 'number' || !isFinite(v.hdg)) v.hdg = at.hdg;
+      else {
+        var dh = ((at.hdg - v.hdg + 540) % 360) - 180, lim = Math.max(0.5, 45 * dt);
+        v.hdg = (v.hdg + Math.max(-lim, Math.min(lim, dh)) + 360) % 360;
+      }
+      var sx = 0, sy = 0;
+      try { var lp = vmap.latLngToLayerPoint([ll[0], ll[1] + vk]); sx = lp.x - Math.round(lp.x); sy = lp.y - Math.round(lp.y); } catch (e2) {}
+      div.style.transform = 'translate(' + sx.toFixed(3) + 'px,' + sy.toFixed(3) + 'px) rotate(' + v.hdg.toFixed(2) + 'deg)';
+    }
+  } catch (e) {}
+  // the dashed line ahead, every 15 m drawn
+  try {
+    var seg = Math.floor((plan.total - left) / 15);
+    if (seg !== v.seg && v.a2 && v.a2.setLatLngs) {
+      v.seg = seg;
+      var i0 = _taxiIdx(plan, plan.total - left) + 1, ahead = [[ll[0], ll[1] + vk]];
+      for (var i = i0; i < plan.pts.length; i += 3) ahead.push([plan.pts[i][0], plan.pts[i][1] + vk]);
+      ahead.push([plan.pts[plan.pts.length - 1][0], plan.pts[plan.pts.length - 1][1] + vk]);
+      v.a2.setLatLngs(ahead);
+    }
+  } catch (e) {}
+  // the camera
+  try {
+    if (!vmap.getZoom || !vmap.flyTo) return;
+    var z = vmap.getZoom(), want = left < 220 ? 17 : left < 700 ? 16 : 15;
+    var now = Date.now();
+    if (z < want && !(vmap._fidsTaxiFly > now)) {
+      vmap._fidsTaxiFly = now + 2600;
+      vmap.flyTo([ll[0], ll[1] + vk], want, { duration: 2.0 });
+      vmap.once('zoomend', function () { try { _mapPlaneFit(vmap); } catch (e) {} });
+      try { vmap._fidsLastView = { lat: ll[0], lng: ll[1] + vk, zoom: want }; } catch (e) {}
+      return;
+    }
+    if (vmap._fidsTaxiFly > now) return;
+    var sz = vmap.getSize(), pt = vmap.latLngToContainerPoint([ll[0], ll[1] + vk]);
+    if (Math.abs(pt.x - sz.x / 2) > sz.x * 0.28 || Math.abs(pt.y - sz.y / 2) > sz.y * 0.28) {
+      vmap._fidsTaxiFly = now + 2400;
+      if (typeof vmap.panInside === 'function') {
+        vmap.panInside([ll[0], ll[1] + vk], { padding: [Math.round(sz.x * 0.34), Math.round(sz.y * 0.34)], animate: true, duration: 2.0, easeLinearity: 0.2 });
+      } else vmap.panTo([ll[0], ll[1] + vk], { animate: true, duration: 2.0, easeLinearity: 0.2 });
+      try { vmap._fidsLastView = { lat: ll[0], lng: ll[1] + vk, zoom: vmap.getZoom() }; } catch (e) {}
+    }
+  } catch (e) {}
 }
 
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata, fixAt) {
@@ -51132,6 +52048,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // down a healthy glide and started nothing — one of the ways the maps
   // froze. Now an early return leaves whatever is running untouched.
   if (!map || !marker || typeof L === 'undefined') return;
+  // v24105 — while an arrival rolls out or taxis in, the taxi drives this
+  // surface instead (_gateTaxiJoin); a newer fix in the air ends the taxi.
+  try { if (_gateTaxiJoin(map, marker, a1, a2, o, d, fixAt)) return; } catch (eTJ) {}
   var _viewKey = (typeof window !== 'undefined' && map === window._bigCraftMap) ? 'big' : 'mini';
   if (!(speedKts > 0)) {
     // No dead reckoning without a live speed (on ground / no data) — but if
@@ -51190,6 +52109,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
   // line and the animated line stay one line.
   var _rwFinal = _runwayFinalPath(_pl, d, destIata);
+  // v24105 — the runway this arrival is landing on, for its roll-out and taxi
+  try {
+    if (_rwFinal && _rwFinal.rw) {
+      _gateGlide.rw = _rwFinal.rw; _gateGlide.rwAt = Date.now();
+      _gateGlide.rwFl = String(((window._gateInbound || window._gatePanelInbound) || {}).flight || '');
+    }
+  } catch (eRw) {}
   var _legB = _rwFinal || _gcFullRoute(_pl, d, _vB);
   // v24095 — joined in one longitude frame, the aeroplane's (_lngChain): the
   // two legs are each unwrapped on their own and met 360 degrees apart on a
@@ -51263,6 +52189,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     // (a fix already inside that point may be carried on to the threshold)
     _drCapP = Math.min(_drCapP, _seedP >= _preP ? Math.max(_seedP, _thrP) : _preP);
   }
+  // v24105 — AND IT LANDS. One established on its final, or already over the
+  // runway, or closing on its final, is carried all the way to touchdown,
+  // where the roll-out and the taxi to its stand take it on
+  // (_gateTaxiFromGlide, in the frame loop). Which ones: _gateLands.
+  var _landsHere = !!(_rwFinal && _rwFinal.rw && _gateLands(_pl, _rwFinal.rw, n >= 3 ? route[n - 2] : null,
+    n >= 3 ? route[n - 1] : null, _gateMapFixAlt(planeLat, planeLng)));
+  if (_landsHere) _drCapP = 1;
   // v24088 — AND THE AEROPLANE SLOWS FOR ITS APPROACH. Carried on at the
   // speed of a fix 4–6 minutes old, a descending arrival ran kilometres
   // ahead of itself between fixes and was pulled back at each one. Within
@@ -51565,6 +52498,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       p = Math.max(_p0, Math.min(_drCapP, _p0 + (_flown(_dAnchor, elapsed)
             + (_corrMs > 0 ? _errNm * Math.min(1, elapsed / _corrMs) : 0)) / _routeNm));
       _gateGlide.holding = (p >= _drCapP) || elapsed >= _drLeftMs;
+      // v24105 — touchdown: the taxi takes the views from the touchdown point
+      // (tried every 3 s until the airport's taxiway file has loaded; without
+      // one the aeroplane waits there, as before, for the ground evidence)
+      if (_landsHere && p >= 1 - 1e-9 && !(frame._taxiTry > Date.now() - 3000)) {
+        frame._taxiTry = Date.now();
+        if (_gateTaxiFromGlide(destIata, _rwFinal.rw, route[n - 1])) return;
+      }
 
       // Publish, and never publish a value lower than the last one: a belt to
       // the braces, so even a future caller mutating _gateGlide.p cannot make
@@ -57061,7 +58001,8 @@ function _map3dFlightCtx(allowEstimated) {
     };
     // A live fix — moving, or on the ground at the origin — is drawn where it
     // is on both maps; the same checks passed it for both (_gateFixCheck).
-    var fixOk = res.kind === 'fix' || res.kind === 'origin-ground';
+    // v24105 — taxiing in counts as live where the taxi has the aeroplane
+    var fixOk = res.kind === 'fix' || res.kind === 'origin-ground' || (res.kind === 'taxi' && typeof res.lat === 'number' && typeof res.lng === 'number');
     var liveLat = fixOk ? res.lat : null, liveLng = fixOk ? res.lng : null;
     var prog = -1;
     if (fixOk) {
@@ -62319,7 +63260,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24104" src="/textures/gate-sky-shelf.mp4?v=24104"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24105" src="/textures/gate-sky-shelf.mp4?v=24105"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
