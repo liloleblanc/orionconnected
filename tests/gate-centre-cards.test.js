@@ -338,7 +338,11 @@ test('the overview prints the gate\'s own times and a status word only where its
   assert.equal(rowOf(E._gateCardHtml('ovcard', m, now, { flight: 'AC1986', ts: 0, st: 'ontime' }), 'inbound'), '', 'no time: no row');
   // tomorrow's times say so, each in its own row; today's say nothing
   // (the day is the board's own today, as every gate time's day line)
-  const T = Date.now() + 24 * 60 * MIN;
+  // (24 hours on is tomorrow except in the first hour of the 25-hour day the
+  // clocks go back: then it is still today, and it is an hour more)
+  const dayIn = (ts) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ts));
+  let T = Date.now() + 24 * 60 * MIN;
+  if (dayIn(T) === dayIn(Date.now())) T += 60 * MIN;
   const tm = E._gateCardsBuild(facts({ depTs: T, boardTs: T - 35 * MIN, close: null, arr: null }));
   const tt = textOf(rowOf(E._gateCardHtml('ovcard', tm, Date.now(), null), 'departure'));
   assert.match(tt, /^Departure \| Départ \d{1,2}:\d\d[ap]m Tomorrow \| Demain$/);

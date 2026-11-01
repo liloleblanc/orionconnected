@@ -855,7 +855,16 @@ function startRelay(fake, worker, opts = {}) {
   const keyFile = path.join(r.dir, 'creds', 'relay-key');
   if (opts.key === false) fs.rmSync(keyFile, { force: true });
   else if (!fs.existsSync(keyFile)) fs.writeFileSync(keyFile, RELAY_KEY + '\n', { mode: 0o600 });
-  r.setClock = (t) => { r.now = t; fs.writeFileSync(path.join(r.dir, 'clock'), String(t)); };
+  // written whole, then renamed into place: the relay reads this file many times a
+  // round, and a read between writeFileSync's truncate and its write finds it empty
+  // and falls back to the real clock, a later UTC day than any test sets, which moves
+  // the relay's day forward for good (the test's own day then counts as spent)
+  r.setClock = (t) => {
+    r.now = t;
+    const f = path.join(r.dir, 'clock');
+    fs.writeFileSync(f + '.tmp', String(t));
+    fs.renameSync(f + '.tmp', f);
+  };
   r.setClock(opts.clock || T0);
   r.stateFile = path.join(r.dir, 'state', 'state.json');
   r.marker = path.join(r.dir, 'state', 'stopped');
