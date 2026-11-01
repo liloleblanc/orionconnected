@@ -40525,17 +40525,30 @@ function _gateBoardingTimes(cf, equip, gi, arrRows, tz) {
   // flights (boarding late night, departure after midnight → a large negative
   // gap) are left alone. The departure the field ACTUALLY shows: revised (upd)
   // when delayed, scheduled otherwise.
+  // v24105 — the gap is counted on the instants: the departure the shown time
+  // was written from (the schedule, _sortTs, when the field shows cf.time;
+  // effDep, built from upd, when it shows upd) less boardTs. The shown time is
+  // read only for how far it stands from that instant's own time of day. Two
+  // times of day were compared before, and the night the clocks go back
+  // 01:00-01:59 comes twice: a 01:47 ADT boarding under a 01:22 AST departure
+  // read as boarding after the departure and was pulled back an hour, to
+  // 00:47 (NOW BOARDING an hour early, 2026-11-01). On the instants a
+  // midnight crossing needs no exception: boarding at 23:40 under a 00:15
+  // departure is 35 minutes before it, and boarding at 00:00 under a 23:20
+  // departure is after it and is pulled back, as at any other hour.
   try {
-    var _gShownDep = (depDelayed && cf.upd) ? cf.upd : cf.time;
+    var _gShownUpd = !!(depDelayed && cf.upd);
+    var _gShownDep = _gShownUpd ? cf.upd : cf.time;
+    var _gRef = (_gShownUpd ? effDep : cf._sortTs) || effDep;
     var _gDepHM = String(_gShownDep || '').match(/^(\d{1,2}):(\d{2})/);
     if (_gDepHM) {
-      var _gTz = { timeZone: tz || 'UTC', hour12: false, hour: '2-digit', minute: '2-digit' }; // i18n-ok: code
-      var _gBoardHM = new Date(boardTs).toLocaleTimeString('en-GB', _gTz).match(/^(\d{1,2}):(\d{2})/); // i18n-ok: code
-      if (_gBoardHM) {
-        var _gDepMin = parseInt(_gDepHM[1], 10) * 60 + parseInt(_gDepHM[2], 10);
-        var _gBoardMin = parseInt(_gBoardHM[1], 10) * 60 + parseInt(_gBoardHM[2], 10);
-        var _gGap = _gDepMin - _gBoardMin;           // + = boarding before dep (same day)
-        if (_gGap < 10 && _gGap > -720) {            // boarding at/after dep → fix; leave real midnight crossings
+      // (a time of day for arithmetic, never shown: no language, 24 hours)
+      var _gRefHM = String(BoardStrings.time(_gRef, null, tz || 'UTC', { clock24: true })).match(/^(\d{1,2}):(\d{2})/);
+      if (_gRefHM) {
+        var _gOff = (parseInt(_gDepHM[1], 10) * 60 + parseInt(_gDepHM[2], 10)) - (parseInt(_gRefHM[1], 10) * 60 + parseInt(_gRefHM[2], 10));
+        if (_gOff > 720) _gOff -= 1440; else if (_gOff < -720) _gOff += 1440;   // the shown time across midnight from _gRef
+        var _gGap = Math.round((_gRef - boardTs) / 60000) + _gOff;   // + = boarding before the shown dep
+        if (_gGap < 10 && _gGap > -720) {            // boarding at/after the shown dep → fix
           boardTs -= (lead - _gGap) * 60000;         // pull back to dep − lead
         }
       }

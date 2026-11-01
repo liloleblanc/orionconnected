@@ -1746,6 +1746,40 @@ test('(D) an Early departure opens its schedule boarding on its revised time, th
   assert.equal(E._gateBoardingTimes(earlyOver, '', null, [], 'America/Halifax').effDepForBoard, H(4, 23, 55));
 });
 
+test('(D) v24105: the night the clocks go back, boarding is the lead before the departure, not an hour more', () => {
+  // 2026-11-01: Atlantic time goes from 02:00 ADT back to 01:00 AST at 05:00Z,
+  // Eastern at 06:00Z, so 01:00-01:59 comes twice. A 01:22 AST departure
+  // (05:22Z) boards at 01:47 ADT (04:47Z); the final guard read the two times
+  // of day, saw boarding 25 minutes after the departure and pulled it back an
+  // hour, to 00:47 (NOW BOARDING, and the gate's cards, an hour early).
+  const E = engine();
+  const hm = (ts, tz) => new Date(ts).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  for (const [tz, at] of [['America/Moncton', '2026-11-01T05:22:00Z'], ['America/Halifax', '2026-11-01T05:00:00Z'], ['America/Halifax', '2026-11-01T05:34:00Z'],
+    ['America/Toronto', '2026-11-01T06:10:00Z'], ['America/Moncton', '2026-11-01T04:22:00Z'], ['America/Moncton', '2026-03-08T06:10:00Z'], ['America/Moncton', '2026-10-31T05:22:00Z']]) {
+    const dep = Date.parse(at);
+    const r = { status: 'scheduled', time: hm(dep, tz), upd: null, _sortTs: dep, _revTs: null };
+    const bt = E._gateBoardingTimes(r, '', null, [], tz);
+    assert.equal(bt.boardTs, dep - bt.lead * MIN, `${tz} ${at} (${r.time}): boarding ${new Date(bt.boardTs).toISOString()}`);
+  }
+  // and the guard still does its work on a row whose shown time is not its
+  // own instant's: shown 09:30 on a 10:00 schedule boards at 08:55
+  const Hz = (hh, mm) => Date.UTC(2026, 8, 5, hh + 3, mm);
+  const odd = { status: 'scheduled', time: '09:30', upd: null, _sortTs: Hz(10, 0), _revTs: null };
+  assert.equal(hm(E._gateBoardingTimes(odd, '', null, [], 'America/Halifax').boardTs, 'America/Halifax'), '08:55');
+  // a revised time on a row that shows its schedule, across the change: 01:00
+  // ADT (04:00Z) shown, revised to 05:00Z (01:00 AST). Boarding the lead before
+  // the revision (04:25Z, 01:25 ADT) is after the 01:00 shown, so it goes to
+  // 00:25 ADT, the lead before the departure the field shows. The gap is read
+  // from the schedule's own instant, not the revision's.
+  const rev = { status: 'scheduled', time: '01:00', upd: null, _sortTs: Date.parse('2026-11-01T04:00:00Z'), _revTs: Date.parse('2026-11-01T05:00:00Z') };
+  assert.equal(E._gateBoardingTimes(rev, '', null, [], 'America/Moncton').boardTs, Date.parse('2026-11-01T03:25:00Z'));
+  // and on any night: a Dash 8 shown at 23:20 and revised to 00:20 boards the
+  // lead before 23:20, as at every other hour. The two times of day read its
+  // 00:00 boarding as 23 hours before 23:20 and left it after the departure.
+  const night = { status: 'scheduled', time: '23:20', upd: null, _sortTs: Hz(23, 20), _revTs: Hz(24, 20) };
+  assert.equal(hm(E._gateBoardingTimes(night, 'DH4', null, [], 'America/Halifax').boardTs, 'America/Halifax'), '23:00');
+});
+
 test('(D) one boarding time on both screens: the lead reads the feed\'s own aircraft type, not one only the gate has resolved', async () => {
   const { E, raw } = await yhzEngine({ noGateClock: true });
   // The gate resolved a Dash 8-400 for AC2057 (its lookups write the type onto
