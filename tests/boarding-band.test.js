@@ -482,6 +482,37 @@ test('the band takes only the room the sign leaves, and the sign keeps every siz
   assert.match(ALL, /\.fx-brk\.fx-brk-off \+ :is\(\.ap-name, \.fx-unit\)::before \{ content: "\\A"; white-space: pre; \}/);
 });
 
+// 2026-10-29 — THE BAND IS SOLVED WITH THE SIGN, IN THE FRAME THEY ARE FIRST
+// PAINTED, AND KEPT. The band's lines measured the room before the pass had
+// fitted the sign, each line again as the one before it moved the band, and
+// every pass from a sign fitted under the band the pass before had left: the
+// band was one height on a fresh paint and another after the next pass, and
+// on some screens it kept stepping (tests/gate-sign-panels-render.test.js
+// reads it on the screen).
+test('the band is solved once the sign is fitted, before the frame is painted, and kept', () => {
+  const pass = fn('_fidsSchedulePairPass');
+  const iSep = pass.indexOf('_fidsPairSeparators(document);'), iBand = pass.indexOf('try { _g8BandSettle(); } catch (eBd) {}'), iCol = pass.indexOf('try { _gateSbColFit(); }');
+  assert.ok(iSep > 0 && iBand > iSep && iCol > iBand, 'after the sign is fitted, in the same pass, before the lists\' column');
+  // every line of a band takes the one room solved for it; no line measures the sign
+  const lineRoom = fn('_g8BandLineRoom');
+  assert.match(lineRoom, /var room = _g8BandSolved\(band\);/);
+  assert.doesNotMatch(lineRoom, /_g8BandRoom\(/);
+  // a fresh band starts where a fresh paint always did: the sign as the gate built it, measured once
+  assert.match(fn('_g8BandSolved'), /if \(typeof band\.__g8Room !== 'number'\) band\.__g8Room = _g8BandRoom\(band\);/);
+  const solve = fn('_g8BandSolve');
+  // a round: the room measured once from the fitted sign, the lines fitted to it, the sign again only under a band that moved
+  assert.match(solve, /band\.__g8Room = _g8BandRoom\(band\);\s*fidsFitAll\(band\);\s*var now = _g8BandHold\(band\);\s*if \(now === was\) break;\s*_fidsPairSeparators\(board\);/);
+  assert.match(solve, /for \(var n = 0; n < 6; n\+\+\)/, 'a bounded number of rounds');
+  assert.match(solve, /if \(seen\[now\]\) break;/, 'a band back where it stood a round before stays there');
+  assert.match(solve, /band\.__g8Solved = _g8BandKey\(band, sign\);/);
+  // kept until the screen, the fonts, a width or the words change
+  assert.match(fn('_g8BandSettle'), /if \(band\.__g8Solved !== _g8BandKey\(band, sign\)\) _g8BandSolve\(band, board\);/);
+  const key = fn('_g8BandKey');
+  for (const part of ['window.innerWidth', '_fxFontsEpoch', 'band.clientWidth', 'sign.clientWidth', 'band.textContent', 'sign.textContent']) assert.ok(key.includes(part), part);
+  // what the sign is fitted under: the band's height and the padding the sign gives it
+  assert.match(fn('_g8BandHold'), /band\.getBoundingClientRect\(\)\.height\.toFixed\(2\) \+ '\|' \+ \(band\.getAttribute\('data-pad-give'\) \|\| '0'\)/);
+});
+
 test('the colours: the lower panel\'s pair, every word on it at 4.5:1 or better, nothing that moves', () => {
   const a = CSS.indexOf("v24006 — THE BOARDING SCREEN'S BAND, IN THE AIRLINE'S OWN COLOURS.");
   assert.ok(a > 0, 'the block exists');
