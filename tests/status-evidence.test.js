@@ -104,7 +104,7 @@ const constLine = (name) => line(CORE, new RegExp('^(?:var|const) ' + name + ' =
 const block = (prefix) => braceFrom(CORE, CORE.indexOf(prefix), prefix) + ';';
 
 const CORE_FNS = [
-  'adbTs', 'adbHHMM', '_adbNearestDayTs', 'adbStatus', 'adbStatusInferred', '_rowStatusRank',
+  'adbTs', 'adbHHMM', '_adbNearestDayTs', '_adbLegUpdateTs', 'adbStatus', 'adbStatusInferred', '_rowStatusRank',
   '_fidsBoardRowPlace', '_bidsInWindow',
   '_gateRawStatus', '_gateOutboundAtGate', '_gatePushLeft', '_gateRawAirborne', '_gateDepLeft',
   '_gateOverrideWord', '_gateFlightLive', '_gateHoldYields', '_gateCsPick', '_gateFlightsAt', '_gateLiveGates',
@@ -139,6 +139,7 @@ function engine(opts) {
     constLine('_GATE_SEEN_IDENTITY'), constLine('_GATE_DEP_SEEN'), constLine('_GATE_SEEN_KEY'), constLine('_GATE_SEEN_FIELDS'),
     constLine('BIDS_WINDOW_AHEAD_MS'), constLine('BIDS_WINDOW_TRAIL_MS'),
     constLine('_ADB_EXPLICIT_STATUS'), constLine('_CS_REGIONAL_FAM'),
+    constLine('_ADB_CLAIM_AHEAD_TIMED_MS'), constLine('_ADB_CLAIM_AHEAD_UNTIMED_MS'),
     block('var _ROW_STATUS_RANK = {'),
     block('var _GATE_LBL = {'),
     ...CORE_FNS.map(fn),
@@ -218,7 +219,9 @@ const CLAIM = /^(landed|arrived|departed|boarding|final|gateclosed)$/;
 
 test('mapADB stamps whether a row\'s status is the feed\'s own word, and the de-dup keeps it with the status', () => {
   const map = fn('mapADB');
-  assert.match(map, /const _stExplicit=_ADB_EXPLICIT_STATUS\.test\(String\(f\.status\|\|''\)\.replace\(\/\[\\s_-\]\+\/g,''\)\.toLowerCase\(\)\);/);
+  // v24107 — and a word adbStatus withheld (its own time denies it) is not
+  // the feed's own (claim-ahead.test.js).
+  assert.match(map, /const _stExplicit=_ADB_EXPLICIT_STATUS\.test\(String\(f\.status\|\|''\)\.replace\(\/\[\\s_-\]\+\/g,''\)\.toLowerCase\(\)\)&&!_adbClaimWithheld\(f,mode,st\);/);
   assert.equal((map.match(/_stInferred,_stExplicit,_pushStatus\}/g) || []).length, 2, 'both row shapes carry it');
   assert.match(fn('_fidsDedupeRows'), /prev\.status = r\.status;\s*prev\._stInferred = r\._stInferred;[^\n]*\n\s*prev\._stExplicit = r\._stExplicit;/);
   assert.match(fn('applyOverrideToFlight'), /flight\.status = ov\.status; flight\._stInferred = false; flight\._stExplicit = true;/,
@@ -863,8 +866,19 @@ test('(C) the notice on Moncton\'s real rows: AC7995 and its inbound AC7992', ()
   const inbAt = (hhmm) => find(arrs(E, said(YQM.arr30, 'AC7992', 30, 'OnTime', hhmm), now), 'AC7992', 30);
   assert.equal(E._gateInbLateNotice(at1110, inbAt('10:39 AM'), 'ontime', at1110._sortTs, now), false, '+3 is on time');
   assert.equal(E._gateInbLateNotice(at1110, inbAt('10:42 AM'), 'ontime', at1110._sortTs, now), true, '+6 is late');
-  // The inbound has landed.
-  assert.equal(notice(YQM.dep30, said(YQM.arr30, 'AC7992', 30, 'Arrived at 11:05 AM', '11:05 AM')).r, false);
+  // The inbound has landed: at 11:05, read at 11:06, with AC7995 at 11:15
+  // still inside the late inbound's turn.
+  // v24107 — read at 10:00, "Arrived at 11:05 AM" is a word its own time
+  // denies (claim-ahead.test.js): AC7992 is still the late inbound.
+  assert.equal(notice(YQM.dep30, said(YQM.arr30, 'AC7992', 30, 'Arrived at 11:05 AM', '11:05 AM')).r, true);
+  const t1106 = T(9, 30, 11, 6);
+  const down = find(arrs(E, said(YQM.arr30, 'AC7992', 30, 'Arrived at 11:05 AM', '11:05 AM'), t1106), 'AC7992', 30);
+  assert.equal(down.status, 'arrived');
+  const cf1106 = find(deps(E, YQM.dep30, t1106), 'AC7995', 30);
+  assert.equal(E._gateInbLateNotice(cf1106, down, cf1106.status, cf1106._revTs || cf1106._sortTs, t1106), false);
+  const stillUp = find(arrs(E, late, t1106), 'AC7992', 30);
+  assert.equal(E._gateInbLateNotice(cf1106, stillUp, cf1106.status, cf1106._revTs || cf1106._sortTs, t1106), true,
+    'the same pair at 11:06 with the inbound not yet down does threaten');
   // The airport is boarding the departure.
   assert.equal(notice(said(YQM.dep30, 'AC7995', 30, 'Boarding'), late).r, false);
   // Late overnight, five hours before the next departure: the turn fits.

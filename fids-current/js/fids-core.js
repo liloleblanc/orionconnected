@@ -17562,7 +17562,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24106" src="/textures/gate-sky-shelf.mp4?v=24106" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24107" src="/textures/gate-sky-shelf.mp4?v=24107" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17606,7 +17606,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24106" src="/textures/gate-sky-shelf.mp4?v=24106" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24107" src="/textures/gate-sky-shelf.mp4?v=24107" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18835,7 +18835,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24106" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24107" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35737,7 +35737,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24106';
+var FIDS_BUILD_TAG = 'v24107';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38751,7 +38751,12 @@ function fidsInboundHasArrived(inboundFlight, nowTs) {
   // confirmed a landing, and it would have silenced the late-inbound notice
   // for every late flight still in the air. The v2 rail's Arrived From / At
   // the gate, the map watchdog and the notice all read this one function.
-  if (inboundFlight._actualArrTime) return true;
+  // v24107 — an "actual" still ahead of us is an estimate (as _gateLandedAt).
+  if (inboundFlight._actualArrTime) {
+    var _actTs = 0;
+    try { _actTs = adbTs(inboundFlight._actualArrTime) || 0; } catch (eA) { _actTs = 0; }
+    if (!(_actTs > (nowTs || Date.now()) + 5 * 60000)) return true;
+  }
   if (inboundFlight._stInferred === true) return false;
   var status = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
   return status === 'arrived' || status === 'landed';
@@ -42650,22 +42655,118 @@ function _adbNearestDayTs(ts, refTs) {
   if (Math.abs(d) <= 12 * 3600000) return ts;
   return ts - Math.round(d / 86400000) * 86400000;
 }
-function adbStatus(f, mode, schedTs, nowTs) {
+// v24107 — A WORD THE ROW'S OWN TIME DENIES IS NOT A CLAIM.
+//
+// Toronto, 2026-11-02 at 14:11: Pearson's row for AS385 from Seattle said ARR
+// (arrived) while its own time for that arrival was still 16:05, and AA1111
+// from Dallas said LND (landed) with its time at 16:23. Both aeroplanes were in
+// the air. Gate A13 said "Arrived at the gate | 4:05pm" for AS391's aircraft,
+// its map said Arrived From and taxied the aeroplane in from the runway, two
+// hours early. Each of the other 183 arrived or landed rows in that list had
+// its time at or before now: Pearson writes the actual time on a row when the
+// aeroplane lands.
+//
+// The word that says something happened is still the airport's (v23925), and
+// it is believed unless the same row's own time for that event is too far
+// ahead. Then the row contradicts itself, and the board shows what its time
+// says instead, as for a row with no such word: Delayed or Early from a
+// revision, otherwise the neutral word. The clock still makes no claim; it
+// only withholds one the row's own time denies.
+//
+// How far ahead an honest word sits depends on the airport. Measured on
+// 2026-11-02 over the live lists of 59 airports (5,136 words saying something
+// had happened):
+//   - where the airport writes the event's own time on the row (Toronto,
+//     Montréal, the Port Authority airports, Washington, Charlotte and about
+//     30 more), honest words were at most 13 minutes ahead of their time
+//     (Charlotte's gate-arrival estimates): _ADB_CLAIM_AHEAD_TIMED_MS;
+//   - where the row keeps its schedule when the event happens (O'Hare,
+//     Seattle, Denver, Minneapolis, Detroit, Salt Lake City, Edinburgh, Billy
+//     Bishop and others), an honest early landing sits ahead by exactly how
+//     early it is: up to 53 minutes in those lists, and 80 at the most for any
+//     early arrival measured: _ADB_CLAIM_AHEAD_UNTIMED_MS.
+// Which kind a list is comes from the list itself (_adbClaimAheadMs), or from
+// the adapter that knows its airport (_claimTimed: Toronto, Moncton).
+var _ADB_CLAIM_AHEAD_TIMED_MS = 20 * 60000;
+var _ADB_CLAIM_AHEAD_UNTIMED_MS = 90 * 60000;
+// The leg's own latest time: its actual runway time, else the predicted, else
+// the revised one, on the day nearest its schedule (_adbNearestDayTs); null
+// when the leg carries none.
+function _adbLegUpdateTs(leg, schedTs) {
+  leg = leg || {};
+  var l = (leg.runwayTime && (leg.runwayTime.local || leg.runwayTime.utc))
+    || (leg.predictedTime && (leg.predictedTime.local || leg.predictedTime.utc))
+    || (leg.revisedTime && (leg.revisedTime.local || leg.revisedTime.utc));
+  return l ? _adbNearestDayTs(adbTs(l), schedTs) : null;
+}
+// The words that say the event happened, on this direction's rows.
+function _adbHappenedWord(raw, mode) {
+  return raw === 'arrived' || raw === 'landed'
+    || (mode === 'dep' && (raw === 'departed' || raw === 'enroute' || raw === 'approaching' || raw === 'active'));
+}
+// v24107 — HOW FAR AHEAD OF ITS OWN TIME A WORD IN THIS LIST MAY SIT, read off
+// the list itself. Where at least three in four of its happened words carry a
+// time of their own (a leg time that is not the schedule), the airport writes
+// the event's time on the row, and a word far ahead of it is a slip. Where they
+// keep the schedule, an honest early landing sits ahead by how early it is.
+// Fewer than eight such words (a small airport, the first hours of the day)
+// cannot tell the two apart, and get the wide margin.
+function _adbClaimAheadMs(list, mode) {
+  var n = 0, timed = 0;
+  for (var i = 0; i < (list || []).length; i++) {
+    var f = list[i];
+    if (!f || !_adbHappenedWord(String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase(), mode)) continue;
+    var leg = (mode === 'dep' ? f.departure : f.arrival) || {};
+    var sL = leg.scheduledTime && (leg.scheduledTime.local || leg.scheduledTime.utc);
+    var sTs = sL ? adbTs(sL) : 0;
+    if (!sTs) continue;
+    n++;
+    var u = _adbLegUpdateTs(leg, sTs);
+    if (u && Math.abs(u - sTs) >= 60000) timed++;
+  }
+  return (n >= 8 && timed >= 0.75 * n) ? _ADB_CLAIM_AHEAD_TIMED_MS : _ADB_CLAIM_AHEAD_UNTIMED_MS;
+}
+// v24107 — the row's happened word was withheld by adbStatus: the status it
+// shows comes from its time, not from the airport's word.
+function _adbClaimWithheld(f, mode, st) {
+  var raw = String((f && f.status) || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (!_adbHappenedWord(raw, mode)) return false;
+  return st !== (mode === 'dep' ? 'departed' : 'arrived');
+}
+function adbStatus(f, mode, schedTs, nowTs, aheadMs) {
   const raw=String(f.status||'').replace(/[\s_-]+/g,'').toLowerCase();
   // AeroDataBox's explicit status is authoritative. In particular, EnRoute /
   // Approaching must never be converted to Arrived merely because an older ETA
   // passed. A departure status on an ARRIVAL row means the inbound is airborne.
   if(raw==='cancelled'||raw==='canceled'||raw==='cancelleduncertain'||raw==='canceleduncertain')return 'cancelled';
   if(raw==='diverted')return 'diverted';
+  // v24107 — a happened word is believed while the row's own time for the
+  // event is not too far ahead (see _ADB_CLAIM_AHEAD_TIMED_MS); otherwise the
+  // row reads by its time below. An airborne word on an arrival row is never
+  // checked: an aeroplane is in the air before its arrival time.
+  const _evAhead=(leg,ms)=>!!nowTs&&(_adbLegUpdateTs(leg,schedTs)||schedTs)>nowTs+ms;
+  const _aheadMs=(f&&f._claimTimed)?_ADB_CLAIM_AHEAD_TIMED_MS:(aheadMs||_ADB_CLAIM_AHEAD_UNTIMED_MS);
   // v23925 — "Arrived" ON A DEPARTURE ROW IS A DEPARTURE. Denver, Chicago
   // O'Hare, Raleigh-Durham and the JFK worker label a departure that has
   // reached its destination "Arrived", and the departures board printed
   // "Arrived | Arrivé" on a flight leaving this airport. The Port Authority
   // client adapter already turns the same word into 'departed'; this does it
   // once for every feed.
-  if(raw==='arrived'||raw==='landed')return mode==='dep'?'departed':'arrived';
-  if(raw==='enroute'||raw==='approaching'||raw==='active')return mode==='dep'?'departed':'active';
-  if(raw==='departed')return mode==='dep'?'departed':'active';
+  // v24107 — and a departure that has reached its destination left at least a
+  // flight's length ago: the word is believed once its own departure time is
+  // 15 minutes past (every such row on 2026-11-02 was 64 to 97 minutes past).
+  // Las Vegas says "Arrived" on a departure row when the aeroplane has arrived
+  // FOR that departure, and keeps saying it until "Departed": four rows on
+  // 2026-11-02, 13 to 25 minutes before they left, and the board said Departed
+  // on flights still at their gates.
+  if(raw==='arrived'||raw==='landed'){
+    if(mode==='dep'){ if(!_evAhead(f.departure,-15*60000))return 'departed'; }
+    else if(!_evAhead(f.arrival,_aheadMs))return 'arrived';
+  }
+  if(raw==='enroute'||raw==='approaching'||raw==='active'||raw==='departed'){
+    if(mode!=='dep')return 'active';
+    if(!_evAhead(f.departure,_aheadMs))return 'departed';
+  }
   if(raw==='boarding')return 'boarding';
   if(raw==='gateclosed')return 'gateclosed';
   if(raw==='final'||raw==='finalcall')return 'final';
@@ -43121,6 +43222,7 @@ function _fidsSetLookahead(depRaw, arrRaw) {
 // sent (_fidsCsEvidence), not only the rows in the board's hours.
 function mapADB(raw, mode, kept) {
   const nowTs=Date.now(), list=mode==='dep'?(raw.departures||[]):(raw.arrivals||[]);
+  const _claimAheadMs=_adbClaimAheadMs(list,mode);   // v24107 — see _ADB_CLAIM_AHEAD_TIMED_MS
   return _fidsOneRowPerFlight(_fidsDedupeRows(list.map(f => {
     const sL=mode==='dep'?(f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc):(f.arrival?.scheduledTime?.local||f.arrival?.scheduledTime?.utc);
     if(!sL)return null;
@@ -43208,14 +43310,16 @@ function mapADB(raw, mode, kept) {
     const revL=_actualL||_predL||_revisedL;
     const revTs=revL?_adbNearestDayTs(adbTs(revL),schedTs):null;
     const upd=(revTs&&Math.abs(revTs-schedTs)>5*60000)?adbHHMM(revL):null;
-    const st=adbStatus(f,mode,schedTs,nowTs);
+    const st=adbStatus(f,mode,schedTs,nowTs,_claimAheadMs);
     const _stInferred=adbStatusInferred(f,st);   // v23915 — see adbStatusInferred
     // v23925 — and whether the word is the feed's own (an explicit status,
     // not one worked out from a revised time or the hour). The departures
     // and arrivals boards keep an airport's own "Delayed" until the feed
     // drops it (_fidsBoardRowPlace), and the gate poll keeps following an
     // inbound the airport calls Delayed past its revised time.
-    const _stExplicit=_ADB_EXPLICIT_STATUS.test(String(f.status||'').replace(/[\s_-]+/g,'').toLowerCase());
+    // v24107 — a word adbStatus withheld is not: AA1111's "landed" two hours
+    // early reads Delayed from its revision, and that Delayed is the time's.
+    const _stExplicit=_ADB_EXPLICIT_STATUS.test(String(f.status||'').replace(/[\s_-]+/g,'').toLowerCase())&&!_adbClaimWithheld(f,mode,st);
     let locIata=mode==='dep'
       ?(f.arrival?.airport?.iata||f.arrival?.airport?.icao?.slice(1)||'').trim().toUpperCase()
       :(f.departure?.airport?.iata||f.departure?.airport?.icao?.slice(1)||'').trim().toUpperCase();
@@ -49747,6 +49851,12 @@ function _gateArrsSeen(list, ap, now) {
       if ((_gateRawLanded(f) || f._actualArrTime) && !_gateLegGone(f)) {
         if (!rows[key] || rows[key]._remembered) changed = true;
         rows[key] = f;
+      } else if (rows[key] && !f._actualArrTime && (Number(f._revTs || f._sortTs) || 0) > now) {
+        // v24107 — a landing kept for a flight its listed row says is still to
+        // come: a word that row no longer makes (Pearson's AS385 "arrived" two
+        // hours early, kept by a screen before adbStatus withheld such words).
+        delete rows[key];
+        changed = true;
       }
     }
     for (var k in rows) {
@@ -63273,7 +63383,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24106" src="/textures/gate-sky-shelf.mp4?v=24106"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24107" src="/textures/gate-sky-shelf.mp4?v=24107"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

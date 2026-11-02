@@ -15,7 +15,7 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=24106"></script>
+<script src="js/host-airport.js?v=24107"></script>
 <title>Airport Companion</title>
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
@@ -526,10 +526,10 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24106"></script>
-<script src="js/shared-names.js?v=24106"></script>
-<script src="data/airline-colors.js?v=24106"></script>
-<script src="js/feed-router.js?v=24106"></script>
+<script src="js/board-strings.js?v=24107"></script>
+<script src="js/shared-names.js?v=24107"></script>
+<script src="data/airline-colors.js?v=24107"></script>
+<script src="js/feed-router.js?v=24107"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1428,7 +1428,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24106';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24107';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -1537,7 +1537,29 @@ function inferOperator(code,num){
   if(code==='WS' && fnum>=3000 && fnum<=3999) return 'WestJet Encore';
   return '';
 }
-function adbToCard(f,dir){
+// v24107 — how far ahead of its own time a word that says something happened
+// may sit in this list: the boards' rule (_adbClaimAheadMs in fids-core.js).
+// 20 minutes where at least three in four such words carry a time of their own
+// (eight or more of them), so the airport writes the event's time on the row;
+// otherwise 90, because an honest early landing keeps its schedule there.
+function claimAheadMs(list,dir){
+  const _ms=(t)=>{const v=new Date(String(t).replace(' ','T')).getTime();return isFinite(v)?v:0;};
+  const _t=(o)=>(o&&(o.utc||o.local))||'';
+  let n=0,timed=0;
+  for(const f of (list||[])){
+    const w=String((f&&f.status)||'').replace(/[\s_-]+/g,'').toLowerCase();
+    if(!(w==='arrived'||w==='landed'||(dir==='dep'&&/^(departed|enroute|approaching|active)$/.test(w))))continue;
+    const leg=(dir==='dep'?f.departure:f.arrival)||{};
+    const sc=_ms(_t(leg.scheduledTime));
+    if(!sc)continue;
+    n++;
+    let u=_ms(_t(leg.runwayTime)||_t(leg.predictedTime)||_t(leg.revisedTime));
+    if(u&&Math.abs(u-sc)>12*3600000)u-=Math.round((u-sc)/86400000)*86400000;   // the nearest day, as the boards
+    if(u&&Math.abs(u-sc)>=60000)timed++;
+  }
+  return (n>=8&&timed>=0.75*n)?20*60000:90*60000;
+}
+function adbToCard(f,dir,aheadMs){
   // v23230 — the boards drop codeshare duplicates and keep the operating
   // flight (fids-core's rule, verbatim); the router feed includes them now,
   // so the app applies the same filter or every AA flight shows three times.
@@ -1574,11 +1596,24 @@ function adbToCard(f,dir){
   const _act=(here.runwayTime&&(here.runwayTime.utc||here.runwayTime.local))||'';
   const _upd=_act||(here.predictedTime&&(here.predictedTime.utc||here.predictedTime.local))||rv;
   const _ms=(t)=>{const v=new Date(String(t).replace(' ','T')).getTime();return isFinite(v)?v:0;};
+  // v24107 — and a word that says something happened is held back while the
+  // row's own time for it is still too far ahead (the boards' adbStatus):
+  // Pearson's AS385 "arrived" at 14:11 with its time at 16:05. The row's own
+  // time is on the day nearest its schedule, as the boards' _adbNearestDayTs
+  // puts it. A departure that reached its destination left a flight's length
+  // ago, so its word waits until its own departure time is 15 minutes past
+  // (Las Vegas's "Arrived" is the aeroplane come in for the departure).
+  const _arrW=_w==='arrived'||_w==='landed';
+  const _scMs=_ms(sc);
+  let _own=_ms(_upd||sc);
+  if(_own&&_scMs&&Math.abs(_own-_scMs)>12*3600000)_own-=Math.round((_own-_scMs)/86400000)*86400000;
+  const _held=!!_own&&(_arrW||(dir==='dep'&&/^(enroute|approaching|active|departed)$/.test(_w)))
+    &&_own>Date.now()+((dir==='dep'&&_arrW)?-15*60000:(f._claimTimed?20*60000:(aheadMs||90*60000)));
   let state='scheduled';
   if(/^(cancelled|canceled|cancelleduncertain|canceleduncertain)$/.test(_w))state='cancelled';
   else if(_w==='diverted')state='diverted';
-  else if(_w==='arrived'||_w==='landed')state=dir==='dep'?'departed':'arrived';
-  else if(_w==='enroute'||_w==='approaching'||_w==='active'||_w==='departed')state=dir==='dep'?'departed':'active';
+  else if(!_held&&_arrW)state=dir==='dep'?'departed':'arrived';
+  else if(!_held&&(_w==='enroute'||_w==='approaching'||_w==='active'||_w==='departed'))state=dir==='dep'?'departed':'active';
   else if(_w==='boarding')state='boarding';
   else if(_w==='gateclosed')state='gateclosed';
   else if(_w==='final'||_w==='finalcall')state='final';
@@ -1677,7 +1712,8 @@ async function fetchDir(dir,ap){
     }catch(e){}
   }
   // Map → drop stale departed/arrived → dedupe → sort.
-  let all=raw.map(x=>adbToCard(x,dir)).filter(f=>f&&f.flight&&f.schedTime);
+  const _aheadMs=claimAheadMs(raw,dir);   // v24107
+  let all=raw.map(x=>adbToCard(x,dir,_aheadMs)).filter(f=>f&&f.flight&&f.schedTime);
   // a feed that wrote no local date: the date of its UTC time at the airport
   for(const f of all){ if(!f.schedDate&&f._ts&&TZ[ap]) f.schedDate=adbFmt(new Date(f._ts),TZ[ap]).slice(0,10); }
   // v24044 — a far end the feed named without its code: the code from the

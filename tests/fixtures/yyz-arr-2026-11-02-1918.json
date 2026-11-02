@@ -1,0 +1,1371 @@
+{
+ "_note": "Toronto Pearson arrivals (/flights/yyz?direction=arr), captured 2026-11-02 at 19:18:42Z (14:18 in Toronto). Trimmed to the two rows that said arrived/landed with their own time still ahead (AS385 16:05, AA1111 16:23), the 25 latest genuine arrived/landed rows, and six flights still to come.",
+ "asOfUtc": "2026-11-02T19:18:42Z",
+ "list": [
+  {
+   "key": "A1102ASA385SEAYYZ",
+   "id": "ASA385",
+   "id2": "AS385",
+   "type": "ARR",
+   "schTime": "2026-11-02T16:05:00-05:00",
+   "latestTm": "2026-11-02T16:05:00-05:00",
+   "gate": "A13",
+   "status": "ARR",
+   "term": "T3",
+   "al": "Alaska Airlines",
+   "alCode": "ASA",
+   "ids": [
+    {
+     "id": "QTR3443",
+     "id2": "QR3443",
+     "alName": "Qatar Airways"
+    }
+   ],
+   "routes": [
+    {
+     "code": "SEA",
+     "name": "Seattle Tacoma International Airport",
+     "short": "",
+     "city": "Seattle",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "9",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "[1102AAL1111DFWYYZ",
+   "id": "AAL1111",
+   "id2": "AA1111",
+   "type": "ARR",
+   "schTime": "2026-11-02T16:15:00-05:00",
+   "latestTm": "2026-11-02T16:23:00-05:00",
+   "gate": "A11",
+   "status": "LND",
+   "term": "T3",
+   "al": "American Airlines",
+   "alCode": "AAL",
+   "ids": [
+    {
+     "id": "ASA6710",
+     "id2": "AS6710",
+     "alName": "Alaska Airlines"
+    },
+    {
+     "id": "POE6019",
+     "id2": "PD6019",
+     "alName": "Porter Airlines"
+    },
+    {
+     "id": "QFA4371",
+     "id2": "QF4371",
+     "alName": "Qantas"
+    },
+    {
+     "id": "QTR2206",
+     "id2": "QR2206",
+     "alName": "Qatar Airways"
+    }
+   ],
+   "routes": [
+    {
+     "code": "DFW",
+     "name": "Dallas Fort Worth International Airport",
+     "short": "",
+     "city": "Dallas-Fort Worth",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "7",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102FLE640YWGYYZ",
+   "id": "FLE640",
+   "id2": "F8640",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:30:00-05:00",
+   "latestTm": "2026-11-02T13:15:00-05:00",
+   "gate": "B2C",
+   "status": "ARR",
+   "term": "T3",
+   "al": "Flair Airlines",
+   "alCode": "FLE",
+   "ids": [],
+   "routes": [
+    {
+     "code": "YWG",
+     "name": "Winnipeg / James Armstrong Richardson International Airport",
+     "short": "",
+     "city": "Winnipeg",
+     "cnty": "CAN",
+     "region": "MB"
+    }
+   ],
+   "carousel": "2",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102WJA636YYCYYZ",
+   "id": "WJA636",
+   "id2": "WS636",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:05:00-05:00",
+   "latestTm": "2026-11-02T13:19:00-05:00",
+   "gate": "B39",
+   "status": "ARR",
+   "term": "T3",
+   "al": "WestJet",
+   "alCode": "WJA",
+   "ids": [
+    {
+     "id": "AMX7155",
+     "id2": "AM7155",
+     "alName": "AeroMexico"
+    },
+    {
+     "id": "DAL7220",
+     "id2": "DL7220",
+     "alName": "Delta Airlines"
+    },
+    {
+     "id": "CES1977",
+     "id2": "MU1977",
+     "alName": "China Eastern"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YYC",
+     "name": "Calgary International Airport",
+     "short": "",
+     "city": "Calgary",
+     "cnty": "CAN",
+     "region": "AB"
+    }
+   ],
+   "carousel": "4",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102JZA8225YFCYYZ",
+   "id": "JZA8225",
+   "id2": "AC8225",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:45:00-05:00",
+   "latestTm": "2026-11-02T13:19:00-05:00",
+   "gate": "D5",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada Jazz",
+   "alCode": "JZA",
+   "ids": [],
+   "routes": [
+    {
+     "code": "YFC",
+     "name": "Fredericton Airport",
+     "short": "",
+     "city": "Fredericton",
+     "cnty": "CAN",
+     "region": "NB"
+    }
+   ],
+   "carousel": "1",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102CES207PVGYYZ",
+   "id": "CES207",
+   "id2": "MU207",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:25:00-05:00",
+   "latestTm": "2026-11-02T13:23:00-05:00",
+   "gate": "C33",
+   "status": "ARR",
+   "term": "T3",
+   "al": "China Eastern",
+   "alCode": "CES",
+   "ids": [],
+   "routes": [
+    {
+     "code": "PVG",
+     "name": "Shanghai Pudong International Airport",
+     "short": "",
+     "city": "Shanghai",
+     "cnty": "CHN",
+     "region": ""
+    }
+   ],
+   "carousel": "9",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102DAL5094LGAYYZ",
+   "id": "DAL5094",
+   "id2": "DL5094",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:40:00-05:00",
+   "latestTm": "2026-11-02T13:26:00-05:00",
+   "gate": "A6",
+   "status": "ARR",
+   "term": "T3",
+   "al": "Delta Airlines",
+   "alCode": "DAL",
+   "ids": [
+    {
+     "id": "WJA6318",
+     "id2": "WS6318",
+     "alName": "WestJet"
+    }
+   ],
+   "routes": [
+    {
+     "code": "LGA",
+     "name": "La Guardia Airport",
+     "short": "La Guardia",
+     "city": "New York",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "6",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA2067YHZYYZ",
+   "id": "ACA2067",
+   "id2": "AC2067",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:47:00-05:00",
+   "latestTm": "2026-11-02T13:34:00-05:00",
+   "gate": "D33",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8261",
+     "id2": "UA8261",
+     "alName": "United Airlines"
+    },
+    {
+     "id": "DLH6513",
+     "id2": "LH6513",
+     "alName": "Lufthansa"
+    },
+    {
+     "id": "AVA6955",
+     "id2": "AV6955",
+     "alName": "Avianca Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YHZ",
+     "name": "Halifax / Stanfield International Airport",
+     "short": "",
+     "city": "Halifax",
+     "cnty": "CAN",
+     "region": "NS"
+    }
+   ],
+   "carousel": "4",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102TSC189CDGYYZ",
+   "id": "TSC189",
+   "id2": "TS189",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:05:00-05:00",
+   "latestTm": "2026-11-02T13:35:00-05:00",
+   "gate": "B29",
+   "status": "ARR",
+   "term": "T3",
+   "al": "Air Transat",
+   "alCode": "TSC",
+   "ids": [
+    {
+     "id": "POE7189",
+     "id2": "PD7189",
+     "alName": "Porter Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "CDG",
+     "name": "Charles de Gaulle International Airport",
+     "short": "",
+     "city": "Paris",
+     "cnty": "FRA",
+     "region": ""
+    }
+   ],
+   "carousel": "10",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA709LGAYYZ",
+   "id": "ACA709",
+   "id2": "AC709",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:37:00-05:00",
+   "latestTm": "2026-11-02T13:37:00-05:00",
+   "gate": "F55",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8231",
+     "id2": "UA8231",
+     "alName": "United Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "LGA",
+     "name": "La Guardia Airport",
+     "short": "La Guardia",
+     "city": "New York",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "9",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102FLE1691MCOYYZ",
+   "id": "FLE1691",
+   "id2": "F81691",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:40:00-05:00",
+   "latestTm": "2026-11-02T13:39:00-05:00",
+   "gate": "C27A",
+   "status": "ARR",
+   "term": "T3",
+   "al": "Flair Airlines",
+   "alCode": "FLE",
+   "ids": [],
+   "routes": [
+    {
+     "code": "MCO",
+     "name": "Orlando International Airport",
+     "short": "",
+     "city": "Orlando",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "5",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102UAL3674ORDYYZ",
+   "id": "UAL3674",
+   "id2": "UA3674",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:03:00-05:00",
+   "latestTm": "2026-11-02T13:41:00-05:00",
+   "gate": "F97",
+   "status": "ARR",
+   "term": "T1",
+   "al": "United Airlines",
+   "alCode": "UAL",
+   "ids": [
+    {
+     "id": "ACA4407",
+     "id2": "AC4407",
+     "alName": "Air Canada"
+    },
+    {
+     "id": "CMP2810",
+     "id2": "CM2810",
+     "alName": "Copa Airlines"
+    },
+    {
+     "id": "ANA7224",
+     "id2": "NH7224",
+     "alName": "All Nippon Airways"
+    },
+    {
+     "id": "ANZ9865",
+     "id2": "NZ9865",
+     "alName": "Air New Zealand"
+    }
+   ],
+   "routes": [
+    {
+     "code": "ORD",
+     "name": "Chicago O'Hare International Airport",
+     "short": "",
+     "city": "Chicago",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "11",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA809AMSYYZ",
+   "id": "ACA809",
+   "id2": "AC809",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:15:00-05:00",
+   "latestTm": "2026-11-02T13:41:00-05:00",
+   "gate": "E69",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8511",
+     "id2": "UA8511",
+     "alName": "United Airlines"
+    },
+    {
+     "id": "AUA8229",
+     "id2": "OS8229",
+     "alName": "Austrian Airlines"
+    },
+    {
+     "id": "DLH6842",
+     "id2": "LH6842",
+     "alName": "Lufthansa"
+    },
+    {
+     "id": "BTI6411",
+     "id2": "BT6411",
+     "alName": "Air Baltic"
+    },
+    {
+     "id": "CTN5912",
+     "id2": "OU5912",
+     "alName": "Croatia Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "AMS",
+     "name": "Amsterdam Airport Schiphol",
+     "short": "",
+     "city": "Amsterdam",
+     "cnty": "NLD",
+     "region": ""
+    }
+   ],
+   "carousel": "5",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA909MANYYZ",
+   "id": "ACA909",
+   "id2": "AC909",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:10:00-05:00",
+   "latestTm": "2026-11-02T13:44:00-05:00",
+   "gate": "E79",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL6612",
+     "id2": "UA6612",
+     "alName": "United Airlines"
+    },
+    {
+     "id": "DLH6494",
+     "id2": "LH6494",
+     "alName": "Lufthansa"
+    },
+    {
+     "id": "BEL9558",
+     "id2": "SN9558",
+     "alName": "Brussels Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "MAN",
+     "name": "Manchester Airport",
+     "short": "",
+     "city": "Manchester",
+     "cnty": "GBR",
+     "region": ""
+    }
+   ],
+   "carousel": "6",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA411YULYYZ",
+   "id": "ACA411",
+   "id2": "AC411",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:46:00-05:00",
+   "latestTm": "2026-11-02T13:45:00-05:00",
+   "gate": "D32",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "AVA6900",
+     "id2": "AV6900",
+     "alName": "Avianca Airlines"
+    },
+    {
+     "id": "EIN8515",
+     "id2": "EI8515",
+     "alName": "Aer Lingus"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YUL",
+     "name": "Montreal / Pierre Elliott Trudeau International Airport",
+     "short": "",
+     "city": "Montreal",
+     "cnty": "CAN",
+     "region": "QC"
+    }
+   ],
+   "carousel": "2",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102BWA612POSYYZ",
+   "id": "BWA612",
+   "id2": "BW612",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:55:00-05:00",
+   "latestTm": "2026-11-02T13:50:00-05:00",
+   "gate": "B37",
+   "status": "ARR",
+   "term": "T3",
+   "al": "Caribbean Airlines",
+   "alCode": "BWA",
+   "ids": [],
+   "routes": [
+    {
+     "code": "POS",
+     "name": "Piarco International Airport",
+     "short": "",
+     "city": "Port of Spain",
+     "cnty": "TTO",
+     "region": ""
+    }
+   ],
+   "carousel": "8",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102UAL2606IAHYYZ",
+   "id": "UAL2606",
+   "id2": "UA2606",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:17:00-05:00",
+   "latestTm": "2026-11-02T13:57:00-05:00",
+   "gate": "F95",
+   "status": "ARR",
+   "term": "T1",
+   "al": "United Airlines",
+   "alCode": "UAL",
+   "ids": [
+    {
+     "id": "ACA4277",
+     "id2": "AC4277",
+     "alName": "Air Canada"
+    },
+    {
+     "id": "ANZ9984",
+     "id2": "NZ9984",
+     "alName": "Air New Zealand"
+    }
+   ],
+   "routes": [
+    {
+     "code": "IAH",
+     "name": "George Bush Intercontinental Houston Airport",
+     "short": "",
+     "city": "Houston",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "11",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102UAL3490IADYYZ",
+   "id": "UAL3490",
+   "id2": "UA3490",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:25:00-05:00",
+   "latestTm": "2026-11-02T13:57:00-05:00",
+   "gate": "F64",
+   "status": "ARR",
+   "term": "T1",
+   "al": "United Airlines",
+   "alCode": "UAL",
+   "ids": [
+    {
+     "id": "ACA3932",
+     "id2": "AC3932",
+     "alName": "Air Canada"
+    },
+    {
+     "id": "CMP2802",
+     "id2": "CM2802",
+     "alName": "Copa Airlines"
+    },
+    {
+     "id": "ANA7020",
+     "id2": "NH7020",
+     "alName": "All Nippon Airways"
+    }
+   ],
+   "routes": [
+    {
+     "code": "IAD",
+     "name": "Washington Dulles International Airport",
+     "short": "Dulles",
+     "city": "Washington",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "11",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102WJA1033MCOYYZ",
+   "id": "WJA1033",
+   "id2": "WS1033",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:10:00-05:00",
+   "latestTm": "2026-11-02T13:58:00-05:00",
+   "gate": "A15",
+   "status": "ARR",
+   "term": "T3",
+   "al": "WestJet",
+   "alCode": "WJA",
+   "ids": [
+    {
+     "id": "AFR3017",
+     "id2": "AF3017",
+     "alName": "Air France"
+    },
+    {
+     "id": "DAL6875",
+     "id2": "DL6875",
+     "alName": "Delta Airlines"
+    },
+    {
+     "id": "KLM9599",
+     "id2": "KL9599",
+     "alName": "KLM"
+    }
+   ],
+   "routes": [
+    {
+     "code": "MCO",
+     "name": "Orlando International Airport",
+     "short": "",
+     "city": "Orlando",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "7",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA811LISYYZ",
+   "id": "ACA811",
+   "id2": "AC811",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:45:00-05:00",
+   "latestTm": "2026-11-02T14:03:00-05:00",
+   "gate": "E80",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8038",
+     "id2": "UA8038",
+     "alName": "United Airlines"
+    },
+    {
+     "id": "DLH6714",
+     "id2": "LH6714",
+     "alName": "Lufthansa"
+    }
+   ],
+   "routes": [
+    {
+     "code": "LIS",
+     "name": "Lisbon Portela Airport",
+     "short": "",
+     "city": "Lisbon",
+     "cnty": "PRT",
+     "region": ""
+    }
+   ],
+   "carousel": "8",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102JZA8399YQBYYZ",
+   "id": "JZA8399",
+   "id2": "AC8399",
+   "type": "ARR",
+   "schTime": "2026-11-02T13:57:00-05:00",
+   "latestTm": "2026-11-02T14:04:00-05:00",
+   "gate": "D9",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada Jazz",
+   "alCode": "JZA",
+   "ids": [],
+   "routes": [
+    {
+     "code": "YQB",
+     "name": "Quebec Jean Lesage International Airport",
+     "short": "",
+     "city": "Quebec",
+     "cnty": "CAN",
+     "region": "QC"
+    }
+   ],
+   "carousel": "1",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102WJA430YEGYYZ",
+   "id": "WJA430",
+   "id2": "WS430",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:05:00-05:00",
+   "latestTm": "2026-11-02T14:07:00-05:00",
+   "gate": "B24",
+   "status": "ARR",
+   "term": "T3",
+   "al": "WestJet",
+   "alCode": "WJA",
+   "ids": [
+    {
+     "id": "AFR3739",
+     "id2": "AF3739",
+     "alName": "Air France"
+    },
+    {
+     "id": "AMX7102",
+     "id2": "AM7102",
+     "alName": "AeroMexico"
+    },
+    {
+     "id": "DAL7103",
+     "id2": "DL7103",
+     "alName": "Delta Airlines"
+    },
+    {
+     "id": "KLM9559",
+     "id2": "KL9559",
+     "alName": "KLM"
+    },
+    {
+     "id": "VIR8000",
+     "id2": "VS8000",
+     "alName": "Virgin Atlantic Airways"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YEG",
+     "name": "Edmonton International Airport",
+     "short": "",
+     "city": "Edmonton",
+     "cnty": "CAN",
+     "region": "AB"
+    }
+   ],
+   "carousel": "2",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102JZA8461LGAYYZ",
+   "id": "JZA8461",
+   "id2": "AC8461",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:23:00-05:00",
+   "latestTm": "2026-11-02T14:09:00-05:00",
+   "gate": "F98",
+   "status": "LND",
+   "term": "T1",
+   "al": "Air Canada Jazz",
+   "alCode": "JZA",
+   "ids": [],
+   "routes": [
+    {
+     "code": "LGA",
+     "name": "La Guardia Airport",
+     "short": "La Guardia",
+     "city": "New York",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "9",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102QTR767DOHYYZ",
+   "id": "QTR767",
+   "id2": "QR767",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:30:00-05:00",
+   "latestTm": "2026-11-02T14:13:00-05:00",
+   "gate": "C30",
+   "status": "LND",
+   "term": "T3",
+   "al": "Qatar Airways",
+   "alCode": "QTR",
+   "ids": [
+    {
+     "id": "MAS4447",
+     "id2": "MH4447",
+     "alName": "Malaysia Airlines"
+    },
+    {
+     "id": "RWD1553",
+     "id2": "WB1553",
+     "alName": "Rwandair Express"
+    },
+    {
+     "id": "ALK3132",
+     "id2": "UL3132",
+     "alName": "SriLankan Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "DOH",
+     "name": "Hamad International Airport",
+     "short": "",
+     "city": "Doha",
+     "cnty": "QAT",
+     "region": ""
+    }
+   ],
+   "carousel": "10",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102AVA324SALYYZ",
+   "id": "AVA324",
+   "id2": "AV324",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:10:00-05:00",
+   "latestTm": "2026-11-02T14:14:00-05:00",
+   "gate": "E81",
+   "status": "LND",
+   "term": "T1",
+   "al": "Avianca Airlines",
+   "alCode": "AVA",
+   "ids": [
+    {
+     "id": "ACA2929",
+     "id2": "AC2929",
+     "alName": "Air Canada"
+    }
+   ],
+   "routes": [
+    {
+     "code": "SAL",
+     "name": "Monse\u00f1or \u00d3scar Arnulfo Romero International Airport",
+     "short": "",
+     "city": "San Salvador (San Luis Talpa)",
+     "cnty": "SLV",
+     "region": ""
+    }
+   ],
+   "carousel": "12",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102WJA632YYCYYZ",
+   "id": "WJA632",
+   "id2": "WS632",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:10:00-05:00",
+   "latestTm": "2026-11-02T14:15:00-05:00",
+   "gate": "B20",
+   "status": "LND",
+   "term": "T3",
+   "al": "WestJet",
+   "alCode": "WJA",
+   "ids": [
+    {
+     "id": "AFR3750",
+     "id2": "AF3750",
+     "alName": "Air France"
+    },
+    {
+     "id": "AMX7124",
+     "id2": "AM7124",
+     "alName": "AeroMexico"
+    },
+    {
+     "id": "DAL7218",
+     "id2": "DL7218",
+     "alName": "Delta Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YYC",
+     "name": "Calgary International Airport",
+     "short": "",
+     "city": "Calgary",
+     "cnty": "CAN",
+     "region": "AB"
+    }
+   ],
+   "carousel": "4",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA645YQMYYZ",
+   "id": "ACA645",
+   "id2": "AC645",
+   "type": "ARR",
+   "schTime": "2026-11-02T06:40:00-05:00",
+   "latestTm": "2026-11-02T06:40:00-05:00",
+   "gate": "D38",
+   "status": "ARR",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8273",
+     "id2": "UA8273",
+     "alName": "United Airlines"
+    },
+    {
+     "id": "UAE5758",
+     "id2": "EK5758",
+     "alName": "Emirates"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YQM",
+     "name": "Greater Moncton International Airport",
+     "short": "",
+     "city": "Moncton",
+     "cnty": "CAN",
+     "region": "NB"
+    }
+   ],
+   "carousel": "4",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA1813CUNYYZ",
+   "id": "ACA1813",
+   "id2": "AC1813",
+   "type": "ARR",
+   "schTime": "2026-11-02T15:30:00-05:00",
+   "latestTm": "2026-11-02T15:30:00-05:00",
+   "gate": "E76",
+   "status": "ONT",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [],
+   "routes": [
+    {
+     "code": "CUN",
+     "name": "Canc\u00fan International Airport",
+     "short": "",
+     "city": "Cancun",
+     "cnty": "MEX",
+     "region": ""
+    }
+   ],
+   "carousel": "5",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102POE106YULYYZ",
+   "id": "POE106",
+   "id2": "PD106",
+   "type": "ARR",
+   "schTime": "2026-11-02T15:47:00-05:00",
+   "latestTm": "2026-11-02T15:47:00-05:00",
+   "gate": "B25",
+   "status": "ONT",
+   "term": "T3",
+   "al": "Porter Airlines",
+   "alCode": "POE",
+   "ids": [
+    {
+     "id": "TSC7168",
+     "id2": "TS7168",
+     "alName": "Air Transat"
+    },
+    {
+     "id": "BAW8669",
+     "id2": "BA8669",
+     "alName": "British Airways"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YUL",
+     "name": "Montreal / Pierre Elliott Trudeau International Airport",
+     "short": "",
+     "city": "Montreal",
+     "cnty": "CAN",
+     "region": "QC"
+    }
+   ],
+   "carousel": "2",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA873CDGYYZ",
+   "id": "ACA873",
+   "id2": "AC873",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:35:00-05:00",
+   "latestTm": "2026-11-02T14:29:00-05:00",
+   "gate": "E73",
+   "status": "ERL",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8155",
+     "id2": "UA8155",
+     "alName": "United Airlines"
+    },
+    {
+     "id": "ETH1143",
+     "id2": "ET1143",
+     "alName": "Ethiopian Airlines"
+    },
+    {
+     "id": "DLH6824",
+     "id2": "LH6824",
+     "alName": "Lufthansa"
+    },
+    {
+     "id": "AUA8243",
+     "id2": "OS8243",
+     "alName": "Austrian Airlines"
+    },
+    {
+     "id": "CTN5927",
+     "id2": "OU5927",
+     "alName": "Croatia Airlines"
+    },
+    {
+     "id": "BEL9637",
+     "id2": "SN9637",
+     "alName": "Brussels Airlines"
+    },
+    {
+     "id": "ALK2873",
+     "id2": "UL2873",
+     "alName": "SriLankan Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "CDG",
+     "name": "Charles de Gaulle International Airport",
+     "short": "",
+     "city": "Paris",
+     "cnty": "FRA",
+     "region": ""
+    }
+   ],
+   "carousel": "7",
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102ACA413YULYYZ",
+   "id": "ACA413",
+   "id2": "AC413",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:45:00-05:00",
+   "latestTm": "2026-11-02T14:19:00-05:00",
+   "gate": "D51",
+   "status": "ERL",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "AVA6919",
+     "id2": "AV6919",
+     "alName": "Avianca Airlines"
+    },
+    {
+     "id": "EIN8504",
+     "id2": "EI8504",
+     "alName": "Aer Lingus"
+    },
+    {
+     "id": "AUA8395",
+     "id2": "OS8395",
+     "alName": "Austrian Airlines"
+    },
+    {
+     "id": "BEL9641",
+     "id2": "SN9641",
+     "alName": "Brussels Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YUL",
+     "name": "Montreal / Pierre Elliott Trudeau International Airport",
+     "short": "",
+     "city": "Montreal",
+     "cnty": "CAN",
+     "region": "QC"
+    }
+   ],
+   "carousel": "2",
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102POE536RSWYYZ",
+   "id": "POE536",
+   "id2": "PD536",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:30:00-05:00",
+   "latestTm": "2026-11-02T16:00:00-05:00",
+   "gate": "A12",
+   "status": "DEL",
+   "term": "T3",
+   "al": "Porter Airlines",
+   "alCode": "POE",
+   "ids": [
+    {
+     "id": "TSC7536",
+     "id2": "TS7536",
+     "alName": "Air Transat"
+    }
+   ],
+   "routes": [
+    {
+     "code": "RSW",
+     "name": "Southwest Florida International Airport",
+     "short": "",
+     "city": "Fort Myers",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "5",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  },
+  {
+   "key": "A1102AAL3608ORDYYZ",
+   "id": "AAL3608",
+   "id2": "AA3608",
+   "type": "ARR",
+   "schTime": "2026-11-02T14:34:00-05:00",
+   "latestTm": "2026-11-02T14:40:00-05:00",
+   "gate": "A11",
+   "status": "DEL",
+   "term": "T3",
+   "al": "American Airlines",
+   "alCode": "AAL",
+   "ids": [
+    {
+     "id": "QFA3337",
+     "id2": "QF3337",
+     "alName": "Qantas"
+    },
+    {
+     "id": "POE6011",
+     "id2": "PD6011",
+     "alName": "Porter Airlines"
+    },
+    {
+     "id": "ASA6186",
+     "id2": "AS6186",
+     "alName": "Alaska Airlines"
+    },
+    {
+     "id": "JAL7681",
+     "id2": "JL7681",
+     "alName": "Japan Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "ORD",
+     "name": "Chicago O'Hare International Airport",
+     "short": "",
+     "city": "Chicago",
+     "cnty": "USA",
+     "region": ""
+    }
+   ],
+   "carousel": "7",
+   "termzone": "USA",
+   "svctype": "J",
+   "aisle": null,
+   "zone": null,
+   "stand": ""
+  }
+ ]
+}
