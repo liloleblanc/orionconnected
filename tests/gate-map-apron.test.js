@@ -106,7 +106,7 @@ const FNS = [
   '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnedByPattern', '_gateTurnConsumed', '_gateLandedAt',
   '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateFeedKept', '_gateInboundForDeparture',
-  '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', 'adbStatus',
+  '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', 'adbStatus',
   'adbStatusInferred', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave', '_gateArrsSeen', 'aircraftCodeToIata',
   // where an aeroplane stands, and its size
   '_gcBrgDeg', '_gcDestPt', '_gateStandHeading', '_gateParkSpot', '_gateStandAlloc', '_gateParkPlace',
@@ -168,6 +168,8 @@ function engine(ctx) {
     lineSource('var _GATE_ARR_SEEN = '),
     lineSource('var _GATE_SEEN_IDENTITY = '),
     lineSource('var _ADB_EXPLICIT_STATUS = '),
+    lineSource('var _ADB_CLAIM_AHEAD_TIMED_MS = '),
+    lineSource('var _ADB_CLAIM_AHEAD_UNTIMED_MS = '),
     lineSource('var _GATE_FEED_KEPT = '),
     lineSource('var _GATE_APRON_AIRPORTS = '),
     ctx.bySize ? 'var _GATE_APRON_BY_SIZE = true;' : lineSource('var _GATE_APRON_BY_SIZE = '),

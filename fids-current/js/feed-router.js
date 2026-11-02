@@ -423,6 +423,10 @@ function yqmToAdbFlight(f, direction) {
   if (sched && f.localTimestamp && schedMin != null && actMin != null && actMin !== schedMin) {
     let delta = actMin - schedMin;
     if (delta < -720) delta += 1440;   // rolled past midnight
+    // v24107 — and back over it, as the worker's farArrYqmRows does: AC1986
+    // due 12:08 AM, "Arrived at 11:48 PM" the evening before, is 20 minutes
+    // early, not a day late.
+    else if (delta > 720) delta -= 1440;
     revised = yqmTimeObj(f.localTimestamp + delta * 60);
   }
   const airline = { iata: (f.airlineCode || '').toUpperCase() || null, icao: null, name: f.airlineName || null };
@@ -446,7 +450,14 @@ function yqmToAdbFlight(f, direction) {
     codeshareStatus: 'IsOperator',
     isCargo: false,
     departure: isDep ? homeSide : otherSide,
-    arrival: isDep ? otherSide : homeSide
+    arrival: isDep ? otherSide : homeSide,
+    // v24107 — "Arrived at 9:47 PM" carries its own time (read into the
+    // revised time above), so a word far ahead of it is not believed (adbStatus,
+    // _ADB_CLAIM_AHEAD_TIMED_MS). A bare "Arrived" or "Departed" carries only
+    // the schedule (cyqm.ca adds "at" exactly when the time differs; Porter's
+    // early and on-time movements come bare), so it is left to the list's own
+    // margin like any row that keeps its schedule.
+    ...(revised ? { _claimTimed: true } : {})
   };
   // v23918 — a row the worker kept after cyqm.ca dropped it ("remembered",
   // see yqmWithMemory in workers/fids-proxy.js). Mapped exactly like a live
@@ -677,7 +688,12 @@ function yyzToAdbFlight(f) {
     status: yyzStatus(f.status),
     codeshareStatus: 'IsOperator', isCargo: false,
     departure: isDep ? homeSide : otherSide,
-    arrival: isDep ? otherSide : homeSide
+    arrival: isDep ? otherSide : homeSide,
+    // v24107 — Pearson writes the actual time into latestTm when a flight
+    // lands or leaves (183 of 185 arrived rows on 2026-11-02, the other two
+    // its slips), so an arrived or departed word far ahead of the row's own
+    // time is not believed (adbStatus, _ADB_CLAIM_AHEAD_TIMED_MS).
+    _claimTimed: true
   };
   // Via routing (intermediate stop) — reuse the generic "via <city>" label.
   if (viaR.length) {

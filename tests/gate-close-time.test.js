@@ -431,7 +431,9 @@ test('(2) a feed\'s own delay flag still upgrades every neutral word, not only S
 });
 
 test('(2) the board never turns Scheduled into On time, at any moment; On time and Expected stay themselves', () => {
-  const src = [fn('adbTs'), fn('_adbNearestDayTs'), fn('adbStatus'), 'return adbStatus;'].join('\n');
+  const varLine = (n) => CORE.match(new RegExp('^var ' + n + ' = [^\\n]+', 'm'))[0];
+  const src = [varLine('_ADB_CLAIM_AHEAD_TIMED_MS'), varLine('_ADB_CLAIM_AHEAD_UNTIMED_MS'),
+    fn('adbTs'), fn('_adbNearestDayTs'), fn('_adbLegUpdateTs'), fn('adbStatus'), 'return adbStatus;'].join('\n');
   const adbStatus = new Function(src)();
   const sched = Date.parse('2026-10-04T21:15:00Z');
   const leg = { scheduledTime: { utc: '2026-10-04 21:15+00:00' } };
