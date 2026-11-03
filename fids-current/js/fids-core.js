@@ -17562,7 +17562,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24107" src="/textures/gate-sky-shelf.mp4?v=24107" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24108" src="/textures/gate-sky-shelf.mp4?v=24108" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17606,7 +17606,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24107" src="/textures/gate-sky-shelf.mp4?v=24107" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24108" src="/textures/gate-sky-shelf.mp4?v=24108" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18835,7 +18835,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24107" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24108" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35737,7 +35737,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24107';
+var FIDS_BUILD_TAG = 'v24108';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -63131,6 +63131,64 @@ var HERITAGE_MARKS = [
     airports: '*CA'
   },
   {
+    // v24108 — THE LOCKHEED L-1011 TRISTAR, IN THE 1987 LIVERY: 'Air Canada' in
+    // mixed-case red over the double cheatline, the white rondelle on a red
+    // fin, so it carries the 1987 mark, as the 1987 DC-9 and 767 cards do. The
+    // supplied drawing is fleet 508 (no registration is drawn); 508 was C-FTNH,
+    // MSN 193E-1049, delivered in 1973 (AirHistory.net; a May 1992 photograph
+    // of C-FTNH in storage shows 508 on the fin and the nose-gear door; and
+    // the C-FTNA–C-FTNL run of fins 501–512, which the NetLetter and the
+    // Transport Canada register bear out). No caption prints the fin or the
+    // registration.
+    // THE LIVERY ON A TRISTAR, CHECKED: fleet 504, C-FTND, is photographed in
+    // it at Miami on 31 January 1991 (Wikimedia Commons), and the enthusiast
+    // histories say only 504 and 506 (C-FTNF) were repainted into it, after
+    // their Gulf Air leases ended in 1989; every other TriStar photographed
+    // from 1987 to 1992 is in the 1980 scheme. 508 itself is photographed in
+    // the 1980 scheme in July 1986 and still in it, stored, in May 1992, so its
+    // fin number is the drawing's, as the DC-8's 861 is. The caption's claim,
+    // a TriStar in this livery, is true; the number is not printed.
+    // THE LIVERY'S YEAR stays 1987, as on the DC-9 and 767 cards (Norebbo, and
+    // confirmed first hand by staff of the period). Air Canada's staff
+    // magazine Horizons, July 1988, has the burgundy stripe and mixed-case
+    // titles arriving in 1988 with 767 fleet 613; the recorded decision holds.
+    //
+    // ITS SHAPE says LONG BODY: length over fuselage depth, measured 14–26%
+    // behind the nose, is 9.09 against the long-body TriStar's 9.07 (177 ft
+    // 8.5 in, 54.17 m, over a fuselage of 19 ft 7 in, 5.97 m: Jane's 1982–83
+    // for the length, Lockheed's L-1011-500 Technical Profile for the diameter,
+    // which both bodies share). The shortened -500 is 8.38 (164 ft 2 in), so
+    // the drawing is not one of Air Canada's six -500s. Inside the 4% the
+    // boards allow, so it is used AS DRAWN. Its four doors a side, the fourth
+    // smaller, are a certified long-body layout (three Type A and one Type I:
+    // FAA type certificate data sheet A23WE, note 5); the -500 has three. The
+    // diamond outline at the tailplane root is the drawing's own, as on the
+    // 1993 drawing, and stays.
+    // Exported a shade see-through (alpha 200–254 over about 6,000 body
+    // pixels), so those pixels are made solid as they looked on white, and 99
+    // faint specks (alpha 8 or less) more than 3 px off the aeroplane are
+    // removed. The fin's top touches the top of the export; it is drawn
+    // complete. Cropped to its own edges and scaled to 2272 px, the 1993
+    // DC-9's width.
+    //
+    // THE CAPTION: 'Lockheed L-1011 TriStar · 1973–1996 · 1987 livery'.
+    // CHECKED, the long body's years with Air Canada: six joined the fleet in
+    // 1973 (Canada Year Book 1974) and the type was in service by March 1973,
+    // first on Toronto–Vancouver (Henry Tenby's history, 1984); the last
+    // scheduled flight was AC152 Vancouver–Toronto on 14 January 1996 (Air
+    // Canada's staff magazine Horizons, as the NetLetter reprints it). The
+    // fleet was stored in 1990–91 (the sources give either year) and three
+    // came back in spring 1994; neither date is printed. No sub-model is
+    // printed either: all twelve were delivered as TriStar 1s and some were
+    // converted later (-1-14, -1-15 in the FAA data sheet), and the names
+    // '100' and '150' are used loosely.
+    key: 'air-canada-l1011-87',
+    file: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-l1011-ac87.png',
+    airports: '*CA'
+  },
+  {
     // v24082 — THE DC-9 IN THE LIVERY THAT FOLLOWED: a white aeroplane, the
     // titles in spaced red capitals behind a small red rondelle, and a dark
     // green tail with a red maple leaf. The supplied drawing is the same
@@ -63179,13 +63237,58 @@ var HERITAGE_MARKS = [
     //
     // THE CAPTION: 'Boeing 767-233 · 1982–2008 · 1987 livery', the 1980
     // card's checked years with this livery's year.
-    // Last in the set on purpose: the rotation runs in this order, so the
+    // Late in the set on purpose: the rotation runs in this order, so the
     // two 767s are never back to back.
     key: 'air-canada-767-87',
     file: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-767-ac87.png',
     credit: true,
+    airports: '*CA'
+  },
+  {
+    // v24108 — AND THE TRISTAR IN THE 1993 LIVERY: a white aeroplane, 'AIR
+    // CANADA' in spaced capitals behind a small red rondelle, the red maple
+    // leaf on a dark green fin, so it carries the 1993 mark, as the 1993 DC-9
+    // card does. The supplied drawing is C-FTNG, fleet 507 (the NetLetter;
+    // Transport Canada's register), MSN 193E-1048, delivered in 1973. C-FTNG
+    // was one of the three TriStars, fleets 504, 507 and 512, that came back
+    // into service in spring 1994 after the fleet was stored, and it flew to
+    // the end in 1996; it went to Air Transat in 1997.
+    // THE LIVERY ON THIS AEROPLANE, CHECKED: C-FTNG with 507 on the fin is
+    // photographed in exactly this scheme at Vancouver on 1 August 1994 and at
+    // Los Angeles on 8 October 1994 (airport-data.com), and C-FTNL, 512, in it
+    // at Los Angeles that October (Wikimedia Commons): the three were
+    // repainted when they came back.
+    //
+    // ITS SHAPE: 9.06 length over fuselage depth against the long body's 9.07
+    // (the figures on the 1987 card above), so it is used AS DRAWN, with the
+    // same four doors a side.
+    // ONE REPAIR: the export had lost the tail cone over the centre engine's
+    // exhaust. Only its top edge was left, a white point floating off the fin
+    // with sky under it. The cone is filled in under that edge, shaded like
+    // the point and outlined like the rest of the drawing, closing on the
+    // exhaust with a rounded end as it does on the 1987 drawing (a fillet
+    // between the drawing's own top and rear outlines, at their weight); the
+    // point's lower outline, now inside the cone, is painted out; the cone's
+    // foot runs under the exhaust's top outline, so no sky shows between them.
+    // About 12,300 body pixels a shade see-through (alpha 200–254) are made
+    // solid as they looked on white, and so is the forward belly antenna,
+    // exported see-through inside its own outline (about 460 pixels the
+    // outside cannot reach); 319 faint specks off the aeroplane are removed.
+    // Cropped to its own edges and scaled to 2272 px, the 1987 TriStar's width.
+    //
+    // THE CAPTION: 'Lockheed L-1011 TriStar · 1973–1996 · 1993 livery', the
+    // years checked on the 1987 card. The livery is named by the year it came
+    // in, as on the 1993 DC-9 card (Air Canada's rondelle history, Open Jaw,
+    // January 2025; Skies Magazine); the supplied artwork's filename says
+    // 1994, and that is not printed.
+    // Last in the set on purpose: the rotation runs in this order, so the two
+    // TriStars are never back to back, nor across the wrap to the first card.
+    key: 'air-canada-l1011-93',
+    file: '/logos/advertisements/retro-airlines/AC-1993-LOGO.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-l1011-ac93.png',
     airports: '*CA'
   }
 ];
@@ -63383,7 +63486,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24107" src="/textures/gate-sky-shelf.mp4?v=24107"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24108" src="/textures/gate-sky-shelf.mp4?v=24108"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

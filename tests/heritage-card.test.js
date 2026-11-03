@@ -444,6 +444,55 @@ test('the DC-8 card: the -61 drawn, its own checked years, the 1965 livery and t
   }
 });
 
+test('the two TriStar cards: the long body drawn, its checked years, each livery with its own mark', () => {
+  // v24108 — two supplied drawings of Air Canada's long-body Lockheed L-1011:
+  // fleet 508 in the 1987 livery and C-FTNG, fleet 507, in the 1993 livery.
+  // Both measure 9.06–9.09 length over fuselage depth against the long body's
+  // 9.07 (177 ft 8.5 in over the 19 ft 7 in fuselage); the shorter -500 is
+  // 8.38. Air Canada flew the long body from 1973 to the last scheduled flight,
+  // AC152 Vancouver–Toronto, on 14 January 1996.
+  const byK = Object.fromEntries(marks().map((m) => [m.key, m]));
+  const CARDS = {
+    'air-canada-l1011-87': { aircraft: '/aircraft/heritage/air-canada-l1011-ac87.png', mark: /retro-airlines\/AC-1987-LOGO\.svg$/, livery: '1987' },
+    'air-canada-l1011-93': { aircraft: '/aircraft/heritage/air-canada-l1011-ac93.png', mark: /retro-airlines\/AC-1993-LOGO\.svg$/, livery: '1993' },
+  };
+  for (const [k, want] of Object.entries(CARDS)) {
+    const m = byK[k];
+    assert.ok(m, k + ' exists');
+    assert.equal(m.aircraft, want.aircraft);
+    assert.match(m.file, want.mark, k + ': the livery carries the mark it came in with');
+    assert.equal(m.airports, '*CA');
+    assert.ok(!m.credit, k + ': a supplied drawing, no credit line');
+    for (const f of [m.aircraft, m.file]) {
+      assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', f.replace(/^\//, ''))), f + ' is on disk');
+    }
+    for (const l of STORE.LANGS) {
+      const cap = STORE.bs('heritage:' + k, l);
+      assert.match(cap, /L-1011/, 'the type, in ' + l);
+      assert.match(cap, / · 1973–1996 · /, 'its checked years, in ' + l);
+      assert.match(cap, new RegExp(want.livery), 'the livery by the year it came in, in ' + l);
+      const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => !['1973', '1996', want.livery].includes(y));
+      assert.deepEqual(years, [], 'no other year (not the 1990–91 storage, not the 1994 return), in ' + l);
+      assert.doesNotMatch(cap, /-100|-150|-500|\b150\b|\b500\b/, 'no sub-model the sources dispute, in ' + l);
+    }
+  }
+  // The board rotates each airport's own pool in set order and wraps, so the
+  // gap is measured in the pools the board really runs: the Atlantic
+  // network's (with Air Atlantic and Air Nova) and a Canadian airport's
+  // outside it. The two TriStars, and the two 767s, never come up back to
+  // back, the wrap from last to first included.
+  const apart = (pool, a, b) => {
+    const gap = Math.abs(pool.indexOf(a) - pool.indexOf(b));
+    return Math.min(gap, pool.length - gap) > 1;
+  };
+  for (const ia of ['YHZ', 'YVR']) {
+    const pool = marks().filter((m) => m.airports === '*CA' || (Array.isArray(m.airports) && m.airports.includes(ia))).map((m) => m.key);
+    assert.ok(pool.includes('air-canada-l1011-87') && pool.includes('air-canada-l1011-93'), 'both TriStars run at ' + ia);
+    assert.ok(apart(pool, 'air-canada-l1011-87', 'air-canada-l1011-93'), 'the two TriStar cards are apart at ' + ia);
+    assert.ok(apart(pool, 'air-canada-767', 'air-canada-767-87'), 'the two 767 cards are apart at ' + ia);
+  }
+});
+
 // ── v24042 — Air Canada gates only ──────────────────────────────────────────
 //
 // The whole set is Air Canada's history: its own DC-9s and 767, and the
