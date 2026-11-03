@@ -63138,20 +63138,24 @@ var HERITAGE_MARKS = [
     // 1973 (no registration is drawn; fins 501–512 run C-FTNA–C-FTNL, which
     // the NetLetter and the Transport Canada register bear out). No caption
     // prints the fin or the registration.
-    // WHY 504: it is the TriStar this livery is photographed on, at Miami on
-    // 31 January 1991 (Wikimedia Commons, 'the extra lower maroon stripe'),
-    // and the enthusiast histories say only 504 and 506 (C-FTNF) were
-    // repainted into it, after their Gulf Air leases ended in 1989; every
-    // other TriStar photographed from 1987 to 1992 is in the 1980 scheme. It
-    // is also one of the three, 504, 507 and 512, brought back from desert
-    // storage in spring 1994 (the NetLetter); 507 and 512 came back in the
-    // 1993 livery (the 1993 card's 507 is photographed in it in August and
-    // October 1994), 504 in this one. The drawing was supplied as 508,
-    // C-FTNH, which never wore it: photographed in the 1980 scheme in July
-    // 1986 and still in it, stored, in May 1992, and gone to Air Transat in
-    // 1993. So its last digit was repainted 8 -> 4 in the drawn digits' own
-    // face, size, softness and colour, fitted to the "5" and "0" beside it,
-    // over the fin's own red.
+    // WHY 504: it is photographed in this livery, fin 504 legible, at Miami
+    // in January 1990, at Glasgow in July 1990 and at Miami on 31 January
+    // 1991 (Wikimedia Commons, 'the extra lower maroon stripe that was in use
+    // for a short period'). The enthusiast histories say only 504 and 506
+    // (C-FTNF) were painted in it, after their Gulf Air leases ended in 1989;
+    // every other TriStar photographed from 1987 to 1992 is in the 1980
+    // scheme. 504 went into storage at Marana in it (photographed there,
+    // titles off, in 1991 and on 17 September 1992), and was one of the three,
+    // 504, 507 and 512, brought back in spring 1994 (the NetLetter's reprint
+    // of Air Canada's March 1996 item). All three were repainted in the 1993
+    // livery for that return (504 is photographed in it at Los Angeles in
+    // June 1994; see the 1993 card), so this card shows 504 as it flew in
+    // 1989–91. The drawing was supplied as 508, C-FTNH, which never wore this
+    // livery: every dated photograph of it, July 1986 to February 1993, has
+    // the 1980 scheme; it was stored in November 1990 and went to Air
+    // Transat in May 1993, before the return. So its last digit was repainted
+    // 8 -> 4 in the drawn digits' own face, size, softness and colour, fitted
+    // to the "5" and "0" beside it, over the fin's own red.
     // THE LIVERY'S YEAR stays 1987, as on the DC-9 and 767 cards (Norebbo, and
     // confirmed first hand by staff of the period). Air Canada's staff
     // magazine Horizons, July 1988, has the burgundy stripe and mixed-case
