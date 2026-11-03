@@ -5145,6 +5145,14 @@ function changeSubScreen(val) {
   }
   subScreenVal = _fidsSafeSub(val);
   _fidsSyncUrl((typeof screenType !== 'undefined' ? screenType : 'main'), subScreenVal);
+  // v24110 — THE PICK ENDS THE HOLD OF THE SELECT. blockRender (mousedown/focus on
+  // #subScreenSel in gids/fids/bids.html) holds render() for 3 s so a refresh
+  // cannot rebuild the list under an open dropdown. The change event is the
+  // choice. Kept, the hold made this render() return at once and left the
+  // previous gate up, its rotation still turning, for the rest of the 3 s; a
+  // turn in that window grew the map of the previous flight just before the new
+  // gate appeared. (try: the let bindings are declared further down the file.)
+  try { if (_renderBlocked) { _renderBlocked = false; clearTimeout(_renderBlockTimer); _renderBlockTimer = null; } } catch (eRb) {}
   render();
 }
 
@@ -6741,6 +6749,23 @@ function _gateRebuildFire() {
     if (typeof screenType !== 'undefined' && screenType === 'gate'
         && typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
   } catch (e) {}
+}
+// v24110 — A FULL GATE PAINT ANSWERS THE REBUILD ALREADY ASKED FOR. Every
+// requestGateRebuild caller publishes what it learned and then asks, always
+// from a fetch answer, an event or a clock check, never in the middle of a
+// build. So a full paint reads all of it, and the paint of the batch timer up to
+// 800 ms later built the same screen again. Measured on a gate switch: the
+// switch painted at +0, the verdict of the registration check at +823 ms, and
+// this timer at +921 ms. Called only after a paint has succeeded, so a paint
+// that throws still leaves the batch to retry. A request made after the
+// paint arms its own timer as before. A new caller must publish before it
+// asks.
+function _gateRebuildAbsorb() {
+  if (!_gateKeyResetTimer) return false;
+  clearTimeout(_gateKeyResetTimer);
+  _gateKeyResetTimer = null;
+  _gateRebuildFirstReq = 0;
+  return true;
 }
 // ── Codeshare guard for GATE screens (a Qantas codeshare number must
 // never brand an American flight). The same physical departure can appear
@@ -17562,7 +17587,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24109" src="/textures/gate-sky-shelf.mp4?v=24109" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24110" src="/textures/gate-sky-shelf.mp4?v=24110" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17606,7 +17631,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24109" src="/textures/gate-sky-shelf.mp4?v=24109" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24110" src="/textures/gate-sky-shelf.mp4?v=24110" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18835,7 +18860,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24109" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24110" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -26993,7 +27018,15 @@ const gView = document.getElementById('gateView');
         var _gateAdAirlineSame = (!_newGateAirline || window._gateCurrentAirline === _newGateAirline);
         var _savedAd = document.getElementById('gateAdCarousel');
         var _savedAdLogo = document.getElementById('gateAdLogo');
-        if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }
+        // v24110 — THE BIG MAP RIDES THROUGH LIKE THE RAIL MAP AND THE CAROUSEL.
+        // The takeover is an overlay on .g8-wrap, which the wipe below replaces.
+        // For the own flight of this gate it is lifted out and put back below (the
+        // same node: no grow, no new map). A takeover for another gate, flight
+        // or carrier is taken down here, before the new gate is drawn, and the
+        // screen under it goes too, so the map of the new flight arrives as a new
+        // visit (_bigCraftLiftForRebuild).
+        var _savedBc = (typeof _bigCraftLiftForRebuild === 'function') ? _bigCraftLiftForRebuild(gView, currentFlight, iata, _gateAdAirlineSame) : null;
+        if (_gateAdAirlineSame && _savedAd && _savedBc !== false && (_savedAd.firstChild || _savedBc)) { _savedAd.remove(); }
         else { _savedAd = null; _savedAdLogo = null; }
         if (_savedAdLogo) { _savedAdLogo.remove(); }
         // NO opacity dip on rebuild
@@ -27021,6 +27054,8 @@ const gView = document.getElementById('gateView');
         // content. v23925 — nothing writes such a field now (the inbound-delay
         // carry-over onto currentFlight.upd is gone); the re-read is a guard.
         window._lastGateKey = _computeGateKey();
+        // v24110 — this paint answers any batched rebuild still pending (_gateRebuildAbsorb).
+        try { if (typeof _gateRebuildAbsorb === 'function') _gateRebuildAbsorb(); } catch (eAb) {}
         // Align the right-column airline watermark band to the MAP's real
         // bottom edge: the map shelf height varies by layout, so a fixed
         // CSS % left the logo's top hidden behind the map (read as "too
@@ -27135,6 +27170,10 @@ const gView = document.getElementById('gateView');
         } catch (eRm) {}
         var _newAdLogo = document.getElementById('gateAdLogo');
         if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
+        // v24110 — and the big map goes back over the screen it covers, the same
+        // node, before the fit below measures the board (its caption is in
+        // FIDS_FIT_RULES and the map on the rail stays folded while it is up).
+        if (_savedBc && typeof _bigCraftPutBack === 'function') _bigCraftPutBack(_savedBc);
         // Run autofit synchronously so oversized text never paints. There used
         // to be six more fit passes (double-rAF, three delayed timers, and a
         // five-second heartbeat); each reset and re-measured the boarding text
@@ -27289,7 +27328,11 @@ const gView = document.getElementById('gateView');
         // The ad carousel is preserved across gate rebuilds (videos must not
         // restart) — but a mounted flight-map slide belongs to the PREVIOUS
         // flight (a WestJet gate showing Porter's map on rotating displays).
-        // Kill it and restart the rotation so the new flight gets its own map.
+        // v24110 — it is taken down at the rebuild above, before the new gate
+        // is drawn (_bigCraftLiftForRebuild: another flight is another
+        // subject), and the refill paints the own map of the new flight as a new
+        // visit. The rotation is not restarted: a same-carrier switch keeps the
+        // place in the deck and the time left on its dwell.
       }
       // Only overwrite window._gateInbound with the gate-match fallback when we
       // don't already have a reg-based result (which is more reliable).
@@ -35737,7 +35780,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24109';
+var FIDS_BUILD_TAG = 'v24110';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -61871,12 +61914,175 @@ function _bigCraftFollowScreen(ov) {
   } catch (e) { ro = null; }
   try { window.addEventListener('resize', fit); window.addEventListener('orientationchange', fit); } catch (e) {}
   // The backstop. _bigCraftTeardown clears it with the slide's other timers.
-  try { (window._bigCraftTimers = window._bigCraftTimers || []).push(setInterval(fit, 1000)); } catch (e) {}
+  // v24110 — and the stop clears it too: a takeover put back into a rebuilt
+  // board (_bigCraftPutBack) stops this follower and starts one on the new
+  // screen, so the old backstop must not keep ticking beside the new one.
+  var iv = null;
+  try { iv = setInterval(fit, 1000); (window._bigCraftTimers = window._bigCraftTimers || []).push(iv); } catch (e) {}
   window._bigCraftFitStop = function () {
     try { if (ro) ro.disconnect(); } catch (e) {}
     try { window.removeEventListener('resize', fit); window.removeEventListener('orientationchange', fit); } catch (e) {}
+    try { if (iv && typeof clearInterval === 'function') clearInterval(iv); } catch (e) {}
   };
   fit();
+}
+// v24110 — ONE GATE SWITCH, ONE GROW.
+//
+// A gate switch is three full rebuilds in about a second: the own paint of
+// the switch, the verdict repaint of the registration check (which clears the gate key
+// on purpose), and the batched rebuild. The big-map takeover lived on the
+// wrap of the board, which every rebuild replaces, and nothing lifted it out. The
+// screen under it is left empty for the whole takeover, so the rebuild never
+// kept that screen either, and the refill drew the takeover from nothing each
+// time. The v23166 continuation test below needs the overlay to still be in
+// the document, which it never was after a wipe, so every pass replayed the
+// grow and blanked the tiles while a new map loaded.
+//
+// Measured on a YYC gate switched A14 -> A15 under the review pin: new maps
+// at +0, +823 and +921 ms, each starting small and dim again. A recording of
+// a WestJet D84 -> D83 switch shows exactly that: grow, drop back small and
+// dim, grow, drop, snap.
+//
+// Now the same node rides through a rebuild of its own flight (lifted before
+// the wipe, put back after it, the way the rail map and the carousel already
+// are), a repaint that would draw the same picture changes nothing, and a
+// takeover for another gate, flight or carrier is taken down at the rebuild,
+// before the new gate is drawn.
+//
+// WHO the takeover is for: the airport, the gate on screen and its departure.
+function _bigCraftSubject(cf, ap) {
+  return String(ap || '').toUpperCase() + '|' + String(typeof subScreenVal !== 'undefined' ? subScreenVal : '') + '|' + String((cf && cf.flight) || '').trim();
+}
+// v24110 — the key is the picture, not the clock. It includes:
+// - the leg and its two ends;
+// - live, or an estimate and the own zoom step of the estimate builder (its ladder
+//   at 0.02/0.06/0.12/0.25/0.75/0.88/0.94/0.98, and 0.995 where it stops
+//   following the aeroplane): inside one step it is the same view;
+// - parked or empty-stand evidence, its label, and the stand the apron deals
+//   this board (the own rule of the small map);
+// - the estimate badge;
+// - the flight, place and verb of the caption;
+// - the board languages.
+// A live fix collapses to one token, so the live builder can move between
+// flying, taxiing and parked in place. An unreadable key is empty and never
+// matches.
+function _bigCraftPaintKey(ctx) {
+  try {
+    if (!ctx) return '';
+    var f = (ctx.out ? window._gateCurrentFlight : window._gateInbound) || {};
+    var p = (typeof ctx.progress === 'number') ? ctx.progress : -1;
+    var ph = p < 0.02 ? 0 : p < 0.06 ? 1 : p < 0.12 ? 2 : p < 0.25 ? 3 : p < 0.75 ? 4
+      : p < 0.88 ? 5 : p < 0.94 ? 6 : p < 0.98 ? 7 : p < 0.995 ? 8 : 9;
+    var own = '';
+    if (ctx.kind === 'stand' || ctx.kind === 'none') { try { own = _gateApronOwnRef(); } catch (eO) { own = ''; } }
+    return [ctx.out ? 1 : 0, ctx.oc || '', ctx.dc || '',
+      ctx.pos ? 'L' : ('E' + ph + '/' + String(ctx.kind || '') + (ctx.waiting ? '/w' : '') + '/' + own),
+      ctx.estimated ? 1 : 0, String(ctx.note || ''),
+      String(f.flight || '').trim(),
+      String((ctx.out ? (f.dest || f._locIata) : (f.origin || f._locIata)) || '').trim(),
+      ctx.out ? 'departure' : _gateInbCaptionKey(f, Date.now()),
+      String(typeof langs !== 'undefined' ? langs : '')].join('|');
+  } catch (e) { return ''; }
+}
+function _bigCraftFixKey(ctx) {
+  try {
+    if (!ctx || !ctx.pos) return '';
+    return Number(ctx.pos[1]).toFixed(5) + ',' + Number(ctx.pos[0]).toFixed(5) + '@' + String(ctx.fixAt || '');
+  } catch (e) { return ''; }
+}
+// v24110 — a repaint of the picture already up: nothing is torn down or
+// rebuilt. A newer live fix goes to the live builder, which re-anchors the
+// running glide in place (v23106); this re-entry is what that path was
+// written for, and it was unreachable while every repaint tore the map down
+// first. False, and the ordinary paint follows, whenever the overlay has no
+// live map of its own.
+function _bigCraftRepaintInPlace(ov, ctx, paint) {
+  try {
+    if (!ov || !ov.isConnected || !paint || ov.__bcPaint !== paint) return false;
+    var m = window._bigCraftMap, mb = document.getElementById('bigCraftMap');
+    if (!m || typeof m.getContainer !== 'function' || !mb || !ov.contains(mb) || m.getContainer() !== mb) return false;
+    var host = ov.parentNode;
+    if (host && host.classList && !host.classList.contains('g8-bigcraft-active')) host.classList.add('g8-bigcraft-active');
+    _bigCraftFitToScreen(ov);
+    var fx = _bigCraftFixKey(ctx);
+    if (fx && fx !== ov.__bcFix) {
+      ov.__bcFix = fx;
+      _bigMapCloneLive(ctx.oc, ctx.dc, ctx.pos[1], ctx.pos[0], ctx.fixAt);
+    }
+    return true;
+  } catch (e) { return false; }
+}
+// v24110 — lifted before the wipe of the gate rebuild.
+// - Re-inserting a node restarts its CSS animations, and bigcraftGrow carries
+//   !important (display-overrides.css:1837).
+// - So a finished grow is switched off, and one still running resumes where it
+//   was with a negative delay (the v23786 idiom of the weather card). Both
+//   need the important priority to win.
+// - Re-inserting also ends a running transition, so a map still fading in from
+//   its tiles (v23100) would jump to full. Its opacity is noted here and the
+//   put-back carries the fade on from it.
+// - A disconnected leftover from a wipe that kept nothing (the welcome and
+//   solo screens) is torn down, so its timers die with it.
+// Returns the node to put back; false when a takeover for another subject or
+// carrier was taken down; null when there is nothing of ours to carry.
+function _bigCraftLiftForRebuild(view, cf, ap, airlineSame) {
+  var GROW_MS = 650;   // bigcraftGrow, display-overrides.css:1837
+  var ov = window._bigCraftOverlay;
+  if (!ov) return null;
+  try {
+    if (!ov.isConnected) { _bigCraftTeardown(); return null; }
+    if (!view || typeof view.contains !== 'function' || !view.contains(ov)) return null;
+    if (airlineSame && ov.__bcSubj && ov.__bcSubj === _bigCraftSubject(cf, ap)) {
+      var grown = Date.now() - (ov.__bcAt || 0);
+      if (ov.__bcGrow && grown >= 0 && grown < GROW_MS) ov.style.setProperty('animation-delay', (-grown) + 'ms', 'important');
+      else ov.style.setProperty('animation', 'none', 'important');
+      ov.__bcMapOp = null;
+      try {
+        var mb = ov.querySelector ? ov.querySelector('#bigCraftMap') : null;
+        if (mb && !mb.classList.contains('bc-loading') && typeof getComputedStyle === 'function') {
+          var op = parseFloat(getComputedStyle(mb).opacity);
+          if (op >= 0 && op < 0.99) ov.__bcMapOp = op;
+        }
+      } catch (eOp) {}
+      ov.remove();
+      return ov;
+    }
+    _bigCraftTeardown();
+    return false;
+  } catch (e) {
+    try { _bigCraftTeardown(); } catch (e2) {}
+    return false;
+  }
+}
+// v24110 — put back over the screen it covers. The board is found from the
+// screen, exactly as at mount. The follower is re-pointed because its
+// observer watched the screen and board the rebuild threw away (v23936). The
+// +200 ms re-size mirrors the re-attach of the rail map. With no screen to go
+// back over (the phone layout), the takeover is torn down.
+function _bigCraftPutBack(ov) {
+  if (!ov) return false;
+  try {
+    var scr = document.getElementById('gateAdCarousel');
+    var wrap = (scr && scr.closest) ? scr.closest('.g8-wrap') : null;
+    if (wrap) {
+      wrap.appendChild(ov);
+      wrap.classList.add('g8-bigcraft-active');
+      // the tile fade carries on from where the lift found it
+      try {
+        if (typeof ov.__bcMapOp === 'number') {
+          var mb = ov.querySelector ? ov.querySelector('#bigCraftMap') : null;
+          if (mb) { mb.style.opacity = String(ov.__bcMapOp); void mb.offsetWidth; mb.style.opacity = ''; }
+        }
+      } catch (eOp) {}
+      ov.__bcMapOp = null;
+      try { if (typeof window._bigCraftFitStop === 'function') { var stop = window._bigCraftFitStop; window._bigCraftFitStop = null; stop(); } } catch (eS) {}
+      try { _bigCraftFollowScreen(ov); } catch (eF) {}
+      try { (window._bigCraftTimers = window._bigCraftTimers || []).push(setTimeout(function () { try { var m = window._bigCraftMap; if (m && m.getContainer && ov.contains(m.getContainer())) m.invalidateSize({ animate: false }); } catch (e1) {} }, 200)); } catch (eT) {}
+      return true;
+    }
+  } catch (e) {}
+  try { _bigCraftTeardown(); } catch (e2) {}
+  return false;
 }
 function _renderBigCraft(el, ctx) {
   // Spec: ONE panel that GROWS into the screen — never the same content
@@ -61894,12 +62100,27 @@ function _renderBigCraft(el, ctx) {
   // so a continuation keeps its size and its already-loaded tiles. The visit
   // bookkeeping further down already knows the difference — read it BEFORE the
   // teardown clears the overlay reference.
+  // v24110 — and for the same subject: a gate switch inside the dwell is a
+  // new arrival for another aeroplane (_bigCraftSubject). The overlay is still
+  // in the document after a rebuild now, because the rebuild lifts it out and
+  // puts it back (_bigCraftLiftForRebuild, _bigCraftPutBack).
+  var _bcSubj = _bigCraftSubject(window._gateCurrentFlight, window._gateIata);
   var _bcContinuation = !!(
     window._bigCraftOverlay && window._bigCraftOverlay.isConnected
+    && window._bigCraftOverlay.__bcSubj === _bcSubj
     && window._bigCraftVisitStart
     && window._bigCraftVisitSlot === window._gateAdCurrentIdx
     && (Date.now() - window._bigCraftVisitStart) <= 120000
   );
+  // v24110 — A CONTINUATION THAT DRAWS THE SAME PICTURE CHANGES NOTHING. The
+  // promise above to keep the size and the already-loaded tiles is kept
+  // now: before, the teardown below always ran, so the map was rebuilt and
+  // faded in from blank on every repaint. Most re-entries are this: the
+  // refill of the deliberately empty screen after a gate repaint, the type
+  // check repaint, the media-ready events, and the rotation tick under
+  // the review pin.
+  var _bcPaint = _bigCraftPaintKey(ctx);
+  if (_bcContinuation && _bigCraftRepaintInPlace(window._bigCraftOverlay, ctx, _bcPaint)) return;
   if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown();
   // Leg-aware: on the outbound fallback (ctx.out) the status/reg belong to
   // the departing flight, not the (absent) inbound.
@@ -61952,7 +62173,7 @@ function _renderBigCraft(el, ctx) {
   _bcOv.className = 'bigcraft-overlay';
   // A continuation is already at full size on screen — suppress the entry grow
   // so a mid-dwell repaint is invisible instead of a 650ms pump (v23166).
-  // The rule this overrides carries !important (display-overrides.css ~1791),
+  // The rule this overrides carries !important (display-overrides.css:1837),
   // so a plain inline style would lose to it — this priority is required.
   if (_bcContinuation) _bcOv.style.setProperty('animation', 'none', 'important');
   _bcOv.style.left = Math.round(_bcElR.left - _bcWrapR.left) + 'px';
@@ -62032,6 +62253,11 @@ function _renderBigCraft(el, ctx) {
   _bcWrapEl.appendChild(_bcOv);
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
+  // v24110 — what this takeover draws and for whom (read by
+  // _bigCraftRepaintInPlace and _bigCraftLiftForRebuild), when it arrived,
+  // and whether it grew.
+  _bcOv.__bcSubj = _bcSubj; _bcOv.__bcPaint = _bcPaint; _bcOv.__bcFix = _bigCraftFixKey(ctx);
+  _bcOv.__bcAt = Date.now(); _bcOv.__bcGrow = !_bcContinuation;
   // v23936 — and it keeps that rectangle for as long as it is up.
   try { _bigCraftFollowScreen(_bcOv); } catch (eFit) {}
   // Free the old carousel content AFTER the grow finishes (overlay now opaque
@@ -62076,9 +62302,14 @@ function _renderBigCraft(el, ctx) {
   // visit start survives repaints; each re-arm only waits out whatever is
   // LEFT of the original 8s.
   var _bcNow = Date.now();
-  if (!window._bigCraftVisitStart
-      || window._bigCraftVisitSlot !== window._gateAdCurrentIdx
-      || (_bcNow - window._bigCraftVisitStart) > 120000) {
+  // v24110 — A NEW VISIT IS EXACTLY WHAT THE TEST AT THE TOP SAYS IS NOT A
+  // CONTINUATION, so the clock and the grow can never disagree. The old test
+  // kept the clock across a gate switch (same slot, under 120 s) and across a
+  // deck short enough to come round to this slide inside 120 s. That map, or
+  // one for a new gate, then had only the 1 s minimum below to show a tile before
+  // it was given up on. Repaints of the same visit still wait out only what
+  // is left of the 8 s.
+  if (!_bcContinuation) {
     window._bigCraftVisitStart = _bcNow;
     window._bigCraftVisitSlot = window._gateAdCurrentIdx;
   }
@@ -63505,7 +63736,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24109" src="/textures/gate-sky-shelf.mp4?v=24109"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24110" src="/textures/gate-sky-shelf.mp4?v=24110"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

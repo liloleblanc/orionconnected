@@ -166,3 +166,23 @@ test('the takeover follows the screen from the moment it mounts, and the teardow
   assert.match(down, /window\._bigCraftFitStop/);
   assert.ok(down.indexOf('_bigCraftFitStop') < down.indexOf('_bigCraftOverlay.remove()'), 'stopped before the overlay goes');
 });
+
+// v24110 — a takeover carried through a gate rebuild (_bigCraftPutBack) stops
+// its follower and starts one on the new board. The stop must take its own
+// one-second backstop with it, or every rebuild would leave another interval
+// ticking (tests/bigmap-one-grow-per-switch.test.js).
+test('the stop takes its own one-second backstop with it, so a put-back leaves one running', () => {
+  const p = page({ screen: [418.8, 168.9, 1261.2, 1017.6] });
+  const cleared = [];
+  p.ctx.clearInterval = (id) => cleared.push(id);
+  p.ctx._bigCraftFollowScreen(p.ov);
+  p.win._bigCraftFitStop();
+  p.ctx._bigCraftFollowScreen(p.ov);
+  assert.deepEqual(cleared, [1], 'the first backstop was cleared');
+  assert.equal(p.state.observers[0].live, false);
+  assert.equal(p.state.observers[1].live, true);
+  assert.deepEqual(p.state.observers[1].els, [p.scr, p.hostEl], 'the new observer watches the screen and the board');
+  assert.equal((p.state.listeners.resize || []).length, 1, 'one resize listener, not two');
+  assert.equal(p.state.intervals.filter((i) => i.ms === 1000).length, 2);
+  assert.deepEqual(p.win._bigCraftTimers, [1, 2], 'both stay on the slide\'s timer list for the teardown');
+});
