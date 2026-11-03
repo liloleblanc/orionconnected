@@ -17562,7 +17562,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24108" src="/textures/gate-sky-shelf.mp4?v=24108" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24109" src="/textures/gate-sky-shelf.mp4?v=24109" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17606,7 +17606,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24108" src="/textures/gate-sky-shelf.mp4?v=24108" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24109" src="/textures/gate-sky-shelf.mp4?v=24109" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18835,7 +18835,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24108" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24109" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35737,7 +35737,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24108';
+var FIDS_BUILD_TAG = 'v24109';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -63133,21 +63133,29 @@ var HERITAGE_MARKS = [
   {
     // v24108 — THE LOCKHEED L-1011 TRISTAR, IN THE 1987 LIVERY: 'Air Canada' in
     // mixed-case red over the double cheatline, the white rondelle on a red
-    // fin, so it carries the 1987 mark, as the 1987 DC-9 and 767 cards do. The
-    // supplied drawing is fleet 508 (no registration is drawn); 508 was C-FTNH,
-    // MSN 193E-1049, delivered in 1973 (AirHistory.net; a May 1992 photograph
-    // of C-FTNH in storage shows 508 on the fin and the nose-gear door; and
-    // the C-FTNA–C-FTNL run of fins 501–512, which the NetLetter and the
-    // Transport Canada register bear out). No caption prints the fin or the
-    // registration.
-    // THE LIVERY ON A TRISTAR, CHECKED: fleet 504, C-FTND, is photographed in
-    // it at Miami on 31 January 1991 (Wikimedia Commons), and the enthusiast
-    // histories say only 504 and 506 (C-FTNF) were repainted into it, after
-    // their Gulf Air leases ended in 1989; every other TriStar photographed
-    // from 1987 to 1992 is in the 1980 scheme. 508 itself is photographed in
-    // the 1980 scheme in July 1986 and still in it, stored, in May 1992, so its
-    // fin number is the drawing's, as the DC-8's 861 is. The caption's claim,
-    // a TriStar in this livery, is true; the number is not printed.
+    // fin, so it carries the 1987 mark, as the 1987 DC-9 and 767 cards do.
+    // THE FIN READS 504 (v24109): C-FTND, MSN 193E-1025, delivered in March
+    // 1973 (no registration is drawn; fins 501–512 run C-FTNA–C-FTNL, which
+    // the NetLetter and the Transport Canada register bear out). No caption
+    // prints the fin or the registration.
+    // WHY 504: it is photographed in this livery, fin 504 legible, at Miami
+    // in January 1990, at Glasgow in July 1990 and at Miami on 31 January
+    // 1991 (Wikimedia Commons, 'the extra lower maroon stripe that was in use
+    // for a short period'). The enthusiast histories say only 504 and 506
+    // (C-FTNF) were painted in it, after their Gulf Air leases ended in 1989;
+    // every other TriStar photographed from 1987 to 1992 is in the 1980
+    // scheme. 504 went into storage at Marana in it (photographed there,
+    // titles off, in 1991 and on 17 September 1992), and was one of the three,
+    // 504, 507 and 512, brought back in spring 1994 (the NetLetter's reprint
+    // of Air Canada's March 1996 item). All three were repainted in the 1993
+    // livery for that return (504 is photographed in it at Los Angeles in
+    // June 1994; see the 1993 card), so this card shows 504 as it flew in
+    // 1989–91. The drawing was supplied as 508, C-FTNH, which never wore this
+    // livery: every dated photograph of it, July 1986 to February 1993, has
+    // the 1980 scheme; it was stored in November 1990 and went to Air
+    // Transat in May 1993, before the return. So its last digit was repainted
+    // 8 -> 4 in the drawn digits' own face, size, softness and colour, fitted
+    // to the "5" and "0" beside it, over the fin's own red.
     // THE LIVERY'S YEAR stays 1987, as on the DC-9 and 767 cards (Norebbo, and
     // confirmed first hand by staff of the period). Air Canada's staff
     // magazine Horizons, July 1988, has the burgundy stripe and mixed-case
@@ -63486,7 +63494,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24108" src="/textures/gate-sky-shelf.mp4?v=24108"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24109" src="/textures/gate-sky-shelf.mp4?v=24109"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
