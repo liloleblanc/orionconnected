@@ -63147,10 +63147,16 @@ var HERITAGE_MARKS = [
     // scheme. 504 went into storage at Marana in it (photographed there,
     // titles off, in 1991 and on 17 September 1992), and was one of the three,
     // 504, 507 and 512, brought back in spring 1994 (the NetLetter's reprint
-    // of Air Canada's March 1996 item). All three were repainted in the 1993
-    // livery for that return (504 is photographed in it at Los Angeles in
-    // June 1994; see the 1993 card), so this card shows 504 as it flew in
-    // 1989–91. The drawing was supplied as 508, C-FTNH, which never wore this
+    // of Air Canada's March 1996 item). It came back in this paint and, as
+    // staff of the period recall first hand, flew in it before it was
+    // repainted: no photograph of it has turned up between its reactivation
+    // in March 1994 and Los Angeles in June 1994, its first in the 1993
+    // livery (see the 1993 card). So this card shows 504 as it flew in
+    // 1989–91 and again on its return in 1994. 506 wore this livery too but
+    // never came back (photographed in it at Marana in May 1992, broken up
+    // there in January 1997); 507 sat out its storage in the 1980 scheme,
+    // and 512 came back in bare metal and was white within three weeks.
+    // The drawing was supplied as 508, C-FTNH, which never wore this
     // livery: every dated photograph of it, July 1986 to February 1993, has
     // the 1980 scheme; it was stored in November 1990 and went to Air
     // Transat in May 1993, before the return. So its last digit was repainted
