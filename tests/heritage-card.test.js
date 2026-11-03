@@ -446,7 +446,8 @@ test('the DC-8 card: the -61 drawn, its own checked years, the 1965 livery and t
 
 test('the two TriStar cards: the long body drawn, its checked years, each livery with its own mark', () => {
   // v24108 — two supplied drawings of Air Canada's long-body Lockheed L-1011:
-  // C-FTND, fleet 504, in the 1987 livery it flew in 1989–91 (supplied as 508,
+  // C-FTND, fleet 504, in the 1987 livery it flew in 1989–90 and on its 1994
+  // return from the desert, before its repaint (supplied as 508,
   // which never wore it; the fin repainted in v24109) and C-FTNG, fleet 507, in
   // the 1993 livery.
   // Both measure 9.06–9.09 length over fuselage depth against the long body's
