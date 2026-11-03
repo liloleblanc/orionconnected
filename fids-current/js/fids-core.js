@@ -64412,6 +64412,10 @@ var _WX_CITY_NIGHT = {
   // v24096 — redrawn: the same skyline over the Petitcodiac's
   // red mud banks at low tide instead of the marsh, by day under summer
   // cloud and by night under stars with the windows lit.
+  // v24111 — the night sky is now clear of its painted stars, the same call as
+  // the star field taken off every other city picture in v24110: over a lit
+  // skyline the dots read as specks, not sky. Only open sky was touched; the
+  // buildings, their lit windows and the vines are as drawn.
   YQM:1
 };
 // The name the Worker searches by, for an airport outside the curated
