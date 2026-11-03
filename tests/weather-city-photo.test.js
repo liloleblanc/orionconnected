@@ -238,13 +238,13 @@ test('every falling loop is seamless, and none of them is a lattice', () => {
     assert.ok(cells.length, tail + ' must lay down cells');
     for (const c of cells) assert.equal(travel % c.h, 0, tail + ': cell ' + c.h + ' must divide ' + travel);
   }
-  // A lattice is what one mark per cell looks like at plate size. Snow and the
-  // night's stars therefore scatter SEVERAL marks at irregular offsets inside
-  // ONE cell, which is why the cell of a layer is a single size.
+  // A lattice is what one mark per cell looks like at plate size. Snow
+  // therefore scatters SEVERAL marks at irregular offsets inside ONE cell,
+  // which is why the cell of a layer is a single size. (The night's stars
+  // did too until v24110 took them off the photographs.)
   for (const tail of [
     '.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::before',
     '.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::after',
-    '.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night::before',
   ]) {
     const cells = cellsOf(tail);
     assert.ok(cells.length >= 5, tail + ' must scatter at least five marks, not tile one');
@@ -264,6 +264,17 @@ test('every falling loop is seamless, and none of them is a lattice', () => {
   const rainMax = Math.max(...Array.from(liveRule('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::after').matchAll(/rgba\(\d+,\d+,\d+,\.(\d+)\)/g)).map(m => +('0.' + m[1])));
   assert.ok(rainMax <= 0.45, 'no rain streak brighter than 45% white, was 88% and read as scratches');
   assert.match(liveRule('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::after'), /filter: blur\(/, 'and every streak is softened');
+});
+
+// v24110 — over a photograph of a lit city the clear night's painted stars
+// read as specks on the glass, not as sky, and they looked fake. The rule
+// that wins draws nothing and does not animate; the night keeps its wash.
+test('no stars are painted over a city picture at night', () => {
+  const stars = liveRule('.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night::before');
+  assert.match(stars, /background: none !important/);
+  assert.match(stars, /animation: none !important/);
+  assert.doesNotMatch(stars, /radial-gradient/, 'no dots');
+  assert.match(liveRule('.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night'), /rgba\(6,16,44/, 'the night is still a blue wash');
 });
 
 test('the storm flashes twice a cycle and rests dark between', () => {

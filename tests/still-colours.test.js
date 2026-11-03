@@ -263,8 +263,10 @@ test('the loading splash: a still amber dot and a still row of languages (items 
 test('status motion, white light and gentle motion are left alone', () => {
   // a status may still flash: the phone view's Final call
   assert.match(read('css/fids.css'), /\.p-final\s+\{ animation: textPulse 2s ease-in-out infinite;/);
-  // the white stars on a clear night still twinkle
-  assert.match(winning('.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night::before', ['animation', 'animation-name']).value, /^wxcFxTwinkle /);
+  // (v24110: the clear night's painted stars were taken off the city
+  // pictures altogether, so there is no twinkle left to keep; see
+  // tests/weather-city-photo.test.js)
+  assert.equal(winning('.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night::before', ['animation', 'animation-name']).value, 'none');
   // the night-storm footage keeps its white lightning; v23937 took the takes
   // that flicker past three flashes a second out of the draw
   // (tests/storm-night-flash-limit.test.js), the one that passes stays and
