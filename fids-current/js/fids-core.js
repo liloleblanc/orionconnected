@@ -63135,17 +63135,19 @@ var HERITAGE_MARKS = [
     // mixed-case red over the double cheatline, the white rondelle on a red
     // fin, so it carries the 1987 mark, as the 1987 DC-9 and 767 cards do. The
     // supplied drawing is fleet 508 (no registration is drawn); 508 was C-FTNH,
-    // MSN 193E-1049, delivered in 1973 (AirHistory.net, and the C-FTNA–C-FTNL
-    // run of fins 501–512, which the NetLetter and the Transport Canada
-    // register bear out). No caption prints the fin or the registration.
+    // MSN 193E-1049, delivered in 1973 (AirHistory.net; a May 1992 photograph
+    // of C-FTNH in storage shows 508 on the fin and the nose-gear door; and
+    // the C-FTNA–C-FTNL run of fins 501–512, which the NetLetter and the
+    // Transport Canada register bear out). No caption prints the fin or the
+    // registration.
     // THE LIVERY ON A TRISTAR, CHECKED: fleet 504, C-FTND, is photographed in
     // it at Miami on 31 January 1991 (Wikimedia Commons), and the enthusiast
     // histories say only 504 and 506 (C-FTNF) were repainted into it, after
-    // their Gulf Air leases ended in 1989; the rest kept the 1980 scheme until
-    // they were stored. 508 itself is photographed in the 1980 scheme in July
-    // 1986 and still in it, stored, in May 1992, so its fin number is the
-    // drawing's, as the DC-8's 861 is. The caption's claim, a TriStar in this
-    // livery, is true; the number is not printed.
+    // their Gulf Air leases ended in 1989; every other TriStar photographed
+    // from 1987 to 1992 is in the 1980 scheme. 508 itself is photographed in
+    // the 1980 scheme in July 1986 and still in it, stored, in May 1992, so its
+    // fin number is the drawing's, as the DC-8's 861 is. The caption's claim,
+    // a TriStar in this livery, is true; the number is not printed.
     // THE LIVERY'S YEAR stays 1987, as on the DC-9 and 767 cards (Norebbo, and
     // confirmed first hand by staff of the period). Air Canada's staff
     // magazine Horizons, July 1988, has the burgundy stripe and mixed-case
@@ -63166,7 +63168,8 @@ var HERITAGE_MARKS = [
     // pixels), so those pixels are made solid as they looked on white, and 99
     // faint specks (alpha 8 or less) more than 3 px off the aeroplane are
     // removed. The fin's top touches the top of the export; it is drawn
-    // complete. Cropped to its own edges and scaled to the DC-9s' 2272 px.
+    // complete. Cropped to its own edges and scaled to 2272 px, the 1993
+    // DC-9's width.
     //
     // THE CAPTION: 'Lockheed L-1011 TriStar · 1973–1996 · 1987 livery'.
     // CHECKED, the long body's years with Air Canada: six joined the fleet in
@@ -63251,7 +63254,7 @@ var HERITAGE_MARKS = [
     // Transport Canada's register), MSN 193E-1048, delivered in 1973. C-FTNG
     // was one of the three TriStars, fleets 504, 507 and 512, that came back
     // into service in spring 1994 after the fleet was stored, and it flew to
-    // the end in 1996; its registration passed to Air Transat on 20 May 1997.
+    // the end in 1996; it went to Air Transat in 1997.
     // THE LIVERY ON THIS AEROPLANE, CHECKED: C-FTNG with 507 on the fin is
     // photographed in exactly this scheme at Vancouver on 1 August 1994 and at
     // Los Angeles on 8 October 1994 (airport-data.com), and C-FTNL, 512, in it
@@ -63267,9 +63270,12 @@ var HERITAGE_MARKS = [
     // the point and outlined like the rest of the drawing, closing on the
     // exhaust with a rounded end as it does on the 1987 drawing (a fillet
     // between the drawing's own top and rear outlines, at their weight); the
-    // point's lower outline, now inside the cone, is painted out. About 12,400
-    // body pixels a shade see-through (alpha 200–254) are made solid as they
-    // looked on white, and 319 faint specks off the aeroplane are removed.
+    // point's lower outline, now inside the cone, is painted out; the cone's
+    // foot runs under the exhaust's top outline, so no sky shows between them.
+    // About 12,300 body pixels a shade see-through (alpha 200–254) are made
+    // solid as they looked on white, and so is the forward belly antenna,
+    // exported see-through inside its own outline (about 460 pixels the
+    // outside cannot reach); 319 faint specks off the aeroplane are removed.
     // Cropped to its own edges and scaled to 2272 px, the 1987 TriStar's width.
     //
     // THE CAPTION: 'Lockheed L-1011 TriStar · 1973–1996 · 1993 livery', the

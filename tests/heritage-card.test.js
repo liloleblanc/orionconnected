@@ -476,10 +476,21 @@ test('the two TriStar cards: the long body drawn, its checked years, each livery
       assert.doesNotMatch(cap, /-100|-150|-500|\b150\b|\b500\b/, 'no sub-model the sources dispute, in ' + l);
     }
   }
-  // The rotation runs in set order: the two TriStars never come up back to back.
-  const keys = marks().map((k) => k.key);
-  const gap = Math.abs(keys.indexOf('air-canada-l1011-87') - keys.indexOf('air-canada-l1011-93'));
-  assert.ok(Math.min(gap, keys.length - gap) > 1, 'the two TriStar cards are apart, the wrap from last to first included');
+  // The board rotates each airport's own pool in set order and wraps, so the
+  // gap is measured in the pools the board really runs: the Atlantic
+  // network's (with Air Atlantic and Air Nova) and a Canadian airport's
+  // outside it. The two TriStars, and the two 767s, never come up back to
+  // back, the wrap from last to first included.
+  const apart = (pool, a, b) => {
+    const gap = Math.abs(pool.indexOf(a) - pool.indexOf(b));
+    return Math.min(gap, pool.length - gap) > 1;
+  };
+  for (const ia of ['YHZ', 'YVR']) {
+    const pool = marks().filter((m) => m.airports === '*CA' || (Array.isArray(m.airports) && m.airports.includes(ia))).map((m) => m.key);
+    assert.ok(pool.includes('air-canada-l1011-87') && pool.includes('air-canada-l1011-93'), 'both TriStars run at ' + ia);
+    assert.ok(apart(pool, 'air-canada-l1011-87', 'air-canada-l1011-93'), 'the two TriStar cards are apart at ' + ia);
+    assert.ok(apart(pool, 'air-canada-767', 'air-canada-767-87'), 'the two 767 cards are apart at ' + ia);
+  }
 });
 
 // ── v24042 — Air Canada gates only ──────────────────────────────────────────
