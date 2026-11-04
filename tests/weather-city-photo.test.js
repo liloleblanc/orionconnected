@@ -95,7 +95,10 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
     { YXX: 'Abbotsford,_British_Columbia' }, { YQT: 'THUNDER BAY' }, { YQT: {} }, s => s.toLowerCase().replace(/(^|\s)(\S)/g, (m, p, c) => p + c.toUpperCase()));
   const enc = new Function('return ' + fnSource('_wxEnc'))();
   const nightFor = new Function('_WX_CITY_NIGHT', 'return ' + fnSource('_wxNightPicFor'))(table('_WX_CITY_NIGHT'));
-  const pic = new Function('_WX_CITY_PICS', '_wxNightPicFor', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, nightFor, query, enc);
+  const pic = new Function('_WX_CITY_PICS', '_WX_CITY_NONE', '_wxNightPicFor', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, table('_WX_CITY_NONE'), nightFor, query, enc);
+  // v24112 — a city the picture service gets wrong asks for nothing at all:
+  // the plate keeps its glass, day and night
+  for (const k of ['PSP', 'YMM', 'YFI']) { assert.equal(pic(k), '', k + ' shows no picture'); assert.equal(pic(k, true), '', k + ' after dark too'); }
   assert.equal(pic('YQM'), '/logos/cities/YQM.jpg');
   // Night asks for the night picture where there is one and keeps the day one
   // where there is not — never a daylit city at two in the morning once the
@@ -120,7 +123,7 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   assert.equal(pic('YXX'), '/citypic?iata=YXX&q=Abbotsford%20British%20Columbia', 'the encyclopedia title, with its province, is the query');
   assert.equal(pic('YQT'), '/citypic?iata=YQT&q=Thunder%20Bay', 'the board name in title case when there is no title');
   assert.equal(pic('ZZZ'), '/citypic?iata=ZZZ', 'an unknown code still asks, with no name');
-  const apos = new Function('_WX_CITY_PICS', '_wxNightPicFor', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, () => '', () => "Val-D'Or (Québec)", enc);
+  const apos = new Function('_WX_CITY_PICS', '_WX_CITY_NONE', '_wxNightPicFor', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, {}, () => '', () => "Val-D'Or (Québec)", enc);
   assert.equal(apos('YVO'), '/citypic?iata=YVO&q=Val-D%27Or%20%28Qu%C3%A9bec%29', "an apostrophe or a bracket cannot break the url('…') it goes into");
   assert.equal(pic(''), '');
 });

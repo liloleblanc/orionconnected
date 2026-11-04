@@ -17587,7 +17587,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24110" src="/textures/gate-sky-shelf.mp4?v=24110" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24112" src="/textures/gate-sky-shelf.mp4?v=24112" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17631,7 +17631,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24110" src="/textures/gate-sky-shelf.mp4?v=24110" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24112" src="/textures/gate-sky-shelf.mp4?v=24112" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18860,7 +18860,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24110" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24112" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35780,7 +35780,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24110';
+var FIDS_BUILD_TAG = 'v24112';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -63736,7 +63736,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24110" src="/textures/gate-sky-shelf.mp4?v=24110"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24112" src="/textures/gate-sky-shelf.mp4?v=24112"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -64354,8 +64354,25 @@ var _WX_CITY_PICS = {
   YEG:1, YWG:1, YFC:1, YSJ:1, YQB:1, YVR:1, MCO:1, FLL:1, CUN:1, PUJ:1,
   VRA:1, ORD:1, DEN:1, SFO:1, CLT:1, NYC:1, IAH:1, LAS:1, PHX:1, DTW:1,
   MSP:1, BOS:1, PHL:1, MIA:1, TPA:1, ZRH:1, DUB:1, EDI:1, KEF:1,
+  // v24112 — FIFTEEN MORE CITIES, each picked from a contact sheet of checked
+  // candidates: cities the boards fly to that had no picture and showed the
+  // plate on its glass, and Windsor ON, which the picture service was showing
+  // as Windsor in England. Where a choice was open the pick leans to
+  // the scenic view, the place in its setting of water, mountains or sky,
+  // over a sign or a street corner. Each is public domain, CC0 or licensed
+  // from Adobe Stock, so none of them owes a credit on the screen.
+  GRU:1, LIR:1, MZT:1, PEK:1, PLS:1, YAA:1, YBG:1, YBL:1, YFB:1, YKA:1,
+  YPW:1, YQG:1, YSB:1, YXC:1, YYF:1,
   JFK:'NYC', LGA:'NYC', EWR:'NYC'
 };
+// v24112 — NO PICTURE RATHER THAN THE WRONG ONE. Outside the curated set the
+// picture service looks a city up by name, and for two of these it found the
+// wrong place (Palm Springs as Havana, Fort McMurray as a brick wall). Until
+// their own pictures are picked the plate stays on its glass, which is what
+// a city with no picture has always shown. Firebag is an oil sands site with
+// no town, and nothing oil related is shown on these boards, so its plate
+// keeps its glass for good rather than risk the service finding the plant.
+var _WX_CITY_NONE = { PSP:1, YMM:1, YFI:1 };
 // v23853 — AND THE SAME CITY AFTER DARK. A plate at two in the morning
 // was showing the city in full daylight, and five of the curated
 // pictures were the opposite fault: a night or a sunset shot, on the
@@ -64416,7 +64433,9 @@ var _WX_CITY_NIGHT = {
   // the star field taken off every other city picture in v24110: over a lit
   // skyline the dots read as specks, not sky. Only open sky was touched; the
   // buildings, their lit windows and the vines are as drawn.
-  YQM:1
+  YQM:1,
+  // v24112 — Quebec City after dark: the Chateau Frontenac lit at blue hour
+  YQB:1
 };
 // The name the Worker searches by, for an airport outside the curated
 // set: the encyclopedia title where there is one (it carries the
@@ -64442,7 +64461,7 @@ var _wxNightPicFor = function (iata) {
 };
 var _wxCityPic = function (iata, night) {
   var k = String(iata || '').toUpperCase();
-  if (!k) return '';
+  if (!k || _WX_CITY_NONE[k]) return '';
   if (night) {
     var n = _wxNightPicFor(k);
     if (n) return n;
