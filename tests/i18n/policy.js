@@ -225,7 +225,8 @@ const DATA_TABLES = {
     HERITAGE_MARKS: 'data: heritage airline names and artwork',
     ALLIANCE_NAMES: 'data: the alliances\' own names (brands)',
     HOTEL_BRAND_RULES: 'data: hotel brand names, as a feed sends them and as the logo files are named',
-    HERITAGE_CARRIERS: 'data: heritage airlines, their homes, fleets and networks (the words they show are BOARD_STR heritage entries)'
+    HERITAGE_CARRIERS: 'data: heritage airlines, their homes, fleets and networks (the words they show are BOARD_STR heritage entries)',
+    _WX_CITY_CREDIT: 'data: the names of the photographers whose city pictures ask for a credit, as each gives it, with the licence mark'
   },
   'fids-current/js/shared-names.js': {
     FIDS_SHARED_CITY: 'data: city names (decision D2)',

@@ -4162,6 +4162,9 @@ var FIDS_FIT_RULES = [
   { sel: '.wxc-fact-l .wxc-l1, .wxc-fact-l .wxc-l2', lines: 2, guard: true },
   { sel: '.wxc-bar-txt .wxc-t-part', box: '.wxc-bar-head', lines: 2, guard: true },
   { sel: '.wxc-credit', lines: 2 },
+  // v24113 — the photographers line beside it (_wxPicCreditHtml): smaller
+  // first, then a second line between two credits (.fx-unit), never cut
+  { sel: '.wxc-pcredit', lines: 2, units: true },
   // the heritage card's kicker (From the archive | Depuis les archives)
   { sel: '.hcard-kicker', lines: 2, guard: true },
   // v24015 — the 3D model credit: each language one line, smaller before it is cut
@@ -7613,6 +7616,9 @@ function _b5BandHtml(c) {
   var welcome = _b5Pair(function (l) { var w = TLin('welcomeTo', l); return w ? w + ' ' + city(l) : ''; }, c.L, '', 'b5-wl');
   return '<header class="b5-band">'
     + '<div class="b5-ph b5-ph-d"' + bg(day) + '></div><div class="b5-ph b5-ph-n' + (dusk ? ' b5-dusk' : '') + '"' + bg(night) + '></div><div class="b5-scrim"></div>'
+    // v24113 — a credited picture names its photographer in the corner, the
+    // day one by day and the night one after dark, as the pictures cross over
+    + (typeof _wxPicCreditHtml === 'function' ? _wxPicCreditHtml([day], 'b5-pcredit b5-pcredit-d') + _wxPicCreditHtml([night], 'b5-pcredit b5-pcredit-n') : '')
     + '<div class="b5-bin"><div class="b5-greet">'
     +   '<div class="b5-kicker"><span class="b5-kico">' + _B5_ICON.bag + '</span><span class="b5-kick">' + _b5Pair(_b5Word('bagClaim'), c.L) + '</span></div>'
     +   '<div class="b5-welcome">' + welcome + '</div>'
@@ -17587,7 +17593,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24112" src="/textures/gate-sky-shelf.mp4?v=24112" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24113" src="/textures/gate-sky-shelf.mp4?v=24113" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17631,7 +17637,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24112" src="/textures/gate-sky-shelf.mp4?v=24112" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24113" src="/textures/gate-sky-shelf.mp4?v=24113" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18860,7 +18866,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24112" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24113" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35780,7 +35786,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24112';
+var FIDS_BUILD_TAG = 'v24113';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -63736,7 +63742,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24112" src="/textures/gate-sky-shelf.mp4?v=24112"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24113" src="/textures/gate-sky-shelf.mp4?v=24113"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -64363,6 +64369,16 @@ var _WX_CITY_PICS = {
   // from Adobe Stock, so none of them owes a credit on the screen.
   GRU:1, LIR:1, MZT:1, PEK:1, PLS:1, YAA:1, YBG:1, YBL:1, YFB:1, YKA:1,
   YPW:1, YQG:1, YSB:1, YXC:1, YYF:1,
+  // v24113 — THIRTY-FOUR MORE, from the same contact sheets. Nearly all are
+  // open-licence photographs that ask for a credit, so each names its
+  // photographer on the card that shows it (_WX_CITY_CREDIT below) and links
+  // its source on the credits page. Cranbrook and Campbell River trade their
+  // v24112 pictures for scenic ones: the Steeples over the Kootenay River, and
+  // snowy mountains across the water.
+  CAN:1, MBJ:1, POP:1, YAM:1, YAY:1, YCD:1, YCG:1, YGR:1, YKL:1, YLW:1,
+  YMM:1, YPR:1, YPX:1, YQQ:1, YQT:1, YQU:1, YQX:1, YQY:1, YTS:1, YVP:1,
+  YWL:1, YXE:1, YXJ:1, YXT:1, YXU:1, YXX:1, YYD:1, YYG:1, YYR:1, YYY:1,
+  YZG:1, YZT:1, YZV:1, YZZ:1,
   JFK:'NYC', LGA:'NYC', EWR:'NYC'
 };
 // v24112 — NO PICTURE RATHER THAN THE WRONG ONE. Outside the curated set the
@@ -64372,7 +64388,9 @@ var _WX_CITY_PICS = {
 // a city with no picture has always shown. Firebag is an oil sands site with
 // no town, and nothing oil related is shown on these boards, so its plate
 // keeps its glass for good rather than risk the service finding the plant.
-var _WX_CITY_NONE = { PSP:1, YMM:1, YFI:1 };
+// v24113 — Fort McMurray has its own picture now (the Athabasca valley), so
+// only Palm Springs waits here, for its picked picture to be licensed.
+var _WX_CITY_NONE = { PSP:1, YFI:1 };
 // v23853 — AND THE SAME CITY AFTER DARK. A plate at two in the morning
 // was showing the city in full daylight, and five of the curated
 // pictures were the opposite fault: a night or a sunset shot, on the
@@ -64435,7 +64453,84 @@ var _WX_CITY_NIGHT = {
   // buildings, their lit windows and the vines are as drawn.
   YQM:1,
   // v24112 — Quebec City after dark: the Chateau Frontenac lit at blue hour
-  YQB:1
+  YQB:1,
+  // v24113 — four more cities after dark, each a real photograph with the
+  // lights on: Edmonton at dusk, Halifax on its harbour, the Esplanade Riel
+  // over the Red River, and the lights of the Newfoundland capital around its
+  // harbour from Signal Hill.
+  YEG:1, YHZ:1, YWG:1, YYT:1
+};
+// v24113 — WHO TOOK THE PICTURE. A curated picture under CC BY or CC BY-SA
+// names its photographer on the card that shows it (_wxPicCreditHtml), the
+// same way the empty gate names an Openverse photographer. The key is the
+// file as served (YHZ-night is the night file); the value is the name as the
+// photographer gives it, the licence and its version. A picture that owes no
+// credit (public domain, CC0, Adobe Stock) has no entry and no line. The
+// full credit, with a link to each source, is on the credits page.
+var _WX_CITY_CREDIT = {
+  'CAN': ['Sergei Gussev', 'BY', '2.0'],
+  'MBJ': ['Grahampurse', 'BY-SA', '4.0'],
+  'POP': ['Jusunx', 'BY-SA', '4.0'],
+  'YAM': ['Sharon Hahn Darlin', 'BY', '2.0'],
+  'YAY': ['Mykola Swarnyk', 'BY-SA', '3.0'],
+  'YCD': ['AB87', 'BY', '3.0'],
+  'YCG': ['Murray Foubister', 'BY-SA', '2.0'],
+  'YEG-night': ['Calgary Reviews', 'BY', '2.0'],
+  'YGR': ['Marc-Lautenbacher', 'BY-SA', '4.0'],
+  'YHZ-night': ['Keith Pomakis', 'BY-SA', '2.5'],
+  'YKL': ['Smidkiff1776', 'BY-SA', '4.0'],
+  'YLW': ['Sunny Goel', 'BY', '2.0'],
+  'YMM': ['Jason Woodhead', 'BY', '2.0'],
+  'YPX': ['Veillg1', 'BY-SA', '4.0'],
+  'YQQ': ['Gerry Thomasen', 'BY', '2.0'],
+  'YQT': ['P199', 'BY-SA', '3.0'],
+  'YQU': ['Rr parker', 'BY-SA', '3.0'],
+  'YQX': ['Ryan Hodnett', 'BY-SA', '4.0'],
+  'YQY': ['Quintin Soloviev', 'BY', '4.0'],
+  'YTS': ['Andrew Taylor', 'BY', '2.0'],
+  'YVP': ['Belug', 'BY-SA', '4.0'],
+  'YWG-night': ['Ethan Sahagun', 'BY', '4.0'],
+  'YWL': ['Ian Gade', 'BY', '2.0'],
+  'YXC': ['Murray Foubister', 'BY-SA', '2.0'],
+  'YXE': ['Robert Linsdell', 'BY', '2.0'],
+  'YXJ': ['Jason Woodhead', 'BY', '2.0'],
+  'YXT': ['Sam Beebe', 'BY', '2.0'],
+  'YXU': ['Gogerr', 'BY', '4.0'],
+  'YXX': ['Sam Bald', 'BY', '2.0'],
+  'YYD': ['Shawn', 'BY-SA', '2.0'],
+  'YYG': ['Quintin Soloviev', 'BY', '4.0'],
+  'YYR': ['Shawn', 'BY-SA', '2.0'],
+  'YYT-night': ['The Tedster', 'BY-SA', '2.0'],
+  'YYY': ['Amqui', 'BY-SA', '4.0'],
+  'YZG': ['Raphaël Joanisse-Clément', 'BY-SA', '3.0'],
+  'YZT': ['sf-dvs', 'BY', '2.0'],
+  'YZV': ['Cephas', 'BY-SA', '3.0'],
+  'YZZ': ['TracyLeigh', 'BY', '2.0']
+};
+var _wxPicCredit = function (url) {
+  var mm = /\/logos\/cities\/([A-Z]{3}(?:-night)?)\.jpg/.exec(String(url || ''));
+  var c = mm && _WX_CITY_CREDIT[mm[1]];
+  return c ? { who: c[0], lic: c[1], ver: c[2] } : null;
+};
+// The credit as one line, language-free: a camera, then each photographer
+// with the licence mark, which is the same in every language. Duplicates
+// (one city on both plates) are named once. The camera rides inside the
+// first credit, so a line that has to wrap never leaves it on its own,
+// and a credit that has to open does so between the name and the licence
+// mark (.pcr-who, .pcr-lic), never inside either.
+var _wxPicCreditHtml = function (urls, cls) {
+  var seen = {}, parts = [];
+  var esc = (typeof fidsEscHtml === 'function') ? fidsEscHtml : function (v) { return String(v); };
+  (urls || []).forEach(function (u) {
+    var c = _wxPicCredit(u);
+    if (!c) return;
+    var line = '<span class="pcr-who">' + esc(c.who) + '</span> \u00b7 <span class="pcr-lic">CC\u00a0' + c.lic + '\u00a0' + c.ver + '</span>';
+    if (seen[line]) return;
+    seen[line] = 1;
+    parts.push('<span class="pcr-one fx-unit" dir="auto">' + (parts.length ? '' : '<svg class="pcr-cam" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>') + line + '</span>');
+  });
+  if (!parts.length) return '';
+  return '<div class="' + cls + '">' + parts.join('<span class="pcr-sep fx-brk"> \u00b7 </span>') + '</div>';
 };
 // The name the Worker searches by, for an airport outside the curated
 // set: the encyclopedia title where there is one (it carries the
@@ -65259,7 +65354,11 @@ function _renderWxCard(el) {
     // v23843 — THE FOOTAGE IS THE WHOLE PICTURE. The title clears onto the
     // weather itself, filling the panel, and the three screens sit over it for
     // the whole visit. No studio set, no navy plate: one world, start to end.
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxVid + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
+    // v24113 — the photographers of the pictures this card shows, on a line of
+    // their own under the source credit (nothing is written on a photograph)
+    var _wxPCredit = '';
+    try { _wxPCredit = _wxPicCreditHtml((_wxS1 + _wxS2 + _wxS3).match(/\/logos\/cities\/[A-Z]{3}(?:-night)?\.jpg/g), 'wxc-pcredit'); } catch (ePc) { _wxPCredit = ''; }
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + (_wxPCredit ? ' wxc-has-pcr' : '') + '">' + _wxVid + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxPCredit + _wxIntro + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
@@ -65414,7 +65513,10 @@ function _renderWxCard(el) {
     // not restarted: the fresh nodes are stamped with the time already
     // elapsed, so their flips land on the same clock as the set's.
     var _wxWrapP = el.querySelector ? el.querySelector('.wxcard-wrap') : null;
-    if (_wxWrapP && el._wxS1Html === _wxS1 && el._wxVidHtml === _wxVid && el._wxWrapCls === _wxWrapCls) {
+    // v24113 — and under the same photographers line: a plate that changed
+    // to a credited picture mid-visit takes the full rebuild, so its credit
+    // is never missing or left over from the picture before
+    if (_wxWrapP && el._wxS1Html === _wxS1 && el._wxVidHtml === _wxVid && el._wxWrapCls === _wxWrapCls && el._wxPCrHtml === _wxPCredit) {
       try {
         var _wxElapsed = '';
         if (window._wxEntranceAt && _wxWrapP.classList.contains('wxc-entering')) {
@@ -65446,6 +65548,7 @@ function _renderWxCard(el) {
     el._wxS1Html = _wxS1;
     el._wxVidHtml = _wxVid;
     el._wxWrapCls = _wxWrapCls;
+    el._wxPCrHtml = _wxPCredit;
     el._wxLastBg = _wxBg;
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');
