@@ -772,6 +772,15 @@ html.fids-dn-ready #baggageView .b5 .b5-page, html.fids-dn-ready #baggageView .b
 #baggageView .b5 .b5-ph-n { opacity: 1; }
 html.fids-day #baggageView .b5 .b5-ph-d { opacity: 1; }
 html.fids-day #baggageView .b5 .b5-ph-n { opacity: 0; }
+/* v24113 — a credited picture names its photographer in the band's corner, day and night as the pictures cross over */
+#baggageView .b5 .b5-pcredit { position: absolute; right: 0.9vw; bottom: 0.5vh; z-index: 2; max-width: 40%; font-size: max(11px, 0.72vw); font-weight: 600; line-height: 1.15; color: rgba(255,255,255,.78); text-shadow: 0 1px 3px rgba(0,20,40,.7); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: clip; opacity: 0; pointer-events: none; }
+#baggageView .b5 .b5-pcredit .pcr-cam { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.16em; margin-right: .35em; }
+#baggageView .b5 .b5-pcredit .pcr-one { unicode-bidi: isolate; }
+#baggageView .b5 .b5-pcredit .pcr-who, #baggageView .b5 .b5-pcredit .pcr-lic { white-space: nowrap; }
+#baggageView .b5 .b5-pcredit-n { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-pcredit-d { opacity: 1; }
+html.fids-day #baggageView .b5 .b5-pcredit-n { opacity: 0; }
+html.fids-dn-ready #baggageView .b5 .b5-pcredit { transition: opacity 2s ease; }
 #baggageView .b5 .b5-ph.b5-dusk { filter: brightness(.42) saturate(.65) contrast(1.08); }
 #baggageView .b5 .b5-scrim { position: absolute; inset: 0;
   background: linear-gradient(90deg, rgba(4,9,20,.80) 0%, rgba(4,9,20,.42) 46%, rgba(4,9,20,.35) 62%, rgba(4,9,20,.70) 100%), linear-gradient(180deg, rgba(4,9,20,.10) 0%, rgba(4,9,20,.45) 100%); }

@@ -94,7 +94,7 @@ function staged() {
 // ── The order ────────────────────────────────────────────────────────────
 
 test('set loop, scene, three screens, credit, title — in that order, and each screen is what it says', () => {
-  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
+  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ \(_wxPCredit \? ' wxc-has-pcr' : ''\) \+ '">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxPCredit \+ _wxIntro \+ '<\/div>';/,
     'that source order is the stacking order; the footage is the ground (v23843)');
   assert.match(SRC, /var _wxS1 = '<div class="wxc-screen wxc-s1">'\s*\+ '<div class="wxc-monitor/, 'screen 1 is the monitor');
   assert.match(SRC, /_wxS2 = '<div class="wxc-screen wxc-s2">'[^;]*wxc-chart/, 'screen 2 is the hours chart');

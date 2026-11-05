@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2840,
+    "total": 2878,
     "by_category": {
       "ad": 14,
       "airline": 1180,
@@ -10,7 +10,7 @@
       "brand": 5,
       "hotel": 888,
       "livery": 96,
-      "misc": 129,
+      "misc": 167,
       "symbol": 4,
       "weather": 331
     }
@@ -26329,6 +26329,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/CAN.jpg",
+      "file": "CAN.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "CAN",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/car-rental.svg",
       "file": "car-rental.svg",
       "category": "misc",
@@ -26835,6 +26846,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/cities/MBJ.jpg",
+      "file": "MBJ.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "MBJ",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/MCO-night.jpg",
       "file": "MCO-night.jpg",
       "category": "misc",
@@ -27055,6 +27077,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/POP.jpg",
+      "file": "POP.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "POP",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/priority-pass.svg",
       "file": "priority-pass.svg",
       "category": "misc",
@@ -27198,6 +27231,28 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YAM.jpg",
+      "file": "YAM.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YAM",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YAY.jpg",
+      "file": "YAY.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YAY",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YBG.jpg",
       "file": "YBG.jpg",
       "category": "misc",
@@ -27220,12 +27275,45 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YCD.jpg",
+      "file": "YCD.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YCD",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YCG.jpg",
+      "file": "YCG.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YCG",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YDF.jpg",
       "file": "YDF.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YDF",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YEG-night.jpg",
+      "file": "YEG-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YEG night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -27264,12 +27352,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YGR.jpg",
+      "file": "YGR.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YGR",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YHM.jpg",
       "file": "YHM.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YHM",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YHZ-night.jpg",
+      "file": "YHZ-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YHZ night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -27297,6 +27407,39 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YKL.jpg",
+      "file": "YKL.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YKL",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YLW.jpg",
+      "file": "YLW.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YLW",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YMM.jpg",
+      "file": "YMM.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YMM",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YOW-night.jpg",
       "file": "YOW-night.jpg",
       "category": "misc",
@@ -27319,12 +27462,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YPR.jpg",
+      "file": "YPR.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YPR",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YPW.jpg",
       "file": "YPW.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YPW",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YPX.jpg",
+      "file": "YPX.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YPX",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -27385,6 +27550,61 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YQQ.jpg",
+      "file": "YQQ.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YQQ",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YQT.jpg",
+      "file": "YQT.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YQT",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YQU.jpg",
+      "file": "YQU.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YQU",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YQX.jpg",
+      "file": "YQX.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YQX",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YQY.jpg",
+      "file": "YQY.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YQY",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YSB.jpg",
       "file": "YSB.jpg",
       "category": "misc",
@@ -27402,6 +27622,17 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YSJ",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YTS.jpg",
+      "file": "YTS.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YTS",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -27429,6 +27660,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YVP.jpg",
+      "file": "YVP.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YVP",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YVR-night.jpg",
       "file": "YVR-night.jpg",
       "category": "misc",
@@ -27446,6 +27688,17 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YVR",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YWG-night.jpg",
+      "file": "YWG-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YWG night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -27473,12 +27726,78 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YWL.jpg",
+      "file": "YWL.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YWL",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YXC.jpg",
       "file": "YXC.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YXC",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YXE.jpg",
+      "file": "YXE.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YXE",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YXJ.jpg",
+      "file": "YXJ.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YXJ",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YXT.jpg",
+      "file": "YXT.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YXT",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YXU.jpg",
+      "file": "YXU.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YXU",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YXX.jpg",
+      "file": "YXX.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YXX",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -27506,6 +27825,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YYD.jpg",
+      "file": "YYD.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YYD",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YYF.jpg",
       "file": "YYF.jpg",
       "category": "misc",
@@ -27517,12 +27847,56 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YYG.jpg",
+      "file": "YYG.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YYG",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YYR.jpg",
+      "file": "YYR.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YYR",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YYT-night.jpg",
+      "file": "YYT-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YYT night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YYT.jpg",
       "file": "YYT.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YYT",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YYY.jpg",
+      "file": "YYY.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YYY",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -27545,6 +27919,50 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YYZ",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YZG.jpg",
+      "file": "YZG.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YZG",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YZT.jpg",
+      "file": "YZT.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YZT",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YZV.jpg",
+      "file": "YZV.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YZV",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YZZ.jpg",
+      "file": "YZZ.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YZZ",
       "iata": "",
       "country": "",
       "ext": "jpg"

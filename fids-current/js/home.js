@@ -540,6 +540,9 @@
           var u = new URL(h, location.href);
           t = u.origin === location.origin ? u.pathname : (u.host.replace(/^www\./, '') + u.pathname.replace(/\/$/, ''));
         } catch (e) { t = h; }
+        // the address as a reader types it (Sept-Îles, Cobb's Pond), not its
+        // %-escapes; the link itself keeps them
+        try { t = decodeURIComponent(t); } catch (e2) {}
       }
       ls[i].textContent = t;
     }

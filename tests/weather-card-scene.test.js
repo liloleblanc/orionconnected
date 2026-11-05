@@ -49,8 +49,8 @@ test('the card builds a muted, looping, inline video', () => {
 
 test('the scene is first and the screens sit over it — that source order is the stacking order', () => {
   // v23843: no studio set, no plate. The footage is the ground of the card.
-  assert.match(SRC, /'">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>'/,
-    'scene, then the three screens, the credit and the title');
+  assert.match(SRC, /'">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxPCredit \+ _wxIntro \+ '<\/div>'/,
+    'scene, then the three screens, the credits (v24113: the photographers beside the source) and the title');
   assert.doesNotMatch(SRC, /_wxSet\b/, 'the studio set is gone from the markup');
   assert.doesNotMatch(SRC, /_wxPlate\b/, 'and so is the navy plate');
   const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: [^}]*z-index: (\d+) !important; \}/);
