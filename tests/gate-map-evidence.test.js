@@ -77,7 +77,7 @@ const FNS = [
   '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnedByPattern', '_gateTurnConsumed', '_gateLandedAt', '_gateLandedInfo', '_gateSeenLand',
   '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateInboundForDeparture', '_gateMapCity', '_gateMapNote', 'fidsInboundAirborne',
-  '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', 'adbStatus',
+  '_gcNm', '_fixCanReachByEta', '_fixTooEarlyForEta', '_gateLegSpanMs', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', 'adbStatus',
   'adbStatusInferred', '_fidsClockForLang', '_gateMatchIsNew', '_fixAtLegOrigin', '_fixPlausibleForLeg',
   '_gateLegWindowOpen', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave', '_gateArrsSeen', 'aircraftCodeToIata',
   '_gateSeenKeepIdentity',

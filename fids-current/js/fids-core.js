@@ -15937,7 +15937,10 @@ function _buildV2MapCol(ctx, vars) {
   try {
     var _wp = window._gateInboundLivePos;
     if (_wp && typeof _wp === 'object') {
-      if (!_wp._airport || _wp._airport === vars.iata) {
+      // (v24116 — and only the position of the flight this gate shows, _wpC below)
+      var _wpIb = vars && vars.inboundFlight;
+      var _wpOwn = !!(_wpIb && _wp.fl && String(_wp.fl).toUpperCase().replace(/\s+/g, '') === String(_wpIb.flight || '').toUpperCase().replace(/\s+/g, ''));
+      if ((!_wp._airport || _wp._airport === vars.iata) && _wpOwn) {
         // window._gateInboundLivePos is stored with keys {speed, altitude}
         // (see writers ~7188 / ~7579). Reading .spd/.alt here always yielded
         // null, so Speed/Altitude never appeared on the flight screen.
@@ -15983,6 +15986,16 @@ function _buildV2MapCol(ctx, vars) {
       // by-number window cache. Feed it through the sticky smoother so the panel
       // doesn't blink off on polls where ADB omits the position.
       var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
+      // v24116 — ONLY THIS FLIGHT POSITION. The page keeps one live position
+      // for whichever gate polled last, owned by its flight (fl). The panel
+      // read it whatever flight it was: switched from gate 4 to gate 3 at
+      // Moncton on 2026-11-05, AC656 descending into Moncton showed as
+      // PD2293 (648 km/h, 11,850 ft, En route) while PD2293 stood in Toronto.
+      // The maps already asked whose it was (_gateFixCheck); now the panel does.
+      try {
+        var _wdg = function (x) { return String(x || '').toUpperCase().replace(/\s+/g, '').replace(/^\D+/, '').replace(/\D+$/, ''); };
+        if (_wpC && !(_wpC.fl && _wdg(_wpC.fl) === _wdg(_ib.flight))) _wpC = null;
+      } catch (eWp) { _wpC = null; }
       // v22889 — ADS-B FIRST. The 60-second gate poll mutates the inbound
       // object it fetched; the renderer frequently holds a DIFFERENT object
       // for the same flight, so those mutations never arrived and SPD/ALT
@@ -16017,6 +16030,24 @@ function _buildV2MapCol(ctx, vars) {
       if (typeof _liveFixPhysOk === 'function' && !_liveFixPhysOk(_ib)) {
         _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
       }
+      // v24115 — and only a reading taken near this leg route (the corridor
+      // _gateFixCheck already keeps for the maps): a quarter of the leg or 86
+      // nm off the direct path is another sector of the number or the tail,
+      // and one that would land an hour before the ETA is another aeroplane
+      // (_fixTooEarlyForEta)
+      try {
+        var _cA = (_adsbC && typeof _adsbC.lat === 'number') ? [_adsbC.lat, _adsbC.lng]
+          : (typeof _ib._liveLat === 'number' && typeof _ib._liveLng === 'number') ? [_ib._liveLat, _ib._liveLng] : null;
+        var _cO = _lookupAirport(_ib._locIata), _cH = _lookupAirport(vars.iata);
+        if (_cA && _cO && _cH && _candAlt !== null) {
+          var _cT = _gcNm(_cO, _cH), _cS = _gcNm(_cO, _cA) + _gcNm(_cA, _cH);
+          var _cArr = Math.max(_ib._revTs || 0, _ib._sortTs || 0);
+          if ((_cT > 1 && _cS > Math.max(_cT * 1.25, _cT + 86))
+              || (_cArr && _fixTooEarlyForEta(_cA[0], _cA[1], _candSpd, _cH, _cArr, Date.now()))) {
+            _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
+          }
+        }
+      } catch (eCor) {}
       // LEG-WINDOW GUARD.
       // ADB's withLocation position belongs to the AIRFRAME, not the leg — it
       // can be a stale cruise fix from a previous flight or linger after
@@ -16027,7 +16058,7 @@ function _buildV2MapCol(ctx, vars) {
       try {
         var _lwArr = (_ib._revTs && _ib._revTs > _ib._sortTs) ? _ib._revTs : (_ib._sortTs || 0);
         if (_lwArr) {
-          var _lwSpan = ((_ib._durationMins || 240) + 25) * 60000;
+          var _lwSpan = _gateLegSpanMs(_ib, vars.iata);
           var _lwNow = Date.now();
           if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + ARR_CONFIRM_MIN * 60000) {
             _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
@@ -17623,7 +17654,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24115" src="/textures/gate-sky-shelf.mp4?v=24115" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24116" src="/textures/gate-sky-shelf.mp4?v=24116" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17667,7 +17698,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24115" src="/textures/gate-sky-shelf.mp4?v=24115" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24116" src="/textures/gate-sky-shelf.mp4?v=24116" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18898,7 +18929,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24115" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24116" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35818,7 +35849,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24115';
+var FIDS_BUILD_TAG = 'v24116';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41617,6 +41648,30 @@ var _FIX_MAX_AGE_MS = 15 * 60000;
 // 8 min, which stopped watching a real landing a few minutes late). Same arithmetic as the
 // render's guard, lifted here so no lookup is even FIRED outside it — a
 // pre-departure or long-landed inbound used to spend FR24 budget every poll.
+// v24116 — HOW LONG BEFORE ITS ARRIVAL A LEG CAN BE IN THE AIR. A row with no
+// flight time of its own (Moncton never gives one) was taken as four hours,
+// so PD2293 from Billy Bishop, due 13:27 on a two hour hop, opened at 09:02:
+// a position of anything Flightradar24 or OpenSky matched to the number was
+// shown as the inbound at 16,800 ft while the real one stood in Toronto, and
+// the board paid for lookups all morning. Without a time of its own the
+// flight time is the distance flown at a cruise ground speed (300 kt a
+// turboprop, 450 a jet, 400 not known) plus 15 minutes, then the same 25
+// minute pad; four hours only when the distance is not known either.
+function _gateLegSpanMs(row, apIata) {
+  var mins = Number(row && row._durationMins) || 0;
+  if (!(mins > 0)) {
+    mins = 240;
+    try {
+      var o = _lookupAirport(row._locIata), h = _lookupAirport(apIata || (typeof window !== 'undefined' && window._gateIata));
+      if (o && h) {
+        var kt = (typeof _gateIsProp === 'function' && _gateIsProp(row)) ? 300
+          : (row._aircraft || row._aircraftCode) ? 450 : 400;
+        mins = Math.max(30, Math.min(900, _gcNm(o, h) / kt * 60 + 15));
+      }
+    } catch (e) { mins = 240; }
+  }
+  return (mins + 25) * 60000;
+}
 function _gateLegWindowOpen(row, apIata) {
   try {
     if (!row) return false;
@@ -41627,7 +41682,7 @@ function _gateLegWindowOpen(row, apIata) {
     if (!arr) return true;                                   // no times → cannot judge; the render's own guards decide
     // (v23946 — the dead ML route-time lookup that also fed this span is gone;
     // it never answered after 2026-09-10, so the span is unchanged.)
-    var span = ((row._durationMins || 240) + 25) * 60000;
+    var span = _gateLegSpanMs(row, apIata);
     var now = Date.now();
     return !(now < arr - span || now > arr + ARR_CONFIRM_MIN * 60000);
   } catch (e) { return true; }
@@ -41639,6 +41694,20 @@ function _fixCanReachByEta(lat, lng, dest, arrTs, nowTs) {
   var remainNm = _gcNm([lat, lng], dest);
   var hrsLeft = Math.max(0, (arrTs - nowTs) / 3600000);
   return remainNm <= hrsLeft * 600 + 60;
+}
+// v24116 — AND NOT SO CLOSE IT WOULD BE HERE HOURS EARLY. The test above only
+// asks whether a fix is too far to make the ETA. Moncton gate 3, 2026-11-05
+// at 10:33: OpenSky gave an aeroplane at 11,850 ft and 350 kt beside the field
+// for PD2293, due 13:27 and still at Billy Bishop; the board drew it there,
+// printed En route and showed its speed and altitude. An airborne fix that,
+// flown on at its own speed (at least 150 kt), would land more than an hour
+// before the ETA is another aeroplane. Pure, like the test above.
+function _fixTooEarlyForEta(lat, lng, spdKt, dest, arrTs, nowTs) {
+  if (!dest || !arrTs) return false;
+  var remainNm = _gcNm([lat, lng], dest);
+  var kt = Math.max(150, typeof spdKt === 'number' && isFinite(spdKt) ? spdKt : 0);
+  var minsToGo = remainNm / kt * 60;
+  return (arrTs - nowTs) / 60000 - minsToGo > 60;
 }
 // v23915 — AN AEROPLANE STILL STANDING AT ITS ORIGIN IS LATE, NOT SOMEONE
 // ELSE'S. The ETA test asks whether a fix could still fly here in time; one on
@@ -41663,6 +41732,7 @@ function _fixPlausibleForLeg(row, lat, lng, onGround) {
     var apI = (typeof window !== 'undefined' && window._gateIata) || '';
     var dC = _lookupAirport(apI); if (!dC) return true;
     var arrTs = Math.max(row._revTs || 0, row._sortTs || 0); if (!arrTs) return true;
+    if (onGround !== true && _fixTooEarlyForEta(lat, lng, row._liveSpd, dC, arrTs, Date.now())) return false;
     return _fixCanReachByEta(lat, lng, dC, arrTs, Date.now());
   } catch (e) { return true; }
 }
@@ -49672,6 +49742,8 @@ function _gateFixCheck(c, inb, ap, now) {
   if (c.onGround && !(nearO || nearH)) return false;
   var arr = Math.max(inb._revTs || 0, inb._sortTs || 0);
   if (h && arr && !(c.onGround && nearO) && !_fixCanReachByEta(c.lat, c.lng, h, arr, now)) return false;
+  // (v24115 — nor one in the air that would be here an hour before its ETA)
+  if (h && arr && !c.onGround && _fixTooEarlyForEta(c.lat, c.lng, c.spd, h, arr, now)) return false;
   // Near this route at all (the big map's corridor gate, now both maps'): a
   // fix a quarter of the leg or 86 nm off the direct path is someone else's.
   if (o && h) {
@@ -64146,7 +64218,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24115" src="/textures/gate-sky-shelf.mp4?v=24115"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24116" src="/textures/gate-sky-shelf.mp4?v=24116"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
