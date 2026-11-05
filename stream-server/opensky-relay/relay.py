@@ -659,6 +659,7 @@ class Relay(object):
         self.register_wait = REGISTER_RETRY_MIN_S
         self.no_pin = False              # the Worker has no address pinned yet
         self.worker_stop = None          # the Worker's stop date, from its heartbeat answer
+        self.worker_refresh = None       # the Worker's refresh (s), from its heartbeat answer
         self.worker_gone = False         # the Worker answered 410: stopped for now
         self.upstream_now = None         # OpenSky's clock, as last read from its answers
         self.puts_date = utc_date(self.now())
@@ -985,7 +986,7 @@ class Relay(object):
             puts = self._puts_roll(self.now())
         q = [('calls', str(calls)), ('cap', str(self.settings['cap'])), ('status', str(self.last_status)),
              ('hold', str(self.hold_seconds())), ('state', self.state), ('puts', str(puts)),
-             ('stop', self.local_stop() or '')]
+             ('stop', self.local_stop() or ''), ('refresh', str(self.cache_ttl()))]
         status, j = self.worker('GET', '/osky/report', query=q)
         self.count('heartbeats')
         self._worker_says_stopped(status)
@@ -1001,7 +1002,23 @@ class Relay(object):
             return False
         self.worker_gone = False
         self._take_worker_stop(j.get('stop_at'))
+        self._take_worker_refresh(j.get('refresh_s'))
         return j.get('on') is True
+
+    def _take_worker_refresh(self, v):
+        """How often the Worker wants each box asked (seconds), kept within
+        MIN_CACHE_S..MAX_CACHE_S. It can make the relay ask more often than
+        relay.conf's CACHE_SECONDS, never less often; the daily cap and its
+        hourly pacing still bound every call. None (an older Worker, or no
+        value): relay.conf alone."""
+        n = _num(v)
+        self.worker_refresh = int(max(MIN_CACHE_S, min(MAX_CACHE_S, n))) if n is not None and n > 0 else None
+
+    def cache_ttl(self):
+        """The seconds a box answer is reused: relay.conf's CACHE_SECONDS, or
+        the Worker's refresh when that is shorter."""
+        c = self.settings['cache_s']
+        return min(c, self.worker_refresh) if self.worker_refresh else c
 
     def ensure_creds(self):
         """The OpenSky client, from the Worker; kept in memory only. Sets the
@@ -1178,7 +1195,7 @@ class Relay(object):
         up_icao = tuple(sorted(icao)) if icao and not calls else ()
         key = (box, up_icao)
         t = self.now()
-        ttl = self.settings['cache_s']
+        ttl = self.cache_ttl()
         for k in [k for k, e in self.cache.items() if not (0 <= t - e['at'] < ttl)]:
             del self.cache[k]
         entry = self.cache.get(key)
@@ -1333,7 +1350,9 @@ class Relay(object):
             if not going:
                 log('stopped: the term has ended (or the stop date is missing); no OpenSky calls')
                 break
-            self.done.wait(self.rt['loop_s'])
+            # a round at least as often as a box is asked again (the Worker's
+            # refresh), and at most once a minute as before
+            self.done.wait(min(self.rt['loop_s'], max(MIN_CACHE_S, self.cache_ttl())))
         with self.lock:
             line = self.summary_line(self.hour_key, self.hour)
         self.creds = None

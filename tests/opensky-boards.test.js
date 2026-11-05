@@ -500,7 +500,7 @@ test('measured over an hour of gate polls: Flightradar24 lookups go down, never 
 });
 
 test('the gate poll marks its own flight tracked, and every map resolver carries OpenSky\'s mark to the credit', () => {
-  assert.match(CORE, /_adsb = await _adsbTelemetry\(inb\._reg, inb\._callSign, flt, _inbHex, true\);/);
+  assert.match(CORE, /_adsb = await _adsbTelemetry\(inb\._reg, inb\._callSign, flt, _inbHex, true, inb\._opCode\);/);
   assert.match(CORE, /at: _fxAt, fl: flt, via: _adsb\.via \|\| '', cs: _adsb\.cs \|\| '', osky: _adsb\.osky === true \};\n\s+if \(_adsb\.osky === true\) _oskyShown\(\);/);
   assert.match(CORE, /inb\._liveOsky = _adsb\.osky === true;/);
   assert.match(CORE, /src: 'poll', osky: lp\.osky === true \}/);

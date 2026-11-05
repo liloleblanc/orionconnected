@@ -52,8 +52,13 @@ test('a quiet flight number does not pay again for guessed callsigns', () => {
   // the bill for an aeroplane FR24 has already said is not flying.
   assert.match(core, /quiet: !ac && !!\(j && j\._quiet\)/,
     '_adsbFetchOne must remember a clean "not transmitting" answer');
-  assert.match(telemetry, /if \(_numberQuiet && \/\^\\\/callsign\\\/\/\.test\(tries\[i\]\)\) continue;/,
+  // v24115 — the guesses are skipped; the operator own names are not
+  // (_operatorCallsigns: a quiet AC8806 is exactly the Jazz JZA806 that
+  // Flightradar24 does not find under the number sold)
+  assert.match(telemetry, /if \(_numberQuiet && \/\^\\\/callsign\\\/\/\.test\(tries\[i\]\) && _opPaths\.indexOf\(tries\[i\]\) < 0\) continue;/,
     'callsign guesses must be skipped once the number is known quiet');
+  assert.match(telemetry, /var _opPaths = _opCs\.map\(function \(c\) \{ return '\/callsign\/' \+ encodeURIComponent\(c\); \}\);/,
+    'the operator names, and only those, are still asked');
 });
 
 test('a flight-number answer is not treated as a stray airframe', () => {

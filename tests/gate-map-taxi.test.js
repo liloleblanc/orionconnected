@@ -285,9 +285,10 @@ test('the answer: taxiing in while the feed\'s landing is recent, the model\'s w
   const inb = { flight: 'UA2779', _locIata: 'EWR' };
   win._gateInbound = inb;
   const taxi = { on: false, fl: '', done: false, anchor: '', anchorAt: 0, since: 0 };
-  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedAt', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm',
+  // v24115 — the landing with its evidence (_gateLandedInfo): the feed own time here
+  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm',
     fnSource('_gateTaxiWhere') + '\nreturn _gateTaxiWhere;')(
-    win, taxi, {}, () => win.land, () => ({ tEnd: 540 }), () => null, () => MCO, G.gcNm);
+    win, taxi, {}, () => ({ t: win.land, by: win.landBy || 'actual' }), () => ({ tEnd: 540 }), () => null, () => MCO, G.gcNm);
   const now = Date.UTC(2026, 9, 31, 1, 40);
   win.land = now - 4 * 60000;
   const stand = { kind: 'stand', leg: 'out', why: 'landed' };

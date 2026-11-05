@@ -103,7 +103,7 @@ test('an older fix never replaces a newer one, and is not news', () => {
 
 test('an OpenSky position past 150 s does not stop the Flightradar24 lookup', () => {
   const tel = fnSource(CORE, '_adsbTelemetry');
-  assert.match(tel, /if \(_osk && !\(typeof _osk\.age === 'number' && _osk\.age > \(_near \? 150 : 240\)\)\) \{/);
+  assert.match(tel, /if \(_osk && !\(typeof _osk\.age === 'number' && _osk\.age > \(\(_near && _osk\.onGround !== true\) \? 150 : 240\)\)\) \{/);
   // kept only when Flightradar24 has nothing
   const tail = tel.slice(tel.lastIndexOf('for (var i = 0; i < tries.length; i++)'));
   assert.match(tail, /\n  if \(_osk\) \{\s*_osk\.fl = _fn \|\| _cs;/);

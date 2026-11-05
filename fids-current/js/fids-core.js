@@ -8265,7 +8265,16 @@ async function _gateNumbersPoll() {
     }
     var flt = inb && inb.flight;
     if (!flt) return;
-    if (/cancel|arriv|land/i.test(String(inb.status || ''))) {   // on the ground → stop
+    // v24115 — THE PAID FEEDS GO ON THROUGH THE LANDING. The airport word
+    // "Landed" stopped every lookup, so from touchdown on the map drew only
+    // its own model, timed from a word that carries no time at Sea-Tac: the
+    // jet landed again and the card and map never agreed. The feed own word
+    // keeps the position coming for the taxi in (_gateTaxiInWindow): until a
+    // live fix shows it stopped at our field, at most 15 minutes after it came
+    // down. A word the clock made up still stops it, as before.
+    var _inTaxi = false;
+    try { _inTaxi = _gateTaxiInWindow(inb, Date.now()); } catch (eTW) { _inTaxi = false; }
+    if (!_inTaxi && /cancel|arriv|land/i.test(String(inb.status || ''))) {   // on the ground → stop
       // v23915 — and the feed's OWN "Arrived"/"Landed" (or a cancellation) ends
       // the leg's live position, so nothing dead-reckons on from it. A status
       // adbStatus made up from the clock stops the lookups as before (no new
@@ -8452,7 +8461,7 @@ async function _gateNumbersPoll() {
       return;
     }
     // v24078 — true: this gate's own flight, tracked (OpenSky gives it first call on the relay's boxes)
-    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex, true); } catch (e) {}
+    try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex, true, inb._opCode); } catch (e) {}
     // v23103 — THE TAIL IS NOT THE FLIGHT. Registration matching finds the
     // airframe wherever it is — including mid-air on its PREVIOUS leg.
     // On gate 4: AC1984 hadn't left Toronto (departs ~90 min later) yet
@@ -8626,7 +8635,15 @@ async function _gateNumbersPoll() {
     try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt, 'pos', _lpLat, _lpLng); } catch (e) {}
   } catch (e) { _gateNumPollBusy = false; }
 }
-try { setInterval(_gateNumbersPoll, 60000); setTimeout(_gateNumbersPoll, 2000); } catch (e) {}
+// v24115 — the poll follows the OpenSky refresh the Worker gives for this
+// airport (refresh_s on /oskypos: every 15 s in the test window, OSKY_FOCUS),
+// and once a minute otherwise, as before
+function _gateNumbersPollLoop() {
+  var ms = 60000;
+  try { var r = Number(window._oskyRefreshS) || 0; if (r >= 10 && r < 60) ms = r * 1000; } catch (e) {}
+  setTimeout(function () { try { _gateNumbersPoll(); } catch (e) {} _gateNumbersPollLoop(); }, ms);
+}
+try { setTimeout(_gateNumbersPoll, 2000); _gateNumbersPollLoop(); } catch (e) {}
 // MAP TICK — re-evaluates the gate map every 10 s against the latest state
 // (late-identified inbound, fresh 60 s fix). The posKey/progKey guards inside
 // tryInitMap make unchanged states a no-op, so this can't cause jumpiness;
@@ -16377,9 +16394,19 @@ function _buildV2MapCol(ctx, vars) {
       // when it came down. So on stand shows the gate time and a bare landed
       // shows the touchdown, instead of one timestamp standing in for both.
       var _mcEvtStr = '';
+      // v24115 — the time it came down, on the evidence _gateLandedInfo
+      // weighs (the live position first): never the schedule of a flight that
+      // landed early. Sea-Tac gives AC8806 only "Landed"; the card printed its
+      // 6:22pm schedule at 6:07pm as the time it arrived.
+      var _mcLand = { t: 0, by: '' };
+      try { if (_stKey === 'arrived' && _ib) _mcLand = _gateLandedInfo(_ib, Date.now()); } catch (eML) {}
       if (_stKey === 'arrived') {
         if (_mcOnStand && _ib && typeof _ib._actualArrTime === 'number' && _ib._actualArrTime > 0) {
           _mcEvtStr = _ibFmtT(_ib._actualArrTime);
+        } else if (_mcLand.t > 0 && (_mcLand.by === 'live' || _mcLand.by === 'seen' || _mcLand.by === 'actual')) {
+          _mcEvtStr = _ibFmtT(_mcLand.t);
+        } else if (_mcLand.by === 'cold') {
+          _mcEvtStr = '';   // down, at a time nobody gave: the sentence without a clock
         } else {
           _mcEvtStr = _ibArrRevStr || _ibArrSchedStr || '';
         }
@@ -16391,6 +16418,9 @@ function _buildV2MapCol(ctx, vars) {
       var _ibShownTs = _gateInboundShownTs({
         arrived: _stKey === 'arrived',
         onStandAt: (_mcOnStand && _ib && typeof _ib._actualArrTime === 'number') ? _ib._actualArrTime : 0,
+        // v24115 — the landing the card prints (_mcEvtStr), or none at all
+        landedAt: (_mcLand.by === 'live' || _mcLand.by === 'seen' || _mcLand.by === 'actual') ? _mcLand.t : 0,
+        landedUnknown: _mcLand.by === 'cold',
         sched: _ibArrTs, rev: _ibRevTs,
         revShown: (_stKey === 'arrived') ? !!_ibArrRevStr : !!(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr)
       });
@@ -17593,7 +17623,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24114" src="/textures/gate-sky-shelf.mp4?v=24114" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24115" src="/textures/gate-sky-shelf.mp4?v=24115" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17637,7 +17667,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24114" src="/textures/gate-sky-shelf.mp4?v=24114" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24115" src="/textures/gate-sky-shelf.mp4?v=24115" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -17817,6 +17847,8 @@ function _gateDayLineHtml(dw) {
 function _gateInboundShownTs(o) {
   if (!o) return 0;
   if (o.arrived && Number(o.onStandAt) > 0) return Number(o.onStandAt);
+  if (o.arrived && Number(o.landedAt) > 0) return Number(o.landedAt);
+  if (o.arrived && o.landedUnknown) return 0;
   if (o.revShown && Number(o.rev) > 0) return Number(o.rev);
   return Number(o.sched) || 0;
 }
@@ -18866,7 +18898,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24114" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24115" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35786,7 +35818,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24114';
+var FIDS_BUILD_TAG = 'v24115';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41750,6 +41782,9 @@ function _adsbNearFinal(fl) {
     if (!inb || !inb.flight || inb.dest) return false;
     var dg = function (s) { return String(s || '').toUpperCase().replace(/\s+/g, '').replace(/^\D+/, '').replace(/\D+$/, ''); };
     if (!fl || dg(fl) !== dg(inb.flight)) return false;
+    // v24115 — down and taxiing in (_gateTaxiInWindow): still near, so the
+    // lookups draw on the arrivals reserve and the pace line does not refuse them
+    if (typeof _gateTaxiInWindow === 'function' && _gateTaxiInWindow(inb, Date.now())) return true;
     if (typeof _gateRawLanded === 'function' && _gateRawLanded(inb)) return false;
     var arr = inb._revTs || inb._sortTs || 0, left = arr - Date.now();
     if (arr && left < 13 * 60000 && left > -20 * 60000) return true;
@@ -41832,6 +41867,42 @@ function _icaoCallsign(s) {
   var icao = _IATA_TO_CALLSIGN[m[1]];
   return icao ? icao + m[2] : '';
 }
+// v24115 — THE OPERATOR NAME, NOT ONLY THE SELLER. An Air Canada Express
+// flight is flown by Jazz (QK) and its transponder carries the Jazz name: JZA
+// and the number with its leading digit dropped, as its crews say it on the
+// radio (the OpenSky map at Pearson on 2026-11-05 listed a Jazz CRJ900 to
+// Philadelphia as JZA520; Rouge flies the whole number, ROU1961). A 7000
+// number has been seen whole (AC7992 as JZA7992), so an 8000 number asks the
+// short form first and any other the whole one first; both are asked. Asked only as ACA8806, the paid feeds never matched the
+// Jazz aeroplane landing at Sea-Tac on 2026-11-04. The short form only for an
+// operator other than the seller, so it is never read as flight 806 of the
+// seller.
+var _OP_SHORT_CS = { JZA: 1 };
+function _operatorCallsigns(opCode, flightNo) {
+  var out = [];
+  try {
+    var op = String(opCode || '').trim().toUpperCase();
+    var fn = String(flightNo || '').trim().toUpperCase().replace(/[\s-]+/g, '');
+    var m = fn.match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])(\d{1,4})$/);
+    if (!op || !m) return out;
+    var icao = /^[A-Z]{3}$/.test(op) ? op : (_IATA_TO_CALLSIGN[op] || '');
+    var seller = _IATA_TO_CALLSIGN[m[1]] || '';
+    if (!icao || icao === seller) return out;
+    var shortCs = (_OP_SHORT_CS[icao] && m[2].length === 4 && m[2].charAt(1) !== '0') ? icao + m[2].slice(1) : '';
+    if (shortCs && m[2].charAt(0) === '8') out.push(shortCs);
+    out.push(icao + m[2]);
+    if (shortCs && m[2].charAt(0) !== '8') out.push(shortCs);
+  } catch (e) {}
+  return out;
+}
+// Is a callsign heard by a feed this flight, by its digits: the same digits,
+// or the operator short form of them (JZA806 for 8806, _OP_SHORT_CS).
+function _csDigitsOk(acCs, ourDigits) {
+  var c = String(acCs || '').trim().toUpperCase();
+  var d = c.replace(/^\D+/, '').replace(/\D+$/, '');
+  if (!d || !ourDigits || d === ourDigits) return true;
+  return !!(_OP_SHORT_CS[c.slice(0, 3)] && ourDigits.length === 4 && d === ourDigits.slice(1));
+}
 // ── v24078 — THE OPENSKY NETWORK FIRST, FLIGHTRADAR24 ONLY WHEN IT HAS NOTHING ──
 // Live positions under OpenSky's licence come through our own server (the
 // relay, stream-server/opensky-relay/) and the Worker's /oskypos route, which
@@ -41876,7 +41947,9 @@ async function _oskyTelemetry(fl, names, hexId, tracked, ourDigits) {
   var q = '?ap=' + ap + '&f=' + encodeURIComponent(fl) + (cs.length ? '&cs=' + cs.join(',') : '') + (hex ? '&hex=' + hex : '') + '&p=' + (tracked ? 2 : 1);
   var hit = _oskyCache[q], ac = null;
   // v24088 — aged by its time in this cache, as _adsbFetchOne's
-  if (hit && (now - hit.at) < _OSKY_TTL_MS) {
+  var _oskTtl = _OSKY_TTL_MS;
+  try { var _rf = Number(window._oskyRefreshS) || 0; if (_rf >= 10) _oskTtl = Math.min(_OSKY_TTL_MS, _rf * 1000); } catch (eT) {}
+  if (hit && (now - hit.at) < _oskTtl) {
     ac = (hit.ac && typeof hit.ac.seen_pos === 'number')
       ? Object.assign({}, hit.ac, { seen_pos: hit.ac.seen_pos + (now - hit.at) / 1000 }) : hit.ac;
   }
@@ -41901,6 +41974,8 @@ async function _oskyTelemetry(fl, names, hexId, tracked, ourDigits) {
       if (!j || j.on !== true) { _oskyOffUntil = Date.now() + 600000; return null; }
       ac = (Array.isArray(j.ac) && j.ac[0]) || null;
       _oskyCache[q] = { at: Date.now(), ac: ac };
+      // v24115 — how often this airport is refreshed now (_gateNumbersPollLoop)
+      try { window._oskyRefreshS = (typeof j.refresh_s === 'number' && j.refresh_s > 0) ? j.refresh_s : 0; } catch (eR) {}
     } catch (e) {
       if (timer) clearTimeout(timer);
       _oskyOffUntil = Date.now() + 300000;
@@ -41911,8 +41986,7 @@ async function _oskyTelemetry(fl, names, hexId, tracked, ourDigits) {
   if (typeof ac.seen_pos === 'number' && ac.seen_pos > 900) return null;
   // the aircraft squawking another flight's number is not this flight
   var acCs = String(ac.flight || '').trim().toUpperCase();
-  var acDigits = acCs.replace(/^\D+/, '').replace(/\D+$/, '');
-  if (acDigits && ourDigits && acDigits !== ourDigits) return null;
+  if (!_csDigitsOk(acCs, ourDigits)) return null;
   var onGround = (ac.alt_baro === 'ground');
   var alt = (typeof ac.alt_baro === 'number') ? Math.round(ac.alt_baro) : null;
   var spd = (typeof ac.gs === 'number') ? Math.round(ac.gs) : null;
@@ -41947,7 +42021,7 @@ function _oskyCreditOn() {
     return !!(lp && lp.osky === true && typeof lp.at === 'number' && now - lp.at < 15 * 60000);
   } catch (e) { return false; }
 }
-async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
+async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked, opCode) {
   var tries = [];
   // v23331 — CALLSIGN FIRST. A callsign is set per flight; a registration
   // (or Mode-S hex) is the AIRFRAME wherever it is — its previous leg, a
@@ -41972,6 +42046,18 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
     try { if (_fm && CALLSIGN_TO_IATA[_fm[1]]) _iataFn = CALLSIGN_TO_IATA[_fm[1]] + _fm[2]; } catch (e) {}
   }
   if (_iataFn) tries.push('/flight/' + encodeURIComponent(_iataFn));
+  // v24115 — the operator names next (_operatorCallsigns): JZA806, JZA8806.
+  // A caller with no operator (the render path, _adsbCached) asking for the
+  // gate inbound takes its operator from that row.
+  if (!opCode) {
+    try {
+      var _gi = (typeof window !== 'undefined') ? window._gateInbound : null;
+      if (_gi && _gi._opCode && String(_gi.flight || '').toUpperCase().replace(/\s+/g, '') === (_iataFn || _fn)) opCode = _gi._opCode;
+    } catch (eOp) {}
+  }
+  var _opCs = _operatorCallsigns(opCode, _iataFn || _fn);
+  var _opPaths = _opCs.map(function (c) { return '/callsign/' + encodeURIComponent(c); });
+  _opCs.forEach(function (c) { if (c !== _cs) tries.push('/callsign/' + encodeURIComponent(c)); });
   if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_cs)) tries.push('/callsign/' + encodeURIComponent(_cs));
   if (_fn && _fn !== _cs && /^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_fn)) tries.push('/callsign/' + encodeURIComponent(_fn));
   // Then the converted forms ('WS812' → 'WJA812') — this is what makes a gate
@@ -41993,7 +42079,7 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
   // below would try, so it finds the flight Flightradar24 would.
   var _oskFl = _iataFn || _fn || _cs;
   var _osk = null;
-  try { _osk = await _oskyTelemetry(_oskFl, [_cs, _fn, _icaoCallsign(_cs), _icaoCallsign(_fn)], _hexId, tracked === true, _ourDigits); } catch (e) { _osk = null; }
+  try { _osk = await _oskyTelemetry(_oskFl, [_cs].concat(_opCs, [_fn, _icaoCallsign(_cs), _icaoCallsign(_fn)]), _hexId, tracked === true, _ourDigits); } catch (e) { _osk = null; }
   // v24088 — AN OLD OPENSKY POSITION DOES NOT END THE SEARCH. OpenSky's box
   // is asked every 2 minutes, then waits in KV and two caches, so a position
   // older than that means it has lost the aeroplane (Moncton's approach is
@@ -42002,7 +42088,8 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
   var _near = _adsbNearFinal(_fn || _cs);
   // (240 s: past the relay's 2-minute round, KV and the edge cache on a
   // healthy track; 150 s for the gate's own arrival near the field)
-  if (_osk && !(typeof _osk.age === 'number' && _osk.age > (_near ? 150 : 240))) {
+  // (v24115 — an OpenSky fix on the ground keeps the 240 s: a taxi is slow)
+  if (_osk && !(typeof _osk.age === 'number' && _osk.age > ((_near && _osk.onGround !== true) ? 150 : 240))) {
     _osk.fl = _fn || _cs;
     var _okH = _adsbNewerHeld(_osk, [_r, _cs, _fn]);
     if (_okH) return _okH;
@@ -42013,7 +42100,9 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
   for (var i = 0; i < tries.length; i++) {
     // FR24 already said nothing is flying under our number: a guessed
     // callsign for the same flight can only cost another empty call.
-    if (_numberQuiet && /^\/callsign\//.test(tries[i])) continue;
+    // (v24115 — except the operator names: a quiet number is exactly the
+    // Jazz flight Flightradar24 does not find by the number sold)
+    if (_numberQuiet && /^\/callsign\//.test(tries[i]) && _opPaths.indexOf(tries[i]) < 0) continue;
     var ac = await _adsbFetchOne(tries[i], _near);
     if (!ac) {
       if (/^\/flight\//.test(tries[i]) && (_adsbCache[tries[i]] || {}).quiet) _numberQuiet = true;
@@ -42027,8 +42116,7 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked) {
     // at all (the community ring often omits it; the resolver's reachability
     // gate still catches those).
     if (!/^\/(callsign|flight)\//.test(tries[i])) {
-      var _acDigits = String(ac.flight || '').trim().toUpperCase().replace(/^\D+/, '').replace(/\D+$/, '');
-      if (_acDigits && _ourDigits && _acDigits !== _ourDigits) {
+      if (!_csDigitsOk(ac.flight, _ourDigits)) {
         try { console.log('[ADSB]', _fn || _cs, tries[i], 'is flying', String(ac.flight).trim(), '— not this leg; fix ignored'); } catch (e) {}
         continue;
       }
@@ -49393,13 +49481,84 @@ function _gateTurnConsumed(inb, landTs, cf, deps, arrs, now) {
 // earlier (_GATE_DOWN_SEEN). 0 when nothing says it has landed.
 var _GATE_DOWN_SEEN = {};
 function _gateLandedAt(inb, now) {
-  if (!inb || _gateLegGone(inb)) return 0;
-  var t = 0;
-  try { t = inb._actualArrTime ? (adbTs(inb._actualArrTime) || 0) : 0; } catch (e) { t = 0; }
-  if (t > now + 5 * 60000) t = 0;                     // an "actual" still ahead of us is an estimate
-  if (!t && _gateRawLanded(inb)) t = Math.min(now, inb._revTs || inb._sortTs || now);
-  if (!t && _GATE_DOWN_SEEN[_gateRowKey(inb)]) t = _GATE_DOWN_SEEN[_gateRowKey(inb)];
-  return t || 0;
+  return _gateLandedInfo(inb, now).t;
+}
+// v24115 — WHEN IT CAME DOWN, AND ON WHAT EVIDENCE. Each piece says it was
+// down BY a time, so the earliest wins: the first live fix that put it on the
+// ground at our field (_GATE_DOWN_SEEN, by = 'live', the paid feeds); the
+// airport own actual time ('actual'); the row own time once it has passed
+// ('own', unless this screen saw it still to come well after that time); the
+// moment this screen saw the airport word appear ('seen', from _gateArrsSeen),
+// which is all Sea-Tac gives ("Landed", no time). A screen that first met the
+// row already landed, with its time still to come and nothing else, does not
+// know when it landed ('cold'): its time is when the screen met it and
+// nothing animates from it.
+// It used to be Math.min(now, the row time), and with a row time still to
+// come that was NOW on every call: each new taxi landed the aeroplane again,
+// AC8806 at Sea-Tac S1A on 2026-11-04 among them, and the card printed the
+// schedule (6:22pm) as the time it arrived.
+function _gateLandedInfo(inb, now) {
+  if (!inb || _gateLegGone(inb)) return { t: 0, by: '' };
+  var best = { t: 0, by: '' };
+  // when this screen first saw the word, it was down by then: nothing later
+  // can be the landing (a cold sighting stays cold rather than becoming the
+  // schedule when that time comes)
+  var seen = _gateRawLanded(inb) ? _gateSeenLand(inb, now) : null;
+  var cap = seen ? seen.at : Infinity;
+  var take = function (t, by) { if (t > 0 && t <= cap && (!best.t || t < best.t)) best = { t: t, by: by }; };
+  var live = _GATE_DOWN_SEEN[_gateRowKey(inb)] || 0;
+  take(live, 'live');
+  var act = 0;
+  try { act = inb._actualArrTime ? (adbTs(inb._actualArrTime) || 0) : 0; } catch (e) { act = 0; }
+  if (act > now + 5 * 60000) act = 0;                 // an "actual" still ahead of us is an estimate
+  take(act, 'actual');
+  if (!_gateRawLanded(inb)) return best;
+  var own = Number(inb._revTs || inb._sortTs) || 0;
+  if (own && own <= now && !(seen && !seen.cold && own < seen.at - 15 * 60000)) take(own, 'own');
+  if (seen && !seen.cold) take(seen.at, 'seen');
+  if (!best.t) best = { t: seen ? seen.at : now, by: 'cold' };
+  return best;
+}
+// v24115 — Is the inbound in its taxi in, for the live lookups: the feed own
+// word says down (never a word the clock made up), the leg is not gone, it
+// came down less than 15 minutes ago, and no live fix has shown it stopped at
+// our field since (on the ground under 3 kt within 6 nm).
+var _GATE_PARKED = {}, _GATE_STOPPED = {};
+function _gateTaxiInWindow(inb, now) {
+  if (!inb || inb.dest || inb._gateNoAdsb === true || !_gateRawLanded(inb) || _gateLegGone(inb)) return false;
+  if (/cancel/i.test(String(inb.status || ''))) return false;
+  var key = _gateRowKey(inb);
+  if (_GATE_PARKED[key]) return false;                  // seen parked: done asking
+  var li = _gateLandedInfo(inb, now);
+  if (!li.t || now - li.t > 15 * 60000) return false;
+  try {
+    // parked = stopped at our field on two fixes a minute apart (one stopped
+    // fix may be the aeroplane holding short on a taxiway)
+    var lp = window._gateInboundLivePos, ap = String(window._gateIata || '').toUpperCase(), h = _lookupAirport(ap);
+    if (lp && (!lp.fl || lp.fl === inb.flight) && lp.onGround === true && typeof lp.speed === 'number' && lp.speed < 3
+        && lp.at > li.t && h && _gcNm([lp.lat, lp.lng], h) < 6) {
+      if (!_GATE_STOPPED[key]) _GATE_STOPPED[key] = lp.at;
+      else if (lp.at - _GATE_STOPPED[key] >= 60000) { _GATE_PARKED[key] = lp.at; return false; }
+    } else if (lp && (!lp.fl || lp.fl === inb.flight) && lp.onGround === true) {
+      delete _GATE_STOPPED[key];                        // moving again
+    }
+  } catch (e) {}
+  return true;
+}
+// When this screen first saw the row landed, and whether it had seen it still
+// to come shortly before (warm) or met it already down (cold). Kept with the
+// remembered rows (_GATE_SEEN_FIELDS), so a reload keeps the same answer.
+var _GATE_ARR_UP = {}, _GATE_LAND_FIRST = {};
+function _gateSeenLand(inb, now) {
+  var key = _gateRowKey(inb);
+  var r = (_GATE_ARR_SEEN.rows && _GATE_ARR_SEEN.rows[key]) || null;
+  if (r && Number(r._seenLandAt) > 0) return { at: Number(r._seenLandAt), cold: r._seenLandCold === true };
+  if (Number(inb._seenLandAt) > 0) return { at: Number(inb._seenLandAt), cold: inb._seenLandCold === true };
+  if (!_GATE_LAND_FIRST[key]) {
+    var up = _GATE_ARR_UP[key];
+    _GATE_LAND_FIRST[key] = { at: now, cold: !(up && now - up < 15 * 60000) };
+  }
+  return _GATE_LAND_FIRST[key];
 }
 // v23930 — A LANDING IS NOT A PLACE. '' while a landed inbound is still
 // certainly at our stand; otherwise why nothing says it is.
@@ -49507,7 +49666,7 @@ function _gateFixCheck(c, inb, ap, now) {
   var o = _lookupAirport(inb._locIata), h = _lookupAirport(ap);
   var nearO = !!(o && _gcNm([c.lat, c.lng], o) < 5), nearH = !!(h && _gcNm([c.lat, c.lng], h) < 6);
   if (/^(hex|reg)$/.test(String(c.via || ''))) {
-    if (c.cs) { if (dg(c.cs) !== dg(inb.flight)) return false; }
+    if (c.cs) { if (!_csDigitsOk(c.cs, dg(inb.flight))) return false; }
     else if (!(c.onGround && (nearO || nearH))) return false;
   }
   if (c.onGround && !(nearO || nearH)) return false;
@@ -49844,7 +50003,7 @@ var _GATE_SEEN_KEY = 'fids_gate_seen_v1';
 // v23925 — '_doorSaid': the departures' boarding-began record (_gateDepsSeen).
 var _GATE_SEEN_FIELDS = ['flight', 'airline', 'gate', 'status', '_stInferred', '_sortTs', '_revTs',
   '_actualDepTime', '_actualArrTime', '_locIata', '_aircraft', '_aircraftCode', '_reg', '_regSource',
-  '_pushStatus', '_depSchedLocal', '_arrSchedLocal', '_doorSaid'];
+  '_pushStatus', '_depSchedLocal', '_arrSchedLocal', '_doorSaid', '_seenLandAt', '_seenLandCold'];
 function _gateSeenSlim(row) {
   var o = { _remembered: true };
   for (var i = 0; i < _GATE_SEEN_FIELDS.length; i++) {
@@ -49899,8 +50058,20 @@ function _gateArrsSeen(list, ap, now) {
       // Only what the feed itself says came down is evidence worth keeping.
       if ((_gateRawLanded(f) || f._actualArrTime) && !_gateLegGone(f)) {
         if (!rows[key] || rows[key]._remembered) changed = true;
+        // v24115 — when this screen first saw it down, kept with the row
+        // (_gateLandedInfo): from the row before it, else from now
+        try {
+          var _sl = _gateSeenLand(rows[key] && Number(rows[key]._seenLandAt) > 0 ? rows[key] : f, now);
+          if (!(rows[key] && Number(rows[key]._seenLandAt) === _sl.at)) changed = true;
+          f._seenLandAt = _sl.at;
+          if (_sl.cold) f._seenLandCold = true; else delete f._seenLandCold;
+        } catch (eSL) {}
         rows[key] = f;
-      } else if (rows[key] && !f._actualArrTime && (Number(f._revTs || f._sortTs) || 0) > now) {
+      } else {
+        // v24115 — still to come on this screen: a landing seen soon after is warm
+        try { if (!_gateLegGone(f)) _GATE_ARR_UP[key] = now; } catch (eUp) {}
+      }
+      if (!((_gateRawLanded(f) || f._actualArrTime) && !_gateLegGone(f)) && rows[key] && !f._actualArrTime && (Number(f._revTs || f._sortTs) || 0) > now) {
         // v24107 — a landing kept for a flight its listed row says is still to
         // come: a word that row no longer makes (Pearson's AS385 "arrived" two
         // hours early, kept by a screen before adbStatus withheld such words).
@@ -49960,15 +50131,30 @@ function _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz) {
   if (!inb || !inb._locIata || _gateLegGone(inb)) return out('none', inb ? 'inbound-gone' : 'no-inbound');
   var org = String(inb._locIata).toUpperCase();
   var land = (inb._actualArrTime || _gateRawLanded(inb)) ? _gateLandedAt(inb, t) : 0;
-  if (!land) {
-    var fx = _gateFixFor(inb, ap, t);
+  // v24115 — THE PAID LIVE POSITION FIRST, LANDED OR NOT. The airport word
+  // used to end the fixes here: once a row said Landed, a fresh Flightradar24
+  // or OpenSky position of the aeroplane rolling out was never looked at and
+  // the map drew its own taxi. Now a fix wins whenever it says something the
+  // word cannot: on the ground at our field, or in the air NEWER than the
+  // landing evidence (the word came early). An airborne fix from before the
+  // landing is history and is not drawn.
+  var fx0 = null;
+  try { fx0 = _gateFixFor(inb, ap, t); } catch (eFx0) { fx0 = null; }
+  if (fx0 && land) {
+    var hL0 = _lookupAirport(ap);
+    var here0 = fx0.onGround && hL0 && _gcNm([fx0.lat, fx0.lng], hL0) < 6;
+    if (!(here0 || (!fx0.onGround && fx0.at > land))) fx0 = null;
+  }
+  if (!land || fx0) {
+    var fx = fx0;
     if (fx) {
       var kind = 'fix';
       var oC = _lookupAirport(org), hC = _lookupAirport(ap);
       if (fx.onGround && oC && _gcNm([fx.lat, fx.lng], oC) < 5) kind = 'origin-ground';
       else if (fx.onGround && hC && _gcNm([fx.lat, fx.lng], hC) < 6) {
         // Down at our field: the landing is now on record for when the fix ages out.
-        try { _GATE_DOWN_SEEN[_gateRowKey(inb)] = fx.at; } catch (e) {}
+        // v24115 — the FIRST such fix only: each later one moved the landing on
+        try { var _dk = _gateRowKey(inb); if (!_GATE_DOWN_SEEN[_dk]) _GATE_DOWN_SEEN[_dk] = fx.at; } catch (e) {}
       }
       return { kind: kind, leg: 'in', org: org, dst: ap, other: org, lat: fx.lat, lng: fx.lng,
                onGround: !!fx.onGround, alt: fx.alt, spd: fx.spd, at: fx.at, src: fx.src, why: fx.src };
@@ -50063,8 +50249,12 @@ function _gateMapApply(res) {
   if (!res || !res.org || !res.dst) return;
   try {
     // The feed's own "Arrived" or a cancellation ends the leg's live position.
+    // v24115 — a cancellation or a leg gone ends it; a landing ends only the
+    // AIRBORNE fix once it is over 3 minutes old. Fresh fixes keep coming
+    // through the taxi in (_gateTaxiInWindow) and the map draws them.
     var inb = window._gateInbound, lp = window._gateInboundLivePos;
-    if (lp && inb && (_gateRawLanded(inb) || _gateLegGone(inb)) && (!lp.fl || lp.fl === inb.flight)) window._gateInboundLivePos = null;
+    if (lp && inb && (!lp.fl || lp.fl === inb.flight)
+        && (_gateLegGone(inb) || (_gateRawLanded(inb) && lp.onGround !== true && !(Date.now() - (lp.at || 0) < 3 * 60000)))) window._gateInboundLivePos = null;
   } catch (e) {}
   // v24105 — rolling out or taxiing in: the taxi draws it (_gateTaxiApply),
   // on every tick, so a rebuild that stopped the map's loops never leaves it
@@ -51957,10 +52147,13 @@ function _gateTaxiWhere(res, inb, t, ap) {
   }
   // the feed's landing
   if (res.kind === 'stand' && res.why === 'landed') {
-    var land = _gateLandedAt(inb, t);
+    var li = _gateLandedInfo(inb, t), land = li.t;
     if (!land) return null;
     if (mine && st.done) return null;
-    if (mine) return mk(st.anchor === 'fix' ? 'keep' : 'land', land, { land: land });
+    if (mine) return mk(st.anchor === 'fix' ? 'keep' : 'land', land, { land: land, landBy: li.by });
+    // v24115 — a landing at a time nobody knows is not flown again from now:
+    // the stand rules say where the aeroplane is (_gateStandVerdict)
+    if (li.by === 'cold') return null;
     if (t - land > 20 * 60000) return null;
     var rwP = (_gateGlide.rw && _gateGlide.rwFl === fl && t - (_gateGlide.rwAt || 0) < 40 * 60000) ? _gateGlide.rw : null;
     var plan = _gateTaxiRoute(ap, org, rwP, null, null);
@@ -51986,7 +52179,10 @@ function _gateTaxiApply(res) {
   if (mine && res.anchor === 'land') {
     // the feed's time replaces the model's unless the two are far apart
     // (a feed whose "arrived" is the aeroplane on its blocks)
-    if (st.anchor === 'model' && Math.abs(res.land - st.t0) < 3 * 60000) { st.t0 = res.land; st.anchor = 'land'; st.anchorAt = res.land; }
+    // v24115 — and only ever EARLIER than the model touchdown: a later time
+    // (a screen that saw the word after the wheels touched) set the marker
+    // back to the threshold and it landed a second time
+    if (st.anchor === 'model' && res.land < st.t0 && st.t0 - res.land < 3 * 60000 && res.landBy !== 'cold') { st.t0 = res.land; st.anchor = 'land'; st.anchorAt = res.land; }
     _gateTaxiMap(res, o, d);
     _gateTaxiRun();
     return true;
@@ -63950,7 +64146,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24114" src="/textures/gate-sky-shelf.mp4?v=24114"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24115" src="/textures/gate-sky-shelf.mp4?v=24115"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
