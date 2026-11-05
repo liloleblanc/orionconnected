@@ -353,7 +353,7 @@ test('the glide hands an established arrival to the taxi at touchdown; every sur
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v24117 — TURNS, NOT PIVOTS. Seattle stand S1A off 16L, 2026-11-05: the turn
+// v24120 — TURNS, NOT PIVOTS. Seattle stand S1A off 16L, 2026-11-05: the turn
 // off the runway took 83 degrees within 7 m of path, then a 46 degree S-bend
 // in 11 m, then 83 degrees in 4 m on to the stand, each at the 3 m/s floor.
 // Every corner was rounded within 45% of its legs, and OpenStreetMap splits

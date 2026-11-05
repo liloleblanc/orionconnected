@@ -56,7 +56,7 @@ test('den: plain-local ISO clock lands on Denver wall time', () => {
   assert.equal(wn.departure.airport.iata, 'SEA');
 });
 
-test('ord: WCF /Date(ms-0500)/ parses; Landed maps to landed (v24117)', () => {
+test('ord: WCF /Date(ms-0500)/ parses; Landed maps to landed (v24120)', () => {
   const arr = ordParseFeed(fx('ord-sample.json'), 'arr', NOW);
   assert.ok(arr.length >= 2, `parsed ${arr.length}`);
   const atlas = arr.find((x) => x.number === '5Y753');

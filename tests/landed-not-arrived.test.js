@@ -1,4 +1,4 @@
-// v24117 — THE AIRPORT WORD "LANDED" REACHES THE BOARDS AS 'landed'.
+// v24120 — THE AIRPORT WORD "LANDED" REACHES THE BOARDS AS 'landed'.
 //
 // Sea-Tac, 2026-11-05 02:10Z: AC8806 (Jazz CRJ900) from Vancouver, inbound to
 // S1A. The airport's page said only "Landed", with no time. Every adapter

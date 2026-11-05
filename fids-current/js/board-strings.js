@@ -1082,7 +1082,7 @@
     // $ctx keeps the status apart from the lower-case "expected" qualifier.
     stExpected: { en: 'Expected', fr: 'Attendu', es: 'Previsto', de: 'Erwartet', it: 'Atteso', pt: 'Previsto', ja: '見込み', zh: '预计', ar: 'متوقعة',
       $ctx: 'status' },
-    // v24117 — an arrival the airport calls Landed (down, not yet on its
+    // v24120 — an arrival the airport calls Landed (down, not yet on its
     // blocks) keeps that word on the departures and arrivals board: fids-v2
     // finds it here (TX is frozen). The gate's own SS.landed in fids-core.js,
     // word for word.

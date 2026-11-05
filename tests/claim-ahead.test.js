@@ -125,7 +125,7 @@ test('Toronto, 2026-11-02 at 14:18: AS385 and AA1111 say arrived with their own 
   const st = statuses(YYZ, 'arr', YYZ_NOW);
   assert.equal(st.AS385, 'scheduled', 'AS385: ARR at 14:18 with its time at 16:05 reads by its time');
   assert.equal(st.AA1111, 'delayed', 'AA1111: LND with its time revised to 16:23 reads Delayed, by the revision');
-  // v24117 — Pearson's LND reaches the board as 'landed' and its ARR as
+  // v24120 — Pearson's LND reaches the board as 'landed' and its ARR as
   // 'arrived', and a word believed keeps itself: down, and only ARR at the gate.
   const genuine = YYZ.filter((f) => (f.status === 'arrived' || f.status === 'landed') && f.number !== 'AS385' && f.number !== 'AA1111');
   assert.equal(genuine.length, 25);

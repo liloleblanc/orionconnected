@@ -132,7 +132,7 @@ test('yyg: synthetic rows — delayed/cancelled/departed, cross-midnight revisio
   assert.equal(cx.status, 'cancelled');
   assert.equal(cx.arrival.revisedTime, undefined);
   assert.equal(dateless.arrival.scheduledTime.local, '2026-09-06 10:55:00-03:00', 'a dateless row is airport-local today');
-  assert.equal(dateless.status, 'landed');                                        // "Landed" — v24117
+  assert.equal(dateless.status, 'landed');                                        // "Landed" — v24120
   assert.equal(pal.number, 'PB901', 'digits-only flight number takes the carrier prefix');
   assert.equal(pal.arrival.airline.name, 'PAL Airlines');
   assert.equal(pal.departure.airport.iata, 'YHZ');

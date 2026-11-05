@@ -260,7 +260,7 @@ test('syd: status vocabulary — the four live, the seven archived, whole-word s
   assert.equal(sydStatus('Departed'), 'departed');
   assert.equal(sydStatus('Arrived'), 'arrived');
   assert.equal(sydStatus('Cancelled'), 'cancelled');
-  assert.equal(sydStatus('Landed'), 'landed');   // v24117 — down, short of the gate
+  assert.equal(sydStatus('Landed'), 'landed');   // v24120 — down, short of the gate
   assert.equal(sydStatus('Delayed'), 'delayed');
   assert.equal(sydStatus('Gate Open'), 'boarding');
   assert.equal(sydStatus('Boarding'), 'boarding');

@@ -13577,7 +13577,7 @@ function renderMobileGateHtml(ctx) {
       var _effArrTs = (_arrRevTs && _arrRevTs > _arrTs) ? _arrRevTs : _arrTs;
       var _minsToArr = _effArrTs ? Math.round((_effArrTs - Date.now()) / 60000) : 0;
       var _etaStr = '';
-      // v24117 — At the gate only on its blocks (fidsInboundOnStand). It used
+      // v24120 — At the gate only on its blocks (fidsInboundOnStand). It used
       // to say At the gate for a bare landed too; down and still taxiing it
       // now says Landed, in the same green.
       var _inbDown = fidsInboundHasArrived(_inb, Date.now());
@@ -15309,7 +15309,7 @@ function _buildV2AircraftCol(ctx, vars) {
     // On the stand, or still rolling? ADB's 'arrived' is on-block and
     // _actualArrTime is the gate time; a bare 'landed', or ADS-B reporting
     // wheels-on-ground before the status catches up, is only touchdown.
-    // v24117 — the one test, fidsInboundOnStand: a landed row with a time is
+    // v24120 — the one test, fidsInboundOnStand: a landed row with a time is
     // still only touchdown.
     var _inbOnStand = _inbArrivedV2 && fidsInboundOnStand(inboundFlight);
     _inbLine =
@@ -16417,7 +16417,7 @@ function _buildV2MapCol(ctx, vars) {
       // ON-BLOCK and _actualArrTime is the gate time, so that is at-the-gate;
       // a bare 'landed', or ADS-B reporting wheels down before the status
       // catches up, is touchdown and still taxiing.
-      // v24117 — the one on-stand test (fidsInboundOnStand): a bare landed now
+      // v24120 — the one on-stand test (fidsInboundOnStand): a bare landed now
       // reaches here as landed, and its time is the touchdown, not the gate.
       var _mcOnStand = false;
       try {
@@ -16457,7 +16457,7 @@ function _buildV2MapCol(ctx, vars) {
         } else if (_mcOnStand) {
           _mcEvtStr = _ibArrRevStr || _ibArrSchedStr || '';
         } else {
-          // v24117 — still rolling: the sentence says Landed at {t}, so the
+          // v24120 — still rolling: the sentence says Landed at {t}, so the
           // time is one the feed gave for this arrival (its actual, estimate
           // or revision), never the bare schedule. Sea-Tac keeps the schedule
           // on a landed row, and AC8806 would have read landed at 6:22pm, its
@@ -16481,7 +16481,7 @@ function _buildV2MapCol(ctx, vars) {
       // v24012 — the same facts for the centre deck's overview card
       // (_gateCardHtml): the flight, where it comes from, the time this card
       // prints first and the word it prints, so the two never disagree.
-      // v24117 — down but not on its blocks, this card says Landed and
+      // v24120 — down but not on its blocks, this card says Landed and
       // taxiing, so the overview says Landed, not Arrived.
       try {
         window._gateInbFacts = { flight: String(_ibFltCompact || ''), city: String(_origCity || ''),
@@ -17680,7 +17680,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24117" src="/textures/gate-sky-shelf.mp4?v=24117" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17724,7 +17724,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24117" src="/textures/gate-sky-shelf.mp4?v=24117" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18565,7 +18565,7 @@ function uxgGateHtml(ctx) {
       || (inboundFlight.status === 'landed' || inboundFlight.status === 'arrived');
     // Same on-stand test as the v2 rail: 'arrived' is on-block, a bare
     // 'landed' is only touchdown.
-    // v24117 — the one test, fidsInboundOnStand.
+    // v24120 — the one test, fidsInboundOnStand.
     var _inbOnStandG8 = inArrived && fidsInboundOnStand(inboundFlight);
     var inDelayed = inboundFlight.upd && (inboundFlight.status === 'delayed');
 
@@ -18613,7 +18613,7 @@ function uxgGateHtml(ctx) {
     }
 
     var inStBadge = '';
-    // v24117 — Landed until it is on its blocks, then Arrived
+    // v24120 — Landed until it is on its blocks, then Arrived
     if (inArrived) inStBadge = '<div class="g8-inb-status">' + SL(_inbOnStandG8 ? 'arrived' : 'landed') + '</div>';
     else if (inDelayed) inStBadge = '<div class="g8-inb-status delayed">' + SL('delayed') + '</div>';
     else if (inboundFlight.status === 'active' || inboundFlight.status === 'en-route' || inboundFlight.status === 'ontime' || inboundFlight.status === 'early') inStBadge = '<div class="g8-inb-status enroute">' + SL('active') + '</div>';
@@ -18956,7 +18956,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24117" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24120" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35876,7 +35876,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24117';
+var FIDS_BUILD_TAG = 'v24120';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38900,7 +38900,7 @@ function fidsInboundHasArrived(inboundFlight, nowTs) {
   var status = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
   return status === 'arrived' || status === 'landed';
 }
-// v24117 — ON THE STAND, NOT ONLY DOWN. Of an inbound that is down
+// v24120 — ON THE STAND, NOT ONLY DOWN. Of an inbound that is down
 // (fidsInboundHasArrived), is it on its blocks? The word arrived is; so is an
 // actual arrival time beside any other word, as the three inbound panels (the
 // Your Aircraft card, the v2 rail, the g8 layout) have always read it; the
@@ -40321,7 +40321,7 @@ function _gcCloseLabel(info, frF) {
 // The status a time carries, from the word its source gave, or '' (none):
 // ok = On time / Early / Arrived, amb = Delayed, red = Cancelled. En route is
 // a status too, in the plain ink. Scheduled and Expected say nothing.
-// v24117 — and Landed (down, still taxiing: the Your Aircraft card) in the
+// v24120 — and Landed (down, still taxiing: the Your Aircraft card) in the
 // same green as Arrived.
 var _GC_STATUS = { ontime: ['ontime', 'ok'], early: ['early', 'ok'], arrived: ['arrived', 'ok'],
   landed: ['landed', 'ok'],
@@ -41186,7 +41186,7 @@ function fidsAdbStatusKey(value) {
       'departed','delayed','active','arrived','cancelled','diverted','cancelled'][value] || 'scheduled';
   }
   var k = String(value || '').replace(/[\s_-]+/g, '').toLowerCase();
-  // v24117 — landed stays landed: down, not on the stand (see adbStatus)
+  // v24120 — landed stays landed: down, not on the stand (see adbStatus)
   var map = {
     unknown:'scheduled', expected:'scheduled', enroute:'active',
     checkin:'scheduled', boarding:'boarding', gateclosed:'gateclosed',
@@ -43018,7 +43018,7 @@ function _adbClaimAheadMs(list, mode) {
 function _adbClaimWithheld(f, mode, st) {
   var raw = String((f && f.status) || '').replace(/[\s_-]+/g, '').toLowerCase();
   if (!_adbHappenedWord(raw, mode)) return false;
-  // v24117 — an arrival row believed keeps its own word, landed or arrived
+  // v24120 — an arrival row believed keeps its own word, landed or arrived
   if (mode !== 'dep') return st !== 'arrived' && st !== 'landed';
   return st !== 'departed';
 }
@@ -43048,7 +43048,7 @@ function adbStatus(f, mode, schedTs, nowTs, aheadMs) {
   // FOR that departure, and keeps saying it until "Departed": four rows on
   // 2026-11-02, 13 to 25 minutes before they left, and the board said Departed
   // on flights still at their gates.
-  // v24117 — and on an arrival row the two words stay apart. Landed is the
+  // v24120 — and on an arrival row the two words stay apart. Landed is the
   // aeroplane down and still rolling or taxiing, Arrived is it on its blocks:
   // Sea-Tac said only Landed for AC8806 at S1A, and folding it into arrived
   // put Arrived at the gate on the card while the map had the jet on the
@@ -43170,7 +43170,7 @@ function adbStatusInferred(f, st) {
 // v23925 — 'final' ranks with finalcall: Moncton's "Final call" now arrives as
 // 'final' (it used to be folded into 'boarding'), and at rank 0 a boarding
 // copy of the same departure would have won the de-dup over it.
-// v24117 — landed ranks between active and arrived: of two copies of one
+// v24120 — landed ranks between active and arrived: of two copies of one
 // arrival, the one that says it is on its blocks knows the most. (Departed
 // shares its rank; a departure row is never landed, adbStatus.)
 var _ROW_STATUS_RANK = {
@@ -46364,7 +46364,7 @@ function _mobileBuildContext(f, isDep) {
     if (f.status === 'early')    stTxt = `${SLbi('early')} · ${_upd}`;
     if (f.status === 'departed') stTxt = `${SLbi('departed')} · ${_upd}`;
     if (f.status === 'arrived')  stTxt = `${SLbi('arrived')} · ${_upd}`;
-    if (f.status === 'landed')   stTxt = `${SLbi('landed')} · ${_upd}`;   // v24117 — Landed, with its time
+    if (f.status === 'landed')   stTxt = `${SLbi('landed')} · ${_upd}`;   // v24120 — Landed, with its time
   }
 
   // Hide-prefix toggle from airport config / user customize — same as desktop
@@ -51944,7 +51944,7 @@ function _taxiRunway(g, rw) {
 }
 // Round the corners of a polyline (metres) so the nose turns through a bend
 // instead of on the spot.
-// v24117 — TURNS, NOT PIVOTS. Each corner was a quadratic `r` metres either
+// v24120 — TURNS, NOT PIVOTS. Each corner was a quadratic `r` metres either
 // side, never more than 45% of either leg, and OpenStreetMap splits a taxiway
 // into legs of 1 to 5 m (the runway exit point sits metres from its node), so
 // most corners kept a radius of 1 to 5 m: Seattle, stand S1A off 16L, turned
@@ -52383,7 +52383,7 @@ function _taxiPlan(g, rw, end, opt) {
     }
     if (clean.length < 2) return null;
     if (roll) {
-      // v24117 — the turn off the runway 50 m round or more (up to 190 m,
+      // v24120 — the turn off the runway 50 m round or more (up to 190 m,
       // cutting up to 15 m inside the drawn lines: over the runway itself),
       // taxiway corners 30 m or more (up to 90 m, within 10 m); the two
       // corners of a turn round on the runway kept, 25 m round within the
@@ -64572,7 +64572,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24117" src="/textures/gate-sky-shelf.mp4?v=24117"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

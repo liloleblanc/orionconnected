@@ -69,7 +69,7 @@ test('sea: dated 12-hour rows with gate and belt', () => {
   const as = arr.find((x) => x.number === 'AS330');
   assert.ok(as, 'AS330 present');
   assert.ok(as.arrival.scheduledTime.local.startsWith('2026-09-04 17:35'), as.arrival.scheduledTime.local);
-  assert.equal(as.status, 'landed');                     // "Landed" — v24117: down, not at the gate
+  assert.equal(as.status, 'landed');                     // "Landed" — v24120: down, not at the gate
   assert.equal(as.arrival.gate, 'D3');
   assert.equal(as.arrival.baggageBelt, '14');
   assert.equal(as.departure.airport.iata, 'ABQ');

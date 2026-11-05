@@ -314,7 +314,7 @@ test('(A) a real actual time is evidence; "Arrived" on a departure row is a depa
   assert.equal(E.adbStatusInferred({ status: 'scheduled' }, 'departed'), true);
 
   // Denver and Chicago label a departure that has reached its destination
-  // "Arrived"; the departures board must not print "Arrived". (v24117 —
+  // "Arrived"; the departures board must not print "Arrived". (v24120 —
   // O'Hare's word for it is Landed, which now reaches the board as 'landed':
   // on a departure row it is a departure too.)
   const W = await import(workerPath);

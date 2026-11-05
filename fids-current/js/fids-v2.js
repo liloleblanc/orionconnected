@@ -125,7 +125,7 @@
       'scheduled':   'fids-status-scheduled',
       'expected':    'fids-status-scheduled'   // v23968 — plain row ink, like Scheduled
     };
-    // v24117 — an arrival the airport calls Landed reaches the board as
+    // v24120 — an arrival the airport calls Landed reaches the board as
     // 'landed' (it used to be folded into 'arrived' before the board saw
     // it): it is down, so it wears the Arrived row and colour, and it says
     // the airport's own word, Landed, until the airport says Arrived.

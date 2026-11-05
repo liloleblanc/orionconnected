@@ -1,6 +1,6 @@
 'use strict';
 
-// v24117 — A LANDED INBOUND IS DOWN, NOT ON THE STAND.
+// v24120 — A LANDED INBOUND IS DOWN, NOT ON THE STAND.
 //
 // Sea-Tac, 2026-11-05 02:10Z: AC8806 from Vancouver, inbound to S1A, said only
 // "Landed". The board folded the word into 'arrived' twice over (the worker's

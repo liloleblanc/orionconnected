@@ -18,7 +18,7 @@ test('clt: epoch seconds, operator rows, IATA airport, belt array joined', () =>
   assert.ok(b6, 'B62149 present');
   assert.equal(b6.arrival.gate, 'A28');
   assert.equal(b6.arrival.baggageBelt, '2');
-  assert.equal(b6.status, 'arrived');              // "Landed" beside originalStatus "Arrived": at the gate (v24117)
+  assert.equal(b6.status, 'arrived');              // "Landed" beside originalStatus "Arrived": at the gate (v24120)
   assert.equal(b6.departure.airport.iata, 'FLL');
   assert.equal(b6.arrival.airline.iata, 'B6');
   assert.ok(b6.arrival.scheduledTime.local.endsWith('-04:00'), 'EDT');

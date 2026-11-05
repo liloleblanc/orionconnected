@@ -35,7 +35,7 @@ test('edi: offset ISO, aircraft type trimmed of WINGLETS, belt', () => {
   const ls = arr.find((x) => x.number === 'LS726');
   assert.ok(ls, 'LS726 present');
   assert.ok(ls.arrival.scheduledTime.local.startsWith('2026-09-05 02:10'), ls.arrival.scheduledTime.local);
-  assert.equal(ls.status, 'landed');             // "LANDED 03:54" — v24117: down, not on the stand
+  assert.equal(ls.status, 'landed');             // "LANDED 03:54" — v24120: down, not on the stand
   assert.equal(ls.arrival.baggageBelt, '7');
   assert.equal(ls.aircraft.model, 'BOEING 737-800');   // WINGLETS shed
   assert.equal(ls.departure.airport.iata, 'RHO');

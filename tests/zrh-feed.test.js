@@ -186,7 +186,7 @@ test('zrh arrivals: en route / approach / rolling / delayed / cancelled', () => 
   assert.equal(lx1109.arrival.revisedTime.local, '2026-09-06 08:29:00+02:00');
   assert.equal(lx1109.arrival.baggageBelt, '13');
   const vy = byNum(arr, 'VY6246');                // 200 Rolling on an arrival = on the ground
-  assert.equal(vy.status, 'landed');              // v24117 — the landing roll: down, not on the stand
+  assert.equal(vy.status, 'landed');              // v24120 — the landing roll: down, not on the stand
   assert.equal(vy.arrival.revisedTime.local, '2026-09-06 08:19:00+02:00');
   assert.equal(vy.arrival.baggageBelt, '12');
   assert.equal(vy.arrival.terminal, '1');

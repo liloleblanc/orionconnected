@@ -1720,7 +1720,7 @@ function mcoStatus(f) {
   const os = String(f.originalStatus || "").toUpperCase();
   switch (os) {
     case "AR": return "arrived";     // Arrived (the vendor enum, see MCO_AUTH_STATUS)
-    case "LD": return "landed";      // v24117 — Landed: down, not yet on stand
+    case "LD": return "landed";      // v24120 — Landed: down, not yet on stand
     case "DP": return "departed";    // Departed
     case "CX": return "cancelled";   // Canceled
     case "DL": return "delayed";     // Delayed
@@ -1731,7 +1731,7 @@ function mcoStatus(f) {
   const s = String(f.status || "").toLowerCase();
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — see yhzStatus
+  if (s.includes("land")) return landWord(s);   // v24120 — see yhzStatus
   if (s.includes("depart")) return "departed";
   if (s.includes("delay")) return "delayed";
   return neutralStatus(s);   // v23968
@@ -1935,7 +1935,7 @@ function isNeutralStatus(st) {
   return st === "scheduled" || st === "ontime" || st === "expected";
 }
 __name(isNeutralStatus, "isNeutralStatus");
-// v24117 — LANDED IS NOT AT THE GATE. Every "land" or "arriv" word used to be
+// v24120 — LANDED IS NOT AT THE GATE. Every "land" or "arriv" word used to be
 // "arrived", and the boards read "arrived" as on its blocks: Sea-Tac said only
 // "Landed" for AC8806 at S1A (2026-11-05 02:10Z), and the gate card said
 // "Arrived at the gate | 6:22pm" (the schedule) while the map still had the
@@ -1952,7 +1952,7 @@ function landWord(txt) {
   return /\b(at|in) (the )?gate\b|\b(in|on)[ -]?blocks?\b|\bbags? (delivered|on belt)\b/.test(s) ? "arrived" : "landed";
 }
 __name(landWord, "landWord");
-// v24117 — where an airport keeps writing Landed after the aeroplane is on its
+// v24120 — where an airport keeps writing Landed after the aeroplane is on its
 // blocks, the row itself says it is on stand some other way, and that turns a
 // "landed" into "arrived": the feed vendor behind Charlotte, Las Vegas and
 // Houston (status Landed beside the airline text Arrived or InGate, or an
@@ -3049,7 +3049,7 @@ function farArrFromAdb(rows) {
 __name(farArrFromAdb, "farArrFromAdb");
 // Toronto Pearson: ISO times with their offset; codeshares ride in ids[] on the
 // operating row, so each marketing number gets the operating row's times.
-// v24117 — LDD and LND are Pearson's Landed: down, not on the stand (yhzStatus).
+// v24120 — LDD and LND are Pearson's Landed: down, not on the stand (yhzStatus).
 const FARARR_YYZ_STATUS = { CAN: "cancelled", DIV: "diverted", DEL: "delayed", ARR: "arrived", LDD: "landed", LND: "landed", BAG: "arrived", ONB: "arrived" };
 function farArrYyzRows(list) {
   const out = [];
@@ -3076,7 +3076,7 @@ function farArrWordStatus(s) {
   if (t.includes("delay") || t.includes("late")) return "delayed";
   if (t.includes("early")) return "early";
   if (t.includes("arriv")) return "arrived";
-  if (t.includes("land")) return landWord(t);   // v24117 — see yhzStatus
+  if (t.includes("land")) return landWord(t);   // v24120 — see yhzStatus
   return "scheduled";
 }
 __name(farArrWordStatus, "farArrWordStatus");
@@ -4992,7 +4992,7 @@ function lhrParseFeed(jsonText, dir, nowMs) {
     const sched = localTimeObjFromTs("Europe/London", schedTs);
     const stat = ((fs.aircraftMovement || {}).aircraftMovementStatus || [])[0] || {};
     const msg = String(stat.message || "");
-    // v24117 — LD is "Landed 05:09": down, not on the stand. LB is "Landed
+    // v24120 — LD is "Landed 05:09": down, not on the stand. LB is "Landed
     // 05:09, bags delivered on belt 5": the bags are off, so it is on stand.
     let status = stat.statusCode === "CX" ? "cancelled"
       : stat.statusCode === "LD" ? "landed"
@@ -5188,7 +5188,7 @@ function bosParseFeed(jsonText, dir, nowMs) {
       if (rv.ts !== ts) revised = rv;
     }
     let status = yhzStatus(r.Remarks || "");
-    // v24117 — Massport keeps Remarks "Landed" at the gate (vendorOnStand)
+    // v24120 — Massport keeps Remarks "Landed" at the gate (vendorOnStand)
     if (status === "landed" && (String(r.ActualGateTime || "").trim() || /arriv/i.test(String(r.RemarksWithTime || "")))) status = "arrived";
     if (isNeutralStatus(status) && String(r.Delayed) === "True") status = "delayed";   // v23968 — any neutral word
     const isDep = dir === "dep";
@@ -5233,7 +5233,7 @@ function lasParseFeed(jsonText, dir, nowMs) {
     const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
     const fl = authorityFlight({
       dir, number: num,
-      // v24117 — Landed beside the airline text Arrived is at the gate (vendorOnStand)
+      // v24120 — Landed beside the airline text Arrived is at the gate (vendorOnStand)
       status: (() => { const st = yhzStatus(r.status || r.originalStatus || ""); return (st === "landed" && vendorOnStand(r)) ? "arrived" : st; })(),
       homeIata: "LAS", homeIcao: "KLAS", homeName: "Las Vegas",
       gate: (r.gate || "").toString().trim() || null,
@@ -5305,7 +5305,7 @@ function ordParseFeed(jsonText, dir, nowMs) {
       const rem = yhzStatus(r.Remarks || "");
       if (!isNeutralStatus(rem) || (status === "scheduled" && rem !== "scheduled")) status = rem;
     }
-    // v24117 — O'Hare says Landed from the runway on; its gate time says on stand
+    // v24120 — O'Hare says Landed from the runway on; its gate time says on stand
     if (status === "landed" && !isDep && r.ArrivalDateTimeActualGate) status = "arrived";
     const fl = authorityFlight({
       dir, number: String(r.AirlineCodeFlightNumber).trim(), status,
@@ -5982,7 +5982,7 @@ __name(yhmParseBoard, "yhmParseBoard");
 // The status field is EMPTY for most rows because the feed runs five days
 // ahead; an empty status is a scheduled flight, not a missing one.
 const HBA_STATUS = {
-  "landed": "landed", "arrived": "arrived", "departed": "departed",   // v24117 — Landed is not at the gate
+  "landed": "landed", "arrived": "arrived", "departed": "departed",   // v24120 — Landed is not at the gate
   "closed": "gateclosed", "boarding": "boarding", "cancelled": "cancelled",
   "delayed": "delayed", "final call": "final", "on time": "ontime"
 };
@@ -6699,7 +6699,7 @@ function ediParseFeed(jsonText, dir, nowMs) {
     const fl = authorityFlight({
       dir, number: String(r.flightNo).replace(/\s+/g, "").toUpperCase(),
       callSign: (r.callsign || "").toString().trim() || null,
-      // v24117 — "LANDED 03:54" stays on the row at the gate; the first bag in
+      // v24120 — "LANDED 03:54" stays on the row at the gate; the first bag in
       // the hall (firstBagDateTime, passed) says the aeroplane is on stand
       status: (() => { const st = yhzStatus(r.status || ""); return (st === "landed" && pastTs(r.firstBagDateTime, nowMs)) ? "arrived" : st; })(),
       homeIata: "EDI", homeIcao: "EGPH", homeName: "Edinburgh",
@@ -6793,7 +6793,7 @@ function cltParseFeed(jsonText, dir, nowMs) {
     const revised = (typeof bt === "number" && bt !== r.scheduledTimestamp) ? localTimeObjFromTs("America/New_York", bt * 1000) : null;
     const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
     let status = yhzStatus(r.status || r.originalStatus || "");
-    if (status === "landed" && vendorOnStand(r)) status = "arrived";   // v24117 — Landed beside Arrived is at the gate
+    if (status === "landed" && vendorOnStand(r)) status = "arrived";   // v24120 — Landed beside Arrived is at the gate
     if (isNeutralStatus(status) && r.isDelayed === true) status = "delayed";   // v23968 — any neutral word
     const fl = authorityFlight({
       dir, number: num.toUpperCase(),
@@ -7052,7 +7052,7 @@ __name(ausParseFeed, "ausParseFeed");
 // revised time and no belt anywhere on the page.
 const MSP_STATUS = {
   "ON TIME": "ontime", "GATE CHANGE": "scheduled", "BOARDING": "boarding",
-  "DEPARTED": "departed", "LANDED": "landed", "ARRIVED AT GATE": "arrived",   // v24117 — LANDED is short of the gate
+  "DEPARTED": "departed", "LANDED": "landed", "ARRIVED AT GATE": "arrived",   // v24120 — LANDED is short of the gate
   "ARRIVED": "arrived", "DELAYED": "delayed", "CANCELLED": "cancelled", "CANCELED": "cancelled"
 };
 function mspStatus(txt) {
@@ -7173,7 +7173,7 @@ const SLC_AIRLINE_NAME = {
 // means "arrived" on the arrivals side.
 const SLC_STATUS = {
   SCHEDULED: "scheduled", ONTIME: "ontime", DEPARTED: "departed", OUTGATE: "departed",
-  ARRIVED: "arrived", LANDED: "landed", INFLIGHT: "active", ENROUTE: "active", INAIR: "active",   // v24117 — LANDED is short of InGate
+  ARRIVED: "arrived", LANDED: "landed", INFLIGHT: "active", ENROUTE: "active", INAIR: "active",   // v24120 — LANDED is short of InGate
   DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted",
   BOARDING: "boarding", GATECLOSED: "gateclosed"
 };
@@ -7257,7 +7257,7 @@ __name(slcFetchDay, "slcFetchDay");
 // Status arrives as a CSS class (flightStatus-InGate …) with a friendly
 // text; diverted legs are listed next to the recovery leg of the same
 // flight, and the class vocabulary is the same one MWAA uses.
-// v24117 — flightStatus-Landed is down and short of the gate; InGate is on stand.
+// v24120 — flightStatus-Landed is down and short of the gate; InGate is on stand.
 const RDU_STATUS = { INGATE: "arrived", LANDED: "landed", INAIR: "active", OUTGATE: "departed", DEPARTED: "departed", SCHEDULED: "scheduled", DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted", BOARDING: "boarding" };
 function rduCellTime(chunk, cls) {
   const m = chunk.match(new RegExp(`class="${cls}[^"]*"[^>]*><!--dtDateTime\\((\\d{4})-(\\d{2})-(\\d{2}),(\\d{2}):(\\d{2}):\\d{2}`));
@@ -7340,7 +7340,7 @@ function yxeStatus(txt) {
   if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — Landed is not at the gate (yhzStatus)
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay")) return "delayed";
   return neutralStatus(txt);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -7514,7 +7514,7 @@ function parseYqtStatus(text, cls) {
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — Landed is not at the gate (yhzStatus)
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("late") || s.includes("delay")) return "delayed";
   return neutralStatus(text);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -7881,7 +7881,7 @@ function yqxStatus(txt) {
   if (s.includes("final call") || s.includes("board")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — Landed is not at the gate (yhzStatus)
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay") || s.includes("late")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -8007,7 +8007,7 @@ function yygStatus(txt) {
   if (s.includes("boarding") || s.includes("final call")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — Landed is not at the gate (yhzStatus)
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay") || s.includes("late")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -8262,7 +8262,7 @@ function yxsStatus(txt, cls) {
   if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — Landed is not at the gate (yhzStatus)
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("late") || s.includes("delay")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -8359,7 +8359,7 @@ const YMM_STATUS = {
   "ON TIME": "ontime", "EARLY": "scheduled", "SCHEDULED": "scheduled", "EXPECTED": "expected",
   "DELAYED": "delayed", "LATE": "delayed",
   "CANCELLED": "cancelled", "CANCELED": "cancelled",
-  "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "landed",   // v24117 — see yhzStatus
+  "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "landed",   // v24120 — see yhzStatus
   "BOARDING": "boarding", "FINAL CALL": "final", "LAST CALL": "final",
   "GATE CLOSED": "gateclosed", "DIVERTED": "diverted"
 };
@@ -8374,7 +8374,7 @@ function ymmStatus(txt) {
   if (s.includes("final call") || s.includes("last call") || s.includes("board")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — Landed is not at the gate (yhzStatus)
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay") || s.includes("late")) return "delayed";
   if (s.includes("on time") || s.includes("expect")) return neutralStatus(s);   // v23968 — its own word
   if (s.includes("early") || s.includes("sched")) return "scheduled";
@@ -8650,7 +8650,7 @@ function yzfStatus(txt) {
   if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv")) return "arrived";
-  if (s.includes("land")) return landWord(s);   // v24117 — Landed is not at the gate (yhzStatus)
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("late") || s.includes("delay")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -8945,7 +8945,7 @@ const ZRH_AIRLINE_NAMES = { KM: "KM Malta Airlines" };
 // statusCode vocabulary seen live across two days; 200 "Rolling" is
 // off-blocks on a departure and the landing roll on an arrival, so it
 // splits by direction in zrhStatus. Unknown codes fall back to the text.
-// v24117 — 7 is "Landed" (statusTextEn on all 36 in the capture) and an
+// v24120 — 7 is "Landed" (statusTextEn on all 36 in the capture) and an
 // arrival's 200 is its landing roll: both are down and short of the stand,
 // "landed", not "arrived" (yhzStatus).
 const ZRH_STATUS = {
@@ -8953,7 +8953,7 @@ const ZRH_STATUS = {
   13: "boarding", 18: "delayed", 57: "scheduled", 90: "scheduled",
   201: "active", 202: "active"
 };
-// onStand (v24117): the row says the aeroplane is on its blocks some other
+// onStand (v24120): the row says the aeroplane is on its blocks some other
 // way (the first bag on the race track), which makes a Landed "arrived".
 function zrhStatus(code, text, dir, onStand) {
   const c = Number(code);
@@ -9027,7 +9027,7 @@ function zrhParseFeed(jsonText, dir, nowMs) {
       dir, number: `${iata}${fln}`,
       // easyJet rows come ICAO-form (EZS1220): that string IS the callsign.
       callSign: flc.length === 3 ? `${flc}${flnRaw}` : null,
-      // v24117 — Landed (7) stays on the row at the gate; the first bag on the
+      // v24120 — Landed (7) stays on the row at the gate; the first bag on the
       // race track (FBR, passed) says the aeroplane is on stand
       status: zrhStatus(r.statusCode, r.statusTextEn, dir, !isDep && pastTs(r.FBR, nowMs)),
       homeIata: "ZRH", homeIcao: "LSZH", homeName: "Zürich",
@@ -9082,7 +9082,7 @@ const IAH_FEED_KEY = "9ACB3B733BE94B11A03B6E84CA87E895";
 // not a delay: scheduled + revised, the AUS/YVR convention. A Departed
 // arrival is en route (the boards render it that way); a Landed
 // departure has reached the far end, "arrived" as ADB itself says (or,
-// since v24117, "landed" when the airline text does not say ARRIVED: the
+// since v24120, "landed" when the airline text does not say ARRIVED: the
 // boards read either one on a departure row as Departed).
 function iahStatus(r) {
   const s = String(r.status || "").toLowerCase();
@@ -9093,7 +9093,7 @@ function iahStatus(r) {
   if (/final call|last call/.test(s) || /final call|last call/.test(o)) return "final";
   if (s.includes("board") || /\bbrd\b|board/.test(o)) return "boarding";
   if (s.includes("depart")) return "departed";
-  // v24117 — the vendor says Landed for every row that is down; the airline
+  // v24120 — the vendor says Landed for every row that is down; the airline
   // text beside it (ARRIVED, InGate) is what says it reached the gate.
   if (s.includes("land") || s.includes("arriv")) {
     return (s.includes("arriv") || vendorOnStand(r)) ? "arrived" : landWord(o + " " + s);
@@ -9176,7 +9176,7 @@ __name(parseIahFeed, "parseIahFeed");
 // Departed, CX Canceled, DL Delayed, DV Diverted, BD Boarding, LC Last
 // Call, NT New Time, ON On Time (the default for every future flight).
 const MCO_AUTH_STATUS = {
-  AR: "arrived", LD: "landed", DP: "departed", CX: "cancelled", DL: "delayed",   // v24117 — LD Landed is short of the gate
+  AR: "arrived", LD: "landed", DP: "departed", CX: "cancelled", DL: "delayed",   // v24120 — LD Landed is short of the gate
   DV: "diverted", BD: "boarding", LC: "boarding", ON: "ontime"   // v23968 — On Time is its own word
 };
 // flymco.com's own airline table (the flightsEnrichmentData block in its
@@ -9326,7 +9326,7 @@ const JFK_GQL_ARR = "query GetArrivingFlights(\n  $arrivalAirport: String!\n  $a
 // Landed / Arrived / Cancelled; the list API says "On Time" and "En Route").
 const JFK_STATUS = {
   "ON TIME": "ontime", SCHEDULED: "scheduled", DELAYED: "delayed", DEPARTED: "departed",
-  "IN FLIGHT": "active", "EN ROUTE": "active", LANDED: "landed", ARRIVED: "arrived",   // v24117 — Landed is not Arrived
+  "IN FLIGHT": "active", "EN ROUTE": "active", LANDED: "landed", ARRIVED: "arrived",   // v24120 — Landed is not Arrived
   CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted"
 };
 // Every marketing carrier is its own row (TK12 IST is also TG9183, AV6634,
@@ -9519,7 +9519,7 @@ __name(jfkFetchList, "jfkFetchList");
 // and CORS-open. Recorded here so the decision stays visible.
 const SYD_TZ = "Australia/Sydney";
 // "On Time" stays scheduled — the boards derive early/delayed from the
-// revision. Landed is on the ground short of the gate, and since v24117 the
+// revision. Landed is on the ground short of the gate, and since v24120 the
 // boards keep it apart from Arrived (yhzStatus); Gate Open sits inside
 // boarding, and Final Call is FINAL CALL (v24083).
 const SYD_STATUS = {
@@ -9544,7 +9544,7 @@ function sydStatus(text) {
   if (/\bnot\b/.test(s)) return "scheduled";
   if (/\bdeparted\b/.test(s)) return "departed";
   if (/\barrived\b/.test(s)) return "arrived";
-  if (/\blanded\b/.test(s)) return "landed";   // v24117
+  if (/\blanded\b/.test(s)) return "landed";   // v24120
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(sydStatus, "sydStatus");
