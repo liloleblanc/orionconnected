@@ -526,8 +526,16 @@ test('/osky/put: a wanted box only, the wanted flights only, known fields checke
   const ttl = w.kv.puts.filter((p) => p.k === key).map((p) => p.ttl);
   assert.deepEqual(ttl, [180], 'kept 180 s');
   assert.ok([...w.kv.m.keys()].every((k) => k.startsWith('osky:')), 'nothing outside osky:* — never trk:v1, acmem or /fltrack/');
-  assert.equal(w.kv.puts.filter((p) => p.k.startsWith('osky:') && !['osky:relay', 'osky:wanted', key].includes(p.k)).length, 0,
-    'one KV write per put: the position, nothing else');
+  // v24115 — and the day's counts (osky:n:<day>, one small document): the
+  // proof of what OpenSky brought, counts only, never a flight or position
+  assert.equal(w.kv.puts.filter((p) => p.k.startsWith('osky:') && !p.k.startsWith('osky:n:') && !['osky:relay', 'osky:wanted', key].includes(p.k)).length, 0,
+    'one KV write of data per put: the position, nothing else');
+  const counts = w.kv.puts.filter((p) => p.k.startsWith('osky:n:'));
+  assert.ok(counts.every((p) => /^osky:n:\d{4}-\d{2}-\d{2}$/.test(p.k)), 'one counts document a day');
+  for (const p of counts) {
+    const d = JSON.parse(w.kv.m.get(p.k));
+    assert.ok(Object.entries(d).every(([k, v]) => /^(asked|found|puts)(:[A-Z]{3})?$/.test(k) && Number.isInteger(v)), 'counts only');
+  }
 
   // the heading only once OSKY_HEADING is "1"
   w.env.OSKY_HEADING = '1';
@@ -612,7 +620,9 @@ test('the heartbeat writes its report only on a change, or every 10 minutes: few
   // a write that fails (KV out of writes) never fails the heartbeat
   w.kv.failNext.put = 'osky:report';
   const r = await beat({ state: 'ready' }, t + 800e3);
-  assert.deepEqual(r.json, { on: false, stop_at: STOP_AT });
+  // v24115 — and how often to ask a box (oskyRefreshS): the relay own 120 s
+  // outside a test window
+  assert.deepEqual(r.json, { on: false, stop_at: STOP_AT, refresh_s: 120 });
 });
 
 test('/osky/status: public, counts and yes/no only, never the address, a key or a secret', async () => {
@@ -634,7 +644,7 @@ test('/osky/status: public, counts and yes/no only, never the address, a key or 
   assert.equal(s.json.relay_registered, true);
   assert.equal(s.json.stop_at, STOP_AT);
   assert.equal(s.json.wanted_boxes, 1);
-  assert.deepEqual(Object.keys(s.json.relay_report).sort(), ['at', 'calls_today', 'cap', 'hold_s', 'last_status', 'puts_today', 'state', 'stop_at']);
+  assert.deepEqual(Object.keys(s.json.relay_report).sort(), ['at', 'calls_today', 'cap', 'hold_s', 'last_status', 'puts_today', 'refresh_s', 'state', 'stop_at']);
   assert.equal(s.json.relay_report.calls_today, 12);
   assert.equal(s.json.relay_report.puts_today, 7);
   assert.equal(s.json.relay_report.state, 'ready');
@@ -979,6 +989,36 @@ test('identical boxes share one OpenSky call for 120 s; a new answer is put agai
   const t = fs.mkdtempSync(path.join(os.tmpdir(), 'osky-cache-'));
   fs.writeFileSync(path.join(t, 'relay.conf'), 'STOP_AT=2026-11-12T22:59:59Z\nCACHE_SECONDS=300\n');
   assert.equal(pyEval(`relay.TEST_MODE = True; print(relay.read_settings(${JSON.stringify(t)})['cache_s'])`), '120');
+});
+
+// v24115 — HOW OFTEN IS SET BY THE WORKER (oskyRefreshS, relay.py
+// _take_worker_refresh): in a test window a box is asked every 15 s, the relay
+// reports the refresh it took, and the Worker only plans boxes at that pace
+// once the relay says it runs it. The relay takes 10..120 s; the Worker never
+// asks under 30 s (a position read waits that long in KV edge caches).
+test('the Worker sets how often a box is asked: 30 s in a test window, reported back, within 10..120 s', PYT, async () => {
+  const fake = await fakeOpenSky();
+  const w = await fakeWorker({ OSKY_FOCUS: 'YQM', OSKY_FOCUS_UNTIL: '2099-01-01T00:00:00Z', OSKY_FOCUS_REFRESH_S: '15' });
+  await w.want();
+  const r = startRelay(fake, w);
+  try {
+    await until(() => w.pos(), 'the first put');
+    await until(() => w.report().refresh_s === 30, 'the relay reports the refresh it took (15 asked, 30 the floor)');
+    r.setClock(T0 + 29);
+    await rounds();
+    assert.equal(fake.statesCalls, 1, 'within 30 s: shared');
+    r.setClock(T0 + 31);
+    await until(() => fake.statesCalls === 2, 'a second call after 30 s, not 120');
+  } finally { await r.stop(); await fake.close(); await w.close(); }
+  const take = (v) => pyEval(`relay.TEST_MODE = True
+class D: pass
+d = D(); relay.Relay._take_worker_refresh(d, ${v}); print(d.worker_refresh)`);
+  assert.equal(take(5), '10', 'never under 10 s');
+  assert.equal(take(999), '120', 'never over 120 s');
+  assert.equal(take('None'), 'None', 'nothing from the Worker: relay.conf alone');
+  // outside a test window the Worker answers the relay own 120 s
+  const w2 = await fakeWorker();
+  try { assert.equal(w2.mod.oskyRefreshS(w2.env, Date.now()), 120); } finally { await w2.close(); }
 });
 
 test('a put the Worker did not take is put again from the same answer, with no new OpenSky call', PYT, async () => {

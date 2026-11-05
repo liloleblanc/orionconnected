@@ -11543,13 +11543,23 @@ async function handleOskyPos(request, env, url, now = Date.now()) {
   if (!FARARR_COORDS[ap] || !OSKY_RE_FLIGHT.test(f)) return answer({ error: "bad-request" }, 400);
   const digits = oskyDigits(f);
   const calls = [...new Set(String(q.get("cs") || "").toUpperCase().split(",").map((v) => v.trim()))]
-    .filter((v) => OSKY_RE_BOARD_CS.test(v) && oskyDigits(v) === digits).slice(0, 3);
+    .filter((v) => OSKY_RE_BOARD_CS.test(v) && oskyCsDigitsOk(v, digits)).slice(0, 3);
   const hq = String(q.get("hex") || "").trim().toLowerCase();
   const hex = OSKY_RE_ICAO.test(hq) ? hq : "";
   const prio = q.get("p") === "2" ? 2 : 1;
   const none = { on: true, stop_at: oskyIso(stopMs), credit: OSKY_CREDIT, ac: [] };
   const kv = oskyKv(env);
   if (!kv) return answer(none);
+  // v24115 — a test-window airport is told how often it is refreshed, once the
+  // relay says it runs that fast, so its boards ask as often (refresh_s)
+  let readTtl = OSKY_READ_TTL_S;
+  if (oskyFocusGroup(env, ap, now)) {
+    try {
+      const rep = await oskyGetJson(kv, "osky:report");
+      const rs = rep && Number.isInteger(rep.refresh_s) ? rep.refresh_s : 0;
+      if (rs >= 10 && rs < OSKY_RELAY_CACHE_S) { none.refresh_s = rs; readTtl = Math.min(OSKY_READ_TTL_S, rs); }
+    } catch (e) { /* the usual minute */ }
+  }
   const cache = typeof caches !== "undefined" && caches && caches.default ? caches.default : null;
   const ck = new Request(`https://osky-pos/v1/${ap}/${f}/${hex || "-"}/${calls.join(",") || "-"}/${prio}`);
   if (cache) {
@@ -11563,26 +11573,32 @@ async function handleOskyPos(request, env, url, now = Date.now()) {
       }
     } catch (e) { /* asked afresh */ }
   }
+  let seenCs = "";
   if (!hex) {
     // the callsign Flightradar24 saw today for this number (AC7754 flies as PVL7754)
     try {
       const rec = oskyParseObj(await kv.get(`acmem:v1:${f}`));
       const day = new Date(now).toISOString().slice(0, 10);
       const o = rec && Array.isArray(rec.obs) ? rec.obs.find((x) => x && x.d === day && typeof x.cs === "string") : null;
-      if (o && OSKY_RE_BOARD_CS.test(o.cs) && oskyDigits(o.cs) === digits && !calls.includes(o.cs)) calls.unshift(o.cs);
+      if (o && OSKY_RE_BOARD_CS.test(o.cs) && oskyCsDigitsOk(o.cs, digits)) { seenCs = o.cs; if (!calls.includes(o.cs)) calls.unshift(o.cs); }
     } catch (e) { /* the board's own callsigns */ }
   }
   let body = none;
   if (hex || calls.length) {
-    const key = await oskyBoardWant(env, kv, ap, hex ? "i:" + hex : "c:" + calls[0], prio, now);
-    const pos = key ? await oskyGetJson(kv, "osky:pos:" + key) : null;
+    // v24115 — one name a flight, the best evidence first: its transponder,
+    // the callsign Flightradar24 heard today, else the first the board sent
+    // (the operator name, JZA806 for AC8806). The relay follows at most four
+    // names a box (relay.py MAX_FILTER_VALUES), so two names would halve it.
+    const tags = hex ? ["i:" + hex] : ["c:" + (seenCs || calls[0])];
+    const key = await oskyBoardWant(env, kv, ap, tags, prio, now);
+    const pos = key ? await oskyGetJson(kv, "osky:pos:" + key, 30) : null;
     const hit = pos && oskyPick(pos.states, hex, calls, digits);
     if (hit) body = { ...none, ac: [oskyBoardAc(hit.s, hit.by, Math.floor(now / 1000))] };
   }
   if (cache) {
     try {
       await cache.put(ck, new Response(JSON.stringify(body), { headers: {
-        "Content-Type": "application/json", "Cache-Control": `public, max-age=${OSKY_READ_TTL_S}`, "X-Osky-At": String(now) } }));
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${readTtl}`, "X-Osky-At": String(now) } }));
     } catch (e) { /* the next screen asks KV */ }
   }
   return answer(body);
@@ -11731,9 +11747,10 @@ function oskyParseObj(v) {
 // For reads where a failure may safely look like "nothing there" (every
 // caller below refuses, or writes nothing, on null). oskyRegister reads
 // osky:relay itself, so a failed read there is a 503, never "absent".
-async function oskyGetJson(kv, key) {
+async function oskyGetJson(kv, key, cacheTtl) {
   try {
-    return oskyParseObj(await kv.get(key));
+    // v24115 — a position read may ask KV for its shortest edge cache (30 s)
+    return oskyParseObj(await (cacheTtl ? kv.get(key, { cacheTtl }) : kv.get(key)));
   } catch (e) {
     return null;
   }
@@ -11788,22 +11805,33 @@ function oskyLiveWanted(doc, now) {
       else continue;
       if (e.p && typeof e.p === "object" && e.p[tag] === 2) p[tag] = 2;
     }
-    if (Object.keys(f).length) out[oskyBoxKey(b)] = { box: b, f, p, c: oskyNum(e.c) || 0 };
+    if (Object.keys(f).length) {
+      out[oskyBoxKey(b)] = { box: b, f, p, c: oskyNum(e.c) || 0 };
+      // v24115 — the test window mark (oskyBoxPrio), with its end, kept only
+      // while the window is open
+      if (typeof e.z === "string" && /^[A-Z]{3}$/.test(e.z) && oskyNum(e.zUntil) !== null && e.zUntil > now) {
+        out[oskyBoxKey(b)].z = e.z;
+        out[oskyBoxKey(b)].zUntil = e.zUntil;
+      }
+    }
   }
   return out;
 }
 function oskyEntryExp(e) { return Math.max(0, ...Object.values(e.f)); }
 // A box's weight: the flights a gate is tracking first, then how many
 // flights one call serves.
-function oskyBoxPrio(e) {
+function oskyBoxPrio(e, now = Date.now()) {
   const tags = Object.keys(e.f);
-  return 10 * tags.filter((t) => e.p && e.p[t] === 2).length + tags.length;
+  // v24115 — a box of the test window (z, OSKY_FOCUS) outranks every other
+  // until the window ends (zUntil)
+  return (oskyZOn(e, now) ? 1000 : 0) + 10 * tags.filter((t) => e.p && e.p[t] === 2).length + tags.length;
 }
+function oskyZOn(e, now) { return !!(e && e.z && Number(e.zUntil) > now); }
 // The boxes in the order the relay should serve them: the heaviest first,
 // and of two as heavy the one opened first (c), so a new box never pushes
 // out one as heavy, and two cannot take each other's place in turn.
-function oskyBoxRank(live) {
-  return Object.keys(live).sort((x, y) => oskyBoxPrio(live[y]) - oskyBoxPrio(live[x]) || (live[x].c || 0) - (live[y].c || 0) || (x < y ? -1 : 1));
+function oskyBoxRank(live, now = Date.now()) {
+  return Object.keys(live).sort((x, y) => oskyBoxPrio(live[y], now) - oskyBoxPrio(live[x], now) || (live[x].c || 0) - (live[y].c || 0) || (x < y ? -1 : 1));
 }
 
 // "This box, these flights, for the next 10 minutes", stored as asked: the
@@ -11901,13 +11929,29 @@ const OSKY_RE_BOARD_CS = /^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/;
 
 // A flight's own digits: AC8890 and JZA8890 are both 8890.
 function oskyDigits(s) { return String(s || "").toUpperCase().replace(/\s+/g, "").replace(/^\D+/, "").replace(/\D+$/, ""); }
+// v24115 — a callsign is this flight by its digits: the same digits, or for
+// an operator that files the number with its leading digit dropped (Jazz:
+// AC8806 flies as JZA806; the OpenSky map listed a Jazz CRJ900 Toronto to
+// Philadelphia as JZA520 on 2026-11-05) the short form under that operator
+// only, never under the seller (ACA806 is Air Canada flight 806).
+const OSKY_SHORT_CS = new Set(["JZA"]);
+function oskyCsDigitsOk(cs, digits) {
+  const c = String(cs || "").toUpperCase().replace(/\s+/g, "");
+  const d = oskyDigits(c);
+  if (d === digits) return true;
+  return OSKY_SHORT_CS.has(c.slice(0, 3)) && digits.length === 4 && d === digits.slice(1);
+}
 
 // The airport's own box, or null for an airport the boards do not serve.
 function oskyAirportBox(code) {
   const c = FARARR_COORDS[String(code || "").toUpperCase()];
   if (!c) return null;
+  return oskyBoxAt(c[0], c[1]);
+}
+// The largest 1-credit box centred on a point.
+function oskyBoxAt(cLat, cLon) {
   const g = (v) => Math.round(v / OSKY_GRID_DEG) * OSKY_GRID_DEG;
-  const lat = Math.max(-80, Math.min(80, g(c[0]))), lon = g(c[1]);
+  const lat = Math.max(-80, Math.min(80, g(cLat))), lon = g(cLon);
   const k = Math.max(0.2, Math.cos(lat * Math.PI / 180));
   // half the height and half the width, in steps of 0.05 and rounded down,
   // so the box is never over 25 sq deg
@@ -11930,19 +11974,48 @@ function oskyBoxBudget(rep, now) {
   if (rep && Number.isInteger(rep.calls_today) && at <= now && now - at < 1800000 && Math.floor(at / 86400000) === day) {
     perHour = Math.max(0, cap - rep.calls_today) / Math.max(1, ((day + 1) * 86400000 - now) / 3600000);
   }
-  return Math.max(0, Math.min(OSKY_MAX_BOXES, Math.floor(perHour * OSKY_RELAY_CACHE_S / 3600 + 1e-9)));
+  // v24115 — at the refresh the relay says it uses (an older relay: 120 s)
+  const refresh = rep && Number.isInteger(rep.refresh_s) && rep.refresh_s >= 10 ? Math.min(OSKY_RELAY_CACHE_S, rep.refresh_s) : OSKY_RELAY_CACHE_S;
+  return Math.max(0, Math.min(OSKY_MAX_BOXES, Math.floor(perHour * refresh / 3600 + 1e-9)));
 }
 
 // A board's wish, planned: the box the airport shares or opens, and the
 // flight's one filter in it. Returns that box's key, or null when the relay
 // has no room for the flight (the board then keeps Flightradar24).
+// v24115 — THE TEST WINDOW (OSKY_FOCUS, OSKY_FOCUS_UNTIL). For a few days the
+// airports named come first: each its own box (a box follows four flights,
+// relay.py MAX_FILTER_VALUES, so two airports in one box would evict each
+// other), outranking every other box while the window is open and taking
+// another box place when there is no room, never one of their own. Other
+// airports get what is left. Their boxes are asked every OSKY_FOCUS_REFRESH_S
+// once the relay runs the code that takes it (oskyRefreshS). Counted per
+// airport (/feeds/status). The mark carries the end of the window (zUntil),
+// so the rank and the counts end by themselves at OSKY_FOCUS_UNTIL.
+const OSKY_FOCUS_GROUPS = {};
+const OSKY_FOCUS_CENTRE = {};
+function oskyFocus(env, now) {
+  const until = Date.parse(String((env && env.OSKY_FOCUS_UNTIL) || ""));
+  if (!(until > now)) return null;
+  const codes = String((env && env.OSKY_FOCUS) || "").toUpperCase().split(",").map((v) => v.trim()).filter((v) => /^[A-Z]{3}$/.test(v));
+  return codes.length ? new Set(codes) : null;
+}
+// The focus group an airport belongs to while the window is open, or "".
+function oskyFocusGroup(env, code, now) {
+  const f = oskyFocus(env, now);
+  const c = String(code || "").toUpperCase();
+  return f && f.has(c) ? (OSKY_FOCUS_GROUPS[c] || c) : "";
+}
+
 async function oskyBoardWant(env, kv, code, tag, prio, now) {
   const c = FARARR_COORDS[String(code || "").toUpperCase()];
-  const own = oskyAirportBox(code);
+  const fg = oskyFocusGroup(env, code, now);
+  const zUntil = fg ? Date.parse(String(env.OSKY_FOCUS_UNTIL)) : 0;
+  const own = fg && OSKY_FOCUS_CENTRE[fg] ? oskyBoxAt(OSKY_FOCUS_CENTRE[fg][0], OSKY_FOCUS_CENTRE[fg][1]) : oskyAirportBox(code);
   if (!c || !own || now >= oskyStopMs(env)) return null;
   const live = oskyLiveWanted(await oskyGetJson(kv, "osky:wanted"), now);
   let key = null, room = OSKY_SHARE_MARGIN_DEG;
-  for (const [k, e] of Object.entries(live)) {
+  // a test-window airport takes its own box (opened or marked below), never a share
+  for (const [k, e] of Object.entries(fg ? {} : live)) {
     const m = oskyInside(e.box, c[0], c[1]);
     if (m >= room) { room = m; key = k; }
   }
@@ -11951,33 +12024,37 @@ async function oskyBoardWant(env, kv, code, tag, prio, now) {
   if (!key) {
     key = oskyBoxKey(own);
     if (!live[key]) {
-      const keys = oskyBoxRank(live);
+      const keys = oskyBoxRank(live, now);
       if (keys.length >= await budget()) {
-        // no room: only a heavier wish takes the lightest box's place
+        // no room: only a heavier wish takes the lightest box's place (a box
+        // of the test window takes any other box's place, never another's)
         const low = keys[keys.length - 1];
-        if (!low || oskyBoxPrio(live[low]) >= 10 * (prio === 2 ? 1 : 0) + 1) return null;
+        if (!low || (fg ? oskyZOn(live[low], now) : oskyBoxPrio(live[low], now) >= 10 * (prio === 2 ? 1 : 0) + 1)) return null;
         delete live[low];
       }
       live[key] = { box: own, f: {}, p: {}, c: now };
     }
   }
   const e = live[key];
-  const had = e.f[tag];
-  if (had && had - now > (OSKY_WANT_TTL_S - OSKY_REWANT_S) * 1000 && (e.p[tag] === 2 || prio !== 2)) return key;
-  e.f[tag] = now + OSKY_WANT_TTL_S * 1000;
-  if (prio === 2) e.p[tag] = 2;
+  // the test-window mark, also on a box that was open before the window
+  const remark = !!fg && (e.z !== fg || e.zUntil !== zUntil);
+  if (fg) { e.z = fg; e.zUntil = zUntil; }
+  const tagList = Array.isArray(tag) ? tag : [tag];
+  const fresh = (t) => e.f[t] && e.f[t] - now > (OSKY_WANT_TTL_S - OSKY_REWANT_S) * 1000 && (e.p[t] === 2 || prio !== 2);
+  if (!remark && tagList.every(fresh)) return key;
+  for (const t of tagList) { e.f[t] = now + OSKY_WANT_TTL_S * 1000; if (prio === 2) e.p[t] = 2; }
   // four flights a box: the tracked ones first, then the most recently wanted
   const tags = Object.keys(e.f).sort((x, y) => (e.p[y] === 2) - (e.p[x] === 2) || e.f[y] - e.f[x] || (x < y ? -1 : 1)).slice(0, OSKY_MAX_FILTERS);
   e.f = Object.fromEntries(tags.map((t) => [t, e.f[t]]));
   e.p = Object.fromEntries(tags.filter((t) => e.p[t] === 2).map((t) => [t, 2]));
   // and never more boxes than the relay has room for now (the budget falls
   // as the day's calls are spent): the lightest go first
-  const keys = oskyBoxRank(live).slice(0, Math.min(OSKY_MAX_BOXES, await budget()));
+  const keys = oskyBoxRank(live, now).slice(0, Math.min(OSKY_MAX_BOXES, await budget()));
   try {
     await kv.put("osky:wanted", JSON.stringify({ v: 1, boxes: Object.fromEntries(keys.map((k) => [k, live[k]])) }),
       { expirationTtl: OSKY_WANT_TTL_S });
   } catch (err) { /* the next answer asks again */ }
-  return keys.includes(key) && e.f[tag] ? key : null;
+  return keys.includes(key) && tagList.some((t) => e.f[t]) ? key : null;
 }
 
 // This flight's aircraft among a box's kept positions: by its icao24 when the
@@ -11990,8 +12067,8 @@ function oskyPick(states, hex, calls, digits) {
     if (!s || typeof s !== "object" || oskyNum(s.lat) === null || oskyNum(s.lon) === null) continue;
     const cs = typeof s.callsign === "string" ? s.callsign : "";
     let b = null;
-    if (hex && s.icao24 === hex && (!cs || oskyDigits(cs) === digits)) b = "icao24";
-    else if (cs && calls.includes(cs) && oskyDigits(cs) === digits) b = "callsign";
+    if (hex && s.icao24 === hex && (!cs || oskyCsDigitsOk(cs, digits))) b = "icao24";
+    else if (cs && calls.includes(cs) && oskyCsDigitsOk(cs, digits)) b = "callsign";
     if (b && (!best || at(s) > at(best))) { best = s; by = b; }
   }
   return best ? { s: best, by } : null;
@@ -12117,18 +12194,33 @@ async function oskyReport(env, kv, url, now, stopMs) {
     hold_s: oskyInt(q.get("hold"), 0, 172800),
     state: OSKY_RE_STATE.test(st) ? st : null,
     puts_today: oskyInt(q.get("puts"), 0, 100000),
-    stop_at: OSKY_RE_ISO.test(stop) ? stop : null
+    stop_at: OSKY_RE_ISO.test(stop) ? stop : null,
+    // v24115 — the relay own refresh, from a relay that takes ours (absent:
+    // an older relay, which asks each box every 120 s)
+    refresh_s: oskyInt(q.get("refresh"), 0, 3600)
   };
   const old = await oskyGetJson(kv, "osky:report");
   const age = old && typeof old.at === "string" ? now - Date.parse(old.at) : NaN;
-  const same = !!old && ["state", "cap", "last_status", "stop_at"].every((k) => old[k] === rep[k])
+  const same = !!old && ["state", "cap", "last_status", "stop_at", "refresh_s"].every((k) => old[k] === rep[k])
     && (old.hold_s > 0) === (rep.hold_s > 0);
   if (!(same && age >= 0 && age < OSKY_REPORT_EVERY_S * 1000)) {
     try {
       await kv.put("osky:report", JSON.stringify({ at: oskyIso(now), ...rep }), { expirationTtl: OSKY_REPORT_TTL_S });
     } catch (e) { /* counts only: the heartbeat still answers */ }
   }
-  return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs) });
+  return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs), refresh_s: oskyRefreshS(env, now) });
+}
+
+// v24115 — HOW OFTEN THE RELAY ASKS A BOX, set here and not on the server: the
+// relay takes it from every heartbeat (relay.py _take_worker_refresh, within
+// 10..120 s). In the test window (OSKY_FOCUS) it is OSKY_FOCUS_REFRESH_S (15 s:
+// two boxes every 15 s is 11,520 calls a day, inside the relay 12,000 and the
+// licence 14,400); otherwise the relay own 120 s.
+function oskyRefreshS(env, now) {
+  if (!oskyFocus(env, now)) return OSKY_RELAY_CACHE_S;
+  const v = Number(env && env.OSKY_FOCUS_REFRESH_S);
+  // never under 30 s: a position read waits at least that long in KV edge caches
+  return Number.isFinite(v) && v > 0 ? Math.max(30, Math.min(OSKY_RELAY_CACHE_S, Math.round(v))) : 30;
 }
 
 async function oskyWanted(kv, now) {
@@ -12223,7 +12315,59 @@ async function oskyPut(env, kv, request, now, stopMs) {
   }
   await kv.put("osky:pos:" + oskyBoxKey(b), JSON.stringify({ at: oskyIso(now), time, box: b, credit: OSKY_CREDIT, states }),
     { expirationTtl: OSKY_POS_TTL_S });
+  // v24115 — what OpenSky brought, counted (/feeds/status): each flight the
+  // boards named in this box, found in the answer or not, overall and per
+  // test-window airport. One small document a day, so one more write a put.
+  try {
+    const day = new Date(now).toISOString().slice(0, 10);
+    const named = Object.keys(want.f).length, found = Math.min(named, states.length);
+    const doc = oskyParseObj(await kv.get("osky:n:" + day)) || {};
+    const add = (k, by) => { doc[k] = (Number.isInteger(doc[k]) ? doc[k] : 0) + by; };
+    add("asked", named); add("found", found); add("puts", 1);
+    if (oskyZOn(want, now)) { add("asked:" + want.z, named); add("found:" + want.z, found); }
+    await kv.put("osky:n:" + day, JSON.stringify(doc), { expirationTtl: 8 * 86400 });
+  } catch (e) { /* counts only */ }
   return oskyJson({ stored: states.length });
+}
+
+// v24115 — THE PAID FEEDS, COUNTED. A position bought and not shown is money
+// spent for nothing, and nothing recorded how many positions Flightradar24 or
+// OpenSky actually brought. One small counter a day per feed and outcome
+// (fr24: pos / empty answers; osky: flights asked / found per box answer),
+// kept 8 days and read back at /feeds/status. Counts only: never a flight,
+// a position or a key. A lost increment under a race undercounts by one.
+async function feedCount(kv, feed, day, what, by = 1) {
+  if (!kv || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !(by > 0)) return;
+  // OpenSky keeps to its own osky:* keys (tests/opensky-relay.test.js)
+  const key = feed === "osky" ? `osky:n:${what}:${day}` : `feeds:n:${feed}:${what}:${day}`;
+  const cur = Number(await kv.get(key)) || 0;
+  await kv.put(key, String(cur + by), { expirationTtl: 8 * 86400 });
+}
+async function feedStatus(env, now) {
+  const kv = env && env.FIDS_LIVE_FLIGHTS;
+  const days = [0, 1].map((d) => new Date(now - d * 86400000).toISOString().slice(0, 10));
+  const num = async (k) => (kv ? Number(await kv.get(k)) || 0 : 0);
+  const out = { counts_utc_day: {} };
+  for (const day of days) {
+    let o = null;
+    try { o = kv ? oskyParseObj(await kv.get("osky:n:" + day)) : null; } catch (e) { o = null; }
+    o = o || {};
+    const n = (k) => (Number.isInteger(o[k]) ? o[k] : 0);
+    const groups = {};
+    for (const k of Object.keys(o)) {
+      const m = /^asked:([A-Z]{3})$/.exec(k);
+      if (m) groups[m[1]] = { flights_asked: n(k), flights_found: n("found:" + m[1]) };
+    }
+    out.counts_utc_day[day] = {
+      fr24: { credits_used: await num(`fr24:used:${day}`), answers_with_position: await num(`feeds:n:fr24:pos:${day}`),
+              answers_empty: await num(`feeds:n:fr24:empty:${day}`), daily_budget: Number(env && env.FR24_DAILY_BUDGET) || null },
+      opensky: { box_answers: n("puts"), flights_asked: n("asked"), flights_found: n("found") }
+    };
+    if (Object.keys(groups).length) out.counts_utc_day[day].opensky.test_window = groups;
+  }
+  const f = oskyFocus(env, now);
+  out.opensky_test_window = f ? { airports: [...f], until: String(env.OSKY_FOCUS_UNTIL), refresh_s: oskyRefreshS(env, now) } : null;
+  return out;
 }
 
 // Counts and yes/no answers only: never the address (it is compared with the
@@ -12253,7 +12397,9 @@ async function oskyStatus(env, kv, now, stopMs) {
       last_status: n(rep.last_status),
       hold_s: n(rep.hold_s),
       puts_today: n(rep.puts_today),
-      stop_at: typeof rep.stop_at === "string" && OSKY_RE_ISO.test(rep.stop_at) ? rep.stop_at : null
+      stop_at: typeof rep.stop_at === "string" && OSKY_RE_ISO.test(rep.stop_at) ? rep.stop_at : null,
+      // v24115 — how often the relay asks each box (s), null from an older relay
+      refresh_s: n(rep.refresh_s)
     } : null
   });
 }
@@ -13249,6 +13395,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               // Cool off for 5 minutes rather than for the day.
               try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
             }
+            // v24115 — what the paid feed brought, counted (/feeds/status)
+            try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
             if (_fr.ok) {
               const _p = _rows[0];
               if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
@@ -13459,6 +13607,11 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       out.at = new Date().toISOString();
       return jsonResponse(out, 200, origin);
+    }
+    // v24115 — PUBLIC, COUNTS ONLY: what each paid feed brought today and
+    // yesterday (feedStatus)
+    if (path === "/feeds/status") {
+      return jsonResponse(await feedStatus(env, Date.now()), 200, origin);
     }
     if (path === "/health") {
       return jsonResponse({ status: "ok", version: "218" }, 200, origin);
@@ -14349,6 +14502,11 @@ export {
   oskyBoardWant,
   oskyPick,
   oskyOriginOk,
+  oskyRefreshS,
+  oskyFocus,
+  oskyFocusGroup,
+  oskyCsDigitsOk,
+  feedStatus,
   handleOskyPos,
   yhzCellText,
   yhzParseBoard,

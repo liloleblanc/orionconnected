@@ -103,7 +103,7 @@ const FNS = [
   '_gateLegGone', '_gateFamily', '_gateRowKey', '_gateRawStatus', '_gateRawLanded', '_gateRawAirborne', '_gatePushLeft',
   '_gateOutboundAtGate', '_gateTodayReg', '_gateIsProp', '_gateMinTurnMs', '_gateDepSchedTs',
   '_gateAcFamily', '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn',
-  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnedByPattern', '_gateTurnConsumed', '_gateLandedAt',
+  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnedByPattern', '_gateTurnConsumed', '_gateLandedAt', '_gateLandedInfo', '_gateSeenLand',
   '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateFeedKept', '_gateInboundForDeparture',
   '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', 'adbStatus',
@@ -161,6 +161,7 @@ function engine(ctx) {
   const gates = ctx.gates || { YQM };
   const src = [
     lineSource('var _GATE_DOWN_SEEN = {};'),
+    lineSource('var _GATE_ARR_UP = '),
     lineSource('var _GATE_DEPLANE_MS = '),
     lineSource('var _GATE_DEP_SEEN = '),
     lineSource('var _GATE_SEEN_KEY = '),

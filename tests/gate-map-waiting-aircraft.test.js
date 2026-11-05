@@ -330,8 +330,10 @@ test('parked is evidence: the feed\'s own words, an actual time — never the cl
   const gone = lift('_gateLegGone', [], []);
   const raw = lift('_gateRawStatus', [], []);
   const rawLanded = new Function('_gateRawStatus', 'return (' + fnSource('_gateRawLanded') + ')')(raw);
-  const landedAt = new Function('_gateLegGone', '_gateRawLanded', 'adbTs', '_GATE_DOWN_SEEN', '_gateRowKey',
-    'return (' + fnSource('_gateLandedAt') + ')')(gone, rawLanded, (v) => Date.parse(v), {}, lift('_gateRowKey', [], []));
+  // v24115 — the time now comes with its evidence (_gateLandedInfo)
+  const landedAt = new Function('_gateLegGone', '_gateRawLanded', 'adbTs', '_GATE_DOWN_SEEN', '_gateRowKey', '_GATE_ARR_SEEN',
+    'var _GATE_ARR_UP = {}, _GATE_LAND_FIRST = {};\n' + fnSource('_gateLandedInfo') + '\n' + fnSource('_gateSeenLand')
+    + '\nreturn (' + fnSource('_gateLandedAt') + ')')(gone, rawLanded, (v) => Date.parse(v), {}, lift('_gateRowKey', [], []), { rows: {} });
   assert.equal(landedAt({ status: 'arrived', _stInferred: false, _revTs: T - 10 * 60000 }, T), T - 10 * 60000, 'the feed says it landed');
   assert.equal(landedAt({ status: 'arrived', _stInferred: true, _sortTs: T - 40 * 60000 }, T), 0, 'the clock says it landed: not a landing');
   assert.equal(landedAt({ status: 'delayed', _actualArrTime: '2026-09-27T19:50:00Z' }, T), Date.parse('2026-09-27T19:50:00Z'));

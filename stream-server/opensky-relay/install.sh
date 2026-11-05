@@ -73,7 +73,7 @@ main() {
   local RELAY_URL="https://raw.githubusercontent.com/liloleblanc/orionconnected/main/stream-server/opensky-relay/relay.py"
   # The relay.py this installer was written with (tests/opensky-relay.test.js
   # fails when it drifts). A download that does not match is never installed.
-  local RELAY_SHA256="892931a98aeae51e9b7d609fa8fd78cadf70676b93f3024f5a0c611f7e3b4bdc"
+  local RELAY_SHA256="ba43690776ef81ba64969df74f991094164df81235c22c7fe133f63551370ba7"
 
   install -d -m 0755 -o root -g root /usr/local/lib/opensky-relay
   write_common

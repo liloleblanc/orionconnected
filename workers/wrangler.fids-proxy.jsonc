@@ -123,7 +123,17 @@
     // at most 40 days at a time and before it is reached: the relay takes a
     // later date from its heartbeat by itself. It must stay a whole UTC date
     // like this one; a value that cannot be read is a stop (410 everywhere).
-    "OSKY_STOP_AT": "2026-11-12T22:59:59Z"
+    "OSKY_STOP_AT": "2026-11-12T22:59:59Z",
+    // v24115 — THE TEST WINDOW (oskyFocus): OpenSky first for these airports,
+    // each in its own box, ahead of every other airport. It ends by itself at
+    // the time below, Sunday 8 Nov 2026 at midnight Atlantic; empty either one
+    // to end it now.
+    "OSKY_FOCUS": "YQM,YHZ,YOW",
+    "OSKY_FOCUS_UNTIL": "2026-11-09T04:00:00Z",
+    // and how often the relay asks each of their boxes, in seconds (30..120),
+    // once the relay runs the code that takes it (oskyRefreshS): three boxes
+    // every 30 s is 8,640 calls a day, inside the relay 12,000
+    "OSKY_FOCUS_REFRESH_S": "30"
   },
 
   // ── CRON REMOVED 2026-09-10 ─────────────────────────────────────────────
