@@ -13577,8 +13577,13 @@ function renderMobileGateHtml(ctx) {
       var _effArrTs = (_arrRevTs && _arrRevTs > _arrTs) ? _arrRevTs : _arrTs;
       var _minsToArr = _effArrTs ? Math.round((_effArrTs - Date.now()) / 60000) : 0;
       var _etaStr = '';
-      var _onStand = (_inb.status === 'arrived' || _inb.status === 'landed');
+      // v24120 — At the gate only on its blocks (fidsInboundOnStand). It used
+      // to say At the gate for a bare landed too; down and still taxiing it
+      // now says Landed, in the same green.
+      var _inbDown = fidsInboundHasArrived(_inb, Date.now());
+      var _onStand = _inbDown && fidsInboundOnStand(_inb);
       if (_onStand) _etaStr = TL('atGateLbl');
+      else if (_inbDown) _etaStr = SL('landed');
       else if (_minsToArr > 0 && _minsToArr < 1440)
         _etaStr = _minsToArr >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(_minsToArr/60) + 'h ' + (_minsToArr%60) + 'm') : (TL('arrivesIn') + ' ' + _minsToArr + ' min');
       // v23938 — the code through _dispIata like every other chip: the feed's
@@ -13608,7 +13613,7 @@ function renderMobileGateHtml(ctx) {
         +   '<div style="' + FS.value + 'color:' + T.ink + ';">' + TL('from') + ' ' + _cityUnit(_fromDisplay) + '</div>'
         +   '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px;">'
         +     '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_inb.flight || '') + '</span>'
-        +     (_etaStr ? '<span style="' + FS.body + 'color:' + (_onStand ? (_lt ? '#0e7c4a' : '#1bbf74') : T.accent) + ';">' + _etaStr + '</span>' : '')
+        +     (_etaStr ? '<span style="' + FS.body + 'color:' + (_inbDown ? (_lt ? '#0e7c4a' : '#1bbf74') : T.accent) + ';">' + _etaStr + '</span>' : '')
         +   '</div>'
         +   _mTelem
         +   '<div class="g8-inb-map" id="gateMapBox" style="height:220px;margin-top:12px;border-radius:10px;overflow:hidden;"></div>'
@@ -15304,8 +15309,9 @@ function _buildV2AircraftCol(ctx, vars) {
     // On the stand, or still rolling? ADB's 'arrived' is on-block and
     // _actualArrTime is the gate time; a bare 'landed', or ADS-B reporting
     // wheels-on-ground before the status catches up, is only touchdown.
-    var _inbSt2 = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
-    var _inbOnStand = _inbArrivedV2 && (_inbSt2 === 'arrived' || !!inboundFlight._actualArrTime);
+    // v24120 — the one test, fidsInboundOnStand: a landed row with a time is
+    // still only touchdown.
+    var _inbOnStand = _inbArrivedV2 && fidsInboundOnStand(inboundFlight);
     _inbLine =
         '<div class="v2-inbound' + (_inbArrivedV2 ? ' is-arrived' : '') + '">'
       +   '<div class="v2-inbound-lbl">'
@@ -16411,10 +16417,11 @@ function _buildV2MapCol(ctx, vars) {
       // ON-BLOCK and _actualArrTime is the gate time, so that is at-the-gate;
       // a bare 'landed', or ADS-B reporting wheels down before the status
       // catches up, is touchdown and still taxiing.
+      // v24120 — the one on-stand test (fidsInboundOnStand): a bare landed now
+      // reaches here as landed, and its time is the touchdown, not the gate.
       var _mcOnStand = false;
       try {
-        var _mcRawSt = String(_ib.status || '').replace(/[\s_-]+/g, '').toLowerCase();
-        _mcOnStand = (_mcRawSt === 'arrived' || !!_ib._actualArrTime);
+        _mcOnStand = fidsInboundOnStand(_ib);
       } catch (e) {}
       // v23538 — THE HEADER NEVER MOVES.
       // then: at
@@ -16447,8 +16454,15 @@ function _buildV2MapCol(ctx, vars) {
           _mcEvtStr = _ibFmtT(_mcLand.t);
         } else if (_mcLand.by === 'cold') {
           _mcEvtStr = '';   // down, at a time nobody gave: the sentence without a clock
-        } else {
+        } else if (_mcOnStand) {
           _mcEvtStr = _ibArrRevStr || _ibArrSchedStr || '';
+        } else {
+          // v24120 — still rolling: the sentence says Landed at {t}, so the
+          // time is one the feed gave for this arrival (its actual, estimate
+          // or revision), never the bare schedule. Sea-Tac keeps the schedule
+          // on a landed row, and AC8806 would have read landed at 6:22pm, its
+          // scheduled minute. No such time: Landed and taxiing.
+          _mcEvtStr = _ibRevTs ? _ibFmtT(_ibRevTs) : '';
         }
       }
       // v23935 — the instant this card's day line is read from: the time it
@@ -16467,9 +16481,12 @@ function _buildV2MapCol(ctx, vars) {
       // v24012 — the same facts for the centre deck's overview card
       // (_gateCardHtml): the flight, where it comes from, the time this card
       // prints first and the word it prints, so the two never disagree.
+      // v24120 — down but not on its blocks, this card says Landed and
+      // taxiing, so the overview says Landed, not Arrived.
       try {
         window._gateInbFacts = { flight: String(_ibFltCompact || ''), city: String(_origCity || ''),
-          code: _origIata ? String(_dispIata(_origIata)) : '', ts: Number(_ibShownTs) || 0, st: String(_stKey || '') };
+          code: _origIata ? String(_dispIata(_origIata)) : '', ts: Number(_ibShownTs) || 0,
+          st: (_stKey === 'arrived' && !_mcOnStand) ? 'landed' : String(_stKey || '') };
       } catch (eIF) { window._gateInbFacts = null; }
       // v23720 — THE EVENT LEADS, AND EACH LANGUAGE CARRIES ITS OWN CLOCK.
       //
@@ -17663,7 +17680,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24119" src="/textures/gate-sky-shelf.mp4?v=24119" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17707,7 +17724,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24119" src="/textures/gate-sky-shelf.mp4?v=24119" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18548,8 +18565,8 @@ function uxgGateHtml(ctx) {
       || (inboundFlight.status === 'landed' || inboundFlight.status === 'arrived');
     // Same on-stand test as the v2 rail: 'arrived' is on-block, a bare
     // 'landed' is only touchdown.
-    var _inbStG8 = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
-    var _inbOnStandG8 = inArrived && (_inbStG8 === 'arrived' || !!inboundFlight._actualArrTime);
+    // v24120 — the one test, fidsInboundOnStand.
+    var _inbOnStandG8 = inArrived && fidsInboundOnStand(inboundFlight);
     var inDelayed = inboundFlight.upd && (inboundFlight.status === 'delayed');
 
     // Inbound departure time - convert to destination airport timezone
@@ -18596,7 +18613,8 @@ function uxgGateHtml(ctx) {
     }
 
     var inStBadge = '';
-    if (inArrived) inStBadge = '<div class="g8-inb-status">' + SL('arrived') + '</div>';
+    // v24120 — Landed until it is on its blocks, then Arrived
+    if (inArrived) inStBadge = '<div class="g8-inb-status">' + SL(_inbOnStandG8 ? 'arrived' : 'landed') + '</div>';
     else if (inDelayed) inStBadge = '<div class="g8-inb-status delayed">' + SL('delayed') + '</div>';
     else if (inboundFlight.status === 'active' || inboundFlight.status === 'en-route' || inboundFlight.status === 'ontime' || inboundFlight.status === 'early') inStBadge = '<div class="g8-inb-status enroute">' + SL('active') + '</div>';
     else if (inboundFlight.status === 'scheduled' || inboundFlight.status === 'expected') inStBadge = '<div class="g8-inb-status scheduled">' + SL(inboundFlight.status) + '</div>';
@@ -18938,7 +18956,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24119" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24120" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35858,7 +35876,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24119';
+var FIDS_BUILD_TAG = 'v24120';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38882,6 +38900,38 @@ function fidsInboundHasArrived(inboundFlight, nowTs) {
   var status = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
   return status === 'arrived' || status === 'landed';
 }
+// v24120 — ON THE STAND, NOT ONLY DOWN. Of an inbound that is down
+// (fidsInboundHasArrived), is it on its blocks? The word arrived is; so is an
+// actual arrival time beside any other word, as the three inbound panels (the
+// Your Aircraft card, the v2 rail, the g8 layout) have always read it; the
+// phone gate now reads it the same way. The word landed is not, even with a
+// time: that time is the touchdown (Heathrow writes it as Landed 05:09), and
+// the aeroplane is still rolling out or taxiing until the row says Arrived.
+// Where an airport keeps writing Landed at the gate but shows the gate some
+// other way (a gate time, the first bag), the worker turns it into arrived
+// (vendorOnStand in workers/fids-proxy.js). Sea-Tac, 2026-11-05 02:10Z:
+// AC8806 at S1A said only Landed, and the card read Arrived at the gate at its
+// scheduled minute while the map had the jet on the runway. The card now says
+// Landed and taxiing (acLandedTaxi, acLandedTaxiNoTime) until it is arrived.
+// v24116 — AND THE MAP OWN EVIDENCE. Sea-Tac never writes Arrived: its rows
+// say Landed until they leave the list, so the card would read Landed and
+// taxiing long after the map had parked the jet. A landed inbound is at its
+// gate once this page saw it get there: two live fixes stopped at our field
+// (_GATE_PARKED, the paid feeds) or the taxi to its stand run to its end
+// (_gateTaxi, flight-checked), so the card and the map say the same thing.
+function fidsInboundOnStand(inb) {
+  if (!inb) return false;
+  var s = String(inb.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (s === 'landed') {
+    try {
+      if (typeof _GATE_PARKED !== 'undefined' && typeof _gateRowKey === 'function' && _GATE_PARKED[_gateRowKey(inb)]) return true;
+      var tx = (typeof _gateTaxi !== 'undefined') ? _gateTaxi : null;
+      if (tx && tx.on && tx.done && tx.fl && tx.fl === String(inb.flight || '')) return true;
+    } catch (e) {}
+    return false;
+  }
+  return s === 'arrived' || !!inb._actualArrTime;
+}
 // v23925 — THE BOARDING SIGN'S STATUS FLANKS, FROM THE FLIGHT'S OWN ROW.
 // Lifted out of uxgGateHtml's _boardWelcomeStripHtml unchanged except for
 // the last rule, so it can be run on its own. The flanks answer "is it on
@@ -40271,7 +40321,10 @@ function _gcCloseLabel(info, frF) {
 // The status a time carries, from the word its source gave, or '' (none):
 // ok = On time / Early / Arrived, amb = Delayed, red = Cancelled. En route is
 // a status too, in the plain ink. Scheduled and Expected say nothing.
+// v24120 — and Landed (down, still taxiing: the Your Aircraft card) in the
+// same green as Arrived.
 var _GC_STATUS = { ontime: ['ontime', 'ok'], early: ['early', 'ok'], arrived: ['arrived', 'ok'],
+  landed: ['landed', 'ok'],
   delayed: ['delayed', 'amb'], cancelled: ['cancelled', 'red'], enroute: ['active', 'plain'] };
 
 function _gcRow(kind, glyph, label, sub, ts, tz, st, dw, frF) {
@@ -41133,11 +41186,12 @@ function fidsAdbStatusKey(value) {
       'departed','delayed','active','arrived','cancelled','diverted','cancelled'][value] || 'scheduled';
   }
   var k = String(value || '').replace(/[\s_-]+/g, '').toLowerCase();
+  // v24120 — landed stays landed: down, not on the stand (see adbStatus)
   var map = {
     unknown:'scheduled', expected:'scheduled', enroute:'active',
     checkin:'scheduled', boarding:'boarding', gateclosed:'gateclosed',
     departed:'departed', delayed:'delayed', approaching:'active',
-    arrived:'arrived', landed:'arrived', canceled:'cancelled',
+    arrived:'arrived', landed:'landed', canceled:'cancelled',
     cancelled:'cancelled', diverted:'diverted',
     canceleduncertain:'cancelled', cancelleduncertain:'cancelled'
   };
@@ -42964,7 +43018,9 @@ function _adbClaimAheadMs(list, mode) {
 function _adbClaimWithheld(f, mode, st) {
   var raw = String((f && f.status) || '').replace(/[\s_-]+/g, '').toLowerCase();
   if (!_adbHappenedWord(raw, mode)) return false;
-  return st !== (mode === 'dep' ? 'departed' : 'arrived');
+  // v24120 — an arrival row believed keeps its own word, landed or arrived
+  if (mode !== 'dep') return st !== 'arrived' && st !== 'landed';
+  return st !== 'departed';
 }
 function adbStatus(f, mode, schedTs, nowTs, aheadMs) {
   const raw=String(f.status||'').replace(/[\s_-]+/g,'').toLowerCase();
@@ -42992,9 +43048,16 @@ function adbStatus(f, mode, schedTs, nowTs, aheadMs) {
   // FOR that departure, and keeps saying it until "Departed": four rows on
   // 2026-11-02, 13 to 25 minutes before they left, and the board said Departed
   // on flights still at their gates.
+  // v24120 — and on an arrival row the two words stay apart. Landed is the
+  // aeroplane down and still rolling or taxiing, Arrived is it on its blocks:
+  // Sea-Tac said only Landed for AC8806 at S1A, and folding it into arrived
+  // put Arrived at the gate on the card while the map had the jet on the
+  // runway. Both are down for every reader (fidsInboundHasArrived,
+  // _gateRawLanded, the claim margins above); only arrived, or an actual time
+  // beside a word that is not Landed, is on the stand (fidsInboundOnStand).
   if(raw==='arrived'||raw==='landed'){
     if(mode==='dep'){ if(!_evAhead(f.departure,-15*60000))return 'departed'; }
-    else if(!_evAhead(f.arrival,_aheadMs))return 'arrived';
+    else if(!_evAhead(f.arrival,_aheadMs))return raw;
   }
   if(raw==='enroute'||raw==='approaching'||raw==='active'||raw==='departed'){
     if(mode!=='dep')return 'active';
@@ -43107,9 +43170,12 @@ function adbStatusInferred(f, st) {
 // v23925 — 'final' ranks with finalcall: Moncton's "Final call" now arrives as
 // 'final' (it used to be folded into 'boarding'), and at rank 0 a boarding
 // copy of the same departure would have won the de-dup over it.
+// v24120 — landed ranks between active and arrived: of two copies of one
+// arrival, the one that says it is on its blocks knows the most. (Departed
+// shares its rank; a departure row is never landed, adbStatus.)
 var _ROW_STATUS_RANK = {
   scheduled: 0, ontime: 0, expected: 0, early: 1, delayed: 1, boarding: 2,
-  gateclosed: 3, finalcall: 3, final: 3, active: 4, departed: 5, arrived: 6,
+  gateclosed: 3, finalcall: 3, final: 3, active: 4, departed: 5, landed: 5, arrived: 6,
   diverted: 7, cancelled: 8
 };
 function _rowStatusRank(s) {
@@ -46298,6 +46364,7 @@ function _mobileBuildContext(f, isDep) {
     if (f.status === 'early')    stTxt = `${SLbi('early')} · ${_upd}`;
     if (f.status === 'departed') stTxt = `${SLbi('departed')} · ${_upd}`;
     if (f.status === 'arrived')  stTxt = `${SLbi('arrived')} · ${_upd}`;
+    if (f.status === 'landed')   stTxt = `${SLbi('landed')} · ${_upd}`;   // v24120 — Landed, with its time
   }
 
   // Hide-prefix toggle from airport config / user customize — same as desktop
@@ -51876,29 +51943,281 @@ function _taxiRunway(g, rw) {
   return { T: T, u: [ux, uy], L: L, on: on, hdg: (Math.atan2(ux, uy) * 180 / Math.PI + 360) % 360 };
 }
 // Round the corners of a polyline (metres) so the nose turns through a bend
-// instead of on the spot: a quadratic through each vertex, `r` metres either
-// side (never more than 45% of either leg).
+// instead of on the spot.
+// v24120 — TURNS, NOT PIVOTS. Each corner was a quadratic `r` metres either
+// side, never more than 45% of either leg, and OpenStreetMap splits a taxiway
+// into legs of 1 to 5 m (the runway exit point sits metres from its node), so
+// most corners kept a radius of 1 to 5 m: Seattle, stand S1A off 16L, turned
+// 83 degrees within 7 m of path, then a 46 degree S-bend in 11 m, then 83
+// degrees in 4 m on to the stand, each at the 3 m/s floor. Now, however finely
+// the line is split:
+//   1. wiggles under 1.5 m go (Douglas-Peucker on the drawn line);
+//   2. two corners too close together for radius `r` become one, where the
+//      leg before them meets the leg after (or, for a step to one side and
+//      back, a straight across), when that keeps within `cut` of the drawn
+//      line: the exit point and its node become one turn off the runway, on
+//      the runway line;
+//   3. every corner is a circular arc tangent to both legs: `r` first (30 m
+//      on a taxiway, 50 m off the runway), less only where the arc would cut
+//      more than `cut` inside the legs or the legs are too short to hold it
+//      (shared with the corner at the other end), then as wide as the legs
+//      leave room for up to `rm` (90 m, beyond which a bend no longer slows
+//      a taxi; 190 m off the runway, where the 15 m/s at the end of the
+//      roll-out need not slow): a curve drawn as many small corners comes
+//      out at the radius it was drawn with;
+//   4. the first and the last corner may swing straight from or into the end
+//      point instead, when that turns wider (the last metres into a stand);
+//   5. every arc is measured against the drawn line and tightened until it
+//      keeps within `cut`.
+// The path starts and ends on the same points, and the runway stays straight
+// until the arc off it starts.
+// `rFor(k)` for vertex k of `pts`: a radius, or { r, rm, cut, fix, exit }:
+// `fix` never merged or dropped (the turn round on a runway), `exit` the
+// corner off the runway (kept, and merged only along the runway line).
 function _taxiRound(pts, rFor) {
-  if (pts.length < 3) return pts.slice();
-  var out = [pts[0]];
-  for (var i = 1; i < pts.length - 1; i++) {
-    var P = pts[i], A = pts[i - 1], B = pts[i + 1];
-    var l1 = Math.hypot(P[0] - A[0], P[1] - A[1]), l2 = Math.hypot(B[0] - P[0], B[1] - P[1]);
-    if (!(l1 > 0.5) || !(l2 > 0.5)) { out.push(P); continue; }
-    var a1 = Math.atan2(P[1] - A[1], P[0] - A[0]), a2 = Math.atan2(B[1] - P[1], B[0] - P[0]);
-    var th = Math.abs(((a2 - a1) * 180 / Math.PI + 540) % 360 - 180);
-    if (th < 8) { out.push(P); continue; }
-    var r = Math.min(rFor(i), 0.45 * l1, 0.45 * l2);
-    if (!(r > 1)) { out.push(P); continue; }
-    var S = [P[0] - (P[0] - A[0]) / l1 * r, P[1] - (P[1] - A[1]) / l1 * r];
-    var E = [P[0] + (B[0] - P[0]) / l2 * r, P[1] + (B[1] - P[1]) / l2 * r];
-    var k = Math.max(3, Math.round(th / 9));
-    for (var s = 0; s <= k; s++) {
-      var t = s / k, wa = (1 - t) * (1 - t), wb = 2 * t * (1 - t), wc = t * t;
-      out.push([wa * S[0] + wb * P[0] + wc * E[0], wa * S[1] + wb * P[1] + wc * E[1]]);
+  var n = pts.length;
+  if (n < 3) return pts.slice();
+  var D2R = Math.PI / 180, nid = 0;
+  var spec = function (k) {
+    var q = rFor ? rFor(k) : null;
+    if (typeof q === 'number') q = { r: q };
+    q = q || {};
+    var r = q.r > 0 ? q.r : 30;
+    return { r: r, rm: Math.max(r, q.rm > 0 ? q.rm : 3 * r), cut: q.cut > 0 ? q.cut : 10, fix: !!q.fix, exit: !!q.exit };
+  };
+  // how far q is from the drawn line between its vertices lo and hi
+  var dLine = function (q, lo, hi) {
+    if (!(hi > lo)) return Math.hypot(q[0] - pts[lo][0], q[1] - pts[lo][1]);
+    var best = Infinity;
+    for (var i = lo; i < hi; i++) {
+      var A = pts[i], B = pts[i + 1], dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy;
+      var f = L2 > 0 ? Math.max(0, Math.min(1, ((q[0] - A[0]) * dx + (q[1] - A[1]) * dy) / L2)) : 0;
+      var d = Math.hypot(q[0] - A[0] - dx * f, q[1] - A[1] - dy * f);
+      if (d < best) best = d;
     }
+    return best;
+  };
+  // the farthest a straight A to B strays from it (every metre)
+  var segDev = function (A, B, lo, hi) {
+    var k = Math.max(1, Math.ceil(Math.hypot(B[0] - A[0], B[1] - A[1]))), w = 0;
+    for (var s = 0; s <= k; s++) w = Math.max(w, dLine([A[0] + (B[0] - A[0]) * s / k, A[1] + (B[1] - A[1]) * s / k], lo, hi));
+    return w;
+  };
+  // 1. a vertex stays when it is 1.5 m or more off the straight between
+  // those kept either side
+  var sp = new Array(n), keep = new Array(n), stack = [], k0 = 0;
+  for (var i = 0; i < n; i++) { sp[i] = spec(i); keep[i] = i === 0 || i === n - 1 || sp[i].fix || sp[i].exit; }
+  for (var i1 = 1; i1 < n; i1++) if (keep[i1]) { stack.push([k0, i1]); k0 = i1; }
+  while (stack.length) {
+    var seg = stack.pop(), a0 = seg[0], b0 = seg[1], far = -1, fd = 1.5;
+    var A0 = pts[a0], B0 = pts[b0], ex = B0[0] - A0[0], ey = B0[1] - A0[1], E2 = ex * ex + ey * ey;
+    for (var j0 = a0 + 1; j0 < b0; j0++) {
+      var f0 = E2 > 0 ? Math.max(0, Math.min(1, ((pts[j0][0] - A0[0]) * ex + (pts[j0][1] - A0[1]) * ey) / E2)) : 0;
+      var d0 = Math.hypot(pts[j0][0] - A0[0] - ex * f0, pts[j0][1] - A0[1] - ey * f0);
+      if (d0 > fd) { fd = d0; far = j0; }
+    }
+    if (far >= 0) { keep[far] = true; stack.push([a0, far], [far, b0]); }
   }
-  out.push(pts[pts.length - 1]);
+  var V = [];
+  for (var i2 = 0; i2 < n; i2++) {
+    if (keep[i2]) V.push({ p: pts[i2], lo: i2, hi: i2, r: sp[i2].r, rm: sp[i2].rm, cut: sp[i2].cut, fix: sp[i2].fix, exit: sp[i2].exit, id: nid++ });
+  }
+  if (V.length < 3) return V.map(function (v) { return v.p; });
+  // the corner at V[j]: the unit legs in and out, the turn (radians, + to the
+  // left), the legs; and the tangent length for a radius up to R there
+  var turn = function (j) {
+    var P = V[j].p, A = V[j - 1].p, B = V[j + 1].p;
+    var l1 = Math.max(1e-9, Math.hypot(P[0] - A[0], P[1] - A[1])), l2 = Math.max(1e-9, Math.hypot(B[0] - P[0], B[1] - P[1]));
+    var u = [(P[0] - A[0]) / l1, (P[1] - A[1]) / l1], w = [(B[0] - P[0]) / l2, (B[1] - P[1]) / l2];
+    return { u: u, w: w, th: Math.atan2(u[0] * w[1] - u[1] * w[0], u[0] * w[0] + u[1] * w[1]), l1: l1, l2: l2 };
+  };
+  var want = function (j, th, R) {
+    var h = Math.abs(th) / 2;
+    if (h < 0.5 * D2R) return 0;
+    return Math.min(R, 0.98 * V[j].cut / (1 - Math.cos(h))) * Math.tan(Math.min(h, 89.9 * D2R));
+  };
+  // 2. the merges: V[j] to V[k] become one corner at `at`
+  var put = function (j, k, at) {
+    var o = { p: at, lo: V[j].lo, hi: V[k].hi, r: 0, rm: 0, cut: 0, fix: false, exit: false, id: nid++ };
+    for (var q = j; q <= k; q++) {
+      o.r = Math.max(o.r, V[q].r); o.rm = Math.max(o.rm, V[q].rm); o.cut = Math.max(o.cut, V[q].cut); o.exit = o.exit || V[q].exit;
+    }
+    V.splice(j, k - j + 1, o);
+    return true;
+  };
+  var merge = function (j) {
+    var ta = turn(j), tb = turn(j + 1), thX = ta.th + tb.th;
+    var P = V[j].p, Q = V[j + 1].p, cut = Math.max(V[j].cut, V[j + 1].cut);
+    var lo = V[j - 1].hi, hi = V[j + 2].lo;
+    var u = ta.u, w = tb.w, cr = u[0] * w[1] - u[1] * w[0];
+    if (Math.abs(thX) <= 150 * D2R && Math.abs(cr) > Math.sin(4 * D2R)) {
+      var a = ((Q[0] - P[0]) * w[1] - (Q[1] - P[1]) * w[0]) / cr;
+      var X = [P[0] + u[0] * a, P[1] + u[1] * a];
+      var b = (X[0] - Q[0]) * w[0] + (X[1] - Q[1]) * w[1];
+      if (a > -(ta.l1 - 0.5) && b < tb.l2 - 0.5) {
+        // off the runway at an angle: the exit point is its node put on the
+        // runway line, so the step between them is no drawn line; the
+        // taxiway may run on back to the runway line where every metre of
+        // the way stays within 20 m of the runway centreline (a 45 m runway
+        // is 22.5 m either side) or within `cut` of the taxiway drawn on
+        if (V[j].exit && a <= 0 && b < 0) {
+          var okX = true, kX = Math.ceil(-b);
+          for (var sX = 0; sX <= kX && okX; sX++) {
+            var qX = [X[0] + (Q[0] - X[0]) * sX / kX, X[1] + (Q[1] - X[1]) * sX / kX];
+            okX = Math.abs((qX[0] - P[0]) * u[1] - (qX[1] - P[1]) * u[0]) <= 20 || dLine(qX, V[j + 1].lo, hi) <= cut;
+          }
+          if (okX) return put(j, j + 1, X);
+        }
+        if ((a <= 0 || segDev(P, X, lo, hi) <= cut) && (b >= 0 || segDev(X, Q, lo, hi) <= cut)) return put(j, j + 1, X);
+      }
+    }
+    if (Math.abs(thX) < 30 * D2R) {
+      if (V[j].exit) {
+        // a step to one side at the exit and on along the runway (its drawn
+        // line metres off ours): our runway line runs on to the next corner,
+        // which is then the turn off
+        var k = j + 2;
+        if (k < V.length - 1) {
+          var al = (V[k].p[0] - P[0]) * u[0] + (V[k].p[1] - P[1]) * u[1], Y = [P[0] + u[0] * al, P[1] + u[1] * al];
+          if (al > 0.5 && segDev(P, Y, lo, V[k + 1].lo) <= cut && segDev(Y, V[k + 1].p, lo, V[k + 1].lo) <= cut) return put(j, k, Y);
+        }
+      } else if (!V[j + 1].exit && segDev(V[j - 1].p, V[j + 2].p, lo, hi) <= cut) {
+        // a step to one side and back: straight across
+        V.splice(j, 2);
+        return true;
+      }
+    }
+    return false;
+  };
+  var bad = {};
+  for (var guard = 0; guard < 4 * n + 50 && V.length > 3; guard++) {
+    var bj = -1, bc = 1;
+    for (var j1 = 1; j1 + 2 < V.length; j1++) {
+      if (V[j1].fix || V[j1 + 1].fix || bad[V[j1].id + ':' + V[j1 + 1].id]) continue;
+      var t1 = turn(j1), t2 = turn(j1 + 1), cc = (want(j1, t1.th, V[j1].r) + want(j1 + 1, t2.th, V[j1 + 1].r)) / t1.l2;
+      if (cc > bc) { bc = cc; bj = j1; }
+    }
+    if (bj < 0) break;
+    if (!merge(bj)) bad[V[bj].id + ':' + V[bj + 1].id] = 1;
+  }
+  // 3. the tangent lengths: radius r, shared out where a leg is too short
+  // for both corners (after the swings below, what room is left, up to rm)
+  var m = V.length, T = new Array(m), TM = new Array(m), TU = new Array(m);
+  var leg = function (j) { return Math.hypot(V[j + 1].p[0] - V[j].p[0], V[j + 1].p[1] - V[j].p[1]); };
+  T[0] = T[m - 1] = TM[0] = TM[m - 1] = 0;
+  for (var j2 = 1; j2 < m - 1; j2++) { TU[j2] = turn(j2); T[j2] = want(j2, TU[j2].th, V[j2].r); TM[j2] = want(j2, TU[j2].th, V[j2].rm); }
+  for (var pass = 0; pass < 40; pass++) {
+    var tight = false;
+    for (var j3 = 0; j3 < m - 1; j3++) {
+      var LL = leg(j3);
+      if (T[j3] + T[j3 + 1] > LL * (1 + 1e-9)) { var sc = LL / (T[j3] + T[j3 + 1]); T[j3] *= sc; T[j3 + 1] *= sc; tight = true; }
+    }
+    if (!tight) break;
+  }
+  var radius = function (j) { var h = Math.abs(TU[j].th) / 2; return h < 0.5 * D2R ? 0 : T[j] / Math.tan(Math.min(h, 89.9 * D2R)); };
+  // an arc of radius R from S, setting off along u and turning to the side
+  // sg (+1 left) through `sweep` radians; or, with sweep null, as far as E
+  var arc = function (S, u, sg, R, sweep, E) {
+    var C = [S[0] - sg * R * u[1], S[1] + sg * R * u[0]], a0 = Math.atan2(S[1] - C[1], S[0] - C[0]);
+    if (sweep === null) {
+      var a1 = Math.atan2(E[1] - C[1], E[0] - C[0]);
+      sweep = ((sg * (a1 - a0)) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    }
+    var k = Math.max(2, Math.ceil(R * sweep / 2), Math.ceil(sweep / (5 * D2R))), out = [];
+    for (var s = 0; s <= k; s++) {
+      var an = a0 + sg * sweep * s / k;
+      out.push([C[0] + R * Math.cos(an), C[1] + R * Math.sin(an)]);
+    }
+    if (E) out[out.length - 1] = E;
+    return out;
+  };
+  // the farthest the points (and the middles between them) stray
+  var stray = function (Q, lo, hi) {
+    var w = 0;
+    for (var q = 0; q < Q.length; q++) {
+      w = Math.max(w, dLine(Q[q], lo, hi));
+      if (q) w = Math.max(w, dLine([(Q[q][0] + Q[q - 1][0]) / 2, (Q[q][1] + Q[q - 1][1]) / 2], lo, hi));
+    }
+    return w;
+  };
+  // the arc at corner j, tightened until it keeps within `cut`
+  var fillet = function (j) {
+    var tu = TU[j], P = V[j].p, lo = V[j - 1].hi, hi = V[j + 1].lo;
+    if (!(T[j] > 0.05)) return [P];
+    for (var g = 0; g < 30; g++) {
+      var S = [P[0] - tu.u[0] * T[j], P[1] - tu.u[1] * T[j]], E = [P[0] + tu.w[0] * T[j], P[1] + tu.w[1] * T[j]];
+      var pts2 = arc(S, tu.u, tu.th > 0 ? 1 : -1, radius(j), Math.abs(tu.th), E);
+      if (stray(pts2, lo, hi) <= V[j].cut || T[j] < 0.2) return pts2;
+      T[j] *= 0.85;
+    }
+    return [P];
+  };
+  // 4. a swing into end point E off the leg along u through P, starting no
+  // earlier than sMin along it, of radius up to Rmax, within `cut` (a start
+  // past P, on the leg drawn on beyond its corner, only within `cut` too:
+  // a smaller radius would start further on, so it is then no swing)
+  var swing = function (P, u, E, sMin, Rmax, cut, lo, hi) {
+    var rx = E[0] - P[0], ry = E[1] - P[1], a = rx * u[0] + ry * u[1], h = ry * u[0] - rx * u[1];
+    var sg = h > 0 ? 1 : -1;
+    h = Math.abs(h);
+    if (h < 0.3) return null;
+    var R = Math.min(Rmax, ((a - sMin) * (a - sMin) + h * h) / (2 * h));
+    for (var g = 0; g < 30 && R > 0.5 && 2 * R >= h; g++) {
+      var sS = a - Math.sqrt(2 * R * h - h * h), S = [P[0] + u[0] * sS, P[1] + u[1] * sS];
+      if (sS > 0 && segDev(P, S, lo, hi) > cut) return null;
+      var pts3 = arc(S, u, sg, R, null, E);
+      if (stray(pts3, lo, hi) <= cut) return { R: R, s: sS, pts: pts3 };
+      R *= 0.85;
+    }
+    return null;
+  };
+  var tail = null, tailS = 0, head = null, join = 0, last = m - 2;
+  if (last >= 2 && !V[1].fix && !V[1].exit && T[1] > 0) {
+    // from the start the same way, worked backwards
+    var tF = TU[1], sw2 = swing(V[1].p, [-tF.w[0], -tF.w[1]], V[0].p, -(tF.l2 - T[2]), V[1].rm, V[1].cut, 0, V[2].lo);
+    if (sw2 && sw2.R > radius(1) + 0.5) { head = sw2.pts.reverse(); join = -sw2.s; }
+  }
+  if (last >= 1 && !V[last].fix && !V[last].exit && T[last] > 0) {
+    var tL = TU[last], sMin = -(tL.l1 - (head && last === 2 ? join : T[last - 1]));
+    var sw = swing(V[last].p, tL.u, V[m - 1].p, sMin, V[last].rm, V[last].cut, V[last - 1].hi, n - 1);
+    if (sw && sw.R > radius(last) + 0.5) { tail = sw.pts; tailS = sw.s; }
+  }
+  // what room is left goes to the corners that can turn wider (a swing
+  // keeps the leg it starts on)
+  if (head) { T[1] = TM[1] = Math.max(0, join); }
+  if (tail) { T[last] = TM[last] = Math.max(0, -tailS); }
+  // (the room on each leg shared by what the corners at its ends still want)
+  for (var pass2 = 0; pass2 < 6; pass2++) {
+    var dfc = new Array(m), inc = new Array(m), more = false;
+    for (var j5 = 0; j5 < m; j5++) dfc[j5] = Math.max(0, TM[j5] - T[j5]);
+    for (var j6 = 1; j6 < m - 1; j6++) {
+      inc[j6] = 0;
+      if (!(dfc[j6] > 1e-3)) continue;
+      var shL = Math.max(0, leg(j6 - 1) - T[j6 - 1] - T[j6]) * dfc[j6] / (dfc[j6] + dfc[j6 - 1]);
+      var shR = Math.max(0, leg(j6) - T[j6] - T[j6 + 1]) * dfc[j6] / (dfc[j6] + dfc[j6 + 1]);
+      inc[j6] = Math.min(dfc[j6], shL, shR);
+    }
+    for (var j7 = 1; j7 < m - 1; j7++) if (inc[j7] > 1e-3) { T[j7] += inc[j7]; more = true; }
+    if (!more) break;
+  }
+  // 5. the path (no two points within 5 cm: the profile would skip them),
+  // from exactly the first point to exactly the last
+  var out = [V[0].p];
+  var add = function (Q) {
+    for (var q = 0; q < Q.length; q++) {
+      var L0 = out[out.length - 1];
+      if (Math.hypot(Q[q][0] - L0[0], Q[q][1] - L0[1]) > 0.05) out.push(Q[q]);
+    }
+  };
+  if (head) add(head);
+  for (var j4 = head ? 2 : 1; j4 < m - 1; j4++) {
+    if (j4 === last && tail) break;
+    add(fillet(j4));
+  }
+  if (tail) add(tail);
+  var Z = V[m - 1].p, LZ = out[out.length - 1];
+  if (Math.hypot(Z[0] - LZ[0], Z[1] - LZ[1]) > 0.05 || out.length < 2) out.push(Z);
+  else out[out.length - 1] = Z;
   return out;
 }
 // The speeds along a path (metres, sampled every `step`): what the aeroplane
@@ -51993,7 +52312,7 @@ function _taxiPlan(g, rw, end, opt) {
       if (!isFinite(ca) && !isFinite(cb)) return null;
       path = [F0, fa.p].concat(tail(ca <= cb ? fa.a : fa.b));
       v0 = Math.min(10.3, Math.max(2, opt.from.v || 6));
-      rFor = function () { return 30; };
+      rFor = function () { return { r: 30, rm: 90, cut: 10 }; };
     } else {
       if (!R) return null;
       var s0 = onRw !== null ? onRw : Math.min(450, 0.18 * R.L);
@@ -52064,8 +52383,17 @@ function _taxiPlan(g, rw, end, opt) {
     }
     if (clean.length < 2) return null;
     if (roll) {
-      var exitK = clean.indexOf(RX);
-      rFor = function (k) { return k === exitK ? 55 : 30; };
+      // v24120 — the turn off the runway 50 m round or more (up to 190 m,
+      // cutting up to 15 m inside the drawn lines: over the runway itself),
+      // taxiway corners 30 m or more (up to 90 m, within 10 m); the two
+      // corners of a turn round on the runway kept, 25 m round within the
+      // runway (_taxiRound)
+      var exitK = clean.indexOf(RX), rtK = back !== null ? clean.indexOf(RT) : -1, rt2K = back !== null ? clean.indexOf(RT2) : -1;
+      rFor = function (k) {
+        if (k === exitK) return { r: 50, rm: 190, cut: 15, exit: true };
+        if (k === rtK || k === rt2K) return { r: 25, rm: 25, cut: 25, fix: true };
+        return { r: 30, rm: 90, cut: 10 };
+      };
     }
     // t = 0 where the path starts: the touchdown, or the fix
     var rounded = _taxiRound(clean, function (k) { return rFor(k); });
@@ -64244,7 +64572,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24119" src="/textures/gate-sky-shelf.mp4?v=24119"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

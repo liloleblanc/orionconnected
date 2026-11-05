@@ -351,3 +351,132 @@ test('the glide hands an established arrival to the taxi at touchdown; every sur
   // never faster than 1.6 times the model, never slower than a third of it
   assert.match(fnSource('_gateTaxiRun'), /var k = Math\.max\(0\.35, Math\.min\(1\.6, 1 \+ \(tgt - st\.s\) \/ Math\.max\(20, vm \* 10\)\)\);/);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v24120 — TURNS, NOT PIVOTS. Seattle stand S1A off 16L, 2026-11-05: the turn
+// off the runway took 83 degrees within 7 m of path, then a 46 degree S-bend
+// in 11 m, then 83 degrees in 4 m on to the stand, each at the 3 m/s floor.
+// Every corner was rounded within 45% of its legs, and OpenStreetMap splits
+// its lines into legs of 1 to 5 m. A corner now keeps a 30 m radius (50 m
+// off the runway) however the line is split, within 10 m of it.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// the tightest turn along a path (metres): the heading change between
+// successive 6 m chords of the path walked every metre (a pivot reads as
+// 6 m over its angle: 4 m for 83 degrees)
+function walk(xy) {
+  const P = [xy[0]], S = [0];
+  let acc = 0, carry = 0;
+  for (let i = 1; i < xy.length; i++) {
+    const A = xy[i - 1], B = xy[i], L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+    if (!(L > 1e-9)) continue;
+    let d = 1 - carry;
+    for (; d <= L + 1e-9; d += 1) { P.push([A[0] + (B[0] - A[0]) * d / L, A[1] + (B[1] - A[1]) * d / L]); acc += 1; S.push(acc); }
+    carry = L - (d - 1);
+  }
+  return { P, S };
+}
+function tightest(xy, from, to) {
+  const { P, S } = walk(xy), hd = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]);
+  let r = Infinity;
+  for (let k = 6; k + 6 < P.length; k++) {
+    if ((from !== undefined && S[k] < from) || (to !== undefined && S[k] > to)) continue;
+    const th = Math.abs(((hd(P[k], P[k + 6]) - hd(P[k - 6], P[k])) * 180 / Math.PI + 540) % 360 - 180) * Math.PI / 180;
+    if (th > 1e-9) r = Math.min(r, 6 / th);
+  }
+  return r;
+}
+// the farthest a path strays from the line it was rounded from
+function strays(xy, line) {
+  let worst = 0;
+  for (const q of walk(xy).P) {
+    let d = Infinity;
+    for (let i = 0; i < line.length - 1; i++) {
+      const A = line[i], B = line[i + 1], dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy;
+      const f = L2 > 0 ? Math.max(0, Math.min(1, ((q[0] - A[0]) * dx + (q[1] - A[1]) * dy) / L2)) : 0;
+      d = Math.min(d, Math.hypot(q[0] - A[0] - dx * f, q[1] - A[1] - dy * f));
+    }
+    worst = Math.max(worst, d);
+  }
+  return worst;
+}
+const TAXIWAY = () => ({ r: 30, rm: 90, cut: 10 });
+
+test('a taxiway corner turns 25 m round or wider however finely the line is split, within 10 m of it', () => {
+  const plain = [[0, 0], [300, 0], [300, 300]];
+  // the same corner as OpenStreetMap draws it: legs of 1 to 5 m near the
+  // corner, a node a metre off the line
+  const split = [[0, 0]];
+  for (let x = 200; x < 300; x += (x > 280 ? 1 : 5)) split.push([x, x === 290 ? 1 : 0]);
+  split.push([300, 0]);
+  for (let y = 1; y < 100; y += (y < 20 ? 1 : 4)) split.push([300, y]);
+  split.push([300, 300]);
+  // and drawn as a pivot: 83 degrees within 7 m (Seattle, S1A)
+  const pivot = [[0, 0], [296, 0], [299, 1], [300.5, 3], [301, 7], [301, 300]];
+  for (const [name, line] of [['plain', plain], ['split', split], ['pivot', pivot]]) {
+    const out = G.taxiRound(line, TAXIWAY);
+    assert.ok(tightest(out) >= 25, name + ': tightest ' + tightest(out).toFixed(1) + ' m');
+    assert.ok(strays(out, line) <= 10.5, name + ': ' + strays(out, line).toFixed(1) + ' m off the line');
+    assert.deepEqual(out[0], line[0], name + ': from the first point');
+    assert.deepEqual(out[out.length - 1], line[line.length - 1], name + ': to exactly the last');
+  }
+  assert.ok(Math.abs(tightest(G.taxiRound(split, TAXIWAY)) - tightest(G.taxiRound(plain, TAXIWAY))) < 2, 'the split corner as the plain one');
+});
+
+test('a bend drawn as many small corners keeps the radius it was drawn with; a stand 4 m off the line is swung into', () => {
+  const arc = [[-200, 0]];
+  for (let a = 0; a <= 90; a += 5) arc.push([60 * Math.sin(a * Math.PI / 180), 60 - 60 * Math.cos(a * Math.PI / 180)]);
+  arc.push([60, 260]);
+  const out = G.taxiRound(arc, TAXIWAY);
+  assert.ok(tightest(out) > 50 && tightest(out) < 70, 'drawn 60 m round: ' + tightest(out).toFixed(1) + ' m');
+  assert.ok(strays(out, arc) < 1.5, strays(out, arc).toFixed(2) + ' m off');
+  // the last leg 4 m long, square to the taxilane: no pivot on to the stand
+  const stand = [[0, 0], [200, 0], [200, 4]];
+  const into = G.taxiRound(stand, TAXIWAY);
+  assert.ok(tightest(into) >= 25, 'into the stand ' + tightest(into).toFixed(1) + ' m');
+  assert.deepEqual(into[into.length - 1], [200, 4]);
+});
+
+test('Seattle S1A off 16L: off the runway, along the taxiways and on to the stand, no turn under 25 m and none below 5 m/s', () => {
+  const tf = taxiFile('SEA'), g = G.taxiGraph(tf), st = gateFile('SEA').stands.S1A;
+  const end = { lat: st[0], lng: st[1], hdg: st[2] };
+  const rw = { t: [47.4638, -122.308], f: [47.4312, -122.308] };   // 16L
+  const p = G.taxiPlan(g, rw, end, {});
+  assert.ok(p, 'a route');
+  const xy = p.pts.map((q) => G.taxiXY(q, g.o));
+  assert.ok(tightest(xy) >= 25, 'tightest turn ' + tightest(xy).toFixed(1) + ' m (main: 5.5 m off the runway)');
+  assert.ok(tightest(xy, p.rollEnd - 150, p.rollEnd) >= 45, 'off the runway ' + tightest(xy, p.rollEnd - 150, p.rollEnd).toFixed(1) + ' m round');
+  const taxiV = p.v.filter((v, i) => p.s[i] > p.rollEnd - 60 && p.total - p.s[i] > 220);
+  assert.ok(Math.min(...taxiV) >= 5, 'slowest turn ' + Math.min(...taxiV).toFixed(1) + ' m/s (main: 3.0)');
+  assert.ok(G.gcNm(p.pts[p.pts.length - 1], [end.lat, end.lng]) * 1852 < 0.01, 'ends on the stand');
+  assert.ok(Math.abs(G.taxiAtS(p, p.total).hdg - 17.8) < 0.5, 'at its heading');
+  for (let i = 1; i < p.t.length; i++) assert.ok(p.t[i] > p.t[i - 1]);
+});
+
+test('at every airport, three routes in four keep every turn 20 m round or wider (main: none)', () => {
+  const dir = path.join(ROOT, 'fids-current', 'data', 'taxi');
+  let n = 0, wide = 0;
+  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json'))) {
+    const ap = f.slice(0, 3);
+    if (!RUNWAYS[ap]) continue;
+    const g = G.taxiGraph(taxiFile(ap)), st = Object.values(gateFile(ap).stands);
+    const step = Math.max(1, Math.floor(st.length / 6));
+    for (let i = 0; i < st.length; i += step) {
+      const end = { lat: st[i][0], lng: st[i][1], hdg: st[i][2] };
+      const at = G.taxiNear(g, G.taxiXY([end.lat, end.lng], g.o));
+      if (!at || at.d > 250) continue;
+      const dj = G.taxiDijkstra(g, at);
+      for (const e of ends(ap)) {
+        const p = G.taxiPlan(g, e, end, { dj });
+        if (!p) continue;
+        n++;
+        if (tightest(p.pts.map((q) => G.taxiXY(q, g.o))) >= 20) wide++;
+      }
+    }
+  }
+  assert.ok(n > 1000, n + ' routes');
+  // the rest turn where the drawn line itself turns hard twice within a few
+  // tens of metres, or doubles back (lead-in lines into a stand, an exit
+  // drawn back against the landing): no 20 m arc fits there within 10 m
+  assert.ok(wide / n > 0.7, (100 * wide / n).toFixed(1) + '% of ' + n + ' routes');
+});
