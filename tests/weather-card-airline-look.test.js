@@ -232,7 +232,8 @@ test('every word is the store\'s: the plate\'s Tomorrow and Now, in all nine lan
     for (const l of S.LANGS) assert.ok(String(S.bs(key, l) || '').trim(), key + '.' + l);
   }
   const side = CORE.slice(CORE.indexOf('var _wxSide = function'), CORE.indexOf('var _depShort ='));
-  assert.match(side, /if \(!ts\) note = _wxPairT\(BoardStrings\.entry\('wxNowTitle'\)\);/, 'a plate with no hour shows the weather now, and says so');
+  // (v24121 — and only when no estimated arrival stands in for the hour)
+  assert.match(side, /if \(!ts && !estTs\) note = _wxPairT\(BoardStrings\.entry\('wxNowTitle'\)\);/, 'a plate with no hour shows the weather now, and says so');
   assert.match(side, /if \(dDay && dDay === nDay\) note = _wxPairT\(BoardStrings\.entry\('tomorrow'\)\);/, 'a plate for after midnight says Tomorrow beside its time');
   assert.match(side, /'<div class="wxc-mon-cond wxc-stk">' \+ _wxPairT\(_WXLBL\[sIc\] \|\| \{ en: '' \}\) \+ '<\/div>'/, 'the condition\'s two languages stack whole, never break mid-phrase');
   assert.match(CORE, /var SEL = '[^']*\.wxc-stk[^']*'/, 'the pair pass stacks them');

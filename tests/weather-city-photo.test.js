@@ -115,6 +115,9 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   assert.equal(pic('JFK', true), '/logos/cities/NYC-night.jpg', 'the shared New York picture at night');
   assert.equal(pic('EWR', true), '/logos/cities/NYC-night.jpg');
   assert.equal(pic('LGA', false), '/logos/cities/NYC.jpg', 'and the day one by day');
+  // v24121 — Billy Bishop takes Toronto, by day and by night
+  assert.equal(pic('YTZ', true), '/logos/cities/YYZ-night.jpg', 'Billy Bishop after dark');
+  assert.equal(pic('YTZ', false), '/logos/cities/YYZ.jpg', 'and by day');
   // An alias may only point at a city that HAS a night picture — otherwise the
   // board asks for a file that answers 404, which is worse than the day
   // picture it would otherwise have kept.
