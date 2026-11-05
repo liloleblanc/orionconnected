@@ -314,12 +314,14 @@ test('(A) a real actual time is evidence; "Arrived" on a departure row is a depa
   assert.equal(E.adbStatusInferred({ status: 'scheduled' }, 'departed'), true);
 
   // Denver and Chicago label a departure that has reached its destination
-  // "Arrived"; the departures board must not print "Arrived".
+  // "Arrived"; the departures board must not print "Arrived". (v24117 —
+  // O'Hare's word for it is Landed, which now reaches the board as 'landed':
+  // on a departure row it is a departure too.)
   const W = await import(workerPath);
   const NOW = Date.parse('2026-09-05T01:00:00-04:00');
   let n = 0;
   for (const list of [W.denParseFeed(fixture('den-sample.json'), 'dep', NOW), W.ordParseFeed(fixture('ord-sample.json'), 'dep', NOW)]) {
-    for (const f of list.filter((x) => x.status === 'arrived')) {
+    for (const f of list.filter((x) => x.status === 'arrived' || x.status === 'landed')) {
       n++;
       assert.equal(E.adbStatus(f, 'dep', E.adbTs(f.departure.scheduledTime.local), NOW), 'departed', f.number);
     }

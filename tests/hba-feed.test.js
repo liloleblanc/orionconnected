@@ -143,7 +143,7 @@ test('an empty status means scheduled, not missing', () => {
     assert.equal(got.status, 'scheduled');
   }
   // And a status the feed does use maps to the board's own vocabulary.
-  const known = ['arrived', 'departed', 'gateclosed', 'boarding', 'cancelled',
+  const known = ['arrived', 'landed', 'departed', 'gateclosed', 'boarding', 'cancelled',
                  'delayed', 'final', 'ontime', 'scheduled'];
   for (const dir of ['dep', 'arr']) {
     for (const f of parse(FIXTURE, dir)) {

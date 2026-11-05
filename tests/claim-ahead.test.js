@@ -125,9 +125,13 @@ test('Toronto, 2026-11-02 at 14:18: AS385 and AA1111 say arrived with their own 
   const st = statuses(YYZ, 'arr', YYZ_NOW);
   assert.equal(st.AS385, 'scheduled', 'AS385: ARR at 14:18 with its time at 16:05 reads by its time');
   assert.equal(st.AA1111, 'delayed', 'AA1111: LND with its time revised to 16:23 reads Delayed, by the revision');
-  const genuine = YYZ.filter((f) => f.status === 'arrived' && f.number !== 'AS385' && f.number !== 'AA1111');
+  // v24117 — Pearson's LND reaches the board as 'landed' and its ARR as
+  // 'arrived', and a word believed keeps itself: down, and only ARR at the gate.
+  const genuine = YYZ.filter((f) => (f.status === 'arrived' || f.status === 'landed') && f.number !== 'AS385' && f.number !== 'AA1111');
   assert.equal(genuine.length, 25);
-  for (const f of genuine) assert.equal(st[f.number], 'arrived', f.number + ' landed, by its own time');
+  assert.ok(genuine.some((f) => f.status === 'landed') && genuine.some((f) => f.status === 'arrived'), 'both words in the list');
+  for (const f of genuine) assert.equal(st[f.number], f.status, f.number + ' landed, by its own time');
+  for (const f of genuine) assert.equal(C._adbClaimWithheld(f, 'arr', st[f.number]), false, f.number + ' believed');
   // Withheld, so the status the row shows is its time's, not the airport's word.
   const as385 = YYZ.find((f) => f.number === 'AS385');
   assert.equal(C._adbClaimWithheld(as385, 'arr', st.AS385), true);

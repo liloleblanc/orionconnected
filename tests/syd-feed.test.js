@@ -260,7 +260,7 @@ test('syd: status vocabulary — the four live, the seven archived, whole-word s
   assert.equal(sydStatus('Departed'), 'departed');
   assert.equal(sydStatus('Arrived'), 'arrived');
   assert.equal(sydStatus('Cancelled'), 'cancelled');
-  assert.equal(sydStatus('Landed'), 'arrived');
+  assert.equal(sydStatus('Landed'), 'landed');   // v24117 — down, short of the gate
   assert.equal(sydStatus('Delayed'), 'delayed');
   assert.equal(sydStatus('Gate Open'), 'boarding');
   assert.equal(sydStatus('Boarding'), 'boarding');
@@ -275,7 +275,7 @@ test('syd: status vocabulary — the four live, the seven archived, whole-word s
   assert.equal(sydStatus('Early'), 'scheduled');
   assert.equal(sydStatus('Delayed - weather'), 'delayed');
   assert.equal(sydStatus('Departed 10:05'), 'departed');
-  assert.equal(sydStatus('Landed 10:05'), 'arrived');
+  assert.equal(sydStatus('Landed 10:05'), 'landed');
   assert.equal(sydStatus(''), 'scheduled');
   assert.equal(sydStatus(null), 'scheduled');
   // Anything the map and the sniff do not know is scheduled — the raw text never reaches a board.

@@ -145,7 +145,7 @@ test('yka: "Late at HH:MM" is delayed; EstimatedTime carries its own date across
   assert.equal(gs('Final Call'), 'boarding');
   assert.equal(gs('Gate Closed'), 'gateclosed');
   assert.equal(gs('Diverted'), 'diverted');
-  assert.equal(gs('Landed at 06:10'), 'arrived');
+  assert.equal(gs('Landed at 06:10'), 'landed');   // v24117
   assert.equal(gs('Gate Change'), 'scheduled');
   assert.equal(gs(''), 'scheduled');
   // ActualTime as a bare "HH:MM" while Estimated has not moved: placed on the scheduled day, settled across midnight.

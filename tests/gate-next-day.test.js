@@ -136,7 +136,10 @@ test('the Your Aircraft card dates the inbound by the time it prints first', () 
   assert.match(CORE, /var _ibShownTs = _gateInboundShownTs\(\{\s*arrived: _stKey === 'arrived',\s*onStandAt: \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number'\) \? _ib\._actualArrTime : 0,\s*(?:\/\/[^\n]*\n\s*)?landedAt: \(_mcLand\.by === 'live' \|\| _mcLand\.by === 'seen' \|\| _mcLand\.by === 'actual'\) \? _mcLand\.t : 0,\s*landedUnknown: _mcLand\.by === 'cold',\s*sched: _ibArrTs, rev: _ibRevTs,\s*revShown: \(_stKey === 'arrived'\) \? !!_ibArrRevStr : !!\(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr\)\s*\}\);/);
   assert.match(CORE, /\(_stKey === 'arrived' \? '' : \(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr\s*\? '<div class="v2-fi-mline2">'\s*\+ '<span class="v2-rc-status-' \+ \(_stCls \|\| 'delayed'\) \+ '">' \+ _railT\(_ibArrRevStr\)/,
     'the revised time is printed first under exactly the condition revShown repeats');
-  assert.match(CORE, /if \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number' && _ib\._actualArrTime > 0\) \{\s*_mcEvtStr = _ibFmtT\(_ib\._actualArrTime\);\s*\} else if \(_mcLand\.t > 0 && \(_mcLand\.by === 'live' \|\| _mcLand\.by === 'seen' \|\| _mcLand\.by === 'actual'\)\) \{\s*_mcEvtStr = _ibFmtT\(_mcLand\.t\);\s*\} else if \(_mcLand\.by === 'cold'\) \{\s*_mcEvtStr = '';[^\n]*\s*\} else \{\s*_mcEvtStr = _ibArrRevStr \|\| _ibArrSchedStr \|\| '';/);
+  // v24117 — the landing it knows (live, seen, actual); none at all when cold;
+  // on the stand: its gate time, else the revised or scheduled time; landed
+  // and still taxiing: only a time the feed gave, never the schedule.
+  assert.match(CORE, /if \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number' && _ib\._actualArrTime > 0\) \{\s*_mcEvtStr = _ibFmtT\(_ib\._actualArrTime\);\s*\} else if \(_mcLand\.t > 0 && \(_mcLand\.by === 'live' \|\| _mcLand\.by === 'seen' \|\| _mcLand\.by === 'actual'\)\) \{\s*_mcEvtStr = _ibFmtT\(_mcLand\.t\);\s*\} else if \(_mcLand\.by === 'cold'\) \{\s*_mcEvtStr = '';[^\n]*\s*\} else if \(_mcOnStand\) \{\s*_mcEvtStr = _ibArrRevStr \|\| _ibArrSchedStr \|\| '';\s*\} else \{(?:\s*\/\/[^\n]*)*\s*_mcEvtStr = _ibRevTs \? _ibFmtT\(_ibRevTs\) : '';/);
   assert.doesNotMatch(CORE, /_gateDayWords\(_ibEffArrTs/, 'the later-of-the-two rule is not a day source');
 });
 

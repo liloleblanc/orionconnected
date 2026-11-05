@@ -405,7 +405,13 @@ function yqmStatus(s) {
   if (t.includes('final call') || t.includes('last call')) return 'final';
   if (t.includes('board')) return 'boarding';
   if (t.includes('depart')) return 'departed';
-  if (t.includes('arriv') || t.includes('land')) return 'arrived';
+  // v24117 — LANDED IS NOT AT THE GATE. A "land" word used to be 'arrived',
+  // and the boards read 'arrived' as on its blocks: the gate card said
+  // "Arrived at the gate" for an aeroplane still rolling out. "Landed" is
+  // 'landed' now (down, not on the stand), as in the worker (yhzStatus);
+  // "Arrived" stays 'arrived'. The adapters below split the same way.
+  if (t.includes('arriv')) return 'arrived';
+  if (t.includes('land')) return 'landed';
   if (t.includes('delay')) return 'delayed';
   return fidsNeutralWord(t);   // v23968 — "OnTime" / "Expected" / "Scheduled" or ""
 }
@@ -518,7 +524,8 @@ function tpaStatus(code, content) {
   if (t.includes('cancel')) return 'cancelled';
   if (t.includes('divert')) return 'diverted';
   if (t.includes('depart')) return 'departed';
-  if (t.includes('bag') || t.includes('arriv') || t.includes('land')) return 'arrived';
+  if (t.includes('bag') || t.includes('arriv')) return 'arrived';
+  if (t.includes('land')) return 'landed';   // v24117 — see yqmStatus
   if (t.includes('delay')) return 'delayed';
   if (t.includes('board')) return 'boarding';
   return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
@@ -643,7 +650,9 @@ function yyzStatus(code) {
   // and the gate's boarding hold on a word the airport did not say.
   if (c === 'GTO') return 'scheduled';
   if (c === 'BRD' || c === 'BOR' || c === 'BOA' || c === 'FBO') return 'boarding';
-  if (c === 'ARR' || c === 'LDD' || c === 'LND' || c === 'BAG' || c === 'ONB') return 'arrived';
+  if (c === 'ARR' || c === 'BAG' || c === 'ONB') return 'arrived';
+  // v24117 — LDD and LND are the Pearson word Landed: down, not on the stand (see yqmStatus).
+  if (c === 'LDD' || c === 'LND') return 'landed';
   // v23968 — ONT is Pearson's "on time" and reads On time; SKD/ETD
   // (scheduled / estimated) and anything else read Scheduled.
   if (c === 'ONT') return 'ontime';
@@ -721,7 +730,8 @@ function yulStatus(s) {
   if (t.includes('delay')) return 'delayed';
   if (t.includes('early')) return 'early';
   if (t.includes('depart')) return 'departed';
-  if (t.includes('arriv') || t.includes('land')) return 'arrived';
+  if (t.includes('arriv')) return 'arrived';
+  if (t.includes('land')) return 'landed';   // v24117 — see yqmStatus
   return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
 // "AC7738" → "AC" (two-char IATA airline designator, letter+digit forms too)
@@ -835,7 +845,8 @@ function yhuStatus(s) {
   if (t.includes('delay')) return 'delayed';
   if (t.includes('early')) return 'early';
   if (t.includes('depart')) return 'departed';
-  if (t.includes('arriv') || t.includes('land')) return 'arrived';
+  if (t.includes('arriv')) return 'arrived';
+  if (t.includes('land')) return 'landed';   // v24117 — see yqmStatus
   if (t.includes('board')) return 'boarding';
   return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
@@ -921,7 +932,8 @@ function ytzStatus(s) {
   if (t.includes('delay') || t.includes('late')) return 'delayed';
   if (t.includes('early')) return 'early';
   if (t.includes('depart')) return 'departed';
-  if (t.includes('arriv') || t.includes('land')) return 'arrived';
+  if (t.includes('arriv')) return 'arrived';
+  if (t.includes('land')) return 'landed';   // v24117 — see yqmStatus
   if (t.includes('board')) return 'boarding';
   return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
@@ -1018,7 +1030,7 @@ function panynjStatus(s, isDep) {
   if (t.includes('depart')) return 'departed';
   // The feed says "Arrived" on DEPARTURE rows too — meaning arrived at the
   // destination. On a departures board that flight has departed.
-  if (t.includes('arriv') || t.includes('land')) return isDep ? 'departed' : 'arrived';
+  if (t.includes('arriv') || t.includes('land')) return isDep ? 'departed' : (t.includes('arriv') ? 'arrived' : 'landed');   // v24117 — see yqmStatus
   if (t.includes('board') || t.includes('final')) return 'boarding';
   if (t.includes('route')) return 'enroute';
   return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
@@ -1118,7 +1130,8 @@ function miaStatus(statusText, delayMin) {
   if (t.startsWith('cancel')) return 'cancelled';
   if (t.startsWith('divert')) return 'diverted';
   if (t.startsWith('depart')) return 'departed';
-  if (t.startsWith('arriv') || t.startsWith('land')) return 'arrived';
+  if (t.startsWith('arriv')) return 'arrived';
+  if (t.startsWith('land')) return 'landed';   // v24117 — see yqmStatus
   if (t.startsWith('board')) return 'boarding';
   if (t.startsWith('delay')) return 'delayed';
   if (delayMin >= MIA_DELAY_MIN) return 'delayed';
