@@ -139,7 +139,7 @@ test('the Your Aircraft card dates the inbound by the time it prints first', () 
   // v24120 — the landing it knows (live, seen, actual); none at all when cold;
   // on the stand: its gate time, else the revised or scheduled time; landed
   // and still taxiing: only a time the feed gave, never the schedule.
-  assert.match(CORE, /if \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number' && _ib\._actualArrTime > 0\) \{\s*_mcEvtStr = _ibFmtT\(_ib\._actualArrTime\);\s*\} else if \(_mcLand\.t > 0 && \(_mcLand\.by === 'live' \|\| _mcLand\.by === 'seen' \|\| _mcLand\.by === 'actual'\)\) \{\s*_mcEvtStr = _ibFmtT\(_mcLand\.t\);\s*\} else if \(_mcLand\.by === 'cold'\) \{\s*_mcEvtStr = '';[^\n]*\s*\} else if \(_mcOnStand\) \{\s*_mcEvtStr = _ibArrRevStr \|\| _ibArrSchedStr \|\| '';\s*\} else \{(?:\s*\/\/[^\n]*)*\s*_mcEvtStr = _ibRevTs \? _ibFmtT\(_ibRevTs\) : '';/);
+  assert.match(CORE, /if \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number' && _ib\._actualArrTime > 0\) \{\s*_mcEvtStr = _ibFmtT\(_ib\._actualArrTime\);\s*\} else if \(_mcLand\.t > 0 && \(_mcLand\.by === 'live' \|\| _mcLand\.by === 'seen' \|\| _mcLand\.by === 'actual'\)\) \{\s*_mcEvtStr = _ibFmtT\(_mcLand\.t\);\s*\} else if \(_mcLand\.by === 'cold'\) \{\s*_mcEvtStr = '';[^\n]*\s*\} else if \(_mcOnStand\) \{\s*_mcEvtStr = _ibArrRevStr \|\| _ibArrSchedStr \|\| '';\s*\} else \{\s*(?:\/\/[^\n]*\n\s*)*_mcEvtStr = _ibRevTs \? _ibFmtT\(_ibRevTs\) : '';/);
   assert.doesNotMatch(CORE, /_gateDayWords\(_ibEffArrTs/, 'the later-of-the-two rule is not a day source');
 });
 
