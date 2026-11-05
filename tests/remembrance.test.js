@@ -57,9 +57,11 @@ const HELPERS = () => fn('fidsLocalDateKey') + fn('_fidsAirportYmd') + fn('_fids
 const holidayWith = (search, withRem = true) => new Function('AP', 'location', 'FidsRemembrance', 'airportCountry', HELPERS() + 'return _fidsHolidayFor;')(
   AP, { search: search || '' }, withRem ? R : undefined, airportCountry);
 
-test('the switch: Canada and the United Kingdom ship off, Australia and the United States on', () => {
-  assert.deepEqual(R.SWITCH, { CA: false, GB: false, AU: true, US: true });
-  assert.match(SRC, /var SWITCH = \{ CA: false, GB: false, AU: true, US: true \};/);
+test('the switch: the United Kingdom ships off; Canada, Australia and the United States on', () => {
+  // v24119 — Canada on: permission asked 2026-10-18, no answer; shown on
+  // 11 November without waiting
+  assert.deepEqual(R.SWITCH, { CA: true, GB: false, AU: true, US: true });
+  assert.match(SRC, /var SWITCH = \{ CA: true, GB: false, AU: true, US: true \};/);
   // the reason sits beside it
   assert.match(SRC, /registered\s+trademark in Canada \(the Royal Canadian Legion\)/);
 });
@@ -88,8 +90,8 @@ test('who keeps which day: 11 November, and the second Sunday of November in the
   assert.equal(R.lookFor('AU', 2026, 11, 11, true), 'remembrance-au');
   assert.equal(R.lookFor('US', 2026, 11, 11, true), 'veterans-us');
   for (const cc of ['IE', 'CH', 'IS', 'FR', 'BE', 'DE', 'MX', '']) assert.equal(R.lookFor(cc, 2026, 11, 11, true), '', cc || 'no country');
-  // and as shipped
-  assert.equal(R.lookFor('CA', 2026, 11, 11), '');
+  // and as shipped (v24119: Canada on)
+  assert.equal(R.lookFor('CA', 2026, 11, 11), 'remembrance-ca');
   assert.equal(R.lookFor('GB', 2026, 11, 11), '');
   assert.equal(R.lookFor('AU', 2026, 11, 11), 'remembrance-au');
   assert.equal(R.lookFor('US', 2026, 11, 11), 'veterans-us');
@@ -123,9 +125,11 @@ test('the holiday engine stamps the look on the airport\'s own day, by its switc
   // Hobart: 11 November starts at 13:00Z on the 10th (AEDT, UTC+11)
   assert.equal(h('HBA', new Date('2026-11-10T13:00:00Z')), 'remembrance-au');
   assert.equal(h('HBA', new Date('2026-11-10T12:59:00Z')), '');
-  // Canada and the United Kingdom: off until permission is in hand
-  assert.equal(h('YQM', new Date('2026-11-11T15:00:00Z')), '');
-  assert.equal(h('YUL', new Date('2026-11-11T16:00:00Z')), '');
+  // Canada on (v24119), on its own day: Moncton 11:00 AST, Montreal 11:00 EST
+  assert.equal(h('YQM', new Date('2026-11-11T15:00:00Z')), 'remembrance-ca');
+  assert.equal(h('YUL', new Date('2026-11-11T16:00:00Z')), 'remembrance-ca');
+  assert.equal(h('YQM', new Date('2026-11-12T04:00:00Z')), '', 'midnight in Moncton: the 12th');
+  // the United Kingdom: off until permission is in hand
   assert.equal(h('LHR', new Date('2026-11-11T11:00:00Z')), '');
   assert.equal(h('LHR', new Date('2026-11-08T11:00:00Z')), '');
   // no look at all there
