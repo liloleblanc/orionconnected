@@ -8493,7 +8493,7 @@ async function _gateNumbersPoll() {
     // aeroplane has not left, it is late (_fixAtLegOrigin).
     try {
       if (_adsb && typeof _adsb.lat === 'number' && typeof _adsb.lng === 'number' && !inb.dest) {
-        var _rOk = _fixPlausibleForLeg(inb, _adsb.lat, _adsb.lng, _adsb.onGround === true);
+        var _rOk = _fixPlausibleForLeg(inb, _adsb.lat, _adsb.lng, _adsb.onGround === true, _adsb.spd);
         if (_rOk && /^(hex|reg)$/.test(String(_adsb.via || '')) && !_adsb.cs) {
           var _oA = _lookupAirport(inb._locIata), _hA = _lookupAirport(iata);
           _rOk = _adsb.onGround === true && !!((_oA && _gcNm([_adsb.lat, _adsb.lng], _oA) < 5) || (_hA && _gcNm([_adsb.lat, _adsb.lng], _hA) < 6));
@@ -15937,7 +15937,10 @@ function _buildV2MapCol(ctx, vars) {
   try {
     var _wp = window._gateInboundLivePos;
     if (_wp && typeof _wp === 'object') {
-      if (!_wp._airport || _wp._airport === vars.iata) {
+      // (v24116 — and only the position of the flight this gate shows, _wpC below)
+      var _wpIb = vars && vars.inboundFlight;
+      var _wpOwn = !!(_wpIb && _wp.fl && String(_wp.fl).toUpperCase().replace(/\s+/g, '') === String(_wpIb.flight || '').toUpperCase().replace(/\s+/g, ''));
+      if ((!_wp._airport || _wp._airport === vars.iata) && _wpOwn) {
         // window._gateInboundLivePos is stored with keys {speed, altitude}
         // (see writers ~7188 / ~7579). Reading .spd/.alt here always yielded
         // null, so Speed/Altitude never appeared on the flight screen.
@@ -15983,6 +15986,16 @@ function _buildV2MapCol(ctx, vars) {
       // by-number window cache. Feed it through the sticky smoother so the panel
       // doesn't blink off on polls where ADB omits the position.
       var _wpC = (window._gateInboundLivePos && typeof window._gateInboundLivePos === 'object') ? window._gateInboundLivePos : null;
+      // v24116 — ONLY THIS FLIGHT POSITION. The page keeps one live position
+      // for whichever gate polled last, owned by its flight (fl). The panel
+      // read it whatever flight it was: switched from gate 4 to gate 3 at
+      // Moncton on 2026-11-05, AC656 descending into Moncton showed as
+      // PD2293 (648 km/h, 11,850 ft, En route) while PD2293 stood in Toronto.
+      // The maps already asked whose it was (_gateFixCheck); now the panel does.
+      try {
+        var _wdg = function (x) { return String(x || '').toUpperCase().replace(/\s+/g, '').replace(/^\D+/, '').replace(/\D+$/, ''); };
+        if (_wpC && !(_wpC.fl && _wdg(_wpC.fl) === _wdg(_ib.flight))) _wpC = null;
+      } catch (eWp) { _wpC = null; }
       // v22889 — ADS-B FIRST. The 60-second gate poll mutates the inbound
       // object it fetched; the renderer frequently holds a DIFFERENT object
       // for the same flight, so those mutations never arrived and SPD/ALT
@@ -16017,6 +16030,33 @@ function _buildV2MapCol(ctx, vars) {
       if (typeof _liveFixPhysOk === 'function' && !_liveFixPhysOk(_ib)) {
         _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
       }
+      // v24115 — and only a reading taken near this leg route (the corridor
+      // _gateFixCheck already keeps for the maps): a quarter of the leg or 86
+      // nm off the direct path is another sector of the number or the tail,
+      // and one that would land an hour before the ETA is another aeroplane
+      // (_fixTooEarlyForEta)
+      try {
+        var _cA = (_adsbC && typeof _adsbC.lat === 'number') ? [_adsbC.lat, _adsbC.lng]
+          : (typeof _ib._liveLat === 'number' && typeof _ib._liveLng === 'number') ? [_ib._liveLat, _ib._liveLng] : null;
+        var _cO = _lookupAirport(_ib._locIata), _cH = _lookupAirport(vars.iata);
+        // (v24117 — the too-early half needs only this field, as on the
+        // maps, and a rejected reading leaves nothing behind: the sticky fix
+        // and the 3 minute hold would serve it again for up to 7 minutes)
+        if (_cA && _cH && _candAlt !== null) {
+          var _cOff = false;
+          if (_cO) {
+            var _cT = _gcNm(_cO, _cH), _cS = _gcNm(_cO, _cA) + _gcNm(_cA, _cH);
+            _cOff = _cT > 1 && _cS > Math.max(_cT * 1.25, _cT + 86);
+          }
+          var _cArr = _gateArrEarliestTs(_ib);
+          if (_cOff || (_cArr && _fixTooEarlyForEta(_cA[0], _cA[1], _candSpd, _cH, _cArr, Date.now()))) {
+            _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
+            var _cKey = String(_ib.flight || _ib._reg || '');
+            if (_gateFixCache && _gateFixCache.key === _cKey) _gateFixCache = null;
+            if (window._gateTelemHold && window._gateTelemHold.key === _cKey) window._gateTelemHold = null;
+          }
+        }
+      } catch (eCor) {}
       // LEG-WINDOW GUARD.
       // ADB's withLocation position belongs to the AIRFRAME, not the leg — it
       // can be a stale cruise fix from a previous flight or linger after
@@ -16027,9 +16067,9 @@ function _buildV2MapCol(ctx, vars) {
       try {
         var _lwArr = (_ib._revTs && _ib._revTs > _ib._sortTs) ? _ib._revTs : (_ib._sortTs || 0);
         if (_lwArr) {
-          var _lwSpan = ((_ib._durationMins || 240) + 25) * 60000;
+          var _lwSpan = _gateLegSpanMs(_ib, vars.iata);
           var _lwNow = Date.now();
-          if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + ARR_CONFIRM_MIN * 60000) {
+          if (_lwNow < _gateArrEarliestTs(_ib) - _lwSpan || _lwNow > _lwArr + ARR_CONFIRM_MIN * 60000) {
             _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
             if (_gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
           }
@@ -41617,6 +41657,32 @@ var _FIX_MAX_AGE_MS = 15 * 60000;
 // 8 min, which stopped watching a real landing a few minutes late). Same arithmetic as the
 // render's guard, lifted here so no lookup is even FIRED outside it — a
 // pre-departure or long-landed inbound used to spend FR24 budget every poll.
+// v24116 — HOW LONG BEFORE ITS ARRIVAL A LEG CAN BE IN THE AIR. A row with no
+// flight time of its own (Moncton never gives one) was taken as four hours,
+// so PD2293 from Billy Bishop, due 13:27 on a two hour hop, opened at 09:02:
+// a position of anything Flightradar24 or OpenSky matched to the number was
+// shown as the inbound at 16,800 ft while the real one stood in Toronto, and
+// the board paid for lookups all morning. Without a time of its own the
+// flight time is the distance flown at a cruise ground speed (250 kt a
+// turboprop, 400 anything else) plus 15 minutes, then the same 25 minute pad;
+// four hours only when the distance is not known either. (v24117: a Dash 8-300
+// into a winter headwind makes about 210 kt, and 300 hid its first 15 minutes;
+// one speed for jets and unknown types, so learning the type from the first
+// live answer does not shrink the window by a quarter of an hour.)
+function _gateLegSpanMs(row, apIata) {
+  var mins = Number(row && row._durationMins) || 0;
+  if (!(mins > 0)) {
+    mins = 240;
+    try {
+      var o = _lookupAirport(row._locIata), h = _lookupAirport(apIata || (typeof window !== 'undefined' && window._gateIata));
+      if (o && h) {
+        var kt = (typeof _gateIsProp === 'function' && _gateIsProp(row)) ? 250 : 400;
+        mins = Math.max(30, Math.min(900, _gcNm(o, h) / kt * 60 + 15));
+      }
+    } catch (e) { mins = 240; }
+  }
+  return (mins + 25) * 60000;
+}
 function _gateLegWindowOpen(row, apIata) {
   try {
     if (!row) return false;
@@ -41627,9 +41693,9 @@ function _gateLegWindowOpen(row, apIata) {
     if (!arr) return true;                                   // no times → cannot judge; the render's own guards decide
     // (v23946 — the dead ML route-time lookup that also fed this span is gone;
     // it never answered after 2026-09-10, so the span is unchanged.)
-    var span = ((row._durationMins || 240) + 25) * 60000;
+    var span = _gateLegSpanMs(row, apIata);
     var now = Date.now();
-    return !(now < arr - span || now > arr + ARR_CONFIRM_MIN * 60000);
+    return !(now < _gateArrEarliestTs(row) - span || now > arr + ARR_CONFIRM_MIN * 60000);
   } catch (e) { return true; }
 }
 // Can the aircraft still get from (lat,lng) to this field by its ETA? A 600 kt
@@ -41639,6 +41705,32 @@ function _fixCanReachByEta(lat, lng, dest, arrTs, nowTs) {
   var remainNm = _gcNm([lat, lng], dest);
   var hrsLeft = Math.max(0, (arrTs - nowTs) / 3600000);
   return remainNm <= hrsLeft * 600 + 60;
+}
+// v24116 — AND NOT SO CLOSE IT WOULD BE HERE HOURS EARLY. The test above only
+// asks whether a fix is too far to make the ETA. Moncton gate 3, 2026-11-05
+// at 10:33: OpenSky gave an aeroplane at 11,850 ft and 350 kt beside the field
+// for PD2293, due 13:27 and still at Billy Bishop; the board drew it there,
+// printed En route and showed its speed and altitude. An airborne fix that,
+// flown on at its own speed (at least 150 kt), would land more than an hour
+// and a half before the ETA is another aeroplane. Pure, like the test above.
+// (v24117: 90 minutes, not 60: taxi-in at a hub and a great-circle leg flown
+// at cruise speed already take half an hour off a real early arrival, and a
+// hold near the field stays inside it. The incident fix was 170 early.)
+function _fixTooEarlyForEta(lat, lng, spdKt, dest, arrTs, nowTs) {
+  if (!dest || !arrTs) return false;
+  var remainNm = _gcNm([lat, lng], dest);
+  var kt = Math.max(150, typeof spdKt === 'number' && isFinite(spdKt) ? spdKt : 0);
+  var minsToGo = remainNm / kt * 60;
+  return (arrTs - nowTs) / 60000 - minsToGo > 90;
+}
+// v24117 — THE EARLIEST TIME THE ROW GIVES, for the too-early test and the
+// opening edge of the leg window. An early flight is judged by its revised
+// time, and a stale delay (the row still says 15:00, the aeroplane lands at
+// 13:40) by its schedule: neither may hide the real inbound. The closing
+// edge and the reach test keep the latest.
+function _gateArrEarliestTs(row) {
+  var a = Number(row && row._revTs) || 0, b = Number(row && row._sortTs) || 0;
+  return (a > 0 && b > 0) ? Math.min(a, b) : (a || b);
 }
 // v23915 — AN AEROPLANE STILL STANDING AT ITS ORIGIN IS LATE, NOT SOMEONE
 // ELSE'S. The ETA test asks whether a fix could still fly here in time; one on
@@ -41656,13 +41748,16 @@ function _fixAtLegOrigin(row, lat, lng, onGround) {
     return !!(o && _gcNm([lat, lng], o) < 5);
   } catch (e) { return false; }
 }
-function _fixPlausibleForLeg(row, lat, lng, onGround) {
+function _fixPlausibleForLeg(row, lat, lng, onGround, spdKt) {
   try {
     if (!row || row.dest) return true;                       // arrival rows only; outbound legs keep their own guards
     if (_fixAtLegOrigin(row, lat, lng, onGround)) return true;
     var apI = (typeof window !== 'undefined' && window._gateIata) || '';
     var dC = _lookupAirport(apI); if (!dC) return true;
     var arrTs = Math.max(row._revTs || 0, row._sortTs || 0); if (!arrTs) return true;
+    // (v24117 — the fix own speed, not the last poll: every path judges a
+    // fix by the same numbers)
+    if (onGround !== true && _fixTooEarlyForEta(lat, lng, (typeof spdKt === 'number') ? spdKt : row._liveSpd, dC, _gateArrEarliestTs(row), Date.now())) return false;
     return _fixCanReachByEta(lat, lng, dC, arrTs, Date.now());
   } catch (e) { return true; }
 }
@@ -41687,7 +41782,8 @@ function _gateLiveFix(row) {
     lat = row._liveLat; lng = row._liveLng; src = 'feed'; osky = row._liveOsky === true;
   }
   if (lat === null || lng === null) return null;
-  if (!_fixPlausibleForLeg(row, lat, lng, src === 'adsb' ? !!(c && c.onGround === true) : row._liveOnGround === true)) {
+  if (!_fixPlausibleForLeg(row, lat, lng, src === 'adsb' ? !!(c && c.onGround === true) : row._liveOnGround === true,
+                           src === 'adsb' ? (c && c.spd) : row._liveSpd)) {
     try { console.log('[FIX-GATE]', row.flight, src, 'fix', lat.toFixed(2) + ',' + lng.toFixed(2), 'cannot reach', window._gateIata, 'by ETA — ignored'); } catch (e) {}
     if (_gateFixCache && _gateFixCache.key === key) _gateFixCache = null;
     return null;
@@ -49672,6 +49768,8 @@ function _gateFixCheck(c, inb, ap, now) {
   if (c.onGround && !(nearO || nearH)) return false;
   var arr = Math.max(inb._revTs || 0, inb._sortTs || 0);
   if (h && arr && !(c.onGround && nearO) && !_fixCanReachByEta(c.lat, c.lng, h, arr, now)) return false;
+  // (v24115 — nor one in the air that would be here an hour before its ETA)
+  if (h && arr && !c.onGround && _fixTooEarlyForEta(c.lat, c.lng, c.spd, h, _gateArrEarliestTs(inb), now)) return false;
   // Near this route at all (the big map's corridor gate, now both maps'): a
   // fix a quarter of the leg or 86 nm off the direct path is someone else's.
   if (o && h) {

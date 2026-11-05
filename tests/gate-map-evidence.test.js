@@ -77,7 +77,7 @@ const FNS = [
   '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnedByPattern', '_gateTurnConsumed', '_gateLandedAt', '_gateLandedInfo', '_gateSeenLand',
   '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateInboundForDeparture', '_gateMapCity', '_gateMapNote', 'fidsInboundAirborne',
-  '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', 'adbStatus',
+  '_gcNm', '_fixCanReachByEta', '_fixTooEarlyForEta', '_gateArrEarliestTs', '_gateLegSpanMs', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', 'adbStatus',
   'adbStatusInferred', '_fidsClockForLang', '_gateMatchIsNew', '_fixAtLegOrigin', '_fixPlausibleForLeg',
   '_gateLegWindowOpen', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave', '_gateArrsSeen', 'aircraftCodeToIata',
   '_gateSeenKeepIdentity',
@@ -525,7 +525,7 @@ test('the glide stops dead-reckoning 8 minutes after its last real fix, and "hea
 test('the poll stamps its fix, checks it like the maps do, and drops it on the feed\'s own "Arrived"', () => {
   const poll = fnSource('_gateNumbersPoll');
   assert.match(poll, /at: _fxAt, fl: flt, via: _adsb\.via \|\| '', cs: _adsb\.cs \|\| ''/);
-  assert.match(poll, /var _rOk = _fixPlausibleForLeg\(inb, _adsb\.lat, _adsb\.lng, _adsb\.onGround === true\);/);
+  assert.match(poll, /var _rOk = _fixPlausibleForLeg\(inb, _adsb\.lat, _adsb\.lng, _adsb\.onGround === true, _adsb\.spd\);/);
   // (v24034: and the map is redrawn from the arrival — tests/gate-glide-resume.test.js)
   assert.match(poll, /\(_gateRawLanded\(inb\) \|\| _gateLegGone\(inb\)\) && \(!_lpEnd\.fl \|\| _lpEnd\.fl === flt\)\) \{\s*window\._gateInboundLivePos = null;/);
   assert.match(poll, /var _depGateT = _gateDepSchedTs\(inb\) \|\| null;/);
@@ -627,7 +627,7 @@ test('a late aeroplane still on the ground at its origin is drawn there, whateve
   assert.equal(E._fixPlausibleForLeg(gone, yul[0], yul[1], true), true, 'on the ground at its origin: late');
   assert.equal(E._fixPlausibleForLeg(gone, yul[0], yul[1], false), false, 'in the air there: cannot make it');
   assert.equal(E._fixAtLegOrigin(gone, 45.9, -70.0, true), false, 'on the ground over Maine is not at the origin');
-  assert.match(fnSource('_gateLiveFix'), /_fixPlausibleForLeg\(row, lat, lng, src === 'adsb' \? !!\(c && c\.onGround === true\) : row\._liveOnGround === true\)/);
+  assert.match(fnSource('_gateLiveFix'), /_fixPlausibleForLeg\(row, lat, lng, src === 'adsb' \? !!\(c && c\.onGround === true\) : row\._liveOnGround === true,\s*src === 'adsb' \? \(c && c\.spd\) : row\._liveSpd\)/);
 });
 
 test('no new Flightradar24 lookups: an inbound only the new pairing rules found is never asked about', () => {
