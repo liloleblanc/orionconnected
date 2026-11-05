@@ -94,7 +94,7 @@
   // cuts that by about 10x, which should land ordinary days near 300-500/day —
   // so 950 is 2-3x headroom, not a squeeze. If a week of real traffic lands
   // higher than that, raise this rather than leaving the cap to bite: a 402
-  // still stops the day by design, and the cap tripping is meant to be rare.
+  // pauses FR24 for an hour (v24118), and the cap tripping is meant to be rare.
   //
   // RAISED 2026-09-26 to 1,900/day, PACED, BY EXPLICIT AUTHORISATION. At 950 the
   // allowance was gone two or three hours after each 00:00 UTC reset and every
@@ -103,8 +103,18 @@
   // month, inside the 60,000 the account has until 2026-12-31. Spending is paced
   // through the day (fr24PacedAllowance), and from 2027-01-01 the worker clamps
   // the cap to 950/day by itself (fr24EffectiveCap), inside the permanent 30,000.
+  //
+  // v24118 — THE MONTH DECIDES THE DAY. At 1,900 counted a day the credits ran
+  // out on 2026-11-04, a day before the plan renewed on the 5th. With
+  // FR24_MONTHLY_CREDITS set, the day's cap is that number x 0.95 over the
+  // days in the billing period (5th to 5th): 1,900 in a 30-day period, 1,838
+  // in a 31-day one. FR24_MONTHLY_CREDITS_2027 is the plan's credits once the
+  // promotion ends on 2027-01-01. A plan change is these two numbers.
+  // FR24_DAILY_BUDGET is used only when FR24_MONTHLY_CREDITS is not set.
   "vars": {
     "FR24_DAILY_BUDGET": "1900",
+    "FR24_MONTHLY_CREDITS": "60000",
+    "FR24_MONTHLY_CREDITS_2027": "30000",
     // ── OPENSKY (the /osky/* routes, handleOsky in fids-proxy.js) ──────────
     // OFF until the OpenSky agreement is signed and paid: only "1" switches
     // it on, and it stays "0" until a change flips it (merged only after an

@@ -238,7 +238,7 @@ test('/feeds/status counts what each paid feed brought, counts only', async () =
   await kv.put('osky:n:' + day, JSON.stringify({ puts: 90, asked: 300, found: 120, 'asked:YQM': 200, 'found:YQM': 50 }));
   const s = await w.feedStatus({ FIDS_LIVE_FLIGHTS: kv, FR24_DAILY_BUDGET: '1900', OSKY_FOCUS: 'YQM,YHZ,YOW', OSKY_FOCUS_UNTIL: '2026-11-09T04:00:00Z' }, now);
   const d = s.counts_utc_day[day];
-  assert.deepEqual(d.fr24, { credits_used: 412, answers_with_position: 40, answers_empty: 61, daily_budget: 1900 });
+  assert.deepEqual(d.fr24, { credits_used: 412, answers_with_position: 40, answers_empty: 61, refused_no_credit: 0, daily_budget: 1900 });
   assert.deepEqual([d.opensky.box_answers, d.opensky.flights_asked, d.opensky.flights_found], [90, 300, 120]);
   assert.deepEqual(d.opensky.test_window, { YQM: { flights_asked: 200, flights_found: 50 } });
   assert.deepEqual(s.opensky_test_window.airports, ['YQM', 'YHZ', 'YOW']);
