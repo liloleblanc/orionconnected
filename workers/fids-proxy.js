@@ -1719,7 +1719,8 @@ __name(mcoTimeObj, "mcoTimeObj");
 function mcoStatus(f) {
   const os = String(f.originalStatus || "").toUpperCase();
   switch (os) {
-    case "AR": return "arrived";     // Landed
+    case "AR": return "arrived";     // Arrived (the vendor enum, see MCO_AUTH_STATUS)
+    case "LD": return "landed";      // v24120 — Landed: down, not yet on stand
     case "DP": return "departed";    // Departed
     case "CX": return "cancelled";   // Canceled
     case "DL": return "delayed";     // Delayed
@@ -1729,7 +1730,8 @@ function mcoStatus(f) {
   // Fall back to the wordy status field if originalStatus is unfamiliar.
   const s = String(f.status || "").toLowerCase();
   if (s.includes("cancel")) return "cancelled";
-  if (s.includes("land") || s.includes("arriv")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — see yhzStatus
   if (s.includes("depart")) return "departed";
   if (s.includes("delay")) return "delayed";
   return neutralStatus(s);   // v23968
@@ -1933,11 +1935,46 @@ function isNeutralStatus(st) {
   return st === "scheduled" || st === "ontime" || st === "expected";
 }
 __name(isNeutralStatus, "isNeutralStatus");
+// v24120 — LANDED IS NOT AT THE GATE. Every "land" or "arriv" word used to be
+// "arrived", and the boards read "arrived" as on its blocks: Sea-Tac said only
+// "Landed" for AC8806 at S1A (2026-11-05 02:10Z), and the gate card said
+// "Arrived at the gate | 6:22pm" (the schedule) while the map still had the
+// jet rolling out on 16C. "Landed" is touchdown and taxiing, so it is now
+// "landed"; "Arrived", "At gate" and "In blocks" are the aeroplane on its
+// stand and stay "arrived". The boards read "landed" as down (the map stops
+// flying it, the rows say Landed) and only "arrived", or an actual time with
+// a word other than Landed, as at the gate. Every adapter below that folded
+// the two does the same split through landWord. A bare "At gate" with no
+// landing word is left as it was (neutral): on a departure row it is the
+// aeroplane waiting to board, as Salt Lake City's InGate is (slcStatus).
+function landWord(txt) {
+  const s = String(txt || "").toLowerCase();
+  return /\b(at|in) (the )?gate\b|\b(in|on)[ -]?blocks?\b|\bbags? (delivered|on belt)\b/.test(s) ? "arrived" : "landed";
+}
+__name(landWord, "landWord");
+// v24120 — where an airport keeps writing Landed after the aeroplane is on its
+// blocks, the row itself says it is on stand some other way, and that turns a
+// "landed" into "arrived": the feed vendor behind Charlotte, Las Vegas and
+// Houston (status Landed beside the airline text Arrived or InGate, or an
+// onBlockTimestamp), Boston (ActualGateTime, RemarksWithTime Arrived), O'Hare
+// (ArrivalDateTimeActualGate), Edinburgh and Zurich (the first bag in the hall).
+function vendorOnStand(r) {
+  const o = String((r && r.originalStatus) || "").toLowerCase();
+  return o.includes("arriv") || /\bin ?gate\b/.test(o) || !!(r && r.onBlockTimestamp);
+}
+__name(vendorOnStand, "vendorOnStand");
+// A time already passed (the first bag in the hall), as evidence.
+function pastTs(v, nowMs) {
+  const t = v ? Date.parse(String(v)) : NaN;
+  return !isNaN(t) && t <= (nowMs || Date.now());
+}
+__name(pastTs, "pastTs");
 function yhzStatus(txt) {
   const s = String(txt || "").toLowerCase();
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);
   if (s.includes("delay")) return "delayed";
   return neutralStatus(s);   // v23968 — ON TIME / EXPECTED / SCHEDULED, EARLY or anything novel
 }
@@ -3012,7 +3049,8 @@ function farArrFromAdb(rows) {
 __name(farArrFromAdb, "farArrFromAdb");
 // Toronto Pearson: ISO times with their offset; codeshares ride in ids[] on the
 // operating row, so each marketing number gets the operating row's times.
-const FARARR_YYZ_STATUS = { CAN: "cancelled", DIV: "diverted", DEL: "delayed", ARR: "arrived", LDD: "arrived", LND: "arrived", BAG: "arrived", ONB: "arrived" };
+// v24120 — LDD and LND are Pearson's Landed: down, not on the stand (yhzStatus).
+const FARARR_YYZ_STATUS = { CAN: "cancelled", DIV: "diverted", DEL: "delayed", ARR: "arrived", LDD: "landed", LND: "landed", BAG: "arrived", ONB: "arrived" };
 function farArrYyzRows(list) {
   const out = [];
   for (const f of (Array.isArray(list) ? list : [])) {
@@ -3037,7 +3075,8 @@ function farArrWordStatus(s) {
   if (t.includes("divert")) return "diverted";
   if (t.includes("delay") || t.includes("late")) return "delayed";
   if (t.includes("early")) return "early";
-  if (t.includes("arriv") || t.includes("land")) return "arrived";
+  if (t.includes("arriv")) return "arrived";
+  if (t.includes("land")) return landWord(t);   // v24120 — see yhzStatus
   return "scheduled";
 }
 __name(farArrWordStatus, "farArrWordStatus");
@@ -4953,8 +4992,11 @@ function lhrParseFeed(jsonText, dir, nowMs) {
     const sched = localTimeObjFromTs("Europe/London", schedTs);
     const stat = ((fs.aircraftMovement || {}).aircraftMovementStatus || [])[0] || {};
     const msg = String(stat.message || "");
+    // v24120 — LD is "Landed 05:09": down, not on the stand. LB is "Landed
+    // 05:09, bags delivered on belt 5": the bags are off, so it is on stand.
     let status = stat.statusCode === "CX" ? "cancelled"
-      : (stat.statusCode === "LD" || stat.statusCode === "LB") ? "arrived"
+      : stat.statusCode === "LD" ? "landed"
+      : stat.statusCode === "LB" ? "arrived"
       : yhzStatus(msg);
     // "Expected 04:37" / "Departed 07:44" — the trailing clock is the
     // revision when it differs from schedule (LHR local wall clock).
@@ -5146,6 +5188,8 @@ function bosParseFeed(jsonText, dir, nowMs) {
       if (rv.ts !== ts) revised = rv;
     }
     let status = yhzStatus(r.Remarks || "");
+    // v24120 — Massport keeps Remarks "Landed" at the gate (vendorOnStand)
+    if (status === "landed" && (String(r.ActualGateTime || "").trim() || /arriv/i.test(String(r.RemarksWithTime || "")))) status = "arrived";
     if (isNeutralStatus(status) && String(r.Delayed) === "True") status = "delayed";   // v23968 — any neutral word
     const isDep = dir === "dep";
     const fl = authorityFlight({
@@ -5188,7 +5232,9 @@ function lasParseFeed(jsonText, dir, nowMs) {
       ? localTimeObjFromTs("America/Los_Angeles", bt * 1000) : null;
     const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
     const fl = authorityFlight({
-      dir, number: num, status: yhzStatus(r.status || r.originalStatus || ""),
+      dir, number: num,
+      // v24120 — Landed beside the airline text Arrived is at the gate (vendorOnStand)
+      status: (() => { const st = yhzStatus(r.status || r.originalStatus || ""); return (st === "landed" && vendorOnStand(r)) ? "arrived" : st; })(),
       homeIata: "LAS", homeIcao: "KLAS", homeName: "Las Vegas",
       gate: (r.gate || "").toString().trim() || null,
       otherIata: ((isArr ? r.departureAirport : r.arrivalAirport) || "").toString().toUpperCase() || null,
@@ -5259,6 +5305,8 @@ function ordParseFeed(jsonText, dir, nowMs) {
       const rem = yhzStatus(r.Remarks || "");
       if (!isNeutralStatus(rem) || (status === "scheduled" && rem !== "scheduled")) status = rem;
     }
+    // v24120 — O'Hare says Landed from the runway on; its gate time says on stand
+    if (status === "landed" && !isDep && r.ArrivalDateTimeActualGate) status = "arrived";
     const fl = authorityFlight({
       dir, number: String(r.AirlineCodeFlightNumber).trim(), status,
       homeIata: "ORD", homeIcao: "KORD", homeName: "Chicago",
@@ -5934,7 +5982,7 @@ __name(yhmParseBoard, "yhmParseBoard");
 // The status field is EMPTY for most rows because the feed runs five days
 // ahead; an empty status is a scheduled flight, not a missing one.
 const HBA_STATUS = {
-  "landed": "arrived", "arrived": "arrived", "departed": "departed",
+  "landed": "landed", "arrived": "arrived", "departed": "departed",   // v24120 — Landed is not at the gate
   "closed": "gateclosed", "boarding": "boarding", "cancelled": "cancelled",
   "delayed": "delayed", "final call": "final", "on time": "ontime"
 };
@@ -6064,11 +6112,43 @@ __name(pdxParseFeed, "pdxParseFeed");
 // and the boards never overspend the permanent allowance.
 const FR24_PROMO_ENDS = "2027-01-01";
 const FR24_PERMANENT_DAILY_CAP = 950;
-function fr24EffectiveCap(configured, now) {
-  const day = new Date(now || Date.now()).toISOString().slice(0, 10);
+// v24118 — THE MONTH HAS TO LAST TO THE RENEWAL. The plan renews on the 5th
+// (charged 2026-11-05) with a fixed number of credits, and FR24 refuses every
+// call once they are gone, paid bill or not, until it renews. 1,900 a day
+// counted is 58,900 in a 31-day period and the counter misses a little of
+// what FR24 bills, so the credits ran out at 12:32 AST on 2026-11-04, a day
+// before the renewal: every gate lost its aircraft. With FR24_MONTHLY_CREDITS
+// set, the day's cap is the month's credits, less a margin for what the
+// counter misses, over the days in this billing period. A bigger plan is one
+// number (and FR24_MONTHLY_CREDITS_2027 for the month after a promotion).
+const FR24_RENEW_DAY = 5;
+const FR24_COUNTER_MARGIN = 0.95;
+function fr24PeriodDays(now) {
+  const d = new Date(now);
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth() - (d.getUTCDate() < FR24_RENEW_DAY ? 1 : 0);
+  return Math.round((Date.UTC(y, m + 1, FR24_RENEW_DAY) - Date.UTC(y, m, FR24_RENEW_DAY)) / 86400000);
+}
+__name(fr24PeriodDays, "fr24PeriodDays");
+function fr24MonthlyCredits(env, day) {
+  const cur = Number(env && env.FR24_MONTHLY_CREDITS) || 0;
+  const later = Number(env && env.FR24_MONTHLY_CREDITS_2027) || 0;
+  return day >= FR24_PROMO_ENDS && later > 0 ? later : cur;
+}
+__name(fr24MonthlyCredits, "fr24MonthlyCredits");
+function fr24EffectiveCap(configured, now, env) {
+  const t = now || Date.now();
+  const day = new Date(t).toISOString().slice(0, 10);
+  const monthly = env ? fr24MonthlyCredits(env, day) : 0;
+  if (monthly > 0) return Math.floor(monthly * FR24_COUNTER_MARGIN / fr24PeriodDays(t));
   return day >= FR24_PROMO_ENDS ? Math.min(configured, FR24_PERMANENT_DAILY_CAP) : configured;
 }
 __name(fr24EffectiveCap, "fr24EffectiveCap");
+// v24118 — AN EMPTY CREDIT POOL PAUSES FR24 FOR AN HOUR, NOT THE DAY. A 402
+// is not billed, and the plan renews during a UTC day: on 2026-11-05 the
+// renewal came after the first refusal at 00:01 UTC, and the old rule (the
+// day spent) kept every gate dark until 20:00 AST with fresh credits waiting.
+const FR24_EMPTY_POOL_PAUSE_MS = 3600000;
 
 // ── THE DAILY ALLOWANCE IS PACED THROUGH THE DAY ──────────────────────────
 // The budget resets at 00:00 UTC — 21:00 in Atlantic Canada — and the boards
@@ -6233,7 +6313,7 @@ async function dtwFr24Schedule(env) {
     let finished = false;
 
     const bKey = `fr24:used:${day}`;
-    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
+    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.now(), env);
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return serve();
     // The whole page must fit under the pace line, not merely start below it.
@@ -6258,8 +6338,8 @@ async function dtwFr24Schedule(env) {
           "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } });
       } catch (e) { break; }
       calls += 1;
-      // A hard no from the plan stops THIS sweep. Only an empty credit pool
-      // (402) stops the day.
+      // A hard no from the plan stops THIS sweep. An empty credit pool (402)
+      // pauses every FR24 call for an hour (v24118: no longer the day).
       //
       // This sweep once wrote used = cap into the SHARED fr24:used:<day> key
       // on a 429 too — the key every aircraft-identity lookup checks — so one
@@ -6267,7 +6347,10 @@ async function dtwFr24Schedule(env) {
       // UTC midnight. 402 still burns the day, because an empty pool really
       // is empty. A 429 or 403 ends this attempt only, costs the calls
       // actually made, and sets the short cool-off the ADSB path uses.
-      if (r.status === 402) { used = cap; break; }
+      if (r.status === 402) {
+        try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + FR24_EMPTY_POOL_PAUSE_MS), { expirationTtl: 7200 }); } catch (e) {}
+        break;
+      }
       if (r.status === 429 || r.status === 403) {
         try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
         break;
@@ -6651,7 +6734,9 @@ function ediParseFeed(jsonText, dir, nowMs) {
     const fl = authorityFlight({
       dir, number: String(r.flightNo).replace(/\s+/g, "").toUpperCase(),
       callSign: (r.callsign || "").toString().trim() || null,
-      status: yhzStatus(r.status || ""),
+      // v24120 — "LANDED 03:54" stays on the row at the gate; the first bag in
+      // the hall (firstBagDateTime, passed) says the aeroplane is on stand
+      status: (() => { const st = yhzStatus(r.status || ""); return (st === "landed" && pastTs(r.firstBagDateTime, nowMs)) ? "arrived" : st; })(),
       homeIata: "EDI", homeIcao: "EGPH", homeName: "Edinburgh",
       gate: (r.gate || "").toString().trim() || null,
       otherIata: ((ap.codes || {}).iata || "").toString().toUpperCase() || null,
@@ -6743,6 +6828,7 @@ function cltParseFeed(jsonText, dir, nowMs) {
     const revised = (typeof bt === "number" && bt !== r.scheduledTimestamp) ? localTimeObjFromTs("America/New_York", bt * 1000) : null;
     const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
     let status = yhzStatus(r.status || r.originalStatus || "");
+    if (status === "landed" && vendorOnStand(r)) status = "arrived";   // v24120 — Landed beside Arrived is at the gate
     if (isNeutralStatus(status) && r.isDelayed === true) status = "delayed";   // v23968 — any neutral word
     const fl = authorityFlight({
       dir, number: num.toUpperCase(),
@@ -7001,7 +7087,7 @@ __name(ausParseFeed, "ausParseFeed");
 // revised time and no belt anywhere on the page.
 const MSP_STATUS = {
   "ON TIME": "ontime", "GATE CHANGE": "scheduled", "BOARDING": "boarding",
-  "DEPARTED": "departed", "LANDED": "arrived", "ARRIVED AT GATE": "arrived",
+  "DEPARTED": "departed", "LANDED": "landed", "ARRIVED AT GATE": "arrived",   // v24120 — LANDED is short of the gate
   "ARRIVED": "arrived", "DELAYED": "delayed", "CANCELLED": "cancelled", "CANCELED": "cancelled"
 };
 function mspStatus(txt) {
@@ -7122,7 +7208,7 @@ const SLC_AIRLINE_NAME = {
 // means "arrived" on the arrivals side.
 const SLC_STATUS = {
   SCHEDULED: "scheduled", ONTIME: "ontime", DEPARTED: "departed", OUTGATE: "departed",
-  ARRIVED: "arrived", LANDED: "arrived", INFLIGHT: "active", ENROUTE: "active", INAIR: "active",
+  ARRIVED: "arrived", LANDED: "landed", INFLIGHT: "active", ENROUTE: "active", INAIR: "active",   // v24120 — LANDED is short of InGate
   DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted",
   BOARDING: "boarding", GATECLOSED: "gateclosed"
 };
@@ -7206,7 +7292,8 @@ __name(slcFetchDay, "slcFetchDay");
 // Status arrives as a CSS class (flightStatus-InGate …) with a friendly
 // text; diverted legs are listed next to the recovery leg of the same
 // flight, and the class vocabulary is the same one MWAA uses.
-const RDU_STATUS = { INGATE: "arrived", LANDED: "arrived", INAIR: "active", OUTGATE: "departed", DEPARTED: "departed", SCHEDULED: "scheduled", DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted", BOARDING: "boarding" };
+// v24120 — flightStatus-Landed is down and short of the gate; InGate is on stand.
+const RDU_STATUS = { INGATE: "arrived", LANDED: "landed", INAIR: "active", OUTGATE: "departed", DEPARTED: "departed", SCHEDULED: "scheduled", DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted", BOARDING: "boarding" };
 function rduCellTime(chunk, cls) {
   const m = chunk.match(new RegExp(`class="${cls}[^"]*"[^>]*><!--dtDateTime\\((\\d{4})-(\\d{2})-(\\d{2}),(\\d{2}):(\\d{2}):\\d{2}`));
   if (!m) return null;
@@ -7287,7 +7374,8 @@ function yxeStatus(txt) {
   if (s.includes("final call") || s.includes("last call")) return "final";
   if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay")) return "delayed";
   return neutralStatus(txt);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -7460,7 +7548,8 @@ function parseYqtStatus(text, cls) {
   const s = `${text || ""} ${cls || ""}`.toLowerCase();
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("late") || s.includes("delay")) return "delayed";
   return neutralStatus(text);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -7826,7 +7915,8 @@ function yqxStatus(txt) {
   if (s.includes("gate closed")) return "gateclosed";
   if (s.includes("final call") || s.includes("board")) return "boarding";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay") || s.includes("late")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -7951,7 +8041,8 @@ function yygStatus(txt) {
   if (s.includes("gate closed")) return "gateclosed";
   if (s.includes("boarding") || s.includes("final call")) return "boarding";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay") || s.includes("late")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -8205,7 +8296,8 @@ function yxsStatus(txt, cls) {
   if (s.includes("final call") || s.includes("last call")) return "final";
   if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("late") || s.includes("delay")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -8302,7 +8394,7 @@ const YMM_STATUS = {
   "ON TIME": "ontime", "EARLY": "scheduled", "SCHEDULED": "scheduled", "EXPECTED": "expected",
   "DELAYED": "delayed", "LATE": "delayed",
   "CANCELLED": "cancelled", "CANCELED": "cancelled",
-  "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
+  "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "landed",   // v24120 — see yhzStatus
   "BOARDING": "boarding", "FINAL CALL": "final", "LAST CALL": "final",
   "GATE CLOSED": "gateclosed", "DIVERTED": "diverted"
 };
@@ -8316,7 +8408,8 @@ function ymmStatus(txt) {
   if (s.includes("gate closed")) return "gateclosed";
   if (s.includes("final call") || s.includes("last call") || s.includes("board")) return "boarding";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("delay") || s.includes("late")) return "delayed";
   if (s.includes("on time") || s.includes("expect")) return neutralStatus(s);   // v23968 — its own word
   if (s.includes("early") || s.includes("sched")) return "scheduled";
@@ -8591,7 +8684,8 @@ function yzfStatus(txt) {
   if (s.includes("final call") || s.includes("last call")) return "final";
   if (s.includes("boarding")) return "boarding";
   if (s.includes("depart")) return "departed";
-  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("arriv")) return "arrived";
+  if (s.includes("land")) return landWord(s);   // v24120 — Landed is not at the gate (yhzStatus)
   if (s.includes("late") || s.includes("delay")) return "delayed";
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -8886,22 +8980,28 @@ const ZRH_AIRLINE_NAMES = { KM: "KM Malta Airlines" };
 // statusCode vocabulary seen live across two days; 200 "Rolling" is
 // off-blocks on a departure and the landing roll on an arrival, so it
 // splits by direction in zrhStatus. Unknown codes fall back to the text.
+// v24120 — 7 is "Landed" (statusTextEn on all 36 in the capture) and an
+// arrival's 200 is its landing roll: both are down and short of the stand,
+// "landed", not "arrived" (yhzStatus).
 const ZRH_STATUS = {
-  2: "gateclosed", 3: "boarding", 4: "departed", 7: "arrived", 8: "cancelled",
+  2: "gateclosed", 3: "boarding", 4: "departed", 7: "landed", 8: "cancelled",
   13: "boarding", 18: "delayed", 57: "scheduled", 90: "scheduled",
   201: "active", 202: "active"
 };
-function zrhStatus(code, text, dir) {
+// onStand (v24120): the row says the aeroplane is on its blocks some other
+// way (the first bag on the race track), which makes a Landed "arrived".
+function zrhStatus(code, text, dir, onStand) {
   const c = Number(code);
-  if (c === 200) return dir === "dep" ? "departed" : "arrived";
-  if (ZRH_STATUS[c]) return ZRH_STATUS[c];
+  if (c === 200) return dir === "dep" ? "departed" : "landed";
+  if (ZRH_STATUS[c]) return (ZRH_STATUS[c] === "landed" && onStand) ? "arrived" : ZRH_STATUS[c];
   const s = String(text || "").toLowerCase();
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("divert")) return "diverted";
   if (s.includes("board")) return "boarding";
   if (s.includes("closed")) return "gateclosed";
   if (s.includes("route") || s.includes("approach") || s.includes("airborne")) return "active";
-  return yhzStatus(s);
+  const st = yhzStatus(s);
+  return (st === "landed" && onStand) ? "arrived" : st;
 }
 __name(zrhStatus, "zrhStatus");
 // UTC-Z instant → epoch ms floored to the minute (ATA/ATD carry seconds;
@@ -8962,7 +9062,9 @@ function zrhParseFeed(jsonText, dir, nowMs) {
       dir, number: `${iata}${fln}`,
       // easyJet rows come ICAO-form (EZS1220): that string IS the callsign.
       callSign: flc.length === 3 ? `${flc}${flnRaw}` : null,
-      status: zrhStatus(r.statusCode, r.statusTextEn, dir),
+      // v24120 — Landed (7) stays on the row at the gate; the first bag on the
+      // race track (FBR, passed) says the aeroplane is on stand
+      status: zrhStatus(r.statusCode, r.statusTextEn, dir, !isDep && pastTs(r.FBR, nowMs)),
       homeIata: "ZRH", homeIcao: "LSZH", homeName: "Zürich",
       gate: isDep ? ((r.GAT == null ? "" : String(r.GAT)).trim() || null) : null,
       // IATA when the feed has one; a 4-letter ICAO (GA airfields) goes
@@ -9014,7 +9116,9 @@ const IAH_FEED_KEY = "9ACB3B733BE94B11A03B6E84CA87E895";
 // 2026-09-05) still reads as delayed here. "Now h:mma" is an estimate,
 // not a delay: scheduled + revised, the AUS/YVR convention. A Departed
 // arrival is en route (the boards render it that way); a Landed
-// departure has reached the far end, "arrived" as ADB itself says.
+// departure has reached the far end, "arrived" as ADB itself says (or,
+// since v24120, "landed" when the airline text does not say ARRIVED: the
+// boards read either one on a departure row as Departed).
 function iahStatus(r) {
   const s = String(r.status || "").toLowerCase();
   const o = String(r.originalStatus || "").toLowerCase();
@@ -9024,7 +9128,11 @@ function iahStatus(r) {
   if (/final call|last call/.test(s) || /final call|last call/.test(o)) return "final";
   if (s.includes("board") || /\bbrd\b|board/.test(o)) return "boarding";
   if (s.includes("depart")) return "departed";
-  if (s.includes("land") || s.includes("arriv")) return "arrived";
+  // v24120 — the vendor says Landed for every row that is down; the airline
+  // text beside it (ARRIVED, InGate) is what says it reached the gate.
+  if (s.includes("land") || s.includes("arriv")) {
+    return (s.includes("arriv") || vendorOnStand(r)) ? "arrived" : landWord(o + " " + s);
+  }
   if (r.isDelayed === true || o.includes("delay")) return "delayed";
   return neutralStatus(r.status);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
@@ -9103,7 +9211,7 @@ __name(parseIahFeed, "parseIahFeed");
 // Departed, CX Canceled, DL Delayed, DV Diverted, BD Boarding, LC Last
 // Call, NT New Time, ON On Time (the default for every future flight).
 const MCO_AUTH_STATUS = {
-  AR: "arrived", LD: "arrived", DP: "departed", CX: "cancelled", DL: "delayed",
+  AR: "arrived", LD: "landed", DP: "departed", CX: "cancelled", DL: "delayed",   // v24120 — LD Landed is short of the gate
   DV: "diverted", BD: "boarding", LC: "boarding", ON: "ontime"   // v23968 — On Time is its own word
 };
 // flymco.com's own airline table (the flightsEnrichmentData block in its
@@ -9253,7 +9361,7 @@ const JFK_GQL_ARR = "query GetArrivingFlights(\n  $arrivalAirport: String!\n  $a
 // Landed / Arrived / Cancelled; the list API says "On Time" and "En Route").
 const JFK_STATUS = {
   "ON TIME": "ontime", SCHEDULED: "scheduled", DELAYED: "delayed", DEPARTED: "departed",
-  "IN FLIGHT": "active", "EN ROUTE": "active", LANDED: "arrived", ARRIVED: "arrived",
+  "IN FLIGHT": "active", "EN ROUTE": "active", LANDED: "landed", ARRIVED: "arrived",   // v24120 — Landed is not Arrived
   CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted"
 };
 // Every marketing carrier is its own row (TK12 IST is also TG9183, AV6634,
@@ -9446,11 +9554,11 @@ __name(jfkFetchList, "jfkFetchList");
 // and CORS-open. Recorded here so the decision stays visible.
 const SYD_TZ = "Australia/Sydney";
 // "On Time" stays scheduled — the boards derive early/delayed from the
-// revision. Landed is on the ground short of the gate, which the boards
-// fold to arrived anyway; Gate Open sits inside boarding, and Final Call is
-// FINAL CALL (v24083).
+// revision. Landed is on the ground short of the gate, and since v24120 the
+// boards keep it apart from Arrived (yhzStatus); Gate Open sits inside
+// boarding, and Final Call is FINAL CALL (v24083).
 const SYD_STATUS = {
-  "ON TIME": "ontime", "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
+  "ON TIME": "ontime", "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "landed",
   "CANCELLED": "cancelled", "DELAYED": "delayed", "DIVERTED": "diverted",
   "GATE OPEN": "boarding", "BOARDING": "boarding", "FINAL CALL": "final", "GATE CLOSED": "gateclosed"
 };
@@ -9470,7 +9578,8 @@ function sydStatus(text) {
   if (/\bdelay/.test(s)) return "delayed";
   if (/\bnot\b/.test(s)) return "scheduled";
   if (/\bdeparted\b/.test(s)) return "departed";
-  if (/\barrived\b|\blanded\b/.test(s)) return "arrived";
+  if (/\barrived\b/.test(s)) return "arrived";
+  if (/\blanded\b/.test(s)) return "landed";   // v24120
   return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(sydStatus, "sydStatus");
@@ -12208,7 +12317,21 @@ async function oskyReport(env, kv, url, now, stopMs) {
       await kv.put("osky:report", JSON.stringify({ at: oskyIso(now), ...rep }), { expirationTtl: OSKY_REPORT_TTL_S });
     } catch (e) { /* counts only: the heartbeat still answers */ }
   }
-  return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs), refresh_s: oskyRefreshS(env, now) });
+  return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs), refresh_s: oskyRefreshS(env, now, await fr24Rationed(env, kv, now)) });
+}
+
+// v24118 — IS FLIGHTRADAR24 HOLDING BACK RIGHT NOW: the day's cap spent, the
+// pace line reached, or a pause (empty pool, rate limit). Then OpenSky, the
+// backup, asks its boxes as often as it may (oskyRefreshS).
+async function fr24Rationed(env, kv, now) {
+  try {
+    if (!env || !env.FR24_KEY || !kv) return false;
+    const day = new Date(now).toISOString().slice(0, 10);
+    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), now, env);
+    const used = Number(await kv.get(`fr24:used:${day}`)) || 0;
+    const cool = Number(await kv.get(`fr24:cool:${day}`)) || 0;
+    return used >= cap || now < cool || used + 8 > fr24PacedAllowance(cap, now);
+  } catch (e) { return false; }
 }
 
 // v24115 — HOW OFTEN THE RELAY ASKS A BOX, set here and not on the server: the
@@ -12216,7 +12339,10 @@ async function oskyReport(env, kv, url, now, stopMs) {
 // 10..120 s). In the test window (OSKY_FOCUS) it is OSKY_FOCUS_REFRESH_S (15 s:
 // two boxes every 15 s is 11,520 calls a day, inside the relay 12,000 and the
 // licence 14,400); otherwise the relay own 120 s.
-function oskyRefreshS(env, now) {
+function oskyRefreshS(env, now, fr24Short) {
+  // (v24118 — and while Flightradar24 is holding back, everywhere: the
+  // backup steps up when the main source cannot answer)
+  if (fr24Short === true) return 30;
   if (!oskyFocus(env, now)) return OSKY_RELAY_CACHE_S;
   const v = Number(env && env.OSKY_FOCUS_REFRESH_S);
   // never under 30 s: a position read waits at least that long in KV edge caches
@@ -12360,7 +12486,12 @@ async function feedStatus(env, now) {
     }
     out.counts_utc_day[day] = {
       fr24: { credits_used: await num(`fr24:used:${day}`), answers_with_position: await num(`feeds:n:fr24:pos:${day}`),
-              answers_empty: await num(`feeds:n:fr24:empty:${day}`), daily_budget: Number(env && env.FR24_DAILY_BUDGET) || null },
+              answers_empty: await num(`feeds:n:fr24:empty:${day}`),
+              // v24118 — refused for an empty credit pool (402), and the cap the
+              // month allows today (fr24EffectiveCap)
+              refused_no_credit: await num(`feeds:n:fr24:refused:${day}`),
+              daily_budget: (env && (env.FR24_DAILY_BUDGET || env.FR24_MONTHLY_CREDITS))
+                ? fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.parse(day + "T12:00:00Z"), env) : null },
       opensky: { box_answers: n("puts"), flights_asked: n("asked"), flights_found: n("found") }
     };
     if (Object.keys(groups).length) out.counts_utc_day[day].opensky.test_window = groups;
@@ -13332,7 +13463,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         try {
           const _day = new Date().toISOString().slice(0, 10);
           const _bKey = `fr24:used:${_day}`;
-          const _cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
+          const _cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.now(), env);
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
           // A recent 429/403 sets a short cool-off instead of burning the day.
           const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
@@ -13383,8 +13514,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               // not seconds. A malformed body is NOT that, so it is excluded.
               _fr24SaidNothing = !!(_fj && Array.isArray(_fj.data) && _fj.data.length === 0);
             }
+            // (v24118 — a 402 is not billed: it costs nothing and pauses an
+            // hour below, so a renewal later in the day is picked up)
             const _spend = _hardStop
-              ? _cap
+              ? _used
               : _used + fr24Charge("live/flight-positions/full", _rows.length);
             try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
             if (_near && _spend > _used) {
@@ -13395,8 +13528,11 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               // Cool off for 5 minutes rather than for the day.
               try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
             }
+            if (_hardStop) {
+              try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + FR24_EMPTY_POOL_PAUSE_MS), { expirationTtl: 7200 }); } catch (e) {}
+            }
             // v24115 — what the paid feed brought, counted (/feeds/status)
-            try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
+            try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, _hardStop ? "refused" : (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
             if (_fr.ok) {
               const _p = _rows[0];
               if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
@@ -14503,6 +14639,9 @@ export {
   oskyPick,
   oskyOriginOk,
   oskyRefreshS,
+  fr24Rationed,
+  fr24EffectiveCap,
+  fr24PeriodDays,
   oskyFocus,
   oskyFocusGroup,
   oskyCsDigitsOk,
