@@ -6064,11 +6064,43 @@ __name(pdxParseFeed, "pdxParseFeed");
 // and the boards never overspend the permanent allowance.
 const FR24_PROMO_ENDS = "2027-01-01";
 const FR24_PERMANENT_DAILY_CAP = 950;
-function fr24EffectiveCap(configured, now) {
-  const day = new Date(now || Date.now()).toISOString().slice(0, 10);
+// v24118 — THE MONTH HAS TO LAST TO THE RENEWAL. The plan renews on the 5th
+// (charged 2026-11-05) with a fixed number of credits, and FR24 refuses every
+// call once they are gone, paid bill or not, until it renews. 1,900 a day
+// counted is 58,900 in a 31-day period and the counter misses a little of
+// what FR24 bills, so the credits ran out at 12:32 ADT on 2026-11-04, a day
+// before the renewal: every gate lost its aircraft. With FR24_MONTHLY_CREDITS
+// set, the day's cap is the month's credits, less a margin for what the
+// counter misses, over the days in this billing period. A bigger plan is one
+// number (and FR24_MONTHLY_CREDITS_2027 for the month after a promotion).
+const FR24_RENEW_DAY = 5;
+const FR24_COUNTER_MARGIN = 0.95;
+function fr24PeriodDays(now) {
+  const d = new Date(now);
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth() - (d.getUTCDate() < FR24_RENEW_DAY ? 1 : 0);
+  return Math.round((Date.UTC(y, m + 1, FR24_RENEW_DAY) - Date.UTC(y, m, FR24_RENEW_DAY)) / 86400000);
+}
+__name(fr24PeriodDays, "fr24PeriodDays");
+function fr24MonthlyCredits(env, day) {
+  const cur = Number(env && env.FR24_MONTHLY_CREDITS) || 0;
+  const later = Number(env && env.FR24_MONTHLY_CREDITS_2027) || 0;
+  return day >= FR24_PROMO_ENDS && later > 0 ? later : cur;
+}
+__name(fr24MonthlyCredits, "fr24MonthlyCredits");
+function fr24EffectiveCap(configured, now, env) {
+  const t = now || Date.now();
+  const day = new Date(t).toISOString().slice(0, 10);
+  const monthly = env ? fr24MonthlyCredits(env, day) : 0;
+  if (monthly > 0) return Math.floor(monthly * FR24_COUNTER_MARGIN / fr24PeriodDays(t));
   return day >= FR24_PROMO_ENDS ? Math.min(configured, FR24_PERMANENT_DAILY_CAP) : configured;
 }
 __name(fr24EffectiveCap, "fr24EffectiveCap");
+// v24118 — AN EMPTY CREDIT POOL PAUSES FR24 FOR AN HOUR, NOT THE DAY. A 402
+// is not billed, and the plan renews during a UTC day: on 2026-11-05 the
+// renewal came after the first refusal at 00:01 UTC, and the old rule (the
+// day spent) kept every gate dark until 21:00 ADT with fresh credits waiting.
+const FR24_EMPTY_POOL_PAUSE_MS = 3600000;
 
 // ── THE DAILY ALLOWANCE IS PACED THROUGH THE DAY ──────────────────────────
 // The budget resets at 00:00 UTC — 21:00 in Atlantic Canada — and the boards
@@ -6233,7 +6265,7 @@ async function dtwFr24Schedule(env) {
     let finished = false;
 
     const bKey = `fr24:used:${day}`;
-    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
+    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.now(), env);
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return serve();
     // The whole page must fit under the pace line, not merely start below it.
@@ -6258,8 +6290,8 @@ async function dtwFr24Schedule(env) {
           "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } });
       } catch (e) { break; }
       calls += 1;
-      // A hard no from the plan stops THIS sweep. Only an empty credit pool
-      // (402) stops the day.
+      // A hard no from the plan stops THIS sweep. An empty credit pool (402)
+      // pauses every FR24 call for an hour (v24118: no longer the day).
       //
       // This sweep once wrote used = cap into the SHARED fr24:used:<day> key
       // on a 429 too — the key every aircraft-identity lookup checks — so one
@@ -6267,7 +6299,10 @@ async function dtwFr24Schedule(env) {
       // UTC midnight. 402 still burns the day, because an empty pool really
       // is empty. A 429 or 403 ends this attempt only, costs the calls
       // actually made, and sets the short cool-off the ADSB path uses.
-      if (r.status === 402) { used = cap; break; }
+      if (r.status === 402) {
+        try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + FR24_EMPTY_POOL_PAUSE_MS), { expirationTtl: 7200 }); } catch (e) {}
+        break;
+      }
       if (r.status === 429 || r.status === 403) {
         try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
         break;
@@ -12208,7 +12243,21 @@ async function oskyReport(env, kv, url, now, stopMs) {
       await kv.put("osky:report", JSON.stringify({ at: oskyIso(now), ...rep }), { expirationTtl: OSKY_REPORT_TTL_S });
     } catch (e) { /* counts only: the heartbeat still answers */ }
   }
-  return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs), refresh_s: oskyRefreshS(env, now) });
+  return oskyJson({ on: oskyOn(env), stop_at: oskyIso(stopMs), refresh_s: oskyRefreshS(env, now, await fr24Rationed(env, kv, now)) });
+}
+
+// v24118 — IS FLIGHTRADAR24 HOLDING BACK RIGHT NOW: the day's cap spent, the
+// pace line reached, or a pause (empty pool, rate limit). Then OpenSky, the
+// backup, asks its boxes as often as it may (oskyRefreshS).
+async function fr24Rationed(env, kv, now) {
+  try {
+    if (!env || !env.FR24_KEY || !kv) return false;
+    const day = new Date(now).toISOString().slice(0, 10);
+    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), now, env);
+    const used = Number(await kv.get(`fr24:used:${day}`)) || 0;
+    const cool = Number(await kv.get(`fr24:cool:${day}`)) || 0;
+    return used >= cap || now < cool || used + 8 > fr24PacedAllowance(cap, now);
+  } catch (e) { return false; }
 }
 
 // v24115 — HOW OFTEN THE RELAY ASKS A BOX, set here and not on the server: the
@@ -12216,7 +12265,10 @@ async function oskyReport(env, kv, url, now, stopMs) {
 // 10..120 s). In the test window (OSKY_FOCUS) it is OSKY_FOCUS_REFRESH_S (15 s:
 // two boxes every 15 s is 11,520 calls a day, inside the relay 12,000 and the
 // licence 14,400); otherwise the relay own 120 s.
-function oskyRefreshS(env, now) {
+function oskyRefreshS(env, now, fr24Short) {
+  // (v24118 — and while Flightradar24 is holding back, everywhere: the
+  // backup steps up when the main source cannot answer)
+  if (fr24Short === true) return 30;
   if (!oskyFocus(env, now)) return OSKY_RELAY_CACHE_S;
   const v = Number(env && env.OSKY_FOCUS_REFRESH_S);
   // never under 30 s: a position read waits at least that long in KV edge caches
@@ -12360,7 +12412,12 @@ async function feedStatus(env, now) {
     }
     out.counts_utc_day[day] = {
       fr24: { credits_used: await num(`fr24:used:${day}`), answers_with_position: await num(`feeds:n:fr24:pos:${day}`),
-              answers_empty: await num(`feeds:n:fr24:empty:${day}`), daily_budget: Number(env && env.FR24_DAILY_BUDGET) || null },
+              answers_empty: await num(`feeds:n:fr24:empty:${day}`),
+              // v24118 — refused for an empty credit pool (402), and the cap the
+              // month allows today (fr24EffectiveCap)
+              refused_no_credit: await num(`feeds:n:fr24:refused:${day}`),
+              daily_budget: (env && (env.FR24_DAILY_BUDGET || env.FR24_MONTHLY_CREDITS))
+                ? fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.parse(day + "T12:00:00Z"), env) : null },
       opensky: { box_answers: n("puts"), flights_asked: n("asked"), flights_found: n("found") }
     };
     if (Object.keys(groups).length) out.counts_utc_day[day].opensky.test_window = groups;
@@ -13332,7 +13389,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         try {
           const _day = new Date().toISOString().slice(0, 10);
           const _bKey = `fr24:used:${_day}`;
-          const _cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
+          const _cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.now(), env);
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
           // A recent 429/403 sets a short cool-off instead of burning the day.
           const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
@@ -13383,8 +13440,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               // not seconds. A malformed body is NOT that, so it is excluded.
               _fr24SaidNothing = !!(_fj && Array.isArray(_fj.data) && _fj.data.length === 0);
             }
+            // (v24118 — a 402 is not billed: it costs nothing and pauses an
+            // hour below, so a renewal later in the day is picked up)
             const _spend = _hardStop
-              ? _cap
+              ? _used
               : _used + fr24Charge("live/flight-positions/full", _rows.length);
             try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
             if (_near && _spend > _used) {
@@ -13395,8 +13454,11 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
               // Cool off for 5 minutes rather than for the day.
               try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
             }
+            if (_hardStop) {
+              try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + FR24_EMPTY_POOL_PAUSE_MS), { expirationTtl: 7200 }); } catch (e) {}
+            }
             // v24115 — what the paid feed brought, counted (/feeds/status)
-            try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
+            try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, _hardStop ? "refused" : (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
             if (_fr.ok) {
               const _p = _rows[0];
               if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
@@ -14503,6 +14565,9 @@ export {
   oskyPick,
   oskyOriginOk,
   oskyRefreshS,
+  fr24Rationed,
+  fr24EffectiveCap,
+  fr24PeriodDays,
   oskyFocus,
   oskyFocusGroup,
   oskyCsDigitsOk,
