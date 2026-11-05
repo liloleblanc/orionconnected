@@ -37,21 +37,29 @@ function spendBlock() {
   assert.ok(at >= 0, 'the FR24 spend decision must still exist');
   // Widened from 900: the spend decision now reads the response body before it
   // can price the call, so the block it lives in is longer than it was.
-  return SRC.slice(at - 200, at + 1800);
+  // (v24118 — and to 2600: the 402 pause sits after the rate-limit cool-off)
+  return SRC.slice(at - 200, at + 2600);
 }
 
-test('only 402 burns the whole day', () => {
+test('only 402 pauses FR24, and for an hour, not the day', () => {
   const b = spendBlock();
   assert.match(b, /const _hardStop = \(_fr\.status === 402\);/,
-    'a dead credit pool (402) is the only thing that should stop for the day');
+    'a dead credit pool (402) is the only thing that should pause FR24');
+  // v24118 — a 402 is not billed and the plan renews during a UTC day: it
+  // pauses every call for an hour and costs nothing, so a renewal is picked up
+  assert.match(b, /_spend = _hardStop\s*\?\s*_used\s*:\s*_used \+ fr24Charge\(/,
+    'a 402 must cost nothing, not the whole cap');
+  assert.match(b, /if \(_hardStop\) \{\s*try \{ await env\.FIDS_LIVE_FLIGHTS\.put\(`fr24:cool:\$\{_day\}`, String\(Date\.now\(\) \+ FR24_EMPTY_POOL_PAUSE_MS\)/,
+    'a 402 sets the shared one-hour pause');
+  assert.match(SRC, /const FR24_EMPTY_POOL_PAUSE_MS = 3600000;/);
   // This used to pin the literal `_used + 1`, which was itself the defect: FR24
   // bills per returned row, so counting one per request meant FR24_DAILY_BUDGET
   // capped request COUNT and not spend. The INTENT of this assertion — that
   // anything short of 402 costs one ordinary call rather than the whole day —
   // is unchanged and is what is checked now; only the price of that call is
   // correct. See fr24-credit-accounting.test.js for the arithmetic.
-  assert.match(b, /_spend = _hardStop\s*\?\s*_cap\s*:\s*_used \+ fr24Charge\(/,
-    'a non-402 must cost one call at its real price, not the whole cap');
+  assert.doesNotMatch(b, /_spend = _hardStop\s*\?\s*_cap/,
+    'a 402 no longer spends the whole cap');
   assert.doesNotMatch(b, /_used \+ 1;/,
     'the per-request counter is back — the cap would stop capping spend');
 });
@@ -188,10 +196,11 @@ function dtwBlock() {
   return SRC.slice(start, start + 1800);
 }
 
-test('the Detroit sweep only burns the day on an empty pool', () => {
+test('the Detroit sweep pauses FR24 for an hour on an empty pool, never the day', () => {
   const b = dtwBlock();
-  assert.match(b, /if \(r\.status === 402\) \{ used = cap; break; \}/,
-    '402 alone should stop the day');
+  assert.match(b, /if \(r\.status === 402\) \{\s*try \{ await env\.FIDS_LIVE_FLIGHTS\.put\(`fr24:cool:\$\{day\}`, String\(Date\.now\(\) \+ FR24_EMPTY_POOL_PAUSE_MS\)/,
+    '402 pauses every FR24 call for an hour');
+  assert.doesNotMatch(b, /if \(r\.status === 402\) \{ used = cap/, 'a 402 no longer spends the day');
   assert.doesNotMatch(b, /r\.status === 402 \|\| r\.status === 429/,
     'a rate limit from a 30-call burst must not blind every board for the day');
 });
