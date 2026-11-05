@@ -3,12 +3,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // v24118 — THE MONTH HAS TO LAST TO THE RENEWAL.
 //
-// 2026-11-04 at 12:32 ADT Flightradar24 started answering 402 to every call:
+// 2026-11-04 at 12:32 AST Flightradar24 started answering 402 to every call:
 // the month's 60,000 credits were gone a day before the plan renewed on the
 // 5th (1,900 counted a day is 58,900 in a 31-day period, and the counter
 // misses a little of what FR24 bills). The worker then marked each day spent
 // at its first refusal, so even after the renewal every gate stayed without
-// aircraft until 21:00 ADT. Pinned here:
+// aircraft until 20:00 AST. Pinned here:
 //   - the day's cap is the month's credits x 0.95 over the days in this
 //     billing period (5th to 5th), so a period cannot spend past its credits;
 //   - a 402 pauses FR24 for an hour and costs nothing (fr24-budget-backoff);

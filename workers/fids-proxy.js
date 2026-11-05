@@ -6068,7 +6068,7 @@ const FR24_PERMANENT_DAILY_CAP = 950;
 // (charged 2026-11-05) with a fixed number of credits, and FR24 refuses every
 // call once they are gone, paid bill or not, until it renews. 1,900 a day
 // counted is 58,900 in a 31-day period and the counter misses a little of
-// what FR24 bills, so the credits ran out at 12:32 ADT on 2026-11-04, a day
+// what FR24 bills, so the credits ran out at 12:32 AST on 2026-11-04, a day
 // before the renewal: every gate lost its aircraft. With FR24_MONTHLY_CREDITS
 // set, the day's cap is the month's credits, less a margin for what the
 // counter misses, over the days in this billing period. A bigger plan is one
@@ -6099,7 +6099,7 @@ __name(fr24EffectiveCap, "fr24EffectiveCap");
 // v24118 — AN EMPTY CREDIT POOL PAUSES FR24 FOR AN HOUR, NOT THE DAY. A 402
 // is not billed, and the plan renews during a UTC day: on 2026-11-05 the
 // renewal came after the first refusal at 00:01 UTC, and the old rule (the
-// day spent) kept every gate dark until 21:00 ADT with fresh credits waiting.
+// day spent) kept every gate dark until 20:00 AST with fresh credits waiting.
 const FR24_EMPTY_POOL_PAUSE_MS = 3600000;
 
 // ── THE DAILY ALLOWANCE IS PACED THROUGH THE DAY ──────────────────────────
