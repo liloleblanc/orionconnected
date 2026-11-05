@@ -17593,7 +17593,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24113" src="/textures/gate-sky-shelf.mp4?v=24113" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24114" src="/textures/gate-sky-shelf.mp4?v=24114" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17637,7 +17637,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24113" src="/textures/gate-sky-shelf.mp4?v=24113" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24114" src="/textures/gate-sky-shelf.mp4?v=24114" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18866,7 +18866,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24113" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24114" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35786,7 +35786,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24113';
+var FIDS_BUILD_TAG = 'v24114';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -54585,8 +54585,11 @@ function fetchAccorHotels(destIata, langOverride) {
   }
   // _listLang computed at the top of the function (the LIST endpoint honors
   // Accept-Language; detail/photos/amenities all come through this call).
+  // v24114 — the fifty nearest, not sixteen: in a big city the sixteen nearest
+  // are one street of ibis and Mercure, and the Sofitel or Pullman a few
+  // blocks on never made the list. _accorPickHotels chooses five from them.
   var proxyUrl = 'https://fids-proxy.n-leblanc1984.workers.dev/accor/catalog/v1/hotels?latLng=' + coords[0] + ',' + coords[1]
-    + '&radius=110&range=0-15&sort=distance'
+    + '&radius=110&range=0-49&sort=distance'
     + '&language=' + encodeURIComponent(_listLang);
 
   console.log('[ACCOR] Fetching hotels near', destIata, '(' + _listLang + ', Accept-Language: ' + _accorAcceptLang(_listLang) + ')');
@@ -54647,7 +54650,135 @@ var DOWNTOWN_COORDS = {
   'CUN': { lat: 21.1619, lng: -86.8515, name: 'Cancún' },
   'PUJ': { lat: 18.5601, lng: -68.3725, name: 'Punta Cana' },
   'BGI': { lat: 13.1939, lng: -59.5432, name: 'Bridgetown' },
-  'NAS': { lat: 25.0443, lng: -77.3504, name: 'Nassau' }
+  'NAS': { lat: 25.0443, lng: -77.3504, name: 'Nassau' },
+  // v24114 — the centres of the cities the boards fly to where the airport is
+  // well outside town. Without one the hotel search centred on the airport,
+  // and Paris showed the ibis and hotelF1 at Roissy, not Paris.
+  'CDG': { lat: 48.8566, lng: 2.3522, name: 'Paris' },
+  'ORY': { lat: 48.8566, lng: 2.3522, name: 'Paris' },
+  'LHR': { lat: 51.5074, lng: -0.1278, name: 'London' },
+  'LGW': { lat: 51.5074, lng: -0.1278, name: 'London' },
+  'STN': { lat: 51.5074, lng: -0.1278, name: 'London' },
+  'LCY': { lat: 51.5074, lng: -0.1278, name: 'London' },
+  'LTN': { lat: 51.5074, lng: -0.1278, name: 'London' },
+  'FRA': { lat: 50.1109, lng: 8.6821, name: 'Frankfurt' },
+  'MUC': { lat: 48.1374, lng: 11.5755, name: 'Munich' },
+  'AMS': { lat: 52.3731, lng: 4.8922, name: 'Amsterdam' },
+  'FCO': { lat: 41.9028, lng: 12.4964, name: 'Rome' },
+  'CIA': { lat: 41.9028, lng: 12.4964, name: 'Rome' },
+  'MXP': { lat: 45.4642, lng: 9.1900, name: 'Milan' },
+  'LIN': { lat: 45.4642, lng: 9.1900, name: 'Milan' },
+  'BCN': { lat: 41.3874, lng: 2.1686, name: 'Barcelona' },
+  'MAD': { lat: 40.4168, lng: -3.7038, name: 'Madrid' },
+  'LIS': { lat: 38.7223, lng: -9.1393, name: 'Lisbon' },
+  'OPO': { lat: 41.1579, lng: -8.6291, name: 'Porto' },
+  'ZRH': { lat: 47.3769, lng: 8.5417, name: 'Zurich' },
+  'GVA': { lat: 46.2044, lng: 6.1432, name: 'Geneva' },
+  'VIE': { lat: 48.2082, lng: 16.3738, name: 'Vienna' },
+  'CPH': { lat: 55.6761, lng: 12.5683, name: 'Copenhagen' },
+  'ARN': { lat: 59.3293, lng: 18.0686, name: 'Stockholm' },
+  'BMA': { lat: 59.3293, lng: 18.0686, name: 'Stockholm' },
+  'OSL': { lat: 59.9139, lng: 10.7522, name: 'Oslo' },
+  'HEL': { lat: 60.1699, lng: 24.9384, name: 'Helsinki' },
+  'BRU': { lat: 50.8503, lng: 4.3517, name: 'Brussels' },
+  'DUB': { lat: 53.3498, lng: -6.2603, name: 'Dublin' },
+  'EDI': { lat: 55.9533, lng: -3.1883, name: 'Edinburgh' },
+  'GLA': { lat: 55.8642, lng: -4.2518, name: 'Glasgow' },
+  'MAN': { lat: 53.4808, lng: -2.2426, name: 'Manchester' },
+  'ATH': { lat: 37.9838, lng: 23.7275, name: 'Athens' },
+  'IST': { lat: 41.0082, lng: 28.9784, name: 'Istanbul' },
+  'SAW': { lat: 41.0082, lng: 28.9784, name: 'Istanbul' },
+  'BER': { lat: 52.5200, lng: 13.4050, name: 'Berlin' },
+  'HAM': { lat: 53.5511, lng: 9.9937, name: 'Hamburg' },
+  'DUS': { lat: 51.2277, lng: 6.7735, name: 'Düsseldorf' },
+  'PRG': { lat: 50.0755, lng: 14.4378, name: 'Prague' },
+  'BUD': { lat: 47.4979, lng: 19.0402, name: 'Budapest' },
+  'WAW': { lat: 52.2297, lng: 21.0122, name: 'Warsaw' },
+  'KEF': { lat: 64.1466, lng: -21.9426, name: 'Reykjavík' },
+  'VCE': { lat: 45.4408, lng: 12.3155, name: 'Venice' },
+  'NCE': { lat: 43.7102, lng: 7.2620, name: 'Nice' },
+  'LYS': { lat: 45.7640, lng: 4.8357, name: 'Lyon' },
+  'MRS': { lat: 43.2965, lng: 5.3698, name: 'Marseille' },
+  'TLS': { lat: 43.6047, lng: 1.4442, name: 'Toulouse' },
+  'BOD': { lat: 44.8378, lng: -0.5792, name: 'Bordeaux' },
+  'NAP': { lat: 40.8518, lng: 14.2681, name: 'Naples' },
+  'FLR': { lat: 43.7696, lng: 11.2558, name: 'Florence' },
+  'DXB': { lat: 25.2048, lng: 55.2708, name: 'Dubai' },
+  'DOH': { lat: 25.2854, lng: 51.5310, name: 'Doha' },
+  'AUH': { lat: 24.4539, lng: 54.3773, name: 'Abu Dhabi' },
+  'NRT': { lat: 35.6812, lng: 139.7671, name: 'Tokyo' },
+  'HND': { lat: 35.6812, lng: 139.7671, name: 'Tokyo' },
+  'ICN': { lat: 37.5665, lng: 126.9780, name: 'Seoul' },
+  'GMP': { lat: 37.5665, lng: 126.9780, name: 'Seoul' },
+  'PEK': { lat: 39.9042, lng: 116.4074, name: 'Beijing' },
+  'PKX': { lat: 39.9042, lng: 116.4074, name: 'Beijing' },
+  'PVG': { lat: 31.2304, lng: 121.4737, name: 'Shanghai' },
+  'SHA': { lat: 31.2304, lng: 121.4737, name: 'Shanghai' },
+  'HKG': { lat: 22.2793, lng: 114.1628, name: 'Hong Kong' },
+  'SIN': { lat: 1.2903, lng: 103.8520, name: 'Singapore' },
+  'BKK': { lat: 13.7563, lng: 100.5018, name: 'Bangkok' },
+  'DMK': { lat: 13.7563, lng: 100.5018, name: 'Bangkok' },
+  'DEL': { lat: 28.6139, lng: 77.2090, name: 'New Delhi' },
+  'BOM': { lat: 18.9400, lng: 72.8350, name: 'Mumbai' },
+  'TPE': { lat: 25.0478, lng: 121.5170, name: 'Taipei' },
+  'KIX': { lat: 34.6937, lng: 135.5023, name: 'Osaka' },
+  'ITM': { lat: 34.6937, lng: 135.5023, name: 'Osaka' },
+  'MNL': { lat: 14.5995, lng: 120.9842, name: 'Manila' },
+  'KUL': { lat: 3.1390, lng: 101.6869, name: 'Kuala Lumpur' },
+  'CAN': { lat: 23.1291, lng: 113.2644, name: 'Guangzhou' },
+  'SYD': { lat: -33.8688, lng: 151.2093, name: 'Sydney' },
+  'MEL': { lat: -37.8136, lng: 144.9631, name: 'Melbourne' },
+  'BNE': { lat: -27.4698, lng: 153.0251, name: 'Brisbane' },
+  'AKL': { lat: -36.8485, lng: 174.7633, name: 'Auckland' },
+  'PER': { lat: -31.9505, lng: 115.8605, name: 'Perth' },
+  'GRU': { lat: -23.5505, lng: -46.6333, name: 'São Paulo' },
+  'CGH': { lat: -23.5505, lng: -46.6333, name: 'São Paulo' },
+  'GIG': { lat: -22.9068, lng: -43.1729, name: 'Rio de Janeiro' },
+  'EZE': { lat: -34.6037, lng: -58.3816, name: 'Buenos Aires' },
+  'SCL': { lat: -33.4489, lng: -70.6693, name: 'Santiago' },
+  'LIM': { lat: -12.0464, lng: -77.0428, name: 'Lima' },
+  'BOG': { lat: 4.7110, lng: -74.0721, name: 'Bogotá' },
+  'MEX': { lat: 19.4326, lng: -99.1332, name: 'Mexico City' },
+  'PTY': { lat: 8.9824, lng: -79.5199, name: 'Panama City' },
+  'SJO': { lat: 9.9281, lng: -84.0907, name: 'San José' },
+  'HAV': { lat: 23.1136, lng: -82.3666, name: 'Havana' },
+  'SDQ': { lat: 18.4861, lng: -69.9312, name: 'Santo Domingo' },
+  'MBJ': { lat: 18.4762, lng: -77.8939, name: 'Montego Bay' },
+  'GDL': { lat: 20.6597, lng: -103.3496, name: 'Guadalajara' },
+  'MTY': { lat: 25.6866, lng: -100.3161, name: 'Monterrey' },
+  'IAD': { lat: 38.9072, lng: -77.0369, name: 'Washington' },
+  'DCA': { lat: 38.9072, lng: -77.0369, name: 'Washington' },
+  'DFW': { lat: 32.7767, lng: -96.7970, name: 'Dallas' },
+  'DAL': { lat: 32.7767, lng: -96.7970, name: 'Dallas' },
+  'IAH': { lat: 29.7604, lng: -95.3698, name: 'Houston' },
+  'HOU': { lat: 29.7604, lng: -95.3698, name: 'Houston' },
+  'DEN': { lat: 39.7392, lng: -104.9903, name: 'Denver' },
+  'ATL': { lat: 33.7490, lng: -84.3880, name: 'Atlanta' },
+  'DTW': { lat: 42.3314, lng: -83.0458, name: 'Detroit' },
+  'MSP': { lat: 44.9778, lng: -93.2650, name: 'Minneapolis' },
+  'CLT': { lat: 35.2271, lng: -80.8431, name: 'Charlotte' },
+  'PHL': { lat: 39.9526, lng: -75.1652, name: 'Philadelphia' },
+  'SLC': { lat: 40.7608, lng: -111.8910, name: 'Salt Lake City' },
+  'SAN': { lat: 32.7157, lng: -117.1611, name: 'San Diego' },
+  'PDX': { lat: 45.5152, lng: -122.6784, name: 'Portland' },
+  'AUS': { lat: 30.2672, lng: -97.7431, name: 'Austin' },
+  'BNA': { lat: 36.1627, lng: -86.7816, name: 'Nashville' },
+  'MSY': { lat: 29.9511, lng: -90.0715, name: 'New Orleans' },
+  'TPA': { lat: 27.9506, lng: -82.4572, name: 'Tampa' },
+  'FLL': { lat: 26.1224, lng: -80.1373, name: 'Fort Lauderdale' },
+  'RDU': { lat: 35.7796, lng: -78.6382, name: 'Raleigh' },
+  'HNL': { lat: 21.3069, lng: -157.8583, name: 'Honolulu' },
+  'MDW': { lat: 41.8781, lng: -87.6298, name: 'Chicago' },
+  'SJC': { lat: 37.3382, lng: -121.8863, name: 'San Jose' },
+  'PIT': { lat: 40.4406, lng: -79.9959, name: 'Pittsburgh' },
+  'CLE': { lat: 41.4993, lng: -81.6944, name: 'Cleveland' },
+  'STL': { lat: 38.6270, lng: -90.1994, name: 'St. Louis' },
+  'MCI': { lat: 39.0997, lng: -94.5786, name: 'Kansas City' },
+  'IND': { lat: 39.7684, lng: -86.1581, name: 'Indianapolis' },
+  'CMH': { lat: 39.9612, lng: -82.9988, name: 'Columbus' },
+  'BUF': { lat: 42.8864, lng: -78.8784, name: 'Buffalo' },
+  'SAT': { lat: 29.4241, lng: -98.4936, name: 'San Antonio' },
+  'YTZ': { lat: 43.6532, lng: -79.3832, name: 'Toronto' }
 };
 
 function _haversineKm(lat1, lng1, lat2, lng2) {
@@ -54663,7 +54794,12 @@ function _haversineKm(lat1, lng1, lat2, lng2) {
 // Pull the hotel's lat/lng out of whatever field shape the Accor catalog used.
 function _accorHotelLatLng(h) {
   if (!h) return null;
+  // v24114 — the catalog now gives the position at localization.gps
+  // ({lat, lng} as strings). Not reading it left every hotel with no
+  // distance, so the near-the-city check dropped all of them outside the
+  // few cities whose name it could find in the address (Paris had none).
   var tryShapes = [
+    h.localization && h.localization.gps,
     h.localization && h.localization.coordinates,
     h.coordinates, h.gps, h.location, h.geoLocation, h.geo, h.position
   ];
@@ -54678,13 +54814,21 @@ function _accorHotelLatLng(h) {
 }
 
 function _accorHotelDowntownDistance(h, destIata) {
-  // Returns { km: number, kmStr: 'X.X km', cityName: 'Toronto' } or null
+  // Returns { km: number, kmStr: 'X.X km', cityName: 'Toronto', iata } or null
   if (!h || !destIata || !DOWNTOWN_COORDS[destIata]) return null;
   var ll = _accorHotelLatLng(h);
   if (!ll) return null;
   var dc = DOWNTOWN_COORDS[destIata];
   var km = _haversineKm(ll.lat, ll.lng, dc.lat, dc.lng);
-  return { km: km, kmStr: (Math.round(km * 10) / 10) + ' km', cityName: dc.name };
+  return { km: km, kmStr: (Math.round(km * 10) / 10) + ' km', cityName: dc.name, iata: destIata };
+}
+
+// v24114 — a distance in the card language: 22,4 km in French, 22.4 km in
+// English (the number through BoardStrings.num, the unit unchanged)
+function _accorKm(kmStr, L) {
+  var m = /^(\d+(?:\.\d+)?) km$/.exec(String(kmStr || ''));
+  if (!m || typeof BoardStrings === 'undefined' || typeof BoardStrings.num !== 'function') return kmStr || '';
+  return BoardStrings.num(parseFloat(m[1]), L) + ' km';
 }
 
 function _accorHotelAirportDistance(h, destIata) {
@@ -55205,6 +55349,45 @@ function fetchAccorHotelMaster(hotelId) {
 }
 if (typeof window !== 'undefined') window.fetchAccorHotelMaster = fetchAccorHotelMaster;
 
+// v24114 — WHICH FIVE HOTELS A DESTINATION SHOWS. Only hotels proven near the
+// city: within 100 km of its centre (or of its airport where we have no
+// centre), or with no position but the city name in the hotel name or address,
+// the same proof the filter in _processAccorData applies. Of those, one hotel
+// per brand first, the premium and luxury brands leading and the nearest of
+// each brand standing for it, so central Paris shows its Sofitel, SO/ and
+// MGallery as well as a Mercure rather than five Mercures. The other hotels
+// follow by distance if the city has fewer than five brands.
+function _accorPickHotels(results, destIata) {
+  var LIMIT_KM = 100, WANT = 5;
+  var dc = DOWNTOWN_COORDS[destIata] || null;
+  var ac = (typeof COORDS !== 'undefined' && COORDS[destIata]) || null;
+  var near = [];
+  (results || []).forEach(function (r, i) {
+    var h = (r && r.hotel) || {};
+    var ll = _accorHotelLatLng(h), km = null;
+    if (ll && dc) km = _haversineKm(ll.lat, ll.lng, dc.lat, dc.lng);
+    else if (ll && ac) km = _haversineKm(ll.lat, ll.lng, ac[0], ac[1]);
+    if (km === null) {
+      var a = (h.localization && h.localization.address) || {};
+      var hay = [h.name, a.city, a.street, a.line1, a.line2].join(' ').toLowerCase();
+      if (!dc || !dc.name || hay.indexOf(String(dc.name).toLowerCase()) === -1) return;
+      km = LIMIT_KM;
+    } else if (km > LIMIT_KM) return;
+    near.push({ r: r, km: km, i: i, brand: String(h.brand || '').toUpperCase() });
+  });
+  near.sort(function (a, b) { return (a.km - b.km) || (a.i - b.i); });
+  var TIER = { premium: 0, midscale: 1, economy: 2 };
+  var firsts = [], rest = [], seen = {};
+  near.forEach(function (n) {
+    if (!seen[n.brand]) { seen[n.brand] = 1; firsts.push(n); } else rest.push(n);
+  });
+  firsts.sort(function (a, b) {
+    var ta = TIER[accorBrandCategory(a.brand)], tb = TIER[accorBrandCategory(b.brand)];
+    return ((ta === undefined ? 1 : ta) - (tb === undefined ? 1 : tb)) || (a.km - b.km);
+  });
+  return firsts.concat(rest).slice(0, WANT).map(function (n) { return n.r; });
+}
+
 function _processAccorData(data, destIata, langKey) {
   var _ckLang = langKey || _accorLangNow();
   if (!data || !data.results) return;
@@ -55222,7 +55405,7 @@ function _processAccorData(data, destIata, langKey) {
   // v218.99.54 — Build initial hotel list, then filter to within 100km
   // of downtown. Hotels closer to a DIFFERENT city are dropped from this
   // list (they'll show up on that other city's list instead).
-  var hotels = openResults.slice(0, 15).map(function(r) {
+  var hotels = _accorPickHotels(openResults, destIata).map(function(r) {
     var h = r.hotel || {};
     var brand = h.brand || '';
     var brandName = ACCOR_BRAND_NAMES[brand] || brand;
@@ -55547,12 +55730,9 @@ function _processAccorData(data, destIata, langKey) {
     }
     return false;
   });
-  // Sort closest-first when we have distance; unknowns go to end
-  hotels.sort(function(a, b) {
-    var aKm = (a.distanceCity && typeof a.distanceCity.km === 'number') ? a.distanceCity.km : 99999;
-    var bKm = (b.distanceCity && typeof b.distanceCity.km === 'number') ? b.distanceCity.km : 99999;
-    return aKm - bKm;
-  });
+  // v24114 — kept in the order _accorPickHotels chose (one per brand, the
+  // finer brands first); a closest-first sort here put the nearest ibis
+  // ahead of the Sofitel two streets on.
   hotels = hotels.slice(0, 5);
   // Log the raw GPS shape from the FIRST result so we can debug field paths
   if (data.results && data.results[0] && data.results[0].hotel) {
@@ -55827,7 +56007,8 @@ function getGateAds() {
         });
       } catch (eFL) {}
       destIata = _legForNow(cf, destIata, function (ia) {
-        try { var c = _accorCacheFor(ia); return !!(c && c.length); } catch (e) { return false; }
+        // v24114 — the cache entry is { hotels, ts }: the count is on .hotels
+        try { var c = _accorCacheFor(ia); return !!(c && c.hotels && c.hotels.length); } catch (e) { return false; }
       });
       destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || cf.dest || destIata;
     }
@@ -56286,10 +56467,10 @@ function buildGateAdHtml(ad) {
     if (!_logoHasName) {
       var _miniCity = (ad.distanceCity && ad.distanceCity.cityName) ? ad.distanceCity.cityName : (ad.address || '');
       if (_miniCity) _miniLine.push(_esc(_miniCity));
-      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(BoardStrings.fmt('kmFromDowntown', _kmL, { KM: ad.distanceCity.kmStr }));
+      if (ad.distanceCity && ad.distanceCity.kmStr) _miniLine.push(BoardStrings.fmt('kmFromDowntown', _kmL, { KM: _accorKm(ad.distanceCity.kmStr, _kmL) }));
     } else if (ad.distanceCity && ad.distanceCity.kmStr) {
       // Logo has the name → just show distance, no city duplicate
-      _miniLine.push(BoardStrings.fmt('kmFromDowntown', _kmL, { KM: ad.distanceCity.kmStr }));
+      _miniLine.push(BoardStrings.fmt('kmFromDowntown', _kmL, { KM: _accorKm(ad.distanceCity.kmStr, _kmL) }));
     }
     if (ad.rating) {
       var _ratingNum = parseFloat(String(ad.rating).split('/')[0]);
@@ -57386,12 +57567,26 @@ function buildAccorAdOnlyV6(ad) {
   }
   function _tpl(map, L, km, city){
     var s = map[L] || '';
-    return s.replace('%k', km).replace('%c', city || '');
+    return s.replace('%k', _accorKm(km, L)).replace('%c', city || '');
   }
   var _locLineHtml = '';
   var _da = ad.distanceAirport, _dc = ad.distanceCity;
   if (_da && _da.kmStr) _locLineHtml += _locRow(_tpl(_AIR_TPL, _lgD, _da.kmStr), _L2 ? _tpl(_AIR_TPL, _L2, _da.kmStr) : '');
-  if (_dc && _dc.kmStr && _dc.cityName) _locLineHtml += _locRow(_tpl(_DT_TPL, _lgD, _dc.kmStr, _dc.cityName), _L2 ? _tpl(_DT_TPL, _L2, _dc.kmStr, _dc.cityName) : '');
+  // v24114 — the city named as the board names it in that language (Londres
+  // on a French card), when the board name for the airport is that same city;
+  // otherwise the name of the centre itself (EWR is Newark, measured from New York)
+  function _dtCity(L){
+    var nm = _dc.cityName;
+    try {
+      var fold = function (x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, ''); };
+      if (_dc.iata && typeof CITY !== 'undefined' && fold(CITY[_dc.iata]) === fold(nm) && typeof airportCityNameSafe_v21877 === 'function') {
+        var c = airportCityNameSafe_v21877(_dc.iata, L);
+        if (c) nm = (c === c.toUpperCase() && typeof tc === 'function') ? tc(c) : c;
+      }
+    } catch (e) {}
+    return nm;
+  }
+  if (_dc && _dc.kmStr && _dc.cityName) _locLineHtml += _locRow(_tpl(_DT_TPL, _lgD, _dc.kmStr, _dtCity(_lgD)), _L2 ? _tpl(_DT_TPL, _L2, _dc.kmStr, _dtCity(_L2)) : '');
   if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(_tpl(_DT_SHORT, _lgD, ad.distance), _L2 ? _tpl(_DT_SHORT, _L2, ad.distance) : '');
   // city is shown standalone only when we don't have the full street address
   var _showCity = address && !_fullAddr;
@@ -59852,6 +60047,16 @@ function _buildGateAdSlideList() {
   var ACCOR_PER_PASS = 2;
   var deck = [];
   var _wantAccor = Math.min(accorSlides.length, ACCOR_PER_PASS);
+  // v24114 — WALKED FROM WHERE IT LEFT OFF, AS THE NOTE ABOVE SAYS. Every
+  // build started at the first hotel, so a gate showed the same two hotels
+  // for the whole flight (SO/ Paris and the MGallery, never Le Scribe or
+  // Delano). The rotation tick counts finished passes (_gateAccorPass) and
+  // each pass starts two hotels further on, so all five come round.
+  var _a0 = 0;
+  try {
+    _a0 = ((((typeof window !== 'undefined') && window._gateAccorPass) || 0) * ACCOR_PER_PASS) % Math.max(1, accorSlides.length);
+  } catch (eA0) { _a0 = 0; }
+  var _accorAt = function (k) { return accorSlides[(_a0 + k) % accorSlides.length]; };
   if (nonAccor.length && _wantAccor) {
     var ai = 0, _since = 0;
     for (var i = 0; ai < _wantAccor && i < 64; i++) {
@@ -59860,14 +60065,14 @@ function _buildGateAdSlideList() {
       // a hotel after every 3 others — or as soon as the pool wraps, when it
       // is shorter than 3 (a 1-item pool never reaches the counter otherwise)
       if (_since >= 5 || (i + 1) % nonAccor.length === 0) {
-        deck.push(accorSlides[ai++]);
+        deck.push(_accorAt(ai++));
         _since = 0;
       }
     }
   } else if (nonAccor.length) {
     deck = nonAccor.slice();
   } else if (_wantAccor) {
-    deck = accorSlides.slice(0, _wantAccor);
+    for (var _ak = 0; _ak < _wantAccor; _ak++) deck.push(_accorAt(_ak));
   }
 
   // ── 5. Graceful fallback — never all-Accor, never blank. Airlines with
@@ -60246,6 +60451,9 @@ function _restartGateAdsTimer() {
         }
       } catch (e) { _old = null; }
       _gateAdIndex = (_gateAdIndex + 1) % Math.max(1, totalSlots);
+      // v24114 — back at the first slide is a finished pass: the next pass of
+      // the deck shows the next two hotels (_buildGateAdSlideList)
+      if (_gateAdIndex === 0) window._gateAccorPass = (window._gateAccorPass || 0) + 1;
       _gateAdExtN = 0;   // new slide visit, holds start over
       // The rotation tick is the ONE authority allowed to change the slide —
       // announce it so the slide lock in renderGateAd lets this swap through.
@@ -63742,7 +63950,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24113" src="/textures/gate-sky-shelf.mp4?v=24113"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24114" src="/textures/gate-sky-shelf.mp4?v=24114"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -64379,6 +64587,11 @@ var _WX_CITY_PICS = {
   YMM:1, YPR:1, YPX:1, YQQ:1, YQT:1, YQU:1, YQX:1, YQY:1, YTS:1, YVP:1,
   YWL:1, YXE:1, YXJ:1, YXT:1, YXU:1, YXX:1, YYD:1, YYG:1, YYR:1, YYY:1,
   YZG:1, YZT:1, YZV:1, YZZ:1,
+  // v24114 — Whitehorse: Miles Canyon, the turquoise Yukon between basalt
+  // walls under the suspension bridge. A CC0 photograph, so no credit is owed.
+  // Palm Springs: desert palms and a still pond under the San Jacinto range in
+  // the last light, an Adobe Stock picture licensed for the boards.
+  PSP:1, YXY:1,
   JFK:'NYC', LGA:'NYC', EWR:'NYC'
 };
 // v24112 — NO PICTURE RATHER THAN THE WRONG ONE. Outside the curated set the
@@ -64390,7 +64603,8 @@ var _WX_CITY_PICS = {
 // keeps its glass for good rather than risk the service finding the plant.
 // v24113 — Fort McMurray has its own picture now (the Athabasca valley), so
 // only Palm Springs waits here, for its picked picture to be licensed.
-var _WX_CITY_NONE = { PSP:1, YFI:1 };
+// v24114 — and Palm Springs has its own now too, so Firebag is the one left.
+var _WX_CITY_NONE = { YFI:1 };
 // v23853 — AND THE SAME CITY AFTER DARK. A plate at two in the morning
 // was showing the city in full daylight, and five of the curated
 // pictures were the opposite fault: a night or a sunset shot, on the
