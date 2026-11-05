@@ -98,7 +98,9 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   const pic = new Function('_WX_CITY_PICS', '_WX_CITY_NONE', '_wxNightPicFor', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, table('_WX_CITY_NONE'), nightFor, query, enc);
   // v24112 — a city the picture service gets wrong asks for nothing at all:
   // the plate keeps its glass, day and night
-  for (const k of ['PSP', 'YFI']) { assert.equal(pic(k), '', k + ' shows no picture'); assert.equal(pic(k, true), '', k + ' after dark too'); }
+  for (const k of ['YFI']) { assert.equal(pic(k), '', k + ' shows no picture'); assert.equal(pic(k, true), '', k + ' after dark too'); }
+  // v24114 — Palm Springs left the list with its own picture
+  assert.equal(pic('PSP'), '/logos/cities/PSP.jpg');
   // v24113 — Fort McMurray has its own picture now, so it left that list
   assert.equal(pic('YMM'), '/logos/cities/YMM.jpg');
   assert.equal(pic('YQM'), '/logos/cities/YQM.jpg');
