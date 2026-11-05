@@ -39,8 +39,12 @@
    THE SWITCH, PER COUNTRY (SWITCH, below). The poppy is a registered
    trademark in Canada (the Royal Canadian Legion) and in the United Kingdom
    (the Royal British Legion), used only with their written permission, so
-   Canada and the United Kingdom ship OFF. Turning a country on is the
-   one-line change to SWITCH.
+   Canada and the United Kingdom shipped OFF. Turning a country on is the
+   one-line change to SWITCH. Canada is ON from v24119: the Legion was asked
+   for permission on 2026-10-18 and has not answered, and the boards honour
+   those who served on 11 November 2026 without waiting, the risk accepted.
+   The poppy drawn is our own drawing of the flower. If the Legion objects,
+   CA goes back to false.
 
    THE ART is stand-in art (holidays/remembrance/): poppy.svg, wreath.svg and
    us-flag.svg, replaced one-for-one by the licensed files under the same
@@ -67,9 +71,9 @@
   'use strict';
 
   // ── THE SWITCH, PER COUNTRY ─────────────────────────────────────────────
-  // CA and GB stay false until the Royal Canadian Legion and the Royal
-  // British Legion have given written permission for the poppy.
-  var SWITCH = { CA: false, GB: false, AU: true, US: true };
+  // GB stays false until the Royal British Legion has given written
+  // permission for the poppy. CA is on (see above).
+  var SWITCH = { CA: true, GB: false, AU: true, US: true };
 
   // ── THE LOOKS ───────────────────────────────────────────────────────────
   //   silence  minutes of silence from 11:00 (0: no silence card)
