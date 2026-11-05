@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2883,
+    "total": 2885,
     "by_category": {
       "ad": 14,
       "airline": 1180,
@@ -10,7 +10,7 @@
       "brand": 5,
       "hotel": 888,
       "livery": 96,
-      "misc": 172,
+      "misc": 174,
       "symbol": 4,
       "weather": 331
     }
@@ -26956,6 +26956,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/NRT.jpg",
+      "file": "NRT.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "NRT",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/NYC-night.jpg",
       "file": "NYC-night.jpg",
       "category": "misc",
@@ -27185,6 +27196,17 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/cities/SYD.jpg",
+      "file": "SYD.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "SYD",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
     },
     {
       "path": "/logos/icons/takeoff.svg",

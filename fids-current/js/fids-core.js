@@ -64871,13 +64871,20 @@ var _WX_CITY_PICS = {
   // from Adobe Stock, so none of them owes a credit on the screen.
   GRU:1, LIR:1, MZT:1, PEK:1, PLS:1, YAA:1, YBG:1, YBL:1, YFB:1, YKA:1,
   YPW:1, YQG:1, YSB:1, YXC:1, YYF:1,
-  // v24122 — DAY PICTURES THAT ARE DAY. Montreal's day picture was a
+  // v24122 — DAY PICTURES THAT ARE DAY. The Montreal day picture was a
   // blue-hour shot with every window lit, and Frankfurt, Hong Kong and
   // Taipei came from the picture service as night views: a night city on
   // a plate at noon. Each is now a daytime photograph, picked from a sheet
   // (Mount Royal lookout CC0; Adobe Stock for the other three). Deer Lake
   // is the Western Brook Pond fjord from the Gros Morne overlook.
   FRA:1, HKG:1, TPE:1,
+  // A famous city is pictured by the landmark that names it on sight: Las
+  // Vegas by its Welcome sign (its owner, YESCO, allows photographs while
+  // its logo under NEVADA stays in), Sydney by the Opera House beside the
+  // Harbour Bridge across Farm Cove (a harbour scene, the use the Opera
+  // House Trust allows), Tokyo by Tokyo Tower over the city. Haneda shares
+  // the Tokyo picture.
+  SYD:1, NRT:1, HND:'NRT',
   // v24113 — THIRTY-FOUR MORE, from the same contact sheets. Nearly all are
   // open-licence photographs that ask for a credit, so each names its
   // photographer on the card that shows it (_WX_CITY_CREDIT below) and links
@@ -64984,8 +64991,10 @@ var _WX_CITY_NIGHT = {
 // full credit, with a link to each source, is on the credits page.
 var _WX_CITY_CREDIT = {
   'CAN': ['Sergei Gussev', 'BY', '2.0'],
+  'LAS': ['Christian David', 'BY-SA', '4.0'],
   'MBJ': ['Grahampurse', 'BY-SA', '4.0'],
   'POP': ['Jusunx', 'BY-SA', '4.0'],
+  'SYD': ['-wuppertaler', 'BY', '4.0'],
   'YAM': ['Sharon Hahn Darlin', 'BY', '2.0'],
   'YAY': ['Mykola Swarnyk', 'BY-SA', '3.0'],
   'YCD': ['AB87', 'BY', '3.0'],
