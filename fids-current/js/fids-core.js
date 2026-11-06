@@ -42111,7 +42111,14 @@ function _oskyWantBoard() {
       .then(function (r) { if (r.status === 403) _oskyOffUntil = Date.now() + 600000; }, function () {});
   } catch (e) {}
 }
-try { if (typeof window !== 'undefined' && typeof setInterval === 'function' && !window.__oskyWantTimer) window.__oskyWantTimer = setInterval(_oskyWantBoard, 60000); } catch (eW) {}
+// (a page only: code lifted into a test runs without a document, and a
+// timer never holds a process open)
+try {
+  if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof setInterval === 'function' && !window.__oskyWantTimer) {
+    window.__oskyWantTimer = setInterval(_oskyWantBoard, 60000);
+    if (window.__oskyWantTimer && typeof window.__oskyWantTimer.unref === 'function') window.__oskyWantTimer.unref();
+  }
+} catch (eW) {}
 var _oskyHexOf = Object.create(null);   // flight -> { h: icao24, d: UTC day }, from an answer that named it
 // A flight number is flown by another aircraft tomorrow: the remembered icao24
 // is good for the UTC day it was learned on only, so a board left running past
