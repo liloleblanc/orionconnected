@@ -67,7 +67,7 @@ function slice(from, to) {
 
 const FNS = ['adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', '_adbHappenedWord', '_adbClaimAheadMs', '_adbClaimWithheld',
   'adbStatus', 'adbStatusInferred', 'fidsInboundHasArrived', 'fidsInboundOnStand', 'fidsAdbStatusKey',
-  '_gateRawStatus', '_gateRawLanded', '_rowStatusRank', '_fidsBoardRowPlace'];
+  '_gateRawStatus', '_gateRawLanded', '_gateOnBlocksWord', '_rowStatusRank', '_fidsBoardRowPlace'];
 const E = new Function([
   varLine('_ADB_CLAIM_AHEAD_TIMED_MS'), varLine('_ADB_CLAIM_AHEAD_UNTIMED_MS'), varLine('_ADB_EXPLICIT_STATUS'),
   varBlock('_ROW_STATUS_RANK'), varLine('BOARD_TRAIL_MIN'), varLine('BOARDING_HOLD_MIN'), varLine('DEPART_TRAIL_HRS'),
