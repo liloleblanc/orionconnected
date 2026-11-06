@@ -17680,7 +17680,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24123" src="/textures/gate-sky-shelf.mp4?v=24123" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17724,7 +17724,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24123" src="/textures/gate-sky-shelf.mp4?v=24123" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18956,7 +18956,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24120" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24123" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35876,7 +35876,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24120';
+var FIDS_BUILD_TAG = 'v24123';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -42071,6 +42071,47 @@ var _OSKY_TTL_MS = 45000;
 var _OSKY_CREDIT_MS = 120000;
 var _oskyCache = Object.create(null);
 var _oskyOffUntil = 0, _oskyStopAt = 0, _oskyShownAt = 0;
+// v24123 — EVERY FLIGHT THE BOARD LISTS NEAR ITS OWN MOVE, NOT ONE A GATE.
+// One OpenSky call answers with every aircraft in the airport box, and asking
+// for the one flight a gate shows threw the rest away: Ottawa on 2026-11-05
+// had 45 aircraft in its box and four names asked, none of them flying. Every
+// two minutes the board names its arrivals from 10 minutes past their time
+// to 75 ahead and its departures from 45 minutes past to 20 ahead, one
+// callsign each (the operator name first, as _oskyTelemetry asks), at most
+// thirty, so a position is already waiting when a gate turns to one of them.
+var _oskyWantAt = 0;
+function _oskyWantNames(rows, now, lo, hi, out) {
+  for (var i = 0; i < rows.length && out.length < 30; i++) {
+    var r = rows[i];
+    if (!r || !r.flight) continue;
+    var t = Number(r._revTs || r._sortTs) || 0;
+    if (!t || t < now - lo * 60000 || t > now + hi * 60000) continue;
+    var fn = String(r.flight).toUpperCase().replace(/\s+/g, '');
+    var cs = '';
+    try { cs = (_operatorCallsigns(r._opCode, fn) || [])[0] || ''; } catch (e) { cs = ''; }
+    if (!/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(cs)) cs = String(r._callSign || '').toUpperCase().replace(/\s+/g, '');
+    if (!/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(cs)) { try { cs = _icaoCallsign(fn) || ''; } catch (e) { cs = ''; } }
+    if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(cs) && out.indexOf(cs) < 0) out.push(cs);
+  }
+  return out;
+}
+function _oskyWantBoard() {
+  try {
+    if (typeof window === 'undefined' || typeof fetch !== 'function') return;
+    var now = Date.now();
+    if (now - _oskyWantAt < 120000 || now < _oskyOffUntil) return;
+    var ap = String(window._gateIata || (typeof _pageAirport === 'function' ? _pageAirport() : '') || '').toUpperCase();
+    if (!/^[A-Z]{3}$/.test(ap)) return;
+    _oskyWantAt = now;
+    var names = [];
+    _oskyWantNames(_gateFeedRows('arr') || [], now, 10, 75, names);
+    _oskyWantNames(_gateFeedRows('dep') || [], now, 45, 20, names);
+    if (!names.length) return;
+    fetch(_ADSB_BASE.replace(/\/adsb$/, '/oskywant') + '?ap=' + ap + '&cs=' + names.join(','), { cache: 'no-store' })
+      .then(function (r) { if (r.status === 403) _oskyOffUntil = Date.now() + 600000; }, function () {});
+  } catch (e) {}
+}
+try { if (typeof window !== 'undefined' && typeof setInterval === 'function' && !window.__oskyWantTimer) window.__oskyWantTimer = setInterval(_oskyWantBoard, 60000); } catch (eW) {}
 var _oskyHexOf = Object.create(null);   // flight -> { h: icao24, d: UTC day }, from an answer that named it
 // A flight number is flown by another aircraft tomorrow: the remembered icao24
 // is good for the UTC day it was learned on only, so a board left running past
@@ -64572,7 +64613,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24120" src="/textures/gate-sky-shelf.mp4?v=24120"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24123" src="/textures/gate-sky-shelf.mp4?v=24123"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
