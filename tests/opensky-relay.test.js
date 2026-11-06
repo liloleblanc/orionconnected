@@ -484,7 +484,8 @@ test('/osky/put: a wanted box only, the wanted flights only, known fields checke
     [{ box: { lamin: '45', lomin: -66, lamax: 46, lomax: -65 }, time: null, states: [] }, 'bad-box'],
     [{ box: { lamin: 46, lomin: -66, lamax: 45, lomax: -65 }, time: null, states: [] }, 'bad-box'],
     [{ box: BOX, time: null }, 'bad-states'],
-    [{ box: BOX, time: null, states: Array(65).fill(stateRow()) }, 'bad-states'],
+    // (v24123: 40 flights a put, 160 rows at most; was 16 and 64)
+    [{ box: BOX, time: null, states: Array(161).fill(stateRow()) }, 'bad-states'],
     [{ box: BOX, time: 'now', states: [] }, 'bad-time'],
     [{ box: BOX, time: -5, states: [] }, 'bad-time'],
   ]) {
@@ -493,7 +494,7 @@ test('/osky/put: a wanted box only, the wanted flights only, known fields checke
     assert.deepEqual(r.json, { error: code });
   }
   assert.equal((await put('{"box":', { raw: true, headers: JSONH })).status, 400);
-  assert.equal((await put('x'.repeat(40 * 1024), { raw: true, headers: JSONH })).status, 413, 'a body over 32 KiB');
+  assert.equal((await put('x'.repeat(72 * 1024), { raw: true, headers: JSONH })).status, 413, 'a body over 64 KiB (32 before v24123)');
   assert.equal((await put({ box: BOX, time: Math.floor(STOP_MS / 1000) + 5, states: [] })).status, 410, 'OpenSky\'s own clock past the stop');
 
   const lat = (BOX.lamin + BOX.lamax) / 2, lon = (BOX.lomin + BOX.lomax) / 2;
@@ -547,14 +548,14 @@ test('/osky/put: a wanted box only, the wanted flights only, known fields checke
   assert.match(RELAY_SRC, /^MAX_CACHE_S = 120 /m);
 });
 
-test('/osky/wanted: what oskyWant stored, at most 25 sq deg and 4 flights a box, lapsing after 10 minutes', async () => {
+test('/osky/wanted: what oskyWant stored, at most 25 sq deg and 30 flights a box (4 before v24123), lapsing after 10 minutes', async () => {
   const w = await worldW({ OPENSKY_ON: '1' });
   await w.register();
   const t = Date.UTC(2026, 9, 20, 12);
   for (const [box, f] of [
     [{ ...BOX, lamax: 60 }, { callsign: ['ACA123'] }],          // too big
     [BOX, {}],                                                    // no flight
-    [BOX, { callsign: ['A1', 'A2', 'A3'], icao24: ['aaaaaa', 'bbbbbb'] }],
+    [BOX, { callsign: Array.from({ length: 29 }, (_, i) => 'A' + (i + 1)), icao24: ['aaaaaa', 'bbbbbb'] }],
     [BOX, { icao24: ['xyz'] }],
     [BOX, { callsign: ['AC 123'] }],
     [BOX, { callsign: 'ACA123' }],
