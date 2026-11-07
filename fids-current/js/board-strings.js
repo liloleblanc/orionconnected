@@ -1082,6 +1082,12 @@
     // $ctx keeps the status apart from the lower-case "expected" qualifier.
     stExpected: { en: 'Expected', fr: 'Attendu', es: 'Previsto', de: 'Erwartet', it: 'Atteso', pt: 'Previsto', ja: '見込み', zh: '预计', ar: 'متوقعة',
       $ctx: 'status' },
+    // v24120 — an arrival the airport calls Landed (down, not yet on its
+    // blocks) keeps that word on the departures and arrivals board: fids-v2
+    // finds it here (TX is frozen). The gate's own SS.landed in fids-core.js,
+    // word for word.
+    stLanded: { en: 'Landed', fr: 'Atterri', es: 'Aterrizó', de: 'Gelandet', it: 'Atterrato', pt: 'Pousou', ja: '着陸', zh: '已着陆', ar: 'هبط',
+      $ctx: 'status' },
     // ── v23968 — EACH AIRLINE'S GATE-CLOSE DEADLINE ──────────────────────────
     // The line at the foot of the gate's Boarding card before boarding starts
     // (_gateCloseLineHtml): the airline's PUBLISHED minutes and the clock time

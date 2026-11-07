@@ -186,7 +186,7 @@ test('zrh arrivals: en route / approach / rolling / delayed / cancelled', () => 
   assert.equal(lx1109.arrival.revisedTime.local, '2026-09-06 08:29:00+02:00');
   assert.equal(lx1109.arrival.baggageBelt, '13');
   const vy = byNum(arr, 'VY6246');                // 200 Rolling on an arrival = on the ground
-  assert.equal(vy.status, 'arrived');
+  assert.equal(vy.status, 'landed');              // v24120 — the landing roll: down, not on the stand
   assert.equal(vy.arrival.revisedTime.local, '2026-09-06 08:19:00+02:00');
   assert.equal(vy.arrival.baggageBelt, '12');
   assert.equal(vy.arrival.terminal, '1');
@@ -230,7 +230,7 @@ test('zrh: direction is respected and a 4-letter far end lands in the icao slot'
 
 test('zrh: status fallback by text for codes the map has not seen', () => {
   assert.equal(zrhStatus(200, 'Rolling', 'dep'), 'departed');
-  assert.equal(zrhStatus(200, 'Rolling', 'arr'), 'arrived');
+  assert.equal(zrhStatus(200, 'Rolling', 'arr'), 'landed');
   assert.equal(zrhStatus(999, 'Diverted', 'arr'), 'diverted');
   assert.equal(zrhStatus(999, 'Airborne', 'arr'), 'active');
   assert.equal(zrhStatus(999, 'Gate Closed', 'dep'), 'gateclosed');

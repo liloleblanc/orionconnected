@@ -247,7 +247,7 @@ test('yxs status vocabulary', () => {
   assert.equal(yxsStatus('Delayed'), 'delayed');
   assert.equal(yxsStatus('Departed'), 'departed');
   assert.equal(yxsStatus('Arrived'), 'arrived');
-  assert.equal(yxsStatus('Landed'), 'arrived');
+  assert.equal(yxsStatus('Landed'), 'landed');   // v24120
   assert.equal(yxsStatus('Cancelled'), 'cancelled');
   assert.equal(yxsStatus('Diverted'), 'diverted');
   assert.equal(yxsStatus('Boarding'), 'boarding');

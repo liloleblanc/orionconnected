@@ -122,7 +122,7 @@ test('yqx: revised time, status words, midnight settle, winter offset', () => {
   const st = (s) => parseYqxPage(page(DEP, [['AC1171', 'Air Canada', '06 Sep', '14:25', '14:25', 'Gander', 'Toronto', s]]), 'dep', NOW)[0].status;
   assert.equal(st('OnTime'), 'ontime');
   assert.equal(st('Departed'), 'departed');
-  assert.equal(st('Landed'), 'arrived');
+  assert.equal(st('Landed'), 'landed');   // v24120
   assert.equal(st('Boarding'), 'boarding');
   assert.equal(st('Late'), 'delayed');
   // December in Newfoundland is NST, -03:30 — the tz helper, not a constant.

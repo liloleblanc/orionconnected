@@ -9936,7 +9936,9 @@ html body[data-gate-airline="TS"]:not(#_) .g8-board-info-row {
   background-blend-mode: normal !important;
 }
 
-/* ── AIR FRANCE — tricolore streaks (quiet zone: right, clean blue) ── */
+/* ── AIR FRANCE — a slate grey frame around navy plates. v24125: the
+   tricolore streaks were too busy behind gate text on a screen. The frame
+   is drawn, no file; the plates and chips are set with the plate rules. ── */
 html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-aircraft-col,
 html body[data-gate-airline="AF"]:not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block > .v2-fi-row,
 html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2,
@@ -9944,9 +9946,9 @@ html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shel
 html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus,
 html body[data-gate-airline="AF"]:not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type,
 html body[data-gate-airline="AF"]:not(#_) .g8-board-info-row {
-  background-color: #0a3d8f !important;
-  background-image: url("/logos/Backgrounds/AF/airfrancebackground.png?v=1") !important;
-  background-position: right center !important;
+  background-color: #2b2f35 !important;
+  background-image: linear-gradient(180deg, #3a3e45, #2b2f35) !important;
+  background-position: center center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-blend-mode: normal !important;
@@ -10288,10 +10290,15 @@ html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airli
   --plate-base: #12192a;
   --plate-blend: normal;
 }
-/* AF + EK: artwork is DARK — white ink, bright status colours. */
+/* AF + EK: artwork is DARK — white ink, bright status colours.
+   v24125: Air France tiles are Air France navy (296C) carrying the faint
+   fine lines of the licensed art (Adobe Stock 870392748, blended half to
+   navy), with white title chips (rule below the United boarding pair)
+   inside a slate grey frame. The tricolore streaks were too busy behind text on a screen;
+   plate-af-tricolore.jpg stays on disk as the one-line rollback. */
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-tricolore.jpg?v=23003');
-  --plate-base: #0a3d8f;
+  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24126');
+  --plate-base: #051039;
   --plate-blend: normal;
   --plate-ink: #ffffff;
   --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
@@ -18506,6 +18513,33 @@ html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"]):not(#_):not(#_)
   background-color: #0C2340 !important;
 }
 
+/* v24125 — Air France boarding wears its own gate sign: SkyPriority red on
+   the priority lane (left, zones 1 and 2), Air France navy on general
+   boarding (right, zones 3 to 5). The red is the gate screen red, not the
+   pure #FF0000 of the brand book: white lettering on pure red is about 4:1,
+   under the 4.5 floor, and #E0101C holds about 4.9:1. The navy is AF 296C. */
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-hdr-now,
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-col.now {
+  background-color: #E0101C !important;
+}
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-hdr-next,
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-col.next {
+  background-color: #051039 !important;
+}
+/* v24125 — the Air France title chips are white with navy lettering, on
+   navy plates in a slate frame: blue, white and the red of the discs, the
+   order its brand book gives. Nine :not(#_): the brand topper paints the
+   chips accent colour at five and the plate-ink block holds the lettering
+   white at eleven on the body, this sits on the chip itself. */
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title {
+  background: linear-gradient(180deg, #ffffff, #eef2f7) !important;
+  color: #051039 !important;
+  box-shadow: inset 0 1px 0 #ffffff !important;
+}
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title * {
+  color: #051039 !important;
+}
+
 /* ══ v23714 — THE BANNER ROUNDEL STOPS OVERFLOWING ITS OWN BAND ══════════════
    Reported: the Air Canada logo is too big and the wordmark too small.
 
@@ -19176,7 +19210,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 0 auto !important;
   width: clamp(44px, 6.4vh, 80px) !important;
   height: clamp(44px, 6.4vh, 80px) !important;
-  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24122');
+  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24126');
   background-size: 5500% 100%;
   background-repeat: no-repeat;
   background-position: 0% 0%;
@@ -22945,7 +22979,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24122') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24126') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
@@ -26148,6 +26182,14 @@ html body.g8-sign-up:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    at 5.4:1, and the teal stays WestJet's own. The arrow discs keep their
    dark disc and white arrow. */
 html body:is([data-gate-airline="WS"],[data-gate-airline="WR"],[data-gate-airline="WJA"],[data-gate-airline="WEN"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-board-col.next.g8-sign-col:not(.is-switch) { color: #002B55 !important; }
+/* v24125 — Air France: general boarding is Air France navy at every stage,
+   the zone calls and the ALL ZONES switch alike, as on its own gate signs
+   (red SkyPriority, navy for everyone else). The violet stays every other
+   airline's switch. White on #051039 is about 17:1. */
+html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.is-switch {
+  background: #051039 !important;
+  background-image: none !important;
+}
 /* "Boarding will begin shortly", the two panels' waiting line: a sentence,
    each language a whole line of its own (fitted by _fidsSignLineFit like
    the instruction line), the panel's main line, centred in what is left */

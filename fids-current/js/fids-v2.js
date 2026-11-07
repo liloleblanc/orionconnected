@@ -125,8 +125,16 @@
       'scheduled':   'fids-status-scheduled',
       'expected':    'fids-status-scheduled'   // v23968 — plain row ink, like Scheduled
     };
+    // v24120 — an arrival the airport calls Landed reaches the board as
+    // 'landed' (it used to be folded into 'arrived' before the board saw
+    // it): it is down, so it wears the Arrived row and colour, and it says
+    // the airport's own word, Landed, until the airport says Arrived.
+    const raw = String((flight && flight.status) || '').toLowerCase().trim();
+    const word = (st === 'arrived' && raw === 'landed')
+      ? ((window.BoardStrings && BoardStrings.bs('stLanded', lang)) || T('st-arrived', lang))
+      : T('st-' + st, lang);
     return {
-      html: T('st-' + st, lang),
+      html: word,
       cssClass: cssMap[st] || ''
     };
   }

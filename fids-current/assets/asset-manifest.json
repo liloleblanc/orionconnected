@@ -13426,15 +13426,15 @@
       "ext": "jpg"
     },
     {
-      "path": "/logos/Backgrounds/AF/airfrancebackground.png",
-      "file": "airfrancebackground.png",
+      "path": "/logos/Backgrounds/AF/airfrance-blue-lines.jpg",
+      "file": "airfrance-blue-lines.jpg",
       "category": "background",
       "subcategory": "airline-bg",
       "group": "Backgrounds (airline-themed)",
-      "name": "airfrancebackground",
+      "name": "airfrance blue lines",
       "iata": "",
       "country": "",
-      "ext": "png"
+      "ext": "jpg"
     },
     {
       "path": "/logos/Backgrounds/AA/americanbackground.png",

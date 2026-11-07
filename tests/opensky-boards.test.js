@@ -209,12 +209,12 @@ test('no more boxes than the relay can serve; a gate\'s tracked flight first', a
   boxes = wantedBoxes(w.kv, T + 6000);
   assert.equal(boxes.length, 2);
   assert.ok(!boxes.some((b) => b.tags.includes('c:ACA100')), 'no tracked box is pushed out');
-  // four flights a box at most: the tracked ones stay
+  // thirty flights a box at most (v24123; four before): the tracked ones stay
   const w2 = world();
   await ask(w2, { ap: 'YQM', f: 'AC1', cs: 'ACA1', p: '2' });
-  for (let i = 2; i <= 6; i++) await ask(w2, { ap: 'YQM', f: 'AC' + i, cs: 'ACA' + i }, { now: T + i * 1000 });
-  const b = wantedBoxes(w2.kv, T + 10000)[0];
-  assert.equal(b.tags.length, 4);
+  for (let i = 2; i <= 32; i++) await ask(w2, { ap: 'YQM', f: 'AC' + i, cs: 'ACA' + i }, { now: T + i * 1000 });
+  const b = wantedBoxes(w2.kv, T + 40000)[0];
+  assert.equal(b.tags.length, 30);
   assert.ok(b.tags.includes('c:ACA1'), 'the tracked flight kept its place');
 });
 
