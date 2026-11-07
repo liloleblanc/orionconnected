@@ -98,6 +98,21 @@ test('the distance follows the taxi: to the field while rolling, 0 at the stand,
   assert.equal(sandbox({}, { on: false }).dist(), null, 'no taxi, no glide: as before');
 });
 
+test('Arrives in N min counts down to the airport\'s new time, early as well as late', () => {
+  // Ottawa gate 21, PD2366 from Charlottetown, 2026-11-07: scheduled 13:55,
+  // early at 13:18; at 13:13 the card printed "1:18pm" and "Arrives in 41 min".
+  const later = new Function(fnSource('_gateLaterTs') + '\nreturn _gateLaterTs;')();
+  const sched = Date.parse('2026-11-07T18:55:00Z'), rev = Date.parse('2026-11-07T18:18:00Z');
+  assert.equal(later({ status: 'early', upd: '13:18', _sortTs: sched, _revTs: rev }), rev, 'early: the new time');
+  assert.equal(later({ status: 'delayed', upd: '14:30', _sortTs: sched, _revTs: sched + 2100000 }), sched + 2100000, 'delayed: the new time');
+  assert.equal(later({ status: 'ontime', upd: '13:18', _sortTs: sched, _revTs: rev }), sched, 'no word: the schedule');
+  // every inbound card measures its minutes with it
+  const hits = CORE.match(/var _effArrTs = _gateLaterTs\((_inb|inboundFlight)\);/g) || [];
+  assert.equal(hits.length, 2, 'the phone card and the v2 rail: ' + hits.length);
+  assert.match(CORE, /const _inbEta = _gateLaterTs\(inboundFlight\);\s*if \(_inbEta\) \{\s*const minsOut = Math\.round\(\(_inbEta - Date\.now\(\)\) \/ 60000\);/, 'the g8 inbound block');
+  assert.doesNotMatch(CORE, /_arrRevTs > _arrTs/, 'the later-only rule is gone');
+});
+
 test('a descent never reads as a climb: a fresh anchor above the digits holds them', () => {
   const src = [fnSource('_animateGateTelem'), 'function _writeGateTelemDom() {}', 'return _animateGateTelem;'].join('\n');
   const run = (T, m) => { new Function('window', '_gateTelemModel', src)({ _gateTelemAnim: T }, () => m)(); return T; };

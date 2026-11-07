@@ -13612,8 +13612,11 @@ function renderMobileGateHtml(ctx) {
       _fromCity = _cleanCity(_fromCity);
       // v23962 — with the airport's name where the city has two of ours
       if (typeof _cityAp === 'function') _fromCity = _cityAp(_fromCity, _fromIata);
-      var _arrTs = _inb._sortTs || 0, _arrRevTs = _inb._revTs || 0;
-      var _effArrTs = (_arrRevTs && _arrRevTs > _arrTs) ? _arrRevTs : _arrTs;
+      // v24126 — the minutes count down to the time the card prints: the
+      // airport's new time with its Delayed or EARLY (_gateLaterTs), not only
+      // a later one. PD2366 into Ottawa, early at 1:18, read Arrives in 41 min
+      // beside its own 1:18pm at 1:13: the count ran to the schedule at 1:55.
+      var _effArrTs = _gateLaterTs(_inb);
       var _minsToArr = _effArrTs ? Math.round((_effArrTs - Date.now()) / 60000) : 0;
       var _etaStr = '';
       // v24120 — At the gate only on its blocks (fidsInboundOnStand). It used
@@ -15311,9 +15314,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // v23962 — with the airport's name where the city has two of ours
       if (typeof _cityAp === 'function') _fromCity = _cityAp(_fromCity, _fromIata);
     } catch(e) { _fromCity = inboundFlight.origin || ''; }
-    var _arrTs = inboundFlight._sortTs || 0;
-    var _arrRevTs = inboundFlight._revTs || 0;
-    var _effArrTs = (_arrRevTs && _arrRevTs > _arrTs) ? _arrRevTs : _arrTs;
+    // v24126 — to the time the rail prints (_gateLaterTs: the new time with
+    // Delayed or Early), not only a later one. An early aeroplane counted
+    // down to its schedule, 37 minutes after it was due at the gate.
+    var _effArrTs = _gateLaterTs(inboundFlight);
     var _minsToArr = _effArrTs ? Math.round((_effArrTs - Date.now()) / 60000) : 0;
     var _etaStr = '';
     if (_minsToArr > 0 && _minsToArr < 1440) {
@@ -26975,8 +26979,10 @@ const gView = document.getElementById('gateView');
         const inStEn = _statusWord(inStatus);
         // Estimate minutes until arrival
         let etaStr = '';
-        if (inboundFlight._sortTs) {
-          const minsOut = Math.round((inboundFlight._sortTs - Date.now()) / 60000);
+        // v24126 — the new time with Delayed or Early, else the schedule (_gateLaterTs)
+        const _inbEta = _gateLaterTs(inboundFlight);
+        if (_inbEta) {
+          const minsOut = Math.round((_inbEta - Date.now()) / 60000);
           if (minsOut > 0 && minsOut <= 180) {
             etaStr = `${TL('arrivesIn')} ${minsOut} MIN`;
           }
