@@ -25,7 +25,16 @@
 //      through 250 degrees and froze short of a threshold it was never
 //      landing on for 100 s. Now: a runway this flight is committed to
 //      (_gateGlide.rw, inside 40 min, not ambiguous) is KEPT while the fix is
-//      still on its centreline, from 1 nm past the threshold out to 12 nm.
+//      still on its centreline, from 1 nm past the threshold out to 12 nm
+//      (within 0.3 nm of it beyond half a mile, 0.1 nm inside that: crossing
+//      thresholds sit 95 m apart at Moncton). And with NO commitment to keep
+//      (a board opened late, a fix gap, a pick just forgotten) the last 0.3 nm
+//      are in the on-centreline set too, within 0.1 nm: the nearest centreline
+//      wins, never flagged, and it lands.
+//   3. Un-landing (_gateTaxiWrongRunway) asks for a fix on ANOTHER runway's
+//      final (within 0.3 nm of a non-parallel centreline), not merely 0.5 nm
+//      off the committed one: a fix still closing on the final the model
+//      landed from keeps the model.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -143,6 +152,17 @@ test('the glide confirms an ambiguous pick only from a LATER, RECENT fix of the 
   P(rw3, T2 + 30000, 'AC450');
   assert.equal(rw3.ambiguous, true);
   assert.ok(same(g.rw.t, THR04));
+  // rwAt is the age of the pick: a rebuild from the same fix leaves it, a later fix or a new end moves it
+  const g5 = { views: {} }, P5 = pickFn(g5);
+  P5({ t: THR07, f: FAR07, hdg: 57.1, nm: 1.3, past: false, ambiguous: true }, T1, 'AC450');
+  g5.rwAt = Date.now() - 10 * MIN;
+  P5({ t: THR07, f: FAR07, hdg: 57.1, nm: 1.3, past: false, ambiguous: true }, T1, 'AC450');
+  assert.ok(Date.now() - g5.rwAt > 9 * MIN, 'a rebuild on the same fix does not refresh the pick');
+  P5({ t: THR07, f: FAR07, hdg: 57.1, nm: 1.3, past: false, ambiguous: true }, T2, 'AC450');
+  assert.ok(Date.now() - g5.rwAt < MIN, 'a later fix does');
+  g5.rwAt = Date.now() - 10 * MIN;
+  P5({ t: THR04, f: FAR04, hdg: 27, nm: 0.5, past: false, ambiguous: true }, T2, 'AC450');
+  assert.ok(Date.now() - g5.rwAt < MIN, 'and so does a new end');
   // another flight never confirms this one
   const rw4 = Object.assign({}, rw3, { ambiguous: true });
   P(rw4, T2 + 60000, 'AC452');
@@ -180,18 +200,19 @@ test('a previous pick from yesterday (same flight number, same end) vouches for 
   assert.equal(rw4.ambiguous, false);
 });
 
-test('landed on the model from fix 1: fix 2, older than the taxi but newer than fix 1 and 0.8 nm off 04, un-lands it; one on the 04 centreline, a slow one or a low one does not', () => {
+test('landed on the model from fix 1: fix 2, older than the taxi but newer than fix 1, on the 07 final 0.8 nm off 04, un-lands it; one on the 04 centreline, a slow one, a low one, or one still closing on the final does not', () => {
   const win = { _gateIata: 'YOW' };
   const inb = { flight: 'AC450', _locIata: 'YYZ' };
   win._gateInbound = inb;
   const G = lib(27);
   const ended = [];
   const taxi = { on: true, fl: 'AC450', done: false, anchor: 'model', anchorAt: 0, since: 0, plan: { tEnd: 540 } };
-  const M = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm', '_gcBrgDeg', '_gateOnBlocksWord', '_gateTaxiEnd',
+  const mkM = (runways) => new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm', '_gcBrgDeg', '_gateOnBlocksWord', '_gateTaxiEnd', 'AIRPORT_RUNWAYS',
     fnSource('_gateTaxiWhere') + '\n' + fnSource('_gateTaxiWrongRunway') + '\nreturn { where: _gateTaxiWhere, wrong: _gateTaxiWrongRunway };')(
     win, taxi, { p: 0.5, ll: FIX1 }, () => ({ t: null, by: 'actual' }), () => ({ tEnd: 540 }), () => null, () => YOW, G.gcNm, G.gcBrgDeg,
-    () => false, () => { ended.push(1); taxi.on = false; });
-  const where = M.where, wrong = M.wrong;
+    () => false, () => { ended.push(1); taxi.on = false; }, runways);
+  const M = mkM(RUNWAYS);
+  const where = M.where, wrong = (res, st) => M.wrong(res, st, 'YOW');
   // the model landed on 04 at 14:00:45 from fix 1 (13:59:46)
   const r1 = lib(27, DH4).runwayFinalPath(FIX1, YOW, 'YOW');
   assert.ok(same(r1.rw.t, THR04));
@@ -200,7 +221,7 @@ test('landed on the model from fix 1: fix 2, older than the taxi but newer than 
   // a fix before fix 1 is the one it was carried from: the model stands
   const old = { kind: 'fix', leg: 'in', onGround: false, lat: 45.28, lng: -75.73, at: T1 - 60000, alt: 1800, spd: 140 };
   assert.equal(where(old, inb, since + 30000, 'YOW').anchor, 'model');
-  // fix 2: 14:00:30, older than the taxi (14:00:45), newer than fix 1, 0.8 nm off the 04 centreline, 135 kt at 625 ft
+  // fix 2: 14:00:30, older than the taxi (14:00:45), newer than fix 1, 0.8 nm off the 04 centreline and 0.01 nm off 07, 135 kt at 625 ft
   const fix2 = { kind: 'fix', leg: 'in', onGround: false, lat: FIX2[0], lng: FIX2[1], at: T2, alt: 625, spd: 135 };
   assert.equal(wrong(fix2, taxi), true);
   assert.equal(where(fix2, inb, since + 30000, 'YOW'), null, 'the landing was wrong: the fix is the answer');
@@ -228,6 +249,25 @@ test('landed on the model from fix 1: fix 2, older than the taxi but newer than 
   // a taxi that did not land on the model (the feed, a fix) is never un-landed by this rule
   assert.equal(wrong(fix2, Object.assign({}, taxi, { anchor: 'land' })), false);
   assert.equal(wrong(fix2, Object.assign({}, taxi, { rw: null })), false);
+  // Moncton: the model landed from fix A, 1.5 nm off the 06 centreline 6 nm out, CLOSING on it at 25 degrees (the
+  // closing rule); fix B 40 s later, 0.85 nm off at 4.6 nm, is the same intercept and on no other runway: the model stands
+  const YQM = COORDS.YQM, rq = RUNWAYS.YQM[0], T06 = [rq[0], rq[1]], F06 = [rq[2], rq[3]], H06 = G.gcBrgDeg(T06, F06);
+  const A = G.gcDestPt(G.gcDestPt(T06, (H06 + 180) % 360, 6), (H06 + 90) % 360, 1.5);
+  const B = G.gcDestPt(G.gcDestPt(T06, (H06 + 180) % 360, 4.6), (H06 + 90) % 360, 0.85);
+  const GA = lib(H06 + 25, JET, { views: {} }, { _gateInbound: { flight: 'AC648' } });
+  const rA = GA.runwayFinalPath(A, YQM, 'YQM');
+  assert.ok(same(rA.rw.t, T06), 'fix A picks 06');
+  assert.equal(GA.gateLands(A, rA.rw, rA[rA.length - 2], rA[rA.length - 1], 2000), true, 'and the closing rule lands the model from it');
+  const tA = Date.UTC(2026, 10, 7, 17, 0, 0);
+  const stA = { anchor: 'model', rw: rA.rw, fixAt: tA, since: tA + 150000, on: true, fl: 'AC648' };
+  const fixB = { kind: 'fix', leg: 'in', onGround: false, lat: B[0], lng: B[1], at: tA + 40000, alt: 1500, spd: 140 };
+  assert.equal(M.wrong(fixB, stA, 'YQM'), false, 'the intercept fix is off 06 but on no other runway: not a contradiction');
+  const B2 = G.gcDestPt(G.gcDestPt(T06, (H06 + 180) % 360, 4.6), (H06 + 270) % 360, 0.85);
+  assert.equal(M.wrong(Object.assign({}, fixB, { lat: B2[0], lng: B2[1] }), stA, 'YQM'), false, 'from the other side too');
+  // a field with no runway table: the half mile alone decides, as before
+  assert.equal(mkM({}).wrong(fixB, stA, 'YQM'), true);
+  assert.equal(mkM({}).wrong(fix2, taxi, 'YOW'), true);
+  assert.equal(mkM({}).wrong(fixOn, taxi, 'YOW'), false);
 });
 
 test('the glide wires it: the pick goes through _gateGlideRunwayPick, an ambiguous runway holds SHORT, a new leg and a finished taxi forget the pick, the taxi keeps fixAt and rw', () => {
@@ -248,12 +288,12 @@ test('the glide wires it: the pick goes through _gateGlideRunwayPick, an ambiguo
   assert.match(fnSource('_gateLands'), /if \(rw\.past\) return true;\s*(\/\/[^\n]*\n\s*)*if \(rw\.ambiguous === true\) return false;/);
   // the taxi remembers what it landed from, and the un-land path ends it
   assert.match(fnSource('_gateTaxiFromGlide'), /st\.fixAt = \(_gateGlide\.fixAt > 0\) \? _gateGlide\.fixAt : 0; st\.rw = rw;/);
-  assert.match(fnSource('_gateTaxiWhere'), /if \(typeof _gateTaxiWrongRunway === 'function' && _gateTaxiWrongRunway\(res, st\)\) \{\s*_gateTaxiEnd\(\);\s*try \{ _gateGlide\.p = null; _gateGlide\.ll = null; \} catch \(eG\) \{\}\s*return null;/);
+  assert.match(fnSource('_gateTaxiWhere'), /if \(typeof _gateTaxiWrongRunway === 'function' && _gateTaxiWrongRunway\(res, st, ap\)\) \{\s*_gateTaxiEnd\(\);\s*try \{ _gateGlide\.p = null; _gateGlide\.ll = null; \} catch \(eG\) \{\}\s*return null;/);
   // the remembered runway is not reused while ambiguous (the feed's Arrived, a ground fix)
   assert.match(fnSource('_gateTaxiWhere'), /var rwP = \(_gateGlide\.rw && _gateGlide\.rw\.ambiguous !== true && _gateGlide\.rwFl === fl && t - \(_gateGlide\.rwAt \|\| 0\) < 40 \* 60000\) \? _gateGlide\.rw : null;/);
   assert.match(fnSource('_gateTaxiApply'), /var rwG = \(_gateGlide\.rw && _gateGlide\.rw\.ambiguous !== true && _gateGlide\.rwFl === fl\) \? _gateGlide\.rw : null;/);
-  // a finished taxi forgets the pick
-  const taxiSt = { gen: 0, raf: null, on: true, plan: {}, views: {}, done: true, key: 'k', fl: 'AC450' };
+  // a finished taxi forgets the pick, and what it landed from
+  const taxiSt = { gen: 0, raf: null, on: true, plan: {}, views: {}, done: true, key: 'k', fl: 'AC450', anchor: 'model', anchorAt: T2, fixAt: T1, rw: { t: THR04 } };
   const g = { rw: { t: THR07 }, rwFl: 'AC450', rwFix: T1, rwAt: Date.now() };
   new Function('_gateTaxi', '_gateGlide', fnSource('_gateTaxiEnd') + '\nreturn _gateTaxiEnd;')(taxiSt, g)();
   assert.equal(taxiSt.on, false);
@@ -261,6 +301,10 @@ test('the glide wires it: the pick goes through _gateGlideRunwayPick, an ambiguo
   assert.equal(g.rwFl, '');
   assert.equal(g.rwFix, 0);
   assert.equal(g.rwAt, 0);
+  assert.equal(taxiSt.rw, null);
+  assert.equal(taxiSt.fixAt, 0);
+  assert.equal(taxiSt.anchor, '');
+  assert.equal(taxiSt.anchorAt, 0);
 });
 
 test('the committed runway is not reused while ambiguous: _rwCommitted says null for an ambiguous, stale, or other-flight pick', () => {
@@ -316,11 +360,24 @@ test('PD2366 into Ottawa: once 07 is committed on the final, no later fix re-pic
   // the 525 ft fix is short of the threshold, not past it: the short final, then touchdown
   assert.equal(picks[15].past, false);
   assert.ok(same(glide.rw.t, THR07));
-  // the same fix list without the memory of the pick shows the fault this pins: 04 at 525 ft, not landing
-  const G0 = lib(undefined, DH4);
-  const r0 = G0.runwayFinalPath(PD2366[15].pl, YOW, 'YOW');
-  assert.equal(Math.round(r0.rw.hdg), 27, 'without the committed runway the bearing to the field picks 04');
-  assert.equal(G0.gateLands(PD2366[15].pl, r0.rw, r0[r0.length - 2], r0[r0.length - 1], 525), false, 'and it does not land: the marker froze short of 04');
+  // and with NO memory of the pick (a board opened late, a fix gap, a pick just forgotten) the 525 ft fix, 0.009 nm
+  // off the 07 centreline 0.18 nm short of its threshold, is in the on-centreline set on its own: 07, plain, landing,
+  // for a Dash 8, a known jet and a type nobody named (the bare bearing to the field had sent it to 04 and frozen)
+  for (const spec of [DH4, JET, { prop: false, known: false, key: 'jet' }, undefined]) {
+    const G0 = lib(undefined, spec);
+    const r0 = G0.runwayFinalPath(PD2366[15].pl, YOW, 'YOW');
+    assert.ok(same(r0.rw.t, THR07), (spec && spec.key) + ': 07 with nothing remembered, got ' + Math.round(r0.rw.hdg));
+    assert.equal(r0.rw.ambiguous, false, (spec && spec.key) + ': the last 0.3 nm are never ambiguous');
+    assert.equal(G0.gateLands(PD2366[15].pl, r0.rw, r0[r0.length - 2], r0[r0.length - 1], 525), true, (spec && spec.key) + ': and it lands');
+  }
+  // the board opened late, at the 1,000 ft fix (ambiguous for a Dash 8, held short): the 525 ft fix still lands on 07
+  const late = { views: {} }, GL = lib(undefined, DH4, late, win), PL = pickFn(late);
+  const rl1 = GL.runwayFinalPath(PD2366[14].pl, YOW, 'YOW'); PL(rl1.rw, PD2366[14].at, 'PD2366');
+  assert.equal(rl1.rw.ambiguous, true, 'the 1,000 ft fix alone, within 0.3 nm of both centrelines: ambiguous');
+  const rl2 = GL.runwayFinalPath(PD2366[15].pl, YOW, 'YOW'); PL(rl2.rw, PD2366[15].at, 'PD2366');
+  assert.ok(same(rl2.rw.t, THR07));
+  assert.equal(rl2.rw.ambiguous, false);
+  assert.equal(GL.gateLands(PD2366[15].pl, rl2.rw, rl2[rl2.length - 2], rl2[rl2.length - 1], 525), true);
 });
 
 test('the committed runway is kept from 1 nm past the threshold out to 12 nm on its centreline, and no further', () => {
@@ -353,9 +410,58 @@ test('the committed runway is kept from 1 nm past the threshold out to 12 nm on 
   const ambG = Object.assign(fresh(), { rw: Object.assign({}, rw07, { ambiguous: true }) });
   const again = G(ambG).runwayFinalPath(FIX1, YOW, 'YOW');
   assert.equal(again.rw.ambiguous, true, 'a Dash 8 at the crossing with nothing confirmed: still ambiguous');
-  // another flight committed 07: this one is weighed on its own
-  const other = G(Object.assign(fresh(), { rwFl: 'AC450' })).runwayFinalPath(PD2366[15].pl, YOW, 'YOW');
-  assert.equal(Math.round(other.rw.hdg), 27, 'another flight: the ordinary rule (04 from the bearing to the field)');
+  // another flight committed 07: this one is weighed on its own (a Dash 8 at the crossing: 04, ambiguous)
+  const other = G(Object.assign(fresh(), { rwFl: 'AC450' })).runwayFinalPath(FIX1, YOW, 'YOW');
+  assert.equal(Math.round(other.rw.hdg), 27, 'another flight: the ordinary rule');
+  assert.equal(other.rw.ambiguous, true);
+  // the corridor narrows to 0.1 nm inside half a mile: Moncton 06 and 11 have their thresholds 95 m apart, and a fix
+  // 0.164 nm short of 06 on its centreline is 0.166 nm off 11, 0.117 nm short of ITS threshold. With 11 committed
+  // (a runway change inside 40 minutes) the fix is not kept on 11: it lands on 06
+  const YQM = COORDS.YQM, rq = RUNWAYS.YQM, T06 = [rq[0][0], rq[0][1]], F06 = [rq[0][2], rq[0][3]], T11 = [rq[1][0], rq[1][1]], F11 = [rq[1][2], rq[1][3]];
+  const MF = [46.104, -64.697];
+  const winM = { _gateInbound: { flight: 'AC648' } };
+  const g11 = { views: {}, rw: { t: T11, f: F11, hdg: G().gcBrgDeg(T11, F11), nm: G().gcNm(T11, F11), past: false, ambiguous: false }, rwAt: Date.now() - MIN, rwFl: 'AC648', rwFix: T1 };
+  const GM = lib(undefined, JET, g11, winM);
+  const r11 = GM.runwayFinalPath(MF, YQM, 'YQM');
+  assert.ok(same(r11.rw.t, T06), '11 committed, the fix on the last 0.2 nm of 06: 06, got ' + Math.round(r11.rw.hdg));
+  assert.equal(r11.rw.ambiguous, false);
+  assert.equal(GM.gateLands(MF, r11.rw, r11[r11.length - 2], r11[r11.length - 1], 275), true);
+  // with 06 committed the same fix is kept, and lands
+  const g06 = { views: {}, rw: { t: T06, f: F06, hdg: G().gcBrgDeg(T06, F06), nm: G().gcNm(T06, F06), past: false, ambiguous: false }, rwAt: Date.now() - MIN, rwFl: 'AC648', rwFix: T1 };
+  const r06 = lib(undefined, JET, g06, winM).runwayFinalPath(MF, YQM, 'YQM');
+  assert.ok(same(r06.rw.t, T06));
+  assert.equal(r06.rw.past, false);
+  // the 0.3 nm band still holds beyond half a mile: the PD2366 1,000 ft fix, 0.21 nm off 04 at 1.62 nm, is kept on 07
+  const r1000 = G(fresh()).runwayFinalPath(PD2366[14].pl, YOW, 'YOW');
+  assert.ok(same(r1000.rw.t, THR07));
+  // and a fix 0.2 nm off the committed centreline 0.4 nm out is not kept: the set decides (07 anyway here)
+  const r02 = G(fresh()).runwayFinalPath(out(0.4, 0.2), YOW, 'YOW');
+  assert.ok(same(r02.rw.t, THR07));
+});
+
+test('across the table: a fix 0.15 nm short of a threshold on its own centreline, nothing remembered, is never ambiguous and never sent to a non-parallel end unless another centreline is within 0.1 nm', () => {
+  const G = lib();
+  let n = 0, other = 0;
+  for (const ap of Object.keys(RUNWAYS)) {
+    if (!COORDS[ap]) continue;
+    const E = [];
+    for (const rr of RUNWAYS[ap]) { const a = [rr[0], rr[1]], b = [rr[2], rr[3]]; E.push({ t: a, f: b }, { t: b, f: a }); }
+    E.forEach((e) => { e.hdg = G.gcBrgDeg(e.t, e.f); });
+    for (const e of E) {
+      const pl = G.gcDestPt(e.t, (e.hdg + 180) % 360, 0.15);
+      const r = G.runwayFinalPath(pl, COORDS[ap], ap);
+      if (!r) continue;
+      n++;
+      assert.notEqual(r.rw.ambiguous, true, ap + ' ' + e.hdg.toFixed(0) + ': the last 0.3 nm are never ambiguous');
+      if (Math.abs(((r.rw.hdg - e.hdg + 540) % 360) - 180) <= 3) continue;
+      other++;
+      const near = E.some((o) => o !== e && Math.abs(((o.hdg - e.hdg + 540) % 360) - 180) > 3
+        && Math.abs(G.gcNm(o.t, pl) * Math.sin((G.gcBrgDeg(o.t, pl) - o.hdg) * Math.PI / 180)) < 0.1);
+      assert.ok(near, ap + ' ' + e.hdg.toFixed(0) + ' sent to ' + r.rw.hdg.toFixed(0) + ' with no other centreline within 0.1 nm');
+    }
+  }
+  assert.ok(n > 3000, 'the table: ' + n);
+  console.log('    short-final fixes in the table:', n, '; to a crossing end (another centreline within 0.1 nm):', other);
 });
 
 test('the Orlando parallels are untouched: UA2779 on 35R is not ambiguous and lands', () => {

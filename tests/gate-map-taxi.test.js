@@ -287,10 +287,10 @@ test('the answer: taxiing in while the feed\'s landing is recent, the model\'s w
   const taxi = { on: false, fl: '', done: false, anchor: '', anchorAt: 0, since: 0 };
   // v24115 — the landing with its evidence (_gateLandedInfo): the feed own time here
   // v24129 — _gateTaxiWrongRunway rides along (a newer airborne fix off the committed runway un-lands the model)
-  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm', '_gcBrgDeg', '_gateOnBlocksWord', '_gateTaxiEnd',
+  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm', '_gcBrgDeg', '_gateOnBlocksWord', '_gateTaxiEnd', 'AIRPORT_RUNWAYS',
     fnSource('_gateTaxiWhere') + '\n' + fnSource('_gateTaxiWrongRunway') + '\nreturn _gateTaxiWhere;')(
     win, taxi, {}, () => ({ t: win.land, by: win.landBy || 'actual' }), () => ({ tEnd: 540 }), () => null, () => MCO, G.gcNm, G.gcBrgDeg,
-    (row) => String((row && row.status) || '').toLowerCase() === 'arrived', () => { taxi.on = false; });
+    (row) => String((row && row.status) || '').toLowerCase() === 'arrived', () => { taxi.on = false; }, RUNWAYS);
   const now = Date.UTC(2026, 9, 31, 1, 40);
   win.land = now - 4 * 60000;
   const stand = { kind: 'stand', leg: 'out', why: 'landed' };
