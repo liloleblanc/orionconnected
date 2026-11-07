@@ -7797,7 +7797,7 @@ window._gateTelemAnim = window._gateTelemAnim || {
 // _liveSpd/_liveAlt; no-ops when the values haven't changed (so the descent
 // time-base isn't reset every re-render), and clears everything when the plane
 // isn't airborne.
-function _gateTelemSetReal(spdKt, altFt) {
+function _gateTelemSetReal(spdKt, altFt, atTs) {
   var T = window._gateTelemAnim;
   var sp = (typeof spdKt === 'number') ? spdKt : null;
   var al = (typeof altFt === 'number') ? altFt : null;
@@ -7811,7 +7811,13 @@ function _gateTelemSetReal(spdKt, altFt) {
   // actual climb/descent/accel rate, which the model below continues
   // between pings.
   if (T.realTs) { T.prevSpd = T.realSpd; T.prevAlt = T.realAlt; T.prevTs = T.realTs; }
-  T.realSpd = sp; T.realAlt = al; T.realTs = now;
+  // v24126 — THE ANCHOR SITS AT THE FIX'S OWN TIME when the caller knows it
+  // (an FR24 answer carries its age). Anchored at the moment it reached us,
+  // a fix 35 s old on final restarted the carried descent from a height the
+  // aeroplane had already left: PD2293 into Moncton, 2026-11-07, read 512 ft,
+  // then 1,167 ft, then down again, 3 km out. Unknown or absurd, it is now.
+  var tAt = (typeof atTs === 'number' && isFinite(atTs) && atTs <= now && now - atTs < 10 * 60000) ? atTs : now;
+  T.realSpd = sp; T.realAlt = al; T.realTs = tAt;
   // A fresh ping re-anchors the MODEL; the per-second animator EASES the
   // displayed digits onto it over ~10 s
   // — no hard snap after a frozen minute.
@@ -7846,9 +7852,22 @@ function _gateTelemModel() {
     if ((_gp && _gp.onGround === true) ||
         (window._gateInbound && window._gateInbound._liveOnGround === true) ||
         (typeof _gateTaxiMine === 'function' && _gateTaxiMine())) {   // v24105 — landed and taxiing (or at its stand)
-      return { spd: (typeof spd === 'number' ? spd : 0), alt: 0 };
+      // v24126 — THE SPEED OF THE TAXI THE MAP DRAWS, not the last reading in
+      // the air held for the whole roll-out and taxi (PD2293 into Moncton,
+      // 2026-11-07: 215 km/h from touchdown to the stand). Never above that
+      // last reading (the roll-out model starts faster than a turboprop
+      // lands), and 0 once parked. A ground fix with no taxi keeps its own.
+      var _gSpd = (typeof spd === 'number' ? spd : 0);
+      try {
+        if (typeof _gateTaxiMine === 'function' && _gateTaxiMine() && _gateTaxi.plan) {
+          var _tv = _gateTaxi.done ? 0 : _taxiVAtS(_gateTaxi.plan, _gateTaxi.s) / 0.514444;
+          _gSpd = Math.max(0, Math.min(_gSpd > 0 ? _gSpd : _tv, _tv));
+        }
+      } catch (eG) {}
+      return { spd: _gSpd, alt: 0 };
     }
   } catch (e) {}
+  var _desc = false;   // v24126 — a measured descent (the animator never lets one read as a climb)
   // TREND BRIDGE — the map glide's rule applied to the digits (
   // approximate first, then adjust with the pings). Between real fixes,
   // continue the RATE measured between the last two fixes, so a plane on
@@ -7882,6 +7901,7 @@ function _gateTelemModel() {
         if (typeof T.prevAlt === 'number' && typeof alt === 'number') {
           var altRate = (alt - T.prevAlt) / span;                     // ft/s
           altRate = Math.max(-30, Math.min(30, altRate));             // ≤1800 fpm
+          _desc = altRate < 0;
           var altReal = alt;
           alt = Math.max(0, alt + altRate * effAge);
           // v24088 — NEVER BELOW THE APPROACH PATH. A descent carried for
@@ -7905,7 +7925,7 @@ function _gateTelemModel() {
       }
     }
   } catch (e) {}
-  return { spd: spd, alt: alt };
+  return { spd: spd, alt: alt, desc: _desc };
 }
 
 // v24088 — the height of a 3° approach path to this field under the aeroplane,
@@ -7940,8 +7960,17 @@ function _gateTelemSpotNm(h, glideOnly, fl) {
 // null (the built number stays) while no glide is flying to it.
 function _gateTelemDistKm(fl) {
   try {
-    if (typeof _gateGlide === 'undefined' || !_gateGlide || !_gateGlide.raf || !_gateGlide.ll || !_gateGlide.d) return null;
     var dc = (typeof AIRPORT_COORDS !== 'undefined') ? AIRPORT_COORDS[String(window._gateIata || '').toUpperCase()] : null;
+    // v24126 — ON THE GROUND THE TAXI THE MAP DRAWS SAYS HOW FAR (the number
+    // built from the last fix in the air read "1 km" from touchdown to the
+    // stand, PD2293 into Moncton, 2026-11-07); 0 once parked.
+    try {
+      if (dc && typeof _gateTaxiMine === 'function' && _gateTaxiMine() && _gateTaxi.ll
+          && (!fl || String(_gateTaxi.fl || '') === String(fl))) {
+        return _gateTaxi.done ? 0 : Math.round(_gcNm(_gateTaxi.ll, dc) * 1.852);
+      }
+    } catch (eT) {}
+    if (typeof _gateGlide === 'undefined' || !_gateGlide || !_gateGlide.raf || !_gateGlide.ll || !_gateGlide.d) return null;
     if (!dc || _gcNm(_gateGlide.d, dc) > 5) return null;
     var nm = _gateTelemSpotNm(dc, true, fl);
     return (nm === null) ? null : Math.round(nm * 1.852);
@@ -7977,7 +8006,15 @@ function _animateGateTelem() {
   // the trend runs, and a ~10 s visible 'catch-up' whenever a fresh ping
   // moves the anchor, instead of the old snap-freeze-snap cadence.
   if (typeof m.spd === 'number') T.spd = (typeof T.spd === 'number') ? T.spd + (m.spd - T.spd) * 0.22 : m.spd;
-  if (typeof m.alt === 'number') T.alt = (typeof T.alt === 'number') ? T.alt + (m.alt - T.alt) * 0.22 : m.alt;
+  // v24126 — A DESCENT NEVER READS AS A CLIMB. While the measured trend is
+  // down, a fresh anchor ABOVE the digits on screen (the carried descent had
+  // run ahead of the aeroplane) holds them where they are until the model
+  // comes down past them. A measured climb (a go-around) still rises.
+  if (typeof m.alt === 'number') {
+    if (!(m.desc === true && typeof T.alt === 'number' && m.alt > T.alt)) {
+      T.alt = (typeof T.alt === 'number') ? T.alt + (m.alt - T.alt) * 0.22 : m.alt;
+    }
+  }
   _writeGateTelemDom();
 }
 
@@ -8606,7 +8643,8 @@ async function _gateNumbersPoll() {
           if (_atFilled && typeof requestGateRebuild === 'function') requestGateRebuild();
         } catch (eT) {}
       }
-      try { _gateTelemSetReal(_adsb.spd, _adsb.alt); } catch (e) {}
+      // v24126 — with the fix's own time (_fxAt above, when the fix had a place)
+      try { _gateTelemSetReal(_adsb.spd, _adsb.alt, (typeof _fxAt === 'number') ? _fxAt : undefined); } catch (e) {}
       try { console.log('[ADSB]', flt, '→ spd', _adsb.spd, 'alt', _adsb.alt, 'trk', _adsb.track, 'age', _adsb.age + 's'); } catch (e) {}
       return;   // fresher than anything AeroDataBox can offer
     }
@@ -12136,9 +12174,10 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/TS/transatbackground.png'
   ],
   'AF': [
-    // Selected Aug 7: tricolore streaks on true AF blue — the clean
-    // right-side field is where gate text lands.
-    '/logos/Backgrounds/AF/airfrancebackground.png'
+    // v24125: plain Air France blue with faint fine lines (Adobe Stock
+    // 870392748), the brand scene in the airline rotation. The tricolore
+    // streaks before it were too busy behind gate text on a screen.
+    '/logos/Backgrounds/AF/airfrance-blue-lines.jpg'
   ],
   'EK': [
     // UAE-flag wave art; source carried baked-in National Day lettering
@@ -13573,8 +13612,11 @@ function renderMobileGateHtml(ctx) {
       _fromCity = _cleanCity(_fromCity);
       // v23962 — with the airport's name where the city has two of ours
       if (typeof _cityAp === 'function') _fromCity = _cityAp(_fromCity, _fromIata);
-      var _arrTs = _inb._sortTs || 0, _arrRevTs = _inb._revTs || 0;
-      var _effArrTs = (_arrRevTs && _arrRevTs > _arrTs) ? _arrRevTs : _arrTs;
+      // v24126 — the minutes count down to the time the card prints: the
+      // airport's new time with its Delayed or EARLY (_gateLaterTs), not only
+      // a later one. PD2366 into Ottawa, early at 1:18, read Arrives in 41 min
+      // beside its own 1:18pm at 1:13: the count ran to the schedule at 1:55.
+      var _effArrTs = _gateLaterTs(_inb);
       var _minsToArr = _effArrTs ? Math.round((_effArrTs - Date.now()) / 60000) : 0;
       var _etaStr = '';
       // v24120 — At the gate only on its blocks (fidsInboundOnStand). It used
@@ -15272,9 +15314,10 @@ function _buildV2AircraftCol(ctx, vars) {
       // v23962 — with the airport's name where the city has two of ours
       if (typeof _cityAp === 'function') _fromCity = _cityAp(_fromCity, _fromIata);
     } catch(e) { _fromCity = inboundFlight.origin || ''; }
-    var _arrTs = inboundFlight._sortTs || 0;
-    var _arrRevTs = inboundFlight._revTs || 0;
-    var _effArrTs = (_arrRevTs && _arrRevTs > _arrTs) ? _arrRevTs : _arrTs;
+    // v24126 — to the time the rail prints (_gateLaterTs: the new time with
+    // Delayed or Early), not only a later one. An early aeroplane counted
+    // down to its schedule, 37 minutes after it was due at the gate.
+    var _effArrTs = _gateLaterTs(inboundFlight);
     var _minsToArr = _effArrTs ? Math.round((_effArrTs - Date.now()) / 60000) : 0;
     var _etaStr = '';
     if (_minsToArr > 0 && _minsToArr < 1440) {
@@ -17680,7 +17723,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24121" src="/textures/gate-sky-shelf.mp4?v=24121" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17724,7 +17767,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24121" src="/textures/gate-sky-shelf.mp4?v=24121" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18956,7 +18999,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24121" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24126" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -26936,8 +26979,10 @@ const gView = document.getElementById('gateView');
         const inStEn = _statusWord(inStatus);
         // Estimate minutes until arrival
         let etaStr = '';
-        if (inboundFlight._sortTs) {
-          const minsOut = Math.round((inboundFlight._sortTs - Date.now()) / 60000);
+        // v24126 — the new time with Delayed or Early, else the schedule (_gateLaterTs)
+        const _inbEta = _gateLaterTs(inboundFlight);
+        if (_inbEta) {
+          const minsOut = Math.round((_inbEta - Date.now()) / 60000);
           if (minsOut > 0 && minsOut <= 180) {
             etaStr = `${TL('arrivesIn')} ${minsOut} MIN`;
           }
@@ -35876,7 +35921,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24121';
+var FIDS_BUILD_TAG = 'v24126';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -42071,6 +42116,54 @@ var _OSKY_TTL_MS = 45000;
 var _OSKY_CREDIT_MS = 120000;
 var _oskyCache = Object.create(null);
 var _oskyOffUntil = 0, _oskyStopAt = 0, _oskyShownAt = 0;
+// v24123 — EVERY FLIGHT THE BOARD LISTS NEAR ITS OWN MOVE, NOT ONE A GATE.
+// One OpenSky call answers with every aircraft in the airport box, and asking
+// for the one flight a gate shows threw the rest away: Ottawa on 2026-11-05
+// had 45 aircraft in its box and four names asked, none of them flying. Every
+// two minutes the board names its arrivals from 10 minutes past their time
+// to 75 ahead and its departures from 45 minutes past to 20 ahead, one
+// callsign each (the operator name first, as _oskyTelemetry asks), at most
+// thirty, so a position is already waiting when a gate turns to one of them.
+var _oskyWantAt = 0;
+function _oskyWantNames(rows, now, lo, hi, out) {
+  for (var i = 0; i < rows.length && out.length < 30; i++) {
+    var r = rows[i];
+    if (!r || !r.flight) continue;
+    var t = Number(r._revTs || r._sortTs) || 0;
+    if (!t || t < now - lo * 60000 || t > now + hi * 60000) continue;
+    var fn = String(r.flight).toUpperCase().replace(/\s+/g, '');
+    var cs = '';
+    try { cs = (_operatorCallsigns(r._opCode, fn) || [])[0] || ''; } catch (e) { cs = ''; }
+    if (!/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(cs)) cs = String(r._callSign || '').toUpperCase().replace(/\s+/g, '');
+    if (!/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(cs)) { try { cs = _icaoCallsign(fn) || ''; } catch (e) { cs = ''; } }
+    if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(cs) && out.indexOf(cs) < 0) out.push(cs);
+  }
+  return out;
+}
+function _oskyWantBoard() {
+  try {
+    if (typeof window === 'undefined' || typeof fetch !== 'function') return;
+    var now = Date.now();
+    if (now - _oskyWantAt < 120000 || now < _oskyOffUntil) return;
+    var ap = String(window._gateIata || (typeof _pageAirport === 'function' ? _pageAirport() : '') || '').toUpperCase();
+    if (!/^[A-Z]{3}$/.test(ap)) return;
+    _oskyWantAt = now;
+    var names = [];
+    _oskyWantNames(_gateFeedRows('arr') || [], now, 10, 75, names);
+    _oskyWantNames(_gateFeedRows('dep') || [], now, 45, 20, names);
+    if (!names.length) return;
+    fetch(_ADSB_BASE.replace(/\/adsb$/, '/oskywant') + '?ap=' + ap + '&cs=' + names.join(','), { cache: 'no-store' })
+      .then(function (r) { if (r.status === 403) _oskyOffUntil = Date.now() + 600000; }, function () {});
+  } catch (e) {}
+}
+// (a page only: code lifted into a test runs without a document, and a
+// timer never holds a process open)
+try {
+  if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof setInterval === 'function' && !window.__oskyWantTimer) {
+    window.__oskyWantTimer = setInterval(_oskyWantBoard, 60000);
+    if (window.__oskyWantTimer && typeof window.__oskyWantTimer.unref === 'function') window.__oskyWantTimer.unref();
+  }
+} catch (eW) {}
 var _oskyHexOf = Object.create(null);   // flight -> { h: icao24, d: UTC day }, from an answer that named it
 // A flight number is flown by another aircraft tomorrow: the remembered icao24
 // is good for the UTC day it was learned on only, so a board left running past
@@ -49395,6 +49488,16 @@ function _gateRawLanded(row) {
   var s = _gateRawStatus(row);
   return s === 'arrived' || s === 'landed';
 }
+// v24124 — ON ITS BLOCKS BY THE ROW OWN WORD. Since v24120 Arrived is the
+// on-stand word on every board, and Landed is down and still taxiing.
+// Halifax gate 15, 2026-11-06 at 18:40: the card said Arrived while the map
+// still moved the aeroplane, on a live position that lags the blocks by a
+// minute or more and on a taxi drawn from the landing. Once the row says
+// Arrived the map draws the aeroplane on its stand: no live position after
+// the blocks, no taxi.
+function _gateOnBlocksWord(row) {
+  return _gateRawStatus(row) === 'arrived';
+}
 // Airborne in the feed's own words: the row's status, or the Flight-Alert push
 // merged onto a Moncton row (_pushStatus, see _yqmCacheAircraftMerge).
 function _gateRawAirborne(row) {
@@ -50309,6 +50412,8 @@ function _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz) {
     var hL0 = _lookupAirport(ap);
     var here0 = fx0.onGround && hL0 && _gcNm([fx0.lat, fx0.lng], hL0) < 6;
     if (!(here0 || (!fx0.onGround && fx0.at > land))) fx0 = null;
+    // (v24124 — and none at all once the row says Arrived: on its blocks)
+    else if (_gateOnBlocksWord(inb)) fx0 = null;
   }
   if (!land || fx0) {
     var fx = fx0;
@@ -52560,6 +52665,9 @@ function _gateTaxiWhere(res, inb, t, ap) {
   // a taxi that has run 5 minutes past its own end (a screen in the
   // background, its frames held) is at its stand
   if (mine && !st.done && st.plan && t - st.t0 > (st.plan.tEnd + 300) * 1000) st.done = true;
+  // v24124 — and a row that says Arrived is on its blocks: the taxi is over
+  // and the stand rules say where it is (_gateOnBlocksWord)
+  if (_gateOnBlocksWord(inb)) { if (mine && !st.done) st.done = true; return null; }
   var mk = function (anchor, at, extra) {
     var r = { kind: 'taxi', leg: 'in', org: org, dst: ap, other: org, onGround: true, at: at, anchor: anchor, why: 'taxi-' + anchor };
     if (mine && st.ll) { r.lat = st.ll[0]; r.lng = st.ll[1]; }
@@ -64583,7 +64691,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24121" src="/textures/gate-sky-shelf.mp4?v=24121"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

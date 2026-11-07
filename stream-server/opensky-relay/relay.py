@@ -129,7 +129,7 @@ MIN_CACHE_S = 10
 MAX_CACHE_S = 120                  # the Worker keeps a put 180 s: the next one must land first
 MAX_EXTEND_S = 40 * 86400          # the Worker may move the stop later by 40 days at most at a time
 MAX_BOXES = 8
-MAX_FILTER_VALUES = 4              # icao24 + callsign values together, per box
+MAX_FILTER_VALUES = 30             # icao24 + callsign values together, per box (v24123: was 4)
 TOKEN_RENEW_MARGIN_S = 120         # renew 2 minutes before expiry
 TOKEN_RETRY_GAP_S = 60             # a login that could not reach OpenSky is retried at most once a minute
 CREDS_REFRESH_S = 1800             # the client is asked of the Worker again every 30 minutes
@@ -563,7 +563,7 @@ def _num(v):
 def parse_box(e):
     """One /osky/wanted entry: ((lamin, lomin, lamax, lomax), icao24 set,
     callsign set), or None when it is not a box of at most 25 sq deg with one
-    to four flights."""
+    to thirty flights."""
     if not isinstance(e, dict):
         return None
     vals = []
@@ -986,7 +986,8 @@ class Relay(object):
             puts = self._puts_roll(self.now())
         q = [('calls', str(calls)), ('cap', str(self.settings['cap'])), ('status', str(self.last_status)),
              ('hold', str(self.hold_seconds())), ('state', self.state), ('puts', str(puts)),
-             ('stop', self.local_stop() or ''), ('refresh', str(self.cache_ttl()))]
+             ('stop', self.local_stop() or ''), ('refresh', str(self.cache_ttl())),
+             ('names', str(MAX_FILTER_VALUES))]
         status, j = self.worker('GET', '/osky/report', query=q)
         self.count('heartbeats')
         self._worker_says_stopped(status)
