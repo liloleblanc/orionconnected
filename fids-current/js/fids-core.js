@@ -17723,7 +17723,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24128" src="/textures/gate-sky-shelf.mp4?v=24128" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17767,7 +17767,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24128" src="/textures/gate-sky-shelf.mp4?v=24128" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18999,7 +18999,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24126" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24128" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -35921,7 +35921,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24126';
+var FIDS_BUILD_TAG = 'v24128';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -64680,7 +64680,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24128" src="/textures/gate-sky-shelf.mp4?v=24128"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -65307,6 +65307,20 @@ var _WX_CITY_PICS = {
   // from Adobe Stock, so none of them owes a credit on the screen.
   GRU:1, LIR:1, MZT:1, PEK:1, PLS:1, YAA:1, YBG:1, YBL:1, YFB:1, YKA:1,
   YPW:1, YQG:1, YSB:1, YXC:1, YYF:1,
+  // v24128 — DAY PICTURES THAT ARE DAY. The Montreal day picture was a
+  // blue-hour shot with every window lit, and Frankfurt, Hong Kong and
+  // Taipei came from the picture service as night views: a night city on
+  // a plate at noon. Each is now a daytime photograph, picked from a sheet
+  // (Mount Royal lookout CC0; Adobe Stock for the other three). Deer Lake
+  // is the Western Brook Pond fjord from the Gros Morne overlook.
+  FRA:1, HKG:1, TPE:1,
+  // A famous city is pictured by the landmark that names it on sight: Las
+  // Vegas by its Welcome sign (its owner, YESCO, allows photographs while
+  // its logo under NEVADA stays in), Sydney by the Opera House beside the
+  // Harbour Bridge across Farm Cove (a harbour scene, the use the Opera
+  // House Trust allows), Tokyo by Tokyo Tower over the city. Haneda shares
+  // the Tokyo picture.
+  SYD:1, NRT:1, HND:'NRT',
   // v24113 — THIRTY-FOUR MORE, from the same contact sheets. Nearly all are
   // open-licence photographs that ask for a credit, so each names its
   // photographer on the card that shows it (_WX_CITY_CREDIT below) and links
@@ -65413,12 +65427,15 @@ var _WX_CITY_NIGHT = {
 // full credit, with a link to each source, is on the credits page.
 var _WX_CITY_CREDIT = {
   'CAN': ['Sergei Gussev', 'BY', '2.0'],
+  'LAS': ['Christian David', 'BY-SA', '4.0'],
   'MBJ': ['Grahampurse', 'BY-SA', '4.0'],
   'POP': ['Jusunx', 'BY-SA', '4.0'],
+  'SYD': ['-wuppertaler', 'BY', '4.0'],
   'YAM': ['Sharon Hahn Darlin', 'BY', '2.0'],
   'YAY': ['Mykola Swarnyk', 'BY-SA', '3.0'],
   'YCD': ['AB87', 'BY', '3.0'],
   'YCG': ['Murray Foubister', 'BY-SA', '2.0'],
+  'YDF': ['Paul Gierszewski', 'BY-SA', '3.0'],
   'YEG-night': ['Calgary Reviews', 'BY', '2.0'],
   'YGR': ['Marc-Lautenbacher', 'BY-SA', '4.0'],
   'YHZ-night': ['Keith Pomakis', 'BY-SA', '2.5'],
