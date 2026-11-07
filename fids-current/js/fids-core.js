@@ -17941,7 +17941,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17985,7 +17985,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19217,7 +19217,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24126" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24127" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36266,7 +36266,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24126';
+var FIDS_BUILD_TAG = 'v24127';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -64385,6 +64385,17 @@ function _wxFetchSun(iata, ts) {
 // v23846 — hoisted out of the card so the hourly tiles and the scene slots
 // can ask it too. Real sunrise and sunset per airport from _wxFetchSun; the
 // 06:00-21:00 window only while those have not arrived.
+// v24127 — WHEN A FLIGHT LANDS, IF NOBODY HAS SAID: the departure plus the
+// great-circle distance at 400 kt plus 15 minutes (a leg as _gateLegSpanMs
+// reads it, without its pad). For the weather plate only; never printed.
+function _wxEstArrTs(orig, dest, depTs) {
+  try {
+    if (!depTs || !orig || !dest || orig === dest) return 0;
+    var o = _lookupAirport(orig), h = _lookupAirport(dest);
+    if (!o || !h) return 0;
+    return depTs + Math.round((_gcNm(o, h) / 400 * 60 + 15) * 60000);
+  } catch (e) { return 0; }
+}
 function _wxNightAt(iata, ts) {
   try {
     // v24042 — asked about NOW on a board shown as an example, the answer is
@@ -65124,7 +65135,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24126" src="/textures/gate-sky-shelf.mp4?v=24126"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -65766,7 +65777,11 @@ var _WX_CITY_PICS = {
   // Palm Springs: desert palms and a still pond under the San Jacinto range in
   // the last light, an Adobe Stock picture licensed for the boards.
   PSP:1, YXY:1,
-  JFK:'NYC', LGA:'NYC', EWR:'NYC'
+  JFK:'NYC', LGA:'NYC', EWR:'NYC',
+  // v24127 — Billy Bishop had no picture of its own and no night one: after
+  // dark it fell to a dimmed daytime photo. It takes Toronto, whose
+  // pictures are the skyline seen from the island the airport is on.
+  YTZ:'YYZ'
 };
 // v24112 — NO PICTURE RATHER THAN THE WRONG ONE. Outside the curated set the
 // picture service looks a city up by name, and for two of these it found the
@@ -65818,7 +65833,7 @@ var _WX_CITY_NIGHT = {
   NYC:1, MIA:1, DUB:1, EDI:1, SFO:1, BOS:1, PHL:1, ORD:1, DEN:1, CLT:1,
   IAH:1, PHX:1, DTW:1, MSP:1, TPA:1, YVR:1, YUL:1, YYC:1, CUN:1, PUJ:1,
   VRA:1, FLL:1, KEF:1,
-  JFK:'NYC', LGA:'NYC', EWR:'NYC',
+  JFK:'NYC', LGA:'NYC', EWR:'NYC', YTZ:'YYZ',
   // v23908 — AND MONCTON, THE PLATE THIS BOARD SHOWS MOST AFTER DARK. No
   // stock library holds a licensable Moncton night skyline (searched
   // across Vecteezy, Unsplash, Pexels, Pixabay, Adobe Stock, Commons and
@@ -66276,10 +66291,17 @@ function _renderWxCard(el) {
       var t = dT(v), m = /^(.*?)(°[CF])$/.exec(t);
       return m ? '<span class="wxc-mon-num">' + m[1] + '</span><span class="wxc-mon-unit">' + m[2] + '</span>' : t;
     };
-    var _wxSide = function (iata, ts, shortLbl, cls) {
-      var w = _wxAtTime(iata, ts);
+    // v24127 — EACH PICTURE AT THE TIME IT STANDS FOR. With no arrival time
+    // published (Pearson arrivals blocked, 2026-11-05) the arrival plate was
+    // read NOW: a day Toronto beside a night Moncton for an evening flight.
+    // estTs, the departure plus the flight (_wxEstArrTs), is read instead:
+    // the weather and day or night at about the landing, with no clock
+    // printed, because nobody has published one.
+    var _wxSide = function (iata, ts, shortLbl, cls, estTs) {
+      var tw = ts || estTs || 0;
+      var w = _wxAtTime(iata, tw);
       if (!w) return '';
-      var isNight = !!_wxNightAt(iata, ts);
+      var isNight = !!_wxNightAt(iata, tw);
       var sIc = _wxAnimIcon(w.code, isNight);
       var when = _wxClock(iata, ts);
       var pic = _wxCityPic(iata, isNight);
@@ -66298,7 +66320,7 @@ function _renderWxCard(el) {
       // weather now and says so.
       var note = '';
       try {
-        if (!ts) note = _wxPairT(BoardStrings.entry('wxNowTitle'));
+        if (!ts && !estTs) note = _wxPairT(BoardStrings.entry('wxNowTitle'));
         else if (when) {
           var tDay = _wxLocalDate(iata), dDay = _wxLocalDate(iata, ts);
           var nDay = tDay ? new Date(Date.parse(tDay + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10) : '';
@@ -66371,13 +66393,19 @@ function _renderWxCard(el) {
     // hour now), the city written large across its foot with its airport and
     // its code; the screen's title runs under it on the airline's band. The
     // place travels as one piece (v23767): city and code never separate.
-    var _wxBand = (function () {
-      var bn = !!night, bp = _wxCityPic(dest, bn), bd = bn && !_wxNightPicFor(dest);
+    // v24127 — and the band picture at the time its screen stands for: the
+    // hours screen at the first hour it shows, the days screen by day (days
+    // ahead are read at midday).
+    var _wxBandAt = function (bn) {
+      bn = !!bn;
+      var bp = _wxCityPic(dest, bn), bd = bn && !_wxNightPicFor(dest);
       return '<div class="wxc-sc-band">'
         + '<div class="wxc-sc-pic' + (bd ? ' wxc-mon-dusk' : '') + '"' + (bp ? ' style="background-image:url(\'' + bp + '\')"' : '') + '></div>'
         + '<div class="wxc-sc-city"><span class="wxc-sc-name">' + _cityApHtml(_wxCityOf(dest), dest, false, true) + '</span>\u00a0<span class="wxc-sc-chip">' + _dispIata(dest) + '</span></div>'
         + '</div>';
-    })();
+    };
+    var _wxBand2Night = !!night;
+    try { if (_wxHours.length && typeof _wxHours[0].night === 'boolean') _wxBand2Night = _wxHours[0].night; } catch (eB2) {}
     var _wxDeg = function (v) { return dT(v).replace(/°[CF]$/, '°'); };
 
     // ── screen 1: the set ──────────────────────────────────────────────────
@@ -66395,7 +66423,9 @@ function _renderWxCard(el) {
     // the flight's hours — departure and arrival — and agree with every
     // other time on the screen.
     var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep') : '';
-    var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr');
+    var _wxArrEst = 0;
+    try { if (!_wxArrTs && _wxDepTs) _wxArrEst = _wxEstArrTs(_wxOrig, dest, _wxDepTs); } catch (eAE) { _wxArrEst = 0; }
+    var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr', _wxArrEst);
     // v24014 — from here to there: a round token in the airline's colour
     // between the two photographs, its arrow in the airline's ink (the dashed
     // amber line it replaces was the Delayed colour's family)
@@ -66525,7 +66555,7 @@ function _renderWxCard(el) {
           _s2facts += _wxFact(_WX_F_PRESS, _wxPairS(BoardStrings.entry('wxPressure')), Math.round(_c2.pressure) + ' hPa');
         }
       } catch (eS2) { _s2facts = ''; }
-      _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar + _wxBand
+      _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar + _wxBandAt(_wxBand2Night)
         + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.entry('wxNextHours')) + '</div>'
         + '<div class="wxc-chart wxc-hgrid">' + _cols + '</div>'
         + _hnote
@@ -66592,7 +66622,7 @@ function _renderWxCard(el) {
           + '<div class="wxc-dstrip" style="background-image:url(/logos/weather/stills/wx-still-' + _dSlot + '.jpg)"></div>'
           + '</div>';
       }).join('');
-      _wxS3 = '<div class="wxc-screen wxc-s3">' + _wxBar + _wxBand
+      _wxS3 = '<div class="wxc-screen wxc-s3">' + _wxBar + _wxBandAt(false)
         + '<div class="wxc-sc-title">' + _wxPairD(BoardStrings.filled('wxForecastN', { N: nDays })) + '</div>'
         + '<div class="wxc-days wxc-days-' + nDays + '">' + _dayCols + '</div>'
         + (_facts ? '<div class="wxc-facts">' + (_factsWhen || '') + _facts + '</div>' : '')
@@ -66705,8 +66735,8 @@ function _renderWxCard(el) {
     } catch (eS2) {}
     try {
       if (_wxDays.length) {
+        // v24127 — days ahead are by day, whatever the hour of arrival
         var _dNight = false;
-        try { _dNight = !!_wxNightAt(dest, _wxArrTs || Date.now()); } catch (eDN) {}
         _wxSlot3 = _wxSceneKindOf(_wxDays[0].ic) + (_dNight ? '-night' : '-day');
       }
     } catch (eS3) {}

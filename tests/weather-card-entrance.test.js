@@ -106,11 +106,11 @@ test('the monitor carries departure and arrival, each read at its own hour', () 
   // current time made the card contradict the board it sits on — the board
   // said the flight leaves at 5:05am while the card's heading said 7:29 PM,
   // the hour a passer-by happened to be looking.
-  assert.match(SRC, /var _sideL = \(_wxOrig && _wxOrig !== dest\) \? _wxSide\(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep'\) : '';\s*var _sideR = _wxSide\(dest, _wxArrTs, _arrShort, 'wxc-mon-arr'\);/,
+  assert.match(SRC, /var _sideL = \(_wxOrig && _wxOrig !== dest\) \? _wxSide\(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep'\) : '';[\s\S]{0,240}var _sideR = _wxSide\(dest, _wxArrTs, _arrShort, 'wxc-mon-arr', _wxArrEst\);/,
     'departure from the board airport at departure time, arrival at the destination at arrival time');
   assert.match(SRC, /'<div class="wxc-mon-body">' \+ \(_sideL \? _sideL \+ _wxLink : ''\) \+ _sideR \+ '<\/div>'/,
     'departure left, the link, arrival right; with no origin reading the arrival stands alone');
-  assert.match(SRC, /var isNight = !!_wxNightAt\(iata, ts\);\s*var sIc = _wxAnimIcon\(w\.code, isNight\);/,
+  assert.match(SRC, /var isNight = !!_wxNightAt\(iata, tw\);\s*var sIc = _wxAnimIcon\(w\.code, isNight\);/,
     'the plate\'s icon is day or night AT THAT HOUR, not now — read once and shared with the picture');
   assert.match(rule('.wxcard-wrap .wxc-mon-2up .wxc-mon-body'), /grid-template-columns: 1fr auto 1fr !important/, 'two plates sit side by side');
 });
