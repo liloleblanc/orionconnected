@@ -10297,7 +10297,7 @@ html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airli
    inside a slate grey frame. The tricolore streaks were too busy behind text on a screen;
    plate-af-tricolore.jpg stays on disk as the one-line rollback. */
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24128');
+  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24129');
   --plate-base: #051039;
   --plate-blend: normal;
   --plate-ink: #ffffff;
@@ -19210,7 +19210,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 0 auto !important;
   width: clamp(44px, 6.4vh, 80px) !important;
   height: clamp(44px, 6.4vh, 80px) !important;
-  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24128');
+  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24129');
   background-size: 5500% 100%;
   background-repeat: no-repeat;
   background-position: 0% 0%;
@@ -22979,7 +22979,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24128') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24129') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
