@@ -12137,8 +12137,8 @@ var AIRLINE_BACKGROUNDS = {
   ],
   'AF': [
     // v24125: plain Air France blue with faint fine lines (Adobe Stock
-    // 870392748). The tricolore streaks before it were too busy behind
-    // gate text on a screen.
+    // 870392748), the brand scene in the airline rotation. The tricolore
+    // streaks before it were too busy behind gate text on a screen.
     '/logos/Backgrounds/AF/airfrance-blue-lines.jpg'
   ],
   'EK': [
