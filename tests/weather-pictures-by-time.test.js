@@ -1,7 +1,7 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v24121 — EACH WEATHER PICTURE AT THE TIME IT STANDS FOR.
+// v24127 — EACH WEATHER PICTURE AT THE TIME IT STANDS FOR.
 //
 // 2026-11-05, late morning: weather cards showed night pictures in broad
 // daylight. Since the clocks changed on 1 November it is dark by about 17:00
@@ -53,7 +53,7 @@ test('the hours screen pictures its first hour, the days screen is by day', () =
   assert.match(CORE, /if \(_wxHours\.length && typeof _wxHours\[0\]\.night === 'boolean'\) _wxBand2Night = _wxHours\[0\]\.night;/);
   assert.match(CORE, /_wxS3 = '<div class="wxc-screen wxc-s3">' \+ _wxBar \+ _wxBandAt\(false\)/);
   // and its footage by day too
-  assert.match(CORE, /\/\/ v24121 — days ahead are by day, whatever the hour of arrival\s*var _dNight = false;/);
+  assert.match(CORE, /\/\/ v24127 — days ahead are by day, whatever the hour of arrival\s*var _dNight = false;/);
   assert.doesNotMatch(CORE, /_dNight = !!_wxNightAt\(dest, _wxArrTs \|\| Date\.now\(\)\)/);
 });
 

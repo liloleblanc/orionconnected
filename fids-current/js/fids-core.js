@@ -63941,7 +63941,7 @@ function _wxFetchSun(iata, ts) {
 // v23846 — hoisted out of the card so the hourly tiles and the scene slots
 // can ask it too. Real sunrise and sunset per airport from _wxFetchSun; the
 // 06:00-21:00 window only while those have not arrived.
-// v24121 — WHEN A FLIGHT LANDS, IF NOBODY HAS SAID: the departure plus the
+// v24127 — WHEN A FLIGHT LANDS, IF NOBODY HAS SAID: the departure plus the
 // great-circle distance at 400 kt plus 15 minutes (a leg as _gateLegSpanMs
 // reads it, without its pad). For the weather plate only; never printed.
 function _wxEstArrTs(orig, dest, depTs) {
@@ -65334,7 +65334,7 @@ var _WX_CITY_PICS = {
   // the last light, an Adobe Stock picture licensed for the boards.
   PSP:1, YXY:1,
   JFK:'NYC', LGA:'NYC', EWR:'NYC',
-  // v24121 — Billy Bishop had no picture of its own and no night one: after
+  // v24127 — Billy Bishop had no picture of its own and no night one: after
   // dark it fell to a dimmed daytime photo. It takes Toronto, whose
   // pictures are the skyline seen from the island the airport is on.
   YTZ:'YYZ'
@@ -65847,7 +65847,7 @@ function _renderWxCard(el) {
       var t = dT(v), m = /^(.*?)(°[CF])$/.exec(t);
       return m ? '<span class="wxc-mon-num">' + m[1] + '</span><span class="wxc-mon-unit">' + m[2] + '</span>' : t;
     };
-    // v24121 — EACH PICTURE AT THE TIME IT STANDS FOR. With no arrival time
+    // v24127 — EACH PICTURE AT THE TIME IT STANDS FOR. With no arrival time
     // published (Pearson arrivals blocked, 2026-11-05) the arrival plate was
     // read NOW: a day Toronto beside a night Moncton for an evening flight.
     // estTs, the departure plus the flight (_wxEstArrTs), is read instead:
@@ -65949,7 +65949,7 @@ function _renderWxCard(el) {
     // hour now), the city written large across its foot with its airport and
     // its code; the screen's title runs under it on the airline's band. The
     // place travels as one piece (v23767): city and code never separate.
-    // v24121 — and the band picture at the time its screen stands for: the
+    // v24127 — and the band picture at the time its screen stands for: the
     // hours screen at the first hour it shows, the days screen by day (days
     // ahead are read at midday).
     var _wxBandAt = function (bn) {
@@ -66291,7 +66291,7 @@ function _renderWxCard(el) {
     } catch (eS2) {}
     try {
       if (_wxDays.length) {
-        // v24121 — days ahead are by day, whatever the hour of arrival
+        // v24127 — days ahead are by day, whatever the hour of arrival
         var _dNight = false;
         _wxSlot3 = _wxSceneKindOf(_wxDays[0].ic) + (_dNight ? '-night' : '-day');
       }
