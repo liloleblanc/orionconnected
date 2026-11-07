@@ -96,6 +96,10 @@ const YOW = () => ({
   arr: fixture('yow-arrivals-2026-11-07T1804Z.json').arrivals.map((f) => rowOf(f, 'arr')),
   dep: fixture('yow-departures-2026-11-07T1804Z.json').departures.map((f) => rowOf(f, 'dep')),
 });
+const YHZ = () => ({
+  arr: fixture('yhz-arrivals-2026-11-07T1745Z.json').arrivals.map((f) => rowOf(f, 'arr')),
+  dep: fixture('yhz-departures-2026-11-07T1745Z.json').departures.map((f) => rowOf(f, 'dep')),
+});
 const find = (list, flight) => list.find((r) => r.flight === flight);
 
 test('one door, two spellings: the shape alone, with no gate file known', () => {
@@ -243,4 +247,33 @@ test('the lookup guard reads the same door, and the v23915 header records the ne
   assert.match(fnSource('_gateTurnedByPattern'), /!_gateSameDoor\(d\.gate, aG\)/);
   // the render marks the pairing's pick as before
   assert.match(CORE, /_gateMatchFallback\._gateNoAdsb = _gateMatchIsNew\(_gateMatchFallback, currentFlight, _gateVal\);/);
+});
+
+test('Halifax 2A..2E on the real rows: five doors and no door 2; the file keeps them apart, and the page knows the file before it pairs', () => {
+  const data = YHZ();
+  const Ef = engine({ files: FILES, ap: 'YHZ' }), E0 = engine({ ap: 'YHZ' });
+  const d = find(data.dep, 'AC7678');            // Jazz, 2C, 16:40
+  assert.equal(d.gate, '2C');
+  const w = Ef._gateInboundForDeparture(d, '2C', data.arr, data.dep);
+  assert.equal(w.flight, 'AC7690', 'the 2C arrival of 15:00'); assert.equal(w.gate, '2C');
+  const d2 = find(data.dep, 'AC7708');           // 2C, 20:35
+  assert.equal(Ef._gateInboundForDeparture(d2, '2C', data.arr, data.dep).flight, 'AC7705');
+  // with no file known (the boot window) the shape folds the five doors into one and the pairing crosses them
+  const w0 = E0._gateInboundForDeparture(d, '2C', data.arr, data.dep);
+  assert.equal(w0.flight, 'AC7677'); assert.equal(w0.gate, '2A');
+  // so the page publishes its airport (the fold reads the cached file through it) and asks for the
+  // file after it picks the flight and BEFORE it pairs: the first render of a reloaded board used to
+  // run the pairing with the airport still unpublished
+  const paint = CORE.slice(CORE.indexOf('function renderDedicatedScreen()'), CORE.indexOf("else if (screenType === 'baggage')"));
+  const iFlights = paint.indexOf('const currentFlight = gateFlights[0];');
+  const iPub = paint.indexOf('window._gateIata = iata;');
+  const iPair = paint.indexOf('const _gateMatchFallback = _gateInboundForDeparture(currentFlight, _gateVal,');
+  assert.ok(iFlights > 0 && iPub > iFlights && iPair > iPub, 'published after the pick of the flight and before the pairing');
+  assert.match(paint.slice(iPub, iPair), /_apGatesFor\(iata\)/);
+  // and the render key carries whether the file is known, so the render made before it landed is made again
+  const key = CORE.slice(CORE.indexOf('function getDedicatedRenderKey()'), CORE.indexOf("if (screenType === 'baggage')", CORE.indexOf('function getDedicatedRenderKey()')));
+  assert.match(key, /gf: \(typeof _AP_GATES !== 'undefined' && Object\.prototype\.hasOwnProperty\.call\(_AP_GATES, iata\)\) \? 1 : 0,/);
+  // the file: five lettered doors, none of them door 2
+  assert.equal(FILES.YHZ.gates['2'], undefined);
+  for (const g of ['2A', '2B', '2C', '2D', '2E']) assert.ok(FILES.YHZ.gates[g], g);
 });

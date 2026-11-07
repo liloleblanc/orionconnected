@@ -6002,22 +6002,23 @@ function _gateFlightsAt(sub, nowMs, iata) {
 // read them), so a row the feed drops at touchdown still deplanes on screen.
 // _gateCsPick rebrands a regional-coded row in place, as _gateFlightsAt
 // already does for departures. The exact door first, then by time.
-// `cheap` is the render key (getDedicatedRenderKey, once a second): data.arr
-// alone, no memory, no landing clock, no rebrand, the landing read from the
-// row own times. Pure otherwise: no DOM.
+// `cheap` is the render key (getDedicatedRenderKey, once a second): the same
+// rows without the memory of this screen (no _gateArrsSeen: no storage
+// write), no rebrand (no _gateCsPick), and the landing read as the maps read
+// it but recording nothing (_gateLandedInfo in peek mode), so the two reads
+// land an aeroplane from the same evidence: a live ground fix seen before
+// its on-blocks time, or a Landed word with no time while the screen was
+// watching. Where they still differ (a row only this screen remembers), the
+// key re-reads the state once a minute (ended). Pure otherwise: no DOM.
 function _gateArrivalsAt(sub, nowMs, iata, cheap) {
   var now = nowMs || Date.now();
   var ap = String(iata || (typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
-  var rows = (typeof data !== 'undefined' && data && data.arr) || [];
-  if (!cheap) { try { rows = _gateArrsSeen(_gateFeedRows('arr'), ap, now); } catch (e) { rows = (data && data.arr) || []; } }
+  var rows = [];
+  try { rows = _gateFeedRows('arr') || []; } catch (e0) { rows = (typeof data !== 'undefined' && data && data.arr) || []; }
+  if (!cheap) { try { rows = _gateArrsSeen(rows, ap, now); } catch (e1) {} }
   var landed = function (f) {
     if (!cheap) return _gateLandedAt(f, now) || now;
-    var t = 0;
-    try { t = f._actualArrTime ? (adbTs(f._actualArrTime) || 0) : 0; } catch (e) { t = 0; }
-    if (t > now + 5 * 60000) t = 0;
-    var own = Number(f._revTs || f._sortTs) || 0;
-    if (own && own <= now && (!t || own < t)) t = own;
-    return t || now;
+    try { return _gateLandedInfo(f, now, true).t || now; } catch (e2) { return now; }
   };
   var list = [];
   for (var i = 0; i < rows.length; i++) {
@@ -6898,14 +6899,22 @@ function getDedicatedRenderKey() {
       later: _gateLaterKeyNow(iata),
       // v23998 — whether the departures feed is down (the empty gate says so).
       feed: _fidsFeedDownKey(iata, 'dep'),
+      // v24130 — whether the airport gate file is known (loaded, or known to
+      // be absent): the door fold (_gateDoorOwn) and the stands read it, and
+      // the first render of a cold boot runs before it lands, so the pairing
+      // and the arrivals-only pick are made again once it is known.
+      gf: (typeof _AP_GATES !== 'undefined' && Object.prototype.hasOwnProperty.call(_AP_GATES, iata)) ? 1 : 0,
       // v24130 — with no departure at the door, the arrival that is the screen
       // (_gateArrivalsAt, the cheap read: this runs once a second), a minute
       // bucket while it deplanes so its twenty minutes end on time, and
-      // whether the arrivals feed it comes from is down.
+      // whether the arrivals feed it comes from is down. A state on screen
+      // (_lastGateArrKey) whose cheap read finds nothing is re-read once a
+      // minute (ended): the full read may still list a row only this screen
+      // remembers, and the state must end within a minute of its window.
       arr: first ? null : (function () {
         var a = null;
         try { a = _gateArrivalsAt(subScreenVal, _nowMs2, iata, true)[0] || null; } catch (e) { a = null; }
-        if (!a) return null;
+        if (!a) return window._lastGateArrKey ? { ended: Math.floor(_nowMs2 / 60000) } : null;
         var down = false;
         try { down = !!fidsInboundHasArrived(a, _nowMs2); } catch (e2) { down = false; }
         return { flight: a.flight, status: a.status, upd: a.upd, gate: a.gate, sort: a._sortTs, rev: a._revTs, act: a._actualArrTime, min: down ? Math.floor(_nowMs2 / 60000) : 0 };
@@ -8918,6 +8927,20 @@ function updateDedicatedTimeOnly() {
       if (cdStr) { cdEl.textContent = cdStr; cdEl.parentElement.style.display = ''; }
       else { cdEl.parentElement.style.display = 'none'; }
     }
+    // v24130 — THE INCOMING CARD COUNTS DOWN ON ITS MINUTE. The arrivals-only
+    // gate (_gateArrivalOnlyHtml) prints Arrives in N min, and its key does
+    // not carry the minute while the aeroplane is still to come (a rebuild a
+    // minute would move the map); the line is patched in place each second
+    // from the one helper that wrote it (_gateArrivalOnlyEta), as the
+    // boarding countdown above is.
+    try {
+      const _aeEl = document.getElementById('gateArrEta');
+      if (_aeEl && !cf && window._gateInbound && !window._gateCurrentFlight && typeof _gateArrivalOnlyEta === 'function') {
+        const _ae = _gateArrivalOnlyEta(window._gateInbound, _nowMs3);
+        if (_aeEl.textContent !== _ae) _aeEl.textContent = _ae;
+        _aeEl.style.display = _ae ? '' : 'none';
+      }
+    } catch (eAE) {}
     // v23925 — THE SCHEDULE BOARDING OPENS ON ITS MINUTE. At an airport whose
     // feed never says Boarding the sign opens at the printed boarding time and
     // closes at the departure time (_gateDoor), with nothing in the feed
@@ -14250,6 +14273,26 @@ function _gateChangeSoloHtml(m, timeStr) {
     + '</div>';
 }
 
+// v24130 — the countdown line of the arrivals-only card: At the gate on its
+// blocks, Landed while it taxis, else Arrives in N min to the time the card
+// prints (_gateLaterTs: the new time with its Delayed or Early), counted as
+// the phone card counts them; nothing once that time has passed. The builder
+// writes it and the clock tick (updateDedicatedTimeOnly) patches it in place,
+// so the key need not carry the minute while the aeroplane is still to come.
+function _gateArrivalOnlyEta(inb, nowMs) {
+  if (!inb) return '';
+  var now = nowMs || Date.now();
+  var down = false, onStand = false;
+  try { down = !!fidsInboundHasArrived(inb, now); onStand = down && !!fidsInboundOnStand(inb); } catch (e) { down = false; onStand = false; }
+  if (onStand) return TL('atGateLbl');
+  if (down) return SL('landed');
+  var eff = 0;
+  try { eff = _gateLaterTs(inb) || 0; } catch (e2) { eff = 0; }
+  var mins = eff ? Math.round((eff - now) / 60000) : 0;
+  if (!(mins > 0 && mins < 1440)) return '';
+  return mins >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm') : (TL('arrivesIn') + ' ' + mins + ' min');
+}
+
 // v24130 — (D) THE ARRIVALS-ONLY GATE: a door with an arrival filed and no
 // departure (_gateArrivalsAt). The empty-gate shell (gate tile, city, clock,
 // footer: the same ids, so updateDedicatedTimeOnly ticks the clock) with the
@@ -14293,22 +14336,19 @@ function _gateArrivalOnlyHtml(inb, iata, timeStr, dateDisplay, feedDown) {
     var sched = '', revised = '';
     try { if (inb._sortTs) sched = clock(inb._sortTs); } catch (e6) { sched = ''; }
     try { if (inb._revTs && inb._revTs !== inb._sortTs) revised = clock(inb._revTs); } catch (e7) { revised = ''; }
-    var down = false, onStand = false;
-    try { down = !!fidsInboundHasArrived(inb, now); onStand = down && !!fidsInboundOnStand(inb); } catch (e8) { down = false; onStand = false; }
+    var down = false;
+    try { down = !!fidsInboundHasArrived(inb, now); } catch (e8) { down = false; }
     var timeLbl = TL(down ? 'arrivedAt' : 'arrivingAt');
     var timeVal = (revised && !down)
       ? '<span style="text-decoration:line-through;opacity:0.55;margin-right:0.4em;">' + fidsEscHtml(sched) + '</span><span>' + fidsEscHtml(revised) + '</span>'
       : '<span>' + fidsEscHtml(revised || sched) + '</span>';
-    // the minutes to the time the card prints (_gateLaterTs: the new time with
-    // its Delayed or Early), counted as the phone card counts them
-    var eta = '';
-    if (onStand) eta = TL('atGateLbl');
-    else if (down) eta = SL('landed');
-    else {
-      var eff = _gateLaterTs(inb) || 0;
-      var mins = eff ? Math.round((eff - now) / 60000) : 0;
-      if (mins > 0 && mins < 1440) eta = mins >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm') : (TL('arrivesIn') + ' ' + mins + ' min');
-    }
+    // the airport own Delayed with no new time: the time printed has passed
+    // and nothing else on the card would say so; the status word (SS, the
+    // nine languages) stands beside it, as the phone card prints the status
+    var lateW = (!down && !revised && inb._stExplicit === true && /^delayed$/.test(String(inb.status || '').toLowerCase())) ? (SL('delayed') || '') : '';
+    // the minutes to the time the card prints (_gateArrivalOnlyEta), patched
+    // in place each second by updateDedicatedTimeOnly (#gateArrEta)
+    var eta = _gateArrivalOnlyEta(inb, now);
     card = '<div class="gate-arr-card g8-airline-' + fidsEscHtml(code) + '" style="flex:1 1 320px;max-width:600px;min-width:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(100,160,250,0.35);padding:clamp(16px,2.4vw,32px);display:flex;flex-direction:column;justify-content:center;gap:clamp(6px,1vw,14px);color:#fff;' + (acc ? '--airline-accent:' + fidsEscHtml(acc) + ';' : '') + '">'
       +   '<div style="display:flex;align-items:center;gap:clamp(10px,1.4vw,20px);">'
       +     (orb ? '<span style="display:inline-flex;flex:0 0 auto;">' + orb + '</span>' : '')
@@ -14321,8 +14361,9 @@ function _gateArrivalOnlyHtml(inb, iata, timeStr, dateDisplay, feedDown) {
       +   '</div>'
       +   ((sched || revised) ? '<div' + _screenLangAttrs() + ' style="display:flex;align-items:baseline;gap:0.5em;flex-wrap:wrap;font-size:clamp(16px,2vw,26px);font-weight:700;font-variant-numeric:tabular-nums;">'
       +     '<span style="color:rgba(255,255,255,0.65);">' + fidsEscHtml(timeLbl) + '</span>' + timeVal
+      +     (lateW ? '<span style="color:#ffb347;font-weight:800;margin-left:0.4em;">' + fidsEscHtml(lateW) + '</span>' : '')
       +   '</div>' : '')
-      +   (eta ? '<div' + _screenLangAttrs() + ' style="font-size:clamp(18px,2.2vw,30px);font-weight:800;color:' + (down ? '#1bbf74' : 'rgba(140,190,255,1)') + ';">' + fidsEscHtml(eta) + '</div>' : '')
+      +   '<div id="gateArrEta"' + _screenLangAttrs() + ' style="font-size:clamp(18px,2.2vw,30px);font-weight:800;color:' + (down ? '#1bbf74' : 'rgba(140,190,255,1)') + ';' + (eta ? '' : 'display:none;') + '">' + fidsEscHtml(eta) + '</div>'
       + '</div>';
   }
   return '<div class="gate-screen gate-arr-only" style="position:relative;">'
@@ -26850,6 +26891,13 @@ const gView = document.getElementById('gateView');
     const gateFlights = _gateFlightsAt(subScreenVal, _nowMs);
     const currentFlight = gateFlights[0];
     const nextFlight = gateFlights[1];
+    // v24130 — the page airport, published before either branch below: the
+    // door fold (_gateDoorOwn) and the pairing read it, and the flight branch
+    // used to publish it after the pairing, so a reloaded board paired its
+    // first render by shape alone. The gate file is asked for here too; the
+    // render key (gf) repaints once it is known.
+    window._gateIata = iata;
+    try { if (iata && typeof _apGatesFor === 'function') _apGatesFor(iata); } catch (eGF0) {}
 
     // Apply localStorage overrides to current flight
     if (currentFlight) applyOverrideToFlight(currentFlight);
@@ -27019,16 +27067,20 @@ const gView = document.getElementById('gateView');
       // show the departure with no incoming aircraft at all; it now shows that
       // arrival as what it is, an aircraft arriving at this door
       // (_gateArrivalsAt, the same door under either spelling), flagged
-      // _doorOnly so the three inbound labels say Incoming aircraft and
-      // Aircraft From, never Your Aircraft, and _identityUnverified like every
-      // pairing. It is a door pick, not a pairing, so it is never _gateNoAdsb:
-      // the same lookup an exact-gate inbound makes.
+      // _doorOnly so the inbound labels say Aircraft From, never Your
+      // Aircraft, and _identityUnverified like every pairing. It is marked
+      // _gateNoAdsb: an arrival of another family at the door is a class of
+      // FR24 lookup no gate made before, and the decision of 2026-11-07 on
+      // lookups covers the sibling-door inbound and the arrivals-only pick,
+      // not this one. Until that yes it is placed by the feed own words
+      // (Landed, Arrived) alone, as a through flight is. One line opens it.
       var _doorOnlyInb = null;
       if (!_gateMatchFallback) {
         try {
           var _dArr = _gateArrivalsAt(_gateVal, Date.now(), _gmAp)[0] || null;
           if (_dArr && _dArr._sortTs < currentFlight._sortTs && _dArr.flight !== currentFlight.flight) _doorOnlyInb = _dArr;
         } catch (eDO) { _doorOnlyInb = null; }
+        try { if (_doorOnlyInb) _doorOnlyInb._gateNoAdsb = true; } catch (eDN) {}
       }
 
       // PRIMARY SOURCE: reg-based inbound from loadFlight. If present, use it.
@@ -28277,12 +28329,9 @@ const gView = document.getElementById('gateView');
       // aircraft is the screen (_gateArrivalsAt, _gateArrivalOnlyHtml). It
       // comes after the gate-change notice above on purpose: a departure the
       // airport moved away from this door is the news for anyone standing at
-      // it, and the empty-gate screen below comes back after both.
-      // The page airport, published here as the flight branch publishes it
-      // (the maps answer dst from it: with none, _gateMapApply draws nothing),
-      // and its gate file asked for, for the door fold and the stands.
-      window._gateIata = iata;
-      try { if (iata && typeof _apGatesFor === 'function') _apGatesFor(iata); } catch (eGF) {}
+      // it, and the empty-gate screen below comes back after both. The page
+      // airport and its gate file were published above, before the branches
+      // (the maps answer dst from it: with none, _gateMapApply draws nothing).
       var _arrOnly = null;
       try { _arrOnly = _gateArrivalsAt(subScreenVal, Date.now(), iata)[0] || null; } catch (eAO) { _arrOnly = null; }
       if (_arrOnly) {
@@ -28363,6 +28412,10 @@ const gView = document.getElementById('gateView');
       window._gateCurrentFlight = null; window._gateInbound = null; window._gatePanelInbound = null;
       window._gateInboundId = null; window._gateInboundLivePos = null; window._lastGateArrKey = '';
       window._gateMapRetry = null; window._lastMapPosKey = null; window._lastMapProgKey = null;
+      // and the airline skin of the last aircraft shown (the body attribute the
+      // stylesheets key on): an empty door has no carrier
+      window._gateCurrentAirline = '';
+      try { document.body.removeAttribute('data-gate-airline'); } catch (eDA2) {}
       try { if (typeof gateMap !== 'undefined' && gateMap) gateMap.remove(); } catch (eMG4) {}
       try { gateMap = null; } catch (eMG5) {}
       // Empty gate — show airport city photo, name, time, and local weather
@@ -50123,13 +50176,16 @@ function _gateLandedAt(inb, now) {
 // come that was NOW on every call: each new taxi landed the aeroplane again,
 // AC8806 at Sea-Tac S1A on 2026-11-04 among them, and the card printed the
 // schedule (6:22pm) as the time it arrived.
-function _gateLandedInfo(inb, now) {
+// v24130 — `peek` (the render key, once a second) reads what a first sighting
+// would record and records nothing (_gateSeenLand), so the key and the paint
+// land an aeroplane from the same evidence.
+function _gateLandedInfo(inb, now, peek) {
   if (!inb || _gateLegGone(inb)) return { t: 0, by: '' };
   var best = { t: 0, by: '' };
   // when this screen first saw the word, it was down by then: nothing later
   // can be the landing (a cold sighting stays cold rather than becoming the
   // schedule when that time comes)
-  var seen = _gateRawLanded(inb) ? _gateSeenLand(inb, now) : null;
+  var seen = _gateRawLanded(inb) ? _gateSeenLand(inb, now, peek) : null;
   var cap = seen ? seen.at : Infinity;
   var take = function (t, by) { if (t > 0 && t <= cap && (!best.t || t < best.t)) best = { t: t, by: by }; };
   var live = _GATE_DOWN_SEEN[_gateRowKey(inb)] || 0;
@@ -50175,14 +50231,18 @@ function _gateTaxiInWindow(inb, now) {
 // to come shortly before (warm) or met it already down (cold). Kept with the
 // remembered rows (_GATE_SEEN_FIELDS), so a reload keeps the same answer.
 var _GATE_ARR_UP = {}, _GATE_LAND_FIRST = {};
-function _gateSeenLand(inb, now) {
+function _gateSeenLand(inb, now, peek) {
   var key = _gateRowKey(inb);
   var r = (_GATE_ARR_SEEN.rows && _GATE_ARR_SEEN.rows[key]) || null;
   if (r && Number(r._seenLandAt) > 0) return { at: Number(r._seenLandAt), cold: r._seenLandCold === true };
   if (Number(inb._seenLandAt) > 0) return { at: Number(inb._seenLandAt), cold: inb._seenLandCold === true };
   if (!_GATE_LAND_FIRST[key]) {
     var up = _GATE_ARR_UP[key];
-    _GATE_LAND_FIRST[key] = { at: now, cold: !(up && now - up < 15 * 60000) };
+    var first = { at: now, cold: !(up && now - up < 15 * 60000) };
+    // v24130 — a peek answers what the first sighting would record and
+    // records nothing: the render key asks once a second, the paint records
+    if (peek) return first;
+    _GATE_LAND_FIRST[key] = first;
   }
   return _GATE_LAND_FIRST[key];
 }
@@ -50480,6 +50540,10 @@ function _gateTurnedByPattern(a, cf, deps, arrs) {
 // _gateNoAdsb. The arrivals-only screen (_gateArrivalsAt) picks its inbound
 // by door, not by pairing, and is never marked either. Decision of
 // 2026-11-07: the aircraft belongs on the map at both spellings of its door.
+// The door-only pick of the flight branch (an arrival of ANOTHER family at
+// the door, shown as Aircraft From beside a departure the pairing could not
+// serve) IS marked: that is a lookup no gate made before, and the decision
+// does not cover it; it is placed by the feed own words until it does.
 function _gateMatchIsNew(inb, cf, gateVal) {
   if (!inb || !cf) return false;
   return inb.flight === cf.flight || !_gateSameDoor(inb.gate, gateVal);

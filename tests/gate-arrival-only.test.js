@@ -160,7 +160,7 @@ function engine(ctx) {
     lineSource('const DEPART_TRAIL_HRS = '),
     lineSource('var _CS_REGIONAL_FAM = '),
     ...FNS.map(fnSource),
-    'return { ' + EXPORTS + ', _GATE_DOWN_SEEN: _GATE_DOWN_SEEN };',
+    'return { ' + EXPORTS + ', _GATE_DOWN_SEEN: _GATE_DOWN_SEEN, _GATE_LAND_FIRST: _GATE_LAND_FIRST, _GATE_ARR_UP: _GATE_ARR_UP };',
   ].join('\n');
   const mod = new Function('window', 'data', 'AP', '_lookupAirport', '_GATE_LBL', 'langs', 'frFirstAirport',
     'airportCityNameSafe_v21877', 'localStorage', '_apGatesFor', src)(
@@ -207,8 +207,12 @@ test('down: the deplaning minutes after the landing, then nothing; a Delayed in 
   assert.equal(E._gateArrivalsAt('3', AT(14, 15), 'YHZ', true).length, 1);
   assert.deepEqual(E._gateArrivalsAt('3', AT(14, 40), 'YHZ'), [], 'past _GATE_DEPLANE_MS the door is empty');
   assert.deepEqual(E._gateArrivalsAt('3', AT(14, 40), 'YHZ', true), []);
-  // the cheap read lands it from the row own times (no memory, no landing clock)
-  assert.doesNotMatch(fnSource('_gateArrivalsAt').split('if (!cheap)')[0], /_gateArrsSeen|_gateLandedAt/);
+  // the cheap read is the same rows and the same landing evidence, with no memory of its own and no rebrand
+  const src = fnSource('_gateArrivalsAt');
+  const cheap = src.split('\n').filter((l) => !/if \(!cheap\)/.test(l)).join('\n');
+  assert.doesNotMatch(cheap, /_gateArrsSeen\(|_gateCsPick\(|_gateLandedAt\(/);
+  assert.match(src, /_gateLandedInfo\(f, now, true\)/, 'the landing read in peek mode');
+  assert.match(src, /rows = _gateFeedRows\('arr'\)/, 'the rows the maps read, worker memory included');
   // Delayed in the airport word, no new time: live for as long as the arrivals board keeps it
   const d2 = YHZ();
   Object.assign(find(d2.arr, 'PD2327'), { status: 'delayed', _stExplicit: true, _revTs: null });
@@ -278,8 +282,13 @@ test('a departure whose pairing names no inbound: the arrival at its door is sho
   assert.match(CORE, /var _mcTitleKey = \(_ib && _ib\._doorOnly === true\) \? 'aircraftFrom' : 'yourAircraftHdr';/, 'the rail title');
   assert.match(CORE, /if \(!\(ctx && ctx\.out\) && _capF\._doorOnly === true\) _capKey = 'aircraftFrom';/, 'the big-map caption');
   assert.match(CORE, /ctx\.out \? 'departure' : \(f\._doorOnly === true \? 'aircraftFrom' : _gateInbCaptionKey\(f, Date\.now\(\)\)\)/, 'and its paint key');
-  // the door pick is never marked _gateNoAdsb by the render (only the pairing's pick is)
-  assert.doesNotMatch(paint, /_doorOnlyInb\._gateNoAdsb = true/);
+  // the door pick IS marked _gateNoAdsb: an arrival of another family at the door is a class of
+  // FR24 lookup no gate made before, and the lookup decision of 2026-11-07 does not cover it
+  assert.match(paint, /try \{ if \(_doorOnlyInb\) _doorOnlyInb\._gateNoAdsb = true; \} catch \(eDN\) \{\}/);
+  door._gateNoAdsb = true;
+  assert.equal(E._gateLegWindowOpen(door, 'YHZ'), false, 'the poll window stays shut for it');
+  const head = CORE.slice(CORE.indexOf('// v24130 — AND THE SAME DOOR UNDER TWO SPELLINGS IS THE SAME GATE'), CORE.indexOf('function _gateMatchIsNew('));
+  assert.match(head, /The door-only pick of the flight branch \(an arrival of ANOTHER family at\s*\/\/ the door/, 'the header records it');
 });
 
 // ── the markup ────────────────────────────────────────────────────────────
@@ -313,7 +322,7 @@ function board({ now, langs = ['en', 'fr'], lang = 'en', ap = 'YHZ', sub = '3', 
     _gateTaxi: null,
     _gateRowKey: (r) => String(r.flight) + '|' + String(r._sortTs),
   };
-  const names = ['_gateArrivalOnlyHtml', '_gateLbl', '_gateInbCaptionKey', 'fidsInboundHasArrived', 'fidsInboundOnStand',
+  const names = ['_gateArrivalOnlyHtml', '_gateArrivalOnlyEta', '_gateLbl', '_gateInbCaptionKey', 'fidsInboundHasArrived', 'fidsInboundOnStand',
     '_gateRawStatus', '_gateRawAirborne', '_gatePushLeft', '_gateOutboundAtGate', '_fidsBoardRowPlace', '_gateLaterTs',
     '_gateLegGone', 'adbTs', '_screenLangAttrs', 'fidsEscHtml', '_gateLaterPlace', '_gateLaterPlaceHtml', '_gateChangeOrbHtml', '_ssEntry'];
   const code = [declSource('var _GATE_LBL = {'), declSource('const LS = {'), declSource('const SS = {'),
@@ -354,7 +363,7 @@ test('the markup: the incoming aircraft beside its map, the empty-gate ids, and 
   assert.ok(html.indexOf('class="gate-footer"') > 0);
   // the single-language words carry their language
   assert.match(html, /<div lang="en" style="[^"]*"><span[^>]*>Arriving at<\/span>/);
-  assert.match(html, /<div lang="en" style="[^"]*">Arrives in 28 min<\/div>/);
+  assert.match(html, /<div id="gateArrEta" lang="en" style="[^"]*">Arrives in 28 min<\/div>/);
   // a revised time: the schedule struck through, the new one beside it
   const early = textOf(b._gateArrivalOnlyHtml(PD2327({ status: 'early', _stExplicit: true, _revTs: AT(13, 40), upd: '1:40 PM' }), 'YHZ', '1:30 PM', ''));
   assert.match(early, new RegExp(clock(AT(13, 58)) + ' ' + clock(AT(13, 40))));
@@ -422,6 +431,8 @@ test('the render key carries the arrival at the door (cheap read) and the arriva
   assert.match(key, /arr: first \? null : \(function \(\) \{/);
   assert.match(key, /_gateArrivalsAt\(subScreenVal, _nowMs2, iata, true\)\[0\]/);
   assert.match(key, /min: down \? Math\.floor\(_nowMs2 \/ 60000\) : 0/);
+  assert.match(key, /if \(!a\) return window\._lastGateArrKey \? \{ ended: Math\.floor\(_nowMs2 \/ 60000\) \} : null;/, 'a state on screen the cheap read has lost is re-read once a minute');
+  assert.match(key, /gf: \(typeof _AP_GATES !== 'undefined' && Object\.prototype\.hasOwnProperty\.call\(_AP_GATES, iata\)\) \? 1 : 0,/, 'the gate file landing repaints');
   assert.match(key, /feedArr: first \? null : _fidsFeedDownKey\(iata, 'arr'\)/);
   assert.match(key, /feed: _fidsFeedDownKey\(iata, 'dep'\)/, 'the departures feed as before');
   // the arrivals-only branch, after the gate-change notice and before the empty gate
@@ -451,12 +462,118 @@ test('the render key carries the arrival at the door (cheap read) and the arriva
   assert.match(empty, /window\._gateMapRetry = null;/);
   assert.match(empty, /gateMap\.remove\(\)/);
   assert.match(empty, /window\._lastGateArrKey = ''/);
+  assert.match(empty, /window\._gateCurrentAirline = '';/, 'and the airline skin of the last aircraft');
+  assert.match(empty, /document\.body\.removeAttribute\('data-gate-airline'\)/);
   // the awaiting line and the departures notice are untouched
   assert.match(paint, /\$\{_gateFeedDown \? `<div class="ffn-inview ffn-inview--gate" role="status">\$\{_gateFeedDown\}<\/div>` : `<div[^`]*>\$\{TL\('awaitingNextFlight'\)\}<\/div>`\}/);
 });
 
+test('the key (cheap read) and the paint (full read) land the aeroplane from the same evidence; a state the cheap read has lost is re-read once a minute', () => {
+  // (a) a live ground fix seen before the on-blocks time: both end at 14:10, not 14:22
+  const d1 = YHZ(); const p1 = find(d1.arr, 'PD2327');
+  Object.assign(p1, { status: 'arrived', _stExplicit: true, _revTs: AT(14, 2), _actualArrTime: '2026-11-07 14:02:00-04:00', upd: '2:02 PM' });
+  const E1 = engine({ ap: 'YHZ', data: d1, files: FILES });
+  E1._GATE_DOWN_SEEN[E1._gateRowKey(p1)] = AT(13, 50);   // the paid feed saw it on the ground at 13:50
+  assert.equal(E1._gateArrivalsAt('3', AT(14, 5), 'YHZ').length, 1);
+  assert.equal(E1._gateArrivalsAt('3', AT(14, 5), 'YHZ', true).length, 1);
+  assert.deepEqual(E1._gateArrivalsAt('3', AT(14, 15), 'YHZ'), [], 'full: down on the fix at 13:50, gone from the door at 14:10');
+  assert.deepEqual(E1._gateArrivalsAt('3', AT(14, 15), 'YHZ', true), [], 'cheap: the same fix, the same minute');
+  // (b) a Landed word with no time, appearing while the screen watched the row still to come (warm)
+  const d2 = YHZ(); const p2 = find(d2.arr, 'PD2327');
+  const E2 = engine({ ap: 'YHZ', data: d2, files: FILES });
+  E2._gateArrsSeen(E2._gateFeedRows('arr'), 'YHZ', AT(14, 30));   // watched at 14:30, still to come
+  Object.assign(p2, { status: 'landed', _stExplicit: true, _revTs: null });
+  // the key runs before the paint: the cheap read lists it and records nothing
+  assert.deepEqual(E2._gateArrivalsAt('3', AT(14, 33), 'YHZ', true).map((r) => r.flight), ['PD2327'], 'cheap: landed now, warm, listed');
+  assert.deepEqual(Object.keys(E2._GATE_LAND_FIRST), [], 'a peek records nothing');
+  assert.equal(p2._seenLandAt, undefined);
+  assert.deepEqual(E2._gateArrivalsAt('3', AT(14, 33), 'YHZ').map((r) => r.flight), ['PD2327'], 'full: the same');
+  assert.equal(p2._seenLandAt, AT(14, 33), 'the paint records the sighting');
+  assert.equal(E2._gateArrivalsAt('3', AT(14, 50), 'YHZ').length, 1);
+  assert.equal(E2._gateArrivalsAt('3', AT(14, 50), 'YHZ', true).length, 1);
+  assert.deepEqual(E2._gateArrivalsAt('3', AT(14, 55), 'YHZ'), [], 'twenty minutes after the sighting');
+  assert.deepEqual(E2._gateArrivalsAt('3', AT(14, 55), 'YHZ', true), []);
+  // cold: a screen that meets the row already landed, long after its time: neither lists it
+  const d3 = YHZ(); Object.assign(find(d3.arr, 'PD2327'), { status: 'landed', _stExplicit: true, _revTs: null });
+  const E3 = engine({ ap: 'YHZ', data: d3, files: FILES });
+  assert.deepEqual(E3._gateArrivalsAt('3', AT(14, 35), 'YHZ', true), []);
+  assert.deepEqual(E3._gateArrivalsAt('3', AT(14, 35), 'YHZ'), []);
+  // (c) a row the feed dropped while it deplaned: only this screen remembers it (storage), so the
+  // full read lists it and the cheap read cannot; the key then carries a minute while the state is
+  // on screen (ended), and the state ends within a minute of the full window
+  const st = store();
+  const d4 = YHZ(); const p4 = find(d4.arr, 'PD2327');
+  Object.assign(p4, { status: 'arrived', _stExplicit: true, _revTs: AT(14, 2), upd: '2:02 PM' });
+  const E4 = engine({ ap: 'YHZ', data: d4, files: FILES, storage: st });
+  assert.equal(E4._gateArrivalsAt('3', AT(14, 5), 'YHZ').length, 1);
+  const E5 = engine({ ap: 'YHZ', data: { arr: d4.arr.filter((r) => r !== p4), dep: d4.dep }, files: FILES, storage: st });
+  assert.equal(E5._gateArrivalsAt('3', AT(14, 10), 'YHZ').length, 1, 'remembered: still deplaning');
+  assert.deepEqual(E5._gateArrivalsAt('3', AT(14, 10), 'YHZ', true), []);
+  assert.deepEqual(E5._gateArrivalsAt('3', AT(14, 25), 'YHZ'), []);
+  const key = CORE.slice(CORE.indexOf('function getDedicatedRenderKey()'), CORE.indexOf("if (screenType === 'baggage')", CORE.indexOf('function getDedicatedRenderKey()')));
+  assert.match(key, /if \(!a\) return window\._lastGateArrKey \? \{ ended: Math\.floor\(_nowMs2 \/ 60000\) \} : null;/);
+  // the peek itself
+  assert.match(fnSource('_gateSeenLand'), /if \(peek\) return first;/);
+  assert.match(fnSource('_gateLandedInfo'), /_gateSeenLand\(inb, now, peek\)/);
+});
+
+test('an arrival the airport calls Delayed with no new time says so beside the time it printed, in the language on screen', () => {
+  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
+    const b = board({ now: AT(14, 10), langs: [l], lang: l });
+    const text = textOf(b._gateArrivalOnlyHtml(PD2327({ status: 'delayed', _stExplicit: true, _revTs: null }), 'YHZ', '2:10 PM', ''));
+    assert.ok(text.indexOf(b.SS.delayed[l]) >= 0, l + ': Delayed');
+    assert.ok(text.indexOf(b.LS.arrivingAt[l]) >= 0, l + ': the time it printed');
+    assert.ok(text.indexOf(b.LS.arrivesIn[l]) < 0, l + ': no countdown past the time');
+  }
+  // with a new time the struck schedule says it: no word
+  const late = textOf(board({ now: AT(13, 30) })._gateArrivalOnlyHtml(PD2327({ status: 'delayed', _stExplicit: true, _revTs: AT(14, 20), upd: '2:20 PM' }), 'YHZ', '1:30 PM', ''));
+  assert.doesNotMatch(late, /Delayed/);
+  assert.match(late, /Arrives in 50 min/);
+  // never on a word the clock made up
+  assert.doesNotMatch(textOf(board({ now: AT(14, 10) })._gateArrivalOnlyHtml(PD2327({ status: 'delayed', _stExplicit: false, _stInferred: true, _revTs: null }), 'YHZ', '2:10 PM', '')), /Delayed/);
+  // and not once it is down
+  assert.doesNotMatch(textOf(board({ now: AT(14, 10) })._gateArrivalOnlyHtml(PD2327({ status: 'landed', _stExplicit: true, _revTs: null }), 'YHZ', '2:10 PM', '')), /Delayed/);
+});
+
+test('the countdown line is patched in place by the clock tick, from the one helper that wrote it', () => {
+  const b = board({ now: AT(13, 30) });
+  assert.equal(b._gateArrivalOnlyEta(PD2327(), AT(13, 30)), 'Arrives in 28 min');
+  assert.equal(b._gateArrivalOnlyEta(PD2327(), AT(11, 30)), 'Arrives in 2h 28m');
+  assert.equal(b._gateArrivalOnlyEta(PD2327(), AT(14, 10)), '', 'nothing once the time has passed');
+  assert.equal(b._gateArrivalOnlyEta(PD2327({ status: 'landed', _stExplicit: true, _revTs: AT(14, 2) }), AT(14, 10)), 'Landed');
+  assert.equal(b._gateArrivalOnlyEta(PD2327({ status: 'arrived', _stExplicit: true, _revTs: AT(14, 2) }), AT(14, 10)), 'At the gate');
+  // the builder always writes the line (hidden when empty), so the tick has a place to write
+  assert.match(b._gateArrivalOnlyHtml(PD2327(), 'YHZ', '1:30 PM', ''), /<div id="gateArrEta" lang="en" style="[^"]*">Arrives in 28 min<\/div>/);
+  assert.match(board({ now: AT(14, 10) })._gateArrivalOnlyHtml(PD2327(), 'YHZ', '2:10 PM', ''), /<div id="gateArrEta" lang="en" style="[^"]*display:none;"><\/div>/);
+  // the once-a-second clock, for the arrivals-only state only (no departure, an inbound)
+  const tick = CORE.slice(CORE.indexOf('function updateDedicatedTimeOnly()'), CORE.indexOf('// ── GATE SCREEN HELPERS'));
+  assert.match(tick, /const _aeEl = document\.getElementById\('gateArrEta'\);/);
+  assert.match(tick, /if \(_aeEl && !cf && window\._gateInbound && !window\._gateCurrentFlight && typeof _gateArrivalOnlyEta === 'function'\)/);
+  assert.match(tick, /const _ae = _gateArrivalOnlyEta\(window\._gateInbound, _nowMs3\);\s*if \(_aeEl\.textContent !== _ae\) _aeEl\.textContent = _ae;\s*_aeEl\.style\.display = _ae \? '' : 'none';/);
+  assert.match(fnSource('_gateArrivalOnlyHtml'), /var eta = _gateArrivalOnlyEta\(inb, now\);/, 'the builder writes it from the same helper');
+});
+
+test('Halifax 2A at 20:45: with the gate file known, no arrival at 2A (AC7681 lands at 2C, a door of its own); the shape alone would have shown it', () => {
+  const data = YHZ();
+  const Ef = engine({ ap: 'YHZ', data, files: FILES });
+  assert.deepEqual(Ef._gateArrivalsAt('2A', AT(20, 45), 'YHZ'), []);
+  const at2c = Ef._gateArrivalsAt('2C', AT(20, 45), 'YHZ');
+  assert.ok(at2c.some((r) => r.flight === 'AC7681'));
+  assert.ok(at2c.every((r) => r.gate === '2C'));
+  // the boot window: before the file lands the shape folds 2A..2E onto door 2 and the 2A screen would
+  // show AC7681; the render key carries whether the file is known (gf), so the screen is drawn again
+  // within a second of it landing, and the page asks for the file before either branch
+  assert.deepEqual(engine({ ap: 'YHZ', data, files: {} })._gateArrivalsAt('2A', AT(20, 45), 'YHZ').map((r) => r.flight), ['AC7681']);
+  const paint = CORE.slice(CORE.indexOf('function renderDedicatedScreen()'), CORE.indexOf("else if (screenType === 'baggage')"));
+  const iFlights = paint.indexOf('const currentFlight = gateFlights[0];');
+  const iPub = paint.indexOf('window._gateIata = iata;');
+  const iBranch = paint.indexOf('if (currentFlight) {', iFlights);
+  assert.ok(iFlights > 0 && iPub > iFlights && iBranch > iPub, 'the airport is published after the pick of the flight and before the branches');
+  assert.match(paint.slice(iPub, iBranch), /_apGatesFor\(iata\)/, 'and the gate file asked for there');
+});
+
 test('the comments carry no apostrophes (the quote counter) and the lead is one constant', () => {
-  for (const name of ['_gateArrivalsAt', '_gateArrivalOnlyHtml', '_gateDoorBase', '_gateDoorOwn', '_gateSameDoor', '_gateDoorFold']) {
+  for (const name of ['_gateArrivalsAt', '_gateArrivalOnlyHtml', '_gateArrivalOnlyEta', '_gateDoorBase', '_gateDoorOwn', '_gateSameDoor', '_gateDoorFold', '_gateSeenLand', '_gateLandedInfo']) {
     const src = fnSource(name);
     const comments = src.split('\n').filter((l) => /^\s*\/\//.test(l)).join('\n');
     assert.doesNotMatch(comments, /'/, name);
