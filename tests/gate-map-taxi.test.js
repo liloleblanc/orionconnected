@@ -44,7 +44,7 @@ const RWCTX = {};
 vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'airport-runways.js'), 'utf8').replace('var AIRPORT_RUNWAYS', 'this.AIRPORT_RUNWAYS'), RWCTX);
 const RUNWAYS = RWCTX.AIRPORT_RUNWAYS;
 const COORDS = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'airport-coords.js'), 'utf8'), { window: w }); return w.AIRPORT_COORDS; })();
-const NAMES = ['_gcNm', '_gcBrgDeg', '_gcDestPt', '_gcFullRoute', '_runwayFinalPath', '_gateOnFinal',
+const NAMES = ['_gcNm', '_gcBrgDeg', '_gcDestPt', '_gcFullRoute', '_rwPlaneSpec', '_rwCommitted', '_runwayFinalPath', '_gateOnFinal',
   '_taxiXY', '_taxiLL', '_taxiGraph', '_taxiNear', '_taxiDijkstra', '_taxiRunway', '_taxiRound', '_taxiProfile',
   '_taxiPlan', '_taxiSAtT', '_taxiIdx', '_taxiVAtS', '_taxiAtS', '_taxiPrefix'];
 const lib = (trk) => new Function('AIRPORT_RUNWAYS', '_gateHeading', NAMES.map(fnSource).join('\n') +
@@ -286,10 +286,11 @@ test('the answer: taxiing in while the feed\'s landing is recent, the model\'s w
   win._gateInbound = inb;
   const taxi = { on: false, fl: '', done: false, anchor: '', anchorAt: 0, since: 0 };
   // v24115 — the landing with its evidence (_gateLandedInfo): the feed own time here
-  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm', '_gateOnBlocksWord',
-    fnSource('_gateTaxiWhere') + '\nreturn _gateTaxiWhere;')(
-    win, taxi, {}, () => ({ t: win.land, by: win.landBy || 'actual' }), () => ({ tEnd: 540 }), () => null, () => MCO, G.gcNm,
-    (row) => String((row && row.status) || '').toLowerCase() === 'arrived');
+  // v24129 — _gateTaxiWrongRunway rides along (a newer airborne fix off the committed runway un-lands the model)
+  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm', '_gcBrgDeg', '_gateOnBlocksWord', '_gateTaxiEnd',
+    fnSource('_gateTaxiWhere') + '\n' + fnSource('_gateTaxiWrongRunway') + '\nreturn _gateTaxiWhere;')(
+    win, taxi, {}, () => ({ t: win.land, by: win.landBy || 'actual' }), () => ({ tEnd: 540 }), () => null, () => MCO, G.gcNm, G.gcBrgDeg,
+    (row) => String((row && row.status) || '').toLowerCase() === 'arrived', () => { taxi.on = false; });
   const now = Date.UTC(2026, 9, 31, 1, 40);
   win.land = now - 4 * 60000;
   const stand = { kind: 'stand', leg: 'out', why: 'landed' };
