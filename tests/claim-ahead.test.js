@@ -75,7 +75,7 @@ function store() {
 
 const CORE_FNS = ['adbTs', '_adbNearestDayTs', '_adbLegUpdateTs', '_adbHappenedWord', '_adbClaimAheadMs',
   '_adbClaimWithheld', 'adbStatus', 'adbStatusInferred', 'fidsInboundHasArrived',
-  '_gateRowKey', '_gateSeenKeepIdentity', '_gateRawStatus', '_gateRawLanded', '_gateLegGone',
+  '_gateRowKey', '_gateSeenKeepIdentity', '_gateRawStatus', '_gateRawLanded', '_gateOnBlocksWord', '_gateLegGone',
   '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave', '_gateArrsSeen'];
 function core(localStorage) {
   const src = [

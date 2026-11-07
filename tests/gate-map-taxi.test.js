@@ -286,9 +286,10 @@ test('the answer: taxiing in while the feed\'s landing is recent, the model\'s w
   win._gateInbound = inb;
   const taxi = { on: false, fl: '', done: false, anchor: '', anchorAt: 0, since: 0 };
   // v24115 — the landing with its evidence (_gateLandedInfo): the feed own time here
-  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm',
+  const where = new Function('window', '_gateTaxi', '_gateGlide', '_gateLandedInfo', '_gateTaxiRoute', '_apTaxiFor', '_lookupAirport', '_gcNm', '_gateOnBlocksWord',
     fnSource('_gateTaxiWhere') + '\nreturn _gateTaxiWhere;')(
-    win, taxi, {}, () => ({ t: win.land, by: win.landBy || 'actual' }), () => ({ tEnd: 540 }), () => null, () => MCO, G.gcNm);
+    win, taxi, {}, () => ({ t: win.land, by: win.landBy || 'actual' }), () => ({ tEnd: 540 }), () => null, () => MCO, G.gcNm,
+    (row) => String((row && row.status) || '').toLowerCase() === 'arrived');
   const now = Date.UTC(2026, 9, 31, 1, 40);
   win.land = now - 4 * 60000;
   const stand = { kind: 'stand', leg: 'out', why: 'landed' };
