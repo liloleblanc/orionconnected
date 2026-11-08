@@ -5,8 +5,9 @@
 //
 // Two surfaces run the same scene: the gate screen's aircraft shelf
 // (.v2-rc-shelf-illus) and the From the Archive card in the gate's centre
-// carousel (.hcard-sky). Each is a sky, three cloud layers (far 60 s, back
-// 12 s, front 6 s) and the aircraft. Two regressions crept into that scene
+// carousel (.hcard-sky). Each is a sky, three cloud layers (far, back and
+// front, 8 s, 5 s and 3.5 s at pace 1, all divided by --g8-pace since v24132;
+// tests/sky-pace.test.js pins the ladder) and the aircraft. Two regressions crept into that scene
 // within one week, and both read on the board as "the animation changed".
 //
 // FIRST, THE FRONT CLOUDS. From #501 through v23927 the nearest cloud layer
@@ -219,7 +220,7 @@ test('the gate shelf: the front clouds are visible and moving, by day and at nig
     assert.ok(!disp || !/^none\b/.test(disp.value), `${label}: front clouds displayed`);
     const anim = cascade('animation', '#gateCloudsFg', SHELF, classes, false);
     assert.ok(anim, `${label}: front clouds animated`);
-    assert.match(anim.value, /^g8SkyVeilFr\s+6s\s+linear\s+infinite$/, `${label}: front clouds keep their 6 s loop (${anim.value})`);
+    assert.match(anim.value, /^g8SkyVeilFr\s+calc\(3\.5s \/ var\(--g8-pace, 1\)\)\s+linear\s+infinite$/, `${label}: front clouds run their 3.5 s loop at the pace of the scene (${anim.value})`);
     assert.match(CSS, /@keyframes g8SkyVeilFr \{ from \{ transform: translate3d\(0,0,0\); \} to \{ transform: translate3d\(-1200px,0,0\); \} \}/);
   }
 });
@@ -244,7 +245,7 @@ test('the archive card: front clouds over the plane, the plane over the far and 
   const name = cascade('animation-name', '.hcard-l-front', CARD, [], false);
   const dur = cascade('animation-duration', '.hcard-l-front', CARD, [], false);
   assert.equal(name && name.value, 'hcardFront');
-  assert.equal(dur && dur.value, '6s');
+  assert.equal(dur && dur.value, 'calc(3.5s / var(--g8-pace, 1))');
 });
 
 test('no @media rule reorders the plane and its clouds', () => {
@@ -261,14 +262,14 @@ test('the sky moves: both surfaces play the re-rendered reference clip, with its
     assert.match(m[0], /\bautoplay muted loop playsinline\b/);
     assert.match(m[0], /src="\/textures\/gate-sky-shelf\.mp4\?v=\d+"/);
     assert.match(m[0], /poster="\/textures\/gate-sky-model\.jpg\?v=\d+"/);
-    assert.match(m[0], /currentTime=\(Date\.now\(\)\/1000\)%15/, 'it starts at the wall clock\'s phase');
+    assert.match(m[0], /this\.playbackRate=p;this\.currentTime=\(Date\.now\(\)\/1000\*p\)%15/, 'it starts at the wall clock\'s phase, at the pace of the scene');
   }
   const at = CORE.indexOf('<video class="hcard-skyclip"');
   assert.ok(at > 0, 'the archive card plays the same clip');
   const card = CORE.slice(at, CORE.indexOf('</video>', at));
   assert.match(card, /src="\/textures\/gate-sky-shelf\.mp4\?v=\d+"/);
   assert.match(card, /poster="\/textures\/gate-sky-model\.jpg\?v=\d+"/);
-  assert.match(card, /currentTime=\(Date\.now\(\)\/1000\)%15/);
+  assert.match(card, /this\.playbackRate=p;this\.currentTime=\(Date\.now\(\)\/1000\*p\)%15/);
   for (const f of ['gate-sky-shelf.mp4', 'gate-sky-model.jpg']) {
     assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', 'textures', f)), `${f} is in the repo`);
   }
