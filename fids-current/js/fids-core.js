@@ -17941,7 +17941,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24129" src="/textures/gate-sky-shelf.mp4?v=24129" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17985,7 +17985,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24129" src="/textures/gate-sky-shelf.mp4?v=24129" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19217,7 +19217,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24127" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24129" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36266,7 +36266,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24127';
+var FIDS_BUILD_TAG = 'v24129';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -49461,6 +49461,9 @@ function _gateLands(pl, rw, thr, tdz, altFt) {
     var off = (typeof trk === 'number' && isFinite(trk)) ? Math.abs(((trk - rw.hdg + 540) % 360) - 180) : null;
     if ((off !== null && off > 60) || (typeof vs === 'number' && vs > 300)) return false;
     if (rw.past) return true;
+    // v24129 — a pick between crossing centrelines that no second fix has
+    // agreed with (rw.ambiguous, _runwayFinalPath) is not landed on
+    if (rw.ambiguous === true) return false;
     if (thr && tdz && _gateOnFinal(pl, thr, tdz, altFt)) return true;
     if (off === null || off > 30 || (typeof altFt === 'number' && altFt > 4500)) return false;
     var d = _gcNm(rw.t, pl), b = (_gcBrgDeg(rw.t, pl) - rw.hdg) * Math.PI / 180;
@@ -52175,6 +52178,33 @@ function _gcDestPt(A, brgDeg, nm) {
   var lo2 = lo1 + Math.atan2(Math.sin(br) * Math.sin(dr) * Math.cos(la1), Math.cos(dr) - Math.sin(la1) * Math.sin(la2));
   return [la2 * 180 / Math.PI, ((lo2 * 180 / Math.PI + 540) % 360) - 180];
 }
+// v24129 — THE TYPE ON THIS GATE, FOR THE RUNWAY PICK: a turboprop may take a
+// short runway, a jet (or a type nobody has named: _MAP_PLANE_UNKNOWN sizes
+// those as a jet) may not. known says a source named a type whose size the
+// map has (_mapPlaneSpecFor), so the length rule may decide on its own. Read
+// under a typeof guard: the sliced test harness has no _mapPlaneSpec and sees
+// an unnamed jet.
+function _rwPlaneSpec() {
+  try {
+    if (typeof _mapPlaneSpec === 'function') { var s = _mapPlaneSpec() || {}; return { prop: !!s.prop, known: !!s.known }; }
+  } catch (e) {}
+  return { prop: false, known: false };
+}
+// v24129 — THE RUNWAY THE GLIDE IS COMMITTED TO, or null: a pick of this
+// flight (_gateGlide.rw, kept by _gateGlideRunwayPick) made inside 40 minutes
+// and not flagged ambiguous. _runwayFinalPath keeps it while the fix is still
+// on its centreline, so one fix on short final never re-picks the runway.
+function _rwCommitted() {
+  try {
+    var g = (typeof _gateGlide !== 'undefined') ? _gateGlide : null;
+    if (!g || !g.rw || !g.rw.t || g.rw.ambiguous === true) return null;
+    if (!(Date.now() - (g.rwAt || 0) < 40 * 60000)) return null;
+    var w = (typeof window !== 'undefined') ? window : null;
+    var fl = String(((w && (w._gateInbound || w._gatePanelInbound)) || {}).flight || '');
+    if (!fl || g.rwFl !== fl) return null;
+    return g.rw;
+  } catch (e) { return null; }
+}
 function _runwayFinalPath(pl, d, destIata) {
   try {
     var rws = (typeof AIRPORT_RUNWAYS !== 'undefined' && AIRPORT_RUNWAYS[String(destIata || '').toUpperCase()]) || null;
@@ -52225,13 +52255,83 @@ function _runwayFinalPath(pl, d, destIata) {
     try { _trkF = (typeof _gateHeading === 'function') ? _gateHeading(null) : null; } catch (eTk) { _trkF = null; }
     var _facing = function (c) { return !(typeof _trkF === 'number' && isFinite(_trkF)) || Math.abs(((_trkF - c.hdg + 540) % 360) - 180) <= 60; };
     var _xt = function (c) { return Math.abs(_gcNm(c.t, pl) * Math.sin((_gcBrgDeg(c.t, pl) - c.hdg) * Math.PI / 180)); };
-    var _onC = null, _onX = 0.3;
-    for (var q0 = 0; q0 < cand.length; q0++) {
+    // v24129 — THE RUNWAY IT IS COMMITTED TO STAYS ITS RUNWAY while the fix is
+    // still on that centreline (within 0.3 nm of it from 12 nm in to half a
+    // mile, within 0.1 nm from there to 1 nm past the threshold). Ottawa,
+    // PD2366, 2026-11-07: established on 07 from 5 nm out, the aeroplane was
+    // re-picked to 04 at 525 ft because its fix sat 0.18 nm short of the 07
+    // threshold, inside the 0.3 nm the on-centreline rule below used to leave
+    // out, and the bearing to the field then chose 04. The marker swung
+    // through 250 degrees and froze short of a threshold it was never landing
+    // on for 100 s. A pick made for this flight inside 40 minutes
+    // (_rwCommitted) is kept, and it lands. The corridor narrows at the
+    // threshold because 286 pairs of crossing thresholds in the table sit
+    // within 0.3 nm of each other (Moncton 06 and 11 are 95 m apart): a fix on
+    // the last stretch of the OTHER runway is 0.17 nm off this one, and a
+    // runway change inside 40 minutes must not keep it here.
+    var _kept = null;
+    try {
+      var _cm = (typeof _rwCommitted === 'function') ? _rwCommitted() : null;
+      for (var qk = 0; _cm && _cm.t && qk < cand.length && !_kept; qk++) {
+        var ck = cand[qk];
+        if (Math.abs(ck.t[0] - _cm.t[0]) > 1e-6 || Math.abs(ck.t[1] - _cm.t[1]) > 1e-6) continue;
+        var ak = -_gcNm(ck.t, pl) * Math.cos((_gcBrgDeg(ck.t, pl) - ck.hdg) * Math.PI / 180);
+        if (ak > -1 && ak < 12 && _xt(ck) < (ak > 0.5 ? 0.3 : 0.1)) _kept = ck;
+      }
+    } catch (eK) { _kept = null; }
+    // v24129 — AND THE LAST 0.3 NM COUNT, within 0.1 nm of the centreline. Left
+    // out of the set, a fix that close to its threshold fell to the bearing to
+    // the field, which says nothing that near the reference point, and at a
+    // crossing it picked the other runway (Ottawa, PD2366 at 525 ft, 0.18 nm
+    // short of 07, sent to 04 and never landed: the marker froze for 100 s).
+    // With no commitment to keep it (a board opened late, a fix gap, a pick
+    // just forgotten) 797 of 11,222 fixes 0.15 and 0.25 nm short of their
+    // own threshold in the table went to a runway not even parallel; now 192,
+    // every one with another centreline inside 0.1 nm. A fix that close is
+    // landing in seconds, so this stretch is never flagged ambiguous (below):
+    // the nearest centreline wins, plain.
+    var _onC = null, _onX = 0.3, _onSet = [], _amb = false;
+    for (var q0 = 0; q0 < cand.length && !_kept; q0++) {
       var c0 = cand[q0];
       if (c0.diff > 60 || !_facing(c0)) continue;
       var a0 = -_gcNm(c0.t, pl) * Math.cos((_gcBrgDeg(c0.t, pl) - c0.hdg) * Math.PI / 180), x0 = _xt(c0);
-      if (a0 > 0.3 && a0 < 12 && x0 < _onX) { _onC = c0; _onX = x0; }
+      if (a0 > 0.05 && a0 < 12 && x0 < (a0 > 0.3 ? 0.3 : 0.1)) { c0.xt = x0; c0.along = a0; c0.len = _gcNm(c0.t, c0.f) * 1852; _onSet.push(c0); }
     }
+    // v24129 — WHERE TWO EXTENDED CENTRELINES CROSS, ONE FIX CANNOT SAY WHICH.
+    // Ottawa, AC450, 2026-11-07: 2.2 nm out the aeroplane sat 23 m off the
+    // 04 centreline and 25 m off the 07 centreline (the two cross there), was
+    // given 04 (951 m) on those two metres, landed on the model and rolled
+    // out on it while the real one landed on 07. Ends that are not parallel
+    // to each other (over 3 degrees apart), both within 0.3 nm, both inside
+    // 5 nm of the fix, make the pick AMBIGUOUS: a jet (or a type nobody has
+    // named) is never given a runway under 1,500 m while a longer one is as
+    // plausible; when the type is known and that leaves one end, the length
+    // has decided and the pick is plain; otherwise the nearest centreline
+    // decides among what is left and the pick is flagged, so the glide holds
+    // short instead of landing on it until a later fix agrees (_gateLands,
+    // _gateGlideRunwayPick). Crossings further out keep the old rule: the
+    // next fix re-picks long before the model could touch down. Only ends
+    // 0.3 nm and further out are weighed, and none at all when the nearest
+    // centreline of the set is within 0.3 nm of its threshold (above): that
+    // fix is landing there, whatever else crosses on the last stretch
+    // (Amsterdam 22 with 24 and 27, El Paso 05 with 09 and 10).
+    var _pool = _onSet, _atThr = null;
+    for (var q3 = 0; q3 < _onSet.length; q3++) if (!_atThr || _onSet[q3].xt < _atThr.xt) _atThr = _onSet[q3];
+    if (_onSet.length > 1 && !(_atThr && _atThr.along < 0.3)) {
+      var _near = _onSet.filter(function (c) { return c.along >= 0.3 && c.along < 5; });
+      for (var q1 = 1; q1 < _near.length && !_amb; q1++) if (Math.abs(((_near[q1].hdg - _near[0].hdg + 540) % 360) - 180) > 3) _amb = true;
+      if (_amb) {
+        var _sp = (typeof _rwPlaneSpec === 'function') ? _rwPlaneSpec() : { prop: false, known: false };
+        if (!_sp.prop) {
+          var _long = _near.filter(function (c) { return c.len >= 1500; });
+          if (_long.length) _near = _long;
+        }
+        if (_near.length === 1 && _sp.known) _amb = false;
+        _pool = _near;
+      }
+    }
+    for (var q2 = 0; q2 < _pool.length; q2++) if (_pool[q2].xt < _onX) { _onC = _pool[q2]; _onX = _pool[q2].xt; }
+    if (_kept) _onC = _kept;
     if (_onC) best = _onC;
     var _bx = _xt(best);
     for (var q = 0; q < cand.length && !_onC && _facing(best); q++) {
@@ -52249,7 +52349,7 @@ function _runwayFinalPath(pl, d, destIata) {
     var rwNm = _gcNm(best.t, best.f);
     var tdNm = Math.min(450 / 1852, rwNm * 0.18);
     var tdz = _gcDestPt(best.t, best.hdg, tdNm);
-    var _rw = function (r, past) { r.rw = { t: best.t, f: best.f, hdg: best.hdg, nm: rwNm, past: !!past }; return r; };
+    var _rw = function (r, past) { r.rw = { t: best.t, f: best.f, hdg: best.hdg, nm: rwNm, past: !!past, ambiguous: !!(_amb && _onC && !past) }; return r; };
     // v24089 — already PAST the threshold (a fix in the flare or the float):
     // on down the runway, never back to the threshold. Routed back to it the
     // line doubled on itself and the nose spun round across the runway.
@@ -53033,6 +53133,15 @@ function _gateTaxiRunwayEnds(ap, org) {
     var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]];
     ends.push({ t: le, f: he, hdg: _gcBrgDeg(le, he) }, { t: he, f: le, hdg: _gcBrgDeg(he, le) });
   }
+  // v24129 — a jet (or a type nobody has named) is never sent to a runway
+  // under 1,500 m while a longer one is here (Ottawa 04/22, 951 m): the same
+  // line as the approach pick (_runwayFinalPath, _rwPlaneSpec)
+  try {
+    if (!(typeof _rwPlaneSpec === 'function' && _rwPlaneSpec().prop)) {
+      var longE = ends.filter(function (e) { return _gcNm(e.t, e.f) * 1852 >= 1500; });
+      if (longE.length) ends = longE;
+    }
+  } catch (eL) {}
   if (dir === null) return ends;
   var dif = function (e) { return Math.abs(((dir - e.hdg + 540) % 360) - 180); };
   ends.sort(function (a, b) { return dif(a) - dif(b); });
@@ -53057,6 +53166,12 @@ function _gateTaxiEnd() {
   try { if (_gateTaxi.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateTaxi.raf); } catch (e) {}
   _gateTaxi.raf = null; _gateTaxi.on = false; _gateTaxi.plan = null; _gateTaxi.views = {}; _gateTaxi.done = false;
   _gateTaxi.key = ''; _gateTaxi.fl = '';
+  // v24129 — the runway it landed on goes with it: a finished leg never
+  // vouches for the next pick (_gateGlideRunwayPick, _rwCommitted), and the
+  // state keeps neither the landing it was anchored on nor the fix it came
+  // from, so a later model answer cannot inherit them (_gateTaxiWrongRunway)
+  _gateTaxi.rw = null; _gateTaxi.fixAt = 0; _gateTaxi.anchor = ''; _gateTaxi.anchorAt = 0;
+  try { _gateGlide.rw = null; _gateGlide.rwFl = ''; _gateGlide.rwFix = 0; _gateGlide.rwAt = 0; } catch (e) {}
 }
 // The stand this board's inbound taxis to, and the route there from each
 // candidate runway (cached per stand and runway; the network's Dijkstra once
@@ -53131,7 +53246,9 @@ function _gateTaxiWhere(res, inb, t, ap) {
     // the stand rules say where the aeroplane is (_gateStandVerdict)
     if (li.by === 'cold') return null;
     if (t - land > 20 * 60000) return null;
-    var rwP = (_gateGlide.rw && _gateGlide.rwFl === fl && t - (_gateGlide.rwAt || 0) < 40 * 60000) ? _gateGlide.rw : null;
+    // v24129 — never an ambiguous pick (crossing centrelines, _runwayFinalPath):
+    // the runway rules choose instead of a roll-out on a coin-flip end
+    var rwP = (_gateGlide.rw && _gateGlide.rw.ambiguous !== true && _gateGlide.rwFl === fl && t - (_gateGlide.rwAt || 0) < 40 * 60000) ? _gateGlide.rw : null;
     var plan = _gateTaxiRoute(ap, org, rwP, null, null);
     if (!plan || t - land > (plan.tEnd + 60) * 1000) return null;
     return mk('land', land, { land: land });
@@ -53139,8 +53256,57 @@ function _gateTaxiWhere(res, inb, t, ap) {
   // the aeroplane landed on the model (an established final): the airborne
   // fix it was carried on from is older than the landing
   // (and stays where its taxi ended until the evidence comes)
-  if (mine && res.kind === 'fix' && !res.onGround && !(res.at > st.since)) return mk('model', st.anchorAt);
+  if (mine && res.kind === 'fix' && !res.onGround && !(res.at > st.since)) {
+    // v24129 — unless the fix is NEWER than the one the model landed from and
+    // in the air (50 kt and 200 ft or more, when it says) half a mile or more
+    // off that runway AND on the final of another: it is landing on that one
+    // (Ottawa, AC450: landed on 04 on the model, the next fix on the 07 final
+    // 0.8 nm from the 04 centreline). The taxi ends and the glide flies the
+    // aeroplane from the fix, not from the roll-out it was drawn in.
+    // (_gateAircraftWhere is also asked from _map3dFlightCtx, which does not
+    // redraw the small map: its marker leaves the roll-out on the next 10 s
+    // tick.)
+    if (typeof _gateTaxiWrongRunway === 'function' && _gateTaxiWrongRunway(res, st, ap)) {
+      _gateTaxiEnd();
+      try { _gateGlide.p = null; _gateGlide.ll = null; } catch (eG) {}
+      return null;
+    }
+    return mk('model', st.anchorAt);
+  }
   return null;
+}
+// v24129 — Is this airborne fix, newer than the one the model landed from,
+// on ANOTHER runway than the one the model landed on: over 0.5 nm from that
+// centreline and within 0.3 nm of the extended centreline of an end not
+// parallel to it, up to 12 nm from its threshold? Merely off the committed
+// runway is not enough: _gateLands lands the model from a fix CLOSING on the
+// final up to 2 nm off it, and the next fix of that same intercept, still
+// 0.8 nm off and timed before the taxi began, would lift a landed aeroplane
+// back into the air to land it again. Where the table has no runways for the
+// field the half mile alone decides. A slow or low fix is a roll-out or a
+// taxi whose ground flag lags the relay (Ottawa, AC450: 19 kt on a taxiway
+// with onGround false), never a go-around.
+function _gateTaxiWrongRunway(res, st, ap) {
+  try {
+    if (st.anchor !== 'model' || !st.rw || !st.rw.t || !(res.at > (st.fixAt || 0))) return false;
+    if (typeof res.spd === 'number' && res.spd < 50) return false;
+    if (typeof res.alt === 'number' && res.alt < 200) return false;
+    var pl = [res.lat, res.lng], dd = _gcNm(st.rw.t, pl), b = (_gcBrgDeg(st.rw.t, pl) - st.rw.hdg) * Math.PI / 180;
+    if (!(Math.abs(dd * Math.sin(b)) > 0.5)) return false;
+    var rws = (typeof AIRPORT_RUNWAYS !== 'undefined' && AIRPORT_RUNWAYS[String(ap || '').toUpperCase()]) || null;
+    if (!rws || !rws.length) return true;
+    for (var i = 0; i < rws.length; i++) {
+      var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]], ends = [[le, he], [he, le]];
+      for (var j = 0; j < 2; j++) {
+        var t = ends[j][0], hdg = _gcBrgDeg(t, ends[j][1]);
+        if (Math.abs(((hdg - st.rw.hdg + 540) % 360) - 180) <= 3) continue;
+        var d2 = _gcNm(t, pl), b2 = (_gcBrgDeg(t, pl) - hdg) * Math.PI / 180;
+        var al = -d2 * Math.cos(b2), xt = Math.abs(d2 * Math.sin(b2));
+        if (al > 0 && al < 12 && xt < 0.3) return true;
+      }
+    }
+    return false;
+  } catch (e) { return false; }
 }
 // Draw the 'taxi' answer: start, re-time or re-route the taxi, and make sure
 // a live map with this aeroplane's marker is up for it to drive.
@@ -53163,7 +53329,9 @@ function _gateTaxiApply(res) {
     _gateTaxiRun();
     return true;
   }
-  var rwG = (_gateGlide.rw && _gateGlide.rwFl === fl) ? _gateGlide.rw : null;
+  // v24129 — never an ambiguous pick (crossing centrelines, _runwayFinalPath):
+  // the fix itself, or the runway rules, say where the aeroplane came down
+  var rwG = (_gateGlide.rw && _gateGlide.rw.ambiguous !== true && _gateGlide.rwFl === fl) ? _gateGlide.rw : null;
   var fixPlan = null;
   if (res.anchor === 'fix' && res.fix) {
     if (mine && st.anchorAt === res.fix.at) { _gateTaxiMap(res, o, d); _gateTaxiRun(); return true; }
@@ -53273,6 +53441,9 @@ function _gateTaxiFromGlide(destIata, rw, td) {
     var st = _gateTaxi, now = Date.now();
     st.on = true; st.fl = String(inb.flight || ''); st.done = false; st.key = st.fl + '|' + (plan.standKey || '');
     st.plan = plan; st.t0 = now; st.s = _taxiSAtT(plan, 0); st.anchor = 'model'; st.anchorAt = now; st.since = now;
+    // v24129 — the fix the model landed from, and the runway: a later fix in
+    // the air off that runway un-lands it (_gateTaxiWrongRunway)
+    st.fixAt = (_gateGlide.fixAt > 0) ? _gateGlide.fixAt : 0; st.rw = rw;
     st.views = {};
     for (var k in _gateGlide.views) if (Object.prototype.hasOwnProperty.call(_gateGlide.views, k)) st.views[k] = _gateGlide.views[k];
     _stopGateMapGlide();
@@ -53385,6 +53556,30 @@ function _gateTaxiDraw(v, at, plan, left, dt) {
   } catch (e) {}
 }
 
+// v24129 — THE RUNWAY THE GLIDE IS LANDING ON (_gateGlide.rw, rwAt, rwFl,
+// rwFix: the time of the fix it was picked from). A pick flagged ambiguous
+// by _runwayFinalPath (two crossing centrelines within 0.3 nm) is confirmed
+// when a LATER fix of the same flight, inside 15 minutes of the fix the
+// previous pick came from and with that pick under 40 minutes old, picks the
+// same end. A rebuild on the same fix confirms nothing, a different end starts
+// again, and a pick from yesterday (gate screens run for days and flight
+// numbers repeat daily) vouches for nothing. _gateTaxiEnd and a leg change
+// forget the pick. rwAt is the age of the pick, not of the last redraw: it
+// moves when the end changes or a later fix picks it again, never on a
+// rebuild from the same fix (the dashed-line drawers call this each draw, and
+// a commitment nobody has re-picked from new evidence must age out of the
+// 40 minutes in _rwCommitted and here).
+function _gateGlideRunwayPick(rw, fixAt, fl) {
+  var g = _gateGlide, prev = g.rw;
+  var later = typeof fixAt === 'number' && isFinite(fixAt) && fixAt > (g.rwFix || 0);
+  var recent = (Date.now() - (g.rwAt || 0)) < 40 * 60000 && (fixAt - (g.rwFix || 0)) < 15 * 60000;
+  var sameEnd = !!(prev && prev.t && rw.t && Math.abs(prev.t[0] - rw.t[0]) < 1e-6 && Math.abs(prev.t[1] - rw.t[1]) < 1e-6);
+  if (rw.ambiguous === true && sameEnd && g.rwFl === fl && later && recent) rw.ambiguous = false;
+  if (!sameEnd || later || g.rwFl !== fl) g.rwAt = Date.now();
+  g.rw = rw; g.rwFl = fl;
+  if (later) g.rwFix = fixAt;
+  return rw;
+}
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata, fixAt) {
   // v23099 — the unconditional kill that used to sit here is gone. Claiming
   // the generation at the END of this function already supersedes any older
@@ -53452,12 +53647,20 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
   // line and the animated line stay one line.
+  // v24129 — a new leg forgets the runway the last one picked: a finished leg
+  // never vouches for the next (_rwCommitted, _gateGlideRunwayPick)
+  try {
+    if (_gateGlide.rw && _gateGlide.o && _gateGlide.d && !(_gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d))) {
+      _gateGlide.rw = null; _gateGlide.rwFl = ''; _gateGlide.rwFix = 0; _gateGlide.rwAt = 0;
+    }
+  } catch (eLg) {}
   var _rwFinal = _runwayFinalPath(_pl, d, destIata);
   // v24105 — the runway this arrival is landing on, for its roll-out and taxi
   try {
     if (_rwFinal && _rwFinal.rw) {
-      _gateGlide.rw = _rwFinal.rw; _gateGlide.rwAt = Date.now();
-      _gateGlide.rwFl = String(((window._gateInbound || window._gatePanelInbound) || {}).flight || '');
+      // v24129 — an ambiguous pick (crossing centrelines) is confirmed by a
+      // later fix of this flight that picks the same end
+      _gateGlideRunwayPick(_rwFinal.rw, fixAt, String(((window._gateInbound || window._gatePanelInbound) || {}).flight || ''));
     }
   } catch (eRw) {}
   var _legB = _rwFinal || _gcFullRoute(_pl, d, _vB);
@@ -53532,6 +53735,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     var _preP = (_thrNm - Math.max(1, 0.25 * (_thrNm - _seedNm))) / _routeNm, _thrP = _thrNm / _routeNm;
     // (a fix already inside that point may be carried on to the threshold)
     _drCapP = Math.min(_drCapP, _seedP >= _preP ? Math.max(_seedP, _thrP) : _preP);
+  }
+  // v24129 — and one between crossing centrelines, its runway still ambiguous
+  // (_runwayFinalPath), waits SHORT of the field as a non-established approach
+  // does (a mile, or a quarter of what was left at the fix) until a later fix
+  // agrees (_gateGlideRunwayPick): never a landing, nor a hold on the
+  // threshold of a runway one fix could not tell from another.
+  if (_rwFinal && n >= 3 && _rwFinal.rw.ambiguous === true) {
+    var _thrA = _cum[n - 2], _seedA = _seedP * _routeNm;
+    _drCapP = Math.min(_drCapP, Math.max(_seedP, (_thrA - Math.max(1, 0.25 * (_thrA - _seedA))) / _routeNm));
   }
   // v24105 — AND IT LANDS. One established on its final, or already over the
   // runway, or closing on its final, is carried all the way to touchdown,
@@ -65135,7 +65347,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24129" src="/textures/gate-sky-shelf.mp4?v=24129"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -65762,6 +65974,20 @@ var _WX_CITY_PICS = {
   // from Adobe Stock, so none of them owes a credit on the screen.
   GRU:1, LIR:1, MZT:1, PEK:1, PLS:1, YAA:1, YBG:1, YBL:1, YFB:1, YKA:1,
   YPW:1, YQG:1, YSB:1, YXC:1, YYF:1,
+  // v24128 — DAY PICTURES THAT ARE DAY. The Montreal day picture was a
+  // blue-hour shot with every window lit, and Frankfurt, Hong Kong and
+  // Taipei came from the picture service as night views: a night city on
+  // a plate at noon. Each is now a daytime photograph, picked from a sheet
+  // (Mount Royal lookout CC0; Adobe Stock for the other three). Deer Lake
+  // is the Western Brook Pond fjord from the Gros Morne overlook.
+  FRA:1, HKG:1, TPE:1,
+  // A famous city is pictured by the landmark that names it on sight: Las
+  // Vegas by its Welcome sign (its owner, YESCO, allows photographs while
+  // its logo under NEVADA stays in), Sydney by the Opera House beside the
+  // Harbour Bridge across Farm Cove (a harbour scene, the use the Opera
+  // House Trust allows), Tokyo by Tokyo Tower over the city. Haneda shares
+  // the Tokyo picture.
+  SYD:1, NRT:1, HND:'NRT',
   // v24113 — THIRTY-FOUR MORE, from the same contact sheets. Nearly all are
   // open-licence photographs that ask for a credit, so each names its
   // photographer on the card that shows it (_WX_CITY_CREDIT below) and links
@@ -65872,12 +66098,15 @@ var _WX_CITY_NIGHT = {
 // full credit, with a link to each source, is on the credits page.
 var _WX_CITY_CREDIT = {
   'CAN': ['Sergei Gussev', 'BY', '2.0'],
+  'LAS': ['Christian David', 'BY-SA', '4.0'],
   'MBJ': ['Grahampurse', 'BY-SA', '4.0'],
   'POP': ['Jusunx', 'BY-SA', '4.0'],
+  'SYD': ['-wuppertaler', 'BY', '4.0'],
   'YAM': ['Sharon Hahn Darlin', 'BY', '2.0'],
   'YAY': ['Mykola Swarnyk', 'BY-SA', '3.0'],
   'YCD': ['AB87', 'BY', '3.0'],
   'YCG': ['Murray Foubister', 'BY-SA', '2.0'],
+  'YDF': ['Paul Gierszewski', 'BY-SA', '3.0'],
   'YEG-night': ['Calgary Reviews', 'BY', '2.0'],
   'YGR': ['Marc-Lautenbacher', 'BY-SA', '4.0'],
   'YHZ-night': ['Keith Pomakis', 'BY-SA', '2.5'],

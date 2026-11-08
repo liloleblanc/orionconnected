@@ -30,7 +30,7 @@ function fnSource(name) {
 }
 const YQM = [46.1122, -64.6786];
 const RUNWAYS = { YQM: [[46.10599, -64.6943, 46.1262, -64.66766], [46.10684, -64.69436, 46.1078, -64.66285]] };
-const geo = new Function('AIRPORT_RUNWAYS', ['_gcNm', '_gcBrgDeg', '_gcDestPt', '_gcFullRoute', '_runwayFinalPath'].map(fnSource).join('\n') +
+const geo = new Function('AIRPORT_RUNWAYS', ['_gcNm', '_gcBrgDeg', '_gcDestPt', '_gcFullRoute', '_rwPlaneSpec', '_rwCommitted', '_runwayFinalPath'].map(fnSource).join('\n') +
   '\nreturn { final: _runwayFinalPath, nm: _gcNm, brg: _gcBrgDeg };')(RUNWAYS);
 const turns = (route) => {
   const out = [];
@@ -117,7 +117,7 @@ test('a route folding back inside the heading window falls back to the way on; a
 test('on the field the live track picks the runway end, not the bearing to the field', () => {
   // past mid-field the bearing to the reference point points back the way the
   // aeroplane came: every fix along either runway, either way, with its track
-  const withTrk = (trk) => new Function('AIRPORT_RUNWAYS', '_gateHeading', ['_gcNm', '_gcBrgDeg', '_gcDestPt', '_gcFullRoute', '_runwayFinalPath'].map(fnSource).join('\n') +
+  const withTrk = (trk) => new Function('AIRPORT_RUNWAYS', '_gateHeading', ['_gcNm', '_gcBrgDeg', '_gcDestPt', '_gcFullRoute', '_rwPlaneSpec', '_rwCommitted', '_runwayFinalPath'].map(fnSource).join('\n') +
     '\nreturn { final: _runwayFinalPath, nm: _gcNm, brg: _gcBrgDeg, dest: _gcDestPt };')(RUNWAYS, () => trk);
   for (const r of RUNWAYS.YQM) {
     for (const [t, f] of [[[r[0], r[1]], [r[2], r[3]]], [[r[2], r[3]], [r[0], r[1]]]]) {
