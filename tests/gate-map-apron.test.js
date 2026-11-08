@@ -121,6 +121,9 @@ const FNS = [
   '_gateDoorBasis', '_gateDoorRecord',
   // v23919 — every aeroplane in the picture
   '_gateApronFrame', '_gateApronFrameCentre',
+  // v24130 — one door, two spellings (15B is door 15): the pairing, the claim
+  // rules, the lookup guard and the own-gate reference read these
+  '_gateDoorBase', '_gateDoorOwn', '_gateSameDoor', '_gateDoorFold',
 ];
 const EXPORTS = FNS.map((n) => n + ': ' + n).join(', ');
 // The board's own table of airport points (GATE_AP) rounds Moncton to two decimals.
@@ -171,6 +174,7 @@ function engine(ctx) {
     lineSource('var _ADB_EXPLICIT_STATUS = '),
     lineSource('var _ADB_CLAIM_AHEAD_TIMED_MS = '),
     lineSource('var _ADB_CLAIM_AHEAD_UNTIMED_MS = '),
+    lineSource('var _GATE_DOOR_SIBLING_M = '),
     lineSource('var _GATE_FEED_KEPT = '),
     lineSource('var _GATE_APRON_AIRPORTS = '),
     ctx.bySize ? 'var _GATE_APRON_BY_SIZE = true;' : lineSource('var _GATE_APRON_BY_SIZE = '),

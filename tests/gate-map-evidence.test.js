@@ -81,6 +81,9 @@ const FNS = [
   'adbStatusInferred', '_fidsClockForLang', '_gateMatchIsNew', '_fixAtLegOrigin', '_fixPlausibleForLeg',
   '_gateLegWindowOpen', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave', '_gateArrsSeen', 'aircraftCodeToIata',
   '_gateSeenKeepIdentity',
+  // v24130 — one door, two spellings (15B is door 15): the pairing, the claim
+  // rules and the lookup guard read these
+  '_gateDoorBase', '_gateDoorOwn', '_gateSameDoor', '_gateDoorFold',
 ];
 const EXPORTS = FNS.map((n) => n + ': ' + n).join(', ');
 
@@ -108,6 +111,7 @@ function engine(ctx) {
     lineSource('var _ADB_CLAIM_AHEAD_TIMED_MS = '),
     lineSource('var _ADB_CLAIM_AHEAD_UNTIMED_MS = '),
     lineSource('var ARR_CONFIRM_MIN = '),
+    lineSource('var _GATE_DOOR_SIBLING_M = '),
     ...FNS.map(fnSource),
     'return { ' + EXPORTS + ', _GATE_DOWN_SEEN: _GATE_DOWN_SEEN };',
   ].join('\n');

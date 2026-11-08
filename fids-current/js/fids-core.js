@@ -5693,6 +5693,12 @@ var DELAY_HOLD_MIN = 60;
 // until the airport says Arrived (the poll's own stop) or this many minutes
 // pass, so the map can show the real landing and taxi.
 var ARR_CONFIRM_MIN = 30;
+// v24130 — GATE_ARR_LEAD_MS: how long before its earliest time an arrival at
+// this door becomes the screen when the door has no departure listed
+// (_gateArrivalsAt, the arrivals-only gate). Three hours: about the span the
+// inbound card of a departure opens ahead of a leg, and short enough that a
+// morning screen with no departure does not show the evening arrival all day.
+var GATE_ARR_LEAD_MS = 3 * 3600000;
 
 // v23925 — WHICH AIRPORTS' FEEDS SAY THE GATE WORDS (decision of 2026-09-30,
 // Option B). Boarding, Final call and Gate closed on a board are claims about
@@ -5975,6 +5981,60 @@ function _gateFlightsAt(sub, nowMs, iata) {
       return _gateFlightLive(f, now) && !_gateHoldYields(f, all, now, iata);
     })
     .sort(function (a, b) { return a._sortTs - b._sortTs; }));
+}
+
+// v24130 — THE ARRIVAL AT THIS DOOR WHEN THE DOOR HAS NO DEPARTURE. Halifax
+// gate 3, 2026-11-07 at 13:30: PD2327 from Montreal was due at gate 3 at 13:58
+// and no departure was filed from gate 3, so the screen read Awaiting Next
+// Flight while an aeroplane was on its way to the door. Ottawa gate 15B the
+// same day: AC889 from Heathrow, an A330, due at 13:16, its onward AC888 filed
+// from gate 15 at 18:50. The departures list stays exact (_gateFlightsAt: a
+// 15B screen never adopts the departure of gate 15); this list reads the
+// arrivals at the SAME DOOR (_gateSameDoor: 15B is a position at door 15) and
+// is the state renderDedicatedScreen shows when _gateFlightsAt is empty.
+// The window: from GATE_ARR_LEAD_MS before the earliest time the row gives
+// (_gateArrEarliestTs) until, once the feed says it is down
+// (fidsInboundHasArrived), _GATE_DEPLANE_MS after the landing on evidence
+// (_gateLandedAt); otherwise ARR_CONFIRM_MIN after its (revised) time, or for
+// as long as the airport own word (Delayed, Early: _stExplicit) keeps the row
+// live on the arrivals board. Cancelled and diverted never. The rows are the
+// feed plus the landed ones it has since dropped (_gateArrsSeen, as the maps
+// read them), so a row the feed drops at touchdown still deplanes on screen.
+// _gateCsPick rebrands a regional-coded row in place, as _gateFlightsAt
+// already does for departures. The exact door first, then by time.
+// `cheap` is the render key (getDedicatedRenderKey, once a second): the same
+// rows without the memory of this screen (no _gateArrsSeen: no storage
+// write), no rebrand (no _gateCsPick), and the landing read as the maps read
+// it but recording nothing (_gateLandedInfo in peek mode), so the two reads
+// land an aeroplane from the same evidence: a live ground fix seen before
+// its on-blocks time, or a Landed word with no time while the screen was
+// watching. Where they still differ (a row only this screen remembers), the
+// key re-reads the state once a minute (ended). Pure otherwise: no DOM.
+function _gateArrivalsAt(sub, nowMs, iata, cheap) {
+  var now = nowMs || Date.now();
+  var ap = String(iata || (typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+  var rows = [];
+  try { rows = _gateFeedRows('arr') || []; } catch (e0) { rows = (typeof data !== 'undefined' && data && data.arr) || []; }
+  if (!cheap) { try { rows = _gateArrsSeen(rows, ap, now); } catch (e1) {} }
+  var landed = function (f) {
+    if (!cheap) return _gateLandedAt(f, now) || now;
+    try { return _gateLandedInfo(f, now, true).t || now; } catch (e2) { return now; }
+  };
+  var list = [];
+  for (var i = 0; i < rows.length; i++) {
+    var f = rows[i];
+    if (!f || !f.flight || !f._sortTs || _gateLegGone(f)) continue;
+    if (!_gateSameDoor(f.gate, sub, ap)) continue;
+    if (now < _gateArrEarliestTs(f) - GATE_ARR_LEAD_MS) continue;
+    var down = false;
+    try { down = !!fidsInboundHasArrived(f, now); } catch (e) { down = false; }
+    if (down) { if (now <= landed(f) + _GATE_DEPLANE_MS) list.push(f); continue; }
+    if (now <= Math.max(f._revTs || 0, f._sortTs) + ARR_CONFIRM_MIN * 60000) { list.push(f); continue; }
+    if (f._stExplicit === true && _fidsBoardRowPlace(f, now) === 'live') list.push(f);
+  }
+  if (!cheap) list = _gateCsPick(list);
+  var exact = function (f) { return _gateRefNorm(f.gate) === _gateRefNorm(sub) ? 0 : 1; };
+  return list.sort(function (a, b) { return (exact(a) - exact(b)) || (a._sortTs - b._sortTs); });
 }
 
 // v23925 — WHERE A ROW SITS ON THE DEPARTURES / ARRIVALS BOARD: 'past' (the
@@ -6838,7 +6898,28 @@ function getDedicatedRenderKey() {
       // v23973 — what Later at this gate and the gate-change notice show.
       later: _gateLaterKeyNow(iata),
       // v23998 — whether the departures feed is down (the empty gate says so).
-      feed: _fidsFeedDownKey(iata, 'dep')
+      feed: _fidsFeedDownKey(iata, 'dep'),
+      // v24130 — whether the airport gate file is known (loaded, or known to
+      // be absent): the door fold (_gateDoorOwn) and the stands read it, and
+      // the first render of a cold boot runs before it lands, so the pairing
+      // and the arrivals-only pick are made again once it is known.
+      gf: (typeof _AP_GATES !== 'undefined' && Object.prototype.hasOwnProperty.call(_AP_GATES, iata)) ? 1 : 0,
+      // v24130 — with no departure at the door, the arrival that is the screen
+      // (_gateArrivalsAt, the cheap read: this runs once a second), a minute
+      // bucket while it deplanes so its twenty minutes end on time, and
+      // whether the arrivals feed it comes from is down. A state on screen
+      // (_lastGateArrKey) whose cheap read finds nothing is re-read once a
+      // minute (ended): the full read may still list a row only this screen
+      // remembers, and the state must end within a minute of its window.
+      arr: first ? null : (function () {
+        var a = null;
+        try { a = _gateArrivalsAt(subScreenVal, _nowMs2, iata, true)[0] || null; } catch (e) { a = null; }
+        if (!a) return window._lastGateArrKey ? { ended: Math.floor(_nowMs2 / 60000) } : null;
+        var down = false;
+        try { down = !!fidsInboundHasArrived(a, _nowMs2); } catch (e2) { down = false; }
+        return { flight: a.flight, status: a.status, upd: a.upd, gate: a.gate, sort: a._sortTs, rev: a._revTs, act: a._actualArrTime, min: down ? Math.floor(_nowMs2 / 60000) : 0 };
+      })(),
+      feedArr: first ? null : _fidsFeedDownKey(iata, 'arr')
     });
   }
   if (screenType === 'baggage') {
@@ -8846,6 +8927,20 @@ function updateDedicatedTimeOnly() {
       if (cdStr) { cdEl.textContent = cdStr; cdEl.parentElement.style.display = ''; }
       else { cdEl.parentElement.style.display = 'none'; }
     }
+    // v24130 — THE INCOMING CARD COUNTS DOWN ON ITS MINUTE. The arrivals-only
+    // gate (_gateArrivalOnlyHtml) prints Arrives in N min, and its key does
+    // not carry the minute while the aeroplane is still to come (a rebuild a
+    // minute would move the map); the line is patched in place each second
+    // from the one helper that wrote it (_gateArrivalOnlyEta), as the
+    // boarding countdown above is.
+    try {
+      const _aeEl = document.getElementById('gateArrEta');
+      if (_aeEl && !cf && window._gateInbound && !window._gateCurrentFlight && typeof _gateArrivalOnlyEta === 'function') {
+        const _ae = _gateArrivalOnlyEta(window._gateInbound, _nowMs3);
+        if (_aeEl.textContent !== _ae) _aeEl.textContent = _ae;
+        _aeEl.style.display = _ae ? '' : 'none';
+      }
+    } catch (eAE) {}
     // v23925 — THE SCHEDULE BOARDING OPENS ON ITS MINUTE. At an airport whose
     // feed never says Boarding the sign opens at the printed boarding time and
     // closes at the departure time (_gateDoor), with nothing in the feed
@@ -14178,6 +14273,126 @@ function _gateChangeSoloHtml(m, timeStr) {
     + '</div>';
 }
 
+// v24130 — the countdown line of the arrivals-only card: At the gate on its
+// blocks, Landed while it taxis, else Arrives in N min to the time the card
+// prints (_gateLaterTs: the new time with its Delayed or Early), counted as
+// the phone card counts them; nothing once that time has passed. The builder
+// writes it and the clock tick (updateDedicatedTimeOnly) patches it in place,
+// so the key need not carry the minute while the aeroplane is still to come.
+function _gateArrivalOnlyEta(inb, nowMs) {
+  if (!inb) return '';
+  var now = nowMs || Date.now();
+  var down = false, onStand = false;
+  try { down = !!fidsInboundHasArrived(inb, now); onStand = down && !!fidsInboundOnStand(inb); } catch (e) { down = false; onStand = false; }
+  if (onStand) return TL('atGateLbl');
+  if (down) return SL('landed');
+  var eff = 0;
+  try { eff = _gateLaterTs(inb) || 0; } catch (e2) { eff = 0; }
+  var mins = eff ? Math.round((eff - now) / 60000) : 0;
+  if (!(mins > 0 && mins < 1440)) return '';
+  return mins >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm') : (TL('arrivesIn') + ' ' + mins + ' min');
+}
+
+// v24130 — (D) THE ARRIVALS-ONLY GATE: a door with an arrival filed and no
+// departure (_gateArrivalsAt). The empty-gate shell (gate tile, city, clock,
+// footer: the same ids, so updateDedicatedTimeOnly ticks the clock) with the
+// incoming aircraft beside its map (#gateMapBox, the one box the map engine
+// and the 10 s tick draw into). Labels: the pairs the gate already has
+// (_gateLbl: arrivingFrom, arrivedFrom, aircraftFrom, flight, gate; the store
+// pair nextArrival), and the single-language words of the phone card
+// (arrivingAt, arrivedAt, arrivesIn, atGateLbl, landed) in the language on
+// screen, marked with _screenLangAttrs; on the gate that language does not
+// rotate (the rotation timer returns for gate screens), so the markup is
+// keyed on the languages, not on lang. No words of its own.
+// `feedDown` (the arrivals feed notice, _fidsFeedDownInView) replaces the
+// card: a card from a dead list would be a claim nobody is making.
+function _gateArrivalOnlyHtml(inb, iata, timeStr, dateDisplay, feedDown) {
+  if (!inb) return '';
+  var now = Date.now();
+  var frF = false;
+  try { frF = !!frFirstAirport(iata); } catch (e0) { frF = false; }
+  var tz = '', apName = '', apCity = '';
+  try { tz = (typeof AP !== 'undefined' && AP[iata] && AP[iata].tz) || ''; } catch (e1) { tz = ''; }
+  try { apName = (typeof AP !== 'undefined' && AP[iata] && AP[iata].name) || iata || ''; } catch (e2) { apName = iata || ''; }
+  try { apCity = (typeof cityCode === 'function') ? (cityCode(iata) || iata || '') : (iata || ''); } catch (e3) { apCity = iata || ''; }
+  var span = function (w) { return '<span>' + fidsEscHtml(w) + '</span>'; };
+  var gateW = _gateLbl('gate', frF, span, ' | ');
+  var code = String(inb.airline || '').toUpperCase();
+  var acc = '';
+  try { acc = _gateChangeAccent(code) || ''; } catch (e4) { acc = ''; }
+  var card = '';
+  if (feedDown) {
+    card = '<div class="ffn-inview ffn-inview--gate" role="status" style="align-self:center;">' + feedDown + '</div>';
+  } else {
+    var pl = _gateLaterPlace(inb);
+    var verb = _gateLbl(_gateInbCaptionKey(inb, now), frF, span, ' | ');
+    var orb = '';
+    try { orb = _gateChangeOrbHtml(code); } catch (e5) { orb = ''; }
+    var eyebrow = BoardStrings.pair('nextArrival', { frFirst: frF, langs: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs : undefined });
+    var flightW = _gateLbl('flight', frF, span, ' | ');
+    // the times: the schedule, struck through when the airport gives a new one
+    // (the board clock, BoardStrings.boardTime, 1:58 PM rather than 01:58 PM)
+    var clock = function (ts) { return String(BoardStrings.boardTime(new Date(ts), tz || 'UTC', { hour: '2-digit' }) || '').replace(/^0(\d)/, '$1'); };
+    var sched = '', revised = '';
+    try { if (inb._sortTs) sched = clock(inb._sortTs); } catch (e6) { sched = ''; }
+    try { if (inb._revTs && inb._revTs !== inb._sortTs) revised = clock(inb._revTs); } catch (e7) { revised = ''; }
+    var down = false;
+    try { down = !!fidsInboundHasArrived(inb, now); } catch (e8) { down = false; }
+    var timeLbl = TL(down ? 'arrivedAt' : 'arrivingAt');
+    var timeVal = (revised && !down)
+      ? '<span style="text-decoration:line-through;opacity:0.55;margin-right:0.4em;">' + fidsEscHtml(sched) + '</span><span>' + fidsEscHtml(revised) + '</span>'
+      : '<span>' + fidsEscHtml(revised || sched) + '</span>';
+    // the airport own Delayed with no new time: the time printed has passed
+    // and nothing else on the card would say so; the status word (SS, the
+    // nine languages) stands beside it, as the phone card prints the status
+    var lateW = (!down && !revised && inb._stExplicit === true && /^delayed$/.test(String(inb.status || '').toLowerCase())) ? (SL('delayed') || '') : '';
+    // the minutes to the time the card prints (_gateArrivalOnlyEta), patched
+    // in place each second by updateDedicatedTimeOnly (#gateArrEta)
+    var eta = _gateArrivalOnlyEta(inb, now);
+    card = '<div class="gate-arr-card g8-airline-' + fidsEscHtml(code) + '" style="flex:1 1 320px;max-width:600px;min-width:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(100,160,250,0.35);padding:clamp(16px,2.4vw,32px);display:flex;flex-direction:column;justify-content:center;gap:clamp(6px,1vw,14px);color:#fff;' + (acc ? '--airline-accent:' + fidsEscHtml(acc) + ';' : '') + '">'
+      +   '<div style="display:flex;align-items:center;gap:clamp(10px,1.4vw,20px);">'
+      +     (orb ? '<span style="display:inline-flex;flex:0 0 auto;">' + orb + '</span>' : '')
+      +     '<div style="font-size:max(var(--fx-floor,12px),clamp(12px,1.5vw,18px));font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.7);">' + eyebrow + '</div>'
+      +   '</div>'
+      +   '<div style="font-size:max(var(--fx-floor,12px),clamp(16px,2vw,26px));font-weight:700;color:rgba(255,255,255,0.8);">' + verb + '</div>'
+      +   '<div style="font-size:clamp(30px,4.4vw,64px);font-weight:900;line-height:1.05;letter-spacing:-0.01em;">' + _gateLaterPlaceHtml(pl) + '</div>'
+      +   '<div style="display:flex;align-items:baseline;gap:0.5em;flex-wrap:wrap;font-size:clamp(20px,2.6vw,36px);font-weight:800;">'
+      +     '<span style="font-size:0.6em;font-weight:700;color:rgba(255,255,255,0.65);">' + flightW + '</span><span>' + fidsEscHtml(inb.flight || '') + '</span>'
+      +   '</div>'
+      +   ((sched || revised) ? '<div' + _screenLangAttrs() + ' style="display:flex;align-items:baseline;gap:0.5em;flex-wrap:wrap;font-size:clamp(16px,2vw,26px);font-weight:700;font-variant-numeric:tabular-nums;">'
+      +     '<span style="color:rgba(255,255,255,0.65);">' + fidsEscHtml(timeLbl) + '</span>' + timeVal
+      +     (lateW ? '<span style="color:#ffb347;font-weight:800;margin-left:0.4em;">' + fidsEscHtml(lateW) + '</span>' : '')
+      +   '</div>' : '')
+      +   '<div id="gateArrEta"' + _screenLangAttrs() + ' style="font-size:clamp(18px,2.2vw,30px);font-weight:800;color:' + (down ? '#1bbf74' : 'rgba(140,190,255,1)') + ';' + (eta ? '' : 'display:none;') + '">' + fidsEscHtml(eta) + '</div>'
+      + '</div>';
+  }
+  return '<div class="gate-screen gate-arr-only" style="position:relative;">'
+    + '<div class="gate-bg no-photo" id="gateBgArr" style="position:absolute;inset:0;z-index:0;"></div>'
+    + '<div style="position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.25) 70%,rgba(0,0,0,0.65) 100%);"></div>'
+    + '<div style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:clamp(16px,4vw,40px);gap:clamp(12px,2vw,24px);">'
+    +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">'
+    +     '<div style="background:rgba(0,0,0,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:0;padding:clamp(12px,2vw,20px) clamp(16px,3vw,28px);border:1px solid rgba(100,160,250,0.35);">'
+    +       '<div style="font-size:clamp(40px,10vw,80px);font-weight:900;color:#fff;line-height:1;">' + fidsEscHtml(subScreenVal || '—') + '</div>'
+    +       '<div style="font-size:max(var(--fx-floor,12px),clamp(10px,1.5vw,13px));font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-top:4px;text-transform:uppercase;">' + gateW + '</div>'
+    +     '</div>'
+    +     '<div style="text-align:right;"><div style="font-size:clamp(28px,7vw,64px);font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.4);line-height:1;">' + fidsEscHtml(apCity) + '</div></div>'
+    +   '</div>'
+    +   '<div style="flex:1 1 auto;min-height:0;display:flex;align-items:stretch;gap:clamp(12px,2vw,28px);flex-wrap:wrap;">'
+    +     card
+    +     (feedDown ? '' : '<div id="gateMapBox" style="flex:2 1 360px;min-height:clamp(220px,40vh,560px);background:rgba(0,0,0,0.3);border:1px solid rgba(100,160,250,0.35);overflow:hidden;position:relative;"></div>')
+    +   '</div>'
+    +   '<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">'
+    +     '<div><div style="font-size:max(var(--fx-floor,12px),clamp(11px,1.5vw,16px));font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:3px;">' + fidsEscHtml(apName) + '</div></div>'
+    +     '<div style="text-align:right;"><div id="dedicatedEmptyTime" style="font-size:clamp(36px,9vw,72px);font-weight:900;color:#fff;font-variant-numeric:tabular-nums;line-height:1;text-shadow:0 4px 20px rgba(0,0,0,0.4);">' + fidsEscHtml(timeStr || '') + '</div></div>'
+    +   '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="gate-footer">'
+    +   '<div class="gate-footer-left"><span>' + fidsEscHtml(apName) + '</span></div>'
+    +   '<div class="gate-footer-right" id="dedicatedFooterRight"' + _screenLangAttrs() + '>' + (dateDisplay || '') + '</div>'
+    + '</div>';
+}
+
 // The key for what the gate shows now (getDedicatedRenderKey, the gate's own
 // render key, the clock tick's check).
 function _gateLaterKeyNow(iata) {
@@ -16476,7 +16691,10 @@ function _buildV2MapCol(ctx, vars) {
       // the body already carried it: flight, times, and "Arrived" on its own
       // coloured line. The same fact twice, with the anchor doing the moving.
       // One label, always, and the status stays where it belongs underneath.
-      var _mcTitleKey = 'yourAircraftHdr';
+      // v24130 — unless the arrival was found at the door alone, with no
+      // pairing to say it is this departure (_doorOnly): then the neutral
+      // Aircraft From, never Your Aircraft.
+      var _mcTitleKey = (_ib && _ib._doorOnly === true) ? 'aircraftFrom' : 'yourAircraftHdr';
       // v23544 — WHICH CLOCK. for arrived,
       // then "5:05pm ... arrived at the gate". They are two different moments
       // and the feed already separates them: _actualArrTime is the ON-BLOCK
@@ -17723,7 +17941,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24130" src="/textures/gate-sky-shelf.mp4?v=24130" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17767,7 +17985,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24130" src="/textures/gate-sky-shelf.mp4?v=24130" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -18999,7 +19217,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24127" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24130" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -26673,6 +26891,13 @@ const gView = document.getElementById('gateView');
     const gateFlights = _gateFlightsAt(subScreenVal, _nowMs);
     const currentFlight = gateFlights[0];
     const nextFlight = gateFlights[1];
+    // v24130 — the page airport, published before either branch below: the
+    // door fold (_gateDoorOwn) and the pairing read it, and the flight branch
+    // used to publish it after the pairing, so a reloaded board paired its
+    // first render by shape alone. The gate file is asked for here too; the
+    // render key (gf) repaints once it is known.
+    window._gateIata = iata;
+    try { if (iata && typeof _apGatesFor === 'function') _apGatesFor(iata); } catch (eGF0) {}
 
     // Apply localStorage overrides to current flight
     if (currentFlight) applyOverrideToFlight(currentFlight);
@@ -26835,6 +27060,28 @@ const gView = document.getElementById('gateView');
       // An inbound the pre-v23915 gate-match could not have found (a through
       // flight, a tail at another gate) is never looked up on FR24 (_gateMatchIsNew).
       try { if (_gateMatchFallback) _gateMatchFallback._gateNoAdsb = _gateMatchIsNew(_gateMatchFallback, currentFlight, _gateVal); } catch (eNA) {}
+      // v24130 — THE ARRIVAL AT THE DOOR WHEN THE PAIRING NAMES NONE. A
+      // departure can have no inbound the rules will pair (another family at
+      // the door, types that disagree, a feed with no tails) while an arrival
+      // is filed at this very door and lands before it. The screen used to
+      // show the departure with no incoming aircraft at all; it now shows that
+      // arrival as what it is, an aircraft arriving at this door
+      // (_gateArrivalsAt, the same door under either spelling), flagged
+      // _doorOnly so the inbound labels say Aircraft From, never Your
+      // Aircraft, and _identityUnverified like every pairing. It is marked
+      // _gateNoAdsb: an arrival of another family at the door is a class of
+      // FR24 lookup no gate made before, and the decision of 2026-11-07 on
+      // lookups covers the sibling-door inbound and the arrivals-only pick,
+      // not this one. Until that yes it is placed by the feed own words
+      // (Landed, Arrived) alone, as a through flight is. One line opens it.
+      var _doorOnlyInb = null;
+      if (!_gateMatchFallback) {
+        try {
+          var _dArr = _gateArrivalsAt(_gateVal, Date.now(), _gmAp)[0] || null;
+          if (_dArr && _dArr._sortTs < currentFlight._sortTs && _dArr.flight !== currentFlight.flight) _doorOnlyInb = _dArr;
+        } catch (eDO) { _doorOnlyInb = null; }
+        try { if (_doorOnlyInb) _doorOnlyInb._gateNoAdsb = true; } catch (eDN) {}
+      }
 
       // PRIMARY SOURCE: reg-based inbound from loadFlight. If present, use it.
       // FALLBACK: gate-match (only while reg lookup is pending). Once the reg
@@ -26845,7 +27092,7 @@ const gView = document.getElementById('gateView');
       const _verifiedInbound = (window._gateInbound
         && /^(reg-lookup|flight-lookup)$/.test(String(window._gateInbound._inboundSource || ''))
         && window._gateInbound._forOutbound === currentFlight.flight) ? window._gateInbound : null;
-      const inboundFlight = _verifiedInbound || _gateMatchFallback;
+      const inboundFlight = _verifiedInbound || _gateMatchFallback || _doorOnlyInb;
       // v22928 — A SHARED GATE IS NOT A SHARED AIRFRAME (on YQM gate 4 these
       // were 2 different aircraft). _gateMatchFallback picks the most
       // recent arrival at this gate, which is fine for showing that something
@@ -26861,7 +27108,12 @@ const gView = document.getElementById('gateView');
       // match, the flag below tells the aircraft block to describe the
       // DEPARTURE from its own record rather than borrowing the arrival's.
       try {
-        if (inboundFlight) inboundFlight._identityUnverified = !_verifiedInbound;
+        if (inboundFlight) {
+          inboundFlight._identityUnverified = !_verifiedInbound;
+          // v24130 — and whether it is a door pick rather than a pairing (set
+          // on every render: the row is shared, and a pairing may claim it later)
+          inboundFlight._doorOnly = !!(_doorOnlyInb && inboundFlight === _doorOnlyInb);
+        }
       } catch (e) {}
       // PANEL PARITY for the 60 s numbers poll: when the loadFlight linking
       // never lands (quota, timing), the panel still shows the gate-match
@@ -28073,6 +28325,99 @@ const gView = document.getElementById('gateView');
         _gateLaterAfterPaint(iata);
         return;
       }
+      // v24130 — (D) AN ARRIVAL AT THIS DOOR AND NO DEPARTURE: the incoming
+      // aircraft is the screen (_gateArrivalsAt, _gateArrivalOnlyHtml). It
+      // comes after the gate-change notice above on purpose: a departure the
+      // airport moved away from this door is the news for anyone standing at
+      // it, and the empty-gate screen below comes back after both. The page
+      // airport and its gate file were published above, before the branches
+      // (the maps answer dst from it: with none, _gateMapApply draws nothing).
+      var _arrOnly = null;
+      try { _arrOnly = _gateArrivalsAt(subScreenVal, Date.now(), iata)[0] || null; } catch (eAO) { _arrOnly = null; }
+      if (_arrOnly) {
+        var _arrFeedDown = '';
+        try { _arrFeedDown = _fidsFeedDownInView(iata, 'arr') || ''; } catch (eAF) { _arrFeedDown = ''; }
+        // The globals every map and poll reads, published as the flight
+        // branch publishes them for a new inbound: no departure, this arrival
+        // as the inbound (the panel copy too, so the 60 s numbers poll tracks
+        // it: a door pick, never _gateNoAdsb), and the map torn down when the
+        // inbound changes, never on a repaint.
+        var _arrId = String(_arrOnly.flight || _arrOnly._reg || 'inb');
+        if ((window._gateInboundId || '') !== _arrId) {
+          window._gateAircraftSpecs = null; window._gateAircraftImg = null;
+          window._gateInboundDirect = null; window._gateInboundLivePos = null;
+          window._lastMapPosKey = null; window._lastMapProgKey = null;
+          try { window._fidsGateRoute = null; } catch (eMR) {}
+          try { if (typeof _gateMapCamera !== 'undefined' && _gateMapCamera) { _gateMapCamera.reg = null; _gateMapCamera.lastProgKey = null; } } catch (eMC) {}
+          try { if (typeof gateMap !== 'undefined' && gateMap) gateMap.remove(); } catch (eMG) {}
+          try { gateMap = null; } catch (eMG2) {}
+          window._gateTelemAnim = { spd:null, alt:null, realSpd:null, realAlt:null, realTs:0, realSecToArr:null, shimmerPh:0 };
+          window._lastGateArrKey = '';
+        }
+        try { _arrOnly._doorOnly = false; _arrOnly._gateNoAdsb = false; } catch (eFl) {}
+        window._gateCurrentFlight = null;
+        window._gateCurrentAirline = String(_arrOnly.airline || '').toUpperCase();
+        window._gateInbound = _arrOnly;
+        window._gatePanelInbound = _arrOnly;
+        window._gateInboundId = _arrId;
+        window._gateLastFlightKey = '';
+        try { document.body.setAttribute('data-gate-airline', window._gateCurrentAirline); } catch (eDA) {}
+        // The markup is rebuilt only when what it says changes (the v23166
+        // lesson: a rebuild on every outer repaint tore the map down). The
+        // languages are in the key; lang is not (it does not rotate on the
+        // gate, and the pairs read langs). Across a rebuild the live map node
+        // moves into the new box, as the flight branch moves its own.
+        // The screen itself is in the key too (a walking display can come
+        // back to this door with the same inbound id after the flight branch
+        // drew another gate with the same aeroplane), and markup that is not
+        // this state is always replaced.
+        var _arrKey = [iata, subScreenVal, _arrOnly.flight, _arrOnly.status, _arrOnly.upd, _arrOnly._revTs, _arrOnly._actualArrTime, _arrOnly.gate, _arrOnly._reg, _arrOnly._aircraft,
+          _arrFeedDown ? 'down' : 'live', (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : ''].join('|');
+        if (window._lastGateArrKey !== _arrKey || !gView.querySelector('.gate-arr-only')) {
+          window._lastGateArrKey = _arrKey;
+          var _arrSavedMap = null;
+          try { if (gateMap && typeof gateMap.getContainer === 'function') _arrSavedMap = gateMap.getContainer(); } catch (eSM) { _arrSavedMap = null; }
+          if (_arrSavedMap && gateMap) { try { _arrSavedMap.remove(); } catch (eSR) {} }
+          gView.innerHTML = _gateArrivalOnlyHtml(_arrOnly, iata, timeStr, dateDisplay, _arrFeedDown);
+          var _arrSlot = document.getElementById('gateMapBox');
+          if (_arrSavedMap && gateMap && _arrSlot) {
+            try { _arrSlot.replaceWith(_arrSavedMap); setTimeout(function () { try { if (gateMap) gateMap.invalidateSize(); } catch (eIV) {} }, 200); } catch (eRW) {}
+          } else if (gateMap) {
+            try { gateMap.remove(); } catch (eMG3) {}
+            gateMap = null;
+            window._lastMapPosKey = null; window._lastMapProgKey = null;
+          }
+          setGateBg(document.getElementById('gateBgArr'), iata);
+        }
+        // The map: the one answer (_gateAircraftWhere) with no departure,
+        // drawn by this state own handle; the 10 s tick re-runs it.
+        var _arrTryInit = function () {
+          var mb = document.getElementById('gateMapBox');
+          if (!mb || mb.offsetParent === null) return;
+          if (mb.offsetHeight < 10) mb.style.minHeight = '250px';
+          if (window._gateCurrentFlight || !window._gateInbound) return;
+          _gateMapApply(_gateAircraftWhere(window._gateInbound, null, Date.now()));
+        };
+        window._gateMapRetry = _arrTryInit;
+        setTimeout(_arrTryInit, 500);
+        setTimeout(function () { if (!gateMap) _arrTryInit(); else { try { gateMap.invalidateSize(); } catch (eI1) {} } }, 1500);
+        setTimeout(function () { if (!gateMap) _arrTryInit(); else { try { gateMap.invalidateSize(); } catch (eI2) {} } }, 3000);
+        _gateLaterAfterPaint(iata);
+        return;
+      }
+      // v24130 — nothing of the states above survives into the empty gate: a
+      // walking display carried the previous gate aircraft into the card and
+      // the poll, and the map handle kept a closure over a flight no longer
+      // shown, with a Leaflet instance bound to a node no longer in the page.
+      window._gateCurrentFlight = null; window._gateInbound = null; window._gatePanelInbound = null;
+      window._gateInboundId = null; window._gateInboundLivePos = null; window._lastGateArrKey = '';
+      window._gateMapRetry = null; window._lastMapPosKey = null; window._lastMapProgKey = null;
+      // and the airline skin of the last aircraft shown (the body attribute the
+      // stylesheets key on): an empty door has no carrier
+      window._gateCurrentAirline = '';
+      try { document.body.removeAttribute('data-gate-airline'); } catch (eDA2) {}
+      try { if (typeof gateMap !== 'undefined' && gateMap) gateMap.remove(); } catch (eMG4) {}
+      try { gateMap = null; } catch (eMG5) {}
       // Empty gate — show airport city photo, name, time, and local weather
       const apName = (AP[iata]||{}).name || iata;
       const apCity = cityCode(iata);
@@ -35921,7 +36266,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24127';
+var FIDS_BUILD_TAG = 'v24130';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -49116,6 +49461,9 @@ function _gateLands(pl, rw, thr, tdz, altFt) {
     var off = (typeof trk === 'number' && isFinite(trk)) ? Math.abs(((trk - rw.hdg + 540) % 360) - 180) : null;
     if ((off !== null && off > 60) || (typeof vs === 'number' && vs > 300)) return false;
     if (rw.past) return true;
+    // v24129 — a pick between crossing centrelines that no second fix has
+    // agreed with (rw.ambiguous, _runwayFinalPath) is not landed on
+    if (rw.ambiguous === true) return false;
     if (thr && tdz && _gateOnFinal(pl, thr, tdz, altFt)) return true;
     if (off === null || off > 30 || (typeof altFt === 'number' && altFt > 4500)) return false;
     var d = _gcNm(rw.t, pl), b = (_gcBrgDeg(rw.t, pl) - rw.hdg) * Math.PI / 180;
@@ -49405,12 +49753,79 @@ function _gateRefNorm(g) {
   var s = String(g == null ? '' : g).toUpperCase().trim().replace(/^GATE\s*/, '').replace(/[\s\-_.]/g, '');
   return s.replace(/(^|[A-Z])0+(\d)/g, '$1$2');
 }
+// v24130 — ONE DOOR, TWO SPELLINGS. Ottawa, 2026-11-07: AC889 from Heathrow
+// came in at gate 15B at 13:16 and left again as AC888 for Heathrow from gate
+// 15 at 18:50, one A330; the feed spelt the door two ways and the pairing
+// compared the strings as they came, so the 15 screen showed AC888 with no
+// incoming aircraft and the 15B screen had no departure at all. A single
+// trailing letter after a run of digits is a POSITION at the numbered door,
+// the shape the stands code reads as 1A and 1B of door 1 (_gateParkSpot,
+// door_stands): 15B is door 15, GATE 015b is door 15, 1A and 1B are one door.
+// A1 and A12, C52 and C5, 15 and 16 never fold. The fold is DATA-AWARE: where
+// the airport gate file is loaded (_apGatesFor, the synchronous cache) and
+// surveys the lettered spelling as a door of its own, the two stay apart.
+// Measured in the files: DUB 305A is 19 m from 305 and 305B 26 m, two doors
+// each (an authority feed names them); YYT 7A to 11A are 23 to 89 m from
+// their numbers, separate doors; YVR 19A is 7 m from 19 and 26A 10 m from 26,
+// SYD 40A is at 40: one door, two signs. So a lettered door listed in the
+// file is a sibling of its number only when it is listed among the stands of
+// that door (door_stands) or stands within _GATE_DOOR_SIBLING_M of it; with
+// no file known, the shape decides. Used by the pairing
+// (_gateInboundForDeparture), the lookup guard (_gateMatchIsNew), the turn
+// and claim rules (_gateCouldTurn, _gateDepOwnInbound, _gateTurnedByPattern)
+// and the arrivals-only screen (_gateArrivalsAt). The departures lists
+// (_gateFlightsAt, _gateHoldYields, _gateLiveGates) stay exact: a 15B screen
+// never adopts the departure of gate 15.
+var _GATE_DOOR_SIBLING_M = 15;
+function _gateDoorBase(g) {
+  return _gateRefNorm(g).replace(/^(\d+)[A-Z]$/, '$1');
+}
+// Is the lettered spelling `g` (already normalised) a door of its own in the
+// airport file? true: its own door; false: a position at its numbered door;
+// null: no file known (none for the airport, or not loaded yet).
+function _gateDoorOwn(g, ap) {
+  var f = null;
+  try {
+    var k = String(ap || (typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+    f = (typeof _apGatesFor === 'function' && k) ? _apGatesFor(k) : null;
+  } catch (e) { f = null; }
+  if (!f || !f.gates) return null;
+  var base = _gateDoorBase(g);
+  if (base === g || !f.gates[g]) return false;
+  var ds = f.door_stands && f.door_stands[base];
+  if (Array.isArray(ds) && ds.indexOf(g) >= 0) return false;
+  var d = f.gates[base];
+  if (d && typeof _gcNm === 'function') {
+    try { if (_gcNm([f.gates[g][0], f.gates[g][1]], [d[0], d[1]]) * 1852 <= _GATE_DOOR_SIBLING_M) return false; } catch (e2) {}
+  }
+  return true;
+}
+function _gateSameDoor(a, b, ap) {
+  var x = _gateRefNorm(a), y = _gateRefNorm(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  if (_gateDoorBase(x) !== _gateDoorBase(y)) return false;
+  return _gateDoorOwn(x, ap) !== true && _gateDoorOwn(y, ap) !== true;
+}
+// The door a gate reference stands at: the numbered door for a position (15B
+// gives 15), the reference itself when the file surveys it as its own door.
+function _gateDoorFold(g, ap) {
+  var x = _gateRefNorm(g);
+  if (!x) return '';
+  var base = _gateDoorBase(x);
+  return (base !== x && _gateDoorOwn(x, ap) !== true) ? base : x;
+}
 // The gate this board stands at, for an aeroplane at the board's own airport.
 function _gateOwnGateRef(org) {
   try {
     if (String(org || '').toUpperCase() !== String(window._gateIata || '').toUpperCase()) return '';
     var cf = window._gateCurrentFlight;
-    return String((cf && cf.gate) || subScreenVal || '');
+    if (cf) return String(cf.gate || subScreenVal || '');
+    // v24130 — no departure (the arrivals-only screen): the door the screen
+    // stands at, 15B read as door 15 where the file lists 15B as no door of
+    // its own (_gateDoorFold), so the parked view finds the stands of door 15.
+    var sub = String(subScreenVal || '');
+    return (typeof _gateDoorFold === 'function' && sub) ? (_gateDoorFold(sub, window._gateIata) || sub) : sub;
   } catch (e) { return ''; }
 }
 // A cancelled or diverted leg is not coming here, and nothing about it places
@@ -49632,7 +50047,8 @@ function _gateCouldTurn(d, a, arrs, aLandTs) {
   }
   var dG = _gateRefNorm(d.gate), aG = _gateRefNorm(a.gate);
   var known = function (g) { return !!g && /[A-Z0-9]/.test(g); };
-  if (known(dG) && known(aG) && dG === aG) return true;
+  // v24130 — the same door under either spelling (15B is 15: _gateSameDoor)
+  if (known(dG) && known(aG) && _gateSameDoor(dG, aG)) return true;
   if (!known(dG)) return false;
   var land = aLandTs || a._revTs || a._sortTs || 0;
   if (!land || !d._sortTs || d._sortTs - land > 18 * 3600000 || !_gateNightStop(land, _gateHereTz())) return false;
@@ -49641,7 +50057,7 @@ function _gateCouldTurn(d, a, arrs, aLandTs) {
     var x = arrs[i];
     if (!x || x === a || _gateFamily(x.airline) !== fam || _gateLegGone(x) || !x._sortTs) continue;
     if (x._sortTs >= d._sortTs || x._sortTs < d._sortTs - 20 * 3600000) continue;
-    if (_gateRefNorm(x.gate) === dG) return false;
+    if (_gateSameDoor(x.gate, dG)) return false;
   }
   return true;
 }
@@ -49677,7 +50093,7 @@ function _gateDepOwnInbound(d, a, arrs) {
     var xReg = _gateTodayReg(x), rank;
     if (dReg && xReg) { if (dReg !== xReg) continue; rank = 3; }
     else if (x.flight === d.flight) rank = 2;
-    else if (dG && _gateRefNorm(x.gate) === dG && d._sortTs - x._sortTs >= _gateMinTurnMs(d, x)) rank = 1;
+    else if (dG && _gateSameDoor(x.gate, dG) && d._sortTs - x._sortTs >= _gateMinTurnMs(d, x)) rank = 1;   // v24130 — one door, two spellings
     else continue;
     if (rank > bestRank || (rank === bestRank && x._sortTs > best._sortTs)) { best = x; bestRank = rank; }
   }
@@ -49763,13 +50179,16 @@ function _gateLandedAt(inb, now) {
 // come that was NOW on every call: each new taxi landed the aeroplane again,
 // AC8806 at Sea-Tac S1A on 2026-11-04 among them, and the card printed the
 // schedule (6:22pm) as the time it arrived.
-function _gateLandedInfo(inb, now) {
+// v24130 — `peek` (the render key, once a second) reads what a first sighting
+// would record and records nothing (_gateSeenLand), so the key and the paint
+// land an aeroplane from the same evidence.
+function _gateLandedInfo(inb, now, peek) {
   if (!inb || _gateLegGone(inb)) return { t: 0, by: '' };
   var best = { t: 0, by: '' };
   // when this screen first saw the word, it was down by then: nothing later
   // can be the landing (a cold sighting stays cold rather than becoming the
   // schedule when that time comes)
-  var seen = _gateRawLanded(inb) ? _gateSeenLand(inb, now) : null;
+  var seen = _gateRawLanded(inb) ? _gateSeenLand(inb, now, peek) : null;
   var cap = seen ? seen.at : Infinity;
   var take = function (t, by) { if (t > 0 && t <= cap && (!best.t || t < best.t)) best = { t: t, by: by }; };
   var live = _GATE_DOWN_SEEN[_gateRowKey(inb)] || 0;
@@ -49815,14 +50234,18 @@ function _gateTaxiInWindow(inb, now) {
 // to come shortly before (warm) or met it already down (cold). Kept with the
 // remembered rows (_GATE_SEEN_FIELDS), so a reload keeps the same answer.
 var _GATE_ARR_UP = {}, _GATE_LAND_FIRST = {};
-function _gateSeenLand(inb, now) {
+function _gateSeenLand(inb, now, peek) {
   var key = _gateRowKey(inb);
   var r = (_GATE_ARR_SEEN.rows && _GATE_ARR_SEEN.rows[key]) || null;
   if (r && Number(r._seenLandAt) > 0) return { at: Number(r._seenLandAt), cold: r._seenLandCold === true };
   if (Number(inb._seenLandAt) > 0) return { at: Number(inb._seenLandAt), cold: inb._seenLandCold === true };
   if (!_GATE_LAND_FIRST[key]) {
     var up = _GATE_ARR_UP[key];
-    _GATE_LAND_FIRST[key] = { at: now, cold: !(up && now - up < 15 * 60000) };
+    var first = { at: now, cold: !(up && now - up < 15 * 60000) };
+    // v24130 — a peek answers what the first sighting would record and
+    // records nothing: the render key asks once a second, the paint records
+    if (peek) return first;
+    _GATE_LAND_FIRST[key] = first;
   }
   return _GATE_LAND_FIRST[key];
 }
@@ -50031,6 +50454,16 @@ function _gateFixFor(inb, ap, now) {
 //    used (at Moncton Air Canada arrives at gate 4 and leaves from gate 1).
 // Among what is left: a through flight first, then a registration match, then
 // the most recent arrival.
+//
+// v24130 — ONE DOOR, TWO SPELLINGS. Ottawa, 2026-11-07: AC889 from Heathrow
+// at gate 15B (13:16) is the aeroplane of AC888 to Heathrow from gate 15
+// (18:50), and the gate test compared the strings as they came, so the 15
+// screen showed AC888 with no incoming aircraft. Neither row carried a
+// registration (none of the 43 departures or 59 arrivals in that feed did),
+// so the tail short-cut could not rescue it, and neither named a type; the
+// exact gate compare was the one filter that failed (probed on the saved
+// rows). The gate test is now the door test (_gateSameDoor), and an arrival
+// at the exact spelling outranks one at the sibling spelling when both fit.
 function _gateInboundForDeparture(cf, gateVal, arrs, deps) {
   if (!cf) return null;
   var depTs = cf._sortTs || Date.now();
@@ -50039,7 +50472,7 @@ function _gateInboundForDeparture(cf, gateVal, arrs, deps) {
   var acFamily = _gateAcFamily;
   var outAc = acFamily(cf._aircraft || cf._aircraftCode);
   var outReg = _gateTodayReg(cf);
-  var rank = function (f) { return f.flight === cf.flight ? 2 : (outReg && _gateTodayReg(f) === outReg ? 1 : 0); };
+  var rank = function (f) { return f.flight === cf.flight ? 3 : (outReg && _gateTodayReg(f) === outReg ? 2 : (_gateRefNorm(f.gate) === _gateRefNorm(gateVal) ? 1 : 0)); };
   return (arrs || []).filter(function (f) {
     if (!f || f.status === 'departed' || _gateLegGone(f)) return false;
     if (!f._sortTs || f._sortTs >= depTs || f._sortTs < lookback) return false;
@@ -50049,7 +50482,7 @@ function _gateInboundForDeparture(cf, gateVal, arrs, deps) {
     var fa = acFamily(f._aircraft || f._aircraftCode);
     if (outAc && fa && fa !== outAc) return false;
     if (f.flight === cf.flight) return true;
-    if (f.gate !== gateVal) return false;
+    if (!_gateSameDoor(f.gate, gateVal)) return false;
     if (depTs - f._sortTs < _gateMinTurnMs(cf, f)) return false;
     if (_gateTurnedByPattern(f, cf, deps, arrs)) return false;
     return !_gateArrivalClaimed(f, cf, deps, arrs);
@@ -50080,7 +50513,7 @@ function _gateTurnedByPattern(a, cf, deps, arrs) {
   if (!aNext) return null;
   for (var i = 0; i < (deps || []).length; i++) {
     var d = deps[i];
-    if (!d || d === cf || !d._sortTs || _gateFamily(d.airline) !== fam || _gateRefNorm(d.gate) !== aG) continue;
+    if (!d || d === cf || !d._sortTs || _gateFamily(d.airline) !== fam || !_gateSameDoor(d.gate, aG)) continue;   // v24130 — one door, two spellings
     var y = d._sortTs - DAY;
     if (y < a._sortTs + _gateMinTurnMs(d, a) || y > a._sortTs + 4 * 3600000) continue;
     if (!_gateCouldTurn(d, aNext, arrs)) continue;
@@ -50102,9 +50535,21 @@ function _gateTurnedByPattern(a, cf, deps, arrs) {
 // gate's inbound goes through (the poll, the panel, the sticky fix) — stays
 // shut for it. Such an inbound is placed only by what the page already holds —
 // the feed's own words (wheels-up, "Arrived") and position — or not at all.
+// v24130 — AND THE SAME DOOR UNDER TWO SPELLINGS IS THE SAME GATE. Ottawa
+// 15B is door 15 (_gateSameDoor): an inbound found at the sibling spelling
+// is the class of lookup an exact-gate inbound has always made, one row a
+// minute per gate screen while the inbound is in its window (the leg span
+// before its earliest time to ARR_CONFIRM_MIN after it), so it is not marked
+// _gateNoAdsb. The arrivals-only screen (_gateArrivalsAt) picks its inbound
+// by door, not by pairing, and is never marked either. Decision of
+// 2026-11-07: the aircraft belongs on the map at both spellings of its door.
+// The door-only pick of the flight branch (an arrival of ANOTHER family at
+// the door, shown as Aircraft From beside a departure the pairing could not
+// serve) IS marked: that is a lookup no gate made before, and the decision
+// does not cover it; it is placed by the feed own words until it does.
 function _gateMatchIsNew(inb, cf, gateVal) {
   if (!inb || !cf) return false;
-  return inb.flight === cf.flight || String(inb.gate || '') !== String(gateVal || '');
+  return inb.flight === cf.flight || !_gateSameDoor(inb.gate, gateVal);
 }
 // v23918 — WHAT THE WORKER REMEMBERED FOR EVERY SCREEN. Moncton's worker keeps
 // each row cyqm.ca said arrived or departed for 30 hours after the feed drops
@@ -51733,6 +52178,33 @@ function _gcDestPt(A, brgDeg, nm) {
   var lo2 = lo1 + Math.atan2(Math.sin(br) * Math.sin(dr) * Math.cos(la1), Math.cos(dr) - Math.sin(la1) * Math.sin(la2));
   return [la2 * 180 / Math.PI, ((lo2 * 180 / Math.PI + 540) % 360) - 180];
 }
+// v24129 — THE TYPE ON THIS GATE, FOR THE RUNWAY PICK: a turboprop may take a
+// short runway, a jet (or a type nobody has named: _MAP_PLANE_UNKNOWN sizes
+// those as a jet) may not. known says a source named a type whose size the
+// map has (_mapPlaneSpecFor), so the length rule may decide on its own. Read
+// under a typeof guard: the sliced test harness has no _mapPlaneSpec and sees
+// an unnamed jet.
+function _rwPlaneSpec() {
+  try {
+    if (typeof _mapPlaneSpec === 'function') { var s = _mapPlaneSpec() || {}; return { prop: !!s.prop, known: !!s.known }; }
+  } catch (e) {}
+  return { prop: false, known: false };
+}
+// v24129 — THE RUNWAY THE GLIDE IS COMMITTED TO, or null: a pick of this
+// flight (_gateGlide.rw, kept by _gateGlideRunwayPick) made inside 40 minutes
+// and not flagged ambiguous. _runwayFinalPath keeps it while the fix is still
+// on its centreline, so one fix on short final never re-picks the runway.
+function _rwCommitted() {
+  try {
+    var g = (typeof _gateGlide !== 'undefined') ? _gateGlide : null;
+    if (!g || !g.rw || !g.rw.t || g.rw.ambiguous === true) return null;
+    if (!(Date.now() - (g.rwAt || 0) < 40 * 60000)) return null;
+    var w = (typeof window !== 'undefined') ? window : null;
+    var fl = String(((w && (w._gateInbound || w._gatePanelInbound)) || {}).flight || '');
+    if (!fl || g.rwFl !== fl) return null;
+    return g.rw;
+  } catch (e) { return null; }
+}
 function _runwayFinalPath(pl, d, destIata) {
   try {
     var rws = (typeof AIRPORT_RUNWAYS !== 'undefined' && AIRPORT_RUNWAYS[String(destIata || '').toUpperCase()]) || null;
@@ -51783,13 +52255,83 @@ function _runwayFinalPath(pl, d, destIata) {
     try { _trkF = (typeof _gateHeading === 'function') ? _gateHeading(null) : null; } catch (eTk) { _trkF = null; }
     var _facing = function (c) { return !(typeof _trkF === 'number' && isFinite(_trkF)) || Math.abs(((_trkF - c.hdg + 540) % 360) - 180) <= 60; };
     var _xt = function (c) { return Math.abs(_gcNm(c.t, pl) * Math.sin((_gcBrgDeg(c.t, pl) - c.hdg) * Math.PI / 180)); };
-    var _onC = null, _onX = 0.3;
-    for (var q0 = 0; q0 < cand.length; q0++) {
+    // v24129 — THE RUNWAY IT IS COMMITTED TO STAYS ITS RUNWAY while the fix is
+    // still on that centreline (within 0.3 nm of it from 12 nm in to half a
+    // mile, within 0.1 nm from there to 1 nm past the threshold). Ottawa,
+    // PD2366, 2026-11-07: established on 07 from 5 nm out, the aeroplane was
+    // re-picked to 04 at 525 ft because its fix sat 0.18 nm short of the 07
+    // threshold, inside the 0.3 nm the on-centreline rule below used to leave
+    // out, and the bearing to the field then chose 04. The marker swung
+    // through 250 degrees and froze short of a threshold it was never landing
+    // on for 100 s. A pick made for this flight inside 40 minutes
+    // (_rwCommitted) is kept, and it lands. The corridor narrows at the
+    // threshold because 286 pairs of crossing thresholds in the table sit
+    // within 0.3 nm of each other (Moncton 06 and 11 are 95 m apart): a fix on
+    // the last stretch of the OTHER runway is 0.17 nm off this one, and a
+    // runway change inside 40 minutes must not keep it here.
+    var _kept = null;
+    try {
+      var _cm = (typeof _rwCommitted === 'function') ? _rwCommitted() : null;
+      for (var qk = 0; _cm && _cm.t && qk < cand.length && !_kept; qk++) {
+        var ck = cand[qk];
+        if (Math.abs(ck.t[0] - _cm.t[0]) > 1e-6 || Math.abs(ck.t[1] - _cm.t[1]) > 1e-6) continue;
+        var ak = -_gcNm(ck.t, pl) * Math.cos((_gcBrgDeg(ck.t, pl) - ck.hdg) * Math.PI / 180);
+        if (ak > -1 && ak < 12 && _xt(ck) < (ak > 0.5 ? 0.3 : 0.1)) _kept = ck;
+      }
+    } catch (eK) { _kept = null; }
+    // v24129 — AND THE LAST 0.3 NM COUNT, within 0.1 nm of the centreline. Left
+    // out of the set, a fix that close to its threshold fell to the bearing to
+    // the field, which says nothing that near the reference point, and at a
+    // crossing it picked the other runway (Ottawa, PD2366 at 525 ft, 0.18 nm
+    // short of 07, sent to 04 and never landed: the marker froze for 100 s).
+    // With no commitment to keep it (a board opened late, a fix gap, a pick
+    // just forgotten) 797 of 11,222 fixes 0.15 and 0.25 nm short of their
+    // own threshold in the table went to a runway not even parallel; now 192,
+    // every one with another centreline inside 0.1 nm. A fix that close is
+    // landing in seconds, so this stretch is never flagged ambiguous (below):
+    // the nearest centreline wins, plain.
+    var _onC = null, _onX = 0.3, _onSet = [], _amb = false;
+    for (var q0 = 0; q0 < cand.length && !_kept; q0++) {
       var c0 = cand[q0];
       if (c0.diff > 60 || !_facing(c0)) continue;
       var a0 = -_gcNm(c0.t, pl) * Math.cos((_gcBrgDeg(c0.t, pl) - c0.hdg) * Math.PI / 180), x0 = _xt(c0);
-      if (a0 > 0.3 && a0 < 12 && x0 < _onX) { _onC = c0; _onX = x0; }
+      if (a0 > 0.05 && a0 < 12 && x0 < (a0 > 0.3 ? 0.3 : 0.1)) { c0.xt = x0; c0.along = a0; c0.len = _gcNm(c0.t, c0.f) * 1852; _onSet.push(c0); }
     }
+    // v24129 — WHERE TWO EXTENDED CENTRELINES CROSS, ONE FIX CANNOT SAY WHICH.
+    // Ottawa, AC450, 2026-11-07: 2.2 nm out the aeroplane sat 23 m off the
+    // 04 centreline and 25 m off the 07 centreline (the two cross there), was
+    // given 04 (951 m) on those two metres, landed on the model and rolled
+    // out on it while the real one landed on 07. Ends that are not parallel
+    // to each other (over 3 degrees apart), both within 0.3 nm, both inside
+    // 5 nm of the fix, make the pick AMBIGUOUS: a jet (or a type nobody has
+    // named) is never given a runway under 1,500 m while a longer one is as
+    // plausible; when the type is known and that leaves one end, the length
+    // has decided and the pick is plain; otherwise the nearest centreline
+    // decides among what is left and the pick is flagged, so the glide holds
+    // short instead of landing on it until a later fix agrees (_gateLands,
+    // _gateGlideRunwayPick). Crossings further out keep the old rule: the
+    // next fix re-picks long before the model could touch down. Only ends
+    // 0.3 nm and further out are weighed, and none at all when the nearest
+    // centreline of the set is within 0.3 nm of its threshold (above): that
+    // fix is landing there, whatever else crosses on the last stretch
+    // (Amsterdam 22 with 24 and 27, El Paso 05 with 09 and 10).
+    var _pool = _onSet, _atThr = null;
+    for (var q3 = 0; q3 < _onSet.length; q3++) if (!_atThr || _onSet[q3].xt < _atThr.xt) _atThr = _onSet[q3];
+    if (_onSet.length > 1 && !(_atThr && _atThr.along < 0.3)) {
+      var _near = _onSet.filter(function (c) { return c.along >= 0.3 && c.along < 5; });
+      for (var q1 = 1; q1 < _near.length && !_amb; q1++) if (Math.abs(((_near[q1].hdg - _near[0].hdg + 540) % 360) - 180) > 3) _amb = true;
+      if (_amb) {
+        var _sp = (typeof _rwPlaneSpec === 'function') ? _rwPlaneSpec() : { prop: false, known: false };
+        if (!_sp.prop) {
+          var _long = _near.filter(function (c) { return c.len >= 1500; });
+          if (_long.length) _near = _long;
+        }
+        if (_near.length === 1 && _sp.known) _amb = false;
+        _pool = _near;
+      }
+    }
+    for (var q2 = 0; q2 < _pool.length; q2++) if (_pool[q2].xt < _onX) { _onC = _pool[q2]; _onX = _pool[q2].xt; }
+    if (_kept) _onC = _kept;
     if (_onC) best = _onC;
     var _bx = _xt(best);
     for (var q = 0; q < cand.length && !_onC && _facing(best); q++) {
@@ -51807,7 +52349,7 @@ function _runwayFinalPath(pl, d, destIata) {
     var rwNm = _gcNm(best.t, best.f);
     var tdNm = Math.min(450 / 1852, rwNm * 0.18);
     var tdz = _gcDestPt(best.t, best.hdg, tdNm);
-    var _rw = function (r, past) { r.rw = { t: best.t, f: best.f, hdg: best.hdg, nm: rwNm, past: !!past }; return r; };
+    var _rw = function (r, past) { r.rw = { t: best.t, f: best.f, hdg: best.hdg, nm: rwNm, past: !!past, ambiguous: !!(_amb && _onC && !past) }; return r; };
     // v24089 — already PAST the threshold (a fix in the flare or the float):
     // on down the runway, never back to the threshold. Routed back to it the
     // line doubled on itself and the nose spun round across the runway.
@@ -52591,6 +53133,15 @@ function _gateTaxiRunwayEnds(ap, org) {
     var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]];
     ends.push({ t: le, f: he, hdg: _gcBrgDeg(le, he) }, { t: he, f: le, hdg: _gcBrgDeg(he, le) });
   }
+  // v24129 — a jet (or a type nobody has named) is never sent to a runway
+  // under 1,500 m while a longer one is here (Ottawa 04/22, 951 m): the same
+  // line as the approach pick (_runwayFinalPath, _rwPlaneSpec)
+  try {
+    if (!(typeof _rwPlaneSpec === 'function' && _rwPlaneSpec().prop)) {
+      var longE = ends.filter(function (e) { return _gcNm(e.t, e.f) * 1852 >= 1500; });
+      if (longE.length) ends = longE;
+    }
+  } catch (eL) {}
   if (dir === null) return ends;
   var dif = function (e) { return Math.abs(((dir - e.hdg + 540) % 360) - 180); };
   ends.sort(function (a, b) { return dif(a) - dif(b); });
@@ -52615,6 +53166,12 @@ function _gateTaxiEnd() {
   try { if (_gateTaxi.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateTaxi.raf); } catch (e) {}
   _gateTaxi.raf = null; _gateTaxi.on = false; _gateTaxi.plan = null; _gateTaxi.views = {}; _gateTaxi.done = false;
   _gateTaxi.key = ''; _gateTaxi.fl = '';
+  // v24129 — the runway it landed on goes with it: a finished leg never
+  // vouches for the next pick (_gateGlideRunwayPick, _rwCommitted), and the
+  // state keeps neither the landing it was anchored on nor the fix it came
+  // from, so a later model answer cannot inherit them (_gateTaxiWrongRunway)
+  _gateTaxi.rw = null; _gateTaxi.fixAt = 0; _gateTaxi.anchor = ''; _gateTaxi.anchorAt = 0;
+  try { _gateGlide.rw = null; _gateGlide.rwFl = ''; _gateGlide.rwFix = 0; _gateGlide.rwAt = 0; } catch (e) {}
 }
 // The stand this board's inbound taxis to, and the route there from each
 // candidate runway (cached per stand and runway; the network's Dijkstra once
@@ -52689,7 +53246,9 @@ function _gateTaxiWhere(res, inb, t, ap) {
     // the stand rules say where the aeroplane is (_gateStandVerdict)
     if (li.by === 'cold') return null;
     if (t - land > 20 * 60000) return null;
-    var rwP = (_gateGlide.rw && _gateGlide.rwFl === fl && t - (_gateGlide.rwAt || 0) < 40 * 60000) ? _gateGlide.rw : null;
+    // v24129 — never an ambiguous pick (crossing centrelines, _runwayFinalPath):
+    // the runway rules choose instead of a roll-out on a coin-flip end
+    var rwP = (_gateGlide.rw && _gateGlide.rw.ambiguous !== true && _gateGlide.rwFl === fl && t - (_gateGlide.rwAt || 0) < 40 * 60000) ? _gateGlide.rw : null;
     var plan = _gateTaxiRoute(ap, org, rwP, null, null);
     if (!plan || t - land > (plan.tEnd + 60) * 1000) return null;
     return mk('land', land, { land: land });
@@ -52697,8 +53256,57 @@ function _gateTaxiWhere(res, inb, t, ap) {
   // the aeroplane landed on the model (an established final): the airborne
   // fix it was carried on from is older than the landing
   // (and stays where its taxi ended until the evidence comes)
-  if (mine && res.kind === 'fix' && !res.onGround && !(res.at > st.since)) return mk('model', st.anchorAt);
+  if (mine && res.kind === 'fix' && !res.onGround && !(res.at > st.since)) {
+    // v24129 — unless the fix is NEWER than the one the model landed from and
+    // in the air (50 kt and 200 ft or more, when it says) half a mile or more
+    // off that runway AND on the final of another: it is landing on that one
+    // (Ottawa, AC450: landed on 04 on the model, the next fix on the 07 final
+    // 0.8 nm from the 04 centreline). The taxi ends and the glide flies the
+    // aeroplane from the fix, not from the roll-out it was drawn in.
+    // (_gateAircraftWhere is also asked from _map3dFlightCtx, which does not
+    // redraw the small map: its marker leaves the roll-out on the next 10 s
+    // tick.)
+    if (typeof _gateTaxiWrongRunway === 'function' && _gateTaxiWrongRunway(res, st, ap)) {
+      _gateTaxiEnd();
+      try { _gateGlide.p = null; _gateGlide.ll = null; } catch (eG) {}
+      return null;
+    }
+    return mk('model', st.anchorAt);
+  }
   return null;
+}
+// v24129 — Is this airborne fix, newer than the one the model landed from,
+// on ANOTHER runway than the one the model landed on: over 0.5 nm from that
+// centreline and within 0.3 nm of the extended centreline of an end not
+// parallel to it, up to 12 nm from its threshold? Merely off the committed
+// runway is not enough: _gateLands lands the model from a fix CLOSING on the
+// final up to 2 nm off it, and the next fix of that same intercept, still
+// 0.8 nm off and timed before the taxi began, would lift a landed aeroplane
+// back into the air to land it again. Where the table has no runways for the
+// field the half mile alone decides. A slow or low fix is a roll-out or a
+// taxi whose ground flag lags the relay (Ottawa, AC450: 19 kt on a taxiway
+// with onGround false), never a go-around.
+function _gateTaxiWrongRunway(res, st, ap) {
+  try {
+    if (st.anchor !== 'model' || !st.rw || !st.rw.t || !(res.at > (st.fixAt || 0))) return false;
+    if (typeof res.spd === 'number' && res.spd < 50) return false;
+    if (typeof res.alt === 'number' && res.alt < 200) return false;
+    var pl = [res.lat, res.lng], dd = _gcNm(st.rw.t, pl), b = (_gcBrgDeg(st.rw.t, pl) - st.rw.hdg) * Math.PI / 180;
+    if (!(Math.abs(dd * Math.sin(b)) > 0.5)) return false;
+    var rws = (typeof AIRPORT_RUNWAYS !== 'undefined' && AIRPORT_RUNWAYS[String(ap || '').toUpperCase()]) || null;
+    if (!rws || !rws.length) return true;
+    for (var i = 0; i < rws.length; i++) {
+      var le = [rws[i][0], rws[i][1]], he = [rws[i][2], rws[i][3]], ends = [[le, he], [he, le]];
+      for (var j = 0; j < 2; j++) {
+        var t = ends[j][0], hdg = _gcBrgDeg(t, ends[j][1]);
+        if (Math.abs(((hdg - st.rw.hdg + 540) % 360) - 180) <= 3) continue;
+        var d2 = _gcNm(t, pl), b2 = (_gcBrgDeg(t, pl) - hdg) * Math.PI / 180;
+        var al = -d2 * Math.cos(b2), xt = Math.abs(d2 * Math.sin(b2));
+        if (al > 0 && al < 12 && xt < 0.3) return true;
+      }
+    }
+    return false;
+  } catch (e) { return false; }
 }
 // Draw the 'taxi' answer: start, re-time or re-route the taxi, and make sure
 // a live map with this aeroplane's marker is up for it to drive.
@@ -52721,7 +53329,9 @@ function _gateTaxiApply(res) {
     _gateTaxiRun();
     return true;
   }
-  var rwG = (_gateGlide.rw && _gateGlide.rwFl === fl) ? _gateGlide.rw : null;
+  // v24129 — never an ambiguous pick (crossing centrelines, _runwayFinalPath):
+  // the fix itself, or the runway rules, say where the aeroplane came down
+  var rwG = (_gateGlide.rw && _gateGlide.rw.ambiguous !== true && _gateGlide.rwFl === fl) ? _gateGlide.rw : null;
   var fixPlan = null;
   if (res.anchor === 'fix' && res.fix) {
     if (mine && st.anchorAt === res.fix.at) { _gateTaxiMap(res, o, d); _gateTaxiRun(); return true; }
@@ -52831,6 +53441,9 @@ function _gateTaxiFromGlide(destIata, rw, td) {
     var st = _gateTaxi, now = Date.now();
     st.on = true; st.fl = String(inb.flight || ''); st.done = false; st.key = st.fl + '|' + (plan.standKey || '');
     st.plan = plan; st.t0 = now; st.s = _taxiSAtT(plan, 0); st.anchor = 'model'; st.anchorAt = now; st.since = now;
+    // v24129 — the fix the model landed from, and the runway: a later fix in
+    // the air off that runway un-lands it (_gateTaxiWrongRunway)
+    st.fixAt = (_gateGlide.fixAt > 0) ? _gateGlide.fixAt : 0; st.rw = rw;
     st.views = {};
     for (var k in _gateGlide.views) if (Object.prototype.hasOwnProperty.call(_gateGlide.views, k)) st.views[k] = _gateGlide.views[k];
     _stopGateMapGlide();
@@ -52943,6 +53556,30 @@ function _gateTaxiDraw(v, at, plan, left, dt) {
   } catch (e) {}
 }
 
+// v24129 — THE RUNWAY THE GLIDE IS LANDING ON (_gateGlide.rw, rwAt, rwFl,
+// rwFix: the time of the fix it was picked from). A pick flagged ambiguous
+// by _runwayFinalPath (two crossing centrelines within 0.3 nm) is confirmed
+// when a LATER fix of the same flight, inside 15 minutes of the fix the
+// previous pick came from and with that pick under 40 minutes old, picks the
+// same end. A rebuild on the same fix confirms nothing, a different end starts
+// again, and a pick from yesterday (gate screens run for days and flight
+// numbers repeat daily) vouches for nothing. _gateTaxiEnd and a leg change
+// forget the pick. rwAt is the age of the pick, not of the last redraw: it
+// moves when the end changes or a later fix picks it again, never on a
+// rebuild from the same fix (the dashed-line drawers call this each draw, and
+// a commitment nobody has re-picked from new evidence must age out of the
+// 40 minutes in _rwCommitted and here).
+function _gateGlideRunwayPick(rw, fixAt, fl) {
+  var g = _gateGlide, prev = g.rw;
+  var later = typeof fixAt === 'number' && isFinite(fixAt) && fixAt > (g.rwFix || 0);
+  var recent = (Date.now() - (g.rwAt || 0)) < 40 * 60000 && (fixAt - (g.rwFix || 0)) < 15 * 60000;
+  var sameEnd = !!(prev && prev.t && rw.t && Math.abs(prev.t[0] - rw.t[0]) < 1e-6 && Math.abs(prev.t[1] - rw.t[1]) < 1e-6);
+  if (rw.ambiguous === true && sameEnd && g.rwFl === fl && later && recent) rw.ambiguous = false;
+  if (!sameEnd || later || g.rwFl !== fl) g.rwAt = Date.now();
+  g.rw = rw; g.rwFl = fl;
+  if (later) g.rwFix = fixAt;
+  return rw;
+}
 function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata, fixAt) {
   // v23099 — the unconditional kill that used to sit here is gone. Claiming
   // the generation at the END of this function already supersedes any older
@@ -53010,12 +53647,20 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
   // line and the animated line stay one line.
+  // v24129 — a new leg forgets the runway the last one picked: a finished leg
+  // never vouches for the next (_rwCommitted, _gateGlideRunwayPick)
+  try {
+    if (_gateGlide.rw && _gateGlide.o && _gateGlide.d && !(_gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d))) {
+      _gateGlide.rw = null; _gateGlide.rwFl = ''; _gateGlide.rwFix = 0; _gateGlide.rwAt = 0;
+    }
+  } catch (eLg) {}
   var _rwFinal = _runwayFinalPath(_pl, d, destIata);
   // v24105 — the runway this arrival is landing on, for its roll-out and taxi
   try {
     if (_rwFinal && _rwFinal.rw) {
-      _gateGlide.rw = _rwFinal.rw; _gateGlide.rwAt = Date.now();
-      _gateGlide.rwFl = String(((window._gateInbound || window._gatePanelInbound) || {}).flight || '');
+      // v24129 — an ambiguous pick (crossing centrelines) is confirmed by a
+      // later fix of this flight that picks the same end
+      _gateGlideRunwayPick(_rwFinal.rw, fixAt, String(((window._gateInbound || window._gatePanelInbound) || {}).flight || ''));
     }
   } catch (eRw) {}
   var _legB = _rwFinal || _gcFullRoute(_pl, d, _vB);
@@ -53090,6 +53735,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     var _preP = (_thrNm - Math.max(1, 0.25 * (_thrNm - _seedNm))) / _routeNm, _thrP = _thrNm / _routeNm;
     // (a fix already inside that point may be carried on to the threshold)
     _drCapP = Math.min(_drCapP, _seedP >= _preP ? Math.max(_seedP, _thrP) : _preP);
+  }
+  // v24129 — and one between crossing centrelines, its runway still ambiguous
+  // (_runwayFinalPath), waits SHORT of the field as a non-established approach
+  // does (a mile, or a quarter of what was left at the fix) until a later fix
+  // agrees (_gateGlideRunwayPick): never a landing, nor a hold on the
+  // threshold of a runway one fix could not tell from another.
+  if (_rwFinal && n >= 3 && _rwFinal.rw.ambiguous === true) {
+    var _thrA = _cum[n - 2], _seedA = _seedP * _routeNm;
+    _drCapP = Math.min(_drCapP, Math.max(_seedP, (_thrA - Math.max(1, 0.25 * (_thrA - _seedA))) / _routeNm));
   }
   // v24105 — AND IT LANDS. One established on its final, or already over the
   // runway, or closing on its final, is carried all the way to touchdown,
@@ -62924,7 +63578,7 @@ function _bigCraftPaintKey(ctx) {
       ctx.estimated ? 1 : 0, String(ctx.note || ''),
       String(f.flight || '').trim(),
       String((ctx.out ? (f.dest || f._locIata) : (f.origin || f._locIata)) || '').trim(),
-      ctx.out ? 'departure' : _gateInbCaptionKey(f, Date.now()),
+      ctx.out ? 'departure' : (f._doorOnly === true ? 'aircraftFrom' : _gateInbCaptionKey(f, Date.now())),
       String(typeof langs !== 'undefined' ? langs : '')].join('|');
   } catch (e) { return ''; }
 }
@@ -63151,6 +63805,8 @@ function _renderBigCraft(el, ctx) {
               // From" for an aeroplane already on the stand, and for up to three
               // hours after an unconfirmed arrival's time.
               var _capKey = (ctx && ctx.out) ? 'departure' : _gateInbCaptionKey(_capF, Date.now());
+              // v24130 — a door pick (_doorOnly, no pairing) is the neutral Aircraft From
+              if (!(ctx && ctx.out) && _capF._doorOnly === true) _capKey = 'aircraftFrom';
               var _capFlt = String(_capF.flight || '').trim();
               // v23937 — the place as passengers read it: a city label's code,
               // or a bare code, both through the one display table (MET for YHU).
@@ -64691,7 +65347,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24127" src="/textures/gate-sky-shelf.mp4?v=24127"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24130" src="/textures/gate-sky-shelf.mp4?v=24130"'
       +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
@@ -65318,6 +65974,20 @@ var _WX_CITY_PICS = {
   // from Adobe Stock, so none of them owes a credit on the screen.
   GRU:1, LIR:1, MZT:1, PEK:1, PLS:1, YAA:1, YBG:1, YBL:1, YFB:1, YKA:1,
   YPW:1, YQG:1, YSB:1, YXC:1, YYF:1,
+  // v24128 — DAY PICTURES THAT ARE DAY. The Montreal day picture was a
+  // blue-hour shot with every window lit, and Frankfurt, Hong Kong and
+  // Taipei came from the picture service as night views: a night city on
+  // a plate at noon. Each is now a daytime photograph, picked from a sheet
+  // (Mount Royal lookout CC0; Adobe Stock for the other three). Deer Lake
+  // is the Western Brook Pond fjord from the Gros Morne overlook.
+  FRA:1, HKG:1, TPE:1,
+  // A famous city is pictured by the landmark that names it on sight: Las
+  // Vegas by its Welcome sign (its owner, YESCO, allows photographs while
+  // its logo under NEVADA stays in), Sydney by the Opera House beside the
+  // Harbour Bridge across Farm Cove (a harbour scene, the use the Opera
+  // House Trust allows), Tokyo by Tokyo Tower over the city. Haneda shares
+  // the Tokyo picture.
+  SYD:1, NRT:1, HND:'NRT',
   // v24113 — THIRTY-FOUR MORE, from the same contact sheets. Nearly all are
   // open-licence photographs that ask for a credit, so each names its
   // photographer on the card that shows it (_WX_CITY_CREDIT below) and links
@@ -65428,12 +66098,15 @@ var _WX_CITY_NIGHT = {
 // full credit, with a link to each source, is on the credits page.
 var _WX_CITY_CREDIT = {
   'CAN': ['Sergei Gussev', 'BY', '2.0'],
+  'LAS': ['Christian David', 'BY-SA', '4.0'],
   'MBJ': ['Grahampurse', 'BY-SA', '4.0'],
   'POP': ['Jusunx', 'BY-SA', '4.0'],
+  'SYD': ['-wuppertaler', 'BY', '4.0'],
   'YAM': ['Sharon Hahn Darlin', 'BY', '2.0'],
   'YAY': ['Mykola Swarnyk', 'BY-SA', '3.0'],
   'YCD': ['AB87', 'BY', '3.0'],
   'YCG': ['Murray Foubister', 'BY-SA', '2.0'],
+  'YDF': ['Paul Gierszewski', 'BY-SA', '3.0'],
   'YEG-night': ['Calgary Reviews', 'BY', '2.0'],
   'YGR': ['Marc-Lautenbacher', 'BY-SA', '4.0'],
   'YHZ-night': ['Keith Pomakis', 'BY-SA', '2.5'],
