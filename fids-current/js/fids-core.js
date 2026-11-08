@@ -17941,7 +17941,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24131" src="/textures/gate-sky-shelf.mp4?v=24131" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24131" src="/textures/gate-sky-shelf.mp4?v=24131" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17985,7 +17985,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24131" src="/textures/gate-sky-shelf.mp4?v=24131" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24131" src="/textures/gate-sky-shelf.mp4?v=24131" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -36154,12 +36154,44 @@ var _acSkyPhaseTimer = null;
 // and emitted on the shelf element itself; data-sky-phased tells the poll to
 // leave them alone. The moduli are the CSS cycles: medium 65s, veil behind
 // 12s, veil in front 6s, float 9s.
+// v24132 — THE PACE OF THE SKY IS ONE NUMBER, AND NEAR MOVES FASTER THAN FAR.
+// Measured on the shelf at 1680x1050, where the sky box is 372px wide and the
+// clip plays at 1x: the veils of the clip itself cross the box at about 40 to
+// 111 px/s (165 to 455 px/s on the 1920-wide source; the clip is the middle
+// 1824 px of that scaled to 1140, and 1140 clip px fill 446 screen px, so 0.245
+// screen px per source px). The far layer, which sits IN FRONT of the clip,
+// crawled at 25 px/s; the back layer ran at 112 and the front at 200. A layer
+// nearer the viewer has to move faster than everything behind it or the depth
+// reads backwards, and big cumulus crawling across a sky that moves four times
+// faster behind it was the slow, wrong-looking part of the scene, worst behind
+// the aircraft drawn largest. The ladder is now: far a clear step above the
+// fastest veil in the clip (1500px over 8s = 188 px/s, about 1.7x the clip),
+// back 1350px over 5s (270), front 1200px over 3.5s (343), at pace 1. The whole scene, clip
+// included, then scales by one pace number. ?skyspeed=1.5 sets it on any one
+// screen with no deploy, so the final value is chosen by eye on the display
+// itself; SKY_PACE_DEFAULT is what every screen gets otherwise. The float is
+// the aeroplane bobbing, not its speed through the air, and keeps its 9s.
+var SKY_PACE_DEFAULT = 1.25;
+// Seconds per cycle at pace 1. The stylesheet divides the same numbers by
+// --g8-pace, so the phase moduli below and the CSS durations cannot drift apart.
+var SKY_LAYER_CYCLES = { far: 8, back: 5, front: 3.5, float: 9 };
+function _skyPace() {
+  try {
+    var q = parseFloat(new URLSearchParams(window.location.search).get('skyspeed'));
+    if (isFinite(q) && q > 0) return Math.min(4, Math.max(0.25, q));
+  } catch (e) {}
+  return SKY_PACE_DEFAULT;
+}
+try { if (typeof window !== 'undefined') { window._skyPace = _skyPace; } } catch (e) {}
 function _acSkyDelayStyle() {
   try {
     var t = Date.now() / 1000;
-    return ' data-sky-phased="1" style="--g8-med-delay:-' + (t % 65).toFixed(2) + 's;--g8-veil-delay:-' + (t % 12).toFixed(2)
-      + 's;--g8-front-delay:-' + (t % 6).toFixed(2) + 's;--g8-float-delay:-' + (t % 9).toFixed(2)
-      + 's;--g8-midfar-delay:-' + (t % 60).toFixed(2) + 's"';
+    // v24132 — each modulus is that layer at the pace of the scene.
+    var p = (typeof _skyPace === 'function') ? _skyPace() : 1;
+    var far = SKY_LAYER_CYCLES.far / p, back = SKY_LAYER_CYCLES.back / p, front = SKY_LAYER_CYCLES.front / p;
+    return ' data-sky-phased="1" style="--g8-pace:' + p + ';--g8-med-delay:-' + (t % 65).toFixed(2) + 's;--g8-veil-delay:-' + (t % back).toFixed(2)
+      + 's;--g8-front-delay:-' + (t % front).toFixed(2) + 's;--g8-float-delay:-' + (t % SKY_LAYER_CYCLES.float).toFixed(2)
+      + 's;--g8-midfar-delay:-' + (t % far).toFixed(2) + 's"';
   } catch (e) { return ''; }
 }
 // v23909 — FROM SUNSET TO SUNRISE, NOT 21:00 TO 06:00. Reported at 20:12 in
@@ -36227,11 +36259,16 @@ function _acSkyPhaseApply() {
         // v23890 — one modulus per layer, equal to that layer's CSS cycle:
         // medium 65s, veil behind 12s, veil in front 6s, float 9s; the bank and the plate are still. The
         // plate is still now and needs no phase.
+        // v24132 — the far, back and front cycles are SKY_LAYER_CYCLES at the
+        // pace of the scene, the same division the stylesheet makes.
+        var _p = _skyPace();
+        _shelfEl.style.setProperty('--g8-pace', String(_p));
         _shelfEl.style.setProperty('--g8-bank-delay',  '-' + (t % 1680).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-med-delay',   '-' + (t %   65).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-veil-delay',  '-' + (t %   12).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %    6).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-float-delay', '-' + (t %    9).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-midfar-delay', '-' + (t % (SKY_LAYER_CYCLES.far / _p)).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-veil-delay',  '-' + (t % (SKY_LAYER_CYCLES.back / _p)).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t % (SKY_LAYER_CYCLES.front / _p)).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-float-delay', '-' + (t % SKY_LAYER_CYCLES.float).toFixed(2) + 's');
         if (_shelfEl.dataset) _shelfEl.dataset.skyPhased = '1';
       }
     } catch (e4) {}
@@ -36242,6 +36279,17 @@ function _acSkyPhaseApply() {
     if (_sv && _sv.isConnected && _sv.playbackRate !== 0.25) {
       try { _sv.playbackRate = 0.25; } catch (e2) {}
     }
+    // v24132 — the sky clip plays at the pace of the scene, on the shelf and
+    // on the archive card. The markup sets it as the clip loads; this poll
+    // re-asserts it, so a clip that loaded before the page settled still runs
+    // at the pace every other layer runs at.
+    try {
+      var _pace = _skyPace();
+      var _clips = document.querySelectorAll('.v2-rc-shelf-illus > #gateSkyVid, .hcard-sky > .hcard-skyclip');
+      for (var _ci = 0; _ci < _clips.length; _ci++) {
+        if (Math.abs(_clips[_ci].playbackRate - _pace) > 0.001) { try { _clips[_ci].playbackRate = _pace; } catch (e5) {} }
+      }
+    } catch (e6) {}
   } catch (e) {}
 }
 function _acSkyPhaseStart() {
@@ -65337,7 +65385,7 @@ function _renderHeritageCard(el) {
       // (::before), the cartoon fast band, the cumulus, the aeroplane, then the
       // front band with the rush streaks riding on it (::after). The last two
       // sit ABOVE the aeroplane exactly as they do on the gate shelf.
-      +   '<div class="hcard-sky" aria-hidden="true">'
+      +   '<div class="hcard-sky" aria-hidden="true" style="--g8-pace:' + (typeof _skyPace === 'function' ? _skyPace() : 1) + '">'
       // ONE element for the back plate, with the fast and cumulus bands as its
       // OWN pseudo-children — the shelf's topology, not merely its numbers.
       // They ride the back plate's transform there, and a flat list of
@@ -65348,7 +65396,7 @@ function _renderHeritageCard(el) {
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
       +       ' poster="/textures/gate-sky-model.jpg?v=24131" src="/textures/gate-sky-shelf.mp4?v=24131"'
-      +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
       +       '<div class="hcard-float"><img class="hcard-plane" src="' + esc(acSrc) + '" alt=""'
