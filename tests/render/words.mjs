@@ -684,7 +684,14 @@ const GATE_STATE = (st) => `(function (st) {
       renderDedicatedScreen();
       return document.getElementById('dedicatedFooterRight') ? 'ok' : 'the empty gate screen did not come up';
     }
-    var f = window._gateCurrentFlight;
+    // v24130 — the row is held by this check, not read back from the page each
+    // time: an empty gate now clears window._gateCurrentFlight (a walking
+    // display carried the last aircraft into the card and the poll), and at
+    // YUL a cancelled departure leaves the gate, so after the cancelled state
+    // the global is null while the row itself is still in data.dep. The same
+    // row object is mutated and the screen re-picks it.
+    if (!window.__wsFlight && window._gateCurrentFlight) window.__wsFlight = window._gateCurrentFlight;
+    var f = window.__wsFlight;
     if (!f) return 'no flight on the gate';
     if (!window.__wsOrig) window.__wsOrig = JSON.stringify(f);
     var o = JSON.parse(window.__wsOrig);
