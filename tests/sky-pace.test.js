@@ -73,16 +73,18 @@ test('the stylesheet divides the same cycles by --g8-pace, on the shelf and on t
   const c = cycles();
   const b = block();
   const dur = (sec) => `calc(${sec}s / var(--g8-pace, 1))`;
+  // A literal for a RegExp: every special character escaped, the backslash included.
+  const rx = (lit) => lit.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
   for (const [id, name, key, delay] of [
     ['#gateCloudsMid', 'g8SkyMidFar', 'far', '--g8-midfar-delay'],
     ['#gateCloudsVeil', 'g8SkyVeilBk', 'back', '--g8-veil-delay'],
     ['#gateCloudsFg', 'g8SkyVeilFr', 'front', '--g8-front-delay'],
   ]) {
-    const re = new RegExp(`\\.v2-rc-shelf-illus > ${id} \\{\\s*animation: ${name} ${dur(c[key]).replace(/[().]/g, '\\$&')} linear infinite !important;\\s*animation-delay: var\\(${delay}, 0s\\) !important;\\s*animation-direction: var\\(--g8-dir, reverse\\) !important;\\s*\\}`);
+    const re = new RegExp(`\\.v2-rc-shelf-illus > ${id} \\{\\s*animation: ${name} ${rx(dur(c[key]))} linear infinite !important;\\s*animation-delay: var\\(${delay}, 0s\\) !important;\\s*animation-direction: var\\(--g8-dir, reverse\\) !important;\\s*\\}`);
     assert.match(b, re, `${id}: ${name} over ${c[key]} s at pace 1, phased and facing the aeroplane`);
   }
   for (const [cls, key] of [['hcard-l-mid', 'far'], ['hcard-l-back', 'back'], ['hcard-l-front', 'front']]) {
-    assert.match(b, new RegExp(`\\.hcard-wrap \\.hcard-sky \\.${cls}\\s*\\{ animation-duration: ${dur(c[key]).replace(/[().]/g, '\\$&')} !important; \\}`), `${cls}: ${c[key]} s at pace 1`);
+    assert.match(b, new RegExp(`\\.hcard-wrap \\.hcard-sky \\.${cls}\\s*\\{ animation-duration: ${rx(dur(c[key]))} !important; \\}`), `${cls}: ${c[key]} s at pace 1`);
   }
   // Reduced motion is restated at this strength, or these rules would outrank the stills.
   const rm = /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\}\s*\}/.exec(b);
