@@ -483,7 +483,9 @@ test('the 1965 and 1980 lockups are one drawing: identical shapes and frame, bla
   const read = (f) => fs.readFileSync(path.join(ROOT, 'fids-current', 'logos', 'advertisements', 'retro-airlines', f), 'utf8');
   const a = read('AC-1965-LOGO.svg'), b = read('AC-1980-LOGO.svg');
   for (const s of [a, b]) assert.match(s, /viewBox="0 0 5644\.65 854\.36"/, 'one frame for both');
-  const geometry = (s) => s.replace(/<!--[\s\S]*?-->/g, '').replace(/fill="#[0-9a-f]{6}"/g, 'fill="X"');
+  // The drawing is the sequence of shape and group tags; comments and the root tag are not compared.
+  const geometry = (s) => (s.match(/<\/?(?:g|path|circle|ellipse|rect|polygon|polyline|line)\b[^>]*>/g) || []).join('\n').replace(/fill="#[0-9a-f]{6}"/g, 'fill="X"');
+  assert.ok(geometry(a).split('\n').length > 12, 'the lockup has its ring, nine letters and three groups');
   assert.equal(geometry(a), geometry(b), 'the same shapes, transforms and order: only the fills differ');
   assert.equal((b.match(/fill="#f7191b"/g) || []).length, 10, 'the 1980 lockup is all the 1980 red');
   assert.match(a, /fill="#c51212"/, 'the 1965 rondelle red');
