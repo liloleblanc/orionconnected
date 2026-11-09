@@ -1243,7 +1243,8 @@ test('HARD STOP at its own STOP_AT: nothing more to OpenSky, latched on disk, th
     r.setClock(STOP_S);
     assert.equal(await r.exit(), 0, 'the relay exits by itself at the stop');
     assert.equal(fs.readFileSync(r.marker, 'utf8'), `stopped for ${STOP_AT}\n`);
-    assert.match(r.out, /stopped: latched for 2026-11-12T22:59:59Z/);
+    // the marker file lands before the pipe delivers the log line; wait for the line
+    await until(() => /stopped: latched for 2026-11-12T22:59:59Z/.test(r.out), 'the latch logged');
     assert.equal(fake.statesCalls, 1);
     assert.equal(fake.tokenCalls, 1);
 
@@ -1340,7 +1341,8 @@ test('a later Worker stop date, by 40 days at most, becomes the relay\'s own (an
   try {
     await until(() => fs.existsSync(r.extended), 'the later date saved');
     assert.equal(fs.readFileSync(r.extended, 'utf8'), `extended to ${EXT}\n`);
-    assert.match(r.out, /stop moved later by the Worker to 2026-12-12T22:59:59Z/);
+    // same race as the latch above: the file is written before the pipe delivers the line
+    await until(() => /stop moved later by the Worker to 2026-12-12T22:59:59Z/.test(r.out), 'the move logged');
     await until(() => r.status().stop_at === EXT && w.report().stop_at === EXT, 'its own stop date, reported to the Worker');
     assert.equal(r.status().conf_stop_at, STOP_AT, 'relay.conf is not touched');
     r.setClock(STOP_S + 60);                     // past the first term, inside the extension
