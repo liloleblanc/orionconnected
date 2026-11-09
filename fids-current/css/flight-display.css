@@ -2255,16 +2255,27 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
   display: none !important;
 }
 
-/* ━━━ CLICKABLE ROWS ━━━ */
+/* ━━━ CLICKABLE ROWS ━━━
+   v24135 — THE HOVER IS A VEIL ON THE CELLS, NOT A FILTER ON THE ROW.
+   A filter on a table row gives the row its own layer, and WebKit repaints
+   the whole table for a row like that: in Safari, moving the mouse across
+   the board repainted every row on every pixel of travel, and while it was
+   touched the rows and their wordmarks blinked in and out (the screen
+   recording of 9 Nov). Chrome paints the same rule without a glitch, which
+   is why it went unseen. An inset veil on the cells repaints the cells and
+   reads the same: a lift of about a fifth on hover, a dip when pressed. */
 #fidsTable tr.fids-row-clickable {
   cursor: pointer;
-  transition: filter .12s ease, transform .12s ease;
+  transition: transform .12s ease;
 }
-#fidsTable tr.fids-row-clickable:hover {
-  filter: brightness(1.18);
+#fidsTable tr.fids-row-clickable td {
+  transition: box-shadow .12s ease;
 }
-#fidsTable tr.fids-row-clickable:active {
-  filter: brightness(0.92);
+#fidsTable tr.fids-row-clickable:hover td {
+  box-shadow: inset 0 0 0 100vmax rgba(255, 255, 255, .14);
+}
+#fidsTable tr.fids-row-clickable:active td {
+  box-shadow: inset 0 0 0 100vmax rgba(0, 0, 0, .10);
 }
 /* Touch device — slight indent feedback */
 @media (hover: none) {
