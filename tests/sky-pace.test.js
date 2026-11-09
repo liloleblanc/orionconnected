@@ -140,7 +140,13 @@ test('_skyPace: the default, ?skyspeed= on one screen, clamped to 0.25..4, nonse
     return vm.runInContext(fn[0] + '; _skyPace()', ctx);
   };
   const d = +def[1];
-  assert.ok(d >= 1 && d <= 2, `the default pace ${d} is a modest speed-up, not a fast-forward`);
+  // v24135 — at 1.25 the front strip crossed the 372px sky box in under a second and the scene read as
+  // far too fast on the display. Half the ladder: the front strip takes about 2 s per box, as it did for
+  // the weeks before v24132, and every layer behind it keeps its place in the ladder at any pace.
+  const c = cycles();
+  const frontCross = 372 / (STRIP.front / c.front * d);
+  assert.ok(d >= 0.25 && d <= 0.75, `the default pace ${d} is about half the ladder, not the 1.25 that raced`);
+  assert.ok(frontCross >= 1.8 && frontCross <= 4, `the front strip crosses the sky box in ${frontCross.toFixed(1)} s at the default pace`);
   assert.equal(run(''), d);
   assert.equal(run('?ap=YQM&gate=3'), d);
   assert.equal(run('?skyspeed=2'), 2);
