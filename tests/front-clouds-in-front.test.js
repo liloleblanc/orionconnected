@@ -6,7 +6,7 @@
 // Two surfaces run the same scene: the gate screen's aircraft shelf
 // (.v2-rc-shelf-illus) and the From the Archive card in the gate's centre
 // carousel (.hcard-sky). Each is a sky, three cloud layers (far, back and
-// front, 8 s, 5 s and 3.5 s at pace 1, all divided by --g8-pace since v24132;
+// front, 25 s, 12.5 s and 7 s at pace 1 (v24136), all divided by --g8-pace since v24132;
 // tests/sky-pace.test.js pins the ladder) and the aircraft. Two regressions crept into that scene
 // within one week, and both read on the board as "the animation changed".
 //
@@ -220,7 +220,7 @@ test('the gate shelf: the front clouds are visible and moving, by day and at nig
     assert.ok(!disp || !/^none\b/.test(disp.value), `${label}: front clouds displayed`);
     const anim = cascade('animation', '#gateCloudsFg', SHELF, classes, false);
     assert.ok(anim, `${label}: front clouds animated`);
-    assert.match(anim.value, /^g8SkyVeilFr\s+calc\(3\.5s \/ var\(--g8-pace, 1\)\)\s+linear\s+infinite$/, `${label}: front clouds run their 3.5 s loop at the pace of the scene (${anim.value})`);
+    assert.match(anim.value, /^g8SkyVeilFr\s+calc\(7s \/ var\(--g8-pace, 1\)\)\s+linear\s+infinite$/, `${label}: front clouds run their 7 s loop at the pace of the scene (${anim.value})`);
     assert.match(CSS, /@keyframes g8SkyVeilFr \{ from \{ transform: translate3d\(0,0,0\); \} to \{ transform: translate3d\(-1200px,0,0\); \} \}/);
   }
 });
@@ -245,7 +245,7 @@ test('the archive card: front clouds over the plane, the plane over the far and 
   const name = cascade('animation-name', '.hcard-l-front', CARD, [], false);
   const dur = cascade('animation-duration', '.hcard-l-front', CARD, [], false);
   assert.equal(name && name.value, 'hcardFront');
-  assert.equal(dur && dur.value, 'calc(3.5s / var(--g8-pace, 1))');
+  assert.equal(dur && dur.value, 'calc(7s / var(--g8-pace, 1))');
 });
 
 test('no @media rule reorders the plane and its clouds', () => {
