@@ -37,7 +37,7 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=24140"></script>
+<script src="js/host-airport.js?v=24143"></script>
 <title>Airport Companion</title>
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
@@ -548,10 +548,10 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24140"></script>
-<script src="js/shared-names.js?v=24140"></script>
-<script src="data/airline-colors.js?v=24140"></script>
-<script src="js/feed-router.js?v=24140"></script>
+<script src="js/board-strings.js?v=24143"></script>
+<script src="js/shared-names.js?v=24143"></script>
+<script src="data/airline-colors.js?v=24143"></script>
+<script src="js/feed-router.js?v=24143"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1450,7 +1450,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24140';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24143';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -1918,10 +1918,17 @@ async function load(o){
   if(BOOT_GATE&&DIR==='dep'&&RENDERED.length){
     try{
       const g=BOOT_GATE.toUpperCase().replace(/[\s-]/g,'');
+      let hit=-1;
       for(let i=0;i<RENDERED.length;i++){
         const fg=String(RENDERED[i].gate||'').toUpperCase().replace(/[\s-]/g,'');
-        if(fg&&fg===g){openFlight(i);break;}
+        if(fg&&fg===g){hit=i;break;}
       }
+      // v24143 - a gate screen picked by flight (?gate=AC8215, an airport whose
+      // feed gives no gates) hands over the flight number: open that flight
+      if(hit<0)for(let i=0;i<RENDERED.length;i++){
+        if(String(RENDERED[i].flight||'').toUpperCase().replace(/[\s-]/g,'')===g){hit=i;break;}
+      }
+      if(hit>=0)openFlight(hit);
     }catch(e){}
     BOOT_GATE='';
   }
