@@ -459,3 +459,52 @@ test('the .com side is untouched by that guard', () => {
   const wall = route({ ua: UA_DESKTOP, width: 1920 });
   assert.match(String(wall.to), /^fids\.html\?mode=live/);
 });
+
+// ── v24139: the page the phone came for ───────────────────────────────────
+//
+// fids-core now sends a phone that has not answered to the opener with
+// ?next= set to the board link it opened, instead of straight into the app.
+// Either answer must land on that link, and nothing but a board page on this
+// origin may be taken from the parameter.
+
+const nx = (u) => '?ap=YQM&next=' + encodeURIComponent(u);
+
+test('a phone that opened a board link is asked, and either answer lands on that link', () => {
+  const r = route({ ua: UA_IPHONE, width: 390, search: nx('/gids?ap=YQM&screen=gate&gate=2') });
+  assert.equal(r.asked, true);
+  assert.equal(r.to, null);
+  assert.equal(r.board, '/gids?ap=YQM&screen=gate&gate=2&nomobile=1');
+  assert.equal(r.app, '/app?ap=YQM&screen=gate&gate=2');
+  assert.ok(boardKeepsIt(r.board), 'the board keeps the phone that chose it');
+  const bare = route({ ua: UA_IPHONE, width: 390, search: '?next=' + encodeURIComponent('/bids') });
+  assert.equal(bare.board, '/bids?nomobile=1');
+});
+
+test('a remembered answer goes straight to the link, either way', () => {
+  const site = route({ ua: UA_IPHONE, width: 390, pref: 'site', search: nx('/fids?mode=live&ap=YQM') });
+  assert.equal(site.asked, false);
+  assert.equal(site.to, '/fids?mode=live&ap=YQM&nomobile=1');
+  const app = route({ ua: UA_IPHONE, width: 390, pref: 'app', search: nx('/fids?mode=live&ap=YQM') });
+  assert.equal(app.to, '/app?mode=live&ap=YQM');
+});
+
+test('a display that arrives with ?next= goes to that board, unasked', () => {
+  const r = route({ search: nx('/gids?ap=YQM&gate=3') });
+  assert.equal(r.asked, false);
+  assert.equal(r.to, '/gids?ap=YQM&gate=3');
+});
+
+test('?next= takes a board page on this origin and nothing else', () => {
+  for (const bad of [
+    'https://example.com/fids', '//example.com/fids', '/\\example.com', '/app?ap=YQM', '/index.html',
+    '/fids/../app', '/fidsx', 'fids?ap=YQM', '/fids#x', '/fids?ap=YQM#x', '/fids?a b', 'javascript:alert(1)', '%E0%A4%A'
+  ]) {
+    const r = route({ ua: UA_IPHONE, width: 390, search: '?ap=YQM&next=' + (bad === '%E0%A4%A' ? bad : encodeURIComponent(bad)) });
+    assert.match(String(r.board), /^fids\.html\?mode=live&ap=YQM&nomobile=1$/, 'ignored: ' + bad);
+    assert.equal(r.app, '/app?ap=YQM', 'ignored for the app too: ' + bad);
+  }
+  for (const good of ['/fids', '/gids.html?ap=YUL', '/bids?ap=YHZ&belt=2']) {
+    const r = route({ ua: UA_IPHONE, width: 390, search: '?next=' + encodeURIComponent(good) });
+    assert.ok(String(r.board).startsWith(good), 'taken: ' + good);
+  }
+});
