@@ -3,7 +3,7 @@
 <head>
   <!-- The one store for passenger words (board-strings.js): the phone offer
        below reads it. docs/BOARD-LANGUAGES.md. -->
-  <script src="js/board-strings.js?v=24138"></script>
+  <script src="js/board-strings.js?v=24139"></script>
   <!-- v23803 — orionconnected.app IS THE APP.
        This page is the opener: it paints, then replaces itself with a board.
        On the .app domain it should hand over to the Airport Companion instead.
@@ -134,7 +134,17 @@
            no idea it had already been answered. */
         if (/(^|\.)orionconnected\.app$/.test(String(location.hostname || '').toLowerCase())) return;
         var apM = qs.match(/[?&]ap=([^&]+)/);
-        var board = 'fids.html?mode=live' + (apM ? '&ap=' + apM[1] : '');
+        /* v24139 — THE PAGE THE PHONE CAME FOR. fids-core sends a phone that
+           has not answered here with ?next= set to the board link it opened
+           (a gate, a belt, an airport), so either answer lands there and not
+           on the default board. Only a board page on this origin is taken:
+           /fids, /gids or /bids with its query. Anything else is ignored, so
+           the parameter can never send anyone off the site. */
+        var next = '';
+        var nextM = qs.match(/[?&]next=([^&#]*)/);
+        if (nextM) { try { next = decodeURIComponent(nextM[1]); } catch (e) { next = ''; } }
+        if (!/^\/(fids|gids|bids)(\.html)?(\?[^#\s\\]*)?$/.test(next)) next = '';
+        var board = next || ('fids.html?mode=live' + (apM ? '&ap=' + apM[1] : ''));
 
         var ua = navigator.userAgent || '';
         /* v23824 — A TELEVISION IS NOT A PHONE, AND A NARROW WINDOW IS NOT EITHER.
@@ -175,7 +185,7 @@
            URL, so on a real phone the documented escape hatch got you to
            fids.html and no further: the board handed you to the app a moment
            later. It only ever worked if you typed fids.html yourself. */
-        var stay = board + '&nomobile=1';
+        var stay = board + (board.indexOf('?') >= 0 ? '&' : '?') + 'nomobile=1';
 
         if (/[?&]nomobile=1/.test(qs)) { location.replace(stay); return; }
 
@@ -213,6 +223,9 @@
         // needs to take.
         var app = '/app'
                 + (ap ? '?ap=' + encodeURIComponent(String(ap).toUpperCase()) : '');
+        // The app reads the same ?ap= / ?screen= / ?gate= / ?belt= the board
+        // link carried, as it did when the board sent phones there directly.
+        if (next && next.indexOf('?') >= 0) app = '/app' + next.slice(next.indexOf('?'));
 
         // An answer is durable, so there has to be a way back to the question.
         // Without one, "stay on the regular site" is a decision you can only
@@ -275,7 +288,7 @@
        a host with no fonts of its own. The browser fetches only the slices a
        screen uses. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+Arabic:wght@400;700;900&display=swap">
-  <link rel="stylesheet" href="css/shared.css?v=24138">
+  <link rel="stylesheet" href="css/shared.css?v=24139">
   <link rel="stylesheet" href="css/font.css?v=335">
   <link rel="stylesheet" href="css/entry.css?v=35">
   <link rel="stylesheet" href="css/mobile.css?v=1">
