@@ -132,6 +132,23 @@
       var m = document.querySelector('meta[name="viewport"]');
       if (m) m.setAttribute('content', 'width=1280');
       document.documentElement.classList.add('fids-desktop-site');
+      /* v24139 — THE PAGE SIZE IS THE PAGE, NOT THE ZOOM. Safari reports
+         innerWidth and innerHeight as the part of the page on screen (WebKit
+         bug 174362, still open), so a phone zoomed in on this 1280 board read
+         as a page a few hundred pixels wide: the map stepped aside for the old
+         skyline (it needs 800) and the board code took its phone layouts
+         (under 700). Here the two read the page itself, the larger of what
+         Safari says and the layout size, exactly as the rot kiosks already
+         fix their axes. Only on a phone in this mode. */
+      try {
+        var de = document.documentElement;
+        var own = function (k) { return Object.getOwnPropertyDescriptor(window, k) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), k); };
+        var nW = own('innerWidth'), nH = own('innerHeight');
+        if (nW && nW.get && nH && nH.get) {
+          Object.defineProperty(window, 'innerWidth', { configurable: true, get: function () { return Math.max(nW.get.call(window) || 0, de.clientWidth || 0); } });
+          Object.defineProperty(window, 'innerHeight', { configurable: true, get: function () { return Math.max(nH.get.call(window) || 0, de.clientHeight || 0); } });
+        }
+      } catch (e2) {}
     } catch (e) {}
   })();
   </script>

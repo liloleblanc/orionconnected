@@ -65,16 +65,19 @@ function desktopSiteBlock(name) {
 }
 
 /** Run a page's desktop-site script and report what it did. */
-function runPage({ ua = UA_IPHONE, search = '', pref = null, framed = false, storageThrows = false, name = 'fids.html', touch = 5, screen = IPHONE_SCREEN } = {}) {
+function runPage({ ua = UA_IPHONE, search = '', pref = null, framed = false, storageThrows = false, name = 'fids.html', touch = 5, screen = IPHONE_SCREEN, visual = { w: 1280, h: 2146 }, layout = { w: 1280, h: 2146 } } = {}) {
   const meta = { content: 'width=device-width, initial-scale=1.0', setAttribute(k, v) { if (k === 'content') this.content = v; } };
   const classes = new Set();
+  // innerWidth/innerHeight as Safari reports them (the part on screen: the zoom
+  // shrinks them) and the layout size (documentElement.clientWidth/Height).
+  const view = { w: visual.w, h: visual.h };
   const ctx = {
     navigator: { userAgent: ua, maxTouchPoints: touch },
     screen,
     location: { search },
     document: {
       querySelector: (sel) => (sel === 'meta[name="viewport"]' ? meta : null),
-      documentElement: { classList: { add: (c) => classes.add(c), contains: (c) => classes.has(c) } }
+      documentElement: { classList: { add: (c) => classes.add(c), contains: (c) => classes.has(c) }, get clientWidth() { return layout.w; }, get clientHeight() { return layout.h; } }
     },
     localStorage: storageThrows
       ? { getItem() { throw new Error('blocked'); } }
@@ -83,9 +86,11 @@ function runPage({ ua = UA_IPHONE, search = '', pref = null, framed = false, sto
   ctx.window = ctx;
   ctx.self = ctx;
   ctx.top = framed ? {} : ctx;
+  Object.defineProperty(ctx, 'innerWidth', { configurable: true, get: () => view.w });
+  Object.defineProperty(ctx, 'innerHeight', { configurable: true, get: () => view.h });
   vm.createContext(ctx);
   vm.runInContext(desktopSiteBlock(name).body, ctx);
-  return { viewport: meta.content, desktop: classes.has('fids-desktop-site') };
+  return { viewport: meta.content, desktop: classes.has('fids-desktop-site'), win: ctx, view };
 }
 
 /** The handoff IIFE from fids-core, run against a phone. */
@@ -266,4 +271,36 @@ test('the app is left alone everywhere else', () => {
   assert.equal(runApp({ ua: UA_DESKTOP, touch: 0, screen: MAC_SCREEN }), null, 'a Mac opening the app');
   assert.equal(runApp({ ua: UA_DESKTOP, touch: 5, screen: IPAD_SCREEN }), null, 'an iPad');
   assert.equal(runApp({ framed: true }), null, 'a frame');
+});
+
+// ── v24139: a phone zoomed in on the board still reads the page size ──────
+//
+// Safari reports innerWidth/innerHeight as the part of the page on screen, so a
+// phone zoomed in on the 1280 board read as a page a few hundred pixels wide:
+// the map gave way to the old skyline (under 800) and the board code took its
+// phone layouts (under 700).
+
+test('zoomed in, the board still reads its own page size, on every board page', () => {
+  for (const name of Object.keys(PAGES)) {
+    const r = runPage({ name, search: '?ap=YQM&nomobile=1' });
+    assert.equal(r.desktop, true);
+    r.view.w = 520; r.view.h = 873;           // pinched in, about 2.5x
+    assert.equal(r.win.innerWidth, 1280, name + ': the page width, not the zoomed view');
+    assert.equal(r.win.innerHeight, 2146, name + ': the page height');
+    r.view.w = 1280; r.view.h = 2400;         // toolbar gone, fully out
+    assert.equal(r.win.innerWidth, 1280);
+    assert.equal(r.win.innerHeight, 2400, 'the larger of the two, as before');
+  }
+});
+
+test('the sizes are untouched where the page keeps its own width', () => {
+  for (const opts of [
+    { ua: UA_DESKTOP, touch: 0, screen: MAC_SCREEN, search: '?nomobile=1' },
+    { ua: UA_IPHONE, search: '?ap=YQM', pref: 'app' },
+    { ua: UA_IPHONE, search: '?nomobile=1', framed: true },
+  ]) {
+    const r = runPage(Object.assign({ visual: { w: 520, h: 873 } }, opts));
+    assert.equal(r.desktop, false);
+    assert.equal(r.win.innerWidth, 520, 'left as the browser reports it');
+  }
 });
