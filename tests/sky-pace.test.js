@@ -21,6 +21,11 @@
 // cumulus ease to the slower veils of the clip: in the video the big clouds
 // hold still and only the thin veils sweep.
 //
+// v24138: that read as still a tad slow. Every slow verdict so far had the
+// veils at or under the v23899 speeds (back 112, front 200 px/s), so every
+// strip steps up, the far cumulus most and the front veil least; the clip
+// stays at 1x.
+//
 // Two things are pinned here. The LADDER, as above. And the PACE: one number, --g8-pace, scales the clip's playback
 // rate, the three CSS durations and the phase moduli together, so the scene
 // can be sped up or slowed on any screen with ?skyspeed= and nothing drifts.
@@ -65,17 +70,22 @@ function block() {
   return CSS.slice(at, end);
 }
 
-test('the ladder (v24136): the clip at 1x, the veils at the speeds the display showed at 0.5, the far cumulus eased', () => {
+test('the ladder (v24138): the clip at 1x, every strip a step faster than v24136, the far cumulus most', () => {
   // v24136 — the Air France A320 video, which the clip is, shows a still sky with only thin veils
   // crossing it. The v24132 ladder put every strip well above the fastest of those veils and the scene
   // raced at 1.25; at 0.5 the clip itself ran in slow motion and read as slow. So the clip plays at 1x,
   // the two veil strips keep the speeds the display showed at 0.5 (171 and about 108 px/s), and the far
   // big cumulus ease to 60 px/s, among the slower veils of the clip: in the video the big clouds hold still.
+  // v24138 — still a tad slow. Every slow verdict had the veils at or under the v23899 speeds (back 112,
+  // front 200 px/s, which ran for weeks with only the far cumulus found wrong), and v24136 had both veils under
+  // those. So: far 94 px/s (with the veils of the clip, below its fastest), back 159 (a step above the fastest
+  // veil), front 240 (about 2.2x the fastest veil, 1.55 s per box, well clear of the 429 that raced).
   const c = cycles();
   const far = STRIP.far / c.far, back = STRIP.back / c.back, front = STRIP.front / c.front;
-  assert.ok(far >= CLIP_SLOWEST_PX_S && far <= CLIP_FASTEST_PX_S * 0.6, `far ${far.toFixed(0)} px/s drifts among the slower veils of the clip (${CLIP_SLOWEST_PX_S.toFixed(0)} to ${(CLIP_FASTEST_PX_S * 0.6).toFixed(0)})`);
-  assert.ok(back >= CLIP_FASTEST_PX_S * 0.8 && back <= CLIP_FASTEST_PX_S, `back ${back.toFixed(0)} px/s runs with the fastest veils of the clip (${(CLIP_FASTEST_PX_S * 0.8).toFixed(0)} to ${CLIP_FASTEST_PX_S.toFixed(0)})`);
-  assert.ok(front >= CLIP_FASTEST_PX_S * 1.4 && front <= CLIP_FASTEST_PX_S * 2.2, `front ${front.toFixed(0)} px/s is a step above the fastest veil and nowhere near the 429 that raced (${(CLIP_FASTEST_PX_S * 1.4).toFixed(0)} to ${(CLIP_FASTEST_PX_S * 2.2).toFixed(0)})`);
+  assert.ok(far >= CLIP_FASTEST_PX_S * 0.6 && far <= CLIP_FASTEST_PX_S, `far ${far.toFixed(0)} px/s drifts with the veils of the clip, below its fastest (${(CLIP_FASTEST_PX_S * 0.6).toFixed(0)} to ${CLIP_FASTEST_PX_S.toFixed(0)})`);
+  assert.ok(far > CLIP_SLOWEST_PX_S * 2, `far ${far.toFixed(0)} px/s is well above the crawl that read wrong (${(CLIP_SLOWEST_PX_S * 2).toFixed(0)})`);
+  assert.ok(back >= CLIP_FASTEST_PX_S * 1.2 && back <= CLIP_FASTEST_PX_S * 1.7, `back ${back.toFixed(0)} px/s is a step above the fastest veil of the clip (${(CLIP_FASTEST_PX_S * 1.2).toFixed(0)} to ${(CLIP_FASTEST_PX_S * 1.7).toFixed(0)})`);
+  assert.ok(front >= CLIP_FASTEST_PX_S * 1.9 && front <= CLIP_FASTEST_PX_S * 2.6, `front ${front.toFixed(0)} px/s is two steps above the fastest veil and nowhere near the 429 that raced (${(CLIP_FASTEST_PX_S * 1.9).toFixed(0)} to ${(CLIP_FASTEST_PX_S * 2.6).toFixed(0)})`);
   assert.ok(back > far && front > back, `near faster than far: ${far.toFixed(0)} < ${back.toFixed(0)} < ${front.toFixed(0)}`);
   assert.equal(c.float, 9, 'the float is the bob, not speed: 9 s stays');
 });
@@ -152,12 +162,12 @@ test('_skyPace: the default, ?skyspeed= on one screen, clamped to 0.25..4, nonse
   };
   const d = +def[1];
   // v24136 — the clip plays at the speed the Air France A320 video was made at (1.25 raced, 0.5 was slow
-  // motion), and the front strip, the nearest thing in the scene, crosses the sky box in about 2.2 s,
-  // as it did at 0.5, and nowhere near the 0.87 s that read as terrible.
+  // motion). v24138 — the front strip, the nearest thing in the scene, crosses the sky box in about 1.5 s
+  // (2.2 s read as a tad slow twice), and nowhere near the 0.87 s that read as terrible.
   const c = cycles();
   const frontCross = 372 / (STRIP.front / c.front * d);
   assert.equal(d, 1, 'the default pace is 1: the clip at its own speed');
-  assert.ok(frontCross >= 1.8 && frontCross <= 2.8, `the front strip crosses the sky box in ${frontCross.toFixed(1)} s at the default pace`);
+  assert.ok(frontCross >= 1.3 && frontCross <= 2.0, `the front strip crosses the sky box in ${frontCross.toFixed(1)} s at the default pace`);
   assert.equal(run(''), d);
   assert.equal(run('?ap=YQM&gate=3'), d);
   assert.equal(run('?skyspeed=2'), 2);
