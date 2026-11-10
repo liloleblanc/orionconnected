@@ -15,11 +15,11 @@ The loader's palette in shared.css is the
   <!-- v23803 — yqm.orionconnected.com shows Moncton. Loaded FIRST: it fills in
        sessionStorage.fids_airport, which every board reads as its default, and the
        earliest reader is an inline script further down this page. -->
-  <script src="js/host-airport.js?v=24139"></script>
+  <script src="js/host-airport.js?v=24140"></script>
   <!-- The one store for passenger words (board-strings.js). Loaded first, before
        the loader below, so the loader greets in the board's own languages. Its
        ?v= always equals fids-core.js's (tests/board-languages.test.js B14). -->
-  <script src="js/board-strings.js?v=24139"></script>
+  <script src="js/board-strings.js?v=24140"></script>
 
   <script>
   (function () {
@@ -250,15 +250,15 @@ s not just start it's all the time now'). ?rotate= navigates with
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+Arabic:wght@400;700;900&display=swap">
   <link rel="stylesheet" href="css/font.css?v=335">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
-  <link rel="stylesheet" href="css/shared.css?v=24139">
-  <link rel="stylesheet" href="css/menu.css?v=24139">
-  <link rel="stylesheet" href="css/fids.css?v=24139">
-  <link rel="stylesheet" href="css/flight-display.css?v=24139">
-  <link rel="stylesheet" href="css/baggage-display.css?v=24139">
+  <link rel="stylesheet" href="css/shared.css?v=24140">
+  <link rel="stylesheet" href="css/menu.css?v=24140">
+  <link rel="stylesheet" href="css/fids.css?v=24140">
+  <link rel="stylesheet" href="css/flight-display.css?v=24140">
+  <link rel="stylesheet" href="css/baggage-display.css?v=24140">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=313">
-  <link rel="stylesheet" href="css/display-overrides.css?v=24139">
-  <link rel="stylesheet" href="css/remembrance.css?v=24139">
+  <link rel="stylesheet" href="css/display-overrides.css?v=24140">
+  <link rel="stylesheet" href="css/remembrance.css?v=24140">
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
@@ -304,8 +304,8 @@ s not just start it's all the time now'). ?rotate= navigates with
     }, 8000);
   } catch (e) {}
   </script>
-  <link rel="stylesheet" href="css/gate-display.css?v=24139">
-  <link rel="stylesheet" href="css/hotel-ads.css?v=24139">
+  <link rel="stylesheet" href="css/gate-display.css?v=24140">
+  <link rel="stylesheet" href="css/hotel-ads.css?v=24140">
   <!-- v24029 — the phone board, last so it decides the phone's look -->
   <link rel="stylesheet" href="css/phone.css?v=3">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
@@ -331,6 +331,53 @@ s not just start it's all the time now'). ?rotate= navigates with
     }
   } catch (e) {}
   </script>
+<script>
+/* v24140 — SAFARI FIRST-LOAD TEST SWITCH. Inert unless the address carries
+   ?wk=<keys>. Safari 26 (Mac and iPhone) paints the airline column and the
+   two end header cells empty on a first load; those are exactly the parts of
+   the table that WebKit draws on their own layers (the clip on the end
+   header cells, the positioned and transformed tile and wordmark, the row
+   hover filter). Each key below takes one of those layers away, from the
+   first paint, so one link per key on a device that has not cached the site
+   says which layer it is. none = the board as it is, with only the corner
+   tag. b = all four. To be removed with the real fix. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('wk');
+    if (!q) return;
+    var keys = q.toLowerCase().split(',');
+    var all = keys.indexOf('b') >= 0;
+    var P = ':root' + new Array(261).join(':not(#_)') + ' ';
+    var R = {
+      clip: [['#fidsTable thead th:first-child', '#fidsTable thead th:last-child'], 'clip-path: none !important; -webkit-clip-path: none !important;'],
+      wm: [['#fidsTable .td-airline .fids-airline-wordmark', '#fidsTable .td-airline .fids-airline-wordmark[data-code]'], 'transform: none !important; position: static !important; top: auto !important;'],
+      tile: [['#fidsTable .td-airline .fids-airline-logo', '#fidsTable .td-airline .fids-airline-logo .full-logo', '#fidsTable .td-airline .full-logo'], 'position: static !important; top: auto !important;'],
+      hover: [['#fidsTable tr', '#fidsTable tr:hover', '#fidsTable tr:active'], 'filter: none !important; transform: none !important; transition: none !important;']
+    };
+    var css = '';
+    for (var k in R) {
+      if (!all && keys.indexOf(k) < 0) continue;
+      css += R[k][0].map(function (x) { return P + x; }).join(',\n') + ' { ' + R[k][1] + ' }\n';
+    }
+    var st = document.createElement('style');
+    st.id = 'wkTest';
+    st.textContent = css;
+    var head = document.head || document.documentElement;
+    head.appendChild(st);
+    setInterval(function () { if (st.parentNode && st.parentNode.lastElementChild !== st) st.parentNode.appendChild(st); }, 1500);
+    var tag = function () {
+      if (!document.body || document.getElementById('wkTag')) return;
+      var d = document.createElement('div');
+      d.id = 'wkTag';
+      d.textContent = q.toUpperCase();
+      d.setAttribute('style', 'position:fixed;right:10px;bottom:46px;z-index:2147483647;padding:4px 10px;border-radius:6px;background:#e91e63;color:#fff;font:700 16px/1.1 -apple-system,system-ui,sans-serif;pointer-events:none');
+      document.body.appendChild(d);
+    };
+    document.addEventListener('DOMContentLoaded', tag);
+    setTimeout(tag, 3000);
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 <!--
@@ -876,32 +923,32 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
 <script src="/mapcdn/leaflet.js?v=22485"></script>
 <script src="/mapcdn/leaflet-arc.js?v=22485"></script>
-<script src="js/fids-v2.js?v=24139"></script>
+<script src="js/fids-v2.js?v=24140"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="data/airline-colors.js?v=24139"></script>
-<script src="js/gate-date-context.js?v=24139"></script>
-<script src="js/feed-router.js?v=24139"></script>
+<script src="data/airline-colors.js?v=24140"></script>
+<script src="js/gate-date-context.js?v=24140"></script>
+<script src="js/feed-router.js?v=24140"></script>
 <!-- v24008 — day and night from the airport's own sun, computed on the screen
      (js/fids-sun.js): sets html.fids-day / html.fids-night. Before the core, so
      the core can call fidsSun from anywhere. -->
-<script src="js/fids-sun.js?v=24139"></script>
+<script src="js/fids-sun.js?v=24140"></script>
 <!-- BOARDING SEQUENCES — each airline's boarding sequence (js/boarding-sequence.js): the
      gate's boarding sign plays its calls one after another. Keys and numbers
      only; before the core, which reads it. -->
-<script src="js/boarding-sequence.js?v=24139"></script>
-<script src="js/fids-core.js?v=24139"></script>
-<script src="js/remembrance.js?v=24139"></script>
-<script src="js/gate-visual-integrity.js?v=24139"></script>
+<script src="js/boarding-sequence.js?v=24140"></script>
+<script src="js/fids-core.js?v=24140"></script>
+<script src="js/remembrance.js?v=24140"></script>
+<script src="js/gate-visual-integrity.js?v=24140"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
 <script src="js/media-base.js?v=2"></script>
-<script src="js/airport-coords.js?v=24139"></script>
-<script src="js/fids-earth.js?v=24139"></script>
+<script src="js/airport-coords.js?v=24140"></script>
+<script src="js/fids-earth.js?v=24140"></script>
 <script src="js/airport-runways.js?v=23035"></script>
-<script src="js/template-renderer.js?v=24139"></script>
+<script src="js/template-renderer.js?v=24140"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=24139"></script>
+<script src="js/menu.js?v=24140"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=23233"></script>
 <script src="js/editor-roles.js?v=1"></script>
