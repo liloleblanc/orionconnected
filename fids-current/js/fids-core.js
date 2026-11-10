@@ -52427,6 +52427,33 @@ function _runwayFinalPath(pl, d, destIata) {
       }
     }
     if (!best) return null;
+    // v24141 — NEVER A TAILWIND LANDING WHEN THE WIND SAYS OTHERWISE. AC648
+    // into Moncton, 2026-11-10: from Toronto in the west, the bearing to the
+    // field chose 11 (landing east) and the map drew a straight-in final from
+    // the west. The wind was 12 km/h from 260, the aeroplane flew past north
+    // of the field at 3,775 ft and turned back to land on 24, and when the
+    // fix past the field came in the plane jumped to the other side of the
+    // airport onto a different route. An end with more than 5 kt of tailwind
+    // (9.3 km/h, the ICAO limit for picking even a noise-preferred runway) is
+    // out, by the wind MET Norway gives, as the weather card has it: 11 had
+    // 6.5 kt behind it that night. Of the ends left, the bearing still
+    // chooses as before (24, not 29, though 29 is nearer the wind: that is
+    // what the aeroplane did). A light wind rules nothing out, and everything
+    // below still overrides: an aeroplane on a centreline lands on it.
+    try {
+      var _wx = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[String(destIata || '').toUpperCase()]) || null;
+      var _wc = _wx && _wx.current;
+      if (_wc && typeof _wc.windDir === 'number' && isFinite(_wc.windDir) && typeof _wc.windSpeed === 'number' && isFinite(_wc.windSpeed)) {
+        var _wBest = null;
+        for (var qw = 0; qw < cand.length; qw++) {
+          var cw = cand[qw];
+          var _tail = -_wc.windSpeed * Math.cos((_wc.windDir - cw.hdg) * Math.PI / 180);
+          if (_tail > 9.3) continue;
+          if (!_wBest || cw.diff < _wBest.diff) _wBest = cw;
+        }
+        if (_wBest) best = _wBest;
+      }
+    } catch (eW) {}
     // v24105 — OF PARALLEL RUNWAYS, THE ONE IT IS LINED UP WITH. Orlando's
     // four run 359.39° to 359.54° by their survey, so the smallest difference
     // from the bearing to the field always picked the same one: UA2779,
