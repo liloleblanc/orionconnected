@@ -347,7 +347,7 @@ s not just start it's all the time now'). ?rotate= navigates with
     if (!q) return;
     var keys = q.toLowerCase().split(',');
     var all = keys.indexOf('b') >= 0;
-    var P = 'html body' + new Array(261).join(':not(#_)') + ' ';
+    var P = ':root' + new Array(261).join(':not(#_)') + ' ';
     var R = {
       clip: [['#fidsTable thead th:first-child', '#fidsTable thead th:last-child'], 'clip-path: none !important; -webkit-clip-path: none !important;'],
       wm: [['#fidsTable .td-airline .fids-airline-wordmark', '#fidsTable .td-airline .fids-airline-wordmark[data-code]'], 'transform: none !important; position: static !important; top: auto !important;'],
@@ -369,7 +369,7 @@ s not just start it's all the time now'). ?rotate= navigates with
       if (!document.body || document.getElementById('wkTag')) return;
       var d = document.createElement('div');
       d.id = 'wkTag';
-      d.textContent = 'TEST ' + q.toUpperCase();
+      d.textContent = q.toUpperCase();
       d.setAttribute('style', 'position:fixed;right:10px;bottom:46px;z-index:2147483647;padding:4px 10px;border-radius:6px;background:#e91e63;color:#fff;font:700 16px/1.1 -apple-system,system-ui,sans-serif;pointer-events:none');
       document.body.appendChild(d);
     };
