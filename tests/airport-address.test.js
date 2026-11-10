@@ -181,11 +181,11 @@ test('the move runs first: host-airport.js is the first script of every board', 
   for (const page of ['fids.html', 'gids.html', 'bids.html']) {
     const html = rd(page);
     const head = html.slice(0, html.indexOf('</head>'));
-    const first = head.search(/<script\b[^>]*>/);
+    const first = head.search(/<script\b[^>]*>/i);
     assert.match(head.slice(first, first + 80), /<script src="js\/host-airport\.js\?v=\d+"><\/script>/, page);
   }
   // and the opener does not load it: "/" hands a display to fids.html, which moves it
-  assert.doesNotMatch(rd('index.html'), /<script[^>]*host-airport\.js/);
+  assert.doesNotMatch(rd('index.html'), /<script[^>]*host-airport\.js/i);
 });
 
 // ── THE BOTTOM OF THE BOARD ────────────────────────────────────────────────
