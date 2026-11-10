@@ -17960,7 +17960,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24140" src="/textures/gate-sky-shelf.mp4?v=24140" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24141" src="/textures/gate-sky-shelf.mp4?v=24141" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -18004,7 +18004,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24140" src="/textures/gate-sky-shelf.mp4?v=24140" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24141" src="/textures/gate-sky-shelf.mp4?v=24141" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19236,7 +19236,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24140" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24141" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36360,7 +36360,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24140';
+var FIDS_BUILD_TAG = 'v24141';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -52329,6 +52329,33 @@ function _runwayFinalPath(pl, d, destIata) {
       }
     }
     if (!best) return null;
+    // v24141 — NEVER A TAILWIND LANDING WHEN THE WIND SAYS OTHERWISE. AC648
+    // into Moncton, 2026-11-10: from Toronto in the west, the bearing to the
+    // field chose 11 (landing east) and the map drew a straight-in final from
+    // the west. The wind was 12 km/h from 260, the aeroplane flew past north
+    // of the field at 3,775 ft and turned back to land on 24, and when the
+    // fix past the field came in the plane jumped to the other side of the
+    // airport onto a different route. An end with more than 5 kt of tailwind
+    // (9.3 km/h, the ICAO limit for picking even a noise-preferred runway) is
+    // out, by the wind MET Norway gives, as the weather card has it: 11 had
+    // 6.5 kt behind it that night. Of the ends left, the bearing still
+    // chooses as before (24, not 29, though 29 is nearer the wind: that is
+    // what the aeroplane did). A light wind rules nothing out, and everything
+    // below still overrides: an aeroplane on a centreline lands on it.
+    try {
+      var _wx = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[String(destIata || '').toUpperCase()]) || null;
+      var _wc = _wx && _wx.current;
+      if (_wc && typeof _wc.windDir === 'number' && isFinite(_wc.windDir) && typeof _wc.windSpeed === 'number' && isFinite(_wc.windSpeed)) {
+        var _wBest = null;
+        for (var qw = 0; qw < cand.length; qw++) {
+          var cw = cand[qw];
+          var _tail = -_wc.windSpeed * Math.cos((_wc.windDir - cw.hdg) * Math.PI / 180);
+          if (_tail > 9.3) continue;
+          if (!_wBest || cw.diff < _wBest.diff) _wBest = cw;
+        }
+        if (_wBest) best = _wBest;
+      }
+    } catch (eW) {}
     // v24105 — OF PARALLEL RUNWAYS, THE ONE IT IS LINED UP WITH. Orlando's
     // four run 359.39° to 359.54° by their survey, so the smallest difference
     // from the bearing to the field always picked the same one: UA2779,
@@ -65496,7 +65523,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24140" src="/textures/gate-sky-shelf.mp4?v=24140"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24141" src="/textures/gate-sky-shelf.mp4?v=24141"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
