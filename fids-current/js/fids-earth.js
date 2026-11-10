@@ -90,19 +90,22 @@
 
    SAFETY
      · EARTH_FLOOR_ON below turns it all off: nothing runs, the attribute is
-       never set, the boards look exactly as before.
+       never set, the boards show their plain ground (the old backdrop only
+       where the airport chose Classic, v24144).
      · ?floor=classic | ?floor=earth on one screen (review, emergencies), then
        the airport's Customize choice (html[data-fids-floor-pref], set by
        fids-core.js from the field floor: '' or earth is Earth, classic is the
        earlier backdrop).
      · html[data-fids-floor=earth] is set only once a planet has painted (or
-       the rows leave under 28 px for one), and it is what retires the old
-       backdrop (css/display-overrides.css). It does not follow the floor page
+       the rows leave under 28 px for one). Since v24144 the old backdrop is
+       retired by data-fids-floor-pref instead (css/display-overrides.css:
+       shown only for classic). It does not follow the floor page
        by page: a busy page under 28 px shows plain ground, not the old
        picture.
      · Pictures that fail: a missing square is covered by the whole-Earth
-       picture. If that fails too the attribute goes and the old backdrop
-       shows; it is tried again at most once every 10 minutes. A thrown error
+       picture. If that fails too the attribute goes and the board shows its
+       plain ground (v24144; the old backdrop until then); it is tried again
+       at most once every 10 minutes. A thrown error
        turns the floor off for the session.
      · Never holds the page: projecting and lighting run in slices of 6 ms at
        most. A screen with little memory or few cores starts at half size; a
@@ -150,7 +153,7 @@
   var BLOB_BUDGET = 8e6;            // compressed pictures kept at hand, bytes
   var RETRY_MS = 600000;            // a floor with no picture is tried again after this
   var WAIT_MS = 60000;              // a planet not up by then: the old backdrop meanwhile
-  var PLACES_URL = '/js/earth-places.js?v=24140';   // every other place's position and zone (loadPlaces)
+  var PLACES_URL = '/js/earth-places.js?v=24144';   // every other place's position and zone (loadPlaces)
   var PLACES_WAIT_MS = 6000;        // the most a floor waits for them before it is drawn without
   var HALO = '#020a1c';
 

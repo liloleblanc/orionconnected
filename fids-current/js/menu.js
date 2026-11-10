@@ -2602,7 +2602,17 @@ function _cuSave(prefs) {
   // updatedAt; the board compares the two so a newer airport-wide save wins
   // over this device's older local copy (see applyAirportConfigToBoard).
   try { prefs.savedAt = Date.now(); } catch (e) {}
-  try { localStorage.setItem(_cuStorageKey(), JSON.stringify(prefs)); } catch (e) {}
+  // v24144 — the bottom of the board is the airport choice only: it travels
+  // to the cloud (_cuCloudPush reads prefs.floor) and is never kept in this
+  // device copy, which the boards no longer read for it (_fidsAirportFloor).
+  var local = prefs;
+  try {
+    if (prefs && prefs.floor !== undefined) {
+      local = {};
+      for (var k in prefs) if (Object.prototype.hasOwnProperty.call(prefs, k) && k !== 'floor') local[k] = prefs[k];
+    }
+  } catch (e) { local = prefs; }
+  try { localStorage.setItem(_cuStorageKey(), JSON.stringify(local)); } catch (e) {}
 }
 
 // v23214 — SETTINGS SAVE GLOBALLY (t save globally …
@@ -2714,6 +2724,11 @@ function _cuCloudPush(code, prefs) {
             return;
           }
           _cuSyncNote('saved');
+          // v24144 — the bottom of the board is read from the airport config
+          // only, so this screen re-reads it now rather than at the next 10 s poll.
+          if (body.floor !== undefined) {
+            try { if (typeof refreshAirportConfig === 'function') refreshAirportConfig(code); } catch (e) {}
+          }
           // Align this device's stamp with the cloud's so the newer-wins
           // comparison treats them as the same save, not a conflict.
           try {
@@ -2868,18 +2883,17 @@ function _cuPaintForm(prefs) {
     }
     wi.value = _wiv || ''; if (wi.selectedIndex < 0) wi.value = ''; wi.dataset.painted = '1';
   }
-  // The bottom of the board: this device's choice when it holds one, otherwise
-  // the airport's (the layers the board reads), so the next save of anything
+  // The bottom of the board: the airport choice, so the next save of anything
   // else never resets the airport to the default.
   var fl = document.getElementById('cuFloor');
   if (fl) {
-    var _flv = prefs.floor;
-    if (_flv === undefined || _flv === null || _flv === '') {
-      try {
-        var _flCfg = (typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null;
-        _flv = (_flCfg && _flCfg.floor) || '';
-      } catch (e) { _flv = ''; }
-    }
+    // v24144 — the airport choice, which is all the boards read for it
+    // (_fidsAirportFloor); a device copy is no longer kept.
+    var _flv = '';
+    try {
+      _flv = (typeof _fidsAirportFloor === 'function') ? _fidsAirportFloor(_acCurrentCode())
+        : (((typeof getAirportConfig === 'function') ? getAirportConfig(_acCurrentCode()) : null) || {}).floor || '';
+    } catch (e) { _flv = ''; }
     if (_flv === 'earth') _flv = '';
     fl.value = _flv || ''; if (fl.selectedIndex < 0) fl.value = ''; fl.dataset.painted = '1';
   }

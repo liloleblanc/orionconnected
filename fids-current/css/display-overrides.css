@@ -10297,7 +10297,7 @@ html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airli
    inside a slate grey frame. The tricolore streaks were too busy behind text on a screen;
    plate-af-tricolore.jpg stays on disk as the one-line rollback. */
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24140');
+  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24144');
   --plate-base: #051039;
   --plate-blend: normal;
   --plate-ink: #ffffff;
@@ -19210,7 +19210,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 0 auto !important;
   width: clamp(44px, 6.4vh, 80px) !important;
   height: clamp(44px, 6.4vh, 80px) !important;
-  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24140');
+  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24144');
   background-size: 5500% 100%;
   background-repeat: no-repeat;
   background-position: 0% 0%;
@@ -22979,7 +22979,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24140') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24144') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }
@@ -26545,17 +26545,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    orbit, this minute (NASA pictures, our own copy under /earth/v1/). This
    block is its stylesheet half.
 
-   THE OLD BACKDROP, BEHIND THE SWITCH. The Moncton skyline (v23146, YQM) and
-   the world-network picture (every themed board but YQM and MCO) are not
-   deleted: they are switched off only while html carries data-fids-floor=earth,
-   which the module sets once a planet has painted, or data-fids-floor-wait=earth
-   (v24079), which fids.html stamps in its head so a board that has just
-   opened shows its plain ground until the planet is up, never the old picture
-   for a moment first; the module takes it away once the planet is up, and
-   wherever none will be. Take the attributes away (EARTH_FLOOR_ON = false,
-   ?floor=classic, the airport Customize choice Classic, a narrow screen, or a
-   floor whose pictures fail) and the board looks exactly as before. MCO keeps its own backdrop and its row pattern; the belts
-   (.bidsv2-screen) are not touched.
+   THE OLD BACKDROP, ONLY WHEN THE AIRPORT CHOSE IT (v24144). The Moncton
+   skyline (v23146, YQM) and the world-network picture (every themed board but
+   YQM and MCO) are not deleted: they show only while html carries
+   data-fids-floor-pref=classic, which fids-core.js sets from the airport
+   Customize choice Classic (the airport config, never a device copy) or from
+   ?floor=classic for review. Everywhere else the board shows its plain ground
+   wherever no planet is up: before the first one, on a screen under 800 px
+   (a phone, a narrow window, a zoomed browser), when the pictures fail, after
+   a minute with no planet, and with EARTH_FLOOR_ON = false. Until v24144 the
+   old picture was the default and came back in every one of those cases, and
+   a device copy of Classic (per origin) brought it back on one address only.
+   MCO keeps its own backdrop and its row pattern; the belts (.bidsv2-screen)
+   are not touched.
 
    THE LAYER sits under the rows at z-index -1 inside the content area, which
    already contains its layout, so it moves nothing. Its names take the board
@@ -26564,10 +26566,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    appears) is run by the module, which skips it on a screen asking for
    reduced motion. No quote marks anywhere in this block
    (tests/earth-floor-wiring.test.js). */
-html[data-fids-floor=earth] body[data-fids-ap=YQM]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_),
-html[data-fids-floor=earth] body[data-fids-theme]:not([data-fids-ap=MCO]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_),
-html[data-fids-floor-wait=earth] body[data-fids-ap=YQM]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_),
-html[data-fids-floor-wait=earth] body[data-fids-theme]:not([data-fids-ap=MCO]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+html:not([data-fids-floor-pref=classic]) body[data-fids-ap=YQM]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_),
+html:not([data-fids-floor-pref=classic]) body[data-fids-theme]:not([data-fids-ap=MCO]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
   background-image: none !important;
 }
 #fidsBoard > .content-area > #ocFloor {
