@@ -17948,7 +17948,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24136" src="/textures/gate-sky-shelf.mp4?v=24136" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24137" src="/textures/gate-sky-shelf.mp4?v=24137" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -17992,7 +17992,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24136" src="/textures/gate-sky-shelf.mp4?v=24136" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24137" src="/textures/gate-sky-shelf.mp4?v=24137" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19224,7 +19224,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24136" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24137" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36338,7 +36338,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24136';
+var FIDS_BUILD_TAG = 'v24137';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -64922,6 +64922,11 @@ var HERITAGE_MARKS = [
     //    body is made solid, each pixel as it looked on the white it was drawn
     //    on, and about 590 faint specks around the aeroplane (alpha 6 or less)
     //    are removed. Cropped to its own edges, as the 1987 drawing is.
+    // v24137 — the 1980 lockup (AC-1980-LOGO.svg: this card, the 1980 767
+    // and the 1980 DC-8) is now the same supplied drawing as the 1965
+    // lockup, every shape identical, filled in the 1980 red: the earlier
+    // export had its letters a fifth of a cap height below the centre of
+    // the ring and softer outlines. The two marks differ only in colour.
     key: 'air-canada-caps',
     file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
     name: 'Air Canada',
@@ -65038,8 +65043,20 @@ var HERITAGE_MARKS = [
     // dates are the artwork's name and none is printed. (The heritage
     // folder's air-canada-1964.svg is the same design and stays unused, a
     // recorded decision in tests/heritage-card.test.js.)
+    // v24137 — THE MARK IS THE SUPPLIED 1965 LOCKUP, BLACK LETTERING. The
+    // 1965 scheme set AIR CANADA in black capitals beside the red rondelle
+    // (the drawing on this card shows it; the titles turned red in 1980),
+    // and the stacked bitmap above was red all over. The supplied vector
+    // drawing, the rondelle and AIR CANADA in one line, is installed as
+    // AC-1965-LOGO.svg beside the 1980, 1987 and 1993 marks, placed in the
+    // frame of the 1980 lockup (the same ring size and place, the cap height
+    // of the I, 425.7 units, the same start and word gap, the letters centred
+    // on the ring), and the 1980 lockup is the same drawing in red. Its letter
+    // counters came as white shapes clipped inside each letter and are cut
+    // as true holes instead, so the card ground shows through them. The red
+    // bitmap stays on disk, used by nothing.
     key: 'air-canada-dc8',
-    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    file: '/logos/advertisements/retro-airlines/AC-1965-LOGO.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc8.png',
     airports: '*CA'
@@ -65149,6 +65166,44 @@ var HERITAGE_MARKS = [
     file: '/logos/advertisements/retro-airlines/AC-1993-LOGO.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc9-ac93.png',
+    airports: '*CA'
+  },
+  {
+    // v24137 — AND THE DOUGLAS DC-8-63, IN THE 1980 LIVERY: AIR CANADA in red
+    // capitals over the single red cheatline, the white rondelle on a red fin
+    // and a bare-metal belly, so it carries the 1980 mark, as the capitals
+    // DC-9 and the 1980 767 cards do. The supplied drawing is C-FTIV, fleet
+    // 877, a DC-8-63 (MSN 46126, line 524): delivered to Air Canada as CF-TIV
+    // on 1 April 1970 (PlaneLogger; the airliners.net record of the Toronto
+    // photograph of 26 March 1971 gives the fin as 877 and its Air Canada
+    // service as April 1970 to April 1983, then a freighter with Evergreen).
+    // The registration became C-FTIV in 1974, as the whole register did.
+    //
+    // THE CAPTION NAMES THE TYPE: Douglas DC-8-63 · 1969–1983 · 1980 livery.
+    // Air Canada took its first -63, CF-TIK (MSN 46033, line 431), on
+    // 16 February 1969 (PlaneLogger; Glyn Chadwick has it joining in February
+    // 1969), after the -61s of the 1965 card, and the stretched DC-8s flew
+    // their last passenger flights on 23 April 1983 (Henry Tenby, spring 1984,
+    // as the 1965 DC-8 card records; the Air Canada fleet list has the -63
+    // withdrawn from passenger service in 1983, and C-FTIV itself left in
+    // April 1983). The -73F freighter conversions that flew on are another
+    // model and do not change these years. The 1970 delivery of the aeroplane
+    // drawn is not printed: the card names the type.
+    //
+    // ITS SHAPE: a -63 is the -61 body with the longer wing and the extended
+    // nacelles, so length over fuselage depth is the 13.83 of the -61 card
+    // (Douglas MDC K0369 rev A, 2.2). Measured 14–26% behind the nose the
+    // drawing gives 12.79, 7.5% deep, outside the 4% the boards resize at,
+    // and it is used AS DRAWN all the same: it is the supplied art, and a
+    // squeeze is a call for its author. Cropped to its own edges (1742 x 385);
+    // 4,941 body pixels a shade see-through (alpha 245–254) made solid as they
+    // looked on white; no specks and no enclosed holes to fix.
+    // Apart from the 1965 DC-8 in the rotation on purpose, as the two 767s
+    // and the two TriStars are.
+    key: 'air-canada-dc8-80',
+    file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-dc8-ac80.png',
     airports: '*CA'
   },
   {
@@ -65419,7 +65474,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24136" src="/textures/gate-sky-shelf.mp4?v=24136"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24137" src="/textures/gate-sky-shelf.mp4?v=24137"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
