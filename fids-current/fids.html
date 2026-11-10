@@ -331,24 +331,11 @@ s not just start it's all the time now'). ?rotate= navigates with
     }
   } catch (e) {}
   </script>
-<!-- SAFARI FIRST-LOAD TEST, VARIANT B. Preview branch safari-first-load-test only, never merged.
-     Every self-painting layer is taken out of the departures table: the clip on the two end
-     header cells, the positioned and transformed logo and wordmark, the row hover filter. -->
-<style id="wkTestB">
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable thead th:first-child,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable thead th:last-child { clip-path: none !important; -webkit-clip-path: none !important; }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-wordmark,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-wordmark[data-code] { transform: none !important; position: static !important; top: auto !important; }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo .full-logo,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .full-logo { position: static !important; top: auto !important; }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable tr,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable tr:hover,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable tr:active { filter: none !important; transform: none !important; transition: none !important; }
-</style>
+<!-- SAFARI FIRST-LOAD TEST, VARIANT C. Preview branch safari-first-load-test only, never merged.
+     The untouched board; its link carries floor=classic, so the Earth floor canvas is never drawn. -->
 <script>
-(function () { function b() { if (!document.body || document.getElementById('wkBadge')) return; var d = document.createElement('div'); d.id = 'wkBadge'; d.textContent = 'TEST B';
-  d.setAttribute('style', 'position:fixed;right:10px;bottom:46px;z-index:2147483647;padding:4px 10px;border-radius:6px;background:#e91e63;color:#fff;font:700 16px/1.1 -apple-system,system-ui,sans-serif;pointer-events:none');
+(function () { function b() { if (!document.body || document.getElementById('wkBadge')) return; var d = document.createElement('div'); d.id = 'wkBadge'; d.textContent = 'TEST C';
+  d.setAttribute('style', 'position:fixed;right:10px;bottom:46px;z-index:2147483647;padding:4px 10px;border-radius:6px;background:#3f51b5;color:#fff;font:700 16px/1.1 -apple-system,system-ui,sans-serif;pointer-events:none');
   document.body.appendChild(d); } document.addEventListener('DOMContentLoaded', b); setTimeout(b, 3000); })();
 </script>
 </head>
