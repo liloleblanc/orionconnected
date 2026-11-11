@@ -81,6 +81,10 @@ function liveGateChain() {
     fnSource('_pageAirport'),
     fnSource('_gateFlightLive'),
     fnSource('_gateHoldYields'),
+    // v24143 — with no gate in the feed, _gateLiveGates hands over the live
+    // flights (_gateFlightPicks); lifted so the harness runs that branch too.
+    constLine('GATE_FLIGHT_PICK_MAX'),
+    fnSource('_gateFlightPicks'),
     fnSource('_gateLiveGates')
   ].join('\n');
 }
