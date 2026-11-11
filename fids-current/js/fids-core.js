@@ -5270,7 +5270,7 @@ function updateSubScreens() {
     if (flights.some(_bidsUnassigned)) locations.push(BIDS_UNASSIGNED);
     useGate = false;
   } else {
-    locations = [...new Set(flights.map(f => f.gate).filter(g => g && g !== '—'))].sort();
+    locations = [...new Set(flights.map(f => f.gate).filter(g => g && !/^[-\u2013\u2014\s]+$/.test(String(g))))].sort();
     // v24143 — no gate number on any departure (YYG): the screen is picked by
     // FLIGHT, the next departures in time order (_gateFlightPicks). Before the
     // pin below, so a ?gate=AC8215 address is matched against flights and its
@@ -36509,7 +36509,7 @@ var _BIDSV3_ON = true; //
       if (document.getElementById('fidsBuildTag')) return;
       var d = document.createElement('div');
       d.id = 'fidsBuildTag';
-      d.textContent = FIDS_BUILD_TAG;
+      d.textContent = FIDS_BUILD_TAG + (window._fidsLoadPath ? '.' + window._fidsLoadPath : '');
       d.style.cssText = 'position:fixed;left:7px;bottom:1px;z-index:99999;font:600 10px/1.6 monospace;color:rgba(128,138,152,0.55);pointer-events:none;';
       document.body.appendChild(d);
       if (!_diagOn) return;
@@ -36536,14 +36536,22 @@ var _BIDSV3_ON = true; //
 
 // v24144 — A BOARD IS NEVER LOADED WHERE NOBODY CAN SEE IT, AND IS REPAINTED WHEN IT IS SHOWN.
 //
-// Seen in Safari 26 on a Mac and on an iPhone: after a new build went live, a
-// board left open in a tab came back with the airline column and both header
-// ends empty and with rows that only appeared under the pointer. A reload by
-// hand always cured it. The build watchdog below had reloaded the page while
-// the tab was hidden (it waits for five quiet minutes, and an unattended tab
-// is quiet), and Safari did not paint what was laid out while hidden.
+// Seen in Safari 26 on a Mac and on an iPhone: a board left open in a tab came
+// back with the airline column and both header ends empty and with rows that
+// only appeared under the pointer. A reload by hand, in view, always cured it.
+// NOT REPRODUCED outside Safari, so the cause is suspected, not proven. Two
+// reloads of ours fit every sighting: the build watchdog below reloading the
+// page while the tab is hidden (it waits for five quiet minutes, and an
+// unattended tab is quiet), and the resume watchdog reloading it in the very
+// event that says the tab is being shown. Either way the page is laid out
+// before Safari is really presenting it. What would refute this: the blank on
+// a load that began well after the page was in view (the build tag says how
+// each load began, see _fidsLoadPath).
 //
-// Three rules, all of them no-ops on a wall screen, which is always visible:
+// Four rules, all of them no-ops on a wall screen, which is always visible:
+//   0. No reload of ours starts in the event that shows the page. It waits for
+//      two painted frames and 600 ms more, and gives up if the page is hidden
+//      again (_fidsReloadInView). A reload by hand is exactly that.
 //   1. The watchdog does not reload a hidden page. It reloads the moment the
 //      page is shown, so the new build loads in view, as a reload by hand does.
 //      (A page hidden for twenty minutes after a build reloads anyway, so a
@@ -36552,9 +36560,33 @@ var _BIDSV3_ON = true; //
 //      tab) reloads once when it is first shown. Once: a session mark stops a
 //      second reload inside a minute.
 //   3. Every time the page is shown again it is repainted: the body is put
-//      through one frame at an opacity a hair under 1, which makes the engine
+//      through two frames at an opacity a hair under 1, which makes the engine
 //      paint the whole page again and moves nothing.
+//
+// HOW EACH LOAD BEGAN is kept for the build tag in the corner (_fidsLoadPath),
+// as two digits after the build, v24144.00. First digit: 0 = opened or
+// reloaded by hand, 1 = build watchdog in view, 2 = build watchdog after
+// twenty hidden minutes, 3 = held build on show, 4 = hidden load on show,
+// 5 = resume watchdog. Second digit: 0 = the load finished in view, 1 = it
+// finished hidden. A screenshot of a blank board then says which path made it.
 var _fidsReloadWhenShown = false;
+var _fidsReloadInViewPending = false;
+function _fidsReloadNow(why) {
+  try { sessionStorage.setItem('fids_reload_why', why); } catch (e) {}
+  location.reload();
+}
+function _fidsReloadInView(why) {
+  if (_fidsReloadInViewPending) return;
+  _fidsReloadInViewPending = true;
+  var go = function () {
+    _fidsReloadInViewPending = false;
+    if (document.hidden) { _fidsReloadWhenShown = true; return; }
+    _fidsReloadNow(why);
+  };
+  var later = function () { setTimeout(go, 600); };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { requestAnimationFrame(later); });
+  else later();
+}
 function _fidsHiddenLoadShouldReload(loadedHidden, lastMark, nowMs) {
   if (!loadedHidden) return false;
   var last = +lastMark || 0;
@@ -36565,7 +36597,15 @@ function _fidsHiddenLoadShouldReload(loadedHidden, lastMark, nowMs) {
     if (typeof document === 'undefined' || typeof window === 'undefined') return;
     var KEY = 'fids_hidden_load_reload';
     var loadedHidden = false;
-    var settle = function () { loadedHidden = !!document.hidden; };
+    var why = '0';
+    try { why = sessionStorage.getItem('fids_reload_why') || '0'; sessionStorage.removeItem('fids_reload_why'); } catch (e) {}
+    if (!/^[0-5]$/.test(why)) why = '0';
+    window._fidsLoadPath = '';
+    var settle = function () {
+      loadedHidden = !!document.hidden;
+      window._fidsLoadPath = why + (loadedHidden ? '1' : '0');
+      try { var tag = document.getElementById('fidsBuildTag'); if (tag && tag.textContent === FIDS_BUILD_TAG) tag.textContent = FIDS_BUILD_TAG + '.' + window._fidsLoadPath; } catch (e) {}
+    };
     if (document.readyState === 'complete') settle();
     else window.addEventListener('load', settle);
     var repaint = function () {
@@ -36582,14 +36622,14 @@ function _fidsHiddenLoadShouldReload(loadedHidden, lastMark, nowMs) {
     };
     var shown = function () {
       if (document.hidden) return;
-      if (_fidsReloadWhenShown) { _fidsReloadWhenShown = false; location.reload(); return; }
+      if (_fidsReloadWhenShown) { _fidsReloadWhenShown = false; _fidsReloadInView('3'); return; }
       if (loadedHidden) {
         loadedHidden = false;
         var last = 0;
         try { last = +sessionStorage.getItem(KEY) || 0; } catch (e) {}
         if (_fidsHiddenLoadShouldReload(true, last, Date.now())) {
           try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {}
-          location.reload();
+          _fidsReloadInView('4');
           return;
         }
       }
@@ -36633,7 +36673,7 @@ function _fidsHiddenLoadShouldReload(loadedHidden, lastMark, nowMs) {
                 if (Date.now() - _hiddenSince < 20 * 60000) return;
               }
               console.log('[FIDS] Build ' + _newBuild + ' deployed (running ' + FIDS_BUILD_TAG + ') — reloading');
-              location.reload();
+              _fidsReloadNow(document.hidden ? '2' : '1');
             }
           }).catch(function () {});
       } catch (e) {}
@@ -62784,7 +62824,8 @@ if (typeof window !== 'undefined') {
         if (Date.now() - last < 60000) return;
         try { sessionStorage.setItem('_fidsResumeReloadAt', String(Date.now())); } catch (e) {}
         try { console.log('[FIDS] resume watchdog reload (' + why + '): heartbeat was ' + Math.round((Date.now() - window._fidsHeartbeat) / 60000) + ' min stale'); } catch (e) {}
-        location.reload();
+        // v24144: not in the event that shows the page (rule 0 at the build watchdog).
+        if (typeof _fidsReloadInView === 'function') _fidsReloadInView('5'); else location.reload();
       } catch (e) {}
     }
     window.addEventListener('pageshow', function (e) { if (e && e.persisted) _maybeReload('pageshow'); });
