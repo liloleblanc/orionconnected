@@ -65,8 +65,9 @@ function desktopSiteBlock(name) {
 }
 
 /** Run a page's desktop-site script and report what it did. */
-function runPage({ ua = UA_IPHONE, search = '', pref = null, framed = false, storageThrows = false, name = 'fids.html', touch = 5, screen = IPHONE_SCREEN, visual = { w: 1280, h: 2146 }, layout = { w: 1280, h: 2146 } } = {}) {
-  const meta = { content: 'width=device-width, initial-scale=1.0', setAttribute(k, v) { if (k === 'content') this.content = v; } };
+function runPage({ ua = UA_IPHONE, search = '', tab = null, framed = false, storageThrows = false, name = 'fids.html', touch = 5, screen = IPHONE_SCREEN, visual = { w: 1280, h: 2146 }, layout = { w: 1280, h: 2146 } } = {}) {
+  // v24145 — the script MAKES the one viewport meta, with its final content
+  const metas = [];
   const classes = new Set();
   // innerWidth/innerHeight as Safari reports them (the part on screen: the zoom
   // shrinks them) and the layout size (documentElement.clientWidth/Height).
@@ -76,12 +77,15 @@ function runPage({ ua = UA_IPHONE, search = '', pref = null, framed = false, sto
     screen,
     location: { search },
     document: {
-      querySelector: (sel) => (sel === 'meta[name="viewport"]' ? meta : null),
+      createElement: (t) => ({ tag: t, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } }),
+      head: { appendChild: (m) => { metas.push(m); return m; } },
       documentElement: { classList: { add: (c) => classes.add(c), contains: (c) => classes.has(c) }, get clientWidth() { return layout.w; }, get clientHeight() { return layout.h; } }
     },
-    localStorage: storageThrows
+    // an answer an older board kept on the device: decides nothing now
+    localStorage: { getItem: (k) => (k === 'oc_mobile_pref' ? 'site' : null) },
+    sessionStorage: storageThrows
       ? { getItem() { throw new Error('blocked'); } }
-      : { getItem: (k) => (k === 'oc_mobile_pref' ? pref : null) }
+      : { getItem: (k) => (k === 'oc_board_tab' ? tab : null) }
   };
   ctx.window = ctx;
   ctx.self = ctx;
@@ -90,7 +94,10 @@ function runPage({ ua = UA_IPHONE, search = '', pref = null, framed = false, sto
   Object.defineProperty(ctx, 'innerHeight', { configurable: true, get: () => view.h });
   vm.createContext(ctx);
   vm.runInContext(desktopSiteBlock(name).body, ctx);
-  return { viewport: meta.content, desktop: classes.has('fids-desktop-site'), win: ctx, view };
+  assert.equal(metas.length, 1, 'exactly one viewport meta, made once');
+  assert.equal(metas[0].tag, 'meta');
+  assert.equal(metas[0].attrs.name, 'viewport');
+  return { viewport: metas[0].attrs.content, desktop: classes.has('fids-desktop-site'), win: ctx, view };
 }
 
 /** The handoff IIFE from fids-core, run against a phone. */
@@ -100,14 +107,16 @@ function handoffSource() {
   assert.ok(a > 0 && b > a, 'the handoff block is where it was');
   return CORE.slice(a, b);
 }
-function runHandoff({ ua = UA_IPHONE, search = '', pref = null, framed = false, stream = false, pathname = '/fids' } = {}) {
+function runHandoff({ ua = UA_IPHONE, search = '', hash = '', pref = null, tab = null, decided = false, framed = false, stream = false, pathname = '/fids' } = {}) {
   let to = null;
   const ctx = {
     navigator: { userAgent: ua },
-    location: { pathname, search, hash: '', replace(u) { if (to === null) to = u; } },
+    location: { pathname, search, hash, replace(u) { if (to === null) to = u; } },
     document: { documentElement: { classList: { contains: (c) => (c === 'fids-stream' ? stream : false) } } },
-    localStorage: { getItem: (k) => (k === 'oc_mobile_pref' ? pref : null) }
+    localStorage: { getItem: (k) => (k === 'oc_mobile_pref' ? pref : null) },
+    sessionStorage: { getItem: (k) => (k === 'oc_board_tab' ? tab : null) }
   };
+  if (decided) ctx.__ocArrival = { to: '', mark: true, phoneBoard: false };
   ctx.window = ctx;
   ctx.self = ctx;
   ctx.top = framed ? {} : ctx;
@@ -118,16 +127,22 @@ function runHandoff({ ua = UA_IPHONE, search = '', pref = null, framed = false, 
 
 // ── the script is one script, early, on all three pages ───────────────────
 
-test('fids, gids and bids carry the same desktop-site script, before any stylesheet', () => {
+test('fids, gids and bids carry the same desktop-site script, first in the head, before anything loads', () => {
   const ref = desktopSiteBlock('fids.html').body;
   for (const name of Object.keys(PAGES)) {
     const html = PAGES[name];
     const blk = desktopSiteBlock(name);
     assert.equal(blk.body, ref, name + ': identical to fids.html');
-    const meta = html.indexOf('<meta name="viewport"');
+    const head = html.indexOf('<head>');
+    assert.ok(head > 0 && /^\s*$/.test(html.slice(head + 6, blk.at)), name + ': the first thing in the head');
     const firstCss = html.indexOf('<link rel="stylesheet"');
-    assert.ok(meta > 0 && meta < blk.at, name + ': after the viewport meta');
-    assert.ok(firstCss > blk.at, name + ': before the first stylesheet, so the width queries never see the phone width');
+    const firstSrc = html.search(/<script[^>]*\ssrc=/i);
+    assert.ok(firstCss > blk.at && firstSrc > blk.at, name + ': before any stylesheet or script file, so nothing can lay the page out first');
+    // v24145 — no static viewport meta for the script to rewrite: the phone
+    // viewport never exists on a page that shows the wall board
+    const outside = html.replace(/<noscript>[\s\S]*?<\/noscript>/gi, '');
+    assert.equal((outside.match(/<meta name="viewport"/g) || []).length, 0, name + ': no static viewport meta');
+    assert.match(html, /<noscript><meta name="viewport" content="width=device-width, initial-scale=1\.0"><\/noscript>/, name + ': without scripts, the phone viewport');
   }
 });
 
@@ -141,28 +156,31 @@ test('a phone that asked for the board gets a desktop width', () => {
   }
 });
 
-test('a phone that answered the regular site once keeps it on every board link', () => {
-  const r = runPage({ search: '?ap=YQM&screen=gate&gate=2', pref: 'site' });
+test('a phone inside a board it chose in this tab keeps the wall board on every tap', () => {
+  const r = runPage({ search: '?screen=gate&gate=2', tab: '1' });
   assert.equal(r.viewport, 'width=1280');
   assert.equal(r.desktop, true);
+  assert.equal(runPage({ search: '?gate=2&mobile=ask', tab: '1' }).desktop, false, 'asked again: the phone viewport');
+  assert.equal(runPage({ search: '?stream=1', tab: '1' }).desktop, false, 'a kiosk layout is not that board');
 });
 
-test('a phone that chose the app, or has not answered, is left to the handoff', () => {
-  for (const pref of [null, 'app', '']) {
-    const r = runPage({ search: '?ap=YQM', pref });
-    assert.equal(r.viewport, 'width=device-width, initial-scale=1.0', 'pref=' + pref);
+test('a fresh phone has the phone viewport while it is asked, whatever an older board stored', () => {
+  for (const tab of [null, '', '0']) {
+    const r = runPage({ search: '?ap=YQM', tab });
+    assert.equal(r.viewport, 'width=device-width, initial-scale=1.0', 'tab=' + tab);
     assert.equal(r.desktop, false);
   }
 });
 
 test('displays, laptops, televisions and rotator frames never change width', () => {
   for (const ua of [UA_DESKTOP, UA_ANDROID_TV]) {
-    const r = runPage({ ua, search: '?nomobile=1', pref: 'site', touch: 0, screen: MAC_SCREEN });
+    const r = runPage({ ua, search: '?nomobile=1', tab: '1', touch: 0, screen: MAC_SCREEN });
     assert.equal(r.viewport, 'width=device-width, initial-scale=1.0', ua.slice(0, 40));
     assert.equal(r.desktop, false);
   }
   const framed = runPage({ search: '?nomobile=1', framed: true });
   assert.equal(framed.desktop, false, 'an iframe in the rotator keeps its own width');
+  assert.equal(framed.viewport, 'width=device-width, initial-scale=1.0', 'and still has its meta');
 });
 
 test('blocked storage does not break the explicit flag', () => {
@@ -202,23 +220,33 @@ test('an iPad, which asks for the desktop site by default, and a Mac keep their 
 });
 
 // ── the handoff: an undecided phone is asked, with the page it came for ────
+// v24145 — on fids, gids and bids the decision is made in the head
+// (host-airport.js fidsArrival, tests/strict-addresses.test.js); this block
+// stands down when it sees it and is the fallback for a page without it.
+
+test('the handoff stands down when the head has decided', () => {
+  assert.equal(runHandoff({ search: '?ap=YQM', decided: true }), null);
+  assert.equal(runHandoff({ search: '?ap=YQM', pref: 'app', decided: true }), null);
+});
 
 test('the handoff sends an undecided phone to the opener, carrying the link it opened', () => {
   assert.equal(runHandoff({ search: '?ap=YQM' }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=YQM'));
   assert.equal(runHandoff({ search: '?ap=YQM&screen=gate&gate=2', pathname: '/gids' }),
     '/?ap=YQM&next=' + encodeURIComponent('/gids?ap=YQM&screen=gate&gate=2'));
   assert.equal(runHandoff({ search: '', pathname: '/bids' }), '/?next=' + encodeURIComponent('/bids'));
-  assert.equal(runHandoff({ search: '?ap=YQM', pref: '' }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=YQM'));
+  assert.equal(runHandoff({ search: '?ap=YQM', hash: '#m' }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=YQM') + '#m');
 });
 
-test('the handoff still sends a phone that chose the app straight to it', () => {
-  assert.equal(runHandoff({ search: '?ap=YQM', pref: 'app' }), 'app.html?ap=YQM');
-  assert.equal(runHandoff({ search: '?ap=YQM&screen=gate&gate=2', pref: 'app' }), 'app.html?ap=YQM&screen=gate&gate=2');
+test('a stored answer decides nothing: the phone is asked, never sent to the app unasked', () => {
+  for (const pref of ['app', 'site', '']) {
+    assert.equal(runHandoff({ search: '?ap=YQM', pref }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=YQM'), 'pref=' + pref);
+  }
 });
 
-test('the handoff keeps a phone that chose the regular site on the board', () => {
-  assert.equal(runHandoff({ search: '?ap=YQM', pref: 'site' }), null);
-  assert.equal(runHandoff({ search: '?ap=YQM&screen=gate&gate=2', pref: 'site' }), null);
+test('the handoff keeps a phone inside a board it chose in this tab', () => {
+  assert.equal(runHandoff({ search: '?ap=YQM', tab: '1' }), null);
+  assert.equal(runHandoff({ search: '?ap=YQM&screen=gate&gate=2', tab: '1' }), null);
+  assert.equal(runHandoff({ search: '?ap=YQM&mobile=ask', tab: '1' }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=YQM&mobile=ask'));
 });
 
 test('the escape hatches and the display guards are unchanged', () => {
@@ -242,13 +270,14 @@ function appDesktopBlock() {
   assert.ok(firstLink < 0 || firstLink > hits[0].at, 'before any stylesheet');
   return hits[0].body;
 }
-function runApp({ ua = UA_CRIOS_DESKTOP, search = '?ap=YQM', touch = 5, screen = IPHONE_SCREEN, framed = false } = {}) {
+function runApp({ ua = UA_CRIOS_DESKTOP, search = '?ap=YQM', touch = 5, screen = IPHONE_SCREEN, framed = false, hostname = 'yqm.orionconnected.com', helper = null } = {}) {
   let to = null;
   const ctx = {
     navigator: { userAgent: ua, maxTouchPoints: touch },
     screen,
-    location: { search, replace(u) { if (to === null) to = u; } }
+    location: { hostname, search, replace(u) { if (to === null) to = u; } }
   };
+  if (helper) ctx.fidsBoardUrl = helper;
   ctx.window = ctx;
   ctx.self = ctx;
   ctx.top = framed ? {} : ctx;
@@ -263,6 +292,20 @@ test('request desktop site on the app opens the board, with the state it carried
   assert.equal(runApp({ search: '' }), '/fids?mode=live&nomobile=1');
   assert.equal(runApp({ search: '?mode=live&ap=YQM&nomobile=1' }), '/fids?mode=live&ap=YQM&nomobile=1');
   assert.equal(runApp({ ua: UA_ANDROID_DESKTOP }), '/fids?ap=YQM&mode=live&nomobile=1');
+});
+
+test('on .app the app is the app: a desktop request stays there', () => {
+  for (const hostname of ['orionconnected.app', 'yqm.orionconnected.app', 'fids.orionconnected.app', 'YQM.OrionConnected.app']) {
+    assert.equal(runApp({ hostname }), null, hostname);
+  }
+});
+
+test('on .com and .ca the desktop request goes straight to the airport address, through the one helper', () => {
+  const calls = [];
+  const helper = (code, page, q) => { calls.push([code, page, q]); return 'https://' + code.toLowerCase() + '.orionconnected.com/' + page + '?x'; };
+  assert.equal(runApp({ helper }), 'https://yqm.orionconnected.com/fids?x');
+  assert.deepEqual(calls[0], ['YQM', 'fids', '?ap=YQM&mode=live&nomobile=1']);
+  assert.equal(runApp({ helper, search: '' }), '/fids?mode=live&nomobile=1', 'no airport to name: the plain board, which then moves');
 });
 
 test('the app is left alone everywhere else', () => {
@@ -296,7 +339,7 @@ test('zoomed in, the board still reads its own page size, on every board page', 
 test('the sizes are untouched where the page keeps its own width', () => {
   for (const opts of [
     { ua: UA_DESKTOP, touch: 0, screen: MAC_SCREEN, search: '?nomobile=1' },
-    { ua: UA_IPHONE, search: '?ap=YQM', pref: 'app' },
+    { ua: UA_IPHONE, search: '?ap=YQM' },
     { ua: UA_IPHONE, search: '?nomobile=1', framed: true },
   ]) {
     const r = runPage(Object.assign({ visual: { w: 520, h: 873 } }, opts));

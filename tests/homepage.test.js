@@ -372,8 +372,11 @@ test('the airport index is the live roster', () => {
   // the words written into the page before its script runs say the same
   assert.match(HOME, new RegExp(`Live now at ${c.LIVE} airports`));
   assert.match(HOME, new RegExp(`${c.CA} in Canada, ${c.US} in the United States, ${c.EU} in Europe and ${c.AU} in Australia\\.`));
-  // each airport links to its own address
-  assert.match(JS, /link\.href = 'https:\/\/' \+ a\[1\]\.toLowerCase\(\) \+ '\.orionconnected\.com';/);
+  // each airport links to its own board, on its own address (v24145: through
+  // the one link helper, the root of the address only where it is missing)
+  assert.match(JS, /link\.href = boardLink\(a\[1\]\);/);
+  assert.match(JS, /var u = window\.fidsBoardUrl\(code, 'fids'\);/);
+  assert.match(JS, /return 'https:\/\/' \+ String\(code\)\.toLowerCase\(\) \+ '\.orionconnected\.com';/);
 });
 
 test('airport names in French are the boards\' own (CITY_FR)', () => {
@@ -413,7 +416,7 @@ test('home.js paints the homepage: the index, the nine languages, the switch, th
   // the airport index: one link per airport, to its own address, grouped by country
   const aps = p.$$('#airport-index a.ap');
   assert.equal(aps.length, home.AIRPORTS.length, 'every airport of the roster is in the index');
-  assert.deepEqual(aps.map((a) => a.href).sort(), Array.from(home.AIRPORTS, (a) => 'https://' + a[1].toLowerCase() + '.orionconnected.com').sort());
+  assert.deepEqual(aps.map((a) => a.href).sort(), Array.from(home.AIRPORTS, (a) => 'https://' + a[1].toLowerCase() + '.orionconnected.com/fids').sort());
   assert.deepEqual(p.$$('#airport-index .region h3').map((h) => h.textContent),
     Array.from(home.groups('en', new Intl.Collator('en'))).map((c) => new Intl.DisplayNames(['en'], { type: 'region' }).of(c)));
   assert.equal(p.$$('#airport-index a.paused').length, home.paused().length);
@@ -474,7 +477,7 @@ test('"Live now" and the paused marks follow the boards\' own dry dock, read liv
   assert.deepEqual(Array.from(home.paused()).sort(), ['SYD', 'YYZ'], 'the admin\'s list and the automatic one, as the boards count them');
   assert.equal(home.counts().LIVE, home.AIRPORTS.length - 2);
   assert.equal(p.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'en', { LIVE: home.AIRPORTS.length - 2 }));
-  assert.deepEqual(p.$$('#airport-index a.paused').map((a) => a.href).sort(), ['https://syd.orionconnected.com', 'https://yyz.orionconnected.com']);
+  assert.deepEqual(p.$$('#airport-index a.paused').map((a) => a.href).sort(), ['https://syd.orionconnected.com/fids', 'https://yyz.orionconnected.com/fids']);
   assert.equal(p.$('#paused-note').textContent, [BS.fmt('homeNotePaused', 'en', { CITY: 'Sydney' }), BS.fmt('homeNotePaused', 'en', { CITY: 'Toronto Pearson' })].join(' · '));
   assert.equal(p.$('#paused-note').parentNode.hasAttribute('hidden'), false);
   // the Canada group says which of its airports is paused, in the page's words

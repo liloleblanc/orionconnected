@@ -111,6 +111,15 @@
   var PHONE_APP = 'https://orionconnected.app';
   var SAVED_KEY = 'oc_home_lang';
 
+  function boardLink(code) {
+    try {
+      if (typeof window.fidsBoardUrl === 'function') {
+        var u = window.fidsBoardUrl(code, 'fids');
+        if (/^https:\/\//.test(u)) return u;
+      }
+    } catch (e) {}
+    return 'https://' + String(code).toLowerCase() + '.orionconnected.com';
+  }
   function display(code) {
     try { return window.fidsDisplayIata ? window.fidsDisplayIata(code) : code; } catch (e) { return code; }
   }
@@ -382,7 +391,10 @@
       list.forEach(function (a) {
         var li = el('li');
         var link = el('a', 'ap' + (PAUSED[a[1]] ? ' paused' : ''));
-        link.href = 'https://' + a[1].toLowerCase() + '.orionconnected.com';
+        // v24145 — the board itself, on its airport address (fidsBoardUrl in
+        // host-airport.js), one page and no hop; the root of the address,
+        // where that helper is missing
+        link.href = boardLink(a[1]);
         link.appendChild(el('span', 'c', display(a[1])));
         var n = el('span', 'n', nameOf(a, l));
         if (a[1] === HOME_CODE) {

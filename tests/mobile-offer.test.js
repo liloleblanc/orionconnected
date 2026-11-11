@@ -66,8 +66,9 @@ const UA_DESKTOP = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/
  * Run the router and report what it did.
  * @returns {{to: string|null, asked: boolean, app: string|null, stored: object}}
  */
-function route({ host = 'fids.orionconnected.com', search = '', ua = UA_DESKTOP, width = 1440, pref = null } = {}) {
+function route({ host = 'fids.orionconnected.com', search = '', hash = '', ua = UA_DESKTOP, width = 1440, pref = null } = {}) {
   const store = pref === null ? {} : { oc_mobile_pref: pref };
+  const tab = {};
   let to = null;
   const html = {
     _attr: {},
@@ -76,13 +77,18 @@ function route({ host = 'fids.orionconnected.com', search = '', ua = UA_DESKTOP,
     clientWidth: width
   };
   const ctx = {
-    location: { hostname: host, search, hash: '', replace(u) { if (to === null) to = u; } },
+    location: { hostname: host, search, hash, replace(u) { if (to === null) to = u; } },
     navigator: { userAgent: ua },
     document: { documentElement: html },
     localStorage: {
       getItem: (k) => (k in store ? store[k] : null),
       setItem: (k, v) => { store[k] = String(v); },
       removeItem: (k) => { delete store[k]; }
+    },
+    sessionStorage: {
+      getItem: (k) => (k in tab ? tab[k] : null),
+      setItem: (k, v) => { tab[k] = String(v); },
+      removeItem: (k) => { delete tab[k]; }
     }
   };
   ctx.window = ctx;
@@ -94,7 +100,8 @@ function route({ host = 'fids.orionconnected.com', search = '', ua = UA_DESKTOP,
     asked: html.getAttribute('data-oc-offer') === '1',
     app: ctx.__ocOffer ? ctx.__ocOffer.app : null,
     board: ctx.__ocOffer ? ctx.__ocOffer.board : null,
-    stored: store
+    stored: store,
+    tab
   };
 }
 
@@ -176,24 +183,31 @@ test('?entry=1 still reaches the admin entry screen from a phone', () => {
   assert.equal(r.asked, false, 'the entry screen must not be hidden behind the offer');
 });
 
-// ── the answer sticks, and can be taken back ──────────────────────────────
+// ── v24145: asked at every arrival; nothing remembered decides ─────────────
 
-test('an answered phone is not asked twice', () => {
-  const stay = route({ ua: UA_IPHONE, width: 390, pref: 'site' });
-  assert.equal(stay.asked, false);
-  assert.match(String(stay.to), /^fids\.html\?mode=live/);
-  assert.match(String(stay.to), /nomobile=1/);
-
-  const app = route({ ua: UA_IPHONE, width: 390, pref: 'app' });
-  assert.equal(app.asked, false);
-  assert.match(String(app.to), /^\/app/);
+test('a phone is asked at every arrival: an answer stored by an older board decides nothing', () => {
+  for (const pref of ['site', 'app', '']) {
+    const r = route({ ua: UA_IPHONE, width: 390, pref });
+    assert.equal(r.asked, true, 'pref=' + pref);
+    assert.equal(r.to, null);
+    assert.equal('oc_mobile_pref' in r.stored, false, 'and the old answer is cleared away');
+  }
 });
 
-test('?mobile=ask takes the answer back', () => {
+test('?mobile=ask is harmless: the question, as for anyone', () => {
   const r = route({ ua: UA_IPHONE, width: 390, pref: 'site', search: '?mobile=ask' });
-  assert.equal(r.asked, true, 'the question must be reachable again');
+  assert.equal(r.asked, true);
   assert.equal(r.to, null);
-  assert.equal('oc_mobile_pref' in r.stored, false, 'the stored answer must be cleared');
+  const d = route({ ua: UA_DESKTOP, width: 1920, search: '?mobile=ask' });
+  assert.equal(d.asked, false, 'a display is still never asked');
+  assert.match(String(d.to), /^fids\.html\?mode=live/);
+});
+
+test('?nomobile=1 marks the tab as inside a board, so the board does not ask', () => {
+  const r = route({ ua: UA_IPHONE, width: 390, search: '?nomobile=1' });
+  assert.equal(r.tab.oc_board_tab, '1');
+  const d = route({ ua: UA_DESKTOP, width: 1920 });
+  assert.equal(d.tab.oc_board_tab, undefined, 'a display goes to the board, which marks its own tab');
 });
 
 test('a preference never overrides an explicit override', () => {
@@ -204,20 +218,35 @@ test('a preference never overrides an explicit override', () => {
 
 // ── where YES actually goes ───────────────────────────────────────────────
 
-test('the app target stays on this origin', () => {
-  // /app is the Companion, and it is the address confirmed working by hand:
-  // fids.orionconnected.com/app?ap=MCO. Hopping to the .app domain instead cost
-  // a cross-origin navigation, a second copy of this page on the far side, and
-  // a preference stored on the origin you just left.
+test('the app answer goes to the airport on .app, the address that is only the app', () => {
+  // v24145 — it used to stay on this origin (/app), when .app had no wildcard
+  // record and no answer was asked twice. .app now resolves for every airport,
+  // and the answer is not remembered, so the app is the app address.
   const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
-  assert.match(r.app, /^\/app(\?|$)/, 'the offer must link to the Companion on this origin');
-  assert.doesNotMatch(r.app, /orionconnected\.app/, 'no cross-origin hop');
+  assert.equal(r.app, 'https://yqm.orionconnected.app/app?ap=YQM');
+  assert.equal(route({ host: 'yhz.orionconnected.ca', ua: UA_IPHONE, width: 390 }).app, 'https://yhz.orionconnected.app/app?ap=YHZ');
+  assert.equal(route({ host: 'fids.orionconnected.com', ua: UA_IPHONE, width: 390 }).app, 'https://orionconnected.app/app',
+    'a site host names no airport: the apex of the app');
+  assert.equal(route({ host: 'orionconnected.ca', ua: UA_IPHONE, width: 390, search: '?ap=YUL' }).app, 'https://yul.orionconnected.app/app?ap=YUL');
+});
+
+test('a preview or local host has no .app, so there the app is /app on its own origin', () => {
+  for (const host of ['strict-addresses-fids.n-leblanc1984.workers.dev', 'localhost', '127.0.0.1']) {
+    const r = route({ host, ua: UA_IPHONE, width: 390, search: '?ap=YQM' });
+    assert.equal(r.app, '/app?ap=YQM', host);
+  }
 });
 
 test('the airport rides across to the app', () => {
   const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
   assert.equal(new URL(r.app, 'https://yqm.orionconnected.com').searchParams.get('ap'), 'YQM',
     'a phone on Moncton’s domain must land on Moncton’s app');
+});
+
+test('the hash of the link rides through either answer', () => {
+  const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390, search: '?ap=YQM&next=' + encodeURIComponent('/gids?gate=2'), hash: '#map' });
+  assert.equal(r.board, '/gids?gate=2&nomobile=1#map');
+  assert.equal(r.app, 'https://yqm.orionconnected.app/app?ap=YQM&gate=2&screen=gate#map');
 });
 
 test('an explicit ?ap= beats the hostname', () => {
@@ -293,7 +322,10 @@ test('the hostname parse still has exactly one home', () => {
 const BS = require('../fids-current/js/board-strings.js');
 
 test('the offer is bilingual', () => {
-  for (const k of ['mobileAsk', 'mobileYes', 'mobileNo', 'mobileNote']) {
+  // v24145 — the note ("we will remember your choice") went with the memory
+  assert.equal(BS.STR.mobileNote, undefined);
+  assert.doesNotMatch(INDEX, /ocOfferNote|mobileNote/);
+  for (const k of ['mobileAsk', 'mobileYes', 'mobileNo']) {
     for (const l of BS.LANGS) assert.ok(BS.STR[k] && BS.STR[k][l], `the offer is missing ${k}.${l}`);
   }
   assert.equal(BS.STR.mobileYes.en, 'Use the mobile app');
@@ -360,7 +392,6 @@ test('the board does not undo the answer', () => {
 
 test('every route to the board from a phone survives the board', () => {
   for (const c of [
-    { label: 'remembered answer', opts: { pref: 'site' } },
     { label: '?nomobile=1 from the root', opts: { search: '?nomobile=1' } },
     { label: 'override beating a remembered app answer', opts: { pref: 'app', search: '?nomobile=1' } }
   ]) {
@@ -474,18 +505,22 @@ test('a phone that opened a board link is asked, and either answer lands on that
   assert.equal(r.asked, true);
   assert.equal(r.to, null);
   assert.equal(r.board, '/gids?ap=YQM&screen=gate&gate=2&nomobile=1');
-  assert.equal(r.app, '/app?ap=YQM&screen=gate&gate=2');
+  assert.equal(r.app, 'https://yqm.orionconnected.app/app?ap=YQM&screen=gate&gate=2');
+  // on the airport address the link carries no ap: the address is the airport
+  const home = route({ host: 'yhz.orionconnected.com', ua: UA_IPHONE, width: 390, search: '?ap=YHZ&next=' + encodeURIComponent('/bids?belt=3&mode=live&floor=classic') });
+  assert.equal(home.board, '/bids?belt=3&mode=live&floor=classic&nomobile=1');
+  assert.equal(home.app, 'https://yhz.orionconnected.app/app?ap=YHZ&belt=3&screen=baggage', 'the app reads ap, screen, gate and belt, nothing else');
   assert.ok(boardKeepsIt(r.board), 'the board keeps the phone that chose it');
   const bare = route({ ua: UA_IPHONE, width: 390, search: '?next=' + encodeURIComponent('/bids') });
   assert.equal(bare.board, '/bids?nomobile=1');
 });
 
-test('a remembered answer goes straight to the link, either way', () => {
-  const site = route({ ua: UA_IPHONE, width: 390, pref: 'site', search: nx('/fids?mode=live&ap=YQM') });
-  assert.equal(site.asked, false);
-  assert.equal(site.to, '/fids?mode=live&ap=YQM&nomobile=1');
-  const app = route({ ua: UA_IPHONE, width: 390, pref: 'app', search: nx('/fids?mode=live&ap=YQM') });
-  assert.equal(app.to, '/app?mode=live&ap=YQM');
+test('an answer stored by an older board does not skip the question for a link', () => {
+  for (const pref of ['site', 'app']) {
+    const r = route({ ua: UA_IPHONE, width: 390, pref, search: nx('/fids?mode=live&ap=YQM') });
+    assert.equal(r.asked, true, pref);
+    assert.equal(r.to, null, pref);
+  }
 });
 
 test('a display that arrives with ?next= goes to that board, unasked', () => {
@@ -501,10 +536,48 @@ test('?next= takes a board page on this origin and nothing else', () => {
   ]) {
     const r = route({ ua: UA_IPHONE, width: 390, search: '?ap=YQM&next=' + (bad === '%E0%A4%A' ? bad : encodeURIComponent(bad)) });
     assert.match(String(r.board), /^fids\.html\?mode=live&ap=YQM&nomobile=1$/, 'ignored: ' + bad);
-    assert.equal(r.app, '/app?ap=YQM', 'ignored for the app too: ' + bad);
+    assert.equal(r.app, 'https://yqm.orionconnected.app/app?ap=YQM', 'ignored for the app too: ' + bad);
   }
   for (const good of ['/fids', '/gids.html?ap=YUL', '/bids?ap=YHZ&belt=2']) {
     const r = route({ ua: UA_IPHONE, width: 390, search: '?next=' + encodeURIComponent(good) });
     assert.ok(String(r.board).startsWith(good), 'taken: ' + good);
   }
+});
+
+// ── v24145: the two buttons ───────────────────────────────────────────────
+
+/** Run the offer's own script with a stub page and press one button. */
+function press(which, offer) {
+  const hit = scriptBlocks(INDEX).filter((b) => b.includes("getElementById('ocOfferYes')") && b.includes('function answer'));
+  assert.equal(hit.length, 1, 'expected exactly one offer script');
+  const els = {};
+  const el = (id) => els[id] || (els[id] = { id, innerHTML: '', handlers: {}, addEventListener(t, f) { this.handlers[t] = f; }, focus() {} });
+  const local = {}, tab = {};
+  let to = null;
+  const ctx = {
+    __ocOffer: offer,
+    BoardStrings: { pairLangs: () => ['en', 'fr'], resolveLangs: () => ({ langs: ['en', 'fr'] }), pair: (k) => k },
+    URL,
+    document: { documentElement: { getAttribute: (k) => (k === 'data-oc-offer' ? '1' : null), removeAttribute() {} }, getElementById: el },
+    localStorage: { setItem: (k, v) => { local[k] = v; }, getItem: (k) => local[k] || null, removeItem: (k) => { delete local[k]; } },
+    sessionStorage: { setItem: (k, v) => { tab[k] = v; }, getItem: (k) => tab[k] || null }
+  };
+  ctx.window = ctx;
+  ctx.location = { href: 'https://yqm.orionconnected.com/', replace(u) { if (to === null) to = u; } };
+  vm.createContext(ctx);
+  vm.runInContext(hit[0], ctx);
+  el(which).handlers.click();
+  return { to, local, tab };
+}
+
+test('Stay goes to the board and marks this tab; the app goes to .app; neither stores an answer', () => {
+  const offer = { app: 'https://yqm.orionconnected.app/app?ap=YQM&gate=2', board: '/gids?gate=2&nomobile=1' };
+  const stay = press('ocOfferNo', offer);
+  assert.equal(stay.to, '/gids?gate=2&nomobile=1');
+  assert.equal(stay.tab.oc_board_tab, '1', 'inside a board from here on, in this tab');
+  assert.deepEqual(stay.local, {}, 'nothing kept past this tab');
+  const go = press('ocOfferYes', offer);
+  assert.equal(go.to, 'https://yqm.orionconnected.app/app?ap=YQM&gate=2');
+  assert.equal(go.tab.oc_board_tab, undefined);
+  assert.deepEqual(go.local, {});
 });
