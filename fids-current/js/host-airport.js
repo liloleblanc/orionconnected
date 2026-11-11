@@ -136,12 +136,18 @@
  *     address, one copy of its settings);
  *   · the path loses .html and any trailing slash (the host does that with a
  *     redirect of its own, which would be a second hop), and every other
- *     parameter and the hash come along untouched.
+ *     parameter and the hash come along untouched;
+ *   · an address is made from a three-letter code only. A four-letter ?ap=
+ *     (an ICAO code such as CYQM or KJFK) makes no address: no table that
+ *     maps it is loaded this early, so the page stays where it is and the
+ *     board resolves the code, as it always has.
  *
  * .app IS THE PHONE APP ONLY. On orionconnected.app, fids.orionconnected.app
  * and <code>.orionconnected.app, "/" and every board page show /app on the
  * same host, carrying ap (from the query or the address), screen, gate and
- * belt, the four things app.html reads. Desktop or phone.
+ * belt, the four things app.html reads. Desktop or phone. The two kinds of
+ * page that are never moved on .com and .ca stay boards on .app as well: a
+ * registered screen and the stream, yt and compact kiosks (below).
  *
  * NEVER MOVED, because moving would break them:
  *   · a framed page (the rotator stream frames, the tour, Studio previews):
@@ -155,6 +161,9 @@
  *     so an admin on fids.<zone> stays on fids.<zone>;
  *   · the stream, yt and compact kiosk layouts, which keep their settings in
  *     this origin storage.
+ * A registered screen and a kiosk are pinned: the link helper answers them
+ * with a relative link, so choosing another airport or a gate inside one
+ * stays on its origin too.
  *
  * PHONES ON .com AND .ca ARE ASKED, EVERY ARRIVAL. A phone that arrives at a
  * board from anywhere but another of our board pages in this tab is asked
@@ -162,7 +171,9 @@
  * remembers, per origin, that a board was shown (sessionStorage oc_board_tab),
  * so a tap inside a board (a row, a gate, the menu) is never asked again.
  * Leaving the origin, the answer travels as nomobile=1 (fidsBoardUrl adds it,
- * and so does a move). The question is asked on the address the board belongs
+ * and so does a move). Only nomobile=1 is that answer, here and in the
+ * viewport script of each board: any other value is not. A kiosk is never
+ * asked and never takes the tab memory for an answer. The question is asked on the address the board belongs
  * to, in the same hop as the move, so a move never asks twice and never
  * skips the question a fresh arrival is owed.
  *
@@ -192,6 +203,11 @@
   // The screen registry id, exactly as fids-core.js (_fidsScreenId) reads it.
   var REGISTRY_ID = /^[A-HJ-NP-Z2-9]{6}$/;
   var KIOSK_KEYS = ['stream', 'yt', 'compact'];
+  // The same three keys, read off the raw query exactly as the viewport
+  // script of fids, gids and bids reads them (tests hold the two together).
+  var KIOSK = /[?&](stream|yt|compact)([=&]|$)/;
+  // The board answer of a phone. Only this exact pair counts, everywhere.
+  var NO_MOBILE = /[?&]nomobile=1(&|$)/;
   // What app.html reads from its address.
   var APP_KEYS = ['ap', 'screen', 'gate', 'belt'];
 
@@ -274,18 +290,19 @@
       if (k === 'mode') hasMode = true;
       if (k === 'screen' && REGISTRY_ID.test(q[j].val)) return '';
       if (k === 'ap') { if (ap === null) ap = q[j].val; continue; }
-      if (k === 'nomobile') hasNoMobile = true;
+      if (k === 'nomobile' && q[j].val === '1') hasNoMobile = true;
       keep.push(q[j].raw);
     }
     var code;
     if (ap !== null && String(ap).trim() !== '') {
       code = codeOf(ap, realIata);
       if (!code) return '';                       // a code the board cannot show: leave it be
+      if (code.length !== 3) return '';           // ICAO: no address is made, the board resolves it
     } else if (here) {
       code = here;
     } else {
       code = codeOf(ctx.fallback, realIata);
-      if (!code) return '';
+      if (!code || code.length !== 3) return '';
     }
     if (here && code === here && z.label === code.toLowerCase()) return '';
     if (ctx.demo && !hasMode) keep.push('mode=demo');
@@ -303,6 +320,14 @@
     var page = pageOf(path);
     if (!page && path !== '/' && path !== '/index.html') return '';
     var q = parts(loc.search);
+    if (page) {
+      // A board page that is pinned to its origin stays a board, here as on
+      // .com and .ca. "/" is the opener and is always the app.
+      for (var p = 0; p < q.length; p++) {
+        if (KIOSK_KEYS.indexOf(q[p].key) !== -1) return '';
+        if (q[p].key === 'screen' && REGISTRY_ID.test(q[p].val)) return '';
+      }
+    }
     var seen = {}, out = [], ap = '';
     for (var j = 0; j < q.length; j++) {
       var k = q[j].key;
@@ -345,13 +370,16 @@
     var page = pageOf(loc.pathname);
     if (!page) return none;
     var search = String(loc.search || '');
-    var kiosk = /[?&](stream|yt|compact)([=&]|$)/.test(search);
-    var noMobile = /[?&]nomobile([=&]|$)/.test(search);
+    // The same reading as the viewport script of the page: nomobile=1 is the
+    // board answer wherever it is; the tab memory is one too, except on a
+    // kiosk and except when ?mobile=ask asks again. A kiosk is never asked.
+    var kiosk = KIOSK.test(search);
+    var noMobile = NO_MOBILE.test(search);
     var askAgain = /[?&]mobile=ask(&|$)/.test(search);
-    var phone = !!ctx.phone && !kiosk;
-    var phoneBoard = phone && (noMobile || (!!ctx.inBoard && !askAgain));
+    var phone = !!ctx.phone;
+    var phoneBoard = phone && (noMobile || (!kiosk && !!ctx.inBoard && !askAgain));
     var to = airportAddress(loc, { admin: ctx.admin, fallback: ctx.fallback, demo: ctx.demo, carry: phoneBoard && !noMobile }, hostAirport, realIata);
-    if (phone && !phoneBoard) {
+    if (phone && !kiosk && !phoneBoard) {
       // A fresh arrival: the question, on the address the board belongs to.
       // The opener takes the board link in ?next= (a board page on its own
       // origin) and lands either answer there.
@@ -378,11 +406,15 @@
    * The link to a board page of an airport, from a page on `env`:
    *   https://<code>.<zone>/<page>?<params>   on .com and .ca (and .com from .app)
    *   <page>.html?ap=<code>&<params>          where a page cannot leave its origin:
-   *     a preview or local host, a frame, an admin signed in here, no code.
+   *     a preview or local host, a frame, an admin signed in here, a pinned
+   *     page (a registered screen, a kiosk), no code, or a code that makes no
+   *     address (four letters).
    *   params: an object, a URLSearchParams or a query string; ap is ignored.
-   *   env: { hostname, pathname, framed, admin, phoneBoard }
-   * A phone showing the board takes nomobile=1 across to another origin, so
-   * the tap is not taken for a fresh arrival there.
+   *   env: { hostname, pathname, framed, admin, pinned, phoneBoard, demo }
+   * To another origin, the memory of the tab travels in the link: a phone
+   * showing the board takes nomobile=1, so the tap is not taken for a fresh
+   * arrival there, and a tab in the demo takes mode=demo when the link names
+   * no mode, so another airport opens in the demo too.
    */
   function boardUrlFor(code, page, params, env, realIata) {
     env = env || {};
@@ -405,13 +437,15 @@
       }
     } catch (e) {}
     var z = zoneOf(env.hostname);
-    if (!z || !c || env.framed || env.admin) {
+    if (!z || !c || c.length !== 3 || env.framed || env.admin || env.pinned) {
       return p + '.html' + ((c || q.length) ? '?' : '') + (c ? 'ap=' + c : '') + (c && q.length ? '&' : '') + q.join('&');
     }
     var zone = z.zone === APP_ZONE ? 'orionconnected.com' : z.zone;
     var host = c.toLowerCase() + '.' + zone;
     var away = host !== String(env.hostname || '').toLowerCase().split(':')[0];
-    if (away && env.phoneBoard && !/(^|&)nomobile=/.test(q.join('&'))) q.push('nomobile=1');
+    var joined = q.join('&');
+    if (away && env.demo && !/(^|&)mode(=|&|$)/.test(joined)) q.push('mode=demo');
+    if (away && env.phoneBoard && !/(^|&)nomobile=1(&|$)/.test(joined)) q.push('nomobile=1');
     return 'https://' + host + '/' + p + (q.length ? '?' + q.join('&') : '');
   }
 
@@ -428,11 +462,43 @@
   function adminNow() {
     try { return !!(window.localStorage.getItem('fids_token') || window.sessionStorage.getItem('fids_token')); } catch (e) { return false; }
   }
+  /** This page is a registered screen or a kiosk: it keeps its origin. */
+  function pinnedNow() {
+    try {
+      var q = parts(window.location.search);
+      for (var i = 0; i < q.length; i++) {
+        if (KIOSK_KEYS.indexOf(q[i].key) !== -1) return true;
+        if (q[i].key === 'screen' && REGISTRY_ID.test(q[i].val)) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  /** This tab shows the demo: the address says so, or with no mode there, the tab does. */
+  function demoNow() {
+    try {
+      var q = parts(window.location.search);
+      for (var i = 0; i < q.length; i++) if (q[i].key === 'mode' && q[i].val) return q[i].val === 'demo';
+      return window.sessionStorage.getItem('fids_mode') === 'demo';
+    } catch (e) { return false; }
+  }
+  /**
+   * The last check before a page is replaced: the destination, read as a URL,
+   * is this origin or an https address on one of our zones. Every address
+   * built above already is; this holds whatever a later change builds.
+   */
+  function ownAddress(to) {
+    try {
+      var u = new URL(String(to), window.location.href);
+      if (u.origin === new URL(window.location.href).origin) return true;
+      return u.protocol === 'https:' && !!zoneOf(u.hostname);
+    } catch (e) { return false; }
+  }
   try {
     window.fidsBoardUrl = function (code, page, params) {
       return boardUrlFor(code, page, params, {
         hostname: window.location.hostname, pathname: window.location.pathname,
-        framed: framedNow(), admin: adminNow(), phoneBoard: window.__ocPhoneBoard === true
+        framed: framedNow(), admin: adminNow(), pinned: pinnedNow(),
+        phoneBoard: window.__ocPhoneBoard === true, demo: demoNow()
       }, window.fidsRealIata);
     };
   } catch (e) {}
@@ -457,7 +523,7 @@
     window.__ocArrival = r;
     if (r.phoneBoard) window.__ocPhoneBoard = true;
     if (r.mark) { try { window.sessionStorage.setItem('oc_board_tab', '1'); } catch (e) {} }
-    if (r.to && r.to !== String(window.location.href)) {
+    if (r.to && r.to !== String(window.location.href) && ownAddress(r.to)) {
       window.__ocAddressMove = r.to;
       window.location.replace(r.to);
     }

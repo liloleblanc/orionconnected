@@ -444,9 +444,15 @@ test('home.js paints the homepage: the index, the nine languages, the switch, th
   assert.deepEqual(links.filter((a) => a.getAttribute('aria-current') === 'true').map((a) => a.getAttribute('data-lang-pick')), ['en']);
   assert.equal(sws[0].querySelector('.lsw-name').textContent, BS.META.en.name);
   for (const a of links) assert.equal(new URL(a.href, 'https://www.orionconnected.com/').searchParams.get('lang'), a.getAttribute('data-lang-pick'), 'each choice links to its own language');
-  // the boards' links go to the boards on a computer, to the app on a phone
+  // the boards' links go to the screen picker on a computer; on a phone to
+  // the address of the boards, whose opener asks board or app (v24145: a
+  // phone is asked at every arrival, so this link no longer answers for it)
   for (const a of p.$$('[data-boards-link]')) assert.equal(a.href, 'https://fids.orionconnected.com/picker');
-  for (const a of loadPage('home.html', { ua: IPHONE }).$$('[data-boards-link]')) assert.equal(a.href, 'https://orionconnected.app');
+  for (const page of ['home.html', 'credits.html']) {
+    const links = loadPage(page, { ua: IPHONE }).$$('[data-boards-link]');
+    assert.ok(links.length >= 2, page);
+    for (const a of links) assert.equal(a.href, 'https://fids.orionconnected.com/', page);
+  }
   // addresses shown as they are
   assert.equal(p.$('[data-addr] .code').textContent + p.$('[data-addr] .dom').textContent, 'yqm.orionconnected.com');
   assert.equal(p.$('a[href="mailto:contact@orionconnected.com"] [data-href-text]').textContent, 'contact@orionconnected.com');
@@ -821,8 +827,10 @@ test('wrangler sends exactly those paths to the Worker first', () => {
 test('the links go where they should', () => {
   assert.match(HOME, /href="https:\/\/fids\.orionconnected\.com\/picker" data-boards-link/, 'the live boards');
   assert.match(JS, /var LIVE_BOARDS = 'https:\/\/fids\.orionconnected\.com\/picker';/);
-  assert.match(JS, /var PHONE_APP = 'https:\/\/orionconnected\.app';/);
-  // a phone goes to the app, by the boards' own rule (fids-core.js PHONE
+  assert.match(JS, /var PHONE_BOARDS = 'https:\/\/fids\.orionconnected\.com\/';/);
+  assert.match(JS, /var to = isPhone\(\) \? PHONE_BOARDS : LIVE_BOARDS;/);
+  assert.doesNotMatch(JS, /PHONE_APP/, 'no link of the homepage decides board or app for a phone');
+  // a phone is told apart by the boards' own rule (fids-core.js PHONE
   // HANDOFF): the user agent alone
   assert.equal(runHome({ ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' }).home.isPhone(), true);
   assert.equal(runHome({ ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile' }).home.isPhone(), true);

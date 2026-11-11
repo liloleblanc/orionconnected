@@ -4975,7 +4975,9 @@ function scheduleGateControlsAutoHide() {
     if (window.__ocArrival) return;
     if (document.documentElement.classList.contains('fids-stream')) return;
     var _hq = location.search || '';
-    if (/[?&](nomobile|stream|yt|compact)([=&]|$)/.test(_hq)) return;
+    // Only nomobile=1 is the board answer, as in the head of each board and
+    // in host-airport.js; a kiosk is never asked.
+    if (/[?&]nomobile=1(&|$)/.test(_hq) || /[?&](stream|yt|compact)([=&]|$)/.test(_hq)) return;
     var _hua = navigator.userAgent || '';
     var _hPhone = /iPhone|iPod|iPad|Windows Phone/i.test(_hua) || (/Android/i.test(_hua) && /Mobile/i.test(_hua));
     if (!_hPhone) return;
@@ -4984,8 +4986,14 @@ function scheduleGateControlsAutoHide() {
     if (_hTab && !/[?&]mobile=ask(&|$)/.test(_hq)) return;
     // v24139 — AN UNDECIDED PHONE IS ASKED, NOT SENT: to the opener, with the
     // page it came for in ?next=, so either answer lands on this link.
-    var _hAp = (_hq.match(/[?&]ap=([^&#]*)/) || [])[1] || '';
-    location.replace('/?' + (_hAp ? 'ap=' + _hAp + '&' : '') + 'next=' + encodeURIComponent((location.pathname || '/fids') + _hq) + (location.hash || ''));
+    // The opener address is made as a URL on this origin: the airport and the
+    // link go in as parameters and the hash as the hash, never as raw text.
+    var _hTo = new URL('/', location.href);
+    var _hAp = new URLSearchParams(_hq).get('ap') || '';
+    if (/^[A-Za-z0-9]{3,4}$/.test(_hAp)) _hTo.searchParams.set('ap', _hAp.toUpperCase());
+    _hTo.searchParams.set('next', (location.pathname || '/fids') + _hq);
+    _hTo.hash = location.hash || '';
+    if (_hTo.origin === location.origin) location.replace(_hTo.href);
   } catch (e) {}
 })();
 
@@ -48073,13 +48081,18 @@ function apAutoSelect(code, name, ctx) {
   // page cannot leave its origin (a preview, a frame, an admin signed in
   // here) the helper answers with a relative link and the switch stays in
   // the page, as before.
+  // A REGISTERED SCREEN AND A KIOSK NEVER LEAVE. A page with a registry id in
+  // ?screen= (its pairing lives in this origin storage) or a stream, yt or
+  // compact kiosk switches airport in the page, as it did before addresses.
+  // A tab in the demo stays in the demo: the helper adds mode=demo to a link
+  // that leaves the origin (the tab memory does not travel).
   try {
     if (typeof window.fidsBoardUrl === 'function') {
       var _swPage = (String(location.pathname || '').match(/^\/(fids|gids|bids)(\.html)?\/?$/) || [])[1] || '';
-      if (_swPage) {
-        var _swQ = new URLSearchParams(location.search);
-        ['ap', 'gate', 'belt', 'carousel', 'sub', 'flight'].forEach(function (k) { _swQ.delete(k); });
-        if (!/^[A-HJ-NP-Z2-9]{6}$/.test(_swQ.get('screen') || '')) _swQ.delete('screen');
+      var _swQ = new URLSearchParams(location.search);
+      var _swPinned = /^[A-HJ-NP-Z2-9]{6}$/.test(_swQ.get('screen') || '') || _swQ.has('stream') || _swQ.has('yt') || _swQ.has('compact');
+      if (_swPage && !_swPinned) {
+        ['ap', 'gate', 'belt', 'carousel', 'sub', 'flight', 'screen'].forEach(function (k) { _swQ.delete(k); });
         var _swTo = window.fidsBoardUrl(code, _swPage, _swQ);
         if (/^https:\/\//.test(_swTo) && _swTo.indexOf(location.origin + '/') !== 0) {
           window.location.assign(_swTo);

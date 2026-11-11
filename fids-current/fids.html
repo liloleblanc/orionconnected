@@ -355,6 +355,53 @@ s not just start it's all the time now'). ?rotate= navigates with
     }
   } catch (e) {}
   </script>
+<script>
+/* v24140 — SAFARI FIRST-LOAD TEST SWITCH. Inert unless the address carries
+   ?wk=<keys>. Safari 26 (Mac and iPhone) paints the airline column and the
+   two end header cells empty on a first load; those are exactly the parts of
+   the table that WebKit draws on their own layers (the clip on the end
+   header cells, the positioned and transformed tile and wordmark, the row
+   hover filter). Each key below takes one of those layers away, from the
+   first paint, so one link per key on a device that has not cached the site
+   says which layer it is. none = the board as it is, with only the corner
+   tag. b = all four. To be removed with the real fix. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('wk');
+    if (!q) return;
+    var keys = q.toLowerCase().split(',');
+    var all = keys.indexOf('b') >= 0;
+    var P = ':root' + new Array(261).join(':not(#_)') + ' ';
+    var R = {
+      clip: [['#fidsTable thead th:first-child', '#fidsTable thead th:last-child'], 'clip-path: none !important; -webkit-clip-path: none !important;'],
+      wm: [['#fidsTable .td-airline .fids-airline-wordmark', '#fidsTable .td-airline .fids-airline-wordmark[data-code]'], 'transform: none !important; position: static !important; top: auto !important;'],
+      tile: [['#fidsTable .td-airline .fids-airline-logo', '#fidsTable .td-airline .fids-airline-logo .full-logo', '#fidsTable .td-airline .full-logo'], 'position: static !important; top: auto !important;'],
+      hover: [['#fidsTable tr', '#fidsTable tr:hover', '#fidsTable tr:active'], 'filter: none !important; transform: none !important; transition: none !important;']
+    };
+    var css = '';
+    for (var k in R) {
+      if (!all && keys.indexOf(k) < 0) continue;
+      css += R[k][0].map(function (x) { return P + x; }).join(',\n') + ' { ' + R[k][1] + ' }\n';
+    }
+    var st = document.createElement('style');
+    st.id = 'wkTest';
+    st.textContent = css;
+    var head = document.head || document.documentElement;
+    head.appendChild(st);
+    setInterval(function () { if (st.parentNode && st.parentNode.lastElementChild !== st) st.parentNode.appendChild(st); }, 1500);
+    var tag = function () {
+      if (!document.body || document.getElementById('wkTag')) return;
+      var d = document.createElement('div');
+      d.id = 'wkTag';
+      d.textContent = q.toUpperCase();
+      d.setAttribute('style', 'position:fixed;right:10px;bottom:46px;z-index:2147483647;padding:4px 10px;border-radius:6px;background:#e91e63;color:#fff;font:700 16px/1.1 -apple-system,system-ui,sans-serif;pointer-events:none');
+      document.body.appendChild(d);
+    };
+    document.addEventListener('DOMContentLoaded', tag);
+    setTimeout(tag, 3000);
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 <!--

@@ -109,9 +109,13 @@ function handoffSource() {
 }
 function runHandoff({ ua = UA_IPHONE, search = '', hash = '', pref = null, tab = null, decided = false, framed = false, stream = false, pathname = '/fids' } = {}) {
   let to = null;
+  // v24145 — the opener address is made as a URL on this origin and checked
+  // against it; read back here without the origin.
+  const origin = 'https://fids.orionconnected.com';
   const ctx = {
     navigator: { userAgent: ua },
-    location: { pathname, search, hash, replace(u) { if (to === null) to = u; } },
+    location: { pathname, search, hash, origin, href: origin + pathname + search + hash, replace(u) { if (to === null) to = u; } },
+    URL, URLSearchParams,
     document: { documentElement: { classList: { contains: (c) => (c === 'fids-stream' ? stream : false) } } },
     localStorage: { getItem: (k) => (k === 'oc_mobile_pref' ? pref : null) },
     sessionStorage: { getItem: (k) => (k === 'oc_board_tab' ? tab : null) }
@@ -122,7 +126,7 @@ function runHandoff({ ua = UA_IPHONE, search = '', hash = '', pref = null, tab =
   ctx.top = framed ? {} : ctx;
   vm.createContext(ctx);
   vm.runInContext(handoffSource(), ctx);
-  return to;
+  return typeof to === 'string' && to.indexOf(origin + '/') === 0 ? to.slice(origin.length) : to;
 }
 
 // ── the script is one script, early, on all three pages ───────────────────
@@ -249,6 +253,24 @@ test('the handoff keeps a phone inside a board it chose in this tab', () => {
   assert.equal(runHandoff({ search: '?ap=YQM&mobile=ask', tab: '1' }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=YQM&mobile=ask'));
 });
 
+test('the handoff builds the opener address, it does not pass text along', () => {
+  const src = handoffSource();
+  assert.match(src, /var _hTo = new URL\('\/', location\.href\);/);
+  assert.match(src, /_hTo\.hash = location\.hash \|\| '';\s*if \(_hTo\.origin === location\.origin\) location\.replace\(_hTo\.href\);/);
+  assert.equal((src.match(/location\.replace\(/g) || []).length, 1);
+  // an airport that is no code is not carried; the link still is
+  assert.equal(runHandoff({ search: '?ap=' + encodeURIComponent('//evil.test') }), '/?next=' + encodeURIComponent('/fids?ap=%2F%2Fevil.test'));
+  assert.equal(runHandoff({ search: '?ap=yqm' }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=yqm'));
+  assert.equal(runHandoff({ search: '?ap=YQM', hash: '#//evil.test' }), '/?ap=YQM&next=' + encodeURIComponent('/fids?ap=YQM') + '#//evil.test');
+});
+
+test('only nomobile=1 is the board answer for the handoff too', () => {
+  for (const q of ['?ap=YQM&nomobile=0', '?ap=YQM&nomobile', '?ap=YQM&nomobile=10', '?ap=YQM&nomobile=']) {
+    assert.notEqual(runHandoff({ search: q }), null, q + ' is asked');
+  }
+  assert.equal(runHandoff({ search: '?nomobile=1&ap=YQM' }), null);
+});
+
 test('the escape hatches and the display guards are unchanged', () => {
   assert.equal(runHandoff({ search: '?ap=YQM&nomobile=1' }), null);
   assert.equal(runHandoff({ search: '?ap=YQM&stream=1' }), null);
@@ -346,4 +368,64 @@ test('the sizes are untouched where the page keeps its own width', () => {
     assert.equal(r.desktop, false);
     assert.equal(r.win.innerWidth, 520, 'left as the browser reports it');
   }
+});
+
+// ── v24145: one reading of the board answer, in the head and in the address ─
+//
+// The viewport script of each board (inline, first in the head) and
+// fidsArrival in host-airport.js (the next thing to run) each decide whether
+// a phone is showing the wall board. They cannot share code, so this holds
+// them together: for every address and every state of the tab, the page is
+// laid out wide exactly when the address logic calls it a phone in a board.
+
+const HOST_AIRPORT = rd('js/host-airport.js');
+function arrivalOf(url, ctx) {
+  const u = new URL(url);
+  const store = { getItem: () => null, setItem() {}, removeItem() {} };
+  const win = {
+    location: { hostname: 'www.orionconnected.com', pathname: '/credits', search: '', hash: '', href: 'https://www.orionconnected.com/credits', replace() {} },
+    navigator: { userAgent: UA_DESKTOP }, localStorage: store, sessionStorage: store
+  };
+  win.self = win; win.top = win;
+  new Function('window', 'sessionStorage', HOST_AIRPORT)(win, store);
+  return win.fidsArrival({ hostname: u.hostname, pathname: u.pathname, search: u.search, hash: u.hash },
+    Object.assign({ fallback: 'YQM' }, ctx), win.fidsHostAirport, win.fidsRealIata);
+}
+
+test('the head and the address logic agree on which phone is showing the board', () => {
+  const searches = [
+    '', '?ap=YQM', '?nomobile=1', '?ap=YQM&nomobile=1', '?nomobile=1&gate=2', '?nomobile=0', '?nomobile', '?nomobile=', '?nomobile=10', '?nomobile=1x',
+    '?xnomobile=1', '?mobile=ask', '?mobile=ask&nomobile=1', '?gate=2&mobile=ask', '?stream=1', '?yt=1', '?compact', '?compact=1', '?stream', '?streams=1',
+    '?stream=1&nomobile=1', '?yt=1&nomobile=0', '?compact&mobile=ask', '?screen=gate&gate=2', '?screen=ABCDEF'
+  ];
+  for (const name of Object.keys(PAGES)) {
+    for (const search of searches) {
+      for (const tab of [null, '1']) {
+        const wide = runPage({ name, search, tab }).desktop;
+        const a = arrivalOf('https://yqm.orionconnected.com/' + name.replace('.html', '') + search, { phone: true, inBoard: tab === '1' });
+        assert.equal(a.phoneBoard, wide, name + search + ' tab=' + tab);
+        // and a phone is either in the board, on a kiosk, or sent to be asked: never left on a narrow board unasked
+        const kiosk = /[?&](stream|yt|compact)([=&]|$)/.test(search);
+        assert.equal(/^\/\?/.test(a.to), !wide && !kiosk, name + search + ' tab=' + tab + ': asked');
+        // a display is never either
+        const d = arrivalOf('https://yqm.orionconnected.com/' + name.replace('.html', '') + search, { phone: false, inBoard: tab === '1' });
+        assert.equal(d.phoneBoard, false);
+        assert.equal(runPage({ name, search, tab, ua: UA_ANDROID_TV }).desktop, false);
+      }
+    }
+  }
+});
+
+test('the two read the kiosk keys and nomobile=1 with the same patterns', () => {
+  for (const [name, html] of Object.entries(PAGES)) {
+    const body = desktopSiteBlock(name).body;
+    assert.ok(body.includes('/[?&]nomobile=1(&|$)/.test(q)'), name);
+    assert.ok(body.includes('/[?&](stream|yt|compact)([=&]|$)/.test(q)'), name);
+    assert.ok(html.length > 0);
+  }
+  assert.ok(HOST_AIRPORT.includes('var KIOSK = /[?&](stream|yt|compact)([=&]|$)/;'));
+  assert.ok(HOST_AIRPORT.includes('var NO_MOBILE = /[?&]nomobile=1(&|$)/;'));
+  assert.doesNotMatch(HOST_AIRPORT, /nomobile\(\[=&\]\|\$\)/, 'no pattern left that takes any value of nomobile');
+  assert.doesNotMatch(CORE, /\[\?&\]\(nomobile\|/, 'nor in the hand-off of fids-core.js');
+  assert.ok(rd('index.html').includes('if (/[?&]nomobile=1(&|$)/.test(qs)) {'), 'nor in the opener');
 });

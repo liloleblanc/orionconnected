@@ -255,17 +255,18 @@
     const picker = document.getElementById('pickerScreen');
     picker.classList.add('fade-out');
 
-    // Map screen to file
+    // Map screen to its page. No .html: the host answers that with a
+    // redirect of its own, one hop more on the way to the airport address.
     const fileMap = {
-      fids: 'fids.html',
-      gids: 'gids.html',
-      bids: 'bids.html'
+      fids: '/fids',
+      gids: '/gids',
+      bids: '/bids'
     };
 
     // v24145 — through the one link helper: the airport address of this
     // tab airport on .com and .ca; the plain page where there is none, or for
     // an admin signed in on this origin (sign-in is per origin)
-    let to = fileMap[screen] || 'fids.html';
+    let to = fileMap[screen] || '/fids';
     try {
       const ap = sessionStorage.getItem('fids_airport') || '';
       if (ap && typeof window.fidsBoardUrl === 'function') to = window.fidsBoardUrl(ap, fileMap[screen] ? screen : 'fids', { mode: sessionStorage.getItem('fids_mode') || '' });

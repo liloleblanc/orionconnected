@@ -84,7 +84,7 @@
   <!-- Auto-router for fids.orionconnected.com (runs in <head> before paint so
        the entry screen never flashes):
          • phones / tablets  → ASK, then the app on .app, or stay on the board
-         • desktop / displays → fids.html?mode=live  (LIVE main FIDS board)
+         • desktop / displays → /fids?mode=live  (LIVE main FIDS board)
        Escape hatches: ?entry=1 keeps the DEMO/LOGIN entry screen (admin),
        ?nomobile=1 forces the desktop board on a phone.
 
@@ -133,18 +133,81 @@
            the answer sent you to, where a second copy of the same question had
            no idea it had already been answered. */
         if (/(^|\.)orionconnected\.app$/.test(String(location.hostname || '').toLowerCase())) return;
-        var apM = qs.match(/[?&]ap=([^&]+)/);
-        /* v24139 — THE PAGE THE PHONE CAME FOR. fids-core sends a phone that
+        /* v24145 — EVERY ADDRESS THIS PAGE SENDS ANYONE TO IS BUILT, NEVER
+           PASSED ALONG. The query and the hash of this page are text a link
+           can carry anything in, so no part of them is ever the start of an
+           address. Each destination is a URL object made from a fixed path
+           (or, for the app, a fixed host), the query and the hash are set
+           on that object, and it is used only if its origin is this origin
+           (the board) or an orionconnected.app address made here (the app). */
+        var P = new URLSearchParams(qs);
+        var here = String(location.origin || '');
+        var hash = location.hash || '';
+
+        /* THE AIRPORT. A code is three or four letters or digits, rebuilt
+           letter by letter from this alphabet, so no character of the address
+           bar reaches a host name. MET is the code passengers read for
+           Saint-Hubert and YHU its real one; the labels listed are sites of
+           ours, never airports. Both are the tables of host-airport.js, kept
+           here because this page does not load that file (it would be a
+           blocking request in the head of the one page whose whole job is to
+           paint the right colour and leave); tests/mobile-offer.test.js holds
+           the two copies together, label by label. */
+        var ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        var REAL = { MET: 'YHU' };
+        var SITES = /^(fids|www|api|app|apps|menu|tour|mail|smtp|imap|pop|ftp|cdn|img|dev|test|beta|demo|edge|vpn|git|docs|blog|shop)$/;
+        function codeOf(v) {
+          var t = String(v == null ? '' : v).trim().toUpperCase(), out = '';
+          if (t.length < 3 || t.length > 4) return '';
+          for (var i = 0; i < t.length; i++) {
+            var at = ALPHA.indexOf(t.charAt(i));
+            if (at < 0) return '';
+            out += ALPHA.charAt(at);
+          }
+          if (SITES.test(out.toLowerCase())) return '';
+          return Object.prototype.hasOwnProperty.call(REAL, out) ? REAL[out] : out;
+        }
+        var host = String(location.hostname || '').toLowerCase();
+        var ours = /(^|\.)orionconnected\.(com|ca)$/.test(host);
+        var labels = host.split('.');
+        // yqm.orionconnected.com is Moncton; fids., www., the apex and a
+        // preview or local host name no airport.
+        var hostAp = ours && labels.length === 3 ? codeOf(labels[0]) : '';
+        var askedAp = codeOf(P.get('ap'));
+        var tabAp = '';
+        try { tabAp = codeOf(sessionStorage.getItem('fids_airport')); } catch (e) {}
+
+        /* v24139 — THE PAGE THE PHONE CAME FOR. A board sends a phone that
            has not answered here with ?next= set to the board link it opened
            (a gate, a belt, an airport), so either answer lands there and not
            on the default board. Only a board page on this origin is taken:
            /fids, /gids or /bids with its query. Anything else is ignored, so
-           the parameter can never send anyone off the site. */
-        var next = '';
-        var nextM = qs.match(/[?&]next=([^&#]*)/);
-        if (nextM) { try { next = decodeURIComponent(nextM[1]); } catch (e) { next = ''; } }
-        if (!/^\/(fids|gids|bids)(\.html)?(\?[^#\s\\]*)?$/.test(next)) next = '';
-        var board = next || ('fids.html?mode=live' + (apM ? '&ap=' + apM[1] : ''));
+           the parameter can never send anyone off the site.
+           v24145 — and it is taken apart, not passed along: the page picks
+           one of three fixed paths, and its query is set on the URL object. */
+        var PATHS = { fids: '/fids', gids: '/gids', bids: '/bids' };
+        var nextM = /^\/(fids|gids|bids)(?:\.html)?(?:\?([^#\s\\]*))?$/.exec(P.get('next') || '');
+        var path = nextM ? PATHS[nextM[1]] : PATHS.fids;
+        var nextQ = nextM ? (nextM[2] || '') : '';
+        var N = new URLSearchParams(nextQ);
+
+        /* ONE AIRPORT FOR BOTH ANSWERS. The link the phone opened, then this
+           address, then the airport the board itself falls back to (this tab,
+           else YQM): the same order host-airport.js uses for a board with no
+           ?ap=. So on fids. with no airport named, Stay and the app both go
+           to that one airport, and neither goes to an address with none. */
+        var ap = (nextM && codeOf(N.get('ap'))) || askedAp || hostAp || tabAp || 'YQM';
+
+        /** The board link on this origin, or null if it would leave it. */
+        function boardUrl(query, noMobile) {
+          var u = new URL(path, location.href);
+          var q = String(query || '');
+          if (noMobile && !/(^|&)nomobile=1(&|$)/.test(q)) q += (q ? '&' : '') + 'nomobile=1';
+          u.search = q;
+          u.hash = hash;
+          return u.origin === here ? u : null;
+        }
+        function go(u) { if (u) location.replace(u.href); }
 
         var ua = navigator.userAgent || '';
         /* v23824 — A TELEVISION IS NOT A PHONE, AND A NARROW WINDOW IS NOT EITHER.
@@ -169,73 +232,46 @@
         // Desktop/displays → LIVE main board. Don't force an airport: carry a
         // root ?ap= if present, otherwise let the board use its own
         // saved/selected airport (works for ALL airports, not locked to YQM).
-        if (!isMobile) { location.replace(board); return; }
+        // v24145 — /fids, not fids.html: the host answers .html with a
+        // redirect of its own, one hop more on the way to the airport address.
+        if (!isMobile) { go(boardUrl(nextM ? nextQ : 'mode=live' + (askedAp ? '&ap=' + askedAp : ''), false)); return; }
 
-        /* Everything past here is a phone, or a window narrow enough to look
-           like one — and THE BOARD HANDS PHONES OFF TOO. fids-core.js runs its
-           own handoff on every board page (fids/gids/bids) and replaces itself
-           with app.html for any real phone. So "go to the board" from here is
-           not enough on its own: without the override the board bounces
-           straight back into the app, and "stay on the regular site" becomes a
-           button that does the opposite of what it says.
+        /* Everything past here is a phone — and THE BOARD HANDS PHONES OFF
+           TOO. A board page (fids/gids/bids) asks a phone that arrives fresh,
+           by sending it back here. So "go to the board" from here is not
+           enough on its own: the answer has to travel with the link, and
+           nomobile=1 is that answer (only that exact pair, here, in the head
+           of each board and in host-airport.js). The Stay link names the
+           airport wherever this address does not, so it cannot land on a
+           different airport than the app answer. */
+        var stay = boardUrl(nextM ? nextQ : 'mode=live' + (askedAp || !hostAp ? '&ap=' + ap : ''), true);
 
-           That handoff reads the same ?nomobile=1 this page does, so carrying
-           it forward is the whole fix — and it repairs ?nomobile=1 from the
-           root as a side effect. It was dropped when this page built the board
-           URL, so on a real phone the documented escape hatch got you to
-           fids.html and no further: the board handed you to the app a moment
-           later. It only ever worked if you typed fids.html yourself. */
-        var stay = board + (board.indexOf('?') >= 0 ? '&' : '?') + 'nomobile=1';
-        /* v24145 — the hash of the link the phone opened rides on this page
-           (the board puts it here, outside ?next=), and either answer keeps it. */
-        var hash = location.hash || '';
-
-        if (/[?&]nomobile=1/.test(qs)) {
+        if (/[?&]nomobile=1(&|$)/.test(qs)) {
           try { sessionStorage.setItem('oc_board_tab', '1'); } catch (e) {}
-          location.replace(stay + hash); return;
+          go(stay); return;
         }
 
         /* v24145 — THE APP IS ON .app. "Use the mobile app" goes to
            https://<code>.orionconnected.app/app, the address that is only the
-           app, with the airport, screen, gate and belt of the link. The
-           airport is the ?ap= of this page, else this address (yqm. is
-           Moncton); fids., www., app. and the apex name no airport, and their
-           answer goes to the apex. A preview or local host has no .app, so
-           there it stays /app on its own origin.
-
-           The label is read crudely on purpose. host-airport.js is the
-           authority for anything that routes a BOARD, and it is deliberately
-           not loaded here: it would be a blocking request in the head of the
-           one page whose whole job is to paint the right colour and leave. A
-           label that is not an airport only costs the app its saved airport:
-           app.html reads the address itself (met. is Saint-Hubert there). */
-        var host = String(location.hostname || '').toLowerCase();
-        var ours = /(^|\.)orionconnected\.(com|ca)$/.test(host);
-        var parts = host.split('.');
-        var label = parts.length > 2 ? parts[0] : '';
-        if (!/^[a-z]{3,4}$/.test(label) || label === 'www' || label === 'fids' || label === 'app' || label === 'apps') label = '';
-        var ap = '';
-        try { ap = apM ? decodeURIComponent(apM[1]).toUpperCase() : ''; } catch (e) { ap = ''; }
-        if (!/^[A-Z]{3,4}$/.test(ap)) ap = '';
-        // The app reads the same ?ap= / ?screen= / ?gate= / ?belt= the board
-        // link carried, and nothing else of it.
-        var keep = [], seen = {};
-        var src = next && next.indexOf('?') >= 0 ? next.slice(next.indexOf('?') + 1) : '';
-        src.split('&').forEach(function (kv) {
-          var k = kv.split('=')[0];
-          if (!kv || seen[k] || !/^(ap|screen|gate|belt)$/.test(k)) return;
-          if (k === 'screen' && /^[A-HJ-NP-Z2-9]{6}$/.test(kv.slice(7))) return;   // a registry id is no app screen
-          seen[k] = 1;
-          if (k === 'ap') { var a = kv.slice(3).toUpperCase(); if (/^[A-Z]{3,4}$/.test(a)) ap = a; return; }
-          keep.push(kv);
+           app, with the airport, screen, gate and belt of the link. The host
+           is made of the three letters of the airport and fixed text; a
+           four-letter code (ICAO) names no address, so it rides to the apex
+           as ?ap= and the app resolves it. A preview or local host has no
+           .app, so there it stays /app on its own origin. */
+        var app = new URL(ours ? 'https://' + (ap.length === 3 ? ap.toLowerCase() + '.' : '') + 'orionconnected.app/app' : '/app', location.href);
+        app.searchParams.set('ap', ap);
+        // The app reads the same ?screen= / ?gate= / ?belt= the board link
+        // carried, and nothing else of it. A registry id is no app screen.
+        ['screen', 'gate', 'belt'].forEach(function (k) {
+          var v = N.get(k);
+          if (v === null || v === '') return;
+          if (k === 'screen' && /^[A-HJ-NP-Z2-9]{6}$/.test(v)) return;
+          app.searchParams.set(k, v);
         });
-        if (!seen.screen && /^\/gids/.test(next)) keep.push('screen=gate');
-        if (!seen.screen && /^\/bids/.test(next)) keep.push('screen=baggage');
-        if (!ap && label) ap = label.toUpperCase();
-        var appQ = (ap ? 'ap=' + ap : '') + (ap && keep.length ? '&' : '') + keep.join('&');
-        var appCode = ap ? ap.toLowerCase() : '';
-        var app = (ours ? 'https://' + (appCode ? appCode + '.' : '') + 'orionconnected.app/app' : '/app')
-                + (appQ ? '?' + appQ : '');
+        if (!app.searchParams.has('screen') && path === PATHS.gids) app.searchParams.set('screen', 'gate');
+        if (!app.searchParams.has('screen') && path === PATHS.bids) app.searchParams.set('screen', 'baggage');
+        app.hash = hash;
+        var appOk = ours ? /^https:\/\/([a-z0-9]{3}\.)?orionconnected\.app$/.test(app.origin) : app.origin === here;
 
         /* v24145 — ASKED EVERY TIME. A phone that arrives at a board link is
            asked board or app on every arrival; the answer is no longer kept
@@ -248,7 +284,7 @@
         // Hold the page and let the offer paint over the ground of the board,
         // which the theme script above has already put up, so this reads as
         // the page arriving, not as a flash then a dialog.
-        window.__ocOffer = { app: app + hash, board: stay + hash };
+        window.__ocOffer = { ap: ap, app: appOk ? app.href : '', board: stay ? stay.href : '' };
         document.documentElement.setAttribute('data-oc-offer', '1');
       }catch(e){}
     })();
@@ -327,8 +363,7 @@
     // every word in all nine languages. The rule is about the airport, not
     // the language of the device — a phone set to English standing in
     // Montréal still reads French first.
-    var ap = '';
-    try { ap = ((new URL(o.app, location.href)).searchParams.get('ap') || '').toUpperCase(); } catch (e) {}
+    var ap = String(o.ap || '').toUpperCase();
     var L = BoardStrings.pairLangs(BoardStrings.resolveLangs({ iata: ap }).langs, ap);
 
     function two(k) {
@@ -341,12 +376,21 @@
     // there is nothing to take back with ?mobile=ask.
 
     function answer(pref, to) {
+      // v24145 — the last check before leaving: the answer is read as a URL
+      // and used only if it is this origin (the board, and the app on a
+      // preview or local host) or an orionconnected.app address (the app).
+      // Anything else lands on the board this address is for.
+      var u = null;
+      try { u = to ? new URL(to, location.href) : null; } catch (e) { u = null; }
+      var ok = !!u && (u.origin === location.origin
+        || (pref === 'app' && /^https:\/\/([a-z0-9]{3}\.)?orionconnected\.app$/.test(u.origin)));
+      if (!ok) { pref = 'site'; u = new URL('/fids?mode=live&nomobile=1', location.href); }
       // The board answer marks this tab, on this origin, as inside a board,
       // so the board does not ask again; the app answer leaves for .app.
       if (pref === 'site') { try { sessionStorage.setItem('oc_board_tab', '1'); } catch (e) {} }
       // replace(), not assign(): the offer must not sit in history, or Back
       // from either destination lands on a question already answered.
-      location.replace(to);
+      location.replace(u.href);
     }
     document.getElementById('ocOfferYes').addEventListener('click', function () { answer('app', o.app); });
     document.getElementById('ocOfferNo').addEventListener('click', function () { answer('site', o.board); });
@@ -356,7 +400,9 @@
     // to the destination that loses nothing: the board this domain is for.
     try {
       document.documentElement.removeAttribute('data-oc-offer');
-      location.replace((window.__ocOffer || {}).board || 'fids.html?mode=live');
+      var back = new URL((window.__ocOffer || {}).board || '/fids?mode=live', location.href);
+      if (back.origin !== location.origin) back = new URL('/fids?mode=live', location.href);
+      location.replace(back.href);
     } catch (e2) {}
   }
 })();
