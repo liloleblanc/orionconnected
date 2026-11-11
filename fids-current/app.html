@@ -1918,10 +1918,17 @@ async function load(o){
   if(BOOT_GATE&&DIR==='dep'&&RENDERED.length){
     try{
       const g=BOOT_GATE.toUpperCase().replace(/[\s-]/g,'');
+      let hit=-1;
       for(let i=0;i<RENDERED.length;i++){
         const fg=String(RENDERED[i].gate||'').toUpperCase().replace(/[\s-]/g,'');
-        if(fg&&fg===g){openFlight(i);break;}
+        if(fg&&fg===g){hit=i;break;}
       }
+      // v24143 - a gate screen picked by flight (?gate=AC8215, an airport whose
+      // feed gives no gates) hands over the flight number: open that flight
+      if(hit<0)for(let i=0;i<RENDERED.length;i++){
+        if(String(RENDERED[i].flight||'').toUpperCase().replace(/[\s-]/g,'')===g){hit=i;break;}
+      }
+      if(hit>=0)openFlight(hit);
     }catch(e){}
     BOOT_GATE='';
   }

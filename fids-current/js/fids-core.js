@@ -5244,6 +5244,7 @@ function updateSubScreens() {
   // normalize-time). For gate screens: build from gate values.
   let locations;
   let useGate = true;
+  let _byFlight = false;   // v24143 — keyed by flight (no gates in the feed)
   if (isBag) {
     locations = [...new Set(flights.map(f => f._belt).filter(b => b && b !== '—'))].sort();
     // YQM has exactly two carousels: 2, the normal belt (in the customs hall,
@@ -5270,6 +5271,18 @@ function updateSubScreens() {
     useGate = false;
   } else {
     locations = [...new Set(flights.map(f => f.gate).filter(g => g && g !== '—'))].sort();
+    // v24143 — no gate number on any departure (YYG): the screen is picked by
+    // FLIGHT, the next departures in time order (_gateFlightPicks). Before the
+    // pin below, so a ?gate=AC8215 address is matched against flights and its
+    // option is labelled as a flight. With nothing live (the small hours) the
+    // old list of every flight in the feed stands, and the screen shows its
+    // own empty state.
+    if (!locations.length && isDep) {
+      var _fp = (typeof _gateFlightPicks === 'function') ? _gateFlightPicks(flights) : [];
+      locations = _fp.length ? _fp : [...new Set(flights.map(f => f.flight).filter(Boolean))].sort();
+      useGate = false;
+      _byFlight = true;
+    }
   }
   // v23270 — A PINNED DISPLAY NEVER DRIFTS OFF ITS OWN GATE.
   //
@@ -5336,6 +5349,14 @@ function updateSubScreens() {
       opt.textContent = 'BELT ' + (_m ? _m[2] : loc);
     }
     else if (useGate) opt.textContent = 'GATE ' + loc;
+    else if (_byFlight) {
+      // v24143 — "AC8215 · Montréal": the flight and its city, from the row
+      // and the city names the boards already use (_cityForIata).
+      const _fr = flights.find(f => f && f.flight === loc);
+      let _city = _fr ? ((_fr._locIata && typeof _cityForIata === 'function') ? _cityForIata(_fr._locIata) : (_fr._locCity || _fr.dest || '')) : '';
+      if (_city && _city === _city.toUpperCase() && typeof tc === 'function') _city = tc(_city);   // cased like every other city
+      opt.textContent = _city ? (loc + ' · ' + _city) : loc;
+    }
     else opt.textContent = loc;
     subSel.appendChild(opt);
   });
@@ -5359,7 +5380,9 @@ function updateSubScreens() {
   // the screen shows a gate with its honest empty state. This only narrows
   // the choice when there is something better to choose. A pinned display
   // returned above and never reaches any of it.
-  var _walk = useGate && _gateWalkActive();
+  // v24143 — a screen picked by flight walks too (_gateLiveGates hands it the
+  // live flights when the feed has no gates).
+  var _walk = (useGate || _byFlight) && _gateWalkActive();
   var _live = _walk ? _gateLiveGates(flights) : [];
   var _stale = _walk && _live.length && _live.indexOf(oldVal) === -1;
   if (locations.includes(oldVal) && !_stale) { subSel.value = oldVal; subScreenVal = oldVal; }
@@ -5682,13 +5705,91 @@ function _gateWalkActive() {
 function _gateLiveGates(flights, nowMs, iata) {
   var now = nowMs || Date.now();
   var out = [];
+  var anyGate = false;
   (flights || []).forEach(function (f) {
     if (!f || !f.gate || f.gate === '—') return;
+    anyGate = true;
     if (!_gateFlightLive(f, now)) return;
     if (_gateHoldYields(f, flights, now, iata)) return;
     if (out.indexOf(f.gate) === -1) out.push(f.gate);
   });
+  // v24143 — a feed with no gate number on any departure: the screen is keyed
+  // by FLIGHT (_gateFlightPicks), so all three pick paths walk flights there.
+  if (!anyGate && typeof _gateFlightPicks === 'function') return _gateFlightPicks(flights, now, iata);
   return out.sort();
+}
+
+// v24143 — AN AIRPORT WHOSE FEED GIVES NO GATE NUMBERS PICKS ITS GATE SCREEN BY FLIGHT.
+//
+// Charlottetown (YYG): every departure in the feed has a dash for its gate, so
+// the gate screen had no gate to open on. The old fallback listed every flight
+// in the feed in alphabetical order (departed ones included), the walking pick
+// never moved (it only knew gates), and the gate tile printed a number made up
+// from the flight number (randomGate: AC2013 became Gate 16).
+//
+// Measured on 2026-11-10 at 09:25 Atlantic over every airport in
+// FIDS_LIVE_AIRPORTS (departures through the board feed, adbFetch): with rows
+// and not one gate were YYG 4, YSJ 3, YFC 7, YDF 7, YXX 9, YQR 12, YYT 19,
+// YQT 20, RDU 165 and SYD 393. Partial gates: ZRH 21%, DUB 29% and LHR 41% of
+// rows, but 20 of 24, 27 of 27 and 89 of 103 of the next two hours, because
+// those airports give the gate close to departure; YHZ 77% (8 of 8 next two
+// hours), then JFK 84%, SFO 85%, MCO 88% and the rest 89 to 100%.
+//
+// THE RULE. Pick by flight only when NO departure row in the feed carries a
+// gate. One gate anywhere keeps the screen on gates exactly as before, so a
+// big airport whose early flights have no gate yet (LHR, DUB, ZRH) never puts
+// hundreds of flights in the picker, and a flight is never moved off the gate
+// list it would join the moment its gate is given.
+//
+// THE LIST. The departures still live for a gate screen (_gateFlightLive:
+// not cancelled, departed or diverted, inside the grace or the boarding hold),
+// in time order, one entry per departure (a second number for the same city
+// within five minutes is the same aeroplane, _gateCsPick test), at most
+// GATE_FLIGHT_PICK_MAX. Twelve holds the whole day at YYG, YSJ, YFC, YDF, YXX
+// and YQR, the next six hours or so at YYT and YQT, and the next hour at RDU
+// (23 in the next two hours) and SYD, so the list slides with the clock
+// instead of carrying the night.
+//
+// The key is the flight number: _gateFlightsAt already matches a screen key
+// against the flight number (v24071), so the gate screen paints that flight
+// with its normal look, and ?gate=AC8215 is the shareable address of it. No
+// gate number is ever shown for it: the tile carries the dash the departures
+// board shows in its own Gate column for the same row.
+var GATE_FLIGHT_PICK_MAX = 12;
+function _gateFlightPicks(flights, nowMs, iata) {
+  var now = nowMs || Date.now();
+  var rows = (flights || []).filter(function (f) {
+    return f && f.flight && _gateFlightLive(f, now);
+  }).sort(function (a, b) { return (a._sortTs || 0) - (b._sortTs || 0); });
+  var kept = [], out = [];
+  for (var i = 0; i < rows.length && out.length < GATE_FLIGHT_PICK_MAX; i++) {
+    var f = rows[i];
+    if (out.indexOf(f.flight) !== -1) continue;
+    var same = kept.some(function (k) {
+      return (k._locIata || k.dest) === (f._locIata || f.dest)
+        && Math.abs((k._sortTs || 0) - (f._sortTs || 0)) <= 5 * 60000;
+    });
+    if (same) continue;
+    kept.push(f);
+    out.push(f.flight);
+  }
+  return out;
+}
+
+// v24143 — does this screen key name a FLIGHT rather than a gate? True when no
+// row has it as a gate and a row has it as a flight number, or, for a flight
+// the feed no longer lists, when it is shaped like a flight number (a two
+// character airline code and 1 to 4 digits) and not like a gate (one letter
+// at most, 1 to 3 digits, one letter: 4, A4, C77, 12B). The empty gate screen
+// and the loader use it so a flight number is never printed as a gate.
+function _gateSubIsFlight(sub, rows) {
+  var n = function (s) { return String(s == null ? '' : s).toUpperCase().replace(/[\s-]/g, ''); };
+  var s = n(sub);
+  if (!s || s === '—') return false;
+  var list = rows || [];
+  for (var i = 0; i < list.length; i++) { if (list[i] && n(list[i].gate) === s) return false; }
+  for (var j = 0; j < list.length; j++) { if (list[j] && n(list[j].flight) === s) return true; }
+  return /^(?:[A-Z]{2}|[A-Z][0-9]|[0-9][A-Z])[0-9]{1,4}[A-Z]?$/.test(s) && !/^[A-Z]?[0-9]{1,3}[A-Z]?$/.test(s);
 }
 
 // v23925 — HOW LONG A FLIGHT STAYS, IN ONE PLACE.
@@ -12636,14 +12737,7 @@ function getAirlineSkyGradient(airlineCode) {
 }
 
 // ── RANDOM GATE FALLBACK ──────────────────────────────────────────────
-function randomGate(terminal, flightNum) {
-  // Deterministic: same flight always gets same gate
-  const seed = (flightNum || 'X').split('').reduce((a,c) => a + c.charCodeAt(0), 0);
-  const t = (terminal || '').replace(/[^A-Z0-9]/gi,'');
-  const gateNum = (seed % 35) + 1;
-  const prefix = t ? t : '';
-  return prefix + gateNum;
-}
+// v24143 — randomGate() is gone: a gate number is shown only when a feed gives one.
 
 
 function uxgLocaleCode() {
@@ -13502,7 +13596,8 @@ try { if (typeof window !== 'undefined') { window._mgLogoFail = _mgLogoFail; win
 // No ads, no map — just essential info, sized for phones.
 function renderMobileGateHtml(ctx) {
   const { currentFlight, nextFlight, iata, tz, timeStr, loc, locIata, arrTimeStr, durationStr } = ctx;
-  const gateVal = currentFlight.gate || subScreenVal || '—';
+  // v24143 — never a flight number in the gate slot (a screen picked by flight).
+  const gateVal = currentFlight.gate || ((subScreenVal && !(typeof _gateSubIsFlight === 'function' && _gateSubIsFlight(subScreenVal, (typeof data !== 'undefined' && data) ? data.dep : null))) ? subScreenVal : '') || '—';
   const apName = (AP[iata] || {}).name || iata;
   const flightNum = currentFlight.flight || '—';
   const airline = currentFlight.airline || '';
@@ -14405,7 +14500,7 @@ function _gateArrivalOnlyHtml(inb, iata, timeStr, dateDisplay, feedDown) {
     + '<div style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:clamp(16px,4vw,40px);gap:clamp(12px,2vw,24px);">'
     +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">'
     +     '<div style="background:rgba(0,0,0,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:0;padding:clamp(12px,2vw,20px) clamp(16px,3vw,28px);border:1px solid rgba(100,160,250,0.35);">'
-    +       '<div style="font-size:clamp(40px,10vw,80px);font-weight:900;color:#fff;line-height:1;">' + fidsEscHtml(subScreenVal || '—') + '</div>'
+    +       '<div style="font-size:clamp(40px,10vw,80px);font-weight:900;color:#fff;line-height:1;">' + fidsEscHtml((subScreenVal && !(typeof _gateSubIsFlight === 'function' && _gateSubIsFlight(subScreenVal, (typeof data !== 'undefined' && data) ? data.dep : null))) ? subScreenVal : '—') + '</div>'
     +       '<div style="font-size:max(var(--fx-floor,12px),clamp(10px,1.5vw,13px));font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-top:4px;text-transform:uppercase;">' + gateW + '</div>'
     +     '</div>'
     +     '<div style="text-align:right;"><div style="font-size:clamp(28px,7vw,64px);font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.4);line-height:1;">' + fidsEscHtml(apCity) + '</div></div>'
@@ -18417,7 +18512,10 @@ function _gateNotePaintedDay(tz) {
 }
 function uxgGateHtml(ctx) {
   const { currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs } = ctx;
-  const gateVal = currentFlight.gate && currentFlight.gate !== '\u2014' ? currentFlight.gate : randomGate(currentFlight.terminal, currentFlight.flight);
+  // v24143 — a flight with no gate in the feed shows the dash the departures
+  // board shows in its Gate column. This used to print randomGate(), a number
+  // made up from the flight number (AC2013 at YYG read Gate 16).
+  const gateVal = currentFlight.gate && currentFlight.gate !== '\u2014' ? currentFlight.gate : '\u2014';
   // Québec airports: French first on every bilingual pair.
   const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
@@ -28477,7 +28575,7 @@ const gView = document.getElementById('gateView');
           <div style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:clamp(16px,4vw,40px);">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
               <div style="background:rgba(0,0,0,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:0;padding:clamp(12px,2vw,20px) clamp(16px,3vw,28px);border:1px solid rgba(100,160,250,0.35);">
-                <div style="font-size:clamp(40px,10vw,80px);font-weight:900;color:#fff;line-height:1;">${subScreenVal || '—'}</div>
+                <div style="font-size:clamp(40px,10vw,80px);font-weight:900;color:#fff;line-height:1;">${(subScreenVal && !(typeof _gateSubIsFlight === 'function' && _gateSubIsFlight(subScreenVal, (typeof data !== 'undefined' && data) ? data.dep : null))) ? subScreenVal : '—'}</div>
                 <div style="font-size:max(var(--fx-floor,12px),clamp(10px,1.5vw,13px));font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-top:4px;text-transform:uppercase;">${_gateLbl('gate', frFirstAirport(iata), function (w) { return '<span>' + w + '</span>'; }, ' | ')}</div>
               </div>
               <div style="text-align:right;">
@@ -52364,6 +52462,33 @@ function _runwayFinalPath(pl, d, destIata) {
       }
     }
     if (!best) return null;
+    // v24141 — NEVER A TAILWIND LANDING WHEN THE WIND SAYS OTHERWISE. AC648
+    // into Moncton, 2026-11-10: from Toronto in the west, the bearing to the
+    // field chose 11 (landing east) and the map drew a straight-in final from
+    // the west. The wind was 12 km/h from 260, the aeroplane flew past north
+    // of the field at 3,775 ft and turned back to land on 24, and when the
+    // fix past the field came in the plane jumped to the other side of the
+    // airport onto a different route. An end with more than 5 kt of tailwind
+    // (9.3 km/h, the ICAO limit for picking even a noise-preferred runway) is
+    // out, by the wind MET Norway gives, as the weather card has it: 11 had
+    // 6.5 kt behind it that night. Of the ends left, the bearing still
+    // chooses as before (24, not 29, though 29 is nearer the wind: that is
+    // what the aeroplane did). A light wind rules nothing out, and everything
+    // below still overrides: an aeroplane on a centreline lands on it.
+    try {
+      var _wx = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[String(destIata || '').toUpperCase()]) || null;
+      var _wc = _wx && _wx.current;
+      if (_wc && typeof _wc.windDir === 'number' && isFinite(_wc.windDir) && typeof _wc.windSpeed === 'number' && isFinite(_wc.windSpeed)) {
+        var _wBest = null;
+        for (var qw = 0; qw < cand.length; qw++) {
+          var cw = cand[qw];
+          var _tail = -_wc.windSpeed * Math.cos((_wc.windDir - cw.hdg) * Math.PI / 180);
+          if (_tail > 9.3) continue;
+          if (!_wBest || cw.diff < _wBest.diff) _wBest = cw;
+        }
+        if (_wBest) best = _wBest;
+      }
+    } catch (eW) {}
     // v24105 — OF PARALLEL RUNWAYS, THE ONE IT IS LINED UP WITH. Orlando's
     // four run 359.39° to 359.54° by their survey, so the smallest difference
     // from the bearing to the field always picked the same one: UA2779,
@@ -63285,6 +63410,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // v23736 — the live-gate test now lives in _gateLiveGates(), shared
         // with the FIRST pick in updateSubScreens(). It was only ever applied
         // here, so the opening gate came from the unfiltered list.
+        // v24143 — where the feed gives no gate numbers this is the live
+        // departures by flight (_gateFlightPicks), so the walk hops flights.
         var gates = _gateLiveGates(data.dep);
         if (gates.length < 1) return;
         var pool = gates.filter(function (g) { return g !== subScreenVal; });

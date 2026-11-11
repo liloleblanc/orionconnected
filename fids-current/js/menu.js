@@ -3492,6 +3492,15 @@ function _navigateToFlight(f, dir) {
   // Departures need a gate; arrivals need a belt (synthesized in normalize()
   // when ADB doesn't provide one — see v218.18 belt logic in fids-core.js).
   if (dir === 'dep') {
+    // v24143 — at an airport whose feed gives no gate numbers (YYG), the gate
+    // screen is picked by flight (_gateFlightPicks in fids-core.js): open that
+    // flight. Where any departure has a gate, a row without one still says so.
+    var _noGates = false;
+    try { _noGates = (typeof data !== 'undefined') && data && Array.isArray(data.dep) && data.dep.length > 0 && !data.dep.some(function (r) { return r && r.gate && r.gate !== '—'; }); } catch (e) {}
+    if ((!gate || gate === '—') && _noGates && flight) {
+      window.location.href = 'gids.html?ap=' + encodeURIComponent(ap) + '&gate=' + encodeURIComponent(flight);
+      return;
+    }
     if (!gate || gate === '—') {
       _flightToast('Flight ' + flight + ' to ' + locDisplay + ' is not currently at a gate.');
       return;
