@@ -5707,7 +5707,8 @@ function _gateLiveGates(flights, nowMs, iata) {
   var out = [];
   var anyGate = false;
   (flights || []).forEach(function (f) {
-    if (!f || !f.gate || f.gate === '—') return;
+    // v24144: a gate made only of dashes is no gate (a feed printing a hyphen).
+    if (!f || !f.gate || /^[-\u2013\u2014\s]+$/.test(String(f.gate))) return;
     anyGate = true;
     if (!_gateFlightLive(f, now)) return;
     if (_gateHoldYields(f, flights, now, iata)) return;
