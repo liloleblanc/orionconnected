@@ -477,6 +477,114 @@ test('the second DC-8 card: the -63 drawn, its own checked years, the 1980 liver
   }
 });
 
+test('the Future Retro DC-9 card: a real aeroplane in a livery it never wore, said in nine languages, with no years of service', () => {
+  // v24147 — a supplied drawing of C-FTMA, fleet 726: a real Air Canada DC-9-32 (MSN 47266, line 352,
+  // delivered 27 July 1968, to Cebu Pacific in December 1997) in the livery unveiled on 9 February
+  // 2017. Air Canada flew its last DC-9 in January 2002, so no DC-9 wore it: the card is a what-if,
+  // and its caption says so where the other cards print the years the type flew.
+  const byK = Object.fromEntries(marks().map((m) => [m.key, m]));
+  const m = byK['air-canada-dc9-2017'];
+  assert.ok(m, 'the Future Retro DC-9 card exists');
+  assert.equal(m.aircraft, '/aircraft/heritage/air-canada-dc9-ac17.png', 'named as the other DC-9 drawings are, by the livery year');
+  assert.equal(m.name, 'Air Canada');
+  assert.equal(m.airports, '*CA', 'Canadian airports only, as its siblings');
+  assert.ok(!m.credit, 'a supplied drawing: no credit line');
+  assert.ok(!m.endorsement, 'no second mark');
+  for (const f of [m.aircraft, m.file]) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', f.replace(/^\//, ''))), f + ' is on disk');
+  }
+  // The drawing is the working size of the capitals and 1993 DC-9s, and a cut-out (it flies over the sky).
+  const png = fs.readFileSync(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, '')));
+  assert.equal(png.toString('latin1', 1, 4), 'PNG');
+  assert.equal(png.readUInt32BE(16), 2272, 'scaled to the 2272 px of the other DC-9 drawings');
+  assert.ok(Math.abs(png.readUInt32BE(16) / png.readUInt32BE(20) - 7710 / 1686) < 0.01, 'at its own proportions: cropped and scaled, never stretched');
+  assert.equal(png[25], 6, 'RGBA: the sky shows around the aeroplane');
+
+  // THE MARK is the lockup the live Air Canada boards use today, in the black lettering the 2017
+  // scheme paints on the aeroplane. The card is paper, so the white-lettering twin of the dark
+  // gate banner would vanish on it; no new file is made and nothing is recoloured.
+  assert.equal(m.file, '/logos/airlines/canadian/air-canada.svg');
+  assert.match(SRC, /var LOCAL_LOGOS = \{[\s\S]{0,400}?'AC': '\/logos\/airlines\/canadian\/air-canada\.svg'/, 'the file the live boards map AC to');
+  assert.match(SRC, /'AC': '\/logos\/airlines\/canadian\/air-canada-white\.svg'/, 'whose white-lettering twin stays on the dark banner');
+  const svg = fs.readFileSync(path.join(ROOT, 'fids-current', m.file.replace(/^\//, '')), 'utf8');
+  assert.doesNotMatch(svg, /fill\s*[:=]\s*["']?\s*(#fff\b|#ffffff\b|white\b)/i, 'no white lettering and no white plate on the paper card');
+  assert.doesNotMatch(svg, /<image\b/, 'all shapes: no picture inside it');
+  assert.equal((svg.match(/<(?:path|rect|polygon)\b(?![^>]*\bclass=)(?![^>]*\bfill=)[^>]*>/g) || []).length, 9, 'nine letters with no fill of their own, so they are drawn black: AIR CANADA');
+  assert.match(svg, /fill:#D82F2E/, 'the red rondelle');
+  assert.match(CSS, /\.hcard-wrap \{[^}]*background: linear-gradient\(180deg, #F6F3EC 0%, #EFEAE0 100%\)/, 'the card ground is still the warm paper the black lettering is chosen for');
+
+  // THE CAPTION: the type, what it is, the livery by the year it came in. Three parts, as the pattern.
+  const WHAT_IF = { en: 'Future Retro what-if', fr: 'et si…', es: '¿y si…?', de: 'Fiktion', it: 'e se…', pt: 'e se…', ja: 'もしも', zh: '假想', ar: 'ماذا لو' };
+  assert.deepEqual(Object.keys(WHAT_IF).sort(), STORE.LANGS.slice().sort(), 'all nine board languages');
+  const sib = STORE.entry('heritage:air-canada-dc9-93');
+  const seen = new Set();
+  for (const l of STORE.LANGS) {
+    const cap = STORE.bs('heritage:air-canada-dc9-2017', l);
+    assert.ok(cap, 'a caption in ' + l);
+    const parts = cap.split(' · ');
+    assert.equal(parts.length, 3, 'type · what it is · livery, in ' + l);
+    assert.equal(parts[0], sib[l].split(' · ')[0], 'the type as the other DC-9 cards name it, in ' + l);
+    assert.match(parts[0], /DC-9-32$/, 'the model drawn, in ' + l);
+    assert.equal(parts[1], WHAT_IF[l], 'it says it is a what-if, in ' + l);
+    assert.equal(parts[2], sib[l].split(' · ')[2].replace('1993', '2017'), 'the livery in the words of the other cards, by the year it came in, in ' + l);
+    const years = (cap.match(/\b(19|20)\d\d\b/g) || []).filter((y) => y !== '2017');
+    assert.deepEqual(years, [], 'no years of service (not 1968–2002: it never flew in this livery), in ' + l);
+    assert.doesNotMatch(cap, /\d–\d/, 'no year range at all, in ' + l);
+    if (l !== 'en') assert.doesNotMatch(cap, /Future|Retro|what-if/i, 'the idea in its own words, not the English name, in ' + l);
+    assert.doesNotMatch(cap, /Montr[eé]al|モントリオール|蒙特利尔|مونتريال/, 'no city: the card names the aeroplane, in ' + l);
+    seen.add(cap);
+  }
+  assert.equal(seen.size, STORE.LANGS.length, 'nine different lines: none left in another language');
+});
+
+test('the Future Retro DC-9 is three cards or more from every other DC-9, and only on Air Canada pages', () => {
+  // The board rotates each airport pool in set order and wraps. Four DC-9s in one deck would
+  // read as one aeroplane on repeat if they came close together, so the what-if sits three or
+  // more cards from each of the three real ones, the wrap included, in both pools the board
+  // runs: the Atlantic network (with Air Atlantic and Air Nova) and any other Canadian airport.
+  const keys = marks().map((k) => k.key);
+  const dc9s = ['air-canada', 'air-canada-caps', 'air-canada-dc9-93'];
+  assert.ok(keys.indexOf('air-canada-dc9-2017') > Math.max(...dc9s.map((k) => keys.indexOf(k))), 'after the last real DC-9 in the deck');
+  const dist = (pool, a, b) => { const gap = Math.abs(pool.indexOf(a) - pool.indexOf(b)); return Math.min(gap, pool.length - gap); };
+  for (const ia of ['YHZ', 'YVR']) {
+    const pool = marks().filter((mk) => mk.airports === '*CA' || (Array.isArray(mk.airports) && mk.airports.includes(ia))).map((mk) => mk.key);
+    assert.ok(pool.includes('air-canada-dc9-2017'), 'the card runs at ' + ia);
+    for (const k of dc9s) {
+      assert.ok(pool.includes(k), k + ' runs at ' + ia);
+      assert.ok(dist(pool, 'air-canada-dc9-2017', k) >= 3, 'three or more cards from ' + k + ' at ' + ia + ' (it is ' + dist(pool, 'air-canada-dc9-2017', k) + ')');
+    }
+    // and it disturbs none of the pairs already kept apart
+    for (const [a, b] of [['air-canada-dc8', 'air-canada-dc8-80'], ['air-canada-767', 'air-canada-767-87'], ['air-canada-l1011-87', 'air-canada-l1011-93']]) {
+      assert.ok(dist(pool, a, b) > 1, a + ' and ' + b + ' are still apart at ' + ia);
+    }
+  }
+  assert.equal(keys[keys.length - 1], 'air-canada-l1011-93', 'the 1993 TriStar is still last, as its own note asks');
+
+  // Only on Air Canada pages, like its siblings: an Air Canada gate reaches it in one turn of the
+  // deck and draws the what-if caption under the live lockup; a WestJet gate never draws anything.
+  const g = gate({ flight: 'AC659', airline: 'AC' }, { iata: 'YHZ' });
+  const el = { innerHTML: '' };
+  let card = '';
+  for (let i = 0; i < keys.length && !card; i++) {
+    el.innerHTML = '';
+    assert.equal(g.render(el), true);
+    if (el.innerHTML.includes('/aircraft/heritage/air-canada-dc9-ac17.png')) card = el.innerHTML;
+  }
+  assert.ok(card, 'the Air Canada gate at Halifax comes to the card within one turn of the deck');
+  assert.match(card, /class="hcard-mark" src="\/logos\/airlines\/canadian\/air-canada\.svg" alt="Air Canada"/, 'under the live lockup');
+  assert.match(card, /Future Retro what-if · 2017 livery/, 'the English line');
+  assert.match(card, /et si… · livrée de 2017/, 'and the French line');
+  assert.match(card, /hcard-kicker/, 'with the shared kicker');
+  assert.doesNotMatch(card, /hcard-credit"|hcard-endorse/, 'no credit line and no endorsement');
+  const ws = gate({ flight: 'WS813', airline: 'WS' }, { iata: 'YHZ' });
+  for (let i = 0; i < keys.length; i++) {
+    const e2 = { innerHTML: '' };
+    assert.equal(ws.render(e2), false, 'a WestJet gate skips the slide every time');
+    assert.equal(e2.innerHTML, '');
+  }
+  assert.equal(gate({ flight: 'AC880', airline: 'AC' }, { iata: 'ZRH' }).render({ innerHTML: '' }), false, 'and an Air Canada gate abroad shows nothing');
+});
+
 test('the 1965 and 1980 lockups are one drawing: identical shapes and frame, black or red', () => {
   // v24137 — the two Air Canada DC-8 cards alternate in the rotation, so their marks must sit alike;
   // the 1980 lockup is the 1965 drawing filled in the 1980 red, nothing else differs.

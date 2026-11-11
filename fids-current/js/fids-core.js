@@ -18075,7 +18075,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24146" src="/textures/gate-sky-shelf.mp4?v=24146" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24147" src="/textures/gate-sky-shelf.mp4?v=24147" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -18119,7 +18119,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24146" src="/textures/gate-sky-shelf.mp4?v=24146" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24147" src="/textures/gate-sky-shelf.mp4?v=24147" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19354,7 +19354,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24146" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24147" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36478,7 +36478,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24146';
+var FIDS_BUILD_TAG = 'v24147';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -65584,6 +65584,68 @@ var HERITAGE_MARKS = [
     airports: '*CA'
   },
   {
+    // v24147 — FUTURE RETRO: THE DC-9 IN THE LIVERY OF 2017, WHICH IT NEVER
+    // WORE. A what-if, and the card says so. The supplied drawing is the same
+    // C-FTMA, fleet 726, as the capitals and 1993 cards, in the scheme Air
+    // Canada unveiled on 9 February 2017: a white aeroplane, AIR CANADA in
+    // black capitals, a black belly and black engines, the red rondelle on a
+    // black fin and again under the titles.
+    //
+    // WHAT IS REAL: C-FTMA with 726 on the fin was an Air Canada DC-9-32, MSN
+    // 47266, line 352, delivered on 27 July 1968 (the NetLetter DC-9 fleet
+    // list; the airliners.net record of a photograph at London, Ontario in
+    // November 1981 gives the same registration, serial and fin).
+    // WHAT IS NOT: this aeroplane in these colours. C-FTMA left the fleet in
+    // 1997 (to Cebu Pacific as RP-C1535 that December: AirHistory.net,
+    // PlaneLogger), Air Canada flew its last DC-9 in January 2002, thirty-six
+    // years after the first was delivered in January 1966 (Aviation Week,
+    // 4 March 2002; the NetLetter list; the Canada Aviation and Space Museum
+    // has the type with Air Canada from 1966 to 2002), and the livery came
+    // fifteen years after that (AirlineGeeks and TheDesignAir, both of
+    // 9 February 2017). No DC-9 flew in it.
+    //
+    // SO THE CAPTION PRINTS NO YEARS OF SERVICE. Where the other cards give
+    // the years the type flew, this one says what it is, a what-if, and the
+    // livery is named by the year it came in, as on every other card:
+    // McDonnell Douglas DC-9-32 · Future Retro what-if · 2017 livery.
+    // Future Retro is the name of the idea and is printed in English only;
+    // the other eight languages say what if in their own words (et si, y si,
+    // e se, Fiktion, and so on): a coined English name is not a brand, and
+    // the board takes no English word in another language. A second phrase
+    // (never worn) was tried and dropped: with it the German and Japanese
+    // lines ran to two rows at 1680 x 1050 and five more sat at 96% or more
+    // of the line. The longest line now is the English, at 92%.
+    // The kicker above it is the shared one for the whole set.
+    //
+    // THE MARK is the lockup the live Air Canada boards use today
+    // (LOCAL_LOGOS.AC, air-canada.svg): the red rondelle beside AIR CANADA
+    // in black, as the 2017 scheme letters the aeroplane. Its white-lettering
+    // twin (air-canada-white.svg) is for the dark gate banner; this card is
+    // paper, where white lettering would vanish. No new file, no plate
+    // behind it, nothing recoloured.
+    //
+    // THE MODEL is the DC-9-32 by its two exits over the wing and its shape:
+    // length over fuselage depth, measured 14–26% behind the nose, is 10.05
+    // against the 10.07 of the -32 (Douglas MDC J2904, section 2.2), 0.2%
+    // short, so it is used AS DRAWN. It has 21 cabin windows ahead of the
+    // first exit where the capitals drawing has 20; that is the drawing.
+    // It came at 8001 x 1883: cropped to its own edges (7710 x 1686), scaled
+    // to the 2272 px of the capitals and 1993 DC-9s (2272 x 497), 5,954 body
+    // pixels a shade see-through (alpha 245–254) made solid as they looked on
+    // white, and 4,094 pixels of haze off the outline (alpha 6 or less)
+    // cleared; no enclosed holes. Nothing redrawn, recoloured or re-lettered.
+    //
+    // Between the 1987 767 and the 1993 TriStar on purpose: three cards
+    // from the 1993 DC-9 and three or more from the other two, the wrap
+    // included, in the Atlantic pool and in the pool of every other Canadian
+    // airport, so no two DC-9s come up close together.
+    key: 'air-canada-dc9-2017',
+    file: '/logos/airlines/canadian/air-canada.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac17.png',
+    airports: '*CA'
+  },
+  {
     // v24108 — AND THE TRISTAR IN THE 1993 LIVERY: a white aeroplane, 'AIR
     // CANADA' in spaced capitals behind a small red rondelle, the red maple
     // leaf on a dark green fin, so it carries the 1993 mark, as the 1993 DC-9
@@ -65823,7 +65885,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24146" src="/textures/gate-sky-shelf.mp4?v=24146"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24147" src="/textures/gate-sky-shelf.mp4?v=24147"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
