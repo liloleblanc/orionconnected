@@ -36534,6 +36534,72 @@ var _BIDSV3_ON = true; //
   } catch (e) {}
 })();
 
+// v24144 — A BOARD IS NEVER LOADED WHERE NOBODY CAN SEE IT, AND IS REPAINTED WHEN IT IS SHOWN.
+//
+// Seen in Safari 26 on a Mac and on an iPhone: after a new build went live, a
+// board left open in a tab came back with the airline column and both header
+// ends empty and with rows that only appeared under the pointer. A reload by
+// hand always cured it. The build watchdog below had reloaded the page while
+// the tab was hidden (it waits for five quiet minutes, and an unattended tab
+// is quiet), and Safari did not paint what was laid out while hidden.
+//
+// Three rules, all of them no-ops on a wall screen, which is always visible:
+//   1. The watchdog does not reload a hidden page. It reloads the moment the
+//      page is shown, so the new build loads in view, as a reload by hand does.
+//      (A page hidden for twenty minutes after a build reloads anyway, so a
+//      screen that never reports itself visible is not left on an old build.)
+//   2. A page that finished loading while hidden (a background tab, a restored
+//      tab) reloads once when it is first shown. Once: a session mark stops a
+//      second reload inside a minute.
+//   3. Every time the page is shown again it is repainted: the body is put
+//      through one frame at an opacity a hair under 1, which makes the engine
+//      paint the whole page again and moves nothing.
+var _fidsReloadWhenShown = false;
+function _fidsHiddenLoadShouldReload(loadedHidden, lastMark, nowMs) {
+  if (!loadedHidden) return false;
+  var last = +lastMark || 0;
+  return !(last > 0 && nowMs - last < 60000);
+}
+(function () {
+  try {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    var KEY = 'fids_hidden_load_reload';
+    var loadedHidden = false;
+    var settle = function () { loadedHidden = !!document.hidden; };
+    if (document.readyState === 'complete') settle();
+    else window.addEventListener('load', settle);
+    var repaint = function () {
+      try {
+        var b = document.body;
+        if (!b || b.getAttribute('data-fids-repaint')) return;
+        var was = b.style.opacity;
+        b.setAttribute('data-fids-repaint', '1');
+        b.style.opacity = '0.999';
+        var back = function () { b.style.opacity = was; b.removeAttribute('data-fids-repaint'); };
+        if (window.requestAnimationFrame) requestAnimationFrame(function () { requestAnimationFrame(back); });
+        else setTimeout(back, 50);
+      } catch (e) {}
+    };
+    var shown = function () {
+      if (document.hidden) return;
+      if (_fidsReloadWhenShown) { _fidsReloadWhenShown = false; location.reload(); return; }
+      if (loadedHidden) {
+        loadedHidden = false;
+        var last = 0;
+        try { last = +sessionStorage.getItem(KEY) || 0; } catch (e) {}
+        if (_fidsHiddenLoadShouldReload(true, last, Date.now())) {
+          try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+          location.reload();
+          return;
+        }
+      }
+      repaint();
+    };
+    document.addEventListener('visibilitychange', shown);
+    window.addEventListener('pageshow', function (ev) { if (ev && ev.persisted) shown(); });
+  } catch (e) {}
+})();
+
 // ── BUILD WATCHDOG ───────────────────────────────────────────────────────
 // A running page executes the build it loaded — field displays run for days,
 // so every deployed fix reached them only on a manual reload
@@ -36549,6 +36615,7 @@ var _BIDSV3_ON = true; //
       window.addEventListener(ev, function () { _lastInput = Date.now(); }, { passive: true });
     });
     var _newBuild = null;
+    var _hiddenSince = 0;
     setInterval(function () {
       try {
         fetch(location.pathname + location.search, { cache: 'no-store' })
@@ -36557,6 +36624,14 @@ var _BIDSV3_ON = true; //
             var m = html && html.match(/fids-core\.js\?v=([0-9][0-9.-]*)/);
             if (m && ('v' + m[1]) !== FIDS_BUILD_TAG) _newBuild = 'v' + m[1];
             if (_newBuild && Date.now() - _lastInput > 5 * 60000) {
+              // v24144: a hidden page waits to be shown (rule 1 above), but not for
+              // ever: a screen that never reports itself visible still has to get
+              // the build, so after twenty hidden minutes it reloads anyway and
+              // rule 2 covers the day somebody looks at it.
+              if (document.hidden) {
+                if (!_fidsReloadWhenShown) { _fidsReloadWhenShown = true; _hiddenSince = Date.now(); }
+                if (Date.now() - _hiddenSince < 20 * 60000) return;
+              }
               console.log('[FIDS] Build ' + _newBuild + ' deployed (running ' + FIDS_BUILD_TAG + ') — reloading');
               location.reload();
             }
