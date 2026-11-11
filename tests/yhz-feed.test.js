@@ -94,3 +94,11 @@ test('yhz: garbage in, empty array out — never a throw', () => {
   assert.deepEqual(yhzParseBoard('<html><body>maintenance</body></html>', true, NOW), []);
   assert.ok(Number.isNaN(yhzWindowTs('not-a-window')));
 });
+
+test('yhz: a dash in the gate cell is no gate', () => {
+  const dashed = dep.replace('</span>12</span>', '</span>-</span>');
+  assert.notEqual(dashed, dep, 'fixture gate cell found');
+  const f = yhzParseBoard(dashed, true, NOW);
+  const ws14 = f.find((x) => x.number === 'WS14');
+  assert.equal(ws14.departure.gate, null);
+});
