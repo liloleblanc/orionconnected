@@ -108,9 +108,20 @@
   var MODEL = { title: 'boeing 767', author: '1883' };
 
   var LIVE_BOARDS = 'https://fids.orionconnected.com/picker';
-  var PHONE_APP = 'https://orionconnected.app';
+  // v24145 — a phone goes to the address of the boards, whose opener asks
+  // board or app, as it asks every phone that arrives at a board
+  var PHONE_BOARDS = 'https://fids.orionconnected.com/';
   var SAVED_KEY = 'oc_home_lang';
 
+  function boardLink(code) {
+    try {
+      if (typeof window.fidsBoardUrl === 'function') {
+        var u = window.fidsBoardUrl(code, 'fids');
+        if (/^https:\/\//.test(u)) return u;
+      }
+    } catch (e) {}
+    return 'https://' + String(code).toLowerCase() + '.orionconnected.com';
+  }
   function display(code) {
     try { return window.fidsDisplayIata ? window.fidsDisplayIata(code) : code; } catch (e) { return code; }
   }
@@ -382,7 +393,10 @@
       list.forEach(function (a) {
         var li = el('li');
         var link = el('a', 'ap' + (PAUSED[a[1]] ? ' paused' : ''));
-        link.href = 'https://' + a[1].toLowerCase() + '.orionconnected.com';
+        // v24145 — the board itself, on its airport address (fidsBoardUrl in
+        // host-airport.js), one page and no hop; the root of the address,
+        // where that helper is missing
+        link.href = boardLink(a[1]);
         link.appendChild(el('span', 'c', display(a[1])));
         var n = el('span', 'n', nameOf(a, l));
         if (a[1] === HOME_CODE) {
@@ -512,18 +526,19 @@
   }
 
   // ── LINKS ────────────────────────────────────────────────────────────────
-  // A phone opening a board is sent to the companion app anyway (fids-core.js
-  // PHONE HANDOFF); the homepage sends it there directly, by the boards' own
-  // rule: the user agent alone. Bare 'Android' without 'Mobile' is not a
-  // phone (Android TVs carry it), and there is no width test, so a narrow
-  // desktop window keeps the boards, as it does on the boards themselves
-  // (which have their own narrow layout, css/phone.css).
+  // v24145 — A PHONE IS ASKED, NOT SENT. A phone that arrives at a board
+  // from .com or .ca is asked board or app at every arrival, so this link no
+  // longer decides for it: on a phone it is the address of the boards, where
+  // the opener asks. The phone test is the same one the boards use, the user
+  // agent alone: bare Android without Mobile is not a phone (Android TVs
+  // carry it), and there is no width test, so a narrow desktop window keeps
+  // the screen picker.
   function isPhone() {
     var ua = navigator.userAgent || '';
     return /iPhone|iPod|iPad|Windows Phone/i.test(ua) || (/Android/i.test(ua) && /Mobile/i.test(ua));
   }
   function paintLinks() {
-    var to = isPhone() ? PHONE_APP : LIVE_BOARDS;
+    var to = isPhone() ? PHONE_BOARDS : LIVE_BOARDS;
     var ls = doc.querySelectorAll('[data-boards-link]');
     for (var i = 0; i < ls.length; i++) ls[i].href = to;
   }

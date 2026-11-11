@@ -1160,6 +1160,26 @@ function _syncMenu() {
 // MENU ACTIONS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// v24145 — ONE LINK HELPER. Every board link the menu builds goes through
+// fidsBoardUrl (host-airport.js): the airport address on .com and .ca, the
+// old relative page.html?ap= link where a page cannot leave its origin (a
+// preview, a frame, an admin signed in here). The fallback is that old link,
+// for a page that somehow lacks host-airport.js.
+function _menuBoardUrl(code, page, params) {
+  try { if (typeof window.fidsBoardUrl === 'function') return window.fidsBoardUrl(code, page, params); } catch (e) {}
+  var q = 'ap=' + encodeURIComponent(code);
+  for (var k in (params || {})) if (Object.prototype.hasOwnProperty.call(params, k) && params[k]) q += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  return page + '.html?' + q;
+}
+
+// v24145 — the airport this page shows when the address carries no ?ap=:
+// the airport address it is on (host-airport.js), else this tab, else YQM.
+function _menuHostAirport() {
+  try { if (window.__ocFromHost) return String(window.__ocFromHost).toUpperCase(); } catch (e) {}
+  try { var s = sessionStorage.getItem('fids_airport'); if (s) return String(s).toUpperCase(); } catch (e) {}
+  return '';
+}
+
 function menuChangeDisplay(type) {
   var currentPage = window.location.pathname.split('/').pop().replace('.html','');
   var targetMap = { main: 'fids', gate: 'gids', baggage: 'bids' };
@@ -1177,7 +1197,7 @@ function menuChangeDisplay(type) {
   var mode = (typeof LIVE_MODE !== 'undefined' && LIVE_MODE) ? 'live' : 'demo';
   closeOverlayMenu();
   setTimeout(function() {
-    window.location.href = target + '.html?ap=' + ap + '&mode=' + mode;
+    window.location.href = _menuBoardUrl(ap, target, { mode: mode });
   }, 200);
 }
 
@@ -1201,7 +1221,11 @@ function _menuScreenUrl() {
   var u = new URL(window.location.href);
   function set(k, v) { if (v) u.searchParams.set(k, v); else u.searchParams.delete(k); }
   try {
-    set('ap', (document.getElementById('apSel') || {}).value || '');
+    // v24145 — on its own airport address a board needs no ?ap=: it is not
+    // added there, though one the address already carries is kept in step
+    // (a registered screen compares it with its assignment).
+    var _apV = (document.getElementById('apSel') || {}).value || '';
+    if (u.searchParams.has('ap') || String(_apV).toUpperCase() !== String(window.__ocFromHost || '').toUpperCase()) set('ap', _apV);
     set('terminal', typeof filterTerminal !== 'undefined' ? filterTerminal : '');
     set('airline',  typeof filterAirline  !== 'undefined' ? filterAirline  : '');
     set('region',   typeof filterRegion   !== 'undefined' ? filterRegion   : '');
@@ -1258,6 +1282,17 @@ function menuClearScreenFilters() {
 
 function menuCopyScreenUrl() {
   var url = _menuScreenUrl().toString();
+  // v24145 — what goes into the next kiosk is the airport address of this
+  // screen, not the address this page happens to be on (an admin signed in
+  // on fids.<zone> stays there; the screen it sets up does not).
+  try {
+    if (typeof window.fidsAirportAddress === 'function') {
+      var _cu = new URL(url);
+      var _ca = window.fidsAirportAddress({ hostname: _cu.hostname, pathname: _cu.pathname, search: _cu.search, hash: _cu.hash },
+        { fallback: (document.getElementById('apSel') || {}).value || _menuHostAirport() }, window.fidsHostAirport, window.fidsRealIata);
+      if (_ca) url = _ca;
+    }
+  } catch (e) {}
   var btn = document.getElementById('menuCopyUrlBtn');
   function done(ok) {
     if (!btn) return;
@@ -1888,7 +1923,7 @@ function _getCurrentAirportCode() {
   if (el && el.value) return el.value.trim().toUpperCase();
   if (window._gateIata) return window._gateIata;
   var params = new URLSearchParams(window.location.search);
-  return (params.get('ap') || 'YQM').toUpperCase();
+  return (params.get('ap') || _menuHostAirport() || 'YQM').toUpperCase();
 }
 
 function menuSetAirportLogo(url) {
@@ -2896,6 +2931,18 @@ function _cuPaintForm(prefs) {
     } catch (e) { _flv = ''; }
     if (_flv === 'earth') _flv = '';
     fl.value = _flv || ''; if (fl.selectedIndex < 0) fl.value = ''; fl.dataset.painted = '1';
+    // v24145 — the bottom of the board is the airport choice only, and only
+    // a signed-in save reaches the airport. Signed out, a pick did nothing
+    // anyone could see, so the control is shown, disabled, with the reason.
+    try {
+      var _flSigned = !!_acGetToken();
+      fl.disabled = !_flSigned;
+      var _flNote = document.getElementById('cuFloorNote');
+      if (_flNote) {
+        _flNote.textContent = _flSigned ? '' : 'Set for the whole airport. Sign in (Login) to change it.';
+        _flNote.style.display = _flSigned ? 'none' : '';
+      }
+    } catch (e) {}
   }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
@@ -3323,7 +3370,7 @@ window.FIDS_CUSTOMIZE = {
       if (!_code) {
         try {
           var _params = new URLSearchParams(window.location.search);
-          _code = (_params.get('ap') || '').toUpperCase();
+          _code = (_params.get('ap') || _menuHostAirport() || '').toUpperCase();
         } catch (e) {}
       }
       if (!_code) _code = (window._gateIata || 'YQM').toUpperCase();
@@ -3498,20 +3545,20 @@ function _navigateToFlight(f, dir) {
     var _noGates = false;
     try { _noGates = (typeof data !== 'undefined') && data && Array.isArray(data.dep) && data.dep.length > 0 && !data.dep.some(function (r) { return r && r.gate && r.gate !== '—'; }); } catch (e) {}
     if ((!gate || gate === '—') && _noGates && flight) {
-      window.location.href = 'gids.html?ap=' + encodeURIComponent(ap) + '&gate=' + encodeURIComponent(flight);
+      window.location.href = _menuBoardUrl(ap, 'gids', { gate: flight });
       return;
     }
     if (!gate || gate === '—') {
       _flightToast('Flight ' + flight + ' to ' + locDisplay + ' is not currently at a gate.');
       return;
     }
-    window.location.href = 'gids.html?ap=' + encodeURIComponent(ap) + '&gate=' + encodeURIComponent(gate);
+    window.location.href = _menuBoardUrl(ap, 'gids', { gate: gate });
   } else {
     if (!belt) {
       _flightToast('Flight ' + flight + ' from ' + locDisplay + ' has no belt assignment yet.');
       return;
     }
-    window.location.href = 'bids.html?ap=' + encodeURIComponent(ap) + '&belt=' + encodeURIComponent(belt);
+    window.location.href = _menuBoardUrl(ap, 'bids', { belt: belt });
   }
 }
 
