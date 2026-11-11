@@ -308,9 +308,24 @@ s not just start it's all the time now'). ?rotate= navigates with
   <link rel="stylesheet" href="css/hotel-ads.css?v=24145">
   <!-- v24029 — the phone board, last so it decides the phone's look -->
   <link rel="stylesheet" href="css/phone.css?v=3">
-  <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
-  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
-  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
+  <script>
+  /* v24145: THE GATE BACKDROPS ARE FETCHED EARLY ONLY FOR A GATE. The Porter
+     pattern panel (1.4 MB) and the Air Canada roundel are drawn on gate
+     screens alone. This page fetched both ahead of time on every load, so a
+     departures or arrivals board paid for them and never drew them (Safari
+     says so in its console). They are asked for early only when the address
+     opens on a gate; a board that is switched to a gate later fetches them
+     when it draws them. */
+  try {
+    if (document.documentElement.getAttribute('data-fids-url-screen') === 'gate') {
+      [['logos/Backgrounds/PD/porter-pattern-panel.png', 'porter-pattern-bg'], ['logos/Backgrounds/AC/aircanada-roundel-fade.svg', 'ac-roundel-bg']].forEach(function (x) {
+        var l = document.createElement('link');
+        l.rel = 'preload'; l.as = 'image'; l.href = x[0]; l.setAttribute('data-fids-patch', x[1]);
+        document.head.appendChild(l);
+      });
+    }
+  } catch (e) {}
+  </script>
   <script>
   /* v24079 — THE PLANET FROM THE FIRST FRAME. Earth, now (js/fids-earth.js)
      draws the bottom of the board once its first planet is lit, about a

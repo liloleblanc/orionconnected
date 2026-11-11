@@ -299,9 +299,7 @@ s not just start it's all the time now'). ?rotate= navigates with
   } catch (e) {}
   </script>
   <link rel="stylesheet" href="css/hotel-ads.css?v=24145">
-  <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
-  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
-  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
+  <!-- v24145: the gate backdrops (Porter panel, Air Canada roundel) are not fetched early here: a baggage screen never draws them. -->
 <style id="mobile-scroll-unlock">
 /* TEMP: allow mobile gate/baggage pages to scroll (big-display layout locks 100vh) */
 @media (max-width: 700px){
