@@ -89,11 +89,11 @@ The loader's palette in shared.css is the
   <!-- v23803 — yqm.orionconnected.com shows Moncton. Loaded FIRST: it fills in
        sessionStorage.fids_airport, which every board reads as its default, and the
        earliest reader is an inline script further down this page. -->
-  <script src="js/host-airport.js?v=24145"></script>
+  <script src="js/host-airport.js?v=24146"></script>
   <!-- The one store for passenger words (board-strings.js). Loaded first, before
        the loader below, so the loader greets in the board's own languages. Its
        ?v= always equals fids-core.js's (tests/board-languages.test.js B14). -->
-  <script src="js/board-strings.js?v=24145"></script>
+  <script src="js/board-strings.js?v=24146"></script>
 
   <script>
   (function () {
@@ -269,15 +269,15 @@ s not just start it's all the time now'). ?rotate= navigates with
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+Arabic:wght@400;700;900&display=swap">
   <link rel="stylesheet" href="css/font.css?v=335">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
-  <link rel="stylesheet" href="css/shared.css?v=24145">
-  <link rel="stylesheet" href="css/menu.css?v=24145">
-  <link rel="stylesheet" href="css/fids.css?v=24145">
-  <link rel="stylesheet" href="css/flight-display.css?v=24145">
-  <link rel="stylesheet" href="css/baggage-display.css?v=24145">
+  <link rel="stylesheet" href="css/shared.css?v=24146">
+  <link rel="stylesheet" href="css/menu.css?v=24146">
+  <link rel="stylesheet" href="css/fids.css?v=24146">
+  <link rel="stylesheet" href="css/flight-display.css?v=24146">
+  <link rel="stylesheet" href="css/baggage-display.css?v=24146">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=313">
-  <link rel="stylesheet" href="css/display-overrides.css?v=24145">
-  <link rel="stylesheet" href="css/remembrance.css?v=24145">
+  <link rel="stylesheet" href="css/display-overrides.css?v=24146">
+  <link rel="stylesheet" href="css/remembrance.css?v=24146">
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
@@ -323,13 +323,28 @@ s not just start it's all the time now'). ?rotate= navigates with
     }, 8000);
   } catch (e) {}
   </script>
-  <link rel="stylesheet" href="css/gate-display.css?v=24145">
-  <link rel="stylesheet" href="css/hotel-ads.css?v=24145">
+  <link rel="stylesheet" href="css/gate-display.css?v=24146">
+  <link rel="stylesheet" href="css/hotel-ads.css?v=24146">
   <!-- v24029 — the phone board, last so it decides the phone's look -->
   <link rel="stylesheet" href="css/phone.css?v=3">
-  <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
-  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
-  <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
+  <script>
+  /* v24145: THE GATE BACKDROPS ARE FETCHED EARLY ONLY FOR A GATE. The Porter
+     pattern panel (1.4 MB) and the Air Canada roundel are drawn on gate
+     screens alone. This page fetched both ahead of time on every load, so a
+     departures or arrivals board paid for them and never drew them (Safari
+     says so in its console). They are asked for early only when the address
+     opens on a gate; a board that is switched to a gate later fetches them
+     when it draws them. */
+  try {
+    if (document.documentElement.getAttribute('data-fids-url-screen') === 'gate') {
+      [['logos/Backgrounds/PD/porter-pattern-panel.png', 'porter-pattern-bg'], ['logos/Backgrounds/AC/aircanada-roundel-fade.svg', 'ac-roundel-bg']].forEach(function (x) {
+        var l = document.createElement('link');
+        l.rel = 'preload'; l.as = 'image'; l.href = x[0]; l.setAttribute('data-fids-patch', x[1]);
+        document.head.appendChild(l);
+      });
+    }
+  } catch (e) {}
+  </script>
   <script>
   /* v24079 — THE PLANET FROM THE FIRST FRAME. Earth, now (js/fids-earth.js)
      draws the bottom of the board once its first planet is lit, about a
@@ -364,11 +379,28 @@ s not just start it's all the time now'). ?rotate= navigates with
    hover filter). Each key below takes one of those layers away, from the
    first paint, so one link per key on a device that has not cached the site
    says which layer it is. none = the board as it is, with only the corner
-   tag. b = all four. To be removed with the real fix. */
+   tag. b = all four.
+
+   v24145: IN SAFARI THE FOUR LAYERS ARE OFF BY DEFAULT. Tested on the live
+   board in Safari 26.6 on a Mac, same minute, plain reloads in view: the
+   board as it is came up with the airline column and the header ends empty;
+   with ?wk=b it was whole; with ?floor=classic (no planet under the table) it
+   was whole too. So the empty parts need both the planet layer under the
+   table and these layers above it. An Apple engine (navigator.vendor) with no
+   ?wk= in the address now runs b, without the corner tag. ?wk=none still
+   gives the board as it was, for testing. Other engines are untouched: wall
+   screens and the streams run Chrome. Cost in Safari: the logos sit 2 px
+   lower and the header ends are square. */
 (function () {
   try {
     var q = new URLSearchParams(location.search).get('wk');
-    if (!q) return;
+    var auto = false;
+    if (!q) {
+      var vendor = (typeof navigator !== 'undefined' && navigator && navigator.vendor) || '';
+      if (!/^Apple/.test(vendor)) return;
+      q = 'b';
+      auto = true;
+    }
     var keys = q.toLowerCase().split(',');
     var all = keys.indexOf('b') >= 0;
     var P = ':root' + new Array(261).join(':not(#_)') + ' ';
@@ -390,6 +422,7 @@ s not just start it's all the time now'). ?rotate= navigates with
     head.appendChild(st);
     setInterval(function () { if (st.parentNode && st.parentNode.lastElementChild !== st) st.parentNode.appendChild(st); }, 1500);
     var tag = function () {
+      if (auto) return;
       if (!document.body || document.getElementById('wkTag')) return;
       var d = document.createElement('div');
       d.id = 'wkTag';
@@ -947,32 +980,32 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
 <script src="/mapcdn/leaflet.js?v=22485"></script>
 <script src="/mapcdn/leaflet-arc.js?v=22485"></script>
-<script src="js/fids-v2.js?v=24145"></script>
+<script src="js/fids-v2.js?v=24146"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="data/airline-colors.js?v=24145"></script>
-<script src="js/gate-date-context.js?v=24145"></script>
-<script src="js/feed-router.js?v=24145"></script>
+<script src="data/airline-colors.js?v=24146"></script>
+<script src="js/gate-date-context.js?v=24146"></script>
+<script src="js/feed-router.js?v=24146"></script>
 <!-- v24008 — day and night from the airport's own sun, computed on the screen
      (js/fids-sun.js): sets html.fids-day / html.fids-night. Before the core, so
      the core can call fidsSun from anywhere. -->
-<script src="js/fids-sun.js?v=24145"></script>
+<script src="js/fids-sun.js?v=24146"></script>
 <!-- BOARDING SEQUENCES — each airline's boarding sequence (js/boarding-sequence.js): the
      gate's boarding sign plays its calls one after another. Keys and numbers
      only; before the core, which reads it. -->
-<script src="js/boarding-sequence.js?v=24145"></script>
-<script src="js/fids-core.js?v=24145"></script>
-<script src="js/remembrance.js?v=24145"></script>
-<script src="js/gate-visual-integrity.js?v=24145"></script>
+<script src="js/boarding-sequence.js?v=24146"></script>
+<script src="js/fids-core.js?v=24146"></script>
+<script src="js/remembrance.js?v=24146"></script>
+<script src="js/gate-visual-integrity.js?v=24146"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
 <script src="js/media-base.js?v=2"></script>
-<script src="js/airport-coords.js?v=24145"></script>
-<script src="js/fids-earth.js?v=24145"></script>
+<script src="js/airport-coords.js?v=24146"></script>
+<script src="js/fids-earth.js?v=24146"></script>
 <script src="js/airport-runways.js?v=23035"></script>
-<script src="js/template-renderer.js?v=24145"></script>
+<script src="js/template-renderer.js?v=24146"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=24145"></script>
+<script src="js/menu.js?v=24146"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=23233"></script>
 <script src="js/editor-roles.js?v=1"></script>
