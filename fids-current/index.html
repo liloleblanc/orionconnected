@@ -3,7 +3,7 @@
 <head>
   <!-- The one store for passenger words (board-strings.js): the phone offer
        below reads it. docs/BOARD-LANGUAGES.md. -->
-  <script src="js/board-strings.js?v=24145"></script>
+  <script src="js/board-strings.js?v=24146"></script>
   <!-- v23803 — orionconnected.app IS THE APP.
        This page is the opener: it paints, then replaces itself with a board.
        On the .app domain it should hand over to the Airport Companion instead.
@@ -84,7 +84,7 @@
   <!-- Auto-router for fids.orionconnected.com (runs in <head> before paint so
        the entry screen never flashes):
          • phones / tablets  → ASK, then the app on .app, or stay on the board
-         • desktop / displays → fids.html?mode=live  (LIVE main FIDS board)
+         • desktop / displays → /fids?mode=live  (LIVE main FIDS board)
        Escape hatches: ?entry=1 keeps the DEMO/LOGIN entry screen (admin),
        ?nomobile=1 forces the desktop board on a phone.
 
@@ -133,18 +133,81 @@
            the answer sent you to, where a second copy of the same question had
            no idea it had already been answered. */
         if (/(^|\.)orionconnected\.app$/.test(String(location.hostname || '').toLowerCase())) return;
-        var apM = qs.match(/[?&]ap=([^&]+)/);
-        /* v24139 — THE PAGE THE PHONE CAME FOR. fids-core sends a phone that
+        /* v24145 — EVERY ADDRESS THIS PAGE SENDS ANYONE TO IS BUILT, NEVER
+           PASSED ALONG. The query and the hash of this page are text a link
+           can carry anything in, so no part of them is ever the start of an
+           address. Each destination is a URL object made from a fixed path
+           (or, for the app, a fixed host), the query and the hash are set
+           on that object, and it is used only if its origin is this origin
+           (the board) or an orionconnected.app address made here (the app). */
+        var P = new URLSearchParams(qs);
+        var here = String(location.origin || '');
+        var hash = location.hash || '';
+
+        /* THE AIRPORT. A code is three or four letters or digits, rebuilt
+           letter by letter from this alphabet, so no character of the address
+           bar reaches a host name. MET is the code passengers read for
+           Saint-Hubert and YHU its real one; the labels listed are sites of
+           ours, never airports. Both are the tables of host-airport.js, kept
+           here because this page does not load that file (it would be a
+           blocking request in the head of the one page whose whole job is to
+           paint the right colour and leave); tests/mobile-offer.test.js holds
+           the two copies together, label by label. */
+        var ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        var REAL = { MET: 'YHU' };
+        var SITES = /^(fids|www|api|app|apps|menu|tour|mail|smtp|imap|pop|ftp|cdn|img|dev|test|beta|demo|edge|vpn|git|docs|blog|shop)$/;
+        function codeOf(v) {
+          var t = String(v == null ? '' : v).trim().toUpperCase(), out = '';
+          if (t.length < 3 || t.length > 4) return '';
+          for (var i = 0; i < t.length; i++) {
+            var at = ALPHA.indexOf(t.charAt(i));
+            if (at < 0) return '';
+            out += ALPHA.charAt(at);
+          }
+          if (SITES.test(out.toLowerCase())) return '';
+          return Object.prototype.hasOwnProperty.call(REAL, out) ? REAL[out] : out;
+        }
+        var host = String(location.hostname || '').toLowerCase();
+        var ours = /(^|\.)orionconnected\.(com|ca)$/.test(host);
+        var labels = host.split('.');
+        // yqm.orionconnected.com is Moncton; fids., www., the apex and a
+        // preview or local host name no airport.
+        var hostAp = ours && labels.length === 3 ? codeOf(labels[0]) : '';
+        var askedAp = codeOf(P.get('ap'));
+        var tabAp = '';
+        try { tabAp = codeOf(sessionStorage.getItem('fids_airport')); } catch (e) {}
+
+        /* v24139 — THE PAGE THE PHONE CAME FOR. A board sends a phone that
            has not answered here with ?next= set to the board link it opened
            (a gate, a belt, an airport), so either answer lands there and not
            on the default board. Only a board page on this origin is taken:
            /fids, /gids or /bids with its query. Anything else is ignored, so
-           the parameter can never send anyone off the site. */
-        var next = '';
-        var nextM = qs.match(/[?&]next=([^&#]*)/);
-        if (nextM) { try { next = decodeURIComponent(nextM[1]); } catch (e) { next = ''; } }
-        if (!/^\/(fids|gids|bids)(\.html)?(\?[^#\s\\]*)?$/.test(next)) next = '';
-        var board = next || ('fids.html?mode=live' + (apM ? '&ap=' + apM[1] : ''));
+           the parameter can never send anyone off the site.
+           v24145 — and it is taken apart, not passed along: the page picks
+           one of three fixed paths, and its query is set on the URL object. */
+        var PATHS = { fids: '/fids', gids: '/gids', bids: '/bids' };
+        var nextM = /^\/(fids|gids|bids)(?:\.html)?(?:\?([^#\s\\]*))?$/.exec(P.get('next') || '');
+        var path = nextM ? PATHS[nextM[1]] : PATHS.fids;
+        var nextQ = nextM ? (nextM[2] || '') : '';
+        var N = new URLSearchParams(nextQ);
+
+        /* ONE AIRPORT FOR BOTH ANSWERS. The link the phone opened, then this
+           address, then the airport the board itself falls back to (this tab,
+           else YQM): the same order host-airport.js uses for a board with no
+           ?ap=. So on fids. with no airport named, Stay and the app both go
+           to that one airport, and neither goes to an address with none. */
+        var ap = (nextM && codeOf(N.get('ap'))) || askedAp || hostAp || tabAp || 'YQM';
+
+        /** The board link on this origin, or null if it would leave it. */
+        function boardUrl(query, noMobile) {
+          var u = new URL(path, location.href);
+          var q = String(query || '');
+          if (noMobile && !/(^|&)nomobile=1(&|$)/.test(q)) q += (q ? '&' : '') + 'nomobile=1';
+          u.search = q;
+          u.hash = hash;
+          return u.origin === here ? u : null;
+        }
+        function go(u) { if (u) location.replace(u.href); }
 
         var ua = navigator.userAgent || '';
         /* v23824 — A TELEVISION IS NOT A PHONE, AND A NARROW WINDOW IS NOT EITHER.
@@ -169,80 +232,59 @@
         // Desktop/displays → LIVE main board. Don't force an airport: carry a
         // root ?ap= if present, otherwise let the board use its own
         // saved/selected airport (works for ALL airports, not locked to YQM).
-        if (!isMobile) { location.replace(board); return; }
+        // v24145 — /fids, not fids.html: the host answers .html with a
+        // redirect of its own, one hop more on the way to the airport address.
+        if (!isMobile) { go(boardUrl(nextM ? nextQ : 'mode=live' + (askedAp ? '&ap=' + askedAp : ''), false)); return; }
 
-        /* Everything past here is a phone, or a window narrow enough to look
-           like one — and THE BOARD HANDS PHONES OFF TOO. fids-core.js runs its
-           own handoff on every board page (fids/gids/bids) and replaces itself
-           with app.html for any real phone. So "go to the board" from here is
-           not enough on its own: without the override the board bounces
-           straight back into the app, and "stay on the regular site" becomes a
-           button that does the opposite of what it says.
+        /* Everything past here is a phone — and THE BOARD HANDS PHONES OFF
+           TOO. A board page (fids/gids/bids) asks a phone that arrives fresh,
+           by sending it back here. So "go to the board" from here is not
+           enough on its own: the answer has to travel with the link, and
+           nomobile=1 is that answer (only that exact pair, here, in the head
+           of each board and in host-airport.js). The Stay link names the
+           airport wherever this address does not, so it cannot land on a
+           different airport than the app answer. */
+        var stay = boardUrl(nextM ? nextQ : 'mode=live' + (askedAp || !hostAp ? '&ap=' + ap : ''), true);
 
-           That handoff reads the same ?nomobile=1 this page does, so carrying
-           it forward is the whole fix — and it repairs ?nomobile=1 from the
-           root as a side effect. It was dropped when this page built the board
-           URL, so on a real phone the documented escape hatch got you to
-           fids.html and no further: the board handed you to the app a moment
-           later. It only ever worked if you typed fids.html yourself. */
-        var stay = board + (board.indexOf('?') >= 0 ? '&' : '?') + 'nomobile=1';
-
-        if (/[?&]nomobile=1/.test(qs)) { location.replace(stay); return; }
-
-        /* Where the app lives, for whoever is standing on this domain.
-
-           The pretty form is yqm.orionconnected.app, and that is what this
-           becomes the day the wildcard DNS record exists on the .app zone.
-           Until then the subdomain does not resolve AT ALL — no record, so it
-           never even reaches Cloudflare — and sending a phone there would be a
-           dead host. The apex does resolve, and carries the airport just as
-           well in a query string, so that is the honest target for now.
-
-           The label is read crudely on purpose. host-airport.js is the
-           authority for anything that routes a BOARD, and it is deliberately
-           not loaded here: it would be a blocking request in the head of the
-           one page whose whole job is to paint the right colour and leave. The
-           cost of being wrong here is only that the app opens on its own saved
-           airport, because app.html sanitises ?ap= and falls back on anything
-           it does not recognise. A wrong guess is a soft landing, not a wrong
-           board. */
-        var host = String(location.hostname || '').toLowerCase();
-        var parts = host.split('.');
-        var label = parts.length > 2 ? parts[0] : '';
-        if (label === 'www' || label === 'fids' || label === 'app') label = '';
-        var ap = apM ? decodeURIComponent(apM[1]) : label;
-        // SAME ORIGIN. /app is the Companion, and it is the address that was
-        // actually confirmed working: fids.orionconnected.com/app?ap=MCO.
-        //
-        // This used to hop to https://orionconnected.app/ instead, and the hop
-        // is what broke. It costs a cross-origin navigation, a second copy of
-        // this very page on the far side, and a preference that cannot be read
-        // back because it was stored on the origin you just left. The .app
-        // domain still IS the app — its apex hands over to /app exactly as
-        // before — but that is a thing you can type, not a detour the offer
-        // needs to take.
-        var app = '/app'
-                + (ap ? '?ap=' + encodeURIComponent(String(ap).toUpperCase()) : '');
-        // The app reads the same ?ap= / ?screen= / ?gate= / ?belt= the board
-        // link carried, as it did when the board sent phones there directly.
-        if (next && next.indexOf('?') >= 0) app = '/app' + next.slice(next.indexOf('?'));
-
-        // An answer is durable, so there has to be a way back to the question.
-        // Without one, "stay on the regular site" is a decision you can only
-        // undo by knowing how to clear site data.
-        var pref = '';
-        if (/[?&]mobile=ask/.test(qs)) {
-          try { localStorage.removeItem('oc_mobile_pref'); } catch(e){}
-        } else {
-          try { pref = localStorage.getItem('oc_mobile_pref') || ''; } catch(e){}
+        if (/[?&]nomobile=1(&|$)/.test(qs)) {
+          try { sessionStorage.setItem('oc_board_tab', '1'); } catch (e) {}
+          go(stay); return;
         }
-        if (pref === 'site') { location.replace(stay); return; }
-        if (pref === 'app')  { location.replace(app);   return; }
 
-        // Undecided. Hold the page and let the offer paint over the board's own
-        // ground, which the theme script above has already put up — so this
-        // reads as the page arriving, not as a flash then a dialog.
-        window.__ocOffer = { app: app, board: stay };
+        /* v24145 — THE APP IS ON .app. "Use the mobile app" goes to
+           https://<code>.orionconnected.app/app, the address that is only the
+           app, with the airport, screen, gate and belt of the link. The host
+           is made of the three letters of the airport and fixed text; a
+           four-letter code (ICAO) names no address, so it rides to the apex
+           as ?ap= and the app resolves it. A preview or local host has no
+           .app, so there it stays /app on its own origin. */
+        var app = new URL(ours ? 'https://' + (ap.length === 3 ? ap.toLowerCase() + '.' : '') + 'orionconnected.app/app' : '/app', location.href);
+        app.searchParams.set('ap', ap);
+        // The app reads the same ?screen= / ?gate= / ?belt= the board link
+        // carried, and nothing else of it. A registry id is no app screen.
+        ['screen', 'gate', 'belt'].forEach(function (k) {
+          var v = N.get(k);
+          if (v === null || v === '') return;
+          if (k === 'screen' && /^[A-HJ-NP-Z2-9]{6}$/.test(v)) return;
+          app.searchParams.set(k, v);
+        });
+        if (!app.searchParams.has('screen') && path === PATHS.gids) app.searchParams.set('screen', 'gate');
+        if (!app.searchParams.has('screen') && path === PATHS.bids) app.searchParams.set('screen', 'baggage');
+        app.hash = hash;
+        var appOk = ours ? /^https:\/\/([a-z0-9]{3}\.)?orionconnected\.app$/.test(app.origin) : app.origin === here;
+
+        /* v24145 — ASKED EVERY TIME. A phone that arrives at a board link is
+           asked board or app on every arrival; the answer is no longer kept
+           (oc_mobile_pref is cleared, and ?mobile=ask is harmless). Inside a
+           board the tab remembers that a board was shown (oc_board_tab,
+           sessionStorage: this tab, this origin), so the board never asks
+           again on a row, a gate or the menu. */
+        try { localStorage.removeItem('oc_mobile_pref'); } catch (e) {}
+
+        // Hold the page and let the offer paint over the ground of the board,
+        // which the theme script above has already put up, so this reads as
+        // the page arriving, not as a flash then a dialog.
+        window.__ocOffer = { ap: ap, app: appOk ? app.href : '', board: stay ? stay.href : '' };
         document.documentElement.setAttribute('data-oc-offer', '1');
       }catch(e){}
     })();
@@ -270,7 +312,6 @@
     #ocOffer .ocq span, #ocOffer button span { display: block; }
     #ocOffer .ocq span + span,
     #ocOffer button span + span { margin-top: .32em; font-weight: 400; opacity: .78; font-size: .84em; }
-    #ocOffer .nb { white-space: nowrap; }
     #ocOffer .ocbtns { display: flex; flex-direction: column; gap: clamp(10px, 2.6vw, 14px); width: min(340px, 100%); }
     #ocOffer button {
       font: inherit; font-size: clamp(15px, 4.2vw, 17px); font-weight: 700;
@@ -280,7 +321,6 @@
     #ocOffer .ocyes { background: #fff; color: rgb(13,77,139); }
     #ocOffer .ocno  { background: transparent; color: #fff; border-color: rgba(255,255,255,.45); font-weight: 400; }
     #ocOffer button:focus-visible { outline: 3px solid #ffd54a; outline-offset: 3px; }
-    #ocOffer small { opacity: .62; font-size: clamp(11px, 3vw, 12.5px); max-width: 30ch; line-height: 1.45; }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -288,7 +328,7 @@
        a host with no fonts of its own. The browser fetches only the slices a
        screen uses. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+Arabic:wght@400;700;900&display=swap">
-  <link rel="stylesheet" href="css/shared.css?v=24145">
+  <link rel="stylesheet" href="css/shared.css?v=24146">
   <link rel="stylesheet" href="css/font.css?v=335">
   <link rel="stylesheet" href="css/entry.css?v=35">
   <link rel="stylesheet" href="css/mobile.css?v=1">
@@ -310,7 +350,6 @@
     <button type="button" class="ocyes" id="ocOfferYes"></button>
     <button type="button" class="ocno"  id="ocOfferNo"></button>
   </div>
-  <small id="ocOfferNote"></small>
 </div>
 <script>
 (function () {
@@ -324,8 +363,7 @@
     // every word in all nine languages. The rule is about the airport, not
     // the language of the device — a phone set to English standing in
     // Montréal still reads French first.
-    var ap = '';
-    try { ap = ((new URL(o.app, location.href)).searchParams.get('ap') || '').toUpperCase(); } catch (e) {}
+    var ap = String(o.ap || '').toUpperCase();
     var L = BoardStrings.pairLangs(BoardStrings.resolveLangs({ iata: ap }).langs, ap);
 
     function two(k) {
@@ -334,15 +372,25 @@
     document.getElementById('ocOfferQ').innerHTML = two('mobileAsk');
     document.getElementById('ocOfferYes').innerHTML = two('mobileYes');
     document.getElementById('ocOfferNo').innerHTML = two('mobileNo');
-    var noteEl = document.getElementById('ocOfferNote');
-    noteEl.innerHTML = BoardStrings.fill(BoardStrings.bs('mobileNote', L[0]), { ASK: '<b class="nb">?mobile=ask</b>' }, true); // i18n-ok: code
-    BoardStrings.setLang(noteEl, L[0]);
+    // v24145 — no note: the answer is not remembered past this arrival, so
+    // there is nothing to take back with ?mobile=ask.
 
     function answer(pref, to) {
-      try { localStorage.setItem('oc_mobile_pref', pref); } catch (e) {}
+      // v24145 — the last check before leaving: the answer is read as a URL
+      // and used only if it is this origin (the board, and the app on a
+      // preview or local host) or an orionconnected.app address (the app).
+      // Anything else lands on the board this address is for.
+      var u = null;
+      try { u = to ? new URL(to, location.href) : null; } catch (e) { u = null; }
+      var ok = !!u && (u.origin === location.origin
+        || (pref === 'app' && /^https:\/\/([a-z0-9]{3}\.)?orionconnected\.app$/.test(u.origin)));
+      if (!ok) { pref = 'site'; u = new URL('/fids?mode=live&nomobile=1', location.href); }
+      // The board answer marks this tab, on this origin, as inside a board,
+      // so the board does not ask again; the app answer leaves for .app.
+      if (pref === 'site') { try { sessionStorage.setItem('oc_board_tab', '1'); } catch (e) {} }
       // replace(), not assign(): the offer must not sit in history, or Back
       // from either destination lands on a question already answered.
-      location.replace(to);
+      location.replace(u.href);
     }
     document.getElementById('ocOfferYes').addEventListener('click', function () { answer('app', o.app); });
     document.getElementById('ocOfferNo').addEventListener('click', function () { answer('site', o.board); });
@@ -352,7 +400,9 @@
     // to the destination that loses nothing: the board this domain is for.
     try {
       document.documentElement.removeAttribute('data-oc-offer');
-      location.replace((window.__ocOffer || {}).board || 'fids.html?mode=live');
+      var back = new URL((window.__ocOffer || {}).board || '/fids?mode=live', location.href);
+      if (back.origin !== location.origin) back = new URL('/fids?mode=live', location.href);
+      location.replace(back.href);
     } catch (e2) {}
   }
 })();

@@ -4939,7 +4939,7 @@ var BOARD_DENSITY_FALLBACK = 'small';   // 36px board rows / 68px BAGS rows (v23
 try {
   if (document.body && !document.body.dataset.fidsLogoSize) {
     var _densAp = '';
-    try { _densAp = String(new URLSearchParams(window.location.search).get('ap') || '').toUpperCase(); } catch (e2) {}
+    try { _densAp = String(new URLSearchParams(window.location.search).get('ap') || sessionStorage.getItem('fids_airport') || '').toUpperCase(); } catch (e2) {}
     document.body.dataset.fidsLogoSize = BOARD_DENSITY_DEFAULTS[_densAp] || BOARD_DENSITY_FALLBACK;
   }
 } catch (e) {}
@@ -4960,35 +4960,40 @@ function scheduleGateControlsAutoHide() {
 // layouts, and the ?nomobile=1 escape hatch (same as index.html's router).
 // Bare 'Android' without 'Mobile' is NOT a phone — Android TVs carry it. No
 // width test either, so a narrow desktop window keeps the board.
+//
+// v24145 — ASKED ON EVERY ARRIVAL, DECIDED IN THE HEAD. On fids, gids and bids
+// host-airport.js makes this decision before the page loads (fidsArrival):
+// the move to the airport address and the question in one hop. This block
+// stands down when it sees that decision and only serves a page that loads
+// fids-core.js without host-airport.js. The remembered oc_mobile_pref no
+// longer decides anything: a phone is asked at every arrival, and a tab that
+// has shown a board on this origin (sessionStorage oc_board_tab) is not asked
+// again on a tap inside it.
 (function () {
   try {
     if (window.self !== window.top) return;
+    if (window.__ocArrival) return;
     if (document.documentElement.classList.contains('fids-stream')) return;
     var _hq = location.search || '';
-    if (/[?&](nomobile|stream|yt|compact)([=&]|$)/.test(_hq)) return;
-    // v24134 — the opener remembers the answer per origin (oc_mobile_pref).
-    // A phone that chose the regular site keeps the board on every link it
-    // opens, not only on the one URL the opener built with ?nomobile=1; the
-    // page head lays it out at a desktop width for the same answer.
-    var _hPref = '';
-    try { _hPref = localStorage.getItem('oc_mobile_pref') || ''; } catch (e3) {}
-    if (_hPref === 'site') return;
+    // Only nomobile=1 is the board answer, as in the head of each board and
+    // in host-airport.js; a kiosk is never asked.
+    if (/[?&]nomobile=1(&|$)/.test(_hq) || /[?&](stream|yt|compact)([=&]|$)/.test(_hq)) return;
     var _hua = navigator.userAgent || '';
     var _hPhone = /iPhone|iPod|iPad|Windows Phone/i.test(_hua) || (/Android/i.test(_hua) && /Mobile/i.test(_hua));
     if (!_hPhone) return;
-    // v24139 — AN UNDECIDED PHONE IS ASKED, NOT SENT. A board link opened on a
-    // phone that never answered the opener (a first visit, or another browser
-    // on the same phone, whose storage is its own) went straight to the app
-    // with no way back to the board. It now goes to the opener with the page it
-    // came for in ?next=; the opener asks, and either answer lands on this
-    // link: its gate, its belt, its airport. A phone that chose the app still
-    // goes straight there.
-    if (_hPref !== 'app') {
-      var _hAp = (_hq.match(/[?&]ap=([^&#]*)/) || [])[1] || '';
-      location.replace('/?' + (_hAp ? 'ap=' + _hAp + '&' : '') + 'next=' + encodeURIComponent((location.pathname || '/fids') + _hq));
-      return;
-    }
-    location.replace('app.html' + _hq + location.hash);
+    var _hTab = false;
+    try { _hTab = sessionStorage.getItem('oc_board_tab') === '1'; } catch (e3) {}
+    if (_hTab && !/[?&]mobile=ask(&|$)/.test(_hq)) return;
+    // v24139 — AN UNDECIDED PHONE IS ASKED, NOT SENT: to the opener, with the
+    // page it came for in ?next=, so either answer lands on this link.
+    // The opener address is made as a URL on this origin: the airport and the
+    // link go in as parameters and the hash as the hash, never as raw text.
+    var _hTo = new URL('/', location.href);
+    var _hAp = new URLSearchParams(_hq).get('ap') || '';
+    if (/^[A-Za-z0-9]{3,4}$/.test(_hAp)) _hTo.searchParams.set('ap', _hAp.toUpperCase());
+    _hTo.searchParams.set('next', (location.pathname || '/fids') + _hq);
+    _hTo.hash = location.hash || '';
+    if (_hTo.origin === location.origin) location.replace(_hTo.href);
   } catch (e) {}
 })();
 
@@ -18070,7 +18075,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24145" src="/textures/gate-sky-shelf.mp4?v=24145" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24146" src="/textures/gate-sky-shelf.mp4?v=24146" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -18114,7 +18119,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24145" src="/textures/gate-sky-shelf.mp4?v=24145" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24146" src="/textures/gate-sky-shelf.mp4?v=24146" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19349,7 +19354,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24145" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24146" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36473,7 +36478,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24145';
+var FIDS_BUILD_TAG = 'v24146';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38033,6 +38038,17 @@ function render() {
   } catch (e) {}
 }
 
+// v24145 — ONE LINK HELPER. A board link built here goes through fidsBoardUrl
+// (host-airport.js): the airport address on .com and .ca, the old relative
+// page.html?ap= link where the page cannot leave its origin. The fallback is
+// that old link, for a page without host-airport.js.
+function _fidsBoardLink(code, page, params) {
+  try { if (typeof window.fidsBoardUrl === 'function') return window.fidsBoardUrl(code, page, params); } catch (e) {}
+  var q = 'ap=' + encodeURIComponent(code || '');
+  for (var k in (params || {})) if (Object.prototype.hasOwnProperty.call(params, k) && params[k]) q += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  return page + '.html?' + q;
+}
+
 // Click handler — invoked by every row's onclick
 function fidsRowClick(tr) {
   if (!tr) return;
@@ -38053,9 +38069,8 @@ function fidsRowClick(tr) {
       alert('Flight ' + f.flight + ' is not currently at a gate.');
       return;
     }
-    var url = (dir === 'dep')
-      ? 'gids.html?ap=' + encodeURIComponent(ap) + '&gate=' + encodeURIComponent(f.gate)
-      : 'bids.html?ap=' + encodeURIComponent(ap) + '&belt=' + encodeURIComponent(f.gate);
+    // v24145 — through the one link helper (host-airport.js fidsBoardUrl)
+    var url = _fidsBoardLink(ap, dir === 'dep' ? 'gids' : 'bids', dir === 'dep' ? { gate: f.gate } : { belt: f.gate });
     window.location.href = url;
   }
 }
@@ -45764,8 +45779,15 @@ function onApChange() {
     try {
       sessionStorage.setItem('fids_airport', iata);
       var _apUrl = new URL(window.location.href);
-      _apUrl.searchParams.set('ap', iata);
-      window.history.replaceState(null, '', _apUrl);
+      // v24145 — on its own airport address the board needs no ?ap=, so none
+      // is added there. One the address already carries is kept in step: a
+      // registered screen compares it with its assignment (_fidsScreenDrift).
+      var _apHost = '';
+      try { _apHost = String(window.__ocFromHost || '').toUpperCase(); } catch (e2) {}
+      if (_apUrl.searchParams.has('ap') || iata !== _apHost) {
+        _apUrl.searchParams.set('ap', iata);
+        window.history.replaceState(null, '', _apUrl);
+      }
     } catch (e) {}
   }
   // v22968 — apply THIS airport's saved language choice on the in-page
@@ -47305,10 +47327,10 @@ function toggleCardExpand(card) {
   if (homeIata && f.gate && f.gate !== '—') {
     var screenUrl, btnLabel;
     if (isDep) {
-      screenUrl = 'gids.html?ap=' + encodeURIComponent(homeIata) + '&gate=' + encodeURIComponent(f.gate);
+      screenUrl = _fidsBoardLink(homeIata, 'gids', { gate: f.gate });
       btnLabel = BoardStrings.fmt('openGateScreen', lang, { GATE: f.gate });
     } else {
-      screenUrl = 'bids.html?ap=' + encodeURIComponent(homeIata) + '&belt=' + encodeURIComponent(f.gate);
+      screenUrl = _fidsBoardLink(homeIata, 'bids', { belt: f.gate });
       btnLabel = BoardStrings.fmt('openCarouselScreen', lang, { GATE: f.gate });
     }
     actionBtn = '<a class="cep-action" href="' + screenUrl + '" onclick="event.stopPropagation();">' +
@@ -48052,9 +48074,35 @@ function apAutoSelect(code, name, ctx) {
   const dd = document.getElementById(ddId);
   const inp = document.getElementById(inputId);
   const hid = document.getElementById(hiddenId);
+  if (dd) dd.style.display='none';
+  // v24145 — ANOTHER AIRPORT IS ANOTHER ADDRESS. Picked on .com or .ca, the
+  // board goes to the address of that airport (fidsBoardUrl), with this page
+  // and its query, less the gate, belt and screen of the old airport. Where a
+  // page cannot leave its origin (a preview, a frame, an admin signed in
+  // here) the helper answers with a relative link and the switch stays in
+  // the page, as before.
+  // A REGISTERED SCREEN AND A KIOSK NEVER LEAVE. A page with a registry id in
+  // ?screen= (its pairing lives in this origin storage) or a stream, yt or
+  // compact kiosk switches airport in the page, as it did before addresses.
+  // A tab in the demo stays in the demo: the helper adds mode=demo to a link
+  // that leaves the origin (the tab memory does not travel).
+  try {
+    if (typeof window.fidsBoardUrl === 'function') {
+      var _swPage = (String(location.pathname || '').match(/^\/(fids|gids|bids)(\.html)?\/?$/) || [])[1] || '';
+      var _swQ = new URLSearchParams(location.search);
+      var _swPinned = /^[A-HJ-NP-Z2-9]{6}$/.test(_swQ.get('screen') || '') || _swQ.has('stream') || _swQ.has('yt') || _swQ.has('compact');
+      if (_swPage && !_swPinned) {
+        ['ap', 'gate', 'belt', 'carousel', 'sub', 'flight', 'screen'].forEach(function (k) { _swQ.delete(k); });
+        var _swTo = window.fidsBoardUrl(code, _swPage, _swQ);
+        if (/^https:\/\//.test(_swTo) && _swTo.indexOf(location.origin + '/') !== 0) {
+          window.location.assign(_swTo);
+          return;
+        }
+      }
+    }
+  } catch (e) {}
   if (inp) inp.value = code + ' — ' + name;
   if (hid) hid.value = code;
-  if (dd) dd.style.display='none';
   onApChange();
   if (ctx === 'menu') {
     if (typeof _syncMenu === 'function') _syncMenu();
@@ -65775,7 +65823,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24145" src="/textures/gate-sky-shelf.mp4?v=24145"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24146" src="/textures/gate-sky-shelf.mp4?v=24146"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

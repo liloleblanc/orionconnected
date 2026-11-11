@@ -70,8 +70,11 @@
 
   var grid = document.getElementById('grid');
   grid.innerHTML = CARRIERS.map(function (c) {
-    var href = 'gids.html?ap=' + encodeURIComponent(c.home)
-             + '&heritage=' + encodeURIComponent(c.code);
+    // v24145 — through the one link helper (host-airport.js fidsBoardUrl):
+    // the gate screen on the airport address of the carrier home
+    var href = (typeof window.fidsBoardUrl === 'function')
+      ? window.fidsBoardUrl(c.home, 'gids', { heritage: c.code })
+      : 'gids.html?ap=' + encodeURIComponent(c.home) + '&heritage=' + encodeURIComponent(c.code);
     return '<a class="card" href="' + esc(href) + '">'
       + '<div class="markbox"><img src="' + esc(c.mark) + '" alt="' + esc(c.name) + '"></div>'
       + (c.endorsement

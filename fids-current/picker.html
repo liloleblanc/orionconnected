@@ -49,7 +49,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FIDS — Select Display</title>
-  <link rel="stylesheet" href="css/shared.css?v=24145">
+  <link rel="stylesheet" href="css/shared.css?v=24146">
   <link rel="stylesheet" href="css/font.css?v=335">
   <link rel="stylesheet" href="css/entry.css?v=35">
   <link rel="stylesheet" href="css/mobile.css?v=1">
@@ -208,6 +208,9 @@
   </style>
 </div>
 
+<!-- v24145 — the one link helper (fidsBoardUrl): a screen picked here opens on
+     its airport address, or stays on this origin for an admin signed in here -->
+<script src="js/host-airport.js?v=24146"></script>
 <script src="js/auth.js?v=23170"></script>
 <script>
   // ── Mode Detection ────────────────────────────────────────────────────
@@ -252,15 +255,24 @@
     const picker = document.getElementById('pickerScreen');
     picker.classList.add('fade-out');
 
-    // Map screen to file
+    // Map screen to its page. No .html: the host answers that with a
+    // redirect of its own, one hop more on the way to the airport address.
     const fileMap = {
-      fids: 'fids.html',
-      gids: 'gids.html',
-      bids: 'bids.html'
+      fids: '/fids',
+      gids: '/gids',
+      bids: '/bids'
     };
 
+    // v24145 — through the one link helper: the airport address of this
+    // tab airport on .com and .ca; the plain page where there is none, or for
+    // an admin signed in on this origin (sign-in is per origin)
+    let to = fileMap[screen] || '/fids';
+    try {
+      const ap = sessionStorage.getItem('fids_airport') || '';
+      if (ap && typeof window.fidsBoardUrl === 'function') to = window.fidsBoardUrl(ap, fileMap[screen] ? screen : 'fids', { mode: sessionStorage.getItem('fids_mode') || '' });
+    } catch (e) {}
     setTimeout(() => {
-      window.location.href = fileMap[screen] || 'fids.html';
+      window.location.href = to;
     }, 400);
   }
 

@@ -90,9 +90,9 @@ test('it sets the DEFAULT, and never the airport itself', () => {
   assert.match(SRC, /sessionStorage\.setItem\('fids_airport', code\)/,
     'the host fills in the default');
   // v24144 — the file now also moves a board to its airport address (its own
-  // block, tests/airport-address.test.js), which follows ?ap= and never moves
+  // block, tests/strict-addresses.test.js), which follows ?ap= and never moves
   // a registered screen. The PARSER block still only fills in the default.
-  const parser = SRC.slice(SRC.indexOf('HOST → AIRPORT'), SRC.indexOf('A BOARD LANDS ON ITS AIRPORT'));
+  const parser = SRC.slice(SRC.indexOf('HOST → AIRPORT'), SRC.indexOf('EVERY BOARD LIVES ON ITS AIRPORT ADDRESS'));
   assert.ok(parser.length > 500, 'the parser block');
   assert.doesNotMatch(parser, /replaceState|pushState|location\.(href|replace|assign)/,
     'the parser must not navigate or rewrite the URL — ?ap= has to keep winning, or ' +

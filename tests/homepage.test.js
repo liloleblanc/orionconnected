@@ -372,8 +372,11 @@ test('the airport index is the live roster', () => {
   // the words written into the page before its script runs say the same
   assert.match(HOME, new RegExp(`Live now at ${c.LIVE} airports`));
   assert.match(HOME, new RegExp(`${c.CA} in Canada, ${c.US} in the United States, ${c.EU} in Europe and ${c.AU} in Australia\\.`));
-  // each airport links to its own address
-  assert.match(JS, /link\.href = 'https:\/\/' \+ a\[1\]\.toLowerCase\(\) \+ '\.orionconnected\.com';/);
+  // each airport links to its own board, on its own address (v24145: through
+  // the one link helper, the root of the address only where it is missing)
+  assert.match(JS, /link\.href = boardLink\(a\[1\]\);/);
+  assert.match(JS, /var u = window\.fidsBoardUrl\(code, 'fids'\);/);
+  assert.match(JS, /return 'https:\/\/' \+ String\(code\)\.toLowerCase\(\) \+ '\.orionconnected\.com';/);
 });
 
 test('airport names in French are the boards\' own (CITY_FR)', () => {
@@ -413,7 +416,7 @@ test('home.js paints the homepage: the index, the nine languages, the switch, th
   // the airport index: one link per airport, to its own address, grouped by country
   const aps = p.$$('#airport-index a.ap');
   assert.equal(aps.length, home.AIRPORTS.length, 'every airport of the roster is in the index');
-  assert.deepEqual(aps.map((a) => a.href).sort(), Array.from(home.AIRPORTS, (a) => 'https://' + a[1].toLowerCase() + '.orionconnected.com').sort());
+  assert.deepEqual(aps.map((a) => a.href).sort(), Array.from(home.AIRPORTS, (a) => 'https://' + a[1].toLowerCase() + '.orionconnected.com/fids').sort());
   assert.deepEqual(p.$$('#airport-index .region h3').map((h) => h.textContent),
     Array.from(home.groups('en', new Intl.Collator('en'))).map((c) => new Intl.DisplayNames(['en'], { type: 'region' }).of(c)));
   assert.equal(p.$$('#airport-index a.paused').length, home.paused().length);
@@ -441,9 +444,15 @@ test('home.js paints the homepage: the index, the nine languages, the switch, th
   assert.deepEqual(links.filter((a) => a.getAttribute('aria-current') === 'true').map((a) => a.getAttribute('data-lang-pick')), ['en']);
   assert.equal(sws[0].querySelector('.lsw-name').textContent, BS.META.en.name);
   for (const a of links) assert.equal(new URL(a.href, 'https://www.orionconnected.com/').searchParams.get('lang'), a.getAttribute('data-lang-pick'), 'each choice links to its own language');
-  // the boards' links go to the boards on a computer, to the app on a phone
+  // the boards' links go to the screen picker on a computer; on a phone to
+  // the address of the boards, whose opener asks board or app (v24145: a
+  // phone is asked at every arrival, so this link no longer answers for it)
   for (const a of p.$$('[data-boards-link]')) assert.equal(a.href, 'https://fids.orionconnected.com/picker');
-  for (const a of loadPage('home.html', { ua: IPHONE }).$$('[data-boards-link]')) assert.equal(a.href, 'https://orionconnected.app');
+  for (const page of ['home.html', 'credits.html']) {
+    const links = loadPage(page, { ua: IPHONE }).$$('[data-boards-link]');
+    assert.ok(links.length >= 2, page);
+    for (const a of links) assert.equal(a.href, 'https://fids.orionconnected.com/', page);
+  }
   // addresses shown as they are
   assert.equal(p.$('[data-addr] .code').textContent + p.$('[data-addr] .dom').textContent, 'yqm.orionconnected.com');
   assert.equal(p.$('a[href="mailto:contact@orionconnected.com"] [data-href-text]').textContent, 'contact@orionconnected.com');
@@ -474,7 +483,7 @@ test('"Live now" and the paused marks follow the boards\' own dry dock, read liv
   assert.deepEqual(Array.from(home.paused()).sort(), ['SYD', 'YYZ'], 'the admin\'s list and the automatic one, as the boards count them');
   assert.equal(home.counts().LIVE, home.AIRPORTS.length - 2);
   assert.equal(p.$('[data-i18n="homeLiveNow"]').textContent, BS.fmt('homeLiveNow', 'en', { LIVE: home.AIRPORTS.length - 2 }));
-  assert.deepEqual(p.$$('#airport-index a.paused').map((a) => a.href).sort(), ['https://syd.orionconnected.com', 'https://yyz.orionconnected.com']);
+  assert.deepEqual(p.$$('#airport-index a.paused').map((a) => a.href).sort(), ['https://syd.orionconnected.com/fids', 'https://yyz.orionconnected.com/fids']);
   assert.equal(p.$('#paused-note').textContent, [BS.fmt('homeNotePaused', 'en', { CITY: 'Sydney' }), BS.fmt('homeNotePaused', 'en', { CITY: 'Toronto Pearson' })].join(' · '));
   assert.equal(p.$('#paused-note').parentNode.hasAttribute('hidden'), false);
   // the Canada group says which of its airports is paused, in the page's words
@@ -818,8 +827,10 @@ test('wrangler sends exactly those paths to the Worker first', () => {
 test('the links go where they should', () => {
   assert.match(HOME, /href="https:\/\/fids\.orionconnected\.com\/picker" data-boards-link/, 'the live boards');
   assert.match(JS, /var LIVE_BOARDS = 'https:\/\/fids\.orionconnected\.com\/picker';/);
-  assert.match(JS, /var PHONE_APP = 'https:\/\/orionconnected\.app';/);
-  // a phone goes to the app, by the boards' own rule (fids-core.js PHONE
+  assert.match(JS, /var PHONE_BOARDS = 'https:\/\/fids\.orionconnected\.com\/';/);
+  assert.match(JS, /var to = isPhone\(\) \? PHONE_BOARDS : LIVE_BOARDS;/);
+  assert.doesNotMatch(JS, /PHONE_APP/, 'no link of the homepage decides board or app for a phone');
+  // a phone is told apart by the boards' own rule (fids-core.js PHONE
   // HANDOFF): the user agent alone
   assert.equal(runHome({ ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' }).home.isPhone(), true);
   assert.equal(runHome({ ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile' }).home.isPhone(), true);

@@ -190,6 +190,7 @@ test('the empty gate screens and the loader print a dash or the flight, never Ga
 });
 
 test('a departures row at a gateless airport opens its flight on the gate screen; the app follows it', () => {
-  assert.match(menuJs, /_noGates && flight\) \{\s*window\.location\.href = 'gids\.html\?ap=' \+ encodeURIComponent\(ap\) \+ '&gate=' \+ encodeURIComponent\(flight\)/);
+  // v24145 — through the one link helper (fidsBoardUrl): the gate screen on the airport address
+  assert.match(menuJs, /_noGates && flight\) \{\s*window\.location\.href = _menuBoardUrl\(ap, 'gids', \{ gate: flight \}\)/);
   assert.match(appHtml, /if\(hit<0\)for\(let i=0;i<RENDERED\.length;i\+\+\)\{\s*if\(String\(RENDERED\[i\]\.flight/);
 });
