@@ -7,10 +7,10 @@
 //     coordinates, on the build's own version;
 //   · it has its off switch, and it pauses with the board (_ocEvery, _ocIdle);
 //   · no screen ever asks NASA for anything: the pictures are ours;
-//   · its stylesheet retires the old backdrop only behind data-fids-floor
-//     (a planet up) or data-fids-floor-wait (the page's own stamp while the
-//     first planet is on its way, so a board just opened never shows the old
-//     picture for a moment first),
+//   · its stylesheet shows the old backdrop only behind
+//     data-fids-floor-pref=classic (the airport chose Classic, or
+//     ?floor=classic); anywhere else a board with no planet up shows its
+//     plain ground (v24144),
 //     leaves Orlando and the belts alone, never animates, gives way to reduced
 //     motion, and sits before the weather card's block, which stays last;
 //   · the Customize choice travels: panel, cloud fields, the core's layers.
@@ -118,20 +118,20 @@ test('the stylesheet: behind the switch, Orlando and the belts untouched, still,
   assert.doesNotMatch(rules, /bidsv2-screen/, 'the belts keep their backdrop');
   for (const m of rules.matchAll(/([^{}]+)\{([^{}]*background-image[^{}]*)\}/g)) {
     for (const sel of m[1].split(',')) {
-      assert.match(sel, /^\s*html\[data-fids-floor(-wait)?=earth\]/, 'behind the switch: ' + sel.trim().slice(0, 60));
+      assert.match(sel, /^\s*html:not\(\[data-fids-floor-pref=classic\]\) /, 'off unless the airport chose Classic: ' + sel.trim().slice(0, 60));
       assert.match(sel, /data-fids-ap=YQM|:not\(\[data-fids-ap=MCO\]\)/, 'Moncton, or anywhere but Orlando: ' + sel.trim().slice(0, 60));
     }
   }
-  // each old picture is off both while a planet is up and while the first one
-  // is on its way, with the same reach (the same selector but the attribute)
+  // v24144 — each old picture is off unless the airport chose Classic: a
+  // planet on its way, a narrow screen, failed pictures or a minute with no
+  // planet all give the plain ground, never the old picture
   const sels = [];
   for (const m of rules.matchAll(/([^{}]+)\{([^{}]*background-image: none[^{}]*)\}/g)) sels.push(...m[1].split(',').map((x) => x.trim()));
   for (const ap of ['body[data-fids-ap=YQM]', 'body[data-fids-theme]:not([data-fids-ap=MCO])']) {
-    const up = sels.find((x) => x.startsWith('html[data-fids-floor=earth] ' + ap));
-    const wait = sels.find((x) => x.startsWith('html[data-fids-floor-wait=earth] ' + ap));
-    assert.ok(up && wait, 'both attributes retire ' + ap);
-    assert.equal(wait.replace('data-fids-floor-wait=earth', 'data-fids-floor=earth'), up, 'the same reach: ' + ap);
+    const off = sels.find((x) => x.startsWith('html:not([data-fids-floor-pref=classic]) ' + ap));
+    assert.ok(off, 'retired unless Classic: ' + ap);
   }
+  assert.doesNotMatch(rules, /html\[data-fids-floor(-wait)?=earth\] body/, 'no longer behind a planet being up');
   // and both old pictures are still in the file, for rollback
   assert.match(CSS, /moncton-skyline\.svg/);
   assert.match(CSS, /fids-world-network\.png/);
@@ -160,7 +160,7 @@ test('the Customize choice travels: panel, cloud, and the board layers', () => {
   assert.match(proxy, /if \(cfg\.floor !== undefined && !\["", "earth", "classic"\]\.includes\(cfg\.floor\)\) delete cfg\.floor;/);
   // the core sheds a device's copy for a newer cloud save, and sets the layer the module reads
   assert.match(CORE, /_cloudOwned\.push\('floor'\);/);
-  assert.match(CORE, /var _fl = _flUrl !== null \? _flUrl : _pref\('floor'\);/);
+  assert.match(CORE, /var _fl = _flUrl !== null \? _flUrl : _fidsAirportFloor\(iata\);/, 'the airport choice, never a device copy (v24144)');
   assert.match(CORE, /setAttribute\('data-fids-floor-pref', _fl === 'classic' \? 'classic' : 'earth'\)/);
   assert.match(MOD, /getAttribute\('data-fids-floor-pref'\) !== 'classic'/);
   assert.match(MOD, /get\('floor'\)/, '?floor= works on one screen');

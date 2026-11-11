@@ -89,8 +89,13 @@ test('it sets the DEFAULT, and never the airport itself', () => {
   // airport directly would override a re-assigned screen.
   assert.match(SRC, /sessionStorage\.setItem\('fids_airport', code\)/,
     'the host fills in the default');
-  assert.doesNotMatch(SRC, /replaceState|pushState|location\.(href|replace|assign)/,
-    'it must not navigate or rewrite the URL — ?ap= has to keep winning, or ' +
+  // v24144 — the file now also moves a board to its airport address (its own
+  // block, tests/airport-address.test.js), which follows ?ap= and never moves
+  // a registered screen. The PARSER block still only fills in the default.
+  const parser = SRC.slice(SRC.indexOf('HOST → AIRPORT'), SRC.indexOf('A BOARD LANDS ON ITS AIRPORT'));
+  assert.ok(parser.length > 500, 'the parser block');
+  assert.doesNotMatch(parser, /replaceState|pushState|location\.(href|replace|assign)/,
+    'the parser must not navigate or rewrite the URL — ?ap= has to keep winning, or ' +
     'the screen registry cannot move a display off the airport its address names');
   assert.equal(hostAirport('yqm.orionconnected.com').stored, 'YQM');
   assert.equal(hostAirport('fids.orionconnected.com').stored, null,

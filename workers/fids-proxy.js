@@ -2023,7 +2023,10 @@ function yhzParseBoard(html, wantDep, nowMs) {
     const paren = locRaw.match(/\(([A-Z]{3})\)\s*$/);
     const cityName = locRaw.replace(/\s*\([A-Z]{3}\)\s*$/, "").trim();
     const otherIata = paren ? paren[1] : (YHZ_CITY_IATA[cityName.toUpperCase()] || null);
-    const gate = yhzCellText(cells["gate"]).replace(/^Gate:\s*/i, "").trim() || null;
+    // v24144: Halifax prints a dash in the gate cell until a gate is given. A
+    // dash is no gate: the gate screens listed it as a gate named "-".
+    const gateText = yhzCellText(cells["gate"]).replace(/^Gate:\s*/i, "").trim();
+    const gate = /^[-\u2013\u2014\s]*$/.test(gateText) ? null : gateText;
     const status = yhzStatus(yhzCellText(cells["flight-status"]));
     const airlineObj = { iata: codeM[1], icao: null, name: null };
     const schedTime = { local: sched.local, utc: sched.utc };
