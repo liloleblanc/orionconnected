@@ -622,7 +622,8 @@ test('a move is read as a URL first: this origin, or https on a zone of ours, an
 
 test('the opener and the picker send no one to a .html page: no redirect hop on the way to the address', () => {
   const INDEX = rd('index.html');
-  assert.doesNotMatch(INDEX.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, ''), /['"](fids|gids|bids)\.html/, 'index.html');
+  // a quoted page.html is a link built in code (the notes in the page name such pages without quotes)
+  assert.doesNotMatch(INDEX, /['"](fids|gids|bids)\.html/, 'index.html');
   assert.match(INDEX, /var PATHS = \{ fids: '\/fids', gids: '\/gids', bids: '\/bids' \};/);
   const PICKER = rd('picker.html');
   assert.match(PICKER, /const fileMap = \{\s*fids: '\/fids',\s*gids: '\/gids',\s*bids: '\/bids'\s*\};/);
