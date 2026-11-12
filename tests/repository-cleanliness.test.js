@@ -37,6 +37,9 @@ test('the public directory contains no development or source-package debris', ()
   // six of the board's icons (logos/icons/) are those files.
   const licensedText = new Set([
     path.join(staticRoot, 'fonts', 'bricolage', 'OFL.txt'),
+    // the two faces of the Algonquin Resort page
+    path.join(staticRoot, 'fonts', 'alegreya', 'OFL.txt'),
+    path.join(staticRoot, 'fonts', 'libre-caslon-text', 'OFL.txt'),
     path.join(staticRoot, 'logos', 'icons', 'LICENSE-Apache-2.0.txt'),
     // the Meteocons weather icons' MIT notice, which must travel with them
     path.join(staticRoot, 'logos', 'weather', 'animated', 'LICENSE-MIT.txt')

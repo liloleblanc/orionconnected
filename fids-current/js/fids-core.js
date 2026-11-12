@@ -18075,7 +18075,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24147" src="/textures/gate-sky-shelf.mp4?v=24147" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24148" src="/textures/gate-sky-shelf.mp4?v=24148" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -18119,7 +18119,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24147" src="/textures/gate-sky-shelf.mp4?v=24147" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24148" src="/textures/gate-sky-shelf.mp4?v=24148" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19354,7 +19354,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24147" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24148" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36478,7 +36478,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24147';
+var FIDS_BUILD_TAG = 'v24148';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -60666,7 +60666,11 @@ function renderGateAd(index) {
   // skipped itself leaves the panel as it is rather than blanking it.
   var _skipN = 0;
   for (; _skipN < totalSlots && slide; _skipN++) {
-    if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) {
+    if (slide.type === 'algonquin') {
+      // v24148 — the page of the Algonquin Resort (js/algonquin-card.js), which
+      // passes its slot over when it is not due at this gate
+      if (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.render(el)) return;
+    } else if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) {
       if (_renderGateCard(el, slide.type, true)) return;
     } else if (slide.type === 'heritage') {
       if (typeof _renderHeritageCard === 'function' && _renderHeritageCard(el)) return;
@@ -61223,6 +61227,9 @@ function _getGateAdDwellMs(slide) {
   // it. The crossing takes 20s; at 14s the card left while the aircraft was
   // still over the middle of it, which is the one moment it must not.
   if (slide.type === 'heritage') return 22000;
+  // v24148 — the Algonquin page: three views at the ten seconds of the hotel
+  // pager, the last one held (the figure is the one of the page module).
+  if (slide.type === 'algonquin') return (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.DWELL_MS) || 34000;
   // v24012 — the centre cards: a minute each, as the weather card.
   if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) return _GATE_CARD_DWELL_MS;
   // v218.96: custom slides from the Gate Theme editor carry their own
@@ -61932,6 +61939,12 @@ function _buildGateAdSlideList() {
       if (_hHas) deck.push({ type: 'heritage' });
     }
   } catch (e) {}
+  // v24148 — THE ALGONQUIN RESORT (js/algonquin-card.js): a whole page for the
+  // resort people fly to Moncton to drive to, once a pass, on a gate whose
+  // flight goes to Moncton and on every gate at Moncton (AlgonquinCard.due).
+  try {
+    if (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.due()) deck.push({ type: 'algonquin' });
+  } catch (e) {}
   // ── 9. v24012 — THE CENTRE CARDS, before boarding only (_gateCardsModel,
   // _gateCardsDue): the overview after the map, the documents after the
   // weather, the close time last, each only while it is due. Under a sign
@@ -62025,6 +62038,10 @@ function _preloadGateAdMediaForSlide(slide) {
     var jobs = [];
     if (slide.type === 'custom' && slide.item && slide.item.url) {
       jobs.push({ u: slide.item.url, v: (slide.item.type === 'video') });
+    }
+    // v24148 — the Algonquin page: its photograph, its card and its frame
+    if (slide.type === 'algonquin' && typeof AlgonquinCard !== 'undefined' && Array.isArray(AlgonquinCard.media)) {
+      AlgonquinCard.media.forEach(function (u) { jobs.push({ u: u, v: false }); });
     }
     var d = slide.data;
     if (d) {
@@ -65885,7 +65902,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24147" src="/textures/gate-sky-shelf.mp4?v=24147"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24148" src="/textures/gate-sky-shelf.mp4?v=24148"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
