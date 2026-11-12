@@ -43,6 +43,9 @@ const PASSENGER_SCRIPTS = [
   // 11 November: the poppy, the day's name and the silence (its words are
   // the store's)
   'fids-current/js/remembrance.js',
+  // the page of the Algonquin Resort in the gate centre deck: its words are
+  // the store's, its facts of the house are one data table (below)
+  'fids-current/js/algonquin-card.js',
   'fids-current/js/boarding-sequence.js',
   // the Earth floor under the departures and arrivals: names from the rows,
   // times from the store, no words of its own
@@ -83,6 +86,8 @@ const PASSENGER_STYLES = [
   'fids-current/css/phone.css',
   // 11 November (no words drawn by CSS)
   'fids-current/css/remembrance.css',
+  // the page of the Algonquin Resort (no words drawn by CSS)
+  'fids-current/css/algonquin-card.css',
   // the homepage and the credits page
   'fids-current/css/home.css'
 ];
@@ -237,6 +242,7 @@ const DATA_TABLES = {
   // (v24070: the names of the places CITY and CITY_FR do not name, which only
   // the map under the rows reads; decision D2)
   'fids-current/js/earth-places.js': { NAME: 'data: city names, the map\'s own (decision D2)' },
+  'fids-current/js/algonquin-card.js': { ALGONQUIN_HOTEL: 'data: the name of the resort, its address, telephone and web address as the house writes them, and the name of the painter as the card is signed' },
   'fids-current/js/airport-runways.js': { AIRPORT_RUNWAYS: 'data: runway geometry' },
   'fids-current/js/studio-airports.js': { AIRPORTS: 'data: airport names for the Studio (decision D2)' },
   'fids-current/data/airline-colors.js': { AIRLINE_BRAND_COLORS: 'data: airline colours' },

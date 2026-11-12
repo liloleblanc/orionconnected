@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2886,
+    "total": 2889,
     "by_category": {
       "ad": 15,
       "airline": 1180,
@@ -10,7 +10,7 @@
       "brand": 5,
       "hotel": 888,
       "livery": 96,
-      "misc": 174,
+      "misc": 177,
       "symbol": 4,
       "weather": 331
     }
@@ -26162,6 +26162,39 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/assets/hotels/algonquin/gilt-frame.png",
+      "file": "gilt-frame.png",
+      "category": "misc",
+      "subcategory": "assets",
+      "group": "Uncategorized (assets root)",
+      "name": "gilt frame",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/assets/hotels/algonquin/resort-aerial.jpg",
+      "file": "resort-aerial.jpg",
+      "category": "misc",
+      "subcategory": "assets",
+      "group": "Uncategorized (assets root)",
+      "name": "resort aerial",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/assets/hotels/algonquin/watercolour-1994.jpg",
+      "file": "watercolour-1994.jpg",
+      "category": "misc",
+      "subcategory": "assets",
+      "group": "Uncategorized (assets root)",
+      "name": "watercolour 1994",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
     },
     {
       "path": "/logos/3d_globe_desktop.svg",
