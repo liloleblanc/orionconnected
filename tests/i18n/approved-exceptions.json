@@ -1,4 +1,5 @@
 [
   { "list": "DATA_TABLES", "entry": "fids-current/js/earth-places.js NAME", "approved": "pending" },
-  { "list": "DATA_TABLES", "entry": "fids-current/js/fids-core.js _WX_CITY_CREDIT", "approved": "pending" }
+  { "list": "DATA_TABLES", "entry": "fids-current/js/fids-core.js _WX_CITY_CREDIT", "approved": "pending" },
+  { "list": "DATA_TABLES", "entry": "fids-current/js/algonquin-card.js ALGONQUIN_HOTEL", "approved": "pending" }
 ]
