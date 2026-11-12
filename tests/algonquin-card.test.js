@@ -4,8 +4,8 @@
 // THE PAGE OF THE ALGONQUIN RESORT (fids-current/js/algonquin-card.js)
 //
 // A whole page for one resort in the centre deck of a gate screen, as the
-// hotel cards are: the resort today, two watercolours of it in gilt frames
-// with three facts of its history, and a scan code for its site. People fly
+// hotel cards are: the resort today, two watercolours of it in gilt frames,
+// a timeline of its story, and a scan code for its site. People fly
 // to Moncton to drive to it, so the page is on a gate whose flight goes to
 // Moncton (a stop there counts) and on every gate at Moncton, and nowhere
 // else. Its words are the store's, in the languages of the board; the facts
@@ -27,7 +27,7 @@ const CSS = read('fids-current/css/algonquin-card.css');
 const CORE = read('fids-current/js/fids-core.js');
 const GIDS = read('fids-current/gids.html');
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelArtworkBy', 'algonquinArt1990', 'algonquinArt1994', 'algonquinSince1889', 'algonquinRebuilt1914', 'algonquinAllYear'];
+const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelArtworkBy', 'algonquinArt1990', 'algonquinArt1994', 'algonquinStory1889', 'algonquinStory1903', 'algonquinStory1915', 'algonquinStory1983', 'algonquinStory2014'];
 
 // The module reads the board through the global object: a gate is set up on
 // it for one check and taken away again.
@@ -84,7 +84,7 @@ test('the page is at Moncton and on a gate whose flight goes to Moncton, and now
   assert.equal(onGate({ _gateIata: 'YHZ', _gateCurrentFlight: null, BoardStrings: B }, () => A.render({})), false);
 });
 
-test('the deck takes the slide only when it is due, passes its slot over when it is not, and gives it time for three views', () => {
+test('the deck takes the slide only when it is due, passes its slot over when it is not, and gives it time for four views', () => {
   const at = CORE.indexOf('function _buildGateAdSlideList(');
   const deck = CORE.slice(at, CORE.indexOf('\n}\n', at));
   assert.match(deck, /if \(typeof AlgonquinCard !== 'undefined' && AlgonquinCard\.due\(\)\) deck\.push\(\{ type: 'algonquin' \}\);/);
@@ -95,11 +95,11 @@ test('the deck takes the slide only when it is due, passes its slot over when it
   const loopAt = CORE.indexOf('var _skipN = 0;');
   const loop = CORE.slice(loopAt, CORE.indexOf('if (_skipN >= totalSlots) return;', loopAt));
   assert.match(loop, /if \(slide\.type === 'algonquin'\) \{[\s\S]{0,260}?if \(typeof AlgonquinCard !== 'undefined' && AlgonquinCard\.render\(el\)\) return;\s*\} else if \(_GATE_CARD_TYPES/);
-  // three views at the ten seconds of the hotel pager, the last one held
-  assert.ok(A.DWELL_MS >= 3 * 10000 + 2000 && A.DWELL_MS <= 45000, 'three views, not a minute');
-  assert.match(CORE, /if \(slide\.type === 'algonquin'\) return \(typeof AlgonquinCard !== 'undefined' && AlgonquinCard\.DWELL_MS\) \|\| 34000;/);
+  // four views at the ten seconds of the hotel pager, the last one held
+  assert.ok(A.DWELL_MS >= 4 * 10000 + 2000 && A.DWELL_MS <= 50000, 'four views, not a minute');
+  assert.match(CORE, /if \(slide\.type === 'algonquin'\) return \(typeof AlgonquinCard !== 'undefined' && AlgonquinCard\.DWELL_MS\) \|\| 44000;/);
   assert.match(CORE, /var EVERY = 10000;/);
-  // its three pictures are warmed before it comes round
+  // its pictures are warmed before it comes round
   assert.match(CORE, /if \(slide\.type === 'algonquin' && typeof AlgonquinCard !== 'undefined' && Array\.isArray\(AlgonquinCard\.media\)\)/);
 });
 
@@ -116,32 +116,49 @@ test('every word of the page is in the store in nine languages', () => {
   assert.match(CORE, /scanToDiscover:\s*\{ en:'Scan to discover'/);
 });
 
-test('the three views: the facts of the house from its one table, the words in the languages of the board', () => {
+test('the four views: the facts of the house from its one table, the words in the languages of the board', () => {
   const html = onGate({ BoardStrings: B, _gateIata: 'YUL', _gateMapCity: () => 'Moncton' }, () => A.build(['fr', 'en']));
-  // three views for the pager of the hotel cards, the first one up
-  assert.equal(count(html, 'class="axr-page '), 3);
+  // four views for the pager of the hotel cards, the first one up
+  assert.equal(count(html, 'class="axr-page '), 4);
   assert.equal(count(html, 'axr-page-on'), 1);
   assert.ok(html.indexOf('axr-page axr-page-on alq-view alq--today') < html.indexOf('alq-view alq--then'));
-  assert.ok(html.indexOf('alq-view alq--then') < html.indexOf('alq-view alq--scan'));
+  assert.ok(html.indexOf('alq-view alq--then') < html.indexOf('alq-view alq--story'));
+  assert.ok(html.indexOf('alq-view alq--story') < html.indexOf('alq-view alq--scan'));
   assert.equal(count(html, 'class="axr-pages alq-views"'), 1);
   // the data: as the house writes it, never marked as an exception
   const H = A.HOTEL;
-  assert.equal(count(html, '>' + H.name + '<'), 3, 'the name on every view: the watercolours carry no lettering');
+  assert.equal(count(html, '>' + H.name + '<'), 4, 'the name on every view: the watercolours carry no lettering');
   assert.equal(count(html, '>' + H.address + '<'), 1);
   assert.equal(count(html, '>' + H.phone + '<'), 1);
   assert.equal(count(html, '>' + H.web + '<'), 1);
-  // one credit under the pair, then one label under each watercolour: its year and its story
+  // under each watercolour its year and where the hotel featured it, then one credit for the pair
   assert.equal(H.painter, 'Peter Bresnen');
   assert.equal(H.menuRoom, 'Passamaquoddy Dining Room');
   assert.equal(count(html, 'class="alq-label"'), 2);
-  const cred = html.indexOf('<div class="alq-credit alq-pairfit"><span class="alq-fit"><span class="bs-h" lang="fr">Œuvres de ' + H.painter + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">Artwork by ' + H.painter + '</span></span></div>');
-  assert.ok(cred > 0 && cred < html.indexOf('class="alq-labels"'), 'the credit once, between the pictures and their labels');
-  assert.equal(count(html, H.painter), 2, 'the painter once in each language of the board');
-  const lab = (fr, en) => '<div class="alq-label"><span class="alq-say">'
+  const lab = (year, fr, en) => '<div class="alq-label"><span class="alq-lyr">' + year + '</span><span class="alq-say">'
     + '<span class="bs-h" lang="fr" data-i18n-src="careful">' + fr + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">' + en + '</span></span></div>';
-  const l90 = html.indexOf(lab('Commande de 1990, utilisée sur un menu du soir du ' + H.menuRoom, '1990 commission, featured on a ' + H.menuRoom + ' dinner menu'));
-  const l94 = html.indexOf(lab('Commande de 1994, utilisée sur une carte postale offerte en chambre', '1994 commission, featured on a guest room postcard'));
+  const l90 = html.indexOf(lab('1990', 'Menu du soir, ' + H.menuRoom, 'Dinner menu, ' + H.menuRoom));
+  const l94 = html.indexOf(lab('1994', 'Carte postale offerte en chambre', 'Guest room postcard'));
   assert.ok(l90 > 0 && l94 > l90, 'the labels in the order of the pictures');
+  const cred = html.indexOf('<div class="alq-credit alq-pairfit"><span class="alq-fit"><span class="bs-h" lang="fr">Œuvres de ' + H.painter + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">Artwork by ' + H.painter + '</span></span></div>');
+  assert.ok(cred > l94, 'the credit once, under the pictures and their labels');
+  assert.equal(count(html, H.painter), 2, 'the painter once in each language of the board');
+  // the story: a timeline, the years in order, one line for each year in each language
+  const years = [...html.matchAll(/<span class="alq-yr">(\d{4})<\/span><span class="alq-ev">/g)].map((x) => x[1]);
+  assert.deepEqual(years, ['1889', '1903', '1915', '1983', '2014']);
+  assert.equal(H.rail, 'Canadian Pacific');
+  assert.equal(H.railFr, 'Canadien Pacifique');
+  assert.equal(H.brand, 'Autograph Collection');
+  const row = (year, fr, en) => '<span class="alq-yr">' + year + '</span><span class="alq-ev"><span class="bs-h" lang="fr" data-i18n-src="careful">' + fr + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">' + en + '</span></span>';
+  assert.ok(html.includes(row('1889', 'Ouverture d’un hôtel d’été au bord de la mer', 'A summer hotel opens by the sea')));
+  assert.ok(html.includes(row('1903', 'Acheté par le ' + H.railFr, 'Bought by the ' + H.rail + ' Railway')));
+  assert.ok(html.includes(row('1915', 'Reconstruit en néo-Tudor après l’incendie de 1914', 'Rebuilt in Tudor Revival style after the fire of 1914')));
+  assert.ok(html.includes(row('1983', 'Visite princière : Charles et Diana y sont reçus', 'A reception here for Prince Charles and Princess Diana')));
+  assert.ok(html.includes(row('2014', 'Rouvre, restauré : premier hôtel ' + H.brand + ' au Canada', 'Reopens, restored: the first ' + H.brand + ' hotel in Canada')));
+  // the timeline is inside the story view, under the name and the heading pair
+  const storyAt = html.indexOf('alq-view alq--story'), timeAt = html.indexOf('class="alq-time"');
+  assert.ok(html.indexOf('class="alq-era', storyAt) > storyAt && html.indexOf('class="alq-era', storyAt) < timeAt && timeAt < html.indexOf('alq-view alq--scan'));
+  assert.equal(count(html, 'class="alq-era'), 1, 'the heading pair is the heading of the story');
   assert.ok(html.includes('data-qr-url="' + H.url + '"'));
   assert.ok(!/translate=/.test(html) && !/translate=/.test(SRC), 'no marker: the table is the data');
   assert.ok(!/data-i18n-/.test(SRC) && !/i18n-ok/.test(SRC));
@@ -151,9 +168,6 @@ test('the three views: the facts of the house from its one table, the words in t
   assert.ok(html.includes('265 km from Moncton airport'));
   assert.ok(html.includes('environ 2 h 30 min en voiture'));
   assert.ok(html.includes('about 2 h 30 min by road'));
-  assert.equal(count(html, 'class="alq-h"'), 3, 'three facts');
-  // a careful translation carries its mark; the English of the house does not
-  assert.ok(html.includes('<span class="bs-h" lang="fr" data-i18n-src="careful">Accueille ses hôtes depuis 1889</span><b class="alq-sep"></b><span class="bs-h" lang="en">Welcoming guests since 1889</span>'));
   // a name with an ampersand is escaped once, not twice
   const odd = onGate({ BoardStrings: B, _gateIata: 'YUL', _gateMapCity: () => 'Sackville & Dorchester' }, () => A.build(['en']));
   assert.ok(odd.includes('265 km from Sackville &amp; Dorchester airport'));
@@ -166,10 +180,10 @@ test('the three views: the facts of the house from its one table, the words in t
   const first = html.indexOf('class="alq-art" alt="' + H.name + ', 1990" decoding="async" src="/assets/hotels/algonquin/bresnen-1990.jpg"');
   const second = html.indexOf('class="alq-art" alt="' + H.name + ', 1994" decoding="async" src="/assets/hotels/algonquin/bresnen-1994.jpg"');
   assert.ok(first > 0 && second > first);
-  // the name stands over the heading of the yesteryear view
-  const thenAt = html.indexOf('alq-view alq--then'), scanAt = html.indexOf('alq-view alq--scan');
-  const nameAt = html.indexOf('class="alq-name"', thenAt), eraAt = html.indexOf('class="alq-era', thenAt);
-  assert.ok(nameAt > thenAt && nameAt < eraAt && eraAt < scanAt);
+  // the name stands over the pictures of the yesteryear view
+  const thenAt = html.indexOf('alq-view alq--then');
+  const nameAt = html.indexOf('class="alq-name"', thenAt);
+  assert.ok(nameAt > thenAt && nameAt < html.indexOf('class="alq-cardbox"', thenAt));
   assert.ok(html.includes('src="/logos/hotels/marriott/autograph-collection.svg#svgView('));
   assert.ok(fs.existsSync(path.join(SITE, 'logos/hotels/marriott/autograph-collection.svg')));
   // no heading or paragraph tags: the carousel resizes those
@@ -178,13 +192,13 @@ test('the three views: the facts of the house from its one table, the words in t
   assert.ok(!/style=/.test(html));
 });
 
-test('a board of one language shows each fact once, in one column', () => {
+test('a board of one language shows each line once', () => {
   const html = onGate({ BoardStrings: B, _gateIata: 'YQM', _gateMapCity: () => 'Moncton' }, () => A.build(['de']));
   assert.ok(html.includes('class="alq alq--one"'));
   assert.equal(count(html, 'alq-sep'), 0, 'no rule between halves when there is one');
   assert.ok(html.includes('<span class="bs-h" lang="de">Erinnerungen an gestern</span>'));
-  assert.match(CSS, /\.alq--one \.alq-hist::before\{ display:none; \}/);
-  assert.match(CSS, /\.alq--one \.alq-h > \.alq-fit\{ grid-template-columns:1fr; \}/);
+  assert.equal(count(html, 'class="alq-yr"'), 5);
+  assert.ok(html.includes('<span class="alq-ev"><span class="bs-h" lang="de" data-i18n-src="careful">Eröffnung als Sommerhotel am Meer</span></span>'));
   // two languages that say the same thing are one half
   const same = onGate({ BoardStrings: B, _gateIata: 'YQM', _gateMapCity: () => 'Moncton' }, () => A.build(['ja', 'ja']));
   assert.equal(count(same, 'lang="ja">昔日の面影<'), 1);
@@ -239,7 +253,10 @@ test('each watercolour is whole at its own proportions inside its frame, and not
   // the box of the pictures is no taller than two frames can be at its width, so a label is
   // never left far under its frame
   assert.ok(CSS.includes('max-height:calc((100cqw - var(--alq-gap)) / ' + m[1] + ' * ' + m[2] + ');'));
-  assert.ok(/\.alq--then \.alq-hero\{[^}]*container-type:inline-size;/.test(CSS));
+  assert.ok(/\.alq--then \.alq-hero, \.alq--story \.alq-hero\{[^}]*container-type:inline-size;/.test(CSS));
+  // the timeline: the years in one fixed column against one rule, the lines from one left edge
+  assert.ok(/\.alq-time\{[^}]*display:grid; grid-template-columns:var\(--alq-yw\) minmax\(0, 1fr\);/.test(CSS));
+  assert.ok(CSS.includes('.alq-time::before{ content:""; position:absolute; top:0; bottom:0; left:calc(var(--alq-yw) + var(--alq-tg)); width:1px; background:var(--alq-rule); }'));
   // the script measures nothing for the labels
   assert.ok(!/alq-labels|alq-label/.test(SRC.slice(SRC.indexOf('function fit('))));
   // no filter, blend, mask or opacity rule of its own touches a picture
