@@ -14,8 +14,10 @@
 
    WORDS: every word comes from the store (js/board-strings.js) in the languages of the board,
    the first language of the board first. The name of the house, its address, its telephone, its
-   web address and the name of the painter are data: they are in the one table below, printed
-   once each, as the house and the painter write them.
+   web address, the name of the painter and the name of the dining room on whose menu the older
+   watercolour was featured are data: they are in the one table below, as the house, the painter
+   and the menu write them. The name of the house heads each view; the painter is named in the
+   credit, once in each language of the board.
    VIEWS: each view is an .axr-page layer inside an .axr-pages wrap, so the pager of the hotel
    cards turns them (ten seconds a view, the last one held) and the language check reads all three.
    LOOK: css/algonquin-card.css. The pictures are files of the site (assets/hotels/algonquin).

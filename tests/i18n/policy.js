@@ -242,7 +242,7 @@ const DATA_TABLES = {
   // (v24070: the names of the places CITY and CITY_FR do not name, which only
   // the map under the rows reads; decision D2)
   'fids-current/js/earth-places.js': { NAME: 'data: city names, the map\'s own (decision D2)' },
-  'fids-current/js/algonquin-card.js': { ALGONQUIN_HOTEL: 'data: the name of the resort, its address, telephone and web address as the house writes them, and the name of the painter as the card is signed' },
+  'fids-current/js/algonquin-card.js': { ALGONQUIN_HOTEL: 'data: the name of the resort, its address, telephone and web address as the house writes them, the name of the painter of its two watercolours, and the name of its dining room as the menu prints it' },
   'fids-current/js/airport-runways.js': { AIRPORT_RUNWAYS: 'data: runway geometry' },
   'fids-current/js/studio-airports.js': { AIRPORTS: 'data: airport names for the Studio (decision D2)' },
   'fids-current/data/airline-colors.js': { AIRLINE_BRAND_COLORS: 'data: airline colours' },

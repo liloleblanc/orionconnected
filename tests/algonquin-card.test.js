@@ -116,7 +116,7 @@ test('every word of the page is in the store in nine languages', () => {
   assert.match(CORE, /scanToDiscover:\s*\{ en:'Scan to discover'/);
 });
 
-test('the three views: the facts of the house once each, the words in the languages of the board', () => {
+test('the three views: the facts of the house from its one table, the words in the languages of the board', () => {
   const html = onGate({ BoardStrings: B, _gateIata: 'YUL', _gateMapCity: () => 'Moncton' }, () => A.build(['fr', 'en']));
   // three views for the pager of the hotel cards, the first one up
   assert.equal(count(html, 'class="axr-page '), 3);
@@ -211,9 +211,8 @@ test('each watercolour is whole at its own proportions inside its frame, and not
   // the two files are the same size, so the two frames are exactly the same width and height
   assert.deepEqual(a, { w: 1600, h: 1073 });
   assert.deepEqual(b, { w: 1600, h: 1073 });
-  assert.ok(CSS.includes('box-sizing:content-box; aspect-ratio:1600 / 1073;'));
+  assert.ok(CSS.includes('box-sizing:content-box; aspect-ratio:1600 / 1073;'), 'the frame is outside the box of the picture');
   assert.equal(count(CSS, 'aspect-ratio:1600 /'), 1);
-  assert.ok(CSS.includes('box-sizing:content-box;'), 'the frame is outside the box of the picture');
   // the files the pair replaced are gone
   assert.ok(!fs.existsSync(path.join(SITE, 'assets/hotels/algonquin/watercolour-1994.jpg')));
   assert.ok(!fs.existsSync(path.join(SITE, 'assets/hotels/algonquin/gilt-frame.png')));
