@@ -5,8 +5,10 @@
    (each view is an .axr-page layer; hotel-ads.css gives the layer its place and its crossfade):
      today      the photograph of the resort with nothing over it, the name, the address,
                 the telephone and the road distance under it
-     yesteryear the 1994 watercolour card, whole, in a gilt picture frame, the credit running
-                from one edge of the frame to the other, then three facts in two ruled columns
+     yesteryear the name, two watercolours (1990 and 1994) side by side, each whole in its
+                own gilt picture frame (the two frames are the same size), one credit for the
+                painter centred under the pair, a label centred under each picture (its year
+                and its story), then three facts in two columns
      scan       the name, the invitation, a large scan code in navy on the paper, the web address
 
    One ground on every view: cream paper, navy ink, fine gold rules, small bronze marks.
@@ -52,7 +54,7 @@
   --alq-ink:#14203c;                                           /* navy ink */
   --alq-bronze:#7b5c17;                                        /* the icons and the small marks */
   --alq-rule:#b8923a;                                          /* the fine rules */
-  --alq-frame-img:url('/assets/hotels/algonquin/gilt-frame.png');
+  --alq-frame-img:url('/assets/hotels/algonquin/gilt-frame-wide.png');
   position:relative; width:100%; height:100%; overflow:hidden;
   background:var(--alq-paper); color:var(--alq-ink);
   font-weight:500; font-style:italic; line-height:1.2;
@@ -108,43 +110,63 @@
 .alq-under .alq-line, .alq-under .alq-row, .alq-under .alq-name{ width:100%; }
 .alq-under .alq-name{ margin-bottom:calc(var(--alq-info) * 0.06); }
 
-/* YESTERYEAR. The heading pair, the framed card as large as the height left allows, the credit
-   under it, the three facts. The card carries the name of the hotel in its own lettering, so the
-   view does not set the name again beside it. */
-.alq--then .alq-hero{ display:flex; flex-direction:column; align-items:stretch;
+/* YESTERYEAR. The name, the heading pair, the two framed watercolours side by side as large as
+   the room left allows, the credit of the painter, a label under each picture, the three facts. The pictures carry no lettering,
+   so the view sets the name of the house itself, as the scan view does. */
+.alq--then .alq-hero{ display:flex; flex-direction:column; align-items:stretch; container-type:inline-size;
   padding:clamp(9px, min(1.25vh, .78vw), 13px) var(--alq-padn) 0; }
+.alq--then .alq-name{ flex:none; text-align:center; max-width:100%; }
 /* the heading: capitals, 32.8 px, navy: read from a gate seat */
 .alq-era{ flex:none; text-align:center; font-weight:400; font-style:normal; text-transform:uppercase; font-size:var(--alq-head); line-height:1.12;
   letter-spacing:.035em; color:var(--alq-ink); white-space:nowrap; }
+.alq--then .alq-era{ margin-top:clamp(2px, min(.4vh, .25vw), 4px); margin-bottom:clamp(8px, min(1.05vh, .66vw), 11px); font-size:calc(var(--alq-head) * .8); }
 .alq-era .alq-sep{ opacity:.55; width:1.5px; }
 .alq-era.alq-stack > .alq-fit{ align-items:center; }
-/* THE CARD IN ITS FRAME. The card is supplied artwork: an img scaled WHOLE at its own proportions
-   (1600 x 1196). Never cropped, never recoloured, nothing drawn over it; its white paper margin
-   is part of the file. The frame is a gilt carved frame from a stock vector, shortened to the
-   shape of the card by taking two plain lengths of rail out of its long sides (the corners, the
-   centre flowers and the two short sides are as drawn; nothing is stretched). File: gilt-frame.png,
-   1481 x 1137, opening 1264 x 928. The frame is the BORDER IMAGE of the picture: the card keeps
-   its own box (content-box) and not one pixel of it is covered. The border widths are fractions
-   of the width of the card, so frame and card always scale together. The shadow on the wall is a
-   box shadow outside the frame: no filter touches the picture. */
-.alq-art{ display:block; box-sizing:content-box; aspect-ratio:1600 / 1196; height:auto; max-width:none;
+/* THE WATERCOLOURS IN THEIR FRAMES. Each picture is supplied artwork: an img scaled WHOLE at its
+   own proportions. The two files are the same size (1600 x 1073), so the two frames are exactly
+   the same width and height. Never cropped, never recoloured, nothing drawn over it; its white
+   paper edge is part of the file. The frame is a gilt carved frame from a
+   stock vector, shortened to the shape of the pictures by taking a plain length of rail out of
+   each half of its long sides at places where the pattern matches (the corners, the centre
+   flowers and the two short sides are as drawn). File: gilt-frame-wide.png, 1577 x 1137, opening
+   1360 x 928. The frame is the BORDER IMAGE of the picture: the picture keeps its own box
+   (content-box) and not one pixel of it is covered. The border widths are the frame's own at
+   the scale of the height of the picture, and the long rails give by under two percent to meet
+   it. Each picture is centred in its own half of the view
+   (two equal columns), over its own label, whatever height is left for it. The shadow on the
+   wall is a box shadow outside the frame: no filter touches a picture. */
+.alq-art{ display:block; box-sizing:content-box; aspect-ratio:1600 / 1073; width:auto; max-width:none; flex:none;
   border-style:solid; border-color:transparent;
   border-image:var(--alq-frame-img) 105 109 104 108 stretch;
   box-shadow:0 12px 22px rgba(20,32,60,.36), 0 3px 6px rgba(20,32,60,.26); }
+.alq--then{ --alq-gap:clamp(10px, min(1.6vh, 1vw), 17px); }
+/* The box of the pictures takes the height it can use and no more (its width, read on the view,
+   says how tall two frames can be), so on a tall stage the room left over is shared above the
+   pictures and under the labels, and each label stays close under its frame. */
 .alq-cardbox{ flex:1 1 0; min-height:0; min-width:0; container-type:size;
-  margin:clamp(8px, min(1.05vh, .66vw), 11px) 0 0; display:flex; align-items:center; justify-content:center; }
-.alq-cardbox .alq-art{ --alq-w:min(100cqw / 1.17168, 100cqh / 0.91585); width:var(--alq-w);
-  border-width:calc(var(--alq-w) * 0.084577) calc(var(--alq-w) * 0.086234) calc(var(--alq-w) * 0.083772) calc(var(--alq-w) * 0.085443); }
-/* The credit as a caption under the frame: the face of the headings, upright, small. The script
-   makes it exactly as wide as the frame, so it runs from one edge of the frame to the other: the
-   medium in the languages of the board on one side, the painter and the year on the other. On a
-   frame too narrow for both, the painter drops to a second line and stays on the far edge. */
-.alq-credit{ flex:none; align-self:center; max-width:100%; margin-top:clamp(5px, min(.7vh, .44vw), 7px);
-  display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; column-gap:1.2em;
-  font-style:normal; font-weight:400; font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); letter-spacing:0; color:var(--alq-ink); white-space:nowrap; }
-.alq-credit .alq-cl, .alq-credit .alq-cr{ flex:none; white-space:nowrap; }
-.alq-credit .alq-cr{ margin-inline-start:auto; }
+  max-height:calc((100cqw - var(--alq-gap)) / 3.449965 * 1.225216);
+  margin:auto 0 0; display:grid; grid-template-columns:1fr 1fr; column-gap:var(--alq-gap);
+  align-items:center; justify-items:center; }
+.alq-cardbox .alq-art{ --alq-h:min((100cqw - var(--alq-gap)) / 3.449965, 100cqh / 1.225216); height:var(--alq-h);
+  border-width:calc(var(--alq-h) * 0.113147) calc(var(--alq-h) * 0.117457) calc(var(--alq-h) * 0.112069) calc(var(--alq-h) * 0.116379); }
+/* THE CREDIT, once, centred under the pair: the painter in the languages of the board, in the
+   face of the headings, upright, small. */
+.alq-credit{ flex:none; margin-top:clamp(6px, min(.85vh, .53vw), 9px); text-align:center; font-style:normal; font-weight:400;
+  font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); letter-spacing:0; color:var(--alq-ink); white-space:nowrap; }
 .alq-credit .alq-sep{ margin:0 .5em; }
+.alq-credit.alq-stack > .alq-fit{ align-items:center; }
+/* A LABEL UNDER EACH FRAME, centred on it: the labels stand in the same two equal columns as
+   the pictures. The year, what the picture was made as and where the hotel featured it, in the
+   languages of the board, one under the other, in the text face. A line too long for its column
+   wraps under itself, balanced. */
+.alq-labels{ flex:none; margin-top:clamp(2px, min(.3vh, .19vw), 3px); margin-bottom:auto;
+  display:grid; grid-template-columns:1fr 1fr; column-gap:var(--alq-gap); align-items:start;
+  font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); letter-spacing:0; color:var(--alq-ink); }
+.alq-label{ min-width:0; text-align:center; line-height:1.14; }
+.alq-say{ display:block; font-weight:500; white-space:normal; text-wrap:balance; }
+.alq-say .bs-h{ display:block; }
+.alq-say .bs-h + .alq-sep + .bs-h{ margin-top:.14em; }
+.alq-say .alq-sep{ display:none; }
 /* THE FACTS: a fine rule over them (the twin of the rule over the foot), two columns split at
    the middle of the view by a fine rule that runs from the one rule to the other, the first
    language of the board on the left and the second on the right, each fact with its own small

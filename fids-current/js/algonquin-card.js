@@ -4,8 +4,10 @@
    gate screen (the slide type is algonquin) and shows three views in turn:
      today      the photograph of the resort, the name, the address, the telephone, the distance
                 by road from the airport of Moncton
-     yesteryear the 1994 watercolour card, whole, in a gilt frame, with its credit, and three
-                facts of the history of the house
+     yesteryear the name, two watercolours of the resort (1990 and 1994), each whole in
+                its own gilt frame, one credit for the painter under the pair, under each
+                picture its year, what it was made as and where the hotel featured it, and
+                three facts of the history of the house
      scan       the name, the invitation, a scan code for the site of the resort, the web address
    People fly to Moncton to drive to it, so the page is on a gate whose flight goes to Moncton
    (a stop there counts) and on every gate at Moncton, and nowhere else.
@@ -25,15 +27,17 @@
 })(typeof window !== 'undefined' ? window : globalThis, function (root) {
   'use strict';
 
-  // THE FACTS OF THE HOUSE, as the house writes them (algonquinresort.com), and the painter of
-  // the 1994 card as the card is signed. Data: none of it is a word to translate.
+  // THE FACTS OF THE HOUSE, as the house writes them (algonquinresort.com), the painter of the
+  // two watercolours, and the dining room of the hotel as its 1990 menu names it (the older
+  // watercolour was featured on one of its dinner menus). Data: none of it is a word to translate.
   var ALGONQUIN_HOTEL = {
     name: 'The Algonquin Resort',
     address: '184 Adolphus Street, St. Andrews by-the-Sea, New Brunswick',
     phone: '1-855-529-8693',
     web: 'algonquinresort.com',
     url: 'https://algonquinresort.com',
-    painter: 'Peter Bresnen, 1994'
+    painter: 'Peter Bresnen',
+    menuRoom: 'Passamaquoddy Dining Room'
   };
   // The airport the distance is measured from, the road distance to the door in kilometres
   // (two routers agree), and the driving time the house publishes.
@@ -45,8 +49,14 @@
   var DWELL_MS = 34000;
 
   var PHOTO = '/assets/hotels/algonquin/resort-aerial.jpg';
-  var CARD = '/assets/hotels/algonquin/watercolour-1994.jpg';
-  var FRAME = '/assets/hotels/algonquin/gilt-frame.png';
+  // The two watercolours, the older one first: the file (both are 1600 x 1073, so the two
+  // frames are the same size), the year it is signed, and the key of the words that say its
+  // year, what it was made as and where the hotel featured it.
+  var ART = [
+    { src: '/assets/hotels/algonquin/bresnen-1990.jpg', year: '1990', say: 'algonquinArt1990' },
+    { src: '/assets/hotels/algonquin/bresnen-1994.jpg', year: '1994', say: 'algonquinArt1994' }
+  ];
+  var FRAME = '/assets/hotels/algonquin/gilt-frame-wide.png';
   // the Autograph Collection file of the site; the view trims its empty canvas only
   var BRAND_FILE = '/logos/hotels/marriott/autograph-collection.svg';
   var BRAND_VIEW = '#svgView(viewBox(54,367,1092,466))';
@@ -189,16 +199,26 @@
 
     // YESTERYEAR
     var era = pairOf(L, function (lg) { return BS.bs('hotelYesteryear', lg); });
-    var medium = pairOf(L, function (lg) { return BS.bs('hotelWatercolour', lg); });
+    // the pictures carry no lettering, so the view sets the name of the house itself
+    var arts = ART.map(function (a) {
+      return '<img class="alq-art" alt="' + esc(H.name + ', ' + a.year) + '" decoding="async" src="' + esc(a.src) + '">';
+    }).join('');
+    // one credit for the pair, then one label for each picture: its year and its story
+    var credit = pairOf(L, function (lg) { return BS.fmt('hotelArtworkBy', lg, { WHO: H.painter }, true); });
+    var labels = ART.map(function (a) {
+      return '<div class="alq-label">'
+        + '<span class="alq-say">' + pairOf(L, function (lg) { return BS.fmt(a.say, lg, { ROOM: H.menuRoom }, true); }, a.say) + '</span></div>';
+    }).join('');
     var facts = [
       pairOf(L, function (lg) { return BS.bs('algonquinSince1889', lg); }, 'algonquinSince1889'),
       pairOf(L, function (lg) { return BS.bs('algonquinRebuilt1914', lg); }, 'algonquinRebuilt1914'),
       pairOf(L, function (lg) { return BS.bs('algonquinAllYear', lg); }, 'algonquinAllYear')
     ].map(function (f) { return '<div class="alq-h"><span class="alq-fit">' + f + '</span></div>'; }).join('');
-    var then = '<div class="alq-hero">'
+    var then = '<div class="alq-hero">' + name
       + '<div class="alq-era alq-pairfit"><span class="alq-fit">' + era + '</span></div>'
-      + '<div class="alq-cardbox"><img class="alq-art" alt="' + esc(H.name) + '" decoding="async" src="' + esc(CARD) + '"></div>'
-      + '<div class="alq-credit"><span class="alq-cl">' + medium + '</span><span class="alq-cr">' + esc(H.painter) + '</span></div>'
+      + '<div class="alq-cardbox">' + arts + '</div>'
+      + '<div class="alq-credit alq-pairfit"><span class="alq-fit">' + credit + '</span></div>'
+      + '<div class="alq-labels">' + labels + '</div>'
       + '<div class="alq-hist">' + facts + '</div>'
       + '</div>';
 
@@ -222,8 +242,8 @@
   // A one-line text that is too long for its place steps down (never under 20 px at 1680x1050,
   // the floor of the stylesheet); a pair that
   // still cannot share the line is stacked, each language whole on its own line. The facts of the
-  // yesteryear view are columns and wrap by themselves. Then the credit takes the width of the
-  // frame, so it runs from one edge of it to the other.
+  // yesteryear view are columns and wrap by themselves, and so are the labels under the two
+  // pictures: the stylesheet places them, nothing is measured for them here.
   function fit(el) {
     try {
       var art = el && el.querySelector ? el.querySelector('.alq') : null;
@@ -251,17 +271,6 @@
           box.style.fontSize = ''; k = 1; box.classList.add('alq-stack'); step();
         }
       });
-      var cred = art.querySelector('.alq-credit'), card = art.querySelector('.alq-art');
-      if (cred && card) {
-        // a credit that has to wrap takes a line from the card, which then narrows: measured
-        // again until the two agree
-        cred.style.width = '';
-        for (var pass = 0; pass < 4; pass++) {
-          var w = card.getBoundingClientRect().width;
-          if (!(w > 0) || Math.abs(w - (parseFloat(cred.style.width) || 0)) < .5) break;
-          cred.style.width = w + 'px';
-        }
-      }
     } catch (e) {}
   }
 
@@ -313,7 +322,7 @@
     HOTEL: ALGONQUIN_HOTEL,
     FROM_AIRPORT: FROM_AIRPORT,
     DWELL_MS: DWELL_MS,
-    media: [PHOTO, CARD, FRAME],
+    media: [PHOTO].concat(ART.map(function (a) { return a.src; }), [FRAME]),
     due: due,
     build: build,
     fit: fit,

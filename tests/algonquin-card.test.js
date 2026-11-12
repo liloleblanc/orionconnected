@@ -4,7 +4,7 @@
 // THE PAGE OF THE ALGONQUIN RESORT (fids-current/js/algonquin-card.js)
 //
 // A whole page for one resort in the centre deck of a gate screen, as the
-// hotel cards are: the resort today, a 1994 watercolour of it in a gilt frame
+// hotel cards are: the resort today, two watercolours of it in gilt frames
 // with three facts of its history, and a scan code for its site. People fly
 // to Moncton to drive to it, so the page is on a gate whose flight goes to
 // Moncton (a stop there counts) and on every gate at Moncton, and nowhere
@@ -27,7 +27,7 @@ const CSS = read('fids-current/css/algonquin-card.css');
 const CORE = read('fids-current/js/fids-core.js');
 const GIDS = read('fids-current/gids.html');
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelWatercolour', 'algonquinSince1889', 'algonquinRebuilt1914', 'algonquinAllYear'];
+const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelArtworkBy', 'algonquinArt1990', 'algonquinArt1994', 'algonquinSince1889', 'algonquinRebuilt1914', 'algonquinAllYear'];
 
 // The module reads the board through the global object: a gate is set up on
 // it for one check and taken away again.
@@ -126,17 +126,27 @@ test('the three views: the facts of the house once each, the words in the langua
   assert.equal(count(html, 'class="axr-pages alq-views"'), 1);
   // the data: as the house writes it, never marked as an exception
   const H = A.HOTEL;
-  assert.equal(count(html, '>' + H.name + '<'), 2, 'the name on the today view and on the scan view');
+  assert.equal(count(html, '>' + H.name + '<'), 3, 'the name on every view: the watercolours carry no lettering');
   assert.equal(count(html, '>' + H.address + '<'), 1);
   assert.equal(count(html, '>' + H.phone + '<'), 1);
   assert.equal(count(html, '>' + H.web + '<'), 1);
-  assert.equal(count(html, '>' + H.painter + '<'), 1);
+  // one credit under the pair, then one label under each watercolour: its year and its story
+  assert.equal(H.painter, 'Peter Bresnen');
+  assert.equal(H.menuRoom, 'Passamaquoddy Dining Room');
+  assert.equal(count(html, 'class="alq-label"'), 2);
+  const cred = html.indexOf('<div class="alq-credit alq-pairfit"><span class="alq-fit"><span class="bs-h" lang="fr">Œuvres de ' + H.painter + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">Artwork by ' + H.painter + '</span></span></div>');
+  assert.ok(cred > 0 && cred < html.indexOf('class="alq-labels"'), 'the credit once, between the pictures and their labels');
+  assert.equal(count(html, H.painter), 2, 'the painter once in each language of the board');
+  const lab = (fr, en) => '<div class="alq-label"><span class="alq-say">'
+    + '<span class="bs-h" lang="fr" data-i18n-src="careful">' + fr + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">' + en + '</span></span></div>';
+  const l90 = html.indexOf(lab('Commande de 1990, utilisée sur un menu du soir du ' + H.menuRoom, '1990 commission, featured on a ' + H.menuRoom + ' dinner menu'));
+  const l94 = html.indexOf(lab('Commande de 1994, utilisée sur une carte postale offerte en chambre', '1994 commission, featured on a guest room postcard'));
+  assert.ok(l90 > 0 && l94 > l90, 'the labels in the order of the pictures');
   assert.ok(html.includes('data-qr-url="' + H.url + '"'));
   assert.ok(!/translate=/.test(html) && !/translate=/.test(SRC), 'no marker: the table is the data');
   assert.ok(!/data-i18n-/.test(SRC) && !/i18n-ok/.test(SRC));
   // the words: French first here, each half marked with its language
   assert.ok(html.includes('<span class="bs-h" lang="fr">Souvenirs d’hier</span><b class="alq-sep"></b><span class="bs-h" lang="en">Yesteryear</span>'));
-  assert.ok(html.includes('<span class="bs-h" lang="fr">Aquarelle</span><b class="alq-sep"></b><span class="bs-h" lang="en">Watercolour</span>'));
   assert.ok(html.includes('à 265 km de l’aéroport de Moncton'));
   assert.ok(html.includes('265 km from Moncton airport'));
   assert.ok(html.includes('environ 2 h 30 min en voiture'));
@@ -148,9 +158,18 @@ test('the three views: the facts of the house once each, the words in the langua
   const odd = onGate({ BoardStrings: B, _gateIata: 'YUL', _gateMapCity: () => 'Sackville & Dorchester' }, () => A.build(['en']));
   assert.ok(odd.includes('265 km from Sackville &amp; Dorchester airport'));
   assert.ok(!odd.includes('&amp;amp;'));
-  // pictures: files of the site, the card with the name of the house for its text, the rest silent
+  // pictures: files of the site, each watercolour with the name of the house and its year for
+  // its text, the older one first, the rest silent
+  assert.equal(A.media.length, 4);
   A.media.forEach((u) => assert.ok(fs.existsSync(path.join(SITE, u)), u));
-  assert.ok(html.includes('class="alq-art" alt="' + H.name + '"'));
+  assert.equal(count(html, 'class="alq-art"'), 2);
+  const first = html.indexOf('class="alq-art" alt="' + H.name + ', 1990" decoding="async" src="/assets/hotels/algonquin/bresnen-1990.jpg"');
+  const second = html.indexOf('class="alq-art" alt="' + H.name + ', 1994" decoding="async" src="/assets/hotels/algonquin/bresnen-1994.jpg"');
+  assert.ok(first > 0 && second > first);
+  // the name stands over the heading of the yesteryear view
+  const thenAt = html.indexOf('alq-view alq--then'), scanAt = html.indexOf('alq-view alq--scan');
+  const nameAt = html.indexOf('class="alq-name"', thenAt), eraAt = html.indexOf('class="alq-era', thenAt);
+  assert.ok(nameAt > thenAt && nameAt < eraAt && eraAt < scanAt);
   assert.ok(html.includes('src="/logos/hotels/marriott/autograph-collection.svg#svgView('));
   assert.ok(fs.existsSync(path.join(SITE, 'logos/hotels/marriott/autograph-collection.svg')));
   // no heading or paragraph tags: the carousel resizes those
@@ -168,7 +187,7 @@ test('a board of one language shows each fact once, in one column', () => {
   assert.match(CSS, /\.alq--one \.alq-h > \.alq-fit\{ grid-template-columns:1fr; \}/);
   // two languages that say the same thing are one half
   const same = onGate({ BoardStrings: B, _gateIata: 'YQM', _gateMapCity: () => 'Moncton' }, () => A.build(['ja', 'ja']));
-  assert.equal(count(same, 'lang="ja">水彩画<'), 1);
+  assert.equal(count(same, 'lang="ja">昔日の面影<'), 1);
 });
 
 test('Arabic, Japanese and Chinese are marked, and stand upright in the script faces of the board', () => {
@@ -186,25 +205,44 @@ test('Arabic, Japanese and Chinese are marked, and stand upright in the script f
   assert.ok(html.includes('車で約2時間30分'));
 });
 
-test('the card is whole at its own proportions inside the frame, and nothing is drawn over it', () => {
-  const card = jpegSize(path.join(SITE, 'assets/hotels/algonquin/watercolour-1994.jpg'));
-  assert.deepEqual(card, { w: 1600, h: 1196 });
-  assert.ok(CSS.includes('aspect-ratio:1600 / 1196;'));
-  assert.ok(CSS.includes('box-sizing:content-box;'), 'the frame is outside the box of the card');
-  const frame = pngSize(path.join(SITE, 'assets/hotels/algonquin/gilt-frame.png'));
-  assert.deepEqual(frame, { w: 1481, h: 1137, alpha: true });
-  // the opening of the frame has the proportions of the card, to within the two percent the
-  // border image takes up across its width
-  const open = { w: 1481 - 108 - 109, h: 1137 - 105 - 104 };
-  assert.ok(Math.abs(open.w / open.h / (card.w / card.h) - 1) < 0.02);
+test('each watercolour is whole at its own proportions inside its frame, and nothing is drawn over it', () => {
+  const a = jpegSize(path.join(SITE, 'assets/hotels/algonquin/bresnen-1990.jpg'));
+  const b = jpegSize(path.join(SITE, 'assets/hotels/algonquin/bresnen-1994.jpg'));
+  // the two files are the same size, so the two frames are exactly the same width and height
+  assert.deepEqual(a, { w: 1600, h: 1073 });
+  assert.deepEqual(b, { w: 1600, h: 1073 });
+  assert.ok(CSS.includes('box-sizing:content-box; aspect-ratio:1600 / 1073;'));
+  assert.equal(count(CSS, 'aspect-ratio:1600 /'), 1);
+  assert.ok(CSS.includes('box-sizing:content-box;'), 'the frame is outside the box of the picture');
+  // the files the pair replaced are gone
+  assert.ok(!fs.existsSync(path.join(SITE, 'assets/hotels/algonquin/watercolour-1994.jpg')));
+  assert.ok(!fs.existsSync(path.join(SITE, 'assets/hotels/algonquin/gilt-frame.png')));
+  const frame = pngSize(path.join(SITE, 'assets/hotels/algonquin/gilt-frame-wide.png'));
+  assert.deepEqual(frame, { w: 1577, h: 1137, alpha: true });
+  // the opening of the frame has the proportions of each picture, to within the two percent
+  // the long rails give
+  const open = { w: 1577 - 108 - 109, h: 1137 - 105 - 104 };
+  [a, b].forEach((c) => assert.ok(Math.abs(c.w / c.h / (open.w / open.h) - 1) < 0.02));
   assert.ok(CSS.includes("border-image:var(--alq-frame-img) 105 109 104 108 stretch;"));
-  assert.ok(CSS.includes("--alq-frame-img:url('/assets/hotels/algonquin/gilt-frame.png');"));
-  // the border widths are the frame's own, as fractions of the width of the card
-  const m = /--alq-w:min\(100cqw \/ ([\d.]+), 100cqh \/ ([\d.]+)\); width:var\(--alq-w\);\s*border-width:calc\(var\(--alq-w\) \* ([\d.]+)\) calc\(var\(--alq-w\) \* ([\d.]+)\) calc\(var\(--alq-w\) \* ([\d.]+)\) calc\(var\(--alq-w\) \* ([\d.]+)\);/.exec(CSS);
+  assert.ok(CSS.includes("--alq-frame-img:url('/assets/hotels/algonquin/gilt-frame-wide.png');"));
+  // one height for the two pictures; the border widths are the frame's own at the scale of
+  // that height, so both frames are the same thickness
+  const m = /--alq-h:min\(\(100cqw - var\(--alq-gap\)\) \/ ([\d.]+), 100cqh \/ ([\d.]+)\); height:var\(--alq-h\);\s*border-width:calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\);/.exec(CSS);
   assert.ok(m, 'the frame rule');
-  const r = card.h / card.w, near = (a, b) => assert.ok(Math.abs(a - b) < 0.0005, a + ' is ' + b);
-  near(+m[3], 105 / open.h * r); near(+m[4], 109 / open.w); near(+m[5], 104 / open.h * r); near(+m[6], 108 / open.w);
-  near(+m[1], 1 + 217 / open.w); near(+m[2], r * (1 + 209 / open.h));
+  const near = (x, y) => assert.ok(Math.abs(x - y) < 0.0005, x + ' is ' + y);
+  near(+m[3], 105 / open.h); near(+m[4], 109 / open.h); near(+m[5], 104 / open.h); near(+m[6], 108 / open.h);
+  // two equal columns, each wide enough for the wider picture in its frame; the pictures and
+  // their labels share the columns and the space between them
+  near(+m[1], 2 * (Math.max(a.w / a.h, b.w / b.h) + 217 / open.h));
+  near(+m[2], 1 + 209 / open.h);
+  assert.ok(/\.alq-cardbox\{[^}]*display:grid; grid-template-columns:1fr 1fr; column-gap:var\(--alq-gap\);/.test(CSS));
+  assert.ok(/\.alq-labels\{[^}]*display:grid; grid-template-columns:1fr 1fr; column-gap:var\(--alq-gap\);/.test(CSS));
+  // the box of the pictures is no taller than two frames can be at its width, so a label is
+  // never left far under its frame
+  assert.ok(CSS.includes('max-height:calc((100cqw - var(--alq-gap)) / ' + m[1] + ' * ' + m[2] + ');'));
+  assert.ok(/\.alq--then \.alq-hero\{[^}]*container-type:inline-size;/.test(CSS));
+  // the script measures nothing for the labels
+  assert.ok(!/alq-labels|alq-label/.test(SRC.slice(SRC.indexOf('function fit('))));
   // no filter, blend, mask or opacity rule of its own touches a picture
   assert.ok(!/filter\s*:|mix-blend-mode|mask(-image)?\s*:/.test(CSS));
   const photo = jpegSize(path.join(SITE, 'assets/hotels/algonquin/resort-aerial.jpg'));
@@ -277,6 +315,6 @@ test('the scan code is the stored matrix of the site address, with its finder sq
 
 test('the licence note names every file of the page', () => {
   const note = read('docs/licenses/algonquin-resort.md');
-  ['watercolour-1994.jpg', 'gilt-frame.png', 'resort-aerial.jpg', 'fonts/libre-caslon-text/', 'fonts/alegreya/', 'autograph-collection.svg'].forEach((f) => assert.ok(note.includes(f), f));
+  ['bresnen-1990.jpg', 'bresnen-1994.jpg', 'gilt-frame-wide.png', 'resort-aerial.jpg', 'fonts/libre-caslon-text/', 'fonts/alegreya/', 'autograph-collection.svg'].forEach((f) => assert.ok(note.includes(f), f));
   assert.ok(note.includes('Peter Bresnen'));
 });

@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2889,
+    "total": 2890,
     "by_category": {
       "ad": 15,
       "airline": 1180,
@@ -10,7 +10,7 @@
       "brand": 5,
       "hotel": 888,
       "livery": 96,
-      "misc": 177,
+      "misc": 178,
       "symbol": 4,
       "weather": 331
     }
@@ -26164,12 +26164,34 @@
       "ext": "svg"
     },
     {
-      "path": "/assets/hotels/algonquin/gilt-frame.png",
-      "file": "gilt-frame.png",
+      "path": "/assets/hotels/algonquin/bresnen-1990.jpg",
+      "file": "bresnen-1990.jpg",
       "category": "misc",
       "subcategory": "assets",
       "group": "Uncategorized (assets root)",
-      "name": "gilt frame",
+      "name": "bresnen 1990",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/assets/hotels/algonquin/bresnen-1994.jpg",
+      "file": "bresnen-1994.jpg",
+      "category": "misc",
+      "subcategory": "assets",
+      "group": "Uncategorized (assets root)",
+      "name": "bresnen 1994",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/assets/hotels/algonquin/gilt-frame-wide.png",
+      "file": "gilt-frame-wide.png",
+      "category": "misc",
+      "subcategory": "assets",
+      "group": "Uncategorized (assets root)",
+      "name": "gilt frame wide",
       "iata": "",
       "country": "",
       "ext": "png"
@@ -26181,17 +26203,6 @@
       "subcategory": "assets",
       "group": "Uncategorized (assets root)",
       "name": "resort aerial",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/assets/hotels/algonquin/watercolour-1994.jpg",
-      "file": "watercolour-1994.jpg",
-      "category": "misc",
-      "subcategory": "assets",
-      "group": "Uncategorized (assets root)",
-      "name": "watercolour 1994",
       "iata": "",
       "country": "",
       "ext": "jpg"
