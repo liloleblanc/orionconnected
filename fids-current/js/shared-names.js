@@ -1140,7 +1140,7 @@ window.FIDS_SHARED_WORDMARK = {
 // maps above; tests/companion-app.test.js fails the moment either drifts from
 // fids-core.js. The app knew eleven carriers' art before this.
 window.FIDS_SHARED_TILE = {
-  "BF":"/logos/airline-tiles/FBU.svg", "3H":"/logos/airline-tiles/AIE.svg", "AC":"/logos/airline-tiles/ACA-black.svg", "WS":"/logos/airline-tiles/WJA.svg",
+  "BF":"/logos/airline-tiles/FBU.svg", "3H":"/logos/airline-tiles/AIE.svg", "YN":"/logos/airline-tiles/CRQ.svg", "AC":"/logos/airline-tiles/ACA-black.svg", "WS":"/logos/airline-tiles/WJA.svg",
   "TS":"/logos/airline-tiles/TSC.svg", "PD":"/logos/airline-tiles/PTR.svg", "F8":"/logos/airline-tiles/FLE.svg", "QK":"/logos/airline-tiles/JZA.svg",
   "PB":"/logos/airline-tiles/PB.svg", "MO":"/logos/airline-tiles/CAV.svg", "YP":"/logos/airline-tiles/PCM.svg", "BQ":"/logos/airline-tiles/PSC.svg",
   "JV":"/logos/airline-tiles/BLS.svg", "WT":"/logos/airline-tiles/WSG.svg", "NSA":"/logos/airline-tiles/NSA.svg", "UA":"/logos/airline-tiles/UAL-sq.svg",

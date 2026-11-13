@@ -9485,6 +9485,9 @@ const AIRLINE_BRAND = {
   // orange.
   '8P': { bg1:'#0C3473', bg2:'#071F45', bg3:'#12468F', accent:'#0C3473', name:'Pacific Coastal' },
   'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
+  // v24150 — Air Creebec, from the supplied palette: the near black #272626 for the field, the
+  // peach #FDD49A for the accent (the cream #FCF8E3 is the body of its gate, data/airline-colors.js).
+  'YN': { bg1:'#272626', bg2:'#171616', bg3:'#3a3838', accent:'#FDD49A', name:'Air Creebec' },
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
@@ -11635,6 +11638,7 @@ const AIRLINE_ACCENT = {
   // Icelandair: '#001B71' with no judgement needed at all — the tile ground,
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
+  'YN':'#272626',   // v24150 — Air Creebec: the near black of the supplied palette (the ink of its emblem). The peach of the palette is too light for the white figures of the gate tab and the white glyphs of the rail
   'FI':'#001B71',
   // ITA Airways. Held back when the tile was wired, because the only value
   // available then was the tile's own ground — and a tile agreeing with itself
@@ -15215,6 +15219,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // spoke tip, invisible at orb size and well inside the tolerance the
         // other emblems were accepted under.
         '4N':  '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North
+        'YN':  '/logos/airline-tiles/CRQ.svg',               // v24150 — Air Creebec: its tile, as supplied art on its own ground; the emblem is black and is never inked white
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
         // NOTHING else. Every surface falling through to this map drew a white
@@ -18075,7 +18080,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24148" src="/textures/gate-sky-shelf.mp4?v=24148" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24150" src="/textures/gate-sky-shelf.mp4?v=24150" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -18119,7 +18124,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24148" src="/textures/gate-sky-shelf.mp4?v=24148" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24150" src="/textures/gate-sky-shelf.mp4?v=24150" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19354,7 +19359,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24148" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24150" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -32914,6 +32919,7 @@ const IATA_TO_TILE_ICAO = {
   'BF':'FBU',   // French Bee — tile on file but was never mapped (tiny external mark)
   // Canadian carriers
   '3H':'AIE',   // Air Inuit — brand-vermilion square + white lockup
+  'YN':'CRQ',   // v24150 — Air Creebec: the supplied emblem (a goose over a stretched hide, three bands of sunset) on the peach of its palette
   'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
   'PB':'PB',   // ← custom PAL Airlines logo (Newfoundland)
@@ -36478,7 +36484,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24148';
+var FIDS_BUILD_TAG = 'v24150';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -65902,7 +65908,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24148" src="/textures/gate-sky-shelf.mp4?v=24148"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24150" src="/textures/gate-sky-shelf.mp4?v=24150"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

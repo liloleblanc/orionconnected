@@ -34,6 +34,10 @@ window.AIRLINE_BRAND_COLORS = {
   'NSA': { r1:'#B01117', r1Text:'#FFFFFF', r2:'#F9A51A', body:'#F6EEE6', bodyText:'#8A0D12' }, // North Star Air (red #B01117 + gold #F9A51A sampled from logo)
   '5T': { r1:'#003F87', r1Text:'#FFFFFF', r2:'#00A9CE', body:'#EAEFF6', bodyText:'#003F87' }, // Canadian North
   '4N': { r1:'#13294B', r1Text:'#FFFFFF', r2:'#F2A900', body:'#F3F0E8', bodyText:'#13294B' }, // Air North
+  // Air Creebec — the supplied palette. A cream upper bar with near-black ink, as the airline sets its
+  // own black lettering on a light ground; the gate and clock tabs in the near black (white figures read
+  // on it; they do not on the peach); the peach as the third colour.
+  'YN': { r1:'#FCF8E3', r1Text:'#272626', r2:'#272626', r3:'#FDD49A', body:'#FCF8E3', bodyText:'#272626' }, // Air Creebec
   'WG': { r1:'#0B1F3A', r1Text:'#FFFFFF', r2:'#E4002B', body:'#EAF0F6', bodyText:'#0B1F3A' }, // Sunwing
 
   /* ── United States ──────────────────────────────────────────────────── */
