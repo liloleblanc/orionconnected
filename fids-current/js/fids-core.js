@@ -62013,12 +62013,14 @@ function _buildGateAdSlideList() {
   try {
     var _hIa = '';
     try { _hIa = String(window._gateIata || '').toUpperCase(); } catch (eH2) {}
+    // 2026-11-13 — and the Dream livery card on a United gate, in the same
+    // one slot: an Air Canada page asks for the Air Canada set, any other
+    // gate asks by its own airline code, and _heritagePick (peek) says
+    // whether that gate has a card at this airport. No gate has two.
     if (_hIa && typeof _heritagePick === 'function' && _heritagePick.peek !== false
-        && typeof _heritageOnAirCanadaGate === 'function' && _heritageOnAirCanadaGate()) {
-      var _hHas = HERITAGE_MARKS.some(function (m) {
-        return (m.airports === '*CA') ? _heritageIsCanadian(_hIa) : m.airports.indexOf(_hIa) !== -1;
-      });
-      if (_hHas) deck.push({ type: 'heritage' });
+        && typeof _heritageOnAirCanadaGate === 'function') {
+      var _hAl = _heritageOnAirCanadaGate() ? null : String((window._gateCurrentFlight || {}).airline || '');
+      if (_heritagePick(_hIa, _hAl, true)) deck.push({ type: 'heritage' });
     }
   } catch (e) {}
   // v24148 — THE ALGONQUIN RESORT (js/algonquin-card.js): a whole page for the
@@ -65213,6 +65215,21 @@ var _WXLBL = {
 // is Air Canada's history (_heritageOnAirCanadaGate, below the table).
 // v23970 — each mark's caption lives in the store as 'heritage:<key>', in all
 // nine languages (board-strings.js); the records carry the art and facts only.
+// 2026-11-13 — A CARD SAYS WHOSE GATES IT RUNS ON, AND WHAT ITS HEADING IS.
+// Three fields, each optional. A card that sets none of them is what every
+// card was before: an Air Canada page at the airports it lists, under From
+// the archive.
+//   gates    a table of the airline codes whose gates carry the card. A card
+//            with one runs on those gates and on no other, at the airports it
+//            lists (an asterisk alone is every airport). A card without one
+//            belongs to the Air Canada set and runs on Air Canada pages only
+//            (_heritageOnAirCanadaGate), so neither set can reach a gate of
+//            the other: _heritagePick answers for one set at a time.
+//   heading  the store key of the words over the card. The what-if cards say
+//            Dream livery (heritageDreamKicker); a card that names none says
+//            From the archive (heritageKicker).
+//   type     the aeroplane as the boards name it (IATA_AIRCRAFT), for a
+//            caption that leaves a place for it instead of spelling it out.
 var HERITAGE_MARKS = [
   {
     key: 'air-atlantic',
@@ -65725,7 +65742,9 @@ var HERITAGE_MARKS = [
     // (never worn) was tried and dropped: with it the German and Japanese
     // lines ran to two rows at 1680 x 1050 and five more sat at 96% or more
     // of the line. The longest line now is the English, at 92%.
-    // The kicker above it is the shared one for the whole set.
+    // 2026-11-13 — the words over it are Dream livery, the heading of the
+    // what-if cards (heritageDreamKicker): the card had From the archive over
+    // an aeroplane no archive holds. Its caption is as it was.
     //
     // THE MARK is the lockup the live Air Canada boards use today
     // (LOCAL_LOGOS.AC, air-canada.svg): the red rondelle beside AIR CANADA
@@ -65753,7 +65772,64 @@ var HERITAGE_MARKS = [
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc9-ac17.png',
+    heading: 'heritageDreamKicker',
     airports: '*CA'
+  },
+  {
+    // 2026-11-13 — DREAM LIVERY: A BOEING 787-8 IN A UNITED LIVERY NOBODY
+    // FLIES. A supplied side drawing: a white aeroplane with UNITED in blue
+    // capitals, teal and blue sweeping along the belly and up into the globe
+    // on the fin. It is a what-if, and the card says so twice: the words over
+    // it are Dream livery where the archive cards say From the archive, and
+    // the caption under the mark says what-if in the words of each language
+    // (et si, y si, Fiktion, and so on, the words of the Future Retro DC-9)
+    // and calls the livery imaginary. A passenger must not take it for a
+    // scheme the airline paints.
+    //
+    // WHAT IS REAL: the type. United flies the 787-8, and the boards name it
+    // Boeing 787-8 (IATA_AIRCRAFT, 788), which is what the caption prints:
+    // the type comes from this record into the place the caption leaves for
+    // it, so no stored line spells a maker or an airline. WHAT IS NOT: the
+    // livery. So there are no years on the card, of service or of a scheme.
+    //
+    // WHOSE GATES: United gates and no other, at every airport. A United gate
+    // is a row filed under the code of United itself, the same two codes the
+    // centenary strip takes (UA_CENTENNIAL): a flight sold as United files
+    // under them whoever operates it, and a row filed under its operator (OO,
+    // YX, G7) is not asked. The Air Canada set never runs here and this card
+    // never runs there: a row that is an Air Canada page (an AC number under
+    // any carrier field) is asked for the Air Canada set first, as before.
+    // The card takes the one archive slot of the deck, so it comes round as
+    // often as the archive cards do on their gates, and no more.
+    //
+    // THE MARK is the lockup the live boards use for United (LOCAL_LOGOS.UA,
+    // united.svg): the globe beside UNITED, all in the blue of the brand,
+    // #0033a0. It reads on the paper of the card as drawn. The white twins in
+    // the same folder are for dark grounds and would vanish here; no plate is
+    // put behind anything and nothing is recoloured.
+    //
+    // THE PICTURE is made by scripts/heritage-sky/card-cutout.py, which takes
+    // the page off the drawing in two steps: the open page round it, then the
+    // share of page in the last two pixels of the outline, which had left a
+    // pale rim round the navy fin, the belly and the engine over the sky. It
+    // is cropped to its own edges and scaled to the 2272 px of the DC-9s and
+    // the TriStars (2272 x 686). Nothing of the aeroplane is repainted.
+    // The file on disk is a STAND-IN, the drawing at the size it was first
+    // sent (1889 x 571 once cropped), so it is soft at this width. The
+    // full-size drawing replaces it by running the same tool on it into the
+    // same file name: one file, and nothing else on the card changes.
+    // Its shape, measured on the stand-in: length over fuselage depth about
+    // 9.0 against the 9.5 of the 787-8 (56.72 m over 5.94 m) and the 10.6 of
+    // the 787-9, with four doors a side. It is the -8, drawn a little short;
+    // it is used as drawn.
+    key: 'united-787-dream',
+    file: '/logos/airlines/us-major/united.svg',
+    name: 'United',
+    type: 'Boeing 787-8',
+    aircraft: '/aircraft/heritage/united-787-dream.png',
+    heading: 'heritageDreamKicker',
+    gates: { UA: 1, UAL: 1 },
+    airports: '*'
   },
   {
     // v24108 — AND THE TRISTAR IN THE 1993 LIVERY: a white aeroplane, 'AIR
@@ -65876,20 +65952,36 @@ function _heritageOnAirCanadaGate() {
     return _heritageIsAirCanada(window._gateCurrentFlight);
   } catch (e) { return false; }
 }
-function _heritagePick(iata) {
+// 2026-11-13 — ONE SET AT A TIME. Asked with the airport alone, the answer
+// comes from the Air Canada set, as it always did: the cards that name no
+// gates, for a caller that has asked the gate (_heritageOnAirCanadaGate).
+// Asked with the airline code of any other gate, it comes from the cards that
+// name that code in their gates table, and it is nothing where no card does
+// (every gate but a United one, today) or where the gate has no code. With
+// peek the first card of the pool is returned and the rotation is not moved:
+// that is how the deck asks whether the slide has anything to show.
+function _heritagePick(iata, airline, peek) {
   var ia = String(iata || '').toUpperCase();
   if (!ia) return null;
+  var named = airline != null;
+  var al = named ? String(airline).trim().toUpperCase() : '';
+  if (named && !al) return null;
   var pool = HERITAGE_MARKS.filter(function (m) {
+    if (named ? !(m.gates && Object.prototype.hasOwnProperty.call(m.gates, al)) : !!m.gates) return false;
+    if (m.airports === '*') return true;
     if (m.airports === '*CA') return _heritageIsCanadian(ia);
     return m.airports.indexOf(ia) !== -1;
   });
   if (!pool.length) return null;
+  if (peek) return pool[0];
   // Rotate through whatever is true for this airport, one per cycle, so a
   // board that runs all day does not show the same card every time. Keyed off
-  // the airport so two screens at one gate stay in step.
+  // the airport so two screens at one gate stay in step. The Air Canada set
+  // keeps the key it had; a set named by a gate counts under its own.
+  var slot = named ? ia + ':' + al : ia;
   window._heritageIdx = window._heritageIdx || {};
-  var n = window._heritageIdx[ia] || 0;
-  window._heritageIdx[ia] = (n + 1) % pool.length;
+  var n = window._heritageIdx[slot] || 0;
+  window._heritageIdx[slot] = (n + 1) % pool.length;
   return pool[n % pool.length];
 }
 function _renderHeritageCard(el) {
@@ -65898,10 +65990,14 @@ function _renderHeritageCard(el) {
     // v24042 — an Air Canada gate only (see _heritageOnAirCanadaGate). The deck
     // already leaves the slide out elsewhere; this is the backstop for a slide
     // still on screen when the gate changes carrier.
-    if (!_heritageOnAirCanadaGate()) return false;
+    // 2026-11-13 — an Air Canada page takes the Air Canada set, as before. Any
+    // other gate asks by the airline code of the row it drew, and only a card
+    // that names that code in its gates answers (the Dream livery card, on a
+    // United gate); every other gate still draws nothing.
+    var _hAl = _heritageOnAirCanadaGate() ? null : String((window._gateCurrentFlight || {}).airline || '');
     var ia = '';
     try { ia = String(window._gateIata || '').toUpperCase(); } catch (e) {}
-    var mark = _heritagePick(ia);
+    var mark = _heritagePick(ia, _hAl);
     if (!mark) return false;                       // nothing true here — skip
     var frF = false;
     try { frF = (typeof frFirstAirport === 'function') && frFirstAirport(ia); } catch (e2) {}
@@ -65915,6 +66011,7 @@ function _renderHeritageCard(el) {
     // nine languages; they were English and French whatever the board spoke.
     var _hLangs = BoardStrings.pairLangs(langs, frF);
     var _capKey = 'heritage:' + mark.key;
+    var _capFields = { TYPE: mark.type || '' };
     var _lines = [], _seenL = Object.create(null);
     _hLangs.forEach(function (lg) {
       var w = BoardStrings.bs(_capKey, lg);
@@ -65924,9 +66021,16 @@ function _renderHeritageCard(el) {
       // the French Air Nova line broke inside '1986–2001', leaving '2001'
       // alone on a third line; word joiners either side of the dash keep the
       // range whole, so the line breaks before it instead.
-      _lines.push(BoardStrings.half(lg, esc(w).replace(/(\d)\u2013(\d)/g, '$1\u2060\u2013\u2060$2')));
+      // 2026-11-13 — a caption may leave a place for the type, which the card
+      // gives as the boards name it (mark.type); a caption with no such place
+      // comes through as stored.
+      _lines.push(BoardStrings.half(lg, esc(BoardStrings.fill(w, _capFields, true)).replace(/(\d)\u2013(\d)/g, '$1\u2060\u2013\u2060$2')));
     });
-    var kicker = BoardStrings.pair('heritageKicker', { langs: _hLangs, sep: ' &nbsp;|&nbsp; ' });
+    // 2026-11-13 — the words over the card are its own where the card names
+    // them (mark.heading: Dream livery over a what-if), From the archive
+    // where it names none.
+    var _kickOpt = { langs: _hLangs, sep: ' &nbsp;|&nbsp; ' };
+    var kicker = mark.heading ? BoardStrings.pair(mark.heading, _kickOpt) : BoardStrings.pair('heritageKicker', _kickOpt);
     var _credit = [], _seenC = Object.create(null);
     if (mark.credit) _hLangs.forEach(function (lg) {
       var w = BoardStrings.bs('heritageCredit:' + mark.key, lg);

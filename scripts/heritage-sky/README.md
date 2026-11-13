@@ -171,6 +171,40 @@ with `qlmanage`, and needs Pillow.
 - the drawing contains no embedded bitmap. Illustrator writes one when it
   cannot express some shading, as it did with the DC-9's engine.
 
+## Aircraft drawings: take the page off (`card-cutout.py`)
+
+A side drawing supplied as a picture usually stands on its page, and the page
+is in it twice: round the aeroplane, and inside the last two pixels of its
+outline, where the drawing was smoothed against the page. Cutting along the
+open page alone leaves the second part behind as a pale rim round every dark
+part of the aeroplane (a navy fin, a blue belly, an engine) as soon as the sky
+is behind it. The first cut of the Dream livery 787-8 had 263 such pixels; the
+card's picture has 6.
+
+    python3 scripts/heritage-sky/card-cutout.py drawing.png fids-current/aircraft/heritage/<name>.png
+
+The script:
+- floods the page colour in from the four edges, so white inside the aeroplane
+  stays;
+- un-mixes the rim: it reads the aeroplane's colour just inside the outline,
+  works out each rim pixel's share of page against it, takes that share out of
+  the colour and makes it clear. A rim pixel that is no such mix (an antenna, a
+  light) keeps its colour;
+- crops the drawing to its own edges and scales it to 2272 px wide, the width
+  of the DC-9 and TriStar pictures, with colour weighted by opacity.
+
+A drawing that already comes as a cut-out is laid on white first and goes
+through the same steps, so a rim it brought with it comes out too. It needs
+Pillow, and nothing of the aeroplane is repainted.
+
+Replacing a card's picture with a better copy of the same drawing is this one
+command into the same file name. `tests/heritage-dream-card.test.js` holds the
+result to it: 2272 px wide, clear at the corners, cropped to the drawing, no
+haze, and no pale rim beside dark paint.
+
+What the script cannot see is a pocket of page shut inside a drawing that came
+on its page (between the legs of an undercarriage, under a pylon). Look for one.
+
 ## The shelf clip re-rendered: clouds carried through the hole (`cleanplate5`)
 
 `cleanplate` filled the hole on each frame from the sky around it (dilate,
