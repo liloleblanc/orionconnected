@@ -964,7 +964,8 @@
 
   /* Resolve an airline code → logo URL.
    * Priority: per-airport override in localStorage (the engine's own seam),
-   * then the engine's carrierLogoUrl() if exposed, then the public wway.io CDN.
+   * then the engine's carrierLogoUrl() if exposed (a file of ours); else none,
+   * and the cell types the code. No outside host is asked.
    */
   function _airlineLogoSrc(code) {
     if (!code) return '';
@@ -981,7 +982,7 @@
       } catch (e) {}
     }
     try { if (typeof carrierLogoUrl === 'function') return carrierLogoUrl(code); } catch (e) {}
-    return 'https://img.wway.io/pics/root/' + String(code).toLowerCase() + '@svg';
+    return '';
   }
   // Share with template-renderer.js
   window.FidsAirlineLogo = _airlineLogoSrc;

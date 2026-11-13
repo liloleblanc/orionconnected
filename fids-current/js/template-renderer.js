@@ -590,8 +590,9 @@
         if (raw) { const o = JSON.parse(raw); if (o && o.url) return o.url; }
       } catch (e) {}
     }
+    // a file of ours, or none (the cell then types the code): no outside host
     try { if (typeof carrierLogoUrl === 'function') return carrierLogoUrl(code); } catch (e) {}
-    return 'https://img.wway.io/pics/root/' + String(code).toLowerCase() + '@svg';
+    return '';
   }
   function _buildFlightListHTML(p, rows) {
     const cols = p.cols || {};

@@ -10140,12 +10140,6 @@ function gatePreferredBrandCode(marketingCode, opCode, flightObj) {
   return String(marketingCode || '').trim().toUpperCase();
 }
 
-// Logo code overrides — when the IATA code differs from the best available
-// logo at the wway.io fallback. Keep minimal. WS stays as WS (uses local
-// WestJet_Logo_2018.svg via LOCAL_LOGOS, not WestJet Rewards).
-var LOGO_CODE_MAP = {};
-function logoCode(code) { return LOGO_CODE_MAP[code] || code; }
-
 // Carriers whose logo is intrinsically full-color and should NOT receive the
 // brightness(0) invert(1) filter. Forcing these to white destroys the brand.
 // If a code is in this set, render the logo as-is.
@@ -10186,31 +10180,11 @@ function carrierLogoUrl(code) {
       if (ov) return ov;
     }
   } catch (e) {}
-  // Local logo takes priority — these are the ones we control and know
-  // are correct. Falls back to wway.io only for carriers we don't have.
-  if (LOCAL_LOGOS[up]) return LOCAL_LOGOS[up];
-  // v197: skip wway.io for IATA codes that have been historically recycled —
-  // wway.io serves the OLD carrier's logo. 4Y was Yute Air (defunct 2017),
-  // reassigned to Discover Airlines in 2023. Without this, GIDS gate-screen
-  // banner shows Yute Air's logo for Discover flights.
-  // (Kept as a fallback safety net — 4Y should be handled by LOCAL_LOGOS above.)
-  // Carriers whose wway.io artwork we will not use. Two reasons, same cure:
-  // returning '' drops the carrier onto the TEXT wordmark path, the same one
-  // every other artwork-less carrier already uses, so it comes out looking
-  // like the rest of the board instead of like a foreign object.
-  //   4Y — recycled IATA code; wway serves Yute Air (defunct 2017) for what
-  //        is now Discover Airlines.
-  //   XP — WAS here. wway's file arrived with its own canvas and a white
-  //        ground, so Avelo rendered as a clipped 'velo' in a white box and
-  // the text-wordmark fallback was the lesser evil. v22676:
-  //        supplied the real brand kit, so XP now has local artwork like
-  //        every other carrier and no longer needs the fallback.
-  //   LL — LEVEL sat here for one version (v22680, the white-box E25
-  // banner) until the real brand kit arrived; v22681 wires the
-  //        local artwork and the fallback comes off, same arc as Avelo.
-  var STALE_WWAY_CARRIER = { '4Y': 1 };
-  if (STALE_WWAY_CARRIER[up]) return '';
-  return 'https://img.wway.io/pics/root/' + logoCode(up) + '@svg';
+  // THE FILE OF OURS, OR NOTHING. A carrier with no file here gets no address at
+  // all, so the gate band types its name in the ink of the band and the Studio
+  // types its code. It was sent to an outside host, whose art was drawn as it
+  // came (another airline for 4Y, a white box for Avelo and LEVEL).
+  return LOCAL_LOGOS[up] || '';
 }
 
 // Watermark variant — logo shown in the middle of the welcome panel
@@ -11604,9 +11578,6 @@ function resolveLogo(input) {
   return logoPath(slug + '.' + ext);
 }
 
-function wwayUrl(code, w, h) {
-  return 'https://img.wway.io/pics/root/' + logoCode(code) + '@svg';
-}
 
 
 // ── BOARDING ZONES PER AIRLINE + AIRCRAFT TYPE ──────────────────────────
@@ -11983,51 +11954,20 @@ var AIRLINE_DOMAIN = {
 // code whose wordmark resolves would silently discard that artwork, which is
 // the failure this comment warns about, arriving from the other direction.
 var _g8LogoCache = {};
+// A FILE OF OURS THAT DID NOT LOAD ON THE GATE BAND: asked once more past the
+// cache, then the name of the carrier, typed in the ink of the band. It went on
+// to two outside hosts for a lockup before it typed the name; it asks none now.
 function g8LogoFail(img) {
   var code = img.getAttribute('data-code') || '';
-  var fb = img.getAttribute('data-fb');
-  // PAIR mode (emblem tile already shown beside this wordmark): external
-  // lockup fallbacks would render the carrier's symbol a second time.
-  // One retry with a fresh cache-buster, then the plain text name.
-  if (img.getAttribute('data-pairmode') === '1') {
-    if (!img.dataset.pmr) { img.dataset.pmr = '1'; img.src = img.src.split('?')[0] + '?r=' + Date.now(); return; }
-    var nmP = img.getAttribute('data-name') || '';
-    var spP = document.createElement('span');
-    spP.className = 'g8-r1-airline';
-    spP.textContent = nmP;
-    if (img.parentNode) img.parentNode.replaceChild(spP, img);
-    return;
-  }
-  // v197: for IATA codes that have been recycled (e.g. 4Y was Yute Air, now
-  // Discover Airlines), skip external logo services — they serve the OLD
-  // carrier's logo. Go straight to text fallback.
-  var STALE_EXTERNAL = { '4Y': 1 };
-  if (STALE_EXTERNAL[(code||'').toUpperCase()]) {
-    if (code) _g8LogoCache[code] = 'text';
-    var nm0 = img.getAttribute('data-name') || '';
-    var sp0 = document.createElement('span');
-    sp0.className = 'g8-r1-airline';
-    sp0.textContent = nm0;
-    if (img.parentNode) img.parentNode.replaceChild(sp0, img);
-    return;
-  }
-  if (fb && img.src.indexOf('avs.io') === -1) {
-    img.onerror = function() { g8LogoFail(this); };
-    img.src = fb;
-  } else {
-    // Both sources failed - try Google Flights as last resort
-    if (code && img.src.indexOf('gstatic') === -1) {
-      img.onerror = function() { g8LogoFail(this); };
-      img.src = 'https://www.gstatic.com/flights/airline_logos/70px/' + code + '.png';
-    } else {
-      if (code) _g8LogoCache[code] = 'text';
-      var name = img.getAttribute('data-name') || '';
-      var span = document.createElement('span');
-      span.className = 'g8-r1-airline';
-      span.textContent = name;
-      if (img.parentNode) img.parentNode.replaceChild(span, img);
-    }
-  }
+  if (!img.dataset.pmr) { img.dataset.pmr = '1'; img.src = img.src.split('?')[0] + '?r=' + Date.now(); return; }
+  // Beside an emblem (data-pairmode) the miss is not remembered: the next
+  // render asks for the lettering again. Alone, later renders type the name
+  // at once.
+  if (code && img.getAttribute('data-pairmode') !== '1') _g8LogoCache[code] = 'text';
+  var span = document.createElement('span');
+  span.className = 'g8-r1-airline';
+  span.textContent = img.getAttribute('data-name') || '';
+  if (img.parentNode) img.parentNode.replaceChild(span, img);
 }
 
 // Operating carrier for regional flights
@@ -21889,7 +21829,6 @@ function uxgGateHtml(ctx) {
   // the moment any dark banner returns.
   var _bannerOverrideFile = null;
   var r1LogoSrc = _bannerOverrideFile || carrierLogoUrl(_bannerBrandCode || airlineCode);
-  var r1LogoFallback = 'https://pics.avs.io/400/120/' + (_bannerBrandCode || airlineCode) + '.png';
   var _sz = BANNER_SIZE_OVERRIDE[_bannerBrandCode] || BANNER_SIZE_OVERRIDE[airlineCode] || { h: 140, w: 560 };
   // If the airline has a pre-made white-variant file listed in
   // BANNER_LOGO_OVERRIDE, the file already has the right colors baked in
@@ -22321,8 +22260,8 @@ function uxgGateHtml(ctx) {
       })()
     : '';
   var r1LogoHtml = '';
-  if (_g8LogoCache[airlineCode] === 'text') {
-    // Already know images fail - show text immediately, no flicker
+  if (_g8LogoCache[airlineCode] === 'text' || !r1LogoSrc) {
+    // No file of ours for this carrier, or one known to fail: its name, typed, at once
     r1LogoHtml = '<span class="g8-r1-airline">' + airlineName + '</span>';
   } else {
     // In PAIR mode (our emblem tile already beside the wordmark) the img must
@@ -22330,7 +22269,7 @@ function uxgGateHtml(ctx) {
     // carrier's symbol again, so a single failed wordmark fetch put TWO
     // emblems in the banner. data-pairmode makes
     // g8LogoFail go straight to the text name instead.
-    r1LogoHtml = '<img class="g8-r1-logo" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
+    r1LogoHtml = '<img class="g8-r1-logo" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
     if (_bannerEmblemHtml) {
       r1LogoHtml = '<span class="g8-r1-brandpair" style="display:inline-flex;align-items:center;gap:16px;">' + _bannerEmblemHtml + r1LogoHtml + '</span>';
     }
@@ -33624,36 +33563,21 @@ const HARDCODED_LOGOS = {
 const LOCAL_TRANSPARENT_LOGOS = LOCAL_LOGOS;
 
 var _logoFailCache = {};
+// A FILE OF OURS THAT DID NOT LOAD: asked once more past the cache, then the
+// monogram. It walked to two outside hosts before it gave up; it asks none now.
 function logoFallback(img) {
   const c = img.dataset.code;
   const name = img.alt;
-  const t = img.dataset.tried || '0';
-  if (t === '0') {
-    // First wway URL failed — try the higher-res wway variant
+  if (!img.dataset.tried) {
     img.dataset.tried = '1';
-    img.src = wwayUrl(c, 400, 80);
-  } else if (t === '1') {
-    // Second wway URL failed — try Google Flights' logo CDN
-    img.dataset.tried = '2';
-    img.src = 'https://www.gstatic.com/flights/airline_logos/90px/' + c + '.png';
-  } else if (t === '2' && IATA_TO_TILE_ICAO[c]) {
-    // gstatic failed too — fall back to the airline tile (colored square).
-    // We only do this if a tile exists for this carrier; otherwise we'd
-    // chase a 404. The tile is square with brand color background, so we
-    // also flip data-logo-set to 'tile' so the CSS shows the name span
-    // alongside (since the tile itself doesn't read as a wordmark).
-    img.dataset.tried = '3';
-    img.dataset.logoSet = 'tile';
-    img.src = '/logos/airline-tiles/' + IATA_TO_TILE_ICAO[c] + '.svg';
-  } else {
-    // All sources exhausted — MONOGRAM tile, not bare text (text or a
-    // wordmark in the emblem slot does not work). Cache so later renders
-    // go straight to the monogram without re-chasing dead URLs.
-    if (c) _logoFailCache[c] = true;
-    img.outerHTML = (typeof _monogramTile === 'function')
-      ? _monogramTile(c, name)
-      : `<span class="logo-fallback">${name}</span>`;
+    img.src = String(img.getAttribute('src') || '').split('?')[0] + '?r=' + Date.now();
+    return;
   }
+  // Cache so later renders go straight to the monogram without asking again.
+  if (c) _logoFailCache[c] = true;
+  img.outerHTML = (typeof _monogramTile === 'function')
+    ? _monogramTile(c, name)
+    : `<span class="logo-fallback">${fidsEscHtml(name)}</span>`;
 }
 
 // ── Wordmark override ─────────────────────────────────────────────────
@@ -34669,17 +34593,12 @@ function mkLogo(code, faName) {
     return `<img class="full-logo" data-code="${_cAttr}"${_invertAttr} data-logo-set="wordmark" alt="${_nameAttr}" src="${LOCAL_TRANSPARENT_LOGOS[c]}" onerror="logoFallback(this)">`;
   }
   
-  // PRIORITY 3: external wway.io fallback. Also full lockups, so same
-  // treatment — hide the redundant text label.
-  // v196: skip wway.io entirely for IATA codes that have been historically
-  // recycled — wway.io serves the OLD carrier's logo. Add codes here as we
-  // discover them: 4Y (Yute Air → Discover Airlines, 2017→2023).
-  const STALE_WWAY = new Set(['4Y']);
-  if (STALE_WWAY.has(c)) {
-    return _monogramTile(c, displayName);
-  }
-  const src = 'https://img.wway.io/pics/root/' + logoCode(c) + '@svg';
-  return `<img class="full-logo" data-code="${_cAttr}"${_invertAttr} data-logo-set="wordmark" alt="${_nameAttr}" src="${fidsEscHtml(src)}" onerror="logoFallback(this)">`;
+  // PRIORITY 3: THE MONOGRAM, FOR EVERY CODE WITH NO ART IN THIS REPOSITORY.
+  // The row draws the code on a square of its own colour beside the typed name.
+  // No file is asked of an outside host, for any code: what such a host sends is
+  // drawn as it comes, and for a code that changed hands it sent the art of
+  // another airline (4Y, YP). tests/airline-logos-own-host.test.js holds this.
+  return _monogramTile(c, displayName);
 }
 
 // ── LANGUAGE STRINGS & THEME SYSTEM ──────────────────────────────────────
@@ -37833,24 +37752,25 @@ const THEMES = {
   },
 };
 const THEME_LIST = ['gold','classic','light','midnight','slate','terminal','aircanada','westjet','porter','delta','united','american','southwest','jetblue','alaska','airtransat','flair','lufthansa','airfrance','emirates','british','singapore'];
-// Airline logos for themed headers
+// Airline logos for themed headers: the row tile of each carrier, a file of ours
+// (they were fifteen addresses on an outside host).
 const THEME_LOGOS = {
-  aircanada: 'https://www.gstatic.com/flights/airline_logos/70px/AC.png',
-  westjet:   'https://www.gstatic.com/flights/airline_logos/70px/WS.png',
-  delta:     'https://www.gstatic.com/flights/airline_logos/70px/DL.png',
-  united:    'https://www.gstatic.com/flights/airline_logos/70px/UA.png',
-  emirates:  'https://www.gstatic.com/flights/airline_logos/70px/EK.png',
+  aircanada: '/logos/airline-tiles/ACA-black.svg',
+  westjet:   '/logos/airline-tiles/WJA.svg',
+  delta:     '/logos/airline-tiles/DAL-red.svg',
+  united:    '/logos/airline-tiles/UAL-sq.svg',
+  emirates:  '/logos/airline-tiles/UAE.svg',
   porter:    'data:image/png;base64,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',
-  british:   'https://www.gstatic.com/flights/airline_logos/70px/BA.png',
-  singapore: 'https://www.gstatic.com/flights/airline_logos/70px/SQ.png',
-  southwest: 'https://www.gstatic.com/flights/airline_logos/70px/WN.png',
-  jetblue:   'https://www.gstatic.com/flights/airline_logos/70px/B6.png',
-  alaska:    'https://www.gstatic.com/flights/airline_logos/70px/AS.png',
-  airtransat:'https://www.gstatic.com/flights/airline_logos/70px/TS.png',
-  flair:     'https://www.gstatic.com/flights/airline_logos/70px/F8.png',
-  american:  'https://www.gstatic.com/flights/airline_logos/70px/AA.png',
-  lufthansa: 'https://www.gstatic.com/flights/airline_logos/70px/LH.png',
-  airfrance: 'https://www.gstatic.com/flights/airline_logos/70px/AF.png',
+  british:   '/logos/airline-tiles/BAW.svg',
+  singapore: '/logos/airline-tiles/SIA.svg',
+  southwest: '/logos/airline-tiles/SWA.svg',
+  jetblue:   '/logos/airline-tiles/JBU.svg',
+  alaska:    '/logos/airline-tiles/ASA.svg',
+  airtransat:'/logos/airline-tiles/TSC.svg',
+  flair:     '/logos/airline-tiles/FLE.svg',
+  american:  '/logos/airline-tiles/AAL.svg',
+  lufthansa: '/logos/airline-tiles/DLH.svg',
+  airfrance: '/logos/airline-tiles/AFR.svg',
 };
 
 function setTheme(name, _noPersist) {
@@ -47952,10 +47872,8 @@ function mkCardLogo(code, airlineName) {
       src="${LOCAL_LOGOS[c]}"
       onerror="this.outerHTML='<span class=\\'card-logo-fb\\'>${displayName}</span>'">`;
   }
-  const mWway = wwayUrl(c, 400, 80);
-  return `<img class="card-logo" data-code="${c}" alt="${displayName}"
-    src="https://img.wway.io/pics/root/${logoCode(c)}@svg"
-    onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${mWway}'}else{this.outerHTML='<span class=\\'card-logo-fb\\'>${displayName}</span>'}">`;
+  // No file of ours: the name, typed. Never a file from an outside host.
+  return `<span class="card-logo-fb">${fidsEscHtml(displayName)}</span>`;
 }
 
 function renderMobile() {
@@ -63608,9 +63526,10 @@ async function menuSearchFlight() {
       if (st.indexOf('landed') !== -1 || st.indexOf('arrived') !== -1) sc = '#16a34a';
       else if (st.indexOf('active') !== -1 || st.indexOf('en route') !== -1) sc = '#2563eb';
       else if (st.indexOf('delayed') !== -1) sc = '#dc2626';
-      var lc = typeof logoCode === 'function' ? logoCode(carrier) : carrier;
+      // the row tile of the carrier, a file of ours, where it has one: no outside host
+      var lc = (typeof IATA_TO_TILE_ICAO !== 'undefined' && IATA_TO_TILE_ICAO[String(carrier || '').toUpperCase()]) || '';
       html += '<div class="sm-flight-card">'
-        + '<img class="sm-flight-logo" src="https://img.wway.io/pics/root/' + lc + '@svg" onerror="this.style.display=\'none\'">'
+        + (lc ? '<img class="sm-flight-logo" src="/logos/airline-tiles/' + lc + '.svg" onerror="this.style.display=\'none\'">' : '')
         + '<div class="sm-flight-info">'
         + '<div class="sm-flight-num">' + carrier + ' ' + num + '</div>'
         + '<div class="sm-flight-route">' + origin + ' → ' + dest + '</div>'
