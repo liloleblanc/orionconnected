@@ -27,7 +27,7 @@ const CSS = read('fids-current/css/algonquin-card.css');
 const CORE = read('fids-current/js/fids-core.js');
 const GIDS = read('fids-current/gids.html');
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelPaintedFor', 'algonquinArt1990', 'algonquinArt1994', 'algonquinStory1889', 'algonquinStory1903', 'algonquinStory1915', 'algonquinStory1974', 'algonquinStory1993', 'algonquinStory2014',
+const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelHistoricLandmark', 'hotelPaintedFor', 'algonquinArt1990', 'algonquinInEveryRoom', 'algonquinArt1994', 'algonquinStory1889', 'algonquinStory1903', 'algonquinStory1915', 'algonquinStory1974', 'algonquinStory1993', 'algonquinStory2014',
   'hotelNotableGuests', 'algonquinGuest1889', 'algonquinGuest1901', 'algonquinGuest1964', 'algonquinGuest1973', 'algonquinGuest1983'];
 
 // The module reads the board through the global object: a gate is set up on
@@ -133,21 +133,28 @@ test('the five views: the facts of the house from its one table, the words in th
   assert.equal(count(html, '>' + H.address + '<'), 1);
   assert.equal(count(html, '>' + H.phone + '<'), 1);
   assert.equal(count(html, '>' + H.web + '<'), 1);
-  // one credit over the pair; under each watercolour its year and one of the uses the hotel made of it
+  // THE WATERCOLOURS, to the supplied example: what the house is; who painted them and that the
+  // hotel commissioned them; each in its frame with its year on a plaque; under each, the place
+  // where it was also used and the line that says so
   assert.equal(H.painter, 'Peter Bresnen');
   assert.equal(H.menuRoom, 'Passamaquoddy Dining Room');
-  assert.equal(count(html, 'class="alq-label"'), 2);
-  const lab = (year, fr, en, where) => '<div class="alq-label"><span class="alq-lyr">' + year + '</span><span class="alq-say">'
-    + '<span class="bs-h" lang="fr" data-i18n-src="careful">' + fr + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">' + en + '</span></span>'
-    + (where ? '<span class="alq-where">' + where + '</span>' : '') + '</div>';
-  const l90 = html.indexOf(lab('1990', 'Aussi sur un menu du soir', 'Also on a dinner menu', H.menuRoom));
-  const l94 = html.indexOf(lab('1994', 'Aussi sur une carte postale en chambre', 'Also on a guest room postcard'));
-  assert.ok(l90 > 0 && l94 > l90, 'the labels in the order of the pictures');
-  assert.equal(count(html, H.menuRoom), 1, 'the name of the dining room once, as printed');
-  // the credit says the pictures were painted for the hotel: the menu and the postcard are uses of them
-  const cred = html.indexOf('<div class="alq-credit alq-pairfit"><span class="alq-fit"><span class="bs-h" lang="fr" data-i18n-src="careful">Peintes pour l’hôtel par ' + H.painter + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">Painted for the hotel by ' + H.painter + '</span></span></div>');
-  assert.ok(cred > html.indexOf('alq-view alq--then') && cred < html.indexOf('class="alq-cardbox"'), 'the credit once, under the name and over the pictures');
+  const thenPart = html.slice(html.indexOf('alq-view alq--then'), html.indexOf('alq-view alq--story"'));
+  const half = (lg, w, careful) => '<span class="bs-h" lang="' + lg + '"' + (careful ? ' data-i18n-src="careful"' : '') + '>' + w + '</span>';
+  const pair = (fr, en) => half('fr', fr, true) + '<b class="alq-sep"></b>' + half('en', en, false);
+  const sub = thenPart.indexOf('<div class="alq-sub alq-pairfit"><span class="alq-fit">' + pair('Un lieu historique', 'A Historic Landmark') + '</span></div>');
+  const cred = thenPart.indexOf('<div class="alq-credit"><span class="alq-fit">' + pair('Peintes par ' + H.painter + ', commandées par l’hôtel', 'Painted by ' + H.painter + ', commissioned by the hotel') + '</span></div>');
+  const box = thenPart.indexOf('class="alq-cardbox"');
+  assert.ok(sub > 0 && cred > sub && box > cred, 'the name, what the house is, the credit, then the pictures');
   assert.equal(count(html, H.painter), 2, 'the painter once in each language of the board');
+  const fig = (year) => '<div class="alq-fig"><img class="alq-art" alt="' + H.name + ', ' + year + '" decoding="async" src="/assets/hotels/algonquin/bresnen-' + year + '.jpg"><span class="alq-plaque">' + year + '</span></div>';
+  assert.ok(thenPart.includes(fig('1990') + fig('1994')), 'the two pictures in order, each with its year on its plaque');
+  assert.equal(count(html, 'class="alq-label"'), 2);
+  const l90 = thenPart.indexOf('<div class="alq-label"><div class="alq-where"><span class="alq-fit">' + H.menuRoom + '</span></div><span class="alq-say">'
+    + pair('A aussi figuré sur le menu du soir', 'Also featured on the dinner menu') + '</span></div>');
+  const l94 = thenPart.indexOf('<div class="alq-label"><div class="alq-where alq-pairfit"><span class="alq-fit">' + pair('Dans chaque chambre', 'In every room') + '</span></div><span class="alq-say">'
+    + pair('Offerte en carte postale aux invités', 'Made into a postcard for guests') + '</span></div>');
+  assert.ok(l90 > box && l94 > l90, 'the labels under the pictures, in their order');
+  assert.equal(count(html, H.menuRoom), 1, 'the name of the dining room once, as printed');
   // the story and the guests: two timelines, the years in order, one line for each year in each language
   const storyAt = html.indexOf('alq-view alq--story"'), guestsAt = html.indexOf('alq-view alq--story alq--guests'), scanAt = html.indexOf('alq-view alq--scan');
   const yearsOf = (part) => [...part.matchAll(/<span class="alq-yr">(\d{4})<\/span><span class="alq-ev">/g)].map((x) => x[1]);
@@ -194,9 +201,6 @@ test('the five views: the facts of the house from its one table, the words in th
   assert.equal(A.media.length, 4);
   A.media.forEach((u) => assert.ok(fs.existsSync(path.join(SITE, u)), u));
   assert.equal(count(html, 'class="alq-art"'), 2);
-  const first = html.indexOf('class="alq-art" alt="' + H.name + ', 1990" decoding="async" src="/assets/hotels/algonquin/bresnen-1990.jpg"');
-  const second = html.indexOf('class="alq-art" alt="' + H.name + ', 1994" decoding="async" src="/assets/hotels/algonquin/bresnen-1994.jpg"');
-  assert.ok(first > 0 && second > first);
   // the name stands over the pictures of the yesteryear view
   const thenAt = html.indexOf('alq-view alq--then');
   const nameAt = html.indexOf('class="alq-name"', thenAt);
@@ -257,14 +261,19 @@ test('each watercolour is whole at its own proportions inside its frame, and not
   assert.ok(CSS.includes("--alq-frame-img:url('/assets/hotels/algonquin/gilt-frame-wide.png');"));
   // one height for the two pictures; the border widths are the frame's own at the scale of
   // that height, so both frames are the same thickness
-  const m = /--alq-h:min\(\(100cqw - var\(--alq-gap\)\) \/ ([\d.]+), 100cqh \/ ([\d.]+)\); height:var\(--alq-h\);\s*border-width:calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\);/.exec(CSS);
-  assert.ok(m, 'the frame rule');
+  const m = /\.alq-cardbox \.alq-fig\{ --alq-h:min\(\(100cqw - var\(--alq-gap\)\) \/ ([\d.]+), 100cqh \/ ([\d.]+)\);/.exec(CSS);
+  assert.ok(m, 'the height of a picture');
+  const bw = /\.alq-cardbox \.alq-art\{ height:var\(--alq-h\); align-self:center; flex:none;\s*border-width:calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\) calc\(var\(--alq-h\) \* ([\d.]+)\);/.exec(CSS);
+  assert.ok(bw, 'the frame rule');
   const near = (x, y) => assert.ok(Math.abs(x - y) < 0.0005, x + ' is ' + y);
-  near(+m[3], 105 / open.h); near(+m[4], 109 / open.h); near(+m[5], 104 / open.h); near(+m[6], 108 / open.h);
-  // two equal columns, each wide enough for the wider picture in its frame; the pictures and
-  // their labels share the columns and the space between them
+  near(+bw[1], 105 / open.h); near(+bw[2], 109 / open.h); near(+bw[3], 104 / open.h); near(+bw[4], 108 / open.h);
+  // two equal columns, each wide enough for a picture in its frame; the pictures and their
+  // labels share the columns and the space between them
   near(+m[1], 2 * (Math.max(a.w / a.h, b.w / b.h) + 217 / open.h));
-  near(+m[2], 1 + 209 / open.h);
+  // the height: the picture, its frame, and the plaque of the year under it with its space
+  const pl = /\.alq \.alq-plaque\{[^}]*margin-top:calc\(var\(--alq-h\) \* ([\d.]+)\); height:calc\(var\(--alq-h\) \* ([\d.]+)\);/.exec(CSS);
+  assert.ok(pl, 'the plaque');
+  near(+m[2], 1 + 209 / open.h + +pl[1] + +pl[2]);
   assert.ok(/\.alq-cardbox\{[^}]*display:grid; grid-template-columns:1fr 1fr; column-gap:var\(--alq-gap\);/.test(CSS));
   assert.ok(/\.alq-labels\{[^}]*display:grid; grid-template-columns:1fr 1fr; column-gap:var\(--alq-gap\);/.test(CSS));
   // the box of the pictures is no taller than two frames can be at its width, so a label is
@@ -296,7 +305,7 @@ test('the two faces are served from the site, with their licence beside them, an
   assert.ok(!/fonts\.googleapis|fonts\.gstatic|@import/.test(CSS));
   // the board forces its face on every element with a rule of no weight: these carry weight
   assert.ok(CSS.includes('.alq, .alq *, .alq *::before, .alq *::after{ font-family:var(--alq-text) !important; }'));
-  assert.ok(CSS.includes('.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *, .alq .alq-where{ font-family:var(--alq-caps) !important; }'));
+  assert.ok(CSS.includes('.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *, .alq .alq-where, .alq .alq-where *{ font-family:var(--alq-caps) !important; }'));
   // credited on the credits page, in the store
   assert.ok(read('fids-current/credits.html').includes('data-i18n="credHotelFaces"'));
   assert.ok(B.entry('credHotelFaces'));

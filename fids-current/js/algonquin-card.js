@@ -4,9 +4,10 @@
    gate screen (the slide type is algonquin) and shows five views in turn:
      today      the photograph of the resort, the name, the address, the telephone, the distance
                 by road from the airport of Moncton
-     yesteryear the name, two watercolours of the resort (1990 and 1994), each whole in its own
-                gilt frame; over the pair one credit (painted for the hotel, and by whom),
-                under each picture its year and one of the uses the hotel made of it
+     yesteryear the name and what the house is (a historic landmark); who painted the two
+                watercolours and that the hotel commissioned them, one language over each
+                picture; the two watercolours (1990 and 1994), each whole in its own gilt
+                frame with its year on a plaque; under each, where it was also used
      story      the name, the heading pair and a timeline: the years in one column, one line
                 for each year in each language of the board beside it
      guests     the same timeline for the people the house has received, each with the year
@@ -65,12 +66,12 @@
 
   var PHOTO = '/assets/hotels/algonquin/resort-aerial.jpg';
   // The two watercolours, the older one first: the file (both are 1600 x 1073, so the two
-  // frames are the same size), the year it is signed, the key of the words that say one of the
-  // uses the hotel made of it, and, where that use has a name, the entry of the table that
-  // holds it.
+  // frames are the same size), the year it is signed, the key of the words that say where it
+  // was also used, and the place of that use: an entry of the table when the place has a name
+  // of its own (where), the key of its words when it has not (whereSay).
   var ART = [
     { src: '/assets/hotels/algonquin/bresnen-1990.jpg', year: '1990', say: 'algonquinArt1990', where: 'menuRoom' },
-    { src: '/assets/hotels/algonquin/bresnen-1994.jpg', year: '1994', say: 'algonquinArt1994' }
+    { src: '/assets/hotels/algonquin/bresnen-1994.jpg', year: '1994', say: 'algonquinArt1994', whereSay: 'algonquinInEveryRoom' }
   ];
   var FRAME = '/assets/hotels/algonquin/gilt-frame-wide.png';
   // The timeline of the story view: the year, and the key of the line that says what happened.
@@ -231,22 +232,27 @@
       +   '<div class="alq-row alq-pairfit">' + ico('car') + '<span class="alq-fit">' + road + '</span></div>'
       + '</div></div>';
 
-    // YESTERYEAR: the two watercolours. They carry no lettering, so the view sets the name of
-    // the house itself.
+    // YESTERYEAR: the two watercolours, laid out to a supplied example. They carry no
+    // lettering, so the view sets the name of the house itself, and says what the house is.
     var era = pairOf(L, function (lg) { return BS.bs('hotelYesteryear', lg); });
-    var arts = ART.map(function (a) {
-      return '<img class="alq-art" alt="' + esc(H.name + ', ' + a.year) + '" decoding="async" src="' + esc(a.src) + '">';
-    }).join('');
-    // one credit for the pair, over it: they were painted for the hotel; then one label for
-    // each picture (its year, one of its uses, the name of the place of that use)
-    var labels = ART.map(function (a) {
-      return '<div class="alq-label"><span class="alq-lyr">' + esc(a.year) + '</span>'
-        + '<span class="alq-say">' + pairOf(L, function (lg) { return BS.bs(a.say, lg); }, a.say) + '</span>'
-        + (a.where ? '<span class="alq-where">' + esc(H[a.where]) + '</span>' : '') + '</div>';
-    }).join('');
+    var landmark = pairOf(L, function (lg) { return BS.bs('hotelHistoricLandmark', lg); }, 'hotelHistoricLandmark');
+    // who painted them, and that the hotel commissioned them: one language over each picture
     var credit = pairOf(L, function (lg) { return BS.fmt('hotelPaintedFor', lg, { WHO: H.painter }, true); }, 'hotelPaintedFor');
+    // each picture in its frame, its year on a plaque under it
+    var arts = ART.map(function (a) {
+      return '<div class="alq-fig"><img class="alq-art" alt="' + esc(H.name + ', ' + a.year) + '" decoding="async" src="' + esc(a.src) + '">'
+        + '<span class="alq-plaque">' + esc(a.year) + '</span></div>';
+    }).join('');
+    // under each picture: the place where it was also used, then the line that says so
+    var labels = ART.map(function (a) {
+      var place = a.where ? '<span class="alq-fit">' + esc(H[a.where]) + '</span>'
+        : '<span class="alq-fit">' + pairOf(L, function (lg) { return BS.bs(a.whereSay, lg); }, a.whereSay) + '</span>';
+      return '<div class="alq-label"><div class="alq-where' + (a.where ? '' : ' alq-pairfit') + '">' + place + '</div>'
+        + '<span class="alq-say">' + pairOf(L, function (lg) { return BS.bs(a.say, lg); }, a.say) + '</span></div>';
+    }).join('');
     var then = '<div class="alq-hero">' + name
-      + '<div class="alq-credit alq-pairfit"><span class="alq-fit">' + credit + '</span></div>'
+      + '<div class="alq-sub alq-pairfit"><span class="alq-fit">' + landmark + '</span></div>'
+      + '<div class="alq-credit"><span class="alq-fit">' + credit + '</span></div>'
       + '<div class="alq-cardbox">' + arts + '</div>'
       + '<div class="alq-labels">' + labels + '</div>'
       + '</div>';

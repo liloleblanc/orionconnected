@@ -8,7 +8,7 @@ and a scan code for the resort's site. Guest information, not an advertisement: 
 
 Code: `fids-current/js/algonquin-card.js` (the page and its one data table, `ALGONQUIN_HOTEL`),
 `fids-current/css/algonquin-card.css`, four hooks in `fids-current/js/fids-core.js`
-(`AlgonquinCard` in the deck builder, the skip loop, the dwell and the preloader), eighteen words in
+(`AlgonquinCard` in the deck builder, the skip loop, the dwell and the preloader), twenty words in
 `fids-current/js/board-strings.js`. Test: `tests/algonquin-card.test.js`.
 
 ## The files
@@ -84,10 +84,13 @@ The Autograph Collection file in the foot is the one already in the site
 
 - The two watercolours are the work of Peter Bresnen (Peter Bresnen Studio, Halifax, by the
   printed credit on the back of the 1990 menu of the hotel that carries the older one). The page
-  credits him by name once, over the pair, and says there that the two were painted for the
-  hotel. Under each picture is its year and one of the uses the hotel then made of it: the
-  1990 one on a dinner menu of the Passamaquoddy Dining Room, the 1994 one on the postcard
-  left in the guest rooms. No written permission is on file.
+  credits him by name over the pictures and says there that the hotel commissioned them, the
+  first language of the board over the first picture and the second over the second. Each
+  picture has its year on a plaque under its frame, then the place where it was also used
+  and the line that says so: the 1990 one was featured on the dinner menu of the
+  Passamaquoddy Dining Room, the 1994 one was made into the postcard left in every room for
+  guests. The view was laid out and worded to an example supplied for the page; the wording
+  was put right in both languages. No written permission is on file.
 - The photograph, the name and the Autograph Collection mark are the resort's and Marriott's.
   The page shows them only to say where the resort is and how to reach it.
 - The frame is licensed stock art. The two typefaces are open-licensed and credited on the

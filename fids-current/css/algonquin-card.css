@@ -5,10 +5,11 @@
    (each view is an .axr-page layer; hotel-ads.css gives the layer its place and its crossfade):
      today      the photograph of the resort with nothing over it, the name, the address,
                 the telephone and the road distance under it
-     yesteryear the name, two watercolours (1990 and 1994) side by side, each whole in its own
-                gilt picture frame (the two frames are the same size); over the pair one credit
-                (painted for the hotel, and by whom), under each its year and one line in
-                each language
+     yesteryear the name and what the house is; who painted the two watercolours and that
+                the hotel commissioned them, one language over each picture; the watercolours
+                (1990 and 1994) side by side, each whole in its own gilt picture frame (the
+                two frames are the same size) with its year on a plaque; under each, the
+                place where it was also used and one line in each language
      story      the name, the heading pair, and a timeline: the years in one column, a fine
                 rule, one line for each year in each language of the board
      guests     the same timeline under its own heading: the people the house has received
@@ -57,6 +58,7 @@
   --alq-ink:#14203c;                                           /* navy ink */
   --alq-bronze:#7b5c17;                                        /* the icons and the small marks */
   --alq-rule:#b8923a;                                          /* the fine rules */
+  --alq-red:#a8351c;                                           /* the name of the house: the red of its roofs (5.7 to 1 on the paper) */
   --alq-frame-img:url('/assets/hotels/algonquin/gilt-frame-wide.png');
   position:relative; width:100%; height:100%; overflow:hidden;
   background:var(--alq-paper); color:var(--alq-ink);
@@ -67,7 +69,7 @@
 /* The board forces its own face on every element with a rule of no weight; these rules carry
    real weight, so the page keeps its two faces. */
 .alq, .alq *, .alq *::before, .alq *::after{ font-family:var(--alq-text) !important; }
-.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *, .alq .alq-where{ font-family:var(--alq-caps) !important; }
+.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *, .alq .alq-where, .alq .alq-where *{ font-family:var(--alq-caps) !important; }
 /* Japanese, Chinese and Arabic stand upright, untracked and in their own case, in the script
    faces of the board, which also draw their figures and any Latin name inside them (the italic
    face would slant those). The variable is read on the half itself, so each language takes its
@@ -88,7 +90,7 @@
 
 /* shared pieces */
 .alq-name{ font-size:var(--alq-title); font-weight:400; font-style:normal; text-transform:uppercase; line-height:1.1; letter-spacing:.035em;
-  white-space:nowrap; margin:0; color:var(--alq-ink); }
+  white-space:nowrap; margin:0; color:var(--alq-red); }
 .alq-line{ font-size:var(--alq-info); font-weight:500; white-space:nowrap; color:var(--alq-ink); }
 .alq-row{ display:flex; align-items:center; font-size:var(--alq-fact); font-weight:500; white-space:nowrap; color:var(--alq-ink); }
 .alq-ico{ flex:none; width:1.12em; height:1.12em; margin-inline-end:.5em; color:var(--alq-bronze); display:inline-flex; }
@@ -113,12 +115,20 @@
 .alq-under .alq-line, .alq-under .alq-row, .alq-under .alq-name{ width:100%; }
 .alq-under .alq-name{ margin-bottom:calc(var(--alq-info) * 0.06); }
 
-/* YESTERYEAR. The name, the credit of the painter, the two framed watercolours side by side as
-   large as the room left allows, a label under each picture. The pictures
-   carry no lettering, so the view sets the name of the house itself, as the scan view does. */
+/* YESTERYEAR, to a supplied example. The name; what the house is; who painted the pictures
+   and that the hotel commissioned them, the first language of the board over the first picture
+   and the second over the second; the two framed watercolours side by side as large as the
+   room left allows, each with its year on a plaque; under each, the place where it was also
+   used and the line that says so. The pictures carry no lettering, so the view sets the name
+   of the house itself, as the scan view does. */
 .alq--then .alq-hero, .alq--story .alq-hero{ display:flex; flex-direction:column; align-items:stretch; container-type:inline-size;
   padding:clamp(9px, min(1.25vh, .78vw), 13px) var(--alq-padn) 0; }
 .alq--then .alq-name, .alq--story .alq-name{ flex:none; text-align:center; max-width:100%; }
+/* what the house is: the text face, in its own case, under the name */
+.alq-sub{ flex:none; text-align:center; max-width:100%; margin-top:clamp(1px, min(.25vh, .16vw), 3px); font-size:var(--alq-name); font-weight:500; line-height:1.12;
+  color:var(--alq-ink); white-space:nowrap; }
+.alq-sub .alq-sep{ opacity:.7; width:1.5px; }
+.alq-sub.alq-stack > .alq-fit{ align-items:center; }
 /* the heading of the story: capitals, navy, 26.2 px under the name of the house: read from a gate seat */
 .alq-era{ flex:none; text-align:center; font-weight:400; font-style:normal; text-transform:uppercase; font-size:calc(var(--alq-head) * .8); line-height:1.12;
   letter-spacing:.035em; color:var(--alq-ink); white-space:nowrap; margin-top:clamp(2px, min(.4vh, .25vw), 4px); }
@@ -136,42 +146,52 @@
    the scale of the height of the picture, and the long rails give by under two percent to meet
    it. Each picture is centred in its own half of the view
    (two equal columns), over its own label, whatever height is left for it. The shadow on the
-   wall is a box shadow outside the frame: no filter touches a picture. */
+   wall is a box shadow outside the frame: no filter touches a picture. Under each frame, as
+   wide as the frame, a small plaque carries the year. */
 .alq-art{ display:block; box-sizing:content-box; aspect-ratio:1600 / 1073; width:auto; max-width:none;
   border-style:solid; border-color:transparent;
   border-image:var(--alq-frame-img) 105 109 104 108 stretch;
   box-shadow:0 12px 22px rgba(20,32,60,.36), 0 3px 6px rgba(20,32,60,.26); }
 .alq--then{ --alq-gap:clamp(10px, min(1.6vh, 1vw), 17px); }
 /* The box of the pictures takes the height it can use and no more (its width, read on the view,
-   says how tall two frames can be), so on a tall stage the room left over is shared above the
-   pictures and under the labels, and each label stays close under its frame. */
+   says how tall two frames and their plaques can be), so on a tall stage the room left over is
+   shared above the pictures and under the labels, and each label stays close under its frame. */
 .alq-cardbox{ flex:1 1 0; min-height:0; min-width:0; container-type:size;
-  max-height:calc((100cqw - var(--alq-gap)) / 3.449965 * 1.225216);
+  max-height:calc((100cqw - var(--alq-gap)) / 3.449965 * 1.415216);
   margin:auto 0 0; display:grid; grid-template-columns:1fr 1fr; column-gap:var(--alq-gap);
   align-items:center; justify-items:center; }
-.alq-cardbox .alq-art{ --alq-h:min((100cqw - var(--alq-gap)) / 3.449965, 100cqh / 1.225216); height:var(--alq-h);
+.alq-cardbox .alq-fig{ --alq-h:min((100cqw - var(--alq-gap)) / 3.449965, 100cqh / 1.415216);
+  display:flex; flex-direction:column; align-items:stretch; }
+.alq-cardbox .alq-art{ height:var(--alq-h); align-self:center; flex:none;
   border-width:calc(var(--alq-h) * 0.113147) calc(var(--alq-h) * 0.117457) calc(var(--alq-h) * 0.112069) calc(var(--alq-h) * 0.116379); }
-/* A LABEL UNDER EACH FRAME, centred on it: the labels stand in the same two equal columns as
-   the pictures. The year, in the face of the headings; then one of the uses the hotel made of
-   the picture, one line for each language of the board, in the text face. */
-.alq-labels{ flex:none; margin-top:clamp(8px, min(1.15vh, .72vw), 12px); margin-bottom:auto;
+/* the plaque: a pale raised strip under the frame, the year on it in the face of the headings */
+.alq .alq-plaque{ display:block; flex:none; margin-top:calc(var(--alq-h) * 0.035); height:calc(var(--alq-h) * 0.155); line-height:calc(var(--alq-h) * 0.155);
+  text-align:center; font-family:var(--alq-caps) !important; font-style:normal; font-weight:400; font-size:max(var(--alq-floor), calc(var(--alq-h) * 0.118));
+  letter-spacing:.05em; color:var(--alq-bronze); font-variant-numeric:lining-nums;
+  background:linear-gradient(#fbf8f1, #ebe4d3); border-radius:2px; box-shadow:0 5px 9px rgba(20,32,60,.22), 0 1px 2px rgba(20,32,60,.2); }
+/* UNDER EACH FRAME, in the same two equal columns as the pictures: the place where the picture
+   was also used, upright, in the face of the headings (a name as it is printed, or its words
+   in the languages of the board); then the line that says so, one for each language, in the
+   text face, set to the right as in the example. */
+.alq-labels{ flex:none; margin-top:clamp(10px, min(1.4vh, .88vw), 15px); margin-bottom:auto;
   display:grid; grid-template-columns:1fr 1fr; column-gap:var(--alq-gap); align-items:start; color:var(--alq-ink); }
-.alq-label{ min-width:0; text-align:center; }
-.alq .alq-lyr{ display:block; font-family:var(--alq-caps) !important; font-style:normal; font-weight:400; font-size:calc(var(--alq-head) * .8); line-height:1.15;
-  letter-spacing:.035em; color:var(--alq-bronze); font-variant-numeric:lining-nums; }
-.alq-say{ display:block; font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); font-weight:500; line-height:1.18; white-space:normal; }
+.alq-label{ min-width:0; }
+.alq-where{ text-align:center; font-style:normal; font-weight:400; font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); line-height:1.2; white-space:nowrap; }
+.alq-where .alq-sep{ margin:0 .5em; }
+.alq-where.alq-stack > .alq-fit{ align-items:center; }
+.alq-say{ display:block; margin-top:clamp(3px, min(.5vh, .31vw), 5px); text-align:right; font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); font-weight:500; line-height:1.18; white-space:normal; }
 .alq-say .bs-h{ display:block; }
 .alq-say .alq-sep{ display:none; }
-/* the name of the place of that use, once, as it is printed: upright, in the face of the headings */
-.alq-where{ display:block; font-style:normal; font-weight:400; font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); line-height:1.2; white-space:nowrap; }
-/* THE CREDIT, once, centred under the name and over the pair: that they were painted for the
-   hotel, and by whom, in the languages of the board (one under the other when the two do not
-   share a line), in the face of the headings, upright, small. The room left over on a tall
-   stage is shared above the pictures and under their labels. */
-.alq-credit{ flex:none; margin-top:clamp(3px, min(.5vh, .31vw), 5px); margin-bottom:clamp(8px, min(1.05vh, .66vw), 11px); text-align:center; font-style:normal; font-weight:400;
-  font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); letter-spacing:0; color:var(--alq-ink); white-space:nowrap; }
-.alq-credit .alq-sep{ margin:0 .5em; }
-.alq-credit.alq-stack > .alq-fit{ align-items:center; }
+/* THE CREDIT, over the pictures: who painted them and that the hotel commissioned them. The
+   first language of the board stands over the first picture and the second over the second
+   (the two equal columns of the pictures); a board of one language has one line across both.
+   Upright, in the face of the headings, small; a line too long for its column wraps, balanced. */
+.alq-credit{ flex:none; margin-top:clamp(4px, min(.6vh, .38vw), 6px); margin-bottom:clamp(6px, min(.85vh, .53vw), 9px); font-style:normal; font-weight:400;
+  font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); line-height:1.16; letter-spacing:0; color:var(--alq-ink); white-space:normal; }
+.alq-credit > .alq-fit{ display:grid; grid-template-columns:1fr 1fr; column-gap:var(--alq-gap); align-items:end; width:100%; }
+.alq-credit .bs-h{ display:block; text-align:center; text-wrap:balance; }
+.alq-credit .alq-sep{ display:none; }
+.alq--one .alq-credit > .alq-fit{ grid-template-columns:1fr; }
 
 /* THE STORY, AND THE GUESTS (the same build, two views). The same cream sheet. Under the name
    and the heading pair, a timeline: the years
