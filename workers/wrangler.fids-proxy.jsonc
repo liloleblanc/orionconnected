@@ -111,10 +111,19 @@
   // in a 31-day one. FR24_MONTHLY_CREDITS_2027 is the plan's credits once the
   // promotion ends on 2027-01-01. A plan change is these two numbers.
   // FR24_DAILY_BUDGET is used only when FR24_MONTHLY_CREDITS is not set.
+  //
+  // 2026-11-12 — THE ESSENTIAL PLAN. The account moved from the Explorer plan
+  // (60,000 credits a month) to the Essential plan: 333,000 a month, doubled
+  // by a promotion until the end of 2026. The boards need about 126,000 to
+  // 171,000 a month with OpenSky gone, so the figure here is the plan's own
+  // 333,000 for both years: a day's cap of 10,545 in a 30-day period, about
+  // twice the need, and inside the credits whether or not the doubling is on
+  // the account. The worker still counts its periods from the 5th; the new
+  // plan may renew on another day, which at half the cap changes nothing.
   "vars": {
     "FR24_DAILY_BUDGET": "1900",
-    "FR24_MONTHLY_CREDITS": "60000",
-    "FR24_MONTHLY_CREDITS_2027": "30000",
+    "FR24_MONTHLY_CREDITS": "333000",
+    "FR24_MONTHLY_CREDITS_2027": "333000",
     // ── OPENSKY (the /osky/* routes, handleOsky in fids-proxy.js) ──────────
     // OFF until the OpenSky agreement is signed and paid: only "1" switches
     // it on, and it stays "0" until a change flips it (merged only after an
