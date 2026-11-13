@@ -248,11 +248,11 @@ test('the name: as the table writes it; with its state, province or country wher
     const got = PLACES.label(c, l, cityOf, regionNameOf);
     assert.equal(PLACES.OF[c] && got === got.toUpperCase() ? without().tc(got) : got, want(c, l), c + ' ' + l);
   }
-  // 73 of them carry where they are (53 whose name CITY gives a place
-  // elsewhere, 20 whose name is another place's that CITY does not hold),
+  // 74 of them carry where they are (53 whose name CITY gives a place
+  // elsewhere, 21 whose name is another place's that CITY does not hold),
   // and the map prints the same words
   const where = AMERICAS.filter((c) => PLACES.inOf(c));
-  assert.equal(where.length, 73);
+  assert.equal(where.length, 74);
   assert.equal(AMERICAS.filter((c) => own(PLACES.IN, c)).length, 53);
   const BF = { inTables: (c) => !!(CITY[c] || CITY_FR[c]), placeName: PLACES.nameOf, placeIn: PLACES.inOf, regionName: regionNameOf };
   for (const c of where) for (const l of NINE) assert.equal(want(c, l), E.cityNameOf(BF, c, c + ' | ' + c, l), c + ' ' + l + ': the board and the map');
@@ -302,11 +302,12 @@ test('the name: as the table writes it; with its state, province or country wher
   // TWO PLACES OF THE TABLE ITSELF, ONE NAME (IN_MORE). IN was built against
   // CITY's names (v24073, tests/earth-places.test.js), so two places that
   // CITY holds neither of were never looked for: a gate to Salinas read the
-  // same for California, Ecuador and Brazil. 20 more carry where they are:
-  // 19 that share their name with another place of the table, and Puerto
-  // Rico in Bolivia, which reads as the island.
+  // same for California, Ecuador and Brazil. 21 more carry where they are:
+  // 19 that share their name with another place of the table, and two whose
+  // name is a territory's or a country's: Puerto Rico in Bolivia, which
+  // reads as the island, and Peru in Indiana, the town of Grissom's field.
   const more = Object.keys(PLACES.IN_MORE).sort();
-  assert.deepEqual(more, ['ELY', 'GWO', 'IAL', 'LGR', 'LYU', 'MTH', 'MUO', 'NOG', 'OLS', 'PUR', 'SCI', 'SCY', 'SNC', 'SNS', 'SPR', 'UOX', 'WMH', 'YCN', 'YSP', 'YZX']);
+  assert.deepEqual(more, ['ELY', 'GUS', 'GWO', 'IAL', 'LGR', 'LYU', 'MTH', 'MUO', 'NOG', 'OLS', 'PUR', 'SCI', 'SCY', 'SNC', 'SNS', 'SPR', 'UOX', 'WMH', 'YCN', 'YSP', 'YZX']);
   const ccOf = Object.fromEntries(built().rows.map((r) => [r.code, r.cc]));
   const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').replace(/\b(SAINTE?|STE?)\b/g, 'ST').trim();
   const km = (a, b) => { const r = Math.PI / 180, d = Math.sin((b[0] - a[0]) * r / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin((b[1] - a[1]) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(Math.min(1, d))); };
@@ -317,7 +318,7 @@ test('the name: as the table writes it; with its state, province or country wher
     assert.equal(PLACES.inOf(c), w); assert.match(w, /^(US|CA)-[A-Z]{2}$|^[A-Z]{2}$/, c);
     assert.equal(w.slice(0, 2), ccOf[c], c + ': the country the list gives it, from its clock and the board\'s country table');
     assert.ok(!Object.values(CITY).some((v) => fold(v) === fold(PLACES.NAME[c])), c + ': CITY gives the name to no place, which is why IN never held it');
-    if (c === 'PUR') continue;
+    if (c === 'PUR' || c === 'GUS') continue;
     // another place of the table has the name: in another country, or more than 100 km away
     const others = sameName(c);
     assert.ok(others.length, c + ' ' + PLACES.NAME[c]);
@@ -325,6 +326,12 @@ test('the name: as the table writes it; with its state, province or country wher
   }
   // (Puerto Rico, Bolivia: the town's name is a territory's in the list's own country table)
   assert.equal(PLACES.NAME.PUR, LIST.COUNTRY.PR); assert.equal(PLACES.zones.PUR, 'America/La_Paz'); assert.equal(want('PUR', 'en'), 'Puerto Rico, Bolivia');
+  // (Peru, Indiana: the town's name is a country's in the same table. The
+  // field is Grissom Air Reserve Base, a joint-use field with no airline,
+  // and the FAA's record gives it to Peru, 14 km to its north.)
+  assert.equal(PLACES.NAME.GUS, LIST.COUNTRY.PE); assert.equal(PLACES.zones.GUS, 'America/Indiana/Indianapolis'); assert.equal(PLACES.IN_MORE.GUS, 'US-IN');
+  for (const l of NINE) assert.equal(want('GUS', l), 'Peru, IN', l);
+  assert.deepEqual([sameName('PUR'), sameName('GUS')], [[], []]);
   assert.equal(want('SNS', 'en'), 'Salinas, CA'); assert.equal(want('SNC', 'en'), 'Salinas, Ecuador'); assert.equal(want('IAL', 'en'), 'Salinas, Brazil');
   assert.equal(want('MTH', 'ja'), 'Marathon, FL'); assert.equal(want('YSP', 'fr'), 'Marathon, ON'); assert.equal(want('YZX', 'en'), 'Greenwood, NS');
   assert.equal(want('NOG', 'es'), 'Nogales, México'); assert.equal(want('OLS', 'es'), 'Nogales, AZ'); assert.equal(want('SCY', 'en'), 'San Cristóbal, Ecuador');
@@ -347,7 +354,7 @@ test('the name: as the table writes it; with its state, province or country wher
   assert.ok(km(PLACES.AT.AOQ, PLACES.AT.QUV) > 1400 && ccOf.AOQ === 'GL' && ccOf.QUV === 'GL');
   assert.deepEqual([PLACES.OF.CBM, PLACES.OF.OSU, CITY.GTR, CITY.CMH], ['GTR', 'CMH', 'COLUMBUS', 'COLUMBUS']);
 
-  // 102 are a city's own other airport: the nearest airport of that name in
+  // 103 are a city's own other airport: the nearest airport of that name in
   // CITY, read without accents, case or St and Saint, never one IN places
   const pair = (v) => (v ? [+(v.lat != null ? v.lat : v[0]), +(v.lon != null ? v.lon : (v.lng != null ? v.lng : v[1]))] : null);
   const B0 = without(), COORDS = B0.__table('COORDS'), GATE_AP = B0.__table('GATE_AP');
@@ -363,7 +370,7 @@ test('the name: as the table writes it; with its state, province or country wher
     nearest[c] = far[0][0];
     assert.ok(far[0][1] <= 100, c + ' is within 100 km of ' + far[0][0] + ', its city\'s airport');
   }
-  assert.equal(Object.keys(nearest).length, 102);
+  assert.equal(Object.keys(nearest).length, 103);
   assert.deepEqual(PLACES.OF, nearest, 'OF is each one\'s city, the nearest airport of that name in CITY');
   for (const [c, d] of Object.entries(PLACES.OF)) { assert.ok(CITY[d], d); assert.ok(!own(PLACES.OF, d), d); assert.equal(PLACES.cityCodeOf(c), d); }
   assert.equal(PLACES.cityCodeOf('RIH'), ''); assert.equal(PLACES.cityCodeOf('det'), 'DTW');
@@ -371,7 +378,7 @@ test('the name: as the table writes it; with its state, province or country wher
   assert.equal(PLACES.OF.ESF, 'AEX'); assert.equal(PLACES.OF.DET, 'DTW'); assert.equal(PLACES.OF.TMB, 'MIA'); assert.equal(PLACES.OF.YRO, 'YOW');
   // the ones a French board writes otherwise, today
   const french = Object.fromEntries(Object.keys(PLACES.OF).filter((c) => want(c, 'fr') !== want(c, 'en')).map((c) => [c, want(c, 'fr')]));
-  assert.deepEqual(french, { DET: 'Détroit', NBG: 'La Nouvelle-Orléans', NEW: 'La Nouvelle-Orléans', PNE: 'Philadelphie', TZA: 'Belize', UPB: 'La Havane', YIP: 'Détroit' });
+  assert.deepEqual(french, { DCF: 'Dominique', DET: 'Détroit', NBG: 'La Nouvelle-Orléans', NEW: 'La Nouvelle-Orléans', PNE: 'Philadelphie', TZA: 'Belize', UPB: 'La Havane', YIP: 'Détroit' });
   for (const c of Object.keys(PLACES.OF)) for (const l of NINE) if (l !== 'fr') assert.equal(want(c, l), PLACES.NAME[c], c + ' ' + l);
   // A city's second airport prints its city's own spelling: Panamá Pacífico
   // read 'Panamá City | BLB' on a board that prints 'Panama City | PTY'
@@ -380,6 +387,42 @@ test('the name: as the table writes it; with its state, province or country wher
   // (Ogle) in OurAirports; the table's rule is the city an airport serves,
   // and CITY names it 38 km away (GEO, Cheddi Jagan, in the same country)
   assert.equal(PLACES.OF.OGL, 'GEO'); assert.equal(want('OGL', 'en'), 'Georgetown'); assert.ok(km(PLACES.AT.OGL, at('GEO')) < 40);
+  // SEVEN READ AGAIN FROM THEIR OWN SOURCES (the airport's authority, the
+  // airline that sells it, its town; docs/licenses/places-data.md), where
+  // OurAirports gives the airfield or the village it stands in.
+  // Canefield is Dominica's second airport, 5 km from Roseau, and its
+  // airline sells it as Dominica: the island CITY names by its main
+  // airport, 25 km away, and in French as CITY_FR does.
+  assert.equal(PLACES.OF.DCF, 'DOM'); assert.equal(CITY.DOM, 'DOMINICA'); assert.ok(km(PLACES.AT.DCF, at('DOM')) < 30);
+  assert.equal(want('DCF', 'en'), 'Dominica'); assert.equal(want('DCF', 'fr'), 'Dominique'); assert.equal(want('DCF', 'es'), 'Dominica');
+  // Ken Jones is Port Antonio's aerodrome; Catamayo's airport is sold as
+  // Loja, the city 30 km away it was built for; Nerlerit Inaat as its
+  // airport's authority and its airline spell it (the table read
+  // Neerlerit), and never the town it serves, which has a heliport and a
+  // code of its own; Cutral Có with no hyphen, as the national decree on
+  // its aerodrome writes it (the municipality drops the accent, and a bare
+  // Co at the end of a name is cased as Colorado's letters); DeRidder as
+  // the city writes it.
+  assert.deepEqual(['POT', 'LOH', 'CNP', 'OBY', 'CUT', 'DRI', 'GUS', 'DCF'].map((c) => PLACES.NAME[c]),
+    ['Port Antonio', 'Loja', 'Nerlerit Inaat', 'Ittoqqortoormiit', 'Cutral Có', 'DeRidder', 'Peru', 'Dominica']);
+  assert.notEqual(want('CNP', 'en'), want('OBY', 'en')); assert.ok(km(PLACES.AT.CNP, PLACES.AT.OBY) > 30);
+  for (const c of ['POT', 'LOH', 'CNP', 'CUT', 'DRI']) { assert.equal(PLACES.inOf(c), '', c); assert.ok(!own(PLACES.OF, c), c); assert.deepEqual(sameName(c), [], c); }
+  // THE CASING KEEPS THE CAPITAL INSIDE DeRidder, and that word alone: the
+  // gate cases a name from its capitals, and read Deridder. No other name
+  // of CITY, CITY_FR, AP or the table holds the word, so no other name is
+  // cased otherwise than it was; and a bare Co still ends as a state does.
+  const TC = without().tc, APT = B0.__table('AP'), CITYFR = tables().CITY_FR;
+  assert.deepEqual([TC('DERIDDER'), TC('Deridder'), TC('DERIDDER | DRI'), TC('DENVER'), TC('DERBY'), TC('DE RIDDER'), TC('DES MOINES')],
+    ['DeRidder', 'DeRidder', 'DeRidder | DRI', 'Denver', 'Derby', 'De Ridder', 'Des Moines']);
+  const held = [];
+  const word = (t, c, v) => { if (/deridder/i.test(String(v || ''))) held.push(t + ' ' + c); };
+  for (const [c, v] of Object.entries(CITY)) word('CITY', c, v);
+  for (const [c, v] of Object.entries(CITYFR)) word('CITY_FR', c, v);
+  for (const [c, v] of Object.entries(APT)) for (const k of Object.keys(v || {})) if (typeof v[k] === 'string') word('AP', c, v[k]);
+  for (const [c, v] of Object.entries(PLACES.NAME)) word('NAME', c, v);
+  assert.ok(Object.keys(CITY).length > 2000 && Object.keys(CITYFR).length > 2000 && Object.keys(APT).length > 200);
+  assert.deepEqual(held, ['NAME DRI']);
+  assert.equal(TC('CUTRAL CÓ'), 'Cutral Có'); assert.equal(TC('CUTRAL CO'), 'Cutral CO'); assert.equal(TC('PERU, IN'), 'Peru, IN');
   // THE NAMES AS THEIR PLACES WRITE THEM: an accent the table had dropped
   // beside names that kept theirs (Río Hato next to Rio Cuarto), and five
   // misspelt or miscased
@@ -468,6 +511,9 @@ test('every place of the Americas the tables do not name prints its name on the 
   assert.equal(print('SNS', 'en'), 'Salinas, CA | SNS'); assert.equal(print('SNC', 'fr'), 'Salinas, Équateur | SNC'); assert.equal(print('CZH', 'fr'), 'Corozal, Belize | CZH');
   assert.equal(print('TCS', 'en'), 'Truth or Consequences | TCS'); assert.equal(print('YJN', 'fr'), 'Saint-Jean-sur-Richelieu | YJN'); assert.equal(print('OGL', 'en'), 'Georgetown | OGL');
   assert.equal(print('BLB', 'en'), 'Panama City | BLB'); assert.equal(print('PUR', 'en'), 'Puerto Rico, Bolivia | PUR'); assert.equal(print('INT', 'en'), 'Winston-Salem | INT');
+  assert.equal(print('POT', 'en'), 'Port Antonio | POT'); assert.equal(print('LOH', 'es'), 'Loja | LOH'); assert.equal(print('CNP', 'en'), 'Nerlerit Inaat | CNP'); assert.equal(print('OBY', 'en'), 'Ittoqqortoormiit | OBY');
+  assert.equal(print('CUT', 'es'), 'Cutral Có | CUT'); assert.equal(print('DRI', 'en'), 'DeRidder | DRI'); assert.equal(print('GUS', 'fr'), 'Peru, IN | GUS');
+  assert.equal(print('DCF', 'en'), 'Dominica | DCF'); assert.equal(print('DCF', 'fr'), 'Dominique | DCF'); assert.equal(print('DOM', 'en'), 'Dominica | DOM');
 
   // THE VIA STOPS OF A THROUGH FLIGHT (a stop sent as a code, as Orlando's
   // feed sends it): each of the 1,055 prints its name, bare. With its state

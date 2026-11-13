@@ -72,7 +72,14 @@
           (Barbuda, Nauru, Niue, Saint Helena, Rarotonga); where OurAirports
           joins two places, the one the airport is named for (Braunschweig,
           Ilorin, Rivera). Written as the place writes it (N'Djamena,
-          Mazar-i-Sharif, McAlester). The same in every language: no French
+          Mazar-i-Sharif, McAlester, DeRidder). Seven of the Americas were
+          read again from the airport's own authority, its airlines and
+          its town (v24152), where OurAirports gives the airfield or its
+          village: Port Antonio for Ken Jones, Loja for Catamayo, Peru
+          (Indiana) for Grissom, Dominica for Canefield, Nerlerit Inaat as
+          its airport and its airline spell it, Cutral Có as the national
+          decree on its aerodrome does, DeRidder as the city does
+          (docs/licenses/places-data.md). The same in every language: no French
           or other name has been read for them yet, and a French board
           prints the name as it is, as the rows print a place CITY_FR does
           not name.
@@ -85,7 +92,7 @@
           with its state or province in the United States and Canada, else
           with its country in the language on screen ('Charlottetown, NL',
           'London, KY', 'Valencia, Venezuela': fids-earth.js floorName), so
-          it never reads as the famous place. The 143 others whose name CITY
+          it never reads as the famous place. The 144 others whose name CITY
           gives too are that city's own other airports (in the same country,
           and in the United States and Canada the same state or province, or
           within 100 km: Batajnica for Belgrade, the Hong Kong heliport,
@@ -95,14 +102,15 @@
           (La Grande-4, YAH, is named so, as OurAirports names it: it is
           265 km from La Grande Rivière's La Grande, YGL, in the same
           province.)
-   IN_MORE  20 more, printed the same way, that IN's rule does not find
+   IN_MORE  21 more, printed the same way, that IN's rule does not find
           because CITY holds neither place: 19 names two places of NAME
           itself share (Salinas in California, Ecuador and Brazil; Marathon
           in Florida and Ontario; Ely, Greenwood, Mountain Home, Cochrane,
           San Cristóbal; Nogales on both sides of one border; Oxford in
           Mississippi and San Pedro in Belize, whose namesakes are outside
-          the Americas and print as before), and PUR, the town of Puerto
-          Rico in Bolivia, which reads as the island. Looked for when the
+          the Americas and print as before), and two that read as a
+          country or a territory: PUR, the town of Puerto Rico in Bolivia,
+          and GUS, Peru in Indiana (Grissom's town). Looked for when the
           boards began to print these names, where two rows can now read
           alike. Left alike: Aappilattoq, AOQ and QUV, two villages of one
           country that no state or country can tell apart.
@@ -117,19 +125,21 @@
           Hawaii); a place left with no zone on purpose (NONE) by its
           longitude, between 170°W and 30°W (Ontario's far north and
           south-west Amazonas, never Sakha).
-   OF     102 of the 143 are of the Americas: each with the code of its
+   OF     103 of the 144 are of the Americas: each with the code of its
           city's airport in CITY, the nearest of that name (Coleman Young
           and Willow Run for Detroit, Lakefront for New Orleans, Tamiami for
-          Miami). Where CITY_FR writes the city otherwise, a French board
-          prints it so for them too (Détroit, La Nouvelle-Orléans,
-          Philadelphie, Belize, La Havane). Codes only.
+          Miami; Canefield for Dominica, the island CITY names by its
+          main airport, DOM). Where CITY_FR writes the city otherwise, a
+          French board prints it so for them too (Détroit, La
+          Nouvelle-Orléans, Philadelphie, Belize, La Havane, Dominique).
+          Codes only.
    label  the name the boards and the app print for a place of the Americas
           that CITY and CITY_FR do not name: NAME; with where it is, as the
-          map prints it, for the 53 of IN and the 20 of IN_MORE ('London,
+          map prints it, for the 53 of IN and the 21 of IN_MORE ('London,
           KY', 'Valencia, Venezuela'; the bare name where the country's
           name cannot be had, never its two letters, which a board would
           case as a word or a reader take for a state); the city's own
-          name in the language for the 102 of OF.
+          name in the language for the 103 of OF.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function (root) {
   'use strict';
@@ -1089,21 +1099,21 @@
     CJN:'Cijulang', CJZ:'Cajazeiras', CKC:'Cherkasy', CKH:'Chokurdakh', CKL:'Moscow', CKT:'Sarakhs',
     CKW:'Christmas Creek', CKY:'Conakry', CLM:'Port Angeles', CLN:'Carolina', CLU:'Columbus', CLV:'Caldas Novas',
     CLZ:'Calabozo', CMB:'Colombo', CMD:'Cootamundra', CMQ:'Clermont', CMR:'Colmar', CMU:'Kundiawa',
-    CNC:'Coconut Island', CND:'Constanța', CNG:'Cognac', CNI:'Changhai', CNL:'Sindal', CNP:'Neerlerit Inaat',
+    CNC:'Coconut Island', CND:'Constanța', CNG:'Cognac', CNI:'Changhai', CNL:'Sindal', CNP:'Nerlerit Inaat',
     CNR:'Chañaral', CNU:'Chanute', COC:'Concordia', COE:"Coeur d'Alene", COF:'Cocoa Beach', COH:'Cooch Behar',
     COJ:'Coonabarabran', COL:'Coll', CON:'Concord', COO:'Cotonou', COQ:'Choibalsan', CQD:'Shahrekord',
     CQF:'Calais', CQM:'Ciudad Real', CRA:'Craiova', CRC:'Cartago', CRE:'North Myrtle Beach', CRG:'Jacksonville',
     CRK:'Clark', CRM:'Catarman', CRQ:'Caravelas', CRU:'Carriacou', CRZ:'Türkmenabat', CSA:'Colonsay',
     CSB:'Caransebeş', CSF:'Creil', CSH:'Solovetsky Islands', CSK:'Cap Skirring', CSN:'Carson City', CSV:'Crossville',
     CSY:'Cheboksary', CTB:'Cut Bank', CTT:'Le Castellet', CUA:'Ciudad Constitución', CUB:'Columbia', CUE:'Cuenca',
-    CUK:'Caye Caulker', CUM:'Cumaná', CUP:'Carúpano', CUT:'Cutral-Co', CVC:'Cleve', CVE:'Coveñas',
+    CUK:'Caye Caulker', CUM:'Cumaná', CUP:'Carúpano', CUT:'Cutral Có', CVC:'Cleve', CVE:'Coveñas',
     CVJ:'Cuernavaca', CVO:'Corvallis', CVS:'Clovis', CVU:'Corvo', CWC:'Chernivtsi', CWT:'Cowra',
     CWW:'Corowa', CXA:'Caicara del Orinoco', CXB:"Cox's Bazar", CXH:'Vancouver', CXI:'Kiritimati', CXO:'Houston',
     CXP:'Cilacap', CXR:'Nha Trang', CXY:'Cat Cay', CYC:'Caye Chapel', CYG:'Corryong', CYI:'Chiayi',
     CYP:'Calbayog', CYU:'Cuyo', CYW:'Celaya', CYX:'Cherskiy', CYZ:'Cauayan', CZE:'Coro',
     CZF:'Cape Romanzof', CZH:'Corozal', CZN:'Chisana', CZR:'Chara', DAA:'Fort Belvoir', DAD:'Da Nang',
     DAG:'Daggett', DAN:'Danville', DAU:'Daru', DAX:'Dazhou', DBA:'Dalbandin', DBD:'Dhanbad',
-    DBM:'Debre Markos', DCF:'Canefield', DCI:'Decimomannu', DCN:'Derby', DCT:'Duncan Town', DDD:'Kudahuvadhoo',
+    DBM:'Debre Markos', DCF:'Dominica', DCI:'Decimomannu', DCN:'Derby', DCT:'Duncan Town', DDD:'Kudahuvadhoo',
     DEA:'Dera Ghazi Khan', DEE:'Yuzhno-Kurilsk', DEF:'Dezful', DEJ:'Tongren', DEM:'Dembidollo', DET:'Detroit',
     DEX:'Dekai', DEZ:'Deir Ez-Zor', DGA:'Dangriga', DGE:'Mudgee', DGH:'Deoghar', DGT:'Dumaguete',
     DHA:'Dhahran', DHF:'Al Dhafra', DHG:'Dalnegorsk', DHH:'Barkol', DHI:'Dhangarhi', DHR:'Den Helder',
@@ -1114,7 +1124,7 @@
     DMB:'Taraz', DMD:'Doomadgee', DME:'Moscow', DMN:'Deming', DNA:'Kadena', DNK:'Dnipro',
     DNL:'Augusta', DNQ:'Deniliquin', DOB:'Dobo', DOD:'Dodoma', DOG:'Dongola', DOP:'Dolpa',
     DOU:'Dourados', DPA:'West Chicago', DPB:'Bahía Inútil', DPL:'Dipolog', DPT:'Deputatskiy', DQA:'Daqing',
-    DQM:'Duqm', DRA:'Mercury', DRB:'Derby', DRI:'Deridder', DRJ:'Drietabbetje', DRK:'Drake Bay',
+    DQM:'Duqm', DRA:'Mercury', DRB:'Derby', DRI:'DeRidder', DRJ:'Drietabbetje', DRK:'Drake Bay',
     DRN:'Dirranbandi', DRP:'Legazpi', DRT:'Del Rio', DRV:'Baa Atoll', DSD:'La Désirade', DSE:'Dessie',
     DSK:'Dera Ismael Khan', DSO:'Sondok', DSS:'Dakar', DSY:'Dara Sakor', DTB:'Silangit', DTD:'Datadawai',
     DTE:'Daet', DUA:'Durant', DUE:'Dundo', DUG:'Douglas', DUM:'Dumai', DVO:'Davao',
@@ -1163,7 +1173,7 @@
     GRV:'Grozny', GSB:'Goldsboro', GSE:'Göteborg', GSI:'Grand-Santi', GSJ:'Puerto San José', GSM:'Qeshm',
     GSV:'Saratov', GTA:'Gatokae', GTN:'Glentanner', GTO:'Gorontalo', GTZ:'Grumeti', GUB:'Guerrero Negro',
     GUF:'Gulf Shores', GUH:'Gunnedah', GUI:'Güiria', GUJ:'Guaratinguetá', GUL:'Goulburn', GUQ:'Guanare',
-    GUR:'Gurney', GUS:'Grissom', GUW:'Atyrau', GUY:'Guymon', GUZ:'Guarapari', GVN:'Sovetskaya Gavan',
+    GUR:'Gurney', GUS:'Peru', GUW:'Atyrau', GUY:'Guymon', GUZ:'Guarapari', GVN:'Sovetskaya Gavan',
     GVX:'Sandviken', GWD:'Gwadar', GWE:'Gweru', GWO:'Greenwood', GXF:'Seiyun', GXG:'Negage',
     GXQ:'Coyhaique', GYB:'Wodgina', GYG:'Magan', GYI:'Gisenyi', GYZ:'Cosmo Newbery', GZG:'Garzê',
     GZM:'Gozo', GZO:'Gizo', GZW:'Qazvin', HAA:'Hasvik', HAH:'Moroni', HAL:'Halali',
@@ -1257,7 +1267,7 @@
     LLK:'Lankaran', LLM:'Lomlom', LLO:'Palopo', LLU:'Alluitsup Paa', LLW:'Lilongwe', LMC:'La Macarena',
     LMN:'Limbang', LMO:'Lossiemouth', LMQ:'Marsa Al Brega', LMR:'Lime Acres', LMT:'Klamath Falls', LMU:'Letung',
     LMV:'Naifaru', LMY:'Lake Murray', LNB:'Lamen Bay', LND:'Lander', LNE:'Lonorore', LNU:'Malinau',
-    LNV:'Londolovit', LNX:'Smolensk', LOD:'Longana', LOH:'Catamayo', LOK:'Lodwar', LOL:'Lovelock',
+    LNV:'Londolovit', LNX:'Smolensk', LOD:'Longana', LOH:'Loja', LOK:'Lodwar', LOL:'Lovelock',
     LOO:'Laghouat', LOP:'Lombok', LOU:'Louisville', LOV:'Monclova', LOZ:'London', LPD:'La Pedrera',
     LPG:'La Plata', LPK:'Lipetsk', LPM:'Lamap', LPQ:'Luang Phabang', LPU:'Long Apung', LPX:'Liepāja',
     LPY:'Le Puy', LQM:'Puerto Leguízamo', LRF:'Jacksonville', LRL:'Niamtougou', LRR:'Lar', LRS:'Leros',
@@ -1361,7 +1371,7 @@
     PMV:'Margarita', PMZ:'Palmar Sur', PNB:'Porto Nacional', PNC:'Ponca City', PND:'Punta Gorda', PNE:'Philadelphia',
     PNH:'Phnom Penh', PNI:'Pohnpei', PNK:'Pontianak', PNP:'Popondetta', PNR:'Pointe-Noire', PNV:'Panevėžys',
     PNX:'Denison', POB:'Fort Bragg', POE:'Fort Polk', POG:'Port Gentil', POJ:'Patos de Minas', POL:'Pemba',
-    POO:'Poços de Caldas', POT:'Ken Jones', POU:'Poughkeepsie', POW:'Portorož', POX:'Pontoise', PPE:'Puerto Peñasco',
+    POO:'Poços de Caldas', POT:'Port Antonio', POU:'Poughkeepsie', POW:'Portorož', POX:'Pontoise', PPE:'Puerto Peñasco',
     PPI:'Port Pirie', PPK:'Petropavl', PPQ:'Paraparaumu', PPS:'Puerto Princesa', PPW:'Papa Westray', PQC:'Phu Quoc',
     PQM:'Palenque', PQT:'Qeqertaq', PRB:'Paso Robles', PRH:'Phrae', PRI:'Praslin Island', PRS:'Parasi',
     PRV:'Přerov', PRX:'Paris', PRY:'Pretoria', PSI:'Pasni', PSJ:'Poso', PSU:'Putussibau',
@@ -1563,7 +1573,7 @@
     'TJI HN TOW BR UTW ZA VLN VE XLS SN XRH AU ZIC CL ZSE RE';
   // AND WHERE CITY HOLDS NEITHER PLACE (IN_MORE, in the header): written as
   // the three lists above are, states, then provinces, then countries
-  var IN_MORE = [['ELY NV LYU MN GWO MS MTH FL MUO ID OLS AZ SNS CA UOX MS WMH AR', 'US-'], ['YCN ON YSP ON YZX NS', 'CA-'],
+  var IN_MORE = [['ELY NV GUS IN LYU MN GWO MS MTH FL MUO ID OLS AZ SNS CA UOX MS WMH AR', 'US-'], ['YCN ON YSP ON YZX NS', 'CA-'],
     ['IAL BR LGR CL NOG MX PUR BO SCI VE SCY EC SNC EC SPR BZ', '']];
   // THE COUNTRIES THE BOARD'S OWN FRENCH WRITES WITHOUT THE BROWSER'S ACCENTS
   // (REGION_FR, in the header)
@@ -1621,7 +1631,7 @@
   // city's airport in CITY, the nearest of that name
   var OF =
     'AFW FTW AGC PIT AKC CAK ALN STL ANN MTM APA DEN BFH CWB BFM MOB BKL CLE BLB PTY CBM GTR CGF CLE ' +
-    'CRG JAX CUB CAE CVS CVN CXH YVR CXO IAH DET DTW DMA TUS DNL AGS DYS ABI EDF MRI EFD HOU EIL FAI ' +
+    'CRG JAX CUB CAE CVS CVN CXH YVR CXO IAH DCF DOM DET DTW DMA TUS DNL AGS DYS ABI EDF MRI EFD HOU EIL FAI ' +
     'ESF AEX FAF PHF FBK FAI FFO DAY FMY RSW FTY ATL FWH FTW FXE FLL GMU GSP HBG PIB HFD BDL HIF OGD ' +
     'HIO PDX HUA HSV IAB ICT ILS SAL LOU SDF LSV LAS MCC SMF MCF TPA MER MCE MHR SMF MIB MOT MKC MCI ' +
     'MTN BWI MXF MGM NBG MSY NEW MSY NGP CRP NGU ORF NIP JAX NKX SAN NPA PNS NQX EYW NRB JAX NTR MTY ' +

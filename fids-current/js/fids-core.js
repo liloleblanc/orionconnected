@@ -34462,6 +34462,14 @@ function tc(s) {
   r = r.replace(/\bSte\.\s*([a-z])/g, (m,c) => 'Ste. ' + c.toUpperCase());
   // Protect "Mc" and "Mac" prefixes
   r = r.replace(/\bMc([a-z])/g, (m,c) => 'Mc' + c.toUpperCase());
+  // A town that writes a capital inside its name and is no Mc: DeRidder,
+  // Louisiana, as the city itself writes it (it read Deridder on the gate
+  // and wherever a name is cased again). The whole word and no other, so
+  // Denver, Derby and Des Moines are as they were: tc over every name of
+  // CITY, CITY_FR, AP and the table of the Americas changes this one alone
+  // (tests/americas-airport-names.test.js). Another such town is one more
+  // line like this one.
+  r = r.replace(/\bDeridder\b/g, 'DeRidder');
   // Preserve trailing region/state/province codes as uppercase
   r = r.replace(/(\s)([A-Za-z]{2,3})$/, function(m, sp, tok) {
     return sp + (_UPPER_TOKENS.has(tok.toUpperCase()) ? tok.toUpperCase() : tok);

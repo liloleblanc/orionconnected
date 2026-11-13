@@ -33,7 +33,7 @@ then by name.
 | COR | Cordoba |  | Argentina |  |
 | CNQ | Corrientes |  | Argentina |  |
 | UZU | Curuzú Cuatiá |  | Argentina | + |
-| CUT | Cutral-Co |  | Argentina | + |
+| CUT | Cutral Có |  | Argentina | + |
 | EHL | El Bolsón |  | Argentina | + |
 | FTE | El Calafate |  | Argentina |  |
 | EPA | El Palomar |  | Argentina | + |
@@ -877,7 +877,7 @@ then by name.
 | VRA | Varadero |  | Cuba |  |
 | VRO | Varadero |  | Cuba | + |
 | CUR | Curacao | Curaçao | Curaçao |  |
-| DCF | Canefield |  | Dominica | + |
+| DCF | Dominica | Dominique | Dominica | + |
 | DOM | Dominica | Dominique | Dominica |  |
 | BRX | Barahona |  | Dominican Republic |  |
 | CBJ | Cabo Rojo |  | Dominican Republic | + |
@@ -890,12 +890,12 @@ then by name.
 | SDQ | Santo Domingo | Saint-Domingue | Dominican Republic |  |
 | ATF | Ambato |  | Ecuador | + |
 | GPS | Baltra |  | Ecuador | + |
-| LOH | Catamayo |  | Ecuador | + |
 | OCC | Coca |  | Ecuador | + |
 | CUE | Cuenca |  | Ecuador | + |
 | ESM | Esmeraldas |  | Ecuador | + |
 | GYE | Guayaquil |  | Ecuador |  |
 | LTX | Latacunga |  | Ecuador | + |
+| LOH | Loja |  | Ecuador | + |
 | MRR | Macará |  | Ecuador | + |
 | XMS | Macas |  | Ecuador | + |
 | MEC | Manta |  | Ecuador | + |
@@ -952,7 +952,7 @@ then by name.
 | JNS | Narsaq |  | Greenland | + |
 | QFN | Narsarmijit |  | Greenland | + |
 | UAK | Narsarsuaq |  | Greenland | + |
-| CNP | Neerlerit Inaat |  | Greenland | + |
+| CNP | Nerlerit Inaat |  | Greenland | + |
 | NIQ | Niaqornat |  | Greenland | + |
 | JUU | Nuugaatsiaq |  | Greenland | + |
 | GOH | Nuuk |  | Greenland | + |
@@ -1016,9 +1016,9 @@ then by name.
 | TJI | Trujillo, Honduras |  | Honduras | + |
 | UII | Utila |  | Honduras | + |
 | OCJ | Boscobel |  | Jamaica |  |
-| POT | Ken Jones |  | Jamaica | + |
 | KIN | Kingston |  | Jamaica |  |
 | MBJ | Montego Bay |  | Jamaica |  |
+| POT | Port Antonio |  | Jamaica | + |
 | KTP | Tinson Pen |  | Jamaica |  |
 | FDF | Fort de France | Fort-de-France | Martinique |  |
 | ACA | Acapulco |  | Mexico |  |
@@ -1432,7 +1432,7 @@ then by name.
 | APA | Denver |  | United States | + |
 | BJC | Denver |  | United States |  |
 | DEN | Denver |  | United States |  |
-| DRI | Deridder |  | United States | + |
+| DRI | DeRidder |  | United States | + |
 | DSM | Des Moines |  | United States |  |
 | DSI | Destin |  | United States |  |
 | VPS | Destin |  | United States |  |
@@ -1567,7 +1567,6 @@ then by name.
 | GSP | Greenville |  | United States |  |
 | PGV | Greenville |  | United States |  |
 | GWO | Greenwood, MS |  | United States | + |
-| GUS | Grissom |  | United States | + |
 | GON | Groton |  | United States | + |
 | GUF | Gulf Shores |  | United States | + |
 | GPT | Gulfport |  | United States |  |
@@ -1950,6 +1949,7 @@ then by name.
 | PNS | Pensacola |  | United States |  |
 | PIA | Peoria |  | United States |  |
 | KPV | Perryville |  | United States |  |
+| GUS | Peru, IN |  | United States | + |
 | PSG | Petersburg |  | United States |  |
 | PHL | Philadelphia | Philadelphie | United States |  |
 | PNE | Philadelphia | Philadelphie | United States | + |

@@ -848,13 +848,14 @@ test('a name of the floor\'s table that CITY gives a place elsewhere is printed 
   const CITY_BY = byFold(CITY), CITY_FR_BY = byFold(CITY_FR);
   const namesakes = (c) => (CITY_BY.get(fold(PLACES.NAME[c])) || []).filter((d) => d !== c);
   const homonyms = Object.keys(PLACES.NAME).filter((c) => namesakes(c).length);
-  // (v24152: 212 with Ogle, named Georgetown as the city it serves)
-  assert.equal(homonyms.length, 212, 'the floor\'s names that CITY gives another place');
+  // (v24152: 213 with Ogle, named Georgetown as the city it serves, and
+  // Canefield, named Dominica as the island's main airport is)
+  assert.equal(homonyms.length, 213, 'the floor\'s names that CITY gives another place');
   assert.equal(Object.keys(PLACES.IN).length, 69);
-  // (v24152: 20 more carry where they are that this rule cannot find, IN_MORE:
+  // (v24152: 21 more carry where they are that this rule cannot find, IN_MORE:
   // their name is another place's of the table itself, and CITY gives it to
   // no one. inOf reads both; tests/americas-airport-names.test.js holds them.)
-  assert.equal(Object.keys(PLACES.IN_MORE).length, 20);
+  assert.equal(Object.keys(PLACES.IN_MORE).length, 21);
   for (const [c, w] of Object.entries(PLACES.IN_MORE)) { assert.ok(!homonyms.includes(c) && !own(PLACES.IN, c), c); assert.equal(PLACES.inOf(c), w); }
   // (and none more by CITY_FR's names)
   assert.deepEqual(Object.keys(PLACES.NAME).filter((c) => !homonyms.includes(c) && (CITY_FR_BY.get(fold(PLACES.NAME[c])) || []).some((d) => d !== c)), []);
@@ -870,14 +871,14 @@ test('a name of the floor\'s table that CITY gives a place elsewhere is printed 
       if (!/^(US|CA)-/.test(w) && CC[d]) assert.notEqual(CC[d], w, c + ' and ' + d + ' share a country');
     }
   }
-  // the 143 others are the city's own other airports: within 100 km of a
+  // the 144 others are the city's own other airports: within 100 km of a
   // place CITY gives the name, or in its country (Batajnica for Belgrade,
   // the Hong Kong heliport, Biggin Hill for London, Allegheny County for
   // Pittsburgh, North Island for San Diego)
   // (one the country table does not have: OurAirports puts Dejiang in
   // Guizhou with Tongren's other airport)
   const kept = homonyms.filter((c) => !own(PLACES.IN, c)), ccOf = (c) => CC[c] || { DEJ: 'CN' }[c];
-  assert.equal(kept.length, 143);
+  assert.equal(kept.length, 144);
   for (const c of kept) {
     const near = namesakes(c).some((d) => kmApart(coordsOf(c), coordsOf(d)) <= 100);
     assert.ok(near || namesakes(c).some((d) => CC[d] && CC[d] === ccOf(c)), c + ' ' + PLACES.NAME[c]);

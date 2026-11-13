@@ -513,6 +513,10 @@ test('names are cased the way they are written', () => {
   assert.equal(tc("L'ANSE-AU-LOUP"), "L'Anse-au-Loup");
   assert.equal(tc("ST. JOHN'S"), "St. John's");
   assert.equal(tc('FORT MCMURRAY'), 'Fort McMurray');
+  // (v24152: and the one town that writes a capital inside its name and is
+  // no Mc; tests/americas-airport-names.test.js holds that no other name of
+  // the tables has the word)
+  assert.equal(tc('DERIDDER'), 'DeRidder'); assert.equal(tc('DENVER'), 'Denver');
   // v23972 — small words between spaces too, never a first word
   assert.equal(tc('RIO DE JANEIRO'), 'Rio de Janeiro');
   assert.equal(tc('SANTA CRUZ DE LA SIERRA'), 'Santa Cruz de la Sierra');
