@@ -1,7 +1,7 @@
 /* THE ALGONQUIN RESORT, ST. ANDREWS BY-THE-SEA: a hotel page of the gate centre deck.
    Built by js/algonquin-card.js. Shown only where a flight goes to Moncton, or at Moncton.
 
-   Four views take turns in one slot of the deck, turned by the pager of the hotel cards
+   Five views take turns in one slot of the deck, turned by the pager of the hotel cards
    (each view is an .axr-page layer; hotel-ads.css gives the layer its place and its crossfade):
      today      the photograph of the resort with nothing over it, the name, the address,
                 the telephone and the road distance under it
@@ -11,6 +11,7 @@
                 each language
      story      the name, the heading pair, and a timeline: the years in one column, a fine
                 rule, one line for each year in each language of the board
+     guests     the same timeline under its own heading: the people the house has received
      scan       the name, the invitation, a large scan code in navy on the paper, the web address
 
    One ground on every view: cream paper, navy ink, fine gold rules, small bronze marks.
@@ -172,7 +173,8 @@
 .alq-credit .alq-sep{ margin:0 .5em; }
 .alq-credit.alq-stack > .alq-fit{ align-items:center; }
 
-/* THE STORY. The same cream sheet. Under the name and the heading pair, a timeline: the years
+/* THE STORY, AND THE GUESTS (the same build, two views). The same cream sheet. Under the name
+   and the heading pair, a timeline: the years
    in one column, in the face of the headings, set to the right against a fine rule that runs
    the height of the list; beside each year one line for each language of the board, each from
    the same left edge. The rows share the height of the view evenly. A line too long for its

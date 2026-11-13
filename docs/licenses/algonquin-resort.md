@@ -1,14 +1,14 @@
-# The Algonquin Resort page (gate centre deck, v24148; two watercolours and a timeline since v24149)
+# The Algonquin Resort page (gate centre deck, v24148; two watercolours and two timelines since v24149)
 
 A whole page for The Algonquin Resort, St. Andrews by-the-Sea, New Brunswick, in the centre
 deck of a gate screen: on a gate whose flight goes to Moncton (a stop there counts) and on every
-gate at Moncton. Four views take turns: the resort today, two watercolours of it (1990 and
-1994) side by side in gilt frames, a timeline of its story, and a scan code for the resort's
-site. Guest information, not an advertisement: no prices, no offer, no slogan.
+gate at Moncton. Five views take turns: the resort today, two watercolours of it (1990 and
+1994) side by side in gilt frames, a timeline of its story, a timeline of its notable guests,
+and a scan code for the resort's site. Guest information, not an advertisement: no prices, no offer, no slogan.
 
 Code: `fids-current/js/algonquin-card.js` (the page and its one data table, `ALGONQUIN_HOTEL`),
 `fids-current/css/algonquin-card.css`, four hooks in `fids-current/js/fids-core.js`
-(`AlgonquinCard` in the deck builder, the skip loop, the dwell and the preloader), eleven words in
+(`AlgonquinCard` in the deck builder, the skip loop, the dwell and the preloader), eighteen words in
 `fids-current/js/board-strings.js`. Test: `tests/algonquin-card.test.js`.
 
 ## The files
@@ -40,12 +40,35 @@ The Autograph Collection file in the foot is the one already in the site
   - 1915, rebuilt in Tudor Revival style after the fire of 1914. Canada's Historic Places (the
     present Tudor Revival building opened in the summer of 1915); the resort's About page; the
     fire was on 11 April 1914 and the hotel opened again on 15 June 1915.
-  - 1983, a reception at the hotel for Prince Charles and Princess Diana. St. Croix Courier,
-    22 June 1983 (a reception on 19 June during their tour; they did not stay the night); the
-    resort's About page.
+  - 1974, bought by the Government of New Brunswick. St. Croix Courier and Telegraph-Journal,
+    7 March 1974 (the Province, which had leased the hotel in 1973, bought it); some later
+    summaries say 1984, which the 1974 reports rule out.
+  - 1993, pictured on a Canadian postage stamp. Canada Post, 43-cent stamp of 14 June 1993,
+    one of five historic Canadian Pacific hotels in the set; the hotel company's release of
+    1 June 1993.
   - 2014, reopened after restoration as the first Autograph Collection hotel in Canada. The
     joint release of the owners and Marriott, March 2014; the resort's fact sheet (re-opened
     March 2014); the release of the Premier of New Brunswick, June 2014.
+- The timeline of the guests view, checked the same day. Each line says what the period
+  sources say and no more; the sources are the newspapers of the day as transcribed by the
+  local historian of the hotel (davidsullivan.ca) and his history of the hotel.
+  - 1889, Sir John A. Macdonald, Prime Minister, a guest in the first summer. St. Andrews
+    Beacon, 22 August 1889: he and Lady Macdonald were driven to the hotel, where rooms were
+    ready for them, and stayed in the town from 16 to 20 August.
+  - 1901, Lord Minto, Governor General, spent the night. Beacon, 8 August 1901.
+  - 1964, Lester B. Pearson, Prime Minister, arrived by helicopter for a banquet. St. Croix
+    Courier, 28 May 1964 (to speak at a convention banquet at the hotel on 20 June); the
+    history of the hotel, with a photograph of the arrival on the lawn.
+  - 1973, Pierre Trudeau, Prime Minister, dropped in with his family. The history of the hotel
+    (the bellman who showed them round); Courier, 23 August 1973 (an afternoon in the town;
+    back in Ottawa by midnight). A visit, not a stay.
+  - 1983, a reception at the hotel for Prince Charles and Princess Diana. St. Croix Courier,
+    22 June 1983 (a reception on 19 June during their tour; they did not stay the night); the
+    resort's About page.
+- Names often listed as guests and NOT on the page, because no dated record was found:
+  Theodore Roosevelt, Franklin D. Roosevelt, Lyndon B. Johnson, William Howard Taft, Queen
+  Elizabeth II, Sir William Van Horne as a guest. A "Winston Churchill" who signed the book
+  in 1942 was an American artist of that name.
 - Left off the page because the sources do not carry them: that the rebuilding took ten months
   (fire to reopening was fourteen), that the red roof dates from the rebuilding (the first
   hotel had one), a dollar figure for the restoration (30, 35 and 38.6 million are all in

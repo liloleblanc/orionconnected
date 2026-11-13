@@ -1,7 +1,7 @@
 /* THE ALGONQUIN RESORT, ST. ANDREWS BY-THE-SEA: a hotel page of the gate centre deck.
 
    A whole page for one resort, as the hotel cards are: it takes one slot of the centre deck of a
-   gate screen (the slide type is algonquin) and shows four views in turn:
+   gate screen (the slide type is algonquin) and shows five views in turn:
      today      the photograph of the resort, the name, the address, the telephone, the distance
                 by road from the airport of Moncton
      yesteryear the name, two watercolours of the resort (1990 and 1994), each whole in its own
@@ -9,6 +9,8 @@
                 under each picture its year and one of the uses the hotel made of it
      story      the name, the heading pair and a timeline: the years in one column, one line
                 for each year in each language of the board beside it
+     guests     the same timeline for the people the house has received, each with the year
+                and what the period sources say of the visit
      scan       the name, the invitation, a scan code for the site of the resort, the web address
    People fly to Moncton to drive to it, so the page is on a gate whose flight goes to Moncton
    (a stop there counts) and on every gate at Moncton, and nowhere else.
@@ -20,7 +22,7 @@
    and the menu write them. The name of the house heads each view; the painter is named in the
    credit, once in each language of the board.
    VIEWS: each view is an .axr-page layer inside an .axr-pages wrap, so the pager of the hotel
-   cards turns them (ten seconds a view, the last one held) and the language check reads all four.
+   cards turns them (ten seconds a view, the last one held) and the language check reads all five.
    LOOK: css/algonquin-card.css. The pictures are files of the site (assets/hotels/algonquin).
    The scan code is drawn here from a stored matrix, navy on the cream, with its quiet zone. */
 (function (root, factory) {
@@ -34,7 +36,7 @@
   // two watercolours, the dining room of the hotel as its 1990 menu names it (the older
   // watercolour was featured on one of its dinner menus), and two names the timeline says: the
   // railway that bought the hotel (it has a French name of its own) and the collection the hotel
-  // belongs to. Data: none of it is a word
+  // belongs to; and the names of four of its guests. Data: none of it is a word
   // to translate.
   var ALGONQUIN_HOTEL = {
     name: 'The Algonquin Resort',
@@ -46,7 +48,11 @@
     menuRoom: 'Passamaquoddy Dining Room',
     rail: 'Canadian Pacific',
     railFr: 'Canadien Pacifique',
-    brand: 'Autograph Collection'
+    brand: 'Autograph Collection',
+    guest1889: 'Sir John A. Macdonald',
+    guest1901: 'Lord Minto',
+    guest1964: 'Lester B. Pearson',
+    guest1973: 'Pierre Trudeau'
   };
   // The airport the distance is measured from, the road distance to the door in kilometres
   // (two routers agree), and the driving time the house publishes.
@@ -54,8 +60,8 @@
   var ROAD_KM = 265;
   var ROAD_HOURS = 2;
   var ROAD_MINUTES = 30;
-  // One slot of the deck: four views at the ten seconds of the pager, the last one held.
-  var DWELL_MS = 44000;
+  // One slot of the deck: five views at the ten seconds of the pager, the last one held.
+  var DWELL_MS = 54000;
 
   var PHOTO = '/assets/hotels/algonquin/resort-aerial.jpg';
   // The two watercolours, the older one first: the file (both are 1600 x 1073, so the two
@@ -72,8 +78,18 @@
     { year: '1889', say: 'algonquinStory1889' },
     { year: '1903', say: 'algonquinStory1903' },
     { year: '1915', say: 'algonquinStory1915' },
-    { year: '1983', say: 'algonquinStory1983' },
+    { year: '1974', say: 'algonquinStory1974' },
+    { year: '1993', say: 'algonquinStory1993' },
     { year: '2014', say: 'algonquinStory2014' }
+  ];
+  // The timeline of the guests view: the year, the key of the line, and the entry of the table
+  // that holds the name of the guest (the last line names its two guests in its own words).
+  var GUESTS = [
+    { year: '1889', say: 'algonquinGuest1889', who: 'guest1889' },
+    { year: '1901', say: 'algonquinGuest1901', who: 'guest1901' },
+    { year: '1964', say: 'algonquinGuest1964', who: 'guest1964' },
+    { year: '1973', say: 'algonquinGuest1973', who: 'guest1973' },
+    { year: '1983', say: 'algonquinGuest1983' }
   ];
   // the Autograph Collection file of the site; the view trims its empty canvas only
   var BRAND_FILE = '/logos/hotels/marriott/autograph-collection.svg';
@@ -235,14 +251,23 @@
       + '<div class="alq-labels">' + labels + '</div>'
       + '</div>';
 
-    // STORY: the timeline
-    var rows = STORY.map(function (t) {
-      return '<span class="alq-yr">' + esc(t.year) + '</span>'
-        + '<span class="alq-ev">' + pairOf(L, function (lg) { return BS.fmt(t.say, lg, { RAIL: lg === 'fr' ? H.railFr : H.rail, BRAND: H.brand }, true); }, t.say) + '</span>';
-    }).join('');
+    // STORY and GUESTS: two timelines of the same build
+    var timeline = function (list) {
+      return list.map(function (t) {
+        return '<span class="alq-yr">' + esc(t.year) + '</span>'
+          + '<span class="alq-ev">' + pairOf(L, function (lg) {
+            return BS.fmt(t.say, lg, { RAIL: lg === 'fr' ? H.railFr : H.rail, BRAND: H.brand, WHO: t.who ? H[t.who] : '' }, true);
+          }, t.say) + '</span>';
+      }).join('');
+    };
     var story = '<div class="alq-hero">' + name
       + '<div class="alq-era alq-pairfit"><span class="alq-fit">' + era + '</span></div>'
-      + '<div class="alq-time">' + rows + '</div>'
+      + '<div class="alq-time">' + timeline(STORY) + '</div>'
+      + '</div>';
+    var guestsHead = pairOf(L, function (lg) { return BS.bs('hotelNotableGuests', lg); });
+    var guests = '<div class="alq-hero">' + name
+      + '<div class="alq-era alq-pairfit"><span class="alq-fit">' + guestsHead + '</span></div>'
+      + '<div class="alq-time">' + timeline(GUESTS) + '</div>'
       + '</div>';
 
     // SCAN
@@ -259,6 +284,7 @@
       +   '<div class="axr-page axr-page-on alq-view alq--today">' + today + band + '</div>'
       +   '<div class="axr-page alq-view alq--then">' + then + band + '</div>'
       +   '<div class="axr-page alq-view alq--story">' + story + band + '</div>'
+      +   '<div class="axr-page alq-view alq--story alq--guests">' + guests + band + '</div>'
       +   '<div class="axr-page alq-view alq--scan">' + scan + band + '</div>'
       + '</div></div>';
   }
