@@ -65299,8 +65299,16 @@ var HERITAGE_MARKS = [
     // lockup, every shape identical, filled in the 1980 red: the earlier
     // export had its letters a fifth of a cap height below the centre of
     // the ring and softer outlines. The two marks differ only in colour.
+    // v24149 — THE SUPPLIED FAMILY OF MARKS. A matching set was supplied for
+    // each of the two schemes (the wordmark alone, the rondelle beside the
+    // wordmark, the rondelle alone), and the lockups of that set are now the
+    // marks of the cards: ACLOGO-1980-2.svg here, on the 1980 767 and on the
+    // 1980 DC-8, ACLOGO-1965.svg on the 1965 DC-8. They are used as supplied.
+    // They are two drawings, not one drawing in two colours: the rondelle is
+    // smaller than before and the space before AIR is a little wider on the
+    // 1980 one. The lockups of v24137 stay on disk, used by nothing.
     key: 'air-canada-caps',
-    file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
+    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc9-ac80.png',
     airports: '*CA'
@@ -65353,7 +65361,7 @@ var HERITAGE_MARKS = [
     // hand by staff of the period). It is named by the year it came in; the year
     // it went out is not printed, because the sources give 1987 and 1992-94.
     key: 'air-canada-767',
-    file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
+    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-767.png',
     credit: true,
@@ -65427,8 +65435,11 @@ var HERITAGE_MARKS = [
     // counters came as white shapes clipped inside each letter and are cut
     // as true holes instead, so the card ground shows through them. The red
     // bitmap stays on disk, used by nothing.
+    // v24149 — now the 1965 lockup of the supplied family (ACLOGO-1965.svg,
+    // black lettering beside the red rondelle), as supplied: see the note on
+    // the caps card.
     key: 'air-canada-dc8',
-    file: '/logos/advertisements/retro-airlines/AC-1965-LOGO.svg',
+    file: '/logos/advertisements/retro-airlines/ACLOGO-1965.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc8.png',
     airports: '*CA'
@@ -65573,7 +65584,7 @@ var HERITAGE_MARKS = [
     // Apart from the 1965 DC-8 in the rotation on purpose, as the two 767s
     // and the two TriStars are.
     key: 'air-canada-dc8-80',
-    file: '/logos/advertisements/retro-airlines/AC-1980-LOGO.svg',
+    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-dc8-ac80.png',
     airports: '*CA'

@@ -287,7 +287,7 @@ test('every card that names its own aeroplane has the file on disk', () => {
   assert.equal(byK['air-canada-caps'].aircraft, '/aircraft/heritage/air-canada-dc9-ac80.png');
   assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current', 'aircraft', 'heritage', 'air-canada-dc9-ac80.svg')),
     'the replaced caps SVG is not left on disk: nothing uses it');
-  assert.match(byK['air-canada-caps'].file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark (v24021)');
+  assert.match(byK['air-canada-caps'].file, /retro-airlines\/ACLOGO-1980-2\.svg$/, 'the 1980 livery carries the 1980 lockup of the supplied family (v24149)');
   // v24082 — the third DC-9 card: the 1993 livery with the 1993 mark.
   assert.equal(byK['air-canada-dc9-93'].aircraft, '/aircraft/heritage/air-canada-dc9-ac93.png');
   assert.match(byK['air-canada-dc9-93'].file, /retro-airlines\/AC-1993-LOGO\.svg$/, 'the 1993 livery carries the 1993 mark');
@@ -371,7 +371,7 @@ test('the 767 card: the capitals livery and mark, a year every source agrees on,
   const m = byK['air-canada-767'];
   assert.ok(m, 'the 767 card exists');
   assert.equal(m.aircraft, '/aircraft/heritage/air-canada-767.png');
-  assert.match(m.file, /AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark, as the caps DC-9 card does');
+  assert.match(m.file, /retro-airlines\/ACLOGO-1980-2\.svg$/, 'the 1980 livery carries the 1980 mark, as the caps DC-9 card does');
   assert.equal(m.airports, '*CA');
   assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''))), 'the picture is on disk');
   for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
@@ -428,7 +428,7 @@ test('the DC-8 card: the -61 drawn, its own checked years, the 1965 livery and t
   const m = byK['air-canada-dc8'];
   assert.ok(m, 'the DC-8 card exists');
   assert.equal(m.aircraft, '/aircraft/heritage/air-canada-dc8.png');
-  assert.match(m.file, /retro-airlines\/AC-1965-LOGO\.svg$/, 'the supplied 1965 lockup, black lettering beside the red rondelle (v24137)');
+  assert.match(m.file, /retro-airlines\/ACLOGO-1965\.svg$/, 'the supplied 1965 lockup, black lettering beside the red rondelle (v24149: the one of the supplied family)');
   assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'fids-current', m.file), 'utf8'), /fill="#f[0-9a-f]{5}"|clipPath/, 'its letter counters are holes, not white shapes clipped inside the letters');
   assert.equal(m.airports, '*CA');
   assert.ok(!m.credit, 'a supplied drawing: no credit line');
@@ -454,7 +454,7 @@ test('the second DC-8 card: the -63 drawn, its own checked years, the 1980 liver
   const m = byK['air-canada-dc8-80'];
   assert.ok(m, 'the DC-8-63 card exists');
   assert.equal(m.aircraft, '/aircraft/heritage/air-canada-dc8-ac80.png');
-  assert.match(m.file, /retro-airlines\/AC-1980-LOGO\.svg$/, 'the 1980 livery carries the 1980 mark');
+  assert.match(m.file, /retro-airlines\/ACLOGO-1980-2\.svg$/, 'the 1980 livery carries the 1980 mark');
   assert.equal(m.airports, '*CA');
   assert.ok(!m.credit, 'a supplied drawing: no credit line');
   for (const f of [m.aircraft, m.file]) {
@@ -585,22 +585,37 @@ test('the Future Retro DC-9 is three cards or more from every other DC-9, and on
   assert.equal(gate({ flight: 'AC880', airline: 'AC' }, { iata: 'ZRH' }).render({ innerHTML: '' }), false, 'and an Air Canada gate abroad shows nothing');
 });
 
-test('the 1965 and 1980 lockups are one drawing: identical shapes and frame, black or red', () => {
-  // v24137 — the two Air Canada DC-8 cards alternate in the rotation, so their marks must sit alike;
-  // the 1980 lockup is the 1965 drawing filled in the 1980 red, nothing else differs.
-  const read = (f) => fs.readFileSync(path.join(ROOT, 'fids-current', 'logos', 'advertisements', 'retro-airlines', f), 'utf8');
-  const a = read('AC-1965-LOGO.svg'), b = read('AC-1980-LOGO.svg');
-  for (const s of [a, b]) assert.match(s, /viewBox="0 0 5644\.65 854\.36"/, 'one frame for both');
-  // The drawing is the sequence of shape and group tags; comments and the root tag are not compared.
-  const geometry = (s) => (s.match(/<\/?(?:g|path|circle|ellipse|rect|polygon|polyline|line)\b[^>]*>/g) || []).join('\n').replace(/fill="#[0-9a-f]{6}"/g, 'fill="X"');
-  assert.ok(geometry(a).split('\n').length > 12, 'the lockup has its ring, nine letters and three groups');
-  assert.equal(geometry(a), geometry(b), 'the same shapes, transforms and order: only the fills differ');
-  assert.equal((b.match(/fill="#f7191b"/g) || []).length, 10, 'the 1980 lockup is all the 1980 red');
-  assert.match(a, /fill="#c51212"/, 'the 1965 rondelle red');
-  assert.equal((a.match(/fill="#(1f1f1f|202020|212121|232323)"/g) || []).length, 9, 'nine black letters on the 1965 lockup');
-  assert.match(a, /translate\(412\.6 412\.6\) scale\(2\.91384\)/, 'the ring 825.2 wide from the corner');
-  assert.match(a, /translate\(952\.9 412\.6\) scale\(3\.06259\)/, 'AIR from x 952.9 at the cap height of the I, centred on the ring');
-  for (const s of [a, b]) assert.doesNotMatch(s, /fill="#f[0-9a-f]f[0-9a-f]f[0-9a-f]"|clipPath/, 'no white counters (f8f8f8 and the like), no clip paths');
+test('the supplied family of Air Canada marks: three of each scheme, used as supplied', () => {
+  // v24149 — a matching set was supplied for the 1965 and the 1980 schemes: the wordmark alone,
+  // the rondelle beside the wordmark, the rondelle alone. The lockups are the marks of the cards.
+  // They are used as supplied: nothing in them is redrawn or recoloured here.
+  const dir = path.join(ROOT, 'fids-current', 'logos', 'advertisements', 'retro-airlines');
+  const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
+  const fills = (s) => (s.match(/fill="#[0-9a-f]{6}"/g) || []);
+  const FAMILY = ['AC-RONDELLE-1965.svg', 'ACWORDMARK-1965.svg', 'ACLOGO-1965.svg', 'ACWORDMARK-1980.svg', 'ACLOGO1980.svg', 'ACLOGO-1980-2.svg'];
+  for (const f of FAMILY) {
+    const s = read(f);
+    assert.match(s, /<svg[^>]*viewBox="[^"]+"/, f + ' has a frame');
+    assert.doesNotMatch(s, /<script|<image|<style|clipPath|fill="#f[0-9a-f]f[0-9a-f]f[0-9a-f]"/i, f + ': shapes only, no white counters, no clip paths, no style block');
+  }
+  // the two wordmarks stand in one frame, black in 1965 and red in 1980
+  const frame = (s) => /viewBox="([^"]+)"/.exec(s)[1];
+  assert.equal(frame(read('ACWORDMARK-1965.svg')), frame(read('ACWORDMARK-1980.svg')), 'one frame for the two wordmarks');
+  assert.equal(fills(read('ACWORDMARK-1965.svg')).length, 9);
+  assert.equal(fills(read('ACWORDMARK-1980.svg')).length, 9);
+  assert.deepEqual([...new Set(fills(read('ACWORDMARK-1965.svg')))], ['fill="#000000"']);
+  assert.deepEqual([...new Set(fills(read('ACWORDMARK-1980.svg')))], ['fill="#d31500"']);
+  // the lockups on the cards: nine black letters and a red rondelle in 1965, all red in 1980
+  const a = read('ACLOGO-1965.svg'), b = read('ACLOGO-1980-2.svg');
+  assert.equal(fills(a).filter((x) => x === 'fill="#000000"').length, 9, 'nine black letters on the 1965 lockup');
+  assert.equal(fills(a).filter((x) => x !== 'fill="#000000"').length, 1, 'and its one red rondelle');
+  assert.equal(fills(b).length, 10, 'the 1980 lockup: the rondelle and nine letters');
+  assert.deepEqual([...new Set(fills(b))], ['fill="#d31500"'], 'all in the one red');
+  // the lockups of v24137 are still on disk, and no card uses them
+  for (const f of ['AC-1965-LOGO.svg', 'AC-1980-LOGO.svg']) {
+    assert.ok(fs.existsSync(path.join(dir, f)), f + ' is kept');
+    assert.ok(!marks().some((m) => String(m.file).endsWith('/' + f)), f + ' is on no card');
+  }
 });
 
 test('the two TriStar cards: the long body drawn, its checked years, each livery with its own mark', () => {
