@@ -119,10 +119,19 @@ test('the change is Air France alone: the letterforms are still inked white', ()
 });
 
 test('the caption re-point pass reads the same list', () => {
-  // The Your Aircraft card is rebuilt once the operator is known, and that
-  // pass strips or re-adds the white-force by the same list.
-  const at = SRC.indexOf("if (_orbFixPng || (window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_orbArtCode]))");
-  assert.ok(at > 0, 'the re-point pass drops the invert for a colour-keeping emblem');
-  assert.ok(SRC.indexOf("&& !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_orbArtCode])", at) > at,
-    'and never re-adds it for one');
+  // The Your Aircraft card is rebuilt once the operator is known. That pass used to strip or re-add the
+  // white-force itself, by the list. It now asks the one function that writes the orb
+  // (window._gateCardOrb), which asks the recipe above: one list, read in one place.
+  const at = SRC.indexOf("var _opOrb = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(_opCode) : _opCode;");
+  assert.ok(at > 0, 'the re-point pass');
+  const pass = SRC.slice(at, SRC.indexOf('} catch (e) {}', at));
+  assert.match(pass, /var _opCardOrb = window\._gateCardOrb\(_mktCode6, _opCode\);/, 'the pass asks for the orb of the operator');
+  assert.doesNotMatch(pass, /_CARD_COLOR_EMBLEMS|invert\(1\)/, 'and keeps no list and no filter of its own');
+  const a = SRC.indexOf('window._gateCardOrb = function');
+  assert.ok(a > 0);
+  const fn = SRC.slice(a, closeBrace(a));
+  assert.match(fn, /window\._gateOrbParts\(/, 'the one function asks the recipe, which reads the list');
+  assert.doesNotMatch(fn, /_CARD_COLOR_EMBLEMS/);
+  // a white-force is only ever taken off there (on a disc where white would not read), never added
+  assert.doesNotMatch(fn, /\+ 'filter:brightness\(0\) invert\(1\);'/);
 });

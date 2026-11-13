@@ -10,9 +10,19 @@
 // reads it: every svg in fids-current/logos/airline-tiles is sampled round
 // the circle the orb crops it to (at 98% and at 95% of the radius), and a
 // tile whose rim is one opaque colour all the way round is listed with that
-// colour. A tile with a split ground, a clear surround or a rim the mark
-// crosses is left out: its gate needs a decision by hand
-// (window._GATE_ORB_LOOKS in fids-core.js).
+// colour. A tile with a split ground, a clear surround, a rim the mark
+// crosses or a rim painted by a gradient is left out: its gate needs a
+// decision by hand (window._GATE_ORB_LOOKS in fids-core.js).
+//
+// A gradient is one colour only when all its opaque stops are within 6 of
+// each other (CIEDE2000). The sampler reads a fill, not a ramp: it took the
+// middle stop for the whole shape, so the Wizz tile (magenta down to blue)
+// and the Qantas tile (two reds 11 apart) were listed as one flat ground that
+// most of their rim is not.
+//
+// The same pass writes window._ORB_TILE_LETTERS: the tiles that are a flat
+// square with a code set as svg text (a placeholder, not an emblem) and the
+// code each one letters. The gate draws such a tile only for that code.
 //
 //   node scripts/orbs/tile-grounds.js           rewrite the table in place
 //   node scripts/orbs/tile-grounds.js --check   exit 1 if table and art differ
@@ -63,6 +73,40 @@ function styleProp(tag, prop) {
   if (!s) return undefined;
   const m = s.match(new RegExp('(?:^|;)\\s*' + prop + '\\s*:\\s*([^;]+)', 'i'));
   return m ? m[1].trim() : undefined;
+}
+
+// ── colour difference (CIEDE2000) ───────────────────────────────────────
+const RAMP_DE = 6;
+function lab(h) {
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(h.slice(i, i + 2), 16)));
+  const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const X = f((r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047), Y = f(r * 0.2126 + g * 0.7152 + b * 0.0722), Z = f((r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883);
+  return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+}
+function dE(a, b) {
+  const [L1, a1, b1] = lab(a), [L2, a2, b2] = lab(b), rad = Math.PI / 180;
+  const Cb = (Math.hypot(a1, b1) + Math.hypot(a2, b2)) / 2;
+  const G = 0.5 * (1 - Math.sqrt(Math.pow(Cb, 7) / (Math.pow(Cb, 7) + Math.pow(25, 7))));
+  const a1p = (1 + G) * a1, a2p = (1 + G) * a2, C1 = Math.hypot(a1p, b1), C2 = Math.hypot(a2p, b2);
+  const hue = (x, y) => { if (x === 0 && y === 0) return 0; const t = Math.atan2(y, x) / rad; return t < 0 ? t + 360 : t; };
+  const h1 = hue(a1p, b1), h2 = hue(a2p, b2);
+  let dh = 0;
+  if (C1 * C2 !== 0) { dh = h2 - h1; if (dh > 180) dh -= 360; else if (dh < -180) dh += 360; }
+  const dH = 2 * Math.sqrt(C1 * C2) * Math.sin(dh * rad / 2), Lb = (L1 + L2) / 2, Cm = (C1 + C2) / 2;
+  let hb = h1 + h2;
+  if (C1 * C2 !== 0) hb = Math.abs(h1 - h2) > 180 ? (h1 + h2 + (h1 + h2 < 360 ? 360 : -360)) / 2 : (h1 + h2) / 2;
+  const T = 1 - 0.17 * Math.cos((hb - 30) * rad) + 0.24 * Math.cos(2 * hb * rad) + 0.32 * Math.cos((3 * hb + 6) * rad) - 0.20 * Math.cos((4 * hb - 63) * rad);
+  const Rc = 2 * Math.sqrt(Math.pow(Cm, 7) / (Math.pow(Cm, 7) + Math.pow(25, 7)));
+  const Sl = 1 + 0.015 * Math.pow(Lb - 50, 2) / Math.sqrt(20 + Math.pow(Lb - 50, 2)), Sc = 1 + 0.045 * Cm, Sh = 1 + 0.015 * Cm * T;
+  const Rt = -Math.sin(2 * 30 * Math.exp(-Math.pow((hb - 275) / 25, 2)) * rad) * Rc;
+  return Math.sqrt(Math.pow((L2 - L1) / Sl, 2) + Math.pow((C2 - C1) / Sc, 2) + Math.pow(dH / Sh, 2) + Rt * ((C2 - C1) / Sc) * (dH / Sh));
+}
+// How far apart the colours of a list are: the largest difference between any two.
+function spread(colours) {
+  let d = 0;
+  for (let i = 0; i < colours.length; i++) for (let j = i + 1; j < colours.length; j++) d = Math.max(d, dE(colours[i], colours[j]));
+  return d;
 }
 
 // ── transforms ──────────────────────────────────────────────────────────
@@ -284,20 +328,29 @@ function build(txt) {
     let fill = st.fill;
     if (fill === undefined) fill = '#000000';
     if (fill === null) continue;
+    // A gradient is read as its middle stop, and marked as a ramp when its opaque stops are
+    // not one colour: a rim that lands on a ramp has no single ground.
+    let ramp = false;
     if (typeof fill === 'string' && fill.startsWith('url:')) {
       const s = grads[fill.slice(4)];
       fill = s ? s[Math.floor(s.length / 2)] : '#808080';
       if (fill === null) continue;
+      ramp = !s || spread(s.filter(Boolean)) >= RAMP_DE;
     }
     if (st.op < 0.35) continue;
-    shapes.push({ fill, rule: (st.rule || 'nonzero').trim(), polys: shapePolys(name, tag).map((p) => p.map((q) => apply(M, q))) });
+    shapes.push({ fill, ramp, rule: (st.rule || 'nonzero').trim(), polys: shapePolys(name, tag).map((p) => p.map((q) => apply(M, q))) });
   }
   return { shapes, vb };
 }
+// The shape painted on top at a point, or null where the drawing is clear.
+function shapeAt(model, x, y) {
+  let hit = null;
+  for (const s of model.shapes) if (inside(s, x, y)) hit = s;
+  return hit;
+}
 function colourAt(model, x, y) {
-  let c = null;
-  for (const s of model.shapes) if (inside(s, x, y)) c = s.fill;
-  return c;
+  const s = shapeAt(model, x, y);
+  return s ? s.fill : null;
 }
 
 // The colour painted round the rim of the circle the orb crops a tile to,
@@ -312,8 +365,12 @@ function rimGround(txt) {
     const seen = {};
     for (let k = 0; k < RIM_SAMPLES; k++) {
       const a = k / RIM_SAMPLES * 2 * Math.PI;
-      const c = colourAt(m, cx + Math.cos(a) * R * rf, cy + Math.sin(a) * R * rf);
-      if (c) seen[c] = (seen[c] || 0) + 1;
+      const s = shapeAt(m, cx + Math.cos(a) * R * rf, cy + Math.sin(a) * R * rf);
+      if (!s) continue;
+      // a sample on a ramp is counted as a ramp, never as the middle stop it was read as: where the
+      // ramp is what the rim is painted in, the tile has no single ground (the last line refuses it)
+      const key = s.ramp ? 'ramp' : s.fill;
+      seen[key] = (seen[key] || 0) + 1;
     }
     const top = Object.entries(seen).sort((p, q) => q[1] - p[1])[0];
     if (!top || top[1] / RIM_SAMPLES < share) return null;
@@ -334,13 +391,35 @@ function tileGrounds() {
   return out;
 }
 
-function render(table) {
-  const keys = Object.keys(table).sort();
-  const rows = [];
-  for (let i = 0; i < keys.length; i += 6) {
-    rows.push('  ' + keys.slice(i, i + 6).map((k) => "'" + k + "':'" + table[k] + "'").join(', ') + (i + 6 < keys.length ? ',' : ''));
+// The code a placeholder tile letters: a tile whose only words are one svg text holding two or
+// three capitals or digits (PSC.svg prints BQ, NAX.svg prints DY), or '' for a drawn tile.
+function lettersOf(txt) {
+  const texts = [...txt.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi)].map((m) => m[1].replace(/<[^>]*>/g, '').trim());
+  return (texts.length === 1 && /^[A-Z0-9]{2,3}$/.test(texts[0])) ? texts[0] : '';
+}
+function tileLetters() {
+  const out = {};
+  for (const f of fs.readdirSync(TILES).sort()) {
+    if (!/\.svg$/i.test(f)) continue;
+    let l = '';
+    try { l = lettersOf(fs.readFileSync(path.join(TILES, f), 'utf8')); } catch (e) { l = ''; }
+    if (l) out[f.replace(/\.svg$/i, '')] = l;
   }
-  return BEGIN + '\nwindow._ORB_TILE_GROUNDS = {\n' + rows.join('\n') + '\n};\n' + END;
+  return out;
+}
+
+function rows(table) {
+  const keys = Object.keys(table).sort();
+  const out = [];
+  for (let i = 0; i < keys.length; i += 6) {
+    out.push('  ' + keys.slice(i, i + 6).map((k) => "'" + k + "':'" + table[k] + "'").join(', ') + (i + 6 < keys.length ? ',' : ''));
+  }
+  return out.join('\n');
+}
+function render(table, letters) {
+  return BEGIN + '\nwindow._ORB_TILE_GROUNDS = {\n' + rows(table) + '\n};\n'
+    + '// The tiles that are a flat square with a code set as text, and the code each one letters.\n'
+    + 'window._ORB_TILE_LETTERS = {\n' + rows(letters || {}) + '\n};\n' + END;
 }
 
 function readBlock(core) {
@@ -349,15 +428,15 @@ function readBlock(core) {
   return { a, b: b + END.length, text: core.slice(a, b + END.length) };
 }
 
-module.exports = { tileGrounds, rimGround, build, colourAt, render, readBlock, BEGIN, END, CORE, TILES };
+module.exports = { tileGrounds, tileLetters, lettersOf, rimGround, build, colourAt, shapeAt, dE, spread, render, readBlock, BEGIN, END, CORE, TILES };
 
 if (require.main === module) {
   const core = fs.readFileSync(CORE, 'utf8');
   const blk = readBlock(core);
   if (!blk) { console.error('markers not found in fids-core.js'); process.exit(2); }
-  const want = render(tileGrounds());
+  const want = render(tileGrounds(), tileLetters());
   if (process.argv.includes('--check')) {
-    if (blk.text !== want) { console.error('window._ORB_TILE_GROUNDS is not what the tiles on disk give: run node scripts/orbs/tile-grounds.js'); process.exit(1); }
+    if (blk.text !== want) { console.error('window._ORB_TILE_GROUNDS and window._ORB_TILE_LETTERS are not what the tiles on disk give: run node scripts/orbs/tile-grounds.js'); process.exit(1); }
     console.log('tile grounds: table and art agree');
   } else if (blk.text !== want) {
     fs.writeFileSync(CORE, core.slice(0, blk.a) + want + core.slice(blk.b));

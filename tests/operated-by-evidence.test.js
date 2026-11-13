@@ -478,7 +478,11 @@ test('Air Canada Express in a round orb is Air Canada\'s roundel, never the lett
   assert.match(CORE, /_mcOrbOp = _orbEmblemCarrier\(_mcOrbOp\);/, 'arrival card orb');
   assert.match(CORE, /_niCode = _orbEmblemCarrier\(_niCode\);/, 'inbound "Your Aircraft" orb');
   assert.match(CORE, /var _opOrb = \(typeof _orbEmblemCarrier === 'function'\) \? _orbEmblemCarrier\(_opCode\) : _opCode;/, 'caption orb repaint');
-  assert.match(CORE, /_airlineOrbEmblem\(_opOrb\)/);
+  // the repaint asks the one function that writes the Your Aircraft orb, which folds the code itself
+  // (it is handed the code as the evidence gives it, so a placeholder tile is never drawn for another code)
+  assert.match(CORE, /if \(_opOrb && _inboundCard && _inboundCard\.indexOf\('v2-fi-orb'\) !== -1\) \{/);
+  assert.match(CORE, /var _opCardOrb = window\._gateCardOrb\(_mktCode6, _opCode\);/);
+  assert.match(CORE, /window\._gateCardOrb = function \(gateCode, opCode\) \{[\s\S]{0,400}?_orbEmblemCarrier\(v\)/);
   assert.doesNotMatch(CORE, /_airlineOrbEmblem\(_opCode\)/, 'no orb resolves the raw operator code');
 });
 
