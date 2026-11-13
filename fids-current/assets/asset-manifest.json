@@ -2,9 +2,9 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2890,
+    "total": 2902,
     "by_category": {
-      "ad": 15,
+      "ad": 21,
       "airline": 1181,
       "background": 193,
       "brand": 5,
