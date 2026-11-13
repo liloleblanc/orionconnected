@@ -957,7 +957,7 @@ window.FIDS_SHARED_AIRLINE = {
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
   'JV':'BEARSKIN',    'WT':'WASAYA',      'NSA':'NORTH STAR AIR',
   'QK':'AIR CANADA',  'RV':'AIR CANADA',  'ZX':'AIR CANADA',
-  '9M':'AIR CANADA',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
+  '9M':'CENTRAL MOUNTAIN AIR',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
   'RJ':'ROYAL JORDANIAN',
   '9X':'MOKULELE',    'W8':'CARGOJET',
   'UA':'UNITED',      'DL':'DELTA',       'AA':'AMERICAN',    'WN':'SOUTHWEST',
@@ -1002,7 +1002,7 @@ window.FIDS_SHARED_AIRLINE = {
   'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows that rendered as raw codes in the app */
   '4T':'RISE AIR',    'LR':'LACSA',        'BM':'BMI',
   'BG':'BIMAN',        'DO':'SKY HIGH',
-  'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
+  'LY':'EL AL',       'TN':'AIR TAHITI NUI', 'NF':'AIR VANUATU',  'FJ':'FIJI',
   'PX':'AIR NIUGINI', 'KO':'ACE CARGO',
 };
 
@@ -1041,95 +1041,290 @@ window.FIDS_SHARED_OFF_BOARD_NAMES = [
   'tradewind aviation', 'tradewind'
 ];
 
-// The boards' wordmark art per carrier — [forLightBg(dark ink), forDarkBg(light ink)],
-// resolved from fids-core's IATA_TO_WORDMARK + LOGO_SUBFOLDER against the real files.
+// THE BOARD'S LETTERING TABLE, WHOLE. Every code of fids-core.js IATA_TO_WORDMARK, as
+// [the cut for a light ground, the cut for a dark one]: what the board's own wordmarkSrc
+// answers for 'dark' (the airline's colour cut where it has one, else its dark lettering)
+// and for 'light' (its white lettering), without the build query. It was a hand copy of 49
+// carriers that nothing held, and it had fallen 46 behind: the phone typed Lufthansa, Swiss,
+// Emirates and easyJet where the board drew their lettering, and drew Alaska, Air France and
+// KLM in black where the board draws their colours. tests/companion-app.test.js makes the
+// table again from fids-core.js and fails the moment the two differ; a row added to or taken
+// from IATA_TO_WORDMARK is added or taken here in the same commit.
 window.FIDS_SHARED_WORDMARK = {
+"GM": [
+"/logos/airlines/european/chair-wordmark-dark.svg",
+"/logos/airlines/european/chair-wordmark-light.svg"
+],
+"LX": [
+"/logos/airlines/european/swiss-wordmark-dark.svg",
+"/logos/airlines/european/swiss-wordmark-light.svg"
+],
+"WK": [
+"/logos/airlines/european/edelweiss-wordmark-dark.svg",
+"/logos/airlines/european/edelweiss-wordmark-light.svg"
+],
+"NZ": [
+"/logos/airlines/asian-other/NZ-wordmark-dark.svg",
+"/logos/airlines/asian-other/NZ-wordmark-light.svg"
+],
+"4N": [
+"/logos/airlines/canadian-regional/airnorth-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/airnorth-wordmark-light.svg"
+],
+"YN": [
+"/logos/airlines/canadian-regional/air-creebec-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/air-creebec-wordmark-light.svg"
+],
+"5T": [
+"/logos/airlines/canadian-regional/canadian-north-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/canadian-north-wordmark-light.svg"
+],
+"MPE": [
+"/logos/airlines/canadian-regional/canadian-north-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/canadian-north-wordmark-light.svg"
+],
+"AZ": [
+"/logos/airlines/european/ita-airways-wordmark-dark.svg",
+"/logos/airlines/european/ita-airways-wordmark-light.svg"
+],
+"HV": [
+"/logos/airlines/european/transavia-wordmark-dark.svg",
+"/logos/airlines/european/transavia-wordmark-light.svg"
+],
+"TO": [
+"/logos/airlines/european/transavia-wordmark-dark.svg",
+"/logos/airlines/european/transavia-wordmark-light.svg"
+],
+"U2": [
+"/logos/airlines/european/easyjet-wordmark-dark.svg",
+"/logos/airlines/european/easyjet-wordmark-light.svg"
+],
+"EZY": [
+"/logos/airlines/european/easyjet-wordmark-dark.svg",
+"/logos/airlines/european/easyjet-wordmark-light.svg"
+],
+"EC": [
+"/logos/airlines/european/easyjet-wordmark-dark.svg",
+"/logos/airlines/european/easyjet-wordmark-light.svg"
+],
+"EJU": [
+"/logos/airlines/european/easyjet-wordmark-dark.svg",
+"/logos/airlines/european/easyjet-wordmark-light.svg"
+],
+"EZS": [
+"/logos/airlines/european/easyjet-wordmark-dark.svg",
+"/logos/airlines/european/easyjet-wordmark-light.svg"
+],
+"CJ": [
+"/logos/airlines/european/british-airways-wordmark-color.svg",
+"/logos/airlines/european/british-airways-wordmark-light.svg"
+],
+"LY": [
+"/logos/airlines/european/elal-wordmark-dark.svg",
+"/logos/airlines/european/elal-wordmark-light.svg"
+],
+"EY": [
+"/logos/airlines/asian-other/etihad-wordmark-dark.svg",
+"/logos/airlines/asian-other/etihad-wordmark-light.svg"
+],
+"EK": [
+"/logos/airlines/asian-other/emirates-wordmark-dark.svg",
+"/logos/airlines/asian-other/emirates-wordmark-light.svg"
+],
+"QR": [
+"/logos/airlines/asian-other/qatar-airways-wordmark-dark.svg",
+"/logos/airlines/asian-other/qatar-airways-wordmark-light.svg"
+],
+"QTR": [
+"/logos/airlines/asian-other/qatar-airways-wordmark-dark.svg",
+"/logos/airlines/asian-other/qatar-airways-wordmark-light.svg"
+],
+"CS": [
+"/logos/airlines/european/chair-wordmark-dark.svg",
+"/logos/airlines/european/chair-wordmark-light.svg"
+],
+"2L": [
+"/logos/airlines/european/helvetic-wordmark-dark.svg",
+"/logos/airlines/european/helvetic-wordmark-light.svg"
+],
+"IB": [
+"/logos/airlines/european/iberia-wordmark-dark.svg",
+"/logos/airlines/european/iberia-wordmark-light.svg"
+],
+"I2": [
+"/logos/airlines/european/iberia-wordmark-dark.svg",
+"/logos/airlines/european/iberia-wordmark-light.svg"
+],
+"DE": [
+"/logos/airlines/european/condor-wordmark-dark.svg",
+"/logos/airlines/european/condor-wordmark-light.svg"
+],
+"LH": [
+"/logos/airlines/european/lufthansa-wordmark-dark.svg",
+"/logos/airlines/european/lufthansa-wordmark-light.svg"
+],
+"OS": [
+"/logos/airlines/european/austrian-wordmark-dark.svg",
+"/logos/airlines/european/austrian-wordmark-light.svg"
+],
+"SK": [
+"/logos/airlines/european/sas-wordmark-dark.svg",
+"/logos/airlines/european/sas-wordmark-light.svg"
+],
+"EW": [
+"/logos/airlines/european/eurowings-wordmark-dark.svg",
+"/logos/airlines/european/eurowings-wordmark-light.svg"
+],
+"A3": [
+"/logos/airlines/european/aegean-wordmark-dark.svg",
+"/logos/airlines/european/aegean-wordmark-light.svg"
+],
+"PC": [
+"/logos/airlines/european/pegasus-wordmark-dark.svg",
+"/logos/airlines/european/pegasus-wordmark-light.svg"
+],
+"4C": [
+"/logos/airlines/asian-other/latam-wordmark-color.svg",
+"/logos/airlines/asian-other/latam-wordmark-light.svg"
+],
+"JJ": [
+"/logos/airlines/asian-other/latam-wordmark-color.svg",
+"/logos/airlines/asian-other/latam-wordmark-light.svg"
+],
+"ZX": [
+"/logos/airlines/canadian/air-canada-wordmark-dark.svg",
+"/logos/airlines/canadian/air-canada-wordmark-light.svg"
+],
+"9L": [
+"/logos/airlines/canadian/air-canada-wordmark-dark.svg",
+"/logos/airlines/canadian/air-canada-wordmark-light.svg"
+],
+"9E": [
+"/logos/airlines/us-major/delta-wordmark-color.svg",
+"/logos/airlines/us-major/delta-wordmark-light.svg"
+],
+"MQ": [
+"/logos/airlines/us-major/american-wordmark-color.svg",
+"/logos/airlines/us-major/american-wordmark-light.svg"
+],
+"OH": [
+"/logos/airlines/us-major/american-wordmark-color.svg",
+"/logos/airlines/us-major/american-wordmark-light.svg"
+],
+"SP": [
+"/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg",
+"/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg"
+],
+"NK": [
+"/logos/airlines/us-major/spirit-wordmark-dark.svg",
+"/logos/airlines/us-major/spirit-wordmark-light.svg"
+],
+"AA2": [
+"/logos/airlines/us-major/american-airlines-wordmark-color.svg",
+"/logos/airlines/us-major/american-airlines-wordmark-light.svg"
+],
 "AC": [
 "/logos/airlines/canadian/air-canada-wordmark-dark.svg",
 "/logos/airlines/canadian/air-canada-wordmark-light.svg"
 ],
 "WS": [
-"/logos/airlines/canadian/westjet-wordmark-dark.svg",
+"/logos/airlines/canadian/westjet-wordmark-color.svg",
 "/logos/airlines/canadian/westjet-wordmark-light.svg"
 ],
 "PD": [
-"/logos/airlines/canadian/porter-wordmark-dark.svg",
+"/logos/airlines/canadian/porter-wordmark-color.svg",
 "/logos/airlines/canadian/porter-wordmark-light.svg"
 ],
 "TS": [
-"/logos/airlines/canadian/transat-wordmark-dark.svg",
+"/logos/airlines/canadian/transat-wordmark-color.svg",
 "/logos/airlines/canadian/transat-wordmark-light.svg"
 ],
 "PB": [
-"/logos/airlines/canadian-regional/pal-airlines-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg",
 "/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg"
 ],
+"8P": [
+"/logos/airlines/canadian-regional/pacific-coastal-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/pacific-coastal-wordmark-light.svg"
+],
+"PCO": [
+"/logos/airlines/canadian-regional/pacific-coastal-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/pacific-coastal-wordmark-light.svg"
+],
 "JV": [
-"/logos/airlines/canadian-regional/bearskin-wordmark-light.svg",
+"/logos/airlines/canadian-regional/bearskin.svg",
 "/logos/airlines/canadian-regional/bearskin-wordmark-light.svg"
 ],
 "WT": [
-"/logos/airlines/canadian-regional/wasaya-wordmark-light.svg",
+"/logos/airlines/canadian-regional/wasaya.svg",
 "/logos/airlines/canadian-regional/wasaya-wordmark-light.svg"
 ],
 "NSA": [
-"/logos/airlines/canadian-regional/north-star-wordmark-light.svg",
+"/logos/airlines/canadian-regional/north-star-air.svg",
 "/logos/airlines/canadian-regional/north-star-wordmark-light.svg"
 ],
 "F8": [
-"/logos/airlines/canadian/flair-wordmark-light.svg",
+"/logos/airlines/canadian/flair-wordmark-color.svg",
 "/logos/airlines/canadian/flair-wordmark-light.svg"
 ],
 "QK": [
-"/logos/airlines/canadian-regional/jazz-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/jazz-wordmark-color.svg",
 "/logos/airlines/canadian-regional/jazz-wordmark-light.svg"
 ],
 "RV": [
 "/logos/airlines/canadian/air-canada-wordmark-dark.svg",
 "/logos/airlines/canadian/air-canada-wordmark-light.svg"
 ],
+"3H": [
+"/logos/airlines/canadian-regional/airinuit.svg",
+"/logos/airlines/canadian-regional/airinuit-monochrome-white.svg"
+],
 "AA": [
-"/logos/airlines/us-major/american-wordmark-dark.svg",
+"/logos/airlines/us-major/american-wordmark-color.svg",
 "/logos/airlines/us-major/american-wordmark-light.svg"
 ],
 "UA": [
-"/logos/airlines/us-major/united-wordmark-dark.svg",
+"/logos/airlines/us-major/united-wordmark-color.svg",
 "/logos/airlines/us-major/united-wordmark-light.svg"
 ],
 "DL": [
-"/logos/airlines/us-major/delta-wordmark-dark.svg",
+"/logos/airlines/us-major/delta-wordmark-color.svg",
 "/logos/airlines/us-major/delta-wordmark-light.svg"
 ],
 "WN": [
-"/logos/airlines/us-major/southwest-wordmark-dark.svg",
+"/logos/airlines/us-major/southwest-wordmark-color.svg",
 "/logos/airlines/us-major/southwest-wordmark-light.svg"
 ],
 "B6": [
-"/logos/airlines/us-major/jetblue-wordmark-dark.svg",
+"/logos/airlines/us-major/jetblue-wordmark-color.svg",
 "/logos/airlines/us-major/jetblue-wordmark-light.svg"
 ],
 "F9": [
-"/logos/airlines/us-major/frontier-wordmark-dark.svg",
+"/logos/airlines/us-major/frontier-wordmark-color.svg",
 "/logos/airlines/us-major/frontier-wordmark-light.svg"
 ],
 "XP": [
-"/logos/airlines/us-major/avelo-wordmark-dark.svg",
+"/logos/airlines/us-major/avelo-wordmark-color.svg",
 "/logos/airlines/us-major/avelo-wordmark-light.svg"
+],
+"WL": [
+"/logos/airlines/us-regional/world-atlantic-wordmark-color.png",
+"/logos/airlines/us-regional/world-atlantic-wordmark-light.png"
 ],
 "LL": [
 "/logos/airlines/european/level-wordmark-dark.svg",
 "/logos/airlines/european/level-wordmark-light.svg"
 ],
 "AS": [
-"/logos/airlines/us-major/alaska-airlines-wordmark-dark.svg",
+"/logos/airlines/us-major/alaska-airlines-wordmark-color.svg",
 "/logos/airlines/us-major/alaska-airlines-wordmark-light.svg"
 ],
 "HA": [
-"/logos/airlines/us-major/hawaiian-wordmark-dark.svg",
+"/logos/airlines/us-major/hawaiian-wordmark-color.svg",
 "/logos/airlines/us-major/hawaiian-wordmark-light.svg"
 ],
 "SY": [
-"/logos/airlines/us-major/sun-country-wordmark-dark.svg",
+"/logos/airlines/us-major/sun-country-wordmark-color.svg",
 "/logos/airlines/us-major/sun-country-wordmark-light.svg"
 ],
 "OO": [
@@ -1140,36 +1335,36 @@ window.FIDS_SHARED_WORDMARK = {
 "/logos/airlines/us-regional/piedmont-wordmark-dark.svg",
 "/logos/airlines/us-regional/piedmont-wordmark-light.svg"
 ],
-"YX": [
-"/logos/airlines/us-regional/republic-wordmark-dark.svg",
-"/logos/airlines/us-regional/republic-wordmark-light.svg"
-],
 "9X": [
 "/logos/airlines/us-major/mokulele-wordmark-dark.svg",
 "/logos/airlines/us-major/mokulele-wordmark-light.svg"
 ],
 "BA": [
-"/logos/airlines/european/british-airways-wordmark-dark.svg",
+"/logos/airlines/european/british-airways-wordmark-color.svg",
 "/logos/airlines/european/british-airways-wordmark-light.svg"
 ],
 "AF": [
-"/logos/airlines/european/air-france-wordmark-dark.svg",
+"/logos/airlines/european/air-france-wordmark-color.svg",
 "/logos/airlines/european/air-france-wordmark-light.svg"
 ],
 "KL": [
-"/logos/airlines/european/klm-wordmark-dark.svg",
+"/logos/airlines/european/klm-wordmark-color.svg",
 "/logos/airlines/european/klm-wordmark-light.svg"
 ],
-"LO": [
-"/logos/airlines/european/lot-wordmark-dark.svg",
-"/logos/airlines/european/lot-wordmark-light.svg"
+"FI": [
+"/logos/airlines/european/icelandair-wordmark-color.svg",
+"/logos/airlines/european/icelandair-wordmark-light.svg"
+],
+"BW": [
+"/logos/airlines/asian-other/caribbean-wordmark-color.png",
+"/logos/airlines/asian-other/caribbean-wordmark-light.png"
 ],
 "VS": [
-"/logos/airlines/european/virgin-atlantic-wordmark-dark.svg",
+"/logos/airlines/european/virgin-atlantic-wordmark-color.svg",
 "/logos/airlines/european/virgin-atlantic-wordmark-light.svg"
 ],
 "4Y": [
-"/logos/airlines/european/discover-airlines-wordmark-dark.svg",
+"/logos/airlines/european/discover-airlines-wordmark-color.svg",
 "/logos/airlines/european/discover-airlines-wordmark-light.svg"
 ],
 "MX": [
@@ -1177,68 +1372,100 @@ window.FIDS_SHARED_WORDMARK = {
 "/logos/airlines/us-major/breeze-airways-wordmark-light.svg"
 ],
 "AV": [
-"/logos/airlines/asian-other/avianca-wordmark-dark.svg",
+"/logos/airlines/asian-other/avianca-wordmark-color.svg",
 "/logos/airlines/asian-other/avianca-wordmark-light.svg"
 ],
 "OB": [
-"/logos/airlines/asian-other/boliviana-wordmark-dark.svg",
+"/logos/airlines/asian-other/boliviana-wordmark-color.svg",
 "/logos/airlines/asian-other/boliviana-wordmark-light.svg"
 ],
 "AM": [
-"/logos/airlines/asian-other/aeromexico-wordmark-dark.svg",
+"/logos/airlines/asian-other/aeromexico-wordmark-color.svg",
 "/logos/airlines/asian-other/aeromexico-wordmark-light.svg"
 ],
 "CM": [
-"/logos/airlines/asian-other/copa-wordmark-dark.svg",
+"/logos/airlines/asian-other/copa-wordmark-color.svg",
 "/logos/airlines/asian-other/copa-wordmark-light.svg"
 ],
 "DM": [
 "/logos/airlines/asian-other/arajet-wordmark-dark.svg",
 "/logos/airlines/asian-other/arajet-wordmark-light.svg"
 ],
-"YN": [
-"/logos/airlines/canadian-regional/air-creebec-wordmark-dark.svg",
-"/logos/airlines/canadian-regional/air-creebec-wordmark-light.svg"
-],
 "UP": [
 "/logos/airlines/asian-other/bahamasair-wordmark-dark.svg",
 "/logos/airlines/asian-other/bahamasair-wordmark-light.svg"
 ],
 "LA": [
-"/logos/airlines/asian-other/latam-wordmark-dark.svg",
+"/logos/airlines/asian-other/latam-wordmark-color.svg",
 "/logos/airlines/asian-other/latam-wordmark-light.svg"
 ],
 "Y4": [
-"/logos/airlines/asian-other/volaris-wordmark-dark.svg",
+"/logos/airlines/asian-other/volaris-wordmark-color.svg",
 "/logos/airlines/asian-other/volaris-wordmark-light.svg"
 ],
 "VB": [
-"/logos/airlines/asian-other/vivaaerobus-wordmark-dark.svg",
+"/logos/airlines/asian-other/vivaaerobus-wordmark-color.svg",
 "/logos/airlines/asian-other/vivaaerobus-wordmark-light.svg"
 ],
 "G3": [
-"/logos/airlines/asian-other/gol-wordmark-dark.svg",
+"/logos/airlines/asian-other/gol-wordmark-color.svg",
 "/logos/airlines/asian-other/gol-wordmark-light.svg"
 ],
-"AT": [
-"/logos/airlines/alliances/royal-air-maroc-wordmark-dark.svg",
-"/logos/airlines/alliances/royal-air-maroc-wordmark-light.svg"
+"SN": [
+"/logos/airlines/split/brussels-airlines-wordmark-dark.svg",
+"/logos/airlines/split/brussels-airlines-wordmark-light.svg"
 ],
-"FI": [
-"/logos/airlines/european/icelandair-wordmark-dark.svg",
-"/logos/airlines/european/icelandair-wordmark-light.svg"
+"EI": [
+"/logos/airlines/split/aer-lingus-wordmark-dark.svg",
+"/logos/airlines/split/aer-lingus-wordmark-light.svg"
 ],
-"WL": [
-"/logos/airlines/us-regional/world-atlantic-wordmark-dark.png",
+"TK": [
+"/logos/airlines/split/turkish-airlines-wordmark-dark.svg",
+"/logos/airlines/split/turkish-airlines-wordmark-light.svg"
+],
+"WY": [
+"/logos/airlines/split/oman-air-wordmark-dark.svg",
+"/logos/airlines/split/oman-air-wordmark-light.svg"
+],
+"SQ": [
+"/logos/airlines/split/singapore-airlines-wordmark-dark.svg",
+"/logos/airlines/split/singapore-airlines-wordmark-light.svg"
+],
+"CX": [
+"/logos/airlines/split/cathay-wordmark-dark.svg",
+"/logos/airlines/split/cathay-wordmark-light.svg"
+],
+"6E": [
+"/logos/airlines/split/indigo-wordmark-dark.svg",
+"/logos/airlines/split/indigo-wordmark-light.svg"
+],
+"KE": [
+"/logos/airlines/split/korean-air-wordmark-dark.svg",
+"/logos/airlines/split/korean-air-wordmark-light.svg"
+],
+"UX": [
+"/logos/airlines/split/air-europa-wordmark-dark.svg",
+"/logos/airlines/split/air-europa-wordmark-light.svg"
+],
+"AH": [
+"/logos/airlines/split/air-algerie-wordmark-dark.svg",
+"/logos/airlines/split/air-algerie-wordmark-light.svg"
+],
+"KU": [
+"/logos/airlines/split/kuwait-airways-wordmark-dark.svg",
+"/logos/airlines/split/kuwait-airways-wordmark-light.svg"
+],
+"0N": [
+"/logos/airlines/canadian-regional/north-star-air.svg",
+"/logos/airlines/canadian-regional/north-star-wordmark-light.svg"
+],
+"WP": [
+"/logos/airlines/canadian-regional/wasaya.svg",
+"/logos/airlines/canadian-regional/wasaya-wordmark-light.svg"
+],
+"WAL": [
+"/logos/airlines/us-regional/world-atlantic-wordmark-color.png",
 "/logos/airlines/us-regional/world-atlantic-wordmark-light.png"
-],
-"BW": [
-"/logos/airlines/asian-other/caribbean-wordmark-color.png",
-"/logos/airlines/asian-other/caribbean-wordmark-light.png"
-],
-"3H": [
-"/logos/airlines/canadian-regional/airinuit-monochrome-black.svg",
-"/logos/airlines/canadian-regional/airinuit-monochrome-white.svg"
 ]
 };
 
@@ -1249,22 +1476,22 @@ window.FIDS_SHARED_WORDMARK = {
 // maps above; tests/companion-app.test.js fails the moment either drifts from
 // fids-core.js. The app knew eleven carriers' art before this.
 window.FIDS_SHARED_TILE = {
-  "BF":"/logos/airline-tiles/FBU.svg", "3H":"/logos/airline-tiles/AIE.svg", "YN":"/logos/airline-tiles/CRQ.svg", "AC":"/logos/airline-tiles/ACA-black.svg", "WS":"/logos/airline-tiles/WJA.svg",
-  "TS":"/logos/airline-tiles/TSC.svg", "PD":"/logos/airline-tiles/PTR.svg", "F8":"/logos/airline-tiles/FLE.svg", "QK":"/logos/airline-tiles/JZA.svg",
-  "PB":"/logos/airline-tiles/PB.svg", "MO":"/logos/airline-tiles/CAV.svg", "YP":"/logos/airline-tiles/PCM.svg", "BQ":"/logos/airline-tiles/PSC.svg",
-  "JV":"/logos/airline-tiles/BLS.svg", "WT":"/logos/airline-tiles/WSG.svg", "NSA":"/logos/airline-tiles/NSA.svg", "UA":"/logos/airline-tiles/UAL-sq.svg",
-  "DL":"/logos/airline-tiles/DAL-red.svg", "AA":"/logos/airline-tiles/AAL.svg", "WN":"/logos/airline-tiles/SWA.svg", "B6":"/logos/airline-tiles/JBU.svg",
-  "AS":"/logos/airline-tiles/ASA.svg", "F9":"/logos/airline-tiles/FFT.svg", "G4":"/logos/airline-tiles/AAY.svg", "HA":"/logos/airline-tiles/HAL.svg",
-  "SY":"/logos/airline-tiles/SCX.svg", "OO":"/logos/airline-tiles/SKW.svg", "YV":"/logos/airline-tiles/ASH.svg", "MX":"/logos/airline-tiles/MXY.svg",
-  "LH":"/logos/airline-tiles/DLH.svg", "BA":"/logos/airline-tiles/BAW.svg", "AF":"/logos/airline-tiles/AFR.svg", "KL":"/logos/airline-tiles/KLM.svg",
-  "VS":"/logos/airline-tiles/VIR.svg", "AZ":"/logos/airline-tiles/ITY.svg", "SN":"/logos/airline-tiles/BEL.svg", "LX":"/logos/airline-tiles/SWR.svg",
-  "OS":"/logos/airline-tiles/AUA.svg", "SK":"/logos/airline-tiles/SAS.svg", "AY":"/logos/airline-tiles/FIN.svg", "IB":"/logos/airline-tiles/IBE.svg",
-  "TP":"/logos/airline-tiles/TAP.svg", "EI":"/logos/airline-tiles/EIN.svg", "LO":"/logos/airline-tiles/LOT.svg", "RO":"/logos/airline-tiles/ROT.svg",
-  "BT":"/logos/airline-tiles/BTI.svg", "FI":"/logos/airline-tiles/ICE.svg", "DY":"/logos/airline-tiles/NAX.svg", "U2":"/logos/airline-tiles/EZY.svg",
-  "FR":"/logos/airline-tiles/RYR.svg", "W6":"/logos/airline-tiles/WZZ.svg", "VY":"/logos/airline-tiles/VLG.svg", "WK":"/logos/airline-tiles/EDW.svg",
-  "RK":"/logos/airline-tiles/RYR.svg", "EC":"/logos/airline-tiles/EZY.svg", "EJU":"/logos/airline-tiles/EZY.svg", "EZS":"/logos/airline-tiles/EZY.svg",
-  "D8":"/logos/airline-tiles/NAX.svg", "I2":"/logos/airline-tiles/IBE.svg", "W4":"/logos/airline-tiles/WZZ.svg", "LS":"/logos/airline-tiles/EXS.svg",
-  "LM":"/logos/airline-tiles/LOG.svg", "EZY":"/logos/airline-tiles/EZY.svg", "DE":"/logos/airline-tiles/CFG.svg", "X3":"/logos/airline-tiles/TUI.svg",
+  "BF":"/logos/airline-tiles/FBU.svg", "3H":"/logos/airline-tiles/AIE.svg", "YN":"/logos/airline-tiles/CRQ.svg", "AC":"/logos/airline-tiles/ACA-black.svg",
+  "WS":"/logos/airline-tiles/WJA.svg", "TS":"/logos/airline-tiles/TSC.svg", "PD":"/logos/airline-tiles/PTR.svg", "F8":"/logos/airline-tiles/FLE.svg",
+  "QK":"/logos/airline-tiles/JZA.svg", "PB":"/logos/airline-tiles/PB.svg", "MO":"/logos/airline-tiles/CAV.svg", "YP":"/logos/airline-tiles/PCM.svg",
+  "BQ":"/logos/airline-tiles/PSC.svg", "JV":"/logos/airline-tiles/BLS.svg", "WT":"/logos/airline-tiles/WSG.svg", "NSA":"/logos/airline-tiles/NSA.svg",
+  "UA":"/logos/airline-tiles/UAL-sq.svg", "DL":"/logos/airline-tiles/DAL-red.svg", "AA":"/logos/airline-tiles/AAL.svg", "WN":"/logos/airline-tiles/SWA.svg",
+  "B6":"/logos/airline-tiles/JBU.svg", "AS":"/logos/airline-tiles/ASA.svg", "F9":"/logos/airline-tiles/FFT.svg", "G4":"/logos/airline-tiles/AAY.svg",
+  "HA":"/logos/airline-tiles/HAL.svg", "SY":"/logos/airline-tiles/SCX.svg", "OO":"/logos/airline-tiles/SKW.svg", "YV":"/logos/airline-tiles/ASH.svg",
+  "MX":"/logos/airline-tiles/MXY.svg", "LH":"/logos/airline-tiles/DLH.svg", "BA":"/logos/airline-tiles/BAW.svg", "AF":"/logos/airline-tiles/AFR.svg",
+  "KL":"/logos/airline-tiles/KLM.svg", "VS":"/logos/airline-tiles/VIR.svg", "AZ":"/logos/airline-tiles/ITY.svg", "SN":"/logos/airline-tiles/BEL.svg",
+  "LX":"/logos/airline-tiles/SWR.svg", "OS":"/logos/airline-tiles/AUA.svg", "SK":"/logos/airline-tiles/SAS.svg", "AY":"/logos/airline-tiles/FIN.svg",
+  "IB":"/logos/airline-tiles/IBE.svg", "TP":"/logos/airline-tiles/TAP.svg", "EI":"/logos/airline-tiles/EIN.svg", "LO":"/logos/airline-tiles/LOT.svg",
+  "RO":"/logos/airline-tiles/ROT.svg", "BT":"/logos/airline-tiles/BTI.svg", "FI":"/logos/airline-tiles/ICE.svg", "DY":"/logos/airline-tiles/NAX.svg",
+  "U2":"/logos/airline-tiles/EZY.svg", "FR":"/logos/airline-tiles/RYR.svg", "W6":"/logos/airline-tiles/WZZ.svg", "VY":"/logos/airline-tiles/VLG.svg",
+  "WK":"/logos/airline-tiles/EDW.svg", "RK":"/logos/airline-tiles/RYR.svg", "EC":"/logos/airline-tiles/EZY.svg", "EJU":"/logos/airline-tiles/EZY.svg",
+  "EZS":"/logos/airline-tiles/EZY.svg", "D8":"/logos/airline-tiles/NAX.svg", "I2":"/logos/airline-tiles/IBE.svg", "W4":"/logos/airline-tiles/WZZ.svg",
+  "LS":"/logos/airline-tiles/EXS.svg", "LM":"/logos/airline-tiles/LOG.svg", "EZY":"/logos/airline-tiles/EZY.svg", "DE":"/logos/airline-tiles/CFG.svg",
   "A3":"/logos/airline-tiles/AEE.svg", "OU":"/logos/airline-tiles/CTN.svg", "JU":"/logos/airline-tiles/ASL.svg", "PC":"/logos/airline-tiles/PGT.svg",
   "TK":"/logos/airline-tiles/THY.svg", "TO":"/logos/airline-tiles/TRA.svg", "HV":"/logos/airline-tiles/TRA.svg", "EW":"/logos/airline-tiles/EWG.svg",
   "EK":"/logos/airline-tiles/UAE.svg", "QR":"/logos/airline-tiles/QTR.svg", "EY":"/logos/airline-tiles/ETD.svg", "GF":"/logos/airline-tiles/GFA.svg",
@@ -1277,19 +1504,31 @@ window.FIDS_SHARED_TILE = {
   "KE":"/logos/airline-tiles/KAL.svg", "OZ":"/logos/airline-tiles/AAR.svg", "TG":"/logos/airline-tiles/THA.svg", "GA":"/logos/airline-tiles/GIA.svg",
   "MH":"/logos/airline-tiles/MAS.svg", "PR":"/logos/airline-tiles/PAL.svg", "SG":"/logos/airline-tiles/SEJ.svg", "VN":"/logos/airline-tiles/HVN.svg",
   "QZ":"/logos/airline-tiles/AXM.svg", "AK":"/logos/airline-tiles/AXM.svg", "TR":"/logos/airline-tiles/TGW.svg", "JQ":"/logos/airline-tiles/JST.svg",
-  "VA":"/logos/airline-tiles/VOZ.svg", "JJ":"/logos/airline-tiles/TAM.svg", "AD":"/logos/airline-tiles/AZU.svg", "LA":"/logos/airline-tiles/LAN.svg",
-  "AR":"/logos/airline-tiles/ARG.svg", "CM":"/logos/airline-tiles/CMP.svg", "DM":"/logos/airline-tiles/DWI.svg", "AV":"/logos/airline-tiles/AVA.svg", "AM":"/logos/airline-tiles/AMX.svg",
-  "Y4":"/logos/airline-tiles/VOI.svg", "G3":"/logos/airline-tiles/GLO.svg", "UP":"/logos/airline-tiles/BHS.svg", "OB":"/logos/airline-tiles/BOV.svg"
+  "VA":"/logos/airline-tiles/VOZ.svg", "LA":"/logos/airline-tiles/LAN.svg", "JJ":"/logos/airline-tiles/LAN.svg", "AD":"/logos/airline-tiles/AZU.svg",
+  "AR":"/logos/airline-tiles/ARG.svg", "CM":"/logos/airline-tiles/CMP.svg", "AV":"/logos/airline-tiles/AVA.svg", "AM":"/logos/airline-tiles/AMX.svg",
+  "Y4":"/logos/airline-tiles/VOI.svg", "G3":"/logos/airline-tiles/GLO.svg", "UP":"/logos/airline-tiles/BHS.svg", "DM":"/logos/airline-tiles/DWI.svg",
+  "OB":"/logos/airline-tiles/BOV.svg", "JX":"/logos/airline-tiles/SJX.svg", "N0":"/logos/airline-tiles/NBT.svg", "Z0":"/logos/airline-tiles/NBT.svg",
+  "KC":"/logos/airline-tiles/KZR.svg", "KM":"/logos/airline-tiles/KMM.svg", "HY":"/logos/airline-tiles/UZB.svg", "UX":"/logos/airline-tiles/AEA.svg",
+  "MF":"/logos/airline-tiles/CXA.svg", "S4":"/logos/airline-tiles/RZO.svg", "XQ":"/logos/airline-tiles/SXS.svg", "UL":"/logos/airline-tiles/ALK.svg",
+  "PK":"/logos/airline-tiles/PIA.svg", "KX":"/logos/airline-tiles/CAY.svg", "TN":"/logos/airline-tiles/THT.svg", "FJ":"/logos/airline-tiles/FJI.svg",
+  "PX":"/logos/airline-tiles/ANG.svg", "OM":"/logos/airline-tiles/MGL.svg", "ZL":"/logos/airline-tiles/RXA.svg", "5J":"/logos/airline-tiles/CEB.svg",
+  "GS":"/logos/airline-tiles/GCR.svg", "HX":"/logos/airline-tiles/CRK.svg", "JD":"/logos/airline-tiles/CBJ.svg", "SB":"/logos/airline-tiles/ACI.svg",
+  "AH":"/logos/airline-tiles/DAH.svg", "KU":"/logos/airline-tiles/KAC.svg", "XY":"/logos/airline-tiles/KNE.svg", "ZH":"/logos/airline-tiles/CSZ.svg",
+  "QS":"/logos/airline-tiles/TVS.svg", "NO":"/logos/airline-tiles/NOS.svg", "H2":"/logos/airline-tiles/SKU.svg", "BG":"/logos/airline-tiles/BBC.svg",
+  "FB":"/logos/airline-tiles/LZB.svg", "XC":"/logos/airline-tiles/CAI.svg", "XR":"/logos/airline-tiles/CAI.svg", "BY":"/logos/airline-tiles/TOM.svg",
+  "TB":"/logos/airline-tiles/TOM.svg", "X3":"/logos/airline-tiles/TOM.svg", "CJ":"/logos/airline-tiles/BAW.svg", "0N":"/logos/airline-tiles/NSA.svg",
+  "WP":"/logos/airline-tiles/WSG.svg"
 };
 window.FIDS_SHARED_EMBLEM = {
-  "LY":"/logos/symbols/airlines/LY.svg", "2L":"/logos/airlines/european/helvetic-emblem-tile.svg", "CS":"/logos/symbols/airlines/CS.png", "EW":"/logos/symbols/airlines/EW.svg",
-  "A3":"/logos/symbols/airlines/A3.svg", "PC":"/logos/symbols/airlines/PC.svg", "JV":"/logos/airlines/canadian-regional/bearskin-emblem.svg", "WT":"/logos/airlines/canadian-regional/wasaya-emblem.svg",
-  "NSA":"/logos/airlines/canadian-regional/north-star-emblem.svg", "4N":"/logos/airline-tiles/AirNorth-Emblem.svg", "DM":"/logos/airlines/asian-other/arajet-emblem.svg", "5T":"/logos/airline-tiles/CanadianNorth-Emblem.svg", "MPE":"/logos/airline-tiles/CanadianNorth-Emblem.svg",
-  "8P":"/logos/airline-tiles/PCO.svg", "SP":"/logos/airline-tiles/PB.svg", "QTR":"/logos/airline-tiles/QTR.svg", "PCO":"/logos/airline-tiles/PCO.svg",
-  "9X":"/logos/airlines/us-major/mokulele-emblem.svg", "4Y":"/logos/airlines/european/discover-airlines-emblem.svg", "F9":"/logos/airlines/us-major/frontier-emblem.svg", "XP":"/logos/airlines/us-major/avelo-emblem.svg",
-  "LL":"/logos/airlines/european/level-emblem.svg", "MX":"/logos/airlines/us-major/breeze-airways-emblem.png", "VB":"/logos/airlines/asian-other/vivaaerobus-emblem.webp", "BW":"/logos/airlines/asian-other/caribbean-emblem.png",
-  "DL":"/logos/airlines/us-major/delta-widget-red.svg", "HA":"/logos/airlines/us-major/hawaiian-pualani.svg", "AA":"/logos/airlines/us-major/american-flight-symbol.svg", "UA":"/logos/airline-tiles/UA-globe-glossy.png?v=22350",
-  "LA":"/logos/airlines/asian-other/latam-spark.svg", "AC":"/logos/symbols/airlines/AC.svg", "WS":"/logos/symbols/airlines/WS.svg"
+  "LY":"/logos/symbols/airlines/LY.svg", "2L":"/logos/airlines/european/helvetic-emblem-tile.svg", "CS":"/logos/symbols/airlines/CS.png", "GM":"/logos/symbols/airlines/CS.png",
+  "EW":"/logos/symbols/airlines/EW.svg", "A3":"/logos/symbols/airlines/A3.svg", "PC":"/logos/symbols/airlines/PC.svg", "JV":"/logos/airlines/canadian-regional/bearskin-emblem.svg",
+  "WT":"/logos/airlines/canadian-regional/wasaya-emblem.svg", "NSA":"/logos/airlines/canadian-regional/north-star-emblem.svg", "4N":"/logos/airline-tiles/AirNorth-Emblem.svg", "DM":"/logos/airlines/asian-other/arajet-emblem.svg",
+  "5T":"/logos/airline-tiles/CanadianNorth-Emblem.svg", "MPE":"/logos/airline-tiles/CanadianNorth-Emblem.svg", "8P":"/logos/airline-tiles/PCO.svg", "SP":"/logos/airline-tiles/PB.svg",
+  "QTR":"/logos/airline-tiles/QTR.svg", "PCO":"/logos/airline-tiles/PCO.svg", "9X":"/logos/airlines/us-major/mokulele-emblem.svg", "4Y":"/logos/airlines/european/discover-airlines-emblem.svg",
+  "F9":"/logos/airlines/us-major/frontier-emblem.svg", "XP":"/logos/airlines/us-major/avelo-emblem.svg", "LL":"/logos/airlines/european/level-emblem.svg", "MX":"/logos/airlines/us-major/breeze-airways-emblem.png",
+  "VB":"/logos/airlines/asian-other/vivaaerobus-emblem.webp", "BW":"/logos/airlines/asian-other/caribbean-emblem.png", "DL":"/logos/airlines/us-major/delta-widget-red.svg", "HA":"/logos/airlines/us-major/hawaiian-pualani.svg",
+  "AA":"/logos/airlines/us-major/american-flight-symbol.svg", "UA":"/logos/airline-tiles/UA-globe-glossy.png?v=22350", "LA":"/logos/airlines/asian-other/latam-spark.svg", "AC":"/logos/symbols/airlines/AC.svg",
+  "WS":"/logos/symbols/airlines/WS.svg"
 };
 
 // v24043 — THE AIRPORT'S OWN NAME AFTER ITS CITY, as the boards write it

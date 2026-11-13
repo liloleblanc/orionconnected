@@ -7663,13 +7663,15 @@ function _b5Airline(f) {
   var name = String(f._airlineName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code).toUpperCase();
   var safe = fidsEscHtml(name);
   var base = (typeof IATA_TO_WORDMARK !== 'undefined') ? IATA_TO_WORDMARK[code] : '';
-  var mark = base
+  var logo = mkLogo(f.airline, f._airlineName);
+  // no typed name beside a lockup, which is the mark and the name together (_logoIsLockup)
+  var mark = (!base && _logoIsLockup(logo)) ? '' : base
     ? '<span class="b5-wm" data-name="' + safe + '">'
       + '<img class="b5-wm-n" alt="' + safe + '" src="' + fidsEscHtml(wordmarkSrc(base, 'light')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
       + '<img class="b5-wm-d" alt="" src="' + fidsEscHtml(wordmarkSrc(base, 'dark')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
       + '</span>'
     : '<span class="b5-aname">' + safe + '</span>';
-  return '<span class="b5-emb">' + mkLogo(f.airline, f._airlineName) + '</span>' + mark;
+  return '<span class="b5-emb">' + logo + '</span>' + mark;
 }
 function _b5Tag(f) {
   return '<span class="b5-tag"><span class="b5-temb">' + mkLogo(f.airline, f._airlineName) + '</span><span class="b5-tfn" dir="ltr">' + fidsEscHtml(f.flight || '') + '</span></span>';
@@ -27700,14 +27702,11 @@ const gView = document.getElementById('gateView');
         // Local SVG wordmark — preferred. Use the DARK variant since the gate-screen
         // banner sits on a WHITE card (line 3858 white logo card).
         const _wmBase = IATA_TO_WORDMARK[bannerLogoCode];
-        // v24069 — a carrier filed in WORDMARK_RASTER (Air Inuit) takes its
-        // own colour file, as the rows do; the hand-built '-wordmark-dark'
-        // name does not exist for it
-        const _localWordmark = (typeof WORDMARK_RASTER !== 'undefined' && WORDMARK_RASTER[_wmBase])
-          ? WORDMARK_RASTER[_wmBase].dark
-          : (typeof logoPath === 'function')
-          ? logoPath(_wmBase + '-wordmark-dark.svg')
-          : ('/logos/' + _wmBase + '-wordmark-dark.svg');
+        // The cut for a light ground, from wordmarkSrc: the one function that
+        // knows where each cut of a lettering is filed (a pair of files, a colour
+        // cut under a name of its own, a raster pair). The name was built by hand
+        // here, and no such file exists for Bearskin, Wasaya or North Star Air.
+        const _localWordmark = wordmarkSrc(_wmBase, 'dark');
         // No wway.io fallback — text only if local file unavailable.
         logoHtml = `<img class="full-logo" alt="${bannerLogoName}" src="${_localWordmark}" onerror="this.outerHTML='<span class=\\'logo-fallback\\' style=&quot;font-size:36px;font-weight:900;color:#002B58;letter-spacing:-0.5px;&quot;>${bannerLogoName}</span>'">`;
       } else if (typeof LOCAL_LOGOS !== 'undefined' && LOCAL_LOGOS[bannerLogoCode]) {
@@ -29730,7 +29729,11 @@ const gView = document.getElementById('gateView');
               // No apostrophes/quotes: the name is embedded in the inline
               // onerror string, where a stray quote kills the fallback.
               const _bSafeName = airlineName.replace(/[^A-Z0-9ÀÂÉÈÊÎÔÛÇ &().-]/gi, '');
-              const _bAirlineHtml = _bidsEmblemOnly ? '' : (_bWmBase
+              // No typed name beside a lockup (_logoIsLockup), and on the yellow Delayed bar no
+              // lettering that is the colour of the bar (_rowStateTypesName): the name, typed.
+              const _bNoName = !_bWmBase && _logoIsLockup(logoHtml);
+              const _bTypesName = isDelayed && _rowStateTypesName('delayed', _bWmBase);
+              const _bAirlineHtml = (_bidsEmblemOnly || _bNoName) ? '' : ((_bWmBase && !_bTypesName)
                 ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 'light' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
                 : '<div class="bidsv2-airline-name">' + fidsEscHtml(airlineName) + '</div>');
               // v23327 — the redesign renders its OWN row markup (b3-*), a
@@ -29767,7 +29770,7 @@ const gView = document.getElementById('gateView');
                 // wordmark: _wmStackOnLoad / _wmStackAttrs, next to wordmarkSrc.
                 const _b3Src = _bWmBase ? wordmarkSrc(_bWmBase, isDelayed ? 'dark' : 'light') : '';
                 const _b3Stack = _wmStackAttrs(_b3Src);
-                const _b3Wm = _bidsEmblemOnly ? '' : (_bWmBase
+                const _b3Wm = (_bidsEmblemOnly || _bNoName) ? '' : ((_bWmBase && !_bTypesName)
                   ? '<img class="b3-wordmark' + _b3Stack.cls + '"' + _b3Stack.style + ' alt="' + _bSafeName + '" src="' + _b3Src + '" onload="_wmStackOnLoad(this)" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
                   : _b3WmOne
                   ? '<img class="b3-wordmark fids-wm-mono" alt="' + _bSafeName + '" src="' + _b3WmOne + '">'
@@ -34310,6 +34313,27 @@ const COLOR_WORDMARKS = {
   'sun-country': '/logos/airlines/us-major/sun-country-wordmark-color.svg',
   'united': '/logos/airlines/us-major/united-wordmark-color.svg',
 };
+// A ROW STATE THAT SWALLOWS THE LETTERING. A Final Call row is orange and a Delayed row is
+// yellow on every theme, and both take the colour cut of the lettering. Three colour cuts are
+// the colour of the row they land on: the orange of easyJet and of GOL on Final Call (1.2 to
+// 1), the gold of Etihad on Delayed (1.5 to 1). No darker cut of the three is on disk, so in
+// that one state the row types the name in its own ink, beside the tile. Keyed by the state
+// of the row, then by the base name of the lettering, so every code that shares the lettering
+// is covered (the five codes of easyJet). The Delayed bar of the belt reads the same table.
+const ROW_STATE_TYPES_NAME = {
+  'final-call': { 'easyjet': 1, 'gol': 1 },
+  'delayed': { 'etihad': 1 }
+};
+function _rowStateTypesName(stKey, base) {
+  return !!(base && ROW_STATE_TYPES_NAME[stKey] && ROW_STATE_TYPES_NAME[stKey][base]);
+}
+// A LOCKUP IN THE MARK SLOT ALREADY SAYS THE NAME. mkLogo marks the one kind of art that is the
+// mark and the name together (a carrier with a lockup and no tile or lettering: Sunwing). The
+// board row hides the typed name beside it by a stylesheet rule; the belt asks here, and types
+// no name beside it.
+function _logoIsLockup(html) {
+  return /data-logo-set="wordmark"/.test(String(html || ''));
+}
 // Carriers whose OFFICIAL artwork exists only as raster (the airline's own
 // brand PNGs — no public vector anywhere). Same variant semantics: 'light'
 // = white art for dark boards, 'dark' = colored art for light boards.
@@ -38576,8 +38600,10 @@ function render() {
     // mapped for the day those files are replaced with words-only art — flip
     // WORDMARK_ONE_OK to true then, or list the codes that qualify.
     const WORDMARK_ONE_OK = false;
+    // lettering that is the colour of this row state: the name, typed in the row ink
+    const _rowTypesName = _rowStateTypesName(stKey, _wordmarkBase);
     const _wmOne = (WORDMARK_ONE_OK && !_wordmarkBase) ? (IATA_WORDMARK_ONE[_airlineCodeForLogo] || '') : '';
-    const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
+    const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : ((_wordmarkBase && !_rowTypesName)
       ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase, _rowWmVariant)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${(_brandColor && _brandInkOk) ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : _wmOne
       ? `<img class="fids-airline-wordmark fids-wm-mono" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${_wmOne}" onerror="this.outerHTML='<span class=&quot;fids-airline-name&quot;>' + this.alt + '</span>'">`
@@ -47929,22 +47955,16 @@ function mkCardLogo(code, airlineName) {
     var _base = IATA_TO_WORDMARK[c];
     var _v = _mobileVariant();
     var _other = _v === 'dark' ? 'light' : 'dark';
-    var _mainFname = _base + '-wordmark-' + _v + '.svg';
-    var _altFname  = _base + '-wordmark-' + _other + '.svg';
-    var _mainSrc = (typeof logoPath === 'function') ? logoPath(_mainFname) : ('/logos/' + _mainFname);
-    var _altSrc  = (typeof logoPath === 'function') ? logoPath(_altFname)  : ('/logos/' + _altFname);
-    // v24069 — A CARRIER WHOSE LETTERING IS NOT A '-wordmark-' PAIR. Air
-    // Inuit's lettering (and Caribbean's and World Atlantic's) is filed under
-    // its own names in WORDMARK_RASTER, which wordmarkSrc reads for the wall
-    // board's rows; this card built the pair's file names by hand, so the
-    // phone's Québec City rows asked for /logos/airinuit-wordmark-light.svg
-    // and -dark.svg, got two 404s and fell back to the typed name. The card
-    // takes the same files the rows do now ('light' = white lettering for a
-    // dark card, 'dark' = the carrier's colours for a light one).
-    if (typeof WORDMARK_RASTER !== 'undefined' && WORDMARK_RASTER[_base]) {
-      _mainSrc = WORDMARK_RASTER[_base][_v];
-      _altSrc  = WORDMARK_RASTER[_base][_other];
-    }
+    // BOTH FILES FROM wordmarkSrc, the one function that knows where each cut of a
+    // lettering is filed: the pair of files, a colour cut filed under a name of its
+    // own (COLOR_WORDMARKS), or a raster pair (WORDMARK_RASTER). This card built the
+    // two file names by hand, so on a light phone it asked for bearskin-, wasaya-
+    // and north-star-wordmark-dark.svg, which do not exist (their colour cuts are
+    // bearskin.svg, wasaya.svg and north-star-air.svg), and fell back to white
+    // lettering on its white card. The light cut is white lettering for a dark
+    // card, the dark cut the colours of the carrier for a light one.
+    var _mainSrc = wordmarkSrc(_base, _v);
+    var _altSrc  = wordmarkSrc(_base, _other);
     // Try matching variant first; if 404, fall back to opposite variant
     // (so airlines with only one variant — e.g. Flair — still display).
     return `<img class="card-logo card-wordmark" data-code="${c}" alt="${displayName}"
