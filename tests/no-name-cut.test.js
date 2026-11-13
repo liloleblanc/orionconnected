@@ -197,7 +197,18 @@ const NAMED = ['Saint-Pierre-et-Miquelon:FSP', 'Îles-de-la-Madeleine:YGR', 'For
   'Kuujjuaq:YVP', 'Montréal · Trudeau:YUL', 'Toronto · Billy Bishop:YTZ', 'Montréal · Métropolitain:MET',
   'Santo Domingo:SDQ', 'Charlottetown:YYG', 'Mont-Joli:YYY']
   .map((s) => { const [name, code] = s.split(':'); return { code, name, sub: name.includes(' · ') }; });
-const NAMES = [...LONGEST, ...SUBLINES, ...NAMED];
+// And the longest names of the places of the Americas that the board's
+// tables do not name and the boards print from the map's table
+// (js/earth-places.js label; fids-core.js _placeNameAm): the name alone
+// ('Santa Isabel do Rio Negro'), and with its state, province or country
+// where the name is another place's too ('Santo Domingo, Venezuela').
+const AM_PLACES = require(path.join(ROOT, 'fids-current', 'js', 'earth-places.js'));
+const AM_NAMES = Object.keys(AM_PLACES.NAME)
+  .map((code) => ({ code, name: AM_PLACES.label(code, 'en', null, (cc) => new Intl.DisplayNames(['en'], { type: 'region' }).of(cc)) })).filter((x) => x.name);
+const byLength = (a, b) => b.name.length - a.name.length || a.name.localeCompare(b.name);
+const AM_LONGEST = AM_NAMES.filter((x) => !/,/.test(x.name)).sort(byLength).slice(0, 8)
+  .concat(AM_NAMES.filter((x) => /,/.test(x.name)).sort(byLength).slice(0, 8));
+const NAMES = [...LONGEST, ...SUBLINES, ...NAMED, ...AM_LONGEST];
 
 // A run of text as the page lays it: characters with their size factor, a
 // break allowed after a space and after a hyphen that has a letter on both
@@ -255,6 +266,10 @@ test('the fixture is the boards\' own geometry, at every size, for every surface
   for (const sh of ['board', 'belt', 'plate', 'dest', 'note', 'cap']) assert.ok(shapes.has(sh), 'no ' + sh + ' surface');
   for (const s of MODEL.surfaces) assert.ok(MODEL.fonts[s.font], s.surface + ' ' + s.size + ': no widths for ' + s.font);
   assert.equal(LONGEST.length, 20);
+  // (the names of the Americas the boards print from the map's table)
+  assert.equal(AM_NAMES.length, 1055);
+  assert.equal(AM_LONGEST.length, 16);
+  assert.ok(AM_LONGEST[0].name.length >= 25 && AM_LONGEST[8].name.length >= 24, AM_LONGEST[0].name + ', ' + AM_LONGEST[8].name);
   // (v24067: the longest names were an airport's own name or a county after
   // a comma, 'La Seu D'Urgell Pyrenees and Andorra', 'Saint-Jacques-de-la-Lande,
   // Ille-et-Vilaine'; the tables now hold the city, and the longest is 26 letters)
@@ -498,6 +513,10 @@ test('names are cased the way they are written', () => {
   assert.equal(tc("L'ANSE-AU-LOUP"), "L'Anse-au-Loup");
   assert.equal(tc("ST. JOHN'S"), "St. John's");
   assert.equal(tc('FORT MCMURRAY'), 'Fort McMurray');
+  // (v24152: and the one town that writes a capital inside its name and is
+  // no Mc; tests/americas-airport-names.test.js holds that no other name of
+  // the tables has the word)
+  assert.equal(tc('DERIDDER'), 'DeRidder'); assert.equal(tc('DENVER'), 'Denver');
   // v23972 — small words between spaces too, never a first word
   assert.equal(tc('RIO DE JANEIRO'), 'Rio de Janeiro');
   assert.equal(tc('SANTA CRUZ DE LA SIERRA'), 'Santa Cruz de la Sierra');
@@ -547,8 +566,11 @@ test('a hung label is held inside its own pill, and the pill inside the map', ()
 
 test('the boarding row\'s Destination is the rail\'s: the airport, the casing, the box rule', () => {
   const row = fnSource('_boardInfoRowHtml');
-  assert.match(row, /_bDest = \(typeof _cityForIata === 'function' \? _cityForIata\(_bdIata\) : ''\)/);
-  assert.match(row, /_bDest = normalizeDisplayCity\(_bDest, _bdIata\);/);
+  // (v24152: a row with no code, whose words stand in for one here, reads
+  // the tables alone, on this row as on the rail: !locIata;
+  // tests/americas-airport-names.test.js)
+  assert.match(row, /_bDest = \(typeof _cityForIata === 'function' \? _cityForIata\(_bdIata, !locIata\) : ''\)/);
+  assert.match(row, /_bDest = normalizeDisplayCity\(_bDest, _bdIata, !locIata\);/);
   assert.match(row, /_bDest = _cityAp\(_bDest, _bdIata\);/);
   assert.match(row, /_bDest = _cityApHtml\(_bDest, _bdIata\);/);
   assert.doesNotMatch(row, /CITY\[locIata\]/, 'no table read of its own');
