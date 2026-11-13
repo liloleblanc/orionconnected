@@ -1,5 +1,14 @@
 'use strict';
 
+// THE CLOCK OF THESE CHECKS. The term of the OpenSky licence ended on 2026-11-12T22:59:59Z and
+// the Worker has answered 410 on every relay route since (the hard stop, by itself). These
+// checks describe the relay while it runs, so they read a clock set inside the term; it still
+// advances with the real one. A check that needs another moment, the hard stop among them,
+// sets its own.
+const REAL_NOW = Date.now.bind(Date);
+const TERM_SKEW = Date.UTC(2026, 10, 5, 12, 0, 0) - REAL_NOW();
+Date.now = () => REAL_NOW() + TERM_SKEW;
+
 // ═══════════════════════════════════════════════════════════════════════════
 // v24078 — THE BOARDS' SIDE OF OPENSKY: live aircraft positions from The
 // OpenSky Network first, Flightradar24 only when OpenSky has nothing.
