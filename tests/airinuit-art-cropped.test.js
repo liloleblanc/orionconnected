@@ -32,6 +32,9 @@ function airInuitFiles() {
   for (const f of ['js/fids-core.js', 'js/shared-names.js', 'app.html', 'css/display-overrides.css']) {
     for (const m of read(f).matchAll(/\/logos\/airlines\/canadian-regional\/airinuit[\w-]*\.svg/g)) found.add(m[0]);
   }
+  // v24150 — the geese emblem is not a cut of the lettering: it is a disc, framed on its own circle
+  // for the round orb on purpose (tests/gate-orbs-one-colour.test.js holds it to that).
+  found.delete('/logos/airlines/canadian-regional/airinuit-emblem.svg');
   return [...found].sort();
 }
 

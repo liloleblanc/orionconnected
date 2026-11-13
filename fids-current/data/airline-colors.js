@@ -26,7 +26,9 @@ window.AIRLINE_BRAND_COLORS = {
   'PB': { r1:'#183677', r1Text:'#FFFFFF', r2:'#3E57BE', body:'#EAF0F8', bodyText:'#183677' }, // PAL Airlines (official navy bar + PAL blue, gold icons)
   'SP': { r1:'#183677', r1Text:'#FFFFFF', r2:'#3E57BE', body:'#EAF0F8', bodyText:'#183677' }, // PAL Airlines (alt code)
   'BQ': { r1:'#1B2A4A', r1Text:'#FFFFFF', r2:'#E1241B', body:'#EDEFF4', bodyText:'#1B2A4A' }, // Pascan
-  '3H': { r1:'#1A1A1A', r1Text:'#FFFFFF', r2:'#E4002B', body:'#F2EEEC', bodyText:'#0F172A' }, // Air Inuit
+  // Air Inuit — its brand guide: Charcoal Black #231F20 for the bar, Air Inuit Orange #F1471D only for the gate
+  // and clock tabs (wayfinding, the focal tenth the guide allows), Slate Charcoal #4A4A4D, Arctic Mist #E6E7E8.
+  '3H': { r1:'#231F20', r1Text:'#FFFFFF', r2:'#F1471D', r3:'#4A4A4D', body:'#E6E7E8', bodyText:'#231F20' }, // Air Inuit
   'MO': { r1:'#10243F', r1Text:'#FFFFFF', r2:'#C8102E', body:'#EAEFF5', bodyText:'#10243F' }, // Calm Air
   'YP': { r1:'#1C3050', r1Text:'#FFFFFF', r2:'#1B75BC', body:'#EBEFF4', bodyText:'#1C3050' }, // Perimeter
   'JV': { r1:'#910028', r1Text:'#FFFFFF', r2:'#C8102E', body:'#F6ECEE', bodyText:'#910028' }, // Bearskin Airlines (crimson #910028 sampled from logo)
@@ -34,6 +36,10 @@ window.AIRLINE_BRAND_COLORS = {
   'NSA': { r1:'#B01117', r1Text:'#FFFFFF', r2:'#F9A51A', body:'#F6EEE6', bodyText:'#8A0D12' }, // North Star Air (red #B01117 + gold #F9A51A sampled from logo)
   '5T': { r1:'#003F87', r1Text:'#FFFFFF', r2:'#00A9CE', body:'#EAEFF6', bodyText:'#003F87' }, // Canadian North
   '4N': { r1:'#13294B', r1Text:'#FFFFFF', r2:'#F2A900', body:'#F3F0E8', bodyText:'#13294B' }, // Air North
+  // Air Creebec — the supplied palette. A cream upper bar with near-black ink, as the airline sets its
+  // own black lettering on a light ground; the gate and clock tabs in the near black (white figures read
+  // on it; they do not on the peach); the peach as the third colour.
+  'YN': { r1:'#FCF8E3', r1Text:'#272626', r2:'#272626', r3:'#FDD49A', body:'#FCF8E3', bodyText:'#272626' }, // Air Creebec
   'WG': { r1:'#0B1F3A', r1Text:'#FFFFFF', r2:'#E4002B', body:'#EAF0F6', bodyText:'#0B1F3A' }, // Sunwing
 
   /* ── United States ──────────────────────────────────────────────────── */
@@ -60,5 +66,6 @@ window.AIRLINE_BRAND_COLORS = {
   'OB': { r1:'#0D2B60', r1Text:'#FFFFFF', r2:'#1E6FD0', body:'#EAF0F8', bodyText:'#0D2B60' }, // Boliviana de Aviación (BoA — clean royal blue accent)
   'LA': { r1:'#1B0088', r1Text:'#FFFFFF', r2:'#ED1650', body:'#EEEDF7', bodyText:'#1B0088' }, // LATAM
   'CM': { r1:'#0033A0', r1Text:'#FFFFFF', r2:'#0EA5E9', body:'#EAEDF7', bodyText:'#0033A0' }, // Copa
+  'DM': { r1:'#520E77', r1Text:'#FFFFFF', r2:'#733C90', r3:'#FEC404', body:'#F6F3F8', bodyText:'#370850' }, // Arajet — the purples and the yellow of its emblem; the pale tint and the dark purple of its own site
   'AM': { r1:'#0B2343', r1Text:'#FFFFFF', r2:'#007DC5', body:'#EAEDF2', bodyText:'#0B2343' }  // Aeroméxico
 };
