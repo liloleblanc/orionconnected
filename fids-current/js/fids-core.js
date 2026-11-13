@@ -16180,8 +16180,11 @@ function _buildV2AircraftCol(ctx, vars) {
         // v23678 — one resolver. The old middle branch read AP[_dIata].city,
         // which never existed (AP carries `name`), so it fell straight through
         // to the bare code. _cityForIata does the whole chain properly.
-        _destCityName = _cityForIata(_dIata);
-        if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata);
+        // (a row with no code, whose words stand in for one here, reads the
+        // tables alone, as the rows do: this shelf prints it as it did before
+        // the table of the Americas was read, _placeNameAm)
+        _destCityName = _cityForIata(_dIata, !locIata);
+        if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata, !locIata);
         // v23962 — 'Toronto · Billy Bishop' where the city has two of ours,
         // the same words as the board row (_cityAp); as markup, the airport's
         // name rides in its own smaller span (_cityApHtml), under the city
@@ -19532,9 +19535,10 @@ function uxgGateHtml(ctx) {
     var _bDest = '';
     try {
       var _bdIata = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-      _bDest = (typeof _cityForIata === 'function' ? _cityForIata(_bdIata) : '') || (currentFlight && currentFlight.dest) || '';
+      // (a row with no code reads the tables alone, as on the rail)
+      _bDest = (typeof _cityForIata === 'function' ? _cityForIata(_bdIata, !locIata) : '') || (currentFlight && currentFlight.dest) || '';
       // (normalizeDisplayCity ends in tc(): the shared casing)
-      if (typeof normalizeDisplayCity === 'function') _bDest = normalizeDisplayCity(_bDest, _bdIata);
+      if (typeof normalizeDisplayCity === 'function') _bDest = normalizeDisplayCity(_bDest, _bdIata, !locIata);
       if (typeof _cityAp === 'function') _bDest = _cityAp(_bDest, _bdIata);
       if (typeof _cityApHtml === 'function') _bDest = _cityApHtml(_bDest, _bdIata);
     } catch (eBd) {}
@@ -29901,17 +29905,32 @@ try { if (typeof window !== 'undefined') window._cityForIata = _cityForIata; } c
 // outside the United States and Canada is often the code of another place
 // (Belgrade, LYBE, reads YBE, Uranium City; Geneva, LSGG, reads SGG,
 // Sermiligaaq). Such a code is noted (_placeAmCut) and prints as it did
-// before, for as long as the page lives.
+// before.
+// A CODE THE FEED HAS ITSELF SENT OUTRANKS THAT NOTE. The note alone lasted
+// as long as the page, and a page lives for weeks: one row with CYHI and no
+// IATA code took the name away from every row the feed codes YHI, and from
+// the gate and the map, which ask by code. So a code that arrives in the
+// IATA field of a row on this page is noted too, as a code of the feed, and
+// a name is refused only to a code that was cut and never sent. The row that
+// was cut never takes the name as it is mapped, whatever the notes say: the
+// feed mapper reads the tables alone for it. What is left: on a page whose
+// feed has sent YBE itself, the surfaces that ask by code alone name a
+// Belgrade row cut to YBE as Uranium City.
+// A VIA STOP is the bare name, with no state or country after a comma: in a
+// list of stops a comma reads as one more stop.
+// WHERE NO NAME OF A COUNTRY CAN BE HAD (a browser with no
+// Intl.DisplayNames) the name prints bare, never with the two letters of
+// the country: the table decides (label).
 // (tests/americas-airport-names.test.js, tests/earth-places.test.js; the
 // list of them all: docs/airport-names-americas.md)
-var _PLACE_AM_CUT = {};
-function _placeAmCut(code) {
+var _PLACE_AM_CUT = {}, _PLACE_AM_SENT = {};
+function _placeAmCut(code, sent) {
   var c = String(code || '').toUpperCase();
-  if (/^[A-Z]{3}$/.test(c)) _PLACE_AM_CUT[c] = true;
+  if (/^[A-Z]{3}$/.test(c)) (sent === true ? _PLACE_AM_SENT : _PLACE_AM_CUT)[c] = true;
 }
 function _placeNameAm(code, langOverride) {
   var c = String(code || '').toUpperCase();
-  if (!/^[A-Z]{3}$/.test(c) || _PLACE_AM_CUT[c] === true) return '';
+  if (!/^[A-Z]{3}$/.test(c) || (_PLACE_AM_CUT[c] === true && _PLACE_AM_SENT[c] !== true)) return '';
   try {
     var P = (typeof window !== 'undefined') ? window.FIDS_EARTH_PLACES : null;
     if (!P || typeof P.label !== 'function') return '';
@@ -34427,7 +34446,8 @@ function tc(s) {
   // and 'El' stay as the places write them: Ras Al Khaimah, Wadi Al Dawasir,
   // Sharm El Sheikh; and a first word is never small: Los Angeles, Las
   // Vegas, Le Havre, El Paso, Den Haag, Al Ain, and 'On' alone.)
-  r = r.replace(/(\s)(De|Da|Do|Dos|Das|Del|Di|Du|Des|La|Of|And|Upon|Et|Es|Am|En|I)(?=\s)/g, function (m, sp, w) { return sp + w.toLowerCase(); });
+  // (and Truth or Consequences, New Mexico, which read Truth Or Consequences)
+  r = r.replace(/(\s)(De|Da|Do|Dos|Das|Del|Di|Du|Des|La|Of|And|Or|Upon|Et|Es|Am|En|I)(?=\s)/g, function (m, sp, w) { return sp + w.toLowerCase(); });
   r = r.replace(/(\sde\s)(Los|Las)(?=\s)/g, function (m, de, w) { return de + w.toLowerCase(); });
   // and the word after an elided D', L' or O' is a name too: La Seu d'Urgell
   // reads 'D'Urgell', L'Anse-au-Loup 'L'Anse' (the casing above stops at the
@@ -35144,8 +35164,10 @@ function formatCityIata(raw, iata, langOverride) {
 
   // A CODE THAT WAS NOT GIVEN takes no name from the table of the Americas
   // (_placeNameAm): a row with no code, whose words are read as a code
-  // below, prints as it did before that table was read.
-  var _amOff = !code;
+  // below, prints as it did before that table was read. And a caller whose
+  // code the feed did not send, cut from an ICAO code, says so with a fourth
+  // argument of true (the feed mapper): that row reads the tables alone.
+  var _amOff = !code || (arguments.length > 3 && arguments[3] === true);
 
   // Handle malformed code-only labels: YYZ(YYZ), YYZ (YYZ), (YYZ)
   if (!code) {
@@ -44568,8 +44590,13 @@ function mapADB(raw, mode, kept) {
       ?(f.arrival?.airport?.name||f.arrival?.airport?.municipalityName||'')
       :(f.departure?.airport?.name||f.departure?.airport?.municipalityName||'');
     // A code the feed did not send, cut above from its ICAO code, takes no
-    // name from the table of the Americas and prints as before (_placeAmCut)
-    if (locIata && !String((mode==='dep'?f.arrival?.airport?.iata:f.departure?.airport?.iata)||'').trim()) _placeAmCut(locIata);
+    // name from the table of the Americas and prints as before; a code the
+    // feed sends in its IATA field is noted as a code of the feed, which
+    // outranks that for every other row and surface (_placeAmCut). The row
+    // that was cut reads the tables alone below, whatever the notes say.
+    const _locSent=!!String((mode==='dep'?f.arrival?.airport?.iata:f.departure?.airport?.iata)||'').trim();
+    const _locCut=!!locIata&&!_locSent;
+    if (locIata) _placeAmCut(locIata, _locSent);
     // Some feed rows arrive with NO iata/icao (Goose Bay, some Montreal /
     // Edmonton rows). Reverse-look the code up from the city/airport name —
     // case- and accent-insensitive (CITY values are ALL-CAPS, the API sends
@@ -44627,10 +44654,11 @@ function mapADB(raw, mode, kept) {
       // airport for a city that has two.
       if (!locIata && typeof _iataFromCityName === 'function') locIata = _iataFromCityName(cityName) || '';
     }
-    let locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
+    let locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata, undefined, _locCut);
     // A place of the Americas that CITY does not name is named as a place
     // CITY names is, by its name before the words of the feed (_placeNameAm)
-    if (locIata && !CITY[locIata]) { const _amName=_placeNameAm(locIata, 'en'); if (_amName) locName=formatCityIata(_amName, locIata); }
+    // (never a row whose code was cut from an ICAO code: _locCut above)
+    if (locIata && !_locCut && !CITY[locIata]) { const _amName=_placeNameAm(locIata, 'en'); if (_amName) locName=formatCityIata(_amName, locIata); }
     // Multi-stop rows (TPA through-flights) carry a comma list of cities in
     // cityName. Keep the WHOLE list on the board — CITY[locIata] collapses it
     // to the first stop, and the destination flip needs every leg to cycle.
@@ -44645,8 +44673,13 @@ function mapADB(raw, mode, kept) {
     // the board flips leg by leg.
     if (f._mcoViaStop) {
       const _finalCity = _stripCityCode(locName);
+      // (a stop named from the table of the Americas is the bare name, with
+      // no state or country: a comma here reads as one more stop. It is
+      // cased by the shared casing, tc, so the footers that print this text
+      // read it right.)
+      const _viaAm = v => { const n = /^[A-Z]{3}$/.test(v) ? _placeNameAm(v, 'en') : ''; return n ? tc(n.replace(/,.*$/, '')) : ''; };
       const _viaCities = String(f._mcoViaStop).split(',').map(s => s.trim()).filter(Boolean)
-        .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : ((/^[A-Z]{3}$/.test(v) && _placeNameAm(v, 'en')) || v));
+        .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : (_viaAm(v) || v));
       // Title-case ALL-CAPS entries (CITY values shout) so the gate rail
       // reads 'Raleigh', matching single-stop rows; mixed-case names pass.
       const _tcCity = s => { s = String(s); return (s === s.toUpperCase())

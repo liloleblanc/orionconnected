@@ -285,7 +285,10 @@ test('the rows read every entry of CITY and CITY_FR this build changed as v24066
   assert.deepEqual(N.alias, MAIN_ALIAS, 'the rows\' aliases are v24066\'s');
   assert.equal(N.look('West Palm Beach'), 'PBI', 'West Palm Beach reads PBI, as it did');
   // the feed mapper reads the rows' lookup, and nothing on the board but the map reads the map's
-  assert.match(CORE, /if \(!locIata && typeof _iataFromCityName === 'function'\) locIata = _iataFromCityName\(cityName\) \|\| '';\s*\}\s*let locName=formatCityIata\(CITY\[locIata\] \|\| cityName \|\| locIata \|\| '—', locIata\);/);
+  // (v24152: the last two arguments say whether the row's code was cut from
+  // an ICAO code the feed sent in place of one; such a row reads the tables
+  // alone: tests/americas-airport-names.test.js)
+  assert.match(CORE, /if \(!locIata && typeof _iataFromCityName === 'function'\) locIata = _iataFromCityName\(cityName\) \|\| '';\s*\}\s*let locName=formatCityIata\(CITY\[locIata\] \|\| cityName \|\| locIata \|\| '—', locIata, undefined, _locCut\);/);
   assert.equal((CORE.match(/_iataFromRowName\(/g) || []).length, 1, 'fids-core.js defines _iataFromRowName and never calls it');
 });
 

@@ -29,8 +29,9 @@
 // do not name. So the rows, the belt, the gate, the destination card and the
 // weather card print those 1,055 by name; and every other place, every row
 // with no code, every row whose code the feed did not send (cut from an
-// ICAO code), the photo search and the weather query print exactly what a
-// board without the table prints. Held here by running this checkout's
+// ICAO code) while the feed has not sent that code itself, the photo search
+// and the weather query print exactly what a board without the table
+// prints. Held here by running this checkout's
 // whole fids-core.js with the table and the floor and without them (and
 // v24084's, from the repository's history, while the rows' scripts are
 // v24084's but for their cache tokens), over every code and name of their
@@ -307,7 +308,7 @@ test('the floor and, for the names of the Americas, the three board pages, the b
   assert.match(naming, /var P = \(typeof window !== 'undefined'\) \? window\.FIDS_EARTH_PLACES : null;/);
   assert.deepEqual([...new Set(naming.match(/\bP\.[A-Za-z_]+/g))], ['P.label'], 'and reads only the names it prints');
   const APP = fs.readFileSync(path.join(ROOT, 'fids-current', 'app.html'), 'utf8');
-  const appNaming = fnOf(APP, '\nfunction placeOf(code,feedName){');
+  const appNaming = fnOf(APP, '\nfunction placeOf(code,feedName,cut){');
   assert.equal(count(APP, /FIDS_EARTH_PLACES/g), 1, 'app.html reads the table in one place');
   assert.equal(count(appNaming, /FIDS_EARTH_PLACES/g), 1, 'inside placeOf');
   assert.deepEqual([...new Set(appNaming.match(/\bP\.[A-Za-z_]+/g))], ['P.label']);
@@ -563,17 +564,24 @@ function run() {
       for (const l of LANGS) E1.cityNameOf(BF, c, text, l);
     }
   }
-  // A ROW WHOSE CODE THE FEED DID NOT SEND, read from the last three letters
-  // of its ICAO code, goes to a board of its own (Bcut, the table and the
-  // floor loaded): the board notes such a code for as long as the page
-  // lives (_placeAmCut) and never names it from the table, so on the board
-  // that has met every code that way (the corpus sends 'L' + code for each)
-  // nothing at all may differ from a board without the table.
+  // ONE BOARD, IN THE ORDER THAT TRIES ITS TWO NOTES. A row whose code the
+  // feed did not send is read from the last three letters of its ICAO code,
+  // and the board notes that code (_placeAmCut) and does not name it from
+  // the table. First every such row (the corpus sends 'L' + code for each
+  // code), and every code by itself: on a board that has met every code
+  // that way and no other, nothing at all may differ from a board without
+  // the table (Pcut). Then, ON THE SAME BOARD, every row with the feed's own
+  // code or none: a code the feed has itself sent outranks the cut, so each
+  // of the 1,055 has its name on a board that cut it first (P1). Then the
+  // cut rows once more: they are mapped as before, whatever the notes say
+  // (Pcut2). (The two kinds were on two boards while a cut lasted as long as
+  // the page; a properly coded row then lost its name for weeks to one row
+  // with an ICAO code alone, and no test ran one after the other.)
   const sent = feeds.filter((x) => !x[1]), cut = feeds.filter((x) => x[1]);
-  const Bcut = tabled();
+  const Pcut = prints(B1, cut, codes), PbareCut = prints(Bare, cut, codes);
   const P1 = prints(B1, sent, codes), Pbare = prints(Bare, sent, codes), P0 = B0 ? prints(B0, sent, codes) : null;
-  const Pcut = prints(Bcut, cut, codes), PbareCut = prints(Bare, cut, codes);
-  return (RUN_ = { B0, Bare, B1, Bcut, feeds, sent, cut, codes, P0, Pbare, P1, Pcut, PbareCut });
+  const Pcut2 = prints(B1, cut, []);
+  return (RUN_ = { B0, Bare, B1, feeds, sent, cut, codes, P0, Pbare, P1, Pcut, PbareCut, Pcut2 });
 }
 const diffOf = (A, B, a, b) => {
   const out = [];
@@ -585,13 +593,14 @@ const diffOf = (A, B, a, b) => {
 // worked out here from the table's own data and never by the function under
 // test (label): NAME; with its state's or province's letters, or its
 // country's name in the language on screen, where IN says the name is
-// another place's too; the city's own French name, cased as the board cases
+// another place's too (IN and IN_MORE, through inOf; the country as the
+// board's own French spells it); the city's own French name, cased as the board cases
 // every name, where OF says the place is a second airport of a city CITY_FR
 // writes otherwise. (tests/americas-airport-names.test.js holds label, IN
 // and OF to this, and the scope: 1,055 places.)
 const AMERICAS = Object.keys(PLACES.NAME).filter((c) => PLACES.americas(c));
 function amName(B, c, l) {
-  const n = PLACES.NAME[c], of = PLACES.OF[c], w = PLACES.IN[c];
+  const n = PLACES.NAME[c], of = PLACES.OF[c], w = PLACES.inOf(c);
   if (of) return (l === 'fr' && CITY_FR[of] && CITY_FR[of] !== CITY[of]) ? B.tc(CITY_FR[of]) : n;
   if (!w) return n;
   const st = /^(?:US|CA)-([A-Z]{2})$/.exec(w);
@@ -633,7 +642,7 @@ function amCode(B, c, bare) {
 }
 
 test('the table and the floor change nothing the rows, the belt, the gate, the destination card, the photos or the weather print, but the name of a place of the Americas the tables do not name: the board with them and without them', () => {
-  const { Bare, B1, Bcut, sent, cut, codes, Pbare, P1, Pcut, PbareCut } = run();
+  const { Bare, B1, sent, cut, codes, Pbare, P1, Pcut, PbareCut, Pcut2 } = run();
   assert.equal(typeof B1.FIDS_EARTH_PLACES, 'object', 'the table is loaded, as the pages load it');
   assert.equal(B1.FidsEarth && typeof B1.FidsEarth.cityNameOf, 'function', 'and the floor');
   assert.equal(Bare.FIDS_EARTH_PLACES, undefined); assert.equal(Bare.FidsEarth, undefined);
@@ -679,14 +688,33 @@ test('the table and the floor change nothing the rows, the belt, the gate, the d
   assert.match(codeless('Yhi'), /^\["","Yhi \| YHI","Yhi \| YHI"/, 'a row with no code prints as before');
   assert.match(codeless('Ulukhaktok'), /^\["","Ulukhaktok","Ulukhaktok"/, 'and a name of the table with no code finds none: the name indexes do not read the table');
 
-  // A CODE THE FEED DID NOT SEND: nothing differs, row or code
+  // A CODE THE FEED DID NOT SEND, on the board before the feed sent it:
+  // nothing differs, row or code
   assert.equal(Pcut.length, PbareCut.length);
   assert.deepEqual(diffOf(PbareCut, Pcut, 'without the table', 'with it          '), [], 'a row with an ICAO code alone printed otherwise with the table loaded');
   const lybe = cut.findIndex((x) => x[1] === 'LYBE' && x[2]);
   assert.match(Pcut[lybe], /^\["YBE","Belgrade Nikola Tesla \| YBE"/, 'Belgrade\'s LYBE reads YBE on the rows, as it always has, and is never named Uranium City');
 
+  // AFTER THE FEED HAS SENT EVERY CODE ITSELF, on that same board: P1 above
+  // is every one of the 1,055 by its name on the board that had cut it; and
+  // the rows that were cut, mapped again, are mapped as before, every one
+  // (the row's code and its words: its first two prints). What the board
+  // prints for such a row by its code alone may then be the name the feed's
+  // own rows of that code have, and only for a code of the 1,055.
+  assert.equal(Pcut2.length, cut.length);
+  const asMapped = (r) => JSON.stringify(JSON.parse(r).slice(0, 2));
+  const remapped = [];
+  let healed = 0;
+  cut.forEach((x, i) => {
+    if (asMapped(Pcut2[i]) !== asMapped(PbareCut[i]) && remapped.length < 20) remapped.push(x[1] + ' ' + JSON.stringify(x[2]) + ': ' + asMapped(PbareCut[i]) + ' -> ' + asMapped(Pcut2[i]));
+    if (Pcut2[i] !== PbareCut[i]) { healed++; assert.ok(am.has(JSON.parse(Pcut2[i])[0]), x[1] + ': ' + Pcut2[i]); }
+  });
+  assert.deepEqual(remapped, [], 'a row whose code was cut from an ICAO code took the table\'s name as it was mapped');
+  assert.ok(healed >= AMERICAS.length, healed + ' cut rows of a code the feed has since sent');
+  assert.match(Pcut2[lybe], /^\["YBE","Belgrade Nikola Tesla \| YBE"/);
+
   // and the board's tables are as they were, every entry
-  for (const B of [B1, Bcut]) {
+  for (const B of [B1]) {
     for (const t of ['CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window.AIRPORT_COORDS']) {
       assert.equal(JSON.stringify(vm.runInContext(t, B)), JSON.stringify(vm.runInContext(t, Bare)), t);
     }
@@ -804,7 +832,10 @@ const kmApart = (a, b) => { const r = Math.PI / 180, d = Math.sin((b[0] - a[0]) 
 const BS_ = require(path.join(JS, 'board-strings.js'));
 const NINE = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
 // the board's own (fids-earth.js boardFns regionName)
-const regionNameOf = (cc, l) => { try { return new Intl.DisplayNames([BS_.intl(l)], { type: 'region' }).of(cc) || cc; } catch (e) { return cc; } };
+// (and the board's own French first, where the browser's fr-CA differs from
+// it: CITY_FR writes BELIZE, Intl writes Bélize and Vénézuéla; js/earth-places.js REGION_FR)
+const FR_OWN = { BZ: 'Belize', VE: 'Venezuela' };
+const regionNameOf = (cc, l) => { if (l === 'fr' && own(FR_OWN, cc)) return FR_OWN[cc]; try { return new Intl.DisplayNames([BS_.intl(l)], { type: 'region' }).of(cc) || cc; } catch (e) { return cc; } };
 
 test('a name of the floor\'s table that CITY gives a place elsewhere is printed with where it is, in the language on screen; a city\'s own other airports keep its name', () => {
   // (read as a passenger reads them: without accents, case, punctuation or
@@ -817,8 +848,14 @@ test('a name of the floor\'s table that CITY gives a place elsewhere is printed 
   const CITY_BY = byFold(CITY), CITY_FR_BY = byFold(CITY_FR);
   const namesakes = (c) => (CITY_BY.get(fold(PLACES.NAME[c])) || []).filter((d) => d !== c);
   const homonyms = Object.keys(PLACES.NAME).filter((c) => namesakes(c).length);
-  assert.equal(homonyms.length, 211, 'the floor\'s names that CITY gives another place');
+  // (v24152: 212 with Ogle, named Georgetown as the city it serves)
+  assert.equal(homonyms.length, 212, 'the floor\'s names that CITY gives another place');
   assert.equal(Object.keys(PLACES.IN).length, 69);
+  // (v24152: 20 more carry where they are that this rule cannot find, IN_MORE:
+  // their name is another place's of the table itself, and CITY gives it to
+  // no one. inOf reads both; tests/americas-airport-names.test.js holds them.)
+  assert.equal(Object.keys(PLACES.IN_MORE).length, 20);
+  for (const [c, w] of Object.entries(PLACES.IN_MORE)) { assert.ok(!homonyms.includes(c) && !own(PLACES.IN, c), c); assert.equal(PLACES.inOf(c), w); }
   // (and none more by CITY_FR's names)
   assert.deepEqual(Object.keys(PLACES.NAME).filter((c) => !homonyms.includes(c) && (CITY_FR_BY.get(fold(PLACES.NAME[c])) || []).some((d) => d !== c)), []);
   for (const [c, w] of Object.entries(PLACES.IN)) {
@@ -833,14 +870,14 @@ test('a name of the floor\'s table that CITY gives a place elsewhere is printed 
       if (!/^(US|CA)-/.test(w) && CC[d]) assert.notEqual(CC[d], w, c + ' and ' + d + ' share a country');
     }
   }
-  // the 142 others are the city's own other airports: within 100 km of a
+  // the 143 others are the city's own other airports: within 100 km of a
   // place CITY gives the name, or in its country (Batajnica for Belgrade,
   // the Hong Kong heliport, Biggin Hill for London, Allegheny County for
   // Pittsburgh, North Island for San Diego)
   // (one the country table does not have: OurAirports puts Dejiang in
   // Guizhou with Tongren's other airport)
   const kept = homonyms.filter((c) => !own(PLACES.IN, c)), ccOf = (c) => CC[c] || { DEJ: 'CN' }[c];
-  assert.equal(kept.length, 142);
+  assert.equal(kept.length, 143);
   for (const c of kept) {
     const near = namesakes(c).some((d) => kmApart(coordsOf(c), coordsOf(d)) <= 100);
     assert.ok(near || namesakes(c).some((d) => CC[d] && CC[d] === ccOf(c)), c + ' ' + PLACES.NAME[c]);
@@ -874,7 +911,13 @@ test('a name of the floor\'s table that CITY gives a place elsewhere is printed 
   assert.equal(of('AHN', 'en'), 'Athens, GA');
   assert.equal(of('PRX', 'es'), 'Paris, TX');
   assert.equal(of('VLN', 'en'), 'Valencia, Venezuela');
-  assert.equal(of('VLN', 'fr'), 'Valencia, Vénézuéla');
+  // (v24152: the country as the board's own French spells it, as CITY_FR
+  // writes BELIZE; the browser's fr-CA gave 'Valencia, Vénézuéla')
+  assert.equal(of('VLN', 'fr'), 'Valencia, Venezuela'); assert.equal(of('CZH', 'fr'), 'Corozal, Belize');
+  assert.equal(CITY_FR.BZE, 'BELIZE', 'the board\'s own French table writes it so');
+  const frCA = (cc) => new Intl.DisplayNames(['fr-CA'], { type: 'region' }).of(cc);
+  assert.deepEqual([PLACES.regionOf('VE', 'fr', frCA), PLACES.regionOf('BZ', 'fr', frCA), PLACES.regionOf('CL', 'fr', frCA), PLACES.regionOf('EC', 'fr', frCA)], ['Venezuela', 'Belize', 'Chili', 'Équateur']);
+  assert.deepEqual([PLACES.regionOf('VE', 'fr', () => 'Vénézuéla'), PLACES.regionOf('VE', 'es', () => 'Vénézuéla'), PLACES.regionOf('VE', 'fr'), PLACES.regionOf('VE', 'fr', () => 'VE')], ['Venezuela', 'Vénézuéla', '', '']);
   assert.equal(of('BLA', 'it'), 'Barcelona, Venezuela');
   assert.equal(of('BQT', 'pt'), 'Brest, Bielorrússia');
   assert.equal(of('NCS', 'de'), 'Newcastle, Südafrika');
@@ -907,7 +950,7 @@ test('a name of the floor\'s table that CITY gives a place elsewhere is printed 
   // and the browser's helpers give it (js/earth-places.js inOf; the
   // country's name in the board's locale, BoardStrings.intl)
   assert.match(MOD, /placeIn: function \(c\) \{ return \(PLACES && PLACES\.inOf\) \? PLACES\.inOf\(c\) : ''; \},/);
-  assert.match(MOD, /regionName: function \(cc, l\) \{ var B = S\(\); try \{ return new Intl\.DisplayNames\(\[B\.intl\(l\)\], \{ type: 'region' \}\)\.of\(cc\) \|\| cc; \} catch \(e\) \{ return cc; \} \},/);
+  assert.match(MOD, /regionName: function \(cc, l\) \{\n        var B = S\(\), ask = function \(c2, l2\) \{ return new Intl\.DisplayNames\(\[B\.intl\(l2\)\], \{ type: 'region' \}\)\.of\(c2\) \|\| ''; \};\n        try \{ return \(\(PLACES && PLACES\.regionOf\) \? PLACES\.regionOf\(cc, l, ask\) : ask\(cc, l\)\) \|\| cc; \} catch \(e\) \{ return cc; \}\n      \},/);
 });
 
 test('a longer name is measured with what it adds and placed by the same rules: Charlottetown and Charlottetown, NL on one floor', () => {

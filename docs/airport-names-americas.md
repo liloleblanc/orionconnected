@@ -32,7 +32,7 @@ then by name.
 | COC | Concordia |  | Argentina | + |
 | COR | Cordoba |  | Argentina |  |
 | CNQ | Corrientes |  | Argentina |  |
-| UZU | Curuzu Cuatia |  | Argentina | + |
+| UZU | Curuzú Cuatiá |  | Argentina | + |
 | CUT | Cutral-Co |  | Argentina | + |
 | EHL | El Bolsón |  | Argentina | + |
 | FTE | El Calafate |  | Argentina |  |
@@ -42,11 +42,11 @@ then by name.
 | GPO | General Pico |  | Argentina | + |
 | GGS | Gobernador Gregores |  | Argentina | + |
 | OYA | Goya |  | Argentina | + |
-| GHU | Gualeguaychu |  | Argentina | + |
+| GHU | Gualeguaychú |  | Argentina | + |
 | LPG | La Plata |  | Argentina | + |
 | IRJ | La Rioja |  | Argentina |  |
 | LHS | Las Heras |  | Argentina |  |
-| LGS | Malargue |  | Argentina | + |
+| LGS | Malargüe |  | Argentina | + |
 | MDQ | Mar del Plata |  | Argentina |  |
 | MDZ | Mendoza |  | Argentina |  |
 | RLO | Merlo |  | Argentina | + |
@@ -66,17 +66,17 @@ then by name.
 | REL | Rawson |  | Argentina |  |
 | RCQ | Reconquista |  | Argentina | + |
 | RES | Resistencia |  | Argentina |  |
-| RDS | Rincon de los Sauces |  | Argentina | + |
-| RCU | Rio Cuarto |  | Argentina | + |
+| RDS | Rincón de los Sauces |  | Argentina | + |
+| RCU | Río Cuarto |  | Argentina | + |
 | RGL | Rio Gallegos |  | Argentina |  |
 | RGA | Rio Grande |  | Argentina |  |
-| RYO | Rio Turbio |  | Argentina | + |
+| RYO | Río Turbio |  | Argentina | + |
 | ROS | Rosario |  | Argentina |  |
 | SLA | Salta |  | Argentina |  |
 | OES | San Antonio Oeste |  | Argentina | + |
 | BRC | San Carlos de Bariloche |  | Argentina |  |
 | UAQ | San Juan |  | Argentina |  |
-| ULA | San Julian |  | Argentina | + |
+| ULA | San Julián |  | Argentina | + |
 | LUQ | San Luis |  | Argentina |  |
 | CPC | San Martín de los Andes |  | Argentina |  |
 | TUC | San Miguel de Tucumán |  | Argentina |  |
@@ -139,19 +139,19 @@ then by name.
 | ORZ | Orange Walk |  | Belize | + |
 | PLJ | Placencia |  | Belize | + |
 | PND | Punta Gorda, Belize |  | Belize | + |
-| SPR | San Pedro |  | Belize | + |
-| SJX | Sartaneja |  | Belize | + |
+| SPR | San Pedro, Belize |  | Belize | + |
+| SJX | Sarteneja |  | Belize | + |
 | BDA | Bermuda | Bermudes | Bermuda |  |
 | BVL | Baures |  | Bolivia |  |
 | BJO | Bermejo |  | Bolivia | + |
-| CCA | Chimore |  | Bolivia | + |
+| CCA | Chimoré |  | Bolivia | + |
 | CIJ | Cobija |  | Bolivia |  |
 | CBB | Cochabamba |  | Bolivia |  |
 | GYA | Guayaramerin | Guayaramerín | Bolivia |  |
 | LPB | La Paz |  | Bolivia |  |
 | ORU | Oruro |  | Bolivia | + |
 | POI | Potosi | Potosí | Bolivia |  |
-| PUR | Puerto Rico |  | Bolivia | + |
+| PUR | Puerto Rico, Bolivia |  | Bolivia | + |
 | PSZ | Puerto Suárez |  | Bolivia | + |
 | RIB | Riberalta |  | Bolivia |  |
 | RBQ | Rurrenabaque |  | Bolivia | + |
@@ -306,7 +306,7 @@ then by name.
 | GIG | Rio de Janeiro · Galeão |  | Brazil |  |
 | SDU | Rio de Janeiro · Santos Dumont | Rio de Janeiro · Santos-Dumont | Brazil |  |
 | ROO | Rondonópolis |  | Brazil |  |
-| IAL | Salinas |  | Brazil | + |
+| IAL | Salinas, Brazil |  | Brazil | + |
 | OPP | Salinópolis |  | Brazil | + |
 | SSA | Salvador |  | Brazil |  |
 | IRZ | Santa Isabel do Rio Negro |  | Brazil | + |
@@ -412,7 +412,7 @@ then by name.
 | YYQ | Churchill |  | Canada | + |
 | ZUM | Churchill Falls |  | Canada | + |
 | YCY | Clyde River |  | Canada | + |
-| YCN | Cochrane |  | Canada | + |
+| YCN | Cochrane, ON |  | Canada | + |
 | YOD | Cold Lake |  | Canada | + |
 | YCK | Colville Lake |  | Canada | + |
 | YQQ | Comox |  | Canada |  |
@@ -429,7 +429,7 @@ then by name.
 | YWJ | Déline |  | Canada | + |
 | YDT | Delta |  | Canada | + |
 | YDG | Digby |  | Canada | + |
-| YDO | Dolbeau-Saint-Felicien |  | Canada | + |
+| YDO | Dolbeau-Saint-Félicien |  | Canada | + |
 | YHD | Dryden |  | Canada | + |
 | YXR | Earlton |  | Canada | + |
 | ZEM | Eastmain River |  | Canada | + |
@@ -475,7 +475,7 @@ then by name.
 | ZGF | Grand Forks, BC |  | Canada | + |
 | YQU | Grande Prairie |  | Canada |  |
 | YQA | Gravenhurst |  | Canada | + |
-| YZX | Greenwood |  | Canada | + |
+| YZX | Greenwood, NS |  | Canada | + |
 | YGZ | Grise Fiord |  | Canada | + |
 | YHT | Haines Junction |  | Canada | + |
 | YHZ | Halifax |  | Canada |  |
@@ -537,7 +537,7 @@ then by name.
 | YMN | Makkovik |  | Canada | + |
 | YMG | Manitouwadge |  | Canada | + |
 | YAQ | Maple Bay |  | Canada | + |
-| YSP | Marathon |  | Canada | + |
+| YSP | Marathon, ON |  | Canada | + |
 | YMH | Mary's Harbour |  | Canada | + |
 | ZMT | Masset |  | Canada |  |
 | YNM | Matagami |  | Canada | + |
@@ -629,6 +629,7 @@ then by name.
 | ZPB | Sachigo Lake |  | Canada | + |
 | YSY | Sachs Harbour |  | Canada |  |
 | YIF | Saint-Augustin |  | Canada | + |
+| YJN | Saint-Jean-sur-Richelieu |  | Canada | + |
 | YSJ | Saint John |  | Canada |  |
 | YSL | Saint-Léonard |  | Canada | + |
 | YZG | Salluit |  | Canada |  |
@@ -655,7 +656,6 @@ then by name.
 | XSI | South Indian Lake |  | Canada | + |
 | YAY | St. Anthony |  | Canada |  |
 | YCM | St. Catharines |  | Canada | + |
-| YJN | St Jean |  | Canada | + |
 | YYT | St. John's |  | Canada |  |
 | YFX | St. Lewis |  | Canada | + |
 | YST | St. Theresa Point |  | Canada | + |
@@ -737,8 +737,8 @@ then by name.
 | WCH | Chaitén |  | Chile | + |
 | CNR | Chañaral |  | Chile | + |
 | CCH | Chile Chico |  | Chile | + |
-| YAI | Chillan |  | Chile | + |
-| LGR | Cochrane |  | Chile | + |
+| YAI | Chillán |  | Chile | + |
+| LGR | Cochrane, Chile |  | Chile | + |
 | CCP | Concepcion |  | Chile |  |
 | CPO | Copiapo |  | Chile |  |
 | GXQ | Coyhaique |  | Chile | + |
@@ -748,7 +748,7 @@ then by name.
 | LSC | La Serena |  | Chile |  |
 | ZOS | Osorno |  | Chile |  |
 | WPR | Porvenir |  | Chile | + |
-| ZPC | Pucon |  | Chile | + |
+| ZPC | Pucón |  | Chile | + |
 | PMC | Puerto Montt |  | Chile |  |
 | PNT | Puerto Natales |  | Chile |  |
 | WPU | Puerto Williams |  | Chile | + |
@@ -902,8 +902,8 @@ then by name.
 | PVO | Portoviejo |  | Ecuador | + |
 | IBB | Puerto Villamil |  | Ecuador | + |
 | UIO | Quito |  | Ecuador |  |
-| SNC | Salinas |  | Ecuador | + |
-| SCY | San Cristóbal |  | Ecuador | + |
+| SNC | Salinas, Ecuador |  | Ecuador | + |
+| SCY | San Cristóbal, Ecuador |  | Ecuador | + |
 | ETR | Santa Rosa, Ecuador |  | Ecuador | + |
 | TPC | Tarapoa |  | Ecuador | + |
 | TNW | Tena |  | Ecuador | + |
@@ -986,19 +986,19 @@ then by name.
 | GBJ | Marie-Galante |  | Guadeloupe | + |
 | PTP | Pointe-à-Pitre |  | Guadeloupe |  |
 | SFC | Saint-François |  | Guadeloupe | + |
-| CBV | Coban |  | Guatemala | + |
+| CBV | Cobán |  | Guatemala | + |
 | GUA | Guatemala City | Guatemala | Guatemala |  |
 | HUG | Huehuetenango |  | Guatemala | + |
 | PBR | Puerto Barrios |  | Guatemala |  |
 | GSJ | Puerto San José |  | Guatemala | + |
-| AAZ | Quezaltenango |  | Guatemala | + |
+| AAZ | Quetzaltenango |  | Guatemala | + |
 | RER | Retalhuleu |  | Guatemala |  |
 | RUV | Rubelsanto |  | Guatemala | + |
 | FRS | San Benito |  | Guatemala |  |
 | GEO | Georgetown |  | Guyana |  |
+| OGL | Georgetown |  | Guyana | + |
 | KAI | Kaieteur Falls |  | Guyana | + |
 | LTM | Lethem |  | Guyana | + |
-| OGL | Ogle |  | Guyana | + |
 | CAP | Cap-Haïtien |  | Haiti |  |
 | JAK | Jacmel |  | Haiti | + |
 | JEE | Jérémie |  | Haiti | + |
@@ -1067,7 +1067,7 @@ then by name.
 | NTR | Monterrey |  | Mexico | + |
 | MLM | Morelia |  | Mexico |  |
 | SRL | Mulegé |  | Mexico | + |
-| NOG | Nogales |  | Mexico | + |
+| NOG | Nogales, Mexico |  | Mexico | + |
 | NLD | Nuevo Laredo |  | Mexico |  |
 | OAX | Oaxaca |  | Mexico |  |
 | PQM | Palenque |  | Mexico | + |
@@ -1106,8 +1106,8 @@ then by name.
 | OTD | Contadora |  | Panama | + |
 | DAV | David |  | Panama |  |
 | BOC | Isla Colón |  | Panama |  |
+| BLB | Panama City |  | Panama | + |
 | PTY | Panama City |  | Panama |  |
-| BLB | Panamá City |  | Panama | + |
 | PDM | Pedasí |  | Panama | + |
 | BFQ | Puerto Piña |  | Panama | + |
 | RIH | Río Hato |  | Panama | + |
@@ -1120,7 +1120,7 @@ then by name.
 | ESG | Mariscal Estigarribia |  | Paraguay | + |
 | PJC | Pedro Juan Caballero |  | Paraguay | + |
 | PIL | Pilar |  | Paraguay | + |
-| VMI | Puerto Vallemi |  | Paraguay | + |
+| VMI | Puerto Vallemí |  | Paraguay | + |
 | ANS | Andahuaylas |  | Peru | + |
 | AQP | Arequipa |  | Peru |  |
 | AYX | Atalaya |  | Peru | + |
@@ -1472,8 +1472,8 @@ then by name.
 | EKN | Elkins |  | United States | + |
 | EKO | Elko |  | United States |  |
 | ELM | Elmira |  | United States |  |
-| ELY | Ely |  | United States | + |
-| LYU | Ely |  | United States | + |
+| LYU | Ely, MN |  | United States | + |
+| ELY | Ely, NV |  | United States | + |
 | EMK | Emmonak |  | United States |  |
 | END | Enid |  | United States | + |
 | ERI | Erie |  | United States |  |
@@ -1566,7 +1566,7 @@ then by name.
 | GMU | Greenville |  | United States | + |
 | GSP | Greenville |  | United States |  |
 | PGV | Greenville |  | United States |  |
-| GWO | Greenwood |  | United States | + |
+| GWO | Greenwood, MS |  | United States | + |
 | GUS | Grissom |  | United States | + |
 | GON | Groton |  | United States | + |
 | GUF | Gulf Shores |  | United States | + |
@@ -1773,7 +1773,7 @@ then by name.
 | MLY | Manley Hot Springs |  | United States |  |
 | KMO | Manokotak |  | United States |  |
 | MFD | Mansfield |  | United States | + |
-| MTH | Marathon |  | United States | + |
+| MTH | Marathon, FL |  | United States | + |
 | MGE | Marietta |  | United States | + |
 | MWA | Marion |  | United States |  |
 | MQT | Marquette |  | United States |  |
@@ -1842,8 +1842,8 @@ then by name.
 | MWH | Moses Lake |  | United States | + |
 | CWA | Mosinee |  | United States |  |
 | MTC | Mount Clemens |  | United States | + |
-| MUO | Mountain Home |  | United States | + |
-| WMH | Mountain Home |  | United States | + |
+| WMH | Mountain Home, AR |  | United States | + |
+| MUO | Mountain Home, ID |  | United States | + |
 | NUQ | Mountain View |  | United States | + |
 | MOU | Mountain Village |  | United States |  |
 | MIE | Muncie |  | United States | + |
@@ -1886,7 +1886,7 @@ then by name.
 | NIB | Nikolai |  | United States |  |
 | IKO | Nikolski |  | United States |  |
 | WTK | Noatak |  | United States |  |
-| OLS | Nogales |  | United States | + |
+| OLS | Nogales, AZ |  | United States | + |
 | OME | Nome |  | United States |  |
 | NNL | Nondalton |  | United States | + |
 | ORV | Noorvik |  | United States |  |
@@ -1928,7 +1928,7 @@ then by name.
 | OTM | Ottumwa |  | United States | + |
 | KOZ | Ouzinkie |  | United States |  |
 | OWB | Owensboro |  | United States |  |
-| UOX | Oxford |  | United States | + |
+| UOX | Oxford, MS |  | United States | + |
 | OXR | Oxnard |  | United States | + |
 | PAH | Paducah |  | United States |  |
 | PGA | Page |  | United States |  |
@@ -2043,7 +2043,7 @@ then by name.
 | STP | Saint Paul |  | United States | + |
 | SLE | Salem |  | United States |  |
 | SLN | Salina |  | United States |  |
-| SNS | Salinas |  | United States | + |
+| SNS | Salinas, CA |  | United States | + |
 | SBY | Salisbury |  | United States |  |
 | SMN | Salmon |  | United States |  |
 | SLC | Salt Lake City |  | United States |  |
@@ -2173,7 +2173,7 @@ then by name.
 | TRI | Tri-Cities |  | United States |  |
 | TOI | Troy |  | United States | + |
 | TKF | Truckee |  | United States |  |
-| TCS | Truth Or Consequences |  | United States | + |
+| TCS | Truth or Consequences |  | United States | + |
 | DMA | Tucson |  | United States | + |
 | TUS | Tucson |  | United States |  |
 | TCC | Tucumcari |  | United States | + |
@@ -2248,7 +2248,7 @@ then by name.
 | INK | Wink |  | United States | + |
 | WMC | Winnemucca |  | United States | + |
 | INW | Winslow |  | United States | + |
-| INT | Winston Salem |  | United States | + |
+| INT | Winston-Salem |  | United States | + |
 | OLF | Wolf Point |  | United States |  |
 | WWR | Woodward |  | United States | + |
 | ORH | Worcester |  | United States |  |
@@ -2279,7 +2279,7 @@ then by name.
 | CAJ | Canaima |  | Venezuela | + |
 | CCS | Caracas |  | Venezuela |  |
 | CUP | Carúpano |  | Venezuela | + |
-| CBL | Ciudad Bolivar |  | Venezuela | + |
+| CBL | Ciudad Bolívar |  | Venezuela | + |
 | CZE | Coro |  | Venezuela | + |
 | CUM | Cumaná |  | Venezuela | + |
 | EOR | El Dorado, Venezuela |  | Venezuela | + |
@@ -2289,9 +2289,9 @@ then by name.
 | LRV | Gran Roque Island |  | Venezuela | + |
 | GUQ | Guanare |  | Venezuela | + |
 | GDO | Guasdualito |  | Venezuela | + |
-| GUI | Guiria |  | Venezuela | + |
+| GUI | Güiria |  | Venezuela | + |
 | ICC | Isla de Coche |  | Venezuela | + |
-| LFR | La Fria |  | Venezuela | + |
+| LFR | La Fría |  | Venezuela | + |
 | MAR | Maracaibo |  | Venezuela |  |
 | MYC | Maracay |  | Venezuela | + |
 | PMV | Margarita |  | Venezuela | + |
@@ -2302,9 +2302,9 @@ then by name.
 | PBL | Puerto Cabello |  | Venezuela | + |
 | PZO | Puerto Ordaz |  | Venezuela | + |
 | LSP | Punto Fijo |  | Venezuela | + |
-| SVZ | San Antonio del Tachira |  | Venezuela | + |
+| SVZ | San Antonio del Táchira |  | Venezuela | + |
 | STB | San Carlos del Zulia |  | Venezuela | + |
-| SCI | San Cristóbal |  | Venezuela | + |
+| SCI | San Cristóbal, Venezuela |  | Venezuela | + |
 | SNF | San Felipe |  | Venezuela | + |
 | SFD | San Fernando de Apure |  | Venezuela | + |
 | SNV | Santa Elena de Uairén |  | Venezuela | + |

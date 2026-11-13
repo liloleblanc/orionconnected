@@ -349,8 +349,13 @@
   // NL': a country's name could not tell the two Charlottetowns apart);
   // elsewhere its country's name in the language on screen (B.regionName:
   // Intl.DisplayNames in the board's locale, BoardStrings.intl: 'Valencia,
-  // Venezuela', 'Valencia, Vénézuéla', 'Valencia, ベネズエラ', 'Valencia,
-  // فنزويلا'), else its two letters. The place's own name is the same in
+  // Venezuela', 'Valencia, ベネズエラ', 'Valencia, فنزويلا'; read through the
+  // table's regionOf, which writes Belize and Venezuela in French as the
+  // board's own CITY_FR writes BELIZE, without the accents of the browser's
+  // fr-CA, Bélize and Vénézuéla: js/earth-places.js REGION_FR), else its two
+  // letters.
+  // (And 20 more whose name CITY gives no one, shared among the table's own
+  // places: js/earth-places.js IN_MORE, read through the same inOf.) The place's own name is the same in
   // every language, in Latin letters, and the comma after it is too. Only
   // the floor's names: the rows print the feed's words as before. The name's
   // box is measured with it, in every language, so a longer name takes a
@@ -1727,7 +1732,10 @@
       // (v24073: where a name of it is another place's too, and a
       // country's name in a language of the board's)
       placeIn: function (c) { return (PLACES && PLACES.inOf) ? PLACES.inOf(c) : ''; },
-      regionName: function (cc, l) { var B = S(); try { return new Intl.DisplayNames([B.intl(l)], { type: 'region' }).of(cc) || cc; } catch (e) { return cc; } },
+      regionName: function (cc, l) {
+        var B = S(), ask = function (c2, l2) { return new Intl.DisplayNames([B.intl(l2)], { type: 'region' }).of(c2) || ''; };
+        try { return ((PLACES && PLACES.regionOf) ? PLACES.regionOf(cc, l, ask) : ask(cc, l)) || cc; } catch (e) { return cc; }
+      },
       onlyHere: function (c) { return !boardAt(c) && !!(PLACES && PLACES.AT && Object.prototype.hasOwnProperty.call(PLACES.AT, c)); },
       /* global _iataFromCityName */
       readWords: function (w) { var r = ''; try { if (typeof _iataFromCityName === 'function') r = _iataFromCityName(w) || ''; } catch (e) { r = ''; } return r || rowWords(w); },

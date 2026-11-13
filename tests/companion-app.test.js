@@ -590,8 +590,11 @@ test('a place is never cut inside its name', () => {
   assert.match(APP, /\.pl-c,\.pl-q\{display:inline-block;max-width:100%;/);
   assert.match(APP, /\.fcard \.city\{[^}]*overflow:hidden;/);
   assert.match(APP, /\.pl-in\{display:block;margin-inline-start:-\.8em;\}/);
-  assert.match(src('rowHtml'), /placeHtml\(placeOf\(f\.cityIata,f\.cityName\)\)/);
-  assert.match(src('openFlight'), /placeHtml\(placeOf\(f\.cityIata,f\.cityName\)\)/);
+  // (v24152: with the card's own note that its code was cut from an ICAO
+  // code, which the feed did not send: placeOf then reads the app's own
+  // names alone for it; tests/americas-airport-names.test.js)
+  assert.match(src('rowHtml'), /placeHtml\(placeOf\(f\.cityIata,f\.cityName,f\.cityCut===true\)\)/);
+  assert.match(src('openFlight'), /placeHtml\(placeOf\(f\.cityIata,f\.cityName,f\.cityCut===true\)\)/);
   // no city in the app's own table carries an airport's name any more
   for (const [k, v] of Object.entries(ctx.CITY)) assert.doesNotMatch(String(v), / · /, k);
 });

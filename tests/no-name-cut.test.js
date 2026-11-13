@@ -562,8 +562,11 @@ test('a hung label is held inside its own pill, and the pill inside the map', ()
 
 test('the boarding row\'s Destination is the rail\'s: the airport, the casing, the box rule', () => {
   const row = fnSource('_boardInfoRowHtml');
-  assert.match(row, /_bDest = \(typeof _cityForIata === 'function' \? _cityForIata\(_bdIata\) : ''\)/);
-  assert.match(row, /_bDest = normalizeDisplayCity\(_bDest, _bdIata\);/);
+  // (v24152: a row with no code, whose words stand in for one here, reads
+  // the tables alone, on this row as on the rail: !locIata;
+  // tests/americas-airport-names.test.js)
+  assert.match(row, /_bDest = \(typeof _cityForIata === 'function' \? _cityForIata\(_bdIata, !locIata\) : ''\)/);
+  assert.match(row, /_bDest = normalizeDisplayCity\(_bDest, _bdIata, !locIata\);/);
   assert.match(row, /_bDest = _cityAp\(_bDest, _bdIata\);/);
   assert.match(row, /_bDest = _cityApHtml\(_bDest, _bdIata\);/);
   assert.doesNotMatch(row, /CITY\[locIata\]/, 'no table read of its own');
