@@ -1091,6 +1091,10 @@ window.FIDS_SHARED_WORDMARK = {
 "/logos/airlines/asian-other/copa-wordmark-dark.svg",
 "/logos/airlines/asian-other/copa-wordmark-light.svg"
 ],
+"DM": [
+"/logos/airlines/asian-other/arajet-wordmark-dark.svg",
+"/logos/airlines/asian-other/arajet-wordmark-light.svg"
+],
 "UP": [
 "/logos/airlines/asian-other/bahamasair-wordmark-dark.svg",
 "/logos/airlines/asian-other/bahamasair-wordmark-light.svg"
@@ -1169,7 +1173,7 @@ window.FIDS_SHARED_TILE = {
   "MH":"/logos/airline-tiles/MAS.svg", "PR":"/logos/airline-tiles/PAL.svg", "SG":"/logos/airline-tiles/SEJ.svg", "VN":"/logos/airline-tiles/HVN.svg",
   "QZ":"/logos/airline-tiles/AXM.svg", "AK":"/logos/airline-tiles/AXM.svg", "TR":"/logos/airline-tiles/TGW.svg", "JQ":"/logos/airline-tiles/JST.svg",
   "VA":"/logos/airline-tiles/VOZ.svg", "JJ":"/logos/airline-tiles/TAM.svg", "AD":"/logos/airline-tiles/AZU.svg", "LA":"/logos/airline-tiles/LAN.svg",
-  "AR":"/logos/airline-tiles/ARG.svg", "CM":"/logos/airline-tiles/CMP.svg", "AV":"/logos/airline-tiles/AVA.svg", "AM":"/logos/airline-tiles/AMX.svg",
+  "AR":"/logos/airline-tiles/ARG.svg", "CM":"/logos/airline-tiles/CMP.svg", "DM":"/logos/airline-tiles/DWI.svg", "AV":"/logos/airline-tiles/AVA.svg", "AM":"/logos/airline-tiles/AMX.svg",
   "Y4":"/logos/airline-tiles/VOI.svg", "G3":"/logos/airline-tiles/GLO.svg", "UP":"/logos/airline-tiles/BHS.svg", "OB":"/logos/airline-tiles/BOV.svg"
 };
 window.FIDS_SHARED_EMBLEM = {

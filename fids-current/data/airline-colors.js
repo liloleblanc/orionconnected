@@ -64,5 +64,6 @@ window.AIRLINE_BRAND_COLORS = {
   'OB': { r1:'#0D2B60', r1Text:'#FFFFFF', r2:'#1E6FD0', body:'#EAF0F8', bodyText:'#0D2B60' }, // Boliviana de Aviación (BoA — clean royal blue accent)
   'LA': { r1:'#1B0088', r1Text:'#FFFFFF', r2:'#ED1650', body:'#EEEDF7', bodyText:'#1B0088' }, // LATAM
   'CM': { r1:'#0033A0', r1Text:'#FFFFFF', r2:'#0EA5E9', body:'#EAEDF7', bodyText:'#0033A0' }, // Copa
+  'DM': { r1:'#520E77', r1Text:'#FFFFFF', r2:'#733C90', r3:'#FEC404', body:'#F6F3F8', bodyText:'#370850' }, // Arajet — the purples and the yellow of its emblem; the pale tint and the dark purple of its own site
   'AM': { r1:'#0B2343', r1Text:'#FFFFFF', r2:'#007DC5', body:'#EAEDF2', bodyText:'#0B2343' }  // Aeroméxico
 };

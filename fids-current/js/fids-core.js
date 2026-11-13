@@ -9485,6 +9485,9 @@ const AIRLINE_BRAND = {
   // orange.
   '8P': { bg1:'#0C3473', bg2:'#071F45', bg3:'#12468F', accent:'#0C3473', name:'Pacific Coastal' },
   'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
+  // v24150 — Arajet: the purples of its emblem (the airline sets its white logo on this purple), the
+  // yellow of the macaw for the accent.
+  'DM': { bg1:'#520E77', bg2:'#370850', bg3:'#733C90', accent:'#FEC404', name:'Arajet' },
   // v24150 — Air Creebec, from the supplied palette: the near black #272626 for the field, the
   // peach #FDD49A for the accent (the cream #FCF8E3 is the body of its gate, data/airline-colors.js).
   'YN': { bg1:'#272626', bg2:'#171616', bg3:'#3a3838', accent:'#FDD49A', name:'Air Creebec' },
@@ -9550,6 +9553,7 @@ var LOCAL_LOGOS = {
   '4Y': '/logos/airlines/european/discover-airlines.svg',         // Discover Airlines (Lufthansa Group, ex-Eurowings Discover; replaced Yute Air's IATA code in 2023)
   'MX': '/logos/airlines/us-major/breeze-airways.svg',            // Breeze Airways
   'AV': '/logos/airlines/asian-other/avianca.svg',                // Avianca (Colombian carrier with condor logo)
+  'DM': '/logos/airlines/asian-other/arajet.svg',                 // v24150 — Arajet: the supplied colour lockup, so no path fetches outside art for it
   'QF': '/logos/airlines/asian-other/qantas.png'
 };
 
@@ -11638,6 +11642,7 @@ const AIRLINE_ACCENT = {
   // Icelandair: '#001B71' with no judgement needed at all — the tile ground,
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
+  'DM':'#520E77',   // v24150 — Arajet: the purple of its emblem and of its own site, the ground of its tile
   'YN':'#272626',   // v24150 — Air Creebec: the near black of the supplied palette (the ink of its emblem). The peach of the palette is too light for the white figures of the gate tab and the white glyphs of the rail
   'FI':'#001B71',
   // ITA Airways. Held back when the tile was wired, because the only value
@@ -15219,6 +15224,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // spoke tip, invisible at orb size and well inside the tolerance the
         // other emblems were accepted under.
         '4N':  '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North
+        'DM':  '/logos/airline-tiles/DWI.svg',               // v24150 — Arajet: its tile, as supplied (the orb printed the letters DM before)
         'YN':  '/logos/airline-tiles/CRQ.svg',               // v24150 — Air Creebec: its tile, as supplied art on its own ground; the emblem is black and is never inked white
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
@@ -32987,6 +32993,7 @@ const IATA_TO_TILE_ICAO = {
   // Latin America
   'JJ':'TAM',  'AD':'AZU',  'LA':'LAN',  'AR':'ARG',  'CM':'CMP',
   'AV':'AVA',  'AM':'AMX',  'Y4':'VOI',  'G3':'GLO',  'UP':'BHS',
+  'DM':'DWI',   // v24150 — Arajet: the supplied tile, its macaw on the purple of the airline
   // Bolivia — Boliviana de Aviación. IATA OB → ICAO BOV (BOV.svg).
   // NOTE: LZB.svg is Bulgaria Air, NOT BoA — do not map OB to LZB.
   'OB':'BOV'
@@ -33246,6 +33253,7 @@ const IATA_TO_WORDMARK = {
   // Latin America — wordmark-only (no emblem) as specified
   'AM':'aeromexico',     // Aeroméxico
   'CM':'copa',           // Copa Airlines (Panama)
+  'DM':'arajet',         // v24150 — Arajet (Dominican Republic): the supplied lettering, purple for light grounds and white for dark
   'UP':'bahamasair',     // Bahamasair (Bahamas flag carrier)
   'LA':'latam',          // LATAM Airlines (parent for 4C LATAM Colombia via PARENT map)
   'Y4':'volaris',        // Volaris (Mexico, parent for Q6 Volaris Costa Rica via PARENT map)
@@ -33410,6 +33418,7 @@ const LOGO_SUBFOLDER = {
   'vivaaerobus-emblem.webp':'airlines/asian-other',
   'gol-wordmark-light.svg':'airlines/asian-other', 'gol-wordmark-dark.svg':'airlines/asian-other',
   'copa-wordmark-light.svg':'airlines/asian-other', 'copa-wordmark-dark.svg':'airlines/asian-other',
+  'arajet-wordmark-light.svg':'airlines/asian-other', 'arajet-wordmark-dark.svg':'airlines/asian-other', 'arajet.svg':'airlines/asian-other',
   'british-airways-speedmarque.svg':'airlines/european',
   'clarion.png':'hotels/choice-le-meridien', 'comair-logo.jpg':'airlines/us-regional', 'comfort-inn.png':'hotels/choice-le-meridien', 'courtyard.png':'hotels/marriott',
   'courtyard.svg':'hotels/marriott', 'crowne-plaza.png':'hotels/ihg', 'crowne-plaza.svg':'hotels/ihg', 'days-inn.jpg':'hotels/wyndham',
