@@ -261,6 +261,7 @@ const UNITED_ROWS = [
 const NOT_UNITED_ROWS = [
   { flight: 'AC659', airline: 'AC' },                     // Air Canada: its own set where that runs, never this card
   { flight: 'AC5678', airline: 'AC', _opCode: 'UA' },     // sold as Air Canada, flown by United: an Air Canada page
+  { flight: 'AC5678', airline: 'UA' },                    // an Air Canada number under a United carrier field: an Air Canada page by its number
   { flight: 'DL1432', airline: 'DL' },                    // Delta
   { flight: 'DAL1432', airline: 'DAL' },
   { flight: 'AA100', airline: 'AA' },
@@ -431,7 +432,8 @@ test('the heading: Dream livery in nine languages over the two what-if cards, Fr
 
   // and what each card prints, in each language, with English beside it
   const b = board();
-  const kicker = (html) => /<div class="hcard-kicker">([\s\S]*?)<\/div>/.exec(html)[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+  // the tags are taken out again until none is left (one pass can leave a tag two halves join into)
+  const kicker = (html) => { let s = /<div class="hcard-kicker">([\s\S]*?)<\/div>/.exec(html)[1], was; do { was = s; s = s.replace(/<[^>]+>/g, ''); } while (s !== was); return s.replace(/&nbsp;/g, ' '); };
   for (const l of STORE.LANGS) {
     const pair = l === 'en' ? ['en', 'fr'] : [l, 'en'];
     // the United card on a United gate
