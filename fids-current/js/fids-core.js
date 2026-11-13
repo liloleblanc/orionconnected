@@ -13155,10 +13155,11 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // flights arrive as KL — renamed to KL, with WA kept as an alias so
   // Cityhopper's E175/E190 still resolve to the same art.
   // v24150 — DM: Arajet flies one type, the 737 MAX 8, and its drawing was supplied (aircraft/DM/7M8.png).
-  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, XP:1, '3H':1, '5T':1, AF:1, KL:1, DM:1 };
+  // YN: Air Creebec, two supplied drawings, its Dash 8-100 and Dash 8-300 (aircraft/YN/DH1.png, DH3.png).
+  var LIVERY_FOLDERS = { AC:1, WS:1, TS:1, PD:1, F8:1, PB:1, AA:1, UA:1, DL:1, AS:1, B6:1, WN:1, HA:1, F9:1, XP:1, '3H':1, '5T':1, AF:1, KL:1, DM:1, YN:1 };
   // ICAO / sister-code aliases so a feed that says AFR, KLM or WA still
   // finds the same folder.
-  var LIVERY_FOLDER_ALIAS = { AFR:'AF', KLM:'KL', WA:'KL', KLC:'KL', DWI:'DM' };
+  var LIVERY_FOLDER_ALIAS = { AFR:'AF', KLM:'KL', WA:'KL', KLC:'KL', DWI:'DM', CRQ:'YN' };
   var miss = (typeof window !== 'undefined') ? window.AIRCRAFT_IMG_MISSING : {};
 
   // v218.99.47 — Engine variant detection. If the full model string was
@@ -13359,7 +13360,7 @@ var PLANE_FACING = {
   'TS/332.png':'R', 'TS/333.png':'R', 'UA/319.png':'L', 'UA/320.png':'L', 'UA/32Q.png':'L', 'UA/737.png':'L',
   'UA/738.png':'L', 'UA/73H.png':'L', 'UA/752.png':'L', 'UA/753.png':'L', 'UA/763.png':'L', 'UA/764.png':'L',
   'UA/772.png':'L', 'UA/777.png':'L', 'UA/77L.png':'L', 'UA/77W.png':'L', 'UA/788.png':'L', 'UA/789.png':'L', 'UA/7M8.png':'L',
-  'DM/7M8.png':'L',
+  'DM/7M8.png':'L', 'YN/DH1.png':'L', 'YN/DH3.png':'L',
   'UA/7M9.png':'L', 'UA/CR7.png':'L', 'UA/CRJ.png':'L', 'UA/E75.png':'L', 'WN/737.png':'L', 'WN/738.png':'L',
   'WN/73W.png':'L', 'WN/7M8.png':'L', 'WS/737.png':'L', 'WS/738.png':'L', 'WS/73G.png':'L', 'WS/73H.png':'L',
   'WS/73W.png':'L', 'WS/789.png':'L', 'WS/7M8.png':'L', 'WS/DH4.png':'L',
