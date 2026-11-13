@@ -880,12 +880,78 @@ window.FIDS_SHARED_CITY_V24066 = {
   YSQ:'qiangorlosmongolautonomouscounty', YTF:'', YVQ:'', YWL:'', YYE:'', YYH:'', YZZ:'', ZAG:'', ZEL:'',
   ZFD:'', ZMT:'', ZNZ:''
 };
+// ONE NAME ON EVERY SCREEN. FIDS_SHARED_AIRLINE is fids-core.js AIRLINE_NAME,
+// whole: every code the boards name, with the same name. Copied, like the
+// tile and emblem maps further down; tests/airline-names-every-row.test.js
+// fails the moment the two differ by one code or one letter. It was a hand
+// copy that nothing held, and it had fallen 47 codes behind: the phone
+// printed ZG where the board printed Zipair, and the feed's other spelling
+// (Frenchbee, Xiamen Airlines, BA Cityflyer) where the board printed its own.
+// A name changed or added on the boards is changed or added here, in the
+// same commit.
 window.FIDS_SHARED_AIRLINE = {
+  // Passenger airlines found on recorded rows and on the Miami boards of
+  // 2026-11-13 with no name in any table.
+  'BBQ': 'Eastern Air Express',     'WAL': 'WORLD ATLANTIC',
+  'G6':  'GlobalX Airlines',        'OB':  'BoA',
+  'ZL':  'Rex',                     'FP':  'FlyPelican',
+  'QN':  'Skytrans',                'FC':  'Link Airways',
+  'OD':  'Batik Air Malaysia',      'HO':  'Juneyao Air',
+  '5J':  'Cebu Pacific',            'TW':  'Trinity Airways',
+  'SB':  'Aircalin',                'GS':  'Tianjin Airlines',
+  'VJ':  'VietJet Air',             'HX':  'Hong Kong Airlines',
+  '3U':  'Sichuan Airlines',        'D7':  'AirAsia X',
+  'JD':  'Capital Airlines',        'IZ':  'Arkia',
+  'KP':  'ASKY Airlines',           'HF':  'Air Côte d’Ivoire',
+  'OM':  'MIAT Mongolian Airlines', '4O':  'Air Montenegro',
+  'FB':  'Bulgaria Air',            'VF':  'AJet',
+  'WP':  'WASAYA',                  '0N':  'NORTH STAR AIR',
+  // Zurich: CS is Chair Airlines, IV is GP Aviation (the feed names both).
+  'CS': 'Chair Airlines',  'GM': 'Chair Airlines',
+  '2L': 'Helvetic Airways',
+  'IV': 'GP Aviation',
+  // Codes that printed as letters on live boards. EZY and ITY are the ICAO
+  // forms of U2 and AZ, which Edinburgh puts in the flight number.
+  'EZY': 'easyJet',
+  'ITY': 'ITA Airways',
+  'LF':  'Contour Airlines',
+  'KG':  'Denver Air Connection',
+  'JX':  'STARLUX Airlines',
+  'AN':  'Advanced Air',
+  '4B':  'Boutique Air',
+  'N0':  'Norse Atlantic Airways',
+  'Z0':  'Norse Atlantic UK',
+  'DM':  'Arajet',
+  'H4':  'HiSky',
+  '5F':  'FlyOne',
+  'KC':  'Air Astana',
+  'P4':  'Air Peace',
+  'KM':  'KM Malta Airlines',
+  'HY':  'Uzbekistan Airways',
+  'ZG':  'ZIPAIR',
+  'BF':  'French Bee',
+  'Q6':  'Volaris Costa Rica',
+  'SM':  'Air Cairo',
+  'NK': 'Spirit Airlines',     'P6': 'Pascan Aviation',
+  '8T': 'Air Tindi',           'PJ': 'Air Saint-Pierre',
+  'AH': 'Air Algérie',         'KU': 'Kuwait Airways',
+  'BI': 'Royal Brunei',        'UX': 'Air Europa',
+  'XY': 'flynas',              'MF': 'Xiamen Air',
+  'ZH': 'Shenzhen Airlines',   '9C': 'Spring Airlines',
+  'KA': 'Cathay Dragon',
+  'EW': 'Eurowings',
+  // CJ is BA CityFlyer, which the boards print as British Airways.
+  'CJ': 'BRITISH AIRWAYS',
+  'RK': 'Ryanair UK',          'EC': 'easyJet Europe',
+  'EJU': 'easyJet Europe',     'EZS': 'easyJet Switzerland',
+  'LM': 'Loganair',            'W4': 'Wizz Air Malta',
+  'I2': 'Iberia Express',
   // Regionals/internationals the map lacked — without an entry here the
   // prefix-first branding can't recognize the code and a feed row marked
   // AC carrying 3H802 branded as Air Canada.
   'YN':'Air Creebec', 'S4':'Azores Airlines',
   '5T':'Canadian North', '4N':'Air North',
+  '8P':'Pacific Coastal',
   'AC':'AIR CANADA',  'WS':'WESTJET', 'WG':'SUNWING',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
@@ -934,11 +1000,46 @@ window.FIDS_SHARED_AIRLINE = {
   'CM':'COPA',        'AV':'AVIANCA',      'MX':'BREEZE',      'AM':'AEROMEXICO',  'XN':'MEXICANA',  'G3':'GOL',
   'Y4':'VOLARIS',     'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
   'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows that rendered as raw codes in the app */
-  '4T':'BEOND',       'LR':'LACSA',        'BM':'BMI',
+  '4T':'RISE AIR',    'LR':'LACSA',        'BM':'BMI',
   'BG':'BIMAN',        'DO':'SKY HIGH',
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
   'PX':'AIR NIUGINI', 'KO':'ACE CARGO',
 };
+
+// THE APP TAKES OFF WHAT THE BOARDS TAKE OFF. A flight no passenger looks for
+// (cargo, courier, private, a ticketing code that is not a carrier) is on no
+// screen. FIDS_SHARED_OFF_BOARD is fids-core.js FILTER_OUT, code for code (the
+// reason for each is written there); FIDS_SHARED_OFF_BOARD_NAMES is its
+// _NON_PASSENGER_PATTERNS, the names a feed gives an operator that carries
+// no passengers, in small letters. Copied, like the maps in this file;
+// tests/airline-names-every-row.test.js fails the moment either differs from
+// fids-core.js, and runs every recorded row through both screens: a row the
+// boards drop is a card the app does not show (app.html adbToCard).
+window.FIDS_SHARED_OFF_BOARD = [
+  'W8','CJT','FX','FDX','5X','GTI','CLX','MPH','ABX','ATN','POC','QT','TCN','8C',
+  '5Y','PO','PAC','CK','CKK','NK','NKS','OK','CSA','ASP','KO','KOW','LXJ','EJA',
+  'EJM','ENJ','XOJ','JTL','NJA','EJ','LJ','XO','PKC','LEG','RVJ','TVP','DCM','CFS',
+  'RSP','SWQ','TWY','XLS','GLF','PJS','EDG','LPC','FLX','JET','MMG','VNY','1I','PNO',
+  'EV','NXC','TJ','GPD','JRE','H3','YHS','YB','M6','AJT','KJ','AIH','WFS','A1',
+  'KF','CF','CGA','M3','ABD','N8','HKC','C8','CDG','CV','CLU','P3','CSU','S6',
+  'SRR','GB','8V','WRF','GSP','PP','PRO','NCB','WSG','TS3','KEW','SCO','CRQ','CDN',
+  'IJM','PRT','EXV','EVH','CGE','CFC','RCM','POL','CCG','PEG','NRC','CMC','BBA','BBD',
+  'AIB','AIK'
+];
+window.FIDS_SHARED_OFF_BOARD_NAMES = [
+  '21 air',
+  'quest diagnostics', 'labcorp', 'lab corp',
+  'amazon air', 'amazon prime',
+  'fedex feeder', 'ups feeder', 'usps',
+  'medical', 'air ambulance', 'lifeflight', 'angel flight',
+  'ferry flight', 'positioning flight', 'maintenance flight',
+  'cargo charter', 'private charter', 'corporate flight',
+  'organ', 'transplant',
+  'flexjet', 'netjets', 'planesense',
+  'wheels up', 'jetsuite', 'vistajet',
+  'nexgen aviation', 'nexgen',
+  'tradewind aviation', 'tradewind'
+];
 
 // The boards' wordmark art per carrier — [forLightBg(dark ink), forDarkBg(light ink)],
 // resolved from fids-core's IATA_TO_WORDMARK + LOGO_SUBFOLDER against the real files.
