@@ -15005,8 +15005,10 @@ window._BADGE_TILE_BRANDS = {
   // geese of its tessellated pattern, white out of an orange disc, half orange and half white as
   // the guide sets the pattern (a drawing supplied for the boards, airinuit-emblem.svg). It was
   // its orange tile, beside five discs of a second red.
-  '3H':  { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit-emblem.svg' },
-  'AIE': { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit-emblem.svg' }
+  // fill: the emblem is drawn to the edge of the orb, so its orange runs to the rim all round
+  // (it is a disc cut by its own square; set inside a margin it showed a flat white side).
+  '3H':  { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit-emblem.svg', fill: true },
+  'AIE': { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit-emblem.svg', fill: true }
 };
 
 // v23396 — ONE ORB RECIPE, USED BY BOTH ORBS.
@@ -15103,18 +15105,18 @@ window._gateOrbParts = function (code) {
   // is set inside it, whole and in its own colours, as the five glyph badges beside it are.
   var onOwnGround = !!(tb && tb.bg);
   var badge = onOwnGround
-    ? BASE + 'background:' + tb.bg + ';padding:clamp(6px,0.9vh,13px);'
+    ? BASE + 'background:' + tb.bg + ';padding:' + (tb.fill ? '0' : 'clamp(6px,0.9vh,13px)') + ';'
     : isTile
       ? BASE + 'background:transparent;padding:0;'
       : BASE + 'background:' + DISC + ';padding:clamp(6px,0.9vh,13px);';
   var imgStyle = onOwnGround
-    ? 'width:100%;height:100%;object-fit:contain;display:block;'
+    ? (tb.fill ? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;' : 'width:100%;height:100%;object-fit:contain;display:block;')
     : isTile
       ? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;'
       : keepsColour || onWhite
         ? 'width:100%;height:100%;object-fit:contain;display:block;'
         : 'width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);';
-  var fills = isTile && !onOwnGround;
+  var fills = (isTile && !onOwnGround) || (onOwnGround && !!tb.fill);
   return { path: path, badge: badge, imgStyle: imgStyle,
            native: fills, keepsColour: keepsColour,
            nativeCls: fills ? ' v2-fi-emblem-native' : '' };

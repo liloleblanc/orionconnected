@@ -58,8 +58,11 @@ test('every brand on its own ground: a ground, a mark that exists, and the resol
 test('the recipe paints the disc in that ground and sets the mark inside it whole, in its own colours', () => {
   const recipe = CORE.slice(CORE.indexOf('window._gateOrbParts = function (code) {'), CORE.indexOf('var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {'));
   assert.match(recipe, /var onOwnGround = !!\(tb && tb\.bg\);/);
-  assert.match(recipe, /\? BASE \+ 'background:' \+ tb\.bg \+ ';padding:clamp\(6px,0\.9vh,13px\);'/);
-  assert.match(recipe, /var imgStyle = onOwnGround\s*\? 'width:100%;height:100%;object-fit:contain;display:block;'/);
+  assert.match(recipe, /\? BASE \+ 'background:' \+ tb\.bg \+ ';padding:' \+ \(tb\.fill \? '0' : 'clamp\(6px,0\.9vh,13px\)'\) \+ ';'/);
+  assert.match(recipe, /var fills = \(isTile && !onOwnGround\) \|\| \(onOwnGround && !!tb\.fill\);/, 'a mark drawn to the edge is marked as filling its box, so no stylesheet pads it');
+  assert.match(recipe, /var imgStyle = onOwnGround\s*\? \(tb\.fill \? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;' : 'width:100%;height:100%;object-fit:contain;display:block;'\)/);
+  // a mark drawn to the edge (fill) has no margin: Air Inuit's orange runs to the rim
+  assert.equal(tableOfGrounds()['3H'].fill, true);
 });
 
 test('the four gates of the report: every glyph badge is the colour of the emblem orb, with an ink that reads on it', () => {
@@ -82,11 +85,20 @@ test('Air Inuit follows its brand guide: Charcoal Black #231F20, Air Inuit Orang
   assert.match(COLORS, /'3H': \{ r1:'#231F20', r1Text:'#FFFFFF', r2:'#F1471D', r3:'#4A4A4D', body:'#E6E7E8', bodyText:'#231F20' \}, \/\/ Air Inuit/);
   assert.match(CORE, /\n  '3H':'#231F20',   \/\/ v24150/);
   assert.match(CORE, /\n  '3H': \{ bg1:'#231F20', bg2:'#161314', bg3:'#4A4A4D', accent:'#F1471D', name:'Air Inuit' \},/);
-  // the orb mark: the geese emblem, orange only (the white of the geese is the white of the disc)
+  // the orb mark: the geese emblem, a disc of the guide's Air Inuit Orange with the geese white out of it.
+  // The drawing was supplied on a square that cut its disc on the left and at the top; for the orb the
+  // disc is completed there, and its frame is the square round the disc, so the round orb shows all of it
+  // (both birds whole) with the orange to the rim on the left.
   const emblem = fs.readFileSync(path.join(ROOT, 'fids-current/logos/airlines/canadian-regional/airinuit-emblem.svg'), 'utf8');
-  assert.deepEqual([...new Set(emblem.match(/fill="#[0-9A-F]{6}"/gi))], ['fill="#ED4C1E"']);
+  assert.deepEqual([...new Set(emblem.match(/fill="#[0-9A-F]{6}"/gi))], ['fill="#F1471D"']);
   assert.doesNotMatch(emblem, /<metadata|<style|class=|<script|<image/);
-  // its orange is the guide's within what an eye can tell (deltaE 76 under 6)
+  const vb = /viewBox="([-\d.]+) ([-\d.]+) ([\d.]+) ([\d.]+)"/.exec(emblem).slice(1).map(Number);
+  assert.equal(vb[2], vb[3], 'square');
+  // the disc: centre 377.0, 392.53 and radius 411.25 (fitted through the points of its arc, all within 0.7)
+  assert.ok(Math.abs(vb[0] + 411.25 - 377.0) < 0.01 && Math.abs(vb[1] + 411.25 - 392.53) < 0.01 && Math.abs(vb[2] - 822.5) < 0.01);
+  assert.equal((emblem.match(/ A411\.25,411\.25 /g) || []).length, 2, 'two arcs complete the disc, on the left and at the top');
+  // the drawing was supplied in #ED4C1E, the guide's orange within what an eye can tell (deltaE 76 under 6),
+  // and is set in the guide's own value so the orb, the glyphs and the tile are one orange
   const lab = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92));
     const X = (c[0] * 0.4124 + c[1] * 0.3576 + c[2] * 0.1805) / 0.95047, Y = c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722, Z = (c[0] * 0.0193 + c[1] * 0.1192 + c[2] * 0.9505) / 1.08883;
     const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116); return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))]; };
