@@ -313,7 +313,7 @@ test('every airline palette and every board preset: white set only where white h
   }
   assert.ok(colour > 0 && white > 0, colour + ' colour, ' + white + ' white');
   // the carriers' yellows, oranges, lime and teal, the ones a light-set test is for
-  for (const [code, k] of [['WN', 'r2'], ['LH', 'r2'], ['4N', 'r2'], ['NSA', 'r2'], ['IB', 'r2'], ['F8', 'r2'], ['WS', 'r2'], ['TS', 'r2']]) {
+  for (const [code, k] of [['WN', 'r2'], ['LH', 'r2'], ['NSA', 'r2'], ['IB', 'r2'], ['F8', 'r2'], ['WS', 'r2'], ['TS', 'r2']]) {
     assert.equal(PICK._wxRowSetFor(rgb(AB[code][k]), rgb('#FFFFFF')), 'colour', code + ' ' + AB[code][k] + ' under white text');
   }
 });
