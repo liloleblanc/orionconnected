@@ -89,7 +89,7 @@ The Autograph Collection file in the foot is the one already in the site
   picture has its year on a plaque under its frame, then the place where it was also used
   and the line that says so: the 1990 one was featured on the dinner menu of the
   Passamaquoddy Dining Room, the 1994 one was made into the postcard left in every room for
-  guests. The view was laid out and worded to an example supplied for the page; the wording
+  hotel guests. The view was laid out and worded to an example supplied for the page; the wording
   was put right in both languages. No written permission is on file.
 - The photograph, the name and the Autograph Collection mark are the resort's and Marriott's.
   The page shows them only to say where the resort is and how to reach it.

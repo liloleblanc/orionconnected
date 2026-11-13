@@ -962,7 +962,7 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     algonquinInEveryRoom: { en: 'In every room', fr: 'Dans chaque chambre', es: 'En cada habitación', de: 'In jedem Zimmer', it: 'In ogni camera', pt: 'Em cada quarto', ja: '全客室に', zh: '每间客房', ar: 'في كل غرفة',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    algonquinArt1994: { en: 'Made into a postcard for guests', fr: 'Offerte en carte postale aux invités', es: 'Convertida en postal para los huéspedes', de: 'Als Postkarte für die Gäste gedruckt', it: 'Divenne una cartolina per gli ospiti', pt: 'Transformada em cartão-postal para os hóspedes', ja: '宿泊客向けの絵はがきに', zh: '制成明信片赠予宾客', ar: 'صدرت بطاقة بريدية للضيوف',
+    algonquinArt1994: { en: 'Made into a postcard for hotel guests', fr: 'Carte postale pour les invités de l’hôtel', es: 'Convertida en postal para los huéspedes del hotel', de: 'Als Postkarte für die Hotelgäste gedruckt', it: 'Divenne una cartolina per gli ospiti dell’hotel', pt: 'Transformada em cartão-postal para os hóspedes do hotel', ja: 'ホテル宿泊客向けの絵はがきに', zh: '制成明信片赠予酒店宾客', ar: 'صدرت بطاقة بريدية لضيوف الفندق',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v24149 — the story view of the page: one line for each year of its timeline. The years,
     // the railway ({RAIL}, in French under its own French name) and the collection of the hotel ({BRAND}) are data of

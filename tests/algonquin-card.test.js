@@ -152,7 +152,7 @@ test('the five views: the facts of the house from its one table, the words in th
   const l90 = thenPart.indexOf('<div class="alq-label"><div class="alq-where"><span class="alq-fit">' + H.menuRoom + '</span></div><span class="alq-say">'
     + pair('A aussi figuré sur le menu du soir', 'Also featured on the dinner menu') + '</span></div>');
   const l94 = thenPart.indexOf('<div class="alq-label"><div class="alq-where alq-pairfit"><span class="alq-fit">' + pair('Dans chaque chambre', 'In every room') + '</span></div><span class="alq-say">'
-    + pair('Offerte en carte postale aux invités', 'Made into a postcard for guests') + '</span></div>');
+    + pair('Carte postale pour les invités de l’hôtel', 'Made into a postcard for hotel guests') + '</span></div>');
   assert.ok(l90 > box && l94 > l90, 'the labels under the pictures, in their order');
   assert.equal(count(html, H.menuRoom), 1, 'the name of the dining room once, as printed');
   // the story and the guests: two timelines, the years in order, one line for each year in each language
