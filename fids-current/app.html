@@ -6,7 +6,7 @@
 <!-- v24145 — host-airport.js first: the desktop request below builds its
      board link with fidsBoardUrl, and the note above the title says why the
      app loads this file at all. -->
-<script src="js/host-airport.js?v=24152"></script>
+<script src="js/host-airport.js?v=24153"></script>
 <script>
 /* v24139 — A PHONE THAT ASKS ITS BROWSER FOR THE DESKTOP SITE GETS THE BOARD.
    Request desktop site on the app only reloaded the app: the browser asks
@@ -560,12 +560,12 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24152"></script>
-<script src="js/shared-names.js?v=24152"></script>
+<script src="js/board-strings.js?v=24153"></script>
+<script src="js/shared-names.js?v=24153"></script>
 <!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
-<script src="js/earth-places.js?v=24152"></script>
-<script src="data/airline-colors.js?v=24152"></script>
-<script src="js/feed-router.js?v=24152"></script>
+<script src="js/earth-places.js?v=24153"></script>
+<script src="data/airline-colors.js?v=24153"></script>
+<script src="js/feed-router.js?v=24153"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -815,10 +815,15 @@ function cityOf(f){const p=placeOf(f.cityIata,f.cityName,f.cityCut===true);retur
 // line can break between and never inside (see .pl-in in the stylesheet)
 function placeHtml(p){return '<span class="pl-in"><span class="pl-c">'+esc(p.c)+'</span>'+(p.q?'<span class="pl-q"><span>'+esc(p.q)+'</span></span>':'')+'</span>';}
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
-  B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet',
+  B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',
   JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air',UX:'Air Europa'};
 // v23230 — the board's full carrier catalogue backfills the rest (see the
 // CITY merge above): every code the big board can name, the app names too.
+// FIDS_SHARED_AIRLINE is the boards' AIRLINE_NAME whole, and the names above
+// are the boards' own for those codes in the app's casing, so a flight has
+// one name on every screen (tests/airline-names-every-row.test.js holds
+// both). Cargojet was named above; an all-cargo airline is on no screen
+// (adbToCard, below), so it is not.
 if(window.FIDS_SHARED_AIRLINE){for(var _sa in FIDS_SHARED_AIRLINE){if(!AIRLINE[_sa])AIRLINE[_sa]=FIDS_SHARED_AIRLINE[_sa];}}
 
 const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':'Airbus A320neo','32Q':'Airbus A321neo','32B':'Airbus A321neo',
@@ -1031,7 +1036,11 @@ const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL
 // had MQ3435 on a generic dark card saying "AMERICAN" beside white American cards.
 // Multi-mainline operators (SkyWest OO, Mesa YV, GoJet G7, Republic YX) keep
 // their own identity — the board keeps them too.
-const REGIONAL_FAM={QK:'AC',RV:'AC',ZX:'AC','9M':'AC','9L':'AC',SP:'PB',MQ:'AA',OH:'AA',PT:'AA','9E':'DL'};
+// The table is the boards' PARENT (fids-core.js) for every code they keep on
+// the screen, held equal by tests/airline-names-every-row.test.js. It lacked
+// Q6, 4C and PTR, so a Volaris Costa Rica flight read Volaris on the board
+// and Volaris Costa Rica on the phone, and a number filed PTR printed PTR.
+const REGIONAL_FAM={QK:'AC',RV:'AC',ZX:'AC','9M':'AC','9L':'AC',SP:'PB',MQ:'AA',OH:'AA',PT:'AA','9E':'DL',PTR:'PD',Q6:'Y4','4C':'LA'};
 const REGIONAL_OP={QK:'Jazz',RV:'Air Canada Rouge',ZX:'Air Georgian','9M':'Central Mountain Air','9L':'Provincial',SP:'PAL Airlines',MQ:'Envoy Air',OH:'PSA Airlines',PT:'Piedmont Airlines','9E':'Endeavor Air'};
 // Wordmark ink for LIGHT theme — each airline's brand colour. Air Canada's
 // wordmark is black by design, so it stays black. (Dark theme uses the white
@@ -1491,7 +1500,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24152';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24153';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -1632,6 +1641,31 @@ function adbToCard(f,dir,aheadMs){
   const other=dir==='arr'?dep:arr;       // the origin (arr) / destination (dep)
   const num=(f.number||'').replace(/\s+/g,'').toUpperCase();
   if(!num)return null;
+  // THE APP TAKES OFF WHAT THE BOARDS TAKE OFF (fids-core.js mapADB, the same
+  // rule): a flight no passenger looks for (cargo, courier, private, a
+  // ticketing code that is not a carrier) is on no screen. The boards' own
+  // lists reach the app through js/shared-names.js: FIDS_SHARED_OFF_BOARD is
+  // their FILTER_OUT, FIDS_SHARED_OFF_BOARD_NAMES their name patterns. A row
+  // gives no card when the code at the top of the row, the carrier of its
+  // flight number or the code of the airline the feed named for it is on the
+  // list, or when the name of that airline carries one of the patterns. The
+  // airline the feed named is the boards' _adbFeedAirline: the one at the
+  // top, else the one on the leg at this airport, but only when the code on
+  // that leg is the carrier of the flight number (a leg that carries another
+  // code is the operating carrier of a flight another airline sells, and is
+  // not judged in its place). The app listed Atlas Air, Air Incheon, Amerijet
+  // and a private Gulfstream that the boards had taken off.
+  const _W=typeof window!=='undefined'?window:{};
+  const _off=_W.FIDS_SHARED_OFF_BOARD||[], _offNames=_W.FIDS_SHARED_OFF_BOARD_NAMES||[];
+  const _top=f.airline||{}, _topCode=String(_top.iata||'').trim().toUpperCase(), _hl=here.airline||{};
+  const _fp=(num.match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(?=\d)/)||[])[0]||num.replace(/[0-9].*/,'');
+  const _li=String(_hl.iata||'').trim().toUpperCase(), _lc=String(_hl.icao||'').trim().toUpperCase();
+  const _ownLeg=!!_fp&&(_fp===_li||_fp===_lc);
+  let _feedCode=_topCode, _feedName=String(_top.name||'').trim();
+  if(!(_feedCode&&_feedName)&&_ownLeg){_feedCode=_feedCode||_li||_lc;_feedName=_feedName||String(_hl.name||'').trim();}
+  if([_topCode,_feedCode,_fp].some(c=>c&&_off.indexOf(c)>=0))return null;
+  const _feedLow=_feedName.toLowerCase();
+  if(_feedLow&&_offNames.some(p=>_feedLow.indexOf(p)>=0))return null;
   let opCode=(((f.airline&&f.airline.iata)||'')).toUpperCase();
   // v23235 — MIA's WebFIDS splits "F9 1204" as carrier "F" + number "91204",
   // so a bare letter (or nothing) lands here and Frontier branded as "F"
@@ -1688,6 +1722,17 @@ function adbToCard(f,dir,aheadMs){
   else if(_w==='ontime')state='ontime';
   else if(_w==='expected')state='expected';
   const timeliness=state==='delayed'?'delayed':state==='early'?'early':'onTime';
+  // The name the feed gave the airline of the card, wherever the feed put it
+  // (_adbFeedAirline on the boards, fids-core.js): the name at the top of the
+  // row, else the one on the leg at this airport, but only when the code on that
+  // leg is the carrier of the flight number. The feed of an airport names the
+  // airline on the legs alone, so a carrier missing from AIRLINE printed its
+  // bare code here (BBQ, WAL and G6 at Miami). A leg that carries another code
+  // is the operating carrier (the Operated by line below), not this airline.
+  // The leg is asked only for a carrier AIRLINE does not name: the cards of
+  // the carriers it names print exactly as they did.
+  let _alName=String(_top.name||'').trim();
+  if(!_alName&&!AIRLINE[code]&&_ownLeg)_alName=String(_hl.name||'').trim();
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
@@ -1714,7 +1759,7 @@ function adbToCard(f,dir,aheadMs){
     // changes), and the feed's own airline name (a fuller spelling of the
     // board's short one: 'Turkish Airlines' for TURKISH)
     schedDate:((String((here.scheduledTime&&here.scheduledTime.local)||'').match(/\d{4}-\d{2}-\d{2}/))||[])[0]||'',
-    alName:(f.airline&&f.airline.name)||'',
+    alName:_alName,
     estTime:adbHHMM(here.runwayTime&&here.runwayTime.local)||adbHHMM(here.predictedTime&&here.predictedTime.local)||adbHHMM(here.revisedTime&&here.revisedTime.local)||adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     otherTime:otherTime, durMin:durMin,
     gate:(here.gate&&here.gate!=='-')?here.gate:'',

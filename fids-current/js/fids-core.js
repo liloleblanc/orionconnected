@@ -18165,7 +18165,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24152" src="/textures/gate-sky-shelf.mp4?v=24152" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24153" src="/textures/gate-sky-shelf.mp4?v=24153" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -18209,7 +18209,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24152" src="/textures/gate-sky-shelf.mp4?v=24152" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24153" src="/textures/gate-sky-shelf.mp4?v=24153" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19444,7 +19444,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24152" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24153" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -32871,6 +32871,51 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 const AIRLINE_NAME = {
 
+  // AN AIRLINE EITHER BELONGS ON THE SCREEN OR IT DOES NOT. Codes found on
+  // recorded rows (tests/fixtures) and on the Miami boards of 2026-11-13 that
+  // no table here named, so their rows printed the code, or would have. Each
+  // one below is a passenger airline, named the way its own airport names it;
+  // the cargo, private and not-a-carrier codes found beside them are in
+  // FILTER_OUT instead. tests/airline-names-every-row.test.js runs every
+  // recorded row through mapADB and fails on a row that prints only a code.
+  // Miami. Its feed puts the ICAO designator in the carrier slot for the two
+  // charter airlines with no IATA code on the row, as Edinburgh does for EZY.
+  'BBQ': 'Eastern Air Express',     // Havana, Santa Clara and Holguin, Boeing 737-400
+  'WAL': 'WORLD ATLANTIC',          // the ICAO form of WL below; MD-83 to Cuba and Cap-Haitien
+  'G6':  'GlobalX Airlines',        // Airbus A320, Caracas and Cap-Haitien
+  'OB':  'BoA',                     // Boliviana de Aviacion, Santa Cruz de la Sierra
+  // Sydney and Hobart
+  'ZL':  'Rex',                     // 162 recorded rows at SYD
+  'FP':  'FlyPelican',
+  'QN':  'Skytrans',                // Lord Howe Island
+  'FC':  'Link Airways',            // Canberra to Hobart
+  'OD':  'Batik Air Malaysia',
+  'HO':  'Juneyao Air',
+  '5J':  'Cebu Pacific',
+  'TW':  'Trinity Airways',         // the name of the former t-way Air since 10 September 2026; the code is unchanged
+  'SB':  'Aircalin',
+  'GS':  'Tianjin Airlines',
+  'VJ':  'VietJet Air',
+  'HX':  'Hong Kong Airlines',
+  '3U':  'Sichuan Airlines',
+  'D7':  'AirAsia X',
+  'JD':  'Capital Airlines',
+  // New York JFK. IZ flies its own rows; the other three sell seats on a
+  // flight of Ethiopian or Cathay Pacific, which the codeshare pass folds
+  // into the operator row, and are named for the day one stands alone.
+  'IZ':  'Arkia',
+  'KP':  'ASKY Airlines',
+  'HF':  'Air Côte d’Ivoire',
+  'OM':  'MIAT Mongolian Airlines',
+  // Zurich
+  '4O':  'Air Montenegro',          // the feed says ToMontenegro, the company that flies as Air Montenegro
+  'FB':  'Bulgaria Air',
+  'VF':  'AJet',
+  // Thunder Bay. The worker files Wasaya under WP and North Star Air under
+  // 0N; the art of both is still keyed WT and NSA further down.
+  'WP':  'WASAYA',
+  '0N':  'NORTH STAR AIR',
+
   // v23361 - Zurich's two remaining bare codes. IV601/IV600 run ZRH<->Pristina:
   // that is Air Prishtina, whose Swiss-Kosovo flights Chair Airlines operates,
   // which is why Chair's artwork arrived alongside. IV was the one code v23349
@@ -32901,7 +32946,7 @@ const AIRLINE_NAME = {
   'AN':  'Advanced Air',
   '4B':  'Boutique Air',
   'N0':  'Norse Atlantic Airways',
-  'Z0':  'Norse Atlantic France',
+  'Z0':  'Norse Atlantic UK',       // Orlando to London Gatwick, as Orlando names it; Z0 is the code of the British company (ICAO UBT). The table said Norse Atlantic France
   'DM':  'Arajet',
   'H4':  'HiSky',
   '5F':  'FlyOne',
@@ -32994,7 +33039,12 @@ const AIRLINE_NAME = {
   'CM':'COPA',        'AV':'AVIANCA',      'MX':'BREEZE',      'AM':'AEROMEXICO',  'XN':'MEXICANA',  'G3':'GOL',
   'Y4':'VOLARIS',     'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
   'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows that rendered as raw codes in the app */
-  '4T':'BEOND',       'LR':'LACSA',        'BM':'BMI',
+  // 4T is Rise Air of Saskatoon (the code of Transwest Air before the two
+  // northern Saskatchewan airlines merged in 2021), as the worker files it
+  // (YXE_AIRLINE_IATA) and as Saskatoon names it on every 4T row. The table
+  // said BEOND, a Maldives airline, so flights to Prince Albert and
+  // Fond-du-Lac printed its name.
+  '4T':'RISE AIR',    'LR':'LACSA',        'BM':'BMI',
   'BG':'BIMAN',        'DO':'SKY HIGH',
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
   'PX':'AIR NIUGINI', 'KO':'ACE CARGO',
@@ -33218,7 +33268,10 @@ const IATA_WORDMARK_ONE = {
   'TK': '/logos/wordmarks/TK.svg',
   'TP': '/logos/wordmarks/TP.svg',
   'TR': '/logos/wordmarks/TR.svg',
-  'TW': '/logos/wordmarks/TW.svg',
+  // TW is not listed. Its file (/logos/wordmarks/TW.svg, still on disk) is
+  // the lettering of t-way Air, the name the airline left on 10 September
+  // 2026. Every surface prints Trinity Airways as text until there is art
+  // of the new name.
   'UB': '/logos/wordmarks/UB.svg',
   'UO': '/logos/wordmarks/UO.svg',
   'UX': '/logos/wordmarks/UX.svg',
@@ -36675,7 +36728,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24152';
+var FIDS_BUILD_TAG = 'v24153';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39584,6 +39637,12 @@ const CALLSIGN_ICAO = {
 // RJ removed from the AC family — Royal Jordanian is its own carrier; the
 // bogus mapping dressed an Amman flight in Air Canada branding.
 const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
+// The phone app keeps the same flights off (app.html adbToCard). It cannot
+// load this script, so the codes below and _NON_PASSENGER_PATTERNS in mapADB
+// are copied to js/shared-names.js (FIDS_SHARED_OFF_BOARD and
+// FIDS_SHARED_OFF_BOARD_NAMES): a code or a pattern added or removed here is
+// added or removed there, and tests/airline-names-every-row.test.js fails
+// until it is.
 const FILTER_OUT = new Set([
   // ── Major cargo carriers (IATA + ICAO) ──
   'W8','CJT','FX','FDX','5X','GTI','CLX','MPH','ABX','ATN','POC','QT','TCN',
@@ -39612,6 +39671,13 @@ const FILTER_OUT = new Set([
   // codes must be blocked too.
   'H3','YHS','YB',  // Harbour Air Seaplanes
   // ── Cargo subsidiaries / freight ──
+  // Found on recorded rows with a code and no name
+  // (tests/airline-names-every-row.test.js). None carries a passenger who
+  // would look for it on a board.
+  'M6','AJT',  // Amerijet International: all-cargo (Houston to Louisville on the IAH feed)
+  'KJ','AIH',  // Air Incheon, AirZeta since August 2025: all-cargo (Anchorage to Chicago on the ORD feed)
+  'WFS',       // World Fuel Services: a trip-support code on a private Gulfstream G650 (Dallas Addison to Keflavik)
+  'A1',        // A.P.G. Distribution Systems: a ticketing code, not a carrier. Its numbers are seats on another airline (Norse Atlantic at JFK), whose own row is the flight
   'KF',        // Air Cargo Carriers
   'CF','CGA',  // City Airline / cargo
   'M3','ABD',  // Air Cargo Express
@@ -44484,6 +44550,42 @@ function _fidsSetLookahead(depRaw, arrRaw) {
   return n;
 }
 
+// THE AIRLINE A FEED NAMED FOR A ROW, WHEREVER THE FEED PUT IT.
+// A row names its airline in one of two places. The older shape carries it at
+// the top of the row (airline: iata, name). Every adapter of the own feed of
+// an airport (feed-router.js, and authorityFlight in the worker, whose rows
+// are also the backup list) carries it only inside the two legs. mapADB used
+// to read the top alone, so at every airport that runs on its own feed an
+// airline missing from AIRLINE_NAME lost the name its airport gave it and the
+// row printed the bare code: BBQ, WAL and G6 at Miami, which that airport
+// calls Eastern Air Express, World Atlantic and GlobalX Airlines.
+// The rule: what the top of the row says, first; for what it leaves unsaid,
+// the home leg (the departure of a departures row, the arrival of an arrivals
+// row), but only when the code on that leg is the carrier of the flight
+// number. A leg that carries another code is the operating carrier of a
+// flight sold by another (the evidence for the Operated-by line), and its
+// name is never printed as the airline of the row. A flight number with no
+// carrier prefix proves nothing about the leg, so that leg is not taken
+// either.
+// Returns code and name as the feed wrote them (code in capitals), each an
+// empty string when the feed gave none.
+function _adbFeedAirline(f, mode) {
+  if (!f) return { code: '', name: '' };
+  var top = f.airline || null;
+  var code = String((top && top.iata) || '').trim().toUpperCase();
+  var name = String((top && top.name) || '').trim();
+  if (code && name) return { code: code, name: name };
+  var leg = (mode === 'dep' ? f.departure : f.arrival) || null;
+  var al = (leg && leg.airline) || null;
+  if (!al) return { code: code, name: name };
+  var legIata = String(al.iata || '').trim().toUpperCase();
+  var legIcao = String(al.icao || '').trim().toUpperCase();
+  var num = String(f.number || '').trim().toUpperCase().replace(/\s+/g, '');
+  var m = num.match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(?=\d)/);
+  var own = m ? m[0] : num.replace(/[0-9].*/, '').trim();
+  if (!own || (own !== legIata && own !== legIcao)) return { code: code, name: name };
+  return { code: code || legIata || legIcao, name: name || String(al.name || '').trim() };
+}
 // v23918 — `kept`: rows the Moncton worker remembered after the feed dropped
 // them (_gateFeedKept). They are evidence for the gate maps, never board rows,
 // so they skip the board's three-hour trail and are kept for the 30 hours the
@@ -44503,6 +44605,13 @@ function mapADB(raw, mode, kept) {
     const time=adbHHMM(sL)||'??:??';
     const code=(f.airline?.iata||'').trim().toUpperCase();
     if(FILTER_OUT.has(code))return null;
+    // THE AIRLINE THE FEED NAMED FOR THIS ROW (_adbFeedAirline): the one at the
+    // top of the row, else the one on the home leg when it is the carrier of
+    // the flight number. The two filters below and the printed name all read
+    // this one answer, so an operator named only on its leg is dropped, or
+    // named, exactly as one named at the top.
+    const _feedAl = _adbFeedAirline(f, mode);
+    if(FILTER_OUT.has(_feedAl.code))return null;
     // v212: filter out non-passenger operators that AeroDataBox sometimes returns
     // as the airline. These are private charters, medical-lab transport, courier
     // services, etc. — registered to companies like Quest Diagnostics, Amazon,
@@ -44511,7 +44620,7 @@ function mapADB(raw, mode, kept) {
     // by matching the API name field against a list of known non-passenger
     // patterns. This is a name-based filter (case-insensitive substring match)
     // because these flights often have no useful IATA code or use generic ones.
-    const _apiNameRaw = (f.airline?.name || '').trim();
+    const _apiNameRaw = _feedAl.name;
     const _NON_PASSENGER_PATTERNS = [
       '21 air',              // 21 Air — Boeing 767 cargo/charter operator
       'quest diagnostics', 'labcorp', 'lab corp',
@@ -44552,7 +44661,7 @@ function mapADB(raw, mode, kept) {
     // code 4Y was historically Yute Air Alaska (defunct 2017), reassigned to
     // Discover Airlines in 2023. The API still sometimes returns "Yute Air".
     // Local map is authoritative; fall back to API only if we have no entry.
-    const _apiName = (f.airline?.name||'').trim().toUpperCase();
+    const _apiName = _feedAl.name.toUpperCase();
     const _localName = AIRLINE_NAME[airline] || AIRLINE_NAME[code] || AIRLINE_NAME[fp] || '';
     const faAirlineName = _localName || _apiName;
     // Extract ACTUAL operating carrier from leg data (FIDS endpoint with withLeg=true)
@@ -66133,7 +66242,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24152" src="/textures/gate-sky-shelf.mp4?v=24152"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24153" src="/textures/gate-sky-shelf.mp4?v=24153"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
