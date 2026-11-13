@@ -1095,6 +1095,10 @@ window.FIDS_SHARED_WORDMARK = {
 "/logos/airlines/asian-other/arajet-wordmark-dark.svg",
 "/logos/airlines/asian-other/arajet-wordmark-light.svg"
 ],
+"YN": [
+"/logos/airlines/canadian-regional/air-creebec-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/air-creebec-wordmark-light.svg"
+],
 "UP": [
 "/logos/airlines/asian-other/bahamasair-wordmark-dark.svg",
 "/logos/airlines/asian-other/bahamasair-wordmark-light.svg"

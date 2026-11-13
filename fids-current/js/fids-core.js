@@ -9555,6 +9555,7 @@ var LOCAL_LOGOS = {
   '4Y': '/logos/airlines/european/discover-airlines.svg',         // Discover Airlines (Lufthansa Group, ex-Eurowings Discover; replaced Yute Air's IATA code in 2023)
   'MX': '/logos/airlines/us-major/breeze-airways.svg',            // Breeze Airways
   'AV': '/logos/airlines/asian-other/avianca.svg',                // Avianca (Colombian carrier with condor logo)
+  'YN': '/logos/airlines/canadian-regional/air-creebec-wordmark-dark.svg', // v24150 — Air Creebec: its own lettering, so no path fetches outside art for it
   'DM': '/logos/airlines/asian-other/arajet.svg',                 // v24150 — Arajet: the supplied colour lockup, so no path fetches outside art for it
   'QF': '/logos/airlines/asian-other/qantas.png'
 };
@@ -33159,6 +33160,7 @@ const IATA_TO_WORDMARK = {
   'WK': 'edelweiss',
   'NZ': 'NZ',              // v23740 — resolver appends -wordmark-dark/-light.svg
   '4N': 'airnorth',        // v23742 — resolver appends -wordmark-dark/-light.svg
+  'YN': 'air-creebec',     // v24150 — Air Creebec: its airCreebec lettering, black for light grounds and white for dark
   // v23770 — Canadian North had no wordmark at all, so the row fell back to
   // the colour lockup under the whitening filter (white on a light ground),
   // the Welcome card drew nothing, and the BIDS cell drew nothing. The dark
@@ -33436,6 +33438,7 @@ const LOGO_SUBFOLDER = {
   'NZ-wordmark-light.svg':'airlines/asian-other', 'NZ-wordmark-dark.svg':'airlines/asian-other',
   'airnorth-wordmark-light.svg':'airlines/canadian-regional', 'airnorth-wordmark-dark.svg':'airlines/canadian-regional',
   'canadian-north-wordmark-light.svg':'airlines/canadian-regional', 'canadian-north-wordmark-dark.svg':'airlines/canadian-regional',
+  'air-creebec-wordmark-light.svg':'airlines/canadian-regional', 'air-creebec-wordmark-dark.svg':'airlines/canadian-regional',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
   'ita-airways-wordmark-light.svg':'airlines/european', 'ita-airways-wordmark-dark.svg':'airlines/european',
   'transavia-wordmark-light.svg':'airlines/european', 'transavia-wordmark-dark.svg':'airlines/european',

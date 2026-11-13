@@ -13,7 +13,8 @@
 //     it is never set on a dark ground.
 //   · the supplied palette in the three colour tables: cream #FCF8E3,
 //     peach #FDD49A, near black #272626.
-// It has no lettering of its own on file yet, so its name is typed.
+//   · its airCreebec lettering, as supplied, black for light grounds and white
+//     for dark grounds (the Welcome card, the rows of a dark board).
 // ══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -60,4 +61,20 @@ test('the supplied palette is in the three colour tables, and the white figures 
   assert.ok(ratio('#FFFFFF', '#272626') >= 7, 'white figures on the near black of the gate tab');
   assert.ok(ratio('#272626', '#FCF8E3') >= 7, 'near-black ink on the cream bar');
   assert.ok(ratio('#FFFFFF', '#FDD49A') < 3, 'and white would not read on the peach, which is why the peach is not the accent');
+});
+
+test('its lettering: one frame, the same letters, black for light grounds and white for dark, on every surface', () => {
+  const dir = 'fids-current/logos/airlines/canadian-regional/';
+  const dark = read(dir + 'air-creebec-wordmark-dark.svg'), light = read(dir + 'air-creebec-wordmark-light.svg');
+  const frame = (s) => /viewBox="([^"]+)"/.exec(s)[1];
+  assert.equal(frame(dark), frame(light));
+  const shapes = (s) => (s.match(/ d="[^"]+"/g) || []);
+  assert.equal(shapes(dark).length, 10);
+  assert.deepEqual(shapes(dark), shapes(light), 'the same letters');
+  assert.deepEqual([...new Set(dark.match(/fill="#[0-9A-F]{6}"/g))], ['fill="#000000"']);
+  assert.deepEqual([...new Set(light.match(/fill="#[0-9A-F]{6}"/g))], ['fill="#FFFFFF"'], 'white lettering, nothing behind it');
+  for (const s of [dark, light]) assert.doesNotMatch(s, /<text|<style|<image|<rect|class=/);
+  assert.match(CORE, /\n  'YN': 'air-creebec',     \/\/ v24150/, 'IATA_TO_WORDMARK');
+  assert.match(CORE, /\n  'YN': '\/logos\/airlines\/canadian-regional\/air-creebec-wordmark-dark\.svg',/, 'LOCAL_LOGOS: no outside art');
+  assert.ok(SHARED.includes('"YN": [\n"/logos/airlines/canadian-regional/air-creebec-wordmark-dark.svg",\n"/logos/airlines/canadian-regional/air-creebec-wordmark-light.svg"\n]'), 'the app');
 });
