@@ -40,7 +40,9 @@
        is now or later, not gone, not cancelled. An overdue row is never it.
      · Names are the rows' own (formatCityIata, the language on screen); a
        place CITY and CITY_FR do not name is named by the floor's own table
-       (js/earth-places.js NAME, v24070), which nothing but the floor reads.
+       (js/earth-places.js NAME, v24070). (Its names of the Americas are
+       now printed by the rows and every other screen too, where the
+       board's tables have none: fids-core.js _placeNameAm.)
        They are placed by the longest of the board's languages, so a
        name never moves when the board turns language: only its text
        changes. A name keeps 6 px clear of the routes where it can, never
@@ -73,9 +75,9 @@
        of every other place (js/earth-places.js, v24070).
      · Every place the boards can meet has a position: the board's own
        tables, else js/earth-places.js (OurAirports), which the floor loads
-       itself as it starts (loadPlaces), never the board. The floor never
-       writes to the board's tables: the rows, the gate, the companion app
-       and every other screen print exactly what they printed before it.
+       itself as it starts (loadPlaces) where the page has not. The floor
+       never writes to the board's tables, and only it reads the positions
+       and the clocks.
      · White ink with a dark halo, nothing behind it. Nothing moves, flashes
        or travels: the planet is re-lit once a minute, a quarter of a degree
        of sunlight, written in bands nobody can see change. A new floor (a
@@ -153,7 +155,7 @@
   var BLOB_BUDGET = 8e6;            // compressed pictures kept at hand, bytes
   var RETRY_MS = 600000;            // a floor with no picture is tried again after this
   var WAIT_MS = 60000;              // a planet not up by then: the old backdrop meanwhile
-  var PLACES_URL = '/js/earth-places.js?v=24151';   // every other place's position and zone (loadPlaces)
+  var PLACES_URL = '/js/earth-places.js?v=24152';   // every other place's position and zone (loadPlaces)
   var PLACES_WAIT_MS = 6000;        // the most a floor waits for them before it is drawn without
   var HALO = '#020a1c';
 
@@ -347,8 +349,13 @@
   // NL': a country's name could not tell the two Charlottetowns apart);
   // elsewhere its country's name in the language on screen (B.regionName:
   // Intl.DisplayNames in the board's locale, BoardStrings.intl: 'Valencia,
-  // Venezuela', 'Valencia, Vénézuéla', 'Valencia, ベネズエラ', 'Valencia,
-  // فنزويلا'), else its two letters. The place's own name is the same in
+  // Venezuela', 'Valencia, ベネズエラ', 'Valencia, فنزويلا'; read through the
+  // table's regionOf, which writes Belize and Venezuela in French as the
+  // board's own CITY_FR writes BELIZE, without the accents of the browser's
+  // fr-CA, Bélize and Vénézuéla: js/earth-places.js REGION_FR), else its two
+  // letters.
+  // (And 20 more whose name CITY gives no one, shared among the table's own
+  // places: js/earth-places.js IN_MORE, read through the same inOf.) The place's own name is the same in
   // every language, in Latin letters, and the comma after it is too. Only
   // the floor's names: the rows print the feed's words as before. The name's
   // box is measured with it, in every language, so a longer name takes a
@@ -1650,11 +1657,14 @@
   }
   // v24070 — EVERY OTHER PLACE THE BOARDS CAN MEET (js/earth-places.js):
   // the positions (OurAirports) and zones (IANA tz) of the places the
-  // board's own tables leave without one. The floor alone loads it, once,
-  // as it starts (it is no part of the board's own load), and waits for it
-  // up to PLACES_WAIT_MS before it draws, so its first planet is framed for
-  // every place it can name; a table that is late or fails is drawn without
-  // (a place with no position has no route, as before).
+  // board's own tables leave without one. The floor loads it, once, as it
+  // starts, where the page has not, and waits for it up to PLACES_WAIT_MS
+  // before it draws, so its first planet is framed for every place it can
+  // name; a table that is late or fails is drawn without (a place with no
+  // position has no route, as before). (The board pages now load the table
+  // themselves, before the core, which prints its names of the Americas:
+  // fids-core.js _placeNameAm. The floor then finds it here and loads
+  // nothing; its positions and clocks are still read by the floor alone.)
   var PLACES = null, placesAsked = 0;
   function loadPlaces() {
     if (placesAsked) return;
@@ -1722,7 +1732,10 @@
       // (v24073: where a name of it is another place's too, and a
       // country's name in a language of the board's)
       placeIn: function (c) { return (PLACES && PLACES.inOf) ? PLACES.inOf(c) : ''; },
-      regionName: function (cc, l) { var B = S(); try { return new Intl.DisplayNames([B.intl(l)], { type: 'region' }).of(cc) || cc; } catch (e) { return cc; } },
+      regionName: function (cc, l) {
+        var B = S(), ask = function (c2, l2) { return new Intl.DisplayNames([B.intl(l2)], { type: 'region' }).of(c2) || ''; };
+        try { return ((PLACES && PLACES.regionOf) ? PLACES.regionOf(cc, l, ask) : ask(cc, l)) || cc; } catch (e) { return cc; }
+      },
       onlyHere: function (c) { return !boardAt(c) && !!(PLACES && PLACES.AT && Object.prototype.hasOwnProperty.call(PLACES.AT, c)); },
       /* global _iataFromCityName */
       readWords: function (w) { var r = ''; try { if (typeof _iataFromCityName === 'function') r = _iataFromCityName(w) || ''; } catch (e) { r = ''; } return r || rowWords(w); },

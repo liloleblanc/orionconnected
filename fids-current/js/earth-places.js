@@ -16,12 +16,25 @@
    the live boards' rows were recorded with (2026-10-19), and every airport
    with airline service and an IATA code (OurAirports: scheduled_service yes).
 
-   THIS TABLE IS THE MAP'S ALONE. Only fids-earth.js loads it, once, as the
-   floor starts (loadPlaces), and only the floor reads it. The rows, the
-   gate, the belt, the companion app, the destination card, the city photos
-   and the weather card never do: they read CITY and CITY_FR as they always
-   have, and print every code here exactly as they did before it existed
-   (tests/earth-places.test.js).
+   THE POSITIONS AND THE CLOCKS ARE THE MAP'S ALONE: only fids-earth.js
+   reads AT and ZONE. The rows, the gate, the belt, the companion app, the
+   destination card, the city photos and the weather card read CITY and
+   CITY_FR as they always have, and print every place outside the Americas
+   exactly as they did before this table existed (tests/earth-places.test.js).
+
+   THE NAMES OF THE AMERICAS ARE THE BOARDS' TOO. A gate to Río Hato printed
+   'Rih' and its map 'To RIH': 1,055 places of North, Central and South
+   America and the Caribbean had a name here and nowhere a board could read
+   it. Every board page (fids.html, gids.html, bids.html) and the companion
+   app now load this file with their own scripts, and where CITY and CITY_FR
+   have no name for a code of the Americas they print the name here (label,
+   below), each through one function: fids-core.js _placeNameAm, app.html
+   placeOf. Nothing is copied into CITY, CITY_FR or shared-names.js: the
+   name indexes that find the code of a row with no code, the photo search
+   and the weather query read the board's tables alone, as before, and a
+   code the feed never sent (cut from an ICAO code) takes no name from here
+   (tests/americas-airport-names.test.js). The list of every airport of the
+   Americas the boards can name: docs/airport-names-americas.md.
 
    AT     [lat, lon] of 3219 places no table of the board places: OurAirports
           (ourairports.com/data, airports.csv, read 2026-10-19; public
@@ -59,7 +72,14 @@
           (Barbuda, Nauru, Niue, Saint Helena, Rarotonga); where OurAirports
           joins two places, the one the airport is named for (Braunschweig,
           Ilorin, Rivera). Written as the place writes it (N'Djamena,
-          Mazar-i-Sharif, McAlester). The same in every language: no French
+          Mazar-i-Sharif, McAlester, DeRidder). Seven of the Americas were
+          read again from the airport's own authority, its airlines and
+          its town (v24152), where OurAirports gives the airfield or its
+          village: Port Antonio for Ken Jones, Loja for Catamayo, Peru
+          (Indiana) for Grissom, Dominica for Canefield, Nerlerit Inaat as
+          its airport and its airline spell it, Cutral Có as the national
+          decree on its aerodrome does, DeRidder as the city does
+          (docs/licenses/places-data.md). The same in every language: no French
           or other name has been read for them yet, and a French board
           prints the name as it is, as the rows print a place CITY_FR does
           not name.
@@ -72,7 +92,7 @@
           with its state or province in the United States and Canada, else
           with its country in the language on screen ('Charlottetown, NL',
           'London, KY', 'Valencia, Venezuela': fids-earth.js floorName), so
-          it never reads as the famous place. The 142 others whose name CITY
+          it never reads as the famous place. The 144 others whose name CITY
           gives too are that city's own other airports (in the same country,
           and in the United States and Canada the same state or province, or
           within 100 km: Batajnica for Belgrade, the Hong Kong heliport,
@@ -82,6 +102,44 @@
           (La Grande-4, YAH, is named so, as OurAirports names it: it is
           265 km from La Grande Rivière's La Grande, YGL, in the same
           province.)
+   IN_MORE  21 more, printed the same way, that IN's rule does not find
+          because CITY holds neither place: 19 names two places of NAME
+          itself share (Salinas in California, Ecuador and Brazil; Marathon
+          in Florida and Ontario; Ely, Greenwood, Mountain Home, Cochrane,
+          San Cristóbal; Nogales on both sides of one border; Oxford in
+          Mississippi and San Pedro in Belize, whose namesakes are outside
+          the Americas and print as before), and two that read as a
+          country or a territory: PUR, the town of Puerto Rico in Bolivia,
+          and GUS, Peru in Indiana (Grissom's town). Looked for when the
+          boards began to print these names, where two rows can now read
+          alike. Left alike: Aappilattoq, AOQ and QUV, two villages of one
+          country that no state or country can tell apart.
+   REGION_FR  the countries whose French name the board's own tables write
+          without the accents the browser's fr-CA puts on it: CITY_FR
+          writes BELIZE, Intl writes Bélize and Vénézuéla. The browser's
+          name is read without them, for label and for the map (regionOf).
+   THE AMERICAS  a place of this table is of the Americas by its clock
+          (americas): a zone of America/ (Greenland's are), or one of the
+          islands of the Americas the tz database files under an ocean
+          (Bermuda, the Falklands, South Georgia, Galápagos, Easter Island,
+          Hawaii); a place left with no zone on purpose (NONE) by its
+          longitude, between 170°W and 30°W (Ontario's far north and
+          south-west Amazonas, never Sakha).
+   OF     103 of the 144 are of the Americas: each with the code of its
+          city's airport in CITY, the nearest of that name (Coleman Young
+          and Willow Run for Detroit, Lakefront for New Orleans, Tamiami for
+          Miami; Canefield for Dominica, the island CITY names by its
+          main airport, DOM). Where CITY_FR writes the city otherwise, a
+          French board prints it so for them too (Détroit, La
+          Nouvelle-Orléans, Philadelphie, Belize, La Havane, Dominique).
+          Codes only.
+   label  the name the boards and the app print for a place of the Americas
+          that CITY and CITY_FR do not name: NAME; with where it is, as the
+          map prints it, for the 53 of IN and the 21 of IN_MORE ('London,
+          KY', 'Valencia, Venezuela'; the bare name where the country's
+          name cannot be had, never its two letters, which a board would
+          case as a word or a reader take for a state); the city's own
+          name in the language for the 103 of OF.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function (root) {
   'use strict';
@@ -964,10 +1022,11 @@
   // (no French or other name has been read for these places yet: a French
   // board prints the name as it is, as the rows print a place CITY_FR does
   // not name). Only codes CITY and CITY_FR do not name: the floor names a
-  // place by them where they do.
+  // place by them where they do. The boards and the app print the names of
+  // the Americas too (label, below).
   var NAME = {
     AAA:'Anaa', AAD:'Adado', AAE:'Annaba', AAK:'Aranuka', AAM:'Malamala', AAO:'Anaco',
-    AAP:'Samarinda', AAQ:'Anapa', AAV:'Surallah', AAY:'Al Ghaydah', AAZ:'Quezaltenango', ABA:'Abakan',
+    AAP:'Samarinda', AAQ:'Anapa', AAV:'Surallah', AAY:'Al Ghaydah', AAZ:'Quetzaltenango', ABA:'Abakan',
     ABB:'Asaba', ABC:'Albacete', ABD:'Abadan', ABF:'Abaiang', ABJ:'Abidjan', ABK:'Kebri Dahar',
     ABM:'Bamaga', ABU:'Atambua', ACF:'Aral', ACI:'Alderney', ACJ:'Anuradhapura', ACN:'Ciudad Acuña',
     ACO:'Cóbano', ACS:'Achinsk', ACZ:'Zabol', ADE:'Aden', ADI:'Arandis', ADJ:'Amman',
@@ -1008,7 +1067,7 @@
     BJM:'Bujumbura', BJO:'Bermejo', BJR:'Bahir Dar', BJT:'Bentota', BJW:'Soa', BJY:'Belgrade',
     BKA:'Baykit', BKB:'Bikaner', BKE:'Baker City', BKI:'Kota Kinabalu', BKL:'Cleveland', BKM:'Bakalalan',
     BKN:'Balkanabat', BKO:'Bamako', BKS:'Bengkulu', BKY:'Bukavu', BKZ:'Bukoba', BLA:'Barcelona',
-    BLB:'Panamá City', BLF:'Bluefield', BLH:'Blythe', BLJ:'Batna', BLK:'Blackpool', BLN:'Benalla',
+    BLB:'Panama City', BLF:'Bluefield', BLH:'Blythe', BLJ:'Batna', BLK:'Blackpool', BLN:'Benalla',
     BLT:'Blackwater', BLW:'Beledweyne', BLZ:'Blantyre', BMG:'Bloomington', BMK:'Borkum', BMM:'Bitam',
     BMO:'Banmaw', BMR:'Baltrum', BMU:'Bima', BMV:'Buon Ma Thuot', BMW:'Bordj Badji Mokhtar', BMY:'Waala',
     BNB:'Boende', BND:'Bandar Abbas', BNI:'Benin City', BNO:'Burns', BNS:'Barinas', BNX:'Banja Luka',
@@ -1030,8 +1089,8 @@
     BZK:'Bryansk', BZL:'Barisal', BZU:'Buta', BZV:'Brazzaville', BZY:'Bălți', BZZ:'Brize Norton',
     CAB:'Cabinda', CAF:'Carauari', CAH:'Ca Mau', CAJ:'Canaima', CAQ:'Caucasia', CAR:'Caribou',
     CAU:'Caruaru', CAX:'Carlisle', CAY:'Cayenne', CBD:'Car Nicobar', CBG:'Cambridge', CBH:'Béchar',
-    CBJ:'Cabo Rojo', CBL:'Ciudad Bolivar', CBM:'Columbus', CBO:'Cotabato', CBQ:'Calabar', CBT:'Catumbela',
-    CBV:'Coban', CCA:'Chimore', CCH:'Chile Chico', CCK:'Cocos Islands', CCL:'Chinchilla', CCV:'Craig Cove',
+    CBJ:'Cabo Rojo', CBL:'Ciudad Bolívar', CBM:'Columbus', CBO:'Cotabato', CBQ:'Calabar', CBT:'Catumbela',
+    CBV:'Cobán', CCA:'Chimoré', CCH:'Chile Chico', CCK:'Cocos Islands', CCL:'Chinchilla', CCV:'Craig Cove',
     CCY:'Charles City', CDJ:'Conceição do Araguaia', CDS:'Childress', CDU:'Camden', CDW:'Caldwell', CEE:'Cherepovets',
     CEF:'Chicopee', CEG:'Chester', CEK:'Chelyabinsk', CEL:'Canela', CEQ:'Cannes', CER:'Cherbourg',
     CEW:'Crestview', CFB:'Cabo Frio', CFK:'Chlef', CGF:'Cleveland', CGJ:'Chingola', CGM:'Camiguin',
@@ -1040,21 +1099,21 @@
     CJN:'Cijulang', CJZ:'Cajazeiras', CKC:'Cherkasy', CKH:'Chokurdakh', CKL:'Moscow', CKT:'Sarakhs',
     CKW:'Christmas Creek', CKY:'Conakry', CLM:'Port Angeles', CLN:'Carolina', CLU:'Columbus', CLV:'Caldas Novas',
     CLZ:'Calabozo', CMB:'Colombo', CMD:'Cootamundra', CMQ:'Clermont', CMR:'Colmar', CMU:'Kundiawa',
-    CNC:'Coconut Island', CND:'Constanța', CNG:'Cognac', CNI:'Changhai', CNL:'Sindal', CNP:'Neerlerit Inaat',
+    CNC:'Coconut Island', CND:'Constanța', CNG:'Cognac', CNI:'Changhai', CNL:'Sindal', CNP:'Nerlerit Inaat',
     CNR:'Chañaral', CNU:'Chanute', COC:'Concordia', COE:"Coeur d'Alene", COF:'Cocoa Beach', COH:'Cooch Behar',
     COJ:'Coonabarabran', COL:'Coll', CON:'Concord', COO:'Cotonou', COQ:'Choibalsan', CQD:'Shahrekord',
     CQF:'Calais', CQM:'Ciudad Real', CRA:'Craiova', CRC:'Cartago', CRE:'North Myrtle Beach', CRG:'Jacksonville',
     CRK:'Clark', CRM:'Catarman', CRQ:'Caravelas', CRU:'Carriacou', CRZ:'Türkmenabat', CSA:'Colonsay',
     CSB:'Caransebeş', CSF:'Creil', CSH:'Solovetsky Islands', CSK:'Cap Skirring', CSN:'Carson City', CSV:'Crossville',
     CSY:'Cheboksary', CTB:'Cut Bank', CTT:'Le Castellet', CUA:'Ciudad Constitución', CUB:'Columbia', CUE:'Cuenca',
-    CUK:'Caye Caulker', CUM:'Cumaná', CUP:'Carúpano', CUT:'Cutral-Co', CVC:'Cleve', CVE:'Coveñas',
+    CUK:'Caye Caulker', CUM:'Cumaná', CUP:'Carúpano', CUT:'Cutral Có', CVC:'Cleve', CVE:'Coveñas',
     CVJ:'Cuernavaca', CVO:'Corvallis', CVS:'Clovis', CVU:'Corvo', CWC:'Chernivtsi', CWT:'Cowra',
     CWW:'Corowa', CXA:'Caicara del Orinoco', CXB:"Cox's Bazar", CXH:'Vancouver', CXI:'Kiritimati', CXO:'Houston',
     CXP:'Cilacap', CXR:'Nha Trang', CXY:'Cat Cay', CYC:'Caye Chapel', CYG:'Corryong', CYI:'Chiayi',
     CYP:'Calbayog', CYU:'Cuyo', CYW:'Celaya', CYX:'Cherskiy', CYZ:'Cauayan', CZE:'Coro',
     CZF:'Cape Romanzof', CZH:'Corozal', CZN:'Chisana', CZR:'Chara', DAA:'Fort Belvoir', DAD:'Da Nang',
     DAG:'Daggett', DAN:'Danville', DAU:'Daru', DAX:'Dazhou', DBA:'Dalbandin', DBD:'Dhanbad',
-    DBM:'Debre Markos', DCF:'Canefield', DCI:'Decimomannu', DCN:'Derby', DCT:'Duncan Town', DDD:'Kudahuvadhoo',
+    DBM:'Debre Markos', DCF:'Dominica', DCI:'Decimomannu', DCN:'Derby', DCT:'Duncan Town', DDD:'Kudahuvadhoo',
     DEA:'Dera Ghazi Khan', DEE:'Yuzhno-Kurilsk', DEF:'Dezful', DEJ:'Tongren', DEM:'Dembidollo', DET:'Detroit',
     DEX:'Dekai', DEZ:'Deir Ez-Zor', DGA:'Dangriga', DGE:'Mudgee', DGH:'Deoghar', DGT:'Dumaguete',
     DHA:'Dhahran', DHF:'Al Dhafra', DHG:'Dalnegorsk', DHH:'Barkol', DHI:'Dhangarhi', DHR:'Den Helder',
@@ -1065,7 +1124,7 @@
     DMB:'Taraz', DMD:'Doomadgee', DME:'Moscow', DMN:'Deming', DNA:'Kadena', DNK:'Dnipro',
     DNL:'Augusta', DNQ:'Deniliquin', DOB:'Dobo', DOD:'Dodoma', DOG:'Dongola', DOP:'Dolpa',
     DOU:'Dourados', DPA:'West Chicago', DPB:'Bahía Inútil', DPL:'Dipolog', DPT:'Deputatskiy', DQA:'Daqing',
-    DQM:'Duqm', DRA:'Mercury', DRB:'Derby', DRI:'Deridder', DRJ:'Drietabbetje', DRK:'Drake Bay',
+    DQM:'Duqm', DRA:'Mercury', DRB:'Derby', DRI:'DeRidder', DRJ:'Drietabbetje', DRK:'Drake Bay',
     DRN:'Dirranbandi', DRP:'Legazpi', DRT:'Del Rio', DRV:'Baa Atoll', DSD:'La Désirade', DSE:'Dessie',
     DSK:'Dera Ismael Khan', DSO:'Sondok', DSS:'Dakar', DSY:'Dara Sakor', DTB:'Silangit', DTD:'Datadawai',
     DTE:'Daet', DUA:'Durant', DUE:'Dundo', DUG:'Douglas', DUM:'Dumai', DVO:'Davao',
@@ -1102,7 +1161,7 @@
     GDO:'Guasdualito', GDQ:'Gondar', GDT:'Grand Turk', GDX:'Magadan', GDZ:'Gelendzhik', GEA:'Nouméa',
     GEC:'Geçitkale', GEM:'Mengomeyén', GES:'General Santos', GFL:'Glens Falls', GFN:'Grafton', GFR:'Granville',
     GFY:'Grootfontein', GGF:'Almeirim', GGJ:'Guaíra', GGM:'Kakamega', GGR:'Garowe', GGS:'Gobernador Gregores',
-    GHA:'Ghardaïa', GHC:'Great Harbour Cay', GHN:'Guanghan', GHS:'Melak', GHT:'Ghat', GHU:'Gualeguaychu',
+    GHA:'Ghardaïa', GHC:'Great Harbour Cay', GHN:'Guanghan', GHS:'Melak', GHT:'Ghat', GHU:'Gualeguaychú',
     GHV:'Brașov', GIC:'Boigu Island', GID:'Gitega', GIL:'Gilgit', GIR:'Girardot', GIT:'Geita',
     GJA:'Guanaja', GJL:'Jijel', GJM:'Guajará-Mirim', GJR:'Gjögur', GKA:'Goroka', GKE:'Geilenkirchen',
     GKK:'Huvadhu Atoll', GLD:'Goodland', GLI:'Glen Innes', GLK:'Galcaio', GLN:'Guelmim', GLO:'Gloucestershire',
@@ -1113,8 +1172,8 @@
     GPL:'Guápiles', GPN:'Pirlangimpi', GPO:'General Pico', GPS:'Baltra', GRF:'Fort Lewis', GRS:'Grosseto',
     GRV:'Grozny', GSB:'Goldsboro', GSE:'Göteborg', GSI:'Grand-Santi', GSJ:'Puerto San José', GSM:'Qeshm',
     GSV:'Saratov', GTA:'Gatokae', GTN:'Glentanner', GTO:'Gorontalo', GTZ:'Grumeti', GUB:'Guerrero Negro',
-    GUF:'Gulf Shores', GUH:'Gunnedah', GUI:'Guiria', GUJ:'Guaratinguetá', GUL:'Goulburn', GUQ:'Guanare',
-    GUR:'Gurney', GUS:'Grissom', GUW:'Atyrau', GUY:'Guymon', GUZ:'Guarapari', GVN:'Sovetskaya Gavan',
+    GUF:'Gulf Shores', GUH:'Gunnedah', GUI:'Güiria', GUJ:'Guaratinguetá', GUL:'Goulburn', GUQ:'Guanare',
+    GUR:'Gurney', GUS:'Peru', GUW:'Atyrau', GUY:'Guymon', GUZ:'Guarapari', GVN:'Sovetskaya Gavan',
     GVX:'Sandviken', GWD:'Gwadar', GWE:'Gweru', GWO:'Greenwood', GXF:'Seiyun', GXG:'Negage',
     GXQ:'Coyhaique', GYB:'Wodgina', GYG:'Magan', GYI:'Gisenyi', GYZ:'Cosmo Newbery', GZG:'Garzê',
     GZM:'Gozo', GZO:'Gizo', GZW:'Qazvin', HAA:'Hasvik', HAH:'Moroni', HAL:'Halali',
@@ -1142,7 +1201,7 @@
     IKU:'Issyk-Kul', ILF:'Ilford', ILN:'Wilmington', ILO:'Iloilo', ILP:'Île des Pins', ILR:'Ilorin',
     ILS:'San Salvador', ILZ:'Dolný Hričov', IMK:'Simikot', IMQ:'Maku', INA:'Inta', INB:'Independence',
     INF:'In Guezzam', INH:'Inhambane', INI:'Niš', INK:'Wink', INO:'Inongo', INQ:'Inisheer',
-    INT:'Winston Salem', INU:'Nauru', INW:'Winslow', INZ:'In Salah', IOQ:'Isortoq', IOR:'Inishmore',
+    INT:'Winston-Salem', INU:'Nauru', INW:'Winslow', INZ:'In Salah', IOQ:'Isortoq', IOR:'Inishmore',
     IOT:'Illorsuit', IPH:'Ipoh', IQA:'Al Asad', IRA:'Kirakira', IRD:'Ishurdi', IRI:'Iringa',
     IRM:'Igrim', IRP:'Isiro', IRZ:'Santa Isabel do Rio Negro', ISC:'Isles of Scilly', ISL:'Istanbul', ISM:'Kissimmee',
     ISO:'Kinston', ISU:'Sulaymaniyah', ITA:'Itacoatiara', ITU:'Iturup', IUE:'Niue', IUI:'Innarsuit',
@@ -1199,8 +1258,8 @@
     LBW:'Long Bawan', LBX:'Lubang', LBY:'La Baule-Escoublac', LCC:'Galatina', LCE:'La Ceiba', LCR:'La Chorrera',
     LDG:'Leshukonskoye', LDH:'Lord Howe Island', LDU:'Lahad Datu', LDV:'Landivisiau', LDX:'Saint-Laurent-du-Maroni', LEC:'Lençóis',
     LED:'St. Petersburg', LEE:'Leesburg', LEH:'Le Havre', LEL:'Gapuwiyak', LEQ:"Land's End", LEV:'Levuka',
-    LEY:'Lelystad', LFI:'Hampton', LFK:'Lufkin', LFM:'Lamerd', LFR:'La Fria', LFW:'Lomé',
-    LGH:'Leigh Creek', LGK:'Langkawi', LGL:'Long Lellang', LGR:'Cochrane', LGS:'Malargue', LGU:'Logan',
+    LEY:'Lelystad', LFI:'Hampton', LFK:'Lufkin', LFM:'Lamerd', LFR:'La Fría', LFW:'Lomé',
+    LGH:'Leigh Creek', LGK:'Langkawi', LGL:'Long Lellang', LGR:'Cochrane', LGS:'Malargüe', LGU:'Logan',
     LGZ:'Shannan', LHA:'Lahr', LHK:'Xiangyang', LHL:'Lachin', LHN:'Linhares', LIF:'Lifou',
     LIJ:'Lishui', LIK:'Likiep', LIP:'Lins', LIQ:'Lisala', LIW:'Loikaw', LJN:'Angleton',
     LKA:'Larantuka', LKB:'Lakeba Island', LKG:'Lokichogio', LKH:'Long Akah', LKI:'Lubang', LKM:'Lolak',
@@ -1208,7 +1267,7 @@
     LLK:'Lankaran', LLM:'Lomlom', LLO:'Palopo', LLU:'Alluitsup Paa', LLW:'Lilongwe', LMC:'La Macarena',
     LMN:'Limbang', LMO:'Lossiemouth', LMQ:'Marsa Al Brega', LMR:'Lime Acres', LMT:'Klamath Falls', LMU:'Letung',
     LMV:'Naifaru', LMY:'Lake Murray', LNB:'Lamen Bay', LND:'Lander', LNE:'Lonorore', LNU:'Malinau',
-    LNV:'Londolovit', LNX:'Smolensk', LOD:'Longana', LOH:'Catamayo', LOK:'Lodwar', LOL:'Lovelock',
+    LNV:'Londolovit', LNX:'Smolensk', LOD:'Longana', LOH:'Loja', LOK:'Lodwar', LOL:'Lovelock',
     LOO:'Laghouat', LOP:'Lombok', LOU:'Louisville', LOV:'Monclova', LOZ:'London', LPD:'La Pedrera',
     LPG:'La Plata', LPK:'Lipetsk', LPM:'Lamap', LPQ:'Luang Phabang', LPU:'Long Apung', LPX:'Liepāja',
     LPY:'Le Puy', LQM:'Puerto Leguízamo', LRF:'Jacksonville', LRL:'Niamtougou', LRR:'Lar', LRS:'Leros',
@@ -1283,7 +1342,7 @@
     OBY:'Ittoqqortoormiit', OCA:'Key Largo', OCC:'Coca', OCN:'Oceanside', OCS:'Corisco', OCV:'Ocaña',
     ODB:'Córdoba', ODH:'Odiham', ODN:'Long Seridan', ODO:'Bodaybo', ODS:'Odesa', ODY:'Oudomsay',
     OEC:'Oecusse', OES:'San Antonio Oeste', OFF:'Omaha', OFK:'Norfolk', OFU:'Ofu', OGB:'Orangeburg',
-    OGL:'Ogle', OGX:'Ouargla', OGZ:'Beslan', OHA:'Ohakea', OHD:'Ohrid', OHH:'Okha',
+    OGL:'Georgetown', OGX:'Ouargla', OGZ:'Beslan', OHA:'Ohakea', OHD:'Ohrid', OHH:'Okha',
     OHO:'Okhotsk', OHS:'Suhar', OIA:'Ourilândia do Norte', OJU:'Ampana', OKL:'Oksibil', OKN:'Okondja',
     OKO:'Fussa', OKR:'Yorke Island', OKU:'Mokuti', OLG:'Olare Orok', OLJ:'Olpoi', OLL:'Oyo',
     OLP:'Olympic Dam', OLS:'Nogales', OLU:'Columbus', OLX:'Olkiombo', OLZ:'Olyokminsk', OMB:'Omboue',
@@ -1312,7 +1371,7 @@
     PMV:'Margarita', PMZ:'Palmar Sur', PNB:'Porto Nacional', PNC:'Ponca City', PND:'Punta Gorda', PNE:'Philadelphia',
     PNH:'Phnom Penh', PNI:'Pohnpei', PNK:'Pontianak', PNP:'Popondetta', PNR:'Pointe-Noire', PNV:'Panevėžys',
     PNX:'Denison', POB:'Fort Bragg', POE:'Fort Polk', POG:'Port Gentil', POJ:'Patos de Minas', POL:'Pemba',
-    POO:'Poços de Caldas', POT:'Ken Jones', POU:'Poughkeepsie', POW:'Portorož', POX:'Pontoise', PPE:'Puerto Peñasco',
+    POO:'Poços de Caldas', POT:'Port Antonio', POU:'Poughkeepsie', POW:'Portorož', POX:'Pontoise', PPE:'Puerto Peñasco',
     PPI:'Port Pirie', PPK:'Petropavl', PPQ:'Paraparaumu', PPS:'Puerto Princesa', PPW:'Papa Westray', PQC:'Phu Quoc',
     PQM:'Palenque', PQT:'Qeqertaq', PRB:'Paso Robles', PRH:'Phrae', PRI:'Praslin Island', PRS:'Parasi',
     PRV:'Přerov', PRX:'Paris', PRY:'Pretoria', PSI:'Pasni', PSJ:'Poso', PSU:'Putussibau',
@@ -1329,8 +1388,8 @@
     QUO:'Uyo', QUV:'Aappilattoq', QUW:'Ammassivik', RAB:'Kokopo', RAI:'Praia', RAJ:'Rajkot',
     RAL:'Riverside', RAM:'Ramingining', RAQ:'Raha', RAR:'Rarotonga', RAS:'Rasht', RAZ:'Rawalakot',
     RBB:'Borba', RBE:'Ratanakiri', RBL:'Red Bluff', RBQ:'Rurrenabaque', RBV:'Ramata', RBZ:'Shahrisabz',
-    RCA:'Rapid City', RCM:'Richmond', RCO:'Rochefort', RCQ:'Reconquista', RCU:'Rio Cuarto', RCY:'Rum Cay',
-    RDG:'Reading', RDL:'El Hassana', RDR:'Grand Forks', RDS:'Rincon de los Sauces', REA:'Reao', REN:'Orenburg',
+    RCA:'Rapid City', RCM:'Richmond', RCO:'Rochefort', RCQ:'Reconquista', RCU:'Río Cuarto', RCY:'Rum Cay',
+    RDG:'Reading', RDL:'El Hassana', RDR:'Grand Forks', RDS:'Rincón de los Sauces', REA:'Reao', REN:'Orenburg',
     RET:'Røst', RFP:'Raiatea', RGI:'Rangiroa', RGK:'Gorno-Altaysk', RGN:'Yangon', RGO:'Chongjin',
     RGS:'Burgos', RGT:'Rengat', RHT:'Badanjilin', RIH:'Río Hato', RIJ:'Rioja', RIL:'Rifle',
     RIV:'Riverside', RIY:'Mukalla', RJB:'Rajbiraj', RJH:'Rajshahi', RJK:'Rijeka', RJL:'Logroño',
@@ -1344,7 +1403,7 @@
     RUG:'Rugao', RUI:'Ruidoso', RUL:'Maavaarulu', RUP:'Rupsi', RUR:'Rurutu', RUS:'Marau',
     RUV:'Rubelsanto', RVE:'Saravena', RVS:'Tulsa', RVV:'Raivavae', RVY:'Rivera', RWF:'Redwood Falls',
     RWI:'Rocky Mount', RWL:'Rawlins', RWN:'Rivne', RXS:'Roxas', RYB:'Rybinsk', RYK:'Rahim Yar Khan',
-    RYL:'Lower Zambezi', RYN:'Royan', RYO:'Rio Turbio', RZA:'Puerto Santa Cruz', RZH:'Preobrazheniye', RZR:'Ramsar',
+    RYL:'Lower Zambezi', RYN:'Royan', RYO:'Río Turbio', RZA:'Puerto Santa Cruz', RZH:'Preobrazheniye', RZR:'Ramsar',
     SAB:'Saba', SAC:'Sacramento', SAE:'Saattut', SAI:'Siem Reap', SBK:'Saint-Brieuc', SBL:'Santa Ana del Yacuma',
     SBR:'Saibai Island', SBT:'Sabetta', SBU:'Springbok', SBW:'Sibu', SBZ:'Sibiu', SCH:'Schenectady',
     SCI:'San Cristóbal', SCO:'Aktau', SCT:'Socotra', SCV:'Suceava', SCW:'Syktyvkar', SCY:'San Cristóbal',
@@ -1355,7 +1414,7 @@
     SGH:'Springfield', SGI:'Sargodha', SGL:'Cavite', SGO:'St George', SGR:'Sugar Land', SGX:'Songea',
     SGZ:'Songkhla', SHC:'Shire', SHF:'Shihezi', SHO:'Manzini', SHT:'Shepparton', SHX:'Shageluk',
     SHY:'Shinyanga', SIA:"Xi'an", SID:'Sal Island', SIF:'Simara', SIH:'Silgadi Doti', SIJ:'Siglufjörður',
-    SIO:'Smithton', SIP:'Simferopol', SIR:'Sion', SJI:'San Jose', SJX:'Sartaneja', SJY:'Seinäjoki',
+    SIO:'Smithton', SIP:'Simferopol', SIR:'Sion', SJI:'San Jose', SJX:'Sarteneja', SJY:'Seinäjoki',
     SKA:'Spokane', SKD:'Samarkand', SKF:'San Antonio', SKH:'Surkhet', SKJ:'Singkawang', SKO:'Sokoto',
     SKS:'Vojens', SKT:'Sialkot', SKU:'Skiros', SKV:'Saint Catherine', SKX:'Saransk', SKZ:'Sukkur',
     SLD:'Sliač', SLH:'Sola', SLI:'Solwesi', SLL:'Salalah', SLV:'Shimla', SLX:'Salt Cay',
@@ -1373,7 +1432,7 @@
     SUB:'Surabaya', SUG:'Surigao', SUI:'Sukhumi', SUJ:'Satu Mare', SUK:'Sakkyryr', SUL:'Sui',
     SUR:'Summer Beaver', SUS:'St Louis', SUU:'Fairfield', SUV:'Suva', SUY:'Suntar', SVB:'Sambava',
     SVN:'Savannah', SVO:'Moscow', SVP:'Kuito', SVR:'Savissivik', SVU:'Savusavu', SVW:'Sparrevohn',
-    SVX:'Yekaterinburg', SVZ:'San Antonio del Tachira', SWC:'Stawell', SWD:'Seward', SWH:'Swan Hill', SWL:'San Vicente',
+    SVX:'Yekaterinburg', SVZ:'San Antonio del Táchira', SWC:'Stawell', SWD:'Seward', SWH:'Swan Hill', SWL:'San Vicente',
     SWP:'Swakopmund', SWQ:'Sumbawa Besar', SWS:'Swansea', SWT:'Strezhevoy', SWU:'Suwon', SWV:'Evensk',
     SWX:'Shakawe', SXE:'Sale', SXI:'Siri', SXJ:'Shanshan', SXK:'Saumlaki', SXL:'Sligo',
     SXN:'Sua Pan', SXQ:'Soldotna', SXV:'Salem', SXZ:'Siirt', SYA:'Shemya', SYF:'Gabriola Island',
@@ -1384,7 +1443,7 @@
     TAZ:'Daşoguz', TBB:'Tuy Hoa', TBF:'Tabiteuea North', TBG:'Tabubil', TBH:'Tablas Island', TBJ:'Tabarka',
     TBM:'Tumbang Samba', TBO:'Tabora', TBU:"Nuku'alofa", TBW:'Tambov', TBZ:'Tabriz', TCC:'Tucumcari',
     TCD:'Tarapacá', TCE:'Tulcea', TCG:'Tacheng', TCL:'Tuscaloosa', TCM:'Tacoma', TCR:'Tuticorin',
-    TCS:'Truth Or Consequences', TCX:'Tabas', TDG:'Tandag', TDK:'Taldykorgan', TDL:'Tandil', TDS:'Sasereme',
+    TCS:'Truth or Consequences', TCX:'Tabas', TDG:'Tandag', TDK:'Taldykorgan', TDL:'Tandil', TDS:'Sasereme',
     TEA:'Tela', TEC:'Telêmaco Borba', TED:'Thisted', TEE:'Tébessa', TEF:'Telfer', TEI:'Tezu',
     TEM:'Temora', TET:'Tete', TEU:'Manapouri', TEV:'Teruel', TFI:'Tufi', TFL:'Teófilo Otoni',
     TGA:'Western Water Catchment', TGC:'Tanjung Manis', TGG:'Kuala Terengganu', TGH:'Tongoa', TGI:'Tingo María', TGJ:'Tiga',
@@ -1416,7 +1475,7 @@
     UEL:'Quelimane', UET:'Quetta', UFA:'Ufa', UGA:'Bulgan', UGC:'Urgench', UGO:'Uige',
     UGU:'Bilogai', UHE:'Uherské Hradiště', UHS:'Aleksandrovsk-Sakhalinskiy', UIH:'Quy Nhon', UII:'Utila', UIK:'Ust-Ilimsk',
     UIP:'Quimper', UIT:'Jaluit', UJE:'Ujae', UKA:'Ukunda', UKG:'Ust-Kuyga', UKI:'Ukiah',
-    UKK:'Ust-Kamenogorsk', UKS:'Sevastopol', UKX:'Ust-Kut', ULA:'San Julian', ULD:'Ulundi', ULG:'Ölgii',
+    UKK:'Ust-Kamenogorsk', UKS:'Sevastopol', UKX:'Ust-Kut', ULA:'San Julián', ULD:'Ulundi', ULG:'Ölgii',
     ULK:'Lensk', ULN:'Ulaanbaatar', ULO:'Ulaangom', ULQ:'Tuluá', ULU:'Gulu', ULV:'Ulyanovsk',
     ULY:'Ulyanovsk', ULZ:'Uliastai', UMB:'Kalumbila', UMD:'Uummannaq', UMS:'Ust-Maya', UMU:'Umuarama',
     UNA:'Una', UND:'Kunduz', UNG:'Kiunga', UNI:'Union Island', UOL:'Buol', UOX:'Oxford',
@@ -1424,7 +1483,7 @@
     URO:'Rouen', URS:'Kursk', USJ:'Usharal', USK:'Usinsk', USQ:'Uşak', USR:'Ust-Nera',
     USU:'Coron', UTI:'Utti', UTK:'Utirik', UTS:'Ust-Tsylma', UTW:'Queenstown', UUA:'Bugulma',
     UUD:'Ulan-Ude', UUN:'Baruun Urt', UUS:'Yuzhno-Sakhalinsk', UVE:'Ouvéa', UVI:'União da Vitória', UYL:'Nyala',
-    UZC:'Užice', UZR:'Urzhar', UZU:'Curuzu Cuatia', VAD:'Valdosta', VAF:'Chabeuil', VAG:'Varginha',
+    UZC:'Užice', UZR:'Urzhar', UZU:'Curuzú Cuatiá', VAD:'Valdosta', VAF:'Chabeuil', VAG:'Varginha',
     VAI:'Vanimo', VAL:'Valença', VAM:'Maamigili', VAO:'Suavanao', VAQ:'Vanavara', VAR:'Varna',
     VAS:'Sivas', VAV:"Vava'u", VBG:'Lompoc', VBV:'Vanua Balavu', VCA:'Can Tho', VCL:'Chu Lai',
     VCS:'Con Dao', VDH:'Dong Hoi', VDO:'Van Don', VDP:'Valle de la Pascua', VDR:'Villa Dolores', VDY:'Toranagallu',
@@ -1433,7 +1492,7 @@
     VII:'Vinh', VIJ:'Virgin Gorda', VIL:'Dakhla', VIN:'Vinnytsia', VIP:'Payerne', VIR:'Durban',
     VIS:'Visalia', VIY:'Vélizy-Villacoublay', VJB:'Xai-Xai', VKG:'Rach Gia', VKO:'Moscow', VKT:'Vorkuta',
     VKV:'Arkhangelsk', VLG:'Villa Gesell', VLI:'Port Vila', VLM:'Villamontes', VLN:'Valencia', VLR:'Vallenar',
-    VLS:'Epi Island', VLU:'Velikiye Luki', VLV:'Valera', VLY:'Anglesey', VME:'Villa Mercedes', VMI:'Puerto Vallemi',
+    VLS:'Epi Island', VLU:'Velikiye Luki', VLV:'Valera', VLY:'Anglesey', VME:'Villa Mercedes', VMI:'Puerto Vallemí',
     VMU:'Baimuru', VNE:'Vannes', VNX:'Vilankulo', VNY:'Van Nuys', VOD:'Vodochody', VOG:'Volgograd',
     VOH:'Vohemar', VOK:'Camp Douglas', VOZ:'Voronezh', VPE:'Ondjiva', VPY:'Chimoio', VPZ:'Valparaiso',
     VQQ:'Jacksonville', VRC:'Virac', VRE:'Vredendal', VRK:'Varkaus', VRO:'Varadero', VRU:'Vryburg',
@@ -1454,13 +1513,13 @@
     XKH:'Xieng Khouang', XKS:'Kasabonika', XLB:'Lac Brochet', XLS:'Saint Louis', XMH:'Manihi', XMS:'Macas',
     XMY:'Yam Island', XNH:'Nasiriyah', XNT:'Xingtai', XPK:'Pukatawagan', XRH:'Richmond', XRR:'Ross River',
     XSB:'Sir Bani Yas', XSC:'South Caicos', XSI:'South Indian Lake', XTL:'Tadoule Lake', XYA:'Yandina', XZM:'Macau',
-    YAB:'Arctic Bay', YAC:'Cat Lake', YAH:'La Grande-4', YAI:'Chillan', YAJ:'Saturna Island', YAL:'Alert Bay',
+    YAB:'Arctic Bay', YAC:'Cat Lake', YAH:'La Grande-4', YAI:'Chillán', YAJ:'Saturna Island', YAL:'Alert Bay',
     YAO:'Yaoundé', YAP:'Yap', YAQ:'Maple Bay', YAS:'Yasawa Island', YAT:'Attawapiskat', YAV:'Mayne Island',
     YAX:'Angling Lake', YBB:'Kugaaruk', YBE:'Uranium City', YBF:'Bamfield', YBI:'Black Tickle', YBQ:'Thetis Island',
     YBT:'Brochet', YBV:'Berens River', YBW:'Bedwell Harbour', YBX:'Blanc-Sablon', YBY:'Bonnyville', YCC:'Cornwall',
     YCE:'Centralia', YCK:'Colville Lake', YCL:'Charlo', YCM:'St. Catharines', YCN:'Cochrane', YCQ:'Chetwynd',
     YCR:'Cross Lake', YCS:'Chesterfield Inlet', YCY:'Clyde River', YDB:'Burwash Landing', YDG:'Digby', YDL:'Dease Lake',
-    YDN:'Dauphin', YDO:'Dolbeau-Saint-Felicien', YDP:'Nain', YDT:'Delta', YDV:'Bloodvein River', YEC:'Yecheon',
+    YDN:'Dauphin', YDO:'Dolbeau-Saint-Félicien', YDP:'Nain', YDT:'Delta', YDV:'Bloodvein River', YEC:'Yecheon',
     YEL:'Elliot Lake', YEM:'Sheguiandah', YEN:'Estevan', YEO:'Yeovil', YER:'Fort Severn', YES:'Yasuj',
     YET:'Edson', YEY:'Amos', YFA:'Fort Albany', YFE:'Forestville', YFH:'Fort Hope', YFJ:'Wekweètì',
     YFO:'Flin Flon', YFR:'Fort Resolution', YFX:'St. Lewis', YGG:'Salt Spring Island', YGH:'Fort Good Hope', YGM:'Gimli',
@@ -1468,7 +1527,7 @@
     YGZ:'Grise Fiord', YHA:'Port Hope Simpson', YHD:'Dryden', YHF:'Hearst', YHG:'Charlottetown', YHH:'Campbell River',
     YHI:'Ulukhaktok', YHK:'Gjoa Haven', YHN:'Hornepayne', YHO:'Hopedale', YHP:'Poplar Hill', YHS:'Sechelt',
     YHT:'Haines Junction', YIA:'Yogyakarta', YIB:'Atikokan', YIF:'Saint-Augustin', YIG:'Stuart Island', YIO:'Pond Inlet',
-    YIP:'Detroit', YIV:'Island Lake', YJF:'Fort Liard', YJN:'St Jean', YKD:'Kincardine', YKJ:'Key Lake',
+    YIP:'Detroit', YIV:'Island Lake', YJF:'Fort Liard', YJN:'Saint-Jean-sur-Richelieu', YKD:'Kincardine', YKJ:'Key Lake',
     YKN:'Yankton', YKS:'Yakutsk', YKX:'Kirkland Lake', YKY:'Kindersley', YLD:'Chapleau', YLE:'Whatì',
     YLH:'Lansdowne House', YLI:'Ylivieska', YLJ:'Meadow Lake', YLK:'Barrie', YLR:'Leaf Rapids', YLT:'Alert',
     YLY:'Langley', YMA:'Mayo', YME:'Matane', YMF:'Galiano Island', YMG:'Manitouwadge', YMH:"Mary's Harbour",
@@ -1494,7 +1553,7 @@
     ZFA:'Faro', ZFL:'Zhaosu', ZFM:'Fort McPherson', ZFN:'Tulita', ZGF:'Grand Forks', ZGI:'Gods River',
     ZGS:'La Romaine', ZGU:'Gaua', ZIA:'Moscow', ZIC:'Victoria', ZIG:'Ziguinchor', ZIS:'Zintan',
     ZIX:'Zhigansk', ZJG:'Jenpeg', ZJN:'Swan River', ZKE:'Kashechewan', ZKP:'Zyryanka', ZLT:'La Tabatière',
-    ZNA:'Nanaimo', ZND:'Zinder', ZPB:'Sachigo Lake', ZPC:'Pucon', ZRI:'Serui', ZRJ:'Round Lake',
+    ZNA:'Nanaimo', ZND:'Zinder', ZPB:'Sachigo Lake', ZPC:'Pucón', ZRI:'Serui', ZRJ:'Round Lake',
     ZSE:'Saint-Pierre', ZSJ:'Sandy Lake', ZST:'Stewart', ZTA:'Tureia', ZTB:'Tête-à-la-Baleine', ZTM:'Shamattawa',
     ZTR:'Zhytomyr', ZTU:'Zaqatala', ZUC:'Ignace', ZUM:'Churchill Falls', ZVA:'Miandrivazo', ZVK:'Savannakhet',
     ZWA:'Andapa', ZWL:'Wollaston Lake', ZXT:'Zabrat', ZYL:'Sylhet', ZZO:'Tymovskoye', ZZU:'Mzuzu',
@@ -1512,6 +1571,13 @@
   var IN_ELSE = 'BAI CR BLA VE BQT BY BVC CV CIO PY CZH BZ EOR VE ETR EC EUQ PH HDD PK HLT AU MRD VE ' +
     'NCS ZA ODB ES OPS BR ORA AR PND BZ RCM AU SGO AU SJI PH SNI LR SRA BR STD VE SXV IN SYP PA ' +
     'TJI HN TOW BR UTW ZA VLN VE XLS SN XRH AU ZIC CL ZSE RE';
+  // AND WHERE CITY HOLDS NEITHER PLACE (IN_MORE, in the header): written as
+  // the three lists above are, states, then provinces, then countries
+  var IN_MORE = [['ELY NV GUS IN LYU MN GWO MS MTH FL MUO ID OLS AZ SNS CA UOX MS WMH AR', 'US-'], ['YCN ON YSP ON YZX NS', 'CA-'],
+    ['IAL BR LGR CL NOG MX PUR BO SCI VE SCY EC SNC EC SPR BZ', '']];
+  // THE COUNTRIES THE BOARD'S OWN FRENCH WRITES WITHOUT THE BROWSER'S ACCENTS
+  // (REGION_FR, in the header)
+  var REGION_FR = 'BZ VE';
   var zones = {};
   Object.keys(ZONE).forEach(function (z) { ZONE[z].split(' ').forEach(function (c) { if (c) zones[c] = z; }); });
   Object.keys(ONE).forEach(function (c) { zones[c] = ONE[c]; });
@@ -1526,12 +1592,84 @@
     var t = x[0].split(' ');
     for (var i = 0; i + 1 < t.length; i += 2) inside[t[i]] = x[1] + t[i + 1];
   });
-  // where a place shares its name with a place CITY names elsewhere, or ''
+  var more = {};
+  IN_MORE.forEach(function (x) {
+    var t = x[0].split(' ');
+    for (var i = 0; i + 1 < t.length; i += 2) more[t[i]] = x[1] + t[i + 1];
+  });
+  // where a place shares its name with a place CITY names elsewhere (IN) or
+  // with another place of NAME (IN_MORE), or ''
   function inOf(c) {
     c = String(c || '').toUpperCase();
-    return own(inside, c) ? inside[c] : '';
+    return own(inside, c) ? inside[c] : (own(more, c) ? more[c] : '');
   }
-  var api = { AT: AT, ZONE: ZONE, ONE: ONE, NONE: NONE.split(' '), zones: zones, NAME: NAME, nameOf: nameOf, IN: inside, inOf: inOf };
+  // a country's name in a language: what ask(country, lang) gives (the
+  // browser's Intl.DisplayNames in the board's locale), without its accents
+  // where the board's own French writes it so (REGION_FR), else ''. Never the
+  // country's code handed back as its name.
+  function regionOf(cc, lang, ask) {
+    cc = String(cc || '').toUpperCase();
+    var q = '';
+    try { q = ask ? String(ask(cc, lang) || '') : ''; } catch (e) { q = ''; }
+    if (!q || q.toUpperCase() === cc) return '';
+    if (lang === 'fr' && (' ' + REGION_FR + ' ').indexOf(' ' + cc + ' ') >= 0) q = q.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return q;
+  }
+  // THE AMERICAS: by a zone's name, and a place of this table by its zone,
+  // or with none on purpose by its longitude (170°W to 30°W)
+  var ISLES = /^(?:Atlantic\/(?:Bermuda|Stanley|South_Georgia)|Pacific\/(?:Galapagos|Easter|Honolulu))$/;
+  function americasZone(z) {
+    z = String(z || '');
+    return z.indexOf('America/') === 0 || ISLES.test(z);
+  }
+  function americas(c) {
+    c = String(c || '').toUpperCase();
+    if (own(zones, c)) return americasZone(zones[c]);
+    return NONE.split(' ').indexOf(c) >= 0 && own(AT, c) && AT[c][1] > -170 && AT[c][1] < -30;
+  }
+  // A CITY'S OWN OTHER AIRPORT, of the Americas: a code and the code of its
+  // city's airport in CITY, the nearest of that name
+  var OF =
+    'AFW FTW AGC PIT AKC CAK ALN STL ANN MTM APA DEN BFH CWB BFM MOB BKL CLE BLB PTY CBM GTR CGF CLE ' +
+    'CRG JAX CUB CAE CVS CVN CXH YVR CXO IAH DCF DOM DET DTW DMA TUS DNL AGS DYS ABI EDF MRI EFD HOU EIL FAI ' +
+    'ESF AEX FAF PHF FBK FAI FFO DAY FMY RSW FTY ATL FWH FTW FXE FLL GMU GSP HBG PIB HFD BDL HIF OGD ' +
+    'HIO PDX HUA HSV IAB ICT ILS SAL LOU SDF LSV LAS MCC SMF MCF TPA MER MCE MHR SMF MIB MOT MKC MCI ' +
+    'MTN BWI MXF MGM NBG MSY NEW MSY NGP CRP NGU ORF NIP JAX NKX SAN NPA PNS NQX EYW NRB JAX NTR MTY ' +
+    'NZY SAN OFF OMA OGL GEO ORL MCO OSU CMH PLL MAO PLU CNF PNE PHL PWK ORD PZS ZCO RCA RAP RDR GFK RTE CGH ' +
+    'RVS TUL SAC SMF SDM SAN SFF GEG SKA GEG SKF SAT SNZ RRJ SSF SAT SUS STL SVN SAV TCM TIW TGU XPL ' +
+    'TIK OKC TLJ TCT TMB MIA TTD PDX TZA BZE UPB HAV VAD VLD VGT LAS VQQ JAX VRO VRA WPL YPW YHH YBL ' +
+    'YIP DTW YRO YOW YTP YAZ YWH YYJ ZNA YCD';
+  var ofCity = {};
+  (function () { var t = OF.split(' '); for (var i = 0; i + 1 < t.length; i += 2) ofCity[t[i]] = t[i + 1]; })();
+  // the code of the city a place is another airport of, or ''
+  function cityCodeOf(c) {
+    c = String(c || '').toUpperCase();
+    return own(ofCity, c) ? ofCity[c] : '';
+  }
+  // THE NAME THE BOARDS AND THE APP PRINT for a place of the Americas that
+  // CITY and CITY_FR do not name, or '' (any other place: they print it as
+  // they always have). cityOf(code, lang): the board's own name for a code
+  // in a language, in its tables; ask(country, lang): a country's name
+  // in a language (Intl.DisplayNames in the board's locale, read through
+  // regionOf above). Without them, or where no country's name can be had:
+  // NAME alone.
+  function label(c, lang, cityOf, ask) {
+    c = String(c || '').toUpperCase();
+    if (!own(NAME, c) || !americas(c)) return '';
+    var n = NAME[c], w = inOf(c), q = '';
+    if (own(ofCity, c)) {
+      var en = '', mine = '';
+      try { if (cityOf) { en = String(cityOf(ofCity[c], 'en') || ''); mine = String(cityOf(ofCity[c], lang) || ''); } } catch (e) { mine = ''; }
+      return (mine && en && mine !== en) ? mine : n;
+    }
+    if (!w) return n;
+    var na = /^(?:US|CA)-([A-Z]{2})$/.exec(w);
+    if (na) return n + ', ' + na[1];
+    q = regionOf(w, lang, ask);
+    return q ? n + ', ' + q : n;
+  }
+  var api = { AT: AT, ZONE: ZONE, ONE: ONE, NONE: NONE.split(' '), zones: zones, NAME: NAME, nameOf: nameOf, IN: inside, IN_MORE: more, inOf: inOf, regionOf: regionOf,
+    americas: americas, americasZone: americasZone, OF: ofCity, cityCodeOf: cityCodeOf, label: label };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.FIDS_EARTH_PLACES = api;
 })(typeof window !== 'undefined' ? window : null);

@@ -6,7 +6,7 @@
 <!-- v24145 — host-airport.js first: the desktop request below builds its
      board link with fidsBoardUrl, and the note above the title says why the
      app loads this file at all. -->
-<script src="js/host-airport.js?v=24151"></script>
+<script src="js/host-airport.js?v=24152"></script>
 <script>
 /* v24139 — A PHONE THAT ASKS ITS BROWSER FOR THE DESKTOP SITE GETS THE BOARD.
    Request desktop site on the app only reloaded the app: the browser asks
@@ -560,10 +560,12 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24151"></script>
-<script src="js/shared-names.js?v=24151"></script>
-<script src="data/airline-colors.js?v=24151"></script>
-<script src="js/feed-router.js?v=24151"></script>
+<script src="js/board-strings.js?v=24152"></script>
+<script src="js/shared-names.js?v=24152"></script>
+<!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
+<script src="js/earth-places.js?v=24152"></script>
+<script src="data/airline-colors.js?v=24152"></script>
+<script src="js/feed-router.js?v=24152"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -743,8 +745,35 @@ function apSub(code,langOnly){
 }
 // A place as its two parts: the city (CITY, then the feed's own name, then
 // the code) and the airport's own name where its city has two of ours
-function placeOf(code,feedName){
-  const c=String(code||'').toUpperCase(), city=CITY[c]||(feedName?_tcCity(feedName):'')||c||'—';
+// A PLACE OF THE AMERICAS THAT CITY DOES NOT NAME. A flight to Río Hato read
+// 'Rih' on the gate: 1,055 places of the Americas had a name only the map
+// under the boards' rows could read (js/earth-places.js NAME, OurAirports).
+// The boards now print those names where their tables have none, and so
+// does the app, here and nowhere else: after CITY, before the feed's own
+// words, as the table gives it (label: with its state, province or country
+// where the name is another place's too, 'London, KY', the country in the
+// app's language). Never merged into CITY, so a name with no code reads as
+// it did (cityCodeOf). A CODE THE FEED DID NOT SEND takes no name from the
+// table: a row with no IATA code is read by the last three letters of its
+// ICAO code (adbToCard), which is often another place's (Belgrade's LYBE
+// reads YBE, Uranium City). Such a code is noted in _CODE_CUT, as the boards
+// note it (fids-core.js _placeAmCut), and prints as before.
+// A CODE THE FEED HAS ITSELF SENT OUTRANKS THAT NOTE (_CODE_SENT), as on the
+// boards: the note alone lasted as long as the page, and one row with CYHI
+// and no IATA code took the name away from every row the feed codes YHI. A
+// name is refused only to a code that was cut and never sent; and the card
+// that was cut says so itself (cityCut, the third argument here) and never
+// takes the table's name, whatever the notes say.
+const _CODE_CUT=Object.create(null);
+const _CODE_SENT=Object.create(null);
+function placeOf(code,feedName,cut){
+  const c=String(code||'').toUpperCase();
+  let am='';
+  try{const P=window.FIDS_EARTH_PLACES;
+    const off=cut===true||(typeof _CODE_CUT!=='undefined'&&_CODE_CUT[c]&&!(typeof _CODE_SENT!=='undefined'&&_CODE_SENT[c]));
+    if(P&&P.label&&!CITY[c]&&!off)am=String(P.label(c,langRes(),null,function(cc,l){return new Intl.DisplayNames([BoardStrings.intl(l)],{type:'region'}).of(cc)||'';})||'');
+  }catch(e){am='';}
+  const city=CITY[c]||am||(feedName?_tcCity(feedName):'')||c||'—';
   return {c:city,q:(city!==c&&city!=='—')?apSub(c):''};
 }
 // v24044 — A PLACE THE FEED NAMED BUT DID NOT CODE. Victoria's page prints
@@ -781,7 +810,7 @@ function cityCodeOf(name){
   return (hit&&hit!=='!')?hit:'';
 }
 // Display name for a flight's other end, as one line of text (search, via)
-function cityOf(f){const p=placeOf(f.cityIata,f.cityName);return p.q?p.c+' · '+p.q:p.c;}
+function cityOf(f){const p=placeOf(f.cityIata,f.cityName,f.cityCut===true);return p.q?p.c+' · '+p.q:p.c;}
 // The same as markup: the city and the airport's name as two units that a
 // line can break between and never inside (see .pl-in in the stylesheet)
 function placeHtml(p){return '<span class="pl-in"><span class="pl-c">'+esc(p.c)+'</span>'+(p.q?'<span class="pl-q"><span>'+esc(p.q)+'</span></span>':'')+'</span>';}
@@ -1290,7 +1319,7 @@ function rowHtml(f,i,isArr){
     +'" role="button" tabindex="0" data-k="'+esc(flightKey(f))+'" onclick="openFlight('+i+')" onkeydown="if(event.key===\'Enter\')openFlight('+i+')">'
     +timeHtml(f)
     +'<div class="l1"><span class="al">'+tileHtml(f.airline)+wmHtml(f.airline,name)+'</span>'+pill+'</div>'
-    +'<div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName))+'</div>'
+    +'<div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName,f.cityCut===true))+'</div>'
     +'<div class="sub"><span class="sx">'+rowSubParts(f)+wxHtml(f.cityIata)+'</span>'+pill+'</div>'
     +slotHtml(f,isArr)+'</div>';
 }
@@ -1462,7 +1491,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24151';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24152';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -1668,9 +1697,15 @@ function adbToCard(f,dir,aheadMs){
   const depU=(dep.scheduledTime&&dep.scheduledTime.utc)||'', arrU=(arr.scheduledTime&&arr.scheduledTime.utc)||'';
   let durMin=0;
   if(depU&&arrU){const d=(new Date(arrU.replace(' ','T'))-new Date(depU.replace(' ','T')))/60000; if(d>0&&d<24*60)durMin=Math.round(d);}
+  // (a code the feed did not send, cut from its ICAO code below, takes no
+  // name from the table of the Americas; a code it sent is noted as its own
+  // and outranks that; the card that was cut carries it, cityCut: placeOf)
+  const cityCut=!!(other.airport&&!other.airport.iata&&other.airport.icao);
+  if(cityCut)_CODE_CUT[String(other.airport.icao).slice(1).toUpperCase()]=1;
+  else if(typeof _CODE_SENT!=='undefined'&&other.airport&&other.airport.iata)_CODE_SENT[String(other.airport.iata).trim().toUpperCase()]=1;
   return{
     airline:code, flight:num, dir:dir,
-    cityIata:(((other.airport&&(other.airport.iata||(other.airport.icao||'').slice(1)))||'')).toUpperCase(),
+    cityIata:(((other.airport&&(other.airport.iata||(other.airport.icao||'').slice(1)))||'')).toUpperCase(), cityCut:cityCut,
     // v23232 — the feed's own airport name backs the CITY map, so a code the
     // map lacks shows its real place name instead of a bare code or "—".
     cityName:(other.airport&&(other.airport.municipalityName||other.airport.shortName||other.airport.name))||'',
@@ -2064,10 +2099,14 @@ async function loadBrand(code){
 }
 // An airport the picker does not list (a link to one with no feed of ours)
 // is still shown as itself, with no live data — never as Moncton
+// (named as the header names it, through placeOf: a place of the Americas
+// the app's own list does not name read as its bare code here, 'RIH', under
+// a header that read 'Río Hato')
 function ensureOption(code){
   const sel=document.getElementById('apSelect');
   if(!sel||sel.querySelector('option[value="'+code+'"]'))return;
-  const o=document.createElement('option');o.value=code;o.textContent=CITY[code]?CITY[code]+' ('+dispIata(code)+')':dispIata(code);
+  const nm=placeOf(code).c;
+  const o=document.createElement('option');o.value=code;o.textContent=(nm&&nm!=='—'&&nm!==String(code).toUpperCase())?nm+' ('+dispIata(code)+')':dispIata(code);
   sel.insertBefore(o,sel.firstChild);
 }
 function setAirport(code,_boot){
@@ -2161,7 +2200,7 @@ function openFlight(i){
     +(reg?'<div class="sub">'+esc(T('reg'))+' '+esc(reg)+'</div>':'')+'</div></div>'):'';
   // Route endpoints: for an arrival, origin → here; for a departure, here → destination.
   const epHere='<div class="ep"><div class="code">'+esc(dispIata(CURAP))+'</div><div class="city">'+placeHtml(placeOf(CURAP))+'</div></div>';
-  const epOther='<div class="ep"><div class="code">'+esc(dispIata(f.cityIata||''))+'</div><div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName))+'</div>'
+  const epOther='<div class="ep"><div class="code">'+esc(dispIata(f.cityIata||''))+'</div><div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName,f.cityCut===true))+'</div>'
     +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(f.cityIata)?'<bdi>'+esc(wxTemp(f.cityIata))+'</bdi>':'')+'</span>':'')+'</div>';
   const when=f.schedDate?dayLabel(f.schedDate):'';
   document.getElementById('detailBody').innerHTML=
