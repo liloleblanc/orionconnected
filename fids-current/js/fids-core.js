@@ -15001,11 +15001,12 @@ window._BADGE_TILE_BRANDS = {
   // a gate that was purple from edge to edge.
   'DM': { bg: '#FFFFFF', icon: '/logos/airlines/asian-other/arajet-emblem.svg' },
   // v24150 — Air Inuit, by its brand guide (Studio FEED): white is the canvas, charcoal the
-  // structure and its orange the one focal colour. The orb is white with its corporate
-  // wordmark on it as the guide sets it on white: the syllabics in orange over Air Inuit in
-  // charcoal. It was its orange tile, beside five discs of a second red.
-  '3H':  { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit.svg' },
-  'AIE': { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit.svg' }
+  // structure and its orange the one focal colour. The orb is white with its emblem on it: the
+  // geese of its tessellated pattern, white out of an orange disc, half orange and half white as
+  // the guide sets the pattern (a drawing supplied for the boards, airinuit-emblem.svg). It was
+  // its orange tile, beside five discs of a second red.
+  '3H':  { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit-emblem.svg' },
+  'AIE': { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit-emblem.svg' }
 };
 
 // v23396 — ONE ORB RECIPE, USED BY BOTH ORBS.

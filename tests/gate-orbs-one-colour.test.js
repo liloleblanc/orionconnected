@@ -82,6 +82,14 @@ test('Air Inuit follows its brand guide: Charcoal Black #231F20, Air Inuit Orang
   assert.match(COLORS, /'3H': \{ r1:'#231F20', r1Text:'#FFFFFF', r2:'#F1471D', r3:'#4A4A4D', body:'#E6E7E8', bodyText:'#231F20' \}, \/\/ Air Inuit/);
   assert.match(CORE, /\n  '3H':'#231F20',   \/\/ v24150/);
   assert.match(CORE, /\n  '3H': \{ bg1:'#231F20', bg2:'#161314', bg3:'#4A4A4D', accent:'#F1471D', name:'Air Inuit' \},/);
-  const lockup = fs.readFileSync(path.join(ROOT, 'fids-current/logos/airlines/canadian-regional/airinuit.svg'), 'utf8');
-  assert.deepEqual([...new Set(lockup.match(/fill="#[0-9A-F]{6}"/gi))].sort(), ['fill="#231F20"', 'fill="#F1471D"'], 'the orb mark is the corporate wordmark: syllabics in orange, Air Inuit in charcoal');
+  // the orb mark: the geese emblem, orange only (the white of the geese is the white of the disc)
+  const emblem = fs.readFileSync(path.join(ROOT, 'fids-current/logos/airlines/canadian-regional/airinuit-emblem.svg'), 'utf8');
+  assert.deepEqual([...new Set(emblem.match(/fill="#[0-9A-F]{6}"/gi))], ['fill="#ED4C1E"']);
+  assert.doesNotMatch(emblem, /<metadata|<style|class=|<script|<image/);
+  // its orange is the guide's within what an eye can tell (deltaE 76 under 6)
+  const lab = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92));
+    const X = (c[0] * 0.4124 + c[1] * 0.3576 + c[2] * 0.1805) / 0.95047, Y = c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722, Z = (c[0] * 0.0193 + c[1] * 0.1192 + c[2] * 0.9505) / 1.08883;
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116); return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))]; };
+  const a = lab('#ED4C1E'), b = lab('#F1471D');
+  assert.ok(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 6);
 });
