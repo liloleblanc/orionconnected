@@ -44,6 +44,14 @@
 //
 // A carrier that cannot pass without new art is in ONE ledger below, by code,
 // with the reason; the ledger fails when a carrier in it starts to pass.
+//
+// THE SURFACES BESIDE THE ORBS (the three plates, the gate change notice, the
+// emblem of the centre cards) show the mark of a carrier and were to keep
+// what they drew. They are held to a record of what origin/main showed for
+// every code, with one table of the differences that are kept on purpose
+// (tests/fixtures/gate-marks-origin-main.json, made and read by
+// scripts/orbs/marks-shown.js): a difference no row names fails, and so does
+// a row that no longer differs.
 // ══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -59,6 +67,11 @@ const GATE_CSS = fs.readFileSync(path.join(FC, 'css/gate-display.css'), 'utf8');
 const COLORS = fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8');
 const MANIFEST = fs.readFileSync(path.join(FC, 'logos/airline-tiles/MANIFEST.csv'), 'utf8');
 const GEN = require(path.join(ROOT, 'scripts/orbs/tile-grounds.js'));
+// What the surfaces that are not orbs end up showing (the three plates, the gate change notice,
+// the centre cards): the script cuts the lines that write them and runs the missing-file
+// handlers of this same fids-core.js against a stand-in for the image.
+const MARKS = require(path.join(ROOT, 'scripts/orbs/marks-shown.js'));
+const SHOWN = MARKS.build(CORE, FC);
 
 // ── the real functions and tables, cut from fids-core.js ───────────────────
 // From a marker to the brace that closes it, stepping over comments, strings
@@ -125,6 +138,7 @@ const O = new Function('window', [
   'var _TILE_DESIGNATOR_IATA = null;', block('function _designatorIata(code) {'),
   block('function _orbEmblemCarrier(code) {'), block('function _airlineOrbEmblem(code) {'), block('function _gateOrbArt(code) {'),
   block('window._orbTileLettersOther = function'), block('function _orbMono(code) {'),
+  block('function _orbRowArg(code, q) {'), block('function _plateEmblem(code, marks) {'),
   // the rail, as the gate runs it for a row of this carrier
   block('function _emblemImg(code, rowCode) {'),
   'function __rail(vars, _fnCarrier, _alCodeEmb) {', RAIL_HEAD, RAIL_BADGES, 'return { emblem: _emblemHtml, badge: BADGE_STYLE, skin: _railSkin }; }',
@@ -136,7 +150,7 @@ const O = new Function('window', [
   "function __shelf(airlineCode) { var _birF8 = (airlineCode === 'F8');", SHELF_BADGES, SHELF_ORB, 'return { badge: _BIR_BADGE_STYLE, orb: _birParts, icon: _birFlightIcon, ink: _birRailInk }; }',
   'return { BRAND: AIRLINE_BRAND, ACCENT: AIRLINE_ACCENT, accent: getAirlineAccent, TILE: IATA_TO_TILE_ICAO, CALL: CALLSIGN_TO_IATA,',
   '  NAME: AIRLINE_NAME, NAME2: _AIRLINE_NAME_OVERRIDE, fold: _orbEmblemCarrier, emblem: _airlineOrbEmblem, art: _gateOrbArt, desig: _designatorIata,',
-  '  mono: _orbMono, FILES: AIRLINE_EMBLEM_FILES, TOP: GATE_TOP_ROUND_EMBLEM_FILES,',
+  '  mono: _orbMono, rowArg: _orbRowArg, plate: _plateEmblem, FILES: AIRLINE_EMBLEM_FILES, TOP: GATE_TOP_ROUND_EMBLEM_FILES,',
   '  rail: __rail, cardWithInbound: __cardWithInbound, cardNoInbound: __cardNoInbound, pass: __pass, shelf: __shelf };'
 ].join('\n'))(W);
 const LOOKS = W._GATE_ORB_LOOKS;
@@ -214,7 +228,7 @@ function art(p) {
 // ── what a piece of markup paints ──────────────────────────────────────────
 // The orb written by a builder: the class and the style of its box, the last background and
 // padding that style declares, the image (its file, its fit, whether the white filter is on it)
-// or the letters and their ink.
+// or the letters, their ink and the whole style that ink is written in.
 function orbFacts(html) {
   const box = /^(?:<div class="v2-fi-iconcol">)?<(?:div|span) class="([^"]*)" style="([^"]*)"/.exec(String(html)) || [];
   const cls = box[1] || '', style = box[2] || '';
@@ -226,8 +240,15 @@ function orbFacts(html) {
   return { cls, style, bg: last('background'), pad: last('padding'), src, imgStyle,
     inked: /invert\(1\)/.test(imgStyle) && !/filter:none;/.test(imgStyle), fit: /object-fit:cover/.test(imgStyle) ? 'cover' : (img ? 'contain' : ''),
     native: /v2-fi-(?:orbwrap|emblem)-native/.test(cls), generic: /<svg viewBox="0 0 24 24"/.test(String(html)),
-    letters: span ? span[2] : '', lettersInk: span ? (/color:\s*(#[0-9a-f]{3,6})/i.exec(span[1] || '') || [])[1] || '' : '' };
+    letters: span ? span[2] : '', lettersInk: span ? (/color:\s*(#[0-9a-f]{3,6})/i.exec(span[1] || '') || [])[1] || '' : '',
+    lettersStyle: span ? span[1] || '' : '' };
 }
+// AN INK IS WRITTEN TO WIN. The stylesheet sets the letters of the Your Aircraft orb white with
+// !important, and the code chip of the rail by a variable with !important, so an ink written
+// inline lands only when it carries !important itself (and, for the chip, the fill colour too:
+// the stylesheet sets both). Read off the whole style of the span, not off the first colour in it.
+const inkWins = (style, fillToo) => /(?:^|;)\s*color:\s*#[0-9a-f]{3,6}\s*!important\s*;/i.test(style)
+  && (!fillToo || /(?:^|;)\s*-webkit-text-fill-color:\s*#[0-9a-f]{3,6}\s*!important\s*;/i.test(style));
 const isVar = (bg) => /^var\(--airline-accent,/.test(bg);
 const styleProp = (style, prop) => { const all = [...String(style).matchAll(new RegExp('(?:^|;)' + prop + ':([^;]+);', 'g'))]; return all.length ? all[all.length - 1][1] : ''; };
 
@@ -258,6 +279,7 @@ function broken(code) {
   else if (L.art && !A.exists) out.push('the orb art is not on disk: ' + L.art);
   if (emb.src !== (L.art || '')) out.push('the top orb draws ' + (emb.src || 'no file') + ', the look says ' + (L.art || 'none'));
   if (L.letters && emb.letters !== L.letters) out.push('the top orb letters ' + emb.letters + ', the look says ' + L.letters);
+  if (emb.letters && !inkWins(emb.lettersStyle, true)) out.push('the letters of the top orb are inked in a style the stylesheet beats: ' + (emb.lettersStyle || 'none'));
   if (!HEX.test(full(top)) || !HEX.test(full(L.ground))) out.push('a ground that is no colour: ' + top + ' / ' + L.ground);
   else {
     // 1. ONE COLOUR. What the top orb paints is the ground the look reports …
@@ -290,8 +312,14 @@ function broken(code) {
     else if (inks.length > 1) out.push('an emblem of ' + inks.length + ' colours inked white: ' + inks.join(' '));
   }
   if (A.exists && accent.toUpperCase() === '#0033A1') out.push('no colour of its own: the fallback blue beside its art');
-  // THE BOARDING SHELF: the same emblem orb beside five badges of its own (a carrier the
-  // stylesheet paints is left to the stylesheet there too).
+  // THE BOARDING SHELF: the same emblem orb beside five badges of its own. A carrier the
+  // stylesheet paints is left to the stylesheet there too, unless its row names an ink (PAL): the
+  // shelf then writes that ink, and it is judged against the ground the row records.
+  if (L.css && (LOOKS[L.carrier] || {}).ink) {
+    const sInk = styleProp(O.shelf(code).badge, 'color');
+    if (!same(sInk, L.ink)) out.push('the shelf inks its glyphs ' + sInk + ', the look says ' + L.ink);
+    if (contrast(full(sInk), L.ground) < 3) out.push('the shelf glyphs ' + sInk + ' on ' + L.ground + ' read at ' + contrast(full(sInk), L.ground).toFixed(2) + ' to 1');
+  }
   if (!L.css && HEX.test(full(top))) {
     const S = O.shelf(code);
     const sBg = styleProp(S.badge, 'background'), sInk = styleProp(S.badge, 'color'), sbg = isVar(sBg) ? accent : sBg;
@@ -527,8 +555,11 @@ test('the finished tile first belongs to the gate orbs: the plates, the notice a
   // the shared resolver holds no step of the orbs: no row of the table of looks, no tile table
   const shared = block('function _airlineOrbEmblem(code) {');
   assert.doesNotMatch(shared, /_GATE_ORB_LOOKS|IATA_TO_TILE_ICAO|_ORB_TILE_GROUNDS/);
-  // the plates ask it, the notice and the standby card ask the recipe for the mark
-  for (const v of ['_holdCode', '_fallbackCode', '_mapLifeCode']) assert.match(CORE, new RegExp('_airlineOrbEmblem\\(' + v + '\\)'), v);
+  // the plates ask it through the one function of the plates (the table of the plate first, for the
+  // code or for the carrier it folds to), the notice and the standby card ask the recipe for the mark
+  for (const v of ['_holdCode, _HOLD_MARK', '_fallbackCode', '_mapLifeCode, _MAPLIFE_EMBLEM']) assert.ok(CORE.includes('_plateEmblem(' + v + ')'), v);
+  assert.match(block('function _plateEmblem(code, marks) {'), /\(marks && \(marks\[given\] \|\| marks\[_orbEmblemCarrier\(given\)\]\)\) \|\| _airlineOrbEmblem\(given\)/);
+  for (const code of THE34) assert.equal(O.plate(code), O.emblem(code), code + ': the plate draws the file of the shared resolver');
   assert.match(block('function _gateChangeOrbHtml(code) {'), /window\._gateOrbParts\(c, true\)/);
   assert.match(block('function _gateCardEmblem(code) {'), /window\._gateOrbParts\(code, true\)/);
   // and the orbs ask the orb resolver: the recipe, and through it the rail, both builders, the pass and the shelf
@@ -538,6 +569,165 @@ test('the finished tile first belongs to the gate orbs: the plates, the notice a
   assert.doesNotMatch(MC_VARS + NI_VARS + PASS + SHELF_ORB, /_airlineOrbEmblem\(/, 'no orb asks the shared resolver');
   // a symbol that is a disc is still drawn as one where the symbol is what is drawn
   for (const code of ['EW', 'LO', 'DE', 'A3', 'PC', 'CM', 'MO', 'HV', 'JL']) assert.equal(W._gateOrbParts(code, true).native, true, code);
+});
+
+test('a code with an emblem row of its own keeps that file where the fold leaves it none: easyJet under EZY', () => {
+  // EZY has a row (Edinburgh sends designators) and folds to U2, which has none. The shared resolver
+  // guessed a U2 symbol that was never drawn: the centre cards drew nothing, and the plates and the
+  // notice asked for a missing file before they found the tile.
+  const tile = '/logos/airline-tiles/EZY.svg';
+  assert.deepEqual([O.fold('EZY'), O.FILES.EZY, O.FILES.U2, O.TOP.U2], ['U2', tile, undefined, undefined]);
+  assert.ok(!fs.existsSync(path.join(FC, 'logos/symbols/airlines/U2.svg')) && fs.existsSync(path.join(FC, tile)));
+  assert.equal(O.emblem('EZY'), tile, 'the shared resolver');
+  assert.equal(O.plate('EZY'), tile, 'the plates');
+  assert.deepEqual([W._gateOrbParts('EZY', true).path, W._gateOrbParts('EZY', true).native], [tile, true], 'the recipe asked for the mark: the notice and the centre cards');
+  // every surface that is not an orb draws the tile first time, with no missing file before it
+  assert.deepEqual(SHOWN.shown('EZY'), ['airline-tiles/EZY.svg', 'airline-tiles/EZY.svg', 'airline-tiles/EZY.svg', 'airline-tiles/EZY.svg filling the orb', 'airline-tiles/EZY.svg']);
+  // and the gate orbs draw the same file, through the fold
+  assert.equal(column('EZY').emb.src, tile);
+  assert.match(block('window._gateOrbParts = function'), /_airlineOrbEmblem\(plain \? code : c\)/, 'the recipe hands the resolver the code as it was given');
+  // THE SCAN OF BOTH EMBLEM TABLES: every code with a row that folds to another code draws a file that
+  // is on disk, the row of its carrier where the carrier has one, else its own. EZY is the only one
+  // whose carrier has none.
+  const lost = [];
+  let n = 0;
+  for (const k of [...new Set([...Object.keys(O.FILES), ...Object.keys(O.TOP)])].sort()) {
+    const f = O.fold(k);
+    if (f === k) continue;
+    n++;
+    const own = O.TOP[k] || O.FILES[k], carrier = O.TOP[f] || O.FILES[f] || '', tb = W._BADGE_TILE_BRANDS[f];
+    if (!carrier) lost.push(k);
+    assert.equal(O.emblem(k), (tb && tb.bg && tb.icon) || carrier || own, k);
+    assert.ok(fs.existsSync(path.join(FC, O.emblem(k).split('?')[0])), k + ': ' + O.emblem(k));
+    for (const text of SHOWN.shown(k)) assert.doesNotMatch(text, /^nothing|^letters|after a miss/, k + ': ' + text);
+  }
+  assert.ok(n >= 15, n + ' codes with a row that fold');
+  assert.deepEqual(lost, ['EZY']);
+});
+
+// ── what the plates, the notice and the centre cards draw, against origin/main ──
+// The gate orbs changed for every airline. Five surfaces that show the mark of a carrier without
+// being one of its orbs were to keep what they drew: the sky plate, the plate of last resort, the
+// map hold, the orb of the gate change notice, the emblem of the centre cards. They do, but for
+// the differences of these kinds, each of which is wanted. tests/fixtures/gate-marks-origin-main.json
+// holds what the commit this work started from showed for every code (made by
+// scripts/orbs/marks-shown.js from the fids-core.js of that commit) and ONE TABLE of the
+// differences that are kept: the surfaces, the code, what that commit showed, what is shown now,
+// and the kind. A difference no row names fails here, and so does a row that no longer differs.
+const KEPT_KINDS = {
+  'designator': 'a three-letter designator in the airline slot draws what its carrier draws, where it drew its own letters or nothing',
+  'partner': 'a regional that prints its partner wears the partner: Endeavor wears Delta, Ryanair UK the harp, PAL under SP is PAL, Volaris Costa Rica wears the Volaris star',
+  'white outside': 'white outside with the mark in its colours inside, as on its gate, where the mark was inked white on the accent (Starlux, Korean, Asiana) or sat in colour on it (Caribbean, Thai)',
+  'own colours': 'Virgin Atlantic in its colours, where it was inked white',
+  'line mark': 'Lufthansa and TAROM: a line mark of one navy, white on a disc of that navy and white on the dark frame of the cards, where it was navy lines in a clear box and on the dark frame',
+  'own letters': 'a code whose only tile is the placeholder of another code letters itself: Norwegian under D8 and DI drew the tile that prints DY'
+};
+
+test('the plates, the notice and the centre cards draw what origin/main drew, but for the differences kept in one table, by code', () => {
+  const REC = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/gate-marks-origin-main.json'), 'utf8'));
+  assert.deepEqual(REC.surfaces, MARKS.SURFACES);
+  const codes = Object.keys(REC.main);
+  // every code a table named that day: a code that joins the tables later has no origin/main to differ
+  // from, and is held by the two rules below (nothing for another code, no placeholder of another code)
+  assert.ok(codes.length >= 390, codes.length + ' codes in the record');
+  // the table, opened into one row per surface and code
+  const kept = new Map();
+  for (const row of REC.kept) {
+    assert.equal(row.length, 5, JSON.stringify(row));
+    const [surfaces, code, was, now, kind] = row;
+    assert.ok(KEPT_KINDS[kind], code + ': a kind this test knows, not ' + kind);
+    assert.ok(REC.main[code], code + ' is a code of the record');
+    assert.notEqual(was, now, code + ': a row of the table is a difference');
+    for (const surface of surfaces.split(', ')) {
+      assert.ok(MARKS.SURFACES.includes(surface), code + ': ' + surface);
+      assert.ok(!kept.has(surface + ' | ' + code), code + ' has two rows for the ' + surface);
+      kept.set(surface + ' | ' + code, { surface, code, was, now, kind });
+    }
+  }
+  // EVERY CODE ON EVERY SURFACE, as the tree draws it now
+  const unseen = [], gone = [], moved = [], cells = [];
+  for (const code of codes) {
+    const now = SHOWN.shown(code);
+    MARKS.SURFACES.forEach((surface, i) => {
+      const was = REC.main[code][i], row = kept.get(surface + ' | ' + code);
+      cells.push({ surface, code, was, now: now[i], row });
+      if (!row) { if (now[i] !== was) unseen.push(JSON.stringify([surface, code, was, now[i]])); return; }
+      assert.equal(row.was, was, code + ', ' + surface + ': the row says what the record says origin/main showed');
+      if (now[i] === was) gone.push(JSON.stringify([surface, code, was]));
+      else if (now[i] !== row.now) moved.push(JSON.stringify([surface, code, row.now, now[i]]));
+    });
+  }
+  assert.deepEqual(unseen, [], unseen.length + ' differences from origin/main that no row of the table names (surface, code, origin/main, now):\n' + unseen.join('\n'));
+  assert.deepEqual(gone, [], gone.length + ' rows of the table no longer differ from origin/main: take them out\n' + gone.join('\n'));
+  assert.deepEqual(moved, [], moved.length + ' rows of the table draw something else now (surface, code, the row, now):\n' + moved.join('\n'));
+
+  // NOTHING THAT WAS DRAWN BECAME NOTHING, on any surface, for any code
+  const drawn = (text) => !/^nothing|^an empty disc/.test(text);
+  for (const c of cells) assert.ok(!drawn(c.was) || drawn(c.now), c.code + ', ' + c.surface + ': ' + c.was + ' became ' + c.now);
+  // AND NO SURFACE SHOWS THE PLACEHOLDER OF ANOTHER CODE: a lettered tile only for the code it letters,
+  // for every code of the record and every code a table names today
+  for (const code of [...new Set([...codes, ...SHOWN.codes()])]) {
+    SHOWN.shown(code).forEach((text, i) => {
+      const m = /airline-tiles\/([^/?., ]+)\.svg/.exec(text);
+      if (m && W._ORB_TILE_LETTERS[m[1]]) assert.equal(W._orbTileLettersOther(m[1], code), false, code + ', ' + MARKS.SURFACES[i] + ' shows ' + m[1] + '.svg, which letters ' + W._ORB_TILE_LETTERS[m[1]]);
+      assert.doesNotMatch(text, /an empty disc/, code + ', ' + MARKS.SURFACES[i]);
+    });
+  }
+  // art that became letters is the letters of the code itself, in place of such a placeholder
+  for (const c of cells) {
+    if (/^letters/.test(c.now) && !/^letters|^nothing/.test(c.was)) assert.ok(c.row && c.row.kind === 'own letters' && c.now.indexOf('letters ' + c.code) === 0, c.code + ', ' + c.surface + ': ' + c.was + ' became ' + c.now);
+  }
+
+  // THE KINDS ARE WHAT THEY CLAIM
+  const of = (kind) => [...kept.values()].filter((r) => r.kind === kind);
+  const codesOf = (kind) => [...new Set(of(kind).map((r) => r.code))].sort();
+  const at = (code, surface) => SHOWN.shown(code)[MARKS.SURFACES.indexOf(surface)];
+  const file = (text) => (/^letters|^nothing/.test(text) ? '' : text.split(/,| on | filling /)[0]);
+  // a designator: three letters, letters or nothing on origin/main, and now the file its carrier draws
+  // there (or letters, where its carrier has no art: the five regionals that fly for a mainline)
+  for (const r of of('designator')) {
+    assert.ok(r.code.length === 3 && O.fold(r.code) !== r.code, r.code + ' folds to a carrier');
+    assert.match(r.was, /^letters |^nothing$/, r.code + ', ' + r.surface);
+    assert.equal(file(r.now), file(at(O.fold(r.code), r.surface)), r.code + ', ' + r.surface + ': the file of ' + O.fold(r.code));
+  }
+  assert.deepEqual(codesOf('designator').filter((c) => of('designator').some((r) => r.code === c && !file(r.now))), ['AWI', 'CPZ', 'GJS', 'RPA', 'UCA']);
+  for (const c of ['AWI', 'CPZ', 'GJS', 'RPA', 'UCA']) assert.equal((LOOKS[O.fold(c)] || {}).none, 1, c);
+  // the rows of two letters, by kind: no code joins a kind unseen
+  assert.deepEqual(codesOf('partner'), ['9E', 'Q6', 'RK', 'SP']);
+  assert.deepEqual(codesOf('white outside'), ['BW', 'JX', 'KE', 'OZ', 'TG']);
+  assert.deepEqual(codesOf('own colours'), ['VS']);
+  assert.deepEqual(codesOf('line mark'), ['LH', 'RO']);
+  assert.deepEqual(codesOf('own letters'), ['D8', 'DI']);
+  assert.deepEqual([...new Set([...kept.values()].filter((r) => r.code.length !== 3).map((r) => r.kind))].sort(), ['line mark', 'own colours', 'own letters', 'partner', 'white outside']);
+  // a partner: exactly what its carrier draws on that surface, the table of the plate included
+  for (const r of of('partner')) assert.equal(r.now, at(O.fold(r.code), r.surface), r.code + ', ' + r.surface + ': what ' + O.fold(r.code) + ' draws there');
+  assert.deepEqual([at('9E', 'sky plate'), at('9E', 'map hold')], ['airlines/us-major/delta-emblem-colour.svg', 'airlines/us-major/delta-emblem-colour.svg'], 'Endeavor: the flat emblem of Delta on the plates, never its sphere');
+  // white outside: the notice alone, a white disc with the mark not inked, as the top orb of that gate
+  for (const r of of('white outside')) {
+    assert.equal(r.surface, 'notice', r.code);
+    assert.match(r.now, /^[^,]+ on a #FFFFFF disc$/, r.code);
+    assert.deepEqual([column(r.code).emb.bg, column(r.code).emb.inked], ['#FFFFFF', false], r.code + ': its gate');
+  }
+  // Virgin Atlantic: no white filter, on the notice and on the cards
+  assert.deepEqual(of('own colours').map((r) => r.surface + ': ' + r.now).sort(), ['notice: symbols/airlines/VS.svg on the accent disc', 'standby card: symbols/airlines/VS.svg']);
+  // the line marks: white, on the accent disc of the notice and on the frame of the cards; the plates as they were
+  for (const code of ['LH', 'RO']) {
+    assert.deepEqual(of('line mark').filter((r) => r.code === code).map((r) => r.surface + ': ' + r.now).sort(),
+      ['notice: symbols/airlines/' + code + '.svg, white on the accent disc', 'standby card: symbols/airlines/' + code + '.svg, white']);
+    assert.deepEqual(art('/logos/symbols/airlines/' + code + '.svg').colours.length, 1, code + ': a mark of one colour');
+  }
+  // own letters: the letters of the code on every surface that drew the Norwegian placeholder
+  for (const r of of('own letters')) {
+    assert.match(r.was, /^airline-tiles\/NAX\.svg/, r.code + ', ' + r.surface);
+    assert.equal(r.now.indexOf('letters ' + r.code), 0, r.code + ', ' + r.surface + ': ' + r.now);
+  }
+  assert.equal(at('DI', 'standby card'), 'letters DI on a ' + W._ORB_TILE_GROUNDS.NAX + ' disc', 'the centre cards: letters on the ground of that tile, never nothing');
+  assert.equal(at('DI', 'notice'), 'letters DI on a ' + W._ORB_TILE_GROUNDS.NAX + ' disc');
+  // the 34 carriers whose symbol these surfaces always drew: none is in the table
+  for (const code of '6E A3 AH AI AT AV CM CX DE EI EK EW FI GA HV IB JL JQ KC KL KQ KU LO MH MO PC SN SQ SV TP VA VN WY XY'.split(' ')) {
+    assert.ok(![...kept.values()].some((r) => r.code === code), code + ' draws what it drew');
+  }
+  assert.ok(REC.kept.length >= 300 && kept.size >= 590, REC.kept.length + ' rows, ' + kept.size + ' surfaces and codes');
 });
 
 // ── a lettered placeholder ─────────────────────────────────────────────────
@@ -583,6 +773,49 @@ test('a placeholder tile, a flat square with a code set as text, is drawn only f
   assert.equal(W._orbTileLettersOther('TUI', 'X3'), false);
   assert.equal(W._orbTileLettersOther('IBE', 'I2'), false, 'a drawn tile is shared freely');
   for (const fn of ['window._holdArtFailed = function', 'window._orbArtFailed = function']) assert.match(block(fn), /window\._orbTileLettersOther\(/, fn);
+});
+
+test('the rule holds on the gate change notice and in the missing-file handler: the handler is handed the code of the row', () => {
+  // A notice for P6 was written with the folded code alone. The symbol of BQ was never drawn, so the
+  // handler tried the row tile of BQ, the Pascan placeholder, found that it letters BQ, the code it
+  // was handed, and drew it: a P6 notice read BQ. The image is now written with the code of the row
+  // after the folded one, and the handler letters the row.
+  const html = SHOWN.O.notice('P6');
+  assert.match(html, /onerror="window\._orbArtFailed\(this,&quot;BQ&quot;,&quot;P6&quot;\)"/);
+  assert.deepEqual(SHOWN.shown('P6'), ['letters P6, after a miss', 'letters P6, after a miss', 'letters P6, after a miss', 'letters P6 on the accent disc, after a miss', 'nothing']);
+  // Pascan under its own code still draws its tile, and Norwegian under D8 letters itself
+  assert.equal(SHOWN.shown('BQ')[3], 'airline-tiles/PSC.svg filling the orb, after a miss');
+  assert.equal(SHOWN.shown('D8')[3], 'letters D8 on the accent disc, after a miss');
+  // the handler: a third argument, asked before the folded code, and the letters that go in are its letters
+  const failed = block('window._orbArtFailed = function');
+  assert.match(failed, /^window\._orbArtFailed = function \(img, code, rowCode\) \{/);
+  assert.match(failed, /window\._orbTileLettersOther\(_icao, rowCode \|\| code\)\) \{\s*\n\s*_icao = '';\s*\n\s*if \(rowCode\) code = rowCode;/);
+  // the code of the row is written wherever the tile the handler would try letters another code than
+  // the row, and nowhere else: for every code any table names, in either quote
+  const named = [];
+  for (const code of Object.keys(JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/gate-marks-origin-main.json'), 'utf8')).main)) {
+    const mono = O.mono(code), tile = O.TILE[mono], want = (code !== mono && code.length <= 3 && tile && W._orbTileLettersOther(tile, code)) ? code : '';
+    assert.equal(O.rowArg(code, "'"), want ? ",'" + want + "'" : '', code);
+    assert.equal(O.rowArg(code, '&quot;'), want ? ',&quot;' + want + '&quot;' : '', code);
+    if (want) named.push(code);
+  }
+  assert.deepEqual(named, ['P6'], 'the one code in that case today');
+  assert.equal(O.rowArg(' p6 ', "'"), ",'P6'");
+  for (const odd of ["P6'", 'P6"', 'P6<', '<img>', 'P 6']) assert.match(O.rowArg(odd, "'"), /^(|,'[A-Z0-9]{1,3}')$/, 'the shape of a code, whatever the feed sends');
+  assert.equal(O.rowArg('', "'"), '');
+  // every image that names the handler is written with it: the notice, the one function of the
+  // Your Aircraft orb, both builders, the boarding shelf
+  assert.match(block('function _gateChangeOrbHtml(code) {'), /_orbMono\(c\) \+ '&quot;' \+ \(\(typeof _orbRowArg === 'function'\) \? _orbRowArg\(c, '&quot;'\) : ''\) \+ '\)">'/);
+  assert.match(block('window._gateCardOrb = function'), /var rowArg = \(typeof _orbRowArg === 'function'\) \? _orbRowArg\(code, '\\''\) : '';/);
+  assert.match(MC_ORB, /_orbMono\(_mcOrbCode\) \+ '\\'' \+ _orbRowArg\(_mcOrbCode, '\\''\) \+ '\)">'/);
+  assert.match(NI_ORB, /_orbMono\(_niCode\) \+ '\\'' \+ _orbRowArg\(_niCode, '\\''\) \+ '\)">'/);
+  assert.match(SHELF_ORB, /_orbMono\(airlineCode\) \+ '\\'' \+ _orbRowArg\(airlineCode, '\\''\) \+ '\)">'/);
+  assert.equal(CORE.split('window._orbArtFailed(this,').length - 1, 5, 'five images name the handler');
+  // the plates read the code of the row from the letters beside the image, and a plate never draws the
+  // placeholder of another code first time either
+  assert.match(block('window._holdArtFailed = function'), /window\._orbTileLettersOther\(icao, String\(shown \|\| code\)\)/);
+  assert.equal(O.plate('DI'), '', 'Norwegian UK: no file, so the plate letters DI');
+  assert.equal(O.plate('DY'), O.emblem('DY'));
 });
 // ── the table of looks ─────────────────────────────────────────────────────
 // Light grounds whose ink is the neutral dark of the boards (#1B2430): no dark colour of the brand
@@ -753,6 +986,11 @@ test('the carriers the stylesheet paints: what the table records is what the sty
   // PAL: gold on the badges and on the emblem disc
   const gold = new RegExp('background: ' + LOOKS.PB.ground + ' !important');
   assert.ok(paints(RG, '.g8-airline-PB ', ' .v2-fi-icon-badge', gold) && paints(RG, '.g8-airline-PB ', ' .v2-fi-emblem-wrap', gold));
+  assert.ok(paints(RG, '.g8-airline-SP ', ' .v2-fi-icon-badge', gold), 'and under its second code');
+  // that rule paints the ground only, and no rule inks those badges for PAL: the ink is the one the gate writes
+  for (const cls of ['.g8-airline-PB ', '.g8-airline-SP ']) for (const list of [R, RG]) {
+    assert.ok(!paints(list, cls, ' .v2-fi-icon-badge', /(?:^|[;\s])color:/) && !paints(list, cls, ' .ac-ico', /(?:^|[;\s])color:/), cls + 'has no ink rule for its badges');
+  }
   // Ryanair: gold glyphs, the harp never inked
   assert.ok(paints(R, FR, ' .v2-fi-icon-badge .ac-ico', /color: #F1C933 !important/));
   assert.ok(paints(R, FR, ' .v2-fi-emblem-wrap img', /filter: none !important/));
@@ -897,17 +1135,29 @@ test('a three-letter designator in the airline slot is its carrier: the callsign
 // ── the boarding shelf ─────────────────────────────────────────────────────
 test('the boarding shelf takes the look of the rail: the ground of its emblem orb on its five badges, an ink that reads', () => {
   assert.match(SHELF_BADGES, /: \(_birLook && _birLook\.bg\) \? _birLook\.bg\s*\n\s*: 'var\(--airline-accent,' \+ _birAccFb \+ '\)';/);
-  assert.match(SHELF_BADGES, /var _birRailInk = _birF8 \? '#141414' : '#fff';\s*\n\s*if \(!_birF8 && _birLook && !_birLook\.css\) _birRailInk = _birLook\.ink;/);
+  assert.match(SHELF_BADGES, /var _birRailInk = _birF8 \? '#141414' : '#fff';\s*\n\s*if \(!_birF8 && _birLook && \(!_birLook\.css \|\| !\/\^#f\{3\}\(f\{3\}\)\?\$\/i\.test\(_birLook\.ink\)\)\) _birRailInk = _birLook\.ink;/,
+    'the ink of the look wherever the gate writes its own discs, and wherever the row names an ink that is not white');
   assert.match(CORE, /_birParts\.badge \+ 'color:' \+ _birRailInk \+ ';'/, 'the emblem orb of the shelf carries the ink of its badges');
   // the shelf chip has no ink rule of its own: it takes the colour of its badge (the base rule and the rule of
   // the column both leave it out, and the only rules that reach it are American and Porter, whose badges the stylesheet paints)
   const chipRules = CSS.replace(/\/\*[\s\S]*?\*\//g, '').split('}').map((r) => r.slice(0, r.indexOf('{'))).filter((sel) => /\.v2-fi-orbcode\b/.test(sel) && !/:not\(\.v2-fi-orbcode-onaccent\)/.test(sel));
   assert.ok(chipRules.length >= 2 && chipRules.every((sel) => /data-gate-airline[*]?="(PD|AA|AAL|AMERICAN)"/.test(sel)), chipRules.map((r) => r.replace(/:not\(#_\)/g, '').trim()).join(' | '));
   let n = 0;
-  const white = [], inked = [];
+  const white = [], inked = [], cssInked = [];
   for (const code of CODES) {
     const { L, badge, accent, top, emb } = column(code);
-    if (L.css) continue;
+    if (L.css) {
+      // a carrier the stylesheet paints: the shelf writes white and the stylesheet inks it, as it always
+      // did, unless its row names an ink that is not white. Then the shelf writes that ink, the ink of
+      // its rail, and it reads on the ground the row records for the discs the stylesheet paints.
+      const ink = styleProp(O.shelf(code).badge, 'color'), row = LOOKS[L.carrier];
+      if (row.ink && !WHITE.test(row.ink)) {
+        cssInked.push(code);
+        assert.ok(same(ink, row.ink) && same(ink, badge.ink), code + ': the shelf writes ' + ink + ', the row ' + row.ink + ', the rail ' + badge.ink);
+        assert.ok(contrast(full(ink), row.ground) >= 4.5, code + ': ' + ink + ' on ' + row.ground + ' = ' + contrast(full(ink), row.ground).toFixed(2));
+      } else assert.equal(ink, '#fff', code + ': left to the stylesheet');
+      continue;
+    }
     n++;
     const S = O.shelf(code), bg = styleProp(S.badge, 'background'), ink = styleProp(S.badge, 'color');
     // what the shelf writes is what the rail writes, string for string
@@ -923,8 +1173,17 @@ test('the boarding shelf takes the look of the rail: the ground of its emblem or
     assert.ok(contrast(ink, sbg) >= 3, code + ': ' + ink + ' on ' + sbg + ' = ' + contrast(ink, sbg).toFixed(2));
   }
   assert.ok(n >= 215 && white.length > 100 && inked.length > 40, n + ' shelves: ' + white.length + ' white, ' + inked.length + ' in the ink of the brand');
-  // white glyphs under 3 to 1 on the shelf: the two approved as drawn, nothing else
-  const low = CODES.filter((c) => !W._gateColumnLook(c).css && WHITE.test(styleProp(O.shelf(c).badge, 'color')) && contrast('#FFFFFF', column(c).badgeBg) < 3);
+  // PAL, under both its codes, is the carrier the stylesheet paints whose row names an ink: its gold
+  // has no ink rule of its own on this shelf, and white read on it at 2 to 1
+  assert.deepEqual(cssInked.sort(), ['PB', 'SP']);
+  assert.ok(contrast('#FFFFFF', LOOKS.PB.ground) < 3 && contrast(LOOKS.PB.ink, LOOKS.PB.ground) >= 4.5);
+  // white glyphs under 3 to 1 on the shelf: the two approved as drawn, nothing else. A carrier the
+  // stylesheet paints is judged on the ground its row records, where the row names its ink.
+  const low = CODES.filter((c) => {
+    const L = W._gateColumnLook(c), named = !!(LOOKS[L.carrier] || {}).ink;
+    if (L.css && !named) return false;
+    return WHITE.test(styleProp(O.shelf(c).badge, 'color')) && contrast('#FFFFFF', L.css ? L.ground : column(c).badgeBg) < 3;
+  });
   assert.deepEqual(low.sort(), ['TS', 'WS']);
   // the carriers the report named: white on a light disc before
   for (const [code, ground] of [['TR', '#FFE900'], ['VY', '#FFCC00'], ['UL', '#B5D5F1'], ['XY', '#00BBB4'], ['BF', '#00ACE7'], ['G3', '#FF7020'], ['U2', '#FF6600'], ['EZY', '#FF6600'], ['EC', '#FF6600']]) {
@@ -941,9 +1200,16 @@ test('the boarding shelf takes the look of the rail: the ground of its emblem or
   // a ground where white reads at 3 to 1 or better keeps white, unless its look names the dark colour of the brand
   assert.deepEqual(inked.filter((c) => contrast('#FFFFFF', column(c).badgeBg) >= 3).sort(), ['KL']);
   // a carrier the stylesheet paints: what the shelf always wrote, the accent and white
-  for (const code of ['AA', 'DL', 'PD', 'F9', 'UA', 'FR', 'PB']) {
+  for (const code of ['AA', 'DL', 'PD', 'F9', 'UA', 'FR']) {
     const S = O.shelf(code);
     assert.ok(isVar(styleProp(S.badge, 'background')) && styleProp(S.badge, 'color') === '#fff', code);
+  }
+  // PAL: the accent still (the stylesheet paints the gold over it), and its navy for the glyphs, the
+  // code chip, which takes the colour of its badge, and the emblem orb of the shelf
+  for (const code of ['PB', 'SP']) {
+    const S = O.shelf(code);
+    assert.ok(isVar(styleProp(S.badge, 'background')), code);
+    assert.deepEqual([styleProp(S.badge, 'color'), S.ink, styleProp(O.rail({ airlineCode: code }, code, code).badge, 'color')], ['#183677', '#183677', '#183677'], code);
   }
 });
 // ── the Your Aircraft orb ──────────────────────────────────────────────────
@@ -972,6 +1238,8 @@ function cardBreaks(gate, op) {
     out.push('a white mark on ' + disc + ' at ' + contrast('#FFFFFF', disc).toFixed(2) + ' to 1: ' + f.src);
   }
   if (disc && f.letters && contrast(f.lettersInk || '#FFFFFF', disc) < 3) out.push('the letters ' + (f.lettersInk || 'white') + ' on ' + disc + ' at ' + contrast(f.lettersInk || '#FFFFFF', disc).toFixed(2) + ' to 1');
+  // an ink that is not white is written so that it wins over the stylesheet, which sets these letters white
+  if (f.letters && f.lettersStyle && !WHITE.test(f.lettersInk) && !inkWins(f.lettersStyle)) out.push('the letters are inked in a style the stylesheet beats, so they stay white: ' + f.lettersStyle);
   // and never an emblem of several colours inked white
   if (f.inked && A.exists && (!A.colours || A.colours.filter((c) => !/^#F[C-F]F[C-F]F[C-F]$/i.test(c)).length > 1)) out.push('a colour emblem inked white: ' + f.src);
   return out;
@@ -1097,6 +1365,99 @@ test('the two builders of the Your Aircraft orb and the pass that re-points it w
   assert.match(failed, /wrap\.style\.setProperty\('background', 'var\(--airline-accent,#D82F2E\)'\);\s*\n\s*wrap\.style\.setProperty\('padding', 'clamp\(6px,0\.9vh,13px\)'\);/);
   assert.match(failed, /if \(\(1\.05 \/ \(lum \+ 0\.05\)\) < 3\) span\.style\.setProperty\('color', '#10151f', 'important'\);/, 'and the letters are dark wherever white is under 3 to 1');
   assert.ok(failed.indexOf("wrap.style.setProperty('background'") < failed.indexOf('var lum = '), 'the disc is given before the ink is picked from it');
+});
+
+// ── one ink on the disc of the gate ────────────────────────────────────────
+test('what lands on the disc of the gate takes the ink of the gate: one column, one ink', () => {
+  // KLM under Cityhopper, an operator with no file and no colour. Its orb sits on the blue of the gate,
+  // where white still reads at 3 to 1, so ink by contrast alone gave white letters beside glyphs and a
+  // code in the navy the look of KLM names.
+  const kl = W._gateCardOrb('KL', 'WA'), f = orbFacts(kl.html), L = W._gateColumnLook('KL');
+  assert.ok(contrast('#FFFFFF', L.bg) >= 3 && same(L.ink, LOOKS.KL.ink) && !WHITE.test(L.ink), 'white reads on ' + L.bg + ', and the look names ' + L.ink + ' all the same');
+  assert.ok(!fs.existsSync(path.join(FC, 'logos/symbols/airlines/WA.svg')), 'the symbol it asks for was never drawn');
+  assert.deepEqual([kl.code, f.src, f.bg, f.inked], ['WA', '/logos/symbols/airlines/WA.svg', L.bg, false], 'the mark of the operator on the disc of the gate, with no white filter');
+  assert.equal(styleProp(f.style, '--orb-ink'), LOOKS.KL.ink, 'the box names the ink of the column');
+  // the file fails, and the handler of the page sets the letters: in that ink, written to win
+  const end = SHOWN.orb(kl.html, O.accent('KL'));
+  assert.deepEqual([end.missed, end.src, end.letters, end.ink, end.inkImportant], [true, '', 'WA', LOOKS.KL.ink, true]);
+  assert.equal(column('KL').badge.ink, end.ink, 'the ink of the five glyph badges of that gate');
+  // EVERY GATE, under an operator with no colour of its own. Where the look of the gate names an ink
+  // that is not white, the box names it, the mark drops the white filter and the letters take it;
+  // where the column is white, nothing is named and the ink is picked by contrast, as it was.
+  let named = 0, plain = 0;
+  for (const gate of CODES) {
+    const G = W._gateColumnLook(gate), r = W._gateCardOrb(gate, 'ZZ'), o = orbFacts(r.html), ink = styleProp(o.style, '--orb-ink');
+    assert.deepEqual([r.own, r.code, o.src], [false, 'ZZ', '/logos/symbols/airlines/ZZ.svg'], gate);
+    const after = SHOWN.orb(r.html, O.accent(G.carrier));
+    assert.equal(after.letters, 'ZZ', gate);
+    if (WHITE.test(G.ink)) {
+      plain++;
+      assert.equal(ink, '', gate + ': no ink named');
+      assert.ok(after.ink === '' || (after.ink === '#10151f' && after.inkImportant), gate + ': white, or the dark ink where white does not read: ' + after.ink);
+      continue;
+    }
+    named++;
+    assert.ok(same(ink, G.ink), gate + ': the box names ' + ink + ', the look ' + G.ink);
+    assert.equal(o.inked, false, gate + ': no white filter beside dark glyphs');
+    assert.ok(same(after.ink, G.ink) && after.inkImportant, gate + ': the letters ' + after.ink);
+    if (!G.css) assert.ok(same(column(gate).badge.ink, after.ink), gate + ': the ink of its glyph badges');
+    if (!LEDGER[gate]) assert.ok(contrast(full(after.ink), G.ground) >= 3, gate + ': ' + after.ink + ' on ' + G.ground);
+  }
+  assert.ok(named >= 45 && plain >= 150, named + ' gates name an ink, ' + plain + ' are white');
+  // PAL is among them: the stylesheet paints that box gold, and the letters take its navy
+  assert.equal(styleProp(orbFacts(W._gateCardOrb('PB', 'ZZ').html).style, '--orb-ink'), LOOKS.PB.ink);
+  // an operator with a colour of its own is not on the disc of the gate: nothing is named
+  for (const [gate, op] of [['KL', 'AF'], ['KL', 'AC'], ['BA', 'IB'], ['KL', '']]) assert.equal(styleProp(orbFacts(W._gateCardOrb(gate, op).html).style, '--orb-ink'), '', gate + '/' + op);
+  // the one function decides it, and the handler reads the ink the box names before it picks by contrast
+  assert.match(block('window._gateCardOrb = function'), /if \(onGateDisc && look && look\.ink && !white\.test\(look\.ink\)\) \{ ink = look\.ink; inkVar = '--orb-ink:' \+ ink \+ ';'; \}/);
+  const failed = block('window._orbArtFailed = function');
+  assert.match(failed, /wrap\.style\.getPropertyValue\('--orb-ink'\)/);
+  assert.ok(failed.indexOf("getPropertyValue('--orb-ink')") < failed.indexOf('var lum = '), 'before the pick by contrast');
+  // the variable is the business of the handler alone: no stylesheet rule reads it or keys on it
+  assert.doesNotMatch(CSS + GATE_CSS, /--orb-ink\b/);
+});
+
+test('an ink that is not white is written to win over the stylesheet: the whole style of the letters, not the first colour in it', () => {
+  // THE RULE IT HAS TO BEAT: the stylesheet sets the letters of the Your Aircraft orb white, with !important
+  const flat = CSS.replace(/:not\(#_\)/g, '');
+  const at = flat.indexOf('.g8-wrap .gad-map-col-v2 .v2-fi-orbwrap .v2-fi-orb-code {');
+  assert.ok(at > 0, 'the rule of the letters');
+  assert.match(flat.slice(at, flat.indexOf('}', at)), /color: #ffffff !important;/);
+  // letters the one function writes itself, on a light disc (a code no table knows, given a light
+  // accent for the length of this check): the dark ink, with !important
+  O.ACCENT.XYZ = '#FFE900';
+  try {
+    const f = orbFacts(W._gateCardOrb('XYZ', '').html);
+    assert.deepEqual([f.letters, f.lettersStyle], ['XYZ', 'color:#1B2430 !important;']);
+    assert.ok(inkWins(f.lettersStyle));
+    assert.deepEqual(cardBreaks('XYZ', ''), []);
+  } finally { delete O.ACCENT.XYZ; }
+  // the check reads the style, not the colour: the same ink without !important is a break
+  assert.equal(inkWins('color:#1B2430;'), false);
+  assert.equal(inkWins('color:#1B2430 !important;'), true);
+  assert.equal(inkWins('color:#1B2430 !important;', true), false, 'the code chip needs the fill colour too');
+  assert.equal(inkWins('color:#1B2430 !important;-webkit-text-fill-color:#1B2430 !important;', true), true);
+  assert.equal(inkWins('background:#fff;-webkit-text-fill-color:#1B2430 !important;', true), false);
+  // letters the missing-file handler sets: the ink the box names, and the dark ink it picks by
+  // contrast on a light disc, both set as important (run here, against a stand-in for the image)
+  for (const [gate, ink] of [['KL', LOOKS.KL.ink], ['BA', LOOKS.BA.ink], ['TS', '#10151f'], ['TR', LOOKS.TR.ink]]) {
+    const end = SHOWN.orb(W._gateCardOrb(gate, 'ZZ').html, O.accent(gate));
+    assert.deepEqual([end.letters, end.ink, end.inkImportant], ['ZZ', ink, true], gate);
+  }
+  const failed = block('window._orbArtFailed = function');
+  assert.equal((failed.match(/span\.style\.setProperty\('color', [^)]*\)/g) || []).length, 2);
+  for (const m of failed.match(/span\.style\.setProperty\('color', [^)]*\)/g)) assert.match(m, /, 'important'\)$/, m);
+  // THE RAIL: the letters of a gate that reaches the placeholder of another code ride in the chip of
+  // the destination code, whose colour and fill colour the stylesheet both set with !important
+  const chip = CSS.indexOf('.v2-fi-icon-badge[style*="--orb-code-ink"] .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {');
+  assert.match(CSS.slice(chip, CSS.indexOf('}', chip)), /color: var\(--orb-code-ink\) !important;\s*-webkit-text-fill-color: var\(--orb-code-ink\) !important;/);
+  for (const code of ['P6', 'D8', 'DI']) {
+    const { emb, L } = column(code), ink = W._orbInkOn(L.ground);
+    assert.equal(emb.lettersStyle, 'color:' + ink + ' !important;-webkit-text-fill-color:' + ink + ' !important;', code);
+    assert.ok(inkWins(emb.lettersStyle, true), code);
+  }
+  // and every letters span either builder or the one function writes is read whole by this test
+  assert.equal(orbFacts('<div class="v2-fi-icon-wrap" style="background:#fff;"><span class="v2-fi-orb-code" style="color:#123456;font-weight:800;">AB</span></div>').lettersStyle, 'color:#123456;font-weight:800;');
 });
 
 // ── no colour of its own ───────────────────────────────────────────────────
