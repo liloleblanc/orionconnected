@@ -2976,17 +2976,10 @@ html body:not(#_):not(#_):not(#_) .v2-fi-icon-wrap .ac-ico {
   font-size: clamp(34px, 4.8vh, 60px) !important;
   line-height: 1 !important;
 }
-/* Frontier: the icons are to read green. The gate icon badges default
-   to var(--airline-accent) (blue #0033A1 for F9). Green ONLY the round icon
-   badges here — NOT --airline-accent itself, so the blue boarding panels and
- final-call strip already approved stay blue. Covers both the idle
-   (v2-fi) and boarding-takeover (g8-bir) info rows, glyphs + airline emblem.
-   The green is Frontier Green #0F6744, the value of its brand guide, of its tile and of the accent
-   table. It was #00854D here, a green of no Frontier palette (17 apart): one colour on the gate, but
-   not the one every other table gives. White on it reads at 6.9 to 1. */
-html body[data-gate-airline="F9"] .g8-bir-badge,
-html body[data-gate-airline="F9"] .v2-fi-icon-badge,
-html body[data-gate-airline="F9"] .v2-fi-emblem-wrap { background: #0F6744 !important; }
+/* Frontier: its round badges were painted Frontier Green here, by a rule of their own, on a card
+   that is a shade of the same green: green on green. The rule is gone. The gate works out the
+   column of Frontier as it does every other (window._gateColumnLook in fids-core.js): white
+   discs, the emblem in its green inside, the glyphs and the code in Frontier Green #0F6744. */
 /* Glyphs take the BADGE's ink — font.css paints .ac-ico white directly,
  which stomped per-airline badge inks (Flair's green). */
 html .g8-bir-badge .ac-ico,
@@ -9093,8 +9086,14 @@ AND DELTA OFF UNITED'S BLUE (
    honest answer rather than a third borrowed plate: Delta is navy AND RED,
    and not one of the fourteen textures has red in it. A red-on-navy texture
    is all it would take. */
+/* THE PLATE OF A YELLOW AIRLINE TAKES ITS OWN DARK. A shade of a yellow is a khaki, which no
+   airline uses, under figures set in white. For Scoot, Vueling and Pegasus the gate publishes
+   the dark each sets its yellow on as --gate-card (window._GATE_CARD_DARKS in fids-core.js),
+   and the plate takes it in place of the shade of the accent. Every other carrier leaves the
+   variable unset and keeps the mix. The numbers of this rule (34%, #0b0e14, screen) are the
+   ones window._gateCardPaint works the paint of a card from: a test holds the two together. */
 html body[data-gate-airline]:not(#_):not(#_):not(#_) {
-  --plate-base: color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14);
+  --plate-base: var(--gate-card, color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14));
   --plate-blend: screen;
 }
 /* Carriers WITH their own artwork keep it flat and untinted — the texture is

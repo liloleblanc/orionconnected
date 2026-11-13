@@ -530,8 +530,11 @@ const ORB = new Function('window', [
   blockSource('window._CARD_COLOR_EMBLEMS = {'),
   blockSource('window._orbKeepsColour = function'),
   fnSource('_orbEmblemCarrier'), fnSource('_airlineOrbEmblem'),
-  blockSource('window._gateOrbParts = function'),
-  'return { files: AIRLINE_EMBLEM_FILES, top: GATE_TOP_ROUND_EMBLEM_FILES, colour: window._CARD_COLOR_EMBLEMS, emblem: _airlineOrbEmblem, carrier: _orbEmblemCarrier, parts: window._gateOrbParts };',
+  // the recipe of the art: the only place an orb is ever given the white filter. The recipe every
+  // orb asks (window._gateOrbParts) starts from it and can only take the filter away (a column made
+  // white draws its mark in its own colours), which the test below reads off its source.
+  blockSource('window._gateOrbNatural = function'),
+  'return { files: AIRLINE_EMBLEM_FILES, top: GATE_TOP_ROUND_EMBLEM_FILES, colour: window._CARD_COLOR_EMBLEMS, emblem: _airlineOrbEmblem, carrier: _orbEmblemCarrier, parts: window._gateOrbNatural };',
 ].join('\n'))({});
 
 test('6c. the gate orb never whitens a tile, nor a colour carrier\'s emblem under another code', () => {
@@ -549,6 +552,13 @@ test('6c. the gate orb never whitens a tile, nor a colour carrier\'s emblem unde
     if (colourArt.has(f) && inked) found.push(`${code}: ${f}, ${colourArt.get(f)}'s emblem, is whitened (an emblem keeps its colours)`);
   }
   assert.deepEqual(found, [], found.join('\n'));
+  // The recipe every orb asks adds no white filter of its own: it hands back the recipe of the art,
+  // or a white disc whose two image styles carry no filter at all.
+  const asked = blockSource('window._gateOrbParts = function');
+  assert.match(asked, /var N = window\._gateOrbNatural\(code\);/);
+  assert.match(asked, /if \(!ink\) return N;/);
+  assert.doesNotMatch(asked, /invert|brightness\(|filter:/, 'no filter is written on a white disc');
+  assert.match(asked, /whitened: false, white: true/);
   // American Eagle's three wear American's symbol, with American's treatment.
   for (const op of ['MQ', 'ENY', 'OH', 'PSA', 'PT', 'PDT']) {
     assert.equal(ORB.carrier(op), 'AA', op);
