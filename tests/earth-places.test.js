@@ -17,17 +17,26 @@
 //     airport with one (tests/fixtures/earth-places-codes-2026-10-19.txt).
 //
 // THE MAP'S OWN TABLE. What no table of the board had (the positions, the
-// clocks and the names) is in js/earth-places.js, which the floor alone
-// loads, once, as it starts, and which only the floor reads. The board's own
-// tables are exactly as they were: so the rows, the gate, the belt, the
-// companion app, the destination card, the city photos and the weather card
-// print every place exactly as v24084 printed it. Held here by running this
-// checkout's whole fids-core.js with the floor's table and the floor loaded
-// beside it and without them, and v24084's (from the repository's history,
-// while the rows' scripts are v24084's but for their cache tokens), over
-// every code and name of their tables and the floor's, every row the live
-// boards were recorded with, and every ICAO code a feed can send in place
-// of one.
+// clocks and the names) is in js/earth-places.js. Its positions and clocks
+// only the floor reads, and the board's own tables are exactly as they were.
+//
+// THE NAMES OF THE AMERICAS ARE THE BOARDS' TOO. A gate to Río Hato printed
+// 'Rih' and its map 'To RIH': the 1,055 places of the Americas this table
+// names and CITY and CITY_FR do not printed their code on every screen but
+// the map. The board pages and the companion app now load the table with
+// their own scripts, and each reads it through one function (fids-core.js
+// _placeNameAm, app.html placeOf), for a code of the Americas its own tables
+// do not name. So the rows, the belt, the gate, the destination card and the
+// weather card print those 1,055 by name; and every other place, every row
+// with no code, every row whose code the feed did not send (cut from an
+// ICAO code), the photo search and the weather query print exactly what a
+// board without the table prints. Held here by running this checkout's
+// whole fids-core.js with the table and the floor and without them (and
+// v24084's, from the repository's history, while the rows' scripts are
+// v24084's but for their cache tokens), over every code and name of their
+// tables and the floor's, every row the live boards were recorded with, and
+// every ICAO code a feed can send in place of one.
+// (tests/americas-airport-names.test.js states the rule of the names.)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -258,9 +267,13 @@ test('every one of them the map can draw has a name: the board\'s (CITY, CITY_FR
   assert.equal(CITY.YZT, 'PORT HARDY');
 });
 
-// ── the floor's table is the floor's ───────────────────────────────────────
+// ── who reads the table ────────────────────────────────────────────────────
 
-test('only the floor loads js/earth-places.js and reads it; the floor writes to no table of the board\'s', () => {
+// (It was the floor's alone, and this test said so. The names of the
+// Americas are now read by the boards and the app too, the reason is in the
+// header above; what is held is that each reads them in one place, and that
+// the positions and the clocks are still read by the floor alone.)
+test('the floor and, for the names of the Americas, the three board pages, the board\'s one naming function and the app\'s read js/earth-places.js, and nothing else; the floor writes to no table of the board\'s', () => {
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((x) => (x.isDirectory() ? walk(path.join(d, x.name)) : [path.join(d, x.name)]));
   const readers = [];
   for (const f of walk(path.join(ROOT, 'fids-current')).concat(walk(path.join(ROOT, 'workers')), [path.join(ROOT, 'worker-entry.js')])) {
@@ -268,9 +281,39 @@ test('only the floor loads js/earth-places.js and reads it; the floor writes to 
     if (/\/fids-current\/js\/(fids-earth|earth-places)\.js$/.test(f)) continue;
     if (/earth-places|FIDS_EARTH_PLACES/.test(fs.readFileSync(f, 'utf8'))) readers.push(path.relative(ROOT, f));
   }
-  assert.deepEqual(readers, [], 'nothing but the floor reads the floor\'s table');
-  assert.match(MOD, /var PLACES_URL = '\/js\/earth-places\.js\?v=\d+';/);
+  assert.deepEqual(readers.sort(), ['fids-current/app.html', 'fids-current/bids.html', 'fids-current/fids.html', 'fids-current/gids.html', 'fids-current/js/fids-core.js'],
+    'the floor, the three board pages, the board\'s script and the app read the table, and nothing else');
   const tag = /var FIDS_BUILD_TAG = 'v(\d+)';/.exec(CORE)[1];
+  const count = (src, re) => (src.match(re) || []).length;
+  // the pages load it once, on the build's token: the boards before the
+  // core, the app after its shared names; and no page reads it by itself
+  for (const page of ['fids.html', 'gids.html', 'bids.html', 'app.html']) {
+    const html = fs.readFileSync(path.join(ROOT, 'fids-current', page), 'utf8');
+    assert.equal(count(html, /<script src="js\/earth-places\.js\?v=\d+"><\/script>/g), 1, page + ' loads the table once');
+    assert.equal(/<script src="js\/earth-places\.js\?v=(\d+)"><\/script>/.exec(html)[1], tag, page + ': on the build\'s token');
+    const at = html.indexOf('<script src="js/earth-places.js?v=');
+    if (page === 'app.html') assert.ok(html.indexOf('<script src="js/shared-names.js?v=') < at && at < html.indexOf('\nfunction placeOf('), 'the app loads it after its shared names, before its own script');
+    else {
+      assert.ok(at < html.indexOf('<script src="js/fids-core.js?v='), page + ' loads it before the core');
+      assert.equal(count(html, /FIDS_EARTH_PLACES/g), 0, page + ' reads nothing of it itself');
+    }
+  }
+  // the board reads it in one function, and only its names (label): never
+  // a position or a clock, which stay the floor's
+  const fnOf = (src, head) => { const i = src.indexOf(head); assert.ok(i >= 0, head); let d = 0, j = src.indexOf('{', i); for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}' && --d === 0) break; } return src.slice(i, j + 1); };
+  const naming = fnOf(CORE, '\nfunction _placeNameAm(code, langOverride) {');
+  assert.equal(count(CORE, /FIDS_EARTH_PLACES/g), 1, 'fids-core.js reads the table in one place');
+  assert.equal(count(naming, /FIDS_EARTH_PLACES/g), 1, 'inside _placeNameAm');
+  assert.match(naming, /var P = \(typeof window !== 'undefined'\) \? window\.FIDS_EARTH_PLACES : null;/);
+  assert.deepEqual([...new Set(naming.match(/\bP\.[A-Za-z_]+/g))], ['P.label'], 'and reads only the names it prints');
+  const APP = fs.readFileSync(path.join(ROOT, 'fids-current', 'app.html'), 'utf8');
+  const appNaming = fnOf(APP, '\nfunction placeOf(code,feedName){');
+  assert.equal(count(APP, /FIDS_EARTH_PLACES/g), 1, 'app.html reads the table in one place');
+  assert.equal(count(appNaming, /FIDS_EARTH_PLACES/g), 1, 'inside placeOf');
+  assert.deepEqual([...new Set(appNaming.match(/\bP\.[A-Za-z_]+/g))], ['P.label']);
+  // the floor loads it itself where a page has not (it finds the page's)
+  assert.match(MOD, /if \(root\.FIDS_EARTH_PLACES\) \{ PLACES = root\.FIDS_EARTH_PLACES; return; \}/);
+  assert.match(MOD, /var PLACES_URL = '\/js\/earth-places\.js\?v=\d+';/);
   assert.equal(/earth-places\.js\?v=(\d+)/.exec(MOD)[1], tag, 'the table\'s cache token is the build\'s');
   assert.match(MOD, /function loadPlaces\(\) \{\s*if \(placesAsked\) return;/);
   assert.match(MOD, /loadPlaces\(\);\s*if \(!placesReady\(\)\) return;/, 'measure waits for it');
@@ -335,8 +378,10 @@ function board(files, extra) {
     cut('    const loc       = isDep ? f.dest : f.origin;', '    // v23925 — the row as shown (_fidsShownRow)'),
     '  return cityDisp; };',
     'var __destInfo = function (locIata) { return ' + line(/var _destCity = (CITY\[locIata\] \|\| _cityForIata\(locIata\) \|\| locIata);/) + '; };',
-    'var __photo = function (locIata) { return ' + line(/var cityName = (CITY\[locIata\] \|\| _cityForIata\(locIata\) \|\| '');\n  if \(cityName\) \{\n    var ov = await fetchOpenversePhoto/) + '; };',
-    'var __wxCard = function (dest) { var city = ""; ' + line(/\n(    try \{ city = \(typeof CITY !== 'undefined' && CITY\[dest\]\) \|\| \(AP\[dest\] && AP\[dest\]\.city\) \|\| dest; \} catch \(e\) \{ city = dest; \}\n    if \(typeof tc === 'function'\) \{ try \{ city = tc\(city\); \} catch \(e2\) \{\} \})/) + ' return city; };',
+    // (the photo search reads the tables alone, by _cityForIata's second
+    // argument; the weather card's title reads the name of the Americas)
+    'var __photo = function (locIata) { return ' + line(/var cityName = (CITY\[locIata\] \|\| _cityForIata\(locIata, true\) \|\| '');\n  if \(cityName\) \{\n    var ov = await fetchOpenversePhoto/) + '; };',
+    'var __wxCard = function (dest) { var city = ""; ' + line(/\n(    try \{ city = \(typeof CITY !== 'undefined' && CITY\[dest\]\) \|\| \(AP\[dest\] && AP\[dest\]\.city\) \|\| \(typeof _placeNameAm === 'function' && _placeNameAm\(dest, 'en'\)\) \|\| dest; \} catch \(e\) \{ city = dest; \}\n    if \(typeof tc === 'function'\) \{ try \{ city = tc\(city\); \} catch \(e2\) \{\} \})/) + ' return city; };',
     line(/\n    (var _wxCityOf = function \(iata\) \{[\s\S]*?\n    \};)/),
     // the feed's airport code as mapADB reads it: the IATA code, else the
     // last three letters of the ICAO code
@@ -355,15 +400,20 @@ const atBase = (() => {
 const BOARD_FILES = ['js/host-airport.js', 'js/board-strings.js', 'js/feed-router.js', 'js/fids-core.js', 'js/airport-coords.js'];
 const here = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 let BOARD_ = null;
-const thisBoard = () => BOARD_ || (BOARD_ = board(BOARD_FILES.map((f) => [f, here('fids-current/' + f)]),
-  [['js/earth-places.js', PLACES_SRC], ['js/fids-earth.js', MOD]]));
+// the board as fids.html loads it: the table before the core, the floor after
+const tabled = () => {
+  const files = BOARD_FILES.map((f) => [f, here('fids-current/' + f)]);
+  files.splice(files.findIndex(([n]) => n === 'js/fids-core.js'), 0, ['js/earth-places.js', PLACES_SRC]);
+  return board(files, [['js/fids-earth.js', MOD]]);
+};
+const thisBoard = () => BOARD_ || (BOARD_ = tabled());
 // The comparison with v24084 holds while the rows' scripts are v24084's but
 // for their cache tokens and the build tag, as this change leaves them. A
 // later change that means the rows to print otherwise is not held to v24084
 // (that comparison stands aside, and says which files moved); what keeps
-// holding the floor's table away from the rows, whatever they print, is the
-// board with and without the floor's table and the floor, which needs no
-// history.
+// holding the table to the names of the Americas and away from everything
+// else the rows print is the board with and without the table and the
+// floor, which needs no history.
 const ROW_FILES = BOARD_FILES.map((f) => 'fids-current/' + f).concat(['fids-current/app.html', 'fids-current/js/shared-names.js']);
 const untokened = (s) => s.replace(/\?v=\d+/g, '?v=').replace(/var FIDS_BUILD_TAG = 'v\d+';/, "var FIDS_BUILD_TAG = 'v';");
 let MOVED_ = null;
@@ -513,8 +563,17 @@ function run() {
       for (const l of LANGS) E1.cityNameOf(BF, c, text, l);
     }
   }
-  const P1 = prints(B1, feeds, codes), Pbare = prints(Bare, feeds, codes), P0 = B0 ? prints(B0, feeds, codes) : null;
-  return (RUN_ = { B0, Bare, B1, feeds, codes, P0, Pbare, P1 });
+  // A ROW WHOSE CODE THE FEED DID NOT SEND, read from the last three letters
+  // of its ICAO code, goes to a board of its own (Bcut, the table and the
+  // floor loaded): the board notes such a code for as long as the page
+  // lives (_placeAmCut) and never names it from the table, so on the board
+  // that has met every code that way (the corpus sends 'L' + code for each)
+  // nothing at all may differ from a board without the table.
+  const sent = feeds.filter((x) => !x[1]), cut = feeds.filter((x) => x[1]);
+  const Bcut = tabled();
+  const P1 = prints(B1, sent, codes), Pbare = prints(Bare, sent, codes), P0 = B0 ? prints(B0, sent, codes) : null;
+  const Pcut = prints(Bcut, cut, codes), PbareCut = prints(Bare, cut, codes);
+  return (RUN_ = { B0, Bare, B1, Bcut, feeds, sent, cut, codes, P0, Pbare, P1, Pcut, PbareCut });
 }
 const diffOf = (A, B, a, b) => {
   const out = [];
@@ -522,37 +581,133 @@ const diffOf = (A, B, a, b) => {
   return out;
 };
 
-test('the floor\'s table and the floor change nothing the rows, the belt, the gate, the destination card, the photos or the weather print: the board with them and without them', () => {
-  const { Bare, B1, feeds, codes, Pbare, P1 } = run();
-  assert.equal(typeof B1.FIDS_EARTH_PLACES, 'object', 'the floor\'s table is loaded, as on a board whose floor has started');
+// THE NAME A BOARD PRINTS FOR A PLACE OF THE AMERICAS ITS TABLES DO NOT NAME,
+// worked out here from the table's own data and never by the function under
+// test (label): NAME; with its state's or province's letters, or its
+// country's name in the language on screen, where IN says the name is
+// another place's too; the city's own French name, cased as the board cases
+// every name, where OF says the place is a second airport of a city CITY_FR
+// writes otherwise. (tests/americas-airport-names.test.js holds label, IN
+// and OF to this, and the scope: 1,055 places.)
+const AMERICAS = Object.keys(PLACES.NAME).filter((c) => PLACES.americas(c));
+function amName(B, c, l) {
+  const n = PLACES.NAME[c], of = PLACES.OF[c], w = PLACES.IN[c];
+  if (of) return (l === 'fr' && CITY_FR[of] && CITY_FR[of] !== CITY[of]) ? B.tc(CITY_FR[of]) : n;
+  if (!w) return n;
+  const st = /^(?:US|CA)-([A-Z]{2})$/.exec(w);
+  return n + ', ' + (st ? st[1] : regionNameOf(w, l));
+}
+// what prints() gives for a place of the Americas the tables do not name:
+// a row the feed coded (`dep`: a departure, else an arrival), and the code
+// by itself (`bare`: the same code on a board without the table, for what
+// must not move: the photo search, the weather query, the name index and
+// the reading of an ICAO code)
+function amRow(B, c, dep) {
+  const r = [c, amName(B, c, 'en') + ' | ' + c];
+  for (const l of (dep ? LANGS : ['en', 'fr'])) { const s = amName(B, c, l) + ' | ' + c; r.push(s, s, s); }
+  if (dep) {
+    // (the via stop, in the language the board was left in, the last; the
+    // name as it is, as _destFlipFromItems writes every stop's)
+    const n = amName(B, c, LANGS[LANGS.length - 1]);
+    r.push('<span class="dest-flip" data-destflip="' + encodeURIComponent(JSON.stringify([{ c: n, ia: c }, { c: 'Toronto', ia: 'YYZ' }])) + '" data-dfk="c">' + n + '</span>');
+  }
+  return JSON.stringify(r);
+}
+function amCode(B, c, bare) {
+  const r = JSON.parse(bare);
+  assert.equal(r[0], c);
+  LANGS.forEach((l, i) => {
+    const n = amName(B, c, l);
+    r[1 + 3 * i] = n.toUpperCase();      // airportCityNameSafe_v21877: in capitals, as CITY is
+    r[2 + 3 * i] = n + ' | ' + c;        // formatCityIata
+    r[3 + 3 * i] = n;                    // the weather plates' city (_wxCityOf)
+  });
+  const en = amName(B, c, 'en');
+  r[10] = en.toUpperCase();              // the destination card's city
+  //  r[11]  the photo search: as on a board without the table
+  //  r[12]  the weather query: the same
+  r[13] = en;                            // the weather card's title
+  r[14] = en.toUpperCase();              // _cityForIata
+  //  r[15]  the name index, and r[16..] an ICAO code read as its last three letters: the same
+  return JSON.stringify(r);
+}
+
+test('the table and the floor change nothing the rows, the belt, the gate, the destination card, the photos or the weather print, but the name of a place of the Americas the tables do not name: the board with them and without them', () => {
+  const { Bare, B1, Bcut, sent, cut, codes, Pbare, P1, Pcut, PbareCut } = run();
+  assert.equal(typeof B1.FIDS_EARTH_PLACES, 'object', 'the table is loaded, as the pages load it');
   assert.equal(B1.FidsEarth && typeof B1.FidsEarth.cityNameOf, 'function', 'and the floor');
   assert.equal(Bare.FIDS_EARTH_PLACES, undefined); assert.equal(Bare.FidsEarth, undefined);
-  assert.ok(feeds.length > 33000 && codes.length > 5600, feeds.length + ' feed rows, ' + codes.length + ' codes');
+  assert.ok(sent.length + cut.length > 33000 && codes.length > 5600, (sent.length + cut.length) + ' feed rows, ' + codes.length + ' codes');
+  assert.ok(sent.length > 20000 && cut.length > 10000, sent.length + ' rows with the feed\'s own code or none, ' + cut.length + ' with an ICAO code alone');
   assert.equal(P1.length, Pbare.length);
   // every feed row is a row on the board, so the comparison reads rows
   assert.equal(P1.filter((r) => r === 'dropped').length, 0, 'a feed row was dropped (its time outside the board\'s window?)');
-  assert.deepEqual(diffOf(Pbare, P1, 'without the floor', 'with it'), [], 'the floor\'s table or the floor changed what the board prints');
+  assert.equal(Pcut.filter((r) => r === 'dropped').length, 0);
+
+  // WHAT MAY DIFFER, AND EXACTLY HOW. prints() gives a departure for every
+  // row, then an arrival for every row with a code, then every code. A row
+  // the feed coded with a place of the Americas the tables do not name
+  // prints that name, whatever words came with it, in every language; that
+  // code by itself prints it too. Everything else is what the board without
+  // the table prints: every other place, every row with no code (words that
+  // are a code of the Americas, 'Yhi', are read as before: 'Yhi | YHI').
+  assert.equal(AMERICAS.length, 1055);
+  const am = new Set(AMERICAS);
+  const arrivals = sent.filter((x) => x[0]);
+  const want = [];
+  sent.forEach((x, i) => want.push(am.has(x[0]) ? amRow(Bare, x[0], true) : Pbare[i]));
+  arrivals.forEach((x, i) => want.push(am.has(x[0]) ? amRow(Bare, x[0], false) : Pbare[sent.length + i]));
+  codes.forEach((c, i) => { const k = sent.length + arrivals.length + i; want.push(am.has(c) ? amCode(Bare, c, Pbare[k]) : Pbare[k]); });
+  assert.equal(want.length, P1.length);
+  assert.deepEqual(diffOf(want, P1, 'expected', 'printed '), [], 'the table changed something other than the name of a place of the Americas, or did not name one');
+  // (each of them at least with no words, with its code as its words and
+  // with its name; a row whose words were the name already printed it)
+  const named = sent.filter((x) => am.has(x[0])).length;
+  assert.ok(named >= 3 * AMERICAS.length, named + ' rows of the Americas the tables do not name');
+  const moved = P1.filter((r, i) => r !== Pbare[i]).length;
+  assert.ok(moved > 4 * AMERICAS.length && moved <= 2 * named + AMERICAS.length, moved + ' printed lines differ from the board without the table');
+  // (samples, written out)
+  const rowOf = (iata, words) => JSON.parse(P1[sent.findIndex((x) => x[0] === iata && x[2] === words)]);
+  assert.deepEqual(rowOf('RIH', '').slice(0, 5), ['RIH', 'Río Hato | RIH', 'Río Hato | RIH', 'Río Hato | RIH', 'Río Hato | RIH']);
+  assert.equal(rowOf('LOZ', '')[2], 'London, KY | LOZ');
+  assert.deepEqual([rowOf('VLN', '')[2], rowOf('VLN', '')[5]], ['Valencia, Venezuela | VLN', 'Valencia, ' + regionNameOf('VE', 'fr') + ' | VLN']);
+  assert.deepEqual([rowOf('DET', '')[2], rowOf('DET', '')[5]], ['Detroit | DET', 'Détroit | DET']);
+  // (a place outside the Americas prints its code, as before: the feed's
+  // row reads 'Abj | ABJ' and the board prints the code alone)
+  assert.deepEqual(rowOf('ABJ', '').slice(0, 5), ['ABJ', 'Abj | ABJ', 'ABJ', 'Abj | ABJ', 'ABJ']);
+  const codeless = (words) => P1[sent.findIndex((x) => !x[0] && x[2] === words)];
+  assert.match(codeless('Yhi'), /^\["","Yhi \| YHI","Yhi \| YHI"/, 'a row with no code prints as before');
+  assert.match(codeless('Ulukhaktok'), /^\["","Ulukhaktok","Ulukhaktok"/, 'and a name of the table with no code finds none: the name indexes do not read the table');
+
+  // A CODE THE FEED DID NOT SEND: nothing differs, row or code
+  assert.equal(Pcut.length, PbareCut.length);
+  assert.deepEqual(diffOf(PbareCut, Pcut, 'without the table', 'with it          '), [], 'a row with an ICAO code alone printed otherwise with the table loaded');
+  const lybe = cut.findIndex((x) => x[1] === 'LYBE' && x[2]);
+  assert.match(Pcut[lybe], /^\["YBE","Belgrade Nikola Tesla \| YBE"/, 'Belgrade\'s LYBE reads YBE on the rows, as it always has, and is never named Uranium City');
+
   // and the board's tables are as they were, every entry
-  for (const t of ['CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window.AIRPORT_COORDS']) {
-    assert.equal(JSON.stringify(vm.runInContext(t, B1)), JSON.stringify(vm.runInContext(t, Bare)), t);
+  for (const B of [B1, Bcut]) {
+    for (const t of ['CITY', 'CITY_FR', 'AP', 'AP_LIST', 'COORDS', 'GATE_AP', 'window.AIRPORT_COORDS']) {
+      assert.equal(JSON.stringify(vm.runInContext(t, B)), JSON.stringify(vm.runInContext(t, Bare)), t);
+    }
   }
 });
 
 test('the rows, the belt, the gate, the companion app, the destination card, the photos and the weather print every place as v24084 did, the floor\'s table loaded beside them', (t) => {
   if (!atBase) { t.skip('v24084 (e8cd4063) is not in this checkout\'s history'); return; }
   const moved = movedSinceBase();
-  if (moved.length) { t.skip('the rows\' scripts have changed since v24084 (' + moved.join(', ') + '): the board with and without the floor holds the floor\'s table away from them'); return; }
-  const { feeds, P0, P1 } = run();
+  if (moved.length) { t.skip('the rows\' scripts have changed since v24084 (' + moved.join(', ') + '): the board with and without the table holds it to the names of the Americas'); return; }
+  const { sent, cut, P0, P1, Pcut } = run();
   assert.equal(P1.length, P0.length);
   assert.deepEqual(diffOf(P0, P1, 'v24084', 'now   '), [], 'printed differently from v24084');
   // the reviewer's: an ICAO code is read as its last three letters, as it was
-  const at = feeds.findIndex((x) => x[1] === 'LYBE' && x[2]);
-  assert.match(P1[at], /^\["YBE","Belgrade Nikola Tesla \| YBE"/, 'Belgrade\'s LYBE reads YBE on the rows, as v24084 read it');
+  const at = cut.findIndex((x) => x[1] === 'LYBE' && x[2]);
+  assert.match(Pcut[at], /^\["YBE","Belgrade Nikola Tesla \| YBE"/, 'Belgrade\'s LYBE reads YBE on the rows, as v24084 read it');
   // the companion app: its names and its lookup, v24084's
   const A0 = app(atBase('fids-current/app.html'), atBase('fids-current/js/shared-names.js'));
   const A1 = app(here('fids-current/app.html'), here('fids-current/js/shared-names.js'));
   const bad = [];
-  for (const [c, , nm] of feeds) {
+  for (const [c, , nm] of sent) {
     const k = JSON.stringify([A0.placeOf(c, nm), A0.cityCodeOf(nm)]), k1 = JSON.stringify([A1.placeOf(c, nm), A1.cityCodeOf(nm)]);
     if (k !== k1 && bad.length < 20) bad.push(`${c} ${JSON.stringify(nm)}: ${k} -> ${k1}`);
   }

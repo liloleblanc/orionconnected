@@ -6856,7 +6856,9 @@ async function setGateBg(bgDiv, locIata) {
 
   // 3. Openverse — city photo fallback, credited (v24037: the Wikipedia
   // step that stood before it is gone — no licence or author to credit)
-  var cityName = CITY[locIata] || _cityForIata(locIata) || '';
+  // (the tables alone, as before: a name of the table of the Americas is
+  // never searched for a picture, _placeNameAm)
+  var cityName = CITY[locIata] || _cityForIata(locIata, true) || '';
   if (cityName) {
     var ov = await fetchOpenversePhoto(cityName);
     if (ov && ov.url) {
@@ -13758,6 +13760,10 @@ function renderMobileGateHtml(ctx) {
 
   // Home airport (origin for a departure) + destination — cleaned of trailing "(code)" and cased
   function _cleanCity(s){
+    // (a second argument, true: the text is a name of the table of the
+    // Americas with where the place is after a comma, LONDON, KY, and
+    // keeps it: _placeNameAm)
+    var _keepWhere = arguments.length > 1 && arguments[1] === true;
     s = String(s || '').trim();
     // v23938 — our own labels end ' | CODE' (formatCityIata), and tc() above
     // has already title-cased that code ('Montreal | Met', 'Toronto | Ytz').
@@ -13767,7 +13773,9 @@ function renderMobileGateHtml(ctx) {
     var _ccCode = _ccm ? _ccm[1].toUpperCase() : '';
     if (_ccm) s = s.slice(0, _ccm.index);
     s = s.replace(/\s*\([^)]*\)\s*$/, '');     // drop trailing "(YOW)" / "(yow)"
-    s = s.replace(/_/g, ' ').replace(/,.*$/, '').trim();  // "Saint_John,_NB" -> "Saint John"
+    s = s.replace(/_/g, ' ');
+    if (!_keepWhere) s = s.replace(/,.*$/, '');  // "Saint_John,_NB" -> "Saint John"
+    s = s.trim();
     if (!s) return _ccCode ? _dispIata(_ccCode) : '';
     // Title-case if it's all-caps or all-lower
     // (the board's shared casing, tc: a place's small words stay small,
@@ -13790,7 +13798,9 @@ function renderMobileGateHtml(ctx) {
   var _homeIata = iata || '';
   var _homeRaw = (typeof CITY !== 'undefined' && CITY[_homeIata]) ? CITY[_homeIata] : (_cityForIata(_homeIata) || _homeIata);
   var _homeCity = _cleanCity(_homeRaw) || _homeIata;
-  var _destCity = _cleanCity(dest) || destIata || '—';
+  var _destAmWhere = false;
+  try { _destAmWhere = !!destIata && typeof _placeNameAm === 'function' && /,/.test(_placeNameAm(destIata, 'en')); } catch (eAm) { _destAmWhere = false; }
+  var _destCity = _cleanCity(dest, _destAmWhere) || destIata || '—';
 
   // Status as plain coloured text (no pill)
   var _stTextColor = (function(){
@@ -13834,11 +13844,13 @@ function renderMobileGateHtml(ctx) {
     var _inb = ctx.inboundFlight;
     if (_inb) {
       var _fromIata = _inb._locIata || '';
-      var _fromCity = '';
+      var _fromCity = '', _fromAm = '';
       if (_fromIata && typeof CITY !== 'undefined' && CITY[_fromIata]) _fromCity = CITY[_fromIata];
       else if (_fromIata && AP[_fromIata] && AP[_fromIata].city) _fromCity = AP[_fromIata].city;
+      // (a place of the Americas that neither table names: _placeNameAm)
+      else if (_fromIata && typeof _placeNameAm === 'function' && (_fromAm = _placeNameAm(_fromIata, 'en'))) _fromCity = _fromAm;
       else _fromCity = _inb.origin || '';
-      _fromCity = _cleanCity(_fromCity);
+      _fromCity = _cleanCity(_fromCity, !!_fromAm);
       // v23962 — with the airport's name where the city has two of ours
       if (typeof _cityAp === 'function') _fromCity = _cityAp(_fromCity, _fromIata);
       // v24126 — the minutes count down to the time the card prints: the
@@ -15658,6 +15670,8 @@ function _buildV2AircraftCol(ctx, vars) {
     try {
       if (_fromIata && typeof CITY !== 'undefined' && CITY[_fromIata]) _fromCity = CITY[_fromIata];
       else if (_fromIata && typeof AP !== 'undefined' && AP[_fromIata] && AP[_fromIata].city) _fromCity = AP[_fromIata].city;
+      // (a place of the Americas that neither table names: _placeNameAm)
+      else if (_fromIata && typeof _placeNameAm === 'function' && _placeNameAm(_fromIata, 'en')) _fromCity = _placeNameAm(_fromIata, 'en');
       else _fromCity = inboundFlight.origin || '';
       if (typeof tc === 'function') _fromCity = tc(_fromCity);
       // v23962 — with the airport's name where the city has two of ours
@@ -16590,6 +16604,7 @@ function _buildV2MapCol(ctx, vars) {
         if (_ocFeedCity) _origCity = _ocFeedCity;
         else if (_origIata && typeof CITY !== 'undefined' && CITY[_origIata]) _origCity = CITY[_origIata];
         else if (_origIata && typeof AP !== 'undefined' && AP[_origIata] && AP[_origIata].city) _origCity = AP[_origIata].city;
+        else if (_origIata && typeof _placeNameAm === 'function' && _placeNameAm(_origIata, 'en')) _origCity = _placeNameAm(_origIata, 'en');
         else _origCity = _ib.origin || '';
         if (typeof tc === 'function') _origCity = tc(_origCity);
         // v23962 — the airport's name where the city has two of ours (the
@@ -29762,7 +29777,9 @@ try { if (typeof window !== 'undefined') window.AP = AP; } catch (e) {}
 // chain lives in one place: the curated city name, else the airport's own name
 // with the boilerplate trimmed off ('Dublin Airport' -> 'Dublin'), else the
 // code itself so a label is never empty.
-function _cityForIata(iata) {
+// (tablesOnly: the tables alone, as it was before the table of the Americas
+// was read here. The photo search asks so: _placeNameAm below.)
+function _cityForIata(iata, tablesOnly) {
   var code = String(iata || '').toUpperCase();
   if (!code) return '';
   try { if (typeof CITY !== 'undefined' && CITY[code]) return CITY[code]; } catch (e) {}
@@ -29775,9 +29792,65 @@ function _cityForIata(iata) {
         .trim() || code;
     }
   } catch (e2) {}
+  // a place of the Americas that neither table names, in English as CITY is
+  if (tablesOnly !== true) {
+    try { var am = (typeof _placeNameAm === 'function') ? _placeNameAm(code, 'en') : ''; if (am) return am; } catch (e3) {}
+  }
   return code;
 }
 try { if (typeof window !== 'undefined') window._cityForIata = _cityForIata; } catch (e) {}
+
+// ── A PLACE OF THE AMERICAS THAT CITY AND CITY_FR DO NOT NAME ─────────────
+// A gate to Rio Hato in Panama printed Rih as its destination and To RIH on
+// its map: the code itself, because neither table names RIH. The map under
+// the rows has had a name for it since v24070 (js/earth-places.js NAME, from
+// OurAirports), with the names of 1,055 places of North, Central and South
+// America and the Caribbean that the tables do not name, and no other screen
+// could read them. Every board page now loads that file before this one, and
+// this function is the one place that reads it: the name of a code of the
+// Americas that CITY and CITY_FR do not name, in capitals as CITY writes its
+// names, or an empty string.
+// The table gives the name itself (its label): where the name is another
+// place too, with its state, province or country after a comma, as the map
+// prints it (LONDON, KY for LOZ, the country in the language asked for);
+// where the place is a second airport of a city CITY names, the name
+// CITY_FR gives that city in French (DET is DÉTROIT on a French board).
+// It is read last, after CITY, CITY_FR and AP: by airportCityNameSafe_v21877
+// in the language asked for, by _cityForIata in English as CITY is, and by
+// the few lines that read CITY directly to print a place (the feed mapper,
+// the inbound lines of the gate, the gate map, the weather card, the ads).
+// NOTHING IS COPIED INTO CITY. The name indexes that find the code of a row
+// with no code, the reading of a last word as a code, the photo search and
+// the weather query read the tables alone, as before; a page that has not
+// loaded the file prints as before; and a place outside the Americas is
+// never answered here, so it prints as before too.
+// A CODE THE FEED NEVER SENT takes no name here. The feed mapper reads a row
+// with no IATA code by the last three letters of its ICAO code, which
+// outside the United States and Canada is often the code of another place
+// (Belgrade, LYBE, reads YBE, Uranium City; Geneva, LSGG, reads SGG,
+// Sermiligaaq). Such a code is noted (_placeAmCut) and prints as it did
+// before, for as long as the page lives.
+// (tests/americas-airport-names.test.js, tests/earth-places.test.js; the
+// list of them all: docs/airport-names-americas.md)
+var _PLACE_AM_CUT = {};
+function _placeAmCut(code) {
+  var c = String(code || '').toUpperCase();
+  if (/^[A-Z]{3}$/.test(c)) _PLACE_AM_CUT[c] = true;
+}
+function _placeNameAm(code, langOverride) {
+  var c = String(code || '').toUpperCase();
+  if (!/^[A-Z]{3}$/.test(c) || _PLACE_AM_CUT[c] === true) return '';
+  try {
+    var P = (typeof window !== 'undefined') ? window.FIDS_EARTH_PLACES : null;
+    if (!P || typeof P.label !== 'function') return '';
+    if ((typeof CITY !== 'undefined' && CITY[c]) || (typeof CITY_FR !== 'undefined' && CITY_FR[c])) return '';
+    var lg = langOverride || (typeof getLang === 'function' ? getLang() : (typeof lang !== 'undefined' ? lang : 'en'));
+    var n = P.label(c, lg,
+      function (city, l) { return (typeof airportCityNameSafe_v21877 === 'function') ? airportCityNameSafe_v21877(city, l) : ''; },
+      function (cc, l) { return new Intl.DisplayNames([BoardStrings.intl(l)], { type: 'region' }).of(cc) || ''; });
+    return n ? String(n).toUpperCase() : '';
+  } catch (e) { return ''; }
+}
 
 const CITY = {
 
@@ -34318,6 +34391,10 @@ function airportCityNameSafe_v21877(code, langOverride) {
   if (!city && langX === 'es' && typeof CITY_ES !== 'undefined' && CITY_ES[c]) city = CITY_ES[c];
   if (!city && typeof CITY !== 'undefined' && CITY[c]) city = CITY[c];
   if (!city && typeof AP !== 'undefined' && AP[c] && AP[c].city) city = AP[c].city;
+  // (a place of the Americas that neither table names: _placeNameAm. A
+  // third argument of true reads the tables alone, as before: the caller
+  // read the code from the words of a row that has none.)
+  if (!city && !(arguments.length > 2 && arguments[2] === true) && typeof _placeNameAm === 'function') city = _placeNameAm(c, langX);
   return city || '';
 }
 
@@ -34386,6 +34463,12 @@ function normalizeDisplayCity(raw, iata) {
   // airportCityNameSafe_v21877)
   var _c8 = String(iata || '').trim().toUpperCase();
   if (/^[A-Z]{2}[0-9]$/.test(_c8) && typeof CITY !== 'undefined' && CITY[_c8]) code = _c8;
+  // A CODE THAT WAS NOT GIVEN takes no name from the table of the Americas
+  // (_placeNameAm): where no code came with the text, any code below is read
+  // from the words, and the text prints as it did before that table was
+  // read. A caller that read its code so says so, with a third argument of
+  // true (formatCityIata).
+  var _amOff = !code || (arguments.length > 2 && arguments[2] === true);
   var _isCodeOnly = function (x) { var t = String(x || ''); return t.replace(/[^A-Za-z]/g, '').toUpperCase() === code || t.replace(/\s+/g, '').toUpperCase() === code; };
 
   // If the supplied city is actually just the airport code, look up the city.
@@ -34393,7 +34476,7 @@ function normalizeDisplayCity(raw, iata) {
   // (v23937: or the code passengers see for it, MET for YHU.)
   if (code && (_isCodeOnly(s)
                || s.replace(/[^A-Za-z]/g, '').toUpperCase() === String(_dispIata(code)).toUpperCase())) {
-    var looked = airportCityNameSafe_v21877(code);
+    var looked = airportCityNameSafe_v21877(code, undefined, _amOff);
     if (looked) s = looked;
   }
 
@@ -34401,7 +34484,7 @@ function normalizeDisplayCity(raw, iata) {
   // (v24067: not a name of three letters written as a name, 'Nan'; _cityWordIsCode)
   if (!code && /^[A-Za-z]{3}$/.test(s) && (typeof _cityWordIsCode !== 'function' || _cityWordIsCode(s, [null, s, s]))) {
     code = String(_realIata(s.toUpperCase()));
-    var looked2 = airportCityNameSafe_v21877(code);
+    var looked2 = airportCityNameSafe_v21877(code, undefined, _amOff);
     if (looked2) s = looked2;
   }
 
@@ -34447,7 +34530,7 @@ function normalizeDisplayCity(raw, iata) {
 
   // If cleaning left just the code, recover the city.
   if (code && (!s || _isCodeOnly(s))) {
-    s = airportCityNameSafe_v21877(code) || s;
+    s = airportCityNameSafe_v21877(code, undefined, _amOff) || s;
   }
 
   return (typeof tc === 'function') ? tc(s) : s;
@@ -34980,17 +35063,22 @@ function formatCityIata(raw, iata, langOverride) {
   var _c8 = String(iata || '').trim().toUpperCase();
   if (/^[A-Z]{2}[0-9]$/.test(_c8) && typeof CITY !== 'undefined' && CITY[_c8]) code = _c8;
 
+  // A CODE THAT WAS NOT GIVEN takes no name from the table of the Americas
+  // (_placeNameAm): a row with no code, whose words are read as a code
+  // below, prints as it did before that table was read.
+  var _amOff = !code;
+
   // Handle malformed code-only labels: YYZ(YYZ), YYZ (YYZ), (YYZ)
   if (!code) {
     var cc = rawStr.match(/^\s*([A-Za-z]{3})\s*\(\s*([A-Za-z]{3})\s*\)\s*$/);
     if (cc && cc[1].toUpperCase() === cc[2].toUpperCase()) {
       code = String(_realIata(cc[2].toUpperCase()));
-      rawStr = airportCityNameSafe_v21877(code, langOverride) || code;
+      rawStr = airportCityNameSafe_v21877(code, langOverride, _amOff) || code;
     } else {
       var solo = rawStr.match(/^\s*\(\s*([A-Za-z]{3})\s*\)\s*$/);
       if (solo) {
         code = String(_realIata(solo[1].toUpperCase()));
-        rawStr = airportCityNameSafe_v21877(code, langOverride) || code;
+        rawStr = airportCityNameSafe_v21877(code, langOverride, _amOff) || code;
       }
     }
   }
@@ -35019,24 +35107,24 @@ function formatCityIata(raw, iata, langOverride) {
         // (v24067: a name of three letters written as a name is that place,
         // not a code: 'Nan' is Nan, Thailand, never Nadi's NAN; _cityWordIsCode)
         code = String(_realIata(rawStr.toUpperCase()));
-        rawStr = airportCityNameSafe_v21877(code, langOverride) || rawStr;
+        rawStr = airportCityNameSafe_v21877(code, langOverride, _amOff) || rawStr;
       }
     }
   }
 
   if (code && (!rawStr || rawStr.replace(/[^A-Za-z]/g, '').toUpperCase() === code || rawStr.replace(/\s+/g, '').toUpperCase() === code)) {
-    rawStr = airportCityNameSafe_v21877(code, langOverride) || rawStr;
+    rawStr = airportCityNameSafe_v21877(code, langOverride, _amOff) || rawStr;
   }
   // v23970 — a city has its own name in a language when the board keeps one
   // (CITY_FR: 'Montréal'), and a board showing that language uses it rather
   // than the feed's English spelling ('Montreal' on a French board).
   if (code && langOverride && langOverride !== 'en') {
-    var _locName = airportCityNameSafe_v21877(code, langOverride);
-    var _enName = airportCityNameSafe_v21877(code, 'en');
+    var _locName = airportCityNameSafe_v21877(code, langOverride, _amOff);
+    var _enName = airportCityNameSafe_v21877(code, 'en', _amOff);
     if (_locName && _enName && _locName !== _enName) rawStr = _locName;
   }
 
-  var city = normalizeDisplayCity(rawStr, code);
+  var city = normalizeDisplayCity(rawStr, code, _amOff);
   // v22736 — last resort: the feed gave a city but no code. Resolve it from
   // the name (unambiguous matches only) so these rows stop being the only
   // ones on the board without a chip.
@@ -35054,10 +35142,10 @@ function formatCityIata(raw, iata, langOverride) {
     var _feedCity = _stripCityCode(city) || city;
     var _feedKey = _normCityKey(_feedCity);
     if (_feedKey && _feedCity === _feedCity.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) {
-      var _own = airportCityNameSafe_v21877(code, langOverride);
-      var _ownEn = airportCityNameSafe_v21877(code, 'en');
+      var _own = airportCityNameSafe_v21877(code, langOverride, _amOff);
+      var _ownEn = airportCityNameSafe_v21877(code, 'en', _amOff);
       if (_own && (_feedKey === _normCityKey(_own) || _feedKey === _normCityKey(_ownEn))) {
-        city = normalizeDisplayCity(_own, code);
+        city = normalizeDisplayCity(_own, code, _amOff);
       }
     }
   }
@@ -44400,6 +44488,9 @@ function mapADB(raw, mode, kept) {
     const cityName=mode==='dep'
       ?(f.arrival?.airport?.name||f.arrival?.airport?.municipalityName||'')
       :(f.departure?.airport?.name||f.departure?.airport?.municipalityName||'');
+    // A code the feed did not send, cut above from its ICAO code, takes no
+    // name from the table of the Americas and prints as before (_placeAmCut)
+    if (locIata && !String((mode==='dep'?f.arrival?.airport?.iata:f.departure?.airport?.iata)||'').trim()) _placeAmCut(locIata);
     // Some feed rows arrive with NO iata/icao (Goose Bay, some Montreal /
     // Edmonton rows). Reverse-look the code up from the city/airport name —
     // case- and accent-insensitive (CITY values are ALL-CAPS, the API sends
@@ -44458,6 +44549,9 @@ function mapADB(raw, mode, kept) {
       if (!locIata && typeof _iataFromCityName === 'function') locIata = _iataFromCityName(cityName) || '';
     }
     let locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
+    // A place of the Americas that CITY does not name is named as a place
+    // CITY names is, by its name before the words of the feed (_placeNameAm)
+    if (locIata && !CITY[locIata]) { const _amName=_placeNameAm(locIata, 'en'); if (_amName) locName=formatCityIata(_amName, locIata); }
     // Multi-stop rows (TPA through-flights) carry a comma list of cities in
     // cityName. Keep the WHOLE list on the board — CITY[locIata] collapses it
     // to the first stop, and the destination flip needs every leg to cycle.
@@ -44473,7 +44567,7 @@ function mapADB(raw, mode, kept) {
     if (f._mcoViaStop) {
       const _finalCity = _stripCityCode(locName);
       const _viaCities = String(f._mcoViaStop).split(',').map(s => s.trim()).filter(Boolean)
-        .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : v);
+        .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : ((/^[A-Z]{3}$/.test(v) && _placeNameAm(v, 'en')) || v));
       // Title-case ALL-CAPS entries (CITY values shout) so the gate rail
       // reads 'Raleigh', matching single-stop rows; mixed-case names pass.
       const _tcCity = s => { s = String(s); return (s === s.toUpperCase())
@@ -47534,7 +47628,7 @@ function renderHeroHotelsAsync(f, target) {
       target.innerHTML = '<div class="hero-section-empty">' + BoardStrings.fmt('noStaysFor', lang, { CITY: _dispIata(f._locIata) }) + '</div>';
       return;
     }
-    const cityName = (CITY[f._locIata] || f._locIata);
+    const cityName = (CITY[f._locIata] || (typeof _placeNameAm === 'function' && _placeNameAm(f._locIata, 'en')) || f._locIata);
     const cards = list.slice(0, 8).map(h => {
       const name = (typeof cleanAccorName === 'function') ? cleanAccorName(h.name) : h.name;
       const brand = (h.brandCode || '').toUpperCase();
@@ -55265,7 +55359,7 @@ function tryPlayDestinationVideo() {
     return false;
   }
 
-  var destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || (cf.dest || destIata);
+  var destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || (typeof _placeNameAm === 'function' && _placeNameAm(destIata, 'en')) || (cf.dest || destIata);
   // the board's shared casing (tc), as the rows: 'Îles-de-la-Madeleine'
   try { destCity = tc(destCity); } catch(e){}
 
@@ -57812,7 +57906,7 @@ function getGateAds() {
         // v24114 — the cache entry is { hotels, ts }: the count is on .hotels
         try { var c = _accorCacheFor(ia); return !!(c && c.hotels && c.hotels.length); } catch (e) { return false; }
       });
-      destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || cf.dest || destIata;
+      destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || (typeof _placeNameAm === 'function' && _placeNameAm(destIata, 'en')) || cf.dest || destIata;
     }
     // Title case — handles all-caps names like "CHICAGO O'HARE" — in the
     // board's shared casing (tc), as the rows: 'Îles-de-la-Madeleine'
@@ -57939,6 +58033,7 @@ function buildGateAdHtml(ad) {
     if (_gIata) {
       _gCity = (typeof CITY !== 'undefined' && CITY[_gIata])
         || ((typeof AP !== 'undefined' && AP[_gIata]) ? AP[_gIata].city : '')
+        || (typeof _placeNameAm === 'function' && _placeNameAm(_gIata, 'en'))
         || _gIata;
       _gCity = (typeof tc === 'function') ? tc(_gCity) : _gCity;
     }
@@ -60159,6 +60254,8 @@ function _map3dFlightCtx(allowEstimated) {
     var cityOf = function (ia) {
       try { if (typeof CITY !== 'undefined' && CITY[ia]) return CITY[ia]; } catch (e) {}
       try { if (typeof AP !== 'undefined' && AP[ia] && AP[ia].city) return AP[ia].city; } catch (e) {}
+      // (a place of the Americas that neither table names: _placeNameAm)
+      try { var am = (typeof _placeNameAm === 'function') ? _placeNameAm(ia, 'en') : ''; if (am) return am; } catch (e) {}
       return ia;
     };
     var _hav = function (a, b) {
@@ -66774,7 +66871,7 @@ function _renderWxCard(el) {
     var wx = TOMORROW_WX[dest], cur = wx.current;
     if (typeof cur.temp !== 'number') return false;
     var city = '';
-    try { city = (typeof CITY !== 'undefined' && CITY[dest]) || (AP[dest] && AP[dest].city) || dest; } catch (e) { city = dest; }
+    try { city = (typeof CITY !== 'undefined' && CITY[dest]) || (AP[dest] && AP[dest].city) || (typeof _placeNameAm === 'function' && _placeNameAm(dest, 'en')) || dest; } catch (e) { city = dest; }
     if (typeof tc === 'function') { try { city = tc(city); } catch (e2) {} }
     var night = false;
     try { night = !!_wxNightAt(dest); } catch (e3) {}

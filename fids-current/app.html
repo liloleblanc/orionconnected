@@ -562,6 +562,8 @@
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
 <script src="js/board-strings.js?v=24149"></script>
 <script src="js/shared-names.js?v=24149"></script>
+<!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
+<script src="js/earth-places.js?v=24149"></script>
 <script src="data/airline-colors.js?v=24149"></script>
 <script src="js/feed-router.js?v=24149"></script>
 <script>
@@ -743,8 +745,28 @@ function apSub(code,langOnly){
 }
 // A place as its two parts: the city (CITY, then the feed's own name, then
 // the code) and the airport's own name where its city has two of ours
+// A PLACE OF THE AMERICAS THAT CITY DOES NOT NAME. A flight to Río Hato read
+// 'Rih' on the gate: 1,055 places of the Americas had a name only the map
+// under the boards' rows could read (js/earth-places.js NAME, OurAirports).
+// The boards now print those names where their tables have none, and so
+// does the app, here and nowhere else: after CITY, before the feed's own
+// words, as the table gives it (label: with its state, province or country
+// where the name is another place's too, 'London, KY', the country in the
+// app's language). Never merged into CITY, so a name with no code reads as
+// it did (cityCodeOf). A CODE THE FEED DID NOT SEND takes no name from the
+// table: a row with no IATA code is read by the last three letters of its
+// ICAO code (adbToCard), which is often another place's (Belgrade's LYBE
+// reads YBE, Uranium City). Such a code is noted in _CODE_CUT, as the boards
+// note it (fids-core.js _placeAmCut), and prints as before for as long as
+// the page lives.
+const _CODE_CUT=Object.create(null);
 function placeOf(code,feedName){
-  const c=String(code||'').toUpperCase(), city=CITY[c]||(feedName?_tcCity(feedName):'')||c||'—';
+  const c=String(code||'').toUpperCase();
+  let am='';
+  try{const P=window.FIDS_EARTH_PLACES;
+    if(P&&P.label&&!CITY[c]&&!(typeof _CODE_CUT!=='undefined'&&_CODE_CUT[c]))am=String(P.label(c,langRes(),null,function(cc,l){return new Intl.DisplayNames([BoardStrings.intl(l)],{type:'region'}).of(cc)||'';})||'');
+  }catch(e){am='';}
+  const city=CITY[c]||am||(feedName?_tcCity(feedName):'')||c||'—';
   return {c:city,q:(city!==c&&city!=='—')?apSub(c):''};
 }
 // v24044 — A PLACE THE FEED NAMED BUT DID NOT CODE. Victoria's page prints
@@ -1668,6 +1690,9 @@ function adbToCard(f,dir,aheadMs){
   const depU=(dep.scheduledTime&&dep.scheduledTime.utc)||'', arrU=(arr.scheduledTime&&arr.scheduledTime.utc)||'';
   let durMin=0;
   if(depU&&arrU){const d=(new Date(arrU.replace(' ','T'))-new Date(depU.replace(' ','T')))/60000; if(d>0&&d<24*60)durMin=Math.round(d);}
+  // (a code the feed did not send, cut from its ICAO code below, takes no
+  // name from the table of the Americas: placeOf)
+  if(other.airport&&!other.airport.iata&&other.airport.icao)_CODE_CUT[String(other.airport.icao).slice(1).toUpperCase()]=1;
   return{
     airline:code, flight:num, dir:dir,
     cityIata:(((other.airport&&(other.airport.iata||(other.airport.icao||'').slice(1)))||'')).toUpperCase(),

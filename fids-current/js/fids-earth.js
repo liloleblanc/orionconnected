@@ -40,7 +40,9 @@
        is now or later, not gone, not cancelled. An overdue row is never it.
      · Names are the rows' own (formatCityIata, the language on screen); a
        place CITY and CITY_FR do not name is named by the floor's own table
-       (js/earth-places.js NAME, v24070), which nothing but the floor reads.
+       (js/earth-places.js NAME, v24070). (Its names of the Americas are
+       now printed by the rows and every other screen too, where the
+       board's tables have none: fids-core.js _placeNameAm.)
        They are placed by the longest of the board's languages, so a
        name never moves when the board turns language: only its text
        changes. A name keeps 6 px clear of the routes where it can, never
@@ -73,9 +75,9 @@
        of every other place (js/earth-places.js, v24070).
      · Every place the boards can meet has a position: the board's own
        tables, else js/earth-places.js (OurAirports), which the floor loads
-       itself as it starts (loadPlaces), never the board. The floor never
-       writes to the board's tables: the rows, the gate, the companion app
-       and every other screen print exactly what they printed before it.
+       itself as it starts (loadPlaces) where the page has not. The floor
+       never writes to the board's tables, and only it reads the positions
+       and the clocks.
      · White ink with a dark halo, nothing behind it. Nothing moves, flashes
        or travels: the planet is re-lit once a minute, a quarter of a degree
        of sunlight, written in bands nobody can see change. A new floor (a
@@ -1650,11 +1652,14 @@
   }
   // v24070 — EVERY OTHER PLACE THE BOARDS CAN MEET (js/earth-places.js):
   // the positions (OurAirports) and zones (IANA tz) of the places the
-  // board's own tables leave without one. The floor alone loads it, once,
-  // as it starts (it is no part of the board's own load), and waits for it
-  // up to PLACES_WAIT_MS before it draws, so its first planet is framed for
-  // every place it can name; a table that is late or fails is drawn without
-  // (a place with no position has no route, as before).
+  // board's own tables leave without one. The floor loads it, once, as it
+  // starts, where the page has not, and waits for it up to PLACES_WAIT_MS
+  // before it draws, so its first planet is framed for every place it can
+  // name; a table that is late or fails is drawn without (a place with no
+  // position has no route, as before). (The board pages now load the table
+  // themselves, before the core, which prints its names of the Americas:
+  // fids-core.js _placeNameAm. The floor then finds it here and loads
+  // nothing; its positions and clocks are still read by the floor alone.)
   var PLACES = null, placesAsked = 0;
   function loadPlaces() {
     if (placesAsked) return;

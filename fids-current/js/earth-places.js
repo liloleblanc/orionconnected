@@ -16,12 +16,25 @@
    the live boards' rows were recorded with (2026-10-19), and every airport
    with airline service and an IATA code (OurAirports: scheduled_service yes).
 
-   THIS TABLE IS THE MAP'S ALONE. Only fids-earth.js loads it, once, as the
-   floor starts (loadPlaces), and only the floor reads it. The rows, the
-   gate, the belt, the companion app, the destination card, the city photos
-   and the weather card never do: they read CITY and CITY_FR as they always
-   have, and print every code here exactly as they did before it existed
-   (tests/earth-places.test.js).
+   THE POSITIONS AND THE CLOCKS ARE THE MAP'S ALONE: only fids-earth.js
+   reads AT and ZONE. The rows, the gate, the belt, the companion app, the
+   destination card, the city photos and the weather card read CITY and
+   CITY_FR as they always have, and print every place outside the Americas
+   exactly as they did before this table existed (tests/earth-places.test.js).
+
+   THE NAMES OF THE AMERICAS ARE THE BOARDS' TOO. A gate to Río Hato printed
+   'Rih' and its map 'To RIH': 1,055 places of North, Central and South
+   America and the Caribbean had a name here and nowhere a board could read
+   it. Every board page (fids.html, gids.html, bids.html) and the companion
+   app now load this file with their own scripts, and where CITY and CITY_FR
+   have no name for a code of the Americas they print the name here (label,
+   below), each through one function: fids-core.js _placeNameAm, app.html
+   placeOf. Nothing is copied into CITY, CITY_FR or shared-names.js: the
+   name indexes that find the code of a row with no code, the photo search
+   and the weather query read the board's tables alone, as before, and a
+   code the feed never sent (cut from an ICAO code) takes no name from here
+   (tests/americas-airport-names.test.js). The list of every airport of the
+   Americas the boards can name: docs/airport-names-americas.md.
 
    AT     [lat, lon] of 3219 places no table of the board places: OurAirports
           (ourairports.com/data, airports.csv, read 2026-10-19; public
@@ -82,6 +95,23 @@
           (La Grande-4, YAH, is named so, as OurAirports names it: it is
           265 km from La Grande Rivière's La Grande, YGL, in the same
           province.)
+   THE AMERICAS  a place of this table is of the Americas by its clock
+          (americas): a zone of America/ (Greenland's are), or one of the
+          islands of the Americas the tz database files under an ocean
+          (Bermuda, the Falklands, South Georgia, Galápagos, Easter Island,
+          Hawaii); a place left with no zone on purpose (NONE) by its
+          longitude, between 170°W and 30°W (Ontario's far north and
+          south-west Amazonas, never Sakha).
+   OF     101 of the 142 are of the Americas: each with the code of its
+          city's airport in CITY, the nearest of that name (Coleman Young
+          and Willow Run for Detroit, Lakefront for New Orleans, Tamiami for
+          Miami). Where CITY_FR writes the city otherwise, a French board
+          prints it so for them too (Détroit, La Nouvelle-Orléans,
+          Philadelphie, Belize, La Havane). Codes only.
+   label  the name the boards and the app print for a place of the Americas
+          that CITY and CITY_FR do not name: NAME; with where it is, as the
+          map prints it, for the 53 of IN ('London, KY', 'Valencia,
+          Venezuela'); the city's own name in the language for the 101 of OF.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function (root) {
   'use strict';
@@ -964,7 +994,8 @@
   // (no French or other name has been read for these places yet: a French
   // board prints the name as it is, as the rows print a place CITY_FR does
   // not name). Only codes CITY and CITY_FR do not name: the floor names a
-  // place by them where they do.
+  // place by them where they do. The boards and the app print the names of
+  // the Americas too (label, below).
   var NAME = {
     AAA:'Anaa', AAD:'Adado', AAE:'Annaba', AAK:'Aranuka', AAM:'Malamala', AAO:'Anaco',
     AAP:'Samarinda', AAQ:'Anapa', AAV:'Surallah', AAY:'Al Ghaydah', AAZ:'Quezaltenango', ABA:'Abakan',
@@ -1531,7 +1562,60 @@
     c = String(c || '').toUpperCase();
     return own(inside, c) ? inside[c] : '';
   }
-  var api = { AT: AT, ZONE: ZONE, ONE: ONE, NONE: NONE.split(' '), zones: zones, NAME: NAME, nameOf: nameOf, IN: inside, inOf: inOf };
+  // THE AMERICAS: by a zone's name, and a place of this table by its zone,
+  // or with none on purpose by its longitude (170°W to 30°W)
+  var ISLES = /^(?:Atlantic\/(?:Bermuda|Stanley|South_Georgia)|Pacific\/(?:Galapagos|Easter|Honolulu))$/;
+  function americasZone(z) {
+    z = String(z || '');
+    return z.indexOf('America/') === 0 || ISLES.test(z);
+  }
+  function americas(c) {
+    c = String(c || '').toUpperCase();
+    if (own(zones, c)) return americasZone(zones[c]);
+    return NONE.split(' ').indexOf(c) >= 0 && own(AT, c) && AT[c][1] > -170 && AT[c][1] < -30;
+  }
+  // A CITY'S OWN OTHER AIRPORT, of the Americas: a code and the code of its
+  // city's airport in CITY, the nearest of that name
+  var OF =
+    'AFW FTW AGC PIT AKC CAK ALN STL ANN MTM APA DEN BFH CWB BFM MOB BKL CLE BLB PTY CBM GTR CGF CLE ' +
+    'CRG JAX CUB CAE CVS CVN CXH YVR CXO IAH DET DTW DMA TUS DNL AGS DYS ABI EDF MRI EFD HOU EIL FAI ' +
+    'ESF AEX FAF PHF FBK FAI FFO DAY FMY RSW FTY ATL FWH FTW FXE FLL GMU GSP HBG PIB HFD BDL HIF OGD ' +
+    'HIO PDX HUA HSV IAB ICT ILS SAL LOU SDF LSV LAS MCC SMF MCF TPA MER MCE MHR SMF MIB MOT MKC MCI ' +
+    'MTN BWI MXF MGM NBG MSY NEW MSY NGP CRP NGU ORF NIP JAX NKX SAN NPA PNS NQX EYW NRB JAX NTR MTY ' +
+    'NZY SAN OFF OMA ORL MCO OSU CMH PLL MAO PLU CNF PNE PHL PWK ORD PZS ZCO RCA RAP RDR GFK RTE CGH ' +
+    'RVS TUL SAC SMF SDM SAN SFF GEG SKA GEG SKF SAT SNZ RRJ SSF SAT SUS STL SVN SAV TCM TIW TGU XPL ' +
+    'TIK OKC TLJ TCT TMB MIA TTD PDX TZA BZE UPB HAV VAD VLD VGT LAS VQQ JAX VRO VRA WPL YPW YHH YBL ' +
+    'YIP DTW YRO YOW YTP YAZ YWH YYJ ZNA YCD';
+  var ofCity = {};
+  (function () { var t = OF.split(' '); for (var i = 0; i + 1 < t.length; i += 2) ofCity[t[i]] = t[i + 1]; })();
+  // the code of the city a place is another airport of, or ''
+  function cityCodeOf(c) {
+    c = String(c || '').toUpperCase();
+    return own(ofCity, c) ? ofCity[c] : '';
+  }
+  // THE NAME THE BOARDS AND THE APP PRINT for a place of the Americas that
+  // CITY and CITY_FR do not name, or '' (any other place: they print it as
+  // they always have). cityOf(code, lang): the board's own name for a code
+  // in a language, in its tables; regionOf(country, lang): a country's name
+  // in a language (Intl.DisplayNames in the board's locale). Without them:
+  // NAME, and the country's two letters.
+  function label(c, lang, cityOf, regionOf) {
+    c = String(c || '').toUpperCase();
+    if (!own(NAME, c) || !americas(c)) return '';
+    var n = NAME[c], w = inOf(c), q = '';
+    if (own(ofCity, c)) {
+      var en = '', mine = '';
+      try { if (cityOf) { en = String(cityOf(ofCity[c], 'en') || ''); mine = String(cityOf(ofCity[c], lang) || ''); } } catch (e) { mine = ''; }
+      return (mine && en && mine !== en) ? mine : n;
+    }
+    if (!w) return n;
+    var na = /^(?:US|CA)-([A-Z]{2})$/.exec(w);
+    if (na) return n + ', ' + na[1];
+    try { q = regionOf ? String(regionOf(w, lang) || '') : ''; } catch (e2) { q = ''; }
+    return n + ', ' + (q || w);
+  }
+  var api = { AT: AT, ZONE: ZONE, ONE: ONE, NONE: NONE.split(' '), zones: zones, NAME: NAME, nameOf: nameOf, IN: inside, inOf: inOf,
+    americas: americas, americasZone: americasZone, OF: ofCity, cityCodeOf: cityCodeOf, label: label };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.FIDS_EARTH_PLACES = api;
 })(typeof window !== 'undefined' ? window : null);
