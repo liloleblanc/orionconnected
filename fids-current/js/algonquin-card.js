@@ -1,21 +1,29 @@
 /* THE ALGONQUIN RESORT, ST. ANDREWS BY-THE-SEA: a hotel page of the gate centre deck.
 
    A whole page for one resort, as the hotel cards are: it takes one slot of the centre deck of a
-   gate screen (the slide type is algonquin) and shows three views in turn:
+   gate screen (the slide type is algonquin) and shows five views in turn:
      today      the photograph of the resort, the name, the address, the telephone, the distance
                 by road from the airport of Moncton
-     yesteryear the 1994 watercolour card, whole, in a gilt frame, with its credit, and three
-                facts of the history of the house
+     yesteryear the name and what the house is (a historic landmark); who painted the two
+                watercolours and that the hotel commissioned them, one language over each
+                picture; the two watercolours (1990 and 1994), each whole in its own gilt
+                frame with its year on a plaque; under each, where it was also used
+     story      the name, the heading pair and a timeline: the years in one column, one line
+                for each year in each language of the board beside it
+     guests     the same timeline for the people the house has received, each with the year
+                and what the period sources say of the visit
      scan       the name, the invitation, a scan code for the site of the resort, the web address
    People fly to Moncton to drive to it, so the page is on a gate whose flight goes to Moncton
    (a stop there counts) and on every gate at Moncton, and nowhere else.
 
    WORDS: every word comes from the store (js/board-strings.js) in the languages of the board,
    the first language of the board first. The name of the house, its address, its telephone, its
-   web address and the name of the painter are data: they are in the one table below, printed
-   once each, as the house and the painter write them.
+   web address, the name of the painter and the name of the dining room on whose menu the older
+   watercolour was featured are data: they are in the one table below, as the house, the painter
+   and the menu write them. The name of the house heads each view; the painter is named in the
+   credit, once in each language of the board.
    VIEWS: each view is an .axr-page layer inside an .axr-pages wrap, so the pager of the hotel
-   cards turns them (ten seconds a view, the last one held) and the language check reads all three.
+   cards turns them (ten seconds a view, the last one held) and the language check reads all five.
    LOOK: css/algonquin-card.css. The pictures are files of the site (assets/hotels/algonquin).
    The scan code is drawn here from a stored matrix, navy on the cream, with its quiet zone. */
 (function (root, factory) {
@@ -25,15 +33,27 @@
 })(typeof window !== 'undefined' ? window : globalThis, function (root) {
   'use strict';
 
-  // THE FACTS OF THE HOUSE, as the house writes them (algonquinresort.com), and the painter of
-  // the 1994 card as the card is signed. Data: none of it is a word to translate.
+  // THE FACTS OF THE HOUSE, as the house writes them (algonquinresort.com), the painter of the
+  // two watercolours, the dining room of the hotel as its 1990 menu names it (the older
+  // watercolour was featured on one of its dinner menus), and two names the timeline says: the
+  // railway that bought the hotel (it has a French name of its own) and the collection the hotel
+  // belongs to; and the names of four of its guests. Data: none of it is a word
+  // to translate.
   var ALGONQUIN_HOTEL = {
     name: 'The Algonquin Resort',
     address: '184 Adolphus Street, St. Andrews by-the-Sea, New Brunswick',
     phone: '1-855-529-8693',
     web: 'algonquinresort.com',
     url: 'https://algonquinresort.com',
-    painter: 'Peter Bresnen, 1994'
+    painter: 'Peter Bresnen',
+    menuRoom: 'Passamaquoddy Dining Room',
+    rail: 'Canadian Pacific',
+    railFr: 'Canadien Pacifique',
+    brand: 'Autograph Collection',
+    guest1889: 'Sir John A. Macdonald',
+    guest1901: 'Lord Minto',
+    guest1964: 'Lester B. Pearson',
+    guest1973: 'Pierre Trudeau'
   };
   // The airport the distance is measured from, the road distance to the door in kilometres
   // (two routers agree), and the driving time the house publishes.
@@ -41,12 +61,37 @@
   var ROAD_KM = 265;
   var ROAD_HOURS = 2;
   var ROAD_MINUTES = 30;
-  // One slot of the deck: three views at the ten seconds of the pager, the last one held.
-  var DWELL_MS = 34000;
+  // One slot of the deck: five views at the ten seconds of the pager, the last one held.
+  var DWELL_MS = 54000;
 
   var PHOTO = '/assets/hotels/algonquin/resort-aerial.jpg';
-  var CARD = '/assets/hotels/algonquin/watercolour-1994.jpg';
-  var FRAME = '/assets/hotels/algonquin/gilt-frame.png';
+  // The two watercolours, the older one first: the file (both are 1600 x 1073, so the two
+  // frames are the same size), the year it is signed, the key of the words that say where it
+  // was also used, and the place of that use: an entry of the table when the place has a name
+  // of its own (where), the key of its words when it has not (whereSay).
+  var ART = [
+    { src: '/assets/hotels/algonquin/bresnen-1990.jpg', year: '1990', say: 'algonquinArt1990', where: 'menuRoom' },
+    { src: '/assets/hotels/algonquin/bresnen-1994.jpg', year: '1994', say: 'algonquinArt1994', whereSay: 'algonquinInEveryRoom' }
+  ];
+  var FRAME = '/assets/hotels/algonquin/gilt-frame-wide.png';
+  // The timeline of the story view: the year, and the key of the line that says what happened.
+  var STORY = [
+    { year: '1889', say: 'algonquinStory1889' },
+    { year: '1903', say: 'algonquinStory1903' },
+    { year: '1915', say: 'algonquinStory1915' },
+    { year: '1974', say: 'algonquinStory1974' },
+    { year: '1993', say: 'algonquinStory1993' },
+    { year: '2014', say: 'algonquinStory2014' }
+  ];
+  // The timeline of the guests view: the year, the key of the line, and the entry of the table
+  // that holds the name of the guest (the last line names its two guests in its own words).
+  var GUESTS = [
+    { year: '1889', say: 'algonquinGuest1889', who: 'guest1889' },
+    { year: '1901', say: 'algonquinGuest1901', who: 'guest1901' },
+    { year: '1964', say: 'algonquinGuest1964', who: 'guest1964' },
+    { year: '1973', say: 'algonquinGuest1973', who: 'guest1973' },
+    { year: '1983', say: 'algonquinGuest1983' }
+  ];
   // the Autograph Collection file of the site; the view trims its empty canvas only
   var BRAND_FILE = '/logos/hotels/marriott/autograph-collection.svg';
   var BRAND_VIEW = '#svgView(viewBox(54,367,1092,466))';
@@ -187,19 +232,48 @@
       +   '<div class="alq-row alq-pairfit">' + ico('car') + '<span class="alq-fit">' + road + '</span></div>'
       + '</div></div>';
 
-    // YESTERYEAR
+    // YESTERYEAR: the two watercolours, laid out to a supplied example. They carry no
+    // lettering, so the view sets the name of the house itself, and says what the house is.
     var era = pairOf(L, function (lg) { return BS.bs('hotelYesteryear', lg); });
-    var medium = pairOf(L, function (lg) { return BS.bs('hotelWatercolour', lg); });
-    var facts = [
-      pairOf(L, function (lg) { return BS.bs('algonquinSince1889', lg); }, 'algonquinSince1889'),
-      pairOf(L, function (lg) { return BS.bs('algonquinRebuilt1914', lg); }, 'algonquinRebuilt1914'),
-      pairOf(L, function (lg) { return BS.bs('algonquinAllYear', lg); }, 'algonquinAllYear')
-    ].map(function (f) { return '<div class="alq-h"><span class="alq-fit">' + f + '</span></div>'; }).join('');
-    var then = '<div class="alq-hero">'
+    var landmark = pairOf(L, function (lg) { return BS.bs('hotelHistoricLandmark', lg); }, 'hotelHistoricLandmark');
+    // who painted them, and that the hotel commissioned them: one language over each picture
+    var credit = pairOf(L, function (lg) { return BS.fmt('hotelPaintedFor', lg, { WHO: H.painter }, true); }, 'hotelPaintedFor');
+    // each picture in its frame, its year on a plaque under it
+    var arts = ART.map(function (a) {
+      return '<div class="alq-fig"><img class="alq-art" alt="' + esc(H.name + ', ' + a.year) + '" decoding="async" src="' + esc(a.src) + '">'
+        + '<span class="alq-plaque">' + esc(a.year) + '</span></div>';
+    }).join('');
+    // under each picture: the place where it was also used, then the line that says so
+    var labels = ART.map(function (a) {
+      var place = a.where ? '<span class="alq-fit">' + esc(H[a.where]) + '</span>'
+        : '<span class="alq-fit">' + pairOf(L, function (lg) { return BS.bs(a.whereSay, lg); }, a.whereSay) + '</span>';
+      return '<div class="alq-label"><div class="alq-where' + (a.where ? '' : ' alq-pairfit') + '">' + place + '</div>'
+        + '<span class="alq-say">' + pairOf(L, function (lg) { return BS.bs(a.say, lg); }, a.say) + '</span></div>';
+    }).join('');
+    var then = '<div class="alq-hero">' + name
+      + '<div class="alq-sub alq-pairfit"><span class="alq-fit">' + landmark + '</span></div>'
+      + '<div class="alq-credit"><span class="alq-fit">' + credit + '</span></div>'
+      + '<div class="alq-cardbox">' + arts + '</div>'
+      + '<div class="alq-labels">' + labels + '</div>'
+      + '</div>';
+
+    // STORY and GUESTS: two timelines of the same build
+    var timeline = function (list) {
+      return list.map(function (t) {
+        return '<span class="alq-yr">' + esc(t.year) + '</span>'
+          + '<span class="alq-ev">' + pairOf(L, function (lg) {
+            return BS.fmt(t.say, lg, { RAIL: lg === 'fr' ? H.railFr : H.rail, BRAND: H.brand, WHO: t.who ? H[t.who] : '' }, true);
+          }, t.say) + '</span>';
+      }).join('');
+    };
+    var story = '<div class="alq-hero">' + name
       + '<div class="alq-era alq-pairfit"><span class="alq-fit">' + era + '</span></div>'
-      + '<div class="alq-cardbox"><img class="alq-art" alt="' + esc(H.name) + '" decoding="async" src="' + esc(CARD) + '"></div>'
-      + '<div class="alq-credit"><span class="alq-cl">' + medium + '</span><span class="alq-cr">' + esc(H.painter) + '</span></div>'
-      + '<div class="alq-hist">' + facts + '</div>'
+      + '<div class="alq-time">' + timeline(STORY) + '</div>'
+      + '</div>';
+    var guestsHead = pairOf(L, function (lg) { return BS.bs('hotelNotableGuests', lg); });
+    var guests = '<div class="alq-hero">' + name
+      + '<div class="alq-era alq-pairfit"><span class="alq-fit">' + guestsHead + '</span></div>'
+      + '<div class="alq-time">' + timeline(GUESTS) + '</div>'
       + '</div>';
 
     // SCAN
@@ -215,15 +289,17 @@
       + '<div class="axr-pages alq-views">'
       +   '<div class="axr-page axr-page-on alq-view alq--today">' + today + band + '</div>'
       +   '<div class="axr-page alq-view alq--then">' + then + band + '</div>'
+      +   '<div class="axr-page alq-view alq--story">' + story + band + '</div>'
+      +   '<div class="axr-page alq-view alq--story alq--guests">' + guests + band + '</div>'
       +   '<div class="axr-page alq-view alq--scan">' + scan + band + '</div>'
       + '</div></div>';
   }
 
   // A one-line text that is too long for its place steps down (never under 20 px at 1680x1050,
   // the floor of the stylesheet); a pair that
-  // still cannot share the line is stacked, each language whole on its own line. The facts of the
-  // yesteryear view are columns and wrap by themselves. Then the credit takes the width of the
-  // frame, so it runs from one edge of it to the other.
+  // still cannot share the line is stacked, each language whole on its own line. The labels under
+  // the two pictures and the lines of the timeline wrap by themselves: the stylesheet places
+  // them, nothing is measured for them here.
   function fit(el) {
     try {
       var art = el && el.querySelector ? el.querySelector('.alq') : null;
@@ -231,7 +307,7 @@
       var minPx = Math.min(20, (root.innerHeight || 1050) * 0.0191, (root.innerWidth || 1680) * 0.012);
       Array.prototype.forEach.call(art.querySelectorAll('.alq-fit'), function (s) {
         var box = s.parentElement;
-        if (!box || box.classList.contains('alq-h')) return;
+        if (!box) return;
         box.style.fontSize = ''; box.classList.remove('alq-stack');
         if (!box.getClientRects().length) return;
         var cs = getComputedStyle(box), base = parseFloat(cs.fontSize), k = 1, floor = Math.max(.86, minPx / base);
@@ -251,17 +327,6 @@
           box.style.fontSize = ''; k = 1; box.classList.add('alq-stack'); step();
         }
       });
-      var cred = art.querySelector('.alq-credit'), card = art.querySelector('.alq-art');
-      if (cred && card) {
-        // a credit that has to wrap takes a line from the card, which then narrows: measured
-        // again until the two agree
-        cred.style.width = '';
-        for (var pass = 0; pass < 4; pass++) {
-          var w = card.getBoundingClientRect().width;
-          if (!(w > 0) || Math.abs(w - (parseFloat(cred.style.width) || 0)) < .5) break;
-          cred.style.width = w + 'px';
-        }
-      }
     } catch (e) {}
   }
 
@@ -313,7 +378,7 @@
     HOTEL: ALGONQUIN_HOTEL,
     FROM_AIRPORT: FROM_AIRPORT,
     DWELL_MS: DWELL_MS,
-    media: [PHOTO, CARD, FRAME],
+    media: [PHOTO].concat(ART.map(function (a) { return a.src; }), [FRAME]),
     due: due,
     build: build,
     fit: fit,
