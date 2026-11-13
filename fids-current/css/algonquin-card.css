@@ -6,8 +6,9 @@
      today      the photograph of the resort with nothing over it, the name, the address,
                 the telephone and the road distance under it
      yesteryear the name, two watercolours (1990 and 1994) side by side, each whole in its own
-                gilt picture frame (the two frames are the same size), under each its year and
-                one line in each language, and one credit for the painter under the pair
+                gilt picture frame (the two frames are the same size); over the pair one credit
+                (painted for the hotel, and by whom), under each its year and one line in
+                each language
      story      the name, the heading pair, and a timeline: the years in one column, a fine
                 rule, one line for each year in each language of the board
      scan       the name, the invitation, a large scan code in navy on the paper, the web address
@@ -65,7 +66,7 @@
 /* The board forces its own face on every element with a rule of no weight; these rules carry
    real weight, so the page keeps its two faces. */
 .alq, .alq *, .alq *::before, .alq *::after{ font-family:var(--alq-text) !important; }
-.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *{ font-family:var(--alq-caps) !important; }
+.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *, .alq .alq-where{ font-family:var(--alq-caps) !important; }
 /* Japanese, Chinese and Arabic stand upright, untracked and in their own case, in the script
    faces of the board, which also draw their figures and any Latin name inside them (the italic
    face would slant those). The variable is read on the half itself, so each language takes its
@@ -111,13 +112,12 @@
 .alq-under .alq-line, .alq-under .alq-row, .alq-under .alq-name{ width:100%; }
 .alq-under .alq-name{ margin-bottom:calc(var(--alq-info) * 0.06); }
 
-/* YESTERYEAR. The name, the two framed watercolours side by side as large as the room left
-   allows, a label under each picture, the credit of the painter under the pair. The pictures
+/* YESTERYEAR. The name, the credit of the painter, the two framed watercolours side by side as
+   large as the room left allows, a label under each picture. The pictures
    carry no lettering, so the view sets the name of the house itself, as the scan view does. */
 .alq--then .alq-hero, .alq--story .alq-hero{ display:flex; flex-direction:column; align-items:stretch; container-type:inline-size;
   padding:clamp(9px, min(1.25vh, .78vw), 13px) var(--alq-padn) 0; }
 .alq--then .alq-name, .alq--story .alq-name{ flex:none; text-align:center; max-width:100%; }
-.alq--then .alq-name{ margin-bottom:clamp(8px, min(1.05vh, .66vw), 11px); }
 /* the heading of the story: capitals, navy, 26.2 px under the name of the house: read from a gate seat */
 .alq-era{ flex:none; text-align:center; font-weight:400; font-style:normal; text-transform:uppercase; font-size:calc(var(--alq-head) * .8); line-height:1.12;
   letter-spacing:.035em; color:var(--alq-ink); white-space:nowrap; margin-top:clamp(2px, min(.4vh, .25vw), 4px); }
@@ -151,9 +151,9 @@
 .alq-cardbox .alq-art{ --alq-h:min((100cqw - var(--alq-gap)) / 3.449965, 100cqh / 1.225216); height:var(--alq-h);
   border-width:calc(var(--alq-h) * 0.113147) calc(var(--alq-h) * 0.117457) calc(var(--alq-h) * 0.112069) calc(var(--alq-h) * 0.116379); }
 /* A LABEL UNDER EACH FRAME, centred on it: the labels stand in the same two equal columns as
-   the pictures. The year, in the face of the headings; then where the hotel featured the
-   picture, one line for each language of the board, in the text face. */
-.alq-labels{ flex:none; margin-top:clamp(8px, min(1.15vh, .72vw), 12px);
+   the pictures. The year, in the face of the headings; then one of the uses the hotel made of
+   the picture, one line for each language of the board, in the text face. */
+.alq-labels{ flex:none; margin-top:clamp(8px, min(1.15vh, .72vw), 12px); margin-bottom:auto;
   display:grid; grid-template-columns:1fr 1fr; column-gap:var(--alq-gap); align-items:start; color:var(--alq-ink); }
 .alq-label{ min-width:0; text-align:center; }
 .alq .alq-lyr{ display:block; font-family:var(--alq-caps) !important; font-style:normal; font-weight:400; font-size:calc(var(--alq-head) * .8); line-height:1.15;
@@ -161,10 +161,13 @@
 .alq-say{ display:block; font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); font-weight:500; line-height:1.18; white-space:normal; }
 .alq-say .bs-h{ display:block; }
 .alq-say .alq-sep{ display:none; }
-/* THE CREDIT, once, centred under the pair and its labels: the painter in the languages of the
-   board, in the face of the headings, upright, small. The room left over on a tall stage is
-   shared above the pictures and under the credit. */
-.alq-credit{ flex:none; margin-top:clamp(8px, min(1.15vh, .72vw), 12px); margin-bottom:auto; text-align:center; font-style:normal; font-weight:400;
+/* the name of the place of that use, once, as it is printed: upright, in the face of the headings */
+.alq-where{ display:block; font-style:normal; font-weight:400; font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); line-height:1.2; white-space:nowrap; }
+/* THE CREDIT, once, centred under the name and over the pair: that they were painted for the
+   hotel, and by whom, in the languages of the board (one under the other when the two do not
+   share a line), in the face of the headings, upright, small. The room left over on a tall
+   stage is shared above the pictures and under their labels. */
+.alq-credit{ flex:none; margin-top:clamp(3px, min(.5vh, .31vw), 5px); margin-bottom:clamp(8px, min(1.05vh, .66vw), 11px); text-align:center; font-style:normal; font-weight:400;
   font-size:max(var(--alq-floor), calc(var(--alq-min) * .9)); letter-spacing:0; color:var(--alq-ink); white-space:nowrap; }
 .alq-credit .alq-sep{ margin:0 .5em; }
 .alq-credit.alq-stack > .alq-fit{ align-items:center; }

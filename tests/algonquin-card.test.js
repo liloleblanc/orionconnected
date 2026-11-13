@@ -27,7 +27,7 @@ const CSS = read('fids-current/css/algonquin-card.css');
 const CORE = read('fids-current/js/fids-core.js');
 const GIDS = read('fids-current/gids.html');
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelArtworkBy', 'algonquinArt1990', 'algonquinArt1994', 'algonquinStory1889', 'algonquinStory1903', 'algonquinStory1915', 'algonquinStory1983', 'algonquinStory2014'];
+const KEYS = ['hotelFromAirport', 'hotelByRoad', 'hotelYesteryear', 'hotelPaintedFor', 'algonquinArt1990', 'algonquinArt1994', 'algonquinStory1889', 'algonquinStory1903', 'algonquinStory1915', 'algonquinStory1983', 'algonquinStory2014'];
 
 // The module reads the board through the global object: a gate is set up on
 // it for one check and taken away again.
@@ -131,17 +131,20 @@ test('the four views: the facts of the house from its one table, the words in th
   assert.equal(count(html, '>' + H.address + '<'), 1);
   assert.equal(count(html, '>' + H.phone + '<'), 1);
   assert.equal(count(html, '>' + H.web + '<'), 1);
-  // under each watercolour its year and where the hotel featured it, then one credit for the pair
+  // one credit over the pair; under each watercolour its year and one of the uses the hotel made of it
   assert.equal(H.painter, 'Peter Bresnen');
   assert.equal(H.menuRoom, 'Passamaquoddy Dining Room');
   assert.equal(count(html, 'class="alq-label"'), 2);
-  const lab = (year, fr, en) => '<div class="alq-label"><span class="alq-lyr">' + year + '</span><span class="alq-say">'
-    + '<span class="bs-h" lang="fr" data-i18n-src="careful">' + fr + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">' + en + '</span></span></div>';
-  const l90 = html.indexOf(lab('1990', 'Menu du soir, ' + H.menuRoom, 'Dinner menu, ' + H.menuRoom));
-  const l94 = html.indexOf(lab('1994', 'Carte postale offerte en chambre', 'Guest room postcard'));
+  const lab = (year, fr, en, where) => '<div class="alq-label"><span class="alq-lyr">' + year + '</span><span class="alq-say">'
+    + '<span class="bs-h" lang="fr" data-i18n-src="careful">' + fr + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">' + en + '</span></span>'
+    + (where ? '<span class="alq-where">' + where + '</span>' : '') + '</div>';
+  const l90 = html.indexOf(lab('1990', 'Aussi sur un menu du soir', 'Also on a dinner menu', H.menuRoom));
+  const l94 = html.indexOf(lab('1994', 'Aussi sur une carte postale en chambre', 'Also on a guest room postcard'));
   assert.ok(l90 > 0 && l94 > l90, 'the labels in the order of the pictures');
-  const cred = html.indexOf('<div class="alq-credit alq-pairfit"><span class="alq-fit"><span class="bs-h" lang="fr">Œuvres de ' + H.painter + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">Artwork by ' + H.painter + '</span></span></div>');
-  assert.ok(cred > l94, 'the credit once, under the pictures and their labels');
+  assert.equal(count(html, H.menuRoom), 1, 'the name of the dining room once, as printed');
+  // the credit says the pictures were painted for the hotel: the menu and the postcard are uses of them
+  const cred = html.indexOf('<div class="alq-credit alq-pairfit"><span class="alq-fit"><span class="bs-h" lang="fr" data-i18n-src="careful">Peintes pour l’hôtel par ' + H.painter + '</span><b class="alq-sep"></b><span class="bs-h" lang="en">Painted for the hotel by ' + H.painter + '</span></span></div>');
+  assert.ok(cred > html.indexOf('alq-view alq--then') && cred < html.indexOf('class="alq-cardbox"'), 'the credit once, under the name and over the pictures');
   assert.equal(count(html, H.painter), 2, 'the painter once in each language of the board');
   // the story: a timeline, the years in order, one line for each year in each language
   const years = [...html.matchAll(/<span class="alq-yr">(\d{4})<\/span><span class="alq-ev">/g)].map((x) => x[1]);
@@ -279,7 +282,7 @@ test('the two faces are served from the site, with their licence beside them, an
   assert.ok(!/fonts\.googleapis|fonts\.gstatic|@import/.test(CSS));
   // the board forces its face on every element with a rule of no weight: these carry weight
   assert.ok(CSS.includes('.alq, .alq *, .alq *::before, .alq *::after{ font-family:var(--alq-text) !important; }'));
-  assert.ok(CSS.includes('.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *{ font-family:var(--alq-caps) !important; }'));
+  assert.ok(CSS.includes('.alq .alq-name, .alq .alq-name *, .alq .alq-era, .alq .alq-era *, .alq .alq-credit, .alq .alq-credit *, .alq .alq-where{ font-family:var(--alq-caps) !important; }'));
   // credited on the credits page, in the store
   assert.ok(read('fids-current/credits.html').includes('data-i18n="credHotelFaces"'));
   assert.ok(B.entry('credHotelFaces'));

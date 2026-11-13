@@ -5,8 +5,8 @@
      today      the photograph of the resort, the name, the address, the telephone, the distance
                 by road from the airport of Moncton
      yesteryear the name, two watercolours of the resort (1990 and 1994), each whole in its own
-                gilt frame, under each its year and where the hotel featured it, and one
-                credit for the painter under the pair
+                gilt frame; over the pair one credit (painted for the hotel, and by whom),
+                under each picture its year and one of the uses the hotel made of it
      story      the name, the heading pair and a timeline: the years in one column, one line
                 for each year in each language of the board beside it
      scan       the name, the invitation, a scan code for the site of the resort, the web address
@@ -59,10 +59,11 @@
 
   var PHOTO = '/assets/hotels/algonquin/resort-aerial.jpg';
   // The two watercolours, the older one first: the file (both are 1600 x 1073, so the two
-  // frames are the same size), the year it is signed, and the key of the words that say its
-  // year, what it was made as and where the hotel featured it.
+  // frames are the same size), the year it is signed, the key of the words that say one of the
+  // uses the hotel made of it, and, where that use has a name, the entry of the table that
+  // holds it.
   var ART = [
-    { src: '/assets/hotels/algonquin/bresnen-1990.jpg', year: '1990', say: 'algonquinArt1990' },
+    { src: '/assets/hotels/algonquin/bresnen-1990.jpg', year: '1990', say: 'algonquinArt1990', where: 'menuRoom' },
     { src: '/assets/hotels/algonquin/bresnen-1994.jpg', year: '1994', say: 'algonquinArt1994' }
   ];
   var FRAME = '/assets/hotels/algonquin/gilt-frame-wide.png';
@@ -220,16 +221,18 @@
     var arts = ART.map(function (a) {
       return '<img class="alq-art" alt="' + esc(H.name + ', ' + a.year) + '" decoding="async" src="' + esc(a.src) + '">';
     }).join('');
-    // one label for each picture (its year, then where the hotel featured it), one credit for the pair
+    // one credit for the pair, over it: they were painted for the hotel; then one label for
+    // each picture (its year, one of its uses, the name of the place of that use)
     var labels = ART.map(function (a) {
       return '<div class="alq-label"><span class="alq-lyr">' + esc(a.year) + '</span>'
-        + '<span class="alq-say">' + pairOf(L, function (lg) { return BS.fmt(a.say, lg, { ROOM: H.menuRoom }, true); }, a.say) + '</span></div>';
+        + '<span class="alq-say">' + pairOf(L, function (lg) { return BS.bs(a.say, lg); }, a.say) + '</span>'
+        + (a.where ? '<span class="alq-where">' + esc(H[a.where]) + '</span>' : '') + '</div>';
     }).join('');
-    var credit = pairOf(L, function (lg) { return BS.fmt('hotelArtworkBy', lg, { WHO: H.painter }, true); });
+    var credit = pairOf(L, function (lg) { return BS.fmt('hotelPaintedFor', lg, { WHO: H.painter }, true); }, 'hotelPaintedFor');
     var then = '<div class="alq-hero">' + name
+      + '<div class="alq-credit alq-pairfit"><span class="alq-fit">' + credit + '</span></div>'
       + '<div class="alq-cardbox">' + arts + '</div>'
       + '<div class="alq-labels">' + labels + '</div>'
-      + '<div class="alq-credit alq-pairfit"><span class="alq-fit">' + credit + '</span></div>'
       + '</div>';
 
     // STORY: the timeline

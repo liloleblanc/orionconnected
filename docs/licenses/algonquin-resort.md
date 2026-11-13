@@ -61,9 +61,10 @@ The Autograph Collection file in the foot is the one already in the site
 
 - The two watercolours are the work of Peter Bresnen (Peter Bresnen Studio, Halifax, by the
   printed credit on the back of the 1990 menu of the hotel that carries the older one). The page
-  credits him by name once, under the pair, and says under each picture its year and where
-  the hotel featured it: the 1990 one on a dinner menu of the Passamaquoddy Dining Room, the
-  1994 one on the postcard left in the guest rooms. No written permission is on file.
+  credits him by name once, over the pair, and says there that the two were painted for the
+  hotel. Under each picture is its year and one of the uses the hotel then made of it: the
+  1990 one on a dinner menu of the Passamaquoddy Dining Room, the 1994 one on the postcard
+  left in the guest rooms. No written permission is on file.
 - The photograph, the name and the Autograph Collection mark are the resort's and Marriott's.
   The page shows them only to say where the resort is and how to reach it.
 - The frame is licensed stock art. The two typefaces are open-licensed and credited on the

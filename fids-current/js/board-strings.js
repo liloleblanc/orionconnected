@@ -950,13 +950,15 @@
       $ctx: 'named-airport' },
     hotelByRoad: { en: 'about {H} h {M} min by road', fr: 'environ {H} h {M} min en voiture', es: 'unas {H} h {M} min por carretera', de: 'etwa {H} Std. {M} Min. Fahrt', it: 'circa {H} h {M} min in macchina', pt: 'cerca de {H} h {M} min de carro', ja: '車で約{H}時間{M}分', zh: '车程约{H}小时{M}分钟', ar: 'نحو {H} س {M} د بالسيارة' },
     hotelYesteryear: { en: 'Yesteryear', fr: 'Souvenirs d’hier', es: 'Recuerdos de ayer', de: 'Erinnerungen an gestern', it: 'Ricordi di ieri', pt: 'Memórias de ontem', ja: '昔日の面影', zh: '昔日时光', ar: 'ذكريات الأمس' },
-    // v24149 — the watercolours view of the page. One credit under the pair ({WHO} is the
-    // painter, data of js/algonquin-card.js); under each picture its year (data) and where the
-    // hotel featured it. {ROOM} is the name of the dining room as its menu prints it (data too).
-    hotelArtworkBy: { en: 'Artwork by {WHO}', fr: 'Œuvres de {WHO}', es: 'Obras de {WHO}', de: 'Werke von {WHO}', it: 'Opere di {WHO}', pt: 'Obras de arte de {WHO}', ja: '{WHO} 作', zh: '{WHO} 作品', ar: 'أعمال {WHO}' },
-    algonquinArt1990: { en: 'Dinner menu, {ROOM}', fr: 'Menu du soir, {ROOM}', es: 'Menú de cena, {ROOM}', de: 'Abendkarte, {ROOM}', it: 'Menu della cena, {ROOM}', pt: 'Cardápio de jantar, {ROOM}', ja: 'ディナーメニュー、{ROOM}', zh: '晚餐菜单，{ROOM}', ar: 'قائمة العشاء، {ROOM}',
+    // v24149 — the watercolours view of the page. One credit under the pair: they were
+    // painted for the hotel ({WHO} is the painter, data of js/algonquin-card.js). Under each
+    // picture its year (data) and one of the uses the hotel then made of it; the name of the
+    // dining room of the menu is data too, printed once under the line.
+    hotelPaintedFor: { en: 'Painted for the hotel by {WHO}', fr: 'Peintes pour l’hôtel par {WHO}', es: 'Pintadas para el hotel por {WHO}', de: 'Für das Hotel gemalt von {WHO}', it: 'Dipinti per l’hotel da {WHO}', pt: 'Pintadas para o hotel por {WHO}', ja: '{WHO} がホテルのために制作', zh: '{WHO} 为酒店创作', ar: 'رسمها {WHO} للفندق',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    algonquinArt1994: { en: 'Guest room postcard', fr: 'Carte postale offerte en chambre', es: 'Postal para las habitaciones', de: 'Postkarte in den Gästezimmern', it: 'Cartolina per le camere', pt: 'Cartão-postal para os quartos', ja: '客室の絵はがき', zh: '客房明信片', ar: 'بطاقة بريدية في غرف الضيوف',
+    algonquinArt1990: { en: 'Also on a dinner menu', fr: 'Aussi sur un menu du soir', es: 'También en un menú de cena', de: 'Auch auf einer Abendkarte', it: 'Anche su un menu della cena', pt: 'Também em um cardápio de jantar', ja: 'ディナーメニューにも掲載', zh: '也用于晚餐菜单', ar: 'ظهرت أيضًا على قائمة عشاء',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    algonquinArt1994: { en: 'Also on a guest room postcard', fr: 'Aussi sur une carte postale en chambre', es: 'También en una postal para las habitaciones', de: 'Auch auf einer Postkarte in den Gästezimmern', it: 'Anche su una cartolina per le camere', pt: 'Também em um cartão-postal para os quartos', ja: '客室の絵はがきにも採用', zh: '也用于客房明信片', ar: 'ظهرت أيضًا على بطاقة بريدية في غرف الضيوف',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // v24149 — the story view of the page: one line for each year of its timeline. The years,
     // the railway ({RAIL}, in French under its own French name) and the collection of the hotel ({BRAND}) are data of
