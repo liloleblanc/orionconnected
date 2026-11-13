@@ -30,6 +30,17 @@
 //   3. MIAMI, as recorded that afternoon (mia-airline-names-2026-11-13.json),
 //      through both doors: the airport feed's own records and the backup list.
 //   4. THE PHONE APP (app.html adbToCard), which had the same gap.
+//   5. THE SAME ANSWER ON THE PHONE. Every recorded row goes through the
+//      app's real mapper and name function as well: a row the board drops
+//      gives no card, a row it keeps gives a card with the same airline
+//      name, never a code. The tables behind that are held equal: the app's
+//      copy of AIRLINE_NAME, of FILTER_OUT and of the name patterns
+//      (js/shared-names.js), and its fold of regionals (PARENT).
+//   6. A NAME IS NOT ENOUGH, IT HAS TO BE THE AIRLINE. A recorded row whose
+//      airport names the airline in words the table's name shares none of
+//      fails, unless the code is in NAMED_OTHERWISE with the airport's name
+//      and the reason: 4T printed BEOND on Saskatoon rows the airport named
+//      Rise Air, and passed as named.
 //
 // A recorded code that cannot be decided goes in UNDECIDED below, by code,
 // with the reason. The ledger fails when a code in it starts to pass, so it
@@ -659,4 +670,262 @@ test('the phone app reads the name off the leg by the same rule', () => {
     for (const row of M.dep) if (own(saved, carrierOf(row.number))) fromFeed[carrierOf(row.number)] = app.airlineName(app.adbToCard(row, 'dep'));
     assert.deepEqual(fromFeed, { BBQ: 'Eastern Air Express', OB: 'BoA' });
   } finally { Object.assign(AIRLINE, saved); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. THE SAME ANSWER ON THE PHONE
+// ═══════════════════════════════════════════════════════════════════════════
+
+// The app as the page builds it: its own tables, then the boards' from
+// shared-names.js, cut from app.html and run in the page's order, with the
+// real adbToCard and name function. `window` is what shared-names.js filled.
+let APP_ = null;
+function theApp() {
+  if (APP_) return APP_;
+  const cut = (re) => { const m = APP.match(re); assert.ok(m, 'app.html: ' + re); return m[0]; };
+  const win = {};
+  vm.runInNewContext(read('fids-current/js/shared-names.js'), { window: win });
+  const ownTable = cut(/\nconst AIRLINE=\{[\s\S]*?\};/);
+  const src = 'const FIDS_SHARED_AIRLINE = window.FIDS_SHARED_AIRLINE, FIDS_SHARED_WORDMARK = window.FIDS_SHARED_WORDMARK;'
+    + ownTable + cut(/\nif\(window\.FIDS_SHARED_AIRLINE\)[^\n]*/)
+    + cut(/\nconst WORDMARK=\{[\s\S]*?\};/) + cut(/\nconst BRAND=\{[\s\S]*?\};/)
+    + cut(/\nconst REGIONAL_FAM=\{[^\n]*\};/) + cut(/\nconst REGIONAL_OP=\{[^\n]*\};/) + cut(/\nconst AL_CASE=\{[\s\S]*?\};/) + '\n'
+    + appFn('wmUrls') + appFn('adbHHMM') + appFn('inferOperator') + appFn('adbToCard') + appFn('alCase') + appFn('airlineName')
+    + '; return { adbToCard: adbToCard, airlineName: airlineName, AIRLINE: AIRLINE, REGIONAL_FAM: REGIONAL_FAM };';
+  APP_ = new Function('window', src)(win);
+  APP_.OWN = new Function(ownTable + '; return AIRLINE;')();   // the app's own short list, before the boards' table fills the rest
+  APP_.shared = win;
+  return APP_;
+}
+const plain = (o) => JSON.parse(JSON.stringify(o));   // out of the vm's own Object
+
+// One name, as two screens write it: the same letters, whatever the casing
+// and the accents (the board prints Aeroméxico from its casing table, the app
+// Aeromexico from the name table).
+const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+// THE ONE DELIBERATE DIFFERENCE. The app prints an airline's name in full
+// where the board prints its short form: the board's name, then more
+// (app.html airlineName and AL_CASE). Nothing else may differ.
+const fuller = (onBoard, onPhone) => { const b = fold(onBoard).replace(/\.$/, ''), a = fold(onPhone); return !!b && a.length > b.length && a.indexOf(b) === 0; };
+// Where it happens on the recorded rows: the feed names the airline at the
+// top of the row with the board's name and more. [on the board, on the phone]
+const FULLER_ON_RECORDED_ROWS = {
+  AA: ['American', 'American Airlines'],
+  DL: ['Delta', 'Delta Air Lines'],
+  UA: ['United', 'United Airlines'],
+  WN: ['Southwest', 'Southwest Airlines']
+};
+// And in the tables alone: a short form of the boards the app writes out.
+const WRITTEN_OUT_ON_THE_PHONE = { S5: ['Shuttle Am.', 'Shuttle America'] };
+
+// Every recorded row with what the board made of it (null: dropped), once.
+let ROWS_ = null;
+async function boardRows() {
+  if (ROWS_) return ROWS_;
+  const out = [];
+  for (const s of await recorded()) for (const r of s.rows) {
+    const far = ((s.dir === 'dep' ? r.arrival : r.departure) || {}).airport || {};
+    out.push({ r, dir: s.dir, f: mapOne(r, s.dir), where: s.file + ' ' + s.dir + ' ' + String(r.number || '').replace(/\s+/g, '') + ' ' + (far.iata || far.name || '?') });
+  }
+  return (ROWS_ = out);
+}
+
+test('the off-board codes and name patterns the phone reads are the board\'s own', () => {
+  const win = theApp().shared;
+  const codes = plain(win.FIDS_SHARED_OFF_BOARD), names = plain(win.FIDS_SHARED_OFF_BOARD_NAMES);
+  assert.equal(new Set(codes).size, codes.length, 'no code is listed twice');
+  assert.deepEqual([...codes].sort(), [...the('FILTER_OUT')].sort(),
+    'shared-names.js FIDS_SHARED_OFF_BOARD is fids-core.js FILTER_OUT: a code added to or taken out of one is added to or taken out of the other');
+  // the patterns are a list inside mapADB: read from its source
+  const m = CORE.match(/\n {4}const _NON_PASSENGER_PATTERNS = \[([\s\S]*?)\n {4}\];/);
+  assert.ok(m, 'mapADB lists _NON_PASSENGER_PATTERNS');
+  const patterns = new Function('return [' + m[1] + '\n];')();
+  assert.ok(patterns.length > 20);
+  assert.deepEqual(names, patterns, 'shared-names.js FIDS_SHARED_OFF_BOARD_NAMES is fids-core.js _NON_PASSENGER_PATTERNS');
+  for (const p of names) assert.equal(p, p.toLowerCase(), p + ' is matched against a name in small letters');
+  // and the app's mapper reads both
+  assert.match(appFn('adbToCard'), /FIDS_SHARED_OFF_BOARD\b[\s\S]*FIDS_SHARED_OFF_BOARD_NAMES\b/);
+});
+
+test('the phone app takes off what the board takes off, by the same rule', () => {
+  const app = theApp();
+  // one row through both screens: [stays on the board, is a card on the phone]
+  const both = (o) => { const dir = o.dir || 'dep', row = feedRow(o); return [!!mapOne(row, dir), !!app.adbToCard(row, dir)]; };
+  const OFF = [false, false], ON = [true, true];
+  // an operator a feed names as carrying no passengers: at the top of the row, or on its own leg
+  for (const name of ['Amazon Air', 'FedEx Feeder', 'NetJets Aviation', 'Quest Diagnostics', 'Angel Flight West']) for (const dir of ['dep', 'arr']) {
+    assert.deepEqual(both({ dir, number: NOBODY + '77', top: { iata: NOBODY, name } }), OFF, name + ' at the top (' + dir + ')');
+    assert.deepEqual(both({ dir, number: NOBODY + '77', leg: { iata: NOBODY, icao: null, name } }), OFF, name + ' on the leg only (' + dir + ')');
+    assert.deepEqual(both({ dir, number: NOBODY + '77', leg: { iata: null, icao: NOBODY, name } }), OFF, name + ' on a leg coded in three letters (' + dir + ')');
+  }
+  // a passenger airline on the same leg stays; so does a passenger flight whose operating carrier has such a name
+  assert.deepEqual(both({ number: NOBODY + '77', leg: { iata: NOBODY, name: 'Meridian Air Express' } }), ON);
+  assert.deepEqual(both({ number: 'UA5000', leg: { iata: 'YV', name: 'Amazon Air' } }), ON, 'only the airline of the row is judged');
+  // a filtered code, wherever the feed wrote it
+  for (const code of ['M6', 'AJT', 'KJ', 'AIH', 'WFS', 'A1', '5Y', 'FX', 'W8', 'CJT']) {
+    assert.deepEqual(both({ number: code + '242' }), OFF, code + ' as the carrier of the number alone');
+    assert.deepEqual(both({ number: code + '242', leg: { iata: code, name: 'Whoever' } }), OFF, code + ' on the leg');
+    assert.deepEqual(both({ dir: 'arr', number: code + '242', top: { iata: code, name: 'Whoever' } }), OFF, code + ' at the top');
+    assert.deepEqual(both({ number: 'UA5000', top: { iata: code, name: null } }), OFF, code + ' at the top of another carrier\'s number');
+    assert.deepEqual(both({ number: NOBODY + '12', leg: { iata: code, icao: NOBODY, name: 'Whoever' } }), OFF, code + ' beside the three letters of the number, on its own leg');
+    assert.deepEqual(both({ number: 'UA5000', leg: { iata: code, name: 'Whoever' } }), ON, code + ' on the leg of a flight United sells: the operating carrier is not the airline of the row');
+  }
+  // the JFK records, each seller standing alone (the board's own adapter):
+  // the four A1 records give no card, the sellers beside them a named one
+  const panynj = the('panynjToAdbFlight');
+  const jfk = {};
+  for (const [file, node, dirName, dir] of [['jfk-dep-sample.json', 'getDepartingFlights', 'Departure', 'dep'], ['jfk-arr-sample.json', 'getArrivingFlights', 'Arrival', 'arr']]) {
+    for (const rec of JSON.parse(fx(file)).data[node].data) {
+      if (!['A1', 'KP', 'HF', 'OM', 'IZ'].includes(rec.airlineCode)) continue;
+      const c = app.adbToCard(panynj(rec, dirName, 'JFK'), dir);
+      (jfk[rec.airlineCode] = jfk[rec.airlineCode] || new Set()).add(c ? app.airlineName(c) : null);
+    }
+  }
+  assert.deepEqual(Object.fromEntries(Object.keys(jfk).sort().map((k) => [k, [...jfk[k]]])),
+    { A1: [null], HF: ['Air Côte d’Ivoire'], IZ: ['Arkia'], KP: ['ASKY Airlines'], OM: ['MIAT Mongolian Airlines'] });
+  // Cargojet was named in the app's own table: an all-cargo airline is on no screen
+  assert.ok(!own(app.OWN, 'W8'), 'the app\'s own table does not name Cargojet');
+  assert.ok(the('FILTER_OUT').has('W8'));
+  // a page that could not load the lists shows what it showed before: the rule reads the boards' lists, it holds none of its own
+  const bare = new Function(['REGIONAL_FAM', 'AIRLINE', 'BRAND', 'REGIONAL_OP', 'wmUrls'], appFn('adbHHMM') + appFn('inferOperator') + appFn('adbToCard') + '; return adbToCard;')({}, {}, {}, {}, () => null);
+  assert.ok(bare(feedRow({ number: '5Y8242', leg: { iata: '5Y', name: 'Atlas Air' } }), 'dep'));
+});
+
+test('the phone app: every recorded row the board drops gives no card, and every row it keeps gives a card with the same airline name', async () => {
+  const rows = await boardRows();
+  const app = theApp();
+  const put = (o, k, v) => { (o[k] = o[k] || []).push(v); };
+  const shown = {}, missing = {}, bare = {}, differs = {}, full = {}, off = {};
+  let cards = 0, same = 0;
+  for (const { r, dir, f, where } of rows) {
+    const c = app.adbToCard(r, dir), k = carrierOf(r.number);
+    if (!f) { if (c) put(shown, k, where + ' reads ' + app.airlineName(c)); else off[k] = (off[k] || 0) + 1; continue; }
+    if (!c) { put(missing, k, where); continue; }
+    cards++;
+    const b = printed(f).shown, a = String(app.airlineName(c) || '').trim();
+    if (!a || [c.airline, k].some((x) => x && fold(a) === fold(x))) put(bare, k, where + ' reads ' + JSON.stringify(a));
+    if (fold(a) === fold(b)) { same++; continue; }
+    // the fuller form: only the feed's own name for the airline, at the top of the row
+    if (fuller(b, a) && a === String((r.airline && r.airline.name) || '').trim() && f.airline === c.airline) { (full[c.airline] = full[c.airline] || new Set()).add(b + ' / ' + a); continue; }
+    put(differs, k, where + ': the board prints ' + JSON.stringify(b) + ', the phone ' + JSON.stringify(a));
+  }
+  const some = (o) => Object.keys(o).sort().map((k) => k + ': ' + o[k].length + ' rows, e.g. ' + o[k][0]);
+  assert.deepEqual(some(shown), [], 'cards on the phone for rows the board drops');
+  assert.deepEqual(Object.keys(off).sort(), Object.keys(OFF_THE_BOARD).sort(), 'the rows off both screens are the ones listed in OFF_THE_BOARD: ' + JSON.stringify(off));
+  assert.deepEqual(some(missing), [], 'rows on the board with no card on the phone');
+  assert.deepEqual(some(bare), [], 'cards that print only a code');
+  assert.deepEqual(some(differs), [], 'one flight, two airline names');
+  assert.deepEqual(Object.fromEntries(Object.keys(full).sort().map((k) => [k, [...full[k]].join(' ; ')])),
+    Object.fromEntries(Object.keys(FULLER_ON_RECORDED_ROWS).sort().map((k) => [k, FULLER_ON_RECORDED_ROWS[k].join(' / ')])),
+    'the only difference between the two screens is the fuller form of these names');
+  assert.ok(cards > 12000 && same > cards - 100, same + ' of ' + cards + ' cards print the board\'s name letter for letter');
+});
+
+test('one name on every screen: the app\'s tables are the board\'s, and a flight of every code prints the same name on both', () => {
+  const app = theApp();
+  const T = plain(the('AIRLINE_NAME')), PARENT = plain(the('PARENT')), OFF = the('FILTER_OUT');
+  // the copy is the table, whole: no code missing, none extra, no other spelling
+  assert.deepEqual(plain(app.shared.FIDS_SHARED_AIRLINE), T,
+    'shared-names.js FIDS_SHARED_AIRLINE is fids-core.js AIRLINE_NAME: a name added or changed in one is added or changed in the other');
+  // the app's own short list writes the same names in its own casing, and wins only on casing
+  for (const c of Object.keys(app.OWN)) {
+    assert.ok(own(T, c), c + ' is named by the app and not by the boards');
+    assert.equal(app.OWN[c].toUpperCase(), T[c].toUpperCase(), c + ': the app\'s own name is the board\'s');
+  }
+  for (const c of Object.keys(T)) assert.equal(String(app.AIRLINE[c] || '').toUpperCase(), T[c].toUpperCase(), c + ' as the page builds its table');
+  // a regional folds into its mainline on the phone exactly where it does on the board
+  const kept = {};
+  for (const c of Object.keys(PARENT)) if (!OFF.has(c)) kept[c] = PARENT[c];
+  assert.deepEqual(plain(app.REGIONAL_FAM), kept, 'app.html REGIONAL_FAM is fids-core.js PARENT for every code the boards keep on the screen');
+  // and what each screen prints for a flight of each code, named by nothing but its number
+  const differs = {}, written = {};
+  let n = 0;
+  for (const c of new Set([...Object.keys(T), ...Object.keys(PARENT)])) {
+    const row = feedRow({ number: c + '123' });
+    const f = mapOne(row, 'dep'), card = app.adbToCard(row, 'dep');
+    if (OFF.has(c)) { assert.equal(f, null, c + ' is off the board'); assert.equal(card, null, c + ' is off the phone'); continue; }
+    assert.ok(f && card, c + ' is on both screens');
+    n++;
+    const p = printed(f), a = app.airlineName(card);
+    assert.equal(p.bare, false, c + ' prints a name on the board');
+    if (fold(a) === fold(p.shown)) continue;
+    if (fuller(p.shown, a)) written[c] = [p.shown, a]; else differs[c] = 'the board prints ' + p.shown + ', the phone ' + a;
+  }
+  assert.ok(n > 250, n + ' codes');
+  assert.deepEqual(differs, {}, 'one code, two names');
+  assert.deepEqual(written, WRITTEN_OUT_ON_THE_PHONE, 'the only short form the app writes out');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. A NAME IS NOT ENOUGH, IT HAS TO BE THE AIRLINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Recorded rows whose airport names the airline in words the board's name
+// shares none of, accepted, by code: the airport's name, what the board
+// prints, and why it stands. Anything else that turns up is a wrong entry in
+// the table (or a new short form to enter here); an entry no recorded row
+// shows any more fails too.
+const NAMED_OTHERWISE = {
+  JL: ['Japan Airlines', 'JAL', 'the short form the airline itself goes by'],
+  NH: ['All Nippon Airways', 'ANA', 'the short form the airline itself goes by'],
+  NZ: ['Air New Zealand', 'Air NZ', 'the short form of the boards'],
+  CJ: ['BA Cityflyer', 'British Airways', 'the boards print British Airways on the rows BA CityFlyer flies for it (v23363)'],
+  '9X': ['Southern Airways Express', 'Mokulele', 'Southern Airways Express holds the code and flies as Mokulele in Hawaii, which is what the name, the colour and the emblem of 9X are; Phoenix names the company on its Imperial flights. Not decided here'],
+  '9M': ['Central Mountain Air', 'Air Canada', 'the boards fold 9M into Air Canada (PARENT), an older decision this test does not judge']
+};
+// Words every airline has: sharing one of them says nothing.
+const EVERY_AIRLINE = new Set(['AIR', 'AIRLINES', 'AIRLINE', 'AIRWAYS', 'AIRWAY', 'AVIATION', 'THE', 'OF', 'DE', 'LINEAS', 'AEREAS', 'INTERNATIONAL', 'EXPRESS']);
+const nameWords = (s) => fold(s).split(/[^A-Z0-9]+/).filter((w) => w && !EVERY_AIRLINE.has(w));
+// Two names of one airline share a word of their own, or one is written
+// inside the other once the spaces are out (Frenchbee, French Bee).
+function oneAirline(x, y) {
+  const wx = nameWords(x), wy = new Set(nameWords(y));
+  if (wx.some((w) => wy.has(w))) return true;
+  const sx = wx.join(''), sy = [...wy].join('');
+  return !!sx && !!sy && (sx.includes(sy) || sy.includes(sx));
+}
+
+test('a recorded row whose airport names another airline than the table does fails, unless the short form is in the ledger', async () => {
+  // the check, on the names that went wrong and on names that are right
+  assert.equal(oneAirline('Rise Air', 'Beond'), false, 'BEOND for Rise Air is caught');
+  assert.equal(oneAirline('Air Canada', 'Air Inuit'), false, 'two airlines that share only the word every airline has');
+  assert.equal(oneAirline('Frenchbee', 'French Bee'), true);
+  assert.equal(oneAirline('ToMontenegro', 'Air Montenegro'), true);
+  assert.equal(oneAirline('Xiamen Airlines', 'Xiamen Air'), true);
+  assert.equal(oneAirline('American Airlines', 'American'), true);
+  const rows = await boardRows();
+  const feedAirline = the('_adbFeedAirline');
+  const seen = {}, by = {};
+  let judged = 0;
+  for (const { r, dir, f } of rows) {
+    if (!f) continue;
+    const k = carrierOf(r.number), fa = feedAirline(r, dir), shown = printed(f).shown;
+    (by[k] = by[k] || new Set()).add(shown);
+    // a feed that writes the code where the name goes names nobody
+    if (!fa.name || [k, fa.code].some((c) => c && fold(fa.name) === fold(c))) continue;
+    judged++;
+    if (!oneAirline(fa.name, shown)) (seen[k] = seen[k] || new Set()).add(fa.name + ' / ' + shown);
+  }
+  assert.ok(judged > 8000, judged + ' recorded rows carry the airport\'s own name for the airline of the row');
+  assert.deepEqual(Object.fromEntries(Object.keys(seen).sort().map((k) => [k, [...seen[k]].sort().join(' ; ')])),
+    Object.fromEntries(Object.keys(NAMED_OTHERWISE).sort().map((k) => [k, NAMED_OTHERWISE[k][0] + ' / ' + NAMED_OTHERWISE[k][1]])),
+    'the airport names one airline and the table another. Correct the name in AIRLINE_NAME (and shared-names.js), or enter the short form in NAMED_OTHERWISE with the reason');
+  for (const k of Object.keys(NAMED_OTHERWISE)) assert.ok(String(NAMED_OTHERWISE[k][2] || '').length > 10, k + ' is in the ledger without a reason');
+  // the two entries that were wrong: each code holds one airline today, and
+  // the airport's own name for it is what prints. (Norse Atlantic France
+  // shared two words with Norse Atlantic UK: no word test catches that one,
+  // so it is held by name.)
+  assert.deepEqual([...by['4T']], ['Rise Air'], 'Saskatoon: 4T is Rise Air');
+  assert.deepEqual([...by.Z0], ['Norse Atlantic UK'], 'Orlando to London Gatwick: Z0 is Norse Atlantic UK');
+  assert.equal(the('AIRLINE_NAME')['4T'], theApp().shared.FIDS_SHARED_AIRLINE['4T']);
+});
+
+test('TW prints Trinity Airways as text: no table draws the lettering of the name it left', () => {
+  // t-way Air has flown as Trinity Airways since 10 September 2026, code
+  // unchanged. /logos/wordmarks/TW.svg is still the old lettering, so no
+  // table may point a row at it until the art is redrawn.
+  assert.equal(the('AIRLINE_NAME').TW, 'Trinity Airways');
+  for (const t of ['IATA_WORDMARK_ONE', 'IATA_TO_WORDMARK', 'IATA_TO_EMBLEM', 'IATA_TO_TILE_ICAO']) assert.ok(!own(the(t), 'TW'), t + ' has no TW');
+  assert.ok(!own(theApp().shared.FIDS_SHARED_WORDMARK, 'TW'), 'nor the app\'s wordmarks');
+  assert.ok(!/\/logos\/wordmarks\/TW[.-]/.test(CORE.replace(/^\s*\/\/.*$/gm, '')), 'no line of the board script points at the TW wordmark files');
 });

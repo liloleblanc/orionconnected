@@ -32854,7 +32854,7 @@ const AIRLINE_NAME = {
   'AN':  'Advanced Air',
   '4B':  'Boutique Air',
   'N0':  'Norse Atlantic Airways',
-  'Z0':  'Norse Atlantic France',
+  'Z0':  'Norse Atlantic UK',       // Orlando to London Gatwick, as Orlando names it; Z0 is the code of the British company (ICAO UBT). The table said Norse Atlantic France
   'DM':  'Arajet',
   'H4':  'HiSky',
   '5F':  'FlyOne',
@@ -32947,7 +32947,12 @@ const AIRLINE_NAME = {
   'CM':'COPA',        'AV':'AVIANCA',      'MX':'BREEZE',      'AM':'AEROMEXICO',  'XN':'MEXICANA',  'G3':'GOL',
   'Y4':'VOLARIS',     'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
   'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows that rendered as raw codes in the app */
-  '4T':'BEOND',       'LR':'LACSA',        'BM':'BMI',
+  // 4T is Rise Air of Saskatoon (the code of Transwest Air before the two
+  // northern Saskatchewan airlines merged in 2021), as the worker files it
+  // (YXE_AIRLINE_IATA) and as Saskatoon names it on every 4T row. The table
+  // said BEOND, a Maldives airline, so flights to Prince Albert and
+  // Fond-du-Lac printed its name.
+  '4T':'RISE AIR',    'LR':'LACSA',        'BM':'BMI',
   'BG':'BIMAN',        'DO':'SKY HIGH',
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
   'PX':'AIR NIUGINI', 'KO':'ACE CARGO',
@@ -33171,7 +33176,10 @@ const IATA_WORDMARK_ONE = {
   'TK': '/logos/wordmarks/TK.svg',
   'TP': '/logos/wordmarks/TP.svg',
   'TR': '/logos/wordmarks/TR.svg',
-  'TW': '/logos/wordmarks/TW.svg',
+  // TW is not listed. Its file (/logos/wordmarks/TW.svg, still on disk) is
+  // the lettering of t-way Air, the name the airline left on 10 September
+  // 2026. Every surface prints Trinity Airways as text until there is art
+  // of the new name.
   'UB': '/logos/wordmarks/UB.svg',
   'UO': '/logos/wordmarks/UO.svg',
   'UX': '/logos/wordmarks/UX.svg',
@@ -39511,6 +39519,12 @@ const CALLSIGN_ICAO = {
 // RJ removed from the AC family — Royal Jordanian is its own carrier; the
 // bogus mapping dressed an Amman flight in Air Canada branding.
 const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
+// The phone app keeps the same flights off (app.html adbToCard). It cannot
+// load this script, so the codes below and _NON_PASSENGER_PATTERNS in mapADB
+// are copied to js/shared-names.js (FIDS_SHARED_OFF_BOARD and
+// FIDS_SHARED_OFF_BOARD_NAMES): a code or a pattern added or removed here is
+// added or removed there, and tests/airline-names-every-row.test.js fails
+// until it is.
 const FILTER_OUT = new Set([
   // ── Major cargo carriers (IATA + ICAO) ──
   'W8','CJT','FX','FDX','5X','GTI','CLX','MPH','ABX','ATN','POC','QT','TCN',
