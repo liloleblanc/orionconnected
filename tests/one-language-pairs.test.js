@@ -70,6 +70,8 @@ const RUN = new Function('BoardStrings', 'langs', '_frF', '_stripState', '_statu
   'var window = {}, iata = "YQM", AP = { YQM: { tz: "America/Moncton" } }, airlineCode = "AC", starHtml = "", _allianceKey = "";',
   'var currentFlight = { status: "boarding" }, minsToDep = 20, _door = { kept: false };',
   'function _boardStripStatusKey() { return _statusKey; }',
+  // the mark beside the words: the strip asks the one function of the strip and the countdown
+  block('window._BW_EMBLEM = {'), 'window._GATE_MARK_MISSED = {};', block('window._gateMarkPick = function'), block('window._gateMarkAttrs = function'),
   STRIP,
   'return { html: _boardWelcomeStripHtml(_stripState), lbl: _GATE_LBL };'
 ].join('\n'));

@@ -347,11 +347,15 @@ function broken(code) {
 // arrives this test fails until the code leaves the ledger.
 const REGIONAL = 'a regional that flies in the livery of a mainline and has no emblem of its own (Republic, GoJet, Air Wisconsin, CommuteAir, Compass): as an operator its orb is left to the gate carrier; a gate under its own code would draw the generic plane';
 const NO_ART = 'no emblem, tile or symbol on disk under this code, and none the tile folder names for it: the top orb is the generic plane until art is supplied';
-// Seven codes have a finished tile on disk. MANIFEST.csv, the list of the tile folder itself,
-// names the file for the code, and the script lists its ground. No table points the code at it
-// because nobody has checked that label against the airline (two of the eight labels the folder
-// gives are wrong: see XR). The reason is that, not a missing file.
-const TILE_UNCHECKED = 'a finished tile is on disk for this code (MANIFEST.csv names it), but its label has not been checked against the airline, so no table points the gate at it: the top orb is the generic plane until someone confirms the tile';
+// One code has a tile on disk that was opened, looked at and refused. MANIFEST.csv, the list of
+// the tile folder, names the file for the code, and the script lists its ground; the picture is
+// not plainly the mark of the airline, so no table points the code at it. (The six other tiles
+// this ledger once held as unchecked were looked at too: five are named in the row table now,
+// and CRK.svg, labelled Cathay Dragon, is the bauhinia of Hong Kong Airlines. Two more tiles were
+// refused for codes that draw something else meanwhile: NOZ.svg, a white aircraft on red, is
+// not plainly the mark of Norwegian, which keeps the square that types DY; UBA.svg is the lotus
+// of Myanmar National Airlines, not the mark of Myanmar Airways International, 8M below.)
+const TILE_REFUSED = 'a tile is on disk under the designator of this airline (MANIFEST.csv names it); it was opened and looked at, and it is a white band across a yellow square, where the mark of Royal Brunei is the crest of Brunei. Not plainly the mark of the airline, so no table points the gate at it: the top orb is the generic plane until art is supplied';
 const GRADIENT = 'WZZ.svg is a gradient, the magenta of Wizz down to its blue: no single ground a disc could match. The five badges take the magenta end, the value of the accent table. It needs a mark on one ground.';
 const LEDGER = {
   '8P': 'PCO.svg is a tile of two grounds, orange and navy halves: no ground the badges could take. It needs one drawing on a full navy ground.',
@@ -366,22 +370,29 @@ const LEDGER = {
   'RV': 'the Your Aircraft orb keeps the Rouge burgundy #A21C37, a recorded choice (v23260), beside a column in the red of Air Canada: two colours on purpose, and the same orb an Air Canada gate shows when Rouge operates the leg',
   'YX': REGIONAL, 'G7': REGIONAL, 'ZW': REGIONAL, 'C5': REGIONAL, 'CP': REGIONAL,
   'VB': 'VivaAerobus has an emblem on disk (a .webp, which this test cannot read) but no colour confirmed from the airline: nothing points its orb at the emblem until its green is known.',
-  'XR': 'MANIFEST.csv names PAO.svg for this code, but that tile is labelled for another operator (a Polish one), not Corendon: no art on disk for it',
   // Approved as drawn, and not to be changed: a white mark and white glyphs on the blue of the
   // brand, under the 3 to 1 floor (Transat 2.41, WestJet 2.64), on the rail and on the shelf.
   'TS': 'approved as drawn the day before this audit: the white star and white glyphs on Transat blue',
   'WS': 'the sanctioned white leaf and white glyphs on WestJet teal (WestJet Encore, WR, wears the same)'
 };
-const UNCHECKED_TILES = { BG: 'BBC', BI: 'RBA', BY: 'TOM', KA: 'CRK', NK: 'NKS', NO: 'NOS', QS: 'TVS' };
-for (const c of Object.keys(UNCHECKED_TILES)) LEDGER[c] = TILE_UNCHECKED;
-for (const c of ('2T 3K 4B 4T 5F 7F 8M 8T 9C 9K AN AX BJ BM DO EM EV FD GM H2 H4 IV JA KG KM KO LF LR MT N0 NF OK '
-  + 'P4 PA PJ RP S5 SM TB W3 W8 WG WL XC XN Z0 ZG ZH').split(' ')) LEDGER[c] = NO_ART;
+// And one tile is plainly the mark of its airline and still not named: the black S of Spirit on
+// its yellow. Spirit stopped flying and its rows are kept off every board (FILTER_OUT), and a
+// code kept off keeps no tile pointer (tests/carrier-branding-contract.test.js).
+const TILE_OFF_BOARD = 'NKS.svg is plainly the mark of Spirit, the black S on its yellow, and no table names it: Spirit stopped flying, its rows are kept off every board, and a code kept off keeps no tile pointer. A gate under NK cannot come up';
+const REFUSED_TILES = { BI: 'RBA', NK: 'NKS' };
+LEDGER.BI = TILE_REFUSED;
+LEDGER.NK = TILE_OFF_BOARD;
+for (const c of ('2T 3K 4B 4T 5F 7F 8M 8T 9C 9K AN AX BJ BM DO EM EV FD H4 IV JA KA KG KO LF LR MT NF OK '
+  + 'P4 PA PJ RP S5 SM W3 W8 WG WL XN ZG').split(' ')) LEDGER[c] = NO_ART;
 // named since (the airlines every row now names, tests/airline-names-every-row.test.js): a name, and
 // no art yet under the code
-// (0N and WP are North Star Air and Wasaya, whose art is filed under NSA and WT: to be pointed there)
-for (const c of '0N 3U 4O D7 FC FP G6 HF HO HX IZ JD KP OD QN SB TW VF VJ WP'.split(' ')) LEDGER[c] = NO_ART;
-LEDGER.FB = 'the tile folder names two tiles for this code (BRU.svg and LZB.svg), one of them under another airline\'s designator; neither label has been checked against the airline, so nothing points the gate at one: the generic plane until someone confirms which is Bulgaria Air\'s';
-for (const c of ['BBQ', 'WAL']) LEDGER[c] = 'a three-letter code the airport itself files the airline under, with a name and no art of any kind: the top orb is the generic plane and the Your Aircraft orb prints the letters until art is supplied';
+for (const c of '3U 4O D7 FC FP G6 HF HO IZ KP OD QN TW VF VJ'.split(' ')) LEDGER[c] = NO_ART;
+// Central Mountain Air, an airline of its own (it was folded into Air Canada and wore the roundel)
+LEDGER['9M'] = NO_ART;
+// World Atlantic as Miami files it, under its designator: it folds to WL (the callsign table),
+// which has lettering and no emblem, tile or symbol: the same missing art, under the same reason
+LEDGER.WAL = NO_ART;
+LEDGER.BBQ = 'a three-letter code the airport itself files the airline under, with a name and no art of any kind: the top orb is the generic plane and the Your Aircraft orb prints the letters until art is supplied';
 
 // The rail draws the mark of Flair as the plain green disc, with no file inside: the file its look
 // names is that same dot (v23130). The one carrier whose top orb holds no image by design.
@@ -439,17 +450,16 @@ test('the ledger says why, and its kinds are what they claim', () => {
   const kinds = (code) => broken(code).map((s) => s.split(':')[0]);
   // no art: the only rule broken is the missing art
   const none = Object.keys(LEDGER).filter((c) => LEDGER[c] === NO_ART);
-  assert.equal(none.length, 68, 'codes with no art of any kind');
-  for (const code of none.concat(['XR'])) {
+  assert.equal(none.length, 58, 'codes with no art of any kind');
+  for (const code of none) {
     assert.deepEqual(kinds(code), ['the orb art is not on disk'], code);
     // and the tile folder names nothing for it, or names the tile of another operator
     const rows = MANIFEST.split('\n').filter((l) => l.split(',')[1] === code);
-    if (code === 'XR') assert.ok(rows.length === 1 && /Polish/.test(rows[0]) && !/Corendon/i.test(rows[0]), rows.join());
-    else assert.deepEqual(rows, [], code + ' has no row in MANIFEST.csv');
+    assert.deepEqual(rows, [], code + ' has no row in MANIFEST.csv');
   }
-  // a tile on disk whose label is unchecked: the folder names it, the file is there, the script
-  // lists its ground, and still nothing points the gate at it
-  for (const [code, tile] of Object.entries(UNCHECKED_TILES)) {
+  // a tile on disk that was looked at and refused: the folder names it, the file is there, the
+  // script lists its ground, and nothing points the gate at it
+  for (const [code, tile] of Object.entries(REFUSED_TILES)) {
     assert.deepEqual(kinds(code), ['the orb art is not on disk'], code);
     const row = MANIFEST.split('\n').find((l) => l.split(',')[1] === code);
     assert.ok(row && row.split(',')[0] === tile && row.trim().endsWith(',' + tile + '.svg'), code + ': ' + row);
@@ -626,7 +636,10 @@ const KEPT_KINDS = {
   'white outside': 'white outside with the mark in its colours inside, as on its gate, where the mark was inked white on the accent (Starlux, Korean, Asiana) or sat in colour on it (Caribbean, Thai)',
   'own colours': 'Virgin Atlantic in its colours, where it was inked white',
   'line mark': 'Lufthansa and TAROM: a line mark of one navy, white on a disc of that navy and white on the dark frame of the cards, where it was navy lines in a clear box and on the dark frame',
-  'own letters': 'a code whose only tile is the placeholder of another code letters itself: Norwegian under D8 and DI drew the tile that prints DY'
+  'own letters': 'a code whose only tile is the placeholder of another code letters itself: Norwegian under D8 and DI drew the tile that prints DY',
+  'named tile': 'a carrier whose finished tile the row table names since (each tile looked at) draws that tile where its symbol is missing, as every carrier with a row tile does: it drew its letters, and TUI fly the square that typed TUI',
+  'second code': 'Chair under its second code, GM, draws the fin filed under CS, where it drew its letters or nothing',
+  'own airline': 'Central Mountain Air is an airline of its own, not a feeder of Air Canada: its code letters itself (and the centre cards draw nothing) where it wore the roundel of Air Canada'
 };
 
 test('the plates, the notice and the centre cards draw what origin/main drew, but for the differences kept in one table, by code', () => {
@@ -669,7 +682,8 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
 
   // NOTHING THAT WAS DRAWN BECAME NOTHING, on any surface, for any code
   const drawn = (text) => !/^nothing|^an empty disc/.test(text);
-  for (const c of cells) assert.ok(!drawn(c.was) || drawn(c.now), c.code + ', ' + c.surface + ': ' + c.was + ' became ' + c.now);
+  // (but the mark of another airline, which was never the mark of this one: the kind own airline)
+  for (const c of cells) assert.ok(!drawn(c.was) || drawn(c.now) || (c.row && c.row.kind === 'own airline'), c.code + ', ' + c.surface + ': ' + c.was + ' became ' + c.now);
   // AND NO SURFACE SHOWS THE PLACEHOLDER OF ANOTHER CODE: a lettered tile only for the code it letters,
   // for every code of the record and every code a table names today
   for (const code of [...new Set([...codes, ...SHOWN.codes()])]) {
@@ -681,7 +695,7 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
   }
   // art that became letters is the letters of the code itself, in place of such a placeholder
   for (const c of cells) {
-    if (/^letters/.test(c.now) && !/^letters|^nothing/.test(c.was)) assert.ok(c.row && c.row.kind === 'own letters' && c.now.indexOf('letters ' + c.code) === 0, c.code + ', ' + c.surface + ': ' + c.was + ' became ' + c.now);
+    if (/^letters/.test(c.now) && !/^letters|^nothing/.test(c.was)) assert.ok(c.row && (c.row.kind === 'own letters' || c.row.kind === 'own airline') && c.now.indexOf('letters ' + c.code) === 0, c.code + ', ' + c.surface + ': ' + c.was + ' became ' + c.now);
   }
 
   // THE KINDS ARE WHAT THEY CLAIM
@@ -704,7 +718,28 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
   assert.deepEqual(codesOf('own colours'), ['VS']);
   assert.deepEqual(codesOf('line mark'), ['LH', 'RO']);
   assert.deepEqual(codesOf('own letters'), ['D8', 'DI']);
-  assert.deepEqual([...new Set([...kept.values()].filter((r) => r.code.length !== 3).map((r) => r.kind))].sort(), ['line mark', 'own colours', 'own letters', 'partner', 'white outside']);
+  assert.deepEqual(codesOf('named tile'), '5J BG BY GS H2 HX HY JD KM KX N0 NO OM PK PX QS S4 SB TB TN UL X3 XC XQ XR Z0 ZH ZL'.split(' '));
+  assert.deepEqual(codesOf('second code'), ['GM']);
+  // its own airline: the roundel of Air Canada on origin/main, and now its own letters, or nothing on
+  // the centre cards; the code folds to no other
+  assert.deepEqual(codesOf('own airline'), ['9M']);
+  for (const r of of('own airline')) {
+    assert.match(r.was, /^airlines\/canadian\/AC\.TO\.svg/, r.code + ', ' + r.surface);
+    assert.match(r.now, r.surface === 'standby card' ? /^nothing$/ : /^letters 9M/, r.code + ', ' + r.surface);
+  }
+  assert.equal(O.fold('9M'), '9M');
+  assert.deepEqual([...new Set([...kept.values()].filter((r) => r.code.length !== 3).map((r) => r.kind))].sort(), ['line mark', 'named tile', 'own airline', 'own colours', 'own letters', 'partner', 'second code', 'white outside']);
+  // a named tile: its letters on origin/main (TUI fly: the square that typed TUI), and now, after the
+  // symbol it never had is missed, the tile the row table names for the code, which is on disk
+  for (const r of of('named tile')) {
+    assert.match(r.was, r.code === 'X3' ? /^airline-tiles\/TUI\.svg/ : /^letters /, r.code + ', ' + r.surface);
+    assert.equal(file(r.now), 'airline-tiles/' + O.TILE[r.code] + '.svg', r.code + ', ' + r.surface + ': the tile the row table names');
+    assert.match(r.now, /after a miss$/, r.code + ', ' + r.surface);
+    assert.ok(fs.existsSync(path.join(FC, 'logos', file(r.now))), file(r.now));
+    assert.notEqual(r.surface, 'standby card', r.code + ': the centre cards draw the mark, never the tile, as before');
+  }
+  // a second code: exactly what the first code draws on that surface
+  for (const r of of('second code')) assert.equal(r.now, at(O.fold(r.code), r.surface), r.code + ', ' + r.surface + ': what ' + O.fold(r.code) + ' draws there');
   // a partner: exactly what its carrier draws on that surface, the table of the plate included
   for (const r of of('partner')) assert.equal(r.now, at(O.fold(r.code), r.surface), r.code + ', ' + r.surface + ': what ' + O.fold(r.code) + ' draws there');
   assert.deepEqual([at('9E', 'sky plate'), at('9E', 'map hold')], ['airlines/us-major/delta-emblem-colour.svg', 'airlines/us-major/delta-emblem-colour.svg'], 'Endeavor: the flat emblem of Delta on the plates, never its sphere');
@@ -748,8 +783,8 @@ test('a placeholder tile, a flat square with a code set as text, is drawn only f
   // a drawn tile, and a tile whose text is a name, are not placeholders
   assert.equal(GEN.lettersOf(fs.readFileSync(path.join(GEN.TILES, 'IBE.svg'), 'utf8')), '');
   assert.equal(GEN.lettersOf(fs.readFileSync(path.join(GEN.TILES, 'P6-glossy.svg'), 'utf8')), '');
-  // the code a tile letters draws that tile (TUI is the designator of X3)
-  for (const [code, tile] of [['BQ', 'PSC'], ['DY', 'NAX'], ['SG', 'SEJ'], ['X3', 'TUI'], ['YP', 'PCM'], ['YV', 'ASH'], ['NAX', 'NAX'], ['ASH', 'ASH']]) {
+  // the code a tile letters draws that tile
+  for (const [code, tile] of [['BQ', 'PSC'], ['DY', 'NAX'], ['SG', 'SEJ'], ['YP', 'PCM'], ['YV', 'ASH'], ['NAX', 'NAX'], ['ASH', 'ASH']]) {
     assert.equal(column(code).emb.src, '/logos/airline-tiles/' + tile + '.svg', code);
     assert.equal(column(code).L.letters, '', code);
   }
@@ -776,7 +811,9 @@ test('a placeholder tile, a flat square with a code set as text, is drawn only f
   assert.equal(orbFacts(W._gateCardOrb('AC', 'P6').html).letters, 'P6');
   assert.equal(W._orbTileLettersOther('NAX', 'D8'), true);
   assert.equal(W._orbTileLettersOther('NAX', 'DY'), false);
-  assert.equal(W._orbTileLettersOther('TUI', 'X3'), false);
+  assert.equal(W._orbTileLettersOther('TUI', 'X3'), false, 'TUI is the designator of X3 (the callsign table)');
+  assert.deepEqual([O.desig('TUI'), O.desig('TAM')], ['X3', 'JJ'], 'the two designators the tile table gave while each code drew a lettered square');
+  assert.equal(column('X3').emb.src, '/logos/airline-tiles/TOM.svg');
   assert.equal(W._orbTileLettersOther('IBE', 'I2'), false, 'a drawn tile is shared freely');
   for (const fn of ['window._holdArtFailed = function', 'window._orbArtFailed = function']) assert.match(block(fn), /window\._orbTileLettersOther\(/, fn);
 });
@@ -826,7 +863,7 @@ test('the rule holds on the gate change notice and in the missing-file handler: 
 // ── the table of looks ─────────────────────────────────────────────────────
 // Light grounds whose ink is the neutral dark of the boards (#1B2430): no dark colour of the brand
 // is confirmed for these, so none is guessed. A row that gains an ink leaves this list.
-const NEUTRAL_INK = ['5J', 'UL', 'XY'];
+const NEUTRAL_INK = [];
 // The only rows that write white on a ground where white is under 3 to 1: approved as drawn (the ledger).
 const APPROVED_WHITE = ['TS', 'WR', 'WS'];
 
@@ -1048,7 +1085,7 @@ test('ink by contrast: white on a dark ground, the dark colour of the brand on a
 
 // ── the fold ───────────────────────────────────────────────────────────────
 test('a regional that prints its partner wears the partner: one fold for the column, the accent and the stylesheet', () => {
-  const F = { MQ: 'AA', ENY: 'AA', OH: 'AA', PSA: 'AA', PT: 'AA', PDT: 'AA', QX: 'AS', QXE: 'AS', '9E': 'DL', EDV: 'DL', ZX: 'AC', '9M': 'AC', '9L': 'AC',
+  const F = { MQ: 'AA', ENY: 'AA', OH: 'AA', PSA: 'AA', PT: 'AA', PDT: 'AA', QX: 'AS', QXE: 'AS', '9E': 'DL', EDV: 'DL', ZX: 'AC', '9L': 'AC',
     CJ: 'BA', RK: 'FR', SP: 'PB', Q6: 'Y4', JJ: 'LA', '4C': 'LA', ACEX: 'AC', EZY: 'U2', ACA: 'AC', DAL: 'DL', AAL: 'AA', KLM: 'KL', PCO: '8P', QTR: 'QR' };
   for (const [from, to] of Object.entries(F)) {
     assert.equal(O.fold(from), to, from);
@@ -1107,7 +1144,7 @@ test('a three-letter designator in the airline slot is its carrier: the callsign
   }
   // where two codes share a tile the designator is the first the table names, and they wear one look
   const ties = Object.entries(shared).filter(([d, l]) => l.length > 1 && !O.CALL[d] && !O.TILE[d]);
-  assert.deepEqual(ties.map(([d]) => d).sort(), ['AXM', 'NAX', 'TRA']);
+  assert.deepEqual(ties.map(([d]) => d).sort(), ['AXM', 'CAI', 'LAN', 'NAX', 'NBT', 'TOM', 'TRA', 'WSG']);
   for (const [d, list] of ties) {
     const look = (c) => { const L = Object.assign({}, W._gateColumnLook(c)); delete L.carrier; delete L.art; delete L.letters; return L; };
     for (const c of list) assert.deepEqual(look(c), look(list[0]), d + ': ' + c + ' and ' + list[0] + ' wear one look');
@@ -1325,7 +1362,10 @@ test('the Your Aircraft orb keeps what it drew where that was a recorded choice:
   assert.ok(contrast('#FFFFFF', '#FFA400') < 2 && contrast('#FFFFFF', O.BRAND.PB.accent) >= 3);
   // Air Canada on its own leg, and under the brand codes that are Air Canada: its own orb
   const ac = W._gateCardOrb('AC', '').html;
-  for (const op of ['AC', 'ACEX', 'ZX', '9M', 'ACA']) assert.equal(W._gateCardOrb('AC', op).html, ac, op);
+  for (const op of ['AC', 'ACEX', 'ZX', 'ACA']) assert.equal(W._gateCardOrb('AC', op).html, ac, op);
+  // Central Mountain Air is not one of them: on a flight Air Canada sells and it flies, the orb is not the roundel
+  assert.notEqual(W._gateCardOrb('AC', '9M').html, ac);
+  assert.doesNotMatch(W._gateCardOrb('AC', '9M').html, /AC\.TO\.svg/);
   assert.deepEqual([orbFacts(ac).src, orbFacts(ac).bg, orbFacts(ac).inked], ['/logos/airlines/canadian/AC.TO.svg', O.BRAND.AC.accent, true]);
   // an operator with no emblem of its own leaves the orb to the gate carrier, never its letters
   for (const c of ['YX', 'G7', 'ZW', 'C5', 'CP']) {

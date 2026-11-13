@@ -290,10 +290,12 @@ test('a model without a registration holds at 1.25x its label while the row come
 });
 
 test('an operator under the marketing carrier\'s own name, with no mark of its own, is left out', () => {
-  // AC313 at YQB gate 23: operator 9M, name 'AIR CANADA', no mark on file.
+  // An operator code the board names Air Canada, with no mark on file (ZX, 9L). It was seen with 9M
+  // while the board folded Central Mountain Air into Air Canada: AC313 at YQB gate 23.
   assert.match(CORE, /var _opSameName6 = !_opLogo6 && !!_mktNm6 && String\(_opNm6\)\.trim\(\)\.toUpperCase\(\) === _mktNm6;/);
   assert.match(CORE, /if \(!_opSameName6\) \{\s*_opByVal = _opLogo6/);
-  assert.match(CORE, /'9M':'AIR CANADA'/, 'the board names 9M Air Canada on purpose');
+  assert.match(CORE, /'ZX':'AIR CANADA'/, 'the board names ZX Air Canada');
+  assert.match(CORE, /'9M':'CENTRAL MOUNTAIN AIR'/, 'and Central Mountain Air by its own name');
 });
 
 // ── v24004: ONE ROW, ALWAYS, AND THE ART IN THE SKY THE BAND LEAVES ─────────

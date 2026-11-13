@@ -871,8 +871,7 @@ const NAMED_OTHERWISE = {
   NH: ['All Nippon Airways', 'ANA', 'the short form the airline itself goes by'],
   NZ: ['Air New Zealand', 'Air NZ', 'the short form of the boards'],
   CJ: ['BA Cityflyer', 'British Airways', 'the boards print British Airways on the rows BA CityFlyer flies for it (v23363)'],
-  '9X': ['Southern Airways Express', 'Mokulele', 'Southern Airways Express holds the code and flies as Mokulele in Hawaii, which is what the name, the colour and the emblem of 9X are; Phoenix names the company on its Imperial flights. Not decided here'],
-  '9M': ['Central Mountain Air', 'Air Canada', 'the boards fold 9M into Air Canada (PARENT), an older decision this test does not judge']
+  '9X': ['Southern Airways Express', 'Mokulele', 'Southern Airways Express holds the code and flies as Mokulele in Hawaii, which is what the name, the colour and the emblem of 9X are; Phoenix names the company on its Imperial flights. Not decided here']
 };
 // Words every airline has: sharing one of them says nothing.
 const EVERY_AIRLINE = new Set(['AIR', 'AIRLINES', 'AIRLINE', 'AIRWAYS', 'AIRWAY', 'AVIATION', 'THE', 'OF', 'DE', 'LINEAS', 'AEREAS', 'INTERNATIONAL', 'EXPRESS']);

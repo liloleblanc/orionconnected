@@ -350,7 +350,9 @@ test('colour art in place of the orb\'s white marks, and the open list is closed
 });
 
 test('Air Canada\'s roundel and its feeders\' read in their own red', () => {
-  for (const code of ['AC', 'AC1', 'ZX', '9M', '9L']) {
+  // (Central Mountain Air, 9M, stood in this list: it is an airline of its own, with no emblem on disk)
+  assert.deepEqual(emblem('9M'), { src: '', kind: 'none' });
+  for (const code of ['AC', 'AC1', 'ZX', '9L']) {
     const e = emblem(code);
     assert.deepEqual(e, { src: '/logos/airlines/canadian/AC.TO.svg', kind: 'own' }, code);
     const fills = [...new Set(svgPaints(fileOf(e.src)).map((c) => c.join(',')))];

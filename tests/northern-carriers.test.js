@@ -75,9 +75,12 @@ test('no carrier tile is filed under a different airline\'s ICAO', () => {
   assert.ok(!fs.existsSync(path.join(LOGOS, 'airline-tiles', 'MPE.svg')),
     'MPE.svg must be gone — the name now belongs to a different carrier');
   // and nothing may point a tile at an ICAO the callsign map assigns elsewhere
+  // (but a code that prints the airline the tile belongs to: BA CityFlyer prints British Airways on
+  // the rows it flies for it, and draws the British Airways tile beside the British Airways lettering)
+  const PRINTS = { CJ: 'BA' };
   for (const [iata, icao] of Object.entries(TILES)) {
     const owner = CALLSIGN[icao];
-    if (owner && owner !== iata) {
+    if (owner && owner !== iata && PRINTS[iata] !== owner) {
       assert.fail(`${iata} takes tile ${icao}.svg, but CALLSIGN_ICAO says ${icao} is ${owner}`);
     }
   }

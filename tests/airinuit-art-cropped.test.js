@@ -70,7 +70,9 @@ function artBox(svg) {
 
 test('the board names every Air Inuit cut it draws, and each is on disk', () => {
   const files = airInuitFiles();
-  for (const f of ['airinuit.svg', 'airinuit-monochrome-white.svg', 'airinuit-monochrome-black.svg', 'airinuit-wordmark-light.svg']) {
+  // (the black cut, airinuit-monochrome-black.svg, was the phone app's file by day; the app draws
+  // the colour cut now, as the board's light rows do, and no surface names the black one)
+  for (const f of ['airinuit.svg', 'airinuit-monochrome-white.svg', 'airinuit-wordmark-light.svg']) {
     assert.ok(files.includes('/logos/airlines/canadian-regional/' + f), f + ' is one of the board\'s files');
   }
   for (const f of files) assert.ok(fs.existsSync(path.join(PUB, f)), f);
