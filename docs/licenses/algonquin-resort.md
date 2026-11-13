@@ -1,4 +1,4 @@
-# The Algonquin Resort page (gate centre deck, v24148; two watercolours and two timelines since v24149)
+# The Algonquin Resort page (gate centre deck, v24148; two watercolours and two timelines since v24151)
 
 A whole page for The Algonquin Resort, St. Andrews by-the-Sea, New Brunswick, in the centre
 deck of a gate screen: on a gate whose flight goes to Moncton (a stop there counts) and on every

@@ -950,7 +950,7 @@
       $ctx: 'named-airport' },
     hotelByRoad: { en: 'about {H} h {M} min by road', fr: 'environ {H} h {M} min en voiture', es: 'unas {H} h {M} min por carretera', de: 'etwa {H} Std. {M} Min. Fahrt', it: 'circa {H} h {M} min in macchina', pt: 'cerca de {H} h {M} min de carro', ja: '車で約{H}時間{M}分', zh: '车程约{H}小时{M}分钟', ar: 'نحو {H} س {M} د بالسيارة' },
     hotelYesteryear: { en: 'Yesteryear', fr: 'Souvenirs d’hier', es: 'Recuerdos de ayer', de: 'Erinnerungen an gestern', it: 'Ricordi di ieri', pt: 'Memórias de ontem', ja: '昔日の面影', zh: '昔日时光', ar: 'ذكريات الأمس' },
-    // v24149 — the watercolours view of the page, worded and laid out to a supplied example.
+    // v24151 — the watercolours view of the page, worded and laid out to a supplied example.
     // Under the name, what the house is; over the pictures, who painted them and that the
     // hotel commissioned them ({WHO} is the painter, data of js/algonquin-card.js); under
     // each picture, where it was also used. The name of the dining room is data too.
@@ -964,7 +964,7 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     algonquinArt1994: { en: 'Made into a postcard for hotel guests', fr: 'Carte postale pour les invités de l’hôtel', es: 'Convertida en postal para los huéspedes del hotel', de: 'Als Postkarte für die Hotelgäste gedruckt', it: 'Divenne una cartolina per gli ospiti dell’hotel', pt: 'Transformada em cartão-postal para os hóspedes do hotel', ja: 'ホテル宿泊客向けの絵はがきに', zh: '制成明信片赠予酒店宾客', ar: 'صدرت بطاقة بريدية لضيوف الفندق',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    // v24149 — the story view of the page: one line for each year of its timeline. The years,
+    // v24151 — the story view of the page: one line for each year of its timeline. The years,
     // the railway ({RAIL}, in French under its own French name) and the collection of the hotel ({BRAND}) are data of
     // js/algonquin-card.js. Each line is a fact checked against the resort and a second source
     // (docs/licenses/algonquin-resort.md).
@@ -978,9 +978,9 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     algonquinStory1993: { en: 'Pictured on a Canadian postage stamp', fr: 'Illustré sur un timbre-poste canadien', es: 'Aparece en un sello postal canadiense', de: 'Auf einer kanadischen Briefmarke abgebildet', it: 'Raffigurato su un francobollo canadese', pt: 'Retratado em um selo postal canadense', ja: 'カナダの郵便切手に描かれる', zh: '登上加拿大邮票', ar: 'ظهر على طابع بريدي كندي',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    algonquinStory2014: { en: 'Reopens, restored: the first {BRAND} hotel in Canada', fr: 'Rouvre, restauré : premier hôtel {BRAND} au Canada', es: 'Reabre, restaurado, como el primer hotel {BRAND} de Canadá', de: 'Wiedereröffnung nach Restaurierung als erstes {BRAND}-Hotel Kanadas', it: 'Riapre, restaurato, come primo hotel {BRAND} del Canada', pt: 'Reabre, restaurado, como o primeiro hotel {BRAND} do Canadá', ja: '改装を経て、カナダ初の{BRAND}ホテルとして再開', zh: '修复后重新开业，成为加拿大首家{BRAND}酒店', ar: 'أُعيد افتتاحه بعد ترميمه كأول فندق {BRAND} في كندا',
+    algonquinStory2014: { en: 'Reopens, restored: the first {BRAND} hotel in Canada', fr: 'Rouvre, restauré : premier hôtel {BRAND} au Canada', es: 'Reabre, restaurado, como el primer hotel {BRAND} de Canadá', de: 'Wiedereröffnung nach Restaurierung als erstes Hotel der {BRAND} in Kanada', it: 'Riapre, restaurato, come primo hotel {BRAND} del Canada', pt: 'Reabre, restaurado, como o primeiro hotel {BRAND} do Canadá', ja: '改装を経て、カナダ初の{BRAND}ホテルとして再開', zh: '修复后重新开业，成为加拿大首家{BRAND}酒店', ar: 'أُعيد افتتاحه بعد ترميمه كأول فندق {BRAND} في كندا',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    // v24149 — the guests view of the page: its heading, and one line for each dated visit.
+    // v24151 — the guests view of the page: its heading, and one line for each dated visit.
     // {WHO} is the name of the guest (data of js/algonquin-card.js); each line says what the
     // period sources say and no more (a stay, a night, a visit, a reception).
     hotelNotableGuests: { en: 'Notable guests', fr: 'Invités de marque', es: 'Huéspedes ilustres', de: 'Berühmte Gäste', it: 'Ospiti illustri', pt: 'Hóspedes ilustres', ja: '著名な来訪者', zh: '知名宾客', ar: 'ضيوف بارزون' },
