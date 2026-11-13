@@ -376,6 +376,12 @@ const UNCHECKED_TILES = { BG: 'BBC', BI: 'RBA', BY: 'TOM', KA: 'CRK', NK: 'NKS',
 for (const c of Object.keys(UNCHECKED_TILES)) LEDGER[c] = TILE_UNCHECKED;
 for (const c of ('2T 3K 4B 4T 5F 7F 8M 8T 9C 9K AN AX BJ BM DO EM EV FD GM H2 H4 IV JA KG KM KO LF LR MT N0 NF OK '
   + 'P4 PA PJ RP S5 SM TB W3 W8 WG WL XC XN Z0 ZG ZH').split(' ')) LEDGER[c] = NO_ART;
+// named since (the airlines every row now names, tests/airline-names-every-row.test.js): a name, and
+// no art yet under the code
+// (0N and WP are North Star Air and Wasaya, whose art is filed under NSA and WT: to be pointed there)
+for (const c of '0N 3U 4O D7 FC FP G6 HF HO HX IZ JD KP OD QN SB TW VF VJ WP'.split(' ')) LEDGER[c] = NO_ART;
+LEDGER.FB = 'the tile folder names two tiles for this code (BRU.svg and LZB.svg), one of them under another airline\'s designator; neither label has been checked against the airline, so nothing points the gate at one: the generic plane until someone confirms which is Bulgaria Air\'s';
+for (const c of ['BBQ', 'WAL']) LEDGER[c] = 'a three-letter code the airport itself files the airline under, with a name and no art of any kind: the top orb is the generic plane and the Your Aircraft orb prints the letters until art is supplied';
 
 // The rail draws the mark of Flair as the plain green disc, with no file inside: the file its look
 // names is that same dot (v23130). The one carrier whose top orb holds no image by design.
@@ -433,7 +439,7 @@ test('the ledger says why, and its kinds are what they claim', () => {
   const kinds = (code) => broken(code).map((s) => s.split(':')[0]);
   // no art: the only rule broken is the missing art
   const none = Object.keys(LEDGER).filter((c) => LEDGER[c] === NO_ART);
-  assert.equal(none.length, 48, 'codes with no art of any kind');
+  assert.equal(none.length, 68, 'codes with no art of any kind');
   for (const code of none.concat(['XR'])) {
     assert.deepEqual(kinds(code), ['the orb art is not on disk'], code);
     // and the tile folder names nothing for it, or names the tile of another operator

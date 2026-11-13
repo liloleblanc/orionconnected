@@ -161,6 +161,7 @@ const NOT_FEED_ROWS = {
   'earth-live-2026-10-19.json': 'floors as drawn: places and counts, no feed rows',
   'earth-places-codes-2026-10-19.txt': 'airport codes',
   'earth-sweep-2026-10-19.json': 'floors as drawn: places and counts, no feed rows',
+  'gate-marks-origin-main.json': 'what the marks beside the gate orbs drew, by code: no feed rows',
   'header-band.json': 'band colours',
   'name-fit-model.json': 'measured sizes of names',
   'phx-capture-headers.txt': 'the headers of a capture',
