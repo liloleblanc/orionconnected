@@ -1,0 +1,685 @@
+{
+ "_note": "Miami (MIA), captured 2026-11-13 at about 19:11Z (14:11 in Miami). arr: the airport feed's own flat records for arrivals (/miafids, the shape miaToAdbFlight reads). dep: departures from the worker's backup list (/flights/airports/iata/MIA, already in the mapper's shape, the airline only on the two legs). Trimmed to the carriers whose rows printed a bare code that afternoon (BBQ, WAL, G6, OB), two that printed a name (KX, UX) and one American and one American Eagle row beside them. Read by tests/airline-names-every-row.test.js.",
+ "asOfUtc": "2026-11-13T19:11:17Z",
+ "arr": [
+  {
+   "city": "SANTA CLARA,CUBA",
+   "stt": "2026-11-13T11:15:00",
+   "ett": "2026-11-13T15:00:00",
+   "att": "",
+   "status": "Now 3:00P",
+   "gate": "F19",
+   "terminal": "F",
+   "bags": "D10",
+   "airlineName": "World Atlantic",
+   "CXR": "WAL",
+   "TRN": "513",
+   "CTY": "SNU",
+   "TYP": "MD83",
+   "REG": "N802WA",
+   "timeInMillis": "1794586500000"
+  },
+  {
+   "city": "SANTA CRUZ, BOL",
+   "stt": "2026-11-13T14:25:00",
+   "ett": "2026-11-13T14:25:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "F16",
+   "terminal": "F",
+   "bags": "D7",
+   "airlineName": "BoA",
+   "CXR": "OB",
+   "TRN": "762",
+   "CTY": "VVI",
+   "TYP": "A3302",
+   "REG": "CP3214",
+   "timeInMillis": "1794597900000"
+  },
+  {
+   "city": "SANTA CLARA,CUBA",
+   "stt": "2026-11-13T14:45:00",
+   "ett": "2026-11-13T14:45:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "F21",
+   "terminal": "F",
+   "bags": "D9",
+   "airlineName": "Eastern Air Express",
+   "CXR": "BBQ",
+   "TRN": "2212",
+   "CTY": "SNU",
+   "TYP": "B7374",
+   "REG": "N808TJ",
+   "timeInMillis": "1794599100000"
+  },
+  {
+   "city": "HAVANA, CUBA",
+   "stt": "2026-11-13T14:50:00",
+   "ett": "2026-11-13T14:50:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "F23",
+   "terminal": "F",
+   "bags": "D10",
+   "airlineName": "World Atlantic",
+   "CXR": "WAL",
+   "TRN": "251",
+   "CTY": "HAV",
+   "TYP": "MD83",
+   "REG": "N805WA",
+   "timeInMillis": "1794599400000"
+  },
+  {
+   "city": "HOLGUIN, CUBA",
+   "stt": "2026-11-13T15:10:00",
+   "ett": "2026-11-13T14:26:00",
+   "att": "",
+   "status": "Now 2:26P",
+   "gate": "F14",
+   "terminal": "F",
+   "bags": "D9",
+   "airlineName": "Eastern Air Express",
+   "CXR": "BBQ",
+   "TRN": "2232",
+   "CTY": "HOG",
+   "TYP": "B7374",
+   "REG": "N438US",
+   "timeInMillis": "1794600600000"
+  },
+  {
+   "city": "CARACAS",
+   "stt": "2026-11-13T16:15:00",
+   "ett": "2026-11-13T16:15:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "J14",
+   "terminal": "J",
+   "bags": "D9",
+   "airlineName": "GlobalX Airlines",
+   "CXR": "G6",
+   "TRN": "201",
+   "CTY": "CCS",
+   "TYP": "A320",
+   "REG": "N837VA",
+   "timeInMillis": "1794604500000"
+  },
+  {
+   "city": "CAP HAITIEN",
+   "stt": "2026-11-13T17:00:00",
+   "ett": "",
+   "att": "",
+   "status": "Cancelled",
+   "gate": "",
+   "terminal": "F",
+   "bags": "",
+   "airlineName": "World Atlantic",
+   "CXR": "WAL",
+   "TRN": "501",
+   "CTY": "CAP",
+   "TYP": "MD83",
+   "REG": "",
+   "timeInMillis": "1794607200000"
+  },
+  {
+   "city": "GRAND CAYMAN",
+   "stt": "2026-11-13T18:20:00",
+   "ett": "2026-11-13T18:20:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "E22",
+   "terminal": "E",
+   "bags": "CD",
+   "airlineName": "Cayman Airways",
+   "CXR": "KX",
+   "TRN": "106",
+   "CTY": "GCM",
+   "TYP": "B38M",
+   "REG": "VPCIX",
+   "timeInMillis": "1794612000000"
+  },
+  {
+   "city": "CAP HAITIEN",
+   "stt": "2026-11-13T19:30:00",
+   "ett": "2026-11-13T19:30:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "F3",
+   "terminal": "F",
+   "bags": "CD",
+   "airlineName": "GlobalX Airlines",
+   "CXR": "G6",
+   "TRN": "618",
+   "CTY": "CAP",
+   "TYP": "A320",
+   "REG": "N291GX",
+   "timeInMillis": "1794616200000"
+  },
+  {
+   "city": "MADRID",
+   "stt": "2026-11-13T19:30:00",
+   "ett": "2026-11-13T19:30:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "E31",
+   "terminal": "E",
+   "bags": "CE",
+   "airlineName": "Air Europa",
+   "CXR": "UX",
+   "TRN": "097",
+   "CTY": "MAD",
+   "TYP": "B7879",
+   "REG": "",
+   "timeInMillis": "1794616200000"
+  },
+  {
+   "city": "HAVANA, CUBA",
+   "stt": "2026-11-13T21:30:00",
+   "ett": "2026-11-13T21:30:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "F18",
+   "terminal": "F",
+   "bags": "CD",
+   "airlineName": "Eastern Air Express",
+   "CXR": "BBQ",
+   "TRN": "505",
+   "CTY": "HAV",
+   "TYP": "B7374",
+   "REG": "N438US",
+   "timeInMillis": "1794623400000"
+  },
+  {
+   "city": "HAVANA, CUBA",
+   "stt": "2026-11-13T22:30:00",
+   "ett": "2026-11-13T22:30:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "F23",
+   "terminal": "F",
+   "bags": "CD",
+   "airlineName": "Eastern Air Express",
+   "CXR": "BBQ",
+   "TRN": "704",
+   "CTY": "HAV",
+   "TYP": "B7374",
+   "REG": "N313XA",
+   "timeInMillis": "1794627000000"
+  },
+  {
+   "city": "HAVANA, CUBA",
+   "stt": "2026-11-13T23:30:00",
+   "ett": "2026-11-13T23:30:00",
+   "att": "",
+   "status": "On Time",
+   "gate": "J3",
+   "terminal": "J",
+   "bags": "J5",
+   "airlineName": "Eastern Air Express",
+   "CXR": "BBQ",
+   "TRN": "2206",
+   "CTY": "HAV",
+   "TYP": "B7374",
+   "REG": "N314XA",
+   "timeInMillis": "1794630600000"
+  },
+  {
+   "city": "PUNTA CANA",
+   "stt": "2026-11-12T18:44:00",
+   "ett": "2026-11-13T14:16:00",
+   "att": "",
+   "status": "Now 2:16P",
+   "gate": "D43",
+   "terminal": "D",
+   "bags": "D8",
+   "airlineName": "American Airlines",
+   "CXR": "AA",
+   "TRN": "1557",
+   "CTY": "PUJ",
+   "TYP": "A21N",
+   "REG": "N437AN",
+   "timeInMillis": "1794527040000"
+  },
+  {
+   "city": "PENSACOLA",
+   "stt": "2026-11-12T20:40:00",
+   "ett": "2026-11-13T13:00:00",
+   "att": "2026-11-13T12:50:00",
+   "status": "Arrived 1:00P",
+   "gate": "D60",
+   "terminal": "D",
+   "bags": "18",
+   "airlineName": "American Eagle",
+   "CXR": "MQ",
+   "TRN": "3429",
+   "CTY": "PNS",
+   "TYP": "E175",
+   "REG": "N320BK",
+   "timeInMillis": "1794534000000",
+   "codeshare": "G3 6170"
+  }
+ ],
+ "dep": [
+  {
+   "number": "BBQ504",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "734",
+    "reg": "N438US"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "F14",
+    "scheduledTime": {
+     "local": "2026-11-13 18:30:00-05:00",
+     "utc": "2026-11-13 23:30:00+00:00"
+    },
+    "airline": {
+     "iata": "BBQ",
+     "icao": null,
+     "name": "Eastern Air Express"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "F",
+    "checkInDesk": "294-299"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "HAV",
+     "icao": null,
+     "name": "HAVANA, CUBA"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 18:30:00-05:00",
+     "utc": "2026-11-13 23:30:00+00:00"
+    },
+    "airline": {
+     "iata": "BBQ",
+     "icao": null,
+     "name": "Eastern Air Express"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794612600000
+  },
+  {
+   "number": "BBQ703",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "734",
+    "reg": "N313XA"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "F18",
+    "scheduledTime": {
+     "local": "2026-11-13 19:30:00-05:00",
+     "utc": "2026-11-14 00:30:00+00:00"
+    },
+    "airline": {
+     "iata": "BBQ",
+     "icao": null,
+     "name": "Eastern Air Express"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "F",
+    "checkInDesk": "357-362"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "HAV",
+     "icao": null,
+     "name": "HAVANA, CUBA"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 19:30:00-05:00",
+     "utc": "2026-11-14 00:30:00+00:00"
+    },
+    "airline": {
+     "iata": "BBQ",
+     "icao": null,
+     "name": "Eastern Air Express"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794616200000
+  },
+  {
+   "number": "BBQ2205",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "734",
+    "reg": "N314XA"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "F15",
+    "scheduledTime": {
+     "local": "2026-11-13 20:30:00-05:00",
+     "utc": "2026-11-14 01:30:00+00:00"
+    },
+    "airline": {
+     "iata": "BBQ",
+     "icao": null,
+     "name": "Eastern Air Express"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "F",
+    "checkInDesk": "265-270"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "HAV",
+     "icao": null,
+     "name": "HAVANA, CUBA"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 20:30:00-05:00",
+     "utc": "2026-11-14 01:30:00+00:00"
+    },
+    "airline": {
+     "iata": "BBQ",
+     "icao": null,
+     "name": "Eastern Air Express"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794619800000
+  },
+  {
+   "number": "KX107",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "7M8",
+    "reg": "VPCIX"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "E22",
+    "scheduledTime": {
+     "local": "2026-11-13 19:40:00-05:00",
+     "utc": "2026-11-14 00:40:00+00:00"
+    },
+    "airline": {
+     "iata": "KX",
+     "icao": null,
+     "name": "Cayman Airways"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "E",
+    "checkInDesk": "205-210"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "GCM",
+     "icao": null,
+     "name": "GRAND CAYMAN"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 19:40:00-05:00",
+     "utc": "2026-11-14 00:40:00+00:00"
+    },
+    "airline": {
+     "iata": "KX",
+     "icao": null,
+     "name": "Cayman Airways"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794616800000
+  },
+  {
+   "number": "OB767",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "332",
+    "reg": "CP3214"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "F16",
+    "scheduledTime": {
+     "local": "2026-11-13 20:00:00-05:00",
+     "utc": "2026-11-14 01:00:00+00:00"
+    },
+    "airline": {
+     "iata": "OB",
+     "icao": null,
+     "name": "BoA"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "F",
+    "checkInDesk": "277-286"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "VVI",
+     "icao": null,
+     "name": "SANTA CRUZ, BOL"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 20:00:00-05:00",
+     "utc": "2026-11-14 01:00:00+00:00"
+    },
+    "airline": {
+     "iata": "OB",
+     "icao": null,
+     "name": "BoA"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794618000000
+  },
+  {
+   "number": "UX98",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "789"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "E31",
+    "scheduledTime": {
+     "local": "2026-11-13 21:45:00-05:00",
+     "utc": "2026-11-14 02:45:00+00:00"
+    },
+    "airline": {
+     "iata": "UX",
+     "icao": null,
+     "name": "Air Europa"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "E",
+    "checkInDesk": "311-324"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "MAD",
+     "icao": null,
+     "name": "MADRID"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 21:45:00-05:00",
+     "utc": "2026-11-14 02:45:00+00:00"
+    },
+    "airline": {
+     "iata": "UX",
+     "icao": null,
+     "name": "Air Europa"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794624300000
+  },
+  {
+   "number": "AA38",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "777",
+    "reg": "N778AN"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "D37",
+    "scheduledTime": {
+     "local": "2026-11-13 18:30:00-05:00",
+     "utc": "2026-11-13 23:30:00+00:00"
+    },
+    "airline": {
+     "iata": "AA",
+     "icao": null,
+     "name": "American Airlines"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "D"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "LHR",
+     "icao": null,
+     "name": "LONDON-HEATHROW"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 18:30:00-05:00",
+     "utc": "2026-11-13 23:30:00+00:00"
+    },
+    "airline": {
+     "iata": "AA",
+     "icao": null,
+     "name": "American Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794612600000
+  },
+  {
+   "number": "MQ3361",
+   "callSign": null,
+   "status": "ontime",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "E175",
+    "reg": "N283NN"
+   },
+   "departure": {
+    "airport": {
+     "iata": "MIA",
+     "icao": "KMIA",
+     "name": "Miami"
+    },
+    "gate": "D60",
+    "scheduledTime": {
+     "local": "2026-11-13 22:16:00-05:00",
+     "utc": "2026-11-14 03:16:00+00:00"
+    },
+    "airline": {
+     "iata": "MQ",
+     "icao": null,
+     "name": "American Eagle"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "D"
+   },
+   "arrival": {
+    "airport": {
+     "iata": "SAV",
+     "icao": null,
+     "name": "SAVANNAH"
+    },
+    "scheduledTime": {
+     "local": "2026-11-13 22:16:00-05:00",
+     "utc": "2026-11-14 03:16:00+00:00"
+    },
+    "airline": {
+     "iata": "MQ",
+     "icao": null,
+     "name": "American Eagle"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1794626160000
+  }
+ ]
+}

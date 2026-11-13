@@ -881,6 +881,23 @@ window.FIDS_SHARED_CITY_V24066 = {
   ZFD:'', ZMT:'', ZNZ:''
 };
 window.FIDS_SHARED_AIRLINE = {
+  // Mirrors the block at the top of AIRLINE_NAME in fids-core.js: passenger
+  // airlines found on recorded rows and on the Miami boards of 2026-11-13
+  // with no name in any table (tests/airline-names-every-row.test.js).
+  'BBQ': 'Eastern Air Express',     'WAL': 'WORLD ATLANTIC',
+  'G6':  'GlobalX Airlines',        'OB':  'BoA',
+  'ZL':  'Rex',                     'FP':  'FlyPelican',
+  'QN':  'Skytrans',                'FC':  'Link Airways',
+  'OD':  'Batik Air Malaysia',      'HO':  'Juneyao Air',
+  '5J':  'Cebu Pacific',            'TW':  'Trinity Airways',
+  'SB':  'Aircalin',                'GS':  'Tianjin Airlines',
+  'VJ':  'VietJet Air',             'HX':  'Hong Kong Airlines',
+  '3U':  'Sichuan Airlines',        'D7':  'AirAsia X',
+  'JD':  'Capital Airlines',        'IZ':  'Arkia',
+  'KP':  'ASKY Airlines',           'HF':  'Air Côte d’Ivoire',
+  'OM':  'MIAT Mongolian Airlines', '4O':  'Air Montenegro',
+  'FB':  'Bulgaria Air',            'VF':  'AJet',
+  'WP':  'WASAYA',                  '0N':  'NORTH STAR AIR',
   // Regionals/internationals the map lacked — without an entry here the
   // prefix-first branding can't recognize the code and a feed row marked
   // AC carrying 3H802 branded as Air Canada.

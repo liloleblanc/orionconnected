@@ -1659,6 +1659,21 @@ function adbToCard(f,dir,aheadMs){
   else if(_w==='ontime')state='ontime';
   else if(_w==='expected')state='expected';
   const timeliness=state==='delayed'?'delayed':state==='early'?'early':'onTime';
+  // The name the feed gave the airline of the card, wherever the feed put it
+  // (_adbFeedAirline on the boards, fids-core.js): the name at the top of the
+  // row, else the one on the leg at this airport, but only when the code on that
+  // leg is the carrier of the flight number. The feed of an airport names the
+  // airline on the legs alone, so a carrier missing from AIRLINE printed its
+  // bare code here (BBQ, WAL and G6 at Miami). A leg that carries another code
+  // is the operating carrier (the Operated by line below), not this airline.
+  // The leg is asked only for a carrier AIRLINE does not name: the cards of
+  // the carriers it names print exactly as they did.
+  let _alName=String((f.airline&&f.airline.name)||'').trim();
+  if(!_alName&&!AIRLINE[code]&&here.airline){
+    const _own=(num.match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(?=\d)/)||[])[0]||'';
+    const _li=String(here.airline.iata||'').trim().toUpperCase(), _lc=String(here.airline.icao||'').trim().toUpperCase();
+    if(_own&&(_own===_li||_own===_lc))_alName=String(here.airline.name||'').trim();
+  }
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
@@ -1679,7 +1694,7 @@ function adbToCard(f,dir,aheadMs){
     // changes), and the feed's own airline name (a fuller spelling of the
     // board's short one: 'Turkish Airlines' for TURKISH)
     schedDate:((String((here.scheduledTime&&here.scheduledTime.local)||'').match(/\d{4}-\d{2}-\d{2}/))||[])[0]||'',
-    alName:(f.airline&&f.airline.name)||'',
+    alName:_alName,
     estTime:adbHHMM(here.runwayTime&&here.runwayTime.local)||adbHHMM(here.predictedTime&&here.predictedTime.local)||adbHHMM(here.revisedTime&&here.revisedTime.local)||adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     otherTime:otherTime, durMin:durMin,
     gate:(here.gate&&here.gate!=='-')?here.gate:'',
