@@ -9485,6 +9485,8 @@ const AIRLINE_BRAND = {
   // orange.
   '8P': { bg1:'#0C3473', bg2:'#071F45', bg3:'#12468F', accent:'#0C3473', name:'Pacific Coastal' },
   'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
+  // v24150 — Air Inuit, by its brand guide: Charcoal Black #231F20 and Slate Charcoal #4A4A4D, Air Inuit Orange #F1471D.
+  '3H': { bg1:'#231F20', bg2:'#161314', bg3:'#4A4A4D', accent:'#F1471D', name:'Air Inuit' },
   // v24150 — Arajet: the purples of its emblem (the airline sets its white logo on this purple), the
   // yellow of the macaw for the accent.
   'DM': { bg1:'#520E77', bg2:'#370850', bg3:'#733C90', accent:'#FEC404', name:'Arajet' },
@@ -11642,6 +11644,7 @@ const AIRLINE_ACCENT = {
   // Icelandair: '#001B71' with no judgement needed at all — the tile ground,
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
+  '3H':'#231F20',   // v24150 — Air Inuit: the charcoal of its brand guide for the frames and banners of the gate, so its orange stays the one focal colour (the guide gives it a tenth of the surface)
   'DM':'#520E77',   // v24150 — Arajet: the purple of its emblem and of its own site, the ground of its tile
   'YN':'#272626',   // v24150 — Air Creebec: the near black of the supplied palette (the ink of its emblem). The peach of the palette is too light for the white figures of the gate tab and the white glyphs of the rail
   'FI':'#001B71',
@@ -14978,6 +14981,33 @@ window._orbKeepsColour = function (code) {
   return !!(c && window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[c]);
 };
 
+// v24150 — THE BRANDS ON A GROUND OF THEIR OWN, defined once as the file loads. The table was made
+// inside the builder of the top-left orb, so every orb drawn before that builder first ran (the
+// Your Aircraft orb, a boarding shelf) found it empty and drew the brand another way.
+window._BADGE_TILE_BRANDS = {
+  // v23396 — MX removed. This forced the rail to draw breeze-check.svg
+  // on #001633 while the arrival card drew Breeze's real mark, so the
+  // two orbs disagreed on the one carrier called out by name.
+  // Dropping it lets both fall through to _airlineOrbEmblem — MXY.svg,
+  // Breeze's own finished roundel (v23390) — and MX is in the colour
+  // list, so it full-bleeds the orb exactly as the rail intends.
+  // v22989
+  // : Transat had NO emblem registered
+  // at all, so its orb fell through to the generic plane. TSC.svg is
+  // the official Transat tile - #00B3F0 ground, white star - which is
+  // exactly the specified colourway.
+  'TS': { bg: '#00B3F0', icon: '/logos/airline-tiles/TSC-star-white.svg' },
+  // v24150 — Arajet: the macaw alone, in its own colours, on white. Its purple tile made
+  // a gate that was purple from edge to edge.
+  'DM': { bg: '#FFFFFF', icon: '/logos/airlines/asian-other/arajet-emblem.svg' },
+  // v24150 — Air Inuit, by its brand guide (Studio FEED): white is the canvas, charcoal the
+  // structure and its orange the one focal colour. The orb is white with its corporate
+  // wordmark on it as the guide sets it on white: the syllabics in orange over Air Inuit in
+  // charcoal. It was its orange tile, beside five discs of a second red.
+  '3H':  { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit.svg' },
+  'AIE': { bg: '#FFFFFF', icon: '/logos/airlines/canadian-regional/airinuit.svg' }
+};
+
 // v23396 — ONE ORB RECIPE, USED BY BOTH ORBS.
 //
 // and 'its a copy paste from the original which
@@ -15065,17 +15095,28 @@ window._gateOrbParts = function (code) {
   // are the half that moves, and they move TO white.
   var LIGHT_DISC = { 'AA':1,'2L':1,'4Y':1,'BA':1,'CJ':1,'ET':1,'HA':1,'LY':1,'PR':1,'WN':1 };
   var DISC = (!isTile && LIGHT_DISC[c]) ? '#F2F4F7' : ACC;
-  var badge = isTile
-    ? BASE + 'background:transparent;padding:0;'
-    : BASE + 'background:' + DISC + ';padding:clamp(6px,0.9vh,13px);';
-  var imgStyle = isTile
-    ? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;'
-    : keepsColour || onWhite
-      ? 'width:100%;height:100%;object-fit:contain;display:block;'
-      : 'width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);';
+  // v24150 — A BRAND WITH A GROUND OF ITS OWN IS A DISC OF THAT GROUND. The table of such brands
+  // (BADGE_TILE_BRANDS: a ground and a mark drawn to sit on it) was read here only as a flag,
+  // which made the badge clear and let the mark fill it: Transat drew a star on nothing beside
+  // five discs of its blue. The disc is now painted in the ground the table gives and the mark
+  // is set inside it, whole and in its own colours, as the five glyph badges beside it are.
+  var onOwnGround = !!(tb && tb.bg);
+  var badge = onOwnGround
+    ? BASE + 'background:' + tb.bg + ';padding:clamp(6px,0.9vh,13px);'
+    : isTile
+      ? BASE + 'background:transparent;padding:0;'
+      : BASE + 'background:' + DISC + ';padding:clamp(6px,0.9vh,13px);';
+  var imgStyle = onOwnGround
+    ? 'width:100%;height:100%;object-fit:contain;display:block;'
+    : isTile
+      ? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;'
+      : keepsColour || onWhite
+        ? 'width:100%;height:100%;object-fit:contain;display:block;'
+        : 'width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);';
+  var fills = isTile && !onOwnGround;
   return { path: path, badge: badge, imgStyle: imgStyle,
-           native: isTile, keepsColour: keepsColour,
-           nativeCls: isTile ? ' v2-fi-emblem-native' : '' };
+           native: fills, keepsColour: keepsColour,
+           nativeCls: fills ? ' v2-fi-emblem-native' : '' };
 };
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // v23354 — REGIONALS THAT ALREADY WEAR A MAINLINE'S NAME. These codes
@@ -15227,6 +15268,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // spoke tip, invisible at orb size and well inside the tolerance the
         // other emblems were accepted under.
         '4N':  '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North
+        '3H':  '/logos/airline-tiles/AIE.svg',               // v24150 — Air Inuit: its tile named here, where it was reached only after a missing file
         'DM':  '/logos/airline-tiles/DWI.svg',               // v24150 — Arajet: its tile, as supplied (the orb printed the letters DM before)
         'YN':  '/logos/airline-tiles/CRQ.svg',               // v24150 — Air Creebec: its tile, as supplied art on its own ground; the emblem is black and is never inked white
         // US majors — symbol-only emblems (rendered white on the accent badge)
@@ -15391,6 +15433,10 @@ function _orbEmblemCarrier(code) {
 function _airlineOrbEmblem(code) {
   var c = _orbEmblemCarrier(code);
   if (!c) return '';
+  // v24150 — a brand on a ground of its own: every orb draws the mark drawn for that ground, so
+  // the Your Aircraft orb and a boarding shelf cannot draw it another way than the top-left orb.
+  var tb = window._BADGE_TILE_BRANDS && window._BADGE_TILE_BRANDS[c];
+  if (tb && tb.bg && tb.icon) return tb.icon;
   if (GATE_TOP_ROUND_EMBLEM_FILES[c]) return GATE_TOP_ROUND_EMBLEM_FILES[c];
   if (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[c]) return window._AIRLINE_EMBLEM_FILES[c];
   return /^[A-Z0-9]{2}$/.test(c) ? '/logos/symbols/airlines/' + c + '.svg' : '';
@@ -15900,20 +15946,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // emblem is an opaque square tile render as a CIRCLE in the tile's
         // own background colour with just the mark padded inside — the mark
         // file is derived from the airline's own tile art, never redrawn.
-        var BADGE_TILE_BRANDS = window._BADGE_TILE_BRANDS = {
-          // v23396 — MX removed. This forced the rail to draw breeze-check.svg
-          // on #001633 while the arrival card drew Breeze's real mark, so the
-          // two orbs disagreed on the one carrier called out by name.
-          // Dropping it lets both fall through to _airlineOrbEmblem — MXY.svg,
-          // Breeze's own finished roundel (v23390) — and MX is in the colour
-          // list, so it full-bleeds the orb exactly as the rail intends.
-          // v22989
-          // : Transat had NO emblem registered
-          // at all, so its orb fell through to the generic plane. TSC.svg is
-          // the official Transat tile - #00B3F0 ground, white star - which is
-          // exactly the specified colourway.
-          'TS': { bg: '#00B3F0', icon: '/logos/airline-tiles/TSC-star-white.svg' }
-        };
+        var BADGE_TILE_BRANDS = window._BADGE_TILE_BRANDS;
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
         // DL removed:
         // native=true meant transparent badge + full-bleed art, which was
@@ -15973,6 +16006,9 @@ function _buildV2AircraftCol(ctx, vars) {
         // out as a red pill. Colour and layout
         // are separate questions again: only real tiles fill the disc.
         var _railParts = window._gateOrbParts(code);
+        // v24150 — and the file the recipe names: the line above that picks the path reads the
+        // table of grounds before the table is made, so it never found a brand in it.
+        if (_tileBrand && _tileBrand.icon) path = _tileBrand.icon;
         var BADGE = _railParts.badge;
         if (!path) {
           var GENERIC_PLANE = '<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#fff;"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
@@ -16070,10 +16106,20 @@ function _buildV2AircraftCol(ctx, vars) {
       // v23438 — Flair flips: GREEN ground, BLACK markings
       // The
       // Flight orb is still the plain green ball the spec calls for.
+      // v24150 — every badge of a rail is the colour of its first one. Air Creebec: the peach of
+      // its tile, with glyphs in its near black (white does not read on the peach). Arajet: white,
+      // as its emblem orb, with glyphs in its purple.
       var _railBadgeBg = (_alCodeEmb === 'F8') ? '#7AFF94'
         : (_alCodeEmb === 'MX') ? '#001633'
+        : (_alCodeEmb === 'YN') ? '#FDD49A'
+        : (_alCodeEmb === 'DM') ? '#FFFFFF'
+        : (_alCodeEmb === '3H' || _alCodeEmb === 'AIE') ? '#FFFFFF'
         : 'var(--airline-accent,' + _railAccFb + ')';
-      var _railBadgeInk = (_alCodeEmb === 'F8') ? '#141414' : '#fff';
+      var _railBadgeInk = (_alCodeEmb === 'F8') ? '#141414'
+        : (_alCodeEmb === 'YN') ? '#272626'
+        : (_alCodeEmb === 'DM') ? '#520E77'
+        : (_alCodeEmb === '3H' || _alCodeEmb === 'AIE') ? '#F1471D'
+        : '#fff';
       var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _railBadgeBg + ';color:' + _railBadgeInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
@@ -16788,6 +16834,10 @@ function _buildV2MapCol(ctx, vars) {
         // art first (so this orb matches the one up top), then the emblem
         // set, then the carrier-symbol library.
         _mcOrbSrc = _airlineOrbEmblem(_orbCode_mcOrb) || _airlineOrbEmblem(_mcCode);
+        // v24150 — a brand on a ground of its own (BADGE_TILE_BRANDS) shows the mark drawn for
+        // that ground, as the top-left orb does: Air Inuit on white drew its whitened tile here.
+        var _mcTb = window._BADGE_TILE_BRANDS && window._BADGE_TILE_BRANDS[_orbEmblemCarrier(_orbCode_mcOrb)];
+        if (_mcTb && _mcTb.bg && _mcTb.icon) _mcOrbSrc = _mcTb.icon;
       } catch (e) {}
       // v23261 — the colour-emblem exemption keys on whose ART actually landed
       // in the orb, not on the resolved operator: a UA Express leg resolves
@@ -17960,6 +18010,10 @@ function _buildV2MapCol(ctx, vars) {
           // keeps the marketing carrier's emblem the builder already baked.
             // v23312 — through the shared resolver, like every other orb.
             var _orbFix = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_opOrb) : '') || '';
+          // v24150 — an operator on a ground of its own keeps the orb the shared recipe drew:
+          // its mark, its ground, in its own colours (see _gateOrbParts).
+          var _opTb = window._BADGE_TILE_BRANDS && window._BADGE_TILE_BRANDS[_opOrb];
+          if (_opTb && _opTb.bg) _orbFix = '';
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
           // v23222 — a bitmap roundel swapped in here must ALSO drop any
           // invert the builder baked for the original vector art (Rouge's
@@ -17985,8 +18039,8 @@ function _buildV2MapCol(ctx, vars) {
           // the bottom-right card alone. The colours are the brands'
           // own script inks: jazz.svg paints #ce3728, rouge.svg #A21C37.
           var _CARD_ORB_GROUND = { 'QK': '#ce3728', 'RV': '#A21C37', 'ROU': '#A21C37' };
-          var _opAcc = _CARD_ORB_GROUND[_opOrb]
-            || (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opOrb] && AIRLINE_BRAND[_opOrb].accent) || '';
+          var _opAcc = (_opTb && _opTb.bg) ? '' : (_CARD_ORB_GROUND[_opOrb]
+            || (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opOrb] && AIRLINE_BRAND[_opOrb].accent) || '');
           if (_opAcc) {
             _inboundCard = _inboundCard.replace(/(v2-fi-orbwrap" style="[^"]*?)background:var\(--airline-accent,[^)]*\)/, '$1background:' + _opAcc);
             var _oh = _opAcc.replace('#',''); if (_oh.length === 3) _oh = _oh.replace(/./g, function (c) { return c + c; });
@@ -33763,6 +33817,7 @@ const IATA_TO_EMBLEM = {
   // banner never reads this map. 8P and SP have no such entry, so for them this
   // also restores the emblem beside the banner wordmark.
   '4N': '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North — blue mark on its orange ground
+  'DM': '/logos/airlines/asian-other/arajet-emblem.svg', // v24150 — Arajet: the macaw alone beside its lettering in the gate header (the rows keep its tile)
   // v23770 — Canadian North, the same hole: the orb had this tile since
   // v23738 and the row never did. Both forms, as the feeds send either.
   '5T': '/logos/airline-tiles/CanadianNorth-Emblem.svg',   // Canadian North — white mark on its red ground
@@ -61381,6 +61436,8 @@ var WELCOME_CARD_EMBLEM = {
   // Breeze: its blue check, the mark inside MXY.svg without the navy square
   // that sinks into the card.
   'MX':  '/logos/airlines/us-major/breeze-check.svg',
+  // Arajet: the macaw alone, with its white head, on the purple of the card (its tile is that purple).
+  'DM':  '/logos/airlines/asian-other/arajet-emblem-light.svg',
   // the airline's own coloured tile
   'PB':  '/logos/airline-tiles/PB.svg',   // PAL's gold tile; the orb's PB-arrow is the arrow drawn white for its gold badge
   'F9':  '/logos/airline-tiles/FFT.svg',  // Frontier green

@@ -26,7 +26,9 @@ window.AIRLINE_BRAND_COLORS = {
   'PB': { r1:'#183677', r1Text:'#FFFFFF', r2:'#3E57BE', body:'#EAF0F8', bodyText:'#183677' }, // PAL Airlines (official navy bar + PAL blue, gold icons)
   'SP': { r1:'#183677', r1Text:'#FFFFFF', r2:'#3E57BE', body:'#EAF0F8', bodyText:'#183677' }, // PAL Airlines (alt code)
   'BQ': { r1:'#1B2A4A', r1Text:'#FFFFFF', r2:'#E1241B', body:'#EDEFF4', bodyText:'#1B2A4A' }, // Pascan
-  '3H': { r1:'#1A1A1A', r1Text:'#FFFFFF', r2:'#E4002B', body:'#F2EEEC', bodyText:'#0F172A' }, // Air Inuit
+  // Air Inuit — its brand guide: Charcoal Black #231F20 for the bar, Air Inuit Orange #F1471D only for the gate
+  // and clock tabs (wayfinding, the focal tenth the guide allows), Slate Charcoal #4A4A4D, Arctic Mist #E6E7E8.
+  '3H': { r1:'#231F20', r1Text:'#FFFFFF', r2:'#F1471D', r3:'#4A4A4D', body:'#E6E7E8', bodyText:'#231F20' }, // Air Inuit
   'MO': { r1:'#10243F', r1Text:'#FFFFFF', r2:'#C8102E', body:'#EAEFF5', bodyText:'#10243F' }, // Calm Air
   'YP': { r1:'#1C3050', r1Text:'#FFFFFF', r2:'#1B75BC', body:'#EBEFF4', bodyText:'#1C3050' }, // Perimeter
   'JV': { r1:'#910028', r1Text:'#FFFFFF', r2:'#C8102E', body:'#F6ECEE', bodyText:'#910028' }, // Bearskin Airlines (crimson #910028 sampled from logo)

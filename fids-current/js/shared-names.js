@@ -1179,7 +1179,7 @@ window.FIDS_SHARED_TILE = {
 window.FIDS_SHARED_EMBLEM = {
   "LY":"/logos/symbols/airlines/LY.svg", "2L":"/logos/airlines/european/helvetic-emblem-tile.svg", "CS":"/logos/symbols/airlines/CS.png", "EW":"/logos/symbols/airlines/EW.svg",
   "A3":"/logos/symbols/airlines/A3.svg", "PC":"/logos/symbols/airlines/PC.svg", "JV":"/logos/airlines/canadian-regional/bearskin-emblem.svg", "WT":"/logos/airlines/canadian-regional/wasaya-emblem.svg",
-  "NSA":"/logos/airlines/canadian-regional/north-star-emblem.svg", "4N":"/logos/airline-tiles/AirNorth-Emblem.svg", "5T":"/logos/airline-tiles/CanadianNorth-Emblem.svg", "MPE":"/logos/airline-tiles/CanadianNorth-Emblem.svg",
+  "NSA":"/logos/airlines/canadian-regional/north-star-emblem.svg", "4N":"/logos/airline-tiles/AirNorth-Emblem.svg", "DM":"/logos/airlines/asian-other/arajet-emblem.svg", "5T":"/logos/airline-tiles/CanadianNorth-Emblem.svg", "MPE":"/logos/airline-tiles/CanadianNorth-Emblem.svg",
   "8P":"/logos/airline-tiles/PCO.svg", "SP":"/logos/airline-tiles/PB.svg", "QTR":"/logos/airline-tiles/QTR.svg", "PCO":"/logos/airline-tiles/PCO.svg",
   "9X":"/logos/airlines/us-major/mokulele-emblem.svg", "4Y":"/logos/airlines/european/discover-airlines-emblem.svg", "F9":"/logos/airlines/us-major/frontier-emblem.svg", "XP":"/logos/airlines/us-major/avelo-emblem.svg",
   "LL":"/logos/airlines/european/level-emblem.svg", "MX":"/logos/airlines/us-major/breeze-airways-emblem.png", "VB":"/logos/airlines/asian-other/vivaaerobus-emblem.webp", "BW":"/logos/airlines/asian-other/caribbean-emblem.png",
