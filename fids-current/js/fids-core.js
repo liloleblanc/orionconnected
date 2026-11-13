@@ -10207,7 +10207,9 @@ var WATERMARK_OVERRIDE = {
   'RV': '/logos/airlines/canadian/Air_Canada_Logo_2017_stacked_variant.svg',
   // US majors — combination logos with white wordmarks
   'AA': '/logos/airlines/us-major/american-airlines-white.svg',
-  'DL': '/logos/airlines/us-major/delta-on-black.svg',
+  // Delta: its white lettering, as Alaska, JetBlue and Southwest below. It was delta-on-black.svg,
+  // a widget drawn beside the word DELTA typed in a font of the system: not lettering.
+  'DL': '/logos/airlines/us-major/delta-wordmark-light.svg',
   'UA': '/logos/airlines/us-major/united.svg',
   'AS': '/logos/airlines/us-major/alaska-airlines-wordmark-light.svg',
   'B6': '/logos/airlines/us-major/jetblue-wordmark-light.svg?v=22648',
@@ -10238,10 +10240,8 @@ var WATERMARK_OVERRIDE = {
   'AF': '/logos/airlines/european/air-france-wordmark-light.svg',
   'KL': '/logos/airlines/european/klm-wordmark-light.svg',
   'LH': '/logos/airlines/european/Lufthansa_Logo_2018.svg',            // Lufthansa is yellow + blue, only invisible on the very dark sky tones
-  'LO': '/logos/airlines/european/lot-wordmark-light.svg',
-  'VS': '/logos/airlines/european/virgin-atlantic-wordmark-light.svg',
-  'TP': '/logos/airlines/european/tap-portugal-wordmark-light.svg',
-  'AT': '/logos/airlines/alliances/royal-air-maroc-wordmark-light.svg'
+  'VS': '/logos/airlines/european/virgin-atlantic-wordmark-light.svg'
+  // LOT, TAP and Royal Air Maroc had rows here: their files are typed text, not lettering
 };
 function airlineWatermarkUrl(code) {
   return WATERMARK_OVERRIDE[code] || carrierLogoUrl(code);
@@ -15168,23 +15168,16 @@ window._GATE_ORB_LOOKS = {
   // magenta down to its blue, and the badges take the magenta end, the value of the accent table.
   'W6': { art: '/logos/airline-tiles/WZZ.svg', ground: '#D3007F' },
   'W4': { art: '/logos/airline-tiles/WZZ.svg', ground: '#D3007F' },
-  // tiles on disk that the row tables do not name
-  'KC': { art: '/logos/airline-tiles/KZR.svg' },
-  'HY': { art: '/logos/airline-tiles/UZB.svg', ink: '#254A88' },
-  'KX': { art: '/logos/airline-tiles/CAY.svg' },
-  'PK': { art: '/logos/airline-tiles/PIA.svg' },
-  'PX': { art: '/logos/airline-tiles/ANG.svg' },
-  'S4': { art: '/logos/airline-tiles/RZO.svg', ink: '#002857' },
-  'TN': { art: '/logos/airline-tiles/TGZ.svg' },
-  'UL': { art: '/logos/airline-tiles/ALK.svg' },
-  'XQ': { art: '/logos/airline-tiles/SXS.svg' },
-  'AH': { art: '/logos/airline-tiles/DAH.svg' },
-  'KU': { art: '/logos/airline-tiles/KAC.svg' },
-  'XY': { art: '/logos/airline-tiles/KNE.svg' },
-  'OM': { art: '/logos/airline-tiles/MGL.svg' },
-  'ZL': { art: '/logos/airline-tiles/RXA.svg' },
-  '5J': { art: '/logos/airline-tiles/CEB.svg' },
-  'GS': { art: '/logos/airline-tiles/CSZ.svg' },
+  // A FINISHED TILE ON A LIGHT GROUND, among the tiles the row table names since: the ink is
+  // the dark colour of the brand (Uzbekistan green on yellow reads too low, so its blue; the
+  // navy of the Azores bird; the navy of the Norse ribbon). The rows that pointed sixteen codes
+  // at a tile are gone: the row table names those tiles now, and the orb reads it. Two of them
+  // named the tile of another airline, read off the list of the folder: Air Tahiti Nui drew the
+  // swirl of Georgian Airways (TGZ) and Tianjin the bird of Shenzhen Airlines (CSZ).
+  'HY': { ink: '#254A88' },
+  'S4': { ink: '#002857' },
+  'N0': { ink: '#20417C' },
+  'Z0': { ink: '#20417C' },
   // THE SYMBOL KEPT WHERE A TILE ALSO EXISTS: a mark of one colour, white on the disc of the
   // brand (Lufthansa and TAROM line marks, Aeromexico, Aerolineas), or a mark in its own colours
   // on the disc of the brand (Virgin Atlantic). Their tiles have a ground that is not the colour
@@ -15194,6 +15187,11 @@ window._GATE_ORB_LOOKS = {
   'AM': { art: '/logos/symbols/airlines/AM.svg' },
   'AR': { art: '/logos/symbols/airlines/AR.svg' },
   'VS': { art: '/logos/symbols/airlines/VS.svg' },
+  // Fiji, Xiamen and Air Europa the same way: a mark of one colour, white on the disc of the
+  // brand, as their gates drew it before the row table named a tile for each.
+  'FJ': { art: '/logos/symbols/airlines/FJ.svg' },
+  'MF': { art: '/logos/symbols/airlines/MF.svg' },
+  'UX': { art: '/logos/symbols/airlines/UX.svg' },
   // Qantas: its mark of one colour, white on the red it publishes (#DF0000, the accent table).
   // Its tile paints the gradient of its tail, two reds eleven apart, so no flat disc equals it.
   'QF': { art: '/logos/symbols/airlines/QF-mono.svg' },
@@ -15839,6 +15837,13 @@ function _orbEmblemCarrier(code) {
   if (c === 'P6') return 'BQ';
   if (c === 'Q6') return 'Y4';
   if (c === 'JJ' || c === '4C') return 'LA';
+  // North Star Air and Wasaya under the second code a feed files them by: their art, their
+  // colours and their look are filed under NSA and WT. (World Atlantic under WAL folds as a
+  // designator, by its row in the callsign table.)
+  if (c === '0N') return 'NSA';
+  if (c === 'WP') return 'WT';
+  // Chair under its second code: the fin and the look are filed under CS
+  if (c === 'GM') return 'CS';
   return c;
 }
 // THE TWO-LETTER CODE OF A THREE-LETTER DESIGNATOR, from the one place both tables give it: the
@@ -15919,9 +15924,89 @@ function _gateOrbArt(code) {
   }
   return _airlineOrbEmblem(c);
 }
+// THE MARK OF THE BOARDING STRIP AND OF THE COUNTDOWN.
+// The white strip under the boarding sign and the countdown before it each draw the mark of the
+// carrier beside their words. Each looked in a table of its own, then in the emblem table of the
+// orbs, then guessed a symbol by code, and gave up there: 78 carriers seen on the boards had a
+// bare white band and a countdown with no mark while their row tile sat on disk. Both end on the
+// row tile now. window._gateMarkPick answers for both: src is the first file to ask, tile the
+// row tile to fall to when that file is not on disk (the emblem of the row where the carrier
+// has no tile), guess says src is the symbol guessed by code. A code with no art filed under
+// itself is asked as the carrier it folds to (_orbEmblemCarrier). window._gateMarkMiss is the
+// handler of the image: it swaps in the tile, and remembers a guess that missed so the next
+// build of the gate asks the tile at once. A placeholder tile is drawn only for the code it
+// letters, as on the orbs.
+// _BW_EMBLEM, the strip: it is white, so a mark drawn white for the disc of an orb is swapped
+// for the colour cut of the same mark. United, SWISS and WestJet were here; Porter (a white p),
+// PAL (a white arrow), Delta with Endeavor (a white widget) and LATAM (a spark that is 60 per
+// cent white) drew white on white.
+window._BW_EMBLEM = {
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
+  'LX': '/logos/airline-tiles/SWR.svg',
+  'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'PD': '/logos/airlines/canadian/porter/porter-p-navy.svg',
+  'PB': '/logos/airline-tiles/PB.svg',
+  'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+  'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+  '9E': '/logos/airlines/us-major/delta-emblem-colour.svg',
+  'LA': '/logos/symbols/airlines/LA.svg',
+  'JJ': '/logos/symbols/airlines/LA.svg',
+  '4C': '/logos/symbols/airlines/LA.svg'
+};
+// _CD_MARK, the countdown: it stands on the colour of the carrier, so a symbol drawn in that
+// same colour is swapped for the row tile, a square of that colour with the mark in white or in
+// a second colour. Delta and WestJet were here. Lufthansa, Brussels, LOT, Icelandair and
+// Emirates drew a symbol of exactly the colour under it; Jetstar, Copa, Singapore, JAL, Cathay,
+// Korean, Aeromexico and Air Serbia one within a few steps of it; Hawaiian and Iberia lost all
+// but a flower and a yellow stroke.
+window._CD_MARK = {
+  'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+  'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+  'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'LH': '/logos/airline-tiles/DLH.svg', 'SN': '/logos/airline-tiles/BEL.svg', 'LO': '/logos/airline-tiles/LOT.svg',
+  'FI': '/logos/airline-tiles/ICE.svg', 'EK': '/logos/airline-tiles/UAE.svg', 'SQ': '/logos/airline-tiles/SIA.svg',
+  'JL': '/logos/airline-tiles/JAL.svg', 'CX': '/logos/airline-tiles/CPA.svg', 'KE': '/logos/airline-tiles/KAL.svg',
+  'JQ': '/logos/airline-tiles/JST.svg', 'CM': '/logos/airline-tiles/CMP.svg', 'AM': '/logos/airline-tiles/AMX.svg',
+  'JU': '/logos/airline-tiles/ASL.svg', 'HA': '/logos/airline-tiles/HAL.svg', 'IB': '/logos/airline-tiles/IBE.svg'
+};
+window._GATE_MARK_MISSED = {};
+window._gateMarkPick = function (table, code) {
+  var c = String(code == null ? '' : code).trim().toUpperCase();
+  // the carrier whose art a code wears where it has none filed under itself (the one fold)
+  var f = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(c) : c;
+  var files = window._AIRLINE_EMBLEM_FILES || {};
+  var named = (table && table[c]) || files[c] || (f !== c && ((table && table[f]) || files[f])) || '';
+  var tiles = (typeof IATA_TO_TILE_ICAO !== 'undefined') ? IATA_TO_TILE_ICAO : {};
+  var icao = tiles[c] || tiles[f] || '';
+  if (icao && window._orbTileLettersOther && window._orbTileLettersOther(icao, c)) icao = '';
+  // the row tile, else the emblem the row draws where the carrier has no tile
+  var rowEmb = (typeof IATA_TO_EMBLEM !== 'undefined') ? (IATA_TO_EMBLEM[c] || IATA_TO_EMBLEM[f] || '') : '';
+  var tile = icao ? '/logos/airline-tiles/' + icao + '.svg' : rowEmb;
+  var guess = (!named && /^[A-Z0-9]{2}$/.test(c)) ? '/logos/symbols/airlines/' + c + '.svg' : '';
+  if (guess && window._GATE_MARK_MISSED[guess]) guess = '';
+  var src = named || guess || tile;
+  return { src: src, tile: (tile && tile.split('?')[0] !== src.split('?')[0]) ? tile : '', guess: !!guess };
+};
+window._gateMarkAttrs = function (pick) {
+  return (pick.tile ? ' data-tile="' + pick.tile + '"' : '') + (pick.guess ? ' data-guess="1"' : '')
+    + ' onerror="window._gateMarkMiss(this)"';
+};
+window._gateMarkMiss = function (img) {
+  try {
+    var tile = img.getAttribute('data-tile') || '';
+    if (img.getAttribute('data-guess') === '1') {
+      window._GATE_MARK_MISSED[String(img.getAttribute('src') || '').split('?')[0]] = 1;
+      img.removeAttribute('data-guess');
+    }
+    if (tile) { img.removeAttribute('data-tile'); img.src = tile; }
+    else img.style.display = 'none';
+  } catch (e) {}
+};
 // A lettered placeholder tile is drawn only for the code it letters (see _gateOrbParts). True
-// where the tile letters a code that is not this one; a designator counts as its carrier, so
-// the TUI tile is the tile of X3.
+// where the tile letters a code that is not this one; a designator counts as its carrier.
+// (No code draws the square that types TUI any more: TUI fly draws the smile, with TUI Airways.)
 window._orbTileLettersOther = function (tile, code) {
   var l = (window._ORB_TILE_LETTERS && window._ORB_TILE_LETTERS[tile]) || '';
   if (!l) return false;
@@ -19742,43 +19827,10 @@ function uxgGateHtml(ctx) {
     } catch (e) { return ''; }
   }
   function _boardWelcomeStripHtml(_stripState) {
-    // WHITE-path emblems vanish on the white strip (United was missing its
-    // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
-    // Swap those brands for a colored cut here, like the SkyTeam invert below.
-    // v23050 — WestJet's COLOUR leaf on the welcome strip
-    // This override is the
-    // WELCOME surface only, so the colour mark lands here while the round rail
-    // ORB keeps the mono white leaf it has always had (it was white and
-    // stays white). The strip's ground is white, so the leaf's navy and
-    // teal both read on it.
-    var _BW_EMBLEM = {
-      'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // v23394 one United face everywhere
-      // v23400 — SWISS's spinning boarding mark had a BLACK cross.
-      // symbols/airlines/LX.svg paints ONLY #e60005: the cross is a CUT-OUT,
-      // so it shows whatever sits behind it. That is right in the orb, where
-      // the art is whitened to a white tail and the cross reads as the orb's
-      // own red — but this strip spins over the dark boarding takeover, so the
-      // hole showed the near-black ground. SWR.svg is the same mark with a
-      // SOLID white cross (#e60005 + #ffffff), which reads on dark, on white
-      // and on navy alike. Verified on all three grounds before shipping.
-      // Scoped to this strip only — the orb keeps the cut-out version.
-      'LX': '/logos/airline-tiles/SWR.svg',
-      'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-      'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
-    };
-    // v22939 — AIRLINE_EMBLEM_FILES is a hand-kept list and most of the world
-    // is not on it. Korean Air is not, so on the YYZ/C35 boarding screen
-    // this strip rendered as a bare white band: no rondelle, just the two
-    // words floating in a white slab under a fully textured banner.
-    // /logos/symbols/airlines/ already ships 73 carrier symbols (KE among
-    // them, the taegeuk in #051766 — which reads correctly on white). Fall
-    // through to it before giving up. The onerror below already hides a miss,
-    // so a carrier with no symbol lands exactly where it does today.
-    var _bwSym = /^[A-Z0-9]{2}$/.test(String(airlineCode || '').toUpperCase())
-      ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
-    var _bwEmb = _BW_EMBLEM[airlineCode]
-      || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode])
-      || _bwSym || null;
+    // The mark beside the words: window._gateMarkPick with the table of this strip
+    // (window._BW_EMBLEM, beside _gateOrbArt), which ends on the row tile.
+    var _bwPick = window._gateMarkPick(window._BW_EMBLEM, airlineCode);
+    var _bwEmb = _bwPick.src || null;
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
     // on the white strip beside 'Welcome | Bienvenue', as in the reference design.
@@ -19922,7 +19974,7 @@ function uxgGateHtml(ctx) {
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
         + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24154" width="212" height="161" alt="">';
     } else {
-      _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
+      _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
     }
@@ -19955,28 +20007,15 @@ function uxgGateHtml(ctx) {
   // swings. Measured, not assumed — every frame's corners sample (253,253,253).
   function _cdRondelleHtml() {
     try {
-      var _sym = /^[A-Z0-9]{2}$/.test(String(airlineCode || '').toUpperCase())
-        ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
-      // v23130 — Delta's countdown centrepiece was the WHITE widget while
-      // every other Delta surface switched to the red colour widget
-      // yesterday
-      // Same colour art as the map slot uses.
-      var _CD_MARK = {
-        'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        // v23198 — WestJet's countdown centrepiece was the dark navy leaf on
-        // the takeover's dark ground: near-invisible on the render. Same fix
-        // Delta got in v23130 — the COLOUR art the map slot already uses.
-        'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
-      };
-      var _src = _CD_MARK[String(airlineCode || '').toUpperCase()]
-        || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
+      // The mark: window._gateMarkPick with the table of the countdown
+      // (window._CD_MARK, beside _gateOrbArt), which ends on the row tile.
+      var _cdPick = window._gateMarkPick(window._CD_MARK, airlineCode);
+      var _src = _cdPick.src;
       var _mot = (typeof GATE_RONDELLE_MOTION !== 'undefined' && GATE_RONDELLE_MOTION[airlineCode]) || null;
       if (!_src && !_mot) return '';
       var _cdSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
       var _still = _src
-        ? '<img class="g8-cd-mark-still"' + _cdSpin + ' src="' + _src + '" alt="" onerror="this.style.display=\'none\'">'
+        ? '<img class="g8-cd-mark-still"' + _cdSpin + ' src="' + _src + '" alt=""' + window._gateMarkAttrs(_cdPick) + '>'
         : '';
       if (!_mot) return '<span class="g8-cd-mark">' + _still + '</span>';
       return '<span class="g8-cd-mark has-motion">'
@@ -22128,8 +22167,8 @@ function uxgGateHtml(ctx) {
   // 76px cap (tuned against the old padded canvases) would inflate the
   // previously padded marks up to 2x here. Scale by each file's OLD ink
   // fraction so the banner keeps the exact letter size it had before.
-  var _BANNER_INK_COMP = { 'republic':0.48, 'lot':0.52, 'piedmont':0.54,
-    'mokulele':0.58, 'royal-air-maroc':0.57, 'latam':0.62, 'tap-portugal':0.65,
+  var _BANNER_INK_COMP = { 'piedmont':0.54,
+    'mokulele':0.58, 'latam':0.62,
     'air-france':0.76, 'southwest':0.77, 'vivaaerobus':0.80,
     'virgin-atlantic':0.80, 'boliviana':0.79, 'jetblue':0.87, 'flair':0.75,
     'volaris':0.85 };
@@ -33287,6 +33326,13 @@ const CALLSIGN_TO_IATA = {
   // aviation with no IATA designator, and EV was ExpressJet, which stopped
   // flying in August 2022. Neither belongs on a passenger board.
   'AWI':'ZW', 'CPZ':'CP',
+  // World Atlantic: Miami files it under its designator. Its art, its colour and its
+  // lettering are filed under WL, and this row is what points the gate there.
+  'WAL':'WL',
+  // LATAM Brasil and TUI fly under their designators. The tile table read backwards gave these
+  // two while each code drew a square with its letters typed on it, filed under the designator;
+  // they draw the LATAM tile and the TUI smile now, filed under LAN and TOM.
+  'TAM':'JJ', 'TUI':'X3',
   // ── Hawaii inter-island regional ──
   // v23769 - SOU rekeyed to FDY. Southern Airways Express flies under FDY
   // (telephony FRIENDLY); SOU was the original Southern Airways, gone since its
@@ -33546,7 +33592,7 @@ const AIRLINE_NAME = {
   // Fond-du-Lac printed its name.
   '4T':'RISE AIR',    'LR':'LACSA',        'BM':'BMI',
   'BG':'BIMAN',        'DO':'SKY HIGH',
-  'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
+  'LY':'EL AL',       'TN':'AIR TAHITI NUI', 'NF':'AIR VANUATU',  'FJ':'FIJI',
   'PX':'AIR NIUGINI', 'KO':'ACE CARGO',
 };
 
@@ -33657,7 +33703,7 @@ const IATA_TO_TILE_ICAO = {
   // and easyJet ran at Edinburgh with no orange square while Ryanair, KLM and
   // Air France beside it each had one.
   'EZY':'EZY',
-  'DE':'CFG',  'X3':'TUI',  'A3':'AEE',  'OU':'CTN',  'JU':'ASL',
+  'DE':'CFG',  'A3':'AEE',  'OU':'CTN',  'JU':'ASL',
   // TO and HV are one brand — Transavia France and Transavia Netherlands — and
   // the board was drawing them as two. HV had the real 't' roundel on #00D66C;
   // TO had an Arial 'TO' on #1A9E5F, a green deltaE 30.6 away, which is far
@@ -33679,12 +33725,33 @@ const IATA_TO_TILE_ICAO = {
   'SG':'SEJ',  'VN':'HVN',  'QZ':'AXM',  'AK':'AXM',  'TR':'TGW',
   'JQ':'JST',  'VA':'VOZ',
   // Latin America
-  'JJ':'TAM',  'AD':'AZU',  'LA':'LAN',  'AR':'ARG',  'CM':'CMP',
+  // LATAM Brasil draws the LATAM tile, as LATAM does: its own was a square with JJ typed on it.
+  // It stands after LA so that the designator LAN reads back as LA (_designatorIata).
+  'LA':'LAN',  'JJ':'LAN',  'AD':'AZU',  'AR':'ARG',  'CM':'CMP',
   'AV':'AVA',  'AM':'AMX',  'Y4':'VOI',  'G3':'GLO',  'UP':'BHS',
   'DM':'DWI',   // v24150 — Arajet: the supplied tile, its macaw on the purple of the airline
   // Bolivia — Boliviana de Aviación. IATA OB → ICAO BOV (BOV.svg).
   // NOTE: LZB.svg is Bulgaria Air, NOT BoA — do not map OB to LZB.
-  'OB':'BOV'
+  'OB':'BOV',
+  // TILES THAT SAT ON DISK UNNAMED. Each file was opened and looked at, and is named here only
+  // where the picture is plainly the mark of the airline: the list of the folder (MANIFEST.csv)
+  // labelled a dozen of them for another airline, and was corrected from the pictures. Until
+  // these rows the codes drew a monogram on the rows and the belt, and a generic plane on the
+  // gate. Where two codes share a tile the code the tile is filed under stands first, so the
+  // designator reads back as that code (_designatorIata).
+  'JX':'SJX',  'N0':'NBT',  'Z0':'NBT',  'KC':'KZR',  'KM':'KMM',  'HY':'UZB',  'UX':'AEA',  'MF':'CXA',
+  'S4':'RZO',  'XQ':'SXS',  'UL':'ALK',  'PK':'PIA',  'KX':'CAY',  'TN':'THT',  'FJ':'FJI',  'PX':'ANG',
+  'OM':'MGL',  'ZL':'RXA',  '5J':'CEB',  'GS':'GCR',  'HX':'CRK',  'JD':'CBJ',  'SB':'ACI',
+  'AH':'DAH',  'KU':'KAC',  'XY':'KNE',  'ZH':'CSZ',  'QS':'TVS',  'NO':'NOS',  'H2':'SKU',  'BG':'BBC',
+  'FB':'LZB',  'XC':'CAI',  'XR':'CAI',
+  // TUI: the smile, filed under TUI Airways. TUI fly drew a square with TUI typed on it.
+  'BY':'TOM',  'TB':'TOM',  'X3':'TOM',
+  // BA CityFlyer draws the British Airways tile beside the British Airways lettering it already
+  // has: lettering and an empty mark slot before. (Spirit has a tile on disk too, NKS.svg, and
+  // no row here: its flights are kept off every board, and a code kept off keeps no pointer.)
+  'CJ':'BAW',
+  // North Star Air and Wasaya under the second code a feed files them by: the tiles of NSA and WT.
+  '0N':'NSA',  'WP':'WSG'
   // Q6 (Volaris CR) → Y4 and 4C (LATAM Colombia) → LA aliased via PARENT map.
   // VB (VivaAerobus) → VIV.svg tile not in pack yet, falls through to wordmark.
 };
@@ -33891,7 +33958,7 @@ const IATA_TO_WORDMARK = {
   'SP': 'pal-airlines',
   // v23349 — three finished light/dark pairs were sitting unmapped on disk, so
   // Spirit, American and TAP fell through to the single-file map or to text.
-  'NK': 'spirit',   'TP': 'tap-portugal',   'AA2': 'american-airlines',
+  'NK': 'spirit',   'AA2': 'american-airlines',
   // Canadian carriers
   'AC':'air-canada',  'WS':'westjet',  'PD':'porter',  'TS':'transat',
   'PB':'pal-airlines',
@@ -33925,18 +33992,18 @@ const IATA_TO_WORDMARK = {
   'SY':'sun-country',      // Sun Country — official lockup split: sun mark → SCX tile, lettering here (Jul 2026)
   'OO':'skywest-airlines',
   'PT':'piedmont',         // Piedmont Airlines (IATA: PT, ICAO: PDT — flies as American Eagle)
-  'YX':'republic',         // Republic Airways (IATA: YX, ICAO: RPA — flies as American Eagle, Delta Connection, United Express)
   // YV (Mesa Airlines) and 9E (Endeavor Air) have no wordmark files yet — falls back to text
   '9X':'mokulele',  // Mokulele / Southern Airways Express
   // Europe
   'BA':'british-airways',  'AF':'air-france',  'KL':'klm',
   'FI':'icelandair',       // official Commons artwork, lettering split from the tail-fin (Jul 2026)
   'BW':'caribbean',        // official raster brand art (no public vector) — served via WORDMARK_RASTER
-  'LO':'lot',              // LOT Polish Airlines
   'VS':'virgin-atlantic',  // Virgin Atlantic
-  // 'TP' wordmark REMOVED — all three tap-portugal-wordmark-*.svg files
-  // use live <text> that overflows its canvas ('TAP Air Portuga', clipped
-  // mid-word on every machine without the font). Tile + text name instead.
+  // TAP, LOT, ROYAL AIR MAROC AND REPUBLIC HAVE NO ROW HERE. Their files
+  // (tap-portugal-, lot-, royal-air-maroc- and republic-wordmark-*.svg) are not
+  // lettering: each holds one line of text set in a font the display may not
+  // have, the name typed inside a picture. The row types the name in the font
+  // of the board beside the tile instead. They come back when outlines exist.
   '4Y':'discover-airlines', // Discover Airlines (Lufthansa Group, IATA 4Y / ICAO OCN, ex-Eurowings Discover)
   // North America other
   'MX':'breeze-airways', // Breeze Airways (David Neeleman's airline, ICAO MXY)
@@ -33951,8 +34018,13 @@ const IATA_TO_WORDMARK = {
   'Y4':'volaris',        // Volaris (Mexico, parent for Q6 Volaris Costa Rica via PARENT map)
   'VB':'vivaaerobus',    // VivaAerobus (Mexico ULCC, ICAO VIV, based in Monterrey)
   'G3':'gol',            // GOL Linhas Aéreas (Brazil)
-  // North Africa
-  'AT':'royal-air-maroc',  // Royal Air Maroc
+  // LETTERING THAT SAT ON DISK UNNAMED (logos/airlines/split): words only, a white cut
+  // for dark grounds and the colours of the airline for light ones. Each pair was looked at.
+  'SN':'brussels-airlines',  'EI':'aer-lingus',  'TK':'turkish-airlines',  'WY':'oman-air',
+  'SQ':'singapore-airlines', 'CX':'cathay',      '6E':'indigo',            'KE':'korean-air',
+  'UX':'air-europa',         'AH':'air-algerie', 'KU':'kuwait-airways',
+  // North Star Air, Wasaya and World Atlantic under the second code a feed files them by
+  '0N':'north-star',  'WP':'wasaya',  'WAL':'world-atlantic',
 };
 
 
@@ -34053,6 +34125,18 @@ function wordmarkVariant() {
 // path constructions (wordmarkSrc, etc.) can resolve full paths at runtime.
 // Files not in this map are assumed to live at /logos/ root.
 const LOGO_SUBFOLDER = {
+  // the lettering of logos/airlines/split, named in IATA_TO_WORDMARK
+  'brussels-airlines-wordmark-light.svg':'airlines/split', 'brussels-airlines-wordmark-dark.svg':'airlines/split',
+  'aer-lingus-wordmark-light.svg':'airlines/split', 'aer-lingus-wordmark-dark.svg':'airlines/split',
+  'turkish-airlines-wordmark-light.svg':'airlines/split', 'turkish-airlines-wordmark-dark.svg':'airlines/split',
+  'oman-air-wordmark-light.svg':'airlines/split', 'oman-air-wordmark-dark.svg':'airlines/split',
+  'singapore-airlines-wordmark-light.svg':'airlines/split', 'singapore-airlines-wordmark-dark.svg':'airlines/split',
+  'cathay-wordmark-light.svg':'airlines/split', 'cathay-wordmark-dark.svg':'airlines/split',
+  'indigo-wordmark-light.svg':'airlines/split', 'indigo-wordmark-dark.svg':'airlines/split',
+  'korean-air-wordmark-light.svg':'airlines/split', 'korean-air-wordmark-dark.svg':'airlines/split',
+  'air-europa-wordmark-light.svg':'airlines/split', 'air-europa-wordmark-dark.svg':'airlines/split',
+  'air-algerie-wordmark-light.svg':'airlines/split', 'air-algerie-wordmark-dark.svg':'airlines/split',
+  'kuwait-airways-wordmark-light.svg':'airlines/split', 'kuwait-airways-wordmark-dark.svg':'airlines/split',
   'chair-wordmark-light.svg':'airlines/european', 'chair-wordmark-dark.svg':'airlines/european',
   'edelweiss-wordmark-light.svg':'airlines/european', 'edelweiss-wordmark-dark.svg':'airlines/european',
   'easyjet-wordmark-light.svg':'airlines/european', 'easyjet-wordmark-dark.svg':'airlines/european',
@@ -34189,7 +34273,6 @@ function logoPath(basename) {
 // purpose: black IS its lettering (and never green, per policy).
 const COLOR_WORDMARKS = {
   'avelo': '/logos/airlines/us-major/avelo-wordmark-color.svg',   // Avelo purple #502E91
-  'royal-air-maroc': '/logos/airlines/alliances/royal-air-maroc-wordmark-color.svg',
   'aeromexico': '/logos/airlines/asian-other/aeromexico-wordmark-color.svg',
   'avianca': '/logos/airlines/asian-other/avianca-wordmark-color.svg',
   'boliviana': '/logos/airlines/asian-other/boliviana-wordmark-color.svg',
@@ -34214,8 +34297,6 @@ const COLOR_WORDMARKS = {
   'discover-airlines': '/logos/airlines/european/discover-airlines-wordmark-color.svg',
   'icelandair': '/logos/airlines/european/icelandair-wordmark-color.svg',
   'klm': '/logos/airlines/european/klm-wordmark-color.svg',
-  'lot': '/logos/airlines/european/lot-wordmark-color.svg',
-  'tap-portugal': '/logos/airlines/european/tap-portugal-wordmark-color.svg',
   'virgin-atlantic': '/logos/airlines/european/virgin-atlantic-wordmark-color.svg',
   'alaska-airlines': '/logos/airlines/us-major/alaska-airlines-wordmark-color.svg',
   'american-airlines': '/logos/airlines/us-major/american-airlines-wordmark-color.svg',
@@ -34424,6 +34505,7 @@ const IATA_TO_EMBLEM = {
   // one out in a rail of red orbs.
   '2L': '/logos/airlines/european/helvetic-emblem-tile.svg',
   'CS': '/logos/symbols/airlines/CS.png',   // Chair tail, red fin + Swiss cross
+  'GM': '/logos/symbols/airlines/CS.png',   // Chair under its second code: lettering and an empty mark slot before
   'EW': '/logos/symbols/airlines/EW.svg',   // Eurowings wings on their grey ground
   'A3': '/logos/symbols/airlines/A3.svg',   // Aegean birds on their navy ground
   'PC': '/logos/symbols/airlines/PC.svg',   // Pegasus P on its red ground
@@ -62183,6 +62265,7 @@ var WELCOME_CARD_EMBLEM = {
   // the airline's own coloured tile
   'PB':  '/logos/airline-tiles/PB.svg',   // PAL's gold tile; the orb's PB-arrow is the arrow drawn white for its gold badge
   'F9':  '/logos/airline-tiles/FFT.svg',  // Frontier green
+  'PC':  '/logos/airline-tiles/PGT.svg',  // Pegasus: its tile, which the card rounds; its red symbol sat as a hard square
   'HA':  '/logos/airline-tiles/HAL.svg'   // Hawaiian purple
 };
 
@@ -62250,7 +62333,6 @@ var WELCOME_CARD_LETTER_HEIGHT = {
   'WT':  0.55,  // Wasaya under its syllabics, with a descender
   'AZ':  0.58,  // ITA over AIRWAYS
   'WL':  0.58,  // World Atlantic over Airlines
-  'TP':  0.62,  // TAP Air Portugal, with a descender
   'VB':  0.65,  // viva, with the mark above its a
   '2L':  0.67,  // helvetic over airways
   'QR':  0.67,  // QATAR over AIRWAYS
@@ -62271,7 +62353,9 @@ var _FB_WM_ICAO = {
   'PVL':'PB', 'JZA':'QK', 'AAL':'AA', 'DAL':'DL', 'UAL':'UA', 'SWA':'WN',
   'JBU':'B6', 'FLE':'F8', 'DLH':'LH', 'AFR':'AF', 'UAE':'EK', 'OCN':'4Y',
   // v23994 — the other non-IATA keys the emblem table already carries
-  'AC1':'AC', 'ROU':'RV', 'BAW':'BA', 'QTR':'QR', 'PCO':'8P', 'SWR':'LX'
+  'AC1':'AC', 'ROU':'RV', 'BAW':'BA', 'QTR':'QR', 'PCO':'8P', 'SWR':'LX',
+  // a second code a feed files the airline by: the card reads the rows of the first
+  '0N':'NSA', 'WP':'WT', 'WAL':'WL'
 };
 
 /** A code's own entry in one of the card's tables, else its IATA twin's (an ICAO-coded feed). */
