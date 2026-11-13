@@ -439,11 +439,19 @@ test('the name: as the table writes it; with its state, province or country wher
   assert.deepEqual(rios.filter((c) => !SPANISH.has(ccOf[c])).map((c) => PLACES.NAME[c]), ['Del Rio', 'Del Rio', 'Santa Isabel do Rio Negro', 'Rio de Janeiro']);
 });
 
+// the words of a piece of markup: its tags taken out, again until none is left
+// (one pass can leave a tag that two halves join into)
+function bareText(html) {
+  let s = String(html), was;
+  do { was = s; s = s.replace(/<[^>]*>/g, ''); } while (s !== was);
+  return s;
+}
+
 // ── 3. the reported gate ───────────────────────────────────────────────────
 
 test('the reported gate: a flight to Río Hato prints Río Hato, with its accent, as its destination, on its map label, on its row, on the belt sign and in the app; without the table it printed Rih and To RIH', () => {
   const B = withTable(), B0 = without();
-  const note = (X, leg) => { X._gateIata = 'YUL'; return String(X._gateMapNote({ leg, other: 'RIH', at: Date.UTC(2026, 10, 13, 20, 5) })).replace(/<[^>]*>/g, ''); };
+  const note = (X, leg) => { X._gateIata = 'YUL'; return bareText(X._gateMapNote({ leg, other: 'RIH', at: Date.UTC(2026, 10, 13, 20, 5) })); };
   for (const words of ['', 'RIH', 'Rio Hato', 'Scarlett Martinez Intl']) {
     const ap = { iata: 'RIH' }; if (words) ap.name = words;
     const f = mapped(B, [ap])[0], a = mapped(B, [ap], false)[0];

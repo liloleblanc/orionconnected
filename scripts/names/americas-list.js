@@ -156,7 +156,8 @@ function markdown(rows) {
   const n = (x) => x.toLocaleString('en-US');
   const added = rows.filter((r) => r.added).length;
   const countries = [...new Set(rows.map((r) => r.country))];
-  const cell = (s) => String(s).replace(/\|/g, '\\|');
+  // a backslash first, so a bar escaped below stays the only thing escaped
+  const cell = (s) => String(s).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
   const out = [
     '# ' + n(rows.length) + ' airports of the Americas have a name on the boards; ' + n(added) + ' of them were added by the change that wrote this list',
     '',
