@@ -10297,7 +10297,7 @@ html body:is([data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airli
    inside a slate grey frame. The tricolore streaks were too busy behind text on a screen;
    plate-af-tricolore.jpg stays on disk as the one-line rollback. */
 html body:is([data-gate-airline="AF"],[data-gate-airline="AFR"],[data-gate-airline*="AIR FRANCE"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24149');
+  --plate-tex: url('/textures/plate-af-navy-lines.jpg?v=24152');
   --plate-base: #051039;
   --plate-blend: normal;
   --plate-ink: #ffffff;
@@ -19210,7 +19210,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 0 auto !important;
   width: clamp(44px, 6.4vh, 80px) !important;
   height: clamp(44px, 6.4vh, 80px) !important;
-  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24149');
+  background-image: url('/logos/airlines/us-major/united-100-globe.webp?v=24152');
   background-size: 5500% 100%;
   background-repeat: no-repeat;
   background-position: 0% 0%;
@@ -19334,6 +19334,23 @@ html body[data-gate-airline="F8"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-gate-airline="FLE"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
   color: #1B2430 !important;
   -webkit-text-fill-color: #1B2430 !important;
+}
+
+/* v24150 — the code chip on the discs of carriers whose discs are light: Air Creebec (the peach of its
+   tile; its glyphs are in its near black), Arajet (white, its glyphs in its purple) and Air Inuit (white,
+   by its brand guide; the code in its charcoal, as the guide sets type). White letters read on none. */
+html body[data-gate-airline="YN"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
+  color: #272626 !important;
+  -webkit-text-fill-color: #272626 !important;
+}
+html body[data-gate-airline="DM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
+  color: #520E77 !important;
+  -webkit-text-fill-color: #520E77 !important;
+}
+html body[data-gate-airline="3H"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent),
+html body[data-gate-airline="AIE"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
+  color: #231F20 !important;
+  -webkit-text-fill-color: #231F20 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -22979,7 +22996,7 @@ html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not
    ═════════════════════════════════════════════════════════════════════════════════════════ */
 html body.gate-acsky:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
   right: 0 !important; width: 100% !important;
-  background: url('/textures/gate-sky-model.jpg?v=24149') 0 0 / 100% 100% no-repeat !important;
+  background: url('/textures/gate-sky-model.jpg?v=24152') 0 0 / 100% 100% no-repeat !important;
   animation: none !important;
   transform-origin: 50% 0 !important; transform: scale(-1.2, 1.2) !important;
 }

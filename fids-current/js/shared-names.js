@@ -1091,6 +1091,14 @@ window.FIDS_SHARED_WORDMARK = {
 "/logos/airlines/asian-other/copa-wordmark-dark.svg",
 "/logos/airlines/asian-other/copa-wordmark-light.svg"
 ],
+"DM": [
+"/logos/airlines/asian-other/arajet-wordmark-dark.svg",
+"/logos/airlines/asian-other/arajet-wordmark-light.svg"
+],
+"YN": [
+"/logos/airlines/canadian-regional/air-creebec-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/air-creebec-wordmark-light.svg"
+],
 "UP": [
 "/logos/airlines/asian-other/bahamasair-wordmark-dark.svg",
 "/logos/airlines/asian-other/bahamasair-wordmark-light.svg"
@@ -1140,7 +1148,7 @@ window.FIDS_SHARED_WORDMARK = {
 // maps above; tests/companion-app.test.js fails the moment either drifts from
 // fids-core.js. The app knew eleven carriers' art before this.
 window.FIDS_SHARED_TILE = {
-  "BF":"/logos/airline-tiles/FBU.svg", "3H":"/logos/airline-tiles/AIE.svg", "AC":"/logos/airline-tiles/ACA-black.svg", "WS":"/logos/airline-tiles/WJA.svg",
+  "BF":"/logos/airline-tiles/FBU.svg", "3H":"/logos/airline-tiles/AIE.svg", "YN":"/logos/airline-tiles/CRQ.svg", "AC":"/logos/airline-tiles/ACA-black.svg", "WS":"/logos/airline-tiles/WJA.svg",
   "TS":"/logos/airline-tiles/TSC.svg", "PD":"/logos/airline-tiles/PTR.svg", "F8":"/logos/airline-tiles/FLE.svg", "QK":"/logos/airline-tiles/JZA.svg",
   "PB":"/logos/airline-tiles/PB.svg", "MO":"/logos/airline-tiles/CAV.svg", "YP":"/logos/airline-tiles/PCM.svg", "BQ":"/logos/airline-tiles/PSC.svg",
   "JV":"/logos/airline-tiles/BLS.svg", "WT":"/logos/airline-tiles/WSG.svg", "NSA":"/logos/airline-tiles/NSA.svg", "UA":"/logos/airline-tiles/UAL-sq.svg",
@@ -1169,13 +1177,13 @@ window.FIDS_SHARED_TILE = {
   "MH":"/logos/airline-tiles/MAS.svg", "PR":"/logos/airline-tiles/PAL.svg", "SG":"/logos/airline-tiles/SEJ.svg", "VN":"/logos/airline-tiles/HVN.svg",
   "QZ":"/logos/airline-tiles/AXM.svg", "AK":"/logos/airline-tiles/AXM.svg", "TR":"/logos/airline-tiles/TGW.svg", "JQ":"/logos/airline-tiles/JST.svg",
   "VA":"/logos/airline-tiles/VOZ.svg", "JJ":"/logos/airline-tiles/TAM.svg", "AD":"/logos/airline-tiles/AZU.svg", "LA":"/logos/airline-tiles/LAN.svg",
-  "AR":"/logos/airline-tiles/ARG.svg", "CM":"/logos/airline-tiles/CMP.svg", "AV":"/logos/airline-tiles/AVA.svg", "AM":"/logos/airline-tiles/AMX.svg",
+  "AR":"/logos/airline-tiles/ARG.svg", "CM":"/logos/airline-tiles/CMP.svg", "DM":"/logos/airline-tiles/DWI.svg", "AV":"/logos/airline-tiles/AVA.svg", "AM":"/logos/airline-tiles/AMX.svg",
   "Y4":"/logos/airline-tiles/VOI.svg", "G3":"/logos/airline-tiles/GLO.svg", "UP":"/logos/airline-tiles/BHS.svg", "OB":"/logos/airline-tiles/BOV.svg"
 };
 window.FIDS_SHARED_EMBLEM = {
   "LY":"/logos/symbols/airlines/LY.svg", "2L":"/logos/airlines/european/helvetic-emblem-tile.svg", "CS":"/logos/symbols/airlines/CS.png", "EW":"/logos/symbols/airlines/EW.svg",
   "A3":"/logos/symbols/airlines/A3.svg", "PC":"/logos/symbols/airlines/PC.svg", "JV":"/logos/airlines/canadian-regional/bearskin-emblem.svg", "WT":"/logos/airlines/canadian-regional/wasaya-emblem.svg",
-  "NSA":"/logos/airlines/canadian-regional/north-star-emblem.svg", "4N":"/logos/airline-tiles/AirNorth-Emblem.svg", "5T":"/logos/airline-tiles/CanadianNorth-Emblem.svg", "MPE":"/logos/airline-tiles/CanadianNorth-Emblem.svg",
+  "NSA":"/logos/airlines/canadian-regional/north-star-emblem.svg", "4N":"/logos/airline-tiles/AirNorth-Emblem.svg", "DM":"/logos/airlines/asian-other/arajet-emblem.svg", "5T":"/logos/airline-tiles/CanadianNorth-Emblem.svg", "MPE":"/logos/airline-tiles/CanadianNorth-Emblem.svg",
   "8P":"/logos/airline-tiles/PCO.svg", "SP":"/logos/airline-tiles/PB.svg", "QTR":"/logos/airline-tiles/QTR.svg", "PCO":"/logos/airline-tiles/PCO.svg",
   "9X":"/logos/airlines/us-major/mokulele-emblem.svg", "4Y":"/logos/airlines/european/discover-airlines-emblem.svg", "F9":"/logos/airlines/us-major/frontier-emblem.svg", "XP":"/logos/airlines/us-major/avelo-emblem.svg",
   "LL":"/logos/airlines/european/level-emblem.svg", "MX":"/logos/airlines/us-major/breeze-airways-emblem.png", "VB":"/logos/airlines/asian-other/vivaaerobus-emblem.webp", "BW":"/logos/airlines/asian-other/caribbean-emblem.png",
