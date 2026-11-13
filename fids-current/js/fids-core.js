@@ -6977,7 +6977,7 @@ function _gateRebuildAbsorb() {
 // under several marketing numbers; keep the row whose marketing carrier
 // matches the OPERATING carrier's family, and rebrand a lone foreign-
 // codeshare row to the operator's mainline.
-var _CS_REGIONAL_FAM = { 'QK':'AC','RV':'AC','ACEX':'AC','ZX':'AC','9M':'AC','PB':'AC','WR':'WS','P3':'PD','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','OO':'UA','YV':'UA','G7':'UA','YX':'UA','QX':'AS' };
+var _CS_REGIONAL_FAM = { 'QK':'AC','RV':'AC','ACEX':'AC','ZX':'AC','PB':'AC','WR':'WS','P3':'PD','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','OO':'UA','YV':'UA','G7':'UA','YX':'UA','QX':'AS' };
 function _gateCsPick(list) {
   function fam(c) { return _CS_REGIONAL_FAM[c] || c || ''; }
   function foreign(f) { return !!(f._opCode && fam(f._opCode) !== fam(f.airline)); }
@@ -15537,7 +15537,6 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'DI':  '/logos/airline-tiles/NAX.svg',                  // Norwegian (DI) → Norwegian
         'PT':  '/logos/airlines/us-major/american-flight-symbol.svg',  // Piedmont → American
         'ZX':  '/logos/airlines/canadian/AC.TO.svg',   // Air Georgian → Air Canada
-        '9M':  '/logos/airlines/canadian/AC.TO.svg',   // Central Mountain Air → Air Canada
         '9L':  '/logos/airlines/canadian/AC.TO.svg',   // Colgan → Air Canada
         '9E':  '/logos/airlines/us-major/delta-widget-monochrome-white.svg',  // Endeavor → Delta
         'MQ':  '/logos/airlines/us-major/american-flight-symbol.svg',         // Envoy → American
@@ -15815,7 +15814,8 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
 // accent and its Your Aircraft orb all ask this function, so a regional that prints its partner
 // wears the look of the partner everywhere, never the art of one and the colours of another.
 // Endeavor is Delta Connection: its row drew a navy rail over a red Your Aircraft orb. Air
-// Georgian, Central Mountain Air and Colgan printed AIR CANADA over a blue gate. BA CityFlyer
+// Georgian and Colgan printed AIR CANADA over a blue gate. (Central Mountain Air stood with
+// them and left: it is an airline of its own, see PARENT.) BA CityFlyer
 // wears the speedmarque, Ryanair UK the harp, PAL under its second code is PAL, Pascan under P6
 // is Pascan, Volaris Costa Rica wears the Volaris star, LATAM Brasil and Colombia print LATAM.
 // Republic is not here: it flies for three mainlines, so its orb falls to the gate carrier. A three-letter
@@ -15830,7 +15830,7 @@ function _orbEmblemCarrier(code) {
   if (c === 'MQ' || c === 'OH' || c === 'PT') return 'AA';
   if (c === 'QX') return 'AS';
   if (c === '9E' || c === 'EDV') return 'DL';
-  if (c === 'ZX' || c === '9M' || c === '9L') return 'AC';
+  if (c === 'ZX' || c === '9L') return 'AC';
   if (c === 'CJ' || c === 'CFE') return 'BA';
   if (c === 'RK' || c === 'RUK') return 'FR';
   if (c === 'SP') return 'PB';
@@ -19727,7 +19727,7 @@ function uxgGateHtml(ctx) {
     'HR':'star','NZ':'star','CM':'star','EW':'star',
     // AC family inherits Star (RJ is NOT AC family — it's Royal Jordanian,
     // oneworld, listed below; it was wrongly swept in with the feeders)
-    'QK':'star','RV':'star','ZX':'star','9M':'star','9L':'star',
+    'QK':'star','RV':'star','ZX':'star','9L':'star',
     // Oneworld members
     'AA':'oneworld','BA':'oneworld','CX':'oneworld','QF':'oneworld','JL':'oneworld',
     'IB':'oneworld','AY':'oneworld','QR':'oneworld','RJ':'oneworld','S7':'oneworld',
@@ -33369,7 +33369,7 @@ const _AIRLINE_NAME_OVERRIDE = {
   'TS':'Air Transat','PB':'PAL Airlines','MO':'Calm Air',
   'YP':'Perimeter','3H':'Air Inuit','BQ':'Pascan','7F':'First Air',
   'QK':'Air Canada','RV':'Air Canada','ZX':'Air Canada',
-  '9M':'Air Canada','9L':'Air Canada','SP':'PAL Airlines',
+  '9M':'Central Mountain Air','9L':'Air Canada','SP':'PAL Airlines',
   // RJ is Royal Jordanian (oneworld) — it was wrongly listed as an AC
   // feeder, which painted an Amman flight in Air Canada branding.
   'RJ':'Royal Jordanian',
@@ -33542,7 +33542,8 @@ const AIRLINE_NAME = {
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
   'JV':'BEARSKIN',    'WT':'WASAYA',      'NSA':'NORTH STAR AIR',
   'QK':'AIR CANADA',  'RV':'AIR CANADA',  'ZX':'AIR CANADA',
-  '9M':'AIR CANADA',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
+  // Central Mountain Air under its own name: see the note on PARENT
+  '9M':'CENTRAL MOUNTAIN AIR',  '9L':'AIR CANADA',  'SP':'PAL AIRLINES',
   'RJ':'ROYAL JORDANIAN',
   '9X':'MOKULELE',    'W8':'CARGOJET',
   'UA':'UNITED',      'DL':'DELTA',       'AA':'AMERICAN',    'WN':'SOUTHWEST',
@@ -33953,7 +33954,7 @@ const IATA_TO_WORDMARK = {
   // v23355 — LATAM's two subsidiaries print LATAM and fell through to a plain
   // text name; latam-wordmark-light/dark are words-only and already on disk.
   '4C': 'latam',       'JJ': 'latam',
-  'ZX': 'air-canada',  '9M': 'air-canada',  '9L': 'air-canada',
+  'ZX': 'air-canada',  '9L': 'air-canada',
   '9E': 'delta',       'MQ': 'american',    'OH': 'american',
   'SP': 'pal-airlines',
   // v23349 — three finished light/dark pairs were sitting unmapped on disk, so
@@ -40199,7 +40200,16 @@ const CALLSIGN_ICAO = {
 
 // RJ removed from the AC family — Royal Jordanian is its own carrier; the
 // bogus mapping dressed an Amman flight in Air Canada branding.
-const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
+// CENTRAL MOUNTAIN AIR IS NOT IN THIS TABLE. It was folded into Air Canada here, so its own
+// flights at Prince George printed AIR CANADA with the Air Canada mark and a rewritten
+// number (9M708 as AC708): a flight no Air Canada passenger holds a ticket for, under a number
+// its own passengers do not have. Central Mountain Air is a privately owned airline that sells
+// and flies its own flights under 9M (it interlines with Air Canada and WestJet, and Air
+// Canada puts its code on some of its flights, as a marketing carrier does on any partner).
+// A row coded 9M keeps its number and prints Central Mountain Air; it has no art on disk, so
+// it draws the monogram. The orb fold, the gate family, the alliance table, the lettering
+// table and the app copy (REGIONAL_FAM) left with it.
+const PARENT = {'QK':'AC','ZX':'AC','9L':'AC','RV':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
 // The phone app keeps the same flights off (app.html adbToCard). It cannot
 // load this script, so the codes below and _NON_PASSENGER_PATTERNS in mapADB
 // are copied to js/shared-names.js (FIDS_SHARED_OFF_BOARD and
@@ -51168,7 +51178,7 @@ function _gateLegGone(row) {
 // AC numbers; Encore WS; Porter's two codes. The same table the gate-match
 // has always used, lifted so the evidence checks read it too.
 function _gateFamily(code) {
-  var F = { QK: 'AC', RV: 'AC', ZX: 'AC', '9M': 'AC', AC: 'AC', WR: 'WS', WS: 'WS',
+  var F = { QK: 'AC', RV: 'AC', ZX: 'AC', AC: 'AC', WR: 'WS', WS: 'WS',
             PD: 'PD', P3: 'PD', PB: 'PB', SP: 'PB', TS: 'TS', F8: 'F8' };
   var c = String(code || '').toUpperCase();
   return F[c] || c;

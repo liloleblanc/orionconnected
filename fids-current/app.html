@@ -1040,8 +1040,9 @@ const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL
 // the screen, held equal by tests/airline-names-every-row.test.js. It lacked
 // Q6, 4C and PTR, so a Volaris Costa Rica flight read Volaris on the board
 // and Volaris Costa Rica on the phone, and a number filed PTR printed PTR.
-const REGIONAL_FAM={QK:'AC',RV:'AC',ZX:'AC','9M':'AC','9L':'AC',SP:'PB',MQ:'AA',OH:'AA',PT:'AA','9E':'DL',PTR:'PD',Q6:'Y4','4C':'LA'};
-const REGIONAL_OP={QK:'Jazz',RV:'Air Canada Rouge',ZX:'Air Georgian','9M':'Central Mountain Air','9L':'Provincial',SP:'PAL Airlines',MQ:'Envoy Air',OH:'PSA Airlines',PT:'Piedmont Airlines','9E':'Endeavor Air'};
+// 9M is not in it: Central Mountain Air is an airline of its own, and left PARENT.
+const REGIONAL_FAM={QK:'AC',RV:'AC',ZX:'AC','9L':'AC',SP:'PB',MQ:'AA',OH:'AA',PT:'AA','9E':'DL',PTR:'PD',Q6:'Y4','4C':'LA'};
+const REGIONAL_OP={QK:'Jazz',RV:'Air Canada Rouge',ZX:'Air Georgian','9L':'Provincial',SP:'PAL Airlines',MQ:'Envoy Air',OH:'PSA Airlines',PT:'Piedmont Airlines','9E':'Endeavor Air'};
 // Wordmark ink for LIGHT theme — each airline's brand colour. Air Canada's
 // wordmark is black by design, so it stays black. (Dark theme uses the white
 // wordmark file instead.)
