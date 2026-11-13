@@ -54,10 +54,16 @@ test('the day cap comes from the month, so no period spends past its credits', a
   assert.equal(w.fr24EffectiveCap(1900, Date.UTC(2027, 0, 10, 12), {}), 950);
 });
 
-test('the config sets the monthly credits', () => {
+test('the config sets the monthly credits: the Essential plan since 2026-11-12', async () => {
   const cfg = require('node:fs').readFileSync(path.join(__dirname, '..', 'workers', 'wrangler.fids-proxy.jsonc'), 'utf8');
-  assert.match(cfg, /"FR24_MONTHLY_CREDITS": "60000",/);
-  assert.match(cfg, /"FR24_MONTHLY_CREDITS_2027": "30000",/);
+  assert.match(cfg, /"FR24_MONTHLY_CREDITS": "333000",/);
+  assert.match(cfg, /"FR24_MONTHLY_CREDITS_2027": "333000",/);
+  // the day's cap that follows: twice what the boards need, and a whole period inside the plan
+  const w = await worker();
+  const ESSENTIAL = { FR24_MONTHLY_CREDITS: '333000', FR24_MONTHLY_CREDITS_2027: '333000', FR24_DAILY_BUDGET: '1900' };
+  assert.equal(w.fr24EffectiveCap(1900, Date.UTC(2026, 10, 14, 12), ESSENTIAL), 10545);
+  assert.equal(w.fr24EffectiveCap(1900, Date.UTC(2027, 0, 10, 12), ESSENTIAL), Math.floor(333000 * 0.95 / 31));
+  assert.ok(10545 * 30 * 1.03 <= 333000, 'a 30-day period at the cap, with the counter 3% short, fits the plan');
 });
 
 test('while Flightradar24 holds back, OpenSky asks every 30 seconds', async () => {
