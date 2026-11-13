@@ -2980,10 +2980,13 @@ html body:not(#_):not(#_):not(#_) .v2-fi-icon-wrap .ac-ico {
    to var(--airline-accent) (blue #0033A1 for F9). Green ONLY the round icon
    badges here — NOT --airline-accent itself, so the blue boarding panels and
  final-call strip already approved stay blue. Covers both the idle
-   (v2-fi) and boarding-takeover (g8-bir) info rows, glyphs + airline emblem. */
+   (v2-fi) and boarding-takeover (g8-bir) info rows, glyphs + airline emblem.
+   The green is Frontier Green #0F6744, the value of its brand guide, of its tile and of the accent
+   table. It was #00854D here, a green of no Frontier palette (17 apart): one colour on the gate, but
+   not the one every other table gives. White on it reads at 6.9 to 1. */
 html body[data-gate-airline="F9"] .g8-bir-badge,
 html body[data-gate-airline="F9"] .v2-fi-icon-badge,
-html body[data-gate-airline="F9"] .v2-fi-emblem-wrap { background: #00854D !important; }
+html body[data-gate-airline="F9"] .v2-fi-emblem-wrap { background: #0F6744 !important; }
 /* Glyphs take the BADGE's ink — font.css paints .ac-ico white directly,
  which stomped per-airline badge inks (Flair's green). */
 html .g8-bir-badge .ac-ico,
@@ -19351,6 +19354,17 @@ html body[data-gate-airline="3H"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-gate-airline="AIE"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
   color: #231F20 !important;
   -webkit-text-fill-color: #231F20 !important;
+}
+
+/* THE CODE CHIP TAKES THE INK OF ITS COLUMN, FOR EVERY CARRIER. The rules above name one carrier each,
+   and every new light disc needed one more. The gate now works out the look of a whole column in one
+   place (window._gateColumnLook in fids-core.js: the ground of the top orb, the same ground on the five
+   badges, and an ink that reads on it) and writes the ink of the code on the badge as --orb-code-ink.
+   This one rule reads it. A badge that carries no such value keeps the white of the base rule, or the
+   ink its carrier has above. The boarding shelf's chip sits on the accent and is left out, as above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-icon-badge[style*="--orb-code-ink"] .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
+  color: var(--orb-code-ink) !important;
+  -webkit-text-fill-color: var(--orb-code-ink) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

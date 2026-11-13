@@ -98,7 +98,7 @@ test('both orbs draw the virgule in its own red, with no white-force', () => {
 
 test('it keeps the navy disc the glyph badges beside it wear, and reads on it', () => {
   const p = orb._gateOrbParts('AF');
-  assert.match(p.badge, /background:var\(--airline-accent,#002157\)/,
+  assert.match(p.badge, /background:var\(--airline-accent,#051039\)/,
     'the accent disc, not the light disc: the column stays one colour');
   // The rail orb renders on the board accent, the caption bar on the brand
   // accent; the red clears 3:1 on both.
