@@ -65611,7 +65611,7 @@ var HERITAGE_MARKS = [
     // the caption, beside the livery, in the words of each language. A
     // passenger must not take it for a scheme the aeroplane wore.
     //
-    // WHAT IS REAL: the aeroplane. C-FTOE, delivered as CF-TOE, fleet 305, a
+    // WHAT IS REAL: the aeroplane. C-FTOE, fleet 305, a
     // Boeing 747-133 (c/n 20881, line 236), the fifth and last of the Air
     // Canada 747-100s, delivered new on 13 May 1974; withdrawn on 15 October
     // 1998 to Marana (sold to Evergreen in September 1998) and broken up in
@@ -65672,9 +65672,10 @@ var HERITAGE_MARKS = [
     // the length, and the depth is the median of the columns 56–64% back,
     // behind the wing and ahead of the taper to the tail (234 px). Length to
     // the furthest aft point (the top of the fin) over that depth is 9.71,
-    // against 10.87 for the 747-100 (70.66 m overall over a fuselage 6.50 m,
-    // 21 ft 4 in, across, the figure published for the 747-100 by Aerocorner
-    // and aircraftinvestigation.info): 10.7% short. Boeing, 747 Airplane
+    // against 10.87 for the 747-100 (70.66 m overall over 6.50 m, 21 ft 4 in,
+    // which is the fuselage WIDTH published for the 747-100 by Aerocorner and
+    // aircraftinvestigation.info, taken here as its depth): 10.7% short, and
+    // less if the body is deeper than it is wide behind the hump. Boeing, 747 Airplane
     // Characteristics for Airport Planning, D6-58326 rev E (May 2011), section
     // 2.2, is the source to check that depth against; it was not read for
     // this card. It is used as drawn either way: it is the supplied art, and
