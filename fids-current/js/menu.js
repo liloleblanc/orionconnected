@@ -1428,9 +1428,21 @@ function menuGoToPicker() {
   window.location.href = 'picker.html';
 }
 
+// THE LOGOUT BUTTON ENDS THE SIGN-IN. It used to clear this tab only: the
+// durable copy in localStorage stayed, and so does the cookie that carries
+// the sign-in to every airport address of the zone (fidsSignIn, in
+// host-airport.js), so the opener took the token straight back and the
+// person who pressed Logout was still signed in, here and everywhere. It
+// now signs out the way the picker does: fidsSignIn.end() clears both
+// copies on this origin and leaves the signed-out mark every other address
+// of the zone obeys. It runs BEFORE the tab is cleared, because end() writes
+// the mark only when it finds a sign-in to end. Where there is no fidsSignIn
+// the two copies are removed here, and they are removed here in any case.
 function menuLogout() {
-  closeOverlayMenu();
-  sessionStorage.clear();
+  try { closeOverlayMenu(); } catch (e) {}
+  try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn && fidsSignIn.end) fidsSignIn.end(); } catch (e) {}
+  try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
+  try { sessionStorage.clear(); } catch (e) {}
   window.location.href = 'index.html';
 }
 

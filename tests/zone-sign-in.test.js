@@ -485,6 +485,160 @@ test('every place that clears the sign-in tells the module: no sign-out path is 
     if (/removeItem\((?:'fids_token'|TOKEN_KEY)/.test(rd(f))) others.push(f);
   }
   assert.deepEqual(others.sort(), ['js/auth.js', 'js/fids-core.js', 'js/host-airport.js', 'js/menu.js']);
+  // the Logout button of the board menu is a sign-out, not a rescue: it ends (the test below)
+  assert.equal((MENU.match(/localStorage\.removeItem\('fids_token'\)/g) || []).length, 2, 'the rescue of menu.js, and menuLogout');
+});
+
+/** Every .js and .html file of the site, as [path, text]. */
+function siteFiles() {
+  const out = [];
+  const walk = (dir) => {
+    for (const n of fs.readdirSync(path.join(ROOT, 'fids-current', dir), { withFileTypes: true })) {
+      const rel = path.posix.join(dir, n.name);
+      if (n.isDirectory()) walk(rel);
+      else if (/\.(js|html)$/.test(n.name)) out.push([rel, rd(rel)]);
+    }
+  };
+  walk('');
+  return out;
+}
+/** The Logout button of the board menu (menu.js menuLogout), real code, pressed on a loaded page. */
+function pressMenuLogout(r, opts) {
+  const o = opts || {};
+  const went = [];
+  const tab = r.win.sessionStorage;
+  tab.clear = () => { for (const k of Object.keys(tab._s)) delete tab._s[k]; };
+  new Function('window', 'localStorage', 'sessionStorage', 'closeOverlayMenu', 'fidsSignIn', lift(MENU, 'menuLogout') + '\nmenuLogout();')(
+    { location: { set href(to) { went.push(to); } } }, r.win.localStorage, tab, o.menuThrows ? () => { throw new Error('no menu'); } : () => {}, o.noModule ? undefined : r.S);
+  return went;
+}
+const OUT_COM = NAME + '=out; Domain=orionconnected.com; Path=/; Max-Age=34560000; Secure; SameSite=Strict';
+
+test('every control that says it signs out ends the sign-in on the whole zone: the picker, and the Logout button of the board menu', () => {
+  // ── the controls there are: every function named for a sign-out, in every file of the site ──
+  const named = new Set(), handlers = [];
+  for (const [rel, text] of siteFiles()) {
+    for (const m of text.matchAll(/function\s+(\w*(?:log_?out|sign_?out|log_?off|sign_?off)\w*)\s*\(/gi)) named.add(rel + ' ' + m[1]);
+    for (const m of text.matchAll(/\son\w+="([^"]*(?:log_?out|sign_?out|log_?off|sign_?off|goBack)[^"]*)"/gi)) handlers.push(rel + ' ' + m[1]);
+  }
+  assert.deepEqual([...named].sort(), ['js/auth.js logout', 'js/menu.js menuLogout', 'picker.html doLogout']);
+  assert.deepEqual(handlers.sort(), ['menu.html menuLogout()', 'picker.html doLogout();return false;', 'picker.html goBack()']);
+  // and every label that offers one is on one of them
+  const labelled = siteFiles().filter(([rel, text]) => /\.html$/.test(rel) && />[^<]*(?:log\s?out|sign\s?out|log\s?off|d[ée]connexion|se d[ée]connecter)[^<]*</i.test(text)).map(([rel]) => rel);
+  assert.deepEqual(labelled.sort(), ['menu.html', 'picker.html']);
+  assert.match(rd('menu.html'), /<button class="sm-btn sm-btn-danger sm-btn-sm" onclick="menuLogout\(\)">Logout<\/button>/);
+  const PICKER = rd('picker.html');
+  assert.match(PICKER, /<a href="#" onclick="doLogout\(\);return false;">LOGOUT<\/a>/);
+  // the picker: Logout, Back and Escape are all auth.js logout, which is clearToken() and so fidsSignIn.end()
+  assert.match(lift(PICKER, 'doLogout'), /^function doLogout\(\) \{\s*Auth\.logout\(\);/);
+  assert.match(lift(PICKER, 'goBack'), /^function goBack\(\) \{\s*Auth\.logout\(\);/);
+  assert.match(PICKER, /if \(e\.key === 'Escape'\) goBack\(\);/);
+  assert.match(lift(AUTH, 'logout'), /^function logout\(\) \{\s*clearToken\(\);/);
+  // auth.js is on the opener and the picker only: on a board, the Auth.logout() of a dead-token rescue is nothing
+  const withAuth = siteFiles().filter(([rel, text]) => /\.html$/.test(rel) && /js\/auth\.js/.test(text)).map(([rel]) => rel);
+  assert.deepEqual(withAuth.sort(), ['index.html', 'picker.html']);
+
+  // ── the Logout button of the board menu, pressed by an admin signed in on yqm ──
+  const src = lift(MENU, 'menuLogout');
+  assert.ok(src.indexOf('fidsSignIn.end()') > 0 && src.indexOf('fidsSignIn.end()') < src.indexOf('sessionStorage.clear()'),
+    'end() runs while the tab still holds the token: it writes the mark only when there is a sign-in to end');
+  assert.match(src, /try \{ if \(typeof fidsSignIn !== 'undefined' && fidsSignIn && fidsSignIn\.end\) fidsSignIn\.end\(\); \} catch \(e\) \{\}\s*try \{ localStorage\.removeItem\('fids_token'\); localStorage\.removeItem\('fids_user'\); \} catch \(e\) \{\}\s*try \{ sessionStorage\.clear\(\); \} catch \(e\) \{\}\s*window\.location\.href = 'index\.html';/);
+  let b = browser();
+  let r = load('https://yqm.orionconnected.com/gids?gate=3', b, { local: { fids_token: LIVE, fids_user: USER }, session: { fids_token: LIVE, fids_user: USER, fids_mode: 'live' } });
+  const yul = load('https://yul.orionconnected.com/fids', b);
+  assert.equal(yul.local.fids_token, LIVE, 'the sign-in had travelled');
+  b.writes.length = 0;
+  assert.deepEqual(pressMenuLogout(r), ['index.html']);
+  assert.deepEqual(b.writes.map((w) => w.text), [OUT_COM], 'the signed-out mark, and nothing else');
+  assert.deepEqual([r.local.fids_token, r.local.fids_user, r.tab.fids_token, r.tab.fids_user], [undefined, undefined, undefined, undefined], 'the durable copy and the tab copy are both gone');
+  assert.deepEqual(r.tab, {}, 'and the tab is cleared, as it always was');
+  // the opener it goes to does not take the token back, and is signed out
+  b.writes.length = 0;
+  const opener = load('https://yqm.orionconnected.com/', b, { local: r.local });
+  assert.equal(authOn(opener).init(), false);
+  assert.deepEqual([opener.local.fids_token, opener.tab.fids_token], [undefined, undefined]);
+  // every other address of the zone, which still holds the live token in its own storage, is signed out at its next load
+  const again = load('https://yul.orionconnected.com/fids', b, { local: { fids_token: LIVE, fids_user: USER }, session: { fids_token: LIVE, fids_user: USER } });
+  assert.deepEqual([again.local.fids_token, again.tab.fids_token], [undefined, undefined]);
+  assert.deepEqual(b.writes, [], 'the mark stays; nothing is written back');
+  assert.equal(b.value('orionconnected.com'), 'out');
+  // the token only in the durable copy (a tab opened later): the same
+  b = browser();
+  r = load('https://fids.orionconnected.com/fids?ap=YQM', b, { local: { fids_token: LIVE, fids_user: USER } });
+  b.writes.length = 0;
+  pressMenuLogout(r, { menuThrows: true });
+  assert.deepEqual(b.writes.map((w) => w.text), [OUT_COM], 'a menu that will not close does not stop the sign-out');
+  assert.deepEqual([r.local.fids_token, r.local.fids_user], [undefined, undefined]);
+  // where the module is absent, both copies are removed here
+  b = browser();
+  r = load('https://yqm.orionconnected.com/fids', b, { local: { fids_token: LIVE, fids_user: USER }, session: { fids_token: LIVE, fids_user: USER } });
+  b.writes.length = 0;
+  assert.deepEqual(pressMenuLogout(r, { noModule: true }), ['index.html']);
+  assert.deepEqual([r.local.fids_token, r.local.fids_user, r.tab.fids_token, r.tab.fids_user], [undefined, undefined, undefined, undefined]);
+  assert.deepEqual(b.writes, []);
+  // off our zones (a preview, a local page): storage only, no cookie
+  for (const url of ['https://zone-sign-in-fids.example.workers.dev/fids?ap=YUL', 'http://localhost:8080/fids.html']) {
+    b = browser();
+    r = load(url, b, { local: { fids_token: LIVE, fids_user: USER }, session: { fids_token: LIVE } });
+    pressMenuLogout(r);
+    assert.deepEqual([r.local.fids_token, r.local.fids_user, r.tab.fids_token], [undefined, undefined, undefined], url);
+    assert.deepEqual(b.writes, [], url);
+  }
+});
+
+test('a visitor is given no cookie: a sign-out with nothing to end (Back or Escape on the picker) writes nothing', () => {
+  // the picker is open to anyone (the Demo button of the opener), and Back and Escape run the sign-out
+  let b = browser();
+  let r = load('https://fids.orionconnected.com/picker', b);
+  const Auth = authOn(r);
+  assert.equal(Auth.init(), false, 'a visitor');
+  Auth.logout();
+  assert.deepEqual(b.writes, [], 'no cookie write at all');
+  assert.deepEqual(b.kept, [], 'and no cookie');
+  r.S.end();
+  r.S.end();
+  assert.deepEqual(b.writes, []);
+  assert.deepEqual(pressMenuLogout(load('https://yqm.orionconnected.com/fids', b)), ['index.html']);
+  assert.deepEqual(b.writes, [], 'nor from the Logout button of the menu');
+  for (const host of ['www.orionconnected.com', 'orionconnected.ca', 'yul.orionconnected.ca', 'yqm.orionconnected.app', 'localhost']) {
+    load('https://' + host + '/picker', b).S.end();
+  }
+  assert.deepEqual(b.writes, []);
+  // signed out already and nothing held: the mark is left as it is, not written again
+  b = browser();
+  b.kept.push({ name: NAME, value: 'out', domain: 'orionconnected.com' });
+  r = load('https://fids.orionconnected.com/picker', b);
+  r.S.end();
+  assert.deepEqual(b.writes, []);
+  assert.equal(b.value('orionconnected.com'), 'out');
+  // there IS something to end when this origin holds a token (either copy)...
+  for (const held of [{ local: { fids_token: LIVE, fids_user: USER } }, { session: { fids_token: LIVE } }]) {
+    b = browser();
+    r = load('https://fids.orionconnected.com/picker', b, held);
+    b.writes.length = 0;
+    r.S.end();
+    assert.deepEqual(b.writes.map((w) => w.text), [OUT_COM]);
+    assert.deepEqual([r.local.fids_token, r.tab.fids_token], [undefined, undefined]);
+  }
+  // ...or when the cookie holds one this origin has not taken yet (signed in on another address since this page loaded)
+  b = browser();
+  r = load('https://fids.orionconnected.com/picker', b);
+  load('https://yul.orionconnected.com/fids', b).S.keep(NEWER, USER);
+  b.writes.length = 0;
+  r.S.end();
+  assert.deepEqual(b.writes.map((w) => w.text), [OUT_COM], 'signing out here ends the sign-in of the zone');
+  // ...and a token held where the cookie cannot be written still leaves this origin clean
+  b = browser({ refuse: true });
+  r = load('https://fids.orionconnected.com/picker', b, { local: { fids_token: LIVE, fids_user: USER } });
+  r.S.end();
+  assert.deepEqual([r.local.fids_token, r.local.fids_user], [undefined, undefined]);
+  // a page with no document at all does not throw
+  r = load('https://fids.orionconnected.com/picker', null, { local: { fids_token: LIVE } });
+  r.S.end();
+  assert.equal(r.local.fids_token, undefined);
+  // in the source: one place writes the mark, behind the question whether there was a sign-in
+  assert.match(SRC, /function end\(\) \{\s*var had = false;\s*try \{ had = !!held\(\)\.token; \} catch \(e\) \{\}\s*if \(!had\) \{ try \{ var c = read\(jar\(\)\); had = !!\(c && c\.token\); \} catch \(e\) \{\} \}\s*wipe\(\);\s*if \(had\) bake\(outCookieFor\(host\(\)\)\);\s*\}/);
+  assert.equal((SRC.match(/outCookieFor\(host\(\)\)/g) || []).length, 1);
 });
 
 // ── the order of things, and the address rule ──────────────────────────────
@@ -644,6 +798,163 @@ test('in the source: one module touches the cookie, and nothing of it reaches an
   const WORKER = fs.readFileSync(path.join(ROOT, 'workers', 'fids-proxy.js'), 'utf8');
   assert.doesNotMatch(WORKER, /fids_signin/, 'the server does not know this cookie exists');
   assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'worker-entry.js'), 'utf8'), /fids_signin/);
+});
+
+// ── the server ─────────────────────────────────────────────────────────────
+// The browser sends the cookie with every request to the zone, so both
+// Workers receive it. Neither may read it: the Authorization bearer header to
+// the proxy is the only thing the server trusts. A Worker that took the
+// sign-in from a cookie would be open to requests forged from another page
+// of the zone, and one that logged request headers would write the token
+// down. The two text checks above (the name of the cookie) would see neither.
+
+const WORKER_FILES = ['worker-entry.js'].concat(fs.readdirSync(path.join(ROOT, 'workers')).filter((n) => n.endsWith('.js')).map((n) => 'workers/' + n));
+const workerSrc = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+/** The lines of a file that are code: not blank, not a // comment. */
+const codeLines = (text) => text.split('\n').map((l, i) => ({ n: i + 1, l })).filter((x) => x.l.trim() && !/^\s*\/\//.test(x.l));
+
+test('the server, in the source: no Worker reads a Cookie header, the gate reads Authorization only, no log is handed a request header', () => {
+  assert.deepEqual(WORKER_FILES, ['worker-entry.js', 'workers/fids-proxy.js'], 'the Workers there are');
+  const ENTRY = workerSrc('worker-entry.js'), PROXY = workerSrc('workers/fids-proxy.js');
+
+  // the word cookie, in any case, in code: only the fixed cookie two airport sites ask of every visitor, SENT, never read
+  const FIXED = /^\s*const t = await fetchAuthorityText\("(dca|iad)\/all", "https:\/\/www\.fly(reagan|dulles)\.com\/arrivals-and-departures\/json", '"flightnumber"', 90, \{ headers: \{ "Cookie": "flight-info=1", "User-Agent": MWAA_UA \} \}\);$/;
+  for (const f of WORKER_FILES) {
+    const hits = codeLines(workerSrc(f)).filter((x) => /cookie/i.test(x.l));
+    for (const x of hits) assert.match(x.l, FIXED, f + ':' + x.n + ' names a cookie');
+    assert.equal(hits.length, f === 'workers/fids-proxy.js' ? 2 : 0, f);
+  }
+
+  // the board Worker reads no header of the request at all; it hands the request, whole, to our own two layers only
+  assert.doesNotMatch(ENTRY, /request\s*\.\s*headers|headers\s*:\s*request\b|\.\.\.\s*request\b/);
+  assert.deepEqual([...new Set(ENTRY.match(/\b[A-Za-z_$][\w$]*\.headers\b/g))].sort(), ['img.headers', 'r.headers', 'res.headers'], 'answers only: an upstream, a picture, an asset');
+  assert.deepEqual(codeLines(ENTRY).filter((x) => /\brequest\b/.test(x.l)).map((x) => x.l.trim()), [
+    'async function homePage(request, url, page, env) {',
+    'const res = await env.ASSETS.fetch(new Request(new URL(page + url.search, url.origin), request));',
+    'async fetch(request, env, ctx) {',
+    'const url = new URL(request.url);',
+    'if (home) return homePage(request, url, home, env);',
+    'return env.ASSETS.fetch(request);',
+    'return inert(await proxy.fetch(request, env, ctx));',
+    'const res = await env.ASSETS.fetch(request);'
+  ], 'every line of code that names the request: its address is read, and it goes to the asset server or the bundled proxy');
+
+  // the proxy reads these headers of a request and no other, each by its literal name
+  const reads = {};
+  for (const m of PROXY.matchAll(/\brequest\s*\.\s*headers\b(\.get\("([A-Za-z-]+)"\))?/g)) {
+    assert.ok(m[2], 'request.headers is used for anything but .get("<a literal name>"): ' + PROXY.slice(m.index, m.index + 60));
+    reads[m[2]] = (reads[m[2]] || 0) + 1;
+  }
+  assert.deepEqual(reads, { 'Content-Type': 4, 'Origin': 3, 'CF-Connecting-IP': 1, 'Content-Length': 1, 'X-Relay-Key': 1, 'Authorization': 1, 'Accept-Language': 1 });
+  assert.deepEqual([...new Set(PROXY.match(/\b[A-Za-z_$][\w$]*\.headers\b/g))].sort(), ['fileRes.headers', 'hit.headers', 'opts.headers', 'r.headers', 'request.headers', 'response.headers'],
+    'no request under another name: the rest are answers, and the options of an outgoing fetch');
+  assert.doesNotMatch(PROXY, /(?<!async )\bfetch\(\s*request\b|new Request\([^()]*,\s*request\b|headers\s*:\s*request\b|\.\.\.\s*request\b/, 'and the request is never passed on to another host');
+
+  // the gate: the bearer header, and nothing else, is what is verified
+  assert.match(PROXY, /if \(path\.startsWith\("\/auth\/users"\) \|\| path\.startsWith\("\/api\/"\)\) \{\s*const authHeader = request\.headers\.get\("Authorization"\);\s*if \(!authHeader \|\| !authHeader\.startsWith\("Bearer "\)\) \{\s*return jsonResponse\(\{ error: "Authentication required" \}, 401, origin\);\s*\}\s*const token = authHeader\.replace\("Bearer ", ""\);\s*const payload = await verifyJwt\(token, env\.JWT_SECRET\);\s*if \(!payload\) \{\s*return jsonResponse\(\{ error: "Invalid or expired token" \}, 401, origin\);\s*\}/);
+  assert.equal((PROXY.match(/\bverifyJwt\(/g) || []).length, 2, 'verifyJwt: defined once, called once, by the gate');
+  assert.equal((PROXY.match(/\bauthHeader\b/g) || []).length, 4, 'and the header it reads is used there only');
+
+  // no log line is handed a request, its headers, or anything named for a credential
+  for (const f of WORKER_FILES) {
+    const lines = workerSrc(f).split('\n');
+    let calls = 0;
+    lines.forEach((l, i) => {
+      if (/^\s*\/\//.test(l) || !/\bconsole\s*\.\s*\w+\s*\(/.test(l)) return;
+      calls++;
+      const call = lines.slice(i, i + 4).join('\n');
+      const end = call.indexOf(');');
+      assert.doesNotMatch(end < 0 ? call : call.slice(0, end), /headers|\brequest\b|cookie|authorization|\btoken\b|password|secret/i, f + ':' + (i + 1) + ' logs something of a request');
+    });
+    assert.equal(calls, f === 'worker-entry.js' ? 2 : 15, f + ': a new log line is read here before it is counted');
+  }
+  assert.doesNotMatch(ENTRY + PROXY, /\bconsole\s*\[|=\s*console\b|\(console\b/, 'console is called by name, so the scan above sees every call');
+});
+
+/** A token signed as the proxy signs one, with a secret made up for this test. */
+function signedToken(secret, payload) {
+  const head = b64({ alg: 'HS256', typ: 'JWT' }), body = b64(payload);
+  return head + '.' + body + '.' + require('node:crypto').createHmac('sha256', secret).update(head + '.' + body).digest('base64url');
+}
+
+test('the server, run: a token that would be accepted as a bearer header opens nothing as a cookie, and nothing of a request is logged or passed on', async () => {
+  const SECRET = 'made-up-secret-' + NOW;
+  const GOOD = signedToken(SECRET, { sub: 'tester', role: 'admin', exp: SEC + 600 });
+  const admin = JSON.stringify({ role: 'admin', displayName: 'Test Admin', createdAt: '2026-01-01T00:00:00.000Z' });
+  const puts = [];
+  const kv = {
+    get: async (k) => (k === 'user:admin' || k === 'user:tester' ? admin : null), put: async (k) => { puts.push(k); }, delete: async (k) => { puts.push('delete ' + k); },
+    list: async () => ({ keys: [{ name: 'user:tester' }] }), getWithMetadata: async () => ({ value: null, metadata: null })
+  };
+  const env = { JWT_SECRET: SECRET, FIDS_USERS: kv, FIDS_LIVE_FLIGHTS: kv, CITY_BG_CACHE: kv,
+    ASSETS: { fetch: async () => new Response('asset', { headers: { 'Content-Type': 'text/plain' } }) }, FIDS_ASSETS: { get: async () => null }, FIDS_PRIVATE: { get: async () => null } };
+  const realFetch = globalThis.fetch, realCaches = globalThis.caches, realConsole = {};
+  const upstream = [], logged = [];
+  globalThis.fetch = async (u, init) => {
+    const h = new Headers(u instanceof Request ? u.headers : undefined);
+    if (init && init.headers) new Headers(init.headers).forEach((v, k) => h.set(k, v));
+    upstream.push(String(u instanceof Request ? u.url : u) + ' ' + [...h].map(([k, v]) => k + '=' + v).join('; '));
+    return new Response('{"hits":[],"properties":{"timeseries":[]}}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  globalThis.caches = { default: { match: async () => null, put: async () => {} } };
+  for (const k of ['log', 'warn', 'error', 'info', 'debug']) { realConsole[k] = console[k]; console[k] = (...a) => { logged.push(a.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ')); }; }
+  try {
+    const proxy = (await import(path.join(ROOT, 'workers', 'fids-proxy.js'))).default;
+    const entry = (await import(path.join(ROOT, 'worker-entry.js'))).default;
+    const ctx = { waitUntil() {} };
+    // the real proxy on its own address, and the copy bundled in the board Worker, which answers on a label of the zone
+    const doors = [
+      ['the proxy', (p, init) => proxy.fetch(new Request('https://fids-proxy.example.workers.dev' + p, init), env, ctx)],
+      ['the bundled proxy on a label of the zone', (p, init) => entry.fetch(new Request('https://fids-proxy.orionconnected.com' + p, init), env, ctx)]
+    ];
+    const cookies = [NAME + '=' + GOOD, NAME + '=' + GOOD + '|' + encodeURIComponent(USER), 'fids_token=' + GOOD, 'token=' + GOOD + '; ' + NAME + '=' + GOOD, 'Authorization=Bearer ' + GOOD];
+    for (const [name, ask] of doors) {
+      // the token is a good one: as the bearer header it opens the door
+      let res = await ask('/auth/users', { headers: { Authorization: 'Bearer ' + GOOD } });
+      assert.equal(res.status, 200, name);
+      assert.deepEqual(await res.json(), { users: [{ username: 'tester', role: 'admin', displayName: 'Test Admin', createdAt: '2026-01-01T00:00:00.000Z' }] });
+      // the same token in a cookie, with no bearer header, is no sign-in: every guarded route, read or write
+      for (const cookie of cookies) {
+        for (const [method, p, body] of [['GET', '/auth/users'], ['POST', '/auth/users', '{"username":"made-up","password":"made-up","role":"admin"}'], ['DELETE', '/auth/users/tester'],
+                                         ['PUT', '/api/airport-config/YQM', '{}'], ['POST', '/api/media-config', '{}'], ['GET', '/api/screens']]) {
+          res = await ask(p, { method, body, headers: Object.assign({ Cookie: cookie }, body ? { 'Content-Type': 'application/json' } : {}) });
+          assert.equal(res.status, 401, name + ': ' + method + ' ' + p + ' with only a cookie');
+          assert.deepEqual(await res.json(), { error: 'Authentication required' });
+        }
+      }
+      // a bearer header that is not a good token is refused, whatever the cookie says
+      res = await ask('/auth/users', { headers: { Authorization: 'Bearer ' + signedToken('another-made-up-secret', { sub: 'tester', role: 'admin', exp: SEC + 600 }), Cookie: NAME + '=' + GOOD } });
+      assert.equal(res.status, 401, name);
+      assert.deepEqual(await res.json(), { error: 'Invalid or expired token' });
+    }
+    assert.deepEqual(puts, [], 'and nothing was written');
+
+    // every route of the board Worker, asked with the cookie and the header: neither is logged, neither leaves for another host
+    const paths = ['/', '/credits', '/fids', '/gids?ap=YUL&gate=128', '/a', '/s', '/t', '/o', '/mapcdn/leaflet.js', '/mapcdn/leaflet.css', '/mapcdn/leaflet-arc.js', '/wxdaily?location=46.1,-64.7', '/wxcurrent?location=46.1,-64.7',
+      '/wxsun?location=46.1,-64.7', '/citypic?iata=YQM&q=Moncton', '/logoimg?u=' + encodeURIComponent('https://' + (/const LOGO_HOST = '([^']+)';/.exec(workerSrc('worker-entry.js')) || [])[1] + '/airports/yqm/logo.png'),
+      '/miafids?direction=dep', '/maptiles/5/9/11.png', '/demtiles/5/9/11.png', '/tiles/osm/5/9/11.png', '/tiles/satellite/5/9/11.png', '/tiles/photo/YQM/14/1/1', '/fonts/Possibility-Bold-Web.woff2', '/wxradar/1/2/3.png',
+      '/gids/ap=YUL', '/auth/users', '/api/dry-dock', '/health', '/stream/agent.sh'];
+    upstream.length = 0; logged.length = 0;
+    let asked = 0;
+    for (const host of ['yqm.orionconnected.com', 'www.orionconnected.com', 'fids.orionconnected.ca', 'fids-proxy.orionconnected.com']) {
+      for (const p of paths) {
+        const res = await entry.fetch(new Request('https://' + host + p, { headers: { Cookie: NAME + '=' + GOOD + '|' + encodeURIComponent(USER), Authorization: 'Bearer ' + GOOD } }), Object.assign({ PIXABAY_KEY: 'made-up-key' }, env), ctx);
+        await res.arrayBuffer();
+        asked++;
+      }
+    }
+    assert.equal(asked, 4 * paths.length);
+    assert.ok(upstream.length > 40, 'the routes did reach for their upstreams (' + upstream.length + ')');
+    const parts = GOOD.split('.').concat([encodeURIComponent(USER), 'Test%20Admin', NAME]);
+    for (const line of upstream.concat(logged)) {
+      for (const part of parts) assert.ok(!line.includes(part), 'part of the sign-in left the Worker: ' + line.slice(0, 90));
+      assert.doesNotMatch(line, /cookie=|authorization=/i, 'a request header of the visitor was passed on: ' + line.slice(0, 90));
+    }
+  } finally {
+    globalThis.fetch = realFetch;
+    globalThis.caches = realCaches;
+    for (const k of Object.keys(realConsole)) console[k] = realConsole[k];
+  }
 });
 
 test('every page that reads the sign-in loads the module first', () => {

@@ -1912,7 +1912,10 @@ test('fids.orionconnected.com/o serves install.sh, like /s and /t', async () => 
   }
   const block = ENTRY.slice(at, i + 1);
   const AsyncFunction = (async () => {}).constructor;
-  const route = new AsyncFunction('path', 'fetch', 'Response', 'NO_STORE', block + '\nreturn null;');
+  // the route answers with the two headers every outside body carries (tests/outside-bodies.test.js)
+  const INERT = new Function('return ' + (/^const INERT = (\{[^\n]*\});$/m.exec(ENTRY) || [])[1] + ';')();
+  const run = new AsyncFunction('path', 'fetch', 'Response', 'NO_STORE', 'INERT', block + '\nreturn null;');
+  const route = (p, f, R, ns) => run(p, f, R, ns, INERT);
   const RAW = 'https://raw.githubusercontent.com/liloleblanc/orionconnected/main/';
   const seen = [];
   const fakeFetch = async (src) => {
@@ -1928,6 +1931,8 @@ test('fids.orionconnected.com/o serves install.sh, like /s and /t', async () => 
   assert.equal(res.status, 200);
   assert.equal(res.headers.get('Content-Type'), 'text/plain; charset=utf-8');
   assert.equal(res.headers.get('Cache-Control'), 'no-store');
+  assert.equal(res.headers.get('Content-Security-Policy'), "default-src 'none'; sandbox");
+  assert.equal(res.headers.get('X-Content-Type-Options'), 'nosniff');
   assert.equal(await res.text(), INSTALL_SRC);
   assert.deepEqual(seen, [RAW + 'stream-server/opensky-relay/install.sh']);
   for (const p of ['/s', '/t']) assert.equal((await route(p, fakeFetch, Response, NO_STORE)).status, 200, p);

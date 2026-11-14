@@ -173,12 +173,17 @@
  *               signing in again.
  *   keep    a sign-in was just made (auth.js saveToken, the board login in
  *           fids-core.js): write the cookie.
- *   end     the admin signed out (auth.js logout): the copies on this origin
- *           go and the cookie becomes a signed-out mark, which every other
- *           origin of the zone obeys at its next page load. A mark and not a
- *           plain delete: the other origins still hold the live token in
- *           their own storage, and with no cookie at all they would write it
- *           straight back.
+ *   end     the admin signed out (auth.js logout, which the picker calls,
+ *           and menuLogout, the Logout button of the board menu): the copies
+ *           on this origin go and the cookie becomes a signed-out mark, which
+ *           every other origin of the zone obeys at its next page load. A
+ *           mark and not a plain delete: the other origins still hold the
+ *           live token in their own storage, and with no cookie at all they
+ *           would write it straight back. The mark is written only when
+ *           there was a sign-in to end (a token on this origin, or one in
+ *           the cookie). Back and Escape on the picker run the same sign-out
+ *           for a visitor who never signed in, and a visitor is given no
+ *           cookie: with nothing held, end only wipes.
  *   drop    a dead token was found (the rescues in fids-core.js and menu.js,
  *           auth.js loadToken): the copies on this origin go, and the cookie
  *           goes only if it holds that same token or a dead one. A newer
@@ -339,8 +344,11 @@
     return travels();
   }
   function end() {
+    var had = false;
+    try { had = !!held().token; } catch (e) {}
+    if (!had) { try { var c = read(jar()); had = !!(c && c.token); } catch (e) {} }
     wipe();
-    bake(outCookieFor(host()));
+    if (had) bake(outCookieFor(host()));
   }
   function drop(token) {
     wipe();

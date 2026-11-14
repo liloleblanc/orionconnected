@@ -65,6 +65,47 @@ const MAP_ENGINE = {
 // cache-poisoning class, third appearance).
 const NO_STORE = { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' };
 
+// ── A BODY FROM ANOTHER HOST IS NEVER A PAGE ON OUR ADDRESS ──────────────
+// Several routes below fetch a body somewhere else and hand it back from
+// THIS origin: logos, tiles, city pictures, the map engine, the installers,
+// and whatever the bundled proxy answers. Asked for as an image, a script or
+// a fetch, such a body is only data. The same address opened in the address
+// bar is a page load, and a body a browser renders as a document (an SVG is
+// one) would run its script on our address, where script reads the admin
+// sign-in (fids-current/js/host-airport.js, fidsSignIn: storage, and the
+// cookie of the whole zone). So every such answer carries INERT:
+//
+//   Content-Security-Policy: default-src 'none'; sandbox
+//       opened as a page, the body runs no script, loads nothing, and sits
+//       in an origin of its own: it reads no storage and no cookie of ours;
+//   X-Content-Type-Options: nosniff
+//       the browser takes the Content-Type as stated and guesses no other.
+//
+// Neither header changes an <img>, a canvas read of one, a CSS background, a
+// <script src>, a stylesheet or a fetch(): none of those applies the policy
+// of the file it loads, and each type sent is the right one for its use.
+// And no route echoes the Content-Type an upstream states. An image route
+// answers with one of the image types the site uses (pinnedType: the four
+// raster types every upload control accepts, and SVG for a logo only, whose
+// declared colours the banner reads) or refuses; every other route states a
+// type fixed here. tests/outside-bodies.test.js runs the real routes with a
+// stubbed upstream.
+const INERT = { 'Content-Security-Policy': "default-src 'none'; sandbox", 'X-Content-Type-Options': 'nosniff' };
+const RASTER_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const LOGO_TYPES = RASTER_TYPES.concat(['image/svg+xml']);
+function pinnedType(stated, allowed) {
+  const t = String(stated || '').split(';')[0].trim().toLowerCase();
+  return allowed.indexOf(t) >= 0 ? t : '';
+}
+// The same two headers on an answer built elsewhere: the bundled proxy, and
+// our own photo tiles.
+function inert(res) {
+  if (!res || res.status === 101 || res.webSocket) return res;
+  const h = new Headers(res.headers);
+  for (const k of Object.keys(INERT)) h.set(k, INERT[k]);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 const TILE_BASE = 'https://a.basemaps.cartocdn.com/rastertiles/voyager/';
 // AWS open elevation tiles (terrarium encoding) — free, no API key.
 const DEM_BASE = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/';
@@ -201,7 +242,8 @@ async function photoTile(path, env) {
     return new Response(obj.body, {
       status: 200,
       headers: {
-        'Content-Type': (obj.httpMetadata && obj.httpMetadata.contentType) || 'image/jpeg',
+        // the two types the tiles are cut as, never whatever the object says
+        'Content-Type': /^image\/png\b/i.test((obj.httpMetadata && obj.httpMetadata.contentType) || '') ? 'image/png' : 'image/jpeg',
         'Cache-Control': 'public, max-age=' + (30 * DAY),
         'ETag': obj.httpEtag || '',
         'Access-Control-Allow-Origin': '*',
@@ -273,8 +315,17 @@ export default {
     // FR24_DAILY_BUDGET and OPENSKY_ON, live there). This route stays as a
     // harmless safety net: it hands the request to the bundled proxy only
     // when this entry is running under the fids-proxy hostname.
+    //
+    // Every label of our zones reaches THIS Worker, so a host such as
+    // fids-proxy.orionconnected.com is answered here by the bundled proxy,
+    // on an address where script can read the sign-in cookie of the zone.
+    // The proxy hands back bodies fetched from its upstreams, some under the
+    // Content-Type the upstream states. Whatever it answers leaves here
+    // INERT (above): data to a fetch, nothing at all as a page. No page of
+    // the site asks this host for anything (they use the workers.dev
+    // address of the real proxy), and the two headers change no API answer.
     if (url.hostname.startsWith("fids-proxy")) {
-      return proxy.fetch(request, env, ctx);
+      return inert(await proxy.fetch(request, env, ctx));
     }
 
     const font = await privateFont(url, env);
@@ -291,7 +342,7 @@ export default {
         if (!r.ok) return new Response('agent fetch failed ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {
           status: 200,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE }
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE, ...INERT }
         });
       } catch (e) {
         return new Response('agent fetch failed', { status: 502, headers: NO_STORE });
@@ -330,7 +381,7 @@ export default {
         const body = (await r.text()).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         return new Response(body, {
           status: 200,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE }
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE, ...INERT }
         });
       } catch (e) {
         return new Response('installer fetch failed', { status: 502, headers: NO_STORE });
@@ -340,9 +391,10 @@ export default {
       const file = path.slice('/mapcdn/'.length);
       const upstreams = MAP_ENGINE[file];
       if (!upstreams) return new Response('Not found', { status: 404, headers: NO_STORE });
+      // the type is the one the file is listed as, never the one a CDN states
       const ct = file.endsWith('.css') ? 'text/css'
                : file.endsWith('.js')  ? 'application/javascript'
-               : null;
+               : 'application/octet-stream';
       for (const upstream of upstreams) {
         try {
           const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: DAY } });
@@ -350,9 +402,10 @@ export default {
           return new Response(r.body, {
             status: 200,
             headers: {
-              'Content-Type': ct || r.headers.get('Content-Type') || 'application/octet-stream',
+              'Content-Type': ct,
               'Cache-Control': 'public, max-age=' + DAY,
               'Access-Control-Allow-Origin': '*',
+              ...INERT,
             },
           });
         } catch (e) { /* network error — fall through to the next upstream */ }
@@ -752,12 +805,14 @@ export default {
       // and nothing else.
       const kHold = 'citypic:hold:' + kq;
       const kBack = 'citypic:backoff';
-      const picHead = (type, age) => ({ 'Content-Type': type, 'Cache-Control': 'public, max-age=' + age, 'Access-Control-Allow-Origin': '*' });
+      const picHead = (type, age) => ({ 'Content-Type': type, 'Cache-Control': 'public, max-age=' + age, 'Access-Control-Allow-Origin': '*', ...INERT });
       const none = (age) => new Response('no picture', { status: 404, headers: { 'Cache-Control': 'public, max-age=' + (age || 3600), 'Access-Control-Allow-Origin': '*' } });
       try {
         if (kv) {
           const hit = await kv.getWithMetadata(kPic, { type: 'arrayBuffer' }).catch(() => null);
-          if (hit && hit.value) return new Response(hit.value, { status: 200, headers: picHead((hit.metadata && hit.metadata.type) || 'image/jpeg', 86400) });
+          // a picture kept under a type that is not a photograph's is not served: it is looked up again
+          const kept = (hit && hit.value) ? pinnedType((hit.metadata && hit.metadata.type) || 'image/jpeg', RASTER_TYPES) : '';
+          if (kept) return new Response(hit.value, { status: 200, headers: picHead(kept, 86400) });
           const neg = await kv.get(kNeg).catch(() => null);
           if (neg) return none();
           const paused = (await kv.get(kBack).catch(() => null)) || (await kv.get(kHold).catch(() => null));
@@ -848,9 +903,12 @@ export default {
         // A failed download, or a body that is not an image, is likewise an
         // upstream fault — not a miss to remember for a day.
         if (!img.ok || !/^image\//.test(type)) return faulted('image ' + (img.status || 0), false);
+        // and only a photograph's type: the type sent is ours, never the upstream's word (INERT, above)
+        const kind = pinnedType(type, RASTER_TYPES);
+        if (!kind) return faulted('image type', false);
         const bytes = await img.arrayBuffer();
-        if (kv) await kv.put(kPic, bytes, { expirationTtl: 30 * 86400, metadata: { type: type, src: 'pixabay', id: hit.id } }).catch(() => {});
-        return new Response(bytes, { status: 200, headers: picHead(type, 86400) });
+        if (kv) await kv.put(kPic, bytes, { expirationTtl: 30 * 86400, metadata: { type: kind, src: 'pixabay', id: hit.id } }).catch(() => {});
+        return new Response(bytes, { status: 200, headers: picHead(kind, 86400) });
       } catch (e) {
         return new Response('citypic fetch failed', { status: 502, headers: NO_STORE });
       }
@@ -949,25 +1007,35 @@ export default {
     // Deliberately NOT a general proxy: the host allowlist below is the whole
     // point. Without it this route would fetch anything, for any caller, on
     // our egress — so it stays pinned to the bucket that holds the logos.
+    //
+    // ONE HOST, WHOLE AND EXACT: the public address of our own bucket, the
+    // one workers/fids-proxy.js gives every upload (R2_PUBLIC_BASE). The
+    // route also took any host ending in .r2.cloudflarestorage.com, which is
+    // the storage endpoint of EVERY account, not ours: anyone with a bucket
+    // could have a file of theirs answered from our address. No upload of
+    // the site is addressed that way, so it is gone. The address asked of
+    // the bucket is rebuilt here from the path and the query alone, and the
+    // answer is INERT (above) under a type from LOGO_TYPES, or refused.
     if (path === '/logoimg') {
       const raw = url.searchParams.get('u') || '';
       let target;
       try { target = new URL(raw); } catch (e) { return new Response('Bad url', { status: 400, headers: NO_STORE }); }
-      const hostOk = target.protocol === 'https:'
-        && (target.hostname === 'pub-e392224bda1a4096843ed05df504ca91.r2.dev'
-            || target.hostname.endsWith('.r2.cloudflarestorage.com'));
+      const LOGO_HOST = 'pub-e392224bda1a4096843ed05df504ca91.r2.dev';
+      const hostOk = target.protocol === 'https:' && target.hostname === LOGO_HOST
+        && !target.port && !target.username && !target.password;
       if (!hostOk) return new Response('Host not allowed', { status: 403, headers: NO_STORE });
       try {
-        const r = await fetch(target.toString(), { cf: { cacheEverything: true, cacheTtl: DAY } });
+        const r = await fetch('https://' + LOGO_HOST + target.pathname + target.search, { cf: { cacheEverything: true, cacheTtl: DAY } });
         if (!r.ok) return new Response('Logo upstream ' + r.status, { status: 502, headers: NO_STORE });
-        const ct = r.headers.get('Content-Type') || '';
-        if (!/^image\//.test(ct)) return new Response('Not an image', { status: 415, headers: NO_STORE });
+        const ct = pinnedType(r.headers.get('Content-Type'), LOGO_TYPES);
+        if (!ct) return new Response('Not an image', { status: 415, headers: NO_STORE });
         return new Response(r.body, {
           status: 200,
           headers: {
             'Content-Type': ct,
             'Cache-Control': 'public, max-age=' + DAY,
             'Access-Control-Allow-Origin': '*',
+            ...INERT,
           },
         });
       } catch (e) {
@@ -1072,6 +1140,7 @@ export default {
             'Content-Type': 'image/png',
             'Cache-Control': 'public, max-age=' + DAY,
             'Access-Control-Allow-Origin': '*',
+            ...INERT,
           },
         });
       } catch (e) {
@@ -1108,6 +1177,7 @@ export default {
             'Content-Type': 'image/png',
             'Cache-Control': 'public, max-age=' + DAY,
             'Access-Control-Allow-Origin': '*',
+            ...INERT,
           },
         });
       } catch (e) {
@@ -1117,7 +1187,7 @@ export default {
 
     // v24031 — /tiles/photo/YQM/18/83967/93139 → our own aerial photo (photoTile)
     if (path.startsWith('/tiles/photo/')) {
-      return (await photoTile(path, env)) || new Response('Bad tile path', { status: 400 });
+      return inert((await photoTile(path, env)) || new Response('Bad tile path', { status: 400 }));
     }
 
     // ── Selectable base-map tiles passthrough ──────────────────────────
@@ -1138,12 +1208,19 @@ export default {
           headers: { 'User-Agent': 'OrionConnectedFIDS/1.0 (airport display boards; +https://fids.orionconnected.com)' }
         });
         if (!r.ok) return new Response('Tile upstream ' + r.status, { status: 502, headers: NO_STORE });
+        // A tile is a PNG or a JPEG (the satellite set). A provider that
+        // states no type is taken as PNG, as before; one that states anything
+        // but a raster image has not sent a tile, and is not passed on.
+        const stated = r.headers.get('Content-Type');
+        const ct = stated ? pinnedType(stated, RASTER_TYPES) : 'image/png';
+        if (!ct) return new Response('Tile upstream type', { status: 502, headers: NO_STORE });
         return new Response(r.body, {
           status: 200,
           headers: {
-            'Content-Type': r.headers.get('Content-Type') || 'image/png',
+            'Content-Type': ct,
             'Cache-Control': 'public, max-age=' + DAY,
             'Access-Control-Allow-Origin': '*',
+            ...INERT,
           },
         });
       } catch (e) {
