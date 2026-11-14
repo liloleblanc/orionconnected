@@ -65605,6 +65605,94 @@ var HERITAGE_MARKS = [
     airports: '*CA'
   },
   {
+    // 2026-11-14 — DREAM LIVERY: A REAL AIR CANADA 747 IN THE LIVERY OF 2017,
+    // WHICH IT NEVER WORE. A what-if, like the Future Retro DC-9, and the card
+    // says so twice: Dream livery over it (heritageDreamKicker) and what-if in
+    // the caption, beside the livery, in the words of each language. A
+    // passenger must not take it for a scheme the aeroplane wore.
+    //
+    // WHAT IS REAL: the aeroplane. C-FTOE, delivered as CF-TOE, fleet 305, a
+    // Boeing 747-133 (c/n 20881, line 236), the fifth and last of the Air
+    // Canada 747-100s, delivered new on 13 May 1974; withdrawn on 15 October
+    // 1998 to Marana (sold to Evergreen in September 1998) and broken up in
+    // July 1999, after 67,407 hours and 17,892 landings (AirHistory.net: the
+    // C-FTOE registration page and its photographs 384311, 324435, 21291 and
+    // 21175). In its last years it wore the 1993 livery: photographed at
+    // Toronto on 28 July 1998 white, with red AIR CANADA titles beside the red
+    // rondelle and the red leaf on a dark green-grey fin.
+    // WHAT IS NOT: these colours. The supplied drawing shows it in the scheme
+    // Air Canada unveiled on 9 February 2017 (a black fin with the red
+    // rondelle, black titles, a black belly), nineteen years after it left.
+    //
+    // THE CAPTION, in English: Boeing 747-133 · 1974–1998 · 2017 livery
+    // what-if. The years are the years of this aeroplane with Air Canada, its
+    // delivery and its withdrawal, and only the years: they are real, and
+    // the what-if stands beside the livery, the one thing that is not. They
+    // are not the years of the type: the first Air Canada 747-133, CF-TOA,
+    // came in February 1971 (AirHistory.net). The other eight languages say
+    // it in four parts, the type, the years, what if in their own words (the
+    // words of the Future Retro DC-9: et si, y si, e se, Fiktion, and so on)
+    // and the livery by its year in the words of the other cards. No
+    // registration and no fleet number is printed: no archive caption prints
+    // either. The type comes from this record into the place the caption
+    // leaves for it: IATA_AIRCRAFT names no 747-100 (no 741), and 133 is the
+    // customer number of Air Canada, as 233 is on the 767 cards.
+    // Measured at 1680 x 1050 as the A350-1000 was, each language drawn and
+    // then measured after document.fonts.ready, every language is one row.
+    // The longest line is the German, 550.8 of 636.7 px (86.5%), then the
+    // Portuguese 77.1%, the Spanish 76.8%, the Italian 75.4%, the French
+    // 74.7%, the Japanese 71.5%, the English 71.2%, the Chinese 68.4% and the
+    // Arabic 68.2%.
+    //
+    // WHOSE GATES: the Air Canada set. It names no gates, so it runs on Air
+    // Canada pages only, like the 2017-livery DC-9, and never on a United
+    // gate; airports *CA, as every Air Canada card of the set.
+    //
+    // THE MARK is the lockup the live Air Canada boards use today, the file of
+    // the Future Retro DC-9 (LOCAL_LOGOS.AC, air-canada.svg): the red rondelle
+    // beside AIR CANADA in black, as the 2017 scheme letters the aeroplane. No
+    // new file, no plate behind it, nothing recoloured.
+    //
+    // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the only
+    // copy of the supplied drawing so far (2000 x 849, on a white page), at
+    // the depth of two pixels, the default and the smallest that passes:
+    // counted as on the A350-1000, light pixels on the outline of the dark
+    // paint are 433 at one pixel and 1 at two; by the count of the Dream
+    // livery test the pale rim is 21. Cropped to its own edges and scaled to
+    // the 2272 px of the other cards (2272 x 635). Nothing of the aeroplane is
+    // repainted. The light line along the leading edge and the top of the fin
+    // is drawn, and stays at any depth, as on the A350-1000.
+    // The file on disk is a STAND-IN, the drawing at the size it was first
+    // sent (1902 x 532 once cropped), so it is soft at this width. The
+    // full-size drawing replaces it by running the same tool on it into the
+    // same file name: one file, and nothing else on the card changes.
+    //
+    // ITS SHAPE, measured on the stand-in behind the upper deck, where the
+    // body is one deck: the top of the fuselage is level from 34% to 74% of
+    // the length, and the depth is the median of the columns 56–64% back,
+    // behind the wing and ahead of the taper to the tail (234 px). Length to
+    // the furthest aft point (the top of the fin) over that depth is 9.71,
+    // against 10.87 for the 747-100 (70.66 m overall over a fuselage 6.50 m,
+    // 21 ft 4 in, across, the figure published for the 747-100 by Aerocorner
+    // and aircraftinvestigation.info): 10.7% short. Boeing, 747 Airplane
+    // Characteristics for Airport Planning, D6-58326 rev E (May 2011), section
+    // 2.2, is the source to check that depth against; it was not read for
+    // this card. It is used as drawn either way: it is the supplied art, and
+    // a stretch is a call for its author. The rest is the -100: the short
+    // upper deck (the hump ends about a third of the way back; the -300 and
+    // the -400 carry it further aft), a wing with no winglets (the -400 has
+    // them) and five main deck doors a side.
+    //
+    // Between the 1987 DC-9 and the 1980 DC-9 on purpose: the Air Canada widebodies (this 747, the two 767s, the two TriStars and the A350-1000) then come every other card in the Atlantic pool and in the pool of every other Canadian airport, the wrap included, and the 2017 DC-9 stays three or more cards from every other DC-9.
+    key: 'air-canada-747-305-2017',
+    file: '/logos/airlines/canadian/air-canada.svg',
+    name: 'Air Canada',
+    type: 'Boeing 747-133',
+    aircraft: '/aircraft/heritage/air-canada-747-305-2017.png',
+    heading: 'heritageDreamKicker',
+    airports: '*CA'
+  },
+  {
     // v23912 — AND THE SAME AEROPLANE IN ITS EARLIER DRESS. The supplied AC80
     // drawing: capitals 'AIR CANADA' titles over a single red cheatline, paired
     // with the capitals mark of the same look (AIR CANADA stacked over the
@@ -65975,7 +66063,7 @@ var HERITAGE_MARKS = [
     // side, as both have. It is used as drawn: it is the supplied art, and a
     // stretch is a call for its author.
     //
-    // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the Air Canada widebodies then come every other card (767, TriStar, A350, 767, TriStar) in the Atlantic pool and in the pool of every other Canadian airport, so no two are back to back.
+    // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the Air Canada widebodies then come every other card (747, 767, TriStar, A350, 767, TriStar) in the Atlantic pool and in the pool of every other Canadian airport, so no two are back to back.
     key: 'air-canada-a350-1000',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',

@@ -16,10 +16,11 @@
 //   show it runs where it ran.
 //
 //   A CARD SAYS WHAT ITS HEADING IS. A what-if is not from any archive, so
-//   the two what-if cards (this one and the Future Retro DC-9) say Dream
-//   livery over the card, in the nine languages, and the caption of the 787-8
-//   says what-if again and calls the livery imaginary: a passenger must not
-//   take it for a scheme the airline paints.
+//   the what-if cards (this one, the Future Retro DC-9 and the Air Canada
+//   747-133 in the 2017 livery) say Dream livery over the card, in the nine
+//   languages, and the caption of the 787-8 says what-if again and calls the
+//   livery imaginary: a passenger must not take it for a scheme the airline
+//   paints.
 //
 // tests/heritage-card.test.js is left exactly as it was: it still passes, and
 // that is the first proof that the existing cards are untouched.
@@ -38,15 +39,17 @@ const STORE = require('../fids-current/js/board-strings.js');
 const KEY = 'united-787-dream';
 const PICTURE = '/aircraft/heritage/united-787-dream.png';
 const HEADING = 'heritageDreamKicker';
-const WHAT_IF_CARDS = ['air-canada-dc9-2017', KEY];
+const WHAT_IF_CARDS = ['air-canada-dc9-2017', 'air-canada-747-305-2017', KEY];
 
 // The Air Canada set as it stood before a card could name its gates, in the
 // order the rotation runs it. A card added to it, taken from it or moved in
 // it is a change to where the existing cards run, and has to be made here too.
 // 2026-11-14 — the A350-1000 that is coming (tests/heritage-a350-card.test.js)
 // joined it, between the 1993 DC-9 and the 1980 DC-8.
+// 2026-11-14 — the Dream livery 747-133 (tests/heritage-747-305-card.test.js)
+// joined it, between the 1987 DC-9 and the 1980 DC-9.
 const AIR_CANADA_SET = [
-  'air-atlantic', 'air-nova', 'canadian-airlines', 'air-canada', 'air-canada-caps', 'air-canada-767',
+  'air-atlantic', 'air-nova', 'canadian-airlines', 'air-canada', 'air-canada-747-305-2017', 'air-canada-caps', 'air-canada-767',
   'air-canada-dc8', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8-80', 'air-canada-767-87',
   'air-canada-dc9-2017', 'air-canada-l1011-93'
 ];
@@ -418,7 +421,7 @@ test('asked with the airport alone the picker answers from the Air Canada set, a
 const DREAM = { en: 'Dream livery', fr: 'Livrée de rêve', es: 'Librea soñada', de: 'Traumlackierung', it: 'Livrea da sogno',
                 pt: 'Pintura de sonho', ja: '夢の塗装', zh: '梦想涂装', ar: 'طلاء الأحلام' };
 
-test('the heading: Dream livery in nine languages over the two what-if cards, From the archive over every other', () => {
+test('the heading: Dream livery in nine languages over the what-if cards, From the archive over every other', () => {
   assert.deepEqual(Object.keys(DREAM).sort(), STORE.LANGS.slice().sort(), 'all nine board languages');
   const e = STORE.entry(HEADING);
   assert.ok(e, 'the heading is in the store');
@@ -429,7 +432,7 @@ test('the heading: Dream livery in nine languages over the two what-if cards, Fr
   }
   assert.equal(new Set(STORE.LANGS.map((l) => e[l])).size, STORE.LANGS.length, 'nine different headings: none left in another language');
   // which cards name it
-  assert.deepEqual(MARKS.filter((m) => m.heading === HEADING).map((m) => m.key).sort(), WHAT_IF_CARDS.slice().sort(), 'the two what-if cards, and no other');
+  assert.deepEqual(MARKS.filter((m) => m.heading === HEADING).map((m) => m.key).sort(), WHAT_IF_CARDS.slice().sort(), 'the what-if cards, and no other');
   for (const m of MARKS) if (m.heading) assert.ok(STORE.entry(m.heading), m.key + ' names a heading the store has');
 
   // and what each card prints, in each language, with English beside it

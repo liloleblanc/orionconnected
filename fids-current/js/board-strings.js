@@ -850,14 +850,21 @@
     'heritage:air-canada-dc9-93': { en: 'McDonnell Douglas DC-9-32 · 1968–2002 · 1993 livery', fr: 'McDonnell Douglas DC-9-32 · 1968–2002 · livrée de 1993', es: 'McDonnell Douglas DC-9-32 · 1968–2002 · librea de 1993', de: 'McDonnell Douglas DC-9-32 · 1968–2002 · Lackierung von 1993', it: 'McDonnell Douglas DC-9-32 · 1968–2002 · livrea del 1993', pt: 'McDonnell Douglas DC-9-32 · 1968–2002 · pintura de 1993', ja: 'マクドネル・ダグラスDC-9-32 · 1968–2002 · 1993年塗装', zh: '麦克唐纳-道格拉斯DC-9-32 · 1968–2002 · 1993年涂装', ar: 'ماكدونيل دوغلاس DC-9-32 · 1968–2002 · طلاء 1993' },
     'heritage:air-canada-dc9-2017': { en: 'McDonnell Douglas DC-9-32 · Future Retro what-if · 2017 livery', fr: 'McDonnell Douglas DC-9-32 · et si… · livrée de 2017', es: 'McDonnell Douglas DC-9-32 · ¿y si…? · librea de 2017', de: 'McDonnell Douglas DC-9-32 · Fiktion · Lackierung von 2017', it: 'McDonnell Douglas DC-9-32 · e se… · livrea del 2017', pt: 'McDonnell Douglas DC-9-32 · e se… · pintura de 2017', ja: 'マクドネル・ダグラスDC-9-32 · もしも · 2017年塗装', zh: '麦克唐纳-道格拉斯DC-9-32 · 假想 · 2017年涂装', ar: 'ماكدونيل دوغلاس DC-9-32 · ماذا لو · طلاء 2017' },
     // The what-if cards: a real aeroplane in a livery nobody flies (the Future
-    // Retro DC-9 above, the United 787-8). Their heading is Dream livery where
+    // Retro DC-9 above, the United 787-8, the Air Canada 747-133 in the 2017
+    // livery). Their heading is Dream livery where
     // the archive cards say From the archive: a livery somebody dreamed up, in
     // the words each language has for that, never the English ones. The 787-8
     // caption says it again, plainly, with the what-if words of the DC-9 card
     // and the livery called imaginary; {TYPE} is the aeroplane as the boards
     // name it, from the card's own record (HERITAGE_MARKS).
+    // The 747-133 prints the years that aeroplane really flew for Air Canada,
+    // 1974–1998, its delivery and its withdrawal, then what-if beside the
+    // livery and its year, in the what-if words of the DC-9 card. Measured
+    // after document.fonts.ready following the draw, every language is one
+    // row at 1680 x 1050; the longest line is the German, at 86.5% of it.
     heritageDreamKicker: { en: 'Dream livery', fr: 'Livrée de rêve', es: 'Librea soñada', de: 'Traumlackierung', it: 'Livrea da sogno', pt: 'Pintura de sonho', ja: '夢の塗装', zh: '梦想涂装', ar: 'طلاء الأحلام' },
     'heritage:united-787-dream': { en: '{TYPE} · Dream livery what-if', fr: '{TYPE} · et si… · livrée imaginaire', es: '{TYPE} · ¿y si…? · librea imaginaria', de: '{TYPE} · Fiktion · erdachte Lackierung', it: '{TYPE} · e se… · livrea immaginaria', pt: '{TYPE} · e se… · pintura imaginária', ja: '{TYPE} · もしも · 架空の塗装', zh: '{TYPE} · 假想 · 虚构涂装', ar: '{TYPE} · ماذا لو · طلاء خيالي' },
+    'heritage:air-canada-747-305-2017': { en: '{TYPE} · 1974–1998 · 2017 livery what-if', fr: '{TYPE} · 1974–1998 · et si… · livrée de 2017', es: '{TYPE} · 1974–1998 · ¿y si…? · librea de 2017', de: '{TYPE} · 1974–1998 · Fiktion · Lackierung von 2017', it: '{TYPE} · 1974–1998 · e se… · livrea del 2017', pt: '{TYPE} · 1974–1998 · e se… · pintura de 2017', ja: '{TYPE} · 1974–1998 · もしも · 2017年塗装', zh: '{TYPE} · 1974–1998 · 假想 · 2017年涂装', ar: '{TYPE} · 1974–1998 · ماذا لو · طلاء 2017' },
     // The card of an aeroplane that is coming: the Airbus A350-1000 that Air
     // Canada has ordered and does not fly yet. Its heading is Coming to the
     // fleet where the archive cards say From the archive, and its caption says

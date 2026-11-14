@@ -223,6 +223,13 @@ a winglet) is no mix of page and aeroplane, and it stays at any depth.
 dark paint and passes 40 or fewer: for the second cut-out 1257 at two, 99 at
 five, 15 at six (the first gave 790 at two and 13 at six).
 
+The Dream livery 747-133 is a stand-in for now (2000 x 849, on a white page)
+and passes at the default two: by the same count 433 at one, 1 at two.
+The full-size drawing replaces it through the same command into the same
+file name:
+
+    python3 scripts/heritage-sky/card-cutout.py 747-305.png fids-current/aircraft/heritage/air-canada-747-305-2017.png
+
 A corner of the picture that is not clear stops the tool when it is solid or
 has the colour of the page, as page left in would be. A drawing cropped to its
 own edges can put a point of its own paint, partly clear, in a corner: the top
