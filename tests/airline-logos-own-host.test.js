@@ -31,11 +31,15 @@
 //      codes: its tile, its lettering by day and by night, the brand of its
 //      flight page. The gate band is built inside the builder of the whole
 //      gate and cannot be run alone, so:
-//   5. EVERY LINE THAT BUILDS AN IMAGE ADDRESS, in all of those files, names no
-//      host at all, absolute or protocol-relative, but for a short list of
-//      hosts that serve no airline logo. A list of the logo hosts known today
-//      (3) says nothing of the host somebody reaches for tomorrow.
-// The hotel, map, weather and font hosts are not this rule.
+//   5. EVERY LINE OF CODE, in all of those files, names no host at all,
+//      absolute or protocol-relative, but for the list of the hosts the code
+//      uses, each with what it serves (the feeds, the map tiles, the fonts,
+//      the hotel pages, the videos, the photographs of cities), none of them
+//      an airline logo; and no line builds an address by joining a scheme to
+//      a value. A list of the logo hosts known today (3) says nothing of the
+//      host somebody reaches for tomorrow, and a line that only builds an
+//      image is no fence: a host named on a line of its own, then joined into
+//      the address of the gate band, passed it.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -341,29 +345,61 @@ test('the phone app, for every code: its tile, its lettering and the brand of it
   assert.deepEqual(addresses('<span style="-webkit-mask-image:url(\'//x.test/a.svg\');mask-image:url(\'/logos/a.svg\')"></span>').map(outside), [true, false]);
 });
 
-// ── every line that builds an image address ────────────────────────────────
-// The hosts a line that builds an image address may name, and what each serves. None serves an
-// airline logo. A host that is not here fails the test, whatever it is: the gate band is built
+// ── every line of code ─────────────────────────────────────────────────────
+// The hosts a line of code may name, and what each serves. None serves an airline logo. A host that
+// is not here fails the test, whatever it is and whatever the line does: the gate band is built
 // inside the builder of the gate, which cannot be run alone, and a list of the logo hosts known
-// today would pass any other host.
+// today would pass any other host. A host named on a line that builds no image, then joined into an
+// image address on the next, is a host named on a line of code like any other.
+// (the worker of the boards is read from the one line that names its base, FIDS_API_BASE)
+const OWN_WORKER = (/^const FIDS_API_BASE = 'https:\/\/([a-z0-9.-]+)';$/m.exec(fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8')) || [])[1] || '';
 const NOT_LOGO_HOSTS = {
+  // our own
+  [OWN_WORKER]: 'the worker of the boards: the flight feeds, the lookups of an aircraft and an operator, the sign-in of the menu',
+  'media.orionconnected.com': 'an example typed as the hint of the media address field in the menu',
+  // feeds the boards read themselves
+  'tampaairportwebprod.prod.acquia-sites.com': 'the flight feed of Tampa',
+  'raw.githubusercontent.com': 'the open list of airports (their places), when the board has none',
+  // maps
+  'basemaps.cartocdn.com': 'the map tiles of the Studio',
+  // fonts and script libraries
+  'fonts.googleapis.com': 'the fonts of the boards',
+  'fonts.gstatic.com': 'the font files those fonts load',
   'cdnjs.cloudflare.com': 'a script library (the QR code of the boards)',
   'unpkg.com': 'a script library (the arcs of the map in the Studio)',
+  // photographs of cities, behind a card
+  'images.unsplash.com': 'photographs of cities behind the weather and hotel cards',
+  'api.openverse.org': 'the search for a photograph of a city under an open licence',
+  // hotels
+  'all.accor.com': 'the page of a hotel, the link of its card (a page, never an image)',
+  // videos
   'img.youtube.com': 'the still of a video, in the list of the menu',
   'www.youtube.com': 'the video player',
-  'youtube.com': 'an example typed as the hint of a field in the menu'
+  'www.youtube-nocookie.com': 'the video player, without its cookies',
+  'youtube.com': 'an example typed as the hint of a field in the menu',
+  // the rest
+  'example.com': 'an example typed as the hint of the address field of a background',
+  'www.w3.org': 'the name space of an inline drawing (svg), not an address that is fetched'
 };
 // a line builds an image address where it names an image, a source, a background or a mask, or
 // one of the words this code uses for the mark of an airline
 const BUILDS_IMAGE = /<img\b|<image\b|<source\b|<video\b|\bsrc\b|\bsrcset\b|url\(|background|mask|\bposter\b|new Image\b|logo|emblem|wordmark|monogram|airline-tiles|watermark/i;
-const HOST = /(?:https?:)?\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,})/ig;
+// (a map tile address names its server as {s}. before the host: the host is read past it)
+const HOST = /(?:https?:)?\/\/(?:\{[a-z]\}\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,})/ig;
 // A RULE CITES ITS SOURCE. Two tables of rules (when a gate closes, who boards when) name the
-// page of the airline each rule was read from, under a key that is also the name of an image
+// page of the airline each rule was read from (src, and srcFr, srcZones and the like for a page in
+// another language or on another part of the rule), under a key that is also the name of an image
 // attribute. Such a line builds no image address: it is a row of one of those two tables, and the
 // address it names is a page, never a picture.
-const CITES = (rel, line) => (rel === 'js/boarding-sequence.js' && /^\s*src: 'https:\/\/[^']+',?\s*$/.test(line))
+const CITES = (rel, line) => (rel === 'js/boarding-sequence.js' && /^\s*src(?:[A-Z][A-Za-z]*)?: 'https:\/\/[^']+',?\s*$/.test(line))
   || (rel === 'js/fids-core.js' && /^\s*(?:'?[A-Z0-9]{2}'?: \{ min: \d+, kind: '[A-Za-z]+',.*)?\bsrc: 'https:\/\/[^']+', checked: '\d{4}-\d\d-\d\d'/.test(line));
 const PICTURE = /\.(?:svg|png|jpe?g|gif|webp|avif|ico|bmp)(?:[?#'"`\s)]|$)/i;
+// AN ADDRESS BUILT FROM A SCHEME AND A VALUE: a string that is only a scheme (or the two slashes of
+// one), joined to what follows it, or a template that opens on a scheme and a value. The host is then
+// in the value, and no reading of the line can say what it is. The one form kept: an address typed
+// without its scheme is given one (a hotel link, a photograph), which joins no host the line names.
+const JOINED = /(['"`])(?:https?:)?\/\/\1\s*\+|`(?:https?:)?\/\/\$\{/;
+const GIVES_SCHEME = /\b([A-Za-z_$][\w$]*)\s*=\s*(['"])https?:\/\/\2\s*\+\s*\1\s*;/;
 // the hosts a line of code names: what follows a comment marker is commentary, but for the two
 // slashes that begin an address
 function hostsNamed(line) {
@@ -373,7 +409,7 @@ function hostsNamed(line) {
   return [...code.matchAll(HOST)].map((m) => m[1].toLowerCase());
 }
 
-test('no line that builds an image address names a host, but for the hosts that serve no airline logo', () => {
+test('no line of code names a host, but for the hosts the code uses for something other than an airline logo', () => {
   // the reader of a line
   assert.deepEqual(hostsNamed("  r1LogoSrc = r1LogoSrc || 'https://cdn.example.net/airlines/' + airlineCode + '.png';"), ['cdn.example.net']);
   assert.deepEqual(hostsNamed("  img.src = '//pics.example.io/400/120/' + code + '.png';"), ['pics.example.io']);
@@ -381,40 +417,60 @@ test('no line that builds an image address names a host, but for the hosts that 
   assert.deepEqual(hostsNamed("  var src = '/logos/airline-tiles/' + t + '.svg'; // was https://img.example.org/x.png"), []);
   assert.deepEqual(hostsNamed('  // the logo came from https://img.example.org/x.png'), []);
   assert.deepEqual(hostsNamed("  var logo = '/logos/a.svg';"), []);
+  assert.deepEqual(hostsNamed("    L.tileLayer('https://{s}.basemaps.example.com/{z}/{x}/{y}.png',"), ['basemaps.example.com']);
+  // A HOST ON A LINE OF ITS OWN, THEN JOINED INTO THE GATE BAND: the two ways it passed the sweep of
+  // the lines that build an image (the line that names the host builds none, and the line that
+  // builds the image names none)
+  assert.deepEqual(hostsNamed("  var _r1Cdn = 'https://cdn.carriermarks.example/a/';"), ['cdn.carriermarks.example']);
+  assert.doesNotMatch("  var _r1Cdn = 'https://cdn.carriermarks.example/a/';", BUILDS_IMAGE, 'that line builds no image');
+  assert.match("  r1LogoSrc = r1LogoSrc || ('https://' + _h + '/a/' + airlineCode + '.png');", JOINED);
+  assert.deepEqual(hostsNamed("  r1LogoSrc = r1LogoSrc || ('https://' + _h + '/a/' + airlineCode + '.png');"), [], 'and this one names no host');
+  assert.match('  var u = `https://${host}/a/${code}.png`;', JOINED);
+  assert.match("  var u = '//' + host + '/a.png';", JOINED);
+  for (const line of ["  url = 'https://' + url;", "  photoUrl = 'https://' + photoUrl;", "  else if (u && !/^https?:/i.test(u) && u.indexOf('/')!==0) u = 'https://'+u;"]) assert.ok(JOINED.test(line) && GIVES_SCHEME.test(line), line);
+  assert.equal(GIVES_SCHEME.test("  r1LogoSrc = 'https://' + _h;"), false);
   for (const line of ['<img src="/logos/a.svg">', 'el.style.backgroundImage = "url(" + u + ")"', 'var r1LogoSrc = carrierLogoUrl(code);', "'/logos/airline-tiles/' + t", 'mask-image:url(x)', 'img.src = u;']) assert.match(line, BUILDS_IMAGE, line);
   const files = ['js/fids-core.js', 'js/shared-names.js', 'js/template-renderer.js', 'js/designer.js', 'js/menu.js', 'js/boarding-sequence.js', 'js/feed-router.js',
     'app.html', 'fids.html', 'gids.html', 'bids.html', 'screen.html', 'rotate.html', 'menu.html', 'designer.html', 'data/airline-colors.js'];
   const found = [], seen = {};
-  let lines = 0, read = 0, cited = 0;
+  let lines = 0, read = 0, cited = 0, given = 0, images = 0;
   for (const rel of files) {
     const file = path.join(FC, rel);
     if (!fs.existsSync(file)) continue;
     read++;
     fs.readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
-      if (!BUILDS_IMAGE.test(line)) return;
+      const t = line.trim();
+      if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('<!--')) return;
       lines++;
-      if (CITES(rel, line)) { cited++; if (PICTURE.test(line)) found.push(rel + ':' + (i + 1) + ': a rule cites a picture: ' + line.trim().slice(0, 120)); return; }
+      if (BUILDS_IMAGE.test(line)) images++;
+      if (CITES(rel, line)) { cited++; if (PICTURE.test(line)) found.push(rel + ':' + (i + 1) + ': a rule cites a picture: ' + t.slice(0, 120)); return; }
       for (const host of hostsNamed(line)) {
         if (Object.prototype.hasOwnProperty.call(NOT_LOGO_HOSTS, host)) { seen[host] = 1; continue; }
-        found.push(rel + ':' + (i + 1) + ': ' + host + ' in ' + line.trim().slice(0, 120));
+        found.push(rel + ':' + (i + 1) + ': ' + host + ' in ' + t.slice(0, 120));
+      }
+      if (JOINED.test(line.replace(/(^|[^:'"`(=\/])\/\/\s.*$/, '$1'))) {
+        if (GIVES_SCHEME.test(line)) given++;
+        else found.push(rel + ':' + (i + 1) + ': an address joined from a scheme and a value: ' + t.slice(0, 120));
       }
     });
   }
-  assert.ok(read >= 14 && lines > 4000, read + ' files, ' + lines + ' lines that build an image address');
-  assert.deepEqual(found, [], found.length + ' lines that build an image address name a host not known to serve none:\n' + found.join('\n'));
-  assert.ok(cited >= 20 && cited <= 60, cited + ' rows of the two rule tables cite the page of an airline');
+  assert.ok(read >= 14 && lines > 50000 && images > 3000, read + ' files, ' + lines + ' lines of code, ' + images + ' of them building an image address');
+  assert.deepEqual(found, [], found.length + ' lines of code name a host not known to serve no airline logo, or join an address:\n' + found.join('\n'));
+  assert.ok(cited >= 30 && cited <= 80, cited + ' rows of the two rule tables cite the page of an airline');
+  assert.equal(given, 3, 'three addresses typed without a scheme are given one');
   assert.equal(CITES('js/fids-core.js', "    r1LogoSrc = r1LogoSrc || 'https://cdn.example.net/airlines/' + airlineCode + '.png';"), false);
   assert.equal(CITES('js/fids-core.js', "    'ZZ': { src: 'https://cdn.example.net/airlines/zz.png', h: 100 },"), false);
   assert.equal(CITES('app.html', "  src: 'https://www.example.com/page',"), false);
   assert.equal(PICTURE.test("  src: 'https://www.example.com/boarding/logo.svg',"), true);
-  // the list holds only hosts such a line still names: one that is no longer named leaves it
+  // the list holds only hosts a line still names: one that is no longer named leaves it
+  assert.ok(/\.workers\.dev$/.test(OWN_WORKER), 'the worker of the boards: ' + OWN_WORKER);
   assert.deepEqual(Object.keys(seen).sort(), Object.keys(NOT_LOGO_HOSTS).sort());
   for (const why of Object.values(NOT_LOGO_HOSTS)) assert.ok(why.length > 10);
   // and none of them is a host of airline logos
-  for (const host of Object.keys(NOT_LOGO_HOSTS)) assert.doesNotMatch(host, /wway|avs\.io|gstatic|clearbit|airhex|kiwi|daisycon|logo/i, host);
+  for (const host of Object.keys(NOT_LOGO_HOSTS)) assert.doesNotMatch(host, /wway|avs\.io|gstatic\.com\/flights|clearbit|airhex|kiwi|daisycon|logo/i, host);
   // the gate band: every line that sets its address is read by the sweep above, and none names a host
   const core = fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8');
   const band = core.split('\n').filter((l) => /\br1LogoSrc\s*=[^=]/.test(l));
   assert.ok(band.length >= 6, band.length + ' lines set the address of the gate band');
-  for (const l of band) { assert.match(l, BUILDS_IMAGE); assert.deepEqual(hostsNamed(l), [], l.trim().slice(0, 120)); }
+  for (const l of band) { assert.match(l, BUILDS_IMAGE); assert.deepEqual(hostsNamed(l), [], l.trim().slice(0, 120)); assert.doesNotMatch(l, JOINED); }
 });

@@ -9100,6 +9100,20 @@ html body[data-gate-airline]:not(#_):not(#_):not(#_) {
   --plate-base: var(--gate-card, color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14));
   --plate-blend: screen;
 }
+/* A PICTURE CARD THAT GIVES WAY. The pattern pictures behind the cards are stock patterns, not
+   the art of an airline, so a picture whose paint the discs of its carrier sink into is tried on
+   the dark plate like any other card (window._gateCardDark): KLM, whose light blue discs sank
+   into the blues of its gradient, and Emirates, whose red discs sat on the red of its wave. Where
+   the discs stand clear of the plate, the gate marks the body (data-gate-card) and this rule lays
+   the plate of the house over the picture: the engraving, the dark the gate publishes, screened,
+   as the rule above paints every other gate on the dark plate. It outranks every rule that names
+   a picture (eleven :not at most). The pictures stay in their rules, unused while the measure
+   sends their gate dark, so a new pattern is wired by naming its file. */
+html body[data-gate-airline][data-gate-card="dark"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22904');
+  --plate-base: var(--gate-card, #16181D);
+  --plate-blend: screen;
+}
 /* Carriers WITH their own artwork keep it flat and untinted — the texture is
    the point, and an accent wash over it would be the v22902 mistake again. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"],

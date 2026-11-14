@@ -12117,6 +12117,17 @@ function _opEvFarGet(f) {
 }
 var _OP_JAZZ_ONLY_TYPE = /\b(CRJ|CR[279]|E75|E7W|E175|E-?175|ERJ.?175|EMBRAER.?175)\b/;
 var _OP_WS_DASH8 = /DH8|DH4|DHC[- ]?8|Q[ -]?400|DASH[ -]?8/;
+// THE OPERATORS OF AN AIR CANADA FLIGHT. Air Canada Express is flown by Jazz and PAL only, and
+// Rouge is Air Canada: these are the operators an Air Canada number names on its own record.
+// Any other code a record gives for an AC-numbered leg is held to two tests before it is
+// believed (fidsResolveOperator below): the name the record gives with it is not the name of
+// Air Canada itself, and the leg fits the network of that airline (_regionalOpFitsRoute).
+// The Quebec City feed gives AC313 (YQB gate 23) the code 9M with the name Air Canada.
+// Central Mountain Air flies in Quebec since January 2026, but on its own flights, under 9M
+// numbers it sells itself (the Lower North Shore, from Montreal and Quebec City); it flies no
+// Air Canada number there. A code the record contradicts with the name of the marketing
+// carrier says nothing, and the gate is the Air Canada gate.
+var _AC_OWN_OPERATORS = { QK: 1, PB: 1, RV: 1, ACEX: 1 };
 // → { op, name, src, basis }; op '' when nothing says who operates it. `home`
 // is the airport the row belongs to (route fit for a band).
 function fidsResolveOperator(f, home) {
@@ -12126,10 +12137,17 @@ function fidsResolveOperator(f, home) {
   var flight = String(f.flight || '').replace(/\s+/g, '').toUpperCase();
   var nm = flight.match(/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])(\d{1,4})/);
   var fn = nm ? parseInt(nm[1], 10) : NaN;
+  var mktName = String((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[mkt]) || '').trim().toUpperCase();
   var hit = function (op, src, basis) {
     op = String(op || '').trim().toUpperCase();
     if (op.length === 3 && typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[op]) op = CALLSIGN_TO_IATA[op];
     if (!op || op === mkt) return null;
+    // an AC-numbered leg names Jazz, PAL or Rouge; any other code, only where its record does
+    // not name Air Canada itself and the leg fits its network (see _AC_OWN_OPERATORS)
+    if (mkt === 'AC' && !_AC_OWN_OPERATORS[op]) {
+      if (mktName && String(basis || '').trim().toUpperCase() === mktName) return null;
+      if (typeof _regionalOpFitsRoute === 'function' && !_regionalOpFitsRoute(op, home, f._locIata)) return null;
+    }
     return { op: op, name: _opLadderName(op), src: src, basis: String(basis || '') };
   };
   var r;
@@ -12247,7 +12265,10 @@ function _opEvRefresh(home, rows) {
 // Every band-derived operator
 // now has to survive the geography; when it can't, the attribution is dropped
 // and the marketing carrier stands on its own rather than being invented.
-var _REGIONAL_MAX_KM = { 'PB': 1900, 'WR': 1900, 'QK': 2900 };
+// Central Mountain Air flies short-range aircraft only (Beech 1900, Dash 8, Dornier 328), as PAL and
+// Encore do. Air Canada sells seats on some of its own flights in British Columbia (Vancouver to
+// Quesnel and Williams Lake) under AC numbers: such a leg is one the ladder can name it on.
+var _REGIONAL_MAX_KM = { 'PB': 1900, 'WR': 1900, 'QK': 2900, '9M': 1900 };
 function _apLatLngFor(iata) {
   var c = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
   if (!c) return null;
@@ -15183,6 +15204,8 @@ window._GATE_ORB_LOOKS = {
   'VY': { ink: '#4D4D4D' },
   'WB': { ink: '#1C4E9D' },
   'DE': { ink: '#111111' },
+  // (KLM: the navy of its glyphs on its light blue, and the mark its white disc would take; on the
+  // dark plate it keeps its discs, and the white disc waits for a card they sink into)
   'KL': { ink: '#072B45', whiteArt: '/logos/symbols/airlines/KL.svg' },
   '4N': { ink: '#0F2A55' },
   // THE FINISHED TILE IN PLACE OF A MARK THAT WAS INKED WHITE OR SAT ON A SECOND COLOUR
@@ -15286,7 +15309,10 @@ window._orbInkOn = function (hex) {
 // AND THE DISCS STAY: a dark neutral plate under discs of the colour of the airline, as the Air
 // Canada gate has always been drawn (red discs on a black card). Only a gate whose own discs
 // are dark themselves (a navy, a black, a deep green or purple that would sink into the dark
-// plate too), or one whose card is a picture of the airline, is drawn as a white column.
+// plate too) is drawn as a white column. A picture card is no exception: the pictures are stock
+// patterns, not the art of an airline, so a picture whose paint the discs sink into is tried on
+// the dark plate like any other card (KLM and Emirates take it). Its row stays in the table
+// below, so a new pattern is wired by naming its file, and the measure asks it again.
 //
 // WHAT PAINTS THE CARD. The rail cards, the shelf cells and the panels of the right column are
 // one plate (display-overrides.css, the rule that paints --plate-base and --plate-tex under
@@ -15323,7 +15349,8 @@ window._GATE_CARD_PICTURES = {
   'DL': { file: 'plate-dl-waves.jpg', at: ['#202743'] },
   'AA': { file: 'plate-aa-gradient.jpg', at: ['#5D93B1'] },
   'F8': { file: 'ac-lines-plate.jpg', at: ['#0D0D0D'] },
-  // KLM: three blues of one gradient
+  // KLM: three blues of one gradient. Its light blue discs sink into them, so its gate takes the
+  // dark plate and keeps its discs; the row waits for a pattern they stand out on
   'KL': { file: 'plate-blue-grad.jpg', at: ['#0003B3', '#00049D', '#0002CA'] },
   // Cathay, Aer Lingus and EVA shared one emerald plate (two dark greens under a gold thread):
   // a picture borrowed for three airlines, not the jade, the teal or the green of any of them.
@@ -15332,7 +15359,8 @@ window._GATE_CARD_PICTURES = {
   'LH': { file: 'plate-gold-wave.jpg', at: ['#D1B055', '#DDBA5A'] },
   // Emirates: the discs stand on the dark green of the picture (two greens), and its red wave
   // passes four pixels under the foot of each. The wave is listed with the greens: a red disc
-  // beside that wave is red on red.
+  // beside that wave is red on red. So its gate takes the dark plate under its red discs (3.00 to
+  // 1 on it), and the row waits for a pattern they stand out on.
   'EK': { file: 'plate-ek-uae.jpg', at: ['#000F07', '#001F0E', '#B60B1F'] },
   // Qatar: sand waves, three tans
   'QR': { file: 'plate-wave.jpg', at: ['#E6B185', '#C89F7E', '#B99483'] },
@@ -15492,17 +15520,19 @@ window._gateColumnDisc = function (code) {
   var disc = ground || accent;
   return { carrier: c, accent: accent, ground: ground, disc: disc, ink: row.ink || window._orbInkOn(disc) };
 };
-// DOES THIS GATE TAKE THE DARK PLATE, AND WHICH DARK. Nothing for a gate left as drawn, for a
-// picture card (the picture stays), and for a gate whose discs stand out on the shade of its
-// own colour already. A gate that sinks there is tried on its own dark, then on the house
-// charcoal, and takes the first its discs stand clear of with room. Where they stand clear of
-// neither, the discs are dark themselves, and the answer is nothing: that gate is a white column.
+// DOES THIS GATE TAKE THE DARK PLATE, AND WHICH DARK. Nothing for a gate left as drawn, and for
+// a gate whose discs stand out on the card it has: the shade of its own colour, or its picture
+// (every paint recorded for it where the discs sit). A gate that sinks there is tried on its own
+// dark, then on the house charcoal, and takes the first its discs stand clear of with room.
+// Where they stand clear of neither, the discs are dark themselves, and the answer is nothing:
+// that gate is a white column (Air France, navy discs on its navy picture).
 window._gateCardDark = function (code) {
   var raw = String(code == null ? '' : code).trim().toUpperCase();
   if (window._gateColumnKept(raw)) return '';
   var D = window._gateColumnDisc(raw);
-  if (window._GATE_CARD_PICTURES[D.carrier]) return '';
-  if (!window._gateDiscSinks(D.disc, window._gateCardScreen(window._gateCardShade(D.accent)))) return '';
+  var pic = window._GATE_CARD_PICTURES[D.carrier];
+  if (pic && !pic.at.some(function (p) { return window._gateDiscSinks(D.disc, p); })) return '';
+  if (!pic && !window._gateDiscSinks(D.disc, window._gateCardScreen(window._gateCardShade(D.accent)))) return '';
   var list = [window._GATE_CARD_DARKS[D.carrier], window._GATE_CARD_DARK];
   for (var i = 0; i < list.length; i++) {
     if (list[i] && window._gateDiscClear(D.disc, window._gateCardScreen(list[i]), D.ink)) return String(list[i]).toUpperCase();
@@ -15524,15 +15554,17 @@ window._gateCardPaint = function (code) {
   if (!railOnly) { try { lower = String(window._gateLowerPair(raw).b || '').toUpperCase(); } catch (e) { lower = ''; } }
   if (!/^#[0-9A-F]{6}$/.test(lower)) lower = '';
   var pic = window._GATE_CARD_PICTURES[c];
-  if (pic) return { carrier: c, kind: 'picture', file: pic.file, paint: pic.at[0], at: pic.at.slice(), lower: lower };
   var dark = window._gateCardDark(raw);
+  if (pic && !dark) return { carrier: c, kind: 'picture', file: pic.file, paint: pic.at[0], at: pic.at.slice(), lower: lower };
   var accent = '';
   try { accent = (typeof getAirlineAccent === 'function') ? String(getAirlineAccent(c) || '') : ''; } catch (e) { accent = ''; }
   if (/^#[0-9a-f]{3}$/i.test(accent)) accent = '#' + accent.slice(1).split('').map(function (x) { return x + x; }).join('');
   var mix = window._gateCardShade(accent);
   var paint = window._gateCardScreen(dark || mix);
   var base = dark || ('#' + mix.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16).toUpperCase(); return h.length < 2 ? '0' + h : h; }).join(''));
-  return { carrier: c, kind: dark ? 'dark' : 'shade', accent: accent, base: base, paint: paint, at: [paint], lower: lower };
+  // over: the picture the dark plate is laid over, where the card has one (the gate marks the
+  // body for the stylesheet with data-gate-card)
+  return { carrier: c, kind: dark ? 'dark' : 'shade', accent: accent, base: base, paint: paint, at: [paint], lower: lower, over: (pic && dark) ? pic.file : '' };
 };
 // THE LOWER RIGHT PANEL OF A GATE, JUDGED AS THE CARD IS. The pair of the carrier (_rc2Pair),
 // with its second colour replaced where the Your Aircraft orb of the gate would sink into it:
@@ -16504,6 +16536,8 @@ window._BW_EMBLEM = {
 // stroke on a warm grey and TAROM its white swallow in a ring. And Transavia under HV, found
 // by the test that reads every mark against its ground: a green letter on that green, where
 // its tile is the white letter (Transavia France, TO, had no symbol and drew the tile already).
+// (LEVEL is lost by half on its own cyan, found when that test was asked for half of a mark and
+// not nine tenths of it, and has no tile to fall to: the test names it, with the reason.)
 window._CD_MARK = {
   'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
   'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
@@ -19185,15 +19219,19 @@ function _buildV2MapCol(ctx, vars) {
         var _opLogo6 = ((typeof operatorWordmarkUrl === 'function') ? operatorWordmarkUrl(_opCode) : null)
           || ((typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null);
         // v23926 — A NAME THAT IS THE MARKETING CARRIER'S OWN SAYS NOTHING.
-        // Québec's feed gives AC313 (YQB gate 23) operator code 9M, which has
-        // no mark on file, with the name 'AIR CANADA' (the board also names 9M
-        // 'Air Canada', on purpose). The caption printed 'Operated By |
-        // Exploité par: AIR CANADA' on an Air Canada flight, and that name was
-        // wide enough that the fitter took the model down to the label's
-        // size. An operator with no mark whose name is the marketing carrier's
-        // is left out, and the caption is the model alone. An operator with a
-        // mark of its own (Jazz, PAL, Rouge, the US regionals) always shows:
-        // its feed name can be the parent's ('AIR CANADA' on a Jazz leg).
+        // An operator code with no mark on file that the board names Air
+        // Canada (ZX, 9L) printed Operated By, Exploité par: AIR CANADA on
+        // an Air Canada flight, and that name was wide enough that the fitter
+        // took the model down to the size of the label. An operator with no
+        // mark whose name is the name of the marketing carrier is left out,
+        // and the caption is the model alone. An operator with a mark of its
+        // own (Jazz, PAL, Rouge, the US regionals) always shows: its feed
+        // name can be the name of the parent (AIR CANADA on a Jazz leg).
+        // The case it was found on: the Quebec City feed gives AC313 (YQB gate 23) the code 9M
+        // with the name Air Canada, while 9M was folded into Air Canada here. Central Mountain Air
+        // is named as itself now, and flies no Air Canada number at Quebec City, so the ladder no
+        // longer believes that code on that leg (_AC_OWN_OPERATORS): the gate prints no caption
+        // and its orb is the Air Canada roundel, as it did.
         var _mktNm6 = String((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_mktCode6]) || '').trim().toUpperCase();
         var _opSameName6 = !_opLogo6 && !!_mktNm6 && String(_opNm6).trim().toUpperCase() === _mktNm6;
         // v23261 — data-op lets the post-render contrast pass re-pick the
@@ -23229,6 +23267,12 @@ function uxgGateHtml(ctx) {
     var _gateCardDark = '';
     try { _gateCardDark = window._gateCardDark(airlineCode) || ''; } catch (eCard) { _gateCardDark = ''; }
     if (_gateCardDark) _rootStyle.setProperty('--gate-card', _gateCardDark); else _rootStyle.removeProperty('--gate-card');
+    // a picture card that takes the dark plate: the body says so, and the one rule of the
+    // stylesheet that reads it lays the house plate over the picture (data-gate-card)
+    try {
+      var _cardOver = _gateCardDark ? (window._gateCardPaint(airlineCode, true).over || '') : '';
+      if (_cardOver) document.body.setAttribute('data-gate-card', 'dark'); else document.body.removeAttribute('data-gate-card');
+    } catch (eOver) {}
     _rootStyle.setProperty('--accent-lane',
       _hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent);
     _rootStyle.setProperty('--banner-bg',
@@ -34195,7 +34239,8 @@ const AIRLINE_NAME = {
   'PC':'PEGASUS',     'TK':'TURKISH',      'QS':'SMARTWINGS',  'TO':'TRANSAVIA',
   'HV':'TRANSAVIA',   'LS':'JET2',         'MT':'THOMAS COOK', 'BY':'TUI',
   'D8':'NORWEGIAN',   'DI':'NORWEGIAN',    'NO':'NEOS',        'TB':'TUI FLY BE',
-  'XR':'CORENDON',    'XC':'CORENDON EU',  'XQ':'SUNEXPRESS',
+  // XC is Corendon Airlines of Turkey (CAI), XR Corendon Airlines Europe of Malta (CXI)
+  'XC':'CORENDON',    'XR':'CORENDON EU',  'XQ':'SUNEXPRESS',
   'EK':'EMIRATES',    'QR':'QATAR',        'EY':'ETIHAD',      'GF':'GULF AIR',
   'WY':'OMAN AIR',    'SV':'SAUDIA',       'ME':'MEA',
   'SA':'SOUTH AFRICAN','ET':'ETHIOPIAN',   'MS':'EGYPTAIR',    'AT':'ROYAL AIR MAROC',
@@ -34971,12 +35016,24 @@ function _logoIsLockup(html) {
 // and the tile of a belt row is a square. A lockup four times as wide as it is tall came out
 // a quarter of the height of the flight number beside it, and with the typed name taken away
 // that miniature was the only name on the line. On every belt surface the mark of such a
-// carrier is the monogram, as for any carrier with no square mark, and its name is typed.
+// carrier is the square mark the boarding strip already draws for it, where a table names one
+// (window._gateMarkPick on the table of the strip: the WestJet leaf for WestJet Encore, whose
+// lockup is all the row has), and else the monogram, as for any carrier with no square mark.
+// A symbol the strip would only guess at by code is not taken: where it is missing the strip
+// hides it, and the belt would show an empty square. The name is typed beside it either way.
 function _beltLogo(code, faName) {
   var logo = mkLogo(code, faName);
   if (!_logoIsLockup(logo)) return logo;
   var c = String(code || '').trim().toUpperCase();
-  return _monogramTile(c, (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[c]) || faName || c);
+  var name = (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[c]) || faName || c;
+  try {
+    var pick = (typeof window !== 'undefined' && typeof window._gateMarkPick === 'function') ? window._gateMarkPick(window._BW_EMBLEM, c) : null;
+    if (pick && pick.src && !pick.guess) {
+      return '<img class="full-logo" data-code="' + fidsEscHtml(c) + '" data-logo-set="emblem" alt="' + fidsEscHtml(name) + '" src="' + fidsEscHtml(pick.src) + '"'
+        + window._gateMarkAttrs(pick) + '>';
+    }
+  } catch (e) {}
+  return _monogramTile(c, name);
 }
 // Carriers whose OFFICIAL artwork exists only as raster (the airline's own
 // brand PNGs — no public vector anywhere). Same variant semantics: 'light'
@@ -35268,14 +35325,41 @@ var TILE_SKIP_WORDMARK_ONLY = new Set([]);
 // Monogram tile — LAST-RESORT emblem for carriers with no artwork anywhere
 // A brand-
 // accent square with the carrier code keeps the board's tile rhythm.
-function _monogramTile(code, name) {
-  var c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  var acc = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '';
+// THE SQUARE IS THE COLOUR OF THE AIRLINE. It read only the accent of the brand table, so a
+// carrier with no row there (Sunwing on the belt) took a hue made up from its letters, a purple
+// that is no colour of Sunwing. It takes what the phone app takes for the same square: the bar
+// colour of the colour file where that is dark, else the accent of the airline. The letters on
+// it are white, so the colour taken is one white reads on at 3 to 1, darkened a step at a time
+// where the brand gives none (window._orbInkOnWhite). Only a code with no colour on record at
+// all, the blue of no airline included, keeps the made-up hue.
+function _monogramColour(c) {
+  try {
+    var hex = /^#[0-9a-f]{6}$/i, list = [];
+    var bc = (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS && window.AIRLINE_BRAND_COLORS[c]) || null;
+    // dark as the app measures it (app.html tileHtml): the luma of the bytes under 0.45
+    var luma = function (h) { var n = parseInt(h.slice(1), 16); return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255; };
+    if (bc && hex.test(String(bc.r1 || '')) && luma(String(bc.r1)) < 0.45) list.push(String(bc.r1));
+    var acc = '';
+    try { acc = String(getAirlineAccent(c) || ''); } catch (e1) { acc = ''; }
+    if (hex.test(acc) && acc.toUpperCase() !== '#0033A1') list.push(acc);
+    if (!list.length || typeof window === 'undefined' || typeof window._orbInkOnWhite !== 'function') return '';
+    return window._orbInkOnWhite(list);
+  } catch (e) { return ''; }
+}
+// The colour of the square, the made-up hue included: the centre cards of a gate draw the
+// same colour for a code they letter (_gateCardEmblem).
+function _monogramFill(c) {
+  var acc = _monogramColour(c);
   if (!acc) {
     // Deterministic muted hue from the code — same carrier, same colour, every render.
     var h = 0; for (var i = 0; i < c.length; i++) h = (h * 31 + c.charCodeAt(i)) % 360;
     acc = 'hsl(' + h + ',45%,32%)';
   }
+  return acc;
+}
+function _monogramTile(code, name) {
+  var c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var acc = _monogramFill(c);
   var txt = (c || String(name || '?').replace(/[^A-Za-z0-9]/g, '')).slice(0, 2).toUpperCase() || '?';
   return '<div class="full-logo logo-monogram" data-code="' + c + '" style="background:' + acc + ';">' + txt + '</div>';
 }
@@ -40895,6 +40979,9 @@ const CALLSIGN_ICAO = {
 // its own passengers do not have. Central Mountain Air is a privately owned airline that sells
 // and flies its own flights under 9M (it interlines with Air Canada and WestJet, and Air
 // Canada puts its code on some of its flights, as a marketing carrier does on any partner).
+// It flies in British Columbia and Alberta, and since January 2026 in Quebec as well (the Lower
+// North Shore, from Montreal and Quebec City), there too under 9M numbers it sells itself: it
+// flies no Air Canada number in Quebec (see _AC_OWN_OPERATORS, beside the operator ladder).
 // A row coded 9M keeps its number and prints Central Mountain Air; it has no art on disk, so
 // it draws the monogram. The orb fold, the gate family, the alliance table, the lettering
 // table and the app copy (REGIONAL_FAM) left with it.
@@ -42494,11 +42581,23 @@ var _GATE_CARD_EMBLEM = {
   WS: '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
   PD: '/logos/airlines/canadian/porter-p.svg'
 };
+// THE CODES THE CARDS LETTER. Central Mountain Air wore the roundel of Air Canada here while it
+// was folded into Air Canada. It is an airline of its own, with no art on disk, and every other
+// surface of its gate letters its code; the card drew nothing in its place, where a mark had
+// stood. It draws the monogram the rows draw for it, as a disc: the code in white on the colour
+// of that square (_monogramFill). A code with no art that never drew a mark here draws nothing,
+// as before.
+var _GATE_CARD_LETTERS = { '9M': 1 };
 function _gateCardEmblem(code) {
   try {
     var c = String(code || '').toUpperCase();
     if (_GATE_CARD_ALIAS[c]) c = _GATE_CARD_ALIAS[c];
     var path = _GATE_CARD_EMBLEM[c] || '', white = false, disc = false;
+    if (!path && _GATE_CARD_LETTERS[c] && typeof _monogramFill === 'function') {
+      var mf = _monogramFill(c);
+      return '<span class="gc-emb-code" style="display:flex;flex:none;align-items:center;justify-content:center;width:2.5em;height:2.5em;border-radius:50%;'
+        + 'background:' + mf + ';color:' + window._orbInkOn(mf) + ';font-size:calc(2.2 * var(--gc-u));font-weight:800;line-height:1;">' + fidsEscHtml(c) + '</span>';
+    }
     if (!path) {
       if (typeof window._gateOrbParts !== 'function') return '';
       // the mark of the carrier, the symbol first (the second argument of the recipe)
@@ -57650,8 +57749,6 @@ var GATE_ADS_BY_AIRLINE = {
 };
 
 // Destination-aware generic ads — use destination city + brand logos
-// Google Maps Place API icons: https://maps.gstatic.com/mapfiles/place_api/icons/v2/{name}.svg
-var _gIco = 'https://maps.gstatic.com/mapfiles/place_api/icons/v2/';
 // ── ACCOR HOTEL ADS ──────────────────────────────────────────────────────
 // Accor API key removed — handled by proxy
 // Keyed by "IATA|lang" so the FRENCH board frame gets FRENCH hotel copy and the

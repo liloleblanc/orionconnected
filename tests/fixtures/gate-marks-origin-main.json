@@ -803,8 +803,8 @@
     ["notice","ZH","letters ZH on the accent disc, after a miss","airline-tiles/CSZ.svg filling the orb, after a miss","named tile"],
     ["sky plate, last plate, map hold","ZL","letters ZL, after a miss","airline-tiles/RXA.svg, after a miss","named tile"],
     ["notice","ZL","letters ZL on the accent disc, after a miss","airline-tiles/RXA.svg filling the orb, after a miss","named tile"],
-    ["sky plate, last plate, map hold","9M","airlines/canadian/AC.TO.svg","letters 9M, after a miss","own airline"],
-    ["notice","9M","airlines/canadian/AC.TO.svg, white on the accent disc","letters 9M on the accent disc, after a miss","own airline"],
-    ["standby card","9M","airlines/canadian/AC.TO.svg, white","nothing","own airline"]
+    ["sky plate, last plate, map hold","9M","airlines/canadian/AC.TO.svg","letters 9M, after a miss","own letters"],
+    ["notice","9M","airlines/canadian/AC.TO.svg, white on the accent disc","letters 9M on the accent disc, after a miss","own letters"],
+    ["standby card","9M","airlines/canadian/AC.TO.svg, white","letters 9M on a hsl(44,45%,32%) disc","own letters"]
   ]
 }

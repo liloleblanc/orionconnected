@@ -28,7 +28,9 @@
 //   7. A ROW STATE THAT SWALLOWS THE LETTERING types the name instead, and the
 //      table that says which is held to a measure of every colour cut on both
 //      rows, not to a list of the cases somebody noticed.
-//   8. THE BELT draws no lockup in its square slots: the monogram, and the name.
+//   8. THE BELT draws no lockup in its square slots: the square mark the boarding
+//      strip draws, where a table names one, else the monogram in the colour of the
+//      airline; and the name.
 //   9. CENTRAL MOUNTAIN AIR is an airline of its own: its name, its number.
 //  10. THE WELCOME CARD knows how tall the letters of a stacked lettering are.
 //  11. LETTERING AND NO MARK OF ANY KIND is a monogram, never an empty slot, and
@@ -596,13 +598,28 @@ test('the white strip never draws a white mark, and the countdown never a symbol
     assert.ok(near(B._CD_MARK[code], g) <= 0.97, code + ': a mark on the tile stands out of ' + g);
   }
   for (const code of ['FJ', 'MF', 'UX', 'AR', 'OZ', 'RO', 'HV']) assert.ok(B._orbDeltaE(picture('/logos/symbols/airlines/' + code + '.svg').inks[0][0], ground(code)) < 4, code);
-  // AND OVER EVERY CODE: no drawing the countdown ends on is all the colour of its ground. Three are,
-  // and are named: two have no tile to fall to (El Al and Mokulele draw an emblem of exactly
-  // their banner colour), and the white p of Porter stands on a ground the stylesheet gives its
-  // countdown, not on its cream banner colour.
-  const SAME_AS_GROUND = { LY: 'no tile on disk', '9X': 'no tile on disk', PD: 'the stylesheet paints the countdown of Porter' };
-  const same = [];
-  let judged = 0;
+  // AND OVER EVERY CODE: no mark the countdown ends on is lost on its ground. A MARK IS LOST where
+  // half of its ink or more is within the measure of that ground (CIEDE2000 under 20), as a lettering
+  // is on a row state, and it has no figure: less than a twenty-fifth of its ink stands clear of that
+  // ground, at twice its light or more (2 to 1, the line the gate draws for a disc on the dark plate,
+  // window._GATE_SINK.clear: the white of easyJet on its orange is 2.9, of Transavia on its green
+  // 2.1, the green half of LEVEL on its cyan 1.2). A tile on a ground of its own colour is the
+  // first and never the second (its square is the ground, its mark in white is the figure: the remedy
+  // of the table above), and so is a roundel (the red disc of Turkish, its white bird and ring). Half
+  // is read to the grain of the reader: LEVEL is two blocks of one size and reads at 0.4999.
+  // Four are lost, and are named: two have no tile to fall to (El Al and Mokulele draw an emblem of
+  // exactly their banner colour), the white p of Porter stands on a ground the stylesheet gives its
+  // countdown, not on its cream banner colour, and LEVEL, which was not caught while the line was
+  // nine tenths of a mark.
+  const LOST_ON_GROUND = {
+    LY: 'no tile on disk', '9X': 'no tile on disk', PD: 'the stylesheet paints the countdown of Porter',
+    LL: 'no tile on disk: its one mark is two blocks, cyan over green, and the cyan block is the colour of its countdown; the green one left reads at 1.2 to 1 on it, a green rectangle. A monogram there would be a square of that cyan. It needs a mark on one ground from the airline (the orb ledger holds it for the same two grounds)'
+  };
+  assert.equal(B._GATE_SINK.clear, 2);
+  const figure = (file, g) => picture(file).inks.filter(([c]) => contrast(c, g) >= B._GATE_SINK.clear).reduce((a, [, share]) => a + share, 0);
+  const lostOn = (file, g) => near(file, g) >= 0.49 && figure(file, g) < 0.04;
+  const lost = [];
+  let judged = 0, half = 0;
   for (const code of CODES) {
     const file = ends(B._gateMarkPick(B._CD_MARK, code));
     if (!file || /\.(?:webp|jpe?g)(\?|$)/i.test(file)) continue;
@@ -610,11 +627,26 @@ test('the white strip never draws a white mark, and the countdown never a symbol
     const tile = (/airline-tiles\/([^/.?]+)\.svg/.exec(file) || [])[1] || '';
     if (picture(file).kind === 'masked' || B._ORB_TILE_LETTERS[tile]) continue;
     judged++;
-    if (near(file, ground(code)) > 0.97) same.push(code);
+    if (near(file, ground(code)) >= 0.49) half++;
+    if (lostOn(file, ground(code))) lost.push(code);
   }
   assert.ok(judged >= 180, judged + ' countdown marks read');
-  assert.deepEqual(same, Object.keys(SAME_AS_GROUND).sort());
-  for (const code of ['LY', '9X']) assert.equal(TILE[code], undefined, code + ': ' + SAME_AS_GROUND[code]);
+  assert.ok(half >= 50, half + ' marks are half the colour of their ground or more, tiles and roundels on their own colour among them');
+  assert.deepEqual(lost, Object.keys(LOST_ON_GROUND).sort());
+  for (const code of ['LY', '9X', 'LL']) assert.equal(TILE[code], undefined, code + ': ' + LOST_ON_GROUND[code]);
+  for (const why of Object.values(LOST_ON_GROUND)) assert.ok(why.length > 10);
+  // LEVEL: half of it is its ground, and the other half no figure on it
+  const ll = ends(B._gateMarkPick(B._CD_MARK, 'LL'));
+  assert.deepEqual([ll, ground('LL')], ['/logos/airlines/european/level-emblem.svg', '#00B7C8']);
+  assert.ok(Math.abs(near(ll, ground('LL')) - 0.5) < 0.01 && figure(ll, ground('LL')) === 0, 'LEVEL: ' + near(ll, ground('LL')).toFixed(4));
+  // the line between them: a roundel and a tile on their own colour are half their ground and more,
+  // and read by their figure (Turkish, Swiss); a mark half lost with a figure that reads (the navy and
+  // teal bird of Garuda on the near black, its teal stripes at 4.6 to 1) stands too; and the white of
+  // a tile on a bright ground of its own, under 3 to 1 and twice its light (easyJet, Transavia)
+  for (const code of ['TK', 'LX', 'GA', 'U2', 'HV']) {
+    const f = ends(B._gateMarkPick(B._CD_MARK, code));
+    assert.ok(near(f, ground(code)) >= 0.49 && figure(f, ground(code)) >= 0.04 && !lostOn(f, ground(code)), code + ': ' + f);
+  }
   assert.match(fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8'), /\.g8-wrap\.g8-airline-PD \.g8-countdown \.g8-cd-body \{/);
   // the countdown keeps the colour marks it had
   assert.equal(B._CD_MARK.DL, '/logos/airlines/us-major/delta-emblem-colour.svg');
@@ -768,7 +800,7 @@ test('on the row state that is the colour of its lettering, the row types the na
 });
 
 // ── 8. the belt ────────────────────────────────────────────────────────────
-test('the belt draws no lockup in its square slots: the monogram there, and the name typed beside it', () => {
+test('the belt draws no lockup in its square slots: the square mark of the strip or the monogram there, and the name typed beside it', () => {
   const lockup = the('_logoIsLockup'), belt = the('_beltLogo');
   // Sunwing: a lockup and no tile or lettering. The board row has a wide slot for it and hides the
   // typed name beside it; the belt has only squares
@@ -787,6 +819,31 @@ test('the belt draws no lockup in its square slots: the monogram there, and the 
   const tag = the('_b5Tag')({ airline: 'WG', _airlineName: 'Sunwing', flight: 'WG123' });
   assert.match(tag, /^<span class="b5-tag"><span class="b5-temb"><div class="full-logo logo-monogram"[^>]*>WG<\/div><\/span><span class="b5-tfn" dir="ltr">WG123<\/span><\/span>$/);
   for (const html of [hall, tag]) assert.doesNotMatch(html, /Sunwing-Logo|data-logo-set="wordmark"|<img/);
+  // the strip only guesses at a symbol for Sunwing by its code, and none is on disk: the belt does not
+  // take a guess, which the strip hides when it misses, and draws the monogram
+  const wgPick = B._gateMarkPick(B._BW_EMBLEM, 'WG');
+  assert.ok(wgPick.guess && !onDisk(wgPick.src) && !wgPick.tile, 'WG: ' + JSON.stringify(wgPick));
+  // THE COLOUR OF THE SQUARE: the colour of the airline, as the phone app draws the same square (the bar
+  // colour of the colour file where that is dark, else the accent), never a hue made up from its letters
+  const colours = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
+  B.AIRLINE_BRAND_COLORS = colours;
+  try {
+    assert.equal(colours.WG.r1, '#0B1F3A', 'Sunwing navy');
+    assert.match(belt('WG', 'Sunwing'), /^<div class="full-logo logo-monogram" data-code="WG" style="background:#0B1F3A;">WG<\/div>$/);
+    assert.match(APP, /const acc=\(b&&b\.r1&&_lum\(b\.r1\)<\.45\)\?b\.r1:/, 'the app: the bar colour where it is dark');
+  } finally { delete B.AIRLINE_BRAND_COLORS; }
+  // without the colour file, the accent of Sunwing, its orange darkened until the white letters read on it
+  const wgFill = (/background:([^;]+);/.exec(belt('WG', 'Sunwing')) || [])[1];
+  assert.ok(/^#[0-9A-F]{6}$/.test(wgFill) && contrast('#FFFFFF', wgFill) >= 3 && B._orbDeltaE(wgFill, the('AIRLINE_ACCENT').WG) < 12, 'WG: ' + wgFill);
+  // a code with no colour on record keeps the made-up hue (the blue of no airline is no colour)
+  assert.match(belt('ZG', 'Zipair'), /style="background:hsl\(\d+,45%,32%\);"/);
+  // WESTJET ENCORE: a lockup is all its row has, and the strip draws the WestJet leaf for it from its
+  // table. The belt draws that leaf in the square, as the strip and the countdown do
+  assert.equal(lockup(the('mkLogo')('WR', '')), true, 'Encore: a lockup on its row');
+  const wr = belt('WR', '');
+  assert.match(wr, /^<img class="full-logo" data-code="WR" data-logo-set="emblem" alt="[^"]+" src="\/logos\/airlines\/canadian\/westjet-2025\/WestJet-leaf-colour\.svg" onerror="window\._gateMarkMiss\(this\)">$/);
+  assert.ok(onDisk(srcOf(wr)) && srcOf(wr) === B._BW_EMBLEM.WR);
+  assert.equal(lockup(wr), false);
   // a tile, a monogram: the name is typed beside it; lettering: drawn beside it
   assert.match(the('_b5Airline')({ airline: 'NH', _airlineName: 'ANA' }), /ANA\.svg[^>]*><\/span><span class="b5-aname">ANA<\/span>$/);
   assert.match(the('_b5Airline')({ airline: 'ZG', _airlineName: 'Zipair' }), /logo-monogram[^>]*>ZG<\/div><\/span><span class="b5-aname">ZIPAIR<\/span>$/);
@@ -796,7 +853,7 @@ test('the belt draws no lockup in its square slots: the monogram there, and the 
   const lockups = [];
   for (const code of CODES) {
     const row = the('mkLogo')(code, ''), mark = belt(code, '');
-    if (lockup(row)) { lockups.push(code); assert.match(mark, /^<div class="full-logo logo-monogram"/, code); } else assert.equal(mark, row, code);
+    if (lockup(row)) { lockups.push(code); assert.match(mark, /^<div class="full-logo logo-monogram"|^<img class="full-logo" data-code="[A-Z0-9]+" data-logo-set="emblem" /, code); } else assert.equal(mark, row, code);
     assert.equal(lockup(mark), false, code);
     assert.match(the('_b5Airline')({ airline: code, _airlineName: '' }), /<span class="b5-(?:aname|wm)"/, code + ': its name beside the mark');
   }
@@ -813,6 +870,16 @@ test('the belt draws no lockup in its square slots: the monogram there, and the 
   assert.match(CORE, /const _bAirlineHtml = _bidsEmblemOnly \? '' : \(\(_bWmBase && !_bTypesName\)/);
   assert.doesNotMatch(CORE, /_bNoName/);
   assert.equal(CORE.split('_beltLogo(').length - 1, 5, 'four callers and the function');
+});
+
+// ── Corendon: each code prints its own airline ─────────────────────────────
+// XC is Corendon Airlines of Turkey (ICAO CAI), XR Corendon Airlines Europe of Malta (ICAO CXI). The
+// name table had the two the other way round, so a Turkish XC row printed CORENDON EU. Both draw the
+// one figure of the group (the CAI tile, above).
+test('Corendon: XC prints Corendon, XR Corendon Europe, on the board and in the app', () => {
+  assert.deepEqual([NAME.XC, NAME.XR], ['CORENDON', 'CORENDON EU']);
+  assert.deepEqual([SHARED.FIDS_SHARED_AIRLINE.XC, SHARED.FIDS_SHARED_AIRLINE.XR], ['CORENDON', 'CORENDON EU'], 'the app copy');
+  assert.deepEqual([TILE.XC, TILE.XR], ['CAI', 'CAI']);
 });
 
 // ── 9. Central Mountain Air ────────────────────────────────────────────────

@@ -981,7 +981,7 @@ window.FIDS_SHARED_AIRLINE = {
   'PC':'PEGASUS',     'TK':'TURKISH',      'QS':'SMARTWINGS',  'TO':'TRANSAVIA',
   'HV':'TRANSAVIA',   'LS':'JET2',         'MT':'THOMAS COOK', 'BY':'TUI',
   'D8':'NORWEGIAN',   'DI':'NORWEGIAN',    'NO':'NEOS',        'TB':'TUI FLY BE',
-  'XR':'CORENDON',    'XC':'CORENDON EU',  'XQ':'SUNEXPRESS',
+  'XC':'CORENDON',    'XR':'CORENDON EU',  'XQ':'SUNEXPRESS',
   'EK':'EMIRATES',    'QR':'QATAR',        'EY':'ETIHAD',      'GF':'GULF AIR',
   'WY':'OMAN AIR',    'SV':'SAUDIA',       'ME':'MEA',
   'SA':'SOUTH AFRICAN','ET':'ETHIOPIAN',   'MS':'EGYPTAIR',    'AT':'ROYAL AIR MAROC',

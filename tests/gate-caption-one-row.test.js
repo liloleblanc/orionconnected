@@ -291,7 +291,9 @@ test('a model without a registration holds at 1.25x its label while the row come
 
 test('an operator under the marketing carrier\'s own name, with no mark of its own, is left out', () => {
   // An operator code the board names Air Canada, with no mark on file (ZX, 9L). It was seen with 9M
-  // while the board folded Central Mountain Air into Air Canada: AC313 at YQB gate 23.
+  // while the board folded Central Mountain Air into Air Canada: AC313 at YQB gate 23. That row no
+  // longer reaches the caption at all: the ladder does not believe 9M on an AC-numbered leg under the
+  // name Air Canada (tests/operated-by-evidence.test.js, Quebec City).
   assert.match(CORE, /var _opSameName6 = !_opLogo6 && !!_mktNm6 && String\(_opNm6\)\.trim\(\)\.toUpperCase\(\) === _mktNm6;/);
   assert.match(CORE, /if \(!_opSameName6\) \{\s*_opByVal = _opLogo6/);
   assert.match(CORE, /'ZX':'AIR CANADA'/, 'the board names ZX Air Canada');

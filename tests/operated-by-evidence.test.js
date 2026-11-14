@@ -79,7 +79,8 @@ const AP = {
   YQM: { lat: 46.11, lon: -64.68 }, YUL: { lat: 45.47, lon: -73.74 }, YOW: { lat: 45.32, lon: -75.67 },
   YYT: { lat: 47.62, lon: -52.75 }, YHZ: { lat: 44.88, lon: -63.51 }, YYZ: { lat: 43.68, lon: -79.63 },
   YVR: { lat: 49.19, lon: -123.18 }, YQB: { lat: 46.79, lon: -71.39 }, ATL: { lat: 33.64, lon: -84.43 },
-  YFC: { lat: 45.87, lon: -66.53 }, YYC: { lat: 51.13, lon: -114.01 }, YLW: { lat: 49.96, lon: -119.38 }
+  YFC: { lat: 45.87, lon: -66.53 }, YYC: { lat: 51.13, lon: -114.01 }, YLW: { lat: 49.96, lon: -119.38 },
+  YQZ: { lat: 53.03, lon: -122.51 }
 };
 // _AC_OP_BANDS is an array literal: lifted by its own closing bracket.
 const BANDS_LIT = (() => {
@@ -87,16 +88,16 @@ const BANDS_LIT = (() => {
   assert.ok(i >= 0, '_AC_OP_BANDS must exist');
   return CORE.slice(i, CORE.indexOf('\n];', i) + 3);
 })();
-function L(win) {
+function L(win, names) {
   const src0 = [
-    lineIn(CORE, 'AC_EXPRESS_OP'), lineIn(CORE, '_REGIONAL_MAX_KM'),
+    lineIn(CORE, 'AC_EXPRESS_OP'), lineIn(CORE, '_REGIONAL_MAX_KM'), lineIn(CORE, '_AC_OWN_OPERATORS'),
     blockIn(CORE, 'var _OP_LADDER_NAMES = {'), BANDS_LIT,
     lineIn(CORE, '_OP_JAZZ_ONLY_TYPE'), lineIn(CORE, '_OP_WS_DASH8'),
     blockIn(CORE, 'const CALLSIGN_TO_IATA = {'), blockIn(CORE, 'const CALLSIGN_ICAO = {'),
     ...LADDER_FNS.map((n) => fnIn(CORE, n)),
     'return { ' + LADDER_FNS.map((n) => n + ': ' + n).join(', ') + ', AC_EXPRESS_OP: AC_EXPRESS_OP, _AC_OP_BANDS: _AC_OP_BANDS };'
   ].join('\n');
-  return new Function('window', 'AP', 'AIRLINE_NAME', src0)(win || {}, AP, {});
+  return new Function('window', 'AP', 'AIRLINE_NAME', src0)(win || {}, AP, names || {});
 }
 
 // Montréal's adapter, as the board runs it.
@@ -536,4 +537,48 @@ test('Pearson\'s own record names Jazz (JZA7884) and nobody for Rouge or a mainl
   assert.equal(got.AC1978.op, 'RV', 'ACA1978 says nothing; Rouge\'s block does');
   assert.equal(got.AC7050.op, '', 'ACA7050: a mainline extra, no line');
   assert.equal(got.AC858.op, '');
+});
+
+// ── Quebec City: an operator code the record itself contradicts ────────────
+// The Quebec City feed gave AC313 (YQB gate 23) the code 9M, under the name Air Canada. While 9M
+// was folded into Air Canada that read as Air Canada; once Central Mountain Air was named as itself,
+// the gate printed Operated by CENTRAL MOUNTAIN AIR on an Air Canada flight and lettered 9M in its
+// Your Aircraft orb. Central Mountain Air does fly in Quebec, since January 2026, but on its own
+// flights under 9M numbers it sells itself (the Lower North Shore, from Montreal and Quebec City),
+// and Air Canada Express is flown by Jazz and PAL only. So on an AC-numbered leg a code that is not
+// one of those (or Rouge) is believed only where its record does not name Air Canada itself and the
+// leg fits the network of that airline.
+test('Quebec City: AC313 under the code 9M and the name Air Canada is an Air Canada flight, operator line none', async () => {
+  const W = await import(workerPath);
+  const NAMES = { AC: 'AIR CANADA', '9M': 'CENTRAL MOUNTAIN AIR', QK: 'JAZZ', PB: 'PAL AIRLINES' };
+  const C = L({}, NAMES);
+  // the row as the feed gives it: a departure of the sample, with the flight, the gate, the code
+  // and the name of the record (the record kept no far end; Toronto is a leg the range of
+  // Central Mountain Air could fly, so the name alone decides)
+  const hit = JSON.parse(fixture('yqb-hits-sample.json')).hits.find((h) => h.flightCode === 'AC1951');
+  const rec = Object.assign({}, hit, { flightCode: 'AC313', flightNumber: '313', gate: '23', airlineIataCode: '9M', airline: 'Air Canada', airlineIcaoCode: null });
+  const adb = W.yqbParseHits(JSON.stringify({ hits: [rec] }), 'dep')[0];
+  assert.deepEqual([adb.number, adb.departure.gate, adb.departure.airline.iata, adb.departure.airline.name, adb.arrival.airport.iata], ['AC313', '23', '9M', 'Air Canada', 'YYZ']);
+  // the board brands it by its number, and takes a leg airline that differs as the own record of its
+  // operator, with the name the feed gave it as the basis (mapADB)
+  assert.match(CORE, /: \(\(_opIata && _opIata !== airline && _opIata !== code\) \? \{ op: _opIata, src: 'own', basis: \(_opApiName \|\| 'leg airline'\) \} : null\)\);/);
+  const row = { flight: adb.number, airline: 'AC', _locIata: 'YYZ', dest: 'YYZ', _sortTs: Date.parse('2026-11-13T15:00:00Z'),
+    _opEv: { op: adb.departure.airline.iata, src: 'own', basis: adb.departure.airline.name } };
+  assert.deepEqual(C.fidsResolveOperator(row, 'YQB'), { op: '', name: '', src: '', basis: '' }, 'no operator line, the Air Canada gate');
+  assert.equal(C.fidsApplyOperator(row, 'YQB'), true);
+  assert.deepEqual([row._opCode, row._opName], [null, null]);
+  // the same code under its own name, on a leg it flies under an Air Canada number (Vancouver to
+  // Quesnel, a codeshare it has; the number here is made up): believed
+  const quesnel = { flight: 'AC8131', airline: 'AC', _locIata: 'YQZ', dest: 'YQZ', _sortTs: row._sortTs, _opEv: { op: '9M', src: 'own', basis: 'Central Mountain Air' } };
+  assert.deepEqual(C.fidsResolveOperator(quesnel, 'YVR'), { op: '9M', name: 'CENTRAL MOUNTAIN AIR', src: 'own', basis: 'Central Mountain Air' });
+  // under its own name on a leg past its range (Quebec City to Vancouver): not believed
+  assert.equal(C.fidsResolveOperator(Object.assign({}, quesnel, { _locIata: 'YVR', dest: 'YVR' }), 'YQB').op, '');
+  // Jazz and PAL keep their line under the name of their parent: they fly as Air Canada Express
+  assert.equal(C.fidsResolveOperator(Object.assign({}, row, { flight: 'AC7929', _locIata: 'YUL', dest: 'YUL', _opEv: { op: 'QK', src: 'own', basis: 'Air Canada' } }), 'YQB').op, 'QK');
+  assert.equal(C.fidsResolveOperator(Object.assign({}, row, { flight: 'AC7929', _locIata: 'YUL', dest: 'YUL', _opEv: { op: 'PB', src: 'own', basis: 'Air Canada' } }), 'YQB').op, 'PB');
+  // its own flights at Quebec City are its own: 9M301 is no Air Canada leg and has no operator line
+  assert.equal(C.fidsResolveOperator({ flight: '9M301', airline: '9M', _locIata: 'YUL', dest: 'YUL', _sortTs: row._sortTs, _opEv: { op: '9M', src: 'own', basis: 'Central Mountain Air' } }, 'YQB').op, '');
+  // the gate, the board and every gate path read this one answer (the test of the one ladder, above)
+  assert.match(CORE, /var _AC_OWN_OPERATORS = \{ QK: 1, PB: 1, RV: 1, ACEX: 1 \};/);
+  assert.equal(lineIn(CORE, '_REGIONAL_MAX_KM'), "var _REGIONAL_MAX_KM = { 'PB': 1900, 'WR': 1900, 'QK': 2900, '9M': 1900 };");
 });

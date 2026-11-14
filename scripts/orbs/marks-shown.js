@@ -139,7 +139,8 @@ function build(CORE, site) {
     block('window._orbTileLettersOther = function', 1), block('function _orbMono(code) {'),
     block('function _orbRowArg(code, q) {', 1), block('function _plateEmblem(code, marks) {', 1),
     block('window._holdArtFailed = function'), block('window._orbArtFailed = function'),
-    block('var _GATE_CARD_ALIAS = {'), block('var _GATE_CARD_EMBLEM = {'), block('function _gateCardEmblem(code) {'),
+    block('function _monogramColour(c) {', 1), block('function _monogramFill(c) {', 1),
+    block('var _GATE_CARD_ALIAS = {'), block('var _GATE_CARD_EMBLEM = {'), block('var _GATE_CARD_LETTERS = {', 1), block('function _gateCardEmblem(code) {'),
     'function fidsEscHtml(s) { return String(s); }',
     block('function _gateChangeOrbHtml(code) {'),
     // the three plates, each from its own table to the end of the statement that writes its markup
