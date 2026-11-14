@@ -172,10 +172,23 @@ test('every tile that was named is on disk, in the app, known to the gate orbs, 
     assert.ok(onDisk(orb), code + ': the orb art ' + orb);
     const look = B._GATE_ORB_LOOKS[B._gateColumnLook(code).carrier] || {};
     const brand = B._BADGE_TILE_BRANDS[B._gateColumnLook(code).carrier];
-    if (!look.art && !brand && !the('AIRLINE_EMBLEM_FILES')[B._gateColumnLook(code).carrier]) assert.equal(orb, file, code + ': the orb draws the tile');
+    // the recipe of the art is the tile; what the column draws is that recipe, but where the rule
+    // of the card behind the discs has made the column white and its row names a mark for the
+    // white disc (tests/gate-orbs-every-airline.test.js holds that rule)
+    const natural = B._gateOrbNatural(code).path, col = B._gateColumnLook(code);
+    if (!look.art && !brand && !the('AIRLINE_EMBLEM_FILES')[col.carrier]) {
+      assert.equal(natural, file, code + ': the art of the orb is the tile');
+      assert.equal(orb, (col.white && look.whiteArt) || file, code + ': the orb draws the tile, or on a white column the mark its row names for the white disc');
+    }
   }
   // the carriers whose gate keeps a mark of one colour, or the mark on white, where the row draws the tile
-  assert.deepEqual(Object.keys(NAMED_TILES).filter((c) => B._gateOrbParts(c).path !== '/logos/airline-tiles/' + NAMED_TILES[c][0] + '.svg').sort(), ['CJ', 'FJ', 'JJ', 'JX', 'MF', 'UX']);
+  assert.deepEqual(Object.keys(NAMED_TILES).filter((c) => B._gateOrbParts(c).path !== '/logos/airline-tiles/' + NAMED_TILES[c][0] + '.svg').sort(), ['CJ', 'FJ', 'JJ', 'JX', 'KC', 'KU', 'MF', 'UX']);
+  // Air Astana and Kuwait: a white column (their navy would sink into the dark plate), the gold
+  // emblem and the bird on the white disc, and the tile still the art their recipe names
+  for (const [code, tile] of [['KC', 'KZR'], ['KU', 'KAC']]) {
+    assert.deepEqual([B._gateColumnLook(code).white, B._gateOrbNatural(code).path, B._gateOrbParts(code).path], [true, '/logos/airline-tiles/' + tile + '.svg', '/logos/symbols/airlines/' + code + '.svg'], code);
+    assert.deepEqual(Object.keys(B._GATE_ORB_LOOKS[code]), ['whiteArt'], code + ': the row carries the mark of the white disc and no pointer at the tile');
+  }
   // a tile on a light ground: an ink that reads on it, and never white
   for (const code of Object.keys(NAMED_TILES)) {
     const L = B._gateColumnLook(code);

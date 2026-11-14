@@ -462,8 +462,9 @@ test('Air Canada Express in a round orb is Air Canada\'s roundel, never the lett
     blockIn(CORE, 'window._CARD_COLOR_EMBLEMS = {'),
     blockIn(CORE, 'window._orbKeepsColour = function'),
     fnIn(CORE, '_orbEmblemCarrier'), fnIn(CORE, '_airlineOrbEmblem'), fnIn(CORE, '_orbMono'),
-    blockIn(CORE, 'window._gateOrbParts = function'),
-    'return { _orbEmblemCarrier: _orbEmblemCarrier, _airlineOrbEmblem: _airlineOrbEmblem, _orbMono: _orbMono, _gateOrbParts: window._gateOrbParts };'
+    // the recipe of the art, which the recipe every orb asks starts from (it folds the code the same way)
+    blockIn(CORE, 'window._gateOrbNatural = function'),
+    'return { _orbEmblemCarrier: _orbEmblemCarrier, _airlineOrbEmblem: _airlineOrbEmblem, _orbMono: _orbMono, _gateOrbParts: window._gateOrbNatural };'
   ].join('\n');
   const O = new Function('window', src)({});
   assert.equal(O._orbEmblemCarrier('ACEX'), 'AC');
