@@ -27,6 +27,14 @@
 //      monogram or the typed name. No handler ever sets an outside address.
 //   3. THE SOURCE. No line of code in the board, the app, the menu or the
 //      Studio names one of the logo hosts.
+//   4. THE BUILDERS OF THE PHONE APP, cut from app.html and run for the same
+//      codes: its tile, its lettering by day and by night, the brand of its
+//      flight page. The gate band is built inside the builder of the whole
+//      gate and cannot be run alone, so:
+//   5. EVERY LINE THAT BUILDS AN IMAGE ADDRESS, in all of those files, names no
+//      host at all, absolute or protocol-relative, but for a short list of
+//      hosts that serve no airline logo. A list of the logo hosts known today
+//      (3) says nothing of the host somebody reaches for tomorrow.
 // The hotel, map, weather and font hosts are not this rule.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -134,6 +142,7 @@ test('every surface, for every code: no airline mark asks an outside host', () =
     'the row and the belt (mkLogo)': (c) => [the('mkLogo')(c, 'Some Airline')],
     'the phone-board card (mkCardLogo)': (c) => [the('mkCardLogo')(c, 'Some Airline')],
     'the belt of the hall (_b5Airline, _b5Tag)': (c) => [the('_b5Airline')({ airline: c, _airlineName: 'Some Airline' }), the('_b5Tag')({ airline: c, _airlineName: 'Some Airline', flight: c + '123' })],
+    'the mark of every belt slot (_beltLogo)': (c) => [the('_beltLogo')(c, 'Some Airline')],
     'the gate band (carrierLogoUrl)': (c) => ['src="' + the('carrierLogoUrl')(c) + '"'],
     'the sky watermark (airlineWatermarkUrl)': (c) => ['src="' + the('airlineWatermarkUrl')(c) + '"'],
     'the phone gate header (_mgHeaderLogo)': (c) => [the('_mgHeaderLogo')(c, 'Some Airline', true, '#fff', ''), the('_mgHeaderLogo')(c, 'Some Airline', false, '#111', '')],
@@ -273,4 +282,139 @@ test('no line of code names a host that serves airline logos', () => {
   for (const rel of ['js/template-renderer.js', 'js/designer.js']) {
     assert.match(fs.readFileSync(path.join(FC, rel), 'utf8'), /if \(typeof carrierLogoUrl === 'function'\) return carrierLogoUrl\(code\); \} catch \(e\) \{\}\n\s*return '';/, rel);
   }
+});
+
+// ── the builders of the phone app ──────────────────────────────────────────
+// app.html holds its own builders of an airline mark: the tile of a card (tileHtml), the lettering
+// by day and by night (wmHtml), and the brand of the flight page (heroBrand, on a light bar and on
+// a dark one). They are one stretch of the page, from its escape function to the end of heroBrand,
+// and run here as they stand, over the tables the app loads (js/shared-names.js and
+// data/airline-colors.js).
+function app() {
+  const page = fs.readFileSync(path.join(FC, 'app.html'), 'utf8');
+  const from = page.indexOf('function esc(s){'), to = page.indexOf('// Normalise an aircraft code/model to the livery file code');
+  assert.ok(from > 0 && to > from, 'the stretch of app.html that builds an airline mark');
+  const ctx = {};
+  ctx.window = ctx; ctx.globalThis = ctx;
+  vm.createContext(ctx);
+  for (const f of ['js/shared-names.js', 'data/airline-colors.js']) vm.runInContext(fs.readFileSync(path.join(FC, f), 'utf8'), ctx, { filename: f });
+  vm.runInContext(page.slice(from, to) + '\n;globalThis.__app = { tileHtml: tileHtml, wmHtml: wmHtml, heroBrand: heroBrand, wmUrls: wmUrls, tileOf: tileOf };', ctx, { filename: 'app.html' });
+  return ctx.__app;
+}
+
+test('the phone app, for every code: its tile, its lettering and the brand of its flight page ask no outside host', () => {
+  const A = app();
+  const SURFACES = {
+    'the tile of a card (tileHtml)': (c) => [A.tileHtml(c)],
+    'the lettering (wmHtml)': (c) => [A.wmHtml(c, 'Some Airline'), A.wmHtml(c, c)],
+    'the brand of the flight page (heroBrand)': (c) => [A.heroBrand(c, 'Some Airline', true), A.heroBrand(c, 'Some Airline', false)],
+    'the pair of lettering files (wmUrls)': (c) => (A.wmUrls(c) || []).map((u) => 'src="' + u + '"')
+  };
+  const wrong = [];
+  let asked = 0, drawn = 0, tiles = 0, lettered = 0;
+  for (const [surface, make] of Object.entries(SURFACES)) {
+    for (const code of CODES) {
+      let made;
+      try { made = make(code); } catch (e) { wrong.push(surface + ', ' + code + ': threw ' + e.message); continue; }
+      for (const text of made) {
+        asked++;
+        for (const u of addresses(text)) {
+          if (u === '') continue;
+          drawn++;
+          if (outside(u)) wrong.push(surface + ', ' + code + ': ' + u);
+        }
+        if (/(?:https?:)?\/\/[a-z0-9.-]+\.[a-z]{2,}/i.test(String(text))) wrong.push(surface + ', ' + code + ': an address in ' + String(text).slice(0, 160));
+      }
+    }
+  }
+  assert.deepEqual(wrong.slice(0, 40), [], wrong.length + ' marks of the app ask an outside host');
+  assert.ok(asked > 7000 && drawn > 1200, asked + ' answers read, ' + drawn + ' addresses in them');
+  // it was run for real: a tile where the board has one, lettering where it has that, and for a
+  // code with neither a square of its letters and no address at all
+  for (const code of NAMED) { if (/<img class="tile /.test(A.tileHtml(code))) tiles++; if (A.wmUrls(code)) lettered++; }
+  assert.ok(tiles >= 150 && lettered >= 100, tiles + ' tiles and ' + lettered + ' letterings among the named codes');
+  assert.match(A.tileHtml('AC'), /^<img class="tile tile" src="\/logos\/airline-tiles\/ACA-black\.svg"/);
+  assert.match(A.tileHtml('ZZ'), /^<span class="tile mono" style="background:[^"]+">ZZ<\/span>$/);
+  assert.deepEqual(addresses(A.tileHtml('ZZ') + A.wmHtml('ZZ', 'Some Airline')), []);
+  assert.match(A.wmHtml('WS', 'WestJet'), /mask-image:url\('\/logos\/airlines\/canadian\/westjet-wordmark-dark\.svg'\)/);
+  // and the checker reads the address inside a mask, which is how the app draws lettering by day
+  assert.deepEqual(addresses('<span style="-webkit-mask-image:url(\'//x.test/a.svg\');mask-image:url(\'/logos/a.svg\')"></span>').map(outside), [true, false]);
+});
+
+// ── every line that builds an image address ────────────────────────────────
+// The hosts a line that builds an image address may name, and what each serves. None serves an
+// airline logo. A host that is not here fails the test, whatever it is: the gate band is built
+// inside the builder of the gate, which cannot be run alone, and a list of the logo hosts known
+// today would pass any other host.
+const NOT_LOGO_HOSTS = {
+  'cdnjs.cloudflare.com': 'a script library (the QR code of the boards)',
+  'unpkg.com': 'a script library (the arcs of the map in the Studio)',
+  'img.youtube.com': 'the still of a video, in the list of the menu',
+  'www.youtube.com': 'the video player',
+  'youtube.com': 'an example typed as the hint of a field in the menu'
+};
+// a line builds an image address where it names an image, a source, a background or a mask, or
+// one of the words this code uses for the mark of an airline
+const BUILDS_IMAGE = /<img\b|<image\b|<source\b|<video\b|\bsrc\b|\bsrcset\b|url\(|background|mask|\bposter\b|new Image\b|logo|emblem|wordmark|monogram|airline-tiles|watermark/i;
+const HOST = /(?:https?:)?\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,})/ig;
+// A RULE CITES ITS SOURCE. Two tables of rules (when a gate closes, who boards when) name the
+// page of the airline each rule was read from, under a key that is also the name of an image
+// attribute. Such a line builds no image address: it is a row of one of those two tables, and the
+// address it names is a page, never a picture.
+const CITES = (rel, line) => (rel === 'js/boarding-sequence.js' && /^\s*src: 'https:\/\/[^']+',?\s*$/.test(line))
+  || (rel === 'js/fids-core.js' && /^\s*(?:'?[A-Z0-9]{2}'?: \{ min: \d+, kind: '[A-Za-z]+',.*)?\bsrc: 'https:\/\/[^']+', checked: '\d{4}-\d\d-\d\d'/.test(line));
+const PICTURE = /\.(?:svg|png|jpe?g|gif|webp|avif|ico|bmp)(?:[?#'"`\s)]|$)/i;
+// the hosts a line of code names: what follows a comment marker is commentary, but for the two
+// slashes that begin an address
+function hostsNamed(line) {
+  const t = line.trim();
+  if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('<!--')) return [];
+  const code = line.replace(/(^|[^:'"`(=\/])\/\/(?![a-z0-9-]+\.[a-z0-9.-]*[a-z]{2,}\/).*$/i, '$1');
+  return [...code.matchAll(HOST)].map((m) => m[1].toLowerCase());
+}
+
+test('no line that builds an image address names a host, but for the hosts that serve no airline logo', () => {
+  // the reader of a line
+  assert.deepEqual(hostsNamed("  r1LogoSrc = r1LogoSrc || 'https://cdn.example.net/airlines/' + airlineCode + '.png';"), ['cdn.example.net']);
+  assert.deepEqual(hostsNamed("  img.src = '//pics.example.io/400/120/' + code + '.png';"), ['pics.example.io']);
+  assert.deepEqual(hostsNamed("  return '<img class=\"tile\" src=\"https://img.example.org/' + c + '.png\">';  // a note"), ['img.example.org']);
+  assert.deepEqual(hostsNamed("  var src = '/logos/airline-tiles/' + t + '.svg'; // was https://img.example.org/x.png"), []);
+  assert.deepEqual(hostsNamed('  // the logo came from https://img.example.org/x.png'), []);
+  assert.deepEqual(hostsNamed("  var logo = '/logos/a.svg';"), []);
+  for (const line of ['<img src="/logos/a.svg">', 'el.style.backgroundImage = "url(" + u + ")"', 'var r1LogoSrc = carrierLogoUrl(code);', "'/logos/airline-tiles/' + t", 'mask-image:url(x)', 'img.src = u;']) assert.match(line, BUILDS_IMAGE, line);
+  const files = ['js/fids-core.js', 'js/shared-names.js', 'js/template-renderer.js', 'js/designer.js', 'js/menu.js', 'js/boarding-sequence.js', 'js/feed-router.js',
+    'app.html', 'fids.html', 'gids.html', 'bids.html', 'screen.html', 'rotate.html', 'menu.html', 'designer.html', 'data/airline-colors.js'];
+  const found = [], seen = {};
+  let lines = 0, read = 0, cited = 0;
+  for (const rel of files) {
+    const file = path.join(FC, rel);
+    if (!fs.existsSync(file)) continue;
+    read++;
+    fs.readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+      if (!BUILDS_IMAGE.test(line)) return;
+      lines++;
+      if (CITES(rel, line)) { cited++; if (PICTURE.test(line)) found.push(rel + ':' + (i + 1) + ': a rule cites a picture: ' + line.trim().slice(0, 120)); return; }
+      for (const host of hostsNamed(line)) {
+        if (Object.prototype.hasOwnProperty.call(NOT_LOGO_HOSTS, host)) { seen[host] = 1; continue; }
+        found.push(rel + ':' + (i + 1) + ': ' + host + ' in ' + line.trim().slice(0, 120));
+      }
+    });
+  }
+  assert.ok(read >= 14 && lines > 4000, read + ' files, ' + lines + ' lines that build an image address');
+  assert.deepEqual(found, [], found.length + ' lines that build an image address name a host not known to serve none:\n' + found.join('\n'));
+  assert.ok(cited >= 20 && cited <= 60, cited + ' rows of the two rule tables cite the page of an airline');
+  assert.equal(CITES('js/fids-core.js', "    r1LogoSrc = r1LogoSrc || 'https://cdn.example.net/airlines/' + airlineCode + '.png';"), false);
+  assert.equal(CITES('js/fids-core.js', "    'ZZ': { src: 'https://cdn.example.net/airlines/zz.png', h: 100 },"), false);
+  assert.equal(CITES('app.html', "  src: 'https://www.example.com/page',"), false);
+  assert.equal(PICTURE.test("  src: 'https://www.example.com/boarding/logo.svg',"), true);
+  // the list holds only hosts such a line still names: one that is no longer named leaves it
+  assert.deepEqual(Object.keys(seen).sort(), Object.keys(NOT_LOGO_HOSTS).sort());
+  for (const why of Object.values(NOT_LOGO_HOSTS)) assert.ok(why.length > 10);
+  // and none of them is a host of airline logos
+  for (const host of Object.keys(NOT_LOGO_HOSTS)) assert.doesNotMatch(host, /wway|avs\.io|gstatic|clearbit|airhex|kiwi|daisycon|logo/i, host);
+  // the gate band: every line that sets its address is read by the sweep above, and none names a host
+  const core = fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8');
+  const band = core.split('\n').filter((l) => /\br1LogoSrc\s*=[^=]/.test(l));
+  assert.ok(band.length >= 6, band.length + ' lines set the address of the gate band');
+  for (const l of band) { assert.match(l, BUILDS_IMAGE); assert.deepEqual(hostsNamed(l), [], l.trim().slice(0, 120)); }
 });
