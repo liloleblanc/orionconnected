@@ -43,9 +43,11 @@ const WHAT_IF_CARDS = ['air-canada-dc9-2017', KEY];
 // The Air Canada set as it stood before a card could name its gates, in the
 // order the rotation runs it. A card added to it, taken from it or moved in
 // it is a change to where the existing cards run, and has to be made here too.
+// 2026-11-14 — the A350-1000 that is coming (tests/heritage-a350-card.test.js)
+// joined it, between the 1993 DC-9 and the 1980 DC-8.
 const AIR_CANADA_SET = [
   'air-atlantic', 'air-nova', 'canadian-airlines', 'air-canada', 'air-canada-caps', 'air-canada-767',
-  'air-canada-dc8', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-dc8-80', 'air-canada-767-87',
+  'air-canada-dc8', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8-80', 'air-canada-767-87',
   'air-canada-dc9-2017', 'air-canada-l1011-93'
 ];
 
@@ -427,7 +429,7 @@ test('the heading: Dream livery in nine languages over the two what-if cards, Fr
   }
   assert.equal(new Set(STORE.LANGS.map((l) => e[l])).size, STORE.LANGS.length, 'nine different headings: none left in another language');
   // which cards name it
-  assert.deepEqual(MARKS.filter((m) => m.heading).map((m) => m.key).sort(), WHAT_IF_CARDS.slice().sort(), 'the two what-if cards, and no other');
+  assert.deepEqual(MARKS.filter((m) => m.heading === HEADING).map((m) => m.key).sort(), WHAT_IF_CARDS.slice().sort(), 'the two what-if cards, and no other');
   for (const m of MARKS) if (m.heading) assert.ok(STORE.entry(m.heading), m.key + ' names a heading the store has');
 
   // and what each card prints, in each language, with English beside it
@@ -444,7 +446,8 @@ test('the heading: Dream livery in nine languages over the two what-if cards, Fr
     b.at('YHZ', { flight: 'AC659', airline: 'AC' }, { langs: pair });
     for (const k of AIR_CANADA_SET) {
       const html = b.draw();
-      const want = WHAT_IF_CARDS.includes(k) ? DREAM[l] : STORE.bs('heritageKicker', l);
+      // a card that names a heading of its own says it (the A350-1000 that is coming); the rest, From the archive
+      const want = WHAT_IF_CARDS.includes(k) ? DREAM[l] : STORE.bs(byKey[k].heading || 'heritageKicker', l);
       const not = WHAT_IF_CARDS.includes(k) ? STORE.bs('heritageKicker', l) : DREAM[l];
       assert.ok(kicker(html).includes(want), k + ' says ' + want + ' in ' + l + ' (it says ' + kicker(html) + ')');
       assert.ok(!kicker(html).includes(not), k + ' does not say ' + not + ' in ' + l);

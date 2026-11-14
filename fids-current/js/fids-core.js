@@ -65892,6 +65892,84 @@ var HERITAGE_MARKS = [
     airports: '*CA'
   },
   {
+    // 2026-11-14 — COMING TO THE FLEET: THE AIRBUS A350-1000, WHICH AIR CANADA
+    // DOES NOT FLY YET. The supplied drawing: a side view in the current
+    // livery, a white aeroplane with AIR CANADA in black capitals, the red
+    // rondelle under the titles and on a black fin, a black belly and black
+    // engines, C-GYQM on the rear fuselage, 881 on the fin and AIRBUS
+    // A350-1000 lettered under the registration. It is an impression by an
+    // artist of an aeroplane that is coming, and the card says so twice: the
+    // words over it are Coming to the fleet (heritageComingKicker) where the
+    // archive cards say From the archive, and the caption names the type,
+    // the year the first deliveries are expected and that the picture is an
+    // artist impression, in the words of each language. A passenger must not
+    // take it for an aeroplane flying today.
+    //
+    // WHAT IS REAL: the order. On 11 February 2026 Air Canada announced a firm
+    // order for eight A350-1000s with purchase rights for eight more, and its
+    // own announcement says the first deliveries are expected in 2030 (the
+    // aircanada.com media release A new era in long-haul: Air Canada to
+    // acquire Airbus A350-1000 widebody aircraft). The caption prints that
+    // year, and only as expected. The type comes from this record as the
+    // boards name it (IATA_AIRCRAFT, 351: Airbus A350-1000) into the place
+    // the caption leaves for it, as on the Dream livery 787-8.
+    // WHAT IS NOT: this aeroplane. C-GYQM is a real Canadian mark, but it is
+    // not assigned to an A350, and 881 on the fin is the number of the
+    // drawing. Neither is printed, and nothing on the card says the aeroplane
+    // exists: no years of service, no livery year, no delivery date beyond
+    // the year.
+    //
+    // THE CAPTION, in English: Airbus A350-1000 · expected from 2030 · and
+    // the words artist impression (the store key is heritage: and the key of
+    // the card). Measured at 1680 x 1050 as the Future Retro DC-9 was, every
+    // language is one row; the longest lines are the English and the
+    // Spanish, each at 91% of the line. First deliveries expected in
+    // 2030, said in full, ran to two rows in the six languages written in
+    // Latin letters (108% to 128%), so they say expected from 2030; the
+    // Japanese and the Arabic, which have the room, name the first deliveries.
+    //
+    // WHOSE GATES: the Air Canada set. It names no gates, so it runs on Air
+    // Canada pages only, like the 2017-livery DC-9, and never on a United gate.
+    // Airports *CA: every card of the set runs at Canadian airports only (the two lists are Canadian airports too), so *CA reaches every Air Canada page the archive reaches, and an asterisk alone would put this card by itself on Air Canada gates abroad, where no archive card runs.
+    //
+    // THE MARK is the lockup the live Air Canada boards use today, the file
+    // of the Future Retro DC-9 (LOCAL_LOGOS.AC, air-canada.svg): the red
+    // rondelle beside AIR CANADA in black, as the drawing letters the
+    // aeroplane. No new file, no plate behind it, nothing recoloured.
+    //
+    // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
+    // supplied cut-out (10312 x 2723): laid on white, the page taken off
+    // again, cropped to its own edges and scaled to the 2272 px of the other
+    // cards (2272 x 588). The page was un-mixed six pixels into the outline
+    // (the fifth argument of the tool), not the two of the 787-8: the cut-out
+    // had been trimmed at a larger size and a band of page about six of its
+    // pixels wide was left round it, a pale line under the black belly, the
+    // chin and the engine and round the fin as soon as a dark sky is behind
+    // them. Counted as light pixels on the outline of dark paint, 790 at two
+    // pixels and 13 at six. Nothing of the aeroplane is repainted. The light
+    // line along the leading edge of the winglet reads as drawn, like the
+    // one on the fin, and stays at any depth. The larger supplied file, with the page only partly
+    // off, gave a paler edge (1445 pale rim pixels by the count of the Dream
+    // livery test, against 45 here, most of them that winglet edge).
+    //
+    // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose
+    // (213 px deep), is 10.66 to the top of the fin and 10.46 to the tail
+    // cone, against 12.12 for the A350-1000 (73.79 m over a fuselage about
+    // 6.09 m deep): 12% short to the fin, 14% to the tail cone. It is nearer
+    // the 10.97 of the shorter A350-900 (66.80 m over the same fuselage), with
+    // four doors a side, as both have. It is used as drawn: it is the
+    // supplied art, and a stretch is a call for its author.
+    //
+    // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the Air Canada widebodies then come every other card (767, TriStar, A350, 767, TriStar) in the Atlantic pool and in the pool of every other Canadian airport, so no two are back to back.
+    key: 'air-canada-a350-1000',
+    file: '/logos/airlines/canadian/air-canada.svg',
+    name: 'Air Canada',
+    type: 'Airbus A350-1000',
+    aircraft: '/aircraft/heritage/air-canada-a350-1000.png',
+    heading: 'heritageComingKicker',
+    airports: '*CA'
+  },
+  {
     // v24137 — AND THE DOUGLAS DC-8-63, IN THE 1980 LIVERY: AIR CANADA in red
     // capitals over the single red cheatline, the white rondelle on a red fin
     // and a bare-metal belly, so it carries the 1980 mark, as the capitals

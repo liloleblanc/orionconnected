@@ -205,6 +205,20 @@ haze, and no pale rim beside dark paint.
 What the script cannot see is a pocket of page shut inside a drawing that came
 on its page (between the legs of an undercarriage, under a pylon). Look for one.
 
+The page usually reaches two pixels into the outline, and that is the default.
+A cut-out that was trimmed at a larger size can carry a wider band: the
+A350-1000 that is coming (10312 px wide) had about six pixels of page left
+round it, and at two the band stayed as a pale line under the black belly, the
+chin and the engine and round the fin over a dark sky. The depth is the fifth
+argument, in the drawing's own pixels:
+
+    python3 scripts/heritage-sky/card-cutout.py drawing.png fids-current/aircraft/heritage/air-canada-a350-1000.png 2272 10 6
+
+Look at the result over a dark sky before choosing a depth. A light line that
+is drawn (the leading edge of a fin or a winglet) is no mix of page and
+aeroplane, and it stays at any depth. `tests/heritage-a350-card.test.js`
+counts light pixels on the outline of the dark paint: 790 at two, 13 at six.
+
 ## The shelf clip re-rendered: clouds carried through the hole (`cleanplate5`)
 
 `cleanplate` filled the hole on each frame from the sky around it (dilate,

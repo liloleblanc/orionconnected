@@ -858,6 +858,19 @@
     // name it, from the card's own record (HERITAGE_MARKS).
     heritageDreamKicker: { en: 'Dream livery', fr: 'Livrée de rêve', es: 'Librea soñada', de: 'Traumlackierung', it: 'Livrea da sogno', pt: 'Pintura de sonho', ja: '夢の塗装', zh: '梦想涂装', ar: 'طلاء الأحلام' },
     'heritage:united-787-dream': { en: '{TYPE} · Dream livery what-if', fr: '{TYPE} · et si… · livrée imaginaire', es: '{TYPE} · ¿y si…? · librea imaginaria', de: '{TYPE} · Fiktion · erdachte Lackierung', it: '{TYPE} · e se… · livrea immaginaria', pt: '{TYPE} · e se… · pintura imaginária', ja: '{TYPE} · もしも · 架空の塗装', zh: '{TYPE} · 假想 · 虚构涂装', ar: '{TYPE} · ماذا لو · طلاء خيالي' },
+    // The card of an aeroplane that is coming: the Airbus A350-1000 that Air
+    // Canada has ordered and does not fly yet. Its heading is Coming to the
+    // fleet where the archive cards say From the archive, and its caption says
+    // when the first deliveries are expected (2030) and that the picture is an
+    // artist's impression, in the words each language has for one, so nobody
+    // takes the drawing for an aeroplane flying today. {TYPE} is the aeroplane
+    // as the boards name it, from the card's record. First deliveries expected
+    // in 2030, said in full, ran to two rows at 1680 x 1050 in the six
+    // languages written in Latin letters (108% to 128% of the line), so the
+    // line says expected from 2030; Japanese and Arabic, which have the room,
+    // name the first deliveries. The longest line is now 91% of the line.
+    heritageComingKicker: { en: 'Coming to the fleet', fr: 'Bientôt dans la flotte', es: 'Próximamente en la flota', de: 'Bald in der Flotte', it: 'Presto nella flotta', pt: 'Em breve na frota', ja: '導入予定の新機材', zh: '即将加入机队', ar: 'قريبًا في الأسطول' },
+    'heritage:air-canada-a350-1000': { en: '{TYPE} · expected from 2030 · artist’s impression', fr: '{TYPE} · attendu dès 2030 · vue d’artiste', es: '{TYPE} · previsto para 2030 · recreación artística', de: '{TYPE} · ab 2030 erwartet · Visualisierung', it: '{TYPE} · atteso dal 2030 · illustrazione artistica', pt: '{TYPE} · esperado em 2030 · concepção artística', ja: '{TYPE} · 2030年に初号機受領予定 · イメージ図', zh: '{TYPE} · 预计2030年起交付 · 艺术效果图', ar: '{TYPE} · أولى التسليمات متوقعة في 2030 · تصوّر فني' },
     'heritage:air-canada-767-87': { en: 'Boeing 767-233 · 1982–2008 · 1987 livery', fr: 'Boeing 767-233 · 1982–2008 · livrée de 1987', es: 'Boeing 767-233 · 1982–2008 · librea de 1987', de: 'Boeing 767-233 · 1982–2008 · Lackierung von 1987', it: 'Boeing 767-233 · 1982–2008 · livrea del 1987', pt: 'Boeing 767-233 · 1982–2008 · pintura de 1987', ja: 'ボーイング767-233 · 1982–2008 · 1987年塗装', zh: '波音767-233 · 1982–2008 · 1987年涂装', ar: 'بوينغ 767-233 · 1982–2008 · طلاء 1987' },
     'heritage:air-canada-l1011-87': { en: 'Lockheed L-1011 TriStar · 1973–1996 · 1987 livery', fr: 'Lockheed L-1011 TriStar · 1973–1996 · livrée de 1987', es: 'Lockheed L-1011 TriStar · 1973–1996 · librea de 1987', de: 'Lockheed L-1011 TriStar · 1973–1996 · Lackierung von 1987', it: 'Lockheed L-1011 TriStar · 1973–1996 · livrea del 1987', pt: 'Lockheed L-1011 TriStar · 1973–1996 · pintura de 1987', ja: 'ロッキードL-1011トライスター · 1973–1996 · 1987年塗装', zh: '洛克希德L-1011三星 · 1973–1996 · 1987年涂装', ar: 'لوكهيد L-1011 ترايستار · 1973–1996 · طلاء 1987' },
     'heritage:air-canada-l1011-93': { en: 'Lockheed L-1011 TriStar · 1973–1996 · 1993 livery', fr: 'Lockheed L-1011 TriStar · 1973–1996 · livrée de 1993', es: 'Lockheed L-1011 TriStar · 1973–1996 · librea de 1993', de: 'Lockheed L-1011 TriStar · 1973–1996 · Lackierung von 1993', it: 'Lockheed L-1011 TriStar · 1973–1996 · livrea del 1993', pt: 'Lockheed L-1011 TriStar · 1973–1996 · pintura de 1993', ja: 'ロッキードL-1011トライスター · 1973–1996 · 1993年塗装', zh: '洛克希德L-1011三星 · 1973–1996 · 1993年涂装', ar: 'لوكهيد L-1011 ترايستار · 1973–1996 · طلاء 1993' },

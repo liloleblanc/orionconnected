@@ -38,9 +38,14 @@ of page shut inside a drawing that came ON its page (between the legs of an
 undercarriage, under a pylon): the flood does not reach it and it stays as
 drawn. Look for one before using the picture.
 
-Usage: python3 scripts/heritage-sky/card-cutout.py drawing out.png [width] [tolerance]
+Usage: python3 scripts/heritage-sky/card-cutout.py drawing out.png [width] [tolerance] [rim]
        width      2272 unless given
        tolerance  how far from the page colour still counts as page, 10 of 255 unless given
+       rim        how many pixels in from the page are part page, 2 unless given. A drawing
+                  cut out at a large size and trimmed can carry a wider band of page in its
+                  outline (the A350-1000, 10312 px wide, carried about six): give it here,
+                  measured in the drawing's own pixels. A pixel of that band that is no mix
+                  of page and aeroplane keeps its colour, as before.
        (needs Pillow)
 """
 import sys
@@ -193,11 +198,16 @@ def take_page_off(im, tol):
 
 
 def main():
+    global RIM
     if len(sys.argv) < 3:
         sys.exit(__doc__)
     src, dst = sys.argv[1], sys.argv[2]
     width = int(sys.argv[3]) if len(sys.argv) > 3 else 2272
     tol = int(sys.argv[4]) if len(sys.argv) > 4 else 10
+    if len(sys.argv) > 5:
+        RIM = int(sys.argv[5])
+        if RIM < 1:
+            sys.exit('rim is one pixel or more')
 
     im = Image.open(src)
     cut, had, share, fixed, kept = take_page_off(im, tol)
@@ -219,9 +229,9 @@ def main():
         sys.exit('the page is still in: a corner of the picture is not clear (opacity %s)' % corners)
 
     out.save(dst, optimize=True)
-    print('%s: %s -> %s; %s; the open page was %.1f%% of it; %d rim pixels un-mixed, %d kept as drawn'
+    print('%s: %s -> %s; %s; the open page was %.1f%% of it; %d rim pixels un-mixed (%d deep), %d kept as drawn'
           % (dst, im.size, out.size, 'came as a cut-out, laid on white first' if had else 'came on its page',
-             100 * share, fixed, kept))
+             100 * share, fixed, RIM, kept))
 
 
 if __name__ == '__main__':
