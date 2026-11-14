@@ -127,7 +127,11 @@ function build(CORE, site) {
     // the dark plate and the white disc (a file from before them has none of these either)
     CORE.indexOf("window._GATE_CARD_DARK = '#16181D';") >= 0 ? "window._GATE_CARD_DARK = '#16181D';" : '',
     block('window._gateDiscClear = function', 1), block('window._gateCardShade = function', 1), block('window._gateCardScreen = function', 1),
+    // the plates of the dark card, and the plate a gate is drawn on (a file from before them has none)
+    block('window._GATE_CARD_PLATES = {', 1), CORE.indexOf("window._GATE_CARD_PLATE = 'grey-wave';") >= 0 ? "window._GATE_CARD_PLATE = 'grey-wave';" : '',
+    block('window._GATE_CARD_PLATE_OF = {', 1),
     block('window._gateColumnKept = function', 1), block('window._gateColumnDisc = function', 1), block('window._gateCardDark = function', 1),
+    block('window._gateCardFlat = function', 1), block('window._gateCardPlate = function', 1),
     block('window._gateCardPaint = function', 1), block('window._gateWhiteInk = function', 1), block('window._gateColumnWhite = function', 1),
     CORE.indexOf("window._GATE_ORB_RING = 'clamp(7px,1.12vh,14px)';") >= 0 ? "window._GATE_ORB_RING = 'clamp(7px,1.12vh,14px)';" : '',
     block('window._gateOrbWhite = function', 1),
@@ -139,7 +143,7 @@ function build(CORE, site) {
     block('window._orbTileLettersOther = function', 1), block('function _orbMono(code) {'),
     block('function _orbRowArg(code, q) {', 1), block('function _plateEmblem(code, marks) {', 1),
     block('window._holdArtFailed = function'), block('window._orbArtFailed = function'),
-    block('function _monogramColour(c) {', 1), block('function _monogramFill(c) {', 1),
+    block('function _monogramHue(c) {', 1), block('function _monogramColour(c) {', 1),
     block('var _GATE_CARD_ALIAS = {'), block('var _GATE_CARD_EMBLEM = {'), block('var _GATE_CARD_LETTERS = {', 1), block('function _gateCardEmblem(code) {'),
     'function fidsEscHtml(s) { return String(s); }',
     block('function _gateChangeOrbHtml(code) {'),

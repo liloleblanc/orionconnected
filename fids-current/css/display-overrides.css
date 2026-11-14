@@ -9087,32 +9087,83 @@ AND DELTA OFF UNITED'S BLUE (
    honest answer rather than a third borrowed plate: Delta is navy AND RED,
    and not one of the fourteen textures has red in it. A red-on-navy texture
    is all it would take. */
-/* THE DARK PLATE. The plate of a carrier with no picture is a shade of its accent, and discs of
-   that accent sink into it: red on maroon, orange on brown, yellow on khaki. Where they would,
-   the gate publishes a dark neutral as --gate-card (window._gateCardDark in fids-core.js: the
-   house charcoal #16181D, or the black or dark grey the airline itself has on record), and the
-   plate takes it in place of the shade, under the same engraving. The discs keep the colour of
-   the airline, as the red discs of Air Canada sit on its black plate. Every other gate leaves
-   the variable unset and keeps the mix. The numbers of this rule (34%, #0b0e14, screen) are the
-   ones window._gateCardShade and window._gateCardScreen work the paint of a card from: a test
-   holds the two together. */
+/* THE SHADE, AND THE DARK CARD. The plate of a carrier with no picture is a shade of its accent,
+   and discs of that accent sink into it: red on maroon, orange on brown, yellow on khaki. Where
+   they would, the gate is a gate of the dark card (window._gateCardDark in fids-core.js): it
+   publishes the base of the plate it is drawn on as --gate-card, which this rule reads first, and
+   marks the body with the name of that plate, which the rules of the plates below read to draw it.
+   The discs keep the colour of the airline, as the red discs of Air Canada sit on its black plate.
+   Every other gate leaves the variable unset and keeps the mix. The numbers of this rule (34%,
+   #0b0e14, screen) are the ones window._gateCardShade and window._gateCardScreen work the paint of
+   a card from: a test holds the two together. */
 html body[data-gate-airline]:not(#_):not(#_):not(#_) {
   --plate-base: var(--gate-card, color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14));
   --plate-blend: screen;
 }
-/* A PICTURE CARD THAT GIVES WAY. The pattern pictures behind the cards are stock patterns, not
-   the art of an airline, so a picture whose paint the discs of its carrier sink into is tried on
-   the dark plate like any other card (window._gateCardDark): KLM, whose light blue discs sank
-   into the blues of its gradient, and Emirates, whose red discs sat on the red of its wave. Where
-   the discs stand clear of the plate, the gate marks the body (data-gate-card) and this rule lays
-   the plate of the house over the picture: the engraving, the dark the gate publishes, screened,
-   as the rule above paints every other gate on the dark plate. It outranks every rule that names
-   a picture (eleven :not at most). The pictures stay in their rules, unused while the measure
-   sends their gate dark, so a new pattern is wired by naming its file. */
-html body[data-gate-airline][data-gate-card="dark"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
-  --plate-tex: url('/textures/ac-lines-plate.jpg?v=22904');
-  --plate-base: var(--gate-card, #16181D);
-  --plate-blend: screen;
+/* THE PLATES OF THE DARK CARD. A gate whose discs sink into their card and stand clear of a dark
+   is a gate of the dark card (window._gateCardDark in fids-core.js), and it is drawn on a plate:
+   one of six calm stock patterns in grey, black and brown (Vecteezy, Pro licence, no attribution
+   required; docs/operations/vecteezy-stock.md lists the files). The gate names the plate on the
+   body (data-gate-card, by window._gateCardPlate: the plate the carrier is given, or the first its
+   discs stand clear of), and one rule per plate draws it as a picture, blend normal on its own
+   average, with white figures (each plate holds white at 4.5 to 1 or better on its lightest 5th
+   percentile: tests/gate-card-plates.test.js). They outrank every rule that names a picture (eleven
+   :not at most), so a carrier with a picture of its own that sinks under its discs (KLM, Emirates)
+   is drawn on its plate, and the picture stays in its rule, unused while the measure sends that gate
+   to a plate. These replace the house engraving that was screened over the dark for these gates. */
+html body[data-gate-airline][data-gate-card="grey-wave"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-grey-wave.jpg?v=24155');
+  --plate-base: #3E403F;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+html body[data-gate-airline][data-gate-card="black-faint-waves"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-black-faint-waves.jpg?v=24155');
+  --plate-base: #0E0F11;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+html body[data-gate-airline][data-gate-card="grey-shapes"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-grey-shapes.jpg?v=24155');
+  --plate-base: #37343A;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+html body[data-gate-airline][data-gate-card="black-fine-lines"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-black-fine-lines.jpg?v=24155');
+  --plate-base: #161616;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+html body[data-gate-airline][data-gate-card="brown-waves"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-brown-waves.jpg?v=24155');
+  --plate-base: #2E1D0A;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
+}
+html body[data-gate-airline][data-gate-card="brown-layers"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) {
+  --plate-tex: url('/textures/plate-brown-layers.jpg?v=24155');
+  --plate-base: #291A0D;
+  --plate-blend: normal;
+  --plate-ink: #ffffff;
+  --plate-ink-sh: 0 1px 3px rgba(0, 0, 0, 0.78);
+  --plate-ok: #34d399;  --plate-warn: #fbbf24;
+  --plate-bad: #f87171;  --plate-info: #93c5fd;
 }
 /* Carriers WITH their own artwork keep it flat and untinted — the texture is
    the point, and an accent wash over it would be the v22902 mistake again. */

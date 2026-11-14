@@ -812,7 +812,9 @@ test('the belt draws no lockup in its square slots: the square mark of the strip
   assert.match(sheet, /\.bidsv3 \.b3-tile img, \.bidsv3 \.b3-tile > \* \{ width: 100% !important; height: 100% !important; object-fit: contain;/);
   const art = decodePng(fs.readFileSync(path.join(FC, bare(srcOf(wg)))));
   assert.ok(art.w / art.h > 3.5, 'the Sunwing lockup is ' + art.w + ' by ' + art.h + ': in a slot 1.6 wide it is under half the height of the text beside it');
-  // so the belt draws the monogram in the slot, and types the name
+  // so the belt draws the monogram in the slot, and types the name. (The square itself shows on the
+  // tile of the belt sign; the emblem slots of the hall line and of its tags, and the airline block of
+  // the older belt rows, clear its background in the stylesheet, and the letters stand alone there.)
   assert.match(belt('WG', 'Sunwing'), /^<div class="full-logo logo-monogram" data-code="WG" style="background:[^"]+;">WG<\/div>$/);
   const hall = the('_b5Airline')({ airline: 'WG', _airlineName: 'Sunwing' });
   assert.match(hall, /^<span class="b5-emb"><div class="full-logo logo-monogram"[^>]*>WG<\/div><\/span><span class="b5-aname">SUNWING<\/span>$/, 'the monogram, and the name');
@@ -823,8 +825,9 @@ test('the belt draws no lockup in its square slots: the square mark of the strip
   // take a guess, which the strip hides when it misses, and draws the monogram
   const wgPick = B._gateMarkPick(B._BW_EMBLEM, 'WG');
   assert.ok(wgPick.guess && !onDisk(wgPick.src) && !wgPick.tile, 'WG: ' + JSON.stringify(wgPick));
-  // THE COLOUR OF THE SQUARE: the colour of the airline, as the phone app draws the same square (the bar
-  // colour of the colour file where that is dark, else the accent), never a hue made up from its letters
+  // THE COLOUR OF THE SQUARE: the square the phone app draws for the same carrier, by the rule of the
+  // app (the bar colour of the colour file where that is dark, else a hue made up from the code), held
+  // equal to the app code for code in the test below
   const colours = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
   B.AIRLINE_BRAND_COLORS = colours;
   try {
@@ -832,11 +835,9 @@ test('the belt draws no lockup in its square slots: the square mark of the strip
     assert.match(belt('WG', 'Sunwing'), /^<div class="full-logo logo-monogram" data-code="WG" style="background:#0B1F3A;">WG<\/div>$/);
     assert.match(APP, /const acc=\(b&&b\.r1&&_lum\(b\.r1\)<\.45\)\?b\.r1:/, 'the app: the bar colour where it is dark');
   } finally { delete B.AIRLINE_BRAND_COLORS; }
-  // without the colour file, the accent of Sunwing, its orange darkened until the white letters read on it
-  const wgFill = (/background:([^;]+);/.exec(belt('WG', 'Sunwing')) || [])[1];
-  assert.ok(/^#[0-9A-F]{6}$/.test(wgFill) && contrast('#FFFFFF', wgFill) >= 3 && B._orbDeltaE(wgFill, the('AIRLINE_ACCENT').WG) < 12, 'WG: ' + wgFill);
-  // a code with no colour on record keeps the made-up hue (the blue of no airline is no colour)
-  assert.match(belt('ZG', 'Zipair'), /style="background:hsl\(\d+,45%,32%\);"/);
+  // without the colour file, the made-up hue of the app, as for a code with no colour on record
+  assert.match(belt('WG', 'Sunwing'), /style="background:hsl\(\d+,42%,32%\);"/);
+  assert.match(belt('ZG', 'Zipair'), /style="background:hsl\(\d+,42%,32%\);"/);
   // WESTJET ENCORE: a lockup is all its row has, and the strip draws the WestJet leaf for it from its
   // table. The belt draws that leaf in the square, as the strip and the countdown do
   assert.equal(lockup(the('mkLogo')('WR', '')), true, 'Encore: a lockup on its row');
@@ -876,6 +877,46 @@ test('the belt draws no lockup in its square slots: the square mark of the strip
 // XC is Corendon Airlines of Turkey (ICAO CAI), XR Corendon Airlines Europe of Malta (ICAO CXI). The
 // name table had the two the other way round, so a Turkish XC row printed CORENDON EU. Both draw the
 // one figure of the group (the CAI tile, above).
+// THE MONOGRAM SQUARE OF THE BOARD IS THE SQUARE OF THE APP. The app draws a carrier with no art as a
+// square of the bar colour of the colour file where that is dark, else of a hue made up from the code
+// (app.html, tileHtml). The board took the accent darkened until white read on it, so one carrier was
+// two colours on the two screens. The board now mirrors the rule of the app (_monogramColour): the two
+// are run here, the app from its own lines, for codes with a dark bar colour, with a light one, and with
+// none on record.
+test('the monogram square of the board is the colour the phone app gives the same square', () => {
+  const colours = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
+  // the app, from its own lines: the measure of dark, the made-up hue, and the colour of the square
+  const line = (re) => { const m = re.exec(APP); assert.ok(m, String(re)); return m[0]; };
+  const appSquare = new Function('AIRLINE_BRAND_COLORS', [
+    line(/^function _lum\(h\)\{.*\}$/m), line(/^function _hue\(c\)\{.*\}$/m),
+    'return function (code) { const c = String(code || \'\').toUpperCase(); const b = AIRLINE_BRAND_COLORS[c];',
+    line(/^  const acc=\(b&&b\.r1&&_lum\(b\.r1\)<\.45\)\?b\.r1:\('hsl\('\+_hue\(c\)\+',42%,32%\)'\);$/m),
+    'return acc; };'
+  ].join('\n'))(colours);
+  const LIST = ['3U', 'DI', 'HO', 'QX', 'WL', 'WG', '9M', 'ZG', 'P6', 'AC', 'WS', 'PD', 'TS', 'F8', 'AF', 'BA', 'NK', 'YX', 'LL', 'WAL', '2T', 'AA', 'UA', 'VY', 'YN'];
+  B.AIRLINE_BRAND_COLORS = colours;
+  try {
+    const kinds = { dark: [], light: [], none: [] };
+    for (const code of LIST) {
+      const board = the('_monogramColour')(code), app = appSquare(code), b = colours[code];
+      assert.equal(board, app, code + ': the board ' + board + ', the app ' + app);
+      // and the square the rows write carries it
+      assert.match(the('_monogramTile')(code, ''), new RegExp('style="background:' + board.replace(/[()]/g, '\\$&') + ';"'), code);
+      kinds[!b || !b.r1 ? 'none' : /^hsl/.test(app) ? 'light' : 'dark'].push(code);
+    }
+    // the list holds every case of the rule
+    assert.deepEqual(kinds.light.sort(), ['PD', 'YN'], 'the two bar colours on record that are light');
+    assert.ok(kinds.dark.length >= 3 && kinds.none.length >= 5, JSON.stringify(kinds));
+    assert.ok(kinds.dark.includes('WG') && kinds.none.includes('3U'), JSON.stringify(kinds));
+  } finally { delete B.AIRLINE_BRAND_COLORS; }
+  // the board mirrors the lines of the app: the same measure of dark and the same hue
+  const fn = the('_monogramColour').toString() + the('_monogramHue').toString();
+  assert.match(fn, /0\.2126 \* \(\(n >> 16\) & 255\) \+ 0\.7152 \* \(\(n >> 8\) & 255\) \+ 0\.0722 \* \(n & 255\)\) \/ 255/);
+  assert.match(fn, /lum\(b\.r1\) < 0\.45\) \? b\.r1 : \('hsl\(' \+ _monogramHue\(c\) \+ ',42%,32%\)'\)/);
+  assert.match(fn, /h = \(h \* 31 \+ c\.charCodeAt\(i\)\) % 360/);
+  assert.doesNotMatch(CORE, /_monogramFill/, 'one function gives the colour');
+});
+
 test('Corendon: XC prints Corendon, XR Corendon Europe, on the board and in the app', () => {
   assert.deepEqual([NAME.XC, NAME.XR], ['CORENDON', 'CORENDON EU']);
   assert.deepEqual([SHARED.FIDS_SHARED_AIRLINE.XC, SHARED.FIDS_SHARED_AIRLINE.XR], ['CORENDON', 'CORENDON EU'], 'the app copy');

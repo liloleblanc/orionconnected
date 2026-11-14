@@ -346,46 +346,66 @@ test('the phone app, for every code: its tile, its lettering and the brand of it
 });
 
 // ── every line of code ─────────────────────────────────────────────────────
-// The hosts a line of code may name, and what each serves. None serves an airline logo. A host that
-// is not here fails the test, whatever it is and whatever the line does: the gate band is built
-// inside the builder of the gate, which cannot be run alone, and a list of the logo hosts known
-// today would pass any other host. A host named on a line that builds no image, then joined into an
-// image address on the next, is a host named on a line of code like any other.
+// The hosts a line of code may name, what each serves, and the paths on it the code names. None
+// serves an airline logo. A host that is not here fails the test, whatever it is and whatever the
+// line does: the gate band is built inside the builder of the gate, which cannot be run alone, and a
+// list of the logo hosts known today would pass any other host. A host named on a line that builds no
+// image, then joined into an image address on the next, is a host named on a line of code like any
+// other.
+// A HOST IS LET IN AT THE PATHS THE CODE USES, NOT WHOLE. Three of these hosts serve any file anybody
+// puts there (a repository on GitHub, a package on npm, a library on cdnjs): allowed anywhere on any
+// line, a new line naming a repository of airline logos on one of them passed, and was joined into the
+// address of the gate band. Each host is listed with the beginnings of the paths the code names on it
+// ('/' for any path, '' for the bare host), and the two hosts of script libraries only on a line that
+// loads a script (a <script src=).
 // (the worker of the boards is read from the one line that names its base, FIDS_API_BASE)
 const OWN_WORKER = (/^const FIDS_API_BASE = 'https:\/\/([a-z0-9.-]+)';$/m.exec(fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8')) || [])[1] || '';
 const NOT_LOGO_HOSTS = {
   // our own
-  [OWN_WORKER]: 'the worker of the boards: the flight feeds, the lookups of an aircraft and an operator, the sign-in of the menu',
-  'media.orionconnected.com': 'an example typed as the hint of the media address field in the menu',
+  [OWN_WORKER]: { why: 'the worker of the boards: the flight feeds, the lookups of an aircraft and an operator, the sign-in of the menu', at: ['/'] },
+  'media.orionconnected.com': { why: 'an example typed as the hint of the media address field in the menu', at: [''] },
   // feeds the boards read themselves
-  'tampaairportwebprod.prod.acquia-sites.com': 'the flight feed of Tampa',
-  'raw.githubusercontent.com': 'the open list of airports (their places), when the board has none',
+  'tampaairportwebprod.prod.acquia-sites.com': { why: 'the flight feed of Tampa', at: ['/api/flight-status?'] },
+  'raw.githubusercontent.com': { why: 'the open list of airports (their places), when the board has none: that one file of that one repository', at: ['/mwgg/Airports/master/airports.json'] },
   // maps
-  'basemaps.cartocdn.com': 'the map tiles of the Studio',
+  'basemaps.cartocdn.com': { why: 'the map tiles of the Studio', at: ['/rastertiles/voyager/'] },
   // fonts and script libraries
-  'fonts.googleapis.com': 'the fonts of the boards',
-  'fonts.gstatic.com': 'the font files those fonts load',
-  'cdnjs.cloudflare.com': 'a script library (the QR code of the boards)',
-  'unpkg.com': 'a script library (the arcs of the map in the Studio)',
+  'fonts.googleapis.com': { why: 'the fonts of the boards', at: ['', '/css2?'] },
+  'fonts.gstatic.com': { why: 'the font files those fonts load', at: [''] },
+  'cdnjs.cloudflare.com': { why: 'two script libraries: the QR code of the boards, the map of the Studio', at: ['/ajax/libs/qrcodejs/', '/ajax/libs/leaflet/'], script: true },
+  'unpkg.com': { why: 'a script library (the arcs of the map in the Studio)', at: ['/leaflet-arc/'], script: true },
   // photographs of cities, behind a card
-  'images.unsplash.com': 'photographs of cities behind the weather and hotel cards',
-  'api.openverse.org': 'the search for a photograph of a city under an open licence',
+  'images.unsplash.com': { why: 'photographs of cities behind the weather and hotel cards, by the id of the photograph', at: ['/'] },
+  'api.openverse.org': { why: 'the search for a photograph of a city under an open licence', at: ['/v1/images/?'] },
   // hotels
-  'all.accor.com': 'the page of a hotel, the link of its card (a page, never an image)',
+  'all.accor.com': { why: 'the page of a hotel, the link of its card (a page, never an image)', at: ['/hotel/'] },
   // videos
-  'img.youtube.com': 'the still of a video, in the list of the menu',
-  'www.youtube.com': 'the video player',
-  'www.youtube-nocookie.com': 'the video player, without its cookies',
-  'youtube.com': 'an example typed as the hint of a field in the menu',
+  'img.youtube.com': { why: 'the still of a video, in the list of the menu', at: ['/vi/'] },
+  'www.youtube.com': { why: 'the video player', at: ['/iframe_api', '/oembed?', '/watch?v=', '/embed/'] },
+  'www.youtube-nocookie.com': { why: 'the video player, without its cookies', at: [''] },
+  'youtube.com': { why: 'an example typed as the hint of a field in the menu', at: ['/watch?v=', '/playlist?list='] },
   // the rest
-  'example.com': 'an example typed as the hint of the address field of a background',
-  'www.w3.org': 'the name space of an inline drawing (svg), not an address that is fetched'
+  'example.com': { why: 'an example typed as the hint of the address field of a background', at: ['/image.jpg'] },
+  'www.w3.org': { why: 'the name space of an inline drawing (svg), not an address that is fetched', at: ['/2000/svg', '/1999/xlink'] }
 };
+// the hosts that serve any file of anybody: never let in whole
+const ANY_FILE_HOSTS = ['raw.githubusercontent.com', 'cdnjs.cloudflare.com', 'unpkg.com', 'cdn.jsdelivr.net', 'gist.githubusercontent.com'];
+// Is a host and a path, named on this line, one the list lets in? The prefix it is let in under, or ''.
+const SCRIPT_LINE = (host) => new RegExp('<script\\b[^>]*\\bsrc\\s*=\\s*["\']https:\\/\\/' + host.replace(/\./g, '\\.') + '\\/');
+function letIn(host, pathPart, line) {
+  if (!Object.prototype.hasOwnProperty.call(NOT_LOGO_HOSTS, host)) return null;
+  const e = NOT_LOGO_HOSTS[host];
+  if (e.script && !SCRIPT_LINE(host).test(line)) return null;
+  for (const at of e.at) {
+    if (at === '/' || (at === '' ? pathPart === '' : pathPart.startsWith(at))) return at;
+  }
+  return null;
+}
 // a line builds an image address where it names an image, a source, a background or a mask, or
 // one of the words this code uses for the mark of an airline
 const BUILDS_IMAGE = /<img\b|<image\b|<source\b|<video\b|\bsrc\b|\bsrcset\b|url\(|background|mask|\bposter\b|new Image\b|logo|emblem|wordmark|monogram|airline-tiles|watermark/i;
 // (a map tile address names its server as {s}. before the host: the host is read past it)
-const HOST = /(?:https?:)?\/\/(?:\{[a-z]\}\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,})/ig;
+const HOST = /(?:https?:)?\/\/(?:\{[a-z]\}\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,})(\/[^\s'"`)<>]*)?/ig;
 // A RULE CITES ITS SOURCE. Two tables of rules (when a gate closes, who boards when) name the
 // page of the airline each rule was read from (src, and srcFr, srcZones and the like for a page in
 // another language or on another part of the rule), under a key that is also the name of an image
@@ -400,13 +420,48 @@ const PICTURE = /\.(?:svg|png|jpe?g|gif|webp|avif|ico|bmp)(?:[?#'"`\s)]|$)/i;
 // without its scheme is given one (a hotel link, a photograph), which joins no host the line names.
 const JOINED = /(['"`])(?:https?:)?\/\/\1\s*\+|`(?:https?:)?\/\/\$\{/;
 const GIVES_SCHEME = /\b([A-Za-z_$][\w$]*)\s*=\s*(['"])https?:\/\/\2\s*\+\s*\1\s*;/;
-// the hosts a line of code names: what follows a comment marker is commentary, but for the two
-// slashes that begin an address
+// the hosts a line of code names, each with the path named after it ('' where none is): what
+// follows a comment marker is commentary, but for the two slashes that begin an address
 function hostsNamed(line) {
+  return addressesNamed(line).map((a) => a.host);
+}
+function addressesNamed(line) {
   const t = line.trim();
   if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('<!--')) return [];
   const code = line.replace(/(^|[^:'"`(=\/])\/\/(?![a-z0-9-]+\.[a-z0-9.-]*[a-z]{2,}\/).*$/i, '$1');
-  return [...code.matchAll(HOST)].map((m) => m[1].toLowerCase());
+  return [...code.matchAll(HOST)].map((m) => ({ host: m[1].toLowerCase(), path: m[2] || '' }));
+}
+
+// THE SWEEP, over the files of a site folder: every line of code, the hosts and paths it names
+// against the list, and every address joined from a scheme and a value. Run on the real folder by
+// the test below, and on a copy with a line added by the test after it.
+const SWEPT = ['js/fids-core.js', 'js/shared-names.js', 'js/template-renderer.js', 'js/designer.js', 'js/menu.js', 'js/boarding-sequence.js', 'js/feed-router.js',
+  'app.html', 'fids.html', 'gids.html', 'bids.html', 'screen.html', 'rotate.html', 'menu.html', 'designer.html', 'data/airline-colors.js'];
+function sweep(site) {
+  const found = [], seen = {}, seenAt = {};
+  let lines = 0, read = 0, cited = 0, given = 0, images = 0;
+  for (const rel of SWEPT) {
+    const file = path.join(site, rel);
+    if (!fs.existsSync(file)) continue;
+    read++;
+    fs.readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+      const t = line.trim();
+      if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('<!--')) return;
+      lines++;
+      if (BUILDS_IMAGE.test(line)) images++;
+      if (CITES(rel, line)) { cited++; if (PICTURE.test(line)) found.push(rel + ':' + (i + 1) + ': a rule cites a picture: ' + t.slice(0, 120)); return; }
+      for (const { host, path: at } of addressesNamed(line)) {
+        const under = letIn(host, at, line);
+        if (under !== null) { seen[host] = 1; seenAt[host + ' ' + under] = 1; continue; }
+        found.push(rel + ':' + (i + 1) + ': ' + host + (Object.prototype.hasOwnProperty.call(NOT_LOGO_HOSTS, host) ? ' at ' + (at || 'its bare name') + ', a path or a line it is not let in at,' : '') + ' in ' + t.slice(0, 120));
+      }
+      if (JOINED.test(line.replace(/(^|[^:'"`(=\/])\/\/\s.*$/, '$1'))) {
+        if (GIVES_SCHEME.test(line)) given++;
+        else found.push(rel + ':' + (i + 1) + ': an address joined from a scheme and a value: ' + t.slice(0, 120));
+      }
+    });
+  }
+  return { found, seen, seenAt, lines, read, cited, given, images };
 }
 
 test('no line of code names a host, but for the hosts the code uses for something other than an airline logo', () => {
@@ -430,30 +485,7 @@ test('no line of code names a host, but for the hosts the code uses for somethin
   for (const line of ["  url = 'https://' + url;", "  photoUrl = 'https://' + photoUrl;", "  else if (u && !/^https?:/i.test(u) && u.indexOf('/')!==0) u = 'https://'+u;"]) assert.ok(JOINED.test(line) && GIVES_SCHEME.test(line), line);
   assert.equal(GIVES_SCHEME.test("  r1LogoSrc = 'https://' + _h;"), false);
   for (const line of ['<img src="/logos/a.svg">', 'el.style.backgroundImage = "url(" + u + ")"', 'var r1LogoSrc = carrierLogoUrl(code);', "'/logos/airline-tiles/' + t", 'mask-image:url(x)', 'img.src = u;']) assert.match(line, BUILDS_IMAGE, line);
-  const files = ['js/fids-core.js', 'js/shared-names.js', 'js/template-renderer.js', 'js/designer.js', 'js/menu.js', 'js/boarding-sequence.js', 'js/feed-router.js',
-    'app.html', 'fids.html', 'gids.html', 'bids.html', 'screen.html', 'rotate.html', 'menu.html', 'designer.html', 'data/airline-colors.js'];
-  const found = [], seen = {};
-  let lines = 0, read = 0, cited = 0, given = 0, images = 0;
-  for (const rel of files) {
-    const file = path.join(FC, rel);
-    if (!fs.existsSync(file)) continue;
-    read++;
-    fs.readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
-      const t = line.trim();
-      if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('<!--')) return;
-      lines++;
-      if (BUILDS_IMAGE.test(line)) images++;
-      if (CITES(rel, line)) { cited++; if (PICTURE.test(line)) found.push(rel + ':' + (i + 1) + ': a rule cites a picture: ' + t.slice(0, 120)); return; }
-      for (const host of hostsNamed(line)) {
-        if (Object.prototype.hasOwnProperty.call(NOT_LOGO_HOSTS, host)) { seen[host] = 1; continue; }
-        found.push(rel + ':' + (i + 1) + ': ' + host + ' in ' + t.slice(0, 120));
-      }
-      if (JOINED.test(line.replace(/(^|[^:'"`(=\/])\/\/\s.*$/, '$1'))) {
-        if (GIVES_SCHEME.test(line)) given++;
-        else found.push(rel + ':' + (i + 1) + ': an address joined from a scheme and a value: ' + t.slice(0, 120));
-      }
-    });
-  }
+  const { found, seen, seenAt, lines, read, cited, given, images } = sweep(FC);
   assert.ok(read >= 14 && lines > 50000 && images > 3000, read + ' files, ' + lines + ' lines of code, ' + images + ' of them building an image address');
   assert.deepEqual(found, [], found.length + ' lines of code name a host not known to serve no airline logo, or join an address:\n' + found.join('\n'));
   assert.ok(cited >= 30 && cited <= 80, cited + ' rows of the two rule tables cite the page of an airline');
@@ -465,7 +497,20 @@ test('no line of code names a host, but for the hosts the code uses for somethin
   // the list holds only hosts a line still names: one that is no longer named leaves it
   assert.ok(/\.workers\.dev$/.test(OWN_WORKER), 'the worker of the boards: ' + OWN_WORKER);
   assert.deepEqual(Object.keys(seen).sort(), Object.keys(NOT_LOGO_HOSTS).sort());
-  for (const why of Object.values(NOT_LOGO_HOSTS)) assert.ok(why.length > 10);
+  // and every path a host is let in at is a path a line still names
+  assert.deepEqual(Object.keys(seenAt).sort(), Object.entries(NOT_LOGO_HOSTS).flatMap(([h, e]) => e.at.map((at) => h + ' ' + at)).sort());
+  for (const e of Object.values(NOT_LOGO_HOSTS)) assert.ok(e.why.length > 10 && Array.isArray(e.at) && e.at.length >= 1, e.why);
+  // a host that serves any file of anybody is never let in whole, and a host of script libraries
+  // only on a line that loads a script
+  for (const host of ANY_FILE_HOSTS.filter((h) => NOT_LOGO_HOSTS[h])) {
+    assert.ok(NOT_LOGO_HOSTS[host].at.every((at) => at.length > 8 && at !== '/'), host + ': ' + NOT_LOGO_HOSTS[host].at.join(' '));
+  }
+  assert.deepEqual(Object.keys(NOT_LOGO_HOSTS).filter((h) => NOT_LOGO_HOSTS[h].script).sort(), ['cdnjs.cloudflare.com', 'unpkg.com']);
+  assert.equal(letIn('cdnjs.cloudflare.com', '/ajax/libs/qrcodejs/1.0.0/qrcode.min.js', '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>'), '/ajax/libs/qrcodejs/');
+  assert.equal(letIn('cdnjs.cloudflare.com', '/ajax/libs/qrcodejs/1.0.0/qrcode.min.js', "  var u = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';"), null, 'a script host on a line that loads no script');
+  assert.equal(letIn('raw.githubusercontent.com', '/someone/airline-logos/main/logos/', "  var _r1Gh = 'https://raw.githubusercontent.com/someone/airline-logos/main/logos/';"), null, 'another repository');
+  assert.equal(letIn('unpkg.com', '/airline-logos/AC.png', '<script src="https://unpkg.com/airline-logos/AC.png"></script>'), null, 'another package');
+  assert.equal(letIn('images.unsplash.com', '/photo-1', "  return 'https://images.unsplash.com/photo-1';"), '/');
   // and none of them is a host of airline logos
   for (const host of Object.keys(NOT_LOGO_HOSTS)) assert.doesNotMatch(host, /wway|avs\.io|gstatic\.com\/flights|clearbit|airhex|kiwi|daisycon|logo/i, host);
   // the gate band: every line that sets its address is read by the sweep above, and none names a host
@@ -473,4 +518,42 @@ test('no line of code names a host, but for the hosts the code uses for somethin
   const band = core.split('\n').filter((l) => /\br1LogoSrc\s*=[^=]/.test(l));
   assert.ok(band.length >= 6, band.length + ' lines set the address of the gate band');
   for (const l of band) { assert.match(l, BUILDS_IMAGE); assert.deepEqual(hostsNamed(l), [], l.trim().slice(0, 120)); assert.doesNotMatch(l, JOINED); }
+});
+
+// THE MUTATION THAT PASSED. A repository of airline logos on the host that serves the open list of
+// airports, named on a line of its own and joined into the address of the gate band on the next. The
+// host was in the list, anywhere on any line, so the sweep let it through. The sweep is run here on a
+// copy of the site folder in a temporary folder, the copy of fids-core.js with the two lines added
+// after the line that opens the address of the band, and it must name the first of them. The real file
+// is never written.
+test('the sweep catches a repository of logos on a host the list knows for another path', () => {
+  const os = require('node:os');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'own-host-'));
+  try {
+    for (const rel of SWEPT) {
+      const from = path.join(FC, rel);
+      if (!fs.existsSync(from)) continue;
+      fs.mkdirSync(path.dirname(path.join(tmp, rel)), { recursive: true });
+      fs.copyFileSync(from, path.join(tmp, rel));
+    }
+    // the copy, untouched, is as clean as the real folder
+    assert.deepEqual(sweep(tmp).found, []);
+    const coreCopy = path.join(tmp, 'js/fids-core.js');
+    const text = fs.readFileSync(coreCopy, 'utf8');
+    const at = /^  var r1LogoSrc = .*$/m.exec(text);
+    assert.ok(at, 'the line that opens the address of the band');
+    const end = at.index + at[0].length;
+    const added = "\n  var _r1Gh = 'https://raw.githubusercontent.com/someone/airline-logos/main/logos/';\n  r1LogoSrc = r1LogoSrc || (_r1Gh + airlineCode + '.png');";
+    fs.writeFileSync(coreCopy, text.slice(0, end) + added + text.slice(end));
+    const line = text.slice(0, end).split('\n').length + 1;
+    const { found } = sweep(tmp);
+    assert.deepEqual(found.map((f) => f.split(': ')[0]), ['js/fids-core.js:' + line], found.join('\n'));
+    assert.match(found[0], /raw\.githubusercontent\.com at \/someone\/airline-logos\/main\/logos\//);
+    // a script library from another package of the same host, on a script line, is caught too
+    const page = path.join(tmp, 'designer.html');
+    fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace('</head>', '  <script src="https://unpkg.com/airline-logos/dist/marks.js"></script>\n</head>'));
+    assert.ok(sweep(tmp).found.some((f) => /^designer\.html:\d+: unpkg\.com at \/airline-logos\//.test(f)), 'another package of unpkg');
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  // and the real file was not touched
+  assert.doesNotMatch(fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8'), /someone\/airline-logos/);
 });
