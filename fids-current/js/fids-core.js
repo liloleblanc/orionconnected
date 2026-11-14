@@ -464,6 +464,9 @@ function _fidsSaveAuthRescue(res) {
   // Both copies, durable first — the order _fidsAuthToken reads them in.
   try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
   try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+  // The dead token leaves the cookie of the zone as well (fidsSignIn in
+  // host-airport.js), unless a newer sign-in from another address is there.
+  try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.drop(tok); } catch (e) {}
   try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
   try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
   return true;
@@ -525,6 +528,8 @@ function _fidsAuthToken() {
   if (tok && _fidsTokenExpired(tok)) {
     try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
     try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+    // and out of the cookie of the zone, where it holds this same dead token
+    try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.drop(tok); } catch (e) {}
     try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
     return null;
   }
@@ -4823,6 +4828,11 @@ async function attemptLogin() {
       } catch (e) { /* storage unavailable — the session lasts this tab only */ }
       sessionStorage.setItem('fids_token', data.token);
       sessionStorage.setItem('fids_user', _userJson);
+      // THE SIGN-IN TRAVELS. On .com and .ca it is also kept in the cookie of
+      // the zone (fidsSignIn in host-airport.js, the one place that cookie is
+      // touched), so the next airport address is signed in as well and an
+      // admin follows the address rule as a visitor does.
+      try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.keep(data.token, _userJson); } catch (e) {}
       LIVE_MODE = true;
       if (typeof demoRebuildTimer !== 'undefined' && demoRebuildTimer) {
         clearInterval(demoRebuildTimer); demoRebuildTimer = null;
@@ -18165,7 +18175,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24154" src="/textures/gate-sky-shelf.mp4?v=24154" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24155" src="/textures/gate-sky-shelf.mp4?v=24155" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -18209,7 +18219,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24154" src="/textures/gate-sky-shelf.mp4?v=24154" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24155" src="/textures/gate-sky-shelf.mp4?v=24155" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -19444,7 +19454,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24154" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24155" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36728,7 +36738,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24154';
+var FIDS_BUILD_TAG = 'v24155';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -48401,9 +48411,10 @@ function apAutoSelect(code, name, ctx) {
   // v24145 — ANOTHER AIRPORT IS ANOTHER ADDRESS. Picked on .com or .ca, the
   // board goes to the address of that airport (fidsBoardUrl), with this page
   // and its query, less the gate, belt and screen of the old airport. Where a
-  // page cannot leave its origin (a preview, a frame, an admin signed in
-  // here) the helper answers with a relative link and the switch stays in
-  // the page, as before.
+  // page cannot leave its origin (a preview, a frame, an admin whose sign-in
+  // cannot travel) the helper answers with a relative link and the switch
+  // stays in the page, as before. An admin signed in on .com or .ca leaves
+  // for the new address like anyone: the sign-in is in the cookie of the zone.
   // A REGISTERED SCREEN AND A KIOSK NEVER LEAVE. A page with a registry id in
   // ?screen= (its pairing lives in this origin storage) or a stream, yt or
   // compact kiosk switches airport in the page, as it did before addresses.
@@ -66242,7 +66253,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24154" src="/textures/gate-sky-shelf.mp4?v=24154"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24155" src="/textures/gate-sky-shelf.mp4?v=24155"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

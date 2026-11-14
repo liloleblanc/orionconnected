@@ -1163,7 +1163,7 @@ function _syncMenu() {
 // v24145 — ONE LINK HELPER. Every board link the menu builds goes through
 // fidsBoardUrl (host-airport.js): the airport address on .com and .ca, the
 // old relative page.html?ap= link where a page cannot leave its origin (a
-// preview, a frame, an admin signed in here). The fallback is that old link,
+// preview, a frame, an admin whose sign-in cannot travel). The fallback is that old link,
 // for a page that somehow lacks host-airport.js.
 function _menuBoardUrl(code, page, params) {
   try { if (typeof window.fidsBoardUrl === 'function') return window.fidsBoardUrl(code, page, params); } catch (e) {}
@@ -1283,8 +1283,8 @@ function menuClearScreenFilters() {
 function menuCopyScreenUrl() {
   var url = _menuScreenUrl().toString();
   // v24145 — what goes into the next kiosk is the airport address of this
-  // screen, not the address this page happens to be on (an admin signed in
-  // on fids.<zone> stays there; the screen it sets up does not).
+  // screen, not the address this page happens to be on (an admin whose
+  // sign-in cannot travel stays on fids.<zone>; the screen it sets up does not).
   try {
     if (typeof window.fidsAirportAddress === 'function') {
       var _cu = new URL(url);
@@ -1428,9 +1428,21 @@ function menuGoToPicker() {
   window.location.href = 'picker.html';
 }
 
+// THE LOGOUT BUTTON ENDS THE SIGN-IN. It used to clear this tab only: the
+// durable copy in localStorage stayed, and so does the cookie that carries
+// the sign-in to every airport address of the zone (fidsSignIn, in
+// host-airport.js), so the opener took the token straight back and the
+// person who pressed Logout was still signed in, here and everywhere. It
+// now signs out the way the picker does: fidsSignIn.end() clears both
+// copies on this origin and leaves the signed-out mark every other address
+// of the zone obeys. It runs BEFORE the tab is cleared, because end() writes
+// the mark only when it finds a sign-in to end. Where there is no fidsSignIn
+// the two copies are removed here, and they are removed here in any case.
 function menuLogout() {
-  closeOverlayMenu();
-  sessionStorage.clear();
+  try { closeOverlayMenu(); } catch (e) {}
+  try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn && fidsSignIn.end) fidsSignIn.end(); } catch (e) {}
+  try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
+  try { sessionStorage.clear(); } catch (e) {}
   window.location.href = 'index.html';
 }
 
@@ -2226,6 +2238,9 @@ async function _acFetch(url, opts) {
     if (_expired) {
       try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
       try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+      // The dead token leaves the cookie of the zone as well (fidsSignIn in
+      // host-airport.js), unless a newer sign-in from another address is there.
+      try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.drop(_t || null); } catch (e) {}
       try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
       try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
       try {

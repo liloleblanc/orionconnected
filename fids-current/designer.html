@@ -8,9 +8,12 @@
   <link rel="stylesheet" href="css/font.css?v=335">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
   <link rel="stylesheet" href="css/designer.css?v=1">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script src="https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js"></script>
-  <script src="js/airport-coords.js?v=24154"></script>
+  <!-- The two map files at an exact version, each held to the SHA-256 that
+       worker-entry.js holds for /mapcdn (MAP_ENGINE_SHA256): a body that
+       differs is not run. Without the arc file a route is a straight line. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/leaflet-arc@1.0.2/bin/leaflet-arc.min.js" integrity="sha256-YmwlspTKbw9EKvwLyOSd7k9Sbp1tArYGAA6Rg0tFnKs=" crossorigin="anonymous"></script>
+  <script src="js/airport-coords.js?v=24155"></script>
 </head>
 <body class="dgn-page">
 
@@ -186,6 +189,6 @@
   <!-- ── Toast ───────────────────────────────────────────────────────── -->
   <div id="dgnToast"></div>
 
-  <script src="js/designer.js?v=24154"></script>
+  <script src="js/designer.js?v=24155"></script>
 </body>
 </html>
