@@ -4114,6 +4114,15 @@ var FIDS_FIT_RULES = [
   // second line between two whole phrases (.fx-unit), never inside one and
   // never cut
   { sel: '.g8-band .g8-band-ln', box: '.g8-band-tx', lines: 2, units: true, group: '.g8-band-half', h: function (el) { return _g8BandLineRoom(el); } },
+  // THE NAME OF THE AIRLINE ON THE BAND OF A GATE, typed where the band has no lettering of the
+  // airline (no file, or one that did not load: g8LogoFail). The stylesheet set it at 48px in a
+  // 420px slot, on one line, and cut it with an ellipsis: CENTRAL MOUNTAIN AIR, 608px wide at
+  // 48px, read CENTRAL MOUNT at Quebec City. It is fitted as every other name: smaller, down to
+  // the floor, on its one line (keep: any size the floor allows), and only where the floor is
+  // not enough, on two lines (balanced by the stylesheet, .g8-r1-airline.fx-wrap) in the band
+  // less its margins; never cut.
+  // tests/gate-header-names.test.js walks every airline name the header can show.
+  { sel: '.g8-r1 .g8-r1-airline', lines: 2, keep: 0.01, h: function (el) { var b = el.closest('.g8-r1'); return b ? b.clientHeight * 0.82 : 0; } },
   // v24012 — the gate's centre cards (_gateCardHtml): every line in its box,
   // smaller first, then a second line between two whole phrases (.fx-unit),
   // never inside one and never cut. A row's words are held to its height
@@ -11981,6 +11990,8 @@ function g8LogoFail(img) {
   span.className = 'g8-r1-airline';
   span.textContent = img.getAttribute('data-name') || '';
   if (img.parentNode) img.parentNode.replaceChild(span, img);
+  // and fitted at once, as a name typed by the render is (FIDS_FIT_RULES): never cut
+  try { if (typeof fidsFitText === 'function') fidsFitText(span, { lines: 2, keep: 0.01, h: function (el) { var b = el.closest('.g8-r1'); return b ? b.clientHeight * 0.82 : 0; } }); } catch (eFit) {}
 }
 
 // Operating carrier for regional flights
@@ -14360,13 +14371,42 @@ function _gateChangeAccent3(code, acc) {
 function _gateChangeOrbHtml(code) {
   var c = String(code || '').toUpperCase();
   if (!c) return '';
+  // a second argument asks for the white orb of the carrier (window._gateNoticeLook decides it)
+  var white = arguments.length > 1 && !!arguments[1];
   try {
     // the mark of the carrier as this notice always drew it, the symbol first: the finished
     // tile first is a rule of the gate orbs alone (the second argument of the recipe)
     var parts = (typeof window !== 'undefined' && typeof window._gateOrbParts === 'function') ? window._gateOrbParts(c, true) : null;
+    // THE WHITE ORB OF THE NOTICE. A mark whose disc is dark itself (a navy, a black, a deep
+    // maroon) stands clear of no dark plate, and the rail draws such discs white: the white disc of
+    // the carrier (window._gateOrbWhite), its tile as a round inset or its mark in its colours, its
+    // letters in the colour of its brand, as the Your Aircraft orb of another gate draws it
+    // (window._gateCardOrb). The ring of an inset is written to win over the padding the stylesheet
+    // gives the orb of the notice: 15 hundredths of the orb on each side, as there.
+    var wcls = '';
+    // THE DISC OF THE NOTICE IS ITS OWN. The rules of the carrier of the gate paint the discs of
+    // that gate (the white discs of American, the gradient of United), and they reached the orb of
+    // the notice too, which is another carrier: the red disc of Iberia went white under its white
+    // bird on an American gate. The box carries its disc a second time, as a variable
+    // (--gc-disc), and the stylesheet paints the orb of the notice with it over every such rule.
+    var hold = function (b) { var m = /background:([^;]+);/.exec(String(b || '')); return String(b || '') + (m ? '--gc-disc:' + m[1] + ';' : ''); };
+    // and the filter of its mark the same way (--gc-filter): the rules of some gates take the white
+    // filter off every emblem of the gate (United, Flair, Ryanair), and the white bird of Iberia came
+    // out in its own red on its red disc there
+    var holdImg = function (st) { var m = /(?:^|;)filter:([^;]+);/.exec(String(st || '')); return String(st || '') + '--gc-filter:' + (m ? m[1] : 'none') + ';'; };
+    if (white && parts && typeof window._gateOrbWhite === 'function') {
+      var _gcN = window._gateOrbNatural(c);
+      parts = window._gateOrbWhite(c, _gcN, window._gateWhiteInk(c, _gcN.ground));
+      if (parts.inset) parts = Object.assign({}, parts, { badge: String(parts.badge).replace('padding:' + window._GATE_ORB_RING + ';', 'padding:calc(min(11vh, 6.9vw) * var(--gl-gk, 1) * 0.15) !important;') });
+      wcls = ' gl-gc-orb-white';
+      if (!parts.path) {
+        return '<span class="gl-gc-orb' + wcls + '"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + hold(parts.badge) + '">'
+          + '<span class="v2-fi-orb-code" style="color:' + parts.ink + ' !important;">' + fidsEscHtml(parts.letters || _orbMono(c)) + '</span></span></span>';
+      }
+    }
     // a carrier whose only tile is the placeholder of another code: its own letters on the disc
     if (parts && parts.letters) {
-      return '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + parts.badge + '">'
+      return '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + hold(parts.badge) + '">'
         + '<span class="v2-fi-orb-code">' + parts.letters + '</span></span></span>';
     }
     var path = (parts && parts.path) || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(c) : '');
@@ -14380,7 +14420,7 @@ function _gateChangeOrbHtml(code) {
     // such tile keeps its symbol on the disc in a dark ink in place of the white (the filter that
     // whitens it gives way to one that darkens it). A white the table of looks names as the ink of
     // the carrier is a look approved as drawn and stays (the leaf of WestJet on its teal).
-    if (/invert\(1\)/.test(String(parts.imgStyle || ''))) {
+    if (!white && /invert\(1\)/.test(String(parts.imgStyle || ''))) {
       var _gcDisc = /background:var\(--airline-accent,/.test(String(parts.badge || '')) ? String(getAirlineAccent(c) || '')
         : ((/background:(#[0-9a-f]{6})\b/i.exec(String(parts.badge || '')) || [])[1] || '');
       var _gcFold = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(c) : c;
@@ -14401,8 +14441,8 @@ function _gateChangeOrbHtml(code) {
     // v24079 — a symbol that was never drawn (Alaska has no AS.svg) tries the
     // row tile, then the letters, as every other round orb does
     // (_orbArtFailed); it used to hide itself and leave an empty disc
-    return '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (parts.native ? ' v2-fi-emblem-native' : '') + '" style="' + parts.badge + '">'
-      + '<img src="' + fidsEscHtml(path) + '" alt="" class="v2-fi-emblem-img" style="' + parts.imgStyle + '" onerror="window._orbArtFailed(this,&quot;' + _orbMono(c) + '&quot;' + ((typeof _orbRowArg === 'function') ? _orbRowArg(c, '&quot;') : '') + ')">'
+    return '<span class="gl-gc-orb' + wcls + '"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (parts.native ? ' v2-fi-emblem-native' : '') + '" style="' + hold(parts.badge) + '">'
+      + '<img src="' + fidsEscHtml(path) + '" alt="" class="v2-fi-emblem-img" style="' + holdImg(parts.imgStyle) + '" onerror="window._orbArtFailed(this,&quot;' + _orbMono(c) + '&quot;' + ((typeof _orbRowArg === 'function') ? _orbRowArg(c, '&quot;') : '') + ')">'
       + '</span></span>';
   } catch (e) { return ''; }
 }
@@ -14421,7 +14461,13 @@ function _gateChangeNoticeHtml(m) {
   var dw = _gateLaterDayWords(f, m);
   var gateW = _gateLbl('gate', frF, function (w) { return '<span>' + fidsEscHtml(w) + '</span>'; }, '');
   var acc3 = _gateChangeAccent3(code, acc);
-  return '<div class="gl-gc" data-gl-gc="' + fidsEscHtml(String(f.flight || '') + '>' + to) + '"' + (acc ? ' style="--airline-accent:' + fidsEscHtml(acc) + ';--airline-accent3:' + fidsEscHtml(acc3) + ';--gl-pill:' + fidsEscHtml(acc) + ';"' : '') + '>'
+  // THE CARD OF THE NOTICE. It is drawn on the plate of the gate it covers, and its orb is the
+  // carrier of the moved flight: an orb that would sink into that plate draws the notice on a plate
+  // of its own, or goes white (window._gateNoticeLook). Two more arguments: the code of the gate
+  // the notice covers, and whether the notice is the whole screen (a gate with no flight).
+  var look = { plate: '', white: false };
+  try { if (typeof window._gateNoticeLook === 'function') look = window._gateNoticeLook(arguments[1], code, !!arguments[2]) || look; } catch (eLook) { look = { plate: '', white: false }; }
+  return '<div class="gl-gc"' + (look.plate ? ' data-gc-plate="' + fidsEscHtml(look.plate) + '"' : '') + ' data-gl-gc="' + fidsEscHtml(String(f.flight || '') + '>' + to) + '"' + (acc ? ' style="--airline-accent:' + fidsEscHtml(acc) + ';--airline-accent3:' + fidsEscHtml(acc3) + ';--gl-pill:' + fidsEscHtml(acc) + ';"' : '') + '>'
     + '<div class="gl-gc-glass"></div>'
     + '<div class="gl-gc-inner">'
     +   '<div class="gl-gc-card g8-bir-shelves"><div class="v2-flightinfo-block"><div class="v2-fi-row gl-gc-row">'
@@ -14430,7 +14476,7 @@ function _gateChangeNoticeHtml(m) {
               return '<span class="' + (i ? 'v2-fi-lbl-2' : 'v2-fi-lbl-en') + '">' + fidsEscHtml(w) + '</span>';
             }, '<span class="v2-fi-sep"> | </span>') + '</div>'
     +       '<div class="gl-gc-body">'
-    +         '<div class="gl-gc-flight">' + _gateChangeOrbHtml(code)
+    +         '<div class="gl-gc-flight">' + _gateChangeOrbHtml(code, look.white)
     +           '<span class="gl-gc-fl">' + fidsEscHtml(f.flight || '') + '</span>'
     +           '<span class="gl-gc-city">' + _gateLaterPlaceHtml(pl) + '</span>'
     +         '</div>'
@@ -14475,7 +14521,7 @@ function _gateChangeSoloHtml(m, timeStr) {
     +   '<div class="gl-solo-clock" id="dedicatedEmptyTime">' + fidsEscHtml(String(timeStr || '').replace(/^0(\d)/, '$1')) + '</div>'
     +   '<div class="gl-solo-gate"><span class="gl-solo-glbl">' + gateW + '</span><span class="gl-solo-gnum">' + fidsEscHtml(m.sub || '') + '</span></div>'
     + '</div>'
-    + '<div class="gl-solo-body">' + _gateChangeNoticeHtml(m) + '</div>'
+    + '<div class="gl-solo-body">' + _gateChangeNoticeHtml(m, '', true) + '</div>'
     + '</div>';
 }
 
@@ -14883,7 +14929,7 @@ function buildV2GateLayout(ctx, vars) {
   var _gl = null, _glStrip = '', _glNotice = '';
   try { _gl = _gateLaterModel(subScreenVal, Date.now(), iata); } catch (eGl) { _gl = null; }
   try { _glStrip = _gl ? _gateLaterStripHtml(_gl) : ''; } catch (eGs) { _glStrip = ''; }
-  try { _glNotice = (_gl && _gl.full) ? _gateChangeNoticeHtml(_gl) : ''; } catch (eGn) { _glNotice = ''; }
+  try { _glNotice = (_gl && _gl.full) ? _gateChangeNoticeHtml(_gl, vars.airlineCode) : ''; } catch (eGn) { _glNotice = ''; }
   var mediaCol =
       '<div class="gad-media-col' + (_glStrip ? ' gl-on' : '') + '" style="display:flex;flex-direction:row;flex:1 1 var(--col-center, 50%);min-width:0;overflow:hidden;position:relative;">'
     +   '<div id="gateAdLogo" class="gate-ad-logo-rail" style="display:none;flex:0 0 0;width:0;min-width:0;max-width:0;overflow:hidden;"></div>'
@@ -15674,6 +15720,117 @@ window._gateCardPaint = function (code) {
   var paint = window._gateCardScreen(mix);
   var base = '#' + mix.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16).toUpperCase(); return h.length < 2 ? '0' + h : h; }).join('');
   return { carrier: c, kind: 'shade', accent: accent, base: base, paint: paint, at: [paint], lower: lower, over: '' };
+};
+// THE NOTICE OF A MOVED FLIGHT, ON THE CARD OF THE GATE IT COVERS. The gate change notice is
+// drawn on the plate of the gate (the card under the rail), and its orb is the carrier of the moved
+// flight, another carrier as often as not: the red disc of Iberia landed on the brown waves of a KLM
+// gate, the red of Emirates on the brown layers of Cathay, navy discs on the black plates. The orb
+// is judged as the rail judges its discs, against the paints of the card the gate shows
+// (window._gateCardPaint): on a plate of the dark card it stands clear with room
+// (window._gateDiscClear), on a picture or a shade it sinks into no paint (window._gateDiscSinks),
+// and a red, an orange or a gold never stands on a brown (window._gateNoticeStands). Where it does
+// not stand, the notice alone is drawn on the first plate it stands clear of: the plate of the own
+// gate of the moved carrier where it has one, then the black faint waves, the grey wave, the black
+// fine lines (the body names the plate of the gate, data-gate-card, and the notice names its own,
+// data-gc-plate; the gate itself is unchanged). An orb dark itself stands clear of no plate, and
+// is drawn white, as the rail draws a column of dark discs: on the card of the gate where white
+// stands there, else on the first of those plates. A notice that is the whole screen (a gate with
+// no flight) covers no card, and is drawn on the first of those plates its orb stands clear of.
+window._GATE_NOTICE_PLATES = ['black-faint-waves', 'grey-wave', 'black-fine-lines'];
+// A red, an orange or a gold (CIELAB hue under 100 degrees or over 330, chroma 15 or more), and a
+// brown (a dark paint of hue between 40 and 95 degrees, chroma 6.5 or more): the owner keeps the
+// first off the second.
+window._gateWarm = function (hex) {
+  var A = window._orbLab(hex);
+  if (!A) return false;
+  var ch = Math.sqrt(A[1] * A[1] + A[2] * A[2]), h = Math.atan2(A[2], A[1]) * 180 / Math.PI;
+  if (h < 0) h += 360;
+  return ch >= 15 && (h < 100 || h > 330);
+};
+window._gateBrown = function (hex) {
+  var A = window._orbLab(hex);
+  if (!A) return false;
+  var ch = Math.sqrt(A[1] * A[1] + A[2] * A[2]), h = Math.atan2(A[2], A[1]) * 180 / Math.PI;
+  if (h < 0) h += 360;
+  return A[0] <= 50 && ch >= 6.5 && h > 40 && h < 95;
+};
+// Does an orb stand on a card ({ kind, at }): the measure of the rail for that kind of card.
+window._gateNoticeStands = function (disc, ink, card) {
+  if (!disc || !card || !card.at || !card.at.length) return false;
+  if (window._gateWarm(disc) && card.at.some(function (p) { return window._gateBrown(p); })) return false;
+  if (card.kind === 'dark') return card.at.every(function (p) { return window._gateDiscClear(disc, p, ink); });
+  return !card.at.some(function (p) { return window._gateDiscSinks(disc, p); });
+};
+// THE ORB OF THE NOTICE, AS IT IS DRAWN: read off the markup the notice writes for it (the one
+// builder, _gateChangeOrbHtml), so what is judged is what lands. disc is the colour it shows: the
+// background of its disc (the accent of the carrier, which the notice sets as --airline-accent),
+// or for art that is its own disc, the ground on record for it, the ground its row of looks names
+// (the orb of Delta is a red sphere), else the accent; for the roundels that carry a light rim of
+// their own (window._ORB_ART_RIMMED), that rim. ink is the ink of its mark where the notice inks
+// it: white, black, or the letters; none for art in its own colours and for a white the table of
+// looks approves as drawn (the leaf of WestJet on its teal).
+window._gateNoticeOrb = function (code) {
+  var c = String(code == null ? '' : code).trim().toUpperCase();
+  var html = '';
+  try { html = (typeof _gateChangeOrbHtml === 'function') ? _gateChangeOrbHtml(c) : ''; } catch (e) { html = ''; }
+  if (!html) return null;
+  var hex = function (h) {
+    var t = String(h || '').trim();
+    if (/^#[0-9a-f]{3}$/i.test(t)) t = '#' + t.slice(1).split('').map(function (x) { return x + x; }).join('');
+    return /^#[0-9a-f]{6}$/i.test(t) ? t.toUpperCase() : '';
+  };
+  var fold = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(c) : c;
+  var row = (window._GATE_ORB_LOOKS && window._GATE_ORB_LOOKS[fold]) || {};
+  var style = (/class="v2-fi-icon-wrap[^"]*" style="([^"]*)"/.exec(html) || [])[1] || '';
+  var bg = (/background:([^;]+);/.exec(style) || [])[1] || '';
+  var accent = '';
+  try { accent = String(getAirlineAccent(c) || ''); } catch (e2) { accent = ''; }
+  var native = /v2-fi-emblem-native/.test(html);
+  var rimmed = native && !!window._ORB_ART_RIMMED[fold];
+  var disc = /^\s*var\(--airline-accent/.test(bg) ? hex(accent) : hex(bg);
+  if (rimmed) disc = window._GATE_WHITE;
+  if (!disc) {
+    var nat = {};
+    try { nat = window._gateOrbNatural(c) || {}; } catch (e3) { nat = {}; }
+    disc = hex(nat.ground) || hex(row.ground) || hex(accent);
+  }
+  var img = /<img [^>]*style="([^"]*)"/.exec(html);
+  var ink = '';
+  if (/class="v2-fi-orb-code"/.test(html)) ink = hex((/(?:^|;)color:([^;]+);/.exec(style) || [])[1]) || window._GATE_WHITE;
+  else if (img && /invert\(1\)/.test(img[1])) ink = window._GATE_WHITE;
+  else if (img && /brightness\(0\)/.test(img[1])) ink = '#000000';
+  if (/^#f{3}(f{3})?$/i.test(String(row.ink || '')) && ink === window._GATE_WHITE) ink = '';
+  return { code: c, carrier: fold, disc: disc, ink: ink, rimmed: rimmed, native: native };
+};
+// The card the notice is drawn on, and whether its orb is white: { plate, white, disc, ink }. plate
+// is empty where the notice stays on the card of the gate.
+window._gateNoticeLook = function (gateCode, movedCode, solo) {
+  var O = window._gateNoticeOrb(movedCode);
+  var out = { plate: '', white: false, disc: O ? O.disc : '', ink: O ? O.ink : '' };
+  if (!O || !O.disc) return out;
+  var P = window._GATE_CARD_PLATES;
+  var card = null;
+  if (!solo) { try { card = window._gateCardPaint(String(gateCode == null ? '' : gateCode), true); } catch (e) { card = null; } }
+  var tried = [];
+  try {
+    var mine = window._gateCardPaint(O.code, true);
+    if (mine && mine.kind === 'dark' && P[mine.plate]) tried.push(mine.plate);
+  } catch (e2) {}
+  window._GATE_NOTICE_PLATES.forEach(function (n) { if (P[n] && tried.indexOf(n) < 0) tried.push(n); });
+  var pick = function (disc, ink) {
+    if (card && window._gateNoticeStands(disc, ink, card)) return { plate: '' };
+    for (var i = 0; i < tried.length; i++) {
+      if (window._gateNoticeStands(disc, ink, { kind: 'dark', at: P[tried[i]].at })) return { plate: tried[i] };
+    }
+    return null;
+  };
+  var r = pick(O.disc, O.ink);
+  if (r) return { plate: r.plate, white: false, disc: O.disc, ink: O.ink };
+  var wink = '';
+  try { var NW = window._gateOrbNatural(O.code); wink = window._gateWhiteInk(O.code, NW.ground); } catch (e3) { wink = ''; }
+  r = pick(window._GATE_WHITE, wink);
+  if (r) return { plate: r.plate, white: true, disc: window._GATE_WHITE, ink: wink };
+  return { plate: solo ? tried[0] : '', white: false, disc: O.disc, ink: O.ink };
 };
 // THE LOWER RIGHT PANEL OF A GATE, JUDGED AS THE CARD IS. The pair of the carrier (_rc2Pair),
 // with its second colour replaced where the Your Aircraft orb of the gate would sink into it:
@@ -16841,6 +16998,8 @@ window._orbArtFailed = function (img, code, rowCode) {
       // a silhouette symbol would flatten a tile into a white blob, so drop it.
       try {
         img.style.removeProperty('filter');
+        // (the orb of the gate change notice holds its filter as a variable: dropped with it)
+        img.style.removeProperty('--gc-filter');
         // A symbol is a silhouette that wants padding and breathing room; a
         // tile is a finished square mark, and several carry their own baked
         // background (Etihad gold, airBaltic, Czech, Allegiant). Padded and
@@ -16876,6 +17035,8 @@ window._orbArtFailed = function (img, code, rowCode) {
       if (wrap.classList) { wrap.classList.remove('v2-fi-orbwrap-native'); wrap.classList.remove('v2-fi-emblem-native'); }
       wrap.style.setProperty('background', 'var(--airline-accent,#D82F2E)');
       wrap.style.setProperty('padding', 'clamp(6px,0.9vh,13px)');
+      // (the orb of the gate change notice holds its disc as a variable: it takes the disc too)
+      if (String(wrap.style.getPropertyValue('--gc-disc') || '').trim()) wrap.style.setProperty('--gc-disc', 'var(--airline-accent,#D82F2E)');
     }
   } catch (e) {}
   // THE INK THE BOX NAMES COMES FIRST. Letters that land on the disc of the gate take the ink of
@@ -26767,6 +26928,8 @@ function _fidsBoardInk() {
   try { _fidsRowInk(table); } catch (e) {}
   // v24054 — and each row's weather icon set, on the side its ink took
   try { _fidsRowWxSet(table); } catch (e) {}
+  // and each monogram square, off the ground of its row (_monogramFit)
+  try { _monogramFit(table); } catch (e) {}
 }
 if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;
 
@@ -30612,6 +30775,8 @@ Bilingual baggage-hall messages loop in a
     // so the From cell keeps its share on a 1366 laptop or a 4K wall
     //
     try { _b3FitList(bView); _b3FitBeltNumber(); } catch (e) {}
+    // the monogram square of the belt sign, off the bar of its belt (_monogramFit)
+    try { _monogramFit(bView); } catch (e) {}
 
     // ── POST-RENDER MEASUREMENT: figure out how many rows actually fit ──
     // v218.36. Run on next animation frame so layout has settled. If the
@@ -35442,9 +35607,21 @@ var TILE_SKIP_WORDMARK_ONLY = new Set([]);
 // where it is dark, by the measure of the app (the bytes weighted 0.2126, 0.7152 and 0.0722, under
 // 0.45 of full), else the hue the code gives, at 42 in saturation and 32 in lightness.
 // tests/airline-logos-every-surface.test.js runs the two for a list of codes and holds them equal.
-// Where the square shows: the rows of the departures board and the tile of the belt sign. The emblem
-// slots of the older belt rows and of the hall belt clear its background in the stylesheet
-// (background none), so there the letters stand alone and no colour of the square is seen.
+// THE SQUARE NEVER SINKS INTO ITS ROW. That colour is where the square starts, on the board and in
+// the app. Where it would sink into the colour it actually sits on (CIEDE2000 under 20: the blues of
+// Juneyao, Arkia, AJet and five more on the blue rows of the teal themes, the blues and purples on
+// the slate of a closed gate, the reds on a cancelled or diverted row), it is stepped (_monoStep):
+// its lightness first, darker and then lighter, 4 hundredths at a time, to the first that stands
+// clear by 20 with its white letters at 3 to 1 or better; where no lightness does, its hue turned
+// half way round. The board judges each square against the ground it is painted on, read off the
+// screen after the rows are drawn (_monogramFit, from _fidsBoardInk): the row of the theme, a custom
+// theme as configured, the colour of a status row. The app judges its square against its own tile
+// grounds, the card and the page of its day and night themes. _monoStep is written the same in
+// both files, and tests/airline-logos-every-surface.test.js holds the two texts equal and runs them.
+// Where the square shows: the rows of the departures board, and the tile of the belt sign (bidsv3),
+// on the bar of its belt. The airline block of the older belt rows and the emblem slots of the hall
+// belt and of its tags clear its background in the stylesheet (background none), so there the
+// letters stand alone and no colour of the square is seen.
 function _monogramHue(c) {
   var h = 0;
   for (var i = 0; i < c.length; i++) h = (h * 31 + c.charCodeAt(i)) % 360;
@@ -35460,6 +35637,111 @@ function _monogramColour(c) {
   };
   return (b && b.r1 && lum(b.r1) < 0.45) ? b.r1 : ('hsl(' + _monogramHue(c) + ',42%,32%)');
 }
+function _monoStep(start, grounds) {
+  var hslRgb = function (h, s, l) {
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    var f = function (t) { t = ((t % 360) + 360) % 360 / 360; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    return [f(h + 120), f(h), f(h - 120)].map(function (v) { return Math.round(Math.max(0, Math.min(1, v)) * 255); });
+  };
+  var rgbOf = function (c) {
+    var s = String(c || '').trim(), m = /^#?([0-9a-f]{6})$/i.exec(s);
+    if (m) { var n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    m = /^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/i.exec(s);
+    return m ? hslRgb(+m[1], +m[2] / 100, +m[3] / 100) : null;
+  };
+  var hslOf = function (v) {
+    var r = v[0] / 255, g = v[1] / 255, b = v[2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn, h = 0, s = 0;
+    if (d) { s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60; }
+    return [h, s, l];
+  };
+  var lin = function (x) { x /= 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+  var lum = function (v) { return 0.2126 * lin(v[0]) + 0.7152 * lin(v[1]) + 0.0722 * lin(v[2]); };
+  var lab = function (v) {
+    var r = lin(v[0]), g = lin(v[1]), b = lin(v[2]);
+    var f = function (t) { return t > 0.008856 ? Math.pow(t, 1 / 3) : 7.787 * t + 16 / 116; };
+    var X = f((r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047), Y = f(r * 0.2126 + g * 0.7152 + b * 0.0722), Z = f((r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883);
+    return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+  };
+  var dE = function (u, w) {
+    var A = lab(u), B = lab(w), rad = Math.PI / 180;
+    var Cb = (Math.sqrt(A[1] * A[1] + A[2] * A[2]) + Math.sqrt(B[1] * B[1] + B[2] * B[2])) / 2;
+    var G = 0.5 * (1 - Math.sqrt(Math.pow(Cb, 7) / (Math.pow(Cb, 7) + Math.pow(25, 7))));
+    var a1 = (1 + G) * A[1], a2 = (1 + G) * B[1], C1 = Math.sqrt(a1 * a1 + A[2] * A[2]), C2 = Math.sqrt(a2 * a2 + B[2] * B[2]);
+    var hue = function (x, y) { if (x === 0 && y === 0) return 0; var t = Math.atan2(y, x) / rad; return t < 0 ? t + 360 : t; };
+    var h1 = hue(a1, A[2]), h2 = hue(a2, B[2]), dh = 0;
+    if (C1 * C2 !== 0) { dh = h2 - h1; if (dh > 180) dh -= 360; else if (dh < -180) dh += 360; }
+    var dH = 2 * Math.sqrt(C1 * C2) * Math.sin(dh * rad / 2), Lb = (A[0] + B[0]) / 2, Cm = (C1 + C2) / 2, hb = h1 + h2;
+    if (C1 * C2 !== 0) hb = Math.abs(h1 - h2) > 180 ? (h1 + h2 + (h1 + h2 < 360 ? 360 : -360)) / 2 : (h1 + h2) / 2;
+    var T = 1 - 0.17 * Math.cos((hb - 30) * rad) + 0.24 * Math.cos(2 * hb * rad) + 0.32 * Math.cos((3 * hb + 6) * rad) - 0.20 * Math.cos((4 * hb - 63) * rad);
+    var Rc = 2 * Math.sqrt(Math.pow(Cm, 7) / (Math.pow(Cm, 7) + Math.pow(25, 7)));
+    var Sl = 1 + 0.015 * Math.pow(Lb - 50, 2) / Math.sqrt(20 + Math.pow(Lb - 50, 2)), Sc = 1 + 0.045 * Cm, Sh = 1 + 0.015 * Cm * T;
+    var Rt = -Math.sin(2 * 30 * Math.exp(-Math.pow((hb - 275) / 25, 2)) * rad) * Rc;
+    return Math.sqrt(Math.pow((B[0] - A[0]) / Sl, 2) + Math.pow((C2 - C1) / Sc, 2) + Math.pow(dH / Sh, 2) + Rt * ((C2 - C1) / Sc) * (dH / Sh));
+  };
+  var hex = function (v) { return '#' + v.map(function (x) { var t = x.toString(16).toUpperCase(); return t.length < 2 ? '0' + t : t; }).join(''); };
+  var under = [].concat(grounds || []).map(rgbOf).filter(Boolean), sq = rgbOf(start);
+  var clear = function (v) { return 1.05 / (lum(v) + 0.05) >= 3 && under.every(function (g) { return dE(v, g) >= 20; }); };
+  if (!sq || !under.length || clear(sq)) return start;
+  var H = hslOf(sq), turns = [H[0], (H[0] + 180) % 360];
+  for (var t = 0; t < 2; t++) {
+    var ls = t ? [H[2]] : [];
+    for (var d = 0.04; H[2] - d >= -1e-9; d += 0.04) ls.push(H[2] - d);
+    for (var u = 0.04; H[2] + u <= 1 + 1e-9; u += 0.04) ls.push(H[2] + u);
+    for (var i = 0; i < ls.length; i++) {
+      var v = hslRgb(turns[t], H[1], Math.max(0, Math.min(1, ls[i])));
+      if (clear(v)) return hex(v);
+    }
+  }
+  return start;
+}
+// The ground under a square, as painted: the first colour behind it that is not clear, a colour with
+// some see-through laid over the ones under it; a bar painted as a gradient and nothing else (the
+// bar of the belt sign) gives every colour of its gradient. Hex strings; empty where nothing is read.
+function _monogramGround(el) {
+  var parts = function (s) {
+    var m = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,\/]+([\d.]+%?))?/.exec(String(s || ''));
+    if (!m) return null;
+    var a = m[4] == null ? 1 : (/%$/.test(m[4]) ? parseFloat(m[4]) / 100 : parseFloat(m[4]));
+    return [+m[1], +m[2], +m[3], a];
+  };
+  var hex = function (v) { return '#' + v.slice(0, 3).map(function (x) { var t = Math.round(x).toString(16).toUpperCase(); return t.length < 2 ? '0' + t : t; }).join(''); };
+  var layers = [], n = el && el.parentElement;
+  while (n && n.nodeType === 1) {
+    var cs = getComputedStyle(n), c = parts(cs.backgroundColor);
+    if (c && c[3] > 0.02) { layers.push(c); if (c[3] >= 0.99) break; }
+    else if (!layers.length && /gradient\(/.test(cs.backgroundImage) && !/\dpx/.test(cs.backgroundSize)) {
+      var stops = (cs.backgroundImage.match(/rgba?\([^)]*\)/g) || []).map(parts).filter(Boolean);
+      if (stops.length) return stops.map(hex);
+    }
+    n = n.parentElement;
+  }
+  if (!layers.length) return [];
+  var base = layers[layers.length - 1].slice(0, 3);
+  for (var i = layers.length - 2; i >= 0; i--) {
+    var L = layers[i];
+    base = [0, 1, 2].map(function (k) { return L[k] * L[3] + base[k] * (1 - L[3]); });
+  }
+  return [hex(base)];
+}
+// Every square under root, stepped off the ground it sits on (from the colour of the app, each
+// time, so a square is never stepped twice). Cheap when nothing changed: the start and the ground
+// are kept on the square, and a pass with the same two writes nothing.
+function _monogramFit(root) {
+  try {
+    var els = (root || document).querySelectorAll('.logo-monogram[data-code]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (!el.isConnected) continue;
+      var start = _monogramColour(String(el.getAttribute('data-code') || ''));
+      var grounds = _monogramGround(el);
+      var key = start + '|' + grounds.join(',');
+      if (el.getAttribute('data-mono-key') === key) continue;
+      el.setAttribute('data-mono-key', key);
+      el.style.background = _monoStep(start, grounds);
+    }
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window._monogramFit = _monogramFit;
 function _monogramTile(code, name) {
   var c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   var acc = _monogramColour(c);

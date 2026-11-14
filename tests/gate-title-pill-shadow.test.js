@@ -118,8 +118,11 @@ test('nothing between the body and the column re-declares the plate shadow', () 
     if (decl(r.body, '--plate-ink-sh') === null) continue;
     for (const s of r.sels) {
       const sh = shape(s);
+      // (the gate change notice is an overlay beside the columns, never an ancestor of the column:
+      // where it names a plate of its own, data-gc-plate, it takes that plate's shadow for its words)
       const ok = sh === 'html body'
         || sh === 'html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi'
+        || (sh === 'html body .g8-wrap .gl-gc' && /\.gl-gc\[data-gc-plate="[a-z-]+"\]$/.test(s))
         || PILL_TAILS.some((t) => sh === 'html body .g8-wrap ' + t);
       assert.ok(ok, `--plate-ink-sh declared below the body, outside the lines: ${s.slice(0, 40)}…${s.slice(-80)}`);
     }

@@ -917,6 +917,106 @@ test('the monogram square of the board is the colour the phone app gives the sam
   assert.doesNotMatch(CORE, /_monogramFill/, 'one function gives the colour');
 });
 
+// THE SQUARE NEVER SINKS INTO ITS ROW. The colour of the app is where the square starts; where it would
+// sink into the colour it sits on (CIEDE2000 under 20) it is stepped (_monoStep): its lightness, darker
+// then lighter, 4 hundredths at a time, to the first that stands clear by 20 with white letters at 3 to 1
+// or better; else its hue turned half way round. One rule on both surfaces: the function is written the
+// same in the two files, and the two copies are run here, each from its own file.
+const fnText = (src, name) => {
+  const at = src.indexOf('function ' + name + '(');
+  assert.ok(at >= 0, name);
+  let depth = 0;
+  for (let j = src.indexOf('{', at); j < src.length; j++) {
+    if (src[j] === '{') depth++;
+    else if (src[j] === '}' && --depth === 0) return src.slice(at, j + 1);
+  }
+  throw new Error('unterminated ' + name);
+};
+// The grounds the square sits on, read off the real board (gids and fids, 1680 by 1050, headless, a row
+// in every state on each theme the board can use: _ALLOWED_THEMES, the others fall back to the teal):
+// the computed colour of the row behind the airline cell. A custom theme is judged at render against
+// its own configured row colour, by the same pass (_monogramFit reads the ground off the screen).
+const ROW_GROUNDS = {
+  'tus-teal, odd row': '#1E7EB8', 'tus-teal and tus-teal-deep, even row': '#2DA4C4', 'tus-teal-deep, odd row': '#117C8A',
+  'mist, odd row': '#E7E3DD', 'mist, even row': '#DDD7D0',
+  'final call': '#F28C00', 'delayed': '#F9D44C', 'cancelled': '#A50D24', 'diverted': '#DA3544',
+  'gate closed, departed and arrived, dark board': '#262D36', 'gate closed, departed and arrived, light board': '#AEB7C1'
+};
+test('the monogram square stands clear of every row it can sit on, by one rule on the board and in the app', () => {
+  const colours = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
+  // the two copies of the rule, word for word, and each run from its own file
+  const boardText = fnText(CORE, '_monoStep'), appText = fnText(APP, '_monoStep');
+  assert.equal(appText, boardText, 'the app and the board write the same rule');
+  const appStep = new Function(appText + '\nreturn _monoStep;')();
+  const boardStep = the('_monoStep');
+  // the grounds of the rows are the colours of the stylesheets
+  const sheets = ['css/flight-display.css', 'css/display-overrides.css'].map((f) => fs.readFileSync(path.join(FC, f), 'utf8')).join('\n');
+  for (const [k, g] of Object.entries(ROW_GROUNDS)) assert.ok(sheets.toUpperCase().includes(g), k + ': ' + g + ' in the stylesheets');
+  // the grounds of the tile in the app: the card and the page of its day and night themes
+  const tg = /^const TILE_GROUNDS=(\[[^\]]+\]);$/m.exec(APP);
+  assert.ok(tg, 'the tile grounds of the app');
+  const TILE = JSON.parse(tg[1].replace(/'/g, '"'));
+  const root = /:root\{[^}]*--bg:(#[0-9a-f]{6}); --card:(#[0-9a-f]{6});/i.exec(APP), night = /:root\[data-theme="dark"\]\{[^}]*--bg:(#[0-9a-f]{6}); --card:(#[0-9a-f]{6});/i.exec(APP);
+  assert.deepEqual(TILE.sort(), [root[2], root[1], night[2], night[1]].sort());
+  assert.match(APP, /return '<span class="tile mono" style="background:'\+_monoStep\(acc,TILE_GROUNDS\)\+'">'/);
+  // every code that can draw the square: the named carriers with no art, and any two characters a feed sends
+  const AL = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  B.AIRLINE_BRAND_COLORS = colours;
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const rgb = (s) => {
+    let m = /^#([0-9a-f]{6})$/i.exec(s);
+    if (m) { const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    m = /^hsl\((\d+),(\d+)%,(\d+)%\)$/.exec(s);
+    const h = +m[1], S = +m[2] / 100, l = +m[3] / 100, q = l < 0.5 ? l * (1 + S) : l + S - l * S, p = 2 * l - q;
+    const f = (t) => { t = ((t % 360) + 360) % 360 / 360; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    return [f(h + 120), f(h), f(h - 120)].map((v) => Math.round(v * 255));
+  };
+  const hex = (s) => '#' + rgb(s).map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const whiteOn = (s) => { const [r, g, b] = rgb(s).map(lin); return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05); };
+  try {
+    const named = [...new Set([...Object.keys(the('AIRLINE_NAME')), ...Object.keys(the('_AIRLINE_NAME_OVERRIDE'))])];
+    const mono = named.filter((c) => /logo-monogram/.test(the('mkLogo')(c, 'X')));
+    const codes = [...new Set(mono.concat(AL.flatMap((a) => AL.map((b) => a + b))))];
+    assert.ok(mono.length >= 60 && codes.length >= 1296, mono.length + ' named, ' + codes.length + ' codes');
+    const sank = { before: [], after: [] };
+    let stepped = 0;
+    for (const code of codes) {
+      const start = the('_monogramColour')(code);
+      for (const [k, g] of Object.entries(ROW_GROUNDS)) {
+        const sq = boardStep(start, [g]);
+        assert.equal(appStep(start, [g]), sq, code + ' on ' + k + ': the two copies agree');
+        if (B._orbDeltaE(hex(start), g) < 20) sank.before.push(code + ' on ' + k);
+        if (sq !== start) stepped++;
+        const de = B._orbDeltaE(hex(sq), g);
+        if (de < 20 || whiteOn(sq) < 3) sank.after.push(code + ' ' + sq + ' on ' + k + ' ' + g + ': dE ' + de.toFixed(1) + ', white ' + whiteOn(sq).toFixed(2));
+      }
+      // the app: its square, from its own rule, on its own grounds
+      const appSq = appStep(start, TILE);
+      assert.equal(boardStep(start, TILE), appSq, code + ': the tile of the app');
+      for (const g of TILE) assert.ok(B._orbDeltaE(hex(appSq), g) >= 20 && whiteOn(appSq) >= 3, code + ' ' + appSq + ' on the app ground ' + g);
+    }
+    assert.deepEqual(sank.after, [], sank.after.slice(0, 20).join('\n'));
+    // the rule was needed: the eight named squares the check found on the teal themes, and the squares
+    // under the blues and purples on the slate of a closed gate, the reds on a red row
+    for (const code of ['2T', '3K', 'HO', 'IV', 'IZ', 'JA', 'TW', 'VF']) {
+      const start = the('_monogramColour')(code);
+      assert.ok(['#1E7EB8', '#117C8A'].some((g) => B._orbDeltaE(hex(start), g) < 20), code + ' sank into a teal row');
+    }
+    assert.ok(sank.before.some((x) => /gate closed, departed and arrived, dark board/.test(x)) && sank.before.some((x) => / on cancelled$/.test(x)), 'the status rows');
+    assert.ok(stepped > 0 && stepped < codes.length * Object.keys(ROW_GROUNDS).length, stepped + ' steps');
+    // a square already clear is its colour as it was, word for word
+    assert.equal(boardStep('#0B1F3A', ['#1E7EB8']), '#0B1F3A');
+    assert.equal(boardStep('hsl(151,42%,32%)', ['#1E7EB8']), 'hsl(151,42%,32%)');
+  } finally { delete B.AIRLINE_BRAND_COLORS; }
+  // the board steps each square off the ground it is painted on, after the rows are drawn, and the
+  // belt sign after its bars; a red row no longer lays a see-through white over the square
+  assert.match(fnText(CORE, '_fidsBoardInk'), /_monogramFit\(table\)/);
+  assert.match(CORE, /_b3FitList\(bView\); _b3FitBeltNumber\(\); \} catch \(e\) \{\}\n\s*\/\/[^\n]*\n\s*try \{ _monogramFit\(bView\); \} catch \(e\) \{\}/);
+  assert.match(fnText(CORE, '_monogramFit'), /el\.style\.background = _monoStep\(start, grounds\)/);
+  const css = fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8');
+  assert.doesNotMatch(css, /tr\.row-diverted \.full-logo\.logo-monogram \{\s*background:/);
+});
+
 test('Corendon: XC prints Corendon, XR Corendon Europe, on the board and in the app', () => {
   assert.deepEqual([NAME.XC, NAME.XR], ['CORENDON', 'CORENDON EU']);
   assert.deepEqual([SHARED.FIDS_SHARED_AIRLINE.XC, SHARED.FIDS_SHARED_AIRLINE.XR], ['CORENDON', 'CORENDON EU'], 'the app copy');

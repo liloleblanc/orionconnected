@@ -1063,12 +1063,74 @@ function tileOf(code){
 }
 function _lum(h){const m=/^#?([0-9a-f]{6})$/i.exec(String(h||''));if(!m)return 0;const n=parseInt(m[1],16);return (0.2126*((n>>16)&255)+0.7152*((n>>8)&255)+0.0722*(n&255))/255;}
 function _hue(c){let h=0;for(let i=0;i<c.length;i++)h=(h*31+c.charCodeAt(i))%360;return h;}
+// The square never sinks into the ground it sits on: the colour above is where it starts, and it is
+// stepped off the grounds of the tile (_monoStep, written the same as in fids-core.js and held equal
+// by tests/airline-logos-every-surface.test.js): the card and the page, day and night (--card and
+// --bg of the two themes), so a square is clear of either without being drawn again.
+const TILE_GROUNDS=['#ffffff','#eef2f7','#0c1c36','#06101f'];
+function _monoStep(start, grounds) {
+  var hslRgb = function (h, s, l) {
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    var f = function (t) { t = ((t % 360) + 360) % 360 / 360; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    return [f(h + 120), f(h), f(h - 120)].map(function (v) { return Math.round(Math.max(0, Math.min(1, v)) * 255); });
+  };
+  var rgbOf = function (c) {
+    var s = String(c || '').trim(), m = /^#?([0-9a-f]{6})$/i.exec(s);
+    if (m) { var n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    m = /^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/i.exec(s);
+    return m ? hslRgb(+m[1], +m[2] / 100, +m[3] / 100) : null;
+  };
+  var hslOf = function (v) {
+    var r = v[0] / 255, g = v[1] / 255, b = v[2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn, h = 0, s = 0;
+    if (d) { s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60; }
+    return [h, s, l];
+  };
+  var lin = function (x) { x /= 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+  var lum = function (v) { return 0.2126 * lin(v[0]) + 0.7152 * lin(v[1]) + 0.0722 * lin(v[2]); };
+  var lab = function (v) {
+    var r = lin(v[0]), g = lin(v[1]), b = lin(v[2]);
+    var f = function (t) { return t > 0.008856 ? Math.pow(t, 1 / 3) : 7.787 * t + 16 / 116; };
+    var X = f((r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047), Y = f(r * 0.2126 + g * 0.7152 + b * 0.0722), Z = f((r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883);
+    return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+  };
+  var dE = function (u, w) {
+    var A = lab(u), B = lab(w), rad = Math.PI / 180;
+    var Cb = (Math.sqrt(A[1] * A[1] + A[2] * A[2]) + Math.sqrt(B[1] * B[1] + B[2] * B[2])) / 2;
+    var G = 0.5 * (1 - Math.sqrt(Math.pow(Cb, 7) / (Math.pow(Cb, 7) + Math.pow(25, 7))));
+    var a1 = (1 + G) * A[1], a2 = (1 + G) * B[1], C1 = Math.sqrt(a1 * a1 + A[2] * A[2]), C2 = Math.sqrt(a2 * a2 + B[2] * B[2]);
+    var hue = function (x, y) { if (x === 0 && y === 0) return 0; var t = Math.atan2(y, x) / rad; return t < 0 ? t + 360 : t; };
+    var h1 = hue(a1, A[2]), h2 = hue(a2, B[2]), dh = 0;
+    if (C1 * C2 !== 0) { dh = h2 - h1; if (dh > 180) dh -= 360; else if (dh < -180) dh += 360; }
+    var dH = 2 * Math.sqrt(C1 * C2) * Math.sin(dh * rad / 2), Lb = (A[0] + B[0]) / 2, Cm = (C1 + C2) / 2, hb = h1 + h2;
+    if (C1 * C2 !== 0) hb = Math.abs(h1 - h2) > 180 ? (h1 + h2 + (h1 + h2 < 360 ? 360 : -360)) / 2 : (h1 + h2) / 2;
+    var T = 1 - 0.17 * Math.cos((hb - 30) * rad) + 0.24 * Math.cos(2 * hb * rad) + 0.32 * Math.cos((3 * hb + 6) * rad) - 0.20 * Math.cos((4 * hb - 63) * rad);
+    var Rc = 2 * Math.sqrt(Math.pow(Cm, 7) / (Math.pow(Cm, 7) + Math.pow(25, 7)));
+    var Sl = 1 + 0.015 * Math.pow(Lb - 50, 2) / Math.sqrt(20 + Math.pow(Lb - 50, 2)), Sc = 1 + 0.045 * Cm, Sh = 1 + 0.015 * Cm * T;
+    var Rt = -Math.sin(2 * 30 * Math.exp(-Math.pow((hb - 275) / 25, 2)) * rad) * Rc;
+    return Math.sqrt(Math.pow((B[0] - A[0]) / Sl, 2) + Math.pow((C2 - C1) / Sc, 2) + Math.pow(dH / Sh, 2) + Rt * ((C2 - C1) / Sc) * (dH / Sh));
+  };
+  var hex = function (v) { return '#' + v.map(function (x) { var t = x.toString(16).toUpperCase(); return t.length < 2 ? '0' + t : t; }).join(''); };
+  var under = [].concat(grounds || []).map(rgbOf).filter(Boolean), sq = rgbOf(start);
+  var clear = function (v) { return 1.05 / (lum(v) + 0.05) >= 3 && under.every(function (g) { return dE(v, g) >= 20; }); };
+  if (!sq || !under.length || clear(sq)) return start;
+  var H = hslOf(sq), turns = [H[0], (H[0] + 180) % 360];
+  for (var t = 0; t < 2; t++) {
+    var ls = t ? [H[2]] : [];
+    for (var d = 0.04; H[2] - d >= -1e-9; d += 0.04) ls.push(H[2] - d);
+    for (var u = 0.04; H[2] + u <= 1 + 1e-9; u += 0.04) ls.push(H[2] + u);
+    for (var i = 0; i < ls.length; i++) {
+      var v = hslRgb(turns[t], H[1], Math.max(0, Math.min(1, ls[i])));
+      if (clear(v)) return hex(v);
+    }
+  }
+  return start;
+}
 function tileHtml(code){
   const c=String(code||'').toUpperCase(), t=tileOf(c);
   if(t) return '<img class="tile '+t.k+'" src="'+esc(t.u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">';
   const b=window.AIRLINE_BRAND_COLORS&&AIRLINE_BRAND_COLORS[c];
   const acc=(b&&b.r1&&_lum(b.r1)<.45)?b.r1:('hsl('+_hue(c)+',42%,32%)');
-  return '<span class="tile mono" style="background:'+acc+'">'+esc(c.slice(0,3))+'</span>';
+  return '<span class="tile mono" style="background:'+_monoStep(acc,TILE_GROUNDS)+'">'+esc(c.slice(0,3))+'</span>';
 }
 // An airline's name in full, never the board's capitals and never a bare
 // letter: the board's own name, or the feed's fuller spelling of that same

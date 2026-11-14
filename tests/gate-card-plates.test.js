@@ -154,12 +154,17 @@ test('the plate files: on disk where the site is served from, the files that wer
     assert.equal(CORE.split(p.file).length - 1, 1, p.file + ' in fids-core.js');
     const rules = CSS.split(p.file).length - 1;
     assert.equal(rules, 1, p.file + ' in the stylesheet');
-    assert.match(CSS, new RegExp('html body\\[data-gate-airline\\]\\[data-gate-card="' + name + '"\\](?::not\\(#_\\)){12} \\{\\n  --plate-tex: url\\(\'/textures/' + p.file.replace(/\./g, '\\.') + '\\?v=24155\'\\);\\n  --plate-base: ' + p.base + ';\\n  --plate-blend: normal;'), name);
+    // one rule per plate, read by the gate (the body names the plate) and by the gate change notice
+    // (the notice names its own plate, where its orb would sink into the plate of the gate)
+    assert.match(CSS, new RegExp('html body\\[data-gate-airline\\]\\[data-gate-card="' + name + '"\\](?::not\\(#_\\)){12},\\nhtml body(?::not\\(#_\\)){255}(?::not\\(\\._\\)){6} \\.g8-wrap \\.gl-gc\\[data-gc-plate="' + name + '"\\] \\{\\n  --plate-tex: url\\(\'/textures/' + p.file.replace(/\./g, '\\.') + '\\?v=24155\'\\);\\n  --plate-base: ' + p.base + ';\\n  --plate-blend: normal;'), name);
   }
   const code = ['js', 'css'].flatMap((d) => fs.readdirSync(path.join(FC, d)).map((f) => fs.readFileSync(path.join(FC, d, f), 'utf8')))
     .concat(fs.readdirSync(FC).filter((f) => /\.html$/.test(f)).map((f) => fs.readFileSync(path.join(FC, f), 'utf8'))).join('\n');
   for (const spare of SPARES) assert.equal(code.split(spare).length - 1, 0, spare + ' is wired to nothing');
 });
+
+// the rule of a plate in the stylesheet, by its name (the selector of the gate, then the one of the notice)
+const RULE = (name) => new RegExp('\\[data-gate-card="' + name + '"\\](?::not\\(#_\\)){12},\\n[^{]*\\{([^}]*)\\}').exec(CSS)[1];
 
 // ── 2. WHITE READS ON EVERY PLATE ──────────────────────────────────────────
 test('white figures and words read at 4.5 to 1 or better on the lightest 5th percentile of every plate', () => {
@@ -176,10 +181,47 @@ test('white figures and words read at 4.5 to 1 or better on the lightest 5th per
   });
   // every plate is drawn on its own average, and the stylesheet gives it white ink
   for (const p of Object.values(PLATES)) assert.equal(p.base, FILES[p.file].mean, p.file);
-  for (const name of Object.keys(PLATES)) {
-    const rule = new RegExp('\\[data-gate-card="' + name + '"\\](?::not\\(#_\\)){12} \\{([^}]*)\\}').exec(CSS)[1];
-    assert.match(rule, /--plate-ink: #ffffff;/, name);
-    for (const w of ['#ffffff', '#34d399', '#fbbf24', '#f87171', '#93c5fd']) assert.match(rule, new RegExp(w), name);
+  for (const name of Object.keys(PLATES)) assert.match(RULE(name), /--plate-ink: #ffffff;/, name);
+});
+
+// ── 2b. THE INKS OF THE STATUS READ ON EVERY PLATE ─────────────────────────
+// The four inks the panels of the card letter a status in (--plate-ok, --plate-warn, --plate-bad,
+// --plate-info) at 4.5 to 1 or better on the lightest 5th percentile of the plate, as white is. The
+// house inks did not on the two grey plates (the red at 3.44 on the grey wave; the green at 4.14, the
+// red at 2.88 and the blue at 4.42 on the grey shapes), so those two plates take them lighter, in the
+// same hue (HSL lightness raised a hundredth at a time, to 4.6 to 1 for a margin over the rendering).
+const INKS = {
+  'grey-wave':         { ok: ['#34d399', 4.95], warn: ['#fbbf24', 5.70], bad: ['#fa9e9e', 4.73], info: ['#93c5fd', 5.27] },
+  'black-faint-waves': { ok: ['#34d399', 9.57], warn: ['#fbbf24', 11.02], bad: ['#f87171', 6.65], info: ['#93c5fd', 10.20] },
+  'grey-shapes':       { ok: ['#5cdcad', 4.66], warn: ['#fbbf24', 4.77], bad: ['#fbb6b6', 4.73], info: ['#9bc9fd', 4.61] },
+  'black-fine-lines':  { ok: ['#34d399', 7.67], warn: ['#fbbf24', 8.83], bad: ['#f87171', 5.33], info: ['#93c5fd', 8.18] },
+  'brown-waves':       { ok: ['#34d399', 6.67], warn: ['#fbbf24', 7.68], bad: ['#f87171', 4.64], info: ['#93c5fd', 7.11] },
+  'brown-layers':      { ok: ['#34d399', 8.26], warn: ['#fbbf24', 9.51], bad: ['#f87171', 5.74], info: ['#93c5fd', 8.80] }
+};
+const HOUSE = { ok: '#34d399', warn: '#fbbf24', bad: '#f87171', info: '#93c5fd' };
+test('the four inks of the status read at 4.5 to 1 or better on the lightest 5th percentile of every plate, the grey ones lightened in their own hue', () => {
+  const hsl = (h) => {
+    const [r, g, b] = rgb(h).map((v) => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let hh = 0;
+    if (d) hh = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
+    return [hh, (mx + mn) / 2];
+  };
+  assert.deepEqual(Object.keys(INKS).sort(), Object.keys(PLATES).sort());
+  for (const [name, inks] of Object.entries(INKS)) {
+    const rule = RULE(name), p95 = FILES[PLATES[name].file].p95;
+    for (const [k, [ink, ratio]] of Object.entries(inks)) {
+      assert.match(rule, new RegExp('--plate-' + k + ': ' + ink + ';'), name + ' ' + k);
+      const r = (lum(ink) + 0.05) / (p95 + 0.05);
+      assert.equal(Number(r.toFixed(2)), ratio, name + ' ' + k + ': ' + ink + ' at ' + r.toFixed(2));
+      assert.ok(r >= 4.5, name + ' ' + k + ': ' + ink + ' at ' + r.toFixed(2) + ' to 1');
+      // the house ink where it reads, else the same hue, lighter
+      const house = HOUSE[k], hr = (lum(house) + 0.05) / (p95 + 0.05);
+      if (hr >= 4.6) assert.equal(ink, house, name + ' ' + k + ': the house ink reads');
+      else {
+        assert.ok(Math.abs(hsl(ink)[0] - hsl(house)[0]) < 1.5, name + ' ' + k + ': the hue of ' + house);
+        assert.ok(hsl(ink)[1] > hsl(house)[1] && lum(ink) > lum(house), name + ' ' + k + ': lighter than ' + house);
+      }
+    }
   }
 });
 
@@ -288,4 +330,93 @@ test('the gates left as drawn and the white columns show with the plates exactly
     const lower = W._gateCardPaint(c).lower;
     assert.ok(!Object.values(PLATES).some((p) => p.base === lower) || lower === W._GATE_CARD_DARK, c + ': ' + lower);
   }
+});
+
+// ── 6. THE GATE CHANGE NOTICE, ON THE CARD OF THE GATE IT COVERS ───────────
+// The notice is drawn on the plate of the gate, and its orb is the carrier of the moved flight: the red
+// disc of Iberia sank into the brown waves of a KLM gate (all its ring), the red of Emirates into the
+// brown layers of Cathay, 61 carriers into the brown waves and 62 into the brown layers, navy orbs into
+// the black plates and the grey shapes. Walked over every card the gates can show (the distinct paints
+// of every code the name tables know, and the gate with no carrier) and every orb the notice can draw,
+// and the notice that is the whole screen: the orb read off the markup the notice writes for it, the
+// card it lands on read off the look (the plate the notice names, else the card of the gate). No pair
+// sinks; a red, an orange or a gold never lands on a brown; on a plate of the dark card the orb stands
+// clear of it with room, as the rail keeps its discs there.
+test('the gate change notice: on every card the gates can show, no orb the notice can draw sinks, and none warm on a brown', () => {
+  const ACCENT = (c) => { const a = String(the('getAirlineAccent')(c) || ''); return /^#[0-9a-f]{3}$/i.test(a) ? '#' + a.slice(1).split('').map((x) => x + x).join('') : a; };
+  const hex = (h) => (/^#[0-9a-f]{6}$/i.test(String(h || '').trim()) ? String(h).trim().toUpperCase() : '');
+  // the colour the orb shows, read off its markup (not off the function that decides)
+  const shown = (html, code) => {
+    const st = (/class="v2-fi-icon-wrap[^"]*" style="([^"]*)"/.exec(html) || [])[1] || '';
+    const bg = ((/background:([^;]+);/.exec(st) || [])[1] || '').trim();
+    // the disc it holds against the rules of the gate is the disc it names
+    assert.equal(((/--gc-disc:([^;]+);/.exec(st) || [])[1] || '').trim(), bg, code + ': the disc held');
+    if (/^var\(--airline-accent/.test(bg)) return hex(ACCENT(code));
+    if (hex(bg)) return hex(bg);
+    const fold = the('_orbEmblemCarrier')(code);
+    if (W._ORB_ART_RIMMED[fold]) return '#FFFFFF';   // the light rim drawn in the file
+    return hex(W._gateOrbNatural(code).ground) || hex((W._GATE_ORB_LOOKS[fold] || {}).ground) || hex(ACCENT(code));
+  };
+  const warm = (h) => chroma(h) >= 15 && (hue(h) < 100 || hue(h) > 330);
+  const brown = (h) => lab(h)[0] <= 50 && chroma(h) >= 6.5 && hue(h) > 40 && hue(h) < 95;
+  // the cards: one gate for each distinct paint
+  const cards = new Map();
+  for (const g of CODES.concat([''])) {
+    const K = W._gateCardPaint(g, true), sig = K.kind + ':' + K.at.join(',');
+    if (!cards.has(sig)) cards.set(sig, { gate: g, K });
+  }
+  const orbs = CODES.filter((c) => the('_gateChangeOrbHtml')(c));
+  assert.ok(cards.size >= 80 && orbs.length >= 250, cards.size + ' cards, ' + orbs.length + ' orbs');
+  const sinks = [], warmBrown = [], notClear = [], by = { stays: 0, plate: 0, white: 0 };
+  let pairs = 0;
+  const judge = (gate, code, solo) => {
+    const L = W._gateNoticeLook(gate, code, solo), html = the('_gateChangeOrbHtml')(code, L.white);
+    const disc = shown(html, code), at = L.plate ? PLATES[L.plate].at : W._gateCardPaint(gate, true).at;
+    pairs++;
+    if (L.white) { by.white++; assert.match(html, /gl-gc-orb gl-gc-orb-white/, code); assert.equal(disc, '#FFFFFF', code); }
+    else if (L.plate) by.plate++; else by.stays++;
+    if (solo) assert.ok(L.plate, code + ': the whole screen names a plate');
+    const tag = (gate || '(none)') + (solo ? ' whole screen' : '') + ' / ' + code + ' ' + disc + ' on ' + (L.plate || W._gateCardPaint(gate, true).kind);
+    if (at.some((p) => W._gateDiscSinks(disc, p))) sinks.push(tag);
+    if (warm(disc) && at.some(brown)) warmBrown.push(tag);
+    if ((L.plate || W._gateCardPaint(gate, true).kind === 'dark') && !at.every((p) => W._gateDiscClear(disc, p))) notClear.push(tag);
+    return L;
+  };
+  for (const { gate } of cards.values()) for (const code of orbs) judge(gate, code, false);
+  for (const code of orbs) judge('', code, true);
+  assert.deepEqual(sinks, [], sinks.length + ' of ' + pairs + ' pairs sink:\n' + sinks.slice(0, 20).join('\n'));
+  assert.deepEqual(warmBrown, [], warmBrown.join('\n'));
+  assert.deepEqual(notClear, [], notClear.slice(0, 20).join('\n'));
+  assert.ok(by.stays > 0 && by.plate > 0 && by.white > 0, JSON.stringify(by));
+  // and the rule would catch them: before the notice judged its orb, the red of Iberia sat on the brown
+  // waves of KLM and the red of Emirates on the brown layers of Cathay
+  assert.ok(PLATES['brown-waves'].at.some((p) => W._gateDiscSinks('#DC1C2E', p)) && PLATES['brown-layers'].at.some((p) => W._gateDiscSinks('#D71921', p)));
+  // the two the check found, on the plate of their own gate: Iberia on the black faint waves, Emirates on
+  // the black fine lines; the gate keeps its plate
+  const m = (al, fl) => ({ ap: 'YUL', full: { f: { flight: fl, airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
+  const kl = the('_gateChangeNoticeHtml')(m('IB', 'IB6252'), 'KL'), cx = the('_gateChangeNoticeHtml')(m('EK', 'EK244'), 'CX');
+  assert.match(kl, /^<div class="gl-gc" data-gc-plate="black-faint-waves" data-gl-gc=/);
+  assert.match(cx, /^<div class="gl-gc" data-gc-plate="black-fine-lines" data-gl-gc=/);
+  assert.deepEqual([W._gateCardPaint('KL').plate, W._gateCardPaint('CX').plate, W._gateCardPaint('IB').plate, W._gateCardPaint('EK').plate], ['brown-waves', 'brown-layers', 'black-faint-waves', 'black-fine-lines']);
+  // a notice of KLM on its own gate stays on the brown waves of its gate (its tile stands clear there)
+  assert.match(the('_gateChangeNoticeHtml')(m('KL', 'KL672'), 'KL'), /^<div class="gl-gc" data-gl-gc=/);
+  // the builder of the gate hands the notice the code of the gate, and the whole screen says it is one
+  assert.match(CORE, /_gateChangeNoticeHtml\(_gl, vars\.airlineCode\)/);
+  assert.match(CORE, /_gateChangeNoticeHtml\(m, '', true\)/);
+  // the stylesheet: the plate the notice names is drawn on its card alone, over the rules of the carrier
+  // of the gate, and the orb holds its disc and the filter of its mark against them
+  const NOT = '(?::not\\(#_\\)){255}(?::not\\(\\._\\)){6}';
+  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc\\[data-gc-plate\\] \\.gl-gc-row::before \\{\\n  background-color: var\\(--plate-base, #0b0e14\\) !important;\\n  background-image: var\\(--plate-tex\\) !important;'));
+  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb > \\.v2-fi-emblem-wrap \\{ background: var\\(--gc-disc, transparent\\) !important; \\}'));
+  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb \\.v2-fi-emblem-img \\{ filter: var\\(--gc-filter, none\\) !important; \\}'));
+  // ART THAT IS ITS OWN DISC fills its box on the notice, as on the rail: the roundels of Turkish and
+  // Alaska (their own light rim), the glossy orbs of Delta and United, the tiles. The padding the
+  // stylesheet gives a mark on a disc drew the Turkish roundel at 76 px inside its 104 px box, under a
+  // gloss cap that stood out over the empty ring (rendered: padding 14.2 px before, 0 after)
+  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb > \\.v2-fi-emblem-native \\{ padding: 0 !important; \\}'));
+  for (const code of ['TK', 'AS', 'DL', 'UA', 'NZ', 'A3']) {
+    const html = the('_gateChangeOrbHtml')(code);
+    assert.match(html, /class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*padding:0;/, code + ': its own disc, marked so');
+  }
+  assert.ok(['AS', 'TK'].every((c) => W._ORB_ART_RIMMED[c]) && W._gateNoticeOrb('TK').disc === '#FFFFFF' && W._gateNoticeOrb('TK').rimmed, 'judged by its rim');
 });

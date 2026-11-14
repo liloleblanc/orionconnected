@@ -392,12 +392,28 @@ const NOT_LOGO_HOSTS = {
 const ANY_FILE_HOSTS = ['raw.githubusercontent.com', 'cdnjs.cloudflare.com', 'unpkg.com', 'cdn.jsdelivr.net', 'gist.githubusercontent.com'];
 // Is a host and a path, named on this line, one the list lets in? The prefix it is let in under, or ''.
 const SCRIPT_LINE = (host) => new RegExp('<script\\b[^>]*\\bsrc\\s*=\\s*["\']https:\\/\\/' + host.replace(/\./g, '\\.') + '\\/');
+// THE PATH AS THE SERVER READS IT. A prefix was matched on the path as typed, so dot segments walked
+// out of it: raw.githubusercontent.com/mwgg/Airports/master/airports.json/../../../../someone/airline-logos/
+// began with the one file let in and is another repository, unpkg.com/leaflet-arc/../other-package/
+// another package. The path is resolved first (new URL: the dot segments are removed as the server
+// removes them, and the query kept), and a path that hides a dot or a slash in an escape (%2e, %2f,
+// %5c) or a backslash is let in nowhere: its prefix says nothing of where it lands.
+function resolvedPath(host, pathPart) {
+  if (pathPart === '') return '';
+  if (/%2e|%2f|%5c|\\/i.test(pathPart)) return null;
+  let u;
+  try { u = new URL('https://' + host + pathPart); } catch (e) { return null; }
+  if (u.hostname !== host) return null;
+  return u.pathname + u.search;
+}
 function letIn(host, pathPart, line) {
   if (!Object.prototype.hasOwnProperty.call(NOT_LOGO_HOSTS, host)) return null;
   const e = NOT_LOGO_HOSTS[host];
   if (e.script && !SCRIPT_LINE(host).test(line)) return null;
+  const at0 = resolvedPath(host, pathPart);
+  if (at0 === null) return null;
   for (const at of e.at) {
-    if (at === '/' || (at === '' ? pathPart === '' : pathPart.startsWith(at))) return at;
+    if (at === '/' || (at === '' ? at0 === '' : at0.startsWith(at))) return at;
   }
   return null;
 }
@@ -511,6 +527,14 @@ test('no line of code names a host, but for the hosts the code uses for somethin
   assert.equal(letIn('raw.githubusercontent.com', '/someone/airline-logos/main/logos/', "  var _r1Gh = 'https://raw.githubusercontent.com/someone/airline-logos/main/logos/';"), null, 'another repository');
   assert.equal(letIn('unpkg.com', '/airline-logos/AC.png', '<script src="https://unpkg.com/airline-logos/AC.png"></script>'), null, 'another package');
   assert.equal(letIn('images.unsplash.com', '/photo-1', "  return 'https://images.unsplash.com/photo-1';"), '/');
+  // a path is read as the server reads it: dot segments walk out of the prefix, an escaped dot or slash
+  // hides where it lands
+  assert.equal(letIn('raw.githubusercontent.com', '/mwgg/Airports/master/airports.json/../../../../someone/airline-logos/main/logos/', "  var _r1Gh = 'https://raw.githubusercontent.com/mwgg/Airports/master/airports.json/../../../../someone/airline-logos/main/logos/';"), null, 'out of the one file by its dot segments');
+  assert.equal(letIn('unpkg.com', '/leaflet-arc/../other-package/marks.js', '<script src="https://unpkg.com/leaflet-arc/../other-package/marks.js"></script>'), null, 'out of the one package');
+  assert.equal(letIn('raw.githubusercontent.com', '/mwgg/Airports/master/airports.json/%2e%2e/%2e%2e/x.png', "  var u = 'https://raw.githubusercontent.com/mwgg/Airports/master/airports.json/%2e%2e/%2e%2e/x.png';"), null, 'an escaped dot');
+  assert.equal(letIn('raw.githubusercontent.com', '/mwgg/Airports/master/airports.json%2F..%2Fx.png', "  var u = 'https://raw.githubusercontent.com/mwgg/Airports/master/airports.json%2F..%2Fx.png';"), null, 'an escaped slash');
+  assert.equal(letIn('raw.githubusercontent.com', '/mwgg/Airports/master/airports.json', "  var u = 'https://raw.githubusercontent.com/mwgg/Airports/master/airports.json';"), '/mwgg/Airports/master/airports.json', 'the one file, as it is named');
+  assert.equal(letIn('unpkg.com', '/leaflet-arc/./dist/leaflet-arc.min.js', '<script src="https://unpkg.com/leaflet-arc/./dist/leaflet-arc.min.js"></script>'), '/leaflet-arc/', 'a dot segment that stays inside');
   // and none of them is a host of airline logos
   for (const host of Object.keys(NOT_LOGO_HOSTS)) assert.doesNotMatch(host, /wway|avs\.io|gstatic\.com\/flights|clearbit|airhex|kiwi|daisycon|logo/i, host);
   // the gate band: every line that sets its address is read by the sweep above, and none names a host
@@ -553,6 +577,18 @@ test('the sweep catches a repository of logos on a host the list knows for anoth
     const page = path.join(tmp, 'designer.html');
     fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace('</head>', '  <script src="https://unpkg.com/airline-logos/dist/marks.js"></script>\n</head>'));
     assert.ok(sweep(tmp).found.some((f) => /^designer\.html:\d+: unpkg\.com at \/airline-logos\//.test(f)), 'another package of unpkg');
+    // THE SECOND MIRROR: the same repository reached from the one file let in, by dot segments, joined
+    // into the band the same way; and another package of unpkg reached from the arcs the same way
+    fs.writeFileSync(coreCopy, text);
+    fs.writeFileSync(page, fs.readFileSync(path.join(FC, 'designer.html'), 'utf8'));
+    assert.deepEqual(sweep(tmp).found, [], 'the copy is clean again');
+    const dots = "\n  var _r1Gh = 'https://raw.githubusercontent.com/mwgg/Airports/master/airports.json/../../../../someone/airline-logos/main/logos/';\n  r1LogoSrc = r1LogoSrc || (_r1Gh + airlineCode + '.png');";
+    fs.writeFileSync(coreCopy, text.slice(0, end) + dots + text.slice(end));
+    const found2 = sweep(tmp).found;
+    assert.deepEqual(found2.map((f) => f.split(': ')[0]), ['js/fids-core.js:' + line], found2.join('\n'));
+    assert.match(found2[0], /raw\.githubusercontent\.com at \/mwgg\/Airports\/master\/airports\.json\/\.\.\/\.\.\/\.\.\/\.\.\/someone\/airline-logos\/main\/logos\//);
+    fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace('</head>', '  <script src="https://unpkg.com/leaflet-arc/../other-package/marks.js"></script>\n</head>'));
+    assert.ok(sweep(tmp).found.some((f) => /^designer\.html:\d+: unpkg\.com at \/leaflet-arc\/\.\.\/other-package\//.test(f)), 'another package of unpkg, by a dot segment');
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   // and the real file was not touched
   assert.doesNotMatch(fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8'), /someone\/airline-logos/);

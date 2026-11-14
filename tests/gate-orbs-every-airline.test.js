@@ -1011,7 +1011,7 @@ test('a placeholder tile, a flat square with a code set as text, is drawn only f
   for (const fn of ['window._holdArtFailed = function', 'window._orbArtFailed = function']) assert.match(block(fn), /window\._orbTileLettersOther\(/, fn);
 });
 
-test('the gate change notice, every carrier: a mark or letters in white only on a disc where white reads at 3 to 1', () => {
+test('the gate change notice, every carrier: a mark or letters in white only on a disc where white reads at 3 to 1, but the WestJet leaf (white on its teal at 2.64, the look the owner approved on its gate kept as drawn)', () => {
   // On a KLM gate the notice drew the bird of KLM inked white on the accent of the moved flight, the
   // light blue #00A1DE, at 2.94 to 1: under the ink rule the rail and the shelf of that gate keep. Where
   // white does not read on the disc of the notice, the notice draws the finished tile of the column
@@ -2507,6 +2507,9 @@ test('rule 6, what paints the card: the plate of the stylesheet, and the tables 
       // the rules of the plates of the dark card hold only where the gate marks the body with the
       // name of a plate: they are read on their own, below
       if (/\[data-gate-card=/.test(sel)) { over.push({ ids: sel.split(':not(#_)').length - 1, sel, decl }); continue; }
+      // and the same rules set the plate of the gate change notice alone, where the notice names one
+      // (.gl-gc[data-gc-plate]): never the card of the gate (tests/gate-card-plates.test.js)
+      if (/\.gl-gc\[data-gc-plate=/.test(sel)) continue;
       set.push({ ids: sel.split(':not(#_)').length - 1, codes: [...sel.matchAll(/\[data-gate-airline="([^"]+)"\]/g)].map((x) => x[1]), all: !/data-gate-airline[*]?="/.test(sel), decl, order: order++ });
     }
   }
@@ -3098,8 +3101,9 @@ test('rule 6, the depth of a white disc reaches every white column: keyed on wha
   const gloss = rules.filter((r) => /linear-gradient\(to bottom, rgba\(255, 255, 255, 0\.95\), rgba\(186, 203, 224, 0\.22\)\)/.test(r.body));
   assert.equal(depth.length, 1, 'one rule gives the shading');
   assert.equal(gloss.length, 1, 'one rule gives the gloss');
-  assert.equal(depth[0].sel, 'html body[data-gate-discs="light"] .g8-wrap .v2-fi-icon-badge, html body[data-gate-discs="light"] .g8-wrap .v2-fi-emblem-wrap:not(.v2-fi-emblem-native)');
-  assert.equal(gloss[0].sel, 'html body[data-gate-discs="light"] .g8-wrap .v2-fi-icon-badge::after');
+  // (and the white orb of the gate change notice, by a selector of its own in the same rule)
+  assert.equal(depth[0].sel, 'html body[data-gate-discs="light"] .g8-wrap .v2-fi-icon-badge, html body[data-gate-discs="light"] .g8-wrap .v2-fi-emblem-wrap:not(.v2-fi-emblem-native), html body .g8-wrap .gl-gc .gl-gc-orb.gl-gc-orb-white > .v2-fi-emblem-wrap');
+  assert.equal(gloss[0].sel, 'html body[data-gate-discs="light"] .g8-wrap .v2-fi-icon-badge::after, html body .g8-wrap .gl-gc .gl-gc-orb.gl-gc-orb-white > .v2-fi-emblem-wrap::after');
   // keyed on the attribute alone: no code of a carrier is named in either, and nothing else reads it
   for (const r of depth.concat(gloss)) assert.doesNotMatch(r.sel, /data-gate-airline/, r.sel);
   assert.equal(CSS.split('[data-gate-discs="light"]').length - 1, 3, 'three selectors');
