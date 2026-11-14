@@ -462,8 +462,9 @@ test('Air Canada Express in a round orb is Air Canada\'s roundel, never the lett
     blockIn(CORE, 'window._CARD_COLOR_EMBLEMS = {'),
     blockIn(CORE, 'window._orbKeepsColour = function'),
     fnIn(CORE, '_orbEmblemCarrier'), fnIn(CORE, '_airlineOrbEmblem'), fnIn(CORE, '_orbMono'),
-    blockIn(CORE, 'window._gateOrbParts = function'),
-    'return { _orbEmblemCarrier: _orbEmblemCarrier, _airlineOrbEmblem: _airlineOrbEmblem, _orbMono: _orbMono, _gateOrbParts: window._gateOrbParts };'
+    // the recipe of the art, which the recipe every orb asks starts from (it folds the code the same way)
+    blockIn(CORE, 'window._gateOrbNatural = function'),
+    'return { _orbEmblemCarrier: _orbEmblemCarrier, _airlineOrbEmblem: _airlineOrbEmblem, _orbMono: _orbMono, _gateOrbParts: window._gateOrbNatural };'
   ].join('\n');
   const O = new Function('window', src)({});
   assert.equal(O._orbEmblemCarrier('ACEX'), 'AC');
@@ -478,7 +479,11 @@ test('Air Canada Express in a round orb is Air Canada\'s roundel, never the lett
   assert.match(CORE, /_mcOrbOp = _orbEmblemCarrier\(_mcOrbOp\);/, 'arrival card orb');
   assert.match(CORE, /_niCode = _orbEmblemCarrier\(_niCode\);/, 'inbound "Your Aircraft" orb');
   assert.match(CORE, /var _opOrb = \(typeof _orbEmblemCarrier === 'function'\) \? _orbEmblemCarrier\(_opCode\) : _opCode;/, 'caption orb repaint');
-  assert.match(CORE, /_airlineOrbEmblem\(_opOrb\)/);
+  // the repaint asks the one function that writes the Your Aircraft orb, which folds the code itself
+  // (it is handed the code as the evidence gives it, so a placeholder tile is never drawn for another code)
+  assert.match(CORE, /if \(_opOrb && _inboundCard && _inboundCard\.indexOf\('v2-fi-orb'\) !== -1\) \{/);
+  assert.match(CORE, /var _opCardOrb = window\._gateCardOrb\(_mktCode6, _opCode\);/);
+  assert.match(CORE, /window\._gateCardOrb = function \(gateCode, opCode\) \{[\s\S]{0,400}?_orbEmblemCarrier\(v\)/);
   assert.doesNotMatch(CORE, /_airlineOrbEmblem\(_opCode\)/, 'no orb resolves the raw operator code');
 });
 

@@ -375,18 +375,20 @@ test('the Your Aircraft lines: the mark and the title on one row, the lines at t
 });
 
 test('a carrier whose art is a disc fills the mark box: no circle inside a circle', () => {
-  const at = CORE.indexOf('window._gateOrbParts = function (code) {');
+  // the recipe of the art (the recipe every orb asks starts from it: Delta, United and Flair are gates
+  // approved as drawn, so theirs is handed back as it is)
+  const at = CORE.indexOf('window._gateOrbNatural = function (code) {');
   assert.ok(at > 0);
   const src = CORE.slice(at, CORE.indexOf('\n};\n', at) + 3);
   const win = {};
   // eslint-disable-next-line no-new-func
   Function('window', '_airlineOrbEmblem', 'AIRLINE_BRAND', src)(win, () => '', {});
   for (const c of ['DL', 'UA', 'F8']) {
-    const p = win._gateOrbParts(c);
+    const p = win._gateOrbNatural(c);
     assert.equal(p.native, true, `${c} art is a disc`);
     assert.match(p.badge, /padding:0;/, `${c}: its inline box asks for no padding`);
   }
-  for (const c of ['AC', 'PD', 'WS']) assert.equal(win._gateOrbParts(c).native, false, `${c} art sits on a disc, padded`);
+  for (const c of ['AC', 'PD', 'WS']) assert.equal(win._gateOrbNatural(c).native, false, `${c} art sits on a disc, padded`);
   assert.match(CORE, /var _mcWrapCls = _mcParts\.native \? ' v2-fi-orbwrap-native' : '';/);
   assert.match(CORE, /var _niWrapCls = _niParts\.native \? ' v2-fi-orbwrap-native' : '';/);
   assert.match(CORE, /v2-fi-icon-badge' \+ _mcWrapCls \+ ' v2-fi-orbwrap" style="' \+ _mcBadge \+ '">'/);
