@@ -15180,12 +15180,22 @@ window._GATE_ORB_LOOKS = {
   // painted by the stylesheet, recorded here so the one function can answer for them
   'AA': { css: 1, ground: '#FFFFFF', cssInk: '#0078D2', cssCode: '#0078D2' },
   'DL': { css: 1, ground: '#E01933', cssInk: '#FFFFFF' },
-  'PD': { css: 1, ground: '#FFFFFF', cssInk: '#152C53', cssCode: '#152C53' },
+  'PD': { css: 1, ground: '#FFFFFF', cssInk: '#152C53', cssCode: '#152C53', whiteArt: '/logos/airline-tiles/PTR.svg' },
   'UA': { css: 1 },
-  'FR': { css: 1, cssInk: '#F1C933', art: '/logos/symbols/airlines/FR.svg' },
+  'FR': { css: 1, cssInk: '#F1C933', art: '/logos/symbols/airlines/FR.svg', whiteArt: '/logos/airline-tiles/RYR.svg' },
   // PAL: gold discs by the stylesheet, its published yellow. White read on it at 2 to 1, so the
   // glyphs and the code take its navy.
-  'PB': { css: 1, ground: '#FCA404', ink: '#183677' },
+  'PB': { css: 1, ground: '#FCA404', ink: '#183677', whiteArt: '/logos/airline-tiles/PB.svg' },
+  // THE WHITE DISC OF A CARRIER WHOSE OWN GATE IS LEFT AS DRAWN (whiteArt in the three rows
+  // above, in the row of Transat below and in this one). Its own column never goes white, but
+  // its mark lands in the Your Aircraft orb of another gate, and where its disc would sink into
+  // that panel the orb is the white disc there (window._gateCardOrb). The p of Porter, the star
+  // of Transat and the arrow of PAL are drawn white, and the harp of Ryanair is its yellow: none
+  // reads on white. So the white disc takes the finished tile the board rows draw for each, the
+  // same mark on its own ground, as a round inset, as that of Qantas does. Avelo has no tile:
+  // its emblem is yellow, cyan and white, drawn for its purple, and the white disc takes the
+  // mark it publishes for a light ground, in its purple.
+  'XP': { whiteArt: '/logos/airlines/us-major/avelo.svg' },
   // the gates set the day before, as they are drawn
   'F8':  { ground: '#7AFF94', ink: '#141414', code: '#1B2430' },
   'YN':  { ink: '#272626' },
@@ -15193,7 +15203,7 @@ window._GATE_ORB_LOOKS = {
   '3H':  { ink: '#F1471D', code: '#231F20' },
   'AIE': { ink: '#F1471D', code: '#231F20' },
   // approved as drawn: a white mark and white glyphs on the blue of the brand
-  'TS': { ink: '#fff' },
+  'TS': { ink: '#fff', whiteArt: '/logos/airline-tiles/TSC.svg' },
   'WS': { ink: '#fff' },
   'WR': { ink: '#fff' },
   // Turkish: its own roundel, as it is drawn
@@ -15340,7 +15350,8 @@ window._orbInkOn = function (hex) {
 //
 // THE SECOND PANEL. The Your Aircraft orb is a disc of the column too, and it sits on another
 // panel: the lower right one, under the aircraft picture, painted in the darker of the two
-// colours of the carrier (the second colour of _rc2Pair, written on the gate as --rc2-b). The
+// colours of the carrier (the second colour of _rc2Pair, written on the gate as --rc2-b-orb
+// once it is judged). The
 // navy tile of Singapore stood out on its bronze rail card and was the exact navy of that
 // panel. That panel is judged as the card is: where the orb would sink into it, the panel
 // takes the dark plate and the orb stays (window._gateLowerPair).
@@ -15399,6 +15410,13 @@ window._GATE_COLUMNS_KEPT = {
   'AA': 1, 'DL': 1, 'UA': 1, 'AS': 1, 'PB': 1, 'YN': 1, 'DM': 1, '3H': 1, 'AIE': 1,
   '5T': 1, '4N': 1, 'NZ': 1, 'LX': 1, 'MU': 1, 'TK': 1, 'XP': 1, 'CS': 1
 };
+// THE OPERATORS WHOSE ART CARRIES A RIM OF ITS OWN: the roundel of Alaska and the roundel of
+// Turkish, each a finished disc inside a light rim drawn in the file. The rim stands between
+// the disc and whatever panel it lands on, and no table of grounds knows it, so the Your
+// Aircraft orb of another gate draws these two as they are and does not judge them against
+// its lower panel (window._gateCardOrb). Keyed by the carrier the code folds to. Every other
+// operator is judged there, the ones whose own gate is left as drawn among them.
+window._ORB_ART_RIMMED = { 'AS': 1, 'TK': 1 };
 
 // Colour arithmetic for the measure: CIELAB from a hex, and CIEDE2000 between two.
 window._orbLab = function (hex) {
@@ -15574,8 +15592,10 @@ window._gateCardPaint = function (code) {
 // it too (a white disc sinks into no dark panel). Where no dark will do, the discs being a navy
 // as dark as any panel that can carry the words, the pair stays and the orb alone goes white
 // (window._gateCardOrb): Lufthansa, whose navy discs stand out on its gold picture.
-// The gate writes this pair as --rc2-a, --rc2-a-ink and --rc2-b, and nothing else reads it:
-// the weather card and the boarding strip keep the pair of the carrier.
+// The gate writes the second colour judged here under a variable of its own, --rc2-b-orb, and
+// only the rules of the Your Aircraft panel read it. The second colour of the carrier (own)
+// stays under --rc2-b beside --rc2-a and --rc2-a-ink, where the boarding band reads the half
+// that holds its closing time: the band and the weather card keep the pair of the carrier.
 window._gateLowerPair = function (code) {
   var raw = String(code == null ? '' : code).trim().toUpperCase();
   var p = _rc2Pair(raw);
@@ -16014,13 +16034,19 @@ window._gateCardOrb = function (gateCode, opCode) {
   // not of a disc that is white already. The disc is the colour worked out above; a tile with
   // no ground on record is judged by the colour of its carrier.
   var whiteNow = false;
-  // (an operator whose own gate is approved as drawn brings that drawing: the roundel of Alaska
-  // and of Turkish carry a rim of their own, and no table here knows it)
-  if (!P.white && !window._gateColumnKept(gate) && (own || onGateDisc || !window._gateColumnKept(code))) {
+  // (an operator whose art carries a rim of its own is not judged: the roundel of Alaska and of
+  // Turkish, by window._ORB_ART_RIMMED. An operator whose own gate is left as drawn is judged
+  // like any other: that list is a list of gates, and says nothing of this panel)
+  if (!P.white && !window._gateColumnKept(gate) && (own || onGateDisc || !window._ORB_ART_RIMMED[c])) {
     var lower = '';
     try { lower = window._gateCardPaint(gate).lower; } catch (e) { lower = ''; }
     var shown = disc;
-    if (!own && !ground && !onGateDisc) { try { shown = String(getAirlineAccent(c) || ''); } catch (e) { shown = disc; } }
+    // (the ground the table of looks records for the discs of that carrier comes before its
+    // accent: the orb of Delta is a red sphere, and its accent is its navy)
+    if (!own && !ground && !onGateDisc) {
+      var opRow = (window._GATE_ORB_LOOKS && window._GATE_ORB_LOOKS[c]) || {};
+      try { shown = String(opRow.ground || getAirlineAccent(c) || ''); } catch (e) { shown = disc; }
+    }
     if (/^#[0-9a-f]{3}$/i.test(shown)) shown = '#' + shown.slice(1).split('').map(function (x) { return x + x; }).join('');
     if (lower && window._gateDiscSinks(shown, lower)) {
       var whose = onGateDisc ? gate : code;
@@ -16575,6 +16601,8 @@ window._holdArtFailed = function (img, code) {
 // card has made white it would show nothing. The letters of the code go there instead, in the
 // colour of the brand, as the chip of the destination code is set. Both arguments are limited
 // to the shape they have: letters and digits, and a hex colour.
+// A gate of the dark plate whose file was never drawn comes here too, with the ink of the
+// glyphs of its column: its other two orbs letter the code, so the top one does as well.
 window._railOrbFailed = function (img, letters, ink) {
   var wrap = img && img.parentNode;
   if (!wrap) return;
@@ -17180,6 +17208,25 @@ function _buildV2AircraftCol(ctx, vars) {
           return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE + '">'
             + '<img src="' + path + '" alt="" class="v2-fi-emblem-img" style="' + IMG + '" '
             + 'onerror="window._railOrbFailed(this,\'' + _wLetters + '\',\'' + _wInk + '\')">'
+            + '</div>';
+        }
+        // A FILE THAT WAS NEVER DRAWN, ON A GATE OF THE DARK PLATE: the letters of the row as well,
+        // through the same handler, in the ink of the glyphs of the column (window._gateColumnLook).
+        // The shelf orb and the Your Aircraft orb of such a gate letter the code already, so the
+        // white plane made one gate of a plane and two sets of letters, and on a light disc the
+        // plane read under 3 to 1 above dark glyphs (Sunwing: white on its orange). Only where the
+        // box is a painted disc: a tile that is the disc leaves no ground for letters to land on.
+        var _dkPlate = '';
+        try { _dkPlate = native ? '' : (window._gateCardDark(rowCode || code) || ''); } catch (eDkPlate) { _dkPlate = ''; }
+        if (_dkPlate) {
+          var _dkLetters = String(rowCode || code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+          var _dkInk = '';
+          try { _dkInk = String(window._gateColumnLook(rowCode || code).ink || ''); } catch (eDkInk) { _dkInk = ''; }
+          if (/^#[0-9a-f]{3}$/i.test(_dkInk)) _dkInk = '#' + _dkInk.slice(1).split('').map(function (x) { return x + x; }).join('');
+          if (!/^#[0-9a-f]{6}$/i.test(_dkInk)) _dkInk = '#FFFFFF';
+          return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE + '">'
+            + '<img src="' + path + '" alt="" class="v2-fi-emblem-img" style="' + IMG + '" '
+            + 'onerror="window._railOrbFailed(this,\'' + _dkLetters + '\',\'' + _dkInk + '\')">'
             + '</div>';
         }
         // Native full-bleed tiles get a marker class: the stylesheet forces
@@ -23277,7 +23324,7 @@ function uxgGateHtml(ctx) {
        + (function () {
            // the pair of the carrier, its second colour judged against the orb that sits on it
            var p = window._gateLowerPair(airlineCode);
-           return ';--rc2-a:' + p.a + ';--rc2-a-ink:' + p.ink + ';--rc2-b:' + p.b;
+           return ';--rc2-a:' + p.a + ';--rc2-a-ink:' + p.ink + ';--rc2-b:' + p.own + ';--rc2-b-orb:' + p.b;
          })()
        // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
        // toward black IS brown when the accent is warm — Southwest gold
@@ -33909,6 +33956,10 @@ const CALLSIGN_TO_IATA = {
   // ── Middle East / Asia ──
   'UAE':'EK', 'QTR':'QR', 'ETD':'EY', 'GFA':'GF',
   'OMA':'WY', 'SVA':'SV', 'MEA':'ME', 'RJA':'RJ',
+  // ── Pacific ──
+  // Fiji Airways. FJI took the colour of FJ only by its first two letters, a borrow that no
+  // three-letter code is given any more, and no table named it: this row does.
+  'FJI':'FJ',
   // ── Africa ──
   'SAA':'SA', 'ETH':'ET', 'MSR':'MS', 'RAM':'AT'
 };

@@ -127,7 +127,9 @@ test('two colours, written on the gate by uxgGateHtml and painted here', () => {
   // the pair of the carrier, by way of the one function that judges its second colour against the
   // orb that sits on it (window._gateLowerPair: where the Your Aircraft orb of a gate would sink into
   // that colour the panel takes the dark plate of the gate; tests/gate-orbs-every-airline.test.js)
-  assert.match(CORE, /var p = window\._gateLowerPair\(airlineCode\);\s*return ';--rc2-a:' \+ p\.a \+ ';--rc2-a-ink:' \+ p\.ink \+ ';--rc2-b:' \+ p\.b;/);
+  // (--rc2-b is the second colour of the carrier, which the boarding band reads; --rc2-b-orb is that
+  // colour once judged, which the two rules of this panel read)
+  assert.match(CORE, /var p = window\._gateLowerPair\(airlineCode\);\s*return ';--rc2-a:' \+ p\.a \+ ';--rc2-a-ink:' \+ p\.ink \+ ';--rc2-b:' \+ p\.own \+ ';--rc2-b-orb:' \+ p\.b;/);
   assert.match(CORE, /window\._gateLowerPair = function \(code\) \{\s*var raw = [^\n]*\n\s*var p = _rc2Pair\(raw\);\s*var out = \{ a: p\.a, ink: p\.ink, b: p\.b, own: p\.b \};/);
   // The caption bar: one flat colour, its words in the ink, no shadow, no glass.
   const cap = ruleFor('.gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap');
@@ -143,10 +145,10 @@ test('two colours, written on the gate by uxgGateHtml and painted here', () => {
   // The second colour is the lower panel's ground: the panel and its masked ::after.
   const ground = rules(RULES).find((r) => r.sels.some((s) => s.endsWith('> .v2-rc-shelf-illus::after')));
   assert.ok(ground && ground.sels.some((s) => s.endsWith('.gad-map-col-v2 > .v2-rc-shelf-illus')));
-  assert.match(ground.body, /background: var\(--rc2-b, var\(--banner-bg, #0c1119\)\) !important;/);
+  assert.match(ground.body, /background: var\(--rc2-b-orb, var\(--rc2-b, var\(--banner-bg, #0c1119\)\)\) !important;/);
   // Each part publishes what its type sits on, for _rcLowerGround.
   assert.match(ruleFor('.gad-map-col-v2 > .v2-rc-shelf-illus'), /--rc-ground-ink: var\(--rc2-a, #0c1119\) !important;/);
-  assert.match(ruleFor('.gad-map-col-v2 > .v2-rc-shelf-fi'), /--rc-ground-ink: var\(--rc2-b, #0c1119\) !important;/);
+  assert.match(ruleFor('.gad-map-col-v2 > .v2-rc-shelf-fi'), /--rc-ground-ink: var\(--rc2-b-orb, var\(--rc2-b, #0c1119\)\) !important;/);
   assert.match(fnSource('_rcLowerGround'), /getPropertyValue\('--rc-ground-ink'\)/);
 });
 

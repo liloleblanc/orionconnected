@@ -521,6 +521,14 @@ test('the colours: the lower panel\'s pair, every word on it at 4.5:1 or better,
   for (const sel of rulesOnly.match(/^html body[^{]+\{/gm)) assert.ok((sel.match(/:not\(#_\)/g) || []).length >= 16, sel.slice(0, 60));
   assert.match(rulesOnly, /\.g8-band \.g8-band-docs \{\s*background: var\(--rc2-a, #0c1119\) !important;\s*color: var\(--rc2-a-ink, #ffffff\) !important;/);
   assert.match(rulesOnly, /\.g8-band \.g8-band-close \{\s*background: var\(--rc2-b, #0c1119\) !important;\s*color: #ffffff !important;/);
+  // THE BAND KEEPS THE PAIR OF THE CARRIER. The gate judges the second colour against the Your
+  // Aircraft orb that sits on the lower right panel (Singapore and Pascan take the dark plate
+  // there), and writes that judged colour under a variable of its own. The band reads none of it:
+  // --rc2-b is the second colour of the carrier itself, on every gate.
+  assert.doesNotMatch(rulesOnly, /--rc2-b-orb/, 'no rule of the band reads the colour judged for the panel');
+  assert.match(CORE, /return ';--rc2-a:' \+ p\.a \+ ';--rc2-a-ink:' \+ p\.ink \+ ';--rc2-b:' \+ p\.own \+ ';--rc2-b-orb:' \+ p\.b;/);
+  assert.match(CORE, /var p = _rc2Pair\(raw\);\s*var out = \{ a: p\.a, ink: p\.ink, b: p\.b, own: p\.b \};/, 'own is the second colour of the pair, and nothing below rewrites it');
+  assert.equal(CORE.slice(CORE.indexOf('window._gateLowerPair = function'), CORE.indexOf('window._orbInkOnWhite = function')).split('out.own').length - 1, 0);
   assert.match(rulesOnly, /\.g8-band \{[^}]*min-height: min\(9\.5vh, 8\.8vw, var\(--g8-band-room, 9\.5vh\)\) !important;/, "the mockup's 9.5vh where the sign leaves it");
   // a portrait board stacks the halves, each across the band's whole width
   const portrait = rulesOnly.slice(rulesOnly.indexOf('@media (orientation: portrait) {'));
