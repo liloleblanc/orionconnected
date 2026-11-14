@@ -29,6 +29,29 @@ const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebK
 const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36';
 const TV = 'Mozilla/5.0 (Linux; Android 12; BRAVIA 4K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
+/**
+ * A made-up sign-in and the cookie jar of a browser on one host, for the
+ * pages where the sign-in travels (fidsSignIn in host-airport.js; the jar
+ * and the module itself are tested in tests/zone-sign-in.test.js). The token
+ * is no real one: three made-up parts, the middle one an expiry an hour off.
+ */
+const SIGNED_IN = 'bWFkZS11cA.' + Buffer.from(JSON.stringify({ sub: 'tester', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url') + '.bm90LWEtc2lnbmF0dXJl';
+function jarOn(host, refuse) {
+  const kept = new Map();
+  return {
+    get cookie() { return [...kept].map(([k, v]) => k + '=' + v).join('; '); },
+    set cookie(text) {
+      if (refuse) return;
+      const bits = String(text).split(';').map((b) => b.trim());
+      const eq = bits[0].indexOf('=');
+      const domain = (bits.find((b) => /^domain=/i.test(b)) || '').slice(7).toLowerCase();
+      const age = bits.find((b) => /^max-age=/i.test(b));
+      if (!bits.includes('Secure') || !domain || !(host === domain || host.endsWith('.' + domain))) return;
+      if (age && Number(age.slice(8)) <= 0) kept.delete(bits[0].slice(0, eq)); else kept.set(bits[0].slice(0, eq), bits[0].slice(eq + 1));
+    }
+  };
+}
+
 /** Run host-airport.js against a stubbed window; returns the window, where it went and the tab storage. */
 function load(opts) {
   const o = opts || {};
@@ -49,6 +72,9 @@ function load(opts) {
   };
   win.self = win;
   win.top = o.framed ? {} : win;
+  // o.jar: this browser keeps cookies (true), or refuses them ('refuse'); with
+  // none the page has no document at all, as in every test older than the jar
+  if (o.jar) win.document = jarOn(url.hostname, o.jar === 'refuse');
   new Function('window', 'sessionStorage', SRC)(win, win.sessionStorage);
   return { win, went, tab: win.sessionStorage._s };
 }
@@ -197,11 +223,41 @@ test('nothing that is not a board page, a board site of ours or a valid code mov
   }
 });
 
-test('a frame and an admin signed in on this origin never move', () => {
+test('a frame and an admin whose sign-in cannot travel never move', () => {
   for (const url of ['https://fids.orionconnected.com/fids?ap=YYG', 'https://fids.orionconnected.com/fids',
-                     'https://yqm.orionconnected.com/gids?ap=YHZ', 'https://met.orionconnected.com/fids']) {
+                     'https://yqm.orionconnected.com/gids?ap=YHZ', 'https://met.orionconnected.com/fids',
+                     'https://yqm.orionconnected.com/gids?ap=YUL&gate=128', 'https://fids.orionconnected.ca/bids?ap=YUL&belt=2']) {
     assert.equal(addr(url, { framed: true }), '', 'framed: ' + url);
     assert.equal(addr(url, { admin: true }), '', 'admin: ' + url);
+    assert.equal(addr(url, { admin: true, travels: false }), '', 'admin, said outright: ' + url);
+    assert.equal(addr(url, { framed: true, admin: true, travels: true }), '', 'a frame stays whoever is signed in: ' + url);
+  }
+});
+
+test('an admin whose sign-in is in the cookie of the zone is no exception: the same address as a visitor', () => {
+  const signedIn = { admin: true, travels: true };
+  assert.equal(addr('https://yqm.orionconnected.com/gids?ap=YUL&gate=128', signedIn), 'https://yul.orionconnected.com/gids?gate=128');
+  assert.equal(addr('https://fids.orionconnected.com/fids?ap=YYG', signedIn), 'https://yyg.orionconnected.com/fids');
+  assert.equal(addr('https://fids.orionconnected.com/fids', signedIn), 'https://yqm.orionconnected.com/fids');
+  assert.equal(addr('https://met.orionconnected.com/fids', signedIn), 'https://yhu.orionconnected.com/fids');
+  assert.equal(addr('https://fids.orionconnected.ca/bids?ap=YUL&belt=2', signedIn), 'https://yul.orionconnected.ca/bids?belt=2');
+  // every case of the rule, one by one: the visitor answer, whatever it is
+  for (const url of ['https://fids.orionconnected.com/fids?ap=YYG&mode=live#top', 'https://orionconnected.ca/gids?ap=YHZ&gate=3', 'https://www.orionconnected.com/bids.html?ap=YQM&belt=2',
+                     'https://yqm.orionconnected.com/gids?ap=YHZ', 'https://yqm.orionconnected.com/gids?gate=3', 'https://yqm.orionconnected.com/fids?ap=CYQM',
+                     'https://yqm.orionconnected.com/fids?stream=1&ap=YHZ', 'https://yqm.orionconnected.com/gids?screen=ABCDEF&ap=YHZ', 'https://yqm.orionconnected.com/credits?ap=YHZ',
+                     'https://yqm.orionconnected.app/gids?ap=YHZ', 'http://localhost:8080/fids.html?ap=YHZ', 'https://strict-addresses-fids.example.workers.dev/fids?ap=YHZ']) {
+    assert.equal(addr(url, signedIn), addr(url), url);
+    assert.deepEqual(arrive(url, signedIn), arrive(url), 'arriving: ' + url);
+    assert.deepEqual(arrive(url, Object.assign({ phone: true }, signedIn)), arrive(url, { phone: true }), 'on a phone: ' + url);
+  }
+  // travels says where the sign-in is, not who is signed in: with no admin it changes nothing
+  assert.equal(addr('https://fids.orionconnected.com/fids?ap=YYG', { travels: true }), 'https://yyg.orionconnected.com/fids');
+  // and it cannot loop: where an admin is sent, the admin stays
+  for (const from of ['https://yqm.orionconnected.com/gids?ap=YUL&gate=128', 'https://fids.orionconnected.com/fids', 'https://met.orionconnected.ca/gids?gate=4']) {
+    const to = addr(from, signedIn);
+    assert.ok(to, from);
+    assert.equal(addr(to, signedIn), '', 'one hop only: ' + from + ' -> ' + to);
+    assert.equal(addr(to, { admin: true }), '', 'nor back, should the cookie be gone on arrival: ' + to);
   }
 });
 
@@ -319,7 +375,11 @@ test('a desktop moves to the address in one hop and marks the tab only where it 
     { to: 'https://yhz.orionconnected.com/gids?gate=3#g', mark: false, phoneBoard: false });
   assert.deepEqual(arrive('https://yhz.orionconnected.com/gids?gate=3'), { to: '', mark: true, phoneBoard: false });
   assert.deepEqual(arrive('https://yhz.orionconnected.com/credits'), { to: '', mark: false, phoneBoard: false }, 'not a board page');
-  assert.deepEqual(arrive('https://fids.orionconnected.com/fids?ap=YHZ', { admin: true }), { to: '', mark: true, phoneBoard: false });
+  assert.deepEqual(arrive('https://fids.orionconnected.com/fids?ap=YHZ', { admin: true }), { to: '', mark: true, phoneBoard: false },
+    'an admin whose sign-in cannot travel: the board stays, and is a board shown');
+  assert.deepEqual(arrive('https://fids.orionconnected.com/fids?ap=YHZ', { admin: true, travels: true }),
+    { to: 'https://yhz.orionconnected.com/fids', mark: false, phoneBoard: false }, 'an admin whose sign-in travels moves in the one hop too');
+  assert.deepEqual(arrive('https://yhz.orionconnected.com/fids', { admin: true, travels: true }), { to: '', mark: true, phoneBoard: false });
   assert.equal(arrive('https://fids.orionconnected.com/fids?ap=YHZ', { phone: false, inBoard: true }).to, 'https://yhz.orionconnected.com/fids',
     'a desktop never carries nomobile');
 });
@@ -341,6 +401,9 @@ test('a fresh phone is asked once, on the address the board belongs to, in the s
     '/?ap=YHZ&next=' + encodeURIComponent('/gids.html?ap=YHZ&gate=2'));
   assert.equal(arrive('https://fids.orionconnected.com/fids?ap=YHZ', { phone: true, admin: true }).to,
     '/?ap=YHZ&next=' + encodeURIComponent('/fids?ap=YHZ'));
+  // an admin whose sign-in travels is asked where a visitor is: on the address of the airport
+  assert.equal(arrive('https://fids.orionconnected.com/fids?ap=YHZ', { phone: true, admin: true, travels: true }).to,
+    'https://yhz.orionconnected.com/?ap=YHZ&next=' + encodeURIComponent('/fids'));
   for (const [url, ctx] of [['https://fids.orionconnected.com/gids?ap=YHZ', { phone: true }], ['https://yhz.orionconnected.com/gids', { phone: true }]]) {
     const r = arrive(url, ctx);
     assert.equal(r.mark, false, 'a page that is leaving to ask is not a board shown');
@@ -454,9 +517,29 @@ test('the caller replaces the page, marks the tab only on a board that stays, an
   assert.deepEqual(r.went, [], 'already home');
   assert.equal(r.tab.oc_board_tab, '1');
   assert.equal(r.tab.fids_airport, 'YYG');
-  for (const o of [{ framed: true }, { local: { fids_token: 't' } }, { session: { fids_token: 't' } }]) {
+  // WHERE THE SIGN-IN CANNOT TRAVEL, an admin stays: no cookie jar at all, a
+  // browser that refuses cookies, a token that is no token (never written)
+  for (const o of [{ framed: true }, { local: { fids_token: 't' } }, { session: { fids_token: 't' } },
+                   { local: { fids_token: SIGNED_IN } }, { session: { fids_token: SIGNED_IN } },
+                   { local: { fids_token: SIGNED_IN }, jar: 'refuse' }, { local: { fids_token: 't' }, jar: true },
+                   { local: { fids_token: SIGNED_IN }, jar: true, framed: true }]) {
     r = load(Object.assign({ url: 'https://fids.orionconnected.com/gids?ap=YYG&gate=2' }, o));
     assert.deepEqual(r.went, [], JSON.stringify(o));
+  }
+  // WHERE IT TRAVELS (.com and .ca, a browser that keeps the cookie of the
+  // zone), an admin moves as a visitor does, from either storage copy
+  for (const o of [{ local: { fids_token: SIGNED_IN } }, { session: { fids_token: SIGNED_IN } }]) {
+    r = load(Object.assign({ url: 'https://fids.orionconnected.com/gids?ap=YYG&gate=2', jar: true }, o));
+    assert.deepEqual(r.went, ['https://yyg.orionconnected.com/gids?gate=2'], JSON.stringify(o));
+    r = load(Object.assign({ url: 'https://yqm.orionconnected.ca/gids?ap=YUL&gate=128', jar: true }, o));
+    assert.deepEqual(r.went, ['https://yul.orionconnected.ca/gids?gate=128'], JSON.stringify(o));
+    r = load(Object.assign({ url: 'https://yul.orionconnected.com/gids?gate=128', jar: true }, o));
+    assert.deepEqual(r.went, [], 'home: ' + JSON.stringify(o));
+    assert.equal(r.tab.oc_board_tab, '1');
+  }
+  // off our zones there is no cookie to keep it in: a preview and a local host stay, signed in or not
+  for (const url of ['https://strict-addresses-fids.example.workers.dev/gids?ap=YYG', 'http://localhost:8080/gids.html?ap=YYG']) {
+    assert.deepEqual(load({ url, local: { fids_token: SIGNED_IN }, jar: true }).went, [], url);
   }
   assert.equal(load({ url: 'https://fids.orionconnected.com/gids?ap=YYG', framed: true }).tab.oc_board_tab, undefined, 'a frame is not the tab');
   r = load({ url: 'https://yqm.orionconnected.app/bids?belt=2' });
@@ -486,8 +569,31 @@ test('fidsBoardUrl keeps the old relative link where a page cannot leave its ori
   assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'strict-addresses-fids.n-leblanc1984.workers.dev' }), 'gids.html?ap=YHZ&gate=3');
   assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'fids.orionconnected.com', framed: true }), 'gids.html?ap=YHZ&gate=3', 'frames stay same-origin');
   assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'fids.orionconnected.com', admin: true }), 'gids.html?ap=YHZ&gate=3', 'an admin keeps the sign-in');
+  assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'fids.orionconnected.com', admin: true, travels: false }), 'gids.html?ap=YHZ&gate=3');
+  // the sign-in travels on .com and .ca only: claimed anywhere else, the link still stays
+  assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'yqm.orionconnected.app', admin: true, travels: true }), 'gids.html?ap=YHZ&gate=3', 'no sign-in is kept on .app');
+  assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'localhost', admin: true, travels: true }), 'gids.html?ap=YHZ&gate=3');
+  assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'strict-addresses-fids.example.workers.dev', admin: true, travels: true }), 'gids.html?ap=YHZ&gate=3');
+  // and a frame or a pinned page stays whoever is signed in
+  assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'fids.orionconnected.com', admin: true, travels: true, framed: true }), 'gids.html?ap=YHZ&gate=3');
+  assert.equal(link('YHZ', 'gids', { gate: '3' }, { hostname: 'fids.orionconnected.com', admin: true, travels: true, pinned: true }), 'gids.html?ap=YHZ&gate=3');
   assert.equal(link('', 'fids', null, { hostname: 'fids.orionconnected.com' }), 'fids.html', 'no airport: the plain page, which then moves');
   assert.equal(link('FIDS', 'bids', { belt: 1 }, { hostname: 'fids.orionconnected.com' }), 'bids.html?belt=1');
+});
+
+test('fidsBoardUrl builds the airport address for an admin whose sign-in travels, as for a visitor', () => {
+  const signedIn = (h) => ({ hostname: h, pathname: '/fids', admin: true, travels: true });
+  assert.equal(link('YUL', 'gids', { gate: '128' }, signedIn('yqm.orionconnected.com')), 'https://yul.orionconnected.com/gids?gate=128');
+  assert.equal(link('YHZ', 'gids', { gate: '3' }, signedIn('fids.orionconnected.com')), 'https://yhz.orionconnected.com/gids?gate=3');
+  assert.equal(link('YUL', 'fids', { mode: 'live' }, signedIn('fids.orionconnected.ca')), 'https://yul.orionconnected.ca/fids?mode=live');
+  assert.equal(link('yqm', 'bids', { belt: 2 }, signedIn('yqm.orionconnected.com')), 'https://yqm.orionconnected.com/bids?belt=2');
+  assert.equal(link('CYQM', 'fids', null, signedIn('yqm.orionconnected.com')), 'fids.html?ap=CYQM', 'four letters make no address for anyone');
+  // this page: read from the storage and the cookie jar it really has
+  const on = (o) => load(Object.assign({ url: 'https://yqm.orionconnected.com/fids' }, o)).win.fidsBoardUrl('YUL', 'gids', { gate: '128' });
+  assert.equal(on({ local: { fids_token: SIGNED_IN }, jar: true }), 'https://yul.orionconnected.com/gids?gate=128', 'the sign-in is in the cookie of the zone');
+  assert.equal(on({ local: { fids_token: SIGNED_IN }, jar: 'refuse' }), 'gids.html?ap=YUL&gate=128', 'cookies refused: the sign-in is only here');
+  assert.equal(on({ local: { fids_token: SIGNED_IN } }), 'gids.html?ap=YUL&gate=128');
+  assert.equal(on({ jar: true }), 'https://yul.orionconnected.com/gids?gate=128', 'a visitor');
 });
 
 test('fidsBoardUrl takes params as an object, a query string or URLSearchParams, and never two ap', () => {
@@ -563,10 +669,26 @@ test('choosing another airport goes to its address, without the gate, belt and s
     { went: ['https://yhz.orionconnected.com/gids?mode=live&langs=fr%2Cen'], inPage: 0, picked: '' });
   assert.deepEqual(pickAirport('https://yqm.orionconnected.com/fids', 'YQM').went, [], 'the same airport: nothing to leave for');
   assert.equal(pickAirport('https://yqm.orionconnected.com/fids', 'YQM').inPage, 1);
-  // where a page cannot leave its origin, the switch is in the page, as before
+  // where a page cannot leave its origin, the switch is in the page, as before:
+  // a local host, an admin whose sign-in cannot travel (no cookie kept), a frame
   for (const [url, opts] of [['http://localhost:8080/fids.html?ap=YQM', {}], ['https://fids.orionconnected.com/fids?ap=YQM', { local: { fids_token: 't' } }],
+                             ['https://yqm.orionconnected.com/fids', { local: { fids_token: SIGNED_IN } }],
+                             ['https://yqm.orionconnected.com/fids', { local: { fids_token: SIGNED_IN }, jar: 'refuse' }],
+                             ['http://localhost:8080/fids.html?ap=YQM', { local: { fids_token: SIGNED_IN }, jar: true }],
                              ['https://yqm.orionconnected.com/fids', { framed: true }]]) {
     assert.deepEqual(pickAirport(url, 'YHZ', opts), { went: [], inPage: 1, picked: 'YHZ' }, url);
+  }
+});
+
+test('an admin whose sign-in travels leaves for the new address when choosing another airport', () => {
+  const signedIn = { local: { fids_token: SIGNED_IN }, jar: true };
+  assert.deepEqual(pickAirport('https://yqm.orionconnected.com/gids?gate=3&screen=gate&mode=live', 'YUL', signedIn),
+    { went: ['https://yul.orionconnected.com/gids?mode=live'], inPage: 0, picked: '' });
+  assert.deepEqual(pickAirport('https://yqm.orionconnected.ca/fids', 'YUL', signedIn), { went: ['https://yul.orionconnected.ca/fids'], inPage: 0, picked: '' });
+  assert.deepEqual(pickAirport('https://yqm.orionconnected.com/fids', 'YQM', signedIn), { went: [], inPage: 1, picked: 'YQM' }, 'the same airport: nothing to leave for');
+  // a registered screen and a kiosk stay pinned, signed in or not
+  for (const url of ['https://yqm.orionconnected.com/gids?screen=ABCDEF&gate=3', 'https://yqm.orionconnected.com/fids?stream=1']) {
+    assert.deepEqual(pickAirport(url, 'YUL', signedIn), { went: [], inPage: 1, picked: 'YUL' }, url);
   }
 });
 
@@ -653,7 +775,22 @@ test('on the boards the viewport is decided first, then host-airport.js is the f
   for (const page of ['app.html', 'home.html', 'credits.html', 'picker.html', 'heritage.html']) {
     assert.match(rd(page), /<script src="\/?js\/host-airport\.js\?v=\d+"><\/script>/, page + ' loads the helper');
   }
-  assert.doesNotMatch(rd('index.html'), /<script[^>]*host-airport\.js/i, 'the opener stays light');
+  // the opener stays light: nothing of the helper in its head. It is loaded at
+  // the foot, for the sign-in only (fidsSignIn must run before auth.js reads
+  // the token), and the address rule stands down there: __ocOpener.
+  assert.doesNotMatch(headOf('index.html'), /<script[^>]*host-airport\.js/i, 'the opener stays light');
+  assert.match(rd('index.html'), /<script>window\.__ocOpener = true;<\/script>\s*<script src="js\/host-airport\.js\?v=\d+"><\/script>\s*<script src="js\/auth\.js\?v=\d+"><\/script>/);
+  assert.match(SRC, /var r = window\.__ocOpener === true \? \{ to: '', mark: false, phoneBoard: false \} : arrival\(window\.location, \{/);
+  for (const url of ['https://fids.orionconnected.com/', 'https://yqm.orionconnected.app/', 'https://orionconnected.app/?ap=YHZ', 'https://fids.orionconnected.com/fids?ap=YHZ']) {
+    const u = new URL(url);
+    const went = [];
+    const win = { __ocOpener: true, location: { hostname: u.hostname, pathname: u.pathname, search: u.search, hash: u.hash, href: u.href, origin: u.origin, replace: (to) => went.push(to) },
+                  navigator: { userAgent: IPHONE }, localStorage: { getItem: () => null }, sessionStorage: { getItem: () => null, setItem() {} } };
+    win.self = win.top = win;
+    new Function('window', 'sessionStorage', SRC)(win, win.sessionStorage);
+    assert.deepEqual(went, [], url + ': the router in the head of the opener decides, not the address rule');
+    assert.equal(typeof win.fidsSignIn.arrive, 'function', 'the sign-in is still kept there');
+  }
 });
 
 test('every board link goes through the one helper; frames and the rotator are untouched', () => {

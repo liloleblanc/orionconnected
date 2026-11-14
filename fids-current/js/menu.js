@@ -1163,7 +1163,7 @@ function _syncMenu() {
 // v24145 — ONE LINK HELPER. Every board link the menu builds goes through
 // fidsBoardUrl (host-airport.js): the airport address on .com and .ca, the
 // old relative page.html?ap= link where a page cannot leave its origin (a
-// preview, a frame, an admin signed in here). The fallback is that old link,
+// preview, a frame, an admin whose sign-in cannot travel). The fallback is that old link,
 // for a page that somehow lacks host-airport.js.
 function _menuBoardUrl(code, page, params) {
   try { if (typeof window.fidsBoardUrl === 'function') return window.fidsBoardUrl(code, page, params); } catch (e) {}
@@ -1283,8 +1283,8 @@ function menuClearScreenFilters() {
 function menuCopyScreenUrl() {
   var url = _menuScreenUrl().toString();
   // v24145 — what goes into the next kiosk is the airport address of this
-  // screen, not the address this page happens to be on (an admin signed in
-  // on fids.<zone> stays there; the screen it sets up does not).
+  // screen, not the address this page happens to be on (an admin whose
+  // sign-in cannot travel stays on fids.<zone>; the screen it sets up does not).
   try {
     if (typeof window.fidsAirportAddress === 'function') {
       var _cu = new URL(url);
@@ -2226,6 +2226,9 @@ async function _acFetch(url, opts) {
     if (_expired) {
       try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
       try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+      // The dead token leaves the cookie of the zone as well (fidsSignIn in
+      // host-airport.js), unless a newer sign-in from another address is there.
+      try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.drop(_t || null); } catch (e) {}
       try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
       try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
       try {

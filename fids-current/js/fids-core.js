@@ -464,6 +464,9 @@ function _fidsSaveAuthRescue(res) {
   // Both copies, durable first — the order _fidsAuthToken reads them in.
   try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
   try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+  // The dead token leaves the cookie of the zone as well (fidsSignIn in
+  // host-airport.js), unless a newer sign-in from another address is there.
+  try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.drop(tok); } catch (e) {}
   try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
   try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
   return true;
@@ -525,6 +528,8 @@ function _fidsAuthToken() {
   if (tok && _fidsTokenExpired(tok)) {
     try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
     try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+    // and out of the cookie of the zone, where it holds this same dead token
+    try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.drop(tok); } catch (e) {}
     try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
     return null;
   }
@@ -4823,6 +4828,11 @@ async function attemptLogin() {
       } catch (e) { /* storage unavailable — the session lasts this tab only */ }
       sessionStorage.setItem('fids_token', data.token);
       sessionStorage.setItem('fids_user', _userJson);
+      // THE SIGN-IN TRAVELS. On .com and .ca it is also kept in the cookie of
+      // the zone (fidsSignIn in host-airport.js, the one place that cookie is
+      // touched), so the next airport address is signed in as well and an
+      // admin follows the address rule as a visitor does.
+      try { if (typeof fidsSignIn !== 'undefined' && fidsSignIn) fidsSignIn.keep(data.token, _userJson); } catch (e) {}
       LIVE_MODE = true;
       if (typeof demoRebuildTimer !== 'undefined' && demoRebuildTimer) {
         clearInterval(demoRebuildTimer); demoRebuildTimer = null;
@@ -48401,9 +48411,10 @@ function apAutoSelect(code, name, ctx) {
   // v24145 — ANOTHER AIRPORT IS ANOTHER ADDRESS. Picked on .com or .ca, the
   // board goes to the address of that airport (fidsBoardUrl), with this page
   // and its query, less the gate, belt and screen of the old airport. Where a
-  // page cannot leave its origin (a preview, a frame, an admin signed in
-  // here) the helper answers with a relative link and the switch stays in
-  // the page, as before.
+  // page cannot leave its origin (a preview, a frame, an admin whose sign-in
+  // cannot travel) the helper answers with a relative link and the switch
+  // stays in the page, as before. An admin signed in on .com or .ca leaves
+  // for the new address like anyone: the sign-in is in the cookie of the zone.
   // A REGISTERED SCREEN AND A KIOSK NEVER LEAVE. A page with a registry id in
   // ?screen= (its pairing lives in this origin storage) or a stream, yt or
   // compact kiosk switches airport in the page, as it did before addresses.

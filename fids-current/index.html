@@ -149,9 +149,10 @@
            bar reaches a host name. MET is the code passengers read for
            Saint-Hubert and YHU its real one; the labels listed are sites of
            ours, never airports. Both are the tables of host-airport.js, kept
-           here because this page does not load that file (it would be a
-           blocking request in the head of the one page whose whole job is to
-           paint the right colour and leave); tests/mobile-offer.test.js holds
+           here because this page does not load that file in its head (it
+           would be a blocking request in the head of the one page whose whole
+           job is to paint the right colour and leave; it is loaded at the
+           foot, for the sign-in only); tests/mobile-offer.test.js holds
            the two copies together, label by label. */
         var ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         var REAL = { MET: 'YHU' };
@@ -611,6 +612,15 @@
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      SCRIPTS
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- THE SIGN-IN TRAVELS. host-airport.js keeps the admin sign-in on the zone
+     (fidsSignIn: the cookie beside the two storage copies), so it is loaded
+     here, at the foot and never in the head, before auth.js reads the token:
+     a sign-in made on any airport address is taken into this origin first,
+     and one made on this page is written for every address of the zone.
+     The address rule of that file decides nothing on this page (__ocOpener):
+     where an arrival goes from here is the work of the router in the head. -->
+<script>window.__ocOpener = true;</script>
+<script src="js/host-airport.js?v=24154"></script>
 <script src="js/auth.js?v=23170"></script>
 <script>
   // ── Entry Actions ─────────────────────────────────────────────────────

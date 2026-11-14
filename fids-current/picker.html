@@ -209,7 +209,9 @@
 </div>
 
 <!-- v24145 — the one link helper (fidsBoardUrl): a screen picked here opens on
-     its airport address, or stays on this origin for an admin signed in here -->
+     its airport address, or stays on this origin for an admin whose sign-in
+     cannot travel. The same file keeps the sign-in on the zone (fidsSignIn),
+     so it is loaded before auth.js reads the token. -->
 <script src="js/host-airport.js?v=24154"></script>
 <script src="js/auth.js?v=23170"></script>
 <script>
@@ -265,7 +267,7 @@
 
     // v24145 — through the one link helper: the airport address of this
     // tab airport on .com and .ca; the plain page where there is none, or for
-    // an admin signed in on this origin (sign-in is per origin)
+    // an admin whose sign-in cannot travel (a preview, a browser with no cookies)
     let to = fileMap[screen] || '/fids';
     try {
       const ap = sessionStorage.getItem('fids_airport') || '';

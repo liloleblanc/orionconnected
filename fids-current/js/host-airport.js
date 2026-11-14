@@ -121,6 +121,246 @@
 
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * THE SIGN-IN TRAVELS WITH THE ADMIN ACROSS THE ADDRESSES OF A ZONE
+ *
+ * An admin sign-in is a bearer token (fids_token, with the small user record
+ * fids_user) kept in localStorage and sessionStorage, and storage belongs to
+ * one origin: yul.orionconnected.com cannot read what yqm.orionconnected.com
+ * holds. An admin therefore could not follow the address rule below without
+ * being signed out at every airport, and was made an exception to it. The
+ * people who run the boards work signed in, so for them the rule never held:
+ * yqm.orionconnected.com/gids?ap=YUL&gate=128 stayed on the Moncton address.
+ *
+ * So the sign-in is ALSO kept in one cookie on the zone the page is on, and
+ * then an admin moves exactly as a visitor does:
+ *
+ *   __Secure-fids_signin=<token>|<user record>; Domain=orionconnected.com;
+ *       Path=/; Max-Age=<seconds the token has left>; Secure; SameSite=Strict
+ *
+ *   · Domain is orionconnected.com on orionconnected.com and its one-label
+ *     hosts, orionconnected.ca on the .ca ones: one cookie per zone, since no
+ *     cookie spans two registrable domains (signing in on .com does not sign
+ *     in on .ca). NOWHERE ELSE. On a preview (workers.dev), localhost, an IP,
+ *     a file page, and on the .app zone (the phone app: no page there signs
+ *     in) nothing is written and nothing is read: the sign-in stays in the
+ *     storage of its origin and the admin exception of the address rule
+ *     stands, as before.
+ *   · It ends when the token does (its exp claim). A token whose expiry
+ *     cannot be read is kept one hour at a time. An expired token is never
+ *     written and never taken.
+ *   · It CANNOT be HttpOnly: the page itself reads the token, to send it as
+ *     the Authorization bearer header to the proxy host. That header stays
+ *     the only thing the server trusts, so nothing about how a request is
+ *     authorised changes. The proxy host never receives this cookie (it is
+ *     another site). The browser does send it with every request for a page
+ *     or a file of our own zone, where nothing reads it: the board worker
+ *     serves files and knows no sign-in. The token was readable by script in
+ *     the storage of one origin and is now readable by the pages of every
+ *     host of the zone, so every host of the zone must be ours.
+ *   · The token is never put in an address, a query, a hash or a log line.
+ *
+ * THIS BLOCK IS THE ONLY CODE THAT TOUCHES document.cookie FOR THE SIGN-IN:
+ *   arrive  on every page load, as this file runs (first in the head; at
+ *           the foot of the opener, ahead of auth.js), before anything reads
+ *           the token and before the address rule decides where the page
+ *           belongs:
+ *             · the cookie says signed out: the copies on this origin go;
+ *             · the cookie holds a live token: both storage copies take it
+ *               (an origin with none, or with another one: the zone has one
+ *               sign-in);
+ *             · no cookie, a live token in storage: the cookie is written, so
+ *               a sign-in made before this existed starts travelling without
+ *               signing in again.
+ *   keep    a sign-in was just made (auth.js saveToken, the board login in
+ *           fids-core.js): write the cookie.
+ *   end     the admin signed out (auth.js logout): the copies on this origin
+ *           go and the cookie becomes a signed-out mark, which every other
+ *           origin of the zone obeys at its next page load. A mark and not a
+ *           plain delete: the other origins still hold the live token in
+ *           their own storage, and with no cookie at all they would write it
+ *           straight back.
+ *   drop    a dead token was found (the rescues in fids-core.js and menu.js,
+ *           auth.js loadToken): the copies on this origin go, and the cookie
+ *           goes only if it holds that same token or a dead one. A newer
+ *           sign-in made on another address is not ended by an old tab.
+ *   travels the sign-in of this page is in the cookie of the zone, read back
+ *           from the cookie jar itself. Where cookies are refused it is
+ *           false, and the admin stays an exception to the address rule.
+ *
+ * tests/zone-sign-in.test.js runs this file against a stubbed window.
+ * ─────────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  // The zones the boards are on. Never .app: it is the phone app only.
+  var ZONES = ['orionconnected.com', 'orionconnected.ca'];
+  var NAME = '__Secure-fids_signin';
+  var TOKEN_KEY = 'fids_token';
+  var USER_KEY = 'fids_user';
+  var OUT = 'out';
+  var SHORT = 3600;             // seconds, for a token whose expiry cannot be read
+  var OUT_AGE = 34560000;       // 400 days, the longest a browser keeps a cookie
+  var USER_MAX = 1024;          // a user record longer than this stays behind
+  var VALUE_MAX = 3800;         // a browser refuses a cookie past about 4096 bytes
+  var SHAPE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
+  /** The zone a host is on ('' when it is not ours, or is .app). */
+  function zoneFor(hostname) {
+    var host = String(hostname || '').toLowerCase().split(':')[0];
+    for (var i = 0; i < ZONES.length; i++) {
+      var z = ZONES[i];
+      if (host === z) return z;
+      if (host.length > z.length + 1 && host.slice(-(z.length + 1)) === '.' + z) {
+        return /^[a-z0-9-]+$/.test(host.slice(0, host.length - z.length - 1)) ? z : '';
+      }
+    }
+    return '';
+  }
+  function shaped(token) { return typeof token === 'string' && token.length < 3000 && SHAPE.test(token); }
+  /** When the token ends, in seconds since 1970; 0 when that cannot be read. */
+  function expiryOf(token) {
+    try {
+      var p = JSON.parse(atob(String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      var exp = p ? Number(p.exp) : 0;
+      return exp > 0 && isFinite(exp) ? exp : 0;
+    } catch (e) { return 0; }
+  }
+  /** A token that may be kept: its shape is right and it has not expired. */
+  function live(token, nowMs) {
+    if (!shaped(token)) return false;
+    var exp = expiryOf(token);
+    return !exp || exp > nowMs / 1000;
+  }
+  function userOf(text) {
+    try {
+      var s = String(text || '');
+      if (!s || s.length > USER_MAX) return '';
+      var u = JSON.parse(s);
+      return u && typeof u === 'object' ? s : '';
+    } catch (e) { return ''; }
+  }
+  function attrs(zone, age) {
+    return '; Domain=' + zone + '; Path=/; Max-Age=' + age + '; Secure; SameSite=Strict';
+  }
+  /** The cookie that keeps a sign-in on the zone of a host, or '' for none. */
+  function cookieFor(hostname, token, user, nowMs) {
+    var zone = zoneFor(hostname);
+    if (!zone || !live(token, nowMs)) return '';
+    var exp = expiryOf(token);
+    var age = exp ? Math.floor(exp - nowMs / 1000) : SHORT;
+    if (age < 1) return '';
+    var u = userOf(user);
+    var value = token + (u ? '|' + encodeURIComponent(u) : '');
+    if (value.length > VALUE_MAX) value = token;   // the record stays behind; the token is what signs in
+    return NAME + '=' + value + attrs(zone, age);
+  }
+  /** The signed-out mark of a zone, and the plain removal of its cookie. */
+  function outCookieFor(hostname) {
+    var zone = zoneFor(hostname);
+    return zone ? NAME + '=' + OUT + attrs(zone, OUT_AGE) : '';
+  }
+  function goneCookieFor(hostname) {
+    var zone = zoneFor(hostname);
+    return zone ? NAME + '=' + attrs(zone, 0) : '';
+  }
+  /** What the cookie jar holds: { out } | { token, user } | null. */
+  function read(cookies) {
+    var all = String(cookies || '').split(';');
+    for (var i = 0; i < all.length; i++) {
+      var c = all[i].replace(/^\s+/, '');
+      if (c.indexOf(NAME + '=') !== 0) continue;
+      var v = c.slice(NAME.length + 1);
+      if (v === OUT) return { out: true };
+      var bar = v.indexOf('|');
+      var token = bar < 0 ? v : v.slice(0, bar);
+      if (!shaped(token)) return null;
+      var user = '';
+      if (bar >= 0) { try { user = userOf(decodeURIComponent(v.slice(bar + 1))); } catch (e) { user = ''; } }
+      return { token: token, user: user };
+    }
+    return null;
+  }
+
+  // ── this page ────────────────────────────────────────────────────────────
+  function host() { try { return window.location.hostname; } catch (e) { return ''; } }
+  function jar() { try { return String(window.document.cookie || ''); } catch (e) { return ''; } }
+  function bake(cookie) { try { if (cookie) window.document.cookie = cookie; } catch (e) {} }
+  function stores() {
+    var out = [];
+    try { if (window.localStorage) out.push(window.localStorage); } catch (e) {}
+    try { if (window.sessionStorage) out.push(window.sessionStorage); } catch (e) {}
+    return out;
+  }
+  /** The sign-in of this origin: the durable copy first, as every reader does. */
+  function held() {
+    var s = stores(), token = '', user = '';
+    for (var i = 0; i < s.length && !token; i++) {
+      try { token = s[i].getItem(TOKEN_KEY) || ''; user = token ? (s[i].getItem(USER_KEY) || '') : ''; } catch (e) { token = ''; }
+    }
+    return { token: token, user: user };
+  }
+  function put(token, user) {
+    var s = stores();
+    for (var i = 0; i < s.length; i++) {
+      try {
+        s[i].setItem(TOKEN_KEY, token);
+        if (user) s[i].setItem(USER_KEY, user); else s[i].removeItem(USER_KEY);
+      } catch (e) {}
+    }
+  }
+  function wipe() {
+    var s = stores();
+    for (var i = 0; i < s.length; i++) {
+      try { s[i].removeItem(TOKEN_KEY); s[i].removeItem(USER_KEY); } catch (e) {}
+    }
+  }
+
+  function arrive() {
+    if (!zoneFor(host())) return;
+    var now = Date.now();
+    var c = read(jar());
+    var h = held();
+    if (c && c.out) { if (h.token) wipe(); return; }
+    if (c && live(c.token, now)) { if (h.token !== c.token) put(c.token, c.user); return; }
+    if (live(h.token, now)) bake(cookieFor(host(), h.token, h.user, now));
+    else if (c) bake(goneCookieFor(host()));      // a dead token is not kept
+  }
+  function travels() {
+    try {
+      if (!zoneFor(host())) return false;
+      var token = held().token;
+      if (!token) return false;                     // a visitor: the jar is not even read
+      var c = read(jar());
+      return !!(c && c.token === token && live(token, Date.now()));
+    } catch (e) { return false; }
+  }
+  function keep(token, user) {
+    try { bake(cookieFor(host(), token, user, Date.now())); } catch (e) {}
+    return travels();
+  }
+  function end() {
+    wipe();
+    bake(outCookieFor(host()));
+  }
+  function drop(token) {
+    wipe();
+    try {
+      var c = read(jar());
+      if (c && c.token && (c.token === token || !live(c.token, Date.now()))) bake(goneCookieFor(host()));
+    } catch (e) {}
+  }
+
+  try {
+    window.fidsSignIn = {
+      NAME: NAME, zoneFor: zoneFor, cookieFor: cookieFor, outCookieFor: outCookieFor, goneCookieFor: goneCookieFor, read: read,
+      arrive: arrive, travels: travels, keep: keep, end: end, drop: drop
+    };
+  } catch (e) {}
+  try { arrive(); } catch (e) {}
+})();
+
+
+/* ───────────────────────────────────────────────────────────────────────────
  * EVERY BOARD LIVES ON ITS AIRPORT ADDRESS  (v24144, strict since v24145)
  *
  *   fids.orionconnected.com/fids?ap=YYG&mode=live
@@ -157,8 +397,11 @@
  *     keeps the id in this origin storage and a forgotten screen goes back to
  *     /screen.html here. ?screen=gate or ?screen=baggage is a sub-screen of a
  *     board, not a registry id, and moves like any board link;
- *   · an admin signed in on this origin (fids_token): sign-in is per origin,
- *     so an admin on fids.<zone> stays on fids.<zone>;
+ *   · an admin whose sign-in cannot travel (fids_token): storage is per
+ *     origin, so where the sign-in is not in the cookie of the zone (a
+ *     browser that refuses cookies; the block above) an admin on fids.<zone>
+ *     stays on fids.<zone>. Where it is in that cookie, on .com and .ca, an
+ *     admin is no exception and moves exactly as a visitor does;
  *   · the stream, yt and compact kiosk layouts, which keep their settings in
  *     this origin storage.
  * A registered screen and a kiosk are pinned: the link helper answers them
@@ -184,7 +427,9 @@
  *   fidsBoardUrlFor(code, page, params, env, ...)        the link builder
  *   fidsBoardUrl(code, page, params)                     the same, for this page
  * It cannot loop: an address it sends a board to is that board address, and
- * an airport address never moves to itself.
+ * an airport address never moves to itself. An admin is moved only once the
+ * sign-in is in the cookie of the zone (fidsSignIn.arrive runs first, above),
+ * and arrives signed in on an address that, like any other, stays.
  * ─────────────────────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
@@ -260,9 +505,11 @@
   /**
    * The address this board page belongs on, or '' to stay (.com and .ca).
    *   loc: { hostname, pathname, search, hash }   (window.location will do)
-   *   ctx: { framed, admin, fallback, carry, demo }
+   *   ctx: { framed, admin, travels, fallback, carry, demo }
    *     framed    the page is inside a frame
    *     admin     an admin sign-in is held on this origin
+   *     travels   that sign-in is in the cookie of the zone (fidsSignIn), so
+   *               it is there on every address of the zone: the admin moves
    *     fallback  the airport the board shows with no ?ap= (this tab, else YQM)
    *     carry     add nomobile=1: a phone already in a board, leaving the origin
    *     demo      this tab chose the demo (sessionStorage fids_mode): add
@@ -271,7 +518,7 @@
    */
   function airportAddress(loc, ctx, hostAirport, realIata) {
     ctx = ctx || {};
-    if (!loc || ctx.framed || ctx.admin) return '';
+    if (!loc || ctx.framed || (ctx.admin && !ctx.travels)) return '';
     var z = zoneOf(loc.hostname);
     if (!z || z.zone === APP_ZONE) return '';
     var page = pageOf(loc.pathname);
@@ -351,7 +598,7 @@
 
   /**
    * One decision for a page that has just loaded: where it goes, if anywhere.
-   *   ctx: { framed, admin, fallback, demo, phone, inBoard }
+   *   ctx: { framed, admin, travels, fallback, demo, phone, inBoard }
    *     phone     a phone user agent (the same test the hand-off always used)
    *     inBoard   this tab has shown a board on this origin (oc_board_tab)
    * Returns { to, mark, phoneBoard }:
@@ -378,7 +625,7 @@
     var askAgain = /[?&]mobile=ask(&|$)/.test(search);
     var phone = !!ctx.phone;
     var phoneBoard = phone && (noMobile || (!kiosk && !!ctx.inBoard && !askAgain));
-    var to = airportAddress(loc, { admin: ctx.admin, fallback: ctx.fallback, demo: ctx.demo, carry: phoneBoard && !noMobile }, hostAirport, realIata);
+    var to = airportAddress(loc, { admin: ctx.admin, travels: ctx.travels, fallback: ctx.fallback, demo: ctx.demo, carry: phoneBoard && !noMobile }, hostAirport, realIata);
     if (phone && !kiosk && !phoneBoard) {
       // A fresh arrival: the question, on the address the board belongs to.
       // The opener takes the board link in ?next= (a board page on its own
@@ -406,11 +653,13 @@
    * The link to a board page of an airport, from a page on `env`:
    *   https://<code>.<zone>/<page>?<params>   on .com and .ca (and .com from .app)
    *   <page>.html?ap=<code>&<params>          where a page cannot leave its origin:
-   *     a preview or local host, a frame, an admin signed in here, a pinned
-   *     page (a registered screen, a kiosk), no code, or a code that makes no
-   *     address (four letters).
+   *     a preview or local host, a frame, an admin whose sign-in cannot
+   *     travel, a pinned page (a registered screen, a kiosk), no code, or a
+   *     code that makes no address (four letters).
    *   params: an object, a URLSearchParams or a query string; ap is ignored.
-   *   env: { hostname, pathname, framed, admin, pinned, phoneBoard, demo }
+   *   env: { hostname, pathname, framed, admin, travels, pinned, phoneBoard, demo }
+   *     admin and travels as for fidsAirportAddress: an admin leaves only
+   *     from .com or .ca, and only when the sign-in is in the zone cookie.
    * To another origin, the memory of the tab travels in the link: a phone
    * showing the board takes nomobile=1, so the tap is not taken for a fresh
    * arrival there, and a tab in the demo takes mode=demo when the link names
@@ -437,7 +686,8 @@
       }
     } catch (e) {}
     var z = zoneOf(env.hostname);
-    if (!z || !c || c.length !== 3 || env.framed || env.admin || env.pinned) {
+    var kept = !!env.admin && !(env.travels && z && z.zone !== APP_ZONE);
+    if (!z || !c || c.length !== 3 || env.framed || kept || env.pinned) {
       return p + '.html' + ((c || q.length) ? '?' : '') + (c ? 'ap=' + c : '') + (c && q.length ? '&' : '') + q.join('&');
     }
     var zone = z.zone === APP_ZONE ? 'orionconnected.com' : z.zone;
@@ -461,6 +711,10 @@
   }
   function adminNow() {
     try { return !!(window.localStorage.getItem('fids_token') || window.sessionStorage.getItem('fids_token')); } catch (e) { return false; }
+  }
+  /** The sign-in of this page is in the cookie of the zone (the block above): it travels. */
+  function travelsNow() {
+    try { return !!(window.fidsSignIn && window.fidsSignIn.travels()); } catch (e) { return false; }
   }
   /** This page is a registered screen or a kiosk: it keeps its origin. */
   function pinnedNow() {
@@ -497,7 +751,7 @@
     window.fidsBoardUrl = function (code, page, params) {
       return boardUrlFor(code, page, params, {
         hostname: window.location.hostname, pathname: window.location.pathname,
-        framed: framedNow(), admin: adminNow(), pinned: pinnedNow(),
+        framed: framedNow(), admin: adminNow(), travels: travelsNow(), pinned: pinnedNow(),
         phoneBoard: window.__ocPhoneBoard === true, demo: demoNow()
       }, window.fidsRealIata);
     };
@@ -509,9 +763,15 @@
     try { fallback = window.sessionStorage.getItem('fids_airport') || ''; } catch (e) {}
     try { demo = window.sessionStorage.getItem('fids_mode') === 'demo'; } catch (e) {}
     try { inBoard = window.sessionStorage.getItem('oc_board_tab') === '1'; } catch (e) {}
-    var r = arrival(window.location, {
+    // The opener (index.html) has its own router in its head and loads this
+    // file at its foot for the sign-in only: nothing is decided for it here.
+    var r = window.__ocOpener === true ? { to: '', mark: false, phoneBoard: false } : arrival(window.location, {
       framed: framedNow(),
+      // fidsSignIn.arrive has already run (the block above): a sign-in made
+      // on another address of the zone is in the storage of this one by now,
+      // and one held only here is in the cookie, before this decides a move
       admin: adminNow(),
+      travels: travelsNow(),
       fallback: fallback || 'YQM',
       demo: demo,
       // the same phone test as the opener and the hand-off: bare Android is a television

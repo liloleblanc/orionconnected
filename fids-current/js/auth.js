@@ -89,6 +89,10 @@ const Auth = (() => {
       sessionStorage.setItem(TOKEN_KEY, jwt);
       sessionStorage.setItem(USER_KEY, JSON.stringify(user));
     } catch (e) { /* storage unavailable — session lasts this page only */ }
+    // THE SIGN-IN TRAVELS. On .com and .ca it is also kept in the cookie of
+    // the zone (fidsSignIn in host-airport.js, the only code that touches
+    // that cookie), so every airport address of the zone is signed in too.
+    try { if (window.fidsSignIn) window.fidsSignIn.keep(jwt, JSON.stringify(user)); } catch (e) {}
   }
 
   function loadToken() {
@@ -125,7 +129,7 @@ const Auth = (() => {
         // Validate token hasn't expired (check payload)
         const payload = parseJwt(stored);
         if (payload && payload.exp && Date.now() / 1000 > payload.exp) {
-          clearToken();
+          clearToken(stored);   // a dead token: dropped, not a sign-out of the zone
           return false;
         }
         return true;
@@ -134,7 +138,11 @@ const Auth = (() => {
     return false;
   }
 
-  function clearToken() {
+  // dead: the expired token being dropped (loadToken). With none, this is the
+  // admin signing out (logout), and signing out anywhere signs out everywhere
+  // on the zone: fidsSignIn.end leaves the signed-out mark every other
+  // address obeys. A dead token only takes the cookie that holds it.
+  function clearToken(dead) {
     token = null;
     currentUser = null;
     currentRole = SIGNED_OUT;
@@ -143,6 +151,9 @@ const Auth = (() => {
       localStorage.removeItem(USER_KEY);
       sessionStorage.removeItem(TOKEN_KEY);   // and any legacy copy
       sessionStorage.removeItem(USER_KEY);
+    } catch (e) { /* ignore */ }
+    try {
+      if (window.fidsSignIn) { if (dead) window.fidsSignIn.drop(dead); else window.fidsSignIn.end(); }
     } catch (e) { /* ignore */ }
   }
 
