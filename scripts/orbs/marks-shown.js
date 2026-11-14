@@ -146,6 +146,11 @@ function build(CORE, site) {
     block('function _monogramHue(c) {', 1), block('function _monogramColour(c) {', 1),
     block('var _GATE_CARD_ALIAS = {'), block('var _GATE_CARD_EMBLEM = {'), block('var _GATE_CARD_LETTERS = {', 1), block('function _gateCardEmblem(code) {'),
     'function fidsEscHtml(s) { return String(s); }',
+    // what the notice names where its symbol was never shipped, and the rules of a gate that reach its
+    // orb (a file from before them has none of these)
+    block('window._ORB_SYMBOLS_ON_DISK = {', 1), block('window._gateNoticeMissTile = function', 1),
+    block('window._GATE_NOTICE_ORB_RULES = {', 1), block('window._gateNoticeOrbRule = function', 1),
+    block('window._gateNoticeHex = function', 1), block('window._gateNoticeBadgeDisc = function', 1),
     block('function _gateChangeOrbHtml(code) {'),
     // the three plates, each from its own table to the end of the statement that writes its markup
     'function __skyPlate(_holdCode) {', lines('var _HOLD_MARK = {', ": '<span class=\"v2-rc-aircraft-hold-code\">' + (_holdCode ||"), 'return _holdMark; }',

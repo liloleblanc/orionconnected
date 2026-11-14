@@ -804,7 +804,7 @@ const KEPT_KINDS = {
   'own letters': 'a code that drew the mark of another code letters itself: Norwegian under D8 and DI drew the tile that prints DY, and Central Mountain Air, an airline of its own and not a feeder of Air Canada, wore the roundel of Air Canada (its centre cards draw the monogram of its rows)',
   'named tile': 'a carrier whose finished tile the row table names since (each tile looked at) draws that tile where its symbol is missing, as every carrier with a row tile does: it drew its letters, and TUI fly the square that typed TUI',
   'second code': 'Chair under its second code, GM, draws the fin filed under CS, where it drew its letters or nothing',
-  'column tile': 'the gate change notice of a carrier whose symbol would be inked white on a disc where white reads under 3 to 1 draws the finished tile of its column, as the rail and the shelf of its gate do: KLM, Singapore and flynas, whose symbol was white on their light accent, and the carriers whose symbol was never drawn, which took that same tile after a miss and take it at once'
+  'column tile': 'the gate change notice of a carrier whose symbol would be inked white on a disc where white reads under 3 to 1 draws the finished tile of its column, as the rail and the shelf of its gate do: KLM, Singapore and flynas, whose symbol was white on their light accent (the carriers whose symbol was never drawn took that same tile after a miss, and the notice now names it at once: no difference)'
 };
 
 test('the plates, the notice and the centre cards draw what origin/main drew, but for the differences kept in one table, by code', () => {
@@ -828,19 +828,28 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
       kept.set(surface + ' | ' + code, { surface, code, was, now, kind });
     }
   }
-  // EVERY CODE ON EVERY SURFACE, as the tree draws it now
+  // EVERY CODE ON EVERY SURFACE, as the tree draws it now. THE NOTICE NAMES AT ONCE WHAT IT DREW AFTER
+  // A MISS: where its symbol was never shipped (window._ORB_SYMBOLS_ON_DISK), it writes the tile or the
+  // letters the handler of the miss drew, so the same mark is read with no miss; that is no difference.
+  const once = (surface, text) => (surface === 'notice' ? String(text).replace(/, after a miss$/, '') : text);
   const unseen = [], gone = [], moved = [], cells = [];
+  let atOnce = 0;
   for (const code of codes) {
     const now = SHOWN.shown(code);
     MARKS.SURFACES.forEach((surface, i) => {
       const was = REC.main[code][i], row = kept.get(surface + ' | ' + code);
       cells.push({ surface, code, was, now: now[i], row });
-      if (!row) { if (now[i] !== was) unseen.push(JSON.stringify([surface, code, was, now[i]])); return; }
+      if (surface === 'notice') {
+        assert.doesNotMatch(now[i], /, after a miss$/, code + ': the notice names what draws');
+        if (/, after a miss$/.test(was) || (row && /, after a miss$/.test(row.now))) atOnce++;
+      }
+      if (!row) { if (once(surface, now[i]) !== once(surface, was)) unseen.push(JSON.stringify([surface, code, was, now[i]])); return; }
       assert.equal(row.was, was, code + ', ' + surface + ': the row says what the record says origin/main showed');
-      if (now[i] === was) gone.push(JSON.stringify([surface, code, was]));
-      else if (now[i] !== row.now) moved.push(JSON.stringify([surface, code, row.now, now[i]]));
+      if (once(surface, now[i]) === once(surface, was)) gone.push(JSON.stringify([surface, code, was]));
+      else if (once(surface, now[i]) !== once(surface, row.now)) moved.push(JSON.stringify([surface, code, row.now, now[i]]));
     });
   }
+  assert.ok(atOnce >= 100, atOnce + ' notices name at once what they drew after a miss');
   assert.deepEqual(unseen, [], unseen.length + ' differences from origin/main that no row of the table names (surface, code, origin/main, now):\n' + unseen.join('\n'));
   assert.deepEqual(gone, [], gone.length + ' rows of the table no longer differ from origin/main: take them out\n' + gone.join('\n'));
   assert.deepEqual(moved, [], moved.length + ' rows of the table draw something else now (surface, code, the row, now):\n' + moved.join('\n'));
@@ -909,8 +918,8 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
   for (const r of of('named tile')) {
     assert.match(r.was, r.code === 'X3' ? /^airline-tiles\/TUI\.svg/ : /^letters /, r.code + ', ' + r.surface);
     assert.equal(file(r.now), 'airline-tiles/' + O.TILE[r.code] + '.svg', r.code + ', ' + r.surface + ': the tile the row table names');
-    const atOnce = r.surface === 'notice' && W._orbInkOn(full(O.accent(r.code))) !== '#fff' && file(r.now) === String(W._gateOrbNatural(r.code).path).replace(/^\/logos\//, '');
-    assert.match(r.now, atOnce ? /filling the orb$/ : /after a miss$/, r.code + ', ' + r.surface);
+    // the notice names the tile at once (window._ORB_SYMBOLS_ON_DISK); the plates find it after a miss
+    assert.match(r.now, r.surface === 'notice' ? /filling the orb$/ : /after a miss$/, r.code + ', ' + r.surface);
     assert.ok(fs.existsSync(path.join(FC, 'logos', file(r.now))), file(r.now));
     assert.notEqual(r.surface, 'standby card', r.code + ': the centre cards draw the mark, never the tile, as before');
   }
@@ -943,15 +952,14 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
   assert.equal(at('DI', 'notice'), 'letters DI on a ' + W._ORB_TILE_GROUNDS.NAX + ' disc');
   // the column tile: the notice alone, and the tile the rail of that gate draws, where white reads
   // under 3 to 1 on the accent of the notice (the three whose symbol is on disk drew it white there)
-  assert.deepEqual(codesOf('column tile'), 'BF EC EY G3 KL SQ TO TR U2 VY XY'.split(' '));
+  assert.deepEqual(codesOf('column tile'), ['KL', 'SQ', 'XY']);
   for (const r of of('column tile')) {
     const P = W._gateOrbNatural(r.code);
     assert.equal(r.surface, 'notice', r.code);
     assert.ok(P.native && !P.letters && contrast(THE_WHITE, full(O.accent(r.code))) < 3, r.code + ': white on ' + O.accent(r.code));
     assert.equal(r.now, String(P.path).replace(/^\/logos\//, '') + ' filling the orb', r.code);
     assert.equal(P.path, column(r.code).emb.src, r.code + ': the tile of its rail');
-    assert.match(r.was, /, white on the accent disc$|filling the orb, after a miss$/, r.code);
-    if (/white on the accent disc$/.test(r.was)) assert.ok(['KL', 'SQ', 'XY'].includes(r.code), r.code);
+    assert.match(r.was, /, white on the accent disc$/, r.code);
   }
   // the 31 carriers whose symbol these surfaces always drew: none is in the table
   for (const code of '6E A3 AH AI AT AV CM CX DE EI EK EW FI GA HV IB JL JQ KC KQ KU LO MH MO PC SN SV TP VA VN WY'.split(' ')) {
@@ -1057,13 +1065,17 @@ test('the rule holds on the gate change notice and in the missing-file handler: 
   // A notice for P6 was written with the folded code alone. The symbol of BQ was never drawn, so the
   // handler tried the row tile of BQ, the Pascan placeholder, found that it letters BQ, the code it
   // was handed, and drew it: a P6 notice read BQ. The image is now written with the code of the row
-  // after the folded one, and the handler letters the row.
+  // after the folded one, and the handler letters the row. The notice now names what draws where its
+  // symbol was never shipped (window._ORB_SYMBOLS_ON_DISK), by the same steps as the handler
+  // (window._gateNoticeMissTile, handed the code of the row): P6 letters P6 at once, with no miss.
   const html = SHOWN.O.notice('P6');
-  assert.match(html, /onerror="window\._orbArtFailed\(this,&quot;BQ&quot;,&quot;P6&quot;\)"/);
-  assert.deepEqual(SHOWN.shown('P6'), ['letters P6, after a miss', 'letters P6, after a miss', 'letters P6, after a miss', 'letters P6 on the accent disc, after a miss', 'nothing']);
+  assert.match(html, /<span class="v2-fi-orb-code">P6<\/span>/);
+  assert.doesNotMatch(html, /<img /);
+  assert.deepEqual([W._gateNoticeMissTile('P6').tile, W._gateNoticeMissTile('P6').letters], ['', 'P6']);
+  assert.deepEqual(SHOWN.shown('P6'), ['letters P6, after a miss', 'letters P6, after a miss', 'letters P6, after a miss', 'letters P6 on the accent disc', 'nothing']);
   // Pascan under its own code still draws its tile, and Norwegian under D8 letters itself
-  assert.equal(SHOWN.shown('BQ')[3], 'airline-tiles/PSC.svg filling the orb, after a miss');
-  assert.equal(SHOWN.shown('D8')[3], 'letters D8 on the accent disc, after a miss');
+  assert.equal(SHOWN.shown('BQ')[3], 'airline-tiles/PSC.svg filling the orb');
+  assert.equal(SHOWN.shown('D8')[3], 'letters D8 on the accent disc');
   // the handler: a third argument, asked before the folded code, and the letters that go in are its letters
   const failed = block('window._orbArtFailed = function');
   assert.match(failed, /^window\._orbArtFailed = function \(img, code, rowCode\) \{/);

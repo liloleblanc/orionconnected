@@ -332,91 +332,218 @@ test('the gates left as drawn and the white columns show with the plates exactly
   }
 });
 
-// ── 6. THE GATE CHANGE NOTICE, ON THE CARD OF THE GATE IT COVERS ───────────
-// The notice is drawn on the plate of the gate, and its orb is the carrier of the moved flight: the red
-// disc of Iberia sank into the brown waves of a KLM gate (all its ring), the red of Emirates into the
-// brown layers of Cathay, 61 carriers into the brown waves and 62 into the brown layers, navy orbs into
-// the black plates and the grey shapes. Walked over every card the gates can show (the distinct paints
-// of every code the name tables know, and the gate with no carrier) and every orb the notice can draw,
-// and the notice that is the whole screen: the orb read off the markup the notice writes for it, the
-// card it lands on read off the look (the plate the notice names, else the card of the gate). No pair
-// sinks; a red, an orange or a gold never lands on a brown; on a plate of the dark card the orb stands
-// clear of it with room, as the rail keeps its discs there.
-test('the gate change notice: on every card the gates can show, no orb the notice can draw sinks, and none warm on a brown', () => {
-  const ACCENT = (c) => { const a = String(the('getAirlineAccent')(c) || ''); return /^#[0-9a-f]{3}$/i.test(a) ? '#' + a.slice(1).split('').map((x) => x + x).join('') : a; };
-  const hex = (h) => (/^#[0-9a-f]{6}$/i.test(String(h || '').trim()) ? String(h).trim().toUpperCase() : '');
-  // the colour the orb shows, read off its markup (not off the function that decides)
-  const shown = (html, code) => {
-    const st = (/class="v2-fi-icon-wrap[^"]*" style="([^"]*)"/.exec(html) || [])[1] || '';
-    const bg = ((/background:([^;]+);/.exec(st) || [])[1] || '').trim();
-    // the disc it holds against the rules of the gate is the disc it names
-    assert.equal(((/--gc-disc:([^;]+);/.exec(st) || [])[1] || '').trim(), bg, code + ': the disc held');
-    if (/^var\(--airline-accent/.test(bg)) return hex(ACCENT(code));
-    if (hex(bg)) return hex(bg);
-    const fold = the('_orbEmblemCarrier')(code);
-    if (W._ORB_ART_RIMMED[fold]) return '#FFFFFF';   // the light rim drawn in the file
-    return hex(W._gateOrbNatural(code).ground) || hex((W._GATE_ORB_LOOKS[fold] || {}).ground) || hex(ACCENT(code));
-  };
+// ── 6. THE GATE CHANGE NOTICE CHANGES ONLY WHERE IT BREAKS THE RULE ────────
+// The notice is drawn on the card it always had (the card of the gate it covers; as the whole screen, the
+// metal card in the colour of its carrier), and its orb is the carrier of the moved flight. What is judged
+// is what lands: every file the markup names is resolved against fids-current, and where one is missing
+// the handler of a missing file is applied (window._orbArtFailed: the row tile, filling the disc in its own
+// ground, else the letters on the disc); the rules of the gate that reach the orb are applied unless the
+// orb holds its own look. A pair that keeps the rule of the owner there (no disc the colour of the card, no
+// red, orange or gold on a brown, no mark the colour of its disc) is written exactly as it always was: no
+// plate of its own, no held or white orb. A notice of its own carrier on a gate approved as drawn never
+// changes. Every other pair is moved by the least change that keeps the rule: its own look held, else a
+// plate of its own (clear with room where one is), and white only after every plate. Walked over every
+// card the gates can show (the distinct paints of every code the name tables know, with the rules of the
+// gate that reach the orb, and the gate with no code) and every orb the notice can draw, and over the
+// notice that is the whole screen.
+test('the gate change notice: what lands is judged, and a notice changes only where it breaks the rule there', () => {
+  const ACCENT = (c) => W._gateNoticeHex(the('getAirlineAccent')(c));
+  const hex = (h) => W._gateNoticeHex(h);
+  const onDisk = (src) => fs.existsSync(path.join(FC, String(src).split('?')[0]));
+  const ratio = (a, b) => contrast(a, b);
+  const sinks = (a, b) => W._gateDiscSinks(a, b);
   const warm = (h) => chroma(h) >= 15 && (hue(h) < 100 || hue(h) > 330);
   const brown = (h) => lab(h)[0] <= 50 && chroma(h) >= 6.5 && hue(h) > 40 && hue(h) < 95;
-  // the cards: one gate for each distinct paint
-  const cards = new Map();
-  for (const g of CODES.concat([''])) {
-    const K = W._gateCardPaint(g, true), sig = K.kind + ':' + K.at.join(',');
-    if (!cards.has(sig)) cards.set(sig, { gate: g, K });
-  }
+  // the symbol files the notice may name are the files on disk
+  const shipped = fs.readdirSync(path.join(FC, 'logos/symbols/airlines')).filter((f) => /^[A-Z0-9]{2}\.svg$/.test(f)).map((f) => f.slice(0, 2)).sort();
+  assert.deepEqual(Object.keys(W._ORB_SYMBOLS_ON_DISK).sort(), shipped, 'the list of symbols is the folder');
+  // the rules of the gates that reach the orb of the notice, each held to its rule in the stylesheet
+  const NOTS = '(?::not\\(#_\\))+';
+  const RULES = W._GATE_NOTICE_ORB_RULES;
+  assert.deepEqual(Object.keys(RULES).sort(), ['AA', 'DL', 'FR', 'LH', 'PD', 'QR']);
+  assert.match(CSS, new RegExp('html body:is\\(\\[data-gate-airline="DL"\\],\\[data-gate-airline="DAL"\\],\\[data-gate-airline\\*="DELTA"\\]\\)' + NOTS + ' \\.g8-wrap \\.v2-fi-emblem-wrap,[^{]*\\{\\s*background:\\s*radial-gradient\\(circle at 34% 26%,\\s*#ff6d7d 0%,\\s*#f23a4e 26%,\\s*#E01933 55%,\\s*#b3122a 80%,\\s*#8f0f24 100%\\) !important;'));
+  assert.deepEqual([RULES.DL.disc, RULES.DL.edge], ['#E01933', '#8F0F24']);
+  assert.match(CSS, new RegExp('html body:is\\(\\[data-gate-airline="AA"\\],\\[data-gate-airline="AAL"\\],\\[data-gate-airline\\*="AMERICAN"\\]\\)' + NOTS + ' \\.g8-wrap\\s+\\.v2-fi-emblem-wrap:not\\(\\.v2-fi-emblem-native\\) \\{\\s*background: #ffffff !important;'));
+  assert.match(CSS, new RegExp('html body\\[data-gate-airline="PD"\\]' + NOTS + ' \\.v2-fi-emblem-wrap:not\\(\\.v2-fi-emblem-native\\) \\{\\s*background: #FFFFFF !important;'));
+  assert.match(CSS, /html body\[data-gate-airline="FR"\] \.v2-fi-emblem-wrap img,[^{]*\{\s*filter: none !important;/);
+  assert.match(CSS, /html body\[data-gate-airline="FR"\] \.v2-fi-orb-code,[^{]*\{\s*color: #F1C933 !important;/);
+  for (const [g, ink] of [['AA', '#002745'], ['LH', '#12161d'], ['QR', '#12161d']]) assert.equal(RULES[g].letters.toLowerCase(), ink, g + ': the ink of its plate');
+  assert.ok(CSS.toLowerCase().split('--plate-ink: #12161d;').length - 1 >= 2 && CSS.includes('--plate-ink: #002745;'), 'the inks of the plates of Lufthansa, Qatar and American');
+  // the colours of the files of the marks the notice inks, where the Ryanair gate takes the ink off: the
+  // colour of the file nearest the disc. Every such mark not listed sinks into its disc in that colour.
+  const fileInk = (src, disc) => {
+    const s = fs.readFileSync(path.join(FC, String(src).split('?')[0]), 'utf8');
+    const all = [...new Set([...s.matchAll(/(?:fill|stop-color)\s*[:=]\s*"?\s*(#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)|currentColor|black|white)/g)].map((m) => {
+      let v = m[1];
+      if (/^#[0-9a-f]{3}$/i.test(v)) v = '#' + v.slice(1).split('').map((z) => z + z).join('');
+      const r = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(v);
+      if (r) v = '#' + [r[1], r[2], r[3]].map((x) => (+x).toString(16).padStart(2, '0')).join('');
+      if (v === 'currentColor' || v === 'black') v = '#000000';
+      if (v === 'white') v = '#ffffff';
+      return v.toUpperCase();
+    }))];
+    return all.sort((a, b) => W._orbDeltaE(a, disc) - W._orbDeltaE(b, disc))[0];
+  };
   const orbs = CODES.filter((c) => the('_gateChangeOrbHtml')(c));
-  assert.ok(cards.size >= 80 && orbs.length >= 250, cards.size + ' cards, ' + orbs.length + ' orbs');
-  const sinks = [], warmBrown = [], notClear = [], by = { stays: 0, plate: 0, white: 0 };
-  let pairs = 0;
-  const judge = (gate, code, solo) => {
-    const L = W._gateNoticeLook(gate, code, solo), html = the('_gateChangeOrbHtml')(code, L.white);
-    const disc = shown(html, code), at = L.plate ? PLATES[L.plate].at : W._gateCardPaint(gate, true).at;
-    pairs++;
-    if (L.white) { by.white++; assert.match(html, /gl-gc-orb gl-gc-orb-white/, code); assert.equal(disc, '#FFFFFF', code); }
-    else if (L.plate) by.plate++; else by.stays++;
-    if (solo) assert.ok(L.plate, code + ': the whole screen names a plate');
-    const tag = (gate || '(none)') + (solo ? ' whole screen' : '') + ' / ' + code + ' ' + disc + ' on ' + (L.plate || W._gateCardPaint(gate, true).kind);
-    if (at.some((p) => W._gateDiscSinks(disc, p))) sinks.push(tag);
-    if (warm(disc) && at.some(brown)) warmBrown.push(tag);
-    if ((L.plate || W._gateCardPaint(gate, true).kind === 'dark') && !at.every((p) => W._gateDiscClear(disc, p))) notClear.push(tag);
+  const fold = the('_orbEmblemCarrier');
+  let inked = 0;
+  for (const c of orbs) {
+    const html = the('_gateChangeOrbHtml')(c), img = /<img src="([^"]*)"[^>]*style="([^"]*)"/.exec(html);
+    if (!img || !/filter:brightness\(0\)/.test(img[2])) continue;
+    inked++;
+    const disc = W._gateNoticeBadgeDisc(c, (/class="v2-fi-icon-wrap[^"]*" style="([^"]*)"/.exec(html) || [])[1]);
+    const near = fileInk(img[1], disc), listed = W._ORB_MARK_FILE_INK[fold(c)];
+    if (listed) assert.ok(listed === near && !sinks(near, disc), c + ': ' + near + ' on ' + disc);
+    else assert.ok(sinks(near, disc), c + ': its file, ' + near + ', sinks into its disc ' + disc + ' (or it is listed)');
+  }
+  assert.ok(inked >= 35, inked + ' marks inked');
+  // the orb as it lands, read off the markup: the file that draws (a missing one replaced as its handler
+  // replaces it), the rules of the gate unless the orb is held
+  const lands = (html, code, gate) => {
+    const wrap = /class="v2-fi-icon-wrap([^"]*)" style="([^"]*)"/.exec(html);
+    const native = /v2-fi-emblem-native/.test(wrap[1]), style = wrap[2], held = /gl-gc-orb-held/.test(html);
+    const R = held ? null : W._gateNoticeOrbRule(gate);
+    const ruled = !!(R && R.disc && (R.native || !native));
+    const row = W._GATE_ORB_LOOKS[fold(code)] || {};
+    const padded = !/padding:0 !important/.test(style) && !/padding:calc\(/.test(style);
+    const own = W._gateNoticeBadgeDisc(code, style);
+    let img = /<img src="([^"]*)"[^>]*style="([^"]*)"/.exec(html), lt = /<span class="v2-fi-orb-code"(?: style="color:([^;"]+) !important;")?>/.exec(html);
+    let fills = img && /object-fit:cover !important/.test(img[2]) && !padded;
+    let srcs = 0;
+    if (img) {
+      srcs++;
+      if (!onDisk(img[1])) {
+        // the handler: the row tile of the folded code, filling the disc; else the letters on the disc
+        const t2 = W._gateNoticeMissTile(code);
+        if (!/data-orb-tile-tried/.test(html) && t2.tile && onDisk(t2.tile)) { img = [img[0], t2.tile, 'object-fit:cover !important;']; fills = !/--orb-ring/.test(style); }
+        else { img = null; lt = [null, (own && W._orbInkOn(own) !== '#fff') ? '#10151f' : '']; }
+      }
+    }
+    const L = { disc: '', edge: '', warm: '', ink: '', rimmed: false, srcs, missing: img ? !onDisk(img[1]) : false };
+    if (lt) { L.disc = ruled ? R.disc : own; L.edge = ruled ? (R.edge || '') : ''; L.ink = hex(lt[1]) || (R && R.letters) || '#FFFFFF'; return L; }
+    if (!img) return L;
+    const tile = (/\/airline-tiles\/([A-Za-z0-9-]+)\.svg/.exec(img[1]) || [])[1] || '';
+    if (fills && !/--orb-ring/.test(style)) { L.disc = hex(W._ORB_TILE_GROUNDS[tile]) || own || ACCENT(code); return L; }
+    if (native) {
+      const ground = hex(W._gateOrbNatural(code, true).ground) || hex(row.ground) || hex(W._ORB_TILE_GROUNDS[tile]) || ACCENT(code);
+      L.rimmed = !!W._ORB_ART_RIMMED[fold(code)]; L.warm = ground; L.disc = L.rimmed ? '#FFFFFF' : ground;
+      if (ruled && padded) { L.disc = R.disc; L.edge = R.edge || ''; L.warm = ''; L.rimmed = false; }
+      return L;
+    }
+    L.disc = ruled ? R.disc : own; L.edge = ruled ? (R.edge || '') : '';
+    const w = /invert\(1\)/.test(img[2]) && !/--gc-filter:(?!brightness)/.test(img[2]) || /--gc-filter:brightness\(0\) invert\(1\)/.test(img[2]);
+    const b = !w && /brightness\(0\)/.test(img[2]);
+    if ((w || b) && R && R.unwhite) L.ink = hex(W._ORB_MARK_FILE_INK[fold(code)]) || L.disc;
+    else if (w) L.ink = /^#f{3}(f{3})?$/i.test(String(row.ink || '')) ? '' : '#FFFFFF';
+    else if (b) L.ink = '#000000';
     return L;
   };
-  for (const { gate } of cards.values()) for (const code of orbs) judge(gate, code, false);
-  for (const code of orbs) judge('', code, true);
-  assert.deepEqual(sinks, [], sinks.length + ' of ' + pairs + ' pairs sink:\n' + sinks.slice(0, 20).join('\n'));
-  assert.deepEqual(warmBrown, [], warmBrown.join('\n'));
-  assert.deepEqual(notClear, [], notClear.slice(0, 20).join('\n'));
-  assert.ok(by.stays > 0 && by.plate > 0 && by.white > 0, JSON.stringify(by));
-  // and the rule would catch them: before the notice judged its orb, the red of Iberia sat on the brown
-  // waves of KLM and the red of Emirates on the brown layers of Cathay
-  assert.ok(PLATES['brown-waves'].at.some((p) => W._gateDiscSinks('#DC1C2E', p)) && PLATES['brown-layers'].at.some((p) => W._gateDiscSinks('#D71921', p)));
-  // the two the check found, on the plate of their own gate: Iberia on the black faint waves, Emirates on
-  // the black fine lines; the gate keeps its plate
-  const m = (al, fl) => ({ ap: 'YUL', full: { f: { flight: fl, airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
-  const kl = the('_gateChangeNoticeHtml')(m('IB', 'IB6252'), 'KL'), cx = the('_gateChangeNoticeHtml')(m('EK', 'EK244'), 'CX');
-  assert.match(kl, /^<div class="gl-gc" data-gc-plate="black-faint-waves" data-gl-gc=/);
-  assert.match(cx, /^<div class="gl-gc" data-gc-plate="black-fine-lines" data-gl-gc=/);
-  assert.deepEqual([W._gateCardPaint('KL').plate, W._gateCardPaint('CX').plate, W._gateCardPaint('IB').plate, W._gateCardPaint('EK').plate], ['brown-waves', 'brown-layers', 'black-faint-waves', 'black-fine-lines']);
-  // a notice of KLM on its own gate stays on the brown waves of its gate (its tile stands clear there)
-  assert.match(the('_gateChangeNoticeHtml')(m('KL', 'KL672'), 'KL'), /^<div class="gl-gc" data-gl-gc=/);
+  const broke = (L, at) => {
+    for (const d of [L.disc].concat(L.edge ? [L.edge] : [])) for (const p of at) if (sinks(d, p)) return 'sinks: ' + d + ' on ' + p;
+    if (at.some(brown) && warm(L.warm || L.disc)) return 'warm on a brown: ' + (L.warm || L.disc);
+    if (L.ink && (sinks(L.ink, L.disc) || ratio(L.ink, L.disc) < 3)) return 'a mark the colour of its disc: ' + L.ink + ' on ' + L.disc;
+    return '';
+  };
+  // the cards: one gate for each distinct paint and rule
+  const cards = new Map();
+  for (const g of CODES.concat([''])) {
+    const K = W._gateCardPaint(g, true), sig = K.kind + ':' + K.at.join(',') + '|' + JSON.stringify(W._gateNoticeOrbRule(g) || {});
+    if (!cards.has(sig)) cards.set(sig, g);
+  }
+  assert.ok(cards.size >= 80 && orbs.length >= 250, cards.size + ' cards, ' + orbs.length + ' orbs');
+  const bad = [], missing = [], by = { as: 0, keptOwn: 0, held: 0, plate: 0, room: 0, white: 0 };
+  const m = (al) => ({ ap: 'YUL', full: { f: { flight: al + '101', airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
+  const walk = (gate, code, solo) => {
+    const whole = solo || !gate;
+    const L = W._gateNoticeLook(gate, code, solo);
+    const notice = the('_gateChangeNoticeHtml')(m(code), gate, solo);
+    const html = (/<span class="gl-gc-orb[\s\S]*?<\/span><\/span>(?:<\/span>)?/.exec(notice) || [''])[0];
+    const plate = (/^<div class="gl-gc" data-gc-plate="([a-z-]+)"/.exec(notice) || [])[1] || '';
+    assert.equal(plate, L.plate, code + ' on ' + gate + ': the plate the notice names is the plate decided');
+    const at = plate ? PLATES[plate].at : (whole ? W._gateSoloCard(code).at : W._gateCardPaint(gate, true).at);
+    const Lw = lands(html, code, whole ? '' : gate);
+    if (Lw.missing) missing.push(gate + '/' + code);
+    const tag = (whole ? '(whole screen)' : gate || '(no code)') + ' / ' + code;
+    const ownKept = !whole && W._gateColumnKept(gate) && fold(gate) === fold(code);
+    if (!L.plate && !L.white && !L.hold) {
+      // unchanged: written as it always was
+      assert.doesNotMatch(notice, /data-gc-plate|gl-gc-orb-held|gl-gc-orb-white|--gc-disc|--gc-filter/, tag);
+      if (ownKept) { by.keptOwn++; return; }
+      by.as++;
+      const why = broke(Lw, at);
+      if (why) bad.push(tag + ' kept as it was, but ' + why);
+      return;
+    }
+    // changed: it broke the rule on the card it had, and keeps it now
+    assert.ok(L.why, tag + ': changed with a reason');
+    assert.ok(!ownKept, tag + ': a kept gate of its own carrier never changes');
+    if (L.white) { by.white++; assert.match(html, /gl-gc-orb gl-gc-orb-white gl-gc-orb-held/, tag); }
+    else if (L.plate) by.plate++; else by.held++;
+    if (L.hold) assert.match(html, /gl-gc-orb-held/, tag);
+    const why = broke(Lw, at);
+    if (why) bad.push(tag + ' (' + JSON.stringify(L) + ') still ' + why);
+    if (plate && at.every((p) => W._gateDiscClear(Lw.disc, p, Lw.ink))) by.room++;
+  };
+  for (const gate of cards.values()) for (const code of orbs) walk(gate, code, false);
+  for (const code of orbs) walk('', code, true);
+  assert.deepEqual(missing, [], 'every file the notice names is on disk');
+  assert.deepEqual(bad, [], bad.length + ' pairs:\n' + bad.slice(0, 20).join('\n'));
+  assert.ok(by.as > 0 && by.keptOwn > 0 && by.held > 0 && by.plate > 0 && by.white > 0 && by.white < by.plate, JSON.stringify(by));
+  // a plate is taken clear with room where one is (the measure of the rail on the dark card), else the
+  // first the orb does not sink into: white comes only after every plate
+  assert.ok(by.room > 0 && by.room < by.plate, JSON.stringify(by));
+  // and the handler of a missing file is judged where one is missing: a guess that is not on disk
+  const guess = '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="background:#005DAF;"><img src="/logos/symbols/airlines/WB.svg" alt="" class="v2-fi-emblem-img" style="filter:brightness(0) invert(1);"></span></span>';
+  assert.ok(!onDisk('/logos/symbols/airlines/WB.svg'));
+  assert.equal(lands(guess, 'WB', 'CX').disc, hex(W._ORB_TILE_GROUNDS.RWD), 'the Rwandair tile lands, in its gold');
+  // what the check found, by name
+  const look = (g, c, solo) => W._gateNoticeLook(g, c, solo);
+  const n = (al, g, solo) => the('_gateChangeNoticeHtml')(m(al), g, solo);
+  // the gold tile of Rwandair that lands for WB on the brown layers of Cathay: now on a plate, and the
+  // markup names the tile; the yellow tiles of BT, WB and HY on the gold of Lufthansa; the navy tile of
+  // SAS on the blue of American
+  assert.match(the('_gateChangeOrbHtml')('WB'), /<img src="\/logos\/airline-tiles\/RWD\.svg" alt="" class="v2-fi-emblem-img" data-orb-tile-tried="1" style="[^"]*width:100% !important;height:100% !important;object-fit:cover !important;border-radius:50% !important;"/);
+  assert.match(the('_gateChangeOrbHtml')('WB'), /style="[^"]*padding:0 !important;"/);
+  for (const [g, c] of [['CX', 'WB'], ['LH', 'BT'], ['LH', 'WB'], ['LH', 'HY'], ['AA', 'SK']]) {
+    assert.ok(look(g, c).plate && /^sink:/.test(look(g, c).why), g + ' / ' + c + ': ' + JSON.stringify(look(g, c)));
+  }
+  // Turkish: its rim judged for the sink, its own red for the brown; on the brown waves of KLM and the
+  // brown layers of Cathay it takes the black faint waves
+  for (const g of ['KL', 'CX']) {
+    assert.deepEqual([look(g, 'TK').plate, look(g, 'TK').white, /^warm:#C8102E>/.test(look(g, 'TK').why)], ['black-faint-waves', false, true], g);
+    assert.match(n('TK', g), /^<div class="gl-gc" data-gc-plate="black-faint-waves" data-gl-gc=/);
+  }
+  assert.equal(look('', 'TK', true).plate, '', 'the whole screen of Turkish keeps its card: the rim stands on its red');
+  // Iberia on the brown waves of KLM, Emirates on the brown layers of Cathay: the plate of their own gate
+  assert.match(n('IB', 'KL'), /^<div class="gl-gc" data-gc-plate="black-faint-waves" data-gl-gc=/);
+  assert.match(n('EK', 'CX'), /^<div class="gl-gc" data-gc-plate="black-fine-lines" data-gl-gc=/);
+  // its own carrier on a kept gate never changes: United, Porter, Ryanair, Air Canada
+  for (const c of ['UA', 'PD', 'FR', 'AC', 'DL', 'AA']) {
+    assert.ok(W._gateColumnKept(c), c);
+    assert.deepEqual({ ...look(c, c) }, { plate: '', white: false, hold: false, gate: c, why: '' }, c);
+    assert.doesNotMatch(n(c, c), /data-gc-plate|gl-gc-orb-held|gl-gc-orb-white|--gc-/, c);
+  }
+  // KLM on its own gate: its tile stands clear of the brown waves, as it always was
+  assert.match(n('KL', 'KL'), /^<div class="gl-gc" data-gl-gc=/);
+  // the white bird of Iberia on the white disc an American gate gave it: the orb holds its red disc, on
+  // the card of the gate
+  assert.deepEqual([look('AA', 'IB').plate, look('AA', 'IB').white, look('AA', 'IB').hold], ['', false, true]);
+  assert.match(n('IB', 'AA'), /^<div class="gl-gc" data-gl-gc="[^"]*" style="--airline-accent:#DC1C2E;[\s\S]*<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="[^"]*background:(var\(--airline-accent,#[0-9A-F]{6}\));[^"]*--gc-disc:\1;"/);
+  // the whole screen keeps the card of its carrier where its orb stands on it (China, a grey tile on its
+  // red), and takes a plate where it sinks (Iberia, red on red)
+  assert.equal(look('', 'CA', true).plate, '');
+  assert.equal(look('', 'IB', true).plate, 'black-faint-waves');
+  assert.match(look('', 'IB', true).why, /^sink:#DC1C2E>/);
   // the builder of the gate hands the notice the code of the gate, and the whole screen says it is one
   assert.match(CORE, /_gateChangeNoticeHtml\(_gl, vars\.airlineCode\)/);
   assert.match(CORE, /_gateChangeNoticeHtml\(m, '', true\)/);
   // the stylesheet: the plate the notice names is drawn on its card alone, over the rules of the carrier
-  // of the gate, and the orb holds its disc and the filter of its mark against them
+  // of the gate; a held orb keeps its disc and the filter of its mark against them, and only a held orb
   const NOT = '(?::not\\(#_\\)){255}(?::not\\(\\._\\)){6}';
   assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc\\[data-gc-plate\\] \\.gl-gc-row::before \\{\\n  background-color: var\\(--plate-base, #0b0e14\\) !important;\\n  background-image: var\\(--plate-tex\\) !important;'));
-  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb > \\.v2-fi-emblem-wrap \\{ background: var\\(--gc-disc, transparent\\) !important; \\}'));
-  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb \\.v2-fi-emblem-img \\{ filter: var\\(--gc-filter, none\\) !important; \\}'));
-  // ART THAT IS ITS OWN DISC fills its box on the notice, as on the rail: the roundels of Turkish and
-  // Alaska (their own light rim), the glossy orbs of Delta and United, the tiles. The padding the
-  // stylesheet gives a mark on a disc drew the Turkish roundel at 76 px inside its 104 px box, under a
-  // gloss cap that stood out over the empty ring (rendered: padding 14.2 px before, 0 after)
-  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb > \\.v2-fi-emblem-native \\{ padding: 0 !important; \\}'));
-  for (const code of ['TK', 'AS', 'DL', 'UA', 'NZ', 'A3']) {
-    const html = the('_gateChangeOrbHtml')(code);
-    assert.match(html, /class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*padding:0;/, code + ': its own disc, marked so');
-  }
-  assert.ok(['AS', 'TK'].every((c) => W._ORB_ART_RIMMED[c]) && W._gateNoticeOrb('TK').disc === '#FFFFFF' && W._gateNoticeOrb('TK').rimmed, 'judged by its rim');
+  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb\\.gl-gc-orb-held > \\.v2-fi-emblem-wrap \\{ background: var\\(--gc-disc, transparent\\) !important; \\}'));
+  assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb\\.gl-gc-orb-held \\.v2-fi-emblem-img \\{ filter: var\\(--gc-filter, none\\) !important; \\}'));
+  assert.doesNotMatch(CSS, /\.gl-gc \.gl-gc-orb > \.v2-fi-emblem-wrap \{ background: var\(--gc-disc/, 'no orb that is not held takes the disc variable');
+  assert.doesNotMatch(CSS, /\.gl-gc \.gl-gc-orb > \.v2-fi-emblem-native \{ padding: 0 !important; \}/, 'art that is its own disc keeps the padding it always had on the notice');
+  assert.ok(['AS', 'TK'].every((c) => W._ORB_ART_RIMMED[c]));
 });

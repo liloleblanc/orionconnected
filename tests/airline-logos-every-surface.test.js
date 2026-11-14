@@ -918,10 +918,12 @@ test('the monogram square of the board is the colour the phone app gives the sam
 });
 
 // THE SQUARE NEVER SINKS INTO ITS ROW. The colour of the app is where the square starts; where it would
-// sink into the colour it sits on (CIEDE2000 under 20) it is stepped (_monoStep): its lightness, darker
-// then lighter, 4 hundredths at a time, to the first that stands clear by 20 with white letters at 3 to 1
-// or better; else its hue turned half way round. One rule on both surfaces: the function is written the
-// same in the two files, and the two copies are run here, each from its own file.
+// sink into the colour it sits on (CIEDE2000 under 20) it is stepped (_monoStep): its lightness, away
+// from the ground (lighter first on a dark ground, darker first on a light one), 4 hundredths at a time,
+// to the first that stands clear by 20 with white letters at 3 to 1 or better; else its hue turned half
+// way round. A step near black or near white (CIELAB lightness under 15 or over 92) is taken only where
+// nothing else works. One rule on both surfaces: the function is written the same in the two files, and
+// the two copies are run here, each from its own file.
 const fnText = (src, name) => {
   const at = src.indexOf('function ' + name + '(');
   assert.ok(at >= 0, name);
@@ -936,12 +938,25 @@ const fnText = (src, name) => {
 // in every state on each theme the board can use: _ALLOWED_THEMES, the others fall back to the teal):
 // the computed colour of the row behind the airline cell. A custom theme is judged at render against
 // its own configured row colour, by the same pass (_monogramFit reads the ground off the screen).
+// A cancelled and a diverted row are each two stripes, odd and even (the stylesheet paints the cells of
+// each: cancelled #A50D24 and #D42341, diverted #A61B2B and #DA3544), and a square sits on either.
 const ROW_GROUNDS = {
   'tus-teal, odd row': '#1E7EB8', 'tus-teal and tus-teal-deep, even row': '#2DA4C4', 'tus-teal-deep, odd row': '#117C8A',
   'mist, odd row': '#E7E3DD', 'mist, even row': '#DDD7D0',
-  'final call': '#F28C00', 'delayed': '#F9D44C', 'cancelled': '#A50D24', 'diverted': '#DA3544',
+  'final call': '#F28C00', 'delayed': '#F9D44C',
+  'cancelled, odd row': '#A50D24', 'cancelled, even row': '#D42341', 'diverted, odd row': '#A61B2B', 'diverted, even row': '#DA3544',
   'gate closed, departed and arrived, dark board': '#262D36', 'gate closed, departed and arrived, light board': '#AEB7C1'
 };
+// the selector each red stripe is painted under, in the stylesheets
+const STRIPE_RULES = {
+  'cancelled, odd row': /tr\.row-cancelled:nth-child\(n\) td(?:\.td-status)?[^{]*\{\s*background: #A50D24 !important;/,
+  'cancelled, even row': /tr\.row-cancelled:nth-child\(even\) td(?:\.td-status)?[^{]*\{\s*background: #D42341 !important;/,
+  'diverted, odd row': /tr\.row-diverted:nth-child\(odd\)[^{]*\{\s*background-color: #A61B2B !important;/,
+  'diverted, even row': /tr\.row-diverted:nth-child\(even\)[^{]*\{\s*background-color: #DA3544 !important;/
+};
+// the navy rows of the board at Halifax (read off the screen at 1680 by 1050: odd and even), where the
+// squares of Sunwing, Tway and Japan Airlines went near black when they were stepped darker first
+const HALIFAX_ROWS = ['#033F77', '#012846'];
 test('the monogram square stands clear of every row it can sit on, by one rule on the board and in the app', () => {
   const colours = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
   // the two copies of the rule, word for word, and each run from its own file
@@ -952,6 +967,7 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
   // the grounds of the rows are the colours of the stylesheets
   const sheets = ['css/flight-display.css', 'css/display-overrides.css'].map((f) => fs.readFileSync(path.join(FC, f), 'utf8')).join('\n');
   for (const [k, g] of Object.entries(ROW_GROUNDS)) assert.ok(sheets.toUpperCase().includes(g), k + ': ' + g + ' in the stylesheets');
+  for (const [k, re] of Object.entries(STRIPE_RULES)) assert.match(sheets, re, k + ': painted in the stylesheets');
   // the grounds of the tile in the app: the card and the page of its day and night themes
   const tg = /^const TILE_GROUNDS=(\[[^\]]+\]);$/m.exec(APP);
   assert.ok(tg, 'the tile grounds of the app');
@@ -989,6 +1005,8 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
         if (sq !== start) stepped++;
         const de = B._orbDeltaE(hex(sq), g);
         if (de < 20 || whiteOn(sq) < 3) sank.after.push(code + ' ' + sq + ' on ' + k + ' ' + g + ': dE ' + de.toFixed(1) + ', white ' + whiteOn(sq).toFixed(2));
+        // never near black or near white where a step in range works (none is needed on these grounds)
+        if (sq !== start && (B._orbLab(hex(sq))[0] < 15 || B._orbLab(hex(sq))[0] > 92)) sank.after.push(code + ' ' + sq + ' on ' + k + ': lightness ' + B._orbLab(hex(sq))[0].toFixed(1));
       }
       // the app: its square, from its own rule, on its own grounds
       const appSq = appStep(start, TILE);
@@ -1002,8 +1020,24 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
       const start = the('_monogramColour')(code);
       assert.ok(['#1E7EB8', '#117C8A'].some((g) => B._orbDeltaE(hex(start), g) < 20), code + ' sank into a teal row');
     }
-    assert.ok(sank.before.some((x) => /gate closed, departed and arrived, dark board/.test(x)) && sank.before.some((x) => / on cancelled$/.test(x)), 'the status rows');
+    assert.ok(sank.before.some((x) => /gate closed, departed and arrived, dark board/.test(x)) && sank.before.some((x) => / on cancelled, (odd|even) row$/.test(x)), 'the status rows');
     assert.ok(stepped > 0 && stepped < codes.length * Object.keys(ROW_GROUNDS).length, stepped + ' steps');
+    // AWAY FROM THE GROUND: on the navy rows of Halifax the squares of Sunwing, Tway and Japan Airlines
+    // step lighter (they went to #06090E, #0C191D and #060C0E stepped darker first), and every square
+    // stepped on those rows stays out of near black
+    for (const code of ['3K', '2T', 'JA']) {
+      const start = the('_monogramColour')(code), sq = boardStep(start, ['#033F77']);
+      assert.notEqual(sq, start, code + ' sank into the navy row of Halifax');
+      assert.ok(B._orbLab(hex(sq))[0] > B._orbLab(hex(start))[0] && B._orbLab(hex(sq))[0] >= 15, code + ' ' + sq + ': lighter, never near black');
+      assert.ok(B._orbDeltaE(hex(sq), '#033F77') >= 20 && whiteOn(sq) >= 3, code + ' ' + sq);
+    }
+    for (const code of codes) for (const g of HALIFAX_ROWS) {
+      const start = the('_monogramColour')(code), sq = boardStep(start, [g]);
+      assert.equal(appStep(start, [g]), sq, code + ' on Halifax ' + g + ': the two copies agree');
+      assert.ok(B._orbDeltaE(hex(sq), g) >= 20 && whiteOn(sq) >= 3 && (sq === start || B._orbLab(hex(sq))[0] >= 15), code + ' ' + sq + ' on Halifax ' + g);
+    }
+    // and on a light ground the step is darker first: the gold of a square on the yellow of a delayed row
+    assert.ok(B._orbLab(hex(boardStep('#C9A227', ['#F9D44C'])))[0] < B._orbLab('#C9A227')[0], 'darker first on a light ground');
     // a square already clear is its colour as it was, word for word
     assert.equal(boardStep('#0B1F3A', ['#1E7EB8']), '#0B1F3A');
     assert.equal(boardStep('hsl(151,42%,32%)', ['#1E7EB8']), 'hsl(151,42%,32%)');

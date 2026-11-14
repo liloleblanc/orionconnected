@@ -1113,14 +1113,26 @@ function _monoStep(start, grounds) {
   var under = [].concat(grounds || []).map(rgbOf).filter(Boolean), sq = rgbOf(start);
   var clear = function (v) { return 1.05 / (lum(v) + 0.05) >= 3 && under.every(function (g) { return dE(v, g) >= 20; }); };
   if (!sq || !under.length || clear(sq)) return start;
-  var H = hslOf(sq), turns = [H[0], (H[0] + 180) % 360];
+  // AWAY FROM THE GROUND: lighter first on a dark ground, darker first on a light one (the grounds it
+  // sinks into, CIELAB lightness under 50 or not), then the other way; then the hue turned half way
+  // round, at its own lightness, away, and back. A step that lands near black or near white (CIELAB
+  // lightness under 15 or over 92) is taken only where no other step and no turn of the hue works:
+  // stepped darker first, the squares of Sunwing, Tway and Japan Airlines went near black on the navy
+  // rows of Halifax.
+  var sunk = under.filter(function (g) { return dE(sq, g) < 20; }), ref = sunk.length ? sunk : under;
+  var up = ref.reduce(function (a, g) { return a + lab(g)[0]; }, 0) / ref.length < 50;
+  var H = hslOf(sq), turns = [H[0], (H[0] + 180) % 360], order = [];
   for (var t = 0; t < 2; t++) {
-    var ls = t ? [H[2]] : [];
-    for (var d = 0.04; H[2] - d >= -1e-9; d += 0.04) ls.push(H[2] - d);
-    for (var u = 0.04; H[2] + u <= 1 + 1e-9; u += 0.04) ls.push(H[2] + u);
-    for (var i = 0; i < ls.length; i++) {
-      var v = hslRgb(turns[t], H[1], Math.max(0, Math.min(1, ls[i])));
-      if (clear(v)) return hex(v);
+    var away = [], back = [];
+    for (var d = 0.04; H[2] - d >= -1e-9; d += 0.04) (up ? back : away).push(H[2] - d);
+    for (var u = 0.04; H[2] + u <= 1 + 1e-9; u += 0.04) (up ? away : back).push(H[2] + u);
+    var ls = (t ? [H[2]] : []).concat(away, back);
+    for (var i = 0; i < ls.length; i++) order.push(hslRgb(turns[t], H[1], Math.max(0, Math.min(1, ls[i]))));
+  }
+  for (var pass = 0; pass < 2; pass++) {
+    for (var k = 0; k < order.length; k++) {
+      var L = lab(order[k])[0];
+      if ((pass || (L >= 15 && L <= 92)) && clear(order[k])) return hex(order[k]);
     }
   }
   return start;
