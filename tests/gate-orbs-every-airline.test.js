@@ -19,16 +19,28 @@
 //   6. A DISC IS NEVER THE COLOUR OF THE PANEL BEHIND IT. One colour down the
 //      column was not enough: red discs on a red rail card, blue on blue and
 //      navy on navy sink into the card. The gate knows the paint of the card
-//      behind the discs of a carrier (window._gateCardPaint), measures the
-//      disc against it (window._gateDiscSinks), and where the disc would
-//      sink the whole column is white outside with the mark in its colours
-//      inside: a finished tile as a round inset inside a white ring, a mark
-//      in its own colours, or letters in the colour of the brand, with the
-//      glyphs and the code in that colour. The discs sit on two panels:
-//      the plate of the rail cards and of the shelf cells, and the lower
-//      right panel behind the Your Aircraft orb. A column is one colour, so
-//      it is judged against both. The gates approved as drawn are named in
-//      one list and stay as they are.
+//      behind the discs of a carrier (window._gateCardPaint) and measures the
+//      disc against it (window._gateDiscSinks). Where the disc would sink:
+//        THE CARD GOES DARK FIRST, AND THE DISCS STAY. The plate of the rail
+//        cards and of the shelf cells takes a dark neutral (the house
+//        charcoal, or the black or dark grey the airline has on record), and
+//        the gate keeps its own discs and its own top orb, as the Air Canada
+//        gate is drawn: red discs on a black card. One function decides it
+//        from the measure (window._gateCardDark), for every gate whose discs
+//        stand clear of the dark plate with room;
+//        THE WHITE COLUMN ONLY WHERE THE DARK PLATE CANNOT WORK: a gate whose
+//        own discs are dark themselves (a navy, a black, a deep maroon) and
+//        would sink into the charcoal too, or one whose card is a picture of
+//        the airline. Its column is white outside with the mark in its
+//        colours inside: the mark of the airline on the white disc where one
+//        is on disk, else its tile as a round inset inside a wide white
+//        ring, else letters, with the glyphs and the code in the colour of
+//        the brand.
+//      The Your Aircraft orb sits on a second panel, the lower right one,
+//      judged the same way: where the orb would sink into it the panel takes
+//      the dark plate (window._gateLowerPair), and the orb stays. The gates
+//      approved as drawn are named in one list and stay as they are, cards,
+//      discs and lower panels.
 //
 // An audit of every airline found 112 gates that broke one of them: 75 codes
 // drew a generic white plane in the top orb while a finished tile sat on
@@ -148,17 +160,15 @@ const O = new Function('window', [
   block('window._CARD_COLOR_EMBLEMS = {'), block('window._orbKeepsColour = function'),
   block('window._BADGE_TILE_BRANDS = {'), block('window._ORB_TILE_GROUNDS = {'), block('window._ORB_TILE_LETTERS = {'), block('window._GATE_ORB_LOOKS = {'),
   block('window._orbInkOn = function'),
-  // the rule of the card behind the discs: its tables, its arithmetic and its answer
-  lines('window._GATE_WHITE = ', 'window._GATE_CARD_PICTURES = {'),
-  block('window._GATE_CARD_PICTURES = {'), block('window._GATE_CARD_DARKS = {'), block('window._GATE_COLUMNS_KEPT = {'),
-  block('window._orbLab = function'), block('window._orbDeltaE = function'), block('window._GATE_SINK = {'),
-  block('window._gateDiscSinks = function'), block('window._gateCardPaint = function'), block('window._orbInkOnWhite = function'),
-  block('window._gateColumnWhite = function'),
+  // the rule of the card behind the discs, whole: its tables, its arithmetic and its answers
+  // (the white, the pictures, the darks, the kept list, the measure, the dark plate, the paint
+  // of the card, the lower right pair, the white column)
+  lines('window._GATE_WHITE = ', '// THE ONE ANSWER FOR A GATE COLUMN.'),
   // the two colours of the lower right panel, the second of which is behind the Your Aircraft orb
   lines('var RC2_STATUS = {', 'function _ocGroundOf(el) {'),
   block('window._gateColumnLook = function'), block('window._gateOwnAccent = function'),
-  block('window._gateOrbNatural = function'), block('window._gateOrbParts = function'),
-  block('window._CARD_ORB_GROUND = {'), block('window._gateCardOrb = function'),
+  // the recipe of the art, the recipe with the rule applied, the white disc, the Your Aircraft orb
+  lines('window._gateOrbNatural = function', 'var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {'),
   block('var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {'), block('var GATE_TOP_ROUND_EMBLEM_FILES = {'),
   'var _TILE_DESIGNATOR_IATA = null;', block('function _designatorIata(code) {'),
   block('function _orbEmblemCarrier(code) {'), block('function _airlineOrbEmblem(code) {'), block('function _gateOrbArt(code) {'),
@@ -293,7 +303,20 @@ function sinks(disc, paint) {
 const hueGap = (x, y) => { const [, a1, b1] = lab(x), [, a2, b2] = lab(y); let d = Math.abs(Math.atan2(b1, a1) - Math.atan2(b2, a2)) * 180 / Math.PI; return d > 180 ? 360 - d : d; };
 const chroma = (x) => { const [, a, b] = lab(x); return Math.hypot(a, b); };
 const THE_WHITE = '#FFFFFF';
-const RING = 'clamp(3px,0.5vh,7px)', PAD = 'clamp(6px,0.9vh,13px)';
+// THE RING OF AN INSET: 30 hundredths of the radius, so that half of the orb is white and it reads
+// as a white disc that carries a roundel. On the rail and the shelf the disc is 7.48vh across and
+// the ring is padding of 1.12vh; the Your Aircraft orb is sized by --rcp-orb and its ring is 15
+// hundredths of that length on each side, written to win over the padding of the stylesheet.
+const RING_SHARE = 0.30;
+const RING = 'clamp(7px,1.12vh,14px)', RING_CARD = 'calc(var(--rcp-orb, 52px) * 0.15) !important', PAD = 'clamp(6px,0.9vh,13px)';
+// STANDING CLEAR OF THE DARK PLATE, WITH ROOM, by the arithmetic of this file: the measure passes
+// and the disc is at least twice as bright as the plate (the luminance ratio of WCAG).
+const CLEAR = 2;
+const clear = (disc, paint) => !sinks(disc, paint) && lum(disc) > lum(paint) && contrast(disc, paint) >= CLEAR;
+const HOUSE_DARK = '#16181D';
+// the engraving screened over the base of a plate, and the shade of an accent under it
+const screened = (base) => '#' + rgb(base).map((v) => Math.round(255 - (255 - v) * (255 - 13) / 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+const shadeBase = (accent) => '#' + rgb(accent).map((v, k) => Math.round(v * 0.34 + [11, 14, 20][k] * 0.66).toString(16).padStart(2, '0')).join('').toUpperCase();
 const lettersOf = (code) => String(code).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
 
 function column(code) {
@@ -398,7 +421,22 @@ const NO_ART = 'no emblem, tile or symbol on disk under this code, and none the 
 // because nobody has checked that label against the airline (two of the eight labels the folder
 // gives are wrong: see XR). The reason is that, not a missing file.
 const TILE_UNCHECKED = 'a finished tile is on disk for this code (MANIFEST.csv names it), but its label has not been checked against the airline, so no table points the gate at it: the top orb letters the code until someone confirms the tile';
+const GRADIENT = 'WZZ.svg is a gradient, the magenta of Wizz down to its blue: no single ground a disc could match. The five badges take the magenta end, the value of the accent table. It needs a mark on one ground.';
 const LEDGER = {
+  // BACK IN THE LEDGER WITH THE DARK PLATE. These four were white columns for one round, their tile
+  // a round inset where its ground had nothing to match. On the dark plate each keeps its own discs
+  // and its own top orb, so each is again the case it was: a tile that fills the orb and gives five
+  // badges no single ground. The owner has seen Austrian and Wizz drawn so and chose them.
+  'LL': 'level-emblem.svg is half cyan and half green: no single ground. It needs a mark on one ground from the airline.',
+  'W6': GRADIENT, 'W4': GRADIENT,
+  // Austrian: the red of its tile holds two thirds of the rim; a white band crosses the rest and
+  // fills more of the disc than the red does. Beside five red discs the orb reads half white.
+  'OS': 'AUA.svg is red on two thirds of its rim only: a white band carries the chevron across it, and white fills more of the disc than the red. No ground the badges could take; no other Austrian mark is on disk. It needs a mark on a full red ground.',
+  // Lufthansa: its navy discs stand out on its gold picture, so the rail is as it was drawn. Its
+  // Your Aircraft orb sits on the navy of its lower right panel, and that navy is as dark as any
+  // panel that can carry the words (it sinks into the charcoal too, 12 apart), so no panel helps:
+  // the orb alone is white, the crane in its navy. Two colours on one gate, on purpose.
+  'LH': 'the Your Aircraft orb is white, the crane in its navy, beside a rail of navy discs: its navy sinks into every panel dark enough to carry the words of the lower right panel, so the orb takes the white disc there and the rail keeps what it drew on its gold picture',
   'ZP': 'ZP.svg is half clear and Paranair has no colour on file: it needs its red confirmed and a mark on a finished ground.',
   // Rouge as a row code: the column is the red of Air Canada, and the Your Aircraft orb keeps the
   // burgundy recorded for Rouge at v23260 (the ink of its script, bottom-right card only).
@@ -410,15 +448,15 @@ const LEDGER = {
   'TS': 'approved as drawn the day before this audit: the white star and white glyphs on Transat blue',
   'WS': 'the sanctioned white leaf and white glyphs on WestJet teal (WestJet Encore, WR, wears the same)'
 };
-// TWELVE CODES LEFT THE LEDGER WITH RULE 6, and none of them got new art. Each was there because
+// EIGHT CODES ARE OUT OF THE LEDGER BY RULE 6, and none of them got new art. Each was there because
 // no single ground could be read off its art for five badges to match, or because it had no art
-// and drew the generic plane. Their columns sink into their cards, so they are white now, and a
-// white column asks nothing of the art but to sit inside a white disc:
-//   a tile of two grounds or of a gradient is a round inset inside the white ring (Pacific
-//     Coastal, two halves; LEVEL, two halves; Wizz, a gradient; Austrian, red with a white band);
+// and drew the generic plane. Their discs are too dark for the dark plate (the navy of Pacific
+// Coastal, the blue of no airline), so their columns are white, and a white column asks nothing of
+// the art but to sit inside a white disc:
+//   a tile of two grounds is a round inset inside the white ring (Pacific Coastal, two halves);
 //   a code with no art at all letters itself in the colour of its gate (the five regionals that
 //     fly in the livery of a mainline, and the two the airport files under three letters).
-const WHITE_SETTLED = { inset: ['8P', 'LL', 'OS', 'W4', 'W6'], letters: ['BBQ', 'C5', 'CP', 'G7', 'WAL', 'YX', 'ZW'] };
+const WHITE_SETTLED = { inset: ['8P'], letters: ['BBQ', 'C5', 'CP', 'G7', 'WAL', 'YX', 'ZW'] };
 const UNCHECKED_TILES = { BG: 'BBC', BI: 'RBA', BY: 'TOM', KA: 'CRK', NK: 'NKS', NO: 'NOS', QS: 'TVS' };
 for (const c of Object.keys(UNCHECKED_TILES)) LEDGER[c] = TILE_UNCHECKED;
 for (const c of ('2T 3K 4B 4T 5F 7F 8M 8T 9C 9K AN AX BJ BM DO EM EV FD GM H2 H4 IV JA KG KM KO LF LR MT N0 NF OK '
@@ -461,10 +499,12 @@ test('the test reads what the gate writes: the markup of each builder, not a val
     assert.ok(own.cls.includes('v2-fi-orbwrap') && own.bg, code + ' Your Aircraft orb');
   }
   // an accent disc is written as the accent variable, a tile that stands out on its card as a clear
-  // box, a brand on its ground as that ground, a column rule 6 made white as the one white
+  // box (on the shade of its own colour, or on the dark plate), a brand on its ground as that
+  // ground, a column rule 6 made white as the one white
   assert.ok(isVar(column('AC').emb.bg) && isVar(column('AC').badge.bg));
   assert.deepEqual([column('BT').emb.bg, column('BT').emb.fit, column('BT').badge.bg], ['transparent', 'cover', W._ORB_TILE_GROUNDS.BTI]);
-  assert.deepEqual([column('IB').emb.bg, column('IB').emb.fit, column('IB').emb.pad, column('IB').badge.bg], [THE_WHITE, 'cover', RING, THE_WHITE]);
+  assert.deepEqual([column('IB').emb.bg, column('IB').emb.fit, column('IB').emb.pad, column('IB').badge.bg], ['transparent', 'cover', '0', W._ORB_TILE_GROUNDS.IBE]);
+  assert.deepEqual([column('AY').emb.bg, column('AY').emb.fit, column('AY').emb.pad, column('AY').badge.bg], [THE_WHITE, 'cover', RING, THE_WHITE]);
   assert.deepEqual([column('KE').emb.bg, column('KE').badge.bg], ['#FFFFFF', '#FFFFFF']);
   assert.deepEqual([column('BA').emb.bg, column('BA').badge.bg], [THE_WHITE, THE_WHITE]);
   // and the white filter is read off the image: on for a mark of one colour, off for a colour emblem
@@ -515,6 +555,17 @@ test('the ledger says why, and its kinds are what they claim', () => {
   // Rouge: one break, the recorded burgundy of its Your Aircraft orb
   assert.deepEqual(broken('RV'), ['the Your Aircraft orb is #A21C37 beside a column of ' + O.ACCENT.RV + ' (dE ' + dE('#A21C37', O.ACCENT.RV).toFixed(1) + ')']);
   assert.equal(W._CARD_ORB_GROUND.RV, '#A21C37');
+  // Austrian: one break, the rim of its tile
+  assert.deepEqual(kinds('OS'), ['the orb art shows #D81E05 on 67% of its rim']);
+  // Wizz: one break, the gradient
+  for (const code of ['W6', 'W4']) assert.deepEqual(kinds(code), ['the orb art has a gradient at its rim'], code);
+  // two grounds
+  assert.ok(broken('LL').length === 3 && broken('LL').every((s) => /two colours/.test(s)), 'LL: ' + broken('LL').join('; '));
+  // these four are on the dark plate with their own discs, which is why their art is asked again
+  for (const code of ['OS', 'W6', 'W4', 'LL']) assert.deepEqual([W._gateCardPaint(code).kind, column(code).L.white], ['dark', false], code);
+  // Lufthansa: two breaks, both its Your Aircraft orb, white beside a navy rail
+  assert.deepEqual(broken('LH'), ['the Your Aircraft orb and the top orb differ on the white filter',
+    'the Your Aircraft orb is #FFFFFF beside a column of ' + O.ACCENT.LH + ' (dE ' + dE(THE_WHITE, O.ACCENT.LH).toFixed(1) + ')']);
   // THE CODES RULE 6 SETTLED. Each obeys every rule now, and each is still the case it was: the art
   // has no single ground, or there is no art.
   for (const code of WHITE_SETTLED.inset.concat(WHITE_SETTLED.letters)) {
@@ -528,6 +579,8 @@ test('the ledger says why, and its kinds are what they claim', () => {
   // Wizz: a gradient at its rim; Pacific Coastal and LEVEL: no ground the script could certify
   assert.ok(art(LOOKS.W6.art).rampShare > 0.9);
   for (const code of ['8P', 'LL']) assert.equal(W._gateOrbNatural(code).ground, '', code + ': the recipe of its art names no ground');
+  // Pacific Coastal is white because its navy would sink into the dark plate too
+  assert.ok(!clear(O.accent('8P'), screened(HOUSE_DARK)) && contrast(O.accent('8P'), screened(HOUSE_DARK)) < 1.5, '8P: ' + O.accent('8P'));
   // as a round inset the ground of the tile no longer has to match anything: the disc is white
   for (const code of WHITE_SETTLED.inset) {
     const { emb, badge, A } = column(code);
@@ -577,38 +630,42 @@ test('a tile whose ground is a gradient is not listed: no flat disc equals a ram
   assert.match(GEN.rimGround(tile('#DC1C2E', '#D91B2C')), /^#D[9C]1[BC]2[CE]$/, 'stops within 6 are one colour');
   // a flat ground with a gradient mark inside it is still listed: the rim is the ground, not the ramp
   for (const name of ['CAL', 'AAL', 'IBE', 'SWA']) assert.match(T[name], /^#[0-9A-F]{6}$/, name);
-  // and no carrier takes a ramp as the ground of its discs: a tile that fills its orb and gives its
-  // ground to five badges has a rim of one colour, and a tile whose rim is a ramp is only ever drawn
-  // as a round inset inside a white disc, where its ground has nothing to match
+  // and no carrier takes a ramp as the ground of its discs unseen: a tile whose rim is a ramp is a
+  // round inset inside a white disc, where its ground has nothing to match, or it fills its orb
+  // beside five badges and is in the ledger with that reason
   let ramps = 0;
   for (const code of CODES) {
     const { L, P, A } = column(code);
     if (!/\/airline-tiles\/[^/]+\.svg/.test(L.art || '') || !A.exists) continue;
-    if (P.native && P.ground) assert.ok(A.rampShare <= 0.5, code + ': ' + L.art + ' fills its orb');
     // (the glossy orb of Alaska shades its own rim and gives no ground: its badges are discs of the accent)
-    if (A.rampShare > 0.5 && !(P.native && !P.ground)) { ramps++; assert.ok(L.inset && same(L.ground, THE_WHITE), code + ': ' + L.art + ' is an inset'); }
+    if (!(A.rampShare > 0.5) || (P.native && !P.ground)) continue;
+    ramps++;
+    if (L.white) assert.ok(L.inset && same(L.ground, THE_WHITE), code + ': ' + L.art + ' is an inset');
+    else assert.equal(LEDGER[code], GRADIENT, code + ': ' + L.art);
   }
-  assert.ok(ramps >= 3, ramps + ' gates draw a tile with a gradient rim');
-  // Qantas, decided by hand from art on disk. The recipe of its art is its mark of one colour, white
-  // on the red it publishes; that red sinks into its maroon card, so its column is white. The mark is
-  // one black, drawn to be inked white, and would be a black tail on the white disc: the white disc
-  // takes its finished tile, the white kangaroo on the red of the tail, as a round inset.
-  const qfN = W._gateOrbNatural('QF');
-  assert.deepEqual([qfN.path, qfN.ground, qfN.whitened], ['/logos/symbols/airlines/QF-mono.svg', '', true]);
+  assert.equal(ramps, 2, ramps + ' gates draw a tile with a gradient rim');
+  // Qantas, decided by hand from art on disk: its mark of one colour, white on the red it publishes.
+  // That red sinks into the maroon its card was, so the card is the dark plate and the red stays.
+  assert.deepEqual([column('QF').L.art, column('QF').L.ground, column('QF').emb.inked, W._gateCardPaint('QF').kind], ['/logos/symbols/airlines/QF-mono.svg', '#DF0000', true, 'dark']);
   assert.deepEqual(art('/logos/symbols/airlines/QF-mono.svg').colours, ['#000000'], 'one colour');
   assert.ok(contrast('#FFFFFF', '#DF0000') >= 4.5);
-  assert.deepEqual([column('QF').L.art, column('QF').L.ground, column('QF').emb.inked, column('QF').L.inset, column('QF').L.ink], ['/logos/airline-tiles/QFA.svg', THE_WHITE, false, true, O.ACCENT.QF]);
+  // The mark is one black, drawn to be inked white, and would be a black tail on a white disc: where
+  // an orb of Qantas is drawn white (on the panel of another gate that its red would sink into), the
+  // white disc takes its finished tile, the white kangaroo on the red of the tail, as a round inset.
+  const qfW = W._gateOrbWhite('QF', W._gateOrbNatural('QF'), O.ACCENT.QF);
+  assert.deepEqual([qfW.path, qfW.inset, qfW.ground, qfW.ink], ['/logos/airline-tiles/QFA.svg', true, THE_WHITE, O.ACCENT.QF]);
   // Hawaiian draws its emblem on the light disc, and nothing on the gate reads the ground of its tile
   assert.deepEqual([column('HA').L.art, column('HA').L.ground], ['/logos/airlines/us-major/hawaiian-pualani.svg', THE_WHITE]);
-  // Wizz: the gradient tile inside the white ring, the glyphs in its magenta
-  for (const code of ['W6', 'W4']) assert.deepEqual([column(code).L.art, column(code).L.ground, column(code).badgeBg, column(code).L.ink], ['/logos/airline-tiles/WZZ.svg', THE_WHITE, THE_WHITE, O.ACCENT.W6], code);
+  // Wizz: the gradient tile fills the orb, and the five badges take the magenta end
+  for (const code of ['W6', 'W4']) assert.deepEqual([column(code).L.art, column(code).L.ground, column(code).badgeBg], ['/logos/airline-tiles/WZZ.svg', O.ACCENT.W6, O.ACCENT.W6], code);
 });
 
 test('a carrier with no emblem and a finished tile draws the tile in both orbs, and its badges take the ground of the tile', () => {
   // THE RECIPE OF THE ART: the tile is the disc, and its ground is the ground the script read.
-  // WHAT IS PAINTED: where that ground stands out on the card of the carrier, the tile fills a clear
-  // box and the five badges take its ground, the same string; where it would sink (rule 6), the tile
-  // is a round inset inside a white ring and the five badges are that white.
+  // WHAT IS PAINTED: where that ground stands out on the card of the gate (the shade of its own
+  // colour, or the dark plate it took because it sank there), the tile fills a clear box and the
+  // five badges take its ground, the same string; where it would sink into the dark plate too
+  // (rule 6), the tile is a round inset inside a white ring and the five badges are that white.
   let n = 0, fills = 0, insets = 0;
   for (const code of CODES) {
     const { L, P, emb, badge } = column(code), N = W._gateOrbNatural(code);
@@ -627,7 +684,8 @@ test('a carrier with no emblem and a finished tile draws the tile in both orbs, 
     if (L.white) {
       insets++;
       assert.deepEqual([emb.bg, emb.pad, emb.fit, emb.native, badge.bg], [THE_WHITE, RING, 'cover', false, THE_WHITE], code + ': a round inset inside a white ring, five white badges');
-      assert.ok(W._gateCardPaint(code).at.concat(W._gateCardPaint(code).lower).some((p) => sinks(g, p)), code + ': ' + g + ' would sink into a panel behind it');
+      assert.ok(W._gateCardPaint(code).at.some((p) => sinks(g, p)), code + ': ' + g + ' would sink into its card');
+      if (W._gateCardPaint(code).kind !== 'picture') assert.ok(!clear(g, screened(HOUSE_DARK)), code + ': and ' + g + ' does not stand clear of the dark plate');
     } else {
       fills++;
       assert.equal(badge.bg, g, code + ': the badges the rail writes are the ground of ' + m[1] + '.svg, the same string');
@@ -635,7 +693,7 @@ test('a carrier with no emblem and a finished tile draws the tile in both orbs, 
       assert.deepEqual([emb.bg, emb.fit], ['transparent', 'cover'], code + ': a clear box, the tile to its edge');
     }
   }
-  assert.ok(n >= 85 && fills >= 15 && insets >= 60, n + ' carriers wear their finished tile: ' + fills + ' fill the orb, ' + insets + ' sit inside a white ring');
+  assert.ok(n >= 85 && fills >= 65 && insets >= 15, n + ' carriers wear their finished tile: ' + fills + ' fill the orb, ' + insets + ' sit inside a white ring');
   // the ones the audit named: a generic white plane before
   for (const [code, tile] of [['AZ', 'ITY'], ['B6', 'JBU'], ['NH', 'ANA'], ['DY', 'NAX'], ['U2', 'EZY'], ['BT', 'BTI'], ['SK', 'SAS']]) {
     assert.equal(O.art(code), '/logos/airline-tiles/' + tile + '.svg', code);
@@ -852,20 +910,20 @@ test('a placeholder tile, a flat square with a code set as text, is drawn only f
     assert.equal(column(code).emb.src, '/logos/airline-tiles/' + tile + '.svg', code);
     assert.equal(column(code).L.letters, '', code);
   }
-  // a gate of another code that reaches it shows its own letters. By the recipe of its art they sit
-  // on a disc of the ground that tile is drawn in; that ground sinks into the card of each of the
-  // three (a shade of the same colour), so the disc is white and the letters are in that colour.
+  // a gate of another code that reaches it shows its own letters, on a disc of the ground that tile
+  // is drawn in. That ground sank into the card of each of the three (a shade of the same colour),
+  // so the card of each is the dark plate, and the disc keeps the ground.
   const OTHER = { P6: 'PSC', D8: 'NAX', DI: 'NAX' };
   for (const [code, tile] of Object.entries(OTHER)) {
     const { L, emb, badge } = column(code), g = W._ORB_TILE_GROUNDS[tile], N = W._gateOrbNatural(code);
     assert.deepEqual([N.path, N.letters, N.ground], ['', code, g], code + ': the recipe of its art');
-    assert.ok(W._gateCardPaint(code).at.some((p) => sinks(g, p)), code + ': ' + g + ' sinks into its card');
-    assert.deepEqual([L.art, L.letters, L.ground, L.white], ['', code, THE_WHITE, true], code);
-    assert.deepEqual([emb.src, emb.letters, emb.bg, emb.generic], ['', code, THE_WHITE, false], code + ': the top orb letters ' + code);
-    assert.equal(badge.bg, THE_WHITE, code + ': the five badges');
-    assert.ok(same(emb.lettersInk, g) && contrast(emb.lettersInk, THE_WHITE) >= 3, code + ': ' + emb.lettersInk + ' on white');
+    assert.ok(sinks(g, screened(shadeBase(g))) && W._gateCardPaint(code).kind === 'dark', code + ': ' + g + ' sank into the shade of itself, and its card is the dark plate');
+    assert.deepEqual([L.art, L.letters, L.ground, L.white], ['', code, g, false], code);
+    assert.deepEqual([emb.src, emb.letters, emb.bg, emb.generic], ['', code, g, false], code + ': the top orb letters ' + code);
+    assert.equal(badge.bg, g, code + ': the five badges');
+    assert.ok(contrast(emb.lettersInk, g) >= 3, code + ': ' + emb.lettersInk + ' on ' + g);
     const own = orbFacts(W._gateCardOrb(code, '').html);
-    assert.deepEqual([own.src, own.letters, own.bg], ['', code, THE_WHITE], code + ': the Your Aircraft orb');
+    assert.deepEqual([own.src, own.letters, own.bg], ['', code, g], code + ': the Your Aircraft orb');
     assert.equal(orbFacts('<div class="x" style="' + O.shelf(code).orb.badge + '">' + O.shelf(code).icon + '</div>').letters, code, code + ': the boarding shelf');
     assert.equal(O.accent(O.fold(code)), g, code + ': its accent is that ground');
   }
@@ -927,15 +985,20 @@ test('the rule holds on the gate change notice and in the missing-file handler: 
   assert.equal(O.plate('DY'), O.emblem('DY'));
 });
 // ── the table of looks ─────────────────────────────────────────────────────
-// Light grounds whose ink is the neutral dark of the boards (#1B2430): none today. Cebu Pacific,
-// SriLankan and flynas were here; their light discs sank into cards of the same hue, so their
-// columns are white, and a white column is inked in the colour of its brand, never the neutral.
-const NEUTRAL_INK = [];
-// Rows whose hand ground is not the rim of their art: the red of Austrian holds two thirds of the
-// rim of its tile, and the tile of Wizz is a gradient. The ground is what the recipe of the art
-// would give five badges; it sinks into the card of each, so nothing is painted in it: the column
-// is white and the tile sits inside the ring.
-const HAND_GROUND_UNPAINTED = ['OS', 'W4', 'W6'];
+// Light grounds whose ink is the neutral dark of the boards (#1B2430): no dark colour of the brand
+// is confirmed for these, so none is guessed. A row that gains an ink leaves this list. (They were
+// white columns for one round, inked in a colour of the brand; on the dark plate each keeps its
+// light discs, and the glyphs on a light disc are dark. French bee joins them: its cyan discs sank
+// into the shade of that cyan and now sit on the dark plate; the blue its row names is the ink of
+// a white disc, not the ink of the cyan.)
+const NEUTRAL_INK = ['5J', 'BF', 'UL', 'XY'];
+// A square is not a mark. True where a file paints the corners of its box: drawn on a white disc it
+// would be a square in a circle, so a white column with such a symbol keeps the round inset.
+function paintsCorners(p) {
+  const m = GEN.build(fs.readFileSync(path.join(FC, String(p).split('?')[0]), 'utf8'));
+  const [vx, vy, vw, vh] = m.vb;
+  return [[0.04, 0.04], [0.96, 0.04], [0.04, 0.96], [0.96, 0.96]].filter(([u, v]) => GEN.colourAt(m, vx + u * vw, vy + v * vh)).length >= 3;
+}
 // The only rows that write white on a ground where white is under 3 to 1: approved as drawn (the ledger).
 const APPROVED_WHITE = ['TS', 'WR', 'WS'];
 
@@ -945,16 +1008,16 @@ test('every row of the table of looks: art that is on disk, inks that are colour
     for (const k of Object.keys(row)) assert.ok(['art', 'ground', 'ink', 'code', 'css', 'cssInk', 'cssCode', 'none', 'whiteArt', 'whiteInk'].includes(k), code + '.' + k);
     for (const k of ['ground', 'ink', 'code', 'cssInk', 'cssCode', 'whiteInk']) if (row[k]) assert.match(full(row[k]), HEX, code + '.' + k);
     if (row.art) assert.ok(fs.existsSync(path.join(FC, row.art)), code + ': ' + row.art);
-    // the art and the ink of a white column: read only once the column is white, and it is
+    // the art and the ink of a white disc: read only by the function that draws one (the column
+    // of this carrier where it is white, or its orb on the panel of another gate), and it gives them
     if (row.whiteArt || row.whiteInk) {
-      const Lw = W._gateColumnLook(code);
-      assert.equal(Lw.white, true, code + ': its column is white, or the row names art and ink nothing draws');
-      if (row.whiteArt) { assert.ok(fs.existsSync(path.join(FC, row.whiteArt)), code + ': ' + row.whiteArt); assert.equal(Lw.art, row.whiteArt, code); }
-      if (row.whiteInk) { assert.equal(Lw.ink, row.whiteInk, code); assert.ok(contrast(row.whiteInk, THE_WHITE) >= 3, code + ': ' + row.whiteInk + ' on white'); }
+      const N = W._gateOrbNatural(code), Ww = W._gateOrbWhite(code, N, W._gateWhiteInk(code, N.ground)), Lw = W._gateColumnLook(code);
+      if (row.whiteArt) { assert.ok(fs.existsSync(path.join(FC, row.whiteArt)), code + ': ' + row.whiteArt); assert.equal(Ww.path, row.whiteArt, code); if (Lw.white) assert.equal(Lw.art, row.whiteArt, code); }
+      if (row.whiteInk) { assert.equal(Ww.ink, row.whiteInk, code); if (Lw.white) assert.equal(Lw.ink, row.whiteInk, code); assert.ok(contrast(row.whiteInk, THE_WHITE) >= 3, code + ': ' + row.whiteInk + ' on white'); }
     }
     // a ground written by hand is the colour the rim of that art is painted in, on three quarters
     // of it or more; a row that cannot say so is in the ledger, with the reason
-    if (row.ground && !row.css && row.art && !LEDGER[code] && !HAND_GROUND_UNPAINTED.includes(code)) {
+    if (row.ground && !row.css && row.art && !LEDGER[code]) {
       const A = art(row.art);
       assert.equal(A.rim, row.ground, code + ': the rim of ' + row.art);
       assert.ok(A.rimShare >= 0.75 && !A.rampShare, code + ': ' + A.rimShare.toFixed(2) + ' of the rim');
@@ -969,34 +1032,69 @@ test('every row of the table of looks: art that is on disk, inks that are colour
   }
   assert.deepEqual(neutral.sort(), NEUTRAL_INK);
   assert.deepEqual(Object.keys(LOOKS).filter((c) => /^#f{3}(f{3})?$/i.test(LOOKS[c].ink || '')).sort(), APPROVED_WHITE);
-  // the hand grounds that are not the rim of their art: each is a white column, where no disc is painted in it
-  for (const code of HAND_GROUND_UNPAINTED) {
-    const { L, emb, badge } = column(code), row = LOOKS[code];
-    assert.ok(row.ground && row.art && !row.css, code);
-    assert.deepEqual([L.white, emb.bg, badge.bg], [true, THE_WHITE, THE_WHITE], code);
-    assert.equal(W._gateOrbNatural(code).ground, row.ground, code + ': the ground the rule of the card judges');
+  // the hand grounds that are not the rim of their art are exactly the ledgered ones
+  assert.deepEqual(Object.keys(LOOKS).filter((c) => LOOKS[c].ground && LOOKS[c].art && !LOOKS[c].css && LEDGER[c]).sort(), ['OS', 'W4', 'W6']);
+  // the rows that name art or an ink for the white disc
+  const WHITE_ART = Object.keys(LOOKS).filter((c) => LOOKS[c].whiteArt).sort();
+  assert.deepEqual(WHITE_ART, ['6E', 'EK', 'FI', 'KC', 'KL', 'KU', 'LA', 'LO', 'MH', 'QF']);
+  assert.deepEqual(Object.keys(LOOKS).filter((c) => LOOKS[c].whiteInk).sort(), ['5J', 'BF', 'EY', 'GF']);
+  // THE MARK BEFORE THE TILE, ON A WHITE DISC. Every row but that of Qantas names a mark in the
+  // colour of the airline on a clear ground: a file that is no tile, that paints no white and not
+  // the corners of its box, every colour of it reading on white at 3 to 1, and the colour that
+  // fills most of it within 30 degrees of hue of the ink beside it or the ink itself.
+  for (const code of WHITE_ART.filter((c) => c !== 'QF')) {
+    const p = LOOKS[code].whiteArt, A = art(p);
+    assert.ok(!/airline-tiles/.test(p) && A.exists && A.colours.length >= 1, code + ': ' + p);
+    assert.ok(A.colours.every((c) => contrast(c, THE_WHITE) >= 3), code + ': every colour of ' + p + ' reads on white: ' + A.colours.join(' '));
+    assert.equal(paintsCorners(p), false, code + ': ' + p + ' is a mark on a clear ground, not a square');
+    const Ww = W._gateOrbWhite(code, W._gateOrbNatural(code), '#000000');
+    assert.deepEqual([Ww.path, Ww.inset, /invert/.test(Ww.imgStyle), /object-fit:contain/.test(Ww.imgStyle)], [p, false, false, true], code + ': the mark on the white disc, whole, never inked');
   }
-  assert.deepEqual(Object.keys(LOOKS).filter((c) => LOOKS[c].ground && LOOKS[c].art && !LOOKS[c].css && LEDGER[c]), []);
-  // the rows that name art or an ink for the white column
-  assert.deepEqual(Object.keys(LOOKS).filter((c) => LOOKS[c].whiteArt).sort(), ['LA', 'QF']);
-  assert.deepEqual(Object.keys(LOOKS).filter((c) => LOOKS[c].whiteInk).sort(), ['5J', 'BF']);
+  // and no white column draws a tile inside the ring while such a mark is on disk for it: the file
+  // the symbol resolver gives it is the art it draws already, or is not on disk, or is a square
+  const SQUARE_SYMBOL = [];
+  for (const code of CODES) {
+    const { L } = column(code);
+    if (!L.white || !L.inset) continue;
+    const sym = O.emblem(L.carrier) || '';
+    if (!sym || sym === L.art || !fs.existsSync(path.join(FC, sym.split('?')[0]))) continue;
+    assert.ok(/\.svg/.test(sym) && paintsCorners(sym), code + ': ' + sym + ' is a mark on a clear ground, and its white disc draws ' + L.art);
+    SQUARE_SYMBOL.push(code);
+  }
+  assert.deepEqual(SQUARE_SYMBOL, ['A3', 'CM', 'MO'], 'Aegean and Copa: their symbols are squares; Calm Air: its symbol file is its tile again');
   // LATAM: its spark is coral and white, drawn for the indigo; the white disc takes the mark in coral and indigo
   assert.deepEqual(art(O.FILES.JJ).colours.slice().sort(), ['#ED1650', '#FFFFFF']);
   assert.ok(art(LOOKS.LA.whiteArt).colours.every((c) => contrast(c, THE_WHITE) >= 3), 'every colour of LA.svg reads on white: ' + art(LOOKS.LA.whiteArt).colours.join(' '));
   for (const code of ['LA', 'JJ', '4C']) assert.deepEqual([column(code).emb.src, column(code).emb.bg, column(code).emb.inked], [LOOKS.LA.whiteArt, THE_WHITE, false], code);
-  // naming an ink for the white column does not move the colour of the gate: the accent is still the ground of the tile
-  assert.deepEqual([O.accent('BF'), O.accent('5J')], [W._ORB_TILE_GROUNDS.FBU, W._ORB_TILE_GROUNDS.CEB]);
+  // the white columns among them draw the mark in the top orb, in the Your Aircraft orb and on the shelf
+  for (const code of ['6E', 'EK', 'FI', 'KC', 'KL', 'KU', 'LO', 'MH']) {
+    const { L, emb } = column(code), own = orbFacts(W._gateCardOrb(code, '').html), S = O.shelf(code);
+    assert.deepEqual([L.white, L.inset, emb.src, emb.bg, emb.pad, emb.inked, own.src, own.bg, S.orb.path], [true, false, LOOKS[code].whiteArt, THE_WHITE, PAD, false, LOOKS[code].whiteArt, THE_WHITE, LOOKS[code].whiteArt], code);
+  }
+  // naming an ink for the white disc does not move the colour of the gate: the accent is still the
+  // ground of the tile, and on the dark plate the discs are that ground
+  assert.deepEqual([O.accent('BF'), O.accent('5J'), O.accent('EY'), O.accent('GF')], [W._ORB_TILE_GROUNDS.FBU, W._ORB_TILE_GROUNDS.CEB, O.ACCENT.EY, W._ORB_TILE_GROUNDS.GFA]);
+  for (const code of ['BF', '5J', 'EY', 'GF']) assert.deepEqual([column(code).L.white, W._gateCardPaint(code).kind], [false, 'dark'], code);
+  // Etihad and Gulf Air: the gold of each reads on white at the floor, and the ink named is stronger
+  for (const [code, floor, strong] of [['EY', 3.2, 9], ['GF', 3.3, 4.4]]) {
+    const g = W._gateOrbNatural(code).ground;
+    assert.ok(contrast(W._orbInkOnWhite([g]), THE_WHITE) < floor && contrast(LOOKS[code].whiteInk, THE_WHITE) >= strong, code + ': ' + contrast(LOOKS[code].whiteInk, THE_WHITE).toFixed(2));
+  }
+  // SriLankan has no colour of its own on record for a white disc: its light blue darkened, a steel
+  // grey that is no colour of the airline. It is not drawn white on its own gate (the dark plate
+  // under its light discs); the ink waits for its navy
+  assert.equal(LOOKS.UL.whiteInk, undefined);
+  assert.deepEqual([column('UL').L.white, W._gateCardPaint('UL').kind, column('UL').L.ink], [false, 'dark', '#1B2430']);
   // Qatar: white for most of its rim, by the file its emblem table names
   assert.equal(art(O.FILES.QR).rim, LOOKS.QR.ground);
 });
 
 test('the white marks that stay: each is a mark of one colour, on the colour of its brand', () => {
-  // a mark is inked white only on a gate approved as drawn: Air Canada and the regionals that print
-  // it, Jazz, Porter, PAL under its two codes, Ryanair under its two. Every other mark of one colour
-  // sank into a panel of its own colour and is drawn in that colour on a white disc.
+  // a mark is inked white only on a disc of a colour: on a gate approved as drawn, or on a gate
+  // whose discs stand out (on its own card or on the dark plate). Never on a white disc.
   const white = CODES.filter((c) => !LEDGER[c] && column(c).emb.inked && column(c).A.exists);
-  assert.deepEqual(white.sort(), ['9L', '9M', 'AC', 'FR', 'PB', 'PD', 'QK', 'RK', 'SP', 'ZX']);
-  for (const code of white) assert.ok(isKept(code), code + ' is a gate approved as drawn');
+  assert.ok(white.length >= 14, white.length + ' marks inked white');
+  for (const code of ['9L', '9M', 'AC', 'FR', 'PB', 'PD', 'QK', 'RK', 'SP', 'ZX']) assert.ok(white.includes(code) && isKept(code), code + ' is a gate approved as drawn');
   for (const code of white) assert.equal(column(code).L.white, false, code + ': never a white mark on a white disc');
   for (const code of white) {
     const { A, L, top } = column(code);
@@ -1005,7 +1103,9 @@ test('the white marks that stay: each is a mark of one colour, on the colour of 
   }
   // the emblems the audit found inked white, and what each draws now
   for (const code of ['IB', 'KL', 'EK', 'CX', 'FI', 'JQ', 'SN', 'SQ', 'KC', 'VN', '6E', 'AT', 'AV', 'KQ', 'MH', 'SV', 'VA']) {
-    assert.match(column(code).emb.src, /^\/logos\/airline-tiles\//, code + ': its finished tile');
+    // its finished tile, or on a white disc its mark in its own colour
+    if ((LOOKS[code] || {}).whiteArt && column(code).L.white) assert.equal(column(code).emb.src, LOOKS[code].whiteArt, code + ': its mark, in its colour, on the white disc');
+    else assert.match(column(code).emb.src, /^\/logos\/airline-tiles\//, code + ': its finished tile');
     assert.equal(column(code).emb.inked, false, code);
   }
   for (const code of ['JX', 'KE', 'OZ', 'VS']) assert.equal(column(code).emb.inked, false, code + ' keeps its colours');
@@ -1016,17 +1116,24 @@ test('the white marks that stay: each is a mark of one colour, on the colour of 
     const N = W._gateOrbNatural(code);
     assert.ok(N.whitened && /invert\(1\)/.test(N.imgStyle) && /^aspect-ratio:[^"]*background:var\(--airline-accent,/.test(N.badge), code + ': the recipe of its art');
   }
-  // ... Lufthansa among them: its navy stands out on its gold rail card, and is the navy of the lower
-  // right panel, behind its Your Aircraft orb
-  assert.ok(!W._gateCardPaint('LH').at.some((p) => sinks(O.ACCENT.LH, p)) && sinks(O.ACCENT.LH, W._gateCardPaint('LH').lower));
-  // each sank into a panel of its own colour, so each is drawn in its own colour on the white disc,
-  // never inked: the colour of the file reads on white, and it is the colour of the brand
-  for (const code of ['AM', 'AR', 'FJ', 'JU', 'MF', 'UX', 'LH', 'RO', 'F9', '9X']) {
+  // ... and that is what is drawn where the disc of the brand stands out: on the dark plate
+  // (Aerolineas, Xiamen, Air Europa, Qantas, Frontier, Mokulele) and on the gold picture of Lufthansa
+  for (const code of ['AR', 'MF', 'UX', 'QF', 'F9', '9X', 'LH']) {
+    assert.equal(column(code).emb.inked, true, code);
+    assert.ok(isVar(column(code).emb.bg), code + ': on the accent disc');
+    assert.equal(column(code).top, O.accent(code), code + ': on its own accent');
+    assert.equal(W._gateCardPaint(code).kind, code === 'LH' ? 'picture' : 'dark', code);
+  }
+  // the navies and the brown among them would sink into the dark plate too, so each is drawn in its
+  // own colour on the white disc, never inked: the colour of the file reads on white, and it is the
+  // colour of the brand
+  for (const code of ['AM', 'FJ', 'JU', 'RO']) {
     const { emb, A, L } = column(code);
     assert.deepEqual([emb.bg, emb.inked, emb.pad, emb.fit, L.white, L.inset], [THE_WHITE, false, PAD, 'contain', true, false], code);
     assert.equal(A.colours.length, 1, code + ': a mark of one colour');
     assert.ok(contrast(A.colours[0], THE_WHITE) >= 3, code + ': ' + A.colours[0] + ' on white');
     assert.ok(dE(A.colours[0], O.accent(code)) < 25 && hueGap(A.colours[0], O.accent(code)) < 30, code + ': the mark ' + A.colours[0] + ' beside glyphs in ' + L.ink);
+    assert.ok(!clear(O.accent(code), screened(HOUSE_DARK)), code + ': ' + O.accent(code) + ' does not stand clear of the dark plate');
   }
 });
 
@@ -1074,9 +1181,9 @@ test('the gates that were right draw what they drew: art, ground, ink and code i
   // PAL keeps its arrow and its gold; only the ink moved, from a white that read at 2 to 1 to its navy
   assert.equal(W._gateColumnLook('PB').inkSeen, '#183677');
   assert.ok(contrast('#183677', '#FCA404') >= 4.5 && contrast('#FFFFFF', '#FCA404') < 3);
-  // Norwegian UK drew the Norwegian tile, which prints DY: it letters its own code now, in the red of
-  // that tile on a white disc (the red disc sank into its red card)
-  assert.deepEqual([column('DI').emb.letters, column('DI').emb.bg, column('DI').badge.ink, column('DI').emb.lettersInk], ['DI', THE_WHITE, '#EB0324', '#EB0324']);
+  // Norwegian UK drew the Norwegian tile, which prints DY: it letters its own code now, on the red of
+  // that tile (the red sank into the maroon its card was, so its card is the dark plate)
+  assert.deepEqual([column('DI').emb.letters, column('DI').emb.bg, column('DI').badge.ink, W._gateCardPaint('DI').kind], ['DI', '#EB0324', '#fff', 'dark']);
 });
 
 test('the rail of the day before and the one function agree, carrier by carrier', () => {
@@ -1102,8 +1209,9 @@ test('the rail of the day before and the one function agree, carrier by carrier'
     const L = W._gateColumnLook(code);
     assert.deepEqual([L.bg, L.ink, L.codeVar], ['', '#fff', ''], code + ': the rail writes what it always wrote');
   }
-  // Frontier is no longer one of them: the gate writes its column, white with Frontier Green inside
-  assert.deepEqual([W._gateColumnLook('F9').bg, W._gateColumnLook('F9').ink, W._gateColumnLook('F9').codeVar], [THE_WHITE, O.ACCENT.F9, O.ACCENT.F9]);
+  // Frontier was one of them, painted by the stylesheet. The gate writes its column now, and what it
+  // writes is the same: discs of the accent, Frontier Green, white glyphs and a white code
+  assert.deepEqual([W._gateColumnLook('F9').bg, W._gateColumnLook('F9').ink, W._gateColumnLook('F9').codeVar, W._gateColumnLook('F9').css], ['', '#fff', '', false]);
   // the code chip rules of the day before say what the function says
   for (const code of ['YN', 'DM', '3H', 'AIE', 'F8']) {
     const i = CSS.indexOf('[data-gate-airline="' + code + '"]', CSS.indexOf(code === 'F8' ? 'v23767 — FLAIR' : 'v24150 — the code chip on the discs of carriers whose discs are light'));
@@ -1145,15 +1253,17 @@ test('the carriers the stylesheet paints: what the table records is what the sty
   assert.ok(paints(R, PD, ' .ac-ico', /color: #152C53 !important/));
   assert.ok(paints(R, PD, ' .v2-fi-orbcode', /color: #152C53 !important/));
   // Frontier: the stylesheet painted its discs Frontier Green, on a card that is a shade of that green.
-  // No rule paints them now, in either stylesheet: the gate writes the column, white outside, the
-  // emblem in its green inside, the glyphs and the code in Frontier Green.
+  // No rule paints them now, in either stylesheet: the gate writes the column, discs of its accent
+  // (the same green) with its emblem white on them, and its card is the dark plate.
   for (const list of [R, RG]) for (const tail of [' .v2-fi-icon-badge', ' .v2-fi-emblem-wrap', ' .g8-bir-badge']) {
     assert.ok(!paints(list, F9, tail, /background/) && !paints(list, 'g8-airline-F9', tail, /background/), 'no rule paints the Frontier' + tail);
   }
   assert.equal(LOOKS.F9, undefined, 'and it has no row: its art and its accent settle its column');
   const f9 = column('F9');
-  assert.deepEqual([f9.emb.bg, f9.emb.inked, f9.emb.src, f9.badge.bg, f9.badge.ink, f9.L.white], [THE_WHITE, false, '/logos/airlines/us-major/frontier-emblem.svg', THE_WHITE, O.ACCENT.F9, true]);
-  assert.ok(W._gateCardPaint('F9').at.some((p) => sinks(O.ACCENT.F9, p)), 'Frontier Green sinks into its card');
+  assert.ok(isVar(f9.emb.bg) && isVar(f9.badge.bg) && f9.top === O.ACCENT.F9 && f9.badgeBg === O.ACCENT.F9, 'discs of Frontier Green: ' + f9.emb.bg);
+  assert.deepEqual([f9.emb.inked, f9.emb.src, f9.badge.ink, f9.L.white], [true, '/logos/airlines/us-major/frontier-emblem.svg', '#fff', false]);
+  assert.ok(sinks(O.ACCENT.F9, screened(shadeBase(O.ACCENT.F9))), 'Frontier Green sank into the shade of itself');
+  assert.deepEqual([W._gateCardPaint('F9').kind, W._gateCardPaint('F9').base, clear(O.ACCENT.F9, W._gateCardPaint('F9').paint)], ['dark', HOUSE_DARK, true], 'and stands clear of the dark plate');
   assert.equal(W._ORB_TILE_GROUNDS.FFT, O.ACCENT.F9);
   assert.doesNotMatch(CSS + COLORS, /#00854D\s*(!important|'|;)/i, 'the green of no Frontier palette paints nothing on the gate or in the colour table');
   // PAL: gold on the badges and on the emblem disc
@@ -1188,10 +1298,11 @@ test('the code chip reads the ink of its column from one rule, beside the code c
   for (const [code, ink] of [['HA', '#4B2D89'], ['BA', '#2E5C99'], ['WN', '#304CB2'], ['LY', '#1B358F'], ['ET', '#2E7D32'], ['PR', '#001F60'], ['4Y', '#003E7B'],
     ['QR', '#5C0931'], ['PB', '#183677'], ['BT', '#152649'], ['PC', '#323A47'], ['DE', '#111111'], ['KE', '#051766'],
     // the columns rule 6 made white: the code in the colour of the brand, as the glyphs
-    ['IB', O.ACCENT.IB], ['EK', O.ACCENT.EK], ['B6', O.ACCENT.B6], ['OS', O.ACCENT.OS], ['KL', LOOKS.KL.ink]]) {
+    ['EK', O.ACCENT.EK], ['B6', O.ACCENT.B6], ['AY', O.ACCENT.AY], ['KL', LOOKS.KL.ink]]) {
     assert.equal(W._gateColumnLook(code).codeVar, ink, code);
   }
-  for (const code of ['AC', 'AA', 'PD', 'DL', 'UA', 'LX', 'MU']) assert.equal(W._gateColumnLook(code).codeVar, '', code);
+  // (and a gate on the dark plate writes none: a white code on a disc of its colour)
+  for (const code of ['AC', 'AA', 'PD', 'DL', 'UA', 'LX', 'MU', 'IB', 'OS', 'W6', 'TP']) assert.equal(W._gateColumnLook(code).codeVar, '', code);
   // every white column writes it, and it is the ink of its glyphs
   for (const code of CODES) {
     const L = W._gateColumnLook(code);
@@ -1211,8 +1322,8 @@ test('ink by contrast: white on a dark ground, the dark colour of the brand on a
     if (/^#f{3}(f{3})?$/i.test(L.inkSeen)) { dark++; assert.ok(contrast('#FFFFFF', L.ground) >= 3, code); }
     else { light++; assert.ok(contrast(L.inkSeen, L.ground) >= 3, code + ' ' + L.inkSeen + ' on ' + L.ground); }
   }
-  // (white glyphs on a dark disc were the many before rule 6; the white columns are the many now)
-  assert.ok(dark >= 15 && light >= 150, dark + ' dark grounds, ' + light + ' light or stylesheet-inked');
+  // (white glyphs on a disc of a colour, and the white and light discs inked in a colour of the brand)
+  assert.ok(dark >= 60 && light >= 90, dark + ' dark grounds, ' + light + ' light or stylesheet-inked');
   // the light columns of the audit, each at 4.5 to 1 or better in the colour of its brand
   for (const code of ['HA', 'BA', 'WN', 'LY', 'PR', '4Y', 'QR', 'BT', 'TR', 'VY', 'WB', 'DE', 'PC', 'KE', 'TG', 'BW', 'JV', 'CA', 'HY', 'S4', 'JX', 'KL', '4N', 'PB']) {
     const L = W._gateColumnLook(code);
@@ -1354,8 +1465,8 @@ test('the boarding shelf takes the look of the rail: the ground of its emblem or
     assert.ok(dE(sbg, top) < 6, code + ': the shelf badges ' + sbg + ' beside its orb ' + top);
     assert.ok(contrast(ink, sbg) >= 3, code + ': ' + ink + ' on ' + sbg + ' = ' + contrast(ink, sbg).toFixed(2));
   }
-  // (white glyphs on a disc of colour were the many before rule 6; the white columns are the many now)
-  assert.ok(n >= 215 && white.length >= 15 && inked.length >= 200, n + ' shelves: ' + white.length + ' white, ' + inked.length + ' in the ink of the brand');
+  // (white glyphs on a disc of colour, and the white and light discs in the ink of the brand)
+  assert.ok(n >= 215 && white.length >= 70 && inked.length >= 140, n + ' shelves: ' + white.length + ' white, ' + inked.length + ' in the ink of the brand');
   // a white column on the shelf: its five badges the one white, its emblem orb the white disc of the rail
   let whiteShelves = 0;
   for (const code of CODES) {
@@ -1369,7 +1480,7 @@ test('the boarding shelf takes the look of the rail: the ground of its emblem or
     if (L.inset) assert.ok(styleProp(S.orb.badge, 'padding') === RING && /object-fit:cover;border-radius:50%;/.test(S.icon) && S.orb.nativeCls === '', code + ': ' + S.icon);
     if (!L.art) assert.equal(orbFacts('<div class="x" style="' + S.orb.badge + '">' + S.icon + '</div>').letters, L.letters || lettersOf(code), code);
   }
-  assert.ok(whiteShelves >= 190, whiteShelves + ' white shelves');
+  assert.ok(whiteShelves >= 110 && whiteShelves <= 130, whiteShelves + ' white shelves');
   // PAL, under both its codes, is the carrier the stylesheet paints whose row names an ink: its gold
   // has no ink rule of its own on this shelf, and white read on it at 2 to 1
   assert.deepEqual(cssInked.sort(), ['PB', 'SP']);
@@ -1382,31 +1493,24 @@ test('the boarding shelf takes the look of the rail: the ground of its emblem or
     return WHITE.test(styleProp(O.shelf(c).badge, 'color')) && contrast('#FFFFFF', L.css ? L.ground : column(c).badgeBg) < 3;
   });
   assert.deepEqual(low.sort(), ['TS', 'WS']);
-  // the carriers the report named: white on a light disc before. Scoot and Vueling keep their yellow
-  // discs, on the dark their cards now take; the others sank into cards of their own hue and are white,
-  // their glyphs in the colour of the brand, or in a deeper shade of it where it is too light for white
-  for (const [code, ground] of [['TR', '#FFE900'], ['VY', '#FFCC00']]) {
-    const S = O.shelf(code);
-    assert.equal(styleProp(S.badge, 'background'), ground, code);
-    assert.ok(contrast(styleProp(S.badge, 'color'), ground) >= 4.5, code + ': ' + styleProp(S.badge, 'color') + ' on ' + ground);
-  }
-  for (const [code, ground] of [['UL', '#B5D5F1'], ['XY', '#00BBB4'], ['BF', '#00ACE7'], ['G3', '#FF7020'], ['U2', '#FF6600'], ['EZY', '#FF6600'], ['EC', '#FF6600']]) {
+  // the carriers the report named: white glyphs on a light disc before. Each keeps its light disc, on
+  // the dark plate its card now takes, with glyphs in a dark ink that reads on it
+  for (const [code, ground] of [['TR', '#FFE900'], ['VY', '#FFCC00'], ['UL', '#B5D5F1'], ['XY', '#00BBB4'], ['BF', '#00ACE7'], ['G3', '#FF7020'], ['U2', '#FF6600'], ['EZY', '#FF6600'], ['EC', '#FF6600']]) {
     const S = O.shelf(code), ink = styleProp(S.badge, 'color');
     assert.equal(W._gateOrbNatural(code).ground, ground, code + ': the ground of its tile');
-    assert.equal(styleProp(S.badge, 'background'), THE_WHITE, code);
-    assert.ok(contrast(ink, THE_WHITE) >= 3, code + ': ' + ink + ' on white');
-    // the colour of the brand or a deeper shade of it: the same hue, or the ink its row names
-    assert.ok((LOOKS[code] || {}).whiteInk === ink || hueGap(ink, ground) < 12, code + ': ' + ink + ' beside ' + ground);
+    assert.equal(styleProp(S.badge, 'background'), ground, code);
+    assert.ok(contrast(ink, ground) >= 4.5, code + ': ' + ink + ' on ' + ground);
+    assert.equal(W._gateCardPaint(code).kind, 'dark', code);
   }
   // and the white outside carriers, with the light tiles: the whole shelf one colour, as on the rail
   for (const code of ['JX', 'KE', 'OZ', 'TG', 'BW', 'JV', 'WT', 'NSA']) assert.equal(styleProp(O.shelf(code).badge, 'background'), '#FFFFFF', code);
   for (const [code, tile] of [['BT', 'BTI'], ['CA', 'CCA'], ['HY', 'UZB'], ['WB', 'RWD']]) assert.equal(styleProp(O.shelf(code).badge, 'background'), W._ORB_TILE_GROUNDS[tile], code);
-  // Azores: the light blue of its tile sank into its navy card, so its shelf is white with its navy ink
-  assert.deepEqual([styleProp(O.shelf('S4').badge, 'background'), styleProp(O.shelf('S4').badge, 'color')], [THE_WHITE, LOOKS.S4.ink]);
+  // Azores: the light blue of its tile sank into its navy card (two blues), so its card is the dark
+  // plate; its shelf keeps the light blue, with its navy ink
+  assert.deepEqual([styleProp(O.shelf('S4').badge, 'background'), styleProp(O.shelf('S4').badge, 'color'), W._gateCardPaint('S4').kind], [W._ORB_TILE_GROUNDS.RZO, LOOKS.S4.ink, 'dark']);
   for (const code of ['HA', 'BA', 'WN', 'LY', 'PR', '4Y', '2L', 'ET']) assert.equal(styleProp(O.shelf(code).badge, 'background'), THE_WHITE, code);
-  // Singapore: never its gold accent beside the navy orb. Its badges were the navy of its tile; that
-  // navy is the navy of the lower right panel, so its column is white now, with glyphs in that navy
-  assert.deepEqual([styleProp(O.shelf('SQ').badge, 'background'), styleProp(O.shelf('SQ').badge, 'color')], [THE_WHITE, W._ORB_TILE_GROUNDS.SIA]);
+  // Singapore: never its gold accent beside the navy orb. Its badges are the navy of its tile, with white glyphs
+  assert.deepEqual([styleProp(O.shelf('SQ').badge, 'background'), styleProp(O.shelf('SQ').badge, 'color')], [W._ORB_TILE_GROUNDS.SIA, '#fff']);
   // a ground where white reads at 3 to 1 or better keeps white: none is inked otherwise (KLM was, in
   // the navy its look names on its blue; its column is white now, with that navy)
   assert.deepEqual(inked.filter((c) => contrast('#FFFFFF', column(c).badgeBg) >= 3), []);
@@ -1430,9 +1534,39 @@ test('the boarding shelf takes the look of the rail: the ground of its emblem or
 // that asks for a symbol that was never drawn, one that asks for nothing).
 const OPERATORS = [...new Set([...CODES, ...Object.keys(O.CALL), 'ACEX', 'ZZ', 'XYZ'])].sort();
 
+// THE STYLESHEET PAINTS THE BOX OF THIS ORB ON THREE GATES. The box carries the class of the glyph
+// badges (v2-fi-icon-badge), and a rule that paints the badges of a carrier with !important, with no
+// column named in its selector, reaches it in the right column too: the red sphere of Delta, the
+// white of American, the white of Porter. An inline background has no !important and loses, so on
+// those gates the colour of a box that is not filled by a tile is the colour of that rule, whatever
+// the gate writes. Read here from the stylesheets: the rule of the most weight for each carrier.
+const BOX_PAINTED = (() => {
+  const out = {}, weight = {};
+  for (const css of [CSS, GATE_CSS]) for (const m of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const bg = /(?:^|;)\s*background:\s*([^;]*?)\s*!important/.exec(m[2]);
+    if (!bg) continue;
+    const sels = []; let depth = 0, cur = '';
+    for (const ch of m[1]) { if (ch === '(' || ch === '[') depth++; else if (ch === ')' || ch === ']') depth--; if (ch === ',' && depth === 0) { sels.push(cur); cur = ''; } else cur += ch; }
+    sels.push(cur);
+    for (const sel of sels) {
+      const flat = sel.replace(/:not\(#_\)/g, '').trim();
+      if (!/ \.v2-fi-icon-badge$/.test(flat) || /gad-aircraft-col|g8-bir-shelves/.test(flat)) continue;   // the left rail and the shelf only
+      const code = (/\[data-gate-airline="([A-Z0-9]{2})"\]/.exec(flat) || [])[1];
+      if (!code) continue;
+      const w = sel.split(':not(#_)').length;
+      if (weight[code] > w) continue;
+      weight[code] = w;
+      // a flat colour, or the body colour of a sphere (the stop at 55 hundredths)
+      out[code] = ((/(#[0-9a-f]{6}) 55%/i.exec(bg[1]) || /^(#[0-9a-f]{6})$/i.exec(bg[1]) || [])[1] || '').toUpperCase();
+    }
+  }
+  return out;
+})();
+
 // The rules the orb of any gate and any operator is held to. Empty means it obeys them.
 function cardBreaks(gate, op) {
   const r = W._gateCardOrb(gate, op), f = orbFacts(r.html), G = W._gateColumnLook(gate), A = art(f.src), out = [];
+  const painted = BOX_PAINTED[G.carrier] || '';
   // a mark never without a disc: a clear box only under a finished tile that is on disk and fills it
   if (f.bg === 'transparent') {
     if (!(f.native && f.src && A.exists && f.fit === 'cover' && f.pad === '0')) out.push('no disc under ' + (f.src || 'the letters ' + f.letters));
@@ -1443,14 +1577,22 @@ function cardBreaks(gate, op) {
   // white column round it, and never the marker class that takes the padding of the box away
   const square = /\/airline-tiles\//.test(f.src) && (!/\.svg(\?|$)/.test(f.src) || (A.exists && A.clearShare < 0.5));
   const fillsBox = f.fit === 'cover' && f.native && f.pad === '0';
-  const roundInset = f.fit === 'cover' && !f.native && f.pad === RING && f.bg === THE_WHITE && /border-radius:50%;/.test(f.imgStyle);
+  const roundInset = f.fit === 'cover' && !f.native && f.pad === RING_CARD && f.bg === THE_WHITE && /border-radius:50%;/.test(f.imgStyle);
   if (square && !(fillsBox || roundInset)) out.push('a square tile inside a padded disc: ' + f.src);
   if (r.inset && !roundInset) out.push('an inset that is not a round picture inside a white ring: ' + f.style + ' / ' + f.imgStyle);
   // a white disc is the one white, and nothing on it is inked white
   if (r.white && (f.bg !== THE_WHITE || f.inked)) out.push('a white disc that is ' + f.bg + (f.inked ? ', with a white mark on it' : ''));
-  // never white on a ground under 3 to 1. The colour of the disc: what the box writes, or the accent of
-  // the gate where it writes the accent variable (a gate the stylesheet paints is not judged here).
-  const disc = HEX.test(full(f.bg)) ? f.bg : (isVar(f.bg) && !G.css) ? O.accent(G.carrier) : '';
+  // A WHITE DISC IS NEVER WRITTEN INTO A BOX THE STYLESHEET PAINTS, and never on a gate left as drawn:
+  // its white would be repainted (a white ring came out Delta red), and its letters, in the ink of a
+  // brand, would land on that paint
+  if ((painted || isKept(gate)) && (r.white || r.inset || /--orb-ring/.test(f.style))) out.push('a white disc written on a gate left as drawn' + (painted ? ', into a box the stylesheet paints ' + painted : ''));
+  // never white on a ground under 3 to 1. The colour of the disc: the paint of the stylesheet where
+  // it paints this box and no tile covers it, else what the box writes, or the accent of the gate
+  // where it writes the accent variable.
+  // (the mark of the gate carrier itself on its own painted box is the business of the stylesheet,
+  // which has rules for it: the p of Porter, the symbol of American)
+  const disc = (painted && !f.native && !r.own) ? painted
+    : HEX.test(full(f.bg)) ? f.bg : (isVar(f.bg) && !G.css) ? O.accent(G.carrier) : '';
   // (the markup of an operator is judged whether or not its file is on disk: it never asks for white
   // on a light disc. A gate carrier with no art of its own is the business of the column, and of the ledger.)
   if (disc && f.inked && (A.exists || !r.own) && contrast('#FFFFFF', disc) < 3 && !APPROVED_WHITE.includes(O.fold(r.code))) {
@@ -1467,17 +1609,41 @@ function cardBreaks(gate, op) {
 test('the Your Aircraft orb, every gate carrier with every operator: a mark never without a disc, never a square in a circle, never white under 3 to 1', () => {
   // THE FULL PRODUCT: every named code as the gate, with no operator and with each of the operators above.
   let pairs = 0, operated = 0;
-  const wrong = [];
+  const wrong = [], whiteBox = {};
   for (const gate of CODES) {
+    const boxWhite = BOX_PAINTED[O.fold(gate)] === THE_WHITE;
     for (const op of [''].concat(OPERATORS)) {
       pairs++;
       const r = W._gateCardOrb(gate, op);
       if (!r.own) operated++;
-      const b = cardBreaks(gate, op);
+      let b = cardBreaks(gate, op);
+      // WHITE ON THE WHITE BOX OF AMERICAN AND OF PORTER: found by this test once it applied the paint
+      // of the stylesheet, and older than this audit. Counted apart, below, and not put right here.
+      if (boxWhite) {
+        const old = b.filter((s) => /^(a white mark on #FFFFFF at 1\.00 to 1|the letters white on #FFFFFF at 1\.00 to 1)/.test(s));
+        if (old.length) { const k = O.fold(gate) + (/^a white mark/.test(old[0]) ? ' marks' : ' letters'); (whiteBox[k] = whiteBox[k] || new Set()).add(op); }
+        b = b.filter((s) => !old.includes(s));
+      }
       if (b.length && wrong.length < 40) wrong.push(gate + ' gate, operated by ' + (op || 'itself') + ': ' + b.join('; '));
     }
   }
   assert.deepEqual(wrong, [], wrong.join('\n'));
+  // ON A GATE LEFT AS DRAWN AN OPERATOR IS DRAWN AS IT WAS, AND THAT INCLUDES A FAULT. The stylesheet
+  // paints the box of this orb white on an American and on a Porter gate, over whatever disc the
+  // gate writes. An operator whose mark is one colour, inked white for the disc of its own colour,
+  // is then white on white there, and so are white letters. No pair of a real schedule is among them
+  // (the regionals of American print American; SkyWest, Mesa and the partners of both draw a tile
+  // that fills the box), and the instruction for the approved gates is to leave them exactly as they
+  // were, so they are counted here, by operator, and reported: the count moves only on purpose.
+  assert.deepEqual(Object.fromEntries(Object.entries(whiteBox).map(([k, v]) => [k, v.size])), { 'AA letters': 3, 'AA marks': 112, 'PD letters': 3, 'PD marks': 110 });
+  // every one of them is an operator whose own mark is inked white for a disc of its own colour, or
+  // a code that letters itself: none is a tile, and none is a white disc of this rule
+  for (const [k, ops] of Object.entries(whiteBox)) for (const op of ops) {
+    const f = orbFacts(W._gateCardOrb(k.slice(0, 2), op).html);
+    assert.ok(!f.native && !/--orb-ring/.test(f.style) && (/letters$/.test(k) ? !!f.letters : f.inked), k + ' / ' + op);
+  }
+  // and the red box of Delta has none: white reads on its red
+  assert.ok(contrast('#FFFFFF', BOX_PAINTED.DL) >= 3 && !Object.keys(whiteBox).some((k) => /^DL/.test(k)));
   assert.ok(pairs >= 70000 && operated >= 60000, pairs + ' pairs, ' + operated + ' with the art of the operator');
   // the cases the review named. A tile gate under an operator with no art: the letters land on a disc
   for (const [gate, op] of [['IB', 'YW'], ['KL', 'WA'], ['AY', 'N7'], ['SK', 'WX'], ['QF', 'QQ'], ['EK', 'FZ']]) {
@@ -1485,27 +1651,95 @@ test('the Your Aircraft orb, every gate carrier with every operator: a mark neve
     assert.ok(HEX.test(full(f.bg)) || isVar(f.bg), gate + '/' + op + ': a disc, ' + f.bg);
     assert.ok(f.pad !== '0' && f.fit === 'contain' && !f.native, gate + '/' + op + ': a padded disc for a mark or its letters');
   }
-  // a tile gate under an operator with an emblem: the disc of that operator, padded, the mark contained
-  // (Air France has a white column of its own now: its virgule in its red on the white disc)
-  for (const [gate, op, disc, inked] of [['NH', 'AC', O.BRAND.AC.accent, true], ['KL', 'AF', THE_WHITE, false], ['IB', 'BA', THE_WHITE, false], ['B6', 'AA', THE_WHITE, false]]) {
+  // a tile gate under an operator with an emblem: the disc of that operator, padded, the mark contained.
+  // Air Canada on a KLM or an ANA gate: its red stands out on their navy panels. Air France on a KLM
+  // gate: its navy disc would sink into the navy of that panel, so it is the white disc of Air
+  // France there, the virgule in its red.
+  for (const [gate, op, disc, inked] of [['NH', 'AC', O.BRAND.AC.accent, true], ['KL', 'AC', O.BRAND.AC.accent, true], ['KL', 'AF', THE_WHITE, false], ['IB', 'BA', THE_WHITE, false], ['B6', 'AA', THE_WHITE, false]]) {
     const f = orbFacts(W._gateCardOrb(gate, op).html);
     assert.deepEqual([f.bg, f.fit, f.native, f.inked], [disc, 'contain', false, inked], gate + '/' + op);
     assert.equal(f.src, W._gateOrbParts(op).path, gate + '/' + op);
   }
-  // a padded gate under an operator whose art is a tile: the orb of that operator as its own gate
-  // draws it. Swiss is approved as drawn, so its tile fills the orb (it sat as a square in the disc);
-  // SkyWest, JetBlue and Iberia have white columns, so the tile is a round inset inside the white ring
-  for (const [gate, op, tile, kept] of [['LH', 'LX', 'SWR', true], ['AA', 'OO', 'SKW', false], ['AC', 'OO', 'SKW', false], ['WS', 'B6', 'JBU', false], ['PD', 'IB', 'IBE', false]]) {
+  // AN OPERATOR WHOSE ART IS A TILE. On a gate left as drawn the tile fills the orb, as it always
+  // did: SkyWest on an American and on an Air Canada gate, JetBlue on a WestJet gate, Iberia on a
+  // Porter gate, Swiss on any gate (its own gate is approved as drawn).
+  for (const [gate, op, tile] of [['LH', 'LX', 'SWR'], ['AA', 'OO', 'SKW'], ['AC', 'OO', 'SKW'], ['DL', 'OO', 'SKW'], ['UA', 'YV', 'ASH'], ['WS', 'B6', 'JBU'], ['PD', 'IB', 'IBE']]) {
     const f = orbFacts(W._gateCardOrb(gate, op).html);
-    assert.deepEqual([f.src, f.bg, f.pad, f.fit, f.native, f.inked], ['/logos/airline-tiles/' + tile + '.svg'].concat(kept ? ['transparent', '0', 'cover', true, false] : [THE_WHITE, RING, 'cover', false, false]), gate + '/' + op);
-    assert.match(f.imgStyle, /border-radius:50%;/, gate + '/' + op + ': round either way');
-    assert.equal(f.bg, column(op).emb.bg, op + ': the disc of its own gate');
+    assert.deepEqual([f.src, f.bg, f.pad, f.fit, f.native, f.inked], ['/logos/airline-tiles/' + tile + '.svg', 'transparent', '0', 'cover', true, false], gate + '/' + op);
+    assert.match(f.cls, /v2-fi-orbwrap-native/, gate + '/' + op + ': the class that takes the padding of the stylesheet away');
   }
+  // On any other gate it fills the orb where it stands out on the lower right panel OF THAT GATE, and
+  // is a round inset inside the white ring where it would sink there: judged against the panel it is
+  // drawn on, never against the card of its own gate, which is not on this screen.
+  for (const [gate, op, tile, inset] of [['IB', 'OO', 'SKW', false], ['QF', 'JQ', 'JST', false], ['AY', 'IB', 'IBE', false], ['TP', 'OS', 'AUA', false],
+    ['B6', 'OO', 'SKW', true], ['KL', 'OO', 'SKW', true], ['AY', 'B6', 'JBU', true], ['SK', 'AY', 'FIN', true], ['QR', 'IB', 'IBE', true]]) {
+    const r = W._gateCardOrb(gate, op), f = orbFacts(r.html), g = W._ORB_TILE_GROUNDS[tile] || LOOKS[op].ground, lower = W._gateCardPaint(gate).lower;
+    assert.equal(sinks(g, lower), inset, gate + '/' + op + ': ' + g + ' on ' + lower);
+    assert.deepEqual([f.src, f.bg, f.pad, f.fit, f.native, f.inked, r.inset], ['/logos/airline-tiles/' + tile + '.svg'].concat(inset ? [THE_WHITE, RING_CARD, 'cover', false, false, true] : ['transparent', '0', 'cover', true, false, false]), gate + '/' + op);
+    assert.match(f.imgStyle, /border-radius:50%;/, gate + '/' + op + ': round either way');
+  }
+  // (SkyWest has a white column on its own gate, and Iberia the dark plate: neither says what its orb
+  // is on the panel of another gate)
+  assert.deepEqual([column('OO').L.white, column('IB').L.white], [true, false]);
+  // EVERY GATE NOT LEFT AS DRAWN, EVERY OPERATOR: no disc that lands on the lower right panel is the
+  // colour of that panel. The disc is read off the markup: the background the box writes, the accent
+  // of the gate where it writes the accent variable, and under a tile that fills a clear box the
+  // ground the script read from that tile (else the rim of the file, else the colour of its carrier).
+  // An operator whose own gate is approved as drawn brings that drawing, and is not judged.
+  const tileGround = (src, code) => {
+    const name = (/\/airline-tiles\/([^/?]+)\.svg/.exec(src) || [])[1];
+    return (name && W._ORB_TILE_GROUNDS[name]) || (LOOKS[O.fold(code)] || {}).ground || O.accent(O.fold(code));
+  };
+  const sunk = [], whitened = [];
+  let judged = 0;
+  for (const gate of CODES) {
+    if (isKept(gate)) continue;
+    const lower = W._gateCardPaint(gate).lower, G = W._gateColumnLook(gate);
+    for (const op of [''].concat(OPERATORS)) {
+      const r = W._gateCardOrb(gate, op), f = orbFacts(r.html);
+      if (!r.own && isKept(r.code)) continue;
+      judged++;
+      const disc = HEX.test(full(f.bg)) ? full(f.bg) : isVar(f.bg) ? full(O.accent(G.carrier)) : full(tileGround(f.src, r.code));
+      if (sinks(disc, lower) && sunk.length < 30) sunk.push(gate + ' gate, operated by ' + (op || 'itself') + ': ' + disc + ' on ' + lower);
+      // and a disc is white only where the column of the gate is white, or where the disc its art
+      // gives would have sunk into this panel
+      if (r.white && !(r.own && G.white)) {
+        const N = W._gateOrbNatural(r.code), onGate = !N.ground && !W._CARD_ORB_GROUND[O.fold(r.code)] && !(O.BRAND[O.fold(r.code)] || {}).accent && !O.ACCENT[O.fold(r.code)] && !W._gateOwnAccent(O.fold(r.code));
+        const natural = full(onGate && !N.disc ? (G.bg || O.accent(G.carrier)) : (N.ground || W._CARD_ORB_GROUND[O.fold(r.code)] || (O.BRAND[O.fold(r.code)] || {}).accent || O.accent(O.fold(r.code))));
+        if (!sinks(natural, lower) && whitened.length < 30) whitened.push(gate + ' gate, operated by ' + (op || 'itself') + ': white, and ' + natural + ' stands out on ' + lower);
+      }
+    }
+  }
+  assert.deepEqual(sunk, [], sunk.join('\n'));
+  assert.deepEqual(whitened, [], whitened.join('\n'));
+  assert.ok(judged >= 60000, judged + ' orbs judged against the panel they sit on');
+  // ON A GATE LEFT AS DRAWN the orb of an operator is the recipe of its art, never the white disc:
+  // the function says so in one place, and no pair writes one (the rule above, in cardBreaks)
+  const fn = block('window._gateCardOrb = function');
+  assert.match(fn, /var opParts = window\._gateOrbNatural\(op\);/);
+  assert.match(fn, /if \(!P\.white && !window\._gateColumnKept\(gate\) && \(own \|\| onGateDisc \|\| !window\._gateColumnKept\(code\)\)\) \{/);
+  assert.match(fn, /try \{ lower = window\._gateCardPaint\(gate\)\.lower; \}/, 'the panel of the gate, not of the operator');
+  // the boxes the stylesheet paints, read from the stylesheets: the three the table of looks records
+  assert.deepEqual(BOX_PAINTED, { AA: '#FFFFFF', DL: '#E01933', PD: '#FFFFFF' });
+  for (const [c, colour] of Object.entries(BOX_PAINTED)) assert.ok(same(LOOKS[c].ground, colour) && LOOKS[c].css === 1 && isKept(c), c);
+  // Delta, and Endeavor which prints it: under every operator a tile that fills the box, or a mark or
+  // letters in white on the red (the review found 126 tiles in a ring of that red, and letters in a
+  // red ink on it at 1.05 to 1)
+  for (const gate of ['DL', '9E']) for (const op of OPERATORS) {
+    const r = W._gateCardOrb(gate, op), f = orbFacts(r.html);
+    assert.ok(!r.white && !r.inset && !/--orb-ring/.test(f.style), gate + '/' + op);
+    if (f.native) assert.deepEqual([f.pad, f.fit], ['0', 'cover'], gate + '/' + op);
+    else if (f.letters) assert.ok(!f.lettersInk || contrast(full(f.lettersInk), BOX_PAINTED.DL) >= 3, gate + '/' + op + ': ' + f.lettersStyle);
+  }
+  for (const op of ['OO', 'YV', 'KL', 'B6', 'SK', 'AZ']) assert.equal(orbFacts(W._gateCardOrb('DL', op).html).native, true, 'DL/' + op + ': the tile is the disc');
+  for (const op of ['DI', 'D8', 'P6', '3U', 'HX', 'JD']) { const f = orbFacts(W._gateCardOrb('DL', op).html); assert.ok(f.inked || (f.letters && !f.lettersInk), 'DL/' + op + ': white on the red'); }
   // an operator no table knows, on a gate whose column is light: its mark is not inked white there
-  for (const [gate, ground] of [['TR', '#FFE900'], ['BT', '#CDDA32'], ['VY', '#FFCC00'], ['OS', THE_WHITE], ['KL', THE_WHITE]]) {
+  for (const [gate, ground] of [['TR', '#FFE900'], ['BT', '#CDDA32'], ['VY', '#FFCC00'], ['AY', THE_WHITE], ['KL', THE_WHITE]]) {
     const f = orbFacts(W._gateCardOrb(gate, 'ZZ').html);
     assert.deepEqual([f.bg, f.inked, f.src], [ground, false, '/logos/symbols/airlines/ZZ.svg'], gate + ': the disc of the column, no white filter');
   }
+  // and on a gate whose column is a colour white reads on (Austrian, on the dark plate), it is
+  assert.deepEqual([orbFacts(W._gateCardOrb('OS', 'ZZ').html).bg, orbFacts(W._gateCardOrb('OS', 'ZZ').html).inked], [LOOKS.OS.ground, true]);
   // WestJet Encore on a WestJet gate keeps its white leaf: its own column is approved white
   assert.deepEqual([orbFacts(W._gateCardOrb('WS', 'WR').html).inked, orbFacts(W._gateCardOrb('WS', 'WR').html).bg], [true, O.ACCENT.WR]);
   // letters, where no file is asked for, are inked to read on their disc: white on a dark accent,
@@ -1513,19 +1747,18 @@ test('the Your Aircraft orb, every gate carrier with every operator: a mark neve
   // (a code no table knows has the fallback blue for its gate: a blue disc on a card of that blue, so
   // its own column is white and its letters are in that blue)
   assert.deepEqual([orbFacts(W._gateCardOrb('XYZ', '').html).letters, orbFacts(W._gateCardOrb('XYZ', '').html).lettersInk, orbFacts(W._gateCardOrb('XYZ', '').html).bg], ['XYZ', '#0033A1', THE_WHITE]);
-  // given a yellow accent it is white still, the yellow on its khaki card, with a deeper shade for ink;
-  // given the dark card of a yellow airline as well it keeps the yellow disc, with dark letters
+  // given a yellow accent, the yellow would sink into the khaki its card would be, so its card is the
+  // dark plate and it keeps the yellow disc, with dark letters; the same with a dark of its own
   O.ACCENT.XYZ = '#FFE900';
   try {
-    const w = orbFacts(W._gateCardOrb('XYZ', '').html);
-    assert.deepEqual([w.letters, w.bg], ['XYZ', THE_WHITE]);
-    assert.ok(w.lettersInk && contrast(w.lettersInk, THE_WHITE) >= 3 && hueGap(w.lettersInk, '#FFE900') < 12, 'a deeper yellow on white: ' + w.lettersInk);
-    assert.deepEqual(cardBreaks('XYZ', ''), []);
-    W._GATE_CARD_DARKS.XYZ = '#000000';
-    const f = orbFacts(W._gateCardOrb('XYZ', '').html);
-    assert.deepEqual([f.letters, f.bg], ['XYZ', 'var(--airline-accent,#D82F2E)']);
-    assert.ok(f.lettersInk && contrast(f.lettersInk, '#FFE900') >= 4.5, 'dark letters on a light disc: ' + f.lettersInk);
-    assert.deepEqual(cardBreaks('XYZ', ''), []);
+    for (const own of ['', '#000000']) {
+      if (own) W._GATE_CARD_DARKS.XYZ = own;
+      assert.deepEqual([W._gateCardDark('XYZ'), W._gateCardPaint('XYZ').kind], [own || HOUSE_DARK, 'dark']);
+      const f = orbFacts(W._gateCardOrb('XYZ', '').html);
+      assert.deepEqual([f.letters, f.bg], ['XYZ', 'var(--airline-accent,#D82F2E)']);
+      assert.ok(f.lettersInk && contrast(f.lettersInk, '#FFE900') >= 4.5, 'dark letters on a light disc: ' + f.lettersInk);
+      assert.deepEqual(cardBreaks('XYZ', ''), []);
+    }
   } finally { delete O.ACCENT.XYZ; delete W._GATE_CARD_DARKS.XYZ; }
   // no gate carrier at all shows a mark or letters on a clear box (120 did, 31 before that)
   const bare = (op) => CODES.filter((g) => { const f = orbFacts(W._gateCardOrb(g, op).html); return f.bg === 'transparent' && !(f.native && art(f.src).exists); });
@@ -1618,13 +1851,22 @@ test('what lands on the disc of the gate takes the ink of the gate: one column, 
   assert.equal(column('KL').badge.ink, end.ink, 'the ink of the five glyph badges of that gate');
   // EVERY GATE, under an operator with no colour of its own. Where the look of the gate names an ink
   // that is not white, the box names it, the mark drops the white filter and the letters take it;
-  // where the column is white, nothing is named and the ink is picked by contrast, as it was.
+  // where the glyphs of the gate are white, nothing is named and the ink is picked by contrast, as it
+  // was. One gate is neither: Lufthansa, whose navy disc would sink into the navy of its lower right
+  // panel, so the orb is the white disc there, and the box names the navy for the letters.
   let named = 0, plain = 0;
+  const whitened = [];
   for (const gate of CODES) {
     const G = W._gateColumnLook(gate), r = W._gateCardOrb(gate, 'ZZ'), o = orbFacts(r.html), ink = styleProp(o.style, '--orb-ink');
     assert.deepEqual([r.own, r.code, o.src], [false, 'ZZ', '/logos/symbols/airlines/ZZ.svg'], gate);
     const after = SHOWN.orb(r.html, O.accent(G.carrier));
     assert.equal(after.letters, 'ZZ', gate);
+    if (r.white && !G.white) {
+      whitened.push(gate);
+      assert.deepEqual([o.bg, o.inked], [THE_WHITE, false], gate);
+      assert.ok(same(ink, after.ink) && after.inkImportant && contrast(full(ink), THE_WHITE) >= 3, gate + ': the letters ' + after.ink + ' on the white disc');
+      continue;
+    }
     if (WHITE.test(G.ink)) {
       plain++;
       assert.equal(ink, '', gate + ': no ink named');
@@ -1638,25 +1880,27 @@ test('what lands on the disc of the gate takes the ink of the gate: one column, 
     if (!G.css) assert.ok(same(column(gate).badge.ink, after.ink), gate + ': the ink of its glyph badges');
     if (!LEDGER[gate]) assert.ok(contrast(full(after.ink), G.ground) >= 3, gate + ': ' + after.ink + ' on ' + G.ground);
   }
-  // (the gates whose column is white name the colour of the brand: the many, since rule 6)
-  assert.ok(named >= 200 && plain >= 15, named + ' gates name an ink, ' + plain + ' are white');
+  assert.deepEqual(whitened, ['LH']);
+  // (the white columns and the light discs name the colour of the brand; a disc of a colour that
+  // white reads on names nothing)
+  assert.ok(named >= 140 && plain >= 70, named + ' gates name an ink, ' + plain + ' are white');
   // PAL is among them: the stylesheet paints that box gold, and the letters take its navy
   assert.equal(styleProp(orbFacts(W._gateCardOrb('PB', 'ZZ').html).style, '--orb-ink'), LOOKS.PB.ink);
   // an operator with a colour of its own is not on the disc of the gate: the ink of the gate is not
   // named. On a disc of colour nothing is named; a white disc of rule 6 names the ink of the column it
   // belongs to, the operator or the gate carrier itself, for the letters of a file that fails
-  for (const [gate, op, ink] of [['KL', 'AC', ''], ['BA', 'IB', O.ACCENT.IB], ['KL', 'AF', O.ACCENT.AF], ['KL', '', LOOKS.KL.ink], ['BT', '', ''], ['BT', 'LX', '']]) {
+  for (const [gate, op, ink] of [['KL', 'AC', ''], ['BA', 'IB', ''], ['QR', 'IB', O.ACCENT.IB], ['KL', 'AF', O.ACCENT.AF], ['KL', '', LOOKS.KL.ink], ['BT', '', ''], ['BT', 'LX', '']]) {
     assert.equal(styleProp(orbFacts(W._gateCardOrb(gate, op).html).style, '--orb-ink'), ink, gate + '/' + op);
   }
-  // an operator with no colour of its own has no column of its own to go white: it keeps the recipe of
-  // its art and sits on the disc of the gate, whatever that disc is
-  assert.match(block('window._gateCardOrb = function'), /if \(!ownColour\) opParts = window\._gateOrbNatural\(op\);/);
+  // an operator is drawn by the recipe of its art, and one with no colour of its own sits on the disc
+  // of the gate, whatever that disc is
+  assert.match(block('window._gateCardOrb = function'), /var opParts = window\._gateOrbNatural\(op\);/);
   for (const gate of ['AC', 'TR', 'OS', 'UA', 'BT']) {
     const o = orbFacts(W._gateCardOrb(gate, 'ZZ').html), G = W._gateColumnLook(gate);
     assert.ok(G.css || isVar(o.bg) || same(o.bg, G.bg), gate + ': the unknown operator sits on ' + o.bg + ', the gate is ' + (G.bg || 'its accent'));
   }
   // the one function decides it, and the handler reads the ink the box names before it picks by contrast
-  assert.match(block('window._gateCardOrb = function'), /if \(onGateDisc && look && look\.ink && !white\.test\(look\.ink\)\) \{ ink = look\.ink; inkVar = '--orb-ink:' \+ ink \+ ';'; \}/);
+  assert.match(block('window._gateCardOrb = function'), /if \(!whiteNow && onGateDisc && look && look\.ink && !white\.test\(look\.ink\)\) \{ ink = look\.ink; inkVar = '--orb-ink:' \+ ink \+ ';'; \}/);
   const failed = block('window._orbArtFailed = function');
   assert.match(failed, /wrap\.style\.getPropertyValue\('--orb-ink'\)/);
   assert.ok(failed.indexOf("getPropertyValue('--orb-ink')") < failed.indexOf('var lum = '), 'before the pick by contrast');
@@ -1671,19 +1915,25 @@ test('an ink that is not white is written to win over the stylesheet: the whole 
   assert.ok(at > 0, 'the rule of the letters');
   assert.match(flat.slice(at, flat.indexOf('}', at)), /color: #ffffff !important;/);
   // letters the one function writes itself, on a light disc (a code no table knows, given a yellow
-  // accent and the dark card of a yellow airline for the length of this check): the dark ink, with !important
-  O.ACCENT.XYZ = '#FFE900'; W._GATE_CARD_DARKS.XYZ = '#000000';
+  // accent for the length of this check, which puts it on the dark plate): the dark ink, with !important
+  O.ACCENT.XYZ = '#FFE900';
   try {
     const f = orbFacts(W._gateCardOrb('XYZ', '').html);
     assert.deepEqual([f.letters, f.lettersStyle], ['XYZ', 'color:#1B2430 !important;']);
     assert.ok(inkWins(f.lettersStyle));
     assert.deepEqual(cardBreaks('XYZ', ''), []);
-  } finally { delete O.ACCENT.XYZ; delete W._GATE_CARD_DARKS.XYZ; }
+  } finally { delete O.ACCENT.XYZ; }
   // and on the white disc of rule 6: the colour of the brand, with !important
-  for (const code of ['XYZ', 'YX', 'DI', 'P6']) {
+  for (const code of ['XYZ', 'YX', 'WAL']) {
     const f = orbFacts(W._gateCardOrb(code, '').html);
     assert.equal(f.lettersStyle, 'color:' + W._gateColumnLook(code).ink + ' !important;', code);
     assert.ok(inkWins(f.lettersStyle) && contrast(full(f.lettersInk), THE_WHITE) >= 3, code);
+  }
+  // on a disc of a colour that white reads on, nothing is written: the white of the stylesheet stands
+  for (const code of ['DI', 'P6']) {
+    const f = orbFacts(W._gateCardOrb(code, '').html);
+    assert.deepEqual([f.letters, f.lettersStyle], [code, ''], code);
+    assert.ok(contrast('#FFFFFF', f.bg) >= 3, code + ': white on ' + f.bg);
   }
   // the check reads the style, not the colour: the same ink without !important is a break
   assert.equal(inkWins('color:#1B2430;'), false);
@@ -1711,17 +1961,54 @@ test('an ink that is not white is written to win over the stylesheet: the whole 
   }
   // a white column whose file was never drawn: the rail hands its own handler the letters and the ink,
   // and the handler sets them as the chip is set, colour and fill colour, both important
-  const failedRail = block('window._railOrbFailed = function');
-  assert.match(failedRail, /span\.style\.setProperty\('color', colour, 'important'\);\s*\n\s*span\.style\.setProperty\('-webkit-text-fill-color', colour, 'important'\);/);
-  assert.match(failedRail, /span\.className = 'v2-fi-orbcode';/);
-  for (const code of ['3U', 'NK', 'ZZ']) {
+  for (const code of ['QN', 'NK', 'ZZ']) {
     const html = O.rail({ airlineCode: code }, code, code).emblem, L = W._gateColumnLook(code);
     assert.ok(!art(L.art).exists && L.white, code + ': a white column, a file that is not on disk');
     assert.ok(html.includes('onerror="window._railOrbFailed(this,\'' + code + '\',\'' + L.ink + '\')"'), code + ': ' + html);
     assert.doesNotMatch(html, /fill:#fff/, code + ': never the white plane on the white disc');
   }
-  // and on a gate that keeps a disc of colour the white plane is still the last resort
+  // THE HANDLER, RUN. It draws the top orb of every white column whose file is not on disk, so it is
+  // run here against a stand-in for the image and its box, and what it leaves is read: the image
+  // gone, one span of the chip class, the letters of the row, and the ink on both properties the
+  // stylesheet sets, each with !important.
+  const railFailed = (() => {
+    const made = [];
+    const doc = { createElement: (tag) => { const el = { tag, className: '', textContent: '', set: {}, style: { setProperty(k, v, p) { el.set[k] = [v, p]; } } }; made.push(el); return el; } };
+    const fn = new Function('window', 'document', block('window._railOrbFailed = function') + '\nreturn window._railOrbFailed;')({}, doc);
+    return (letters, ink, already) => {
+      const kids = already ? [{ className: 'v2-fi-orbcode' }] : [];
+      const wrap = { querySelector: (sel) => kids.find((k) => '.' + k.className === sel) || null, appendChild: (n) => kids.push(n) };
+      const img = { parentNode: wrap, removed: false, remove() { this.removed = true; } };
+      made.length = 0;
+      fn(img, letters, ink);
+      return { removed: img.removed, kids, made: made.slice() };
+    };
+  })();
+  let ran = 0;
+  for (const code of CODES) {
+    const { L, emb } = column(code);
+    if (!L.white || !emb.src || art(emb.src).exists) continue;
+    ran++;
+    const args = /onerror="window\._railOrbFailed\(this,'([A-Z0-9]*)','(#[0-9A-Fa-f]{6})'\)"/.exec(O.rail({ airlineCode: code }, code, code).emblem);
+    assert.ok(args, code + ': the rail names the handler');
+    const end = railFailed(args[1], args[2]);
+    assert.ok(end.removed && end.kids.length === 1 && end.made.length === 1, code + ': the image gone, one span in its place');
+    const span = end.kids[0];
+    assert.deepEqual([span.tag, span.className, span.textContent], ['span', 'v2-fi-orbcode', lettersOf(code)], code);
+    assert.deepEqual(span.set, { color: [L.ink.toString(), 'important'], '-webkit-text-fill-color': [L.ink.toString(), 'important'] }, code + ': the ink of the column on both properties, both important');
+    assert.ok(contrast(full(span.set.color[0]), THE_WHITE) >= 3 && !WHITE.test(span.set.color[0]), code + ': ' + span.set.color[0] + ' on the white disc');
+  }
+  assert.ok(ran >= 70, ran + ' white columns whose top orb the handler draws');
+  // what it is handed is limited to the shape it has: letters and digits, three at most, and a hex
+  // colour, with the dark ink of the boards where the colour is not one; and it never sets two spans
+  const odd = railFailed('q<n>"9x', 'red').kids[0];
+  assert.deepEqual([odd.textContent, odd.set.color, odd.set['-webkit-text-fill-color']], ['QN9', ['#1B2430', 'important'], ['#1B2430', 'important']]);
+  assert.deepEqual([railFailed('QN', '#62142E', true).made.length, railFailed('QN', '#62142E', true).kids.length], [0, 1], 'letters already there are left alone');
+  // and on a gate that keeps a disc of colour the white plane is still the last resort: a gate
+  // approved as drawn, and a gate on the dark plate whose file was never drawn (Sichuan, on its red)
   assert.match(O.rail({ airlineCode: 'AC' }, 'AC', 'AC').emblem, /onerror="this\.outerHTML=/);
+  assert.match(O.rail({ airlineCode: '3U' }, '3U', '3U').emblem, /onerror="this\.outerHTML=/);
+  assert.deepEqual([column('3U').L.white, W._gateCardPaint('3U').kind, column('3U').top], [false, 'dark', O.ACCENT['3U']]);
   // and every letters span either builder or the one function writes is read whole by this test
   assert.equal(orbFacts('<div class="v2-fi-icon-wrap" style="background:#fff;"><span class="v2-fi-orb-code" style="color:#123456;font-weight:800;">AB</span></div>').lettersStyle, 'color:#123456;font-weight:800;');
 });
@@ -1795,7 +2082,10 @@ test('no gate with art of its own falls to the fallback blue, and the colour tab
 // ════════════════════════════════════════════════════════════════════════
 
 // The paint read off the screens, beside the third disc of each rail (1680 by 1050, the median of a
-// ring six to eight pixels outside the disc), and the ground of that disc. Recorded by hand.
+// ring six to eight pixels outside the disc), and the ground of that disc. Recorded by hand. These
+// are the cards as they were seen before the dark plate: the shade of each accent. They hold the
+// arithmetic of the shade, which still decides whether a gate sinks, and still paints the card of
+// every gate that does not.
 const SEEN_SHADE = {
   OS: '#561F1B', IB: '#571F28', JL: '#521619', QF: '#581619', VS: '#561829', W6: '#541640', DI: '#5B1724',
   TP: '#294821', F9: '#19352E', AY: '#18172E', B6: '#14273D', SK: '#141638', AD: '#16162E', AM: '#18202E',
@@ -1804,9 +2094,16 @@ const SEEN_SHADE = {
 };
 // Scoot as it was seen, before its card took its black: the khaki of a shade of its yellow
 const SEEN_SCOOT = { accent: '#FFE900', card: '#625C19', disc: '#F2DD00' };
+// (Aer Lingus was seen on the emerald picture it shared with Cathay and EVA, #1C2E28 at its discs:
+// that picture is no longer its card)
 const SEEN_PICTURE = {
-  AC: '#2A2A2A', WS: '#126C74', UA: '#00286D', TS: '#182234', KL: '#0002C9', EI: '#1C2E28',
+  AC: '#2A2A2A', WS: '#126C74', UA: '#00286D', TS: '#182234', KL: '#0002C9',
   AA: '#5B8FAD', LH: '#D3B156', QR: '#D7A680', AF: '#0D1F4F', EK: '#000F07'
+};
+// THE DARK PLATE AS IT WAS SEEN, on the five gates drawn both ways for the choice (the same ring,
+// beside the third disc): [the plate, the disc on it]
+const SEEN_DARK = {
+  OS: ['#232529', '#D21D05'], IB: ['#232529', '#D61B2D'], QF: ['#232529', '#D90000'], TP: ['#232529', '#449F19'], W6: ['#232529', '#CD007B']
 };
 // gate: [the ground of its discs as seen, the paints of its card as seen]
 const SEEN_SUNK = {
@@ -1850,7 +2147,7 @@ const APPROVED_SUNK = {
   'XP': 'Avelo: its purple discs on a card that is a shade of that purple, and on a lower right panel of that purple'
 };
 // The paint behind the Your Aircraft orb, read off the same screens (a ring six to eight pixels
-// outside the orb): the second colour of the lower right panel, to the digit.
+// outside the orb): the second colour of the pair of the carrier, to the digit.
 const SEEN_LOWER = {
   '3H': '#231F20', AA: '#101820', AC: '#0B0D10', AD: '#0C1119', AF: '#051039', AM: '#0B2343', AY: '#0C0243', B6: '#003876',
   BA: '#1A1A2E', BT: '#0C1119', CA: '#0C1119', DI: '#0C1119', DM: '#520E77', EI: '#0C1119', EK: '#1A1A2E', F9: '#0A3D6B',
@@ -1859,6 +2156,8 @@ const SEEN_LOWER = {
   TS: '#0F4C81', UA: '#0C2340', VS: '#0C1119', W6: '#0C1119', WN: '#111B40', WS: '#003366', YN: '#272626'
 };
 const isKept = (code) => !!(W._GATE_COLUMNS_KEPT[O.fold(code)] || W._GATE_COLUMNS_KEPT[code]);
+// the words the lower right panel carries: white, and its status inks, each at 4.5 to 1 on it
+const PANEL_WORDS = ['#FFFFFF', '#34D399', '#FBBF24', '#FCA5A5', '#93C5FD'];
 
 // Every ground a column writes, and the panel each disc sits on: the top orb, the five badges and
 // the shelf on the plate (the rail cards and the shelf cells are one plate), the Your Aircraft orb on
@@ -1876,6 +2175,23 @@ function groundsWritten(code) {
   const own = orbFacts(W._gateCardOrb(code, '').html);
   out.push(['the Your Aircraft orb', full(HEX.test(full(own.bg)) ? own.bg : edge), lower]);
   return out;
+}
+// THE RULE OF THE DARK PLATE, by the arithmetic of this file and the tables of the gate, for a code
+// that is not left as drawn: what its card is, and whether its column is white, with the reason.
+function plateOf(code) {
+  const c = O.fold(code), accent = full(O.accent(c)), N = W._gateOrbNatural(code), natural = full(N.ground || accent);
+  const pic = W._GATE_CARD_PICTURES[c];
+  if (pic) {
+    const sunk = pic.at.some((p) => sinks(natural, p));
+    return { natural, kind: 'picture', base: '', white: sunk, why: sunk ? 'its discs sink into its picture, and the picture stays' : '' };
+  }
+  const own = shadeOf(accent);
+  if (!sinks(natural, own)) return { natural, kind: 'shade', base: '', white: false, why: '' };
+  const ink = (LOOKS[c] || {}).ink || W._orbInkOn(natural);
+  const tried = [W._GATE_CARD_DARKS[c], HOUSE_DARK].filter(Boolean);
+  const takes = tried.find((d) => clear(natural, screened(d)) && contrast(full(ink), natural) >= 3);
+  if (takes) return { natural, kind: 'dark', base: takes, white: false, why: '' };
+  return { natural, kind: 'shade', base: '', white: true, own, tried, why: 'its discs sink into the shade of their own colour and do not stand clear of the dark plate' };
 }
 
 test('rule 6, what paints the card: the plate of the stylesheet, and the tables of the gate agree with it', () => {
@@ -1908,16 +2224,22 @@ test('rule 6, what paints the card: the plate of the stylesheet, and the tables 
   assert.equal(mix[0].decl['--plate-base'], 'var(--gate-card, color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14))');
   assert.equal(mix[0].decl['--plate-blend'], 'screen');
   // and the gate works the paint from the same numbers: 34 hundredths over #0B0E14, under a screen
-  const fn = block('window._gateCardPaint = function');
-  assert.match(fn, /var under = \[11, 14, 20\], a = rgb\(accent\) \|\| \[107, 118, 132\];/);
-  assert.match(fn, /return v \* 0\.34 \+ under\[k\] \* 0\.66;/);
-  assert.match(fn, /return 255 - \(255 - v\) \* \(255 - 13\) \/ 255;/);
+  const shade = block('window._gateCardShade = function'), screen = block('window._gateCardScreen = function');
+  assert.match(shade, /var under = \[11, 14, 20\], a = m \? \[0, 2, 4\]\.map\(function \(i\) \{ return parseInt\(m\[1\]\.substr\(i, 2\), 16\); \}\) : \[107, 118, 132\];/);
+  assert.match(shade, /return v \* 0\.34 \+ under\[k\] \* 0\.66;/);
+  assert.match(screen, /Math\.round\(255 - \(255 - v\) \* \(255 - 13\) \/ 255\)/);
+  const paintFn = block('window._gateCardPaint = function');
+  assert.match(paintFn, /var dark = window\._gateCardDark\(raw\);/);
+  assert.match(paintFn, /var paint = window\._gateCardScreen\(dark \|\| mix\);/, 'the dark plate lies under the same engraving as the shade');
   // the rule that paints the plate under a rail row reads those variables, and no rule outranks it for every carrier
   const painter = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((m) => /\.v2-flightinfo-block > \.v2-fi-row::before/.test(m[1]) && /background-color:\s*var\(--plate-base/.test(m[2]));
   assert.ok(painter.length >= 1, 'a rule paints --plate-base under the row');
   const last = painter[painter.length - 1];
   assert.match(last[2], /background-image:\s*var\(--plate-tex\)\s*!important/);
   assert.match(last[2], /background-blend-mode:\s*var\(--plate-blend, normal\)\s*!important/);
+  // and it paints the cells of the boarding shelf with them too: one plate
+  assert.match(last[1], /\.g8-bir-cell::before/);
+  assert.match(last[1], /:is\(\.gad-aircraft-col,\.g8-bir-shelves\) \.v2-flightinfo-block > \.v2-fi-row::before/);
 
   // THE PICTURES: a carrier is a picture card exactly where its plate is not blended with the shade
   const named = [...new Set(set.flatMap((r) => r.codes))];
@@ -1938,31 +2260,64 @@ test('rule 6, what paints the card: the plate of the stylesheet, and the tables 
     assert.equal(O.fold(c), c, c + ' is the carrier a gate wears, as the body attribute names it');
     const K = W._gateCardPaint(c);
     assert.deepEqual([K.kind, K.paint, K.at], ['picture', row.at[0], row.at], c);
+    // a picture stays: a picture card is never given the dark plate
+    assert.equal(W._gateCardDark(c), '', c);
+  }
+  // THE EMERALD PLATE WAS A BORROWED PICTURE. One file was set for Cathay, Aer Lingus and EVA, and it
+  // is the jade, the teal or the green of none of them. No rule sets it now, under any of their
+  // codes, so each is a gate with no picture: the dark plate under its own discs.
+  assert.doesNotMatch(css, /plate-emerald-gold/, 'no rule sets the emerald picture');
+  for (const code of ['CX', 'CPA', 'EI', 'EIN', 'BR', 'EVA']) assert.ok(!named.includes(code), code + ' is named by no plate rule');
+  for (const [code, tile] of [['CX', 'CPA'], ['EI', 'EIN'], ['BR', 'EVA']]) {
+    const K = W._gateCardPaint(code), c = column(code), g = W._ORB_TILE_GROUNDS[tile];
+    assert.equal(P[code], undefined, code);
+    assert.deepEqual([K.kind, K.base, K.paint], ['dark', HOUSE_DARK, screened(HOUSE_DARK)], code);
+    assert.deepEqual([c.L.white, c.emb.src, c.emb.bg, c.emb.pad, c.badge.bg, c.badge.ink], [false, '/logos/airline-tiles/' + tile + '.svg', 'transparent', '0', g, '#fff'], code + ': its own tile and its own discs');
+    assert.ok(sinks(g, shadeOf(full(O.accent(code)))) && clear(g, K.paint), code + ': ' + g + ' sank into the shade of itself and stands clear of the dark plate');
   }
   // a carrier the stylesheet names without a picture of its own is a shade (Hawaiian, on the engraving)
   assert.ok(named.includes('HA') && !P.HA && wins('HA', '--plate-blend') === 'screen');
   assert.equal(W._gateCardPaint('HA').kind, 'shade');
-  // every other carrier: the shade of its accent, by the arithmetic of this file
-  let shades = 0;
+  // every other carrier: the shade of its accent, or the dark plate, by the arithmetic of this file
+  let shades = 0, darks = 0;
   for (const code of CODES) {
     const K = W._gateCardPaint(code), c = O.fold(code);
     assert.equal(K.carrier, c, code);
-    if (K.kind !== 'shade') continue;
-    shades++;
-    assert.equal(K.paint, shadeOf(full(O.accent(c))), code + ': the shade of ' + O.accent(c));
+    if (K.kind === 'picture') continue;
     assert.deepEqual(K.at, [K.paint], code);
+    if (K.kind === 'dark') {
+      darks++;
+      assert.ok(K.base === HOUSE_DARK || K.base === W._GATE_CARD_DARKS[c], code + ': ' + K.base);
+      assert.equal(K.paint, screened(K.base), code + ': the dark under the engraving');
+      continue;
+    }
+    shades++;
+    assert.equal(K.kind, 'shade', code);
+    assert.equal(K.paint, shadeOf(full(O.accent(c))), code + ': the shade of ' + O.accent(c));
   }
-  assert.ok(shades >= 215, shades + ' carriers on a shade of their accent');
+  assert.ok(shades >= 150 && darks >= 70, shades + ' carriers on a shade of their accent, ' + darks + ' on the dark plate');
 });
 
 test('rule 6, the paint of the card is the paint on the gate screens of November 2026', () => {
-  // the shades: what the function gives is within 4 of what was read beside the discs
+  // the shades: what the arithmetic gives is within 4 of what was read beside the discs, and it is
+  // the card of every one of these gates that is still on a shade
+  let still = 0;
   for (const [code, seen] of Object.entries(SEEN_SHADE)) {
+    const own = shadeOf(full(O.accent(O.fold(code))));
+    assert.ok(dE(own, seen) < 4, code + ': ' + own + ' beside ' + seen + ' on the screen (dE ' + dE(own, seen).toFixed(1) + ')');
     const K = W._gateCardPaint(code);
-    assert.equal(K.kind, 'shade', code);
-    assert.ok(dE(K.paint, seen) < 4, code + ': ' + K.paint + ' beside ' + seen + ' on the screen (dE ' + dE(K.paint, seen).toFixed(1) + ')');
+    if (K.kind === 'shade') { still++; assert.equal(K.paint, own, code); } else assert.equal(K.kind, 'dark', code);
   }
+  assert.ok(still >= 14, still + ' of them are on that shade still');
   assert.ok(dE(shadeOf(SEEN_SCOOT.accent), SEEN_SCOOT.card) < 4, 'Scoot, as it was: the khaki of its yellow');
+  // the dark plate: the house charcoal under the engraving is what was read beside the discs of the
+  // five gates drawn on it, within 4, and the disc of each stood clear of it there
+  for (const [code, [plate, disc]] of Object.entries(SEEN_DARK)) {
+    assert.ok(dE(screened(HOUSE_DARK), plate) < 4, code + ': ' + screened(HOUSE_DARK) + ' beside ' + plate + ' on the screen');
+    assert.ok(clear(disc, plate) && dE(disc, plate) > 35, code + ': ' + disc + ' on ' + plate);
+    assert.equal(W._gateCardPaint(code).kind, 'dark', code);
+  }
+  assert.equal(W._GATE_CARD_DARK, HOUSE_DARK);
   // the pictures: one of the paints recorded for the card is what was read there
   for (const [code, seen] of Object.entries(SEEN_PICTURE)) {
     const K = W._gateCardPaint(code);
@@ -1972,15 +2327,19 @@ test('rule 6, the paint of the card is the paint on the gate screens of November
   }
   // Envoy prints American and wears its card; the lower right panel is keyed on the code of the gate
   assert.deepEqual([W._gateCardPaint('MQ').at, W._gateCardPaint('MQ').kind], [W._gateCardPaint('AA').at, 'picture']);
-  // THE SECOND PANEL, behind the Your Aircraft orb: the second colour of the pair the gate writes as
-  // --rc2-b, and on every screen the paint read there is that colour, string for string
+  // THE SECOND PANEL, behind the Your Aircraft orb: the second colour of the pair of the carrier was
+  // the paint read there on every screen, string for string. It is the paint still, but for one of
+  // those gates: Singapore, whose panel was the navy of its orb and is the dark plate now.
+  const moved = [];
   for (const [code, seen] of Object.entries(SEEN_LOWER)) {
-    assert.equal(W._gateCardPaint(code).lower, seen, code);
     assert.equal(O.pair(code).b, seen, code + ': the second colour of its pair');
+    if (W._gateCardPaint(code).lower !== seen) moved.push(code);
   }
+  assert.deepEqual(moved, ['SQ']);
   assert.equal(Object.keys(SEEN_LOWER).length, 39);
-  assert.match(block('window._gateCardPaint = function'), /if \(typeof _rc2Pair === 'function'\) lower = String\(_rc2Pair\(raw\)\.b \|\| ''\)\.toUpperCase\(\);/);
-  assert.match(CORE, /return ';--rc2-a:' \+ p\.a \+ ';--rc2-a-ink:' \+ p\.ink \+ ';--rc2-b:' \+ p\.b;/);
+  assert.match(block('window._gateCardPaint = function'), /if \(!railOnly\) \{ try \{ lower = String\(window\._gateLowerPair\(raw\)\.b \|\| ''\)\.toUpperCase\(\); \}/);
+  assert.match(CORE, /var p = window\._gateLowerPair\(airlineCode\);\s*\n\s*return ';--rc2-a:' \+ p\.a \+ ';--rc2-a-ink:' \+ p\.ink \+ ';--rc2-b:' \+ p\.b;/);
+  assert.equal(CORE.split('window._gateLowerPair(').length - 1, 2, 'asked in two places: where the gate writes the panel, and where the paint of the card is told');
   assert.match(CSS, /background: var\(--rc2-b, var\(--banner-bg, #0c1119\)\) !important;/);
   // it holds white words at 4.5 to 1 on every gate, so a white disc never sinks into it
   for (const code of CODES) {
@@ -1991,7 +2350,7 @@ test('rule 6, the paint of the card is the paint on the gate screens of November
 });
 
 test('rule 6, the measure: every gate seen to sink fails it, every gate seen to stand out passes', () => {
-  assert.deepEqual(W._GATE_SINK, SINK, 'the numbers of the gate are the numbers of this file');
+  assert.deepEqual(W._GATE_SINK, Object.assign({}, SINK, { clear: CLEAR }), 'the numbers of the gate are the numbers of this file');
   for (const [code, [disc, paints]] of Object.entries(SEEN_SUNK)) assert.ok(paints.some((p) => sinks(disc, p)), code + ': ' + disc + ' sinks into ' + paints.join(' '));
   for (const [code, [disc, paints]] of Object.entries(SEEN_OUT)) assert.ok(!paints.some((p) => sinks(disc, p)), code + ': ' + disc + ' stands out on ' + paints.join(' '));
   assert.equal(Object.keys(SEEN_SUNK).length, 16); assert.equal(Object.keys(SEEN_OUT).length, 12);
@@ -2015,12 +2374,13 @@ test('rule 6, the measure: every gate seen to sink fails it, every gate seen to 
   for (const code of ['KE', 'QR', 'BA', 'HA', 'AA', '3H']) assert.ok(chroma(SEEN_OUT[code][0]) < SINK.chroma, code + ': a disc with no hue');
   assert.ok(chroma(SEEN_OUT.AC[1][0]) < SINK.chroma, 'the black card of Air Canada has no hue');
   // where the line between a colour and a grey falls: the silver tile of Air China (chroma 6) on its
-  // navy card is a grey on a colour and stands out, 66 apart; the khaki card of Gulf Air (chroma 8)
-  // is a colour, the gold of its tile is 7 degrees of hue from it, and the gold sinks
-  const ca = [W._ORB_TILE_GROUNDS.CCA, W._gateCardPaint('CA').paint], gf = [W._ORB_TILE_GROUNDS.GFA, W._gateCardPaint('GF').paint];
+  // navy card is a grey on a colour and stands out, 66 apart; the khaki a shade of the Gulf Air gold
+  // gives (chroma 8) is a colour, the gold of its tile is 7 degrees of hue from it, and the gold sinks
+  const ca = [W._ORB_TILE_GROUNDS.CCA, W._gateCardPaint('CA').paint], gf = [W._ORB_TILE_GROUNDS.GFA, shadeOf(full(O.accent('GF')))];
   assert.ok(chroma(ca[0]) < SINK.chroma - 0.5 && !sinks(...ca) && dE(...ca) > 60, 'Air China: chroma ' + chroma(ca[0]).toFixed(1));
   assert.ok(chroma(gf[1]) > SINK.chroma + 0.5 && hueGap(...gf) < 10 && sinks(...gf), 'Gulf Air: chroma ' + chroma(gf[1]).toFixed(1));
-  assert.deepEqual([column('CA').L.white, column('GF').L.white], [false, true]);
+  // so Air China stays on its navy, and Gulf Air takes the dark plate under its gold discs
+  assert.deepEqual([column('CA').L.white, W._gateCardPaint('CA').kind, column('GF').L.white, W._gateCardPaint('GF').kind], [false, 'shade', false, 'dark']);
   // Emirates: on the dark green behind it the red disc stands out; beside its red wave it is red on red
   assert.deepEqual(SEEN_SUNK.EK[1].map((p) => sinks(SEEN_SUNK.EK[0], p)), [false, true]);
   assert.deepEqual(W._GATE_CARD_PICTURES.EK.at.map((p) => sinks(O.ACCENT.EK, p)), [false, false, true]);
@@ -2029,11 +2389,37 @@ test('rule 6, the measure: every gate seen to sink fails it, every gate seen to 
   const colours = new Set([THE_WHITE]);
   for (const code of CODES) { colours.add(full(O.accent(O.fold(code)))); const g = W._gateOrbNatural(code).ground; if (g) colours.add(full(g)); for (const p of W._gateCardPaint(code).at) colours.add(p); }
   for (const a of colours) for (const b of colours) { pairs++; assert.equal(W._gateDiscSinks(a, b), sinks(a, b), a + ' on ' + b); }
-  assert.ok(pairs > 100000, pairs + ' pairs');
+  assert.ok(pairs > 60000, pairs + ' pairs');
   assert.ok(Math.abs(W._orbDeltaE('#DF0000', '#581619') - dE('#DF0000', '#581619')) < 1e-9);
+  // STANDING CLEAR, WITH ROOM: the second measure, asked only of the dark plate. The disc is not lost
+  // by the first, and it is at least twice as bright as the plate. The gate and this file give one
+  // answer for every colour above on every dark the gate can take.
+  const plates = [...new Set(Object.values(W._GATE_CARD_DARKS).concat(HOUSE_DARK))].map(screened);
+  for (const a of colours) for (const p of plates) assert.equal(W._gateDiscClear(a, p), clear(a, p), a + ' on ' + p);
+  // the ink is asked too: a disc whose glyphs would not read at 3 to 1 does not stand clear
+  assert.deepEqual([W._gateDiscClear('#DC1C2E', screened(HOUSE_DARK), '#fff'), W._gateDiscClear('#DC1C2E', screened(HOUSE_DARK), '#C01020')], [true, false]);
+  // the line it draws: the red of Air Canada on its black, as it has always been drawn, is 3 to 1;
+  // the reds, the greens, the oranges and the magenta seen on the dark plate are 3 to 5; the deepest
+  // disc that still stands clear is the jade of Cathay at 2.03; and the navies, a black, a deep
+  // maroon and the blue of no airline are 1.0 to 1.9: dark themselves
+  const H = screened(HOUSE_DARK), ratio = (c) => contrast(c, H);
+  assert.ok(contrast(SEEN_OUT.AC[0], SEEN_OUT.AC[1][0]) > 2.6 && contrast(SEEN_OUT.AC[0], SEEN_OUT.AC[1][0]) < 3.2);
+  for (const [, [plate, disc]] of Object.entries(SEEN_DARK)) assert.ok(contrast(disc, plate) > 2.7 && contrast(disc, plate) < 5, disc);
+  for (const [code, lo, hi] of [['OS', 3, 3.1], ['IB', 3.1, 3.2], ['TP', 4.8, 4.9], ['W6', 3, 3.05], ['U2', 5.2, 5.4], ['KL', 5.1, 5.2], ['CX', 2, 2.1], ['EI', 2.2, 2.3], ['F9', 2.2, 2.3]]) {
+    const g = full(W._gateOrbNatural(code).ground || O.accent(code));
+    assert.ok(ratio(g) >= lo && ratio(g) < hi && clear(g, H), code + ': ' + g + ' at ' + ratio(g).toFixed(2));
+  }
+  for (const [code, lo, hi] of [['AY', 1.2, 1.25], ['B6', 1.3, 1.4], ['SK', 1.35, 1.45], ['AD', 1.2, 1.3], ['AM', 1, 1.05], ['LH', 1.05, 1.1], ['SQ', 1.7, 1.75], ['OO', 1.9, 2], ['Y4', 1.3, 1.4], ['QN', 1.2, 1.3]]) {
+    const g = full(W._gateOrbNatural(code).ground || O.accent(code));
+    assert.ok(ratio(g) >= lo && ratio(g) < hi && !clear(g, H), code + ': ' + g + ' at ' + ratio(g).toFixed(2));
+  }
+  assert.ok(ratio('#0033A1') < 1.5 && !clear('#0033A1', H), 'the blue of no airline');
+  // the first measure alone would not do: Singapore navy and SAS blue are 21 from the plate, past
+  // its line of 20, beside the jade of Cathay at 24
+  assert.ok(!sinks(W._ORB_TILE_GROUNDS.SIA, H) && !sinks(W._ORB_TILE_GROUNDS.SAS, H) && dE(W._ORB_TILE_GROUNDS.SAS, H) < 22 && dE(W._ORB_TILE_GROUNDS.CPA, H) < 25);
 });
 
-test('rule 6, every code: no disc the gate writes is the colour of the card behind it, but for the gates approved as drawn', () => {
+test('rule 6, every code: no disc sinks into the paint behind it; the dark plate where the discs stand clear of it, the white column only where they do not', () => {
   const wrong = [], sunkKept = [];
   let judged = 0;
   for (const code of CODES) {
@@ -2055,48 +2441,153 @@ test('rule 6, every code: no disc the gate writes is the colour of the card behi
   // the kept list is the approved gates, by the carrier a gate wears: no code joins it unseen
   assert.deepEqual(Object.keys(W._GATE_COLUMNS_KEPT).sort(), ['3H', '4N', '5T', 'AA', 'AC', 'AIE', 'AS', 'CS', 'DL', 'DM', 'F8', 'FR', 'LX', 'MU', 'NZ', 'PB', 'PD', 'QK', 'RV', 'TK', 'TS', 'UA', 'WR', 'WS', 'XP', 'YN']);
   assert.equal(W._GATE_COLUMNS_KEPT.DI, undefined, 'Norwegian UK is not one of them');
-  // a kept gate is never made white, and the rule is never asked of it; their folded partners with them
-  for (const code of CODES) if (isKept(code)) assert.equal(column(code).L.white, false, code);
+  // A KEPT GATE STAYS EXACTLY AS IT IS: never white, never the dark plate, and its lower right panel
+  // the second colour of its pair; their folded partners with them
+  let kept = 0;
+  for (const code of CODES) {
+    if (!isKept(code)) continue;
+    kept++;
+    assert.equal(W._gateColumnKept(code), true, code);
+    assert.equal(column(code).L.white, false, code);
+    assert.equal(W._gateCardDark(code), '', code + ': no dark plate');
+    assert.notEqual(W._gateCardPaint(code).kind, 'dark', code);
+    assert.equal(W._gateCardPaint(code).lower, O.pair(code).b, code + ': its lower right panel is the colour of its pair');
+    assert.deepEqual(W._gateLowerPair(code), Object.assign({}, O.pair(code), { own: O.pair(code).b }), code);
+    assert.equal(orbFacts(W._gateCardOrb(code, '').html).bg !== THE_WHITE || same(column(code).top, THE_WHITE), true, code + ': its own orb is not made white');
+  }
+  assert.equal(kept, 34, kept + ' codes are gates approved as drawn');
   for (const [from, to] of [['MQ', 'AA'], ['OH', 'AA'], ['PT', 'AA'], ['9E', 'DL'], ['QX', 'AS'], ['ZX', 'AC'], ['9M', 'AC'], ['9L', 'AC'], ['SP', 'PB'], ['RK', 'FR']]) {
     assert.ok(isKept(from) && O.fold(from) === to, from);
     assert.equal(W._gateColumnWhite(from, W._gateOrbNatural(from).ground), '', from);
   }
-  // THE OTHERS: a column is white exactly where the ground its art would give it sinks into a panel
-  // its discs sit on, the plate of the rail or the lower right panel
-  let white = 0, stay = 0;
-  const byLower = [];
+  // THE OTHERS, EVERY ONE, AGAINST THE RULE WORKED HERE (plateOf, above this test):
+  //   a picture card stays, and its column is white where its discs sink into the picture;
+  //   a gate whose discs stand out on the shade of its own colour is as its art draws it;
+  //   a gate whose discs sink there takes the dark plate where they stand clear of it, AND KEEPS
+  //     ITS DISCS: every disc the colour of its top orb, the same string, and none of them white;
+  //   and only where they do not stand clear of it is the column white.
+  const tally = { dark: [], whiteDark: [], whitePicture: [], stay: [] };
   for (const code of CODES) {
     if (isKept(code)) continue;
-    const { L } = column(code), N = W._gateOrbNatural(code), K = W._gateCardPaint(code);
-    const natural = full(N.ground || O.accent(L.carrier));
-    const onRail = K.at.some((p) => sinks(natural, p)), onLower = sinks(natural, K.lower);
-    const would = onRail || onLower;
-    if (onLower && !onRail) byLower.push(code);
-    assert.equal(L.white, would, code + ': ' + natural + ' on ' + K.at.join(' ') + ' and ' + K.lower);
-    if (L.white) white++; else { stay++; assert.equal(full(L.ground), natural, code + ': it keeps the ground of its art'); }
+    const want = plateOf(code), c = column(code), { L } = c, K = W._gateCardPaint(code);
+    assert.deepEqual([K.kind, K.kind === 'dark' ? K.base : '', L.white], [want.kind, want.base, want.white], code + ': ' + want.natural + ' on ' + K.at.join(' '));
+    assert.equal(W._gateCardDark(code), want.base, code);
+    if (want.kind === 'dark') {
+      tally.dark.push(code);
+      assert.ok(K.at.every((p) => clear(want.natural, p)), code + ': ' + want.natural + ' stands clear of ' + K.paint);
+      assert.ok(contrast(THE_WHITE, K.paint) >= 7, code + ': white figures on ' + K.paint);
+      // it keeps the ground of its art, and its top orb is the recipe of its art, untouched
+      assert.equal(full(L.ground), want.natural, code);
+      assert.deepEqual([c.P.badge, c.P.path, c.P.imgStyle], [W._gateOrbNatural(code).badge, W._gateOrbNatural(code).path, W._gateOrbNatural(code).imgStyle], code + ': the top orb as its art gives it');
+      assert.ok(!c.P.white && !/--orb-ring/.test(c.emb.style), code);
+      // ONE COLOUR, THE COLOUR OF THE TOP ORB, STRING FOR STRING, AND NOT WHITE. (Four tiles give no
+      // single ground to read: the two halves of LEVEL are in the ledger for it, and the red of
+      // Austrian and the magenta of Wizz are grounds written by hand beside tiles that show more.)
+      const S = O.shelf(code), sBg = styleProp(S.badge, 'background'), own = orbFacts(W._gateCardOrb(code, '').html);
+      const discs = { 'the five badges': c.badgeBg, 'the shelf badges': isVar(sBg) ? c.accent : sBg, 'the Your Aircraft orb': HEX.test(full(own.bg)) ? own.bg : isVar(own.bg) ? c.accent : c.top };
+      if (code === 'LL') assert.ok(LEDGER.LL && !same(c.top, c.badgeBg), 'LEVEL: two grounds, in the ledger');
+      else for (const [what, g] of Object.entries(discs)) assert.equal(full(g).toUpperCase(), full(c.top).toUpperCase(), code + ': ' + what + ' ' + g + ' beside a top orb of ' + c.top);
+      for (const g of [c.top].concat(Object.values(discs))) assert.ok(!same(g, THE_WHITE) && contrast(full(g), THE_WHITE) > 1.15, code + ': ' + g + ' is not white');
+      continue;
+    }
+    if (L.white) {
+      // THE REASON FOR EVERY WHITE COLUMN, from the measure
+      assert.ok(K.at.some((p) => sinks(want.natural, p)), code + ': ' + want.natural + ' sinks into ' + K.at.join(' '));
+      if (K.kind === 'picture') { tally.whitePicture.push(code); continue; }
+      tally.whiteDark.push(code);
+      assert.ok(want.tried.length >= 1 && want.tried.every((d) => !clear(want.natural, screened(d))), code + ': ' + want.natural + ' does not stand clear of ' + want.tried.map(screened).join(' '));
+      // dark themselves: none is half again as bright as the dark plate would have to let it be
+      assert.ok(contrast(want.natural, screened(HOUSE_DARK)) < CLEAR, code + ': ' + want.natural + ' at ' + contrast(want.natural, screened(HOUSE_DARK)).toFixed(2) + ' to 1 on the dark plate');
+      continue;
+    }
+    tally.stay.push(code);
+    assert.equal(full(L.ground), want.natural, code + ': it keeps the ground of its art');
+    assert.ok(!K.at.some((p) => sinks(want.natural, p)), code);
   }
-  assert.ok(white >= 190 && stay >= 25, white + ' white columns, ' + stay + ' that stand out as their art draws them');
-  // TWO GATES STOOD OUT ON THE RAIL AND SANK ON THE SECOND PANEL. Singapore: the navy of its tile on
-  // its bronze card, and the same navy, string for string, behind its Your Aircraft orb. Lufthansa:
-  // its navy disc on its gold card, and the navy of its own lower right panel. A column is one
-  // colour, so both are white: the tile of Singapore inside the ring, the crane of Lufthansa in its
-  // navy, the glyphs in that navy.
-  assert.deepEqual(byLower.sort(), ['LH', 'SQ']);
-  assert.equal(W._gateCardPaint('SQ').lower, W._ORB_TILE_GROUNDS.SIA);
-  assert.ok(dE(W._gateCardPaint('LH').lower, O.ACCENT.LH) < 12);
-  assert.deepEqual([column('SQ').L.white, column('SQ').L.inset, column('SQ').L.ink, column('SQ').emb.src], [true, true, W._ORB_TILE_GROUNDS.SIA, '/logos/airline-tiles/SIA.svg']);
-  assert.deepEqual([column('LH').L.white, column('LH').emb.inked, column('LH').L.ink, column('LH').emb.src], [true, false, O.ACCENT.LH, '/logos/symbols/airlines/LH.svg']);
-  // the gates seen to sink are white now (Scoot but for its card, which took its black), and the
-  // other gates seen to stand out draw what they drew
-  for (const code of Object.keys(SEEN_SUNK)) if (code !== 'TR') assert.equal(column(code).L.white, true, code);
-  for (const code of Object.keys(SEEN_OUT)) assert.equal(column(code).L.white, code === 'SQ' || code === 'LH', code);
-  for (const [code, ground] of [['KE', THE_WHITE], ['QR', THE_WHITE], ['BT', W._ORB_TILE_GROUNDS.BTI], ['AC', O.ACCENT.AC]]) assert.ok(same(column(code).top, ground), code + ': ' + column(code).top);
-  // Austrian, the gate that was named: white discs, its tile inside the ring, glyphs and code in its red
-  const os = column('OS');
-  assert.deepEqual([os.emb.bg, os.emb.src, os.emb.pad, os.badge.bg, os.badge.ink, os.badge.codeVar], [THE_WHITE, '/logos/airline-tiles/AUA.svg', RING, THE_WHITE, '#D81E05', '#D81E05']);
+  assert.equal(tally.dark.length + tally.whiteDark.length + tally.whitePicture.length + tally.stay.length + kept, CODES.length);
+  assert.ok(tally.dark.length >= 75 && tally.dark.length <= 90, tally.dark.length + ' gates on the dark plate');
+  assert.ok(tally.whiteDark.length >= 110 && tally.whiteDark.length <= 125, tally.whiteDark.length + ' white columns of dark discs');
+  assert.ok(tally.stay.length >= 22 && tally.stay.length <= 28, tally.stay.length + ' gates that stand out as their art draws them');
+  // THE PICTURES THAT STAY UNDER A WHITE COLUMN: the blue gradient of KLM, the navy of Air France, the
+  // green and red of Emirates. Lufthansa and Qatar stand out on theirs.
+  assert.deepEqual(tally.whitePicture.sort(), ['AF', 'EK', 'KL']);
+  for (const code of ['LH', 'QR']) assert.ok(tally.stay.includes(code) && W._gateCardPaint(code).kind === 'picture', code);
+  // the white columns of dark discs: 77 of them have no colour of their own and wear the blue of no
+  // airline, on a card that is a shade of it; the rest are navies, two blacks, a brown and two deep reds
+  const noColour = tally.whiteDark.filter((c) => same(O.accent(O.fold(c)), '#0033A1'));
+  assert.ok(noColour.length >= 70 && noColour.length <= 80, noColour.length + ' on the blue of no airline');
+  for (const code of ['AY', 'B6', 'SK', 'AD', 'AM', 'MX', 'NH', 'FI', 'LO', 'MS', 'OO', 'YV', 'Y4', 'QN', 'HO', 'FJ', '8P']) assert.ok(tally.whiteDark.includes(code), code + ' is a white column');
+  // the gates seen to sink: on the dark plate now with their own discs, but for the navies (white)
+  // and the two on a picture (white); the gates seen to stand out draw what they drew
+  for (const code of ['OS', 'IB', 'QF', 'DI', 'W6', 'TR', 'TP', 'F9', 'EI']) assert.ok(tally.dark.includes(code), code + ' is on the dark plate');
+  for (const code of ['AY', 'B6', 'SK', 'AD', 'AM', 'EK', 'KL']) assert.equal(column(code).L.white, true, code);
+  for (const code of Object.keys(SEEN_OUT)) assert.equal(column(code).L.white, false, code);
+  for (const [code, ground] of [['KE', THE_WHITE], ['QR', THE_WHITE], ['BT', W._ORB_TILE_GROUNDS.BTI], ['AC', O.ACCENT.AC], ['SQ', W._ORB_TILE_GROUNDS.SIA], ['LH', O.ACCENT.LH]]) assert.ok(same(column(code).top, ground), code + ': ' + column(code).top);
+  // THE BROWNS AND THE KHAKIS ARE GONE: every orange, gold and yellow whose card was a brown shade of
+  // itself is on the dark plate with its bright discs
+  for (const code of ['U2', 'EZY', 'EC', 'EJU', 'EZS', 'G3', 'JQ', 'XQ', 'DE', 'WG', 'EY', 'GF', '5J', 'TR', 'VY', 'PC']) {
+    const K = W._gateCardPaint(code), own = shadeOf(full(O.accent(O.fold(code))));
+    // (the dark of Pegasus is a slate, chroma 9: a dark of its own, and no shade of its yellow)
+    assert.ok(tally.dark.includes(code) && chroma(own) >= SINK.chroma && chroma(K.paint) < 10, code + ': ' + own + ' was its card, a brown or a khaki; ' + K.paint + ' is, a neutral');
+  }
+  // Austrian, the gate that was named: its own red discs and its own tile, on the black it has on record
+  const os = column('OS'), osK = W._gateCardPaint('OS');
+  assert.deepEqual([os.emb.bg, os.emb.src, os.emb.pad, os.emb.native, os.badge.bg, os.badge.ink, os.badge.codeVar], ['transparent', '/logos/airline-tiles/AUA.svg', '0', true, '#D81E05', '#fff', '']);
+  assert.deepEqual([osK.kind, osK.base, osK.paint, osK.lower], ['dark', '#000000', '#0D0D0D', '#0C1119']);
+  // and the others drawn both ways for the choice, on the house charcoal
+  for (const [code, disc] of [['IB', W._ORB_TILE_GROUNDS.IBE], ['QF', O.ACCENT.QF], ['TP', W._ORB_TILE_GROUNDS.TAP], ['W6', O.ACCENT.W6]]) {
+    assert.deepEqual([W._gateCardPaint(code).base, W._gateCardPaint(code).paint, column(code).badgeBg, column(code).L.white], [HOUSE_DARK, '#222429', disc, false], code);
+  }
+
+  // THE LOWER RIGHT PANEL, JUDGED THE SAME WAY. Where the orb of a gate would sink into the second
+  // colour of its pair, the panel takes the dark plate and the orb stays. Two gates: Singapore,
+  // whose navy tile stood out on its bronze rail and was the navy of that panel, string for string;
+  // and Pascan, whose blue tile sat on a navy panel of the same hue.
+  const panel = [], orbAlone = [];
+  for (const code of CODES) {
+    if (isKept(code)) continue;
+    const K = W._gateCardPaint(code), pair = O.pair(code), want = plateOf(code), L = column(code).L;
+    const disc = L.white ? THE_WHITE : want.natural;
+    const own = W._gateCardOrb(code, '');
+    if (K.lower !== pair.b) {
+      panel.push(code);
+      assert.ok(sinks(disc, pair.b) && !sinks(disc, K.lower), code + ': ' + disc + ' sank into ' + pair.b + ' and stands out on ' + K.lower);
+      assert.ok(PANEL_WORDS.every((w) => contrast(w, K.lower) >= 4.5), code + ': every word of the panel reads on ' + K.lower);
+      assert.ok(K.lower === HOUSE_DARK || K.lower === W._GATE_CARD_DARKS[O.fold(code)], code + ': ' + K.lower);
+      assert.deepEqual([W._gateLowerPair(code).a, W._gateLowerPair(code).ink, W._gateLowerPair(code).own], [pair.a, pair.ink, pair.b], code + ': the first colour and its ink do not move');
+    } else assert.ok(!sinks(disc, pair.b) || own.white, code + ': ' + disc + ' on ' + pair.b);
+    if (own.white && !L.white) orbAlone.push(code);
+  }
+  assert.deepEqual(panel.sort(), ['BQ', 'SQ']);
+  assert.deepEqual([W._gateCardPaint('SQ').lower, O.pair('SQ').b, W._ORB_TILE_GROUNDS.SIA], [HOUSE_DARK, '#1D4886', '#1D4886']);
+  const sq = column('SQ'), sqOwn = orbFacts(W._gateCardOrb('SQ', '').html);
+  assert.deepEqual([sq.L.white, sq.emb.src, sq.emb.native, sq.badge.bg, sq.badge.ink, sqOwn.src, sqOwn.native, W._gateCardPaint('SQ').kind], [false, '/logos/airline-tiles/SIA.svg', true, '#1D4886', '#fff', '/logos/airline-tiles/SIA.svg', true, 'shade'], 'Singapore: its rail and its orb as they were drawn');
+  assert.ok(dE('#1D4886', HOUSE_DARK) > 22 && dE('#1D4886', HOUSE_DARK) < 25, 'its navy on the dark panel: ' + dE('#1D4886', HOUSE_DARK).toFixed(1));
+  // ONE GATE NO DARK PANEL CAN HELP: Lufthansa. Its navy stands out on its gold picture, so its rail
+  // is as it was drawn. Its navy would sink into the charcoal too (12 apart), and into any panel dark
+  // enough to carry the words, so its pair stays and its Your Aircraft orb alone is the white disc,
+  // the crane in its navy. In the ledger, with that reason.
+  assert.deepEqual(orbAlone, ['LH']);
+  const lh = column('LH'), lhOwn = orbFacts(W._gateCardOrb('LH', '').html), lhK = W._gateCardPaint('LH');
+  assert.deepEqual([lh.L.white, lh.emb.inked, isVar(lh.emb.bg), isVar(lh.badge.bg), lh.badge.ink, lhK.kind, lhK.lower], [false, true, true, true, '#fff', 'picture', O.pair('LH').b]);
+  assert.ok(sinks(O.ACCENT.LH, lhK.lower) && sinks(O.ACCENT.LH, HOUSE_DARK) && dE(O.ACCENT.LH, HOUSE_DARK) < 14 && !lhK.at.some((p) => sinks(O.ACCENT.LH, p)));
+  assert.deepEqual([lhOwn.bg, lhOwn.src, lhOwn.inked, lhOwn.pad, styleProp(lhOwn.style, '--orb-ink')], [THE_WHITE, '/logos/symbols/airlines/LH.svg', false, PAD, O.ACCENT.LH]);
+  assert.deepEqual(art('/logos/symbols/airlines/LH.svg').colours, ['#05164D'], 'the crane is drawn in its navy');
+  assert.ok(LEDGER.LH && /lower right panel/.test(LEDGER.LH));
+  // the function, where it decides
+  const dk = block('window._gateCardDark = function'), lp = block('window._gateLowerPair = function');
+  assert.match(dk, /if \(window\._gateColumnKept\(raw\)\) return '';/);
+  assert.match(dk, /if \(window\._GATE_CARD_PICTURES\[D\.carrier\]\) return '';/);
+  assert.match(dk, /if \(!window\._gateDiscSinks\(D\.disc, window\._gateCardScreen\(window\._gateCardShade\(D\.accent\)\)\)\) return '';/);
+  assert.match(dk, /var list = \[window\._GATE_CARD_DARKS\[D\.carrier\], window\._GATE_CARD_DARK\];/);
+  assert.match(lp, /if \(window\._gateColumnKept\(raw\)\) return out;/);
+  assert.match(lp, /if \(words\.some\(function \(w\) \{ return _rc2Contrast\(d, w\) < 4\.5; \}\)\) continue;/);
+  // the pair of the carrier itself does not move: the weather card and the boarding strip read it
+  assert.doesNotMatch(block('function _rc2Pair(code, tables) {'), /_gateLowerPair|_gateCardDark/);
+  assert.match(CORE, /var _bPair = _rc2Pair\(airlineCode\);/);
 });
 
-test('rule 6, a tile drawn as an inset is round and inside a white disc, on the rail, the shelf and the Your Aircraft orb', () => {
+test('rule 6, a tile drawn as an inset is round and inside a wide white ring, on the rail, the shelf and the Your Aircraft orb', () => {
   let n = 0;
   for (const code of CODES) {
     const { L, emb, A } = column(code);
@@ -2115,23 +2606,48 @@ test('rule 6, a tile drawn as an inset is round and inside a white disc, on the 
     assert.equal(emb.imgStyle, 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;', code + ': the picture is round');
     assert.equal(emb.native, false, code + ': ' + emb.cls);
     assert.equal(emb.inked, false, code);
-    // THE YOUR AIRCRAFT ORB, on its own leg: the same
+    // THE YOUR AIRCRAFT ORB, on its own leg: the same, its ring written from the length that sizes it
     const own = orbFacts(W._gateCardOrb(code, '').html);
-    assert.deepEqual([own.src, own.bg, own.pad, own.fit, own.native], [emb.src, THE_WHITE, RING, 'cover', false], code + ': the Your Aircraft orb');
+    assert.deepEqual([own.src, own.bg, own.pad, own.fit, own.native], [emb.src, THE_WHITE, RING_CARD, 'cover', false], code + ': the Your Aircraft orb');
     assert.match(own.imgStyle, /border-radius:50%;/, code);
     // THE BOARDING SHELF: the same
     const S = O.shelf(code), shelf = orbFacts('<div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + S.orb.nativeCls + '" style="' + S.orb.badge + '">' + S.icon + '</div>');
     assert.deepEqual([shelf.src, shelf.bg, shelf.pad, shelf.fit, shelf.native], [emb.src, THE_WHITE, RING, 'cover', false], code + ': the boarding shelf');
     assert.match(shelf.imgStyle, /border-radius:50%;/, code);
+    assert.equal(S.orb.badge, W._gateOrbParts(code).badge, code + ': the shelf writes the recipe of the rail');
   }
-  assert.ok(n >= 90, n + ' tiles drawn as an inset');
-  // the ring is the ring of the Alaska orb, whose roundel is 43 hundredths of its box inside a white
-  // ring 7 wide: 14 hundredths of the radius. The disc is 76 pixels at most and its ring 7.
+  assert.ok(n >= 25 && n <= 40, n + ' tiles drawn as an inset');
+  // THE WIDTH OF THE RING: 30 HUNDREDTHS OF THE RADIUS, AT THE LEAST 29. The ring of the Alaska orb
+  // art is 7 of a radius of 50, 14 hundredths, and a tile inside a ring that thin left three quarters
+  // of the orb the colour of the tile above five white discs. At 30 the roundel is 70 hundredths of
+  // the disc across and half of the disc is white: a white disc that carries a roundel.
   const asa = fs.readFileSync(path.join(FC, 'logos/airline-tiles/ASA-orb.svg'), 'utf8');
   assert.match(asa, /<circle cx="50" cy="50" r="50" fill="#FFFFFF"\/><circle cx="50" cy="50" r="43"/);
-  assert.equal(RING, 'clamp(3px,0.5vh,7px)');
-  assert.match(block('window._gateOrbNatural = function'), /width:clamp\(46px,5\.6vh,76px\)/);
-  assert.ok(Math.abs(7 / (76 / 2) - 7 / 50) < 0.05, 'a ring of 7 on a disc of 76: ' + (7 / 38).toFixed(2) + ' of the radius');
+  assert.ok(7 / 50 < RING_SHARE / 2, 'the ring of that art is less than half of this one');
+  assert.equal(W._GATE_ORB_RING, RING);
+  // on the rail and the shelf: the padding the gate writes, against the disc the stylesheet sizes
+  // (the last rule that sizes the emblem box, which is the one that wins: 7.48vh between 48 and 92)
+  const ring = /^clamp\((\d+)px,([\d.]+)vh,(\d+)px\)$/.exec(RING).slice(1).map(Number);
+  const sizes = [...GATE_CSS.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/\.v2-fi-row \.v2-fi-emblem-wrap \{\s*width: clamp\((\d+)px,([\d.]+)vh,(\d+)px\) !important;/g)].map((m) => m.slice(1).map(Number));
+  assert.ok(sizes.length >= 3, sizes.length + ' rules size the emblem box');
+  const disc = sizes[sizes.length - 1];
+  assert.deepEqual(disc, [48, 7.48, 92]);
+  for (let k = 0; k < 3; k++) {
+    const share = ring[k] / (disc[k] / 2);
+    assert.ok(share >= RING_SHARE - 0.01 && share <= RING_SHARE + 0.01, 'a ring of ' + ring[k] + ' on a disc of ' + disc[k] + ': ' + share.toFixed(3) + ' of the radius');
+  }
+  // 1050 pixels high: a disc of 78.5 and a ring of 11.8, where the ring was 5.25
+  assert.ok(Math.abs(1050 * ring[1] / 100 - 11.76) < 0.01 && Math.abs(1050 * disc[1] / 100 - 78.54) < 0.01);
+  assert.ok(1 - Math.pow(1 - RING_SHARE, 2) > 0.5, 'more than half of the disc is white');
+  // on the Your Aircraft orb the stylesheet sizes the box from --rcp-orb and pads it with !important,
+  // so the ring is written from that length with !important, which an inline style needs to win
+  const flat = CSS.replace(/:not\((?:#_|\._)\)/g, '');
+  assert.match(flat, /\.v2-rc-shelf-fi \.v2-fi-orbwrap \{\s*width: var\(--rcp-orb\) !important;[\s\S]{0,400}?padding: clamp\(4px, min\(0\.55vh, 0\.34vw\), 7px\) !important;/);
+  assert.match(CSS, /--rcp-orb: clamp\(30px, min\(5vh, 3\.1vw\), 64px\);/);
+  const card = /^calc\(var\(--rcp-orb, 52px\) \* ([\d.]+)\) !important$/.exec(RING_CARD);
+  assert.ok(card && Math.abs(Number(card[1]) * 2 - RING_SHARE) < 1e-9, 'the same share of the radius: ' + RING_CARD);
+  assert.ok(0.55 / (5 / 2) < RING_SHARE - 0.05, 'the padding of the stylesheet alone was ' + (0.55 / 2.5).toFixed(2) + ' of the radius');
+  assert.match(block('window._gateCardOrb = function'), /if \(P\.inset\) badge = badge\.replace\('padding:' \+ window\._GATE_ORB_RING \+ ';', 'padding:calc\(var\(--rcp-orb, 52px\) \* 0\.15\) !important;'\);/);
   // NEVER THE BARE TILE FILLING A WHITE DISC, AND NEVER A SQUARE IN A CIRCLE: on a white column no
   // box is clear, none has its padding taken away, and a tile on it is always the round inset
   for (const code of CODES) {
@@ -2144,14 +2660,13 @@ test('rule 6, a tile drawn as an inset is round and inside a white disc, on the 
   // the stylesheet takes the padding of the Your Aircraft orb away only under the marker class, and
   // forces the fit of a rail image to contain only where the box has no marker class: a square tile
   // is the same picture under either fit, and it is cropped round by its own style
-  const flat = CSS.replace(/:not\((?:#_|\._)\)/g, '');
   assert.match(flat, /\.v2-rc-shelf-fi \.v2-fi-orbwrap\.v2-fi-orbwrap-native \{\s*padding: 0 !important;/);
   assert.match(GATE_CSS, /\.v2-fi-emblem-wrap\.v2-fi-emblem-native \.v2-fi-emblem-img \{\s*object-fit: cover !important;/);
   // a file that fails on a white disc and falls back to the row tile keeps the ring: the handler
   // takes the padding away only where the box does not carry the mark of a white disc
   assert.match(block('window._orbArtFailed = function'), /if \(_p && _p\.style && !String\(_p\.style\.getPropertyValue\('--orb-ring'\) \|\| ''\)\.trim\(\)\) _p\.style\.setProperty\('padding', '0', 'important'\);/);
-  for (const code of ['OS', 'AM', 'YX']) assert.equal(styleProp(column(code).emb.style, '--orb-ring'), '1', code);
-  for (const code of ['AC', 'BT', 'KE']) assert.equal(styleProp(column(code).emb.style, '--orb-ring'), '', code);
+  for (const code of ['AY', 'AM', 'YX']) assert.equal(styleProp(column(code).emb.style, '--orb-ring'), '1', code);
+  for (const code of ['AC', 'BT', 'KE', 'OS', 'IB']) assert.equal(styleProp(column(code).emb.style, '--orb-ring'), '', code);
   assert.doesNotMatch(CSS + GATE_CSS, /--orb-ring\b/, 'the mark is the business of the handler alone');
 });
 
@@ -2175,11 +2690,11 @@ test('rule 6, the white of every white column is the same literal', () => {
     check(styleProp(S.orb.badge, 'background'), code + ', the shelf orb');
     for (const op of OPS) check(orbFacts(W._gateCardOrb(code, op).html).bg, code + ' operated by ' + (op || 'itself'));
   }
-  assert.ok(whites >= 3000, whites + ' white discs');
+  assert.ok(whites >= 1800, whites + ' white discs');
   // the second, greyer white is gone from every column: the light disc of the ten carriers that had it
   for (const code of ['2L', '4Y', 'BA', 'CJ', 'ET', 'HA', 'LY', 'PR', 'WN']) assert.deepEqual([column(code).emb.bg, column(code).badge.bg], [THE_WHITE, THE_WHITE], code);
   assert.match(block('window._gateOrbNatural = function'), /var LIGHT = plain \? '#F2F4F7' : '#FFFFFF';/, 'only the surfaces beside the orbs keep the disc they drew');
-  assert.match(block('window._gateOrbParts = function'), /var WHITE = window\._GATE_WHITE;/);
+  assert.match(block('window._gateOrbWhite = function'), /var WHITE = window\._GATE_WHITE;/);
   // the brands on a white ground of their own, and the white the stylesheet paints for American and
   // Porter, are the same white
   for (const [code, b] of Object.entries(W._BADGE_TILE_BRANDS)) if (contrast(full(b.bg), THE_WHITE) < 1.2) assert.equal(b.bg, THE_WHITE, code);
@@ -2187,57 +2702,142 @@ test('rule 6, the white of every white column is the same literal', () => {
   assert.ok(/\.v2-fi-icon-badge\s*\{\s*background: #ffffff !important;\s*color: #0078D2 !important;/i.test(CSS), 'the white the stylesheet paints on the badges of American');
 });
 
-test('rule 6, the card judged first: a yellow airline takes its own dark, seven carriers leave the fallback blue, and white figures read', () => {
+test('rule 6, the depth of a white disc reaches every white column: keyed on what the gate writes, not on a list of codes', () => {
+  // THE TREATMENT: a white disc gets its form from the shading under it (a hairline ring, a soft
+  // inner shadow, the drop shadow) and a gloss that fades to a cool grey, where a coloured disc takes
+  // a dark inner shadow and a white gloss that cannot show on white. Three selectors of the stylesheet.
+  const css = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1].replace(/:not\(#_\)/g, '').replace(/\s+/g, ' ').trim(), body: m[2].replace(/\s+/g, ' ') }));
+  const depth = rules.filter((r) => /inset 0 0 0 1px rgba\(0, 0, 0, 0\.14\)/.test(r.body) && /0 2px 8px rgba\(5, 15, 30, 0\.35\)/.test(r.body) && /inset 0 -7px 11px -7px/.test(r.body));
+  const gloss = rules.filter((r) => /linear-gradient\(to bottom, rgba\(255, 255, 255, 0\.95\), rgba\(186, 203, 224, 0\.22\)\)/.test(r.body));
+  assert.equal(depth.length, 1, 'one rule gives the shading');
+  assert.equal(gloss.length, 1, 'one rule gives the gloss');
+  assert.equal(depth[0].sel, 'html body[data-gate-discs="light"] .g8-wrap .v2-fi-icon-badge, html body[data-gate-discs="light"] .g8-wrap .v2-fi-emblem-wrap:not(.v2-fi-emblem-native)');
+  assert.equal(gloss[0].sel, 'html body[data-gate-discs="light"] .g8-wrap .v2-fi-icon-badge::after');
+  // keyed on the attribute alone: no code of a carrier is named in either, and nothing else reads it
+  for (const r of depth.concat(gloss)) assert.doesNotMatch(r.sel, /data-gate-airline/, r.sel);
+  assert.equal(CSS.split('[data-gate-discs="light"]').length - 1, 3, 'three selectors');
+  assert.doesNotMatch(GATE_CSS, /data-gate-discs/);
+  // the weight of each selector is what it was: one attribute in the place of one :is() of attributes,
+  // and the ten :not(#_) it carried
+  const raw = CSS.slice(CSS.indexOf('html body[data-gate-discs="light"]'));
+  assert.equal(raw.slice(0, raw.indexOf(' .g8-wrap')).split(':not(#_)').length - 1, 10);
+  // THE GATE WRITES IT, beside the code of the carrier, in the two places that attribute is set, and
+  // takes it away in the two places that one is taken away
+  assert.equal(CORE.split("setAttribute('data-gate-airline'").length - 1, 2);
+  assert.match(CORE, /document\.body\.setAttribute\('data-gate-airline', _skinCode\);\s*\n\s*\/\/[^\n]*\n\s*window\._gateDiscsAttr\(_skinCode\);/);
+  assert.match(CORE, /document\.body\.setAttribute\('data-gate-airline', \(typeof _orbEmblemCarrier === 'function'\) \? _orbEmblemCarrier\(window\._gateCurrentAirline\) : window\._gateCurrentAirline\); window\._gateDiscsAttr\(window\._gateCurrentAirline\);/);
+  assert.equal(CORE.split("removeAttribute('data-gate-airline'); document.body.removeAttribute('data-gate-discs');").length - 1, 2);
+  assert.equal(CORE.split("removeAttribute('data-gate-airline')").length - 1, 2, 'and it is never taken away alone');
+  // the function, run against a stand-in for the body: set for a white column, taken away for a coloured one
+  const attrs = {};
+  const run = new Function('window', 'document', block('window._gateDiscsAttr = function') + '\nreturn window._gateDiscsAttr;')(W, { body: { setAttribute: (k, v) => { attrs[k] = v; }, removeAttribute: (k) => { delete attrs[k]; } } });
+  run('AY'); assert.deepEqual(attrs, { 'data-gate-discs': 'light' });
+  run('IB'); assert.deepEqual(attrs, {});
+  run('AA'); assert.deepEqual(attrs, { 'data-gate-discs': 'light' });
+  run(''); assert.deepEqual(attrs, {});
+  // WHO IS LIGHT: the ten carriers whose art sits on the light disc (the twelve codes the selectors
+  // named, under the codes a gate can wear), and every column the rule of the card has made white
+  const TEN = ['2L', '4Y', 'AA', 'BA', 'CJ', 'ET', 'HA', 'LY', 'PR', 'WN'];
+  let light = 0, whiteCols = 0;
+  for (const code of CODES) {
+    const { L } = column(code), is = W._gateDiscsLight(code), ten = TEN.includes(O.fold(code));
+    assert.equal(is, L.white || ten, code + ': ' + (L.white ? 'a white column' : ten ? 'the light disc' : 'a disc of a colour'));
+    // the attribute is keyed on the carrier the gate wears, as the code beside it is
+    assert.equal(W._gateDiscsLight(O.fold(code)), is, code + ' and ' + O.fold(code));
+    if (is) light++;
+    if (L.white) { whiteCols++; assert.equal(is, true, code + ': the treatment reaches this white column'); }
+  }
+  assert.ok(whiteCols >= 110 && light === whiteCols + CODES.filter((c) => TEN.includes(O.fold(c))).length, light + ' light gates, ' + whiteCols + ' of them white columns');
+  // a gate approved as drawn is where it was: light only under the ten (American and the regionals
+  // that print it), so Porter, Arajet and Air Inuit keep the white discs they drew, as they drew them
+  for (const code of CODES) if (isKept(code)) assert.equal(W._gateDiscsLight(code), O.fold(code) === 'AA', code);
+  for (const code of ['OS', 'IB', 'TP', 'QR', 'KE', 'SQ', 'LH']) assert.equal(W._gateDiscsLight(code), false, code);
+  assert.match(block('window._gateOrbNatural = function'), /light: !letters && !onOwnGround && !isTile && !!LIGHT_DISC\[c\],/);
+});
+
+test('rule 6, the dark plate: the house charcoal, the dark of an airline where it has one, and white figures that read', () => {
+  // THE HOUSE CHARCOAL, under the engraving: white figures read on it at 15.5 to 1
+  assert.equal(W._GATE_CARD_DARK, HOUSE_DARK);
+  assert.equal(screened(HOUSE_DARK), '#222429');
+  assert.ok(contrast(THE_WHITE, screened(HOUSE_DARK)) > 15.4 && contrast(THE_WHITE, screened(HOUSE_DARK)) < 15.7, contrast(THE_WHITE, screened(HOUSE_DARK)).toFixed(2));
+  assert.ok(chroma(HOUSE_DARK) < SINK.chroma && chroma(screened(HOUSE_DARK)) < SINK.chroma, 'a neutral: it has no hue for a disc to share');
+  // THE DARK OF AN AIRLINE, where one is on record: six rows, each a black or a dark grey
+  assert.deepEqual(W._GATE_CARD_DARKS, { TR: '#000000', VY: '#4D4D4D', PC: '#323A47', OS: '#000000', DE: '#111111', KQ: '#0D0D0D' });
+  // (Royal Jordanian has a dark grey on record, #222121, and grey discs. A grey under a grey is a
+  // shade of the discs, 21 from them where the house charcoal is 24: no row, the house charcoal.)
+  const rj = W._ORB_TILE_GROUNDS.RJA;
+  assert.ok(chroma(rj) < SINK.chroma && dE(rj, screened('#222121')) < 21.5 && dE(rj, screened(HOUSE_DARK)) > 23, 'Royal Jordanian: ' + rj);
+  assert.deepEqual([W._gateCardPaint('RJ').kind, W._gateCardPaint('RJ').base], ['dark', HOUSE_DARK]);
+  for (const [code, dark] of Object.entries(W._GATE_CARD_DARKS)) {
+    const K = W._gateCardPaint(code), { L, top } = column(code), natural = plateOf(code).natural;
+    // a neutral, and never a hue of the discs it lies under
+    assert.ok(chroma(dark) < 10 && lab(dark)[0] < 35, code + ': ' + dark + ', chroma ' + chroma(dark).toFixed(1));
+    assert.ok(!(chroma(dark) >= SINK.chroma && hueGap(dark, natural) < SINK.hue), code + ': ' + dark + ' is no shade of ' + natural);
+    // it is the card of that gate, under the engraving, and white figures read on it at 4.5 to 1 or better
+    assert.deepEqual([K.kind, K.base, K.paint, L.white], ['dark', dark, screened(dark), false], code);
+    assert.ok(contrast(THE_WHITE, K.paint) >= 4.5, code + ': white on ' + K.paint + ' = ' + contrast(THE_WHITE, K.paint).toFixed(1));
+    assert.ok(sinks(natural, shadeOf(full(O.accent(code)))) && clear(natural, K.paint), code + ': ' + natural + ' sank into the shade of itself and stands clear of ' + K.paint);
+    assert.ok(same(top, natural), code);
+    // nothing else moves: the accent of the gate is its colour still
+    assert.ok(!same(O.accent(code), dark), code);
+  }
   // THE YELLOWS. The primary of four carriers is a yellow (CIELAB hue 80 to 110 at a lightness of 80
-  // or more), and the shade of a yellow is a khaki, under figures set in white
+  // or more), and the shade of a yellow is a khaki, under figures set in white. Three have the dark
+  // each sets its yellow on, which is the ink the look already sets on its yellow discs; Cebu Pacific
+  // has none on record and takes the house charcoal.
   const hue = (h) => { const [, a, b] = lab(h); const t = Math.atan2(b, a) * 180 / Math.PI; return t < 0 ? t + 360 : t; };
   const yellow = (h) => lab(h)[0] >= 80 && hue(h) >= 80 && hue(h) <= 110 && chroma(h) >= 40;
   assert.deepEqual(CODES.filter((c) => yellow(full(O.accent(O.fold(c))))).sort(), ['5J', 'PC', 'TR', 'VY']);
-  assert.deepEqual(W._GATE_CARD_DARKS, { TR: '#000000', VY: '#4D4D4D', PC: '#323A47' });
-  for (const [code, dark] of Object.entries(W._GATE_CARD_DARKS)) {
-    const K = W._gateCardPaint(code), { L, emb, badge, top } = column(code), accent = full(O.accent(code));
-    assert.ok(yellow(accent), code + ': ' + accent);
-    // its card: its own dark under the engraving, and white figures read on it at 4.5 to 1 or better
-    assert.deepEqual([K.kind, K.base], ['dark', dark], code);
-    assert.ok(contrast(THE_WHITE, K.paint) >= 4.5, code + ': white on ' + K.paint + ' = ' + contrast(THE_WHITE, K.paint).toFixed(1));
-    // the dark is the ink the look already sets on its yellow discs
-    assert.ok(same(LOOKS[code].ink, dark), code + ': the ink of its glyphs');
-    // on that card its yellow stands out, so the column is as its art draws it: the tile, yellow discs, dark glyphs
-    assert.ok(sinks(accent, shadeOf(accent)), code + ': on the khaki it sank');
-    assert.ok(!sinks(accent, K.paint), code + ': on ' + K.paint + ' it stands out');
-    assert.deepEqual([L.white, emb.bg, emb.fit, top, badge.bg, badge.ink], [false, 'transparent', 'cover', accent, accent, dark], code);
-    // nothing else moves: the accent of the gate is the yellow still
+  for (const code of ['TR', 'VY', 'PC']) {
+    const { emb, badge, top } = column(code), accent = full(O.accent(code));
+    assert.ok(same(LOOKS[code].ink, W._GATE_CARD_DARKS[code]), code + ': the ink of its glyphs');
+    assert.deepEqual([emb.bg, emb.fit, top, badge.bg, badge.ink], ['transparent', 'cover', accent, accent, W._GATE_CARD_DARKS[code]], code);
     assert.equal(O.ACCENT[code], accent, code);
   }
-  // Cebu Pacific has no dark of its own on record: its card is left, and its column is white
-  assert.deepEqual([W._gateCardPaint('5J').kind, column('5J').L.white, column('5J').L.ink], ['shade', true, LOOKS['5J'].whiteInk]);
+  assert.deepEqual([W._gateCardPaint('5J').kind, W._gateCardPaint('5J').base, column('5J').L.white, column('5J').badge.bg], ['dark', HOUSE_DARK, false, W._ORB_TILE_GROUNDS.CEB]);
+  // the first dark its discs stand clear of: the dark of the airline before the house one, and the
+  // house one where the discs do not stand clear of its own (a red disc given a grey as bright as it)
+  O.ACCENT.XYZ = '#B03030'; W._GATE_CARD_DARKS.XYZ = '#5A5A5A';
+  try {
+    assert.ok(sinks('#B03030', shadeOf('#B03030')) && !clear('#B03030', screened('#5A5A5A')) && clear('#B03030', screened(HOUSE_DARK)));
+    assert.equal(W._gateCardDark('XYZ'), HOUSE_DARK);
+    W._GATE_CARD_DARKS.XYZ = '#101010';
+    assert.equal(W._gateCardDark('XYZ'), '#101010');
+  } finally { delete O.ACCENT.XYZ; delete W._GATE_CARD_DARKS.XYZ; }
   // the gate publishes the dark beside its accent, on the element the plate rule reads from, and
-  // takes it away for every other carrier
-  assert.match(CORE, /_rootStyle\.setProperty\('--airline-accent', accent\);[\s\S]{0,700}window\._GATE_CARD_DARKS\[\(typeof _orbEmblemCarrier === 'function'\) \? _orbEmblemCarrier\(airlineCode\) : airlineCode\]/);
+  // takes it away for every other gate
+  assert.match(CORE, /_rootStyle\.setProperty\('--airline-accent', accent\);[\s\S]{0,700}try \{ _gateCardDark = window\._gateCardDark\(airlineCode\) \|\| ''; \}/);
   assert.match(CORE, /if \(_gateCardDark\) _rootStyle\.setProperty\('--gate-card', _gateCardDark\); else _rootStyle\.removeProperty\('--gate-card'\);/);
   assert.equal(CORE.split("'--gate-card'").length - 1, 2, 'written in one place');
   assert.equal((CSS + GATE_CSS).split('--gate-card').length - 1, 2, 'read by one rule (and named once in its comment)');
+  // ONLY THE PLATE GOES DARK. The header, the title tabs of each card, the frame of the rail and
+  // every other accent surface read --airline-accent, which the dark plate does not touch
+  assert.doesNotMatch(block('window._gateCardDark = function') + block('window._gateCardPaint = function'), /setProperty|--airline-accent/);
+  assert.ok(CSS.split('var(--airline-accent').length - 1 > 60 && CSS.split('var(--gate-card').length - 1 === 1);
 
   // THE FALLBACK BLUE. Seven carriers with a colour of their own on record had a card that was a
-  // shade of the blue of no airline. Each has its colour in the accent table now.
+  // shade of the blue of no airline. Each has its colour in the accent table.
   const OWN = { FC: '#007DC8', QN: '#62142E', HO: '#7C0044', SB: '#353E75', HX: '#DA2129', '3U': '#D8000F', JD: '#EA4237' };
   for (const [code, colour] of Object.entries(OWN)) {
     assert.equal(O.ACCENT[code], colour, code);
     // (Aircalin is a navy 9 from that blue, and Link Airways a lighter blue: each is its own all the same)
     assert.ok(!same(colour, '#0033A1') && (dE(colour, '#0033A1') > 10 || code === 'SB'), code + ': ' + colour + ' is not the fallback blue');
-    const K = W._gateCardPaint(code), { L, emb } = column(code);
-    assert.deepEqual([K.kind, K.paint], ['shade', shadeOf(colour)], code);
-    // no art on disk: a white disc, the letters of the code in that colour once the file fails
-    assert.deepEqual([L.white, L.ink, emb.bg], [true, colour, THE_WHITE], code);
+    const K = W._gateCardPaint(code), { L, emb } = column(code), bright = clear(colour, screened(HOUSE_DARK));
+    // the bright ones keep a disc of their colour on the dark plate; the deep ones (the maroon of
+    // Skytrans, the magenta of Juneyao, the navy of Aircalin) are white columns on a shade of it
+    assert.deepEqual([K.kind, K.paint, L.white], bright ? ['dark', screened(HOUSE_DARK), false] : ['shade', shadeOf(colour), true], code);
+    if (!bright) assert.deepEqual([L.ink, emb.bg], [colour, THE_WHITE], code);
     assert.ok(contrast(colour, THE_WHITE) >= 3, code);
   }
+  assert.deepEqual(Object.keys(OWN).filter((c) => clear(OWN[c], screened(HOUSE_DARK))).sort(), ['3U', 'FC', 'HX', 'JD']);
   // no other table carries these carriers, so none is left out of step
-  for (const code of Object.keys(OWN).concat(Object.keys(W._GATE_CARD_DARKS))) {
+  for (const code of Object.keys(OWN).concat(['TR', 'VY', 'PC'])) {
     assert.equal(O.BRAND[code], undefined, code + ' has no row in AIRLINE_BRAND');
     assert.doesNotMatch(COLORS, new RegExp("'" + code + "'\\s*:"), code + ' has no row in airline-colors.js');
   }
   // WHITE FIGURES READ ON EVERY CARD THE GATE MIXES: 4.5 to 1 or better on every shade and every dark
-  let low = 9;
+  let low = 99;
   for (const code of CODES) {
     const K = W._gateCardPaint(code);
     if (K.kind === 'picture') continue;
@@ -2286,13 +2886,118 @@ test('rule 6, the ink of a white column is the colour of the brand, and reads on
     if (contrast(accent, THE_WHITE) >= 3) { assert.ok(same(L.ink, accent), code + ': its accent'); continue; }
     if (natural && contrast(full(natural), THE_WHITE) >= 3) { assert.ok(same(L.ink, natural), code + ': the ground of its art'); continue; }
     deeper.push(code);
-    assert.ok(hueGap(L.ink, accent) < 12 && lab(L.ink)[0] < lab(accent)[0] && contrast(full(L.ink), THE_WHITE) < 3.2, code + ': ' + L.ink + ', a deeper shade of ' + accent + ', no darker than it has to be');
   }
-  assert.ok(n >= 190, n + ' white columns');
-  // the carriers whose colour is too light for white and who have no dark of their own on record
-  assert.deepEqual(deeper.sort(), ['EC', 'EJU', 'EZS', 'EZY', 'G3', 'HV', 'LL', 'TO', 'U2', 'UL', 'WG', 'XY']);
+  assert.ok(n >= 110 && n <= 130, n + ' white columns');
+  // A WHITE COLUMN IS A COLUMN OF DARK DISCS, so its colour reads on white as it is: none needs a
+  // deeper shade now, and the lowest ink is the blue of KLM set in its navy
+  assert.deepEqual(deeper, []);
+  let low = 99;
+  for (const code of CODES) if (column(code).L.white) low = Math.min(low, contrast(full(column(code).L.ink), THE_WHITE));
+  assert.ok(low >= 5, 'the weakest ink of a white column reads at ' + low.toFixed(2) + ' to 1');
+  // the same function inks the white disc of an operator on the panel of another gate: the first of
+  // the colours given that reads on white, else the first one taken down a step at a time
   assert.equal(W._orbInkOnWhite(['#FF6600']), '#FA6400', 'the orange of easyJet, two hundredths down');
   assert.equal(W._orbInkOnWhite(['#C4921B', '#BD8B13']), '#BD8B13', 'the first that reads');
   assert.equal(W._orbInkOnWhite(['#0033A1']), '#0033A1');
   assert.equal(W._orbInkOnWhite([]), '#1B2430');
+  assert.equal(W._gateWhiteInk('U2', W._gateOrbNatural('U2').ground), '#FA6400');
+  // Etihad and Gulf Air were at that floor in their gold; each has a stronger ink of its own now
+  assert.deepEqual([W._gateWhiteInk('EY', W._gateOrbNatural('EY').ground), W._gateWhiteInk('GF', W._gateOrbNatural('GF').ground)], ['#2E4755', '#857550']);
+  assert.ok(contrast('#2E4755', THE_WHITE) > 9.5 && contrast('#857550', THE_WHITE) > 4.4);
+});
+
+test('the heritage gates draw what they drew: installed at run time, in no name table, and left as drawn', () => {
+  // Air Nova, Canadian Airlines and Air Atlantic get their accent and their name when a heritage page
+  // is up (_heritageInstallBranding), under codes that are in no name table and no ledger: ANV and
+  // CDX are not designators at all. The rule of the card found them unseen, made each a white column
+  // and lettered its code in the top orb. The installer now puts the carrier on the list of gates
+  // left as drawn, and each draws what it drew before the rule: run here, with the branding
+  // installed by the function of the page itself.
+  const src = [block('var HERITAGE_CARRIERS = {'), block('function _heritageInstallBranding() {'), 'return { H: HERITAGE_CARRIERS, install: _heritageInstallBranding };'].join('\n');
+  let up = '';
+  const page = new Function('window', 'AIRLINE_ACCENT', 'AIRLINE_NAME', '_heritageCode', src)(W, O.ACCENT, O.NAME, () => up);
+  assert.deepEqual(Object.keys(page.H).sort(), ['9A', 'ANV', 'CDX']);
+  const PLANE = /<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#fff;">/;
+  const ACCENT_DISC = 'var(--airline-accent,#D82F2E)';
+  // what each drew the day before the rule: [top orb file or the generic plane, Your Aircraft orb, second colour of its pair]
+  const DREW = {
+    ANV: { top: 'plane', own: 'letters ANV', lower: '#0C1119' },
+    CDX: { top: 'plane', own: 'letters CDX', lower: '#061D40' },
+    '9A': { top: '/logos/symbols/airlines/9A.svg', own: '/logos/symbols/airlines/9A.svg', lower: '#061D40' }
+  };
+  for (const code of Object.keys(page.H)) {
+    const had = { accent: O.ACCENT[code], name: O.NAME[code], kept: W._GATE_COLUMNS_KEPT[code] };
+    assert.ok(!CODES.includes(code) && !LEDGER[code], code + ' is in no name table and no ledger');
+    up = code;
+    try {
+      page.install();
+      assert.deepEqual([O.ACCENT[code], O.NAME[code], W._GATE_COLUMNS_KEPT[code]], [page.H[code].accent, page.H[code].name, 1], code + ': the branding, and the gate on the kept list');
+      assert.equal(W._gateColumnKept(code), true, code);
+      const want = DREW[code], L = W._gateColumnLook(code), K = W._gateCardPaint(code);
+      // not white, no dark plate, and its lower right panel the second colour of its pair
+      assert.deepEqual([L.white, W._gateCardDark(code), K.kind, K.lower, O.pair(code).b], [false, '', 'shade', want.lower, want.lower], code);
+      // THE RAIL: the top orb and the five badges, discs of the accent with white on them
+      const rail = O.rail({ airlineCode: code }, code, code), emb = orbFacts(rail.emblem);
+      assert.deepEqual([emb.bg, styleProp(rail.badge, 'background'), styleProp(rail.badge, 'color'), styleProp(rail.badge, '--orb-code-ink')], [ACCENT_DISC, ACCENT_DISC, '#fff', ''], code);
+      assert.doesNotMatch(rail.emblem, /v2-fi-orbcode|_railOrbFailed|--orb-ring/, code + ': no letters of a code that is no designator, and no white disc');
+      if (want.top === 'plane') { assert.match(rail.emblem, PLANE, code + ': the generic plane, white on the disc'); assert.deepEqual([emb.src, emb.pad], ['', 'clamp(5px,0.7vh,10px)'], code); }
+      else assert.deepEqual([emb.src, emb.inked, emb.pad], [want.top, true, PAD], code);
+      // THE YOUR AIRCRAFT ORB, by the builder and by the one function: a disc of the accent
+      const own = W._gateCardOrb(code, ''), f = orbFacts(own.html);
+      assert.deepEqual([f.bg, f.pad, own.white, own.inset, styleProp(f.style, '--orb-ink')], [ACCENT_DISC, PAD, false, false, ''], code);
+      if (/^letters /.test(want.own)) assert.deepEqual([f.src, f.letters, f.lettersStyle], ['', want.own.slice(8), ''], code + ': its letters, white by the stylesheet');
+      else assert.deepEqual([f.src, f.inked], [want.own, true], code);
+      assert.equal(O.cardWithInbound({ airlineCode: code, currentFlight: { airline: code, _opCode: '' } }).includes(own.badge), true, code + ': the builder writes that orb');
+      // THE BOARDING SHELF: five badges of the accent, white glyphs
+      const S = O.shelf(code);
+      assert.deepEqual([styleProp(S.badge, 'background'), styleProp(S.badge, 'color'), S.orb.white || false, S.ink], [ACCENT_DISC, '#fff', false, '#fff'], code);
+      assert.equal(S.orb.badge, W._gateOrbNatural(code).badge, code + ': the recipe of its art');
+      assert.equal(W._gateDiscsLight(code), false, code);
+    } finally {
+      for (const [table, key] of [[O.ACCENT, 'accent'], [O.NAME, 'name'], [W._GATE_COLUMNS_KEPT, 'kept']]) { if (had[key] === undefined) delete table[code]; else table[code] = had[key]; }
+    }
+  }
+  up = '';
+  // without the installer the rule would take each again: that is what the list is for
+  O.ACCENT.ANV = page.H.ANV.accent;
+  try { assert.equal(W._gateCardPaint('ANV').kind, 'dark', 'Air Nova red, were it not kept, would be on the dark plate'); } finally { delete O.ACCENT.ANV; }
+  assert.match(block('function _heritageInstallBranding() {'), /window\._GATE_COLUMNS_KEPT\[code\] = 1;/);
+  // and off a heritage page the installer does nothing, so the list of the approved gates is as it was
+  page.install();
+  assert.equal(Object.keys(W._GATE_COLUMNS_KEPT).length, 26);
+});
+
+test('the accent of a three-letter code is never borrowed by its first two letters', () => {
+  // getAirlineAccent fell back to the accent of the first two letters of a code. A designator the
+  // tables know is folded to its carrier before that; one they do not know is another carrier, and
+  // it took the colour of whoever holds its first two letters: HOP, the designator of an Air France
+  // regional, the magenta of Juneyao (HO); HXA the red of Hong Kong Airlines; SBI the navy of Aircalin.
+  const fn = block('function getAirlineAccent(code) {');
+  assert.match(fn, /var _borrow = \/\^\[A-Z0-9\]\{3\}\$\/\.test\(c\) \? '' : AIRLINE_ACCENT\[c\.substring\(0, 2\)\];/);
+  assert.match(fn, /return AIRLINE_ACCENT\[c\] \|\| _borrow\s*\n/);
+  for (const [code, owner] of [['HOP', 'HO'], ['HXA', 'HX'], ['SBI', 'SB'], ['FCM', 'FC'], ['QNZ', 'QN'], ['3UX', '3U'], ['JDL', 'JD'], ['ACX', 'AC'], ['KLX', 'KL']]) {
+    assert.ok(O.ACCENT[owner] && !O.ACCENT[code] && !O.desig(code), code + ' is no designator of ' + owner);
+    assert.notEqual(O.accent(code), O.ACCENT[owner], code + ' does not take the colour of ' + owner);
+    assert.equal(O.accent(code), '#0033A1', code + ': no colour of its own on record');
+    assert.equal(W._gateCardPaint(code).paint, shadeOf('#0033A1'), code + ': and its card is not a shade of the colour of ' + owner);
+  }
+  // every three-letter code no table knows, on every pair of letters that has an accent: none borrows
+  let tried = 0;
+  for (const two of Object.keys(O.ACCENT).filter((k) => /^[A-Z0-9]{2}$/.test(k))) {
+    for (const x of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+      const code = two + x;
+      if (O.ACCENT[code] || O.desig(code) || O.BRAND[code] || CODES.includes(code) || O.fold(code) !== code) continue;
+      tried++;
+      assert.equal(O.accent(code), '#0033A1', code);
+    }
+  }
+  assert.ok(tried > 2000, tried + ' codes');
+  // a designator the tables know is its carrier, as it was, and a code with a row of its own keeps it
+  for (const [code, two] of [['ROU', 'RV'], ['ETD', 'EY'], ['UAE', 'EK'], ['DLH', 'LH'], ['ACA', 'AC'], ['KLM', 'KL'], ['AFR', 'AF'], ['IBE', 'IB'], ['AUA', 'OS']]) {
+    assert.equal(O.desig(code), two, code);
+    assert.equal(O.accent(code), O.accent(two), code + ' is ' + two);
+  }
+  // and a code that is not three letters is as it was: the brand code of Air Canada Express wears Air Canada
+  assert.equal(O.accent('ACEX'), O.ACCENT.AC);
+  assert.equal(O.accent('AC'), O.ACCENT.AC);
 });

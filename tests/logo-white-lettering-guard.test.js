@@ -557,8 +557,12 @@ test('6c. the gate orb never whitens a tile, nor a colour carrier\'s emblem unde
   const asked = blockSource('window._gateOrbParts = function');
   assert.match(asked, /var N = window\._gateOrbNatural\(code\);/);
   assert.match(asked, /if \(!ink\) return N;/);
-  assert.doesNotMatch(asked, /invert|brightness\(|filter:/, 'no filter is written on a white disc');
-  assert.match(asked, /whitened: false, white: true/);
+  assert.match(asked, /return window\._gateOrbWhite\(code, N, ink\);/);
+  // the white disc is drawn by one function, for a white column and for an orb that would sink
+  // into the lower right panel of the gate it lands on
+  const whiteDisc = blockSource('window._gateOrbWhite = function');
+  for (const src of [asked, whiteDisc]) assert.doesNotMatch(src, /invert|brightness\(|filter:/, 'no filter is written on a white disc');
+  assert.match(whiteDisc, /whitened: false, white: true/);
   // American Eagle's three wear American's symbol, with American's treatment.
   for (const op of ['MQ', 'ENY', 'OH', 'PSA', 'PT', 'PDT']) {
     assert.equal(ORB.carrier(op), 'AA', op);

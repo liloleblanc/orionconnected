@@ -8869,10 +8869,11 @@ html body:is([data-gate-airline="AS"],[data-gate-airline="ASA"],[data-gate-airli
   --plate-tex: url('/textures/plate-teal-gold.jpg?v=22904'); }
 html body:is([data-gate-airline="KL"],[data-gate-airline="KLM"],[data-gate-airline*="KLM"]):not(#_) {
   --plate-tex: url('/textures/plate-blue-grad.jpg?v=22904'); }
-html body:is([data-gate-airline="CX"],[data-gate-airline="CPA"],[data-gate-airline*="CATHAY"],
-             [data-gate-airline="EI"],[data-gate-airline="EIN"],[data-gate-airline*="AER LINGUS"],
-             [data-gate-airline="BR"],[data-gate-airline="EVA"],[data-gate-airline*="EVA AIR"]):not(#_) {
-  --plate-tex: url('/textures/plate-emerald-gold.jpg?v=22904'); }
+/* The emerald and gold plate was set here for Cathay, Aer Lingus and EVA: one picture borrowed
+   for three airlines, and not the jade, the teal or the green of any of them. The rule is gone,
+   and so are their lines in the list of carriers with artwork further down. Each is now a gate
+   like any carrier with no picture: the gate works out its plate (window._gateCardDark in
+   fids-core.js), the dark plate under discs of its own colour. */
 
 /* The five bright plates. Ink flips to near-black with a white lift, and
    the status colours darken to match — the light-on-light green and amber
@@ -9086,12 +9087,15 @@ AND DELTA OFF UNITED'S BLUE (
    honest answer rather than a third borrowed plate: Delta is navy AND RED,
    and not one of the fourteen textures has red in it. A red-on-navy texture
    is all it would take. */
-/* THE PLATE OF A YELLOW AIRLINE TAKES ITS OWN DARK. A shade of a yellow is a khaki, which no
-   airline uses, under figures set in white. For Scoot, Vueling and Pegasus the gate publishes
-   the dark each sets its yellow on as --gate-card (window._GATE_CARD_DARKS in fids-core.js),
-   and the plate takes it in place of the shade of the accent. Every other carrier leaves the
-   variable unset and keeps the mix. The numbers of this rule (34%, #0b0e14, screen) are the
-   ones window._gateCardPaint works the paint of a card from: a test holds the two together. */
+/* THE DARK PLATE. The plate of a carrier with no picture is a shade of its accent, and discs of
+   that accent sink into it: red on maroon, orange on brown, yellow on khaki. Where they would,
+   the gate publishes a dark neutral as --gate-card (window._gateCardDark in fids-core.js: the
+   house charcoal #16181D, or the black or dark grey the airline itself has on record), and the
+   plate takes it in place of the shade, under the same engraving. The discs keep the colour of
+   the airline, as the red discs of Air Canada sit on its black plate. Every other gate leaves
+   the variable unset and keeps the mix. The numbers of this rule (34%, #0b0e14, screen) are the
+   ones window._gateCardShade and window._gateCardScreen work the paint of a card from: a test
+   holds the two together. */
 html body[data-gate-airline]:not(#_):not(#_):not(#_) {
   --plate-base: var(--gate-card, color-mix(in srgb, var(--airline-accent, #6b7684) 34%, #0b0e14));
   --plate-blend: screen;
@@ -9105,9 +9109,6 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
              [data-gate-airline="TS"],[data-gate-airline="TSC"],[data-gate-airline*="TRANSAT"],
              [data-gate-airline="AS"],[data-gate-airline="ASA"],[data-gate-airline*="ALASKA"],
              [data-gate-airline="KL"],[data-gate-airline="KLM"],
-             [data-gate-airline="CX"],[data-gate-airline="CPA"],[data-gate-airline*="CATHAY"],
-             [data-gate-airline="EI"],[data-gate-airline="EIN"],[data-gate-airline*="AER LINGUS"],
-             [data-gate-airline="BR"],[data-gate-airline="EVA"],[data-gate-airline*="EVA AIR"],
              [data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],
              [data-gate-airline="LH"],[data-gate-airline="DLH"],[data-gate-airline*="LUFTHANSA"],
              [data-gate-airline="EK"],[data-gate-airline="UAE"],[data-gate-airline*="EMIRATES"],
@@ -18427,15 +18428,25 @@ html body:is([data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airlin
    and sit on #F2F4F7, where the same gloss is nearly as invisible — so they had
    a milder version of the identical problem and would otherwise have become the
    next report. Carriers on their own accent disc are untouched.
+
+   KEYED ON WHAT THE GATE WRITES, NOT ON A LIST OF CODES. The three selectors
+   below named those twelve codes. The rule of the card behind the discs then
+   made other columns white (the gates whose own discs are too dark for the dark
+   plate), and their white discs took the dark inner shadow and the white gloss
+   of a coloured disc: two whites on the boards. The gate now writes
+   data-gate-discs="light" on the body, beside the code of the carrier
+   (window._gateDiscsLight in fids-core.js: the ten carriers of the light disc
+   and every white column), and the three selectors read that. One attribute in
+   the place of one :is() of attributes: the weight of each selector is the same.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],[data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge,
-html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],[data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) {
+html body[data-gate-discs="light"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge,
+html body[data-gate-discs="light"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) {
   box-shadow:
     0 2px 8px rgba(5, 15, 30, 0.35),
     inset 0 -7px 11px -7px rgba(12, 30, 56, 0.30),
     inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
 }
-html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],[data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge::after {
+html body[data-gate-discs="light"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge::after {
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(186, 203, 224, 0.22)) !important;
 }
 

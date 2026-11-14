@@ -124,7 +124,11 @@ test('the block is the house pattern: one booster on every selector, no :has(), 
 });
 
 test('two colours, written on the gate by uxgGateHtml and painted here', () => {
-  assert.match(CORE, /var p = _rc2Pair\(airlineCode\);\s*return ';--rc2-a:' \+ p\.a \+ ';--rc2-a-ink:' \+ p\.ink \+ ';--rc2-b:' \+ p\.b;/);
+  // the pair of the carrier, by way of the one function that judges its second colour against the
+  // orb that sits on it (window._gateLowerPair: where the Your Aircraft orb of a gate would sink into
+  // that colour the panel takes the dark plate of the gate; tests/gate-orbs-every-airline.test.js)
+  assert.match(CORE, /var p = window\._gateLowerPair\(airlineCode\);\s*return ';--rc2-a:' \+ p\.a \+ ';--rc2-a-ink:' \+ p\.ink \+ ';--rc2-b:' \+ p\.b;/);
+  assert.match(CORE, /window\._gateLowerPair = function \(code\) \{\s*var raw = [^\n]*\n\s*var p = _rc2Pair\(raw\);\s*var out = \{ a: p\.a, ink: p\.ink, b: p\.b, own: p\.b \};/);
   // The caption bar: one flat colour, its words in the ink, no shadow, no glass.
   const cap = ruleFor('.gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap');
   assert.match(cap, /background: var\(--rc2-a, #[0-9a-f]{6}\) !important;/i);
