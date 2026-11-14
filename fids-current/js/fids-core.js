@@ -65927,12 +65927,12 @@ var HERITAGE_MARKS = [
     // language drawn and then measured after document.fonts.ready (the Arabic
     // face, Noto Sans Arabic, loads only once an Arabic line is drawn, and
     // measured before it the Arabic line read 89%), every language is one
-    // row. The longest line is the Italian, 613.4 of 636.7 px (96.3%), then
-    // the Arabic, 584.6 (91.8%), the English and the Spanish, 578.0 and 578.1
-    // (90.8%), the Portuguese 89.9%, the Japanese 84.4%, the German 80.4%,
-    // the French 78.2% and the Chinese 75.0%. The Italian names the picture
-    // rappresentazione artistica, the usual Italian label for an artist
-    // impression. First deliveries expected in 2030, said in full, ran to two
+    // row. The longest line is the Arabic, 584.6 of 636.7 px (91.8%), then
+    // the English and the Spanish, 578.0 and 578.1 (90.8%), the Portuguese
+    // 89.9%, the Italian 88.2%, the Japanese 84.4%, the German 80.4%, the
+    // French 78.2% and the Chinese 75.0%. The Italian names the picture
+    // illustrazione artistica: rappresentazione artistica, the more usual
+    // label, measured 96.3%, too close to a second row in another browser. First deliveries expected in 2030, said in full, ran to two
     // rows in the six languages written in Latin letters (108% to 128%), so
     // they say expected from 2030; the Japanese and the Arabic, which have
     // the room, name the first deliveries.

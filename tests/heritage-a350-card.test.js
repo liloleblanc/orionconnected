@@ -197,11 +197,11 @@ test('and never on a United gate, another airline, an Air Canada gate abroad or 
 const COMING = { en: 'Coming to the fleet', fr: 'Bientôt dans la flotte', es: 'Próximamente en la flota', de: 'Bald in der Flotte',
                  it: 'Presto nella flotta', pt: 'Em breve na frota', ja: '導入予定の新機材', zh: '即将加入机队', ar: 'قريبًا في الأسطول' };
 // An artist's impression, in the words each language has for one. The Italian
-// is rappresentazione artistica, its usual label: the longest line of the
-// nine, 96.3% of the line at 1680 x 1050 and still one row, then the Arabic
-// (91.8%) and the English and the Spanish (90.8%), each measured after
-// document.fonts.ready following the draw.
-const IMPRESSION = { en: 'artist’s impression', fr: 'vue d’artiste', es: 'recreación artística', de: 'Visualisierung', it: 'rappresentazione artistica',
+// is illustrazione artistica (88.2% of the line at 1680 x 1050): the more usual
+// rappresentazione artistica measured 96.3%, too close to a second row. The
+// longest line is the Arabic (91.8%), then the English and the Spanish
+// (90.8%), each measured after document.fonts.ready following the draw.
+const IMPRESSION = { en: 'artist’s impression', fr: 'vue d’artiste', es: 'recreación artística', de: 'Visualisierung', it: 'illustrazione artistica',
                      pt: 'concepção artística', ja: 'イメージ図', zh: '艺术效果图', ar: 'تصوّر فني' };
 // And when: expected from 2030, or the first deliveries expected in 2030.
 const WHEN = { en: 'expected from 2030', fr: 'attendu dès 2030', es: 'previsto para 2030', de: 'ab 2030 erwartet', it: 'atteso dal 2030',
