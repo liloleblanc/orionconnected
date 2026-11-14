@@ -22,21 +22,28 @@ import proxy from "./workers/fids-proxy.js";
 
 // Each engine file lists FALLBACK upstreams, tried in order — a single-CDN
 // outage (or one CDN blocked from Cloudflare's egress) must not take the
-// route maps down. First upstream that answers 200 wins.
+// route maps down. First upstream that answers 200 WITH THE EXPECTED BODY
+// wins (MAP_ENGINE_SHA256, below).
+//
+// Every address names an exact version, and the file as the package
+// publishes it (not a copy a CDN minifies itself), so that every host
+// serves the same bytes. leaflet-arc used to be asked for with no version
+// at all: whatever the registry called latest that day was run as script on
+// every board.
 const MAP_ENGINE = {
   'leaflet.js': [
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js',
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   ],
   'leaflet.css': [
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
-    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css',
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   ],
   'leaflet-arc.js': [
-    'https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js',
-    'https://cdn.jsdelivr.net/npm/leaflet-arc/bin/leaflet-arc.min.js',
+    'https://unpkg.com/leaflet-arc@1.0.2/bin/leaflet-arc.min.js',
+    'https://cdn.jsdelivr.net/npm/leaflet-arc@1.0.2/bin/leaflet-arc.min.js',
   ],
   // v23167 — THE 3D ENGINE STACK IS GONE
   // "Remove anything not serving seriously").
@@ -57,6 +64,33 @@ const MAP_ENGINE = {
   // droplet has 2 vCPUs and no GPU, so WebGL there falls back to software
   // rendering and would be slower than the 2D board it replaced.
 };
+
+// THE MAP ENGINE IS THE ONE OUTSIDE BODY THAT IS MEANT TO RUN. The boards
+// load /mapcdn/leaflet.js and /mapcdn/leaflet-arc.js with a script tag, so
+// what a CDN answers runs on our addresses, where script reads the admin
+// sign-in. The two inert headers do nothing for a script tag. So the route
+// answers a file only when the SHA-256 of the body is the one held here:
+// the bytes of that exact version, the same on every host listed above
+// (leaflet 1.9.4 as published, leaflet-arc 1.0.2). A body that differs (a
+// new publish under the same version, a CDN fault, an error page sent with
+// 200) is not served: the next host is asked, and when none has the
+// expected bytes the answer is 502 and no script. A board without the arc
+// file draws its routes as straight lines; without Leaflet it draws no map.
+// To move a version: change the addresses and the constant together
+// (shasum -a 256 of the file, from every host; they must agree), and the
+// integrity attributes of fids-current/designer.html, which loads the same
+// two files straight from the public hosts.
+const MAP_ENGINE_SHA256 = {
+  'leaflet.js':     'db49d009c841f5ca34a888c96511ae936fd9f5533e90d8b2c4d57596f4e5641a',
+  'leaflet.css':    'a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6',
+  'leaflet-arc.js': '626c25b294ca6f0f442afc0bc8e49dee4f526e9d6d02b606000e91834b459cab',
+};
+async function sha256Hex(bytes) {
+  const d = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  let s = '';
+  for (let i = 0; i < d.length; i++) s += (d[i] < 16 ? '0' : '') + d[i].toString(16);
+  return s;
+}
 
 // Failure responses must NEVER carry cache headers. Until v22378 every branch
 // below stamped 'max-age=86400' on whatever came back — including upstream
@@ -389,17 +423,23 @@ export default {
     }
     if (path.startsWith('/mapcdn/')) {
       const file = path.slice('/mapcdn/'.length);
-      const upstreams = MAP_ENGINE[file];
+      // a file of the list itself: a name every object answers to (constructor…) is not one
+      const upstreams = Object.prototype.hasOwnProperty.call(MAP_ENGINE, file) ? MAP_ENGINE[file] : null;
       if (!upstreams) return new Response('Not found', { status: 404, headers: NO_STORE });
       // the type is the one the file is listed as, never the one a CDN states
       const ct = file.endsWith('.css') ? 'text/css'
                : file.endsWith('.js')  ? 'application/javascript'
                : 'application/octet-stream';
+      // and the body is the one held (MAP_ENGINE_SHA256), or it is not served
+      const want = Object.prototype.hasOwnProperty.call(MAP_ENGINE_SHA256, file) ? MAP_ENGINE_SHA256[file] : '';
+      let refused = false;
       for (const upstream of upstreams) {
         try {
           const r = await fetch(upstream, { cf: { cacheEverything: true, cacheTtl: DAY } });
           if (!r.ok) continue;   // try the next CDN — and never cache a corpse
-          return new Response(r.body, {
+          const bytes = await r.arrayBuffer();
+          if (!want || (await sha256Hex(bytes)) !== want) { refused = true; continue; }
+          return new Response(bytes, {
             status: 200,
             headers: {
               'Content-Type': ct,
@@ -410,6 +450,7 @@ export default {
           });
         } catch (e) { /* network error — fall through to the next upstream */ }
       }
+      if (refused) return new Response('Map engine body refused', { status: 502, headers: NO_STORE });
       return new Response('Map engine fetch failed', { status: 503, headers: NO_STORE });
     }
 

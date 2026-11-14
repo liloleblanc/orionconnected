@@ -146,14 +146,22 @@ const Auth = (() => {
     token = null;
     currentUser = null;
     currentRole = SIGNED_OUT;
+    // The module is told FIRST, while the token is still in storage: end()
+    // writes the signed-out mark only when it finds a sign-in to end (a
+    // visitor gets no cookie), and it looks on this origin before it looks
+    // in the cookie. Told after the removal below, it saw nothing here, and
+    // with the cookie gone (cookies cleared, site data kept) it left no
+    // mark: another address still holding the token brought the sign-in
+    // back. end() and drop() both wipe the two copies themselves; the
+    // removal below is for a page where the module is absent.
+    try {
+      if (window.fidsSignIn) { if (dead) window.fidsSignIn.drop(dead); else window.fidsSignIn.end(); }
+    } catch (e) { /* ignore */ }
     try {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       sessionStorage.removeItem(TOKEN_KEY);   // and any legacy copy
       sessionStorage.removeItem(USER_KEY);
-    } catch (e) { /* ignore */ }
-    try {
-      if (window.fidsSignIn) { if (dead) window.fidsSignIn.drop(dead); else window.fidsSignIn.end(); }
     } catch (e) { /* ignore */ }
   }
 

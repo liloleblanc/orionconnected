@@ -526,6 +526,30 @@ test('every control that says it signs out ends the sign-in on the whole zone: t
   // and every label that offers one is on one of them
   const labelled = siteFiles().filter(([rel, text]) => /\.html$/.test(rel) && />[^<]*(?:log\s?out|sign\s?out|log\s?off|d[ée]connexion|se d[ée]connecter)[^<]*</i.test(text)).map(([rel]) => rel);
   assert.deepEqual(labelled.sort(), ['menu.html', 'picker.html']);
+  // the controls themselves, one by one and not by file: every element of every page whose words (or whose title,
+  // label or value) offer a sign-out, with the handler it carries. A second one beside the first is counted here.
+  const WORDS = '(?:log[\\s-]?out|sign[\\s-]?out|log[\\s-]?off|sign[\\s-]?off|d[ée]connexion|se d[ée]connecter)';
+  const controls = [];
+  for (const [rel, text] of siteFiles()) {
+    if (!/\.html$/.test(rel)) continue;
+    const markup = text.replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/<style\b[\s\S]*?<\/style>/gi, '').replace(/<!--[\s\S]*?-->/g, '');
+    const seen = new Set();
+    for (const re of [new RegExp('<(\\w+)\\b([^>]*)>[^<]*' + WORDS + '[^<]*<', 'gi'),
+                      new RegExp('<(\\w+)\\b([^>]*\\s(?:title|aria-label|value|alt|placeholder)="[^"]*' + WORDS + '[^"]*"[^>]*)>', 'gi')]) {
+      for (const m of markup.matchAll(re)) {
+        if (seen.has(m.index)) continue;
+        seen.add(m.index);
+        controls.push(rel + ' <' + m[1].toLowerCase() + '> ' + ((/\son\w+="([^"]*)"/i.exec(m[2]) || [])[1] || '(no handler)'));
+      }
+    }
+  }
+  assert.deepEqual(controls.sort(), ['menu.html <button> menuLogout()', 'picker.html <a> doLogout();return false;'], 'two controls say they sign out, each on its own handler');
+  const KNOWN = ['menuLogout()', 'doLogout();return false;', 'goBack()'];
+  for (const c of controls) assert.ok(KNOWN.includes(c.replace(/^\S+ <\w+> /, '')), c + ': a sign-out control runs one of the three handlers that end the sign-in');
+  for (const h of handlers) assert.ok(KNOWN.includes(h.replace(/^\S+ /, '')), h);
+  // none is built in script either: no script of the site writes such a label into a page
+  const written = siteFiles().filter(([rel, text]) => new RegExp('(?:textContent|innerText|innerHTML|value|title)\\s*\\+?=\\s*[^;\\n]*[\'"`>]\\s*' + WORDS + '\\s*[\'"`<]', 'i').test(text)).map(([rel]) => rel);
+  assert.deepEqual(written, []);
   assert.match(rd('menu.html'), /<button class="sm-btn sm-btn-danger sm-btn-sm" onclick="menuLogout\(\)">Logout<\/button>/);
   const PICKER = rd('picker.html');
   assert.match(PICKER, /<a href="#" onclick="doLogout\(\);return false;">LOGOUT<\/a>/);
@@ -584,6 +608,83 @@ test('every control that says it signs out ends the sign-in on the whole zone: t
     assert.deepEqual([r.local.fids_token, r.local.fids_user, r.tab.fids_token], [undefined, undefined, undefined], url);
     assert.deepEqual(b.writes, [], url);
   }
+});
+
+test('the picker signs out with the cookie gone: the token of this origin is the sign-in it ends, so the module is told before storage is cleared', () => {
+  // in the source: clearToken() tells the module first, then removes the two copies itself
+  const clear = lift(AUTH, 'clearToken');
+  const told = clear.indexOf('window.fidsSignIn.end()'), removed = clear.indexOf('localStorage.removeItem(TOKEN_KEY)');
+  assert.ok(told > 0 && removed > 0 && told < removed, 'fidsSignIn.end() runs while the token is still in storage');
+  assert.ok(clear.indexOf('sessionStorage.removeItem(TOKEN_KEY)') > told);
+  assert.match(clear, /try \{\s*if \(window\.fidsSignIn\) \{ if \(dead\) window\.fidsSignIn\.drop\(dead\); else window\.fidsSignIn\.end\(\); \}\s*\} catch \(e\) \{ \/\* ignore \*\/ \}\s*try \{\s*localStorage\.removeItem\(TOKEN_KEY\);\s*localStorage\.removeItem\(USER_KEY\);\s*sessionStorage\.removeItem\(TOKEN_KEY\);[^\n]*\s*sessionStorage\.removeItem\(USER_KEY\);\s*\} catch \(e\) \{ \/\* ignore \*\/ \}\s*\}$/);
+  // run: an admin signed in on fids and on yqm; the cookies of the browser are cleared while site data stays; LOGOUT on the picker
+  for (const held of [{ local: { fids_token: LIVE, fids_user: USER } },                                                   // the durable copy only
+                      { local: { fids_token: LIVE, fids_user: USER }, session: { fids_token: LIVE, fids_user: USER } },   // both, as after a sign-in on this tab
+                      { session: { fids_token: LIVE, fids_user: USER } }]) {                                              // a copy of the tab only
+    const b = browser();
+    load('https://yqm.orionconnected.com/fids', b, { local: { fids_token: LIVE, fids_user: USER } });
+    const r = load('https://fids.orionconnected.com/picker', b, held);
+    const Auth = authOn(r);
+    assert.equal(Auth.init(), true, 'signed in on the picker');
+    b.kept.length = 0;          // the cookie jar is emptied
+    b.writes.length = 0;
+    Auth.logout();              // what LOGOUT, Back and Escape run (doLogout, goBack)
+    assert.deepEqual(b.writes.map((w) => w.text), [OUT_COM], 'the signed-out mark is written, once');
+    assert.deepEqual([r.local.fids_token, r.local.fids_user, r.tab.fids_token, r.tab.fids_user], [undefined, undefined, undefined, undefined]);
+    assert.deepEqual([Auth.token, Auth.user, Auth.isAdmin()], [null, null, false]);
+    // the other address, still holding the token in its own storage, obeys the mark at its next load and writes nothing back
+    b.writes.length = 0;
+    const yqm = load('https://yqm.orionconnected.com/fids', b, { local: { fids_token: LIVE, fids_user: USER }, session: { fids_token: LIVE, fids_user: USER } });
+    assert.deepEqual([yqm.local.fids_token, yqm.tab.fids_token], [undefined, undefined]);
+    assert.deepEqual(b.writes, []);
+    assert.equal(b.value('orionconnected.com'), 'out');
+    // and back on the picker the admin is still signed out
+    const back = load('https://fids.orionconnected.com/picker', b, { local: r.local });
+    assert.equal(authOn(back).init(), false, 'not signed in again where they signed out');
+    assert.deepEqual([back.local.fids_token, back.tab.fids_token], [undefined, undefined]);
+  }
+  // a cookie that cannot be written, and a page without the module: both copies are still removed here
+  let b = browser({ refuse: true });
+  let r = load('https://fids.orionconnected.com/picker', b, { local: { fids_token: LIVE, fids_user: USER } });
+  let Auth = authOn(r);
+  assert.equal(Auth.init(), true);
+  Auth.logout();
+  assert.deepEqual([r.local.fids_token, r.local.fids_user, r.tab.fids_token, r.tab.fids_user], [undefined, undefined, undefined, undefined]);
+  b = browser();
+  r = load('https://fids.orionconnected.com/picker', b, { local: { fids_token: LIVE, fids_user: USER } });
+  Auth = authOn(r);
+  assert.equal(Auth.init(), true);
+  b.writes.length = 0;
+  r.win.fidsSignIn = undefined;
+  Auth.logout();
+  assert.deepEqual([r.local.fids_token, r.local.fids_user, r.tab.fids_token, r.tab.fids_user], [undefined, undefined, undefined, undefined]);
+  assert.deepEqual(b.writes, [], 'and without the module nothing touches the cookie');
+  // a module that throws does not stop the removal either
+  r = load('https://fids.orionconnected.com/picker', browser(), { local: { fids_token: LIVE, fids_user: USER } });
+  Auth = authOn(r);
+  assert.equal(Auth.init(), true);
+  r.win.fidsSignIn = { end() { throw new Error('made up'); } };
+  Auth.logout();
+  assert.deepEqual([r.local.fids_token, r.tab.fids_token], [undefined, undefined]);
+  // a dead token found at load is still a drop, not a sign-out: no mark, and the cookie that holds it goes
+  b = browser();
+  b.kept.push({ name: NAME, value: DEAD + '|' + encodeURIComponent(USER), domain: 'orionconnected.com' });
+  r = load('https://fids.orionconnected.com/picker', b);
+  r.win.localStorage.setItem('fids_token', DEAD);
+  r.win.localStorage.setItem('fids_user', USER);
+  b.writes.length = 0;
+  assert.equal(authOn(r).init(), false);
+  assert.equal(b.writes.filter((w) => /=out;/.test(w.text)).length, 0, 'an expired token is not a sign-out of the zone');
+  assert.deepEqual([r.local.fids_token, r.local.fids_user], [undefined, undefined]);
+  // a visitor on the picker, with or without a cookie jar, still writes nothing (the test below runs every such path)
+  b = browser();
+  r = load('https://fids.orionconnected.com/picker', b);
+  Auth = authOn(r);
+  assert.equal(Auth.init(), false);
+  Auth.logout();
+  Auth.logout();
+  assert.deepEqual(b.writes, []);
+  assert.deepEqual(b.kept, []);
 });
 
 test('a visitor is given no cookie: a sign-out with nothing to end (Back or Escape on the picker) writes nothing', () => {
@@ -970,6 +1071,23 @@ test('every page that reads the sign-in loads the module first', () => {
     assert.ok(helper >= 0 && helper < first, page + ': host-airport.js (fidsSignIn) comes before anything that reads the sign-in');
   }
   assert.deepEqual(readers.sort(), ['bids.html', 'fids.html', 'gids.html', 'index.html', 'picker.html']);
+  // the scripts of the sign-in are asked for at the build tag wherever a page loads them, auth.js included: a
+  // release moves the four addresses together, so no browser runs a new module beside an old auth.js or menu.js
+  // (an old one beside the new module does not sign out of the zone at all)
+  const TAG = (/var FIDS_BUILD_TAG = 'v(\d+)'/.exec(CORE) || [])[1];
+  assert.match(String(TAG), /^\d{5}$/, 'fids-core.js declares FIDS_BUILD_TAG');
+  const loads = {};
+  for (const page of pages) {
+    for (const m of rd(page).matchAll(/<script src="\/?js\/(host-airport|auth|menu|fids-core)\.js(?:\?v=([^"]*))?"/g)) {
+      assert.equal(m[2], TAG, page + ': js/' + m[1] + '.js is asked for at the build tag');
+      (loads[m[1]] = loads[m[1]] || []).push(page);
+    }
+  }
+  assert.deepEqual(loads.auth.sort(), ['index.html', 'picker.html']);
+  assert.deepEqual(loads.menu.sort(), ['bids.html', 'fids.html', 'gids.html']);
+  assert.deepEqual(loads['fids-core'].sort(), ['bids.html', 'fids.html', 'gids.html']);
+  for (const page of readers) assert.ok(loads['host-airport'].includes(page), page);
+  assert.doesNotMatch(rd('index.html') + rd('picker.html'), /\?v=23170/, 'the old address of auth.js is gone');
   // .app: no page that is shown there reads the sign-in (app.html), so none is put there
   assert.doesNotMatch(rd('app.html'), /fids_token|fids_user(?!_presets)|js\/auth\.js|js\/fids-core\.js|js\/menu\.js/);
 });

