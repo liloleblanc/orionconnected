@@ -5,8 +5,9 @@
 //
 // A supplied side drawing of an A350-1000 in the current Air Canada livery,
 // an aeroplane Air Canada has ordered and does not fly yet: on 11 February
-// 2026 it announced a firm order for eight with purchase rights for eight
-// more, and its own release says the first deliveries are expected in 2030.
+// 2026 it announced an order for eight with rights to purchase eight more,
+// and its own release says the first delivery is expected in 2030, deliveries
+// beginning in the second half of 2030.
 // The card is in the Air Canada set (Air Canada pages only, never a United
 // gate) under its own heading, Coming to the fleet, never From the archive,
 // and its caption says when the first ones are expected and that the picture
@@ -195,8 +196,12 @@ test('and never on a United gate, another airline, an Air Canada gate abroad or 
 
 const COMING = { en: 'Coming to the fleet', fr: 'Bientôt dans la flotte', es: 'Próximamente en la flota', de: 'Bald in der Flotte',
                  it: 'Presto nella flotta', pt: 'Em breve na frota', ja: '導入予定の新機材', zh: '即将加入机队', ar: 'قريبًا في الأسطول' };
-// An artist's impression, in the words each language has for one.
-const IMPRESSION = { en: 'artist’s impression', fr: 'vue d’artiste', es: 'recreación artística', de: 'Visualisierung', it: 'illustrazione artistica',
+// An artist's impression, in the words each language has for one. The Italian
+// is rappresentazione artistica, its usual label: the longest line of the
+// nine, 96.3% of the line at 1680 x 1050 and still one row, then the Arabic
+// (91.8%) and the English and the Spanish (90.8%), each measured after
+// document.fonts.ready following the draw.
+const IMPRESSION = { en: 'artist’s impression', fr: 'vue d’artiste', es: 'recreación artística', de: 'Visualisierung', it: 'rappresentazione artistica',
                      pt: 'concepção artística', ja: 'イメージ図', zh: '艺术效果图', ar: 'تصوّر فني' };
 // And when: expected from 2030, or the first deliveries expected in 2030.
 const WHEN = { en: 'expected from 2030', fr: 'attendu dès 2030', es: 'previsto para 2030', de: 'ab 2030 erwartet', it: 'atteso dal 2030',
@@ -309,9 +314,14 @@ test('its picture: a cut-out at the working width, clear all round, with no pale
   assert.ok(fs.existsSync(file), PICTURE + ' is on disk');
   const { w, h, px } = rgbaOf(file);
   assert.equal(w, 2272, 'scaled to the 2272 px of the other card pictures');
-  assert.ok(Math.abs(w / h - 2272 / 588) < 0.01, 'at the proportions of the drawing (it is ' + w + ' x ' + h + ')');
+  assert.ok(Math.abs(w / h - 2272 / 585) < 0.01, 'at the proportions of the drawing (it is ' + w + ' x ' + h + ')');
   const A = (x, y) => px[(y * w + x) * 4 + 3];
-  for (const [x, y] of [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]) assert.equal(A(x, y), 0, 'the corner at ' + x + ',' + y + ' is clear');
+  for (const [x, y] of [[0, 0], [0, h - 1], [w - 1, h - 1]]) assert.equal(A(x, y), 0, 'the corner at ' + x + ',' + y + ' is clear');
+  // The top of the fin is the highest and the furthest aft point of the
+  // drawing, so the top right corner is the tip of the fin: dark fin paint,
+  // partly clear, never page (the page was white).
+  const tip = px.subarray((w - 1) * 4, (w - 1) * 4 + 4);
+  assert.ok(tip[3] === 0 || (tip[3] < 255 && Math.max(tip[0], tip[1], tip[2]) <= 60), 'the top right corner is clear or the dark tip of the fin, partly clear (it is ' + Array.from(tip) + ')');
   const touches = { left: false, right: false, top: false, bottom: false };
   for (let y = 0; y < h; y++) { if (A(0, y)) touches.left = true; if (A(w - 1, y) || A(w - 2, y)) touches.right = true; }
   for (let x = 0; x < w; x++) { if (A(x, 0) || A(x, 1)) touches.top = true; if (A(x, h - 1)) touches.bottom = true; }
@@ -322,14 +332,16 @@ test('its picture: a cut-out at the working width, clear all round, with no pale
   assert.ok(solid / (w * h) > 0.3, 'and the aeroplane is solid (' + (100 * solid / (w * h)).toFixed(1) + '%)');
   assert.equal(haze, 0, 'no haze left off the outline');
 
-  // NO PAGE LEFT UNDER THE BLACK BELLY. The supplied cut-out had been trimmed
-  // at a larger size and carried a band of page about six of its pixels wide
-  // round the outline: un-mixed two pixels deep, as the 787-8 was, it stayed a
-  // pale line under the black belly, the chin and the engine and round the fin
-  // over a dark sky (790 pixels by this count); six deep, 13. Counted here: a
-  // pixel that shows (opacity 100 or more) and is not dark (every channel 60
-  // or more), on the outline (clear sky within one pixel), on a dark part
-  // (solid paint of 40 or less within three pixels, and no light solid paint).
+  // NO PAGE LEFT UNDER THE BLACK BELLY. The edge of the supplied cut-out (the
+  // second, 7899 x 3164) is feathered over about six of its pixels: un-mixed
+  // two pixels deep, as the 787-8 was, the feather stayed a pale line under
+  // the black belly, the chin and the engine and round the fin over a dark
+  // sky (1257 pixels by this count); five deep, 99; six deep, 15, the
+  // smallest depth that passes. The first cut-out gave 790 at two and 13 at
+  // six. Counted here: a pixel that shows (opacity 100 or more) and is not
+  // dark (every channel 60 or more), on the outline (clear sky within one
+  // pixel), on a dark part (solid paint of 40 or less within three pixels,
+  // and no light solid paint).
   let rim = 0;
   const at = (x, y) => (y * w + x) * 4;
   for (let y = 0; y < h; y++) {

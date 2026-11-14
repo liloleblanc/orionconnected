@@ -65905,14 +65905,16 @@ var HERITAGE_MARKS = [
     // artist impression, in the words of each language. A passenger must not
     // take it for an aeroplane flying today.
     //
-    // WHAT IS REAL: the order. On 11 February 2026 Air Canada announced a firm
-    // order for eight A350-1000s with purchase rights for eight more, and its
-    // own announcement says the first deliveries are expected in 2030 (the
-    // aircanada.com media release A new era in long-haul: Air Canada to
-    // acquire Airbus A350-1000 widebody aircraft). The caption prints that
-    // year, and only as expected. The type comes from this record as the
-    // boards name it (IATA_AIRCRAFT, 351: Airbus A350-1000) into the place
-    // the caption leaves for it, as on the Dream livery 787-8.
+    // WHAT IS REAL: the order. On 11 February 2026 Air Canada announced an
+    // order for eight A350-1000s with rights to purchase eight more, and its
+    // own release says the first delivery is expected in 2030, deliveries
+    // beginning in the second half of 2030 (the aircanada.com media release A
+    // new era in long-haul: Air Canada to acquire Airbus A350-1000 widebody
+    // aircraft). It does not call the order firm, and nor does this record.
+    // The caption prints that year, and only as expected. The type comes from
+    // this record as the boards name it (IATA_AIRCRAFT, 351: Airbus
+    // A350-1000) into the place the caption leaves for it, as on the Dream
+    // livery 787-8.
     // WHAT IS NOT: this aeroplane. C-GYQM is a real Canadian mark, but it is
     // not assigned to an A350, and 881 on the fin is the number of the
     // drawing. Neither is printed, and nothing on the card says the aeroplane
@@ -65921,12 +65923,19 @@ var HERITAGE_MARKS = [
     //
     // THE CAPTION, in English: Airbus A350-1000 · expected from 2030 · and
     // the words artist impression (the store key is heritage: and the key of
-    // the card). Measured at 1680 x 1050 as the Future Retro DC-9 was, every
-    // language is one row; the longest lines are the English and the
-    // Spanish, each at 91% of the line. First deliveries expected in
-    // 2030, said in full, ran to two rows in the six languages written in
-    // Latin letters (108% to 128%), so they say expected from 2030; the
-    // Japanese and the Arabic, which have the room, name the first deliveries.
+    // the card). Measured at 1680 x 1050 as the Future Retro DC-9 was, each
+    // language drawn and then measured after document.fonts.ready (the Arabic
+    // face, Noto Sans Arabic, loads only once an Arabic line is drawn, and
+    // measured before it the Arabic line read 89%), every language is one
+    // row. The longest line is the Italian, 613.4 of 636.7 px (96.3%), then
+    // the Arabic, 584.6 (91.8%), the English and the Spanish, 578.0 and 578.1
+    // (90.8%), the Portuguese 89.9%, the Japanese 84.4%, the German 80.4%,
+    // the French 78.2% and the Chinese 75.0%. The Italian names the picture
+    // rappresentazione artistica, the usual Italian label for an artist
+    // impression. First deliveries expected in 2030, said in full, ran to two
+    // rows in the six languages written in Latin letters (108% to 128%), so
+    // they say expected from 2030; the Japanese and the Arabic, which have
+    // the room, name the first deliveries.
     //
     // WHOSE GATES: the Air Canada set. It names no gates, so it runs on Air
     // Canada pages only, like the 2017-livery DC-9, and never on a United gate.
@@ -65938,27 +65947,33 @@ var HERITAGE_MARKS = [
     // aeroplane. No new file, no plate behind it, nothing recoloured.
     //
     // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
-    // supplied cut-out (10312 x 2723): laid on white, the page taken off
-    // again, cropped to its own edges and scaled to the 2272 px of the other
-    // cards (2272 x 588). The page was un-mixed six pixels into the outline
-    // (the fifth argument of the tool), not the two of the 787-8: the cut-out
-    // had been trimmed at a larger size and a band of page about six of its
-    // pixels wide was left round it, a pale line under the black belly, the
-    // chin and the engine and round the fin as soon as a dark sky is behind
-    // them. Counted as light pixels on the outline of dark paint, 790 at two
-    // pixels and 13 at six. Nothing of the aeroplane is repainted. The light
-    // line along the leading edge of the winglet reads as drawn, like the
-    // one on the fin, and stays at any depth. The larger supplied file, with the page only partly
-    // off, gave a paler edge (1445 pale rim pixels by the count of the Dream
-    // livery test, against 45 here, most of them that winglet edge).
+    // second supplied cut-out (7899 x 3164, made after the card was built: a
+    // cleaner cut and a crisper white 881 on the fin): laid on white, the
+    // page taken off again, cropped to its own edges and scaled to the 2272
+    // px of the other cards (2272 x 585). The page was un-mixed six pixels
+    // into the outline (the fifth argument of the tool), not the two of the
+    // 787-8: the edge of the cut-out is feathered over about six of its
+    // pixels, and at two that feather stayed a pale line under the black
+    // belly, the chin and the engine and round the fin as soon as a dark sky
+    // is behind them. Counted as light pixels on the outline of dark paint,
+    // 1257 at two pixels, 99 at five and 15 at six, the smallest depth that
+    // passes. Nothing of the aeroplane is repainted. The light line along the
+    // leading edge of the winglet reads as drawn, like the one on the fin,
+    // and stays at any depth. The top of the fin is the highest and the
+    // furthest aft point of the drawing, so the top right corner of the
+    // picture is the tip of the fin (dark fin paint at opacity 43), the one
+    // corner that is not clear sky. The first supplied cut-out (10312 x 2723)
+    // gave 790 at two and 13 at six; by the count of the Dream livery test
+    // the pale rim is 19 pixels here, 45 in that first cut.
     //
     // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose
-    // (213 px deep), is 10.66 to the top of the fin and 10.46 to the tail
-    // cone, against 12.12 for the A350-1000 (73.79 m over a fuselage about
-    // 6.09 m deep): 12% short to the fin, 14% to the tail cone. It is nearer
-    // the 10.97 of the shorter A350-900 (66.80 m over the same fuselage), with
-    // four doors a side, as both have. It is used as drawn: it is the
-    // supplied art, and a stretch is a call for its author.
+    // (213 px deep, the median of the columns, the same in both cut-outs), is
+    // 10.66 to the top of the fin and 10.46 to the tail cone, against 12.12
+    // for the A350-1000 (73.79 m over a fuselage about 6.09 m deep): 12%
+    // short to the fin, 14% to the tail cone. It is nearer the 10.97 of the
+    // shorter A350-900 (66.80 m over the same fuselage), with four doors a
+    // side, as both have. It is used as drawn: it is the supplied art, and a
+    // stretch is a call for its author.
     //
     // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the Air Canada widebodies then come every other card (767, TriStar, A350, 767, TriStar) in the Atlantic pool and in the pool of every other Canadian airport, so no two are back to back.
     key: 'air-canada-a350-1000',

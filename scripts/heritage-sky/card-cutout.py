@@ -30,22 +30,27 @@ steps, so body pixels a shade see-through come out solid as they looked on
 white and a rim it brought with it is taken out too; where a pixel cannot be
 un-mixed (white on white) its own opacity is kept.
 
-It refuses to write a picture the page is still in: one whose corners are not
-clear, or a cut-out that came with clear pixels shut inside the drawing (it
-names the first; whether that is sky between two parts or a hole in the body
-is a call for a person, never a guess here). What it cannot see is a pocket
-of page shut inside a drawing that came ON its page (between the legs of an
-undercarriage, under a pylon): the flood does not reach it and it stays as
-drawn. Look for one before using the picture.
+It refuses to write a picture the page is still in: one with a corner that is
+solid or has the colour of the page, or a cut-out that came with clear pixels
+shut inside the drawing (it names the first; whether that is sky between two
+parts or a hole in the body is a call for a person, never a guess here). A
+corner the drawing reaches with its own paint, partly clear, is no page: a
+drawing cropped to its own edges can put a point of itself there (the fin of
+the A350-1000 is its highest and its furthest aft point, so the top of the fin
+is the top right corner of the picture). It is kept, and named in the report.
+What it cannot see is a pocket of page shut inside a drawing that came ON its
+page (between the legs of an undercarriage, under a pylon): the flood does not
+reach it and it stays as drawn. Look for one before using the picture.
 
 Usage: python3 scripts/heritage-sky/card-cutout.py drawing out.png [width] [tolerance] [rim]
        width      2272 unless given
        tolerance  how far from the page colour still counts as page, 10 of 255 unless given
        rim        how many pixels in from the page are part page, 2 unless given. A drawing
-                  cut out at a large size and trimmed can carry a wider band of page in its
-                  outline (the A350-1000, 10312 px wide, carried about six): give it here,
-                  measured in the drawing's own pixels. A pixel of that band that is no mix
-                  of page and aeroplane keeps its colour, as before.
+                  cut out at a large size and trimmed, or cut with a feathered edge, can carry
+                  a wider band of page in its outline (both A350-1000 cut-outs carried about
+                  six): give it here, measured in the drawing's own pixels, the smallest that
+                  leaves no pale line. A pixel of that band that is no mix of page and
+                  aeroplane keeps its colour, as before.
        (needs Pillow)
 """
 import sys
@@ -194,7 +199,7 @@ def take_page_off(im, tol):
             al[x, y] = int(round(255 * a))
     out = rgb.convert('RGBA')
     out.putalpha(alpha)
-    return out, had, share, fixed, kept
+    return out, had, share, fixed, kept, bg
 
 
 def main():
@@ -210,7 +215,7 @@ def main():
             sys.exit('rim is one pixel or more')
 
     im = Image.open(src)
-    cut, had, share, fixed, kept = take_page_off(im, tol)
+    cut, had, share, fixed, kept, bg = take_page_off(im, tol)
 
     # haze off, then the drawing's own edges
     a = cut.getchannel('A').point(lambda v: 0 if v <= HAZE else v)
@@ -223,15 +228,21 @@ def main():
     a = out.getchannel('A').point(lambda v: 0 if v <= HAZE else v)
     out.putalpha(a)
 
+    # a corner that shows is page when it is solid (page left in fills its corner) or has the colour of the page;
+    # partly clear and in the drawing's own paint, it is a point of the drawing
     W, H = out.size
-    corners = [a.getpixel(p) for p in ((0, 0), (W - 1, 0), (0, H - 1), (W - 1, H - 1))]
-    if any(corners):
-        sys.exit('the page is still in: a corner of the picture is not clear (opacity %s)' % corners)
+    corners = [(p, out.getpixel(p)) for p in ((0, 0), (W - 1, 0), (0, H - 1), (W - 1, H - 1))]
+    page = [(p, c) for p, c in corners if c[3] and (c[3] == 255 or max(abs(c[k] - bg[k]) for k in range(3)) <= tol)]
+    if page:
+        sys.exit('the page is still in: a corner of the picture is solid or has the colour of the page %s' % page)
+    own = ['the corner at %s is the drawing (colour %s, opacity %d)' % (p, c[:3], c[3]) for p, c in corners if c[3]]
 
     out.save(dst, optimize=True)
     print('%s: %s -> %s; %s; the open page was %.1f%% of it; %d rim pixels un-mixed (%d deep), %d kept as drawn'
           % (dst, im.size, out.size, 'came as a cut-out, laid on white first' if had else 'came on its page',
              100 * share, fixed, RIM, kept))
+    for line in own:
+        print(line)
 
 
 if __name__ == '__main__':

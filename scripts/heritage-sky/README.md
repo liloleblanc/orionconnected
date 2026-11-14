@@ -206,18 +206,29 @@ What the script cannot see is a pocket of page shut inside a drawing that came
 on its page (between the legs of an undercarriage, under a pylon). Look for one.
 
 The page usually reaches two pixels into the outline, and that is the default.
-A cut-out that was trimmed at a larger size can carry a wider band: the
-A350-1000 that is coming (10312 px wide) had about six pixels of page left
-round it, and at two the band stayed as a pale line under the black belly, the
-chin and the engine and round the fin over a dark sky. The depth is the fifth
-argument, in the drawing's own pixels:
+A cut-out that was trimmed at a larger size, or one with a feathered edge, can
+carry a wider band: both cut-outs of the A350-1000 that is coming had about six
+pixels of page in their outline (the first, 10312 px wide, a band left by the
+trim; the second, 7899 px wide and the one the card uses, an edge feathered
+over six pixels), and at two the band stayed as a pale line under the black
+belly, the chin and the engine and round the fin over a dark sky. The depth is
+the fifth argument, in the drawing's own pixels:
 
-    python3 scripts/heritage-sky/card-cutout.py drawing.png fids-current/aircraft/heritage/air-canada-a350-1000.png 2272 10 6
+    python3 scripts/heritage-sky/card-cutout.py 881-canva.png fids-current/aircraft/heritage/air-canada-a350-1000.png 2272 10 6
 
-Look at the result over a dark sky before choosing a depth. A light line that
-is drawn (the leading edge of a fin or a winglet) is no mix of page and
-aeroplane, and it stays at any depth. `tests/heritage-a350-card.test.js`
-counts light pixels on the outline of the dark paint: 790 at two, 13 at six.
+Look at the result over a dark sky before choosing a depth, and take the
+smallest that passes. A light line that is drawn (the leading edge of a fin or
+a winglet) is no mix of page and aeroplane, and it stays at any depth.
+`tests/heritage-a350-card.test.js` counts light pixels on the outline of the
+dark paint and passes 40 or fewer: for the second cut-out 1257 at two, 99 at
+five, 15 at six (the first gave 790 at two and 13 at six).
+
+A corner of the picture that is not clear stops the tool when it is solid or
+has the colour of the page, as page left in would be. A drawing cropped to its
+own edges can put a point of its own paint, partly clear, in a corner: the top
+of the A350-1000 fin is its highest and its furthest aft point, so the top
+right corner of that picture is the dark tip of the fin, at opacity 43. The
+tool keeps it and names it in its report.
 
 ## The shelf clip re-rendered: clouds carried through the hole (`cleanplate5`)
 
