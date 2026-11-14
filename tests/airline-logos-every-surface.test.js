@@ -25,9 +25,14 @@
 //      never a symbol of the colour it stands on.
 //   6. LETTERING THAT IS TYPED TEXT is in no table, but for one file kept in a
 //      ledger with the reason.
-//   7. A ROW STATE THAT SWALLOWS THE LETTERING types the name instead.
-//   8. THE BELT types no name beside a lockup.
+//   7. A ROW STATE THAT SWALLOWS THE LETTERING types the name instead, and the
+//      table that says which is held to a measure of every colour cut on both
+//      rows, not to a list of the cases somebody noticed.
+//   8. THE BELT draws no lockup in its square slots: the monogram, and the name.
 //   9. CENTRAL MOUNTAIN AIR is an airline of its own: its name, its number.
+//  10. THE WELCOME CARD knows how tall the letters of a stacked lettering are.
+//  11. LETTERING AND NO MARK OF ANY KIND is a monogram, never an empty slot, and
+//      Pascan under its second code draws the lettering of its first.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -95,6 +100,161 @@ const isWhite = (c) => /^(#fff|#ffffff|white)$/.test(c);
 const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
 const lum = (h) => { const m = /^#([0-9a-f]{6})$/i.exec(h); const [r, g, b] = [0, 2, 4].map((i) => lin(parseInt(m[1].substr(i, 2), 16))); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+
+// ── reading a picture ──────────────────────────────────────────────────────
+// Three checks below ask what a file paints and where: how much of a lettering is which colour,
+// how tall its lines are, and whether a mark is the colour of its ground. A drawing is read by
+// the sampler the gate orbs use (scripts/orbs/tile-grounds.js): its shapes, in document order. A
+// png, and a drawing that only wraps one, is decoded here. A drawing that paints a picture
+// through a mask can be read by neither: MASKED names those, with what the picture was seen to
+// hold (each drawn by the system viewer and looked at).
+const zlib = require('node:zlib');
+const GEN = require(path.join(ROOT, 'scripts/orbs/tile-grounds.js'));
+const bare = (u) => String(u).split('?')[0];
+function decodePng(buf) {
+  assert.equal(buf.toString('latin1', 1, 4), 'PNG');
+  let o = 8, w = 0, h = 0, depth = 0, type = 0, lace = 0, plte = null, trns = null;
+  const idat = [];
+  while (o < buf.length) {
+    const len = buf.readUInt32BE(o), kind = buf.toString('latin1', o + 4, o + 8), d = buf.subarray(o + 8, o + 8 + len);
+    o += 12 + len;
+    if (kind === 'IHDR') { w = d.readUInt32BE(0); h = d.readUInt32BE(4); depth = d[8]; type = d[9]; lace = d[12]; }
+    else if (kind === 'IDAT') idat.push(d); else if (kind === 'PLTE') plte = d; else if (kind === 'tRNS') trns = d;
+  }
+  assert.ok(depth === 8 && lace === 0 && [0, 2, 3, 4, 6].includes(type), 'a png of 8 bits, not interlaced: ' + depth + ', ' + type + ', ' + lace);
+  const n = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[type], stride = w * n, raw = zlib.inflateSync(Buffer.concat(idat)), px = Buffer.alloc(w * h * 4);
+  let prev = Buffer.alloc(stride), at = 0;
+  for (let y = 0; y < h; y++) {
+    const f = raw[at++], line = Buffer.from(raw.subarray(at, at + stride));
+    at += stride;
+    for (let i = 0; i < stride; i++) {
+      const a = i >= n ? line[i - n] : 0, u = prev[i], c = i >= n ? prev[i - n] : 0;
+      let v = line[i];
+      if (f === 1) v += a; else if (f === 2) v += u; else if (f === 3) v += (a + u) >> 1;
+      else if (f === 4) { const pa = Math.abs(u - c), pb = Math.abs(a - c), pc = Math.abs(a + u - 2 * c); v += (pa <= pb && pa <= pc) ? a : (pb <= pc ? u : c); }
+      line[i] = v & 255;
+    }
+    for (let x = 0; x < w; x++) {
+      const q = (y * w + x) * 4, i = x * n;
+      if (type === 6) line.copy(px, q, i, i + 4);
+      else if (type === 2) { line.copy(px, q, i, i + 3); px[q + 3] = 255; }
+      else if (type === 4) { px[q] = px[q + 1] = px[q + 2] = line[i]; px[q + 3] = line[i + 1]; }
+      else if (type === 0) { px[q] = px[q + 1] = px[q + 2] = line[i]; px[q + 3] = 255; }
+      else { const k = line[i] * 3; px[q] = plte[k]; px[q + 1] = plte[k + 1]; px[q + 2] = plte[k + 2]; px[q + 3] = (trns && line[i] < trns.length) ? trns[line[i]] : 255; }
+    }
+    prev = line;
+  }
+  return { w, h, px };
+}
+const hexOf = (r, g, b) => '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+// spans [from, to] on one axis, joined where they touch or overlap
+function joined(spans) {
+  const out = [];
+  for (const [a, b] of spans.slice().sort((x, y) => x[0] - y[0])) {
+    if (out.length && a <= out[out.length - 1][1]) out[out.length - 1][1] = Math.max(out[out.length - 1][1], b);
+    else out.push([a, b]);
+  }
+  return out;
+}
+// true where a shape of the sampler paints some of the row at y between x0 and x1
+function rowPainted(shape, y, x0, x1) {
+  const xs = [];
+  for (const p of shape.polys) for (let k = 0; k < p.length; k++) {
+    const a = p[k], b = p[(k + 1) % p.length];
+    if ((a[1] > y) === (b[1] > y)) continue;
+    xs.push([a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1]), b[1] > a[1] ? 1 : -1]);
+  }
+  xs.sort((m, n) => m[0] - n[0]);
+  let wind = 0;
+  for (let i = 0; i < xs.length - 1; i++) {
+    wind += xs[i][1];
+    const inside = shape.rule === 'evenodd' ? (i % 2 === 0) : wind !== 0;
+    if (inside && Math.min(xs[i + 1][0], x1) - Math.max(xs[i][0], x0) > 1e-6) return true;
+  }
+  return false;
+}
+const MASKED = {
+  '/logos/airlines/us-major/spirit-wordmark-dark.svg': { ink: '#000000', lines: [0.62], seen: 'the word spirit in black, lower case' },
+  '/logos/airlines/us-major/spirit-wordmark-light.svg': { ink: '#FFFFFF', lines: [0.62], seen: 'the same word in white' },
+  '/logos/airlines/canadian/flair-wordmark-color.svg': { ink: '#000000', lines: [0.98], seen: 'the word flair with its mark, in black' },
+  '/logos/airlines/canadian/flair-wordmark-light.svg': { ink: '#FFFFFF', lines: [0.98], seen: 'the same in white' }
+};
+// What a file paints: inks, each colour with the share of the painted area it covers, the
+// largest first; and lines, the height of each band of painted rows as a share of the height
+// of the box, from the top down.
+const PICTURES = {};
+function picture(u) {
+  const file = bare(u);
+  if (PICTURES[file]) return PICTURES[file];
+  const raw = fs.readFileSync(path.join(FC, file));
+  let img = null, out = null;
+  if (/\.png$/i.test(file)) img = decodePng(raw);
+  else {
+    const txt = raw.toString('utf8');
+    const shapes = /<(?:path|rect|circle|ellipse|polygon|polyline)\b/.test(txt.replace(/<(defs|clipPath|mask)\b[\s\S]*?<\/\1>/g, ''));
+    const inside = /<image\b[^>]*href="data:image\/png;base64,([^"]+)"/.exec(txt);
+    if (/<mask\b/.test(txt) && /<image\b/.test(txt)) out = Object.assign({ kind: 'masked', inks: [[MASKED[file] ? MASKED[file].ink : '', 1]] }, MASKED[file] || { lines: [] });
+    else if (inside && !shapes) img = decodePng(Buffer.from(inside[1], 'base64'));
+    else {
+      const m = GEN.build(txt);
+      let vb = m.vb;
+      if (vb.length !== 4) { const tag = (/<svg\b[^>]*>/i.exec(txt) || [''])[0]; vb = [0, 0, parseFloat((/\bwidth="([\d.]+)/.exec(tag) || [])[1]), parseFloat((/\bheight="([\d.]+)/.exec(tag) || [])[1])]; }
+      assert.ok(vb[2] > 0 && vb[3] > 0 && m.shapes.length, file + ': a box and shapes to read');
+      const NX = 120, NY = Math.max(12, Math.round(NX * vb[3] / vb[2])), hist = {};
+      let n = 0;
+      for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+        const c = GEN.colourAt(m, vb[0] + (i + 0.5) / NX * vb[2], vb[1] + (j + 0.5) / NY * vb[3]);
+        if (c) { hist[c] = (hist[c] || 0) + 1; n++; }
+      }
+      // the lines: 300 rows across the height of the box, each painted where a shape covers some
+      // of it inside the box (the crossings of the row with the outline, by the fill rule)
+      const ROWS = 300, spans = [];
+      for (let j = 0; j < ROWS; j++) {
+        const y = vb[1] + (j + 0.5) / ROWS * vb[3];
+        if (m.shapes.some((sh) => rowPainted(sh, y, vb[0], vb[0] + vb[2]))) spans.push([j, j + 1]);
+      }
+      out = { kind: 'drawing', inks: Object.entries(hist).map(([c, k]) => [c, k / n]).sort((a, b) => b[1] - a[1]), lines: joined(spans).map(([a, b]) => (b - a) / ROWS) };
+    }
+  }
+  if (img) {
+    const hist = new Map(), spans = [];
+    let n = 0;
+    for (let y = 0; y < img.h; y++) {
+      let on = false;
+      for (let x = 0; x < img.w; x++) {
+        const i = (y * img.w + x) * 4;
+        if (img.px[i + 3] < 128) continue;
+        on = true; n++;
+        const k = (img.px[i] >> 3) << 10 | (img.px[i + 1] >> 3) << 5 | (img.px[i + 2] >> 3), e = hist.get(k) || [0, 0, 0, 0];
+        e[0]++; e[1] += img.px[i]; e[2] += img.px[i + 1]; e[3] += img.px[i + 2];
+        hist.set(k, e);
+      }
+      if (on) spans.push([y, y + 1]);
+    }
+    out = { kind: 'raster', inks: [...hist.values()].sort((a, b) => b[0] - a[0]).map((e) => [hexOf(e[1] / e[0], e[2] / e[0], e[3] / e[0]), e[0] / n]), lines: joined(spans).map(([a, b]) => (b - a) / img.h) };
+  }
+  return (PICTURES[file] = out);
+}
+
+test('the reader of pictures: a drawing, a png, a png inside a drawing, and the four it cannot read', () => {
+  // a drawing: KLM is one blue; Kuwait is three lines, its script the tallest and KUWAIT a quarter of the box
+  const klm = picture(the('wordmarkSrc')('klm', 'dark'));
+  assert.deepEqual([klm.kind, klm.inks[0][0], klm.inks[0][1] > 0.99, klm.lines.length], ['drawing', '#00A1DE', true, 1]);
+  const ku = picture(the('wordmarkSrc')('kuwait-airways', 'light'));
+  assert.equal(ku.lines.length, 3);
+  assert.ok(Math.abs(ku.lines[0] - 0.515) < 0.01 && Math.abs(ku.lines[1] - 0.245) < 0.01 && ku.lines[2] < 0.08, ku.lines.map((x) => x.toFixed(3)).join(' '));
+  // a png, and a png inside a drawing
+  const wal = picture(the('wordmarkSrc')('world-atlantic', 'dark')), lx = picture(the('wordmarkSrc')('swiss', 'dark'));
+  assert.deepEqual([wal.kind, lx.kind, lx.inks[0][0].slice(0, 3)], ['raster', 'raster', '#E6']);
+  assert.ok(wal.inks.length >= 2 && wal.lines.length === 2, 'World Atlantic over Airlines');
+  // what it cannot read is named, and is such a file
+  for (const [file, row] of Object.entries(MASKED)) {
+    assert.ok(onDisk(file) && /<mask\b/.test(read(file)) && /<image\b/.test(read(file)), file);
+    assert.deepEqual([picture(file).kind, picture(file).inks[0][0]], ['masked', row.ink], file);
+    assert.ok(row.seen.length > 10, file);
+  }
+  assert.deepEqual(joined([[5, 9], [0, 2], [2, 4], [8, 12]]), [[0, 4], [5, 12]]);
+});
 
 // ── 1. tiles on disk, named ────────────────────────────────────────────────
 // code: the tile, and what the picture shows. Looked at one by one.
@@ -331,6 +491,22 @@ test('the boarding strip and the countdown are never bare for a carrier the row 
   // a lettered square is drawn only for the code it letters
   assert.equal(ends(B._gateMarkPick(B._BW_EMBLEM, 'DY')), '/logos/airline-tiles/NAX.svg');
   assert.equal(ends(B._gateMarkPick(B._BW_EMBLEM, 'D8')), '');
+  // whichever table names it: the emblem table hands Norwegian UK the square that types DY, and
+  // neither the strip nor the countdown of a DI gate draws it. Over every code and both surfaces,
+  // a lettered square is the end only for the code it letters.
+  assert.equal(the('AIRLINE_EMBLEM_FILES').DI, '/logos/airline-tiles/NAX.svg');
+  for (const table of [B._BW_EMBLEM, B._CD_MARK]) assert.equal(ends(B._gateMarkPick(table, 'DI')), '', 'DI');
+  const lettered = [];
+  for (const code of CODES) for (const table of [B._BW_EMBLEM, B._CD_MARK]) {
+    const pick = B._gateMarkPick(table, code);
+    for (const u of [pick.src, pick.tile]) {
+      const tile = (/airline-tiles\/([^/.?]+)\.svg/.exec(u || '') || [])[1] || '';
+      if (!B._ORB_TILE_LETTERS[tile]) continue;
+      assert.equal(B._orbTileLettersOther(tile, code), false, code + ' is handed ' + tile + '.svg, which letters ' + B._ORB_TILE_LETTERS[tile]);
+      if (!lettered.includes(code)) lettered.push(code);
+    }
+  }
+  assert.deepEqual(lettered.sort(), ['BQ', 'DY', 'SG', 'YP', 'YV'], 'the five codes whose own tile is a lettered square');
   // both builders ask the one function, and write its handler
   const strip = CORE.slice(CORE.indexOf('function _boardWelcomeStripHtml(_stripState) {'), CORE.indexOf('function _cdRondelleHtml() {'));
   const cd = CORE.slice(CORE.indexOf('function _cdRondelleHtml() {'), CORE.indexOf('function _boardInfoRowHtml(statusKey) {'));
@@ -383,8 +559,14 @@ test('the white strip never draws a white mark, and the countdown never a symbol
   assert.ok(!paints('/logos/symbols/airlines/LA.svg').some(isWhite));
 
   // THE COUNTDOWN STANDS ON THE COLOUR OF THE CARRIER: the fifteen whose symbol was that colour draw
-  // their row tile, a square of the colour with the mark in white or in a second colour
-  const CD = { LH: 'DLH', SN: 'BEL', LO: 'LOT', FI: 'ICE', EK: 'UAE', SQ: 'SIA', JL: 'JAL', CX: 'CPA', KE: 'KAL', JQ: 'JST', CM: 'CMP', AM: 'AMX', JU: 'ASL', HA: 'HAL', IB: 'IBE' };
+  // their row tile, a square of the colour with the mark in white or in a second colour. And eight
+  // more the first list missed, each tile looked at on its ground: Fiji and Xiamen (a symbol the
+  // colour under it to the digit), Air Europa, Aerolineas, Asiana and TAROM (within a few steps of
+  // it), Kuwait and IndiGo (a navy symbol on the near black of a carrier with no banner colour).
+  // And a ninth the reading below found: Transavia under HV, a green letter on that green.
+  const CD = { LH: 'DLH', SN: 'BEL', LO: 'LOT', FI: 'ICE', EK: 'UAE', SQ: 'SIA', JL: 'JAL', CX: 'CPA', KE: 'KAL', JQ: 'JST', CM: 'CMP', AM: 'AMX', JU: 'ASL', HA: 'HAL', IB: 'IBE',
+    FJ: 'FJI', MF: 'CXA', UX: 'AEA', KU: 'KAC', '6E': 'IGO', AR: 'ARG', OZ: 'AAR', RO: 'ROT', HV: 'TRA' };
+  assert.equal(Object.keys(CD).length, 24);
   for (const [code, tile] of Object.entries(CD)) {
     const file = '/logos/airline-tiles/' + tile + '.svg';
     assert.equal(B._CD_MARK[code], file, code);
@@ -393,6 +575,47 @@ test('the white strip never draws a white mark, and the countdown never a symbol
     // the tile paints a ground and a mark: two colours or more, so the mark cannot be the ground
     assert.ok(paints(file).length >= 2, code + ': ' + paints(file).join(' '));
   }
+  // THE GROUND OF THE COUNTDOWN, as the gate writes it: the first colour of the banner of the
+  // carrier (the colour file, then the table in the gate), else its accent, else the near black
+  // #0C1119; never white. Read here from the same three places.
+  const colours = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
+  const spec = {};
+  for (const m of CORE.slice(CORE.indexOf('var BANNER_COLOR_SPEC = {'), CORE.indexOf('Object.assign(BANNER_COLOR_SPEC, window.AIRLINE_BRAND_COLORS)')).matchAll(/'([A-Z0-9]{2,3})':\s*\{\s*r1:\s*'(#[0-9A-Fa-f]{6})'/g)) spec[m[1]] = m[2];
+  assert.ok(Object.keys(spec).length >= 8 && Object.keys(colours).length >= 20, 'both tables of banner colours were read');
+  assert.match(CORE, /\+ ';--banner-bg:' \+ \(\(_bannerSpec && _bannerSpec\.r1 && String\(_bannerSpec\.r1\)\.toUpperCase\(\) !== '#FFFFFF'\) \? _bannerSpec\.r1 : '#0c1119'\)/);
+  assert.match(fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8'), /\.g8-countdown \.g8-cd-body \{\s*background-color: var\(--banner-bg, #0b0f16\) !important;/);
+  const ground = (code) => { const r = (colours[code] && colours[code].r1) || spec[code] || the('AIRLINE_ACCENT')[code] || ''; return (/^#[0-9a-f]{6}$/i.test(r) && r.toUpperCase() !== '#FFFFFF') ? r.toUpperCase() : '#0C1119'; };
+  assert.deepEqual([ground('FJ'), ground('MF'), ground('KU'), ground('6E'), ground('ZZ')], ['#473729', '#008CD5', '#0C1119', '#0C1119', '#0C1119']);
+  // the eight: the symbol each asked for is one colour, and reads on that ground under 1.5 to 1
+  // (six of them within 4 of it by CIEDE2000; the navy of Kuwait and of IndiGo 17 and 22 from the
+  // near black, at 1.36 and 1.43 to 1); its tile shows a mark that stands 20 or more from the ground
+  const near = (file, g) => picture(file).inks.filter(([c]) => B._orbDeltaE(c, g) < 20).reduce((a, [, share]) => a + share, 0);
+  for (const code of ['FJ', 'MF', 'UX', 'KU', '6E', 'AR', 'OZ', 'RO', 'HV']) {
+    const sym = '/logos/symbols/airlines/' + code + '.svg', g = ground(code), ink = picture(sym).inks;
+    assert.ok(onDisk(sym) && ink[0][1] > 0.99 && contrast(ink[0][0], g) < 1.5, code + ': ' + sym + ' is ' + ink[0][0] + ', ' + contrast(ink[0][0], g).toFixed(2) + ' to 1 on ' + g);
+    assert.ok(near(B._CD_MARK[code], g) <= 0.97, code + ': a mark on the tile stands out of ' + g);
+  }
+  for (const code of ['FJ', 'MF', 'UX', 'AR', 'OZ', 'RO', 'HV']) assert.ok(B._orbDeltaE(picture('/logos/symbols/airlines/' + code + '.svg').inks[0][0], ground(code)) < 4, code);
+  // AND OVER EVERY CODE: no drawing the countdown ends on is all the colour of its ground. Three are,
+  // and are named: two have no tile to fall to (El Al and Mokulele draw an emblem of exactly
+  // their banner colour), and the white p of Porter stands on a ground the stylesheet gives its
+  // countdown, not on its cream banner colour.
+  const SAME_AS_GROUND = { LY: 'no tile on disk', '9X': 'no tile on disk', PD: 'the stylesheet paints the countdown of Porter' };
+  const same = [];
+  let judged = 0;
+  for (const code of CODES) {
+    const file = ends(B._gateMarkPick(B._CD_MARK, code));
+    if (!file || /\.(?:webp|jpe?g)(\?|$)/i.test(file)) continue;
+    // (a lettered square is its ground and a code set as text, which the reader does not read)
+    const tile = (/airline-tiles\/([^/.?]+)\.svg/.exec(file) || [])[1] || '';
+    if (picture(file).kind === 'masked' || B._ORB_TILE_LETTERS[tile]) continue;
+    judged++;
+    if (near(file, ground(code)) > 0.97) same.push(code);
+  }
+  assert.ok(judged >= 180, judged + ' countdown marks read');
+  assert.deepEqual(same, Object.keys(SAME_AS_GROUND).sort());
+  for (const code of ['LY', '9X']) assert.equal(TILE[code], undefined, code + ': ' + SAME_AS_GROUND[code]);
+  assert.match(fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8'), /\.g8-wrap\.g8-airline-PD \.g8-countdown \.g8-cd-body \{/);
   // the countdown keeps the colour marks it had
   assert.equal(B._CD_MARK.DL, '/logos/airlines/us-major/delta-emblem-colour.svg');
   assert.equal(B._CD_MARK.WS, '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg');
@@ -452,21 +675,79 @@ test('lettering that is typed text is in no table: TAP, LOT, Royal Air Maroc and
 // ── 7. a row state that swallows the lettering ─────────────────────────────
 test('on the row state that is the colour of its lettering, the row types the name in its own ink', () => {
   const types = the('_rowStateTypesName');
-  // the table, whole: two letterings on Final Call, one on Delayed
-  assert.deepEqual(plain(the('ROW_STATE_TYPES_NAME')), { 'final-call': { easyjet: 1, gol: 1 }, delayed: { etihad: 1 } });
+  const TABLE = plain(the('ROW_STATE_TYPES_NAME'));
   for (const code of ['U2', 'EZY', 'EC', 'EJU', 'EZS', 'G3']) {
     assert.equal(types('final-call', WM[code]), true, code + ' on Final Call');
     for (const st of ['delayed', 'scheduled', 'boarding', 'cancelled', 'departed', '']) assert.equal(types(st, WM[code]), false, code + ' on ' + st);
   }
-  assert.equal(types('delayed', WM.EY), true, 'Etihad on Delayed');
-  for (const st of ['final-call', 'scheduled', 'boarding', 'cancelled', '']) assert.equal(types(st, WM.EY), false, 'Etihad on ' + st);
+  // Etihad and Oman Air on both states (Etihad was listed for Delayed alone, and its gold on the
+  // orange of Final Call is the lower of the two; Oman Air typed its name before it had lettering)
+  for (const code of ['EY', 'WY']) {
+    for (const st of ['final-call', 'delayed']) assert.equal(types(st, WM[code]), true, code + ' on ' + st);
+    for (const st of ['scheduled', 'boarding', 'cancelled', 'departed', '']) assert.equal(types(st, WM[code]), false, code + ' on ' + st);
+  }
   for (const code of ['AC', 'WS', 'LH', 'DL']) for (const st of ['final-call', 'delayed']) assert.equal(types(st, WM[code]), false, code);
   assert.equal(types('final-call', undefined), false);
   // WHY: the colour cut the row asks for in that state is the colour of the row
   const ROW = { 'final-call': ['#F28C00'], delayed: ['#EDBB00', '#F9D44C'] };
   const css = ['css/fids.css', 'css/display-overrides.css'].map((f) => fs.readFileSync(path.join(FC, f), 'utf8')).join('\n').toUpperCase();
   for (const c of [].concat(...Object.values(ROW))) assert.ok(css.includes(c), 'the stylesheets paint a row ' + c);
-  for (const [st, base, ink] of [['final-call', 'easyjet', '#ff6600'], ['final-call', 'gol', '#eb7302'], ['delayed', 'etihad', '#c89801']]) {
+
+  // THE TABLE IS HELD TO A MEASURE, NOT TO A LIST. It was pinned to three entries, so a lettering
+  // wired later was never asked: Oman Air went from a typed name to grey and gold letters at 1.03
+  // to 1 on the orange row. Every colour cut the lettering table can hand a row is read here (what
+  // it paints, by area) and set against the colour of both rows.
+  // AN INK IS LOST ON A ROW where it is near the same paint (CIEDE2000 under 20, the line the gate
+  // orbs draw between a disc and its card), or where it is a grey (chroma under 7, the line of the
+  // same measure between a colour and a grey) under 2 to 1 on it: a grey has no colour of its own
+  // to stand on, only light. A CUT IS LOST where half of what it paints, or more, is.
+  // Contrast alone would not do, and the pictures say so: the blue of KLM and the green of
+  // Transavia are 1.2 to 1 on the orange and read at once, a blue and a green on an orange.
+  const SINK = plain(B._GATE_SINK);
+  assert.deepEqual([SINK.deltaE, SINK.chroma], [20, 7]);
+  const apart = (a, b) => B._orbDeltaE(a, b), chroma = (c) => Math.hypot(B._orbLab(c)[1], B._orbLab(c)[2]);
+  const lost = (ink, row) => apart(ink, row) < SINK.deltaE || (chroma(ink) < SINK.chroma && contrast(ink, row) < 2);
+  const lostShare = (inks, row) => inks.filter(([c]) => lost(c, row)).reduce((a, [, share]) => a + share, 0);
+  // the measure against the cuts that were drawn on both rows and looked at: these vanish
+  for (const [ink, row] of [['#C89801', '#F28C00'], ['#C89801', '#EDBB00'], ['#C89801', '#F9D44C'], ['#FF6600', '#F28C00'], ['#EB7302', '#F28C00'],
+    ['#A6A8AB', '#F28C00'], ['#A6A8AB', '#EDBB00'], ['#B39759', '#F28C00'], ['#B39759', '#EDBB00']]) assert.equal(lost(ink, row), true, ink + ' on ' + row);
+  // and these read: KLM, Transavia, VivaAerobus, the blue and the red of Chair, SWISS, Pegasus, Air
+  // Algerie, Air Europa and both blues of El Al on either row, and the orange of easyJet and of GOL
+  // on the yellow of Delayed (the weakest that read: 31 and 26 apart from it)
+  for (const ink of ['#00A1DE', '#05CE78', '#04A64B', '#35B0E6', '#FF0000', '#E60005', '#DC2C2B', '#E2231A', '#006FDE', '#63C7EF', '#1B358F']) {
+    for (const row of [].concat(...Object.values(ROW))) assert.equal(lost(ink, row), false, ink + ' on ' + row);
+  }
+  for (const [ink, row] of [['#FF6600', '#EDBB00'], ['#FF6600', '#F9D44C'], ['#EB7302', '#EDBB00'], ['#EB7302', '#F9D44C']]) assert.equal(lost(ink, row), false, ink + ' on ' + row);
+  assert.ok(apart('#FF6600', '#EDBB00') > 30 && apart('#EB7302', '#EDBB00') > 25 && apart('#EB7302', '#EDBB00') < 27);
+  // a grey with light against the row reads; white, a grey with none, does not read on the yellow
+  assert.deepEqual([lost('#58595B', '#F28C00'), lost('#58595B', '#EDBB00'), lost('#FFFFFF', '#F9D44C')], [false, false, true]);
+
+  // THE SWEEP: every lettering, both states
+  const bases = [...new Set(Object.values(WM))].sort(), found = { 'final-call': {}, delayed: {} }, kinds = {};
+  let partly = 0;
+  for (const base of bases) {
+    const cut = the('wordmarkSrc')(base, 'dark');
+    assert.ok(onDisk(cut), base + ': ' + cut);
+    const P = picture(cut);
+    kinds[P.kind] = (kinds[P.kind] || 0) + 1;
+    assert.ok(P.inks.length && /^#[0-9A-F]{6}$/.test(P.inks[0][0]) && Math.abs(P.inks.reduce((a, [, share]) => a + share, 0) - 1) < 1e-6, base + ': what ' + cut + ' paints');
+    for (const st of Object.keys(ROW)) {
+      const worst = Math.max(...ROW[st].map((row) => lostShare(P.inks, row)));
+      if (worst >= 0.5) found[st][base] = 1;
+      else if (worst >= 0.1) partly++;
+    }
+  }
+  assert.ok(bases.length >= 80, bases.length + ' letterings read');
+  assert.deepEqual(kinds, { drawing: bases.length - 6, raster: 4, masked: 2 }, 'how each cut was read');
+  // every cut that is lost on a row is in the table, and the table names no other
+  assert.deepEqual(found, TABLE);
+  assert.deepEqual([Object.keys(TABLE['final-call']).sort(), Object.keys(TABLE.delayed).sort()], [['easyjet', 'etihad', 'gol', 'oman-air'], ['etihad', 'oman-air']]);
+  // some read with a part of them lost (the orange half of North Star, the orange of Sun Country
+  // and of the bird of Singapore, the peach of Bahamasair, the grey ring of GOL on the yellow):
+  // under half, so the lettering stays
+  assert.ok(partly >= 8 && partly <= 20, partly + ' cuts lose a tenth to a half of their ink on a row');
+  for (const [st, base, ink] of [['final-call', 'easyjet', '#ff6600'], ['final-call', 'gol', '#eb7302'], ['delayed', 'etihad', '#c89801'], ['final-call', 'etihad', '#c89801'],
+    ['final-call', 'oman-air', '#a6a8ab'], ['delayed', 'oman-air', '#a6a8ab'], ['final-call', 'oman-air', '#b39759'], ['delayed', 'oman-air', '#b39759']]) {
     const cut = the('wordmarkSrc')(base, 'dark');
     assert.ok(paints(cut).includes(ink), base + ': its colour cut paints ' + paints(cut).join(' '));
     for (const row of ROW[st]) assert.ok(contrast(ink, row) < 2, base + ' ' + ink + ' on a ' + st + ' row ' + row + ' reads at ' + contrast(ink, row).toFixed(2) + ' to 1');
@@ -481,34 +762,57 @@ test('on the row state that is the colour of its lettering, the row types the na
   assert.match(CORE, /const isDelayed = stKey === 'delayed';/);
   // the Delayed bar of the belt reads the same table
   assert.match(CORE, /const _bTypesName = isDelayed && _rowStateTypesName\('delayed', _bWmBase\);/);
-  assert.match(CORE, /const _b3Wm = \(_bidsEmblemOnly \|\| _bNoName\) \? '' : \(\(_bWmBase && !_bTypesName\)/);
+  assert.match(CORE, /const _b3Wm = _bidsEmblemOnly \? '' : \(\(_bWmBase && !_bTypesName\)/);
   // the mark slot still holds the tile on those rows
-  for (const code of ['U2', 'G3', 'EY']) assert.match(the('mkLogo')(code, ''), /data-logo-set="tile"/, code);
+  for (const code of ['U2', 'G3', 'EY', 'WY']) assert.match(the('mkLogo')(code, ''), /data-logo-set="tile"/, code);
 });
 
 // ── 8. the belt ────────────────────────────────────────────────────────────
-test('the belt types no name beside a lockup, and still types it beside a tile or a monogram', () => {
-  const lockup = the('_logoIsLockup');
-  // Sunwing: a lockup and no tile or lettering, so its mark is the mark and the name together
+test('the belt draws no lockup in its square slots: the monogram there, and the name typed beside it', () => {
+  const lockup = the('_logoIsLockup'), belt = the('_beltLogo');
+  // Sunwing: a lockup and no tile or lettering. The board row has a wide slot for it and hides the
+  // typed name beside it; the belt has only squares
   const wg = the('mkLogo')('WG', 'Sunwing');
   assert.equal(lockup(wg), true);
   assert.equal(WM.WG, undefined); assert.equal(TILE.WG, undefined);
+  const sheet = fs.readFileSync(path.join(FC, 'css/baggage-display.css'), 'utf8') + fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8');
+  assert.match(sheet, /#baggageView \.b5 \.b5-emb img, #baggageView \.b5 \.b5-emb \.full-logo \{\s*height: 1em !important;[^}]*max-width: 1\.6em !important;/);
+  assert.match(sheet, /\.bidsv3 \.b3-tile img, \.bidsv3 \.b3-tile > \* \{ width: 100% !important; height: 100% !important; object-fit: contain;/);
+  const art = decodePng(fs.readFileSync(path.join(FC, bare(srcOf(wg)))));
+  assert.ok(art.w / art.h > 3.5, 'the Sunwing lockup is ' + art.w + ' by ' + art.h + ': in a slot 1.6 wide it is under half the height of the text beside it');
+  // so the belt draws the monogram in the slot, and types the name
+  assert.match(belt('WG', 'Sunwing'), /^<div class="full-logo logo-monogram" data-code="WG" style="background:[^"]+;">WG<\/div>$/);
   const hall = the('_b5Airline')({ airline: 'WG', _airlineName: 'Sunwing' });
-  assert.match(hall, /^<span class="b5-emb"><img class="full-logo"[^>]*Sunwing-Logo-Colour\.png[^>]*><\/span>$/, 'the lockup alone');
-  assert.doesNotMatch(hall, /b5-aname|b5-wm/);
+  assert.match(hall, /^<span class="b5-emb"><div class="full-logo logo-monogram"[^>]*>WG<\/div><\/span><span class="b5-aname">SUNWING<\/span>$/, 'the monogram, and the name');
+  const tag = the('_b5Tag')({ airline: 'WG', _airlineName: 'Sunwing', flight: 'WG123' });
+  assert.match(tag, /^<span class="b5-tag"><span class="b5-temb"><div class="full-logo logo-monogram"[^>]*>WG<\/div><\/span><span class="b5-tfn" dir="ltr">WG123<\/span><\/span>$/);
+  for (const html of [hall, tag]) assert.doesNotMatch(html, /Sunwing-Logo|data-logo-set="wordmark"|<img/);
   // a tile, a monogram: the name is typed beside it; lettering: drawn beside it
   assert.match(the('_b5Airline')({ airline: 'NH', _airlineName: 'ANA' }), /ANA\.svg[^>]*><\/span><span class="b5-aname">ANA<\/span>$/);
   assert.match(the('_b5Airline')({ airline: 'ZG', _airlineName: 'Zipair' }), /logo-monogram[^>]*>ZG<\/div><\/span><span class="b5-aname">ZIPAIR<\/span>$/);
   assert.match(the('_b5Airline')({ airline: 'AC', _airlineName: 'Air Canada' }), /<span class="b5-wm" data-name="AIR CANADA">/);
-  for (const code of ['AC', 'NH', 'ZG', 'TP', 'YX', '9M']) assert.equal(lockup(the('mkLogo')(code, '')), false, code);
-  // every code that is a lockup on the row has neither tile nor lettering, so nothing is lost
-  const lockups = CODES.filter((c) => lockup(the('mkLogo')(c, '')));
-  assert.ok(lockups.includes('WG'));
+  // FOR EVERY CODE: the belt mark is the mark of the row, but where that is a lockup; never a lockup,
+  // and the hall belt always names the airline beside it, typed or drawn
+  const lockups = [];
+  for (const code of CODES) {
+    const row = the('mkLogo')(code, ''), mark = belt(code, '');
+    if (lockup(row)) { lockups.push(code); assert.match(mark, /^<div class="full-logo logo-monogram"/, code); } else assert.equal(mark, row, code);
+    assert.equal(lockup(mark), false, code);
+    assert.match(the('_b5Airline')({ airline: code, _airlineName: '' }), /<span class="b5-(?:aname|wm)"/, code + ': its name beside the mark');
+  }
+  assert.deepEqual(lockups, ['WG']);
   for (const c of lockups) assert.ok(!TILE[c] && !WM[c] && the('LOCAL_LOGOS')[c], c);
-  // the two belt rows ask the same question
-  assert.match(CORE, /const _bNoName = !_bWmBase && _logoIsLockup\(logoHtml\);/);
-  assert.match(CORE, /const _bAirlineHtml = \(_bidsEmblemOnly \|\| _bNoName\) \? ''/);
-  assert.match(CORE, /var mark = \(!base && _logoIsLockup\(logo\)\) \? '' : base/);
+  // every builder of the belt asks the one function: the hall line, its two tags, and both belt rows
+  // (which share one mark); the name is typed on both rows whatever the mark is
+  const hallSrc = CORE.slice(CORE.indexOf('function _b5Airline(f) {'), CORE.indexOf('function _b5LaterItem(f, c) {') + 900);
+  assert.equal(hallSrc.split('_beltLogo(f.airline, f._airlineName)').length - 1, 3, 'the hall line and its two tags');
+  assert.doesNotMatch(hallSrc, /mkLogo\(/);
+  assert.match(CORE, /const logoHtml = _beltLogo\(f\.airline, f\._airlineName\);/);
+  assert.match(CORE, /<div class="b3-tile">\$\{logoHtml\}<\/div>/);
+  assert.match(CORE, /<div class="bidsv2-airline-block">\$\{logoHtml\}<\/div>/);
+  assert.match(CORE, /const _bAirlineHtml = _bidsEmblemOnly \? '' : \(\(_bWmBase && !_bTypesName\)/);
+  assert.doesNotMatch(CORE, /_bNoName/);
+  assert.equal(CORE.split('_beltLogo(').length - 1, 5, 'four callers and the function');
 });
 
 // ── 9. Central Mountain Air ────────────────────────────────────────────────
@@ -544,4 +848,106 @@ test('Central Mountain Air is an airline of its own: its name and its number, ne
   // an Air Canada row is untouched
   const ac = the('mapADB')({ arrivals: [Object.assign({}, row, { number: 'AC 8421', airline: { iata: 'AC', name: 'Air Canada' }, arrival: Object.assign({}, row.arrival, { airline: { iata: 'AC', name: 'Air Canada' } }) })] }, 'arr');
   assert.deepEqual([ac[0].airline, ac[0].flight], ['AC', 'AC8421']);
+});
+
+
+// ── 10. the Welcome card ───────────────────────────────────────────────────
+test('the Welcome card has the letter height of every lettering whose tallest line is under three quarters of its box', () => {
+  const T = plain(the('WELCOME_CARD_LETTER_HEIGHT')), pick = the('_welcomeCardPick');
+  // THE RULE OF THE TABLE: the card sizes the box of a lettering, and rule 1 (a logo at least as
+  // large as the text beside it) is about its letters. A lettering set on two or three lines, or
+  // one whose letters are a part of its height, is listed with the share its letters fill, and
+  // the card draws the box that much taller. Five of the letterings named since are stacked and
+  // were not listed (Kuwait, Oman Air, Singapore, Air Algerie, Brussels): their name came out
+  // at a quarter to two thirds of the size asked. The table was checked for the entries it had,
+  // never for the ones it lacked. Here every lettering the card can draw is read, and one whose
+  // tallest line of ink is under three quarters of its box must be listed.
+  const codes = [...new Set([...Object.keys(WM), ...Object.keys(plain(the('WELCOME_CARD_WORDMARK'))), ...Object.keys(T), ...Object.keys(plain(the('_FB_WM_ICAO')))])].sort();
+  const missing = [], files = new Set();
+  for (const code of codes) {
+    const u = bare(the('_welcomeCardName')(code).wordmark);
+    if (!u) continue;
+    assert.ok(onDisk(u), code + ': ' + u);
+    files.add(u);
+    const lines = picture(u).lines, tallest = Math.max(...lines), entry = pick(T, code);
+    assert.ok(lines.length >= 1 && tallest > 0.05 && tallest <= 1, code + ': ' + u + ' has lines of ' + lines.map((x) => x.toFixed(2)).join(' '));
+    if (tallest < 0.75 && entry === undefined) missing.push(code + ' (' + u + ': its tallest line is ' + tallest.toFixed(2) + ' of its box)');
+    // an entry is never more than the tallest line the art has: letters cannot be taller than their line
+    if (entry !== undefined) assert.ok(entry > 0.15 && entry <= tallest + 0.03, code + ': ' + entry + ' against a tallest line of ' + tallest.toFixed(2));
+  }
+  assert.deepEqual(missing, [], 'stacked lettering with no letter height:\n' + missing.join('\n'));
+  assert.ok(files.size >= 75, files.size + ' letterings read');
+  // THE SIX ADDED, each measured from its white cut: the line that carries the name, capitals (or
+  // ascenders, or the height of lower case with none) to baseline, as a share of the box. The
+  // line is named by its place: Kuwait is script, KUWAIT, AIRWAYS; Oman Air and Air Algerie
+  // end on the name; Singapore and Brussels begin with it; avianca is one word under the dot of
+  // its i, which the reader sees as a line of its own.
+  const NAME_LINE = { KU: [1, 0.24], WY: [-1, 0.34], SQ: [0, 0.35], AH: [-1, 0.44], SN: [0, 0.62], AV: [-1, 0.73] };
+  for (const [code, [at, want]] of Object.entries(NAME_LINE)) {
+    const lines = picture(the('_welcomeCardName')(code).wordmark).lines, line = lines[at < 0 ? lines.length + at : at];
+    assert.equal(T[code], want, code);
+    assert.ok(lines.length >= 2 && Math.abs(line - want) < 0.012, code + ': its name line is ' + line.toFixed(3) + ' of the box, among ' + lines.map((x) => x.toFixed(3)).join(' '));
+    assert.equal(the('_welcomeCardData')(code).letterHeight, want, code + ': the card is handed it');
+  }
+  // a lettering whose letters fill its box is not listed, and the card is handed 1
+  for (const code of ['AC', 'TK', 'KE', 'CX', 'UX', 'EI']) { assert.equal(pick(T, code), undefined, code); assert.equal(the('_welcomeCardData')(code).letterHeight, 1, code); }
+});
+
+// ── 11. lettering and no mark; Pascan under its second code ────────────────
+test('lettering and no mark of any kind is the monogram, never an empty slot; a regional keeps the slot of its airline', () => {
+  const mk = the('mkLogo');
+  // World Atlantic: lettering, and no tile, emblem or lockup. Miami files it under its designator,
+  // and both codes draw the monogram of its two-letter code beside the lettering
+  for (const code of ['WL', 'WAL']) {
+    assert.equal(WM[code], 'world-atlantic', code);
+    assert.ok(!TILE[code] && !EMBLEM[code] && !the('LOCAL_LOGOS')[code], code + ': no mark of any kind');
+    assert.match(mk(code, ''), /^<div class="full-logo logo-monogram" data-code="WL" style="background:[^"]+;">WL<\/div>$/, code);
+    const hall = the('_b5Airline')({ airline: code, _airlineName: 'World Atlantic' });
+    assert.match(hall, /^<span class="b5-emb"><div class="full-logo logo-monogram"[^>]*>WL<\/div><\/span><span class="b5-wm" data-name="WORLD ATLANTIC">/, code + ': the belt line');
+  }
+  assert.equal(mk('WAL', ''), mk('WL', ''), 'one airline, one square');
+  // FOR EVERY CODE WITH LETTERING: a mark in the slot, but for the regionals that wear the lettering
+  // of the airline they fly for (the rows hand the code of that airline here, never theirs) and a
+  // carrier with a lockup on file, which keep the empty slot they had
+  const PARENT = plain(the('PARENT')), empty = [];
+  for (const code of Object.keys(WM)) {
+    const html = mk(code, '');
+    if (html === '') { empty.push(code); assert.ok(PARENT[code] || the('LOCAL_LOGOS')[code], code + ': an empty slot only for a regional or a lockup'); continue; }
+    assert.match(html, /data-logo-set="(?:tile|emblem)"|logo-monogram/, code);
+  }
+  assert.deepEqual(empty.sort(), ['4C', '9E', '9L', 'MQ', 'OH', 'PT', 'RV', 'ZX']);
+  for (const code of empty) assert.ok(PARENT[code], code + ' prints ' + PARENT[code]);
+  // the branch, as written: the monogram of the two-letter code, then the bare return for those two kinds
+  const body = CORE.slice(CORE.indexOf('function mkLogo(code, faName) {'), CORE.indexOf('// ── LANGUAGE STRINGS & THEME SYSTEM'));
+  assert.match(body, /if \(!LOCAL_TRANSPARENT_LOGOS\[c\] && !_wears\) \{\n\s*return _monogramTile\(\(typeof _designatorIata === 'function' && _designatorIata\(c\)\) \|\| c, displayName\);\n\s*\}\n\s*return ''; \/\/ no tile, wordmark alone/);
+});
+
+test('Pascan under its second code draws the lettering its first code draws, where that is drawn', () => {
+  // P6 is Pascan as Saint John files it (four recorded rows). On a board row neither code draws
+  // lettering: BQ has none in the lettering table, and types PASCAN beside the square that letters
+  // BQ; P6 types its name beside its own letters, since a lettered square is drawn only for the
+  // code it letters. Where BQ does draw the lettering of Pascan, P6 typed the name: the gate band,
+  // the phone gate header and the Operated-by caption. One row beside BQ and PSC in each table.
+  const light = '/logos/airlines/canadian-regional/pascan-wordmark-light.svg', colour = '/logos/airlines/canadian-regional/pascan-wordmark-color.svg';
+  for (const u of [light, colour]) assert.ok(onDisk(u), u);
+  assert.equal(the('_orbEmblemCarrier')('P6'), 'BQ');
+  assert.deepEqual([WM.BQ, WM.P6], [undefined, undefined], 'neither is in the lettering table of the rows');
+  for (const code of ['BQ', 'PSC', 'P6']) {
+    assert.deepEqual([the('_mgHeaderLogoSrc')(code, true), the('_mgHeaderLogoSrc')(code, false)], [light, colour], code + ': the phone gate header');
+    assert.deepEqual([the('operatorLogoUrl')(code), the('operatorLogoUrlThemed')(code, true), the('operatorLogoUrlThemed')(code, false)], [colour, light, colour], code + ': the caption');
+    assert.deepEqual(plain(the('OPBY_WORDMARKS_THEMED')[code]), { onDark: light, onLight: colour }, code);
+  }
+  // the two tables of the gate band, which live inside the builder of the gate
+  const dark = CORE.slice(CORE.indexOf('var BANNER_DARK_LOGO = {'), CORE.indexOf('var BANNER_LIGHT_LOGO = {'));
+  const pale = CORE.slice(CORE.indexOf('var BANNER_LIGHT_LOGO = {'), CORE.indexOf('var _lightLogo = _bannerIsLight'));
+  for (const code of ['BQ', 'PSC', 'P6']) {
+    assert.match(dark, new RegExp("'" + code + "':\\s*'" + light.replace(/[.\/]/g, '\\$&') + "'"), code + ': white lettering on a dark band');
+    assert.match(pale, new RegExp("'" + code + "':\\s*'" + colour.replace(/[.\/]/g, '\\$&') + "'"), code + ': its colours on a light band');
+  }
+  // the row: its own letters and its typed name, as before; never the square that letters BQ
+  assert.match(the('mkLogo')('P6', ''), /^<div class="full-logo logo-monogram" data-code="P6"[^>]*>P6<\/div>$/);
+  assert.match(the('mkLogo')('BQ', ''), /airline-tiles\/PSC\.svg/);
+  assert.equal(B._ORB_TILE_LETTERS.PSC, 'BQ');
+  // and nothing else of BQ was copied under P6: no tile, no colour, no look
+  assert.deepEqual([TILE.P6, the('AIRLINE_ACCENT').P6, B._GATE_ORB_LOOKS.P6, the('LOCAL_LOGOS').P6], [undefined, undefined, undefined, undefined]);
 });

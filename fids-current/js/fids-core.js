@@ -7663,9 +7663,9 @@ function _b5Airline(f) {
   var name = String(f._airlineName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code).toUpperCase();
   var safe = fidsEscHtml(name);
   var base = (typeof IATA_TO_WORDMARK !== 'undefined') ? IATA_TO_WORDMARK[code] : '';
-  var logo = mkLogo(f.airline, f._airlineName);
-  // no typed name beside a lockup, which is the mark and the name together (_logoIsLockup)
-  var mark = (!base && _logoIsLockup(logo)) ? '' : base
+  // the square mark of the belt, never a lockup (_beltLogo), and the name beside it always
+  var logo = _beltLogo(f.airline, f._airlineName);
+  var mark = base
     ? '<span class="b5-wm" data-name="' + safe + '">'
       + '<img class="b5-wm-n" alt="' + safe + '" src="' + fidsEscHtml(wordmarkSrc(base, 'light')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
       + '<img class="b5-wm-d" alt="" src="' + fidsEscHtml(wordmarkSrc(base, 'dark')) + '" onload="_b5WmFit(this)" onerror="_b5WmFail(this)">'
@@ -7674,7 +7674,7 @@ function _b5Airline(f) {
   return '<span class="b5-emb">' + logo + '</span>' + mark;
 }
 function _b5Tag(f) {
-  return '<span class="b5-tag"><span class="b5-temb">' + mkLogo(f.airline, f._airlineName) + '</span><span class="b5-tfn" dir="ltr">' + fidsEscHtml(f.flight || '') + '</span></span>';
+  return '<span class="b5-tag"><span class="b5-temb">' + _beltLogo(f.airline, f._airlineName) + '</span><span class="b5-tfn" dir="ltr">' + fidsEscHtml(f.flight || '') + '</span></span>';
 }
 // 'HH:MM' in the airport's clock from a time stamp, for the board's own
 // clock formatting (_bidsTimeForLang).
@@ -7787,7 +7787,7 @@ function _b5LaterItem(f, c) {
   var ts = _b5Eff(f);
   var tmr = (typeof _wxLocalDate === 'function' && ts && _wxLocalDate(c.iata, ts) !== _wxLocalDate(c.iata, c.nowTs)) ? '<span class="b5-tmr">' + c.tomorrow + '</span>' : '';
   var from = _b5CityHtml(f, c);
-  return '<span class="b5-li"><span class="b5-temb">' + mkLogo(f.airline, f._airlineName) + '</span>'
+  return '<span class="b5-li"><span class="b5-temb">' + _beltLogo(f.airline, f._airlineName) + '</span>'
     + '<span class="b5-lt" dir="ltr">' + fidsEscHtml(_bidsTimeForLang(f.upd || f.time)) + '</span>' + tmr
     + BoardStrings.markHalf('<span class="b5-lc">' + fidsEscHtml(from.city) + '</span>', c.L[0])
     + (from.code ? '<span class="b5-lcode">' + fidsEscHtml(from.code) + '</span>' : '')
@@ -9592,6 +9592,10 @@ var OPERATOR_LOGOS = {
   // (a white box on any ground but white); the same art without it.
   'BQ':  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',        // Pascan
   'PSC': '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',        // Pascan ICAO
+  // Pascan under the second code a feed files it by (P6, at Saint John): the same lettering,
+  // here and in the three tables below that name BQ and PSC. It typed its name on the gate
+  // band, on the phone gate header and in the caption while its lettering sat on disk.
+  'P6':  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',
   '5T':  '/logos/airlines/canadian-regional/canadian-north.svg',               // Canadian North
   '7F':  '/logos/airlines/canadian-regional/firstair.svg',                     // First Air
   '4N':  '/logos/airlines/canadian-regional/airnorth.svg',                     // Air North
@@ -9811,6 +9815,7 @@ var OPBY_WORDMARKS_THEMED = {
   'AIE': { onDark:'/logos/airlines/canadian-regional/airinuit-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/airinuit.svg' },
   'BQ':  { onDark:'/logos/airlines/canadian-regional/pascan-wordmark-light.svg',   onLight:'/logos/airlines/canadian-regional/pascan-wordmark-color.svg' },
   'PSC': { onDark:'/logos/airlines/canadian-regional/pascan-wordmark-light.svg',   onLight:'/logos/airlines/canadian-regional/pascan-wordmark-color.svg' },
+  'P6':  { onDark:'/logos/airlines/canadian-regional/pascan-wordmark-light.svg',   onLight:'/logos/airlines/canadian-regional/pascan-wordmark-color.svg' },
   '5T':  { onDark:'/logos/airlines/canadian-regional/canadian-north-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/canadian-north.svg' },
   '7F':  { onDark:'/logos/airlines/canadian-regional/firstair-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/firstair.svg' },
   '4N':  { onDark:'/logos/airlines/canadian-regional/airnorth-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/airnorth.svg' },
@@ -16490,6 +16495,15 @@ window._BW_EMBLEM = {
 // Emirates drew a symbol of exactly the colour under it; Jetstar, Copa, Singapore, JAL, Cathay,
 // Korean, Aeromexico and Air Serbia one within a few steps of it; Hawaiian and Iberia lost all
 // but a flower and a yellow stroke.
+// Eight more, each tile looked at on the ground it lands on: the symbol of Fiji and of Xiamen
+// is the colour under it to the digit, that of Air Europa, of Aerolineas, of Asiana and of
+// TAROM within a few steps of it, and the navy bird of Kuwait and the navy aircraft of IndiGo
+// stood on the near black a carrier with no banner colour gets. Fiji draws its white masi
+// roundel on its brown, Xiamen its white egret, Air Europa its white letters, Kuwait its
+// white bird, IndiGo its white dotted aircraft, Aerolineas its white condor, Asiana its red
+// stroke on a warm grey and TAROM its white swallow in a ring. And Transavia under HV, found
+// by the test that reads every mark against its ground: a green letter on that green, where
+// its tile is the white letter (Transavia France, TO, had no symbol and drew the tile already).
 window._CD_MARK = {
   'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
   'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
@@ -16499,7 +16513,10 @@ window._CD_MARK = {
   'FI': '/logos/airline-tiles/ICE.svg', 'EK': '/logos/airline-tiles/UAE.svg', 'SQ': '/logos/airline-tiles/SIA.svg',
   'JL': '/logos/airline-tiles/JAL.svg', 'CX': '/logos/airline-tiles/CPA.svg', 'KE': '/logos/airline-tiles/KAL.svg',
   'JQ': '/logos/airline-tiles/JST.svg', 'CM': '/logos/airline-tiles/CMP.svg', 'AM': '/logos/airline-tiles/AMX.svg',
-  'JU': '/logos/airline-tiles/ASL.svg', 'HA': '/logos/airline-tiles/HAL.svg', 'IB': '/logos/airline-tiles/IBE.svg'
+  'JU': '/logos/airline-tiles/ASL.svg', 'HA': '/logos/airline-tiles/HAL.svg', 'IB': '/logos/airline-tiles/IBE.svg',
+  'FJ': '/logos/airline-tiles/FJI.svg', 'MF': '/logos/airline-tiles/CXA.svg', 'UX': '/logos/airline-tiles/AEA.svg',
+  'KU': '/logos/airline-tiles/KAC.svg', '6E': '/logos/airline-tiles/IGO.svg', 'AR': '/logos/airline-tiles/ARG.svg',
+  'OZ': '/logos/airline-tiles/AAR.svg', 'RO': '/logos/airline-tiles/ROT.svg', 'HV': '/logos/airline-tiles/TRA.svg'
 };
 window._GATE_MARK_MISSED = {};
 window._gateMarkPick = function (table, code) {
@@ -16508,6 +16525,10 @@ window._gateMarkPick = function (table, code) {
   var f = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(c) : c;
   var files = window._AIRLINE_EMBLEM_FILES || {};
   var named = (table && table[c]) || files[c] || (f !== c && ((table && table[f]) || files[f])) || '';
+  // a file a table names is held to the rule of the lettered square too: the emblem table hands
+  // Norwegian UK the tile that types DY, and the strip and the countdown of a DI gate drew it
+  var namedTile = /\/airline-tiles\/([A-Za-z0-9-]+)\.svg/.exec(named);
+  if (namedTile && window._orbTileLettersOther && window._orbTileLettersOther(namedTile[1], c)) named = '';
   var tiles = (typeof IATA_TO_TILE_ICAO !== 'undefined') ? IATA_TO_TILE_ICAO : {};
   var icao = tiles[c] || tiles[f] || '';
   if (icao && window._orbTileLettersOther && window._orbTileLettersOther(icao, c)) icao = '';
@@ -22562,6 +22583,7 @@ function uxgGateHtml(ctx) {
     // white lettering alone (the square taken out) is pascan-wordmark-light.
     'BQ': '/logos/airlines/canadian-regional/pascan-wordmark-light.svg',
     'PSC': '/logos/airlines/canadian-regional/pascan-wordmark-light.svg',
+    'P6': '/logos/airlines/canadian-regional/pascan-wordmark-light.svg',
     '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg',
     // v23468 — Encore's white lockup as a VECTOR. The supplied artwork, outlined,
     // replacing the raster encore.png the banner reached through LOCAL_LOGOS.
@@ -22641,6 +22663,7 @@ function uxgGateHtml(ctx) {
     'CAV': '/logos/airlines/canadian-regional/calmair.svg',
     'BQ':  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',
     'PSC': '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',
+    'P6':  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',
     '3H':  '/logos/airlines/canadian-regional/airinuit.svg',
     'AIE': '/logos/airlines/canadian-regional/airinuit.svg',
     'BA':  { src: '/logos/airlines/european/british-airways-stacked.svg', h: 132, w: 340 },
@@ -30305,7 +30328,8 @@ const gView = document.getElementById('gateView');
               // (a row with no code: formatCityIata as on the board's rows, see render())
               const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : formatCityIata(f.origin || '—', '', lang);
               const airlineName = (f._airlineName || f.airline || '').toString().toUpperCase();
-              const logoHtml = mkLogo(f.airline, f._airlineName);
+              // the square mark of the belt, never a lockup (_beltLogo)
+              const logoHtml = _beltLogo(f.airline, f._airlineName);
               const statusClass = isArr ? 'bidsv2-status-arrived' : (isDelayed ? 'bidsv2-status-delayed' : (isEarly ? 'bidsv2-status-early' : 'bidsv2-status-other'));
               // Row-level state class — same grammar as the FIDS board
               // (delayed/cancelled/diverted rows become solid blocks).
@@ -30327,11 +30351,10 @@ const gView = document.getElementById('gateView');
               // No apostrophes/quotes: the name is embedded in the inline
               // onerror string, where a stray quote kills the fallback.
               const _bSafeName = airlineName.replace(/[^A-Z0-9ÀÂÉÈÊÎÔÛÇ &().-]/gi, '');
-              // No typed name beside a lockup (_logoIsLockup), and on the yellow Delayed bar no
-              // lettering that is the colour of the bar (_rowStateTypesName): the name, typed.
-              const _bNoName = !_bWmBase && _logoIsLockup(logoHtml);
+              // On the yellow Delayed bar no lettering that is the colour of the bar
+              // (_rowStateTypesName): the name, typed.
               const _bTypesName = isDelayed && _rowStateTypesName('delayed', _bWmBase);
-              const _bAirlineHtml = (_bidsEmblemOnly || _bNoName) ? '' : ((_bWmBase && !_bTypesName)
+              const _bAirlineHtml = _bidsEmblemOnly ? '' : ((_bWmBase && !_bTypesName)
                 ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 'light' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
                 : '<div class="bidsv2-airline-name">' + fidsEscHtml(airlineName) + '</div>');
               // v23327 — the redesign renders its OWN row markup (b3-*), a
@@ -30368,7 +30391,7 @@ const gView = document.getElementById('gateView');
                 // wordmark: _wmStackOnLoad / _wmStackAttrs, next to wordmarkSrc.
                 const _b3Src = _bWmBase ? wordmarkSrc(_bWmBase, isDelayed ? 'dark' : 'light') : '';
                 const _b3Stack = _wmStackAttrs(_b3Src);
-                const _b3Wm = (_bidsEmblemOnly || _bNoName) ? '' : ((_bWmBase && !_bTypesName)
+                const _b3Wm = _bidsEmblemOnly ? '' : ((_bWmBase && !_bTypesName)
                   ? '<img class="b3-wordmark' + _b3Stack.cls + '"' + _b3Stack.style + ' alt="' + _bSafeName + '" src="' + _b3Src + '" onload="_wmStackOnLoad(this)" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
                   : _b3WmOne
                   ? '<img class="b3-wordmark fids-wm-mono" alt="' + _bSafeName + '" src="' + _b3WmOne + '">'
@@ -34922,19 +34945,38 @@ const COLOR_WORDMARKS = {
 // that one state the row types the name in its own ink, beside the tile. Keyed by the state
 // of the row, then by the base name of the lettering, so every code that shares the lettering
 // is covered (the five codes of easyJet). The Delayed bar of the belt reads the same table.
+// The gold of Etihad is lost on the orange of Final Call as well (1.07 to 1), and the cut of
+// Oman Air, grey letters under gold script, on both: the gold is the colour of either row
+// and the grey has no colour of its own and no light against them (1.03 and 1.33 to 1).
+// THE TABLE IS NOT A LIST OF THE CASES SOMEBODY NOTICED. tests/airline-logos-every-surface.test.js
+// measures the colour cut of every lettering against both rows, and the table must name
+// every cut that is lost on one and no other. An ink is lost where it is near the same
+// paint as the row (CIEDE2000 under 20, the line the gate orbs draw), or where it is a grey
+// under 2 to 1 on it; a cut is lost where half of its ink or more is.
 const ROW_STATE_TYPES_NAME = {
-  'final-call': { 'easyjet': 1, 'gol': 1 },
-  'delayed': { 'etihad': 1 }
+  'final-call': { 'easyjet': 1, 'gol': 1, 'etihad': 1, 'oman-air': 1 },
+  'delayed': { 'etihad': 1, 'oman-air': 1 }
 };
 function _rowStateTypesName(stKey, base) {
   return !!(base && ROW_STATE_TYPES_NAME[stKey] && ROW_STATE_TYPES_NAME[stKey][base]);
 }
 // A LOCKUP IN THE MARK SLOT ALREADY SAYS THE NAME. mkLogo marks the one kind of art that is the
 // mark and the name together (a carrier with a lockup and no tile or lettering: Sunwing). The
-// board row hides the typed name beside it by a stylesheet rule; the belt asks here, and types
-// no name beside it.
+// board row widens its slot for it and hides the typed name beside it by a stylesheet rule.
 function _logoIsLockup(html) {
   return /data-logo-set="wordmark"/.test(String(html || ''));
+}
+// THE BELT HAS NO WIDE SLOT, SO IT DRAWS NO LOCKUP. Its mark slots are squares: the emblem
+// of the hall belt is one line of text high and 1.6 of it wide at most, its tags are squares,
+// and the tile of a belt row is a square. A lockup four times as wide as it is tall came out
+// a quarter of the height of the flight number beside it, and with the typed name taken away
+// that miniature was the only name on the line. On every belt surface the mark of such a
+// carrier is the monogram, as for any carrier with no square mark, and its name is typed.
+function _beltLogo(code, faName) {
+  var logo = mkLogo(code, faName);
+  if (!_logoIsLockup(logo)) return logo;
+  var c = String(code || '').trim().toUpperCase();
+  return _monogramTile(c, (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[c]) || faName || c);
 }
 // Carriers whose OFFICIAL artwork exists only as raster (the airline's own
 // brand PNGs — no public vector anywhere). Same variant semantics: 'light'
@@ -35271,6 +35313,21 @@ function mkLogo(code, faName) {
     // the wordmark. Mokulele's plumeria flower is the canonical example.
     if (IATA_TO_EMBLEM[c]) {
       return `<img class="full-logo airline-emblem" data-code="${_cAttr}" data-logo-set="emblem" alt="${_nameAttr}" src="${IATA_TO_EMBLEM[c]}" onerror="this.style.display='none'">`;
+    }
+    // LETTERING AND NO MARK OF ANY KIND: THE MONOGRAM. The slot was left empty so the lettering
+    // stood alone, and World Atlantic at Miami was a row with a gap where every other row has
+    // a mark, on the board and on the belt. A carrier with lettering of its own and no tile,
+    // emblem or lockup draws the monogram of its code there, as a carrier with no art at all
+    // does: of its two-letter code where the feed files it by its designator, so World
+    // Atlantic is WL under WAL as well. Two kinds keep the empty slot. A carrier with a lockup
+    // on file: the lockup would say the name twice. And a regional that wears the lettering
+    // of the airline it flies for (the table of parents): the rows give it the code of that
+    // airline before they ask here, and its own letters beside that lettering would name two
+    // airlines on one line.
+    let _wears = '';
+    try { _wears = PARENT[c] || ''; } catch (e) { _wears = ''; }
+    if (!LOCAL_TRANSPARENT_LOGOS[c] && !_wears) {
+      return _monogramTile((typeof _designatorIata === 'function' && _designatorIata(c)) || c, displayName);
     }
     return ''; // no tile, wordmark alone
   }
@@ -62959,9 +63016,13 @@ var WELCOME_CARD_LETTERING_SCALE = { 'RV': 1.4, 'ROU': 1.4, 'QR': 1.4, 'QTR': 1.
 // capitals (or ascenders) to its baseline. A carrier not listed has letters
 // that fill its box. The ICAO form of a code finds its IATA twin's entry.
 var WELCOME_CARD_LETTER_HEIGHT = {
+  'KU':  0.24,  // Kuwait Airways: its name in Arabic script, over KUWAIT, over a small AIRWAYS
+  'WY':  0.34,  // Oman Air: its name in Arabic script over OMAN AIR
+  'SQ':  0.35,  // SINGAPORE over AIRLINES over a rule
   '3H':  0.42,  // Air Inuit: syllabics over "Air Inuit" (its cropped cut, WELCOME_CARD_WORDMARK)
   'NSA': 0.22,  // North Star Air: NORTHSTAR, AIR inside a roundel the full height of the art
   'AA2': 0.43,  // "American" over "Airlines"
+  'AH':  0.44,  // Air Algerie: its name in Arabic script over AIR ALGERIE, capitals to baseline
   'NK':  0.47,  // spirit: lower case, its ascenders to its baseline
   '8P':  0.48,  // Pacific Coastal: the script over a small AIRLINES
   'RV':  0.5,   // rouge: lower case with a long tail
@@ -62969,10 +63030,12 @@ var WELCOME_CARD_LETTER_HEIGHT = {
   'WT':  0.55,  // Wasaya under its syllabics, with a descender
   'AZ':  0.58,  // ITA over AIRWAYS
   'WL':  0.58,  // World Atlantic over Airlines
+  'SN':  0.62,  // brussels over a small AIRLINES: lower case, its ascenders to its baseline
   'VB':  0.65,  // viva, with the mark above its a
   '2L':  0.67,  // helvetic over airways
   'QR':  0.67,  // QATAR over AIRWAYS
   'PD':  0.72,  // porter: a descender below, an ascender above
+  'AV':  0.73,  // avianca: lower case with no ascender, under the dot of its i
   'QK':  0.84   // Jazz: a script with a long tail
 };
 
