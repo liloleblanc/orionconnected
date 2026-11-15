@@ -395,11 +395,15 @@ const ANY_FILE_HOSTS = ['raw.githubusercontent.com', 'cdnjs.cloudflare.com', 'un
 // A LINE THAT LOADS A SCRIPT FROM THE HOST: a script tag on it (to the first > after <script) with a
 // src that opens on https:// and then the host and a slash, exactly as typed. The host is compared as
 // a string where the address begins, never set into a pattern, so a dot in it is a dot and nothing else.
-const SCRIPT_TAG = /<script\b[^>]*/g;
+// The tags are found by a plain search of the line (any case), not by a pattern.
 const SCRIPT_SRC = /\bsrc\s*=\s*["']https:\/\//g;
 function loadsScriptFrom(host, line) {
-  for (const tag of line.matchAll(SCRIPT_TAG)) {
-    for (const src of tag[0].matchAll(SCRIPT_SRC)) if (tag[0].startsWith(host + '/', src.index + src[0].length)) return true;
+  const low = line.toLowerCase();
+  for (let at = low.indexOf('<script'); at >= 0; at = low.indexOf('<script', at + 7)) {
+    if (/\w/.test(low.charAt(at + 7))) continue;   // <scripts, <scripted: not a script tag
+    const end = line.indexOf('>', at);
+    const tag = line.slice(at, end < 0 ? line.length : end);
+    for (const src of tag.matchAll(SCRIPT_SRC)) if (tag.startsWith(host + '/', src.index + src[0].length)) return true;
   }
   return false;
 }
