@@ -230,12 +230,15 @@ file name:
 
     python3 scripts/heritage-sky/card-cutout.py 747-305.png fids-current/aircraft/heritage/air-canada-747-305-2017.png
 
-The same aeroplane in the 1980 livery, the archive card, came already cut out
-(3187 x 882) and passes at the default two as well: 127 at one, 14 at two by
-that count, and 426 at one, 19 at two by the count of the Dream livery test,
-which also reaches the grey of its lower body:
+The same aeroplane in the 1980 livery, the archive card, came already cut out.
+The picture is from the drawing as its author corrected it (the v2 file,
+3187 x 881, the ring of the rondelle open at its foot for the stem of the
+leaf), and it passes at the default two as well: 304 at one, 16 at two by
+that count, and 22 at one, 7 at two by the count of the Dream livery test,
+which also reaches the grey of its lower body. It comes out at 2272 x 597
+(the first drawing, 3187 x 882, gave 2272 x 598, and 127 and 14, 426 and 19):
 
-    python3 scripts/heritage-sky/card-cutout.py 747-305-1980.png fids-current/aircraft/heritage/air-canada-747-305-ac80.png
+    python3 scripts/heritage-sky/card-cutout.py 747-305-1980-v2.png fids-current/aircraft/heritage/air-canada-747-305-ac80.png
 
 A corner of the picture that is not clear stops the tool when it is solid or
 has the colour of the page, as page left in would be. A drawing cropped to its

@@ -65504,6 +65504,39 @@ var HERITAGE_MARKS = [
     airports: ['YYT', 'YHZ', 'YQX', 'YQM', 'YSJ', 'YFC', 'YDF', 'YQY', 'YYG', 'YYZ', 'YOW', 'YUL']
   },
   {
+    // v23760 — Canadian Airlines gets its own card now that its OWN wordmark
+    // is in the archive. It could not have one before: the only Canadian
+    // artwork held was the Partner endorsement, which is the mark a feeder
+    // carried and not this carrier's identity. Using it here would have said
+    // something false, which is why the earlier card carried Air Atlantic's
+    // endorsement instead of pretending to be Canadian.
+    //
+    // Formed 27 March 1987 when Pacific Western bought CP Air; became an Air
+    // Canada subsidiary on 1 January 2001. Both ends confirmed, so both print.
+    //
+    // 2026-11-14 — BETWEEN AIR ATLANTIC AND AIR NOVA ON PURPOSE. Its DC-10 is
+    // a widebody, and third in the set it came straight before the 1980 747,
+    // the first Air Canada card: two widebodies back to back at every
+    // Canadian airport. Here, at the twelve airports of Air Atlantic and Air
+    // Nova (YHZ, YYZ, YUL, YQM, YYT and the rest) the sixteen cards alternate
+    // perfectly, eight widebodies and eight others, the wrap included. At
+    // every other Canadian airport (YVR and the rest) the two BAe 146 cards
+    // are not in the pool, which leaves fourteen: eight widebodies with this
+    // DC-10 counted and six narrowbodies, so two pairs of widebodies come
+    // back to back whatever the order. There are two, the fewest there can
+    // be: this card then the 1980 747, and across the wrap the 1993 TriStar
+    // then this card. No two Air Canada widebodies are back to back in either
+    // pool.
+    key: 'canadian-airlines',
+    file: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
+    name: 'Canadian Airlines',
+    // v23903 — its aeroplane: a DC-10 in Canadian's livery, from the supplied
+    // artwork. Nose left like the other two, so the card's sky runs the same
+    // way; until now this card had no aircraft and so showed no sky at all.
+    aircraft: '/logos/advertisements/retro-airlines/CDNDC10.svg',
+    airports: '*CA'
+  },
+  {
     // v23831 — Air Nova, the Atlantic side of the Air Canada network, opposite
     // Air Atlantic on the Canadian side. Between them the two cards cover the
     // same airports from the two competing alliances of the period, which is
@@ -65535,33 +65568,16 @@ var HERITAGE_MARKS = [
     airports: ['YHZ', 'YYT', 'YQM', 'YSJ', 'YFC', 'YYG', 'YQY', 'YQX', 'YDF', 'YUL', 'YOW', 'YYZ']
   },
   {
-    // v23760 — Canadian Airlines gets its own card now that its OWN wordmark
-    // is in the archive. It could not have one before: the only Canadian
-    // artwork held was the Partner endorsement, which is the mark a feeder
-    // carried and not this carrier's identity. Using it here would have said
-    // something false, which is why the earlier card carried Air Atlantic's
-    // endorsement instead of pretending to be Canadian.
-    //
-    // Formed 27 March 1987 when Pacific Western bought CP Air; became an Air
-    // Canada subsidiary on 1 January 2001. Both ends confirmed, so both print.
-    key: 'canadian-airlines',
-    file: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
-    name: 'Canadian Airlines',
-    // v23903 — its aeroplane: a DC-10 in Canadian's livery, from the supplied
-    // artwork. Nose left like the other two, so the card's sky runs the same
-    // way; until now this card had no aircraft and so showed no sky at all.
-    aircraft: '/logos/advertisements/retro-airlines/CDNDC10.svg',
-    airports: '*CA'
-  },
-  {
     // 2026-11-14 — FROM THE ARCHIVE: THE BOEING 747-133 OF THE DREAM LIVERY
     // CARD, C-FTOE, FLEET 305, IN THE 1980 LIVERY IT REALLY WORE. The
     // supplied drawing: AIR CANADA in red capitals forward, one red cheatline
     // through the windows and round the nose, a white upper body over a grey
     // lower body, and the white rondelle with the white leaf on a red fin,
-    // 305 at the top of the fin and C-FTOE aft. The capitals DC-9, the 1980
-    // 767 and the DC-8-63 wear the same livery, so it carries their mark and
-    // the default heading, From the archive.
+    // the stem of the leaf running down through an opening at the foot of
+    // the ring as on the aeroplane and on the 1980 mark, 305 at the top of
+    // the fin and C-FTOE aft. The capitals DC-9, the 1980 767 and the
+    // DC-8-63 wear the same livery, so it carries their mark and the default
+    // heading, From the archive.
     //
     // THE AEROPLANE: a Boeing 747-133, c/n 20881, line 236, delivered new on
     // 13 May 1974, the last of the five 747-133s; withdrawn on 15 October 1998
@@ -65601,21 +65617,23 @@ var HERITAGE_MARKS = [
     // file, no plate behind it, nothing recoloured.
     //
     // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
-    // supplied drawing (3187 x 882, already cut out): laid on white and the
-    // page taken off again at the depth of two pixels, the default and the
-    // smallest that passes. Counted as on the Dream livery 747, light pixels
-    // on the outline of the dark paint are 127 at one pixel and 14 at two;
-    // by the count of the Dream livery test, which reaches the grey of the
-    // lower body, 426 and 19. Cropped to its own edges and scaled to the 2272
-    // px of the other cards (2272 x 598), the four corners clear. Nothing of
-    // the aeroplane is repainted. The light line along the leading edge of
-    // the fin is drawn, and stays at any depth.
+    // supplied drawing as corrected by its author (the v2 file, 3187 x 881,
+    // already cut out), which opens the ring of the rondelle at its foot for
+    // the stem of the leaf, where the first drawing closed it. Laid on
+    // white and the page taken off again at the depth of two pixels, the
+    // default and the smallest that passes. Counted as on the Dream livery
+    // 747, light pixels on the outline of the dark paint are 304 at one
+    // pixel and 16 at two; by the count of the Dream livery test, which
+    // reaches the grey of the lower body, 22 and 7. Cropped to its own edges
+    // and scaled to the 2272 px of the other cards (2272 x 597), the four
+    // corners clear. Nothing of the aeroplane is repainted. The light line
+    // along the leading edge of the fin is drawn, and stays at any depth.
     //
     // ITS SHAPE, measured as on the Dream livery 747, behind the upper deck
     // where the body is one deck: the top of the fuselage is level from 34%
     // to 76% of the length, and the depth is the median of the columns
     // 56–64% back (230 px). Length to the furthest aft point, here the tip of
-    // the tailplane, over that depth is 9.88 (9.80 to the top of the fin),
+    // the tailplane, over that depth is 9.88 (9.79 to the top of the fin),
     // against 10.87 for the 747-100 (70.66 m overall over 6.50 m, 21 ft 4 in,
     // which is the fuselage WIDTH published for the 747-100, taken here as
     // its depth): 9.1% short, and less if the body is deeper than it is wide
@@ -65626,7 +65644,7 @@ var HERITAGE_MARKS = [
     // author. The rest is the -100: the short upper deck, a wing with no
     // winglets and five main deck doors a side.
     //
-    // First of the Air Canada cards on purpose, with the 1980 767 moved ahead of the capitals DC-9 and the Dream livery 747 after it: the Air Canada widebodies (the two 747s, the two 767s, the two TriStars and the A350-1000) then come every other card in the Atlantic pool and in the pool of every other Canadian airport, the wrap included, the two fin 305 cards four apart, and the DC-9, DC-8, 767 and TriStar spacing holds.
+    // First of the Air Canada cards on purpose, after Air Nova, with the 1980 767 ahead of the capitals DC-9 and the Dream livery 747 after it. Counted with the Canadian Airlines DC-10, which sits between Air Atlantic and Air Nova so that it no longer comes straight before this card there, the eight widebodies come every other card in the Atlantic pool, the wrap included. In the pool of every other Canadian airport, eight widebodies and six narrowbodies, two back-to-back pairs cannot be avoided, and there are only those two: the DC-10 then this card, and across the wrap the 1993 TriStar then the DC-10. The Air Canada widebodies (the two 747s, the two 767s, the two TriStars and the A350-1000) come every other card in both pools, the two fin 305 cards four apart, and the DC-9, DC-8, 767 and TriStar spacing holds.
     key: 'air-canada-747-305-80',
     file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
     name: 'Air Canada',
@@ -65868,7 +65886,7 @@ var HERITAGE_MARKS = [
     // the -400 carry it further aft), a wing with no winglets (the -400 has
     // them) and five main deck doors a side.
     //
-    // Between the 1980 DC-9 and the 1965 DC-8 on purpose, four cards after the 1980 livery card of the same aeroplane: the Air Canada widebodies (the two 747s, the two 767s, the two TriStars and the A350-1000) then come every other card in the Atlantic pool and in the pool of every other Canadian airport, the wrap included, and the 2017 DC-9 stays three or more cards from every other DC-9.
+    // Between the 1980 DC-9 and the 1965 DC-8 on purpose, four cards after the 1980 livery card of the same aeroplane: the widebodies, the Canadian Airlines DC-10 counted, then come every other card in the Atlantic pool, the wrap included, and the Air Canada widebodies (the two 747s, the two 767s, the two TriStars and the A350-1000) do in the pool of every other Canadian airport as well, where the DC-10 makes the two back-to-back pairs that pool cannot avoid (see the Canadian Airlines card). The 2017 DC-9 stays three or more cards from every other DC-9.
     key: 'air-canada-747-305-2017',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',
@@ -66145,7 +66163,7 @@ var HERITAGE_MARKS = [
     // side, as both have. It is used as drawn: it is the supplied art, and a
     // stretch is a call for its author.
     //
-    // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the Air Canada widebodies then come every other card (747, 767, 747, TriStar, A350, 767, TriStar) in the Atlantic pool and in the pool of every other Canadian airport, so no two are back to back.
+    // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the widebodies then come every other card (DC-10, 747, 767, 747, TriStar, A350, 767, TriStar) in the Atlantic pool, the wrap included, and the Air Canada ones (all but the DC-10) in the pool of every other Canadian airport as well, so no two Air Canada widebodies are back to back; there the two pairs that pool cannot avoid are the DC-10 with the 1980 747 and with the 1993 TriStar (see the Canadian Airlines card).
     key: 'air-canada-a350-1000',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',
@@ -66274,8 +66292,8 @@ var HERITAGE_MARKS = [
     // white, and 4,094 pixels of haze off the outline (alpha 6 or less)
     // cleared; no enclosed holes. Nothing redrawn, recoloured or re-lettered.
     //
-    // Between the 1987 767 and the 1993 TriStar on purpose: three cards
-    // from the 1993 DC-9 and three or more from the other two, the wrap
+    // Between the 1987 767 and the 1993 TriStar on purpose: four cards
+    // from the 1993 DC-9 and four or more from the other two, the wrap
     // included, in the Atlantic pool and in the pool of every other Canadian
     // airport, so no two DC-9s come up close together.
     key: 'air-canada-dc9-2017',
@@ -66380,6 +66398,9 @@ var HERITAGE_MARKS = [
     // 1994, and that is not printed.
     // Last in the set on purpose: the rotation runs in this order, so the two
     // TriStars are never back to back, nor across the wrap to the first card.
+    // Across the wrap it comes before Air Atlantic at the Atlantic airports,
+    // and before the Canadian Airlines DC-10 at every other Canadian airport,
+    // one of the two widebody pairs that pool cannot avoid (see that card).
     key: 'air-canada-l1011-93',
     file: '/logos/advertisements/retro-airlines/AC-1993-LOGO.svg',
     name: 'Air Canada',

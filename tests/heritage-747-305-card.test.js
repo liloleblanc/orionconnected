@@ -25,7 +25,15 @@
 // same years as the Dream livery card (1974–1998) and the 1980 livery, in nine
 // languages. It is the first Air Canada card of the deck, and the Dream livery
 // card moved to after the 1980 DC-9, so the two cards of fin 305 come four
-// apart and the widebodies still every other card.
+// apart and the widebodies still every other card. Its picture is from the
+// drawing as its author corrected it (v2), the ring of the rondelle open at
+// its foot for the stem of the leaf.
+// Canadian Airlines then moved between Air Atlantic and Air Nova, so its
+// DC-10, a widebody, no longer comes straight before this card at the
+// Atlantic airports: there all eight widebodies come every other card. At the
+// other Canadian airports the pool is eight widebodies and six narrowbodies,
+// and the two back-to-back pairs that leaves are the DC-10 with its two
+// neighbours, never two Air Canada widebodies.
 //
 // tests/heritage-dream-card.test.js holds the set card for card (both cards
 // are in its frozen list) and walks every airport and airline the boards know;
@@ -159,14 +167,17 @@ test('the card: a Boeing 747-133 in the Air Canada set, under Dream livery', () 
 });
 
 test('their place in the rotation: no two Air Canada widebodies back to back, the two fin 305 cards apart, the DC-9 spacing kept', () => {
-  // The board rotates each airport pool in set order and wraps. The widebodies
-  // of the set (the 767s, the TriStars, the A350-1000 and the two 747s) come
-  // every other card, the two cards of fin 305 three or more apart, and the
-  // 2017 DC-9 stays three or more cards from every other DC-9.
+  // The board rotates each airport pool in set order and wraps. The Air Canada
+  // widebodies of the set (the 767s, the TriStars, the A350-1000 and the two
+  // 747s) come every other card, the two cards of fin 305 three or more apart,
+  // and the 2017 DC-9 stays three or more cards from every other DC-9. The
+  // Canadian Airlines DC-10 is counted in the next test.
   const WIDE = ['air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-a350-1000', KEY, ARCHIVE];
   const DC9 = ['air-canada', 'air-canada-caps', 'air-canada-dc9-93'];
   const keys = MARKS.map((k) => k.key);
-  assert.equal(keys.indexOf(ARCHIVE), keys.indexOf('canadian-airlines') + 1, 'the 1980 card is the first Air Canada card, after Canadian Airlines');
+  assert.equal(keys.indexOf('canadian-airlines'), keys.indexOf('air-atlantic') + 1, 'Canadian Airlines after Air Atlantic');
+  assert.equal(keys.indexOf('canadian-airlines') + 1, keys.indexOf('air-nova'), 'and before Air Nova');
+  assert.equal(keys.indexOf(ARCHIVE), keys.indexOf('air-nova') + 1, 'the 1980 card is the first Air Canada card, after Air Nova');
   assert.equal(keys.indexOf(ARCHIVE) + 1, keys.indexOf('air-canada'), 'and before the 1987 DC-9');
   assert.equal(keys.indexOf('air-canada') + 1, keys.indexOf('air-canada-767'), 'the 1980 767 after the 1987 DC-9');
   assert.equal(keys.indexOf('air-canada-767') + 1, keys.indexOf('air-canada-caps'), 'and before the 1980 DC-9');
@@ -187,6 +198,33 @@ test('their place in the rotation: no two Air Canada widebodies back to back, th
     for (const [a, b] of [['air-canada-dc8', 'air-canada-dc8-80'], ['air-canada-767', 'air-canada-767-87'], ['air-canada-l1011-87', 'air-canada-l1011-93']]) {
       assert.ok(dist(pool, a, b) > 1, a + ' and ' + b + ' are still apart at ' + ia);
     }
+  }
+});
+
+test('the Canadian Airlines DC-10 counted as a widebody: every other card at the Atlantic airports, the fewest pairs elsewhere', () => {
+  // Every widebody of the set with the DC-10, and the back-to-back pairs of a
+  // pool as it rotates, the wrap included.
+  const WIDE = new Set(['canadian-airlines', 'air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-a350-1000', KEY, ARCHIVE]);
+  assert.match(byKey['canadian-airlines'].aircraft, /CDNDC10\.svg$/, 'the Canadian Airlines card shows its DC-10');
+  const poolAt = (ia) => MARKS.filter((mk) => !mk.gates && (mk.airports === '*CA' || (Array.isArray(mk.airports) && mk.airports.includes(ia)))).map((mk) => mk.key);
+  const pairs = (pool) => pool.map((k, i) => [k, pool[(i + 1) % pool.length]]).filter(([a, b]) => WIDE.has(a) && WIDE.has(b)).map(([a, b]) => a + ' then ' + b);
+  // the airports of Air Atlantic and Air Nova: sixteen cards, eight of them widebodies, every other card
+  for (const ia of ['YHZ', 'YYZ', 'YUL', 'YQM', 'YYT', 'YOW', 'YSJ', 'YFC', 'YQX', 'YDF', 'YQY', 'YYG']) {
+    const pool = poolAt(ia);
+    assert.equal(pool.length, 16, ia + ': the Atlantic pool');
+    assert.equal(pool.filter((k) => WIDE.has(k)).length, 8, ia + ': eight widebodies');
+    assert.deepEqual(pairs(pool), [], ia + ': no two widebodies back to back, the wrap included');
+    assert.equal(pool.indexOf(ARCHIVE) - pool.indexOf('canadian-airlines'), 2, ia + ': Air Nova between the DC-10 and the 1980 747');
+  }
+  // every other Canadian airport: fourteen cards, eight widebodies and six narrowbodies, so two pairs
+  // cannot be avoided; there are two, and each has the DC-10 in it
+  for (const ia of ['YVR', 'YYC', 'YEG', 'YWG', 'YXE', 'YQR', 'YXU', 'YQB', 'YLW', 'YYJ']) {
+    const pool = poolAt(ia);
+    const wide = pool.filter((k) => WIDE.has(k)).length;
+    assert.equal(pool.length, 14, ia + ': no Air Atlantic and no Air Nova');
+    assert.equal(wide, 8, ia + ': eight widebodies');
+    assert.deepEqual(pairs(pool), ['canadian-airlines then ' + ARCHIVE, 'air-canada-l1011-93 then canadian-airlines'], ia + ': the two pairs, the fewest there can be (' + wide + ' - ' + (pool.length - wide) + ')');
+    assert.equal(pairs(pool).length, wide - (pool.length - wide), ia + ': no more pairs than the count forces');
   }
 });
 
@@ -557,17 +595,22 @@ test('its picture: a cut-out at the working width, clear all round, with no pale
 });
 
 test('the 1980 picture: a cut-out at the working width, clear all round, with no pale line round the dark paint or the grey belly', () => {
-  // The supplied drawing came already cut out (3187 x 882). Laid on white and
-  // un-mixed one pixel deep, the page stayed in its outline: 127 by the first
-  // count, 426 by the second (most of it along the fin and the grey belly);
-  // two deep, the default of the tool, 14 and 19.
-  const img = cutout(ARCHIVE_PICTURE, 2272 / 598);
+  // The supplied drawing as its author corrected it (v2, the ring of the
+  // rondelle open at its foot for the stem of the leaf) came already cut out
+  // (3187 x 881). Laid on white and un-mixed one pixel deep, the page stayed
+  // in its outline: 304 by the first count (most of it under the engines and
+  // along the belly), 22 by the second; two deep, the default of the tool,
+  // 16 and 7.
+  const img = cutout(ARCHIVE_PICTURE, 2272 / 597);
+  assert.equal(img.h, 597, 'the corrected drawing at 2272 px: 2272 x 597 (the first one was 2272 x 598)');
   const dark = darkRim(img), pale = paleRim(img);
   assert.ok(dark <= 40, 'the page is still in the outline of the dark paint: ' + dark + ' light pixels on it');
   assert.ok(pale <= 40, 'the page is still in the outline of the grey and dark paint: ' + pale + ' pale pixels on it');
   const note = ARCHIVE_NOTE.replace(/\s*\/\/\s*/g, ' ');
   assert.match(note, /at the depth of two pixels, the default and the smallest that passes/, 'the note names the depth');
-  assert.match(note, /127 at one pixel and 14 at two[^.]*426 and 19/, 'and the counts it was chosen by');
+  assert.match(note, /as corrected by its author \(the v2 file, 3187 x 881/, 'the note names the drawing it is made from');
+  assert.match(note, /304 at one pixel and 16 at two[^.]*22 and 7/, 'and the counts it was chosen by');
+  assert.match(note, /\(2272 x 597\)/, 'and the size it comes out at');
 });
 
 test('the pictures are in the build: under the folder the deploy serves, in the size it allows', () => {

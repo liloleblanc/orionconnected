@@ -130,8 +130,10 @@ test('the card: an Airbus A350-1000 in the Air Canada set, under its own heading
 });
 
 test('its place in the rotation: no two Air Canada widebodies back to back', () => {
-  // The board rotates each airport pool in set order and wraps. The widebodies
-  // of the set (the 767s, the TriStars, the two 747s and this one) come every other card.
+  // The board rotates each airport pool in set order and wraps. The Air Canada
+  // widebodies of the set (the 767s, the TriStars, the two 747s and this one) come every
+  // other card. The Canadian Airlines DC-10, counted as a widebody too, comes between
+  // Air Atlantic and Air Nova: tests/heritage-747-305-card.test.js holds where its pairs fall.
   const WIDE = ['air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-747-305-2017', 'air-canada-747-305-80', KEY];
   const keys = MARKS.map((k) => k.key);
   assert.equal(keys.indexOf(KEY), keys.indexOf('air-canada-dc9-93') + 1, 'after the 1993 DC-9');
