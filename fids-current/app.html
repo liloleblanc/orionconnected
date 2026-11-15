@@ -6,7 +6,7 @@
 <!-- v24145 — host-airport.js first: the desktop request below builds its
      board link with fidsBoardUrl, and the note above the title says why the
      app loads this file at all. -->
-<script src="js/host-airport.js?v=24153"></script>
+<script src="js/host-airport.js?v=24154"></script>
 <script>
 /* v24139 — A PHONE THAT ASKS ITS BROWSER FOR THE DESKTOP SITE GETS THE BOARD.
    Request desktop site on the app only reloaded the app: the browser asks
@@ -560,12 +560,12 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24153"></script>
-<script src="js/shared-names.js?v=24153"></script>
+<script src="js/board-strings.js?v=24154"></script>
+<script src="js/shared-names.js?v=24154"></script>
 <!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
-<script src="js/earth-places.js?v=24153"></script>
-<script src="data/airline-colors.js?v=24153"></script>
-<script src="js/feed-router.js?v=24153"></script>
+<script src="js/earth-places.js?v=24154"></script>
+<script src="data/airline-colors.js?v=24154"></script>
+<script src="js/feed-router.js?v=24154"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1500,7 +1500,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24153';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24154';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
