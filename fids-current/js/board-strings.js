@@ -847,8 +847,54 @@
     'heritage:air-canada-767': { en: 'Boeing 767-233 · 1982–2008 · 1980 livery', fr: 'Boeing 767-233 · 1982–2008 · livrée de 1980', es: 'Boeing 767-233 · 1982–2008 · librea de 1980', de: 'Boeing 767-233 · 1982–2008 · Lackierung von 1980', it: 'Boeing 767-233 · 1982–2008 · livrea del 1980', pt: 'Boeing 767-233 · 1982–2008 · pintura de 1980', ja: 'ボーイング767-233 · 1982–2008 · 1980年塗装', zh: '波音767-233 · 1982–2008 · 1980年涂装', ar: 'بوينغ 767-233 · 1982–2008 · طلاء 1980' },
     'heritage:air-canada-dc8': { en: 'Douglas DC-8-61 · 1967–1983 · 1965 livery', fr: 'Douglas DC-8-61 · 1967–1983 · livrée de 1965', es: 'Douglas DC-8-61 · 1967–1983 · librea de 1965', de: 'Douglas DC-8-61 · 1967–1983 · Lackierung von 1965', it: 'Douglas DC-8-61 · 1967–1983 · livrea del 1965', pt: 'Douglas DC-8-61 · 1967–1983 · pintura de 1965', ja: 'ダグラスDC-8-61 · 1967–1983 · 1965年塗装', zh: '道格拉斯DC-8-61 · 1967–1983 · 1965年涂装', ar: 'دوغلاس DC-8-61 · 1967–1983 · طلاء 1965' },
     'heritage:air-canada-dc8-80': { en: 'Douglas DC-8-63 · 1969–1983 · 1980 livery', fr: 'Douglas DC-8-63 · 1969–1983 · livrée de 1980', es: 'Douglas DC-8-63 · 1969–1983 · librea de 1980', de: 'Douglas DC-8-63 · 1969–1983 · Lackierung von 1980', it: 'Douglas DC-8-63 · 1969–1983 · livrea del 1980', pt: 'Douglas DC-8-63 · 1969–1983 · pintura de 1980', ja: 'ダグラスDC-8-63 · 1969–1983 · 1980年塗装', zh: '道格拉斯DC-8-63 · 1969–1983 · 1980年涂装', ar: 'دوغلاس DC-8-63 · 1969–1983 · طلاء 1980' },
+    // The 747-133 in the 1980 livery, the archive card of the aeroplane of the Dream livery
+    // 747: the DC-8-63 line, the type from the card (HERITAGE_MARKS), the years that
+    // aeroplane flew for Air Canada, 1974–1998, as on its Dream livery card, and the 1980
+    // livery in the words of the DC-8-63 line.
+    // Measured after document.fonts.ready following the draw, every language is one row at
+    // 1680 x 1050; the longest line is the German, at 74.3% of it.
+    'heritage:air-canada-747-305-80': { en: '{TYPE} · 1974–1998 · 1980 livery', fr: '{TYPE} · 1974–1998 · livrée de 1980', es: '{TYPE} · 1974–1998 · librea de 1980', de: '{TYPE} · 1974–1998 · Lackierung von 1980', it: '{TYPE} · 1974–1998 · livrea del 1980', pt: '{TYPE} · 1974–1998 · pintura de 1980', ja: '{TYPE} · 1974–1998 · 1980年塗装', zh: '{TYPE} · 1974–1998 · 1980年涂装', ar: '{TYPE} · 1974–1998 · طلاء 1980' },
+    // The same 747-133 in the 1993 livery, its third card: the line of the 1980 livery card,
+    // the same years, with the 1993 livery in the words of the 1993 DC-9 and TriStar lines.
+    // Measured after document.fonts.ready following the draw, every language is one row at
+    // 1680 x 1050; the longest line is the German, at 74.0% of it.
+    'heritage:air-canada-747-305-93': { en: '{TYPE} · 1974–1998 · 1993 livery', fr: '{TYPE} · 1974–1998 · livrée de 1993', es: '{TYPE} · 1974–1998 · librea de 1993', de: '{TYPE} · 1974–1998 · Lackierung von 1993', it: '{TYPE} · 1974–1998 · livrea del 1993', pt: '{TYPE} · 1974–1998 · pintura de 1993', ja: '{TYPE} · 1974–1998 · 1993年塗装', zh: '{TYPE} · 1974–1998 · 1993年涂装', ar: '{TYPE} · 1974–1998 · طلاء 1993' },
     'heritage:air-canada-dc9-93': { en: 'McDonnell Douglas DC-9-32 · 1968–2002 · 1993 livery', fr: 'McDonnell Douglas DC-9-32 · 1968–2002 · livrée de 1993', es: 'McDonnell Douglas DC-9-32 · 1968–2002 · librea de 1993', de: 'McDonnell Douglas DC-9-32 · 1968–2002 · Lackierung von 1993', it: 'McDonnell Douglas DC-9-32 · 1968–2002 · livrea del 1993', pt: 'McDonnell Douglas DC-9-32 · 1968–2002 · pintura de 1993', ja: 'マクドネル・ダグラスDC-9-32 · 1968–2002 · 1993年塗装', zh: '麦克唐纳-道格拉斯DC-9-32 · 1968–2002 · 1993年涂装', ar: 'ماكدونيل دوغلاس DC-9-32 · 1968–2002 · طلاء 1993' },
     'heritage:air-canada-dc9-2017': { en: 'McDonnell Douglas DC-9-32 · Future Retro what-if · 2017 livery', fr: 'McDonnell Douglas DC-9-32 · et si… · livrée de 2017', es: 'McDonnell Douglas DC-9-32 · ¿y si…? · librea de 2017', de: 'McDonnell Douglas DC-9-32 · Fiktion · Lackierung von 2017', it: 'McDonnell Douglas DC-9-32 · e se… · livrea del 2017', pt: 'McDonnell Douglas DC-9-32 · e se… · pintura de 2017', ja: 'マクドネル・ダグラスDC-9-32 · もしも · 2017年塗装', zh: '麦克唐纳-道格拉斯DC-9-32 · 假想 · 2017年涂装', ar: 'ماكدونيل دوغلاس DC-9-32 · ماذا لو · طلاء 2017' },
+    // The what-if cards: a real aeroplane in a livery nobody flies (the Future
+    // Retro DC-9 above, the United 787-8, the Air Canada 747-133 in the 2017
+    // livery). Their heading is Dream livery where
+    // the archive cards say From the archive: a livery somebody dreamed up, in
+    // the words each language has for that, never the English ones. The 787-8
+    // caption says it again, plainly, with the what-if words of the DC-9 card
+    // and the livery called imaginary; {TYPE} is the aeroplane as the boards
+    // name it, from the card's own record (HERITAGE_MARKS).
+    // The 747-133 prints the years that aeroplane really flew for Air Canada,
+    // 1974–1998, its delivery and its withdrawal, then what-if beside the
+    // livery and its year, in the what-if words of the DC-9 card. Measured
+    // after document.fonts.ready following the draw, every language is one
+    // row at 1680 x 1050; the longest line is the German, at 86.5% of it.
+    heritageDreamKicker: { en: 'Dream livery', fr: 'Livrée de rêve', es: 'Librea soñada', de: 'Traumlackierung', it: 'Livrea da sogno', pt: 'Pintura de sonho', ja: '夢の塗装', zh: '梦想涂装', ar: 'طلاء الأحلام' },
+    'heritage:united-787-dream': { en: '{TYPE} · Dream livery what-if', fr: '{TYPE} · et si… · livrée imaginaire', es: '{TYPE} · ¿y si…? · librea imaginaria', de: '{TYPE} · Fiktion · erdachte Lackierung', it: '{TYPE} · e se… · livrea immaginaria', pt: '{TYPE} · e se… · pintura imaginária', ja: '{TYPE} · もしも · 架空の塗装', zh: '{TYPE} · 假想 · 虚构涂装', ar: '{TYPE} · ماذا لو · طلاء خيالي' },
+    'heritage:air-canada-747-305-2017': { en: '{TYPE} · 1974–1998 · 2017 livery what-if', fr: '{TYPE} · 1974–1998 · et si… · livrée de 2017', es: '{TYPE} · 1974–1998 · ¿y si…? · librea de 2017', de: '{TYPE} · 1974–1998 · Fiktion · Lackierung von 2017', it: '{TYPE} · 1974–1998 · e se… · livrea del 2017', pt: '{TYPE} · 1974–1998 · e se… · pintura de 2017', ja: '{TYPE} · 1974–1998 · もしも · 2017年塗装', zh: '{TYPE} · 1974–1998 · 假想 · 2017年涂装', ar: '{TYPE} · 1974–1998 · ماذا لو · طلاء 2017' },
+    // The card of an aeroplane that is coming: the Airbus A350-1000 that Air
+    // Canada has ordered and does not fly yet. Its heading is Coming to the
+    // fleet where the archive cards say From the archive, and its caption says
+    // when the first deliveries are expected (2030) and that the picture is an
+    // artist's impression, in the words each language has for one, so nobody
+    // takes the drawing for an aeroplane flying today. {TYPE} is the aeroplane
+    // as the boards name it, from the card's record. First deliveries expected
+    // in 2030, said in full, ran to two rows at 1680 x 1050 in the six
+    // languages written in Latin letters (108% to 128% of the line), so the
+    // line says expected from 2030; Japanese and Arabic, which have the room,
+    // name the first deliveries. Each measured after document.fonts.ready
+    // following the draw (Noto Sans Arabic loads only once an Arabic line is
+    // drawn), the longest line is the Arabic, at 91.8% of the line, then the
+    // English and the Spanish at 90.8%. The Italian says illustrazione
+    // artistica (88.2%): rappresentazione artistica, the more usual label,
+    // measured 96.3%, too close to a second row in another browser.
+    heritageComingKicker: { en: 'Coming to the fleet', fr: 'Bientôt dans la flotte', es: 'Próximamente en la flota', de: 'Bald in der Flotte', it: 'Presto nella flotta', pt: 'Em breve na frota', ja: '導入予定の新機材', zh: '即将加入机队', ar: 'قريبًا في الأسطول' },
+    'heritage:air-canada-a350-1000': { en: '{TYPE} · expected from 2030 · artist’s impression', fr: '{TYPE} · attendu dès 2030 · vue d’artiste', es: '{TYPE} · previsto para 2030 · recreación artística', de: '{TYPE} · ab 2030 erwartet · Visualisierung', it: '{TYPE} · atteso dal 2030 · illustrazione artistica', pt: '{TYPE} · esperado em 2030 · concepção artística', ja: '{TYPE} · 2030年に初号機受領予定 · イメージ図', zh: '{TYPE} · 预计2030年起交付 · 艺术效果图', ar: '{TYPE} · أولى التسليمات متوقعة في 2030 · تصوّر فني' },
     'heritage:air-canada-767-87': { en: 'Boeing 767-233 · 1982–2008 · 1987 livery', fr: 'Boeing 767-233 · 1982–2008 · livrée de 1987', es: 'Boeing 767-233 · 1982–2008 · librea de 1987', de: 'Boeing 767-233 · 1982–2008 · Lackierung von 1987', it: 'Boeing 767-233 · 1982–2008 · livrea del 1987', pt: 'Boeing 767-233 · 1982–2008 · pintura de 1987', ja: 'ボーイング767-233 · 1982–2008 · 1987年塗装', zh: '波音767-233 · 1982–2008 · 1987年涂装', ar: 'بوينغ 767-233 · 1982–2008 · طلاء 1987' },
     'heritage:air-canada-l1011-87': { en: 'Lockheed L-1011 TriStar · 1973–1996 · 1987 livery', fr: 'Lockheed L-1011 TriStar · 1973–1996 · livrée de 1987', es: 'Lockheed L-1011 TriStar · 1973–1996 · librea de 1987', de: 'Lockheed L-1011 TriStar · 1973–1996 · Lackierung von 1987', it: 'Lockheed L-1011 TriStar · 1973–1996 · livrea del 1987', pt: 'Lockheed L-1011 TriStar · 1973–1996 · pintura de 1987', ja: 'ロッキードL-1011トライスター · 1973–1996 · 1987年塗装', zh: '洛克希德L-1011三星 · 1973–1996 · 1987年涂装', ar: 'لوكهيد L-1011 ترايستار · 1973–1996 · طلاء 1987' },
     'heritage:air-canada-l1011-93': { en: 'Lockheed L-1011 TriStar · 1973–1996 · 1993 livery', fr: 'Lockheed L-1011 TriStar · 1973–1996 · livrée de 1993', es: 'Lockheed L-1011 TriStar · 1973–1996 · librea de 1993', de: 'Lockheed L-1011 TriStar · 1973–1996 · Lackierung von 1993', it: 'Lockheed L-1011 TriStar · 1973–1996 · livrea del 1993', pt: 'Lockheed L-1011 TriStar · 1973–1996 · pintura de 1993', ja: 'ロッキードL-1011トライスター · 1973–1996 · 1993年塗装', zh: '洛克希德L-1011三星 · 1973–1996 · 1993年涂装', ar: 'لوكهيد L-1011 ترايستار · 1973–1996 · طلاء 1993' },
