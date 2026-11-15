@@ -14387,6 +14387,8 @@ function _gateChangeOrbHtml(code) {
   if (white && typeof window._gateOrbBadge === 'function' && window._gateOrbBadge(c)) { white = false; badgeFill = true; }
   var column = !white && arguments.length > 5 && !!arguments[5];
   if (white || column) badgeFill = false;
+  // the round badge the look asks for (the seventh argument, or a white orb of a carrier with one)
+  var lookFill = badgeFill;
   var held = white || column || badgeFill || (arguments.length > 3 && !!arguments[3]);
   // the notice of its own carrier on a gate approved as drawn is written as it always was
   var _gcFold = function (x) { return (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(x) : x; };
@@ -14479,12 +14481,22 @@ function _gateChangeOrbHtml(code) {
     var _gcLine = (window._ORB_ART_GROUNDS && window._ORB_ART_GROUNDS[String(path || '').split('?')[0]]) || {};
     if (parts && !white && !column && !keptOwn && parts.native && !parts.letters && path && !/padding:0 !important/.test(String(parts.badge || '')) && !(_gcLine.line && !_gcLine.ground)) badgeFill = true;
     if (badgeFill) {
-      var bArt = (parts && parts.native && !parts.letters) ? String(path || '') : '';
-      var bGuess = /^\/logos\/symbols\/airlines\/([A-Z0-9]{2})\.svg$/.exec(bArt);
-      if (bGuess && window._ORB_SYMBOLS_ON_DISK && !window._ORB_SYMBOLS_ON_DISK[bGuess[1]]) bArt = window._gateNoticeMissTile(c).tile || '';
+      // THE BADGE THE LOOK ASKS FOR IS THE TILE THE WHITE DISC CARRIED (window._gateOrbBadge), opaque: the
+      // symbol the notice draws first is that badge only where it is a disc by itself. The symbols of
+      // Copa and JAL are lines cut out of nothing (CM.svg, JL.svg), and drawn filling the orb in place of
+      // the white disc they let the card show through the white of the brand; the tiles the white disc
+      // carried (CMP.svg, JAL.svg) are drawn instead, and judged by their own rim (window._gateNoticeLands).
+      var bArt = lookFill ? String(window._gateOrbBadge(c) || '') : '';
+      if (!bArt) {
+        bArt = (parts && parts.native && !parts.letters) ? String(path || '') : '';
+        var bGuess = /^\/logos\/symbols\/airlines\/([A-Z0-9]{2})\.svg$/.exec(bArt);
+        if (bGuess && window._ORB_SYMBOLS_ON_DISK && !window._ORB_SYMBOLS_ON_DISK[bGuess[1]]) bArt = window._gateNoticeMissTile(c).tile || '';
+      }
       if (!bArt) bArt = window._gateOrbBadge(c);
+      // never art on a clear ground filling a clear box (window._gateOrbSeeThrough): its tile, else no fill
+      if (bArt && window._gateOrbSeeThrough(bArt)) { bArt = String(window._gateOrbBadge(c) || ''); if (window._gateOrbSeeThrough(bArt)) bArt = ''; }
       if (bArt) {
-        var Bp = window._gateOrbBadgeParts((parts && parts.native) ? Object.assign({}, parts, { path: bArt }) : null, bArt);
+        var Bp = window._gateOrbBadgeParts((parts && parts.native && bArt === String(path || '')) ? Object.assign({}, parts, { path: bArt }) : null, bArt);
         var bBase = Bp.base || (parts && parts.base) || '';
         return '<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="' + bBase + 'background:transparent;padding:0 !important;--gc-disc:transparent;">'
           + '<img src="' + fidsEscHtml(Bp.path) + '" alt="" class="v2-fi-emblem-img" style="' + Bp.imgStyle + '--gc-filter:none;"' + onerr
@@ -15773,11 +15785,28 @@ window._gateCardFlat = function (code) {
   if (window._gateColumnKept(raw)) return '';
   var D = window._gateColumnDisc(raw);
   var pic = window._GATE_CARD_PICTURES[D.carrier];
-  if (pic && !pic.at.some(function (p) { return window._gateDiscSinks(D.disc, p); })) return '';
-  if (!pic && !window._gateDiscSinks(D.disc, window._gateCardScreen(window._gateCardShade(D.accent)))) return '';
+  // A RING MARK (window._ORB_RING_MARKS) meets the card with its ring, the edge of its top orb: where
+  // that ring sinks into the card the gate has, the gate takes the dark card, as a gate whose discs sink
+  // there does, and its ring is held to the dark (window._gateColumnRing)
+  var had = pic ? pic.at : [window._gateCardScreen(window._gateCardShade(D.accent))];
+  var ringOn = function (at, dark) { return window._gateColumnRing(raw, at, dark); };
+  var ringSinks = !window._gateRingClear(ringOn(had), had);
+  if (!ringSinks && pic && !pic.at.some(function (p) { return window._gateDiscSinks(D.disc, p); })) return '';
+  if (!ringSinks && !pic && !window._gateDiscSinks(D.disc, window._gateCardScreen(window._gateCardShade(D.accent)))) return '';
   var list = [window._GATE_CARD_DARKS[D.carrier], window._GATE_CARD_DARK];
   for (var i = 0; i < list.length; i++) {
-    if (list[i] && window._gateDiscClear(D.disc, window._gateCardScreen(list[i]), D.ink)) return String(list[i]).toUpperCase();
+    var sc = list[i] ? [window._gateCardScreen(list[i])] : [];
+    if (list[i] && window._gateDiscClear(D.disc, sc[0], D.ink) && window._gateRingClear(ringOn(sc, true), sc)) return String(list[i]).toUpperCase();
+  }
+  // a column whose ring sinks into the card it has takes the dark card: the first dark its ring stands
+  // clear of, else the house charcoal, and the plate it is drawn on is chosen by its ring
+  // (window._gateCardPlate)
+  if (ringSinks) {
+    for (var r = 0; r < list.length; r++) {
+      var sr = list[r] ? [window._gateCardScreen(list[r])] : [];
+      if (list[r] && window._gateRingClear(ringOn(sr, true), sr)) return String(list[r]).toUpperCase();
+    }
+    return String(window._GATE_CARD_DARK).toUpperCase();
   }
   // A ROUND BADGE IS NEVER SET IN A WHITE RING (window._gateOrbBadge). A column whose orb is a round
   // badge and whose discs stand clear of no dark with room was a white column, the badge inside a
@@ -15808,9 +15837,26 @@ window._gateCardPlate = function (code) {
   var tried = [window._GATE_CARD_PLATE_OF[D.carrier] || window._GATE_CARD_PLATE];
   if (own && lum(own) < lum(window._GATE_CARD_DARK)) tried.push('black-faint-waves');
   tried.push('grey-wave', 'black-faint-waves');
+  // (the ring of a ring mark stands clear of the plate too: window._gateColumnRing)
+  var ringOk = function (at) { return window._gateRingClear(window._gateColumnRing(raw, at, true), at); };
   for (var i = 0; i < tried.length; i++) {
     var plate = P[tried[i]];
-    if (plate && plate.at.every(function (p) { return window._gateDiscClear(D.disc, p, D.ink); })) return tried[i];
+    if (plate && plate.at.every(function (p) { return window._gateDiscClear(D.disc, p, D.ink); }) && ringOk(plate.at)) return tried[i];
+  }
+  // a column whose top orb is a ring mark: the first of the same plates its ring stands clear of (no
+  // room asked: the discs of the column go white where they sink there, window._gateColumnWhite), else
+  // the plate its ring differs from most, drawn all the same
+  if (window._gateColumnRing(raw, [])) {
+    var bestR = '', bestRE = -1;
+    for (var q = 0; q < tried.length; q++) {
+      var pq = P[tried[q]];
+      if (!pq) continue;
+      if (ringOk(pq.at)) return tried[q];
+      var rq = window._gateColumnRing(raw, pq.at, true);
+      var eq = Math.min.apply(null, pq.at.map(function (p) { return window._orbDeltaE(rq, p); }));
+      if (eq > bestRE) { bestRE = eq; bestR = tried[q]; }
+    }
+    return bestR;
   }
   // a column whose orb is a round badge (window._gateOrbBadge) is never made white: the first of the
   // same plates its discs do not sink into (the measure of the owner, no room asked); else the plate
@@ -16048,7 +16094,9 @@ window._gateSoloCard = function (code) {
 //            Qantas, Pascan): both halves are judged;
 //   line     art on a clear ground (the rim and the field round the mark are see-through): the colour
 //            of the art, which is what meets the card, judged for the sink and for the brown alike;
-//   inner    the colour inside the light rim of a rimmed roundel (window._ORB_ART_RIMMED).
+//   inner    the colour inside the light rim of a rimmed roundel (window._ORB_ART_RIMMED);
+//   cut      a disc with its mark cut out of it (the t of Transavia, 17 hundredths of its circle clear):
+//            drawn on a clear box, the card shows through the mark (window._gateOrbSeeThrough).
 // tests/gate-card-plates.test.js reads every such file and fails where a colour here is not one the
 // file draws, or where the notice draws art of its own that is in no table.
 window._ORB_ART_GROUNDS = {
@@ -16069,7 +16117,7 @@ window._ORB_ART_GROUNDS = {
   '/logos/symbols/airlines/CM.svg': { line: '#0032A0' },
   '/logos/symbols/airlines/DE.svg': { ground: '#F08200' },
   '/logos/symbols/airlines/EW.svg': { ground: '#A6959C' },
-  '/logos/symbols/airlines/HV.svg': { ground: '#00D66C' },
+  '/logos/symbols/airlines/HV.svg': { ground: '#00D66C', cut: true },
   '/logos/symbols/airlines/JL.svg': { line: '#E50012' },
   '/logos/symbols/airlines/LO.svg': { line: '#252668' },
   '/logos/symbols/airlines/MO.svg': { ground: '#250E5C' },
@@ -16166,6 +16214,17 @@ window._gateNoticeLands = function (gate, code, white, held) {
       if (out.unwhite) out.ink = hx(window._ORB_MARK_FILE_INK[fold]) || out.disc;
       else if (inkW) out.ink = /^#f{3}(f{3})?$/i.test(String(row.ink || '')) ? '' : WHITE;
       else if (inkB) out.ink = '#000000';
+      // A RING MARK whose ring is the edge of its orb (window._ORB_RING_MARKS, written with no padding):
+      // the ring is what meets the card, in the ink it is drawn in, and the ink of the mark is judged
+      // against the inside of the ring (inside), the disc the box paints
+      var ringM = window._gateOrbRingMark(img[1]);
+      if (ringM && /padding:0 !important/.test(style)) {
+        out.how = 'ring-mark';
+        out.inside = out.disc;
+        out.disc = out.unwhite ? (out.ink || ringM.ring) : inkW ? WHITE : inkB ? '#000000' : hx(ringM.ring);
+        out.edge = '';
+        if (!out.ink) out.ink = out.disc;
+      }
     }
   }
   return out;
@@ -16187,8 +16246,10 @@ window._gateNoticeBreaks = function (L, card) {
   for (var w = 0; brown && w < warms.length; w++) if (window._gateWarm(warms[w])) return 'warm:' + warms[w] + '>' + brown;
   if (L.ink) {
     var lum = function (h) { var m = /^#([0-9a-f]{6})$/i.exec(h); if (!m) return 0; var l = [0, 2, 4].map(function (k) { var v = parseInt(m[1].substr(k, 2), 16) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
-    var a = lum(L.ink), b = lum(L.disc), ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-    if (window._gateDiscSinks(L.ink, L.disc) || ratio < 3) return 'ink:' + L.ink + '>' + L.disc + ':' + window._orbDeltaE(L.ink, L.disc).toFixed(1) + ':' + ratio.toFixed(2);
+    // (the mark of a ring mark is judged against the inside of its ring: window._gateNoticeLands)
+    var on = L.inside || L.disc;
+    var a = lum(L.ink), b = lum(on), ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    if (window._gateDiscSinks(L.ink, on) || ratio < 3) return 'ink:' + L.ink + '>' + on + ':' + window._orbDeltaE(L.ink, on).toFixed(1) + ':' + ratio.toFixed(2);
   }
   return '';
 };
@@ -16212,7 +16273,7 @@ window._gateNoticePlateAt = function (name) {
 window._gateNoticeClear = function (L, at) {
   if (window._gateNoticeBreaks(L, { at: at })) return false;
   var discs = [L.disc].concat(L.edge ? [L.edge] : [], L.second ? [L.second] : []);
-  return discs.every(function (d) { return at.every(function (p) { return window._gateDiscClear(d, p, d === L.disc ? L.ink : ''); }); });
+  return discs.every(function (d) { return at.every(function (p) { return window._gateDiscClear(d, p, (d === L.disc && !L.inside) ? L.ink : ''); }); });
 };
 window._gateNoticeLook = function (gateCode, movedCode, solo) {
   var g = String(gateCode == null ? '' : gateCode).trim().toUpperCase();
@@ -16356,20 +16417,26 @@ window._gateLowerPair = function (code) {
     if (window._gateColumnKept(raw)) return out;
     var D = window._gateColumnDisc(raw);
     var disc = window._gateColumnWhite(raw, D.ground) ? window._GATE_WHITE : D.disc;
-    if (!window._gateDiscSinks(disc, p.b)) return out;
+    // the Your Aircraft orb of a ring mark meets the panel with its ring (window._ORB_RING_MARKS): the
+    // ring of the top orb of the column, on the card of the rail
+    var ringC = '';
+    try { var KR = window._gateCardPaint(raw, true); ringC = window._gateColumnRing(raw, KR.at, KR.kind === 'dark'); } catch (eR) { ringC = ''; }
+    if (ringC) disc = ringC;
+    if (!window._gateDiscSinks(disc, p.b) && window._gateRingClear(ringC, [p.b])) return out;
     var words = (typeof RC2_B_WORDS !== 'undefined') ? RC2_B_WORDS : ['#FFFFFF'];
     var list = [window._gateCardFlat(raw), window._GATE_CARD_DARKS[D.carrier], window._GATE_CARD_DARK];
     // a column whose orb is a round badge (window._gateOrbBadge) has no white disc to fall back on: its
     // badge would sit inside a white ring. The panel is offered one flat more, the grey of the grey wave
     // where its discs meet it, as the panel of the Your Aircraft orb of an operator is (window._gateCardOrb),
     // and where none will do it takes, of those that hold the words, the one its discs differ from most
-    var badge = !!window._gateOrbBadge(raw);
+    // (a ring mark is offered the same grey, and takes the flat its ring differs from most likewise)
+    var badge = !!window._gateOrbBadge(raw) || !!ringC;
     if (badge) list.push(window._GATE_CARD_GREY);
     var far = '', farE = window._orbDeltaE(disc, p.b);
     for (var i = 0; i < list.length; i++) {
       var d = list[i];
       if (!d || words.some(function (w) { return _rc2Contrast(d, w) < 4.5; })) continue;
-      if (window._gateDiscSinks(disc, d)) {
+      if (window._gateDiscSinks(disc, d) || !window._gateRingClear(ringC, [d])) {
         if (badge && window._orbDeltaE(disc, d) > farE) { farE = window._orbDeltaE(disc, d); far = String(d).toUpperCase(); }
         continue;
       }
@@ -16437,6 +16504,9 @@ window._gateColumnWhite = function (code, naturalGround) {
   if (/^#[0-9a-f]{3}$/i.test(accent)) accent = '#' + accent.slice(1).split('').map(function (x) { return x + x; }).join('');
   var disc = naturalGround || accent;
   var white = window._GATE_WHITE;
+  // a column of a ring mark on the dark plate given it for its ring goes white where its discs have no
+  // room there (window._gateColumnRingWhite)
+  if (card.kind === 'dark' && window._gateColumnRing(raw, [], true)) return window._gateColumnRingWhite(raw, card.at, true) ? window._gateWhiteInk(raw, naturalGround) : '';
   var any = function (d) { return card.at.some(function (p) { return window._gateDiscSinks(d, p); }); };
   if (!any(disc) || any(white)) return '';
   return window._gateWhiteInk(raw, naturalGround);
@@ -16651,12 +16721,14 @@ window._gateOrbNatural = function (code) {
     : (look && look.ground && !look.css) ? look.ground
     : (isTile && _tileGround) ? _tileGround
     : (!isTile && LIGHT_DISC[c]) ? LIGHT : '';
-  return { path: path, badge: badge, imgStyle: imgStyle,
+  var recipe = { path: path, badge: badge, imgStyle: imgStyle,
            native: fills, keepsColour: keepsColour,
            nativeCls: fills ? ' v2-fi-emblem-native' : '',
            ground: ground, letters: letters, disc: isTile && !onOwnGround, base: BASE,
            light: !letters && !onOwnGround && !isTile && !!LIGHT_DISC[c],
            whitened: !letters && !onOwnGround && !isTile && !(keepsColour || onWhite) };
+  // a mark set in a ring line is drawn with its ring as the edge of the orb (window._gateOrbRingFill)
+  return (typeof window._gateOrbRingFill === 'function') ? window._gateOrbRingFill(recipe) : recipe;
 };
 
 // THE RECIPE OF A GATE ORB, WITH THE RULE OF THE CARD APPLIED. The recipe above gives the orb a
@@ -16708,10 +16780,114 @@ window._gateOrbWhite = function (code, N, ink) {
   var imgStyle = inset
     ? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;'
     : 'width:100%;height:100%;object-fit:contain;display:block;';
-  return { path: path, badge: badge, imgStyle: imgStyle,
+  var recipe = { path: path, badge: badge, imgStyle: imgStyle,
            native: false, keepsColour: true, nativeCls: '',
            ground: WHITE, letters: N.letters, disc: disc, base: N.base,
            whitened: false, white: true, inset: inset, ink: ink, natural: N.ground };
+  // a mark set in a ring line: its ring is the edge of the white disc, the white inside it
+  // (window._gateOrbRingFill)
+  return (typeof window._gateOrbRingFill === 'function') ? window._gateOrbRingFill(recipe) : recipe;
+};
+// A MARK SET IN A RING LINE IS ONE CIRCLE WITH ITS ORB (decision of 15 November 2026, NO CIRCLE INSIDE
+// A CIRCLE). The marks of Lufthansa, TAROM and LOT are drawn in a ring line, the swirl of Korean Air
+// and the red lines of Paranair trace a circle broken only where a stroke tapers, and the tile of LOT
+// sets that ring inside a square of its navy. Each was drawn inside the padding of a disc (the white
+// disc of a white column, of the Your Aircraft orb and of the gate change notice, or the disc of its
+// accent), and the disc showed as a band outside the ring: a circle inside a circle. Each is scaled now
+// so that its ring IS the edge of the orb: no padding, no band outside it. Inside the ring the orb is as
+// drawn: the disc the box paints (the navy of Lufthansa under its white mark), and where the box was
+// clear, the white a disc of the mark had (or, for a tile, the ground the tile paints inside its ring),
+// so the mark reads as one roundel. The ring is what meets the card now, and it is judged as any disc
+// is (window._gateColumnRing, window._gateNoticeLands, window._gateCardOrb): ring the colour the file
+// draws the ring in (white where the mark is inked white), scale the factor that takes the ring of the
+// art to the edge of its box (the outer edge of the ring as a share of the half width of the drawing,
+// read off each file: the rings of LH, RO, LO and ZP touch the edge of their box; the swirl of Korean Air
+// reaches 0.9475 of it across and all of it top to bottom; the ring of the LOT tile is 35.338 of 50).
+window._ORB_RING_MARKS = {
+  '/logos/symbols/airlines/LH.svg': { ring: '#05164D', scale: 1 },
+  '/logos/symbols/airlines/RO.svg': { ring: '#003366', scale: 1 },
+  '/logos/symbols/airlines/LO.svg': { ring: '#252668', scale: 1 },
+  '/logos/symbols/airlines/KE.svg': { ring: '#051766', scale: 1.0554 },
+  '/logos/symbols/airlines/ZP.svg': { ring: '#CD1025', scale: 1 },
+  '/logos/airline-tiles/LOT.svg': { ring: '#FFFFFF', scale: 1.4149, inside: '#252668' }
+};
+window._gateOrbRingMark = function (src) {
+  var k = String(src || '').split('?')[0];
+  return (k && window._ORB_RING_MARKS && window._ORB_RING_MARKS[k]) || null;
+};
+// The colour the ring of a ring mark is drawn in, by the filter on its picture: white where the mark is
+// inked white, black where it is inked black, else the colour of the file.
+window._gateOrbRingInk = function (src, imgStyle) {
+  var M = window._gateOrbRingMark(src);
+  if (!M) return '';
+  var f = String(imgStyle || '');
+  if (/invert\(1\)/.test(f)) return window._GATE_WHITE;
+  if (/brightness\(0\)/.test(f)) return '#000000';
+  return M.ring;
+};
+// The recipe of an orb whose art is a ring mark, rewritten so that the ring is the edge of the orb:
+// padding none (written to win over the padding a stylesheet gives the box: the notice, the Your
+// Aircraft orb, the shelf), the picture its box wide, scaled by the factor of its file, never cropped;
+// the box keeps the disc it paints, and a clear box takes the white a disc had (the ground of the tile,
+// for a tile). Any other recipe is returned as it is.
+window._gateOrbRingFill = function (P) {
+  if (!P || !P.path || P.letters) return P;
+  var M = window._gateOrbRingMark(P.path);
+  if (!M) return P;
+  var badge = String(P.badge || ''), img = String(P.imgStyle || '');
+  var bg = ((/background:([^;]+);/.exec(badge) || [])[1] || '').trim();
+  var clear = !bg || /^transparent$/i.test(bg);
+  var inside = clear ? (M.inside || window._GATE_WHITE) : bg;
+  if (clear) badge = /background:[^;]*;/.test(badge) ? badge.replace(/background:[^;]*;/, 'background:' + inside + ';') : badge + 'background:' + inside + ';';
+  badge = /padding:[^;]*;/.test(badge) ? badge.replace(/padding:[^;]*;/, 'padding:0 !important;') : badge + 'padding:0 !important;';
+  var filter = (/(?:^|;)(filter:[^;]*;)/.exec(img) || [])[1] || '';
+  var imgStyle = 'width:100%;height:100%;object-fit:contain;display:block;' + (M.scale !== 1 ? 'transform:scale(' + M.scale + ');' : '') + filter;
+  return Object.assign({}, P, { badge: badge, imgStyle: imgStyle, native: false, nativeCls: '', inset: false, disc: false,
+    ringFill: true, ring: window._gateOrbRingInk(P.path, imgStyle), inside: inside, wasNative: !!P.native });
+};
+// The ring the top orb of a column of a ring mark shows on a card whose paints are given (at; dark: the
+// card is one of the dark plates): the mark on the white disc (in its colours) where the column goes
+// white there (window._gateColumnRingWhite), else the mark as its own recipe draws it. Empty for every
+// other column. Asked by the functions that choose the card, so it reads the recipes of the art alone
+// (the rule of the card asks for this answer).
+window._gateColumnRing = function (code, at, dark) {
+  try {
+    var raw = String(code == null ? '' : code).trim().toUpperCase();
+    var N = window._gateOrbNatural(raw);
+    var Wh = null;
+    try { Wh = window._gateOrbWhite(raw, N, '#000000'); } catch (e) { Wh = null; }
+    if (!N.ring && !(Wh && Wh.ring)) return '';
+    return window._gateColumnRingWhite(raw, at, dark) ? ((Wh && Wh.ring) || '') : (N.ring || '');
+  } catch (e2) { return ''; }
+};
+// Does the column of a ring mark go white on the paints given. On the card it has, where its discs sink
+// there and white does not (window._gateColumnWhite). On a dark plate, the plate it was given for its
+// ring (window._gateCardPlate), where its discs do not stand clear of it with room (window._gateDiscClear):
+// a dark plate keeps a disc only with room, and the discs of such a column were never given the plate
+// for their own sake.
+window._gateColumnRingWhite = function (code, at, dark) {
+  var raw = String(code == null ? '' : code).trim().toUpperCase();
+  var D = window._gateColumnDisc(raw);
+  var list = [].concat(at || []);
+  var sinksAt = function (d) { return list.some(function (p) { return window._gateDiscSinks(d, p); }); };
+  if (!list.length || sinksAt(window._GATE_WHITE)) return false;
+  if (dark) return !list.every(function (p) { return window._gateDiscClear(D.disc, p, D.ink); });
+  return sinksAt(D.disc);
+};
+// Does a ring stand clear of every paint given: the measure of the owner (the sink, and no red, orange
+// or gold on a brown).
+window._gateRingClear = function (ring, at) {
+  if (!ring) return true;
+  return ![].concat(at || []).some(function (p) { return window._gateDiscSinks(ring, p) || (window._gateWarm(ring) && window._gateBrown(p)); });
+};
+// NEVER SEE-THROUGH ART FILLING A CLEAR BOX. Art on a clear ground (a line of window._ORB_ART_GROUNDS: the
+// lines of Copa, JAL, LOT, Paranair and Air Inuit, cut out of nothing) or a disc with its mark cut out of
+// it (cut: the t of Transavia) drawn edge to edge on a clear box is a broken disc: the card shows through
+// the inside of the mark. Such art never fills a clear box: the finished tile of the carrier does
+// (window._gateOrbBadge), opaque.
+window._gateOrbSeeThrough = function (src) {
+  var A = (window._ORB_ART_GROUNDS && window._ORB_ART_GROUNDS[String(src || '').split('?')[0]]) || {};
+  return !!((A.line && !A.ground) || A.cut);
 };
 // NO CIRCLE INSIDE A CIRCLE (decision of 15 November 2026). A ROUND BADGE is art that is a disc by itself:
 // a finished tile (cropped into a circle by the orb it fills) or a symbol that is a disc, the art the
@@ -16837,7 +17013,7 @@ window._gateCardOrb = function (gateCode, opCode) {
   // THE DISC THAT LANDS, AGAINST THE PANEL OF THIS GATE. Not asked on a gate left as drawn, and
   // not of a disc that is white already. The disc is the colour worked out above; a tile with
   // no ground on record is judged by the colour of its carrier.
-  var whiteNow = false, badgeNow = false, panel = '', panelOpen = false;
+  var whiteNow = false, badgeNow = false, ringNow = false, panel = '', panelOpen = false;
   // (an operator whose art carries a rim of its own is not judged: the roundel of Alaska and of
   // Turkish, by window._ORB_ART_RIMMED. An operator whose own gate is left as drawn is judged
   // like any other: that list is a list of gates, and says nothing of this panel)
@@ -16852,12 +17028,43 @@ window._gateCardOrb = function (gateCode, opCode) {
       try { shown = String(opRow.ground || getAirlineAccent(c) || ''); } catch (e) { shown = disc; }
     }
     if (/^#[0-9a-f]{3}$/i.test(shown)) shown = '#' + shown.slice(1).split('').map(function (x) { return x + x; }).join('');
-    if (lower && window._gateDiscSinks(shown, lower)) {
+    // A RING MARK meets the panel with its ring, the edge of its orb (window._ORB_RING_MARKS): the ring as
+    // it will be drawn (white where the mark keeps its white filter on this disc, below)
+    var ringP = '';
+    if (P.ring) {
+      var keepsWhite = /invert\(1\)/.test(imgStyle) && (own || white.test(ink) || (!onGateDisc && (function () { try { return white.test(window._gateColumnLook(code, true).ink); } catch (eK) { return false; } })()));
+      ringP = window._gateOrbRingInk(P.path, keepsWhite ? imgStyle : String(imgStyle).replace('filter:brightness(0) invert(1);', ''));
+      if (ringP) shown = ringP;
+    }
+    if (lower && (window._gateDiscSinks(shown, lower) || !window._gateRingClear(ringP, [lower]))) {
       var whose = onGateDisc ? gate : code;
       var NW = window._gateOrbNatural(whose);
       var W = window._gateOrbWhite(code, P, window._gateWhiteInk(whose, NW.ground));
       var Aw = (window._ORB_ART_GROUNDS && window._ORB_ART_GROUNDS[String(W.path || '').split('?')[0]]) || {};
-      if (W.inset && !(Aw.line && !Aw.ground)) {
+      if (ringP) {
+        // the ring sinks into the panel: the white disc of the mark where its ring (the mark in its
+        // colours) stands clear of the panel, else the orb as drawn, and the panel under it takes the
+        // first flat its ring stands clear of, as for a round badge (panel; panelOpen where none will do)
+        if (W.ring && window._gateRingClear(W.ring, [lower])) {
+          P = W; badge = W.badge; imgStyle = W.imgStyle; ground = W.ground; ink = W.ink; whiteNow = true;
+        } else {
+          var wordsR = (typeof RC2_B_WORDS !== 'undefined') ? RC2_B_WORDS : ['#FFFFFF'];
+          var flatsR = [window._gateCardFlat(gate), window._GATE_CARD_DARKS[fold(gate)], window._GATE_CARD_DARKS[c], window._GATE_CARD_DARK, window._GATE_CARD_GREY];
+          var farRE = window._orbDeltaE(ringP, lower), farRD = '';
+          for (var ri = 0; ri < flatsR.length; ri++) {
+            var rd = flatsR[ri];
+            if (!rd || (typeof _rc2Contrast === 'function' && wordsR.some(function (wd) { return _rc2Contrast(rd, wd) < 4.5; }))) continue;
+            if (!window._gateRingClear(ringP, [rd])) {
+              if (window._orbDeltaE(ringP, rd) > farRE) { farRE = window._orbDeltaE(ringP, rd); farRD = String(rd).toUpperCase(); }
+              continue;
+            }
+            panel = String(rd).toUpperCase();
+            break;
+          }
+          if (!panel && farRD) { panel = farRD; panelOpen = true; }
+          ringNow = true;
+        }
+      } else if (W.inset && !(Aw.line && !Aw.ground)) {
         // NO CIRCLE INSIDE A CIRCLE (window._gateOrbBadge): the white disc would carry a round badge
         // inside its ring. The badge fills the orb instead, edge to edge on a clear box, and the panel
         // under it gives the contrast: the first flat dark it does not sink into (the flat dark of the
@@ -16922,6 +17129,8 @@ window._gateCardOrb = function (gateCode, opCode) {
   return { html: html, code: code, carrier: c, own: own, src: src, letters: letters, ground: ground, ink: ink,
            badge: badge + 'color:#fff;' + inkVar, parts: { native: !!P.native, nativeCls: P.nativeCls, imgStyle: imgStyle },
            white: !!P.white, inset: !!P.inset, badgeFill: badgeNow, panel: panel, panelOpen: panelOpen,
+           // a ring mark: its ring as drawn, the edge of the orb (ringPanel: the panel was asked for it)
+           ringFill: !!P.ringFill, ring: P.ringFill ? window._gateOrbRingInk(src, imgStyle) : '', ringPanel: ringNow,
            native: !!P.native, whitened: !!src && /invert\(1\)/.test(imgStyle) && !/\.png(\?|$)/i.test(src) };
 };
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
@@ -43647,8 +43856,11 @@ function _gateCardEmblem(code) {
       }
       if (!P || !P.path) return '';
       path = String(P.path);
-      disc = !!P.native;
-      white = !P.native && !P.keepsColour && !/\.png(\?|$)/i.test(path);
+      // (a ring mark is no orb here: the card draws the mark as it drew it before its ring was made the
+      // edge of an orb, window._gateOrbRingFill)
+      var nat = P.ringFill ? !!P.wasNative : !!P.native;
+      disc = nat;
+      white = !nat && !P.keepsColour && !/\.png(\?|$)/i.test(path);
     }
     return '<img class="gc-emb' + (white ? ' gc-emb-white' : '') + (disc ? ' gc-emb-disc' : '') + '" src="' + fidsEscHtml(path) + '" alt=""'
       + ' onerror="this.remove()">';

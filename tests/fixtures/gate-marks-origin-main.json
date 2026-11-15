@@ -603,7 +603,7 @@
     ["sky plate, last plate, map hold","LOG","letters LOG","airline-tiles/LOG.svg, after a miss","designator"],
     ["notice","LOG","nothing","airline-tiles/LOG.svg filling the orb","designator"],
     ["sky plate, last plate, map hold","LOT","letters LOT","symbols/airlines/LO.svg","designator"],
-    ["notice","LOT","nothing","symbols/airlines/LO.svg filling the orb","designator"],
+    ["notice","LOT","nothing","symbols/airlines/LO.svg on a #FFFFFF disc","designator"],
     ["standby card","LOT","nothing","symbols/airlines/LO.svg","designator"],
     ["sky plate, last plate, map hold","MAS","letters MAS","symbols/airlines/MH.svg","designator"],
     ["notice","MAS","nothing","symbols/airlines/MH.svg, white on the accent disc","designator"],
@@ -808,6 +808,9 @@
     ["standby card","9M","airlines/canadian/AC.TO.svg, white","letters 9M on a #FFFFFF disc","own letters"],
     ["notice","KL","symbols/airlines/KL.svg, white on the accent disc","airline-tiles/KLM.svg filling the orb","column tile"],
     ["notice","SQ","symbols/airlines/SQ.svg, white on the accent disc","airline-tiles/SIA.svg filling the orb","column tile"],
-    ["notice","XY","symbols/airlines/XY.svg, white on the accent disc","airline-tiles/KNE.svg filling the orb","column tile"]
+    ["notice","XY","symbols/airlines/XY.svg, white on the accent disc","airline-tiles/KNE.svg filling the orb","column tile"],
+    ["notice","LO","symbols/airlines/LO.svg filling the orb","symbols/airlines/LO.svg on a #FFFFFF disc","ring mark"],
+    ["notice","ZP","symbols/airlines/ZP.svg filling the orb","symbols/airlines/ZP.svg on a #FFFFFF disc","ring mark"],
+    ["notice","HV","symbols/airlines/HV.svg filling the orb","airline-tiles/TRA.svg filling the orb","cut disc"]
   ]
 }

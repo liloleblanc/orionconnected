@@ -112,6 +112,9 @@ function discOf(src) {
     const tile = (/\/airline-tiles\/([^/?]+)\.svg$/.exec(k) || [])[1] || '';
     const A = W._ORB_ART_GROUNDS[k] || {};
     out = { disc: (share >= 0.9 && square) || /-glossy\.svg$/.test(k) || !!(tile && W._ORB_TILE_GROUNDS[tile]) || !!A.ground, share };
+    // a mark set in a ring line (window._ORB_RING_MARKS) is no round badge: it is drawn with its ring as
+    // the edge of its orb, the test of ring marks below
+    if (own(W._ORB_RING_MARKS, k)) out = { disc: false, share, ring: true };
   }
   DISC.set(k, out);
   return out;
@@ -255,7 +258,7 @@ test('the Your Aircraft orb of every operator on every gate: a round badge fills
     for (const op of CODES) {
       if (fold(op) === fold(gate)) continue;
       const r = W._gateCardOrb(gate, op);
-      if (r.panel && !r.badgeFill) panels.push(gate + '/' + op + ': a panel of its own under an orb that is no round badge');
+      if (r.panel && !r.badgeFill && !r.ringPanel) panels.push(gate + '/' + op + ': a panel of its own under an orb that is no round badge or ring mark');
       if (!r.src || !isDisc(r.src)) continue;
       n++;
       const o = wrapOf(r.html);
@@ -278,5 +281,180 @@ test('the Your Aircraft orb of every operator on every gate: a round badge fills
   for (const [gate, op] of [['IB', 'PD'], ['IB', 'SK'], ['KL', 'MS']]) {
     const r = W._gateCardOrb(gate, op), o = wrapOf(r.html);
     assert.deepEqual([r.white, r.inset, /v2-fi-orbwrap-native/.test(o.cls), o.pad, o.bg], [false, false, true, '0', 'transparent'], gate + '/' + op);
+  }
+});
+
+// ── THE ART ALONE, MEASURED FROM ITS FILE ───────────────────────────────────
+// The share of the circle an orb crops a picture to (cover: the middle square of the drawing, the circle
+// inside it out to 98 hundredths of its radius) that the drawing leaves clear, on a grid of 80 by 80; and,
+// for a mark set in a ring line, the outer edge of its ring along every ray (every 2 degrees, out from the
+// middle in steps of 2 thousandths), the colour of its ring only where the file draws more than one.
+// A bitmap is a finished roundel by construction (the tiles and the glossy orbs): no share is read.
+const ART = new Map();
+function artOf(src) {
+  const k = String(src || '').split('?')[0];
+  if (ART.has(k)) return ART.get(k);
+  const f = path.join(FC, k);
+  let out = { read: false, clear: 0 };
+  if (k && fs.existsSync(f) && /\.svg$/i.test(k)) {
+    const m = GEN.build(fs.readFileSync(f, 'utf8'));
+    if (m.vb.length === 4 && m.vb[2] > 0 && m.vb[3] > 0) {
+      const [vx, vy, vw, vh] = m.vb, cx = vx + vw / 2, cy = vy + vh / 2, R = Math.min(vw, vh) / 2;
+      let n = 0, clear = 0;
+      for (let i = 0; i < 80; i++) for (let j = 0; j < 80; j++) {
+        const x = (i + 0.5) / 40 - 1, y = (j + 0.5) / 40 - 1;
+        if (x * x + y * y > 0.98 * 0.98) continue;
+        n++; if (!GEN.colourAt(m, cx + x * R, cy + y * R)) clear++;
+      }
+      out = { read: true, clear: clear / n, m, cx, cy, R };
+    }
+  }
+  ART.set(k, out);
+  return out;
+}
+function ringEdge(src, colour) {
+  const a = artOf(src);
+  if (!a.read) return null;
+  const outs = [];
+  for (let d = 0; d < 360; d += 2) {
+    let ro = 0;
+    for (let r = 0; r <= 1.0001; r += 0.002) {
+      const c = GEN.colourAt(a.m, a.cx + Math.cos(d * Math.PI / 180) * a.R * r, a.cy + Math.sin(d * Math.PI / 180) * a.R * r);
+      if (c && (!colour || String(c).toUpperCase() === colour)) ro = r;
+    }
+    outs.push(ro);
+  }
+  outs.sort((x, y) => x - y);
+  // the ring where it is drawn: four rays in five (the swirl of Korean Air and the lines of Paranair break
+  // their circle where a stroke tapers, one ray in eight)
+  return { edge: outs[Math.floor(0.2 * (outs.length - 1))], drawn: outs.filter((r) => r >= 0.6).length / outs.length };
+}
+// every orb the gates draw, with the surface that draws it: the gate change notice (one gate for each card
+// and rule the gates can show, every gate of its own carrier, and the whole screen), the top orb of the
+// rail and the boarding shelf (one recipe, held to each other by tests/gate-orbs-every-airline.test.js),
+// the Your Aircraft orb of its own gate and of every operator on every gate
+function everyOrb(visit) {
+  const m = (al) => ({ ap: 'YUL', full: { f: { flight: al + '101', airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
+  const cards = new Map();
+  for (const g of CODES.concat([''])) {
+    const K = W._gateCardPaint(g, true), sig = K.kind + ':' + K.at.join(',') + '|' + JSON.stringify(W._gateNoticeOrbRule(g) || {});
+    if (!cards.has(sig)) cards.set(sig, g);
+  }
+  const notice = (gate, code, solo) => {
+    const html = (/<span class="gl-gc-orb[\s\S]*?<\/span><\/span>(?:<\/span>)?/.exec(the('_gateChangeNoticeHtml')(m(code), gate, solo)) || [''])[0];
+    if (html) visit({ surface: 'notice', gate: solo ? '(whole screen)' : gate, code, o: wrapOf(html), html, solo });
+  };
+  for (const gate of cards.values()) for (const code of CODES) notice(gate, code, false);
+  for (const g of CODES) notice(g, g, false);
+  for (const code of CODES) notice('', code, true);
+  for (const code of CODES) {
+    const P = W._gateOrbParts(code);
+    if (P.path) visit({ surface: 'rail', gate: code, code, o: wrapOf('<div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (P.nativeCls || '') + '" style="' + P.badge + '"><img src="' + P.path + '" style="' + P.imgStyle + '"></div>'), P });
+  }
+  for (const gate of CODES) for (const op of [''].concat(CODES)) {
+    if (op && fold(op) === fold(gate)) continue;
+    const r = W._gateCardOrb(gate, op);
+    if (r.src) visit({ surface: 'your aircraft', gate, code: op || gate, o: wrapOf(r.html), r });
+  }
+}
+// a clear box: no paint of its own (none, transparent, or a held disc that is clear)
+const clearBox = (o) => (!o.bg || /^transparent$/i.test(o.bg)) && !/--gc-disc:\s*(?!transparent)[^;]+;/.test(o.style);
+// a picture that fills its box: no padding (the notice and the Your Aircraft orb are padded by their
+// stylesheets unless the box takes it away, marked important or by the class of a finished tile)
+const fillsBox = (s) => {
+  const pad = s.o.pad;
+  if (s.surface === 'notice') return /^0\s*!important$/.test(pad);
+  if (s.surface === 'your aircraft') return /^0(\s*!important)?$/.test(pad) && (/!important/.test(pad) || /v2-fi-orbwrap-native/.test(s.o.cls));
+  return /^0(\s*!important)?$/.test(pad);
+};
+
+test('no orb draws see-through art filling a clear box (the art alone, measured)', () => {
+  // by the file: the symbols of Copa and JAL are lines cut out of nothing, their tiles are opaque
+  for (const [f, see] of [['symbols/airlines/CM.svg', true], ['symbols/airlines/JL.svg', true], ['symbols/airlines/ZP.svg', true], ['symbols/airlines/HV.svg', true], ['airline-tiles/CMP.svg', false], ['airline-tiles/TRA.svg', false], ['airline-tiles/JAL.svg', false], ['airline-tiles/MSR.svg', false], ['symbols/airlines/TK.svg', false]]) {
+    const a = artOf('/logos/' + f);
+    assert.ok(a.read && (see ? a.clear > 0.1 : a.clear < 0.02), f + ': ' + a.clear.toFixed(3) + ' of its circle clear');
+  }
+  // the board names the same art as see-through (a line of window._ORB_ART_GROUNDS with no ground)
+  for (const k of Object.keys(W._ORB_ART_GROUNDS)) {
+    const a = artOf(k);
+    if (a.read && a.clear > 0.1 && a.clear <= 0.99) assert.ok(W._gateOrbSeeThrough(k), k + ': ' + a.clear.toFixed(3) + ' of its circle clear, and the board does not say so');
+  }
+  // (a drawing the reader of shapes cannot follow, nothing painted at all, is a finished tile whose rim
+  // the table of grounds read off it in Chrome: the gold of PAL)
+  const unread = (src) => { const a = artOf(src), k = String(src).split('?')[0], A = W._ORB_ART_GROUNDS[k] || {}; return a.clear > 0.99 && !!A.ground && !A.cut; };
+  const bad = [];
+  let fills = 0;
+  everyOrb((s) => {
+    if (!s.o.src || !clearBox(s.o) || !fillsBox(s)) return;
+    fills++;
+    const a = artOf(s.o.src);
+    if (a.read && a.clear >= 0.02 && !unread(s.o.src)) bad.push(s.surface + ' ' + s.gate + ' / ' + s.code + ': ' + s.o.src + ' fills a clear box, ' + (100 * a.clear).toFixed(0) + '% of it clear');
+  });
+  assert.deepEqual(bad, [], bad.length + ' see-through fills:\n' + bad.slice(0, 20).join('\n'));
+  assert.ok(fills >= 30000, fills + ' orbs that fill a clear box');
+  // by name: the notices of Copa and JAL where the look asks for the round badge draw the tiles the white
+  // disc carried, on a gate and as the whole screen
+  const m = (al) => ({ ap: 'YUL', full: { f: { flight: al + '101', airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
+  for (const [g, c, tile] of [['IB', 'CM', 'CMP'], ['', 'CM', 'CMP'], ['', 'JL', 'JAL'], ['IB', 'HV', 'TRA'], ['', 'HV', 'TRA']]) {
+    const L = W._gateNoticeLook(g, c, !g);
+    const h = the('_gateChangeNoticeHtml')(m(c), g, !g);
+    if (L.badge) assert.match(h, new RegExp('<img src="/logos/airline-tiles/' + tile + '\\.svg"'), (g || '(whole screen)') + ' / ' + c);
+  }
+  assert.equal(W._gateNoticeLook('IB', 'CM').badge, true);
+  // the t of Transavia, cut out of its disc, never shows the card: its tile fills the orb
+  assert.match(the('_gateChangeNoticeHtml')(m('HV'), 'IB'), /<img src="\/logos\/airline-tiles\/TRA\.svg"/);
+});
+
+test('a mark set in a ring line: its ring is the edge of its orb on every surface, judged as a disc', () => {
+  // the table, by the file: the ring of each reaches the edge of the orb at its scale, and is drawn on
+  // four rays in five or more
+  for (const [k, M] of Object.entries(W._ORB_RING_MARKS)) {
+    const multi = /\/airline-tiles\//.test(k);
+    const e = ringEdge(k, multi ? M.ring : '');
+    assert.ok(e, k + ' is read');
+    assert.ok(Math.abs(e.edge * M.scale - 1) <= 0.015, k + ': the ring reaches ' + e.edge.toFixed(3) + ' of the half width, scaled ' + M.scale);
+    assert.ok(e.drawn >= 0.85, k + ': a ring on ' + (100 * e.drawn).toFixed(0) + '% of the rays');
+    const fills = GEN.build(fs.readFileSync(path.join(FC, k), 'utf8')).shapes.map((s) => String(s.fill).toUpperCase());
+    assert.ok(fills.includes(M.ring), k + ': ' + M.ring + ' is a colour the file draws (' + [...new Set(fills)].join(', ') + ')');
+  }
+  // by name: the five marks and the tile of LOT
+  assert.deepEqual(Object.keys(W._ORB_RING_MARKS).map((k) => path.basename(k)).sort(), ['KE.svg', 'LH.svg', 'LO.svg', 'LOT.svg', 'RO.svg', 'ZP.svg']);
+  const bad = [], sinks = [], open = [];
+  let n = 0;
+  everyOrb((s) => {
+    const M = W._gateOrbRingMark(s.o.src);
+    if (!M) return;
+    n++;
+    const tag = s.surface + ' ' + s.gate + ' / ' + s.code;
+    // the notice of its own carrier on a gate left as drawn is written as it always was (none is a ring)
+    if (!/^0\s*!important$/.test(s.o.pad)) bad.push(tag + ': padding ' + (s.o.pad || 'of the stylesheet') + ' round ' + s.o.src);
+    if (clearBox(s.o)) bad.push(tag + ': a clear box inside the ring of ' + s.o.src);
+    if (!/width:100%;height:100%;object-fit:contain;/.test(s.o.imgStyle)) bad.push(tag + ': ' + s.o.imgStyle);
+    const sc = +((/transform:scale\(([0-9.]+)\)/.exec(s.o.imgStyle) || [])[1] || 1);
+    if (sc !== M.scale) bad.push(tag + ': scaled ' + sc + ', the file asks ' + M.scale);
+    // the ring meets what is behind it, judged as any disc is
+    if (s.surface === 'rail' && !kept(s.gate)) {
+      const K = W._gateCardPaint(s.gate);
+      if (!W._gateRingClear(s.P.ring, K.at)) sinks.push(tag + ': ring ' + s.P.ring + ' on ' + K.at.join(','));
+    }
+    if (s.surface === 'your aircraft' && !kept(s.gate)) {
+      const lower = s.r.panel || W._gateCardPaint(s.gate).lower;
+      if (lower && !W._gateRingClear(s.r.ring, [lower])) (s.r.panelOpen ? open : sinks).push(tag + ': ring ' + s.r.ring + ' on the panel ' + lower);
+    }
+    if (s.surface === 'notice') {
+      const K = W._gateNoticeLook(s.solo ? '' : s.gate, s.code, s.solo);
+      const L = W._gateNoticeLands(K.gate, s.code, K.white, K.hold, K.wrap == null ? K.gate : K.wrap, K.column, K.badge);
+      if (!L || L.how !== 'ring-mark' || L.disc !== W._gateOrbRingInk(s.o.src, s.o.imgStyle)) bad.push(tag + ': the notice judges ' + (L && L.disc) + ' (' + (L && L.how) + ')');
+    }
+  });
+  assert.deepEqual(bad, [], bad.length + ' ring marks inside a band:\n' + bad.slice(0, 20).join('\n'));
+  assert.deepEqual(sinks, [], sinks.length + ' rings that sink:\n' + sinks.slice(0, 20).join('\n'));
+  assert.ok(n >= 1500, n + ' orbs of a ring mark');
+  // by name: the columns of TAROM and LOT stay white, on the grey wave their ring stands clear of; Korean
+  // Air keeps its white disc on the grey wave; Lufthansa keeps its gold card, its white ring on the navy
+  // of its disc; Paranair keeps its card
+  for (const [c, kind, white, ring] of [['RO', 'dark', true, '#003366'], ['LO', 'dark', true, '#252668'], ['KE', 'dark', false, '#051766'], ['LH', 'picture', false, '#FFFFFF'], ['ZP', 'shade', true, '#CD1025']]) {
+    const K = W._gateCardPaint(c), P = W._gateOrbParts(c);
+    assert.deepEqual([K.kind, !!P.white, P.ring], [kind, white, ring], c);
   }
 });
