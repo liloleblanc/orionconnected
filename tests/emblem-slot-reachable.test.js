@@ -76,9 +76,16 @@ test('mkLogo still ends its wordmark branch in a bare return', () => {
   // and should be retired rather than left passing for the wrong reason.
   const at = SRC.indexOf('function mkLogo(');
   assert.ok(at >= 0, 'mkLogo must exist');
-  const body = SRC.slice(at, at + 3000);
+  const body = SRC.slice(at, SRC.indexOf('// ── LANGUAGE STRINGS & THEME SYSTEM', at));
   assert.match(body, /return ''; \/\/ no tile, wordmark alone/,
     'the empty-slot branch this test guards is gone — re-read mkLogo');
+  // A carrier with lettering of its own and no mark draws the monogram of its code in that slot
+  // since (World Atlantic had a gap there); the slot is empty only for a regional that wears the
+  // lettering of its airline, or beside a lockup. A tile the orb draws and the row cannot reach is
+  // as lost under a monogram as it was beside an empty slot, so the walk below stands as it is.
+  assert.match(body.slice(0, body.indexOf("return ''; // no tile")),
+    /if \(!LOCAL_TRANSPARENT_LOGOS\[c\] && !_wears\) \{\n\s*return _monogramTile\(/,
+    'the monogram, then the bare return');
   assert.doesNotMatch(body.slice(0, body.indexOf("return ''; // no tile")),
     /_AIRLINE_EMBLEM_FILES/,
     'if the wordmark branch now reads the orb map, this test is obsolete');

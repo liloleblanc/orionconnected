@@ -120,6 +120,9 @@ test('_gateOrbParts still gives those ten a light disc', () => {
   for (const c of ['AA', '2L', '4Y', 'BA', 'CJ', 'ET', 'HA', 'LY', 'PR', 'WN']) {
     assert.ok(m[1].includes(`'${c}'`), c + ' must still be on the light disc');
   }
-  assert.match(SRC, /var DISC = \(!isTile && LIGHT_DISC\[c\]\) \? '#F2F4F7' : ACC;/,
+  // The light disc of a column is the one white of every white column now (#FFFFFF, the white the
+  // stylesheet paints for American); the surfaces beside the orbs keep the #F2F4F7 they drew.
+  assert.match(SRC, /var LIGHT = plain \? '#F2F4F7' : '#FFFFFF';/);
+  assert.match(SRC, /var DISC = \(!isTile && LIGHT_DISC\[c\]\) \? LIGHT : ACC;/,
     'the light disc must still be conditional on !isTile');
 });

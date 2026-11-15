@@ -56,7 +56,11 @@ test('every brand on its own ground: a ground, a mark that exists, and the resol
 });
 
 test('the recipe paints the disc in that ground and sets the mark inside it whole, in its own colours', () => {
-  const recipe = CORE.slice(CORE.indexOf('window._gateOrbParts = function (code) {'), CORE.indexOf('var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {'));
+  // the recipe of the art (window._gateOrbNatural): the recipe every orb asks, window._gateOrbParts,
+  // starts from it and only turns a column white where its disc would sink into the card behind it
+  const recipe = CORE.slice(CORE.indexOf('window._gateOrbNatural = function (code) {'), CORE.indexOf('window._gateOrbParts = function (code) {'));
+  assert.ok(recipe.length > 2000 && CORE.indexOf('window._gateOrbNatural = function (code) {') < CORE.indexOf('window._gateOrbParts = function (code) {'));
+  assert.match(CORE, /window\._gateOrbParts = function \(code\) \{\s*\n\s*if \(arguments\.length > 1 && arguments\[1\]\) return window\._gateOrbNatural\(code, true\);\s*\n\s*var N = window\._gateOrbNatural\(code\);/);
   assert.match(recipe, /var onOwnGround = !!\(tb && tb\.bg\);/);
   assert.match(recipe, /\? BASE \+ 'background:' \+ tb\.bg \+ ';padding:' \+ \(tb\.fill \? '0' : 'clamp\(6px,0\.9vh,13px\)'\) \+ ';'/);
   assert.match(recipe, /var fills = \(isTile && !onOwnGround\) \|\| \(onOwnGround && !!tb\.fill\);/, 'a mark drawn to the edge is marked as filling its box, so no stylesheet pads it');

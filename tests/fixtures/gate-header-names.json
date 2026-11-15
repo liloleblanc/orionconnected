@@ -1,0 +1,1460 @@
+{
+ "measured": "the gate header of the real board (gids, YQB, 1680 by 1050, headless Chrome), each name typed in the header and fitted by the board (FIDS_FIT_RULES); w48 is its width on one line at 48px, the size the stylesheet sets",
+ "face": "Possibility 900, letter-spacing 0.03em",
+ "box": 420,
+ "floor": 13.75,
+ "names": {
+  "ACE CARGO": {
+   "w48": 296,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ADVANCED AIR": {
+   "w48": 379,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AEGEAN": {
+   "w48": 210,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AER LINGUS": {
+   "w48": 302,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AEROLINEAS": {
+   "w48": 322,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AEROLÍNEAS": {
+   "w48": 322,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AEROMEXICO": {
+   "w48": 341,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AEROMÉXICO": {
+   "w48": 341,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR ALGÉRIE": {
+   "w48": 318,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR ASTANA": {
+   "w48": 303,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR BALTIC": {
+   "w48": 277,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR CAIRO": {
+   "w48": 256,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR CANADA": {
+   "w48": 311,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR CHINA": {
+   "w48": 256,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR CREEBEC": {
+   "w48": 334,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR CÔTE D’IVOIRE": {
+   "w48": 468,
+   "px": 43,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "AIR EUROPA": {
+   "w48": 309,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR FRANCE": {
+   "w48": 301,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR INDIA": {
+   "w48": 237,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR INUIT": {
+   "w48": 230,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR MONTENEGRO": {
+   "w48": 459,
+   "px": 43.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "AIR NIUGINI": {
+   "w48": 288,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR NORTH": {
+   "w48": 276,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR NZ": {
+   "w48": 168,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR PEACE": {
+   "w48": 267,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR SAINT-PIERRE": {
+   "w48": 452,
+   "px": 44.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "AIR SERBIA": {
+   "w48": 286,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR TAHITI NUI": {
+   "w48": 360,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR TINDI": {
+   "w48": 233,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR TRANSAT": {
+   "w48": 332,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR VANUATU": {
+   "w48": 337,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIR WISCONSIN": {
+   "w48": 383,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIRASIA": {
+   "w48": 204,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIRASIA X": {
+   "w48": 252,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIRBLUE": {
+   "w48": 218,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AIRCALIN": {
+   "w48": 233,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AJET": {
+   "w48": 131,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ALASKA": {
+   "w48": 202,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ALLEGIANT": {
+   "w48": 277,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AMERICAN": {
+   "w48": 268,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ANA": {
+   "w48": 106,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ARAJET": {
+   "w48": 200,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ARIK AIR": {
+   "w48": 218,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ARKIA": {
+   "w48": 154,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ASIANA": {
+   "w48": 189,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ASKY AIRLINES": {
+   "w48": 380,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AUSTRIAN": {
+   "w48": 254,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AVELO": {
+   "w48": 168,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AVIANCA": {
+   "w48": 223,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "AZORES AIRLINES": {
+   "w48": 451,
+   "px": 44.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "AZUL": {
+   "w48": 133,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BAHAMASAIR": {
+   "w48": 342,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BATIK AIR MALAYSIA": {
+   "w48": 524,
+   "px": 38.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "BEARSKIN": {
+   "w48": 255,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BERMUDAIR": {
+   "w48": 305,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BIMAN": {
+   "w48": 167,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BMI": {
+   "w48": 96,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BOA": {
+   "w48": 109,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BOUTIQUE AIR": {
+   "w48": 363,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BREEZE": {
+   "w48": 203,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BRITISH AIRWAYS": {
+   "w48": 448,
+   "px": 44.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "BRUSSELS": {
+   "w48": 267,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "BULGARIA AIR": {
+   "w48": 356,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CALM AIR": {
+   "w48": 243,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CANADIAN NORTH": {
+   "w48": 453,
+   "px": 44.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "CAPE AIR": {
+   "w48": 235,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CAPITAL AIRLINES": {
+   "w48": 455,
+   "px": 44.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "CARGOJET": {
+   "w48": 277,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CARIBBEAN": {
+   "w48": 292,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CATHAY DRAGON": {
+   "w48": 438,
+   "px": 45.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "CATHAY PACIFIC": {
+   "w48": 415,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CAYMAN": {
+   "w48": 218,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CEBU PACIFIC": {
+   "w48": 347,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CENTRAL MOUNTAIN AIR": {
+   "w48": 608,
+   "px": 33,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "CHAIR AIRLINES": {
+   "w48": 400,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CHAUTAUQUA": {
+   "w48": 349,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CHINA AIRLINES": {
+   "w48": 401,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CHINA EASTERN": {
+   "w48": 405,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CHINA SOUTHERN": {
+   "w48": 450,
+   "px": 44.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "COMMUTAIR": {
+   "w48": 311,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "COMPASS": {
+   "w48": 252,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CONDOR": {
+   "w48": 217,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CONTOUR AIRLINES": {
+   "w48": 485,
+   "px": 41.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "COPA": {
+   "w48": 140,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CORENDON": {
+   "w48": 285,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CORENDON EU": {
+   "w48": 367,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CROATIA": {
+   "w48": 221,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "CZECH": {
+   "w48": 169,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "DELTA": {
+   "w48": 165,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "DENVER AIR CONNECTION": {
+   "w48": 646,
+   "px": 31,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "DISCOVER": {
+   "w48": 258,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EASTERN AIR EXPRESS": {
+   "w48": 584,
+   "px": 34.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "EASYJET": {
+   "w48": 230,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EASYJET EUROPE": {
+   "w48": 452,
+   "px": 44.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "EASYJET SWITZERLAND": {
+   "w48": 606,
+   "px": 33.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "EDELWEISS": {
+   "w48": 295,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EGYPTAIR": {
+   "w48": 252,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EL AL": {
+   "w48": 141,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EMIRATES": {
+   "w48": 257,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EMPIRE": {
+   "w48": 197,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ETHIOPIAN": {
+   "w48": 275,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ETIHAD": {
+   "w48": 190,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EUROWINGS": {
+   "w48": 308,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EVA AIR": {
+   "w48": 202,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "EXPRESSJET": {
+   "w48": 331,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FIJI": {
+   "w48": 92,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FINNAIR": {
+   "w48": 202,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FIRST AIR": {
+   "w48": 245,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FLAIR": {
+   "w48": 145,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FLYNAS": {
+   "w48": 193,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FLYONE": {
+   "w48": 197,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FLYPELICAN": {
+   "w48": 305,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FRENCH BEE": {
+   "w48": 321,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "FRONTIER": {
+   "w48": 251,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "GARUDA": {
+   "w48": 215,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "GLOBALX AIRLINES": {
+   "w48": 482,
+   "px": 41.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "GOJET": {
+   "w48": 174,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "GOL": {
+   "w48": 107,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "GP AVIATION": {
+   "w48": 323,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "GULF AIR": {
+   "w48": 232,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "HAINAN": {
+   "w48": 194,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "HAWAIIAN": {
+   "w48": 254,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "HELVETIC AIRWAYS": {
+   "w48": 492,
+   "px": 40.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "HISKY": {
+   "w48": 153,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "HONG KONG AIRLINES": {
+   "w48": 554,
+   "px": 36.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "HORIZON": {
+   "w48": 231,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "IBERIA": {
+   "w48": 169,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "IBERIA EXPRESS": {
+   "w48": 419,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ICELANDAIR": {
+   "w48": 302,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "INDIGO": {
+   "w48": 180,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ITA": {
+   "w48": 79,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ITA AIRWAYS": {
+   "w48": 326,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "JAL": {
+   "w48": 95,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "JET2": {
+   "w48": 125,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "JETBLUE": {
+   "w48": 229,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "JETSMART": {
+   "w48": 275,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "JETSTAR": {
+   "w48": 228,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "JETSTAR ASIA": {
+   "w48": 361,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "JUNEYAO AIR": {
+   "w48": 342,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "KENYA": {
+   "w48": 170,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "KLM": {
+   "w48": 109,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "KM MALTA AIRLINES": {
+   "w48": 514,
+   "px": 39,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "KOREAN AIR": {
+   "w48": 310,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "KUWAIT AIRWAYS": {
+   "w48": 442,
+   "px": 45.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "LACSA": {
+   "w48": 166,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "LATAM": {
+   "w48": 172,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "LATAM BRASIL": {
+   "w48": 369,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "LATAM COLOMBIA": {
+   "w48": 456,
+   "px": 44.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "LEVEL": {
+   "w48": 158,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "LINK AIRWAYS": {
+   "w48": 360,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "LOGANAIR": {
+   "w48": 261,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "LOT": {
+   "w48": 96,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "LUFTHANSA": {
+   "w48": 302,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "MALAYSIA": {
+   "w48": 262,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "MEA": {
+   "w48": 114,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "MESA": {
+   "w48": 147,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "MEXICANA": {
+   "w48": 268,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "MIAT MONGOLIAN AIRLINES": {
+   "w48": 696,
+   "px": 28.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "MOKULELE": {
+   "w48": 277,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "MYANMAR": {
+   "w48": 266,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "NEOS": {
+   "w48": 140,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "NORSE ATLANTIC AIRWAYS": {
+   "w48": 677,
+   "px": 29.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "NORSE ATLANTIC UK": {
+   "w48": 513,
+   "px": 39.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "NORTH STAR AIR": {
+   "w48": 423,
+   "px": 47.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "NORWEGIAN": {
+   "w48": 312,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "NOUVELAIR": {
+   "w48": 291,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "OMAN AIR": {
+   "w48": 255,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PACIFIC COASTAL": {
+   "w48": 444,
+   "px": 45.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "PAL AIRLINES": {
+   "w48": 343,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PARANAIR": {
+   "w48": 260,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PASCAN": {
+   "w48": 207,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PASCAN AVIATION": {
+   "w48": 458,
+   "px": 43.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "PEGASUS": {
+   "w48": 241,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PERIMETER": {
+   "w48": 294,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PHILIPPINE": {
+   "w48": 284,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PIA": {
+   "w48": 85,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "PORTER": {
+   "w48": 204,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "QANTAS": {
+   "w48": 204,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "QATAR": {
+   "w48": 171,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "REPUBLIC": {
+   "w48": 249,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "REX": {
+   "w48": 103,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "RISE AIR": {
+   "w48": 217,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ROYAL AIR MAROC": {
+   "w48": 474,
+   "px": 42.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "ROYAL BRUNEI": {
+   "w48": 374,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ROYAL JORDANIAN": {
+   "w48": 484,
+   "px": 41.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "RWANDAIR": {
+   "w48": 273,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "RYANAIR": {
+   "w48": 224,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "RYANAIR UK": {
+   "w48": 307,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SAS": {
+   "w48": 101,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SAUDIA": {
+   "w48": 190,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SCOOT": {
+   "w48": 173,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SHENZHEN AIRLINES": {
+   "w48": 522,
+   "px": 38.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "SHUTTLE AM.": {
+   "w48": 339,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SICHUAN AIRLINES": {
+   "w48": 468,
+   "px": 43,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "SINGAPORE": {
+   "w48": 297,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SKY AIRLINE": {
+   "w48": 313,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SKY HIGH": {
+   "w48": 243,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SKYTRANS": {
+   "w48": 269,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SKYWEST": {
+   "w48": 245,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SMARTWINGS": {
+   "w48": 347,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SOUTH AFRICAN": {
+   "w48": 410,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SOUTHWEST": {
+   "w48": 320,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SPICEJET": {
+   "w48": 243,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SPIRIT AIRLINES": {
+   "w48": 408,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SPRING AIRLINES": {
+   "w48": 435,
+   "px": 46.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "SRILANKAN": {
+   "w48": 287,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "STARLUX AIRLINES": {
+   "w48": 475,
+   "px": 42.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "SUN COUNTRY": {
+   "w48": 355,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SUNEXPRESS": {
+   "w48": 339,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SUNWING": {
+   "w48": 237,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "SWISS": {
+   "w48": 160,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TAP": {
+   "w48": 98,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TAROM": {
+   "w48": 183,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "THAI": {
+   "w48": 118,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "THAI AIRASIA": {
+   "w48": 336,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "THOMAS COOK": {
+   "w48": 379,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TIANJIN AIRLINES": {
+   "w48": 442,
+   "px": 45.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "TRANS STATES": {
+   "w48": 374,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TRANSAVIA": {
+   "w48": 289,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TRINITY AIRWAYS": {
+   "w48": 443,
+   "px": 45.25,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "TUI": {
+   "w48": 80,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TUI FLY": {
+   "w48": 184,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TUI FLY BE": {
+   "w48": 268,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "TURKISH": {
+   "w48": 220,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "UNITED": {
+   "w48": 184,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "UZBEKISTAN AIRWAYS": {
+   "w48": 566,
+   "px": 35.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "VIETJET AIR": {
+   "w48": 309,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "VIETNAM": {
+   "w48": 230,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "VIRGIN ATLANTIC": {
+   "w48": 429,
+   "px": 46.75,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "VIRGIN AUS": {
+   "w48": 291,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "VIRGIN AUSTRALIA": {
+   "w48": 472,
+   "px": 42.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "VIVAAEROBUS": {
+   "w48": 364,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "VOLARIS": {
+   "w48": 220,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "VOLARIS COSTA RICA": {
+   "w48": 535,
+   "px": 37.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "VUELING": {
+   "w48": 222,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "WASAYA": {
+   "w48": 218,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "WESTJET": {
+   "w48": 239,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "WIZZ AIR": {
+   "w48": 227,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "WIZZ AIR MALTA": {
+   "w48": 416,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "WORLD ATLANTIC": {
+   "w48": 441,
+   "px": 45.5,
+   "lines": 1,
+   "cutBefore": true
+  },
+  "XIAMEN AIR": {
+   "w48": 298,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  },
+  "ZIPAIR": {
+   "w48": 168,
+   "px": 48,
+   "lines": 1,
+   "cutBefore": false
+  }
+ }
+}

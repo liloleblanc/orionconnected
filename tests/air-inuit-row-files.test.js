@@ -76,7 +76,7 @@ test('Air Inuit\'s phone cards ask for its own files, by day and by night', () =
     assert.equal(files.length, 2, 'a file and its other ink: ' + files);
     for (const f of files) assert.ok(onDisk(f), (dark ? 'dark' : 'light') + ' phone: ' + f + ' is in the repository');
     // white lettering on a dark card, the colours on a light one
-    assert.equal(files[0], dark ? L.WORDMARK_RASTER.airinuit.light : L.WORDMARK_RASTER.airinuit.dark);
+    assert.equal(files[0].split('?')[0], dark ? L.WORDMARK_RASTER.airinuit.light : L.WORDMARK_RASTER.airinuit.dark);
     assert.ok(!files.some((f) => /airinuit-wordmark-(light|dark)\.svg$/.test(f) && f.startsWith('/logos/airinuit')), 'never the hand-built name');
   }
 });
@@ -102,5 +102,7 @@ test('the old gate banner path takes the registered colour file too', () => {
   const at = CORE.indexOf('const _wmBase = IATA_TO_WORDMARK[bannerLogoCode];');
   assert.ok(at > 0);
   const seg = CORE.slice(at, at + 900);
-  assert.match(seg, /const _localWordmark = \(typeof WORDMARK_RASTER !== 'undefined' && WORDMARK_RASTER\[_wmBase\]\)\n\s*\? WORDMARK_RASTER\[_wmBase\]\.dark/);
+  // through wordmarkSrc, which reads WORDMARK_RASTER first (and the colour cuts filed under their own names)
+  assert.match(seg, /const _localWordmark = wordmarkSrc\(_wmBase, 'dark'\);/);
+  assert.match(blockOf('function wordmarkSrc(base, forceVariant)'), /if \(WORDMARK_RASTER\[base\]\) \{\s*return WORDMARK_RASTER\[base\]\[_variant === 'dark' \? 'dark' : 'light'\]/);
 });

@@ -161,6 +161,8 @@ const NOT_FEED_ROWS = {
   'earth-live-2026-10-19.json': 'floors as drawn: places and counts, no feed rows',
   'earth-places-codes-2026-10-19.txt': 'airport codes',
   'earth-sweep-2026-10-19.json': 'floors as drawn: places and counts, no feed rows',
+  'gate-marks-origin-main.json': 'what the marks beside the gate orbs drew, by code: no feed rows',
+  'gate-header-names.json': 'the width of each airline name in the header of a gate, measured: no feed rows',
   'header-band.json': 'band colours',
   'name-fit-model.json': 'measured sizes of names',
   'phx-capture-headers.txt': 'the headers of a capture',
@@ -870,8 +872,7 @@ const NAMED_OTHERWISE = {
   NH: ['All Nippon Airways', 'ANA', 'the short form the airline itself goes by'],
   NZ: ['Air New Zealand', 'Air NZ', 'the short form of the boards'],
   CJ: ['BA Cityflyer', 'British Airways', 'the boards print British Airways on the rows BA CityFlyer flies for it (v23363)'],
-  '9X': ['Southern Airways Express', 'Mokulele', 'Southern Airways Express holds the code and flies as Mokulele in Hawaii, which is what the name, the colour and the emblem of 9X are; Phoenix names the company on its Imperial flights. Not decided here'],
-  '9M': ['Central Mountain Air', 'Air Canada', 'the boards fold 9M into Air Canada (PARENT), an older decision this test does not judge']
+  '9X': ['Southern Airways Express', 'Mokulele', 'Southern Airways Express holds the code and flies as Mokulele in Hawaii, which is what the name, the colour and the emblem of 9X are; Phoenix names the company on its Imperial flights. Not decided here']
 };
 // Words every airline has: sharing one of them says nothing.
 const EVERY_AIRLINE = new Set(['AIR', 'AIRLINES', 'AIRLINE', 'AIRWAYS', 'AIRWAY', 'AVIATION', 'THE', 'OF', 'DE', 'LINEAS', 'AEREAS', 'INTERNATIONAL', 'EXPRESS']);

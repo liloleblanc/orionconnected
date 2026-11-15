@@ -86,6 +86,8 @@ function sandbox(langs, extra) {
     location: { search: '' },
     getAirportConfig: () => null,
     mkLogo: (code) => '<img class="full-logo" data-code="' + esc(code) + '">',
+    // the mark of a belt slot: the hall asks this one (it is mkLogo but where that is a lockup)
+    _beltLogo: (code) => '<img class="full-logo" data-code="' + esc(code) + '">',
     IATA_TO_WORDMARK: { AC: 'air-canada', PD: 'porter' },
     AIRLINE_NAME: { AC: 'AIR CANADA', PD: 'PORTER', WS: 'WESTJET' },
     wordmarkSrc: (b, v) => '/logos/' + b + '-' + v + '.svg',

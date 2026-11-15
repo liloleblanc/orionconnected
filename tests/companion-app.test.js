@@ -349,6 +349,64 @@ test('the board\'s own airline tiles and emblems reach the app, and cannot drift
   assert.match(src('tileHtml'), /tile mono/);
 });
 
+// THE APP'S LETTERING TABLE IS THE BOARD'S, WHOLE. It was a hand copy of 49 carriers beside the
+// board's 95, held by nothing: the phone typed Lufthansa, Swiss, Emirates, Qatar and easyJet
+// where the board drew their lettering, and drew Alaska, Hawaiian, Avelo, Air France, KLM and
+// Air Inuit in black where the board's light rows draw the airline's colours. The table is made
+// from fids-core.js: every code of IATA_TO_WORDMARK, through the board's own wordmarkSrc, the
+// cut for a light ground first (the colour cut where there is one) and the white cut second.
+test('the board\'s lettering table reaches the app whole, the colour cut first, and cannot drift', () => {
+  const vm = require('node:vm');
+  const CORE = fs.readFileSync(path.join(ROOT, 'fids-current/js/fids-core.js'), 'utf8');
+  // from a marker to the brace that closes it, stepping over comments and strings
+  const cut = (marker) => {
+    const at = CORE.indexOf(marker);
+    assert.ok(at >= 0, 'fids-core.js still has: ' + marker);
+    let i = CORE.indexOf('{', at), d = 0;
+    for (; i < CORE.length; i++) {
+      const ch = CORE[i], nx = CORE[i + 1];
+      if (ch === '/' && nx === '/') { i = CORE.indexOf('\n', i); continue; }
+      if (ch === '/' && nx === '*') { i = CORE.indexOf('*/', i) + 1; continue; }
+      if (ch === "'" || ch === '"' || ch === '`') { const q = ch; for (i++; CORE[i] !== q; i++) if (CORE[i] === '\\') i++; continue; }
+      if (ch === '{') d++; else if (ch === '}' && --d === 0) break;
+    }
+    return CORE.slice(at, CORE[i + 1] === ';' ? i + 2 : i + 1);
+  };
+  const B = new Function([
+    cut('const IATA_TO_WORDMARK = {'), cut('const LOGO_SUBFOLDER = {'), cut('function logoPath(basename) {'),
+    cut('const COLOR_WORDMARKS = {'), cut('const WORDMARK_RASTER = {'), cut('function wordmarkSrc(base, forceVariant) {'),
+    'function wordmarkVariant() { throw new Error("the cut is always named here"); }',
+    'return { WM: IATA_TO_WORDMARK, src: wordmarkSrc, COLOR: COLOR_WORDMARKS };'
+  ].join('\n'))();
+  const bare = (u) => String(u).split('?')[0];
+  const want = {};
+  for (const code of Object.keys(B.WM)) want[code] = [bare(B.src(B.WM[code], 'dark')), bare(B.src(B.WM[code], 'light'))];
+  const win = {};
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'fids-current/js/shared-names.js'), 'utf8'), { window: win });
+  const have = JSON.parse(JSON.stringify(win.FIDS_SHARED_WORDMARK));
+  assert.deepEqual(have, want, 'shared-names.js FIDS_SHARED_WORDMARK is fids-core.js IATA_TO_WORDMARK through wordmarkSrc: [the cut for a light ground, the white cut]');
+  assert.ok(Object.keys(have).length >= 100, Object.keys(have).length + ' codes with lettering');
+  // every file is one of ours, and on disk
+  for (const [code, pair] of Object.entries(have)) for (const u of pair) {
+    assert.match(u, /^\/logos\//, code + ': ' + u);
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', u)), code + ': ' + u);
+  }
+  // the carriers the phone typed while the board drew their lettering
+  for (const code of ['LH', 'LX', 'EK', 'QR', 'U2', 'EZY', 'IB', 'SK', 'OS', 'AZ', 'NZ', 'EY', 'LY', 'DE', 'A3', 'PC', '5T', '8P', '4N']) assert.ok(have[code], code);
+  // the colour cut by day, where the board's light rows draw one
+  for (const [code, base] of [['AS', 'alaska-airlines'], ['HA', 'hawaiian'], ['XP', 'avelo'], ['AF', 'air-france'], ['KL', 'klm'], ['JV', 'bearskin'], ['WT', 'wasaya'], ['NSA', 'north-star']]) {
+    assert.equal(have[code][0], B.COLOR[base], code + ' by day');
+    assert.notEqual(have[code][0], have[code][1], code);
+    assert.match(have[code][1], /-wordmark-light\.svg$/, code + ' at night: its white lettering');
+  }
+  assert.deepEqual(have['3H'], ['/logos/airlines/canadian-regional/airinuit.svg', '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg'], 'Air Inuit: its colours by day');
+  // no code the board has no lettering for (the four whose files are typed text among them)
+  for (const code of ['TP', 'LO', 'AT', 'YX', '9M']) assert.equal(have[code], undefined, code);
+  // the app reads the pair as [day, night]
+  assert.match(src('wmUrls'), /const sw=window\.FIDS_SHARED_WORDMARK&&FIDS_SHARED_WORDMARK\[code\];\s*return sw\?\[sw\[0\],sw\[1\]\]:null;/);
+  assert.match(src('wmHtml'), /src="'\+u\[0\]\+'"[\s\S]*wm-d[\s\S]*src="'\+u\[1\]\+'"/);
+});
+
 test('the day changes are marked: Tomorrow, with its date', () => {
   const build = (L) => new Function('BoardStrings', 'langRes', 'apToday', 'rowHtml', 'svg', 'esc', 'IC_CAL',
     line(/^const DAY_FMT=\{[^\n]*\};/m) + fn('_dayShift') + fn('dayDate') + fn('dayLabel') + fn('rowsHtml') + '; return rowsHtml;')(
