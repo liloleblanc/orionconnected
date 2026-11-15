@@ -20494,7 +20494,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24157" src="/textures/gate-sky-shelf.mp4?v=24157" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24158" src="/textures/gate-sky-shelf.mp4?v=24158" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20538,7 +20538,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24157" src="/textures/gate-sky-shelf.mp4?v=24157" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24158" src="/textures/gate-sky-shelf.mp4?v=24158" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21742,7 +21742,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24157" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24158" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -24321,6 +24321,32 @@ function uxgGateHtml(ctx) {
     if (!(_silkBanner && _silkLightBand)) return html;
     return html.replace('skyteam-white.png', 'skyteam-colour.svg');
   }
+  // 2026-11-15 — A STAR ALLIANCE MEMBER DRAWS ITS MEMBER LOCKUP
+  // (STAR_ALLIANCE_LOCKUP): its mark as this band draws it, a rule the width
+  // of it, and A STAR ALLIANCE MEMBER with the star, one picture in place of
+  // the emblem and the wordmark. The lockup carries the alliance, so no badge
+  // goes beside it, as for the lockups of KLM and Delta (starHtml is still
+  // built: the boarding strip keeps its star). The white twin on a dark band
+  // (the classic banner), the dark one on every light band. A heritage page
+  // keeps its period mark, and a carrier whose lettering failed to load keeps
+  // its typed name. Two tiers stand taller than a wordmark: the band less its
+  // date bar and a margin (96 px at 1680x1050, where every member line reads
+  // at 10 px or more), never taller than its slot (Boarding and Final Call
+  // draw the band 112 px tall, a slot of 85 px at 1680x1050, where the full
+  // height ran past the top of the screen), and never wider than the slot.
+  function _starLockupOnBand() {
+    if (_allianceKey !== 'star' || typeof starLockupSrc !== 'function') return '';
+    if (_g8LogoCache[airlineCode] === 'text') return '';
+    if (typeof _heritageBannerMark === 'function' && _heritageBannerMark(airlineCode)) return '';
+    var src = starLockupSrc(airlineCode, !(_silkBanner && _silkLightBand));
+    if (!src) return '';
+    var h = 'calc(clamp(110px, 13vh, 160px) - 40px)';
+    return '<img class="g8-r1-logo g8-r1-lockup" src="' + src + '" alt="' + airlineName + '"'
+      + ' style="height:' + h + ' !important;max-height:100% !important;width:auto !important;max-width:100% !important;'
+      + 'min-width:0 !important;object-fit:contain !important;object-position:left center !important;filter:none !important;'
+      + 'flex:0 1 auto !important;display:block !important;"'
+      + ' onerror="g8LogoFail(this)" data-pairmode="1" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
+  }
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
   // stop lands just before it and reads as one continuous fabric.
@@ -24555,6 +24581,9 @@ function uxgGateHtml(ctx) {
           : '')
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + (function () {
+          // 2026-11-15 — a Star Alliance member: its member lockup alone
+          var _lockup = _starLockupOnBand();
+          if (_lockup) return _lockup;
           // v23252 — ONEWORLD COMPOSES LIKE THE OFFICIAL CO-BRAND LOCKUP
           // (the reference sheet: ball | thin divider | airline mark —
           // ball FIRST). Star Alliance / SkyTeam keep the approved
@@ -24588,6 +24617,10 @@ function uxgGateHtml(ctx) {
           var _tbBg = _tbSpec ? _tbSpec.bg : '#1F2C44';
           var _tbInk = _tbSpec ? _tbSpec.ink : '#fff';
           var _tbInkSoft = _tbSpec ? _tbSpec.inkSoft : 'rgba(255,255,255,0.88)';
+          // 2026-11-15 — the escape for the text of both bands, set before
+          // either uses it: the classic band (fids_gate_banner_classic) called
+          // it while it was set only in the silk branch, and drew no header.
+          var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
           var _tbTz = (AP[iata] || {}).tz || '';
           var _tbNow = '';
           try { _tbNow = _ocClockTime(new Date(), _tbTz || null); } catch (e) {}
@@ -24622,7 +24655,6 @@ function uxgGateHtml(ctx) {
             // 'Heure à <City>'), the single 12h clock to the right, and the
             // full bilingual date below, all inside a faded gate-style tab
             // (rounded top, soft border/shadow separation).
-            var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
             var _tbNow1 = '—';
             try { _tbNow1 = BoardStrings.boardTime(BoardStrings.clockNow(new Date(), _tbTz || null), _tbTz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
             var _tbDate1 = '', _tbDay1 = '';
@@ -39349,7 +39381,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24157';
+var FIDS_BUILD_TAG = 'v24158';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -64283,6 +64315,73 @@ function _getGateAdDwellMs(slide) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
+// 2026-11-15 — STAR ALLIANCE MEMBER LOCKUPS.
+//
+// On the two big logo spots of a gate, the band at the top and the Welcome
+// card, a Star Alliance carrier shows its member lockup: its own mark, a thin
+// rule the full width of it, then A STAR ALLIANCE MEMBER with the Star
+// Alliance star, laid out as the first supplied Air Canada lockup. Air Canada
+// (AC) and EgyptAir (MS, which had no lettering on the boards) are the
+// supplied files themselves; Air Canada's is its own later design, a bar
+// running grey to Air Canada red under the mark and the member line in white
+// on a black band, the same on either ground but for its lettering. Every
+// other one is built by scripts/star-lockups/build.py from the files the band
+// already draws for that carrier (its emblem, its wordmark), with the rule,
+// the member line and the star of the first Air Canada file
+// (scripts/star-lockups/AC-member-line.svg), its own paths, scaled to the
+// width of the mark. Rows, orbs, shelves and belts keep their own marks.
+//
+// <CODE>.svg is for a light ground. <CODE>-white.svg is its twin for a dark
+// one: the wordmark in its own white cut, the rule and the member line white,
+// the star as drawn, never a plate behind it. Where the board sets no emblem
+// on a dark ground (Aegean, Air New Zealand) or the emblem is a white square
+// (Copa), the twin has the lettering alone.
+//
+// The value is the share of the height of the twin that the lettering of the
+// airline fills: the Welcome card draws the lockup taller by it, so those
+// letters are never smaller than the greeting (WELCOME_CARD_LETTER_HEIGHT).
+// ════════════════════════════════════════════════════════════════════════
+var STAR_ALLIANCE_LOCKUP = {
+  'AC': 0.29, 'MS': 0.57,
+  'LH': 0.47, 'UA': 0.37, 'TK': 0.23, 'SK': 0.68, 'OS': 0.57, 'LX': 0.62,
+  'A3': 0.54, 'NZ': 0.40, 'CM': 0.52,
+  // Singapore and Brussels letter on two lines: the line that carries the
+  // name (0.35 and 0.62 of their lettering, read from their white cuts)
+  'SQ': 0.23, 'SN': 0.41,
+  // Rouge and Air Canada Express: the band draws AIR CANADA, so the lockup is Air Canada lettering
+  'RV': 0.44, 'ZX': 0.44, '9L': 0.44
+};
+// The codes the gate band maps to Star Alliance that have no lockup, and why.
+// Each keeps its wordmark and the separate star badge as before.
+var STAR_ALLIANCE_LOCKUP_SKIP = {
+  // not members in their own name: Jazz flies as Air Canada Express, and
+  // Eurowings is not in Star Alliance, so no member line goes under either name
+  'QK': 'not-a-member', 'EW': 'not-a-member',
+  // Central Mountain Air is a carrier of its own: Air Canada lettering is not its lockup
+  '9M': 'own-carrier',
+  // TAP and LOT: their lettering files set the name in a font, with no outlines to build from
+  'TP': 'lettering-is-type', 'LO': 'lettering-is-type',
+  // no lettering of their own on the band: ANA, Ethiopian, South African,
+  // Asiana, Thai, Air China, Shenzhen Airlines, Air India, Adria, Croatia
+  // Airlines, Hahn Air
+  'NH': 'no-lettering', 'ET': 'no-lettering', 'SA': 'no-lettering', 'OZ': 'no-lettering',
+  'TG': 'no-lettering', 'CA': 'no-lettering', 'ZH': 'no-lettering', 'AI': 'no-lettering',
+  'JP': 'no-lettering', 'OU': 'no-lettering', 'HR': 'no-lettering'
+};
+// The Welcome card keeps its own mark for these: Rouge draws its own rouge
+// lettering there (WELCOME_CARD_WORDMARK), and the Air Canada Express codes
+// draw the rondelle beside AIR CANADA, where their header lockups have the
+// lettering alone.
+var WELCOME_CARD_KEEPS_OWN_MARK = { 'RV': 1, 'ZX': 1, '9L': 1 };
+/** The member lockup of a carrier, for a light ground or (onDark) a dark one; empty where it has none. */
+function starLockupSrc(code, onDark) {
+  var c = String(code || '').toUpperCase();
+  if (!Object.prototype.hasOwnProperty.call(STAR_ALLIANCE_LOCKUP, c)) return '';
+  return '/logos/airlines/star-lockups/' + c + (onDark ? '-white' : '') + '.svg'
+    + '?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : '1');
+}
+
+// ════════════════════════════════════════════════════════════════════════
 // v23994 — THE WELCOME CARD, IN THREE LINES.
 //
 // The middle screen's fallback slide (a gate with no uploaded media and no
@@ -64537,7 +64636,13 @@ function _welcomeCardData(code) {
     wordmark: nm.wordmark,
     wordmarkScale: _welcomeCardPick(WELCOME_CARD_LETTERING_SCALE, code) || 1,
     letterHeight: _welcomeCardPick(WELCOME_CARD_LETTER_HEIGHT, code) || 1,
-    name: nm.name
+    name: nm.name,
+    // 2026-11-15 — a Star Alliance member: its member lockup, the twin for a
+    // dark ground, and the share of it the letters of the airline fill
+    // (STAR_ALLIANCE_LOCKUP). _welcomeCardHtml draws it in place of the
+    // emblem and the lettering.
+    lockup: (typeof starLockupSrc === 'function' && !WELCOME_CARD_KEEPS_OWN_MARK[code]) ? starLockupSrc(code, true) : '',
+    lockupLetters: (typeof STAR_ALLIANCE_LOCKUP !== 'undefined' && STAR_ALLIANCE_LOCKUP[code]) || 0
   };
 }
 
@@ -64550,6 +64655,14 @@ function _welcomeCardEsc(s) {
 /** The card's markup. Sizes are set by _welcomeCardFit once the art has loaded. */
 function _welcomeCardHtml(ad) {
   var esc = _welcomeCardEsc;
+  // 2026-11-15 — a Star Alliance member: its member lockup alone on the
+  // airline line, drawn taller by the share its letters fill, so the letters
+  // of the airline are as large as a lettering alone would be, with the
+  // member line under them, within the room of the card (rule 1).
+  if (ad && ad.lockup && ad.lockupLetters > 0) {
+    ad = Object.assign({}, ad, { emblem: '', emblemKind: 'none', wordmark: ad.lockup,
+      letterHeight: ad.lockupLetters, wordmarkScale: 1 / ad.lockupLetters });
+  }
   var lines = (ad && ad.lines) || [];
   function phrase(l, pos) {
     if (!l || !l.text) return '';
@@ -69516,7 +69629,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24157" src="/textures/gate-sky-shelf.mp4?v=24157"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24158" src="/textures/gate-sky-shelf.mp4?v=24158"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
