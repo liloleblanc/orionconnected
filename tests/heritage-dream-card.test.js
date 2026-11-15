@@ -62,9 +62,15 @@ const WHAT_IF_CARDS = ['air-canada-dc9-2017', 'air-canada-747-305-2017', KEY];
 // DC-9, Air Nova after the Dream livery 747 and the 1965 DC-8 after the
 // A350-1000; the widebodies make the fewest back-to-back pairs each pool
 // allows, one and three.
+// 2026-11-15 — the Boeing 727-233 in the 1980 livery, from the archive,
+// joined it between the A350-1000 and the 1993 747, where the 1965 DC-8 was,
+// and the DC-8 moved in between the 1980 767 and Canadian Airlines: no two
+// cards of one type or one livery meet, the widebodies come every other card
+// in the Atlantic pool (none back to back) and make the two pairs elsewhere
+// that sixteen cards force; fin 305 comes 6, 6 and 6 apart and 6, 5 and 5.
 const AIR_CANADA_SET = [
-  'air-atlantic', 'air-canada-747-305-80', 'air-canada', 'air-canada-767', 'canadian-airlines', 'air-canada-caps',
-  'air-canada-747-305-2017', 'air-nova', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8',
+  'air-atlantic', 'air-canada-747-305-80', 'air-canada', 'air-canada-767', 'air-canada-dc8', 'canadian-airlines', 'air-canada-caps',
+  'air-canada-747-305-2017', 'air-nova', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-727-80',
   'air-canada-747-305-93', 'air-canada-dc8-80', 'air-canada-767-87', 'air-canada-dc9-2017', 'air-canada-l1011-93'
 ];
 
