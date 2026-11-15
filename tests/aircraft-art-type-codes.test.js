@@ -77,6 +77,9 @@ test('KLM: the 787-10 is KL/78J.png and the E195-E2 is KL/295.png, the codes the
   assert.match(CORE, /'KL\/78J\.png':'R'/);
   assert.match(CORE, /'KL\/295\.png':'R'/);
   assert.doesNotMatch(CORE, /'KL\/(78X|29E)\.png'/);
+  // the KLM A350-900 (KL/359.png, new November 2026) is drawn nose left
+  assert.ok(fs.existsSync(path.join(ART, 'KL', '359.png')), 'KL/359.png');
+  assert.match(CORE, /'KL\/359\.png':'L'/);
 });
 
 test('the phone app gives the 787-10, the A350 and the E2 jets their own codes', () => {

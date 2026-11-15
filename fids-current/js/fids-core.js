@@ -13340,6 +13340,9 @@ var PLANE_FACING = {
   'AA/E7W.png':'L', 'DL/321.png':'L', 'F9/319.png':'L', 'F9/32A.png':'L',
   'F9/32B.png':'L', 'F9/32N.png':'L', 'MX/223.png':'L', 'MX/E90.png':'L',
   'UA/739.png':'L', 'UA/E7W.png':'L',
+  // the KLM A350-900 is drawn nose left, unlike the rest of the KLM set (its
+  // lettering reads only that way round)
+  'KL/359.png':'L',
   'AF/223.png':'R', 'AF/318.png':'R', 'AF/319.png':'R', 'AF/320.png':'R',
   'AF/321.png':'R', 'AF/332.png':'R', 'AF/359.png':'R', 'AF/772.png':'R',
   'AF/77W.png':'R', 'AF/789.png':'R', 'AF/E70.png':'R', 'AF/E90.png':'R',
