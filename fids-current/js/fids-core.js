@@ -36408,7 +36408,9 @@ function _hexLum(hex) {
 // airport, and the stylesheets decide which of them paints the rows. A row in
 // a state of its own is never read (the same rows wordmarkVariant skips).
 // Where the table has no plain row of a parity yet (the first paint), the
-// preset in use says, else the ground of the table stands for that stripe.
+// preset in use says where no stylesheet theme is set (a stylesheet theme
+// paints the rows over a preset: mist stays #E7E3DD and #DDD7D0 with gold
+// set), else the ground of the table stands for that stripe.
 // Returns [] only where nothing can be read at all.
 function _boardRowGrounds() {
   var solid = function (el) {
@@ -36440,7 +36442,7 @@ function _boardRowGrounds() {
   } catch (e) {}
   if (!(out[0] && out[1])) {
     try {
-      var t = document.getElementById('dynamicTheme') && THEMES[currentTheme];
+      var t = !(document.body && document.body.dataset && document.body.dataset.fidsTheme) && document.getElementById('dynamicTheme') && THEMES[currentTheme];
       var tb = document.getElementById('fidsTable');
       var fill = t ? [t.rowOdd, t.rowEven] : ((tb || document.body) ? [solid(tb || document.body), solid(tb || document.body)] : [null, null]);
       out = [out[0] || fill[0], out[1] || fill[1]];

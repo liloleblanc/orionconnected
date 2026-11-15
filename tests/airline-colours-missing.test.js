@@ -254,9 +254,10 @@ const groundsOf = new Function('document', 'getComputedStyle', 'THEMES', 'curren
 const nameInk = new Function('_brandColor', '_nameGrounds', '_fidsContrast', 'wordmarkVariant', '_hexLum',
   fnBody(CORE, '      if (_brandColor && _nameGrounds.length === 2) {', '    } catch (e) {}') + '\nreturn _brandColor;');
 // a board of stand-in elements: the computed background of each is its own, as getComputedStyle gives it
-function board(rowBgs, tableBg, dynamic) {
+function board(rowBgs, tableBg, dynamic, sheetTheme) {
   const el = (bg, parent) => ({ nodeType: 1, bg, parentElement: parent });
   const html = el('rgba(0, 0, 0, 0)', null), body = el('rgb(0, 0, 0)', html), table = el(tableBg, body), tbody = el('rgba(0, 0, 0, 0)', table);
+  body.dataset = sheetTheme ? { fidsTheme: sheetTheme } : {};
   const rows = rowBgs.map((bg) => { const tr = el(bg, tbody), td = el('rgba(0, 0, 0, 0)', tr); tr.querySelector = (q) => (/^td/.test(q) ? td : null); return tr; });
   tbody.children = rows;
   return { body, querySelectorAll: () => rows, getElementById: (id) => (id === 'fidsTable' ? table : (id === 'dynamicTheme' && dynamic) ? {} : null) };
@@ -269,8 +270,9 @@ test('the typed row name: the stripes of the board as painted, read once a page'
   assert.deepEqual(read(board(['rgb(231, 227, 221)', 'rgb(221, 215, 208)', 'rgb(231, 227, 221)'], 'rgb(199, 210, 221)')), ['#e7e3dd', '#ddd7d0']);
   // a see-through stripe laid over the table under it (the default board: no odd ground, a 2.5 per cent white even one)
   assert.deepEqual(read(board(['rgba(0, 0, 0, 0)', 'rgba(255, 255, 255, 0.025)'], 'rgb(12, 30, 58)')), ['#0c1e3a', '#12243f']);
-  // no row yet: the preset in use, else the ground of the table
+  // no row yet: the preset in use where no stylesheet theme paints the rows, else the ground of the table
   assert.deepEqual(read(board([], 'rgb(12, 30, 58)', true), 'gold'), [THEMES.gold.rowOdd, THEMES.gold.rowEven]);
+  assert.deepEqual(read(board([], 'rgb(199, 210, 221)', true, 'mist'), 'gold'), ['#c7d2dd', '#c7d2dd']);
   assert.deepEqual(read(board([], 'rgb(12, 30, 58)', false)), ['#0c1e3a', '#0c1e3a']);
 });
 
