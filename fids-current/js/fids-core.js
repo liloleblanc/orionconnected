@@ -66192,7 +66192,8 @@ var HERITAGE_MARKS = [
     // Prestwick in June–July 1993 (AirHistory.net photograph 345805), and in
     // the 1993 livery at Heathrow on 8 June 1996 (324435) and at Toronto on
     // 28 July 1998 (384311). So it was repainted between mid-1993 and
-    // mid-1996, and wore this livery to its withdrawal. The Toronto photograph
+    // mid-1996, and was still in it at Toronto on 28 July 1998, eleven weeks
+    // before its withdrawal on 15 October 1998. The Toronto photograph
     // of 28 July 1998 was compared by eye with the drawing and matches: the
     // rondelle ahead of the red titles, the dark fin with the red leaf, C-FTOE
     // aft, 305 at the top of the fin, the star behind the cockpit and the

@@ -13,8 +13,9 @@
 // flew (1974–1998) and what-if beside the 2017 livery, in nine languages. No
 // registration and no fleet number is printed: no archive caption prints one.
 // It is in the Air Canada set (Air Canada pages at Canadian airports only,
-// never a United gate), placed so that no two Air Canada widebodies come back
-// to back in either pool the board runs.
+// never a United gate). The deck spreads the three fin 305 cards evenly and
+// keeps the widebody pairs (the Canadian DC-10 counted) to the fewest each
+// pool allows; in the Atlantic pool no two Air Canada widebodies meet.
 //
 //
 // FROM THE ARCHIVE — the same aeroplane in the 1980 livery it really wore.
