@@ -55,10 +55,17 @@ const WHAT_IF_CARDS = ['air-canada-dc9-2017', 'air-canada-747-305-2017', KEY];
 // 2026-11-14 — Canadian Airlines moved between Air Atlantic and Air Nova, so
 // its DC-10 no longer comes straight before the 1980 747 at the Atlantic
 // airports, where the widebodies now come every other card, the DC-10 counted.
+// 2026-11-14 — and the same 747-133 in the 1993 livery, from the archive (the
+// same file), joined it between the 1965 DC-8 and the 1980 DC-8. To spread
+// the three fin 305 cards evenly (5, 6 and 6 apart in the Atlantic pool, 5, 5
+// and 5 elsewhere) Canadian Airlines moved between the 1980 767 and the 1980
+// DC-9, Air Nova after the Dream livery 747 and the 1965 DC-8 after the
+// A350-1000; the widebodies make the fewest back-to-back pairs each pool
+// allows, one and three.
 const AIR_CANADA_SET = [
-  'air-atlantic', 'canadian-airlines', 'air-nova', 'air-canada-747-305-80', 'air-canada', 'air-canada-767', 'air-canada-caps',
-  'air-canada-747-305-2017', 'air-canada-dc8', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8-80',
-  'air-canada-767-87', 'air-canada-dc9-2017', 'air-canada-l1011-93'
+  'air-atlantic', 'air-canada-747-305-80', 'air-canada', 'air-canada-767', 'canadian-airlines', 'air-canada-caps',
+  'air-canada-747-305-2017', 'air-nova', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8',
+  'air-canada-747-305-93', 'air-canada-dc8-80', 'air-canada-767-87', 'air-canada-dc9-2017', 'air-canada-l1011-93'
 ];
 
 function lift(name) {
@@ -526,7 +533,7 @@ test('the card as drawn: the heading, the caption with its type, the mark and th
   }
   // the captions that leave no place for a type come through as stored, joiners in their year ranges and all
   b.at('YHZ', { flight: 'AC659', airline: 'AC' });
-  for (let i = 0; i < AIR_CANADA_SET.indexOf('air-nova'); i++) b.draw();   // Air Atlantic and Canadian Airlines first, then Air Nova
+  for (let i = 0; i < AIR_CANADA_SET.indexOf('air-nova'); i++) b.draw();   // the cards before it in the set, then Air Nova
   assert.match(b.draw(), /Halifax, Nova Scotia · the first Air Canada Connector · 1986\u2060–\u20602001/, 'the Air Nova line is as it was, word joiners round its dash');
   // the Future Retro DC-9 under its new heading, its caption untouched
   b.at('YHZ', { flight: 'AC659', airline: 'AC' });

@@ -240,6 +240,17 @@ which also reaches the grey of its lower body. It comes out at 2272 x 597
 
     python3 scripts/heritage-sky/card-cutout.py 747-305-1980-v2.png fids-current/aircraft/heritage/air-canada-747-305-ac80.png
 
+Its third card, the same aeroplane in the 1993 livery, came already cut out
+too (5924 x 1611) and needs a depth of four: by the first count 200 at one,
+218 at two, 34 at three and 28 at four, and by the count of the Dream livery
+test 843, 444, 46 and 8. At two the page stays as a pale dotted line along the
+trailing edge of the dark fin over a dark sky; at three that is gone, but the
+second count is still over 40, along the lower body. What is left at four is
+mostly the light line drawn along the leading edge of the fin. It comes out
+at 2272 x 602:
+
+    python3 scripts/heritage-sky/card-cutout.py 747-305-1993.png fids-current/aircraft/heritage/air-canada-747-305-ac93.png 2272 10 4
+
 A corner of the picture that is not clear stops the tool when it is solid or
 has the colour of the page, as page left in would be. A drawing cropped to its
 own edges can put a point of its own paint, partly clear, in a corner: the top

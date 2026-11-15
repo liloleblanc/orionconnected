@@ -129,24 +129,31 @@ test('the card: an Airbus A350-1000 in the Air Canada set, under its own heading
   assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.file.replace(/^\//, ''))), 'on disk');
 });
 
-test('its place in the rotation: no two Air Canada widebodies back to back', () => {
-  // The board rotates each airport pool in set order and wraps. The Air Canada
-  // widebodies of the set (the 767s, the TriStars, the two 747s and this one) come every
-  // other card. The Canadian Airlines DC-10, counted as a widebody too, comes between
-  // Air Atlantic and Air Nova: tests/heritage-747-305-card.test.js holds where its pairs fall.
-  const WIDE = ['air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-747-305-2017', 'air-canada-747-305-80', KEY];
+test('its place in the rotation: no two Air Canada widebodies back to back where the pool allows it, and this card in no pair', () => {
+  // The board rotates each airport pool in set order and wraps. In the
+  // Atlantic pool (with Air Atlantic and Air Nova) the Air Canada widebodies
+  // of the set (the 767s, the TriStars, the three 747s and this one) come
+  // every other card. Elsewhere eight of them share fifteen cards with seven
+  // others, so two must meet: tests/heritage-747-305-card.test.js holds where
+  // the pairs fall, the Canadian Airlines DC-10 counted. This card is never in one.
+  const WIDE = ['air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-747-305-2017', 'air-canada-747-305-80', 'air-canada-747-305-93', KEY];
   const keys = MARKS.map((k) => k.key);
   assert.equal(keys.indexOf(KEY), keys.indexOf('air-canada-dc9-93') + 1, 'after the 1993 DC-9');
-  assert.equal(keys.indexOf(KEY) + 1, keys.indexOf('air-canada-dc8-80'), 'and before the 1980 DC-8');
+  assert.equal(keys.indexOf(KEY) + 1, keys.indexOf('air-canada-dc8'), 'and before the 1965 DC-8');
   assert.equal(keys[keys.length - 1], 'air-canada-l1011-93', 'the 1993 TriStar is still last');
   const dist = (pool, a, b) => { const gap = Math.abs(pool.indexOf(a) - pool.indexOf(b)); return Math.min(gap, pool.length - gap); };
-  // the Atlantic pool (with Air Atlantic and Air Nova) and the pool of every other Canadian airport
-  for (const ia of ['YHZ', 'YVR']) {
-    const pool = MARKS.filter((mk) => !mk.gates && (mk.airports === '*CA' || (Array.isArray(mk.airports) && mk.airports.includes(ia)))).map((mk) => mk.key);
-    assert.ok(pool.includes(KEY), 'the card runs at ' + ia);
-    for (const a of WIDE) for (const b of WIDE) {
-      if (a < b) assert.ok(dist(pool, a, b) >= 2, a + ' and ' + b + ' are not back to back at ' + ia + ' (' + dist(pool, a, b) + ')');
-    }
+  const poolAt = (ia) => MARKS.filter((mk) => !mk.gates && (mk.airports === '*CA' || (Array.isArray(mk.airports) && mk.airports.includes(ia)))).map((mk) => mk.key);
+  // the Atlantic pool: none back to back
+  const atl = poolAt('YHZ');
+  assert.ok(atl.includes(KEY), 'the card runs at YHZ');
+  for (const a of WIDE) for (const b of WIDE) {
+    if (a < b) assert.ok(dist(atl, a, b) >= 2, a + ' and ' + b + ' are not back to back at YHZ (' + dist(atl, a, b) + ')');
+  }
+  // the pool of every other Canadian airport: this card is next to no widebody
+  const yvr = poolAt('YVR');
+  assert.ok(yvr.includes(KEY), 'the card runs at YVR');
+  for (const a of WIDE.concat('canadian-airlines')) {
+    if (a !== KEY) assert.ok(dist(yvr, a, KEY) >= 2, a + ' is not next to this card at YVR (' + dist(yvr, a, KEY) + ')');
   }
 });
 
