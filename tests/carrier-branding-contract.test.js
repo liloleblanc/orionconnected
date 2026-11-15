@@ -78,9 +78,12 @@ const viewBox = (svg) => {
 // in the repo is now square. Anything appearing in this list is a regression.
 const KNOWN_NON_SQUARE = [];
 const KNOWN_TEXT_EMBLEM = ['DI'];         // NAX.svg — Arial lettermark
-const KNOWN_BROKEN_WORDMARK = [
-  '3H:dark', '3H:light', 'BW:dark', 'BW:light', 'JV:dark', 'WL:dark', 'WL:light', 'WT:dark',
-];
+// EMPTY, and it should stay that way. Eight pointers sat here that were never dead:
+// the check built the file name by hand, as two surfaces of the board did, where the
+// cut is filed under a name of its own (a colour cut in COLOR_WORDMARKS, a raster pair
+// in WORDMARK_RASTER). The check asks for the file the board asks for now, and no
+// surface builds the name by hand any more.
+const KNOWN_BROKEN_WORDMARK = [];
 
 // ── the tiles reached WITHOUT a path: IATA_TO_TILE_ICAO ────────────────────
 // The tests below this block walk AIRLINE_EMBLEM_FILES, which names its files
@@ -111,7 +114,10 @@ const tilePath = (icao) => path.join(root, 'logos', 'airline-tiles', icao + '.sv
 //
 // TO and QZ left it next, and neither needed new artwork invented — only the
 // observation that TO is HV and QZ is AK. See the sister-code test below.
-const KNOWN_LETTERMARK_TILES = ['BQ', 'D8', 'DY', 'JJ', 'SG', 'X3', 'YP', 'YV'];
+//
+// JJ and X3 left it when the art on disk was looked at: LATAM Brasil draws the
+// LATAM tile and TUI fly the TUI smile, both already in the folder.
+const KNOWN_LETTERMARK_TILES = ['BQ', 'D8', 'DY', 'SG', 'YP', 'YV'];
 
 test('IATA_TO_TILE_ICAO maps every carrier to a file that exists', () => {
   const missing = Object.entries(TILE_MAP).filter(([, icao]) => !fs.existsSync(tilePath(icao)));
@@ -182,14 +188,28 @@ test('tile emblems are not typed letters — no more of them than already were',
 // appears as a fill in its own emblem, which a transparent mark cannot satisfy.
 
 
+const COLOR_WM = pairs('COLOR_WORDMARKS');
+const RASTER_WM = (() => {
+  const out = {};
+  for (const m of objectBody('WORDMARK_RASTER').matchAll(/'([a-z0-9-]+)'\s*:\s*\{\s*light:\s*'([^']+)',\s*dark:\s*'([^']+)'/g)) out[m[1]] = { light: m[2], dark: m[3] };
+  return out;
+})();
+
 test('every wordmark slug resolves to BOTH variants — no more breakage than already there', () => {
+  assert.deepEqual(Object.keys(RASTER_WM).sort(), ['airinuit', 'caribbean', 'world-atlantic'], 'the raster pairs, as wordmarkSrc reads them');
+  // and no surface builds the file name by hand: each asks wordmarkSrc
+  assert.equal((core.match(/logoPath\([^)\n]*'-wordmark-/g) || []).length, 1, 'one fallback line in the gate band, for a page without wordmarkSrc');
+  assert.doesNotMatch(core, /_base \+ '-wordmark-' \+ _v|_wmBase \+ '-wordmark-dark\.svg'/);
   const broken = [];
   for (const [code, slug] of Object.entries(WORDMARKS)) {
     if (!/^[A-Z0-9]{2}$/.test(code)) continue;
     for (const variant of ['dark', 'light']) {
+      // the file wordmarkSrc answers with: a raster pair, a colour cut filed under
+      // its own name, else the pair of files found through LOGO_SUBFOLDER
+      const filed = (RASTER_WM[slug] && RASTER_WM[slug][variant]) || (variant === 'dark' && COLOR_WM[slug]) || '';
       const base = `${slug}-wordmark-${variant}.svg`;
       const sub = SUBFOLDER[base];
-      const p = path.join(root, 'logos', sub || '', base);
+      const p = filed ? localPath(filed) : path.join(root, 'logos', sub || '', base);
       if (!fs.existsSync(p)) broken.push(`${code}:${variant}`);
     }
   }
@@ -501,8 +521,12 @@ test('a symbols file that shadows a tile is deliberate, not accidental', () => {
     .filter((f) => /^[A-Z0-9]{2}\.(svg|png)$/.test(f))
     .map((f) => f.replace(/\.(svg|png)$/, ''))
     .filter((c) => TILE_MAP[c]);
-  assert.ok(shadowing.length <= 54,
-    `${shadowing.length} symbols files now shadow a tile, up from 54. Newly shadowed: ${shadowing.join(' ')}`);
+  // 62 since the tiles that sat on disk unnamed were named for the rows: eight of
+  // those carriers (AH FJ JX KC KU MF UX XY) had a symbols file already. The row
+  // draws the tile; which of the two the gate orb draws is the table of looks
+  // (tests/gate-orbs-every-airline.test.js), carrier by carrier.
+  assert.ok(shadowing.length <= 62,
+    `${shadowing.length} symbols files now shadow a tile, up from 62. Newly shadowed: ${shadowing.join(' ')}`);
 });
 
 test('the baselined orb-colour drift is real, not a stale list', () => {

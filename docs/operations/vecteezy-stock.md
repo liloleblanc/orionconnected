@@ -71,3 +71,37 @@ players, delete — R2 object is removed with the item).
   `attribution.required` / `attribution.url` on the library item and the
   library list shows "credit required" on such items — check before putting
   one on a public display.
+
+## Gate card plates
+
+The dark card of a gate (the cards of the rail and the cells of the boarding
+shelf, on a gate whose airline discs would sink into a card of their own
+colour) is drawn on one of these stock patterns. Licence: Vecteezy Pro, no
+attribution required. The files are in `fids-current/textures/`, cut to
+1744x616.
+
+| File | Vecteezy item | Plate | Given to |
+| --- | --- | --- | --- |
+| `plate-grey-wave.jpg` | 85868529 | `grey-wave` | every other gate of the dark card (the default) |
+| `plate-black-faint-waves.jpg` | 82498963 | `black-faint-waves` | TR, OS, DE, KQ |
+| `plate-grey-shapes.jpg` | 63527784 | `grey-shapes` | PC, VY, RJ |
+| `plate-black-fine-lines.jpg` | 69483591 | `black-fine-lines` | EK |
+| `plate-brown-waves.jpg` | 80914976 | `brown-waves` | KL |
+| `plate-brown-layers.jpg` | 88062392 | `brown-layers` | CX, EI, BR |
+| `plate-black-fabric.jpg` | 55335613 | spare | nothing |
+| `plate-black-stripes.jpg` | 7233631 | spare | nothing |
+
+Where they are used: each wired plate is named once in
+`window._GATE_CARD_PLATES` (`fids-current/js/fids-core.js`, with its base and
+the paints the discs meet on it, measured on the rendered gate) and drawn by
+one rule in `fids-current/css/display-overrides.css`, keyed on the body
+attribute `data-gate-card="<plate>"`. The two spares are on disk and named by
+no code. "Given to" is the first plate a carrier is tried on; the measure has
+the last word (`window._gateCardPlate`): a gate whose discs do not stand clear
+of that plate goes to the black faint waves where the airline has a black of
+its own, then to the grey wave, then to the black faint waves. Royal Jordanian
+and the reds, magentas, middle blues and deep greens given the grey wave are
+drawn on the black faint waves for that reason. White figures read at 4.5 to 1
+or better on the lightest 5th percentile of every plate.
+`tests/gate-card-plates.test.js` holds this table, the files and the code
+together.

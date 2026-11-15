@@ -62,7 +62,9 @@ test('the map takeover\'s brand hold tries the tile before the letters', () => {
 
 test('the gate-change notice\'s orb tries the tile, then the letters, never an empty disc', () => {
   const src = fn('_gateChangeOrbHtml');
-  assert.match(src, /onerror="window\._orbArtFailed\(this,&quot;' \+ _orbMono\(c\) \+ '&quot;\)"/);
+  // the folded code, and after it the code of the row where the row tile is a placeholder that
+  // letters another code (_orbRowArg): the handler then letters the row
+  assert.match(src, /onerror="window\._orbArtFailed\(this,&quot;' \+ _orbMono\(c\) \+ '&quot;' \+ \(\(typeof _orbRowArg === 'function'\) \? _orbRowArg\(c, '&quot;'\) : ''\) \+ '\)">'/);
   assert.doesNotMatch(src, /onerror="this\.style\.display/, 'no longer hides itself');
 });
 
