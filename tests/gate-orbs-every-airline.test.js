@@ -812,7 +812,7 @@ const KEPT_KINDS = {
   'named tile': 'a carrier whose finished tile the row table names since (each tile looked at) draws that tile where its symbol is missing, as every carrier with a row tile does: it drew its letters, and TUI fly the square that typed TUI',
   'second code': 'Chair under its second code, GM, draws the fin filed under CS, where it drew its letters or nothing',
   'ring mark': 'a mark set in a ring line (the crane of LOT, the lines of Paranair) is drawn on the gate change notice with its ring as the edge of its orb and the white of a disc inside it, where it was lines in a clear box: no circle inside a circle, decision of 15 November 2026',
-  'cut disc': 'the disc of Transavia has its t cut out of it, so the card showed through the t where it filled a clear box: the gate change notice draws its finished tile, as its gate does',
+  'cut disc': 'the disc of Transavia has its t cut out of it, and the discs of Copa and JAL their lines, so the card showed through the cuts where the notice drew them in a clear box, filling it or padded (and the disc the Delta and PAL gates paint showed round them): the gate change notice draws their finished tiles, opaque, as their gates do',
   'column tile': 'the gate change notice of a carrier whose symbol would be inked white on a disc where white reads under 3 to 1 draws the finished tile of its column, as the rail and the shelf of its gate do: KLM, Singapore and flynas, whose symbol was white on their light accent (the carriers whose symbol was never drawn took that same tile after a miss, and the notice now names it at once: no difference)'
 };
 
@@ -920,9 +920,10 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
   assert.ok(contrast(cma.ink, cma.bg) >= 3, 'its letters read on it');
   assert.equal(O.fold('9M'), '9M');
   assert.deepEqual([...new Set([...kept.values()].filter((r) => r.code.length !== 3).map((r) => r.kind))].sort(), ['column tile', 'cut disc', 'line mark', 'named tile', 'own colours', 'own letters', 'partner', 'ring mark', 'second code', 'white outside']);
-  // a ring mark and the disc with its t cut out of it, on the notice alone (decision of 15 November 2026)
+  // a ring mark, and the discs with their mark cut out of them (the t of Transavia, the lines of Copa and
+  // JAL), on the notice alone (decision of 15 November 2026)
   assert.deepEqual(codesOf('ring mark'), ['LO', 'ZP']);
-  assert.deepEqual(codesOf('cut disc'), ['HV']);
+  assert.deepEqual(codesOf('cut disc'), ['CM', 'HV', 'JL']);
   for (const r of of('ring mark').concat(of('cut disc'))) assert.equal(r.surface, 'notice', r.code);
   // a named tile: its letters on origin/main (TUI fly: the square that typed TUI), and now, after the
   // symbol it never had is missed, the tile the row table names for the code, which is on disk. On
@@ -975,10 +976,12 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
     assert.match(r.was, /, white on the accent disc$/, r.code);
   }
   // the 31 carriers whose symbol these surfaces always drew: none is in the table, but for the notice of
-  // two of them (LOT, a ring mark, and Transavia, a disc with its t cut out of it: above)
-  for (const code of '6E A3 AH AI AT AV CM CX DE EI EK EW FI GA IB JL JQ KC KQ KU MH MO PC SN SV TP VA VN WY'.split(' ')) {
+  // four of them (LOT, a ring mark, and Transavia, Copa and JAL, discs with their mark cut out of them:
+  // above); Copa and JAL are in it for the notice alone
+  for (const code of '6E A3 AH AI AT AV CX DE EI EK EW FI GA IB JQ KC KQ KU MH MO PC SN SV TP VA VN WY'.split(' ')) {
     assert.ok(![...kept.values()].some((r) => r.code === code), code + ' draws what it drew');
   }
+  for (const code of ['CM', 'JL']) assert.deepEqual([...kept.values()].filter((r) => r.code === code).map((r) => r.surface + ', ' + r.kind), ['notice, cut disc'], code);
   assert.ok(REC.kept.length >= 300 && kept.size >= 590, REC.kept.length + ' rows, ' + kept.size + ' surfaces and codes');
 });
 

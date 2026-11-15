@@ -368,7 +368,7 @@ const fillsBox = (s) => {
   return /^0(\s*!important)?$/.test(pad);
 };
 
-test('no orb draws see-through art filling a clear box (the art alone, measured)', () => {
+test('no orb draws see-through art on a clear box, filling it or padded (the art alone, measured)', () => {
   // by the file: the symbols of Copa and JAL are lines cut out of nothing, their tiles are opaque
   for (const [f, see] of [['symbols/airlines/CM.svg', true], ['symbols/airlines/JL.svg', true], ['symbols/airlines/ZP.svg', true], ['symbols/airlines/HV.svg', true], ['airline-tiles/CMP.svg', false], ['airline-tiles/TRA.svg', false], ['airline-tiles/JAL.svg', false], ['airline-tiles/MSR.svg', false], ['symbols/airlines/TK.svg', false]]) {
     const a = artOf('/logos/' + f);
@@ -382,16 +382,71 @@ test('no orb draws see-through art filling a clear box (the art alone, measured)
   // (a drawing the reader of shapes cannot follow, nothing painted at all, is a finished tile whose rim
   // the table of grounds read off it in Chrome: the gold of PAL)
   const unread = (src) => { const a = artOf(src), k = String(src).split('?')[0], A = W._ORB_ART_GROUNDS[k] || {}; return a.clear > 0.99 && !!A.ground && !A.cut; };
-  const bad = [];
-  let fills = 0;
+  // PADDED OR NOT: see-through art in the padding of a clear box shows the card through its cuts as much
+  // as art that fills the box does (the crane of JAL and the lines of Copa, drawn so on 218 notices). The
+  // art the board names see-through (window._gateOrbSeeThrough) is never drawn on a clear box at all.
+  const seeThroughOnClear = (o) => !!(o.src && clearBox(o) && W._gateOrbSeeThrough(o.src));
+  // ONLY SEE-THROUGH ART TAKES THE TILE: where the symbol the notice draws first is opaque (the disc of
+  // Aegean, of Calm Air, the roundel of Pegasus), the notice draws that symbol, never the tile the white
+  // disc carried (window._gateOrbBadge) in its place; the look of the column of its own gate aside
+  const swapped = (s) => {
+    if (s.surface !== 'notice') return '';
+    const tile = W._gateOrbBadge(s.code), first = W._gateOrbParts(s.code, true);
+    if (!tile || s.o.src !== tile || !first.native || first.letters || !first.path || first.path === tile) return '';
+    const sym = /^\/logos\/symbols\/airlines\/([A-Z0-9]{2})\.svg$/.exec(first.path);
+    if ((sym && !W._ORB_SYMBOLS_ON_DISK[sym[1]]) || W._gateOrbSeeThrough(first.path)) return '';
+    if (W._gateNoticeLook(s.solo ? '' : s.gate, s.code, s.solo).column) return '';
+    return first.path;
+  };
+  const bad = [], padded = [], swaps = [];
+  let fills = 0, pads = 0, symbols = 0;
   everyOrb((s) => {
-    if (!s.o.src || !clearBox(s.o) || !fillsBox(s)) return;
+    const sw = swapped(s);
+    if (sw) swaps.push(s.gate + ' / ' + s.code + ': ' + s.o.src + ' in place of ' + sw);
+    if (s.surface === 'notice' && s.o.src && s.o.src === W._gateOrbParts(s.code, true).path && !W._gateOrbSeeThrough(s.o.src)) symbols++;
+    // and a box a rule of the gate clears is a clear box too (the United gate clears the disc of art that is
+    // its own): see-through art there is held, its disc kept
+    if (s.surface === 'notice' && s.o.src && W._gateOrbSeeThrough(s.o.src) && /v2-fi-emblem-native/.test(s.o.cls) && !/gl-gc-orb-held/.test(s.html)) {
+      const R = s.solo ? W._gateNoticeOrbRule('', s.code) : W._gateNoticeOrbRule(s.gate);
+      if (R && R.clearNative) padded.push('notice ' + s.gate + ' / ' + s.code + ': ' + s.o.src + ' on a disc the rule of the gate clears');
+    }
+    if (!s.o.src || !clearBox(s.o)) return;
+    if (!fillsBox(s)) {
+      pads++;
+      if (seeThroughOnClear(s.o)) padded.push(s.surface + ' ' + s.gate + ' / ' + s.code + ': ' + s.o.src + ' in the padding of a clear box, ' + (100 * artOf(s.o.src).clear).toFixed(0) + '% of it clear');
+      return;
+    }
     fills++;
     const a = artOf(s.o.src);
     if (a.read && a.clear >= 0.02 && !unread(s.o.src)) bad.push(s.surface + ' ' + s.gate + ' / ' + s.code + ': ' + s.o.src + ' fills a clear box, ' + (100 * a.clear).toFixed(0) + '% of it clear');
   });
   assert.deepEqual(bad, [], bad.length + ' see-through fills:\n' + bad.slice(0, 20).join('\n'));
-  assert.ok(fills >= 30000, fills + ' orbs that fill a clear box');
+  assert.deepEqual(padded, [], padded.length + ' see-through art padded on a clear box:\n' + padded.slice(0, 20).join('\n'));
+  assert.deepEqual(swaps, [], swaps.length + ' tiles in place of an opaque symbol:\n' + swaps.slice(0, 20).join('\n'));
+  assert.ok(fills >= 30000 && pads > 0 && symbols >= 1000, fills + ' orbs that fill a clear box, ' + pads + ' padded on a clear box, ' + symbols + ' notices that draw their opaque symbol');
+  // the check fails the markup the notice wrote for JAL and Copa: the symbol in the padding of a clear box
+  for (const c of ['JL', 'CM']) {
+    const old = '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="border-radius:50%;background:transparent;padding:0;"><img src="/logos/symbols/airlines/' + c + '.svg" alt="" class="v2-fi-emblem-img" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"></span></span>';
+    assert.ok(seeThroughOnClear(wrapOf(old)) && !/^0\s*!important$/.test(wrapOf(old).pad), c + ': the padded clear box fails');
+  }
+  // by name: Copa and JAL draw their tiles on the gates the check named (Iberia, North Star Air, BermudAir)
+  // and more (Finnair, Air Canada, and the gates whose rules paint every disc, Delta and PAL), and as the
+  // whole screen
+  for (const g of ['IB', 'AY', '0N', '2T', 'AC', 'DL', 'PB', '']) for (const [c, tile] of [['CM', 'CMP'], ['JL', 'JAL']]) {
+    const h = the('_gateChangeNoticeHtml')(({ ap: 'YUL', full: { f: { flight: c + '101', airline: c, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } }), g, !g);
+    assert.match(h, new RegExp('<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:transparent;padding:0 !important;--gc-disc:transparent;"><img src="/logos/airline-tiles/' + tile + '\\.svg"'), (g || '(whole screen)') + ' / ' + c);
+  }
+  // by name: Air Inuit on the United gate keeps the white disc under the goose cut out of its orange
+  {
+    const L = W._gateNoticeLook('UA', '3H');
+    assert.deepEqual([L.hold, L.plate, L.white, /^see-through:/.test(L.why)], [true, '', false, true], JSON.stringify(L));
+    assert.match(the('_gateChangeNoticeHtml')(({ ap: 'YUL', full: { f: { flight: '3H101', airline: '3H', dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } }), 'UA'), /<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:#FFFFFF;[^"]*--gc-disc:#FFFFFF;"><img src="\/logos\/airlines\/canadian-regional\/airinuit-emblem\.svg"/);
+  }
+  // by name: Aegean, Calm Air and Pegasus keep their opaque symbols where their badge fills the orb
+  for (const [g, c, sym] of [['IB', 'A3', 'A3'], ['', 'A3', 'A3'], ['IB', 'MO', 'MO'], ['', 'MO', 'MO'], ['AY', 'PC', 'PC']]) {
+    const h = the('_gateChangeNoticeHtml')(({ ap: 'YUL', full: { f: { flight: c + '101', airline: c, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } }), g, !g);
+    assert.match(h, new RegExp('<img src="/logos/symbols/airlines/' + sym + '\\.svg"'), (g || '(whole screen)') + ' / ' + c);
+  }
   // by name: the notices of Copa and JAL where the look asks for the round badge draw the tiles the white
   // disc carried, on a gate and as the whole screen
   const m = (al) => ({ ap: 'YUL', full: { f: { flight: al + '101', airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
@@ -450,6 +505,20 @@ test('a mark set in a ring line: its ring is the edge of its orb on every surfac
   assert.deepEqual(bad, [], bad.length + ' ring marks inside a band:\n' + bad.slice(0, 20).join('\n'));
   assert.deepEqual(sinks, [], sinks.length + ' rings that sink:\n' + sinks.slice(0, 20).join('\n'));
   assert.ok(n >= 1500, n + ' orbs of a ring mark');
+  // THE RING ON THE SCREEN (window._GATE_NOTICE_SCREEN): the card of the Bearskin gate as the screen shows it
+  // round the orb of the notice is nearer the navy rings of LOT and Korean Air than its recorded paint; each
+  // colour of the table crosses the line for a ring the recorded paint keeps, and those notices take the
+  // black faint waves there, their ring clear of it by the rule
+  for (const [g, S] of Object.entries(W._GATE_NOTICE_SCREEN)) {
+    assert.ok(W._GATE_CARD_PLATES[S.plate], g + ': ' + S.plate);
+    const K = W._gateCardPaint(g, true);
+    for (const p of S.at) assert.ok(['#252668', '#051766'].some((r) => W._gateDiscSinks(r, p) && !K.at.some((q) => W._gateDiscSinks(r, q))), g + ': ' + p + ' crosses the line for a ring the paint ' + K.at.join(',') + ' keeps');
+  }
+  for (const c of ['LO', 'KE']) {
+    const L = W._gateNoticeLook('JV', c), Lr = W._gateNoticeLands('JV', c, false, false, 'JV');
+    assert.deepEqual([L.plate, L.white, L.badge, /^screen:sink:/.test(L.why), Lr.how], ['black-faint-waves', false, false, true, 'ring-mark'], c + ' on JV: ' + JSON.stringify(L));
+    assert.ok(!W._gateNoticeBreaks(Lr, { at: W._gateNoticePlateAt('black-faint-waves') }), c + ': its ring keeps the rule on the black faint waves');
+  }
   // by name: the columns of TAROM and LOT stay white, on the grey wave their ring stands clear of; Korean
   // Air keeps its white disc on the grey wave; Lufthansa keeps its gold card, its white ring on the navy
   // of its disc; Paranair keeps its card

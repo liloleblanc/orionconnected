@@ -14387,8 +14387,6 @@ function _gateChangeOrbHtml(code) {
   if (white && typeof window._gateOrbBadge === 'function' && window._gateOrbBadge(c)) { white = false; badgeFill = true; }
   var column = !white && arguments.length > 5 && !!arguments[5];
   if (white || column) badgeFill = false;
-  // the round badge the look asks for (the seventh argument, or a white orb of a carrier with one)
-  var lookFill = badgeFill;
   var held = white || column || badgeFill || (arguments.length > 3 && !!arguments[3]);
   // the notice of its own carrier on a gate approved as drawn is written as it always was
   var _gcFold = function (x) { return (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(x) : x; };
@@ -14477,21 +14475,31 @@ function _gateChangeOrbHtml(code) {
     // notice is written as it always was.
     var onerr = ' onerror="window._orbArtFailed(this,&quot;' + _orbMono(c) + '&quot;' + ((typeof _orbRowArg === 'function') ? _orbRowArg(c, '&quot;') : '') + ')">';
     // (art on a clear ground, a line of window._ORB_ART_GROUNDS, is a mark, not a round badge: the lines
-    // of Air Inuit, Copa, JAL, LOT and Paranair keep the look they had)
+    // of Air Inuit, LOT and Paranair keep the look they had, on the disc their box paints; Copa and JAL,
+    // whose box paints none, below)
     var _gcLine = (window._ORB_ART_GROUNDS && window._ORB_ART_GROUNDS[String(path || '').split('?')[0]]) || {};
     if (parts && !white && !column && !keptOwn && parts.native && !parts.letters && path && !/padding:0 !important/.test(String(parts.badge || '')) && !(_gcLine.line && !_gcLine.ground)) badgeFill = true;
+    // SEE-THROUGH ART NEVER STANDS ON A CLEAR BOX, PADDED OR NOT (window._gateOrbSeeThrough). The symbols of
+    // Copa and JAL (CM.svg, JL.svg) are discs with their lines cut out of them, and the notice drew them
+    // inside the padding of a clear box: the card showed through the cuts where the brand has its white (an
+    // Iberia gate, a BermudAir gate, the whole screen), and on the gates whose rules paint every disc (the
+    // red gradient of Delta, the gold of PAL) that paint showed through them and round them, a circle
+    // inside a circle. Where the box of the notice paints no disc of its own, the opaque tile of the
+    // carrier fills the orb in their place (window._gateOrbBadge: CMP.svg, JAL.svg), held as every round
+    // badge is, and judged as one (window._gateNoticeLands, window._gateNoticeLook).
+    var _gcBox = ((/background:([^;]+);/.exec(String((parts && parts.badge) || '')) || [])[1] || '').trim();
+    if (parts && !keptOwn && !parts.letters && path && typeof window._gateOrbSeeThrough === 'function' && typeof window._gateOrbBadge === 'function' && window._gateOrbSeeThrough(path) && (!_gcBox || /^transparent$/i.test(_gcBox)) && window._gateOrbBadge(c)) badgeFill = true;
     if (badgeFill) {
-      // THE BADGE THE LOOK ASKS FOR IS THE TILE THE WHITE DISC CARRIED (window._gateOrbBadge), opaque: the
-      // symbol the notice draws first is that badge only where it is a disc by itself. The symbols of
-      // Copa and JAL are lines cut out of nothing (CM.svg, JL.svg), and drawn filling the orb in place of
-      // the white disc they let the card show through the white of the brand; the tiles the white disc
-      // carried (CMP.svg, JAL.svg) are drawn instead, and judged by their own rim (window._gateNoticeLands).
-      var bArt = lookFill ? String(window._gateOrbBadge(c) || '') : '';
-      if (!bArt) {
-        bArt = (parts && parts.native && !parts.letters) ? String(path || '') : '';
-        var bGuess = /^\/logos\/symbols\/airlines\/([A-Z0-9]{2})\.svg$/.exec(bArt);
-        if (bGuess && window._ORB_SYMBOLS_ON_DISK && !window._ORB_SYMBOLS_ON_DISK[bGuess[1]]) bArt = window._gateNoticeMissTile(c).tile || '';
-      }
+      // THE BADGE IS THE SYMBOL THE NOTICE DRAWS FIRST, WHERE THAT SYMBOL IS OPAQUE (the disc of Aegean,
+      // of Calm Air, the roundel of Pegasus: A3.svg, MO.svg, PC.svg stay), and the tile the white disc
+      // carried (window._gateOrbBadge) where the notice draws no art of its own, or where its art is
+      // see-through (window._gateOrbSeeThrough): the symbols of Copa and JAL are discs with their lines
+      // cut out of them (CM.svg, JL.svg), and drawn in place of the white disc they let the card show
+      // through the white of the brand; their tiles (CMP.svg, JAL.svg) are opaque, and judged by their
+      // own rim (window._gateNoticeLands). A tile never stands in for an opaque symbol.
+      var bArt = (parts && parts.native && !parts.letters) ? String(path || '') : '';
+      var bGuess = /^\/logos\/symbols\/airlines\/([A-Z0-9]{2})\.svg$/.exec(bArt);
+      if (bGuess && window._ORB_SYMBOLS_ON_DISK && !window._ORB_SYMBOLS_ON_DISK[bGuess[1]]) bArt = window._gateNoticeMissTile(c).tile || '';
       if (!bArt) bArt = window._gateOrbBadge(c);
       // never art on a clear ground filling a clear box (window._gateOrbSeeThrough): its tile, else no fill
       if (bArt && window._gateOrbSeeThrough(bArt)) { bArt = String(window._gateOrbBadge(c) || ''); if (window._gateOrbSeeThrough(bArt)) bArt = ''; }
@@ -16275,6 +16283,15 @@ window._gateNoticeClear = function (L, at) {
   var discs = [L.disc].concat(L.edge ? [L.edge] : [], L.second ? [L.second] : []);
   return discs.every(function (d) { return at.every(function (p) { return window._gateDiscClear(d, p, (d === L.disc && !L.inside) ? L.ink : ''); }); });
 };
+// THE CARD OF A NOTICE ON THE SCREEN, WHERE IT CROSSES THE LINE THE RECORDED PAINT KEEPS. Read at 1680 by
+// 1050 (headless Chrome) right outside the orb of the notice (12 hundredths of its radius out, every 10
+// degrees), the orb hidden: the card of the Bearskin gate (JV), recorded as #431626, shows #421426 to
+// #502636 there, 2 to 4 degrees of hue nearer the navy rings of LOT (#252668) and Korean Air (#051766):
+// 59 and 58 degrees apart at #421426, 57 and 56 at #502636, 61 and 60 on the recorded paint. A ring mark
+// is judged on these too (window._gateNoticeLook), and where its ring sinks there it takes the plate named
+// (plate: the black faint waves, decision of 15 November 2026). tests/no-circle-in-a-circle.test.js
+// holds each colour to the line it crosses.
+window._GATE_NOTICE_SCREEN = { 'JV': { at: ['#502636', '#421426'], plate: 'black-faint-waves' } };
 window._gateNoticeLook = function (gateCode, movedCode, solo) {
   var g = String(gateCode == null ? '' : gateCode).trim().toUpperCase();
   var c = String(movedCode == null ? '' : movedCode).trim().toUpperCase();
@@ -16303,6 +16320,14 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
   // white arrow of PAL on its gold), and only what meets the card is judged
   var Lj = (solo && window._gateColumnKept(c)) ? Object.assign({}, L0, { ink: '' }) : L0;
   out.why = window._gateNoticeBreaks(Lj, card);
+  // THE RING ON THE SCREEN (window._GATE_NOTICE_SCREEN). The ring of a ring mark that keeps the rule on the
+  // paint recorded for the card of the gate, but sinks into the colours of that card as the screen shows
+  // them round the orb, takes the plate named for the gate, where it keeps the rule on that plate.
+  var scr = (!whole && !ownGate && window._GATE_NOTICE_SCREEN) ? window._GATE_NOTICE_SCREEN[g] : null;
+  if (scr && !out.why && L0.how === 'ring-mark') {
+    var scrWhy = window._gateNoticeBreaks(L0, { at: scr.at });
+    if (scrWhy && !window._gateNoticeBreaks(L0, { at: window._gateNoticePlateAt(scr.plate) })) { out.why = 'screen:' + scrWhy; out.plate = scr.plate; return out; }
+  }
   // A DARK PLATE COUNTS ONLY WITH ROOM, WHOEVER CHOSE IT. Where the card behind the notice is one of
   // the dark plates (the plate the gate is drawn on, as much as a plate the notice takes), the orb
   // that lands on it stands clear of every paint of it, its darkest included, with room
@@ -16311,6 +16336,17 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
   // column of dark discs.
   var plateOf = (card.kind === 'dark' && window._GATE_CARD_PLATES[card.plate]) ? window._gateNoticePlateAt(card.plate) : null;
   var roomy = function (L) { return !plateOf || window._gateNoticeClear(L, plateOf); };
+  // SEE-THROUGH ART ON A DISC THE RULES OF THE GATE CLEAR (the United gate clears the disc of art that is
+  // its own, window._GATE_NOTICE_ORB_RULES). The emblem of Air Inuit is an orange disc with a goose cut out
+  // of it, on the white disc of its box; with that disc cleared the card showed through the goose. The orb
+  // holds its own look there, its white disc under the cut (window._gateOrbSeeThrough), where that look
+  // keeps the rule on the card.
+  var srcOf = function (L) { return String((/<img src="([^"]*)"/.exec(String((L && L.html) || '')) || [])[1] || '').split('?')[0]; };
+  var Rg = whole ? null : window._gateNoticeOrbRule(on, wrapC);
+  if (!out.why && !ownGate && Rg && Rg.clearNative && L0.native && !L0.held && srcOf(L0) && window._gateOrbSeeThrough(srcOf(L0))) {
+    var Lh = window._gateNoticeLands(on, c, false, true, wrapC);
+    if (Lh && !window._gateNoticeBreaks(Lh, card) && roomy(Lh)) { out.hold = true; out.why = 'see-through:' + srcOf(L0); return out; }
+  }
   var Lp = L0, touched = false, Lc = null;
   // the plates a notice of its own may take: the plate of the own gate of the moved carrier where it has
   // one, then the black faint waves, the grey wave, the black fine lines
@@ -16320,6 +16356,11 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
     if (mine && mine.kind === 'dark' && P[mine.plate]) tried.push(mine.plate);
   } catch (e2) {}
   window._GATE_NOTICE_PLATES.forEach(function (n) { if (P[n] && tried.indexOf(n) < 0) tried.push(n); });
+  // a plate of its own, taken only where the orb stands clear of it with room
+  var onPlate = function (L) {
+    for (var i = 0; i < tried.length; i++) if (window._gateNoticeClear(L, window._gateNoticePlateAt(tried[i]))) return tried[i];
+    return '';
+  };
   // THE ROUND BADGE, FILLING ITS ORB: on the card it has where it breaks no rule there (the sink, the
   // hue, no red, orange or gold on a brown; no room asked), else on the first plate of those it breaks
   // no rule on, else where it differs most from what is behind it, the card it has or one of those plates,
@@ -16364,7 +16405,20 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
     if (!out.why && roomy(L0)) return out;
     if (!out.why) {
       out.why = 'room:' + L0.disc + '>' + card.plate;
-      if (isBadge) return badgeChain();
+      if (isBadge) {
+        // THE OWN LOOK BEFORE AN OPEN BADGE. Where the round badge stands clear of no card and no plate
+        // (open), the own look of the orb, which broke no rule here and lacked only room, tries the plates
+        // first, with room: the disc of Porter (#254D87) on the black faint waves, on the gates of TAROM,
+        // LOT and Korean Air and on every gate of a dark plate where its tile stood open (77 notices).
+        // The badge is drawn open only where no plate will do.
+        var whyRoom = out.why, Bc = badgeChain();
+        if (!Bc.open) return Bc;
+        var nOwn = onPlate(L0);
+        if (!nOwn) return Bc;
+        out.plate = nOwn; out.white = false; out.hold = false; out.column = false; out.badge = false; out.why = whyRoom;
+        delete out.open;
+        return out;
+      }
       // the orb drawn white on the card it had
       var Lr = window._gateNoticeLands(on, c, true, true, wrapC);
       if (Lr && !window._gateNoticeBreaks(Lr, card) && roomy(Lr)) { out.white = true; out.badge = false; out.hold = true; return out; }
@@ -16375,11 +16429,6 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
     if (touched && !window._gateNoticeBreaks(L1, card) && roomy(L1)) { out.hold = true; return out; }
     if (touched) Lp = L1;
   }
-  // a plate of its own, taken only where the orb stands clear of it with room
-  var onPlate = function (L) {
-    for (var i = 0; i < tried.length; i++) if (window._gateNoticeClear(L, window._gateNoticePlateAt(tried[i]))) return tried[i];
-    return '';
-  };
   var n = onPlate(Lp);
   if (n) { out.plate = n; out.hold = touched; return out; }
   // the last resort: the orb drawn white, as the rail draws a column of dark discs, on the card it had,

@@ -483,7 +483,7 @@
     ["sky plate, last plate, map hold","CHH","letters CHH","airline-tiles/CHH.svg, after a miss","designator"],
     ["notice","CHH","nothing","airline-tiles/CHH.svg filling the orb","designator"],
     ["sky plate, last plate, map hold","CMP","letters CMP","symbols/airlines/CM.svg","designator"],
-    ["notice","CMP","nothing","symbols/airlines/CM.svg filling the orb","designator"],
+    ["notice","CMP","nothing","airline-tiles/CMP.svg filling the orb","designator"],
     ["standby card","CMP","nothing","symbols/airlines/CM.svg","designator"],
     ["sky plate, last plate, map hold","CPA","letters CPA","symbols/airlines/CX.svg","designator"],
     ["notice","CPA","nothing","symbols/airlines/CX.svg, white on the accent disc","designator"],
@@ -572,7 +572,7 @@
     ["sky plate, last plate, map hold","ITY","letters ITY","airline-tiles/ITY.svg, after a miss","designator"],
     ["notice","ITY","nothing","airline-tiles/ITY.svg filling the orb","designator"],
     ["sky plate, last plate, map hold","JAL","letters JAL","symbols/airlines/JL.svg","designator"],
-    ["notice","JAL","nothing","symbols/airlines/JL.svg filling the orb","designator"],
+    ["notice","JAL","nothing","airline-tiles/JAL.svg filling the orb","designator"],
     ["standby card","JAL","nothing","symbols/airlines/JL.svg","designator"],
     ["sky plate, last plate, map hold","JBU","letters JBU","airline-tiles/JBU.svg, after a miss","designator"],
     ["notice","JBU","nothing","airline-tiles/JBU.svg filling the orb","designator"],
@@ -811,6 +811,8 @@
     ["notice","XY","symbols/airlines/XY.svg, white on the accent disc","airline-tiles/KNE.svg filling the orb","column tile"],
     ["notice","LO","symbols/airlines/LO.svg filling the orb","symbols/airlines/LO.svg on a #FFFFFF disc","ring mark"],
     ["notice","ZP","symbols/airlines/ZP.svg filling the orb","symbols/airlines/ZP.svg on a #FFFFFF disc","ring mark"],
-    ["notice","HV","symbols/airlines/HV.svg filling the orb","airline-tiles/TRA.svg filling the orb","cut disc"]
+    ["notice","HV","symbols/airlines/HV.svg filling the orb","airline-tiles/TRA.svg filling the orb","cut disc"],
+    ["notice","CM","symbols/airlines/CM.svg filling the orb","airline-tiles/CMP.svg filling the orb","cut disc"],
+    ["notice","JL","symbols/airlines/JL.svg filling the orb","airline-tiles/JAL.svg filling the orb","cut disc"]
   ]
 }
