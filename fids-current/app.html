@@ -1111,7 +1111,14 @@ function _monoStep(start, grounds) {
   };
   var hex = function (v) { return '#' + v.map(function (x) { var t = x.toString(16).toUpperCase(); return t.length < 2 ? '0' + t : t; }).join(''); };
   var under = [].concat(grounds || []).map(rgbOf).filter(Boolean), sq = rgbOf(start);
-  var clear = function (v) { return 1.05 / (lum(v) + 0.05) >= 3 && under.every(function (g) { return dE(v, g) >= 20; }); };
+  // A SQUARE SEEN THROUGH. A third argument, where the square is drawn see-through (a row of the board
+  // dimmed to 0.7: departed, arrived, gate closed): a, the opacity it is drawn at, and under, the colour
+  // it is drawn over. The square and its white letters are then judged as drawn, against the grounds
+  // as drawn (the caller reads those off the screen that way).
+  var veil = (arguments.length > 2 && arguments[2] && arguments[2].a < 1) ? arguments[2] : null, vu = veil ? rgbOf(veil.under) : null;
+  var seen = function (v) { return (veil && vu) ? v.map(function (x, k) { return Math.round(x * veil.a + vu[k] * (1 - veil.a)); }) : v; };
+  var ink = lum(seen([255, 255, 255]));
+  var clear = function (v) { var s = seen(v), l = lum(s); return (Math.max(ink, l) + 0.05) / (Math.min(ink, l) + 0.05) >= 3 && under.every(function (g) { return dE(s, g) >= 20; }); };
   if (!sq || !under.length || clear(sq)) return start;
   // AWAY FROM THE GROUND: lighter first on a dark ground, darker first on a light one (the grounds it
   // sinks into, CIELAB lightness under 50 or not), then the other way; then the hue turned half way
@@ -1119,7 +1126,7 @@ function _monoStep(start, grounds) {
   // lightness under 15 or over 92) is taken only where no other step and no turn of the hue works:
   // stepped darker first, the squares of Sunwing, Tway and Japan Airlines went near black on the navy
   // rows of Halifax.
-  var sunk = under.filter(function (g) { return dE(sq, g) < 20; }), ref = sunk.length ? sunk : under;
+  var sunk = under.filter(function (g) { return dE(seen(sq), g) < 20; }), ref = sunk.length ? sunk : under;
   var up = ref.reduce(function (a, g) { return a + lab(g)[0]; }, 0) / ref.length < 50;
   var H = hslOf(sq), turns = [H[0], (H[0] + 180) % 360], order = [];
   for (var t = 0; t < 2; t++) {
@@ -1133,6 +1140,19 @@ function _monoStep(start, grounds) {
     for (var k = 0; k < order.length; k++) {
       var L = lab(order[k])[0];
       if ((pass || (L >= 15 && L <= 92)) && clear(order[k])) return hex(order[k]);
+    }
+  }
+  // A SQUARE WITH LITTLE HUE OF ITS OWN (a black, a grey) that no lightness lifts off its ground takes
+  // colour: the saturation of the squares the app makes up (42 hundredths), at its own hue and then
+  // turned half way round, every lightness in the same order. Only a row seen through needs it (a
+  // grey square on a dimmed row, where the letters as drawn leave no lightness clear of the row).
+  if (H[1] < 0.42) {
+    for (var t3 = 0; t3 < 2; t3++) {
+      var aw = [], bk = [];
+      for (var d3 = 0.04; H[2] - d3 >= -1e-9; d3 += 0.04) (up ? bk : aw).push(H[2] - d3);
+      for (var u3 = 0.04; H[2] + u3 <= 1 + 1e-9; u3 += 0.04) (up ? aw : bk).push(H[2] + u3);
+      var l3 = [H[2]].concat(aw, bk);
+      for (var j = 0; j < l3.length; j++) { var v3 = hslRgb(turns[t3], 0.42, Math.max(0, Math.min(1, l3[j]))); if (clear(v3)) return hex(v3); }
     }
   }
   return start;

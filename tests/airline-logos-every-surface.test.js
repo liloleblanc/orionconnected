@@ -957,6 +957,20 @@ const STRIPE_RULES = {
 // the navy rows of the board at Halifax (read off the screen at 1680 by 1050: odd and even), where the
 // squares of Sunwing, Tway and Japan Airlines went near black when they were stepped darker first
 const HALIFAX_ROWS = ['#033F77', '#012846'];
+// THE DIMMED ROWS, AS DRAWN. A departed, an arrived and a gate-closed row are drawn at 0.7 (the row,
+// display-overrides.css) over what is under the row, the board of the theme: the square, its letters
+// and the slate of the row all seen through. Read off the real board at 1680 by 1050, each theme the
+// board can use and the two configured boards measured (Halifax, and Montreal as it is set up): the
+// ground as drawn (the bare render, the square hidden, matched it pixel for pixel) and the colour
+// under the row. The square was judged against the slate it is painted on: on screen at Halifax the
+// square of Sunwing was #4E749F on #405160, 11 apart.
+const DIMMED_ROWS = {
+  'departed, arrived and gate closed, tus-teal': { slate: '#262D36', under: '#0D4D8B', drawn: '#1F3750' },
+  'departed, arrived and gate closed, tus-teal-deep': { slate: '#262D36', under: '#0A5563', drawn: '#1E3944' },
+  'departed, arrived and gate closed, mist (light board)': { slate: '#AEB7C1', under: '#C7D2DD', drawn: '#B6BFC9' },
+  'departed, arrived and gate closed, Halifax': { slate: '#262D36', under: '#7BA6C1', drawn: '#405160' },
+  'departed, arrived and gate closed, Montreal': { slate: '#262D36', under: '#195252', drawn: '#22383E' }
+};
 test('the monogram square stands clear of every row it can sit on, by one rule on the board and in the app', () => {
   const colours = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
   // the two copies of the rule, word for word, and each run from its own file
@@ -989,6 +1003,7 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
   };
   const hex = (s) => '#' + rgb(s).map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
   const whiteOn = (s) => { const [r, g, b] = rgb(s).map(lin); return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05); };
+  const lum2 = (s) => { const [r, g, b] = rgb(s).map(lin); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
   try {
     const named = [...new Set([...Object.keys(the('AIRLINE_NAME')), ...Object.keys(the('_AIRLINE_NAME_OVERRIDE'))])];
     const mono = named.filter((c) => /logo-monogram/.test(the('mkLogo')(c, 'X')));
@@ -1012,6 +1027,23 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
       const appSq = appStep(start, TILE);
       assert.equal(boardStep(start, TILE), appSq, code + ': the tile of the app');
       for (const g of TILE) assert.ok(B._orbDeltaE(hex(appSq), g) >= 20 && whiteOn(appSq) >= 3, code + ' ' + appSq + ' on the app ground ' + g);
+    }
+    // the dimmed rows: the square, its letters and the row as drawn, 0.7 over what is under the row
+    const veiled = (h, v) => '#' + rgb(h).map((x, k) => Math.round(x * v.a + rgb(v.under)[k] * (1 - v.a)).toString(16).padStart(2, '0')).join('').toUpperCase();
+    for (const [k, d] of Object.entries(DIMMED_ROWS)) {
+      const veil = { a: 0.7, under: d.under };
+      assert.equal(veiled(d.slate, veil), d.drawn, k + ': the slate at 0.7 over the board is the ground as drawn');
+      for (const code of codes) {
+        const start = the('_monogramColour')(code), sq = boardStep(start, [d.drawn], veil);
+        assert.equal(appStep(start, [d.drawn], veil), sq, code + ' on ' + k + ': the two copies agree');
+        const seenSq = veiled(hex(sq), veil), seenInk = veiled('#FFFFFF', veil), de = B._orbDeltaE(seenSq, d.drawn);
+        const r = (Math.max(lum2(seenInk), lum2(seenSq)) + 0.05) / (Math.min(lum2(seenInk), lum2(seenSq)) + 0.05);
+        if (de < 20 || r < 3) sank.after.push(code + ' ' + sq + ' (drawn ' + seenSq + ') on ' + k + ' ' + d.drawn + ': dE ' + de.toFixed(1) + ', letters ' + r.toFixed(2));
+      }
+    }
+    for (const code of ['3K', 'VF', 'JA']) {
+      const start = the('_monogramColour')(code), d = DIMMED_ROWS['departed, arrived and gate closed, Halifax'];
+      assert.ok(B._orbDeltaE(veiled(hex(boardStep(start, [d.slate])), { a: 0.7, under: d.under }), d.drawn) < 20, code + ': judged on the slate alone, it sank into the dimmed row at Halifax as drawn');
     }
     assert.deepEqual(sank.after, [], sank.after.slice(0, 20).join('\n'));
     // the rule was needed: the eight named squares the check found on the teal themes, and the squares
@@ -1046,8 +1078,12 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
   // belt sign after its bars; a red row no longer lays a see-through white over the square
   assert.match(fnText(CORE, '_fidsBoardInk'), /_monogramFit\(table\)/);
   assert.match(CORE, /_b3FitList\(bView\); _b3FitBeltNumber\(\); \} catch \(e\) \{\}\n\s*\/\/[^\n]*\n\s*try \{ _monogramFit\(bView\); \} catch \(e\) \{\}/);
-  assert.match(fnText(CORE, '_monogramFit'), /el\.style\.background = _monoStep\(start, grounds\)/);
+  assert.match(fnText(CORE, '_monogramFit'), /var grounds = _monogramGround\(el\), veil = grounds\.veil \|\| null;/);
+  assert.match(fnText(CORE, '_monogramFit'), /el\.style\.background = _monoStep\(start, grounds, veil\)/);
+  // the ground is read as drawn: an ancestor drawn see-through lays all that is in it over what is behind it
+  assert.match(fnText(CORE, '_monogramGround'), /var o = parseFloat\(st\.opacity\);/);
   const css = fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8');
+  assert.match(css, /#fidsTable tbody tr:is\(\.row-departed, \.row-arrived, \.row-gate-closed\) \{\n  opacity: 0\.7 !important;/);
   assert.doesNotMatch(css, /tr\.row-diverted \.full-logo\.logo-monogram \{\s*background:/);
 });
 

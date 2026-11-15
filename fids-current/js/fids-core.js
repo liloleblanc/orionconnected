@@ -14371,17 +14371,34 @@ function _gateChangeAccent3(code, acc) {
 function _gateChangeOrbHtml(code) {
   var c = String(code || '').toUpperCase();
   if (!c) return '';
-  // Three more arguments, each decided by window._gateNoticeLook: the white orb of the carrier, the
+  // Five more arguments, each decided by window._gateNoticeLook: the white orb of the carrier, the
   // code of the gate the notice covers (its stylesheet can paint the orb: window._GATE_NOTICE_ORB_RULES),
-  // and whether the orb holds its own look against those rules. With none of them the markup is the
-  // markup the notice always wrote, word for word.
+  // whether the orb holds its own look against those rules, the code on the class of the wrap the
+  // notice sits in (the gate, or for the whole screen the moved flight), and the look of the column of
+  // the gate (a notice of its own carrier on its own gate). With none of them the markup is the markup
+  // the notice always wrote, word for word.
   var white = arguments.length > 1 && !!arguments[1];
   var gate = arguments.length > 2 ? String(arguments[2] == null ? '' : arguments[2]).trim().toUpperCase() : '';
-  var held = white || (arguments.length > 3 && !!arguments[3]);
+  var wrapC = arguments.length > 4 ? String(arguments[4] == null ? '' : arguments[4]).trim().toUpperCase() : gate;
+  var column = !white && arguments.length > 5 && !!arguments[5];
+  var held = white || column || (arguments.length > 3 && !!arguments[3]);
   try {
     // the mark of the carrier as this notice always drew it, the symbol first: the finished
     // tile first is a rule of the gate orbs alone (the second argument of the recipe)
     var parts = (typeof window !== 'undefined' && typeof window._gateOrbParts === 'function') ? window._gateOrbParts(c, true) : null;
+    // THE LOOK OF THE COLUMN. A notice of its own carrier on its own gate, where the mark above breaks
+    // the rule on the card of the gate, draws the orb the rail of that gate draws (window._gateOrbParts,
+    // the rule of the card applied: the white disc of a white column, the art of a gate of the dark
+    // card), its ring written to win over the padding of the notice as the white orb below writes it.
+    if (column && parts) {
+      parts = window._gateOrbParts(c);
+      if (parts.inset) parts = Object.assign({}, parts, { badge: String(parts.badge).replace('padding:' + window._GATE_ORB_RING + ';', 'padding:calc(min(11vh, 6.9vw) * var(--gl-gk, 1) * 0.15) !important;') });
+      if (!parts.path && parts.white) {
+        var _gcColBadge = String(parts.badge), _gcColBg = /background:([^;]+);/.exec(_gcColBadge);
+        return '<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + _gcColBadge + (_gcColBg ? '--gc-disc:' + _gcColBg[1] + ';' : '') + '">'
+          + '<span class="v2-fi-orb-code" style="color:' + parts.ink + ' !important;">' + fidsEscHtml(parts.letters || _orbMono(c)) + '</span></span></span>';
+      }
+    }
     // THE WHITE ORB OF THE NOTICE, THE LAST RESORT. A mark whose disc is dark itself (a navy, a
     // black, a deep maroon) that stands on no card the notice can take is drawn white, as the rail
     // draws a column of dark discs: the white disc of the carrier (window._gateOrbWhite), its tile
@@ -14408,8 +14425,8 @@ function _gateChangeOrbHtml(code) {
     var letterInk = function (badge, nativeBox) {
       var named = (/--orb-ink:(#[0-9a-f]{3,8});/i.exec(String(badge || '')) || [])[1] || '';
       if (named) return named;
-      var R = held ? null : window._gateNoticeOrbRule(gate);
-      var shown = (R && R.disc && (R.native || !nativeBox)) ? (R.gradient ? '' : R.disc) : window._gateNoticeBadgeDisc(c, badge);
+      var R = held ? null : window._gateNoticeOrbRule(gate, wrapC);
+      var shown = (R && R.disc && (R.native || !nativeBox)) ? (R.gradient ? '' : window._gateNoticeRuleDisc(R, getAirlineAccent(c)).disc) : window._gateNoticeBadgeDisc(c, badge);
       return (shown && window._orbInkOn(shown) !== '#fff') ? '#10151f' : '';
     };
     var lettersHtml = function (text, ink) {
@@ -14442,7 +14459,7 @@ function _gateChangeOrbHtml(code) {
     // such tile keeps its symbol on the disc in a dark ink in place of the white (the filter that
     // whitens it gives way to one that darkens it). A white the table of looks names as the ink of
     // the carrier is a look approved as drawn and stays (the leaf of WestJet on its teal).
-    if (!white && /invert\(1\)/.test(String(parts.imgStyle || ''))) {
+    if (!white && !column && /invert\(1\)/.test(String(parts.imgStyle || ''))) {
       var _gcDisc = /background:var\(--airline-accent,/.test(String(parts.badge || '')) ? String(getAirlineAccent(c) || '')
         : ((/background:(#[0-9a-f]{6})\b/i.exec(String(parts.badge || '')) || [])[1] || '');
       var _gcFold = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(c) : c;
@@ -14513,8 +14530,8 @@ function _gateChangeNoticeHtml(m) {
   // there (window._gateNoticeLook: the orb holds its own look, or the notice takes a plate of its
   // own, or last of all the orb is drawn white). Two more arguments: the code of the gate the notice
   // covers, and whether the notice is the whole screen (a gate with no flight).
-  var look = { plate: '', white: false, hold: false, gate: '' };
-  try { if (typeof window._gateNoticeLook === 'function') look = window._gateNoticeLook(arguments[1], code, !!arguments[2]) || look; } catch (eLook) { look = { plate: '', white: false, hold: false, gate: '' }; }
+  var look = { plate: '', white: false, hold: false, gate: '', wrap: '', column: false };
+  try { if (typeof window._gateNoticeLook === 'function') look = window._gateNoticeLook(arguments[1], code, !!arguments[2]) || look; } catch (eLook) { look = { plate: '', white: false, hold: false, gate: '', wrap: '', column: false }; }
   return '<div class="gl-gc"' + (look.plate ? ' data-gc-plate="' + fidsEscHtml(look.plate) + '"' : '') + ' data-gl-gc="' + fidsEscHtml(String(f.flight || '') + '>' + to) + '"' + (acc ? ' style="--airline-accent:' + fidsEscHtml(acc) + ';--airline-accent3:' + fidsEscHtml(acc3) + ';--gl-pill:' + fidsEscHtml(acc) + ';"' : '') + '>'
     + '<div class="gl-gc-glass"></div>'
     + '<div class="gl-gc-inner">'
@@ -14524,7 +14541,7 @@ function _gateChangeNoticeHtml(m) {
               return '<span class="' + (i ? 'v2-fi-lbl-2' : 'v2-fi-lbl-en') + '">' + fidsEscHtml(w) + '</span>';
             }, '<span class="v2-fi-sep"> | </span>') + '</div>'
     +       '<div class="gl-gc-body">'
-    +         '<div class="gl-gc-flight">' + _gateChangeOrbHtml(code, look.white, look.gate, look.hold)
+    +         '<div class="gl-gc-flight">' + _gateChangeOrbHtml(code, look.white, look.gate, look.hold, look.wrap == null ? look.gate : look.wrap, look.column)
     +           '<span class="gl-gc-fl">' + fidsEscHtml(f.flight || '') + '</span>'
     +           '<span class="gl-gc-city">' + _gateLaterPlaceHtml(pl) + '</span>'
     +         '</div>'
@@ -15830,29 +15847,62 @@ window._gateNoticeMissTile = function (code) {
   if (icao && window._orbTileLettersOther && window._orbTileLettersOther(icao, row || mono)) { icao = ''; if (row) letters = row; }
   return { tile: icao ? '/logos/airline-tiles/' + icao + '.svg' : '', icao: icao, letters: letters };
 };
-// THE RULES OF A GATE THAT REACH THE ORB OF THE NOTICE, keyed by the carrier the body names
-// (data-gate-airline). Read off the stylesheet and measured on every gate the body can name, with
-// the orb of every carrier on it (computed in the browser): the Delta gate paints every disc of the
-// gate with its red gradient (the middle and the edge of it here), art that is its own disc
-// included (it shows as a ring round that art, in the padding of the orb); the American and the
-// Porter gates paint white every disc that is not art of its own (and the plate of American inks
-// letters navy, --plate-ink); the Ryanair gate takes the white filter off every emblem (the mark in
-// the colours of its file) and inks letters gold; the gold plate of Lufthansa and the plate of Qatar
-// ink letters dark (--plate-ink). No other gate reaches the orb of the notice.
-// tests/gate-card-plates.test.js holds each to its rule in the stylesheet.
+// THE RULES OF A GATE THAT REACH THE ORB OF THE NOTICE. Read off the stylesheets and measured in
+// Chrome with the notice where the gate draws it, inside the real wrap of the gate (.g8-wrap with the
+// class of its carrier, g8-airline-XX) and under the body that names it (data-gate-airline), for every
+// gate code, with the orb of every carrier on it. Two kinds:
+//   keyed on the body (data-gate-airline, the carrier the gate folds to): the Delta gate paints every
+//   disc of the gate with its red gradient (the middle and the edge of it here), art that is its own
+//   disc included (it shows as a ring round that art, in the padding of the orb); the American and
+//   the Porter gates paint white every disc that is not art of its own (and the plate of American
+//   inks letters navy, --plate-ink); the Ryanair gate takes the white filter off every emblem (the
+//   mark in the colours of its file) and inks letters gold; the gold plate of Lufthansa and the plate
+//   of Qatar ink letters dark (--plate-ink);
+//   keyed on the class of the wrap (wrap: 1), so they reach the whole screen too, whose wrap carries
+//   the class of the carrier of the moved flight (_gateChangeSoloHtml): the PAL gate paints every disc
+//   its gold, #FCA404, art that is its own disc included (gate-display.css, the PB and SP rule; SP
+//   folds to PB); the Flair gate takes the white filter off every emblem and inks letters #1C1C1C; the
+//   United gate paints every disc that is not art of its own with its glossy gradient in the accent
+//   of the orb (disc: accent; the middle of the gradient is the accent, the edge 56 hundredths of it
+//   on black, edge), clears the disc of art that is its own (the first row rule: the notice is the
+//   first row of its block), and takes the white filter off every emblem.
+// No other gate reaches the orb of the notice. tests/gate-card-plates.test.js holds each to its rule
+// in the stylesheet.
 window._GATE_NOTICE_ORB_RULES = {
   'DL': { disc: '#E01933', edge: '#8F0F24', gradient: true, native: true },
   'AA': { disc: '#FFFFFF', letters: '#002745' },
   'PD': { disc: '#FFFFFF' },
   'FR': { unwhite: true, letters: '#F1C933' },
   'LH': { letters: '#12161D' },
-  'QR': { letters: '#12161D' }
+  'QR': { letters: '#12161D' },
+  'PB': { disc: '#FCA404', native: true, wrap: 1 },
+  'F8': { unwhite: true, letters: '#1C1C1C', wrap: 1 },
+  'UA': { disc: 'accent', edge: 0.56, gradient: true, clearNative: true, unwhite: true, wrap: 1 }
 };
+// The rule that reaches the orb: the rule of the body, by the carrier the gate folds to, and the rule
+// of the wrap, by the code on its class (the code of the gate, or for the whole screen the code of the
+// moved flight: a second argument, empty for a gate with no code). No gate has both.
 window._gateNoticeOrbRule = function (gate) {
-  var g = String(gate == null ? '' : gate).trim().toUpperCase();
-  if (!g) return null;
-  var f = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(g) : g;
-  return window._GATE_NOTICE_ORB_RULES[f] || null;
+  var norm = function (x) { return String(x == null ? '' : x).trim().toUpperCase(); };
+  var fold = function (x) { return (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(x) : x; };
+  var g = norm(gate), w = arguments.length > 1 ? norm(arguments[1]) : g;
+  var T = window._GATE_NOTICE_ORB_RULES;
+  var body = g ? T[fold(g)] : null, wrap = w ? T[fold(w)] : null;
+  if (body && body.wrap) body = null;
+  if (wrap && !wrap.wrap) wrap = null;
+  return body || wrap || null;
+};
+// The colours a rule paints a disc in, for the orb of a carrier: its disc and the edge of its gradient,
+// the accent of the orb where the rule paints in the accent (the edge is then that share of it on black).
+window._gateNoticeRuleDisc = function (R, accent) {
+  if (!R || !R.disc) return { disc: '', edge: '' };
+  if (R.disc !== 'accent') return { disc: R.disc, edge: R.edge || '' };
+  var a = window._gateNoticeHex(accent);
+  if (!a) return { disc: '', edge: '' };
+  var k = typeof R.edge === 'number' ? R.edge : 1;
+  var n = parseInt(a.slice(1), 16);
+  var e = '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(function (v) { var h = Math.round(v * k).toString(16).toUpperCase(); return h.length < 2 ? '0' + h : h; }).join('');
+  return { disc: a, edge: R.gradient ? e : '' };
 };
 // THE COLOUR OF THE FILE OF A MARK THE NOTICE INKS, where the gate takes the ink off (the Ryanair
 // gate): the colour of the file nearest its disc. A mark inked white is drawn in the colour of its
@@ -15907,23 +15957,70 @@ window._gateSoloCard = function (code) {
   });
   return { carrier: c, kind: 'metal', file: 'gate-metal-blue.png', accent: a, paint: at[1], at: at };
 };
+// THE ART THAT IS ITS OWN DISC, AS ITS FILE DRAWS IT. The notice judged art that fills its disc by
+// the ground a table gave it, and where no table had one, by the accent of the carrier: the red
+// roundel of Pegasus was judged as the yellow of its accent, the red line art of Copa (ZP) as a blue
+// disc. Each file the notice can draw as its own disc, beside the finished tiles whose one ground the
+// generated table gives (window._ORB_TILE_GROUNDS), is read here off the file: drawn in Chrome as the
+// notice crops it (cover, into a circle) and sampled round the rim, the colours named as the file
+// writes them.
+//   ground   the one colour round its rim (the disc that meets the card);
+//   second   a second half of the rim, where the ground is two colours (Level, Austrian, Wizz,
+//            Qantas, Pascan): both halves are judged;
+//   line     art on a clear ground (the rim and the field round the mark are see-through): the colour
+//            of the art, which is what meets the card, judged for the sink and for the brown alike;
+//   inner    the colour inside the light rim of a rimmed roundel (window._ORB_ART_RIMMED).
+// tests/gate-card-plates.test.js reads every such file and fails where a colour here is not one the
+// file draws, or where the notice draws art of its own that is in no table.
+window._ORB_ART_GROUNDS = {
+  '/logos/airlines/canadian-regional/airinuit-emblem.svg': { line: '#F1471D' },
+  '/logos/airlines/canadian/flair-dot.svg': { ground: '#7AFF94' },
+  '/logos/airlines/european/level-emblem.svg': { ground: '#3FA74D', second: '#00AADB' },
+  '/logos/airline-tiles/ASA-orb-glossy.svg': { ground: '#FFFFFF', inner: '#0C4368' },
+  '/logos/airline-tiles/AUA.svg': { ground: '#D81E05', second: '#FFFFFF' },
+  '/logos/airline-tiles/PCO.svg': { ground: '#0B3371', second: '#F5891D' },
+  '/logos/airline-tiles/QFA.svg': { ground: '#BE0000', second: '#FF0000' },
+  '/logos/airline-tiles/QTR.svg': { ground: '#FFFFFF' },
+  '/logos/airline-tiles/WZZ.svg': { ground: '#CD2B86', second: '#161998' },
+  '/logos/symbols/airlines/A3.svg': { ground: '#0A2768' },
+  '/logos/symbols/airlines/CM.svg': { line: '#0032A0' },
+  '/logos/symbols/airlines/DE.svg': { ground: '#F08200' },
+  '/logos/symbols/airlines/EW.svg': { ground: '#A6959C' },
+  '/logos/symbols/airlines/HV.svg': { ground: '#00D66C' },
+  '/logos/symbols/airlines/JL.svg': { line: '#E50012' },
+  '/logos/symbols/airlines/LO.svg': { line: '#252668' },
+  '/logos/symbols/airlines/MO.svg': { ground: '#250E5C' },
+  '/logos/symbols/airlines/PC.svg': { ground: '#C30B0B' },
+  '/logos/symbols/airlines/TK.svg': { ground: '#FFFFFF', inner: '#C90019' },
+  '/logos/symbols/airlines/ZP.svg': { line: '#CD1025' }
+};
+window._gateNoticeArt = function (src) {
+  var p = String(src || '').split('?')[0];
+  return (window._ORB_ART_GROUNDS && window._ORB_ART_GROUNDS[p]) || null;
+};
 // THE ORB OF THE NOTICE, AS IT LANDS: read off the markup the notice writes for it (the one builder,
 // _gateChangeOrbHtml) on a gate (its rules, unless the orb holds its own look). how says what draws
 // (mark: a mark on a disc; art: art that is its own disc; ring: that art in a ring the gate paints;
-// tile: a tile filling the disc; letters); disc is the colour
-// that meets the card (the disc of the box, or the ground of art that is its own disc, or the light
-// rim drawn in the roundels of Alaska and Turkish: window._ORB_ART_RIMMED), edge a second colour of
-// a disc painted as a gradient; warm the colour the brown is judged against (for a rimmed roundel,
-// its own colour, inside the rim); ink the ink of the mark or of the letters, where it is one colour.
+// tile: a tile filling the disc; letters); disc is the colour that meets the card (the disc of the
+// box, or the ground of art that is its own disc as its file draws it, or a ring round that art, the
+// box painted in a colour of its own or by the rules of the gate, or the light rim drawn in the
+// roundels of Alaska and Turkish: window._ORB_ART_RIMMED), edge a second colour of a disc painted
+// as a gradient, second the second half of a ground of two colours; warm the colour the brown is
+// judged against (for a roundel inside a rim, its own colour, inside the rim; warm2 the second half);
+// ink the ink of the mark or of the letters, where it is one colour. Two more arguments: the code on
+// the class of the wrap the notice sits in (the rules keyed on it: window._GATE_NOTICE_ORB_RULES), and
+// the look of the column of the gate (window._gateNoticeLook, for a notice of its own carrier).
 window._gateNoticeLands = function (gate, code, white, held) {
   var c = String(code == null ? '' : code).trim().toUpperCase();
+  var wrapC = arguments.length > 4 ? String(arguments[4] == null ? '' : arguments[4]).trim().toUpperCase() : String(gate == null ? '' : gate).trim().toUpperCase();
+  var column = arguments.length > 5 && !!arguments[5];
   var html = '';
-  try { html = _gateChangeOrbHtml(c, !!white, gate, !!held); } catch (e) { html = ''; }
+  try { html = _gateChangeOrbHtml(c, !!white, gate, !!held || column, wrapC, column); } catch (e) { html = ''; }
   if (!html) return null;
   var hx = window._gateNoticeHex, WHITE = window._GATE_WHITE;
   var fold = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(c) : c;
   var row = (window._GATE_ORB_LOOKS && window._GATE_ORB_LOOKS[fold]) || {};
-  var R = (held || white) ? null : window._gateNoticeOrbRule(gate);
+  var R = (held || white || column) ? null : window._gateNoticeOrbRule(gate, wrapC);
   var wrap = /class="v2-fi-icon-wrap([^"]*)" style="([^"]*)"/.exec(html) || ['', '', ''];
   var native = /v2-fi-emblem-native/.test(wrap[1]), style = wrap[2];
   var img = /<img src="([^"]*)"[^>]*style="([^"]*)"/.exec(html);
@@ -15932,37 +16029,48 @@ window._gateNoticeLands = function (gate, code, white, held) {
   try { accent = hx(getAirlineAccent(c)); } catch (e2) { accent = ''; }
   var own = window._gateNoticeBadgeDisc(c, style) || '';
   var ruled = !!(R && R.disc && (R.native || !native));
+  var Rd = ruled ? window._gateNoticeRuleDisc(R, accent) : { disc: '', edge: '' };
   // the stylesheet pads the orb of the notice, unless the box says otherwise: a ring of the box round
   // art that is its own disc
   var padded = !/padding:0 !important/.test(style) && !/padding:calc\(/.test(style);
-  var out = { code: c, carrier: fold, native: native, white: !!white, held: !!held, how: '', disc: '', edge: '', warm: '', ink: '', rimmed: false, html: html };
+  var out = { code: c, carrier: fold, native: native, white: !!white, held: !!held || column, column: column, how: '', disc: '', edge: '', second: '', warm: '', warm2: '', ink: '', rimmed: false, html: html };
   if (lt) {
     out.how = 'letters';
-    out.disc = ruled ? R.disc : own;
-    out.edge = ruled ? (R.edge || '') : '';
+    out.disc = ruled ? Rd.disc : own;
+    out.edge = ruled ? Rd.edge : '';
     out.ink = hx(lt[1]) || (R && R.letters) || WHITE;
   } else if (img) {
     var tile = (/\/airline-tiles\/([A-Za-z0-9-]+)\.svg/.exec(img[1]) || [])[1] || '';
+    var A = window._gateNoticeArt(img[1]) || {};
     var fills = /object-fit:cover !important/.test(img[2]) && !padded;
     if (fills && !/--orb-ring/.test(style)) {
       out.how = 'tile';
-      out.disc = hx(window._ORB_TILE_GROUNDS && window._ORB_TILE_GROUNDS[tile]) || own || accent;
+      out.disc = hx(window._ORB_TILE_GROUNDS && window._ORB_TILE_GROUNDS[tile]) || hx(A.ground) || own || accent;
+      out.second = hx(A.second);
+      out.warm2 = out.second;
     } else if (native) {
       out.how = 'art';
       var N = {};
       try { N = window._gateOrbNatural(c, true) || {}; } catch (e3) { N = {}; }
-      var ground = hx(N.ground) || hx(row.ground) || hx(window._ORB_TILE_GROUNDS && window._ORB_TILE_GROUNDS[tile]) || accent;
+      // the ground of the art as its file draws it; a table of the gate where no file is read (a picture)
+      var ground = hx(A.ground) || hx(A.line) || hx(N.ground) || hx(row.ground) || hx(window._ORB_TILE_GROUNDS && window._ORB_TILE_GROUNDS[tile]) || accent;
+      var box = (R && R.clearNative) ? '' : own;
       out.rimmed = !!window._ORB_ART_RIMMED[fold];
-      out.warm = ground;
+      out.second = hx(A.second);
+      out.warm = hx(A.inner) || ground;
+      out.warm2 = out.second;
       out.disc = out.rimmed ? WHITE : ground;
-      if (ruled && padded) { out.how = 'ring'; out.disc = R.disc; out.edge = R.edge || ''; out.warm = ''; out.rimmed = false; }
+      // a box painted in a colour of its own rings the art in it, in the padding of the orb
+      if (padded && box && box !== ground && !out.rimmed) { out.disc = box; out.second = ''; }
+      if (ruled && padded) { out.how = 'ring'; out.disc = Rd.disc; out.edge = Rd.edge; out.second = ''; out.warm = ''; out.warm2 = ''; out.rimmed = false; }
     } else {
       out.how = 'mark';
-      out.disc = ruled ? R.disc : own;
-      out.edge = ruled ? (R.edge || '') : '';
+      out.disc = ruled ? Rd.disc : own;
+      out.edge = ruled ? Rd.edge : '';
       var f = String(img[2]);
       var inkW = /invert\(1\)/.test(f), inkB = !inkW && /brightness\(0\)/.test(f);
-      if ((inkW || inkB) && R && R.unwhite) out.ink = hx(window._ORB_MARK_FILE_INK[fold]) || out.disc;
+      out.unwhite = !!((inkW || inkB) && R && R.unwhite);
+      if (out.unwhite) out.ink = hx(window._ORB_MARK_FILE_INK[fold]) || out.disc;
       else if (inkW) out.ink = /^#f{3}(f{3})?$/i.test(String(row.ink || '')) ? '' : WHITE;
       else if (inkB) out.ink = '#000000';
     }
@@ -15971,18 +16079,19 @@ window._gateNoticeLands = function (gate, code, white, held) {
 };
 // Does an orb, as it lands, break the rule on a card ({ at: its paints })? The reason, as a code (sink:
 // the disc, the paint, CIEDE2000; warm: the warm colour, the brown; ink: the ink, its disc, CIEDE2000,
-// the ratio), or nothing.
+// the ratio), or nothing. Every colour that meets the card is judged: the disc, the edge of a gradient,
+// the second half of a ground of two colours; and both halves for the brown.
 window._gateNoticeBreaks = function (L, card) {
   if (!L || !L.disc || !card || !card.at || !card.at.length) return '';
-  var discs = [L.disc].concat(L.edge ? [L.edge] : []);
+  var discs = [L.disc].concat(L.edge ? [L.edge] : [], L.second ? [L.second] : []);
   for (var i = 0; i < discs.length; i++) {
     for (var j = 0; j < card.at.length; j++) {
       if (window._gateDiscSinks(discs[i], card.at[j])) return 'sink:' + discs[i] + '>' + card.at[j] + ':' + window._orbDeltaE(discs[i], card.at[j]).toFixed(1);
     }
   }
-  var warm = L.warm || L.disc;
+  var warms = [L.warm || L.disc].concat(L.warm2 ? [L.warm2] : []);
   var brown = card.at.filter(function (p) { return window._gateBrown(p); })[0];
-  if (brown && window._gateWarm(warm)) return 'warm:' + warm + '>' + brown;
+  for (var w = 0; brown && w < warms.length; w++) if (window._gateWarm(warms[w])) return 'warm:' + warms[w] + '>' + brown;
   if (L.ink) {
     var lum = function (h) { var m = /^#([0-9a-f]{6})$/i.exec(h); if (!m) return 0; var l = [0, 2, 4].map(function (k) { var v = parseInt(m[1].substr(k, 2), 16) / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
     var a = lum(L.ink), b = lum(L.disc), ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
@@ -15990,31 +16099,69 @@ window._gateNoticeBreaks = function (L, card) {
   }
   return '';
 };
-// On a plate: the rule kept, and clear of every paint with room, as the rail keeps its discs there.
+// THE DARKEST PAINT OF EACH PLATE: the 5th percentile of luminance of the file (every pixel, as the
+// lightest 5th percentile of tests/gate-card-plates.test.js is measured), the average colour of the
+// pixels there. The plate is stretched over the whole card of the notice, so the orb can land on any
+// part of it: a plate counts for the notice only where its orb stands clear of this paint too.
+window._GATE_NOTICE_PLATE_DARK = {
+  'grey-wave': '#2F3030', 'black-faint-waves': '#090B0A', 'grey-shapes': '#1E1B22',
+  'black-fine-lines': '#111111', 'brown-waves': '#1F1307', 'brown-layers': '#1D130A'
+};
+window._gateNoticePlateAt = function (name) {
+  var P = window._GATE_CARD_PLATES[name];
+  if (!P) return [];
+  var dark = window._GATE_NOTICE_PLATE_DARK[name];
+  return P.at.concat(dark && P.at.indexOf(dark) < 0 ? [dark] : []);
+};
+// A PLATE COUNTS ONLY WITH ROOM. On a plate the notice keeps the rule, and every colour of its orb that
+// meets the plate stands clear of every paint of it (its recorded paints and its darkest) with room,
+// as the rail keeps its discs on the dark card (window._gateDiscClear).
 window._gateNoticeClear = function (L, at) {
   if (window._gateNoticeBreaks(L, { at: at })) return false;
-  return at.every(function (p) { return window._gateDiscClear(L.disc, p, L.ink); });
+  var discs = [L.disc].concat(L.edge ? [L.edge] : [], L.second ? [L.second] : []);
+  return discs.every(function (d) { return at.every(function (p) { return window._gateDiscClear(d, p, d === L.disc ? L.ink : ''); }); });
 };
 window._gateNoticeLook = function (gateCode, movedCode, solo) {
   var g = String(gateCode == null ? '' : gateCode).trim().toUpperCase();
   var c = String(movedCode == null ? '' : movedCode).trim().toUpperCase();
   var whole = !!solo || !g;
   var on = whole ? '' : g;
-  var out = { plate: '', white: false, hold: false, gate: on, why: '' };
+  // the code on the class of the wrap: the gate, or for the whole screen the moved flight (none for a
+  // gate with no code)
+  var wrapC = solo ? c : g;
+  var out = { plate: '', white: false, hold: false, column: false, gate: on, wrap: wrapC, why: '' };
   if (!c) return out;
   var fold = function (x) { return (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(x) : x; };
-  if (!whole && window._gateColumnKept(g) && fold(g) === fold(c)) return out;
+  var ownGate = !whole && fold(g) === fold(c);
+  if (ownGate && window._gateColumnKept(g)) return out;
   var card = null;
   try { card = whole ? window._gateSoloCard(c) : window._gateCardPaint(g, true); } catch (e) { card = null; }
-  var L0 = window._gateNoticeLands(on, c, false, false);
+  var L0 = window._gateNoticeLands(on, c, false, false, wrapC);
   if (!card || !L0) return out;
-  out.why = window._gateNoticeBreaks(L0, card);
+  // the whole screen of a carrier whose gate is approved as drawn wears the rules of that gate (its wrap
+  // carries the class of the carrier): the mark and the disc it draws there are the approved pair (the
+  // white arrow of PAL on its gold), and only what meets the card is judged
+  var Lj = (solo && window._gateColumnKept(c)) ? Object.assign({}, L0, { ink: '' }) : L0;
+  out.why = window._gateNoticeBreaks(Lj, card);
   if (!out.why) return out;
-  // the orb in its own look, where the rules of the gate broke it
-  var L1 = window._gateNoticeLands(on, c, false, true);
-  var touched = !!(L1 && window._gateNoticeOrbRule(on) && (L1.disc !== L0.disc || L1.ink !== L0.ink || L1.edge !== L0.edge));
-  if (touched && !window._gateNoticeBreaks(L1, card)) { out.hold = true; return out; }
-  // a plate of its own
+  var Lp = L0, touched = false;
+  if (ownGate) {
+    // A NOTICE OF ITS OWN CARRIER ON ITS OWN GATE takes the look of the column of that gate: the disc
+    // and the ink its rail draws (window._gateOrbParts, the rule of the card applied), on the card
+    // of the gate, unchanged. Only where that too breaks the rule does it take a plate.
+    var Lc = window._gateNoticeLands(on, c, false, true, wrapC, true);
+    if (Lc) {
+      out.column = true; out.hold = true; Lp = Lc; touched = true;
+      if (!window._gateNoticeBreaks(Lc, card)) return out;
+    }
+  } else {
+    // the orb in its own look, where the rules of the gate broke it
+    var L1 = window._gateNoticeLands(on, c, false, true, wrapC);
+    touched = !!(L1 && window._gateNoticeOrbRule(on, wrapC) && (L1.disc !== L0.disc || L1.ink !== L0.ink || L1.edge !== L0.edge));
+    if (touched && !window._gateNoticeBreaks(L1, card)) { out.hold = true; return out; }
+    if (touched) Lp = L1;
+  }
+  // a plate of its own, taken only where the orb stands clear of it with room
   var P = window._GATE_CARD_PLATES, tried = [];
   try {
     var mine = window._gateCardPaint(c, true);
@@ -16022,19 +16169,20 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
   } catch (e2) {}
   window._GATE_NOTICE_PLATES.forEach(function (n) { if (P[n] && tried.indexOf(n) < 0) tried.push(n); });
   var onPlate = function (L) {
-    var i;
-    for (i = 0; i < tried.length; i++) if (window._gateNoticeClear(L, P[tried[i]].at)) return tried[i];
-    for (i = 0; i < tried.length; i++) if (!window._gateNoticeBreaks(L, { at: P[tried[i]].at })) return tried[i];
+    for (var i = 0; i < tried.length; i++) if (window._gateNoticeClear(L, window._gateNoticePlateAt(tried[i]))) return tried[i];
     return '';
   };
-  var Lp = touched ? L1 : L0;
   var n = onPlate(Lp);
   if (n) { out.plate = n; out.hold = touched; return out; }
-  // the last resort: the orb drawn white
-  var Lw = window._gateNoticeLands(on, c, true, true);
+  // the last resort: the orb drawn white, as the rail draws a column of dark discs, on the card it had,
+  // else on the first plate it stands clear of
+  var Lw = window._gateNoticeLands(on, c, true, true, wrapC);
+  out.column = false;
   if (Lw && !window._gateNoticeBreaks(Lw, card)) { out.white = true; out.hold = true; return out; }
   n = Lw ? onPlate(Lw) : '';
-  if (n) { out.plate = n; out.white = true; out.hold = true; }
+  if (n) { out.plate = n; out.white = true; out.hold = true; return out; }
+  // nothing keeps it: the white orb on the first plate it does not sink into
+  for (var k = 0; Lw && k < tried.length; k++) if (!window._gateNoticeBreaks(Lw, { at: window._gateNoticePlateAt(tried[k]) })) { out.plate = tried[k]; out.white = true; out.hold = true; return out; }
   return out;
 };
 // THE LOWER RIGHT PANEL OF A GATE, JUDGED AS THE CARD IS. The pair of the carrier (_rc2Pair),
@@ -35822,7 +35970,8 @@ var TILE_SKIP_WORDMARK_ONLY = new Set([]);
 // turned half way round. A step near black or near white (CIELAB lightness under 15 or over 92) is
 // taken only where nothing else works. The board judges each square against the ground it is painted on, read off the
 // screen after the rows are drawn (_monogramFit, from _fidsBoardInk): the row of the theme, a custom
-// theme as configured, the colour of a status row. The app judges its square against its own tile
+// theme as configured, the colour of a status row; and a row drawn see-through (departed, arrived and
+// gate closed, at 0.7 over what is under the row) as drawn, the square and its letters with it. The app judges its square against its own tile
 // grounds, the card and the page of its day and night themes. _monoStep is written the same in
 // both files, and tests/airline-logos-every-surface.test.js holds the two texts equal and runs them.
 // Where the square shows: the rows of the departures board, and the tile of the belt sign (bidsv3),
@@ -35887,7 +36036,14 @@ function _monoStep(start, grounds) {
   };
   var hex = function (v) { return '#' + v.map(function (x) { var t = x.toString(16).toUpperCase(); return t.length < 2 ? '0' + t : t; }).join(''); };
   var under = [].concat(grounds || []).map(rgbOf).filter(Boolean), sq = rgbOf(start);
-  var clear = function (v) { return 1.05 / (lum(v) + 0.05) >= 3 && under.every(function (g) { return dE(v, g) >= 20; }); };
+  // A SQUARE SEEN THROUGH. A third argument, where the square is drawn see-through (a row of the board
+  // dimmed to 0.7: departed, arrived, gate closed): a, the opacity it is drawn at, and under, the colour
+  // it is drawn over. The square and its white letters are then judged as drawn, against the grounds
+  // as drawn (the caller reads those off the screen that way).
+  var veil = (arguments.length > 2 && arguments[2] && arguments[2].a < 1) ? arguments[2] : null, vu = veil ? rgbOf(veil.under) : null;
+  var seen = function (v) { return (veil && vu) ? v.map(function (x, k) { return Math.round(x * veil.a + vu[k] * (1 - veil.a)); }) : v; };
+  var ink = lum(seen([255, 255, 255]));
+  var clear = function (v) { var s = seen(v), l = lum(s); return (Math.max(ink, l) + 0.05) / (Math.min(ink, l) + 0.05) >= 3 && under.every(function (g) { return dE(s, g) >= 20; }); };
   if (!sq || !under.length || clear(sq)) return start;
   // AWAY FROM THE GROUND: lighter first on a dark ground, darker first on a light one (the grounds it
   // sinks into, CIELAB lightness under 50 or not), then the other way; then the hue turned half way
@@ -35895,7 +36051,7 @@ function _monoStep(start, grounds) {
   // lightness under 15 or over 92) is taken only where no other step and no turn of the hue works:
   // stepped darker first, the squares of Sunwing, Tway and Japan Airlines went near black on the navy
   // rows of Halifax.
-  var sunk = under.filter(function (g) { return dE(sq, g) < 20; }), ref = sunk.length ? sunk : under;
+  var sunk = under.filter(function (g) { return dE(seen(sq), g) < 20; }), ref = sunk.length ? sunk : under;
   var up = ref.reduce(function (a, g) { return a + lab(g)[0]; }, 0) / ref.length < 50;
   var H = hslOf(sq), turns = [H[0], (H[0] + 180) % 360], order = [];
   for (var t = 0; t < 2; t++) {
@@ -35911,11 +36067,30 @@ function _monoStep(start, grounds) {
       if ((pass || (L >= 15 && L <= 92)) && clear(order[k])) return hex(order[k]);
     }
   }
+  // A SQUARE WITH LITTLE HUE OF ITS OWN (a black, a grey) that no lightness lifts off its ground takes
+  // colour: the saturation of the squares the app makes up (42 hundredths), at its own hue and then
+  // turned half way round, every lightness in the same order. Only a row seen through needs it (a
+  // grey square on a dimmed row, where the letters as drawn leave no lightness clear of the row).
+  if (H[1] < 0.42) {
+    for (var t3 = 0; t3 < 2; t3++) {
+      var aw = [], bk = [];
+      for (var d3 = 0.04; H[2] - d3 >= -1e-9; d3 += 0.04) (up ? bk : aw).push(H[2] - d3);
+      for (var u3 = 0.04; H[2] + u3 <= 1 + 1e-9; u3 += 0.04) (up ? aw : bk).push(H[2] + u3);
+      var l3 = [H[2]].concat(aw, bk);
+      for (var j = 0; j < l3.length; j++) { var v3 = hslRgb(turns[t3], 0.42, Math.max(0, Math.min(1, l3[j]))); if (clear(v3)) return hex(v3); }
+    }
+  }
   return start;
 }
-// The ground under a square, as painted: the first colour behind it that is not clear, a colour with
-// some see-through laid over the ones under it; a bar painted as a gradient and nothing else (the
-// bar of the belt sign) gives every colour of its gradient. Hex strings; empty where nothing is read.
+// The ground under a square, as drawn: the first colour behind it that is not clear, a colour with
+// some see-through laid over the ones under it, and an ancestor drawn see-through (opacity under 1:
+// a departed, arrived or gate-closed row of the board, at 0.7) laying all that is in it over what is
+// behind it; a bar painted as a gradient and nothing else (the bar of the belt sign) gives every
+// colour of its gradient. Hex strings; empty where nothing is read. Where the square itself is drawn
+// see-through, the list carries it as veil: the opacity it is drawn at (a) and the colour it is drawn
+// over (under), for _monoStep to judge the square as drawn. The dimmed row of Halifax: the square of
+// Sunwing was judged #4E749F against the row it is painted on, and drawn over the navy under that row
+// it stood 11 from it.
 function _monogramGround(el) {
   var parts = function (s) {
     var m = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,\/]+([\d.]+%?))?/.exec(String(s || ''));
@@ -35923,24 +36098,39 @@ function _monogramGround(el) {
     var a = m[4] == null ? 1 : (/%$/.test(m[4]) ? parseFloat(m[4]) / 100 : parseFloat(m[4]));
     return [+m[1], +m[2], +m[3], a];
   };
-  var hex = function (v) { return '#' + v.slice(0, 3).map(function (x) { var t = Math.round(x).toString(16).toUpperCase(); return t.length < 2 ? '0' + t : t; }).join(''); };
-  var layers = [], n = el && el.parentElement;
+  var hex = function (v) { return '#' + v.slice(0, 3).map(function (x) { var t = Math.round(Math.max(0, Math.min(255, x))).toString(16).toUpperCase(); return t.length < 2 ? '0' + t : t; }).join(''); };
+  if (!el) return [];
+  var n = el.parentElement, painted = false;
   while (n && n.nodeType === 1) {
     var cs = getComputedStyle(n), c = parts(cs.backgroundColor);
-    if (c && c[3] > 0.02) { layers.push(c); if (c[3] >= 0.99) break; }
-    else if (!layers.length && /gradient\(/.test(cs.backgroundImage) && !/\dpx/.test(cs.backgroundSize)) {
+    if (c && c[3] > 0.02) { painted = true; break; }
+    if (/gradient\(/.test(cs.backgroundImage) && !/\dpx/.test(cs.backgroundSize)) {
       var stops = (cs.backgroundImage.match(/rgba?\([^)]*\)/g) || []).map(parts).filter(Boolean);
       if (stops.length) return stops.map(hex);
     }
     n = n.parentElement;
   }
-  if (!layers.length) return [];
-  var base = layers[layers.length - 1].slice(0, 3);
-  for (var i = layers.length - 2; i >= 0; i--) {
-    var L = layers[i];
-    base = [0, 1, 2].map(function (k) { return L[k] * L[3] + base[k] * (1 - L[3]); });
-  }
-  return [hex(base)];
+  if (!painted) return [];
+  // what a pixel shows, from a colour painted at the depth of a node (c, covering a) up: each ancestor
+  // lays its background under what is above it, and an ancestor drawn see-through lays all that is in
+  // it over what is behind it; white under the page
+  var seen = function (c, a, from) {
+    var C = [c[0] * a, c[1] * a, c[2] * a], A = a;
+    for (var p = from; p && p.nodeType === 1; p = p.parentElement) {
+      var st = getComputedStyle(p);
+      if (p !== el) {
+        var b = parts(st.backgroundColor);
+        if (b && b[3] > 0.02 && A < 0.999) { var k = (1 - A) * b[3]; C = [0, 1, 2].map(function (i) { return C[i] + k * b[i]; }); A += k; }
+      }
+      var o = parseFloat(st.opacity);
+      if (o >= 0 && o < 1) { C = C.map(function (v) { return v * o; }); A *= o; }
+    }
+    return [0, 1, 2].map(function (i) { return C[i] + (1 - A) * 255; });
+  };
+  var out = [hex(seen([0, 0, 0], 0, el.parentElement))];
+  var k0 = seen([0, 0, 0], 1, el), k1 = seen([255, 255, 255], 1, el), a = (k1[1] - k0[1]) / 255;
+  if (a < 0.995 && a > 0.005) out.veil = { a: Math.round(a * 1000) / 1000, under: hex(k0.map(function (v) { return v / (1 - a); })) };
+  return out;
 }
 // Every square under root, stepped off the ground it sits on (from the colour of the app, each
 // time, so a square is never stepped twice). Cheap when nothing changed: the start and the ground
@@ -35952,11 +36142,11 @@ function _monogramFit(root) {
       var el = els[i];
       if (!el.isConnected) continue;
       var start = _monogramColour(String(el.getAttribute('data-code') || ''));
-      var grounds = _monogramGround(el);
-      var key = start + '|' + grounds.join(',');
+      var grounds = _monogramGround(el), veil = grounds.veil || null;
+      var key = start + '|' + grounds.join(',') + (veil ? '|' + veil.a + veil.under : '');
       if (el.getAttribute('data-mono-key') === key) continue;
       el.setAttribute('data-mono-key', key);
-      el.style.background = _monoStep(start, grounds);
+      el.style.background = _monoStep(start, grounds, veil);
     }
   } catch (e) {}
 }
