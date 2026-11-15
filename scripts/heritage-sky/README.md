@@ -223,12 +223,17 @@ a winglet) is no mix of page and aeroplane, and it stays at any depth.
 dark paint and passes 40 or fewer: for the second cut-out 1257 at two, 99 at
 five, 15 at six (the first gave 790 at two and 13 at six).
 
-The Dream livery 747-133 is a stand-in for now (2000 x 849, on a white page)
-and passes at the default two: by the same count 433 at one, 1 at two.
-The full-size drawing replaces it through the same command into the same
-file name:
+The Dream livery 747-133 is made from the final supplied drawing (4080 x
+2295, already cut out, the aeroplane about 73% of its width), which replaced
+a stand-in (2000 x 849, on a white page) through the same command into the
+same file name. It passes at the default two: by the same count 361 at one,
+11 at two, and by the count of the Dream livery test 37 and 31, nearly all of
+it the white paint of the nose framing the dark cockpit windows, which is
+drawn. The top of its fin is its furthest aft point, so the top right corner
+of the picture is the dark tip of the fin, partly clear, as on the A350-1000.
+It comes out at 2272 x 603:
 
-    python3 scripts/heritage-sky/card-cutout.py 747-305.png fids-current/aircraft/heritage/air-canada-747-305-2017.png
+    python3 scripts/heritage-sky/card-cutout.py 747-305-2017-livery-FINAL-with-door.png fids-current/aircraft/heritage/air-canada-747-305-2017.png
 
 The same aeroplane in the 1980 livery, the archive card, came already cut out.
 The picture is from the drawing as its author corrected it (the v2 file,

@@ -65827,36 +65827,54 @@ var HERITAGE_MARKS = [
     // beside AIR CANADA in black, as the 2017 scheme letters the aeroplane. No
     // new file, no plate behind it, nothing recoloured.
     //
-    // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the only
-    // copy of the supplied drawing so far (2000 x 849, on a white page), at
-    // the depth of two pixels, the default and the smallest that passes:
-    // counted as on the A350-1000, light pixels on the outline of the dark
-    // paint are 433 at one pixel and 1 at two; by the count of the Dream
-    // livery test the pale rim is 21. Cropped to its own edges and scaled to
-    // the 2272 px of the other cards (2272 x 635). Nothing of the aeroplane is
-    // repainted. The light line along the leading edge and the top of the fin
-    // is drawn, and stays at any depth, as on the A350-1000.
-    // The file on disk is a STAND-IN, the drawing at the size it was first
-    // sent (1902 x 532 once cropped), so it is soft at this width. The
-    // full-size drawing replaces it by running the same tool on it into the
-    // same file name: one file, and nothing else on the card changes.
+    // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
+    // final supplied drawing (4080 x 2295 at 204 dpi, already cut out, the
+    // aeroplane about 73% of its width): laid on white and the page taken off
+    // again at the depth of two pixels, the default and the smallest that
+    // passes. Counted as on the A350-1000, light pixels on the outline of the
+    // dark paint are 361 at one pixel and 11 at two; by the count of the Dream
+    // livery test the pale rim is 37 and 31, nearly all of it the white paint
+    // of the nose framing the dark cockpit windows, which is drawn and stays
+    // at any depth (28 at three). Cropped to its own edges and scaled to the
+    // 2272 px of the other cards (2272 x 603). Nothing of the aeroplane is
+    // repainted. The top of the fin is the furthest aft point of the drawing,
+    // so the top right corner of the picture is the dark tip of the fin,
+    // partly clear (opacity 9), as on the A350-1000; the other three corners
+    // are clear. The light line along the leading edge and the top of the fin
+    // is drawn, and stays at any depth, as on the A350-1000. Looked at over a
+    // dark sky and over the paper of the card, no pale line shows round the
+    // black fin, the belly or the engines.
+    // THE FIN, measured for regular horizontal stripes (the mean brightness
+    // of the dark fin paint row by row, against the median of the nine rows
+    // round it): none. No row is 1.5 levels or more above its neighbours; the
+    // one row 1.0 above them is a short line drawn near the top of the
+    // trailing edge, and the six rows 0.5 or more above them, that one among
+    // them, are 23 to 152 rows apart, with no regular step.
+    // THE FINAL DRAWING draws the upper-deck door behind the cockpit, which
+    // the stand-in left out, and keeps the Star Alliance star behind it. It
+    // replaced the stand-in (the drawing at the size it was first sent, 2000
+    // x 849 on a white page, 2272 x 635 here) through the same tool into the
+    // same file name: one file, and nothing else on the card changed.
     //
-    // ITS SHAPE, measured on the stand-in behind the upper deck, where the
-    // body is one deck: the top of the fuselage is level from 34% to 74% of
-    // the length, and the depth is the median of the columns 56–64% back,
-    // behind the wing and ahead of the taper to the tail (234 px). Length to
-    // the furthest aft point (the top of the fin) over that depth is 9.71,
-    // against 10.87 for the 747-100 (70.66 m overall over 6.50 m, 21 ft 4 in,
-    // which is the fuselage WIDTH published for the 747-100 by Aerocorner and
-    // aircraftinvestigation.info, taken here as its depth): 10.7% short, and
-    // less if the body is deeper than it is wide behind the hump. Boeing, 747 Airplane
+    // ITS SHAPE, measured again on the final drawing behind the upper deck,
+    // where the body is one deck: the top of the fuselage is level from 34%
+    // to 74% of the length, and the depth is the median of the columns 56–64%
+    // back, behind the wing and ahead of the taper to the tail (223 px).
+    // Length to the furthest aft point (the top of the fin) over that depth
+    // is 10.19 (10.17 to the tip of the tailplane), against 10.87 for the
+    // 747-100 (70.66 m overall over 6.50 m, 21 ft 4 in, which is the fuselage
+    // WIDTH published for the 747-100 by Aerocorner and
+    // aircraftinvestigation.info, taken here as its depth): 6.3% short, and
+    // less if the body is deeper than it is wide behind the hump. The
+    // stand-in measured 9.71, 10.7% short. Boeing, 747 Airplane
     // Characteristics for Airport Planning, D6-58326 rev E (May 2011), section
     // 2.2, is the source to check that depth against; it was not read for
     // this card. It is used as drawn either way: it is the supplied art, and
     // a stretch is a call for its author. The rest is the -100: the short
     // upper deck (the hump ends about a third of the way back; the -300 and
     // the -400 carry it further aft), a wing with no winglets (the -400 has
-    // them) and five main deck doors a side.
+    // them) and five main deck doors a side, with the upper-deck door now
+    // drawn behind the cockpit.
     //
     // Between the 1980 DC-9 and Air Nova on purpose, five cards after the 1980 livery card of the same aeroplane and six before its 1993 livery card at the Atlantic airports, five and five at every other Canadian airport, where Air Nova is not in the pool and it comes straight before the 1987 TriStar, one of the three widebody pairs that pool cannot avoid (see the Canadian Airlines card). The 2017 DC-9 stays three or more cards from every other DC-9.
     key: 'air-canada-747-305-2017',

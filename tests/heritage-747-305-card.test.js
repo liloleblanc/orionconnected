@@ -177,10 +177,13 @@ test('the card: a Boeing 747-133 in the Air Canada set, under Dream livery', () 
   assert.equal(m.file, byKey['air-canada-dc9-2017'].file, 'the mark of the 2017-livery DC-9 card');
   assert.match(SRC, /var LOCAL_LOGOS = \{[\s\S]{0,400}?'AC': '\/logos\/airlines\/canadian\/air-canada\.svg'/, 'the file the live boards map AC to');
   assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', m.file.replace(/^\//, ''))), 'on disk');
-  // the note says the picture is a stand-in, and how the full-size drawing replaces it
+  // the note says the picture is the final drawing, which replaced the stand-in, and what it adds
   const note = NOTE.replace(/\s*\/\/\s*/g, ' ');
-  assert.match(note, /The file on disk is a STAND-IN, the drawing at the size it was first sent/, 'the note says the picture is a stand-in');
-  assert.match(note, /The full-size drawing replaces it by running the same tool on it into the same file name/, 'and that the full-size drawing replaces it, by the same tool into the same file name');
+  assert.doesNotMatch(note, /The file on disk is a STAND-IN/, 'the picture is no longer a stand-in');
+  assert.match(note, /from the final supplied drawing \(4080 x 2295 at 204 dpi, already cut out/, 'the note names the drawing it is made from');
+  assert.match(note, /It replaced the stand-in \(the drawing at the size it was first sent, 2000 x 849 on a white page, 2272 x 635 here\) through the same tool into the same file name/, 'and the stand-in it replaced, by the same tool into the same file name');
+  assert.match(note, /THE FINAL DRAWING draws the upper-deck door behind the cockpit, which the stand-in left out, and keeps the Star Alliance star behind it/, 'the upper-deck door is drawn now');
+  assert.doesNotMatch(note, /['"]/, 'no quote marks in the note');
 });
 
 test('their place in the rotation: the three fin 305 cards spread evenly, the DC-9, DC-8, 767 and TriStar spacing kept', () => {
@@ -643,15 +646,22 @@ function rgbaOf(file) {
 
 // A card picture as the tool writes it: the working width, the proportions of
 // the drawing, cropped to it, clear in the corners, mostly sky, the aeroplane
-// solid, no haze. Returns the pixels for the counts below.
-function cutout(picture, ratio) {
+// solid, no haze. Returns the pixels for the counts below. With finTip, the
+// top right corner may be the dark tip of the fin, partly clear, as on the
+// A350-1000: a drawing whose fin is its highest and furthest aft point.
+function cutout(picture, ratio, { finTip = false } = {}) {
   const file = path.join(ROOT, 'fids-current', picture.replace(/^\//, ''));
   assert.ok(fs.existsSync(file), picture + ' is on disk');
   const img = rgbaOf(file), { w, h, px } = img;
   assert.equal(w, 2272, 'scaled to the 2272 px of the other card pictures');
   assert.ok(Math.abs(w / h - ratio) < 0.01, 'at the proportions of the drawing: cropped and scaled, never stretched (it is ' + w + ' x ' + h + ')');
   const A = (x, y) => px[(y * w + x) * 4 + 3];
-  for (const [x, y] of [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]) assert.equal(A(x, y), 0, 'the corner at ' + x + ',' + y + ' is clear');
+  for (const [x, y] of [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]) {
+    if (finTip && x === w - 1 && y === 0) {
+      const tip = px.subarray((w - 1) * 4, (w - 1) * 4 + 4);
+      assert.ok(tip[3] === 0 || (tip[3] < 255 && Math.max(tip[0], tip[1], tip[2]) <= 60), 'the top right corner is clear or the dark tip of the fin, partly clear (it is ' + Array.from(tip) + ')');
+    } else assert.equal(A(x, y), 0, 'the corner at ' + x + ',' + y + ' is clear');
+  }
   const touches = { left: false, right: false, top: false, bottom: false };
   for (let y = 0; y < h; y++) { if (A(0, y) || A(1, y)) touches.left = true; if (A(w - 1, y) || A(w - 2, y)) touches.right = true; }
   for (let x = 0; x < w; x++) { if (A(x, 0) || A(x, 1)) touches.top = true; if (A(x, h - 1) || A(x, h - 2)) touches.bottom = true; }
@@ -715,13 +725,30 @@ function paleRim({ w, h, px }) {
 }
 
 test('its picture: a cut-out at the working width, clear all round, with no pale line under the dark paint', () => {
-  // NO PAGE LEFT ROUND THE BLACK FIN, BELLY AND ENGINES. The stand-in came on a
-  // white page; un-mixed one pixel deep, the page stayed a pale line round the
-  // dark paint over a dark sky (433 pixels by this count); two deep, the
-  // default of the tool, 1.
-  const rim = darkRim(cutout(PICTURE, 2272 / 635));
-  assert.ok(rim <= 40, 'the page is still in the outline of the dark paint: ' + rim + ' light pixels on it');
-  assert.ok(fs.existsSync(path.join(ROOT, 'scripts', 'heritage-sky', 'card-cutout.py')), 'the tool that makes the picture from a drawing is kept, for the full-size drawing');
+  // NO PAGE LEFT ROUND THE BLACK FIN, BELLY AND ENGINES. The final supplied
+  // drawing came already cut out (4080 x 2295). Laid on white and un-mixed
+  // one pixel deep, the page stayed a pale line round the dark paint over a
+  // dark sky: 361 by the first count, 37 by the second; two deep, the
+  // default of the tool, 11 and 31, the second nearly all the white paint of
+  // the nose round the dark cockpit windows, which is drawn (28 at three).
+  // The stand-in it replaced (2000 x 849, on a white page) gave 433 and 1 by
+  // the first count. The top of the fin is the furthest aft point of the
+  // drawing, so the top right corner is the dark tip of the fin, partly
+  // clear, as on the A350-1000.
+  const img = cutout(PICTURE, 2272 / 603, { finTip: true });
+  assert.equal(img.h, 603, 'the final drawing at 2272 px: 2272 x 603 (the stand-in was 2272 x 635)');
+  const dark = darkRim(img), pale = paleRim(img);
+  assert.ok(dark <= 40, 'the page is still in the outline of the dark paint: ' + dark + ' light pixels on it');
+  assert.ok(pale <= 40, 'the page is still in the outline of the dark paint: ' + pale + ' pale pixels on it');
+  const note = NOTE.replace(/\s*\/\/\s*/g, ' ');
+  assert.match(note, /at the depth of two pixels, the default and the smallest that passes/, 'the note names the depth');
+  assert.match(note, /361 at one pixel and 11 at two; by the count of the Dream livery test the pale rim is 37 and 31/, 'and the counts it was chosen by');
+  assert.match(note, /\(2272 x 603\)/, 'and the size it comes out at');
+  assert.match(note, /the top right corner of the picture is the dark tip of the fin, partly clear/, 'and why one corner is not clear');
+  const readme = fs.readFileSync(path.join(ROOT, 'scripts', 'heritage-sky', 'README.md'), 'utf8');
+  assert.doesNotMatch(readme, /747-133 is a stand-in/, 'the README no longer calls it a stand-in');
+  assert.match(readme, /card-cutout\.py 747-305-2017-livery-FINAL-with-door\.png fids-current\/aircraft\/heritage\/air-canada-747-305-2017\.png\n/, 'the README gives the command, at the default depth');
+  assert.ok(fs.existsSync(path.join(ROOT, 'scripts', 'heritage-sky', 'card-cutout.py')), 'the tool that makes the picture from a drawing is kept');
 });
 
 test('the 1980 picture: a cut-out at the working width, clear all round, with no pale line round the dark paint or the grey belly', () => {
@@ -765,11 +792,11 @@ test('the 1993 picture: a cut-out at the working width, clear all round, with no
   assert.match(readme, /card-cutout\.py 747-305-1993\.png fids-current\/aircraft\/heritage\/air-canada-747-305-ac93\.png 2272 10 4/, 'the README gives the command, depth and all');
 });
 
-test('the 1993 picture has the shape its note gives: 10.33 long for its depth, to the tip of the tailplane', () => {
-  // Measured as on the other two cards of fin 305: the opaque run of each
-  // column (opacity 128 or more) from the top of the body down, the depth the
-  // median of the columns 56–64% back, behind the upper deck.
-  const { w, h, px } = rgbaOf(path.join(ROOT, 'fids-current', ARCHIVE93_PICTURE.replace(/^\//, '')));
+// The body of a fin 305 picture, measured as on all three cards: the opaque
+// run of each column (opacity 128 or more) from the top of the body down,
+// the depth the median of the columns 56–64% back, behind the upper deck.
+function bodyOf(picture) {
+  const { w, h, px } = rgbaOf(path.join(ROOT, 'fids-current', picture.replace(/^\//, '')));
   const A = (x, y) => px[(y * w + x) * 4 + 3];
   const depths = [], tops = [];
   for (let x = Math.floor(0.56 * w); x <= Math.floor(0.64 * w); x++) {
@@ -780,7 +807,11 @@ test('the 1993 picture has the shape its note gives: 10.33 long for its depth, t
     tops.push(top); depths.push(y - top);
   }
   depths.sort((a, b) => a - b);
-  const depth = depths[depths.length >> 1];
+  return { w, h, A, tops, depth: depths[depths.length >> 1] };
+}
+
+test('the 1993 picture has the shape its note gives: 10.33 long for its depth, to the tip of the tailplane', () => {
+  const { w, h, A, tops, depth } = bodyOf(ARCHIVE93_PICTURE);
   assert.equal(depth, 220, 'the depth behind the upper deck');
   assert.equal((w / depth).toFixed(2), '10.33', 'length over depth');
   // the furthest aft point (the last column, where the tip is partly clear) is the tailplane,
@@ -791,6 +822,22 @@ test('the 1993 picture has the shape its note gives: 10.33 long for its depth, t
   const note = ARCHIVE93_NOTE.replace(/\s*\/\/\s*/g, ' ');
   assert.match(note, /the depth is the median of the columns 56–64% back \(220 px\)/, 'the note gives the depth');
   assert.match(note, /over that depth is 10\.33 \(10\.28 to the top of the fin\), against 10\.87 for the 747-100 as on the 1980 livery card: 5\.0% short/, 'and the proportion against the -100');
+});
+
+test('the Dream livery picture has the shape its note gives, measured again on the final drawing: 10.19 long for its depth, to the top of the fin', () => {
+  const { w, h, A, tops, depth } = bodyOf(PICTURE);
+  assert.equal(depth, 223, 'the depth behind the upper deck (234 on the stand-in)');
+  assert.equal((w / depth).toFixed(2), '10.19', 'length over depth (9.71 on the stand-in)');
+  // the furthest aft point (the last column, partly clear) is the top of the fin, not the tailplane
+  const aft = [];
+  for (let y = 0; y < h; y++) if (A(w - 1, y) > 0) aft.push(y);
+  assert.ok(aft.length && aft[aft.length - 1] < 0.1 * Math.min(...tops), 'the last column is the top of the fin, far above the top of the body');
+  const note = NOTE.replace(/\s*\/\/\s*/g, ' ');
+  assert.match(note, /ITS SHAPE, measured again on the final drawing/, 'the note says the shape is measured on the final drawing');
+  assert.match(note, /the depth is the median of the columns 56–64% back, behind the wing and ahead of the taper to the tail \(223 px\)/, 'the note gives the depth');
+  assert.match(note, /over that depth is 10\.19 \(10\.17 to the tip of the tailplane\), against 10\.87 for the 747-100/, 'and the proportion against the -100');
+  assert.match(note, /which is the fuselage WIDTH published for the 747-100 by Aerocorner and aircraftinvestigation\.info, taken here as its depth\): 6\.3% short, and less if the body is deeper than it is wide behind the hump/, 'with the width taken for the depth, said');
+  assert.match(note, /The stand-in measured 9\.71, 10\.7% short/, 'and what the stand-in measured');
 });
 
 test('the pictures are in the build: under the folder the deploy serves, in the size it allows', () => {
