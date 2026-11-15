@@ -20119,6 +20119,15 @@ html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:is(.row-d
 html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td *:not(.gate-changed-badge) {
   color: #000000 !important;
 }
+/* THE MONOGRAM SQUARE KEEPS ITS WHITE LETTERS ON EVERY ROW. The square is a chip with its own ground
+   (_monogramColour, stepped off the row as drawn by _monogramFit), and its colour is chosen for white
+   letters: the black of the light board above read 1.8 to 3.0 to 1 on 94 of the 100 squares of the
+   dimmed rows of mist at Halifax (Ace Cargo, Boutique Air, Jetstar Asia, JetSMART, BermudAir). One
+   more id than the rules above, so it wins on the dark board and the light board alike. */
+html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td .logo-monogram {
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+}
 html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td .gate-changed-badge {
   color: #000000 !important;
 }
@@ -25576,6 +25585,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   width: calc(min(11vh, 6.9vw) * var(--gl-gk)) !important; height: calc(min(11vh, 6.9vw) * var(--gl-gk)) !important;
   min-width: 0 !important; min-height: 0 !important; max-width: none !important; max-height: none !important;
   padding: calc(min(1.5vh, .95vw) * var(--gl-gk)) !important;
+}
+/* the letters of a carrier drawn as letters on its orb sit inside the padding of the orb at its normal
+   size: half the content box, so two characters (WW at 1.82 em is the widest pair) stand whole within it
+   and three stay within the orb. They inherited the size of the flight beside them (110 px in an orb
+   of 115.5), ran out of the orb and out of the row, and the fit of the notice went to its floor (0.45:
+   the orb 52 px, 4B read as 4E, the whole notice shrunk). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gl-gc .gl-gc-orb .v2-fi-orb-code {
+  font-size: calc((min(11vh, 6.9vw) - 2 * min(1.5vh, .95vw)) * var(--gl-gk) * 0.5) !important;
+  line-height: 1 !important; white-space: nowrap !important; letter-spacing: -0.03em !important;
 }
 /* the plate of the notice, where it names one (data-gc-plate): the rules of the plates above set its
    paints on .gl-gc, and this draws them on the card of the notice alone, over whatever the rules of the

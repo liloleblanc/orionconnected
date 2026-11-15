@@ -1085,6 +1085,44 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
   const css = fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8');
   assert.match(css, /#fidsTable tbody tr:is\(\.row-departed, \.row-arrived, \.row-gate-closed\) \{\n  opacity: 0\.7 !important;/);
   assert.doesNotMatch(css, /tr\.row-diverted \.full-logo\.logo-monogram \{\s*background:/);
+  // THE LIGHT BOARD, ITS DIMMED ROWS AS DRAWN. Every cell of a departed, arrived or gate-closed row of the
+  // light board is inked black (display-overrides.css), and that rule reached the letters of the square,
+  // whose colour is stepped for white letters: on the dimmed rows of mist at Halifax 94 of 100 squares
+  // read 1.8 to 3.0 to 1 (Ace Cargo, Boutique Air, Jetstar Asia, JetSMART, BermudAir). The letters of the
+  // square stay white on every row: a rule beside that one, on the square alone, outranks it.
+  const DIM = 'tr:is\\(\\.row-departed, \\.row-arrived, \\.row-gate-closed\\)';
+  const black = new RegExp('(html:not\\(#_\\):not\\(#_\\) body\\.fids-light-board:not\\(#_\\) #fidsTable tbody ' + DIM + ' td \\*:not\\(\\.gate-changed-badge\\)) \\{\\n  color: #000000 !important;\\n\\}').exec(css);
+  const white = new RegExp('(html(?::not\\(#_\\))+ body(?::not\\(#_\\))+ #fidsTable tbody ' + DIM + ' td \\.logo-monogram) \\{\\n  color: #FFFFFF !important;\\n  -webkit-text-fill-color: #FFFFFF !important;\\n\\}').exec(css);
+  assert.ok(black && white, 'the black of the light board, and the white of the square beside it');
+  assert.ok(white.index > black.index && white.index - black.index < 1500, 'placed next to it');
+  // specificity: ids, then classes and pseudo-classes (each :not and :is counts what it holds), then types
+  const spec = (sel) => {
+    const ids = (sel.match(/#[\w-]+/g) || []).length;
+    const cls = (sel.match(/\.[\w-]+/g) || []).length - (/:is\(/.test(sel) ? 2 : 0);
+    const types = (sel.replace(/\([^)]*\)/g, '').match(/(^|\s)[a-z]+/g) || []).length;
+    return ids * 1e6 + cls * 1e3 + types;
+  };
+  assert.ok(spec(white[1]) > spec(black[1]), white[1] + ' outranks ' + black[1]);
+  // so the square of the light board is judged with white letters, as it is drawn: the dimmed row of mist
+  // at Halifax and at Montreal (#AEB7C1 at 0.7 over #C7D2DD, drawn #B6BFC9, read off the board at 1680 by
+  // 1050 with the squares hidden), and the five carriers the check named
+  const mist = DIMMED_ROWS['departed, arrived and gate closed, mist (light board)'];
+  try {
+    B.AIRLINE_BRAND_COLORS = (() => { const w = {}; vm.runInNewContext(fs.readFileSync(path.join(FC, 'data/airline-colors.js'), 'utf8'), { window: w }); return w.AIRLINE_BRAND_COLORS || {}; })();
+    const step = the('_monoStep'), veil = { a: 0.7, under: mist.under };
+    const rgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const hslHex = (s0) => { const m = /^hsl\((\d+),(\d+)%,(\d+)%\)$/.exec(s0); if (!m) return s0; const h = +m[1], S = +m[2] / 100, l = +m[3] / 100, q = l < 0.5 ? l * (1 + S) : l + S - l * S, p = 2 * l - q; const f = (t) => { t = ((t % 360) + 360) % 360 / 360; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; }; return '#' + [f(h + 120), f(h), f(h - 120)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('').toUpperCase(); };
+    const seen = (h) => '#' + rgb(hslHex(h)).map((x, k) => Math.round(x * 0.7 + rgb(mist.under)[k] * 0.3).toString(16).padStart(2, '0')).join('').toUpperCase();
+    const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    const lum = (h) => { const [r, g, b] = rgb(h).map(lin); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+    for (const code of ['KO', '4B', '3K', 'JA', '2T']) {
+      const sq = seen(step(the('_monogramColour')(code), [mist.drawn], veil)), ink = seen('#FFFFFF');
+      assert.ok(B._orbDeltaE(sq, mist.drawn) >= 20 && ratio(ink, sq) >= 3, code + ': ' + sq + ' on ' + mist.drawn + ', white letters ' + ratio(ink, sq).toFixed(2));
+      // and black letters, as the light board drew them, did not read on it
+      assert.ok(ratio(seen('#000000'), sq) < 3.1, code + ': black letters ' + ratio(seen('#000000'), sq).toFixed(2));
+    }
+  } finally { delete B.AIRLINE_BRAND_COLORS; }
 });
 
 test('Corendon: XC prints Corendon, XR Corendon Europe, on the board and in the app', () => {

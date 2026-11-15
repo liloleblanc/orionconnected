@@ -14393,10 +14393,15 @@ function _gateChangeOrbHtml(code) {
     if (column && parts) {
       parts = window._gateOrbParts(c);
       if (parts.inset) parts = Object.assign({}, parts, { badge: String(parts.badge).replace('padding:' + window._GATE_ORB_RING + ';', 'padding:calc(min(11vh, 6.9vw) * var(--gl-gk, 1) * 0.15) !important;') });
-      if (!parts.path && parts.white) {
+      // a finished tile fills the disc, as on the rail: no padding of the notice round it
+      else if (parts.native) parts = Object.assign({}, parts, { badge: String(parts.badge).replace(/padding:0;/, 'padding:0 !important;') });
+      if (!parts.path && (parts.white || parts.letters)) {
+        // letters, in the ink the rail gives them: the colour of the brand on a white column, else
+        // the ink that reads on the ground of the disc
         var _gcColBadge = String(parts.badge), _gcColBg = /background:([^;]+);/.exec(_gcColBadge);
+        var _gcColInk = (parts.white && parts.ink) || window._orbInkOn(parts.ground);
         return '<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + _gcColBadge + (_gcColBg ? '--gc-disc:' + _gcColBg[1] + ';' : '') + '">'
-          + '<span class="v2-fi-orb-code" style="color:' + parts.ink + ' !important;">' + fidsEscHtml(parts.letters || _orbMono(c)) + '</span></span></span>';
+          + '<span class="v2-fi-orb-code" style="color:' + _gcColInk + ' !important;">' + fidsEscHtml(parts.letters || _orbMono(c)) + '</span></span></span>';
       }
     }
     // THE WHITE ORB OF THE NOTICE, THE LAST RESORT. A mark whose disc is dark itself (a navy, a
@@ -14499,8 +14504,12 @@ function _gateChangeOrbHtml(code) {
           + '<img src="' + fidsEscHtml(fb.tile) + '" alt="" class="v2-fi-emblem-img" data-orb-tile-tried="1" style="' + (held ? ts + '--gc-filter:none;' : ts) + '"' + onerr
           + '</span></span>';
       }
+      // the look of the column letters the code in the ink the rail gives it (window._railOrbFailed,
+      // the ink of the glyphs of the column: window._gateColumnLook)
+      var colInk = '';
+      if (column) { try { colInk = window._gateNoticeHex(window._gateColumnLook(c).ink); } catch (eColInk) { colInk = ''; } }
       return '<span class="gl-gc-orb' + wcls + hcls + '"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (parts.native ? ' v2-fi-emblem-native' : '') + '" style="' + hold(parts.badge) + '">'
-        + lettersHtml(fidsEscHtml(fb.letters), letterInk(parts.badge, !!parts.native)) + '</span></span>';
+        + lettersHtml(fidsEscHtml(fb.letters), colInk || letterInk(parts.badge, !!parts.native)) + '</span></span>';
     }
     // v24079 — a symbol that was never drawn (Alaska has no AS.svg) tries the
     // row tile, then the letters, as every other round orb does
@@ -15794,17 +15803,22 @@ window._gateCardPaint = function (code) {
 // it lands (window._gateNoticeLands: the file that draws, the rules of the gate that reach it) by
 // the rule of the owner (window._gateNoticeBreaks): a disc never the colour of what is behind it
 // (CIEDE2000 under 20, or the same hue within 60 degrees where both have colour), a red, an orange
-// or a gold never on a brown, a mark never the colour of its disc. A notice that keeps that rule is
-// drawn exactly as it always was: its card, its orb, its markup. A notice of its own carrier on a
-// gate approved as drawn (window._GATE_COLUMNS_KEPT) never changes. Where the rule is broken, the
+// or a gold never on a brown, a mark never the colour of its disc; and on a card that is one of the
+// dark plates, a disc that stands clear of it with room (its darkest paint included), as the rail
+// keeps its discs there. A notice that keeps that rule is drawn exactly as it always was: its card,
+// its orb, its markup. A notice of its own carrier on a gate approved as drawn
+// (window._GATE_COLUMNS_KEPT) never changes; on every other gate of its own carrier it wears the
+// look of the column of the gate (the disc, the mark and the ink of its rail). Where the rule is broken, the
 // notice changes as little as it can, in this order: the orb holds its own look against the rules
 // of the gate (where those rules broke it), then the notice alone is drawn on a plate of its own
 // (the plate of the own gate of the moved carrier where it has one, then the black faint waves, the
 // grey wave, the black fine lines: data-gc-plate on .gl-gc, the gate itself unchanged), the first
 // it stands clear of with room, else the first it does not sink into; and last of all, where no
-// plate will do, the orb is drawn white (on the card it had, else on the first of those plates).
+// plate will do, the orb is drawn white (on the card it had, else on the first of those plates). An
+// orb that keeps the rule on a dark plate but stands on it without room is drawn white at once.
 // window._gateNoticeLook decides, and says why (why: the rule the look it had broke, as a code of
-// window._gateNoticeBreaks).
+// window._gateNoticeBreaks; room: the disc and the plate it had no room on; column: a notice of its
+// own carrier that broke nothing and wears the look of its column).
 window._GATE_NOTICE_PLATES = ['black-faint-waves', 'grey-wave', 'black-fine-lines'];
 // A red, an orange or a gold (CIELAB hue under 100 degrees or over 330, chroma 15 or more), and a
 // brown (a dark paint of hue between 40 and 95 degrees, chroma 6.5 or more): the owner keeps the
@@ -16143,22 +16157,40 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
   // white arrow of PAL on its gold), and only what meets the card is judged
   var Lj = (solo && window._gateColumnKept(c)) ? Object.assign({}, L0, { ink: '' }) : L0;
   out.why = window._gateNoticeBreaks(Lj, card);
-  if (!out.why) return out;
+  // A DARK PLATE COUNTS ONLY WITH ROOM, WHOEVER CHOSE IT. Where the card behind the notice is one of
+  // the dark plates (the plate the gate is drawn on, as much as a plate the notice takes), the orb
+  // that lands on it stands clear of every paint of it, its darkest included, with room
+  // (window._gateNoticeClear, as the rail keeps its discs there); an orb that only just misses
+  // sinking (a navy at 20 to 23 from the black faint waves) is drawn white, as the rail draws a
+  // column of dark discs.
+  var plateOf = (card.kind === 'dark' && window._GATE_CARD_PLATES[card.plate]) ? window._gateNoticePlateAt(card.plate) : null;
+  var roomy = function (L) { return !plateOf || window._gateNoticeClear(L, plateOf); };
   var Lp = L0, touched = false;
   if (ownGate) {
-    // A NOTICE OF ITS OWN CARRIER ON ITS OWN GATE takes the look of the column of that gate: the disc
-    // and the ink its rail draws (window._gateOrbParts, the rule of the card applied), on the card
-    // of the gate, unchanged. Only where that too breaks the rule does it take a plate.
+    // A NOTICE OF ITS OWN CARRIER ON ITS OWN GATE wears the look of the column of that gate, always:
+    // the disc, the mark and the ink its rail draws (window._gateOrbParts, the rule of the card
+    // applied: the white disc of a white column, the light disc of the ten brands set on white, the
+    // finished tile that fills the disc), on the card of the gate, unchanged. The rail was judged on
+    // that card when the gate was drawn. Only where the look breaks the rule there does it take a plate.
     var Lc = window._gateNoticeLands(on, c, false, true, wrapC, true);
     if (Lc) {
       out.column = true; out.hold = true; Lp = Lc; touched = true;
+      // why: the rule the look it had broke, else column (it wears the look of its column all the same)
+      if (!out.why) out.why = 'column';
       if (!window._gateNoticeBreaks(Lc, card)) return out;
-    }
+    } else if (!out.why) return out;
   } else {
+    if (!out.why && roomy(L0)) return out;
+    if (!out.why) {
+      out.why = 'room:' + L0.disc + '>' + card.plate;
+      // the orb drawn white on the card it had
+      var Lr = window._gateNoticeLands(on, c, true, true, wrapC);
+      if (Lr && !window._gateNoticeBreaks(Lr, card) && roomy(Lr)) { out.white = true; out.hold = true; return out; }
+    }
     // the orb in its own look, where the rules of the gate broke it
     var L1 = window._gateNoticeLands(on, c, false, true, wrapC);
     touched = !!(L1 && window._gateNoticeOrbRule(on, wrapC) && (L1.disc !== L0.disc || L1.ink !== L0.ink || L1.edge !== L0.edge));
-    if (touched && !window._gateNoticeBreaks(L1, card)) { out.hold = true; return out; }
+    if (touched && !window._gateNoticeBreaks(L1, card) && roomy(L1)) { out.hold = true; return out; }
     if (touched) Lp = L1;
   }
   // a plate of its own, taken only where the orb stands clear of it with room
@@ -16178,7 +16210,7 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
   // else on the first plate it stands clear of
   var Lw = window._gateNoticeLands(on, c, true, true, wrapC);
   out.column = false;
-  if (Lw && !window._gateNoticeBreaks(Lw, card)) { out.white = true; out.hold = true; return out; }
+  if (Lw && !window._gateNoticeBreaks(Lw, card) && roomy(Lw)) { out.white = true; out.hold = true; return out; }
   n = Lw ? onPlate(Lw) : '';
   if (n) { out.plate = n; out.white = true; out.hold = true; return out; }
   // nothing keeps it: the white orb on the first plate it does not sink into

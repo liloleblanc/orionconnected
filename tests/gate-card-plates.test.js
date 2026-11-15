@@ -563,7 +563,9 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
     if (!cards.has(sig)) cards.set(sig, g);
   }
   assert.ok(cards.size >= 80 && orbs.length >= 250, cards.size + ' cards, ' + orbs.length + ' orbs');
-  const bad = [], missing = [], by = { as: 0, keptOwn: 0, held: 0, column: 0, plate: 0, room: 0, white: 0 };
+  const bad = [], missing = [], by = { as: 0, keptOwn: 0, held: 0, column: 0, plate: 0, room: 0, white: 0, darkCard: 0, darkRoom: 0, roomWhite: 0 };
+  // every colour of the orb that meets a dark plate stands clear of every paint of it with room
+  const roomOn = (Lw, at) => [Lw.disc].concat(Lw.edge ? [Lw.edge] : [], Lw.second ? [Lw.second] : []).every((d) => at.every((p) => W._gateDiscClear(d, p, d === Lw.disc ? Lw.ink : '')));
   const m = (al) => ({ ap: 'YUL', full: { f: { flight: al + '101', airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
   const walk = (gate, code, solo) => {
     const whole = solo || !gate;
@@ -574,6 +576,10 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
     assert.equal(plate, L.plate, code + ' on ' + gate + ': the plate the notice names is the plate decided');
     // on a plate: its paints and its darkest (the file, measured)
     const at = plate ? PLATES[plate].at.concat([FILES[PLATES[plate].file].dark]) : (whole ? W._gateSoloCard(code).at : W._gateCardPaint(gate, true).at);
+    // A DARK PLATE COUNTS ONLY WITH ROOM, WHOEVER CHOSE IT: the card of a gate drawn on one of the dark
+    // plates is judged as a plate the notice takes is, by its paints and its darkest
+    const gc = whole ? null : W._gateCardPaint(gate, true);
+    const darkAt = (!plate && gc && gc.kind === 'dark') ? PLATES[gc.plate].at.concat([FILES[PLATES[gc.plate].file].dark]) : null;
     const Lw = lands(html, code, whole ? '' : gate, solo ? code : gate);
     if (Lw.missing) missing.push(gate + '/' + code);
     const tag = (whole ? '(whole screen)' : gate || '(no code)') + ' / ' + code;
@@ -583,6 +589,7 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
       assert.doesNotMatch(notice, /data-gc-plate|gl-gc-orb-held|gl-gc-orb-white|--gc-disc|--gc-filter/, tag);
       if (ownKept) { by.keptOwn++; return; }
       by.as++;
+      if (darkAt) { by.darkCard++; if (roomOn(Lw, darkAt)) by.darkRoom++; else bad.push(tag + ' kept as it was on the dark plate of its gate, without room'); }
       // the whole screen of a carrier whose gate is approved as drawn wears the rules of that gate: its mark
       // and its disc there are the approved pair (the white arrow of PAL on its gold), only the disc is judged
       const why = broke((solo && W._gateColumnKept(code)) ? { ...Lw, ink: '' } : Lw, at);
@@ -596,6 +603,9 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
     else if (L.plate) by.plate++; else if (L.column) by.column++; else by.held++;
     if (L.hold) assert.match(html, /gl-gc-orb-held/, tag);
     if (L.column) assert.ok(!whole && fold(gate) === fold(code) && !W._gateColumnKept(gate), tag + ': the look of the column only for its own carrier on its own gate');
+    if (/^room:/.test(L.why)) { by.roomWhite++; assert.ok(L.white && !broke(lands(the('_gateChangeOrbHtml')(code, false, gate, false, gate), code, gate), W._gateCardPaint(gate, true).at), tag + ': kept the rule, had no room, drawn white'); }
+    // on the dark plate of its gate, with room (the look of the column is the look of the rail there, below)
+    if (darkAt && !L.column) { by.darkCard++; if (roomOn(Lw, darkAt)) by.darkRoom++; else bad.push(tag + ' (' + JSON.stringify(L) + ') on the dark plate of its gate without room'); }
     const why = broke(Lw, at);
     if (why) bad.push(tag + ' (' + JSON.stringify(L) + ') still ' + why);
     // A PLATE COUNTS ONLY WITH ROOM: every colour of the orb that meets the plate clear of every paint of it
@@ -608,7 +618,8 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   for (const code of orbs) walk('', code, true);
   assert.deepEqual(missing, [], 'every file the notice names is on disk');
   assert.deepEqual(bad, [], bad.length + ' pairs:\n' + bad.slice(0, 20).join('\n'));
-  assert.ok(by.as > 0 && by.keptOwn > 0 && by.held > 0 && by.column > 0 && by.plate > 0 && by.white > 0, JSON.stringify(by));
+  assert.ok(by.as > 0 && by.keptOwn > 0 && by.held > 0 && by.column > 0 && by.plate > 0 && by.white > 0 && by.roomWhite > 0 && by.darkCard > 0, JSON.stringify(by));
+  assert.equal(by.darkRoom, by.darkCard, JSON.stringify(by));
   // a plate is taken only where the orb stands clear of it with room (the measure of the rail on the dark
   // card); where no plate gives room the orb is drawn white, as the rail draws a column of dark discs
   assert.equal(by.room, by.plate, JSON.stringify(by));
@@ -664,6 +675,22 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   assert.match(afHtml, /^<div class="gl-gc" data-gl-gc=/, 'the card of the gate, no plate');
   assert.match(afHtml, /<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="[^"]*background:#FFFFFF;[^"]*--gc-disc:#FFFFFF;"/);
   assert.equal(lands((/<span class="gl-gc-orb[\s\S]*?<\/span><\/span>(?:<\/span>)?/.exec(afHtml) || [''])[0], 'AF', 'AF').disc, '#FFFFFF');
+  // A DARK PLATE COUNTS ONLY WITH ROOM, WHOEVER CHOSE IT: the navy and dark discs that stood on the dark
+  // plate of a gate (Sichuan, Iberia, Air India, Cebu Pacific: the black faint waves) 20 to 23 from its
+  // paints, keeping the rule without room, are drawn white on the card of the gate, as the rail draws a
+  // column of dark discs
+  for (const g of ['3U', 'IB', 'AI', '5J']) {
+    const K = W._gateCardPaint(g, true);
+    assert.equal(K.kind, 'dark', g + ': a gate of the dark card');
+    const dark = PLATES[K.plate].at.concat([FILES[PLATES[K.plate].file].dark]);
+    for (const c of ['KU', 'MS', 'OB', '8P', 'A3', 'LO', 'OU']) {
+      const L = look(g, c), L0 = W._gateNoticeLands(g, c, false, false, g);
+      assert.ok(!broke(L0, K.at), g + ' / ' + c + ': it kept the rule on the paints of the plate');
+      assert.ok(!roomOn(L0, dark), g + ' / ' + c + ': ' + L0.disc + ' has no room on the ' + K.plate);
+      assert.deepEqual([L.white, L.plate, L.column, /^room:/.test(L.why)], [true, '', false, true], g + ' / ' + c + ': ' + JSON.stringify(L));
+      assert.match(n(c, g), /^<div class="gl-gc" data-gl-gc=[\s\S]*<span class="gl-gc-orb gl-gc-orb-white gl-gc-orb-held">/, g + ' / ' + c + ': white, on the card of the gate');
+    }
+  }
   // Turkish: its rim judged for the sink, its own red for the brown (#C90019, as TK.svg draws it); on the brown waves of KLM and the
   // brown layers of Cathay it takes the black faint waves
   for (const g of ['KL', 'CX']) {
@@ -674,6 +701,48 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   // Iberia on the brown waves of KLM, Emirates on the brown layers of Cathay: the plate of their own gate
   assert.match(n('IB', 'KL'), /^<div class="gl-gc" data-gc-plate="black-faint-waves" data-gl-gc=/);
   assert.match(n('EK', 'CX'), /^<div class="gl-gc" data-gc-plate="black-fine-lines" data-gl-gc=/);
+  // EVERY NOTICE OF ITS OWN CARRIER ON ITS OWN GATE (a gate not kept as drawn) wears the look of the column
+  // of that gate, whether its own look broke the rule there or not: the disc, the mark, its filter and the
+  // ink of the letters the rail draws (window._gateOrbParts with the rule of the card), a finished tile
+  // filling the disc as on the rail, the white of the light disc of the ten brands set on white (#FFFFFF,
+  // not the #F2F4F7 of the surfaces beside the orbs)
+  let ownCols = 0, ownWas = 0;
+  for (const g of CODES) {
+    if (W._gateColumnKept(g) || !the('_gateChangeOrbHtml')(g)) continue;
+    const L = look(g, g), P = W._gateOrbParts(g);
+    assert.deepEqual([L.column, L.hold, L.white], [true, true, false], g + ': ' + JSON.stringify(L));
+    if (L.plate) continue;
+    ownCols++;
+    if (L.why === 'column') ownWas++;
+    const html = the('_gateChangeOrbHtml')(g, L.white, L.gate, L.hold, L.wrap, L.column);
+    const box = (/class="v2-fi-icon-wrap[^"]*" style="([^"]*)"/.exec(html) || [])[1] || '';
+    const bg = (s0) => ((/background:([^;]+);/.exec(String(s0)) || [])[1] || '').trim();
+    assert.equal(bg(box), bg(P.badge), g + ': the disc of the rail');
+    assert.ok(box.includes('--gc-disc:' + bg(P.badge) + ';'), g + ': held against the rules of the gate');
+    const img = /<img src="([^"]*)"[^>]*style="([^"]*)"/.exec(html);
+    const lt = /<span class="v2-fi-orb-code" style="color:([^;"]+) !important;">([^<]*)<\/span>/.exec(html);
+    if (P.path && fs.existsSync(path.join(FC, String(P.path).split('?')[0]))) {
+      assert.ok(img, g + ': a mark');
+      assert.equal(img[1], P.path, g + ': the mark of the rail');
+      const f = (s0) => ((/(?:^|;)filter:([^;]+);/.exec(String(s0)) || [])[1] || 'none');
+      assert.equal(f(img[2]), f(P.imgStyle), g + ': the filter of the rail');
+      if (P.native && !P.inset) assert.match(box, /padding:0 !important;/, g + ': the tile fills the disc, as on the rail');
+    } else if (P.path) {
+      // a file the folder does not hold: what the handler of a missing file draws in its place, as on the
+      // rail (window._railOrbFailed: the letters of the row in the ink of the glyphs of the column)
+      assert.ok(img || lt, g + ': the tile or the letters the handler draws');
+      if (lt) assert.equal(lt[1].toUpperCase(), W._gateNoticeHex(W._gateColumnLook(g).ink), g + ': the ink the rail letters it in');
+    } else {
+      assert.ok(lt, g + ': letters');
+      assert.equal(lt[1], (P.white && P.ink) || W._orbInkOn(P.ground), g + ': the ink of the letters of the rail');
+    }
+  }
+  assert.ok(ownCols >= 200 && ownWas >= 80, ownCols + ' own gates wear their column, ' + ownWas + ' of them broke nothing before');
+  for (const g of ['IB', 'AH', 'AT', 'AV', 'CX', 'EK', 'KQ', 'SN', 'SV', 'TP', 'VA', 'VN', 'WY', 'CM', 'BA', '2L', '4Y', 'CJ', 'ET', 'HA', 'LY', 'PR', 'WN'].filter((x) => CODES.includes(x) && !W._gateColumnKept(x))) {
+    assert.ok(look(g, g).column, g);
+  }
+  assert.match(n('BA', 'BA'), /background:#FFFFFF;[^"]*--gc-disc:#FFFFFF;/, 'British Airways on its own gate: the white of its rail');
+  assert.match(n('IB', 'IB'), /<img src="\/logos\/airline-tiles\/IBE\.svg"/, 'Iberia on its own gate: the tile of its rail');
   // its own carrier on a kept gate never changes: United, Porter, Ryanair, Air Canada
   for (const c of ['UA', 'PD', 'FR', 'AC', 'DL', 'AA']) {
     assert.ok(W._gateColumnKept(c), c);
@@ -703,4 +772,16 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   assert.doesNotMatch(CSS, /\.gl-gc \.gl-gc-orb > \.v2-fi-emblem-wrap \{ background: var\(--gc-disc/, 'no orb that is not held takes the disc variable');
   assert.doesNotMatch(CSS, /\.gl-gc \.gl-gc-orb > \.v2-fi-emblem-native \{ padding: 0 !important; \}/, 'art that is its own disc keeps the padding it always had on the notice');
   assert.ok(['AS', 'TK'].every((c) => W._ORB_ART_RIMMED[c]));
+  // THE LETTERS OF THE ORB OF THE NOTICE (about 65 carriers drawn as letters) sit inside the padding of
+  // the orb at its normal size: half its content box. They took the size of the flight beside them (110 px
+  // in an orb of 115.5), ran out of the orb and the row, and the fit of the notice went to its floor (0.45).
+  // The widest pair, measured in Chrome in the face of the notice (Cabinet Grotesk Extrabold, -0.03 em):
+  // WW at 1.82 em, so 0.91 of the content box; 4B 1.33 em.
+  const orbRule = new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb > \\* \\{\\n  width: calc\\((min\\([^)]*\\)) \\* var\\(--gl-gk\\)\\) !important;[^}]*padding: calc\\((min\\([^)]*\\)) \\* var\\(--gl-gk\\)\\) !important;\\n\\}').exec(CSS);
+  assert.ok(orbRule, 'the size and the padding of the orb of the notice');
+  const lettersRule = new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb \\.v2-fi-orb-code \\{\\n  font-size: calc\\(\\((min\\([^)]*\\)) - 2 \\* (min\\([^)]*\\))\\) \\* var\\(--gl-gk\\) \\* ([\\d.]+)\\) !important;').exec(CSS);
+  assert.ok(lettersRule, 'the letters of the orb take a size of their own');
+  assert.deepEqual([lettersRule[1], lettersRule[2]], [orbRule[1], orbRule[2]], 'the content box of the orb: its size less its padding on each side');
+  assert.ok(1.82 * +lettersRule[3] < 1, 'two characters within the content box');
+  assert.ok(CSS.indexOf(lettersRule[0]) > CSS.indexOf(orbRule[0]) && CSS.indexOf(lettersRule[0]) < CSS.length - 2000, 'beside the rule of the orb, not at the end of the sheet');
 });
