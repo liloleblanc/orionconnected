@@ -16,9 +16,20 @@
 // never a United gate), placed so that no two Air Canada widebodies come back
 // to back in either pool the board runs.
 //
-// tests/heritage-dream-card.test.js holds the set card for card (the new card
-// is in its frozen list) and walks every airport and airline the boards know;
-// this file holds the card itself.
+//
+// FROM THE ARCHIVE — the same aeroplane in the 1980 livery it really wore.
+// The supplied drawing shows C-FTOE in the red capitals and single red
+// cheatline of 1980, which reached it in 1982 and which it wore into 1993. So
+// that card is a plain archive card, From the archive over it as over the
+// DC-8-63, with the mark of the 1980 cards and the DC-8-63 line: the type, the
+// same years as the Dream livery card (1974–1998) and the 1980 livery, in nine
+// languages. It is the first Air Canada card of the deck, and the Dream livery
+// card moved to after the 1980 DC-9, so the two cards of fin 305 come four
+// apart and the widebodies still every other card.
+//
+// tests/heritage-dream-card.test.js holds the set card for card (both cards
+// are in its frozen list) and walks every airport and airline the boards know;
+// this file holds the two cards themselves.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -35,6 +46,9 @@ const KEY = 'air-canada-747-305-2017';
 const PICTURE = '/aircraft/heritage/air-canada-747-305-2017.png';
 const HEADING = 'heritageDreamKicker';
 const TYPE = 'Boeing 747-133';
+// the archive card of the same aeroplane, in the 1980 livery
+const ARCHIVE = 'air-canada-747-305-80';
+const ARCHIVE_PICTURE = '/aircraft/heritage/air-canada-747-305-ac80.png';
 
 function lift(name) {
   const at = SRC.indexOf('function ' + name + '(');
@@ -49,12 +63,14 @@ function lift(name) {
 const MARKS_SRC = /var HERITAGE_MARKS = \[[\s\S]*?\n\];/.exec(SRC)[0];
 const MARKS = new Function(MARKS_SRC + '\nreturn HERITAGE_MARKS;')();
 const byKey = Object.fromEntries(MARKS.map((m) => [m.key, m]));
-// the comment of the record, from the brace that opens it to its key
-const NOTE = (() => {
-  const at = MARKS_SRC.indexOf("key: '" + KEY + "'");
+// the comment of a record, from the brace that opens it to its key
+const noteOf = (key) => {
+  const at = MARKS_SRC.indexOf("key: '" + key + "'");
   assert.ok(at > 0, 'the record is in the source');
   return MARKS_SRC.slice(MARKS_SRC.lastIndexOf('\n  {\n', at), at);
-})();
+};
+const NOTE = noteOf(KEY);
+const ARCHIVE_NOTE = noteOf(ARCHIVE);
 
 // One gate, re-aimed between questions: the shipping functions lifted out of
 // fids-core.js, as tests/heritage-dream-card.test.js runs them. AP is empty,
@@ -100,11 +116,11 @@ function board() {
       }
       return out;
     },
-    // the first drawing of this card within `turns` visits
-    find(turns) {
+    // the first drawing of this card (or of the card with the picture given) within `turns` visits
+    find(turns, picture = PICTURE) {
       for (let i = 0; i < turns; i++) {
         const html = this.draw();
-        if (html && html.includes('src="' + PICTURE + '"')) return html;
+        if (html && html.includes('src="' + picture + '"')) return html;
       }
       return null;
     }
@@ -142,15 +158,20 @@ test('the card: a Boeing 747-133 in the Air Canada set, under Dream livery', () 
   assert.match(note, /The full-size drawing replaces it by running the same tool on it into the same file name/, 'and that the full-size drawing replaces it, by the same tool into the same file name');
 });
 
-test('its place in the rotation: no two Air Canada widebodies back to back, the DC-9 spacing kept', () => {
+test('their place in the rotation: no two Air Canada widebodies back to back, the two fin 305 cards apart, the DC-9 spacing kept', () => {
   // The board rotates each airport pool in set order and wraps. The widebodies
-  // of the set (the 767s, the TriStars, the A350-1000 and this 747) come every
-  // other card, and the 2017 DC-9 stays three or more cards from every other DC-9.
-  const WIDE = ['air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-a350-1000', KEY];
+  // of the set (the 767s, the TriStars, the A350-1000 and the two 747s) come
+  // every other card, the two cards of fin 305 three or more apart, and the
+  // 2017 DC-9 stays three or more cards from every other DC-9.
+  const WIDE = ['air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-a350-1000', KEY, ARCHIVE];
   const DC9 = ['air-canada', 'air-canada-caps', 'air-canada-dc9-93'];
   const keys = MARKS.map((k) => k.key);
-  assert.equal(keys.indexOf(KEY), keys.indexOf('air-canada') + 1, 'after the 1987 DC-9');
-  assert.equal(keys.indexOf(KEY) + 1, keys.indexOf('air-canada-caps'), 'and before the 1980 DC-9');
+  assert.equal(keys.indexOf(ARCHIVE), keys.indexOf('canadian-airlines') + 1, 'the 1980 card is the first Air Canada card, after Canadian Airlines');
+  assert.equal(keys.indexOf(ARCHIVE) + 1, keys.indexOf('air-canada'), 'and before the 1987 DC-9');
+  assert.equal(keys.indexOf('air-canada') + 1, keys.indexOf('air-canada-767'), 'the 1980 767 after the 1987 DC-9');
+  assert.equal(keys.indexOf('air-canada-767') + 1, keys.indexOf('air-canada-caps'), 'and before the 1980 DC-9');
+  assert.equal(keys.indexOf(KEY), keys.indexOf('air-canada-caps') + 1, 'the Dream livery card after the 1980 DC-9');
+  assert.equal(keys.indexOf(KEY) + 1, keys.indexOf('air-canada-dc8'), 'and before the 1965 DC-8');
   assert.equal(keys[keys.length - 1], 'air-canada-l1011-93', 'the 1993 TriStar is still last');
   const dist = (pool, a, b) => { const gap = Math.abs(pool.indexOf(a) - pool.indexOf(b)); return Math.min(gap, pool.length - gap); };
   // the Atlantic pool (with Air Atlantic and Air Nova) and the pool of every other Canadian airport
@@ -161,6 +182,8 @@ test('its place in the rotation: no two Air Canada widebodies back to back, the 
       if (a < b) assert.ok(dist(pool, a, b) >= 2, a + ' and ' + b + ' are not back to back at ' + ia + ' (' + dist(pool, a, b) + ')');
     }
     for (const k of DC9) assert.ok(dist(pool, 'air-canada-dc9-2017', k) >= 3, 'the 2017 DC-9 is three or more cards from ' + k + ' at ' + ia);
+    assert.ok(pool.includes(ARCHIVE), 'the 1980 card runs at ' + ia);
+    assert.ok(dist(pool, KEY, ARCHIVE) >= 3, 'the two cards of fin 305 are three or more apart at ' + ia + ' (' + dist(pool, KEY, ARCHIVE) + ')');
     for (const [a, b] of [['air-canada-dc8', 'air-canada-dc8-80'], ['air-canada-767', 'air-canada-767-87'], ['air-canada-l1011-87', 'air-canada-l1011-93']]) {
       assert.ok(dist(pool, a, b) > 1, a + ' and ' + b + ' are still apart at ' + ia);
     }
@@ -182,11 +205,14 @@ test('it runs on Air Canada pages at Canadian airports, within one turn of the d
     for (const row of AC_ROWS) {
       b.at(ia, row);
       assert.ok(b.deck().includes('heritage'), `${row.flight} at ${ia}: the archive slot is there`);
-      assert.ok(b.cards(TURNS).includes(KEY), `${row.flight} at ${ia}: and the 747 comes round`);
+      const seen = b.cards(TURNS);
+      assert.ok(seen.includes(KEY), `${row.flight} at ${ia}: and the Dream livery 747 comes round`);
+      assert.ok(seen.includes(ARCHIVE), `${row.flight} at ${ia}: and the 1980 747 comes round`);
     }
   }
   // the heritage demonstration gates are Air Canada pages too
-  assert.ok(b.at('YHZ', { flight: '500', airline: 'ANV' }, { heritage: 'ANV' }).cards(TURNS).includes(KEY), 'the Air Nova demonstration gate');
+  const anv = b.at('YHZ', { flight: '500', airline: 'ANV' }, { heritage: 'ANV' }).cards(TURNS);
+  assert.ok(anv.includes(KEY) && anv.includes(ARCHIVE), 'the Air Nova demonstration gate');
 });
 
 test('and never on a United gate, another airline, an Air Canada gate abroad or a board with no gate flight', () => {
@@ -194,7 +220,7 @@ test('and never on a United gate, another airline, an Air Canada gate abroad or 
   for (const ia of ['YYZ', 'YUL', 'YVR', 'ORD', 'EWR', 'FRA']) {
     for (const row of [{ flight: 'UA1234', airline: 'UA' }, { flight: 'UAL951', airline: 'UAL' }, { flight: 'UA4321', airline: 'UA', _opCode: 'OO' }]) {
       const seen = b.at(ia, row).cards(TURNS * 2);
-      assert.ok(!seen.includes(KEY), `${row.flight} at ${ia} never draws the 747`);
+      assert.ok(!seen.includes(KEY) && !seen.includes(ARCHIVE), `${row.flight} at ${ia} never draws either 747`);
     }
     for (const row of [{ flight: 'WS813', airline: 'WS' }, { flight: 'PD2382', airline: 'PD' }, { flight: 'DL1432', airline: 'DL' }, { flight: 'PB924', airline: 'PB' }, { flight: '', airline: '' }]) {
       b.at(ia, row);
@@ -266,18 +292,7 @@ test('the caption: the type, the years it flew, what-if and the 2017 livery, in 
 });
 
 test('every line is one row at 1680 x 1050, the widths recorded with the card', () => {
-  const note = NOTE.replace(/\s*\/\/\s*/g, ' ');
-  assert.match(note, /Measured at 1680 x 1050[^.]*after document\.fonts\.ready, every language is one row/, 'measured after the fonts load, one row each');
-  // each language named with its share of the line, every one at 92% or less (two rows start past 100%; 96% is too near)
-  const pct = {};
-  for (const l of STORE.LANGS) {
-    const m = new RegExp('the ' + LANG_NAME[l] + ',? (?:[0-9.]+ of [0-9.]+ px )?\\(?([0-9.]+)%').exec(note);
-    assert.ok(m, 'the ' + LANG_NAME[l] + ' line is measured');
-    pct[l] = parseFloat(m[1]);
-    assert.ok(pct[l] > 50 && pct[l] <= 92, 'the ' + LANG_NAME[l] + ' line takes ' + pct[l] + '% of the line');
-  }
-  const longest = Object.keys(pct).sort((a, b) => pct[b] - pct[a])[0];
-  assert.match(note, new RegExp('The longest line is the ' + LANG_NAME[longest]), 'the longest is named first');
+  widthsIn(NOTE);
 });
 
 test('the card as drawn, in every language: its heading, the caption with its type, the mark and the picture', () => {
@@ -306,6 +321,119 @@ test('the card as drawn, in every language: its heading, the caption with its ty
     assert.ok(line.includes(l === 'en' ? 'what-if' : WHAT_IF[l]), 'and what-if, in ' + l);
     assert.ok(kicker(h).includes(DREAM[l]), 'under ' + DREAM[l]);
     assert.ok(!kicker(h).includes(STORE.bs('heritageKicker', l)), 'and never ' + STORE.bs('heritageKicker', l));
+    assert.doesNotMatch(h.replace(/ onloadedmetadata="[^"]*"/, ''), /[{}]/, 'no placeholder left, in ' + l);
+  }
+});
+
+// ── the 1980 card: From the archive ────────────────────────────────────────
+
+// The words of the DC-8-63 line for the 1980 livery, which this card takes word for word.
+const LIVERY_1980 = { en: '1980 livery', fr: 'livrée de 1980', es: 'librea de 1980', de: 'Lackierung von 1980', it: 'livrea del 1980',
+                      pt: 'pintura de 1980', ja: '1980年塗装', zh: '1980年涂装', ar: 'طلاء 1980' };
+const ARCHIVE_HEADING = { en: 'From the archive', fr: 'Depuis les archives', es: 'Del archivo', de: 'Aus dem Archiv', it: 'Dall’archivio',
+                          pt: 'Do arquivo', ja: 'アーカイブより', zh: '档案回顾', ar: 'من الأرشيف' };
+
+test('the 1980 card: the same 747-133 in the Air Canada set, with the mark of the 1980 cards and the default heading', () => {
+  const m = byKey[ARCHIVE];
+  assert.ok(m, 'the card is in the deck');
+  assert.equal(m.name, 'Air Canada');
+  assert.equal(m.type, TYPE, 'the type, from the record, as on the Dream livery card');
+  assert.equal(m.type, byKey[KEY].type, 'the same aeroplane as the Dream livery card');
+  assert.equal(m.aircraft, ARCHIVE_PICTURE);
+  assert.equal(m.heading, undefined, 'no heading of its own: From the archive, as the DC-8-63');
+  assert.equal(m.heading, byKey['air-canada-dc8-80'].heading);
+  assert.equal(m.gates, undefined, 'no gates: the Air Canada set, Air Canada pages only');
+  assert.equal(m.airports, '*CA', 'every Canadian airport, where the rest of the set runs');
+  assert.ok(!m.credit && !m.endorsement, 'a supplied drawing: no credit line, no second mark');
+  // the 1980 lockup of the supplied family, the mark of every other 1980 card
+  assert.equal(m.file, '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg');
+  for (const k of ['air-canada-dc8-80', 'air-canada-caps', 'air-canada-767']) assert.equal(m.file, byKey[k].file, 'the mark of ' + k);
+  for (const f of [m.file, m.aircraft]) assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', f.replace(/^\//, ''))), f + ' is on disk');
+  // the note says where the facts come from and keeps to them
+  const note = ARCHIVE_NOTE.replace(/\s*\/\/\s*/g, ' ');
+  assert.match(note, /c\/n 20881, line 236, delivered new on 13 May 1974/, 'the aeroplane, as its registration page has it');
+  assert.match(note, /the 1980 livery reached it in 1982, the titles first/, 'when the livery reached it');
+  assert.match(note, /1987–89 \(145070\)[\s\S]*6 August 1991 \(319519\)[\s\S]*June–July 1993 \(345805\)[\s\S]*8 June 1996 it is in the 1993 livery \(324435\)/, 'the dated photographs it is drawn against');
+  assert.doesNotMatch(note, /\bCF-[A-Z]/, 'no CF- mark claimed');
+  assert.doesNotMatch(note, /['"]/, 'no quote marks in the note');
+});
+
+test('the 1980 card says From the archive and the DC-8-63 line, with the years of the Dream livery card, in nine languages', () => {
+  assert.deepEqual(Object.keys(LIVERY_1980).sort(), STORE.LANGS.slice().sort(), 'all nine board languages');
+  assert.deepEqual(Object.keys(ARCHIVE_HEADING).sort(), STORE.LANGS.slice().sort());
+  const e = STORE.entry('heritage:' + ARCHIVE), dc8 = STORE.entry('heritage:air-canada-dc8-80'), dream = STORE.entry('heritage:' + KEY);
+  assert.ok(e, 'the caption is in the store');
+  assert.equal(e.en, '{TYPE} · 1974–1998 · 1980 livery');
+  assert.equal(STORE.fill(e.en, { TYPE }), 'Boeing 747-133 · 1974–1998 · 1980 livery', 'the English line as it prints');
+  const seen = new Set();
+  for (const l of STORE.LANGS) {
+    assert.equal(STORE.bs('heritageKicker', l), ARCHIVE_HEADING[l], 'From the archive, in ' + l);
+    const cap = e[l];
+    assert.ok(cap, 'a caption in ' + l);
+    const parts = cap.split(' · '), dc8p = dc8[l].split(' · ');
+    assert.equal(parts.length, 3, 'type · years · livery, the shape of the DC-8-63 line, in ' + l);
+    assert.equal(parts.length, dc8p.length);
+    assert.equal(parts[0], '{TYPE}', 'the type comes from the card, in ' + l);
+    assert.equal(parts[1], '1974–1998', 'the years it flew for Air Canada, delivery to withdrawal, in ' + l);
+    assert.equal(parts[1], dream[l].split(' · ')[1], 'the years of the Dream livery card of the same aeroplane, in ' + l);
+    assert.equal(parts[2], LIVERY_1980[l], 'the 1980 livery, in ' + l);
+    assert.equal(parts[2], dc8p[2], 'in the words of the DC-8-63 line, in ' + l);
+    assert.deepEqual(cap.match(/\d+/g), ['1974', '1998', '1980'], 'its years and the livery year, nothing else: no 1982, no registration, no fleet number, in ' + l);
+    assert.doesNotMatch(cap, /FTOE|CF-?TOE|\b305\b|Boeing|ボーイング|波音|بوينغ|Air Canada|エア・カナダ|加航|إير كندا/, 'no mark, no fleet number, no maker and no airline spelled in the stored line, in ' + l);
+    assert.doesNotMatch(cap, /what-if|et si|y si|e se|Fiktion|もしも|假想|ماذا لو/i, 'nothing of the what-if: this is the livery it wore, in ' + l);
+    if (l !== 'en') assert.doesNotMatch(cap, /livery/, 'in its own words, not the English one, in ' + l);
+    seen.add(cap);
+  }
+  assert.equal(seen.size, STORE.LANGS.length, 'nine different lines: none left in another language');
+});
+
+// The measured widths recorded in a record note: every language one row, at 92% or less of the line
+// (two rows start past 100%; 96% is too near), the longest named first.
+function widthsIn(note) {
+  note = note.replace(/\s*\/\/\s*/g, ' ');
+  assert.match(note, /Measured at 1680 x 1050[^.]*after document\.fonts\.ready, every language is one row/, 'measured after the fonts load, one row each');
+  const pct = {};
+  for (const l of STORE.LANGS) {
+    const m = new RegExp('the ' + LANG_NAME[l] + ',? (?:[0-9.]+ of [0-9.]+ px )?\\(?([0-9.]+)%').exec(note);
+    assert.ok(m, 'the ' + LANG_NAME[l] + ' line is measured');
+    pct[l] = parseFloat(m[1]);
+    assert.ok(pct[l] > 50 && pct[l] <= 92, 'the ' + LANG_NAME[l] + ' line takes ' + pct[l] + '% of the line');
+  }
+  const longest = Object.keys(pct).sort((a, b) => pct[b] - pct[a])[0];
+  assert.match(note, new RegExp('The longest line is the ' + LANG_NAME[longest]), 'the longest is named first');
+  return pct;
+}
+
+test('every line of the 1980 card is one row at 1680 x 1050, the widths recorded with the card', () => {
+  const pct = widthsIn(ARCHIVE_NOTE);
+  assert.equal(pct.de, 74.3, 'the German, the longest, as measured');
+  assert.match(fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'board-strings.js'), 'utf8'), /every language is one row at\s*\/\/ 1680 x 1050; the longest line is the German, at 74\.3% of it\.\s*'heritage:air-canada-747-305-80'/, 'and the store says so beside the line');
+});
+
+test('the 1980 card as drawn, in every language: From the archive, the caption with its type, the 1980 mark and its picture', () => {
+  const b = board();
+  const html = b.at('YYZ', AC_ROWS[0]).find(TURNS, ARCHIVE_PICTURE);
+  assert.ok(html, 'an Air Canada gate at Toronto comes to it');
+  assert.match(html, /<div class="hcard-kicker"><span class="bs-h" lang="en">From the archive<\/span> &nbsp;\|&nbsp; <span class="bs-h" lang="fr">Depuis les archives<\/span><\/div>/, 'the archive heading, English then French');
+  assert.match(html, /<img class="hcard-mark" src="\/logos\/advertisements\/retro-airlines\/ACLOGO-1980-2\.svg" alt="Air Canada">/, 'the 1980 lockup');
+  assert.match(html, /<img class="hcard-plane" src="\/aircraft\/heritage\/air-canada-747-305-ac80\.png" alt=""/, 'the picture, over the sky');
+  assert.match(html, /<div class="hcard-line"><span class="bs-h" lang="en">Boeing 747-133 · 1974⁠–⁠1998 · 1980 livery<\/span><\/div>/, 'the English line, the year range kept whole');
+  assert.match(html, /<div class="hcard-line hcard-line-2"><span class="bs-h" lang="fr">Boeing 747-133 · 1974⁠–⁠1998 · livrée de 1980<\/span><\/div>/, 'and the French line');
+  assert.doesNotMatch(html, /Dream livery|Livrée de rêve|Coming to the fleet/, 'neither the Dream livery heading nor the coming one');
+  assert.doesNotMatch(html, /hcard-credit"|hcard-endorse/, 'no credit line and no endorsement');
+  assert.doesNotMatch(html.replace(/<[^>]+>/g, ' '), /FTOE|CF-TOE|\b305\b/, 'no registration and no fleet number in the words on the card (the file name is not shown)');
+  // French first where the board puts French first
+  const yul = b.at('YUL', AC_ROWS[0]).find(TURNS, ARCHIVE_PICTURE);
+  assert.match(yul, /<div class="hcard-kicker"><span class="bs-h" lang="fr">Depuis les archives<\/span>/, 'Montréal leads in French');
+  assert.match(yul, /<div class="hcard-line"><span class="bs-h" lang="fr">Boeing 747-133 · 1974⁠–⁠1998 · livrée de 1980<\/span>/, 'the caption too');
+  for (const l of STORE.LANGS) {
+    const h = b.at('YVR', AC_ROWS[0], { langs: l === 'en' ? ['en', 'fr'] : [l, 'en'] }).find(TURNS, ARCHIVE_PICTURE);
+    assert.ok(h, 'drawn in ' + l);
+    const line = STORE.fill(STORE.bs('heritage:' + ARCHIVE, l), { TYPE }).replace(/(\d)–(\d)/g, '$1⁠–⁠$2');
+    assert.ok(h.includes('lang="' + l + '"' + (l === 'ar' ? ' dir="rtl"' : '') + '>' + line + '</span>'), 'the ' + l + ' line: ' + line);
+    assert.ok(line.includes('1974') && line.includes('1998') && line.includes(LIVERY_1980[l]), 'it says 1974, 1998 and the 1980 livery, in ' + l);
+    assert.ok(kicker(h).includes(ARCHIVE_HEADING[l]), 'under ' + ARCHIVE_HEADING[l]);
+    assert.ok(!kicker(h).includes(DREAM[l]), 'and never ' + DREAM[l]);
     assert.doesNotMatch(h.replace(/ onloadedmetadata="[^"]*"/, ''), /[{}]/, 'no placeholder left, in ' + l);
   }
 });
@@ -345,12 +473,15 @@ function rgbaOf(file) {
   return { w, h, px };
 }
 
-test('its picture: a cut-out at the working width, clear all round, with no pale line under the dark paint', () => {
-  const file = path.join(ROOT, 'fids-current', PICTURE.replace(/^\//, ''));
-  assert.ok(fs.existsSync(file), PICTURE + ' is on disk');
-  const { w, h, px } = rgbaOf(file);
+// A card picture as the tool writes it: the working width, the proportions of
+// the drawing, cropped to it, clear in the corners, mostly sky, the aeroplane
+// solid, no haze. Returns the pixels for the counts below.
+function cutout(picture, ratio) {
+  const file = path.join(ROOT, 'fids-current', picture.replace(/^\//, ''));
+  assert.ok(fs.existsSync(file), picture + ' is on disk');
+  const img = rgbaOf(file), { w, h, px } = img;
   assert.equal(w, 2272, 'scaled to the 2272 px of the other card pictures');
-  assert.ok(Math.abs(w / h - 2272 / 635) < 0.01, 'at the proportions of the drawing: cropped and scaled, never stretched (it is ' + w + ' x ' + h + ')');
+  assert.ok(Math.abs(w / h - ratio) < 0.01, 'at the proportions of the drawing: cropped and scaled, never stretched (it is ' + w + ' x ' + h + ')');
   const A = (x, y) => px[(y * w + x) * 4 + 3];
   for (const [x, y] of [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]) assert.equal(A(x, y), 0, 'the corner at ' + x + ',' + y + ' is clear');
   const touches = { left: false, right: false, top: false, bottom: false };
@@ -362,14 +493,14 @@ test('its picture: a cut-out at the working width, clear all round, with no pale
   assert.ok(clear / (w * h) > 0.5, 'more than half the picture is sky (' + (100 * clear / (w * h)).toFixed(1) + '%)');
   assert.ok(solid / (w * h) > 0.3, 'and the aeroplane is solid (' + (100 * solid / (w * h)).toFixed(1) + '%)');
   assert.equal(haze, 0, 'no haze left off the outline');
+  return img;
+}
 
-  // NO PAGE LEFT ROUND THE BLACK FIN, BELLY AND ENGINES. The stand-in came on a
-  // white page; un-mixed one pixel deep, the page stayed a pale line round the
-  // dark paint over a dark sky (433 pixels by this count); two deep, the
-  // default of the tool, 1. Counted as on the A350-1000: a pixel that shows
-  // (opacity 100 or more) and is not dark (every channel 60 or more), on the
-  // outline (clear sky within one pixel), on a dark part (solid paint of 40 or
-  // less within three pixels, and no light solid paint).
+// Light pixels on the outline of the dark paint, counted as on the A350-1000:
+// a pixel that shows (opacity 100 or more) and is not dark (every channel 60
+// or more), on the outline (clear sky within one pixel), on a dark part (solid
+// paint of 40 or less within three pixels, and no light solid paint).
+function darkRim({ w, h, px }) {
   let rim = 0;
   const at = (x, y) => (y * w + x) * 4;
   for (let y = 0; y < h; y++) {
@@ -388,19 +519,68 @@ test('its picture: a cut-out at the working width, clear all round, with no pale
       if (sky && dark && !light) rim++;
     }
   }
+  return rim;
+}
+
+// Pale pixels on the outline of any paint of 150 or less, counted as in
+// tests/heritage-dream-card.test.js: a pixel that shows (opacity 100 or more),
+// is pale (every channel 205 or more), lies within two pixels of clear sky,
+// and has solid paint of 150 or less within three. This reaches a grey belly,
+// which the count above does not.
+function paleRim({ w, h, px }) {
+  const near = (x, y, r, hit) => {
+    for (let yy = Math.max(0, y - r); yy <= Math.min(h - 1, y + r); yy++) {
+      for (let xx = Math.max(0, x - r); xx <= Math.min(w - 1, x + r); xx++) if (hit((yy * w + xx) * 4)) return true;
+    }
+    return false;
+  };
+  let rim = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const o = (y * w + x) * 4;
+      if (px[o + 3] < 100 || px[o] < 205 || px[o + 1] < 205 || px[o + 2] < 205) continue;
+      if (!near(x, y, 2, (k) => px[k + 3] === 0)) continue;
+      if (near(x, y, 3, (k) => px[k + 3] >= 200 && px[k] <= 150 && px[k + 1] <= 150 && px[k + 2] <= 150)) rim++;
+    }
+  }
+  return rim;
+}
+
+test('its picture: a cut-out at the working width, clear all round, with no pale line under the dark paint', () => {
+  // NO PAGE LEFT ROUND THE BLACK FIN, BELLY AND ENGINES. The stand-in came on a
+  // white page; un-mixed one pixel deep, the page stayed a pale line round the
+  // dark paint over a dark sky (433 pixels by this count); two deep, the
+  // default of the tool, 1.
+  const rim = darkRim(cutout(PICTURE, 2272 / 635));
   assert.ok(rim <= 40, 'the page is still in the outline of the dark paint: ' + rim + ' light pixels on it');
   assert.ok(fs.existsSync(path.join(ROOT, 'scripts', 'heritage-sky', 'card-cutout.py')), 'the tool that makes the picture from a drawing is kept, for the full-size drawing');
 });
 
-test('the picture is in the build: under the folder the deploy serves, in the size it allows', () => {
+test('the 1980 picture: a cut-out at the working width, clear all round, with no pale line round the dark paint or the grey belly', () => {
+  // The supplied drawing came already cut out (3187 x 882). Laid on white and
+  // un-mixed one pixel deep, the page stayed in its outline: 127 by the first
+  // count, 426 by the second (most of it along the fin and the grey belly);
+  // two deep, the default of the tool, 14 and 19.
+  const img = cutout(ARCHIVE_PICTURE, 2272 / 598);
+  const dark = darkRim(img), pale = paleRim(img);
+  assert.ok(dark <= 40, 'the page is still in the outline of the dark paint: ' + dark + ' light pixels on it');
+  assert.ok(pale <= 40, 'the page is still in the outline of the grey and dark paint: ' + pale + ' pale pixels on it');
+  const note = ARCHIVE_NOTE.replace(/\s*\/\/\s*/g, ' ');
+  assert.match(note, /at the depth of two pixels, the default and the smallest that passes/, 'the note names the depth');
+  assert.match(note, /127 at one pixel and 14 at two[^.]*426 and 19/, 'and the counts it was chosen by');
+});
+
+test('the pictures are in the build: under the folder the deploy serves, in the size it allows', () => {
   const wr = fs.readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8');
   assert.match(wr, /"assets":\s*\{[\s\S]*?"directory":\s*"fids-current"/, 'the deploy serves fids-current as its static assets');
-  const file = path.join(ROOT, 'fids-current', PICTURE.replace(/^\//, ''));
-  const size = fs.statSync(file).size;
-  assert.ok(size > 100000 && size < 2 * 1024 * 1024, 'a picture of card size (' + size + ' bytes), far under the 25 MiB a static asset may be');
+  for (const picture of [PICTURE, ARCHIVE_PICTURE]) {
+    const file = path.join(ROOT, 'fids-current', picture.replace(/^\//, ''));
+    const size = fs.statSync(file).size;
+    assert.ok(size > 100000 && size < 2 * 1024 * 1024, picture + ' is a picture of card size (' + size + ' bytes), far under the 25 MiB a static asset may be');
+  }
   const ignore = path.join(ROOT, 'fids-current', '.assetsignore');
   if (fs.existsSync(ignore)) {
     const pats = fs.readFileSync(ignore, 'utf8').split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('#'));
-    assert.ok(!pats.some((p) => /aircraft|heritage|\*\.png/.test(p)), 'and nothing keeps it out of the deploy');
+    assert.ok(!pats.some((p) => /aircraft|heritage|\*\.png/.test(p)), 'and nothing keeps them out of the deploy');
   }
 });

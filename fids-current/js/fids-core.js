@@ -65554,6 +65554,87 @@ var HERITAGE_MARKS = [
     airports: '*CA'
   },
   {
+    // 2026-11-14 — FROM THE ARCHIVE: THE BOEING 747-133 OF THE DREAM LIVERY
+    // CARD, C-FTOE, FLEET 305, IN THE 1980 LIVERY IT REALLY WORE. The
+    // supplied drawing: AIR CANADA in red capitals forward, one red cheatline
+    // through the windows and round the nose, a white upper body over a grey
+    // lower body, and the white rondelle with the white leaf on a red fin,
+    // 305 at the top of the fin and C-FTOE aft. The capitals DC-9, the 1980
+    // 767 and the DC-8-63 wear the same livery, so it carries their mark and
+    // the default heading, From the archive.
+    //
+    // THE AEROPLANE: a Boeing 747-133, c/n 20881, line 236, delivered new on
+    // 13 May 1974, the last of the five 747-133s; withdrawn on 15 October 1998
+    // to Marana and broken up in July 1999 (AirHistory.net, the C-FTOE
+    // registration page and its photographs).
+    // THE LIVERY ON THIS AEROPLANE: the 1980 livery reached it in 1982, the
+    // titles first (photograph 21175, Toronto, September 1982, by its
+    // caption), and it is photographed in it at Miami in 1987–89 (145070),
+    // at Paris Charles de Gaulle on 6 August 1991 (319519) and at Prestwick
+    // in June–July 1993 (345805); at Heathrow on 8 June 1996 it is in the
+    // 1993 livery (324435). The livery is named by the year it came in, as on
+    // the other 1980 cards; 1982, the year it reached this aeroplane, is not
+    // printed, and neither is the year it went out.
+    //
+    // THE CAPTION, in English: Boeing 747-133 · 1974–1998 · 1980 livery, in
+    // the shape of the DC-8-63 line: the type, its years, and the livery by
+    // the year it came in, in the words of that line in each language. The
+    // years are the years of this aeroplane with Air Canada, its delivery and
+    // its withdrawal, the same years as the Dream livery card of the same
+    // aeroplane; they are not the years of the type. The type comes from this
+    // record into the place the caption leaves for it, as on that card:
+    // IATA_AIRCRAFT names no 747-100 (no 741). No registration and no fleet
+    // number is printed.
+    // Measured at 1680 x 1050 as the Dream livery 747 was, each language
+    // drawn and then measured after document.fonts.ready, every language is
+    // one row. The longest line is the German, 472.9 of 636.7 px (74.3%),
+    // then the Portuguese 66.9%, the Italian 65.2%, the Spanish 64.5%, the
+    // French 64.3%, the Japanese 60.1%, the Chinese 60.1%, the English 59.7%
+    // and the Arabic 57.5%.
+    //
+    // WHOSE GATES: the Air Canada set. It names no gates, so it runs on Air
+    // Canada pages only, never on a United gate; airports *CA, as every Air
+    // Canada card of the set.
+    //
+    // THE MARK is the 1980 lockup of the supplied family (ACLOGO-1980-2.svg),
+    // the mark of the capitals DC-9, the 1980 767 and the DC-8-63. No new
+    // file, no plate behind it, nothing recoloured.
+    //
+    // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
+    // supplied drawing (3187 x 882, already cut out): laid on white and the
+    // page taken off again at the depth of two pixels, the default and the
+    // smallest that passes. Counted as on the Dream livery 747, light pixels
+    // on the outline of the dark paint are 127 at one pixel and 14 at two;
+    // by the count of the Dream livery test, which reaches the grey of the
+    // lower body, 426 and 19. Cropped to its own edges and scaled to the 2272
+    // px of the other cards (2272 x 598), the four corners clear. Nothing of
+    // the aeroplane is repainted. The light line along the leading edge of
+    // the fin is drawn, and stays at any depth.
+    //
+    // ITS SHAPE, measured as on the Dream livery 747, behind the upper deck
+    // where the body is one deck: the top of the fuselage is level from 34%
+    // to 76% of the length, and the depth is the median of the columns
+    // 56–64% back (230 px). Length to the furthest aft point, here the tip of
+    // the tailplane, over that depth is 9.88 (9.80 to the top of the fin),
+    // against 10.87 for the 747-100 (70.66 m overall over 6.50 m, 21 ft 4 in,
+    // which is the fuselage WIDTH published for the 747-100, taken here as
+    // its depth): 9.1% short, and less if the body is deeper than it is wide
+    // behind the hump. Boeing, 747 Airplane Characteristics for Airport
+    // Planning, D6-58326 rev E, section 2.2, is the source to check that
+    // depth against; it was not read for this card. It is used as drawn
+    // either way: it is the supplied art, and a stretch is a call for its
+    // author. The rest is the -100: the short upper deck, a wing with no
+    // winglets and five main deck doors a side.
+    //
+    // First of the Air Canada cards on purpose, with the 1980 767 moved ahead of the capitals DC-9 and the Dream livery 747 after it: the Air Canada widebodies (the two 747s, the two 767s, the two TriStars and the A350-1000) then come every other card in the Atlantic pool and in the pool of every other Canadian airport, the wrap included, the two fin 305 cards four apart, and the DC-9, DC-8, 767 and TriStar spacing holds.
+    key: 'air-canada-747-305-80',
+    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
+    name: 'Air Canada',
+    type: 'Boeing 747-133',
+    aircraft: '/aircraft/heritage/air-canada-747-305-ac80.png',
+    airports: '*CA'
+  },
+  {
     // v23912 — AIR CANADA IN THE DC-9 YEARS. The supplied artwork: a DC-9-32
     // in the red-cheatline livery with the white rondelle on a red tail, drawn
     // as C-FTMA (a real Air Canada DC-9-32, MSN 47266, delivered 1968), under
@@ -65602,6 +65683,109 @@ var HERITAGE_MARKS = [
     aircraft: '/aircraft/heritage/air-canada-dc9-ac87.png',
     // The DC-9 was the domestic workhorse; Canadian airports only, the same
     // scope as the Canadian Airlines card.
+    airports: '*CA'
+  },
+  {
+    // v24015 — AND THE BOEING 767, IN THE CAPITALS LIVERY OF THE CAPS DC-9. A 767-200 with
+    // 'AIR CANADA' in red capitals over a single red cheatline and the white
+    // rondelle on a red tail: the dress of the caps DC-9 card below, so it
+    // carries the same capitals mark. The aeroplane is C-GAUN, fleet number 604.
+    //
+    // THE PICTURE IS A RENDER, NOT A DRAWING: the supplied 3D model "boeing 767"
+    // by 1883 on Sketchfab, CC BY 4.0, rendered to a still with the landing gear
+    // removed so it flies. CC BY asks for the maker's credit where the work is
+    // seen, so this card carries a credit line ('heritageCredit:<key>'), and
+    // docs/licenses/3d-models.md holds the full notice.
+    // v24077 — NOW A REALISTIC DRAWING MADE OVER THAT RENDER: the supplied
+    // 762.png, the same C-GAUN, fleet 604. Laid over the render, its windows,
+    // doors, wing and engine sit where the render's do, so it is still an
+    // adaptation of the model and the credit line stays ('modified' already
+    // says so). Only its tailplane tip is not its own: the export cut 5 px off
+    // at the right edge, and those 31 pixels come from an earlier save of the
+    // same drawing (604.png, scaled 0.837 and fitted at the nose and fuselage);
+    // every other pixel is 762's. Cropped to its own edges like the other cards.
+    // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose,
+    // is 9.36 to the tailplane tip against a 767-200's 8.97 (159 ft 2 in,
+    // 48.51 m, over a fuselage 17 ft 9 in, 5.41 m, deep in the side view:
+    // Boeing, 767 Airplane Characteristics for Airport Planning, D6-58328 rev
+    // K, section 2.2.1). The tip reaches further back than the fin's top,
+    // which a real 767's does not; to the fin's top it is 2.6% long, inside
+    // the 4% the boards allow, so it is used AS DRAWN, not resized. Its doors
+    // are the -200's (a door at each end and one exit over the wing), so the
+    // caption below stands.
+    // v24082 — RECOLOURED BY ITS ARTIST: the supplied 762.png again, the same
+    // drawing with the same outline pixel for pixel, its reds warmed toward
+    // the orange red of the period (the fin reads about 165,32,0 where it read
+    // 157,0,39). The 31 tip pixels from 604.png get the same shift, fitted on
+    // the tailplane's light pixels beside them.
+    //
+    // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Boeing 767-233 · 1982–2008 ·
+    // 1980 livery'. 233 is Air Canada's own customer number, so the designation
+    // is this airline's 767-200s and nobody else's.
+    // CHECKED: the first, C-GAUB (fleet 601), was delivered in October 1982 and
+    // flew the first transcontinental service on 14 February 1983 (Air Canada,
+    // 'Flying into the sunset', June 2020); the 767-200s and -200ERs were
+    // retired in 2008, replaced by A330-300s (Air Canada fleet history; Canadian
+    // Museum of Flight, August 2022). The later 767-300ERs are another model
+    // and do not change these years.
+    // THE LIVERY is the one introduced in 1980: red and white, the titles in
+    // bold capitals (Norebbo's Air Canada livery history, and confirmed first
+    // hand by staff of the period). It is named by the year it came in; the year
+    // it went out is not printed, because the sources give 1987 and 1992-94.
+    key: 'air-canada-767',
+    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-767.png',
+    credit: true,
+    airports: '*CA'
+  },
+  {
+    // v23912 — AND THE SAME DC-9 IN ITS EARLIER DRESS. The supplied AC80
+    // drawing: capitals 'AIR CANADA' titles over a single red cheatline, paired
+    // with the capitals mark of the same look (AIR CANADA stacked over the
+    // rondelle). Two cards, one per livery, rotating with the rest.
+    //
+    // Same checked caption as the 1987 DC-9 card, for the same reason: the DC-9
+    // years are solid, the years each livery was worn are not. The mark's
+    // FILENAME carries '1965-1987'; that is the artwork's name, and no date
+    // from it is printed.
+    // v24021 — the mark is the supplied 1980 logo (AC-1980-LOGO.svg: the
+    // rondelle beside AIR CANADA in red capitals, one red, all shapes), the
+    // mark of the livery this card and the 767 card show; it replaces the
+    // stacked capitals bitmap (air-canada-logo-1965-1987.png, kept on disk).
+    // v24077 — NOW THE SUPPLIED POLISHED DRAWING, as a PNG: the same C-FTMA in
+    // the same capitals livery (726 on the fin is the drawing's; no caption
+    // prints it). The SVG it replaces is deleted: nothing else used it.
+    //  · Its model is the DC-9-32, by its windows and exits: 20 windows, an
+    //    exit, one window, a second exit, 11 windows, exactly the -32's side
+    //    view in Douglas MDC J2904 section 2.2. The -14/-15 has one exit over
+    //    the wing. So the caption's '-32' and its 1968–2002 stand.
+    //  · Its shape: length over fuselage depth, measured 14–26% behind the
+    //    nose, was drawn 9.57 against the -32's 10.07 (36.36 m over 3.61 m, the
+    //    same manual), 5.0% short. More than the 4% the boards allow, so it is
+    //    stretched horizontally by 1.052 to 10.07; nothing is resampled
+    //    vertically, redrawn or recoloured.
+    //  · It was exported slightly see-through (alpha 251–254 all over), so the
+    //    body is made solid, each pixel as it looked on the white it was drawn
+    //    on, and about 590 faint specks around the aeroplane (alpha 6 or less)
+    //    are removed. Cropped to its own edges, as the 1987 drawing is.
+    // v24137 — the 1980 lockup (AC-1980-LOGO.svg: this card, the 1980 767
+    // and the 1980 DC-8) is now the same supplied drawing as the 1965
+    // lockup, every shape identical, filled in the 1980 red: the earlier
+    // export had its letters a fifth of a cap height below the centre of
+    // the ring and softer outlines. The two marks differ only in colour.
+    // v24149 — THE SUPPLIED FAMILY OF MARKS. A matching set was supplied for
+    // each of the two schemes (the wordmark alone, the rondelle beside the
+    // wordmark, the rondelle alone), and the lockups of that set are now the
+    // marks of the cards: ACLOGO-1980-2.svg here, on the 1980 767 and on the
+    // 1980 DC-8, ACLOGO-1965.svg on the 1965 DC-8. They are used as supplied.
+    // They are two drawings, not one drawing in two colours: the rondelle is
+    // smaller than before and the space before AIR is a little wider on the
+    // 1980 one. The lockups of v24137 stay on disk, used by nothing.
+    key: 'air-canada-caps',
+    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac80.png',
     airports: '*CA'
   },
   {
@@ -65684,116 +65868,13 @@ var HERITAGE_MARKS = [
     // the -400 carry it further aft), a wing with no winglets (the -400 has
     // them) and five main deck doors a side.
     //
-    // Between the 1987 DC-9 and the 1980 DC-9 on purpose: the Air Canada widebodies (this 747, the two 767s, the two TriStars and the A350-1000) then come every other card in the Atlantic pool and in the pool of every other Canadian airport, the wrap included, and the 2017 DC-9 stays three or more cards from every other DC-9.
+    // Between the 1980 DC-9 and the 1965 DC-8 on purpose, four cards after the 1980 livery card of the same aeroplane: the Air Canada widebodies (the two 747s, the two 767s, the two TriStars and the A350-1000) then come every other card in the Atlantic pool and in the pool of every other Canadian airport, the wrap included, and the 2017 DC-9 stays three or more cards from every other DC-9.
     key: 'air-canada-747-305-2017',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',
     type: 'Boeing 747-133',
     aircraft: '/aircraft/heritage/air-canada-747-305-2017.png',
     heading: 'heritageDreamKicker',
-    airports: '*CA'
-  },
-  {
-    // v23912 — AND THE SAME AEROPLANE IN ITS EARLIER DRESS. The supplied AC80
-    // drawing: capitals 'AIR CANADA' titles over a single red cheatline, paired
-    // with the capitals mark of the same look (AIR CANADA stacked over the
-    // rondelle). Two cards, one per livery, rotating with the rest.
-    //
-    // Same checked caption as the card above, for the same reason: the DC-9
-    // years are solid, the years each livery was worn are not. The mark's
-    // FILENAME carries '1965-1987'; that is the artwork's name, and no date
-    // from it is printed.
-    // v24021 — the mark is the supplied 1980 logo (AC-1980-LOGO.svg: the
-    // rondelle beside AIR CANADA in red capitals, one red, all shapes), the
-    // mark of the livery this card and the 767 card show; it replaces the
-    // stacked capitals bitmap (air-canada-logo-1965-1987.png, kept on disk).
-    // v24077 — NOW THE SUPPLIED POLISHED DRAWING, as a PNG: the same C-FTMA in
-    // the same capitals livery (726 on the fin is the drawing's; no caption
-    // prints it). The SVG it replaces is deleted: nothing else used it.
-    //  · Its model is the DC-9-32, by its windows and exits: 20 windows, an
-    //    exit, one window, a second exit, 11 windows, exactly the -32's side
-    //    view in Douglas MDC J2904 section 2.2. The -14/-15 has one exit over
-    //    the wing. So the caption's '-32' and its 1968–2002 stand.
-    //  · Its shape: length over fuselage depth, measured 14–26% behind the
-    //    nose, was drawn 9.57 against the -32's 10.07 (36.36 m over 3.61 m, the
-    //    same manual), 5.0% short. More than the 4% the boards allow, so it is
-    //    stretched horizontally by 1.052 to 10.07; nothing is resampled
-    //    vertically, redrawn or recoloured.
-    //  · It was exported slightly see-through (alpha 251–254 all over), so the
-    //    body is made solid, each pixel as it looked on the white it was drawn
-    //    on, and about 590 faint specks around the aeroplane (alpha 6 or less)
-    //    are removed. Cropped to its own edges, as the 1987 drawing is.
-    // v24137 — the 1980 lockup (AC-1980-LOGO.svg: this card, the 1980 767
-    // and the 1980 DC-8) is now the same supplied drawing as the 1965
-    // lockup, every shape identical, filled in the 1980 red: the earlier
-    // export had its letters a fifth of a cap height below the centre of
-    // the ring and softer outlines. The two marks differ only in colour.
-    // v24149 — THE SUPPLIED FAMILY OF MARKS. A matching set was supplied for
-    // each of the two schemes (the wordmark alone, the rondelle beside the
-    // wordmark, the rondelle alone), and the lockups of that set are now the
-    // marks of the cards: ACLOGO-1980-2.svg here, on the 1980 767 and on the
-    // 1980 DC-8, ACLOGO-1965.svg on the 1965 DC-8. They are used as supplied.
-    // They are two drawings, not one drawing in two colours: the rondelle is
-    // smaller than before and the space before AIR is a little wider on the
-    // 1980 one. The lockups of v24137 stay on disk, used by nothing.
-    key: 'air-canada-caps',
-    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
-    name: 'Air Canada',
-    aircraft: '/aircraft/heritage/air-canada-dc9-ac80.png',
-    airports: '*CA'
-  },
-  {
-    // v24015 — AND THE BOEING 767, IN THE SAME CAPITALS LIVERY. A 767-200 with
-    // 'AIR CANADA' in red capitals over a single red cheatline and the white
-    // rondelle on a red tail: the dress of the caps DC-9 card above, so it
-    // carries the same capitals mark. The aeroplane is C-GAUN, fleet number 604.
-    //
-    // THE PICTURE IS A RENDER, NOT A DRAWING: the supplied 3D model "boeing 767"
-    // by 1883 on Sketchfab, CC BY 4.0, rendered to a still with the landing gear
-    // removed so it flies. CC BY asks for the maker's credit where the work is
-    // seen, so this card carries a credit line ('heritageCredit:<key>'), and
-    // docs/licenses/3d-models.md holds the full notice.
-    // v24077 — NOW A REALISTIC DRAWING MADE OVER THAT RENDER: the supplied
-    // 762.png, the same C-GAUN, fleet 604. Laid over the render, its windows,
-    // doors, wing and engine sit where the render's do, so it is still an
-    // adaptation of the model and the credit line stays ('modified' already
-    // says so). Only its tailplane tip is not its own: the export cut 5 px off
-    // at the right edge, and those 31 pixels come from an earlier save of the
-    // same drawing (604.png, scaled 0.837 and fitted at the nose and fuselage);
-    // every other pixel is 762's. Cropped to its own edges like the other cards.
-    // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose,
-    // is 9.36 to the tailplane tip against a 767-200's 8.97 (159 ft 2 in,
-    // 48.51 m, over a fuselage 17 ft 9 in, 5.41 m, deep in the side view:
-    // Boeing, 767 Airplane Characteristics for Airport Planning, D6-58328 rev
-    // K, section 2.2.1). The tip reaches further back than the fin's top,
-    // which a real 767's does not; to the fin's top it is 2.6% long, inside
-    // the 4% the boards allow, so it is used AS DRAWN, not resized. Its doors
-    // are the -200's (a door at each end and one exit over the wing), so the
-    // caption below stands.
-    // v24082 — RECOLOURED BY ITS ARTIST: the supplied 762.png again, the same
-    // drawing with the same outline pixel for pixel, its reds warmed toward
-    // the orange red of the period (the fin reads about 165,32,0 where it read
-    // 157,0,39). The 31 tip pixels from 604.png get the same shift, fitted on
-    // the tailplane's light pixels beside them.
-    //
-    // THE CAPTION NAMES THE TYPE, NOT A CITY: 'Boeing 767-233 · 1982–2008 ·
-    // 1980 livery'. 233 is Air Canada's own customer number, so the designation
-    // is this airline's 767-200s and nobody else's.
-    // CHECKED: the first, C-GAUB (fleet 601), was delivered in October 1982 and
-    // flew the first transcontinental service on 14 February 1983 (Air Canada,
-    // 'Flying into the sunset', June 2020); the 767-200s and -200ERs were
-    // retired in 2008, replaced by A330-300s (Air Canada fleet history; Canadian
-    // Museum of Flight, August 2022). The later 767-300ERs are another model
-    // and do not change these years.
-    // THE LIVERY is the one introduced in 1980: red and white, the titles in
-    // bold capitals (Norebbo's Air Canada livery history, and confirmed first
-    // hand by staff of the period). It is named by the year it came in; the year
-    // it went out is not printed, because the sources give 1987 and 1992-94.
-    key: 'air-canada-767',
-    file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
-    name: 'Air Canada',
-    aircraft: '/aircraft/heritage/air-canada-767.png',
-    credit: true,
     airports: '*CA'
   },
   {
@@ -66064,7 +66145,7 @@ var HERITAGE_MARKS = [
     // side, as both have. It is used as drawn: it is the supplied art, and a
     // stretch is a call for its author.
     //
-    // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the Air Canada widebodies then come every other card (747, 767, TriStar, A350, 767, TriStar) in the Atlantic pool and in the pool of every other Canadian airport, so no two are back to back.
+    // Between the 1993 DC-9 and the 1980 DC-8 on purpose: the Air Canada widebodies then come every other card (747, 767, 747, TriStar, A350, 767, TriStar) in the Atlantic pool and in the pool of every other Canadian airport, so no two are back to back.
     key: 'air-canada-a350-1000',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',

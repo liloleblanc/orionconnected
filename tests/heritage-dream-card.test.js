@@ -48,10 +48,14 @@ const WHAT_IF_CARDS = ['air-canada-dc9-2017', 'air-canada-747-305-2017', KEY];
 // joined it, between the 1993 DC-9 and the 1980 DC-8.
 // 2026-11-14 — the Dream livery 747-133 (tests/heritage-747-305-card.test.js)
 // joined it, between the 1987 DC-9 and the 1980 DC-9.
+// 2026-11-14 — and the same 747-133 in the 1980 livery, from the archive (the
+// same file), joined it as the first Air Canada card; the 1980 767 moved
+// ahead of the capitals DC-9 and the Dream livery 747 after it, so the
+// widebodies still come every other card and the two fin 305 cards four apart.
 const AIR_CANADA_SET = [
-  'air-atlantic', 'air-nova', 'canadian-airlines', 'air-canada', 'air-canada-747-305-2017', 'air-canada-caps', 'air-canada-767',
-  'air-canada-dc8', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8-80', 'air-canada-767-87',
-  'air-canada-dc9-2017', 'air-canada-l1011-93'
+  'air-atlantic', 'air-nova', 'canadian-airlines', 'air-canada-747-305-80', 'air-canada', 'air-canada-767', 'air-canada-caps',
+  'air-canada-747-305-2017', 'air-canada-dc8', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8-80',
+  'air-canada-767-87', 'air-canada-dc9-2017', 'air-canada-l1011-93'
 ];
 
 function lift(name) {
