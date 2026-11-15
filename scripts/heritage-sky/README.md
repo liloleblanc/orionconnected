@@ -171,6 +171,98 @@ with `qlmanage`, and needs Pillow.
 - the drawing contains no embedded bitmap. Illustrator writes one when it
   cannot express some shading, as it did with the DC-9's engine.
 
+## Aircraft drawings: take the page off (`card-cutout.py`)
+
+A side drawing supplied as a picture usually stands on its page, and the page
+is in it twice: round the aeroplane, and inside the last two pixels of its
+outline, where the drawing was smoothed against the page. Cutting along the
+open page alone leaves the second part behind as a pale rim round every dark
+part of the aeroplane (a navy fin, a blue belly, an engine) as soon as the sky
+is behind it. The first cut of the Dream livery 787-8 had 263 such pixels; the
+card's picture has 6.
+
+    python3 scripts/heritage-sky/card-cutout.py drawing.png fids-current/aircraft/heritage/<name>.png
+
+The script:
+- floods the page colour in from the four edges, so white inside the aeroplane
+  stays;
+- un-mixes the rim: it reads the aeroplane's colour just inside the outline,
+  works out each rim pixel's share of page against it, takes that share out of
+  the colour and makes it clear. A rim pixel that is no such mix (an antenna, a
+  light) keeps its colour;
+- crops the drawing to its own edges and scales it to 2272 px wide, the width
+  of the DC-9 and TriStar pictures, with colour weighted by opacity.
+
+A drawing that already comes as a cut-out is laid on white first and goes
+through the same steps, so a rim it brought with it comes out too. It needs
+Pillow, and nothing of the aeroplane is repainted.
+
+Replacing a card's picture with a better copy of the same drawing is this one
+command into the same file name. `tests/heritage-dream-card.test.js` holds the
+result to it: 2272 px wide, clear at the corners, cropped to the drawing, no
+haze, and no pale rim beside dark paint.
+
+What the script cannot see is a pocket of page shut inside a drawing that came
+on its page (between the legs of an undercarriage, under a pylon). Look for one.
+
+The page usually reaches two pixels into the outline, and that is the default.
+A cut-out that was trimmed at a larger size, or one with a feathered edge, can
+carry a wider band: both cut-outs of the A350-1000 that is coming had about six
+pixels of page in their outline (the first, 10312 px wide, a band left by the
+trim; the second, 7899 px wide and the one the card uses, an edge feathered
+over six pixels), and at two the band stayed as a pale line under the black
+belly, the chin and the engine and round the fin over a dark sky. The depth is
+the fifth argument, in the drawing's own pixels:
+
+    python3 scripts/heritage-sky/card-cutout.py 881-canva.png fids-current/aircraft/heritage/air-canada-a350-1000.png 2272 10 6
+
+Look at the result over a dark sky before choosing a depth, and take the
+smallest that passes. A light line that is drawn (the leading edge of a fin or
+a winglet) is no mix of page and aeroplane, and it stays at any depth.
+`tests/heritage-a350-card.test.js` counts light pixels on the outline of the
+dark paint and passes 40 or fewer: for the second cut-out 1257 at two, 99 at
+five, 15 at six (the first gave 790 at two and 13 at six).
+
+The Dream livery 747-133 is made from the final supplied drawing (4080 x
+2295, already cut out, the aeroplane about 73% of its width), which replaced
+a stand-in (2000 x 849, on a white page) through the same command into the
+same file name. It passes at the default two: by the same count 361 at one,
+11 at two, and by the count of the Dream livery test 37 and 31, nearly all of
+it the white paint of the nose framing the dark cockpit windows, which is
+drawn. The top of its fin is its furthest aft point, so the top right corner
+of the picture is the dark tip of the fin, partly clear, as on the A350-1000.
+It comes out at 2272 x 603:
+
+    python3 scripts/heritage-sky/card-cutout.py 747-305-2017-livery-FINAL-with-door.png fids-current/aircraft/heritage/air-canada-747-305-2017.png
+
+The same aeroplane in the 1980 livery, the archive card, came already cut out.
+The picture is from the drawing as its author corrected it (the v2 file,
+3187 x 881, the ring of the rondelle open at its foot for the stem of the
+leaf), and it passes at the default two as well: 304 at one, 16 at two by
+that count, and 22 at one, 7 at two by the count of the Dream livery test,
+which also reaches the grey of its lower body. It comes out at 2272 x 597
+(the first drawing, 3187 x 882, gave 2272 x 598, and 127 and 14, 426 and 19):
+
+    python3 scripts/heritage-sky/card-cutout.py 747-305-1980-v2.png fids-current/aircraft/heritage/air-canada-747-305-ac80.png
+
+Its third card, the same aeroplane in the 1993 livery, came already cut out
+too (5924 x 1611) and needs a depth of four: by the first count 200 at one,
+218 at two, 34 at three and 28 at four, and by the count of the Dream livery
+test 843, 444, 46 and 8. At two the page stays as a pale dotted line along the
+trailing edge of the dark fin over a dark sky; at three that is gone, but the
+second count is still over 40, along the lower body. What is left at four is
+mostly the light line drawn along the leading edge of the fin. It comes out
+at 2272 x 602:
+
+    python3 scripts/heritage-sky/card-cutout.py 747-305-1993.png fids-current/aircraft/heritage/air-canada-747-305-ac93.png 2272 10 4
+
+A corner of the picture that is not clear stops the tool when it is solid or
+has the colour of the page, as page left in would be. A drawing cropped to its
+own edges can put a point of its own paint, partly clear, in a corner: the top
+of the A350-1000 fin is its highest and its furthest aft point, so the top
+right corner of that picture is the dark tip of the fin, at opacity 43. The
+tool keeps it and names it in its report.
+
 ## The shelf clip re-rendered: clouds carried through the hole (`cleanplate5`)
 
 `cleanplate` filled the hole on each frame from the sky around it (dilate,
