@@ -22012,6 +22012,30 @@ function uxgGateHtml(ctx) {
     if (!(_silkBanner && _silkLightBand)) return html;
     return html.replace('skyteam-white.png', 'skyteam-colour.svg');
   }
+  // 2026-11-15 — A STAR ALLIANCE MEMBER DRAWS ITS MEMBER LOCKUP
+  // (STAR_ALLIANCE_LOCKUP): its mark as this band draws it, a rule the width
+  // of it, and A STAR ALLIANCE MEMBER with the star, one picture in place of
+  // the emblem and the wordmark. The lockup carries the alliance, so no badge
+  // goes beside it, as for the lockups of KLM and Delta (starHtml is still
+  // built: the boarding strip keeps its star). The white twin on a dark band
+  // (the classic banner), the dark one on every light band. A heritage page
+  // keeps its period mark, and a carrier whose lettering failed to load keeps
+  // its typed name. Two tiers stand taller than a wordmark: the band less its
+  // date bar and a margin (96 px at 1680x1050, where every member line reads
+  // at 10 px or more), and never wider than the slot.
+  function _starLockupOnBand() {
+    if (_allianceKey !== 'star' || typeof starLockupSrc !== 'function') return '';
+    if (_g8LogoCache[airlineCode] === 'text') return '';
+    if (typeof _heritageBannerMark === 'function' && _heritageBannerMark(airlineCode)) return '';
+    var src = starLockupSrc(airlineCode, !(_silkBanner && _silkLightBand));
+    if (!src) return '';
+    var h = 'calc(clamp(110px, 13vh, 160px) - 40px)';
+    return '<img class="g8-r1-logo g8-r1-lockup" src="' + src + '" alt="' + airlineName + '"'
+      + ' style="height:' + h + ' !important;max-height:' + h + ' !important;width:auto !important;max-width:100% !important;'
+      + 'min-width:0 !important;object-fit:contain !important;object-position:left center !important;filter:none !important;'
+      + 'flex:0 1 auto !important;display:block !important;"'
+      + ' onerror="g8LogoFail(this)" data-pairmode="1" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
+  }
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
   // stop lands just before it and reads as one continuous fabric.
@@ -22232,6 +22256,9 @@ function uxgGateHtml(ctx) {
           : '')
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + (function () {
+          // 2026-11-15 — a Star Alliance member: its member lockup alone
+          var _lockup = _starLockupOnBand();
+          if (_lockup) return _lockup;
           // v23252 — ONEWORLD COMPOSES LIKE THE OFFICIAL CO-BRAND LOCKUP
           // (the reference sheet: ball | thin divider | airline mark —
           // ball FIRST). Star Alliance / SkyTeam keep the approved
@@ -61625,6 +61652,65 @@ function _getGateAdDwellMs(slide) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
+// 2026-11-15 — STAR ALLIANCE MEMBER LOCKUPS.
+//
+// On the two big logo spots of a gate, the band at the top and the Welcome
+// card, a Star Alliance carrier shows its member lockup: its own mark, a thin
+// rule the full width of it, then A STAR ALLIANCE MEMBER with the Star
+// Alliance star, laid out as the supplied Air Canada lockup. Air Canada (AC)
+// and EgyptAir (MS, which had no lettering on the boards) are the supplied
+// files themselves. Every other one is built by scripts/star-lockups/build.py
+// from the files the band already draws for that carrier (its emblem, its
+// wordmark), with the rule, the member line and the star of the Air Canada
+// file, its own paths, scaled to the width of the mark. Rows, orbs, shelves
+// and belts keep their own marks.
+//
+// <CODE>.svg is for a light ground. <CODE>-white.svg is its twin for a dark
+// one: the wordmark in its own white cut, the rule and the member line white,
+// the star as drawn, never a plate behind it. Where the board sets no emblem
+// on a dark ground (Aegean, Air New Zealand) or the emblem is a white square
+// (Copa), the twin has the lettering alone.
+//
+// The value is the share of the height of the twin that the lettering of the
+// airline fills: the Welcome card draws the lockup taller by it, so those
+// letters are never smaller than the greeting (WELCOME_CARD_LETTER_HEIGHT).
+// ════════════════════════════════════════════════════════════════════════
+var STAR_ALLIANCE_LOCKUP = {
+  'AC': 0.32, 'MS': 0.57,
+  'LH': 0.47, 'UA': 0.37, 'TK': 0.23, 'SK': 0.68, 'OS': 0.57, 'LX': 0.62,
+  'A3': 0.54, 'NZ': 0.40, 'CM': 0.52,
+  // Singapore and Brussels letter on two lines: the line that carries the
+  // name (0.35 and 0.62 of their lettering, read from their white cuts)
+  'SQ': 0.23, 'SN': 0.41,
+  // Rouge and Air Canada Express: the band draws AIR CANADA, so the lockup is Air Canada lettering
+  'RV': 0.44, 'ZX': 0.44, '9L': 0.44
+};
+// The codes the gate band maps to Star Alliance that have no lockup, and why.
+// Each keeps its wordmark and the separate star badge as before.
+var STAR_ALLIANCE_LOCKUP_SKIP = {
+  // not members in their own name: Jazz flies as Air Canada Express, and
+  // Eurowings is not in Star Alliance, so no member line goes under either name
+  'QK': 'not-a-member', 'EW': 'not-a-member',
+  // Central Mountain Air is a carrier of its own: Air Canada lettering is not its lockup
+  '9M': 'own-carrier',
+  // TAP and LOT: their lettering files set the name in a font, with no outlines to build from
+  'TP': 'lettering-is-type', 'LO': 'lettering-is-type',
+  // no lettering of their own on the band: ANA, Ethiopian, South African,
+  // Asiana, Thai, Air China, Shenzhen Airlines, Air India, Adria, Croatia
+  // Airlines, Hahn Air
+  'NH': 'no-lettering', 'ET': 'no-lettering', 'SA': 'no-lettering', 'OZ': 'no-lettering',
+  'TG': 'no-lettering', 'CA': 'no-lettering', 'ZH': 'no-lettering', 'AI': 'no-lettering',
+  'JP': 'no-lettering', 'OU': 'no-lettering', 'HR': 'no-lettering'
+};
+/** The member lockup of a carrier, for a light ground or (onDark) a dark one; empty where it has none. */
+function starLockupSrc(code, onDark) {
+  var c = String(code || '').toUpperCase();
+  if (!Object.prototype.hasOwnProperty.call(STAR_ALLIANCE_LOCKUP, c)) return '';
+  return '/logos/airlines/star-lockups/' + c + (onDark ? '-white' : '') + '.svg'
+    + '?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : '1');
+}
+
+// ════════════════════════════════════════════════════════════════════════
 // v23994 — THE WELCOME CARD, IN THREE LINES.
 //
 // The middle screen's fallback slide (a gate with no uploaded media and no
@@ -61871,7 +61957,13 @@ function _welcomeCardData(code) {
     wordmark: nm.wordmark,
     wordmarkScale: _welcomeCardPick(WELCOME_CARD_LETTERING_SCALE, code) || 1,
     letterHeight: _welcomeCardPick(WELCOME_CARD_LETTER_HEIGHT, code) || 1,
-    name: nm.name
+    name: nm.name,
+    // 2026-11-15 — a Star Alliance member: its member lockup, the twin for a
+    // dark ground, and the share of it the letters of the airline fill
+    // (STAR_ALLIANCE_LOCKUP). _welcomeCardHtml draws it in place of the
+    // emblem and the lettering.
+    lockup: (typeof starLockupSrc === 'function') ? starLockupSrc(code, true) : '',
+    lockupLetters: (typeof STAR_ALLIANCE_LOCKUP !== 'undefined' && STAR_ALLIANCE_LOCKUP[code]) || 0
   };
 }
 
@@ -61884,6 +61976,14 @@ function _welcomeCardEsc(s) {
 /** The card's markup. Sizes are set by _welcomeCardFit once the art has loaded. */
 function _welcomeCardHtml(ad) {
   var esc = _welcomeCardEsc;
+  // 2026-11-15 — a Star Alliance member: its member lockup alone on the
+  // airline line, drawn taller by the share its letters fill, so the letters
+  // of the airline are as large as a lettering alone would be, with the
+  // member line under them, within the room of the card (rule 1).
+  if (ad && ad.lockup && ad.lockupLetters > 0) {
+    ad = Object.assign({}, ad, { emblem: '', emblemKind: 'none', wordmark: ad.lockup,
+      letterHeight: ad.lockupLetters, wordmarkScale: 1 / ad.lockupLetters });
+  }
   var lines = (ad && ad.lines) || [];
   function phrase(l, pos) {
     if (!l || !l.text) return '';

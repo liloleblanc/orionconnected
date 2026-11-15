@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2912,
+    "total": 2944,
     "by_category": {
       "ad": 21,
-      "airline": 1190,
+      "airline": 1222,
       "background": 193,
       "brand": 5,
       "hotel": 894,
@@ -5000,6 +5000,72 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/star-lockups/9L-white.svg",
+      "file": "9L-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "9L white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/9L.svg",
+      "file": "9L.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "9L",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/A3-white.svg",
+      "file": "A3-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "A3 white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/A3.svg",
+      "file": "A3.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "A3",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/AC-white.svg",
+      "file": "AC-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "AC white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/AC.svg",
+      "file": "AC.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "AC",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/split/aer-lingus-wordmark-dark.svg",
       "file": "aer-lingus-wordmark-dark.svg",
       "category": "airline",
@@ -5154,6 +5220,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/star-lockups/CM-white.svg",
+      "file": "CM-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "CM white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/CM.svg",
+      "file": "CM.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "CM",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/split/firefly-wordmark-dark.svg",
       "file": "firefly-wordmark-dark.svg",
       "category": "airline",
@@ -5242,6 +5330,72 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/star-lockups/LH-white.svg",
+      "file": "LH-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "LH white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/LH.svg",
+      "file": "LH.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "LH",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/LX-white.svg",
+      "file": "LX-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "LX white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/LX.svg",
+      "file": "LX.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "LX",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/MS-white.svg",
+      "file": "MS-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "MS white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/MS.svg",
+      "file": "MS.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "MS",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/split/myanmar-national-wordmark-dark.svg",
       "file": "myanmar-national-wordmark-dark.svg",
       "category": "airline",
@@ -5264,6 +5418,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/star-lockups/NZ-white.svg",
+      "file": "NZ-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "NZ white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/NZ.svg",
+      "file": "NZ.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "NZ",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/split/oman-air-wordmark-dark.svg",
       "file": "oman-air-wordmark-dark.svg",
       "category": "airline",
@@ -5281,6 +5457,50 @@
       "subcategory": "misc",
       "group": "Airlines — misc",
       "name": "oman air wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/OS-white.svg",
+      "file": "OS-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "OS white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/OS.svg",
+      "file": "OS.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "OS",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/RV-white.svg",
+      "file": "RV-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "RV white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/RV.svg",
+      "file": "RV.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "RV",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5330,6 +5550,94 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/star-lockups/SK-white.svg",
+      "file": "SK-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "SK white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/SK.svg",
+      "file": "SK.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "SK",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/SN-white.svg",
+      "file": "SN-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "SN white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/SN.svg",
+      "file": "SN.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "SN",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/SQ-white.svg",
+      "file": "SQ-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "SQ white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/SQ.svg",
+      "file": "SQ.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "SQ",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/TK-white.svg",
+      "file": "TK-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "TK white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/TK.svg",
+      "file": "TK.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "TK",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/split/transavia-wordmark-dark.svg",
       "file": "transavia-wordmark-dark.svg",
       "category": "airline",
@@ -5369,6 +5677,50 @@
       "subcategory": "misc",
       "group": "Airlines — misc",
       "name": "turkish airlines wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/UA-white.svg",
+      "file": "UA-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "UA white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/UA.svg",
+      "file": "UA.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "UA",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/ZX-white.svg",
+      "file": "ZX-white.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "ZX white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/star-lockups/ZX.svg",
+      "file": "ZX.svg",
+      "category": "airline",
+      "subcategory": "misc",
+      "group": "Airlines — misc",
+      "name": "ZX",
       "iata": "",
       "country": "",
       "ext": "svg"
