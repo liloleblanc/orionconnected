@@ -6,17 +6,19 @@ build.py: the Star Alliance member lockups of the gate header and the Welcome ca
 
 Writes fids-current/logos/airlines/star-lockups/<CODE>.svg and <CODE>-white.svg.
 
-The layout is the one of the supplied Air Canada lockup (star-lockups/AC.svg,
-kept exactly as supplied): the carrier's mark on top, a thin rule the full
-width of it, then A STAR ALLIANCE MEMBER with the Star Alliance star and its TM
-at the right. AC.svg and MS.svg (EgyptAir, also as supplied) are not built
-here, only their white twins.
+The layout is the one of the first supplied Air Canada lockup (kept as
+scripts/star-lockups/AC-member-line.svg): the carrier's mark on top, a thin
+rule the full width of it, then A STAR ALLIANCE MEMBER with the Star Alliance
+star and its TM at the right. AC.svg and MS.svg (EgyptAir) are the supplied
+files and are not built here, only their white twins. AC.svg is the later
+supplied Air Canada design: a bar running grey to Air Canada red under the
+mark, then the member line in white on a black band.
 
 For every other carrier the mark on top is what the gate header draws for it:
 its emblem in an 82 px box with corners of 12 px, a 16 px gap, then its
 wordmark contained in the box the header gives it (measured on the header at
 1680x1050). Below it go the rule, the member line, the TM and the star of
-AC.svg, its own paths and not a retyped copy, scaled so the rule is as wide as
+AC-member-line.svg, its own paths and not a retyped copy, scaled so the rule is as wide as
 the mark, at the gap of the supplied EgyptAir lockup (a share of the width).
 
 The white twin (for a dark ground) takes the wordmark's own white cut, a white
@@ -34,6 +36,9 @@ import xml.etree.ElementTree as ET
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FC = os.path.join(REPO, 'fids-current')
 OUT = os.path.join(FC, 'logos', 'airlines', 'star-lockups')
+# The rule, the member line, the TM and the star of the first supplied Air Canada
+# lockup (thin black rule, black member line): every built lockup takes its paths.
+MEMBER_LINE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'AC-member-line.svg')
 SVG = 'http://www.w3.org/2000/svg'
 XLINK = 'http://www.w3.org/1999/xlink'
 ET.register_namespace('', SVG)
@@ -64,7 +69,7 @@ WHITE_NO_EMBLEM = {'A3', 'NZ', 'CM'}
 
 EMB, GAP, RADIUS = 82.0, 16.0, 12.0
 RULE_GAP = 9.57 / 484.57        # EgyptAir lockup: rule 9.57 under the wordmark, 484.57 long
-AC_RULE_LEN = 1556.78            # AC.svg: rule from x 0 to 1556.78
+AC_RULE_LEN = 1556.78            # AC-member-line.svg: rule from x 0 to 1556.78
 AC_RULE_TOP = 502.524
 AC_BOTTOM = 649.28               # foot of the star
 AC_RIGHT = 1601.98               # right of the TM
@@ -154,7 +159,7 @@ def contain(x, box_w, box_h, vb):
 
 
 def member_paths(white):
-    root = ET.parse(os.path.join(OUT, 'AC.svg')).getroot()
+    root = ET.parse(MEMBER_LINE).getroot()
     paths = [el for el in root.iter('{%s}path' % SVG)]
     assert len(paths) == 19, len(paths)
     out = []
@@ -206,9 +211,11 @@ def build(code, white):
 
 
 def white_twin_of_supplied():
+    # Air Canada: the AIR CANADA lettering white; the bar, the black band and
+    # the white member line on it are the same on either ground
     ac = read(os.path.join(OUT, 'AC.svg'))
-    assert ac.count('fill="#2e2a25"') == 1 and ac.count('fill="#000000"') == 3
-    ac = ac.replace('fill="#2e2a25"', 'fill="#ffffff"').replace('fill="#000000"', 'fill="#ffffff"')
+    assert ac.count('fill="#2e2a25"') == 1 and ac.count('fill="#000000"') == 1
+    ac = ac.replace('fill="#2e2a25"', 'fill="#ffffff"')
     ms = read(os.path.join(OUT, 'MS.svg'))
     assert ms.count('fill: #002d62;') == 1
     ms = ms.replace('fill: #002d62;', 'fill: #ffffff;')

@@ -6,17 +6,20 @@
 // A Star Alliance carrier shows its member lockup on the two big logo spots of
 // a gate, the band at the top and the Welcome card: its mark, a thin rule the
 // width of it, and A STAR ALLIANCE MEMBER with the star, laid out as the
-// supplied Air Canada lockup (star-lockups/AC.svg). Air Canada and EgyptAir
-// are the supplied files; the others are built by scripts/star-lockups/build.py
-// from the files the band already draws, with the rule, the member line and
-// the star of AC.svg. This holds that:
+// first supplied Air Canada lockup (scripts/star-lockups/AC-member-line.svg).
+// Air Canada and EgyptAir are the supplied files (Air Canada's is its later
+// design: a bar under the mark, the member line white on a black band); the
+// others are built by scripts/star-lockups/build.py from the files the band
+// already draws, with the rule, the member line and the star of
+// AC-member-line.svg. This holds that:
 //   · every code the band maps to Star Alliance has both files, or a reason;
 //   · the supplied files are kept byte for byte, and every built one draws the
-//     member line from AC.svg itself, white on the twin for dark grounds;
+//     member line from AC-member-line.svg itself, white on the twin for dark grounds;
 //   · the band draws the lockup alone (no second star badge), the white twin on
 //     a dark band, and every other carrier exactly as before;
 //   · the member line reads at 9 px or more in the band at 1680x1050;
-//   · the Welcome card draws the white twin in place of emblem and lettering.
+//   · the Welcome card draws the white twin in place of emblem and lettering
+//     (Rouge and the Air Canada Express codes keep their own card).
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -55,12 +58,15 @@ const md5 = (f) => crypto.createHash('md5').update(fs.readFileSync(path.join(DIR
 const ALLIANCE_MAP = table('var ALLIANCE_MAP = {');
 const LOCKUP = table('var STAR_ALLIANCE_LOCKUP = {');
 const SKIP = table('var STAR_ALLIANCE_LOCKUP_SKIP = {');
+const KEEPS_OWN = table('var WELCOME_CARD_KEEPS_OWN_MARK = {');
 const starLockupSrc = new Function('STAR_ALLIANCE_LOCKUP', 'FIDS_BUILD_TAG', block('function starLockupSrc(').text + '\nreturn starLockupSrc;')(LOCKUP, 'vTEST');
 const STAR = Object.keys(ALLIANCE_MAP).filter((c) => ALLIANCE_MAP[c] === 'star');
-const SUPPLIED = { 'AC.svg': '3ef30cc3850771619c50c681a83b8f22', 'MS.svg': '571ac289ef66a710addc8ec22a652b12' };
+const SUPPLIED = { 'AC.svg': 'af68c9573582043e1c7b028be4c8a9da', 'MS.svg': '571ac289ef66a710addc8ec22a652b12' };
+// The first supplied Air Canada lockup, kept beside the builder as the source of every built member line.
+const MEMBER_LINE_SVG = path.join(ROOT, 'scripts', 'star-lockups', 'AC-member-line.svg');
 
-// The member line of AC.svg: the rule, A STAR ALLIANCE MEMBER, its TM, then the fourteen faces of the star.
-const AC_PATHS = [...read('AC.svg').matchAll(/<path\b[^>]*\sd="([^"]+)"[^>]*\sfill="(#[0-9a-f]{6})"/g)].map((m) => ({ d: m[1], fill: m[2] }));
+// The member line of AC-member-line.svg: the rule, A STAR ALLIANCE MEMBER, its TM, then the fourteen faces of the star.
+const AC_PATHS = [...fs.readFileSync(MEMBER_LINE_SVG, 'utf8').matchAll(/<path\b[^>]*\sd="([^"]+)"[^>]*\sfill="(#[0-9a-f]{6})"/g)].map((m) => ({ d: m[1], fill: m[2] }));
 const MEMBER = AC_PATHS.slice(2);
 
 test('every code the band maps to Star Alliance has its two lockup files, or a reason it has none', () => {
@@ -88,8 +94,15 @@ test('every code the band maps to Star Alliance has its two lockup files, or a r
 
 test('Air Canada and EgyptAir are the supplied files, byte for byte; their twins change only the ink', () => {
   for (const [f, h] of Object.entries(SUPPLIED)) assert.equal(md5(f), h, f);
+  // the source of the built member lines is the first supplied file, byte for byte
+  assert.equal(crypto.createHash('md5').update(fs.readFileSync(MEMBER_LINE_SVG)).digest('hex'), '3ef30cc3850771619c50c681a83b8f22');
+  // Air Canada: only its AIR CANADA lettering turns white; the bar, the black band and its white member line stay
   const ac = read('AC.svg'), acw = read('AC-white.svg');
-  assert.equal(acw, ac.replace('fill="#2e2a25"', 'fill="#ffffff"').split('fill="#000000"').join('fill="#ffffff"'));
+  assert.equal((ac.match(/fill="#2e2a25"/g) || []).length, 1, 'one AIR CANADA lettering');
+  assert.equal(acw, ac.replace('fill="#2e2a25"', 'fill="#ffffff"'));
+  assert.match(ac, /<stop offset="0" stop-color="#92959b"\/>\s*<stop offset="1" stop-color="#f01428"\/>/, 'the bar: grey to Air Canada red');
+  assert.match(ac, /<path d="M0 226\.[^"]*" fill="#000000"/, 'the black band under the bar');
+  assert.equal((ac.match(/fill="#ffffff"/g) || []).length, 2, 'the member line and its TM, white on the band');
   const ms = read('MS.svg'), msw = read('MS-white.svg');
   assert.match(ms, /\.cls-3 \{\s*fill: #002d62;/);
   assert.match(msw, /\.cls-3 \{\s*fill: #ffffff;/);
@@ -97,7 +110,7 @@ test('Air Canada and EgyptAir are the supplied files, byte for byte; their twins
   assert.equal((msw.match(/ fill="#ffffff"/g) || []).length, 3, 'the rule, the member line and the TM');
 });
 
-test('every built lockup draws the rule, the member line, the TM and the star of AC.svg, its own paths', () => {
+test('every built lockup draws the rule, the member line, the TM and the star of AC-member-line.svg, its own paths', () => {
   assert.equal(AC_PATHS.length, 19);
   assert.deepEqual(MEMBER.slice(0, 3).map((p) => p.fill), ['#000000', '#000000', '#000000']);
   assert.deepEqual([...new Set(MEMBER.slice(3).map((p) => p.fill))].sort(), ['#5b5b63', '#92959b', '#cdd0d3'], 'the star in its three greys');
@@ -106,7 +119,7 @@ test('every built lockup draws the rule, the member line, the TM and the star of
       const f = code + (white ? '-white' : '') + '.svg', t = read(f);
       MEMBER.forEach((p, i) => {
         const at = t.indexOf('d="' + p.d + '"');
-        assert.ok(at > 0, f + ': path ' + (i + 2) + ' of AC.svg');
+        assert.ok(at > 0, f + ': path ' + (i + 2) + ' of AC-member-line.svg');
         const fill = (/fill="(#[0-9a-f]{6})"/.exec(t.slice(at)) || [])[1];
         assert.equal(fill, i < 3 ? (white ? '#ffffff' : '#000000') : p.fill, f + ': the ink of path ' + (i + 2));
       });
@@ -199,13 +212,18 @@ test('in the band at 1680x1050 the member line reads at 10 px or more, the locku
   assert.match(fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'gate-display.css'), 'utf8'), /min-height: clamp\(110px, 13vh, 160px\) !important;/);
   assert.match(LOCKUP_FN, /var h = 'calc\(clamp\(110px, 13vh, 160px\) - 40px\)';/);
   assert.match(LOCKUP_FN, /max-width:100% !important;/);
+  // never taller than its slot: Boarding and Final Call draw the band 112 px tall, a slot of 85 px
+  // at 1680x1050 (measured), where the full height ran past the top of the screen
+  assert.match(LOCKUP_FN, /"height:' \+ h \+ ' !important;max-height:100% !important;/);
+  assert.doesNotMatch(LOCKUP_FN, /max-height:' \+ h/);
   const H = Math.min(160, Math.max(110, 0.13 * 1050)) - 40;            // 96.5
   const slotW = 0.36 * 1680 - Math.min(62, Math.max(34, 0.034 * 1680));  // the slot less its gutter
-  // the member capitals of AC.svg (553.091 to 615.45) and of MS.svg (119.53 to 138.94)
+  // the member capitals of AC.svg (274.646 to 337.005), of AC-member-line.svg (553.091 to 615.45),
+  // which every built one scales, and of MS.svg (119.53 to 138.94)
   const caps = (f) => {
     const t = read(f);
     const [, , W, Hv] = /viewBox="([^"]+)"/.exec(t)[1].split(' ').map(Number);
-    if (/^AC/.test(f)) return { W, Hv, c: 615.45 - 553.091 };
+    if (/^AC/.test(f)) return { W, Hv, c: 337.005 - 274.646 };
     if (/^MS/.test(f)) return { W, Hv, c: 138.94 - 119.53 };
     return { W, Hv, c: (615.45 - 553.091) * Number(/matrix\(([\d.]+) /.exec(t)[1]) };
   };
@@ -225,12 +243,13 @@ test('in the band at 1680x1050 the member line reads at 10 px or more, the locku
 test('the Welcome card draws the white twin in place of emblem and lettering, every other card as before', () => {
   const data = new Function('AIRLINE_BRAND', 'frFirstAirport', 'window', '_welcomeCardEmblem', '_welcomeCardName', '_welcomeCardLines',
     '_welcomeCardPick', 'WELCOME_CARD_LETTERING_SCALE', 'WELCOME_CARD_LETTER_HEIGHT', 'starLockupSrc', 'STAR_ALLIANCE_LOCKUP',
+    'WELCOME_CARD_KEEPS_OWN_MARK',
     block('function _welcomeCardData(code)').text + '\nreturn _welcomeCardData;')(
     {}, () => false, { _gateIata: 'YYZ' }, () => ({ src: '/emblem.svg', kind: 'own' }), () => ({ wordmark: '/lettering.svg', name: 'NAME' }),
-    () => [], (t, c) => t[c], {}, { SQ: 0.35 }, starLockupSrc, LOCKUP);
+    () => [], (t, c) => t[c], {}, { SQ: 0.35 }, starLockupSrc, LOCKUP, KEEPS_OWN);
   const card = new Function('BoardStrings', block('function _welcomeCardEsc(s)').text + '\n' + block('function _welcomeCardHtml(ad)').text
     + '\nreturn _welcomeCardHtml;')({ META: {} });
-  for (const code of Object.keys(LOCKUP)) {
+  for (const code of Object.keys(LOCKUP).filter((c) => !KEEPS_OWN[c])) {
     const d = data(code);
     // the data of the card is as it was (its emblem, its lettering and their letters), plus the lockup
     assert.equal(d.wordmark, '/lettering.svg', code);
@@ -248,7 +267,10 @@ test('the Welcome card draws the white twin in place of emblem and lettering, ev
     assert.ok(Math.abs(+/data-scale="([\d.]+)"/.exec(img)[1] * LOCKUP[code] - 1) < 1e-9, code + ': its letters as large as a lettering alone');
     assert.match(img, /alt="NAME"/);
   }
-  for (const code of ['AA', 'QK', 'EW', 'NH', 'WS', 'KL']) {
+  // Rouge keeps its own rouge lettering on the card, and the Air Canada Express codes the rondelle beside
+  // AIR CANADA: their header lockups have the AIR CANADA lettering alone
+  assert.deepEqual(Object.keys(KEEPS_OWN).sort(), ['9L', 'RV', 'ZX']);
+  for (const code of ['AA', 'QK', 'EW', 'NH', 'WS', 'KL', 'RV', 'ZX', '9L']) {
     const d = data(code);
     assert.equal(d.lockup, '', code);
     const h = card(d);

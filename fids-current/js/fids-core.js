@@ -22022,7 +22022,9 @@ function uxgGateHtml(ctx) {
   // keeps its period mark, and a carrier whose lettering failed to load keeps
   // its typed name. Two tiers stand taller than a wordmark: the band less its
   // date bar and a margin (96 px at 1680x1050, where every member line reads
-  // at 10 px or more), and never wider than the slot.
+  // at 10 px or more), never taller than its slot (Boarding and Final Call
+  // draw the band 112 px tall, a slot of 85 px at 1680x1050, where the full
+  // height ran past the top of the screen), and never wider than the slot.
   function _starLockupOnBand() {
     if (_allianceKey !== 'star' || typeof starLockupSrc !== 'function') return '';
     if (_g8LogoCache[airlineCode] === 'text') return '';
@@ -22031,7 +22033,7 @@ function uxgGateHtml(ctx) {
     if (!src) return '';
     var h = 'calc(clamp(110px, 13vh, 160px) - 40px)';
     return '<img class="g8-r1-logo g8-r1-lockup" src="' + src + '" alt="' + airlineName + '"'
-      + ' style="height:' + h + ' !important;max-height:' + h + ' !important;width:auto !important;max-width:100% !important;'
+      + ' style="height:' + h + ' !important;max-height:100% !important;width:auto !important;max-width:100% !important;'
       + 'min-width:0 !important;object-fit:contain !important;object-position:left center !important;filter:none !important;'
       + 'flex:0 1 auto !important;display:block !important;"'
       + ' onerror="g8LogoFail(this)" data-pairmode="1" data-name="' + airlineName + '" data-code="' + airlineCode + '">';
@@ -22292,6 +22294,10 @@ function uxgGateHtml(ctx) {
           var _tbBg = _tbSpec ? _tbSpec.bg : '#1F2C44';
           var _tbInk = _tbSpec ? _tbSpec.ink : '#fff';
           var _tbInkSoft = _tbSpec ? _tbSpec.inkSoft : 'rgba(255,255,255,0.88)';
+          // 2026-11-15 — the escape for the text of both bands, set before
+          // either uses it: the classic band (fids_gate_banner_classic) called
+          // it while it was set only in the silk branch, and drew no header.
+          var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
           var _tbTz = (AP[iata] || {}).tz || '';
           var _tbNow = '';
           try { _tbNow = _ocClockTime(new Date(), _tbTz || null); } catch (e) {}
@@ -22326,7 +22332,6 @@ function uxgGateHtml(ctx) {
             // 'Heure à <City>'), the single 12h clock to the right, and the
             // full bilingual date below, all inside a faded gate-style tab
             // (rounded top, soft border/shadow separation).
-            var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
             var _tbNow1 = '—';
             try { _tbNow1 = BoardStrings.boardTime(BoardStrings.clockNow(new Date(), _tbTz || null), _tbTz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
             var _tbDate1 = '', _tbDay1 = '';
@@ -61657,13 +61662,16 @@ function _getGateAdDwellMs(slide) {
 // On the two big logo spots of a gate, the band at the top and the Welcome
 // card, a Star Alliance carrier shows its member lockup: its own mark, a thin
 // rule the full width of it, then A STAR ALLIANCE MEMBER with the Star
-// Alliance star, laid out as the supplied Air Canada lockup. Air Canada (AC)
-// and EgyptAir (MS, which had no lettering on the boards) are the supplied
-// files themselves. Every other one is built by scripts/star-lockups/build.py
-// from the files the band already draws for that carrier (its emblem, its
-// wordmark), with the rule, the member line and the star of the Air Canada
-// file, its own paths, scaled to the width of the mark. Rows, orbs, shelves
-// and belts keep their own marks.
+// Alliance star, laid out as the first supplied Air Canada lockup. Air Canada
+// (AC) and EgyptAir (MS, which had no lettering on the boards) are the
+// supplied files themselves; Air Canada's is its own later design, a bar
+// running grey to Air Canada red under the mark and the member line in white
+// on a black band, the same on either ground but for its lettering. Every
+// other one is built by scripts/star-lockups/build.py from the files the band
+// already draws for that carrier (its emblem, its wordmark), with the rule,
+// the member line and the star of the first Air Canada file
+// (scripts/star-lockups/AC-member-line.svg), its own paths, scaled to the
+// width of the mark. Rows, orbs, shelves and belts keep their own marks.
 //
 // <CODE>.svg is for a light ground. <CODE>-white.svg is its twin for a dark
 // one: the wordmark in its own white cut, the rule and the member line white,
@@ -61676,7 +61684,7 @@ function _getGateAdDwellMs(slide) {
 // letters are never smaller than the greeting (WELCOME_CARD_LETTER_HEIGHT).
 // ════════════════════════════════════════════════════════════════════════
 var STAR_ALLIANCE_LOCKUP = {
-  'AC': 0.32, 'MS': 0.57,
+  'AC': 0.29, 'MS': 0.57,
   'LH': 0.47, 'UA': 0.37, 'TK': 0.23, 'SK': 0.68, 'OS': 0.57, 'LX': 0.62,
   'A3': 0.54, 'NZ': 0.40, 'CM': 0.52,
   // Singapore and Brussels letter on two lines: the line that carries the
@@ -61702,6 +61710,11 @@ var STAR_ALLIANCE_LOCKUP_SKIP = {
   'TG': 'no-lettering', 'CA': 'no-lettering', 'ZH': 'no-lettering', 'AI': 'no-lettering',
   'JP': 'no-lettering', 'OU': 'no-lettering', 'HR': 'no-lettering'
 };
+// The Welcome card keeps its own mark for these: Rouge draws its own rouge
+// lettering there (WELCOME_CARD_WORDMARK), and the Air Canada Express codes
+// draw the rondelle beside AIR CANADA, where their header lockups have the
+// lettering alone.
+var WELCOME_CARD_KEEPS_OWN_MARK = { 'RV': 1, 'ZX': 1, '9L': 1 };
 /** The member lockup of a carrier, for a light ground or (onDark) a dark one; empty where it has none. */
 function starLockupSrc(code, onDark) {
   var c = String(code || '').toUpperCase();
@@ -61962,7 +61975,7 @@ function _welcomeCardData(code) {
     // dark ground, and the share of it the letters of the airline fill
     // (STAR_ALLIANCE_LOCKUP). _welcomeCardHtml draws it in place of the
     // emblem and the lettering.
-    lockup: (typeof starLockupSrc === 'function') ? starLockupSrc(code, true) : '',
+    lockup: (typeof starLockupSrc === 'function' && !WELCOME_CARD_KEEPS_OWN_MARK[code]) ? starLockupSrc(code, true) : '',
     lockupLetters: (typeof STAR_ALLIANCE_LOCKUP !== 'undefined' && STAR_ALLIANCE_LOCKUP[code]) || 0
   };
 }
