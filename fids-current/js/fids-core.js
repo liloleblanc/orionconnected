@@ -9506,6 +9506,25 @@ const AIRLINE_BRAND = {
   // v24150 — Air Creebec, from the supplied palette: the near black #272626 for the field, the
   // peach #FDD49A for the accent (the cream #FCF8E3 is the body of its gate, data/airline-colors.js).
   'YN': { bg1:'#272626', bg2:'#171616', bg3:'#3a3838', accent:'#FDD49A', name:'Air Creebec' },
+  // The carriers with no row here: their Welcome card was the house navy. The ground of the card runs from
+  // bg1, the dark colour of the airline (darker than the frame of the card, which is the accent), to bg2,
+  // white words on both; the accent is the colour of the rail. Each value is read off the airline site,
+  // as data/airline-colors.js records beside its row.
+  // Royal Air Maroc: secondary #690A22 to background-inverse #1A1717 (and inverse-light #333231), primary red.
+  'AT': { bg1:'#690A22', bg2:'#1A1717', bg3:'#333231', accent:'#C20831', name:'Royal Air Maroc' },
+  // VietJet: primary dark #6F0000 to its text #333333, background red #CA161C.
+  'VJ': { bg1:'#6F0000', bg2:'#333333', bg3:'#CA161C', accent:'#D91A21', name:'VietJet Air' },
+  // AirAsia X and Thai AirAsia: the dark red of airasia.com to its text #2C2B2F, its accent #E51837.
+  'D7': { bg1:'#8D1414', bg2:'#2C2B2F', bg3:'#E51837', accent:'#E32526', name:'AirAsia X' },
+  'FD': { bg1:'#8D1414', bg2:'#2C2B2F', bg3:'#E51837', accent:'#E32526', name:'Thai AirAsia' },
+  // Central Mountain Air: the deeper red of its buttons to its black, its button red #DC2F27.
+  '9M': { bg1:'#B52720', bg2:'#000000', bg3:'#DC2F27', accent:'#D42E12', name:'Central Mountain Air' },
+  // Royal Brunei: its browns #563C18 to #412D12, the brown #645138 of its rail (its yellow is a line only).
+  'BI': { bg1:'#563C18', bg2:'#412D12', bg3:'#645138', accent:'#645138', name:'Royal Brunei' },
+  // Air Cote d Ivoire: its dark green #027031 to its black, its primary green #1BA455.
+  'HF': { bg1:'#027031', bg2:'#000000', bg3:'#1BA455', accent:'#027031', name:'Air Côte d’Ivoire' },
+  // ASKY: the dark brown of its logo #481B16 to its text #292B2C, the brown of its site #6C321A.
+  'KP': { bg1:'#481B16', bg2:'#292B2C', bg3:'#6C321A', accent:'#6C321A', name:'ASKY Airlines' },
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
@@ -11930,6 +11949,14 @@ const AIRLINE_ACCENT = {
   // Skytrans (the fill of its logo), Juneyao, Aircalin (the header ground of its site), Hong
   // Kong Airlines and Sichuan (the primary token of their sites), Capital Airlines.
   'FC':'#007DC8','QN':'#62142E','HO':'#7C0044','SB':'#353E75','HX':'#DA2129','3U':'#D8000F','JD':'#EA4237',
+  // THE WHOLE GATE WAS THE FALLBACK BLUE for seven carriers of the name tables: no row here, no tile and
+  // no art of a colour, so every orb, tab and frame of their gate was #0033A1. Each value is read off the
+  // airline site (data/airline-colors.js says where, beside its row): VietJet its primary light (white
+  // words read on it), AirAsia X and Thai AirAsia the AirAsia red of AK and QZ, Central Mountain Air the
+  // red of its booking tabs, Royal Brunei the brown its site sets white type on (its yellow would carry
+  // the white words of the tabs at 1.2 to 1), Air Cote d Ivoire its dark green (white words read on it,
+  // not on its bright green), ASKY its brown.
+  'VJ':'#D91A21','D7':'#E32526','FD':'#E32526','9M':'#D42E12','BI':'#645138','HF':'#027031','KP':'#6C321A',
 };
 
 

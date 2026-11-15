@@ -41,6 +41,10 @@ window.AIRLINE_BRAND_COLORS = {
   // on it; they do not on the peach); the peach as the third colour.
   'YN': { r1:'#FCF8E3', r1Text:'#272626', r2:'#272626', r3:'#FDD49A', body:'#FCF8E3', bodyText:'#272626' }, // Air Creebec
   'WG': { r1:'#0B1F3A', r1Text:'#FFFFFF', r2:'#E4002B', body:'#EAF0F6', bodyText:'#0B1F3A' }, // Sunwing
+  // Central Mountain Air, from flycma.com: the red of its booking tabs #D42E12, the deeper red of its
+  // buttons #B52720 for the bar (the brighter red on its own pale band reads at 4.2:1 only), the gold of
+  // its search box #927635, its black text.
+  '9M': { r1:'#B52720', r1Text:'#FFFFFF', r2:'#D42E12', r3:'#927635', body:'#F5F5F5', bodyText:'#000000' }, // Central Mountain Air
 
   /* ── United States ──────────────────────────────────────────────────── */
   'DL': { r1:'#003366', r1Text:'#FFFFFF', r2:'#C01933', body:'#F4F6F9', bodyText:'#003366' }, // Delta (official)
@@ -60,6 +64,29 @@ window.AIRLINE_BRAND_COLORS = {
   'EK': { r1:'#D71921', r1Text:'#FFFFFF', r2:'#C9A24B', body:'#F7EFEF', bodyText:'#7A0F14' }, // Emirates
   'QR': { r1:'#5C0931', r1Text:'#FFFFFF', r2:'#A4925A', body:'#F2EEF0', bodyText:'#5C0931' }, // Qatar — bar in the burgundy of its site, as the two tables in fids-core.js now give it
   'IB': { r1:'#D7192D', r1Text:'#FFFFFF', r2:'#F2B233', body:'#F7EEEF', bodyText:'#8A0F1C' }, // Iberia
+  // The carriers that had no row, so their band, date bar, lower panel and phone header were the house
+  // grey and navy. Each value is read off the airline's own site.
+  // Royal Air Maroc, the tokens of royalairmaroc.com (ram-airways-theme styles.css): secondary #690A22,
+  // primary #C20831, tertiary gold #B49360, background-accent2 #F6F2ED, text-dark #1A1717.
+  'AT': { r1:'#690A22', r1Text:'#FFFFFF', r2:'#C20831', r3:'#B49360', body:'#F6F2ED', bodyText:'#1A1717' }, // Royal Air Maroc
+  // VietJet, the theme palette of vietjetair.com: primary dark #6F0000 and primary light #D91A21 (its
+  // main #EC2029 holds white words at 4.4:1 only), secondary yellow #FBB612, background #F1F1F1, text #333333.
+  'VJ': { r1:'#6F0000', r1Text:'#FFFFFF', r2:'#D91A21', r3:'#FBB612', body:'#F1F1F1', bodyText:'#333333' }, // VietJet
+  // AirAsia X and Thai AirAsia: the AirAsia red of AK and QZ (#E32526, its logo); the dark red #8D1414,
+  // the grey #F4F4F4 and the text #2C2B2F of airasia.com, the booking site of every AirAsia airline.
+  'D7': { r1:'#8D1414', r1Text:'#FFFFFF', r2:'#E32526', body:'#F4F4F4', bodyText:'#2C2B2F' }, // AirAsia X
+  'FD': { r1:'#8D1414', r1Text:'#FFFFFF', r2:'#E32526', body:'#F4F4F4', bodyText:'#2C2B2F' }, // Thai AirAsia
+  // Royal Brunei, flyroyalbrunei.com: the browns #412D12 and #645138 its booking box sets (white type on
+  // #645138 there), the yellow of its logo #FFE600 (rba-logo.svg) for the line under the titles, the grey
+  // #F5F5F5 of its stylesheet. Not the yellow for the tabs: the gate sets white words on its accent.
+  'BI': { r1:'#412D12', r1Text:'#FFFFFF', r2:'#645138', r3:'#FFE600', body:'#F5F5F5', bodyText:'#412D12' }, // Royal Brunei
+  // Air Côte d’Ivoire, the global colours of aircotedivoire.com: dark green #027031 (its primary green
+  // #1BA455 holds white words at 3.2:1 only), its dark orange #BF5613 for the line under the titles and
+  // the square of its phone header, pale green #EDF4EF.
+  'HF': { r1:'#027031', r1Text:'#FFFFFF', r2:'#027031', r3:'#BF5613', body:'#EDF4EF', bodyText:'#027031' }, // Air Côte d’Ivoire
+  // ASKY, flyasky.com: the brown #6C321A and the grey #F3F3F3 of asky.css, the gold of the swoop of its
+  // logo #F2A41E (ASKY-Airlines-Logo.jpg) for the line under the titles.
+  'KP': { r1:'#6C321A', r1Text:'#FFFFFF', r2:'#6C321A', r3:'#F2A41E', body:'#F3F3F3', bodyText:'#6C321A' }, // ASKY
 
   /* ── Latin America ─────────────────────────────────────────────────── */
   'AV': { r1:'#202020', r1Text:'#FFFFFF', r2:'#D6001C', body:'#F2F2F2', bodyText:'#0F172A' }, // Avianca

@@ -1157,11 +1157,19 @@ function _monoStep(start, grounds) {
   }
   return start;
 }
-function tileHtml(code){
+// ground: the colours of the header the square sits on, on the flight page (heroBrand). That header
+// is the bar colour of the airline, the colour the square starts in, so there the square takes the
+// first colour of the airline that stands clear of the header as it is (its bar colour, its second,
+// its third), else its bar colour stepped off the header as well as off the card and the page.
+function tileHtml(code,ground){
   const c=String(code||'').toUpperCase(), t=tileOf(c);
   if(t) return '<img class="tile '+t.k+'" src="'+esc(t.u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">';
   const b=window.AIRLINE_BRAND_COLORS&&AIRLINE_BRAND_COLORS[c];
   const acc=(b&&b.r1&&_lum(b.r1)<.45)?b.r1:('hsl('+_hue(c)+',42%,32%)');
+  if(ground&&ground.length){
+    const own=[acc,b&&b.r2,b&&b.r3].filter(x=>/^#[0-9a-f]{6}$/i.test(String(x||''))).find(x=>_monoStep(x,ground)===x);
+    return '<span class="tile mono" style="background:'+(own||_monoStep(acc,TILE_GROUNDS.concat(ground)))+'">'+esc(c.slice(0,3))+'</span>';
+  }
   return '<span class="tile mono" style="background:'+_monoStep(acc,TILE_GROUNDS)+'">'+esc(c.slice(0,3))+'</span>';
 }
 // An airline's name in full, never the board's capitals and never a bare
@@ -1220,7 +1228,7 @@ function heroColors(code){
   }
   return {bg:bg, ink:(b&&b.r1Text)||'#ffffff', light:light, night:night};
 }
-function heroBrand(code,name,light){
+function heroBrand(code,name,light,ground){
   const u=wmUrls(code), nm=esc(name);
   let wm;
   if(!u) wm=name===code?'':'<div class="dt-name">'+nm+'</div>';
@@ -1235,7 +1243,7 @@ function heroBrand(code,name,light){
         :'<img class="wm wm-l" src="'+u[0]+'" alt="'+nm+'">')+white;
     } else wm=white;
   }
-  return '<div class="dt-brand">'+tileHtml(code)+wm+'</div>';
+  return '<div class="dt-brand">'+tileHtml(code,ground)+wm+'</div>';
 }
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
@@ -2344,7 +2352,7 @@ function openFlight(i){
     +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(f.cityIata)?'<bdi>'+esc(wxTemp(f.cityIata))+'</bdi>':'')+'</span>':'')+'</div>';
   const when=f.schedDate?dayLabel(f.schedDate):'';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light)
+    '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light,[hc.bg].concat(hc.night?[hc.night]:[]))
     +'<div class="flt">'+esc(f.flight)+'</div>'
     +(opLine?'<div class="al-op">'+esc(T('operatedBy'))+' '+(opLogoHtml(f.operatedBy,hc.light)||esc(f.operatedBy))+'</div>':'')
     +liveryImg(f.airline,acRaw,f.operatedBy,reg)+'</div>'

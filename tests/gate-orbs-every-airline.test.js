@@ -909,15 +909,16 @@ test('the plates, the notice and the centre cards draw what origin/main drew, bu
     assert.match(r.was, /^airlines\/canadian\/AC\.TO\.svg/, r.code + ', ' + r.surface);
     assert.match(r.now, /^letters 9M/, r.code + ', ' + r.surface);
   }
-  // the centre cards letter it on the disc of its column, in the ink of its column: the white disc
-  // its rail, its shelf and its Your Aircraft orb draw, lettered in the colour of its column (they
-  // drew the square of the rows for one round, a third colour on its own gate)
+  // the centre cards letter it on the disc of its column, in the ink of its column: the disc its
+  // rail, its shelf and its Your Aircraft orb draw, lettered in the ink of its column (they drew the
+  // square of the rows for one round, a third colour on its own gate). The disc was white with the
+  // blue of no airline for its letters; it is the red of its own site since November 2026, white letters.
   const cma = W._gateColumnLook('9M');
-  assert.deepEqual([cma.white, cma.bg, cma.ink], [true, THE_WHITE, '#0033A1']);
-  assert.equal(at('9M', 'standby card'), 'letters 9M on a ' + cma.bg + ' disc');
-  assert.match(CARD_EMBLEM('9M'), new RegExp('background:' + cma.bg + ';color:' + cma.ink + ';'));
-  assert.equal(orbFacts(W._gateCardOrb('9M', '').html).bg, cma.bg, 'the Your Aircraft orb of its gate: the same white disc');
-  assert.ok(contrast(cma.ink, cma.bg) >= 3, 'its letters read on it');
+  assert.deepEqual([cma.white, cma.ground, cma.ink], [false, O.ACCENT['9M'], '#fff']);
+  assert.equal(at('9M', 'standby card'), 'letters 9M on a ' + O.ACCENT['9M'] + ' disc');
+  assert.match(CARD_EMBLEM('9M'), new RegExp('background:' + O.ACCENT['9M'] + ';color:#fff;', 'i'));
+  assert.equal(String(orbFacts(W._gateCardOrb('9M', '').html).bg).toUpperCase(), O.ACCENT['9M'], 'the Your Aircraft orb of its gate: the same disc');
+  assert.ok(contrast('#FFFFFF', O.ACCENT['9M']) >= 4.5, 'its letters read on it');
   assert.equal(O.fold('9M'), '9M');
   assert.deepEqual([...new Set([...kept.values()].filter((r) => r.code.length !== 3).map((r) => r.kind))].sort(), ['column tile', 'cut disc', 'line mark', 'named tile', 'own colours', 'own letters', 'partner', 'ring mark', 'second code', 'white outside']);
   // a ring mark, and the discs with their mark cut out of them (the t of Transavia, the lines of Copa and
@@ -2309,8 +2310,10 @@ test('an ink that is not white is written to win over the stylesheet: the whole 
     assert.deepEqual(span.set, { color: [L.ink.toString(), 'important'], '-webkit-text-fill-color': [L.ink.toString(), 'important'] }, code + ': the ink of the column on both properties, both important');
     assert.ok(contrast(full(span.set.color[0]), THE_WHITE) >= 3 && !WHITE.test(span.set.color[0]), code + ': ' + span.set.color[0] + ' on the white disc');
   }
-  // (74 before fifteen of them were pointed at a tile on disk)
-  assert.ok(ran >= 54, ran + ' white columns whose top orb the handler draws');
+  // (74 before fifteen of them were pointed at a tile on disk; 58 before six of them took the colours
+  // of their own sites, November 2026: VietJet, AirAsia X, Thai AirAsia, Central Mountain Air, Royal
+  // Brunei and Air Cote d Ivoire, whose discs stand clear of the dark plate)
+  assert.ok(ran >= 50, ran + ' white columns whose top orb the handler draws');
   // what it is handed is limited to the shape it has: letters and digits, three at most, and a hex
   // colour, with the dark ink of the boards where the colour is not one; and it never sets two spans
   const odd = railFailed('q<n>"9x', 'red').kids[0];
@@ -2357,8 +2360,9 @@ test('an ink that is not white is written to win over the stylesheet: the whole 
     assert.match(O.shelf(code).icon, /onerror="window\._orbArtFailed\(this,/, code + ': the shelf orb');
   }
   // (Hong Kong Airlines and Capital were two more: the row table names a tile for each since, a tile
-  // that is the disc, on disk)
-  assert.deepEqual(darkNoFile, ['3U', 'FC', 'WG']);
+  // that is the disc, on disk. Six joined them when they took the colours of their own sites, November
+  // 2026: their discs stand clear of the dark plate, and they letter their code as Sunwing does.)
+  assert.deepEqual(darkNoFile, ['3U', '9M', 'BI', 'D7', 'FC', 'FD', 'HF', 'VJ', 'WG']);
   assert.ok(darkPainted.length >= 15 && darkNoFile.every((c) => darkPainted.includes(c)), darkPainted.join(' '));
   assert.deepEqual([column('WG').badge.ink, column('WG').top, contrast('#FFFFFF', column('WG').top) < 3], ['#1B2430', O.ACCENT.WG, true], 'Sunwing: dark glyphs on its orange, where white is under 3 to 1');
   assert.deepEqual([column('3U').L.white, W._gateCardPaint('3U').kind, column('3U').top], [false, 'dark', O.ACCENT['3U']]);
@@ -2727,7 +2731,9 @@ test('rule 6, what paints the card: the plate of the stylesheet, and the tables 
   // the count of the every-code test, below)
   // (27 columns whose round badge sat inside a white ring are on the dark plate now: no circle inside a
   // circle, decision of 15 November 2026)
-  assert.ok(shades >= 115 && darks >= 110, shades + ' carriers on a shade of their accent, ' + darks + ' on the dark plate');
+  // (six fewer on a shade and six more on the dark plate since six carriers of the blue of no airline
+  // took the colours of their own sites, November 2026: the count of the every-code test, below)
+  assert.ok(shades >= 109 && darks >= 116, shades + ' carriers on a shade of their accent, ' + darks + ' on the dark plate');
 });
 
 test('rule 6, the paint of the card is the paint on the gate screens of November 2026', () => {
@@ -2811,7 +2817,17 @@ test('rule 6, the paint of the card is the paint on the gate screens of November
   // (and the ring marks, whose ring is the edge of their orb, window._ORB_RING_MARKS: Korean Air, LOT and
   // TAROM, their navy ring on the grey of the grey wave)
   const ringPair = movedPair.filter((c) => !!W._gateCardOrb(c, '').ring);
-  const badgePair = movedPair.filter((c) => !['BQ', 'KL', 'SQ'].includes(c) && !ringPair.includes(c));
+  // (and two columns of letters on a disc of their own colour since they took the colours of their own
+  // sites, November 2026: the Your Aircraft orb is a darker shade of one hue below it, VietJet red on its
+  // maroon and Royal Brunei yellow on its brown, so the panel takes a flat dark and the band keeps the pair)
+  const letterPair = movedPair.filter((c) => !W._gateOrbBadge(c) && !column(c).L.white && !['BQ', 'KL', 'SQ'].includes(c) && !ringPair.includes(c));
+  assert.deepEqual(letterPair, ['BI', 'VJ']);
+  for (const c of letterPair) {
+    const p = W._gateLowerPair(c), disc = W._gateColumnDisc(c).disc;
+    assert.ok(sinks(disc, p.own) && !sinks(disc, p.b) && [HOUSE_DARK, W._GATE_CARD_DARKS[O.fold(c)], W._gateCardFlat(c)].includes(p.b), c + ': ' + disc + ' sank into ' + p.own + ', stands out on ' + p.b);
+    assert.deepEqual([p.own, p.a, p.ink], [O.pair(c).b, O.pair(c).a, O.pair(c).ink], c + ': the band keeps the pair');
+  }
+  const badgePair = movedPair.filter((c) => !['BQ', 'KL', 'SQ'].includes(c) && !ringPair.includes(c) && !letterPair.includes(c));
   assert.deepEqual(movedPair.filter((c) => ['BQ', 'KL', 'SQ'].includes(c)), ['BQ', 'KL', 'SQ']);
   assert.deepEqual(ringPair, ['KE', 'LO', 'RO']);
   for (const c of ringPair) assert.deepEqual([W._gateLowerPair(c).b, sinks(W._gateCardOrb(c, '').ring, W._GATE_CARD_GREY)], [W._GATE_CARD_GREY, false], c);
@@ -3056,10 +3072,12 @@ test('rule 6, every code: no disc sinks into the paint behind it; the dark plate
     assert.equal(K.plate, plate, code);
     assert.ok(r >= lo && r < hi && K.at.every((p) => clear(g, p)), code + ': ' + g + ' at ' + r.toFixed(2) + ' to 1 on the ' + plate);
   }
-  // the white columns of dark discs: 61 of them have no colour of their own and wear the blue of no
-  // airline, on a card that is a shade of it; the rest are navies, two blacks, a brown and two deep reds
+  // the white columns of dark discs: 54 of them have no colour of their own and wear the blue of no
+  // airline, on a card that is a shade of it; the rest are navies, two blacks, browns and two deep reds
+  // (61 before seven took the colours of their own sites, November 2026: the list of those that have
+  // not is tests/airline-colours-missing.test.js)
   const noColour = tally.whiteDark.filter((c) => same(O.accent(O.fold(c)), '#0033A1'));
-  assert.ok(noColour.length >= 56 && noColour.length <= 66, noColour.length + ' on the blue of no airline');
+  assert.ok(noColour.length >= 49 && noColour.length <= 59, noColour.length + ' on the blue of no airline');
   for (const code of ['AM', 'FI', 'QN', 'HO', 'FJ']) assert.ok(tally.whiteDark.includes(code), code + ' is a white column');
   // (and these were, their round badge inside the ring of the white disc: no circle inside a circle, the
   // owner, 15 November 2026; each fills its orb on the dark plate now)
@@ -3116,7 +3134,8 @@ test('rule 6, every code: no disc sinks into the paint behind it; the dark plate
     } else assert.ok(!sinks(disc, pair.b) || own.white, code + ': ' + disc + ' on ' + pair.b);
     if (own.white && !L.white) orbAlone.push(code);
   }
-  assert.deepEqual(panel.filter((c) => (!W._gateOrbBadge(c) || ['BQ', 'SQ'].includes(c)) && !W._gateCardOrb(c, '').ring).sort(), ['BQ', 'KL', 'SQ']);
+  // (and VietJet and Royal Brunei, their letters on a disc of the hue of their pair: see the pairs above)
+  assert.deepEqual(panel.filter((c) => (!W._gateOrbBadge(c) || ['BQ', 'SQ'].includes(c)) && !W._gateCardOrb(c, '').ring).sort(), ['BI', 'BQ', 'KL', 'SQ', 'VJ']);
   // the ring marks whose ring sank into the second colour of their pair: the grey of the grey wave
   assert.deepEqual(panel.filter((c) => W._gateCardOrb(c, '').ring).sort(), ['KE', 'LO', 'RO']);
   assert.ok(panel.filter((c) => W._gateOrbBadge(c) && !['BQ', 'SQ'].includes(c)).every((c) => !column(c).L.white), 'the others: a round badge that was set in a white ring');
@@ -3266,7 +3285,8 @@ test('rule 6, the white of every white column is the same literal', () => {
     check(styleProp(S.orb.badge, 'background'), code + ', the shelf orb');
     for (const op of OPS) check(orbFacts(W._gateCardOrb(code, op).html).bg, code + ' operated by ' + (op || 'itself'));
   }
-  assert.ok(whites >= 1800, whites + ' white discs');
+  // (1811 before six white columns of the blue of no airline took the colours of their own sites)
+  assert.ok(whites >= 1755, whites + ' white discs');
   // the second, greyer white is gone from every column: the light disc of the ten carriers that had it
   for (const code of ['2L', '4Y', 'BA', 'CJ', 'ET', 'HA', 'LY', 'PR', 'WN']) assert.deepEqual([column(code).emb.bg, column(code).badge.bg], [THE_WHITE, THE_WHITE], code);
   assert.match(block('window._gateOrbNatural = function'), /var LIGHT = plain \? '#F2F4F7' : '#FFFFFF';/, 'only the surfaces beside the orbs keep the disc they drew');
