@@ -558,7 +558,9 @@ test('the Future Retro DC-9 is three cards or more from every other DC-9, and on
       assert.ok(dist(pool, a, b) > 1, a + ' and ' + b + ' are still apart at ' + ia);
     }
   }
-  assert.equal(keys[keys.length - 1], 'air-canada-l1011-93', 'the 1993 TriStar is still last, as its own note asks');
+  // 2026-11-15 — the 1987 727 came after it (tests/heritage-727-87-card.test.js); its note says so,
+  // and what it asked for, the two TriStars never back to back, is held above.
+  assert.deepEqual(keys.slice(-2), ['air-canada-l1011-93', 'air-canada-727-87'], 'the 1993 TriStar last but one, as its own note now asks, the 1987 727 after it');
 
   // Only on Air Canada pages, like its siblings: an Air Canada gate reaches it in one turn of the
   // deck and draws the what-if caption under the live lockup; a WestJet gate never draws anything.

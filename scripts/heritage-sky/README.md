@@ -269,6 +269,21 @@ mirrored. It comes out at 2272 x 502:
 
     python3 scripts/heritage-sky/card-cutout.py 1727AC-image2.png fids-current/aircraft/heritage/air-canada-727-ac80.png 2272 10 5
 
+The same 727-233 in the 1987 livery (C-GAAY again, with its own fin number,
+425) came already cut out (4001 x 961), so the tool runs on it as supplied, at
+a depth of three. The three counts of `tests/heritage-727-card.test.js` pass at
+every depth from two: 10, 11 and 6 at two, 6, 10 and 5 at three. They do not
+see what two leaves, a pale dashed line along the bottom of the grey belly,
+only 15 to 25 brighter than the paint above it (the third count wants 40), so
+`tests/heritage-727-87-card.test.js` adds a fourth: the columns whose lowest
+pixel of opacity 200 or more is 12 or more brighter than the paint three
+pixels above it. That is 132 at two, 12 at three, 6 at four and 5 at five; what
+is left from three on is drawn (the root of the belly antenna, the foot of the
+nose, the white line and the tail cone). It faces nose left, so nothing is
+mirrored. It comes out at 2272 x 511:
+
+    python3 scripts/heritage-sky/card-cutout.py 1727AC87.png fids-current/aircraft/heritage/air-canada-727-ac87.png 2272 10 3
+
 A corner of the picture that is not clear stops the tool when it is solid or
 has the colour of the page, as page left in would be. A drawing cropped to its
 own edges can put a point of its own paint, partly clear, in a corner: the top

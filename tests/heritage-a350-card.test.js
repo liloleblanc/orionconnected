@@ -134,14 +134,15 @@ test('its place in the rotation: no two Air Canada widebodies back to back where
   // Atlantic pool (with Air Atlantic and Air Nova) the Air Canada widebodies
   // of the set (the 767s, the TriStars, the three 747s and this one) come
   // every other card. Elsewhere nine widebodies, the Canadian Airlines DC-10
-  // counted, share sixteen cards with seven narrowbodies, so two pairs must
-  // meet: tests/heritage-747-305-card.test.js holds where they fall. This
-  // card is never in one.
+  // counted, share seventeen cards with eight narrowbodies, so one pair must
+  // meet (two, with sixteen cards, until the 1987 727 came on 2026-11-15):
+  // tests/heritage-747-305-card.test.js holds where it falls. This card is
+  // never in one.
   const WIDE = ['air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-747-305-2017', 'air-canada-747-305-80', 'air-canada-747-305-93', KEY];
   const keys = MARKS.map((k) => k.key);
   assert.equal(keys.indexOf(KEY), keys.indexOf('air-canada-dc9-93') + 1, 'after the 1993 DC-9');
   assert.equal(keys.indexOf(KEY) + 1, keys.indexOf('air-canada-727-80'), 'and before the 727 (the 1965 DC-8 until 2026-11-15)');
-  assert.equal(keys[keys.length - 1], 'air-canada-l1011-93', 'the 1993 TriStar is still last');
+  assert.deepEqual(keys.slice(-2), ['air-canada-l1011-93', 'air-canada-727-87'], 'the 1993 TriStar last but one, the 1987 727 last (tests/heritage-727-87-card.test.js)');
   const dist = (pool, a, b) => { const gap = Math.abs(pool.indexOf(a) - pool.indexOf(b)); return Math.min(gap, pool.length - gap); };
   const poolAt = (ia) => MARKS.filter((mk) => !mk.gates && (mk.airports === '*CA' || (Array.isArray(mk.airports) && mk.airports.includes(ia)))).map((mk) => mk.key);
   // the Atlantic pool: none back to back

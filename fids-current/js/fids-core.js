@@ -68360,7 +68360,7 @@ var HERITAGE_MARKS = [
     // author. The rest is the -100: the short upper deck, a wing with no
     // winglets and five main deck doors a side.
     //
-    // First of the Air Canada cards on purpose, after Air Atlantic, with the 1987 DC-9, the 1980 767, the 1965 DC-8 and the Canadian Airlines DC-10 after it. The three cards of fin 305 (this one, the Dream livery card and the 1993 livery card) come 6, 6 and 6 cards apart in the Atlantic pool of eighteen and 6, 5 and 5 apart in the pool of sixteen at every other Canadian airport, the wrap included: the most even both pools allow at once. Counted with the DC-10, the widebodies make no back-to-back pair in the Atlantic pool and two elsewhere, the fewest each pool allows (see the Canadian Airlines card), and the DC-9, DC-8, 767 and TriStar spacing holds.
+    // First of the Air Canada cards on purpose, after Air Atlantic, with the 1987 DC-9, the 1980 767, the 1965 DC-8 and the Canadian Airlines DC-10 after it. The three cards of fin 305 (this one, the Dream livery card and the 1993 livery card) come 6, 6 and 7 cards apart in the Atlantic pool of nineteen and 6, 5 and 6 apart in the pool of seventeen at every other Canadian airport, the wrap included, since the 1987 727 came last in the set: the most even both pools allow at once. Counted with the DC-10, the widebodies make no back-to-back pair in the Atlantic pool and one elsewhere, the fewest each pool allows (see the Canadian Airlines card), and the DC-9, DC-8, 767 and TriStar spacing holds.
     key: 'air-canada-747-305-80',
     file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
     name: 'Air Canada',
@@ -68548,7 +68548,8 @@ var HERITAGE_MARKS = [
     // purpose, moved from between the A350-1000 and the 1993 747 to make the
     // place for the 727 (see its card): the widebodies now come every other
     // card at the Atlantic airports, and the two DC-8 cards are eight cards
-    // apart there and seven elsewhere, where they were two.
+    // apart there and seven elsewhere, where they were two (nine and eight
+    // since the 1987 727 came last in the set).
     key: 'air-canada-dc8',
     file: '/logos/advertisements/retro-airlines/ACLOGO-1965.svg',
     name: 'Air Canada',
@@ -68573,16 +68574,17 @@ var HERITAGE_MARKS = [
     // livery 747 made three cards of fin 305 to spread through the deck. Here
     // it is beside no 747 in either pool. At the twelve airports of Air
     // Atlantic and Air Nova (YHZ, YYZ, YUL, YQM, YYT and the rest) the pool is
-    // eighteen cards since the 727 came, nine of them widebodies with this
-    // DC-10 counted and nine narrowbodies, so the widebodies can come every
-    // other card, and they do: the 1965 DC-8 moved in between the 1980 767
-    // and this card, which had been the one pair there. At every other
+    // nineteen cards since the two 727s came, nine of them widebodies with
+    // this DC-10 counted and ten narrowbodies, so the widebodies can come
+    // every other card, and they do: the 1965 DC-8 moved in between the 1980
+    // 767 and this card, which had been the one pair there. At every other
     // Canadian airport (YVR and the rest) the Air Atlantic and Air Nova cards
-    // are not in the pool, which leaves sixteen, nine widebodies and seven
-    // narrowbodies, so two pairs, and there are two: the Dream livery 747 then
-    // the 1987 TriStar, and across the wrap the 1993 TriStar then the 1980
-    // 747, the two places Air Nova and Air Atlantic hold apart at the Atlantic
-    // airports.
+    // are not in the pool, which leaves seventeen, nine widebodies and eight
+    // narrowbodies, so one pair, and there is one: the Dream livery 747 then
+    // the 1987 TriStar, the place Air Nova holds apart at the Atlantic
+    // airports. The 1993 TriStar then the 1980 747 across the wrap, the
+    // second pair until 2026-11-15, is parted by the 1987 727, last in the
+    // set.
     key: 'canadian-airlines',
     file: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
     name: 'Canadian Airlines',
@@ -68739,7 +68741,7 @@ var HERITAGE_MARKS = [
     // them) and five main deck doors a side, with the upper-deck door now
     // drawn behind the cockpit.
     //
-    // Between the 1980 DC-9 and Air Nova on purpose, six cards after the 1980 livery card of the same aeroplane and six before its 1993 livery card at the Atlantic airports, six and five at every other Canadian airport, where Air Nova is not in the pool and it comes straight before the 1987 TriStar, one of the two widebody pairs that pool cannot avoid (see the Canadian Airlines card). The 2017 DC-9 stays three or more cards from every other DC-9.
+    // Between the 1980 DC-9 and Air Nova on purpose, six cards after the 1980 livery card of the same aeroplane and six before its 1993 livery card at the Atlantic airports, six and five at every other Canadian airport, where Air Nova is not in the pool and it comes straight before the 1987 TriStar, the one widebody pair that pool cannot avoid (see the Canadian Airlines card). The 2017 DC-9 stays three or more cards from every other DC-9.
     key: 'air-canada-747-305-2017',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',
@@ -68970,7 +68972,7 @@ var HERITAGE_MARKS = [
     // side, as both have. It is used as drawn: it is the supplied art, and a
     // stretch is a call for its author.
     //
-    // Between the 1993 DC-9 and the 727 on purpose (the 1965 DC-8 until 2026-11-15): in the Atlantic pool the widebodies come every other card, the wrap included, the Canadian Airlines DC-10 counted, so no two widebodies are back to back there. At every other Canadian airport the two pairs that pool cannot avoid are the Dream livery 747 then the 1987 TriStar and, across the wrap, the 1993 TriStar then the 1980 747 (see the Canadian Airlines card); this card is in neither.
+    // Between the 1993 DC-9 and the 727 on purpose (the 1965 DC-8 until 2026-11-15): in the Atlantic pool the widebodies come every other card, the wrap included, the Canadian Airlines DC-10 counted, so no two widebodies are back to back there. At every other Canadian airport the one pair that pool cannot avoid is the Dream livery 747 then the 1987 TriStar (see the Canadian Airlines card); this card is not in it. (Until 2026-11-15 there were two, the 1993 TriStar then the 1980 747 across the wrap the second; the 1987 727, last in the set, parts it.)
     key: 'air-canada-a350-1000',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',
@@ -69006,6 +69008,10 @@ var HERITAGE_MARKS = [
     // C-GAAV, c/n 21675 (PlaneLogger). The drawing is used as supplied: a new
     // fin or a new registration is a call for its author. No caption prints
     // either.
+    // 2026-11-15 — THE 1987 LIVERY DRAWING OF THE SAME AEROPLANE CARRIES THE
+    // CORRECT FIN, 425 (see the 1987 727 card, last in the set). This 1980
+    // drawing still shows 422; it stays as supplied, and whether to send it
+    // again with 425 is for its author.
     //
     // THE CAPTION NAMES THE TYPE: Boeing 727-233 · 1974–1992 · 1980 livery,
     // the shape of the 767 and DC-8-63 lines, in their words in each language.
@@ -69080,6 +69086,7 @@ var HERITAGE_MARKS = [
     // the supplied art.
     //
     // Between the A350-1000 and the 1993 747 on purpose, where the 1965 DC-8 was. No card beside it shares its type or its livery in either pool: the four other 1980 cards are two or more cards away. With it the Atlantic pool (Air Atlantic and Air Nova in it) is eighteen cards, nine widebodies with the Canadian Airlines DC-10 counted and nine narrowbodies, so they can come every other card, the wrap included, and they do: no back-to-back pair of widebodies there. For that the 1965 DC-8 moved in between the 1980 767 and the DC-10, where it parts the one pair that pool had (the 1980 767 then the DC-10), and the two DC-8s are eight cards apart there and seven elsewhere, where they were two. At every other Canadian airport the pool is sixteen, nine widebodies and seven narrowbodies, so two pairs at least, and there are two (see the Canadian Airlines card). The three cards of fin 305 come 6, 6 and 6 apart in the pool of eighteen and 6, 5 and 5 in the pool of sixteen, the most even both pools allow. Without a card moved, the one place that keeps the fin 305 spacing and the fewest widebody pairs in both pools is between the 1980 767 and the DC-10, beside another 1980 card. The DC-9, DC-8, 767 and TriStar spacing holds.
+    // 2026-11-15 — since the 1987 727 came last in the set the pools are nineteen and seventeen cards: still no widebody pair in the Atlantic pool, one elsewhere (the Dream livery 747 then the 1987 TriStar), the fin 305 cards 6, 6 and 7 apart and 6, 5 and 6, the two DC-8s nine and eight apart, and the two 727s six cards apart in both pools. No card moved for it (see its card).
     key: 'air-canada-727-80',
     file: '/logos/advertisements/retro-airlines/ACLOGO-1980-2.svg',
     name: 'Air Canada',
@@ -69160,7 +69167,7 @@ var HERITAGE_MARKS = [
     // is a call for its author. The rest is the -100: the short upper deck, a
     // wing with no winglets and five main deck doors a side.
     //
-    // Between the 727 and the 1980 DC-8 on purpose (the 1965 DC-8 came before it until 2026-11-15), six cards after the Dream livery card and six before the 1980 livery card, across the wrap, at the Atlantic airports, and five and five at every other Canadian airport: the three cards of fin 305 come 6, 6 and 6 apart in the Atlantic pool of eighteen and 6, 5 and 5 apart in the pool of sixteen at every other Canadian airport, the most even both pools allow at once. Counted with the Canadian Airlines DC-10, nine of the eighteen Atlantic cards are widebodies, so they can come every other card, and they do, with no back-to-back pair; nine of sixteen elsewhere make two pairs at least, and there are two (see the Canadian Airlines card). This card is in neither, and the DC-9, DC-8, 767 and TriStar spacing holds.
+    // Between the 727 and the 1980 DC-8 on purpose (the 1965 DC-8 came before it until 2026-11-15), six cards after the Dream livery card and seven before the 1980 livery card, across the wrap, at the Atlantic airports, and five and six at every other Canadian airport: the three cards of fin 305 come 6, 6 and 7 apart in the Atlantic pool of nineteen and 6, 5 and 6 apart in the pool of seventeen at every other Canadian airport, the most even both pools allow at once (6, 6 and 6 and 6, 5 and 5 until the 1987 727 came last in the set, 2026-11-15). Counted with the Canadian Airlines DC-10, nine of the nineteen Atlantic cards are widebodies, so they can come every other card, and they do, with no back-to-back pair; nine of seventeen elsewhere make one pair at least, and there is one (see the Canadian Airlines card). This card is not in it, and the DC-9, DC-8, 767 and TriStar spacing holds.
     key: 'air-canada-747-305-93',
     file: '/logos/advertisements/retro-airlines/AC-1993-LOGO.svg',
     name: 'Air Canada',
@@ -69288,12 +69295,14 @@ var HERITAGE_MARKS = [
     // white, and 4,094 pixels of haze off the outline (alpha 6 or less)
     // cleared; no enclosed holes. Nothing redrawn, recoloured or re-lettered.
     //
-    // Between the 1987 767 and the 1993 TriStar on purpose: four or more
-    // cards from every other DC-9 at the Atlantic airports (four from the
-    // 1987 DC-9 across the wrap, six from the 1993 DC-9 and eight from the
-    // 1980 one) and three or more at every other Canadian airport (three from
-    // the 1987 DC-9 across the wrap, six from the 1993 DC-9 and seven from the
-    // 1980 one), so no two DC-9s come up close together.
+    // Between the 1987 767 and the 1993 TriStar on purpose: five or more
+    // cards from every other DC-9 at the Atlantic airports (five from the
+    // 1987 DC-9 across the wrap, six from the 1993 DC-9 and nine from the
+    // 1980 one) and four or more at every other Canadian airport (four from
+    // the 1987 DC-9 across the wrap, six from the 1993 DC-9 and eight from the
+    // 1980 one), so no two DC-9s come up close together. Each across-the-wrap
+    // and 1980 figure is one more than before 2026-11-15, when the 1987 727
+    // came last in the set.
     key: 'air-canada-dc9-2017',
     file: '/logos/airlines/canadian/air-canada.svg',
     name: 'Air Canada',
@@ -69394,16 +69403,123 @@ var HERITAGE_MARKS = [
     // in, as on the 1993 DC-9 card (Air Canada's rondelle history, Open Jaw,
     // January 2025; Skies Magazine); the supplied artwork's filename says
     // 1994, and that is not printed.
-    // Last in the set on purpose: the rotation runs in this order, so the two
-    // TriStars are never back to back, nor across the wrap to the first card.
-    // Across the wrap it comes before Air Atlantic at the Atlantic airports,
-    // and before the 1980 747 at every other Canadian airport, one of the
-    // two widebody pairs that pool cannot avoid (see the Canadian Airlines
-    // card).
+    // Last in the set on purpose until 2026-11-15, and last but one since,
+    // with the 1987 727 after it: the rotation runs in this order, so the two
+    // TriStars are never back to back, nor across the wrap to the first card,
+    // and that still holds. Until then, across the wrap, it came before Air
+    // Atlantic at the Atlantic airports and before the 1980 747 at every
+    // other Canadian airport, one of the two widebody pairs that pool could
+    // not avoid; the 1987 727 now comes after it in both pools and parts that
+    // pair (see the 1987 727 card and the Canadian Airlines card).
     key: 'air-canada-l1011-93',
     file: '/logos/advertisements/retro-airlines/AC-1993-LOGO.svg',
     name: 'Air Canada',
     aircraft: '/aircraft/heritage/air-canada-l1011-ac93.png',
+    airports: '*CA'
+  },
+  {
+    // 2026-11-15 — FROM THE ARCHIVE: THE SAME BOEING 727-233, C-GAAY, IN THE
+    // 1987 LIVERY. The supplied drawing: the aeroplane of the 1980 727 card,
+    // nose left, in flight, Air Canada in mixed-case red titles over the
+    // double cheatline (a broad red band through the windows, then a thin
+    // white line and a darker red line under it), the white rondelle with the
+    // white leaf on a red fin, 425 at the top of the fin and C-GAAY under the
+    // windows aft. The 1987 DC-9, the 1987 767 and the 1987 TriStar wear the
+    // same livery, so it carries their mark and the default heading, From
+    // the archive. It is the second card of this aeroplane, with the 1980
+    // livery card, as the 767 and the TriStar each have a card in two of
+    // their liveries.
+    //
+    // THE FIN READS 425, WHICH WAS THIS AEROPLANE: the fin number of C-GAAY,
+    // as the 1980 727 card sets out (legible on both dated photographs there,
+    // the fleet number AirHistory.net gives, and the run C-GAAX 424, C-GAAZ
+    // 426). The 1980 drawing reads 422, which was C-GAAV; this one is right.
+    // No caption prints the fin or the registration.
+    //
+    // THE LIVERY ON THIS AEROPLANE, CHECKED: C-GAAY is photographed in this
+    // dual-stripe scheme at Toronto on 21 May 1992 (airport-data.com
+    // photograph 001587231), three months before it went to FedEx, and in the
+    // 1980 scheme at Houston on 31 October 1982 (airport-data.com photograph
+    // 001664983), so it was repainted between those two dates; when is not
+    // known, and nothing printed depends on it.
+    // THE LIVERY YEAR stays 1987, as on the 1987 DC-9, 767 and TriStar cards,
+    // the recorded decision; Horizons, July 1988, has the burgundy stripe and
+    // the mixed-case titles arriving in 1988 (see the 1987 TriStar card).
+    //
+    // THE CAPTION: Boeing 727-233 · 1974–1992 · 1987 livery, the 1987 767
+    // line word for word with the model and the years changed, in each
+    // language, and the 1980 727 line with the livery year changed. The years
+    // are the years of the type with Air Canada, checked on the 1980 727
+    // card, not the 1980 to 1992 of this aeroplane.
+    // Measured at 1680 x 1050 as the 1980 727 was, each language drawn and
+    // then measured after document.fonts.ready, every language is one row.
+    // The longest line is the German, 473.5 of 636.7 px (74.4%), then the
+    // Portuguese 66.9%, the Italian 65.3%, the Japanese 64.6%, the Spanish
+    // 64.5%, the French 64.4%, the English 59.7%, the Chinese 55.1% and the
+    // Arabic 53.9%, measured at a Montreal gate, where the German line of
+    // the 1980 727 measures the 476.0 px its card records.
+    //
+    // WHOSE GATES: the Air Canada set. It names no gates, so it runs on Air
+    // Canada pages only, never on a United gate; airports *CA, as every Air
+    // Canada card of the set.
+    //
+    // THE MARK is the 1987 lockup of the supplied family (AC-1987-LOGO.svg),
+    // the mark of the 1987 DC-9, the 1987 767 and the 1987 TriStar. No new
+    // file, no plate behind it, nothing recoloured.
+    //
+    // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
+    // supplied drawing (4001 x 961, already cut out), laid on white and the
+    // page taken off again at the depth of three pixels of the drawing.
+    // Counted by the four counts of tests/heritage-727-87-card.test.js: light
+    // pixels on the outline of the dark paint 6, pale pixels on the outline
+    // of the grey and dark paint 10, pixels of the outline 40 or more
+    // brighter than the paint just inside them 5, and columns whose lowest
+    // solid pixel is 12 or more brighter than the paint three pixels above it
+    // 12. At the default depth of two the first three pass (10, 11 and 6) but
+    // the page stays as a pale dashed line along the grey belly, which the
+    // fourth count finds, 132 columns; at three the line is gone, and what the
+    // fourth count still finds is drawn (the root of the belly antenna, the
+    // foot of the nose, the white line and the tail cone, the same at a depth
+    // of five). Cropped to its own edges and scaled to the 2272 px of the
+    // other cards (2272 x 511), the four corners clear; the furthest aft
+    // point is the tip of the tailplane on top of the fin. Nothing of the
+    // aeroplane is repainted. The light line along the leading edge of the
+    // fin is drawn, as on the 1980 drawing, and stays at any depth.
+    // IT FACES NOSE LEFT, as every picture of the set: the sky of the card is
+    // laid out for a nose-left aeroplane (scripts/heritage-sky/README.md), so
+    // nothing is mirrored.
+    //
+    // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose
+    // (the median of the columns, 228 px deep), is 9.96 to the tip of the
+    // tailplane, against 10.33 on the 1980 727 picture: two drawings of one
+    // aeroplane, 3.6% apart, each used as drawn, the supplied art.
+    //
+    // LAST IN THE SET ON PURPOSE, after the 1993 TriStar (the Dream livery
+    // 787 of United sits between them in the list, but names its gates and is
+    // in neither pool): the one place in the deck that keeps every rule
+    // without moving a card. With it the Atlantic pool (Air Atlantic and Air
+    // Nova in it) is nineteen cards, nine widebodies with the Canadian
+    // Airlines DC-10 counted and ten narrowbodies, and still no two
+    // widebodies come back to back. At every other Canadian airport the pool
+    // is seventeen, nine widebodies and eight narrowbodies, so one pair at
+    // least, and there is one, the Dream livery 747 then the 1987 TriStar:
+    // this card parts the other, the 1993 TriStar then the 1980 747 across
+    // the wrap. Beside it come the 1993 TriStar and, across the wrap, Air
+    // Atlantic at the Atlantic airports and the 1980 747 elsewhere, none of
+    // its type or its livery; the nearest 1987 cards are three away at the
+    // Atlantic airports and two elsewhere, and the two 727s are six cards
+    // apart in both pools. The three cards of fin 305 come 6, 6 and 7 apart
+    // in the pool of nineteen and 6, 5 and 6 in the pool of seventeen, the
+    // most even both pools allow. Of every other place, the one that keeps
+    // the rules as well is straight before the 1980 747, which would take
+    // its place as the first Air Canada card, first on purpose; every other
+    // place breaks the fin 305 spacing, adds a widebody pair or puts it
+    // beside another 1987 card or the other 727, unless a card moves. The
+    // DC-9, DC-8, 767 and TriStar spacing holds.
+    key: 'air-canada-727-87',
+    file: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-727-ac87.png',
     airports: '*CA'
   }
 ];

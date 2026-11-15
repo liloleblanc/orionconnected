@@ -25,6 +25,11 @@
 // they must. The three fin 305 cards come 6, 6 and 6 apart and 6, 5 and 5.
 // Without a card moved, the one place keeping those two rules was beside the
 // 1980 767, another 1980 card.
+// 2026-11-15 — the same aeroplane in the 1987 livery came last in the set
+// (tests/heritage-727-87-card.test.js), with no card moved: the pools are now
+// nineteen and seventeen, no widebody pair in the Atlantic pool and one
+// elsewhere, fin 305 6, 6 and 7 apart and 6, 5 and 6, and the two 727s six
+// cards apart in both. Its drawing carries the correct fin, 425.
 //
 // tests/heritage-dream-card.test.js holds the set card for card (this card is
 // in its frozen list); tests/heritage-747-305-card.test.js holds the fin 305
@@ -157,6 +162,7 @@ test('the note keeps to the checked facts and says where each one comes from', (
   assert.match(note, /THE FIN READS 422, WHICH WAS NOT THIS AEROPLANE\. The fin number of C-GAAY was 425/, 'the fin number said plainly');
   assert.match(note, /Fin 422 was C-GAAV, c\/n 21675 \(PlaneLogger\)/, 'and whose it was');
   assert.match(note, /The drawing is used as supplied/, 'the art is not changed');
+  assert.match(note, /2026-11-15 — THE 1987 LIVERY DRAWING OF THE SAME AEROPLANE CARRIES THE CORRECT FIN, 425 \(see the 1987 727 card, last in the set\)\. This 1980 drawing still shows 422/, 'and the 1987 drawing has it right');
   // the years, both ends sourced, and the one aeroplane after the fleet
   assert.match(note, /C-GAAA, fin 401, was delivered on 25 September 1974 \(PlaneLogger\)/, 'the first');
   assert.match(note, /21 November 1992 as the last day of flying/, 'the last day of the fleet');
@@ -300,7 +306,7 @@ test('the card as drawn, in every language: From the archive, the caption, the 1
 // Every card of the Air Canada set by its livery and its type. The A350-1000 wears the scheme of 2017.
 const LIVERY = {
   'air-canada-747-305-80': 1980, 'air-canada-767': 1980, 'air-canada-caps': 1980, 'air-canada-dc8-80': 1980, [KEY]: 1980,
-  'air-canada': 1987, 'air-canada-l1011-87': 1987, 'air-canada-767-87': 1987,
+  'air-canada': 1987, 'air-canada-l1011-87': 1987, 'air-canada-767-87': 1987, 'air-canada-727-87': 1987,
   'air-canada-dc9-93': 1993, 'air-canada-747-305-93': 1993, 'air-canada-l1011-93': 1993,
   'air-canada-747-305-2017': 2017, 'air-canada-dc9-2017': 2017, 'air-canada-a350-1000': 2017,
   'air-canada-dc8': 1965
@@ -309,7 +315,8 @@ const TYPE = {
   'air-canada': 'DC-9', 'air-canada-caps': 'DC-9', 'air-canada-dc9-93': 'DC-9', 'air-canada-dc9-2017': 'DC-9',
   'air-canada-747-305-80': '747', 'air-canada-747-305-2017': '747', 'air-canada-747-305-93': '747',
   'air-canada-dc8': 'DC-8', 'air-canada-dc8-80': 'DC-8', 'air-canada-767': '767', 'air-canada-767-87': '767',
-  'air-canada-l1011-87': 'L-1011', 'air-canada-l1011-93': 'L-1011', 'air-canada-a350-1000': 'A350', 'canadian-airlines': 'DC-10', [KEY]: '727'
+  'air-canada-l1011-87': 'L-1011', 'air-canada-l1011-93': 'L-1011', 'air-canada-a350-1000': 'A350', 'canadian-airlines': 'DC-10', [KEY]: '727',
+  'air-canada-727-87': '727'
 };
 const FIN305 = ['air-canada-747-305-80', 'air-canada-747-305-2017', 'air-canada-747-305-93'];
 const WIDE = new Set(['canadian-airlines', 'air-canada-767', 'air-canada-767-87', 'air-canada-l1011-87', 'air-canada-l1011-93', 'air-canada-a350-1000', ...FIN305]);
@@ -331,8 +338,9 @@ test('its place: after the A350-1000 and before the 1993 747, the 1965 DC-8 move
   after('air-canada-dc8', 'canadian-airlines', 'and before the Canadian Airlines DC-10');
   assert.equal(keys[0], 'air-atlantic', 'Air Atlantic is still first');
   assert.equal(keys[1], 'air-canada-747-305-80', 'the 1980 747 is still the first Air Canada card');
-  assert.equal(keys[keys.length - 1], 'air-canada-l1011-93', 'the 1993 TriStar is still last');
+  assert.deepEqual(keys.slice(-2), ['air-canada-l1011-93', 'air-canada-727-87'], 'the 1993 TriStar last but one, the 1987 727 last (tests/heritage-727-87-card.test.js)');
   assert.match(flat(NOTE), /Between the A350-1000 and the 1993 747 on purpose, where the 1965 DC-8 was/, 'the note says why');
+  assert.match(flat(NOTE), /2026-11-15 — since the 1987 727 came last in the set the pools are nineteen and seventeen cards/, 'and what the 1987 727 changed');
   assert.match(flat(noteOf('air-canada-dc8')), /2026-11-15 — between the 1980 767 and the Canadian Airlines DC-10 on purpose/, 'and the DC-8 note says it moved');
 });
 
@@ -340,8 +348,9 @@ test('no two cards of one type or one livery meet in either pool, the wrap inclu
   const keys = MARKS.map((k) => k.key);
   for (const k of keys) if (!byKey[k].gates && /^air-canada/.test(k)) assert.ok(LIVERY[k] && TYPE[k], k + ' has a livery and a type here: a new card is placed by these rules too');
   for (const [ia, n, spread, pairs] of [
-    ['YHZ', 18, [6, 6, 6], []],
-    ['YVR', 16, [6, 5, 5], ['air-canada-747-305-2017 then air-canada-l1011-87', 'air-canada-l1011-93 then air-canada-747-305-80']]
+    // since the 1987 727 (2026-11-15); eighteen and sixteen before it, 6, 6 and 6 and 6, 5 and 5, and two pairs at YVR
+    ['YHZ', 19, [6, 6, 7], []],
+    ['YVR', 17, [6, 5, 6], ['air-canada-747-305-2017 then air-canada-l1011-87']]
   ]) {
     const pool = poolOf(keys, ia);
     assert.equal(pool.length, n, ia + ': ' + n + ' cards');
@@ -363,12 +372,13 @@ test('no two cards of one type or one livery meet in either pool, the wrap inclu
     for (const k of ['air-canada', 'air-canada-caps', 'air-canada-dc9-93']) assert.ok(dist(pool, 'air-canada-dc9-2017', k) >= 3, 'the 2017 DC-9 is three or more cards from ' + k + ' at ' + ia);
     assert.ok(dist(pool, 'air-canada-dc8', 'air-canada-dc8-80') >= 7, 'the two DC-8s far apart at ' + ia + ' (' + dist(pool, 'air-canada-dc8', 'air-canada-dc8-80') + ')');
     for (const [a, b] of [['air-canada-767', 'air-canada-767-87'], ['air-canada-l1011-87', 'air-canada-l1011-93']]) assert.ok(dist(pool, a, b) > 1, a + ' and ' + b + ' are apart at ' + ia);
+    assert.equal(dist(pool, KEY, 'air-canada-727-87'), 6, 'the two 727s six cards apart at ' + ia);
   }
 });
 
 test('why the DC-8 moved: without it, the one place that keeps the deck rules puts the 727 beside the 1980 767', () => {
-  // The deck as it was before this card (the 1965 DC-8 after the A350-1000), with the 727 tried in every place.
-  const before = MARKS.map((k) => k.key).filter((k) => k !== KEY && k !== 'air-canada-dc8');
+  // The deck as it was before this card (the 1965 DC-8 after the A350-1000, and no 1987 727 yet), with the 727 tried in every place.
+  const before = MARKS.map((k) => k.key).filter((k) => k !== KEY && k !== 'air-canada-dc8' && k !== 'air-canada-727-87');
   before.splice(before.indexOf('air-canada-a350-1000') + 1, 0, 'air-canada-dc8');
   const fits = new Set();
   for (let i = 0; i <= before.length; i++) {
@@ -378,7 +388,9 @@ test('why the DC-8 moved: without it, the one place that keeps the deck rules pu
   }
   assert.deepEqual([...fits], ['air-canada-767 | canadian-airlines'], 'one place keeps both rules in both pools');
   assert.equal(LIVERY['air-canada-767'], LIVERY[KEY], 'and it is beside another 1980 card');
-  // with the DC-8 moved, the deck keeps both rules
+  // with the DC-8 moved, the deck keeps both rules, and still does with the 1987 727 after the 1993 TriStar
+  const without87 = MARKS.map((k) => k.key).filter((k) => k !== 'air-canada-727-87');
+  assert.ok(keepsRules(poolOf(without87, 'YHZ')) && keepsRules(poolOf(without87, 'YVR')), 'the deck as this card left it keeps both');
   assert.ok(keepsRules(poolOf(MARKS.map((k) => k.key), 'YHZ')) && keepsRules(poolOf(MARKS.map((k) => k.key), 'YVR')), 'the deck as it is keeps both');
 });
 

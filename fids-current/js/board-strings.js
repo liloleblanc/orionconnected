@@ -853,6 +853,11 @@
     // Measured after document.fonts.ready following the draw, every language is one row at
     // 1680 x 1050; the longest line is the German, at 74.8% of it.
     'heritage:air-canada-727-80': { en: 'Boeing 727-233 · 1974–1992 · 1980 livery', fr: 'Boeing 727-233 · 1974–1992 · livrée de 1980', es: 'Boeing 727-233 · 1974–1992 · librea de 1980', de: 'Boeing 727-233 · 1974–1992 · Lackierung von 1980', it: 'Boeing 727-233 · 1974–1992 · livrea del 1980', pt: 'Boeing 727-233 · 1974–1992 · pintura de 1980', ja: 'ボーイング727-233 · 1974–1992 · 1980年塗装', zh: '波音727-233 · 1974–1992 · 1980年涂装', ar: 'بوينغ 727-233 · 1974–1992 · طلاء 1980' },
+    // The same Boeing 727-233 in the 1987 livery: the line of the 1987 767 word for word with
+    // the model and the years changed, the line above with the livery year changed.
+    // Measured after document.fonts.ready following the draw, every language is one row at
+    // 1680 x 1050; the longest line is the German, at 74.4% of it.
+    'heritage:air-canada-727-87': { en: 'Boeing 727-233 · 1974–1992 · 1987 livery', fr: 'Boeing 727-233 · 1974–1992 · livrée de 1987', es: 'Boeing 727-233 · 1974–1992 · librea de 1987', de: 'Boeing 727-233 · 1974–1992 · Lackierung von 1987', it: 'Boeing 727-233 · 1974–1992 · livrea del 1987', pt: 'Boeing 727-233 · 1974–1992 · pintura de 1987', ja: 'ボーイング727-233 · 1974–1992 · 1987年塗装', zh: '波音727-233 · 1974–1992 · 1987年涂装', ar: 'بوينغ 727-233 · 1974–1992 · طلاء 1987' },
     // The 747-133 in the 1980 livery, the archive card of the aeroplane of the Dream livery
     // 747: the DC-8-63 line, the type from the card (HERITAGE_MARKS), the years that
     // aeroplane flew for Air Canada, 1974–1998, as on its Dream livery card, and the 1980
