@@ -16336,14 +16336,16 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
   // column of dark discs.
   var plateOf = (card.kind === 'dark' && window._GATE_CARD_PLATES[card.plate]) ? window._gateNoticePlateAt(card.plate) : null;
   var roomy = function (L) { return !plateOf || window._gateNoticeClear(L, plateOf); };
-  // SEE-THROUGH ART ON A DISC THE RULES OF THE GATE CLEAR (the United gate clears the disc of art that is
-  // its own, window._GATE_NOTICE_ORB_RULES). The emblem of Air Inuit is an orange disc with a goose cut out
-  // of it, on the white disc of its box; with that disc cleared the card showed through the goose. The orb
-  // holds its own look there, its white disc under the cut (window._gateOrbSeeThrough), where that look
-  // keeps the rule on the card.
+  // SEE-THROUGH ART ON A DISC THE RULES OF THE GATE CLEAR OR REPAINT (the United gate clears the disc of art
+  // that is its own; the Delta and PAL gates paint every disc their red gradient or their gold, art that is
+  // its own disc included: window._GATE_NOTICE_ORB_RULES, clearNative and native). The emblem of Air Inuit
+  // is an orange disc with a goose cut out of it, on the white disc of its box; with that disc cleared the
+  // card showed through the goose, and with it painted red or gold the orange disc sat as a circle inside
+  // that red or gold disc and sank into it. The orb holds its own look there, its white disc under the cut
+  // (window._gateOrbSeeThrough), where that look keeps the rule on the card.
   var srcOf = function (L) { return String((/<img src="([^"]*)"/.exec(String((L && L.html) || '')) || [])[1] || '').split('?')[0]; };
   var Rg = whole ? null : window._gateNoticeOrbRule(on, wrapC);
-  if (!out.why && !ownGate && Rg && Rg.clearNative && L0.native && !L0.held && srcOf(L0) && window._gateOrbSeeThrough(srcOf(L0))) {
+  if (!out.why && !ownGate && Rg && (Rg.clearNative || Rg.native) && L0.native && !L0.held && srcOf(L0) && window._gateOrbSeeThrough(srcOf(L0))) {
     var Lh = window._gateNoticeLands(on, c, false, true, wrapC);
     if (Lh && !window._gateNoticeBreaks(Lh, card) && roomy(Lh)) { out.hold = true; out.why = 'see-through:' + srcOf(L0); return out; }
   }

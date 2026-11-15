@@ -330,9 +330,15 @@ function ringEdge(src, colour) {
   return { edge: outs[Math.floor(0.2 * (outs.length - 1))], drawn: outs.filter((r) => r >= 0.6).length / outs.length };
 }
 // every orb the gates draw, with the surface that draws it: the gate change notice (one gate for each card
-// and rule the gates can show, every gate of its own carrier, and the whole screen), the top orb of the
-// rail and the boarding shelf (one recipe, held to each other by tests/gate-orbs-every-airline.test.js),
-// the Your Aircraft orb of its own gate and of every operator on every gate
+// and rule the gates can show, every gate of its own carrier, and the whole screen), the arrival-only card
+// of a gate with no departure (_gateArrivalOnlyHtml: the orb of the notice beside the incoming aircraft),
+// the top orb of the rail and the boarding shelf (one recipe, held to each other by
+// tests/gate-orbs-every-airline.test.js), the Your Aircraft orb of its own gate and of every operator on
+// every gate
+const arrivalOrb = (code) => {
+  const inb = { flight: code + '200', airline: code, status: 'ontime', gate: '99', _sortTs: Date.now() + 40 * 60000, _locIata: 'YYZ', dest: 'Toronto', origin: 'Toronto' };
+  return (/<span class="gl-gc-orb[\s\S]*?<\/span><\/span>(?:<\/span>)?/.exec(the('_gateArrivalOnlyHtml')(inb, 'YUL', '10:10', '', null)) || [''])[0];
+};
 function everyOrb(visit) {
   const m = (al) => ({ ap: 'YUL', full: { f: { flight: al + '101', airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
   const cards = new Map();
@@ -347,6 +353,10 @@ function everyOrb(visit) {
   for (const gate of cards.values()) for (const code of CODES) notice(gate, code, false);
   for (const g of CODES) notice(g, g, false);
   for (const code of CODES) notice('', code, true);
+  for (const code of CODES) {
+    const html = arrivalOrb(code);
+    if (html) visit({ surface: 'arrival only', gate: '(arrival only)', code, o: wrapOf(html), html });
+  }
   for (const code of CODES) {
     const P = W._gateOrbParts(code);
     if (P.path) visit({ surface: 'rail', gate: code, code, o: wrapOf('<div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (P.nativeCls || '') + '" style="' + P.badge + '"><img src="' + P.path + '" style="' + P.imgStyle + '"></div>'), P });
@@ -399,16 +409,20 @@ test('no orb draws see-through art on a clear box, filling it or padded (the art
     return first.path;
   };
   const bad = [], padded = [], swaps = [];
-  let fills = 0, pads = 0, symbols = 0;
+  let fills = 0, pads = 0, symbols = 0, arrivals = 0;
   everyOrb((s) => {
+    if (s.surface === 'arrival only') arrivals++;
     const sw = swapped(s);
     if (sw) swaps.push(s.gate + ' / ' + s.code + ': ' + s.o.src + ' in place of ' + sw);
     if (s.surface === 'notice' && s.o.src && s.o.src === W._gateOrbParts(s.code, true).path && !W._gateOrbSeeThrough(s.o.src)) symbols++;
     // and a box a rule of the gate clears is a clear box too (the United gate clears the disc of art that is
-    // its own): see-through art there is held, its disc kept
+    // its own), and a box a rule of the gate repaints is no box of its own (the Delta and PAL gates paint
+    // every disc their red gradient or their gold, art that is its own disc included): see-through art
+    // there is held, its disc kept
     if (s.surface === 'notice' && s.o.src && W._gateOrbSeeThrough(s.o.src) && /v2-fi-emblem-native/.test(s.o.cls) && !/gl-gc-orb-held/.test(s.html)) {
       const R = s.solo ? W._gateNoticeOrbRule('', s.code) : W._gateNoticeOrbRule(s.gate);
       if (R && R.clearNative) padded.push('notice ' + s.gate + ' / ' + s.code + ': ' + s.o.src + ' on a disc the rule of the gate clears');
+      else if (R && R.native) padded.push('notice ' + s.gate + ' / ' + s.code + ': ' + s.o.src + ' on a disc the rule of the gate repaints ' + R.disc);
     }
     if (!s.o.src || !clearBox(s.o)) return;
     if (!fillsBox(s)) {
@@ -436,12 +450,17 @@ test('no orb draws see-through art on a clear box, filling it or padded (the art
     const h = the('_gateChangeNoticeHtml')(({ ap: 'YUL', full: { f: { flight: c + '101', airline: c, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } }), g, !g);
     assert.match(h, new RegExp('<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:transparent;padding:0 !important;--gc-disc:transparent;"><img src="/logos/airline-tiles/' + tile + '\\.svg"'), (g || '(whole screen)') + ' / ' + c);
   }
-  // by name: Air Inuit on the United gate keeps the white disc under the goose cut out of its orange
-  {
-    const L = W._gateNoticeLook('UA', '3H');
-    assert.deepEqual([L.hold, L.plate, L.white, /^see-through:/.test(L.why)], [true, '', false, true], JSON.stringify(L));
-    assert.match(the('_gateChangeNoticeHtml')(({ ap: 'YUL', full: { f: { flight: '3H101', airline: '3H', dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } }), 'UA'), /<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:#FFFFFF;[^"]*--gc-disc:#FFFFFF;"><img src="\/logos\/airlines\/canadian-regional\/airinuit-emblem\.svg"/);
+  // by name: Air Inuit on the United gate keeps the white disc under the goose cut out of its orange, and
+  // so on the gates whose rules repaint every disc (Delta and Endeavor in the red gradient of Delta, PAL and
+  // PAL Express in its gold), where its orange disc sat as a circle inside the red or the gold and sank
+  // into it
+  for (const g of ['UA', 'DL', '9E', 'PB', 'SP']) {
+    const L = W._gateNoticeLook(g, '3H');
+    assert.deepEqual([L.hold, L.plate, L.white, /^see-through:/.test(L.why)], [true, '', false, true], g + ': ' + JSON.stringify(L));
+    assert.match(the('_gateChangeNoticeHtml')(({ ap: 'YUL', full: { f: { flight: '3H101', airline: '3H', dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } }), g), /<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:#FFFFFF;[^"]*--gc-disc:#FFFFFF;"><img src="\/logos\/airlines\/canadian-regional\/airinuit-emblem\.svg"/, g);
   }
+  // (the rules of those gates repaint a native disc: native, and clearNative for United)
+  assert.deepEqual(['UA', 'DL', '9E', 'PB', 'SP'].map((g) => { const R = W._gateNoticeOrbRule(g) || {}; return !!(R.native || R.clearNative); }), [true, true, true, true, true]);
   // by name: Aegean, Calm Air and Pegasus keep their opaque symbols where their badge fills the orb
   for (const [g, c, sym] of [['IB', 'A3', 'A3'], ['', 'A3', 'A3'], ['IB', 'MO', 'MO'], ['', 'MO', 'MO'], ['AY', 'PC', 'PC']]) {
     const h = the('_gateChangeNoticeHtml')(({ ap: 'YUL', full: { f: { flight: c + '101', airline: c, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } }), g, !g);
@@ -458,6 +477,13 @@ test('no orb draws see-through art on a clear box, filling it or padded (the art
   assert.equal(W._gateNoticeLook('IB', 'CM').badge, true);
   // the t of Transavia, cut out of its disc, never shows the card: its tile fills the orb
   assert.match(the('_gateChangeNoticeHtml')(m('HV'), 'IB'), /<img src="\/logos\/airline-tiles\/TRA\.svg"/);
+  // by name: the arrival-only card draws the opaque tiles of Copa, JAL and Transavia, held and filling the
+  // orb, and Air Inuit on its white disc
+  assert.ok(arrivals >= 250, arrivals + ' arrival-only cards walked');
+  for (const [c, tile] of [['CM', 'CMP'], ['JL', 'JAL'], ['HV', 'TRA']]) {
+    assert.match(arrivalOrb(c), new RegExp('^<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:transparent;padding:0 !important;--gc-disc:transparent;"><img src="/logos/airline-tiles/' + tile + '\\.svg"'), '(arrival only) / ' + c);
+  }
+  assert.match(arrivalOrb('3H'), /style="[^"]*background:#FFFFFF;[^"]*"><img src="\/logos\/airlines\/canadian-regional\/airinuit-emblem\.svg"/);
 });
 
 test('a mark set in a ring line: its ring is the edge of its orb on every surface, judged as a disc', () => {
