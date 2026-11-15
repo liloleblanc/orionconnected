@@ -135,6 +135,8 @@ function build(CORE, site) {
     block('window._gateCardPaint = function', 1), block('window._gateWhiteInk = function', 1), block('window._gateColumnWhite = function', 1),
     CORE.indexOf("window._GATE_ORB_RING = 'clamp(7px,1.12vh,14px)';") >= 0 ? "window._GATE_ORB_RING = 'clamp(7px,1.12vh,14px)';" : '',
     block('window._gateOrbWhite = function', 1),
+    // the round badge that fills its orb, never set inside a white ring (a file from before it has none)
+    block('window._ORB_ART_GROUNDS = {', 1), block('window._gateOrbBadge = function', 1), block('window._gateOrbBadgeParts = function', 1),
     block('window._gateColumnLook = function', 1), block('window._gateOwnAccent = function', 1),
     block('window._gateOrbNatural = function', 1), block('window._gateOrbParts = function'),
     block('var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {'), block('var GATE_TOP_ROUND_EMBLEM_FILES = {'),

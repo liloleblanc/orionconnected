@@ -245,7 +245,7 @@ test('each plate: the paints its discs meet are the paints measured, and every d
     assert.deepEqual([...PLATES[name].at], m.map((x) => x[1]), name + ': the paints measured, the widest first');
     for (let i = 1; i < m.length; i++) assert.ok(m[i][0] <= m[i - 1][0], name);
   }
-  const dark = [], by = {};
+  const dark = [], by = {}, badgeGates = [], openBadge = [];
   for (const code of CODES) {
     const K = W._gateCardPaint(code);
     if (K.kind !== 'dark') { assert.equal(W._gateCardPlate(code) && W._gateCardDark(code), '', code); continue; }
@@ -254,6 +254,23 @@ test('each plate: the paints its discs meet are the paints measured, and every d
     (by[K.plate] = by[K.plate] || []).push(code);
     assert.ok(PLATES[K.plate], code + ': a plate');
     assert.deepEqual([K.base, K.paint, [...K.at], K.file, W._gateCardDark(code)], [PLATES[K.plate].base, PLATES[K.plate].at[0], [...PLATES[K.plate].at], PLATES[K.plate].file, PLATES[K.plate].base], code);
+    // the plate is the first of the plates it is tried on that it stands clear of
+    const given = W._GATE_CARD_PLATE_OF[D.carrier] || W._GATE_CARD_PLATE;
+    const ownBlack = W._GATE_CARD_DARKS[D.carrier] && lab(W._GATE_CARD_DARKS[D.carrier])[0] < lab(W._GATE_CARD_DARK)[0];
+    const tried = [given].concat(ownBlack ? ['black-faint-waves'] : [], ['grey-wave', 'black-faint-waves']);
+    const roomy = tried.find((n) => PLATES[n].at.every((p) => W._gateDiscClear(D.disc, p, D.ink)));
+    // NO CIRCLE INSIDE A CIRCLE (decision of 15 November 2026). A column whose orb is a round badge was a
+    // white column where its discs stood clear of no plate with room, the badge inside the ring of its
+    // white disc. It takes the first of the same plates its discs do not sink into, no room asked, else
+    // the plate they differ from most (Volaris and Mesa, black and a deep navy: open items)
+    if (!roomy && W._gateOrbBadge(code)) {
+      badgeGates.push(code);
+      const apart = (n) => Math.min(...PLATES[n].at.map((p) => W._orbDeltaE(D.disc, p)));
+      const want = tried.find((n) => PLATES[n].at.every((p) => !W._gateDiscSinks(D.disc, p))) || tried.slice().sort((a, b) => apart(b) - apart(a))[0];
+      assert.equal(K.plate, want, code);
+      if (K.at.some((p) => W._gateDiscSinks(D.disc, p))) openBadge.push(code);
+      continue;
+    }
     // A DISC IS NEVER THE COLOUR OF THE PANEL BEHIND IT: not one paint of its plate that it sinks into,
     // and every paint one it is twice as bright as, with an ink that reads on it
     for (const p of K.at) {
@@ -261,14 +278,13 @@ test('each plate: the paints its discs meet are the paints measured, and every d
       assert.ok(W._gateDiscClear(D.disc, p, D.ink), code + ': ' + D.disc + ' stands clear of ' + p);
       assert.ok(W._orbDeltaE(D.disc, p) >= 20, code + ': ' + D.disc + ' on ' + p + ' at ' + W._orbDeltaE(D.disc, p).toFixed(1));
     }
-    // the plate is the first of the plates it is tried on that it stands clear of
-    const given = W._GATE_CARD_PLATE_OF[D.carrier] || W._GATE_CARD_PLATE;
-    const ownBlack = W._GATE_CARD_DARKS[D.carrier] && lab(W._GATE_CARD_DARKS[D.carrier])[0] < lab(W._GATE_CARD_DARK)[0];
-    const tried = [given].concat(ownBlack ? ['black-faint-waves'] : [], ['grey-wave', 'black-faint-waves']);
-    assert.equal(K.plate, tried.find((n) => PLATES[n].at.every((p) => W._gateDiscClear(D.disc, p, D.ink))), code);
+    assert.equal(K.plate, roomy, code);
   }
-  // the dark card is the gates it was before the plates: 93 of the codes the name tables know
-  assert.ok(dark.length >= 86 && dark.length <= 101, dark.length + ' gates of the dark card');
+  assert.ok(badgeGates.length >= 20, badgeGates.length + ' round badges on a plate with no room asked');
+  assert.deepEqual(openBadge.sort(), ['Q6', 'Y4', 'YV'], 'the round badges that stand clear of no plate');
+  // the dark card is the gates it was before the plates (93 of the codes the name tables know), and the
+  // round badges that sat inside a white ring
+  assert.ok(dark.length >= 113 && dark.length <= 128, dark.length + ' gates of the dark card');
   // every plate given is used, and the two the owner set first for most gates carry most of them
   assert.deepEqual(Object.keys(by).sort(), [...Object.keys(PLATES)].sort());
   assert.ok(by['grey-wave'].length >= 40 && by['black-faint-waves'].length >= 30, JSON.stringify(Object.fromEntries(Object.entries(by).map(([k, v]) => [k, v.length]))));
@@ -315,7 +331,9 @@ test('the gates left as drawn and the white columns show with the plates exactly
     W._gateCardPaint(code), W._gateCardDark(code), W._gateColumnWhite(code, W._gateOrbNatural(code).ground)]);
   const kept = CODES.filter((c) => W._gateColumnKept(c));
   const white = CODES.filter((c) => !W._gateColumnKept(c) && W._gateColumnLook(c).white);
-  assert.ok(kept.length >= 30 && white.length >= 90, kept.length + ' kept, ' + white.length + ' white');
+  // (27 columns whose round badge sat inside a white ring are on the dark plate now: no circle inside a
+  // circle, decision of 15 November 2026)
+  assert.ok(kept.length >= 30 && white.length >= 70, kept.length + ' kept, ' + white.length + ' white');
   const withPlates = Object.fromEntries(kept.concat(white).map((c) => [c, snap(c)]));
   // no plate at all: the plate tables emptied
   const saved = Object.assign({}, PLATES);
@@ -423,7 +441,8 @@ test('the art that is its own disc is judged by the colours its file draws', () 
     const L = W._gateNoticeLook(g, c);
     assert.ok(L.plate && /^sink:#C[3D]/.test(L.why), g + ' / ' + c + ': ' + JSON.stringify(L));
   }
-  for (const g of ['AF', '2T', 'SK']) for (const c of ['PC', 'ZP']) assert.equal(W._gateNoticeLook(g, c).why, '', g + ' / ' + c);
+  // (SAS was the third: its gate is on the dark plate since its tile no longer sits inside a white ring)
+  for (const g of ['AF', '2T', 'KU']) for (const c of ['PC', 'ZP']) assert.equal(W._gateNoticeLook(g, c).why, '', g + ' / ' + c);
   // a judge of both halves: the blue half of Wizz on the navy shade of a gate (2T), where its magenta stands out
   assert.ok(!W._gateDiscSinks('#CD2B86', '#14264D'));
   assert.match(W._gateNoticeBreaks(at('W4'), { at: ['#14264D'] }), /^sink:#161998>/);
@@ -562,8 +581,17 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
     const K = W._gateCardPaint(g, true), sig = K.kind + ':' + K.at.join(',') + '|' + JSON.stringify(W._gateNoticeOrbRule(g) || {});
     if (!cards.has(sig)) cards.set(sig, g);
   }
-  assert.ok(cards.size >= 80 && orbs.length >= 250, cards.size + ' cards, ' + orbs.length + ' orbs');
-  const bad = [], missing = [], by = { as: 0, keptOwn: 0, held: 0, column: 0, plate: 0, room: 0, white: 0, darkCard: 0, darkRoom: 0, roomWhite: 0 };
+  // (fewer cards than the 80 there were: the gates whose round badge sat inside a white ring share the
+  // plates now, no circle inside a circle, decision of 15 November 2026)
+  assert.ok(cards.size >= 60 && orbs.length >= 250, cards.size + ' cards, ' + orbs.length + ' orbs');
+  const bad = [], missing = [], open = {}, by = { as: 0, keptOwn: 0, held: 0, column: 0, plate: 0, room: 0, white: 0, darkCard: 0, darkRoom: 0, roomWhite: 0, badge: 0, badgePlate: 0, badgeFill: 0 };
+  // NO CIRCLE INSIDE A CIRCLE. A round badge (window._gateOrbBadge) is never set inside the ring of a
+  // white disc, and art that is a disc by itself fills its orb edge to edge on a clear box the rules of the
+  // gate cannot paint (held), wherever the notice draws it but under its own carrier on a gate left as
+  // drawn. Read off the markup: the class of the wrap, its padding and its disc
+  const badgeFill = (html) => /<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:transparent;padding:0 !important;--gc-disc:transparent;">/.test(html);
+  const lineArt = (html) => { const src = (/<img src="([^"]*)"/.exec(html) || [])[1] || ''; const A = W._ORB_ART_GROUNDS[src.split('?')[0]] || {}; return !!(A.line && !A.ground); };
+  const roundInRing = (html) => /--orb-ring/.test(html) && /object-fit:cover/.test(html) && !lineArt(html);
   // every colour of the orb that meets a dark plate stands clear of every paint of it with room
   const roomOn = (Lw, at) => [Lw.disc].concat(Lw.edge ? [Lw.edge] : [], Lw.second ? [Lw.second] : []).every((d) => at.every((p) => W._gateDiscClear(d, p, d === Lw.disc ? Lw.ink : '')));
   const m = (al) => ({ ap: 'YUL', full: { f: { flight: al + '101', airline: al, dest: 'Madrid', _locIata: 'MAD', time: '18:40', _sortTs: Date.now() + 3600000 }, to: '12' } });
@@ -584,12 +612,16 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
     if (Lw.missing) missing.push(gate + '/' + code);
     const tag = (whole ? '(whole screen)' : gate || '(no code)') + ' / ' + code;
     const ownKept = !whole && W._gateColumnKept(gate) && fold(gate) === fold(code);
-    if (!L.plate && !L.white && !L.hold) {
-      // unchanged: written as it always was
-      assert.doesNotMatch(notice, /data-gc-plate|gl-gc-orb-held|gl-gc-orb-white|--gc-disc|--gc-filter/, tag);
+    assert.ok(!roundInRing(html), tag + ': a round badge inside the ring of a white disc');
+    if (badgeFill(html)) by.badgeFill++;
+    if (!L.plate && !L.white && !L.hold && !L.badge) {
+      // unchanged: written as it always was, but for art that is a disc by itself, which fills its orb
+      // now (held: no rule of the gate paints round it)
+      assert.doesNotMatch(notice, /data-gc-plate|gl-gc-orb-white/, tag);
+      if (!badgeFill(html)) assert.doesNotMatch(notice, /gl-gc-orb-held|--gc-disc|--gc-filter/, tag);
       if (ownKept) { by.keptOwn++; return; }
       by.as++;
-      if (darkAt) { by.darkCard++; if (roomOn(Lw, darkAt)) by.darkRoom++; else bad.push(tag + ' kept as it was on the dark plate of its gate, without room'); }
+      if (darkAt) { by.darkCard++; if (roomOn(Lw, darkAt) || (badgeFill(html) && W._gateOrbBadge(code) && !broke(Lw, darkAt))) by.darkRoom++; else bad.push(tag + ' kept as it was on the dark plate of its gate, without room'); }
       // the whole screen of a carrier whose gate is approved as drawn wears the rules of that gate: its mark
       // and its disc there are the approved pair (the white arrow of PAL on its gold), only the disc is judged
       const why = broke((solo && W._gateColumnKept(code)) ? { ...Lw, ink: '' } : Lw, at);
@@ -599,18 +631,25 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
     // changed: it broke the rule on the card it had, and keeps it now
     assert.ok(L.why, tag + ': changed with a reason');
     assert.ok(!ownKept, tag + ': a kept gate of its own carrier never changes');
-    if (L.white) { by.white++; assert.match(html, /gl-gc-orb gl-gc-orb-white gl-gc-orb-held/, tag); }
+    if (L.white) { by.white++; assert.match(html, /gl-gc-orb gl-gc-orb-white gl-gc-orb-held/, tag); assert.ok(!W._gateOrbBadge(code), tag + ': a round badge is never drawn white'); }
+    else if (L.badge) { by.badge++; assert.ok(badgeFill(html) && W._gateOrbBadge(code), tag + ': the round badge fills its orb'); }
     else if (L.plate) by.plate++; else if (L.column) by.column++; else by.held++;
     if (L.hold) assert.match(html, /gl-gc-orb-held/, tag);
     if (L.column) assert.ok(!whole && fold(gate) === fold(code) && !W._gateColumnKept(gate), tag + ': the look of the column only for its own carrier on its own gate');
-    if (/^room:/.test(L.why)) { by.roomWhite++; assert.ok(L.white && !broke(lands(the('_gateChangeOrbHtml')(code, false, gate, false, gate), code, gate), W._gateCardPaint(gate, true).at), tag + ': kept the rule, had no room, drawn white'); }
+    if (/^room:/.test(L.why)) { by.roomWhite++; assert.ok((L.white || L.badge) && !broke(lands(the('_gateChangeOrbHtml')(code, false, gate, false, gate), code, gate), W._gateCardPaint(gate, true).at), tag + ': kept the rule, had no room, drawn white, or as its round badge filling its orb'); }
+    // a round badge: no room asked (it is what sent it to the white disc), only the rule; the open items
+    // stand clear of no card and no plate and are drawn where they differ most, counted by carrier below
+    const badgeNoRoom = (L.badge || (badgeFill(html) && W._gateOrbBadge(code)));
+    if (L.open) { assert.ok(L.badge && /^badge:/.test(L.open), tag + ': ' + L.open); open[fold(code)] = (open[fold(code)] || 0) + 1; return; }
     // on the dark plate of its gate, with room (the look of the column is the look of the rail there, below)
-    if (darkAt && !L.column) { by.darkCard++; if (roomOn(Lw, darkAt)) by.darkRoom++; else bad.push(tag + ' (' + JSON.stringify(L) + ') on the dark plate of its gate without room'); }
+    if (darkAt && !L.column) { by.darkCard++; if (roomOn(Lw, darkAt) || (badgeNoRoom && !broke(Lw, darkAt))) by.darkRoom++; else bad.push(tag + ' (' + JSON.stringify(L) + ') on the dark plate of its gate without room'); }
     const why = broke(Lw, at);
     if (why) bad.push(tag + ' (' + JSON.stringify(L) + ') still ' + why);
-    // A PLATE COUNTS ONLY WITH ROOM: every colour of the orb that meets the plate clear of every paint of it
+    // A PLATE COUNTS ONLY WITH ROOM: every colour of the orb that meets the plate clear of every paint of
+    // it; for a round badge, the rule alone
     if (plate) {
       if ([Lw.disc].concat(Lw.edge ? [Lw.edge] : [], Lw.second ? [Lw.second] : []).every((d) => at.every((p) => W._gateDiscClear(d, p, d === Lw.disc ? Lw.ink : '')))) by.room++;
+      else if (badgeNoRoom && !why) by.badgePlate++;
       else bad.push(tag + ' (' + JSON.stringify(L) + ') on a plate without room');
     }
   };
@@ -618,11 +657,17 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   for (const code of orbs) walk('', code, true);
   assert.deepEqual(missing, [], 'every file the notice names is on disk');
   assert.deepEqual(bad, [], bad.length + ' pairs:\n' + bad.slice(0, 20).join('\n'));
-  assert.ok(by.as > 0 && by.keptOwn > 0 && by.held > 0 && by.column > 0 && by.plate > 0 && by.white > 0 && by.roomWhite > 0 && by.darkCard > 0, JSON.stringify(by));
+  assert.ok(by.as > 0 && by.keptOwn > 0 && by.held > 0 && by.column > 0 && by.plate > 0 && by.white > 0 && by.roomWhite > 0 && by.darkCard > 0 && by.badge > 0 && by.badgeFill > 0, JSON.stringify(by));
   assert.equal(by.darkRoom, by.darkCard, JSON.stringify(by));
   // a plate is taken only where the orb stands clear of it with room (the measure of the rail on the dark
-  // card); where no plate gives room the orb is drawn white, as the rail draws a column of dark discs
-  assert.equal(by.room, by.plate, JSON.stringify(by));
+  // card), or by a round badge where it breaks no rule there; where no plate gives room a mark is drawn
+  // white, as the rail draws a column of dark discs, and a round badge fills its orb
+  // (every plate taken is one or the other, or the pair is in the list of what is wrong above)
+  assert.ok(by.room >= by.plate && by.badgePlate > 0, JSON.stringify(by));
+  // THE OPEN ITEMS: round badges of black and of a navy as dark as every plate (Air New Zealand, Breeze, Porter,
+  // Volaris and Volaris Costa Rica that wears it, Mesa), drawn filling their orb on the card or the plate
+  // they differ from most
+  assert.deepEqual(Object.keys(open).sort(), ['MX', 'NZ', 'PD', 'Y4', 'YV'], JSON.stringify(open));
   // and the handler of a missing file is judged where one is missing: a guess that is not on disk
   const guess = '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="background:#005DAF;"><img src="/logos/symbols/airlines/WB.svg" alt="" class="v2-fi-emblem-img" style="filter:brightness(0) invert(1);"></span></span>';
   assert.ok(!onDisk('/logos/symbols/airlines/WB.svg'));
@@ -638,15 +683,26 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   for (const [g, c] of [['CX', 'WB'], ['LH', 'BT'], ['LH', 'WB'], ['LH', 'HY']]) {
     assert.ok(look(g, c).plate && !look(g, c).white && /^sink:/.test(look(g, c).why), g + ' / ' + c + ': ' + JSON.stringify(look(g, c)));
   }
-  // the navy tile of SAS on the blue of American: no plate gives it room, so it is drawn white
-  assert.deepEqual([look('AA', 'SK').plate, look('AA', 'SK').white, /^sink:/.test(look('AA', 'SK').why)], ['', true, true]);
+  // the navy tile of SAS on the blue of American: no plate gives it room, and it was drawn white, the tile
+  // inside the ring of the white disc. NO CIRCLE INSIDE A CIRCLE (decision of 15 November 2026): the tile
+  // fills its orb, on the first plate it breaks no rule on, the grey wave
+  assert.deepEqual([look('AA', 'SK').plate, look('AA', 'SK').white, look('AA', 'SK').badge, /^sink:/.test(look('AA', 'SK').why)], ['grey-wave', false, true, true]);
+  assert.match(n('SK', 'AA'), /^<div class="gl-gc" data-gc-plate="grey-wave"[\s\S]*<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:transparent;padding:0 !important;--gc-disc:transparent;"><img src="\/logos\/airline-tiles\/SAS\.svg"/);
   // A PLATE COUNTS ONLY WITH ROOM: the navy and the dark discs that landed on the black faint waves 20 from
-  // the near black of it (Kuwait, EgyptAir, Bulgaria Air, Breeze, TAROM, MIAT on the whole screen) are drawn
-  // white, on the card they had
-  for (const c of ['KU', 'MS', 'OB', 'MX', 'RO', 'MO']) {
+  // the near black of it (Kuwait, EgyptAir, Bulgaria Air, Breeze, TAROM, MIAT on the whole screen) were
+  // drawn white, on the card they had. Kuwait and TAROM still are: a mark on the white disc, the bird of
+  // Kuwait and the mark of TAROM in their colours. EgyptAir, Bulgaria Air, Breeze and MIAT carried a round
+  // badge in that white ring, their tile: it fills the orb now, on the grey wave (Breeze, a navy as dark as
+  // every plate, on the plate it differs from most: an open item)
+  for (const c of ['KU', 'RO']) {
     const L = look('', c, true);
-    assert.ok(L.why && L.white && !L.plate, c + ': ' + JSON.stringify(L));
+    assert.ok(L.why && L.white && !L.plate && !W._gateOrbBadge(c), c + ': ' + JSON.stringify(L));
     assert.ok(!W._gateDiscClear(W._gateNoticeLands('', c, false, false, c).disc, FILES['plate-black-faint-waves.jpg'].dark, ''), c + ': no room on the black faint waves');
+  }
+  for (const c of ['MS', 'OB', 'MX', 'MO']) {
+    const L = look('', c, true);
+    assert.deepEqual([L.white, L.badge, L.plate, !!L.open], [false, true, 'grey-wave', c === 'MX'], c + ': ' + JSON.stringify(L));
+    assert.doesNotMatch(n(c, '', true), /gl-gc-orb-white|--orb-ring/, c);
   }
   // the darkest paint of each plate is the darkest 5th percentile of its file, and a plate is judged by it
   for (const [name, P] of Object.entries(PLATES)) {
@@ -687,8 +743,12 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
       const L = look(g, c), L0 = W._gateNoticeLands(g, c, false, false, g);
       assert.ok(!broke(L0, K.at), g + ' / ' + c + ': it kept the rule on the paints of the plate');
       assert.ok(!roomOn(L0, dark), g + ' / ' + c + ': ' + L0.disc + ' has no room on the ' + K.plate);
-      assert.deepEqual([L.white, L.plate, L.column, /^room:/.test(L.why)], [true, '', false, true], g + ' / ' + c + ': ' + JSON.stringify(L));
-      assert.match(n(c, g), /^<div class="gl-gc" data-gl-gc=[\s\S]*<span class="gl-gc-orb gl-gc-orb-white gl-gc-orb-held">/, g + ' / ' + c + ': white, on the card of the gate');
+      // a mark (the bird of Kuwait, the crane of LOT) is drawn white; a round badge (the tiles of the
+      // others) was drawn inside the ring of that white disc, and fills its orb on the card of the gate now
+      const badge = !!W._gateOrbBadge(c);
+      assert.deepEqual([L.white, L.badge, L.plate, L.column, /^room:/.test(L.why)], [!badge, badge, '', false, true], g + ' / ' + c + ': ' + JSON.stringify(L));
+      if (badge) assert.match(n(c, g), /^<div class="gl-gc" data-gl-gc=[\s\S]*<span class="gl-gc-orb gl-gc-orb-held"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*padding:0 !important;--gc-disc:transparent;">/, g + ' / ' + c + ': its badge filling its orb, on the card of the gate');
+      else assert.match(n(c, g), /^<div class="gl-gc" data-gl-gc=[\s\S]*<span class="gl-gc-orb gl-gc-orb-white gl-gc-orb-held">/, g + ' / ' + c + ': white, on the card of the gate');
     }
   }
   // Turkish: its rim judged for the sink, its own red for the brown (#C90019, as TK.svg draws it); on the brown waves of KLM and the
@@ -746,7 +806,7 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   // its own carrier on a kept gate never changes: United, Porter, Ryanair, Air Canada
   for (const c of ['UA', 'PD', 'FR', 'AC', 'DL', 'AA']) {
     assert.ok(W._gateColumnKept(c), c);
-    assert.deepEqual({ ...look(c, c) }, { plate: '', white: false, hold: false, column: false, gate: c, wrap: c, why: '' }, c);
+    assert.deepEqual({ ...look(c, c) }, { plate: '', white: false, hold: false, column: false, badge: false, gate: c, wrap: c, why: '' }, c);
     assert.doesNotMatch(n(c, c), /data-gc-plate|gl-gc-orb-held|gl-gc-orb-white|--gc-/, c);
   }
   // KLM on its own gate: its tile stands clear of the brown waves, as it always was
@@ -770,7 +830,12 @@ test('the gate change notice: what lands is judged, and a notice changes only wh
   assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb\\.gl-gc-orb-held > \\.v2-fi-emblem-wrap \\{ background: var\\(--gc-disc, transparent\\) !important; \\}'));
   assert.match(CSS, new RegExp('html body' + NOT + ' \\.g8-wrap \\.gl-gc \\.gl-gc-orb\\.gl-gc-orb-held \\.v2-fi-emblem-img \\{ filter: var\\(--gc-filter, none\\) !important; \\}'));
   assert.doesNotMatch(CSS, /\.gl-gc \.gl-gc-orb > \.v2-fi-emblem-wrap \{ background: var\(--gc-disc/, 'no orb that is not held takes the disc variable');
-  assert.doesNotMatch(CSS, /\.gl-gc \.gl-gc-orb > \.v2-fi-emblem-native \{ padding: 0 !important; \}/, 'art that is its own disc keeps the padding it always had on the notice');
+  // ART THAT IS ITS OWN DISC FILLS ITS ORB (no circle inside a circle, decision of 15 November 2026): the
+  // markup takes the padding of the notice away, inline and held, not a rule of the stylesheet, so the
+  // notice of its own carrier on a gate left as drawn keeps the padding it always had (Turkish on its gate)
+  assert.doesNotMatch(CSS, /\.gl-gc \.gl-gc-orb > \.v2-fi-emblem-native \{ padding: 0 !important; \}/, 'no rule of the stylesheet takes it away');
+  assert.ok(badgeFill(n('TK', 'IB')) && badgeFill(n('TK', '', true)) && badgeFill(n('PC', 'AF')), 'Turkish on an Iberia gate and as the whole screen, Pegasus on an Air France gate: the roundel fills its orb');
+  assert.match(n('TK', 'TK'), /<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap v2-fi-emblem-native" style="[^"]*background:transparent;padding:0;">/, 'Turkish on its own gate, left as drawn: as it always was');
   assert.ok(['AS', 'TK'].every((c) => W._ORB_ART_RIMMED[c]));
   // THE LETTERS OF THE ORB OF THE NOTICE (about 65 carriers drawn as letters) sit inside the padding of
   // the orb at its normal size: half its content box. They took the size of the flight beside them (110 px
