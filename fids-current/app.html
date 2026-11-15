@@ -6,7 +6,7 @@
 <!-- v24145 — host-airport.js first: the desktop request below builds its
      board link with fidsBoardUrl, and the note above the title says why the
      app loads this file at all. -->
-<script src="js/host-airport.js?v=24158"></script>
+<script src="js/host-airport.js?v=24159"></script>
 <script>
 /* v24139 — A PHONE THAT ASKS ITS BROWSER FOR THE DESKTOP SITE GETS THE BOARD.
    Request desktop site on the app only reloaded the app: the browser asks
@@ -560,12 +560,12 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24158"></script>
-<script src="js/shared-names.js?v=24158"></script>
+<script src="js/board-strings.js?v=24159"></script>
+<script src="js/shared-names.js?v=24159"></script>
 <!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
-<script src="js/earth-places.js?v=24158"></script>
-<script src="data/airline-colors.js?v=24158"></script>
-<script src="js/feed-router.js?v=24158"></script>
+<script src="js/earth-places.js?v=24159"></script>
+<script src="data/airline-colors.js?v=24159"></script>
+<script src="js/feed-router.js?v=24159"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1280,7 +1280,8 @@ function acType(raw){
   // the same answers as the boards' aircraftCodeToIata: B77W, E75L, A21N and
   // B190 used to give no picture, and B190 drew an Embraer jet.
   const RE={BCS:'223',BCS1:'221',BCS3:'223',CS1:'221',CS3:'223',DH8D:'DH4',DH8C:'DH3',DH8B:'DH2',DH8A:'DH1',DHC8:'DH4','32A':'319','32B':'320','32S':'320','757':'752',
-    B77W:'77W',B773:'773',E75L:'E75',E75S:'E75',A21N:'32Q',B190:'BEH'};
+    B77W:'77W',B773:'773',E75L:'E75',E75S:'E75',A21N:'32Q',B190:'BEH',
+    B788:'788',B789:'789',B78X:'78J',A359:'359',A35K:'351',E290:'290',E295:'295'};
   if(RE[s]) return RE[s];
   if(/^[A-Z0-9]{3}$/.test(s)) return s;            // already a 3-char code (OAG)
   // Beechcraft, before the Embraer 190 test below, the same answers as the
@@ -1308,12 +1309,19 @@ function acType(raw){
   if(/CRJ-?700|CRJ7/.test(s)) return 'CR7';
   if(/CRJ-?200|CRJ2/.test(s)) return 'CR2';
   if(/175/.test(s)) return 'E75';
+  // the E2 jets before their first generation: an E195-E2 is 295 and an
+  // E190-E2 is 290, as on the boards, never the older E95 or E90
+  if(/195[\s-]*E2|E2[\s-]*195/.test(s)) return '295';
+  if(/190[\s-]*E2|E2[\s-]*190/.test(s)) return '290';
   if(/190/.test(s)) return 'E90';
   if(/195/.test(s)) return 'E95';
   if(/767/.test(s)) return '763';
   if(/777/.test(s)) return '77W';
   if(/787-?8|788/.test(s)) return '788';
+  if(/787-?10/.test(s)) return '78J';                 // the 787-10 is 78J, never the 787-9's picture
   if(/787/.test(s)) return '789';
+  if(/350-?1000/.test(s)) return '351';
+  if(/350/.test(s)) return '359';
   return '';
 }
 // ONE AEROPLANE, ITS OWN PAINT — the boards' AIRCRAFT_LIVERY_BY_REG
@@ -1630,7 +1638,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24158';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24159';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
