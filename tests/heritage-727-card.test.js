@@ -492,7 +492,7 @@ test('its picture: a cut-out at the working width, clear all round, no page left
   assert.ok(fs.existsSync(file), PICTURE + ' is on disk');
   const img = rgbaOf(file), { w, h, px } = img;
   assert.equal(w, 2272, 'scaled to the 2272 px of the other card pictures');
-  assert.equal(h, 503, 'at the proportions of the drawing (4001 x 991, cropped to its edges): 2272 x 503');
+  assert.equal(h, 502, 'at the proportions of the drawing (4524 x 1120, cropped to its edges): 2272 x 502');
   const A = (x, y) => px[(y * w + x) * 4 + 3];
   for (const [x, y] of [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]) assert.equal(A(x, y), 0, 'the corner at ' + x + ',' + y + ' is clear');
   const touches = { left: false, right: false, top: false, bottom: false };
@@ -512,13 +512,13 @@ test('its picture: a cut-out at the working width, clear all round, no page left
   assert.ok(pale <= 40, 'pale pixels on the outline of the grey and dark paint: ' + pale);
   assert.ok(bright <= 20, 'the page is still in the outline: ' + bright + ' outline pixels much brighter than the paint inside them (111 at four deep)');
   const note = flat(NOTE);
-  assert.match(note, /supplied drawing \(4001 x 991, already cut out\)/, 'the note names the drawing it is made from');
-  assert.match(note, /at the depth of five pixels of the drawing, the smallest that passes/, 'and the depth');
-  assert.match(note, /396 at one pixel, 48 at two, 41 at three, 7 at four and 1 at five; by the count of the Dream livery test, 935, 242, 3, 6 and 6/, 'and the counts it was chosen by');
-  assert.match(note, /411 at two, 149 at three, 111 at four and 3 at five/, 'with the third count');
-  assert.match(note, /\(2272 x 503\)/, 'and the size it comes out at');
+  assert.match(note, /sharper enlarged copy \(4524 x 1120, on a white page\)/, 'the note names the drawing it is made from');
+  assert.match(note, /outline of the first copy of the same drawing \(4001 x 991, already cut out\)/, 'and the outline it is cut with');
+  assert.match(note, /at the depth of five pixels of the drawing/, 'and the depth');
+  assert.match(note, /of the dark paint 8, pale pixels on the outline of the grey and dark\s+paint 20, and pixels of the outline 40 or more brighter than the paint\s+just inside them 6/, 'and the three counts');
+  assert.match(note, /\(2272 x 502\)/, 'and the size it comes out at');
   const readme = fs.readFileSync(path.join(ROOT, 'scripts', 'heritage-sky', 'README.md'), 'utf8');
-  assert.match(readme, /card-cutout\.py 1727AC\.png fids-current\/aircraft\/heritage\/air-canada-727-ac80\.png 2272 10 5\n/, 'the README gives the command, depth and all');
+  assert.match(readme, /card-cutout\.py 1727AC-image2\.png fids-current\/aircraft\/heritage\/air-canada-727-ac80\.png 2272 10 5\n/, 'the README gives the command, depth and all');
   // NOSE LEFT, as every picture of the set: the fin, the tallest part, is at the right-hand end
   let top = 0; while (top < h && ![...Array(w).keys()].some((x) => A(x, top) >= 128)) top++;
   const finX = [...Array(w).keys()].filter((x) => A(x, top) >= 128);
@@ -526,7 +526,7 @@ test('its picture: a cut-out at the working width, clear all round, no page left
   assert.doesNotMatch(SRC.slice(SRC.indexOf('var PLANE_FACING = {'), SRC.indexOf('function _planeFacingFromSrc')), /heritage\//, 'no table of facings lists the archive pictures: the card sky is laid out for nose left');
 });
 
-test('its shape, as its note gives it: 10.23 long for its depth, to the tip of the tailplane', () => {
+test('its shape, as its note gives it: 10.33 long for its depth, to the tip of the tailplane', () => {
   const { w, h, px } = rgbaOf(path.join(ROOT, 'fids-current', PICTURE.replace(/^\//, '')));
   const A = (x, y) => px[(y * w + x) * 4 + 3];
   const depths = [];
@@ -539,13 +539,13 @@ test('its shape, as its note gives it: 10.23 long for its depth, to the tip of t
   }
   depths.sort((a, b) => a - b);
   const depth = depths[depths.length >> 1];
-  assert.equal(depth, 222, 'the depth 14–26% behind the nose');
-  assert.equal((w / depth).toFixed(2), '10.23', 'length over depth');
+  assert.equal(depth, 220, 'the depth 14–26% behind the nose');
+  assert.equal((w / depth).toFixed(2), '10.33', 'length over depth');
   // the furthest aft point (the last column) is the tip of the tailplane, on top of the fin
   const aft = [];
   for (let y = 0; y < h; y++) if (A(w - 1, y) > 0) aft.push(y);
   assert.ok(aft.length && aft[aft.length - 1] < 0.1 * h, 'the last column is near the top: the tailplane on the fin');
-  assert.match(flat(NOTE), /\(the median of the columns, 222 px deep\), is 10\.23 to the tip of the tailplane/, 'the note gives it');
+  assert.match(flat(NOTE), /\(the median of the columns, 220 px deep\), is 10\.33 to the tip of the tailplane/, 'the note gives it');
 });
 
 test('the picture is in the build: under the folder the deploy serves, in the size it allows', () => {

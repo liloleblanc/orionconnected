@@ -68941,19 +68941,17 @@ var HERITAGE_MARKS = [
     // 747. No new file, no plate behind it, nothing recoloured.
     //
     // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
-    // supplied drawing (4001 x 991, already cut out): laid on white and the
-    // page taken off again at the depth of five pixels of the drawing, the
-    // smallest that passes. Counted as on the 1980 747, light pixels on the
-    // outline of the dark paint are 396 at one pixel, 48 at two, 41 at three,
-    // 7 at four and 1 at five; by the count of the Dream livery test, 935,
-    // 242, 3, 6 and 6. Those two pass at four, but over a dark sky a pale
-    // dashed line still runs along the grey belly and the trailing edge of the
-    // fin there: counted as pixels of the outline 40 or more brighter than the
-    // paint just inside them, 411 at two, 149 at three, 111 at four and 3 at
-    // five. The outline of the drawing comes in runs of two and three pixels
-    // of one colour, so the page reaches further into it, in its own pixels,
-    // than into the other drawings. Cropped to its own edges and scaled to the
-    // 2272 px of the other cards (2272 x 503), the four corners clear; the
+    // supplied drawing in its sharper enlarged copy (4524 x 1120, on a white
+    // page), cut out with the outline of the first copy of the same drawing
+    // (4001 x 991, already cut out), scaled to it and closed by one pixel so
+    // no pocket of page is shut inside: laid on white and the page taken off
+    // again at the depth of five pixels of the drawing. Counted by the three
+    // counts of tests/heritage-727-card.test.js, light pixels on the outline
+    // of the dark paint 8, pale pixels on the outline of the grey and dark
+    // paint 20, and pixels of the outline 40 or more brighter than the paint
+    // just inside them 6 (the first copy at the same depth: 1, 6 and 3; it
+    // was softer). Cropped to its own edges and scaled to the 2272 px of the
+    // other cards (2272 x 502), the four corners clear; the
     // furthest aft point is the tip of the tailplane on top of the fin.
     // Nothing of the aeroplane is repainted. The light line along the leading
     // edge of the fin is drawn, and stays at any depth.
@@ -68963,7 +68961,7 @@ var HERITAGE_MARKS = [
     // PLANE_FACING is the art of the gate shelf.
     //
     // ITS SHAPE: length over fuselage depth, measured 14–26% behind the nose
-    // (the median of the columns, 222 px deep), is 10.23 to the tip of the
+    // (the median of the columns, 220 px deep), is 10.33 to the tip of the
     // tailplane. No figure from Boeing for the depth of the 727 fuselage was
     // read for this card, so it is not set against one; it is used as drawn,
     // the supplied art.

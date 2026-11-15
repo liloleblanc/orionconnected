@@ -256,19 +256,18 @@ at 2272 x 602:
 
     python3 scripts/heritage-sky/card-cutout.py 747-305-1993.png fids-current/aircraft/heritage/air-canada-747-305-ac93.png 2272 10 4
 
-The Boeing 727-233 in the 1980 livery came already cut out (4001 x 991) and
-needs a depth of five. By the first count 396 at one, 48 at two, 41 at three,
-7 at four and 1 at five; by the count of the Dream livery test 935, 242, 3, 6
-and 6. Both pass at four, but over a dark sky a pale dashed line still runs
-along the grey belly and the trailing edge of the fin there, so
-`tests/heritage-727-card.test.js` adds a third count, the pixels of the
-outline 40 or more brighter than the paint just inside them: 411 at two, 149
-at three, 111 at four and 3 at five. The outline of this drawing comes in runs
-of two and three pixels of one colour, so the page reaches further into it, in
-its own pixels. It faces nose left, as every drawing of the set, so nothing is
-mirrored. It comes out at 2272 x 503:
+The Boeing 727-233 in the 1980 livery is made from the sharper enlarged copy
+of the drawing (4524 x 1120), which came on a white page. Cutting white off a
+white aeroplane eats its edges, so the copy is cut with the outline of the
+first copy of the same drawing (4001 x 991, already cut out): its alpha scaled
+to the enlarged copy (bilinear) and closed by one pixel (a 3 x 3 max then min
+filter), so no pocket of page is shut inside, saved as 1727AC-image2.png. Then
+the tool at a depth of five. The three counts of
+`tests/heritage-727-card.test.js` are 8, 20 and 6 (all far under their
+limits). It faces nose left, as every drawing of the set, so nothing is
+mirrored. It comes out at 2272 x 502:
 
-    python3 scripts/heritage-sky/card-cutout.py 1727AC.png fids-current/aircraft/heritage/air-canada-727-ac80.png 2272 10 5
+    python3 scripts/heritage-sky/card-cutout.py 1727AC-image2.png fids-current/aircraft/heritage/air-canada-727-ac80.png 2272 10 5
 
 A corner of the picture that is not clear stops the tool when it is solid or
 has the colour of the page, as page left in would be. A drawing cropped to its
