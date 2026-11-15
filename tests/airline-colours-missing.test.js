@@ -59,7 +59,7 @@ const APPB = (() => {
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   for (const f of ['js/shared-names.js', 'data/airline-colors.js']) vm.runInContext(fs.readFileSync(path.join(FC, f), 'utf8'), ctx, { filename: f });
-  vm.runInContext(APP.slice(from, to) + '\n;globalThis.__app = { heroBrand: heroBrand, heroColors: heroColors, tileOf: tileOf };', ctx, { filename: 'app.html' });
+  vm.runInContext(APP.slice(from, to) + '\n;globalThis.__app = { heroBrand: heroBrand, heroColors: heroColors, tileOf: tileOf, tileHtml: tileHtml };', ctx, { filename: 'app.html' });
   return ctx.__app;
 })();
 const contrast = RC.contrast;
@@ -153,9 +153,11 @@ test('words read on every surface these colours paint, at 4.5 to 1', () => {
     assert.ok(luma(r.r2) <= 170 && contrast(r.r2, '#FFFFFF') >= 4.5, code + ': the titles, ' + r.r2 + ' on white');
     assert.ok(contrast(r.bodyText, r.body) >= 4.5, code + ': the body');
     // the Welcome card: white words from one end of its gradient to the other; it starts on a colour
-    // that is not the accent its frame is drawn in, but where the airline has no darker colour
+    // that is not the accent its frame is drawn in, but for Air Cote d Ivoire, whose darkest site green
+    // is its accent: its card starts in the green of its frame and runs to its black
     assert.ok(contrast('#FFFFFF', b.bg1) >= 4.5 && contrast('#FFFFFF', b.bg2) >= 4.5, code + ': the Welcome card');
     if (code !== 'HF') assert.notEqual(up(b.bg1), c.accent, code + ': the card is not the colour of its frame');
+    else assert.deepEqual([up(b.bg1), up(b.bg2)], [c.accent, '#000000'], 'HF: the green of its frame to its black');
     // the phone app header: the row's own ink on the row's own bar
     const h = heroColors(code);
     assert.deepEqual([h.bg, h.ink, h.light], [r.r1, r.r1Text, false], code + ': the app header');
@@ -168,29 +170,127 @@ test('words read on every surface these colours paint, at 4.5 to 1', () => {
   }
 });
 
+// THE SQUARE OF THE FLIGHT PAGE, carrier by carrier: what it is and why. It sinks into the header for
+// each of the seven (the header is the bar colour of the airline, which is where the square starts), so
+// it steps away to a square that stands clear of the header with white letters at 4.5 to 1.
+const FLIGHT_SQUARES = {
+  VJ: ['#D91A21', 'its primary light red, as it is'],
+  D7: ['#2C2B2F', 'the text colour of airasia.com: its AirAsia red sinks into the dark red header (17.9) and no red that holds white words at 4.5 to 1 stands clear of it'],
+  FD: ['#2C2B2F', 'as AirAsia X'],
+  '9M': ['#8C7133', 'its gold #927635 one step darker (white on the gold is 4.32 to 1)'],
+  BI: ['#916428', 'its bar colour stepped off the header (its brown #645138 sinks into it, its yellow holds white words at 1.27 to 1)'],
+  HF: ['#BF5613', 'its dark orange, as it is'],
+  KP: ['#9B6913', 'the gold of its logo #F2A41E, nine steps darker (the first that holds white words at 4.5 to 1)']
+};
+const hex6 = (s) => {
+  if (/^#[0-9a-f]{6}$/i.test(s)) return s.toUpperCase();
+  const m = /^hsl\((\d+),(\d+)%,(\d+)%\)$/.exec(s);
+  const h = +m[1], S = +m[2] / 100, l = +m[3] / 100, q = l < 0.5 ? l * (1 + S) : l + S - l * S, p = 2 * l - q;
+  const f = (t) => { t = ((t % 360) + 360) % 360 / 360; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+  return '#' + [f(h + 120), f(h), f(h - 120)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+const squareOf = (html) => (/<span class="tile mono" style="background:([^"]+)">/.exec(html) || [])[1];
+const flightPage = (code) => { const hc = APPB.heroColors(code); return { hc, ground: [hc.bg].concat(hc.night ? [hc.night] : []), html: APPB.heroBrand(code, 'Some Airline', hc.light, [hc.bg].concat(hc.night ? [hc.night] : [])) }; };
+
 test('the phone app header: the square of a carrier with no art is never the colour of the header behind it', () => {
-  // The square of the app starts in the bar colour of the airline, and the header of its flight page is
-  // that same colour: drawn as it was, the square was the header. It is stepped off the header now, as
-  // it is off the card and the page (tileHtml, the grounds heroBrand hands it).
   let squares = 0;
   for (const code of Object.keys(CARRIERS)) {
-    const hc = APPB.heroColors(code), html = APPB.heroBrand(code, O.BRAND[code].name, hc.light, [hc.bg].concat(hc.night ? [hc.night] : []));
+    const { hc, html } = flightPage(code);
     if (APPB.tileOf(code)) { assert.match(html, /<img class="tile /, code + ': its own tile'); continue; }
     squares++;
-    const sq = (/<span class="tile mono" style="background:(#[0-9A-F]{6})">/i.exec(html) || [])[1];
-    assert.ok(sq, code + ': a square of one colour: ' + html.slice(0, 120));
+    const sq = squareOf(html);
+    assert.equal(sq, FLIGHT_SQUARES[code][0], code + ': ' + FLIGHT_SQUARES[code][1]);
+    // the square it would be on every other page sinks into this header
+    const elsewhere = hex6(squareOf(APPB.tileHtml(code)));
+    assert.ok(W._orbDeltaE(elsewhere, hc.bg) < 20, code + ': ' + elsewhere + ' sinks into ' + hc.bg);
+    // the square of the flight page stands clear of it, its white letters at 4.5 to 1
     assert.ok(W._orbDeltaE(sq, hc.bg) >= 20, code + ': the square ' + sq + ' on the header ' + hc.bg + ' (dE ' + W._orbDeltaE(sq, hc.bg).toFixed(1) + ')');
-    assert.ok(contrast('#FFFFFF', sq) >= 3, code + ': its white letters');
-    // a colour of the airline where one stands clear of its header (VietJet its red, Central Mountain Air
-    // its gold, Air Cote d Ivoire its orange), else the bar colour stepped, its hue kept
-    const r = AB[code];
-    if ([r.r2, r.r3].includes(up(sq))) continue;
-    const hue = (h) => { const L = W._orbLab(h); return Math.atan2(L[2], L[1]) * 180 / Math.PI; };
-    let dh = Math.abs(hue(sq) - hue(r.r1)); if (dh > 180) dh = 360 - dh;
-    assert.ok(dh < 30, code + ': ' + sq + ' is a shade of ' + r.r1 + ' (hue ' + dh.toFixed(0) + ' apart)');
+    assert.ok(contrast('#FFFFFF', sq) >= 4.5, code + ': its white letters at ' + contrast('#FFFFFF', sq).toFixed(2) + ' to 1');
   }
-  assert.deepEqual(['VJ', '9M', 'HF'].map((c) => /background:(#[0-9A-F]{6})/i.exec(APPB.heroBrand(c, '', false, [AB[c].r1]))[1].toUpperCase()), [AB.VJ.r2, AB['9M'].r3, AB.HF.r3]);
   assert.equal(squares, 7, 'every carrier of the list but Royal Air Maroc draws the square');
+  // a colour of the airline, or that colour a darker step at a time, where one stands clear
+  const darker = (h, k) => '#' + [1, 3, 5].map((i) => ('0' + Math.round(parseInt(h.slice(i, i + 2), 16) * (1 - k * 0.04)).toString(16)).slice(-2)).join('').toUpperCase();
+  assert.deepEqual([AB.VJ.r2, AB.HF.r3, darker(AB['9M'].r3, 1), darker(AB.KP.r3, 9), AB.D7.bodyText], ['#D91A21', '#BF5613', '#8C7133', '#9B6913', '#2C2B2F']);
+});
+
+test('the flight page keeps the square of every other page, unless that square sinks into its header', () => {
+  // Every code that can draw the square: every two characters a feed may send, and every code of the
+  // name and colour tables. The square of the flight page is the square of every other page (tileHtml
+  // with no header, the rule of main) wherever that one stands clear of the header; where it sinks into
+  // the header (CIEDE2000 under 20) it steps away, clear of it, white letters at 4.5 to 1.
+  const AL = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const codes = [...new Set([...AL.flatMap((a) => AL.map((b) => a + b)), ...Object.keys(O.NAME), ...Object.keys(O.NAME2), ...Object.keys(AB)])];
+  let kept = 0, away = 0, tiles = 0;
+  const stepped = [];
+  for (const code of codes) {
+    const { ground, html } = flightPage(code);
+    const own = APPB.tileHtml(code);
+    if (APPB.tileOf(code)) { assert.ok(html.includes(own), code + ': its own tile'); tiles++; continue; }
+    const sq = squareOf(html), was = squareOf(own);
+    const sinks = ground.some((g) => W._orbDeltaE(hex6(was), hex6(g)) < 20);
+    if (!sinks) { assert.equal(sq, was, code + ': the square of every other page'); kept++; continue; }
+    away++;
+    if (!CARRIERS[code]) stepped.push(code);
+    for (const g of ground) assert.ok(W._orbDeltaE(hex6(sq), hex6(g)) >= 20, code + ': ' + sq + ' on ' + g);
+    assert.ok(contrast('#FFFFFF', hex6(sq)) >= 4.5, code + ': ' + sq + ' white at ' + contrast('#FFFFFF', hex6(sq)).toFixed(2));
+  }
+  assert.equal(kept + away + tiles, codes.length);
+  assert.ok(codes.length >= 1296 && kept >= 1000, codes.length + ' codes, ' + kept + ' kept, ' + away + ' stepped away, ' + tiles + ' tiles');
+  // the ones that step: the seven, LATAM Colombia on its indigo, and codes with no colours whose square
+  // came within 20 of the house navy of the header
+  assert.ok(stepped.includes('4C') && !stepped.includes('RV') && !stepped.includes('WG'), stepped.join(' '));
+  for (const code of stepped.filter((c) => c !== '4C')) assert.equal(APPB.heroColors(code).bg.toLowerCase(), '#0b1f3a', code);
+  assert.ok(away >= 7, away + ' stepped away');
+});
+
+// THE NAME TYPED IN THE ROW: the accent of its carrier only where it reads at 4.5 to 1 on both stripes
+// of the board as painted, else the row ink. The AirAsia red typed AirAsia X and Thai AirAsia at 4.19
+// to 4.24 to 1 on the pale even rows of the light presets, and at 3.2 to 1 on the even row of mist.
+const fnBody = (src, from, to) => { const a = src.indexOf(from), b = src.indexOf(to, a + from.length); assert.ok(a >= 0 && b > a, from); return src.slice(a, b); };
+const fidsContrast = new Function(fnBody(CORE, 'function _fidsRelLum(c) {', 'function _fidsInk(') + '\nreturn _fidsContrast;')();
+const THEMES = new Function(fnBody(CORE, 'const THEMES = {', 'const THEME_LIST') + '\nreturn THEMES;')();
+const groundsOf = new Function('document', 'getComputedStyle', 'THEMES', 'currentTheme',
+  fnBody(CORE, 'function _boardRowGrounds() {', '// IATA → emblem-only icon URL') + '\nreturn _boardRowGrounds;');
+const nameInk = new Function('_brandColor', '_nameGrounds', '_fidsContrast', 'wordmarkVariant', '_hexLum',
+  fnBody(CORE, '      if (_brandColor && _nameGrounds.length === 2) {', '    } catch (e) {}') + '\nreturn _brandColor;');
+// a board of stand-in elements: the computed background of each is its own, as getComputedStyle gives it
+function board(rowBgs, tableBg, dynamic) {
+  const el = (bg, parent) => ({ nodeType: 1, bg, parentElement: parent });
+  const html = el('rgba(0, 0, 0, 0)', null), body = el('rgb(0, 0, 0)', html), table = el(tableBg, body), tbody = el('rgba(0, 0, 0, 0)', table);
+  const rows = rowBgs.map((bg) => { const tr = el(bg, tbody), td = el('rgba(0, 0, 0, 0)', tr); tr.querySelector = (q) => (/^td/.test(q) ? td : null); return tr; });
+  tbody.children = rows;
+  return { body, querySelectorAll: () => rows, getElementById: (id) => (id === 'fidsTable' ? table : (id === 'dynamicTheme' && dynamic) ? {} : null) };
+}
+const read = (doc, theme) => groundsOf(doc, (e) => ({ backgroundColor: e.bg }), THEMES, theme || 'gold')();
+
+test('the typed row name: the stripes of the board as painted, read once a page', () => {
+  assert.match(CORE, /const _nameGrounds = _boardRowGrounds\(\);\n  const _newHtml = pageFlights\.map\(f => \{/);
+  // the rows as painted, each stripe on its own (mist, as measured on the board)
+  assert.deepEqual(read(board(['rgb(231, 227, 221)', 'rgb(221, 215, 208)', 'rgb(231, 227, 221)'], 'rgb(199, 210, 221)')), ['#e7e3dd', '#ddd7d0']);
+  // a see-through stripe laid over the table under it (the default board: no odd ground, a 2.5 per cent white even one)
+  assert.deepEqual(read(board(['rgba(0, 0, 0, 0)', 'rgba(255, 255, 255, 0.025)'], 'rgb(12, 30, 58)')), ['#0c1e3a', '#12243f']);
+  // no row yet: the preset in use, else the ground of the table
+  assert.deepEqual(read(board([], 'rgb(12, 30, 58)', true), 'gold'), [THEMES.gold.rowOdd, THEMES.gold.rowEven]);
+  assert.deepEqual(read(board([], 'rgb(12, 30, 58)', false)), ['#0c1e3a', '#0c1e3a']);
+});
+
+test('the typed row name keeps its accent only where it reads at 4.5 to 1 on both stripes', () => {
+  const ink = (accent, grounds, variant) => nameInk(accent, grounds, fidsContrast, () => variant || 'dark', (h) => { const n = parseInt(h.slice(1), 16), l = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * l((n >> 16) & 255) + 0.7152 * l((n >> 8) & 255) + 0.0722 * l(n & 255); });
+  const red = O.BRAND.D7.accent;
+  assert.equal(red, O.BRAND.FD.accent);
+  // the light presets (white odd rows, pale even rows) and mist, as painted: the row ink
+  for (const t of ['gold', 'light', 'slate', 'aircanada', 'westjet']) {
+    assert.ok(fidsContrast(red, THEMES[t].rowEven) < 4.5 && fidsContrast(red, THEMES[t].rowOdd) >= 4.5, t);
+    assert.equal(ink(red, [THEMES[t].rowOdd, THEMES[t].rowEven]), '', t + ': the AirAsia red on its even row');
+  }
+  assert.equal(ink(red, ['#E7E3DD', '#DDD7D0']), '', 'mist');
+  // where it reads on both, it stays: VietJet on gold (5.10 and 4.64 to 1)
+  assert.equal(ink(O.BRAND.VJ.accent, [THEMES.gold.rowOdd, THEMES.gold.rowEven]), O.BRAND.VJ.accent);
+  // a dark accent on a dark board, as before: the row ink (Qatar maroon on the teal)
+  assert.equal(ink('#5c0931', ['#1E7EB8', '#2DA4C4']), '');
+  // no stripe read at all: the old guard (dark board, dark accent)
+  assert.equal(ink('#5c0931', [], 'light'), '');
+  assert.equal(ink(red, [], 'dark'), red);
 });
 
 test('the house colours are gone from their gates, but where a rule of the board keeps them', () => {

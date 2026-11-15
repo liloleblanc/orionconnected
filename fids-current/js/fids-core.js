@@ -9507,9 +9507,10 @@ const AIRLINE_BRAND = {
   // peach #FDD49A for the accent (the cream #FCF8E3 is the body of its gate, data/airline-colors.js).
   'YN': { bg1:'#272626', bg2:'#171616', bg3:'#3a3838', accent:'#FDD49A', name:'Air Creebec' },
   // The carriers with no row here: their Welcome card was the house navy. The ground of the card runs from
-  // bg1, the dark colour of the airline (darker than the frame of the card, which is the accent), to bg2,
-  // white words on both; the accent is the colour of the rail. Each value is read off the airline site,
-  // as data/airline-colors.js records beside its row.
+  // bg1, a dark colour of the airline, to bg2, white words on both; the accent is the colour of the rail
+  // and of the frame of the card. bg1 is not the accent, but for Air Cote d Ivoire: the darkest green of
+  // its site is its accent, so its card starts in the green of its frame and runs to its black. Each
+  // value is read off the airline site, as data/airline-colors.js records beside its row.
   // Royal Air Maroc: secondary #690A22 to background-inverse #1A1717 (and inverse-light #333231), primary red.
   'AT': { bg1:'#690A22', bg2:'#1A1717', bg3:'#333231', accent:'#C20831', name:'Royal Air Maroc' },
   // VietJet: primary dark #6F0000 to its text #333333, background red #CA161C.
@@ -11954,7 +11955,7 @@ const AIRLINE_ACCENT = {
   // airline site (data/airline-colors.js says where, beside its row): VietJet its primary light (white
   // words read on it), AirAsia X and Thai AirAsia the AirAsia red of AK and QZ, Central Mountain Air the
   // red of its booking tabs, Royal Brunei the brown its site sets white type on (its yellow would carry
-  // the white words of the tabs at 1.2 to 1), Air Cote d Ivoire its dark green (white words read on it,
+  // the white words of the tabs at 1.27 to 1), Air Cote d Ivoire its dark green (white words read on it,
   // not on its bright green), ASKY its brown.
   'VJ':'#D91A21','D7':'#E32526','FD':'#E32526','9M':'#D42E12','BI':'#645138','HF':'#027031','KP':'#6C321A',
 };
@@ -36366,6 +36367,56 @@ function _hexLum(hex) {
   } catch (e) { return 1; }
 }
 
+// THE TWO STRIPES OF THE BOARD, AS PAINTED: [odd row, even row], each a #hex.
+// A typed airline name keeps the accent of its carrier only where it reads at
+// 4.5 to 1 on both (render, the airline cell). The rows of #fidsTable are read
+// off the screen, the cell of the airline name first, laid over what is under
+// it where it is see-through, because the theme in use can be a preset of
+// THEMES, a stylesheet theme (body[data-fids-theme]) or a palette of the
+// airport, and the stylesheets decide which of them paints the rows. A row in
+// a state of its own is never read (the same rows wordmarkVariant skips).
+// Where the table has no plain row of a parity yet (the first paint), the
+// preset in use says, else the ground of the table stands for that stripe.
+// Returns [] only where nothing can be read at all.
+function _boardRowGrounds() {
+  var solid = function (el) {
+    var layers = [];
+    for (; el && el.nodeType === 1; el = el.parentElement) {
+      var m = String(getComputedStyle(el).backgroundColor || '').match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:\s*[,\/]\s*([\d.]+)(%?))?/);
+      if (!m) continue;
+      var a = (m[4] === undefined) ? 1 : (+m[4] / (m[5] ? 100 : 1));
+      if (!(a > 0)) continue;
+      layers.push([+m[1], +m[2], +m[3], a]);
+      if (a >= 1) break;
+    }
+    if (!layers.length) return null;
+    var c = [255, 255, 255];
+    for (var i = layers.length - 1; i >= 0; i--) {
+      var ly = layers[i];
+      c = [0, 1, 2].map(function (k) { return c[k] * (1 - ly[3]) + ly[k] * ly[3]; });
+    }
+    return '#' + c.map(function (v) { var h = Math.round(Math.max(0, Math.min(255, v))).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
+  };
+  var out = [null, null];
+  try {
+    var rows = document.querySelectorAll('#fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed)');
+    for (var r = 0; r < rows.length && !(out[0] && out[1]); r++) {
+      var par = Array.prototype.indexOf.call(rows[r].parentElement.children, rows[r]) % 2;
+      if (out[par]) continue;
+      out[par] = solid(rows[r].querySelector('td.td-airline') || rows[r].querySelector('td') || rows[r]);
+    }
+  } catch (e) {}
+  if (!(out[0] && out[1])) {
+    try {
+      var t = document.getElementById('dynamicTheme') && THEMES[currentTheme];
+      var tb = document.getElementById('fidsTable');
+      var fill = t ? [t.rowOdd, t.rowEven] : ((tb || document.body) ? [solid(tb || document.body), solid(tb || document.body)] : [null, null]);
+      out = [out[0] || fill[0], out[1] || fill[1]];
+    } catch (e) {}
+  }
+  return (out[0] && out[1]) ? out : [];
+}
+
 // IATA → emblem-only icon URL. Used by mkLogo() to populate the emblem
 // slot for carriers whose primary symbol is an icon/illustration (not a
 // solid tile). Distinct from IATA_TO_TILE_ICAO (square-tile carriers like
@@ -40474,6 +40525,8 @@ function render() {
   //   - 12-hour AM/PM time format throughout
   //   - Inline weather icon comes from the fidsWxIcon() helper in fids-v2.js
   //     (the animated set, or the Solid / Colour looks)
+  // the stripes the typed airline names sit on (_boardRowGrounds), read once for the page
+  const _nameGrounds = _boardRowGrounds();
   const _newHtml = pageFlights.map(f => {
     const loc       = isDep ? f.dest : f.origin;
     // A row with no code of its own goes through formatCityIata too, not the
@@ -40616,11 +40669,18 @@ function render() {
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
     // Legibility guard: on the DARK board a deep brand accent (Qatar's maroon
     // #5c0931, any dark navy/burgundy) is an unreadable smudge in the name
-    // slot — fall back to row ink. wordmarkVariant() is 'light' when the board
-    // is dark (light-ink artwork). Only gates the TEXT name; wordmark IMAGES
+    // slot — fall back to row ink. Only gates the TEXT name; wordmark IMAGES
     // are unaffected.
+    // A TYPED NAME READS ON BOTH STRIPES, ON EVERY THEME. The accent types the
+    // name only where it reads at 4.5 to 1 on the odd row and on the even row
+    // of the board as painted (_nameGrounds), else the name takes the row ink
+    // of the theme. The guard was for dark boards alone, so the AirAsia red
+    // #E32526 typed AirAsia X and Thai AirAsia at 4.2 to 1 on the pale even
+    // rows of the light presets. Where no stripe can be read, the old guard.
     try {
-      if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
+      if (_brandColor && _nameGrounds.length === 2) {
+        if (!_nameGrounds.every(function (g) { var c = _fidsContrast(_brandColor, g); return c !== null && c >= 4.5; })) _brandColor = '';
+      } else if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
     } catch (e) {}
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow) and the

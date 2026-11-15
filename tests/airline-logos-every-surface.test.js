@@ -990,11 +990,12 @@ test('the monogram square stands clear of every row it can sit on, by one rule o
   const TILE = JSON.parse(tg[1].replace(/'/g, '"'));
   const root = /:root\{[^}]*--bg:(#[0-9a-f]{6}); --card:(#[0-9a-f]{6});/i.exec(APP), night = /:root\[data-theme="dark"\]\{[^}]*--bg:(#[0-9a-f]{6}); --card:(#[0-9a-f]{6});/i.exec(APP);
   assert.deepEqual(TILE.sort(), [root[2], root[1], night[2], night[1]].sort());
-  assert.match(APP, /return '<span class="tile mono" style="background:'\+_monoStep\(acc,TILE_GROUNDS\)\+'">'/);
+  assert.match(APP, /const sq=_monoStep\(acc,TILE_GROUNDS\);/);
+  assert.match(APP, /return '<span class="tile mono" style="background:'\+sq\+'">'/);
   // (on the flight page the square sits on the header, which is the bar colour of the airline: heroBrand
-  // hands its colours in, and the square takes a colour of the airline clear of it, else is stepped off
-  // it too: tests/airline-colours-missing.test.js)
-  assert.match(APP, /return '<span class="tile mono" style="background:'\+\(own\|\|_monoStep\(acc,TILE_GROUNDS\.concat\(ground\)\)\)\+'">'/);
+  // hands its colours in, and the square stays this one unless it sinks into that header; only then is
+  // it stepped away (_monoAway): tests/airline-colours-missing.test.js)
+  assert.match(APP, /if\(ground&&ground\.length&&_monoStep\(sq,ground\)!==sq\)\s*return '<span class="tile mono" style="background:'\+_monoAway\(acc,b,ground\)\+'">'/);
   assert.match(APP, /'">'\+heroBrand\(f\.airline,name,hc\.light,\[hc\.bg\]\.concat\(hc\.night\?\[hc\.night\]:\[\]\)\)/);
   // every code that can draw the square: the named carriers with no art, and any two characters a feed sends
   const AL = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
