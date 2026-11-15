@@ -254,6 +254,60 @@ function inside(shape, x, y) {
   return shape.rule === 'evenodd' ? cross % 2 === 1 : w !== 0;
 }
 
+// ── the file as a parser reads it ───────────────────────────────────────
+// The svg is read once from the start into its items: a comment, a declaration or a processing
+// instruction is one item and is passed over whole, a CDATA section is the text it holds, a tag is
+// one item (its name lower case, whether it closes, whether it closes itself), and what lies between
+// two of them is text. Nothing is cut out of the file and the rest read again, so no removal can join
+// what was on either side of it into a comment or a tag that the file never had.
+const TAG = /<\/?([a-zA-Z][\w:-]*)\b[^>]*?\/?>/y;
+function items(txt) {
+  const out = [];
+  const n = txt.length;
+  let i = 0;
+  while (i < n) {
+    const lt = txt.indexOf('<', i);
+    if (lt < 0) { out.push({ text: txt.slice(i) }); break; }
+    if (lt > i) out.push({ text: txt.slice(i, lt) });
+    let end;
+    if (txt.startsWith('<!--', lt)) {
+      end = txt.indexOf('-->', lt + 4);
+      i = end < 0 ? n : end + 3;
+    } else if (txt.startsWith('<![CDATA[', lt)) {
+      end = txt.indexOf(']]>', lt + 9);
+      out.push({ text: txt.slice(lt + 9, end < 0 ? n : end) });
+      i = end < 0 ? n : end + 3;
+    } else if (txt[lt + 1] === '!' || txt[lt + 1] === '?') {
+      end = txt.indexOf('>', lt + 2);
+      i = end < 0 ? n : end + 1;
+    } else {
+      TAG.lastIndex = lt;
+      const m = TAG.exec(txt);
+      if (!m) { out.push({ text: '<' }); i = lt + 1; continue; }
+      out.push({ tag: m[0], name: m[1].toLowerCase(), close: m[0][1] === '/', empty: m[0].endsWith('/>') });
+      i = lt + m[0].length;
+    }
+  }
+  return out;
+}
+// The elements that paint nothing where they stand: their tags, and every tag inside them, are
+// passed over (a gradient, a clip, a style sheet are read where they are named, not drawn).
+const UNDRAWN = new Set(['defs', 'clippath', 'mask', 'symbol', 'lineargradient', 'radialgradient', 'pattern', 'filter', 'style', 'title', 'desc', 'metadata']);
+function drawnTags(txt) {
+  const out = [];
+  let skip = '', depth = 0;
+  for (const it of items(txt)) {
+    if (!it.tag) continue;
+    if (skip) {
+      if (it.name === skip) { if (it.close) depth--; else if (!it.empty) depth++; if (!depth) skip = ''; }
+      continue;
+    }
+    if (UNDRAWN.has(it.name)) { if (!it.close && !it.empty) { skip = it.name; depth = 1; } continue; }
+    out.push(it);
+  }
+  return out;
+}
+
 // ── the drawing as painted shapes, in document order ────────────────────
 function build(txt) {
   const classFill = {};
@@ -283,17 +337,15 @@ function build(txt) {
     const h = (attr('<x ' + g[2] + '>', 'xlink:href') || attr('<x ' + g[2] + '>', 'href') || '').replace('#', '');
     if (id && grads[h]) grads[id] = grads[h];
   }
-  const body = txt.replace(/<defs[\s\S]*?<\/defs>/gi, '')
-    .replace(/<(clipPath|mask|symbol|linearGradient|radialGradient|pattern|filter|style|title|desc|metadata)\b[\s\S]*?<\/\1>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '');
-  const svgTag = (body.match(/<svg\b[^>]*>/i) || [''])[0];
+  const tags = drawnTags(txt);
+  const svgTag = (tags.find((t) => t.name === 'svg' && !t.close) || { tag: '' }).tag;
   const vb = (attr(svgTag, 'viewBox') || '').split(/[\s,]+/).filter(Boolean).map(Number);
   const shapes = [];
   const stack = [{ M: IDENT.slice(), fill: colour(styleProp(svgTag, 'fill') || attr(svgTag, 'fill')), rule: styleProp(svgTag, 'fill-rule') || attr(svgTag, 'fill-rule'), op: 1 }];
   let sawRoot = false;
-  for (const t of body.matchAll(/<\/?([a-zA-Z][\w:-]*)\b[^>]*?\/?>/g)) {
-    const tag = t[0], name = t[1].toLowerCase();
-    if (tag.startsWith('</')) { if ((name === 'g' || name === 'a' || name === 'svg') && stack.length > 1) stack.pop(); continue; }
+  for (const t of tags) {
+    const tag = t.tag, name = t.name;
+    if (t.close) { if ((name === 'g' || name === 'a' || name === 'svg') && stack.length > 1) stack.pop(); continue; }
     const top = stack[stack.length - 1];
     if (name === 'svg') {
       if (!sawRoot) { sawRoot = true; continue; }
@@ -394,7 +446,16 @@ function tileGrounds() {
 // The code a placeholder tile letters: a tile whose only words are one svg text holding two or
 // three capitals or digits (PSC.svg prints BQ, NAX.svg prints DY), or '' for a drawn tile.
 function lettersOf(txt) {
-  const texts = [...txt.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi)].map((m) => m[1].replace(/<[^>]*>/g, '').trim());
+  // the words of each svg text: the text items from its tag to the tag that closes it, the tags of
+  // any tspan between them passed over
+  const texts = [];
+  let words = null;
+  for (const it of items(txt)) {
+    if (!it.tag) { if (words !== null) words += it.text; continue; }
+    if (it.name !== 'text') continue;
+    if (!it.close) { if (!it.empty && words === null) words = ''; }
+    else if (words !== null) { texts.push(words.trim()); words = null; }
+  }
   return (texts.length === 1 && /^[A-Z0-9]{2,3}$/.test(texts[0])) ? texts[0] : '';
 }
 function tileLetters() {

@@ -41,6 +41,8 @@ const CORE = fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8');
 const GEN = require(path.join(ROOT, 'scripts/orbs/tile-grounds.js'));
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// a string read as itself inside a pattern: every character a pattern gives a meaning to, backslash included
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ── the whole board script, with the colour file it loads first ──────────────
 function board() {
@@ -127,7 +129,7 @@ const wrapOf = (html) => {
   const img = /<img\b[^>]*\bsrc="([^"]*)"[^>]*\bstyle="([^"]*)"/.exec(html) || /<img\b[^>]*\bstyle="([^"]*)"[^>]*\bsrc="([^"]*)"/.exec(html);
   const src = img ? (/\bsrc="([^"]*)"/.exec(img[0]) || [])[1] : '';
   const imgStyle = img ? (/\bstyle="([^"]*)"/.exec(img[0]) || [])[1] : '';
-  const prop = (st, k) => ((new RegExp('(?:^|;)\\s*' + k.replace(/[-]/g, '\\-') + '\\s*:\\s*([^;]*)').exec(st) || [])[1] || '').trim();
+  const prop = (st, k) => ((new RegExp('(?:^|;)\\s*' + reEsc(k) + '\\s*:\\s*([^;]*)').exec(st) || [])[1] || '').trim();
   return { cls: m[1], style: m[2], src: src || '', imgStyle: imgStyle || '', bg: prop(m[2], 'background'), pad: prop(m[2], 'padding'), ring: /--orb-ring/.test(m[2]) };
 };
 // A RING: a round badge set inside a box larger than itself, the box painting a disc of its own colour

@@ -53,6 +53,8 @@ const FC = path.join(ROOT, 'fids-current');
 const JS = path.join(FC, 'js');
 const FX = path.join(__dirname, 'fixtures');
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// a string read as itself inside a pattern: every character a pattern gives a meaning to, backslash included
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ── the whole board script in a page of its own (as tests/airline-names-every-row.test.js) ──
 function board() {
@@ -218,7 +220,7 @@ test('a file of ours that does not load: asked once more, then the monogram or t
     const img = image({ src, 'data-code': code, alt: 'Some Airline' });
     the('logoFallback')(img);
     assert.equal(img.set.length, 1, code + ': one more try');
-    assert.match(img.set[0], new RegExp('^' + src.replace(/[.\/-]/g, '\\$&') + '\\?r=\\d+$'), code + ': the same file, past the cache');
+    assert.match(img.set[0], new RegExp('^' + reEsc(src) + '\\?r=\\d+$'), code + ': the same file, past the cache');
     assert.equal(img.became, undefined);
     the('logoFallback')(img);
     assert.equal(img.set.length, 1, code + ': no third address');
@@ -390,8 +392,18 @@ const NOT_LOGO_HOSTS = {
 };
 // the hosts that serve any file of anybody: never let in whole
 const ANY_FILE_HOSTS = ['raw.githubusercontent.com', 'cdnjs.cloudflare.com', 'unpkg.com', 'cdn.jsdelivr.net', 'gist.githubusercontent.com'];
+// A LINE THAT LOADS A SCRIPT FROM THE HOST: a script tag on it (to the first > after <script) with a
+// src that opens on https:// and then the host and a slash, exactly as typed. The host is compared as
+// a string where the address begins, never set into a pattern, so a dot in it is a dot and nothing else.
+const SCRIPT_TAG = /<script\b[^>]*/g;
+const SCRIPT_SRC = /\bsrc\s*=\s*["']https:\/\//g;
+function loadsScriptFrom(host, line) {
+  for (const tag of line.matchAll(SCRIPT_TAG)) {
+    for (const src of tag[0].matchAll(SCRIPT_SRC)) if (tag[0].startsWith(host + '/', src.index + src[0].length)) return true;
+  }
+  return false;
+}
 // Is a host and a path, named on this line, one the list lets in? The prefix it is let in under, or ''.
-const SCRIPT_LINE = (host) => new RegExp('<script\\b[^>]*\\bsrc\\s*=\\s*["\']https:\\/\\/' + host.replace(/\./g, '\\.') + '\\/');
 // THE PATH AS THE SERVER READS IT. A prefix was matched on the path as typed, so dot segments walked
 // out of it: raw.githubusercontent.com/mwgg/Airports/master/airports.json/../../../../someone/airline-logos/
 // began with the one file let in and is another repository, unpkg.com/leaflet-arc/../other-package/
@@ -409,7 +421,7 @@ function resolvedPath(host, pathPart) {
 function letIn(host, pathPart, line) {
   if (!Object.prototype.hasOwnProperty.call(NOT_LOGO_HOSTS, host)) return null;
   const e = NOT_LOGO_HOSTS[host];
-  if (e.script && !SCRIPT_LINE(host).test(line)) return null;
+  if (e.script && !loadsScriptFrom(host, line)) return null;
   const at0 = resolvedPath(host, pathPart);
   if (at0 === null) return null;
   for (const at of e.at) {

@@ -52,6 +52,8 @@ const MANIFEST = fs.readFileSync(path.join(FC, 'logos/airline-tiles/MANIFEST.csv
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const onDisk = (u) => !!u && fs.existsSync(path.join(FC, String(u).split('?')[0]));
 const read = (u) => fs.readFileSync(path.join(FC, String(u).split('?')[0]), 'utf8');
+// a string read as itself inside a pattern: every character a pattern gives a meaning to, backslash included
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ── the whole board script in a page of its own (as tests/airline-names-every-row.test.js) ──
 function board() {
@@ -901,7 +903,7 @@ test('the monogram square of the board is the colour the phone app gives the sam
       const board = the('_monogramColour')(code), app = appSquare(code), b = colours[code];
       assert.equal(board, app, code + ': the board ' + board + ', the app ' + app);
       // and the square the rows write carries it
-      assert.match(the('_monogramTile')(code, ''), new RegExp('style="background:' + board.replace(/[()]/g, '\\$&') + ';"'), code);
+      assert.match(the('_monogramTile')(code, ''), new RegExp('style="background:' + reEsc(board) + ';"'), code);
       kinds[!b || !b.r1 ? 'none' : /^hsl/.test(app) ? 'light' : 'dark'].push(code);
     }
     // the list holds every case of the rule
@@ -1257,8 +1259,8 @@ test('Pascan under its second code draws the lettering its first code draws, whe
   const dark = CORE.slice(CORE.indexOf('var BANNER_DARK_LOGO = {'), CORE.indexOf('var BANNER_LIGHT_LOGO = {'));
   const pale = CORE.slice(CORE.indexOf('var BANNER_LIGHT_LOGO = {'), CORE.indexOf('var _lightLogo = _bannerIsLight'));
   for (const code of ['BQ', 'PSC', 'P6']) {
-    assert.match(dark, new RegExp("'" + code + "':\\s*'" + light.replace(/[.\/]/g, '\\$&') + "'"), code + ': white lettering on a dark band');
-    assert.match(pale, new RegExp("'" + code + "':\\s*'" + colour.replace(/[.\/]/g, '\\$&') + "'"), code + ': its colours on a light band');
+    assert.match(dark, new RegExp("'" + code + "':\\s*'" + reEsc(light) + "'"), code + ': white lettering on a dark band');
+    assert.match(pale, new RegExp("'" + code + "':\\s*'" + reEsc(colour) + "'"), code + ': its colours on a light band');
   }
   // the row: its own letters and its typed name, as before; never the square that letters BQ
   assert.match(the('mkLogo')('P6', ''), /^<div class="full-logo logo-monogram" data-code="P6"[^>]*>P6<\/div>$/);

@@ -15611,7 +15611,7 @@ window._GATE_CARD_PLATES = {
   'brown-waves':       { file: 'plate-brown-waves.jpg',       base: '#2E1D0A', at: ['#442C12', '#2C1C0C', '#36230D'] },
   'brown-layers':      { file: 'plate-brown-layers.jpg',      base: '#291A0D', at: ['#2A1A0D', '#1D130A', '#311E0F'] }
 };
-// The plate each carrier is given first, as the owner chose them: its own black for the four that
+// The plate each carrier is given first, as assigned: its own black for the four that
 // set their colour on black, the grey shapes for the two that set it on a grey (and Royal Jordanian,
 // whose discs are grey), the fine lines for Emirates, the browns for KLM and for Cathay, Aer Lingus
 // and EVA. Every other gate of the dark card is given the grey wave. The measure has the last word:
@@ -15867,7 +15867,7 @@ window._gateCardPlate = function (code) {
     return bestR;
   }
   // a column whose orb is a round badge (window._gateOrbBadge) is never made white: the first of the
-  // same plates its discs do not sink into (the measure of the owner, no room asked); else the plate
+  // same plates its discs do not sink into (the colour rule, no room asked); else the plate
   // it differs from most, drawn all the same
   if (window._gateOrbBadge(raw)) {
     var best = '', bestE = -1;
@@ -15920,7 +15920,7 @@ window._gateCardPaint = function (code) {
 // the card of the carrier of the moved flight, the metal plate in its colour (window._gateSoloCard).
 // Its orb is the carrier of the moved flight, another carrier as often as not, and it is judged as
 // it lands (window._gateNoticeLands: the file that draws, the rules of the gate that reach it) by
-// the rule of the owner (window._gateNoticeBreaks): a disc never the colour of what is behind it
+// the colour rule (window._gateNoticeBreaks): a disc never the colour of what is behind it
 // (CIEDE2000 under 20, or the same hue within 60 degrees where both have colour), a red, an orange
 // or a gold never on a brown, a mark never the colour of its disc; and on a card that is one of the
 // dark plates, a disc that stands clear of it with room (its darkest paint included), as the rail
@@ -15940,7 +15940,7 @@ window._gateCardPaint = function (code) {
 // own carrier that broke nothing and wears the look of its column).
 window._GATE_NOTICE_PLATES = ['black-faint-waves', 'grey-wave', 'black-fine-lines'];
 // A red, an orange or a gold (CIELAB hue under 100 degrees or over 330, chroma 15 or more), and a
-// brown (a dark paint of hue between 40 and 95 degrees, chroma 6.5 or more): the owner keeps the
+// brown (a dark paint of hue between 40 and 95 degrees, chroma 6.5 or more): the rule keeps the
 // first off the second.
 window._gateWarm = function (hex) {
   var A = window._orbLab(hex);
@@ -16085,7 +16085,7 @@ window._gateSoloCard = function (code) {
     if (hi > 1) o = o.map(function (x) { return L + (x - L) * (1 - L) / (hi - L); });
     return o;
   };
-  var at = window._GATE_SOLO_METAL.map(function (l) {
+  var at = (window._GATE_SOLO_METAL).map(function (l) {
     return '#' + setLum(mix, l).map(function (x) { var h = Math.max(0, Math.min(255, Math.round(x * 255))).toString(16).toUpperCase(); return h.length < 2 ? '0' + h : h; }).join('');
   });
   return { carrier: c, kind: 'metal', file: 'gate-metal-blue.png', accent: a, paint: at[1], at: at };
@@ -16311,7 +16311,7 @@ window._gateNoticeLook = function (gateCode, movedCode, solo) {
   if (!card || !L0) return out;
   // NO CIRCLE INSIDE A CIRCLE. A carrier whose white orb would carry a round badge inside its ring
   // (window._gateOrbBadge) is never drawn white: where the look below would go white, that badge fills
-  // the orb instead and the card or a plate gives it its contrast, by the measure of the owner alone,
+  // the orb instead and the card or a plate gives it its contrast, by the colour rule alone,
   // with no room asked (badgeChain). A round badge the notice draws as its own mark fills its orb
   // always, held against the rules of the gate (_gateChangeOrbHtml).
   var isBadge = !!window._gateOrbBadge(c);
@@ -16925,7 +16925,7 @@ window._gateColumnRingWhite = function (code, at, dark) {
   if (dark) return !list.every(function (p) { return window._gateDiscClear(D.disc, p, D.ink); });
   return sinksAt(D.disc);
 };
-// Does a ring stand clear of every paint given: the measure of the owner (the sink, and no red, orange
+// Does a ring stand clear of every paint given: the colour rule (the sink, and no red, orange
 // or gold on a brown).
 window._gateRingClear = function (ring, at) {
   if (!ring) return true;
@@ -16948,7 +16948,7 @@ window._gateOrbSeeThrough = function (src) {
 // round badge is never drawn so. It fills its orb edge to edge, no padding, no disc behind it, no white
 // ring, and the contrast comes from the card or the plate behind the orb: where its outer colour would
 // sink into the card it sits on, the gate, the notice or the panel takes a card it stands clear of
-// (the measure of the owner, CIEDE2000 20 and the rule of the hue, and no red, orange or gold on a
+// (the colour rule, CIEDE2000 20 and the rule of the hue, and no red, orange or gold on a
 // brown; the extra room asked of a disc on a dark plate is not asked of a round badge: that request is
 // what sent them to white discs). Where none will do, it is drawn filling its orb all the same, on the
 // card it differs from most (an open item, by name, in the record of the change).

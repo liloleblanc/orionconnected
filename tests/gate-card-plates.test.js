@@ -7,7 +7,7 @@
 // dark card and keeps its discs (window._gateCardDark). The dark card was the
 // house charcoal under an engraving screened over it; it is drawn now on one of
 // six calm stock patterns in grey, black and brown (Vecteezy, Pro licence, no
-// attribution required), chosen by the owner carrier by carrier, with the
+// attribution required), assigned carrier by carrier, with the
 // measure having the last word (window._gateCardPlate). This holds:
 //   1. the files: on disk in the folder the site is served from, the files the
 //      numbers below were measured on, and named exactly where the docs say
@@ -35,6 +35,8 @@ const JS = path.join(FC, 'js');
 const CORE = fs.readFileSync(path.join(JS, 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(FC, 'css/display-overrides.css'), 'utf8');
 const DOC = fs.readFileSync(path.join(ROOT, 'docs/operations/vecteezy-stock.md'), 'utf8');
+// a string read as itself inside a pattern: every character a pattern gives a meaning to, backslash included
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 // ── the whole board script, with the colour file it loads first ──────────────
@@ -157,7 +159,7 @@ test('the plate files: on disk where the site is served from, the files that wer
     assert.equal(rules, 1, p.file + ' in the stylesheet');
     // one rule per plate, read by the gate (the body names the plate) and by the gate change notice
     // (the notice names its own plate, where its orb would sink into the plate of the gate)
-    assert.match(CSS, new RegExp('html body\\[data-gate-airline\\]\\[data-gate-card="' + name + '"\\](?::not\\(#_\\)){12},\\nhtml body(?::not\\(#_\\)){255}(?::not\\(\\._\\)){6} \\.g8-wrap \\.gl-gc\\[data-gc-plate="' + name + '"\\] \\{\\n  --plate-tex: url\\(\'/textures/' + p.file.replace(/\./g, '\\.') + '\\?v=24155\'\\);\\n  --plate-base: ' + p.base + ';\\n  --plate-blend: normal;'), name);
+    assert.match(CSS, new RegExp('html body\\[data-gate-airline\\]\\[data-gate-card="' + name + '"\\](?::not\\(#_\\)){12},\\nhtml body(?::not\\(#_\\)){255}(?::not\\(\\._\\)){6} \\.g8-wrap \\.gl-gc\\[data-gc-plate="' + name + '"\\] \\{\\n  --plate-tex: url\\(\'/textures/' + reEsc(p.file) + '\\?v=24155\'\\);\\n  --plate-base: ' + p.base + ';\\n  --plate-blend: normal;'), name);
   }
   const code = ['js', 'css'].flatMap((d) => fs.readdirSync(path.join(FC, d)).map((f) => fs.readFileSync(path.join(FC, d, f), 'utf8')))
     .concat(fs.readdirSync(FC).filter((f) => /\.html$/.test(f)).map((f) => fs.readFileSync(path.join(FC, f), 'utf8'))).join('\n');
@@ -300,10 +302,10 @@ test('each plate: the paints its discs meet are the paints measured, and every d
   // the dark card is the gates it was before the plates (93 of the codes the name tables know), and the
   // round badges that sat inside a white ring
   assert.ok(dark.length >= 113 && dark.length <= 128, dark.length + ' gates of the dark card');
-  // every plate given is used, and the two the owner set first for most gates carry most of them
+  // every plate given is used, and the two set first for most gates carry most of them
   assert.deepEqual(Object.keys(by).sort(), [...Object.keys(PLATES)].sort());
   assert.ok(by['grey-wave'].length >= 40 && by['black-faint-waves'].length >= 30, JSON.stringify(Object.fromEntries(Object.entries(by).map(([k, v]) => [k, v.length]))));
-  // the carriers the owner named, on the plate they were given, but for Royal Jordanian (its grey discs
+  // the carriers named, on the plate they were given, but for Royal Jordanian (its grey discs
   // sink into the grey shapes, and are under twice as bright as the grey wave)
   for (const [c, plate] of Object.entries(W._GATE_CARD_PLATE_OF)) {
     assert.equal(W._gateCardPaint(c).plate, c === 'RJ' ? 'black-faint-waves' : plate, c);
@@ -375,7 +377,7 @@ test('the gates left as drawn and the white columns show with the plates exactly
 // is what lands: every file the markup names is resolved against fids-current, and where one is missing
 // the handler of a missing file is applied (window._orbArtFailed: the row tile, filling the disc in its own
 // ground, else the letters on the disc); the rules of the gate that reach the orb are applied unless the
-// orb holds its own look. A pair that keeps the rule of the owner there (no disc the colour of the card, no
+// orb holds its own look. A pair that keeps the colour rule there (no disc the colour of the card, no
 // red, orange or gold on a brown, no mark the colour of its disc) is written exactly as it always was: no
 // plate of its own, no held or white orb. A notice of its own carrier on a gate approved as drawn never
 // changes. Every other pair is moved by the least change that keeps the rule: its own look held, else a

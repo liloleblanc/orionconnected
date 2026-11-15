@@ -1036,7 +1036,7 @@ test('a placeholder tile, a flat square with a code set as text, is drawn only f
   for (const fn of ['window._holdArtFailed = function', 'window._orbArtFailed = function']) assert.match(block(fn), /window\._orbTileLettersOther\(/, fn);
 });
 
-test('the gate change notice, every carrier: a mark or letters in white only on a disc where white reads at 3 to 1, but the WestJet leaf (white on its teal at 2.64, the look the owner approved on its gate kept as drawn)', () => {
+test('the gate change notice, every carrier: a mark or letters in white only on a disc where white reads at 3 to 1, but the WestJet leaf (white on its teal at 2.64, the approved look of its gate, kept as drawn)', () => {
   // On a KLM gate the notice drew the bird of KLM inked white on the accent of the moved flight, the
   // light blue #00A1DE, at 2.94 to 1: under the ink rule the rail and the shelf of that gate keep. Where
   // white does not read on the disc of the notice, the notice draws the finished tile of the column
@@ -2697,7 +2697,7 @@ test('rule 6, what paints the card: the plate of the stylesheet, and the tables 
   for (const [code, tile] of [['CX', 'CPA'], ['EI', 'EIN'], ['BR', 'EVA']]) {
     const K = W._gateCardPaint(code), c = column(code), g = W._ORB_TILE_GROUNDS[tile];
     assert.equal(P[code], undefined, code);
-    // the dark card, drawn on the brown layers the owner chose for the three
+    // the dark card, drawn on the brown layers assigned to the three
     assert.deepEqual([K.kind, W._gateCardFlat(code), K.plate, K.base, K.paint], ['dark', HOUSE_DARK, 'brown-layers', PLATES['brown-layers'].base, PLATES['brown-layers'].at[0]], code);
     assert.deepEqual([c.L.white, c.emb.src, c.emb.bg, c.emb.pad, c.badge.bg, c.badge.ink], [false, '/logos/airline-tiles/' + tile + '.svg', 'transparent', '0', g, '#fff'], code + ': its own tile and its own discs');
     assert.ok(sinks(g, shadeOf(full(O.accent(code)))) && clear(g, screened(HOUSE_DARK)) && K.at.every((p) => clear(g, p)), code + ': ' + g + ' sank into the shade of itself and stands clear of the dark card');
@@ -3046,7 +3046,7 @@ test('rule 6, every code: no disc sinks into the paint behind it; the dark plate
   // THE PICTURE THAT STAYS UNDER A WHITE COLUMN: the navy of Air France, under its navy discs, which
   // stand clear of no dark. Lufthansa and Qatar stand out on theirs. KLM and Emirates, whose discs
   // sank into the blue gradient and the red wave, are on the dark card with their own discs, on the
-  // plates the owner chose for them: the light blue of KLM at 4.31 to 1 on the lightest paint of the
+  // plates assigned to them: the light blue of KLM at 4.31 to 1 on the lightest paint of the
   // brown waves, the red of Emirates at 3.03 to 1 on the lightest paint of the black fine lines
   assert.deepEqual(tally.whitePicture.sort(), ['AF']);
   for (const code of ['LH', 'QR']) assert.ok(tally.stay.includes(code) && W._gateCardPaint(code).kind === 'picture', code);
@@ -3079,7 +3079,7 @@ test('rule 6, every code: no disc sinks into the paint behind it; the dark plate
     assert.ok(tally.dark.includes(code) && chroma(own) >= SINK.chroma && chroma(K.paint) < 10, code + ': ' + own + ' was its card, a brown or a khaki; ' + K.paint + ' is, a neutral');
   }
   // Austrian, the gate that was named: its own red discs and its own tile, on the black it has on record,
-  // drawn on the black faint waves the owner chose for it
+  // drawn on the black faint waves assigned to it
   const os = column('OS'), osK = W._gateCardPaint('OS');
   assert.deepEqual([os.emb.bg, os.emb.src, os.emb.pad, os.emb.native, os.badge.bg, os.badge.ink, os.badge.codeVar], ['transparent', '/logos/airline-tiles/AUA.svg', '0', true, '#D81E05', '#fff', '']);
   assert.deepEqual([osK.kind, W._gateCardFlat('OS'), osK.plate, osK.base, osK.paint, osK.lower], ['dark', '#000000', 'black-faint-waves', '#0E0F11', '#101213', '#0C1119']);
@@ -3356,8 +3356,8 @@ test('rule 6, the dark plate: the house charcoal, the dark of an airline where i
     // a neutral, and never a hue of the discs it lies under
     assert.ok(chroma(dark) < 10 && lab(dark)[0] < 35, code + ': ' + dark + ', chroma ' + chroma(dark).toFixed(1));
     assert.ok(!(chroma(dark) >= SINK.chroma && hueGap(dark, natural) < SINK.hue), code + ': ' + dark + ' is no shade of ' + natural);
-    // it is the dark that makes that gate one of the dark card, which is drawn on the plate the owner
-    // chose for the airline: the black faint waves where its dark is a black, the grey shapes where it
+    // it is the dark that makes that gate one of the dark card, which is drawn on the plate
+    // assigned to the airline: the black faint waves where its dark is a black, the grey shapes where it
     // is a grey; white figures read on it at 4.5 to 1 or better
     const given = lab(dark)[0] < lab(HOUSE_DARK)[0] ? 'black-faint-waves' : 'grey-shapes';
     assert.deepEqual([K.kind, W._gateCardFlat(code), W._GATE_CARD_PLATE_OF[code], K.plate, K.base, L.white], ['dark', dark, given, given, PLATES[given].base, false], code);
