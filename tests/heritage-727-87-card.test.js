@@ -6,7 +6,7 @@
 // A supplied side drawing, nose left: the aeroplane of the 1980 727 card,
 // C-GAAY, now in the dual-stripe livery, Air Canada in mixed-case red titles,
 // the white rondelle on a red fin, and 425 at the top of the fin, which was
-// its fin number (the 1980 drawing reads 422). C-GAAY is photographed in this
+// its fin number (the 1980 drawing first read 422). C-GAAY is photographed in this
 // livery at Toronto on 21 May 1992, three months before it went to FedEx.
 //
 // A plain archive card, From the archive over it, with the mark of the other
@@ -160,7 +160,7 @@ test('the note keeps to the checked facts: the fin 425 it carries is right, and 
   assert.match(note, /THE SAME BOEING 727-233, C-GAAY, IN THE 1987 LIVERY/, 'the aeroplane drawn');
   assert.match(note, /425 at the top of the fin and C-GAAY under the windows aft/, 'as drawn');
   assert.match(note, /THE FIN READS 425, WHICH WAS THIS AEROPLANE: the fin number of C-GAAY, as the 1980 727 card sets out/, 'the fin is right, the sources on the 1980 card');
-  assert.match(note, /The 1980 drawing reads 422, which was C-GAAV; this one is right/, 'and the 1980 drawing is not');
+  assert.match(note, /The 1980 drawing first read 422, which was C-GAAV; it was supplied again with 425, so both drawings are right/, 'and the 1980 drawing, corrected');
   assert.match(note, /C-GAAY is photographed in this dual-stripe scheme at Toronto on 21 May 1992 \(airport-data\.com photograph 001587231\)/, 'the livery on this aeroplane');
   assert.match(note, /in the 1980 scheme at Houston on 31 October 1982 \(airport-data\.com photograph 001664983\), so it was repainted between those two dates; when is not known/, 'and when it was repainted, as far as it is known');
   assert.match(note, /THE LIVERY YEAR stays 1987, as on the 1987 DC-9, 767 and TriStar cards, the recorded decision/, 'the year of the livery, as the other 1987 cards have it');
@@ -169,8 +169,8 @@ test('the note keeps to the checked facts: the fin 425 it carries is right, and 
   assert.doesNotMatch(note, /\bCF-[A-Z]/, 'no CF- mark claimed');
   // the 1980 card says the same from its side
   const sib = flat(noteOf(SIBLING));
-  assert.match(sib, /THE 1987 LIVERY DRAWING OF THE SAME AEROPLANE CARRIES THE CORRECT FIN, 425/, 'the 1980 card names the fin of this drawing');
-  assert.match(sib, /This 1980 drawing still shows 422/, 'and its own');
+  assert.match(sib, /THE FIN READS 425, the fin number of C-GAAY/, 'the 1980 card has the same fin');
+  assert.match(sib, /The first drawing supplied read 422, which was C-GAAV/, 'and says its first drawing read 422');
 });
 
 // ── the words ──────────────────────────────────────────────────────────────
@@ -354,7 +354,7 @@ test('its place: last in the set, after the 1993 TriStar, with no card moved', (
   assert.equal(keys[1], 'air-canada-747-305-80', 'the 1980 747 is still the first Air Canada card');
   assert.equal(poolOf(keys, 'YVR')[0], 'air-canada-747-305-80', 'and the first card of the pool without Air Atlantic');
   const note = flat(NOTE);
-  assert.match(note, /LAST IN THE SET ON PURPOSE, after the 1993 TriStar/, 'the note says where');
+  assert.match(note, /LAST IN THE SET ON PURPOSE, straight after the 1993 TriStar in the list/, 'the note says where');
   assert.match(note, /the one place in the deck that keeps every rule without moving a card/, 'and why');
   assert.match(flat(noteOf('air-canada-l1011-93')), /Last in the set on purpose until 2026-11-15, and last but one since, with the 1987 727 after it/, 'and the 1993 TriStar says it is last but one now');
 });

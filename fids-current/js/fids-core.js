@@ -68986,7 +68986,7 @@ var HERITAGE_MARKS = [
     // The supplied drawing: a 727-200 in flight, nose left, AIR CANADA in red
     // capitals forward, one red cheatline through the windows and round the
     // nose with no black panel, the white rondelle with the white leaf on a
-    // red fin, 422 at the top of the fin and C-GAAY on the rear fuselage. The
+    // red fin, 425 at the top of the fin and C-GAAY on the rear fuselage. The
     // capitals DC-9, the 1980 767, the DC-8-63 and the 1980 747 wear the same
     // livery, so it carries their mark and the default heading, From the
     // archive.
@@ -69000,18 +69000,15 @@ var HERITAGE_MARKS = [
     // airport-data.com, 26 August). It is photographed in this livery at
     // Houston on 31 October 1982 (airport-data.com photograph 001664983), laid
     // out exactly as the drawing is.
-    // THE FIN READS 422, WHICH WAS NOT THIS AEROPLANE. The fin number of
-    // C-GAAY was 425: legible at the top of the fin on both photographs above,
-    // given as its fleet number by AirHistory.net (photograph 939186, read
-    // from the search index), and where the fins run in registration order
-    // (C-GAAX 424, ABPic 1549044; C-GAAZ 426, ABPic 1697357). Fin 422 was
-    // C-GAAV, c/n 21675 (PlaneLogger). The drawing is used as supplied: a new
-    // fin or a new registration is a call for its author. No caption prints
-    // either.
-    // 2026-11-15 — THE 1987 LIVERY DRAWING OF THE SAME AEROPLANE CARRIES THE
-    // CORRECT FIN, 425 (see the 1987 727 card, last in the set). This 1980
-    // drawing still shows 422; it stays as supplied, and whether to send it
-    // again with 425 is for its author.
+    // THE FIN READS 425, the fin number of C-GAAY: legible at the top of
+    // the fin on both photographs above, given as its fleet number by
+    // AirHistory.net (photograph 939186, read from the search index), and
+    // where the fins run in registration order (C-GAAX 424, ABPic 1549044;
+    // C-GAAZ 426, ABPic 1697357). The first drawing supplied read 422, which
+    // was C-GAAV, c/n 21675 (PlaneLogger); on 15 November 2026 the drawing
+    // was supplied again with 425 and without the black panel round the
+    // cockpit windows, which the red-titles scheme took away. No caption
+    // prints the fin or the registration.
     //
     // THE CAPTION NAMES THE TYPE: Boeing 727-233 · 1974–1992 · 1980 livery,
     // the shape of the 767 and DC-8-63 lines, in their words in each language.
@@ -69060,17 +69057,16 @@ var HERITAGE_MARKS = [
     // 747. No new file, no plate behind it, nothing recoloured.
     //
     // THE PICTURE is made by scripts/heritage-sky/card-cutout.py from the
-    // supplied drawing in its sharper enlarged copy (4524 x 1120, on a white
-    // page), cut out with the outline of the first copy of the same drawing
-    // (4001 x 991, already cut out), scaled to it and closed by one pixel so
-    // no pocket of page is shut inside: laid on white and the page taken off
-    // again at the depth of five pixels of the drawing. Counted by the three
-    // counts of tests/heritage-727-card.test.js, light pixels on the outline
-    // of the dark paint 8, pale pixels on the outline of the grey and dark
-    // paint 20, and pixels of the outline 40 or more brighter than the paint
-    // just inside them 6 (the first copy at the same depth: 1, 6 and 3; it
-    // was softer). Cropped to its own edges and scaled to the 2272 px of the
-    // other cards (2272 x 502), the four corners clear; the
+    // supplied drawing with fin 425 (4526 x 1122, already cut out): laid on
+    // white and the page taken off again at the depth of three pixels of the
+    // drawing, the smallest that passes all four counts of the 727 tests.
+    // Light pixels on the outline of the dark paint 77 at two and 6 at three;
+    // pale pixels on the outline of the grey and dark paint 20 and 19;
+    // pixels of the outline 40 or more brighter than the paint just inside
+    // them 9 and 7; columns whose lowest solid pixel is 12 or more brighter
+    // than the paint 3 pixels above it 13 and 5. Cropped to its own edges and
+    // scaled to the 2272 px of the other cards (2272 x 501), the four corners
+    // clear; the
     // furthest aft point is the tip of the tailplane on top of the fin.
     // Nothing of the aeroplane is repainted. The light line along the leading
     // edge of the fin is drawn, and stays at any depth.
@@ -69433,7 +69429,8 @@ var HERITAGE_MARKS = [
     // THE FIN READS 425, WHICH WAS THIS AEROPLANE: the fin number of C-GAAY,
     // as the 1980 727 card sets out (legible on both dated photographs there,
     // the fleet number AirHistory.net gives, and the run C-GAAX 424, C-GAAZ
-    // 426). The 1980 drawing reads 422, which was C-GAAV; this one is right.
+    // 426). The 1980 drawing first read 422, which was C-GAAV; it was
+    // supplied again with 425, so both drawings are right.
     // No caption prints the fin or the registration.
     //
     // THE LIVERY ON THIS AEROPLANE, CHECKED: C-GAAY is photographed in this
@@ -69494,9 +69491,8 @@ var HERITAGE_MARKS = [
     // tailplane, against 10.33 on the 1980 727 picture: two drawings of one
     // aeroplane, 3.6% apart, each used as drawn, the supplied art.
     //
-    // LAST IN THE SET ON PURPOSE, after the 1993 TriStar (the Dream livery
-    // 787 of United sits between them in the list, but names its gates and is
-    // in neither pool): the one place in the deck that keeps every rule
+    // LAST IN THE SET ON PURPOSE, straight after the 1993 TriStar in the
+    // list: the one place in the deck that keeps every rule
     // without moving a card. With it the Atlantic pool (Air Atlantic and Air
     // Nova in it) is nineteen cards, nine widebodies with the Canadian
     // Airlines DC-10 counted and ten narrowbodies, and still no two

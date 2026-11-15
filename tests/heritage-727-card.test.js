@@ -5,11 +5,11 @@
 //
 // A supplied side drawing, nose left: AIR CANADA in red capitals, one red
 // cheatline through the windows and round the nose, the white rondelle on a
-// red fin, C-GAAY on the rear fuselage and 422 at the top of the fin. C-GAAY
+// red fin, C-GAAY on the rear fuselage and 425 at the top of the fin. C-GAAY
 // was a 727-233 (c/n 22037), delivered to Air Canada on 10 April 1980 and
-// gone to FedEx in August 1992. Its fin number was 425, not 422 (422 was
-// C-GAAV): the record says so and the drawing is used as supplied, since the
-// card prints neither the registration nor the fin.
+// gone to FedEx in August 1992. Its fin number was 425: the first drawing
+// read 422 (C-GAAV), and the drawing was supplied again with 425. The card
+// prints neither the registration nor the fin.
 //
 // A plain archive card, From the archive over it, with the mark of the other
 // 1980 cards and the line of the 767 and the DC-8-63: the type spelled out,
@@ -158,11 +158,12 @@ test('the note keeps to the checked facts and says where each one comes from', (
   assert.match(note, /delivered on 10 April 1980 \(ABPic, airport-data\.com and PlaneLogger; one AirHistory\.net caption has 20 April\)/, 'the delivery, and the one source that differs');
   assert.match(note, /went to FedEx as N272FE in August 1992/, 'and when it left');
   assert.match(note, /Houston on 31 October 1982 \(airport-data\.com photograph 001664983\)/, 'photographed in this livery');
-  // the fin on the drawing is not this aeroplane, and the drawing is left as it is
-  assert.match(note, /THE FIN READS 422, WHICH WAS NOT THIS AEROPLANE\. The fin number of C-GAAY was 425/, 'the fin number said plainly');
-  assert.match(note, /Fin 422 was C-GAAV, c\/n 21675 \(PlaneLogger\)/, 'and whose it was');
-  assert.match(note, /The drawing is used as supplied/, 'the art is not changed');
-  assert.match(note, /2026-11-15 — THE 1987 LIVERY DRAWING OF THE SAME AEROPLANE CARRIES THE CORRECT FIN, 425 \(see the 1987 727 card, last in the set\)\. This 1980 drawing still shows 422/, 'and the 1987 drawing has it right');
+  // the fin on the drawing is the fin of this aeroplane (the first drawing read 422, C-GAAV)
+  assert.match(note, /THE FIN READS 425, the fin number of C-GAAY/, 'the fin number said plainly');
+  assert.match(note, /The first drawing supplied read 422, which\s+was C-GAAV, c\/n 21675 \(PlaneLogger\)/, 'and the first drawing, and whose fin that was');
+  assert.match(note, /supplied again with 425 and without the black panel round the\s+cockpit windows/, 'the drawing as supplied again');
+  assert.match(note, /425 at the top of the fin and C-GAAY on the rear fuselage/, 'the drawing described as it is');
+  assert.doesNotMatch(note, /still shows 422/, 'no stale fin note');
   // the years, both ends sourced, and the one aeroplane after the fleet
   assert.match(note, /C-GAAA, fin 401, was delivered on 25 September 1974 \(PlaneLogger\)/, 'the first');
   assert.match(note, /21 November 1992 as the last day of flying/, 'the last day of the fleet');
@@ -504,7 +505,7 @@ test('its picture: a cut-out at the working width, clear all round, no page left
   assert.ok(fs.existsSync(file), PICTURE + ' is on disk');
   const img = rgbaOf(file), { w, h, px } = img;
   assert.equal(w, 2272, 'scaled to the 2272 px of the other card pictures');
-  assert.equal(h, 502, 'at the proportions of the drawing (4524 x 1120, cropped to its edges): 2272 x 502');
+  assert.equal(h, 501, 'at the proportions of the drawing (4526 x 1122, cropped to its edges): 2272 x 501');
   const A = (x, y) => px[(y * w + x) * 4 + 3];
   for (const [x, y] of [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]]) assert.equal(A(x, y), 0, 'the corner at ' + x + ',' + y + ' is clear');
   const touches = { left: false, right: false, top: false, bottom: false };
@@ -524,13 +525,12 @@ test('its picture: a cut-out at the working width, clear all round, no page left
   assert.ok(pale <= 40, 'pale pixels on the outline of the grey and dark paint: ' + pale);
   assert.ok(bright <= 20, 'the page is still in the outline: ' + bright + ' outline pixels much brighter than the paint inside them (111 at four deep)');
   const note = flat(NOTE);
-  assert.match(note, /sharper enlarged copy \(4524 x 1120, on a white page\)/, 'the note names the drawing it is made from');
-  assert.match(note, /outline of the first copy of the same drawing \(4001 x 991, already cut out\)/, 'and the outline it is cut with');
-  assert.match(note, /at the depth of five pixels of the drawing/, 'and the depth');
-  assert.match(note, /of the dark paint 8, pale pixels on the outline of the grey and dark\s+paint 20, and pixels of the outline 40 or more brighter than the paint\s+just inside them 6/, 'and the three counts');
-  assert.match(note, /\(2272 x 502\)/, 'and the size it comes out at');
+  assert.match(note, /supplied drawing with fin 425 \(4526 x 1122, already cut out\)/, 'the note names the drawing it is made from');
+  assert.match(note, /at the depth of three pixels of the\s+drawing, the smallest that passes all four counts/, 'and the depth');
+  assert.match(note, /dark paint 77 at two and 6 at three/, 'and the first count');
+  assert.match(note, /\(2272 x 501\)/, 'and the size it comes out at');
   const readme = fs.readFileSync(path.join(ROOT, 'scripts', 'heritage-sky', 'README.md'), 'utf8');
-  assert.match(readme, /card-cutout\.py 1727AC-image2\.png fids-current\/aircraft\/heritage\/air-canada-727-ac80\.png 2272 10 5\n/, 'the README gives the command, depth and all');
+  assert.match(readme, /card-cutout\.py 727AC80\.png fids-current\/aircraft\/heritage\/air-canada-727-ac80\.png 2272 10 3\n/, 'the README gives the command, depth and all');
   // NOSE LEFT, as every picture of the set: the fin, the tallest part, is at the right-hand end
   let top = 0; while (top < h && ![...Array(w).keys()].some((x) => A(x, top) >= 128)) top++;
   const finX = [...Array(w).keys()].filter((x) => A(x, top) >= 128);

@@ -256,18 +256,15 @@ at 2272 x 602:
 
     python3 scripts/heritage-sky/card-cutout.py 747-305-1993.png fids-current/aircraft/heritage/air-canada-747-305-ac93.png 2272 10 4
 
-The Boeing 727-233 in the 1980 livery is made from the sharper enlarged copy
-of the drawing (4524 x 1120), which came on a white page. Cutting white off a
-white aeroplane eats its edges, so the copy is cut with the outline of the
-first copy of the same drawing (4001 x 991, already cut out): its alpha scaled
-to the enlarged copy (bilinear) and closed by one pixel (a 3 x 3 max then min
-filter), so no pocket of page is shut inside, saved as 1727AC-image2.png. Then
-the tool at a depth of five. The three counts of
-`tests/heritage-727-card.test.js` are 8, 20 and 6 (all far under their
-limits). It faces nose left, as every drawing of the set, so nothing is
-mirrored. It comes out at 2272 x 502:
+The Boeing 727-233 in the 1980 livery is made from the drawing supplied again
+with fin 425 (4526 x 1122, already cut out), at a depth of three, the smallest
+where all four counts of the 727 tests pass: light pixels on the outline of the
+dark paint 77 at two and 6 at three, pale pixels 20 and 19, outline pixels 40 or
+more brighter than the paint inside them 9 and 7, and belly columns 12 or more
+brighter than the paint 3 pixels above 13 and 5. It faces nose left, as every
+drawing of the set, so nothing is mirrored. It comes out at 2272 x 501:
 
-    python3 scripts/heritage-sky/card-cutout.py 1727AC-image2.png fids-current/aircraft/heritage/air-canada-727-ac80.png 2272 10 5
+    python3 scripts/heritage-sky/card-cutout.py 727AC80.png fids-current/aircraft/heritage/air-canada-727-ac80.png 2272 10 3
 
 The same 727-233 in the 1987 livery (C-GAAY again, with its own fin number,
 425) came already cut out (4001 x 961), so the tool runs on it as supplied, at
