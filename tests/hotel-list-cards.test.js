@@ -370,14 +370,28 @@ test('the deck: the slide sits after the Accor pages, takes nothing away, and is
   assert.match(CORE, /slide\.type === 'hotellist' && typeof HotelListCard !== 'undefined' && typeof HotelListCard\.media === 'function'/);
 });
 
+// The text without its notes, cut out by position (no pattern): from each opening mark to its
+// closing mark (a line note keeps its end of line).
+function cut(src, open, close) {
+  let out = '', i = 0;
+  for (;;) {
+    const a = src.indexOf(open, i);
+    if (a < 0) return out + src.slice(i);
+    out += src.slice(i, a);
+    const b = src.indexOf(close, a + open.length);
+    if (b < 0) return out;
+    i = close === '\n' ? b : b + close.length;
+  }
+}
+
 test('the Accor pages and the Algonquin page are not touched', () => {
   // the module and its stylesheet keep to their own slide: no Accor cache, no Accor function,
   // nothing of the Algonquin page, and every rule scoped to .hlc
   // (the deck's own count of its passes, _gateAccorPass, is read for the rotation and nothing else)
-  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/_gateAccorPass/g, '');
+  const code = cut(cut(SRC, '/*', '*/'), '//', '\n').split('_gateAccorPass').join('');
   assert.doesNotMatch(code, /accor|AlgonquinCard|axr-(?!pages?\b|page-on\b)/i);
   assert.match(SRC, /root\._gateAccorPass\) \|\| 0/);
-  const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@font-face\{[^}]*\}/g, '');
+  const rules = cut(CSS, '/*', '*/').replace(/@font-face\{[^}]*\}/g, '');
   for (const m of rules.matchAll(/([^{}]+)\{[^{}]*\}/g)) {
     for (const sel of m[1].split(',').map((x) => x.trim()).filter(Boolean)) assert.match(sel, /^\.hlc\b/, 'scoped: ' + sel);
   }
