@@ -307,7 +307,7 @@
     var head = linesOf(L, function (lg) { return BS.bs(HEAD[c.area], lg); }, HEAD[c.area]);
     var where = pairOf(L, function (lg) { return cityName(city, lg); });
     var scan = pairOf(L, function (lg) { return BS.bs('hotelListScan', lg); }, 'hotelListScan');
-    var legend = mark ? '<span class="hlc-legend">' + ico('shuttle', 'hlc-mark') + '<span class="hlc-fit">'
+    var legend = mark ? '<span class="hlc-legend hlc-pairfit">' + ico('shuttle', 'hlc-mark') + '<span class="hlc-fit">'
       + pairOf(L, function (lg) { return BS.bs('hotelShuttle', lg); }, 'hotelShuttle') + '</span></span>' : '';
     var credit = osm ? '<span class="hlc-credit hlc-pairfit"><span class="hlc-fit">' + pairOf(L, function (lg) { return BS.bs('credOsmLine', lg); }, 'credOsmLine') + '</span></span>' : '';
     var marks = (Array.isArray(doc.foot_marks) ? doc.foot_marks : []).map(function (m) {
@@ -399,8 +399,19 @@
       var again = function () { try { if (art.isConnected) { fit(el); codes(el); } } catch (e) {} };
       if (root.document && root.document.fonts && root.document.fonts.load) {
         try {
-          Promise.all([root.document.fonts.load('600 30px "HL Playfair Display"'), root.document.fonts.load('500 20px "HL Montserrat"')]).then(again, again);
+          Promise.all([root.document.fonts.load('600 30px "HL Playfair Display"'), root.document.fonts.load('500 20px "HL Montserrat"'),
+            root.document.fonts.load('600 20px "HL Montserrat"')]).then(again, again);
         } catch (e1) {}
+        // any face that arrives later (another weight, a script face) changes the widths the
+        // fitter measured: fit again then, until the card leaves the page
+        try {
+          var fontsDone = function () {
+            if (!art.isConnected) { try { root.document.fonts.removeEventListener('loadingdone', fontsDone); } catch (e4) {} return; }
+            again();
+          };
+          if (root.document.fonts.addEventListener) root.document.fonts.addEventListener('loadingdone', fontsDone);
+          if (root.document.fonts.ready && root.document.fonts.ready.then) root.document.fonts.ready.then(again, again);
+        } catch (e2) {}
       }
       if (typeof root.ResizeObserver === 'function') {
         var t = 0;

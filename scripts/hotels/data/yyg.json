@@ -1223,8 +1223,8 @@
    },
    "logo": null,
    "logo_missing": "White-lettering file only: nothing reads on the cream column.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Motel-like (the motel rule keeps motels off the cards): decided 16 November 2026.",
    "verified": {
     "name": {
      "verified": true,

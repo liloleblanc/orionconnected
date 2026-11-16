@@ -169,15 +169,12 @@
   }
  ],
  "unverified": [
-  "Wild Rose Inn shuttle: real (own site) but only with the Stay, Park & Fly package; open decision whether that earns the mark (card_mark false for now).",
   "Brand pages refuse automated readers (Marriott, Hilton, IHG, Hyatt, Choice, Best Western all answered 403 on 2026-11-16): those 15 hotels rest on the destination listing, the airport page and OpenStreetMap, and their website URLs are taken from the listing, not opened.",
   "Postal codes on one source only (destination listing): Holiday Inn Express & Suites Dieppe Airport E1A 7E6, Fairfield Inn & Suites Moncton E1A 7S4, Hilton Garden Inn E1C 5N2. Postal codes are not shown on the cards.",
   "Best Western Plus Moncton website: property code 64007 comes from a search index; the listing only links the bestwestern.com home page.",
   "Hôtel Shediac: the only number on its site is the toll-free (855) 836-6100; OpenStreetMap has a local (506) 532-6100. It states no winter closure; Shediac is a summer town, so a call would settle the season.",
   "Season: only Wild Rose Inn and The Algonquin state \"year round\" on their own sites; every other entry is a year-round city hotel with no closure stated (season.verified false, closed_now false).",
-  "Downtown by the straight-line rule but not in the downtown core: Best Western Plus (1.8 km), Coastal Inn and Comfort Inn East (1.9 km) sit by Champlain Place / Lewisville Road. Open decision: Nearby may suit them better.",
   "Area borderline: Wingate Dieppe is 5.4 km from the airport point and 2.6 km from the centre: Airport under the 10 % tolerance.",
-  "Kept but motel-like: Coastal Inn Moncton/Dieppe (OpenStreetMap tags it motel; the chain calls it a hotel) and Thriftlodge by Wyndham (economy brand, former Howard Johnson): either may be dropped under the motel rule.",
   "Casino New Brunswick: whether a casino hotel belongs on a guest-information card is an open decision; it is included for now.",
   "St. James’ Gate phone: its own site labels (506) 388-4283 as the restaurant line (extension 1). Kept on the card (verified false) until the number to call for a room is confirmed.",
   "Logos: the logo field of each hotel (logos/hotels/list/sources.json)."
@@ -523,7 +520,7 @@
     "note": "Own site: \"Open year round\"; also \"24-hour front desk service\"."
    },
    "shuttle": {
-    "mark": false,
+    "mark": true,
     "offered": true,
     "verified": true,
     "terms": "Included in the Stay, Park & Fly package (\"To and from airport shuttle (subject to flights departure and arrival time)\"); parking-only customers pay $15 one way.",
@@ -531,7 +528,7 @@
     "also": [
      "https://wildroseinn.com/"
     ],
-    "evidence": "Own site, read 2026-11-16. The shuttle is tied to the package, not offered to every guest: card_mark stays false until it is decided whether a package-only shuttle earns the mark.",
+    "evidence": "Own site, read 2026-11-16. The shuttle is tied to the package, not offered to every guest: card_mark stays false until it is decided whether a package-only shuttle earns the mark. Marked on 16 November 2026: the legend now reads 'contact the hotel', which covers a shuttle that comes with a package.",
     "checked": "2026-11-16"
    },
    "logo": {
@@ -1767,8 +1764,8 @@
     "origin": "official site: coastalinns.com"
    },
    "logo_missing": null,
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Motel-like (the motel rule keeps motels off the cards): decided 16 November 2026.",
    "verified": {
     "name": {
      "verified": true,
@@ -1965,8 +1962,8 @@
    },
    "logo": null,
    "logo_missing": "No official logo exists.",
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "Motel-like (the motel rule keeps motels off the cards): decided 16 November 2026.",
    "verified": {
     "name": {
      "verified": true,
