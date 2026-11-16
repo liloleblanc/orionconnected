@@ -61,6 +61,8 @@ the day at the airport each time the deck is built, so a seasonal hotel comes ba
 chain's site or brand page, the tourism body, or Wikimedia Commons; never a logo-download site),
 with its licence note. Files are unaltered. Where a file has a wide transparent margin, the card
 shows it through `object-view-box` (`logo.trim` in the data, measured from the file's own ink);
+a stacked lockup whose words are small at the common logo height (the Algonquin, Delta Hotels,
+Fairholm) may take the whole cell of the column (`logo.fill`);
 a JPEG or a file with its own white plate is multiplied into the cream so the box does not show.
 Five files are reused from the repository as they were (the same bytes the check saw), listed
 under `already_in_repo`. Every logo is drawn through `<img>`, never inlined.

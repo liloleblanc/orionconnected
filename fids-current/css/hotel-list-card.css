@@ -107,6 +107,9 @@
 .hlc-logo{ flex:0 0 var(--hlc-col); align-self:stretch; display:flex; align-items:center; justify-content:center;
   padding:calc(10 * var(--hlc-px)) calc(18 * var(--hlc-px)); }
 .hlc-img{ display:block; max-width:100%; max-height:calc(62 * var(--hlc-px)); width:auto; height:auto; object-fit:contain; }
+/* a stacked lockup whose words are small at that height (logo.fill in the data: the Algonquin,
+   Delta Hotels, Fairholm): the whole cell, the width of the column and the height of the line */
+.hlc-img--fill{ max-height:100%; }
 /* a file with its own light ground (a JPEG): multiplied into the cream so no box shows round it */
 .hlc-img--opaque{ mix-blend-mode:multiply; }
 .hlc-text{ flex:1 1 auto; min-width:0; padding:0 var(--hlc-pad) 0 calc(24 * var(--hlc-px)); display:flex; flex-direction:column; gap:calc(5 * var(--hlc-px)); }

@@ -276,8 +276,9 @@
     // trim: the file's own transparent margin, cut by the view of the image (object-view-box), so
     // a mark drawn small on a big canvas fills its place; the file is shown as it is
     var trim = /^inset\([\d.% ]+\)$/.test(String(h.logo.trim || '')) ? ' style="object-view-box:' + h.logo.trim + '"' : '';
-    return '<span class="hlc-logo"><img class="hlc-img' + (h.logo.opaque ? ' hlc-img--opaque' : '') + '" alt="" decoding="async"' + trim + ' src="'
-      + esc(lg) + '"></span>';
+    // fill: a stacked lockup whose words are small at the common height takes the whole cell
+    return '<span class="hlc-logo"><img class="hlc-img' + (h.logo.opaque ? ' hlc-img--opaque' : '') + (h.logo.fill === true ? ' hlc-img--fill' : '')
+      + '" alt="" decoding="async"' + trim + ' src="' + esc(lg) + '"></span>';
   }
   function line(h, L, city, BS) {
     var info = '<bdi class="hlc-addr">' + esc(h.address && h.address.display) + '</bdi>'

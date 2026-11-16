@@ -499,6 +499,7 @@
   .hl-logo{flex:0 0 86px;display:flex;align-items:center;justify-content:center;padding:10px 9px;}
   .hl-logo img{display:block;max-width:100%;max-height:46px;width:auto;height:auto;object-fit:contain;}
   .hl-logo img.op{mix-blend-mode:multiply;}
+  .hl-logo img.fill{max-height:72px;}
   .hl-txt{flex:1 1 auto;min-width:0;padding:12px 12px 12px 13px;color:var(--txt);}
   .hl-name{display:flex;align-items:baseline;gap:6px;font-family:'HL Playfair Display',Georgia,'Times New Roman',serif;font-size:17.5px;font-weight:600;line-height:1.25;}
   .hl-name .hl-ico{color:#b8862f;width:18px;height:18px;flex:none;align-self:center;}
@@ -2507,7 +2508,8 @@ function renderHotels(){
       const lg=h.logo&&h.logo.file;
       const trim=lg&&/^inset\([\d.% ]+\)$/.test(String(h.logo.trim||''))?' style="object-view-box:'+h.logo.trim+'"':'';
       const tel=hlTel(h.phone),web=hlWeb(h.website);
-      html+='<li class="hl-row"><span class="hl-logo">'+(lg?'<img'+(h.logo.opaque?' class="op"':'')+' alt="" loading="lazy" decoding="async"'+trim+' src="'+esc(lg)+'">':'')+'</span>'
+      const lc=((h.logo&&h.logo.opaque)?' op':'')+((h.logo&&h.logo.fill===true)?' fill':'');
+      html+='<li class="hl-row"><span class="hl-logo">'+(lg?'<img'+(lc?' class="'+lc.slice(1)+'"':'')+' alt="" loading="lazy" decoding="async"'+trim+' src="'+esc(lg)+'">':'')+'</span>'
         +'<div class="hl-txt"><div class="hl-name"><bdi>'+esc(h.name)+'</bdi>'+(h.shuttle&&h.shuttle.mark===true?hlIco('shuttle'):'')
         +(c.area==='resort'&&h.drive&&h.drive.km?'<span class="hl-drive">'+hlIco('car')+'<bdi dir="ltr">'+esc(String(Math.round(h.drive.km)))+' km</bdi></span>':'')+'</div>'
         +'<div class="hl-addr"><bdi>'+esc(h.address&&h.address.display)+'</bdi></div>'

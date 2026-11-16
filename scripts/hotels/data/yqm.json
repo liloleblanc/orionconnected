@@ -10,7 +10,8 @@
   "areas": "downtown = within about 2 km of the centre point; airport = within about 5 km of the airport point; resort = a destination resort (resort true) more than 30 km from both points, listed with its drive distance (no tolerance); nearby = the rest within about 30 km of either point. Each about-limit has a 10 % tolerance; downtown is tested first, then airport.",
   "listed": "listed false = held back (the reason is given). A listed hotel is shown only while its season is open (season.year_round, or a season.open range that holds the date at the airport).",
   "shuttle": "shuttle.mark true only where the shuttle is verified on the hotel's or the airport's own page.",
-  "logo": "logo.file is loaded through <img>, never inlined; opaque = the file has its own light ground (shown with a multiply blend on the cream column so the box does not show)."
+  "logo": "logo.file is loaded through <img>, never inlined; opaque = the file has its own light ground (shown with a multiply blend on the cream column so the box does not show).",
+  "logo_fill": "logo.fill true = a stacked lockup whose words are small at the common logo height (62 px at 1680x1050): it may take the whole cell of the cream column, the width of the column and the height of its line. The file is shown as it is."
  },
  "points": {
   "airport": {
@@ -743,6 +744,7 @@
    "logo": {
     "file": "/logos/hotels/list/delta-hotels.svg",
     "opaque": false,
+    "fill": true,
     "source": "https://upload.wikimedia.org/wikipedia/commons/7/72/Delta_Hotels_logo.svg",
     "origin": "Wikimedia Commons"
    },
@@ -3154,6 +3156,7 @@
    "logo": {
     "file": "/logos/hotels/marriott/the-algonquin-resort-1.svg",
     "opaque": false,
+    "fill": true,
     "source": "repo: fids-current/logos/hotels/marriott/the-algonquin-resort-1.svg",
     "origin": "already in the repository (same bytes as the checked copy)"
    },

@@ -50,6 +50,7 @@ function slimHotel(h) {
     out.logo = { file: h.logo.file };
     if (h.logo.trim) out.logo.trim = h.logo.trim;
     if (h.logo.opaque) out.logo.opaque = true;
+    if (h.logo.fill) out.logo.fill = true;
   }
   return out;
 }

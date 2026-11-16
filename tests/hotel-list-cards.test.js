@@ -254,6 +254,20 @@ test('every logo is a file loaded through <img>: no SVG of a hotel is written in
   assert.doesNotMatch(SRC, /\.svg['"]\s*\)\s*\.then/);
 });
 
+test('a stacked lockup whose words are small at the common height takes the whole cell, shown as it is', () => {
+  const filled = [];
+  for (const doc of Object.values(DOCS)) for (const h of doc.hotels) if (h.logo && h.logo.fill) filled.push(h.id);
+  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-prince-edward', 'fairholm']);
+  assert.match(CSS, /\n\.hlc-img--fill\{ max-height:100%; \}\n/);
+  const resort = views(build('YQM', ['en', 'fr'])).find((x) => x.includes('data-area="resort"'));
+  assert.match(resort, /<img class="hlc-img hlc-img--fill" alt="" decoding="async" src="\/logos\/hotels\/marriott\/the-algonquin-resort-1\.svg">/);
+  // the file itself: no filter, no blend other than the JPEG multiply, no ground of its own
+  assert.doesNotMatch(CSS, /\.hlc-img[^{]*\{[^}]*(filter|background|border|box-shadow)/);
+  // the app's list the same way, at its own size
+  assert.match(APP, /\.hl-logo img\.fill\{max-height:72px;\}/);
+  assert.match(APP, /\(\(h\.logo&&h\.logo\.fill===true\)\?' fill':''\)/);
+});
+
 test('the logo files come from official sources, each with its source on file', () => {
   const dir = path.join(SITE, 'logos/hotels/list');
   const src = JSON.parse(fs.readFileSync(path.join(dir, 'sources.json'), 'utf8'));
