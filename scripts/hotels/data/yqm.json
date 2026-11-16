@@ -424,14 +424,16 @@
     "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-16."
    },
    "shuttle": {
-    "mark": false,
-    "offered": false,
-    "verified": false,
+    "mark": true,
+    "offered": true,
+    "verified": true,
     "terms": null,
-    "source": "https://www.marriott.com/en-us/hotels/yqmfi-fairfield-inn-and-suites-moncton/overview/",
-    "also": null,
-    "evidence": "Marriott page read through a search index only (2026-11-11): no shuttle service. The airport page lists the hotel with no shuttle note.",
-    "checked": "2026-11-11"
+    "source": "local confirmation, 2026-11-16",
+    "also": [
+     "https://www.marriott.com/en-us/hotels/yqmfi-fairfield-inn-and-suites-moncton/overview/"
+    ],
+    "evidence": "Confirmed locally on 16 November 2026 that the hotel runs an airport shuttle. Earlier reading: the Marriott page, seen only through a search index on 2026-11-11, gave no shuttle service, and the airport page lists the hotel with no shuttle note.",
+    "checked": "2026-11-16"
    },
    "logo": {
     "file": "/logos/hotels/list/fairfield-by-marriott.svg",
@@ -482,8 +484,8 @@
      "source": "https://destinationmonctondieppe.ca/listing/fairfield-inn-%26-suites/179/"
     },
     "shuttle": {
-     "verified": false,
-     "source": "https://www.marriott.com/en-us/hotels/yqmfi-fairfield-inn-and-suites-moncton/overview/"
+     "verified": true,
+     "source": "local confirmation, 2026-11-16"
     }
    },
    "osm": null,
