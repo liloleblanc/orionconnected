@@ -805,7 +805,7 @@
     ["notice","ZL","letters ZL on the accent disc, after a miss","airline-tiles/RXA.svg filling the orb","named tile"],
     ["sky plate, last plate, map hold","9M","airlines/canadian/AC.TO.svg","letters 9M, after a miss","own letters"],
     ["notice","9M","airlines/canadian/AC.TO.svg, white on the accent disc","letters 9M on the accent disc","own letters"],
-    ["standby card","9M","airlines/canadian/AC.TO.svg, white","letters 9M on a #FFFFFF disc","own letters"],
+    ["standby card","9M","airlines/canadian/AC.TO.svg, white","letters 9M on a #D42E12 disc","own letters"],
     ["notice","KL","symbols/airlines/KL.svg, white on the accent disc","airline-tiles/KLM.svg filling the orb","column tile"],
     ["notice","SQ","symbols/airlines/SQ.svg, white on the accent disc","airline-tiles/SIA.svg filling the orb","column tile"],
     ["notice","XY","symbols/airlines/XY.svg, white on the accent disc","airline-tiles/KNE.svg filling the orb","column tile"],
