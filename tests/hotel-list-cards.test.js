@@ -306,6 +306,12 @@ test('the deck: the slide sits after the Accor pages, takes nothing away, and is
   assert.equal(s.indexOf('hotellist'), lastAccor + 1, 'beside the Accor pages');
   // the slot is drawn, timed and warmed through the module only
   assert.match(CORE, /slide\.type === 'hotellist'\) \{\n[^\n]*\n[^\n]*\n\s*if \(typeof HotelListCard !== 'undefined' && HotelListCard\.render\(el\)\) return;/);
+  // first in the loop that passes a slot over, so the centre cards' own branch keeps its
+  // short way to the shared skip (tests/gate-centre-cards.test.js measures it)
+  const loopAt = CORE.indexOf('var _skipN = 0;');
+  const loop = CORE.slice(loopAt, CORE.indexOf('if (_skipN >= totalSlots) return;', loopAt));
+  assert.match(loop, /^var _skipN = 0;\s*for \(; _skipN < totalSlots && slide; _skipN\+\+\) \{\s*if \(slide\.type === 'hotellist'\) \{/);
+  assert.equal((loop.match(/HotelListCard\.render\(el\)/g) || []).length, 1, 'drawn in one place');
   assert.match(CORE, /if \(slide\.type === 'hotellist'\) return \(typeof HotelListCard !== 'undefined' && HotelListCard\.dwellMs\(\)\) \|\| 44000;/);
   assert.match(CORE, /slide\.type === 'hotellist' && typeof HotelListCard !== 'undefined' && typeof HotelListCard\.media === 'function'/);
 });

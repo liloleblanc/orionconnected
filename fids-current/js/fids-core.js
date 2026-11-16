@@ -63774,16 +63774,16 @@ function renderGateAd(index) {
   // skipped itself leaves the panel as it is rather than blanking it.
   var _skipN = 0;
   for (; _skipN < totalSlots && slide; _skipN++) {
-    if (slide.type === 'algonquin') {
+    if (slide.type === 'hotellist') {
+      // 2026-11-16 — the hotel lists of the destination (js/hotel-list-card.js),
+      // which pass their slot over until the list of the city is loaded
+      if (typeof HotelListCard !== 'undefined' && HotelListCard.render(el)) return;
+    } else if (slide.type === 'algonquin') {
       // v24148 — the page of the Algonquin Resort (js/algonquin-card.js), which
       // passes its slot over when it is not due at this gate
       if (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.render(el)) return;
     } else if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) {
       if (_renderGateCard(el, slide.type, true)) return;
-    } else if (slide.type === 'hotellist') {
-      // 2026-11-16 — the hotel lists of the destination (js/hotel-list-card.js),
-      // which pass their slot over until the list of the city is loaded
-      if (typeof HotelListCard !== 'undefined' && HotelListCard.render(el)) return;
     } else if (slide.type === 'heritage') {
       if (typeof _renderHeritageCard === 'function' && _renderHeritageCard(el)) return;
     } else if (slide.type === 'wxcard') {
