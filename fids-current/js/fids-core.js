@@ -63780,6 +63780,10 @@ function renderGateAd(index) {
       if (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.render(el)) return;
     } else if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) {
       if (_renderGateCard(el, slide.type, true)) return;
+    } else if (slide.type === 'hotellist') {
+      // 2026-11-16 — the hotel lists of the destination (js/hotel-list-card.js),
+      // which pass their slot over until the list of the city is loaded
+      if (typeof HotelListCard !== 'undefined' && HotelListCard.render(el)) return;
     } else if (slide.type === 'heritage') {
       if (typeof _renderHeritageCard === 'function' && _renderHeritageCard(el)) return;
     } else if (slide.type === 'wxcard') {
@@ -64339,6 +64343,9 @@ function _getGateAdDwellMs(slide) {
   // pager, the last one held (the figure is the one of the page module; five
   // views since v24151).
   if (slide.type === 'algonquin') return (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.DWELL_MS) || 54000;
+  // 2026-11-16 — the hotel lists: one card a view at the ten seconds of the
+  // hotel pager, the last one held (the module counts the cards of the city).
+  if (slide.type === 'hotellist') return (typeof HotelListCard !== 'undefined' && HotelListCard.dwellMs()) || 44000;
   // v24012 — the centre cards: a minute each, as the weather card.
   if (_GATE_CARD_TYPES.indexOf(slide.type) >= 0) return _GATE_CARD_DWELL_MS;
   // v218.96: custom slides from the Gate Theme editor carry their own
@@ -65147,6 +65154,21 @@ function _buildGateAdSlideList() {
   try {
     if (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.due()) deck.push({ type: 'algonquin' });
   } catch (e) {}
+  // 2026-11-16 — THE HOTEL LISTS (js/hotel-list-card.js): free guest
+  // information by area for the city the flight goes to, when that city has a
+  // checked list, once a pass, beside the Accor pages (after the last one) or
+  // at the end of the deck when there are none. HotelListCard.due loads the
+  // list on its first ask and says no until it is there.
+  try {
+    if (typeof HotelListCard !== 'undefined' && HotelListCard.due()) {
+      var _hlAt = -1;
+      for (var _hlI = 0; _hlI < deck.length; _hlI++) {
+        if (deck[_hlI] && deck[_hlI].type === 'ad' && deck[_hlI].data && deck[_hlI].data.isAccorHotel) _hlAt = _hlI;
+      }
+      if (_hlAt >= 0) deck.splice(_hlAt + 1, 0, { type: 'hotellist' });
+      else deck.push({ type: 'hotellist' });
+    }
+  } catch (e) {}
   // ── 9. v24012 — THE CENTRE CARDS, before boarding only (_gateCardsModel,
   // _gateCardsDue): the overview after the map, the documents after the
   // weather, the close time last, each only while it is due. Under a sign
@@ -65244,6 +65266,10 @@ function _preloadGateAdMediaForSlide(slide) {
     // v24148 — the Algonquin page: its photograph, its card and its frame
     if (slide.type === 'algonquin' && typeof AlgonquinCard !== 'undefined' && Array.isArray(AlgonquinCard.media)) {
       AlgonquinCard.media.forEach(function (u) { jobs.push({ u: u, v: false }); });
+    }
+    // 2026-11-16 — the hotel lists: the logos of the city and the marks of the foot
+    if (slide.type === 'hotellist' && typeof HotelListCard !== 'undefined' && typeof HotelListCard.media === 'function') {
+      HotelListCard.media().forEach(function (u) { jobs.push({ u: u, v: false }); });
     }
     var d = slide.data;
     if (d) {

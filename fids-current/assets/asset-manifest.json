@@ -2,13 +2,13 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2944,
+    "total": 2979,
     "by_category": {
       "ad": 21,
       "airline": 1222,
       "background": 193,
       "brand": 5,
-      "hotel": 894,
+      "hotel": 929,
       "livery": 96,
       "misc": 178,
       "symbol": 4,
@@ -25251,6 +25251,50 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/hotels/list/amsterdam-inn.svg",
+      "file": "amsterdam-inn.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "amsterdam inn",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/arts-hotel.png",
+      "file": "arts-hotel.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "arts hotel",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/best-western-plus.png",
+      "file": "best-western-plus.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "best western plus",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/blackbush-beach-resort.jpg",
+      "file": "blackbush-beach-resort.jpg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "blackbush beach resort",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/hotels/accor-pictos/breakfast-white.svg",
       "file": "breakfast-white.svg",
       "category": "hotel",
@@ -25295,12 +25339,155 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/hotels/list/casino-new-brunswick.svg",
+      "file": "casino-new-brunswick.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "casino new brunswick",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/chateau-moncton.png",
+      "file": "chateau-moncton.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "chateau moncton",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/coastal-inns.png",
+      "file": "coastal-inns.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "coastal inns",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
       "path": "/logos/hotels/accor-pictos/coffee-white.svg",
       "file": "coffee-white.svg",
       "category": "hotel",
       "subcategory": "misc",
       "group": "Hotels — misc",
       "name": "coffee white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/crowne-plaza-grey.webp",
+      "file": "crowne-plaza-grey.webp",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "crowne plaza grey",
+      "iata": "",
+      "country": "",
+      "ext": "webp"
+    },
+    {
+      "path": "/logos/hotels/list/dalvay-by-the-sea.png",
+      "file": "dalvay-by-the-sea.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "dalvay by the sea",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/days-inn-by-wyndham.svg",
+      "file": "days-inn-by-wyndham.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "days inn by wyndham",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/delta-hotels.svg",
+      "file": "delta-hotels.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "delta hotels",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/foot/destination-moncton-dieppe-white.svg",
+      "file": "destination-moncton-dieppe-white.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "destination moncton dieppe white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/dutch-inn.png",
+      "file": "dutch-inn.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "dutch inn",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/foot/explore-nb.svg",
+      "file": "explore-nb.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "explore nb",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/fairfield-by-marriott.svg",
+      "file": "fairfield-by-marriott.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "fairfield by marriott",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/fairholm-boutique-inns.png",
+      "file": "fairholm-boutique-inns.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "fairholm boutique inns",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/four-points-by-sheraton.svg",
+      "file": "four-points-by-sheraton.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "four points by sheraton",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -25317,6 +25504,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/hotels/list/great-george.png",
+      "file": "great-george.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "great george",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/hampton-by-hilton.png",
+      "file": "hampton-by-hilton.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "hampton by hilton",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
       "path": "/logos/hotels/accor-pictos/handicap-white.svg",
       "file": "handicap-white.svg",
       "category": "hotel",
@@ -25326,6 +25535,72 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/harbour-house.png",
+      "file": "harbour-house.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "harbour house",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/hilton-garden-inn.png",
+      "file": "hilton-garden-inn.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "hilton garden inn",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/holiday-inn-express.svg",
+      "file": "holiday-inn-express.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "holiday inn express",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/holman-grand.svg",
+      "file": "holman-grand.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "holman grand",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/hotel-moncton.png",
+      "file": "hotel-moncton.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "hotel moncton",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/hotel-shediac.png",
+      "file": "hotel-shediac.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "hotel shediac",
+      "iata": "",
+      "country": "",
+      "ext": "png"
     },
     {
       "path": "/logos/hotels/accor-pictos/internet-white.svg",
@@ -25339,12 +25614,122 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/hotels/list/quality.jpg",
+      "file": "quality.jpg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "quality",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/hotels/list/rodd-charlottetown.svg",
+      "file": "rodd-charlottetown.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "rodd charlottetown",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/rodd-moncton.svg",
+      "file": "rodd-moncton.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "rodd moncton",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/rodd-royalty.svg",
+      "file": "rodd-royalty.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "rodd royalty",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/shaws-hotel.png",
+      "file": "shaws-hotel.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "shaws hotel",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
       "path": "/logos/hotels/accor-pictos/star-white.svg",
       "file": "star-white.svg",
       "category": "hotel",
       "subcategory": "misc",
       "group": "Hotels — misc",
       "name": "star white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/sydney-boutique-inn.jpg",
+      "file": "sydney-boutique-inn.jpg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "sydney boutique inn",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/hotels/list/tapestry-collection-by-hilton.png",
+      "file": "tapestry-collection-by-hilton.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "tapestry collection by hilton",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/travelodge-by-wyndham.svg",
+      "file": "travelodge-by-wyndham.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "travelodge by wyndham",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/wild-rose-inn.svg",
+      "file": "wild-rose-inn.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "wild rose inn",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/wingate-by-wyndham.svg",
+      "file": "wingate-by-wyndham.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "wingate by wyndham",
       "iata": "",
       "country": "",
       "ext": "svg"

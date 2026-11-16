@@ -1,0 +1,127 @@
+/* THE HOTEL LISTS: free guest information by area, a slot of the gate centre deck.
+   Built by js/hotel-list-card.js. Shown on a gate whose flight goes to a city with a checked list.
+
+   Each card is one .axr-page layer inside an .axr-pages wrap, so the pager of the hotel cards
+   turns them (hotel-ads.css gives the layer its place and its crossfade):
+     head   the city in small gold capitals; the heading of the card, one line for each language
+            of the board; under it the invitation of the scan code; the scan code at the right
+     list   five lines: the logo of the hotel on the CREAM COLUMN (one panel down the whole list,
+            the same cream on every card, never a box behind a single logo, so the colour logos
+            of the hotels read as their owners print them), then the name, the street address
+            and the telephone; the shuttle mark after the name of a hotel with a verified one
+     foot   the legend of the shuttle mark when the card shows one, the map credit when a drive
+            distance comes from OpenStreetMap, and the marks of the city's tourism bodies where
+            the list has them (white lettering, so only ever on the dark ground)
+
+   Look: a navy card, white names, gold rules and marks.
+   Faces, both self-hosted under the SIL Open Font License (fonts/playfair-display, fonts/montserrat),
+   under names of their own so the Accor pages, whose stacks name Montserrat, are not touched:
+     PLAYFAIR DISPLAY for the heading and the names of the hotels
+     MONTSERRAT for everything else
+   Japanese, Chinese and Arabic take the script faces of the board.
+   Sizes are written at 1680x1050 (--hlc-px is one pixel there) and follow the smaller of the
+   height and the width of the screen; nothing is under 18 px at 1680x1050. */
+
+@font-face{ font-family:'HL Playfair Display'; font-style:normal; font-weight:400 900; font-display:swap;
+  src:url('/fonts/playfair-display/PlayfairDisplay-latin.woff2') format('woff2');
+  unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:'HL Playfair Display'; font-style:normal; font-weight:400 900; font-display:swap;
+  src:url('/fonts/playfair-display/PlayfairDisplay-latin-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:'HL Montserrat'; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url('/fonts/montserrat/Montserrat-latin.woff2') format('woff2');
+  unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:'HL Montserrat'; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url('/fonts/montserrat/Montserrat-latin-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+.hlc, .hlc *{ box-sizing:border-box; }
+.hlc{
+  --hlc-px:min(0.09524vh, 0.05952vw);                 /* one pixel at 1680x1050 */
+  --hlc-serif:'HL Playfair Display', Georgia, 'Times New Roman', var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), serif;
+  --hlc-sans:'HL Montserrat', 'Helvetica Neue', Arial, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
+  --hlc-navy:#14203c;                                  /* the card */
+  --hlc-navy2:#0f1930;                                 /* the foot of the card's gradient */
+  --hlc-cream:#f5efe3;                                 /* the logo column: fixed, on every card */
+  --hlc-gold:#d2ad66;                                  /* the city, the rules, the marks */
+  --hlc-soft:#d5dae6;                                  /* the addresses */
+  --hlc-pad:calc(30 * var(--hlc-px));
+  --hlc-col:calc(184 * var(--hlc-px));                 /* the width of the cream column */
+  --hlc-qr:calc(124 * var(--hlc-px));
+  --hlc-title:calc(33 * var(--hlc-px));
+  --hlc-city:calc(19 * var(--hlc-px));
+  --hlc-say:calc(19 * var(--hlc-px));
+  --hlc-name:calc(28 * var(--hlc-px));
+  --hlc-info:calc(20 * var(--hlc-px));
+  --hlc-floor-px:calc(18 * var(--hlc-px));             /* read by the fitter: nothing smaller */
+  position:relative; width:100%; height:100%; overflow:hidden;
+  background:linear-gradient(180deg, var(--hlc-navy) 0%, var(--hlc-navy2) 100%);
+  color:#fff; font-family:var(--hlc-sans); font-weight:500; line-height:1.2;
+}
+/* The board forces its own face on every element with a rule of no weight; these rules carry
+   real weight, so the lists keep their two faces. */
+.hlc, .hlc *{ font-family:var(--hlc-sans) !important; }
+.hlc .hlc-title, .hlc .hlc-title *, .hlc .hlc-name, .hlc .hlc-name *{ font-family:var(--hlc-serif) !important; }
+.hlc .hlc-name .hlc-drive, .hlc .hlc-name .hlc-drive *{ font-family:var(--hlc-sans) !important; }
+.hlc [lang="ja"], .hlc [lang|="zh"], .hlc [lang="ar"]{ font-family:var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important;
+  font-style:normal; letter-spacing:0; text-transform:none; }
+.hlc-views{ position:absolute; inset:0; }
+.hlc .hlc-view{ display:flex; flex-direction:column; }
+
+/* ── head ── */
+.hlc-head{ flex:0 0 auto; display:flex; align-items:flex-start; gap:calc(20 * var(--hlc-px));
+  padding:calc(24 * var(--hlc-px)) var(--hlc-pad) calc(16 * var(--hlc-px));
+  border-bottom:calc(2 * var(--hlc-px)) solid var(--hlc-gold); }
+.hlc-titles{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:calc(4 * var(--hlc-px)); }
+.hlc-city{ font-size:var(--hlc-city); font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--hlc-gold);
+  white-space:nowrap; overflow:hidden; }
+.hlc-title{ font-family:var(--hlc-serif); font-weight:600; font-size:var(--hlc-title); line-height:1.16; }
+.hlc-tl{ white-space:nowrap; overflow:hidden; }
+.hlc-say{ margin-top:calc(6 * var(--hlc-px)); font-size:var(--hlc-say); font-weight:500; color:var(--hlc-soft); white-space:nowrap; overflow:hidden; }
+.hlc-scan{ flex:0 0 auto; }
+.hlc-qr{ width:var(--hlc-qr); height:var(--hlc-qr); background:#fff; padding:calc(9 * var(--hlc-px)); border-radius:calc(6 * var(--hlc-px)); }
+.hlc-qr img, .hlc-qr canvas{ display:block; width:100% !important; height:100% !important; }
+.hlc-qr canvas + img{ display:block; }
+.hlc-qr canvas{ display:none !important; }
+
+/* ── list: the cream column is the list's own ground, one panel from its first line to its last ── */
+.hlc-list{ flex:1 1 auto; min-height:0; list-style:none; margin:0; padding:0;
+  display:flex; flex-direction:column;
+  background:linear-gradient(90deg, var(--hlc-cream) 0, var(--hlc-cream) var(--hlc-col), transparent var(--hlc-col)); }
+.hlc-row{ flex:0 0 20%; min-height:0; display:flex; align-items:center;
+  border-bottom:var(--hlc-px) solid rgba(210,173,102,.38); }
+.hlc-row:last-child{ border-bottom:0; }
+.hlc-logo{ flex:0 0 var(--hlc-col); align-self:stretch; display:flex; align-items:center; justify-content:center;
+  padding:calc(10 * var(--hlc-px)) calc(18 * var(--hlc-px)); }
+.hlc-img{ display:block; max-width:100%; max-height:calc(62 * var(--hlc-px)); width:auto; height:auto; object-fit:contain; }
+/* a file with its own light ground (a JPEG): multiplied into the cream so no box shows round it */
+.hlc-img--opaque{ mix-blend-mode:multiply; }
+.hlc-text{ flex:1 1 auto; min-width:0; padding:0 var(--hlc-pad) 0 calc(24 * var(--hlc-px)); display:flex; flex-direction:column; gap:calc(5 * var(--hlc-px)); }
+.hlc-name{ display:flex; align-items:baseline; font-family:var(--hlc-serif); font-weight:600; font-size:var(--hlc-name); line-height:1.18; white-space:nowrap; overflow:hidden; }
+.hlc-info{ font-size:var(--hlc-info); font-weight:500; color:var(--hlc-soft); white-space:nowrap; overflow:hidden; }
+.hlc-tel{ display:inline-flex; align-items:center; gap:.3em; margin-inline-start:.9em; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; }
+.hlc-drive{ flex:0 0 auto; margin-inline-start:auto; padding-inline-start:.8em; display:inline-flex; align-items:center; gap:.35em;
+  font-family:var(--hlc-sans) !important; font-size:var(--hlc-info); font-weight:600; color:#fff; font-variant-numeric:tabular-nums; }
+.hlc-fit{ display:inline-block; white-space:nowrap; }
+
+/* ── icons and the shuttle mark ── */
+.hlc-ico{ display:inline-flex; width:1em; height:1em; flex:0 0 auto; color:var(--hlc-gold); vertical-align:-0.12em; }
+.hlc-ico svg{ width:100%; height:100%; fill:currentColor; }
+.hlc-mark{ width:1.05em; height:1.05em; margin-inline-start:.45em; vertical-align:-0.14em; }
+
+/* ── the halves of a pair ── */
+.hlc .bs-h{ unicode-bidi:isolate; }
+.hlc-sep{ display:inline-block; width:var(--hlc-px); height:.9em; margin:0 .55em; vertical-align:-0.1em; background:rgba(255,255,255,.45); }
+.hlc-stack .hlc-sep{ display:none; }
+.hlc-stack .hlc-fit .bs-h{ display:block; }
+
+/* ── foot ── */
+.hlc-foot{ flex:0 0 auto; min-height:calc(62 * var(--hlc-px)); display:flex; align-items:center; gap:calc(22 * var(--hlc-px));
+  padding:calc(10 * var(--hlc-px)) var(--hlc-pad); border-top:calc(2 * var(--hlc-px)) solid var(--hlc-gold); }
+.hlc-legend{ display:inline-flex; align-items:center; gap:.5em; font-size:var(--hlc-info); font-weight:600; white-space:nowrap; min-width:0; }
+.hlc-legend .hlc-mark{ margin:0; width:1.3em; height:1.3em; }
+.hlc-credit{ flex:1 1 auto; font-size:calc(18 * var(--hlc-px)); line-height:1.2; color:var(--hlc-soft); white-space:nowrap; overflow:hidden; min-width:0; }
+.hlc-foot:empty{ display:none; }
+.hlc-marks{ margin-inline-start:auto; display:inline-flex; align-items:center; gap:calc(26 * var(--hlc-px)); }
+.hlc-foot-mark{ display:block; height:calc(40 * var(--hlc-px)); width:auto; }
+

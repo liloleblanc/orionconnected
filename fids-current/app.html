@@ -51,6 +51,8 @@
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
 <title>Airport Companion</title>
+<!-- the two faces of the hotel lists (Playfair Display, Montserrat: SIL OFL), shared with the cards of the gates -->
+<link rel="stylesheet" href="css/hotel-list-card.css?v=24160">
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
      site's own files (the boards' font.css faces), not Inter from Google */
@@ -473,6 +475,47 @@
   .dt-credit{margin:16px 18px 0;font-size:11px;font-weight:550;color:var(--muted);text-align:center;line-height:1.35;}
   .detail .dt-credit:empty{display:none;}
 
+  /* ── The hotel lists (2026-11-16): the full list of a city, opened by the scan code of a
+     hotel card on a gate (app.html?hotels=YQM&area=downtown). Guest information: the logo on
+     the cream column (one panel down each list, never a box behind one logo), the name, the
+     address, a button that calls the hotel and one for its website. The faces are the cards'
+     (css/hotel-list-card.css). The marks of the city's tourism bodies are white lettering, so
+     they sit on the navy foot whatever the theme. ── */
+  .hl-body{padding:6px 0 0;font-family:'HL Montserrat','Helvetica Neue',Arial,var(--fids-script-fonts,'Noto Sans JP','Noto Sans SC','Noto Sans Arabic'),sans-serif;}
+  .hl-legend{display:flex;align-items:center;gap:8px;margin:-2px 4px 8px;font-size:13px;font-weight:600;color:var(--muted);}
+  .hl-legend .hl-ico{color:#b8862f;width:20px;height:20px;}
+  .hl-sec{margin:14px 12px 0;scroll-margin-top:72px;}
+  .hl-h{margin:0 4px 8px;font-family:'HL Playfair Display',Georgia,'Times New Roman',var(--fids-script-fonts,'Noto Sans JP','Noto Sans SC','Noto Sans Arabic'),serif;
+    font-size:21px;font-weight:600;line-height:1.2;color:var(--txt);}
+  .hl-h [lang="ja"],.hl-h [lang|="zh"],.hl-h [lang="ar"]{font-family:var(--fids-script-fonts,'Noto Sans JP','Noto Sans SC','Noto Sans Arabic'),sans-serif;}
+  .hl-list{list-style:none;margin:0;padding:0;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);
+    background:linear-gradient(90deg,#f5efe3 0,#f5efe3 86px,var(--card) 86px);}
+  [dir="rtl"] .hl-list{background:linear-gradient(270deg,#f5efe3 0,#f5efe3 86px,var(--card) 86px);}
+  .hl-row{display:flex;align-items:stretch;border-bottom:1px solid rgba(184,134,47,.28);}
+  .hl-row:last-child{border-bottom:0;}
+  .hl-logo{flex:0 0 86px;display:flex;align-items:center;justify-content:center;padding:10px 9px;}
+  .hl-logo img{display:block;max-width:100%;max-height:46px;width:auto;height:auto;object-fit:contain;}
+  .hl-logo img.op{mix-blend-mode:multiply;}
+  .hl-txt{flex:1 1 auto;min-width:0;padding:12px 12px 12px 13px;color:var(--txt);}
+  .hl-name{display:flex;align-items:baseline;gap:6px;font-family:'HL Playfair Display',Georgia,'Times New Roman',serif;font-size:17.5px;font-weight:600;line-height:1.25;}
+  .hl-name .hl-ico{color:#b8862f;width:18px;height:18px;flex:none;align-self:center;}
+  .hl-drive{margin-inline-start:auto;display:inline-flex;align-items:center;gap:4px;font-family:'HL Montserrat','Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;white-space:nowrap;color:var(--txt);}
+  .hl-drive .hl-ico{width:16px;height:16px;color:#b8862f;}
+  .hl-addr{margin-top:3px;font-size:13.5px;font-weight:500;color:var(--muted);line-height:1.35;}
+  .hl-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .hl-btn{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:6px 10px;border-radius:999px;border:1px solid var(--line2);
+    background:var(--soft);color:var(--txt);font-size:13px;font-weight:650;text-decoration:none;white-space:nowrap;}
+  .hl-btn .hl-ico{width:16px;height:16px;color:var(--accent);}
+  .hl-btn bdi{font-variant-numeric:tabular-nums;}
+  .hl-ico{display:inline-flex;}
+  .hl-ico svg{width:100%;height:100%;fill:currentColor;}
+  .hl-ico.hl-web svg{fill:none;stroke:currentColor;stroke-width:2;}
+  .hl-foot{margin:18px 0 0;padding:16px 16px 18px;background:#14203c;color:#d5dae6;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;}
+  .hl-foot:empty{display:none;}
+  .hl-foot img{display:block;height:34px;width:auto;}
+  .hl-foot .hl-cred{flex:1 1 100%;font-size:11.5px;font-weight:550;}
+  .hl-foot .hl-cred:empty{display:none;}
+
   /* ── Full-page ad ────────────────────────────────── */
   .ad-full{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
     align-items:center;justify-content:center;text-align:center;padding:34px;background:var(--bg);}
@@ -549,6 +592,16 @@
   <div id="detailBody"></div>
 </div>
 
+<!-- The hotel lists (2026-11-16): the full list of a city, opened by the scan code of a hotel
+     card on a gate. Every word is written from the store when it opens. -->
+<div class="detail" id="hotels" aria-hidden="true">
+  <div class="dt-top">
+    <button class="back" onclick="closeHotels()"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="ttl" id="hlTtl"></div>
+  </div>
+  <div class="hl-body" id="hlBody"></div>
+</div>
+
 <div class="ad-full" id="adFull">
   <span class="tag">Advertisement</span>
   <button class="skip" onclick="closeFullAd()"><svg class="ic" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
@@ -566,6 +619,9 @@
 <script src="js/earth-places.js?v=24160"></script>
 <script src="data/airline-colors.js?v=24160"></script>
 <script src="js/feed-router.js?v=24160"></script>
+<!-- the hotel lists: the checked list of a city and its rules (season, areas), shared with the
+     cards of the gates -->
+<script src="js/hotel-list-card.js?v=24160"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -997,6 +1053,7 @@ function applyLang(){
   try{paintHint();}catch(e){}
   try{render({keep:true});}catch(e){}
   try{if(DETAIL_I>=0&&document.getElementById('detail').classList.contains('show'))openFlight(DETAIL_I);}catch(e){}
+  try{if(HL_CITY&&document.getElementById('hotels').classList.contains('show'))renderHotels();}catch(e){}
   try{measureHeader();}catch(e){}
 }
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
@@ -2410,8 +2467,78 @@ function closeFlight(fromHistory){
   d.classList.remove('show');d.setAttribute('aria-hidden','true');DETAIL_I=-1;
   if(!fromHistory){try{if(history.state&&history.state.appDetail)history.back();}catch(e){}}
 }
-window.addEventListener('popstate',function(){closeFlight(true);});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeFlight();});
+// ── THE HOTEL LISTS (2026-11-16) ─────────────────────────────────────────
+// ?hotels=YQM opens the whole list of a city (the cards of a gate show five
+// a card; their scan code lands here), &area= scrolls to that card's list.
+// Guest information only: the hotels open today (the season of each), by
+// area, each with its logo on the cream column where an official one reads
+// there, its address, a button that calls it and one for its website. The
+// lists and their rules are js/hotel-list-card.js; the words are the store's.
+let HL_CITY='',HL_AREA='';
+function hlIco(k){const s=(window.HotelListCard&&HotelListCard.ICON&&HotelListCard.ICON[k])||'';return s?'<i class="hl-ico">'+s+'</i>':'';}
+const HL_GLOBE='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>';
+// tel: digits only, a North American number with its country code
+function hlTel(p){let d=String(p||'').replace(/[^0-9]/g,'');if(d.length===10)d='1'+d;return d?'tel:+'+d:'';}
+// the website button names the hotel's own address (roddvacations.com): data, in no language
+function hlHost(u){try{return new URL(u).hostname.replace(/^www\./i,'');}catch(e){return '';}}
+function hlWeb(u){u=String(u||'');return /^https?:\/\/[^\s"'<>]+$/i.test(u)?u:'';}
+function renderHotels(){
+  const body=document.getElementById('hlBody');if(!body)return;
+  const L=langRes(),BS=window.BoardStrings,H=window.HotelListCard;
+  const city=HL_CITY,doc=H&&H.get(city);
+  const cityName=placeOf(city).c;
+  const ttl=document.getElementById('hlTtl');
+  if(ttl)ttl.textContent=BS?BS.fmt('hotelsInCity',L,{CITY:cityName},true):'';
+  if(!doc){body.innerHTML='<div class="empty"><div class="p">'+esc(BS?BS.bs('appLoading',L):'')+'</div></div>';return;}
+  const tz=(AIRPORTS[city]&&AIRPORTS[city].tz)||'';
+  const cards=H.cards(doc,null,tz);
+  const osm=cards.some(c=>c.hotels.some(h=>h.drive&&/OpenStreetMap/.test(String(h.drive.credit||''))));
+  let html='';
+  cards.forEach(function(c){
+    // the legend of the shuttle mark under the heading of a list that shows one
+    const mk=c.hotels.some(h=>h.shuttle&&h.shuttle.mark===true);
+    html+='<section class="hl-sec" id="hl-'+esc(c.area)+'"><h2 class="hl-h">'+BS.half(L,esc(BS.bs(H.HEAD[c.area],L)),'',{key:H.HEAD[c.area]})+'</h2>'
+      +(mk?'<div class="hl-legend">'+hlIco('shuttle')+'<span>'+esc(BS.bs('hotelShuttle',L))+'</span></div>':'')+'<ol class="hl-list">';
+    c.hotels.forEach(function(h){
+      const lg=h.logo&&h.logo.file;
+      const trim=lg&&/^inset\([\d.% ]+\)$/.test(String(h.logo.trim||''))?' style="object-view-box:'+h.logo.trim+'"':'';
+      const tel=hlTel(h.phone),web=hlWeb(h.website);
+      html+='<li class="hl-row"><span class="hl-logo">'+(lg?'<img'+(h.logo.opaque?' class="op"':'')+' alt="" loading="lazy" decoding="async"'+trim+' src="'+esc(lg)+'">':'')+'</span>'
+        +'<div class="hl-txt"><div class="hl-name"><bdi>'+esc(h.name)+'</bdi>'+(h.shuttle&&h.shuttle.mark===true?hlIco('shuttle'):'')
+        +(c.area==='resort'&&h.drive&&h.drive.km?'<span class="hl-drive">'+hlIco('car')+'<bdi dir="ltr">'+esc(String(Math.round(h.drive.km)))+' km</bdi></span>':'')+'</div>'
+        +'<div class="hl-addr"><bdi>'+esc(h.address&&h.address.display)+'</bdi></div>'
+        +'<div class="hl-acts">'
+        +(tel?'<a class="hl-btn" href="'+esc(tel)+'">'+hlIco('phone')+'<span>'+esc(BS.bs('hotelCall',L))+'</span><bdi dir="ltr">'+esc(h.phone)+'</bdi></a>':'')
+        +(web?'<a class="hl-btn" href="'+esc(web)+'" target="_blank" rel="noopener">'+'<i class="hl-ico hl-web">'+HL_GLOBE+'</i><bdi dir="ltr">'+esc(hlHost(web))+'</bdi></a>':'')
+        +'</div></div></li>';
+    });
+    html+='</ol></section>';
+  });
+  const marks=(doc.foot_marks||[]).map(m=>'<img alt="" loading="lazy" src="'+esc(m.file)+'">').join('');
+  html+='<div class="hl-foot">'+marks+(osm?'<div class="hl-cred">'+esc(BS.bs('credOsmLine',L))+'</div>':'')+'</div>';
+  body.innerHTML=html;
+}
+function openHotels(city,area){
+  const H=window.HotelListCard; if(!H)return;
+  const c=String(city||'').toUpperCase(); if(H.CITIES.indexOf(c)<0)return;
+  HL_CITY=c; HL_AREA=H.AREAS.indexOf(String(area||''))>=0?String(area):'';
+  const d=document.getElementById('hotels'),wasOpen=d.classList.contains('show');
+  renderHotels();
+  d.classList.add('show');d.setAttribute('aria-hidden','false');
+  if(!wasOpen){try{history.pushState({appHotels:1},'');}catch(e){}}
+  H.load(c).then(function(){
+    if(HL_CITY!==c)return;
+    renderHotels();
+    if(HL_AREA){const s=document.getElementById('hl-'+HL_AREA);if(s)try{s.scrollIntoView({block:'start'});}catch(e){}}
+  });
+}
+function closeHotels(fromHistory){
+  const d=document.getElementById('hotels'); if(!d||!d.classList.contains('show'))return;
+  d.classList.remove('show');d.setAttribute('aria-hidden','true');HL_CITY='';
+  if(!fromHistory){try{if(history.state&&history.state.appHotels)history.back();}catch(e){}}
+}
+window.addEventListener('popstate',function(){closeFlight(true);closeHotels(true);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeFlight();closeHotels();}});
 function bannerTap(){showFullAd();}
 // Mobile app is ad-free (per request). Flip to true to bring ads back; the
 // big-screen FIDS/GIDS/BIDS displays are unaffected — they use their own
@@ -2543,6 +2670,8 @@ let BOOT_GATE='';
     paintSeg();
   }catch(e){ap='YQM';}
   setAirport(ap||'YQM',true);
+  // the scan code of a hotel card: the list of that city, at that card's area
+  try{const q=new URLSearchParams(location.search),hl=(q.get('hotels')||'').toUpperCase();if(hl)openHotels(hl,q.get('area')||'');}catch(e){}
 })();
 // Refresh the list (every 3 min), holding the reader's place; the clock every 15 s.
 setInterval(()=>{ refresh(); },180000);
