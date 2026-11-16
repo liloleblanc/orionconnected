@@ -2510,9 +2510,9 @@ function renderHotels(){
       const tel=hlTel(h.phone),web=hlWeb(h.website);
       const lc=((h.logo&&h.logo.opaque)?' op':'')+((h.logo&&h.logo.fill===true)?' fill':'');
       html+='<li class="hl-row"><span class="hl-logo">'+(lg?'<img'+(lc?' class="'+lc.slice(1)+'"':'')+' alt="" loading="lazy" decoding="async"'+trim+' src="'+esc(lg)+'">':'')+'</span>'
-        +'<div class="hl-txt"><div class="hl-name"><bdi>'+esc(h.name)+'</bdi>'+(h.shuttle&&h.shuttle.mark===true?hlIco('shuttle'):'')
+        +'<div class="hl-txt"><div class="hl-name"><bdi translate="no">'+esc(h.name)+'</bdi>'+(h.shuttle&&h.shuttle.mark===true?hlIco('shuttle'):'')
         +(c.area==='resort'&&h.drive&&h.drive.km?'<span class="hl-drive">'+hlIco('car')+'<bdi dir="ltr">'+esc(String(Math.round(h.drive.km)))+' km</bdi></span>':'')+'</div>'
-        +'<div class="hl-addr"><bdi>'+esc(h.address&&h.address.display)+'</bdi></div>'
+        +'<div class="hl-addr"><bdi translate="no">'+esc(h.address&&h.address.display)+'</bdi></div>'
         +'<div class="hl-acts">'
         +(tel?'<a class="hl-btn" href="'+esc(tel)+'">'+hlIco('phone')+'<span>'+esc(BS.bs('hotelCall',L))+'</span><bdi dir="ltr">'+esc(h.phone)+'</bdi></a>':'')
         +(web?'<a class="hl-btn" href="'+esc(web)+'" target="_blank" rel="noopener">'+'<i class="hl-ico hl-web">'+HL_GLOBE+'</i><bdi dir="ltr">'+esc(hlHost(web))+'</bdi></a>':'')

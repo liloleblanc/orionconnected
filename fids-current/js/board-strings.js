@@ -1057,7 +1057,7 @@
     // shuttle, the invitation under the scan code, and the words of the list in the app (its
     // website button names the hotel's own address, data). The
     // names, addresses and telephones of the hotels are data (data/hotels/<code>.json); the
-    // drive to a resort reuses hotelFromAirport; the map credit is credOsmLine.
+    // drive to a resort is a bare figure and its unit beside a car mark; the map credit is credOsmLine.
     hotelsAirport: { en: 'Airport hotels', fr: 'Hôtels près de l’aéroport', es: 'Hoteles cerca del aeropuerto', de: 'Hotels am Flughafen', it: 'Hotel vicino all’aeroporto', pt: 'Hotéis perto do aeroporto', ja: '空港周辺のホテル', zh: '机场周边酒店', ar: 'فنادق قرب المطار' },
     hotelsDowntown: { en: 'Downtown hotels', fr: 'Hôtels du centre-ville', es: 'Hoteles en el centro', de: 'Hotels im Stadtzentrum', it: 'Hotel in centro', pt: 'Hotéis no centro', ja: '中心部のホテル', zh: '市中心酒店', ar: 'فنادق وسط المدينة' },
     hotelsNearby: { en: 'Nearby hotels', fr: 'Hôtels des environs', es: 'Hoteles de los alrededores', de: 'Hotels in der Umgebung', it: 'Hotel nei dintorni', pt: 'Hotéis nos arredores', ja: '近郊のホテル', zh: '附近酒店', ar: 'فنادق قريبة' },

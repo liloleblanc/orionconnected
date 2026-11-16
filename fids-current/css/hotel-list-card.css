@@ -116,6 +116,11 @@
 .hlc-name{ display:flex; align-items:baseline; font-family:var(--hlc-serif); font-weight:600; font-size:var(--hlc-name); line-height:1.18; white-space:nowrap; overflow:hidden; }
 .hlc-info{ font-size:var(--hlc-info); font-weight:500; color:var(--hlc-soft); white-space:nowrap; overflow:hidden; }
 .hlc-tel{ display:inline-flex; align-items:center; gap:.3em; margin-inline-start:.9em; color:#fff; font-weight:600; font-variant-numeric:tabular-nums; }
+/* a line still too long at the floor (the fitter adds hlc-clip): the address ends in an ellipsis,
+   the telephone stays whole */
+.hlc-info.hlc-clip .hlc-fit{ display:flex; align-items:baseline; min-width:0; max-width:100%; }
+.hlc-info.hlc-clip .hlc-addr{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hlc-info.hlc-clip .hlc-tel{ flex:none; }
 .hlc-drive{ flex:0 0 auto; margin-inline-start:auto; padding-inline-start:.8em; display:inline-flex; align-items:center; gap:.35em;
   font-family:var(--hlc-sans) !important; font-size:var(--hlc-info); font-weight:600; color:#fff; font-variant-numeric:tabular-nums; }
 .hlc-fit{ display:inline-block; white-space:nowrap; }
@@ -140,4 +145,3 @@
 .hlc-foot:empty{ display:none; }
 .hlc-marks{ margin-inline-start:auto; display:inline-flex; align-items:center; gap:calc(26 * var(--hlc-px)); }
 .hlc-foot-mark{ display:block; height:calc(40 * var(--hlc-px)); width:auto; }
-

@@ -281,7 +281,7 @@
       + '" alt="" decoding="async"' + trim + ' src="' + esc(lg) + '"></span>';
   }
   function line(h, L, city, BS) {
-    var info = '<bdi class="hlc-addr">' + esc(h.address && h.address.display) + '</bdi>'
+    var info = '<bdi class="hlc-addr" translate="no">' + esc(h.address && h.address.display) + '</bdi>'
       + '<span class="hlc-tel">' + ico('phone') + '<bdi dir="ltr">' + esc(h.phone) + '</bdi></span>';
     // a resort: the drive from the airport, by road, after its name (a figure and its unit:
     // the card's heading says what it is)
@@ -291,7 +291,7 @@
     }
     return '<li class="hlc-row" data-hotel="' + esc(h.id) + '">' + logoCell(h)
       + '<div class="hlc-text">'
-      +   '<div class="hlc-name"><span class="hlc-fit"><bdi>' + esc(h.name) + '</bdi>'
+      +   '<div class="hlc-name"><span class="hlc-fit"><bdi translate="no">' + esc(h.name) + '</bdi>'
       +     (h.shuttle && h.shuttle.mark === true ? ico('shuttle', 'hlc-mark') : '') + '</span>' + drive + '</div>'
       +   '<div class="hlc-info"><span class="hlc-fit">' + info + '</span></div>'
       + '</div></li>';
@@ -365,7 +365,7 @@
       Array.prototype.forEach.call(art.querySelectorAll('.hlc-fit'), function (s) {
         var box = s.parentElement;
         if (!box) return;
-        box.style.fontSize = ''; box.classList.remove('hlc-stack');
+        box.style.fontSize = ''; box.classList.remove('hlc-stack'); box.classList.remove('hlc-clip');
         if (!box.getClientRects().length) return;
         var cs = getComputedStyle(box), base = parseFloat(cs.fontSize), k = 1;
         var floor = Math.min(1, Math.max(0.7, least / base));
@@ -385,6 +385,9 @@
         if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-pairfit')) {
           box.style.fontSize = ''; k = 1; box.classList.add('hlc-stack'); step();
         }
+        // still too long at the floor: the address gives way (an ellipsis at its end), never the
+        // telephone after it
+        if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-info')) box.classList.add('hlc-clip');
       });
     } catch (e) {}
   }
