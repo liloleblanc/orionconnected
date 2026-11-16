@@ -461,9 +461,12 @@ test('the fitter steps a long line down to the floor of the screen, and no furth
     // ten per cent too long: it steps down until it fits, above the floor
     const a = fitOnce(W, H0, base, 10, base * 10 / 1.1 + 1);
     assert.ok(a < base && a >= floor - 0.01, W + 'x' + H0 + ': stepped down to ' + a.toFixed(2) + ' (base ' + base.toFixed(2) + ', floor ' + floor.toFixed(2) + ')');
-    // far too long: it stops at the floor of this screen, never under it
+    // far too long: it stops on the floor of this screen, never under it
     const b = fitOnce(W, H0, base, 10, base * 5);
-    assert.ok(b >= floor - 0.01 && b <= floor + base * 0.011, W + 'x' + H0 + ': held at the floor, ' + b.toFixed(2));
+    assert.ok(Math.abs(b - floor) < 0.005, W + 'x' + H0 + ': held at the floor, ' + b.toFixed(3) + ' (floor ' + floor.toFixed(3) + ')');
+    // a name (28 px of the design) steps down to seven tenths of itself at most
+    const n = fitOnce(W, H0, 28 * u, 10, 28 * u * 3);
+    assert.ok(Math.abs(n - 0.7 * 28 * u) < 0.005, W + 'x' + H0 + ': a name holds at seven tenths, ' + n.toFixed(3));
   }
 });
 

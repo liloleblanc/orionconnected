@@ -375,8 +375,10 @@
           });
           return r.width - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0) - sib;
         };
+        // a hundredth at a time, the last step landing on the floor itself (counting down in
+        // hundredths drifts, and stopped a step short of it)
         var step = function () {
-          while (s.scrollWidth > room() + 0.5 && k - 0.01 >= floor) { k -= 0.01; box.style.fontSize = (base * k) + 'px'; }
+          while (s.scrollWidth > room() + 0.5 && k > floor + 1e-9) { k = Math.max(floor, k - 0.01); box.style.fontSize = (base * k) + 'px'; }
         };
         step();
         if (s.scrollWidth > room() + 0.5 && box.classList.contains('hlc-pairfit')) {
