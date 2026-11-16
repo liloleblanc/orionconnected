@@ -491,6 +491,9 @@
   .hl-list{list-style:none;margin:0;padding:0;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);
     background:linear-gradient(90deg,#f5efe3 0,#f5efe3 86px,var(--card) 86px);}
   [dir="rtl"] .hl-list{background:linear-gradient(270deg,#f5efe3 0,#f5efe3 86px,var(--card) 86px);}
+  /* a list where no hotel has a logo: no column, the names at the list's own edge */
+  .hl-list.hl-list--bare{background:var(--card);}
+  .hl-list--bare .hl-logo{display:none;}
   .hl-row{display:flex;align-items:stretch;border-bottom:1px solid rgba(184,134,47,.28);}
   .hl-row:last-child{border-bottom:0;}
   .hl-logo{flex:0 0 86px;display:flex;align-items:center;justify-content:center;padding:10px 9px;}
@@ -2498,7 +2501,8 @@ function renderHotels(){
     // the legend of the shuttle mark under the heading of a list that shows one
     const mk=c.hotels.some(h=>h.shuttle&&h.shuttle.mark===true);
     html+='<section class="hl-sec" id="hl-'+esc(c.area)+'"><h2 class="hl-h">'+BS.half(L,esc(BS.bs(H.HEAD[c.area],L)),'',{key:H.HEAD[c.area]})+'</h2>'
-      +(mk?'<div class="hl-legend">'+hlIco('shuttle')+'<span>'+esc(BS.bs('hotelShuttle',L))+'</span></div>':'')+'<ol class="hl-list">';
+      +(mk?'<div class="hl-legend">'+hlIco('shuttle')+'<span>'+esc(BS.bs('hotelShuttle',L))+'</span></div>':'')
+      +'<ol class="hl-list'+(c.hotels.some(h=>h.logo&&h.logo.file)?'':' hl-list--bare')+'">';
     c.hotels.forEach(function(h){
       const lg=h.logo&&h.logo.file;
       const trim=lg&&/^inset\([\d.% ]+\)$/.test(String(h.logo.trim||''))?' style="object-view-box:'+h.logo.trim+'"':'';

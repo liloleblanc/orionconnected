@@ -8,7 +8,8 @@
      nearby    Nearby hotels            the rest within about 30 km
      resort    Resorts worth the drive  destination resorts further out, with the drive
    Each card is a list and nothing else: a line for each hotel with its logo where an official
-   one reads on the cream column, its name, its street address and its telephone. No picture, no
+   one reads on the cream column, its name, its street address and its telephone. The column
+   stands behind the lines there are, and a card where no line has a logo has no column. No picture, no
    price, no offer, no slogan. Five lines a card; an area with more takes the next five on the
    next pass of the deck (window._gateAccorPass, the deck's own count of passes), so every hotel
    comes round. A hotel whose airport shuttle is verified carries the shuttle mark, and the card
@@ -42,6 +43,8 @@
   var PER_CARD = 5;
   // The pager of the hotel cards (fids-core.js) turns a card every ten seconds.
   var VIEW_MS = 10000;
+  // The smallest text of a card, in pixels of the 1680x1050 screen the stylesheet is written at.
+  var FLOOR = 18;
   // The phone app's own address (host-airport.js: .app is the app only).
   var APP_HOST = 'https://orionconnected.app/app';
 
@@ -293,6 +296,9 @@
   function card(doc, c, L, o) {
     var BS = store(), city = up(doc.iata);
     var rows = page(c.hotels, o.pass);
+    // the cream column stands behind the lines there are (--hlc-rows), and a card where no
+    // line has a logo has none: its names start at the card's own edge (hlc-list--bare)
+    var bare = !rows.some(function (h) { return h.logo && h.logo.file; });
     var mark = rows.some(function (h) { return h.shuttle && h.shuttle.mark === true; });
     var osm = rows.some(function (h) { return h.drive && /OpenStreetMap/.test(String(h.drive.credit || '')); });
     var head = linesOf(L, function (lg) { return BS.bs(HEAD[c.area], lg); }, HEAD[c.area]);
@@ -313,7 +319,8 @@
       +   '</div>'
       +   '<div class="hlc-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(city, c.area, o.home)) + '"></div></div>'
       + '</div>'
-      + '<ol class="hlc-list">' + rows.map(function (h) { return line(h, L, city, BS); }).join('') + '</ol>'
+      + '<ol class="hlc-list' + (bare ? ' hlc-list--bare' : '') + '" style="--hlc-rows:' + rows.length + '">'
+      +   rows.map(function (h) { return line(h, L, city, BS); }).join('') + '</ol>'
       + '<div class="hlc-foot">' + legend + credit + (marks ? '<span class="hlc-marks">' + marks + '</span>' : '') + '</div>'
       + '</div>';
   }
@@ -331,20 +338,34 @@
       + '<div class="axr-pages hlc-views">' + html + '</div></div>';
   }
 
-  // A one-line text that is too long for its place steps down (never under the floor of the
-  // stylesheet); a pair that still cannot share the line is stacked, each language whole.
+  // One pixel of the 1680x1050 design in real pixels: the stylesheet's --hlc-px, the smaller of
+  // the height and the width of the screen (the same two figures). Worked out here because the
+  // computed value of a custom property is its text (min(...)), not a length.
+  function unitPx(w, h) {
+    if (w == null || h == null) {
+      try { w = Number(root.innerWidth) || 0; h = Number(root.innerHeight) || 0; } catch (e) { w = 0; h = 0; }
+    }
+    if (!(w > 0) || !(h > 0)) return 1;
+    return Math.min(h * 0.09524, w * 0.05952) / 100;
+  }
+  // The smallest a fitted text may be, in real pixels, on a screen of that size (this one when
+  // none is given): 18 px at 1680x1050, the same share of any other screen.
+  function floorPx(w, h) { return FLOOR * unitPx(w, h); }
+  // A one-line text that is too long for its place steps down (never under the floor, and never
+  // under seven tenths of its own size); a pair that still cannot share the line is stacked,
+  // each language whole.
   function fit(el) {
     try {
       var art = el && el.querySelector ? el.querySelector('.hlc') : null;
       if (!art) return;
+      var least = floorPx();
       Array.prototype.forEach.call(art.querySelectorAll('.hlc-fit'), function (s) {
         var box = s.parentElement;
         if (!box) return;
         box.style.fontSize = ''; box.classList.remove('hlc-stack');
         if (!box.getClientRects().length) return;
         var cs = getComputedStyle(box), base = parseFloat(cs.fontSize), k = 1;
-        var floorPx = parseFloat(getComputedStyle(art).getPropertyValue('--hlc-floor-px')) || 16;
-        var floor = Math.min(1, Math.max(0.7, floorPx / base));
+        var floor = Math.min(1, Math.max(0.7, least / base));
         var room = function () {
           var r = box.getBoundingClientRect(), sib = 0;
           Array.prototype.forEach.call(box.children, function (c) {
@@ -444,6 +465,7 @@
     RULE: RULE,
     PER_CARD: PER_CARD,
     VIEW_MS: VIEW_MS,
+    FLOOR: FLOOR,
     ICON: ICON,
     dataUrl: dataUrl,
     get: get,
@@ -460,6 +482,8 @@
     dwellMs: dwellMs,
     qrUrl: qrUrl,
     build: build,
+    unitPx: unitPx,
+    floorPx: floorPx,
     fit: fit,
     render: render,
     media: media

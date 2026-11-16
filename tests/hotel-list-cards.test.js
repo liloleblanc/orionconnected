@@ -255,6 +255,10 @@ test('every word of the cards and the app list is in the store in nine languages
   assert.match(ar, /<span class="bs-h" lang="ar" dir="rtl"[^>]*>فنادق قرب المطار<\/span>/);
   assert.match(build('YQM', ['ja', 'zh']), /lang="ja"[^>]*>空港周辺のホテル/);
   assert.match(CSS, /\.hlc \[lang="ja"\], \.hlc \[lang\|="zh"\], \.hlc \[lang="ar"\]\{ font-family:var\(--fids-script-fonts/);
+  // the city (a name in Latin letters on every board) keeps its capitals in a half marked
+  // Arabic, Japanese or Chinese: a rule of more weight than the rule of the scripts
+  assert.match(CSS, /\n\.hlc \.hlc-city \[lang\]\{ text-transform:uppercase; \}\n/);
+  assert.match(build('YQM', ['ar', 'en']), /<div class="hlc-city"><span class="hlc-fit"><span class="bs-h" lang="ar"[^>]*>Moncton<\/span><\/span><\/div>/);
   // no word of the module's own: every passenger word comes through the store
   assert.doesNotMatch(SRC, /'(Airport|Downtown|Nearby) hotels'|'Resorts worth|'Airport [Ss]huttle'|'Scan for/);
   // the app's list writes its words from the store too
@@ -375,15 +379,81 @@ test('the two faces are served from the site with their licence beside them; the
 });
 
 test('nothing on a card is under 18 px at 1680x1050', () => {
-  const px = [...CSS.matchAll(/--hlc-(title|city|say|name|info|floor-px):calc\((\d+(?:\.\d+)?) \* var\(--hlc-px\)\)/g)];
-  assert.ok(px.length >= 6);
+  const px = [...CSS.matchAll(/--hlc-(title|city|say|name|info):calc\((\d+(?:\.\d+)?) \* var\(--hlc-px\)\)/g)];
+  assert.ok(px.length >= 5);
   for (const m of px) assert.ok(Number(m[2]) >= 18, m[1] + ' ' + m[2]);
   for (const m of CSS.matchAll(/font-size:calc\((\d+(?:\.\d+)?) \* var\(--hlc-px\)\)/g)) assert.ok(Number(m[1]) >= 18, 'font ' + m[1]);
   assert.match(CSS, /--hlc-px:min\(0\.09524vh, 0\.05952vw\);/, 'one pixel at 1680x1050, by the smaller of height and width');
+  // the fitter's floor is worked out in pixels from the screen, with the stylesheet's own two
+  // figures (a custom property computes to its text, min(...), which is not a number)
+  assert.match(SRC, /return Math\.min\(h \* 0\.09524, w \* 0\.05952\) \/ 100;/);
+  assert.doesNotMatch(SRC + CSS, /--hlc-floor-px/);
+  assert.equal(H.FLOOR, 18);
+  const near = (a, b) => Math.abs(a - b) < 0.01;
+  assert.ok(near(H.floorPx(1680, 1050), 18), '18 px at 1680x1050');
+  assert.ok(near(H.floorPx(1920, 1080), 18 * 1080 / 1050), 'by the height at 1920x1080: ' + H.floorPx(1920, 1080));
+  assert.ok(near(H.floorPx(1366, 768), 18 * 768 / 1050), 'by the height at 1366x768: ' + H.floorPx(1366, 768));
+  assert.ok(near(H.floorPx(1280, 1024), 18 * 1280 / 1680), 'by the width on a squarer screen');
+});
+
+test('the fitter steps a long line down to the floor of the screen, and no further', () => {
+  // a line of the given width at 1 px of type, in a box of the given width, at a base size
+  const fitOnce = (W, H0, base, need, room) => {
+    let size = '';
+    const box = {
+      style: { set fontSize(v) { size = v; }, get fontSize() { return size; } },
+      classList: { remove() {}, add() {}, contains: () => false },
+      getClientRects: () => [1],
+      getBoundingClientRect: () => ({ width: room }),
+      children: []
+    };
+    const span = { parentElement: box, get scrollWidth() { return need * (size ? parseFloat(size) : base); }, getClientRects: () => [1] };
+    box.children = [span];
+    const art = { querySelectorAll: () => [span] };
+    const el = { querySelector: () => art };
+    // the screen and the style of the box, on the global object for this one call
+    const g = { innerWidth: W, innerHeight: H0, getComputedStyle: () => ({ fontSize: base + 'px', paddingLeft: '0', paddingRight: '0' }) };
+    const keep = {};
+    Object.keys(g).forEach((n) => { keep[n] = Object.getOwnPropertyDescriptor(globalThis, n); Object.defineProperty(globalThis, n, { value: g[n], configurable: true, writable: true }); });
+    try { H.fit(el); } finally {
+      Object.keys(g).forEach((n) => { delete globalThis[n]; if (keep[n]) Object.defineProperty(globalThis, n, keep[n]); });
+    }
+    return size ? parseFloat(size) : base;
+  };
+  for (const [W, H0] of [[1680, 1050], [1920, 1080], [1366, 768]]) {
+    const u = Math.min(H0 / 1050, W / 1680), floor = 18 * u, base = 20 * u;   // an address line
+    // ten per cent too long: it steps down until it fits, above the floor
+    const a = fitOnce(W, H0, base, 10, base * 10 / 1.1 + 1);
+    assert.ok(a < base && a >= floor - 0.01, W + 'x' + H0 + ': stepped down to ' + a.toFixed(2) + ' (base ' + base.toFixed(2) + ', floor ' + floor.toFixed(2) + ')');
+    // far too long: it stops at the floor of this screen, never under it
+    const b = fitOnce(W, H0, base, 10, base * 5);
+    assert.ok(b >= floor - 0.01 && b <= floor + base * 0.011, W + 'x' + H0 + ': held at the floor, ' + b.toFixed(2));
+  }
 });
 
 test('the cream column is one panel down the whole list, never a box behind one logo', () => {
   assert.match(CSS, /\.hlc-list\{[^}]*background:linear-gradient\(90deg, var\(--hlc-cream\) 0, var\(--hlc-cream\) var\(--hlc-col\), transparent var\(--hlc-col\)\)/);
+  // only as tall as the lines there are: a line is a fifth of the list
+  assert.match(CSS, /\.hlc-list\{[^}]*background-repeat:no-repeat; background-position:0 0; background-size:100% calc\(var\(--hlc-rows, 5\) \* 20%\);/);
+  assert.match(CSS, /\.hlc-row\{ flex:0 0 20%;/);
+  // a card where no line has a logo has no column, and its names start at the card's edge
+  assert.match(CSS, /\.hlc-list--bare\{ background:none; \}\n\.hlc-list--bare \.hlc-logo\{ display:none; \}\n\.hlc-list--bare \.hlc-text\{ padding-left:var\(--hlc-pad\); \}/);
+  const list = (city, area, pass) => {
+    const v = views(build(city, ['en', 'fr'], { pass: pass || 0 })).find((x) => x.includes('data-area="' + area + '"'));
+    const m = /<ol class="(hlc-list[^"]*)" style="--hlc-rows:(\d)">/.exec(v);
+    return { cls: m[1], rows: Number(m[2]), lines: (v.match(/class="hlc-row"/g) || []).length };
+  };
+  // five-line cards as they were: the column down the whole list
+  for (const [c, a] of [['YQM', 'airport'], ['YQM', 'downtown'], ['YQM', 'nearby'], ['YYG', 'airport'], ['YYG', 'downtown']]) {
+    for (let pass = 0; pass < 3; pass++) assert.deepEqual(list(c, a, pass), { cls: 'hlc-list', rows: 5, lines: 5 }, c + ' ' + a + ' ' + pass);
+  }
+  // shorter cards: the column behind their lines only
+  assert.deepEqual(list('YQM', 'resort'), { cls: 'hlc-list', rows: 1, lines: 1 }, 'Moncton resorts: the Algonquin');
+  assert.deepEqual(list('YYG', 'nearby'), { cls: 'hlc-list', rows: 2, lines: 2 }, 'Charlottetown nearby: two lines, both with a logo');
+  assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list hlc-list--bare', rows: 3, lines: 3 }, 'Charlottetown resorts: no logo, no column');
+  // the app's list: no column on a list where no hotel has a logo
+  assert.match(APP, /\.hl-list\.hl-list--bare\{background:var\(--card\);\}\n  \.hl-list--bare \.hl-logo\{display:none;\}/);
+  assert.match(APP, /'<ol class="hl-list'\+\(c\.hotels\.some\(h=>h\.logo&&h\.logo\.file\)\?'':' hl-list--bare'\)\+'">'/);
   assert.match(CSS, /--hlc-cream:#f5efe3;/, 'one fixed cream, never the airline colour');
   for (const m of CSS.matchAll(/(\.hlc-(?:logo|img)[^{]*)\{([^}]*)\}/g)) assert.doesNotMatch(m[2], /background/, m[1] + ' has no ground of its own');
   // the white-lettering marks of the foot stay on the navy
