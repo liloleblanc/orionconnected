@@ -210,13 +210,14 @@ test('nothing closed for the season, and a hotel held back never shows', () => {
   });
 });
 
+const WINGATE = 'wingate-dieppe';
 test('the shuttle mark only where the shuttle is verified, and the legend only on a card that shows one', () => {
   for (const doc of Object.values(DOCS)) {
     for (const h of doc.hotels) if (h.shuttle.mark) assert.equal(h.shuttle.verified, true, h.id + ': a mark is verified');
   }
   const marked = DOCS.YQM.hotels.filter((h) => h.shuttle.mark).map((h) => h.id);
-  // the Holiday Inn Express at the airport (cyqm.ca) and the Quality Inn Airport (confirmed locally, 16 Nov 2026)
-  assert.deepEqual(marked.slice().sort(), ['hix-dieppe', 'quality-inn-airport'], 'Moncton: the two airport hotels with a shuttle');
+  // the Holiday Inn Express at the airport (cyqm.ca), the Quality Inn Airport and the Wingate (both confirmed locally, 16 Nov 2026)
+  assert.deepEqual(marked.slice().sort(), ['hix-dieppe', 'quality-inn-airport', WINGATE].sort(), 'Moncton: the three airport hotels with a shuttle');
   assert.equal(DOCS.YYG.hotels.filter((h) => h.shuttle.mark).length, 0, 'Charlottetown: the airport says no hotel shuttle runs');
   const v = views(build('YQM', ['en', 'fr']));
   const airport = v.find((x) => x.includes('data-area="airport"'));
@@ -224,7 +225,9 @@ test('the shuttle mark only where the shuttle is verified, and the legend only o
   assert.ok(row.includes('hlc-mark'), 'the mark on its line');
   const qrow = airport.split('<li ').find((x) => x.includes('data-hotel="quality-inn-airport"'));
   assert.ok(qrow && qrow.includes('hlc-mark'), 'the Quality Inn Airport line carries the mark too');
-  assert.equal((airport.match(/hlc-mark"/g) || []).length, 3, 'one mark on each of the two lines, one in the legend');
+  const wrow = airport.split('<li ').find((x) => x.includes('data-hotel="' + WINGATE + '"'));
+  assert.ok(wrow && wrow.includes('hlc-mark'), 'the Wingate line carries the mark too');
+  assert.equal((airport.match(/hlc-mark"/g) || []).length, 4, 'one mark on each of the three lines, one in the legend');
   assert.ok(airport.includes('class="hlc-legend"') && airport.includes(B.bs('hotelShuttle', 'en')) && airport.includes(B.bs('hotelShuttle', 'fr')));
   for (const x of v.filter((y) => !y.includes('data-area="airport"'))) assert.ok(!x.includes('hlc-legend') && !x.includes('hlc-mark"'), 'no legend without a mark');
 });

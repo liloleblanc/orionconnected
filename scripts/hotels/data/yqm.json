@@ -169,7 +169,6 @@
   }
  ],
  "unverified": [
-  "Wingate by Wyndham Dieppe Moncton shuttle: hotel text on HotelPlanner says a free shuttle 7 am to 11 pm; the Wyndham page and the airport page do not. Phone (506) 830-8330.",
   "Wild Rose Inn shuttle: real (own site) but only with the Stay, Park & Fly package; open decision whether that earns the mark (card_mark false for now).",
   "Brand pages refuse automated readers (Marriott, Hilton, IHG, Hyatt, Choice, Best Western all answered 403 on 2026-11-16): those 15 hotels rest on the destination listing, the airport page and OpenStreetMap, and their website URLs are taken from the listing, not opened.",
   "Postal codes on one source only (destination listing): Holiday Inn Express & Suites Dieppe Airport E1A 7E6, Fairfield Inn & Suites Moncton E1A 7S4, Hilton Garden Inn E1C 5N2. Postal codes are not shown on the cards.",
@@ -625,15 +624,16 @@
     "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-16."
    },
    "shuttle": {
-    "mark": false,
-    "offered": null,
-    "verified": false,
+    "mark": true,
+    "offered": true,
+    "verified": true,
     "terms": null,
-    "source": "https://www.wyndhamhotels.com/en-ca/wingate/dieppe-new-brunswick/wingate-by-wyndham-dieppe-moncton/overview",
+    "source": "local confirmation, 2026-11-16",
     "also": [
+     "https://www.wyndhamhotels.com/en-ca/wingate/dieppe-new-brunswick/wingate-by-wyndham-dieppe-moncton/overview",
      "https://www.hotelplanner.com/Property/2206689/Reservations-Wingate-by-Wyndham-Dieppe-Moncton-Dieppe-69-Rue-Du-Marche"
     ],
-    "evidence": "Conflicting. Hotel-supplied text on HotelPlanner (cached 2026-11-11): \"We have a complimentary airport shuttle from 7am to 11pm\" (the same text puts the hotel 12 km from the airport). The Wyndham page, read 2026-11-16, describes pool, rink, breakfast and paid underground parking and mentions no shuttle; the airport page has no shuttle note for it. NEEDS A PHONE CALL: (506) 830-8330.",
+    "evidence": "Confirmed locally on 16 November 2026 that the hotel runs an airport shuttle. The hotel's own text on HotelPlanner had said so (complimentary airport shuttle, 7 am to 11 pm); the Wyndham and airport pages do not mention it.",
     "checked": "2026-11-16"
    },
    "logo": {
@@ -693,8 +693,8 @@
      "source": "https://www.wyndhamhotels.com/en-ca/wingate/dieppe-new-brunswick/wingate-by-wyndham-dieppe-moncton/overview"
     },
     "shuttle": {
-     "verified": false,
-     "source": "https://www.wyndhamhotels.com/en-ca/wingate/dieppe-new-brunswick/wingate-by-wyndham-dieppe-moncton/overview"
+     "verified": true,
+     "source": "local confirmation, 2026-11-16"
     }
    },
    "osm": "https://www.openstreetmap.org/way/555584911",
