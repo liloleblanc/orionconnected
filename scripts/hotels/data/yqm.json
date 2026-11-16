@@ -169,7 +169,6 @@
   }
  ],
  "unverified": [
-  "Quality Inn Airport shuttle: directories only (Cvent, HotelsCombined, Travelocity); the hotel and the airport do not say so in anything readable. Phone (506) 858-8880. card_mark is false until confirmed.",
   "Wingate by Wyndham Dieppe Moncton shuttle: hotel text on HotelPlanner says a free shuttle 7 am to 11 pm; the Wyndham page and the airport page do not. Phone (506) 830-8330.",
   "Wild Rose Inn shuttle: real (own site) but only with the Stay, Park & Fly package; open decision whether that earns the mark (card_mark false for now).",
   "Brand pages refuse automated readers (Marriott, Hilton, IHG, Hyatt, Choice, Best Western all answered 403 on 2026-11-16): those 15 hotels rest on the destination listing, the airport page and OpenStreetMap, and their website URLs are taken from the listing, not opened.",
@@ -322,16 +321,17 @@
     "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-16."
    },
    "shuttle": {
-    "mark": false,
-    "offered": null,
-    "verified": false,
+    "mark": true,
+    "offered": true,
+    "verified": true,
     "terms": null,
-    "source": "https://www.cvent.com/venues/dieppe/hotel/quality-inn-airport/venue-571c4537-2a20-4a3a-aee9-e5de5d16fe92",
+    "source": "local confirmation, 2026-11-16",
     "also": [
+     "https://www.cvent.com/venues/dieppe/hotel/quality-inn-airport/venue-571c4537-2a20-4a3a-aee9-e5de5d16fe92",
      "https://www.hotelscombined.ca/Hotel/Quality_Inn_Airport_Dieppe.htm",
      "https://www.choicehotels.com/en-ca/new-brunswick/dieppe/quality-inn-hotels/cna72"
     ],
-    "evidence": "Only directories say so (Cvent \"There is a free airport shuttle\"; HotelsCombined; Travelocity free-shuttle lists; a search index quotes the Choice page as \"Free Airport Transportation\"). Neither the hotel nor the airport says so in anything read directly: choicehotels.com answers 403 and the airport page lists the hotel with no shuttle note. NEEDS A PHONE CALL: (506) 858-8880.",
+    "evidence": "Confirmed locally on 16 November 2026 that the hotel runs an airport shuttle. Directories had said so before (Cvent \"There is a free airport shuttle\"; HotelsCombined; Travelocity); choicehotels.com answers 403 to automated readers and the airport page lists the hotel with no shuttle note.",
     "checked": "2026-11-16"
    },
    "logo": {
@@ -386,8 +386,8 @@
      "source": "https://destinationmonctondieppe.ca/listing/quality-inn-airport/189/"
     },
     "shuttle": {
-     "verified": false,
-     "source": "https://www.cvent.com/venues/dieppe/hotel/quality-inn-airport/venue-571c4537-2a20-4a3a-aee9-e5de5d16fe92"
+     "verified": true,
+     "source": "local confirmation, 2026-11-16"
     }
    },
    "osm": "https://www.openstreetmap.org/way/324264310",
