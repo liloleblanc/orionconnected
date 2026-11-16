@@ -344,6 +344,31 @@
    "viewBox": "0 0 122 67",
    "note": "#ExploreNB, white: foot of the Moncton cards.",
    "use": "foot of the Moncton cards, on the dark ground only (white lettering)"
+  },
+  "wild-rose-inn-black.svg": {
+   "source": "http://wildroseinn.com/images/wild_rose_inn_logo.svg",
+   "origin": "one-colour (black) file of the official Wild Rose Inn logo, supplied 16 Nov 2026; the logo's official source is the hotel's own site",
+   "licence": "Trademark of the Wild Rose Inn. One-colour (black) version used to name the hotel in a guest-information list; the colour file was pale on the cream column.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 386 106.7",
+   "has_style_block": false
+  },
+  "fairholm-boutique-inns-navy.png": {
+   "source": "https://static.wixstatic.com/media/e2f03f_43a07c31c5e74f839e22a0dc5390a781~mv2_d_3000_2054_s_2.png",
+   "origin": "one-colour version made from fairholm-boutique-inns.png (same shape and transparency, every ink in the card navy #14203c), 16 Nov 2026",
+   "licence": "Trademark of Fairholm Boutique Inns. Official file from its Wix site (wixstatic CDN), shown as a one-colour version to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "made_from": "fairholm-boutique-inns.png"
+  },
+  "great-george-navy.png": {
+   "source": "https://thegreatgeorge.com/wp-content/uploads/2024/05/mobile-logo.png",
+   "origin": "one-colour version made from great-george.png (same shape and transparency, every ink in the card navy #14203c), 16 Nov 2026",
+   "licence": "Trademark of The Great George. Official file from thegreatgeorge.com, shown as a one-colour version to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "made_from": "great-george.png"
   }
  },
  "already_in_repo": [

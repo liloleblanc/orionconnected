@@ -1888,11 +1888,13 @@
     "checked": "2026-11-16"
    },
    "logo": {
-    "file": "/logos/hotels/list/great-george.png",
+    "file": "/logos/hotels/list/great-george-navy.png",
     "opaque": false,
     "source": "https://thegreatgeorge.com/wp-content/uploads/2024/05/mobile-logo.png",
     "origin": "official site: thegreatgeorge.com",
-    "trim": "inset(11.9% 6.5% 11.9% 6.5%)"
+    "trim": "inset(11.9% 6.5% 11.9% 6.5%)",
+    "note": "One-colour version in the card navy, made from the official file (same shape, every ink in #14203c) for the cream column, 16 Nov 2026: the gold original was pale on cream.",
+    "original": "/logos/hotels/list/great-george.png"
    },
    "logo_missing": null,
    "listed": true,
@@ -2117,11 +2119,13 @@
     "checked": "2026-11-16"
    },
    "logo": {
-    "file": "/logos/hotels/list/fairholm-boutique-inns.png",
+    "file": "/logos/hotels/list/fairholm-boutique-inns-navy.png",
     "opaque": false,
     "fill": true,
     "source": "https://static.wixstatic.com/media/e2f03f_43a07c31c5e74f839e22a0dc5390a781~mv2_d_3000_2054_s_2.png",
-    "origin": "official site: its Wix site (wixstatic CDN)"
+    "origin": "official site: its Wix site (wixstatic CDN)",
+    "note": "One-colour version in the card navy, made from the official file (same shape, every ink in #14203c) for the cream column, 16 Nov 2026: the gold original was pale on cream.",
+    "original": "/logos/hotels/list/fairholm-boutique-inns.png"
    },
    "logo_missing": null,
    "listed": true,

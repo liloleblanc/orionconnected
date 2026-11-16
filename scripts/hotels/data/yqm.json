@@ -532,10 +532,12 @@
     "checked": "2026-11-16"
    },
    "logo": {
-    "file": "/logos/hotels/list/wild-rose-inn.svg",
+    "file": "/logos/hotels/list/wild-rose-inn-black.svg",
     "opaque": false,
     "source": "http://wildroseinn.com/images/wild_rose_inn_logo.svg",
-    "origin": "official site: wildroseinn.com"
+    "origin": "official site: wildroseinn.com",
+    "note": "One-colour version (black, from the hotel) for the cream column, 16 Nov 2026; the colour file was pale on cream.",
+    "original": "/logos/hotels/list/wild-rose-inn.svg"
    },
    "logo_missing": null,
    "listed": true,
