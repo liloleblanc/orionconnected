@@ -20,10 +20,19 @@ page, the skip loop, the dwell, the preloader), the list view in `fids-current/a
 words in `fids-current/js/board-strings.js` (nine languages each), and a credits line for the two faces. Test: `tests/hotel-list-cards.test.js`.
 Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate.
 
-## The data: `fids-current/data/hotels/yqm.json`, `yyg.json`
+## The data: `scripts/hotels/data/yqm.json`, `yyg.json`
 
-One file a city, checked on 2026-11-16. Every hotel keeps, field by field, where it was read and
-whether it was verified (`verified.<field>.verified`, `.source`, `.checked`); the shuttle and the
+One checked file a city, checked on 2026-11-16, kept out of the site. The site serves a slim
+copy of each, `fids-current/data/hotels/<code>.json` (about 10 KB instead of about 120 KB, since
+every gate with a flight to the city fetches it): only the hotels that are listed, and only the
+fields the cards and the phone app read (id, name, area, address line, telephone, website,
+season, shuttle mark, drive, logo; the marks of the foot). `node scripts/hotels/build-runtime.js`
+makes the slim copies from the checked files (`--check` only compares), and
+`tests/hotel-list-cards.test.js` holds the two to agree: the same bytes, the same hotels on the
+same cards on every day of a year, the same card markup.
+
+In the checked file every hotel keeps, field by field, where it was read and whether it was
+verified (`verified.<field>.verified`, `.source`, `.checked`); the shuttle and the
 season keep their own source and evidence. `listed: false` holds a hotel back (the reason is
 given); `excluded` lists the places left out (motels, hostels, apartment suites, places that have
 closed or could not be confirmed) with the reason for each.
@@ -72,6 +81,8 @@ flight boards keep Bricolage Grotesque.
 
 ## Refreshing a list
 
-Rebuild the city's file from the checked source sheet, keep every `verified` and `source` field,
+Edit the city's checked file (`scripts/hotels/data/<code>.json`), keep every `verified` and
+`source` field, run `node scripts/hotels/build-runtime.js` to make the slim copy the site serves,
 run `npm run assets:build` if a logo was added, and run `tests/hotel-list-cards.test.js`, which
-holds every hotel to the area rule, the season format and the shuttle rule.
+holds every hotel to the area rule, the season format and the shuttle rule, and the slim copy to
+the checked file.

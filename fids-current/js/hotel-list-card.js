@@ -20,7 +20,9 @@
    that city has a checked list (CITIES). Nothing anywhere else. The Accor pages and the page of
    the Algonquin Resort are separate slides and are not touched by this one.
 
-   DATA: data/hotels/<code>.json, one checked file a city (sources and verified marks in it).
+   DATA: data/hotels/<code>.json, a slim copy a city with only the fields read here and in the
+   app, made by scripts/hotels/build-runtime.js from the checked file of the city
+   (scripts/hotels/data/<code>.json, which keeps the source and verified mark of every fact).
    WORDS: the store (js/board-strings.js) in the languages of the board, the first language
    first; names, addresses and telephones are data. LOGOS: through <img> only, never inlined
    (an SVG with a generic <style> class leaks it into the page). LOOK: css/hotel-list-card.css.

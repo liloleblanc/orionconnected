@@ -30,12 +30,19 @@ const GIDS = read('fids-current/gids.html');
 const APP = read('fids-current/app.html');
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
 const KEYS = ['hotelsAirport', 'hotelsDowntown', 'hotelsNearby', 'hotelsResorts', 'hotelShuttle', 'hotelListScan', 'hotelsInCity', 'hotelCall', 'credOsmLine'];
+// the checked list of each city (every fact with its source and verified mark), kept out of the
+// site, and the slim copy the site serves, made from it by scripts/hotels/build-runtime.js
+const RT = require(path.join(ROOT, 'scripts/hotels/build-runtime.js'));
 const DOCS = {
+  YQM: JSON.parse(read('scripts/hotels/data/yqm.json')),
+  YYG: JSON.parse(read('scripts/hotels/data/yyg.json'))
+};
+const RUN = {
   YQM: JSON.parse(read('fids-current/data/hotels/yqm.json')),
   YYG: JSON.parse(read('fids-current/data/hotels/yyg.json'))
 };
-H.put('YQM', DOCS.YQM);
-H.put('YYG', DOCS.YYG);
+H.put('YQM', RUN.YQM);
+H.put('YYG', RUN.YYG);
 // a day at noon on the machine's own calendar (no board: the module reads the date's own fields)
 const day = (y, m, d) => new Date(y, m - 1, d, 12, 0, 0);
 const NOV16 = day(2026, 11, 16);
@@ -56,7 +63,7 @@ function onGate(g, run) {
 }
 const CITY_NAMES = { YQM: 'Moncton', YYG: 'Charlottetown' };
 const gate = (extra) => Object.assign({ BoardStrings: B, _gateIata: 'YYZ', _gateMapCity: (c) => CITY_NAMES[c] || c }, extra || {});
-const build = (city, L, o) => onGate(gate(), () => H.build(DOCS[city], L, Object.assign({ date: NOV16, home: 'YYZ' }, o || {})));
+const build = (city, L, o) => onGate(gate(), () => H.build(RUN[city], L, Object.assign({ date: NOV16, home: 'YYZ' }, o || {})));
 const views = (html) => html.split('<div class="axr-page hlc-view').slice(1);
 
 test('each list is one checked file: every hotel has its facts, where they were read and whether they were verified', () => {
@@ -99,6 +106,35 @@ test('each list is one checked file: every hotel has its facts, where they were 
       }
       if (h.area === 'resort') assert.ok(h.drive && h.drive.km > 30 && h.drive.from === code, at + ': a resort has its drive');
     }
+  }
+});
+
+test('the site serves a slim copy of each checked list, made from it by the build step, and the two agree', () => {
+  for (const code of RT.CITIES) {
+    const C = code.toUpperCase();
+    // the same bytes the build step writes from the checked file (run it after any edit)
+    assert.equal(read('fids-current/data/hotels/' + code + '.json'), RT.render(DOCS[C]), code + ': run node scripts/hotels/build-runtime.js');
+    assert.deepEqual(RUN[C], RT.slim(DOCS[C]));
+    // small: the fields the cards and the app read, and nothing of the sources
+    assert.ok(Buffer.byteLength(read('fids-current/data/hotels/' + code + '.json')) < 20000, code + ' is slim');
+    assert.doesNotMatch(read('fids-current/data/hotels/' + code + '.json'), /"(source|verified|evidence|notes|excluded|unverified|lat|lng)"/);
+    // the checked file stays out of the site
+    assert.ok(!fs.existsSync(path.join(SITE, 'data/hotels/' + code + '.full.json')));
+    // the same hotels on the same cards on every day of a year, and the same card markup
+    for (let d = 0; d < 366; d++) {
+      const when = new Date(2028, 0, 1 + d, 12);
+      const ids = (doc) => H.cards(doc, when).map((c) => c.area + ':' + c.hotels.map((h) => h.id).join(','));
+      assert.deepEqual(ids(RUN[C]), ids(DOCS[C]), code + ' ' + when.toDateString());
+    }
+    for (const date of [NOV16, day(2026, 7, 15)]) {
+      for (let pass = 0; pass < 3; pass++) {
+        const o = { date, home: 'YYZ', pass };
+        const html = (doc) => onGate(gate(), () => H.build(doc, ['en', 'fr'], o));
+        assert.equal(html(RUN[C]), html(DOCS[C]), code + ' pass ' + pass);
+      }
+    }
+    // a hotel held back is not in the slim copy at all
+    for (const h of DOCS[C].hotels) assert.equal(RUN[C].hotels.some((x) => x.id === h.id), h.listed !== false, h.id);
   }
 });
 
