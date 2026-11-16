@@ -128,12 +128,20 @@ test('a carrier types its name only when it genuinely has no lettering', () => {
   const carriers = [...welcomeCarriers().keys()].filter((c) => !HAS_NAME[c]);
   const uncovered = carriers.filter((c) => !WORDMARK[c]);
   const slug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  // A file that holds the name as live text, with no outline in it, is not lettering: it renders in
+  // whatever font the screen has. IATA_TO_WORDMARK leaves such carriers out on purpose and the board
+  // types the name in its own font (TAP, LOT, Royal Air Maroc and Republic), so it is no stranded art.
+  const typed = (f) => { const t = fs.readFileSync(f, 'utf8'); return /<text[\s>]/.test(t) && !/<path[\s>]/.test(t); };
+  const lettering = (base) => resolve(base, 'light').filter((f) => !/\.svg$/i.test(f) || !typed(f));
   const stranded = uncovered.filter((code) => {
     const name = welcomeCarriers().get(code).name;
     // any light-cut wordmark on disk whose slug plausibly names this carrier
-    return resolve(slug(name), 'light').length > 0
-        || resolve(slug(name).split('-')[0], 'light').length > 0;
+    return lettering(slug(name)).length > 0
+        || lettering(slug(name).split('-')[0]).length > 0;
   });
+  // Royal Air Maroc reaches the card (its colours, November 2026) and its files are the typed kind
+  const ram = resolve('royal-air-maroc', 'light');
+  assert.ok(ram.length > 0 && ram.every(typed) && uncovered.includes('AT'), 'Royal Air Maroc: a typed name in a picture, so the card types it');
   assert.deepEqual(stranded, [],
     'these carriers HAVE wordmark artwork on disk but the card still types ' +
     'their name — the file was added and never registered in IATA_TO_WORDMARK');

@@ -9506,6 +9506,26 @@ const AIRLINE_BRAND = {
   // v24150 — Air Creebec, from the supplied palette: the near black #272626 for the field, the
   // peach #FDD49A for the accent (the cream #FCF8E3 is the body of its gate, data/airline-colors.js).
   'YN': { bg1:'#272626', bg2:'#171616', bg3:'#3a3838', accent:'#FDD49A', name:'Air Creebec' },
+  // The carriers with no row here: their Welcome card was the house navy. The ground of the card runs from
+  // bg1, a dark colour of the airline, to bg2, white words on both; the accent is the colour of the rail
+  // and of the frame of the card. bg1 is not the accent, but for Air Cote d Ivoire: the darkest green of
+  // its site is its accent, so its card starts in the green of its frame and runs to its black. Each
+  // value is read off the airline site, as data/airline-colors.js records beside its row.
+  // Royal Air Maroc: secondary #690A22 to background-inverse #1A1717 (and inverse-light #333231), primary red.
+  'AT': { bg1:'#690A22', bg2:'#1A1717', bg3:'#333231', accent:'#C20831', name:'Royal Air Maroc' },
+  // VietJet: primary dark #6F0000 to its text #333333, background red #CA161C.
+  'VJ': { bg1:'#6F0000', bg2:'#333333', bg3:'#CA161C', accent:'#D91A21', name:'VietJet Air' },
+  // AirAsia X and Thai AirAsia: the dark red of airasia.com to its text #2C2B2F, its accent #E51837.
+  'D7': { bg1:'#8D1414', bg2:'#2C2B2F', bg3:'#E51837', accent:'#E32526', name:'AirAsia X' },
+  'FD': { bg1:'#8D1414', bg2:'#2C2B2F', bg3:'#E51837', accent:'#E32526', name:'Thai AirAsia' },
+  // Central Mountain Air: the deeper red of its buttons to its black, its button red #DC2F27.
+  '9M': { bg1:'#B52720', bg2:'#000000', bg3:'#DC2F27', accent:'#D42E12', name:'Central Mountain Air' },
+  // Royal Brunei: its browns #563C18 to #412D12, the brown #645138 of its rail (its yellow is a line only).
+  'BI': { bg1:'#563C18', bg2:'#412D12', bg3:'#645138', accent:'#645138', name:'Royal Brunei' },
+  // Air Cote d Ivoire: its dark green #027031 to its black, its primary green #1BA455.
+  'HF': { bg1:'#027031', bg2:'#000000', bg3:'#1BA455', accent:'#027031', name:'Air Côte d’Ivoire' },
+  // ASKY: the dark brown of its logo #481B16 to its text #292B2C, the brown of its site #6C321A.
+  'KP': { bg1:'#481B16', bg2:'#292B2C', bg3:'#6C321A', accent:'#6C321A', name:'ASKY Airlines' },
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
@@ -11930,6 +11950,14 @@ const AIRLINE_ACCENT = {
   // Skytrans (the fill of its logo), Juneyao, Aircalin (the header ground of its site), Hong
   // Kong Airlines and Sichuan (the primary token of their sites), Capital Airlines.
   'FC':'#007DC8','QN':'#62142E','HO':'#7C0044','SB':'#353E75','HX':'#DA2129','3U':'#D8000F','JD':'#EA4237',
+  // THE WHOLE GATE WAS THE FALLBACK BLUE for seven carriers of the name tables: no row here, no tile and
+  // no art of a colour, so every orb, tab and frame of their gate was #0033A1. Each value is read off the
+  // airline site (data/airline-colors.js says where, beside its row): VietJet its primary light (white
+  // words read on it), AirAsia X and Thai AirAsia the AirAsia red of AK and QZ, Central Mountain Air the
+  // red of its booking tabs, Royal Brunei the brown its site sets white type on (its yellow would carry
+  // the white words of the tabs at 1.27 to 1), Air Cote d Ivoire its dark green (white words read on it,
+  // not on its bright green), ASKY its brown.
+  'VJ':'#D91A21','D7':'#E32526','FD':'#E32526','9M':'#D42E12','BI':'#645138','HF':'#027031','KP':'#6C321A',
 };
 
 
@@ -20497,7 +20525,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24159" src="/textures/gate-sky-shelf.mp4?v=24159" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24160" src="/textures/gate-sky-shelf.mp4?v=24160" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20541,7 +20569,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24159" src="/textures/gate-sky-shelf.mp4?v=24159" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24160" src="/textures/gate-sky-shelf.mp4?v=24160" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21745,7 +21773,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24159" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24160" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -36374,6 +36402,58 @@ function _hexLum(hex) {
   } catch (e) { return 1; }
 }
 
+// THE TWO STRIPES OF THE BOARD, AS PAINTED: [odd row, even row], each a #hex.
+// A typed airline name keeps the accent of its carrier only where it reads at
+// 4.5 to 1 on both (render, the airline cell). The rows of #fidsTable are read
+// off the screen, the cell of the airline name first, laid over what is under
+// it where it is see-through, because the theme in use can be a preset of
+// THEMES, a stylesheet theme (body[data-fids-theme]) or a palette of the
+// airport, and the stylesheets decide which of them paints the rows. A row in
+// a state of its own is never read (the same rows wordmarkVariant skips).
+// Where the table has no plain row of a parity yet (the first paint), the
+// preset in use says where no stylesheet theme is set (a stylesheet theme
+// paints the rows over a preset: mist stays #E7E3DD and #DDD7D0 with gold
+// set), else the ground of the table stands for that stripe.
+// Returns [] only where nothing can be read at all.
+function _boardRowGrounds() {
+  var solid = function (el) {
+    var layers = [];
+    for (; el && el.nodeType === 1; el = el.parentElement) {
+      var m = String(getComputedStyle(el).backgroundColor || '').match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:\s*[,\/]\s*([\d.]+)(%?))?/);
+      if (!m) continue;
+      var a = (m[4] === undefined) ? 1 : (+m[4] / (m[5] ? 100 : 1));
+      if (!(a > 0)) continue;
+      layers.push([+m[1], +m[2], +m[3], a]);
+      if (a >= 1) break;
+    }
+    if (!layers.length) return null;
+    var c = [255, 255, 255];
+    for (var i = layers.length - 1; i >= 0; i--) {
+      var ly = layers[i];
+      c = [0, 1, 2].map(function (k) { return c[k] * (1 - ly[3]) + ly[k] * ly[3]; });
+    }
+    return '#' + c.map(function (v) { var h = Math.round(Math.max(0, Math.min(255, v))).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
+  };
+  var out = [null, null];
+  try {
+    var rows = document.querySelectorAll('#fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed)');
+    for (var r = 0; r < rows.length && !(out[0] && out[1]); r++) {
+      var par = Array.prototype.indexOf.call(rows[r].parentElement.children, rows[r]) % 2;
+      if (out[par]) continue;
+      out[par] = solid(rows[r].querySelector('td.td-airline') || rows[r].querySelector('td') || rows[r]);
+    }
+  } catch (e) {}
+  if (!(out[0] && out[1])) {
+    try {
+      var t = !(document.body && document.body.dataset && document.body.dataset.fidsTheme) && document.getElementById('dynamicTheme') && THEMES[currentTheme];
+      var tb = document.getElementById('fidsTable');
+      var fill = t ? [t.rowOdd, t.rowEven] : ((tb || document.body) ? [solid(tb || document.body), solid(tb || document.body)] : [null, null]);
+      out = [out[0] || fill[0], out[1] || fill[1]];
+    } catch (e) {}
+  }
+  return (out[0] && out[1]) ? out : [];
+}
+
 // IATA → emblem-only icon URL. Used by mkLogo() to populate the emblem
 // slot for carriers whose primary symbol is an icon/illustration (not a
 // solid tile). Distinct from IATA_TO_TILE_ICAO (square-tile carriers like
@@ -39384,7 +39464,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24159';
+var FIDS_BUILD_TAG = 'v24160';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -40482,6 +40562,8 @@ function render() {
   //   - 12-hour AM/PM time format throughout
   //   - Inline weather icon comes from the fidsWxIcon() helper in fids-v2.js
   //     (the animated set, or the Solid / Colour looks)
+  // the stripes the typed airline names sit on (_boardRowGrounds), read once for the page
+  const _nameGrounds = _boardRowGrounds();
   const _newHtml = pageFlights.map(f => {
     const loc       = isDep ? f.dest : f.origin;
     // A row with no code of its own goes through formatCityIata too, not the
@@ -40624,11 +40706,18 @@ function render() {
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
     // Legibility guard: on the DARK board a deep brand accent (Qatar's maroon
     // #5c0931, any dark navy/burgundy) is an unreadable smudge in the name
-    // slot — fall back to row ink. wordmarkVariant() is 'light' when the board
-    // is dark (light-ink artwork). Only gates the TEXT name; wordmark IMAGES
+    // slot — fall back to row ink. Only gates the TEXT name; wordmark IMAGES
     // are unaffected.
+    // A TYPED NAME READS ON BOTH STRIPES, ON EVERY THEME. The accent types the
+    // name only where it reads at 4.5 to 1 on the odd row and on the even row
+    // of the board as painted (_nameGrounds), else the name takes the row ink
+    // of the theme. The guard was for dark boards alone, so the AirAsia red
+    // #E32526 typed AirAsia X and Thai AirAsia at 4.2 to 1 on the pale even
+    // rows of the light presets. Where no stripe can be read, the old guard.
     try {
-      if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
+      if (_brandColor && _nameGrounds.length === 2) {
+        if (!_nameGrounds.every(function (g) { var c = _fidsContrast(_brandColor, g); return c !== null && c >= 4.5; })) _brandColor = '';
+      } else if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
     } catch (e) {}
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
     // brand colours clash there (TAP green/red on yellow) and the
@@ -69519,7 +69608,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24159" src="/textures/gate-sky-shelf.mp4?v=24159"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24160" src="/textures/gate-sky-shelf.mp4?v=24160"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

@@ -6,7 +6,7 @@
 <!-- v24145 — host-airport.js first: the desktop request below builds its
      board link with fidsBoardUrl, and the note above the title says why the
      app loads this file at all. -->
-<script src="js/host-airport.js?v=24159"></script>
+<script src="js/host-airport.js?v=24160"></script>
 <script>
 /* v24139 — A PHONE THAT ASKS ITS BROWSER FOR THE DESKTOP SITE GETS THE BOARD.
    Request desktop site on the app only reloaded the app: the browser asks
@@ -560,12 +560,12 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24159"></script>
-<script src="js/shared-names.js?v=24159"></script>
+<script src="js/board-strings.js?v=24160"></script>
+<script src="js/shared-names.js?v=24160"></script>
 <!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
-<script src="js/earth-places.js?v=24159"></script>
-<script src="data/airline-colors.js?v=24159"></script>
-<script src="js/feed-router.js?v=24159"></script>
+<script src="js/earth-places.js?v=24160"></script>
+<script src="data/airline-colors.js?v=24160"></script>
+<script src="js/feed-router.js?v=24160"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1157,12 +1157,47 @@ function _monoStep(start, grounds) {
   }
   return start;
 }
-function tileHtml(code){
+// White letters on a square: the WCAG contrast of white on a #hex.
+function _whiteOn(h){
+  const m=/^#([0-9a-f]{6})$/i.exec(String(h||'')); if(!m) return 0;
+  const n=parseInt(m[1],16), l=v=>{v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+  return 1.05/(0.2126*l((n>>16)&255)+0.7152*l((n>>8)&255)+0.0722*l(n&255)+0.05);
+}
+// THE SQUARE THAT SINKS INTO ITS HEADER. ground: the colours of the header the square sits on, on the
+// flight page (heroBrand), the bar colour of the airline. The square is the one of every other page
+// (stepped off the card and the page) wherever it stands clear of that header. Only where it sinks
+// into it (CIEDE2000 under 20: _monoStep of it on the header is not itself, its white letters already
+// reading at 3 to 1, a rule tests/airline-logos-every-surface.test.js holds for every code) does it
+// step away, to the first square that stands clear of the header with white letters at 4.5 to 1:
+// the second or third colour of the airline as it is, then at its first darker step (4 hundredths
+// toward black at a time, a fifth at most) where its letters read; its bar colour stepped off the
+// header, as it is or at that first darker step; its second or third colour at that first darker
+// step, however deep; the colour of its words. Else its bar colour stepped off the header.
+function _monoAway(acc,b,ground){
+  const hex6=x=>/^#[0-9a-f]{6}$/i.test(String(x||''));
+  const fits=x=>hex6(x)&&_monoStep(x,ground)===x&&_whiteOn(x)>=4.5;
+  const darker=(x,most)=>{
+    if(!hex6(x)) return null;
+    const n=parseInt(x.slice(1),16), v=[(n>>16)&255,(n>>8)&255,n&255];
+    for(let k=0;k<=most;k++){
+      const y='#'+v.map(c=>('0'+Math.round(c*(1-k*.04)).toString(16).toUpperCase()).slice(-2)).join('');
+      if(_whiteOn(y)>=4.5) return y;
+    }
+    return null;
+  };
+  const own=[b&&b.r2,b&&b.r3].filter(hex6), st=_monoStep(acc,TILE_GROUNDS.concat(ground));
+  const order=own.concat(own.map(x=>darker(x,5)),[st,darker(st,25)],own.map(x=>darker(x,25)),[b&&b.bodyText]);
+  return order.find(fits)||st;
+}
+function tileHtml(code,ground){
   const c=String(code||'').toUpperCase(), t=tileOf(c);
   if(t) return '<img class="tile '+t.k+'" src="'+esc(t.u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">';
   const b=window.AIRLINE_BRAND_COLORS&&AIRLINE_BRAND_COLORS[c];
   const acc=(b&&b.r1&&_lum(b.r1)<.45)?b.r1:('hsl('+_hue(c)+',42%,32%)');
-  return '<span class="tile mono" style="background:'+_monoStep(acc,TILE_GROUNDS)+'">'+esc(c.slice(0,3))+'</span>';
+  const sq=_monoStep(acc,TILE_GROUNDS);
+  if(ground&&ground.length&&_monoStep(sq,ground)!==sq)
+    return '<span class="tile mono" style="background:'+_monoAway(acc,b,ground)+'">'+esc(c.slice(0,3))+'</span>';
+  return '<span class="tile mono" style="background:'+sq+'">'+esc(c.slice(0,3))+'</span>';
 }
 // An airline's name in full, never the board's capitals and never a bare
 // letter: the board's own name, or the feed's fuller spelling of that same
@@ -1220,7 +1255,7 @@ function heroColors(code){
   }
   return {bg:bg, ink:(b&&b.r1Text)||'#ffffff', light:light, night:night};
 }
-function heroBrand(code,name,light){
+function heroBrand(code,name,light,ground){
   const u=wmUrls(code), nm=esc(name);
   let wm;
   if(!u) wm=name===code?'':'<div class="dt-name">'+nm+'</div>';
@@ -1235,7 +1270,7 @@ function heroBrand(code,name,light){
         :'<img class="wm wm-l" src="'+u[0]+'" alt="'+nm+'">')+white;
     } else wm=white;
   }
-  return '<div class="dt-brand">'+tileHtml(code)+wm+'</div>';
+  return '<div class="dt-brand">'+tileHtml(code,ground)+wm+'</div>';
 }
 // Normalise an aircraft code/model to the livery file code (e.g. "Boeing 737 MAX 8"→7M8).
 function acType(raw){
@@ -1603,7 +1638,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24159';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24160';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -2352,7 +2387,7 @@ function openFlight(i){
     +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(f.cityIata)?'<bdi>'+esc(wxTemp(f.cityIata))+'</bdi>':'')+'</span>':'')+'</div>';
   const when=f.schedDate?dayLabel(f.schedDate):'';
   document.getElementById('detailBody').innerHTML=
-    '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light)
+    '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light,[hc.bg].concat(hc.night?[hc.night]:[]))
     +'<div class="flt">'+esc(f.flight)+'</div>'
     +(opLine?'<div class="al-op">'+esc(T('operatedBy'))+' '+(opLogoHtml(f.operatedBy,hc.light)||esc(f.operatedBy))+'</div>':'')
     +liveryImg(f.airline,acRaw,f.operatedBy,reg)+'</div>'
