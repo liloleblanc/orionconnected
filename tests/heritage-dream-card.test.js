@@ -62,10 +62,22 @@ const WHAT_IF_CARDS = ['air-canada-dc9-2017', 'air-canada-747-305-2017', KEY];
 // DC-9, Air Nova after the Dream livery 747 and the 1965 DC-8 after the
 // A350-1000; the widebodies make the fewest back-to-back pairs each pool
 // allows, one and three.
+// 2026-11-15 — the Boeing 727-233 in the 1980 livery, from the archive,
+// joined it between the A350-1000 and the 1993 747, where the 1965 DC-8 was,
+// and the DC-8 moved in between the 1980 767 and Canadian Airlines: no two
+// cards of one type or one livery meet, the widebodies come every other card
+// in the Atlantic pool (none back to back) and make the two pairs elsewhere
+// that sixteen cards force; fin 305 comes 6, 6 and 6 apart and 6, 5 and 5.
+// 2026-11-15 — and the same 727-233 in the 1987 livery, from the archive
+// (tests/heritage-727-87-card.test.js), joined it last, after the 1993
+// TriStar, with no card moved: the pools are nineteen and seventeen, the
+// widebodies make no pair in the Atlantic pool and the one pair elsewhere
+// that seventeen cards force (the card parts the 1993 TriStar and the 1980
+// 747 across the wrap); fin 305 comes 6, 6 and 7 apart and 6, 5 and 6.
 const AIR_CANADA_SET = [
-  'air-atlantic', 'air-canada-747-305-80', 'air-canada', 'air-canada-767', 'canadian-airlines', 'air-canada-caps',
-  'air-canada-747-305-2017', 'air-nova', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-dc8',
-  'air-canada-747-305-93', 'air-canada-dc8-80', 'air-canada-767-87', 'air-canada-dc9-2017', 'air-canada-l1011-93'
+  'air-atlantic', 'air-canada-747-305-80', 'air-canada', 'air-canada-767', 'air-canada-dc8', 'canadian-airlines', 'air-canada-caps',
+  'air-canada-747-305-2017', 'air-nova', 'air-canada-l1011-87', 'air-canada-dc9-93', 'air-canada-a350-1000', 'air-canada-727-80',
+  'air-canada-747-305-93', 'air-canada-dc8-80', 'air-canada-767-87', 'air-canada-dc9-2017', 'air-canada-l1011-93', 'air-canada-727-87'
 ];
 
 function lift(name) {
@@ -178,7 +190,7 @@ test('the Dream livery card: a Boeing 787-8, the United lockup, and whose gates 
   // every other card names no gates: it is in the Air Canada set, in the order it had
   assert.deepEqual(MARKS.filter((k) => !k.gates).map((k) => k.key), AIR_CANADA_SET, 'the Air Canada set, card for card');
   assert.deepEqual(MARKS.filter((k) => k.gates).map((k) => k.key), [KEY], 'and one card that names its gates');
-  assert.equal(MARKS[MARKS.length - 1].key, 'air-canada-l1011-93', 'the 1993 TriStar is still last');
+  assert.deepEqual(MARKS.slice(-2).map((m) => m.key), ['air-canada-l1011-93', 'air-canada-727-87'], 'the 1993 TriStar last but one, the 1987 727 last');
 });
 
 test('its mark is the lockup the live boards use for United, in the blue it is drawn in', () => {

@@ -38,14 +38,21 @@
 // in nine languages.
 //
 // THE DECK. With three cards of fin 305 the deck is laid out so that they
-// come 5, 6 and 6 cards apart in the Atlantic pool (seventeen cards, with Air
-// Atlantic and Air Nova) and 5, 5 and 5 apart in the pool of fifteen at every
-// other Canadian airport, the most even both pools allow at once. Counted
-// with the Canadian Airlines DC-10, nine cards of each pool are widebodies, so
-// back-to-back pairs cannot all be avoided: at least one in the Atlantic pool
-// (nine of seventeen) and three elsewhere (nine of fifteen), and those are
-// the counts. The DC-10 sits beside no 747, and the DC-9, DC-8, 767 and
-// TriStar spacing holds.
+// come 6, 6 and 7 cards apart in the Atlantic pool (nineteen cards, with Air
+// Atlantic and Air Nova) and 6, 5 and 6 apart in the pool of seventeen at
+// every other Canadian airport, the most even both pools allow at once.
+// Counted with the Canadian Airlines DC-10, nine cards of each pool are
+// widebodies: in the Atlantic pool (nine of nineteen) they come every other
+// card, with no back-to-back pair, and elsewhere (nine of seventeen) one pair
+// cannot be avoided, and there is one. The DC-10 sits beside no 747, and the DC-9,
+// DC-8, 767 and TriStar spacing holds.
+// 2026-11-15 — the counts were seventeen and fifteen, with 5, 6 and 6 and
+// 5, 5 and 5, one pair and three, until the 727 came in after the A350-1000
+// and the 1965 DC-8 moved in between the 1980 767 and the DC-10
+// (tests/heritage-727-card.test.js). They were eighteen and sixteen, with
+// 6, 6 and 6 and 6, 5 and 5, no pair and two, until the 1987 727 came
+// last in the set, after the 1993 TriStar, the same day
+// (tests/heritage-727-87-card.test.js).
 //
 // tests/heritage-dream-card.test.js holds the set card for card (the three
 // cards are in its frozen list) and walks every airport and airline the
@@ -188,10 +195,10 @@ test('the card: a Boeing 747-133 in the Air Canada set, under Dream livery', () 
 
 test('their place in the rotation: the three fin 305 cards spread evenly, the DC-9, DC-8, 767 and TriStar spacing kept', () => {
   // The board rotates each airport pool in set order and wraps. The three
-  // cards of fin 305 come 5, 6 and 6 apart in the Atlantic pool of seventeen
-  // and 5, 5 and 5 apart in the pool of fifteen elsewhere: the most even both
-  // pools allow at once (no two of three can be more than five apart in
-  // fifteen, nor all three six apart in seventeen). The 2017 DC-9 stays three
+  // cards of fin 305 come 6, 6 and 7 apart in the Atlantic pool of nineteen
+  // and 6, 5 and 6 apart in the pool of seventeen elsewhere: the most even
+  // both pools allow at once (neither can be cut into three equal parts). The
+  // 2017 DC-9 stays three
   // or more cards from every other DC-9, and the two DC-8s, the two 767s and
   // the two TriStars are never back to back. The widebody pairs are counted in
   // the next test.
@@ -202,17 +209,18 @@ test('their place in the rotation: the three fin 305 cards spread evenly, the DC
   after('air-atlantic', ARCHIVE, 'the 1980 747 is the first Air Canada card, after Air Atlantic');
   after(ARCHIVE, 'air-canada', 'then the 1987 DC-9');
   after('air-canada', 'air-canada-767', 'then the 1980 767');
-  after('air-canada-767', 'canadian-airlines', 'then Canadian Airlines');
+  after('air-canada-767', 'air-canada-dc8', 'then the 1965 DC-8');
+  after('air-canada-dc8', 'canadian-airlines', 'then Canadian Airlines');
   after('canadian-airlines', 'air-canada-caps', 'then the 1980 DC-9');
   after('air-canada-caps', KEY, 'then the Dream livery 747');
   after(KEY, 'air-nova', 'then Air Nova');
-  after('air-canada-dc8', ARCHIVE93, 'the 1993 747 after the 1965 DC-8');
+  after('air-canada-727-80', ARCHIVE93, 'the 1993 747 after the 727');
   after(ARCHIVE93, 'air-canada-dc8-80', 'and before the 1980 DC-8');
-  assert.equal(keys[keys.length - 1], 'air-canada-l1011-93', 'the 1993 TriStar is still last');
+  assert.deepEqual(keys.slice(-2), ['air-canada-l1011-93', 'air-canada-727-87'], 'the 1993 TriStar last but one, the 1987 727 last (tests/heritage-727-87-card.test.js)');
   const dist = (pool, a, b) => { const gap = Math.abs(pool.indexOf(a) - pool.indexOf(b)); return Math.min(gap, pool.length - gap); };
   const gaps = (pool) => { const at = FIN305.map((k) => pool.indexOf(k)).sort((x, y) => x - y); return [at[1] - at[0], at[2] - at[1], pool.length - at[2] + at[0]]; };
   // the Atlantic pool (with Air Atlantic and Air Nova) and the pool of every other Canadian airport
-  for (const [ia, n, spread] of [['YHZ', 17, [5, 6, 6]], ['YVR', 15, [5, 5, 5]]]) {
+  for (const [ia, n, spread] of [['YHZ', 19, [6, 6, 7]], ['YVR', 17, [6, 5, 6]]]) {
     const pool = MARKS.filter((mk) => !mk.gates && (mk.airports === '*CA' || (Array.isArray(mk.airports) && mk.airports.includes(ia)))).map((mk) => mk.key);
     assert.equal(pool.length, n, ia + ': ' + n + ' cards');
     for (const k of FIN305) assert.ok(pool.includes(k), k + ' runs at ' + ia);
@@ -236,24 +244,24 @@ test('the Canadian Airlines DC-10 counted as a widebody: the fewest back-to-back
   const poolAt = (ia) => MARKS.filter((mk) => !mk.gates && (mk.airports === '*CA' || (Array.isArray(mk.airports) && mk.airports.includes(ia)))).map((mk) => mk.key);
   const pairs = (pool) => pool.map((k, i) => [k, pool[(i + 1) % pool.length]]).filter(([a, b]) => WIDE.has(a) && WIDE.has(b)).map(([a, b]) => a + ' then ' + b);
   const near747 = (pool) => { const i = pool.indexOf('canadian-airlines'), n = pool.length; return [pool[(i + n - 1) % n], pool[(i + 1) % n]].filter((k) => FIN305.includes(k)); };
-  // the airports of Air Atlantic and Air Nova: seventeen cards, nine of them widebodies, so one pair at least, and one
+  // the airports of Air Atlantic and Air Nova: nineteen cards, nine of them widebodies, so they can come every other card, and they do
   for (const ia of ['YHZ', 'YYZ', 'YUL', 'YQM', 'YYT', 'YOW', 'YSJ', 'YFC', 'YQX', 'YDF', 'YQY', 'YYG']) {
     const pool = poolAt(ia);
     const wide = pool.filter((k) => WIDE.has(k)).length;
-    assert.equal(pool.length, 17, ia + ': the Atlantic pool');
+    assert.equal(pool.length, 19, ia + ': the Atlantic pool');
     assert.equal(wide, 9, ia + ': nine widebodies');
-    assert.deepEqual(pairs(pool), ['air-canada-767 then canadian-airlines'], ia + ': one pair, the fewest there can be, and no two Air Canada widebodies');
-    assert.equal(pairs(pool).length, wide - (pool.length - wide), ia + ': no more pairs than the count forces');
+    assert.deepEqual(pairs(pool), [], ia + ': no pair, the fewest there can be');
+    assert.equal(pairs(pool).length, Math.max(0, wide - (pool.length - wide)), ia + ': no more pairs than the count forces');
     assert.deepEqual(near747(pool), [], ia + ': the DC-10 beside no 747');
   }
-  // every other Canadian airport: fifteen cards, nine widebodies and six narrowbodies, so three pairs at least, and three
+  // every other Canadian airport: seventeen cards, nine widebodies and eight narrowbodies, so one pair at least, and one
   for (const ia of ['YVR', 'YYC', 'YEG', 'YWG', 'YXE', 'YQR', 'YXU', 'YQB', 'YLW', 'YYJ']) {
     const pool = poolAt(ia);
     const wide = pool.filter((k) => WIDE.has(k)).length;
-    assert.equal(pool.length, 15, ia + ': no Air Atlantic and no Air Nova');
+    assert.equal(pool.length, 17, ia + ': no Air Atlantic and no Air Nova');
     assert.equal(wide, 9, ia + ': nine widebodies');
-    assert.deepEqual(pairs(pool), ['air-canada-767 then canadian-airlines', KEY + ' then air-canada-l1011-87', 'air-canada-l1011-93 then ' + ARCHIVE],
-      ia + ': the three pairs, the fewest there can be (' + wide + ' - ' + (pool.length - wide) + ')');
+    assert.deepEqual(pairs(pool), [KEY + ' then air-canada-l1011-87'],
+      ia + ': the one pair, the fewest there can be (' + wide + ' - ' + (pool.length - wide) + ')');
     assert.equal(pairs(pool).length, wide - (pool.length - wide), ia + ': no more pairs than the count forces');
     assert.deepEqual(near747(pool), [], ia + ': the DC-10 beside no 747');
   }
