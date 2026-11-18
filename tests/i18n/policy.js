@@ -46,6 +46,10 @@ const PASSENGER_SCRIPTS = [
   // the page of the Algonquin Resort in the gate centre deck: its words are
   // the store's, its facts of the house are one data table (below)
   'fids-current/js/algonquin-card.js',
+  // the hotel lists of the gate centre deck: their words are the store's; the
+  // names, addresses and telephones of the hotels are data files
+  // (data/hotels/<code>.json), read at run time
+  'fids-current/js/hotel-list-card.js',
   'fids-current/js/boarding-sequence.js',
   // the Earth floor under the departures and arrivals: names from the rows,
   // times from the store, no words of its own
@@ -88,6 +92,8 @@ const PASSENGER_STYLES = [
   'fids-current/css/remembrance.css',
   // the page of the Algonquin Resort (no words drawn by CSS)
   'fids-current/css/algonquin-card.css',
+  // the hotel lists (no words drawn by CSS)
+  'fids-current/css/hotel-list-card.css',
   // the homepage and the credits page
   'fids-current/css/home.css'
 ];

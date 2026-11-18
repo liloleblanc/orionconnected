@@ -1,0 +1,381 @@
+{
+ "about": "Hotel logos of the free hotel list cards (cream logo column) and the tourism marks of their foot. Each file is copied unaltered from the official source named here (the hotel, its chain, the tourism body, or Wikimedia Commons). Load through <img> only, never inline (some SVGs carry generic <style> class names). Trademarks of their owners, used to name the hotel in a guest-information list.",
+ "files": {
+  "amsterdam-inn.svg": {
+   "source": "https://amsterdaminns.com/wp-content/uploads/2025/12/group-8.svg",
+   "origin": "official site: amsterdaminns.com",
+   "licence": "Trademark of Amsterdam Inns. Official file from amsterdaminns.com, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 316 68",
+   "has_style_block": false
+  },
+  "arts-hotel.png": {
+   "source": "https://www.theartshotel.ca/files-sbbasic/ba_thearts_ca/logo/_the-arts-hotel-charlottetown.png",
+   "origin": "official site: theartshotel.ca",
+   "licence": "Trademark of The Arts Hotel. Official file from theartshotel.ca, used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "png",
+   "px": "636x250",
+   "transparent_background": true,
+   "note": "The logo is drawn on its own white plate: shows as a white panel on cream and on dark. The \"inverted\" file on its site looks the same."
+  },
+  "best-western-plus.png": {
+   "source": "https://www.bestwestern.com/content/dam/best-western/brand/brand-logos/best-western-plus-horizontal-logo-rgb.png",
+   "origin": "official site: bestwestern.com brand logos",
+   "licence": "Trademark of Best Western International. Official file from bestwestern.com brand logos, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "300x200",
+   "transparent_background": true,
+   "note": "Red BW, grey \"Best Western\" sinks on the dark card. 300 px wide."
+  },
+  "blackbush-beach-resort.jpg": {
+   "source": "https://blackbush.ca/wp-content/uploads/2026/01/Blackbush-Logo-2024.jpg",
+   "origin": "official site: blackbush.ca",
+   "licence": "Trademark of Blackbush Beach Resort. Official file from blackbush.ca, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "jpeg",
+   "px": "1500x731",
+   "transparent_background": false,
+   "note": "JPEG on an opaque white ground: shows as a white tile."
+  },
+  "casino-new-brunswick.svg": {
+   "source": "https://cdn.greatcanadian.com/wp-content/uploads/2024/02/nb-logo-01-2.svg",
+   "origin": "official site: greatcanadian.com (its CDN)",
+   "licence": "Trademark of Great Canadian Entertainment. Official file from greatcanadian.com (its CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 102.853 69.436",
+   "has_style_block": false,
+   "note": "Red and blue, vector. Replaces the 174 px great-canadian-logo.png."
+  },
+  "chateau-moncton.png": {
+   "source": "https://chateaumoncton.ca/images/logo.png",
+   "origin": "official site: chateaumoncton.ca",
+   "licence": "Trademark of Château Moncton. Official file from chateaumoncton.ca, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "97x96",
+   "transparent_background": true,
+   "note": "Only 97 x 96 px: fine at list size, soft if enlarged. Black letters with a thin outline: weak on the dark card."
+  },
+  "coastal-inns.png": {
+   "source": "https://coastalinns.com/wp/wp-content/uploads/2025/11/CoastalInns_Logo.png",
+   "origin": "official site: coastalinns.com",
+   "licence": "Trademark of Coastal Inns. Official file from coastalinns.com, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "341x79",
+   "transparent_background": true
+  },
+  "crowne-plaza-grey.webp": {
+   "source": "https://www.ihgplc.com/~/media/Images/I/Ihg-Plc/images/brands/brand-crowne-plaza/crowne-plaza-grey.webp",
+   "origin": "official site: ihgplc.com (IHG corporate brand page)",
+   "licence": "Trademark of IHG. Official file from ihgplc.com (IHG corporate brand page), used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "webp",
+   "px": "269x121",
+   "transparent_background": true,
+   "note": "Current CROWNE PLAZA wordmark in grey. Only 269 px wide: fine at list-logo size, soft if enlarged."
+  },
+  "dalvay-by-the-sea.png": {
+   "source": "https://static.wixstatic.com/media/ba2cd3_0e4feb7081444129854c652e89b867a2~mv2.png",
+   "origin": "official site: dalvaybythesea.com (wixstatic CDN)",
+   "licence": "Trademark of Dalvay by the Sea. Official file from dalvaybythesea.com (wixstatic CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "png",
+   "px": "200x145",
+   "transparent_background": true,
+   "note": "Gold script."
+  },
+  "days-inn-by-wyndham.svg": {
+   "source": "https://www.wyndhamhotels.com/content/dam/images/global/logos/di_bywynd_ca_rgb_pos.svg",
+   "origin": "official site: wyndhamhotels.com",
+   "licence": "Trademark of Wyndham Hotels & Resorts. Official file from wyndhamhotels.com, used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "svg",
+   "viewBox": "0 0 190 112",
+   "has_style_block": true,
+   "note": "Sun over a navy Days Inn panel: reads on both. Replaces the repo Days Inn files (white sky panel)."
+  },
+  "delta-hotels.svg": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/7/72/Delta_Hotels_logo.svg",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo), tagged trademarked. Trademark of Marriott International. Commons credit: Marriott International.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 271.77332 336",
+   "has_style_block": false,
+   "note": "Navy. Byte-identical to repo fids-current/logos/airlines/us-major/delta-hotels.svg."
+  },
+  "dutch-inn.png": {
+   "source": "https://static.wixstatic.com/media/524714_ec3f7c7210ad409784fff042a3ce31ed~mv2.png",
+   "origin": "official site: its Wix site (wixstatic CDN)",
+   "licence": "Trademark of Dutch Inn. Official file from its Wix site (wixstatic CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "833x501",
+   "transparent_background": true,
+   "note": "Brown lettering sinks on the dark card."
+  },
+  "fairfield-by-marriott.svg": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/8/84/FairfieldMarriott.svg",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo), tagged trademarked. Trademark of Marriott International. Commons credit: marriott.com.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 373.2 239.4",
+   "has_style_block": false,
+   "note": "Blue lettering sinks on the dark card. Replaces the repo Fairfield PNGs (old badge on a white square)."
+  },
+  "fairholm-boutique-inns.png": {
+   "source": "https://static.wixstatic.com/media/e2f03f_43a07c31c5e74f839e22a0dc5390a781~mv2_d_3000_2054_s_2.png",
+   "origin": "official site: its Wix site (wixstatic CDN)",
+   "licence": "Trademark of Fairholm Boutique Inns. Official file from its Wix site (wixstatic CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "png",
+   "px": "3000x2054",
+   "transparent_background": true,
+   "note": "Gold."
+  },
+  "four-points-by-sheraton.svg": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Four_Points_Logo_neu.svg",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo), tagged trademarked. Trademark of Marriott International. Commons credit: own work, drawn in Inkscape.",
+   "ground": "light",
+   "type": "svg",
+   "has_style_block": false,
+   "note": "A Commons redraw (no brand file named as its source): check it against the hotel sign before it goes live. Black lettering sinks on the dark card. No white version. Has width/height but no viewBox: it scaled correctly in Chrome <img> on the sheet; check Safari once."
+  },
+  "great-george.png": {
+   "source": "https://thegreatgeorge.com/wp-content/uploads/2024/05/mobile-logo.png",
+   "origin": "official site: thegreatgeorge.com",
+   "licence": "Trademark of The Great George. Official file from thegreatgeorge.com, used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "png",
+   "px": "500x150",
+   "transparent_background": true,
+   "note": "Gold, 500 px (larger copy of logo-gold.png)."
+  },
+  "hampton-by-hilton.png": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/2/28/Hampton-by-Hilton-Logo-Color.png",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo). Trademark of Hilton. Commons credit: stories.hilton.com media library.",
+   "ground": "both",
+   "type": "png",
+   "px": "2130x1348",
+   "transparent_background": true,
+   "note": "Badge carries its own blue ground, 2130 px. NEVER repo hilton/hampton-white.png or hampton-inn-white.png (solid white shapes)."
+  },
+  "harbour-house.png": {
+   "source": "https://www.hhhouse.net/wp-content/uploads/2019/12/cropped-HHI-Hor-2C-copia-3.png",
+   "origin": "official site: hhhouse.net",
+   "licence": "Trademark of The Harbour House. Official file from hhhouse.net, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "250x88",
+   "transparent_background": true,
+   "note": "Orange and brown; the brown words weaken on the dark card."
+  },
+  "hilton-garden-inn.png": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/4/44/HGI-Logo-Color_HR.png",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo), tagged trademarked. Trademark of Hilton. Commons credit: newsroom.hilton.com.",
+   "ground": "light",
+   "type": "png",
+   "px": "800x546",
+   "transparent_background": true,
+   "note": "Current one-line lockup: red flower, dark-grey lettering that sinks on the dark card. 800 px."
+  },
+  "holiday-inn-express.svg": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/7/75/Holiday_Inn_Express_by_IHG_logo.svg",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo), tagged trademarked. Trademark of IHG. Commons credit: ihg.com.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 250 250",
+   "has_style_block": false,
+   "note": "Navy tile reads on both grounds, but the navy \"BY IHG\" line under it vanishes on the dark card. Byte-identical to repo ihg/holiday-inn-express.svg and ihg/HI-Express.svg."
+  },
+  "holman-grand.svg": {
+   "source": "https://f0bbb8b611ccb753aa55-e28a706a866e259ed2dd5118cc4c4c84.ssl.cf1.rackcdn.com/u/the-holman-grand-hotel/holman-logo-dark.svg",
+   "origin": "official site: the hotel's own site (its Rackspace CDN)",
+   "licence": "Trademark of The Holman Grand Hotel. Official file from the hotel's own site (its Rackspace CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 250 127",
+   "has_style_block": false,
+   "note": "SVG wrapping an embedded PNG (not true vector)."
+  },
+  "hotel-moncton.png": {
+   "source": "https://irp-cdn.multiscreensite.com/13434bc2/dms3rep/multi/logo_black2.png",
+   "origin": "official site: monctonhotel.ca (its site CDN)",
+   "licence": "Trademark of Hotel Moncton. Official file from monctonhotel.ca (its site CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "450x100",
+   "transparent_background": true,
+   "note": "Black script."
+  },
+  "hotel-shediac.png": {
+   "source": "https://hotelshediac.ca/wp-content/uploads/2024/05/hotel-shediac-logo.png",
+   "origin": "official site: hotelshediac.ca",
+   "licence": "Trademark of Hôtel Shediac. Official file from hotelshediac.ca, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "710x166",
+   "transparent_background": true,
+   "note": "Brown colour version."
+  },
+  "quality.jpg": {
+   "source": "https://media.choicehotels.com/download/Quality_W+Endorsement_Chiclet_RGB.jpg",
+   "origin": "official site: media.choicehotels.com (Choice media library)",
+   "licence": "Trademark of Choice Hotels. Official file from media.choicehotels.com (Choice media library), used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "jpeg",
+   "px": "1801x1801",
+   "transparent_background": false,
+   "note": "Current \"Quality by Choice Hotels\" chiclet, 1801 px. JPEG: tiny white pixels at the rounded corners, just visible on the dark card, invisible on cream. For the two \"Quality Inn\" hotels (no \"& Suites\")."
+  },
+  "rodd-charlottetown.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-1fkxchm8t253uxyy84dmpnhsd/official-logo-of-rodd-charlottetown-hotel.svg",
+   "origin": "official site: roddvacations.com (Galaxy CDN)",
+   "licence": "Trademark of Rodd Hotels & Resorts. Official file from roddvacations.com (Galaxy CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 187.2 100",
+   "has_style_block": true
+  },
+  "rodd-moncton.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-3qv9lr31qjd96wjx1vnjo1o9v/official-logo-of-rodd-moncton.svg",
+   "origin": "official site: roddvacations.com (Galaxy CDN)",
+   "licence": "Trademark of Rodd Hotels & Resorts. Official file from roddvacations.com (Galaxy CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 184.92 100",
+   "has_style_block": true
+  },
+  "rodd-royalty.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-4w3475nt4uvtc89gi22fbgu9r/official-logo-of-rodd-royalty.svg",
+   "origin": "official site: roddvacations.com (Galaxy CDN)",
+   "licence": "Trademark of Rodd Hotels & Resorts. Official file from roddvacations.com (Galaxy CDN), used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 184.92 100",
+   "has_style_block": true
+  },
+  "shaws-hotel.png": {
+   "source": "https://shawshotel.ca/wp-content/uploads/2017/04/Shaws-Hotel-logo.png",
+   "origin": "official site: shawshotel.ca",
+   "licence": "Trademark of Shaw's Hotel. Official file from shawshotel.ca, used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "png",
+   "px": "200x160",
+   "transparent_background": true,
+   "note": "Red with its own white plate in the badge."
+  },
+  "sydney-boutique-inn.jpg": {
+   "source": "https://sydneyinn.com/wp-content/uploads/2017/04/logomain.jpg",
+   "origin": "official site: sydneyinn.com",
+   "licence": "Trademark of The Sydney Boutique Inn & Suites. Official file from sydneyinn.com, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "jpeg",
+   "px": "279x116",
+   "transparent_background": false,
+   "note": "Small (279 x 116) JPEG on an opaque white ground: shows as a white tile."
+  },
+  "tapestry-collection-by-hilton.png": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Tapestry-Collection-By-Hilton-Logo.png",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: CC0. Trademark of Hilton. Commons credit: stories.hilton.com media library.",
+   "ground": "light",
+   "type": "png",
+   "px": "800x546",
+   "transparent_background": true,
+   "note": "Navy and purple lettering sink on the dark card."
+  },
+  "travelodge-by-wyndham.svg": {
+   "source": "https://www.wyndhamhotels.com/content/dam/images/global/logos/tl_bywynd_rgb_pos.svg",
+   "origin": "official site: wyndhamhotels.com",
+   "licence": "Trademark of Wyndham Hotels & Resorts. Official file from wyndhamhotels.com, used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "svg",
+   "viewBox": "0 0 190 70",
+   "has_style_block": true,
+   "note": "Navy box with white lettering: reads on both."
+  },
+  "wild-rose-inn.svg": {
+   "source": "http://wildroseinn.com/images/wild_rose_inn_logo.svg",
+   "origin": "official site: wildroseinn.com",
+   "licence": "Trademark of Wild Rose Inn. Official file from wildroseinn.com, used unaltered to name the hotel in a guest-information list.",
+   "ground": "both",
+   "type": "svg",
+   "viewBox": "0 0 385.9 106.6",
+   "has_style_block": false,
+   "note": "Wordmark reads on both; the pale rose drawing fades on cream."
+  },
+  "wingate-by-wyndham.svg": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/9/93/Wingate_by_Wyndham_logo.svg",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo), tagged trademarked. Trademark of Wyndham Hotels & Resorts. Commons credit: Wingate By Wyndham.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 150 66.5",
+   "has_style_block": true,
+   "note": "Dark-green word sinks on the dark card."
+  },
+  "foot/destination-moncton-dieppe-white.svg": {
+   "source": "https://destinationmonctondieppe.ca/includes/public/assets/shared/logos/moncton-dieppe-white.svg",
+   "origin": "official site: destinationmonctondieppe.ca (supplied for the cards)",
+   "licence": "Trademark of Destination Moncton-Dieppe. Official file from destinationmonctondieppe.ca (supplied for the cards), used unaltered to name the hotel in a guest-information list.",
+   "ground": "dark",
+   "type": "svg",
+   "viewBox": "0 0 293 73",
+   "note": "White lettering: foot of the Moncton cards.",
+   "use": "foot of the Moncton cards, on the dark ground only (white lettering)"
+  },
+  "foot/explore-nb.svg": {
+   "source": "https://destinationmonctondieppe.ca/includes/public/assets/shared/logos/explore-nb.svg",
+   "origin": "official site: destinationmonctondieppe.ca (supplied for the cards)",
+   "licence": "Trademark of Tourism New Brunswick. Official file from destinationmonctondieppe.ca (supplied for the cards), used unaltered to name the hotel in a guest-information list.",
+   "ground": "dark",
+   "type": "svg",
+   "viewBox": "0 0 122 67",
+   "note": "#ExploreNB, white: foot of the Moncton cards.",
+   "use": "foot of the Moncton cards, on the dark ground only (white lettering)"
+  },
+  "wild-rose-inn-black.svg": {
+   "source": "http://wildroseinn.com/images/wild_rose_inn_logo.svg",
+   "origin": "one-colour (black) file of the official Wild Rose Inn logo, supplied 16 Nov 2026; the logo's official source is the hotel's own site",
+   "licence": "Trademark of the Wild Rose Inn. One-colour (black) version used to name the hotel in a guest-information list; the colour file was pale on the cream column.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 386 106.7",
+   "has_style_block": false
+  },
+  "fairholm-boutique-inns-navy.png": {
+   "source": "https://static.wixstatic.com/media/e2f03f_43a07c31c5e74f839e22a0dc5390a781~mv2_d_3000_2054_s_2.png",
+   "origin": "one-colour version made from fairholm-boutique-inns.png (same shape and transparency, every ink in the card navy #14203c), 16 Nov 2026",
+   "licence": "Trademark of Fairholm Boutique Inns. Official file from its Wix site (wixstatic CDN), shown as a one-colour version to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "made_from": "fairholm-boutique-inns.png"
+  },
+  "great-george-navy.png": {
+   "source": "https://thegreatgeorge.com/wp-content/uploads/2024/05/mobile-logo.png",
+   "origin": "one-colour version made from great-george.png (same shape and transparency, every ink in the card navy #14203c), 16 Nov 2026",
+   "licence": "Trademark of The Great George. Official file from thegreatgeorge.com, shown as a one-colour version to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "made_from": "great-george.png"
+  }
+ },
+ "already_in_repo": [
+  "/logos/hotels/choice-le-meridien/comfort-inn.png",
+  "/logos/hotels/choice-le-meridien/quality-inn.png",
+  "/logos/hotels/hyatt/hyatt-place.png",
+  "/logos/hotels/marriott/residence-inn.png",
+  "/logos/hotels/marriott/the-algonquin-resort-1.svg"
+ ]
+}

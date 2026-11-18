@@ -1,0 +1,3709 @@
+{
+ "schema": 1,
+ "iata": "YYG",
+ "city": "Charlottetown",
+ "province": "PE",
+ "built": "2026-11-16",
+ "about": "Guest information for the free hotel list cards of the boards (js/hotel-list-card.js) and the full list in the phone app (app.html). Facts only: name, street address, phone, website, the logo where an official one reads on the cream column. No prices, no offers. Every field keeps the source it was read from and whether it was verified.",
+ "runtime": "fids-current/data/hotels/yyg.json is made from this file by scripts/hotels/build-runtime.js: only the hotels that are listed and only the fields the cards and the phone app read. Edit this file, then run the script; tests/hotel-list-cards.test.js holds the two to agree.",
+ "rules": {
+  "areas": "downtown = within about 2 km of the centre point; airport = within about 5 km of the airport point; resort = a destination resort (resort true) more than 30 km from both points, listed with its drive distance (no tolerance); nearby = the rest within about 30 km of either point. Each about-limit has a 10 % tolerance; downtown is tested first, then airport.",
+  "listed": "listed false = held back (the reason is given). A listed hotel is shown only while its season is open (season.year_round, or a season.open range that holds the date at the airport).",
+  "shuttle": "shuttle.mark true only where the shuttle is verified on the hotel's or the airport's own page.",
+  "logo": "logo.file is loaded through <img>, never inlined; opaque = the file has its own light ground (shown with a multiply blend on the cream column so the box does not show).",
+  "logo_fill": "logo.fill true = a stacked lockup whose words are small at the common logo height (62 px at 1680x1050): it may take the whole cell of the cream column, the width of the column and the height of its line. The file is shown as it is."
+ },
+ "points": {
+  "airport": {
+   "lat": 46.28575,
+   "lng": -63.13113,
+   "source": "https://www.openstreetmap.org/way/28329014",
+   "what": "terminal building, 250 Maple Hills Avenue",
+   "board_point": {
+    "lat": 46.29,
+    "lng": -63.12,
+    "source": "fids-current/js/airport-coords.js",
+    "note": "About 1 km from the terminal. Every hotel falls in the same area from either point (distance_km.airport_board_point is kept for the check)."
+   }
+  },
+  "centre": {
+   "lat": 46.23528,
+   "lng": -63.12962,
+   "source": "https://www.openstreetmap.org/way/250006082",
+   "what": "Charlottetown City Hall, 199 Queen Street",
+   "note": "YYG has no entry in DOWNTOWN_COORDS in fids-core.js (checked on main today). Suggested entry: 'YYG': { lat: 46.2353, lng: -63.1296, name: 'Charlottetown' }."
+  }
+ },
+ "foot_marks": [],
+ "notes": {
+  "verified_legend": {
+   "verified=true": "read on the hotel’s own site, the Tourism PEI listing or the airport’s own site on the checked date (OpenStreetMap for coordinates)",
+   "verified=false": "from a search index, a travel directory or OpenStreetMap address data only, or not found: the note says which; to be confirmed"
+  },
+  "brand_sites_note": "Marriott, Hilton, IHG and Choice pages answer 403 to automated readers (checked again today: hiexpress.com, marriott.com, choicehotels.com, hilton.com). Those hotels rest on the Tourism PEI listing; their postal codes come from a search index and are marked unverified. Discover Charlottetown (discovercharlottetown.com) shows a bot check: not used, not bypassed.",
+  "shuttle_note": "Charlottetown Airport, 2026-11-16: \"At this time, there are no operating hotel shuttles.\" So no Charlottetown hotel carries the \"Airport shuttle | Navette aéroport\" mark. Recheck each refresh: the page says \"at this time\".",
+  "season_note": "Judged for Monday 16 November 2026. Tourism PEI prints with its dates: dates of operation may vary, contact the operator to confirm. Where a hotel’s own site states its season, that wins.",
+  "sources": [
+   "Hotels’ own sites (best source; read 2026-11-16)",
+   "Tourism PEI accommodation listings (tourismpei.com/where-to-stay/...), with provincial licence numbers and dates of operation",
+   "Charlottetown Airport, ground transportation page (flyyyg.com)",
+   "OpenStreetMap via Overpass and Nominatim (ODbL): credit \"© OpenStreetMap contributors\"",
+   "OSRM public router on OpenStreetMap roads, for the resort drive distances",
+   "Search index (travel directories quoting brand pages): only for postal codes of brand hotels, marked verified=false"
+  ],
+  "not_listed": "Summerside hotels (about 60 km, not resorts) are outside the Charlottetown cards. Cavendish lodging is cottages and motels, all closed for the season (see hotels_excluded).",
+  "foot_mark_option": {
+   "note": "Moncton cards carry Destination Moncton-Dieppe and #ExploreNB. The Charlottetown equivalent found earlier is Tourism PEI’s own mark (not yet approved for the cards).",
+   "tourism_pei_white": "https://www.tourismpei.com/themes/custom/tpei/logo-white.svg",
+   "tourism_pei": "https://www.tourismpei.com/themes/custom/tpei/logo.svg"
+  }
+ },
+ "excluded": [
+  {
+   "name": "Fair Isle Motel",
+   "kind": "motel",
+   "address": "511 Brackley Point Road, Charlottetown",
+   "phone": "(902) 213-5506",
+   "season": "year-round",
+   "source": "https://www.tourismpei.com/where-to-stay/fair-isle-motel",
+   "reason": "Motel (list rule: motels off unless picked). Closest lodging to the terminal (about 0.5 km)."
+  },
+  {
+   "name": "Sherwood Motel & Inn",
+   "kind": "motel",
+   "address": "281 Brackley Point Road, Charlottetown",
+   "phone": "(902) 892-1622",
+   "season": "year-round",
+   "source": "https://www.tourismpei.com/where-to-stay/sherwood-motel-inn",
+   "reason": "Motel (list rule)."
+  },
+  {
+   "name": "Sunny King Motel",
+   "kind": "motel",
+   "address": "3 Centennial Drive, Cornwall",
+   "phone": "(902) 566-2209",
+   "season": "year-round",
+   "source": "https://www.tourismpei.com/where-to-stay/sunny-king-motel",
+   "reason": "Motel (list rule)."
+  },
+  {
+   "name": "Royalty Maples Motel & Cottages",
+   "kind": "motel",
+   "address": "89 Malpeque Road, Charlottetown",
+   "phone": null,
+   "season": null,
+   "source": "https://www.openstreetmap.org/node/6592923761",
+   "reason": "Motel and cottages (list rule); not on Tourism PEI."
+  },
+  {
+   "name": "White Horse Motel",
+   "kind": "motel",
+   "address": null,
+   "phone": null,
+   "season": null,
+   "source": "https://www.openstreetmap.org/node/5015621472",
+   "reason": "Motel (list rule)."
+  },
+  {
+   "name": "Econo Lodge Charlottetown",
+   "kind": "motel",
+   "address": "20 Lower Malpeque Road, Charlottetown",
+   "phone": "(902) 368-1110 (old directory only)",
+   "season": null,
+   "source": "https://www.openstreetmap.org/way/400662403",
+   "reason": "Motel brand (OSM tourism=motel), and DOUBTFUL: not licensed on Tourism PEI, the Choice site refuses automated readers, and only old directory pages carry it. Not confirmed trading in 2026."
+  },
+  {
+   "name": "Stanhope Beach Lodge",
+   "kind": "motel",
+   "address": "41 Point Pleasant Crescent, Stanhope",
+   "phone": "(902) 903-3981",
+   "season": "22 June - 26 October",
+   "source": "https://www.tourismpei.com/where-to-stay/stanhope-beach-lodge",
+   "reason": "Tourism PEI files it under Motel; closed for the season."
+  },
+  {
+   "name": "Brackley Beach North Winds Inn & Suites",
+   "kind": "motel",
+   "address": "3812 Portage Road, Brackley Beach",
+   "phone": "(902) 672-2245",
+   "season": "15 May - 27 September",
+   "source": "https://www.tourismpei.com/where-to-stay/brackley-beach-north-winds-inn-suites",
+   "reason": "Tourism PEI files it under Motel; closed for the season."
+  },
+  {
+   "name": "Cavendish MemoTree Resort",
+   "kind": "motel",
+   "address": "6596 Route 13, Mayfield",
+   "phone": "(902) 963-2213",
+   "season": "15 May - 30 September",
+   "source": "https://www.memotreeresort.com/",
+   "reason": "Own site: motel and cottages (Tourism PEI files it under Hotel); closed for the season."
+  },
+  {
+   "name": "North Rustico Harbour Inn",
+   "kind": "motel",
+   "address": null,
+   "phone": null,
+   "season": "29 May - 5 October",
+   "source": "https://www.tourismpei.com/where-to-stay/north-rustico-harbour-inn",
+   "reason": "Tourism PEI files it under Motel; closed for the season."
+  },
+  {
+   "name": "Charlottetown Backpackers Inn (HI Hostel)",
+   "kind": "hostel",
+   "address": "60 Hillsborough Street, Charlottetown",
+   "phone": "(902) 367-5749",
+   "season": null,
+   "source": "https://www.openstreetmap.org/way/264921524",
+   "reason": "Hostel (list rule: hostels off unless picked)."
+  },
+  {
+   "name": "University of Prince Edward Island (conference rooms)",
+   "kind": "residence",
+   "address": "550 University Avenue, Charlottetown",
+   "phone": "(902) 566-0442",
+   "season": "year-round",
+   "source": "https://www.tourismpei.com/where-to-stay/university-of-prince-edward-island",
+   "reason": "University residence and conference rooms, not a hotel."
+  },
+  {
+   "name": "Glendenning Hall",
+   "kind": "residence",
+   "address": "331 Grafton Street, Charlottetown",
+   "phone": "(902) 367-7702",
+   "season": "8 June - 23 August",
+   "source": "https://www.tourismpei.com/where-to-stay/glendenning-hall",
+   "reason": "Holland College residence let as summer rooms; closed."
+  },
+  {
+   "name": "Elmwood Heritage Inn",
+   "kind": "small inn",
+   "address": "121 North River Road, Charlottetown",
+   "phone": "(902) 626-8319",
+   "season": "22 May - 19 October",
+   "source": "https://www.tourismpei.com/where-to-stay/elmwood-heritage-inn-0",
+   "reason": "Eight-room heritage inn with breakfast (a B&B in practice); closed for the season."
+  },
+  {
+   "name": "A Country Home Inn the City",
+   "kind": "small inn",
+   "address": "139 Upton Road, Charlottetown",
+   "phone": "(902) 393-4415",
+   "season": "year-round",
+   "source": "https://www.tourismpei.com/where-to-stay/a-country-home-inn-the-city",
+   "reason": "Small inn with self-contained units on 2.5 acres."
+  },
+  {
+   "name": "Slaymaker & Nichols Gastro House",
+   "kind": "rooms over a restaurant",
+   "address": "82 Fitzroy Street, Charlottetown",
+   "phone": "(902) 629-3411",
+   "season": "year-round",
+   "source": "https://www.tourismpei.com/where-to-stay/slaymaker-nichols-gastro-house",
+   "reason": "Three suites above a restaurant."
+  },
+  {
+   "name": "Prince Inn, Sonata Inn, Charlotte’s Rose Inn, Eden Hall, Number One Grafton Street",
+   "kind": "small inn / guest house",
+   "address": "Prince Street, Grafton Street and West Street, Charlottetown",
+   "phone": null,
+   "season": null,
+   "source": "https://www.openstreetmap.org/way/256452758",
+   "reason": "Small inns and guest houses (OpenStreetMap only; none on the Tourism PEI hotel list)."
+  },
+  {
+   "name": "Brackley Country Inn, Barachois Inn, Little York B&B, Firedance Country Inn B&B, New Glasgow Inn, Bishop’s Rest B&B",
+   "kind": "small inn / B&B",
+   "address": null,
+   "phone": null,
+   "season": null,
+   "source": "https://www.openstreetmap.org/way/691529724",
+   "reason": "Small country inns and B&Bs."
+  },
+  {
+   "name": "OH Victoria",
+   "kind": "group rental",
+   "address": "34 Main Street, Victoria",
+   "phone": null,
+   "season": "5 June - 30 September",
+   "source": "https://www.tourismpei.com/where-to-stay/oh-victoria",
+   "reason": "Restored historic house let whole (five suites, up to 18 guests); closed for the season. The former Orient Hotel."
+  },
+  {
+   "name": "The Suites of Ole King Square",
+   "kind": "apartment",
+   "address": "1-3 Ole King Square, Charlottetown",
+   "phone": "(902) 940-7304",
+   "season": "1 May - 1 November",
+   "source": "https://www.tourismpei.com/where-to-stay/the-suites-of-ole-king-square",
+   "reason": "One-bedroom apartments."
+  },
+  {
+   "name": "Nature Space Resort & Retreat Centre",
+   "kind": "glamping",
+   "address": "631 St. Peters Harbour Road, St. Peters Harbour",
+   "phone": "(902) 916-0136",
+   "season": "year-round",
+   "source": "https://www.tourismpei.com/where-to-stay/nature-space-resort-retreat-centre",
+   "reason": "Yurt glamping."
+  },
+  {
+   "name": "Rustico Resort Golf and Domes",
+   "kind": "glamping",
+   "address": "496 Grand Pere Point Road, Rustico",
+   "phone": "(902) 393-8677",
+   "season": "15 May - 8 November",
+   "source": "https://www.tourismpei.com/where-to-stay/rustico-resort-golf-and-domes",
+   "reason": "Golf course with dome glamping; closed for the season."
+  },
+  {
+   "name": "Cavendish and North Rustico cottage and motel operations (Gulf View, Coastline, Bosom Buddies, Fairways, Anne Shirley, Cavendish Motel and others)",
+   "kind": "cottages / motels",
+   "address": null,
+   "phone": null,
+   "season": "summer only",
+   "source": "https://www.openstreetmap.org/",
+   "reason": "Cottages and motels, all closed for the season."
+  },
+  {
+   "name": "Fairholm National Historic Inn (second OSM entry)",
+   "kind": "duplicate",
+   "address": "230 Prince Street",
+   "phone": null,
+   "season": null,
+   "source": "https://www.openstreetmap.org/node/5599325921",
+   "reason": "Same business as Fairholm Boutique Inns."
+  },
+  {
+   "name": "Shaw's Hotel Luxury Chalets",
+   "kind": "duplicate",
+   "address": "99 Apple Tree Road, Brackley Beach",
+   "phone": null,
+   "season": null,
+   "source": "https://www.tourismpei.com/where-to-stay/shaws-hotel-luxury-chalets",
+   "reason": "Same licence as Shaw's Hotel (2200032)."
+  }
+ ],
+ "hotels": [
+  {
+   "id": "rodd-royalty",
+   "name": "Rodd Royalty",
+   "area": "airport",
+   "resort": false,
+   "brand": "Rodd Hotels & Resorts",
+   "group": "Rodd Hotels & Resorts",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "14 Capital Drive",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 8C2",
+    "display": "14 Capital Drive, Charlottetown"
+   },
+   "phone": "(902) 894-8566",
+   "website": "https://www.roddvacations.com/rodd-royalty",
+   "lat": 46.26588,
+   "lng": -63.14935,
+   "distance_km": {
+    "airport": 2.6,
+    "centre": 3.7,
+    "airport_board_point": 3.5
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/rodd-royalty",
+    "checked": "2026-11-16",
+    "note": "Licence 1200064."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/rodd-royalty.svg",
+    "opaque": false,
+    "source": "https://image-tc.galaxy.tf/wisvg-4w3475nt4uvtc89gi22fbgu9r/official-logo-of-rodd-royalty.svg",
+    "origin": "official site: roddvacations.com (Galaxy CDN)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-royalty",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-royalty",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Page data (schema.org): 14 Capital Drive. Tourism PEI: 14 Capital Dr."
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-royalty",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-royalty",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Also printed on the Rodd page."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-royalty",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI links www.roddroyalty.com, which no longer answers."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/400664337",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-royalty",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null
+  },
+  {
+   "id": "cbv-charlottetown",
+   "name": "Canadas Best Value Inn & Suites",
+   "area": "airport",
+   "resort": false,
+   "brand": "Canadas Best Value Inn",
+   "group": "Sonesta (Canadas Best Value Inn)",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "20 Capital Drive",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1E 1E7",
+    "display": "20 Capital Drive, Charlottetown"
+   },
+   "phone": "(902) 892-2481",
+   "website": "https://canadasbestvalueinnpei.com/",
+   "lat": 46.2653,
+   "lng": -63.15137,
+   "distance_km": {
+    "airport": 2.8,
+    "centre": 3.7,
+    "airport_board_point": 3.7
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/canadas-best-value-inn-suites",
+    "checked": "2026-11-16",
+    "note": "Licence 1200063."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "The only official file (sonesta.com footer, white) now answers 404.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/canadas-best-value-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "The brand writes \"Canadas\" without an apostrophe."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://canadasbestvalueinnpei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://canadasbestvalueinnpei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://canadasbestvalueinnpei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same number on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/canadas-best-value-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/node/4038653583",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI map pin 46.26572, -63.15183 (50 m away)."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/canadas-best-value-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null
+  },
+  {
+   "id": "banbridge-inn",
+   "name": "Banbridge Inn",
+   "area": "airport",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "105 Capital Drive",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1E 1E8",
+    "display": "105 Capital Drive, Charlottetown"
+   },
+   "phone": "(902) 368-2223",
+   "website": "https://www.banbridgeinn.com/",
+   "lat": 46.2649146,
+   "lng": -63.155812,
+   "distance_km": {
+    "airport": 3.0,
+    "centre": 3.9,
+    "airport_board_point": 3.9
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "06-01",
+      "to": "10-17"
+     }
+    ],
+    "open_dates": "1 June - 17 October",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/banbridge-inn",
+    "checked": "2026-11-16",
+    "note": "Licence 2200707. Own site: twelve one-bedroom self-catering apartments, extended stays and monthly rentals; it states no season. Off the cards until 1 June."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official logo (only a photo-like tile).",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/banbridge-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Own site calls it \"The Banbridge\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.banbridgeinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.banbridgeinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.banbridgeinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/banbridge-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.banbridgeinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI pin has the latitude sign flipped (-46.265); OSM node/4038661901 has no address."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/banbridge-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Self-catering apartments; Tourism PEI files it under Hotel."
+  },
+  {
+   "id": "comfort-inn-charlottetown",
+   "name": "Comfort Inn Charlottetown",
+   "area": "airport",
+   "resort": false,
+   "brand": "Comfort Inn",
+   "group": "Choice Hotels",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "112 Capital Drive",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1E 1E7",
+    "display": "112 Capital Drive, Charlottetown"
+   },
+   "phone": "(902) 566-4424",
+   "website": "https://www.choicehotels.com/cn320",
+   "lat": 46.26405,
+   "lng": -63.15605,
+   "distance_km": {
+    "airport": 3.1,
+    "centre": 3.8,
+    "airport_board_point": 4.0
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/comfort-inn",
+    "checked": "2026-11-16",
+    "note": "Licence 1200072."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/choice-le-meridien/comfort-inn.png",
+    "opaque": false,
+    "source": "repo: fids-current/logos/hotels/choice-le-meridien/comfort-inn.png",
+    "origin": "already in the repository (same bytes as the checked copy)",
+    "trim": "inset(1.5% 19.5% 2.0% 20.5%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/comfort-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI prints \"Comfort Inn\"; brand style adds the town."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/comfort-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://travelweekly-asia.com/Hotels/Charlottetown-PE/Comfort-Inn-p8563124",
+     "source_type": "search_index",
+     "checked": "2026-11-16",
+     "note": "Not on Tourism PEI; the Choice page refuses automated readers. Travel directories seen through a search index agree on C1E 1E7. Confirm."
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/comfort-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/comfort-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Brand page answers 403 to automated readers; not read."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/361877150",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/comfort-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Brand site refuses automated readers: name, street and phone rest on the Tourism PEI listing."
+  },
+  {
+   "id": "hix-charlottetown",
+   "name": "Holiday Inn Express & Suites Charlottetown",
+   "area": "airport",
+   "resort": false,
+   "brand": "Holiday Inn Express",
+   "group": "IHG Hotels & Resorts",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "200 Capital Drive",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1E 2E8",
+    "display": "200 Capital Drive, Charlottetown"
+   },
+   "phone": "(902) 892-1201",
+   "website": "https://www.hiexpress.com/princeedward",
+   "lat": 46.26318,
+   "lng": -63.16151,
+   "distance_km": {
+    "airport": 3.4,
+    "centre": 4.0,
+    "airport_board_point": 4.4
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/holiday-inn-express-suites",
+    "checked": "2026-11-16",
+    "note": "Licence 1200060."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/holiday-inn-express.svg",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/75/Holiday_Inn_Express_by_IHG_logo.svg",
+    "origin": "Wikimedia Commons",
+    "trim": "inset(15.2% 0.0% 15.5% 0.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/holiday-inn-express-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/holiday-inn-express-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.aaa.com/tripcanvas/hotel/holiday-inn-express-suites-charlottetown-AA134946",
+     "source_type": "search_index",
+     "checked": "2026-11-16",
+     "note": "Not on Tourism PEI; IHG pages answer 403. AAA and Travel Weekly listings (through a search index) agree on C1E 2E8. Confirm."
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/holiday-inn-express-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/holiday-inn-express-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "IHG answers 403 to automated readers; not read."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/403498114",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/holiday-inn-express-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Brand site refuses automated readers: name, street and phone rest on the Tourism PEI listing."
+  },
+  {
+   "id": "hampton-charlottetown",
+   "name": "Hampton Inn & Suites Charlottetown",
+   "area": "airport",
+   "resort": false,
+   "brand": "Hampton by Hilton",
+   "group": "Hilton",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "300 Capital Drive",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": null,
+    "display": "300 Capital Drive, Charlottetown"
+   },
+   "phone": "(902) 368-3551",
+   "website": "https://www.hilton.com/en/hotels/yqmchhx-hampton-suites-charlottetown/",
+   "lat": 46.26188,
+   "lng": -63.16566,
+   "distance_km": {
+    "airport": 3.8,
+    "centre": 4.1,
+    "airport_board_point": 4.7
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/hampton-inn-suites",
+    "checked": "2026-11-16",
+    "note": "Licence 1201076."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/hampton-by-hilton.png",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/28/Hampton-by-Hilton-Logo-Color.png",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/hampton-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI prints \"Hampton Inn & Suites\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/hampton-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": null,
+     "source_type": "search_index",
+     "checked": "2026-11-16",
+     "note": "Unknown: directories disagree (C1E 1E8 in most, C1E 3N1 in Costco Travel and Kayak); Hilton answers 403. Leave blank until confirmed."
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/hampton-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/hampton-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Hilton answers 403 to automated readers; not read."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/701204178",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/hampton-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Brand site refuses automated readers: name, street and phone rest on the Tourism PEI listing."
+  },
+  {
+   "id": "rodd-charlottetown",
+   "name": "Rodd Charlottetown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Rodd Hotels & Resorts",
+   "group": "Rodd Hotels & Resorts",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "75 Kent Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 7K4",
+    "display": "75 Kent Street, Charlottetown"
+   },
+   "phone": "(902) 894-7371",
+   "website": "https://www.roddvacations.com/rodd-charlottetown",
+   "lat": 46.23483,
+   "lng": -63.13073,
+   "distance_km": {
+    "airport": 5.7,
+    "centre": 0.1,
+    "airport_board_point": 6.2
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/rodd-charlottetown-hotel",
+    "checked": "2026-11-16",
+    "note": "Licence 1200013. Own site sells Christmas and winter packages."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/rodd-charlottetown.svg",
+    "opaque": false,
+    "source": "https://image-tc.galaxy.tf/wisvg-1fkxchm8t253uxyy84dmpnhsd/official-logo-of-rodd-charlottetown-hotel.svg",
+    "origin": "official site: roddvacations.com (Galaxy CDN)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-charlottetown",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI: \"Rodd Charlottetown Hotel\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-charlottetown",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-charlottetown",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-charlottetown",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-charlottetown",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI links www.roddcharlottetown.com, which no longer answers."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/250006087",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-charlottetown-hotel",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null
+  },
+  {
+   "id": "hotel-on-pownal",
+   "name": "The Hotel on Pownal",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": "Murphy Hospitality Group",
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "146 Pownal Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 3W6",
+    "display": "146 Pownal Street, Charlottetown"
+   },
+   "phone": "(902) 892-1217",
+   "website": "https://thehotelonpownal.com/",
+   "lat": 46.23434,
+   "lng": -63.12983,
+   "distance_km": {
+    "airport": 5.7,
+    "centre": 0.1,
+    "airport_board_point": 6.2
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/the-hotel-on-pownal",
+    "checked": "2026-11-16",
+    "note": "Licence 1200018. Own site sells an October 2026 to April 2027 package."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "White-lettering files only: nothing reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://thehotelonpownal.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://thehotelonpownal.com/contact-us/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://thehotelonpownal.com/contact-us/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://thehotelonpownal.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Local number; toll-free 1-800-268-6261."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://thehotelonpownal.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/250308058",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-hotel-on-pownal",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Independent; one of the Murphy Hospitality Group properties (own site footer links mhgpei.com)."
+  },
+  {
+   "id": "dundee-arms",
+   "name": "Dundee Arms Inn",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Motel (inn with an annex)",
+   "address": {
+    "street": "200 Pownal Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 3W8",
+    "display": "200 Pownal Street, Charlottetown"
+   },
+   "phone": "(902) 892-2496",
+   "website": "https://dundeearmspei.com/",
+   "lat": 46.23512,
+   "lng": -63.13115,
+   "distance_km": {
+    "airport": 5.6,
+    "centre": 0.1,
+    "airport_board_point": 6.2
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/dundee-arms-inn",
+    "checked": "2026-11-16",
+    "note": "Licence 1200205."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "White-lettering file only: nothing reads on the cream column.",
+   "listed": false,
+   "not_listed_reason": "Motel-like (the motel rule keeps motels off the cards): decided 16 November 2026.",
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://dundeearmspei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://dundeearmspei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://dundeearmspei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://dundeearmspei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://dundeearmspei.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Answers at dundeearmspei.com without www (the www address fails)."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/250149933",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/dundee-arms-inn",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "22-room inn (1903 mansion plus annex). Tourism PEI files it under Motel because of the annex; kept as an inn that runs as a hotel, as in the earlier rounds."
+  },
+  {
+   "id": "holman-grand",
+   "name": "The Holman Grand Hotel",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "123 Grafton Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 1K9",
+    "display": "123 Grafton Street, Charlottetown"
+   },
+   "phone": "(902) 367-7777",
+   "website": "https://www.theholmangrand.com/",
+   "lat": 46.23518,
+   "lng": -63.12733,
+   "distance_km": {
+    "airport": 5.6,
+    "centre": 0.2,
+    "airport_board_point": 6.1
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/the-holman-grand-hotel",
+    "checked": "2026-11-16",
+    "note": "Licence 1200914."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/holman-grand.svg",
+    "opaque": false,
+    "source": "https://f0bbb8b611ccb753aa55-e28a706a866e259ed2dd5118cc4c4c84.ssl.cf1.rackcdn.com/u/the-holman-grand-hotel/holman-logo-dark.svg",
+    "origin": "official site: the hotel's own site (its Rackspace CDN)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-holman-grand-hotel",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Own site: \"The Holman Grand\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.theholmangrand.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.theholmangrand.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-holman-grand-hotel",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Also on the own site; own site data also lists toll-free (877) 455-4726."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-holman-grand-hotel",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Current site; the old theholman.com has lapsed."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/node/3980228660",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-holman-grand-hotel",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null
+  },
+  {
+   "id": "arts-hotel",
+   "name": "The Arts Hotel",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "155 Kent Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 5Y6",
+    "display": "155 Kent Street, Charlottetown"
+   },
+   "phone": "(902) 370-2787",
+   "website": "https://www.theartshotel.ca/en/",
+   "lat": 46.23661,
+   "lng": -63.12734,
+   "distance_km": {
+    "airport": 5.5,
+    "centre": 0.2,
+    "airport_board_point": 6.0
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/the-arts-hotel",
+    "checked": "2026-11-16",
+    "note": "Licence 1201118."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/arts-hotel.png",
+    "opaque": true,
+    "source": "https://www.theartshotel.ca/files-sbbasic/ba_thearts_ca/logo/_the-arts-hotel-charlottetown.png",
+    "origin": "official site: theartshotel.ca",
+    "trim": "inset(22.2% 4.3% 21.3% 5.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.theartshotel.ca/en/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.theartshotel.ca/en/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.theartshotel.ca/en/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.theartshotel.ca/en/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Toll-free 1-888-670-2787."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.theartshotel.ca/en/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/node/8059118764",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-arts-hotel",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null
+  },
+  {
+   "id": "quality-inn-downtown",
+   "name": "Quality Inn & Suites Downtown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Quality Inn",
+   "group": "Choice Hotels",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "150 Euston Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 1W5",
+    "display": "150 Euston Street, Charlottetown"
+   },
+   "phone": "(902) 894-8572",
+   "website": "https://www.qualityinnonthehill.com/",
+   "lat": 46.23809,
+   "lng": -63.12876,
+   "distance_km": {
+    "airport": 5.3,
+    "centre": 0.3,
+    "airport_board_point": 5.8
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/quality-inn-suites-downtown-charlottetown",
+    "checked": "2026-11-16",
+    "note": "Licence 1200017."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/choice-le-meridien/quality-inn.png",
+    "opaque": false,
+    "source": "repo: fids-current/logos/hotels/choice-le-meridien/quality-inn.png",
+    "origin": "already in the repository (same bytes as the checked copy)",
+    "trim": "inset(0.0% 20.0% 0.0% 20.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.qualityinnonthehill.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "The hotel runs its own site beside the Choice page; Tourism PEI adds \"Charlottetown\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.qualityinnonthehill.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.qualityinnonthehill.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.qualityinnonthehill.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/quality-inn-suites-downtown-charlottetown",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/177661065",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "OSM maps it as three buildings with no number; the hotel site gives 46.23811, -63.12886."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/quality-inn-suites-downtown-charlottetown",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null
+  },
+  {
+   "id": "prince-street-suites",
+   "name": "Prince Street Suites",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "193 Prince Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 4R8",
+    "display": "193 Prince Street, Charlottetown"
+   },
+   "phone": "(902) 368-1211",
+   "website": "https://www.princestreetsuites.ca/",
+   "lat": 46.2374977,
+   "lng": -63.1269048,
+   "distance_km": {
+    "airport": 5.4,
+    "centre": 0.3,
+    "airport_board_point": 5.9
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "05-15",
+      "to": "11-30"
+     }
+    ],
+    "open_dates": "15 May - 30 November",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/prince-street-suites",
+    "checked": "2026-11-16",
+    "note": "Licence 2202737. Open now; drops off the cards on 1 December."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.princestreetsuites.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.princestreetsuites.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.princestreetsuites.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "OSM gives C1A 0G6 for the building: the hotel prints C1A 4R8."
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.princestreetsuites.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/prince-street-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/256095293",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "OSM address point for 193 Prince Street; Tourism PEI pin agrees."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/prince-street-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Small boutique hotel (rooms with ensuite bathrooms; Tourism PEI calls it a 4-star boutique hotel). Round one dropped it as apartment suites; its own site describes rooms, so it is back. Open decision: keep or drop."
+  },
+  {
+   "id": "suites-of-euston",
+   "name": "Suites of Euston",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "155 Euston Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 1W6",
+    "display": "155 Euston Street, Charlottetown"
+   },
+   "phone": "(902) 314-0364",
+   "website": "https://suitesofeuston.ca/",
+   "lat": 46.23832,
+   "lng": -63.1292,
+   "distance_km": {
+    "airport": 5.3,
+    "centre": 0.3,
+    "airport_board_point": 5.8
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/suites-of-euston",
+    "checked": "2026-11-16",
+    "note": "Licence 2201360."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://suitesofeuston.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://suitesofeuston.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://suitesofeuston.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://suitesofeuston.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Call or text; same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/suites-of-euston",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Answers without www (the www address fails)."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/229772434",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/suites-of-euston",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Calls itself \"a boutique hotel\": named suites in an 1878 house, booked online, phone or text. Round one dropped it as apartment suites; Tourism PEI files it under Hotel, so it is listed. Open decision: keep or drop."
+  },
+  {
+   "id": "great-george",
+   "name": "The Great George",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": "Murphy Hospitality Group",
+   "independent": true,
+   "kind": "Inn",
+   "address": {
+    "street": "58 Great George Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 4K3",
+    "display": "58 Great George Street, Charlottetown"
+   },
+   "phone": "(902) 892-0606",
+   "website": "https://thegreatgeorge.com/",
+   "lat": 46.23394,
+   "lng": -63.12414,
+   "distance_km": {
+    "airport": 5.8,
+    "centre": 0.4,
+    "airport_board_point": 6.2
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/the-great-george",
+    "checked": "2026-11-16",
+    "note": "Licence 1200019. Own site sells winter packages to January 2027."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/great-george-navy.png",
+    "opaque": false,
+    "source": "https://thegreatgeorge.com/wp-content/uploads/2024/05/mobile-logo.png",
+    "origin": "official site: thegreatgeorge.com",
+    "trim": "inset(11.9% 6.5% 11.9% 6.5%)",
+    "note": "One-colour version in the card navy, made from the official file (same shape, every ink in #14203c) for the cream column, 16 Nov 2026: the gold original was pale on cream.",
+    "original": "/logos/hotels/list/great-george.png"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://thegreatgeorge.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://thegreatgeorge.com/contact/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://thegreatgeorge.com/contact/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://thegreatgeorge.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Toll-free 1-800-361-1118."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://thegreatgeorge.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/relation/21479674",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-great-george",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Historic boutique hotel across several heritage buildings; Tourism PEI files it under Inn."
+  },
+  {
+   "id": "harbour-house",
+   "name": "The Harbour House",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "9 Grafton Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 1K3",
+    "display": "9 Grafton Street, Charlottetown"
+   },
+   "phone": "(902) 892-6633",
+   "website": "https://www.hhhouse.net/",
+   "lat": 46.23242,
+   "lng": -63.13191,
+   "distance_km": {
+    "airport": 5.9,
+    "centre": 0.4,
+    "airport_board_point": 6.5
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "04-01",
+      "to": "10-31"
+     }
+    ],
+    "open_dates": "1 April - 31 October",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/the-harbour-house-boutique-hotel",
+    "checked": "2026-11-16",
+    "note": "Licence 4013324. Its own site states no season; the tourism listing dates are the only ones found."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/harbour-house.png",
+    "opaque": false,
+    "source": "https://www.hhhouse.net/wp-content/uploads/2019/12/cropped-HHI-Hor-2C-copia-3.png",
+    "origin": "official site: hhhouse.net"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.hhhouse.net/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI: \"The Harbour House Boutique Hotel\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.hhhouse.net/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.hhhouse.net/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.hhhouse.net/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.hhhouse.net/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/389592803",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-harbour-house-boutique-hotel",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Boutique hotel."
+  },
+  {
+   "id": "fairholm",
+   "name": "Fairholm Boutique Inns",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "181 Fitzroy Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 1S3",
+    "display": "181 Fitzroy Street, Charlottetown"
+   },
+   "phone": "(902) 892-5022",
+   "website": "https://www.fairholminn.com/",
+   "lat": 46.2389014,
+   "lng": -63.125922,
+   "distance_km": {
+    "airport": 5.2,
+    "centre": 0.5,
+    "airport_board_point": 5.7
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/fairholm-boutique-inns",
+    "checked": "2026-11-16",
+    "note": "Licence 1200252."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/fairholm-boutique-inns-navy.png",
+    "opaque": false,
+    "fill": true,
+    "source": "https://static.wixstatic.com/media/e2f03f_43a07c31c5e74f839e22a0dc5390a781~mv2_d_3000_2054_s_2.png",
+    "origin": "official site: its Wix site (wixstatic CDN)",
+    "note": "One-colour version in the card navy, made from the official file (same shape, every ink in #14203c) for the cream column, 16 Nov 2026: the gold original was pale on cream.",
+    "original": "/logos/hotels/list/fairholm-boutique-inns.png"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.fairholminn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.fairholminn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site: \"Our front desk, check-ins, breakfast and dining all take place at Hillhurst Inn, 181 Fitzroy St.\" Tourism PEI still lists 230 Prince St (the Fairholm house). The card uses the front desk."
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.fairholminn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "OSM has C1A 1X3 for this address point: the hotel prints C1A 1S3. Confirm with the hotel if it matters."
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/fairholm-boutique-inns",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Local number from the tourism listing; the own site prints only toll-free (888) 573-5022."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/fairholm-boutique-inns",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/node/2098661552",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "The 181 Fitzroy Street address point (Hillhurst Inn). Fairholm house itself: OSM way/256446862, 230 Prince Street."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/fairholm-boutique-inns",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "33 suites in four heritage buildings; national historic property."
+  },
+  {
+   "id": "delta-prince-edward",
+   "name": "Delta Hotels Prince Edward",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Delta Hotels",
+   "group": "Marriott International",
+   "independent": false,
+   "kind": "Hotel",
+   "address": {
+    "street": "18 Queen Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 4A1",
+    "display": "18 Queen Street, Charlottetown"
+   },
+   "phone": "(902) 566-2222",
+   "website": "https://www.marriott.com/en-us/hotels/yygdp-delta-hotels-prince-edward/overview/",
+   "lat": 46.23179,
+   "lng": -63.12383,
+   "distance_km": {
+    "airport": 6.0,
+    "centre": 0.6,
+    "airport_board_point": 6.5
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/the-delta-prince-edward-by-marriott",
+    "checked": "2026-11-16",
+    "note": "Licence 1200023."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/delta-hotels.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/72/Delta_Hotels_logo.svg",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-delta-prince-edward-by-marriott",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI prints \"The Delta Prince Edward by Marriott\". The card uses the brand style \"Delta Hotels Prince Edward\", as in the Marriott page address (marriott.com/yygdp forwards to .../yygdp-delta-hotels-prince-edward/) and its title in a search index."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-delta-prince-edward-by-marriott",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.marriott.com/hotels/travel/yygdp-delta-hotels-prince-edward/",
+     "source_type": "search_index",
+     "checked": "2026-11-16",
+     "note": "Marriott page quoted by a search index: C1A 4A1 (meeting-venue directories agree; one German directory says C1A 8B9). Marriott answers 403 to automated readers. Confirm."
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-delta-prince-edward-by-marriott",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-delta-prince-edward-by-marriott",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "marriott.com/yygdp redirects to this address (403 to automated readers)."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/node/3988476443",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-delta-prince-edward-by-marriott",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Brand site refuses automated readers: street and phone rest on the Tourism PEI listing."
+  },
+  {
+   "id": "charlottetown-inn",
+   "name": "Charlottetown Inn & Conference Centre",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": null,
+   "address": {
+    "street": "238 Grafton Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": null,
+    "display": "238 Grafton Street, Charlottetown"
+   },
+   "phone": "(902) 892-2461",
+   "website": null,
+   "lat": 46.23766,
+   "lng": -63.12263,
+   "distance_km": {
+    "airport": 5.4,
+    "centre": 0.6,
+    "airport_board_point": 5.8
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": null,
+    "open_dates": null,
+    "verified": false,
+    "source": "https://www.tourismpei.com/where-to-stay/charlottetown-inn-conference-centre",
+    "checked": "2026-11-16",
+    "note": "Its Tourism PEI page answers \"Access denied\" (403) and it is not in the Tourism PEI sitemap; travel sites show bookings in 2026 after renovations (April 2025 to May 2026)."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official logo exists.",
+   "listed": false,
+   "not_listed_reason": "name, street or phone not verified; season not established",
+   "verified": {
+    "name": {
+     "verified": false,
+     "source": "https://www.travelocity.com/Charlottetown-Hotels-Charlottetown-Inn-Conference-Centre.h19528.Hotel-Information",
+     "source_type": "travel_directory",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": false,
+     "source": "https://www.openstreetmap.org/relation/9996322",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "Travel directories agree."
+    },
+    "postal_code": {
+     "verified": false,
+     "source": null,
+     "source_type": null,
+     "checked": "2026-11-16",
+     "note": "Not found."
+    },
+    "phone": {
+     "verified": false,
+     "source": "https://www.hotelscombined.com/Hotel/Charlottetown_Inn_Conference_Centre.htm",
+     "source_type": "search_index",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": false,
+     "source": null,
+     "source_type": null,
+     "checked": "2026-11-16",
+     "note": "No own site answers; its old domains do not resolve."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/relation/9996322",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "OSM still carries both names (and Best Western Charlottetown)."
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.tourismpei.com/where-to-stay/charlottetown-inn-conference-centre",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "DOUBTFUL: former Best Western. Off the cards until a phone call confirms it trades, its name and its number."
+  },
+  {
+   "id": "sydney-boutique-inn",
+   "name": "The Sydney Boutique Inn & Suites",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "55 Weymouth Street",
+    "town": "Charlottetown",
+    "province": "PE",
+    "postal_code": "C1A 1E5",
+    "display": "55 Weymouth Street, Charlottetown"
+   },
+   "phone": "(902) 367-5888",
+   "website": "https://sydneyinn.com/",
+   "lat": 46.23667,
+   "lng": -63.12078,
+   "distance_km": {
+    "airport": 5.5,
+    "centre": 0.7,
+    "airport_board_point": 5.9
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/sydney-boutique-inn-suites",
+    "checked": "2026-11-16",
+    "note": "Licence 1200964."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/sydney-boutique-inn.jpg",
+    "opaque": true,
+    "source": "https://sydneyinn.com/wp-content/uploads/2017/04/logomain.jpg",
+    "origin": "official site: sydneyinn.com"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://sydneyinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site: \"Sydney Boutique Inn & Suites\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://sydneyinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://sydneyinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://sydneyinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI; toll-free 1-855-372-0888."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://sydneyinn.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/177662576",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI pin (46.23869, -63.12663) is 500 m off, on Prince Street."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/sydney-boutique-inn-suites",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null
+  },
+  {
+   "id": "dutch-inn",
+   "name": "Dutch Inn",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Hotel",
+   "address": {
+    "street": "73 Main Street",
+    "town": "Cornwall",
+    "province": "PE",
+    "postal_code": "C0A 1H8",
+    "display": "73 Main Street, Cornwall"
+   },
+   "phone": "(902) 566-2211",
+   "website": "https://www.dutchinn.ca/",
+   "lat": 46.2514746,
+   "lng": -63.1944081,
+   "distance_km": {
+    "airport": 6.2,
+    "centre": 5.3,
+    "airport_board_point": 7.1
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/dutch-inn-0",
+    "checked": "2026-11-16",
+    "note": "Licence 4015108."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/dutch-inn.png",
+    "opaque": false,
+    "source": "https://static.wixstatic.com/media/524714_ec3f7c7210ad409784fff042a3ce31ed~mv2.png",
+    "origin": "official site: its Wix site (wixstatic CDN)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.dutchinn.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.dutchinn.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.dutchinn.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.dutchinn.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/dutch-inn-0",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.dutchinn.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site map point; Tourism PEI pin agrees. The round-one point (46.2262, -63.214) was 3 km off."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/dutch-inn-0",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Not in OpenStreetMap as a hotel."
+  },
+  {
+   "id": "dalvay",
+   "name": "Dalvay by the Sea",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Inn",
+   "address": {
+    "street": "16 Cottage Crescent",
+    "town": "Dalvay",
+    "province": "PE",
+    "postal_code": "C0A 1P0",
+    "display": "16 Cottage Crescent, Dalvay"
+   },
+   "phone": "(902) 672-2048",
+   "website": "https://www.dalvaybythesea.com/",
+   "lat": 46.41471,
+   "lng": -63.07334,
+   "distance_km": {
+    "airport": 15.0,
+    "centre": 20.4,
+    "airport_board_point": 14.3
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "05-03",
+      "to": "10-31"
+     }
+    ],
+    "open_dates": "3 May - 31 October",
+    "verified": true,
+    "source": "https://www.dalvaybythesea.com/",
+    "checked": "2026-11-16",
+    "note": "Own site: \"Open until October 31st, 2026\". Tourism PEI: 3 May - 31 October."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/dalvay-by-the-sea.png",
+    "opaque": false,
+    "source": "https://static.wixstatic.com/media/ba2cd3_0e4feb7081444129854c652e89b867a2~mv2.png",
+    "origin": "official site: dalvaybythesea.com (wixstatic CDN)",
+    "trim": "inset(15.7% 2.5% 13.6% 2.7%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.dalvaybythesea.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.dalvaybythesea.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site \"main address\"; it also gives a mailing address, PO Box 8, York."
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.dalvaybythesea.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.dalvaybythesea.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Toll-free 1-888-366-2955."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.dalvaybythesea.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/203517098",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.dalvaybythesea.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Historic hotel inside Prince Edward Island National Park; it has a real street address (the park itself has none)."
+  },
+  {
+   "id": "blackbush",
+   "name": "Blackbush Beach Resort",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Resort",
+   "address": {
+    "street": "20 Carrie Me Way",
+    "town": "Grand Tracadie",
+    "province": "PE",
+    "postal_code": "C0A 1P0",
+    "display": "20 Carrie Me Way, Grand Tracadie"
+   },
+   "phone": "(902) 672-4334",
+   "website": "https://blackbush.ca/",
+   "lat": 46.40755,
+   "lng": -63.04084,
+   "distance_km": {
+    "airport": 15.2,
+    "centre": 20.3,
+    "airport_board_point": 14.4
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/blackbush-beach-resort",
+    "checked": "2026-11-16",
+    "note": "Licence 4009196. Tourism PEI text: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/blackbush-beach-resort.jpg",
+    "opaque": true,
+    "source": "https://blackbush.ca/wp-content/uploads/2026/01/Blackbush-Logo-2024.jpg",
+    "origin": "official site: blackbush.ca"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://blackbush.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://blackbush.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://blackbush.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://blackbush.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/blackbush-beach-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/1329698274",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "The Hotel Acadia building. Tourism PEI pin has a wrong longitude (-63.41)."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/blackbush-beach-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Resort (The Hotel Acadia and villas) inside 30 km, so it sits on the Nearby card, not Resorts."
+  },
+  {
+   "id": "shaws-hotel",
+   "name": "Shaw's Hotel",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Cottage (hotel and cottages)",
+   "address": {
+    "street": "99 Apple Tree Road",
+    "town": "Brackley Beach",
+    "province": "PE",
+    "postal_code": "C1E 0Z4",
+    "display": "99 Apple Tree Road, Brackley Beach"
+   },
+   "phone": "(902) 672-2022",
+   "website": "https://shawshotel.ca/",
+   "lat": 46.42402,
+   "lng": -63.1916,
+   "distance_km": {
+    "airport": 16.1,
+    "centre": 21.5,
+    "airport_board_point": 15.9
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "05-15",
+      "to": "11-02"
+     }
+    ],
+    "open_dates": "15 May - 2 November",
+    "verified": true,
+    "source": "https://shawshotel.ca/",
+    "checked": "2026-11-16",
+    "note": "Own site: \"November 1st, 2026: now closed for the 2026 season. We will start taking 2027 bookings in January.\" Tourism PEI: 15 May - 2 November."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/shaws-hotel.png",
+    "opaque": false,
+    "source": "https://shawshotel.ca/wp-content/uploads/2017/04/Shaws-Hotel-logo.png",
+    "origin": "official site: shawshotel.ca"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://shawshotel.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI: \"Shaw's Hotel & Cottages\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://shawshotel.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://shawshotel.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://shawshotel.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://shawshotel.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/node/5368437107",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://shawshotel.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Historic hotel with cottages. Tourism PEI also lists Shaw's Hotel Luxury Chalets under the same licence (2200032): one entry here."
+  },
+  {
+   "id": "rodd-crowbush",
+   "name": "Rodd Crowbush Golf & Beach Resort",
+   "area": "resort",
+   "resort": true,
+   "brand": "Rodd Hotels & Resorts",
+   "group": "Rodd Hotels & Resorts",
+   "independent": false,
+   "kind": "Resort",
+   "address": {
+    "street": "632 Lakeside Road",
+    "town": "Morell",
+    "province": "PE",
+    "postal_code": "C0A 1S0",
+    "display": "632 Lakeside Road, Morell"
+   },
+   "phone": "(902) 961-5600",
+   "website": "https://www.roddvacations.com/rodd-crowbush-golf-resort",
+   "lat": 46.42962,
+   "lng": -62.79289,
+   "distance_km": {
+    "airport": 30.5,
+    "centre": 33.7,
+    "airport_board_point": 29.5
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "05-01",
+      "to": "10-31"
+     }
+    ],
+    "open_dates": "1 May - 31 October",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/rodd-crowbush-golf-beach-resort",
+    "checked": "2026-11-16",
+    "note": "Licence 2300354. Own page states no dates."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-crowbush-golf-beach-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-crowbush-golf-resort",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI: \"632 Rte 350, Lakeside\". The resort is at Lakeside; Morell is its postal town."
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-crowbush-golf-resort",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-crowbush-golf-beach-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-crowbush-golf-resort",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI links www.roddcrowbush.com, which no longer answers."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-crowbush-golf-beach-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI map pin."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-crowbush-golf-beach-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "30.5 km straight line from the terminal: just past 30 km, so it goes on Resorts worth the drive rather than Nearby (see meta.area_rule).",
+   "drive": {
+    "km": 38.1,
+    "from": "YYG",
+    "minutes_total": 42,
+    "km_source": "OSRM public router on OpenStreetMap roads (router.project-osrm.org), 2026-11-16",
+    "credit": "© OpenStreetMap contributors",
+    "verified": true,
+    "from_point": "Charlottetown Airport terminal"
+   }
+  },
+  {
+   "id": "stanley-bridge-resort",
+   "name": "Stanley Bridge Country Resort",
+   "area": "resort",
+   "resort": true,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": null,
+   "address": {
+    "street": "10090 Route 6",
+    "town": "Stanley Bridge",
+    "province": "PE",
+    "postal_code": "C0B 1M0",
+    "display": "10090 Route 6, Stanley Bridge"
+   },
+   "phone": "(902) 886-2278",
+   "website": "https://stanleybridgeresort.com/",
+   "lat": 46.46328,
+   "lng": -63.46526,
+   "distance_km": {
+    "airport": 32.4,
+    "centre": 36.1,
+    "airport_board_point": 32.8
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "05-01",
+      "to": "11-01"
+     }
+    ],
+    "open_dates": "1 May - 1 November",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/stanley-bridge-country-resort-conference-centre",
+    "checked": "2026-11-16",
+    "note": "Licence 2200439. Own site still says \"We are open for the 2025 season\" (stale)."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://stanleybridgeresort.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI: \"Stanley Bridge Country Resort & Conference Centre\"."
+    },
+    "street": {
+     "verified": true,
+     "source": "https://stanleybridgeresort.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site gives the postal town (Kensington); the resort is at Stanley Bridge (Tourism PEI)."
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://stanleybridgeresort.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/stanley-bridge-country-resort-conference-centre",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI main number; alternate (902) 886-2882; own site prints toll-free 1-800-361-2882."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://stanleybridgeresort.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/stanley-bridge-country-resort-conference-centre",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI map pin."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/stanley-bridge-country-resort-conference-centre",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Country resort (inn rooms and cottages). Open decision: whether it is a destination resort; closed until May anyway.",
+   "drive": {
+    "km": 36.7,
+    "from": "YYG",
+    "minutes_total": 40,
+    "km_source": "OSRM public router on OpenStreetMap roads (router.project-osrm.org), 2026-11-16",
+    "credit": "© OpenStreetMap contributors",
+    "verified": true,
+    "from_point": "Charlottetown Airport terminal"
+   }
+  },
+  {
+   "id": "rodd-brudenell",
+   "name": "Rodd Brudenell River Resort",
+   "area": "resort",
+   "resort": true,
+   "brand": "Rodd Hotels & Resorts",
+   "group": "Rodd Hotels & Resorts",
+   "independent": false,
+   "kind": "Resort",
+   "address": {
+    "street": "86 Dewars Lane",
+    "town": "Cardigan",
+    "province": "PE",
+    "postal_code": "C0A 1G0",
+    "display": "86 Dewars Lane, Cardigan"
+   },
+   "phone": "(902) 652-2332",
+   "website": "https://www.roddvacations.com/rodd-brudenell-river",
+   "lat": 46.20141,
+   "lng": -62.58851,
+   "distance_km": {
+    "airport": 42.8,
+    "centre": 41.8,
+    "airport_board_point": 42.0
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/rodd-brudenell-river-resort",
+    "checked": "2026-11-16",
+    "note": "Licence 2300077. Own site sells New Year's Eve and Winterval stays, which fits a year-round listing; it states no dates. Golf is seasonal."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-brudenell-river-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-brudenell-river",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI town: Georgetown Royalty. Own site: Cardigan (postal town)."
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-brudenell-river",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-brudenell-river",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.roddvacations.com/rodd-brudenell-river",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI links www.roddbrudenell.com, which no longer answers."
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-brudenell-river-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI map pin."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/rodd-brudenell-river-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": null,
+   "drive": {
+    "km": 53.1,
+    "from": "YYG",
+    "minutes_total": 53,
+    "km_source": "OSRM public router on OpenStreetMap roads (router.project-osrm.org), 2026-11-16",
+    "credit": "© OpenStreetMap contributors",
+    "verified": true,
+    "from_point": "Charlottetown Airport terminal"
+   }
+  },
+  {
+   "id": "mysa",
+   "name": "Mysa Nordic Spa & Resort",
+   "area": "resort",
+   "resort": true,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Resort",
+   "address": {
+    "street": "1668 Greenwich Road",
+    "town": "St. Peters Bay",
+    "province": "PE",
+    "postal_code": "C0A 2A0",
+    "display": "1668 Greenwich Road, St. Peters Bay"
+   },
+   "phone": "(902) 739-2112",
+   "website": "https://mysanordicspa.com/",
+   "lat": 46.42739,
+   "lng": -62.59647,
+   "distance_km": {
+    "airport": 44.0,
+    "centre": 46.2,
+    "airport_board_point": 43.0
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/mysa-nordic-spa-resort",
+    "checked": "2026-11-16",
+    "note": "Licence 1300771. Own site: open 7 days a week, 9 am to 9 pm."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://mysanordicspa.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://mysanordicspa.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site prints \"1668 Greenwich Rd.\""
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://mysanordicspa.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://mysanordicspa.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Same on Tourism PEI."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://mysanordicspa.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/mysa-nordic-spa-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI map pin."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/mysa-nordic-spa-resort",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Nordic spa with seventeen water-view rooms. Own site: 16+ only. Open decision: an age-limited spa on a public board.",
+   "drive": {
+    "km": 54.0,
+    "from": "YYG",
+    "minutes_total": 53,
+    "km_source": "OSRM public router on OpenStreetMap roads (router.project-osrm.org), 2026-11-16",
+    "credit": "© OpenStreetMap contributors",
+    "verified": true,
+    "from_point": "Charlottetown Airport terminal"
+   }
+  },
+  {
+   "id": "inn-at-bay-fortune",
+   "name": "The Inn at Bay Fortune",
+   "area": "resort",
+   "resort": true,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Inn",
+   "address": {
+    "street": "758 Route 310",
+    "town": "Bay Fortune",
+    "province": "PE",
+    "postal_code": "C0A 2B0",
+    "display": "758 Route 310, Bay Fortune"
+   },
+   "phone": "(902) 687-3745",
+   "website": "https://innatbayfortune.com/",
+   "lat": 46.32958,
+   "lng": -62.36259,
+   "distance_km": {
+    "airport": 59.2,
+    "centre": 59.9,
+    "airport_board_point": 58.3
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": false,
+    "open": [
+     {
+      "from": "05-15",
+      "to": "11-07"
+     }
+    ],
+    "open_dates": "15 May - 7 November",
+    "verified": true,
+    "source": "https://innatbayfortune.com/",
+    "checked": "2026-11-16",
+    "note": "Own site: \"We've wrapped up another wonderful season\" and taking 2027 reservations (FireWorks Feast 14 May to 9 October 2027, Chefs' Harvest 14 October to 6 November 2027). Tourism PEI: 15 May - 7 November."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://innatbayfortune.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://innatbayfortune.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site prints the town as \"Fortune, PEI\"; Tourism PEI: Bay Fortune."
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://innatbayfortune.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://innatbayfortune.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Toll-free 1-888-687-3745."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://innatbayfortune.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/the-inn-at-bay-fortune-0",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16",
+     "note": "Tourism PEI map pin."
+    },
+    "season": {
+     "verified": true,
+     "source": "https://innatbayfortune.com/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "Destination culinary country inn; listed with the resorts because people drive out for it.",
+   "drive": {
+    "km": 73.1,
+    "from": "YYG",
+    "minutes_total": 70,
+    "km_source": "OSRM public router on OpenStreetMap roads (router.project-osrm.org), 2026-11-16",
+    "credit": "© OpenStreetMap contributors",
+    "verified": true,
+    "from_point": "Charlottetown Airport terminal"
+   }
+  },
+  {
+   "id": "mill-river",
+   "name": "Mill River Resort",
+   "area": "resort",
+   "resort": true,
+   "brand": null,
+   "group": null,
+   "independent": true,
+   "kind": "Resort",
+   "address": {
+    "street": "180 Mill River Resort Road",
+    "town": "Woodstock",
+    "province": "PE",
+    "postal_code": "C0B 1V0",
+    "display": "180 Mill River Resort Road, Woodstock"
+   },
+   "phone": "(902) 859-3555",
+   "website": "https://millriver.ca/",
+   "lat": 46.7418646,
+   "lng": -64.1660277,
+   "distance_km": {
+    "airport": 94.0,
+    "centre": 97.3,
+    "airport_board_point": 94.5
+   },
+   "area_reason": null,
+   "season": {
+    "year_round": true,
+    "open": null,
+    "open_dates": "year-round",
+    "verified": true,
+    "source": "https://www.tourismpei.com/where-to-stay/mill-river-resort-0",
+    "checked": "2026-11-16",
+    "note": "Licence 1100916. Own site: \"Your 4 Season, 4 Star Resort\", with winter stays."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": false,
+    "verified": true,
+    "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+    "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
+    "checked": "2026-11-16"
+   },
+   "logo": null,
+   "logo_missing": "No official file that reads on the cream column.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://millriver.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://millriver.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Own site: \"180 Mill River Resort Rd. Route 136 Woodstock, PEI\"."
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.openstreetmap.org/way/350173409",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16",
+     "note": "Not printed on its own site or Tourism PEI; OpenStreetMap address data gives C0B 1V0. Confirm."
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://millriver.ca/",
+     "source_type": "own_site",
+     "checked": "2026-11-16",
+     "note": "Toll-free 1-844-375-3555."
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/mill-river-resort-0",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "coords": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/350173409",
+     "source_type": "openstreetmap",
+     "checked": "2026-11-16"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://www.tourismpei.com/where-to-stay/mill-river-resort-0",
+     "source_type": "tourism_pei",
+     "checked": "2026-11-16"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://flyyyg.com/passengers/parking-transport/ground-transportation/",
+     "source_type": "airport_own_site",
+     "checked": "2026-11-16"
+    },
+    "area": {
+     "verified": true,
+     "source": null,
+     "source_type": "computed",
+     "note": "Straight-line distance from the coordinates above (meta.area_rule)."
+    }
+   },
+   "notes": "West PEI, about 1 h 45 by road. No longer a Rodd property (its own site, a Graphcom build). Open decision: whether it is too far for a Charlottetown card.",
+   "drive": {
+    "km": 111.4,
+    "from": "YYG",
+    "minutes_total": 107,
+    "km_source": "OSRM public router on OpenStreetMap roads (router.project-osrm.org), 2026-11-16",
+    "credit": "© OpenStreetMap contributors",
+    "verified": true,
+    "from_point": "Charlottetown Airport terminal"
+   }
+  }
+ ]
+}
