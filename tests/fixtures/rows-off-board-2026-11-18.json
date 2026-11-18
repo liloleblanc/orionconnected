@@ -1,0 +1,2292 @@
+{
+ "about": "Rows found on the live lists of 2026-11-18, kept to hold the rule of fidsRowOffBoard (fids-current/js/feed-router.js). mia: records as Miami sends them through /miafids (the fields of worker-entry.js MIA_FIELDS), captured 14:34Z. served: rows of other airports as our worker served them between 14:32Z and 14:36Z (Toronto and Newark: as the adapters of the board made them from the records of the airport), trimmed to what the mappers read. off: why the row leaves (home, no-terminal, callsign, unnamed, or list for the code list and name words), null when it stays. undecided: a row that stays because nothing in it says what it is.",
+ "mia": {
+  "dep": [
+   {
+    "off": "no-terminal",
+    "rec": {
+     "city": "ALEXANDRIA INT'L",
+     "stt": "2026-11-18T19:10:00",
+     "ett": "2026-11-18T19:10:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "",
+     "terminal": "NO",
+     "bags": "",
+     "airlineName": "GlobalX Airlines",
+     "CXR": "G6",
+     "TRN": "6175",
+     "CTY": "AEX",
+     "TYP": "A321",
+     "REG": "N966AD",
+     "timeInMillis": "1795047000000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "ANTIGUA",
+     "stt": "2026-11-18T11:16:00",
+     "ett": "2026-11-18T11:16:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "D33",
+     "terminal": "D",
+     "bags": "",
+     "airlineName": "American Airlines",
+     "CXR": "AA",
+     "TRN": "2672",
+     "CTY": "ANU",
+     "TYP": "7378W",
+     "REG": "N830NN",
+     "timeInMillis": "1795018560000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "ATLANTA",
+     "stt": "2026-11-18T07:14:00",
+     "ett": "2026-11-18T07:04:00",
+     "att": "2026-11-18T07:23:00",
+     "status": "Departed 7:00A",
+     "gate": "J18",
+     "terminal": "J",
+     "bags": "",
+     "airlineName": "Delta Air Lines",
+     "CXR": "DL",
+     "TRN": "1211",
+     "CTY": "ATL",
+     "TYP": "7572W",
+     "REG": "N550NW",
+     "timeInMillis": "1795004040000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "BARRANQUILLA",
+     "stt": "2026-11-18T11:25:00",
+     "ett": "2026-11-18T11:25:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "J8",
+     "terminal": "J",
+     "bags": "",
+     "airlineName": "avianca",
+     "CXR": "AV",
+     "TRN": "003",
+     "CTY": "BAQ",
+     "TYP": "A320",
+     "REG": "N944AV",
+     "timeInMillis": "1795019100000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "CAP HAITIEN",
+     "stt": "2026-11-18T06:30:00",
+     "ett": "2026-11-18T09:00:00",
+     "att": "",
+     "status": "Now 9:00A",
+     "gate": "E22",
+     "terminal": "E",
+     "bags": "",
+     "airlineName": "GlobalX Airlines",
+     "CXR": "G6",
+     "TRN": "613",
+     "CTY": "CAP",
+     "TYP": "A320",
+     "REG": "N291GX",
+     "timeInMillis": "1795001400000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "CARACAS",
+     "stt": "2026-11-18T07:30:00",
+     "ett": "2026-11-18T07:30:00",
+     "att": "2026-11-18T09:09:00",
+     "status": "Departed 8:54A",
+     "gate": "E22",
+     "terminal": "E",
+     "bags": "",
+     "airlineName": "GlobalX Airlines",
+     "CXR": "G6",
+     "TRN": "200",
+     "CTY": "CCS",
+     "TYP": "A320",
+     "REG": "N837VA",
+     "timeInMillis": "1795005000000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "HAVANA, CUBA",
+     "stt": "2026-11-18T07:15:00",
+     "ett": "2026-11-18T07:15:00",
+     "att": "",
+     "status": "Departed 9:30A",
+     "gate": "E31",
+     "terminal": "E",
+     "bags": "",
+     "airlineName": "World Atlantic",
+     "CXR": "WAL",
+     "TRN": "252",
+     "CTY": "HAV",
+     "TYP": "MD83",
+     "REG": "N805WA",
+     "timeInMillis": "1795004100000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "LES CAYES, HAITI",
+     "stt": "2026-11-18T07:30:00",
+     "ett": "2026-11-18T07:30:00",
+     "att": "2026-11-18T07:17:00",
+     "status": "Departed 7:00A",
+     "gate": "G4",
+     "terminal": "G",
+     "bags": "",
+     "airlineName": "IBC Air",
+     "CXR": "CSQ",
+     "TRN": "761",
+     "CTY": "CYA",
+     "TYP": "E145P",
+     "REG": "N291BC",
+     "timeInMillis": "1795005000000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "LIMA",
+     "stt": "2026-11-18T09:50:00",
+     "ett": "2026-11-18T09:50:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F12",
+     "terminal": "F",
+     "bags": "",
+     "airlineName": "Sky",
+     "CXR": "H8",
+     "TRN": "5595",
+     "CTY": "LIM",
+     "TYP": "A20N",
+     "REG": "CCAZS",
+     "timeInMillis": "1795013400000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "SANTA CLARA,CUBA",
+     "stt": "2026-11-18T06:00:00",
+     "ett": "2026-11-18T09:45:00",
+     "att": "",
+     "status": "Now 9:45A",
+     "gate": "F17",
+     "terminal": "F",
+     "bags": "",
+     "airlineName": "Eastern Air Express",
+     "CXR": "BBQ",
+     "TRN": "2211",
+     "CTY": "SNU",
+     "TYP": "B7374",
+     "REG": "N314XA",
+     "timeInMillis": "1794999600000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "SANTA CLARA,CUBA",
+     "stt": "2026-11-18T08:00:00",
+     "ett": "2026-11-18T08:00:00",
+     "att": "2026-11-18T08:59:00",
+     "status": "Departed 8:34A",
+     "gate": "E33",
+     "terminal": "E",
+     "bags": "",
+     "airlineName": "World Atlantic",
+     "CXR": "WAL",
+     "TRN": "512",
+     "CTY": "SNU",
+     "TYP": "MD83",
+     "REG": "N808WA",
+     "timeInMillis": "1795006800000"
+    }
+   }
+  ],
+  "arr": [
+   {
+    "off": null,
+    "rec": {
+     "city": "LONDON-HEATHROW",
+     "stt": "2026-11-18T16:05:00",
+     "ett": "2026-11-18T15:32:00",
+     "att": "",
+     "status": "Now 3:32P",
+     "gate": "D23",
+     "terminal": "D",
+     "bags": "CD",
+     "airlineName": "American Airlines",
+     "CXR": "AA",
+     "TRN": "057",
+     "CTY": "LHR",
+     "TYP": "7773E",
+     "REG": "N726AN",
+     "timeInMillis": "1795035900000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "BARRANQUILLA",
+     "stt": "2026-11-18T09:55:00",
+     "ett": "2026-11-18T09:55:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "J8",
+     "terminal": "J",
+     "bags": "J1",
+     "airlineName": "avianca",
+     "CXR": "AV",
+     "TRN": "002",
+     "CTY": "BAQ",
+     "TYP": "A320",
+     "REG": "N944AV",
+     "timeInMillis": "1795013700000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "LONDON-HEATHROW",
+     "stt": "2026-11-18T14:40:00",
+     "ett": "2026-11-18T14:40:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "E24",
+     "terminal": "E",
+     "bags": "CE",
+     "airlineName": "British Airways",
+     "CXR": "BA",
+     "TRN": "207",
+     "CTY": "LHR",
+     "TYP": "A380",
+     "REG": "",
+     "timeInMillis": "1795030800000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "HAVANA, CUBA",
+     "stt": "2026-11-18T09:15:00",
+     "ett": "2026-11-18T09:15:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F19",
+     "terminal": "F",
+     "bags": "D3",
+     "airlineName": "Eastern Air Express",
+     "CXR": "BBQ",
+     "TRN": "503",
+     "CTY": "HAV",
+     "TYP": "B7374",
+     "REG": "N438US",
+     "timeInMillis": "1795011300000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "HAVANA, CUBA",
+     "stt": "2026-11-18T09:00:00",
+     "ett": "2026-11-18T09:00:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F17",
+     "terminal": "F",
+     "bags": "D2",
+     "airlineName": "Eastern Air Express",
+     "CXR": "BBQ",
+     "TRN": "702",
+     "CTY": "HAV",
+     "TYP": "B7374",
+     "REG": "N314XA",
+     "timeInMillis": "1795010400000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "HAVANA, CUBA",
+     "stt": "2026-11-18T09:30:00",
+     "ett": "2026-11-18T09:30:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F21",
+     "terminal": "F",
+     "bags": "D1",
+     "airlineName": "Eastern Air Express",
+     "CXR": "BBQ",
+     "TRN": "2202",
+     "CTY": "HAV",
+     "TYP": "B7374",
+     "REG": "N808TJ",
+     "timeInMillis": "1795012200000"
+    }
+   },
+   {
+    "off": "home",
+    "rec": {
+     "city": "MIAMI",
+     "stt": "2026-11-18T07:02:00",
+     "ett": "2026-11-18T07:02:00",
+     "att": "2026-11-18T07:02:00",
+     "status": "Arrived 7:40A",
+     "gate": "F21",
+     "terminal": "F",
+     "bags": "",
+     "airlineName": "Eastern Air Express",
+     "CXR": "BBQ",
+     "TRN": "2211A",
+     "CTY": "MIA",
+     "TYP": "B7374",
+     "REG": "N313XA",
+     "timeInMillis": "1795003320000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "SANTA CLARA,CUBA",
+     "stt": "2026-11-18T09:00:00",
+     "ett": "2026-11-18T09:00:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F9",
+     "terminal": "F",
+     "bags": "D1",
+     "airlineName": "Eastern Air Express",
+     "CXR": "BBQ",
+     "TRN": "2212",
+     "CTY": "SNU",
+     "TYP": "B7374",
+     "REG": "N313XA",
+     "timeInMillis": "1795010400000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "CARACAS",
+     "stt": "2026-11-18T16:15:00",
+     "ett": "2026-11-18T16:15:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F23",
+     "terminal": "F",
+     "bags": "CE",
+     "airlineName": "GlobalX Airlines",
+     "CXR": "G6",
+     "TRN": "201",
+     "CTY": "CCS",
+     "TYP": "A320",
+     "REG": "N837VA",
+     "timeInMillis": "1795036500000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "CAP HAITIEN",
+     "stt": "2026-11-18T18:00:00",
+     "ett": "2026-11-18T18:00:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F21",
+     "terminal": "F",
+     "bags": "CD",
+     "airlineName": "GlobalX Airlines",
+     "CXR": "G6",
+     "TRN": "608",
+     "CTY": "CAP",
+     "TYP": "A320",
+     "REG": "N276GX",
+     "timeInMillis": "1795042800000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "CAP HAITIEN",
+     "stt": "2026-11-18T19:30:00",
+     "ett": "2026-11-18T19:30:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F23",
+     "terminal": "F",
+     "bags": "CD",
+     "airlineName": "GlobalX Airlines",
+     "CXR": "G6",
+     "TRN": "614",
+     "CTY": "CAP",
+     "TYP": "A320",
+     "REG": "N291GX",
+     "timeInMillis": "1795048200000"
+    }
+   },
+   {
+    "off": "no-terminal",
+    "rec": {
+     "city": "MARACAY",
+     "stt": "2026-11-18T17:40:00",
+     "ett": "2026-11-18T17:40:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "",
+     "terminal": "NO",
+     "bags": "CE",
+     "airlineName": "GlobalX Airlines",
+     "CXR": "G6",
+     "TRN": "6175",
+     "CTY": "MYC",
+     "TYP": "A321",
+     "REG": "N966AD",
+     "timeInMillis": "1795041600000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "LIMA",
+     "stt": "2026-11-18T07:10:00",
+     "ett": "2026-11-18T06:55:00",
+     "att": "2026-11-18T06:45:00",
+     "status": "Arrived 6:55A",
+     "gate": "F12",
+     "terminal": "F",
+     "bags": "D5",
+     "airlineName": "Sky",
+     "CXR": "H8",
+     "TRN": "5594",
+     "CTY": "LIM",
+     "TYP": "A20N",
+     "REG": "CCAZS",
+     "timeInMillis": "1795003800000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "HAVANA, CUBA",
+     "stt": "2026-11-18T10:15:00",
+     "ett": "2026-11-18T10:15:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F10",
+     "terminal": "F",
+     "bags": "D2",
+     "airlineName": "World Atlantic",
+     "CXR": "WAL",
+     "TRN": "253",
+     "CTY": "HAV",
+     "TYP": "MD83",
+     "REG": "N805WA",
+     "timeInMillis": "1795014900000"
+    }
+   },
+   {
+    "off": null,
+    "rec": {
+     "city": "SANTA CLARA,CUBA",
+     "stt": "2026-11-18T11:00:00",
+     "ett": "2026-11-18T11:00:00",
+     "att": "",
+     "status": "On Time",
+     "gate": "F12",
+     "terminal": "F",
+     "bags": "D7",
+     "airlineName": "World Atlantic",
+     "CXR": "WAL",
+     "TRN": "513",
+     "CTY": "SNU",
+     "TYP": "A320",
+     "REG": "LZMDI",
+     "timeInMillis": "1795017600000"
+    }
+   }
+  ]
+ },
+ "served": [
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a callsign, and no terminal, gate or belt: two letters after the digits",
+   "row": {
+    "number": "BA2PD",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "LHR",
+      "icao": null,
+      "name": "London"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:03:00-06:00",
+      "utc": "2026-11-18 19:03:00+00:00"
+     },
+     "airline": {
+      "iata": "BA",
+      "icao": null,
+      "name": "British Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:03:00-06:00",
+      "utc": "2026-11-18 19:03:00+00:00"
+     },
+     "airline": {
+      "iata": "BA",
+      "icao": null,
+      "name": "British Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a callsign, and no terminal, gate or belt: two letters after the digits",
+   "row": {
+    "number": "IB3GA",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "MAD",
+      "icao": null,
+      "name": "Madrid"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:39:00-06:00",
+      "utc": "2026-11-18 20:39:00+00:00"
+     },
+     "airline": {
+      "iata": "IB",
+      "icao": null,
+      "name": "Iberia"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:39:00-06:00",
+      "utc": "2026-11-18 20:39:00+00:00"
+     },
+     "airline": {
+      "iata": "IB",
+      "icao": null,
+      "name": "Iberia"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "OS1R",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "VIE",
+      "icao": null,
+      "name": "Vienna"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:17:00-06:00",
+      "utc": "2026-11-18 19:17:00+00:00"
+     },
+     "airline": {
+      "iata": "OS",
+      "icao": null,
+      "name": "Austrian"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:17:00-06:00",
+      "utc": "2026-11-18 19:17:00+00:00"
+     },
+     "airline": {
+      "iata": "OS",
+      "icao": null,
+      "name": "Austrian"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "TK67C",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "IST",
+      "icao": null,
+      "name": "Istanbul"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 09:23:00-06:00",
+      "utc": "2026-11-18 15:23:00+00:00"
+     },
+     "airline": {
+      "iata": "TK",
+      "icao": null,
+      "name": "Turkish Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 09:23:00-06:00",
+      "utc": "2026-11-18 15:23:00+00:00"
+     },
+     "airline": {
+      "iata": "TK",
+      "icao": null,
+      "name": "Turkish Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "EY93C",
+    "callSign": null,
+    "status": "landed",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "AUH",
+      "icao": null,
+      "name": "Abu Dhabi"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 06:36:00-06:00",
+      "utc": "2026-11-18 12:36:00+00:00"
+     },
+     "airline": {
+      "iata": "EY",
+      "icao": null,
+      "name": "Etihad Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 06:36:00-06:00",
+      "utc": "2026-11-18 12:36:00+00:00"
+     },
+     "airline": {
+      "iata": "EY",
+      "icao": null,
+      "name": "Etihad Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "QR20V",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "DOH",
+      "icao": null,
+      "name": "Doha"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:06:00-06:00",
+      "utc": "2026-11-18 19:06:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:06:00-06:00",
+      "utc": "2026-11-18 19:06:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "QR31T",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "MXP",
+      "icao": null,
+      "name": "Milan"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 17:18:00-06:00",
+      "utc": "2026-11-18 23:18:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 17:18:00-06:00",
+      "utc": "2026-11-18 23:18:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "AA764P",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "IAH",
+      "icao": null,
+      "name": "Houston"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 11:21:00-06:00",
+      "utc": "2026-11-18 17:21:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 11:21:00-06:00",
+      "utc": "2026-11-18 17:21:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "OO285R",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "CLE",
+      "icao": null,
+      "name": "Cleveland"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 09:55:00-06:00",
+      "utc": "2026-11-18 15:55:00+00:00"
+     },
+     "airline": {
+      "iata": "OO",
+      "icao": null,
+      "name": "SkyWest Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 09:55:00-06:00",
+      "utc": "2026-11-18 15:55:00+00:00"
+     },
+     "airline": {
+      "iata": "OO",
+      "icao": null,
+      "name": "SkyWest Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "AA179Q",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 07:10:00-06:00",
+      "utc": "2026-11-18 13:10:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "SNA",
+      "icao": null,
+      "name": "Santa Ana"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 07:10:00-06:00",
+      "utc": "2026-11-18 13:10:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": "callsign",
+   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "row": {
+    "number": "OO225X",
+    "callSign": null,
+    "status": "landed",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 05:45:00-06:00",
+      "utc": "2026-11-18 11:45:00+00:00"
+     },
+     "airline": {
+      "iata": "OO",
+      "icao": null,
+      "name": "SkyWest Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "EVV",
+      "icao": null,
+      "name": "Evansville"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 05:45:00-06:00",
+      "utc": "2026-11-18 11:45:00+00:00"
+     },
+     "airline": {
+      "iata": "OO",
+      "icao": null,
+      "name": "SkyWest Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "list",
+   "note": "Kalitta Air, all-cargo",
+   "row": {
+    "number": "K4557",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ANC",
+      "icao": null,
+      "name": "Anchorage"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 10:52:00-06:00",
+      "utc": "2026-11-18 16:52:00+00:00"
+     },
+     "airline": {
+      "iata": "K4",
+      "icao": null,
+      "name": "Kalitta Air"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 10:52:00-06:00",
+      "utc": "2026-11-18 16:52:00+00:00"
+     },
+     "airline": {
+      "iata": "K4",
+      "icao": null,
+      "name": "Kalitta Air"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": "list",
+   "note": "Nippon Cargo Airlines, all-cargo",
+   "row": {
+    "number": "KZ143",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 02:00:00-06:00",
+      "utc": "2026-11-18 08:00:00+00:00"
+     },
+     "airline": {
+      "iata": "KZ",
+      "icao": null,
+      "name": "NCA - Nippon Cargo Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "NRT",
+      "icao": null,
+      "name": "Tokyo"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 02:00:00-06:00",
+      "utc": "2026-11-18 08:00:00+00:00"
+     },
+     "airline": {
+      "iata": "KZ",
+      "icao": null,
+      "name": "NCA - Nippon Cargo Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": "list",
+   "note": "Western Global Airlines, all-cargo",
+   "row": {
+    "number": "KD314",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 12:10:00-06:00",
+      "utc": "2026-11-18 18:10:00+00:00"
+     },
+     "airline": {
+      "iata": "KD",
+      "icao": null,
+      "name": "Western Global"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ICN",
+      "icao": null,
+      "name": "Seoul"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 12:10:00-06:00",
+      "utc": "2026-11-18 18:10:00+00:00"
+     },
+     "airline": {
+      "iata": "KD",
+      "icao": null,
+      "name": "Western Global"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "note": "Avelo from New Haven: a scheduled flight Chicago lists with no terminal, gate or belt a day and a half ahead. A missing place is not evidence",
+   "row": {
+    "number": "XP421",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "HVN",
+      "icao": null,
+      "name": "New Haven"
+     },
+     "scheduledTime": {
+      "local": "2026-11-19 18:28:00-06:00",
+      "utc": "2026-11-20 00:28:00+00:00"
+     },
+     "airline": {
+      "iata": "XP",
+      "icao": null,
+      "name": "Xtra Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-19 18:28:00-06:00",
+      "utc": "2026-11-20 00:28:00+00:00"
+     },
+     "airline": {
+      "iata": "XP",
+      "icao": null,
+      "name": "Xtra Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": null,
+   "note": "Avelo to New Haven, the same",
+   "row": {
+    "number": "XP422",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-19 19:13:00-06:00",
+      "utc": "2026-11-20 01:13:00+00:00"
+     },
+     "airline": {
+      "iata": "XP",
+      "icao": null,
+      "name": "Xtra Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "HVN",
+      "icao": null,
+      "name": "New Haven"
+     },
+     "scheduledTime": {
+      "local": "2026-11-19 19:13:00-06:00",
+      "utc": "2026-11-20 01:13:00+00:00"
+     },
+     "airline": {
+      "iata": "XP",
+      "icao": null,
+      "name": "Xtra Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "note": "Arajet from Punta Cana: scheduled, listed with no terminal, gate or belt",
+   "row": {
+    "number": "DM5480",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "PUJ",
+      "icao": null,
+      "name": "Punta Cana"
+     },
+     "scheduledTime": {
+      "local": "2026-11-19 22:40:00-06:00",
+      "utc": "2026-11-20 04:40:00+00:00"
+     },
+     "airline": {
+      "iata": "DM",
+      "icao": null,
+      "name": "Arajet"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-19 22:40:00-06:00",
+      "utc": "2026-11-20 04:40:00+00:00"
+     },
+     "airline": {
+      "iata": "DM",
+      "icao": null,
+      "name": "Arajet"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": null,
+   "note": "Emirates to Dubai, terminal 5 and no gate yet",
+   "row": {
+    "number": "EK236",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "5",
+     "scheduledTime": {
+      "local": "2026-11-18 19:45:00-06:00",
+      "utc": "2026-11-19 01:45:00+00:00"
+     },
+     "airline": {
+      "iata": "EK",
+      "icao": null,
+      "name": "Emirates"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "DXB",
+      "icao": null,
+      "name": "Dubai"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 19:45:00-06:00",
+      "utc": "2026-11-19 01:45:00+00:00"
+     },
+     "airline": {
+      "iata": "EK",
+      "icao": null,
+      "name": "Emirates"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": null,
+   "undecided": "a freighter under the code of Air China (Beijing, no place): only its number range says so",
+   "note": "stays",
+   "row": {
+    "number": "CA1054",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 09:10:00-06:00",
+      "utc": "2026-11-18 15:10:00+00:00"
+     },
+     "airline": {
+      "iata": "CA",
+      "icao": null,
+      "name": "Air China LTD"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "PEK",
+      "icao": null,
+      "name": "Beijing"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 09:10:00-06:00",
+      "utc": "2026-11-18 15:10:00+00:00"
+     },
+     "airline": {
+      "iata": "CA",
+      "icao": null,
+      "name": "Air China LTD"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": null,
+   "undecided": "an Emirates freighter to Dubai World Central: only its number range and its far end say so",
+   "note": "stays",
+   "row": {
+    "number": "EK9988",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:25:00-06:00",
+      "utc": "2026-11-18 19:25:00+00:00"
+     },
+     "airline": {
+      "iata": "EK",
+      "icao": null,
+      "name": "Emirates"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "DWC",
+      "icao": null,
+      "name": "Dubai"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:25:00-06:00",
+      "utc": "2026-11-18 19:25:00+00:00"
+     },
+     "airline": {
+      "iata": "EK",
+      "icao": null,
+      "name": "Emirates"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "undecided": "a JAL freighter from Tokyo: only its number range says so",
+   "note": "stays",
+   "row": {
+    "number": "JL6747",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "NRT",
+      "icao": null,
+      "name": "Tokyo"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 12:30:00-06:00",
+      "utc": "2026-11-18 18:30:00+00:00"
+     },
+     "airline": {
+      "iata": "JL",
+      "icao": null,
+      "name": "JAL"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 12:30:00-06:00",
+      "utc": "2026-11-18 18:30:00+00:00"
+     },
+     "airline": {
+      "iata": "JL",
+      "icao": null,
+      "name": "JAL"
+     }
+    }
+   }
+  },
+  {
+   "ap": "CLT",
+   "dir": "dep",
+   "off": "callsign",
+   "note": "a ferry: a letter after the number and no gate, where Charlotte gives every flight a gate",
+   "row": {
+    "number": "AA473Q",
+    "callSign": null,
+    "status": "landed",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "CLT",
+      "icao": "KCLT",
+      "name": "Charlotte"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 05:00:00-05:00",
+      "utc": "2026-11-18 10:00:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "IAD",
+      "icao": null,
+      "name": null
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 05:00:00-05:00",
+      "utc": "2026-11-18 10:00:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "CLT",
+   "dir": "arr",
+   "off": null,
+   "note": "a cancelled Sun Country flight with no gate and no letter after its number: stays",
+   "row": {
+    "number": "SY8215",
+    "callSign": null,
+    "status": "cancelled",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "MSY",
+      "icao": null,
+      "name": null
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 11:42:00-05:00",
+      "utc": "2026-11-18 16:42:00+00:00"
+     },
+     "airline": {
+      "iata": "SY",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "CLT",
+      "icao": "KCLT",
+      "name": "Charlotte"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 11:42:00-05:00",
+      "utc": "2026-11-18 16:42:00+00:00"
+     },
+     "airline": {
+      "iata": "SY",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "DEN",
+   "dir": "arr",
+   "off": "home",
+   "note": "an arrival from Denver at Denver, gate A30",
+   "row": {
+    "number": "UA 2257",
+    "callSign": null,
+    "status": "arrived",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "DEN",
+      "icao": null,
+      "name": "Denver"
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 13:05:00-07:00",
+      "utc": "2026-11-17 20:05:00+00:00"
+     },
+     "airline": {
+      "iata": "UA",
+      "icao": null,
+      "name": "United Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "DEN",
+      "icao": "KDEN",
+      "name": "Denver"
+     },
+     "gate": "A30",
+     "scheduledTime": {
+      "local": "2026-11-17 13:05:00-07:00",
+      "utc": "2026-11-17 20:05:00+00:00"
+     },
+     "airline": {
+      "iata": "UA",
+      "icao": null,
+      "name": "United Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "DEN",
+   "dir": "arr",
+   "off": "home",
+   "note": "an arrival from Denver at Denver",
+   "row": {
+    "number": "F9 2349",
+    "callSign": null,
+    "status": "arrived",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "DEN",
+      "icao": null,
+      "name": "Denver"
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 09:32:00-07:00",
+      "utc": "2026-11-17 16:32:00+00:00"
+     },
+     "airline": {
+      "iata": "F9",
+      "icao": null,
+      "name": "Frontier Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "DEN",
+      "icao": "KDEN",
+      "name": "Denver"
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 09:32:00-07:00",
+      "utc": "2026-11-17 16:32:00+00:00"
+     },
+     "airline": {
+      "iata": "F9",
+      "icao": null,
+      "name": "Frontier Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "YOW",
+   "dir": "arr",
+   "off": "home",
+   "note": "an arrival from Ottawa at Ottawa, gate 23",
+   "row": {
+    "number": "AC7690",
+    "callSign": null,
+    "status": "arrived",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "YOW",
+      "icao": null,
+      "name": "Ottawa"
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 14:23:00-05:00",
+      "utc": "2026-11-17 19:23:00+00:00"
+     },
+     "airline": {
+      "iata": "AC",
+      "icao": null,
+      "name": "Air Canada"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "YOW",
+      "icao": "CYOW",
+      "name": "Ottawa"
+     },
+     "gate": "23",
+     "scheduledTime": {
+      "local": "2026-11-17 14:23:00-05:00",
+      "utc": "2026-11-17 19:23:00+00:00"
+     },
+     "airline": {
+      "iata": "AC",
+      "icao": null,
+      "name": "Air Canada"
+     }
+    }
+   }
+  },
+  {
+   "ap": "YXE",
+   "dir": "arr",
+   "off": "home",
+   "note": "an arrival from Saskatoon at Saskatoon",
+   "row": {
+    "number": "AC1122",
+    "callSign": null,
+    "status": "arrived",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "YXE",
+      "icao": null,
+      "name": "Saskatoon"
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 16:07:00-06:00",
+      "utc": "2026-11-17 22:07:00+00:00"
+     },
+     "airline": {
+      "iata": "AC",
+      "icao": null,
+      "name": "Air Canada"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "YXE",
+      "icao": "CYXE",
+      "name": "Saskatoon"
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 16:07:00-06:00",
+      "utc": "2026-11-17 22:07:00+00:00"
+     },
+     "airline": {
+      "iata": "AC",
+      "icao": null,
+      "name": "Air Canada"
+     }
+    }
+   }
+  },
+  {
+   "ap": "PHL",
+   "dir": "arr",
+   "off": "list",
+   "note": "Kalitta Charters II, cargo",
+   "row": {
+    "number": "KII 587",
+    "callSign": null,
+    "status": "delayed",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": null,
+      "icao": null,
+      "name": "Cincinnati, OH"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 08:33:00-05:00",
+      "utc": "2026-11-18 13:33:00+00:00"
+     },
+     "airline": {
+      "iata": "KII",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "PHL",
+      "icao": "KPHL",
+      "name": "Philadelphia"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 08:33:00-05:00",
+      "utc": "2026-11-18 13:33:00+00:00"
+     },
+     "airline": {
+      "iata": "KII",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "PHL",
+   "dir": "dep",
+   "off": "list",
+   "note": "Freight Runners Express, cargo",
+   "row": {
+    "number": "FRG 9508",
+    "callSign": null,
+    "status": "scheduled",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "PHL",
+      "icao": "KPHL",
+      "name": "Philadelphia"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 00:10:00-05:00",
+      "utc": "2026-11-18 05:10:00+00:00"
+     },
+     "airline": {
+      "iata": "FRG",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": null,
+      "icao": null,
+      "name": "Richmond, VA"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 00:10:00-05:00",
+      "utc": "2026-11-18 05:10:00+00:00"
+     },
+     "airline": {
+      "iata": "FRG",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "PHL",
+   "dir": "arr",
+   "off": "list",
+   "note": "Executive Fliteways, private charter",
+   "row": {
+    "number": "XFL 450",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": null,
+      "icao": null,
+      "name": "Chicago-Midway"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 11:49:00-05:00",
+      "utc": "2026-11-18 16:49:00+00:00"
+     },
+     "airline": {
+      "iata": "XFL",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "PHL",
+      "icao": "KPHL",
+      "name": "Philadelphia"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 11:49:00-05:00",
+      "utc": "2026-11-18 16:49:00+00:00"
+     },
+     "airline": {
+      "iata": "XFL",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "PHL",
+   "dir": "arr",
+   "off": "unnamed",
+   "note": "nobody names XA and the row has no terminal, gate or belt",
+   "row": {
+    "number": "XA 5903",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "LAS",
+      "icao": null,
+      "name": "Las Vegas"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:53:00-05:00",
+      "utc": "2026-11-18 18:53:00+00:00"
+     },
+     "airline": {
+      "iata": "XA",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "PHL",
+      "icao": "KPHL",
+      "name": "Philadelphia"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 13:53:00-05:00",
+      "utc": "2026-11-18 18:53:00+00:00"
+     },
+     "airline": {
+      "iata": "XA",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "PHL",
+   "dir": "arr",
+   "off": null,
+   "note": "Frontier from Atlanta with no gate yet: a missing gate is not evidence",
+   "row": {
+    "number": "F9 2552",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ATL",
+      "icao": null,
+      "name": "Atlanta"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 18:19:00-05:00",
+      "utc": "2026-11-18 23:19:00+00:00"
+     },
+     "airline": {
+      "iata": "F9",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "PHL",
+      "icao": "KPHL",
+      "name": "Philadelphia"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 18:19:00-05:00",
+      "utc": "2026-11-18 23:19:00+00:00"
+     },
+     "airline": {
+      "iata": "F9",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "PHL",
+   "dir": "dep",
+   "off": null,
+   "note": "Contour to Toronto with no gate: named, stays",
+   "row": {
+    "number": "LF 652",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "PHL",
+      "icao": "KPHL",
+      "name": "Philadelphia"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:45:00-05:00",
+      "utc": "2026-11-18 19:45:00+00:00"
+     },
+     "airline": {
+      "iata": "LF",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "YYZ",
+      "icao": null,
+      "name": "Toronto"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:45:00-05:00",
+      "utc": "2026-11-18 19:45:00+00:00"
+     },
+     "airline": {
+      "iata": "LF",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "YYZ",
+   "dir": "dep",
+   "off": "list",
+   "note": "Morningstar Air Express, the FedEx feeder, by the name the airport gives it",
+   "row": {
+    "number": "XX7092",
+    "callSign": "MAL7092",
+    "status": "cancelled",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "YYZ",
+      "icao": "CYYZ",
+      "name": "Toronto Pearson"
+     },
+     "terminal": "T3",
+     "gate": "605",
+     "scheduledTime": {
+      "local": "2026-11-18T12:34:00-05:00",
+      "utc": "2026-11-18T12:34:00-05:00"
+     },
+     "airline": {
+      "iata": "XX",
+      "icao": "MAL",
+      "name": "Morningstar Air Express"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "YVR",
+      "icao": null,
+      "name": "Vancouver International Airport"
+     },
+     "airline": {
+      "iata": "XX",
+      "icao": "MAL",
+      "name": "Morningstar Air Express"
+     }
+    }
+   }
+  },
+  {
+   "ap": "YYZ",
+   "dir": "arr",
+   "off": null,
+   "note": "Air Canada from Buenos Aires with a letter after its number, at gate E80 and belt 6: a passenger flight",
+   "row": {
+    "number": "AC91Z",
+    "callSign": "ACA91Z",
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "EZE",
+      "icao": null,
+      "name": "Ministro Pistarini International Airport"
+     },
+     "airline": {
+      "iata": "AC",
+      "icao": "ACA",
+      "name": "Air Canada"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "YYZ",
+      "icao": "CYYZ",
+      "name": "Toronto Pearson"
+     },
+     "terminal": "T1",
+     "gate": "E80",
+     "baggageBelt": "6",
+     "scheduledTime": {
+      "local": "2026-11-19T05:50:00-05:00",
+      "utc": "2026-11-19T05:50:00-05:00"
+     },
+     "airline": {
+      "iata": "AC",
+      "icao": "ACA",
+      "name": "Air Canada"
+     }
+    }
+   }
+  },
+  {
+   "ap": "BOS",
+   "dir": "dep",
+   "off": null,
+   "note": "Sunrise Airways to Cap-Haitien, gate E5: S6 stood in the cargo list",
+   "row": {
+    "number": "S6623",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "BOS",
+      "icao": "KBOS",
+      "name": "Boston"
+     },
+     "terminal": "E",
+     "gate": "E5",
+     "scheduledTime": {
+      "local": "2026-11-18 10:00:00-05:00",
+      "utc": "2026-11-18 15:00:00+00:00"
+     },
+     "airline": {
+      "iata": "S6",
+      "icao": null,
+      "name": "Sunrise Airline"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "CAP",
+      "icao": null,
+      "name": "Cap Haitien"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 10:00:00-05:00",
+      "utc": "2026-11-18 15:00:00+00:00"
+     },
+     "airline": {
+      "iata": "S6",
+      "icao": null,
+      "name": "Sunrise Airline"
+     }
+    }
+   }
+  },
+  {
+   "ap": "EWR",
+   "dir": "dep",
+   "off": null,
+   "note": "EgyptAir to Cairo, terminal 0 and no gate: a placeholder is not evidence",
+   "row": {
+    "number": "MS988",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "EWR",
+      "icao": "KEWR",
+      "name": "Newark Liberty"
+     },
+     "terminal": "0",
+     "scheduledTime": {
+      "local": "2026-11-18 12:00:00-05:00",
+      "utc": "2026-11-18 17:00:00+00:00"
+     },
+     "airline": {
+      "iata": "MS",
+      "icao": null,
+      "name": "EgyptAir"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "CAI",
+      "icao": null,
+      "name": "Cairo, Egypt"
+     },
+     "airline": {
+      "iata": "MS",
+      "icao": null,
+      "name": "EgyptAir"
+     }
+    }
+   }
+  },
+  {
+   "ap": "LAS",
+   "dir": "arr",
+   "off": null,
+   "note": "Contour, terminal ?? : a placeholder is not evidence",
+   "row": {
+    "number": "LF3603",
+    "callSign": null,
+    "status": "scheduled",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "MCE",
+      "icao": null,
+      "name": null
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 15:50:00-08:00",
+      "utc": "2026-11-18 23:50:00+00:00"
+     },
+     "airline": {
+      "iata": "LF",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "LAS",
+      "icao": "KLAS",
+      "name": "Las Vegas"
+     },
+     "terminal": "??",
+     "gate": "D59",
+     "scheduledTime": {
+      "local": "2026-11-18 15:50:00-08:00",
+      "utc": "2026-11-18 23:50:00+00:00"
+     },
+     "airline": {
+      "iata": "LF",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "SEA",
+   "dir": "dep",
+   "off": null,
+   "undecided": "Air Mobility Command to Osan, gate S12: a military charter the row gives a gate; whether it belongs on a public board is a decision",
+   "note": "stays",
+   "row": {
+    "number": "MC1271",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "SEA",
+      "icao": "KSEA",
+      "name": "Seattle"
+     },
+     "gate": "S12",
+     "scheduledTime": {
+      "local": "2026-11-18 08:30:00-08:00",
+      "utc": "2026-11-18 16:30:00+00:00"
+     },
+     "airline": {
+      "iata": "MC",
+      "icao": null,
+      "name": "Air Mobility Command"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "OSN",
+      "icao": null,
+      "name": "Osan AFB"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 08:30:00-08:00",
+      "utc": "2026-11-18 16:30:00+00:00"
+     },
+     "airline": {
+      "iata": "MC",
+      "icao": null,
+      "name": "Air Mobility Command"
+     }
+    }
+   }
+  }
+ ]
+}

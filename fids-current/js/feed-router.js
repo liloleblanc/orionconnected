@@ -1191,9 +1191,10 @@ function miaToAdbFlight(f, direction) {
   const other = { iata: String(f.CTY || '').trim().toUpperCase() || null, icao: null, name: cityName || null };
 
   const bags = String(f.bags || '').trim();
+  const miaTerm = String(f.terminal || '').trim().toUpperCase();
   const homeSide = {
     airport: home,
-    terminal: String(f.terminal || '').trim().toUpperCase() || null,
+    terminal: (miaTerm && miaTerm !== 'NO') ? miaTerm : null,
     gate: String(f.gate || '').trim().toUpperCase() || null,
     ...(!isDep && bags ? { baggageBelt: bags } : {}),
     scheduledTime: sched,
@@ -1211,12 +1212,136 @@ function miaToAdbFlight(f, direction) {
     departure: isDep ? homeSide : otherSide,
     arrival: isDep ? otherSide : homeSide,
   };
+  // Miami's terminals are its concourse letters (D to J). NO is its word for
+  // a flight in no public terminal: it is never a terminal to print (the
+  // belt screens made a belt "NO-CE" of it), and it is what fidsRowOffBoard
+  // reads to keep the row off when the flight has no gate either.
+  if (miaTerm === 'NO') out._noPublicTerminal = true;
   // The feed hands us the airframe outright — no AeroDataBox enrichment pass
   // needed here, unlike MCO. This is what drives the gate screen's aircraft
   // illustration and the tail number.
   if (f.TYP) out.aircraft = { model: String(f.TYP).trim() };
   if (f.REG) out.reg = String(f.REG).trim().toUpperCase();
   return out;
+}
+
+// ── A ROW NO PASSENGER LOOKS FOR, BY WHAT THE ROW ITSELF SAYS ──────────────
+// The standing rule (2026-11-13): a flight a passenger can be on prints its
+// airline by name; a flight no passenger looks for (cargo, courier, private,
+// positioning) is on no screen. The code list and the name words of
+// fids-core.js (FILTER_OUT, _NON_PASSENGER_PATTERNS) take an operator off
+// whole. They cannot take off ONE flight of an airline that also carries
+// passengers, and that is what stood on the Miami boards of 2026-11-18,
+// beside the Cuba and Haiti charters of the same two airlines, which have
+// gates, concourses and belts and which passengers do fly:
+//   - BBQ 2211A, an arrival "from Miami" at Miami, at gate F21: the 06:00 to
+//     Santa Clara, come back;
+//   - G6 6175, in from Maracay and out to Alexandria, Louisiana, which Miami
+//     itself files under terminal "NO" and gives no gate.
+//
+// So this reads the row, and only what the row itself says. It is ONE
+// function, in the one data layer every board page and the phone app load:
+// mapADB (fids-core.js) and adbToCard (app.html) both ask it, so a row is
+// off every screen or on every screen. tests/rows-off-board.test.js holds it.
+//
+// fidsRowOffBoard answers a short word for the reason, or '' (the row stays):
+//   'cargo'        the feed marks the row as cargo (isCargo).
+//   'home'         the other airport IS this airport: an aeroplane that came
+//                  back or was moved across the field, not a flight from
+//                  somewhere (Denver, Ottawa and Saskatoon list them too).
+//   'no-terminal'  the airport marks the flight as in no public terminal and
+//                  gives it no gate. The mark is the airport's own word, read
+//                  by that airport's adapter into _noPublicTerminal (Miami
+//                  writes NO in the terminal field: three records in all
+//                  that was ever recorded, none of them with a gate, while
+//                  a cancelled flight keeps its concourse letter).
+//   'tail'         the flight number is an aircraft registration: private
+//                  and business aviation flies under its tail number.
+//   'callsign'     the number has letters after its digits AND the airport
+//                  gives the row no terminal, no gate and no belt. Two
+//                  letters or more is a radio callsign, which no passenger
+//                  holds: Chicago lists BA2PD from London and IB3GA from
+//                  Madrid beside the scheduled flights themselves. One letter
+//                  is an operational suffix that passenger flights do carry
+//                  (Toronto: AC91Z from Buenos Aires at gate E80, belt 6), so
+//                  it is read only where the airport's own feed places every
+//                  public flight (FIDS_PLACED_FEEDS): there a row with a
+//                  suffix and no place is a ferry or a second listing
+//                  (Chicago: AA179Q, OO285R, TK67C; Charlotte: AA473Q).
+//   'unnamed'      nobody names the airline of the row, neither the tables of
+//                  the screen nor the airport (the caller says so: named ===
+//                  false), AND the airport gives the row no terminal, no gate
+//                  and no belt. A bare code is never printed, and a row with
+//                  no name and no place is not one a passenger can use:
+//                  Philadelphia lists XA 5903 from Las Vegas that way. With a
+//                  gate the row stays, and the tests ask for its name.
+//
+// WHEN THE ROW DOES NOT SAY, THE ROW STAYS. What was looked at on the live
+// lists of 2026-11-18 (56 airports, 40,893 rows) and is NOT evidence:
+//   - a missing gate alone (87% of Dublin, 67% of Heathrow, every Sydney row;
+//     ordinary flights at Denver, Houston, Philadelphia);
+//   - a missing terminal, gate and belt alone, even at Chicago: Avelo XP 421
+//     and 422 (New Haven) and Arajet DM 5480 (Punta Cana) are scheduled
+//     flights that Chicago lists with none of the three a day and a half
+//     ahead, next to the freighters it lists the same way;
+//   - a terminal placeholder ('0' at Newark and JFK, '?' at Las Vegas), which
+//     sits on EgyptAir, Arajet and Contour flights;
+//   - a letter after the number alone (AC91Z above);
+//   - a number range (Sun Country 3xxx, Delta 97xx): not in the row.
+// A public charter with a gate or a belt stays, by name.
+var FIDS_PLACED_FEEDS = {
+  ORD: 1,   // 5,301 rows: every public flight has its terminal from the schedule (or the gate word INTL)
+  CLT: 1    // 2,158 rows: two without a gate, AA473Q (a ferry) and a cancelled charter
+};
+// A terminal, gate or belt as the feed wrote it, or '' when the feed wrote
+// its word for nothing ('-', '0', '?', 'None', 'TBA').
+function fidsPlaceWord(v) {
+  var s = String(v == null ? '' : v).trim();
+  return /^(?:0+|\?+|-+|—+|none|null|undefined|n\/?a|tba|tbd)?$/i.test(s) ? '' : s;
+}
+// No terminal, no gate and (an arrival) no belt on the leg at this airport.
+function fidsRowUnplaced(f, mode) {
+  if (!f || typeof f !== 'object') return false;
+  var here = (mode === 'dep' ? f.departure : f.arrival) || {};
+  if (fidsPlaceWord(here.terminal) || fidsPlaceWord(here.gate)) return false;
+  return mode === 'dep' || !fidsPlaceWord((f.arrival || {}).baggageBelt);
+}
+// A flight number that is an aircraft registration. Only the shapes no
+// flight number can take: the registration the row itself carries, a
+// hyphenated mark (C-GABC, VH-ABC), a Canadian mark written solid (CGABC),
+// and a United States mark that ends in two letters (N966AD). N5332 is NOT
+// one: N5 is Nolinor and 332 its flight.
+function fidsNumberIsTail(num, reg) {
+  var n = String(num == null ? '' : num).toUpperCase().replace(/\s+/g, '');
+  if (!n) return false;
+  var r = String(reg == null ? '' : reg).toUpperCase().replace(/[\s-]+/g, '');
+  if (r.length >= 4 && n.replace(/-/g, '') === r) return true;
+  return /^[A-Z0-9]{1,2}-[A-Z]{3,4}$/.test(n) || /^C[FGI][A-Z]{3}$/.test(n) || /^N[1-9]\d{0,2}[A-Z]{2}$/.test(n);
+}
+function fidsRowOffBoard(f, mode, home, named) {
+  if (!f || typeof f !== 'object') return '';
+  var isDep = mode === 'dep';
+  var here = (isDep ? f.departure : f.arrival) || {};
+  var far = (isDep ? f.arrival : f.departure) || {};
+  var up = function (v) { return String(v == null ? '' : v).trim().toUpperCase(); };
+  if (f.isCargo === true) return 'cargo';
+  // the other airport is this airport
+  var hAp = here.airport || {}, fAp = far.airport || {};
+  var homeIata = up(hAp.iata), farIata = up(fAp.iata);
+  if (!/^[A-Z0-9]{3}$/.test(homeIata)) { homeIata = up(home); if (!/^[A-Z0-9]{3}$/.test(homeIata)) homeIata = ''; }
+  if (homeIata && farIata === homeIata) return 'home';
+  var homeIcao = up(hAp.icao), farIcao = up(fAp.icao);
+  if (!farIata && /^[A-Z]{4}$/.test(farIcao) && farIcao === homeIcao) return 'home';
+  // the airport's own mark for a flight in no public terminal, and no gate
+  if (f._noPublicTerminal === true && !fidsPlaceWord(here.gate)) return 'no-terminal';
+  // the flight number
+  var num = up(f.number).replace(/\s+/g, '');
+  if (fidsNumberIsTail(num, f.reg || (f.aircraft && (f.aircraft.reg || f.aircraft.registration)))) return 'tail';
+  var m = num.match(/^(?:[A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])\d{1,4}([A-Z]+)$/);
+  if (m && fidsRowUnplaced(f, mode) && (m[1].length >= 2 || FIDS_PLACED_FEEDS[homeIata])) return 'callsign';
+  // an airline nobody names, at no place
+  if (named === false && fidsRowUnplaced(f, mode)) return 'unnamed';
+  return '';
 }
 
 // v23996 — every board's fetch goes through _feedSettle: a failed feed shows

@@ -1932,6 +1932,20 @@ function adbToCard(f,dir,aheadMs){
   // the carriers it names print exactly as they did.
   let _alName=String(_top.name||'').trim();
   if(!_alName&&!AIRLINE[code]&&_ownLeg)_alName=String(_hl.name||'').trim();
+  // A ROW NO PASSENGER LOOKS FOR, BY WHAT THE ROW ITSELF SAYS. The codes and
+  // name words above take an operator off whole; they cannot take off one
+  // flight of an airline that also carries passengers. On 2026-11-18 the app
+  // listed BBQ 2211A, an arrival from Miami at Miami, and G6 6175, which
+  // Miami files under terminal NO with no gate, as the boards did. The rule
+  // is the boards' own function, not a copy: fidsRowOffBoard of
+  // js/feed-router.js, which this page loads and where the rule is written
+  // (the other airport is this one; no public terminal and no gate; a tail
+  // number; a callsign on a row with no place; an airline nobody names on a
+  // row with no place). Named, as the boards judge it: the app's table names
+  // the airline, or the feed does in words that are not the code again.
+  const _rowOff=_W.fidsRowOffBoard;
+  if(typeof _rowOff==='function'&&_rowOff(f,dir,(typeof CURAP!=='undefined'?CURAP:''),
+    !!AIRLINE[code]||(!!_alName&&[code,opCode,_fp,_feedCode].indexOf(_alName.toUpperCase())<0)))return null;
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
