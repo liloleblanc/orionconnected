@@ -116,7 +116,7 @@
     const namesReady = new Promise(function (done) {
       if (window.FIDS_SHARED_OFF_BOARD) { done(); return; }
       const names = document.createElement('script');
-      names.src = '../js/shared-names.js?v=24165';
+      names.src = '../js/shared-names.js?v=24166';
       names.async = true;
       names.addEventListener('load', function () { done(); });
       names.addEventListener('error', function () { done(); });
@@ -124,7 +124,7 @@
     });
     pilotRouterPromise = new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = '../js/feed-router.js?v=24165';
+      script.src = '../js/feed-router.js?v=24166';
       script.async = true;
       script.addEventListener('load', function () {
         if (typeof window.adbFetch === 'function') namesReady.then(function () { resolve(window.adbFetch); });
