@@ -6,7 +6,7 @@
 // Free guest information by area in the centre deck of a gate whose flight
 // goes to a city with a checked list (Moncton, Charlottetown): Airport,
 // Downtown, Nearby hotels and Resorts worth the drive, five lines a card, the
-// rest on the next passes, the logo on one cream column, a shuttle mark only
+// rest on the next passes, the logo on the cream of a light card, a shuttle mark only
 // where it is verified, nothing closed for the season, one scan code a card
 // to the whole list in the phone app. The Accor pages and the page of the
 // Algonquin Resort are separate slides and stay as they are.
@@ -514,33 +514,38 @@ test('the fitter steps a long line down to the floor of the screen, and no furth
   }
 });
 
-test('the cream column is one panel down the whole list, never a box behind one logo', () => {
-  assert.match(CSS, /\.hlc-list\{[^}]*background:linear-gradient\(90deg, var\(--hlc-cream\) 0, var\(--hlc-cream\) var\(--hlc-col\), transparent var\(--hlc-col\)\)/);
-  // only as tall as the lines there are: a line is a fifth of the list
-  assert.match(CSS, /\.hlc-list\{[^}]*background-repeat:no-repeat; background-position:0 0; background-size:100% calc\(var\(--hlc-rows, 5\) \* 20%\);/);
+test('a light card: the logos stand on its cream, never a box behind one logo; the foot is the navy band', () => {
+  // the card is the cream paper with navy ink (the family of the Algonquin page)
+  assert.match(CSS, /\n\.hlc\{[^}]*background:var\(--hlc-cream\);\n  color:var\(--hlc-navy\);/);
+  assert.match(CSS, /--hlc-navy:#14203c;/);
+  // the list has no ground of its own: the logos read on the cream of the card
+  assert.doesNotMatch(CSS, /\.hlc-list[^{]*\{[^}]*background/);
   assert.match(CSS, /\.hlc-row\{ flex:0 0 20%;/);
-  // a card where no line has a logo has no column, and its names start at the card's edge
-  assert.match(CSS, /\.hlc-list--bare\{ background:none; \}\n\.hlc-list--bare \.hlc-logo\{ display:none; \}\n\.hlc-list--bare \.hlc-text\{ padding-left:var\(--hlc-pad\); \}/);
+  // a card where no line has a logo has no logo cell, and its names start at the card's edge
+  assert.match(CSS, /\.hlc-list--bare \.hlc-logo\{ display:none; \}\n\.hlc-list--bare \.hlc-text\{ padding-left:var\(--hlc-pad\); \}/);
+  // the scan code: navy modules on the cream, no white box
+  assert.match(SRC, /colorDark: '#14203c', colorLight: '#f5efe3'/);
+  assert.doesNotMatch(CSS, /\.hlc-qr\{[^}]*background/);
   const list = (city, area, pass) => {
     const v = views(build(city, ['en', 'fr'], { pass: pass || 0 })).find((x) => x.includes('data-area="' + area + '"'));
     const m = /<ol class="(hlc-list[^"]*)" style="--hlc-rows:(\d)">/.exec(v);
     return { cls: m[1], rows: Number(m[2]), lines: (v.match(/class="hlc-row"/g) || []).length };
   };
-  // five-line cards as they were: the column down the whole list
+  // five-line cards as they were
   for (const [c, a] of [['YQM', 'airport'], ['YQM', 'downtown'], ['YQM', 'nearby'], ['YYG', 'airport'], ['YYG', 'downtown']]) {
     for (let pass = 0; pass < 3; pass++) assert.deepEqual(list(c, a, pass), { cls: 'hlc-list', rows: 5, lines: 5 }, c + ' ' + a + ' ' + pass);
   }
-  // shorter cards: the column behind their lines only
+  // shorter cards: their lines only
   assert.deepEqual(list('YQM', 'resort'), { cls: 'hlc-list', rows: 1, lines: 1 }, 'Moncton resorts: the Algonquin');
   assert.deepEqual(list('YYG', 'nearby'), { cls: 'hlc-list', rows: 2, lines: 2 }, 'Charlottetown nearby: two lines, both with a logo');
-  assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list hlc-list--bare', rows: 3, lines: 3 }, 'Charlottetown resorts: no logo, no column');
+  assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list hlc-list--bare', rows: 3, lines: 3 }, 'Charlottetown resorts: no logo, no logo cell');
   // the app's list: no column on a list where no hotel has a logo
   assert.match(APP, /\.hl-list\.hl-list--bare\{background:var\(--card\);\}\n  \.hl-list--bare \.hl-logo\{display:none;\}/);
   assert.match(APP, /'<ol class="hl-list'\+\(c\.hotels\.some\(h=>h\.logo&&h\.logo\.file\)\?'':' hl-list--bare'\)\+'">'/);
   assert.match(CSS, /--hlc-cream:#f5efe3;/, 'one fixed cream, never the airline colour');
   for (const m of CSS.matchAll(/(\.hlc-(?:logo|img)[^{]*)\{([^}]*)\}/g)) assert.doesNotMatch(m[2], /background/, m[1] + ' has no ground of its own');
   // the white-lettering marks of the foot stay on the navy
-  assert.doesNotMatch(CSS, /\.hlc-foot[^{]*\{[^}]*background/);
+  assert.match(CSS, /\.hlc-foot\{[^}]*background:var\(--hlc-navy\); color:#fff; \}/);
   assert.deepEqual(DOCS.YQM.foot_marks.map((m) => m.name), ['Destination Moncton-Dieppe', '#ExploreNB']);
   assert.deepEqual(DOCS.YYG.foot_marks, [], 'no Charlottetown mark until one is approved');
 });

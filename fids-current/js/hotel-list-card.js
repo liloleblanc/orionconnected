@@ -8,8 +8,8 @@
      nearby    Nearby hotels            the rest within about 30 km
      resort    Resorts worth the drive  destination resorts further out, with the drive
    Each card is a list and nothing else: a line for each hotel with its logo where an official
-   one reads on the cream column, its name, its street address and its telephone. The column
-   stands behind the lines there are, and a card where no line has a logo has no column. No picture, no
+   one reads on the cream of the card, its name, its street address and its telephone. A card
+   where no line has a logo has no logo cell. No picture, no
    price, no offer, no slogan. Five lines a card; an area with more takes the next five on the
    next pass of the deck (window._gateAccorPass, the deck's own count of passes), so every hotel
    comes round. A hotel whose airport shuttle is verified carries the shuttle mark, and the card
@@ -299,8 +299,8 @@
   function card(doc, c, L, o) {
     var BS = store(), city = up(doc.iata);
     var rows = page(c.hotels, o.pass);
-    // the cream column stands behind the lines there are (--hlc-rows), and a card where no
-    // line has a logo has none: its names start at the card's own edge (hlc-list--bare)
+    // a card where no line has a logo has no logo cell: its names start at the card's own
+    // edge (hlc-list--bare); --hlc-rows is the number of lines there are
     var bare = !rows.some(function (h) { return h.logo && h.logo.file; });
     var mark = rows.some(function (h) { return h.shuttle && h.shuttle.mark === true; });
     var osm = rows.some(function (h) { return h.drive && /OpenStreetMap/.test(String(h.drive.credit || '')); });
@@ -424,8 +424,8 @@
       }
     } catch (e) {}
   }
-  // The scan codes: drawn by the board's QR library (qrcode.js) at the box's own size, dark
-  // modules on white with the quiet zone of the box around them.
+  // The scan codes: drawn by the board's QR library (qrcode.js) at the box's own size, navy
+  // modules on the cream of the card, with the quiet zone of the box around them.
   function codes(el) {
     try {
       if (typeof root.QRCode === 'undefined') return;
@@ -434,7 +434,7 @@
         if (!url || q.getAttribute('data-qr-done') === url) return;
         var w = Math.max(64, Math.round(q.clientWidth || 0));
         q.innerHTML = '';
-        new root.QRCode(q, { text: url, width: w, height: w, colorDark: '#000000', colorLight: '#ffffff', correctLevel: root.QRCode.CorrectLevel.M });
+        new root.QRCode(q, { text: url, width: w, height: w, colorDark: '#14203c', colorLight: '#f5efe3', correctLevel: root.QRCode.CorrectLevel.M });
         q.setAttribute('data-qr-done', url);
       });
     } catch (e) {}
