@@ -273,8 +273,11 @@ test('every one of them the map can draw has a name: the board\'s (CITY, CITY_FR
 // (It was the floor's alone, and this test said so. The names of the
 // Americas are now read by the boards and the app too, the reason is in the
 // header above; what is held is that each reads them in one place, and that
-// the positions and the clocks are still read by the floor alone.)
-test('the floor and, for the names of the Americas, the three board pages, the board\'s one naming function and the app\'s read js/earth-places.js, and nothing else; the floor writes to no table of the board\'s', () => {
+// the clocks are still read by the floor alone. Its positions are read once
+// more: by the lookup the weather is asked through, in the board and in the
+// app, after the board's own three tables of positions, so that a place this
+// table alone holds has its weather: tests/weather-every-place.test.js.)
+test('the floor and, for the names of the Americas and the positions the weather is asked at, the three board pages, the board\'s naming function and position lookup and the app\'s read js/earth-places.js, and nothing else; the floor writes to no table of the board\'s', () => {
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((x) => (x.isDirectory() ? walk(path.join(d, x.name)) : [path.join(d, x.name)]));
   const readers = [];
   for (const f of walk(path.join(ROOT, 'fids-current')).concat(walk(path.join(ROOT, 'workers')), [path.join(ROOT, 'worker-entry.js')])) {
@@ -299,19 +302,27 @@ test('the floor and, for the names of the Americas, the three board pages, the b
       assert.equal(count(html, /FIDS_EARTH_PLACES/g), 0, page + ' reads nothing of it itself');
     }
   }
-  // the board reads it in one function, and only its names (label): never
-  // a position or a clock, which stay the floor's
+  // the board reads it in two functions: its names where it prints a place
+  // (label), and its positions where it asks for a place's weather (AT, the
+  // last of the four tables of positions: tests/weather-every-place.test.js);
+  // never a clock, which stays the floor's
   const fnOf = (src, head) => { const i = src.indexOf(head); assert.ok(i >= 0, head); let d = 0, j = src.indexOf('{', i); for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}' && --d === 0) break; } return src.slice(i, j + 1); };
   const naming = fnOf(CORE, '\nfunction _placeNameAm(code, langOverride) {');
-  assert.equal(count(CORE, /FIDS_EARTH_PLACES/g), 1, 'fids-core.js reads the table in one place');
+  assert.equal(count(CORE, /FIDS_EARTH_PLACES/g), 2, 'fids-core.js reads the table in two places');
   assert.equal(count(naming, /FIDS_EARTH_PLACES/g), 1, 'inside _placeNameAm');
   assert.match(naming, /var P = \(typeof window !== 'undefined'\) \? window\.FIDS_EARTH_PLACES : null;/);
   assert.deepEqual([...new Set(naming.match(/\bP\.[A-Za-z_]+/g))], ['P.label'], 'and reads only the names it prints');
+  const placing = fnOf(CORE, '\nfunction _placeLatLon(code) {');
+  assert.equal(count(placing, /FIDS_EARTH_PLACES/g), 1, 'and inside _placeLatLon');
+  assert.deepEqual([...new Set(placing.match(/\bP\.[A-Za-z_]+/g))], ['P.AT'], 'which reads only its positions');
   const APP = fs.readFileSync(path.join(ROOT, 'fids-current', 'app.html'), 'utf8');
   const appNaming = fnOf(APP, '\nfunction placeOf(code,feedName,cut){');
-  assert.equal(count(APP, /FIDS_EARTH_PLACES/g), 1, 'app.html reads the table in one place');
+  assert.equal(count(APP, /FIDS_EARTH_PLACES/g), 2, 'app.html reads the table in two places');
   assert.equal(count(appNaming, /FIDS_EARTH_PLACES/g), 1, 'inside placeOf');
   assert.deepEqual([...new Set(appNaming.match(/\bP\.[A-Za-z_]+/g))], ['P.label']);
+  const appPlacing = fnOf(APP, '\nfunction wxPlaceAt(co,code){');
+  assert.equal(count(appPlacing, /FIDS_EARTH_PLACES/g), 1, 'and inside wxPlaceAt');
+  assert.deepEqual([...new Set(appPlacing.match(/\bP\.[A-Za-z_]+/g))], ['P.AT']);
   // the floor loads it itself where a page has not (it finds the page's)
   assert.match(MOD, /if \(root\.FIDS_EARTH_PLACES\) \{ PLACES = root\.FIDS_EARTH_PLACES; return; \}/);
   assert.match(MOD, /var PLACES_URL = '\/js\/earth-places\.js\?v=\d+';/);

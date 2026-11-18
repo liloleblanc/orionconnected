@@ -51,6 +51,25 @@ var FEED_LG_WRITE_EVERY_MS = 3 * 60000;
 // one answer failed would put it up and take it down all day. Under this age
 // the board shows the list as it does a live one; past it, it says how old.
 var FEED_STALE_QUIET_MS = 5 * 60000;
+// A LIST THE AIRPORT STOPPED WRITING (2026-11-18, New Orleans: its feed
+// answered all morning with a table last written at 00:15). The worker now
+// reads that feed's own stamp and says how old the airport's data is: on its
+// stale answer, and on its 503 once the data is past three hours. This screen
+// took every one of those fetches for a live list and dated its own copy by
+// its own clock, so the copy claims to be minutes old when the rows in it are
+// hours old. The airport's stamp wins: a copy is never dated later than the
+// airport last wrote its list, and is not shown at all once that is past the
+// 180 minutes. With nothing left to show, the panel adds the store's "Last
+// update {TIME}" under "Live data unavailable" while that time is recent
+// enough for a clock time alone to be read correctly.
+// ONLY THE AIRPORT'S STAMP DOES THAT (_feed.dataAt), never the plain time of
+// a stale answer (_feed.asOf). That one is the age of the copy one worker
+// isolate holds, and while an airport refuses the worker two isolates hold
+// copies of different ages for a few minutes: a screen that took the older
+// answer's time for the truth would swap its own newer list for the older
+// one and rewrite its stored copy on every other poll (a Toronto list is
+// about half a million characters).
+var FEED_DOWN_TIME_MAX_MS = 12 * 3600000;
 // Their own last-good chains already exist (YQM: fids_yqm_lastgood_*, MCO:
 // fids_mco_lastgood_*); they report into the status, and are not copied twice.
 var FEED_OWN_LASTGOOD = { YQM: 1, MCO: 1 };
@@ -71,7 +90,10 @@ function _feedNote(iata, dir, r, body) {
       asOf = a ? Date.parse(a) : null;
     }
     if (!st && r && r.status === 503 && body && (body.error === 'blocked' || body.error === 'error')) st = body.error;
-    if (st) _feedCallNote[iata + '|' + dir] = { state: st, asOf: isNaN(asOf) ? null : asOf };
+    // dataAt: the airport's own stamp on a list it stopped writing, when the
+    // worker read one. Only ever in the body.
+    var dataAt = (meta && meta.state && meta.dataAt) ? Date.parse(meta.dataAt) : null;
+    if (st) _feedCallNote[iata + '|' + dir] = { state: st, asOf: isNaN(asOf) ? null : asOf, dataAt: (dataAt && !isNaN(dataAt)) ? dataAt : null };
   } catch (e) {}
 }
 // A worker answer that says the feed itself failed (not a network blip).
@@ -95,7 +117,7 @@ function _feedLgIndex() {
   });
   return idx;
 }
-function _feedLgSave(iata, dir, out, asOf) {
+function _feedLgSave(iata, dir, out, asOf, redate) {
   var k = _feedLgKey(iata, dir);
   try { window._feedLgMem[k] = { asOf: asOf, out: out }; } catch (e) {}
   // v23998 — Moncton and Orlando store their own copies (their chains below),
@@ -109,9 +131,13 @@ function _feedLgSave(iata, dir, out, asOf) {
     var now = Date.now();
     var idx = _feedLgIndex();
     // Stored recently enough (or found too big recently): the memory copy
-    // carries the rest, and the list is not serialised on every poll.
-    if (idx[k] && now - idx[k][0] < FEED_LG_WRITE_EVERY_MS) return;
-    if (_feedLgBigAt[k] && now - _feedLgBigAt[k] < FEED_LG_WRITE_EVERY_MS) return;
+    // carries the rest, and the list is not serialised on every poll. Except
+    // a copy being dated EARLIER (redate): the stored one claims a later time
+    // than the list is from and would win over the memory copy on the next
+    // load, so it is rewritten now. That happens once per stamp: the copy
+    // then carries the stamp, and is no longer later than it.
+    if (!redate && idx[k] && now - idx[k][0] < FEED_LG_WRITE_EVERY_MS) return;
+    if (!redate && _feedLgBigAt[k] && now - _feedLgBigAt[k] < FEED_LG_WRITE_EVERY_MS) return;
     var txt = JSON.stringify({ ts: now, asOf: asOf, out: out });
     var drop = function (old) { try { localStorage.removeItem(old); } catch (e2) {} delete idx[old]; };
     if (txt.length > FEED_LG_MAX_BYTES) {
@@ -212,8 +238,18 @@ function _feedSettle(iata, direction, out, err) {
     if (note && (note.state === 'stale' || note.state === 'stale-local')) {
       _feedSetStatus(iata, dir, 'stale', note.asOf);
       if (note.state === 'stale' && note.asOf) {
+        // The worker's copy is kept when it is newer than this screen's own.
+        // An OLDER one never replaces it (another isolate's copy, see above).
         var have = _feedLgLoad(iata, dir, now);
         if (!have || have.asOf < note.asOf) _feedLgSave(iata, dir, out, note.asOf);
+        // The airport's own stamp is another matter: no copy anywhere is
+        // newer than the airport's last write, whenever it was fetched. A copy
+        // of ours that claims a later time is re-dated to the stamp, at once
+        // (the list is the worker's when that one is dated by the stamp too,
+        // else our own, which was fetched after it).
+        else if (note.dataAt && have.asOf > note.dataAt) {
+          _feedLgSave(iata, dir, note.asOf >= note.dataAt ? out : have.out, note.dataAt, true);
+        }
       }
     } else if (note && note.state === 'unavailable-local') {
       _feedSetStatus(iata, dir, 'unavailable', null, 'error');
@@ -224,13 +260,21 @@ function _feedSettle(iata, direction, out, err) {
     return out;
   }
   var lg = _feedLgLoad(iata, dir, now);
+  // A failure that carries a time: the worker knows when the airport last
+  // wrote its list (a 503 has no other time to give). This screen's copy of
+  // that list is no newer than that. A time ahead of this screen's own clock
+  // is not believed: the clock is wrong, and nothing is re-dated by it.
+  var stamp = note ? (note.dataAt || note.asOf) : null;
+  var known = (note && (note.state === 'blocked' || note.state === 'error') && stamp && stamp < now) ? stamp : null;
+  if (lg && known && known < lg.asOf) lg = (now - known < FEED_LG_MAX_MS) ? { asOf: known, out: lg.out } : null;
   if (lg) {
     try { console.warn('[FIDS] ' + iata + ' ' + direction + ' feed down (' + ((err && (err.feedDown || err.message)) || (note && note.state)) + ') — showing the last good list from ' + new Date(lg.asOf).toISOString()); } catch (e) {}
     _feedSetStatus(iata, dir, 'stale', lg.asOf);
     return lg.out;
   }
   try { console.warn('[FIDS] ' + iata + ' ' + direction + ' feed down, no last good list — live data unavailable'); } catch (e) {}
-  _feedSetStatus(iata, dir, 'unavailable', null, (err && err.feedDown) || (note && note.state) || 'error');
+  _feedSetStatus(iata, dir, 'unavailable', (known && now - known < FEED_DOWN_TIME_MAX_MS) ? known : null,
+    (err && err.feedDown) || (note && note.state) || 'error');
   var empty = {};
   empty[lk] = [];
   return empty;
@@ -1191,9 +1235,10 @@ function miaToAdbFlight(f, direction) {
   const other = { iata: String(f.CTY || '').trim().toUpperCase() || null, icao: null, name: cityName || null };
 
   const bags = String(f.bags || '').trim();
+  const miaTerm = String(f.terminal || '').trim().toUpperCase();
   const homeSide = {
     airport: home,
-    terminal: String(f.terminal || '').trim().toUpperCase() || null,
+    terminal: (miaTerm && miaTerm !== 'NO') ? miaTerm : null,
     gate: String(f.gate || '').trim().toUpperCase() || null,
     ...(!isDep && bags ? { baggageBelt: bags } : {}),
     scheduledTime: sched,
@@ -1211,12 +1256,226 @@ function miaToAdbFlight(f, direction) {
     departure: isDep ? homeSide : otherSide,
     arrival: isDep ? otherSide : homeSide,
   };
+  // Miami's terminals are its concourse letters (D to J). NO is its word for
+  // a flight in no public terminal: it is never a terminal to print (the
+  // belt screens made a belt "NO-CE" of it), and it is what fidsRowOffBoard
+  // reads to keep the row off when the flight has no gate either.
+  if (miaTerm === 'NO') out._noPublicTerminal = true;
   // The feed hands us the airframe outright — no AeroDataBox enrichment pass
   // needed here, unlike MCO. This is what drives the gate screen's aircraft
   // illustration and the tail number.
   if (f.TYP) out.aircraft = { model: String(f.TYP).trim() };
   if (f.REG) out.reg = String(f.REG).trim().toUpperCase();
   return out;
+}
+
+// ── A ROW NO PASSENGER LOOKS FOR, BY WHAT THE ROW ITSELF SAYS ──────────────
+// The standing rule (2026-11-13): a flight a passenger can be on prints its
+// airline by name; a flight no passenger looks for (cargo, courier, private,
+// positioning) is on no screen. The code list and the name words of
+// fids-core.js (FILTER_OUT, _NON_PASSENGER_PATTERNS) take an operator off
+// whole. They cannot take off ONE flight of an airline that also carries
+// passengers, and that is what stood on the Miami boards of 2026-11-18,
+// beside the Cuba and Haiti charters of the same two airlines, which have
+// gates, concourses and belts and which passengers do fly:
+//   - BBQ 2211A, an arrival "from Miami" at Miami, at gate F21: the 06:00 to
+//     Santa Clara, come back;
+//   - G6 6175, in from Maracay and out to Alexandria, Louisiana, which Miami
+//     itself files under terminal "NO" and gives no gate.
+//
+// So this reads the row, and only what the row itself says (for one kind,
+// 'callsign' with a single letter, what the list around it says too). It is
+// ONE function, in the one data layer every board page and the phone app
+// load: mapADB (fids-core.js), adbToCard (app.html) and the live list of the
+// Studio player (studio-data.js) all ask it, so a row this rule takes off is
+// off every screen. tests/rows-off-board.test.js holds it.
+//
+// fidsRowOffBoard answers a short word for the reason, or '' (the row stays):
+//   'cargo'        the feed marks the row as cargo (isCargo).
+//   'home'         the other airport IS this airport: an aeroplane that came
+//                  back or was moved across the field, not a flight from
+//                  somewhere (Denver, Ottawa and Saskatoon list them too).
+//                  A flight that turned back keeps its departure row, which
+//                  is where its passengers look.
+//   'nowhere'      the airport gives the other end no code and no name (or
+//                  the word Unknown). The boards have always kept such a row
+//                  off, because a row cannot print where it goes; the phone
+//                  app listed it with an empty city (Denver: Contour LF 6354
+//                  with no gate either; United 1395 at gate B41. Philadelphia:
+//                  American 2338 at gate C24). The rule is here now so both
+//                  ask the same one. Ten of the twelve rows of 2026-11-18 are
+//                  United and American flights at a gate: what is missing is
+//                  the destination in the feed of the airport, and until a
+//                  source gives it neither screen can print them.
+//   'no-terminal'  the airport marks the flight as in no public terminal and
+//                  gives it no gate. The mark is the airport's own word, read
+//                  by that airport's adapter into _noPublicTerminal (Miami
+//                  writes NO in the terminal field: three records in all
+//                  that was ever recorded, none of them with a gate, while
+//                  a cancelled flight keeps its concourse letter).
+//   'tail'         the flight number is an aircraft registration: private
+//                  and business aviation flies under its tail number.
+//   'callsign'     the number has letters after its digits AND the airport
+//                  gives the row no terminal, no gate and no belt. Two
+//                  letters or more is a radio callsign, which no passenger
+//                  holds: Chicago lists BA2PD from London and IB3GA from
+//                  Madrid beside the scheduled flights themselves. One letter
+//                  is an operational suffix that passenger flights do carry
+//                  (Toronto: AC91Z from Buenos Aires at gate E80, belt 6), so
+//                  a row with one letter leaves only as a SECOND LISTING: at
+//                  an airport whose own feed places every public flight
+//                  (FIDS_PLACED_FEEDS), when the list it came in holds the
+//                  flight itself beside it (fidsSecondListing, below, where
+//                  the rows it was measured on are written). A suffix and no
+//                  place alone is not evidence: Chicago AA179Q to Santa Ana
+//                  and Charlotte AA473Q to Dulles are, as far as the lists
+//                  show, the evening flights 1179 and 1473 of the day before
+//                  flown the next morning, and that row is the only one the
+//                  flight has. A caller that hands over no list takes no
+//                  one-letter row off.
+//   'unnamed'      nobody names the airline of the row, neither the tables of
+//                  the screen nor the airport (the caller says so: named ===
+//                  false), AND the airport gives the row no terminal, no gate
+//                  and no belt. A bare code is never printed, and a row with
+//                  no name and no place is not one a passenger can use:
+//                  Philadelphia lists XA 5903 from Las Vegas that way. With a
+//                  gate the row stays, and the tests ask for its name.
+//
+// WHEN THE ROW DOES NOT SAY, THE ROW STAYS. What was looked at on the live
+// lists of 2026-11-18 (56 airports, 40,893 rows) and is NOT evidence:
+//   - a missing gate alone (87% of Dublin, 67% of Heathrow, every Sydney row;
+//     ordinary flights at Denver, Houston, Philadelphia);
+//   - a missing terminal, gate and belt alone, even at Chicago: Avelo XP 421
+//     and 422 (New Haven) and Arajet DM 5480 (Punta Cana) are scheduled
+//     flights that Chicago lists with none of the three a day and a half
+//     ahead, next to the freighters it lists the same way;
+//   - a terminal placeholder ('0' at Newark and JFK, '?' at Las Vegas), which
+//     sits on EgyptAir, Arajet and Contour flights;
+//   - a letter after the number alone (AC91Z above), or with no place and
+//     no flight beside it (AA179Q and AA473Q above; SkyWest OO285R from
+//     Cleveland and OO225X to Evansville, which nothing on the list explains);
+//   - a number range (Sun Country 3xxx, Delta 97xx): not in the row.
+// A public charter with a gate or a belt stays, by name.
+var FIDS_PLACED_FEEDS = {
+  ORD: 1,   // 5,301 rows: every public flight has its terminal from the schedule (or the gate word INTL)
+  CLT: 1    // 2,158 rows: two without a gate, AA473Q (a flight filed again under a letter) and a cancelled charter
+};
+// A terminal, gate or belt as the feed wrote it, or '' when the feed wrote
+// its word for nothing ('-', '0', '?', 'None', 'TBA').
+function fidsPlaceWord(v) {
+  var s = String(v == null ? '' : v).trim();
+  return /^(?:0+|\?+|-+|—+|none|null|undefined|n\/?a|tba|tbd)?$/i.test(s) ? '' : s;
+}
+// No terminal, no gate and (an arrival) no belt on the leg at this airport.
+function fidsRowUnplaced(f, mode) {
+  if (!f || typeof f !== 'object') return false;
+  var here = (mode === 'dep' ? f.departure : f.arrival) || {};
+  if (fidsPlaceWord(here.terminal) || fidsPlaceWord(here.gate)) return false;
+  return mode === 'dep' || !fidsPlaceWord((f.arrival || {}).baggageBelt);
+}
+// A flight number that is an aircraft registration. Only the shapes no
+// flight number can take: the registration the row itself carries, a
+// hyphenated mark (C-GABC, VH-ABC), a Canadian mark written solid (CGABC),
+// and a United States mark that ends in two letters (N966AD). N5332 is NOT
+// one: N5 is Nolinor and 332 its flight.
+function fidsNumberIsTail(num, reg) {
+  var n = String(num == null ? '' : num).toUpperCase().replace(/\s+/g, '');
+  if (!n) return false;
+  var r = String(reg == null ? '' : reg).toUpperCase().replace(/[\s-]+/g, '');
+  if (r.length >= 4 && n.replace(/-/g, '') === r) return true;
+  return /^[A-Z0-9]{1,2}-[A-Z]{3,4}$/.test(n) || /^C[FGI][A-Z]{3}$/.test(n) || /^N[1-9]\d{0,2}[A-Z]{2}$/.test(n);
+}
+// The time of a row at this airport, in milliseconds (its scheduled time:
+// the universal one, else the local one as written), or NaN.
+function fidsRowTimeMs(f, mode) {
+  var st = (((mode === 'dep' ? f.departure : f.arrival) || {}).scheduledTime) || {};
+  var s = String(st.utc || st.local || '').trim();
+  return s ? Date.parse(s.replace(' ', 'T')) : NaN;
+}
+// A ROW WITH ONE LETTER AFTER ITS NUMBER AND NO PLACE IS A SECOND LISTING OF
+// A FLIGHT THE LIST ALREADY HOLDS. Chicago lists an inbound flight twice: once
+// by its flight number, at its scheduled time, with its terminal, and once by
+// the callsign its crew files, at the time it is expected, with no place.
+// Measured on the arrivals of 2026-11-18 (minutes between the two rows):
+//   AA764P  Houston    11:21   beside AA764  12:00, terminal 3, gate L2A (39)
+//   TK67C   Istanbul   09:23   beside TK185  10:00, terminal 5         (37)
+//   EY93C   Abu Dhabi  06:36   beside EY9    07:35, terminal 5         (59)
+//   OS1R    Vienna     13:17   beside OS45   14:00, terminal 5         (43)
+//   QR20V   Doha       13:06   beside QR725  14:30, terminal 5         (84)
+// So the row leaves when the list holds a flight of the same airline, to or
+// from the same airport, under a plain number, with a terminal, a gate or a
+// belt, not cancelled, within 90 minutes of it. (A row that only sells the
+// seats of another airline's flight is not that flight: a codeshare row is
+// never the flight beside it.)
+// It STAYS, whatever stands beside it, when its three digits are the end of
+// a four-digit number of that airline on that route anywhere on the list: a
+// callsign has room for three digits and a letter, so a flight held overnight
+// and flown the next day is filed again that way (AA179Q is AA1179 to Santa
+// Ana, AA473Q is AA1473 to Dulles), and that row is the only one the delayed
+// flight has. AA2285 to Santa Ana leaves Chicago 55 minutes after AA179Q:
+// the time alone does not tell the two cases apart, the number does.
+// With no list, or a row whose time cannot be read, the answer is no.
+var FIDS_SECOND_LISTING_MS = 90 * 60000;
+function fidsSecondListing(f, mode, list) {
+  if (!f || typeof f !== 'object' || !Array.isArray(list)) return false;
+  var shape = /^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(\d{1,4})([A-Z]*)$/;
+  var norm = function (v) { return String(v == null ? '' : v).toUpperCase().replace(/\s+/g, ''); };
+  var farOf = function (g) {
+    var a = (((mode === 'dep' ? g.arrival : g.departure) || {}).airport) || {};
+    return norm(a.iata) || norm(a.icao);
+  };
+  var m = norm(f.number).match(shape);
+  if (!m || m[3].length !== 1) return false;
+  var far = farOf(f), t = fidsRowTimeMs(f, mode);
+  if (!far || !isFinite(t)) return false;
+  var beside = false;
+  for (var i = 0; i < list.length; i++) {
+    var g = list[i];
+    if (!g || g === f || typeof g !== 'object') continue;
+    var gm = norm(g.number).match(shape);
+    if (!gm || gm[3] || gm[1] !== m[1] || farOf(g) !== far) continue;
+    // the same flight under its whole number, on any day of the list: filed again, it stays
+    if (m[2].length === 3 && gm[2].length === 4 && gm[2].slice(1) === m[2]) return false;
+    if (beside || fidsRowUnplaced(g, mode)) continue;
+    if (/^cancel/i.test(String(g.status || '').replace(/[\s_-]+/g, ''))) continue;
+    if (String(g.codeshareStatus || '').toLowerCase() === 'iscodeshared') continue;
+    var gt = fidsRowTimeMs(g, mode);
+    if (isFinite(gt) && Math.abs(gt - t) <= FIDS_SECOND_LISTING_MS) beside = true;
+  }
+  return beside;
+}
+// f: the row; mode: 'dep' or 'arr'; home: the airport of the screen, for a
+// row that does not carry it; named: false when nobody names the airline of
+// the row (the caller knows its own tables); list: the list the row came in,
+// as the airport sent it (read only for a second listing).
+function fidsRowOffBoard(f, mode, home, named, list) {
+  if (!f || typeof f !== 'object') return '';
+  var isDep = mode === 'dep';
+  var here = (isDep ? f.departure : f.arrival) || {};
+  var far = (isDep ? f.arrival : f.departure) || {};
+  var up = function (v) { return String(v == null ? '' : v).trim().toUpperCase(); };
+  if (f.isCargo === true) return 'cargo';
+  // the other airport is this airport
+  var hAp = here.airport || {}, fAp = far.airport || {};
+  var homeIata = up(hAp.iata), farIata = up(fAp.iata);
+  if (!/^[A-Z0-9]{3}$/.test(homeIata)) { homeIata = up(home); if (!/^[A-Z0-9]{3}$/.test(homeIata)) homeIata = ''; }
+  if (homeIata && farIata === homeIata) return 'home';
+  var homeIcao = up(hAp.icao), farIcao = up(fAp.icao);
+  if (!farIata && /^[A-Z]{4}$/.test(farIcao) && farIcao === homeIcao) return 'home';
+  // the other end has no code and no name (the fields the board reads for it)
+  var farCode = up(fAp.iata || (fAp.icao ? String(fAp.icao).slice(1) : ''));
+  var farName = String(fAp.name || fAp.municipalityName || '').trim();
+  if (!farCode && (!farName || /^unknown$/i.test(farName))) return 'nowhere';
+  // the airport's own mark for a flight in no public terminal, and no gate
+  if (f._noPublicTerminal === true && !fidsPlaceWord(here.gate)) return 'no-terminal';
+  // the flight number
+  var num = up(f.number).replace(/\s+/g, '');
+  if (fidsNumberIsTail(num, f.reg || (f.aircraft && (f.aircraft.reg || f.aircraft.registration)))) return 'tail';
+  var m = num.match(/^(?:[A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])\d{1,4}([A-Z]+)$/);
+  if (m && fidsRowUnplaced(f, mode) && (m[1].length >= 2 || (FIDS_PLACED_FEEDS[homeIata] && fidsSecondListing(f, mode, list)))) return 'callsign';
+  // an airline nobody names, at no place
+  if (named === false && fidsRowUnplaced(f, mode)) return 'unnamed';
+  return '';
 }
 
 // v23996 — every board's fetch goes through _feedSettle: a failed feed shows

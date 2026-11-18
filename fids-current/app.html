@@ -6,7 +6,7 @@
 <!-- v24145 — host-airport.js first: the desktop request below builds its
      board link with fidsBoardUrl, and the note above the title says why the
      app loads this file at all. -->
-<script src="js/host-airport.js?v=24165"></script>
+<script src="js/host-airport.js?v=24166"></script>
 <script>
 /* v24139 — A PHONE THAT ASKS ITS BROWSER FOR THE DESKTOP SITE GETS THE BOARD.
    Request desktop site on the app only reloaded the app: the browser asks
@@ -52,7 +52,7 @@
      before the app resolves its airport, hence the head. -->
 <title>Airport Companion</title>
 <!-- the two faces of the hotel lists (Playfair Display, Montserrat: SIL OFL), shared with the cards of the gates -->
-<link rel="stylesheet" href="css/hotel-list-card.css?v=24165">
+<link rel="stylesheet" href="css/hotel-list-card.css?v=24166">
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
      site's own files (the boards' font.css faces), not Inter from Google */
@@ -617,15 +617,15 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24165"></script>
-<script src="js/shared-names.js?v=24165"></script>
+<script src="js/board-strings.js?v=24166"></script>
+<script src="js/shared-names.js?v=24166"></script>
 <!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
-<script src="js/earth-places.js?v=24165"></script>
-<script src="data/airline-colors.js?v=24165"></script>
-<script src="js/feed-router.js?v=24165"></script>
+<script src="js/earth-places.js?v=24166"></script>
+<script src="data/airline-colors.js?v=24166"></script>
+<script src="js/feed-router.js?v=24166"></script>
 <!-- the hotel lists: the lists of a city and their rules (season, areas), shared with the
      cards of the gates -->
-<script src="js/hotel-list-card.js?v=24165"></script>
+<script src="js/hotel-list-card.js?v=24166"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1528,7 +1528,7 @@ function rowHtml(f,i,isArr){
     +timeHtml(f)
     +'<div class="l1"><span class="al">'+tileHtml(f.airline)+wmHtml(f.airline,name)+'</span>'+pill+'</div>'
     +'<div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName,f.cityCut===true))+'</div>'
-    +'<div class="sub"><span class="sx">'+rowSubParts(f)+wxHtml(f.cityIata)+'</span>'+pill+'</div>'
+    +'<div class="sub"><span class="sx">'+rowSubParts(f)+wxHtml(wxCodeOf(f))+'</span>'+pill+'</div>'
     +slotHtml(f,isArr)+'</div>';
 }
 // Rows from..to, with a day line wherever the date changes (the first row's
@@ -1593,12 +1593,12 @@ function render(o){
   watchMore();
   if(anchor)anchorSet(anchor);
   wxCredit();
-  wxKick(list.slice(0,n).map(f=>f.cityIata));
+  wxKick(list.slice(0,n).map(wxCodeOf));
 }
 function showMore(){
   const s=document.getElementById('more'); if(!s)return;
   const from=SHOWN, to=Math.min(RENDERED.length,SHOWN+PAGE);
-  if(to>from){SHOWN=to;s.insertAdjacentHTML('beforebegin',rowsHtml(RENDERED,from,to,DIR==='arr'));fitRows(false);wxKick(RENDERED.slice(from,to).map(f=>f.cityIata));}
+  if(to>from){SHOWN=to;s.insertAdjacentHTML('beforebegin',rowsHtml(RENDERED,from,to,DIR==='arr'));fitRows(false);wxKick(RENDERED.slice(from,to).map(wxCodeOf));}
   if(SHOWN>=RENDERED.length){s.remove();return;}
   if(_io){_io.unobserve(s);_io.observe(s);}
 }
@@ -1683,8 +1683,8 @@ function measureHeader(){const tb=document.getElementById('topbar');if(tb)docume
 // ('AC1983 Gate 4 11°C'); the app now does too, on the row and on the
 // flight's route card. Same source as the boards (fids-core.js _fetchMetWx):
 // the site's own /wxcurrent, MET Norway behind the Worker's half-hour cache,
-// asked by the airport's position (js/airport-coords.js, the boards' COORDS,
-// loaded when first needed). Only for rows on screen, four at a time. MET's
+// asked by the position of the place (wxPlaceAt, below; js/airport-coords.js
+// is loaded when first needed). Only for rows on screen, four at a time. MET's
 // licence asks for its credit, which shows wherever a temperature does
 // (wxCredit, the weather card's own words).
 // v24069 — in the unit of the airport the app is showing, as its boards print
@@ -1699,22 +1699,62 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24165';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24166';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
   return _coordsP;
 }
+// THE POSITION THE WEATHER IS ASKED AT, for every place the app can name.
+// A row to St. Thomas, Tortola or Guayaquil had its name and no temperature:
+// the app read js/airport-coords.js alone, which held 2,349 of the 2,485
+// places it names and none of the places only js/earth-places.js names.
+// This is the one lookup of the boards (fids-core.js _placeLatLon: COORDS, then
+// AIRPORT_COORDS, then GATE_AP, then AT of js/earth-places.js) over the two
+// of those tables the app loads, in the same order: AIRPORT_COORDS, then AT.
+// js/airport-coords.js now carries every place COORDS and GATE_AP hold, so
+// the app and a board ask for a place at the same spot and share the one
+// reading the Worker keeps for it (all but Abbotsford, which the two tables
+// hold 0.6 km apart: the test names it). Only one code of three characters
+// is a place: anything else has no position and nothing is asked
+// (tests/weather-every-place.test.js).
+function wxPlaceAt(co,code){
+  const c=String(code==null?'':code).toUpperCase();
+  if(!/^[A-Z0-9]{3}$/.test(c))return null;
+  const has=Object.prototype.hasOwnProperty, P=window.FIDS_EARTH_PLACES;
+  for(const t of [co,P&&P.AT]){
+    const v=(t&&has.call(t,c))?t[c]:null; if(!v)continue;
+    const la=Number(v[0]), lo=Number(v[1]);
+    if(isFinite(la)&&isFinite(lo)&&Math.abs(la)<=90&&Math.abs(lo)<=180)return [la,lo];
+  }
+  return null;
+}
+// THE CODE A CARD HAS ITS WEATHER BY, or none. A card with no IATA code is
+// read by the last three letters of its ICAO code (adbToCard), which is often
+// the code of another place: Belgrade, LYBE, reads YBE, Uranium City. Its
+// name already refuses that code (placeOf: cityCut, _CODE_CUT, _CODE_SENT)
+// and prints the words of the feed. With AT read above, the card printed
+// Belgrade and the temperature of Uranium City. So the weather follows the
+// name, by the same test: a card that was cut, or a code that was cut and
+// never sent, has no weather unless CITY names the code; where CITY does,
+// that is the name the card prints, and the weather is of the place printed,
+// as before. Every row, the route card and what is asked go through here.
+function wxCodeOf(f){
+  const raw=(f&&f.cityIata)||'', c=String(raw).toUpperCase();
+  if(!c)return '';
+  const off=f.cityCut===true||(!!_CODE_CUT[c]&&!_CODE_SENT[c]);
+  return (off&&!CITY[c])?'':raw;
+}
 function wxKick(codes){
   if(!WX_ON||!codes||!codes.length)return;
   const now=Date.now();
-  for(const c0 of codes){const c=String(c0||'').toUpperCase();if(!/^[A-Z]{3}$/.test(c)||(WX_TRY[c]&&now-WX_TRY[c]<30*60000))continue;WX_TRY[c]=now;WX_Q.push(c);}
+  for(const c0 of codes){const c=String(c0||'').toUpperCase();if(!/^[A-Z0-9]{3}$/.test(c)||(WX_TRY[c]&&now-WX_TRY[c]<30*60000))continue;WX_TRY[c]=now;WX_Q.push(c);}
   if(WX_Q.length)_wxPump();
 }
 async function _wxPump(){
   const co=await _coords();
   while(WX_RUN<4&&WX_Q.length){
-    const c=WX_Q.shift(), p=co[c]; if(!p)continue;
+    const c=WX_Q.shift(), p=wxPlaceAt(co,c); if(!p)continue;
     WX_RUN++;
     fetch('/wxcurrent?location='+p[0]+','+p[1]).then(function(r){return r.ok?r.json():null;}).then(function(d){
       if(d&&!d.error&&d.current&&typeof d.current.temperature_2m==='number'){WX[c]={t:d.current.temperature_2m,at:Date.now()};wxPaint(c);}
@@ -1830,7 +1870,10 @@ function claimAheadMs(list,dir){
   }
   return (n>=8&&timed>=0.75*n)?20*60000:90*60000;
 }
-function adbToCard(f,dir,aheadMs){
+// f: the row; dir: 'dep' or 'arr'; aheadMs: the margin of claimAheadMs;
+// ap: the airport the list was asked for; list: that list, as it came (the
+// last two are for fidsRowOffBoard, below).
+function adbToCard(f,dir,aheadMs,ap,list){
   // v23230 — the boards drop codeshare duplicates and keep the operating
   // flight (fids-core's rule, verbatim); the router feed includes them now,
   // so the app applies the same filter or every AA flight shows three times.
@@ -1879,6 +1922,17 @@ function adbToCard(f,dir,aheadMs){
     const _p3=(num.match(/^([A-Z]{3})[0-9]/)||[])[1];
     opCode=(_p2&&(AIRLINE[_p2]||BRAND[_p2]||REGIONAL_FAM[_p2]||wmUrls(_p2)))?_p2:(_p3||((_p2&&/[A-Z]/.test(_p2))?_p2:opCode));
   }
+  // A code at the top that AIRLINE cannot name (itself, or the airline it
+  // folds into), on a flight number whose carrier it can (PTR is Porter):
+  // the card is the carrier's of the number, as the boards brand a row by
+  // its flight number first (fids-core.js mapADB). The card printed the
+  // unknown code bare, and the two screens disagreed on whether anybody
+  // names the row (fidsRowOffBoard below): the board kept the row, as
+  // American or GlobalX, and the app dropped it when it had no gate. With
+  // this, AIRLINE[code] below is the answer the board gives from its own
+  // table. No row of an airport's own feed carries a code at the top; the
+  // webhook rows of Moncton do.
+  else if(_fp&&_fp!==opCode&&(AIRLINE[_fp]||AIRLINE[REGIONAL_FAM[_fp]])&&!(AIRLINE[opCode]||AIRLINE[REGIONAL_FAM[opCode]]))opCode=_fp;
   // v23232 — single-mainline feeders brand as their mainline (board rule);
   // the operating carrier's name moves to the "Operated by" line instead.
   const code=REGIONAL_FAM[opCode]||opCode;
@@ -1932,6 +1986,26 @@ function adbToCard(f,dir,aheadMs){
   // the carriers it names print exactly as they did.
   let _alName=String(_top.name||'').trim();
   if(!_alName&&!AIRLINE[code]&&_ownLeg)_alName=String(_hl.name||'').trim();
+  // A ROW NO PASSENGER LOOKS FOR, BY WHAT THE ROW ITSELF SAYS. The codes and
+  // name words above take an operator off whole; they cannot take off one
+  // flight of an airline that also carries passengers. On 2026-11-18 the app
+  // listed BBQ 2211A, an arrival from Miami at Miami, and G6 6175, which
+  // Miami files under terminal NO with no gate, as the boards did. The rule
+  // is the boards' own function, not a copy: fidsRowOffBoard of
+  // js/feed-router.js, which this page loads and where the rule is written
+  // (the other airport is this one; the other end has no code and no name;
+  // no public terminal and no gate; a tail number; a callsign on a row with
+  // no place; an airline nobody names on a row with no place). Named, as the
+  // boards judge it: the app's table names the airline of the card (the code
+  // at the top, or the carrier of the number when the table cannot name that
+  // code: above), or the feed does in words that are not the code again.
+  // The airport is the one the list was asked for (ap, from fetchDir; CURAP
+  // may be another airport by the time the list is back), and the list goes
+  // with the row: a row with one letter after its number leaves only as a
+  // second listing of a flight on that list.
+  const _rowOff=_W.fidsRowOffBoard;
+  if(typeof _rowOff==='function'&&_rowOff(f,dir,ap||(typeof CURAP!=='undefined'?CURAP:''),
+    !!AIRLINE[code]||(!!_alName&&[code,opCode,_fp,_feedCode].indexOf(_alName.toUpperCase())<0),list))return null;
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
@@ -2026,7 +2100,7 @@ async function fetchDir(dir,ap){
   }
   // Map → drop stale departed/arrived → dedupe → sort.
   const _aheadMs=claimAheadMs(raw,dir);   // v24107
-  let all=raw.map(x=>adbToCard(x,dir,_aheadMs)).filter(f=>f&&f.flight&&f.schedTime);
+  let all=raw.map(x=>adbToCard(x,dir,_aheadMs,ap,raw)).filter(f=>f&&f.flight&&f.schedTime);
   // a feed that wrote no local date: the date of its UTC time at the airport
   for(const f of all){ if(!f.schedDate&&f._ts&&TZ[ap]) f.schedDate=adbFmt(new Date(f._ts),TZ[ap]).slice(0,10); }
   // v24044 — a far end the feed named without its code: the code from the
@@ -2419,7 +2493,7 @@ function openFlight(i){
   const aci=ACI[key]||null, acRaw=f.aircraft||(aci&&aci.type)||'', reg=f.reg||(aci&&aci.reg)||'';
   // the far end's real code, for the weather lookups only (what is printed
   // goes through dispIata)
-  const oc=String(f.cityIata||'');
+  const oc=String(wxCodeOf(f)||'');
   if(!acRaw&&!cx)acKick(f);
   const opLine=!!(f.operatedBy&&f.operatedBy.toUpperCase()!==name.toUpperCase()&&f.operatedBy.toUpperCase()!==String(AIRLINE[f.airline]||'').toUpperCase());
   function cell(k,v,o){o=o||{};
@@ -2445,7 +2519,7 @@ function openFlight(i){
   // Route endpoints: for an arrival, origin → here; for a departure, here → destination.
   const epHere='<div class="ep"><div class="code">'+esc(dispIata(CURAP))+'</div><div class="city">'+placeHtml(placeOf(CURAP))+'</div></div>';
   const epOther='<div class="ep"><div class="code">'+esc(dispIata(f.cityIata||''))+'</div><div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName,f.cityCut===true))+'</div>'
-    +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(f.cityIata)?'<bdi>'+esc(wxTemp(f.cityIata))+'</bdi>':'')+'</span>':'')+'</div>';
+    +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(oc)?'<bdi>'+esc(wxTemp(oc))+'</bdi>':'')+'</span>':'')+'</div>';
   const when=f.schedDate?dayLabel(f.schedDate):'';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light,[hc.bg].concat(hc.night?[hc.night]:[]))
@@ -2458,8 +2532,8 @@ function openFlight(i){
     +(cx?'<div class="dt-cx">'+esc(capFirst(s.t))+'</div>'+(when?'<div class="dt-status"><span class="when">'+esc(when)+'</span></div>':'')
         :'<div class="dt-status"><span class="st '+s.c+'"><span class="d"></span>'+esc(capFirst(s.t))+'</span>'+(when?'<span class="when">'+esc(when)+'</span>':'')+'</div>')
     +'<div class="dt-grid">'+cells+'</div>'+plane
-    +'<div class="dt-credit" data-wxc="'+esc(oc)+'">'+(WX_ON&&wxTemp(f.cityIata)?esc(BoardStrings.bs('wxCredit',langRes())):'')+'</div>';
-  if(WX_ON&&f.cityIata)wxKick([f.cityIata]);
+    +'<div class="dt-credit" data-wxc="'+esc(oc)+'">'+(WX_ON&&wxTemp(oc)?esc(BoardStrings.bs('wxCredit',langRes())):'')+'</div>';
+  if(WX_ON&&oc)wxKick([oc]);
   const d=document.getElementById('detail'), wasOpen=d.classList.contains('show');
   if(!wasOpen)d.scrollTop=0;
   d.classList.add('show');d.setAttribute('aria-hidden','false');

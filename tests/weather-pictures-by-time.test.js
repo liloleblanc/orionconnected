@@ -28,7 +28,8 @@ const fnSrc = (name) => {
 };
 
 const AP = { YQM: [46.1122, -64.6786], YYZ: [43.6772, -79.6306], YTZ: [43.6275, -79.3962] };
-const est = new Function('_lookupAirport', fnSrc('_gcNm') + fnSrc('_wxEstArrTs') + 'return _wxEstArrTs;')((c) => AP[c] || null);
+// (both ends by the weather's one position lookup, _placeLatLon: tests/weather-every-place.test.js)
+const est = new Function('_placeLatLon', fnSrc('_gcNm') + fnSrc('_wxEstArrTs') + 'return _wxEstArrTs;')((c) => AP[c] || null);
 
 test('an unpublished arrival is estimated from the departure and the flight', () => {
   const dep = Date.UTC(2026, 10, 5, 22, 20);                 // AC1987 YQM 18:20 AST
