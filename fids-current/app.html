@@ -1528,7 +1528,7 @@ function rowHtml(f,i,isArr){
     +timeHtml(f)
     +'<div class="l1"><span class="al">'+tileHtml(f.airline)+wmHtml(f.airline,name)+'</span>'+pill+'</div>'
     +'<div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName,f.cityCut===true))+'</div>'
-    +'<div class="sub"><span class="sx">'+rowSubParts(f)+wxHtml(f.cityIata)+'</span>'+pill+'</div>'
+    +'<div class="sub"><span class="sx">'+rowSubParts(f)+wxHtml(wxCodeOf(f))+'</span>'+pill+'</div>'
     +slotHtml(f,isArr)+'</div>';
 }
 // Rows from..to, with a day line wherever the date changes (the first row's
@@ -1593,12 +1593,12 @@ function render(o){
   watchMore();
   if(anchor)anchorSet(anchor);
   wxCredit();
-  wxKick(list.slice(0,n).map(f=>f.cityIata));
+  wxKick(list.slice(0,n).map(wxCodeOf));
 }
 function showMore(){
   const s=document.getElementById('more'); if(!s)return;
   const from=SHOWN, to=Math.min(RENDERED.length,SHOWN+PAGE);
-  if(to>from){SHOWN=to;s.insertAdjacentHTML('beforebegin',rowsHtml(RENDERED,from,to,DIR==='arr'));fitRows(false);wxKick(RENDERED.slice(from,to).map(f=>f.cityIata));}
+  if(to>from){SHOWN=to;s.insertAdjacentHTML('beforebegin',rowsHtml(RENDERED,from,to,DIR==='arr'));fitRows(false);wxKick(RENDERED.slice(from,to).map(wxCodeOf));}
   if(SHOWN>=RENDERED.length){s.remove();return;}
   if(_io){_io.unobserve(s);_io.observe(s);}
 }
@@ -1728,6 +1728,22 @@ function wxPlaceAt(co,code){
     if(isFinite(la)&&isFinite(lo)&&Math.abs(la)<=90&&Math.abs(lo)<=180)return [la,lo];
   }
   return null;
+}
+// THE CODE A CARD HAS ITS WEATHER BY, or none. A card with no IATA code is
+// read by the last three letters of its ICAO code (adbToCard), which is often
+// the code of another place: Belgrade, LYBE, reads YBE, Uranium City. Its
+// name already refuses that code (placeOf: cityCut, _CODE_CUT, _CODE_SENT)
+// and prints the words of the feed. With AT read above, the card printed
+// Belgrade and the temperature of Uranium City. So the weather follows the
+// name, by the same test: a card that was cut, or a code that was cut and
+// never sent, has no weather unless CITY names the code; where CITY does,
+// that is the name the card prints, and the weather is of the place printed,
+// as before. Every row, the route card and what is asked go through here.
+function wxCodeOf(f){
+  const raw=(f&&f.cityIata)||'', c=String(raw).toUpperCase();
+  if(!c)return '';
+  const off=f.cityCut===true||(!!_CODE_CUT[c]&&!_CODE_SENT[c]);
+  return (off&&!CITY[c])?'':raw;
 }
 function wxKick(codes){
   if(!WX_ON||!codes||!codes.length)return;
@@ -2443,7 +2459,7 @@ function openFlight(i){
   const aci=ACI[key]||null, acRaw=f.aircraft||(aci&&aci.type)||'', reg=f.reg||(aci&&aci.reg)||'';
   // the far end's real code, for the weather lookups only (what is printed
   // goes through dispIata)
-  const oc=String(f.cityIata||'');
+  const oc=String(wxCodeOf(f)||'');
   if(!acRaw&&!cx)acKick(f);
   const opLine=!!(f.operatedBy&&f.operatedBy.toUpperCase()!==name.toUpperCase()&&f.operatedBy.toUpperCase()!==String(AIRLINE[f.airline]||'').toUpperCase());
   function cell(k,v,o){o=o||{};
@@ -2469,7 +2485,7 @@ function openFlight(i){
   // Route endpoints: for an arrival, origin → here; for a departure, here → destination.
   const epHere='<div class="ep"><div class="code">'+esc(dispIata(CURAP))+'</div><div class="city">'+placeHtml(placeOf(CURAP))+'</div></div>';
   const epOther='<div class="ep"><div class="code">'+esc(dispIata(f.cityIata||''))+'</div><div class="city">'+placeHtml(placeOf(f.cityIata,f.cityName,f.cityCut===true))+'</div>'
-    +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(f.cityIata)?'<bdi>'+esc(wxTemp(f.cityIata))+'</bdi>':'')+'</span>':'')+'</div>';
+    +(WX_ON?'<span class="wx ep-wx" data-wx="'+esc(oc)+'">'+(wxTemp(oc)?'<bdi>'+esc(wxTemp(oc))+'</bdi>':'')+'</span>':'')+'</div>';
   const when=f.schedDate?dayLabel(f.schedDate):'';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero" style="--hero:'+esc(hc.bg)+';--hero-ink:'+esc(hc.ink)+(hc.night?';--hero-n:'+esc(hc.night)+';--hero-ink-n:#ffffff':'')+'">'+heroBrand(f.airline,name,hc.light,[hc.bg].concat(hc.night?[hc.night]:[]))
@@ -2482,8 +2498,8 @@ function openFlight(i){
     +(cx?'<div class="dt-cx">'+esc(capFirst(s.t))+'</div>'+(when?'<div class="dt-status"><span class="when">'+esc(when)+'</span></div>':'')
         :'<div class="dt-status"><span class="st '+s.c+'"><span class="d"></span>'+esc(capFirst(s.t))+'</span>'+(when?'<span class="when">'+esc(when)+'</span>':'')+'</div>')
     +'<div class="dt-grid">'+cells+'</div>'+plane
-    +'<div class="dt-credit" data-wxc="'+esc(oc)+'">'+(WX_ON&&wxTemp(f.cityIata)?esc(BoardStrings.bs('wxCredit',langRes())):'')+'</div>';
-  if(WX_ON&&f.cityIata)wxKick([f.cityIata]);
+    +'<div class="dt-credit" data-wxc="'+esc(oc)+'">'+(WX_ON&&wxTemp(oc)?esc(BoardStrings.bs('wxCredit',langRes())):'')+'</div>';
+  if(WX_ON&&oc)wxKick([oc]);
   const d=document.getElementById('detail'), wasOpen=d.classList.contains('show');
   if(!wasOpen)d.scrollTop=0;
   d.classList.add('show');d.setAttribute('aria-hidden','false');

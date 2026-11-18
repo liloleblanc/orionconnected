@@ -30,6 +30,9 @@
 //   · what is not a place (a four-letter code, two codes in one field) is
 //     never asked for;
 //   · no check in front of the weather reads one table alone again;
+//   · a code cut from an ICAO code, which the feed never sent, is a place
+//     only where CITY names it: a row that prints the feed's own words for
+//     Belgrade never has the weather of Uranium City (board and app);
 //   · the app and a board ask for a place at the same spot, so they share
 //     the one reading the site worker keeps for it.
 // A NAME WITH NO POSITION IN ANY TABLE fails here too: it would be a place
@@ -266,6 +269,104 @@ test('what is not one code of three characters is not a place, and nothing is as
   assert.deepEqual(Array.from(B._placeLatLon('gye')), [-2.16, -79.88]);
 });
 
+// ── a code the feed never sent ─────────────────────────────────────────────
+// The feed mapper reads a row with no IATA code by the last three letters of
+// its ICAO code. In the United States and Canada that is the place; elsewhere
+// it is often another one (Belgrade, LYBE, reads YBE: Uranium City,
+// Saskatchewan). The names refuse such a code and print the words of the
+// feed (tests/americas-airport-names.test.js). The first build of the one
+// lookup read AT for it all the same: of 40 such rows mapped at Ottawa, 9
+// printed the feed's name with the weather of the other place ('Belgrade'
+// at 59.561,-108.481). The row a feed would send, built here as the feed
+// writes it:
+function feedRow(i, here, airport) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const t = new Date(Date.now() + 3600000);
+  const utc = t.getUTCFullYear() + '-' + pad(t.getUTCMonth() + 1) + '-' + pad(t.getUTCDate()) + ' ' + pad(t.getUTCHours()) + ':' + pad(t.getUTCMinutes()) + ':00+00:00';
+  return { number: 'JU' + (500 + i), status: 'ontime', codeshareStatus: 'IsOperator', isCargo: false,
+    departure: { airport: { iata: here, icao: 'K' + here, name: 'Miami' }, scheduledTime: { local: utc, utc }, airline: { iata: 'AC', name: 'Air Canada' } },
+    arrival: { airport, scheduledTime: { local: utc, utc }, airline: { iata: 'AC', name: 'Air Canada' } }, airline: { iata: 'AC', name: 'Air Canada' } };
+}
+
+test('a row cut from an ICAO code has no weather of another place: a code the feed never sent is a place only where CITY names it', async () => {
+  const P = page(), B = P.B;
+  const CUT = B._PLACE_AM_CUT, SENT = B._PLACE_AM_SENT;
+  assert.ok(CUT && SENT, 'the two notes of the names (_placeAmCut)');
+  const cutWas = Object.assign({}, CUT), sentWas = Object.assign({}, SENT);
+  const restore = () => {
+    for (const k of Object.keys(CUT)) if (!own(cutWas, k)) delete CUT[k];
+    for (const k of Object.keys(SENT)) if (!own(sentWas, k)) delete SENT[k];
+  };
+  // [ICAO code, the feed's name, the three letters it is cut to, whose weather it took]
+  const OTHER = [['LYBE', 'Belgrade', 'YBE', 'Uranium City'], ['LSGG', 'Geneva', 'SGG', 'Sermiligaaq'], ['TAPA', 'Antigua', 'APA', 'Denver'],
+    ['RJAA', 'Tokyo', 'JAA', 'Jalalabad'], ['MMUN', 'Cancun', 'MUN', 'Maturín']];
+  // and two that CITY names, which print that name: Bangor by COORDS, as on
+  // every build; Cranbrook by the row js/airport-coords.js took from the
+  // gate map table
+  const NAMED_BY_CITY = [['KBGR', 'Bangor', 'BGR'], ['CYXC', 'Cranbrook', 'YXC']];
+  try {
+    for (const [, , c, whose] of OTHER) {
+      assert.ok(!own(CITY, c) && own(PLACES.AT, c) && PLACES.NAME[c] === whose, c + ' is ' + whose + ' in js/earth-places.js alone');
+      assert.ok(B._placeLatLon(c), c + ' is a place until a feed row is cut to it');
+    }
+    const rows = B.mapADB({ departures: OTHER.concat(NAMED_BY_CITY).map((r, i) => feedRow(i, 'MIA', { iata: null, icao: r[0], name: r[1] })) }, 'dep');
+    assert.equal(rows.length, OTHER.length + NAMED_BY_CITY.length, 'every row is mapped');
+    OTHER.forEach(([, name, c], i) => {
+      assert.equal(rows[i]._locIata, c);
+      assert.ok(String(rows[i].dest).startsWith(name), c + ' prints the words of the feed: ' + rows[i].dest);
+      assert.equal(B._placeLatLon(c), null, name + ' cut to ' + c + ' is not placed');
+    });
+    NAMED_BY_CITY.forEach(([, , c], i) => {
+      const f = rows[OTHER.length + i];
+      assert.equal(f._locIata, c);
+      assert.ok(String(f.dest).toUpperCase().startsWith(String(B.__table('CITY')[c]).toUpperCase()), c + ' prints the name CITY has for it: ' + f.dest);
+      assert.ok(own(COORDS, c) || own(GATE_AP, c), c);
+      assert.deepEqual(Array.from(B._placeLatLon(c)), placed(c).at, c + ' is placed where it always was');
+    });
+    // the line of the live board that lists what to ask for, cut and run over
+    // these rows, then the asking itself
+    const m = /const destCodes = (\[\.\.\.new Set\(\[\.\.\.data\.dep, \.\.\.data\.arr\]\.flatMap\(_flightWxCodes\)\.filter\([^\n]*\)\)\]);\n\s*_fetchBoardWeather\(destCodes\);/.exec(CORE);
+    assert.ok(m, 'the live board lists its weather codes');
+    const codes = Array.from(vm.runInContext('(function (data) { return ' + m[1] + '; })', B)({ dep: rows, arr: [] }));
+    assert.deepEqual(codes, NAMED_BY_CITY.map((r) => r[2]), 'only the places the rows print by a name of CITY');
+    await B._fetchBoardWeather(codes);
+    assert.deepEqual(P.calls.slice().sort(), NAMED_BY_CITY.map((r) => urlOf(placed(r[2]).at)).sort());
+    const WX = B.__table('TOMORROW_WX');
+    // every other way to the weather: the reading by code (the gate, the test
+    // flight), the belt sign, the week and the sun of the weather card, its
+    // arrival hour, and the sun on the icon
+    if (!B.FidsSun) vm.runInContext(fs.readFileSync(path.join(JS, 'fids-sun.js'), 'utf8'), B, { filename: 'js/fids-sun.js' });
+    const sunAt = B.FidsSun.browserEnv(B).coords;
+    for (const [, name, c] of OTHER) {
+      const n = P.calls.length;
+      assert.equal(await B.fetchTomorrowWeather(c), null, c);
+      B._b5AskWx({}, c); B._wxFetchDaily(c, null); B._wxFetchSun(c, Date.UTC(2026, 10, 18, 12));
+      assert.deepEqual(P.calls.slice(n), [], 'nothing is asked for ' + name + ' at ' + c);
+      assert.equal(WX[c], undefined, 'and the row has no reading to print');
+      assert.equal(B._wxEstArrTs('MIA', c, Date.UTC(2026, 10, 18, 15)), 0, c);
+      assert.equal(sunAt(c), null, c + ' has no sun of another place');
+    }
+    await new Promise((r) => setImmediate(r));
+
+    // A CODE THE FEED SENDS ITSELF OUTRANKS THE NOTE, as it does for the
+    // name: Uranium City, sent as YBE, is Uranium City
+    B.mapADB({ departures: [feedRow(90, 'MIA', { iata: 'YBE', icao: 'CYBE', name: 'Uranium City' })] }, 'dep');
+    assert.deepEqual(Array.from(B._placeLatLon('YBE')), [59.561, -108.481]);
+    assert.deepEqual((await ask(P, 'YBE')).calls, ['/wxcurrent?location=59.561,-108.481']);
+    assert.equal(B._placeLatLon('SGG'), null, 'the others stay as they were');
+
+    // and the note alone takes nothing from a place CITY names: Anguilla
+    // stands in AT alone, and CITY names it
+    assert.ok(own(CITY, 'AXA') && !own(COORDS, 'AXA') && !own(AIRPORT_COORDS, 'AXA') && !own(GATE_AP, 'AXA'));
+    B._placeAmCut('AXA', false);
+    assert.deepEqual(Array.from(B._placeLatLon('AXA')), [18.205, -63.054]);
+  } finally { restore(); }
+  for (const [, , c] of OTHER) assert.ok(B._placeLatLon(c), c + ' is put back for the tests after this one');
+  // the lookup reads the two notes of the names and CITY, before any table
+  const fn = CORE.slice(CORE.indexOf('\nfunction _placeLatLon(code) {'), CORE.indexOf('\nasync function _fetchMetWx(iata) {'));
+  assert.match(fn, /if \(_PLACE_AM_CUT\[c\] === true && _PLACE_AM_SENT\[c\] !== true && !has\.call\(CITY, c\)\) return null;[^\n]*\n\s*try \{ tables\.push\(COORDS\); \}/);
+});
+
 test('no check in front of the weather reads one table alone', () => {
   const fnSrc = (name) => {
     const m = new RegExp('\\n(?:async )?function ' + name + '\\(').exec(CORE);
@@ -381,20 +482,28 @@ function app(win) {
   assert.ok(state, 'the app weather state');
   const calls = [];
   const fetch = (u) => { calls.push(String(u)); return answer(); };
-  const api = new Function('window', 'document', 'fetch', 'wxPaint',
-    state[0] + appFn('_coords') + '\n' + appFn('wxPlaceAt') + '\n' + appFn('wxKick') + '\n' + appFn('_wxPump')
-    + '\nreturn { wxKick: wxKick, wxPlaceAt: wxPlaceAt, WX: WX, idle: function () { return WX_RUN === 0 && WX_Q.length === 0; } };')(win, {}, fetch, () => {});
-  api.calls = calls;
+  // the app's names (its own table, then the boards' it is served) and its
+  // two notes of cut and sent codes, as app.html declares them
+  for (const d of ['const _CODE_CUT=Object.create(null);', 'const _CODE_SENT=Object.create(null);']) assert.ok(APP.includes('\n' + d + '\n'), d);
+  const CITY_ = Object.assign({}, shWin.FIDS_SHARED_CITY, appOwnCity());
+  const CUT = Object.create(null), SENT = Object.create(null);
+  const api = new Function('window', 'document', 'fetch', 'wxPaint', 'CITY', '_CODE_CUT', '_CODE_SENT',
+    state[0] + appFn('_coords') + '\n' + appFn('wxPlaceAt') + '\n' + appFn('wxCodeOf') + '\n' + appFn('wxKick') + '\n' + appFn('_wxPump')
+    + '\nreturn { wxKick: wxKick, wxPlaceAt: wxPlaceAt, wxCodeOf: wxCodeOf, WX: WX, idle: function () { return WX_RUN === 0 && WX_Q.length === 0; } };')(win, {}, fetch, () => {}, CITY_, CUT, SENT);
+  api.calls = calls; api.CITY = CITY_; api.CUT = CUT; api.SENT = SENT;
   api.settle = async () => { for (let i = 0; i < 200000 && !api.idle(); i++) await new Promise((r) => setImmediate(r)); assert.ok(api.idle(), 'the app queue drains'); };
   return api;
 }
 // the places the app names: its own short table, the boards' names it is
 // served (js/shared-names.js) and the names of js/earth-places.js
-function appNamed() {
+function appOwnCity() {
   const m = /\nconst CITY=\{/.exec(APP);
   assert.ok(m, 'the app CITY table');
   const lit = appBraces(m.index, 'CITY');
-  const mine = vm.runInNewContext('(' + APP.slice(lit.start, lit.end) + ')');
+  return vm.runInNewContext('(' + APP.slice(lit.start, lit.end) + ')');
+}
+function appNamed() {
+  const mine = appOwnCity();
   assert.ok(Object.keys(mine).length >= 40 && Object.keys(shWin.FIDS_SHARED_CITY).length >= 2400);
   return [...new Set(Object.keys(mine).concat(Object.keys(shWin.FIDS_SHARED_CITY), Object.keys(PLACES.NAME)))].filter(isCode).sort();
 }
@@ -442,19 +551,84 @@ test('the app reads AIRPORT_COORDS, then AT: the boards\' order over the two tab
   assert.match(appFn('_wxPump'), /const c=WX_Q\.shift\(\), p=wxPlaceAt\(co,c\); if\(!p\)continue;/);
 });
 
+test('a card of the phone app cut from an ICAO code has no weather of another place', async () => {
+  // the two notes and the card's own flag, as adbToCard writes them where it
+  // reads the feed (the lines themselves, cut out and run)
+  const noted = /\n  (const cityCut=!!\(other\.airport&&!other\.airport\.iata&&other\.airport\.icao\);\n  if\(cityCut\)_CODE_CUT\[String\(other\.airport\.icao\)\.slice\(1\)\.toUpperCase\(\)\]=1;\n  else if\(typeof _CODE_SENT!=='undefined'&&other\.airport&&other\.airport\.iata\)_CODE_SENT\[String\(other\.airport\.iata\)\.trim\(\)\.toUpperCase\(\)\]=1;)\n  return\{\n    airline:code, flight:num, dir:dir,\n    cityIata:\(\(\(other\.airport&&\(other\.airport\.iata\|\|\(other\.airport\.icao\|\|''\)\.slice\(1\)\)\)\|\|''\)\)\.toUpperCase\(\), cityCut:cityCut,\n/.exec(APP);
+  assert.ok(noted, 'adbToCard cuts a code from an ICAO code, notes it, and the card carries its own cut');
+  const A = app({ AIRPORT_COORDS, FIDS_EARTH_PLACES: PLACES });
+  const note = new Function('_CODE_CUT', '_CODE_SENT', 'other', noted[1] + ' return cityCut;');
+  const card = (airport) => ({ cityIata: String(airport.iata || (airport.icao || '').slice(1) || '').toUpperCase(), cityCut: note(A.CUT, A.SENT, { airport }), cityName: airport.name || '' });
+  assert.ok(!A.CITY.YBE && !A.CITY.SGG && !A.CITY.APA && A.CITY.BGR && A.CITY.AXA, 'the names the app has');
+
+  const belgrade = card({ icao: 'LYBE', name: 'Belgrade' }), geneva = card({ icao: 'LSGG', name: 'Geneva' }), antigua = card({ icao: 'TAPA', name: 'Antigua' });
+  const bangor = card({ icao: 'KBGR', name: 'Bangor' }), stt = card({ iata: 'STT', icao: 'TIST', name: 'St. Thomas' }), rih = card({ iata: 'RIH', icao: 'MPSM', name: 'Rio Hato' });
+  assert.deepEqual([belgrade.cityIata, belgrade.cityCut, geneva.cityIata, antigua.cityIata, bangor.cityIata, bangor.cityCut, stt.cityCut], ['YBE', true, 'SGG', 'APA', 'BGR', true, false]);
+  for (const f of [belgrade, geneva, antigua]) {
+    assert.ok(A.wxPlaceAt(AIRPORT_COORDS, f.cityIata), f.cityIata + ' is another place, with a position');
+    assert.equal(A.wxCodeOf(f), '', f.cityName + ' cut to ' + f.cityIata + ' has no weather code');
+    // a card kept from before the flag, known by the note alone
+    assert.equal(A.wxCodeOf({ cityIata: f.cityIata }), '', f.cityIata);
+  }
+  // a cut code CITY names prints that name, and has its weather as before;
+  // a code the feed sent is a place, whether CITY names it or AT alone does
+  assert.equal(A.wxCodeOf(bangor), 'BGR');
+  assert.equal(A.wxCodeOf(stt), 'STT');
+  assert.equal(A.wxCodeOf(rih), 'RIH');
+  for (const f of [null, undefined, {}, { cityIata: '' }]) assert.equal(A.wxCodeOf(f), '');
+  // what a list of rows asks for (render and showMore hand wxKick this)
+  A.wxKick([belgrade, geneva, antigua, bangor, stt, rih].map(A.wxCodeOf));
+  await A.settle();
+  assert.deepEqual(A.calls.slice().sort(), ['BGR', 'STT', 'RIH'].map((c) => urlOf(A.wxPlaceAt(AIRPORT_COORDS, c))).sort());
+  for (const c of ['YBE', 'SGG', 'APA']) assert.equal(A.WX[c], undefined, c + ' has no temperature to print');
+
+  // the feed then sends YBE itself (Uranium City): its own cards have their
+  // weather; the card that was cut still has none
+  const uranium = card({ iata: 'YBE', icao: 'CYBE', name: 'Uranium City' });
+  assert.equal(A.wxCodeOf(uranium), 'YBE');
+  assert.equal(A.wxCodeOf({ cityIata: 'YBE' }), 'YBE');
+  assert.equal(A.wxCodeOf(belgrade), '', 'the card that was cut never takes it');
+  // and a cut alone takes nothing from a place CITY names (Anguilla, in AT alone)
+  assert.equal(A.wxCodeOf({ cityIata: 'AXA', cityCut: true }), 'AXA');
+
+  // EVERY WAY TO A TEMPERATURE in the app goes through it: the row, the two
+  // lists that ask, and the route card (its code, its temperature, its
+  // credit and its own asking)
+  assert.match(appFn('rowHtml'), /\+rowSubParts\(f\)\+wxHtml\(wxCodeOf\(f\)\)\+/);
+  const kicks = APP.match(/[^\n]*\bwxKick\([^\n]*/g).filter((l) => !/^\s*\/\//.test(l) && !/^function wxKick\(/.test(l)).map((l) => /wxKick\([^;]*\);/.exec(l)[0]);
+  assert.deepEqual(kicks, ['wxKick(list.slice(0,n).map(wxCodeOf));', 'wxKick(RENDERED.slice(from,to).map(wxCodeOf));', 'wxKick([oc]);']);
+  const open = appFn('openFlight');
+  assert.match(open, /\n  const oc=String\(wxCodeOf\(f\)\|\|''\);\n/);
+  assert.match(open, /data-wx="'\+esc\(oc\)\+'">'\+\(wxTemp\(oc\)\?'<bdi>'\+esc\(wxTemp\(oc\)\)\+'<\/bdi>':''\)/);
+  assert.match(open, /data-wxc="'\+esc\(oc\)\+'">'\+\(WX_ON&&wxTemp\(oc\)\?/);
+  assert.match(open, /\n  if\(WX_ON&&oc\)wxKick\(\[oc\]\);\n/);
+  assert.doesNotMatch(APP, /wx(?:Temp|Html)\(f\.cityIata\)|=>f\.cityIata\)\);/);
+});
+
 test('js/airport-coords.js holds every place COORDS and GATE_AP hold, in the cell the board asks at', () => {
   // The app loads neither board table. A place added to one of them and not
   // to js/airport-coords.js has a name in the app and no temperature; one
   // that stands in another cell there is asked for twice upstream.
-  const missing = [], moved = [];
+  // EACH ROW IS HELD TO THE TABLE IT WAS TAKEN FROM, never to the lookup:
+  // the lookup reads js/airport-coords.js before GATE_AP, so for a place
+  // COORDS lacks it answers with the row itself, and a row held to itself
+  // holds nothing (Kuala Lumpur moved to northern Italy passed).
+  const missing = [], moved = [], fromGate = [];
   for (const c of [...new Set(Object.keys(COORDS).concat(Object.keys(GATE_AP)))].filter(isCode)) {
     if (!own(AIRPORT_COORDS, c)) { missing.push(c); continue; }
-    if (cell(AIRPORT_COORDS[c]) !== cell(placed(c).at)) moved.push(c);
+    const inCoords = own(COORDS, c), src = inCoords ? COORDS[c] : GATE_AP[c];
+    const a = AIRPORT_COORDS[c], b = [Number(src[0]), Number(src[1])];
+    if (cell(a) !== cell(b)) moved.push(c);
     // and never far: the rule the board tables are already held to
     // (tests/day-night-engine.test.js), 0.05 of a degree
-    const a = AIRPORT_COORDS[c], b = placed(c).at;
     assert.ok(Math.abs(a[0] - b[0]) <= 0.05 && Math.abs(a[1] - b[1]) <= 0.05, c + ': ' + a + ' / ' + b);
+    // a row taken from GATE_AP is that row, digit for digit: for these
+    // places js/airport-coords.js is where the boards ask too
+    if (!inCoords) { fromGate.push(c); assert.deepEqual([Number(a[0]), Number(a[1])], b, c + ' is not the position GATE_AP holds'); }
   }
+  // (63 on 2026-11-18, Kuala Lumpur, Jakarta and Manila among them; fewer
+  // only as COORDS takes them)
+  for (const c of ['STT', 'EIS', 'GYE', 'KUL', 'CGK', 'MNL']) assert.ok(fromGate.includes(c) || own(COORDS, c), c);
   assert.deepEqual(missing, [], 'add these rows to fids-current/js/airport-coords.js, at the position of COORDS (else GATE_AP)');
   assert.deepEqual(moved, TWO_CELLS, 'the places that stand in another two-decimal cell than the board asks at: the one known, and no other');
   // and nothing AT holds is in it (AT is only what no other table places:

@@ -776,7 +776,7 @@ test('the detail carries what the boards show: the weather there, the aircraft b
   // MET's credit wherever a temperature shows
   assert.match(src('wxPaint'), /BoardStrings\.bs\('wxCredit',langRes\(\)\)/);
   assert.match(src('openFlight'), /BoardStrings\.bs\('wxCredit',langRes\(\)\)/);
-  assert.match(src('rowHtml'), /wxHtml\(f\.cityIata\)/);
+  assert.match(src('rowHtml'), /wxHtml\(wxCodeOf\(f\)\)/);
   // an airport whose boards hide the weather hides it here
   assert.match(APP, /\.no-wx \.wx,\.no-wx #wxCredit,\.no-wx \.dt-credit\{display:none !important;\}/);
   assert.match(src('applyBrand'), /WX_ON=!\(b&&b\.hw\); root\.classList\.toggle\('no-wx',!WX_ON\);/);

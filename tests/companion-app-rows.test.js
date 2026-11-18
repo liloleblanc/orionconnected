@@ -114,7 +114,7 @@ test('the line under the city never draws a separator beside an empty part', () 
   assert.equal(strip(ctx.rowSubParts({ cityIata: 'YXY', flight: '4N527' }) + ctx.wxHtml('YXY')), 'YXY · 4N527 · 3°C');
   // the row draws the line through it, and the old fixed '·' is gone
   const rh = fn('rowHtml');
-  assert.match(rh, /'<div class="sub"><span class="sx">'\+rowSubParts\(f\)\+wxHtml\(f\.cityIata\)\+'<\/span>'\+pill\+'<\/div>'/);
+  assert.match(rh, /'<div class="sub"><span class="sx">'\+rowSubParts\(f\)\+wxHtml\(wxCodeOf\(f\)\)\+'<\/span>'\+pill\+'<\/div>'/);
   assert.doesNotMatch(APP, /'<\/b> · <span class="fno">'/);
 });
 

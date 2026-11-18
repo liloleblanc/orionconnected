@@ -35003,6 +35003,20 @@ function tioLabel(weatherCode) {
 //   ONLY ONE CODE OF THREE CHARACTERS IS A PLACE. Feeds have sent a
 //   four-letter code and two codes in one field; those have no position, and
 //   nothing is asked for them.
+//   A CODE THE FEED NEVER SENT IS NOT A PLACE EITHER, unless CITY names it.
+//   The feed mapper reads a row with no IATA code by the last three letters
+//   of its ICAO code, which outside the United States and Canada is often
+//   the code of another place (Belgrade, LYBE, reads YBE, Uranium City). The
+//   names already refuse such a code (_placeAmCut, _placeNameAm): the row
+//   prints the words of the feed. With AT read here, that row printed
+//   Belgrade and the temperature of Uranium City, and so did the gate, the
+//   weather card and the sun on the icon. So a code that was cut and never
+//   sent has no position, by the same two notes the names read
+//   (_PLACE_AM_CUT, _PLACE_AM_SENT). Where CITY names the code the row
+//   prints that name, and its weather is the weather of the place printed,
+//   as it always was: every position outside AT is of a place CITY names.
+//   What is left is what is left for the names: on a page whose feed has
+//   sent YBE itself, a Belgrade row cut to YBE reads the YBE weather.
 // It reads tables only. The gate map network lookup (_fetchAirportCoords) is
 // never part of it.
 // tests/weather-every-place.test.js asks for every place with a name, and
@@ -35011,6 +35025,7 @@ function _placeLatLon(code) {
   var c = String(code == null ? '' : code).toUpperCase();
   if (!/^[A-Z0-9]{3}$/.test(c)) return null;
   var has = Object.prototype.hasOwnProperty, tables = [];
+  try { if (_PLACE_AM_CUT[c] === true && _PLACE_AM_SENT[c] !== true && !has.call(CITY, c)) return null; } catch (eC) {}
   try { tables.push(COORDS); } catch (e0) {}
   try { tables.push(window.AIRPORT_COORDS); } catch (e1) {}
   try { tables.push(_GATE_AP_OWN); } catch (e2) {}
