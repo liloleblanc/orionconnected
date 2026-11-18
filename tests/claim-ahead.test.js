@@ -306,7 +306,8 @@ test('the companion app holds back the same words', () => {
   assert.equal(card(arr('AS385', 'Arrived', 45, null, { _claimTimed: true }), 'arr').state, 'scheduled', 'the adapter\'s word alone');
   assert.equal(card(arr('UA1', 'Arrived', 45, null), 'arr').state, 'arrived', 'a schedule-only row 45 minutes early');
   // The list's margin reaches the cards.
-  assert.match(APP, /const _aheadMs=claimAheadMs\(raw,dir\);[^\n]*\n\s*let all=raw\.map\(x=>adbToCard\(x,dir,_aheadMs\)\)/);
+  // (the airport and the list go with it since the rows no passenger looks for left: tests/rows-off-board.test.js)
+  assert.match(APP, /const _aheadMs=claimAheadMs\(raw,dir\);[^\n]*\n\s*let all=raw\.map\(x=>adbToCard\(x,dir,_aheadMs,ap,raw\)\)/);
   // A revised time stamped a day late (an early landing across midnight) is
   // on the day nearest its schedule, as on the boards.
   assert.equal(card(arr('AC1986', 'Arrived', 16, -4 + 24 * 60, { _claimTimed: true }), 'arr').state, 'arrived');

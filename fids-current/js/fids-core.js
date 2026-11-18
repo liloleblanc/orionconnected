@@ -35336,10 +35336,25 @@ function tcAirline(name, code) {
   // Generic fallback: convert ALL CAPS to title case using the same tc()
   // function we already have for cities. Only do it if the input looks all-caps.
   if (name === name.toUpperCase() && /[A-Z]{3,}/.test(name)) {
+    // A NAME ONLY THE AIRPORT GAVE KEEPS ITS SHORT WORDS IN CAPITALS. mapADB
+    // stores a feed name in capitals, and the casing made Ibc Air of IBC AIR
+    // on a Miami row while the phone app printed IBC Air: its alCase keeps a
+    // word of two or three letters as written unless it is an everyday word.
+    // The same here, only for a code no table names; a name from the tables
+    // is cased exactly as before.
+    if (code && typeof AIRLINE_NAME !== 'undefined' && !AIRLINE_NAME[code]) {
+      return tc(name).replace(/[A-Za-z]+/g, function (w) {
+        var u = w.toUpperCase();
+        return (u.length >= 2 && u.length <= 3 && !_TC_AIRLINE_WORDS.test(u)) ? u : w;
+      });
+    }
     return tc(name);
   }
   return name;
 }
+// Words of two or three letters that are words, not initials (the list of
+// the phone app, app.html alCase, and a few more a name can hold).
+const _TC_AIRLINE_WORDS = /^(AIR|AER|SKY|SUN|JET|FLY|BAY|NEW|THE|AND|BIG|ONE|SEA|VIA|DEL|DE|LA|LE|EL|AL|OF|DU|DA|DI|DO|DOS|DAS|LOS|LAS|DES|LES|SAN|RED|LTD|INC|CO)$/;
 if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
@@ -42516,8 +42531,24 @@ const FILTER_OUT = new Set([
   'C8','CDG',  // Cargolux Italia
   'CV','CLU',  // Cargolux
   'P3','CSU',  // CargoSur
-  'S6','SRR',  // Suburban Air Freight
+  // (S6 was listed here as Suburban Air Freight. S6 is Sunrise Airways of
+  // Haiti, a passenger airline: Boston lists S6 623 to Cap-Haitien at gate
+  // E5, and the entry kept it off the board. It prints the name its airport
+  // gives it.)
+  'SRR',       // Star Air (cargo)
   'GB','ABX',  // ABX Air (cargo)
+  // Found on the live lists of 2026-11-18, each on rows with no terminal,
+  // no gate and no belt. All-cargo airlines and private operators only: a
+  // freighter under the code of an airline that also carries passengers
+  // (Air China, EVA, Qatar at Chicago) cannot be told from the code, and
+  // stays (fidsRowOffBoard, feed-router.js, says what can be read off a row).
+  'K4','CKS',  // Kalitta Air: all-cargo (Anchorage and Tokyo at Chicago)
+  'KZ','NCA',  // Nippon Cargo Airlines: all-cargo (Anchorage and Tokyo at Chicago)
+  'KD','WGN',  // Western Global Airlines: all-cargo (Anchorage and Seoul at Chicago)
+  'Y8','YZR',  // Suparna Airlines: its passenger flights stay inside China, where no board is. Abroad it flies freighters only (Anchorage, Nanjing and Shanghai at Chicago, no terminal, no gate, no belt). A board in China takes it off this list first.
+  'KII',       // Kalitta Charters II: cargo (Cincinnati to Philadelphia, no name on the page)
+  'FRG',       // Freight Runners Express: cargo (Philadelphia to Richmond, no name on the page)
+  'XFL',       // Executive Fliteways: private charter (Chicago Midway to Philadelphia, no name on the page)
   '8V','WRF',  // Wright Air Service
   'GSP',       // Global SuperTanker (firefighting)
   // ── Canadian charter / medevac / regional non-scheduled (added 2026-05) ──
@@ -47454,6 +47485,8 @@ function _adbFeedAirline(f, mode) {
 // sent (_fidsCsEvidence), not only the rows in the board's hours.
 function mapADB(raw, mode, kept) {
   const nowTs=Date.now(), list=mode==='dep'?(raw.departures||[]):(raw.arrivals||[]);
+  // the airport of this board, for a row that does not carry it (fidsRowOffBoard below)
+  const _rowHome=String((document.getElementById('apSel')||{}).value||'');
   const _claimAheadMs=_adbClaimAheadMs(list,mode);   // v24107 — see _ADB_CLAIM_AHEAD_TIMED_MS
   return _fidsOneRowPerFlight(_fidsDedupeRows(list.map(f => {
     const sL=mode==='dep'?(f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc):(f.arrival?.scheduledTime?.local||f.arrival?.scheduledTime?.utc);
@@ -47492,7 +47525,13 @@ function mapADB(raw, mode, kept) {
       'flexjet', 'netjets', 'planesense',  // fractional ownership / charter
       'wheels up', 'jetsuite', 'vistajet',
       'nexgen aviation', 'nexgen',          // NexGen Aviation (Part 135 charter)
-      'tradewind aviation', 'tradewind'     // Tradewind Aviation (Part 135 premium charter)
+      'tradewind aviation', 'tradewind',    // Tradewind Aviation (Part 135 premium charter)
+      // An operator its own airport names as a cargo or freight carrier
+      // (Chicago: NCA - Nippon Cargo Airlines, China Cargo; no passenger
+      // airline on any recorded or live row has either word in its name),
+      // and the FedEx feeder Toronto lists under the placeholder code XX.
+      'cargo', 'freight',
+      'morningstar air express'
     ];
     const _apiNameLower = _apiNameRaw.toLowerCase();
     if (_apiNameLower && _NON_PASSENGER_PATTERNS.some(p => _apiNameLower.includes(p))) {
@@ -47523,6 +47562,29 @@ function mapADB(raw, mode, kept) {
     const _apiName = _feedAl.name.toUpperCase();
     const _localName = AIRLINE_NAME[airline] || AIRLINE_NAME[code] || AIRLINE_NAME[fp] || '';
     const faAirlineName = _localName || _apiName;
+    // A ROW NO PASSENGER LOOKS FOR, BY WHAT THE ROW ITSELF SAYS (2026-11-18).
+    // FILTER_OUT and the name words above take an operator off whole. They
+    // cannot take off one flight of an airline that also carries passengers:
+    // on the Miami boards of 2026-11-18 stood BBQ 2211A, an arrival from
+    // Miami at Miami, and G6 6175, which Miami files under terminal NO with
+    // no gate, beside the Cuba and Haiti charters of the same two airlines.
+    // fidsRowOffBoard (feed-router.js, where the whole rule and what it was
+    // measured on are written) reads the row: the other airport is this one,
+    // the airport marks it as in no public terminal and gives it no gate,
+    // the other end has no code and no name, the number is a tail number,
+    // the number is a callsign on a row with no place (one letter: only as a
+    // second listing of a flight the list holds, which is why the whole list
+    // goes with the row), or nobody names the airline and the row has no
+    // place. The phone app and the live list of the Studio player ask the
+    // same function (app.html adbToCard, studio-data.js), so a row this rule
+    // takes off is off every screen. When the row does not say, the row stays.
+    // Named: the tables name the airline, or the feed does in words that are
+    // not the code again.
+    // A screen that still holds an older feed-router.js from its cache has no
+    // such function: it maps its rows as it did before the rule (the cargo
+    // mark alone) and never throws on every row, which emptied the board.
+    const _rowNamed = !!_localName || (!!_apiName && [airline, code, fp, _feedAl.code].indexOf(_apiName) < 0);
+    if (typeof fidsRowOffBoard === 'function' ? fidsRowOffBoard(f, mode, _rowHome, _rowNamed, list) : f.isCargo === true) return null;
     // Extract ACTUAL operating carrier from leg data (FIDS endpoint with withLeg=true)
     // f.departure.airline or f.arrival.airline = who physically operates it
     const opLeg = mode==='dep' ? f.departure : f.arrival;
@@ -47880,8 +47942,9 @@ function mapADB(raw, mode, kept) {
       const d1=adbTs(_depSched), d2=adbTs(_arrSched);
       if (d1&&d2&&d2>d1) _durationMins=Math.round((d2-d1)/60000);
     }
-    // Cargo/private filter
-    if (f.isCargo===true) return null;
+    // (a row the feed marks as cargo left above: fidsRowOffBoard, which also
+    // holds the rule below now, so the phone app asks the same one; the line
+    // stays for a page whose feed-router.js is older than its board script)
     // No resolvable place: no IATA/ICAO and the feed's airport name is empty
     // or literally 'Unknown' — repositioning/ferry/private legs. A public
     // board row reading 'Unknown' helps no traveler and should not be

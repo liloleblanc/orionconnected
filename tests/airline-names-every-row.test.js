@@ -19,7 +19,11 @@
 //   1. EVERY RECORDED FEED ROW of tests/fixtures goes through the real
 //      adapters and parsers and then through the real mapADB, one row at a
 //      time. A row that stays on the board must print a name; a row that
-//      leaves must be one the board keeps off on purpose (FILTER_OUT).
+//      leaves must be one the board keeps off on purpose: by its code
+//      (FILTER_OUT), by a word in the name its airport gives it, or by what
+//      the row itself says (fidsRowOffBoard, feed-router.js: the rule and
+//      its own tests are tests/rows-off-board.test.js). Each is listed here,
+//      so a scheduled passenger flight cannot leave unseen.
 //      Every file of tests/fixtures is either read here or listed, with the
 //      reason, as holding no feed rows: a new recording cannot go unread.
 //   2. THE RULE ITSELF, on rows written for it: the name on the home leg is
@@ -76,7 +80,34 @@ const OFF_THE_BOARD = {
   '5Y': 'Atlas Air, cargo (Anchorage to Chicago on the ORD feed)',
   'KJ': 'Air Incheon (AirZeta), cargo (Anchorage to Chicago on the ORD feed)',
   'M6': 'Amerijet International, cargo (Houston to Louisville on the IAH feed)',
-  'WFS': 'World Fuel Services, a private Gulfstream (Dallas Addison to Keflavik on the KEF feed)'
+  'WFS': 'World Fuel Services, a private Gulfstream (Dallas Addison to Keflavik on the KEF feed)',
+  // the live lists of 2026-11-18 (rows-off-board-2026-11-18.json)
+  'K4': 'Kalitta Air, cargo (Anchorage to Chicago)',
+  'KZ': 'Nippon Cargo Airlines, cargo (Chicago to Tokyo)',
+  'KD': 'Western Global Airlines, cargo (Chicago to Seoul)',
+  'KII': 'Kalitta Charters II, cargo (Cincinnati to Philadelphia)',
+  'FRG': 'Freight Runners Express, cargo (Philadelphia to Richmond)',
+  'XFL': 'Executive Fliteways, private charter (Chicago Midway to Philadelphia)',
+  'Y8': 'Suparna Airlines, freighters only outside China (Anchorage to Chicago)'
+};
+// Recorded rows the board keeps off by a word in the name the airport gives
+// the operator (_NON_PASSENGER_PATTERNS), by the carrier of the number: no
+// code to list, the airport files it under a placeholder.
+const OFF_BY_ITS_NAME = {
+  'XX': 'Morningstar Air Express, the FedEx feeder at Toronto, which the airport files under XX'
+};
+// Recorded rows that leave by what the row itself says (fidsRowOffBoard), row
+// by row, with the word the rule answers. The rows of
+// rows-off-board-2026-11-18.json carry theirs in the file (off), and are
+// checked against it. A row that leaves and is in neither fails: that is how
+// a scheduled passenger flight taken off by mistake is caught.
+const OFF_BY_THE_ROW = {
+  'slc-arr-sample.html arr DL4327 SLC': 'home'   // an arrival from Salt Lake City at Salt Lake City, no gate
+};
+// And the one recorded row nobody can name, which has no terminal, gate or
+// belt either: the standing rule prints no bare code, so it is off.
+const OFF_UNNAMED = {
+  'XA': 'Philadelphia lists XA 5903 from Las Vegas with no airline name and no gate; no table names XA'
 };
 
 // ── the whole board script in a page of its own ────────────────────────────
@@ -133,6 +164,16 @@ function mapOne(row, dir) {
   const out = the('mapADB')({ [dir === 'dep' ? 'departures' : 'arrivals']: [g] }, dir);
   assert.ok(Array.isArray(out) && out.length <= 1, 'one row in, at most one row out');
   return out[0] || null;
+}
+// ONE KIND OF ROW IS JUDGED WITH THE LIST AROUND IT: a row with one letter
+// after its number leaves only as a second listing of a flight on the same
+// list (fidsSecondListing, feed-router.js). mapOne hands the mapper one row
+// at a time, so the rule is asked here as well, with the list the row was
+// recorded in and the times it was recorded with, exactly as mapADB asks it
+// for a whole list: a row the rule takes off there is off the board.
+function mapInList(row, dir, list) {
+  const f = mapOne(row, dir);
+  return (f && the('fidsRowOffBoard')(row, dir, '', true, list)) ? null : f;
 }
 // The carrier of a flight number, as mapADB reads it.
 const carrierOf = (num) => {
@@ -199,7 +240,7 @@ const PARSED = [
   ['msp-dep-sample.html', 'mspParsePage', ['dep'], '2026-09-05T21:10:00-05:00'],
   ['msp-dep-lastpage-sample.html', 'mspParsePage', ['dep'], '2026-09-05T21:10:00-05:00'],
   ['msy-sample.json', 'msyParseFeed', ['arr'], '2026-09-04T22:00:00-04:00'],
-  ['ord-sample.json', 'ordParseFeed', ['dep', 'arr'], US],
+  ['ord-sample.json', 'ordParseFeed', ['arr'], US],   // four arrivals: read as departures they would leave Chicago for Chicago
   ['pdx-sample.json', 'pdxParseFeed', ['dep', 'arr'], '2026-09-04T22:00:00-07:00'],
   ['phl-sample.html', 'phlParsePage', ['dep', 'arr'], US],
   ['phx-sample.json', 'phxParseFeed', ['dep', 'arr'], '2026-09-05T23:08:00-07:00'],
@@ -294,6 +335,7 @@ function hbaParser() {
   ].join('\n'))();
 }
 
+const OFF_ROWS_FILE = 'rows-off-board-2026-11-18.json';
 let SETS_ = null;
 async function recorded() {
   if (SETS_) return SETS_;
@@ -356,6 +398,18 @@ async function recorded() {
   byHome('fararr-2026-10-04/yhu-arr.json', 'YHU', yhu);
   byHome('fararr-2026-10-04/ytz-arr.json', 'YTZ', ytz);
   add('mia-airline-names-2026-11-13.json', 'arr', json('mia-airline-names-2026-11-13.json').arr.map((x) => mia(x, 'Arrival')));
+  // the rows of 2026-11-18 kept for the rule of fidsRowOffBoard: Miami as the
+  // airport sent it, the other airports as served. Each carries the word the
+  // rule answers for it (off), read by OFF_FIXTURE below.
+  // (one list per airport and direction, as they came: a row with one letter
+  // after its number is judged with the list around it)
+  { const j = json(OFF_ROWS_FILE);
+    for (const d of ['dep', 'arr']) {
+      add(OFF_ROWS_FILE, d, j.mia[d].map((x) => Object.assign(mia(x.rec, d === 'dep' ? 'Departure' : 'Arrival'), { __off: x.off || null })));
+      for (const ap of [...new Set(j.served.filter((x) => x.dir === d).map((x) => x.ap))]) {
+        add(OFF_ROWS_FILE, d, j.served.filter((x) => x.dir === d && x.ap === ap).map((x) => Object.assign(JSON.parse(JSON.stringify(x.row)), { __off: x.off || null })));
+      }
+    } }
 
   return (SETS_ = sets);
 }
@@ -392,14 +446,35 @@ test('every recorded row that stays on the board prints its airline by name, and
   // the row prints its airline from _airlineName, cased by tcAirline: what printed() reads
   assert.match(CORE, /tcAirline\(f\._airlineName \|\| AIRLINE_NAME\[f\.airline\] \|\| f\.airline \|\| '', f\.airline\)/, 'the row prints its airline from _airlineName');
   const FILTER_OUT = the('FILTER_OUT');
-  const bare = {}, gone = {};
+  const rowOff = the('fidsRowOffBoard'), feedAirline = the('_adbFeedAirline');
+  const nameWords = new Function('return [' + CORE.match(/\n {4}const _NON_PASSENGER_PATTERNS = \[([\s\S]*?)\n {4}\];/)[1] + '\n];')();
+  const bare = {}, gone = {}, goneByName = {}, goneUnnamed = {}, goneByRow = {}, stayed = [];
   let kept = 0, n = 0;
   for (const s of sets) for (const r of s.rows) {
     n++;
-    const f = mapOne(r, s.dir);
+    const f = mapInList(r, s.dir, s.rows);
     const far = ((s.dir === 'dep' ? r.arrival : r.departure) || {}).airport || {};
     const where = s.file + ' ' + s.dir + ' ' + String(r.number || '').replace(/\s+/g, '') + ' ' + (far.iata || far.name || '?');
-    if (!f) { const c = carrierOf(r.number); (gone[c] = gone[c] || []).push(where); continue; }
+    // a row of the 2026-11-18 file says itself whether it leaves, and why
+    const listed = s.file === OFF_ROWS_FILE ? (r.__off || '') : null;
+    if (f && listed) stayed.push(where + ' is recorded as leaving (' + listed + ') and is on the board');
+    if (!f) {
+      // why it left, in the order mapADB asks: the code, the name, the row
+      const c = carrierOf(r.number), fa = feedAirline(r, s.dir);
+      const top = String((r.airline && r.airline.iata) || '').trim().toUpperCase();
+      const low = String(fa.name || '').toLowerCase();
+      if ([top, fa.code, c].some((x) => x && FILTER_OUT.has(x))) (gone[c] = gone[c] || []).push(where);
+      else if (low && nameWords.some((p) => low.includes(p))) (goneByName[c] = goneByName[c] || []).push(where);
+      else if (rowOff(r, s.dir, '', undefined, s.rows)) goneByRow[where] = rowOff(r, s.dir, '', undefined, s.rows);
+      else if (rowOff(r, s.dir, '', false) === 'unnamed') (goneUnnamed[c] = goneUnnamed[c] || []).push(where);
+      else goneByRow[where] = '(nothing explains it)';
+      if (listed !== null) {
+        const how = goneByRow[where] || (goneUnnamed[c] && goneUnnamed[c].includes(where) ? 'unnamed' : 'list');
+        assert.equal(how, listed || '(recorded as staying)', where + ': the row leaves for the reason the file records');
+        delete goneByRow[where];
+      }
+      continue;
+    }
     kept++;
     const p = printed(f);
     if (p.bare) (bare[p.code || carrierOf(r.number) || '(none)'] = bare[p.code || carrierOf(r.number) || '(none)'] || []).push(where + ' prints ' + JSON.stringify(p.shown));
@@ -418,8 +493,17 @@ test('every recorded row that stays on the board prints its airline by name, and
 
   // rows that leave: only the ones kept off on purpose
   assert.deepEqual(Object.keys(gone).sort(), Object.keys(OFF_THE_BOARD).sort(),
-    'the carriers of the recorded rows the board drops are exactly the ones listed in OFF_THE_BOARD: ' + JSON.stringify(gone));
+    'the carriers of the recorded rows the board drops by code are exactly the ones listed in OFF_THE_BOARD: ' + JSON.stringify(gone));
   for (const c of Object.keys(OFF_THE_BOARD)) assert.ok(FILTER_OUT.has(c), c + ' (' + OFF_THE_BOARD[c] + ') is kept off by FILTER_OUT');
+  assert.deepEqual(Object.keys(goneByName).sort(), Object.keys(OFF_BY_ITS_NAME).sort(),
+    'the recorded rows the board drops by a word in the airline name are the ones listed in OFF_BY_ITS_NAME: ' + JSON.stringify(goneByName));
+  assert.deepEqual(Object.keys(goneUnnamed).sort(), Object.keys(OFF_UNNAMED).sort(),
+    'the recorded rows that leave because nobody names the airline and the row has no place are the ones listed in OFF_UNNAMED: ' + JSON.stringify(goneUnnamed));
+  // by what the row says: row for row. A scheduled passenger flight that
+  // starts to leave shows up here, by file, direction, number and far end.
+  assert.deepEqual(goneByRow, OFF_BY_THE_ROW,
+    'the recorded rows that leave by what the row itself says (fidsRowOffBoard) are exactly the ones listed in OFF_BY_THE_ROW');
+  assert.deepEqual(stayed, [], 'rows of ' + OFF_ROWS_FILE + ' recorded as leaving');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -431,7 +515,10 @@ test('every recorded row that stays on the board prints its airline by name, and
 // `leg`: the airline on the legs; `top`: one at the top of the row as well.
 function feedRow(o) {
   const t = { local: AT, utc: AT };
-  const home = { airport: { iata: 'MIA', icao: 'KMIA', name: 'Miami' }, scheduledTime: t, quality: ['Live'] };
+  // (a terminal and a gate, as Miami gives a public flight: a row nobody
+  // names with no place at all is off the board, which is another rule,
+  // fidsRowOffBoard, with tests of its own)
+  const home = { airport: { iata: 'MIA', icao: 'KMIA', name: 'Miami' }, terminal: 'F', gate: 'F10', scheduledTime: t, quality: ['Live'] };
   const other = { airport: { iata: o.far || 'HAV', icao: null, name: null }, quality: ['Live'] };
   if (o.leg) { home.airline = o.leg; other.airline = o.leg; }
   const f = { number: o.number, callSign: null, status: 'scheduled', codeshareStatus: 'IsOperator', isCargo: false };
@@ -694,6 +781,10 @@ function theApp() {
     + cut(/\nconst REGIONAL_FAM=\{[^\n]*\};/) + cut(/\nconst REGIONAL_OP=\{[^\n]*\};/) + cut(/\nconst AL_CASE=\{[\s\S]*?\};/) + '\n'
     + appFn('wmUrls') + appFn('adbHHMM') + appFn('inferOperator') + appFn('adbToCard') + appFn('alCase') + appFn('airlineName')
     + '; return { adbToCard: adbToCard, airlineName: airlineName, AIRLINE: AIRLINE, REGIONAL_FAM: REGIONAL_FAM };';
+  // (the page loads js/feed-router.js before its own script: the rule of the
+  // rows is that file's fidsRowOffBoard, the very function the board asks)
+  assert.match(APP, /<script src="js\/feed-router\.js\?v=\d+"><\/script>/, 'app.html loads the feed router');
+  win.fidsRowOffBoard = the('fidsRowOffBoard');
   APP_ = new Function('window', src)(win);
   APP_.OWN = new Function(ownTable + '; return AIRLINE;')();   // the app's own short list, before the boards' table fills the rest
   APP_.shared = win;
@@ -727,7 +818,7 @@ async function boardRows() {
   const out = [];
   for (const s of await recorded()) for (const r of s.rows) {
     const far = ((s.dir === 'dep' ? r.arrival : r.departure) || {}).airport || {};
-    out.push({ r, dir: s.dir, f: mapOne(r, s.dir), where: s.file + ' ' + s.dir + ' ' + String(r.number || '').replace(/\s+/g, '') + ' ' + (far.iata || far.name || '?') });
+    out.push({ r, dir: s.dir, list: s.rows, f: mapInList(r, s.dir, s.rows), where: s.file + ' ' + s.dir + ' ' + String(r.number || '').replace(/\s+/g, '') + ' ' + (far.iata || far.name || '?') });
   }
   return (ROWS_ = out);
 }
@@ -799,8 +890,9 @@ test('the phone app: every recorded row the board drops gives no card, and every
   const put = (o, k, v) => { (o[k] = o[k] || []).push(v); };
   const shown = {}, missing = {}, bare = {}, differs = {}, full = {}, off = {};
   let cards = 0, same = 0;
-  for (const { r, dir, f, where } of rows) {
-    const c = app.adbToCard(r, dir), k = carrierOf(r.number);
+  for (const { r, dir, list, f, where } of rows) {
+    // (the card is asked with the list the row was recorded in, as fetchDir asks it)
+    const c = app.adbToCard(r, dir, undefined, '', list), k = carrierOf(r.number);
     if (!f) { if (c) put(shown, k, where + ' reads ' + app.airlineName(c)); else off[k] = (off[k] || 0) + 1; continue; }
     if (!c) { put(missing, k, where); continue; }
     cards++;
@@ -813,7 +905,10 @@ test('the phone app: every recorded row the board drops gives no card, and every
   }
   const some = (o) => Object.keys(o).sort().map((k) => k + ': ' + o[k].length + ' rows, e.g. ' + o[k][0]);
   assert.deepEqual(some(shown), [], 'cards on the phone for rows the board drops');
-  assert.deepEqual(Object.keys(off).sort(), Object.keys(OFF_THE_BOARD).sort(), 'the rows off both screens are the ones listed in OFF_THE_BOARD: ' + JSON.stringify(off));
+  // (which rows those are, and why, is the board test above; here, that every one of its ledgers is off the phone too)
+  for (const c of Object.keys(OFF_THE_BOARD).concat(Object.keys(OFF_BY_ITS_NAME), Object.keys(OFF_UNNAMED))) assert.ok(off[c] > 0, c + ' is off both screens');
+  const byRow = Object.keys(OFF_BY_THE_ROW).map((w) => rows.find((x) => x.where === w));
+  for (const x of byRow) assert.ok(x && !x.f && !app.adbToCard(x.r, x.dir, undefined, '', x.list), 'a row that leaves by what it says is off both screens');
   assert.deepEqual(some(missing), [], 'rows on the board with no card on the phone');
   assert.deepEqual(some(bare), [], 'cards that print only a code');
   assert.deepEqual(some(differs), [], 'one flight, two airline names');
@@ -872,6 +967,7 @@ const NAMED_OTHERWISE = {
   NH: ['All Nippon Airways', 'ANA', 'the short form the airline itself goes by'],
   NZ: ['Air New Zealand', 'Air NZ', 'the short form of the boards'],
   CJ: ['BA Cityflyer', 'British Airways', 'the boards print British Airways on the rows BA CityFlyer flies for it (v23363)'],
+  XP: ['Xtra Airways', 'Avelo', 'Chicago still names the airline that held XP before: Avelo flies under the certificate and the code of Xtra Airways, and XP 421 and 422 are its New Haven flights'],
   '9X': ['Southern Airways Express', 'Mokulele', 'Southern Airways Express holds the code and flies as Mokulele in Hawaii, which is what the name, the colour and the emblem of 9X are; Phoenix names the company on its Imperial flights. Not decided here']
 };
 // Words every airline has: sharing one of them says nothing.

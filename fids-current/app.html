@@ -1870,7 +1870,10 @@ function claimAheadMs(list,dir){
   }
   return (n>=8&&timed>=0.75*n)?20*60000:90*60000;
 }
-function adbToCard(f,dir,aheadMs){
+// f: the row; dir: 'dep' or 'arr'; aheadMs: the margin of claimAheadMs;
+// ap: the airport the list was asked for; list: that list, as it came (the
+// last two are for fidsRowOffBoard, below).
+function adbToCard(f,dir,aheadMs,ap,list){
   // v23230 — the boards drop codeshare duplicates and keep the operating
   // flight (fids-core's rule, verbatim); the router feed includes them now,
   // so the app applies the same filter or every AA flight shows three times.
@@ -1919,6 +1922,17 @@ function adbToCard(f,dir,aheadMs){
     const _p3=(num.match(/^([A-Z]{3})[0-9]/)||[])[1];
     opCode=(_p2&&(AIRLINE[_p2]||BRAND[_p2]||REGIONAL_FAM[_p2]||wmUrls(_p2)))?_p2:(_p3||((_p2&&/[A-Z]/.test(_p2))?_p2:opCode));
   }
+  // A code at the top that AIRLINE cannot name (itself, or the airline it
+  // folds into), on a flight number whose carrier it can (PTR is Porter):
+  // the card is the carrier's of the number, as the boards brand a row by
+  // its flight number first (fids-core.js mapADB). The card printed the
+  // unknown code bare, and the two screens disagreed on whether anybody
+  // names the row (fidsRowOffBoard below): the board kept the row, as
+  // American or GlobalX, and the app dropped it when it had no gate. With
+  // this, AIRLINE[code] below is the answer the board gives from its own
+  // table. No row of an airport's own feed carries a code at the top; the
+  // webhook rows of Moncton do.
+  else if(_fp&&_fp!==opCode&&(AIRLINE[_fp]||AIRLINE[REGIONAL_FAM[_fp]])&&!(AIRLINE[opCode]||AIRLINE[REGIONAL_FAM[opCode]]))opCode=_fp;
   // v23232 — single-mainline feeders brand as their mainline (board rule);
   // the operating carrier's name moves to the "Operated by" line instead.
   const code=REGIONAL_FAM[opCode]||opCode;
@@ -1972,6 +1986,26 @@ function adbToCard(f,dir,aheadMs){
   // the carriers it names print exactly as they did.
   let _alName=String(_top.name||'').trim();
   if(!_alName&&!AIRLINE[code]&&_ownLeg)_alName=String(_hl.name||'').trim();
+  // A ROW NO PASSENGER LOOKS FOR, BY WHAT THE ROW ITSELF SAYS. The codes and
+  // name words above take an operator off whole; they cannot take off one
+  // flight of an airline that also carries passengers. On 2026-11-18 the app
+  // listed BBQ 2211A, an arrival from Miami at Miami, and G6 6175, which
+  // Miami files under terminal NO with no gate, as the boards did. The rule
+  // is the boards' own function, not a copy: fidsRowOffBoard of
+  // js/feed-router.js, which this page loads and where the rule is written
+  // (the other airport is this one; the other end has no code and no name;
+  // no public terminal and no gate; a tail number; a callsign on a row with
+  // no place; an airline nobody names on a row with no place). Named, as the
+  // boards judge it: the app's table names the airline of the card (the code
+  // at the top, or the carrier of the number when the table cannot name that
+  // code: above), or the feed does in words that are not the code again.
+  // The airport is the one the list was asked for (ap, from fetchDir; CURAP
+  // may be another airport by the time the list is back), and the list goes
+  // with the row: a row with one letter after its number leaves only as a
+  // second listing of a flight on that list.
+  const _rowOff=_W.fidsRowOffBoard;
+  if(typeof _rowOff==='function'&&_rowOff(f,dir,ap||(typeof CURAP!=='undefined'?CURAP:''),
+    !!AIRLINE[code]||(!!_alName&&[code,opCode,_fp,_feedCode].indexOf(_alName.toUpperCase())<0),list))return null;
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
@@ -2066,7 +2100,7 @@ async function fetchDir(dir,ap){
   }
   // Map → drop stale departed/arrived → dedupe → sort.
   const _aheadMs=claimAheadMs(raw,dir);   // v24107
-  let all=raw.map(x=>adbToCard(x,dir,_aheadMs)).filter(f=>f&&f.flight&&f.schedTime);
+  let all=raw.map(x=>adbToCard(x,dir,_aheadMs,ap,raw)).filter(f=>f&&f.flight&&f.schedTime);
   // a feed that wrote no local date: the date of its UTC time at the airport
   for(const f of all){ if(!f.schedDate&&f._ts&&TZ[ap]) f.schedDate=adbFmt(new Date(f._ts),TZ[ap]).slice(0,10); }
   // v24044 — a far end the feed named without its code: the code from the

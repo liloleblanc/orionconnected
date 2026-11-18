@@ -8948,6 +8948,13 @@ function miaParseFeed(xmlText, dir, nowMs) {
     const homeSide = isDep ? fl.departure : fl.arrival;
     const term = g("terminal").toUpperCase();
     if (term && term !== "NO") homeSide.terminal = term;
+    // NO is Miami's word for a flight in no public terminal. It is never a
+    // terminal to print, and it is evidence: the boards and the phone app
+    // keep such a row off when it has no gate either (fidsRowOffBoard in
+    // fids-current/js/feed-router.js, which reads this mark). G6 6175 of
+    // 2026-11-18 (in from Maracay, out to Alexandria, Louisiana) stood on
+    // this list with a blank terminal and nothing to tell it by.
+    if (term === "NO") fl._noPublicTerminal = true;
     const bags = g("bags");
     if (!isDep && bags) fl.arrival.baggageBelt = bags;
     const ctr = g("CTR");
