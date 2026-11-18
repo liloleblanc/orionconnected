@@ -1022,7 +1022,7 @@ window.FIDS_SHARED_OFF_BOARD = [
   'RSP','SWQ','TWY','XLS','GLF','PJS','EDG','LPC','FLX','JET','MMG','VNY','1I','PNO',
   'EV','NXC','TJ','GPD','JRE','H3','YHS','YB','M6','AJT','KJ','AIH','WFS','A1',
   'KF','CF','CGA','M3','ABD','N8','HKC','C8','CDG','CV','CLU','P3','CSU',
-  'SRR','GB','K4','CKS','KZ','NCA','KD','WGN','KII','FRG','XFL',
+  'SRR','GB','K4','CKS','KZ','NCA','KD','WGN','Y8','YZR','KII','FRG','XFL',
   '8V','WRF','GSP','PP','PRO','NCB','WSG','TS3','KEW','SCO','CRQ','CDN',
   'IJM','PRT','EXV','EVH','CGE','CFC','RCM','POL','CCG','PEG','NRC','CMC','BBA','BBD',
   'AIB','AIK'

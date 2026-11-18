@@ -1,5 +1,5 @@
 {
- "about": "Rows found on the live lists of 2026-11-18, kept to hold the rule of fidsRowOffBoard (fids-current/js/feed-router.js). mia: records as Miami sends them through /miafids (the fields of worker-entry.js MIA_FIELDS), captured 14:34Z. served: rows of other airports as our worker served them between 14:32Z and 14:36Z (Toronto and Newark: as the adapters of the board made them from the records of the airport), trimmed to what the mappers read. off: why the row leaves (home, no-terminal, callsign, unnamed, or list for the code list and name words), null when it stays. undecided: a row that stays because nothing in it says what it is.",
+ "about": "Rows found on the live lists of 2026-11-18, kept to hold the rule of fidsRowOffBoard (fids-current/js/feed-router.js). mia: records as Miami sends them through /miafids (the fields of worker-entry.js MIA_FIELDS), captured 14:34Z. served: rows of other airports as our worker served them between 14:32Z and 14:36Z (Toronto and Newark: as the adapters of the board made them from the records of the airport), trimmed to what the mappers read. off: why the row leaves (home, nowhere, no-terminal, callsign, unnamed, or list for the code list and name words), null when it stays. undecided: a row that stays because nothing in it says what it is. A row with one letter after its number leaves only as a second listing of a flight on the same list: the rows of one airport and direction are read together, as the list they came in.",
  "mia": {
   "dep": [
    {
@@ -621,7 +621,7 @@
    "ap": "ORD",
    "dir": "arr",
    "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "note": "a letter after the number and no terminal, gate or belt, and the flight itself beside it on the list: OS45 from Vienna, terminal 5, 43 minutes later",
    "row": {
     "number": "OS1R",
     "callSign": null,
@@ -666,7 +666,7 @@
    "ap": "ORD",
    "dir": "arr",
    "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "note": "a letter after the number and no terminal, gate or belt, and the flight itself beside it on the list: TK185 from Istanbul, terminal 5, 37 minutes later",
    "row": {
     "number": "TK67C",
     "callSign": null,
@@ -711,7 +711,7 @@
    "ap": "ORD",
    "dir": "arr",
    "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "note": "a letter after the number and no terminal, gate or belt, and the flight itself beside it on the list: EY9 from Abu Dhabi, terminal 5, 59 minutes later",
    "row": {
     "number": "EY93C",
     "callSign": null,
@@ -756,7 +756,7 @@
    "ap": "ORD",
    "dir": "arr",
    "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "note": "a letter after the number and no terminal, gate or belt, and the flight itself beside it on the list: QR725 from Doha, terminal 5, 84 minutes later",
    "row": {
     "number": "QR20V",
     "callSign": null,
@@ -800,8 +800,8 @@
   {
    "ap": "ORD",
    "dir": "arr",
-   "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "off": null,
+   "note": "stays",
    "row": {
     "number": "QR31T",
     "callSign": null,
@@ -840,13 +840,14 @@
       "name": "Qatar Airways"
      }
     }
-   }
+   },
+   "undecided": "Qatar Airways from Milan with a letter after its number and no place. Qatar flies no passengers from Milan to Chicago, and the only row beside it is QR8154, itself without a place: a freighter by every sign, but only its route says so"
   },
   {
    "ap": "ORD",
    "dir": "arr",
    "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "note": "a letter after the number and no terminal, gate or belt, and the flight itself beside it on the list: AA764 from Houston, terminal 3, gate L2A, 39 minutes later",
    "row": {
     "number": "AA764P",
     "callSign": null,
@@ -890,8 +891,8 @@
   {
    "ap": "ORD",
    "dir": "arr",
-   "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "off": null,
+   "note": "stays",
    "row": {
     "number": "OO285R",
     "callSign": null,
@@ -930,13 +931,14 @@
       "name": "SkyWest Airlines"
      }
     }
-   }
+   },
+   "undecided": "SkyWest from Cleveland with a letter after its number and no place; no SkyWest flight from Cleveland is on the list, so nothing says whether it is a ferry or a flight filed again"
   },
   {
    "ap": "ORD",
    "dir": "dep",
-   "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "off": null,
+   "note": "American to Santa Ana at 07:10 with no place. Its digits are the end of AA1179, the evening flight on the same route: as far as the list shows, the flight of the day before flown the next morning, and its only row. It stays, though AA2285 to Santa Ana leaves 55 minutes later",
    "row": {
     "number": "AA179Q",
     "callSign": null,
@@ -980,8 +982,8 @@
   {
    "ap": "ORD",
    "dir": "dep",
-   "off": "callsign",
-   "note": "a letter after the number, and no terminal, gate or belt, where Chicago places every public flight",
+   "off": null,
+   "note": "stays",
    "row": {
     "number": "OO225X",
     "callSign": null,
@@ -1020,7 +1022,8 @@
       "name": "SkyWest Airlines"
      }
     }
-   }
+   },
+   "undecided": "SkyWest to Evansville with a letter after its number and no place; no SkyWest flight to Evansville is on the list, so nothing says whether it is a ferry or a flight filed again"
   },
   {
    "ap": "ORD",
@@ -1479,8 +1482,8 @@
   {
    "ap": "CLT",
    "dir": "dep",
-   "off": "callsign",
-   "note": "a ferry: a letter after the number and no gate, where Charlotte gives every flight a gate",
+   "off": null,
+   "note": "American to Dulles at 05:00 with no gate. Its digits are the end of AA1473, the evening flight on the same route: as far as the list shows, the flight of the day before flown the next morning. It stays",
    "row": {
     "number": "AA473Q",
     "callSign": null,
@@ -2284,6 +2287,606 @@
       "iata": "MC",
       "icao": null,
       "name": "Air Mobility Command"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "note": "Austrian from Vienna, terminal 5: the flight OS1R is the second listing of",
+   "row": {
+    "number": "OS45",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "VIE",
+      "icao": null,
+      "name": "Vienna"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:00:00-06:00",
+      "utc": "2026-11-18 20:00:00+00:00"
+     },
+     "airline": {
+      "iata": "OS",
+      "icao": null,
+      "name": "Austrian"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "5",
+     "scheduledTime": {
+      "local": "2026-11-18 14:00:00-06:00",
+      "utc": "2026-11-18 20:00:00+00:00"
+     },
+     "airline": {
+      "iata": "OS",
+      "icao": null,
+      "name": "Austrian"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "note": "Turkish Airlines from Istanbul, terminal 5: the flight TK67C is the second listing of",
+   "row": {
+    "number": "TK185",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "IST",
+      "icao": null,
+      "name": "Istanbul"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 10:00:00-06:00",
+      "utc": "2026-11-18 16:00:00+00:00"
+     },
+     "airline": {
+      "iata": "TK",
+      "icao": null,
+      "name": "Turkish Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "5",
+     "scheduledTime": {
+      "local": "2026-11-18 10:00:00-06:00",
+      "utc": "2026-11-18 16:00:00+00:00"
+     },
+     "airline": {
+      "iata": "TK",
+      "icao": null,
+      "name": "Turkish Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "note": "Etihad from Abu Dhabi, terminal 5: the flight EY93C is the second listing of",
+   "row": {
+    "number": "EY9",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "AUH",
+      "icao": null,
+      "name": "Abu Dhabi"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 07:35:00-06:00",
+      "utc": "2026-11-18 13:35:00+00:00"
+     },
+     "airline": {
+      "iata": "EY",
+      "icao": null,
+      "name": "Etihad Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "5",
+     "scheduledTime": {
+      "local": "2026-11-18 07:35:00-06:00",
+      "utc": "2026-11-18 13:35:00+00:00"
+     },
+     "airline": {
+      "iata": "EY",
+      "icao": null,
+      "name": "Etihad Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "note": "Qatar Airways from Doha, terminal 5: the flight QR20V is the second listing of",
+   "row": {
+    "number": "QR725",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "DOH",
+      "icao": null,
+      "name": "Doha"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:30:00-06:00",
+      "utc": "2026-11-18 20:30:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "5",
+     "scheduledTime": {
+      "local": "2026-11-18 14:30:00-06:00",
+      "utc": "2026-11-18 20:30:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "note": "American from Houston, terminal 3, gate L2A: the flight AA764P is the second listing of",
+   "row": {
+    "number": "AA764",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "IAH",
+      "icao": null,
+      "name": "Houston"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 12:00:00-06:00",
+      "utc": "2026-11-18 18:00:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "3",
+     "gate": "L2A",
+     "scheduledTime": {
+      "local": "2026-11-18 12:00:00-06:00",
+      "utc": "2026-11-18 18:00:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": null,
+   "note": "American to Santa Ana at 18:50, gate H17: the flight AA179Q is filed again from",
+   "row": {
+    "number": "AA1179",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "3",
+     "gate": "H17",
+     "scheduledTime": {
+      "local": "2026-11-18 18:50:00-06:00",
+      "utc": "2026-11-19 00:50:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "SNA",
+      "icao": null,
+      "name": "Santa Ana"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 18:50:00-06:00",
+      "utc": "2026-11-19 00:50:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "dep",
+   "off": null,
+   "note": "American to Santa Ana at 08:05, gate L2A: another flight, 55 minutes after AA179Q, and not a reason for AA179Q to leave",
+   "row": {
+    "number": "AA2285",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "terminal": "3",
+     "gate": "L2A",
+     "scheduledTime": {
+      "local": "2026-11-18 08:05:00-06:00",
+      "utc": "2026-11-18 14:05:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "SNA",
+      "icao": null,
+      "name": "Santa Ana"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 08:05:00-06:00",
+      "utc": "2026-11-18 14:05:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": "American Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "CLT",
+   "dir": "dep",
+   "off": null,
+   "note": "American to Dulles at 21:35, gate C17: the flight AA473Q is filed again from",
+   "row": {
+    "number": "AA1473",
+    "callSign": null,
+    "status": "scheduled",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "CLT",
+      "icao": "KCLT",
+      "name": "Charlotte"
+     },
+     "gate": "C17",
+     "scheduledTime": {
+      "local": "2026-11-18 21:35:00-05:00",
+      "utc": "2026-11-19 02:35:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "IAD",
+      "icao": null,
+      "name": null
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 21:35:00-05:00",
+      "utc": "2026-11-19 02:35:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": null
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": null,
+   "undecided": "a Qatar Airways freighter from Milan: only its number range and its route say so. Without a place it is not a flight QR31T can be the second listing of",
+   "note": "stays",
+   "row": {
+    "number": "QR8154",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "MXP",
+      "icao": null,
+      "name": "Milan"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 18:35:00-06:00",
+      "utc": "2026-11-19 00:35:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 18:35:00-06:00",
+      "utc": "2026-11-19 00:35:00+00:00"
+     },
+     "airline": {
+      "iata": "QR",
+      "icao": null,
+      "name": "Qatar Airways"
+     }
+    }
+   }
+  },
+  {
+   "ap": "ORD",
+   "dir": "arr",
+   "off": "list",
+   "note": "Suparna Airlines from Anchorage: freighters only outside China",
+   "row": {
+    "number": "Y87469",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "ANC",
+      "icao": null,
+      "name": "Anchorage"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:56:00-06:00",
+      "utc": "2026-11-18 20:56:00+00:00"
+     },
+     "airline": {
+      "iata": "Y8",
+      "icao": null,
+      "name": "Suparna Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": "ORD",
+      "icao": "KORD",
+      "name": "Chicago"
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 14:56:00-06:00",
+      "utc": "2026-11-18 20:56:00+00:00"
+     },
+     "airline": {
+      "iata": "Y8",
+      "icao": null,
+      "name": "Suparna Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "DEN",
+   "dir": "dep",
+   "off": "nowhere",
+   "note": "Contour at Denver: no destination in the feed, and no gate",
+   "row": {
+    "number": "LF 6354",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "DEN",
+      "icao": "KDEN",
+      "name": "Denver"
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 11:30:00-07:00",
+      "utc": "2026-11-17 18:30:00+00:00"
+     },
+     "airline": {
+      "iata": "LF",
+      "icao": null,
+      "name": "Contour"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": " ",
+      "icao": null,
+      "name": null
+     },
+     "scheduledTime": {
+      "local": "2026-11-17 11:30:00-07:00",
+      "utc": "2026-11-17 18:30:00+00:00"
+     },
+     "airline": {
+      "iata": "LF",
+      "icao": null,
+      "name": "Contour"
+     }
+    }
+   }
+  },
+  {
+   "ap": "DEN",
+   "dir": "dep",
+   "off": "nowhere",
+   "note": "United at Denver, gate B41: the feed gives no destination, so no screen can print the row (the boards never did; the phone listed it with an empty city)",
+   "row": {
+    "number": "UA 1395",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "DEN",
+      "icao": "KDEN",
+      "name": "Denver"
+     },
+     "gate": "B41",
+     "scheduledTime": {
+      "local": "2026-11-18 09:45:00-07:00",
+      "utc": "2026-11-18 16:45:00+00:00"
+     },
+     "airline": {
+      "iata": "UA",
+      "icao": null,
+      "name": "United Airlines"
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": " ",
+      "icao": null,
+      "name": null
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 09:45:00-07:00",
+      "utc": "2026-11-18 16:45:00+00:00"
+     },
+     "airline": {
+      "iata": "UA",
+      "icao": null,
+      "name": "United Airlines"
+     }
+    }
+   }
+  },
+  {
+   "ap": "PHL",
+   "dir": "dep",
+   "off": "nowhere",
+   "note": "American at Philadelphia, gate C24: the feed gives no destination",
+   "row": {
+    "number": "AA 2338",
+    "callSign": null,
+    "status": "ontime",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "departure": {
+     "airport": {
+      "iata": "PHL",
+      "icao": "KPHL",
+      "name": "Philadelphia"
+     },
+     "terminal": "C",
+     "gate": "C24",
+     "scheduledTime": {
+      "local": "2026-11-18 19:05:00-05:00",
+      "utc": "2026-11-19 00:05:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": null
+     }
+    },
+    "arrival": {
+     "airport": {
+      "iata": null,
+      "icao": null,
+      "name": null
+     },
+     "scheduledTime": {
+      "local": "2026-11-18 19:05:00-05:00",
+      "utc": "2026-11-19 00:05:00+00:00"
+     },
+     "airline": {
+      "iata": "AA",
+      "icao": null,
+      "name": null
      }
     }
    }

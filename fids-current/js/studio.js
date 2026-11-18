@@ -110,12 +110,24 @@
     window.AP = window.AP || {};
     window.AP[airportContext.iata] = window.AP[airportContext.iata] || { tz: airportContext.timezone || 'UTC' };
     window._yqmCacheAircraftMerge = window._yqmCacheAircraftMerge || async function () {};
+    // The code list and the name words of the boards (shared-names.js), for
+    // the live list, as the player loads them (studio-player.js): the list
+    // keeps off what the boards keep off (studio-data.js rowOffEveryScreen).
+    const namesReady = new Promise(function (done) {
+      if (window.FIDS_SHARED_OFF_BOARD) { done(); return; }
+      const names = document.createElement('script');
+      names.src = '../js/shared-names.js?v=24165';
+      names.async = true;
+      names.addEventListener('load', function () { done(); });
+      names.addEventListener('error', function () { done(); });
+      document.head.appendChild(names);
+    });
     pilotRouterPromise = new Promise(function (resolve, reject) {
       const script = document.createElement('script');
       script.src = '../js/feed-router.js?v=24165';
       script.async = true;
       script.addEventListener('load', function () {
-        if (typeof window.adbFetch === 'function') resolve(window.adbFetch);
+        if (typeof window.adbFetch === 'function') namesReady.then(function () { resolve(window.adbFetch); });
         else reject(new Error('The shared airport flight router did not start.'));
       });
       script.addEventListener('error', function () { reject(new Error('The shared airport flight router could not be loaded.')); });

@@ -87,7 +87,8 @@ const OFF_THE_BOARD = {
   'KD': 'Western Global Airlines, cargo (Chicago to Seoul)',
   'KII': 'Kalitta Charters II, cargo (Cincinnati to Philadelphia)',
   'FRG': 'Freight Runners Express, cargo (Philadelphia to Richmond)',
-  'XFL': 'Executive Fliteways, private charter (Chicago Midway to Philadelphia)'
+  'XFL': 'Executive Fliteways, private charter (Chicago Midway to Philadelphia)',
+  'Y8': 'Suparna Airlines, freighters only outside China (Anchorage to Chicago)'
 };
 // Recorded rows the board keeps off by a word in the name the airport gives
 // the operator (_NON_PASSENGER_PATTERNS), by the carrier of the number: no
@@ -163,6 +164,16 @@ function mapOne(row, dir) {
   const out = the('mapADB')({ [dir === 'dep' ? 'departures' : 'arrivals']: [g] }, dir);
   assert.ok(Array.isArray(out) && out.length <= 1, 'one row in, at most one row out');
   return out[0] || null;
+}
+// ONE KIND OF ROW IS JUDGED WITH THE LIST AROUND IT: a row with one letter
+// after its number leaves only as a second listing of a flight on the same
+// list (fidsSecondListing, feed-router.js). mapOne hands the mapper one row
+// at a time, so the rule is asked here as well, with the list the row was
+// recorded in and the times it was recorded with, exactly as mapADB asks it
+// for a whole list: a row the rule takes off there is off the board.
+function mapInList(row, dir, list) {
+  const f = mapOne(row, dir);
+  return (f && the('fidsRowOffBoard')(row, dir, '', true, list)) ? null : f;
 }
 // The carrier of a flight number, as mapADB reads it.
 const carrierOf = (num) => {
@@ -390,11 +401,14 @@ async function recorded() {
   // the rows of 2026-11-18 kept for the rule of fidsRowOffBoard: Miami as the
   // airport sent it, the other airports as served. Each carries the word the
   // rule answers for it (off), read by OFF_FIXTURE below.
+  // (one list per airport and direction, as they came: a row with one letter
+  // after its number is judged with the list around it)
   { const j = json(OFF_ROWS_FILE);
     for (const d of ['dep', 'arr']) {
-      const rows = j.mia[d].map((x) => Object.assign(mia(x.rec, d === 'dep' ? 'Departure' : 'Arrival'), { __off: x.off || null }))
-        .concat(j.served.filter((x) => x.dir === d).map((x) => Object.assign(JSON.parse(JSON.stringify(x.row)), { __off: x.off || null })));
-      add(OFF_ROWS_FILE, d, rows);
+      add(OFF_ROWS_FILE, d, j.mia[d].map((x) => Object.assign(mia(x.rec, d === 'dep' ? 'Departure' : 'Arrival'), { __off: x.off || null })));
+      for (const ap of [...new Set(j.served.filter((x) => x.dir === d).map((x) => x.ap))]) {
+        add(OFF_ROWS_FILE, d, j.served.filter((x) => x.dir === d && x.ap === ap).map((x) => Object.assign(JSON.parse(JSON.stringify(x.row)), { __off: x.off || null })));
+      }
     } }
 
   return (SETS_ = sets);
@@ -438,7 +452,7 @@ test('every recorded row that stays on the board prints its airline by name, and
   let kept = 0, n = 0;
   for (const s of sets) for (const r of s.rows) {
     n++;
-    const f = mapOne(r, s.dir);
+    const f = mapInList(r, s.dir, s.rows);
     const far = ((s.dir === 'dep' ? r.arrival : r.departure) || {}).airport || {};
     const where = s.file + ' ' + s.dir + ' ' + String(r.number || '').replace(/\s+/g, '') + ' ' + (far.iata || far.name || '?');
     // a row of the 2026-11-18 file says itself whether it leaves, and why
@@ -451,7 +465,7 @@ test('every recorded row that stays on the board prints its airline by name, and
       const low = String(fa.name || '').toLowerCase();
       if ([top, fa.code, c].some((x) => x && FILTER_OUT.has(x))) (gone[c] = gone[c] || []).push(where);
       else if (low && nameWords.some((p) => low.includes(p))) (goneByName[c] = goneByName[c] || []).push(where);
-      else if (rowOff(r, s.dir, '')) goneByRow[where] = rowOff(r, s.dir, '');
+      else if (rowOff(r, s.dir, '', undefined, s.rows)) goneByRow[where] = rowOff(r, s.dir, '', undefined, s.rows);
       else if (rowOff(r, s.dir, '', false) === 'unnamed') (goneUnnamed[c] = goneUnnamed[c] || []).push(where);
       else goneByRow[where] = '(nothing explains it)';
       if (listed !== null) {
@@ -804,7 +818,7 @@ async function boardRows() {
   const out = [];
   for (const s of await recorded()) for (const r of s.rows) {
     const far = ((s.dir === 'dep' ? r.arrival : r.departure) || {}).airport || {};
-    out.push({ r, dir: s.dir, f: mapOne(r, s.dir), where: s.file + ' ' + s.dir + ' ' + String(r.number || '').replace(/\s+/g, '') + ' ' + (far.iata || far.name || '?') });
+    out.push({ r, dir: s.dir, list: s.rows, f: mapInList(r, s.dir, s.rows), where: s.file + ' ' + s.dir + ' ' + String(r.number || '').replace(/\s+/g, '') + ' ' + (far.iata || far.name || '?') });
   }
   return (ROWS_ = out);
 }
@@ -876,8 +890,9 @@ test('the phone app: every recorded row the board drops gives no card, and every
   const put = (o, k, v) => { (o[k] = o[k] || []).push(v); };
   const shown = {}, missing = {}, bare = {}, differs = {}, full = {}, off = {};
   let cards = 0, same = 0;
-  for (const { r, dir, f, where } of rows) {
-    const c = app.adbToCard(r, dir), k = carrierOf(r.number);
+  for (const { r, dir, list, f, where } of rows) {
+    // (the card is asked with the list the row was recorded in, as fetchDir asks it)
+    const c = app.adbToCard(r, dir, undefined, '', list), k = carrierOf(r.number);
     if (!f) { if (c) put(shown, k, where + ' reads ' + app.airlineName(c)); else off[k] = (off[k] || 0) + 1; continue; }
     if (!c) { put(missing, k, where); continue; }
     cards++;
@@ -893,7 +908,7 @@ test('the phone app: every recorded row the board drops gives no card, and every
   // (which rows those are, and why, is the board test above; here, that every one of its ledgers is off the phone too)
   for (const c of Object.keys(OFF_THE_BOARD).concat(Object.keys(OFF_BY_ITS_NAME), Object.keys(OFF_UNNAMED))) assert.ok(off[c] > 0, c + ' is off both screens');
   const byRow = Object.keys(OFF_BY_THE_ROW).map((w) => rows.find((x) => x.where === w));
-  for (const x of byRow) assert.ok(x && !x.f && !app.adbToCard(x.r, x.dir), 'a row that leaves by what it says is off both screens');
+  for (const x of byRow) assert.ok(x && !x.f && !app.adbToCard(x.r, x.dir, undefined, '', x.list), 'a row that leaves by what it says is off both screens');
   assert.deepEqual(some(missing), [], 'rows on the board with no card on the phone');
   assert.deepEqual(some(bare), [], 'cards that print only a code');
   assert.deepEqual(some(differs), [], 'one flight, two airline names');

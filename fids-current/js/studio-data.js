@@ -121,9 +121,57 @@
     };
   }
 
-  function operationalReadOnlyAdapter(routerFetch, airport) {
+  // A ROW THE BOARDS AND THE PHONE APP KEEP OFF IS OFF THE LIVE LIST HERE TOO.
+  // The standing rule: a flight no passenger looks for (cargo, courier,
+  // private, positioning) is on no screen. The live list of the player and
+  // of the editor mapped every row the router returned: on 2026-11-18 it held
+  // G6 6175 and BBQ 2211A at Miami, the callsign rows and twenty rows of
+  // cargo airlines among the arrivals of Chicago. It now asks what the phone
+  // app asks (app.html adbToCard), of the same objects:
+  //   - a codeshare duplicate (the operating flight has its own row);
+  //   - the code list and the name words of the boards, which reach a page
+  //     through js/shared-names.js (FIDS_SHARED_OFF_BOARD and
+  //     FIDS_SHARED_OFF_BOARD_NAMES): the code at the top of the row, the
+  //     carrier of the flight number, or the airline the feed named for it;
+  //   - the row rule, fidsRowOffBoard of js/feed-router.js, the one function
+  //     the boards and the app ask. Whether anybody names the airline of the
+  //     row is read off the boards' table of names in the same file
+  //     (FIDS_SHARED_AIRLINE) and the name the feed gives; a page without
+  //     the table does not say, and the rule then takes no row off for that.
+  // scope is the page (globalThis): a page that loaded neither file lists
+  // its rows as before. tests/rows-off-board.test.js holds the three screens
+  // to the same answer on the rows of that morning.
+  function rowOffEveryScreen(flight, mode, home, list, scope) {
+    const page = scope || {};
+    const f = flight || {};
+    if (String(f.codeshareStatus || '').toLowerCase() === 'iscodeshared') return true;
+    const up = function (value) { return String(value == null ? '' : value).trim().toUpperCase(); };
+    const number = up(f.number).replace(/\s+/g, '');
+    const prefix = (number.match(/^([A-Z]{2,3}|[A-Z][0-9]|[0-9][A-Z])(?=\d)/) || [])[0] || number.replace(/[0-9].*/, '');
+    const top = f.airline || {};
+    const leg = ((mode === 'arr' ? f.arrival : f.departure) || {}).airline || {};
+    const legIata = up(leg.iata), legIcao = up(leg.icao);
+    const ownLeg = !!prefix && (prefix === legIata || prefix === legIcao);
+    let feedCode = up(top.iata), feedName = String(top.name || '').trim();
+    if (!(feedCode && feedName) && ownLeg) { feedCode = feedCode || legIata || legIcao; feedName = feedName || String(leg.name || '').trim(); }
+    const offCodes = Array.isArray(page.FIDS_SHARED_OFF_BOARD) ? page.FIDS_SHARED_OFF_BOARD : [];
+    const offNames = Array.isArray(page.FIDS_SHARED_OFF_BOARD_NAMES) ? page.FIDS_SHARED_OFF_BOARD_NAMES : [];
+    if ([up(top.iata), feedCode, prefix].some(function (code) { return code && offCodes.indexOf(code) >= 0; })) return true;
+    const low = feedName.toLowerCase();
+    if (low && offNames.some(function (word) { return low.indexOf(word) >= 0; })) return true;
+    const names = page.FIDS_SHARED_AIRLINE;
+    let named;
+    if (names && typeof names === 'object') {
+      const codes = [up(top.iata), feedCode, prefix];
+      named = codes.some(function (code) { return code && !!names[code]; }) || (!!feedName && codes.indexOf(feedName.toUpperCase()) < 0);
+    }
+    return typeof page.fidsRowOffBoard === 'function' && !!page.fidsRowOffBoard(f, mode, home, named, list);
+  }
+
+  function operationalReadOnlyAdapter(routerFetch, airport, scope) {
     if (typeof routerFetch !== 'function') throw new Error('The airport flight router is unavailable.');
     const context = airport || {};
+    const page = scope || (typeof globalThis !== 'undefined' ? globalThis : {});
     let lastHealth = { ok: true, source: 'operational-read-only', fallback: false, checkedAt: null };
     return {
       id: 'operational-read-only',
@@ -135,7 +183,9 @@
           const values = requestedDirection === 'arrivals' ? data && data.arrivals : data && data.departures;
           if (!Array.isArray(values)) throw new Error('The airport flight router returned an invalid response.');
           lastHealth = { ok: true, source: 'operational-read-only', fallback: false, count: values.length, checkedAt: new Date().toISOString() };
-          return values.map(function (flight) { return normalizeOperationalFlight(flight, requestedDirection); });
+          const mode = requestedDirection === 'arrivals' ? 'arr' : 'dep';
+          return values.filter(function (flight) { return !rowOffEveryScreen(flight, mode, context.iata || '', values, page); })
+            .map(function (flight) { return normalizeOperationalFlight(flight, requestedDirection); });
         } catch (error) {
           lastHealth = { ok: false, source: 'operational-read-only', fallback: false, reason: error && error.message || 'Airport data unavailable.', checkedAt: new Date().toISOString() }; // i18n-ok: debug
           throw error;
@@ -207,7 +257,7 @@
     if (settings.mode === 'pilot') {
       let primary;
       try {
-        primary = operationalReadOnlyAdapter(settings.routerFetch, settings.airport);
+        primary = operationalReadOnlyAdapter(settings.routerFetch, settings.airport, settings.scope);
       } catch (error) {
         primary = {
           id: 'operational-read-only',
@@ -231,6 +281,7 @@
     readableStatus,
     normalizeFlight,
     normalizeOperationalFlight,
+    rowOffEveryScreen,
     previewAdapter,
     legacyReadOnlyAdapter,
     operationalReadOnlyAdapter,

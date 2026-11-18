@@ -18,9 +18,11 @@
 //
 // The rule is ONE function, fidsRowOffBoard in fids-current/js/feed-router.js,
 // the data layer every board page and the phone app load. What is held here:
-//   1. ONE FUNCTION, ASKED BY BOTH SCREENS: it is defined once, mapADB
-//      (fids-core.js) and adbToCard (app.html) both ask it, and every page
-//      that maps rows loads the file that holds it.
+//   1. ONE FUNCTION, ASKED BY EVERY SCREEN: it is defined once, mapADB
+//      (fids-core.js), adbToCard (app.html) and the live list of the Studio
+//      player (studio-data.js) all ask it, and every page that maps rows
+//      loads the file that holds it. A board whose cache still holds an
+//      older feed-router.js maps its rows as before and does not go empty.
 //   2. THE RULE, KIND BY KIND, on rows written for it, through the real
 //      mapADB and the real adbToCard: each kind leaves both screens, and each
 //      thing that is NOT evidence stays on both.
@@ -29,10 +31,14 @@
 //      airline. A row that comes back fails here.
 //   4. MIAMI THROUGH THE BACKUP LIST: the worker's parser carries the
 //      airport's mark, so the row is off whichever list the board is on.
-//   5. THE OTHER AIRPORTS of the same morning: the rows that leave, the
-//      scheduled flights that look like them and stay (Avelo and Arajet at
-//      Chicago with no terminal, gate or belt), and the rows nothing in the
-//      row can decide, which stay and are listed so the list can only shrink.
+//   5. THE OTHER AIRPORTS of the same morning, each list read as a list:
+//      the rows that leave, the scheduled flights that look like them and
+//      stay (Avelo and Arajet at Chicago with no terminal, gate or belt;
+//      AA179Q and AA473Q, flights filed again under a letter), and the rows
+//      nothing can decide, which stay and are listed so the list can only
+//      shrink.
+//   6. THE THREE SCREENS GIVE THE SAME ANSWER on every row of the file: the
+//      board, the phone app and the live list of the Studio player.
 //
 // Every recorded row of tests/fixtures goes through the same rule in
 // tests/airline-names-every-row.test.js, where a row that leaves must be
@@ -55,6 +61,8 @@ const CORE = read('fids-current/js/fids-core.js');
 const APP = read('fids-current/app.html');
 const ROUTER = read('fids-current/js/feed-router.js');
 const SHARED = read('fids-current/js/shared-names.js');
+const STUDIO = read('fids-current/js/studio-data.js');
+const StudioData = require('../fids-current/js/studio-data.js');
 const WORKER_PATH = path.join(ROOT, 'workers', 'fids-proxy.js');
 const TODAY = JSON.parse(read('tests/fixtures/rows-off-board-2026-11-18.json'));
 
@@ -143,11 +151,12 @@ function appFn(name) {
   }
   throw new Error(name);
 }
-function buildApp(win) {
+// (pageVars: source for a variable of the page the cut functions read, CURAP)
+function buildApp(win, pageVars) {
   const cut = (re) => { const m = APP.match(re); assert.ok(m, 'app.html: ' + re); return m[0]; };
   vm.runInNewContext(SHARED, { window: win });
   // (_CODE_CUT and _CODE_SENT: the page's notes of the place codes a feed cut or sent, which the mapper writes to)
-  const src = 'const FIDS_SHARED_AIRLINE = window.FIDS_SHARED_AIRLINE, FIDS_SHARED_WORDMARK = window.FIDS_SHARED_WORDMARK; const _CODE_CUT = {}, _CODE_SENT = {};'
+  const src = (pageVars || '') + 'const FIDS_SHARED_AIRLINE = window.FIDS_SHARED_AIRLINE, FIDS_SHARED_WORDMARK = window.FIDS_SHARED_WORDMARK; const _CODE_CUT = {}, _CODE_SENT = {};'
     + cut(/\nconst AIRLINE=\{[\s\S]*?\};/) + cut(/\nif\(window\.FIDS_SHARED_AIRLINE\)[^\n]*/)
     + cut(/\nconst WORDMARK=\{[\s\S]*?\};/) + cut(/\nconst BRAND=\{[\s\S]*?\};/)
     + cut(/\nconst REGIONAL_FAM=\{[^\n]*\};/) + cut(/\nconst REGIONAL_OP=\{[^\n]*\};/) + cut(/\nconst AL_CASE=\{[\s\S]*?\};/) + '\n'
@@ -163,17 +172,54 @@ const card = (row, dir) => theApp().adbToCard(timed(row, dir), dir);
 const both = (row, dir) => [!!mapOne(row, dir), !!card(row, dir)];
 const OFF = [false, false], ON = [true, true];
 const why = (row, dir, named) => the('fidsRowOffBoard')(row, dir, '', named);
+
+// ── a row in the list it came in ───────────────────────────────────────────
+// One kind of row is judged with the list around it (a second listing). The
+// whole list goes to the real mappers, moved in time as one piece so the row
+// asked about stands an hour from now and every other row keeps its distance
+// from it.
+const norm = (n) => String(n || '').toUpperCase().replace(/\s+/g, '');
+const AT_MS = Date.parse(AT.replace(' ', 'T'));
+const stamp = (ms) => new Date(ms).toISOString().slice(0, 16).replace('T', ' ') + 'Z';
+const legOf = (r, dir) => (dir === 'dep' ? r.departure : r.arrival) || {};
+const timeOf = (r, dir) => { const st = legOf(r, dir).scheduledTime || {}; return Date.parse(String(st.utc || st.local || '').replace(' ', 'T')); };
+function inList(focus, dir, list) {
+  const by = AT_MS - timeOf(focus, dir);
+  assert.ok(isFinite(by), 'the row has a time');
+  let mine = null;
+  const moved = list.map((r) => {
+    const g = JSON.parse(JSON.stringify(r)), k = dir === 'dep' ? 'departure' : 'arrival';
+    g[k] = g[k] || {};
+    const t = stamp(timeOf(r, dir) + by);
+    g[k].scheduledTime = { local: t, utc: t };
+    delete g[k].revisedTime; delete g[k].runwayTime; delete g[k].predictedTime;
+    if (r === focus) mine = g;
+    return g;
+  });
+  assert.ok(mine, 'the row is on its list');
+  return { row: mine, list: moved };
+}
+// [stays on the board, is a card on the phone], the row read on its list.
+function bothIn(focus, dir, list, ap) {
+  const L = inList(focus, dir, list);
+  const out = the('mapADB')({ [dir === 'dep' ? 'departures' : 'arrivals']: L.list }, dir);
+  const f = Array.from(out).find((x) => x.flight === norm(L.row.number) && x._sortTs === AT_MS) || null;
+  const c = theApp().adbToCard(L.row, dir, undefined, ap, L.list);
+  return { board: f, card: c, both: [!!f, !!c], why: the('fidsRowOffBoard')(L.row, dir, ap, true, L.list) };
+}
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
 
 // A row as an airport's own feed sends it (the adapters of feed-router.js,
 // the worker's authorityFlight): the airline on both legs, none at the top.
 //   ap: the airport of the board; far: the other airport (a code, or an
 //   object); name: the airline's name on the legs (null: the feed names none);
-//   terminal, gate, belt: the place the airport gives the flight.
+//   terminal, gate, belt: the place the airport gives the flight;
+//   min: minutes after the hour the rows of this file stand at.
 function row(o) {
   const dir = o.dir || 'dep', ap = o.ap || 'MIA', num = o.number;
   const al = { iata: own(o, 'code') ? o.code : carrierOf(num), icao: null, name: own(o, 'name') ? o.name : 'Meridian Air Express' };
-  const home = { airport: { iata: ap, icao: 'K' + ap, name: ap }, scheduledTime: { local: AT, utc: AT }, airline: al, quality: ['Live'] };
+  const when = o.min ? stamp(AT_MS + o.min * 60000) : AT;
+  const home = { airport: { iata: ap, icao: 'K' + ap, name: ap }, scheduledTime: { local: when, utc: when }, airline: al, quality: ['Live'] };
   if (o.terminal != null) home.terminal = o.terminal;
   if (o.gate != null) home.gate = o.gate;
   const other = { airport: typeof o.far === 'object' ? o.far : { iata: o.far || 'HAV', icao: null, name: null }, airline: al, quality: ['Live'] };
@@ -189,22 +235,38 @@ const NOBODY = 'XQQ';
 // 1. ONE FUNCTION, ASKED BY BOTH SCREENS
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('the rule is one function of the shared data layer, and both mappers ask it', () => {
+test('the rule is one function of the shared data layer, and every mapper asks it', () => {
   // defined once, in feed-router.js: no copy in the board script or in the app
   assert.equal(ROUTER.split('\nfunction fidsRowOffBoard(').length - 1, 1, 'feed-router.js defines fidsRowOffBoard once');
-  for (const [name, src] of [['fids-core.js', CORE], ['app.html', APP], ['shared-names.js', SHARED]]) {
+  for (const [name, src] of [['fids-core.js', CORE], ['app.html', APP], ['shared-names.js', SHARED], ['studio-data.js', STUDIO]]) {
     assert.ok(!/function\s+fidsRowOffBoard\b/.test(src), name + ' holds no copy of the rule');
+    assert.ok(!/function\s+fidsSecondListing\b/.test(src), name + ' holds no copy of the second-listing rule');
     assert.ok(!/FIDS_PLACED_FEEDS\s*=/.test(src), name + ' holds no copy of its table');
   }
-  // the board: mapADB asks it, for every row, with the airport of the board and whether the row is named
+  // the board: mapADB asks it, for every row, with the airport of the board, whether the row is named, and the list
   const at = CORE.indexOf('\nfunction mapADB(');
   const mapSrc = CORE.slice(at, CORE.indexOf('\n}\n', at));
-  assert.match(mapSrc, /if \(fidsRowOffBoard\(f, mode, _rowHome, _rowNamed\)\) return null;/, 'mapADB drops the row the rule names');
+  assert.match(mapSrc, /if \(typeof fidsRowOffBoard === 'function' \? fidsRowOffBoard\(f, mode, _rowHome, _rowNamed, list\) : f\.isCargo === true\) return null;/, 'mapADB drops the row the rule names');
   assert.match(mapSrc, /const _rowHome=String\(\(document\.getElementById\('apSel'\)\|\|\{\}\)\.value\|\|''\);/);
-  // the phone: adbToCard asks the same function, off the page it was loaded into
+  assert.match(mapSrc, /list=mode==='dep'\?\(raw\.departures\|\|\[\]\):\(raw\.arrivals\|\|\[\]\)/, 'the list handed to the rule is the list as the airport sent it');
+  // the phone: adbToCard asks the same function, off the page it was loaded into, with the airport and the list of the request
   const cardSrc = appFn('adbToCard');
   assert.match(cardSrc, /const _rowOff=_W\.fidsRowOffBoard;/);
-  assert.match(cardSrc, /if\(typeof _rowOff==='function'&&_rowOff\(f,dir,/);
+  assert.match(cardSrc, /if\(typeof _rowOff==='function'&&_rowOff\(f,dir,ap\|\|\(typeof CURAP!=='undefined'\?CURAP:''\),/);
+  assert.match(cardSrc, /,list\)\)return null;/);
+  assert.match(APP, /let all=raw\.map\(x=>adbToCard\(x,dir,_aheadMs,ap,raw\)\)/, 'fetchDir hands adbToCard the airport it asked for and the list it got');
+  // the Studio player: its live list asks it too, and loads the lists of the boards beside the router
+  assert.match(STUDIO, /page\.fidsRowOffBoard\(f, mode, home, named, list\)/);
+  assert.match(STUDIO, /values\.filter\(function \(flight\) \{ return !rowOffEveryScreen\(flight, mode, context\.iata \|\| '', values, page\); \}\)/);
+  for (const file of ['studio-player.js', 'studio.js']) {
+    const src = read('fids-current/js/' + file);
+    assert.match(src, /names\.src = '\.\.\/js\/shared-names\.js\?v=\d+';/, file + ' loads the code list of the boards for its live list');
+    assert.match(src, /namesReady\.then\(function \(\) \{ resolve\(window\.adbFetch\); \}\)/, file + ' hands the router over once the list is in');
+    assert.ok(!/=== 'function'\) resolve\(window\.adbFetch\);/.test(src), file + ' does not hand the router over before the list');
+    // the list is loaded at the build of the router beside it
+    const tags = src.match(/'\.\.\/js\/(?:shared-names|feed-router)\.js\?v=(\d+)'/g).map((t) => t.match(/v=(\d+)/)[1]);
+    assert.ok(tags.length === 2 && tags[0] === tags[1], file + ' loads both files at one build: ' + tags.join(', '));
+  }
   // and every page that maps rows loads the file that holds it, before the script that asks
   for (const page of ['fids.html', 'gids.html', 'bids.html']) {
     const html = read('fids-current/' + page);
@@ -218,6 +280,90 @@ test('the rule is one function of the shared data layer, and both mappers ask it
   // without the function (a page that could not load the router) the app maps rows as it did
   const bare = buildApp({});
   assert.ok(bare.adbToCard(timed(row({ dir: 'arr', ap: 'MIA', far: 'MIA', number: 'BBQ2211A', gate: 'F21', terminal: 'F' }), 'arr'), 'arr'));
+});
+
+test('a board whose cache holds an older feed-router.js maps its rows as it did, and does not go empty', () => {
+  // fids-core.js and feed-router.js are two files: a screen can hold the new
+  // board script with the router of the build before, which has no such
+  // function. The call threw on every row and the board listed nothing.
+  const ctx = B(), fn = the('fidsRowOffBoard');
+  const plain = row({ dir: 'arr', ap: 'MIA', far: 'LHR', number: 'AA57', name: 'American Airlines', terminal: 'D', gate: 'D23' });
+  try {
+    vm.runInContext('fidsRowOffBoard = undefined;', ctx);
+    assert.equal(the('fidsRowOffBoard'), undefined, 'the page has no such function');
+    const f = mapOne(plain, 'arr');
+    assert.ok(f && f.flight === 'AA57', 'an ordinary row is mapped');
+    // the cargo mark, which the board read itself before the rule, is still read
+    assert.equal(mapOne(Object.assign({}, plain, { isCargo: true }), 'arr'), null);
+    // and the rows of the new rule stay, as they did before it
+    assert.ok(mapOne(row({ dir: 'arr', ap: 'MIA', far: 'MIA', number: 'BBQ2211A', name: 'Eastern Air Express', gate: 'F21' }), 'arr'));
+  } finally {
+    ctx.fidsRowOffBoard = fn;
+  }
+  assert.equal(typeof the('fidsRowOffBoard'), 'function');
+  assert.equal(mapOne(row({ dir: 'arr', ap: 'MIA', far: 'MIA', number: 'BBQ2211A', name: 'Eastern Air Express', gate: 'F21' }), 'arr'), null, 'the rule is back');
+});
+
+test('the phone judges a row against the airport its list was asked for', () => {
+  // a row that does not carry its own airport (the webhook rows of Moncton)
+  const noHome = (far) => { const r = row({ dir: 'arr', ap: 'YQM', far, number: 'AC7690', name: 'Air Canada', gate: '23' }); delete r.arrival.airport; return r; };
+  const app = theApp();
+  assert.equal(app.adbToCard(noHome('YOW'), 'arr', undefined, 'YOW'), null, 'from Ottawa, on the list asked for Ottawa: off');
+  assert.ok(app.adbToCard(noHome('YOW'), 'arr', undefined, 'YUL'), 'from Ottawa, on the list asked for Montreal: a card');
+  assert.ok(app.adbToCard(noHome('YOW'), 'arr'), 'no airport known: the row stays');
+  // a caller that names no airport: the airport the page is on
+  const onOttawa = buildApp({ fidsRowOffBoard: the('fidsRowOffBoard') }, "let CURAP='YOW';");
+  assert.equal(onOttawa.adbToCard(noHome('YOW'), 'arr'), null, 'the page is on Ottawa');
+  assert.ok(onOttawa.adbToCard(noHome('YUL'), 'arr'));
+  // and the airport of the request outranks it: the page may be on another airport by the time the list is back
+  assert.ok(onOttawa.adbToCard(noHome('YOW'), 'arr', undefined, 'YUL'), 'the list was asked for Montreal');
+  assert.equal(onOttawa.adbToCard(noHome('YUL'), 'arr', undefined, 'YUL'), null);
+  // the airport also decides where one letter is read: Charlotte and Chicago, not Montreal
+  const pair = (ap) => {
+    const a = row({ dir: 'arr', ap, far: 'IST', number: 'TK67C', name: 'Turkish Airlines' }), b = row({ dir: 'arr', ap, far: 'IST', number: 'TK185', name: 'Turkish Airlines', terminal: '5', min: 37 });
+    delete a.arrival.airport; delete b.arrival.airport;
+    return [a, [a, b]];
+  };
+  const [tk, list] = pair('ORD');
+  assert.equal(app.adbToCard(tk, 'arr', undefined, 'ORD', list), null);
+  assert.ok(app.adbToCard(tk, 'arr', undefined, 'YUL', list));
+  assert.ok(onOttawa.adbToCard(tk, 'arr', undefined, '', list), 'Ottawa is not a feed that places every flight');
+  // the board: the airport of the board, for the same row
+  assert.equal(the('fidsRowOffBoard')(tk, 'arr', 'ORD', true, list), 'callsign');
+  assert.equal(the('fidsRowOffBoard')(tk, 'arr', 'YUL', true, list), '');
+});
+
+test('the two screens judge whether anybody names a row from the same codes', () => {
+  assert.ok(!own(the('AIRLINE_NAME'), 'ZQ') && !own(the('AIRLINE_NAME'), NOBODY));
+  for (const dir of ['arr', 'dep']) {
+    // a code at the top that no table knows, on a number whose carrier the tables name: the board brands by the
+    // number and keeps the row; the phone dropped it when it had no gate, and printed the bare code when it had one
+    // (PTR is Porter filed under its three letters: both screens fold it into PD)
+    for (const [num, name, code] of [['AA123', 'American', 'AA'], ['G6201', 'GlobalX Airlines', 'G6'], ['PTR123', 'Porter', 'PD']]) {
+      for (const gate of [null, 'A1']) {
+        const r = row({ dir, ap: 'PHL', far: 'LAS', number: num, name: null, gate, more: { airline: { iata: 'ZQ' } } });
+        const f = mapOne(r, dir), c = card(r, dir);
+        assert.ok(f && c, num + ' under ZQ, gate ' + gate + ', ' + dir + ': on both screens');
+        assert.equal(printed(f).shown, name);
+        assert.equal(fold(theApp().airlineName(c)).indexOf(fold(name)), 0, 'the phone prints ' + name + ', not ZQ: ' + theApp().airlineName(c));
+        assert.equal(c.airline, code);
+        assert.equal(f.airline, code, 'the card and the row are of the same airline');
+      }
+    }
+    // nobody names either code and the feed names nobody: off both with no place, on both at a gate
+    const none = (gate) => row({ dir, ap: 'PHL', far: 'LAS', number: NOBODY + '450', code: NOBODY, name: null, gate, more: { airline: { iata: 'ZQ' } } });
+    assert.deepEqual(both(none(null), dir), OFF, dir);
+    assert.deepEqual(both(none('A14'), dir), ON, dir);
+    // a code at the top that the app knows keeps the card it had: Jazz under an Air Canada number
+    const jazz = card(row({ dir, ap: 'YQM', far: 'YUL', number: 'AC8901', name: 'Air Canada', gate: '4', more: { airline: { iata: 'QK', name: 'Jazz' } } }), dir);
+    assert.equal(jazz.airline, 'AC');
+    // (so does any code at the top the app can name, whatever the number: the card of such a row is not touched here)
+    const top = card(row({ dir, ap: 'YQM', far: 'YYC', number: 'DL7123', name: 'Delta Air Lines', gate: '4', more: { airline: { iata: 'WS', name: 'WestJet' } } }), dir);
+    assert.equal(top.airline, 'WS');
+    // and a code at the top that only the feed names, on a number no table names, keeps its own name
+    const fed = card(row({ dir, ap: 'PHL', far: 'LAS', number: NOBODY + '450', code: NOBODY, name: null, gate: 'A14', more: { airline: { iata: 'ZQ', name: 'Zenith Air' } } }), dir);
+    assert.equal(theApp().airlineName(fed), 'Zenith Air');
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -251,6 +397,28 @@ test('the other airport is this airport: off both screens, whatever else the row
   assert.equal(off(noHome, 'arr', undefined), '');
   // a far end with no code at all is not this airport
   assert.equal(why(row({ dir: 'arr', ap: 'PHL', far: { iata: null, icao: null, name: 'Philadelphia' }, number: 'AA2102', gate: 'C21' }), 'arr'), '');
+});
+
+test('the other end has no code and no name: off both screens, as it always was off the board', () => {
+  for (const dir of ['arr', 'dep']) {
+    // Denver sends a space where the code goes; Philadelphia sends nothing
+    for (const far of [{ iata: ' ', icao: null, name: null }, { iata: null, icao: null, name: null }, { iata: '', icao: '', name: '' }, { iata: null, icao: null, name: 'Unknown' }, { iata: null, icao: null, name: ' unknown ' }, {}]) {
+      // with a gate (United 1395 at Denver, American 2338 at Philadelphia) and without (Contour LF 6354)
+      for (const gate of ['B41', null]) {
+        const r = row({ dir, ap: 'DEN', far, number: 'UA1395', name: 'United Airlines', gate });
+        assert.deepEqual(both(r, dir), OFF, dir + ' ' + JSON.stringify(far) + ' gate ' + gate);
+        assert.equal(why(r, dir, true), 'nowhere');
+      }
+    }
+    // a name with no code, a code with no name, an ICAO code alone: the row says where it goes, and stays
+    for (const far of [{ iata: null, icao: null, name: 'Aspen' }, { iata: 'ASE', icao: null, name: null }, { iata: null, icao: 'KASE', name: null }, { iata: null, icao: null, municipalityName: 'Aspen' }]) {
+      const r = row({ dir, ap: 'DEN', far, number: 'UA1395', name: 'United Airlines', gate: 'B41' });
+      assert.deepEqual(both(r, dir), ON, dir + ' ' + JSON.stringify(far));
+      assert.equal(why(r, dir, true), '');
+    }
+  }
+  // the board has its own line for it still (a page whose router is older), and the rule says the same
+  assert.match(CORE, /if \(!locIata && \(!cityName \|\| \/\^unknown\$\/i\.test\(String\(cityName\)\.trim\(\)\)\)\) return null;/);
 });
 
 test('the airport marks the flight as in no public terminal and gives it no gate: off both screens', () => {
@@ -330,15 +498,12 @@ test('a callsign where the flight number goes, on a row with no place: off both 
       assert.deepEqual(both(row({ dir, ap, far: 'MAD', number: n, name, gate: 'M12' }), dir), ON, n + ' with a gate');
       assert.deepEqual(both(row({ dir, ap, far: 'MAD', number: n, name, terminal: '5' }), dir), ON, n + ' with a terminal');
     }
-    // ONE LETTER is a suffix passenger flights carry: read only where the feed places every public flight
+    // ONE LETTER is a suffix passenger flights carry. Alone on its list, with no place, it stays: at any airport
     for (const [ap, n, name] of [['ORD', 'TK67C', 'Turkish Airlines'], ['ORD', 'AA179Q', 'American Airlines'], ['ORD', 'OO285R', 'SkyWest Airlines'], ['CLT', 'AA473Q', null]]) {
       const r = row({ dir, ap, far: 'IAH', number: n, name });
-      assert.deepEqual(both(r, dir), OFF, n + ' at ' + ap + ' ' + dir);
-      assert.equal(why(r, dir), 'callsign');
-      assert.deepEqual(both(row({ dir, ap, far: 'IAH', number: n, name, gate: 'K5' }), dir), ON, n + ' with a gate');
-      assert.deepEqual(both(row({ dir, ap, far: 'IAH', number: n, name, terminal: '3' }), dir), ON, n + ' with a terminal');
-      // the feed's words for nothing are nothing
-      for (const none of ['0', '??', '?', '-', '—', 'None', 'TBA', ' ']) assert.deepEqual(both(row({ dir, ap, far: 'IAH', number: n, name, terminal: none, gate: none }), dir), OFF, n + ' with ' + JSON.stringify(none));
+      assert.deepEqual(both(r, dir), ON, n + ' alone at ' + ap + ' ' + dir);
+      assert.equal(why(r, dir), '', 'a caller with no list takes no one-letter row off');
+      assert.equal(the('fidsRowOffBoard')(r, dir, ap, true, [r]), '');
     }
     // one letter, no place, at an airport whose feed places nobody (St. John's, Sydney, Dublin): stays
     for (const ap of ['YYT', 'SYD', 'DUB', 'MIA', 'YYZ', 'PHL']) {
@@ -351,9 +516,9 @@ test('a callsign where the flight number goes, on a row with no place: off both 
     assert.deepEqual(both(row({ dir, ap: 'ORD', far: 'PUJ', number: 'DM5480', name: 'Arajet' }), dir), ON, 'Arajet at Chicago ' + dir);
   }
   // an arrival with a belt and nothing else has a place
-  assert.deepEqual(both(row({ dir: 'arr', ap: 'ORD', far: 'IST', number: 'TK67C', name: 'Turkish Airlines', belt: '7' }), 'arr'), ON);
+  assert.deepEqual(both(row({ dir: 'arr', ap: 'ORD', far: 'MAD', number: 'IB3GA', name: 'Iberia', belt: '7' }), 'arr'), ON);
   // a departure is not placed by a belt on its far leg
-  const dep = row({ dir: 'dep', ap: 'ORD', far: 'IST', number: 'TK67C', name: 'Turkish Airlines' });
+  const dep = row({ dir: 'dep', ap: 'ORD', far: 'MAD', number: 'IB3GA', name: 'Iberia' });
   dep.arrival.baggageBelt = '7';
   assert.deepEqual(both(dep, 'dep'), OFF);
   // the place words, read once for every rule
@@ -418,10 +583,100 @@ test('what is not evidence: the row stays on both screens', () => {
   }
   // nothing to read is nothing said
   const off = the('fidsRowOffBoard');
-  for (const nothing of [null, undefined, '', 0, {}, { number: 'AA1' }, { departure: null, arrival: null }]) {
+  for (const nothing of [null, undefined, '', 0, 'AA1', 7]) {
     assert.equal(off(nothing, 'dep', 'MIA'), '');
     assert.equal(off(nothing, 'arr', 'MIA'), '');
   }
+  // a row that is an object with no far end says one thing: it goes nowhere a screen can print
+  for (const empty of [{}, { number: 'AA1' }, { departure: null, arrival: null }]) {
+    assert.equal(off(empty, 'dep', 'MIA'), 'nowhere');
+    assert.equal(off(empty, 'arr', 'MIA'), 'nowhere');
+  }
+});
+
+test('one letter after the number leaves only as a second listing of a flight the list holds', () => {
+  const second = the('fidsSecondListing');
+  assert.equal(the('FIDS_SECOND_LISTING_MS'), 90 * 60000, 'the widest gap measured between the two rows of one flight is 84 minutes (QR20V and QR725)');
+  for (const dir of ['arr', 'dep']) {
+    for (const ap of ['ORD', 'CLT']) {
+      const tk = (o) => row(Object.assign({ dir, ap, far: 'IST', number: 'TK67C', name: 'Turkish Airlines' }, o));
+      const flight = (o) => row(Object.assign({ dir, ap, far: 'IST', number: 'TK185', name: 'Turkish Airlines', terminal: '5', min: 37 }, o));
+      const on = (a, list, what) => { const r = bothIn(a, dir, list, ap); assert.deepEqual(r.both, ON, what + ' (' + ap + ' ' + dir + ')'); assert.equal(r.why, '', what); };
+      const off = (a, list, what) => { const r = bothIn(a, dir, list, ap); assert.deepEqual(r.both, OFF, what + ' (' + ap + ' ' + dir + ')'); assert.equal(r.why, 'callsign', what); };
+      // THE FLIGHT ITSELF BESIDE IT: same airline, same airport at the far end, a plain number, a place, near in time
+      let a = tk(), b = flight();
+      off(a, [a, b], 'TK67C beside TK185 at terminal 5');
+      // ... and the flight itself stays, with the place it has
+      assert.deepEqual(bothIn(b, dir, [a, b], ap).both, ON, 'TK185 stays');
+      b = flight({ terminal: null, gate: 'M12' }); off(a, [a, b], 'the flight has a gate');
+      b = flight({ min: -37 }); off(a, [a, b], 'the flight stands before it');
+      b = flight({ min: 90 }); off(a, [a, b], '90 minutes apart');
+      // the same number without the letter is the plainest case (AA764P beside AA764)
+      a = row({ dir, ap, far: 'IAH', number: 'AA764P', name: 'American Airlines' }); b = row({ dir, ap, far: 'IAH', number: 'AA764', name: 'American Airlines', terminal: '3', gate: 'L2A', min: 39 });
+      off(a, [a, b], 'AA764P beside AA764');
+      // NOT THE FLIGHT ITSELF: each of these keeps the row
+      a = tk();
+      on(a, [a], 'nothing beside it');
+      on(a, [a, flight({ min: 91 })], '91 minutes apart');
+      on(a, [a, flight({ min: -91 })], '91 minutes before');
+      on(a, [a, flight({ min: 24 * 60 + 37 })], 'the flight of the next day');
+      on(a, [a, flight({ terminal: null })], 'the flight beside it has no place either (a freighter beside a freighter)');
+      on(a, [a, flight({ terminal: '0', gate: '-' })], 'the place words for nothing are no place');
+      on(a, [a, flight({ far: 'SAW' })], 'another airport at the far end');
+      on(a, [a, flight({ number: 'LH185', name: 'Lufthansa' })], 'another airline');
+      on(a, [a, flight({ number: 'TK185C' })], 'the row beside it carries a letter too');
+      on(a, [a, flight({ more: { status: 'cancelled' } })], 'the flight beside it is cancelled: the row may be the flight that replaces it');
+      on(a, [a, flight({ more: { status: 'Canceled' } })], 'cancelled, as some feeds spell it');
+      on(a, [a, flight({ more: { codeshareStatus: 'IsCodeshared' } })], 'the row beside it only sells the seats of another flight');
+      // a place on the row itself: the airport has placed it, it stays
+      for (const place of [{ gate: 'K5' }, { terminal: '3' }]) { a = tk(place); on(a, [a, flight()], 'TK67C with ' + JSON.stringify(place)); }
+      // the feed words for nothing are no place: the row still leaves
+      for (const none of ['0', '??', '?', '-', '—', 'None', 'TBA', ' ']) { a = tk({ terminal: none, gate: none }); off(a, [a, flight()], 'TK67C with ' + JSON.stringify(none)); }
+      // A FLIGHT FILED AGAIN UNDER A LETTER: three digits that end a four-digit number of the airline on the
+      // route. It stays, whatever stands beside it (Chicago: AA179Q, AA1179 that evening, AA2285 55 minutes on)
+      const q = row({ dir, ap, far: 'SNA', number: 'AA179Q', name: 'American Airlines' });
+      const evening = row({ dir, ap, far: 'SNA', number: 'AA1179', name: 'American Airlines', terminal: '3', gate: 'H17', min: 700 });
+      const next = row({ dir, ap, far: 'SNA', number: 'AA2285', name: 'American Airlines', terminal: '3', gate: 'L2A', min: 55 });
+      on(q, [q, evening, next], 'AA179Q is AA1179 filed again');
+      on(q, [q, next, evening], 'in whatever order the list comes');
+      on(q, [next, row({ dir, ap, far: 'SNA', number: 'AA1179', name: 'American Airlines', min: 24 * 60 + 700 }), q], 'the whole number on another day, with no place yet');
+      // without the whole number on the list nothing says it was filed again, and the flight beside it takes it off
+      off(q, [q, next], 'AA179Q with only AA2285 beside it');
+      // the whole number on another route, or of another airline, says nothing
+      off(q, [q, next, row({ dir, ap, far: 'LAX', number: 'AA1179', name: 'American Airlines', gate: 'H1', min: 700 })], 'AA1179 to another airport');
+      off(q, [q, next, row({ dir, ap, far: 'SNA', number: 'UA1179', name: 'United Airlines', gate: 'B1', min: 700 })], 'UA1179');
+      // only three digits that end four: AA79Q is not AA1179, AA179Q is not AA2179 less its 2 and more
+      const short = row({ dir, ap, far: 'SNA', number: 'AA79Q', name: 'American Airlines' });
+      off(short, [short, next, evening], 'two digits end many numbers');
+      on(q, [q, next, row({ dir, ap, far: 'SNA', number: 'AA2179', name: 'American Airlines', gate: 'H2', min: 300 })], 'AA2179 ends in 179 as well');
+    }
+    // AT ANY OTHER AIRPORT one letter is never read, whatever the list holds
+    for (const ap of ['YYZ', 'MIA', 'DUB', 'SYD', 'LHR']) {
+      const a = row({ dir, ap, far: 'IST', number: 'TK67C', name: 'Turkish Airlines' }), b = row({ dir, ap, far: 'IST', number: 'TK185', name: 'Turkish Airlines', terminal: '5', min: 37 });
+      assert.deepEqual(bothIn(a, dir, [a, b], ap).both, ON, 'TK67C beside TK185 at ' + ap + ' ' + dir);
+    }
+    // two letters need no list, and a list changes nothing for them
+    const ba = row({ dir, ap: 'LHR', far: 'MAD', number: 'BA2PD', name: 'British Airways' });
+    assert.deepEqual(bothIn(ba, dir, [ba], 'LHR').both, OFF);
+  }
+  // the function alone: what it does not take for a list or a row
+  const a = row({ dir: 'arr', ap: 'ORD', far: 'IST', number: 'TK67C', name: 'Turkish Airlines' }), b = row({ dir: 'arr', ap: 'ORD', far: 'IST', number: 'TK185', name: 'Turkish Airlines', terminal: '5', min: 37 });
+  assert.equal(second(a, 'arr', [a, b]), true);
+  for (const noList of [undefined, null, '', {}, 5]) assert.equal(second(a, 'arr', noList), false, 'no list: ' + JSON.stringify(noList));
+  assert.equal(second(a, 'arr', [null, undefined, 'x', {}, a]), false, 'a list of nothing');
+  assert.equal(second(b, 'arr', [a, b]), false, 'a plain number is not a second listing');
+  assert.equal(second(row({ dir: 'arr', ap: 'ORD', far: 'MAD', number: 'IB3GA' }), 'arr', [a, b]), false, 'two letters are not its business');
+  const noTime = JSON.parse(JSON.stringify(a)); delete noTime.arrival.scheduledTime;
+  assert.equal(second(noTime, 'arr', [noTime, b]), false, 'a row with no time');
+  const noFar = JSON.parse(JSON.stringify(a)); noFar.departure.airport = {};
+  assert.equal(second(noFar, 'arr', [noFar, b]), false, 'a row with no far end');
+  // the far end sent as an ICAO code alone on both rows
+  const ai = JSON.parse(JSON.stringify(a)), bi = JSON.parse(JSON.stringify(b));
+  ai.departure.airport = { iata: null, icao: 'LTFM' }; bi.departure.airport = { iata: null, icao: 'LTFM' };
+  assert.equal(second(ai, 'arr', [ai, bi]), true);
+  // a belt places an arrival
+  const belt = row({ dir: 'arr', ap: 'ORD', far: 'IST', number: 'TK185', name: 'Turkish Airlines', belt: '7', min: 37 });
+  assert.equal(second(a, 'arr', [a, belt]), true);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -539,13 +794,18 @@ test('Miami through the backup list: the worker carries the mark, and the same r
 // 5. THE OTHER AIRPORTS OF THE SAME MORNING
 // ═══════════════════════════════════════════════════════════════════════════
 
+// The rows of one airport and one direction, as the list they came in.
+const servedList = (ap, dir) => TODAY.served.filter((s) => s.ap === ap && s.dir === dir).map((s) => s.row);
+// One recorded row through both screens, read on its list.
+const servedBoth = (x) => bothIn(x.row, x.dir, servedList(x.ap, x.dir), x.ap);
+
 test('the rows found at the other airports: each leaves or stays as recorded, on the board and on the phone', () => {
   const FILTER_OUT = the('FILTER_OUT'), feedAirline = the('_adbFeedAirline');
   const words = new Function('return [' + CORE.match(/\n {4}const _NON_PASSENGER_PATTERNS = \[([\s\S]*?)\n {4}\];/)[1] + '\n];')();
-  const seen = { home: 0, callsign: 0, unnamed: 0, list: 0, stays: 0 };
+  const seen = { home: 0, nowhere: 0, callsign: 0, unnamed: 0, list: 0, stays: 0 };
   for (const x of TODAY.served) {
     const tag = x.ap + ' ' + x.dir + ' ' + x.row.number;
-    const f = mapOne(x.row, x.dir), c = card(x.row, x.dir);
+    const r = servedBoth(x), f = r.board, c = r.card;
     if (!x.off) {
       assert.ok(f, tag + ' stays on the board: ' + x.note);
       assert.ok(c, tag + ' stays on the phone: ' + x.note);
@@ -556,23 +816,63 @@ test('the rows found at the other airports: each leaves or stays as recorded, on
     assert.equal(f, null, tag + ' is off the board: ' + x.note);
     assert.equal(c, null, tag + ' is off the phone: ' + x.note);
     seen[x.off]++;
+    const L = inList(x.row, x.dir, servedList(x.ap, x.dir));
+    const rule = (named) => the('fidsRowOffBoard')(L.row, x.dir, x.ap, named, L.list);
     if (x.off === 'list') {
       // by the code list or by a word in the name the airport gives it, not by the row
       const fa = feedAirline(x.row, x.dir), low = String(fa.name || '').toLowerCase();
       assert.ok(FILTER_OUT.has(carrierOf(x.row.number)) || FILTER_OUT.has(fa.code) || (low && words.some((p) => low.includes(p))), tag + ' is on the code list or carries a name word');
     } else if (x.off === 'unnamed') {
-      assert.equal(why(x.row, x.dir, true), '', tag + ' leaves only because nobody names it');
-      assert.equal(why(x.row, x.dir, false), 'unnamed');
+      assert.equal(rule(true), '', tag + ' leaves only because nobody names it');
+      assert.equal(rule(false), 'unnamed');
     } else {
-      assert.equal(why(x.row, x.dir, true), x.off, tag + ' leaves for the reason recorded');
+      assert.equal(rule(true), x.off, tag + ' leaves for the reason recorded');
     }
   }
-  assert.deepEqual(seen, { home: 4, callsign: 12, unnamed: 1, list: 7, stays: 15 }, 'the file holds what it held when it was made');
+  assert.deepEqual(seen, { home: 4, nowhere: 3, callsign: 7, unnamed: 1, list: 8, stays: 29 }, 'the file holds what it held when it was made');
+});
+
+test('one letter after the number, on the lists of that morning: the second listings leave, the flights filed again stay', () => {
+  const at = (ap, dir, num) => { const x = TODAY.served.find((s) => s.ap === ap && s.dir === dir && norm(s.row.number) === num); assert.ok(x, ap + ' ' + num + ' is in the file'); return x; };
+  const gap = (a, b) => Math.round((timeOf(b.row, b.dir) - timeOf(a.row, a.dir)) / 60000);
+  // Chicago arrivals: the callsign row, and the flight itself beside it with its terminal
+  for (const [call, flight, minutes] of [['AA764P', 'AA764', 39], ['TK67C', 'TK185', 37], ['EY93C', 'EY9', 59], ['OS1R', 'OS45', 43], ['QR20V', 'QR725', 84]]) {
+    const a = at('ORD', 'arr', call), b = at('ORD', 'arr', flight);
+    assert.equal(gap(a, b), minutes, call + ' and ' + flight);
+    assert.ok(the('fidsRowUnplaced')(a.row, 'arr') && !the('fidsRowUnplaced')(b.row, 'arr'), flight + ' has the place, ' + call + ' has none');
+    assert.equal(a.off, 'callsign');
+    assert.deepEqual(servedBoth(a).both, OFF, call + ' leaves');
+    const kept = servedBoth(b);
+    assert.deepEqual(kept.both, ON, flight + ' stays');
+    assert.equal(printed(kept.board).bare, false);
+    // alone, the callsign row stays: it is the list that says it is a second listing
+    assert.deepEqual(both(a.row, 'arr'), ON, call + ' alone');
+    // and without the flight beside it, it stays
+    const without = servedList('ORD', 'arr').filter((r) => r !== b.row);
+    assert.deepEqual(bothIn(a.row, 'arr', without, 'ORD').both, ON, call + ' without ' + flight);
+  }
+  // Chicago and Charlotte departures: a flight filed again under a letter is the only row that flight has
+  for (const [ap, call, whole, name] of [['ORD', 'AA179Q', 'AA1179', 'American'], ['CLT', 'AA473Q', 'AA1473', 'American']]) {
+    const a = at(ap, 'dep', call), b = at(ap, 'dep', whole);
+    assert.equal(a.off, null);
+    assert.equal(norm(b.row.number).slice(-3), norm(a.row.number).slice(2, 5), call + ' is the end of ' + whole);
+    assert.equal(legOf(a.row, 'dep').airport.iata, ap);
+    assert.equal(a.row.arrival.airport.iata, b.row.arrival.airport.iata, 'the same route');
+    const r = servedBoth(a);
+    assert.deepEqual(r.both, ON, call + ' stays on both screens');
+    assert.equal(printed(r.board).shown, name);
+    assert.ok(Math.abs(gap(a, b)) > 600, whole + ' is the evening flight, hours away');
+  }
+  // AA2285 to Santa Ana stands 55 minutes after AA179Q, inside the window: the number keeps AA179Q, not the clock
+  const q = at('ORD', 'dep', 'AA179Q'), next = at('ORD', 'dep', 'AA2285'), evening = at('ORD', 'dep', 'AA1179');
+  assert.equal(gap(q, next), 55);
+  assert.ok(!the('fidsRowUnplaced')(next.row, 'dep'));
+  assert.deepEqual(bothIn(q.row, 'dep', servedList('ORD', 'dep').filter((r) => r !== evening.row), 'ORD').both, OFF, 'without AA1179 on the list nothing would say so');
 });
 
 test('the scheduled flights that look like the rows that leave are on both screens, named', () => {
   const at = (ap, dir, num) => { const x = TODAY.served.find((s) => s.ap === ap && s.dir === dir && s.row.number.replace(/\s+/g, '') === num); assert.ok(x, ap + ' ' + num + ' is in the file'); return x; };
-  const shown = (x) => { const f = mapOne(x.row, x.dir); assert.ok(f && card(x.row, x.dir), x.ap + ' ' + x.row.number); return printed(f).shown; };
+  const shown = (x) => { const r = servedBoth(x); assert.ok(r.board && r.card, x.ap + ' ' + x.row.number); return printed(r.board).shown; };
   const placeOf = (x) => (x.dir === 'dep' ? x.row.departure : x.row.arrival);
   // Chicago lists Avelo and Arajet with no terminal, no gate and no belt, as it lists its freighters
   for (const [dir, num, name] of [['arr', 'XP421', 'Avelo'], ['dep', 'XP422', 'Avelo'], ['arr', 'DM5480', 'Arajet']]) {
@@ -602,11 +902,12 @@ test('rows nothing in the row can decide stay, and are listed: the list can only
   // a military charter at a gate: the row does not say, so the row stays.
   // When a rule comes that can tell one, this fails and the entry goes.
   const undecided = TODAY.served.filter((x) => x.undecided);
-  assert.deepEqual(undecided.map((x) => x.ap + ' ' + x.row.number).sort(), ['ORD CA1054', 'ORD EK9988', 'ORD JL6747', 'SEA MC1271']);
+  assert.deepEqual(undecided.map((x) => x.ap + ' ' + x.row.number).sort(),
+    ['ORD CA1054', 'ORD EK9988', 'ORD JL6747', 'ORD OO225X', 'ORD OO285R', 'ORD QR31T', 'ORD QR8154', 'SEA MC1271']);
   for (const x of undecided) {
     assert.ok(String(x.undecided).length > 20, x.row.number + ' says why it cannot be decided');
     assert.ok(!x.off);
-    assert.deepEqual(both(x.row, x.dir), ON, x.ap + ' ' + x.row.number + ' is decided now: take it out of the undecided rows of the file and record why it leaves');
+    assert.deepEqual(servedBoth(x).both, ON, x.ap + ' ' + x.row.number + ' is decided now: take it out of the undecided rows of the file and record why it leaves');
   }
 });
 
@@ -614,13 +915,18 @@ test('the lists the two screens share carry the operators found that morning', (
   const win = {};
   vm.runInNewContext(SHARED, { window: win });
   const codes = JSON.parse(JSON.stringify(win.FIDS_SHARED_OFF_BOARD)), names = JSON.parse(JSON.stringify(win.FIDS_SHARED_OFF_BOARD_NAMES));
-  for (const c of ['K4', 'CKS', 'KZ', 'NCA', 'KD', 'WGN', 'KII', 'FRG', 'XFL']) {
+  for (const c of ['K4', 'CKS', 'KZ', 'NCA', 'KD', 'WGN', 'Y8', 'YZR', 'KII', 'FRG', 'XFL']) {
     assert.ok(the('FILTER_OUT').has(c), c + ' is on the board\'s list');
     assert.ok(codes.includes(c), c + ' is on the phone\'s list');
   }
   for (const w of ['cargo', 'freight', 'morningstar air express']) assert.ok(names.includes(w), w);
   // S6 left the list on both
   assert.ok(!codes.includes('S6'));
+  // Suparna: named by its airport, with no word for cargo in the name, so only the code takes it off
+  for (const dir of ['arr', 'dep']) {
+    assert.deepEqual(both(row({ dir, ap: 'ORD', far: 'ANC', number: 'Y87469', name: 'Suparna Airlines' }), dir), OFF, 'Suparna ' + dir);
+    assert.deepEqual(both(row({ dir, ap: 'ORD', far: 'ANC', number: 'Y87469', name: 'Suparna Airlines', terminal: '5', gate: 'M3' }), dir), OFF, 'Suparna at a gate ' + dir);
+  }
   // the name words take off an operator its airport calls a cargo or freight carrier, and no passenger airline
   for (const dir of ['arr', 'dep']) {
     for (const name of ['NCA - Nippon Cargo Airlines', 'China Cargo', 'Qatar Airways Cargo', 'Suburban Air Freight', 'Morningstar Air Express']) {
@@ -653,4 +959,88 @@ test('a name only the airport gives keeps its initials in capitals on the board,
   // a name written in small letters by the caller is left alone, and no code at all changes nothing
   assert.equal(tcAirline('IBC Air', NOBODY), 'IBC Air');
   assert.equal(tcAirline('IBC AIR', ''), the('tc')('IBC AIR'));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. THE THREE SCREENS GIVE THE SAME ANSWER
+// ═══════════════════════════════════════════════════════════════════════════
+
+// The page of the Studio player in its live mode: the router's rule and the
+// lists and names of the boards, as studio-player.js loads them.
+const studioPage = () => {
+  const win = {};
+  vm.runInNewContext(SHARED, { window: win });
+  return { fidsRowOffBoard: the('fidsRowOffBoard'), FIDS_SHARED_OFF_BOARD: Array.from(win.FIDS_SHARED_OFF_BOARD), FIDS_SHARED_OFF_BOARD_NAMES: Array.from(win.FIDS_SHARED_OFF_BOARD_NAMES), FIDS_SHARED_AIRLINE: win.FIDS_SHARED_AIRLINE };
+};
+// The flight numbers the live list of the player holds for a list of rows.
+async function studioKeeps(ap, dir, list, page) {
+  const key = dir === 'dep' ? 'departures' : 'arrivals';
+  const adapter = StudioData.operationalReadOnlyAdapter(async () => ({ [key]: list }), { iata: ap }, page);
+  return (await adapter.flights(key)).map((f) => norm(f.flight));
+}
+
+test('the live list of the Studio player holds the rows the phone holds, and no other', async () => {
+  const page = studioPage();
+  const lists = [];
+  const mia = miaRows();
+  for (const dir of ['dep', 'arr']) lists.push(['MIA', dir, mia.filter((x) => x.dir === dir).map((x) => x.row)]);
+  const seen = new Set();
+  for (const x of TODAY.served) { const k = x.ap + ' ' + x.dir; if (!seen.has(k)) { seen.add(k); lists.push([x.ap, x.dir, servedList(x.ap, x.dir)]); } }
+  let rows = 0, off = 0;
+  for (const [ap, dir, list] of lists) {
+    const phone = list.filter((r) => theApp().adbToCard(JSON.parse(JSON.stringify(r)), dir, undefined, ap, list)).map((r) => norm(r.number));
+    // (the phone reads a copy of each row; the list it is handed is the list itself, as on the page)
+    const studio = await studioKeeps(ap, dir, list, page);
+    assert.deepEqual(studio, phone, ap + ' ' + dir + ': the player lists what the phone lists');
+    rows += list.length; off += list.length - studio.length;
+  }
+  assert.ok(rows >= 70 && off >= 25, rows + ' rows, ' + off + ' kept off');
+  // the three rows of Miami are off the player
+  const miaArr = await studioKeeps('MIA', 'arr', mia.filter((x) => x.dir === 'arr').map((x) => x.row), page);
+  assert.ok(!miaArr.includes('BBQ2211A') && !miaArr.includes('G66175'));
+  assert.ok(miaArr.includes('G6201') || miaArr.includes('G6200') || miaArr.some((n) => /^G6\d/.test(n)), 'and the GlobalX charters with a gate are on it');
+  const miaDep = await studioKeeps('MIA', 'dep', mia.filter((x) => x.dir === 'dep').map((x) => x.row), page);
+  assert.ok(!miaDep.includes('G66175'));
+});
+
+test('the live list of the Studio player: each kind of row the boards keep off', async () => {
+  const page = studioPage();
+  for (const dir of ['arr', 'dep']) {
+    const keeps = async (r, list, scope) => (await studioKeeps(legOf(r, dir).airport.iata, dir, list || [r], scope || page)).includes(norm(r.number));
+    const plain = row({ dir, ap: 'MIA', far: 'HAV', number: 'WAL253', name: 'World Atlantic', terminal: 'F', gate: 'F10' });
+    assert.equal(await keeps(plain), true, 'a public charter at a gate');
+    // the row rule
+    assert.equal(await keeps(row({ dir, ap: 'MIA', far: 'MIA', number: 'BBQ2211A', name: 'Eastern Air Express', gate: 'F21' })), false, 'home');
+    assert.equal(await keeps(row({ dir, ap: 'MIA', far: 'MYC', number: 'G66175', name: 'GlobalX Airlines', more: { _noPublicTerminal: true } })), false, 'no-terminal');
+    assert.equal(await keeps(row({ dir, ap: 'DEN', far: { iata: ' ' }, number: 'UA1395', name: 'United Airlines', gate: 'B41' })), false, 'nowhere');
+    assert.equal(await keeps(row({ dir, ap: 'MIA', far: 'TEB', number: 'N966AD', code: null, name: null, gate: 'F3' })), false, 'tail');
+    assert.equal(await keeps(row({ dir, ap: 'ORD', far: 'MAD', number: 'IB3GA', name: 'Iberia' })), false, 'callsign');
+    assert.equal(await keeps(row({ dir, ap: 'MIA', far: 'BOG', number: 'AA904', name: 'American Airlines', gate: 'D3', more: { isCargo: true } })), false, 'cargo');
+    // a second listing, read on its list
+    const a = row({ dir, ap: 'ORD', far: 'IST', number: 'TK67C', name: 'Turkish Airlines' }), b = row({ dir, ap: 'ORD', far: 'IST', number: 'TK185', name: 'Turkish Airlines', terminal: '5', min: 37 });
+    assert.deepEqual(await studioKeeps('ORD', dir, [a, b], page), ['TK185']);
+    assert.deepEqual(await studioKeeps('ORD', dir, [a], page), ['TK67C']);
+    // nobody names it and it has no place; named by a table or by its airport, it stays
+    assert.equal(await keeps(row({ dir, ap: 'PHL', far: 'LAS', number: 'XA5903', code: 'XA', name: null })), false, 'unnamed');
+    assert.equal(await keeps(row({ dir, ap: 'PHL', far: 'LAS', number: 'XA5903', code: 'XA', name: null, gate: 'A14' })), true);
+    assert.equal(await keeps(row({ dir, ap: 'PHL', far: 'ATL', number: 'F92552', name: null })), true, 'Frontier, named by the table');
+    assert.equal(await keeps(row({ dir, ap: 'PHL', far: 'LAS', number: 'XA5903', code: 'XA', name: 'Meridian Air Express' })), true, 'named by its airport');
+    // the code list and the name words
+    assert.equal(await keeps(row({ dir, ap: 'ORD', far: 'ANC', number: 'K4557', name: 'Kalitta Air' })), false, 'the code list, by the number');
+    assert.equal(await keeps(row({ dir, ap: 'ORD', far: 'ANC', number: NOBODY + '134', name: 'China Cargo', terminal: '5', gate: 'M3' })), false, 'a name word');
+    const top = row({ dir, ap: 'ORD', far: 'ANC', number: 'AA134', name: 'American Airlines', gate: 'K1', more: { airline: { iata: '5Y', name: 'Atlas Air' } } });
+    assert.equal(await keeps(top), false, 'the code at the top of the row');
+    // a codeshare duplicate
+    assert.equal(await keeps(Object.assign({}, plain, { codeshareStatus: 'IsCodeshared' })), false);
+    // a page that loaded neither file lists its rows as it did
+    const home = row({ dir, ap: 'MIA', far: 'MIA', number: 'BBQ2211A', name: 'Eastern Air Express', gate: 'F21' });
+    assert.equal(await keeps(home, [home], {}), true);
+    // a page with the router alone still asks the row rule, and does not say nobody names a row
+    assert.equal(await keeps(home, [home], { fidsRowOffBoard: the('fidsRowOffBoard') }), false);
+    const xa = row({ dir, ap: 'PHL', far: 'LAS', number: 'XA5903', code: 'XA', name: null });
+    assert.equal(await keeps(xa, [xa], { fidsRowOffBoard: the('fidsRowOffBoard') }), true);
+  }
+  // the adapter hands its page on from choose()
+  const picked = StudioData.choose({ mode: 'pilot', airport: { iata: 'MIA' }, scope: page, routerFetch: async () => ({ arrivals: [row({ dir: 'arr', ap: 'MIA', far: 'MIA', number: 'BBQ2211A', gate: 'F21' })], departures: [] }) });
+  assert.deepEqual(await picked.flights('arrivals'), []);
 });

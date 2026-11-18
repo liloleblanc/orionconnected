@@ -42478,6 +42478,7 @@ const FILTER_OUT = new Set([
   'K4','CKS',  // Kalitta Air: all-cargo (Anchorage and Tokyo at Chicago)
   'KZ','NCA',  // Nippon Cargo Airlines: all-cargo (Anchorage and Tokyo at Chicago)
   'KD','WGN',  // Western Global Airlines: all-cargo (Anchorage and Seoul at Chicago)
+  'Y8','YZR',  // Suparna Airlines: its passenger flights stay inside China, where no board is. Abroad it flies freighters only (Anchorage, Nanjing and Shanghai at Chicago, no terminal, no gate, no belt). A board in China takes it off this list first.
   'KII',       // Kalitta Charters II: cargo (Cincinnati to Philadelphia, no name on the page)
   'FRG',       // Freight Runners Express: cargo (Philadelphia to Richmond, no name on the page)
   'XFL',       // Executive Fliteways: private charter (Chicago Midway to Philadelphia, no name on the page)
@@ -47503,14 +47504,20 @@ function mapADB(raw, mode, kept) {
     // fidsRowOffBoard (feed-router.js, where the whole rule and what it was
     // measured on are written) reads the row: the other airport is this one,
     // the airport marks it as in no public terminal and gives it no gate,
-    // the number is a tail number, the number is a callsign on a row with no
-    // place, or nobody names the airline and the row has no place. The phone
-    // app asks the same function (app.html adbToCard), so a row is off every
-    // screen or on every screen. When the row does not say, the row stays.
+    // the other end has no code and no name, the number is a tail number,
+    // the number is a callsign on a row with no place (one letter: only as a
+    // second listing of a flight the list holds, which is why the whole list
+    // goes with the row), or nobody names the airline and the row has no
+    // place. The phone app and the live list of the Studio player ask the
+    // same function (app.html adbToCard, studio-data.js), so a row this rule
+    // takes off is off every screen. When the row does not say, the row stays.
     // Named: the tables name the airline, or the feed does in words that are
     // not the code again.
+    // A screen that still holds an older feed-router.js from its cache has no
+    // such function: it maps its rows as it did before the rule (the cargo
+    // mark alone) and never throws on every row, which emptied the board.
     const _rowNamed = !!_localName || (!!_apiName && [airline, code, fp, _feedAl.code].indexOf(_apiName) < 0);
-    if (fidsRowOffBoard(f, mode, _rowHome, _rowNamed)) return null;
+    if (typeof fidsRowOffBoard === 'function' ? fidsRowOffBoard(f, mode, _rowHome, _rowNamed, list) : f.isCargo === true) return null;
     // Extract ACTUAL operating carrier from leg data (FIDS endpoint with withLeg=true)
     // f.departure.airline or f.arrival.airline = who physically operates it
     const opLeg = mode==='dep' ? f.departure : f.arrival;
@@ -47868,7 +47875,9 @@ function mapADB(raw, mode, kept) {
       const d1=adbTs(_depSched), d2=adbTs(_arrSched);
       if (d1&&d2&&d2>d1) _durationMins=Math.round((d2-d1)/60000);
     }
-    // (a row the feed marks as cargo left above: fidsRowOffBoard)
+    // (a row the feed marks as cargo left above: fidsRowOffBoard, which also
+    // holds the rule below now, so the phone app asks the same one; the line
+    // stays for a page whose feed-router.js is older than its board script)
     // No resolvable place: no IATA/ICAO and the feed's airport name is empty
     // or literally 'Unknown' — repositioning/ferry/private legs. A public
     // board row reading 'Unknown' helps no traveler and should not be
