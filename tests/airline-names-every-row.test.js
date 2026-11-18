@@ -220,6 +220,7 @@ const PARSED = [
   ['yeg-dep-sample.html', 'yegParseBoard', ['dep'], '2026-09-04T22:00:00-06:00'],
   ['yfc-arr-sample.html', 'yfcParseBoard', ['arr'], '2026-09-04T23:30:00-03:00'],
   ['yfc-dep-sample.html', 'yfcParseBoard', ['dep'], '2026-09-04T23:30:00-03:00'],
+  ['yhm-sample-2026-09.html', 'yhmParseBoard', ['dep', 'arr'], '2026-09-04T22:00:00-04:00'],
   ['yhm-sample.html', 'yhmParseBoard', ['dep', 'arr'], '2026-11-18T10:41:00-05:00'],
   ['yka-arr-sample.json', 'parseYkaFeed', ['arr'], '2026-09-05T23:06:00-07:00'],
   ['yka-dep-sample.json', 'parseYkaFeed', ['dep'], '2026-09-05T23:06:00-07:00'],

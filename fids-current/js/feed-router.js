@@ -57,11 +57,18 @@ var FEED_STALE_QUIET_MS = 5 * 60000;
 // stale answer, and on its 503 once the data is past three hours. This screen
 // took every one of those fetches for a live list and dated its own copy by
 // its own clock, so the copy claims to be minutes old when the rows in it are
-// hours old. The worker's time wins: a copy is never dated later than the
-// worker says the list is from, and is not shown at all once that is past the
+// hours old. The airport's stamp wins: a copy is never dated later than the
+// airport last wrote its list, and is not shown at all once that is past the
 // 180 minutes. With nothing left to show, the panel adds the store's "Last
 // update {TIME}" under "Live data unavailable" while that time is recent
 // enough for a clock time alone to be read correctly.
+// ONLY THE AIRPORT'S STAMP DOES THAT (_feed.dataAt), never the plain time of
+// a stale answer (_feed.asOf). That one is the age of the copy one worker
+// isolate holds, and while an airport refuses the worker two isolates hold
+// copies of different ages for a few minutes: a screen that took the older
+// answer's time for the truth would swap its own newer list for the older
+// one and rewrite its stored copy on every other poll (a Toronto list is
+// about half a million characters).
 var FEED_DOWN_TIME_MAX_MS = 12 * 3600000;
 // Their own last-good chains already exist (YQM: fids_yqm_lastgood_*, MCO:
 // fids_mco_lastgood_*); they report into the status, and are not copied twice.
@@ -83,7 +90,10 @@ function _feedNote(iata, dir, r, body) {
       asOf = a ? Date.parse(a) : null;
     }
     if (!st && r && r.status === 503 && body && (body.error === 'blocked' || body.error === 'error')) st = body.error;
-    if (st) _feedCallNote[iata + '|' + dir] = { state: st, asOf: isNaN(asOf) ? null : asOf };
+    // dataAt: the airport's own stamp on a list it stopped writing, when the
+    // worker read one. Only ever in the body.
+    var dataAt = (meta && meta.state && meta.dataAt) ? Date.parse(meta.dataAt) : null;
+    if (st) _feedCallNote[iata + '|' + dir] = { state: st, asOf: isNaN(asOf) ? null : asOf, dataAt: (dataAt && !isNaN(dataAt)) ? dataAt : null };
   } catch (e) {}
 }
 // A worker answer that says the feed itself failed (not a network blip).
@@ -124,7 +134,8 @@ function _feedLgSave(iata, dir, out, asOf, redate) {
     // carries the rest, and the list is not serialised on every poll. Except
     // a copy being dated EARLIER (redate): the stored one claims a later time
     // than the list is from and would win over the memory copy on the next
-    // load, so it is rewritten now. That happens once per list.
+    // load, so it is rewritten now. That happens once per stamp: the copy
+    // then carries the stamp, and is no longer later than it.
     if (!redate && idx[k] && now - idx[k][0] < FEED_LG_WRITE_EVERY_MS) return;
     if (!redate && _feedLgBigAt[k] && now - _feedLgBigAt[k] < FEED_LG_WRITE_EVERY_MS) return;
     var txt = JSON.stringify({ ts: now, asOf: asOf, out: out });
@@ -227,11 +238,18 @@ function _feedSettle(iata, direction, out, err) {
     if (note && (note.state === 'stale' || note.state === 'stale-local')) {
       _feedSetStatus(iata, dir, 'stale', note.asOf);
       if (note.state === 'stale' && note.asOf) {
-        // Kept under the worker's time for it, also when this screen's own
-        // copy claims a later one: the list the worker shows is the newest
-        // there is, and it is as old as the worker says.
+        // The worker's copy is kept when it is newer than this screen's own.
+        // An OLDER one never replaces it (another isolate's copy, see above).
         var have = _feedLgLoad(iata, dir, now);
-        if (!have || have.asOf !== note.asOf) _feedLgSave(iata, dir, out, note.asOf, !!have && have.asOf > note.asOf);
+        if (!have || have.asOf < note.asOf) _feedLgSave(iata, dir, out, note.asOf);
+        // The airport's own stamp is another matter: no copy anywhere is
+        // newer than the airport's last write, whenever it was fetched. A copy
+        // of ours that claims a later time is re-dated to the stamp, at once
+        // (the list is the worker's when that one is dated by the stamp too,
+        // else our own, which was fetched after it).
+        else if (note.dataAt && have.asOf > note.dataAt) {
+          _feedLgSave(iata, dir, note.asOf >= note.dataAt ? out : have.out, note.dataAt, true);
+        }
       }
     } else if (note && note.state === 'unavailable-local') {
       _feedSetStatus(iata, dir, 'unavailable', null, 'error');
@@ -243,8 +261,11 @@ function _feedSettle(iata, direction, out, err) {
   }
   var lg = _feedLgLoad(iata, dir, now);
   // A failure that carries a time: the worker knows when the airport last
-  // wrote its list. This screen's copy of that list is no newer than that.
-  var known = (note && (note.state === 'blocked' || note.state === 'error') && note.asOf && note.asOf < now) ? note.asOf : null;
+  // wrote its list (a 503 has no other time to give). This screen's copy of
+  // that list is no newer than that. A time ahead of this screen's own clock
+  // is not believed: the clock is wrong, and nothing is re-dated by it.
+  var stamp = note ? (note.dataAt || note.asOf) : null;
+  var known = (note && (note.state === 'blocked' || note.state === 'error') && stamp && stamp < now) ? stamp : null;
   if (lg && known && known < lg.asOf) lg = (now - known < FEED_LG_MAX_MS) ? { asOf: known, out: lg.out } : null;
   if (lg) {
     try { console.warn('[FIDS] ' + iata + ' ' + direction + ' feed down (' + ((err && (err.feedDown || err.message)) || (note && note.state)) + ') — showing the last good list from ' + new Date(lg.asOf).toISOString()); } catch (e) {}

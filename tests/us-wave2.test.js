@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { pdxParseFeed, dtwParseFeed, sanParseFeed, msyParseFeed, dtwFr24Lookup, msyFeedFrozenAt, feedFrozen,
-  FEED_FROZEN_STAMP_MS, FEED_FROZEN_DUE_MS } from '../workers/fids-proxy.js';
+  FEED_FROZEN_STAMP_MS, FEED_FROZEN_DUE_MS, MSY_FEED_SILENT_MS } from '../workers/fids-proxy.js';
 
 const fx = (n) => readFileSync(new URL(`./fixtures/${n}`, import.meta.url), 'utf8');
 const NOW = Date.parse('2026-09-04T22:00:00-07:00');
@@ -133,6 +133,31 @@ test('msy: the list is frozen once its stamp is 90 minutes old and a flight has 
   assert.equal(msyFeedFrozenAt('x', at('2026-11-18T15:41:13Z')), null);
 });
 
+test('msy: a flight filed a day late is due at its expected time, the newest stamp is the stamp, and a list with nothing after its stamp is frozen after six hours of silence', () => {
+  // The September capture: written 22:47:01 on the 4th. Every flight on it slipped past midnight and is filed
+  // under the 5th, so its scheduled_time reads a day late ("2026-09-05 23:53" for 23:53 on the 4th); the expected
+  // times are right (00:06 to 01:28 on the 5th). Had the importer stopped at that write:
+  const sept = fx('msy-sample.json');
+  const stamp = at('2026-09-04T22:47:00-05:00');
+  const rows = JSON.parse(sept);
+  assert.ok(rows.every((r) => r.updated_at === '2026-09-04 22:47:01' && r.scheduled_time > '2026-09-05 21:00' && r.actual_time < '2026-09-05 02:00'));
+  // 00:35: the stamp is 108 minutes old, the first expected time (00:06) 29 minutes past. Not yet.
+  assert.equal(msyFeedFrozenAt(sept, at('2026-09-05T00:35:00-05:00')), null);
+  // 00:36: frozen, 1 h 49 min after the stamp. By the scheduled times alone this was 21:50 on the 5th, 23 hours on.
+  assert.equal(msyFeedFrozenAt(sept, at('2026-09-05T00:36:00-05:00')), stamp);
+  assert.equal(msyFeedFrozenAt(sept, at('2026-09-05T09:00:00-05:00')), stamp);
+  // Rows stamped at different times: the list was last written at the NEWEST of them.
+  const mixed = JSON.stringify(rows.map((r, i) => ({ ...r, updated_at: i === 0 ? '2026-09-05 00:30:00' : r.updated_at })));
+  assert.equal(msyFeedFrozenAt(mixed, at('2026-09-05T00:40:00-05:00')), null, 'written ten minutes ago: not frozen, whatever the other rows say');
+  assert.equal(msyFeedFrozenAt(mixed, at('2026-09-05T02:05:00-05:00')), at('2026-09-05T00:30:00-05:00'), 'and when it is, since the newest stamp');
+  // A list with nothing after its stamp, scheduled or expected: no flight ever comes due on it.
+  assert.equal(MSY_FEED_SILENT_MS, 6 * 3600000);
+  const spent = JSON.stringify(rows.map((r) => ({ ...r, scheduled_time: '2026-09-04 21:20:00', actual_time: '2026-09-04 21:42:00' })));
+  assert.equal(msyFeedFrozenAt(spent, at('2026-09-05T04:46:00-05:00')), null, 'five hours and 59 minutes: New Orleans may be asleep');
+  assert.equal(msyFeedFrozenAt(spent, at('2026-09-05T04:47:00-05:00')), stamp, 'six hours untouched: never on a healthy night there');
+  assert.equal(msyFeedFrozenAt(spent, at('2026-09-07T12:00:00-05:00')), stamp, 'and never live again until the airport writes');
+});
+
 test('the frozen rule needs both halves: an old stamp alone is a quiet night, a flight just due alone is a slow importer', () => {
   const T = at('2026-11-18T12:00:00Z'), MIN = 60000, H = 3600000;
   assert.equal(FEED_FROZEN_STAMP_MS, 90 * MIN);
@@ -153,6 +178,12 @@ test('the frozen rule needs both halves: an old stamp alone is a quiet night, a 
   assert.equal(feedFrozen(NaN, [T - H], T), null);
   assert.equal(feedFrozen(T - 2 * H, [], T), null);
   assert.equal(feedFrozen(T - 2 * H, null, T), null);
+  // The silence rule is the producer's to ask for, per airport, and is never shorter than the 90 minutes.
+  assert.equal(feedFrozen(T - 5 * H, [T - 6 * H, T + 2 * H], T, 6 * H), null);
+  assert.equal(feedFrozen(T - 6 * H, [T - 7 * H, T + 2 * H], T, 6 * H), T - 6 * H);
+  assert.equal(feedFrozen(T - 6 * H, [T - 7 * H, T + 2 * H], T), null, 'not asked for: a quiet night, as long as it likes');
+  assert.equal(feedFrozen(T - 20 * MIN, [], T, 10 * MIN), null);
+  assert.equal(feedFrozen(T - 100 * MIN, [], T, 10 * MIN), null, 'a silence shorter than the stamp rule is not a rule');
 });
 
 test('us-wave2: garbage in, empty out', () => {

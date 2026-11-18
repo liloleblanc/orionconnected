@@ -3562,7 +3562,10 @@ __name(acTrackAppend, "acTrackAppend");
 //    stamp, not as old as our last fetch of it. So the last good list is
 //    served marked stale AS OF THE STAMP, and only while the stamp is under
 //    3 hours old; after that the answer is the 503, which carries the stamp
-//    too, so a screen holding its own copy can date it honestly.
+//    too, so a screen holding its own copy can date it honestly. The stamp
+//    also goes out under its own name (_feed.dataAt): asOf by itself may be
+//    no more than the age of one isolate's copy, and a screen must not take
+//    that for the age of every copy.
 //    A rule on the rows alone ("every row is hours in the past") is NOT
 //    applied to every airport: a small airport whose list holds only today
 //    reads exactly like that on a quiet night, and would be called an outage
@@ -3622,19 +3625,28 @@ const FEED_CHALLENGE_RE = /perfdrive|shieldsquare|rdwr|radware|captcha|cf-chl|cf
 // a flight coming due alone would trip on an importer that runs once an
 // hour. Together they say: the list had this flight ahead of it, the flight's
 // time came and went, and the airport has not touched its list since before.
+// A THIRD WAY, ONLY WHERE THE PRODUCER ASKS FOR IT (silentMs): a list whose
+// importer stopped with nothing left ahead of it never has a flight come due,
+// and by the two halves alone would go out as live for ever, empty of
+// anything current. An airport busy enough that its list is never untouched
+// for silentMs says so, and a stamp that old is frozen whatever the rows say.
+// Never given for a small airport: there, a long silence is a quiet night.
 const FEED_FROZEN_STAMP_MS = 90 * 60000;
 const FEED_FROZEN_DUE_MS = 30 * 60000;
 /**
  * Pure. stampMs: when the airport last wrote its list (its own stamp, epoch
- * ms). times: the scheduled time of every row (epoch ms). Returns the stamp
- * when the list is frozen at nowMs, else null. No stamp, no verdict.
+ * ms). times: every time the list holds for its rows, scheduled or expected
+ * (epoch ms). silentMs: optional, the silence no healthy night at this
+ * airport reaches. Returns the stamp when the list is frozen at nowMs, else
+ * null. No stamp, no verdict.
  */
-function feedFrozen(stampMs, times, nowMs) {
+function feedFrozen(stampMs, times, nowMs, silentMs) {
   if (typeof stampMs !== "number" || !isFinite(stampMs) || stampMs <= 0) return null;
   if (nowMs - stampMs < FEED_FROZEN_STAMP_MS) return null;
   for (const t of times || []) {
     if (typeof t === "number" && t > stampMs && t <= nowMs - FEED_FROZEN_DUE_MS) return stampMs;
   }
+  if (typeof silentMs === "number" && silentMs >= FEED_FROZEN_STAMP_MS && nowMs - stampMs >= silentMs) return stampMs;
   return null;
 }
 __name(feedFrozen, "feedFrozen");
@@ -4302,7 +4314,14 @@ function feedMeta(g, now) {
     ageS: g.asOf ? Math.max(0, Math.round(((now || Date.now()) - g.asOf) / 1000)) : null,
     ...(g.partial ? { partial: "later-day" } : {}),
     // A failing feed says what the airport answered (never on a live answer).
-    ...(g.why && g.state !== "ok" ? { why: g.why } : {})
+    ...(g.why && g.state !== "ok" ? { why: g.why } : {}),
+    // Rule 5: the airport's own stamp, under its own name. asOf alone cannot
+    // tell a screen which of two things it is reading: "this isolate's copy
+    // is from then" (another isolate may hold a newer one, and so may the
+    // screen) or "the airport has written nothing since then" (no copy
+    // anywhere is newer, whenever it was fetched). Only the second re-dates a
+    // screen's own copy (feed-router.js, _feedSettle).
+    ...(typeof g.dataAt === "number" && g.dataAt > 0 && g.state !== "ok" ? { dataAt: new Date(g.dataAt).toISOString() } : {})
   };
 }
 __name(feedMeta, "feedMeta");
@@ -4718,7 +4737,8 @@ async function fetchAuthorityText(cachePath, srcUrl, marker, ttlS, fetchOpts) {
   // XML one must close its root (feedBodyComplete). A body cut off mid-row
   // still carries the marker; so does a list followed by a PHP fatal error.
   const broken = text != null && !feedBodyComplete(text, expect);
-  let good = !!text && !broken && (!marker || text.indexOf(marker) !== -1);
+  // A list of markers: any one of them (a site that has had two markups).
+  let good = !!text && !broken && (!marker || [].concat(marker).some((m) => text.indexOf(m) !== -1));
   if (good && !marker && expect === "json" && !/^\s*[[{]/.test(text)) good = false;
   // A valid JSON answer with no rows: no row, so no marker (feedJsonEmpty).
   if (!good && !broken && text != null && kind === "ok" && expect === "json" && feedJsonEmpty(text)) good = true;
@@ -5849,6 +5869,10 @@ __name(seaFarIata, "seaFarIata");
 // handler is the experiment. Schema reconstructed from an archived
 // capture, so every read is defensive; if the wall holds, the handler
 // stays silent forever and costs nothing.
+// 2026-11-18 — THE WALL HOLDS, AND IS LEFT STANDING. The Worker is refused
+// as curl was (both directions "blocked" in that day's capture of every
+// board). Nothing here is changed to get round it; the board says "Live data
+// unavailable", and the way back is the airport's permission.
 function yvrParseFeed(jsonText, dir, nowMs) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
@@ -6022,7 +6046,9 @@ __name(yqrParsePage, "yqrParsePage");
 // its stylesheet dated 2026-10-29). Until then each flight was a `.flight`
 // div carrying data-datetime, and that attribute was the marker of the fetch:
 // the rebuilt page, a normal 200 with 27 flights on it, read as "not the
-// feed", and Hamilton had no flights, probably since that date. The status
+// feed", and Hamilton had no flights, probably since that date. The fetch
+// takes either page now (YHM_MARKERS), and a panel with no rebuilt row in it
+// is read as the page before (yhmParseBoardSept). The status
 // is the WORD in the pill, never the pill's class ("Early" is classed
 // "landed"). The estimate is always printed, equal to the time until the
 // flight moves, and carries its own date.
@@ -6050,7 +6076,10 @@ function yhmParseBoard(html, dir, nowMs) {
     const sched = when(dm[1], dm[2], tm[1], tm[2]);
     if (!sched) continue;
     const airline = attr(chunk, "airline") || cell(chunk, "airline");
-    const code = (attr(chunk, "airline-code").match(/^[A-Z0-9]{2}$/) || flightCell.match(/^[A-Z0-9]{2}(?=\s*\d)/) || [])[0]
+    // A code is two characters with a letter among them ("PD", "F8", "3H"):
+    // two digits are the start of a flight number printed with no code
+    // ("2426" is not carrier "24"). A longer one ("WJA") is left to the name.
+    const code = (attr(chunk, "airline-code").match(YHM_CODE_RE) || flightCell.match(/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])(?=\s*\d)/) || [])[0]
       || AIRLINE_NAME_IATA[airline.toUpperCase()] || AIRLINE_NAME_IATA_SQUASHED[airline.toUpperCase().replace(/\s+/g, "")] || null;
     // "Halifax (YHZ)": the place and its own code, as the airport prints them.
     const pm = cell(chunk, "origin").match(/^(.*?)\s*\(([A-Z]{3})\)\s*$/);
@@ -6067,9 +6096,54 @@ function yhmParseBoard(html, dir, nowMs) {
       sched, revised: est && est.ts !== sched.ts ? est : null
     }));
   }
-  return out;
+  // No row of the rebuilt page in this panel: the page as it was until
+  // October 2026, should the airport put it back.
+  return out.length ? out : yhmParseBoardSept(pane, dir, nowMs);
 }
 __name(yhmParseBoard, "yhmParseBoard");
+const YHM_CODE_RE = /^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])$/;
+// What marks a Hamilton page as the board: a row's own attribute, of the
+// rebuilt page or of the one before it. A page with no row on it is not the
+// feed, so the last good list is kept rather than an empty board served as
+// live.
+const YHM_MARKERS = ["data-flight-number", "data-datetime"];
+// THE PAGE AS IT WAS UNTIL OCTOBER 2026, read from one panel: each flight a
+// `.flight` div carrying data-datetime (scheduled local, with its year),
+// data-city and data-airline (name). Status is the div's own class, and a
+// revised "HH:MM / Mon DD" sits in the status cell. Kept because a plugin
+// three weeks old can be rolled back, and then the board would be down again
+// for a page this worker read for months. Only reached when the panel holds
+// no row of the rebuilt page.
+function yhmParseBoardSept(pane, dir, nowMs) {
+  const out = [];
+  for (const chunk of String(pane || "").split(/<div class=['"]flight\b/).slice(1)) {
+    const dm = chunk.match(/data-datetime=['"](\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+    const city = (chunk.match(/data-city=['"]([^'"]*)/) || [, ""])[1];
+    const airline = (chunk.match(/data-airline=['"]([^'"]*)/) || [, ""])[1];
+    const numM = chunk.match(/class=['"]flight-number['"][^>]*>[\s\S]*?(\d{1,4})\s*<\/span>/);
+    if (!dm || !numM) continue;
+    const sched = localTimeObjIn("America/Toronto", Number(dm[1]), Number(dm[2]), Number(dm[3]), Number(dm[4]), Number(dm[5]));
+    const statusText = (chunk.match(/^\s*([A-Za-z ]+?)['"]/) || [, ""])[1].trim()
+      || (chunk.match(/text-(?:danger|success|warning|muted)['"][^>]*><strong>([^<]+)/) || [, ""])[1];
+    let revised = null;
+    const rvM = chunk.match(/<strong>[^<]*<\/strong><span[^>]*>\s*(\d{1,2}):(\d{2})\s*\/\s*([A-Za-z]{3})\s+(\d{1,2})/);
+    if (rvM) {
+      const mo = AUTH_MONTHS[rvM[3].toUpperCase()];
+      if (mo) revised = localTimeObjIn("America/Toronto", nearestYear(mo, Number(rvM[4]), nowMs), mo, Number(rvM[4]), Number(rvM[1]), Number(rvM[2]));
+    }
+    const code = AIRLINE_NAME_IATA[airline.toUpperCase()] || AIRLINE_NAME_IATA_SQUASHED[airline.toUpperCase().replace(/\s+/g, "")] || null;
+    out.push(authorityFlight({
+      dir, number: code ? `${code}${numM[1]}` : numM[1],
+      status: yhzStatus(statusText),
+      homeIata: "YHM", homeIcao: "CYHM", homeName: "Hamilton",
+      otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
+      airlineIata: code, airlineName: airline || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(yhmParseBoardSept, "yhmParseBoardSept");
 
 // ── US wave 2 (2026-09-05) ───────────────────────────────────────────
 // Small shared helper: parse an offset-less local ISO string as a wall
@@ -6788,9 +6862,29 @@ __name(msyParseFeed, "msyParseFeed");
 // answering 200 with that table for the rest of the morning: flights from
 // hours before still "On Time", and nothing new behind them. Returns the
 // stamp (epoch ms) when the list is frozen at nowMs (feedFrozen: the stamp is
-// 90 minutes old or more and a flight has come due since), else null. A row's
-// scheduled_time can sit a day late when the flight slipped past midnight
-// (the feed takes its day from the actual time); that only delays the rule.
+// 90 minutes old or more and a flight has come due since), else null.
+// BOTH TIMES OF A ROW COUNT AS ITS TIME, the scheduled and the expected
+// (actual_time, which holds the estimate until the flight has moved). A flight
+// that slips past midnight is filed under the next day, and its
+// scheduled_time then reads a day late: "2026-09-05 23:53" for a flight due
+// 2026-09-04 23:53, expected 00:34. Read by the scheduled time alone, a list
+// frozen in the evening with only such rows left was called frozen 23 hours
+// after its stamp; its expected times came due within the first two.
+// The stamp is the NEWEST updated_at on the list (one importer run stamps
+// every row alike; were they ever to differ, the last write is the newest).
+// A list with nothing at all after its stamp never has a flight come due:
+// MSY_FEED_SILENT_MS covers it. New Orleans flies from about 05:00 to past
+// 01:00 every day, so its list is never six hours untouched on a healthy
+// night, whatever the importer's rhythm.
+// NOT VERIFIED: that rhythm. Three answers of the airport are on record, with
+// two stamps: 2026-09-04 22:47:01, and 2026-11-18 00:15:51 (read at 09:41,
+// 09:43 and 10:38 Central, the same each time). One stamp on every row says
+// a run rewrites the whole table, so the stamp is the last run. If a healthy
+// night there ever has a pause of over two hours with a flight due inside it,
+// the board reads stale for that stretch and has nothing from three hours
+// after the stamp: the list would be that old, and is said to be. A look at
+// the stamp through one healthy night would settle it.
+const MSY_FEED_SILENT_MS = 6 * 3600000;
 function msyFeedFrozenAt(jsonText, nowMs) {
   let j; try { j = JSON.parse(jsonText); } catch (e) { return null; }
   const rows = Array.isArray(j) ? j : (j && Array.isArray(j.flights) ? j.flights : []);
@@ -6800,10 +6894,12 @@ function msyFeedFrozenAt(jsonText, nowMs) {
     if (!r) continue;
     const u = localIsoObj("America/Chicago", r.updated_at);
     if (u && (stamp == null || u.ts > stamp)) stamp = u.ts;
-    const t = localIsoObj("America/Chicago", r.scheduled_time);
-    if (t) times.push(t.ts);
+    for (const v of [r.scheduled_time, r.actual_time]) {
+      const t = localIsoObj("America/Chicago", v);
+      if (t) times.push(t.ts);
+    }
   }
-  return feedFrozen(stamp, times, nowMs);
+  return feedFrozen(stamp, times, nowMs, MSY_FEED_SILENT_MS);
 }
 __name(msyFeedFrozenAt, "msyFeedFrozenAt");
 
@@ -7033,6 +7129,11 @@ __name(mciParseFeed, "mciParseFeed");
 // airline.code are ICAO-form (EZY2064 / EZY), so a small ICAO→IATA map
 // recovers the code the boards key on; unknown carriers keep the ICAO
 // number, still legible.
+// 2026-11-18 — REFUSED, AND LEFT REFUSED. The endpoint's edge has turned this
+// Worker away since September (both directions "blocked" in that day's
+// capture of every board). Nothing here is changed to get round it; the
+// board says "Live data unavailable", and the way back is the airport's
+// permission.
 const MAN_ICAO_IATA = {
   EZY: "U2", RYR: "FR", TOM: "BY", BAW: "BA", VIR: "VS", EXS: "LS", DLH: "LH",
   KLM: "KL", AFR: "AF", UAE: "EK", QTR: "QR", THY: "TK", SWR: "LX", TAP: "TP",
@@ -8289,9 +8390,10 @@ __name(parseYygPage, "parseYygPage");
 //   flightNumber (FlightNumber)      bare digits
 //   airlineName (AirlineCode)        the carrier NAME: "Air Canada",
 //                                    "WestJet", "Pacific Coastal Airlines".
-//                                    The new airlineCode is NOT used for the
-//                                    carrier: it is "AC" and "8P" but "WJA"
-//                                    (the ICAO code) for WestJet.
+//                                    The new airlineCode is read only when
+//                                    the name is missing or unknown: it is
+//                                    "AC" and "8P" but "WJA" (the ICAO code)
+//                                    for WestJet.
 //   direction (ArrivalOrDeparture)   "A" / "D"
 //   scheduleDisplay (ScheduleTime)   "Nov 18 - 09:47": no year, no offset,
 //                                    Pacific wall clock. flightDate
@@ -8383,11 +8485,17 @@ function parseYkaFeed(jsonText, dir, nowMs) {
     const sched = parseYkaTime(r.ScheduleTime || r.scheduleDisplay, nowMs) || ykaDateClock(r.flightDate, r.scheduledTime);
     if (!sched) continue;
     // The carrier's NAME under either name of the field. The plugin's own
-    // airlineCode is never the carrier here: it reads "WJA" for WestJet.
+    // airlineCode is never read FIRST: it is "WJA" for WestJet.
     const name = String(r.AirlineCode || r.airlineName || "").trim();
     const key = name.toUpperCase();
+    // A name no map knows, or no name: the row's own code then, when it is
+    // one. Two characters with a letter among them are the code as printed
+    // ("H3"); three letters are the ICAO form, read through the Canadian map
+    // ("WJA" is WS) and otherwise left alone.
+    const own = String(r.airlineCode || "").trim().toUpperCase();
     const code = YKA_AIRLINE_IATA[key] || AIRLINE_NAME_IATA[key] || AIRLINE_NAME_IATA_SQUASHED[key.replace(/\s+/g, "")]
-      || (/^[A-Z0-9]{2}$/.test(key) ? key : null) || nm[1] || null;
+      || (/^[A-Z0-9]{2}$/.test(key) ? key : null)
+      || (/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])$/.test(own) ? own : (YQX_ICAO_IATA[own] || null)) || nm[1] || null;
     // EstimatedTime carries its own date and is kept in step with the
     // status clock (verified: "Arrived at 23:02" ↔ "Sep 5 - 23:02");
     // ActualTime and the "at HH:MM" inside Status are the fallbacks.
@@ -10199,10 +10307,7 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   yhm: { tz: "America/Toronto", source: "yhm-authority", list: async (dir, env) => {
-    // The marker is a row's own attribute: a page with no rows on it is not
-    // the feed, so the last good list is kept rather than an empty board
-    // served as live.
-    const t = await fetchAuthorityText("yhm/page", "https://flyhamilton.ca/arrivals-departures/", "data-flight-number", 120);
+    const t = await fetchAuthorityText("yhm/page", "https://flyhamilton.ca/arrivals-departures/", YHM_MARKERS, 120);
     if (!t) return null;
     const f = yhmParseBoard(t, dir, Date.now());
     return f.length ? f : null;
@@ -15056,5 +15161,6 @@ export {
   feedFailedResult,
   feedHeldResult,
   FEED_FROZEN_STAMP_MS,
-  FEED_FROZEN_DUE_MS
+  FEED_FROZEN_DUE_MS,
+  MSY_FEED_SILENT_MS
 };

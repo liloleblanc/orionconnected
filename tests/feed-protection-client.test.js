@@ -792,11 +792,14 @@ test('only an airport code becomes a key of the feed-status record (CodeQL js/pr
 // The worker reads the feed's own stamp now and says how old the data is: on
 // its stale answer, and on its 503 once the data is past three hours. This
 // screen had taken every fetch of that table for a live list and dated its
-// own copy by its own clock.
+// own copy by its own clock. The worker sends the airport's stamp under its
+// own name (_feed.dataAt), beside the time the answer is as of: only the
+// stamp re-dates a screen's copy.
 const MSY_STAMP = Date.parse('2026-11-18T06:15:00Z');
 const msyRows = [{ number: 'SY3041', arrival: { scheduledTime: { utc: '2026-11-18 07:48Z' } } }, { number: 'MX353', arrival: { scheduledTime: { utc: '2026-11-18 11:30Z' } } }];
-const msyStale = () => json({ arrivals: msyRows, _feed: { state: 'stale', failure: 'error', asOf: new Date(MSY_STAMP).toISOString() } }, 200, { 'X-Feed-State': 'stale' });
-const msyDown = (asOf) => json({ error: 'error', state: 'error', airport: 'MSY', _feed: { state: 'error', failure: 'error', asOf: asOf ? new Date(asOf).toISOString() : null, ageS: null } },
+const msyStale = () => json({ arrivals: msyRows, _feed: { state: 'stale', failure: 'error', asOf: new Date(MSY_STAMP).toISOString(), dataAt: new Date(MSY_STAMP).toISOString() } }, 200, { 'X-Feed-State': 'stale' });
+const msyDown = (asOf) => json({ error: 'error', state: 'error', airport: 'MSY', _feed: { state: 'error', failure: 'error', asOf: asOf ? new Date(asOf).toISOString() : null, ageS: null,
+  ...(asOf ? { dataAt: new Date(asOf).toISOString() } : {}) } },
   503, { 'X-Feed-State': 'error' });
 
 test("New Orleans: the screen's own copy is never dated later than the worker says the list is from, and is gone 180 minutes after that", async () => {
@@ -865,6 +868,85 @@ test('New Orleans: a screen that only ever saw the frozen list called live does 
   st = B.win.fidsFeedStatus('MSY', 'arr');
   assert.equal(st.state, 'stale');
   assert.equal(st.asOf, B.now - 100 * MIN);
+});
+
+test('a stale answer with no stamp of the airport never replaces a newer list on the screen, and is not written to storage poll after poll (two isolates, Toronto)', async () => {
+  // Pearson refuses the worker. For a few minutes two isolates hold last good
+  // copies of different ages and answer in turn. The time on such an answer is
+  // the age of that isolate's copy, not of the airport's data.
+  const rowsOf = (tag, n) => Array.from({ length: n }, (_, i) => ({ number: tag + (100 + i), departure: { scheduledTime: { utc: '2026-11-18 17:00Z' } } }));
+  const A = rowsOf('A', 40), Bn = rowsOf('B', 40);
+  const T0 = Date.parse('2026-11-18T14:00:00Z');
+  let answer = null;
+  const B = board(() => answer(), { now: T0 });
+  let writes = 0;
+  const set = B.ls.setItem.bind(B.ls);
+  B.ls.setItem = (k, v) => { if (k === 'fids_feed_lastgood_ORD_dep') writes++; return set(k, v); };
+  const live = (rows) => () => json({ departures: rows, _feed: { state: 'live', asOf: new Date(B.now).toISOString() } });
+  const stale = (rows, at) => () => json({ departures: rows, _feed: { state: 'stale', failure: 'blocked', asOf: new Date(at).toISOString(), why: 'HTTP 403' } }, 200, { 'X-Feed-State': 'stale' });
+  answer = live(A);
+  await B.win.adbFetch('ORD', 'Departure');                     // 14:00, list A
+  B.tick(4 * MIN);
+  answer = live(Bn);
+  await B.win.adbFetch('ORD', 'Departure');                     // 14:04, list B: the newer one
+  const before = writes;
+  const X = stale(A, T0), Y = stale(Bn, T0 + 4 * MIN);
+  for (let i = 0; i < 10; i++) { B.tick(30000); answer = i % 2 ? Y : X; await B.win.adbFetch('ORD', 'Departure'); }
+  assert.equal(writes - before, 0, 'ten polls, two isolates in turn: the stored copy is not rewritten once');
+  assert.equal(B.win._feedLgMem['fids_feed_lastgood_ORD_dep'].asOf, T0 + 4 * MIN, 'and the copy in memory is still the newer list');
+  // The last word was the lagging isolate's (list A, 14:00). Then the worker cannot be reached at all.
+  B.tick(30000); answer = X;
+  const shown = await B.win.adbFetch('ORD', 'Departure');
+  assert.equal(shown.departures[0].number, 'A100', 'what the worker answered is what is shown, with its own time');
+  assert.equal(B.win.fidsFeedStatus('ORD', 'dep').asOf, T0);
+  B.tick(30000); answer = () => { throw new TypeError('Failed to fetch'); };
+  const kept = await B.win.adbFetch('ORD', 'Departure');
+  assert.equal(kept.departures[0].number, 'B100', 'on its own, the screen shows the newest list it ever had');
+  assert.equal(B.win.fidsFeedStatus('ORD', 'dep').asOf, T0 + 4 * MIN);
+  assert.equal(JSON.parse(B.ls.getItem('fids_feed_lastgood_ORD_dep')).out.departures[0].number, 'B100');
+  // One refused answer between good ones: the same.
+  const C = board(() => answer(), { now: T0 });
+  answer = () => json({ departures: Bn, _feed: { state: 'live', asOf: new Date(C.now).toISOString() } });
+  await C.win.adbFetch('ORD', 'Departure');
+  C.tick(MIN); answer = stale(A, T0 - 4 * MIN);
+  await C.win.adbFetch('ORD', 'Departure');
+  C.tick(MIN); answer = () => { throw new TypeError('Failed to fetch'); };
+  assert.equal((await C.win.adbFetch('ORD', 'Departure')).departures[0].number, 'B100');
+  assert.equal(C.win.fidsFeedStatus('ORD', 'dep').asOf, T0);
+  assert.equal(JSON.parse(C.ls.getItem('fids_feed_lastgood_ORD_dep')).asOf, T0);
+});
+
+test("the airport's stamp re-dates the screen's own list when the worker's copy is older than the stamp, and a time ahead of the screen's clock is not believed", async () => {
+  // The worker's last good copy is from 00:10, before the airport's last write
+  // at 00:15. This screen fetched the list at 02:19: after the stamp, so it is
+  // the list as the airport left it, and the newer of the two.
+  const older = [{ number: 'DL2224', arrival: { scheduledTime: { utc: '2026-11-18 05:59Z' } } }];
+  let answer = null;
+  const B = board(() => answer(), { now: Date.parse('2026-11-18T08:19:00Z') });
+  answer = () => json({ arrivals: msyRows, _feed: { state: 'live', asOf: new Date(B.now).toISOString() } });
+  await B.win.adbFetch('MSY', 'Arrival');
+  B.tick(MIN);
+  answer = () => json({ arrivals: older, _feed: { state: 'stale', failure: 'error', asOf: new Date(MSY_STAMP - 5 * MIN).toISOString(), dataAt: new Date(MSY_STAMP).toISOString() } }, 200, { 'X-Feed-State': 'stale' });
+  await B.win.adbFetch('MSY', 'Arrival');
+  const mem = B.win._feedLgMem['fids_feed_lastgood_MSY_arr'];
+  assert.equal(mem.asOf, MSY_STAMP, 'dated by the stamp, not by the fetch at 02:19');
+  assert.deepEqual(plain(mem.out.arrivals.map((f) => f.number)), ['SY3041', 'MX353'], 'and still our own list: it was fetched after the stamp');
+  assert.equal(JSON.parse(B.ls.getItem('fids_feed_lastgood_MSY_arr')).asOf, MSY_STAMP);
+  // A 503 whose time is AHEAD of this screen's clock (the clock is slow): nothing is re-dated by it, and no time is shown.
+  const C = board(() => answer(), { now: Date.parse('2026-11-18T08:19:00Z') });
+  answer = () => json({ arrivals: msyRows, _feed: { state: 'live', asOf: new Date(C.now).toISOString() } });
+  await C.win.adbFetch('MSY', 'Arrival');
+  const t0 = C.now;
+  C.tick(MIN);
+  answer = () => msyDown(C.now + 20 * MIN);
+  const kept = await C.win.adbFetch('MSY', 'Arrival');
+  assert.equal(kept.arrivals.length, 2);
+  assert.deepEqual(plain(C.win.fidsFeedStatus('MSY', 'arr')), { state: 'live', asOf: t0, quiet: true }, 'the copy keeps its own date (a minute old: shown as live)');
+  delete C.win._feedLgMem['fids_feed_lastgood_MSY_arr'];
+  C.ls.clear();
+  assert.deepEqual(plain(await C.win.adbFetch('MSY', 'Arrival')), { arrivals: [] });
+  assert.equal(C.win.fidsFeedStatus('MSY', 'arr').state, 'unavailable');
+  assert.equal(C.win.fidsFeedStatus('MSY', 'arr').asOf, null, 'never "Last update" at a time that has not come');
 });
 
 test('a failure that carries no time changes nothing: the copy keeps its own date (Keflavik, Washington)', async () => {

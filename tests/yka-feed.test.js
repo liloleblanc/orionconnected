@@ -299,6 +299,29 @@ test('yka, the new route: a bare estimate settles across midnight; the date and 
   assert.equal(st('Delayed at 11:15').status, 'delayed');
 });
 
+test("yka, the new route: the row's own code stands in when the name is missing or unknown, never before the name", () => {
+  const one = (over) => parseYkaFeed(newRow(over), 'arr', NOW_NOV)[0];
+  // A carrier no map knows, with a good two-character code: the code, and the name as printed.
+  const h3 = one({ airlineName: 'Harbour Somewhere Air', airlineCode: 'H3' });
+  assert.equal(h3.number, 'H38054');
+  assert.equal(h3.arrival.airline.iata, 'H3');
+  assert.equal(h3.arrival.airline.name, 'Harbour Somewhere Air');
+  // No name at all: the code, and the name the worker knows for it.
+  const ac = one({ airlineName: '', airlineCode: 'AC' });
+  assert.equal(ac.number, 'AC8054');
+  assert.equal(ac.arrival.airline.name, 'Air Canada');
+  // The ICAO form the plugin sends for WestJet, with no name: read through the Canadian map.
+  const ws = one({ airlineName: '', airlineCode: 'WJA' });
+  assert.equal(ws.number, 'WS8054');
+  assert.equal(ws.arrival.airline.name, 'WestJet');
+  // The name still comes first: a wrong code beside a known name changes nothing.
+  assert.equal(one({ airlineName: 'WestJet', airlineCode: 'AC' }).number, 'WS8054');
+  // Neither a name nor a code that is one (digits, an unknown three letters): the bare number, as before.
+  assert.equal(one({ airlineName: '', airlineCode: '80' }).number, '8054');
+  assert.equal(one({ airlineName: '', airlineCode: 'XQZ' }).number, '8054');
+  assert.equal(one({ airlineName: '', airlineCode: 'XQZ' }).arrival.airline.iata, null);
+});
+
 test("yka: the board's own route (stark/both: bare clocks, no date, no gate) is never read as rows with a guessed day", () => {
   const both = JSON.stringify({ arrivals: [{ DisplayTime: '09:47', ViaAirportCity: 'Vancouver', AirlineCode: 'Air Canada', FlightNumber: '8054',
     Status: 'Late', StatusModifier: '', ScheduleTime: '09:47', Haystack: '' }], departures: [] });
