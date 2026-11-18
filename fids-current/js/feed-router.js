@@ -51,6 +51,18 @@ var FEED_LG_WRITE_EVERY_MS = 3 * 60000;
 // one answer failed would put it up and take it down all day. Under this age
 // the board shows the list as it does a live one; past it, it says how old.
 var FEED_STALE_QUIET_MS = 5 * 60000;
+// A LIST THE AIRPORT STOPPED WRITING (2026-11-18, New Orleans: its feed
+// answered all morning with a table last written at 00:15). The worker now
+// reads that feed's own stamp and says how old the airport's data is: on its
+// stale answer, and on its 503 once the data is past three hours. This screen
+// took every one of those fetches for a live list and dated its own copy by
+// its own clock, so the copy claims to be minutes old when the rows in it are
+// hours old. The worker's time wins: a copy is never dated later than the
+// worker says the list is from, and is not shown at all once that is past the
+// 180 minutes. With nothing left to show, the panel adds the store's "Last
+// update {TIME}" under "Live data unavailable" while that time is recent
+// enough for a clock time alone to be read correctly.
+var FEED_DOWN_TIME_MAX_MS = 12 * 3600000;
 // Their own last-good chains already exist (YQM: fids_yqm_lastgood_*, MCO:
 // fids_mco_lastgood_*); they report into the status, and are not copied twice.
 var FEED_OWN_LASTGOOD = { YQM: 1, MCO: 1 };
@@ -95,7 +107,7 @@ function _feedLgIndex() {
   });
   return idx;
 }
-function _feedLgSave(iata, dir, out, asOf) {
+function _feedLgSave(iata, dir, out, asOf, redate) {
   var k = _feedLgKey(iata, dir);
   try { window._feedLgMem[k] = { asOf: asOf, out: out }; } catch (e) {}
   // v23998 — Moncton and Orlando store their own copies (their chains below),
@@ -109,9 +121,12 @@ function _feedLgSave(iata, dir, out, asOf) {
     var now = Date.now();
     var idx = _feedLgIndex();
     // Stored recently enough (or found too big recently): the memory copy
-    // carries the rest, and the list is not serialised on every poll.
-    if (idx[k] && now - idx[k][0] < FEED_LG_WRITE_EVERY_MS) return;
-    if (_feedLgBigAt[k] && now - _feedLgBigAt[k] < FEED_LG_WRITE_EVERY_MS) return;
+    // carries the rest, and the list is not serialised on every poll. Except
+    // a copy being dated EARLIER (redate): the stored one claims a later time
+    // than the list is from and would win over the memory copy on the next
+    // load, so it is rewritten now. That happens once per list.
+    if (!redate && idx[k] && now - idx[k][0] < FEED_LG_WRITE_EVERY_MS) return;
+    if (!redate && _feedLgBigAt[k] && now - _feedLgBigAt[k] < FEED_LG_WRITE_EVERY_MS) return;
     var txt = JSON.stringify({ ts: now, asOf: asOf, out: out });
     var drop = function (old) { try { localStorage.removeItem(old); } catch (e2) {} delete idx[old]; };
     if (txt.length > FEED_LG_MAX_BYTES) {
@@ -212,8 +227,11 @@ function _feedSettle(iata, direction, out, err) {
     if (note && (note.state === 'stale' || note.state === 'stale-local')) {
       _feedSetStatus(iata, dir, 'stale', note.asOf);
       if (note.state === 'stale' && note.asOf) {
+        // Kept under the worker's time for it, also when this screen's own
+        // copy claims a later one: the list the worker shows is the newest
+        // there is, and it is as old as the worker says.
         var have = _feedLgLoad(iata, dir, now);
-        if (!have || have.asOf < note.asOf) _feedLgSave(iata, dir, out, note.asOf);
+        if (!have || have.asOf !== note.asOf) _feedLgSave(iata, dir, out, note.asOf, !!have && have.asOf > note.asOf);
       }
     } else if (note && note.state === 'unavailable-local') {
       _feedSetStatus(iata, dir, 'unavailable', null, 'error');
@@ -224,13 +242,18 @@ function _feedSettle(iata, direction, out, err) {
     return out;
   }
   var lg = _feedLgLoad(iata, dir, now);
+  // A failure that carries a time: the worker knows when the airport last
+  // wrote its list. This screen's copy of that list is no newer than that.
+  var known = (note && (note.state === 'blocked' || note.state === 'error') && note.asOf && note.asOf < now) ? note.asOf : null;
+  if (lg && known && known < lg.asOf) lg = (now - known < FEED_LG_MAX_MS) ? { asOf: known, out: lg.out } : null;
   if (lg) {
     try { console.warn('[FIDS] ' + iata + ' ' + direction + ' feed down (' + ((err && (err.feedDown || err.message)) || (note && note.state)) + ') — showing the last good list from ' + new Date(lg.asOf).toISOString()); } catch (e) {}
     _feedSetStatus(iata, dir, 'stale', lg.asOf);
     return lg.out;
   }
   try { console.warn('[FIDS] ' + iata + ' ' + direction + ' feed down, no last good list — live data unavailable'); } catch (e) {}
-  _feedSetStatus(iata, dir, 'unavailable', null, (err && err.feedDown) || (note && note.state) || 'error');
+  _feedSetStatus(iata, dir, 'unavailable', (known && now - known < FEED_DOWN_TIME_MAX_MS) ? known : null,
+    (err && err.feedDown) || (note && note.state) || 'error');
   var empty = {};
   empty[lk] = [];
   return empty;

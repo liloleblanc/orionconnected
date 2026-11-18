@@ -786,3 +786,115 @@ test('only an airport code becomes a key of the feed-status record (CodeQL js/pr
   W._feedSetStatus('yyz', 'dep', 'unavailable', null, 'error');
   assert.equal(W.fidsFeedStatus('YYZ', 'dep').state, 'unavailable', 'a real code still records, under its capitals');
 });
+
+// ── 2026-11-18 — A LIST THE AIRPORT STOPPED WRITING ─────────────────────────
+// New Orleans' feed answered all morning with a table last written at 00:15.
+// The worker reads the feed's own stamp now and says how old the data is: on
+// its stale answer, and on its 503 once the data is past three hours. This
+// screen had taken every fetch of that table for a live list and dated its
+// own copy by its own clock.
+const MSY_STAMP = Date.parse('2026-11-18T06:15:00Z');
+const msyRows = [{ number: 'SY3041', arrival: { scheduledTime: { utc: '2026-11-18 07:48Z' } } }, { number: 'MX353', arrival: { scheduledTime: { utc: '2026-11-18 11:30Z' } } }];
+const msyStale = () => json({ arrivals: msyRows, _feed: { state: 'stale', failure: 'error', asOf: new Date(MSY_STAMP).toISOString() } }, 200, { 'X-Feed-State': 'stale' });
+const msyDown = (asOf) => json({ error: 'error', state: 'error', airport: 'MSY', _feed: { state: 'error', failure: 'error', asOf: asOf ? new Date(asOf).toISOString() : null, ageS: null } },
+  503, { 'X-Feed-State': 'error' });
+
+test("New Orleans: the screen's own copy is never dated later than the worker says the list is from, and is gone 180 minutes after that", async () => {
+  let mood = 'live';
+  const B = board((u, i, now) => {
+    if (!u.startsWith(PROXY + '/flights/airports/iata/MSY/')) throw new Error('unexpected ' + u);
+    if (mood === 'live') return json({ arrivals: msyRows, _feed: { state: 'live', asOf: new Date(now).toISOString() } });
+    return mood === 'stale' ? msyStale() : msyDown(MSY_STAMP);
+  }, { now: Date.parse('2026-11-18T08:19:00Z') });
+  // 02:19: the worker still calls the list live, and the screen dates its copy by its own clock.
+  await B.win.adbFetch('MSY', 'Arrival');
+  assert.equal(B.win.fidsFeedStatus('MSY', 'arr').state, 'live');
+  assert.equal(JSON.parse(B.ls.getItem('fids_feed_lastgood_MSY_arr')).asOf, B.now);
+  // 02:20: the worker says stale, as of 00:15.
+  mood = 'stale';
+  B.tick(MIN);
+  const shown = await B.win.adbFetch('MSY', 'Arrival');
+  assert.equal(shown.arrivals.length, 2, 'the last list is still shown');
+  assert.deepEqual(plain(B.win.fidsFeedStatus('MSY', 'arr')), { state: 'stale', asOf: MSY_STAMP, why: null, at: B.now });
+  // The copy is re-dated at once, in memory and in storage, although it was stored a minute ago:
+  // left as it was, the stored one would claim 02:19 and win on the next load.
+  assert.equal(B.win._feedLgMem['fids_feed_lastgood_MSY_arr'].asOf, MSY_STAMP);
+  assert.equal(JSON.parse(B.ls.getItem('fids_feed_lastgood_MSY_arr')).asOf, MSY_STAMP);
+  // Once re-dated it is not rewritten on every poll.
+  const stored = B.ls.getItem('fids_feed_lastgood_MSY_arr');
+  B.tick(MIN);
+  await B.win.adbFetch('MSY', 'Arrival');
+  assert.equal(B.ls.getItem('fids_feed_lastgood_MSY_arr'), stored);
+  // 03:16: the worker has nothing left (three hours after the stamp) and says since when.
+  mood = 'down';
+  B.tick(Date.parse('2026-11-18T09:16:00Z') - B.now);
+  const gone = await B.win.adbFetch('MSY', 'Arrival');
+  assert.deepEqual(plain(gone), { arrivals: [] }, '181 minutes after 00:15 the screen does not show its copy either');
+  const st = B.win.fidsFeedStatus('MSY', 'arr');
+  assert.equal(st.state, 'unavailable');
+  assert.equal(st.asOf, MSY_STAMP, 'and the panel can say "Last update 00:15" under "Live data unavailable"');
+});
+
+test('New Orleans: a screen that only ever saw the frozen list called live does not keep showing it as minutes old', async () => {
+  // The morning of the capture: the list on this screen was fetched two minutes ago and is nine hours old.
+  let mood = 'live';
+  const B = board((u, i, now) => mood === 'live'
+    ? json({ arrivals: msyRows, _feed: { state: 'live', asOf: new Date(now).toISOString() } })
+    : msyDown(mood === 'down-old' ? MSY_STAMP - 6 * 3600000 : (mood === 'down-recent' ? B.now - 100 * MIN : (mood === 'down' ? MSY_STAMP : null))),
+  { now: Date.parse('2026-11-18T15:39:00Z') });
+  await B.win.adbFetch('MSY', 'Arrival');
+  assert.equal(B.win.fidsFeedStatus('MSY', 'arr').state, 'live');
+  // The worker now knows better: 503, the list is from 00:15.
+  mood = 'down';
+  B.tick(2 * MIN);
+  const out = await B.win.adbFetch('MSY', 'Arrival');
+  assert.deepEqual(plain(out), { arrivals: [] }, 'not the frozen rows under "last update two minutes ago"');
+  let st = B.win.fidsFeedStatus('MSY', 'arr');
+  assert.equal(st.state, 'unavailable');
+  assert.equal(st.asOf, MSY_STAMP, 'nine and a half hours old: the time is still said');
+  // A stamp from more than twelve hours ago is not printed as a bare clock time.
+  mood = 'down-old';
+  await B.win.adbFetch('MSY', 'Arrival');
+  st = B.win.fidsFeedStatus('MSY', 'arr');
+  assert.equal(st.state, 'unavailable');
+  assert.equal(st.asOf, null);
+  // A stamp 100 minutes old: the screen's copy is shown, dated by the stamp, not by the fetch.
+  mood = 'down-recent';
+  const kept = await B.win.adbFetch('MSY', 'Arrival');
+  assert.equal(kept.arrivals.length, 2);
+  st = B.win.fidsFeedStatus('MSY', 'arr');
+  assert.equal(st.state, 'stale');
+  assert.equal(st.asOf, B.now - 100 * MIN);
+});
+
+test('a failure that carries no time changes nothing: the copy keeps its own date (Keflavik, Washington)', async () => {
+  let mood = 'live';
+  const B = board((u, i, now) => mood === 'live'
+    ? json({ departures: [{ number: 'FI543', departure: { scheduledTime: { utc: '2026-11-18 16:00Z' } } }], _feed: { state: 'live', asOf: new Date(now).toISOString() } })
+    : msyDown(null), { now: Date.parse('2026-11-18T14:00:00Z') });
+  await B.win.adbFetch('KEF', 'Departure');
+  const t0 = B.now;
+  mood = 'down';
+  B.tick(40 * MIN);
+  const kept = await B.win.adbFetch('KEF', 'Departure');
+  assert.equal(kept.departures.length, 1);
+  assert.deepEqual(plain(B.win.fidsFeedStatus('KEF', 'dep')), { state: 'stale', asOf: t0, why: null, at: B.now });
+  B.tick(141 * MIN);
+  delete B.win._feedLgMem['fids_feed_lastgood_KEF_dep'];
+  B.ls.clear();
+  assert.deepEqual(plain(await B.win.adbFetch('KEF', 'Departure')), { departures: [] });
+  const st = B.win.fidsFeedStatus('KEF', 'dep');
+  assert.equal(st.state, 'unavailable');
+  assert.equal(st.asOf, null, 'no time is invented: the plain notice');
+});
+
+test('the notice for a feed that is down is the store\'s own words, in all nine languages: no word was added for it, and the panel adds the time only when there is one', () => {
+  // The three keys that existed before this change are the only ones used.
+  for (const key of ['feedUnavailable', 'feedStale', 'feedLastUpdate']) {
+    for (const l of LANGS) assert.ok(typeof STORE.STR[key][l] === 'string' && STORE.STR[key][l].trim(), `${key}.${l}`);
+  }
+  assert.deepEqual(Object.keys(STORE.STR).filter((k) => /^feed/.test(k)).sort(), ['feedLastUpdate', 'feedStale', 'feedUnavailable']);
+  const panel = CORE.slice(CORE.indexOf('function _fidsFeedDownPanel('), CORE.indexOf('function _fidsFeedDownLine('));
+  assert.match(panel, /_fidsFeedPairHtml\('feedUnavailable'\)\n\s*\+ \(fd\.asOf \? '<div class="sub">' \+ _fidsFeedPairHtml\('feedLastUpdate', fd\.asOf\)/);
+  assert.match(ROUTER, /var FEED_DOWN_TIME_MAX_MS = 12 \* 3600000;/);
+});

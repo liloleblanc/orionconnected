@@ -25,7 +25,8 @@ import { fileURLToPath } from 'node:url';
 import worker, {
   feedClassifyResponse, feedClassifyBody, feedJsonEmpty, feedVerdict, feedPartial, feedHealthNext, feedAutoDocked,
   feedBodyComplete, feedBackoffS,
-  _feedResetMemory, FEED_LASTGOOD_MAX_MS, FEED_AUTODOCK_MS, FEED_PROBE_EVERY_MS, FEED_FAIL_CONFIRM_MS, FEED_FAIL_PREFIX
+  _feedResetMemory, FEED_LASTGOOD_MAX_MS, FEED_AUTODOCK_MS, FEED_PROBE_EVERY_MS, FEED_FAIL_CONFIRM_MS, FEED_FAIL_PREFIX,
+  feedFailedResult, feedHeldResult
 } from '../workers/fids-proxy.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -1805,4 +1806,230 @@ test("Chicago's roll is read against its midnight, worked out once — not a dat
   assert.match(ord, /parts\.every\(\(f\) => f\._authTs >= calStart\)/);
   assert.doesNotMatch(ord, /parts\.every\(\(f\) => feedLocalDay\(/);
   assert.match(WORKER_SRC, /let f = _feedDayFmt\.get\(tz\);/, 'and feedLocalDay keeps one formatter per zone');
+});
+
+// ── 8. A LIST THE AIRPORT STOPPED WRITING, AND A COPY PAST ITS LIMIT (2026-11-18) ──
+// New Orleans answered 200 with well-formed JSON all morning while every row
+// carried the same updated_at from 00:15: at 14:33Z the worker called it live
+// with five arrivals, all over three hours old, and departures from hours
+// before still On Time. "ok" only ever meant that the airport answered.
+// Toronto, the same morning, ran on a copy 24 to 35 minutes old because
+// Pearson was refusing the worker: that one was said honestly (stale, with
+// its age), and stays so.
+const MSY_BODY = fx('msy-frozen-2026-11-18.json');
+const MSY_STAMP = Date.parse('2026-11-18T06:15:00Z');      // "2026-11-18 00:15:51" Central, to the minute
+const msyWin = (dir) => `/flights/airports/iata/MSY/2026-11-17T18:00/2026-11-18T18:00?direction=${dir === 'arr' ? 'Arrival' : 'Departure'}`;
+function msyUpstream(st) {
+  const f = async (url) => {
+    const u = new URL(String(url && url.url || url));
+    f.calls.push(u.hostname + u.pathname);
+    if (u.hostname === 'flymsy.com') return new Response(st.body, { status: 200, headers: { 'Content-Type': 'application/json; charset=UTF-8' } });
+    throw new Error('test: no network for ' + u.hostname);
+  };
+  f.calls = [];
+  return f;
+}
+
+test('New Orleans: a list the airport stopped writing is live only while it is still true, then stale as of the airport\'s own stamp, then nothing — never five old rows under LIVE', async () => {
+  await world(async (W) => {
+    const { env } = makeEnv();
+    const st = { body: MSY_BODY };
+    globalThis.fetch = msyUpstream(st);
+    // 00:20 in New Orleans: written five minutes ago. Live.
+    const r0 = await W.get(env, makeCtx(), msyWin('arr'));
+    assert.equal(r0.status, 200);
+    assert.equal(r0.headers.get('X-Feed-State'), 'live');
+    const j0 = await r0.json();
+    const rows = j0.arrivals;
+    assert.equal(rows.length, 5);
+    assert.ok(!('why' in j0._feed), 'a live answer has no reason to give');
+    // 02:00: the stamp is 105 minutes old and the 01:48 arrival is 12 minutes past. A late flight is not a dead importer: live.
+    W.tick(Date.parse('2026-11-18T08:00:00Z') - W.now); W.colo();
+    const r1 = await W.get(env, makeCtx(), msyWin('arr'));
+    assert.equal(r1.headers.get('X-Feed-State'), 'live');
+    const lastFetch = W.now;
+    // 02:20: that flight came due half an hour ago and the list was last written at 00:15. Not live any more.
+    W.tick(20 * MIN); W.colo();
+    const r2 = await W.get(env, makeCtx(), msyWin('arr'));
+    assert.equal(r2.status, 200);
+    assert.equal(r2.headers.get('X-Feed-State'), 'stale');
+    assert.equal(r2.headers.get('X-Feed-Stale'), '1');
+    assert.equal(r2.headers.get('Cache-Control'), 'no-store');
+    const j2 = await r2.json();
+    assert.equal(j2._feed.state, 'stale');
+    assert.equal(j2._feed.failure, 'error');
+    // As of the airport's stamp — 00:15 — not as of our last fetch of it at 02:00.
+    assert.equal(Date.parse(j2._feed.asOf), MSY_STAMP);
+    assert.notEqual(Date.parse(j2._feed.asOf), lastFetch);
+    assert.equal(j2._feed.why, 'the airport has not written its list since 2026-11-18T06:15:00.000Z');
+    assert.equal(r2.headers.get('X-Feed-As-Of'), new Date(MSY_STAMP).toISOString());
+    assert.equal(r2.headers.get('X-Feed-Age'), String((W.now - MSY_STAMP) / 1000));
+    assert.deepEqual(j2.arrivals.map((f) => f.number), rows.map((f) => f.number), 'the last list, marked');
+    // The other direction is the same feed: the same answer.
+    const d2 = await W.get(env, makeCtx(), msyWin('dep'));
+    assert.equal(d2.status, 503, 'no departures copy was ever kept: nothing, rather than frozen rows as live');
+    // 03:16: three hours after the STAMP (our own copy is 76 minutes old). Nothing honest is left to show.
+    W.tick(Date.parse('2026-11-18T09:16:00Z') - W.now); W.colo();
+    const r3 = await W.get(env, makeCtx(), msyWin('arr'));
+    assert.equal(r3.status, 503);
+    const j3 = await r3.json();
+    assert.equal(j3.error, 'error');
+    assert.equal(j3._feed.state, 'error');
+    assert.equal(Date.parse(j3._feed.asOf), MSY_STAMP, 'the 503 says since when, so a screen can date its own copy');
+    assert.equal(r3.headers.get('X-Feed-State'), 'error');
+    // 08:33:58, the moment of the capture: the five arrivals are all over three hours old. 503 both ways, never 200 live.
+    W.tick(Date.parse('2026-11-18T14:33:58Z') - W.now); W.colo();
+    for (const dir of ['arr', 'dep']) {
+      const r = await W.get(env, makeCtx(), msyWin(dir));
+      assert.equal(r.status, 503, dir);
+      assert.notEqual(r.headers.get('X-Feed-State'), 'live', dir);
+      assert.equal((await r.json()).error, 'error', dir + ': an outage of the list, not a refusal');
+    }
+    assert.ok(globalThis.fetch.calls.every((c) => c === 'flymsy.com/wp-json/flight-status/flights'), 'only the airport was asked');
+  }, Date.parse('2026-11-18T06:20:00Z'));
+});
+
+test('New Orleans: the frozen list is written to feed health as an error (never a block, never docked), and is live again the moment the airport writes it', async () => {
+  await world(async (W) => {
+    const { env, writes } = makeEnv();
+    const st = { body: MSY_BODY };
+    globalThis.fetch = msyUpstream(st);
+    // One screen, one isolate, polling every 90 seconds through the morning.
+    for (let i = 0; i < 5; i++) {
+      const r = await W.get(env, makeCtx(), msyWin('dep'));
+      assert.equal(r.status, 503);
+      W.tick(90000);
+    }
+    const health = JSON.parse(env.FIDS_USERS.m.get('feed-health').v).feeds.MSY;
+    assert.equal(health.state, 'error');
+    assert.match(health.why, /has not written its list since 2026-11-18T06:15:00\.000Z/);
+    const dock = feedAutoDocked({ feeds: { MSY: { ...health, since: W.now - 6 * 3600000 } } }, W.now);
+    assert.deepEqual(dock.auto, [], 'an error never docks an airport');
+    assert.equal(dock.watch.MSY.state, 'error', 'it is on the watch list the menu shows');
+    // The shared failure remembers the stamp, so a colo that only honours the hold says the same time.
+    const fail = JSON.parse(env.FIDS_LIVE_FLIGHTS.m.get(FEED_FAIL_PREFIX + 'MSY:win:dep').v);
+    assert.equal(fail.state, 'error');
+    assert.equal(fail.d, MSY_STAMP);
+    // The importer runs again: every row restamped a few minutes ago.
+    st.body = MSY_BODY.replace(/"updated_at":"2026-11-18 00:15:51"/g, '"updated_at":"2026-11-18 09:40:02"');
+    W.tick(2 * MIN); W.colo();
+    const ok = await W.get(env, makeCtx(), msyWin('dep'));
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers.get('X-Feed-State'), 'live');
+    assert.ok((await ok.json()).departures.length >= 1);
+    assert.ok(writes.some((w) => w.k === 'fg:v1:MSY:win:dep'), 'and it is the shared copy again');
+  }, Date.parse('2026-11-18T15:41:00Z'));
+});
+
+test('the last good list is dated by the airport\'s stamp when it has one: served as of it, and counted against the three hours from it', () => {
+  const now = Date.parse('2026-11-18T08:20:00Z');
+  const doc = { at: now - 20 * MIN, p: [{ n: 1 }], n: 1 };
+  // No stamp: as before, the copy's own time.
+  assert.deepEqual(feedFailedResult(doc, 'blocked', now), { state: 'stale', failure: 'blocked', payload: doc.p, rows: 1, asOf: doc.at, via: 'lastgood' });
+  assert.deepEqual(feedFailedResult(null, 'blocked', now), { state: 'blocked', failure: 'blocked', payload: null, rows: 0, asOf: null, via: 'none' });
+  // A stamp older than the copy: the list is as old as the stamp.
+  const stamp = now - 125 * MIN;
+  const g = feedFailedResult(doc, 'error', now, stamp);
+  assert.equal(g.state, 'stale');
+  assert.equal(g.asOf, stamp);
+  assert.equal(g.payload, doc.p);
+  // Past three hours by the stamp, whatever the copy's time: nothing, and the stamp goes out with it.
+  const old = feedFailedResult(doc, 'error', now, now - FEED_LASTGOOD_MAX_MS - 1000);
+  assert.equal(old.state, 'error');
+  assert.equal(old.payload, null);
+  assert.equal(old.asOf, now - FEED_LASTGOOD_MAX_MS - 1000);
+  // A stamp NEWER than the copy never makes the copy younger than it is.
+  assert.equal(feedFailedResult(doc, 'error', now, now - MIN).asOf, doc.at);
+  // The 503 carries the time in its body and headers; a failure with no stamp carries none, as before.
+  const wide = WORKER_SRC.slice(WORKER_SRC.indexOf('function feedDownResponse('), WORKER_SRC.indexOf('__name(feedDownResponse'));
+  assert.match(wide, /_feed: feedMeta\(g\)/);
+  assert.match(wide, /\.\.\.feedHeaders\(g\)/);
+});
+
+test('Toronto: a copy 24 to 35 minutes old while Pearson refuses is stale with its age, never live — and a copy past three hours is never served, even from a held answer', async () => {
+  await world(async (W) => {
+    const { env } = makeEnv();
+    const up = { yyz: 'ok' };
+    globalThis.fetch = upstream(up);
+    const r0 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    assert.equal(r0.headers.get('X-Feed-State'), 'live');
+    const good = (await r0.json()).list;
+    const t0 = W.now;
+    // Pearson's bot manager turns the worker away. 24, 31 and 35 minutes on, as on 2026-11-18.
+    up.yyz = 'radware';
+    for (const min of [24, 31, 35]) {
+      W.tick(t0 + min * MIN - W.now); W.colo();
+      const r = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+      assert.equal(r.status, 200);
+      assert.equal(r.headers.get('X-Feed-State'), 'stale', min + ' minutes: not live');
+      assert.equal(r.headers.get('X-Feed-Stale'), '1');
+      assert.equal(r.headers.get('X-Feed-Age'), String(min * 60));
+      assert.equal(r.headers.get('X-Feed-As-Of'), new Date(t0).toISOString());
+      assert.equal(r.headers.get('Cache-Control'), 'no-store', 'and no cache keeps it past its time');
+      const j = await r.json();
+      assert.equal(j._feed.state, 'stale');
+      assert.equal(j._feed.failure, 'blocked');
+      assert.equal(j._feed.why, 'HTTP 302');
+      assert.equal(j._feed.ageS, min * 60);
+      assert.deepEqual(j.list, good);
+    }
+    // Two asks in a row just inside the limit: the second failure is held by this isolate for five minutes.
+    W.tick(t0 + FEED_LASTGOOD_MAX_MS - 4 * MIN - W.now); W.colo();
+    assert.equal((await W.get(env, makeCtx(), '/flights/yyz?direction=dep')).headers.get('X-Feed-State'), 'stale');
+    W.tick(3 * MIN);                                    // same isolate: one minute inside the limit
+    const held = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    assert.equal(held.headers.get('X-Feed-State'), 'stale');
+    assert.equal(held.headers.get('X-Feed-Age'), String(FEED_LASTGOOD_MAX_MS / 1000 - 60));
+    const asked = globalThis.fetch.calls.length;
+    // Two minutes later the copy is past three hours and the hold has not run out. It used to be served on.
+    W.tick(2 * MIN);
+    const late = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    assert.equal(globalThis.fetch.calls.length, asked, 'still the held answer: Pearson was not asked again');
+    assert.equal(late.status, 503, 'but the copy it was made with is past the limit');
+    const jl = await late.json();
+    assert.equal(jl.error, 'blocked');
+    assert.equal(jl._feed.asOf, null);
+  });
+  // The rule itself.
+  const now = Date.parse('2026-11-18T15:41:00Z');
+  const stale = { state: 'stale', failure: 'blocked', payload: { list: [1] }, rows: 1, asOf: now - FEED_LASTGOOD_MAX_MS + 1000, via: 'lastgood' };
+  assert.equal(feedHeldResult(stale, now), stale, 'inside the limit: as held');
+  assert.deepEqual(feedHeldResult(stale, now + 2000), { state: 'blocked', failure: 'blocked', payload: null, rows: 0, asOf: null, via: 'none' });
+  const live = { state: 'ok', failure: null, payload: [], rows: 0, asOf: now, via: 'live' };
+  assert.equal(feedHeldResult(live, now + 10 * 3600000), live, 'only a stale copy has a limit to pass');
+});
+
+test('the airports that refuse us or are down are answered honestly: Keflavik\'s outage is "error", Washington\'s refusal "blocked", and nothing is asked a second way', async () => {
+  await world(async (W) => {
+    const { env } = makeEnv();
+    const asked = [];
+    globalThis.fetch = async (url, init) => {
+      const u = new URL(String(url && url.url || url));
+      asked.push({ host: u.hostname, path: u.pathname, headers: Object.keys((init && init.headers) || {}).sort().join(',') });
+      // fids.kefairport.is on 2026-11-18: a load balancer with nothing behind it.
+      if (u.hostname === 'fids.kefairport.is') return new Response('<html><body><b>Http/1.1 Service Unavailable</b></body> </html>', { status: 503, headers: { 'Content-Type': 'text/html' } });
+      // flyreagan.com and flydulles.com: the edge refuses the worker.
+      if (u.hostname === 'www.flyreagan.com' || u.hostname === 'www.flydulles.com') return new Response('', { status: 403, headers: { 'Content-Type': 'text/html' } });
+      throw new Error('test: no network for ' + u.hostname);
+    };
+    const win = (code) => `/flights/airports/iata/${code}/2026-11-18T06:00/2026-11-18T18:00?direction=Departure`;
+    for (const [code, kind] of [['KEF', 'error'], ['DCA', 'blocked'], ['IAD', 'blocked']]) {
+      const r = await W.get(env, makeCtx(), win(code));
+      assert.equal(r.status, 503, code);
+      assert.equal(r.headers.get('X-Feed-State'), kind, code);
+      const j = await r.json();
+      assert.equal(j.error, kind, code);
+      assert.equal(j._feed.asOf, null, code + ': no list, and no time invented for one');
+      // What the airport answered is on the route itself: no dashboard needed to tell a 403 from a 429.
+      assert.equal(j._feed.why, kind === 'error' ? 'HTTP 503' : 'HTTP 403', code);
+      assert.ok(!('departures' in j), code + ': never an empty list');
+    }
+    // One ask per airport, to the address it always had, with the headers it always sent: no second route, no other source.
+    assert.deepEqual(asked.map((a) => a.host), ['fids.kefairport.is', 'www.flyreagan.com', 'www.flydulles.com']);
+    assert.equal(asked[1].path, '/arrivals-and-departures/json');
+    assert.equal(asked[1].headers, 'Accept,Cookie,User-Agent');
+    assert.equal(asked[2].headers, 'Accept,Cookie,User-Agent');
+    assert.equal(asked[0].headers, 'Accept,User-Agent');
+  }, Date.parse('2026-11-18T15:41:00Z'));
+  assert.doesNotMatch(WORKER_SRC, /kefairport\.is\/flug/, 'the public pages of Keflavik are not read in its place');
 });

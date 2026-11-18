@@ -1,5 +1,7 @@
-// YKA Kamloops — kamloopsairport.com/starkapi.php parser against verbatim
-// captures (2026-09-05 23:06 PDT). Pins: "Sep 5 - 22:13" (no year, no
+// YKA Kamloops — the parser against verbatim captures: the September shim
+// (kamloopsairport.com/starkapi.php, 2026-09-05 23:06 PDT, gone since the site
+// was rebuilt) and, at the end of this file, the plugin route that replaced it
+// (2026-11-18). The shim's rows still parse: the old names are read as fallbacks. Pins: "Sep 5 - 22:13" (no year, no
 // offset) landing on the Pacific offset, carrier NAME → IATA ("Pacific
 // Coastal" → 8P from the YKA map, the shared map lacks it), the bare
 // FlightNumber gaining its prefix, "Arrived at 23:02" with ActualTime as
@@ -10,7 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseYkaFeed, parseYkaTime } from '../workers/fids-proxy.js';
+import { parseYkaFeed, parseYkaTime, _authorityHandlers } from '../workers/fids-proxy.js';
 
 const fx = (n) => readFileSync(new URL(`./fixtures/${n}`, import.meta.url), 'utf8');
 const NOW = Date.parse('2026-09-05T23:06:00-07:00');
@@ -194,4 +196,140 @@ test('yka: garbage in, empty out', () => {
   // The WP REST 404 a missing ?type= answers with.
   assert.deepEqual(parseYkaFeed('{"code":"rest_no_route","message":"No route was found matching the URL and request method","data":{"status":404}}', 'arr', NOW), []);
   assert.deepEqual(parseYkaFeed('<html></html>', 'arr', NOW), []);
+});
+
+// ── 2026-11-18 — the address moved and the rows were renamed ────────────────
+// The airport rebuilt its site: /starkapi.php answers a plain 404 and the
+// plugin now serves /wp-json/ch-flight-data/v1/flights/<direction>, with
+// camelCase rows. The two fixtures are the first rows of what those routes
+// answered at 15:44Z (07:44 in Kamloops), byte for byte.
+const NOW_NOV = Date.parse('2026-11-18T07:44:00-08:00');
+
+test('yka, the new route: arrivals parse into rows with the date, the gate, the place code and the carrier', () => {
+  const arr = parseYkaFeed(fx('yka-flights-arr-2026-11-18.json'), 'arr', NOW_NOV);
+  assert.deepEqual(arr.map((x) => x.number), ['AC8054', 'WS3483', 'WS3485', '8P1165', 'AC8060', 'AC8062', 'WS3487', 'AC8054']);
+  assert.ok(arr.every((x) => x.arrival.airport.iata === 'YKA'));
+  assert.ok(arr.every((x) => x.arrival.scheduledTime.local.endsWith('-08:00')), 'all PST');
+  assert.ok(arr.every((x) => x.arrival.gate), 'a gate on every row');
+  // AC8054 from Vancouver: "Nov 18 - 09:47", status "Late", estimatedTime a bare "10:44".
+  const ac = arr[0];
+  assert.equal(ac.status, 'delayed');
+  assert.equal(ac.arrival.scheduledTime.local, '2026-11-18 09:47:00-08:00');
+  assert.equal(ac.arrival.scheduledTime.utc, '2026-11-18 17:47:00+00:00');
+  // The row's own timestamp (1795016820 = 15:47Z) is two hours early: never read.
+  assert.equal(ac._authTs, Date.parse('2026-11-18T09:47:00-08:00'));
+  assert.notEqual(ac._authTs, 1795016820 * 1000);
+  assert.equal(ac.arrival.revisedTime.local, '2026-11-18 10:44:00-08:00');
+  assert.equal(ac.arrival.gate, '1');
+  assert.equal(ac.departure.airport.iata, 'YVR');
+  assert.equal(ac.departure.airport.name, 'Vancouver');
+  assert.equal(ac.arrival.airline.iata, 'AC');
+  assert.equal(ac.arrival.airline.name, 'Air Canada');
+  // WestJet: airlineCode is "WJA" (the ICAO code). The carrier comes from the name.
+  const ws = arr[1];
+  assert.equal(ws.number, 'WS3483');
+  assert.equal(ws.arrival.airline.iata, 'WS');
+  assert.equal(ws.arrival.airline.name, 'WestJet');
+  assert.equal(ws.status, 'cancelled');
+  assert.equal(ws.arrival.revisedTime, undefined);
+  assert.equal(ws.departure.airport.iata, 'YYC');
+  // "On Time" with estimatedTime equal to the schedule: no revised time.
+  const pc = arr[3];
+  assert.equal(pc.number, '8P1165');
+  assert.equal(pc.status, 'ontime');
+  assert.equal(pc.arrival.revisedTime, undefined);
+  assert.equal(pc.arrival.airline.name, 'Pacific Coastal Airlines');
+  assert.equal(pc.departure.airport.iata, 'YYJ');
+  assert.equal(pc.arrival.gate, '3');
+  // Past midnight and the next day keep their own dates.
+  assert.equal(arr[6].arrival.scheduledTime.local, '2026-11-19 00:15:00-08:00');
+  assert.equal(arr[7].arrival.scheduledTime.local, '2026-11-19 09:47:00-08:00');
+  assert.equal(arr[7].status, 'ontime');
+});
+
+test('yka, the new route: departures — "Delayed at 11:15", cancelled, direction respected', () => {
+  const dep = parseYkaFeed(fx('yka-flights-dep-2026-11-18.json'), 'dep', NOW_NOV);
+  assert.deepEqual(dep.map((x) => x.number), ['AC8055', 'WS3488', 'WS3486', '8P1166', 'AC8061', 'WS3482', 'AC8053']);
+  assert.ok(dep.every((x) => x.departure.airport.iata === 'YKA' && x.departure.gate));
+  const ac = dep[0];
+  assert.equal(ac.status, 'delayed');
+  assert.equal(ac.departure.scheduledTime.local, '2026-11-18 10:20:00-08:00');
+  assert.equal(ac.departure.revisedTime.local, '2026-11-18 11:15:00-08:00');
+  assert.equal(ac.departure.gate, '1');
+  assert.equal(ac.arrival.airport.iata, 'YVR');
+  assert.equal(ac.arrival.gate, undefined);
+  assert.equal(dep[1].status, 'cancelled');
+  assert.equal(dep[5].departure.scheduledTime.local, '2026-11-19 05:10:00-08:00');
+  // Each route is one direction: read for the other side, it is empty.
+  assert.deepEqual(parseYkaFeed(fx('yka-flights-dep-2026-11-18.json'), 'arr', NOW_NOV), []);
+  assert.deepEqual(parseYkaFeed(fx('yka-flights-arr-2026-11-18.json'), 'dep', NOW_NOV), []);
+});
+
+// One row of the new shape with fields overridden.
+const newRow = (over) => JSON.stringify([{
+  flightId: 40355681, flightNumber: '8054', airlineName: 'Air Canada', airlineCode: 'AC', airportCity: 'Vancouver', airportCode: 'YVR',
+  direction: 'A', flightDate: '20261118', localTimestamp: 1795016820, utcTimestamp: 1795016820, timestamp: 1795016820,
+  displayDate: 'Nov 18', scheduledTime: '9:47 AM', scheduleDisplay: 'Nov 18 - 09:47', estimatedTime: '09:47', status: 'On Time',
+  notes: 'On Time', terminal: '', gate: '1', haystack: '', ...over
+}]);
+
+test('yka, the new route: a bare estimate settles across midnight; the date and clock stand in for a missing scheduleDisplay', () => {
+  // 23:55 scheduled, estimated "00:05": the next day, ten minutes late.
+  const late = parseYkaFeed(newRow({ scheduleDisplay: 'Nov 18 - 23:55', scheduledTime: '11:55 PM', estimatedTime: '00:05', status: 'Late' }), 'arr', NOW_NOV)[0];
+  assert.equal(late.status, 'delayed');
+  assert.equal(late.arrival.scheduledTime.local, '2026-11-18 23:55:00-08:00');
+  assert.equal(late.arrival.revisedTime.local, '2026-11-19 00:05:00-08:00');
+  // 00:15 scheduled, estimated "23:58": the evening before, early.
+  const early = parseYkaFeed(newRow({ scheduleDisplay: 'Nov 19 - 00:15', flightDate: '20261119', estimatedTime: '23:58' }), 'arr', NOW_NOV)[0];
+  assert.equal(early.arrival.revisedTime.local, '2026-11-18 23:58:00-08:00');
+  // No scheduleDisplay: flightDate + scheduledTime, twelve-hour clock.
+  const bare = parseYkaFeed(newRow({ scheduleDisplay: undefined, scheduledTime: '2:45 PM', estimatedTime: '14:45' }), 'arr', NOW_NOV)[0];
+  assert.equal(bare.arrival.scheduledTime.local, '2026-11-18 14:45:00-08:00');
+  assert.equal(bare.arrival.revisedTime, undefined);
+  const noon = parseYkaFeed(newRow({ scheduleDisplay: '', scheduledTime: '12:05 AM', flightDate: '20261119' }), 'arr', NOW_NOV)[0];
+  assert.equal(noon.arrival.scheduledTime.local, '2026-11-19 00:05:00-08:00');
+  // Neither: the row has no time, and is not given one from the timestamps.
+  assert.deepEqual(parseYkaFeed(newRow({ scheduleDisplay: '', scheduledTime: '', flightDate: '' }), 'arr', NOW_NOV), []);
+  // The words of the old shim still read on the new rows.
+  const st = (status, extra) => parseYkaFeed(newRow({ status, ...extra }), 'arr', NOW_NOV)[0];
+  assert.equal(st('Arrived at 09:51', { estimatedTime: '09:51' }).status, 'arrived');
+  assert.equal(st('Arrived at 09:51', { estimatedTime: '09:51' }).arrival.revisedTime.local, '2026-11-18 09:51:00-08:00');
+  assert.equal(st('Early at 09:40', { estimatedTime: '09:40' }).status, 'scheduled');
+  assert.equal(st('Late at 10:10', { estimatedTime: '09:47' }).arrival.revisedTime.local, '2026-11-18 10:10:00-08:00', 'the clock in the words, when the estimate has not moved');
+  assert.equal(st('Delayed at 11:15').status, 'delayed');
+});
+
+test("yka: the board's own route (stark/both: bare clocks, no date, no gate) is never read as rows with a guessed day", () => {
+  const both = JSON.stringify({ arrivals: [{ DisplayTime: '09:47', ViaAirportCity: 'Vancouver', AirlineCode: 'Air Canada', FlightNumber: '8054',
+    Status: 'Late', StatusModifier: '', ScheduleTime: '09:47', Haystack: '' }], departures: [] });
+  assert.deepEqual(parseYkaFeed(both, 'arr', NOW_NOV), []);
+  assert.deepEqual(parseYkaFeed(JSON.stringify(JSON.parse(both).arrivals), 'arr', NOW_NOV), []);
+});
+
+test('yka: the handler asks the plugin route for its direction, never the shim that is gone, and a 404 there is no list', async () => {
+  const saved = { fetch: globalThis.fetch, caches: globalThis.caches, now: Date.now };
+  const asked = [];
+  Date.now = () => NOW_NOV;
+  globalThis.caches = { default: { async match() { return undefined; }, async put() {} } };
+  try {
+    globalThis.fetch = async (url) => {
+      asked.push(String(url));
+      const m = String(url).match(/\/wp-json\/ch-flight-data\/v1\/flights\/(arrivals|departures)$/);
+      if (m) return new Response(fx(`yka-flights-${m[1] === 'arrivals' ? 'arr' : 'dep'}-2026-11-18.json`), { status: 200, headers: { 'Content-Type': 'application/json; charset=UTF-8' } });
+      return new Response('<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>nginx</center></body></html>',
+        { status: 404, headers: { 'Content-Type': 'text/html' } });
+    };
+    const dep = await _authorityHandlers.yka.list('dep', {});
+    const arr = await _authorityHandlers.yka.list('arr', {});
+    assert.equal(dep.length, 7);
+    assert.equal(arr.length, 8);
+    assert.deepEqual(asked, [
+      'https://kamloopsairport.com/wp-json/ch-flight-data/v1/flights/departures',
+      'https://kamloopsairport.com/wp-json/ch-flight-data/v1/flights/arrivals'
+    ]);
+    // The route gone again (what starkapi.php answers today): nothing, never an empty list.
+    globalThis.fetch = async (url) => { asked.push(String(url)); return new Response('<center><h1>404 Not Found</h1></center>', { status: 404, headers: { 'Content-Type': 'text/html' } }); };
+    assert.equal(await _authorityHandlers.yka.list('dep', {}), null);
+    assert.ok(!asked.some((u) => /starkapi/.test(u)), 'the old address is not asked');
+  } finally { globalThis.fetch = saved.fetch; globalThis.caches = saved.caches; Date.now = saved.now; }
 });

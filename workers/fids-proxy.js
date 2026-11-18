@@ -3548,6 +3548,30 @@ __name(acTrackAppend, "acTrackAppend");
 //    (the probe's time is its own small key, "fp:v1:<IATA>", never the health
 //    document), and two good answers in a row undock it. Automation never
 //    writes the admin's manual "dry-dock" document.
+// 5. A LIST THE AIRPORT STOPPED WRITING IS NOT LIVE. On 2026-11-18 New
+//    Orleans answered 200 with well-formed JSON all morning while every row
+//    in it carried the same "updated_at" from 00:15: its importer had stopped
+//    and its endpoint kept serving the table. Arrivals held five rows, all
+//    over three hours old, departures from hours before still read On Time,
+//    and all of it went out under a LIVE stamp, because "ok" only ever meant
+//    that the airport answered. Where a feed carries its own stamp, the
+//    producer reads it (feedFrozen) and, when flights have come due since the
+//    airport last wrote its list, fails the answer with the stamp
+//    (feedNote "error", { dataAt }). The guard then does what it does for any
+//    failed feed, with ONE difference: the list is as old as the airport's
+//    stamp, not as old as our last fetch of it. So the last good list is
+//    served marked stale AS OF THE STAMP, and only while the stamp is under
+//    3 hours old; after that the answer is the 503, which carries the stamp
+//    too, so a screen holding its own copy can date it honestly.
+//    A rule on the rows alone ("every row is hours in the past") is NOT
+//    applied to every airport: a small airport whose list holds only today
+//    reads exactly like that on a quiet night, and would be called an outage
+//    every evening. The stamp is evidence; the rows alone are not.
+// 6. A COPY PAST THE LIMIT IS NEVER SERVED, HOWEVER IT IS HELD. The last good
+//    list is good for FEED_LASTGOOD_MAX_MS. A failed answer held in an
+//    isolate (the backoff) used to keep serving the copy it was made with
+//    until the hold ran out, up to five minutes past the limit; the hold is
+//    checked against the limit on every use now (feedHeldResult).
 // No cron: tests/provider-ban.test.js forbids one in this worker, and the
 // dock poll every board already makes is the clock.
 // ════════════════════════════════════════════════════════════════════════════
@@ -3589,6 +3613,45 @@ const FEED_FAIL_PREFIX = "fx:v1:";      // FIDS_LIVE_FLIGHTS: the shared backoff
 const FEED_NO_AUTODOCK = { YQM: "second source; stream 1 is pinned here" };
 const FEED_EXPOSE = "X-Feed-State, X-Feed-Stale, X-Feed-Age, X-Feed-As-Of, X-Feed-Source, X-Feed-Partial";
 const FEED_CHALLENGE_RE = /perfdrive|shieldsquare|rdwr|radware|captcha|cf-chl|cf_chl|challenge-platform|just a moment|attention required|access denied|request unsuccessful|incapsula|pardon our interruption|are you a robot|bot protection|wp remote firewall|blocked because|ddos-guard|sucuri/i;
+
+// A FEED THAT CARRIES ITS OWN STAMP (rule 5). The list is frozen when the
+// airport last wrote it FEED_FROZEN_STAMP_MS ago or more AND a flight has
+// come due since: scheduled after the stamp, and FEED_FROZEN_DUE_MS or more
+// before now. Both halves are needed. The age alone would call a quiet night
+// an outage at an airport whose importer only writes when something changes;
+// a flight coming due alone would trip on an importer that runs once an
+// hour. Together they say: the list had this flight ahead of it, the flight's
+// time came and went, and the airport has not touched its list since before.
+const FEED_FROZEN_STAMP_MS = 90 * 60000;
+const FEED_FROZEN_DUE_MS = 30 * 60000;
+/**
+ * Pure. stampMs: when the airport last wrote its list (its own stamp, epoch
+ * ms). times: the scheduled time of every row (epoch ms). Returns the stamp
+ * when the list is frozen at nowMs, else null. No stamp, no verdict.
+ */
+function feedFrozen(stampMs, times, nowMs) {
+  if (typeof stampMs !== "number" || !isFinite(stampMs) || stampMs <= 0) return null;
+  if (nowMs - stampMs < FEED_FROZEN_STAMP_MS) return null;
+  for (const t of times || []) {
+    if (typeof t === "number" && t > stampMs && t <= nowMs - FEED_FROZEN_DUE_MS) return stampMs;
+  }
+  return null;
+}
+__name(feedFrozen, "feedFrozen");
+/**
+ * The airport's own time for the data behind a failed answer: the oldest
+ * dataAt among the notes that failed it (feedNote extra), or null. Only a
+ * producer that read the feed's own stamp says one.
+ */
+function feedNotesDataAt(notes) {
+  let at = null;
+  for (const n of notes || []) {
+    if (!n || n.state === "ok" || n.superseded) continue;
+    if (typeof n.dataAt === "number" && isFinite(n.dataAt) && n.dataAt > 0 && (at == null || n.dataAt < at)) at = n.dataAt;
+  }
+  return at;
+}
+__name(feedNotesDataAt, "feedNotesDataAt");
 
 /** Record one upstream answer's label in the current guarded request, if any. */
 function feedNote(state, why, extra) {
@@ -4067,7 +4130,8 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
       // fail: it keeps the run of failures going (feedHealthNote writes only
       // on a change), so a longer hold does not hide an outage from the health.
       else if (m.failure) feedHealthNote(env, ctx, code, m.failure, now, [{ state: m.failure, why: "recent failure (held)" }], m.asOf || null, null, dir);
-      return m;
+      // Rule 6: a held failure never serves its copy past the limit.
+      return feedHeldResult(m, now);
     }
   }
   const kv = env && env.FIDS_LIVE_FLIGHTS;
@@ -4101,7 +4165,8 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
     const holdMs = fl ? feedBackoffS(code, fl.state) * 1000 - (now - fl.at) : 0;
     if (fl && (fl.n || 1) >= 2 && holdMs > 0) {
       feedHealthNote(env, ctx, code, fl.state, now, [{ state: fl.state, why: fl.why || "recent failure (shared)" }], doc ? doc.at : null, null, dir);
-      const res = feedFailedResult(doc, fl.state, now);
+      // The failure remembers the airport's own stamp, when it had one (rule 5).
+      const res = feedFailedResult(doc, fl.state, now, typeof fl.d === "number" ? fl.d : null, fl.why);
       _feedMemoSet(key, res, Math.ceil(holdMs / 1000), now);
       return res;
     }
@@ -4157,7 +4222,14 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
   }
   // The shared copy's time is the latest good answer any isolate has had.
   feedHealthNote(env, ctx, code, state, now, store.notes, doc ? doc.at : null, null, dir);
-  const res = feedFailedResult(doc, state, now);
+  // Rule 5: a producer that read the feed's own stamp says how old the
+  // airport's data is; the copy is no younger than that, whenever we fetched it.
+  const dataAt = feedNotesDataAt(store.notes);
+  // The first failed answer's words ("HTTP 403", "the page is not the feed"):
+  // they go out with the answer (feedMeta), so what an airport said to us can
+  // be read off the route itself.
+  const why = String((store.notes || []).filter((x) => x && x.state === state && !x.superseded).map((x) => x.why).filter(Boolean)[0] || "").slice(0, 80);
+  const res = feedFailedResult(doc, state, now, dataAt, why);
   if (!fast && !opts.force) {
     // The count of failures in a row, any colo's: a good answer since (a newer
     // shared copy) or a long silence starts it again. A first failure is held
@@ -4166,8 +4238,7 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
     const n = lastFail && now - lastFail.at <= FEED_FAIL_GAP_MS ? (lastFail.n || 1) + 1 : 1;
     _feedMemoSet(key, res, n >= 2 ? feedBackoffS(code, state) : (FEED_BACKOFF_S[state] || 60), now);
     if (kv) {
-      const why = (store.notes || []).filter((x) => x && x.state === state && !x.superseded).map((x) => x.why).filter(Boolean)[0] || "";
-      const w = kv.put(failKey, JSON.stringify({ v: 1, at: now, n: Math.min(n, 99), state, why: String(why).slice(0, 80) }),
+      const w = kv.put(failKey, JSON.stringify({ v: 1, at: now, n: Math.min(n, 99), state, why, ...(dataAt != null ? { d: dataAt } : {}) }),
         { expirationTtl: Math.max(60, Math.ceil(FEED_FAIL_GAP_MS / 1000)) }).catch(() => {});
       if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(w); else await w;
     }
@@ -4176,14 +4247,37 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
 }
 __name(feedGuard, "feedGuard");
 
-/** A failed guard's answer: the last good list (up to 3 h old), else nothing. */
-function feedFailedResult(doc, state, now) {
-  const lg = doc && now - doc.at <= FEED_LASTGOOD_MAX_MS ? doc : null;
+/**
+ * A failed guard's answer: the last good list (up to 3 h old), else nothing.
+ * dataAt (rule 5) is the airport's own stamp on a list it stopped writing:
+ * the copy is then as old as the stamp, however lately it was fetched, so the
+ * stamp is the time it is served with and the time the 3 hours are counted
+ * from. With nothing left to serve, the stamp still goes out with the 503.
+ * why: the failed answer's own words, carried to the answer's _feed.
+ */
+function feedFailedResult(doc, state, now, dataAt, why) {
+  const known = typeof dataAt === "number" && isFinite(dataAt) && dataAt > 0 ? dataAt : null;
+  const at = doc ? (known != null && known < doc.at ? known : doc.at) : null;
+  const lg = doc && now - at <= FEED_LASTGOOD_MAX_MS ? doc : null;
+  const extra = { ...(known != null ? { dataAt: known } : {}), ...(why ? { why: String(why).slice(0, 80) } : {}) };
   return lg
-    ? { state: "stale", failure: state, payload: lg.p, rows: lg.n || 0, asOf: lg.at, via: "lastgood", ...(lg.pt ? { partial: true } : {}) }
-    : { state, failure: state, payload: null, rows: 0, asOf: null, via: "none" };
+    ? { state: "stale", failure: state, payload: lg.p, rows: lg.n || 0, asOf: at, via: "lastgood", ...(lg.pt ? { partial: true } : {}), ...extra }
+    : { state, failure: state, payload: null, rows: 0, asOf: known, via: "none", ...extra };
 }
 __name(feedFailedResult, "feedFailedResult");
+
+/**
+ * Rule 6 — a result held in an isolate, as it may be served at `now`. A stale
+ * one whose copy has passed the limit while it was held is the failure with
+ * nothing to show; anything else is served as it was held.
+ */
+function feedHeldResult(m, now) {
+  if (m && m.state === "stale" && typeof m.asOf === "number" && now - m.asOf > FEED_LASTGOOD_MAX_MS) {
+    return feedFailedResult(null, m.failure || "error", now, m.dataAt, m.why);
+  }
+  return m;
+}
+__name(feedHeldResult, "feedHeldResult");
 
 /** Headers that say what a guarded answer is. */
 function feedHeaders(g, now) {
@@ -4206,7 +4300,9 @@ function feedMeta(g, now) {
     failure: g.failure || null,
     asOf: g.asOf ? new Date(g.asOf).toISOString() : null,
     ageS: g.asOf ? Math.max(0, Math.round(((now || Date.now()) - g.asOf) / 1000)) : null,
-    ...(g.partial ? { partial: "later-day" } : {})
+    ...(g.partial ? { partial: "later-day" } : {}),
+    // A failing feed says what the airport answered (never on a live answer).
+    ...(g.why && g.state !== "ok" ? { why: g.why } : {})
   };
 }
 __name(feedMeta, "feedMeta");
@@ -5915,10 +6011,21 @@ function yqrParsePage(html, dir, nowMs) {
 }
 __name(yqrParsePage, "yqrParsePage");
 
-// YHM Hamilton — one page, #arrivals and #departures panes, each a set
-// of `.flight` divs carrying data-datetime (scheduled local), data-city
-// and data-airline (name). Status is the div's own class + a revised
-// "HH:MM / Mon DD" in the status cell. Eastern.
+// YHM Hamilton — one page, #arrivals and #departures panels. Each flight is
+// a `.hia-flight-status__row` carrying data-airline (name), data-airline-code
+// (IATA), data-city and data-flight-number, with one cell each for the place
+// "Halifax (YHZ)", the date "Nov 18", the time "11:00", the status word (in a
+// pill) and the estimate "11:32 / Nov 18". The same cells are repeated inside
+// a `__mobile` block as spans: only the div cells are read. No year on the
+// page: the nearest one. Eastern.
+// 2026-11-18 — THE PAGE WAS REBUILT (board plugin hia-flight-status 3.0.3,
+// its stylesheet dated 2026-10-29). Until then each flight was a `.flight`
+// div carrying data-datetime, and that attribute was the marker of the fetch:
+// the rebuilt page, a normal 200 with 27 flights on it, read as "not the
+// feed", and Hamilton had no flights, probably since that date. The status
+// is the WORD in the pill, never the pill's class ("Early" is classed
+// "landed"). The estimate is always printed, equal to the time until the
+// flight moves, and carries its own date.
 function yhmParseBoard(html, dir, nowMs) {
   const out = [];
   const paneId = dir === "dep" ? "departures" : "arrivals";
@@ -5927,32 +6034,37 @@ function yhmParseBoard(html, dir, nowMs) {
   // Everything from this pane's id to the start of the OTHER pane.
   const other = dir === "dep" ? "arrivals" : "departures";
   const pane = paneSplit[1].split(new RegExp(`id=["']${other}["']`))[0];
-  const blocks = pane.match(/<div class=['"]flight[\s\S]*?data-airline=['"][^'"]*['"]/g) || [];
-  // Re-split into whole flight blocks by the opening marker.
-  const chunks = pane.split(/<div class=['"]flight\b/).slice(1);
-  for (const chunk of chunks) {
-    const dm = chunk.match(/data-datetime=['"](\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
-    const city = (chunk.match(/data-city=['"]([^'"]*)/) || [, ""])[1];
-    const airline = (chunk.match(/data-airline=['"]([^'"]*)/) || [, ""])[1];
-    const numM = chunk.match(/class=['"]flight-number['"][^>]*>[\s\S]*?(\d{1,4})\s*<\/span>/);
-    if (!dm || !numM) continue;
-    const sched = localTimeObjIn("America/Toronto", Number(dm[1]), Number(dm[2]), Number(dm[3]), Number(dm[4]), Number(dm[5]));
-    const statusText = (chunk.match(/^\s*([A-Za-z ]+?)['"]/) || [, ""])[1].trim()
-      || (chunk.match(/text-(?:danger|success|warning|muted)['"][^>]*><strong>([^<]+)/) || [, ""])[1];
-    let revised = null;
-    const rvM = chunk.match(/<strong>[^<]*<\/strong><span[^>]*>\s*(\d{1,2}):(\d{2})\s*\/\s*([A-Za-z]{3})\s+(\d{1,2})/);
-    if (rvM) {
-      const mo = AUTH_MONTHS[rvM[3].toUpperCase()];
-      if (mo) revised = localTimeObjIn("America/Toronto", nearestYear(mo, Number(rvM[4]), nowMs), mo, Number(rvM[4]), Number(rvM[1]), Number(rvM[2]));
-    }
-    const code = AIRLINE_NAME_IATA[airline.toUpperCase()] || AIRLINE_NAME_IATA_SQUASHED[airline.toUpperCase().replace(/\s+/g, "")] || null;
+  const cell = (chunk, name) => yhzCellText((chunk.match(new RegExp(`<div class=["']hia-flight-status__${name}["'][^>]*>([\\s\\S]*?)</div>`)) || [, ""])[1]);
+  // An attribute ends at the quote it began with ("Chicago O'Hare" is one value).
+  const attr = (chunk, name) => yhzCellText((chunk.match(new RegExp(`\\sdata-${name}=(["'])([\\s\\S]*?)\\1`)) || [, "", ""])[2]);
+  const when = (mon, day, hh, mm) => {
+    const mo = AUTH_MONTHS[String(mon || "").slice(0, 3).toUpperCase()];
+    return mo ? localTimeObjIn("America/Toronto", nearestYear(mo, Number(day), nowMs), mo, Number(day), Number(hh), Number(mm)) : null;
+  };
+  for (const chunk of pane.split(/<div class=["']hia-flight-status__row["']/).slice(1)) {
+    const flightCell = cell(chunk, "flight");                       // "PD 2426"
+    const num = (attr(chunk, "flight-number").match(/\d{1,4}/) || flightCell.match(/\d{1,4}\s*$/) || [])[0];
+    const dm = cell(chunk, "date").match(/([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})/);
+    const tm = cell(chunk, "time").match(/(\d{1,2}):(\d{2})/);
+    if (!num || !dm || !tm) continue;
+    const sched = when(dm[1], dm[2], tm[1], tm[2]);
+    if (!sched) continue;
+    const airline = attr(chunk, "airline") || cell(chunk, "airline");
+    const code = (attr(chunk, "airline-code").match(/^[A-Z0-9]{2}$/) || flightCell.match(/^[A-Z0-9]{2}(?=\s*\d)/) || [])[0]
+      || AIRLINE_NAME_IATA[airline.toUpperCase()] || AIRLINE_NAME_IATA_SQUASHED[airline.toUpperCase().replace(/\s+/g, "")] || null;
+    // "Halifax (YHZ)": the place and its own code, as the airport prints them.
+    const pm = cell(chunk, "origin").match(/^(.*?)\s*\(([A-Z]{3})\)\s*$/);
+    const city = (pm ? pm[1] : (attr(chunk, "city") || cell(chunk, "origin"))).trim();
+    // The estimate is always printed, equal to the time when nothing moved.
+    const ev = cell(chunk, "estimate").match(/(\d{1,2}):(\d{2})\s*\/\s*([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})/);
+    const est = ev ? when(ev[3], ev[4], ev[1], ev[2]) : null;
     out.push(authorityFlight({
-      dir, number: code ? `${code}${numM[1]}` : numM[1],
-      status: yhzStatus(statusText),
+      dir, number: code ? `${code}${num}` : num,
+      status: yhzStatus(cell(chunk, "status")),
       homeIata: "YHM", homeIcao: "CYHM", homeName: "Hamilton",
-      otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
-      airlineIata: code, airlineName: airline || null,
-      sched, revised
+      otherIata: (pm && pm[2]) || YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
+      airlineIata: code, airlineName: airline || (code ? (AIRLINE_IATA_NAME[code] || null) : null),
+      sched, revised: est && est.ts !== sched.ts ? est : null
     }));
   }
   return out;
@@ -6670,6 +6782,30 @@ function msyParseFeed(jsonText, dir, nowMs) {
   return out;
 }
 __name(msyParseFeed, "msyParseFeed");
+// New Orleans stamps every row with the time its importer last wrote the
+// table ("updated_at", Central wall clock, the same on all rows). On
+// 2026-11-18 the importer stopped at 00:15:51 and the endpoint went on
+// answering 200 with that table for the rest of the morning: flights from
+// hours before still "On Time", and nothing new behind them. Returns the
+// stamp (epoch ms) when the list is frozen at nowMs (feedFrozen: the stamp is
+// 90 minutes old or more and a flight has come due since), else null. A row's
+// scheduled_time can sit a day late when the flight slipped past midnight
+// (the feed takes its day from the actual time); that only delays the rule.
+function msyFeedFrozenAt(jsonText, nowMs) {
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return null; }
+  const rows = Array.isArray(j) ? j : (j && Array.isArray(j.flights) ? j.flights : []);
+  let stamp = null;
+  const times = [];
+  for (const r of rows) {
+    if (!r) continue;
+    const u = localIsoObj("America/Chicago", r.updated_at);
+    if (u && (stamp == null || u.ts > stamp)) stamp = u.ts;
+    const t = localIsoObj("America/Chicago", r.scheduled_time);
+    if (t) times.push(t.ts);
+  }
+  return feedFrozen(stamp, times, nowMs);
+}
+__name(msyFeedFrozenAt, "msyFeedFrozenAt");
 
 // ── Iceland / UK / Washington batch (2026-09-05) ─────────────────────
 // KEF Keflavík — the dream feed: open JSON, CORS *, aircraft reg AND
@@ -6760,8 +6896,16 @@ __name(ediParseFeed, "ediParseFeed");
 // departures[] arrays; local ET strings with no offset; mwaaTime is the
 // revision. Parameterized by home code since Reagan and Dulles are byte
 // -identical in shape.
-// MWAA's Akamai edge tends to challenge datacenter egress on the
-// OrionConnected UA; a mainstream browser UA gets the JSON through.
+// The edge in front of both sites tends to refuse datacenter egress on the
+// OrionConnected UA; a mainstream browser UA got the JSON through when this
+// was written (September 2026). The origin also answers 401 to a request
+// without the cookie the site's own page sets (flight-info=1), sent below.
+// 2026-11-18 — REFUSED AGAIN, AND LEFT REFUSED. Both sites (one platform,
+// Cloudflare in front of it now) refuse this Worker's requests while the
+// same request from a home connection is answered: the feed is up and its
+// shape unchanged, and the parser reads it. Nothing here is changed to get
+// round that: no other header, no relay, no second source. The boards say
+// "Live data unavailable", and the way back is the airports' permission.
 const MWAA_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 const MWAA_STATUS = { INGATE: "arrived", ARRIVED: "arrived", INAIR: "active", ENROUTE: "active", SCHEDULED: "scheduled", DEPARTED: "departed", OUTGATE: "departed", CANCELLED: "cancelled", CANCELED: "cancelled", DELAYED: "delayed", DIVERTED: "diverted", BOARDING: "boarding" };
 function mwaaStatus(s) {
@@ -8128,22 +8272,43 @@ function parseYygPage(html, dir, nowMs) {
 }
 __name(parseYygPage, "parseYygPage");
 
-// ── YKA Kamloops — kamloopsairport.com/starkapi.php (2026-09-06) ─────
-// A WordPress-root PHP shim in front of the airport's Stark FIDS; the
-// site's own React board (plugin ch-flight-data, Vantage Airport Group)
-// polls ?type=arrivals and ?type=departures every 60 s. One bare JSON
-// array per direction, from about now to +2 days (landed flights linger
-// briefly, then drop off), no auth, no cookies, no referer; Cloudflare-
-// fronted but unchallenged with the worker's own UA (verified live
-// 2026-09-05 23:06 PDT). Quirks: AirlineCode holds the carrier NAME
-// ("Air Canada" / "WestJet" / "Pacific Coastal") and FlightNumber the
-// bare digits; ScheduleTime/EstimatedTime read "Sep 5 - 22:13" (no year,
-// no offset — Pacific wall clock); ActualTime is [] until the flight
-// moves, then a bare "HH:MM"; Status is free text with the clock
-// embedded: "On Time", "Late at 22:50", "Early at 23:47", "Arrived at
-// 23:02". Gate on both directions; no terminal, belt, tail or type. A
-// missing ?type= answers a WP REST 404 JSON and an unknown one silently
-// falls back to departures — the ArrivalOrDeparture field guards that.
+// ── YKA Kamloops — the airport's flight plugin (ch-flight-data, Vantage
+// Airport Group) in front of its Stark FIDS ──────────────────────────────
+// 2026-11-18 — THE ADDRESS MOVED AND THE ROWS WERE RENAMED. Until the site
+// was rebuilt (its board script is dated 2026-10-22) the list came from a
+// PHP shim, /starkapi.php?type=arrivals|departures. That file is gone (a
+// plain 404), and the Kamloops boards had no flights, probably since that
+// day. The plugin now answers on WordPress REST routes, open to anyone (no
+// key, no nonce, no cookie; robots.txt allows the site):
+//   /wp-json/ch-flight-data/v1/flights/arrivals | departures   ← asked here
+//   /wp-json/ch-flight-data/v1/stark/both                      (its own board)
+// The board's own route was not taken: its rows carry a bare "09:47" with no
+// date, no gate and no airport code. The /flights/ routes carry all three.
+// One bare JSON array per direction, from about now to +2 days. Row names,
+// new (and the September shim's, still read so its captures keep parsing):
+//   flightNumber (FlightNumber)      bare digits
+//   airlineName (AirlineCode)        the carrier NAME: "Air Canada",
+//                                    "WestJet", "Pacific Coastal Airlines".
+//                                    The new airlineCode is NOT used for the
+//                                    carrier: it is "AC" and "8P" but "WJA"
+//                                    (the ICAO code) for WestJet.
+//   direction (ArrivalOrDeparture)   "A" / "D"
+//   scheduleDisplay (ScheduleTime)   "Nov 18 - 09:47": no year, no offset,
+//                                    Pacific wall clock. flightDate
+//                                    ("20261118") + scheduledTime ("9:47 AM")
+//                                    stand in when it is missing.
+//   estimatedTime                    a bare "10:44" now, placed on the
+//                                    scheduled day (the shim's EstimatedTime
+//                                    carried its own date, "Sep 5 - 23:02").
+//   status (Status)                  free text: "On Time", "Late",
+//                                    "Delayed at 11:15", "Cancelled", and
+//                                    the shim's "Late at 22:50", "Early at
+//                                    23:47", "Arrived at 23:02".
+//   airportCode, airportCity (ViaAirportCode, ViaAirportCity); gate (Gate)
+// NEVER READ timestamp, localTimestamp or utcTimestamp: the three hold the
+// same number, and it is not the flight's instant (09:47 Pacific on Nov 18,
+// which is 17:47Z, came as 15:47Z). No terminal, belt, tail or type.
+// The direction field still guards a list answered for the wrong side.
 const YKA_TZ = "America/Vancouver";
 // Carriers the Kamloops board names that the shared map lacks (8P flies
 // YKA–YYJ today; 9M and Jazz for whenever they are back on the roster).
@@ -8180,8 +8345,21 @@ function ykaStatus(txt) {
   return yhzStatus(s);
 }
 __name(ykaStatus, "ykaStatus");
-// A bare "HH:MM" (ActualTime, or the clock inside Status) placed on the
-// scheduled day and settled across midnight.
+// "20261118" + "9:47 AM" (flightDate + scheduledTime): the scheduled time of
+// a row whose scheduleDisplay is missing. The date carries its own year.
+function ykaDateClock(date, clock) {
+  const dm = String(date || "").match(/^(\d{4})(\d{2})(\d{2})$/);
+  const cm = String(clock || "").match(/^\s*(\d{1,2}):(\d{2})\s*([AaPp][Mm])?\s*$/);
+  if (!dm || !cm) return null;
+  let hh = Number(cm[1]);
+  if (cm[3]) hh = (hh % 12) + (/p/i.test(cm[3]) ? 12 : 0);
+  const mo = Number(dm[2]), d = Number(dm[3]), mm = Number(cm[2]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || hh > 23 || mm > 59) return null;
+  return localTimeObjIn(YKA_TZ, Number(dm[1]), mo, d, hh, mm);
+}
+__name(ykaDateClock, "ykaDateClock");
+// A bare "HH:MM" (estimatedTime, ActualTime, or the clock inside Status)
+// placed on the scheduled day and settled across midnight.
 function ykaClockOn(sched, txt) {
   const m = String(txt || "").match(/(\d{1,2}):(\d{2})/);
   if (!m || !sched) return null;
@@ -8198,31 +8376,39 @@ function parseYkaFeed(jsonText, dir, nowMs) {
     // Each endpoint is one direction, but the field is there — and it is
     // what turns the shim's silent fallback to departures into an empty
     // (→ null → untouched) read instead of departures on the arrivals board.
-    const ad = String(r.ArrivalOrDeparture || "").trim().toUpperCase();
+    const ad = String(r.ArrivalOrDeparture || r.direction || "").trim().toUpperCase();
     if (ad && (dir === "dep") !== /^D/.test(ad)) continue;
-    const nm = String(r.FlightNumber || "").trim().toUpperCase().match(/^(?:([A-Z]\d|\d[A-Z]|[A-Z]{2})\s*)?(\d{1,4})[A-Z]?$/);
+    const nm = String(r.FlightNumber || r.flightNumber || "").trim().toUpperCase().match(/^(?:([A-Z]\d|\d[A-Z]|[A-Z]{2})\s*)?(\d{1,4})[A-Z]?$/);
     if (!nm) continue;
-    const sched = parseYkaTime(r.ScheduleTime, nowMs);
+    const sched = parseYkaTime(r.ScheduleTime || r.scheduleDisplay, nowMs) || ykaDateClock(r.flightDate, r.scheduledTime);
     if (!sched) continue;
-    const name = String(r.AirlineCode || "").trim();
+    // The carrier's NAME under either name of the field. The plugin's own
+    // airlineCode is never the carrier here: it reads "WJA" for WestJet.
+    const name = String(r.AirlineCode || r.airlineName || "").trim();
     const key = name.toUpperCase();
     const code = YKA_AIRLINE_IATA[key] || AIRLINE_NAME_IATA[key] || AIRLINE_NAME_IATA_SQUASHED[key.replace(/\s+/g, "")]
       || (/^[A-Z0-9]{2}$/.test(key) ? key : null) || nm[1] || null;
     // EstimatedTime carries its own date and is kept in step with the
     // status clock (verified: "Arrived at 23:02" ↔ "Sep 5 - 23:02");
     // ActualTime and the "at HH:MM" inside Status are the fallbacks.
+    // The plugin's estimatedTime is a bare clock, equal to the scheduled one
+    // until the flight moves: placed on the scheduled day, like ActualTime.
+    const statusText = String(r.Status || r.status || "");
     const est = parseYkaTime(r.EstimatedTime, nowMs);
     let revised = (est && est.ts !== sched.ts) ? est
-      : ykaClockOn(sched, typeof r.ActualTime === "string" ? r.ActualTime : "")
-        || ykaClockOn(sched, (String(r.Status || "").match(/\bat\s+(\d{1,2}:\d{2})/i) || [])[1]);
+      : ykaClockOn(sched, typeof r.estimatedTime === "string" ? r.estimatedTime : "");
+    if (!revised || revised.ts === sched.ts) {
+      revised = ykaClockOn(sched, typeof r.ActualTime === "string" ? r.ActualTime : "")
+        || ykaClockOn(sched, (statusText.match(/\bat\s+(\d{1,2}:\d{2})/i) || [])[1]);
+    }
     if (revised && revised.ts === sched.ts) revised = null;
-    const city = String(r.ViaAirportCity || r.Comments || "").trim();
+    const city = String(r.ViaAirportCity || r.airportCity || r.Comments || "").trim();
     out.push(authorityFlight({
       dir, number: code ? `${code}${nm[2]}` : nm[2],
-      status: ykaStatus(r.Status),
+      status: ykaStatus(statusText),
       homeIata: "YKA", homeIcao: "CYKA", homeName: "Kamloops",
-      gate: String(r.Gate || "").trim() || null,
-      otherIata: String(r.ViaAirportCode || "").trim().toUpperCase() || YHZ_CITY_IATA[city.toUpperCase()] || null,
+      gate: String(r.Gate || r.gate || "").trim() || null,
+      otherIata: String(r.ViaAirportCode || r.airportCode || "").trim().toUpperCase() || YHZ_CITY_IATA[city.toUpperCase()] || null,
       otherName: city || null,
       airlineIata: code,
       airlineName: (name && !/^[A-Z0-9]{2}$/.test(key)) ? name : (AIRLINE_IATA_NAME[code] || null),
@@ -9973,6 +10159,14 @@ const AUTHORITY_HANDLERS = {
   msy: { tz: "America/Chicago", source: "msy-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText("msy/all", "https://flymsy.com/wp-json/flight-status/flights", '"flight_number"', 90);
     if (!t) return null;
+    // A list the airport stopped writing is not live (feed protection, rule
+    // 5): the answer fails, dated by the feed's own stamp, and the guard
+    // shows the last list marked with that time, or nothing once it is old.
+    const frozenAt = msyFeedFrozenAt(t, Date.now());
+    if (frozenAt != null) {
+      feedNote("error", `the airport has not written its list since ${new Date(frozenAt).toISOString()}`, { dataAt: frozenAt });
+      return null;
+    }
     const f = msyParseFeed(t, dir, Date.now());
     return f.length ? f : null;
   } },
@@ -10005,7 +10199,10 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   yhm: { tz: "America/Toronto", source: "yhm-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText("yhm/page", "https://flyhamilton.ca/arrivals-departures/", "data-datetime", 120);
+    // The marker is a row's own attribute: a page with no rows on it is not
+    // the feed, so the last good list is kept rather than an empty board
+    // served as live.
+    const t = await fetchAuthorityText("yhm/page", "https://flyhamilton.ca/arrivals-departures/", "data-flight-number", 120);
     if (!t) return null;
     const f = yhmParseBoard(t, dir, Date.now());
     return f.length ? f : null;
@@ -10313,12 +10510,12 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   yka: { tz: "America/Vancouver", source: "yka-authority", list: async (dir, env) => {
-    // Cloudflare passes the query-string URL through uncached (fastcgi-cache
-    // BYPASS, cf-cache-status DYNAMIC), so every miss here reaches the
-    // airport's origin: the 90 s edge TTL is what stands between thirty
-    // polling screens and a WordPress box that already answers its own
-    // board every 60 s. ~12 KB per direction, ~18 movements a day.
-    const t = await fetchAuthorityText(`yka/${dir}`, `https://kamloopsairport.com/starkapi.php?type=${dir === "dep" ? "departures" : "arrivals"}`, '"FlightNumber"', 90);
+    // The REST route is passed through uncached (fastcgi-cache BYPASS,
+    // cf-cache-status DYNAMIC), so every miss here reaches the airport's
+    // origin: the 90 s edge TTL is what stands between thirty polling
+    // screens and a WordPress box that already answers its own board every
+    // 60 s. ~11 KB per direction, ~18 movements a day.
+    const t = await fetchAuthorityText(`yka/${dir}`, `https://kamloopsairport.com/wp-json/ch-flight-data/v1/flights/${dir === "dep" ? "departures" : "arrivals"}`, '"flightNumber"', 90);
     if (!t) return null;
     const f = parseYkaFeed(t, dir, Date.now());
     return f.length ? f : null;
@@ -14742,6 +14939,7 @@ export {
   dtwLocalMinutes,
   sanParseFeed,
   msyParseFeed,
+  msyFeedFrozenAt,
   kefParseFeed,
   ediParseFeed,
   mwaaParseFeed,
@@ -14853,5 +15051,10 @@ export {
   FEED_AUTODOCK_MS,
   FEED_PROBE_EVERY_MS,
   FEED_FAIL_CONFIRM_MS,
-  FEED_FAIL_PREFIX
+  FEED_FAIL_PREFIX,
+  feedFrozen,
+  feedFailedResult,
+  feedHeldResult,
+  FEED_FROZEN_STAMP_MS,
+  FEED_FROZEN_DUE_MS
 };

@@ -3,6 +3,9 @@
 // direction field; Abbotsford's carrier-name→IATA and local scheddate;
 // Regina's icon-class airline codes on a fixed (no-DST) offset; and
 // Hamilton's #arrivals/#departures pane split with data-attr rows.
+// 2026-11-18 — Hamilton rebuilt its page (board plugin hia-flight-status):
+// the fixture is that page as answered on the day, and the old markup, which
+// the parser read until then, now parses to nothing instead of to stale rows.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -51,18 +54,58 @@ test('yqr: icon-class airline code, fixed Regina offset, revised', () => {
   assert.equal(ws.departure.airport.iata, 'YYC');
 });
 
-test('yhm: pane split keeps arrivals and departures apart', () => {
-  const arr = yhmParseBoard(fx('yhm-sample.html'), 'arr', NOW);
-  const dep = yhmParseBoard(fx('yhm-sample.html'), 'dep', NOW);
-  assert.ok(arr.length >= 1 && dep.length >= 1, `arr=${arr.length} dep=${dep.length}`);
+// The page prints no year ("Nov 18"): the clock sits where the capture does.
+const YHM_NOW = Date.parse('2026-11-18T15:41:00Z');
+test('yhm: the rebuilt page (2026-11-18) — panel split, row attributes, the place with its code, the estimate', () => {
+  const html = fx('yhm-sample.html');
+  const arr = yhmParseBoard(html, 'arr', YHM_NOW);
+  const dep = yhmParseBoard(html, 'dep', YHM_NOW);
+  // id="tab-arrivals" on the tab button is not the panel: four and three, not seven and seven.
+  assert.deepEqual(arr.map((x) => x.number), ['PD2426', 'AC8931', 'PD2439', 'PD482']);
+  assert.deepEqual(dep.map((x) => x.number), ['AC8932', 'PD2446', 'AC8928']);
   for (const x of arr) assert.equal(x.arrival.airport.iata, 'YHM');
   for (const x of dep) assert.equal(x.departure.airport.iata, 'YHM');
-  const pd = dep.find((x) => x.number === 'PD486');
-  if (pd) {
-    assert.equal(pd.departure.airline.iata, 'PD');     // data-airline "Porter"
-    assert.equal(pd.arrival.airport.iata, 'YYC');      // data-city Calgary
-    assert.ok(pd.departure.scheduledTime.local.startsWith('2026-09-04 23:13'));
-  }
+  // PD 2426 from Halifax (YHZ): 11:00, "Delayed", estimate "11:32 / Nov 18".
+  const pd = arr[0];
+  assert.equal(pd.status, 'delayed');
+  assert.equal(pd.arrival.scheduledTime.local, '2026-11-18 11:00:00-05:00');
+  assert.equal(pd.arrival.scheduledTime.utc, '2026-11-18 16:00:00+00:00');
+  assert.equal(pd.arrival.revisedTime.local, '2026-11-18 11:32:00-05:00');
+  assert.equal(pd._authTs, Date.parse('2026-11-18T11:00:00-05:00'));
+  assert.equal(pd.arrival.airline.iata, 'PD');           // data-airline-code
+  assert.equal(pd.arrival.airline.name, 'Porter');       // data-airline
+  assert.equal(pd.departure.airport.iata, 'YHZ');        // "Halifax (YHZ)": the page's own code
+  assert.equal(pd.departure.airport.name, 'Halifax');
+  // AC 8931: the word is "Early" (in a pill classed "landed": the word is read, not the class), estimate before the time.
+  const ac = arr[1];
+  assert.equal(ac.status, 'scheduled');
+  assert.equal(ac.arrival.scheduledTime.local, '2026-11-18 11:25:00-05:00');
+  assert.equal(ac.arrival.revisedTime.local, '2026-11-18 11:09:00-05:00');
+  assert.ok(ac.arrival.revisedTime.utc < ac.arrival.scheduledTime.utc, 'early, not late');
+  // An estimate equal to the time is no revised time ("On Time", "22:05 / Nov 18").
+  const yhu = arr[2];
+  assert.equal(yhu.status, 'ontime');
+  assert.equal(yhu.arrival.revisedTime, undefined);
+  assert.equal(yhu.departure.airport.iata, 'YHU');
+  // Past midnight the row carries its own date: Nov 19 00:08, not Nov 18.
+  assert.equal(arr[3].arrival.scheduledTime.local, '2026-11-19 00:08:00-05:00');
+  assert.equal(dep[0].departure.scheduledTime.local, '2026-11-18 11:40:00-05:00');
+  assert.equal(dep[0].arrival.airport.iata, 'YYZ');
+  assert.equal(dep[0].departure.airline.name, 'Air Canada');
+  assert.equal(dep[2].departure.scheduledTime.local, '2026-11-19 05:30:00-05:00');
+  // Each row repeats its cells as spans for the phone layout: read once, not twice.
+  assert.equal((html.match(/hia-flight-status__row"/g) || []).length, 7);
+});
+
+test('yhm: the year the page does not print is the nearest one, and the old markup is no longer read as rows', () => {
+  const html = fx('yhm-sample.html').replace(/Nov 18/g, 'Dec 31').replace(/Nov 19/g, 'Jan 1');
+  const arr = yhmParseBoard(html, 'arr', Date.parse('2026-12-31T20:00:00-05:00'));
+  assert.equal(arr[0].arrival.scheduledTime.local, '2026-12-31 11:00:00-05:00');
+  assert.equal(arr[3].arrival.scheduledTime.local, '2027-01-01 00:08:00-05:00');
+  // The September page: .flight divs with data-datetime. Nothing in it is a row now.
+  const old = "<div id=\"arrivals\"><div class='flight Delayed' data-datetime='2026-09-04 23:13:00' data-city='Calgary' data-airline='Porter'>"
+    + "<span class='flight-number'>PD 486</span></div></div><div id=\"departures\"></div>";
+  assert.deepEqual(yhmParseBoard(old, 'arr', YHM_NOW), []);
 });
 
 test('canada-wave2: garbage in, empty out', () => {
