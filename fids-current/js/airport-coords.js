@@ -1,6 +1,9 @@
 /* Airport coordinates [lat, lng] keyed by IATA code.
  * Extracted from the engine's COORDS table (fids-core.js) so the
- * Template Designer's Flight Map can resolve any route. ~2300 airports. */
+ * Template Designer's Flight Map can resolve any route, and, since the
+ * phone app asks the weather by this file alone (app.html wxPlaceAt), with
+ * the places only the gate map's GATE_AP holds: every place either table
+ * places, at the position the boards read for it. ~2450 airports. */
 window.AIRPORT_COORDS = {
   YYZ:[43.68,-79.63], YUL:[45.47,-73.74], YVR:[49.19,-123.18], YYC:[51.11,-114.02],
   YEG:[53.31,-113.58], YOW:[45.32,-75.67], YQM:[46.11,-64.68], YHZ:[44.88,-63.51],
@@ -675,4 +678,38 @@ window.AIRPORT_COORDS = {
   YQC:[61.046,-69.618],   // Quaqtaq, Quebec (CYHA)
   YKG:[60.027,-69.999],   // Kangirsuk, Quebec (CYAS)
   XGR:[58.711,-65.993],   // Kangiqsualujjuaq, Quebec (CYLU)
+
+  // EVERY PLACE THE BOARDS CAN PLACE THEMSELVES IS IN THIS FILE.
+  // The phone app asks the weather by this file (app.html wxPlaceAt) and loads
+  // neither of the board tables, so a place they held and this file did not
+  // had a name in the app and no temperature. The rows below are those
+  // places, each at the position the board reads for it, so the app and a
+  // board ask for it at the same spot (tests/weather-every-place.test.js
+  // fails when a place of COORDS or GATE_AP is missing here, or stands in
+  // another two-decimal cell than the board asks at).
+  //    From COORDS (fids-core.js), 46 places this extract of it had not kept up with:
+  YXU:[43.036,-81.151], YKU:[53.806,-78.917], YZG:[62.179,-75.667], FSP:[46.763,-56.173], PTP:[16.265,-61.532],
+  FDF:[14.591,-61.003], SVD:[13.157,-61.15], SAL:[13.441,-89.056], AMM:[31.723,35.993], ADD:[8.978,38.799],
+  LHE:[31.522,74.404], TPE:[25.078,121.233], ZAG:[45.743,16.069], YXL:[50.11,-91.91], YQK:[49.79,-94.36],
+  YAG:[48.65,-93.44], YMU:[52.6,-90.37], KM8:[52.6,-90.37], VVI:[-17.64,-63.14], CBB:[-17.42,-66.18],
+  SRZ:[-17.81,-63.17], UYU:[-20.45,-66.85], TJA:[-21.56,-64.7], SRE:[-19.24,-65.15], POI:[-19.54,-65.72],
+  TDD:[-14.82,-64.92], CIJ:[-11.04,-68.78], RIB:[-10.96,-66.1], GYA:[-10.82,-65.35], BVL:[-13.95,-65.46],
+  ALG:[36.69,3.22], ORN:[35.62,-0.62], CZL:[36.28,6.62], TUN:[36.85,10.23], ACC:[5.61,-0.17],
+  BCM:[46.522,26.91], BOJ:[42.57,27.515], CLJ:[46.785,23.686], IOM:[54.083,-4.624], LUX:[49.627,6.212],
+  MLA:[35.858,14.478], OTP:[44.571,26.085], RIX:[56.924,23.971], RMO:[46.928,28.931], SPU:[43.539,16.298],
+  TIA:[41.415,19.721],
+  //    From GATE_AP (fids-core.js, the gate map), 63 places no other table of positions held:
+  YXC:[49.61,-115.78], YQQ:[49.71,-124.89], YCG:[49.3,-117.63], YMO:[51.29,-80.61], YQI:[43.83,-66.09],
+  GUM:[13.48,144.8], SPN:[15.12,145.73], PPG:[-14.33,-170.71], KUL:[2.74,101.71], MNL:[14.51,121],
+  CGK:[-6.13,106.66], DPS:[-8.75,115.17], SGN:[10.82,106.66], HAN:[21.22,105.81], BAH:[26.27,50.63],
+  KWI:[29.23,47.97], MCT:[23.59,58.28], SAH:[15.48,44.21], BGW:[33.26,44.23], EBL:[36.24,43.96],
+  BSR:[30.55,47.66], BEY:[33.82,35.49], DAM:[33.41,36.51], ALP:[36.18,37.22], NBO:[-1.32,36.93],
+  MBA:[-4.03,39.59], DAR:[-6.88,39.2], KGL:[-1.97,30.13], EBB:[0.04,32.45], HRE:[-17.92,31.09],
+  GBE:[-24.55,25.92], LUN:[-15.33,28.45], MPM:[-25.92,32.57], TNR:[-18.79,47.48], RUN:[-20.89,55.51],
+  MRU:[-20.43,57.68], SEZ:[-4.67,55.52], ZNZ:[-6.22,39.22], LAD:[-8.86,13.23], CCS:[10.6,-66.99],
+  UIO:[-0.13,-78.36], GYE:[-2.16,-79.88], STT:[18.34,-64.97], STX:[17.7,-64.8], EIS:[18.44,-64.54],
+  TLL:[59.41,24.83], VNO:[54.63,25.29], SOF:[42.69,23.41], BEG:[44.82,20.31], DBV:[42.56,18.27],
+  LJU:[46.22,14.46], TCI:[28.04,-16.57], LCA:[34.88,33.62], PFO:[34.71,32.49], TGD:[42.36,19.25],
+  TIV:[42.4,18.72], SJJ:[43.82,18.33], SKP:[41.96,21.62], PRN:[42.57,21.04], NAN:[-17.75,177.45],
+  PPT:[-17.55,-149.61], NOU:[-22.01,166.21], POM:[-9.44,147.22],
 };

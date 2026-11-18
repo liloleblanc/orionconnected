@@ -523,11 +523,18 @@
 
   // ── 5. THE BROWSER ─────────────────────────────────────────────────────────
   // Coordinates: the board's COORDS (the fullest table, every live airport),
-  // then airport-coords.js, then the gate map's GATE_AP and its saved lookups.
+  // then airport-coords.js, then the gate map's GATE_AP, then wherever the
+  // board asks for the place's weather (fids-core.js _placeLatLon: those three
+  // tables and, last, the positions of the places no table of the board's
+  // holds), then the gate map's saved lookups. A place with weather on its
+  // row has a position there, so the sun or the moon on its weather icon is
+  // the one over the place itself; for a place none of the three tables held
+  // it was the one over the board.
   function boardCoords(code) {
     try { if (typeof COORDS !== 'undefined' && COORDS[code]) return COORDS[code]; } catch (e) {}
     try { if (root.AIRPORT_COORDS && root.AIRPORT_COORDS[code]) return root.AIRPORT_COORDS[code]; } catch (e) {}
     try { if (typeof GATE_AP !== 'undefined' && GATE_AP[code]) return GATE_AP[code]; } catch (e) {}
+    try { if (typeof _placeLatLon === 'function') { var at = _placeLatLon(code); if (at) return at; } } catch (e) {}
     try { if (typeof _lookupAirport === 'function') return _lookupAirport(code) || null; } catch (e) {}
     return null;
   }

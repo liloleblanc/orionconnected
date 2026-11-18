@@ -1683,8 +1683,8 @@ function measureHeader(){const tb=document.getElementById('topbar');if(tb)docume
 // ('AC1983 Gate 4 11°C'); the app now does too, on the row and on the
 // flight's route card. Same source as the boards (fids-core.js _fetchMetWx):
 // the site's own /wxcurrent, MET Norway behind the Worker's half-hour cache,
-// asked by the airport's position (js/airport-coords.js, the boards' COORDS,
-// loaded when first needed). Only for rows on screen, four at a time. MET's
+// asked by the position of the place (wxPlaceAt, below; js/airport-coords.js
+// is loaded when first needed). Only for rows on screen, four at a time. MET's
 // licence asks for its credit, which shows wherever a temperature does
 // (wxCredit, the weather card's own words).
 // v24069 — in the unit of the airport the app is showing, as its boards print
@@ -1705,16 +1705,40 @@ function _coords(){
   });
   return _coordsP;
 }
+// THE POSITION THE WEATHER IS ASKED AT, for every place the app can name.
+// A row to St. Thomas, Tortola or Guayaquil had its name and no temperature:
+// the app read js/airport-coords.js alone, which held 2,349 of the 2,485
+// places it names and none of the places only js/earth-places.js names.
+// This is the one lookup of the boards (fids-core.js _placeLatLon: COORDS, then
+// AIRPORT_COORDS, then GATE_AP, then AT of js/earth-places.js) over the two
+// of those tables the app loads, in the same order: AIRPORT_COORDS, then AT.
+// js/airport-coords.js now carries every place COORDS and GATE_AP hold, so
+// the app and a board ask for a place at the same spot and share the one
+// reading the Worker keeps for it (all but Abbotsford, which the two tables
+// hold 0.6 km apart: the test names it). Only one code of three characters
+// is a place: anything else has no position and nothing is asked
+// (tests/weather-every-place.test.js).
+function wxPlaceAt(co,code){
+  const c=String(code==null?'':code).toUpperCase();
+  if(!/^[A-Z0-9]{3}$/.test(c))return null;
+  const has=Object.prototype.hasOwnProperty, P=window.FIDS_EARTH_PLACES;
+  for(const t of [co,P&&P.AT]){
+    const v=(t&&has.call(t,c))?t[c]:null; if(!v)continue;
+    const la=Number(v[0]), lo=Number(v[1]);
+    if(isFinite(la)&&isFinite(lo)&&Math.abs(la)<=90&&Math.abs(lo)<=180)return [la,lo];
+  }
+  return null;
+}
 function wxKick(codes){
   if(!WX_ON||!codes||!codes.length)return;
   const now=Date.now();
-  for(const c0 of codes){const c=String(c0||'').toUpperCase();if(!/^[A-Z]{3}$/.test(c)||(WX_TRY[c]&&now-WX_TRY[c]<30*60000))continue;WX_TRY[c]=now;WX_Q.push(c);}
+  for(const c0 of codes){const c=String(c0||'').toUpperCase();if(!/^[A-Z0-9]{3}$/.test(c)||(WX_TRY[c]&&now-WX_TRY[c]<30*60000))continue;WX_TRY[c]=now;WX_Q.push(c);}
   if(WX_Q.length)_wxPump();
 }
 async function _wxPump(){
   const co=await _coords();
   while(WX_RUN<4&&WX_Q.length){
-    const c=WX_Q.shift(), p=co[c]; if(!p)continue;
+    const c=WX_Q.shift(), p=wxPlaceAt(co,c); if(!p)continue;
     WX_RUN++;
     fetch('/wxcurrent?location='+p[0]+','+p[1]).then(function(r){return r.ok?r.json():null;}).then(function(d){
       if(d&&!d.error&&d.current&&typeof d.current.temperature_2m==='number'){WX[c]={t:d.current.temperature_2m,at:Date.now()};wxPaint(c);}
