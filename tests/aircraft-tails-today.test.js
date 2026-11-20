@@ -14,6 +14,12 @@
 //   3. the expected tag dropped only on a registry lookup that answers {};
 //   4. FR24 files a partner flight under its own prefix (RV1986, PB7664), and
 //      the /adsb/ route remembered the first row without checking it.
+// The review of that fix (same day) added what must never be lent: the
+// v22928 C-FUJA case (same operator, another type), the Express brand alone,
+// a sighting with no callsign of the leg, a PAL-own PB number for an AC one;
+// and what must cost nothing more: the lent tail never becomes a row _reg
+// (the poll would add /reg/ FR24 lookups), the re-ask is windowed and backed
+// off, the worker reads the partner keys only when the AC key is empty.
 // These run the real functions lifted out of fids-core.js and the worker,
 // as tests/gate-pairing-operator.test.js does. Nothing here reaches the
 // network: fetch is stubbed and every FR24 answer below is a fixture.
@@ -58,11 +64,12 @@ function blockSource(prefix, tail) {
 }
 
 const VARS = ['var AC_EXPRESS_OP = ', 'var _OP_LADDER_NAMES = ', 'var _AC_OP_BANDS = ', 'var _OP_JAZZ_ONLY_TYPE = ',
-  'var _OP_WS_DASH8 = ', 'var _AC_OWN_OPERATORS = ', 'var _OP_SHORT_CS = ', 'var _GATE_TAIL_CS_EXPRESS = ',
-  'var _ACRES_LEG_MS = ', "var _ACINFO_BASE = ", 'var _acInfoTried = '];
+  'var _OP_WS_DASH8 = ', 'var _AC_OWN_OPERATORS = ', 'var _OP_SHORT_CS = ',
+  'var _ACRES_LEG_MS = ', "var _ACINFO_BASE = ", 'var _acInfoTried = ', 'var _acInfoAsks = '];
 const FNS = ['acOperatorBand', '_opLadderName', '_opEvLegId', '_opEvFarGet', 'fidsResolveOperator', '_csDigitsOk',
-  '_acResLeg', '_acResolvedPut', '_acResolvedGet', '_acInfoKick',
-  '_gateTailCsPrefixes', '_gateInboundFr24Seen', '_gateFr24TypeSeen'];
+  '_acResLeg', '_acResolvedPut', '_acResolvedGet', '_acInfoKick', '_gateDepSchedTs',
+  '_gateTailCsPrefixes', '_gateCsIsLeg', '_gateOwnFr24Seen', '_gateInboundFr24Seen', '_gateSameType',
+  '_gateFr24TypeSeen', '_gateTailAskOpen'];
 
 // The real callsign tables, so the operator to callsign mapping is the board own.
 const TABLES = blockSource('const CALLSIGN_TO_IATA = {', ';') + '\n'
@@ -72,14 +79,16 @@ function engine(fetchStub) {
   const window = { _gateIata: 'YQM', _ACRES: {} };
   const src = [TABLES].concat(VARS.map(stmtSource), FNS.map(fnSource))
     .concat(['return { ' + FNS.concat(['_IATA_TO_CALLSIGN']).map((n) => n + ': ' + n).join(', ') + ' };']).join('\n');
-  const codes = { B38M: '7M8', DH8D: 'DH4', A320: '320' };
-  const names = { B38M: 'Boeing 737 MAX 8', '7M8': 'Boeing 737 MAX 8', DH8D: 'De Havilland Dash 8-400', DH4: 'De Havilland Dash 8-400' };
+  const codes = { B38M: '7M8', DH8D: 'DH4', A320: '320', E75L: 'E75', CRJ9: 'CR9' };
+  const names = { B38M: 'Boeing 737 MAX 8', '7M8': 'Boeing 737 MAX 8', DH8D: 'De Havilland Dash 8-400', DH4: 'De Havilland Dash 8-400',
+    E75: 'Embraer E175', E75L: 'Embraer E175', CR9: 'Bombardier CRJ-900', CRJ9: 'Bombardier CRJ-900' };
   let rebuilt = 0;
   const api = new Function('window', 'fetch', 'aircraftCodeToIata', 'formatAircraft', 'gateAircraftShortname',
-    'requestGateRebuild', 'AIRLINE_NAME', 'CALLSIGN_ICAO', '_regionalOpFitsRoute', src)(
+    'requestGateRebuild', 'AIRLINE_NAME', 'CALLSIGN_ICAO', '_regionalOpFitsRoute', 'adbTs', src)(
     window, fetchStub || (() => Promise.reject(new Error('no fetch in this test'))),
     (s) => codes[s] || '', (s) => names[s] || '', (s) => s, () => { rebuilt++; },
-    { AC: 'Air Canada', RV: 'Air Canada Rouge', PB: 'PAL Airlines', QK: 'Jazz Aviation', WS: 'WestJet' }, {}, () => true);
+    { AC: 'Air Canada', RV: 'Air Canada Rouge', PB: 'PAL Airlines', QK: 'Jazz Aviation', WS: 'WestJet' }, {}, () => true,
+    (s) => Date.parse(s) || 0);
   api.window = window;
   api.rebuilt = () => rebuilt;
   return api;
@@ -115,9 +124,20 @@ test('/acinfo basis today puts the tail and the sighting on the inbound leg', as
   await tick(); await tick();
   assert.match(asked[0], /acinfo\?f=AC1986&other=YYZ&at=dep&ts=\d+/);
   const v = e._acResolvedGet(AC1986());
-  assert.equal(v.reg, 'C-FFIQ');
+  assert.equal(v.reg, '', 'a sighting only: no row takes it as its _reg, so the poll adds no /reg/ lookup');
   assert.deepEqual([v.seen.reg, v.seen.cs, v.seen.cd], ['C-FFIQ', 'ROU1986', '7M8']);
   assert.equal(e.rebuilt(), 1);
+});
+
+test('/acinfo basis today with a callsign of another leg, or none, is not a sighting', async () => {
+  for (const cs of ['PVL924', '', null]) {
+    const e = engine(() => Promise.resolve({ ok: true, json: () => ({ f: 'AC1986', type: 'B38M', reg: 'C-FXYZ', cs, source: 'fr24', basis: 'today' }) }));
+    e._acInfoKick(AC1986(), 'arr');
+    await tick(); await tick();
+    const v = e._acResolvedGet(AC1986());
+    assert.equal(v.seen, undefined, String(cs));
+    assert.equal(v.reg, '');
+  }
 });
 
 test('a usual-type answer never carries a tail, and a held type with no tail still takes one', async () => {
@@ -129,27 +149,59 @@ test('a usual-type answer never carries a tail, and a held type with no tail sti
   // The screen had the usual type before AC1986 flew; ten minutes on it asks again.
   e._acInfoKick(AC1986(), 'arr');
   await tick(); await tick();
-  assert.equal(e._acResolvedGet(AC1986()).reg, '', 'at most once per leg per 10 minutes');
+  assert.equal(e._acResolvedGet(AC1986()).seen, undefined, 'at most once per leg per 10 minutes');
   answer = { f: 'AC1986', type: 'B38M', reg: 'C-FFIQ', cs: 'ROU1986', source: 'fr24', basis: 'today' };
   const realNow = Date.now;
   Date.now = () => realNow() + 11 * 60000;
   try {
-    e._acInfoKick(AC1986(), 'arr');
+    e._acInfoKick(AC1986(), 'arr', true);
     await tick(); await tick();
   } finally { Date.now = realNow; }
-  assert.equal(e._acResolvedGet(AC1986()).reg, 'C-FFIQ', 'the tail reaches a screen that was already running');
+  assert.equal(e._acResolvedGet(AC1986()).seen.reg, 'C-FFIQ', 'the tail reaches a screen that was already running');
+  assert.equal(e._acResolvedGet(AC1986()).reg, '', 'as a sighting, never the leg reg');
 });
 
-test('the inbound asks /acinfo whenever it has no tail, even with a type', () => {
+test('the tail re-ask backs off: 10, 30, then 60 minutes', () => {
+  let asks = 0;
+  const e = engine(() => { asks++; return new Promise(() => {}); });
+  const realNow = Date.now, t0 = realNow();
+  const at = (min) => { Date.now = () => t0 + min * 60000; e._acInfoKick(AC1986(), 'arr', true); };
+  try {
+    at(0); at(5); at(10); at(30); at(40); at(70); at(100); at(130);
+  } finally { Date.now = realNow; }
+  // asked at 0, 10, 40 (30 after), 100 (60 after); 130 is 30 after the last
+  assert.equal(asks, 4);
+});
+
+test('the inbound re-asks for a tail only in its window, and no departure re-asks', () => {
   const at = CORE.indexOf('AND THE TAIL, ON A SCREEN THAT IS ALREADY RUNNING');
   assert.ok(at > 0);
-  const blk = CORE.slice(at, at + 1600);
-  assert.match(blk, /if \(_inbR2 && !_inbEquipNm && !_inbEquipCd\) \{/);
-  assert.match(blk, /if \(!\(_inbR2 && _inbR2\.reg\) && !_ib2\._reg && typeof _acInfoKick === 'function'\) \{\n\s+_acInfoKick\(_ib2, 'arr'\);/);
-  assert.match(CORE, /if \(!_acR\.reg && !currentFlight\._reg && typeof _acInfoKick === 'function'\) _acInfoKick\(currentFlight, 'dep'\);/,
-    'the departure held with a type and no tail asks again too');
-  assert.match(CORE, /_acResolvedPut\(inb, _atNm, _atCd, inb\._reg \|\| '', \{ reg: _adsb\.reg \|\| '', cs: _adsb\.cs \|\| '' \}\);/,
-    'the poll own FR24 answer is stored as a sighting');
+  const before = CORE.slice(at - 800, at);
+  // the v23901 ask, as it was: the store tail reaches _ib2._reg only when the inbound has no type
+  assert.match(before, /if \(_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function'\) \{/);
+  assert.match(before, /if \(!_ib2\._reg && _inbR2\.reg\) _ib2\._reg = _inbR2\.reg;\n\s+\} else if \(typeof _acInfoKick === 'function'\) \{\n\s+_acInfoKick\(_ib2, 'arr'\);/);
+  const blk = CORE.slice(at, at + 1400);
+  assert.match(blk, /_gateTailAskOpen\(_ib2, Date\.now\(\)\)\) \{\n\s+_acInfoKick\(_ib2, 'arr', true\);/);
+  assert.doesNotMatch(blk, /_ib2\._reg =/, 'the re-ask never writes the row _reg');
+  assert.doesNotMatch(CORE, /if \(!_acR\.reg && !currentFlight\._reg && typeof _acInfoKick === 'function'\) _acInfoKick\(currentFlight, 'dep'\);/,
+    'no departure re-ask: the screen own poll covers the departure once it leaves');
+  assert.match(CORE, /_acResolvedPut\(inb, _atNm, _atCd, inb\._reg \|\| '',\n\s+\(_adsb\.cs && typeof _gateCsIsLeg === 'function' && _gateCsIsLeg\(_adsb\.cs, flt\)\) \? \{ reg: _adsb\.reg \|\| '', cs: _adsb\.cs \} : null\);/,
+    'the poll stores a sighting only for an answer heard under this leg number');
+});
+
+test('the re-ask window: from 30 min before the inbound leaves to 20 min after it lands, while no tail is held', () => {
+  const e = engine();
+  const inb = AC1986();   // arrives 00:09 ADT; no departure time on the row: 3 h block back
+  const arr = inb._sortTs;
+  assert.equal(e._gateTailAskOpen(inb, arr - 4 * 3600000), false, 'hours before it can fly');
+  assert.equal(e._gateTailAskOpen(inb, arr - 3 * 3600000 - 20 * 60000), true);
+  assert.equal(e._gateTailAskOpen(inb, arr + 15 * 60000), true, 'the taxi in');
+  assert.equal(e._gateTailAskOpen(inb, arr + 25 * 60000), false, 'landed and parked');
+  assert.equal(e._gateTailAskOpen(Object.assign(AC1986(), { _durationMins: 120 }), arr - 2.4 * 3600000), true);
+  assert.equal(e._gateTailAskOpen(Object.assign(AC1986(), { _durationMins: 120 }), arr - 2.6 * 3600000), false);
+  assert.equal(e._gateTailAskOpen(Object.assign(AC1986(), { _reg: 'C-FFIQ' }), arr), false, 'a tail on the row');
+  e._acResolvedPut(AC1986(), 'Boeing 737 MAX 8', '7M8', '', { reg: 'C-FFIQ', cs: 'ROU1986' });
+  assert.equal(e._gateTailAskOpen(AC1986(), arr), false, 'a sighting held');
 });
 
 // ── E: the inbound tail on the departure ──────────────────────────────────
@@ -159,7 +211,7 @@ test('the operator callsigns come from the board own tables', () => {
   assert.deepEqual(e._gateTailCsPrefixes('AC', 'RV'), ['ROU']);
   assert.deepEqual(e._gateTailCsPrefixes('AC', 'PB'), ['PVL']);
   assert.deepEqual(e._gateTailCsPrefixes('AC', 'QK'), ['JZA']);
-  assert.deepEqual(e._gateTailCsPrefixes('AC', 'ACEX').sort(), ['JZA', 'PVL']);
+  assert.deepEqual(e._gateTailCsPrefixes('AC', 'ACEX'), [], 'the Express brand alone names no operator');
   assert.deepEqual(e._gateTailCsPrefixes('AC', ''), ['ACA'], 'mainline Air Canada, ACA only');
   assert.deepEqual(['WS', 'PD', 'PB', 'TS', 'F8', 'WR'].map((m) => e._gateTailCsPrefixes(m, '')[0]),
     ['WJA', 'POE', 'PVL', 'TSC', 'FLE', 'WEN']);
@@ -179,9 +231,50 @@ test('a PAL tail (PVL) never shows on a Rouge departure', () => {
   const e = engine();
   e._acResolvedPut(AC7754(), 'De Havilland Dash 8-400', 'DH4', 'C-GPOJ', { reg: 'C-GPOJ', cs: 'PVL7754' });
   assert.equal(e._gateInboundFr24Seen(AC1983(), AC7754(), 'YQM'), null);
-  // It does lend to AC7753, the flight it night-stops for: the 7700 block is
-  // the Express brand both partners fly, so PVL passes.
-  assert.equal(e._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM').reg, 'C-GPOJ');
+  // AC7753, the flight it night-stops for, sits in the 7700 block both
+  // partners fly: with nothing naming PAL it is the brand alone, and no tail.
+  assert.equal(e._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM'), null);
+  // Its own record naming PAL, the PVL tail passes.
+  const pal = Object.assign(AC7753(), { _opEv: { op: 'PB', src: 'own' } });
+  assert.equal(e._gateInboundFr24Seen(pal, AC7754(), 'YQM').reg, 'C-GPOJ');
+});
+
+test('the Express brand alone takes no tail: a Jazz AC8542 (JZA542) never reaches the PAL AC7753', () => {
+  const e = engine();
+  const ac8542 = { flight: 'AC8542', airline: 'AC', gate: '4', origin: 'YUL', _locIata: 'YUL', _sortTs: T(20, 6, 0) };
+  e._acResolvedPut(ac8542, 'De Havilland Dash 8-400', 'DH4', 'C-GJZA', { reg: 'C-GJZA', cs: 'JZA542' });
+  assert.equal(e._gateInboundFr24Seen(AC7753(), ac8542, 'YQM'), null);
+});
+
+test('v22928 C-FUJA: a Jazz E175 (JZA7992) never lends its tail to the Jazz AC7995 the feed gives a CRJ-900', () => {
+  const e = engine();
+  const ac7992 = { flight: 'AC7992', airline: 'AC', gate: '4', origin: 'YYZ', _locIata: 'YYZ', _sortTs: T(19, 15, 0) };
+  const ac7995 = { flight: 'AC7995', airline: 'AC', gate: '4', dest: 'YYZ', _locIata: 'YYZ', _sortTs: T(19, 16, 0),
+    _aircraftCode: 'CR9', _feedAcCode: 'CR9' };
+  e._acResolvedPut(ac7992, 'Embraer E175', 'E75', 'C-FUJA', { reg: 'C-FUJA', cs: 'JZA7992' });
+  assert.equal(e.fidsResolveOperator(ac7995, 'YQM').op, 'QK', 'the same operator: Jazz, from the CR9');
+  assert.equal(e._gateInboundFr24Seen(ac7995, ac7992, 'YQM'), null, 'its own type differs');
+  assert.equal(e._gateInboundFr24Seen(ac7995, ac7992, 'YQM', 'CR9', 'Bombardier CRJ-900'), null, 'the caption type differs');
+  // AC1983 with its own type the same as the one FR24 saw on AC1986 still takes C-FFIQ
+  e._acResolvedPut(AC1986(), 'Boeing 737 MAX 8', '7M8', '', { reg: 'C-FFIQ', cs: 'ROU1986' });
+  assert.equal(e._gateInboundFr24Seen(Object.assign(AC1983(), { _aircraftCode: '7M8' }), AC1986(), 'YQM').reg, 'C-FFIQ');
+  assert.equal(e._gateInboundFr24Seen(AC1983(), AC1986(), 'YQM', '', 'Boeing 737 MAX 8').reg, 'C-FFIQ');
+  assert.equal(e._gateInboundFr24Seen(Object.assign(AC1983(), { _aircraftCode: '320' }), AC1986(), 'YQM'), null);
+});
+
+test('a callsign must carry the leg number: the poll stray row and a tail answer with no callsign are no sighting', () => {
+  const e = engine();
+  assert.equal(e._gateCsIsLeg('ROU1986', 'AC1986'), true);
+  assert.equal(e._gateCsIsLeg('JZA542', 'AC8542'), true, 'the Jazz short form');
+  assert.equal(e._gateCsIsLeg('', 'AC7748'), false, 'no callsign');
+  assert.equal(e._gateCsIsLeg('FPPI', 'AC7748'), false, 'a callsign with no digits');
+  assert.equal(e._gateCsIsLeg('TBM123', 'AC7748'), false);
+  // the departure own sighting is read only under its own number
+  e._acResolvedPut(AC1983(), 'Socata TBM 850', 'TBM', 'C-FPPI', { reg: 'C-FPPI', cs: 'FPPI' });
+  assert.equal(e._gateOwnFr24Seen(AC1983()), null);
+  const e2 = engine();
+  e2._acResolvedPut(AC1983(), 'Boeing 737 MAX 8', '7M8', '', { reg: 'C-FFIQ', cs: 'ROU1983' });
+  assert.equal(e2._gateOwnFr24Seen(AC1983()).reg, 'C-FFIQ');
 });
 
 test('a door pick (_doorOnly) never lends its tail', () => {
@@ -208,9 +301,11 @@ test('the caption takes the lent tail only where its own tail is empty, and keep
   assert.ok(at > 0, 'the v22928 reasoning stays');
   const blk = CORE.slice(at, at + 4000);
   assert.match(blk, /WHAT IS LENT NOW, AND WHY THAT IS NOT THE C-FUJA CASE/);
-  assert.match(blk, /_gateInboundFr24Seen\(_cf, _ib2, /);
+  assert.match(blk, /_gateInboundFr24Seen\(_cf, _ib2, .*, _outEquipCd, _outEquipNm\)/);
   assert.match(blk, /if \(!_inboundReg && _inbFrSeen && _inbFrSeen\.reg\) _inboundReg = _inbFrSeen\.reg;/);
   assert.match(blk, /var _acReg = _currentReg \|\| _inboundReg;/, 'the departure own tail still comes first');
+  assert.match(CORE, /if \(!_currentReg && _ownFrSeen && _ownFrSeen\.reg\) _currentReg = _ownFrSeen\.reg;/,
+    'then the departure own sighting');
 });
 
 // ── F: no expected tag on a type FR24 saw ─────────────────────────────────
@@ -226,7 +321,9 @@ test('a type FR24 saw today on the aircraft shown carries no expected tag', () =
   const blk = CORE.slice(CORE.indexOf('A TYPE FR24 SAW IS NOT A PLAN'), CORE.indexOf('A TYPE FR24 SAW IS NOT A PLAN') + 2400);
   assert.match(blk, /if \(_typeSeen\) _regConfirmed = true;/);
   assert.match(blk, /if \(_acModel && !_acReg && !_typeSeen\) \{/, 'the common branch, type and no tail, too');
-  assert.match(blk, /_equipFromInb \? _inbFrSeen/, 'an inbound type only through the same test as its tail');
+  assert.match(blk, /_typeSeen = _gateFr24TypeSeen\(_ownFrSeen, _acModel, _equipCd, _acReg\);/,
+    'only the departure own sighting drops the tag; a lent tail keeps it');
+  assert.doesNotMatch(blk, /_inbFrSeen/);
 });
 
 // ── A, B, C: the worker ───────────────────────────────────────────────────
@@ -234,21 +331,39 @@ test('a type FR24 saw today on the aircraft shown carries no expected tag', () =
 test('/acinfo hands back the tail only within 12 h of the leg, matched on time, not the UTC day', async () => {
   const { acMemToday, acMemKeysFor } = await import(workerPath);
   const rec = { obs: [{ d: '2026-11-17', t: 'B38M' }, { d: '2026-11-20', t: 'B38M', cs: 'ROU1986', r: 'CFFIQ', ts: SEEN_AC1986 }] };
-  assert.deepEqual(acMemToday([rec], T(20, 0, 9)), { type: 'B38M', reg: 'C-FFIQ', cs: 'ROU1986', ts: SEEN_AC1986 });
-  assert.equal(acMemToday([rec], T(20, 0, 9) + 24 * 3600000), null, 'tomorrow night AC1986 is another leg');
-  assert.equal(acMemToday([rec], SEEN_AC1986 - 13 * 3600000), null);
-  assert.equal(acMemToday([rec], 0), null, 'no leg time, no tail');
-  assert.equal(acMemToday([{ obs: [{ d: '2026-11-20', t: 'B38M', r: 'GXLEA', ts: SEEN_AC1986 }] }], SEEN_AC1986), null,
+  assert.deepEqual(acMemToday([rec], T(20, 0, 9), 'AC1986'), { type: 'B38M', reg: 'C-FFIQ', cs: 'ROU1986', ts: SEEN_AC1986 });
+  assert.equal(acMemToday([rec], T(20, 0, 9) + 24 * 3600000, 'AC1986'), null, 'tomorrow night AC1986 is another leg');
+  assert.equal(acMemToday([rec], SEEN_AC1986 - 13 * 3600000, 'AC1986'), null);
+  assert.equal(acMemToday([rec], 0, 'AC1986'), null, 'no leg time, no tail');
+  assert.equal(acMemToday([{ obs: [{ d: '2026-11-20', t: 'B38M', cs: 'ROU1986', r: 'GXLEA', ts: SEEN_AC1986 }] }], SEEN_AC1986, 'AC1986'), null,
     'a tail that would print wrong is not handed back');
-  assert.deepEqual(acMemKeysFor('AC1986'), ['AC1986', 'RV1986', 'PB1986', 'QK1986']);
+  assert.deepEqual(acMemKeysFor('AC1986'), ['AC1986', 'RV1986'], 'Rouge block');
+  assert.deepEqual(acMemKeysFor('AC7664'), ['AC7664', 'PB7664', 'QK7664'], 'Express blocks');
+  assert.deepEqual(acMemKeysFor('AC924'), ['AC924'], 'a mainline number reads only its own key');
   assert.deepEqual(acMemKeysFor('WS812'), ['WS812']);
 });
 
-function kvEnv(store) {
+test('/acinfo today: an observation must be this leg, under a callsign that fits its key', async () => {
+  const { acMemToday } = await import(workerPath);
+  const ts = SEEN_AC1986;
+  const o = (cs, r) => ({ d: '2026-11-20', t: 'DH8C', cs, r: r || 'CFXYZ', ts: ts - 2 * 3600000 });
+  // The review probe: a PAL-own PB924 never answers for AC924, under any key list
+  assert.equal(acMemToday([null, null, { obs: [o('PVL924')] }, null], ts, 'AC924'), null, 'PB924 is not an AC924 key');
+  assert.equal(acMemToday([null, { obs: [o('PVL7664')] }], ts, 'AC7664').reg, 'C-FXYZ', 'PAL-flown AC7664 (PB7664)');
+  assert.equal(acMemToday([null, { obs: [o('JZA7664')] }], ts, 'AC7664'), null, 'PB needs PVL');
+  assert.equal(acMemToday([null, null, { obs: [o('JZA7664')] }], ts, 'AC7664').cs, 'JZA7664', 'QK takes JZA');
+  assert.equal(acMemToday([null, { obs: [o('PVL1986')] }], ts, 'AC1986'), null, 'RV needs ROU');
+  assert.equal(acMemToday([{ obs: [o(undefined, 'CFPPI')] }], ts, 'AC7748'), null, 'an old row with no callsign (the TBM C-FPPI)');
+  assert.equal(acMemToday([{ obs: [o('TBM7748', 'CFPPI')] }], ts, 'AC7748'), null, 'a callsign of another operator under AC');
+  assert.equal(acMemToday([{ obs: [o('PVL7749')] }], ts, 'AC7748'), null, 'another number');
+  assert.equal(acMemToday([{ obs: [o('JZA542')] }], ts, 'AC8542').cs, 'JZA542', 'the Jazz short form');
+});
+
+function kvEnv(store, reads) {
   return {
     FIDS_USERS: { async get() { return JSON.stringify({ username: 'admin' }); }, async put() {} },
     FIDS_LIVE_FLIGHTS: {
-      async get(k, o) { const v = store.has(k) ? store.get(k) : null; return (v && o && o.type === 'json') ? JSON.parse(v) : v; },
+      async get(k, o) { if (reads) reads.push(k); const v = store.has(k) ? store.get(k) : null; return (v && o && o.type === 'json') ? JSON.parse(v) : v; },
       async put(k, v) { store.set(k, v); },
     },
   };
@@ -272,16 +387,24 @@ test('/acinfo for AC1986 at 00:09 answers C-FFIQ from the KV FR24 kept, with no 
     const mod = await import(workerPath);
     store.set('acmem:v1:AC1986', JSON.stringify({ obs: [{ d: '2026-11-17', t: 'B38M' },
       { d: '2026-11-20', t: 'B38M', cs: 'ROU1986', r: 'CFFIQ', ts: SEEN_AC1986 }] }));
-    const ask = (f, ts) => mod.default.fetch(new Request(`https://fids-proxy.example/acinfo?f=${f}&at=dep&ts=${ts}`), kvEnv(store), { waitUntil() {} });
+    const reads = [];
+    const ask = (f, ts) => mod.default.fetch(new Request(`https://fids-proxy.example/acinfo?f=${f}&at=dep&ts=${ts}`), kvEnv(store, reads), { waitUntil() {} });
     const r1 = await ask('AC1986', T(20, 0, 9));
     const j1 = await r1.json();
     assert.deepEqual([j1.type, j1.reg, j1.cs, j1.basis], ['B38M', 'C-FFIQ', 'ROU1986', 'today']);
     assert.match(r1.headers.get('Cache-Control'), /max-age=600/);
-    // The same number a day later: only the usual type, kept briefly.
+    assert.deepEqual(reads, ['acmem:v1:AC1986'], 'the AC key held the leg: one KV read');
+    // The same number a day later: only the usual type. Outside the leg
+    // window it is kept 10 minutes, at or above the screens own re-ask.
     const r2 = await ask('AC1986', T(21, 0, 9));
     const j2 = await r2.json();
     assert.deepEqual([j2.type, j2.reg, j2.basis], ['B38M', null, 'usual']);
-    assert.match(r2.headers.get('Cache-Control'), /max-age=120/, 'an answer without a tail is not held long');
+    assert.match(r2.headers.get('Cache-Control'), /max-age=600/, 'a type-only answer outside the leg window');
+    // Inside the window (our arrival due in an hour), FR24 may yet see the tail: 2 minutes.
+    store.set('acmem:v1:AC1984', JSON.stringify({ obs: [{ d: '2026-11-10', t: 'B38M' }] }));
+    const r2b = await ask('AC1984', Date.now() + 3600000);
+    assert.equal((await r2b.json()).basis, 'usual');
+    assert.match(r2b.headers.get('Cache-Control'), /max-age=120/, 'the leg window');
     // Filed by FR24 under the operator prefix only (PB7664): still found for AC7664.
     store.set('acmem:v1:PB7664', JSON.stringify({ obs: [{ d: '2026-11-18', t: 'DH8D', cs: 'PVL7664', r: 'CFPVJ', ts: Date.UTC(2026, 10, 18, 15) }] }));
     const j3 = await (await ask('AC7664', Date.UTC(2026, 10, 18, 17))).json();

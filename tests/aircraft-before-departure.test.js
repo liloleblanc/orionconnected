@@ -118,16 +118,16 @@ test('every FR24 hit is remembered, at no extra call', () => {
 });
 
 test('the board asks only when nothing is known, and repaints on an answer', () => {
-  assert.match(CORE, /function _acInfoKick\(row, ourDir\)/);
+  // (v24169 — a third argument, tailOnly: the backed-off re-ask for a held leg with no tail)
+  assert.match(CORE, /function _acInfoKick\(row, ourDir, tailOnly\)/);
   assert.match(CORE, /\} else if \(typeof _acInfoKick === 'function'\) \{\n\s+_acInfoKick\(currentFlight, 'dep'\);/,
     'the departing flight asks when its fallback is empty');
-  // v24169 — the inbound asks whenever it has no tail, type or not
-  assert.match(CORE, /if \(!\(_inbR2 && _inbR2\.reg\) && !_ib2\._reg && typeof _acInfoKick === 'function'\) \{\n\s+_acInfoKick\(_ib2, 'arr'\);/,
-    'the inbound asks when its fallback has no tail');
-  const fn = CORE.slice(CORE.indexOf('function _acInfoKick('), CORE.indexOf('function _acInfoKick(') + 2600);
-  assert.match(fn, /< 600000\) return;/, 'at most once per flight per 10 minutes');
-  // v24169 — or today's FR24 sighting of this leg (basis today)
-  assert.match(fn, /\(j\.basis === 'feed' \|\| j\.basis === 'today'\) \? \(j\.reg \|\| ''\) : ''/, 'a usual-type answer never carries a registration');
+  assert.match(CORE, /\} else if \(typeof _acInfoKick === 'function'\) \{\n\s+_acInfoKick\(_ib2, 'arr'\);/,
+    'the inbound asks when its fallback is empty');
+  const fn = CORE.slice(CORE.indexOf('function _acInfoKick('), CORE.indexOf('function _acInfoKick(') + 4000);
+  assert.match(fn, /: 600000;/, 'at most once per flight per 10 minutes');
+  assert.match(fn, /< gap\) return;/);
+  assert.match(fn, /j\.basis === 'feed' \? \(j\.reg \|\| ''\) : ''/, 'a usual-type answer never carries a registration');
   assert.match(fn, /requestGateRebuild\(\)/);
 });
 

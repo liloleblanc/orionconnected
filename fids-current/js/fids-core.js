@@ -8409,7 +8409,12 @@ function _acResolvedGet(row) {
 // then the gate repaints once.
 var _ACINFO_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/acinfo';
 var _acInfoTried = Object.create(null);
-function _acInfoKick(row, ourDir) {
+// v24169 — how many times a leg was asked, for the tail re-ask backoff below
+var _acInfoAsks = Object.create(null);
+// v24169 — `tailOnly`: the re-ask for a leg already held with a type and no
+// tail (_gateTailAskOpen), backed off 10, 30, then 60 minutes, so a screen
+// pays a few worker requests per leg, not one every 10 minutes all day.
+function _acInfoKick(row, ourDir, tailOnly) {
   try {
     if (!row || !row.flight || typeof fetch !== 'function') return;
     var f = String(row.flight).replace(/\s+/g, '').toUpperCase();
@@ -8421,8 +8426,11 @@ function _acInfoKick(row, ourDir) {
     var ts = Number(row._sortTs) || 0;
     var key = f + '|' + other + '|' + at + '|' + Math.floor(ts / 3600000);
     var last = _acInfoTried[key];
-    if (last && (Date.now() - last) < 600000) return;
+    var asks = _acInfoAsks[key] || 0;
+    var gap = (tailOnly && asks >= 2) ? (asks >= 3 ? 3600000 : 1800000) : 600000;
+    if (last && (Date.now() - last) < gap) return;
     _acInfoTried[key] = Date.now();
+    _acInfoAsks[key] = asks + 1;
     var url = _ACINFO_BASE + '?f=' + encodeURIComponent(f)
       + (other ? '&other=' + encodeURIComponent(other) : '') + '&at=' + at + (ts ? '&ts=' + ts : '');
     fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -8431,18 +8439,21 @@ function _acInfoKick(row, ourDir) {
       var nm = (typeof formatAircraft === 'function') ? formatAircraft(j.type) : '';
       if (!nm && !cd) return;
       var _leg = { flight: f, _sortTs: ts };
-      // A registration only from the far end own feed for THIS flight today, or
-      // (v24169) from what FR24 saw on this leg (basis today, within 12 h of
-      // it: AC1986 as C-FFIQ on 2026-11-19); the usual-type answer never
-      // carries one.
-      var _regIn = (j.basis === 'feed' || j.basis === 'today') ? (j.reg || '') : '';
+      // A registration only from the far end own feed for THIS flight today;
+      // the usual-type answer never carries one.
+      var _regIn = j.basis === 'feed' ? (j.reg || '') : '';
+      // v24169 — what FR24 saw on this leg (basis today, within 12 h of it:
+      // AC1986 as C-FFIQ flown as ROU1986 on 2026-11-19) is kept as a sighting
+      // only (`seen`), never as the leg reg: the caption reads it, and no row
+      // takes it as its _reg, so the poll never adds a /reg/ lookup for it.
+      var _seenIn = (j.basis === 'today' && j.reg && typeof _gateCsIsLeg === 'function' && _gateCsIsLeg(j.cs, f))
+        ? { reg: String(j.reg), cs: String(j.cs) } : null;
       var _have = _acResolvedGet(_leg);
       // resolved by another path meanwhile; a leg held with a type and no
-      // tail still takes the tail (v24169: a screen running since before the
+      // sighting still takes one (v24169: a screen running since before the
       // aircraft flew got the usual type first and never got the tail)
-      if (_have && (_have.reg || !_regIn)) return;
-      _acResolvedPut(_leg, nm, cd, _regIn,
-        (j.basis === 'today' && _regIn) ? { reg: _regIn, cs: j.cs || '' } : null);
+      if (_have && !(_seenIn && !(_have.seen && _have.seen.reg))) return;
+      _acResolvedPut(_leg, nm, cd, _regIn, _seenIn);
       if (typeof requestGateRebuild === 'function') requestGateRebuild();
     }).catch(function () {});
   } catch (e) {}
@@ -8900,11 +8911,10 @@ async function _gateNumbersPoll() {
           var _atFilled = false;
           if (_atNm && !inb._aircraft) { inb._aircraft = _atNm; _atFilled = true; }
           if (_atCd && !inb._aircraftCode) { inb._aircraftCode = _atCd; _atFilled = true; }
-          // v24169 — marked as an FR24 sighting of this leg (the `seen` of
-          // _acResolvedPut): its own tail and the callsign it flew under, for
-          // the departure caption (_gateInboundFr24Seen)
+          // v24169 — a sighting (`seen`) only under this leg number (_gateCsIsLeg)
           if ((_atNm || _atCd) && typeof _acResolvedPut === 'function') {
-            _acResolvedPut(inb, _atNm, _atCd, inb._reg || '', { reg: _adsb.reg || '', cs: _adsb.cs || '' });
+            _acResolvedPut(inb, _atNm, _atCd, inb._reg || '',
+              (_adsb.cs && typeof _gateCsIsLeg === 'function' && _gateCsIsLeg(_adsb.cs, flt)) ? { reg: _adsb.reg || '', cs: _adsb.cs } : null);
           }
           // v23901 — the type was stored and never painted: this path returns
           // just below, and render() does not rebuild a gate on its own. Paint
@@ -19873,22 +19883,27 @@ function _buildV2MapCol(ctx, vars) {
     var _inbEquipCd = (_anyInb && !_inbCdHistorical) ? (_ib2._aircraftCode || '') : '';
     var _inbEquipNm = (_anyInb && !_inbNmHistorical)
       ? (_ib2._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
-    // v24169 — AND THE TAIL, ON A SCREEN THAT IS ALREADY RUNNING. /acinfo
-    // was asked only when the inbound had no type at all, and the answer was
-    // dropped when the leg was already held, so a screen that got the usual
-    // type before the aircraft flew never got the tail FR24 then saw (AC1986,
-    // C-FFIQ at 22:05 ADT on 2026-11-19). An inbound with no tail now asks
-    // too, at the same once per leg per 10 minutes (_acInfoKick).
-    if (_anyInb && typeof _acResolvedGet === 'function') {
+    if (_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function') {
       var _inbR2 = _acResolvedGet(_ib2);
-      if (_inbR2 && !_inbEquipNm && !_inbEquipCd) {
+      if (_inbR2) {
         _inbEquipCd = _inbR2.cd || '';
         _inbEquipNm = _inbR2.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
-      }
-      if (_inbR2 && !_ib2._reg && _inbR2.reg) _ib2._reg = _inbR2.reg;
-      if (!(_inbR2 && _inbR2.reg) && !_ib2._reg && typeof _acInfoKick === 'function') {
+        if (!_ib2._reg && _inbR2.reg) _ib2._reg = _inbR2.reg;
+      } else if (typeof _acInfoKick === 'function') {
         _acInfoKick(_ib2, 'arr');
       }
+    }
+    // v24169 — AND THE TAIL, ON A SCREEN THAT IS ALREADY RUNNING. /acinfo
+    // was asked only when the inbound had no type at all, so a screen that
+    // got the usual type before the aircraft flew never got the tail FR24
+    // then saw (AC1986, C-FFIQ at 22:05 ADT on 2026-11-19). An inbound with
+    // no tail now asks again, only while FR24 can have seen that leg, backed
+    // off 10, 30, then 60 minutes (_gateTailAskOpen, _acInfoKick). The answer
+    // is a sighting only: it never becomes _ib2._reg, which the poll would
+    // add to its FR24 lookups.
+    if (_anyInb && typeof _gateTailAskOpen === 'function' && typeof _acInfoKick === 'function'
+        && _gateTailAskOpen(_ib2, Date.now())) {
+      _acInfoKick(_ib2, 'arr', true);
     }
     // PAIRWISE, ONE FLIGHT
     //
@@ -19898,8 +19913,7 @@ function _buildV2MapCol(ctx, vars) {
     // drew the 320, with the reg riding along from whichever had it. Type
     // name and code now always travel together from the SAME flight.
     var _equipCd, _equipNm;
-    var _equipFromInb = !!(_inbEquipCd || _inbEquipNm);
-    if (_equipFromInb) { _equipCd = _inbEquipCd; _equipNm = _inbEquipNm; }
+    if (_inbEquipCd || _inbEquipNm) { _equipCd = _inbEquipCd; _equipNm = _inbEquipNm; }
     else { _equipCd = _outEquipCd; _equipNm = _outEquipNm; }
     if (_equipCd && !_equipNm && typeof formatAircraft === 'function') _equipNm = formatAircraft(_equipCd);
 
@@ -19907,6 +19921,11 @@ function _buildV2MapCol(ctx, vars) {
     var _currentRegSource = String((_cf && _cf._regSource) || '');
     var _inboundRegSource = String((_anyInb && _ib2 && _ib2._regSource) || '');
     var _currentReg = /^history/i.test(_currentRegSource) ? '' : ((_cf && _cf._reg) || '');
+    // v24169 — the departure own FR24 sighting today (_gateOwnFr24Seen): its
+    // tail when the row has none, and the one sighting that may drop the
+    // expected tag below
+    var _ownFrSeen = (typeof _gateOwnFr24Seen === 'function') ? _gateOwnFr24Seen(_cf) : null;
+    if (!_currentReg && _ownFrSeen && _ownFrSeen.reg) _currentReg = _ownFrSeen.reg;
     // v22928 — and never borrow a tail from an inbound that was only matched
     // by GATE. This line is where the wrong aeroplane got in: the departure
     // AC7995 has no tail of its own, so it took the gate-matched arrival's
@@ -19924,16 +19943,18 @@ function _buildV2MapCol(ctx, vars) {
     // operator-checked one (v24168), not a door pick (_doorOnly); and the
     // callsign FR24 heard is the one the departure operator flies under (ROU
     // for Rouge, JZA for Jazz, PVL for PAL, ACA for mainline Air Canada,
-    // WJA for WestJet). C-FUJA was a Jazz E175 flown as JZA7992 on a
-    // departure the feed gave another type: the callsign test turns it away
-    // whenever the departure is not Jazz, and the pairing rule since v24168
-    // keeps arrivals of another operator off the departure. A PAL tail never
-    // shows on a Rouge departure.
+    // WJA for WestJet), never the Express brand alone (ACEX: either partner);
+    // and the departure own type, when it has one, is the type FR24 saw.
+    // That last test is the C-FUJA case: the Jazz E175 flown as JZA7992 on
+    // the Jazz AC7995, whose feed gave a CRJ-900. Same operator is not same
+    // airframe, so a type that differs refuses the tail. A PAL tail never
+    // shows on a Rouge departure. A lent tail keeps the expected tag: FR24
+    // saw it on the inbound leg, not on this one.
     var _inboundIdentityOk = !(_ib2 && _ib2._identityUnverified);
     var _inboundReg = (/^history/i.test(_inboundRegSource) || !_inboundIdentityOk)
       ? '' : ((_anyInb && _ib2 && _ib2._reg) || '');
     var _inbFrSeen = (_anyInb && typeof _gateInboundFr24Seen === 'function')
-      ? _gateInboundFr24Seen(_cf, _ib2, String((vars && vars.iata) || (ctx && ctx.iata) || '')) : null;
+      ? _gateInboundFr24Seen(_cf, _ib2, String((vars && vars.iata) || (ctx && ctx.iata) || ''), _outEquipCd, _outEquipNm) : null;
     if (!_inboundReg && _inbFrSeen && _inbFrSeen.reg) _inboundReg = _inbFrSeen.reg;
     // v218.99.32 — Registration folded into aircraft block (two-column)
     var _acReg = _currentReg || _inboundReg;
@@ -20408,16 +20429,15 @@ function _buildV2MapCol(ctx, vars) {
       // v24169 — A TYPE FR24 SAW IS NOT A PLAN. The tag dropped only when
       // the registry lookup confirmed the tail, and that lookup answers
       // nothing since AeroDataBox went, so even a type seen minutes ago read
-      // as a guess (Boeing 737 MAX 8 expected, for AC1983 on 2026-11-19,
-      // from AC1986 seen by FR24 as C-FFIQ). No tag when the type shown is
-      // the one FR24 saw today on the aircraft shown (_gateFr24TypeSeen): the
-      // departure own leg, or the inbound the caption may lend a tail from.
+      // as a guess. No tag when the type shown is the one FR24 saw today on
+      // the departure own leg, under its own number (_gateOwnFr24Seen,
+      // _gateFr24TypeSeen). A tail lent from the inbound keeps the tag
+      // (AC1983 shows C-FFIQ from AC1986 on 2026-11-19 as expected): FR24
+      // saw that airframe on the inbound leg, and the turn may still swap.
       var _typeSeen = false;
       try {
         if (typeof _gateFr24TypeSeen === 'function') {
-          var _seenFr = _equipFromInb ? _inbFrSeen
-            : ((typeof _acResolvedGet === 'function' && (_acResolvedGet(_cf) || {}).seen) || null);
-          _typeSeen = _gateFr24TypeSeen(_seenFr, _acModel, _equipCd, _acReg);
+          _typeSeen = _gateFr24TypeSeen(_ownFrSeen, _acModel, _equipCd, _acReg);
         }
       } catch (eTS) { _typeSeen = false; }
       if (_typeSeen) _regConfirmed = true;
@@ -21091,9 +21111,6 @@ function uxgGateHtml(ctx) {
       equipRaw = _acR.cd || '';
       equipName = _acR.nm || (equipRaw ? formatAircraft(equipRaw) : '');
       if (!currentFlight._reg && _acR.reg) currentFlight._reg = _acR.reg;
-      // v24169 — a leg held with a type and no tail asks again (same once
-      // per 10 minutes): the tail FR24 sees later reaches a running screen
-      if (!_acR.reg && !currentFlight._reg && typeof _acInfoKick === 'function') _acInfoKick(currentFlight, 'dep');
     } else if (typeof _acInfoKick === 'function') {
       _acInfoKick(currentFlight, 'dep');
     }
@@ -54082,47 +54099,94 @@ function _gateOpClash(a, b) {
 }
 // v24169 — THE CALLSIGNS A DEPARTURE OPERATOR FLIES UNDER, for lending an
 // inbound tail (_gateInboundFr24Seen). The resolved operator first: Rouge
-// ROU, Jazz JZA, PAL PVL, and the Express brand both partners fly under
-// either of JZA and PVL. With no partner named, the airline own: Air Canada
-// mainline ACA only, WestJet WJA, Porter POE, Transat TSC, Flair FLE. From
-// the callsign tables (CALLSIGN_TO_IATA, _IATA_TO_CALLSIGN).
-var _GATE_TAIL_CS_EXPRESS = ['JZA', 'PVL'];
+// ROU, Jazz JZA, PAL PVL. The Express brand alone (ACEX: the 7700 block, or
+// no partner named) gives none: either partner flies it, so a Jazz tail
+// (JZA542 for AC8542) would pass on the PAL Ottawa AC7753 at Moncton gate 4.
+// With no partner named, the airline own: Air Canada mainline ACA only,
+// WestJet WJA, Porter POE, Transat TSC, Flair FLE. From the callsign tables
+// (CALLSIGN_TO_IATA, _IATA_TO_CALLSIGN).
 function _gateTailCsPrefixes(mkt, op) {
   try {
     var o = String(op || '').trim().toUpperCase();
     var code = o || String(mkt || '').trim().toUpperCase();
-    if (o === 'ACEX') return _GATE_TAIL_CS_EXPRESS.slice();
+    if (o === 'ACEX') return [];
     if (/^[A-Z]{3}$/.test(code) && typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[code]) return [code];
     var icao = (typeof _IATA_TO_CALLSIGN !== 'undefined' && _IATA_TO_CALLSIGN[code]) || '';
     return icao ? [icao] : [];
   } catch (e) { return []; }
 }
-// v24169 — THE INBOUND, SEEN BY FR24 TODAY AS THE DEPARTURE OPERATOR. The
-// FR24 sighting (`seen` in _ACRES) of the inbound leg, when it may describe the
+// v24169 — does this FR24 callsign carry this leg number? A three-letter
+// prefix and the flight digits (_csDigitsOk: ROU1986 for AC1986, the Jazz
+// short form JZA542 for AC8542). A callsign with no digits, or none at all,
+// says nothing and fails: the worker hands back the first row when none
+// matches, and a tail answer may name no callsign (the TBM 850 C-FPPI FR24
+// returned for AC7748).
+function _gateCsIsLeg(cs, flight) {
+  try {
+    var c = String(cs || '').replace(/\s+/g, '').toUpperCase();
+    if (!/^[A-Z]{3}\d/.test(c)) return false;
+    var dg = String(flight || '').replace(/\s+/g, '').toUpperCase()
+      .replace(/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])(?=\d)/, '').replace(/\D+$/, '');
+    if (!/^\d+$/.test(dg)) return false;
+    return typeof _csDigitsOk === 'function' ? _csDigitsOk(c, dg) : c.replace(/^\D+/, '').replace(/\D+$/, '') === dg;
+  } catch (e) { return false; }
+}
+// v24169 — the departure own FR24 sighting today (`seen` in _ACRES), when it
+// was heard under the departure own number (_gateCsIsLeg). Else null.
+function _gateOwnFr24Seen(cf) {
+  try {
+    if (!cf || !cf.flight || typeof _acResolvedGet !== 'function') return null;
+    var r = _acResolvedGet(cf);
+    var seen = r && r.seen;
+    return (seen && _gateCsIsLeg(seen.cs, cf.flight)) ? seen : null;
+  } catch (e) { return null; }
+}
+// v24169 — THE INBOUND, SEEN BY FR24 TODAY, AS THE DEPARTURE AIRCRAFT. The FR24
+// sighting (`seen` in _ACRES) of the inbound leg, when it may describe the
 // departure: the inbound is a pairing, not a door pick (_doorOnly); FR24 heard
-// it under the inbound own number (_csDigitsOk: ROU1986 for AC1986, JZA542
-// for AC8542); and that callsign is one the departure operator flies under
-// (_gateTailCsPrefixes). Else null. Moncton gate 4, 2026-11-19: AC1986 seen
-// as C-FFIQ flown as ROU1986, paired with the Rouge AC1983, passes; the PAL
-// AC7754 (PVL7754) never lends its tail to a Rouge departure.
-function _gateInboundFr24Seen(cf, inb, home) {
+// it under the inbound own number (_gateCsIsLeg); that callsign is one the
+// departure operator flies under (_gateTailCsPrefixes, never the Express
+// brand alone); and the departure own type, when it has one, is the type
+// FR24 saw. Same operator is not same airframe: v22928, the Jazz E175 C-FUJA
+// flown as JZA7992 lent to the Jazz AC7995, whose feed gave a CRJ-900, is
+// refused by that last test. Else null. Moncton gate 4, 2026-11-19: AC1986
+// seen as C-FFIQ (B38M) flown as ROU1986, paired with the Rouge AC1983, passes;
+// the PAL AC7754 (PVL7754) never lends its tail to a Rouge departure.
+// `ownCd` / `ownNm`: the departure type the caption holds (non-history).
+function _gateInboundFr24Seen(cf, inb, home, ownCd, ownNm) {
   try {
     if (!cf || !inb || inb._doorOnly === true || typeof _acResolvedGet !== 'function') return null;
     var r = _acResolvedGet(inb);
     var seen = r && r.seen;
-    if (!seen) return null;
+    if (!seen || !seen.reg) return null;
     var cs = String(seen.cs || '').replace(/\s+/g, '').toUpperCase();
-    var m = cs.match(/^([A-Z]{3})\d/);
-    if (!m) return null;
-    var dg = String(inb.flight || '').replace(/\s+/g, '').toUpperCase()
-      .replace(/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])(?=\d)/, '').replace(/\D+$/, '');
-    if (!dg || (typeof _csDigitsOk === 'function' && !_csDigitsOk(cs, dg))) return null;
+    if (!_gateCsIsLeg(cs, inb.flight)) return null;
     var ap = String(home || (typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
     var res = (typeof fidsResolveOperator === 'function') ? fidsResolveOperator(cf, ap) : null;
     var op = String((res && res.op) || '').toUpperCase();
-    if (_gateTailCsPrefixes(cf.airline, op).indexOf(m[1]) < 0) return null;
+    if (_gateTailCsPrefixes(cf.airline, op).indexOf(cs.slice(0, 3)) < 0) return null;
+    // the departure own type: the caption one, else the row own (non-history)
+    var hist = function (k) { return /^history/i.test(String(cf[k] || '')); };
+    var oc = String(ownCd || (!hist('_aircraftCodeSource') && cf._aircraftCode) || cf._feedAcCode || '').toUpperCase();
+    var on = String(ownNm || (!hist('_aircraftSource') && cf._aircraft) || '');
+    if ((oc || on) && !_gateSameType(oc, on, seen.cd, seen.nm)) return null;
     return seen;
   } catch (e) { return null; }
+}
+// v24169 — are two types the same aircraft type? By code (7M8 and 7M8), else by
+// the name the board prints for each (gateAircraftShortname of formatAircraft).
+function _gateSameType(cdA, nmA, cdB, nmB) {
+  try {
+    var nz = function (x) { return String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    if (cdA && cdB && nz(cdA) === nz(cdB)) return true;
+    var name = function (cd, nm) {
+      var n = String(nm || (cd && typeof formatAircraft === 'function' ? formatAircraft(cd) : '') || '');
+      if (n && typeof gateAircraftShortname === 'function') n = gateAircraftShortname(n);
+      return nz(n);
+    };
+    var a = name(cdA, nmA), b = name(cdB, nmB);
+    return !!a && a === b;
+  } catch (e) { return false; }
 }
 // v24169 — is the type on the caption the one FR24 saw (seen.nm / seen.cd), on
 // the aircraft the caption names (no tail shown, or FR24 own tail)?
@@ -54136,6 +54200,26 @@ function _gateFr24TypeSeen(seen, model, code, reg) {
       ? gateAircraftShortname(String(seen.nm || (typeof formatAircraft === 'function' ? formatAircraft(seen.cd) : seen.cd) || ''))
       : String(seen.nm || '');
     return !!seenModel && seenModel === model;
+  } catch (e) { return false; }
+}
+// v24169 — MAY THIS SCREEN ASK /acinfo AGAIN FOR THE INBOUND TAIL? Only while
+// FR24 can have seen that leg: from 30 minutes before it leaves the far end
+// (its departure time, else its block time back from the arrival, else three
+// hours) to 20 minutes past its arrival here, and only while no tail is held
+// (the row own, the store, or a sighting). Outside that window an answer can
+// only repeat the last one: AC1986 at Moncton gate 4, 2026-11-19, could show
+// C-FFIQ only once FR24 had seen it in the air, at 22:05 ADT.
+function _gateTailAskOpen(inb, now) {
+  try {
+    if (!inb || !inb.flight || inb._reg) return false;
+    var r = (typeof _acResolvedGet === 'function') ? _acResolvedGet(inb) : null;
+    if (r && (r.reg || (r.seen && r.seen.reg))) return false;
+    var arr = Math.max(Number(inb._revTs) || 0, Number(inb._sortTs) || 0);
+    if (!arr) return false;
+    var dep = (typeof _gateDepSchedTs === 'function' && _gateDepSchedTs(inb)) || 0;
+    if (!dep) dep = arr - ((Number(inb._durationMins) > 0 ? Number(inb._durationMins) : 180) * 60000);
+    var t = Number(now) || Date.now();
+    return t >= dep - 30 * 60000 && t <= arr + 20 * 60000;
   } catch (e) { return false; }
 }
 function _gateInboundForDeparture(cf, gateVal, arrs, deps) {

@@ -2638,31 +2638,64 @@ __name(acMemRemember, "acMemRemember");
 // v24169 — WHERE FR24 FILES A NUMBER. FR24 labels a partner flight with the
 // operator own prefix: Rouge AC1986 came back as RV1986, PAL AC7664 as PB7664
 // (both in KV on 2026-11-19), so the memory of an Air Canada number is also
-// read under RV, PB and QK. The /adsb/ route now files each answer under the
-// number asked as well, so new days land under AC; this reads the old ones.
+// read under the partner prefix, only in the blocks that partner flies Air
+// Canada numbers in: RV for 1600-2299 (Rouge), PB and QK for 7000-8999
+// (Express). PAL flies its own PB-numbered network outside those blocks
+// (PB901, PB921-925, PB9241: PB924 from Mont-Joli to Moncton is not AC924),
+// so a mainline number reads only its own key. The /adsb/ route now files each
+// answer under the number asked as well, so new days land under AC; this
+// reads the old ones and the answers found by callsign.
 function acMemKeysFor(f) {
   const out = [String(f || "").toUpperCase()];
-  const m = out[0].match(/^AC(\d{1,4}[A-Z]?)$/);
-  if (m) ["RV", "PB", "QK"].forEach((p) => out.push(p + m[1]));
+  const m = out[0].match(/^AC(\d{1,4})([A-Z]?)$/);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    const pre = (n >= 1600 && n <= 2299) ? ["RV"] : (n >= 7000 && n <= 8999) ? ["PB", "QK"] : [];
+    pre.forEach((p) => out.push(p + m[1] + m[2]));
+  }
   return out;
 }
 __name(acMemKeysFor, "acMemKeysFor");
+// v24169 — the callsign prefixes an observation filed under a key may carry:
+// PB is PAL (PVL), RV is Rouge (ROU), QK is Jazz (JZA), and an AC number any
+// of the four. PAL flies its own PB-numbered network too (PB924 from Mont-Joli
+// to Moncton), so a PAL-own PB924 must never answer for AC924.
+const ACMEM_KEY_CS = { PB: ["PVL"], RV: ["ROU"], QK: ["JZA"], AC: ["ACA", "ROU", "JZA", "PVL"] };
+// Is observation `o`, filed under `key`, a sighting of flight `f`? Its callsign
+// must fit the key and carry the digits of f (adsbRowMatches). No callsign, no
+// answer: rows written before this check (the blind first row, a TBM 850
+// C-FPPI for AC7748) never come back as today.
+function acMemObsIsLeg(o, key, f) {
+  const cs = String((o && o.cs) || "").toUpperCase();
+  if (!/^[A-Z]{3}\d/.test(cs)) return false;
+  const pre = String(key || "").toUpperCase().slice(0, 2);
+  const allow = ACMEM_KEY_CS[pre];
+  if (allow && allow.indexOf(cs.slice(0, 3)) < 0) return false;
+  return adsbRowMatches("flight", f, { flight: "", callsign: cs });
+}
+__name(acMemObsIsLeg, "acMemObsIsLeg");
 // v24169 — TODAY'S TAIL FOR THIS LEG. The observation with a registration
 // closest to the leg asked about, and only within 12 h of it (opevLive's
 // window). Matched on the time FR24 answered, never on the UTC day: an
 // evening flight here is filed under the next UTC date (AC1986 seen at 22:05
 // ADT on 2026-11-19 is filed as 2026-11-20). No leg time, no answer.
+// `recs` are the records read under acMemKeysFor(f), in that order; a record
+// past the end of that list has no key and is never read.
 // -> { type, reg, cs, ts } or null; reg as a board prints it (C-FFIQ).
-function acMemToday(recs, ts) {
+function acMemToday(recs, ts, f) {
   const at = Number(ts) || 0;
-  if (!at) return null;
+  if (!at || !f) return null;
+  const list = Array.isArray(recs) ? recs : [recs];
+  const ks = acMemKeysFor(f);
   let best = null, bestD = Infinity;
-  for (const rec of (Array.isArray(recs) ? recs : [recs])) {
+  for (let i = 0; i < list.length && i < ks.length; i++) {
+    const rec = list[i];
     const obs = (rec && Array.isArray(rec.obs)) ? rec.obs : [];
     for (const o of obs) {
       if (!o || typeof o.ts !== "number" || !o.r || !o.t) continue;
       const d = Math.abs(o.ts - at);
       if (d > 12 * 3600000 || d >= bestD) continue;
+      if (!acMemObsIsLeg(o, ks[i], f)) continue;
       const reg = acDisplayRegistration(o.r);
       if (!reg) continue;
       best = { type: o.t, reg, cs: o.cs || null, ts: o.ts };
@@ -2672,6 +2705,13 @@ function acMemToday(recs, ts) {
   return best;
 }
 __name(acMemToday, "acMemToday");
+// Any observation within 12 h of the leg in this record, sighting or not.
+function acMemHasNear(rec, ts) {
+  const at = Number(ts) || 0;
+  const obs = (rec && Array.isArray(rec.obs)) ? rec.obs : [];
+  return !!at && obs.some((o) => o && typeof o.ts === "number" && Math.abs(o.ts - at) <= 12 * 3600000);
+}
+__name(acMemHasNear, "acMemHasNear");
 // v24169 — IS THIS FR24 ROW THE FLIGHT THAT WAS ASKED FOR. The /adsb/ route
 // took the first row FR24 sent and filed it as that number for the day, with
 // no look at what the row was: KV holds a single-engine TBM 850 (C-FPPI) as
@@ -13345,12 +13385,19 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // Moncton gate 4, 2026-11-19: AC1986 asked here at 23:00 got
       // { type: B38M, reg: null, basis: usual } while this KV held C-FFIQ,
       // seen by FR24 on that very flight at 22:05 ADT.
+      // The number asked first: the partner prefixes (RV, PB, QK) are read
+      // only when it holds nothing within 12 h of the leg, so most answers
+      // cost one KV read, as before.
       let _mem = null;
       if (!out.reg && ts && env.FIDS_LIVE_FLIGHTS) {
         try {
-          _mem = await Promise.all(acMemKeysFor(f).map((k) =>
-            env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${k}`, { type: "json" }).catch(() => null)));
-          const today = acMemToday(_mem, ts);
+          const _keys = acMemKeysFor(f);
+          _mem = [await env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${_keys[0]}`, { type: "json" }).catch(() => null)];
+          if (_keys.length > 1 && !acMemHasNear(_mem[0], ts)) {
+            _mem = _mem.concat(await Promise.all(_keys.slice(1).map((k) =>
+              env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${k}`, { type: "json" }).catch(() => null))));
+          }
+          const today = acMemToday(_mem, ts, f);
           if (today) {
             out.type = today.type; out.reg = today.reg; out.cs = today.cs;
             out.source = "fr24"; out.basis = "today";
@@ -13364,10 +13411,16 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         } catch (e) {}
       }
       const _acBody = JSON.stringify(out);
-      // v24169 — an answer without a registration is kept 2 minutes, not 5 or
-      // 10: the tail FR24 sees once the aircraft is up is then on the next
-      // screen that asks, not hidden behind an older "usual" answer
-      const _acAge = out.reg ? 600 : 120;
+      // v24169 — an answer without a registration is kept 2 minutes only
+      // inside the leg window, where FR24 may yet see the tail (our arrival
+      // up to 6 h before ts and 30 min after; our departure 30 min before to
+      // 6 h after); outside it, 10 minutes with a type and 5 without, as
+      // before, at or above the screens own 10-minute re-ask
+      const _nowA = Date.now();
+      const _legLive = !!ts && (at === "dep"
+        ? (_nowA >= ts - 6 * 3600000 && _nowA <= ts + 30 * 60000)
+        : (_nowA >= ts - 30 * 60000 && _nowA <= ts + 6 * 3600000));
+      const _acAge = out.reg ? 600 : (_legLive ? 120 : (out.type ? 600 : 300));
       try { await _acCache.put(_acKey, new Response(_acBody, { headers: {
         "Content-Type": "application/json", "Cache-Control": `public, max-age=${_acAge}` } })); } catch (e) {}
       return new Response(_acBody, { status: 200, headers: {
@@ -14912,6 +14965,7 @@ export {
   acMemUsualType,
   acMemKeysFor,
   acMemToday,
+  acMemObsIsLeg,
   adsbRowMatches,
   adsbPickRow,
   acFeedIndexRows,
