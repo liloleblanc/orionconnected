@@ -20525,7 +20525,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24165" src="/textures/gate-sky-shelf.mp4?v=24165" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24168" src="/textures/gate-sky-shelf.mp4?v=24168" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20569,7 +20569,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24165" src="/textures/gate-sky-shelf.mp4?v=24165" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24168" src="/textures/gate-sky-shelf.mp4?v=24168" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21773,7 +21773,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24165" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24168" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -39464,7 +39464,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24165';
+var FIDS_BUILD_TAG = 'v24168';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -53962,6 +53962,38 @@ function _gateFixFor(inb, ap, now) {
 // exact gate compare was the one filter that failed (probed on the saved
 // rows). The gate test is now the door test (_gateSameDoor), and an arrival
 // at the exact spelling outranks one at the sibling spelling when both fit.
+// v24168 — ONE AIR CANADA NUMBER, SEVERAL OPERATORS. Moncton gate 4,
+// 2026-11-19 at 22:30: AC1983 to Toronto (05:00, a Rouge flight) named AC7754
+// from Ottawa as its aeroplane, "Arrived at the gate 6:59 PM", Operated by
+// Rouge. AC7754 is flown for Air Canada Express by PAL; that aeroplane stays
+// the night and flies AC7753 back to Ottawa at 07:10. The real one for AC1983,
+// AC1986 from Toronto (Rouge, due 00:09), was on the same list. Two rules failed together. _gateFamily folds every
+// Air Canada partner into AC, so the Express flight passed the airline test;
+// and the two Rouge arrivals carried a type that disagreed with the type the
+// screen held for AC1983 (none of these is the feed own word: Moncton names
+// no aircraft), so the type test threw both out and the one arrival with no
+// type at all was left to win by default. Reproduced on the live rows.
+// Now the operator comes from the one ladder every surface uses
+// (fidsResolveOperator): when both rows name one and they cannot be the same
+// company, the arrival is not this aeroplane (Air Canada Express, the brand
+// both Jazz and PAL fly under, agrees with either of them). When both rows
+// name the SAME operator, a type disagreement no longer rules the arrival
+// out; it only ranks below one whose type agrees, because at an airport whose
+// feed names no aircraft both types are a remembered guess.
+var _GATE_AC_EXPRESS_OPS = { QK: 1, PB: 1, ACEX: 1 };
+function _gateOpOf(row) {
+  try {
+    if (!row || typeof fidsResolveOperator !== 'function') return '';
+    var home = (typeof window !== 'undefined' && window._gateIata) || '';
+    var r = fidsResolveOperator(row, String(home).toUpperCase());
+    return String((r && r.op) || '').toUpperCase();
+  } catch (e) { return ''; }
+}
+function _gateOpClash(a, b) {
+  if (!a || !b || a === b) return false;
+  if (_GATE_AC_EXPRESS_OPS[a] && _GATE_AC_EXPRESS_OPS[b]) return a !== 'ACEX' && b !== 'ACEX';
+  return true;
+}
 function _gateInboundForDeparture(cf, gateVal, arrs, deps) {
   if (!cf) return null;
   var depTs = cf._sortTs || Date.now();
@@ -53971,20 +54003,23 @@ function _gateInboundForDeparture(cf, gateVal, arrs, deps) {
   var outAc = acFamily(cf._aircraft || cf._aircraftCode);
   var outReg = _gateTodayReg(cf);
   var rank = function (f) { return f.flight === cf.flight ? 3 : (outReg && _gateTodayReg(f) === outReg ? 2 : (_gateRefNorm(f.gate) === _gateRefNorm(gateVal) ? 1 : 0)); };
+  var outOp = _gateOpOf(cf);
+  var typeOk = function (f) { var fa = acFamily(f._aircraft || f._aircraftCode); return (outAc && fa && fa !== outAc) ? 0 : 1; };
   return (arrs || []).filter(function (f) {
     if (!f || f.status === 'departed' || _gateLegGone(f)) return false;
     if (!f._sortTs || f._sortTs >= depTs || f._sortTs < lookback) return false;
     if (_gateFamily(f.airline) !== depFamily) return false;
     var fReg = _gateTodayReg(f);
     if (outReg && fReg) return fReg === outReg;
-    var fa = acFamily(f._aircraft || f._aircraftCode);
-    if (outAc && fa && fa !== outAc) return false;
+    var fOp = outOp ? _gateOpOf(f) : '';
+    if (_gateOpClash(outOp, fOp)) return false;
+    if (!typeOk(f) && !(outOp && fOp === outOp)) return false;
     if (f.flight === cf.flight) return true;
     if (!_gateSameDoor(f.gate, gateVal)) return false;
     if (depTs - f._sortTs < _gateMinTurnMs(cf, f)) return false;
     if (_gateTurnedByPattern(f, cf, deps, arrs)) return false;
     return !_gateArrivalClaimed(f, cf, deps, arrs);
-  }).sort(function (a, b) { return (rank(b) - rank(a)) || (b._sortTs - a._sortTs); })[0] || null;
+  }).sort(function (a, b) { return (rank(b) - rank(a)) || (typeOk(b) - typeOk(a)) || (b._sortTs - a._sortTs); })[0] || null;
 }
 // v24018 — AN ARRIVAL FROM THE DAY BEFORE THAT THE DAILY PATTERN TURNS.
 // Moncton, Oct 7 at 10:18: gate 3's PD2370 (11:55) named yesterday's PD2373
@@ -69859,7 +69894,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24165" src="/textures/gate-sky-shelf.mp4?v=24165"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24168" src="/textures/gate-sky-shelf.mp4?v=24168"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

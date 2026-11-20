@@ -52,7 +52,7 @@ function lineSource(prefix) {
 const FNS = [
   '_gateRefNorm', '_gateLegGone', '_gateFamily', '_gateTodayReg', '_gateIsProp', '_gateMinTurnMs', '_gateAcFamily',
   '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn', '_gateDepOwnInbound', '_gateArrivalClaimed',
-  '_gateTurnedByPattern', '_gateInboundForDeparture', '_gateMatchIsNew', '_gateDepSchedTs', 'adbTs', '_gcNm',
+  '_gateTurnedByPattern', '_gateInboundForDeparture', '_gateOpOf', '_gateOpClash', '_gateMatchIsNew', '_gateDepSchedTs', 'adbTs', '_gcNm',
   '_gateDoorBase', '_gateDoorOwn', '_gateSameDoor', '_gateDoorFold', '_gateOwnGateRef',
 ];
 
