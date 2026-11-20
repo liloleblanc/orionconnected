@@ -2584,9 +2584,15 @@ __name(acDisplayRegistration, "acDisplayRegistration");
 // v23944 — the same answer also names WHO flew it: the callsign (PVL7754 is
 // PAL, JZA8542 is Jazz) and the registration. Both are kept on TODAY's
 // observation only, as operator evidence for today's flight (opevLive, the
-// /opinfo route) — never shown, never read for another day, and dropped from
-// every older observation on the next write, so a day's tail outlives that
-// day only until this number flies again.
+// /opinfo route) — never read for another day, and dropped from every older
+// observation on the next write, so a day's tail outlives that day only until
+// this number flies again.
+// v24169 — and the tail is now handed back by /acinfo (basis "today"), for
+// the leg it was seen on only: an observation within 12 h of the leg asked
+// about (acMemToday). Moncton gate 4, 2026-11-19: FR24 saw AC1986 as C-FFIQ,
+// a 737 MAX 8 flown as ROU1986, at 22:05 ADT, the worker kept it here, and no
+// screen could ever read it back, so AC1983 (that aircraft, at 05:00) showed
+// no registration at all. A tail from another day is still never shown.
 function acMemAddObservation(rec, type, now, seen) {
   const t = String(type || "").toUpperCase().trim();
   if (!/^[A-Z0-9]{2,4}$/.test(t)) return null;
@@ -2629,6 +2635,81 @@ async function acMemRemember(env, flightNo, type, now, seen) {
   } catch (e) {}
 }
 __name(acMemRemember, "acMemRemember");
+// v24169 — WHERE FR24 FILES A NUMBER. FR24 labels a partner flight with the
+// operator own prefix: Rouge AC1986 came back as RV1986, PAL AC7664 as PB7664
+// (both in KV on 2026-11-19), so the memory of an Air Canada number is also
+// read under RV, PB and QK. The /adsb/ route now files each answer under the
+// number asked as well, so new days land under AC; this reads the old ones.
+function acMemKeysFor(f) {
+  const out = [String(f || "").toUpperCase()];
+  const m = out[0].match(/^AC(\d{1,4}[A-Z]?)$/);
+  if (m) ["RV", "PB", "QK"].forEach((p) => out.push(p + m[1]));
+  return out;
+}
+__name(acMemKeysFor, "acMemKeysFor");
+// v24169 — TODAY'S TAIL FOR THIS LEG. The observation with a registration
+// closest to the leg asked about, and only within 12 h of it (opevLive's
+// window). Matched on the time FR24 answered, never on the UTC day: an
+// evening flight here is filed under the next UTC date (AC1986 seen at 22:05
+// ADT on 2026-11-19 is filed as 2026-11-20). No leg time, no answer.
+// -> { type, reg, cs, ts } or null; reg as a board prints it (C-FFIQ).
+function acMemToday(recs, ts) {
+  const at = Number(ts) || 0;
+  if (!at) return null;
+  let best = null, bestD = Infinity;
+  for (const rec of (Array.isArray(recs) ? recs : [recs])) {
+    const obs = (rec && Array.isArray(rec.obs)) ? rec.obs : [];
+    for (const o of obs) {
+      if (!o || typeof o.ts !== "number" || !o.r || !o.t) continue;
+      const d = Math.abs(o.ts - at);
+      if (d > 12 * 3600000 || d >= bestD) continue;
+      const reg = acDisplayRegistration(o.r);
+      if (!reg) continue;
+      best = { type: o.t, reg, cs: o.cs || null, ts: o.ts };
+      bestD = d;
+    }
+  }
+  return best;
+}
+__name(acMemToday, "acMemToday");
+// v24169 — IS THIS FR24 ROW THE FLIGHT THAT WAS ASKED FOR. The /adsb/ route
+// took the first row FR24 sent and filed it as that number for the day, with
+// no look at what the row was: KV holds a single-engine TBM 850 (C-FPPI) as
+// the day's aircraft for AC7748, a PAL Dash 8 number. By number or callsign,
+// the row's own flight or callsign must carry the digits asked (or the Jazz
+// short form, JZA542 for AC8542); by registration, the same tail. A row that
+// names nothing to compare passes, as the board's own guard (_csDigitsOk) does.
+function adsbRowMatches(kind, subject, p) {
+  if (!p) return false;
+  const norm = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (kind === "reg") {
+    const r = norm(p.reg);
+    return !r || r === norm(subject);
+  }
+  if (kind !== "flight" && kind !== "callsign") return true;
+  const num = (s) => {
+    const m = norm(s).match(/^(?:[A-Z]{3}|[A-Z]{2}|[A-Z]\d|\d[A-Z])(\d{1,4})[A-Z]{0,2}$/);
+    return m ? m[1].replace(/^0+(?=\d)/, "") : "";
+  };
+  const want = num(subject);
+  if (!want) return true;
+  const cs = norm(p.callsign);
+  const got = [p.flight, p.callsign].map(num).filter(Boolean);
+  if (!got.length) return true;
+  return got.some((d) => d === want || (want.length === 4 && d === want.slice(1) && /^JZA/.test(cs)));
+}
+__name(adsbRowMatches, "adsbRowMatches");
+// The row to use: the first with a position that is the flight asked for,
+// else the first row as before (its position still draws; it is not
+// remembered, see the acMemRemember call).
+function adsbPickRow(rows, kind, subject) {
+  const list = Array.isArray(rows) ? rows : [];
+  for (const r of list) {
+    if (r && typeof r.lat === "number" && typeof r.lon === "number" && adsbRowMatches(kind, subject, r)) return r;
+  }
+  return list[0];
+}
+__name(adsbPickRow, "adsbPickRow");
 // Compact index of one direction of an authority feed: [number, ts, model, reg]
 // for rows that name an aircraft. Calgary's document is ~6.5 MB; the index is
 // a few tens of KB, so a lookup never re-parses the whole feed.
@@ -13217,9 +13298,11 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     //          destination for a departure)
     //   at     which of THEIR rows that is: "dep" for our arrival, "arr" for ours
     // Answers { type, reg, source, basis }: basis "feed" is today's aircraft from
-    // the far end's own feed; basis "usual" is the type this number flies most
-    // (no registration, ever). Public like /adsb/, pattern-checked, no upstream
-    // beyond the feeds the boards already read and our own KV.
+    // the far end's own feed; basis "today" is what FR24 saw on this leg
+    // (acMemToday: type, registration and callsign, within 12 h of ts, from
+    // answers already paid for); basis "usual" is the type this number flies
+    // most (no registration, ever). Public like /adsb/, pattern-checked, no
+    // upstream beyond the feeds the boards already read and our own KV.
     if (path === "/acinfo") {
       const f = String(url.searchParams.get("f") || "").toUpperCase().replace(/\s+/g, "");
       const other = String(url.searchParams.get("other") || "").toLowerCase();
@@ -13233,7 +13316,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       try {
         const hit = await _acCache.match(_acKey);
         if (hit) return new Response(await hit.text(), { status: 200, headers: {
-          "Content-Type": "application/json", "Cache-Control": "public, max-age=300", "X-Acinfo-Cache": "hit", ...corsHeaders(origin) } });
+          "Content-Type": "application/json", "Cache-Control": hit.headers.get("Cache-Control") || "public, max-age=120",
+          "X-Acinfo-Cache": "hit", ...corsHeaders(origin) } });
       } catch (e) {}
       const out = { f, type: null, reg: null, source: null, basis: null };
       // v24071 — a feed whose rows carry no aircraft (h.noAircraft: Sea-Tac)
@@ -13257,14 +13341,33 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           }
         } catch (e) {}
       }
+      // v24169 — today's tail for this leg, before the usual type (acMemToday).
+      // Moncton gate 4, 2026-11-19: AC1986 asked here at 23:00 got
+      // { type: B38M, reg: null, basis: usual } while this KV held C-FFIQ,
+      // seen by FR24 on that very flight at 22:05 ADT.
+      let _mem = null;
+      if (!out.reg && ts && env.FIDS_LIVE_FLIGHTS) {
+        try {
+          _mem = await Promise.all(acMemKeysFor(f).map((k) =>
+            env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${k}`, { type: "json" }).catch(() => null)));
+          const today = acMemToday(_mem, ts);
+          if (today) {
+            out.type = today.type; out.reg = today.reg; out.cs = today.cs;
+            out.source = "fr24"; out.basis = "today";
+          }
+        } catch (e) {}
+      }
       if (!out.type && env.FIDS_LIVE_FLIGHTS) {
         try {
-          const usual = acMemUsualType(await env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${f}`, { type: "json" }), Date.now());
+          const usual = acMemUsualType(_mem ? _mem[0] : await env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${f}`, { type: "json" }), Date.now());
           if (usual) { out.type = usual; out.source = "fr24"; out.basis = "usual"; }
         } catch (e) {}
       }
       const _acBody = JSON.stringify(out);
-      const _acAge = out.type || out.reg ? 600 : 300;
+      // v24169 — an answer without a registration is kept 2 minutes, not 5 or
+      // 10: the tail FR24 sees once the aircraft is up is then on the next
+      // screen that asks, not hidden behind an older "usual" answer
+      const _acAge = out.reg ? 600 : 120;
       try { await _acCache.put(_acKey, new Response(_acBody, { headers: {
         "Content-Type": "application/json", "Cache-Control": `public, max-age=${_acAge}` } })); } catch (e) {}
       return new Response(_acBody, { status: 200, headers: {
@@ -13581,7 +13684,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             // v24115 — what the paid feed brought, counted (/feeds/status)
             try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, _hardStop ? "refused" : (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
             if (_fr.ok) {
-              const _p = _rows[0];
+              // v24169 — the row that is the flight asked for, not blindly the
+              // first (adsbPickRow); a row that is not is never remembered
+              const _p = adsbPickRow(_rows, kind, subject);
+              const _pMatch = adsbRowMatches(kind, subject, _p);
               if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
                 const _ageS = _p.timestamp ? Math.max(0, Math.round((Date.now() - Date.parse(_p.timestamp)) / 1000)) : null;
                 const _ac = {
@@ -13606,7 +13712,16 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 // v23901 — remember what this flight number flew (type only is
                 // ever shown from it). Same answer, no extra credit.
                 // v23944 — with the callsign and tail, today's operator evidence.
-                try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
+                // v24169 — only a row that is the flight asked for (adsbRowMatches),
+                // and under the number asked too: FR24 files PAL AC7664 as
+                // PB7664 and Rouge AC1986 as RV1986, which /acinfo?f=AC7664
+                // never read (the board asks by the number it shows).
+                if (_pMatch) {
+                  try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
+                  if (kind === "flight" && _p.flight && String(_p.flight).toUpperCase().replace(/\s+/g, "") !== subject) {
+                    try { ctx.waitUntil(acMemRemember(env, subject, _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
+                  }
+                }
                 // v23906 — and add this position to the flight's flown track.
                 try { ctx.waitUntil(acTrackAppend(env, _p, Date.now())); } catch (e) {}
                 const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
@@ -14795,6 +14910,10 @@ export {
   acDisplayRegistration,
   acMemAddObservation,
   acMemUsualType,
+  acMemKeysFor,
+  acMemToday,
+  adsbRowMatches,
+  adsbPickRow,
   acFeedIndexRows,
   acFeedPick,
   OPEV_DESIGNATOR,
