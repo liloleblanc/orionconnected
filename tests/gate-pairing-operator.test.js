@@ -4,9 +4,10 @@
 //
 // v24168. Moncton gate 4, 2026-11-19 at 22:30 ADT: AC1983 to Toronto (05:00,
 // a Rouge number) named AC7754 from Ottawa as its aeroplane, "Arrived at the
-// gate 6:59 PM". AC7754 is an Air Canada Express flight flown by PAL, and that
-// Dash 8 had already left; the real aeroplane, AC1986 from Toronto (Rouge,
-// due 00:09), was on the same list, as was AC2040 from Montreal (Rouge).
+// gate 6:59 PM". AC7754 is an Air Canada Express flight flown by PAL; that
+// aircraft stays the night and leaves at 07:10 as AC7753. The real aeroplane
+// for AC1983, AC1986 from Toronto (Rouge, due 00:09), was on the same list,
+// as was AC2040 from Montreal (Rouge).
 // _gateFamily folds every Air Canada partner into AC, and the two Rouge
 // arrivals carried a remembered type that disagreed with the one the screen
 // held for AC1983, so the type test threw both out and the untyped Express
@@ -111,6 +112,17 @@ test('a Rouge arrival whose type agrees still outranks a later one whose type do
   const arrs = ARRS().map((a) => a.flight === 'AC2040' ? Object.assign({}, a, { _aircraft: 'A320' })
     : a.flight === 'AC1986' ? Object.assign({}, a, { _aircraft: 'B38M' }) : a);
   assert.equal(e._gateInboundForDeparture(cf, '4', arrs, DEPS()).flight, 'AC2040');
+});
+
+test('the PAL aircraft that night-stops is the one for the morning PAL flight back to Ottawa', () => {
+  // AC7754 lands from Ottawa at 18:59 and stays overnight; it leaves at 07:10
+  // as AC7753 (PAL). The Rouge flights each get their own Rouge arrival.
+  const e = engine();
+  const deps = DEPS();
+  const pick = (f) => { const cf = deps.find((d) => d.flight === f); const r = e._gateInboundForDeparture(cf, '4', ARRS(), deps); return r && r.flight; };
+  assert.equal(pick('AC7753'), 'AC7754');
+  assert.equal(pick('AC1983'), 'AC1986');
+  assert.equal(pick('AC2037'), 'AC2040');
 });
 
 test('Express agrees with either partner; Jazz and PAL named outright do not agree', () => {

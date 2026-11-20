@@ -53965,9 +53965,9 @@ function _gateFixFor(inb, ap, now) {
 // v24168 — ONE AIR CANADA NUMBER, SEVERAL OPERATORS. Moncton gate 4,
 // 2026-11-19 at 22:30: AC1983 to Toronto (05:00, a Rouge flight) named AC7754
 // from Ottawa as its aeroplane, "Arrived at the gate 6:59 PM", Operated by
-// Rouge. AC7754 is flown for Air Canada Express by PAL, a Dash 8 that had
-// already left again; the real one, AC1986 from Toronto (Rouge, due 00:09),
-// was on the same list. Two rules failed together. _gateFamily folds every
+// Rouge. AC7754 is flown for Air Canada Express by PAL; that aeroplane stays
+// the night and flies AC7753 back to Ottawa at 07:10. The real one for AC1983,
+// AC1986 from Toronto (Rouge, due 00:09), was on the same list. Two rules failed together. _gateFamily folds every
 // Air Canada partner into AC, so the Express flight passed the airline test;
 // and the two Rouge arrivals carried a type that disagreed with the type the
 // screen held for AC1983 (none of these is the feed own word: Moncton names
