@@ -54,19 +54,22 @@ function world(answers) {
     const m = u.match(/^https:\/\/fr24api\.flightradar24\.com\/api\/live\/flight-positions\/full\?flights=([A-Z0-9]+)$/);
     if (!m) throw new Error('no network in this test: ' + u);
     asked.push(m[1]);
+    if (w.onFetch) w.onFetch(m[1]);
     const a = answers[m[1]];
+    if (a === 'throw') throw new Error('FR24 unreachable (fixture)');
     if (typeof a === 'number') return new Response('{}', { status: a });
     return new Response(JSON.stringify({ data: a || [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
+  const w = {};
   const waits = [];
   const ctx = { waitUntil(p) { waits.push(Promise.resolve(p).catch(() => {})); } };
   const env = {
     FR24_KEY: 'test-key', FR24_DAILY_BUDGET: '1440', FIDS_LIVE_FLIGHTS: kv,
     FIDS_USERS: { async get() { return JSON.stringify({ username: 'admin' }); }, async put() {} },
   };
-  return { store, reads, writes, edge, cache, asked, fetchStub, ctx, env, waits,
+  return Object.assign(w, { store, reads, writes, edge, cache, asked, fetchStub, ctx, env, waits,
     settle: async () => { while (waits.length) await waits.shift(); },
-    unlock: () => { store.delete('arrsweep:lock:v1'); edge.delete('https://arrsweep-lock/v1'); } };
+    unlock: () => { store.delete('arrsweep:lock:v1'); edge.delete('https://arrsweep-lock/v1'); } });
 }
 
 // A cyqm.ca arrivals row, due `mins` from the pinned clock (wall-clock frame).
@@ -95,6 +98,7 @@ async function withWorld(answers, fn) {
   w.at = (min) => { now = T0 + min * 60000; return now; };
   try {
     const mod = await load();
+    mod.yqmArrSweepReset();   // each case starts as a fresh isolate
     w.mod = mod;
     w.wall = mod.yqmMonctonWallS(T0);
     await fn(w, mod);
@@ -176,7 +180,7 @@ test('an empty first answer allows one retry, at least 10 minutes later and befo
     assert.equal(w.asked.length, 2, 'never more than two');
     const sched = JSON.parse(text)[0].localTimestamp;
     const rec = JSON.parse(w.store.get(`arrsweep:v1:AC2040:${sched}`));
-    assert.deepEqual([rec.attempts, rec.found], [2, false]);
+    assert.deepEqual([rec.attempts, rec.asks, rec.found], [2, 2, false]);
     assert.equal(w.store.get('feeds:n:fr24:sweep_asked:2026-11-20'), '2');
     assert.equal(w.store.get('feeds:n:fr24:sweep_found:2026-11-20'), undefined);
   });
@@ -228,13 +232,14 @@ test('the FR24 budget gates of /adsb/ decide: over the cap, in a cool-off, or a 
     await mod.yqmArrSweep(w.env, w.ctx, text);
     await w.settle();
     assert.deepEqual(w.asked, ['AC7770']);
-    // an empty pool (402): the call is counted, the leg keeps its asks
+    // an empty pool (402): the call is counted as an ask, not an attempt
     const t2 = JSON.stringify([row(w.wall, 'AC7772', 30)]);
     w.at(5); w.unlock(); w.edge.clear();
     await mod.yqmArrSweep(w.env, w.ctx, t2);
     await w.settle();
     assert.deepEqual(w.asked, ['AC7770', 'AC7772']);
-    assert.ok(!w.store.has(`arrsweep:v1:AC7772:${JSON.parse(t2)[0].localTimestamp}`), 'a refusal spends no attempt');
+    const r402 = JSON.parse(w.store.get(`arrsweep:v1:AC7772:${JSON.parse(t2)[0].localTimestamp}`));
+    assert.deepEqual([r402.attempts, r402.asks], [0, 1], 'a refusal spends no attempt, but it is an ask');
     assert.ok(Number(w.store.get(`fr24:cool:${day}`)) >= T0 + 3600000, 'the 402 pause is set, as /adsb/ sets it');
   });
 });
@@ -249,13 +254,16 @@ test('a fresh shared answer with a tail is used: found, and FR24 is not asked', 
     assert.equal(r.asked, 0);
     const rec = JSON.parse(w.store.get(`arrsweep:v1:AC2048:${JSON.parse(text)[0].localTimestamp}`));
     assert.deepEqual([rec.attempts, rec.found, rec.via], [0, true, 'shared']);
-    // a fresh quiet answer is no tail: no call now, no attempt
+    assert.equal(w.store.get('feeds:n:fr24:sweep_shared:2026-11-20'), '1', 'counted as found in a shared answer');
+    assert.equal(r.shared, 1);
+    // a fresh quiet answer is no tail: no call now, no attempt (an ask, and the leg waits 10 minutes)
     w.store.set('adsbans:v1:flight:AC2050', JSON.stringify({ at: T0 - 60000, quiet: true, body: JSON.stringify({ ac: [], _provider: 'fr24', _quiet: true }) }));
     const t2 = JSON.stringify([row(w.wall, 'AC2050', 22)]);
     w.unlock();
     await mod.yqmArrSweep(w.env, w.ctx, t2);
     assert.deepEqual(w.asked, []);
-    assert.ok(!w.store.has(`arrsweep:v1:AC2050:${JSON.parse(t2)[0].localTimestamp}`));
+    const q = JSON.parse(w.store.get(`arrsweep:v1:AC2050:${JSON.parse(t2)[0].localTimestamp}`));
+    assert.deepEqual([q.attempts, q.asks, q.found], [0, 1, false]);
   });
 });
 
@@ -305,5 +313,107 @@ test('/yqm/flights/arrivals runs the sweep after its answer, and /feeds/status c
     const fr = s.counts_utc_day['2026-11-20'].fr24;
     assert.deepEqual([fr.sweep_asked, fr.sweep_found], [1, 1]);
     assert.equal(fr.answers_with_position, 1, 'and it counts as an FR24 answer like any other');
+  });
+});
+
+// ── Review of 2026-11-20 ──────────────────────────────────────────────────
+
+// Run the sweep once a minute from `from` to `to` (inclusive), as the screens
+// polling the list do, the lock released between runs.
+async function everyMinute(w, mod, text, from, to) {
+  for (let m = from; m <= to; m++) {
+    w.at(m); w.unlock();
+    await mod.yqmArrSweep(w.env, w.ctx, text);
+    await w.settle();
+  }
+}
+
+test('an FR24 error or a fetch that throws is an attempt: two at most per leg, never one a minute', async () => {
+  await withWorld({ AC7790: 500, AC7792: 'throw' }, async (w, mod) => {
+    const text = JSON.stringify([row(w.wall, 'AC7790', 40), row(w.wall, 'AC7792', 40)]);
+    await everyMinute(w, mod, text, 0, 31);
+    assert.deepEqual(w.asked.filter((f) => f === 'AC7790'), ['AC7790', 'AC7790'], 'a 500: two attempts, 10 minutes apart');
+    assert.deepEqual(w.asked.filter((f) => f === 'AC7792'), ['AC7792', 'AC7792'], 'a thrown fetch: the same');
+    for (const f of ['AC7790', 'AC7792']) {
+      const rec = JSON.parse(w.store.get(`arrsweep:v1:${f}:${JSON.parse(text)[0].localTimestamp}`));
+      assert.deepEqual([rec.attempts, rec.asks, rec.found], [2, 2, false], f);
+    }
+  });
+});
+
+test('refusals (429) are asks: four at most per leg over the whole window, 10 minutes apart', async () => {
+  await withWorld({ AC7794: 429 }, async (w, mod) => {
+    const text = JSON.stringify([row(w.wall, 'AC7794', 40)]);
+    const at = [];
+    w.onFetch = () => at.push(Math.round((Date.now() - T0) / 60000));
+    await everyMinute(w, mod, text, 0, 31);
+    assert.deepEqual(at, [0, 10, 20, 30], 'four asks, 10 minutes apart, inside the window');
+    const rec = JSON.parse(w.store.get(`arrsweep:v1:AC7794:${JSON.parse(text)[0].localTimestamp}`));
+    assert.deepEqual([rec.attempts, rec.asks], [0, 4]);
+  });
+});
+
+test('the ask is claimed in the leg record before FR24 is called', async () => {
+  await withWorld({ AC7796: [] }, async (w, mod) => {
+    const text = JSON.stringify([row(w.wall, 'AC7796', 25)]);
+    const key = `arrsweep:v1:AC7796:${JSON.parse(text)[0].localTimestamp}`;
+    let seen = null;
+    w.onFetch = () => { seen = JSON.parse(w.store.get(key) || 'null'); };
+    await mod.yqmArrSweep(w.env, w.ctx, text);
+    await w.settle();
+    assert.deepEqual(seen && [seen.asks, seen.attempts, seen.last], [1, 0, T0], 'claimed before the call');
+    // the read of the record asks for the shortest KV read cache
+    const src = require('node:fs').readFileSync(workerPath, 'utf8');
+    assert.match(src, /kv\.get\(key, \{ type: "json", cacheTtl: ARRSWEEP_READ_TTL_S \}\)/);
+    assert.match(src, /const ARRSWEEP_READ_TTL_S = 30;/);
+  });
+});
+
+test('a leg waiting out its 10 minutes costs no KV read or write', async () => {
+  await withWorld({ AC7798: [] }, async (w, mod) => {
+    const text = JSON.stringify([row(w.wall, 'AC7798', 38)]);
+    await mod.yqmArrSweep(w.env, w.ctx, text);
+    await w.settle();
+    const r0 = w.reads.length, w0 = w.writes.length;
+    await everyMinute(w, mod, text, 1, 9);
+    assert.equal(w.reads.length, r0, 'no read while it waits');
+    assert.equal(w.writes.length, w0, 'and no lock written');
+    await everyMinute(w, mod, text, 10, 10);
+    assert.equal(w.asked.length, 2, 'due again at 10 minutes');
+  });
+});
+
+test('a shut budget gate is read once per run, writes nothing, and this location waits 2 minutes', async () => {
+  await withWorld({ AC7800: [] }, async (w, mod) => {
+    w.store.set('fr24:used:2026-11-20', '1440');
+    const text = JSON.stringify([row(w.wall, 'AC7800', 25)]);
+    const r = await mod.yqmArrSweep(w.env, w.ctx, text);
+    assert.equal(r.ran, false);
+    assert.deepEqual(w.asked, []);
+    assert.ok(w.reads.includes('fr24:used:2026-11-20'), 'the budget is read');
+    assert.deepEqual(w.writes, [], 'no lock, no record, nothing');
+    const r0 = w.reads.length;
+    w.at(1);
+    await mod.yqmArrSweep(w.env, w.ctx, text);
+    assert.equal(w.reads.length, r0, 'a minute on: this location is still waiting');
+    w.at(2); w.store.set('fr24:used:2026-11-20', '0');
+    await mod.yqmArrSweep(w.env, w.ctx, text);
+    await w.settle();
+    assert.deepEqual(w.asked, ['AC7800'], 'two minutes on, the gate open: asked');
+  });
+});
+
+test('a near ask (the arrival on final) holds a quiet answer 5 minutes, every other ask 10', async () => {
+  await withWorld({ AC7673: [] }, async (w, mod) => {
+    const ask = async (near) => { const info = {}; await mod.adsbAnswer(w.env, w.ctx, 'flight', 'AC7673', near, '*', info); await w.settle(); return info; };
+    w.at(0); assert.equal((await ask(false)).asked, true, 'a quiet answer, held 10 minutes for the rest');
+    w.at(4); assert.equal((await ask(true)).cache, 'shared', 'near, 4 minutes on: the KV copy, under 5 minutes old');
+    w.at(6); assert.equal((await ask(true)).asked, true, 'near, 6 minutes on: FR24 asked again');
+    w.at(8); assert.ok(!(await ask(false)).asked, 'not near: the copy still holds');
+    w.at(12); assert.ok(!(await ask(false)).asked, 'not near: 6 minutes after the last answer, still held');
+    assert.deepEqual(w.asked, ['AC7673', 'AC7673']);
+    // clean empty answers are counted apart from refusals and errors
+    assert.equal(w.store.get('feeds:n:fr24:quiet:2026-11-20'), '2');
+    assert.equal(w.store.get('feeds:n:fr24:empty:2026-11-20'), undefined);
   });
 });

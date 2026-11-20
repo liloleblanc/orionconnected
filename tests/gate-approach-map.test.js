@@ -201,7 +201,7 @@ test('the worker holds a near arrival below 10,000 ft for 90 s, and every locati
   assert.match(WORKER, /const ADSB_NEAR_TTL = 90;/);
   assert.match(WORKER, /const _hold = \(_near && typeof _ac\.alt_baro === "number" && _ac\.alt_baro < 10000\) \? ADSB_NEAR_TTL : ADSB_TTL;/);
   assert.match(WORKER, /JSON\.stringify\(\{ at: Date\.now\(\), hold: _hold, body: _frBody \}\), \{ expirationTtl: Math\.max\(60, _hold\) \}/);
-  assert.match(WORKER, /const _gMax = _g\.quiet \? ADSB_EMPTY_TTL : \(typeof _g\.hold === "number" && _g\.hold > 0 \? _g\.hold : ADSB_TTL\);/);
+  assert.match(WORKER, /const _gMax = _g\.quiet \? \(_near \? ADSB_NEAR_EMPTY_TTL : ADSB_EMPTY_TTL\) : \(typeof _g\.hold === "number" && _g\.hold > 0 \? _g\.hold : ADSB_TTL\);/);
   assert.match(WORKER, /"Cache-Control": `public, max-age=\$\{_hold\}`/);
 });
 

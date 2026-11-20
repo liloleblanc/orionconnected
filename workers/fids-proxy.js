@@ -11925,6 +11925,14 @@ async function adsbAnswer(env, ctx, kind, subject, _near, origin, info) {
   // (_gateLegWindowOpen), so the wait falls mostly on the minutes around
   // take-off, where the map draws the aeroplane at its origin anyway.
   const ADSB_EMPTY_TTL = 600;
+  // v24169 review — BUT NOT FOR A NEAR ASK (a board's own inbound near the
+  // field, ?near=1). FR24 drops arrivals low on final (it lost AC7673 at
+  // 1,075 ft at YHZ), and ten minutes of a quiet answer there covers the
+  // landing roll and the whole taxi-in, so the land and taxi would run on the
+  // model alone after FR24 has the aeroplane again on the ground. A near ask
+  // keeps the old five minutes, writing and reading: the edge copy a near ask
+  // finds quiet is passed over for the KV copy, whose age is checked here.
+  const ADSB_NEAR_EMPTY_TTL = 300;
   // v24088 — and its position is held 90 s, not 180, once it is below
   // 10,000 ft: the approach is where a three-minute-old fix is a
   // different place (15 km at approach speed). See fr24NearReserve.
@@ -11936,8 +11944,9 @@ async function adsbAnswer(env, ctx, kind, subject, _near, origin, info) {
   const cache = caches.default;
   try {
     const hit = await cache.match(cacheKey);
-    if (hit) {
-      let body = await hit.text();
+    let body = hit ? await hit.text() : "";
+    // (a near ask passes over a quiet edge copy: its age is not on it)
+    if (hit && !(_near && body.indexOf('"_quiet":true') >= 0)) {
       // v24088 — this location's copy is older by its time here, as the
       // KV copy below is: a fix must never come back looking newer
       const _hAt = Number(hit.headers.get("X-Adsb-At")) || 0;
@@ -11970,7 +11979,7 @@ async function adsbAnswer(env, ctx, kind, subject, _near, origin, info) {
       const _g = await env.FIDS_LIVE_FLIGHTS.get(_gKey, { type: "json" });
       if (_g && typeof _g.body === "string" && typeof _g.at === "number") {
         const _gAge = Math.max(0, Math.round((Date.now() - _g.at) / 1000));
-        const _gMax = _g.quiet ? ADSB_EMPTY_TTL : (typeof _g.hold === "number" && _g.hold > 0 ? _g.hold : ADSB_TTL);
+        const _gMax = _g.quiet ? (_near ? ADSB_NEAR_EMPTY_TTL : ADSB_EMPTY_TTL) : (typeof _g.hold === "number" && _g.hold > 0 ? _g.hold : ADSB_TTL);
         if (_gAge < _gMax) {
           const _gj = JSON.parse(_g.body);
           if (Array.isArray(_gj.ac)) _gj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _gAge; });
@@ -12087,7 +12096,11 @@ async function adsbAnswer(env, ctx, kind, subject, _near, origin, info) {
           try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + FR24_EMPTY_POOL_PAUSE_MS), { expirationTtl: 7200 }); } catch (e) {}
         }
         // v24115 — what the paid feed brought, counted (/feeds/status)
-        try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, _hardStop ? "refused" : (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
+        // v24169 review — a clean empty answer (nothing transmitting) is
+        // counted apart as quiet, so the saving of the longer empty hold can
+        // be measured: empty is now 429 / 403 / 5xx / a malformed body only,
+        // and /feeds/status still reports answers_empty as the two together.
+        try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, _hardStop ? "refused" : (_fr.ok && _rows.length) ? "pos" : _fr24SaidNothing ? "quiet" : "empty")); } catch (e) {}
         if (_fr.ok) {
           // v24169 — the row that is the flight asked for, not blindly the
           // first (adsbPickRow); a row that is not is never remembered
@@ -12171,7 +12184,7 @@ async function adsbAnswer(env, ctx, kind, subject, _near, origin, info) {
   // sitting two hours on stand was re-asked 240 times per callsign variant
   // — and FR24 is tried ahead of the ring, so every one of those was paid.
   // That is the origin of the 80% empty-response rate in the usage figures.
-  const _negTtl = _fr24SaidNothing ? ADSB_EMPTY_TTL : ADSB_NEG_TTL;
+  const _negTtl = _fr24SaidNothing ? (_near ? ADSB_NEAR_EMPTY_TTL : ADSB_EMPTY_TTL) : ADSB_NEG_TTL;
   const _negBody = JSON.stringify({
     ac: [], _provider: "fr24",
     ...(_fr24SaidNothing ? { _quiet: true } : {})
@@ -12198,8 +12211,8 @@ __name(adsbAnswer, "adsbAnswer");
 // transponder off FR24 cannot see them: AC7754 had no acmem record in 29
 // days. Approved 2026-11-20 as a swap: this sweep adds one lookup per
 // arriving aircraft, paid for by cutting repeat empty answers
-// (ADSB_EMPTY_TTL 600 s, no board lookup before the origin departure, the
-// operator callsign retry once per leg per 10 minutes).
+// (ADSB_EMPTY_TTL 600 s except near asks, no board lookup before the origin
+// departure, the operator callsign retry once per leg per 10 minutes).
 //
 // HOW. The /yqm/flights/arrivals route hands each fresh cyqm.ca list to this
 // function (ctx.waitUntil, after the answer). A row qualifies when it is not
@@ -12210,16 +12223,53 @@ __name(adsbAnswer, "adsbAnswer");
 // adsbAnswer, the same path a screen takes: the shared KV answer (adsbans),
 // the acmem record under the number asked, the FR24 budget gates (cap,
 // paced allowance with the arrivals reserve held, cool-off, 402 pause). A
-// fresh shared answer is used and FR24 is not asked; a gate that says no
-// costs nothing and no attempt.
+// fresh shared answer is used and FR24 is not asked.
+//
+// THE COST (review of 2026-11-20; the first estimate was too hopeful). The
+// cyqm.ca fixtures show 8 to 13 arrivals a day, about 11. About half to
+// two thirds of them have no fresh answer a screen paid for, and cost about
+// 7 credits each (one position, now and then an empty answer and a retry):
+// about 40 to 55 credits a day, about 50 to 90 with two locations making
+// the first ask. The longer empty hold saves only on clean empty answers
+// (429 / 403 / 5xx were never held 600 s), about 60 to 120 a day; the other
+// two cuts save next to nothing at Moncton. So the swap is between a small
+// saving and a small increase. /feeds/status measures it: answers_quiet
+// (clean empty answers, the ones the hold cuts), sweep_asked, sweep_found,
+// sweep_shared. Ceiling below.
 //
 // ONCE PER LEG. arrsweep:v1:<FLIGHT>:<localTimestamp> (36 h) keeps the
-// attempts and whether a tail was found. A first answer with no row that is
-// the flight and carries a tail allows one retry at least 10 minutes later,
-// still inside the window, so never after landing; never a third. A lock
-// (edge cache, then KV, 60 s) holds the whole sweep to about once a minute
-// however many screens ask, and nothing is read or written when no row is in
-// the window. Counted at /feeds/status: fr24 sweep_asked, sweep_found.
+// asks (FR24 calls of any outcome), the attempts (the calls that were not a
+// 402 / 429 / 403 refusal: a clean answer, an error, a fetch that threw) and
+// whether a tail was found. The ask is CLAIMED in that record before FR24 is
+// called. A leg stops when a tail is found, after 2 attempts, or after 4
+// asks, whichever comes first; any ask is followed by at least 10 minutes,
+// and nothing is asked outside the window, so never after landing. A refusal
+// (402 / 429 / 403) ends the run, and while a budget gate is shut (cap,
+// paced line with the arrivals reserve held, cool-off, 402 pause; read once
+// per run) nothing is asked and this location waits 2 minutes.
+//
+// WHAT IT TOUCHES. A leg waiting out its 10 minutes, or done, is known to
+// this isolate (_arrSweepDue, _arrSweepDone) and costs nothing; when no leg
+// is due nothing is read or written. A run with a leg due: the edge lock,
+// then the KV lock (read, then written for 60 s), the budget keys once, and
+// per due leg its record (read, claim written, result written).
+//
+// THE CEILING IS PER CLOUDFLARE LOCATION, NOT GLOBAL. KV is eventually
+// consistent: a write made at one location can take up to about a minute to
+// be seen at another, and a read is cached where it was made (30 s here, the
+// least KV allows). A leg enters the window at the same minute for every
+// location polling the list (the Moncton screens, the stream box, phones),
+// so two locations can both make the first ask. The 10 minutes between asks
+// leave the claim time to arrive, so after that the locations mostly see one
+// record. Per leg and per location at most 4 FR24 calls: 2 attempts (8
+// credits for the usual one row, n x 8 for n rows) and 2 refusals (1 credit
+// each for 429 / 403, none for 402), so 18 credits for the usual single row.
+// Inside one location two isolates can race between the edge lock and the
+// KV lock; one isolate runs one sweep at a time (_arrSweepBusy).
+//
+// Counted at /feeds/status: fr24 sweep_asked (FR24 calls), sweep_found (a
+// tail from its own call), sweep_shared (a tail in a fresh answer a screen
+// had paid for).
 const ARRSWEEP_KEY = "arrsweep:v1:";
 const ARRSWEEP_LOCK_KEY = "arrsweep:lock:v1";
 const ARRSWEEP_TTL_S = 36 * 3600;
@@ -12228,9 +12278,20 @@ const ARRSWEEP_FROM_S = 10 * 60;
 const ARRSWEEP_TO_S = 40 * 60;
 const ARRSWEEP_RETRY_MS = 10 * 60000;
 const ARRSWEEP_MAX_ASKS = 2;
+const ARRSWEEP_MAX_CLAIMS = 4;
+const ARRSWEEP_GATE_WAIT_S = 120;
+const ARRSWEEP_READ_TTL_S = 30;
 // Per isolate: legs that are done (found, or out of asks), so a run reads
 // no KV for them again. Key -> expiry ms.
 const _arrSweepDone = new Map();
+// Per isolate: legs waiting out their 10 minutes. Key -> ms when next due.
+const _arrSweepDue = new Map();
+let _arrSweepBusy = false;
+// (tests start each case from a fresh isolate)
+function yqmArrSweepReset() {
+  _arrSweepDone.clear(); _arrSweepDue.clear(); _arrSweepBusy = false;
+}
+__name(yqmArrSweepReset, "yqmArrSweepReset");
 // "5:07 PM" -> minutes after midnight, as farArrYqmRows reads it.
 function yqmClockMin(t) {
   const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
@@ -12278,9 +12339,23 @@ function arrSweepBodyTail(body, flight) {
   } catch (e) { return false; }
 }
 __name(arrSweepBodyTail, "arrSweepBodyTail");
+// The budget gates adsbAnswer applies to an ask that is not near, read once
+// for the whole run (adsbAnswer still checks them again on each ask).
+async function arrSweepGateOpen(env, kv, now) {
+  try {
+    const day = new Date(now).toISOString().slice(0, 10);
+    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), now, env);
+    const used = Number(await kv.get(`fr24:used:${day}`)) || 0;
+    const cool = Number(await kv.get(`fr24:cool:${day}`)) || 0;
+    let nearDoc = null;
+    try { nearDoc = await kv.get(FR24_NEAR_KEY, { type: "json" }); } catch (e) { nearDoc = null; }
+    return used < cap && now >= cool && used < fr24PacedAllowance(cap, now) - fr24NearHeld(cap, nearDoc, now);
+  } catch (e) { return true; }
+}
+__name(arrSweepGateOpen, "arrSweepGateOpen");
 async function yqmArrSweep(env, ctx, text, now = Date.now()) {
   const kv = env && env.FIDS_LIVE_FLIGHTS;
-  const out = { ran: false, asked: 0, found: 0, legs: 0 };
+  const out = { ran: false, asked: 0, found: 0, shared: 0, legs: 0 };
   if (!kv || !env.FR24_KEY) return out;
   let list = null;
   try {
@@ -12288,60 +12363,91 @@ async function yqmArrSweep(env, ctx, text, now = Date.now()) {
     list = Array.isArray(j) ? j : (j && Array.isArray(j.flights) ? j.flights : null);
   } catch (e) { list = null; }
   for (const [k, until] of _arrSweepDone) if (until <= now) _arrSweepDone.delete(k);
-  const legs = yqmArrSweepLegs(list, now).filter((l) => !_arrSweepDone.has(l.flight + ":" + l.sched));
+  for (const [k, due] of _arrSweepDue) if (due <= now) _arrSweepDue.delete(k);
+  const legs = yqmArrSweepLegs(list, now).filter((l) => {
+    const id = l.flight + ":" + l.sched;
+    return !_arrSweepDone.has(id) && !_arrSweepDue.has(id);
+  });
   out.legs = legs.length;
-  if (!legs.length) return out;
+  if (!legs.length || _arrSweepBusy) return out;
+  _arrSweepBusy = true;
+  try { return await arrSweepRun(env, ctx, kv, legs, now, out); } finally { _arrSweepBusy = false; }
+}
+__name(yqmArrSweep, "yqmArrSweep");
+async function arrSweepRun(env, ctx, kv, legs, now, out) {
   // The lock: this location first (free), then every location (KV).
   const lockReq = new Request("https://arrsweep-lock/v1");
   let cache = null;
   try { cache = caches.default; } catch (e) { cache = null; }
   try { if (cache && await cache.match(lockReq)) return out; } catch (e) {}
-  const held = Number(await kv.get(ARRSWEEP_LOCK_KEY)) || 0;
-  const lockLeft = held ? ARRSWEEP_LOCK_S - Math.floor((now - held) / 1000) : 0;
   const putEdgeLock = async (s) => {
     try { if (cache) await cache.put(lockReq, new Response("1", { headers: { "Cache-Control": `public, max-age=${Math.max(1, s)}` } })); } catch (e) {}
   };
+  const held = Number(await kv.get(ARRSWEEP_LOCK_KEY, { cacheTtl: ARRSWEEP_READ_TTL_S })) || 0;
+  const lockLeft = held ? ARRSWEEP_LOCK_S - Math.floor((now - held) / 1000) : 0;
   if (lockLeft > 0) { await putEdgeLock(lockLeft); return out; }
+  // a budget gate shut: nothing written, and this location waits
+  if (!(await arrSweepGateOpen(env, kv, now))) { await putEdgeLock(ARRSWEEP_GATE_WAIT_S); return out; }
   await kv.put(ARRSWEEP_LOCK_KEY, String(now), { expirationTtl: ARRSWEEP_LOCK_S });
   await putEdgeLock(ARRSWEEP_LOCK_S);
   out.ran = true;
   const day = new Date(now).toISOString().slice(0, 10);
+  const done = (id) => _arrSweepDone.set(id, now + ARRSWEEP_TTL_S * 1000);
+  const wait = (id, from) => _arrSweepDue.set(id, from + ARRSWEEP_RETRY_MS);
+  const save = async (key, rec) => {
+    try { await kv.put(key, JSON.stringify(rec), { expirationTtl: ARRSWEEP_TTL_S }); } catch (e) {}
+  };
   for (const leg of legs) {
     const id = leg.flight + ":" + leg.sched;
     const key = ARRSWEEP_KEY + id;
     let rec = null;
-    try { rec = await kv.get(key, { type: "json" }); } catch (e) { rec = null; }
-    rec = (rec && typeof rec === "object") ? rec : { attempts: 0, found: false };
+    try { rec = await kv.get(key, { type: "json", cacheTtl: ARRSWEEP_READ_TTL_S }); } catch (e) { rec = null; }
+    rec = (rec && typeof rec === "object") ? rec : { attempts: 0, asks: 0, found: false };
     const attempts = Number(rec.attempts) || 0;
-    if (rec.found === true || attempts >= ARRSWEEP_MAX_ASKS) { _arrSweepDone.set(id, now + ARRSWEEP_TTL_S * 1000); continue; }
-    if (attempts > 0 && now - (Number(rec.last) || 0) < ARRSWEEP_RETRY_MS) continue;
+    // (a record written before asks were counted: each attempt was an ask)
+    const asks = Math.max(Number(rec.asks) || 0, attempts);
+    const last = Number(rec.last) || 0;
+    if (rec.found === true || attempts >= ARRSWEEP_MAX_ASKS || asks >= ARRSWEEP_MAX_CLAIMS) { done(id); continue; }
+    if (asks > 0 && now - last < ARRSWEEP_RETRY_MS) { wait(id, last); continue; }
+    // CLAIM FIRST: the ask is in the record before FR24 is called
+    await save(key, { attempts, asks: asks + 1, found: false, last: now });
+    wait(id, now);
     const info = {};
     try { await adsbAnswer(env, ctx, "flight", leg.flight, false, "*", info); } catch (e) {}
     if (!info.asked) {
       // a fresh answer another screen paid for: a tail in it is this leg found
       if ((info.cache === "shared" || info.cache === "hit") && arrSweepBodyTail(info.body, leg.flight)) {
-        try { await kv.put(key, JSON.stringify({ attempts, found: true, via: "shared", last: Number(rec.last) || 0 }), { expirationTtl: ARRSWEEP_TTL_S }); } catch (e) {}
-        _arrSweepDone.set(id, now + ARRSWEEP_TTL_S * 1000);
+        await save(key, { attempts, asks: asks + 1, found: true, via: "shared", last: now });
+        done(id);
+        out.shared++;
+        try { await feedCount(kv, "fr24", day, "sweep_shared"); } catch (e) {}
       }
-      continue;   // a budget gate said no, or a quiet answer is still fresh
+      // else a quiet answer still fresh, or a gate shut since the check
+      // above: the claim stands and the leg waits its 10 minutes
+      continue;
     }
     out.asked++;
     try { await feedCount(kv, "fr24", day, "sweep_asked"); } catch (e) {}
-    // a refusal (429 / 403 / 402) is not an answer: no attempt spent
-    if (info.status !== 200) continue;
+    // a refusal (402 / 429 / 403) is not an answer: an ask, no attempt, and
+    // the run stops (adsbAnswer has set the pause or the cool-off)
+    if (info.status === 402 || info.status === 429 || info.status === 403) {
+      if (asks + 1 >= ARRSWEEP_MAX_CLAIMS) done(id);
+      break;
+    }
+    // any other reply, or a fetch that threw (no status), is an attempt
     const row = info.row;
-    const found = !!(info.match && row && row.reg && typeof row.lat === "number" && typeof row.lon === "number");
-    const next = { attempts: attempts + 1, found, last: now };
-    try { await kv.put(key, JSON.stringify(next), { expirationTtl: ARRSWEEP_TTL_S }); } catch (e) {}
+    const found = info.status === 200 && !!(info.match && row && row.reg && typeof row.lat === "number" && typeof row.lon === "number");
+    const next = { attempts: attempts + 1, asks: asks + 1, found, last: now };
+    await save(key, next);
     if (found) {
       out.found++;
       try { await feedCount(kv, "fr24", day, "sweep_found"); } catch (e) {}
     }
-    if (found || next.attempts >= ARRSWEEP_MAX_ASKS) _arrSweepDone.set(id, now + ARRSWEEP_TTL_S * 1000);
+    if (found || next.attempts >= ARRSWEEP_MAX_ASKS || next.asks >= ARRSWEEP_MAX_CLAIMS) done(id);
   }
   return out;
 }
-__name(yqmArrSweep, "yqmArrSweep");
+__name(arrSweepRun, "arrSweepRun");
 // ═══════════════════════════════════════════════════════════════════════════
 // /osky/* — THE OPENSKY RELAY'S ROUTES (the "pull" design).
 //
@@ -13130,7 +13236,10 @@ async function feedStatus(env, now) {
     }
     out.counts_utc_day[day] = {
       fr24: { credits_used: await num(`fr24:used:${day}`), answers_with_position: await num(`feeds:n:fr24:pos:${day}`),
-              answers_empty: await num(`feeds:n:fr24:empty:${day}`),
+              answers_empty: await num(`feeds:n:fr24:empty:${day}`) + await num(`feeds:n:fr24:quiet:${day}`),
+              // v24169 review — of those, clean empty answers (FR24 sees
+              // nothing transmitting), apart from refusals and errors
+              answers_quiet: await num(`feeds:n:fr24:quiet:${day}`),
               // v24118 — refused for an empty credit pool (402), and the cap the
               // month allows today (fr24EffectiveCap)
               refused_no_credit: await num(`feeds:n:fr24:refused:${day}`),
@@ -13138,6 +13247,8 @@ async function feedStatus(env, now) {
               // made, and legs whose answer named the aircraft
               sweep_asked: await num(`feeds:n:fr24:sweep_asked:${day}`),
               sweep_found: await num(`feeds:n:fr24:sweep_found:${day}`),
+              // legs found in a fresh answer a screen had already paid for
+              sweep_shared: await num(`feeds:n:fr24:sweep_shared:${day}`),
               daily_budget: (env && (env.FR24_DAILY_BUDGET || env.FR24_MONTHLY_CREDITS))
                 ? fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.parse(day + "T12:00:00Z"), env) : null },
       opensky: { box_answers: n("puts"), flights_asked: n("asked"), flights_found: n("found") }
@@ -15163,6 +15274,7 @@ export {
   adsbAnswer,
   yqmArrSweep,
   yqmArrSweepLegs,
+  yqmArrSweepReset,
   yqmMonctonWallS,
   acFeedIndexRows,
   acFeedPick,

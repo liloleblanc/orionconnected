@@ -278,6 +278,25 @@ test('the Express return pair: AC7754 (PVL7754, from YOW) lends to AC7753 (to YO
   assert.equal(e._gateInboundFr24Seen(AC7753(), Object.assign(AC7754(), { _doorOnly: true }), 'YQM'), null);
 });
 
+// Review of 2026-11-20: the return pair takes the inbound four digits exactly.
+// The Jazz short form (JZA + last three) of a 77xx number is the callsign of
+// the 87xx flight (JZA542 is AC8542), so JZA777 for AC7777 is AC8777.
+test('the Express return pair takes no short form: AC7777 seen as JZA777 never lends to AC7778', () => {
+  const ac7777 = { flight: 'AC7777', airline: 'AC', gate: '25', origin: 'YUL', _locIata: 'YUL', _sortTs: T(19, 22, 32), _opCode: 'JZA' };
+  const ac7778 = { flight: 'AC7778', airline: 'AC', gate: '25', dest: 'YUL', _locIata: 'YUL', _sortTs: T(20, 6, 0) };
+  const e = engine();
+  assert.equal(e._gateCsIsLeg('JZA777', 'AC7777'), true, 'the short form passes the leg test on its own');
+  assert.equal(e._gateExpressReturnPair(ac7778, ac7777, 'JZA777'), false, 'but not the return pair');
+  e._acResolvedPut(ac7777, 'De Havilland Dash 8-400', 'DH4', '', { reg: 'C-GKQA', cs: 'JZA777' });
+  assert.equal(e.fidsResolveOperator(ac7778, 'YOW').op, 'ACEX', 'the brand alone');
+  assert.equal(e._gateInboundFr24Seen(ac7778, ac7777, 'YOW'), null, 'AC8777 tail never reaches AC7778');
+  // the full number still pairs, and PVL7754 still lends to AC7753
+  assert.equal(e._gateExpressReturnPair(ac7778, ac7777, 'JZA7777'), true);
+  const e2 = engine();
+  e2._acResolvedPut(AC7754(), 'De Havilland Dash 8-400', 'DH4', '', { reg: 'C-GPOJ', cs: 'PVL7754' });
+  assert.equal(e2._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM').reg, 'C-GPOJ');
+});
+
 test('the Express brand alone takes no tail: a Jazz AC8542 (JZA542) never reaches the PAL AC7753', () => {
   const e = engine();
   const ac8542 = { flight: 'AC8542', airline: 'AC', gate: '4', origin: 'YUL', _locIata: 'YUL', _sortTs: T(20, 6, 0) };

@@ -46118,23 +46118,26 @@ function _oskyCreditOn() {
 // nothing flies under the number sold (a quiet /flight/ answer), the board
 // asked the operator callsigns (JZA806, JZA8806) on every poll, and each one
 // was another billed empty answer while the aeroplane sat at its origin. Now
-// the retry runs at most once per leg in 10 minutes, unless the last retry
-// found the aeroplane (a Jazz flight FR24 knows only by its callsign keeps
-// its position every poll). Memory only, per screen.
+// a quiet operator answer (FR24 answered cleanly, nothing transmitting under
+// that callsign) holds the retry off for 10 minutes for that leg. Nothing
+// else starts the hold: a refused or failed answer, or a short gap low on
+// final, leaves the next poll free to ask, and an answer with the aeroplane
+// clears the hold (a Jazz flight FR24 knows only by its callsign keeps its
+// position every poll). Never held for a near ask (_adsbNearFinal): the
+// arrival on final and taxiing is asked every poll. Memory only, per screen.
 var _adsbOpRetry = Object.create(null);
 var _ADSB_OP_RETRY_MS = 10 * 60000;
 function _adsbOpRetryOk(leg, now) {
   try {
-    var k = String(leg || '');
-    if (!k) return true;
-    var r = _adsbOpRetry[k];
-    if (r && !r.found && (now - r.at) < _ADSB_OP_RETRY_MS) return false;
-    _adsbOpRetry[k] = { at: now, found: false };
-    return true;
+    var r = _adsbOpRetry[String(leg || '')];
+    return !(r && typeof r.until === 'number' && now < r.until);
   } catch (e) { return true; }
 }
+function _adsbOpRetryQuiet(leg, now) {
+  try { var k = String(leg || ''); if (k) _adsbOpRetry[k] = { until: now + _ADSB_OP_RETRY_MS }; } catch (e) {}
+}
 function _adsbOpRetryFound(leg) {
-  try { var r = _adsbOpRetry[String(leg || '')]; if (r) r.found = true; } catch (e) {}
+  try { delete _adsbOpRetry[String(leg || '')]; } catch (e) {}
 }
 async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked, opCode) {
   var tries = [];
@@ -46212,8 +46215,8 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked, opCode) {
     return _osk;
   }
   var _numberQuiet = false;
-  // v24169 — the operator retry after a quiet number, once per leg per 10
-  // minutes (_adsbOpRetryOk), unless the last retry found the aeroplane
+  // v24169 — the operator retry after a quiet number: held 10 minutes after
+  // a quiet operator answer (_adsbOpRetryOk), never for a near ask
   var _opLeg = _iataFn || _fn, _opGate = null;
   for (var i = 0; i < tries.length; i++) {
     // FR24 already said nothing is flying under our number: a guessed
@@ -46222,12 +46225,13 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS, tracked, opCode) {
     // Jazz flight Flightradar24 does not find by the number sold)
     if (_numberQuiet && /^\/callsign\//.test(tries[i]) && _opPaths.indexOf(tries[i]) < 0) continue;
     var _isOpTry = _numberQuiet && _opPaths.indexOf(tries[i]) >= 0;
-    if (_isOpTry) {
+    if (_isOpTry && !_near) {
       if (_opGate === null) _opGate = _adsbOpRetryOk(_opLeg, Date.now());
       if (!_opGate) continue;
     }
     var ac = await _adsbFetchOne(tries[i], _near);
     if (_isOpTry && ac) _adsbOpRetryFound(_opLeg);
+    else if (_isOpTry && (_adsbCache[tries[i]] || {}).quiet) _adsbOpRetryQuiet(_opLeg, Date.now());
     if (!ac) {
       if (/^\/flight\//.test(tries[i]) && (_adsbCache[tries[i]] || {}).quiet) _numberQuiet = true;
       continue;
@@ -54240,7 +54244,11 @@ function _gateExpressReturnPair(cf, inb, cs) {
     if (!a || !d || Math.abs(a - d) !== 1) return false;
     var from = String((inb && inb._locIata) || '').toUpperCase(), to = String((cf && cf._locIata) || '').toUpperCase();
     if (!/^[A-Z]{3}$/.test(from) || from !== to) return false;
-    return /^(PVL|JZA)\d/.test(String(cs || '').replace(/\s+/g, '').toUpperCase()) && _gateCsIsLeg(cs, inb.flight);
+    // the inbound four digits exactly: the Jazz short form (JZA777 for
+    // AC7777) is another flight in this block, AC8777
+    var c = String(cs || '').replace(/\s+/g, '').toUpperCase();
+    if (!/^(PVL|JZA)\d/.test(c)) return false;
+    return c.replace(/^\D+/, '').replace(/\D+$/, '') === String(a);
   } catch (e) { return false; }
 }
 // v24169 — are two types the same aircraft type? By code (7M8 and 7M8), else by
