@@ -68,7 +68,7 @@ const VARS = ['var AC_EXPRESS_OP = ', 'var _OP_LADDER_NAMES = ', 'var _AC_OP_BAN
   'var _ACRES_LEG_MS = ', "var _ACINFO_BASE = ", 'var _acInfoTried = ', 'var _acInfoAsks = '];
 const FNS = ['acOperatorBand', '_opLadderName', '_opEvLegId', '_opEvFarGet', 'fidsResolveOperator', '_csDigitsOk',
   '_acResLeg', '_acResolvedPut', '_acResolvedGet', '_acInfoKick', '_gateDepSchedTs',
-  '_gateTailCsPrefixes', '_gateCsIsLeg', '_gateOwnFr24Seen', '_gateInboundFr24Seen', '_gateSameType',
+  '_gateTailCsPrefixes', '_gateCsIsLeg', '_gateOwnFr24Seen', '_gateExpressReturnPair', '_gateInboundFr24Seen', '_gateSameType',
   '_gateFr24TypeSeen', '_gateTailAskOpen'];
 
 // The real callsign tables, so the operator to callsign mapping is the board own.
@@ -232,11 +232,50 @@ test('a PAL tail (PVL) never shows on a Rouge departure', () => {
   e._acResolvedPut(AC7754(), 'De Havilland Dash 8-400', 'DH4', 'C-GPOJ', { reg: 'C-GPOJ', cs: 'PVL7754' });
   assert.equal(e._gateInboundFr24Seen(AC1983(), AC7754(), 'YQM'), null);
   // AC7753, the flight it night-stops for, sits in the 7700 block both
-  // partners fly: with nothing naming PAL it is the brand alone, and no tail.
-  assert.equal(e._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM'), null);
-  // Its own record naming PAL, the PVL tail passes.
+  // partners fly. With nothing naming PAL it is the brand alone, but it is
+  // the return pair of AC7754 (v24169, _gateExpressReturnPair), so it lends.
+  assert.equal(e._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM').reg, 'C-GPOJ');
+  // Its own record naming PAL, the PVL tail passes too.
   const pal = Object.assign(AC7753(), { _opEv: { op: 'PB', src: 'own' } });
   assert.equal(e._gateInboundFr24Seen(pal, AC7754(), 'YQM').reg, 'C-GPOJ');
+});
+
+test('the Express return pair: AC7754 (PVL7754, from YOW) lends to AC7753 (to YOW); nothing short of every sign does', () => {
+  const e = engine();
+  const seen = (row, cs, reg, nm, cd) => e._acResolvedPut(row, nm || 'De Havilland Dash 8-400', cd || 'DH4', '', { reg: reg || 'C-GPOJ', cs });
+  seen(AC7754(), 'PVL7754');
+  assert.equal(e.fidsResolveOperator(AC7753(), 'YQM').op, 'ACEX', 'the brand alone: no partner named');
+  assert.equal(e._gateExpressReturnPair(AC7753(), AC7754(), 'PVL7754'), true);
+  assert.equal(e._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM').reg, 'C-GPOJ', 'gate 4, Nov 19: the night stop lends');
+  // a Jazz callsign carrying the inbound number passes the same way
+  const e2 = engine();
+  e2._acResolvedPut(AC7754(), 'De Havilland Dash 8-400', 'DH4', '', { reg: 'C-GGOY', cs: 'JZA7754' });
+  assert.equal(e2._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM').reg, 'C-GGOY');
+  // not one apart
+  const ac7756 = Object.assign(AC7754(), { flight: 'AC7756' });
+  const e3 = engine();
+  e3._acResolvedPut(ac7756, 'De Havilland Dash 8-400', 'DH4', '', { reg: 'C-GPOJ', cs: 'PVL7756' });
+  assert.equal(e3._gateInboundFr24Seen(AC7753(), ac7756, 'YQM'), null, 'two apart');
+  // not the same route back
+  const fromYul = Object.assign(AC7754(), { origin: 'YUL', _locIata: 'YUL' });
+  const e4 = engine();
+  e4._acResolvedPut(fromYul, 'De Havilland Dash 8-400', 'DH4', '', { reg: 'C-GPOJ', cs: 'PVL7754' });
+  assert.equal(e4._gateInboundFr24Seen(AC7753(), fromYul, 'YQM'), null, 'came from Montreal, goes to Ottawa');
+  // a callsign of another operator, or of another number
+  const e5 = engine();
+  e5._acResolvedPut(AC7754(), 'De Havilland Dash 8-400', 'DH4', '', { reg: 'C-GPOJ', cs: 'ROU7754' });
+  assert.equal(e5._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM'), null, 'ROU is neither partner');
+  const e6 = engine();
+  e6._acResolvedPut(AC7754(), 'De Havilland Dash 8-400', 'DH4', '', { reg: 'C-GPOJ', cs: 'PVL7753' });
+  assert.equal(e6._gateInboundFr24Seen(AC7753(), AC7754(), 'YQM'), null, 'heard under the departure number, not the inbound');
+  // outside the 7700 block
+  const ac8754 = Object.assign(AC7754(), { flight: 'AC8754' }), ac8753 = Object.assign(AC7753(), { flight: 'AC8753' });
+  assert.equal(e._gateExpressReturnPair(ac8753, ac8754, 'JZA754'), false, 'the Jazz block names its operator already');
+  // the own-type check still applies
+  assert.equal(e._gateInboundFr24Seen(Object.assign(AC7753(), { _aircraftCode: 'CR9' }), AC7754(), 'YQM'), null, 'its own type differs');
+  assert.equal(e._gateInboundFr24Seen(Object.assign(AC7753(), { _aircraftCode: 'DH4' }), AC7754(), 'YQM').reg, 'C-GPOJ');
+  // a door pick never lends, pair or not
+  assert.equal(e._gateInboundFr24Seen(AC7753(), Object.assign(AC7754(), { _doorOnly: true }), 'YQM'), null);
 });
 
 test('the Express brand alone takes no tail: a Jazz AC8542 (JZA542) never reaches the PAL AC7753', () => {

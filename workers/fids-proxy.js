@@ -11862,6 +11862,486 @@ async function handleOskyPos(request, env, url, now = Date.now()) {
   return answer(body);
 }
 
+// v24169 — THE /adsb/ LOOKUP AS A FUNCTION, so the Moncton arrival sweep
+// (yqmArrSweep) asks Flightradar24 through exactly the path a screen does:
+// the same edge and KV answers (adsbans), the same budget gates, the same
+// acmem record under the number asked. `info`, when given, is told whether
+// FR24 was asked (asked), and the row picked and whether it is the flight
+// asked for (row, match). The answer is unchanged.
+async function adsbAnswer(env, ctx, kind, subject, _near, origin, info) {
+  // v23254 — 40s, up from 20. The boards refresh telemetry on a 45s
+  // clock, so a 20s edge TTL meant nearly every poll was a cache MISS
+  // that hit the community feeds; doubling the TTL halves our request
+  // volume against per-IP throttles for no visible staleness.
+  // v23907 — 180 s, up from 90. A position for a flying aeroplane costs 8
+  // FR24 credits and the daily allowance is paced (~80 credits an hour for
+  // every screen together): at 90 s one tracked flight cost ~320 an hour
+  // per Cloudflare location, four times the whole hourly budget, so most
+  // lookups were skipped and few flights got a position, a type or a
+  // track. The map's glide dead-reckons between fixes, so a fix every
+  // three minutes still moves smoothly, and the flown track still traces
+  // the real path.
+  const ADSB_TTL = 180;
+  // How long an all-providers-failed answer is remembered. Without this,
+  // every board poll re-hammered feeds that were ALREADY rate-limiting
+  // us (observed, morning of 2026-08-25: all three upstreams 429 — no
+  // altimeter, no reg, no inbound panel), which keeps the throttle
+  // pinned. Short on purpose: recovery is only ever this far away.
+  const ADSB_NEG_TTL = 30;
+  // ── AN AIRCRAFT THAT IS NOT TRANSMITTING WILL STILL NOT BE IN 90 SECONDS
+  //
+  // The ring returns on ANY ok response, including one carrying zero
+  // aircraft, and that empty answer was cached at ADSB_TTL — 90 seconds,
+  // a value chosen for how fast a POSITION goes stale. But an empty answer
+  // is not a stale position, it is the absence of one, and the commonest
+  // reason for it is an aircraft sitting on a stand. Those sit for hours.
+  //
+  // So every board poll re-asked, and because FR24 is tried ahead of the
+  // ring, every re-ask was a paid call that could only ever return nothing.
+  // One flight, two hours on stand, roughly four callsign/reg variants
+  // tried: 80 lookups per variant, ~320 credits, to establish that a
+  // parked aeroplane is parked. That is where the 80% empty-response rate
+  // in the account's usage figures comes from.
+  //
+  // Five minutes rather than ten: the cost curve is already flat by then
+  // (80 calls -> 24), and the exposure is that a departure which starts
+  // transmitting just after a miss was cached waits up to this long for
+  // its aircraft panel. Five minutes of that is tolerable; ten is not.
+  //
+  // Deliberately NOT applied to the all-providers-failed path above, which
+  // keeps ADSB_NEG_TTL: a 429 wants to be retried soon, and conflating
+  // "everyone is rate-limiting us" with "this aeroplane is parked" would
+  // turn a transient outage into a five-minute one.
+  //
+  // v24169 — TEN MINUTES NOW, for edge and KV alike. On 2026-11-19 305 of
+  // 713 FR24 answers were empty (about 1 credit each), nearly all of them an
+  // aeroplane not yet in the air, re-asked every five minutes by the screens
+  // together. The Moncton arrival sweep (yqmArrSweep) was approved on the
+  // condition that it is paid for by cutting repeats like these. What the
+  // longer hold costs: a flight that starts transmitting just after a miss
+  // waits up to ten minutes for its first fix instead of five. An arrival no
+  // longer depends on that re-ask for its tail (the sweep asks once, 10 to 40
+  // minutes out), and the board stops asking before its origin departure
+  // (_gateLegWindowOpen), so the wait falls mostly on the minutes around
+  // take-off, where the map draws the aeroplane at its origin anyway.
+  const ADSB_EMPTY_TTL = 600;
+  // v24088 — and its position is held 90 s, not 180, once it is below
+  // 10,000 ft: the approach is where a three-minute-old fix is a
+  // different place (15 km at approach speed). See fr24NearReserve.
+  const ADSB_NEAR_TTL = 90;
+  const _info = info || {};
+
+  // Shared edge cache — this is the bit that makes audience size irrelevant.
+  const cacheKey = new Request(`https://adsb-cache/fr24/${kind}/${subject}`);
+  const cache = caches.default;
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) {
+      let body = await hit.text();
+      // v24088 — this location's copy is older by its time here, as the
+      // KV copy below is: a fix must never come back looking newer
+      const _hAt = Number(hit.headers.get("X-Adsb-At")) || 0;
+      if (_hAt > 0) {
+        try {
+          const _hj = JSON.parse(body);
+          const _hAge = Math.max(0, Math.round((Date.now() - _hAt) / 1000));
+          if (Array.isArray(_hj.ac) && _hj.ac.length) {
+            _hj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _hAge; });
+            body = JSON.stringify(_hj);
+          }
+        } catch (e) {}
+      }
+      _info.cache = "hit"; _info.body = body;
+      return new Response(body, { status: 200, headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+        "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
+    }
+  } catch (e) {}
+  // v23907 — ONE ANSWER FOR EVERY SCREEN. The cache above belongs to one
+  // Cloudflare location, so the stream box (Europe) and the screens
+  // (Canada) each paid FR24 for the same aircraft. Every FR24 answer — a
+  // position, or "not transmitting" — is also kept in KV, which every
+  // location reads, for as long as the edge would keep it. A copy served
+  // from KV has seen_pos advanced by its age, so a reused fix is never
+  // mistaken for a fresh one.
+  const _gKey = `adsbans:v1:${kind}:${subject}`;
+  try {
+    if (env.FIDS_LIVE_FLIGHTS) {
+      const _g = await env.FIDS_LIVE_FLIGHTS.get(_gKey, { type: "json" });
+      if (_g && typeof _g.body === "string" && typeof _g.at === "number") {
+        const _gAge = Math.max(0, Math.round((Date.now() - _g.at) / 1000));
+        const _gMax = _g.quiet ? ADSB_EMPTY_TTL : (typeof _g.hold === "number" && _g.hold > 0 ? _g.hold : ADSB_TTL);
+        if (_gAge < _gMax) {
+          const _gj = JSON.parse(_g.body);
+          if (Array.isArray(_gj.ac)) _gj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _gAge; });
+          const _gBody = JSON.stringify(_gj);
+          const _gLeft = Math.max(1, _gMax - _gAge);
+          try { await cache.put(cacheKey, new Response(_gBody, { headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`, "X-Adsb-At": String(Date.now()) } })); } catch (e) {}
+          _info.cache = "shared"; _info.body = _gBody;
+          return new Response(_gBody, { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`,
+            "X-Adsb-Cache": "shared", ...corsHeaders(origin) } });
+        }
+      }
+    }
+  } catch (e) {}
+
+  // THE COMMUNITY FEEDS AND AERODATABOX ARE GONE FROM THIS LOOKUP.
+  // airplanes.live, adsb.fi and adsb.lol refuse requests from a Cloudflare
+  // Worker (403/429 on every call) and have told us not to use them;
+  // AeroDataBox is cancelled (RapidAPI, disconnected 2026-09-10) and this
+  // route still held a direct call to it. Flightradar24 is the only source.
+  // When it cannot answer, the lookup answers empty and the board keeps
+  // the feed's own data. Do not add a free community feed back here.
+  // ── FR24, ON A DAILY ALLOWANCE (2026-09-05) ─────────────────────
+  // the $9 Explorer tier was bought to test FR24 as the position
+  // source (the community ring is unapproved, anonymous, and
+  // throttling us; airplanes.live REFUSED us — see the ring filter
+  // below, it is a closed question, do not raise it). Explorer
+  // is a small credit pool billed per aircraft returned, so this
+  // provider spends a HARD daily request budget and then goes quiet
+  // for the day — the ring below always remains. Callsign and reg
+  // lookups only (the documented filters); hex stays with the ring.
+  // A 402/429 from FR24 (credits gone) burns the whole day's budget
+  // at once so a dead pool is never hammered. Budget accounting is
+  // KV read-modify-write: approximate under races, and that's fine.
+  // Set when FR24 answers cleanly and carries no aircraft — i.e. "nothing
+  // is transmitting under that callsign", which is a fact about the world
+  // and not a transient failure. It decides how long the miss below is
+  // remembered, and it is the difference between paying FR24 twice a
+  // minute for a parked aeroplane and paying it twice an hour.
+  let _fr24SaidNothing = false;
+  if (env.FR24_KEY && (kind === "callsign" || kind === "reg" || kind === "flight") && env.FIDS_LIVE_FLIGHTS) {
+    try {
+      const _day = new Date().toISOString().slice(0, 10);
+      const _bKey = `fr24:used:${_day}`;
+      const _cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.now(), env);
+      const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
+      // A recent 429/403 sets a short cool-off instead of burning the day.
+      const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
+      // v24088 — what is in the arrivals' reserve
+      let _nearDoc = null;
+      try { _nearDoc = await env.FIDS_LIVE_FLIGHTS.get(FR24_NEAR_KEY, { type: "json" }); } catch (e) { _nearDoc = null; }
+      if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap) - (_near ? 0 : fr24NearHeld(_cap, _nearDoc))) {
+        const _param = kind === "callsign" ? "callsigns" : kind === "flight" ? "flights" : "registrations";
+        _info.asked = true;
+        const _fr = await fetch(
+          `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
+          { headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } }
+        );
+        // A TRANSIENT ERROR MUST NOT COST THE WHOLE DAY.
+        //
+        // This burned the full daily cap on 402 OR 429 OR 403, which is
+        // right for exactly one of the three. 402 means the credit pool is
+        // actually empty and there is nothing left to spend, so stopping
+        // for the day is correct. 429 is a RATE limit — it says "slower",
+        // not "stop" — and 403 on this endpoint is usually a momentary
+        // auth/edge refusal. Treating either as a dead pool takes the
+        // provider off the board until the next UTC midnight.
+        //
+        // That is what was happening here. With FR24 silent, every lookup
+        // falls through to the community ADS-B ring, which answers a
+        // Cloudflare Worker with 403/429 no matter what (verified: the same
+        // query returns HTTP 200 from a home IP and is refused from the
+        // Worker — they block datacenter egress, not the account). The ring
+        // carries reg, type and track, so losing FR24 loses all three: the
+        // aircraft panel goes blank and the map icon falls back to
+        // bearing-toward-airport, which is the "plane pointing sideways".
+        //
+        // Now: 402 still stops for the day. 429/403 costs a normal call and
+        // a short cool-off, so the next poll a few minutes later can try
+        // again instead of the board going dark until midnight. The cap
+        // itself is unchanged — this never spends more than FR24_DAILY_BUDGET.
+        const _hardStop = (_fr.status === 402);
+        _info.status = _fr.status;
+        // The body has to be read BEFORE the charge can be known, because
+        // FR24 prices per returned row. A refusal or an unparseable body
+        // yields zero rows, which is exactly the flat 1-credit empty charge
+        // FR24 bills for one. This is the call that was costing 2.42 credits
+        // on average and recording 1.
+        let _fj = null, _rows = [];
+        if (_fr.ok) {
+          _fj = await _fr.json().catch(() => null);
+          _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];
+          // A clean 200 with an empty data array is FR24 telling us this
+          // aircraft is not transmitting — worth remembering for minutes,
+          // not seconds. A malformed body is NOT that, so it is excluded.
+          _fr24SaidNothing = !!(_fj && Array.isArray(_fj.data) && _fj.data.length === 0);
+        }
+        // (v24118 — a 402 is not billed: it costs nothing and pauses an
+        // hour below, so a renewal later in the day is picked up)
+        const _spend = _hardStop
+          ? _used
+          : _used + fr24Charge("live/flight-positions/full", _rows.length);
+        try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
+        if (_near && _spend > _used) {
+          const _nb = Math.max(0, fr24NearBucket(_cap, _nearDoc) - (_spend - _used));
+          try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(FR24_NEAR_KEY, JSON.stringify({ b: _nb, at: Date.now() }), { expirationTtl: 172800 })); } catch (e) {}
+        }
+        if (!_hardStop && (_fr.status === 429 || _fr.status === 403)) {
+          // Cool off for 5 minutes rather than for the day.
+          try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
+        }
+        if (_hardStop) {
+          try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + FR24_EMPTY_POOL_PAUSE_MS), { expirationTtl: 7200 }); } catch (e) {}
+        }
+        // v24115 — what the paid feed brought, counted (/feeds/status)
+        try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, _hardStop ? "refused" : (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
+        if (_fr.ok) {
+          // v24169 — the row that is the flight asked for, not blindly the
+          // first (adsbPickRow); a row that is not is never remembered
+          const _p = adsbPickRow(_rows, kind, subject);
+          const _pMatch = adsbRowMatches(kind, subject, _p);
+          _info.row = _p || null; _info.match = _pMatch;
+          if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
+            const _ageS = _p.timestamp ? Math.max(0, Math.round((Date.now() - Date.parse(_p.timestamp)) / 1000)) : null;
+            const _ac = {
+              hex: String(_p.hex || "").toLowerCase() || void 0,
+              flight: _p.callsign || _p.flight || void 0,
+              r: _p.reg || void 0,
+              t: _p.type || void 0,
+              desc: _p.type || void 0,
+              lat: _p.lat, lon: _p.lon,
+              // v23905 — FR24 reports an aircraft on the ground with alt 0.
+              // It was dropped, so no FR24 fix was ever "on the ground": a
+              // parked aeroplane read as airborne with no altitude and the
+              // board glided it across the apron. "ground" is the value the
+              // board already reads as on the ground.
+              alt_baro: (typeof _p.alt === "number" && _p.alt > 0) ? Math.round(_p.alt)
+                : (typeof _p.alt === "number" ? "ground" : void 0),
+              gs: (typeof _p.gspeed === "number") ? Math.round(_p.gspeed) : void 0,
+              track: (typeof _p.track === "number") ? _p.track : void 0,
+              baro_rate: (typeof _p.vspeed === "number") ? _p.vspeed : void 0,
+              seen_pos: _ageS !== null ? _ageS : void 0
+            };
+            // v23901 — remember what this flight number flew (type only is
+            // ever shown from it). Same answer, no extra credit.
+            // v23944 — with the callsign and tail, today's operator evidence.
+            // v24169 — only a row that is the flight asked for (adsbRowMatches),
+            // and under the number asked too: FR24 files PAL AC7664 as
+            // PB7664 and Rouge AC1986 as RV1986, which /acinfo?f=AC7664
+            // never read (the board asks by the number it shows).
+            if (_pMatch) {
+              try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
+              if (kind === "flight" && _p.flight && String(_p.flight).toUpperCase().replace(/\s+/g, "") !== subject) {
+                try { ctx.waitUntil(acMemRemember(env, subject, _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
+              }
+            }
+            // v23906 — and add this position to the flight's flown track.
+            try { ctx.waitUntil(acTrackAppend(env, _p, Date.now())); } catch (e) {}
+            const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
+            // v24088 — a board's own inbound below 10,000 ft is held 90 s
+            const _hold = (_near && typeof _ac.alt_baro === "number" && _ac.alt_baro < 10000) ? ADSB_NEAR_TTL : ADSB_TTL;
+            // v23907 — and for every other location.
+            try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), hold: _hold, body: _frBody }), { expirationTtl: Math.max(60, _hold) })); } catch (e) {}
+            try {
+              await cache.put(cacheKey, new Response(_frBody, { headers: {
+                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}`, "X-Adsb-At": String(Date.now()) } }));
+            } catch (e) {}
+            return new Response(_frBody, { status: 200, headers: {
+              "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}`,
+              "X-Adsb-Cache": "miss", "X-Adsb-Provider": "fr24", ...corsHeaders(origin) } });
+          }
+          // FR24 answered but sees no such aircraft airborne → the ring
+          // still gets its chance (same reasoning as the ADB fallthrough).
+        }
+      }
+    } catch (e) { /* FR24 trouble → community ring */ }
+  }
+  // No answer — shaped like a success with no aircraft so the
+  // board's existing "no fix" path handles it. v23254: the failure IS
+  // cached now, briefly (ADSB_NEG_TTL) — an uncached miss meant every
+  // board poll re-hit feeds that were already rate-limiting us, keeping
+  // the 429s alive. The stampede stops; recovery costs at most 30s.
+  //
+  // But TWO different things land here, and they want different answers.
+  // The community ring is blocked from a Cloudflare Worker and answers 429
+  // essentially always, so reaching this point says nothing on its own.
+  // What matters is what FR24 said on the way past:
+  //
+  //   FR24 answered, carrying nothing  → the aircraft is not transmitting.
+  //     A parked aeroplane stays parked; re-asking in 30s buys nothing and
+  //     costs a credit every time. Remember it for ADSB_EMPTY_TTL.
+  //   FR24 was skipped, over budget, or errored → we do not actually know.
+  //     Keep the short TTL so recovery stays 30s away.
+  //
+  // Measured before this change: a non-transmitting subject came back
+  // `max-age=30, x-adsb-cache: neg, _upstreamStatus: 429`, so a flight
+  // sitting two hours on stand was re-asked 240 times per callsign variant
+  // — and FR24 is tried ahead of the ring, so every one of those was paid.
+  // That is the origin of the 80% empty-response rate in the usage figures.
+  const _negTtl = _fr24SaidNothing ? ADSB_EMPTY_TTL : ADSB_NEG_TTL;
+  const _negBody = JSON.stringify({
+    ac: [], _provider: "fr24",
+    ...(_fr24SaidNothing ? { _quiet: true } : {})
+  });
+  try {
+    await cache.put(cacheKey, new Response(_negBody, { headers: {
+      "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}` } }));
+  } catch (e) {}
+  if (_fr24SaidNothing && env.FIDS_LIVE_FLIGHTS) {
+    try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), quiet: true, body: _negBody }), { expirationTtl: ADSB_EMPTY_TTL })); } catch (e) {}
+  }
+  return new Response(_negBody, { status: 200, headers: {
+    "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}`,
+    "X-Adsb-Cache": _fr24SaidNothing ? "quiet" : "neg", ...corsHeaders(origin) } });
+}
+__name(adsbAnswer, "adsbAnswer");
+// v24169 — THE MONCTON ARRIVAL SWEEP: ONE FLIGHTRADAR24 LOOKUP PER ARRIVING
+// AIRCRAFT, ASKED BY THE WORKER FOR EVERY SCREEN.
+//
+// A gate screen asks FR24 only about the inbound of the departure it shows
+// now. At Moncton gate 4 on 2026-11-19 the gate showed AC1983 (05:00) all
+// evening, so AC2040 (for AC2037 at 06:20) and AC7754 (for AC7753 at 07:10)
+// landed without ever being looked up in the air, and once parked with the
+// transponder off FR24 cannot see them: AC7754 had no acmem record in 29
+// days. Approved 2026-11-20 as a swap: this sweep adds one lookup per
+// arriving aircraft, paid for by cutting repeat empty answers
+// (ADSB_EMPTY_TTL 600 s, no board lookup before the origin departure, the
+// operator callsign retry once per leg per 10 minutes).
+//
+// HOW. The /yqm/flights/arrivals route hands each fresh cyqm.ca list to this
+// function (ctx.waitUntil, after the answer). A row qualifies when it is not
+// cancelled, diverted, landed or arrived and its expected time (the revised
+// clock when the row has one, else the scheduled one; localTimestamp is
+// Moncton wall clock written as UTC, so now is measured the same way,
+// yqmMonctonWallS) is 10 to 40 minutes away. The ask goes through
+// adsbAnswer, the same path a screen takes: the shared KV answer (adsbans),
+// the acmem record under the number asked, the FR24 budget gates (cap,
+// paced allowance with the arrivals reserve held, cool-off, 402 pause). A
+// fresh shared answer is used and FR24 is not asked; a gate that says no
+// costs nothing and no attempt.
+//
+// ONCE PER LEG. arrsweep:v1:<FLIGHT>:<localTimestamp> (36 h) keeps the
+// attempts and whether a tail was found. A first answer with no row that is
+// the flight and carries a tail allows one retry at least 10 minutes later,
+// still inside the window, so never after landing; never a third. A lock
+// (edge cache, then KV, 60 s) holds the whole sweep to about once a minute
+// however many screens ask, and nothing is read or written when no row is in
+// the window. Counted at /feeds/status: fr24 sweep_asked, sweep_found.
+const ARRSWEEP_KEY = "arrsweep:v1:";
+const ARRSWEEP_LOCK_KEY = "arrsweep:lock:v1";
+const ARRSWEEP_TTL_S = 36 * 3600;
+const ARRSWEEP_LOCK_S = 60;
+const ARRSWEEP_FROM_S = 10 * 60;
+const ARRSWEEP_TO_S = 40 * 60;
+const ARRSWEEP_RETRY_MS = 10 * 60000;
+const ARRSWEEP_MAX_ASKS = 2;
+// Per isolate: legs that are done (found, or out of asks), so a run reads
+// no KV for them again. Key -> expiry ms.
+const _arrSweepDone = new Map();
+// "5:07 PM" -> minutes after midnight, as farArrYqmRows reads it.
+function yqmClockMin(t) {
+  const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = Number(m[1]) % 12;
+  if (String(m[3] || "").toUpperCase() === "PM") h += 12;
+  else if (!m[3]) h = Number(m[1]);
+  return h * 60 + Number(m[2]);
+}
+__name(yqmClockMin, "yqmClockMin");
+// The rows of one cyqm.ca arrivals list the sweep would ask about now:
+// [{ flight, sched, exp, left }] (sched / exp in the wall-clock frame, s;
+// left = seconds to the expected time).
+function yqmArrSweepLegs(list, now) {
+  const out = [];
+  const wall = yqmMonctonWallS(now);
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || f.remembered === true || typeof f.localTimestamp !== "number") continue;
+    if (/cancel|divert|arriv|land/i.test(String(f.status || ""))) continue;
+    const flight = yqmSeenFlight(f);
+    if (!/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])\d{1,4}[A-Z]?$/.test(flight)) continue;
+    let exp = f.localTimestamp;
+    const sm = yqmClockMin(f.scheduledTime), am = yqmClockMin(f.actualTime);
+    if (sm != null && am != null && am !== sm) {
+      let d = am - sm;
+      if (d < -720) d += 1440;
+      else if (d > 720) d -= 1440;
+      exp = f.localTimestamp + d * 60;
+    }
+    const left = exp - wall;
+    if (left < ARRSWEEP_FROM_S || left > ARRSWEEP_TO_S) continue;
+    out.push({ flight, sched: f.localTimestamp, exp, left });
+  }
+  return out;
+}
+__name(yqmArrSweepLegs, "yqmArrSweepLegs");
+// Does an /adsb/ answer body carry a tail for this flight, on a row that is
+// the flight asked for (adsbRowMatches)?
+function arrSweepBodyTail(body, flight) {
+  try {
+    const j = typeof body === "string" ? JSON.parse(body) : body;
+    const a = j && Array.isArray(j.ac) ? j.ac[0] : null;
+    if (!a || !a.r) return false;
+    return adsbRowMatches("flight", flight, { flight: a.flight, callsign: a.flight, reg: a.r });
+  } catch (e) { return false; }
+}
+__name(arrSweepBodyTail, "arrSweepBodyTail");
+async function yqmArrSweep(env, ctx, text, now = Date.now()) {
+  const kv = env && env.FIDS_LIVE_FLIGHTS;
+  const out = { ran: false, asked: 0, found: 0, legs: 0 };
+  if (!kv || !env.FR24_KEY) return out;
+  let list = null;
+  try {
+    const j = JSON.parse(text);
+    list = Array.isArray(j) ? j : (j && Array.isArray(j.flights) ? j.flights : null);
+  } catch (e) { list = null; }
+  for (const [k, until] of _arrSweepDone) if (until <= now) _arrSweepDone.delete(k);
+  const legs = yqmArrSweepLegs(list, now).filter((l) => !_arrSweepDone.has(l.flight + ":" + l.sched));
+  out.legs = legs.length;
+  if (!legs.length) return out;
+  // The lock: this location first (free), then every location (KV).
+  const lockReq = new Request("https://arrsweep-lock/v1");
+  let cache = null;
+  try { cache = caches.default; } catch (e) { cache = null; }
+  try { if (cache && await cache.match(lockReq)) return out; } catch (e) {}
+  const held = Number(await kv.get(ARRSWEEP_LOCK_KEY)) || 0;
+  const lockLeft = held ? ARRSWEEP_LOCK_S - Math.floor((now - held) / 1000) : 0;
+  const putEdgeLock = async (s) => {
+    try { if (cache) await cache.put(lockReq, new Response("1", { headers: { "Cache-Control": `public, max-age=${Math.max(1, s)}` } })); } catch (e) {}
+  };
+  if (lockLeft > 0) { await putEdgeLock(lockLeft); return out; }
+  await kv.put(ARRSWEEP_LOCK_KEY, String(now), { expirationTtl: ARRSWEEP_LOCK_S });
+  await putEdgeLock(ARRSWEEP_LOCK_S);
+  out.ran = true;
+  const day = new Date(now).toISOString().slice(0, 10);
+  for (const leg of legs) {
+    const id = leg.flight + ":" + leg.sched;
+    const key = ARRSWEEP_KEY + id;
+    let rec = null;
+    try { rec = await kv.get(key, { type: "json" }); } catch (e) { rec = null; }
+    rec = (rec && typeof rec === "object") ? rec : { attempts: 0, found: false };
+    const attempts = Number(rec.attempts) || 0;
+    if (rec.found === true || attempts >= ARRSWEEP_MAX_ASKS) { _arrSweepDone.set(id, now + ARRSWEEP_TTL_S * 1000); continue; }
+    if (attempts > 0 && now - (Number(rec.last) || 0) < ARRSWEEP_RETRY_MS) continue;
+    const info = {};
+    try { await adsbAnswer(env, ctx, "flight", leg.flight, false, "*", info); } catch (e) {}
+    if (!info.asked) {
+      // a fresh answer another screen paid for: a tail in it is this leg found
+      if ((info.cache === "shared" || info.cache === "hit") && arrSweepBodyTail(info.body, leg.flight)) {
+        try { await kv.put(key, JSON.stringify({ attempts, found: true, via: "shared", last: Number(rec.last) || 0 }), { expirationTtl: ARRSWEEP_TTL_S }); } catch (e) {}
+        _arrSweepDone.set(id, now + ARRSWEEP_TTL_S * 1000);
+      }
+      continue;   // a budget gate said no, or a quiet answer is still fresh
+    }
+    out.asked++;
+    try { await feedCount(kv, "fr24", day, "sweep_asked"); } catch (e) {}
+    // a refusal (429 / 403 / 402) is not an answer: no attempt spent
+    if (info.status !== 200) continue;
+    const row = info.row;
+    const found = !!(info.match && row && row.reg && typeof row.lat === "number" && typeof row.lon === "number");
+    const next = { attempts: attempts + 1, found, last: now };
+    try { await kv.put(key, JSON.stringify(next), { expirationTtl: ARRSWEEP_TTL_S }); } catch (e) {}
+    if (found) {
+      out.found++;
+      try { await feedCount(kv, "fr24", day, "sweep_found"); } catch (e) {}
+    }
+    if (found || next.attempts >= ARRSWEEP_MAX_ASKS) _arrSweepDone.set(id, now + ARRSWEEP_TTL_S * 1000);
+  }
+  return out;
+}
+__name(yqmArrSweep, "yqmArrSweep");
 // ═══════════════════════════════════════════════════════════════════════════
 // /osky/* — THE OPENSKY RELAY'S ROUTES (the "pull" design).
 //
@@ -12654,6 +13134,10 @@ async function feedStatus(env, now) {
               // v24118 — refused for an empty credit pool (402), and the cap the
               // month allows today (fr24EffectiveCap)
               refused_no_credit: await num(`feeds:n:fr24:refused:${day}`),
+              // v24169 — the Moncton arrival sweep (yqmArrSweep): FR24 asks it
+              // made, and legs whose answer named the aircraft
+              sweep_asked: await num(`feeds:n:fr24:sweep_asked:${day}`),
+              sweep_found: await num(`feeds:n:fr24:sweep_found:${day}`),
               daily_budget: (env && (env.FR24_DAILY_BUDGET || env.FR24_MONTHLY_CREDITS))
                 ? fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.parse(day + "T12:00:00Z"), env) : null },
       opensky: { box_answers: n("puts"), flights_asked: n("asked"), flights_found: n("found") }
@@ -13517,55 +14001,6 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // subject is pattern-checked, so this cannot be turned into an open proxy
     // (same SSRF discipline as /maptiles, /logoimg, /miafids).
     if (path.startsWith("/adsb/")) {
-      // v23254 — 40s, up from 20. The boards refresh telemetry on a 45s
-      // clock, so a 20s edge TTL meant nearly every poll was a cache MISS
-      // that hit the community feeds; doubling the TTL halves our request
-      // volume against per-IP throttles for no visible staleness.
-      // v23907 — 180 s, up from 90. A position for a flying aeroplane costs 8
-      // FR24 credits and the daily allowance is paced (~80 credits an hour for
-      // every screen together): at 90 s one tracked flight cost ~320 an hour
-      // per Cloudflare location, four times the whole hourly budget, so most
-      // lookups were skipped and few flights got a position, a type or a
-      // track. The map's glide dead-reckons between fixes, so a fix every
-      // three minutes still moves smoothly, and the flown track still traces
-      // the real path.
-      const ADSB_TTL = 180;
-      // How long an all-providers-failed answer is remembered. Without this,
-      // every board poll re-hammered feeds that were ALREADY rate-limiting
-      // us (observed, morning of 2026-08-25: all three upstreams 429 — no
-      // altimeter, no reg, no inbound panel), which keeps the throttle
-      // pinned. Short on purpose: recovery is only ever this far away.
-      const ADSB_NEG_TTL = 30;
-      // ── AN AIRCRAFT THAT IS NOT TRANSMITTING WILL STILL NOT BE IN 90 SECONDS
-      //
-      // The ring returns on ANY ok response, including one carrying zero
-      // aircraft, and that empty answer was cached at ADSB_TTL — 90 seconds,
-      // a value chosen for how fast a POSITION goes stale. But an empty answer
-      // is not a stale position, it is the absence of one, and the commonest
-      // reason for it is an aircraft sitting on a stand. Those sit for hours.
-      //
-      // So every board poll re-asked, and because FR24 is tried ahead of the
-      // ring, every re-ask was a paid call that could only ever return nothing.
-      // One flight, two hours on stand, roughly four callsign/reg variants
-      // tried: 80 lookups per variant, ~320 credits, to establish that a
-      // parked aeroplane is parked. That is where the 80% empty-response rate
-      // in the account's usage figures comes from.
-      //
-      // Five minutes rather than ten: the cost curve is already flat by then
-      // (80 calls -> 24), and the exposure is that a departure which starts
-      // transmitting just after a miss was cached waits up to this long for
-      // its aircraft panel. Five minutes of that is tolerable; ten is not.
-      //
-      // Deliberately NOT applied to the all-providers-failed path above, which
-      // keeps ADSB_NEG_TTL: a 429 wants to be retried soon, and conflating
-      // "everyone is rate-limiting us" with "this aeroplane is parked" would
-      // turn a transient outage into a five-minute one.
-      const ADSB_EMPTY_TTL = 300;
-      // v24088 — and its position is held 90 s, not 180, once it is below
-      // 10,000 ft: the approach is where a three-minute-old fix is a
-      // different place (15 km at approach speed). See fr24NearReserve.
-      const ADSB_NEAR_TTL = 90;
-      const _near = url.searchParams.get("near") === "1";
       // ── BY FLIGHT NUMBER, NOT BY A GUESSED CALLSIGN ────────────────────
       // A callsign is the radio name, and for regional flying it is not the
       // number on the ticket. Measured against Flightradar24 on 2026-09-26:
@@ -13580,259 +14015,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       if (!m) {
         return jsonResponse({ error: "Use /adsb/flight/:number, /adsb/callsign/:cs, /adsb/reg/:tail or /adsb/hex/:icao24" }, 400, origin);
       }
-      const kind = m[1];
-      const subject = m[2].toUpperCase();
-
-      // Shared edge cache — this is the bit that makes audience size irrelevant.
-      const cacheKey = new Request(`https://adsb-cache/fr24/${kind}/${subject}`);
-      const cache = caches.default;
-      try {
-        const hit = await cache.match(cacheKey);
-        if (hit) {
-          let body = await hit.text();
-          // v24088 — this location's copy is older by its time here, as the
-          // KV copy below is: a fix must never come back looking newer
-          const _hAt = Number(hit.headers.get("X-Adsb-At")) || 0;
-          if (_hAt > 0) {
-            try {
-              const _hj = JSON.parse(body);
-              const _hAge = Math.max(0, Math.round((Date.now() - _hAt) / 1000));
-              if (Array.isArray(_hj.ac) && _hj.ac.length) {
-                _hj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _hAge; });
-                body = JSON.stringify(_hj);
-              }
-            } catch (e) {}
-          }
-          return new Response(body, { status: 200, headers: {
-            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
-            "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
-        }
-      } catch (e) {}
-      // v23907 — ONE ANSWER FOR EVERY SCREEN. The cache above belongs to one
-      // Cloudflare location, so the stream box (Europe) and the screens
-      // (Canada) each paid FR24 for the same aircraft. Every FR24 answer — a
-      // position, or "not transmitting" — is also kept in KV, which every
-      // location reads, for as long as the edge would keep it. A copy served
-      // from KV has seen_pos advanced by its age, so a reused fix is never
-      // mistaken for a fresh one.
-      const _gKey = `adsbans:v1:${kind}:${subject}`;
-      try {
-        if (env.FIDS_LIVE_FLIGHTS) {
-          const _g = await env.FIDS_LIVE_FLIGHTS.get(_gKey, { type: "json" });
-          if (_g && typeof _g.body === "string" && typeof _g.at === "number") {
-            const _gAge = Math.max(0, Math.round((Date.now() - _g.at) / 1000));
-            const _gMax = _g.quiet ? ADSB_EMPTY_TTL : (typeof _g.hold === "number" && _g.hold > 0 ? _g.hold : ADSB_TTL);
-            if (_gAge < _gMax) {
-              const _gj = JSON.parse(_g.body);
-              if (Array.isArray(_gj.ac)) _gj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _gAge; });
-              const _gBody = JSON.stringify(_gj);
-              const _gLeft = Math.max(1, _gMax - _gAge);
-              try { await cache.put(cacheKey, new Response(_gBody, { headers: {
-                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`, "X-Adsb-At": String(Date.now()) } })); } catch (e) {}
-              return new Response(_gBody, { status: 200, headers: {
-                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`,
-                "X-Adsb-Cache": "shared", ...corsHeaders(origin) } });
-            }
-          }
-        }
-      } catch (e) {}
-
-      // THE COMMUNITY FEEDS AND AERODATABOX ARE GONE FROM THIS LOOKUP.
-      // airplanes.live, adsb.fi and adsb.lol refuse requests from a Cloudflare
-      // Worker (403/429 on every call) and have told us not to use them;
-      // AeroDataBox is cancelled (RapidAPI, disconnected 2026-09-10) and this
-      // route still held a direct call to it. Flightradar24 is the only source.
-      // When it cannot answer, the lookup answers empty and the board keeps
-      // the feed's own data. Do not add a free community feed back here.
-      // ── FR24, ON A DAILY ALLOWANCE (2026-09-05) ─────────────────────
-      // the $9 Explorer tier was bought to test FR24 as the position
-      // source (the community ring is unapproved, anonymous, and
-      // throttling us; airplanes.live REFUSED us — see the ring filter
-      // below, it is a closed question, do not raise it). Explorer
-      // is a small credit pool billed per aircraft returned, so this
-      // provider spends a HARD daily request budget and then goes quiet
-      // for the day — the ring below always remains. Callsign and reg
-      // lookups only (the documented filters); hex stays with the ring.
-      // A 402/429 from FR24 (credits gone) burns the whole day's budget
-      // at once so a dead pool is never hammered. Budget accounting is
-      // KV read-modify-write: approximate under races, and that's fine.
-      // Set when FR24 answers cleanly and carries no aircraft — i.e. "nothing
-      // is transmitting under that callsign", which is a fact about the world
-      // and not a transient failure. It decides how long the miss below is
-      // remembered, and it is the difference between paying FR24 twice a
-      // minute for a parked aeroplane and paying it twice an hour.
-      let _fr24SaidNothing = false;
-      if (env.FR24_KEY && (kind === "callsign" || kind === "reg" || kind === "flight") && env.FIDS_LIVE_FLIGHTS) {
-        try {
-          const _day = new Date().toISOString().slice(0, 10);
-          const _bKey = `fr24:used:${_day}`;
-          const _cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)), Date.now(), env);
-          const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
-          // A recent 429/403 sets a short cool-off instead of burning the day.
-          const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
-          // v24088 — what is in the arrivals' reserve
-          let _nearDoc = null;
-          try { _nearDoc = await env.FIDS_LIVE_FLIGHTS.get(FR24_NEAR_KEY, { type: "json" }); } catch (e) { _nearDoc = null; }
-          if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap) - (_near ? 0 : fr24NearHeld(_cap, _nearDoc))) {
-            const _param = kind === "callsign" ? "callsigns" : kind === "flight" ? "flights" : "registrations";
-            const _fr = await fetch(
-              `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
-              { headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } }
-            );
-            // A TRANSIENT ERROR MUST NOT COST THE WHOLE DAY.
-            //
-            // This burned the full daily cap on 402 OR 429 OR 403, which is
-            // right for exactly one of the three. 402 means the credit pool is
-            // actually empty and there is nothing left to spend, so stopping
-            // for the day is correct. 429 is a RATE limit — it says "slower",
-            // not "stop" — and 403 on this endpoint is usually a momentary
-            // auth/edge refusal. Treating either as a dead pool takes the
-            // provider off the board until the next UTC midnight.
-            //
-            // That is what was happening here. With FR24 silent, every lookup
-            // falls through to the community ADS-B ring, which answers a
-            // Cloudflare Worker with 403/429 no matter what (verified: the same
-            // query returns HTTP 200 from a home IP and is refused from the
-            // Worker — they block datacenter egress, not the account). The ring
-            // carries reg, type and track, so losing FR24 loses all three: the
-            // aircraft panel goes blank and the map icon falls back to
-            // bearing-toward-airport, which is the "plane pointing sideways".
-            //
-            // Now: 402 still stops for the day. 429/403 costs a normal call and
-            // a short cool-off, so the next poll a few minutes later can try
-            // again instead of the board going dark until midnight. The cap
-            // itself is unchanged — this never spends more than FR24_DAILY_BUDGET.
-            const _hardStop = (_fr.status === 402);
-            // The body has to be read BEFORE the charge can be known, because
-            // FR24 prices per returned row. A refusal or an unparseable body
-            // yields zero rows, which is exactly the flat 1-credit empty charge
-            // FR24 bills for one. This is the call that was costing 2.42 credits
-            // on average and recording 1.
-            let _fj = null, _rows = [];
-            if (_fr.ok) {
-              _fj = await _fr.json().catch(() => null);
-              _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];
-              // A clean 200 with an empty data array is FR24 telling us this
-              // aircraft is not transmitting — worth remembering for minutes,
-              // not seconds. A malformed body is NOT that, so it is excluded.
-              _fr24SaidNothing = !!(_fj && Array.isArray(_fj.data) && _fj.data.length === 0);
-            }
-            // (v24118 — a 402 is not billed: it costs nothing and pauses an
-            // hour below, so a renewal later in the day is picked up)
-            const _spend = _hardStop
-              ? _used
-              : _used + fr24Charge("live/flight-positions/full", _rows.length);
-            try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
-            if (_near && _spend > _used) {
-              const _nb = Math.max(0, fr24NearBucket(_cap, _nearDoc) - (_spend - _used));
-              try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(FR24_NEAR_KEY, JSON.stringify({ b: _nb, at: Date.now() }), { expirationTtl: 172800 })); } catch (e) {}
-            }
-            if (!_hardStop && (_fr.status === 429 || _fr.status === 403)) {
-              // Cool off for 5 minutes rather than for the day.
-              try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
-            }
-            if (_hardStop) {
-              try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + FR24_EMPTY_POOL_PAUSE_MS), { expirationTtl: 7200 }); } catch (e) {}
-            }
-            // v24115 — what the paid feed brought, counted (/feeds/status)
-            try { ctx.waitUntil(feedCount(env.FIDS_LIVE_FLIGHTS, "fr24", _day, _hardStop ? "refused" : (_fr.ok && _rows.length) ? "pos" : "empty")); } catch (e) {}
-            if (_fr.ok) {
-              // v24169 — the row that is the flight asked for, not blindly the
-              // first (adsbPickRow); a row that is not is never remembered
-              const _p = adsbPickRow(_rows, kind, subject);
-              const _pMatch = adsbRowMatches(kind, subject, _p);
-              if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
-                const _ageS = _p.timestamp ? Math.max(0, Math.round((Date.now() - Date.parse(_p.timestamp)) / 1000)) : null;
-                const _ac = {
-                  hex: String(_p.hex || "").toLowerCase() || void 0,
-                  flight: _p.callsign || _p.flight || void 0,
-                  r: _p.reg || void 0,
-                  t: _p.type || void 0,
-                  desc: _p.type || void 0,
-                  lat: _p.lat, lon: _p.lon,
-                  // v23905 — FR24 reports an aircraft on the ground with alt 0.
-                  // It was dropped, so no FR24 fix was ever "on the ground": a
-                  // parked aeroplane read as airborne with no altitude and the
-                  // board glided it across the apron. "ground" is the value the
-                  // board already reads as on the ground.
-                  alt_baro: (typeof _p.alt === "number" && _p.alt > 0) ? Math.round(_p.alt)
-                    : (typeof _p.alt === "number" ? "ground" : void 0),
-                  gs: (typeof _p.gspeed === "number") ? Math.round(_p.gspeed) : void 0,
-                  track: (typeof _p.track === "number") ? _p.track : void 0,
-                  baro_rate: (typeof _p.vspeed === "number") ? _p.vspeed : void 0,
-                  seen_pos: _ageS !== null ? _ageS : void 0
-                };
-                // v23901 — remember what this flight number flew (type only is
-                // ever shown from it). Same answer, no extra credit.
-                // v23944 — with the callsign and tail, today's operator evidence.
-                // v24169 — only a row that is the flight asked for (adsbRowMatches),
-                // and under the number asked too: FR24 files PAL AC7664 as
-                // PB7664 and Rouge AC1986 as RV1986, which /acinfo?f=AC7664
-                // never read (the board asks by the number it shows).
-                if (_pMatch) {
-                  try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
-                  if (kind === "flight" && _p.flight && String(_p.flight).toUpperCase().replace(/\s+/g, "") !== subject) {
-                    try { ctx.waitUntil(acMemRemember(env, subject, _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
-                  }
-                }
-                // v23906 — and add this position to the flight's flown track.
-                try { ctx.waitUntil(acTrackAppend(env, _p, Date.now())); } catch (e) {}
-                const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
-                // v24088 — a board's own inbound below 10,000 ft is held 90 s
-                const _hold = (_near && typeof _ac.alt_baro === "number" && _ac.alt_baro < 10000) ? ADSB_NEAR_TTL : ADSB_TTL;
-                // v23907 — and for every other location.
-                try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), hold: _hold, body: _frBody }), { expirationTtl: Math.max(60, _hold) })); } catch (e) {}
-                try {
-                  await cache.put(cacheKey, new Response(_frBody, { headers: {
-                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}`, "X-Adsb-At": String(Date.now()) } }));
-                } catch (e) {}
-                return new Response(_frBody, { status: 200, headers: {
-                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${_hold}`,
-                  "X-Adsb-Cache": "miss", "X-Adsb-Provider": "fr24", ...corsHeaders(origin) } });
-              }
-              // FR24 answered but sees no such aircraft airborne → the ring
-              // still gets its chance (same reasoning as the ADB fallthrough).
-            }
-          }
-        } catch (e) { /* FR24 trouble → community ring */ }
-      }
-      // No answer — shaped like a success with no aircraft so the
-      // board's existing "no fix" path handles it. v23254: the failure IS
-      // cached now, briefly (ADSB_NEG_TTL) — an uncached miss meant every
-      // board poll re-hit feeds that were already rate-limiting us, keeping
-      // the 429s alive. The stampede stops; recovery costs at most 30s.
-      //
-      // But TWO different things land here, and they want different answers.
-      // The community ring is blocked from a Cloudflare Worker and answers 429
-      // essentially always, so reaching this point says nothing on its own.
-      // What matters is what FR24 said on the way past:
-      //
-      //   FR24 answered, carrying nothing  → the aircraft is not transmitting.
-      //     A parked aeroplane stays parked; re-asking in 30s buys nothing and
-      //     costs a credit every time. Remember it for ADSB_EMPTY_TTL.
-      //   FR24 was skipped, over budget, or errored → we do not actually know.
-      //     Keep the short TTL so recovery stays 30s away.
-      //
-      // Measured before this change: a non-transmitting subject came back
-      // `max-age=30, x-adsb-cache: neg, _upstreamStatus: 429`, so a flight
-      // sitting two hours on stand was re-asked 240 times per callsign variant
-      // — and FR24 is tried ahead of the ring, so every one of those was paid.
-      // That is the origin of the 80% empty-response rate in the usage figures.
-      const _negTtl = _fr24SaidNothing ? ADSB_EMPTY_TTL : ADSB_NEG_TTL;
-      const _negBody = JSON.stringify({
-        ac: [], _provider: "fr24",
-        ...(_fr24SaidNothing ? { _quiet: true } : {})
-      });
-      try {
-        await cache.put(cacheKey, new Response(_negBody, { headers: {
-          "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}` } }));
-      } catch (e) {}
-      if (_fr24SaidNothing && env.FIDS_LIVE_FLIGHTS) {
-        try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), quiet: true, body: _negBody }), { expirationTtl: ADSB_EMPTY_TTL })); } catch (e) {}
-      }
-      return new Response(_negBody, { status: 200, headers: {
-        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}`,
-        "X-Adsb-Cache": _fr24SaidNothing ? "quiet" : "neg", ...corsHeaders(origin) } });
+      // v24088 — a board's own inbound near the field (fr24NearReserve)
+      const _near = url.searchParams.get("near") === "1";
+      return adsbAnswer(env, ctx, m[1], m[2].toUpperCase(), _near, origin);
     }
 
     // ── Vecteezy connectivity self-test ─────────────────────────────────
@@ -14460,6 +14645,13 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         // A failure there answers exactly what cyqm.ca sent, as before.
         let _mem = { text: _txt, added: 0 };
         try { _mem = await yqmWithMemory(env, ctx, _seg, _txt, Date.now()); } catch (e) { _mem = { text: _txt, added: 0 }; }
+        // v24169 — the arrival sweep (yqmArrSweep): one FR24 lookup per
+        // arriving aircraft for every screen, after the answer, at most about
+        // once a minute (its own lock). The rows cyqm.ca sent, never the
+        // remembered ones.
+        if (_seg === "arrivals" && ctx && typeof ctx.waitUntil === "function") {
+          try { ctx.waitUntil(yqmArrSweep(env, ctx, _txt, Date.now()).catch(() => {})); } catch (e) {}
+        }
         return new Response(_mem.text, { headers: {
           "Content-Type": "application/json",
           "Cache-Control": "public, max-age=30",
@@ -14968,6 +15160,10 @@ export {
   acMemObsIsLeg,
   adsbRowMatches,
   adsbPickRow,
+  adsbAnswer,
+  yqmArrSweep,
+  yqmArrSweepLegs,
+  yqmMonctonWallS,
   acFeedIndexRows,
   acFeedPick,
   OPEV_DESIGNATOR,

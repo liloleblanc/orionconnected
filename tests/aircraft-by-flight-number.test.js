@@ -66,3 +66,31 @@ test('a flight-number answer is not treated as a stray airframe', () => {
   // previous leg. A flight-number answer is this leg by definition.
   assert.match(telemetry, /if \(!\/\^\\\/\(callsign\|flight\)\\\/\/\.test\(tries\[i\]\)\) \{/);
 });
+
+// v24169 — paid for the Moncton arrival sweep (workers/fids-proxy.js
+// yqmArrSweep): after a quiet number, the operator callsigns are asked at
+// most once per leg per 10 minutes, unless the last retry found the aeroplane.
+test('the operator retry after a quiet number runs once per leg per 10 minutes', () => {
+  const fnSrc = (name) => {
+    const a = core.indexOf('\nfunction ' + name + '(') + 1;
+    assert.ok(a > 0, name + ' must exist');
+    return core.slice(a, core.indexOf('\n}\n', a) + 2);
+  };
+  const decl = (prefix) => { const a = core.indexOf(prefix); assert.ok(a >= 0, prefix); return core.slice(a, core.indexOf(';\n', a) + 1); };
+  const lib = new Function([decl('var _adsbOpRetry = '), decl('var _ADSB_OP_RETRY_MS = '), fnSrc('_adsbOpRetryOk'), fnSrc('_adsbOpRetryFound')].join('\n')
+    + '\nreturn { _adsbOpRetryOk, _adsbOpRetryFound };')();
+  const t0 = Date.UTC(2026, 10, 19, 22, 0), MIN = 60000;
+  assert.equal(lib._adsbOpRetryOk('AC8806', t0), true, 'the first retry');
+  assert.equal(lib._adsbOpRetryOk('AC8806', t0 + 1 * MIN), false, 'the next poll: no');
+  assert.equal(lib._adsbOpRetryOk('AC8806', t0 + 9 * MIN), false);
+  assert.equal(lib._adsbOpRetryOk('AC8542', t0 + 9 * MIN), true, 'another leg has its own');
+  assert.equal(lib._adsbOpRetryOk('AC8806', t0 + 10 * MIN), true, '10 minutes on');
+  // the retry found it (a Jazz flight FR24 knows only by its callsign): every poll
+  lib._adsbOpRetryFound('AC8806');
+  assert.equal(lib._adsbOpRetryOk('AC8806', t0 + 11 * MIN), true);
+  assert.equal(lib._adsbOpRetryOk('AC8806', t0 + 12 * MIN), false, 'until a retry comes back empty');
+  // and the loop gates the operator tries, only after a quiet number
+  assert.match(telemetry, /var _isOpTry = _numberQuiet && _opPaths\.indexOf\(tries\[i\]\) >= 0;/);
+  assert.match(telemetry, /if \(_opGate === null\) _opGate = _adsbOpRetryOk\(_opLeg, Date\.now\(\)\);\n\s+if \(!_opGate\) continue;/);
+  assert.match(telemetry, /if \(_isOpTry && ac\) _adsbOpRetryFound\(_opLeg\);/);
+});
