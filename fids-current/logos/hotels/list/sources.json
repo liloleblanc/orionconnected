@@ -587,6 +587,16 @@
    "px": "150x150",
    "transparent_background": false,
    "note": "Black, on an opaque white ground: multiplied into the cream (opaque). The Commons SVG was not used: it is in the former Starwood taupe, not the current Westin grey. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "alt-hotels.svg": {
+   "source": "https://assets.germainhotels.com/germain-website-assets-production/website-assets/Icons/Brand-and-city-Icons/logo-alt-icon.svg",
+   "origin": "drawing of the Alt Hotels by Le Germain logo, supplied 21 Nov 2026; the brand's own site (germainhotels.com) publishes the colour grid as a file and shows the full lockup only as an inline header image that cannot be saved as a working file",
+   "licence": "Trademark of Germain Hotels. The colour grid matches the official file colour for colour (two white squares included, as in the official file); the alt and HOTELS wordmark matches the brand's site header, with the BY LE GERMAIN line of the brand name. Used to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 4780.2 1325.89",
+   "has_style_block": true,
+   "note": "Black wordmark, the sixteen-square colour grid. Generic class names (.cls-1 to .cls-15): <img> only. The BY LE GERMAIN line is small at the cell size; the grid and alt HOTELS carry it."
   }
  },
  "already_in_repo": [

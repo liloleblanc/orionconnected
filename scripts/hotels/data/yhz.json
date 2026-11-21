@@ -423,8 +423,13 @@
     "evidence": "Airport page, read 2026-11-21: \"connected to the terminal building\". No shuttle is needed or named.",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "No Alt Hotels logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "logo": {
+    "file": "/logos/hotels/list/alt-hotels.svg",
+    "opaque": false,
+    "source": "https://assets.germainhotels.com/germain-website-assets-production/website-assets/Icons/Brand-and-city-Icons/logo-alt-icon.svg",
+    "origin": "drawing of the Alt Hotels by Le Germain logo, supplied 21 Nov 2026 (the brand site publishes only the colour grid as a file)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
