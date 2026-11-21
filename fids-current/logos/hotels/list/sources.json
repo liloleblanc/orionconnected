@@ -667,6 +667,16 @@
    "px": "901x638",
    "transparent_background": true,
    "note": "Black SJG monogram, its only mark (no name in it); the name is on the card beside it. Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
+  },
+  "delta-beausejour.svg": {
+   "source": "https://www.marriott.com/en-us/hotels/yqmdr-delta-hotels-beausejour/overview/",
+   "origin": "drawing of the hotel’s own property logo (the Delta Hotels lockup with BEAUSÉJOUR under it, its black file YQMDR_Logo_blk, YQMDR being the hotel’s Marriott code), supplied 21 Nov 2026; the logo’s official home is the hotel’s Marriott page",
+   "licence": "Trademark of Marriott International (Delta Hotels). The hotel’s own property lockup, drawn line for line from its black file in one blue (#11149A) for the cream column, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 584.01 869.31",
+   "has_style_block": false,
+   "note": "The D, DELTA HOTELS, the rule, MARRIOTT and BEAUSÉJOUR, stacked: takes the whole cell (fill). The drawing is as supplied (only paths, no metadata block). The plain Delta Hotels mark (delta-hotels.svg) stays on the other Delta hotels."
   }
  },
  "already_in_repo": [

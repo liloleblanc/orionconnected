@@ -743,11 +743,11 @@
     "checked": "2026-11-11"
    },
    "logo": {
-    "file": "/logos/hotels/list/delta-hotels.svg",
+    "file": "/logos/hotels/list/delta-beausejour.svg",
     "opaque": false,
     "fill": true,
-    "source": "https://upload.wikimedia.org/wikipedia/commons/7/72/Delta_Hotels_logo.svg",
-    "origin": "Wikimedia Commons"
+    "source": "https://www.marriott.com/en-us/hotels/yqmdr-delta-hotels-beausejour/overview/",
+    "origin": "drawing of the hotel’s own property logo (Delta Hotels, Beauséjour), supplied 21 Nov 2026"
    },
    "logo_missing": null,
    "listed": true,
