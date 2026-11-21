@@ -2823,7 +2823,7 @@
   },
   {
    "id": "casino-nb-hotel",
-   "name": "Hotel Casino New-Brunswick",
+   "name": "The Hotel at Casino New Brunswick",
    "area": "nearby",
    "resort": false,
    "brand": null,
@@ -2874,13 +2874,11 @@
    "verified": {
     "name": {
      "verified": true,
-     "source": "https://tourismnewbrunswick.ca/listing/hotel-casino-new-brunswick",
+     "source": "https://greatcanadian.com/hotels/casino-new-brunswick/",
      "also": [
-      "https://greatcanadian.com/hotels/casino-new-brunswick/",
       "https://www.cyqm.ca/destination-info/nearby-hotels/"
      ],
-     "note": "Hotel Casino New-Brunswick: the name the hotel goes by in Moncton, supplied for the cards on 2026-11-21. The Tourism New Brunswick listing is titled Hotel Casino New Brunswick (its page refuses automated reads, so the title is from a search index; the refusal was not worked around). The operator page title says The Hotel at Casino New Brunswick (French page: L’hôtel du Casino du Nouveau-Brunswick); its menu says New Brunswick Casino Hotel; the airport page says Casino New Brunswick.",
-     "checked": "2026-11-21"
+     "note": "Page title \"The Hotel at Casino New Brunswick\"; the operator menu says \"New Brunswick Casino Hotel\"; the airport page \"Casino New Brunswick\"."
     },
     "street": {
      "verified": true,
