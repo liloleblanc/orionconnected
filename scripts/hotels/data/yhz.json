@@ -27,16 +27,16 @@
  },
  "foot_marks": [],
  "notes": {
-  "verified_definition": "verified true = read directly on 2026-11-21 on the hotel's own site, its brand property page, the airport's own page (halifaxstanfield.ca) or an official tourism listing (Discover Halifax, the city's destination body; Tourism Nova Scotia, the province's). Facts on two official pages that agree, or on the hotel's own page, are marked verified. verified false = not read (a page that answered 403 or did not answer), one weaker source, or sources that disagree: the note says which. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js); no fact rests on it alone.",
-  "postal_note": "Postal codes are not shown on the cards. Where the pages disagree (Sandman Signature, Inn on the Lake on Discover Halifax) or only one page gives one, postal_code is marked verified false.",
-  "shuttle_note": "shuttle.value: true / false / null (unknown). mark true only where the airport's own page (halifaxstanfield.ca, Visiting Halifax, Accommodations) or the hotel's own page says so: the Halifax (HFX) Airport Hotel, the Hilton Garden Inn Halifax Airport and Inn on the Lake. The airport page's entry for the Holiday Inn Express repeats the Hilton Garden Inn text, so that hotel is not marked although Tourism Nova Scotia names a shuttle.",
-  "season_note": "season.open_months lists the months open (1-12); seasonal true would mean it closes part of the year; closed_now is judged for 2026-11-21. Tourism Nova Scotia prints \"Open year-round\" for every listed hotel it carries.",
+  "verified_definition": "verified true = read directly on 2026-11-21 on at least one official page: the hotel's own site, its brand property page, the airport's own page (halifaxstanfield.ca) or an official tourism listing (Discover Halifax, the city's destination body; Tourism Nova Scotia, the province's), and no official page read says otherwise. Where only one official page gives a fact, its note says so (one page is enough, as in the Moncton and Charlottetown files). verified false = not read (a page that answered 403 or did not answer), on no official page, or official pages that disagree: the note says which. The airport page's entry for the Holiday Inn Express Hotel & Suites Halifax Airport repeats the Hilton Garden Inn's text and numbers and is not counted for that hotel. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js) and is cited only beside an official page: no fact rests on it alone. Postal codes take two pages (postal_note).",
+  "postal_note": "Postal codes are not shown on the cards. A postal code is marked verified true only where two official pages agree. Where the pages disagree (Sandman Signature, Inn on the Lake on Discover Halifax) or only one official page gives one, postal_code is marked verified false.",
+  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the airport's own page (halifaxstanfield.ca, Visiting Halifax, Accommodations) or the hotel's own page says so: the Halifax (HFX) Airport Hotel, the Hilton Garden Inn Halifax Airport and Inn on the Lake. shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read and shuttle.checked the date. The airport page's entry for the Holiday Inn Express repeats the Hilton Garden Inn text, so that hotel is not marked although Tourism Nova Scotia names a shuttle.",
+  "season_note": "season.year_round true = open all year; season.open would hold the open days (MM-DD to MM-DD) of a seasonal hotel (none in Halifax). season.verified true where Tourism Nova Scotia prints \"Open year-round\" (read 2026-11-21). Chateau Bedford is on neither listing and its brand page states no season: year_round true there is the city-hotel default, verified false.",
   "sources": [
    "Halifax Stanfield International Airport: Visiting Halifax page, Accommodations (halifaxstanfield.ca), read directly",
    "Discover Halifax listings, discoverhalifaxns.com (official destination body; each listing page read directly, ten seconds apart as its robots.txt asks)",
    "Tourism Nova Scotia listings, novascotia.com (official provincial tourism site; each listing page read directly)",
    "Hotels' own sites and the Wyndham and Sandman property pages (read directly); Marriott, Hilton and IHG pages answered 403",
-   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, 2026-11-21), and the map point of Chateau Bedford"
+   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, 2026-11-21), cited only beside an official page"
   ]
  },
  "excluded": [
@@ -373,11 +373,13 @@
   "Websites that did not answer: Hampton Inn by Hilton Halifax Downtown and Homewood Suites by Hilton Halifax Downtown (both listings link hotel domains that gave no connection on 2026-11-21): no website shown for them.",
   "Cloudflare blocks (403) on the own sites of the Comfort Hotel Bayer's Lake and the Halifax Tower Hotel & Conference Centre: their websites rest on the listings. Blocked, needs a person.",
   "Hampton Inn & Suites Halifax Dartmouth is held back: the two official listings give different telephones (406-7700 and 406-7704). A call or the Hilton page would settle it.",
-  "Single official source for the telephone: Holiday Inn Express Hotel & Suites Halifax Airport and Comfort Hotel Bayer's Lake (Tourism Nova Scotia), Sandman Signature Dartmouth (own page), Chateau Bedford (brand page).",
+  "Holiday Inn Express Hotel and Suites Halifax–Dartmouth is held back: Tourism Nova Scotia prints 335 John Savage Avenue, Discover Halifax 335 John Savage Dr, and the IHG pages answer 403. A call or the IHG page would settle it.",
+  "One official page only (verified true, see notes.verified_definition): the Holiday Inn Express Hotel & Suites Halifax Airport and the Comfort Hotel Bayer's Lake rest on Tourism Nova Scotia alone for their name, street and telephone (their own pages answered 403); the Sandman Signature Dartmouth telephone on its own page; Chateau Bedford on its brand page alone (it is on neither listing).",
   "The airport page lists the Holiday Inn Express Hotel & Suites with the Hilton Garden Inn's text and numbers (a copy error on that page): its telephone and shuttle are not taken from it.",
   "Not looked at in this trial: places on Discover Halifax that are not OpenStreetMap candidates and not hotels by their listing (ABC Hotel under Things To Do; Governors Lake Suites, Atlantic Corporate Suites and Executive Suites Downtown Halifax, suites).",
   "foot_marks is empty: no Halifax or Nova Scotia mark has been approved for the foot of the card (as Charlottetown).",
-  "Logos: only the brand files the Moncton list already uses; no logo was downloaded for Halifax."
+  "Logos: only the brand files the Moncton list already uses; no logo was downloaded for Halifax.",
+  "independent is null on the 14 hotels of no chain brand: not established (the helper's brand table found no chain brand, and no page was read to say the hotel belongs to none). brand, group and independent are not published: the slim copy has none of them."
  ],
  "hotels": [
   {
@@ -741,7 +743,7 @@
     "display": "180 Pratt & Whitney Drive, Enfield"
    },
    "phone": "(902) 576-7600",
-   "website": "https://www.ihg.com/holidayinnexpress/hotels/us/en/enfield/yhznt/hoteldetail",
+   "website": "https://www.hiexpress.com/halifaxairport",
    "lat": 44.861042,
    "lng": -63.54373,
    "distance_km": {
@@ -783,13 +785,13 @@
      "also": [
       "https://halifaxstanfield.ca/travel-planning/visiting-halifax/"
      ],
-     "note": "The airport page prints \"Holiday Inn Express Hotel & Suites\". Not on Discover Halifax.",
+     "note": "Tourism Nova Scotia prints this name. The airport page heads its entry \"Holiday Inn Express Hotel & Suites\" (the entry's text is the Hilton Garden Inn's). Not on Discover Halifax.",
      "checked": "2026-11-21"
     },
     "street": {
      "verified": true,
      "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
-     "note": "One official page (Tourism Nova Scotia); OpenStreetMap agrees on the number and street.",
+     "note": "One official page, read directly: Tourism Nova Scotia. Not on Discover Halifax; the IHG pages answered 403; the airport page's entry for this hotel is a copy of the Hilton Garden Inn's. OpenStreetMap agrees on the number and street (a candidate only).",
      "checked": "2026-11-21"
     },
     "postal_code": {
@@ -801,13 +803,13 @@
     "phone": {
      "verified": true,
      "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
-     "note": "The airport page's entry for this hotel repeats the Hilton Garden Inn text and numbers (1-888-667-6005, 902-873-1400): a copy error on that page, not used. Toll-free (877) 919-2244 on the listing.",
+     "note": "One official page, read directly: Tourism Nova Scotia. The airport page's entry for this hotel repeats the Hilton Garden Inn text and numbers (1-888-667-6005, 902-873-1400): a copy error on that page, not used. Toll-free (877) 919-2244 on the listing.",
      "checked": "2026-11-21"
     },
     "website": {
      "verified": false,
-     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
-     "note": "IHG pages answered 403 to automated readers on 2026-11-21 (ihg.com and hiexpress.com tried): not read; blocked, needs a person. URL taken from the airport page. Tourism Nova Scotia links https://www.hiexpress.com/halifaxairport.",
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+     "note": "URL as Tourism Nova Scotia links it. IHG pages answered 403 to automated readers on 2026-11-21 (ihg.com and hiexpress.com tried): not read; blocked, needs a person. The airport page links https://www.ihg.com/holidayinnexpress/hotels/us/en/enfield/yhznt/hoteldetail from its entry for this hotel, but that entry repeats the Hilton Garden Inn text and numbers, so nothing is taken from it.",
      "checked": "2026-11-21"
     },
     "latlng": {
@@ -1551,9 +1553,9 @@
      "checked": "2026-11-21"
     },
     "postal_code": {
-     "verified": true,
+     "verified": false,
      "source": "https://discoverhalifaxns.com/listings/hampton-inn-by-hilton-halifax-downtown/",
-     "note": "Single source (Discover Halifax); OpenStreetMap agrees.",
+     "note": "Single official source (Discover Halifax; Tourism Nova Scotia gives none); OpenStreetMap agrees (a candidate only). Not shown on the cards.",
      "checked": "2026-11-21"
     },
     "phone": {
@@ -2623,9 +2625,10 @@
      "checked": "2026-11-21"
     },
     "postal_code": {
-     "verified": true,
+     "verified": false,
      "source": "https://novascotia.com/listing/garden-south-park-inn/",
-     "checked": "2026-11-21"
+     "checked": "2026-11-21",
+     "note": "Single official source (Tourism Nova Scotia). Not shown on the cards."
     },
     "phone": {
      "verified": true,
@@ -3109,7 +3112,7 @@
     "display": "240 Brownlow Avenue, Dartmouth"
    },
    "phone": "(902) 468-8888",
-   "website": "https://www.marriott.com/en-us/hotels/yhzdm-delta-hotels-dartmouth/overview/",
+   "website": "https://www.marriott.com/yhzdm",
    "lat": 44.695083,
    "lng": -63.578723,
    "distance_km": {
@@ -3186,7 +3189,7 @@
      "also": [
       "https://discoverhalifaxns.com/listings/delta-hotels-by-marriott-dartmouth/"
      ],
-     "note": "The listings link marriott.com/yhzdm, which forwards here and answered 403 on 2026-11-21: not read; blocked, needs a person.",
+     "note": "Copied as Tourism Nova Scotia links it (Discover Halifax links the same address in capitals, https://www.marriott.com/YHZDM). It forwards to a marriott.com page that answered 403 on 2026-11-21: not read; blocked, needs a person.",
      "checked": "2026-11-21"
     },
     "latlng": {
@@ -3370,8 +3373,8 @@
     "trim": "inset(15.2% 0.0% 15.5% 0.0%)"
    },
    "logo_missing": null,
-   "listed": true,
-   "not_listed_reason": null,
+   "listed": false,
+   "not_listed_reason": "The two official listings disagree on the street (Tourism Nova Scotia: 335 John Savage Avenue; Discover Halifax: 335 John Savage Dr) and the IHG pages answer 403 to automated readers: blocked, needs a person to confirm the address.",
    "verified": {
     "name": {
      "verified": true,
@@ -3383,12 +3386,12 @@
      "checked": "2026-11-21"
     },
     "street": {
-     "verified": true,
+     "verified": false,
      "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
      "also": [
       "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
      ],
-     "note": "Discover Halifax prints \"335 John Savage Dr\"; Tourism Nova Scotia and OpenStreetMap say Avenue.",
+     "note": "Sources disagree: Tourism Nova Scotia prints \"335 John Savage Avenue\", Discover Halifax \"335 John Savage Dr\" (re-read 2026-11-21). OpenStreetMap says Avenue (a candidate only). The IHG pages answered 403: blocked, needs a person.",
      "checked": "2026-11-21"
     },
     "postal_code": {
@@ -3432,7 +3435,7 @@
     }
    },
    "osm": "https://www.openstreetmap.org/way/815093594",
-   "notes": null
+   "notes": "Held back until a person settles the street (Avenue or Drive)."
   },
   {
    "id": "hampton-halifax-dartmouth",
@@ -3612,12 +3615,12 @@
      "checked": "2026-11-21"
     },
     "postal_code": {
-     "verified": true,
+     "verified": false,
      "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-dartmouth/",
      "also": [
       "https://www.openstreetmap.org/way/584287896"
      ],
-     "note": "Tourism Nova Scotia gives no postal code; OpenStreetMap agrees.",
+     "note": "Single official source (Discover Halifax; Tourism Nova Scotia gives none); OpenStreetMap agrees (a candidate only). Not shown on the cards.",
      "checked": "2026-11-21"
     },
     "phone": {
@@ -3727,12 +3730,12 @@
      "checked": "2026-11-21"
     },
     "postal_code": {
-     "verified": true,
+     "verified": false,
      "source": "https://discoverhalifaxns.com/listings/residence-inn-by-marriott-halifax-dartmouth/",
      "also": [
       "https://www.openstreetmap.org/way/584287896"
      ],
-     "note": "Tourism Nova Scotia gives no postal code; OpenStreetMap agrees.",
+     "note": "Single official source (Discover Halifax; Tourism Nova Scotia gives none); OpenStreetMap agrees (a candidate only). Not shown on the cards.",
      "checked": "2026-11-21"
     },
     "phone": {
@@ -3930,13 +3933,13 @@
     "name": {
      "verified": true,
      "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
-     "note": "OpenStreetMap still says \"Comfort Inn Bayer's Lake\". Not on Discover Halifax.",
+     "note": "One official page, read directly: Tourism Nova Scotia. Not on Discover Halifax; the hotel's own site answered 403 (Cloudflare). OpenStreetMap still says \"Comfort Inn Bayer's Lake\".",
      "checked": "2026-11-21"
     },
     "street": {
      "verified": true,
      "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
-     "note": "One official page; OpenStreetMap agrees on the number and street (it gives the town as Beechville).",
+     "note": "One official page, read directly: Tourism Nova Scotia. OpenStreetMap agrees on the number and street (it gives the town as Beechville).",
      "checked": "2026-11-21"
     },
     "postal_code": {
@@ -3948,7 +3951,7 @@
     "phone": {
      "verified": true,
      "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
-     "note": "One official page (Tourism Nova Scotia).",
+     "note": "One official page, read directly: Tourism Nova Scotia.",
      "checked": "2026-11-21"
     },
     "website": {
@@ -3975,7 +3978,7 @@
     }
    },
    "osm": "https://www.openstreetmap.org/node/4301210589",
-   "notes": null
+   "notes": "Rests on one official listing (Tourism Nova Scotia): the own site answered 403 and Discover Halifax has no listing."
   },
   {
    "id": "halifax-tower-hotel",
@@ -4329,7 +4332,7 @@
    "phone": "(902) 445-1100",
    "website": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
    "lat": 44.685005,
-   "lng": -63.6760482,
+   "lng": -63.676048,
    "distance_km": {
     "airport": 25.3,
     "centre": 8.9
@@ -4340,7 +4343,7 @@
     "open": null,
     "verified": false,
     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
-    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-21."
+    "note": "No season or closure stated on the brand page, the only page read (the hotel is on neither Discover Halifax nor Tourism Nova Scotia): year_round is the city-hotel default, not read on a page, so it is verified false."
    },
    "shuttle": {
     "mark": false,
@@ -4372,12 +4375,13 @@
      "checked": "2026-11-21"
     },
     "postal_code": {
-     "verified": true,
+     "verified": false,
      "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
      "also": [
       "https://www.openstreetmap.org/node/31262993"
      ],
-     "checked": "2026-11-21"
+     "checked": "2026-11-21",
+     "note": "Single official source (the brand page); OpenStreetMap agrees (a candidate only). Not shown on the cards."
     },
     "phone": {
      "verified": true,
@@ -4393,8 +4397,11 @@
     },
     "latlng": {
      "verified": true,
-     "source": "https://www.openstreetmap.org/node/31262993",
-     "note": "OpenStreetMap point; the brand page agrees on the street. Point for the straight-line area distances.",
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "also": [
+      "https://www.openstreetmap.org/node/31262993"
+     ],
+     "note": "Map point in the property data of the brand page (latitude 44.685005, longitude -63.676048, beside its telephone), read 2026-11-21; the OpenStreetMap node agrees. Point for the straight-line area distances.",
      "checked": "2026-11-21"
     },
     "season": {
@@ -4409,7 +4416,7 @@
     }
    },
    "osm": "https://www.openstreetmap.org/node/31262993",
-   "notes": "Not on Discover Halifax or Tourism Nova Scotia."
+   "notes": "Not on Discover Halifax or Tourism Nova Scotia: every fact rests on the brand page (the hotel's own property page at Wyndham)."
   },
   {
    "id": "hix-halifax-bedford",

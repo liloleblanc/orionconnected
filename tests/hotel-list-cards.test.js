@@ -59,7 +59,7 @@ function onGate(g, run) {
     names.forEach((n) => { try { delete globalThis[n]; } catch (e) {} if (keep[n]) Object.defineProperty(globalThis, n, keep[n]); });
   }
 }
-const CITY_NAMES = { YQM: 'Moncton', YYG: 'Charlottetown' };
+const CITY_NAMES = { YQM: 'Moncton', YYG: 'Charlottetown', YHZ: 'Halifax' };
 const gate = (extra) => Object.assign({ BoardStrings: B, _gateIata: 'YYZ', _gateMapCity: (c) => CITY_NAMES[c] || c }, extra || {});
 const build = (city, L, o) => onGate(gate(), () => H.build(RUN[city], L, Object.assign({ date: NOV16, home: 'YYZ' }, o || {})));
 const views = (html) => html.split('<div class="axr-page hlc-view').slice(1);
@@ -235,6 +235,13 @@ test('nothing closed for the season, and a hotel held back never shows', () => {
   // Thriftlodge in Moncton and Dundee Arms Inn in Charlottetown, are off the cards)
   assert.deepEqual(H.cards(DOCS.YQM, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:5', 'downtown:11', 'nearby:11', 'resort:1']);
   assert.deepEqual(H.cards(DOCS.YYG, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:5', 'downtown:11', 'nearby:2', 'resort:3']);
+  // Halifax (v24170): 36 of 39 listed; held back, the Garden South Park Inn (a bed and breakfast by
+  // its listing), the Hampton Inn & Suites Dartmouth (the listings give two telephones) and the
+  // Holiday Inn Express Dartmouth (the listings give two streets)
+  assert.deepEqual(H.cards(DOCS.YHZ, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:4', 'downtown:19', 'nearby:13']);
+  for (const held of ['garden-south-park-inn', 'hampton-halifax-dartmouth', 'hix-halifax-dartmouth']) {
+    for (const d of [NOV16, day(2026, 7, 15)]) assert.ok(!ids('YHZ', d).includes(held), held + ' is held back');
+  }
   for (const [city, id] of [['YQM', 'coastal-inn-dieppe'], ['YQM', 'thriftlodge-moncton'], ['YYG', 'dundee-arms']]) {
     assert.ok(!ids(city, NOV16).includes(id), id + ' is off the cards');
   }
@@ -256,6 +263,10 @@ test('the shuttle mark only where the shuttle is verified, and the legend only o
   // locally, 16 Nov 2026); the Wild Rose (its own page: a shuttle with its park-and-fly package; the legend says to contact the hotel)
   assert.deepEqual(marked.slice().sort(), ['fairfield-moncton', 'hix-dieppe', 'quality-inn-airport', WILDROSE, WINGATE].sort(), 'Moncton: the five airport hotels with a shuttle');
   assert.equal(DOCS.YYG.hotels.filter((h) => h.shuttle.mark).length, 0, 'Charlottetown: the airport says no hotel shuttle runs');
+  // Halifax: the three the airport's own page names; not the Holiday Inn Express by the airport, whose entry
+  // on that page repeats the Hilton Garden Inn text (Tourism Nova Scotia names a shuttle, not an allowed source)
+  assert.deepEqual(DOCS.YHZ.hotels.filter((h) => h.shuttle.mark).map((h) => h.id).sort(), ['hfx-airport-hotel', 'hgi-halifax-airport', 'inn-on-the-lake']);
+  for (const h of DOCS.YHZ.hotels.filter((x) => x.shuttle.mark)) assert.match(h.shuttle.source, /^https:\/\/halifaxstanfield\.ca\//, h.id);
   const v = views(build('YQM', ['en', 'fr']));
   const airport = v.find((x) => x.includes('data-area="airport"'));
   const row = airport.split('<li ').find((x) => x.includes('data-hotel="hix-dieppe"'));
@@ -370,6 +381,8 @@ test('the gate shows the hotels of the city its flight goes to, when that city h
   assert.equal(at({ _locIata: 'YHZ' }), 'YHZ');
   assert.equal(at({ _locIata: 'YYZ' }), '', 'no list for Toronto');
   assert.equal(at({ _locIata: 'YYZ', _stops: ['YQM', 'YYZ'] }), 'YQM', 'a stop with a list counts');
+  assert.equal(at({ _locIata: 'YHZ', _stops: ['YQM', 'YHZ'] }), 'YHZ', 'the city the flight goes to comes before a stop with a list');
+  assert.equal(at({ _locIata: 'YYZ', _stops: ['YQM', 'YHZ', 'YYZ'] }), 'YHZ', 'the last stop with a list first');
   assert.equal(at(null), '', 'no flight, nothing');
   // due only with the list loaded and something open
   assert.equal(onGate(gate({ _gateCurrentFlight: { _locIata: 'YYG' }, _flightLegs: legs }), () => H.due()), true);

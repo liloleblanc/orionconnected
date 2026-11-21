@@ -83,8 +83,13 @@ entry in the list, or an entry has no checked file.
      browser, changed user agent or cache service).
    - Do not use Google Places, Tripadvisor, Booking or Expedia: their terms forbid storing or
      caching what they show.
-   - If a fact cannot be confirmed on an official page, leave it unverified. If the hotel cannot
-     be confirmed at all, it stays `listed: false` with the reason. Never guess.
+   - If a fact cannot be confirmed on an official page, leave it unverified. If two official
+     pages disagree on the name, street or telephone, keep the hotel in `hotels` but held back
+     (`listed: false`, the disagreement in `not_listed_reason`): a person settles it. If the hotel
+     cannot be confirmed at all (no official page has it, or every page is blocked), move it out
+     of `hotels` into `excluded` with the reason: an entry in `hotels`, listed or not, needs its
+     name, street, town, telephone and season filled from a page (the tests hold every entry to
+     that). Never guess.
    - Add a logo only if the file comes from the chain's or the hotel's own official site.
      Otherwise show the name alone and say why in `logo_missing`.
    - Set `shuttle.mark` to true only where the hotel's or the airport's own page says there is a
@@ -96,9 +101,10 @@ entry in the list, or an entry has no checked file.
    skeleton line from `unverified`, and delete the `osm_candidate` of each hotel. Set
    `listed: true` only on the hotels whose facts are checked.
 
-4. **Make the slim copy.** Run `node scripts/hotels/build-runtime.js`. If you added a logo, also
-   run `npm run assets:build`.
+4. **Add the city to the one list.** Add the code to `HotelListCard.CITIES` in
+   `fids-current/js/hotel-list-card.js`. The build step refuses a data file whose city is not in
+   that list, so this comes first.
 
-5. **Add the city to the one list.** Add the code to `HotelListCard.CITIES` in
-   `fids-current/js/hotel-list-card.js`. Bump the version (every change under `fids-current/` needs
-   one). Then run `node --test tests/hotel-list-cards.test.js tests/hotel-candidates.test.js`.
+5. **Make the slim copy.** Run `node scripts/hotels/build-runtime.js`. If you added a logo, also
+   run `npm run assets:build`. Bump the version (every change under `fids-current/` needs one).
+   Then run `node --test tests/hotel-list-cards.test.js tests/hotel-candidates.test.js`.

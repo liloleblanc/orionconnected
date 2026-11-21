@@ -108,12 +108,12 @@ function overpassQuery(points) {
 
 // ── WORDS, NAMES AND DISTANCES ──────────────────────────────────────────────
 function norm(s) {
-  return String(s == null ? '' : s).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return String(s == null ? '' : s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ').replace(/\b(and|the)\b/g, ' ').replace(/\s+/g, ' ').trim();
 }
 // An id in the manner of the checked files (shaws-hotel, st-james-gate): a person may shorten it.
 function slug(s) {
-  return String(s == null ? '' : s).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return String(s == null ? '' : s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/['’`]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 const round1 = (x) => Math.round(x * 10) / 10;
@@ -408,8 +408,13 @@ const SHEET = [
   ['source_url', () => ''], ['source_kind (hotel/brand/airport/tourism)', () => ''], ['checked_date', () => ''],
   ['decision (list/hold/off)', () => ''], ['notes (blocked, needs a person; disagreements)', () => '']
 ];
+// A cell that begins with = + - @ (or a tab or carriage return) would open as a formula in a
+// spreadsheet: OpenStreetMap text is written by anyone, and its telephones begin with +. Such a
+// cell is written with a leading apostrophe, so it opens as the text it is. A plain number (a
+// longitude west of Greenwich, -63.5752) stays a number.
 function csvCell(v) {
-  const s = String(v == null ? '' : v);
+  let s = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s;
   return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 function worksheetCsv(rows) {
@@ -420,7 +425,7 @@ function worksheetCsv(rows) {
 
 // ── ASKING OPENSTREETMAP ────────────────────────────────────────────────────
 async function askOverpass(query) {
-  let res;
+  let res, text;
   try {
     res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -428,10 +433,10 @@ async function askOverpass(query) {
       body: new URLSearchParams({ data: query }).toString(),
       signal: AbortSignal.timeout(150000)
     });
+    text = await res.text();
   } catch (e) {
     return { ok: false, why: 'no answer from the Overpass API (' + (e && e.message || e) + '): try again later.' };
   }
-  const text = await res.text();
   if (res.status === 403) return { ok: false, why: 'HTTP 403 from the Overpass API: blocked, needs a person. No other route is tried.' };
   if (res.status === 429 || res.status === 504) return { ok: false, why: 'HTTP ' + res.status + ' (the Overpass API is busy): try again later. No other endpoint is tried.' };
   if (res.status !== 200) return { ok: false, why: 'HTTP ' + res.status + ' from the Overpass API: nothing cached.' };
@@ -528,4 +533,9 @@ module.exports = {
   skeleton, skeletonHotel, worksheetCsv, csvCell, parseArgs, askOverpass
 };
 
-if (require.main === module) main(process.argv.slice(2)).then((code) => { process.exitCode = code; });
+if (require.main === module) {
+  main(process.argv.slice(2)).then((code) => { process.exitCode = code; }, (e) => {
+    console.error('The helper stopped: ' + (e && e.message || e) + ' (try again later).');
+    process.exitCode = 1;
+  });
+}

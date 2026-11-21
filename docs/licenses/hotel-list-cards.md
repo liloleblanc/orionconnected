@@ -22,7 +22,8 @@ Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a
 
 ## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`)
 
-One checked file a city, checked on 2026-11-16, kept out of the site. The cities are one list,
+One checked file a city (Moncton and Charlottetown checked on 2026-11-16, Halifax on 2026-11-21),
+kept out of the site. The cities are one list,
 `HotelListCard.CITIES` in `fids-current/js/hotel-list-card.js`: the build step, the phone app and
 the tests read it, and fail on a checked file whose city is not in it. The site serves a slim
 copy of each, `fids-current/data/hotels/<code>.json` (about 10 KB instead of about 120 KB, since
@@ -42,9 +43,9 @@ closed or could not be confirmed) with the reason for each.
 Sources: the hotels' own sites and brand property pages; Destination Moncton-Dieppe listings;
 the Greater Moncton airport's hotels and transport pages (cyqm.ca); Tourism PEI listings (with
 dates of operation); Charlottetown Airport's ground-transportation page (flyyyg.com); for Halifax,
-the Discover Halifax and Tourism Nova Scotia listings and Halifax Stanfield's Visiting Halifax
-page (halifaxstanfield.ca);
-OpenStreetMap (positions, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
+the Discover Halifax and Tourism Nova Scotia listings (the map points come from the listings
+and the hotels' own pages) and Halifax Stanfield's Visiting Halifax page (halifaxstanfield.ca);
+OpenStreetMap (positions in Moncton and Charlottetown, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
 OpenStreetMap roads for the drive distances to the resorts. A search index was used only for
 some brand-hotel postal codes, which are marked `verified: false` (postal codes are not shown).
 

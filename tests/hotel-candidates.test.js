@@ -247,6 +247,12 @@ test('the worksheet: one row a place, quoted where a cell needs it, empty column
   assert.equal(F.csvCell('say "hi"'), '"say ""hi"""');
   assert.equal(F.csvCell('two\nlines'), '"two\nlines"');
   assert.equal(F.csvCell(null), '');
+  // a cell a spreadsheet would read as a formula opens as its text; a plain number stays one
+  assert.equal(F.csvCell('+1-902-429-7410'), "'+1-902-429-7410");
+  assert.equal(F.csvCell('=1+1'), "'=1+1");
+  assert.equal(F.csvCell('@SUM(A1)'), "'@SUM(A1)");
+  assert.equal(F.csvCell('-63.5752'), '-63.5752');
+  assert.equal(F.csvCell('-1+2'), "'-1+2");
   const rows = F.classify({ elements: [el('node', north('centre', 0.2), { tourism: 'hotel', name: 'Inn, "Example"', phone: '+1 506 555 0102' })] }, P);
   const csv = F.worksheetCsv(rows).split('\r\n');
   assert.equal(csv.length, 3);
@@ -254,6 +260,7 @@ test('the worksheet: one row a place, quoted where a cell needs it, empty column
   for (const c of ['status', 'skeleton_id', 'area', 'km_airport', 'km_centre', 'osm_name', 'osm_phone', 'osm_url', 'checked_name', 'checked_phone', 'source_url', 'checked_date']) assert.ok(head.includes(c), c);
   assert.ok(csv[1].startsWith('candidate,inn-example,downtown,'));
   assert.ok(csv[1].includes('"Inn, ""Example"""'));
+  assert.ok(csv[1].includes(",'+1 506 555 0102,"), 'the OpenStreetMap telephone opens as text');
   assert.match(csv[1], /,{14}$/, 'the checked columns start empty');
 });
 
