@@ -1,7 +1,7 @@
 # The hotel lists (gate centre deck, and the full list in the phone app)
 
 Free guest information by area for the city a gate's flight goes to, when that city has a
-checked list (Moncton YQM and Charlottetown YYG so far). One slot of the centre deck shows the
+checked list (Moncton YQM, Charlottetown YYG and Halifax YHZ so far). One slot of the centre deck shows the
 cards in turn: **Airport hotels**, **Downtown hotels**, **Nearby hotels** and **Resorts worth the
 drive**. Each card is a list and nothing else: the hotel's logo on one cream column where an
 official file reads there, its name, its street address and its telephone. Five lines a card;
@@ -20,7 +20,7 @@ page, the skip loop, the dwell, the preloader), the list view in `fids-current/a
 words in `fids-current/js/board-strings.js` (nine languages each), and a credits line for the two faces. Test: `tests/hotel-list-cards.test.js`.
 Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate.
 
-## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`)
+## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`)
 
 One checked file a city, checked on 2026-11-16, kept out of the site. The cities are one list,
 `HotelListCard.CITIES` in `fids-current/js/hotel-list-card.js`: the build step, the phone app and
@@ -41,7 +41,9 @@ closed or could not be confirmed) with the reason for each.
 
 Sources: the hotels' own sites and brand property pages; Destination Moncton-Dieppe listings;
 the Greater Moncton airport's hotels and transport pages (cyqm.ca); Tourism PEI listings (with
-dates of operation); Charlottetown Airport's ground-transportation page (flyyyg.com);
+dates of operation); Charlottetown Airport's ground-transportation page (flyyyg.com); for Halifax,
+the Discover Halifax and Tourism Nova Scotia listings and Halifax Stanfield's Visiting Halifax
+page (halifaxstanfield.ca);
 OpenStreetMap (positions, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
 OpenStreetMap roads for the drive distances to the resorts. A search index was used only for
 some brand-hotel postal codes, which are marked `verified: false` (postal codes are not shown).

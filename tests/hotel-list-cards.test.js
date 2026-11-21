@@ -304,7 +304,7 @@ test('every logo is a file loaded through <img>: no SVG of a hotel is written in
 test('a stacked lockup whose words are small at the common height takes the whole cell, shown as it is', () => {
   const filled = [];
   for (const doc of Object.values(DOCS)) for (const h of doc.hotels) if (h.logo && h.logo.fill) filled.push(h.id);
-  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-prince-edward', 'fairholm']);
+  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-dartmouth', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm']);
   assert.match(CSS, /\n\.hlc-img--fill\{ max-height:100%; \}\n/);
   const resort = views(build('YQM', ['en', 'fr'])).find((x) => x.includes('data-area="resort"'));
   assert.match(resort, /<img class="hlc-img hlc-img--fill" alt="" decoding="async" src="\/logos\/hotels\/marriott\/the-algonquin-resort-1\.svg">/);
@@ -367,8 +367,9 @@ test('the gate shows the hotels of the city its flight goes to, when that city h
   const at = (cf) => onGate(gate({ _gateCurrentFlight: cf, _flightLegs: legs }), () => H.cityFor());
   assert.equal(at({ _locIata: 'YYG' }), 'YYG');
   assert.equal(at({ _locIata: 'YQM' }), 'YQM');
+  assert.equal(at({ _locIata: 'YHZ' }), 'YHZ');
   assert.equal(at({ _locIata: 'YYZ' }), '', 'no list for Toronto');
-  assert.equal(at({ _locIata: 'YHZ', _stops: ['YQM', 'YHZ'] }), 'YQM', 'a stop with a list counts');
+  assert.equal(at({ _locIata: 'YYZ', _stops: ['YQM', 'YYZ'] }), 'YQM', 'a stop with a list counts');
   assert.equal(at(null), '', 'no flight, nothing');
   // due only with the list loaded and something open
   assert.equal(onGate(gate({ _gateCurrentFlight: { _locIata: 'YYG' }, _flightLegs: legs }), () => H.due()), true);

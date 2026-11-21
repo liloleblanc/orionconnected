@@ -1,0 +1,4643 @@
+{
+ "schema": 1,
+ "iata": "YHZ",
+ "city": "Halifax / Dartmouth / Bedford",
+ "province": "NS",
+ "built": "2026-11-21",
+ "about": "Guest information for the free hotel list cards of the boards (js/hotel-list-card.js) and the full list in the phone app (app.html). Facts only: name, street address, phone, website, the logo where an official one reads on the cream column. No prices, no offers. Every field keeps the source it was read from and whether it was verified.",
+ "runtime": "fids-current/data/hotels/yhz.json is made from this file by scripts/hotels/build-runtime.js: only the hotels that are listed and only the fields the cards and the phone app read. Edit this file, then run the script; tests/hotel-list-cards.test.js holds the two to agree.",
+ "rules": {
+  "areas": "downtown = within about 2 km of the centre point; airport = within about 5 km of the airport point; resort = a destination resort (resort true) more than 30 km from both points, listed with its drive distance (no tolerance); nearby = the rest within about 30 km of either point. Each about-limit has a 10 % tolerance; downtown is tested first, then airport.",
+  "listed": "listed false = held back (the reason is given). A listed hotel is shown only while its season is open (season.year_round, or a season.open range that holds the date at the airport).",
+  "shuttle": "shuttle.mark true only where the shuttle is verified on the hotel's or the airport's own page.",
+  "logo": "logo.file is loaded through <img>, never inlined; opaque = the file has its own light ground (shown with a multiply blend on the cream column so the box does not show).",
+  "logo_fill": "logo.fill true = a stacked lockup whose words are small at the common logo height (62 px at 1680x1050): it may take the whole cell of the cream column, the width of the column and the height of its line. The file is shown as it is."
+ },
+ "points": {
+  "airport": {
+   "lat": 44.88,
+   "lng": -63.51,
+   "source": "fids-current/js/airport-coords.js (YHZ)"
+  },
+  "centre": {
+   "lat": 44.6488,
+   "lng": -63.5752,
+   "source": "DOWNTOWN_COORDS.YHZ in fids-current/js/fids-core.js"
+  }
+ },
+ "foot_marks": [],
+ "notes": {
+  "verified_definition": "verified true = read directly on 2026-11-21 on the hotel's own site, its brand property page, the airport's own page (halifaxstanfield.ca) or an official tourism listing (Discover Halifax, the city's destination body; Tourism Nova Scotia, the province's). Facts on two official pages that agree, or on the hotel's own page, are marked verified. verified false = not read (a page that answered 403 or did not answer), one weaker source, or sources that disagree: the note says which. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js); no fact rests on it alone.",
+  "postal_note": "Postal codes are not shown on the cards. Where the pages disagree (Sandman Signature, Inn on the Lake on Discover Halifax) or only one page gives one, postal_code is marked verified false.",
+  "shuttle_note": "shuttle.value: true / false / null (unknown). mark true only where the airport's own page (halifaxstanfield.ca, Visiting Halifax, Accommodations) or the hotel's own page says so: the Halifax (HFX) Airport Hotel, the Hilton Garden Inn Halifax Airport and Inn on the Lake. The airport page's entry for the Holiday Inn Express repeats the Hilton Garden Inn text, so that hotel is not marked although Tourism Nova Scotia names a shuttle.",
+  "season_note": "season.open_months lists the months open (1-12); seasonal true would mean it closes part of the year; closed_now is judged for 2026-11-21. Tourism Nova Scotia prints \"Open year-round\" for every listed hotel it carries.",
+  "sources": [
+   "Halifax Stanfield International Airport: Visiting Halifax page, Accommodations (halifaxstanfield.ca), read directly",
+   "Discover Halifax listings, discoverhalifaxns.com (official destination body; each listing page read directly, ten seconds apart as its robots.txt asks)",
+   "Tourism Nova Scotia listings, novascotia.com (official provincial tourism site; each listing page read directly)",
+   "Hotels' own sites and the Wyndham and Sandman property pages (read directly); Marriott, Hilton and IHG pages answered 403",
+   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, 2026-11-21), and the map point of Chateau Bedford"
+  ]
+ },
+ "excluded": [
+  {
+   "name": "In Spring",
+   "address": "5518 Spring Garden Road, Halifax",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/3799679357"
+  },
+  {
+   "name": "Nelson Place",
+   "address": "5675 Spring Garden Road, Halifax",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/3800662067"
+  },
+  {
+   "name": "Inglis Lodge",
+   "address": "5538 Inglis Street, Halifax",
+   "kind": "apartment_suites",
+   "reason": "Apartments (OpenStreetMap tourism=apartment); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/way/461377527"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "address": "32A Slayter Street, Dartmouth",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/way/1565252151"
+  },
+  {
+   "name": "Dutch village",
+   "address": "3471 Dutch Village Road, Halifax",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/4382832794"
+  },
+  {
+   "name": "10 tamarack",
+   "address": "10 Tamarack Drive",
+   "kind": "apartment_suites",
+   "reason": "Apartments (OpenStreetMap tourism=apartment); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/5508751921"
+  },
+  {
+   "name": "SeaWatch B&B",
+   "address": "139 Fergusons Cove Road",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/8447117889"
+  },
+  {
+   "name": "Star of the Sea B&B",
+   "address": "4 York Redoubt Crescent, Fergusons Cove",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/way/436649762",
+   "also": [
+    "https://www.openstreetmap.org/node/4345285074"
+   ]
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/5922540385"
+  },
+  {
+   "name": "Abigail Apartments",
+   "address": "26 Jacob Lane, Halifax",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/4422610391"
+  },
+  {
+   "name": "Susan's at Sambro",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/4788717494"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/2351881298"
+  },
+  {
+   "name": "Anchors Gate B&B",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/1794514114"
+  },
+  {
+   "name": "Changing Tides Bed & Breakfast",
+   "address": "6627 Highway 207, Grand Desert",
+   "kind": "bed_and_breakfast",
+   "reason": "Not a hotel (OpenStreetMap tourism=guest_house); not checked. Off the hotel cards unless picked.",
+   "source": "https://www.openstreetmap.org/node/464027600"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "address": "86 Sky Boulevard, Goffs",
+   "kind": "unconfirmed",
+   "reason": "tourism=hotel with no name in OpenStreetMap: could not be matched to a place.",
+   "source": "https://www.openstreetmap.org/way/1552721974"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "address": "1669 Granville Street",
+   "kind": "unconfirmed",
+   "reason": "tourism=hotel with no name in OpenStreetMap: could not be matched to a place.",
+   "source": "https://www.openstreetmap.org/node/13836977601"
+  },
+  {
+   "name": "Hostel backpackers",
+   "address": "2193 Gottingen Street, Halifax",
+   "kind": "hostel",
+   "reason": "Hostel (OpenStreetMap tourism=hostel): hostels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/4458673419"
+  },
+  {
+   "name": "The Heritage House Hostel",
+   "address": "1253 Barrington Street, Halifax",
+   "kind": "hostel",
+   "reason": "Hostel (OpenStreetMap tourism=hostel): hostels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/88879089"
+  },
+  {
+   "name": "Chebucto Inn",
+   "address": "6151 Lady Hammond Road, Halifax",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/181652457"
+  },
+  {
+   "name": "Express Lodge Motel",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/4483490635"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "address": "101 Yorkshire Ave Extension, Dartmouth",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/83571126"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "address": "456 Windmill Road, Dartmouth",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/362622821"
+  },
+  {
+   "name": "Seasons Motor Inn",
+   "address": "4 Melrose Avenue, Halifax",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/455728097"
+  },
+  {
+   "name": "Lake City Motel",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/4483490636"
+  },
+  {
+   "name": "Coastal Inn Halifax",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel); Tourism Nova Scotia calls it a hotel. Off as motel-like, as Coastal Inn Moncton/Dieppe is held back.",
+   "source": "https://www.openstreetmap.org/node/4483490617",
+   "also": [
+    "https://novascotia.com/listing/coastal-inn-halifax/",
+    "https://discoverhalifaxns.com/listings/coastal-inn-halifax/"
+   ]
+  },
+  {
+   "name": "Wedgewood Motel",
+   "address": "374 Bedford Highway, Halifax",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/306828433"
+  },
+  {
+   "name": "Travelers Motel",
+   "address": "793 Bedford Highway, Bedford",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/31736839"
+  },
+  {
+   "name": "Stardust Motel Timberlea",
+   "address": "1791 St Margarets Bay Road, Timberlea",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/493560198"
+  },
+  {
+   "name": "Stardust Motel",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/4483490618"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "kind": "unconfirmed",
+   "reason": "tourism=hotel with no name in OpenStreetMap: could not be matched to a place.",
+   "source": "https://www.openstreetmap.org/way/1101830570"
+  },
+  {
+   "name": "River Oaks Country Lodge",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/470086568"
+  },
+  {
+   "name": "Bay Breeze Motel and Cottages",
+   "address": "6970 St Margarets Bay Road, Boutiliers Point",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/6874569629"
+  },
+  {
+   "name": "(no name in OpenStreetMap)",
+   "address": "219 Island View Drive, Boutiliers Point",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/734316324"
+  },
+  {
+   "name": "Backpackers Hostel by the sea",
+   "address": "8555 St Margarets Bay Road, Black Point",
+   "kind": "hostel",
+   "reason": "Hostel (OpenStreetMap tourism=hostel): hostels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/697820171"
+  },
+  {
+   "name": "Bishop's Landing",
+   "address": "1475 Lower Water Street, Halifax",
+   "kind": "not_a_hotel",
+   "reason": "Discover Halifax files it under Things To Do and links harboursouth.ca (the waterfront district): not a hotel.",
+   "source": "https://discoverhalifaxns.com/listings/bishops-landing/",
+   "also": [
+    "https://www.openstreetmap.org/node/5161501326"
+   ]
+  },
+  {
+   "name": "Brewery Park Hotel",
+   "address": "2857 Agricola Street, Halifax",
+   "phone": "(782) 414-1040",
+   "kind": "apartment_suites",
+   "reason": "Own site: \"a boutique apartment hotel\", eight suites with kitchenettes and self check-in (\"Skip the front desk\"): apartment-style suites stay off unless picked (as Bower in Moncton). About 2.2 km from the centre point.",
+   "source": "https://brewerypark.ca/",
+   "also": [
+    "https://discoverhalifaxns.com/listings/brewery-park/",
+    "https://www.openstreetmap.org/node/10606522103"
+   ]
+  },
+  {
+   "name": "The Waverley Inn",
+   "kind": "unconfirmed",
+   "reason": "In OpenStreetMap with a name only; not on the Discover Halifax or Tourism Nova Scotia listings read and no own site found (2026-11-21): could not confirm.",
+   "source": "https://www.openstreetmap.org/node/1922264174"
+  },
+  {
+   "name": "DoubleTree by Hilton Halifax Dartmouth",
+   "address": "101 Wyse Road, Dartmouth",
+   "kind": "blocked",
+   "reason": "Not on Discover Halifax or Tourism Nova Scotia; the Hilton page answered 403 to an automated reader (2026-11-21): blocked, needs a person.",
+   "source": "https://www.openstreetmap.org/node/1143261176",
+   "also": [
+    "https://www.hilton.com/en/hotels/yhzhddt-doubletree-halifax-dartmouth/"
+   ]
+  },
+  {
+   "name": "Hearthstone Inn Boutique Hotel Dartmouth/Halifax",
+   "address": "313 Prince Albert Road, Dartmouth",
+   "kind": "unconfirmed",
+   "reason": "Not on Discover Halifax; the Tourism Nova Scotia page a search pointed to answered 404, and no own site was found (2026-11-21): needs a person.",
+   "source": "https://www.openstreetmap.org/node/4483490634"
+  },
+  {
+   "name": "Bluenose Inn & Suites",
+   "address": "636 Bedford Highway, Halifax",
+   "kind": "unconfirmed",
+   "reason": "Not on Discover Halifax or Tourism Nova Scotia; the website OpenStreetMap gives (hojo.com) now forwards to the Wyndham search page for Halifax, where it is not listed (2026-11-21): could not confirm.",
+   "source": "https://www.openstreetmap.org/node/31262985"
+  },
+  {
+   "name": "Nalu Retreat & Nordic Spa, Dome 2",
+   "address": "1972 Myra Road, Porters Lake",
+   "kind": "glamping",
+   "reason": "Geodesic domes with a Nordic spa (Tourism Nova Scotia files Nalu Retreat as \"Geodesic Dome\"): not a hotel.",
+   "source": "https://novascotia.com/listing/nalu-retreat/",
+   "also": [
+    "https://www.openstreetmap.org/way/1101830567",
+    "https://www.openstreetmap.org/way/1101830569",
+    "https://discoverhalifaxns.com/listings/nalu-retreat/"
+   ]
+  },
+  {
+   "name": "Heritage Hideaway B&B, Elephant's Nest B&B, Peggy's Cove B&B",
+   "kind": "bed_and_breakfast",
+   "reason": "Bed and breakfasts by their own names (OpenStreetMap tags them tourism=hotel); not checked. Off the hotel cards unless picked.",
+   "source": "OpenStreetMap, Overpass, 2026-11-21",
+   "also": [
+    "https://www.openstreetmap.org/node/31921446",
+    "https://www.openstreetmap.org/node/470726941",
+    "https://www.openstreetmap.org/node/5155334720"
+   ]
+  },
+  {
+   "name": "Karen & Paul",
+   "kind": "unconfirmed",
+   "reason": "tourism=hotel in OpenStreetMap with a name only (no address, telephone or website), 26 km from the centre point: could not confirm.",
+   "source": "https://www.openstreetmap.org/node/4392716490"
+  },
+  {
+   "name": "Comfort Inn Dartmouth",
+   "address": "456 Windmill Road, Dartmouth",
+   "phone": "(902) 463-9900",
+   "kind": "motel",
+   "reason": "Tourism Nova Scotia files it as a motel: motels stay off unless picked. Not an OpenStreetMap candidate.",
+   "source": "https://novascotia.com/listing/comfort-inn-dartmouth/",
+   "also": [
+    "https://discoverhalifaxns.com/listings/comfort-inn-dartmouth/"
+   ]
+  }
+ ],
+ "unverified": [
+  "Brand pages refuse automated readers (Marriott, Hilton and IHG answered 403 on 2026-11-21; Choice on 2026-11-16): those hotels rest on the two official tourism listings, and their website URLs are taken from the listings, not opened. Blocked, needs a person.",
+  "Websites that did not answer: Hampton Inn by Hilton Halifax Downtown and Homewood Suites by Hilton Halifax Downtown (both listings link hotel domains that gave no connection on 2026-11-21): no website shown for them.",
+  "Cloudflare blocks (403) on the own sites of the Comfort Hotel Bayer's Lake and the Halifax Tower Hotel & Conference Centre: their websites rest on the listings. Blocked, needs a person.",
+  "Hampton Inn & Suites Halifax Dartmouth is held back: the two official listings give different telephones (406-7700 and 406-7704). A call or the Hilton page would settle it.",
+  "Single official source for the telephone: Holiday Inn Express Hotel & Suites Halifax Airport and Comfort Hotel Bayer's Lake (Tourism Nova Scotia), Sandman Signature Dartmouth (own page), Chateau Bedford (brand page).",
+  "The airport page lists the Holiday Inn Express Hotel & Suites with the Hilton Garden Inn's text and numbers (a copy error on that page): its telephone and shuttle are not taken from it.",
+  "Not looked at in this trial: places on Discover Halifax that are not OpenStreetMap candidates and not hotels by their listing (ABC Hotel under Things To Do; Governors Lake Suites, Atlantic Corporate Suites and Executive Suites Downtown Halifax, suites).",
+  "foot_marks is empty: no Halifax or Nova Scotia mark has been approved for the foot of the card (as Charlottetown).",
+  "Logos: only the brand files the Moncton list already uses; no logo was downloaded for Halifax."
+ ],
+ "hotels": [
+  {
+   "id": "alt-halifax-airport",
+   "name": "Alt Hotel Halifax Airport",
+   "area": "airport",
+   "resort": false,
+   "brand": "Alt Hotels",
+   "group": "Germain Hotels",
+   "independent": false,
+   "address": {
+    "street": "40 Silver Dart Drive",
+    "town": "Enfield",
+    "province": "NS",
+    "postal_code": "B2T 1K2",
+    "display": "40 Silver Dart Drive, Enfield"
+   },
+   "phone": "(902) 334-0136",
+   "website": "https://www.germainhotels.com/en/alt-hotel/halifax-airport",
+   "lat": 44.88587,
+   "lng": -63.517869,
+   "distance_km": {
+    "airport": 0.9,
+    "centre": 26.7
+   },
+   "area_reason": "0.9 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/alt-hotel-halifax-airport/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+    "also": null,
+    "evidence": "Airport page, read 2026-11-21: \"connected to the terminal building\". No shuttle is needed or named.",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Alt Hotels logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.germainhotels.com/en/alt-hotel/halifax-airport",
+     "also": [
+      "https://discoverhalifaxns.com/listings/alt-hotel-halifax-airport/",
+      "https://novascotia.com/listing/alt-hotel-halifax-airport/"
+     ],
+     "note": "Own page title \"Official Site | Alt Hotel Halifax Airport\"; the airport page says \"ALT Hotel\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.germainhotels.com/en/alt-hotel/halifax-airport",
+     "also": [
+      "https://discoverhalifaxns.com/listings/alt-hotel-halifax-airport/",
+      "https://novascotia.com/listing/alt-hotel-halifax-airport/"
+     ],
+     "note": "Own page address block: 40 Silver Dart Drive, Enfield. Discover Halifax prints the town as Goffs; Tourism Nova Scotia agrees with Enfield.",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.germainhotels.com/en/alt-hotel/halifax-airport",
+     "also": [
+      "https://discoverhalifaxns.com/listings/alt-hotel-halifax-airport/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.germainhotels.com/en/alt-hotel/halifax-airport",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+      "https://novascotia.com/listing/alt-hotel-halifax-airport/"
+     ],
+     "note": "Own page \"Local number 902.334.0136\"; toll-free 1-855-258-5775 on all four pages.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.germainhotels.com/en/alt-hotel/halifax-airport",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/"
+     ],
+     "note": "The page the airport links; answered 200. Discover Halifax still links the old althotels.com address.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/alt-hotel-halifax-airport/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/alt-hotel-halifax-airport/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/354584366",
+   "notes": "Connected to the terminal building (airport page)."
+  },
+  {
+   "id": "hfx-airport-hotel",
+   "name": "Halifax (HFX) Airport Hotel",
+   "area": "airport",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "60 Sky Boulevard",
+    "town": "Goffs",
+    "province": "NS",
+    "postal_code": "B2T 1K3",
+    "display": "60 Sky Boulevard, Goffs"
+   },
+   "phone": "(902) 873-3000",
+   "website": "https://airporthotelhalifax.com/",
+   "lat": 44.8755,
+   "lng": -63.53585,
+   "distance_km": {
+    "airport": 2.1,
+    "centre": 25.4
+   },
+   "area_reason": "2.1 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/halifax-airport-hotel/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": true,
+    "offered": true,
+    "verified": true,
+    "terms": "Free, 24 hours: leaves every quarter past and quarter to the hour (own site).",
+    "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+    "also": [
+     "https://airporthotelhalifax.com/"
+    ],
+    "evidence": "Airport page, read 2026-11-21: \"offers a free shuttle service to and from the Airport\". Own site, read 2026-11-21: \"24-Hour Halifax Airport Shuttle\", \"our shuttle departs every quarter past and quarter to the hour\".",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/halifax-airport-hotel/"
+     ],
+     "note": "Airport page and Discover Halifax: \"Halifax (HFX) Airport Hotel\". Own site calls itself \"HFX Airport Hotel\" and \"Halifax Airport Hotel\"; Tourism Nova Scotia \"Halifax Airport Hotel\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://airporthotelhalifax.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/halifax-airport-hotel/",
+      "https://novascotia.com/listing/halifax-airport-hotel/"
+     ],
+     "note": "Own site footer: \"60 Sky Boulevard Goffs, Nova Scotia B2T1K3\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://airporthotelhalifax.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/halifax-airport-hotel/",
+      "https://novascotia.com/listing/halifax-airport-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://airporthotelhalifax.com/",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+      "https://discoverhalifaxns.com/listings/halifax-airport-hotel/",
+      "https://novascotia.com/listing/halifax-airport-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://airporthotelhalifax.com/",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/"
+     ],
+     "note": "The www address the airport links forwards here; answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-airport-hotel/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-airport-hotel/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/9377350266",
+   "notes": "About one kilometre from the terminal (airport page)."
+  },
+  {
+   "id": "hgi-halifax-airport",
+   "name": "Hilton Garden Inn Halifax Airport",
+   "area": "airport",
+   "resort": false,
+   "brand": "Hilton Garden Inn",
+   "group": "Hilton",
+   "independent": false,
+   "address": {
+    "street": "200 Pratt & Whitney Drive",
+    "town": "Enfield",
+    "province": "NS",
+    "postal_code": "B2T 0A2",
+    "display": "200 Pratt & Whitney Drive, Enfield"
+   },
+   "phone": "(902) 873-1400",
+   "website": "https://www.hilton.com/en/hotels/yhzhggi-hilton-garden-inn-halifax-airport/",
+   "lat": 44.862219,
+   "lng": -63.543744,
+   "distance_km": {
+    "airport": 3.3,
+    "centre": 23.9
+   },
+   "area_reason": "3.3 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": true,
+    "offered": true,
+    "verified": true,
+    "terms": "Complimentary, 24 hours (airport page).",
+    "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+    "also": [
+     "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/",
+     "https://discoverhalifaxns.com/listings/hilton-garden-inn-halifax-airport/"
+    ],
+    "evidence": "Airport page, read 2026-11-21: \"offers a 24-hour complimentary shuttle service to and from the Airport\". Tourism Nova Scotia and Discover Halifax say the same; the Hilton page answered 403.",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/hilton-garden-inn.png",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/44/HGI-Logo-Color_HR.png",
+    "origin": "Wikimedia Commons",
+    "trim": "inset(25.6% 2.8% 25.6% 2.8%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hilton-garden-inn-halifax-airport/",
+      "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hilton-garden-inn-halifax-airport/"
+     ],
+     "note": "Discover Halifax prints \"200 Pratt and Whitney Drive\". The airport page gives no street.",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/hilton-garden-inn-halifax-airport/",
+     "also": [
+      "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hilton-garden-inn-halifax-airport/",
+      "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/"
+     ],
+     "note": "Toll-free 1-888-667-6005 on the airport page and Tourism Nova Scotia.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "note": "Hilton property pages answered 403 to automated readers on 2026-11-21 (two tried): not read; blocked, needs a person. URL taken from the airport page.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hilton-garden-inn-halifax-airport/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/100017979",
+   "notes": "About three kilometres from the terminal (airport page)."
+  },
+  {
+   "id": "hix-halifax-airport",
+   "name": "Holiday Inn Express Hotel & Suites Halifax Airport",
+   "area": "airport",
+   "resort": false,
+   "brand": "Holiday Inn Express",
+   "group": "IHG Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "180 Pratt & Whitney Drive",
+    "town": "Enfield",
+    "province": "NS",
+    "postal_code": "",
+    "display": "180 Pratt & Whitney Drive, Enfield"
+   },
+   "phone": "(902) 576-7600",
+   "website": "https://www.ihg.com/holidayinnexpress/hotels/us/en/enfield/yhznt/hoteldetail",
+   "lat": 44.861042,
+   "lng": -63.54373,
+   "distance_km": {
+    "airport": 3.4,
+    "centre": 23.7
+   },
+   "area_reason": "3.4 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+    "also": null,
+    "evidence": "Tourism Nova Scotia overview, read 2026-11-21: \"Complimentary 24-hr airport shuttle service\". Not marked: the mark wants the hotel's or the airport's own page; the airport page's entry for this hotel repeats the Hilton Garden Inn text, and the IHG pages answered 403 (blocked, needs a person).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/holiday-inn-express.svg",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/75/Holiday_Inn_Express_by_IHG_logo.svg",
+    "origin": "Wikimedia Commons",
+    "trim": "inset(15.2% 0.0% 15.5% 0.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/"
+     ],
+     "note": "The airport page prints \"Holiday Inn Express Hotel & Suites\". Not on Discover Halifax.",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+     "note": "One official page (Tourism Nova Scotia); OpenStreetMap agrees on the number and street.",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "",
+     "note": "No postal code on the official page read; OpenStreetMap has B2T 0C8 (a candidate only).",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+     "note": "The airport page's entry for this hotel repeats the Hilton Garden Inn text and numbers (1-888-667-6005, 902-873-1400): a copy error on that page, not used. Toll-free (877) 919-2244 on the listing.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "note": "IHG pages answered 403 to automated readers on 2026-11-21 (ihg.com and hiexpress.com tried): not read; blocked, needs a person. URL taken from the airport page. Tourism Nova Scotia links https://www.hiexpress.com/halifaxairport.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-suites-halifax-airport/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/100017952",
+   "notes": "Next to the Hilton Garden Inn on Pratt & Whitney Drive. Not on Discover Halifax."
+  },
+  {
+   "id": "barrington-hotel",
+   "name": "The Barrington Hotel",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1875 Barrington Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 3L6",
+    "display": "1875 Barrington Street, Halifax"
+   },
+   "phone": "(902) 429-7410",
+   "website": "https://www.thebarringtonhotel.ca/",
+   "lat": 44.649676,
+   "lng": -63.57504,
+   "distance_km": {
+    "airport": 26.1,
+    "centre": 0.1
+   },
+   "area_reason": "0.1 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/the-barrington-hotel/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.thebarringtonhotel.ca/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/the-barrington-hotel/",
+     "also": [
+      "https://novascotia.com/listing/the-barrington-hotel/",
+      "https://www.thebarringtonhotel.ca/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/the-barrington-hotel/",
+     "also": [
+      "https://novascotia.com/listing/the-barrington-hotel/"
+     ],
+     "note": "Discover Halifax prints \"1875 Barrington St\". The own home page shows no street in its text.",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/the-barrington-hotel/",
+     "also": [
+      "https://novascotia.com/listing/the-barrington-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/the-barrington-hotel/",
+     "also": [
+      "https://novascotia.com/listing/the-barrington-hotel/"
+     ],
+     "note": "Toll-free (888) 236-2427 on Tourism Nova Scotia.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.thebarringtonhotel.ca/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-barrington-hotel/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-barrington-hotel/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.thebarringtonhotel.ca/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/1139389342",
+   "notes": null
+  },
+  {
+   "id": "prince-george-hotel",
+   "name": "Prince George Hotel",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1725 Market Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 3N9",
+    "display": "1725 Market Street, Halifax"
+   },
+   "phone": "(902) 425-1986",
+   "website": "https://www.princegeorgehotel.com/",
+   "lat": 44.647229,
+   "lng": -63.576288,
+   "distance_km": {
+    "airport": 26.4,
+    "centre": 0.2
+   },
+   "area_reason": "0.2 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/prince-george-hotel/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.princegeorgehotel.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/prince-george-hotel/",
+     "also": [
+      "https://novascotia.com/listing/prince-george-hotel/",
+      "https://www.princegeorgehotel.com/"
+     ],
+     "note": "Own site: \"The Prince George Hotel\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.princegeorgehotel.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/prince-george-hotel/",
+      "https://novascotia.com/listing/prince-george-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.princegeorgehotel.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/prince-george-hotel/",
+      "https://novascotia.com/listing/prince-george-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/prince-george-hotel/",
+     "also": [
+      "https://novascotia.com/listing/prince-george-hotel/"
+     ],
+     "note": "Own site prints only the toll-free 1-800-565-1567. OpenStreetMap has +1-902-425-6066, which no official page gives.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.princegeorgehotel.com/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/prince-george-hotel/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/prince-george-hotel/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.princegeorgehotel.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/98486289",
+   "notes": null
+  },
+  {
+   "id": "marriott-harbourfront",
+   "name": "Halifax Marriott Harbourfront",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Marriott Hotels",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "1919 Upper Water Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 3J5",
+    "display": "1919 Upper Water Street, Halifax"
+   },
+   "phone": "(902) 421-1700",
+   "website": "https://www.marriott.com/en-us/hotels/yhzmc-halifax-marriott-harbourfront-hotel/overview/",
+   "lat": 44.65067,
+   "lng": -63.57407,
+   "distance_km": {
+    "airport": 26,
+    "centre": 0.2
+   },
+   "area_reason": "0.2 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/halifax-marriott-harbourfront/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/halifax-marriott-harbourfront/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Marriott Hotels logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/halifax-marriott-harbourfront/",
+     "also": [
+      "https://novascotia.com/listing/halifax-marriott-harbourfront/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-marriott-harbourfront/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/halifax-marriott-harbourfront/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-marriott-harbourfront/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/halifax-marriott-harbourfront/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/halifax-marriott-harbourfront/",
+     "also": [
+      "https://novascotia.com/listing/halifax-marriott-harbourfront/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://discoverhalifaxns.com/listings/halifax-marriott-harbourfront/",
+     "note": "This Marriott page answered 403 to an automated reader on 2026-11-21: not read; blocked, needs a person. Tourism Nova Scotia links halifaxmarriott.com.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-marriott-harbourfront/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-marriott-harbourfront/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/halifax-marriott-harbourfront/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/98486163",
+   "notes": null
+  },
+  {
+   "id": "muir-hotel",
+   "name": "Muir Hotel",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1709 Lower Water Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 1S5",
+    "display": "1709 Lower Water Street, Halifax"
+   },
+   "phone": "(902) 407-6847",
+   "website": "https://muirhotel.com/",
+   "lat": 44.647962,
+   "lng": -63.573642,
+   "distance_km": {
+    "airport": 26.3,
+    "centre": 0.2
+   },
+   "area_reason": "0.2 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/muir-hotel/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://muirhotel.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/muir-hotel/",
+     "also": [
+      "https://novascotia.com/listing/muir-hotel/"
+     ],
+     "note": "Own site says \"Muir\" and \"Muir Halifax\". OpenStreetMap tags it Autograph Collection; the pages read do not say so, so no brand is given.",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://muirhotel.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/muir-hotel/",
+      "https://novascotia.com/listing/muir-hotel/"
+     ],
+     "note": "Own site prints \"1709 Lower Water St\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/muir-hotel/",
+     "also": [
+      "https://novascotia.com/listing/muir-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://muirhotel.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/muir-hotel/",
+      "https://novascotia.com/listing/muir-hotel/"
+     ],
+     "note": "Toll-free 1-833-888-1011 on the own site.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://muirhotel.com/",
+     "note": "www.muirhotel.com forwards here; answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/muir-hotel/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/muir-hotel/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://muirhotel.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/10916677109",
+   "notes": null
+  },
+  {
+   "id": "sutton-place-halifax",
+   "name": "The Sutton Place Hotel Halifax",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1700 Grafton Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 2C4",
+    "display": "1700 Grafton Street, Halifax"
+   },
+   "phone": "(902) 932-7548",
+   "website": "https://www.suttonplace.com/halifax",
+   "lat": 44.64703,
+   "lng": -63.57572,
+   "distance_km": {
+    "airport": 26.4,
+    "centre": 0.2
+   },
+   "area_reason": "0.2 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/sutton-place-hotel-halifax/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.suttonplace.com/halifax",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.suttonplace.com/halifax",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-sutton-place-hotel-halifax/",
+      "https://novascotia.com/listing/sutton-place-hotel-halifax/"
+     ],
+     "note": "Own page title \"Hotels in Halifax | The Sutton Place Hotel Halifax\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.suttonplace.com/halifax",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-sutton-place-hotel-halifax/",
+      "https://novascotia.com/listing/sutton-place-hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.suttonplace.com/halifax",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-sutton-place-hotel-halifax/",
+      "https://novascotia.com/listing/sutton-place-hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.suttonplace.com/halifax",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-sutton-place-hotel-halifax/",
+      "https://novascotia.com/listing/sutton-place-hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.suttonplace.com/halifax",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.suttonplace.com/halifax",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-sutton-place-hotel-halifax/"
+     ],
+     "note": "Own page map point (structured data); Discover Halifax agrees. Tourism Nova Scotia's point has a longitude of -64.318, a typing error.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/sutton-place-hotel-halifax/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.suttonplace.com/halifax",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/13720020716",
+   "notes": null
+  },
+  {
+   "id": "delta-halifax-downtown",
+   "name": "Delta Hotels by Marriott Halifax Downtown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Delta Hotels",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "1990 Barrington Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 1P2",
+    "display": "1990 Barrington Street, Halifax"
+   },
+   "phone": "(902) 425-6700",
+   "website": "https://www.marriott.com/en-us/hotels/yhzdd-delta-hotels-halifax-downtown/overview/",
+   "lat": 44.650891,
+   "lng": -63.576451,
+   "distance_km": {
+    "airport": 26,
+    "centre": 0.3
+   },
+   "area_reason": "0.3 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/delta-hotels.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/72/Delta_Hotels_logo.svg",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hotel-halifax/"
+     ],
+     "note": "Discover Halifax prints \"Delta Hotels Halifax Downtown\" (its page address is still /listings/hotel-halifax/). OpenStreetMap calls it \"Hotel Halifax\": an older name.",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "note": "Marriott property pages answered 403 to automated readers on 2026-11-21 (three tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/delta-hotels-marriott-halifax-downtown/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/179522725",
+   "notes": null
+  },
+  {
+   "id": "hampton-halifax-downtown",
+   "name": "Hampton Inn by Hilton Halifax Downtown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Hampton by Hilton",
+   "group": "Hilton",
+   "independent": false,
+   "address": {
+    "street": "1960 Brunswick Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 2G7",
+    "display": "1960 Brunswick Street, Halifax"
+   },
+   "phone": "(902) 422-1391",
+   "website": "",
+   "lat": 44.650084,
+   "lng": -63.57883,
+   "distance_km": {
+    "airport": 26.1,
+    "centre": 0.3
+   },
+   "area_reason": "0.3 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/hampton-by-hilton.png",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/28/Hampton-by-Hilton-Logo-Color.png",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-by-hilton-halifax-downtown/"
+     ],
+     "note": "Discover Halifax prints \"Hampton Inn by Hilton - Halifax Downtown\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-by-hilton-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/hampton-inn-by-hilton-halifax-downtown/",
+     "note": "Single source (Discover Halifax); OpenStreetMap agrees.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-by-hilton-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://discoverhalifaxns.com/listings/hampton-inn-by-hilton-halifax-downtown/",
+     "note": "Both listings link a hotel domain that did not answer on 2026-11-21 (halifax.hamptoninn.com on Discover Halifax, halifaxdowntown.hamptonbyhilton.com on Tourism Nova Scotia: no connection). No website shown until the Hilton page is read (hilton.com answers 403: needs a person).",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/hampton-inn-by-hilton-halifax-downtown/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/591655120",
+   "notes": "Shares 1960 Brunswick Street with the Homewood Suites."
+  },
+  {
+   "id": "residence-inn-halifax-downtown",
+   "name": "Residence Inn Halifax Downtown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Residence Inn",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "1599 Grafton Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 2C3",
+    "display": "1599 Grafton Street, Halifax"
+   },
+   "phone": "(902) 422-0493",
+   "website": "https://www.marriott.com/yhzri",
+   "lat": 44.6459,
+   "lng": -63.57487,
+   "distance_km": {
+    "airport": 26.5,
+    "centre": 0.3
+   },
+   "area_reason": "0.3 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/marriott/residence-inn.png",
+    "opaque": false,
+    "source": "repo: fids-current/logos/hotels/marriott/residence-inn.png",
+    "origin": "already in the repository (same bytes as the checked copy)",
+    "trim": "inset(32.0% 0.0% 32.0% 0.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott/"
+     ],
+     "note": "Discover Halifax prints \"Residence Inn by Marriott\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott/"
+     ],
+     "note": "Marriott property pages answered 403 to automated readers on 2026-11-21 (three tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-downtown/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/4483490645",
+   "notes": null
+  },
+  {
+   "id": "homewood-halifax-downtown",
+   "name": "Homewood Suites by Hilton Halifax Downtown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Homewood Suites by Hilton",
+   "group": "Hilton",
+   "independent": false,
+   "address": {
+    "street": "1960 Brunswick Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 2G7",
+    "display": "1960 Brunswick Street, Halifax"
+   },
+   "phone": "(902) 429-6620",
+   "website": "",
+   "lat": 44.650085,
+   "lng": -63.57883,
+   "distance_km": {
+    "airport": 26.1,
+    "centre": 0.3
+   },
+   "area_reason": "0.3 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Homewood Suites logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/homewood-suites-by-hilton-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/homewood-suites-by-hilton-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/"
+     ],
+     "note": "OpenStreetMap has 1988 Brunswick Street: wrong.",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/homewood-suites-by-hilton-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/homewood-suites-by-hilton-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://discoverhalifaxns.com/listings/homewood-suites-by-hilton-halifax-downtown/",
+     "note": "Both listings link halifax.homewoodsuites.com, which did not answer on 2026-11-21 (no connection). No website shown until the Hilton page is read (hilton.com answers 403: needs a person).",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/homewood-suites-by-hilton-halifax-downtown/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/346367315",
+   "notes": "Shares 1960 Brunswick Street with the Hampton Inn."
+  },
+  {
+   "id": "hollis-halifax",
+   "name": "The Hollis Halifax – a DoubleTree Suites by Hilton",
+   "area": "downtown",
+   "resort": false,
+   "brand": "DoubleTree by Hilton",
+   "group": "Hilton",
+   "independent": false,
+   "address": {
+    "street": "1649 Hollis Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 1V8",
+    "display": "1649 Hollis Street, Halifax"
+   },
+   "phone": "(902) 429-7233",
+   "website": "https://www.hilton.com/en/hotels/yhzhhdt-the-hollis-halifax/",
+   "lat": 44.646705,
+   "lng": -63.572365,
+   "distance_km": {
+    "airport": 26.4,
+    "centre": 0.3
+   },
+   "area_reason": "0.3 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No DoubleTree logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-hollis-halifax-a-doubletree-suites-by-hilton/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-hollis-halifax-a-doubletree-suites-by-hilton/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-hollis-halifax-a-doubletree-suites-by-hilton/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-hollis-halifax-a-doubletree-suites-by-hilton/"
+     ],
+     "note": "Toll-free (888) 664-1649 on Tourism Nova Scotia.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://discoverhalifaxns.com/listings/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "also": [
+      "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/"
+     ],
+     "note": "Hilton property pages answered 403 to automated readers on 2026-11-21 (two tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/the-hollis-halifax-a-doubletree-suites-by-hilton/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": null,
+   "notes": "Missing from OpenStreetMap as a hotel (not among the helper's candidates); found on both official listings."
+  },
+  {
+   "id": "cambridge-suites-halifax",
+   "name": "Cambridge Suites Hotel Halifax",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1583 Brunswick Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 3P5",
+    "display": "1583 Brunswick Street, Halifax"
+   },
+   "phone": "(902) 420-0555",
+   "website": "https://www.cambridgesuiteshalifax.com/",
+   "lat": 44.645204,
+   "lng": -63.57557,
+   "distance_km": {
+    "airport": 26.6,
+    "centre": 0.4
+   },
+   "area_reason": "0.4 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/cambridge-suites-hotel-halifax/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.cambridgesuiteshalifax.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.cambridgesuiteshalifax.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/cambridge-suites-hotel-halifax/",
+      "https://novascotia.com/listing/cambridge-suites-hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.cambridgesuiteshalifax.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/cambridge-suites-hotel-halifax/",
+      "https://novascotia.com/listing/cambridge-suites-hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.cambridgesuiteshalifax.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/cambridge-suites-hotel-halifax/",
+      "https://novascotia.com/listing/cambridge-suites-hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.cambridgesuiteshalifax.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/cambridge-suites-hotel-halifax/",
+      "https://novascotia.com/listing/cambridge-suites-hotel-halifax/"
+     ],
+     "note": "Toll-free 1-800-565-1263 on the own site.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.cambridgesuiteshalifax.com/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/cambridge-suites-hotel-halifax/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/cambridge-suites-hotel-halifax/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.cambridgesuiteshalifax.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/536923601",
+   "notes": null
+  },
+  {
+   "id": "courtyard-halifax-downtown",
+   "name": "Courtyard by Marriott Halifax Downtown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Courtyard by Marriott",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "5120 Salter Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 0A1",
+    "display": "5120 Salter Street, Halifax"
+   },
+   "phone": "(902) 428-1900",
+   "website": "https://www.marriott.com/hotels/travel/yhzcy-courtyard-halifax-downtown/",
+   "lat": 44.645163,
+   "lng": -63.570927,
+   "distance_km": {
+    "airport": 26.6,
+    "centre": 0.5
+   },
+   "area_reason": "0.5 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Courtyard logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-downtown/",
+     "also": [
+      "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-downtown/",
+     "note": "Marriott property pages answered 403 to automated readers on 2026-11-21 (three tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/courtyard-by-marriott-halifax-downtown/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/703489985",
+   "notes": null
+  },
+  {
+   "id": "four-points-halifax",
+   "name": "Four Points by Sheraton Halifax",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Four Points by Sheraton",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "1496 Hollis Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 3Z1",
+    "display": "1496 Hollis Street, Halifax"
+   },
+   "phone": "(902) 423-4444",
+   "website": "https://www.marriott.com/en-us/hotels/yhzfp-four-points-halifax/overview/",
+   "lat": 44.644892,
+   "lng": -63.571607,
+   "distance_km": {
+    "airport": 26.6,
+    "centre": 0.5
+   },
+   "area_reason": "0.5 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/four-points-by-sheraton-halifax/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/four-points-by-sheraton-halifax/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/four-points-by-sheraton.svg",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Four_Points_Logo_neu.svg",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/four-points-by-sheraton-halifax/",
+     "also": [
+      "https://novascotia.com/listing/four-points-by-sheraton-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/four-points-by-sheraton-halifax/",
+     "also": [
+      "https://novascotia.com/listing/four-points-by-sheraton-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/four-points-by-sheraton-halifax/",
+     "also": [
+      "https://novascotia.com/listing/four-points-by-sheraton-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/four-points-by-sheraton-halifax/",
+     "also": [
+      "https://novascotia.com/listing/four-points-by-sheraton-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/four-points-by-sheraton-halifax/",
+     "note": "fourpointshalifax.com (on Discover Halifax and in OpenStreetMap) forwards to marriott.com, which answered 403 on 2026-11-21: not read; blocked, needs a person. URL taken from Tourism Nova Scotia.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/four-points-by-sheraton-halifax/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/four-points-by-sheraton-halifax/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/four-points-by-sheraton-halifax/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/4483490644",
+   "notes": null
+  },
+  {
+   "id": "moxy-halifax-downtown",
+   "name": "Moxy Halifax Downtown",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Moxy Hotels",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "5417 Cogswell Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 1R1",
+    "display": "5417 Cogswell Street, Halifax"
+   },
+   "phone": "(902) 377-6699",
+   "website": "https://www.marriott.com/en-us/hotels/yhzox-moxy-halifax-downtown/overview/",
+   "lat": 44.651152,
+   "lng": -63.582772,
+   "distance_km": {
+    "airport": 26.1,
+    "centre": 0.7
+   },
+   "area_reason": "0.7 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/moxy-halifax-downtown/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/moxy-halifax-downtown/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Moxy logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/moxy-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/moxy-halifax-downtown-hotel/"
+     ],
+     "note": "Discover Halifax prints \"Moxy Halifax Downtown Hotel\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/moxy-halifax-downtown-hotel/",
+     "also": [
+      "https://novascotia.com/listing/moxy-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/moxy-halifax-downtown-hotel/",
+     "also": [
+      "https://novascotia.com/listing/moxy-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/moxy-halifax-downtown-hotel/",
+     "also": [
+      "https://novascotia.com/listing/moxy-halifax-downtown/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/moxy-halifax-downtown/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/moxy-halifax-downtown-hotel/"
+     ],
+     "note": "Marriott property pages answered 403 to automated readers on 2026-11-21 (three tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/moxy-halifax-downtown/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/moxy-halifax-downtown/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/moxy-halifax-downtown/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/13868598726",
+   "notes": null
+  },
+  {
+   "id": "lord-nelson-hotel",
+   "name": "Lord Nelson Hotel & Suites",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1515 South Park Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 2L2",
+    "display": "1515 South Park Street, Halifax"
+   },
+   "phone": "(902) 423-6331",
+   "website": "https://lordnelsonhotel.ca/",
+   "lat": 44.642575,
+   "lng": -63.57976,
+   "distance_km": {
+    "airport": 27,
+    "centre": 0.8
+   },
+   "area_reason": "0.8 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/lord-nelson-hotel-suites/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://lordnelsonhotel.ca/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://lordnelsonhotel.ca/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/lord-nelson-hotel-suites/",
+      "https://novascotia.com/listing/lord-nelson-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://lordnelsonhotel.ca/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/lord-nelson-hotel-suites/",
+      "https://novascotia.com/listing/lord-nelson-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://lordnelsonhotel.ca/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/lord-nelson-hotel-suites/",
+      "https://novascotia.com/listing/lord-nelson-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://lordnelsonhotel.ca/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/lord-nelson-hotel-suites/",
+      "https://novascotia.com/listing/lord-nelson-hotel-suites/"
+     ],
+     "note": "Toll-free 1-800-565-2020 on the own site.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://lordnelsonhotel.ca/",
+     "note": "The lordnelsonhotel.com address on Discover Halifax forwards here; answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/lord-nelson-hotel-suites/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/lord-nelson-hotel-suites/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://lordnelsonhotel.ca/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/4483490640",
+   "notes": null
+  },
+  {
+   "id": "halliburton",
+   "name": "The Halliburton",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "5184 Morris Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 1B3",
+    "display": "5184 Morris Street, Halifax"
+   },
+   "phone": "(902) 420-0658",
+   "website": "https://thehalliburton.com/",
+   "lat": 44.641767,
+   "lng": -63.570873,
+   "distance_km": {
+    "airport": 26.9,
+    "centre": 0.9
+   },
+   "area_reason": "0.9 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/the-halliburton/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://thehalliburton.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/the-halliburton/",
+     "also": [
+      "https://novascotia.com/listing/the-halliburton/"
+     ],
+     "note": "Own page title \"The Halliburton Hotel\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://thehalliburton.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halliburton/",
+      "https://novascotia.com/listing/the-halliburton/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://thehalliburton.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halliburton/",
+      "https://novascotia.com/listing/the-halliburton/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://thehalliburton.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halliburton/",
+      "https://novascotia.com/listing/the-halliburton/"
+     ],
+     "note": "Toll-free 1-888-512-3344 on the own site.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://thehalliburton.com/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-halliburton/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/the-halliburton/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://thehalliburton.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/1757438955",
+   "notes": null
+  },
+  {
+   "id": "garden-south-park-inn",
+   "name": "Garden South Park Inn",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1263 South Park Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3J 2K8",
+    "display": "1263 South Park Street, Halifax"
+   },
+   "phone": "(902) 492-8577",
+   "website": "https://www.gardensouthparkinn.com",
+   "lat": 44.63922,
+   "lng": -63.57827,
+   "distance_km": {
+    "airport": 27.3,
+    "centre": 1.1
+   },
+   "area_reason": "1.1 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/garden-south-park-inn/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/garden-south-park-inn/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": false,
+   "not_listed_reason": "Bed and breakfast inn (Tourism Nova Scotia files it as \"Bed & Breakfast • Inn\"): B&Bs stay off the hotel cards unless picked.",
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "note": "Not on Discover Halifax (its \"The Garden\" page is another business).",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "note": "Toll-free (877) 414-8577 on the listing.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "note": "Not opened (held back).",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/garden-south-park-inn/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/438031050",
+   "notes": null
+  },
+  {
+   "id": "westin-nova-scotian",
+   "name": "Westin Nova Scotian",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Westin",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "1181 Hollis Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3H 2P6",
+    "display": "1181 Hollis Street, Halifax"
+   },
+   "phone": "(902) 421-1000",
+   "website": "https://www.marriott.com/en-us/hotels/yhzwi-the-westin-nova-scotian/overview/",
+   "lat": 44.639987,
+   "lng": -63.568822,
+   "distance_km": {
+    "airport": 27.1,
+    "centre": 1.1
+   },
+   "area_reason": "1.1 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/westin-nova-scotian/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/westin-nova-scotian/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Westin logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/westin-nova-scotian/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/westin-nova-scotian-hotel/"
+     ],
+     "note": "Discover Halifax prints \"Westin Nova Scotian Hotel\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/westin-nova-scotian-hotel/",
+     "also": [
+      "https://novascotia.com/listing/westin-nova-scotian/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/westin-nova-scotian-hotel/",
+     "also": [
+      "https://novascotia.com/listing/westin-nova-scotian/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/westin-nova-scotian-hotel/",
+     "also": [
+      "https://novascotia.com/listing/westin-nova-scotian/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://discoverhalifaxns.com/listings/westin-nova-scotian-hotel/",
+     "also": [
+      "https://novascotia.com/listing/westin-nova-scotian/"
+     ],
+     "note": "Marriott property pages answered 403 to automated readers on 2026-11-21 (three tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/westin-nova-scotian/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/westin-nova-scotian/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/westin-nova-scotian/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/62048942",
+   "notes": null
+  },
+  {
+   "id": "atlantica-halifax",
+   "name": "Atlantica Hotel Halifax",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1980 Robie Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3H 3G5",
+    "display": "1980 Robie Street, Halifax"
+   },
+   "phone": "(902) 423-1161",
+   "website": "https://www.atlanticahotelhalifax.com/",
+   "lat": 44.646687,
+   "lng": -63.590406,
+   "distance_km": {
+    "airport": 26.7,
+    "centre": 1.2
+   },
+   "area_reason": "1.2 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/atlantica-hotel-halifax/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.atlanticahotelhalifax.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/atlantica-hotel-halifax/",
+     "also": [
+      "https://novascotia.com/listing/atlantica-hotel-halifax/",
+      "https://www.atlanticahotelhalifax.com/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.atlanticahotelhalifax.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/atlantica-hotel-halifax/",
+      "https://novascotia.com/listing/atlantica-hotel-halifax/"
+     ],
+     "note": "Own page structured data: \"1980 Robie Street\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/atlantica-hotel-halifax/",
+     "also": [
+      "https://novascotia.com/listing/atlantica-hotel-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/atlantica-hotel-halifax/",
+     "also": [
+      "https://novascotia.com/listing/atlantica-hotel-halifax/"
+     ],
+     "note": "Toll-free (888) 810-7288 on Tourism Nova Scotia.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.atlanticahotelhalifax.com/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/atlantica-hotel-halifax/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/atlantica-hotel-halifax/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.atlanticahotelhalifax.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/4989718",
+   "notes": "Discover Halifax files it under West End Halifax; 1.3 km from the centre point puts it on the downtown card."
+  },
+  {
+   "id": "commons-inn",
+   "name": "Commons Inn",
+   "area": "downtown",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "5780 West Street",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3K 1H8",
+    "display": "5780 West Street, Halifax"
+   },
+   "phone": "(902) 484-3466",
+   "website": "https://commonsinn.ca/",
+   "lat": 44.652783,
+   "lng": -63.590419,
+   "distance_km": {
+    "airport": 26.1,
+    "centre": 1.3
+   },
+   "area_reason": "1.3 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/commons-inn/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://commonsinn.ca/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://commonsinn.ca/",
+     "also": [
+      "https://novascotia.com/listing/commons-inn/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://commonsinn.ca/",
+     "also": [
+      "https://novascotia.com/listing/commons-inn/"
+     ],
+     "note": "Own site prints \"5780 West St, Halifax, NS\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/commons-inn/",
+     "note": "Single source: only the Tourism Nova Scotia listing gives a postal code.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://commonsinn.ca/",
+     "also": [
+      "https://novascotia.com/listing/commons-inn/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://commonsinn.ca/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/commons-inn/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/commons-inn/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://commonsinn.ca/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/4483490638",
+   "notes": "Tourism Nova Scotia files it as an inn; its own site calls it a hotel. Not on Discover Halifax."
+  },
+  {
+   "id": "bw-plus-chocolate-lake",
+   "name": "Best Western Plus Chocolate Lake Hotel",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Best Western Plus",
+   "group": "BWH Hotels",
+   "independent": false,
+   "address": {
+    "street": "250 St Margarets Bay Road",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3N 1J4",
+    "display": "250 St Margarets Bay Road, Halifax"
+   },
+   "phone": "(902) 477-5611",
+   "website": "https://www.chocolatelakehotel.com/",
+   "lat": 44.64037,
+   "lng": -63.62448,
+   "distance_km": {
+    "airport": 28.1,
+    "centre": 4
+   },
+   "area_reason": "4.0 km from the centre point, 28.1 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/best-western-plus-chocolate-lake-hotel/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.chocolatelakehotel.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/best-western-plus.png",
+    "opaque": false,
+    "source": "https://www.bestwestern.com/content/dam/best-western/brand/brand-logos/best-western-plus-horizontal-logo-rgb.png",
+    "origin": "official site: bestwestern.com brand logos",
+    "trim": "inset(16.2% 3.2% 17.8% 2.7%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/best-western-plus-chocolate-lake-hotel/",
+     "also": [
+      "https://novascotia.com/listing/best-western-plus-chocolate-lake-hotel/"
+     ],
+     "note": "OpenStreetMap: \"Best Western Plus\" only.",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.chocolatelakehotel.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/best-western-plus-chocolate-lake-hotel/",
+      "https://novascotia.com/listing/best-western-plus-chocolate-lake-hotel/"
+     ],
+     "note": "Tourism Nova Scotia prints \"St Margaret's Bay Road\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.chocolatelakehotel.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/best-western-plus-chocolate-lake-hotel/",
+      "https://novascotia.com/listing/best-western-plus-chocolate-lake-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.chocolatelakehotel.com/",
+     "also": [
+      "https://novascotia.com/listing/best-western-plus-chocolate-lake-hotel/"
+     ],
+     "note": "Discover Halifax prints (902) 444-8657; the own site and Tourism Nova Scotia say (902) 477-5611.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.chocolatelakehotel.com/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/best-western-plus-chocolate-lake-hotel/",
+     "note": "Tourism Nova Scotia's map point; OpenStreetMap agrees. Discover Halifax's point is about 2 km further west.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/best-western-plus-chocolate-lake-hotel/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.chocolatelakehotel.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/14052883857",
+   "notes": null
+  },
+  {
+   "id": "delta-dartmouth",
+   "name": "Delta Hotels by Marriott Dartmouth",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Delta Hotels",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "240 Brownlow Avenue",
+    "town": "Dartmouth",
+    "province": "NS",
+    "postal_code": "B3B 1X6",
+    "display": "240 Brownlow Avenue, Dartmouth"
+   },
+   "phone": "(902) 468-8888",
+   "website": "https://www.marriott.com/en-us/hotels/yhzdm-delta-hotels-dartmouth/overview/",
+   "lat": 44.695083,
+   "lng": -63.578723,
+   "distance_km": {
+    "airport": 21.3,
+    "centre": 5.2
+   },
+   "area_reason": "5.2 km from the centre point, 21.3 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/delta-hotels.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/72/Delta_Hotels_logo.svg",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/delta-hotels-by-marriott-dartmouth/"
+     ],
+     "note": "Discover Halifax prints \"Delta Hotels Dartmouth\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/delta-hotels-by-marriott-dartmouth/"
+     ],
+     "note": "Both print \"240 Brownlow Ave\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/delta-hotels-by-marriott-dartmouth/"
+     ],
+     "note": "OpenStreetMap has B3B 1Y2: wrong.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/delta-hotels-by-marriott-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/delta-hotels-by-marriott-dartmouth/"
+     ],
+     "note": "The listings link marriott.com/yhzdm, which forwards here and answered 403 on 2026-11-21: not read; blocked, needs a person.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/delta-hotels-by-marriott-dartmouth/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/363961417",
+   "notes": null
+  },
+  {
+   "id": "bw-plus-dartmouth",
+   "name": "Best Western Plus Dartmouth Hotel & Suites",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Best Western Plus",
+   "group": "BWH Hotels",
+   "independent": false,
+   "address": {
+    "street": "15 Spectacle Lake Drive",
+    "town": "Dartmouth",
+    "province": "NS",
+    "postal_code": "B3B 1X7",
+    "display": "15 Spectacle Lake Drive, Dartmouth"
+   },
+   "phone": "(902) 463-2000",
+   "website": "https://www.bestwesterndartmouth.com/",
+   "lat": 44.70103,
+   "lng": -63.57997,
+   "distance_km": {
+    "airport": 20.7,
+    "centre": 5.8
+   },
+   "area_reason": "5.8 km from the centre point, 20.7 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/best-western-plus-dartmouth-hotel-suites/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.bestwesterndartmouth.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/best-western-plus.png",
+    "opaque": false,
+    "source": "https://www.bestwestern.com/content/dam/best-western/brand/brand-logos/best-western-plus-horizontal-logo-rgb.png",
+    "origin": "official site: bestwestern.com brand logos",
+    "trim": "inset(16.2% 3.2% 17.8% 2.7%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.bestwesterndartmouth.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/best-western-plus-dartmouth-hotel-suites/",
+      "https://novascotia.com/listing/best-western-plus-dartmouth-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/best-western-plus-dartmouth-hotel-suites/",
+     "also": [
+      "https://novascotia.com/listing/best-western-plus-dartmouth-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/best-western-plus-dartmouth-hotel-suites/",
+     "also": [
+      "https://novascotia.com/listing/best-western-plus-dartmouth-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.bestwesterndartmouth.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/best-western-plus-dartmouth-hotel-suites/",
+      "https://novascotia.com/listing/best-western-plus-dartmouth-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.bestwesterndartmouth.com/",
+     "note": "The address on both listings; answered 200. OpenStreetMap links the bestwestern.com property page instead.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/best-western-plus-dartmouth-hotel-suites/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/best-western-plus-dartmouth-hotel-suites/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.bestwesterndartmouth.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/451522906",
+   "notes": null
+  },
+  {
+   "id": "hix-halifax-dartmouth",
+   "name": "Holiday Inn Express Hotel and Suites Halifax–Dartmouth",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Holiday Inn Express",
+   "group": "IHG Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "335 John Savage Avenue",
+    "town": "Dartmouth",
+    "province": "NS",
+    "postal_code": "B3B 0J3",
+    "display": "335 John Savage Avenue, Dartmouth"
+   },
+   "phone": "(902) 431-1122",
+   "website": "https://www.ihg.com/holidayinnexpress/hotels/us/en/dartmouth/yhzdj/hoteldetail",
+   "lat": 44.704843,
+   "lng": -63.57567,
+   "distance_km": {
+    "airport": 20.2,
+    "centre": 6.2
+   },
+   "area_reason": "6.2 km from the centre point, 20.2 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/holiday-inn-express.svg",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/75/Holiday_Inn_Express_by_IHG_logo.svg",
+    "origin": "Wikimedia Commons",
+    "trim": "inset(15.2% 0.0% 15.5% 0.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
+     ],
+     "note": "Discover Halifax prints \"Holiday Inn Express + Suites Dartmouth\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
+     ],
+     "note": "Discover Halifax prints \"335 John Savage Dr\"; Tourism Nova Scotia and OpenStreetMap say Avenue.",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/",
+     "note": "Single source (Discover Halifax prints B3B0J3); OpenStreetMap has B3B 0L7. Not shown on the cards.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
+     ],
+     "note": "IHG pages answered 403 to automated readers on 2026-11-21 (ihg.com and hiexpress.com tried): not read; blocked, needs a person. URL taken from the official listing (tracking code removed).",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/815093594",
+   "notes": null
+  },
+  {
+   "id": "hampton-halifax-dartmouth",
+   "name": "Hampton Inn & Suites Halifax Dartmouth",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Hampton by Hilton",
+   "group": "Hilton",
+   "independent": false,
+   "address": {
+    "street": "65 Cromarty Drive",
+    "town": "Dartmouth",
+    "province": "NS",
+    "postal_code": "B3B 0G2",
+    "display": "65 Cromarty Drive, Dartmouth"
+   },
+   "phone": "(902) 406-7700",
+   "website": "https://www.hilton.com/en/hotels/yhzdthx-hampton-suites-halifax-dartmouth/",
+   "lat": 44.704906,
+   "lng": -63.560823,
+   "distance_km": {
+    "airport": 19.9,
+    "centre": 6.3
+   },
+   "area_reason": "6.3 km from the centre point, 19.9 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/hampton-by-hilton.png",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/2/28/Hampton-by-Hilton-Logo-Color.png",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": false,
+   "not_listed_reason": "The two official listings give different telephones (Tourism Nova Scotia (902) 406-7700, Discover Halifax (902) 406-7704) and the Hilton page answers 403 to automated readers: blocked, needs a person to confirm the number.",
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-suites-dartmouth/"
+     ],
+     "note": "Discover Halifax prints \"Hampton Inn & Suites Dartmouth\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-suites-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-suites-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-suites-dartmouth/"
+     ],
+     "note": "Sources disagree: Tourism Nova Scotia (902) 406-7700, Discover Halifax (902) 406-7704. Toll-free (877) 406-7701 on Tourism Nova Scotia.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/hampton-inn-suites-dartmouth/"
+     ],
+     "note": "Hilton property pages answered 403 to automated readers on 2026-11-21 (two tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/178229988",
+   "notes": null
+  },
+  {
+   "id": "courtyard-halifax-dartmouth",
+   "name": "Courtyard by Marriott Halifax Dartmouth",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Courtyard by Marriott",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "35 Shubie Drive",
+    "town": "Dartmouth",
+    "province": "NS",
+    "postal_code": "B3B 0N4",
+    "display": "35 Shubie Drive, Dartmouth"
+   },
+   "phone": "(902) 406-3000",
+   "website": "https://www.marriott.com/en-us/hotels/yhzcd-courtyard-halifax-dartmouth/overview/",
+   "lat": 44.707687,
+   "lng": -63.56465,
+   "distance_km": {
+    "airport": 19.6,
+    "centre": 6.6
+   },
+   "area_reason": "6.6 km from the centre point, 19.6 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/courtyard-halifax-dartmouth/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/courtyard-halifax-dartmouth/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Courtyard logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-dartmouth/",
+     "also": [
+      "https://novascotia.com/listing/courtyard-halifax-dartmouth/"
+     ],
+     "note": "Tourism Nova Scotia prints \"Courtyard Halifax–Dartmouth\". OpenStreetMap has one building named \"Marriott\" for this hotel and the Residence Inn.",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-dartmouth/",
+     "also": [
+      "https://novascotia.com/listing/courtyard-halifax-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-dartmouth/",
+     "also": [
+      "https://www.openstreetmap.org/way/584287896"
+     ],
+     "note": "Tourism Nova Scotia gives no postal code; OpenStreetMap agrees.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-dartmouth/",
+     "also": [
+      "https://novascotia.com/listing/courtyard-halifax-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/courtyard-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/courtyard-by-marriott-halifax-dartmouth/"
+     ],
+     "note": "Marriott property pages answered 403 to automated readers on 2026-11-21 (three tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/courtyard-halifax-dartmouth/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/courtyard-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/courtyard-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/584287896",
+   "notes": "Shares 35 Shubie Drive with the Residence Inn Halifax–Dartmouth."
+  },
+  {
+   "id": "residence-inn-halifax-dartmouth",
+   "name": "Residence Inn Halifax–Dartmouth",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Residence Inn",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "35 Shubie Drive",
+    "town": "Dartmouth",
+    "province": "NS",
+    "postal_code": "B3B 0N4",
+    "display": "35 Shubie Drive, Dartmouth"
+   },
+   "phone": "(902) 406-4000",
+   "website": "https://www.marriott.com/en-us/hotels/yhzrd-residence-inn-halifax-dartmouth/overview/",
+   "lat": 44.707687,
+   "lng": -63.56465,
+   "distance_km": {
+    "airport": 19.6,
+    "centre": 6.6
+   },
+   "area_reason": "6.6 km from the centre point, 19.6 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/marriott/residence-inn.png",
+    "opaque": false,
+    "source": "repo: fids-current/logos/hotels/marriott/residence-inn.png",
+    "origin": "already in the repository (same bytes as the checked copy)",
+    "trim": "inset(32.0% 0.0% 32.0% 0.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott-halifax-dartmouth/"
+     ],
+     "note": "Discover Halifax prints \"Residence Inn By Marriott Dartmouth\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott-halifax-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://discoverhalifaxns.com/listings/residence-inn-by-marriott-halifax-dartmouth/",
+     "also": [
+      "https://www.openstreetmap.org/way/584287896"
+     ],
+     "note": "Tourism Nova Scotia gives no postal code; OpenStreetMap agrees.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott-halifax-dartmouth/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/residence-inn-by-marriott-halifax-dartmouth/"
+     ],
+     "note": "Marriott property pages answered 403 to automated readers on 2026-11-21 (three tried): not read; blocked, needs a person. URL taken from the official listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/residence-inn-halifax-dartmouth/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/584287896",
+   "notes": "Shares 35 Shubie Drive with the Courtyard; not a place of its own in OpenStreetMap."
+  },
+  {
+   "id": "sandman-signature-dartmouth",
+   "name": "Sandman Signature Dartmouth Hotel & Suites",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Sandman Signature",
+   "group": "Sandman Hotel Group",
+   "independent": false,
+   "address": {
+    "street": "973 Wilkinson Avenue",
+    "town": "Dartmouth",
+    "province": "NS",
+    "postal_code": "B3B 0H6",
+    "display": "973 Wilkinson Avenue, Dartmouth"
+   },
+   "phone": "(902) 482-4340",
+   "website": "https://www.sandmanhotels.com/signature-dartmouth/",
+   "lat": 44.71038,
+   "lng": -63.5695,
+   "distance_km": {
+    "airport": 19.4,
+    "centre": 6.9
+   },
+   "area_reason": "6.9 km from the centre point, 19.4 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/sandman-signature-dartmouth-hotel-suites/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Sandman logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+     "also": [
+      "https://novascotia.com/listing/sandman-signature-dartmouth-hotel-suites/"
+     ],
+     "note": "Own page title \"Hotels in Dartmouth | Sandman Signature Dartmouth Hotel & Suites\"; Discover Halifax prints \"Sandman Signature Hotel & Suites Dartmouth\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/sandman-signature-hotel/",
+      "https://novascotia.com/listing/sandman-signature-dartmouth-hotel-suites/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/sandman-signature-hotel/",
+      "https://novascotia.com/listing/sandman-signature-dartmouth-hotel-suites/"
+     ],
+     "note": "Sources disagree: own page B3B 0H6, both listings B3B 0M9. Not shown on the cards.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+     "note": "Own page only. Discover Halifax prints the chain toll-free 1-800-726-3626; Tourism Nova Scotia gives no number.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+     "also": [
+      "https://novascotia.com/listing/sandman-signature-dartmouth-hotel-suites/"
+     ],
+     "note": "Own page map point (structured data); Tourism Nova Scotia agrees.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/sandman-signature-dartmouth-hotel-suites/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.sandmanhotels.com/signature-dartmouth/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": null,
+   "notes": "Missing from OpenStreetMap as a hotel (not among the helper's candidates); found on both official listings."
+  },
+  {
+   "id": "comfort-hotel-bayers-lake",
+   "name": "Comfort Hotel Bayer’s Lake",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Comfort Hotel",
+   "group": null,
+   "independent": false,
+   "address": {
+    "street": "88 Chain Lake Drive",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "",
+    "display": "88 Chain Lake Drive, Halifax"
+   },
+   "phone": "(902) 405-4555",
+   "website": "https://www.comforthotelhalifax.com/",
+   "lat": 44.637484,
+   "lng": -63.668023,
+   "distance_km": {
+    "airport": 29.7,
+    "centre": 7.5
+   },
+   "area_reason": "7.5 km from the centre point, 29.7 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Comfort Hotel is not the Comfort Inn brand of the repository file; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+     "note": "OpenStreetMap still says \"Comfort Inn Bayer's Lake\". Not on Discover Halifax.",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+     "note": "One official page; OpenStreetMap agrees on the number and street (it gives the town as Beechville).",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "",
+     "note": "No postal code on the official page read.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+     "note": "One official page (Tourism Nova Scotia).",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+     "note": "The hotel's site answered 403 (a Cloudflare block page) on 2026-11-21: blocked, needs a person. URL taken from the listing.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/comfort-hotel-bayers-lake/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/4301210589",
+   "notes": null
+  },
+  {
+   "id": "halifax-tower-hotel",
+   "name": "Halifax Tower Hotel & Conference Centre",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "15 Lakelands Boulevard",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3S 1G4",
+    "display": "15 Lakelands Boulevard, Halifax"
+   },
+   "phone": "(902) 444-3700",
+   "website": "https://www.halifaxtowerhotel.com/",
+   "lat": 44.637072,
+   "lng": -63.670656,
+   "distance_km": {
+    "airport": 29.8,
+    "centre": 7.7
+   },
+   "area_reason": "7.7 km from the centre point, 29.8 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halifax-tower-hotel/"
+     ],
+     "note": "Discover Halifax prints \"The Halifax Tower Hotel\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halifax-tower-hotel/"
+     ],
+     "note": "Both print \"15 Lakelands Blvd\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halifax-tower-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halifax-tower-hotel/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/the-halifax-tower-hotel/"
+     ],
+     "note": "The hotel's site answered 403 (a Cloudflare block page) on 2026-11-21: blocked, needs a person. URL taken from the listings.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/halifax-tower-hotel-conference-centre/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": null,
+   "notes": "Missing from OpenStreetMap as a hotel (not among the helper's candidates); found on both official listings."
+  },
+  {
+   "id": "future-inns-halifax",
+   "name": "Future Inns Halifax",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "30 Fairfax Drive",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3S 1P1",
+    "display": "30 Fairfax Drive, Halifax"
+   },
+   "phone": "(902) 443-4333",
+   "website": "https://www.futureinns.com/",
+   "lat": 44.659339,
+   "lng": -63.6726,
+   "distance_km": {
+    "airport": 27.7,
+    "centre": 7.8
+   },
+   "area_reason": "7.8 km from the centre point, 27.7 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/future-inns-halifax/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.futureinns.com/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.futureinns.com/",
+     "also": [
+      "https://novascotia.com/listing/future-inns-halifax/",
+      "https://discoverhalifaxns.com/listings/future-inns-halifax-hotel-conference-centre/"
+     ],
+     "note": "Discover Halifax prints \"Future Inns Halifax Hotel & Conference Centre\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.futureinns.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/future-inns-halifax-hotel-conference-centre/",
+      "https://novascotia.com/listing/future-inns-halifax/"
+     ],
+     "note": "Own site prints \"30 Fairfax Dr\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.futureinns.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/future-inns-halifax-hotel-conference-centre/",
+      "https://novascotia.com/listing/future-inns-halifax/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.futureinns.com/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/future-inns-halifax-hotel-conference-centre/",
+      "https://novascotia.com/listing/future-inns-halifax/"
+     ],
+     "note": "Toll-free 1-800-565-0700 on the own site.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.futureinns.com/",
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/future-inns-halifax/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/future-inns-halifax/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.futureinns.com/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/31921738",
+   "notes": null
+  },
+  {
+   "id": "comfort-inn-halifax",
+   "name": "Comfort Inn Halifax",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Comfort Inn",
+   "group": "Choice Hotels",
+   "independent": false,
+   "address": {
+    "street": "560 Bedford Highway",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3M 2L8",
+    "display": "560 Bedford Highway, Halifax"
+   },
+   "phone": "(902) 443-0303",
+   "website": "https://www.choicehotels.ca/cn207",
+   "lat": 44.694884,
+   "lng": -63.66105,
+   "distance_km": {
+    "airport": 23.8,
+    "centre": 8.5
+   },
+   "area_reason": "8.5 km from the centre point, 23.8 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/choice-le-meridien/comfort-inn.png",
+    "opaque": false,
+    "source": "repo: fids-current/logos/hotels/choice-le-meridien/comfort-inn.png",
+    "origin": "already in the repository (same bytes as the checked copy)",
+    "trim": "inset(1.5% 19.5% 2.0% 20.5%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/comfort-inn-halifax-bedford/"
+     ],
+     "note": "Discover Halifax prints \"Comfort Inn Halifax Bedford\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/comfort-inn-halifax-bedford/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/comfort-inn-halifax-bedford/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/comfort-inn-halifax-bedford/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/comfort-inn-halifax-bedford/"
+     ],
+     "note": "Choice brand page not opened (choicehotels answered 403 to automated readers on 2026-11-16, Moncton): URL taken from the official listings.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/comfort-inn-halifax/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/4411881869",
+   "notes": "OpenStreetMap has the name only (no street, telephone or website)."
+  },
+  {
+   "id": "chateau-bedford",
+   "name": "Chateau Bedford, Trademark Collection by Wyndham",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Trademark Collection by Wyndham",
+   "group": "Wyndham Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "133 Kearney Lake Road",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3M 4P3",
+    "display": "133 Kearney Lake Road, Halifax"
+   },
+   "phone": "(902) 445-1100",
+   "website": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+   "lat": 44.685005,
+   "lng": -63.6760482,
+   "distance_km": {
+    "airport": 25.3,
+    "centre": 8.9
+   },
+   "area_reason": "8.9 km from the centre point, 25.3 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-21."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "No Trademark Collection logo in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "also": [
+      "https://www.openstreetmap.org/node/31262993"
+     ],
+     "note": "Brand page prints \"133 Kearney Lake Rd, Halifax, Nova Scotia B3M 4P3\".",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "also": [
+      "https://www.openstreetmap.org/node/31262993"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "note": "Brand page: +1-902-445-1100 (one official page).",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "note": "The en-ca overview address forwards here; answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/node/31262993",
+     "note": "OpenStreetMap point; the brand page agrees on the street. Point for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/trademark/halifax-nova-scotia/chateau-bedford-trademark-collection-by-wyndham",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/31262993",
+   "notes": "Not on Discover Halifax or Tourism Nova Scotia."
+  },
+  {
+   "id": "hix-halifax-bedford",
+   "name": "Holiday Inn Express & Suites Halifax – Bedford",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Holiday Inn Express",
+   "group": "IHG Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "980 Parkland Drive",
+    "town": "Halifax",
+    "province": "NS",
+    "postal_code": "B3M 4Y7",
+    "display": "980 Parkland Drive, Halifax"
+   },
+   "phone": "(902) 444-6700",
+   "website": "https://www.ihg.com/holidayinnexpress/hotels/us/en/halifax/yhzpd/hoteldetail",
+   "lat": 44.682997,
+   "lng": -63.676658,
+   "distance_km": {
+    "airport": 25.6,
+    "centre": 8.9
+   },
+   "area_reason": "8.9 km from the centre point, 25.6 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+    "also": null,
+    "evidence": "No shuttle stated on the pages read (2026-11-21).",
+    "checked": "2026-11-21"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/holiday-inn-express.svg",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/75/Holiday_Inn_Express_by_IHG_logo.svg",
+    "origin": "Wikimedia Commons",
+    "trim": "inset(15.2% 0.0% 15.5% 0.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-halifax-bedford/"
+     ],
+     "note": "Discover Halifax prints \"Holiday Inn Express & Suites Halifax-Bedford\".",
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-halifax-bedford/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-halifax-bedford/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-halifax-bedford/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "note": "IHG pages answered 403 to automated readers on 2026-11-21 (ihg.com and hiexpress.com tried): not read; blocked, needs a person. URL taken from the official listing (tracking code removed). Discover Halifax links hiexhalifax.com.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://novascotia.com/listing/holiday-inn-express-suites-halifax-bedford/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/358578658",
+   "notes": null
+  },
+  {
+   "id": "inn-on-the-lake",
+   "name": "Inn on the Lake",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "3009 Highway 2",
+    "town": "Fall River",
+    "province": "NS",
+    "postal_code": "B2T 1J5",
+    "display": "3009 Highway 2, Fall River"
+   },
+   "phone": "(902) 861-3480",
+   "website": "https://www.innonthelake.com/",
+   "lat": 44.807175,
+   "lng": -63.606811,
+   "distance_km": {
+    "airport": 11.1,
+    "centre": 17.8
+   },
+   "area_reason": "17.8 km from the centre point, 11.1 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": true,
+    "source": "https://novascotia.com/listing/inn-on-the-lake/",
+    "note": "Tourism Nova Scotia listing, read 2026-11-21: \"Open year-round\"."
+   },
+   "shuttle": {
+    "mark": true,
+    "offered": true,
+    "verified": true,
+    "terms": "Complimentary, 5 am to midnight (airport page).",
+    "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+    "also": [
+     "https://discoverhalifaxns.com/listings/inn-on-the-lake/"
+    ],
+    "evidence": "Airport page, read 2026-11-21: \"approximately 10 kilometres from the Airport and offers a complimentary shuttle service from 5 am to midnight\". Discover Halifax: \"The complimentary shuttle and parking services\". The own home page does not mention it.",
+    "checked": "2026-11-21"
+   },
+   "logo": null,
+   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.innonthelake.com/",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+      "https://discoverhalifaxns.com/listings/inn-on-the-lake/",
+      "https://novascotia.com/listing/inn-on-the-lake/"
+     ],
+     "checked": "2026-11-21"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.innonthelake.com/",
+     "also": [
+      "https://novascotia.com/listing/inn-on-the-lake/",
+      "https://discoverhalifaxns.com/listings/inn-on-the-lake/"
+     ],
+     "note": "Own site: \"3009 Highway 2, Fall River, Nova Scotia\"; Discover Halifax prints the town as Halifax.",
+     "checked": "2026-11-21"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.innonthelake.com/",
+     "also": [
+      "https://novascotia.com/listing/inn-on-the-lake/"
+     ],
+     "note": "Discover Halifax prints B3T 1J5: a typing error.",
+     "checked": "2026-11-21"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.innonthelake.com/",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+      "https://discoverhalifaxns.com/listings/inn-on-the-lake/",
+      "https://novascotia.com/listing/inn-on-the-lake/"
+     ],
+     "note": "Toll-free 1-800-463-6465 on the own site and the airport page.",
+     "checked": "2026-11-21"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.innonthelake.com/",
+     "also": [
+      "https://halifaxstanfield.ca/travel-planning/visiting-halifax/"
+     ],
+     "note": "Answered 200.",
+     "checked": "2026-11-21"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/inn-on-the-lake/",
+     "note": "Map point of the Tourism Nova Scotia listing, for the straight-line area distances.",
+     "checked": "2026-11-21"
+    },
+    "season": {
+     "verified": true,
+     "source": "https://novascotia.com/listing/inn-on-the-lake/",
+     "checked": "2026-11-21"
+    },
+    "shuttle": {
+     "verified": true,
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
+     "checked": "2026-11-21"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/4989720",
+   "notes": "Boutique hotel with 39 rooms on Lake Thomas (own site), about 10 km from the airport (airport page)."
+  }
+ ]
+}
