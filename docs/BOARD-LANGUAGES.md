@@ -200,7 +200,9 @@ deck and its states), the Studio player (a departures, a gate and a baggage
 document) in each language, the stream's rotation page and the stream
 tour; and, on the boards and the gates, the airport's feed down (no list,
 the last update's time, the last good list with its age), each reached in
-other languages and read after a change to the set's, mid-visit. It
+other languages, held while it stands (an answer of the board's own that
+lands then, as every answer fails offline, is dropped, and one is put in on
+purpose to prove it) and read after a change to the set's, mid-visit. It
 reads every visible text node, the text CSS draws (`::before`/`::after`),
 placeholders, text drawn on a canvas, and the boards inside same-origin
 iframes. It fails on any word that is not one of the board's languages or
