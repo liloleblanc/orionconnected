@@ -67,13 +67,15 @@ function pngSize(file) {
   return { w: b.readUInt32BE(16), h: b.readUInt32BE(20), alpha: b[25] === 6 || b[25] === 4 };
 }
 
-test('the page is at Moncton and on a gate whose flight goes to Moncton, and nowhere else', () => {
+test('the page is on a gate whose flight goes to Moncton, at any airport, and nowhere else', () => {
   assert.equal(A.FROM_AIRPORT, 'YQM');
-  // at Moncton, whatever the flight, and with no flight at all
-  assert.equal(onGate({ _gateIata: 'YQM', _gateCurrentFlight: { _locIata: 'YYZ' } }, A.due), true);
-  assert.equal(onGate({ _gateIata: 'yqm', _gateCurrentFlight: null }, A.due), true);
-  // elsewhere: a flight to Moncton
+  // not on a departure from Moncton (it is for the people flying in), nor on an empty Moncton gate
+  assert.equal(onGate({ _gateIata: 'YQM', _gateCurrentFlight: { _locIata: 'YYZ' }, _flightLegs: legs }, A.due), false);
+  assert.equal(onGate({ _gateIata: 'YQM', _gateCurrentFlight: { _locIata: 'YHZ' }, _flightLegs: legs }, A.due), false);
+  assert.equal(onGate({ _gateIata: 'yqm', _gateCurrentFlight: null }, A.due), false);
+  // a flight to Moncton, Montreal to Moncton for one
   assert.equal(onGate({ _gateIata: 'YUL', _gateCurrentFlight: { _locIata: 'YQM' } }, A.due), true);
+  assert.equal(onGate({ _gateIata: 'YYZ', _gateCurrentFlight: { _locIata: 'yqm' } }, A.due), true);
   // a flight that stops at Moncton on its way
   assert.equal(onGate({ _gateIata: 'YYZ', _gateCurrentFlight: { _locIata: 'YHZ', _stops: [{ iata: 'YQM' }, { iata: 'YHZ' }] }, _flightLegs: legs }, A.due), true);
   // any other flight

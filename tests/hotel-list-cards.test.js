@@ -33,16 +33,14 @@ const KEYS = ['hotelsAirport', 'hotelsDowntown', 'hotelsNearby', 'hotelsResorts'
 // the checked list of each city (every fact with its source and verified mark), kept out of the
 // site, and the slim copy the site serves, made from it by scripts/hotels/build-runtime.js
 const RT = require(path.join(ROOT, 'scripts/hotels/build-runtime.js'));
-const DOCS = {
-  YQM: JSON.parse(read('scripts/hotels/data/yqm.json')),
-  YYG: JSON.parse(read('scripts/hotels/data/yyg.json'))
-};
-const RUN = {
-  YQM: JSON.parse(read('fids-current/data/hotels/yqm.json')),
-  YYG: JSON.parse(read('fids-current/data/hotels/yyg.json'))
-};
-H.put('YQM', RUN.YQM);
-H.put('YYG', RUN.YYG);
+// every city of the one list (HotelListCard.CITIES), the checked file and the slim copy of each
+const DOCS = {};
+const RUN = {};
+for (const C of H.CITIES) {
+  DOCS[C] = JSON.parse(read('scripts/hotels/data/' + C.toLowerCase() + '.json'));
+  RUN[C] = JSON.parse(read('fids-current/data/hotels/' + C.toLowerCase() + '.json'));
+  H.put(C, RUN[C]);
+}
 // a day at noon on the machine's own calendar (no board: the module reads the date's own fields)
 const day = (y, m, d) => new Date(y, m - 1, d, 12, 0, 0);
 const NOV16 = day(2026, 11, 16);
@@ -61,7 +59,7 @@ function onGate(g, run) {
     names.forEach((n) => { try { delete globalThis[n]; } catch (e) {} if (keep[n]) Object.defineProperty(globalThis, n, keep[n]); });
   }
 }
-const CITY_NAMES = { YQM: 'Moncton', YYG: 'Charlottetown' };
+const CITY_NAMES = { YQM: 'Moncton', YYG: 'Charlottetown', YHZ: 'Halifax' };
 const gate = (extra) => Object.assign({ BoardStrings: B, _gateIata: 'YYZ', _gateMapCity: (c) => CITY_NAMES[c] || c }, extra || {});
 const build = (city, L, o) => onGate(gate(), () => H.build(RUN[city], L, Object.assign({ date: NOV16, home: 'YYZ' }, o || {})));
 const views = (html) => html.split('<div class="axr-page hlc-view').slice(1);
@@ -107,6 +105,39 @@ test('each list is one checked file: every hotel has its facts, where they were 
       if (h.area === 'resort') assert.ok(h.drive && h.drive.km > 30 && h.drive.from === code, at + ': a resort has its drive');
     }
   }
+});
+
+test('the cities are one list (HotelListCard.CITIES): the build step, the phone app and the tests read it, and it matches the files', () => {
+  assert.ok(H.CITIES.length >= 2 && H.CITIES.every((c) => /^[A-Z0-9]{3}$/.test(c)), 'codes');
+  assert.equal(new Set(H.CITIES).size, H.CITIES.length, 'no city twice');
+  // the build step reads the module's list (lower case, its file names), and names no city itself
+  assert.deepEqual(RT.CITIES, H.CITIES.map((c) => c.toLowerCase()));
+  const BUILD = read('scripts/hotels/build-runtime.js');
+  assert.match(BUILD, /require\(path\.join\(ROOT, 'fids-current', 'js', 'hotel-list-card\.js'\)\)\.CITIES/);
+  for (const C of H.CITIES) {
+    assert.ok(!new RegExp("['\"]" + C + "['\"]", 'i').test(BUILD), 'build-runtime.js names ' + C + ' itself');
+    assert.ok(!new RegExp("['\"]" + C + "['\"]", 'i').test(APP.slice(APP.indexOf('// ── THE HOTEL LISTS'), APP.indexOf('function closeHotels('))), 'the app names ' + C + ' itself');
+  }
+  // the module names the list once
+  assert.equal((SRC.match(/var CITIES = \[/g) || []).length, 1);
+  // the app asks the module which cities have a list
+  assert.match(APP, /if\(H\.CITIES\.indexOf\(c\)<0\)return;/);
+  // every checked file is a city of the list, every city of the list has its checked file and its slim copy
+  const codes = (dir) => fs.readdirSync(path.join(ROOT, dir)).filter((f) => /^[a-z0-9]{3}\.json$/.test(f)).map((f) => f.slice(0, 3).toUpperCase()).sort();
+  assert.deepEqual(codes('scripts/hotels/data'), H.CITIES.slice().sort());
+  assert.deepEqual(codes('fids-current/data/hotels'), H.CITIES.slice().sort());
+  assert.deepEqual(RT.listProblems(), []);
+  assert.deepEqual(Object.keys(DOCS), H.CITIES);
+});
+
+test('the gate no longer asks the old AI route for hotels: the lists are checked data only', () => {
+  // v24170: fetchDestInfo and loadDestInfoForGate are gone with their call, and the table of
+  // place names only they sent (the route answers status unavailable, and nothing read it)
+  for (const gone of ['/ai/destination-info', 'function fetchDestInfo(', 'function loadDestInfoForGate(', 'loadDestInfoForGate(', '_destInfoCache', '_CITY_DISAMBIGUATION', '_gateDestInfo']) {
+    assert.ok(!CORE.includes(gone), gone + ' is gone from fids-core.js');
+  }
+  for (const page of ['gids.html', 'app.html', 'fids.html', 'bids.html']) assert.ok(!read('fids-current/' + page).includes('/ai/destination-info'), page);
+  assert.ok(!SRC.includes('/ai/'), 'the hotel cards ask no AI route');
 });
 
 test('the site serves a slim copy of each checked list, made from it by the build step, and the two agree', () => {
@@ -204,6 +235,13 @@ test('nothing closed for the season, and a hotel held back never shows', () => {
   // Thriftlodge in Moncton and Dundee Arms Inn in Charlottetown, are off the cards)
   assert.deepEqual(H.cards(DOCS.YQM, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:5', 'downtown:11', 'nearby:11', 'resort:1']);
   assert.deepEqual(H.cards(DOCS.YYG, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:5', 'downtown:11', 'nearby:2', 'resort:3']);
+  // Halifax (v24170): 36 of 39 listed; held back, the Garden South Park Inn (a bed and breakfast by
+  // its listing), the Hampton Inn & Suites Dartmouth (the listings give two telephones) and the
+  // Holiday Inn Express Dartmouth (the listings give two streets)
+  assert.deepEqual(H.cards(DOCS.YHZ, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:4', 'downtown:19', 'nearby:13']);
+  for (const held of ['garden-south-park-inn', 'hampton-halifax-dartmouth', 'hix-halifax-dartmouth']) {
+    for (const d of [NOV16, day(2026, 7, 15)]) assert.ok(!ids('YHZ', d).includes(held), held + ' is held back');
+  }
   for (const [city, id] of [['YQM', 'coastal-inn-dieppe'], ['YQM', 'thriftlodge-moncton'], ['YYG', 'dundee-arms']]) {
     assert.ok(!ids(city, NOV16).includes(id), id + ' is off the cards');
   }
@@ -225,6 +263,10 @@ test('the shuttle mark only where the shuttle is verified, and the legend only o
   // locally, 16 Nov 2026); the Wild Rose (its own page: a shuttle with its park-and-fly package; the legend says to contact the hotel)
   assert.deepEqual(marked.slice().sort(), ['fairfield-moncton', 'hix-dieppe', 'quality-inn-airport', WILDROSE, WINGATE].sort(), 'Moncton: the five airport hotels with a shuttle');
   assert.equal(DOCS.YYG.hotels.filter((h) => h.shuttle.mark).length, 0, 'Charlottetown: the airport says no hotel shuttle runs');
+  // Halifax: the three the airport's own page names; not the Holiday Inn Express by the airport, whose entry
+  // on that page repeats the Hilton Garden Inn text (Tourism Nova Scotia names a shuttle, not an allowed source)
+  assert.deepEqual(DOCS.YHZ.hotels.filter((h) => h.shuttle.mark).map((h) => h.id).sort(), ['hfx-airport-hotel', 'hgi-halifax-airport', 'inn-on-the-lake']);
+  for (const h of DOCS.YHZ.hotels.filter((x) => x.shuttle.mark)) assert.match(h.shuttle.source, /^https:\/\/halifaxstanfield\.ca\//, h.id);
   const v = views(build('YQM', ['en', 'fr']));
   const airport = v.find((x) => x.includes('data-area="airport"'));
   const row = airport.split('<li ').find((x) => x.includes('data-hotel="hix-dieppe"'));
@@ -273,7 +315,7 @@ test('every logo is a file loaded through <img>: no SVG of a hotel is written in
 test('a stacked lockup whose words are small at the common height takes the whole cell, shown as it is', () => {
   const filled = [];
   for (const doc of Object.values(DOCS)) for (const h of doc.hotels) if (h.logo && h.logo.fill) filled.push(h.id);
-  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-prince-edward', 'fairholm']);
+  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-dartmouth', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm', 'future-inns-halifax', 'mill-river', 'rodd-crowbush']);
   assert.match(CSS, /\n\.hlc-img--fill\{ max-height:100%; \}\n/);
   const resort = views(build('YQM', ['en', 'fr'])).find((x) => x.includes('data-area="resort"'));
   assert.match(resort, /<img class="hlc-img hlc-img--fill" alt="" decoding="async" src="\/logos\/hotels\/marriott\/the-algonquin-resort-1\.svg">/);
@@ -336,9 +378,20 @@ test('the gate shows the hotels of the city its flight goes to, when that city h
   const at = (cf) => onGate(gate({ _gateCurrentFlight: cf, _flightLegs: legs }), () => H.cityFor());
   assert.equal(at({ _locIata: 'YYG' }), 'YYG');
   assert.equal(at({ _locIata: 'YQM' }), 'YQM');
+  assert.equal(at({ _locIata: 'YHZ' }), 'YHZ');
   assert.equal(at({ _locIata: 'YYZ' }), '', 'no list for Toronto');
-  assert.equal(at({ _locIata: 'YHZ', _stops: ['YQM', 'YHZ'] }), 'YQM', 'a stop with a list counts');
+  assert.equal(at({ _locIata: 'YYZ', _stops: ['YQM', 'YYZ'] }), 'YQM', 'a stop with a list counts');
+  assert.equal(at({ _locIata: 'YHZ', _stops: ['YQM', 'YHZ'] }), 'YHZ', 'the city the flight goes to comes before a stop with a list');
+  assert.equal(at({ _locIata: 'YYZ', _stops: ['YQM', 'YHZ', 'YYZ'] }), 'YHZ', 'the last stop with a list first');
   assert.equal(at(null), '', 'no flight, nothing');
+  // the list is for the city the flight goes to, never the city of the screen: a departure
+  // from Halifax to Toronto has no Halifax hotels; Montreal to Moncton has the Moncton list
+  const from = (ia, cf) => onGate(gate({ _gateIata: ia, _gateCurrentFlight: cf, _flightLegs: legs }), () => H.cityFor());
+  assert.equal(from('YHZ', { _locIata: 'YYZ' }), '', 'no Halifax list on a departure from Halifax');
+  assert.equal(from('YQM', { _locIata: 'YUL' }), '', 'no Moncton list on a departure from Moncton');
+  assert.equal(from('YYG', null), '', 'an empty gate at a city with a list shows none');
+  assert.equal(from('YQM', { _locIata: 'YHZ' }), 'YHZ', 'Moncton to Halifax: the Halifax list');
+  assert.equal(from('YUL', { _locIata: 'YQM' }), 'YQM', 'Montreal to Moncton: the Moncton list');
   // due only with the list loaded and something open
   assert.equal(onGate(gate({ _gateCurrentFlight: { _locIata: 'YYG' }, _flightLegs: legs }), () => H.due()), true);
   assert.equal(onGate(gate({ _gateCurrentFlight: { _locIata: 'YYZ' }, _flightLegs: legs }), () => H.due()), false);
@@ -538,7 +591,12 @@ test('a light card: the logos stand on its cream, never a box behind one logo; t
   // shorter cards: their lines only
   assert.deepEqual(list('YQM', 'resort'), { cls: 'hlc-list', rows: 1, lines: 1 }, 'Moncton resorts: the Algonquin');
   assert.deepEqual(list('YYG', 'nearby'), { cls: 'hlc-list', rows: 2, lines: 2 }, 'Charlottetown nearby: two lines, both with a logo');
-  assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list hlc-list--bare', rows: 3, lines: 3 }, 'Charlottetown resorts: no logo, no logo cell');
+  assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list', rows: 3, lines: 3 }, 'Charlottetown resorts: their own logos (v24170)');
+  // a card where no line has a logo still drops the logo cell: the same list with its logos taken off
+  const noLogos = JSON.parse(JSON.stringify(RUN.YYG));
+  noLogos.hotels.forEach((h) => { delete h.logo; });
+  const bare = views(onGate(gate(), () => H.build(noLogos, ['en', 'fr'], { date: NOV16, home: 'YYZ' }))).find((x) => x.includes('data-area="resort"'));
+  assert.match(bare, /<ol class="hlc-list hlc-list--bare" style="--hlc-rows:3">/, 'no logo, no logo cell');
   // the app's list: no column on a list where no hotel has a logo
   assert.match(APP, /\.hl-list\.hl-list--bare\{background:var\(--card\);\}\n  \.hl-list--bare \.hl-logo\{display:none;\}/);
   assert.match(APP, /'<ol class="hl-list'\+\(c\.hotels\.some\(h=>h\.logo&&h\.logo\.file\)\?'':' hl-list--bare'\)\+'">'/);

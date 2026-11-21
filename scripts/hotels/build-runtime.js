@@ -25,7 +25,19 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..', '..');
 const SRC_DIR = path.join(__dirname, 'data');
 const OUT_DIR = path.join(ROOT, 'fids-current', 'data', 'hotels');
-const CITIES = ['yqm', 'yyg'];
+// The cities: the one list, HotelListCard.CITIES in fids-current/js/hotel-list-card.js (the
+// gate and the phone app read the same one). Adding a city is one entry there.
+const CITIES = require(path.join(ROOT, 'fids-current', 'js', 'hotel-list-card.js')).CITIES.map((c) => String(c).toLowerCase());
+
+// A checked file whose city is not in the list, or a city of the list with no checked file:
+// both are a city half added.
+function listProblems() {
+  const files = fs.readdirSync(SRC_DIR).filter((f) => /^[a-z0-9]{3}\.json$/.test(f)).map((f) => f.slice(0, 3));
+  const out = [];
+  for (const f of files) if (!CITIES.includes(f)) out.push('scripts/hotels/data/' + f + '.json has no entry in HotelListCard.CITIES (fids-current/js/hotel-list-card.js): add ' + f.toUpperCase() + ' there');
+  for (const c of CITIES) if (!files.includes(c)) out.push(c.toUpperCase() + ' is in HotelListCard.CITIES but scripts/hotels/data/' + c + '.json does not exist');
+  return out;
+}
 
 // One hotel, with only what the cards and the app read.
 function slimHotel(h) {
@@ -79,6 +91,9 @@ function outPath(code) { return path.join(OUT_DIR, code + '.json'); }
 
 function main(argv) {
   const check = argv.includes('--check');
+  const half = listProblems();
+  for (const p of half) console.error(p);
+  if (half.length) return 1;
   let bad = 0;
   for (const code of CITIES) {
     const text = render(JSON.parse(fs.readFileSync(sourcePath(code), 'utf8')));
@@ -97,6 +112,6 @@ function main(argv) {
   return bad ? 1 : 0;
 }
 
-module.exports = { CITIES, slim, slimHotel, render, sourcePath, outPath };
+module.exports = { CITIES, slim, slimHotel, render, sourcePath, outPath, listProblems };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

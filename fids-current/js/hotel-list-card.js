@@ -34,8 +34,12 @@
 })(typeof window !== 'undefined' ? window : globalThis, function (root) {
   'use strict';
 
-  // The cities with a checked list (data/hotels/<code>.json).
-  var CITIES = ['YQM', 'YYG'];
+  // THE ONE LIST of the cities with a checked list (data/hotels/<code>.json). Nothing else
+  // names them: scripts/hotels/build-runtime.js, the phone app (app.html, HotelListCard.CITIES)
+  // and the tests read this one. A new city is its checked file (scripts/hotels/data/<code>.json),
+  // its slim copy (node scripts/hotels/build-runtime.js) and one entry here; the build step and
+  // the tests fail on a checked file whose city is not in this list, and on an entry without one.
+  var CITIES = ['YQM', 'YYG', 'YHZ'];
   // The cards, in the order they take turns, and the key of the heading of each.
   var AREAS = ['airport', 'downtown', 'nearby', 'resort'];
   var HEAD = { airport: 'hotelsAirport', downtown: 'hotelsDowntown', nearby: 'hotelsNearby', resort: 'hotelsResorts' };

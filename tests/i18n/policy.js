@@ -225,7 +225,6 @@ const DATA_TABLES = {
     _known: 'data: hotel brand names matched in a hotel\'s name',
     luxury: 'data: hotel brand names that take the luxury layout',
     _NON_PASSENGER_PATTERNS: 'data: feed operator names that mark a non-passenger flight',
-    _CITY_DISAMBIGUATION: 'data: place names sent to the geocoder',
     knownMakers: 'data: aircraft makers',
     FIDS_ICAO_EXCEPTIONS: 'data: ICAO airport codes',
     _OPNAMES: 'data: operating airline names',

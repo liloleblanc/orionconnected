@@ -1,7 +1,7 @@
 # The hotel lists (gate centre deck, and the full list in the phone app)
 
 Free guest information by area for the city a gate's flight goes to, when that city has a
-checked list (Moncton YQM and Charlottetown YYG so far). One slot of the centre deck shows the
+checked list (Moncton YQM, Charlottetown YYG and Halifax YHZ so far). One slot of the centre deck shows the
 cards in turn: **Airport hotels**, **Downtown hotels**, **Nearby hotels** and **Resorts worth the
 drive**. Each card is a list and nothing else: the hotel's logo on one cream column where an
 official file reads there, its name, its street address and its telephone. Five lines a card;
@@ -20,9 +20,12 @@ page, the skip loop, the dwell, the preloader), the list view in `fids-current/a
 words in `fids-current/js/board-strings.js` (nine languages each), and a credits line for the two faces. Test: `tests/hotel-list-cards.test.js`.
 Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate.
 
-## The data: `scripts/hotels/data/yqm.json`, `yyg.json`
+## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`)
 
-One checked file a city, checked on 2026-11-16, kept out of the site. The site serves a slim
+One checked file a city (Moncton and Charlottetown checked on 2026-11-16, Halifax on 2026-11-21),
+kept out of the site. The cities are one list,
+`HotelListCard.CITIES` in `fids-current/js/hotel-list-card.js`: the build step, the phone app and
+the tests read it, and fail on a checked file whose city is not in it. The site serves a slim
 copy of each, `fids-current/data/hotels/<code>.json` (about 10 KB instead of about 120 KB, since
 every gate with a flight to the city fetches it): only the hotels that are listed, and only the
 fields the cards and the phone app read (id, name, area, address line, telephone, website,
@@ -39,8 +42,10 @@ closed or could not be confirmed) with the reason for each.
 
 Sources: the hotels' own sites and brand property pages; Destination Moncton-Dieppe listings;
 the Greater Moncton airport's hotels and transport pages (cyqm.ca); Tourism PEI listings (with
-dates of operation); Charlottetown Airport's ground-transportation page (flyyyg.com);
-OpenStreetMap (positions, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
+dates of operation); Charlottetown Airport's ground-transportation page (flyyyg.com); for Halifax,
+the Discover Halifax and Tourism Nova Scotia listings (the map points come from the listings
+and the hotels' own pages) and Halifax Stanfield's Visiting Halifax page (halifaxstanfield.ca);
+OpenStreetMap (positions in Moncton and Charlottetown, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
 OpenStreetMap roads for the drive distances to the resorts. A search index was used only for
 some brand-hotel postal codes, which are marked `verified: false` (postal codes are not shown).
 
@@ -58,8 +63,12 @@ the day at the airport each time the deck is built, so a seasonal hotel comes ba
 ## The logos: `fids-current/logos/hotels/list/`
 
 `sources.json` beside the files names the official source of each (the hotel's own site, its
-chain's site or brand page, the tourism body, or Wikimedia Commons; never a logo-download site),
-with its licence note. Files are unaltered. Where a file has a wide transparent margin, the card
+chain's site, brand page or press room, the tourism body, or Wikimedia Commons; never a
+logo-download site), with its licence note. Files are unaltered. A file supplied for the cards (a
+one-colour or light-ground version of a hotel's own logo, where the hotel's own file is pale or
+white and cannot read on the cream) says so in its `origin` and still names the hotel's own file
+as its `source`. Where the hotel's or the brand's site refuses automated reads, the hotel keeps
+the name alone until a file is supplied; the refusal is not worked around. Where a file has a wide transparent margin, the card
 shows it through `object-view-box` (`logo.trim` in the data, measured from the file's own ink);
 a stacked lockup whose words are small at the common logo height (the Algonquin, Delta Hotels,
 Fairholm) may take the whole cell of the column (`logo.fill`);
@@ -88,3 +97,11 @@ Edit the city's checked file (`scripts/hotels/data/<code>.json`), keep every `ve
 run `npm run assets:build` if a logo was added, and run `tests/hotel-list-cards.test.js`, which
 holds every hotel to the area rule, the season format and the shuttle rule, and the slim copy to
 the checked file.
+
+## Adding a city
+
+`node scripts/hotels/find-candidates.js <code>` (an on-demand helper, one Overpass query a city,
+the raw answer cached under `scripts/hotels/work/`, which git ignores) writes a worksheet and a
+skeleton of the checked file with every fact empty and every verified mark false. OpenStreetMap
+only finds: every published fact is then copied from a named official page, never from an AI
+model. The steps are in `scripts/hotels/README.md`.

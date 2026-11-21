@@ -14,7 +14,7 @@
                 and what the period sources say of the visit
      scan       the name, the invitation, a scan code for the site of the resort, the web address
    People fly to Moncton to drive to it, so the page is on a gate whose flight goes to Moncton
-   (a stop there counts) and on every gate at Moncton, and nowhere else.
+   (a stop there counts), at any airport, and nowhere else: not on a departure from Moncton.
 
    WORDS: every word comes from the store (js/board-strings.js) in the languages of the board,
    the first language of the board first. The name of the house, its address, its telephone, its
@@ -162,11 +162,13 @@
       + '" role="img" shape-rendering="crispEdges"><path fill="currentColor" d="' + d + '"/></svg>';
   }
 
-  // WHERE THE PAGE SHOWS: at Moncton, and on a gate whose flight goes to Moncton or stops there.
-  // A gate that only receives an arrival has no flight of its own and shows nothing.
+  // WHERE THE PAGE SHOWS: on a gate, at any airport, whose flight goes to Moncton or stops there:
+  // the resort is for the people flying in, as the hotel lists are for the city a flight goes
+  // to. A departure from Moncton does not show it (v24170: it used to show on every Moncton
+  // gate, whatever the flight). A gate that only receives an arrival has no flight of its own
+  // and shows nothing.
   function due() {
     try {
-      if (String(root._gateIata || '').toUpperCase() === FROM_AIRPORT) return true;
       var cf = root._gateCurrentFlight;
       if (!cf) return false;
       if (String(cf._locIata || '').toUpperCase() === FROM_AIRPORT) return true;

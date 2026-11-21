@@ -90,11 +90,17 @@ const pos = (flight, cs, reg, type) => ({ flight, callsign: cs, reg, type, lat: 
 
 async function withWorld(answers, fn) {
   const w = world(answers);
-  const realFetch = globalThis.fetch, realNow = Date.now;
+  const realFetch = globalThis.fetch, RealDate = globalThis.Date;
   globalThis.fetch = w.fetchStub;
   globalThis.caches = { default: w.cache };
   let now = T0;
-  Date.now = () => now;
+  // The whole clock is pinned, `new Date()` as well as Date.now(): the /adsb/
+  // budget path keys the FR24 day with `new Date()`, so pinning Date.now alone
+  // made this file pass only while the real UTC date was 2026-11-20.
+  globalThis.Date = class PinnedDate extends RealDate {
+    constructor(...a) { if (a.length) super(...a); else super(now); }
+    static now() { return now; }
+  };
   w.at = (min) => { now = T0 + min * 60000; return now; };
   try {
     const mod = await load();
@@ -104,7 +110,7 @@ async function withWorld(answers, fn) {
     await fn(w, mod);
   } finally {
     globalThis.fetch = realFetch;
-    Date.now = realNow;
+    globalThis.Date = RealDate;
     delete globalThis.caches;
   }
 }

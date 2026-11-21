@@ -1,5 +1,5 @@
 {
- "about": "Hotel logos of the free hotel list cards (cream logo column) and the tourism marks of their foot. Each file is copied unaltered from the official source named here (the hotel, its chain, the tourism body, or Wikimedia Commons). Load through <img> only, never inline (some SVGs carry generic <style> class names). Trademarks of their owners, used to name the hotel in a guest-information list.",
+ "about": "Hotel logos of the free hotel list cards (cream logo column) and the tourism marks of their foot. Each file is copied unaltered from the official source named here (the hotel, its chain or its press room, the tourism body, or Wikimedia Commons); a file supplied for the cards (a one-colour or light-ground version of a hotel’s own logo) says so in its origin. Load through <img> only, never inline (some SVGs carry generic <style> class names). Trademarks of their owners, used to name the hotel in a guest-information list.",
  "files": {
   "amsterdam-inn.svg": {
    "source": "https://amsterdaminns.com/wp-content/uploads/2025/12/group-8.svg",
@@ -369,6 +369,234 @@
    "ground": "light",
    "type": "png",
    "made_from": "great-george.png"
+  },
+  "hfx-airport-hotel.svg": {
+   "source": "https://airporthotelhalifax.com/wp-content/uploads/2024/12/hah_logo.png",
+   "origin": "light-ground drawing of the official HFX Airport Hotel logo, supplied 21 Nov 2026 (the hotel's own logo, on its site, is white lettering on a blue panel); the logo's official source is the hotel's own site",
+   "licence": "Trademark of the HFX Airport Hotel. Drawn in the hotel's own lettering and planes, blue and navy for the cream column, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 177.99 49.69",
+   "has_style_block": true,
+   "note": "Navy planes (#152d49) and blue lettering (#1a68c4). The editor's metadata block was removed; the drawing is as supplied. Generic class names (.cls-1, .cls-2): <img> only."
+  },
+  "halliburton.png": {
+   "source": "https://thehalliburton.wpengine.com/wp-content/uploads/2020/06/brown.png",
+   "origin": "official site: thehalliburton.com (its header logo, served from the site host thehalliburton.wpengine.com)",
+   "licence": "Trademark of The Halliburton. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "250x63",
+   "transparent_background": true,
+   "note": "Dark brown, one colour. Only 250 px wide: about 1x in the cell, soft on a 2x screen; the site has no larger dark file and no SVG. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "atlantica-hotel-halifax.png": {
+   "source": "https://image-tc.galaxy.tf/wipng-b49yo74ju0iiqm09d0jo0jf5w/logo-transparent.png",
+   "origin": "official site: atlanticahotelhalifax.com (its header logo, on the site image host)",
+   "licence": "Trademark of the Atlantica Hotel Halifax. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "1868x805",
+   "transparent_background": true,
+   "note": "Deep red, one colour. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "future-inns.png": {
+   "source": "https://static.wixstatic.com/media/ba2cd3_b8bc35ad4ab748f385f79ab749a46204~mv2.png",
+   "origin": "official site: futureinns.com (its logo, on the site image host)",
+   "licence": "Trademark of Future Inns. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "216x216",
+   "transparent_background": false,
+   "note": "Navy and slate blue on its own opaque white plate: multiplied into the cream (opaque). The light grey chevron is part of the mark. A stacked square lockup: takes the whole cell (fill). Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "muir-hotel.svg": {
+   "source": "https://muirhotel.com/",
+   "origin": "official site: muirhotel.com (the header logo, an inline <svg> of 199x70 in the page, saved byte for byte on 2026-11-21)",
+   "licence": "Trademark of the Muir hotel. Official logo from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 199 70",
+   "has_style_block": false,
+   "note": "Sage, one colour (about 2.4:1 on the cream: light, as on the hotel’s own site). The hotel’s own mark, not the Autograph Collection mark. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "sutton-place-halifax.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-4actc2jrr5jl1atueldx13jjj/hal-sutton-halifax.svg",
+   "origin": "official site: suttonplace.com/halifax (its header logo, on the site image host)",
+   "licence": "Trademark of The Sutton Place Hotels. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "has_style_block": false,
+   "note": "Navy, one colour. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "cambridge-suites-halifax.svg": {
+   "source": "https://www.cambridgesuiteshalifax.com/wp-content/uploads/2026/03/logo-header-cssh.svg",
+   "origin": "official site: cambridgesuiteshalifax.com",
+   "licence": "Trademark of the Cambridge Suites Hotel Halifax. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 716.45 80.3",
+   "has_style_block": true,
+   "note": "Near-black lettering and a cyan map pin (a small white dot inside the pin). Generic class names (.cls-1 to .cls-3): <img> only. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "lord-nelson-hotel.png": {
+   "source": "https://immediac.blob.core.windows.net/lordnelson2023/images/topLogo.png",
+   "origin": "official site: lordnelsonhotel.ca (its header logo, served from the site vendor store)",
+   "licence": "Trademark of the Lord Nelson Hotel & Suites. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "420x97",
+   "transparent_background": true,
+   "note": "Steel blue, one colour (about 3.9:1 on the cream). Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "rodd-crowbush.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-722o9w32rx60tnlh7dggb03hc/official-logo-of-rodd-crowbush-golf-beach-resort.svg",
+   "origin": "official site: roddvacations.com (the resort logo, on the site image host, as the other Rodd marks)",
+   "licence": "Trademark of Rodd Hotels & Resorts. Official file from the chain site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 153.85 100",
+   "has_style_block": true,
+   "note": "Black lettering, gold sunburst and rule. A stacked lockup: takes the whole cell (fill). Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "rodd-brudenell.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-cgi2rvjmsu36aefx21zb7ibjz/official-logo-of-rodd-brudenell-river-resort.svg",
+   "origin": "official site: roddvacations.com (the resort logo, on the site image host, as the other Rodd marks)",
+   "licence": "Trademark of Rodd Hotels & Resorts. Official file from the chain site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 200.8 100",
+   "has_style_block": true,
+   "note": "Black lettering, gold sunburst and rule. The RODD HOTELS & RESORTS line is small at the cell width; the resort name reads. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "stanley-bridge-resort.png": {
+   "source": "https://stanleybridgeresort.com/wp-content/uploads/2018/04/web-logo.png",
+   "origin": "official site: stanleybridgeresort.com",
+   "licence": "Trademark of the Stanley Bridge Country Resort. Official file from the resort site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "999x130",
+   "transparent_background": true,
+   "note": "Deep red lettering, navy and amber swooshes. A wide lockup (7.7:1): small at the cell width, legible. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "mysa.png": {
+   "source": "https://mysanordicspa.com/wp-content/uploads/2021/11/logo-lg.png",
+   "origin": "official site: mysanordicspa.com",
+   "licence": "Trademark of Mysa Nordic Spa & Resort. Official file from the resort site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "1000x225",
+   "transparent_background": true,
+   "note": "Near-black, one colour. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "inn-at-bay-fortune.png": {
+   "source": "https://innatbayfortune.com/wp-content/uploads/2019/03/IABF-logo-wide.png",
+   "origin": "official site: innatbayfortune.com",
+   "licence": "Trademark of The Inn at Bay Fortune. Official file from the inn site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "1035x267",
+   "transparent_background": true,
+   "note": "Near-black, one colour. The tagline under the name is too small to read at the cell size; the name reads. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "mill-river.svg": {
+   "source": "https://millriver.ca/wp-content/uploads/2022/04/MillRiver-1.svg",
+   "origin": "official site: millriver.ca",
+   "licence": "Trademark of Mill River Resort. Official file from the resort site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 792 612",
+   "has_style_block": true,
+   "note": "Near-black, one colour. A stacked mark: takes the whole cell (fill). Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "courtyard-by-marriott.svg": {
+   "source": "https://upload.wikimedia.org/wikipedia/commons/3/34/Courtyard_by_Marriott_logo.svg",
+   "origin": "Wikimedia Commons",
+   "licence": "Wikimedia Commons: Public domain (text logo), tagged trademarked. Trademark of Marriott International. Commons credit: Courtyard by Marriott web.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 76.076 11.909",
+   "has_style_block": false,
+   "note": "Current lockup (matches the Marriott News Center file and the marriott.com brand tile). Gold COURTYARD and grey BY MARRIOTT, the colours of the brand’s own stylesheet (brand-config.CY.css): the gold is light on the cream (about 2.1:1). Both Halifax Courtyards use it. Replaces the older tree mark in logos/hotels/marriott/. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "moxy-hotels.png": {
+   "source": "https://news.marriott.com/static-assets/component-resources/newscenter/brands/images/logo-moxy-hotels.png",
+   "origin": "chain press room: Marriott News Center (news.marriott.com), brand logos",
+   "licence": "Trademark of Marriott International. Official press file, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "150x150",
+   "transparent_background": false,
+   "note": "Black on an opaque white ground: multiplied into the cream (opaque). Small file (150 px): the wordmark reads. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "homewood-suites.png": {
+   "source": "https://stories-editor.hilton.com/wp-content/uploads/2022/04/HMWD-Logo-Dusk-e1649516585800.png",
+   "origin": "chain press room: Hilton Stories (stories.hilton.com)",
+   "licence": "Trademark of Hilton. Official press file, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "736x204",
+   "transparent_background": true,
+   "note": "Hilton Dusk slate blue, one colour; thin strokes, the lightest of the Halifax marks. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "doubletree-by-hilton.png": {
+   "source": "https://stories-editor.hilton.com/wp-content/uploads/2022/05/DTWide.png",
+   "origin": "chain press room: Hilton Stories (stories.hilton.com)",
+   "licence": "Trademark of Hilton. Official press file, used unaltered to name the hotel (a DoubleTree Suites by Hilton) in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "2840x711",
+   "transparent_background": true,
+   "note": "Navy, one colour. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "sandman-signature-dartmouth.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-ea69260fhmvjedt06259paqa/sandman-signature-dartmouth-v6.svg",
+   "origin": "official site: sandmanhotels.com/signature-dartmouth (its header logo, on the site image host)",
+   "licence": "Trademark of the Sandman Hotel Group. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "has_style_block": false,
+   "note": "Taupe, one colour. Has width/height (184x65) but no viewBox, like the Four Points file. The seal and SANDMAN carry it; the small lines under them are too small to read at the cell size. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "trademark-collection-by-wyndham.svg": {
+   "source": "https://corporate.wyndhamhotels.com/wp-content/uploads/2018/05/logo-trademark-dark.svg",
+   "origin": "chain site: corporate.wyndhamhotels.com (the brand bar)",
+   "licence": "Trademark of Wyndham Hotels & Resorts. Official file from the chain site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 504 211",
+   "has_style_block": false,
+   "note": "Dark grey, one colour. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "marriott-hotels.png": {
+   "source": "https://news.marriott.com/static-assets/component-resources/newscenter/brands/images/logo-marriott-hotels.png",
+   "origin": "chain press room: Marriott News Center (news.marriott.com), brand logos",
+   "licence": "Trademark of Marriott International. Official press file, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "150x150",
+   "transparent_background": false,
+   "note": "Black M over MARRIOTT on an opaque white ground: multiplied into the cream (opaque). Small file (150 px), a little soft, reads. The Commons SVG was not used: a third-party redraw, stretched about 5 percent against Marriott’s own artwork. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "westin.png": {
+   "source": "https://news.marriott.com/static-assets/component-resources/newscenter/brands/images/logo-westin-hotels.png",
+   "origin": "chain press room: Marriott News Center (news.marriott.com), brand logos",
+   "licence": "Trademark of Marriott International. Official press file, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "150x150",
+   "transparent_background": false,
+   "note": "Black, on an opaque white ground: multiplied into the cream (opaque). The Commons SVG was not used: it is in the former Starwood taupe, not the current Westin grey. Checked 2026-11-21 against the current mark on the hotel’s or brand’s own pages, and re-checked by a second reader."
+  },
+  "alt-hotels.svg": {
+   "source": "https://assets.germainhotels.com/germain-website-assets-production/website-assets/Icons/Brand-and-city-Icons/logo-alt-icon.svg",
+   "origin": "drawing of the Alt Hotels by Le Germain logo, supplied 21 Nov 2026; the brand's own site (germainhotels.com) publishes the colour grid as a file and shows the full lockup only as an inline header image that cannot be saved as a working file",
+   "licence": "Trademark of Germain Hotels. The colour grid matches the official file colour for colour (two white squares included, as in the official file); the alt and HOTELS wordmark matches the brand's site header, with the BY LE GERMAIN line of the brand name. Used to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 4780.2 1325.89",
+   "has_style_block": true,
+   "note": "Black wordmark, the sixteen-square colour grid. Generic class names (.cls-1 to .cls-15): <img> only. The BY LE GERMAIN line is small at the cell size; the grid and alt HOTELS carry it."
   }
  },
  "already_in_repo": [
