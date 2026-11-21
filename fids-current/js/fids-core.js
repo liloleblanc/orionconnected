@@ -20623,7 +20623,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24169" src="/textures/gate-sky-shelf.mp4?v=24169" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24170" src="/textures/gate-sky-shelf.mp4?v=24170" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20667,7 +20667,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24169" src="/textures/gate-sky-shelf.mp4?v=24169" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24170" src="/textures/gate-sky-shelf.mp4?v=24170" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21871,7 +21871,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24169" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24170" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -30626,11 +30626,9 @@ const gView = document.getElementById('gateView');
       var _welcomeBg = document.getElementById('gateWelcomePhotoBg');
       if (_welcomeBg) setGateBg(_welcomeBg, locIata);
       if (screenType === 'gate' && typeof startGateAds==='function') { startGateAds(); }
-      // Fetch AI destination info for the ad carousel
-      if (typeof loadDestInfoForGate === 'function') {
-        var _destCity = CITY[locIata] || _cityForIata(locIata) || locIata;
-        loadDestInfoForGate(locIata, _destCity);
-      }
+      // v24170 - no AI destination call: the gate no longer asks the AI destination-info
+      // route of the worker (it answers status unavailable, and nothing on any screen read
+      // its answer). The hotel lists are checked data (js/hotel-list-card.js).
       uxgActivateRotator();
   uxgFitDestinations();
   if (typeof updateOverrideBtn === 'function') updateOverrideBtn();
@@ -39567,7 +39565,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24169';
+var FIDS_BUILD_TAG = 'v24170';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -61119,9 +61117,9 @@ var AD_I18N = {
   'Earn Saga Points on every flight': { fr:'Points Saga \u00e0 chaque vol', es:'Puntos Saga en cada vuelo', de:'Saga-Punkte bei jedem Flug', it:'Punti Saga ad ogni volo', pt:'Pontos Saga em cada voo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067Saga\u30dd\u30a4\u30f3\u30c8', zh:'\u6bcf\u6b21\u98de\u884c\u8d5aSaga\u79ef\u5206', ar:'\u0646\u0642\u0627\u0637 Saga \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629' },
   'Earn miles to paradise': { fr:'Milles vers le paradis', es:'Millas al para\u00edso', de:'Meilen ins Paradies', it:'Miglia per il paradiso', pt:'Milhas para o para\u00edso', ja:'\u697d\u5712\u3078\u306e\u30de\u30a4\u30eb', zh:'\u98de\u5f80\u5929\u5802\u7684\u91cc\u7a0b', ar:'\u0623\u0645\u064a\u0627\u0644 \u0625\u0644\u0649 \u0627\u0644\u062c\u0646\u0629' },
 
-  // ── Generic city-aware ads ──
-  'Book your hotel in {CITY}':        { fr:'Réservez votre hôtel à {CITY}', es:'Reserve su hotel en {CITY}', de:'Hotel in {CITY} buchen', it:'Prenota il tuo hotel a {CITY}', pt:'Reserve seu hotel em {CITY}', ja:'{CITY}のホテル予約', zh:'预订{CITY}的酒店', ar:'احجز فندقك في {CITY}' },
-  'Best price guaranteed \u00b7 booking.com': { fr:'Meilleur prix garanti · booking.com', es:'Mejor precio garantizado · booking.com', de:'Bestpreis garantiert · booking.com', it:'Miglior prezzo garantito · booking.com', pt:'Melhor preço garantido · booking.com', ja:'最低価格保証 · booking.com', zh:'最优价格保证 · booking.com', ar:'أفضل سعر مضمون · booking.com' },
+  // ── City-aware ad lines ── (v24170: no ad shows these since the generic
+  // ads were removed; the rows stay because the word lists of the language
+  // guard in tests/i18n/policy.js are checked against them)
   'Airport transfers in {CITY}':      { fr:'Transferts aéroport à {CITY}', es:'Traslados al aeropuerto en {CITY}', de:'Flughafentransfers in {CITY}', it:"Transfer aeroportuali a {CITY}", pt:'Transfers do aeroporto em {CITY}', ja:'{CITY}の空港送迎', zh:'{CITY}机场接送', ar:'نقل المطار في {CITY}' },
   'Taxi \u00b7 Shuttle \u00b7 Rideshare from {CITY} airport': { fr:"Taxi · Navette · Covoiturage depuis l'aéroport de {CITY}", es:'Taxi · Lanzadera · Compartido desde el aeropuerto de {CITY}', de:'Taxi · Shuttle · Mitfahrt vom Flughafen {CITY}', it:"Taxi · Navetta · Condivisi dall'aeroporto di {CITY}", pt:'Táxi · Shuttle · Caronas do aeroporto de {CITY}', ja:'タクシー · シャトル · 配車 ({CITY}空港)', zh:'{CITY}机场出租车 · 班车 · 拼车', ar:'سيارة أجرة · حافلة · مشاركة الركوب من مطار {CITY}' },
   'Rent a car in {CITY}':             { fr:'Louez une voiture à {CITY}', es:'Alquile un coche en {CITY}', de:'Mietwagen in {CITY}', it:"Noleggia un'auto a {CITY}", pt:'Alugue um carro em {CITY}', ja:'{CITY}でレンタカー', zh:'在{CITY}租车', ar:'استئجار سيارة في {CITY}' },
@@ -61160,32 +61158,6 @@ function adTL(s) {
   return s;
 }
 
-var GATE_ADS_GENERIC = [
-  { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)',
-    headline:'Book your hotel in {CITY}',
-    sub:'Best price guaranteed · booking.com',
-    logo:'/logos/booking.svg' },
-  { bg:'linear-gradient(135deg,#0d47a1 0%,#1565c0 100%)',
-    headline:'Airport transfers in {CITY}',
-    sub:'Taxi · Shuttle · Rideshare from {CITY} airport',
-    logo:'/logos/airport-transfer.svg' },
-  { bg:'linear-gradient(135deg,#00843d 0%,#00a550 100%)',
-    headline:'Rent a car in {CITY}',
-    sub:'Pick up at the airport · Drive to your destination',
-    logo:'/logos/car-rental.svg' },
-  { bg:'linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)',
-    headline:'Hotels & Resorts',
-    sub:'Earn Honors points · Stay connected in {CITY}',
-    logo:'/logos/hotels/hilton/hilton.png' },
-  { bg:'linear-gradient(135deg,#1a1a1a 0%,#333 100%)',
-    headline:'Lounge Access',
-    sub:'Priority Pass · 1,300+ airport lounges worldwide',
-    logo:'/logos/priority-pass.svg' },
-  { bg:'linear-gradient(135deg,#2E7D32 0%,#388E3C 100%)',
-    headline:'Free Wi-Fi on board',
-    sub:'Stay connected · In-flight browsing',
-    icon:'<svg viewBox="0 0 24 24" width="48" height="48" fill="white"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>' },
-];
 
 
 // ── THE LEGS OF A THROUGH FLIGHT, AND WHICH ONE IS BEING FEATURED ──────────
@@ -61240,7 +61212,7 @@ function getGateAds() {
     if (ad.subLogo)  out.subLogo  = ad.subLogo;
     return out;
   });
-  // Build destination-aware generic ads
+  // The destination the hotel ads are for
   var destCity = '';
   var destIata = '';
   try {
@@ -61284,18 +61256,6 @@ function getGateAds() {
     accorAds = accorCache.hotels;
   }
 
-  var generic = GATE_ADS_GENERIC.map(function(ad) {
-    return {
-      bg: ad.bg,
-      headline: adTL(ad.headline).replace('{CITY}', destCity || TL('yourDestination')),
-      sub: adTL(ad.sub).replace('{CITY}', destCity || TL('yourDestination')),
-      logo: ad.logo || null,
-      brand: ad.brand || '',
-      gicon: ad.gicon || null,
-      giconBg: ad.giconBg || null,
-      icon: ad.icon || null
-    };
-  });
   // v218.99.46 — the spec: ad rotation = Aeroplan/airline-related ads
   // ONLY + Accor hotel ads. No generic destination ads.
   // v22408 — (Delta 'SkyMiles / Earn miles
@@ -61308,7 +61268,7 @@ function getGateAds() {
 
   // DEBUG: log ad count once per destination change
   if (window._lastAdLogKey !== code + '|' + destIata) {
-    console.log('[ADS] Airline:', code, '| airline ads:', airline.length, '| Accor:', accorAds.length, '| generic:', generic.length, '| TOTAL:', allAds.length);
+    console.log('[ADS] Airline:', code, '| airline ads:', airline.length, '| Accor:', accorAds.length, '| TOTAL:', allAds.length);
     if (airline.length > 0) console.log('[ADS] First airline ad:', airline[0].headline, '/ logo:', airline[0].logo);
     window._lastAdLogKey = code + '|' + destIata;
   }
@@ -66057,25 +66017,9 @@ function stopGateAds() {
   try { if (typeof stopDestinationVideoScheduler === 'function') stopDestinationVideoScheduler(); } catch(e) {}
 }
 
-// ── AI DESTINATION INFO — fetches and caches travel facts for gate screen ──
-var _destInfoCache = {};
-
-async function fetchDestInfo(locIata, cityName) {
-  if (_destInfoCache[locIata]) return _destInfoCache[locIata];
-  try {
-    var lang = (typeof langList !== 'undefined' && langList[0]) || 'en';
-    var proxy = typeof FIDS_PROXY !== 'undefined' ? FIDS_PROXY : 'https://fids-proxy.n-leblanc1984.workers.dev';
-    var r = await fetch(proxy + '/ai/destination-info?iata=' + encodeURIComponent(locIata) + '&city=' + encodeURIComponent(cityName || locIata) + '&lang=' + lang);
-    if (!r.ok) return null;
-    var data = await r.json();
-    if (data && data.funFacts) {
-      _destInfoCache[locIata] = data;
-      return data;
-    }
-  } catch(e) { console.log('[FIDS-AI] Destination info failed:', e.message); }
-  return null;
-}
-
+// ── DESTINATION INFO SLIDE: draws an info object of the old AI route. Since v24170
+// the gate no longer asks that route (fetchDestInfo and loadDestInfoForGate are gone),
+// and nothing calls this renderer.
 function buildDestInfoSlide(info, type, cityName) {
   if (!info) return '';
   // Single flowing card — the intro label ("Did You Know?", "Travel Tip",
@@ -66196,45 +66140,6 @@ function buildDestInfoSlide(info, type, cityName) {
       + '</div></div></div>';
   }
   return html;
-}
-
-// Cities whose short name is ambiguous — force a fully-qualified disambiguation
-// for AI calls so we don't get Sydney (Australia) content for Sydney, Nova Scotia, etc.
-var _CITY_DISAMBIGUATION = {
-  YQY: 'Sydney, Nova Scotia, Canada',
-  YSM: 'Fort Smith, Northwest Territories, Canada',
-  YMM: 'Fort McMurray, Alberta, Canada',
-  YFC: 'Fredericton, New Brunswick, Canada',
-  YHZ: 'Halifax, Nova Scotia, Canada',
-  YYJ: 'Victoria, British Columbia, Canada',
-  YHM: 'Hamilton, Ontario, Canada',
-  YXX: 'Abbotsford, British Columbia, Canada',
-  YLW: 'Kelowna, British Columbia, Canada',
-  YXE: 'Saskatoon, Saskatchewan, Canada',
-  YXU: 'London, Ontario, Canada',
-  YQR: 'Regina, Saskatchewan, Canada',
-  YWG: 'Winnipeg, Manitoba, Canada',
-  YQB: 'Quebec City, Quebec, Canada',
-  YOW: 'Ottawa, Ontario, Canada',
-  YUL: 'Montreal, Quebec, Canada',
-  YYC: 'Calgary, Alberta, Canada',
-  YEG: 'Edmonton, Alberta, Canada',
-  YVR: 'Vancouver, British Columbia, Canada',
-  YYT: "St. John's, Newfoundland, Canada",
-  YYG: 'Charlottetown, Prince Edward Island, Canada',
-  YAM: 'Sault Ste. Marie, Ontario, Canada'
-};
-
-// Inject AI slides into ad rotation — called after flight loads
-async function loadDestInfoForGate(locIata, cityName) {
-  // Pass the most unambiguous city name available to avoid AI confusion
-  // (e.g. Sydney NS vs Sydney Australia).
-  var aiCityName = _CITY_DISAMBIGUATION[locIata] || (cityName ? tc(cityName) : locIata);
-  var displayCity = tc(cityName || locIata);
-  var info = await fetchDestInfo(locIata, aiCityName);
-  if (!info) return;
-  window._gateDestInfo = info;
-  window._gateDestCity = displayCity;
 }
 
 // ── FLIGHT SEARCH (sidebar menu) ─────────────────────────────────────
@@ -70200,7 +70105,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24169" src="/textures/gate-sky-shelf.mp4?v=24169"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24170" src="/textures/gate-sky-shelf.mp4?v=24170"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

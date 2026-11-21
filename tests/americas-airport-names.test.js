@@ -21,7 +21,7 @@
 //     table has one, every screen that prints a place prints that name: the
 //     gate's destination and origin, its map label, the departures and
 //     arrivals rows, the belt sign, the phone screens, the companion app, the
-//     destination card, the weather card. Cased as every name is ('Río
+//     weather card. Cased as every name is ('Río
 //     Hato'), with its accent as the table writes it.
 //   · A name that is another place's too is printed with where it is, as the
 //     map prints it: 'London, KY', 'Valencia, Venezuela' (the country in the
@@ -138,8 +138,6 @@ const GATE_SRC = [
   ' return { dest: _destCity, from: _fromCity }; };',
   // the 3D map's place names (_map3dFlightCtx)
   'var __map3dCity = function (ia) {', cut('    var cityOf = function (ia) {', '    var _hav = function (a, b) {'), ' return cityOf(ia); };',
-  // the destination card's city, as loadDestInfoForGate cases it
-  'var __destCard = function (locIata) { ' + line(/\n        (var _destCity = CITY\[locIata\] \|\| _cityForIata\(locIata\) \|\| locIata;)/) + ' return tc(_destCity || locIata); };',
   // the gate's photo search (a query, never a print)
   'var __photo = function (locIata) { return ' + line(/var cityName = (CITY\[locIata\] \|\| _cityForIata\(locIata, true\) \|\| '');\n  if \(cityName\) \{\n    var ov = await fetchOpenversePhoto/) + '; };',
   // the weather card's title
@@ -197,7 +195,6 @@ function gateSurfaces(B, c, f) {
   const ph = B.__phone(f.dest, c, f, { _locIata: c, origin: 'Scarlett Martinez Intl' });
   p('phone gate destination', B._stripCityCode(ph.dest)); p('phone gate origin', ph.from);
   p('later at this gate', B._gateLaterPlace(f).city);
-  p('destination card', B.__destCard(c));
   p('weather card title', B.__wxCard(c));
   p('weather strip label', B.tc(B._cityForIata(c)));
   p('3D map place', B.tc(B.__map3dCity(c)));
@@ -476,7 +473,7 @@ test('the reported gate: a flight to Río Hato prints Río Hato, with its accent
 
 // ── 4. every one of them, on every screen ──────────────────────────────────
 
-test('every place of the Americas the tables do not name prints its name on the gate, the gate map, the rows, the belt sign, the destination card, the weather card and the ads, in every language', () => {
+test('every place of the Americas the tables do not name prints its name on the gate, the gate map, the rows, the belt sign, the weather card and the ads, in every language', () => {
   const B = withTable();
   const rows = mapped(B, AMERICAS.map((c) => ({ iata: c }))), arr = mapped(B, AMERICAS.map((c) => ({ iata: c, name: 'Some Field Intl' })), false);
   assert.equal(rows.length, AMERICAS.length); assert.equal(arr.length, AMERICAS.length);

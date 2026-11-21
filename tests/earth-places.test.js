@@ -26,8 +26,8 @@
 // the map. The board pages and the companion app now load the table with
 // their own scripts, and each reads it through one function (fids-core.js
 // _placeNameAm, app.html placeOf), for a code of the Americas its own tables
-// do not name. So the rows, the belt, the gate, the destination card and the
-// weather card print those 1,055 by name; and every other place, every row
+// do not name. So the rows, the belt, the gate and the weather card print
+// those 1,055 by name; and every other place, every row
 // with no code, every row whose code the feed did not send (cut from an
 // ICAO code) while the feed has not sent that code itself, the photo search
 // and the weather query print exactly what a board without the table
@@ -369,16 +369,15 @@ function board(files, extra) {
   for (const [name, src] of files.concat(extra || [])) vm.runInContext(src, ctx, { filename: name });
   const core = files.find(([n]) => n === 'js/fids-core.js')[1];
   // what each screen prints, by the board's own code, cut from its own source:
-  // the departures and arrivals row (render), the AI destination card's city
-  // (renderDedicatedScreen), the gate's photo search (setGateBg), the weather
-  // card's city (_renderWxCard) and its cities' plates (_wxCityOf)
+  // the departures and arrivals row (render), the gate's photo search
+  // (setGateBg), the weather card's city (_renderWxCard) and its cities'
+  // plates (_wxCityOf)
   const cut = (a, b) => { const i = core.indexOf(a), j = core.indexOf(b, i); assert.ok(i >= 0 && j > i, a); return core.slice(i, j); };
   const line = (re) => { const m = re.exec(core); assert.ok(m, String(re)); return m[1]; };
   vm.runInContext([
     'var __row = function (f, isDep, lang) {',
     cut('    const loc       = isDep ? f.dest : f.origin;', '    // v23925 — the row as shown (_fidsShownRow)'),
     '  return cityDisp; };',
-    'var __destInfo = function (locIata) { return ' + line(/var _destCity = (CITY\[locIata\] \|\| _cityForIata\(locIata\) \|\| locIata);/) + '; };',
     // (the photo search reads the tables alone, by _cityForIata's second
     // argument; the weather card's title reads the name of the Americas)
     'var __photo = function (locIata) { return ' + line(/var cityName = (CITY\[locIata\] \|\| _cityForIata\(locIata, true\) \|\| '');\n  if \(cityName\) \{\n    var ov = await fetchOpenversePhoto/) + '; };',
@@ -465,7 +464,7 @@ function prints(B, feeds, codes) {
     const r = [c];
     for (const l of LANGS) { B.__setLang(l); r.push(B.airportCityNameSafe_v21877(c, l), B.formatCityIata(c, c, l), B._wxCityOf(c)); }
     B.__setLang('en');
-    r.push(B.__destInfo(c), B.__photo(c), B._wxCityQuery(c), B.__wxCard(c), B._cityForIata(c), String(B._iataFromCityName(c)));
+    r.push(B.__photo(c), B._wxCityQuery(c), B.__wxCard(c), B._cityForIata(c), String(B._iataFromCityName(c)));
     // every ICAO code a feed can send for it: its first letter, any
     for (const p of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') r.push(B.__locIata({ arrival: { airport: { icao: p + c } } }, 'dep') + B.__locIata({ departure: { airport: { icao: p + c } } }, 'arr'));
     out.push(JSON.stringify(r));
@@ -632,16 +631,15 @@ function amCode(B, c, bare) {
     r[3 + 3 * i] = n;                    // the weather plates' city (_wxCityOf)
   });
   const en = amName(B, c, 'en');
-  r[10] = en.toUpperCase();              // the destination card's city
-  //  r[11]  the photo search: as on a board without the table
-  //  r[12]  the weather query: the same
-  r[13] = en;                            // the weather card's title
-  r[14] = en.toUpperCase();              // _cityForIata
-  //  r[15]  the name index, and r[16..] an ICAO code read as its last three letters: the same
+  //  r[10]  the photo search: as on a board without the table
+  //  r[11]  the weather query: the same
+  r[12] = en;                            // the weather card's title
+  r[13] = en.toUpperCase();              // _cityForIata
+  //  r[14]  the name index, and r[15..] an ICAO code read as its last three letters: the same
   return JSON.stringify(r);
 }
 
-test('the table and the floor change nothing the rows, the belt, the gate, the destination card, the photos or the weather print, but the name of a place of the Americas the tables do not name: the board with them and without them', () => {
+test('the table and the floor change nothing the rows, the belt, the gate, the photos or the weather print, but the name of a place of the Americas the tables do not name: the board with them and without them', () => {
   const { Bare, B1, sent, cut, codes, Pbare, P1, Pcut, PbareCut, Pcut2 } = run();
   assert.equal(typeof B1.FIDS_EARTH_PLACES, 'object', 'the table is loaded, as the pages load it');
   assert.equal(B1.FidsEarth && typeof B1.FidsEarth.cityNameOf, 'function', 'and the floor');
@@ -721,7 +719,7 @@ test('the table and the floor change nothing the rows, the belt, the gate, the d
   }
 });
 
-test('the rows, the belt, the gate, the companion app, the destination card, the photos and the weather print every place as v24084 did, the floor\'s table loaded beside them', (t) => {
+test('the rows, the belt, the gate, the companion app, the photos and the weather print every place as v24084 did, the floor\'s table loaded beside them', (t) => {
   if (!atBase) { t.skip('v24084 (e8cd4063) is not in this checkout\'s history'); return; }
   const moved = movedSinceBase();
   if (moved.length) { t.skip('the rows\' scripts have changed since v24084 (' + moved.join(', ') + '): the board with and without the table holds it to the names of the Americas'); return; }
