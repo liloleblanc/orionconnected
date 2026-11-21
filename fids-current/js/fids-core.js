@@ -65451,7 +65451,8 @@ function _buildGateAdSlideList() {
   } catch (e) {}
   // v24148 — THE ALGONQUIN RESORT (js/algonquin-card.js): a whole page for the
   // resort people fly to Moncton to drive to, once a pass, on a gate whose
-  // flight goes to Moncton and on every gate at Moncton (AlgonquinCard.due).
+  // flight goes to Moncton or stops there, at any airport (AlgonquinCard.due).
+  // v24170: no longer on the departures from Moncton itself.
   try {
     if (typeof AlgonquinCard !== 'undefined' && AlgonquinCard.due()) deck.push({ type: 'algonquin' });
   } catch (e) {}

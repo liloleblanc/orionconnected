@@ -384,6 +384,14 @@ test('the gate shows the hotels of the city its flight goes to, when that city h
   assert.equal(at({ _locIata: 'YHZ', _stops: ['YQM', 'YHZ'] }), 'YHZ', 'the city the flight goes to comes before a stop with a list');
   assert.equal(at({ _locIata: 'YYZ', _stops: ['YQM', 'YHZ', 'YYZ'] }), 'YHZ', 'the last stop with a list first');
   assert.equal(at(null), '', 'no flight, nothing');
+  // the list is for the city the flight goes to, never the city of the screen: a departure
+  // from Halifax to Toronto has no Halifax hotels; Montreal to Moncton has the Moncton list
+  const from = (ia, cf) => onGate(gate({ _gateIata: ia, _gateCurrentFlight: cf, _flightLegs: legs }), () => H.cityFor());
+  assert.equal(from('YHZ', { _locIata: 'YYZ' }), '', 'no Halifax list on a departure from Halifax');
+  assert.equal(from('YQM', { _locIata: 'YUL' }), '', 'no Moncton list on a departure from Moncton');
+  assert.equal(from('YYG', null), '', 'an empty gate at a city with a list shows none');
+  assert.equal(from('YQM', { _locIata: 'YHZ' }), 'YHZ', 'Moncton to Halifax: the Halifax list');
+  assert.equal(from('YUL', { _locIata: 'YQM' }), 'YQM', 'Montreal to Moncton: the Moncton list');
   // due only with the list loaded and something open
   assert.equal(onGate(gate({ _gateCurrentFlight: { _locIata: 'YYG' }, _flightLegs: legs }), () => H.due()), true);
   assert.equal(onGate(gate({ _gateCurrentFlight: { _locIata: 'YYZ' }, _flightLegs: legs }), () => H.due()), false);
