@@ -29,7 +29,7 @@
  "notes": {
   "verified_definition": "verified true = read directly on 2026-11-21 on at least one official page: the hotel's own site, its brand property page, the airport's own page (halifaxstanfield.ca) or an official tourism listing (Discover Halifax, the city's destination body; Tourism Nova Scotia, the province's), and no official page read says otherwise. Where only one official page gives a fact, its note says so (one page is enough, as in the Moncton and Charlottetown files). verified false = not read (a page that answered 403 or did not answer), on no official page, or official pages that disagree: the note says which. The airport page's entry for the Holiday Inn Express Hotel & Suites Halifax Airport repeats the Hilton Garden Inn's text and numbers and is not counted for that hotel. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js) and is cited only beside an official page: no fact rests on it alone. Postal codes take two pages (postal_note).",
   "postal_note": "Postal codes are not shown on the cards. A postal code is marked verified true only where two official pages agree. Where the pages disagree (Sandman Signature, Inn on the Lake on Discover Halifax) or only one official page gives one, postal_code is marked verified false.",
-  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the airport's own page (halifaxstanfield.ca, Visiting Halifax, Accommodations) or the hotel's own page says so: the Halifax Airport Hotel, the Hilton Garden Inn Halifax Airport and Inn on the Lake. shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read and shuttle.checked the date. The airport page's entry for the Holiday Inn Express repeats the Hilton Garden Inn text, so that hotel is not marked although Tourism Nova Scotia names a shuttle.",
+  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the airport's own page (halifaxstanfield.ca, Visiting Halifax, Accommodations) or the hotel's own page says so: the Halifax (HFX) Airport Hotel, the Hilton Garden Inn Halifax Airport and Inn on the Lake. shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read and shuttle.checked the date. The airport page's entry for the Holiday Inn Express repeats the Hilton Garden Inn text, so that hotel is not marked although Tourism Nova Scotia names a shuttle.",
   "season_note": "season.year_round true = open all year; season.open would hold the open days (MM-DD to MM-DD) of a seasonal hotel (none in Halifax). season.verified true where Tourism Nova Scotia prints \"Open year-round\" (read 2026-11-21). Chateau Bedford is on neither listing and its brand page states no season: year_round true there is the city-hotel default, verified false.",
   "sources": [
    "Halifax Stanfield International Airport: Visiting Halifax page, Accommodations (halifaxstanfield.ca), read directly",
@@ -497,7 +497,7 @@
   },
   {
    "id": "hfx-airport-hotel",
-   "name": "Halifax Airport Hotel",
+   "name": "Halifax (HFX) Airport Hotel",
    "area": "airport",
    "resort": false,
    "brand": null,
@@ -538,18 +538,24 @@
     "evidence": "Airport page, read 2026-11-21: \"offers a free shuttle service to and from the Airport\". Own site, read 2026-11-21: \"24-Hour Halifax Airport Shuttle\", \"our shuttle departs every quarter past and quarter to the hour\".",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "logo": {
+    "file": "/logos/hotels/list/hfx-airport-hotel.svg",
+    "opaque": false,
+    "source": "https://airporthotelhalifax.com/wp-content/uploads/2024/12/hah_logo.png",
+    "origin": "light-ground drawing of the hotel's own logo, supplied 21 Nov 2026 (its own file is white on blue)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
     "name": {
      "verified": true,
-     "source": "https://airporthotelhalifax.com/",
+     "source": "https://halifaxstanfield.ca/travel-planning/visiting-halifax/",
      "also": [
-      "https://novascotia.com/listing/halifax-airport-hotel/"
+      "https://discoverhalifaxns.com/listings/halifax-airport-hotel/",
+      "https://airporthotelhalifax.com/"
      ],
-     "note": "Own site, read 2026-11-21: \"Halifax Airport Hotel\" is its usual name (8 times on the home page, \"HFX Airport Hotel\" and \"Halifax (HFX) Airport Hotel\" once each); Tourism Nova Scotia \"Halifax Airport Hotel\". The airport page and Discover Halifax write \"Halifax (HFX) Airport Hotel\". The card uses the plain name: HFX is the city nickname, and on a screen that says YHZ it reads like a second airport code.",
+     "note": "Airport page and Discover Halifax: \"Halifax (HFX) Airport Hotel\". The hotel's own logo reads \"HFX AIRPORT HOTEL\" (airporthotelhalifax.com); its site also says \"Halifax Airport Hotel\"; Tourism Nova Scotia \"Halifax Airport Hotel\". HFX is in the hotel's own name, so the card keeps it (briefly shortened to the plain name on 21 Nov and put back the same day).",
      "checked": "2026-11-21"
     },
     "street": {

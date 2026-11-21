@@ -369,6 +369,16 @@
    "ground": "light",
    "type": "png",
    "made_from": "great-george.png"
+  },
+  "hfx-airport-hotel.svg": {
+   "source": "https://airporthotelhalifax.com/wp-content/uploads/2024/12/hah_logo.png",
+   "origin": "light-ground drawing of the official HFX Airport Hotel logo, supplied 21 Nov 2026 (the hotel's own logo, on its site, is white lettering on a blue panel); the logo's official source is the hotel's own site",
+   "licence": "Trademark of the HFX Airport Hotel. Drawn in the hotel's own lettering and planes, blue and navy for the cream column, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 177.99 49.69",
+   "has_style_block": true,
+   "note": "Navy planes (#152d49) and blue lettering (#1a68c4). The editor's metadata block was removed; the drawing is as supplied. Generic class names (.cls-1, .cls-2): <img> only."
   }
  },
  "already_in_repo": [
