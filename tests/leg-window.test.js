@@ -112,3 +112,36 @@ test('the speed and altitude panel reads only the live position of the flight it
   const writers = CORE.split('window._gateInboundLivePos = ').slice(1).filter((w) => /^[\s(]*\{|^\(/.test(w) || /^\{/.test(w));
   for (const w of writers) assert.match(w.slice(0, 600), /\bfl: /, 'a writer without fl: ' + w.slice(0, 80));
 });
+
+// v24169 — not before it can have left. Paid for the Moncton arrival sweep
+// (workers/fids-proxy.js yqmArrSweep): an aeroplane still at its origin
+// stand is the main class of empty, billed FR24 answers, so when the row
+// gives its own departure time the window opens 5 minutes before it.
+test('with a departure time of its own, the window opens 5 minutes before it, not a block time back', () => {
+  const lib2 = new Function('_lookupAirport', 'window', 'ARR_CONFIRM_MIN', '_gateIsProp', 'adbTs',
+    [fnSrc('_gcNm'), fnSrc('_gateArrEarliestTs'), fnSrc('_gateLegSpanMs'), fnSrc('_gateDepSchedTs'), fnSrc('_gateLegWindowOpen')].join('\n')
+    + '\nreturn { _gateLegWindowOpen };')(
+    (c) => AP[c] || null, { _gateIata: 'YQM' }, 30, (row) => /dash|dhc/i.test(String(row._aircraft || '')),
+    (s) => Date.parse(String(s).replace(' ', 'T')) || 0);
+  const dep = ETA - 120 * MIN;                         // 11:27 at Moncton, 10:27 in Toronto
+  const row = Object.assign({}, pd2293, { _depSchedLocal: '2026-11-05 10:27-05:00' });
+  assert.equal(Date.parse('2026-11-05T10:27-05:00'), dep);
+  const realNow = Date.now;
+  try {
+    Date.now = () => ETA - 150 * MIN;
+    assert.equal(lib._gateLegWindowOpen(pd2293, 'YQM'), true, 'no departure time: the block time window, as before');
+    assert.equal(lib2._gateLegWindowOpen(row, 'YQM'), false, '30 minutes before it leaves: no lookup');
+    Date.now = () => dep - 6 * MIN;
+    assert.equal(lib2._gateLegWindowOpen(row, 'YQM'), false);
+    Date.now = () => dep - 4 * MIN;
+    assert.equal(lib2._gateLegWindowOpen(row, 'YQM'), true, '5 minutes before its departure');
+    // a row that says it has left is never held back
+    Date.now = () => ETA - 150 * MIN;
+    assert.equal(lib2._gateLegWindowOpen(Object.assign({}, row, { _actualDepTime: '2026-11-05 09:55-05:00' }), 'YQM'), true);
+    assert.equal(lib2._gateLegWindowOpen(Object.assign({}, row, { status: 'departed' }), 'YQM'), true);
+    assert.equal(lib2._gateLegWindowOpen(Object.assign({}, row, { status: 'En Route' }), 'YQM'), true);
+    // the arrival time echoed into the departure field (authority feeds) is no departure time
+    const echo = Object.assign({}, pd2293, { _depSchedLocal: '2026-11-05 13:27-04:00' });
+    assert.equal(lib2._gateLegWindowOpen(echo, 'YQM'), true);
+  } finally { Date.now = realNow; }
+});

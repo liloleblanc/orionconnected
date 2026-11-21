@@ -20,7 +20,10 @@ const WORKER = fs.readFileSync(workerPath, 'utf8');
 
 test('a position is held 180 s, a quiet answer longer', () => {
   assert.match(WORKER, /const ADSB_TTL = 180;/);
-  assert.match(WORKER, /const ADSB_EMPTY_TTL = 300;/);
+  // v24169 — 600 s, up from 300: the repeat empty answers pay for the
+  // Moncton arrival sweep (see the ADSB_EMPTY_TTL note in the worker); a
+  // quiet answer is still held well under the 15 minute fix age limit.
+  assert.match(WORKER, /const ADSB_EMPTY_TTL = 600;/);
 });
 
 test('another location\'s answer is reused, aged, and FR24 is not called', async () => {

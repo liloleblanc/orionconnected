@@ -112,18 +112,21 @@ test('/acinfo is a public route ahead of the ADS-B and ADB catch-alls', () => {
 test('every FR24 hit is remembered, at no extra call', () => {
   const hit = WORKER.indexOf('const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });');
   assert.ok(hit > 0);
-  assert.match(WORKER.slice(hit - 600, hit), /ctx\.waitUntil\(acMemRemember\(env, _p\.flight/);
+  // (v24169 — the call now sits behind the subject check, adsbRowMatches)
+  assert.match(WORKER.slice(hit - 900, hit), /ctx\.waitUntil\(acMemRemember\(env, _p\.flight/);
   assert.match(WORKER, /const ACMEM_TTL_S = 29 \* 86400;/, 'kept under FR24\'s 30-day storage cap');
 });
 
 test('the board asks only when nothing is known, and repaints on an answer', () => {
-  assert.match(CORE, /function _acInfoKick\(row, ourDir\)/);
+  // (v24169 — a third argument, tailOnly: the backed-off re-ask for a held leg with no tail)
+  assert.match(CORE, /function _acInfoKick\(row, ourDir, tailOnly\)/);
   assert.match(CORE, /\} else if \(typeof _acInfoKick === 'function'\) \{\n\s+_acInfoKick\(currentFlight, 'dep'\);/,
     'the departing flight asks when its fallback is empty');
   assert.match(CORE, /\} else if \(typeof _acInfoKick === 'function'\) \{\n\s+_acInfoKick\(_ib2, 'arr'\);/,
     'the inbound asks when its fallback is empty');
-  const fn = CORE.slice(CORE.indexOf('function _acInfoKick('), CORE.indexOf('function _acInfoKick(') + 2600);
-  assert.match(fn, /< 600000\) return;/, 'at most once per flight per 10 minutes');
+  const fn = CORE.slice(CORE.indexOf('function _acInfoKick('), CORE.indexOf('function _acInfoKick(') + 4000);
+  assert.match(fn, /: 600000;/, 'at most once per flight per 10 minutes');
+  assert.match(fn, /< gap\) return;/);
   assert.match(fn, /j\.basis === 'feed' \? \(j\.reg \|\| ''\) : ''/, 'a usual-type answer never carries a registration');
   assert.match(fn, /requestGateRebuild\(\)/);
 });

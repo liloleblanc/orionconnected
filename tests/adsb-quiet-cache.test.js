@@ -48,8 +48,10 @@ test('a transient failure still recovers quickly', () => {
   // The 429 stampede this TTL was originally added for is a real problem and
   // must not be traded away: if everything merely failed, retry soon.
   assert.equal(constant('ADSB_NEG_TTL'), 30);
-  assert.match(worker, /const _negTtl = _fr24SaidNothing \? ADSB_EMPTY_TTL : ADSB_NEG_TTL;/,
+  // (v24169 review: a near ask, the arrival on final, keeps a shorter quiet hold)
+  assert.match(worker, /const _negTtl = _fr24SaidNothing \? \(_near \? ADSB_NEAR_EMPTY_TTL : ADSB_EMPTY_TTL\) : ADSB_NEG_TTL;/,
     'the long TTL must be conditional on FR24 having actually answered');
+  assert.ok(constant('ADSB_NEAR_EMPTY_TTL') <= 300, 'an arrival on final is not hidden for ten minutes');
 });
 
 test('only a clean, genuinely empty FR24 answer counts as quiet', () => {
