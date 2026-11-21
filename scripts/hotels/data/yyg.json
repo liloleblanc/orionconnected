@@ -442,8 +442,13 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "The only official file (sonesta.com footer, white) now answers 404.",
+   "logo": {
+    "file": "/logos/hotels/list/canadas-best-value-inn.png",
+    "opaque": false,
+    "source": "https://franchise.sonesta.com/wp-content/uploads/2023/03/CanadasBestValueInn_BySonesta_Logo_FullColor_RGB-1.png",
+    "origin": "chain site: franchise.sonesta.com, the Canadas Best Value Inn brand page (Sonesta)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -556,7 +561,7 @@
     "checked": "2026-11-16"
    },
    "logo": null,
-   "logo_missing": "No official logo (only a photo-like tile).",
+   "logo_missing": "Only a photograph of the sign is published, not a logo file. The name alone (searched twice, 21 Nov 2026).",
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -1115,8 +1120,14 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "White-lettering files only: nothing reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/hotel-on-pownal.png",
+    "opaque": false,
+    "source": "https://thehotelonpownal.com/wp-content/uploads/2021/08/thop-logo.png",
+    "origin": "one-colour version of the hotel’s own logo (its HP monogram in black on a white panel over white lettering): the lettering switched to the monogram’s near-black #231F20 and the white panel taken away, shapes unchanged, 21 Nov 2026",
+    "trim": "inset(8.5% 0% 8.5% 0.3%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -1673,7 +1684,7 @@
     "checked": "2026-11-16"
    },
    "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo_missing": "No logo file on its site, its booking page or the tourism listings. The name alone (searched twice, 21 Nov 2026).",
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -1780,8 +1791,15 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/suites-of-euston.png",
+    "opaque": false,
+    "fill": true,
+    "source": "https://book.suitesofeuston.ca/cdn/shop/files/IMG_9488_430x_webp.png?v=1744899801",
+    "origin": "official site: the header logo of the hotel’s own booking site (book.suitesofeuston.ca, linked from suitesofeuston.ca)",
+    "trim": "inset(1.6% 10.9% 1.6% 12.3%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {

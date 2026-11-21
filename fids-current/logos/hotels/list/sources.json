@@ -1,5 +1,5 @@
 {
- "about": "Hotel logos of the free hotel list cards (cream logo column) and the tourism marks of their foot. Each file is copied unaltered from the official source named here (the hotel, its chain or its press room, the tourism body, or Wikimedia Commons); a file supplied for the cards (a one-colour or light-ground version of a hotel’s own logo) says so in its origin. Load through <img> only, never inline (some SVGs carry generic <style> class names). Trademarks of their owners, used to name the hotel in a guest-information list.",
+ "about": "Hotel logos of the free hotel list cards (cream logo column) and the tourism marks of their foot. Each file is copied unaltered from the official source named here (the hotel, its chain or its press room, the tourism body, or Wikimedia Commons); a one-colour or light-ground version of a hotel’s own logo (supplied for the cards, or made here by switching the colour of the hotel’s own white file, shapes unchanged) says so in its origin. Load through <img> only, never inline (some SVGs carry generic <style> class names). Trademarks of their owners, used to name the hotel in a guest-information list.",
  "files": {
   "amsterdam-inn.svg": {
    "source": "https://amsterdaminns.com/wp-content/uploads/2025/12/group-8.svg",
@@ -597,6 +597,76 @@
    "viewBox": "0 0 4780.2 1325.89",
    "has_style_block": true,
    "note": "Black wordmark, the sixteen-square colour grid. Generic class names (.cls-1 to .cls-15): <img> only. The BY LE GERMAIN line is small at the cell size; the grid and alt HOTELS carry it."
+  },
+  "barrington-hotel.svg": {
+   "source": "https://image-tc.galaxy.tf/wisvg-e7dim8gso1xcme3hc1hsi3qm8/logo-white.svg",
+   "origin": "one-colour version of the hotel’s own logo (thebarringtonhotel.ca header, published only in white): the colour switched to the hotel’s burgundy #57251E (the header of its own booking page and its favicon) for the cream card, shapes unchanged, 21 Nov 2026",
+   "licence": "Trademark of The Barrington Hotel. The hotel’s own lettering, one colour, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 270 69",
+   "has_style_block": false,
+   "note": "A very wide one-line name (about 20 to 1): small at the cell width. The site, its booking page and the tourism listings publish no dark version. Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
+  },
+  "prince-george-hotel.svg": {
+   "source": "https://www.princegeorgehotel.com/images/logo-header-prince-george-hotel.svg",
+   "origin": "one-colour version of the hotel’s own header logo (published in white): the colour switched to the hotel’s own warm grey #6A615E, the colour of the same logo in its catering menu PDF (princegeorgehotel.com, October 2026), shapes unchanged, 21 Nov 2026",
+   "licence": "Trademark of The Prince George Hotel. The hotel’s own logo in its own dark colour, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 401.68 147.71",
+   "has_style_block": true,
+   "note": "PG monogram, the name and HALIFAX, stacked. Generic class name (.cls-1): <img> only. Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
+  },
+  "inn-on-the-lake.jpg": {
+   "source": "https://www.innonthelake.com/s/2027-brunch-menu.pdf",
+   "origin": "official site: the logo image in the inn’s own 2027 brunch menu PDF, linked from innonthelake.com/menus (the same bytes are in its catering menu PDF); the JPEG stream taken byte for byte",
+   "licence": "Trademark of Inn on the Lake. Official file from the inn’s own PDF, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "jpg",
+   "px": "548x115",
+   "transparent_background": false,
+   "note": "Burgundy on a white plate: multiplied into the cream (opaque). The site header publishes the same logo only in white. Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
+  },
+  "hotel-on-pownal.png": {
+   "source": "https://thehotelonpownal.com/wp-content/uploads/2021/08/thop-logo.png",
+   "origin": "one-colour version of the hotel’s own logo (its HP monogram in black on a white panel over white lettering): the lettering switched to the monogram’s near-black #231F20 and the white panel taken away, shapes unchanged, 21 Nov 2026",
+   "licence": "Trademark of The Hotel on Pownal. The hotel’s own logo, one colour, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "376x200",
+   "transparent_background": true,
+   "note": "The only dark official file is the HP monogram alone (the site favicon, no name), so the full logo is used in one colour. Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
+  },
+  "suites-of-euston.png": {
+   "source": "https://book.suitesofeuston.ca/cdn/shop/files/IMG_9488_430x_webp.png?v=1744899801",
+   "origin": "official site: the header logo of the hotel’s own booking site (book.suitesofeuston.ca, linked from suitesofeuston.ca)",
+   "licence": "Trademark of Suites of Euston. Official file from the hotel’s own site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "430x430",
+   "transparent_background": true,
+   "note": "Gold gate over Suites of Euston, stacked: takes the whole cell (fill). Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
+  },
+  "canadas-best-value-inn.png": {
+   "source": "https://franchise.sonesta.com/wp-content/uploads/2023/03/CanadasBestValueInn_BySonesta_Logo_FullColor_RGB-1.png",
+   "origin": "chain site: franchise.sonesta.com, the Canadas Best Value Inn brand page (Sonesta)",
+   "licence": "Trademark of Sonesta International Hotels. Official brand file, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "2000x892",
+   "transparent_background": true,
+   "note": "Red badge, the white leaf and band inside its red outline. The brand mark (CANADAS BEST VALUE INN BY SONESTA); the hotel’s own site shows the older badge with a white place-name line under it that cannot read on the cream. Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
+  },
+  "st-james-gate.png": {
+   "source": "https://www.st-jamesgate.ca/s/SJG-Event-Menu-2025.pdf",
+   "origin": "official site: the monogram in its own 2025 Special Event Menu PDF (linked from st-jamesgate.ca/events-meetings-moncton), the PDF’s own image with its own soft mask, pixels unchanged",
+   "licence": "Trademark of St. James’ Gate (the St. James Gate Group of Companies). Its own mark, to name it in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "901x638",
+   "transparent_background": true,
+   "note": "Black SJG monogram, its only mark (no name in it); the name is on the card beside it. Checked 2026-11-21 against the hotel’s own pages and re-checked by a second reader."
   }
  },
  "already_in_repo": [

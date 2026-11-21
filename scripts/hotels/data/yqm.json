@@ -845,8 +845,14 @@
     "evidence": "Own site: no mention of a shuttle.",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "Its only official file has light-grey letters for a dark ground: nothing reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/st-james-gate.png",
+    "opaque": false,
+    "source": "https://www.st-jamesgate.ca/s/SJG-Event-Menu-2025.pdf",
+    "origin": "official site: the monogram in its own 2025 Special Event Menu PDF (linked from st-jamesgate.ca/events-meetings-moncton), the PDF’s own image with its own soft mask, pixels unchanged",
+    "trim": "inset(22.3% 25% 22.3% 25%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
