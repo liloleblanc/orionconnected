@@ -3034,8 +3034,15 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/rodd-crowbush.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://image-tc.galaxy.tf/wisvg-722o9w32rx60tnlh7dggb03hc/official-logo-of-rodd-crowbush-golf-beach-resort.svg",
+    "origin": "official site: roddvacations.com (the resort logo, on the site image host, as the other Rodd marks)",
+    "trim": "inset(10.1% 0% 10% 0%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -3156,8 +3163,13 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/stanley-bridge-resort.png",
+    "opaque": false,
+    "source": "https://stanleybridgeresort.com/wp-content/uploads/2018/04/web-logo.png",
+    "origin": "official site: stanleybridgeresort.com"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -3274,8 +3286,14 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/rodd-brudenell.svg",
+    "opaque": false,
+    "source": "https://image-tc.galaxy.tf/wisvg-cgi2rvjmsu36aefx21zb7ibjz/official-logo-of-rodd-brudenell-river-resort.svg",
+    "origin": "official site: roddvacations.com (the resort logo, on the site image host, as the other Rodd marks)",
+    "trim": "inset(10% 0% 10% 0%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -3392,8 +3410,14 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/mysa.png",
+    "opaque": false,
+    "source": "https://mysanordicspa.com/wp-content/uploads/2021/11/logo-lg.png",
+    "origin": "official site: mysanordicspa.com",
+    "trim": "inset(6.2% 7.8% 6.2% 10.8%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -3514,8 +3538,14 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/inn-at-bay-fortune.png",
+    "opaque": false,
+    "source": "https://innatbayfortune.com/wp-content/uploads/2019/03/IABF-logo-wide.png",
+    "origin": "official site: innatbayfortune.com",
+    "trim": "inset(1.9% 0.5% 1.9% 0.5%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -3631,8 +3661,15 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No official file that reads on the cream column.",
+   "logo": {
+    "file": "/logos/hotels/list/mill-river.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://millriver.ca/wp-content/uploads/2022/04/MillRiver-1.svg",
+    "origin": "official site: millriver.ca",
+    "trim": "inset(5.2% 7.1% 10.2% 6.8%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {

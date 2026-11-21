@@ -63,8 +63,12 @@ the day at the airport each time the deck is built, so a seasonal hotel comes ba
 ## The logos: `fids-current/logos/hotels/list/`
 
 `sources.json` beside the files names the official source of each (the hotel's own site, its
-chain's site or brand page, the tourism body, or Wikimedia Commons; never a logo-download site),
-with its licence note. Files are unaltered. Where a file has a wide transparent margin, the card
+chain's site, brand page or press room, the tourism body, or Wikimedia Commons; never a
+logo-download site), with its licence note. Files are unaltered. A file supplied for the cards (a
+one-colour or light-ground version of a hotel's own logo, where the hotel's own file is pale or
+white and cannot read on the cream) says so in its `origin` and still names the hotel's own file
+as its `source`. Where the hotel's or the brand's site refuses automated reads, the hotel keeps
+the name alone until a file is supplied; the refusal is not worked around. Where a file has a wide transparent margin, the card
 shows it through `object-view-box` (`logo.trim` in the data, measured from the file's own ink);
 a stacked lockup whose words are small at the common logo height (the Algonquin, Delta Hotels,
 Fairholm) may take the whole cell of the column (`logo.fill`);

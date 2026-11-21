@@ -315,7 +315,7 @@ test('every logo is a file loaded through <img>: no SVG of a hotel is written in
 test('a stacked lockup whose words are small at the common height takes the whole cell, shown as it is', () => {
   const filled = [];
   for (const doc of Object.values(DOCS)) for (const h of doc.hotels) if (h.logo && h.logo.fill) filled.push(h.id);
-  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-dartmouth', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm']);
+  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-dartmouth', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm', 'future-inns-halifax', 'mill-river', 'rodd-crowbush']);
   assert.match(CSS, /\n\.hlc-img--fill\{ max-height:100%; \}\n/);
   const resort = views(build('YQM', ['en', 'fr'])).find((x) => x.includes('data-area="resort"'));
   assert.match(resort, /<img class="hlc-img hlc-img--fill" alt="" decoding="async" src="\/logos\/hotels\/marriott\/the-algonquin-resort-1\.svg">/);
@@ -591,7 +591,12 @@ test('a light card: the logos stand on its cream, never a box behind one logo; t
   // shorter cards: their lines only
   assert.deepEqual(list('YQM', 'resort'), { cls: 'hlc-list', rows: 1, lines: 1 }, 'Moncton resorts: the Algonquin');
   assert.deepEqual(list('YYG', 'nearby'), { cls: 'hlc-list', rows: 2, lines: 2 }, 'Charlottetown nearby: two lines, both with a logo');
-  assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list hlc-list--bare', rows: 3, lines: 3 }, 'Charlottetown resorts: no logo, no logo cell');
+  assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list', rows: 3, lines: 3 }, 'Charlottetown resorts: their own logos (v24170)');
+  // a card where no line has a logo still drops the logo cell: the same list with its logos taken off
+  const noLogos = JSON.parse(JSON.stringify(RUN.YYG));
+  noLogos.hotels.forEach((h) => { delete h.logo; });
+  const bare = views(onGate(gate(), () => H.build(noLogos, ['en', 'fr'], { date: NOV16, home: 'YYZ' }))).find((x) => x.includes('data-area="resort"'));
+  assert.match(bare, /<ol class="hlc-list hlc-list--bare" style="--hlc-rows:3">/, 'no logo, no logo cell');
   // the app's list: no column on a list where no hotel has a logo
   assert.match(APP, /\.hl-list\.hl-list--bare\{background:var\(--card\);\}\n  \.hl-list--bare \.hl-logo\{display:none;\}/);
   assert.match(APP, /'<ol class="hl-list'\+\(c\.hotels\.some\(h=>h\.logo&&h\.logo\.file\)\?'':' hl-list--bare'\)\+'">'/);
