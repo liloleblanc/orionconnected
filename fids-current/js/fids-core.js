@@ -20623,7 +20623,7 @@ function _buildV2MapCol(ctx, vars) {
         // The clip is re-rendered with cleanplate5.swift: the clouds that pass behind the removed
         // aircraft are carried through from the frames where they show, so they keep moving and keep
         // their texture (the first render's per-frame fill smeared them into a glow).
-        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24169" src="/textures/gate-sky-shelf.mp4?v=24169" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24170" src="/textures/gate-sky-shelf.mp4?v=24170" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
         +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
         +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
@@ -20667,7 +20667,7 @@ function _buildV2MapCol(ctx, vars) {
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
       +   '<div id="gateCloudsBg"></div>'
-      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24169" src="/textures/gate-sky-shelf.mp4?v=24169" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=24170" src="/textures/gate-sky-shelf.mp4?v=24170" onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
       +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
@@ -21871,7 +21871,7 @@ function uxgGateHtml(ctx) {
       _bwMid = '<span class="g8-bw-u100" aria-hidden="true"' + _u100T + '></span>'
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
         + (_bwStar && !_u100StarMid ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '')
-        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24169" width="212" height="161" alt="">';
+        + '<img class="g8-bw-u100-words"' + _u100T + ' src="/logos/airlines/us-major/united-100-years-words.png?v=24170" width="212" height="161" alt="">';
     } else {
       _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt=""' + window._gateMarkAttrs(_bwPick) + '>' : '')
         + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -30626,11 +30626,9 @@ const gView = document.getElementById('gateView');
       var _welcomeBg = document.getElementById('gateWelcomePhotoBg');
       if (_welcomeBg) setGateBg(_welcomeBg, locIata);
       if (screenType === 'gate' && typeof startGateAds==='function') { startGateAds(); }
-      // Fetch AI destination info for the ad carousel
-      if (typeof loadDestInfoForGate === 'function') {
-        var _destCity = CITY[locIata] || _cityForIata(locIata) || locIata;
-        loadDestInfoForGate(locIata, _destCity);
-      }
+      // v24170 - no AI destination call: the gate no longer asks the AI destination-info
+      // route of the worker (it answers status unavailable, and nothing on any screen read
+      // its answer). The hotel lists are checked data (js/hotel-list-card.js).
       uxgActivateRotator();
   uxgFitDestinations();
   if (typeof updateOverrideBtn === 'function') updateOverrideBtn();
@@ -39567,7 +39565,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v24169';
+var FIDS_BUILD_TAG = 'v24170';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -66057,25 +66055,9 @@ function stopGateAds() {
   try { if (typeof stopDestinationVideoScheduler === 'function') stopDestinationVideoScheduler(); } catch(e) {}
 }
 
-// ── AI DESTINATION INFO — fetches and caches travel facts for gate screen ──
-var _destInfoCache = {};
-
-async function fetchDestInfo(locIata, cityName) {
-  if (_destInfoCache[locIata]) return _destInfoCache[locIata];
-  try {
-    var lang = (typeof langList !== 'undefined' && langList[0]) || 'en';
-    var proxy = typeof FIDS_PROXY !== 'undefined' ? FIDS_PROXY : 'https://fids-proxy.n-leblanc1984.workers.dev';
-    var r = await fetch(proxy + '/ai/destination-info?iata=' + encodeURIComponent(locIata) + '&city=' + encodeURIComponent(cityName || locIata) + '&lang=' + lang);
-    if (!r.ok) return null;
-    var data = await r.json();
-    if (data && data.funFacts) {
-      _destInfoCache[locIata] = data;
-      return data;
-    }
-  } catch(e) { console.log('[FIDS-AI] Destination info failed:', e.message); }
-  return null;
-}
-
+// ── DESTINATION INFO SLIDE: draws an info object of the old AI route. Since v24170
+// the gate no longer asks that route (fetchDestInfo and loadDestInfoForGate are gone),
+// and nothing calls this renderer.
 function buildDestInfoSlide(info, type, cityName) {
   if (!info) return '';
   // Single flowing card — the intro label ("Did You Know?", "Travel Tip",
@@ -66196,45 +66178,6 @@ function buildDestInfoSlide(info, type, cityName) {
       + '</div></div></div>';
   }
   return html;
-}
-
-// Cities whose short name is ambiguous — force a fully-qualified disambiguation
-// for AI calls so we don't get Sydney (Australia) content for Sydney, Nova Scotia, etc.
-var _CITY_DISAMBIGUATION = {
-  YQY: 'Sydney, Nova Scotia, Canada',
-  YSM: 'Fort Smith, Northwest Territories, Canada',
-  YMM: 'Fort McMurray, Alberta, Canada',
-  YFC: 'Fredericton, New Brunswick, Canada',
-  YHZ: 'Halifax, Nova Scotia, Canada',
-  YYJ: 'Victoria, British Columbia, Canada',
-  YHM: 'Hamilton, Ontario, Canada',
-  YXX: 'Abbotsford, British Columbia, Canada',
-  YLW: 'Kelowna, British Columbia, Canada',
-  YXE: 'Saskatoon, Saskatchewan, Canada',
-  YXU: 'London, Ontario, Canada',
-  YQR: 'Regina, Saskatchewan, Canada',
-  YWG: 'Winnipeg, Manitoba, Canada',
-  YQB: 'Quebec City, Quebec, Canada',
-  YOW: 'Ottawa, Ontario, Canada',
-  YUL: 'Montreal, Quebec, Canada',
-  YYC: 'Calgary, Alberta, Canada',
-  YEG: 'Edmonton, Alberta, Canada',
-  YVR: 'Vancouver, British Columbia, Canada',
-  YYT: "St. John's, Newfoundland, Canada",
-  YYG: 'Charlottetown, Prince Edward Island, Canada',
-  YAM: 'Sault Ste. Marie, Ontario, Canada'
-};
-
-// Inject AI slides into ad rotation — called after flight loads
-async function loadDestInfoForGate(locIata, cityName) {
-  // Pass the most unambiguous city name available to avoid AI confusion
-  // (e.g. Sydney NS vs Sydney Australia).
-  var aiCityName = _CITY_DISAMBIGUATION[locIata] || (cityName ? tc(cityName) : locIata);
-  var displayCity = tc(cityName || locIata);
-  var info = await fetchDestInfo(locIata, aiCityName);
-  if (!info) return;
-  window._gateDestInfo = info;
-  window._gateDestCity = displayCity;
 }
 
 // ── FLIGHT SEARCH (sidebar menu) ─────────────────────────────────────
@@ -70200,7 +70143,7 @@ function _renderHeritageCard(el) {
       // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
       // every layer keeps the shelf's proportions and speeds at the card's larger size.
       +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
-      +       ' poster="/textures/gate-sky-model.jpg?v=24169" src="/textures/gate-sky-shelf.mp4?v=24169"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=24170" src="/textures/gate-sky-shelf.mp4?v=24170"'
       +       ' onloadedmetadata="try{var p=(window._skyPace?window._skyPace():1);this.playbackRate=p;this.currentTime=(Date.now()/1000*p)%15}catch(e){}"></video>'
       +     '<div class="hcard-stage">'
       +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'

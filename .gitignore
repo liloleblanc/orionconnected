@@ -21,3 +21,7 @@ tests/render/out/
 # Python bytecode caches
 __pycache__/
 *.pyc
+
+# the hotel-list helper's working files (node scripts/hotels/find-candidates.js): the raw
+# OpenStreetMap answer, the worksheet and the skeleton, never published as they are
+scripts/hotels/work/

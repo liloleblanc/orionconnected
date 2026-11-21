@@ -33,16 +33,14 @@ const KEYS = ['hotelsAirport', 'hotelsDowntown', 'hotelsNearby', 'hotelsResorts'
 // the checked list of each city (every fact with its source and verified mark), kept out of the
 // site, and the slim copy the site serves, made from it by scripts/hotels/build-runtime.js
 const RT = require(path.join(ROOT, 'scripts/hotels/build-runtime.js'));
-const DOCS = {
-  YQM: JSON.parse(read('scripts/hotels/data/yqm.json')),
-  YYG: JSON.parse(read('scripts/hotels/data/yyg.json'))
-};
-const RUN = {
-  YQM: JSON.parse(read('fids-current/data/hotels/yqm.json')),
-  YYG: JSON.parse(read('fids-current/data/hotels/yyg.json'))
-};
-H.put('YQM', RUN.YQM);
-H.put('YYG', RUN.YYG);
+// every city of the one list (HotelListCard.CITIES), the checked file and the slim copy of each
+const DOCS = {};
+const RUN = {};
+for (const C of H.CITIES) {
+  DOCS[C] = JSON.parse(read('scripts/hotels/data/' + C.toLowerCase() + '.json'));
+  RUN[C] = JSON.parse(read('fids-current/data/hotels/' + C.toLowerCase() + '.json'));
+  H.put(C, RUN[C]);
+}
 // a day at noon on the machine's own calendar (no board: the module reads the date's own fields)
 const day = (y, m, d) => new Date(y, m - 1, d, 12, 0, 0);
 const NOV16 = day(2026, 11, 16);
@@ -107,6 +105,39 @@ test('each list is one checked file: every hotel has its facts, where they were 
       if (h.area === 'resort') assert.ok(h.drive && h.drive.km > 30 && h.drive.from === code, at + ': a resort has its drive');
     }
   }
+});
+
+test('the cities are one list (HotelListCard.CITIES): the build step, the phone app and the tests read it, and it matches the files', () => {
+  assert.ok(H.CITIES.length >= 2 && H.CITIES.every((c) => /^[A-Z0-9]{3}$/.test(c)), 'codes');
+  assert.equal(new Set(H.CITIES).size, H.CITIES.length, 'no city twice');
+  // the build step reads the module's list (lower case, its file names), and names no city itself
+  assert.deepEqual(RT.CITIES, H.CITIES.map((c) => c.toLowerCase()));
+  const BUILD = read('scripts/hotels/build-runtime.js');
+  assert.match(BUILD, /require\(path\.join\(ROOT, 'fids-current', 'js', 'hotel-list-card\.js'\)\)\.CITIES/);
+  for (const C of H.CITIES) {
+    assert.ok(!new RegExp("['\"]" + C + "['\"]", 'i').test(BUILD), 'build-runtime.js names ' + C + ' itself');
+    assert.ok(!new RegExp("['\"]" + C + "['\"]", 'i').test(APP.slice(APP.indexOf('// ── THE HOTEL LISTS'), APP.indexOf('function closeHotels('))), 'the app names ' + C + ' itself');
+  }
+  // the module names the list once
+  assert.equal((SRC.match(/var CITIES = \[/g) || []).length, 1);
+  // the app asks the module which cities have a list
+  assert.match(APP, /if\(H\.CITIES\.indexOf\(c\)<0\)return;/);
+  // every checked file is a city of the list, every city of the list has its checked file and its slim copy
+  const codes = (dir) => fs.readdirSync(path.join(ROOT, dir)).filter((f) => /^[a-z0-9]{3}\.json$/.test(f)).map((f) => f.slice(0, 3).toUpperCase()).sort();
+  assert.deepEqual(codes('scripts/hotels/data'), H.CITIES.slice().sort());
+  assert.deepEqual(codes('fids-current/data/hotels'), H.CITIES.slice().sort());
+  assert.deepEqual(RT.listProblems(), []);
+  assert.deepEqual(Object.keys(DOCS), H.CITIES);
+});
+
+test('the gate no longer asks the old AI route for hotels: the lists are checked data only', () => {
+  // v24170: fetchDestInfo and loadDestInfoForGate are gone with their call, and the table of
+  // place names only they sent (the route answers status unavailable, and nothing read it)
+  for (const gone of ['/ai/destination-info', 'function fetchDestInfo(', 'function loadDestInfoForGate(', 'loadDestInfoForGate(', '_destInfoCache', '_CITY_DISAMBIGUATION', '_gateDestInfo']) {
+    assert.ok(!CORE.includes(gone), gone + ' is gone from fids-core.js');
+  }
+  for (const page of ['gids.html', 'app.html', 'fids.html', 'bids.html']) assert.ok(!read('fids-current/' + page).includes('/ai/destination-info'), page);
+  assert.ok(!SRC.includes('/ai/'), 'the hotel cards ask no AI route');
 });
 
 test('the site serves a slim copy of each checked list, made from it by the build step, and the two agree', () => {

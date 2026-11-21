@@ -20,9 +20,11 @@ page, the skip loop, the dwell, the preloader), the list view in `fids-current/a
 words in `fids-current/js/board-strings.js` (nine languages each), and a credits line for the two faces. Test: `tests/hotel-list-cards.test.js`.
 Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate.
 
-## The data: `scripts/hotels/data/yqm.json`, `yyg.json`
+## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`)
 
-One checked file a city, checked on 2026-11-16, kept out of the site. The site serves a slim
+One checked file a city, checked on 2026-11-16, kept out of the site. The cities are one list,
+`HotelListCard.CITIES` in `fids-current/js/hotel-list-card.js`: the build step, the phone app and
+the tests read it, and fail on a checked file whose city is not in it. The site serves a slim
 copy of each, `fids-current/data/hotels/<code>.json` (about 10 KB instead of about 120 KB, since
 every gate with a flight to the city fetches it): only the hotels that are listed, and only the
 fields the cards and the phone app read (id, name, area, address line, telephone, website,
@@ -88,3 +90,11 @@ Edit the city's checked file (`scripts/hotels/data/<code>.json`), keep every `ve
 run `npm run assets:build` if a logo was added, and run `tests/hotel-list-cards.test.js`, which
 holds every hotel to the area rule, the season format and the shuttle rule, and the slim copy to
 the checked file.
+
+## Adding a city
+
+`node scripts/hotels/find-candidates.js <code>` (an on-demand helper, one Overpass query a city,
+the raw answer cached under `scripts/hotels/work/`, which git ignores) writes a worksheet and a
+skeleton of the checked file with every fact empty and every verified mark false. OpenStreetMap
+only finds: every published fact is then copied from a named official page, never from an AI
+model. The steps are in `scripts/hotels/README.md`.
