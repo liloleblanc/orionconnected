@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2982,
+    "total": 2981,
     "by_category": {
       "ad": 21,
       "airline": 1222,
@@ -10,7 +10,7 @@
       "brand": 5,
       "hotel": 932,
       "livery": 96,
-      "misc": 178,
+      "misc": 177,
       "symbol": 4,
       "weather": 331
     }
@@ -27358,17 +27358,6 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "boarding pass",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/booking.svg",
-      "file": "booking.svg",
-      "category": "misc",
-      "subcategory": "root",
-      "group": "Uncategorized (logos root)",
-      "name": "booking",
       "iata": "",
       "country": "",
       "ext": "svg"

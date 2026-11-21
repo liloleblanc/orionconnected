@@ -61117,9 +61117,9 @@ var AD_I18N = {
   'Earn Saga Points on every flight': { fr:'Points Saga \u00e0 chaque vol', es:'Puntos Saga en cada vuelo', de:'Saga-Punkte bei jedem Flug', it:'Punti Saga ad ogni volo', pt:'Pontos Saga em cada voo', ja:'\u6bce\u30d5\u30e9\u30a4\u30c8\u3067Saga\u30dd\u30a4\u30f3\u30c8', zh:'\u6bcf\u6b21\u98de\u884c\u8d5aSaga\u79ef\u5206', ar:'\u0646\u0642\u0627\u0637 Saga \u0645\u0639 \u0643\u0644 \u0631\u062d\u0644\u0629' },
   'Earn miles to paradise': { fr:'Milles vers le paradis', es:'Millas al para\u00edso', de:'Meilen ins Paradies', it:'Miglia per il paradiso', pt:'Milhas para o para\u00edso', ja:'\u697d\u5712\u3078\u306e\u30de\u30a4\u30eb', zh:'\u98de\u5f80\u5929\u5802\u7684\u91cc\u7a0b', ar:'\u0623\u0645\u064a\u0627\u0644 \u0625\u0644\u0649 \u0627\u0644\u062c\u0646\u0629' },
 
-  // ── Generic city-aware ads ──
-  'Book your hotel in {CITY}':        { fr:'Réservez votre hôtel à {CITY}', es:'Reserve su hotel en {CITY}', de:'Hotel in {CITY} buchen', it:'Prenota il tuo hotel a {CITY}', pt:'Reserve seu hotel em {CITY}', ja:'{CITY}のホテル予約', zh:'预订{CITY}的酒店', ar:'احجز فندقك في {CITY}' },
-  'Best price guaranteed \u00b7 booking.com': { fr:'Meilleur prix garanti · booking.com', es:'Mejor precio garantizado · booking.com', de:'Bestpreis garantiert · booking.com', it:'Miglior prezzo garantito · booking.com', pt:'Melhor preço garantido · booking.com', ja:'最低価格保証 · booking.com', zh:'最优价格保证 · booking.com', ar:'أفضل سعر مضمون · booking.com' },
+  // ── City-aware ad lines ── (v24170: no ad shows these since the generic
+  // ads were removed; the rows stay because the word lists of the language
+  // guard in tests/i18n/policy.js are checked against them)
   'Airport transfers in {CITY}':      { fr:'Transferts aéroport à {CITY}', es:'Traslados al aeropuerto en {CITY}', de:'Flughafentransfers in {CITY}', it:"Transfer aeroportuali a {CITY}", pt:'Transfers do aeroporto em {CITY}', ja:'{CITY}の空港送迎', zh:'{CITY}机场接送', ar:'نقل المطار في {CITY}' },
   'Taxi \u00b7 Shuttle \u00b7 Rideshare from {CITY} airport': { fr:"Taxi · Navette · Covoiturage depuis l'aéroport de {CITY}", es:'Taxi · Lanzadera · Compartido desde el aeropuerto de {CITY}', de:'Taxi · Shuttle · Mitfahrt vom Flughafen {CITY}', it:"Taxi · Navetta · Condivisi dall'aeroporto di {CITY}", pt:'Táxi · Shuttle · Caronas do aeroporto de {CITY}', ja:'タクシー · シャトル · 配車 ({CITY}空港)', zh:'{CITY}机场出租车 · 班车 · 拼车', ar:'سيارة أجرة · حافلة · مشاركة الركوب من مطار {CITY}' },
   'Rent a car in {CITY}':             { fr:'Louez une voiture à {CITY}', es:'Alquile un coche en {CITY}', de:'Mietwagen in {CITY}', it:"Noleggia un'auto a {CITY}", pt:'Alugue um carro em {CITY}', ja:'{CITY}でレンタカー', zh:'在{CITY}租车', ar:'استئجار سيارة في {CITY}' },
@@ -61158,32 +61158,6 @@ function adTL(s) {
   return s;
 }
 
-var GATE_ADS_GENERIC = [
-  { bg:'linear-gradient(135deg,#003580 0%,#0057b8 100%)',
-    headline:'Book your hotel in {CITY}',
-    sub:'Best price guaranteed · booking.com',
-    logo:'/logos/booking.svg' },
-  { bg:'linear-gradient(135deg,#0d47a1 0%,#1565c0 100%)',
-    headline:'Airport transfers in {CITY}',
-    sub:'Taxi · Shuttle · Rideshare from {CITY} airport',
-    logo:'/logos/airport-transfer.svg' },
-  { bg:'linear-gradient(135deg,#00843d 0%,#00a550 100%)',
-    headline:'Rent a car in {CITY}',
-    sub:'Pick up at the airport · Drive to your destination',
-    logo:'/logos/car-rental.svg' },
-  { bg:'linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)',
-    headline:'Hotels & Resorts',
-    sub:'Earn Honors points · Stay connected in {CITY}',
-    logo:'/logos/hotels/hilton/hilton.png' },
-  { bg:'linear-gradient(135deg,#1a1a1a 0%,#333 100%)',
-    headline:'Lounge Access',
-    sub:'Priority Pass · 1,300+ airport lounges worldwide',
-    logo:'/logos/priority-pass.svg' },
-  { bg:'linear-gradient(135deg,#2E7D32 0%,#388E3C 100%)',
-    headline:'Free Wi-Fi on board',
-    sub:'Stay connected · In-flight browsing',
-    icon:'<svg viewBox="0 0 24 24" width="48" height="48" fill="white"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>' },
-];
 
 
 // ── THE LEGS OF A THROUGH FLIGHT, AND WHICH ONE IS BEING FEATURED ──────────
@@ -61238,7 +61212,7 @@ function getGateAds() {
     if (ad.subLogo)  out.subLogo  = ad.subLogo;
     return out;
   });
-  // Build destination-aware generic ads
+  // The destination the hotel ads are for
   var destCity = '';
   var destIata = '';
   try {
@@ -61282,18 +61256,6 @@ function getGateAds() {
     accorAds = accorCache.hotels;
   }
 
-  var generic = GATE_ADS_GENERIC.map(function(ad) {
-    return {
-      bg: ad.bg,
-      headline: adTL(ad.headline).replace('{CITY}', destCity || TL('yourDestination')),
-      sub: adTL(ad.sub).replace('{CITY}', destCity || TL('yourDestination')),
-      logo: ad.logo || null,
-      brand: ad.brand || '',
-      gicon: ad.gicon || null,
-      giconBg: ad.giconBg || null,
-      icon: ad.icon || null
-    };
-  });
   // v218.99.46 — the spec: ad rotation = Aeroplan/airline-related ads
   // ONLY + Accor hotel ads. No generic destination ads.
   // v22408 — (Delta 'SkyMiles / Earn miles
@@ -61306,7 +61268,7 @@ function getGateAds() {
 
   // DEBUG: log ad count once per destination change
   if (window._lastAdLogKey !== code + '|' + destIata) {
-    console.log('[ADS] Airline:', code, '| airline ads:', airline.length, '| Accor:', accorAds.length, '| generic:', generic.length, '| TOTAL:', allAds.length);
+    console.log('[ADS] Airline:', code, '| airline ads:', airline.length, '| Accor:', accorAds.length, '| TOTAL:', allAds.length);
     if (airline.length > 0) console.log('[ADS] First airline ad:', airline[0].headline, '/ logo:', airline[0].logo);
     window._lastAdLogKey = code + '|' + destIata;
   }
