@@ -5,5 +5,7 @@
   { "list": "i18n-ok", "entry": "fids-current/js/hotel-list-card.js translate=\"no\": var info = '<bdi class=\"hlc-addr\" translate=\"no\">' + esc(h.address && h.address.display) + '</bdi>'", "approved": "#1167" },
   { "list": "i18n-ok", "entry": "fids-current/js/hotel-list-card.js translate=\"no\": + '<div class=\"hlc-name\"><span class=\"hlc-fit\"><bdi translate=\"no\">' + esc(h.name) + '</bdi>'", "approved": "#1167" },
   { "list": "i18n-ok", "entry": "fids-current/app.html translate=\"no\": +'<div class=\"hl-txt\"><div class=\"hl-name\"><bdi translate=\"no\">'+esc(h.name)+'</bdi>'+(h.shuttle&&h.shuttle.mark===true?hlIco('shuttle'):'')", "approved": "#1167" },
-  { "list": "i18n-ok", "entry": "fids-current/app.html translate=\"no\": +'<div class=\"hl-addr\"><bdi translate=\"no\">'+esc(h.address&&h.address.display)+'</bdi></div>'", "approved": "#1167" }
+  { "list": "i18n-ok", "entry": "fids-current/app.html translate=\"no\": +'<div class=\"hl-addr\"><bdi translate=\"no\">'+esc(h.address&&h.address.display)+'</bdi></div>'", "approved": "#1167" },
+  { "list": "DATA_TABLES", "entry": "fids-current/js/earth-places.js NAME_FR", "approved": "#1170" },
+  { "list": "NONTEXT_TABLES", "entry": "fids-current/js/earth-places.js NAME_FR", "approved": "#1170" }
 ]
