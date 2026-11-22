@@ -697,6 +697,16 @@
    "viewBox": "0 0 213.73 213.13",
    "has_style_block": false,
    "note": "Monogram, name and line under it, stacked: takes the whole cell (fill). The drawing is as supplied (only paths and rectangles, no metadata block, default black fill) with one repair: the I of BOUTIQUE carried a second, inner box that drew the letter hollow; that box is removed, so the I is solid as in the hotel’s logo. The thin rule the hotel sets between the name and the line under it is not in the drawing. The hotel’s site refuses automated reads (not worked around), so the drawing was compared with a 256 px copy of the logo supplied with it, not with the site’s own file."
+  },
+  "comfort-hotel.svg": {
+   "source": "https://www.choicehotels.com/comfort",
+   "origin": "the current Comfort Hotel brand logo (Choice Hotels: the C mark over Comfort and HOTEL), supplied 21 Nov 2026; its official home is the Comfort brand page on choicehotels.com",
+   "licence": "Trademark of Choice Hotels International. The brand’s own logo, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 43 44",
+   "has_style_block": true,
+   "note": "Stacked (the C mark over the name): takes the whole cell (fill). Navy #00145F lettering, the C in its oranges and yellow. Generic class names (.j, .k, .l, .m): <img> only. The file as supplied, unaltered (no metadata block). Choice lists the Bayer’s Lake hotel among its Comfort properties (media.choicehotels.com, 2025), so the current brand mark is shown, not the older blue Comfort Hotel sign in the tourism photo."
   }
  },
  "already_in_repo": [

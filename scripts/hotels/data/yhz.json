@@ -4032,8 +4032,14 @@
     "evidence": "No shuttle stated on the pages read (2026-11-21).",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "Choice Hotels lists it among its Comfort properties (media.choicehotels.com, 2025), but the only official picture of the building (the Tourism Nova Scotia listing) shows the earlier blue Comfort Hotel sign, and the hotel’s own site and choicehotels.com refuse automated reads: which Comfort mark it shows is not confirmed. The name alone until it is (searched twice, 21 Nov 2026).",
+   "logo": {
+    "file": "/logos/hotels/list/comfort-hotel.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://www.choicehotels.com/comfort",
+    "origin": "the current Comfort Hotel brand logo (Choice Hotels), supplied 21 Nov 2026"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
