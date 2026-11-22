@@ -69,7 +69,9 @@ version of a hotel's own logo, where the hotel publishes it only pale or white a
 on the cream, says so in its `origin` and still names the hotel's own file as its `source`: either
 supplied for the cards, or made here by switching the colour of the hotel's own white file (to the
 hotel's own dark colour where its pages show one, otherwise the card's navy), shapes unchanged and
-only after no official dark version was found. Where the hotel's or the brand's site refuses automated reads, the hotel keeps
+only after no official dark version was found. Where a hotel publishes no logo at all, its name as its own site writes it may be set in the card face
+(Montserrat SemiBold, the card navy, no ornament) by `scripts/hotels/typeset-name.py`, and its `origin` says it is the
+name typeset, not a logo of its own. Where the hotel's or the brand's site refuses automated reads, the hotel keeps
 the name alone until a file is supplied; the refusal is not worked around. Where a file has a wide transparent margin, the card
 shows it through `object-view-box` (`logo.trim` in the data, measured from the file's own ink);
 a stacked lockup whose words are small at the common logo height (the Algonquin, Delta Hotels,

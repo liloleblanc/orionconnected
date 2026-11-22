@@ -315,7 +315,7 @@ test('every logo is a file loaded through <img>: no SVG of a hotel is written in
 test('a stacked lockup whose words are small at the common height takes the whole cell, shown as it is', () => {
   const filled = [];
   for (const doc of Object.values(DOCS)) for (const h of doc.hotels) if (h.logo && h.logo.fill) filled.push(h.id);
-  assert.deepEqual(filled.sort(), ['algonquin-resort', 'delta-beausejour', 'delta-dartmouth', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm', 'future-inns-halifax', 'mill-river', 'rodd-crowbush', 'suites-of-euston']);
+  assert.deepEqual(filled.sort(), ['algonquin-resort', 'comfort-hotel-bayers-lake', 'delta-beausejour', 'delta-dartmouth', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm', 'future-inns-halifax', 'halifax-tower-hotel', 'mill-river', 'rodd-crowbush', 'suites-of-euston']);
   assert.match(CSS, /\n\.hlc-img--fill\{ max-height:100%; \}\n/);
   const resort = views(build('YQM', ['en', 'fr'])).find((x) => x.includes('data-area="resort"'));
   assert.match(resort, /<img class="hlc-img hlc-img--fill" alt="" decoding="async" src="\/logos\/hotels\/marriott\/the-algonquin-resort-1\.svg">/);

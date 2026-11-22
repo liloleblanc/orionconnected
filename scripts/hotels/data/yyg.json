@@ -560,8 +560,13 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "Only a photograph of the sign is published, not a logo file. The name alone (searched twice, 21 Nov 2026).",
+   "logo": {
+    "file": "/logos/hotels/list/banbridge-inn.svg",
+    "opaque": false,
+    "source": "https://www.banbridgeinn.com/",
+    "origin": "drawing of the inn’s own logo, supplied 21 Nov 2026"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -1683,8 +1688,13 @@
     "evidence": "Charlottetown Airport ground-transportation page: \"At this time, there are no operating hotel shuttles.\"",
     "checked": "2026-11-16"
    },
-   "logo": null,
-   "logo_missing": "No logo file on its site, its booking page or the tourism listings. The name alone (searched twice, 21 Nov 2026).",
+   "logo": {
+    "file": "/logos/hotels/list/prince-street-suites.svg",
+    "opaque": false,
+    "source": "https://www.princestreetsuites.ca/",
+    "origin": "the hotel’s name typeset in the card face (the hotel publishes no logo), 21 Nov 2026"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
