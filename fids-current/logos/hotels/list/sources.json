@@ -727,6 +727,36 @@
    "viewBox": "0 0 130.82 64.56",
    "has_style_block": true,
    "note": "One rose (#AF5F78, traced as ten near-identical shades). Generic class names (.cls-1 to .cls-10): <img> only. The drawing as supplied, with only its Adobe metadata block (XMP and C2PA provenance) taken out."
+  },
+  "fredericton-inn.png": {
+   "source": "https://frederictoninn.nb.ca/wp-content/uploads/2015/02/fred-inn-logo-grayb.png",
+   "origin": "official site: frederictoninn.nb.ca (its header logo; the page links the http address, which forwards to this one)",
+   "licence": "Trademark of the Fredericton Inn. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "283x59",
+   "transparent_background": true,
+   "note": "Dark grey (#363636), one colour. The hotel's line \"A Breath of Maritime Hospitality.\" is part of the file, very small at the logo height. Only 283 px wide: about 1x in the cell, soft on a 2x screen; the site has no larger file. Checked 2026-11-22 against the hotel's own page."
+  },
+  "ramada-by-wyndham.png": {
+   "source": "https://ramadafredericton.com/wp-content/uploads/2022/04/Logo-Ramada.png",
+   "origin": "official site: ramadafredericton.com (the hotel's own header logo)",
+   "licence": "Trademark of Wyndham Hotels & Resorts (Ramada by Wyndham). Official file from the hotel's own site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "921x265",
+   "transparent_background": true,
+   "note": "Ramada red (#D11242), one colour: RAMADA over BY WYNDHAM. Checked 2026-11-22 against the hotel's own page."
+  },
+  "riverside-resort.png": {
+   "source": "https://static.wixstatic.com/media/0c3bab_0b8458c9014e490a9c117ec5a1d15026~mv2.png",
+   "origin": "official site: riversideresort.ca (its logo, on the site image host)",
+   "licence": "Trademark of Riverside Resort. Official file from the hotel site, used unaltered to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "png",
+   "px": "600x400",
+   "transparent_background": false,
+   "note": "Blue and black on its own opaque white plate: multiplied into the cream (opaque). A stacked lockup (two chairs before the sun over the river, RIVERSIDE RESORT, Resort & Conference Centre): takes the whole cell (fill). Checked 2026-11-22 against the hotel's own page."
   }
  },
  "already_in_repo": [
