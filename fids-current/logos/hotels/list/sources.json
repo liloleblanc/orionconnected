@@ -687,6 +687,16 @@
    "viewBox": "0 0 255.9 50.09",
    "has_style_block": true,
    "note": "The name in one line over five gold stars (about 5 to 1). Generic class names (.cls-1, .cls-2): <img> only. The drawing is as supplied (no metadata block). Its stars file is at commonsinn.ca/wp-content/uploads/2023/08/logo-e1705285239585.png (checked 21 Nov 2026)."
+  },
+  "halifax-tower-hotel.svg": {
+   "source": "https://www.halifaxtowerhotel.com/",
+   "origin": "drawing of the hotel’s own logo (the tower monogram over the water, HALIFAX TOWER HOTEL, A DELUXE BOUTIQUE HOTEL), supplied 21 Nov 2026; the logo’s official home is the hotel’s site",
+   "licence": "Trademark of the Halifax Tower Hotel & Conference Centre. The hotel’s own logo, drawn in black for the cream column, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 213.73 213.13",
+   "has_style_block": false,
+   "note": "Monogram, name and line under it, stacked: takes the whole cell (fill). The drawing is as supplied (only paths and rectangles, no metadata block, default black fill) with one repair: the I of BOUTIQUE carried a second, inner box that drew the letter hollow; that box is removed, so the I is solid as in the hotel’s logo. The thin rule the hotel sets between the name and the line under it is not in the drawing. The hotel’s site refuses automated reads (not worked around), so the drawing was compared with a 256 px copy of the logo supplied with it, not with the site’s own file."
   }
  },
  "already_in_repo": [

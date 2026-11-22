@@ -4128,8 +4128,14 @@
     "evidence": "No shuttle stated on the pages read (2026-11-21).",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "Its own site refuses automated reads (not worked around); the tourism listings carry photographs only. The name alone (searched twice, 21 Nov 2026).",
+   "logo": {
+    "file": "/logos/hotels/list/halifax-tower-hotel.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://www.halifaxtowerhotel.com/",
+    "origin": "drawing of the hotel’s own logo (the tower monogram, Halifax Tower Hotel), supplied 21 Nov 2026"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
