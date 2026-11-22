@@ -17,8 +17,19 @@
    One scan code a card opens the whole list of the city in the phone app (app.html?hotels=).
 
    WHERE: on a gate, the hotels of the city its flight goes to (beside the Accor pages), when
-   that city has a checked list (CITIES). Nothing anywhere else. The Accor pages and the page of
-   the Algonquin Resort are separate slides and are not touched by this one.
+   that city has a checked list (CITIES). The Accor pages and the page of the Algonquin Resort
+   are separate slides and are not touched by this one.
+
+   EVERY OTHER CITY (v24176): the same slot shows ONE card instead, "Hotels in {CITY}": the
+   heading in the languages of the board, one large scan code, and under it the invitation to
+   search on a phone. No hotel, no logo, no price: the code opens the phone app
+   (app.html?hotels=<code>&in=<where it is>), which for a city without a checked list offers a
+   search in Google Maps, and on an Apple device one in Apple Maps (mapLinks), the city named
+   with its state or province and its country (searchPlace), so a Sydney is never the other
+   one. The city is chosen as cityFor() chooses it (the city
+   the flight goes to, then its stops from the last), for any code the board has a name for
+   (airportCityNameSafe_v21877, the names of every board); a code with no name, a city with a
+   checked list, and a gate with no flight show no such card. Nothing anywhere else.
 
    DATA: data/hotels/<code>.json, a slim copy a city with only the fields read here and in the
    app, made by scripts/hotels/build-runtime.js from the checked file of the city
@@ -26,7 +37,9 @@
    WORDS: the store (js/board-strings.js) in the languages of the board, the first language
    first; names, addresses and telephones are data. LOGOS: through <img> only, never inlined
    (an SVG with a generic <style> class leaks it into the page). LOOK: css/hotel-list-card.css.
-   REVIEW: ?hotellist=YYG shows that city on any gate (inert without it), with ?scene=hotellist. */
+   REVIEW: ?hotellist=YYG shows that city on any gate (inert without it), with ?scene=hotellist;
+   ?hotellist=YYZ (a city without a list) shows its "Hotels in {CITY}" card; a code the board
+   has no name for is no link (the gate shows what it shows without one). */
 (function (root, factory) {
   var api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -53,6 +66,28 @@
   var FLOOR = 18;
   // The phone app's own address (host-airport.js: .app is the app only).
   var APP_HOST = 'https://orionconnected.app/app';
+  // The card of a city without a list is one view, held long enough to take a phone out.
+  var FIND_MS = 20000;
+  // The two map searches the phone app offers for a city without a list (mapLinks). No key, no
+  // tracking parameter, nothing but the search and, for Apple, where to search.
+  //   Google: the Maps URLs search action, as documented on
+  //     developers.google.com/maps/documentation/urls/get-started (read 2026-11-22):
+  //     https://www.google.com/maps/search/?api=1&query=<the search, URL-encoded>. api=1 is
+  //     required; the search action takes no centre (query is a place, an address or a general
+  //     search such as "restaurants in Seattle WA"); no API key is needed. With no centre, a
+  //     city whose name is another city's too (Sydney, London, Santiago, Portland) is told apart
+  //     in the words of the search: where it is goes in them (searchPlace, "Sydney, NS, Canada").
+  //   Apple: the legacy Map Links form (q is the query as if typed into the Maps search field;
+  //     sll is the search location, latitude,longitude, given alone or with q). Its page
+  //     (developer.apple.com/library/archive, MapLinks) now redirects to Apple's Unified Map URLs
+  //     page (developer.apple.com/documentation/mapkit/unified-map-urls, read 2026-11-22), which
+  //     does not describe the legacy form; the q and sll text was read only from a search
+  //     index's extract of the old page. The unified page documents
+  //     maps.apple.com/search?query=&center= for iOS 18.4, macOS 15.4 and later only, so the
+  //     legacy form is used, to be checked on an iPhone running iOS 18.4 or earlier:
+  //     https://maps.apple.com/?q=<the search, URL-encoded>&sll=<latitude>,<longitude>
+  var MAPS_GOOGLE = 'https://www.google.com/maps/search/?api=1&query=';
+  var MAPS_APPLE = 'https://maps.apple.com/?q=';
 
   var DATA = Object.create(null);
   var ASKED = Object.create(null);
@@ -61,7 +96,11 @@
   var ICON = {
     shuttle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 5H3c-1.100 0-2 .89-2 2v9h2c0 1.650 1.340 3 3 3s3-1.350 3-3h5.500c0 1.650 1.340 3 3 3s3-1.350 3-3H23v-5l-6-6zM3 11V7h4v4H3zm3 6.500c-.83 0-1.500-.67-1.500-1.500s.67-1.500 1.500-1.500 1.500.67 1.500 1.500-.67 1.500-1.500 1.500zM13 11H9V7h4v4zm5 6.500c-.83 0-1.500-.67-1.500-1.500s.67-1.500 1.500-1.500 1.500.67 1.500 1.500-.67 1.500-1.500 1.500zM15 11V7h1l4 4h-5z"/></svg>',
     phone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.620 10.790c1.440 2.830 3.760 5.140 6.590 6.590l2.200-2.200c.27-.27.67-.36 1.020-.24 1.120.37 2.330.57 3.570.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.390 0-17-7.610-17-17 0-.55.45-1 1-1h3.500c.55 0 1 .45 1 1 0 1.250.2 2.450.57 3.570.11.35.03.74-.25 1.020l-2.200 2.200z"/></svg>',
-    car: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.920 6.010C18.720 5.420 18.160 5 17.500 5h-11c-.66 0-1.210.42-1.420 1.010L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.080-5.990zM6.500 16c-.83 0-1.500-.67-1.500-1.500S5.670 13 6.500 13s1.500.67 1.500 1.500S7.330 16 6.500 16zm11 0c-.83 0-1.500-.67-1.500-1.500s.67-1.500 1.500-1.500 1.500.67 1.500 1.500-.67 1.500-1.500 1.500zM5 11l1.500-4.500h11L19 11H5z"/></svg>'
+    car: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.920 6.010C18.720 5.420 18.160 5 17.500 5h-11c-.66 0-1.210.42-1.420 1.010L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.080-5.990zM6.500 16c-.83 0-1.500-.67-1.500-1.500S5.670 13 6.500 13s1.500.67 1.500 1.500S7.330 16 6.500 16zm11 0c-.83 0-1.500-.67-1.500-1.500s.67-1.500 1.500-1.500 1.500.67 1.500 1.500-.67 1.500-1.500 1.500zM5 11l1.500-4.500h11L19 11H5z"/></svg>',
+    // the card of a city without a list (the phone beside its invitation) and the map buttons
+    // of the app (the pin of a place)
+    smartphone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1.010L7 1c-1.100 0-2 .9-2 2v18c0 1.100.9 2 2 2h10c1.100 0 2-.9 2-2V3c0-1.100-.9-1.990-2-1.990zM17 19H7V5h10v14z"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.130 2 5 5.130 5 9c0 5.250 7 13 7 13s7-7.750 7-13c0-3.870-3.130-7-7-7zm0 9.500c-1.380 0-2.500-1.120-2.500-2.500s1.120-2.500 2.500-2.500 2.500 1.120 2.500 2.500-1.120 2.500-2.500 2.500z"/></svg>'
   };
 
   function esc(s) {
@@ -172,18 +211,21 @@
   }
 
   // ── WHERE ─────────────────────────────────────────────────────────────────
+  // The city of a review link (?hotellist=): a city with a list, or a code without one that the
+  // board has a name for. Any other code is no link: the gate shows what it shows without one.
   function review() {
     try {
       var q = new URLSearchParams(root.location && root.location.search || '');
       var c = up(q.get('hotellist') || '');
-      return CITIES.indexOf(c) >= 0 ? c : '';
+      return (CITIES.indexOf(c) >= 0 || findName(c)) ? c : '';
     } catch (e) { return ''; }
   }
   // The city whose hotels a gate shows: the one its flight goes to (the last stop first, then
-  // any stop), when that city has a list. A gate with no flight of its own shows nothing.
+  // any stop), when that city has a list. A gate with no flight of its own shows nothing. A
+  // review link names the city itself (a city without a list: none here, its card instead).
   function cityFor() {
     var r = review();
-    if (r) return r;
+    if (r) return CITIES.indexOf(r) >= 0 ? r : '';
     try {
       var cf = root._gateCurrentFlight;
       if (!cf) return '';
@@ -196,6 +238,44 @@
     } catch (e) {}
     return '';
   }
+  // The name of a city as the board writes it, for the card of a city without a list: '' when
+  // the board has no name for the code (airportCityNameSafe_v21877, the tables of every board),
+  // and then no card. Cased and spelled as the gate writes every city (_gateMapCity), without
+  // the airport's own name that a city with two of ours carries (Toronto, not Toronto · Pearson).
+  function findName(iata, lg) {
+    var c = up(iata), raw = '';
+    if (!/^[A-Z0-9]{3}$/.test(c)) return '';
+    try { raw = (typeof root.airportCityNameSafe_v21877 === 'function') ? String(root.airportCityNameSafe_v21877(c, lg) || '') : ''; } catch (e) { raw = ''; }
+    if (!raw.trim()) return '';
+    var n = cityName(c, lg) || raw;
+    var cut = n.indexOf(' · ');
+    if (cut > 0) n = n.slice(0, cut);
+    n = n.trim();
+    return (n && n !== c) ? n : '';
+  }
+  // The city of the card of a city without a list: the city the flight goes to, then its stops
+  // from the last, as cityFor() chooses, for any code the board has a name for; never the city
+  // of the screen itself. '' on a gate with no flight, and wherever a city of the flight has a
+  // checked list (its list shows instead). A review link names it: a code without a list.
+  function findCity() {
+    var r = review();
+    if (r) return (CITIES.indexOf(r) < 0 && findName(r)) ? r : '';
+    try {
+      var cf = root._gateCurrentFlight;
+      if (!cf || cityFor()) return '';
+      var home = up(root._gateIata);
+      var dest = up(cf._locIata);
+      if (dest && dest !== home && findName(dest)) return dest;
+      var legs = (typeof root._flightLegs === 'function') ? root._flightLegs(cf) : [];
+      if (Array.isArray(legs)) {
+        for (var i = legs.length - 1; i >= 0; i--) {
+          var l = up(legs[i]);
+          if (l && l !== home && findName(l)) return l;
+        }
+      }
+    } catch (e) {}
+    return '';
+  }
   function tzOf(iata) {
     try { return (root.AP && root.AP[iata] && root.AP[iata].tz) || ''; } catch (e) { return ''; }
   }
@@ -203,29 +283,88 @@
     try { return Math.max(0, Number(root._gateAccorPass) || 0); } catch (e) { return 0; }
   }
   // Due on this gate: a city with a list, the list loaded and something open in it. The first
-  // ask loads the list; the deck passes the slot over until it is there.
+  // ask loads the list; the deck passes the slot over until it is there. A city without a list
+  // that the board has a name for: its one card.
   function due() {
     var c = cityFor();
-    if (!c) return false;
+    if (!c) return !!findCity();
     var doc = get(c);
     if (!doc) { load(c); return false; }
     return cards(doc, null, tzOf(c)).length > 0;
   }
   function dwellMs() {
     var c = cityFor(), doc = c ? get(c) : null;
+    if (!c && findCity()) return FIND_MS;
     var n = doc ? cards(doc, null, tzOf(c)).length : 1;
     return Math.max(1, n) * VIEW_MS + 4000;
   }
+  // Where a city without a list is, for its map search on the phone (the scan code carries it,
+  // &in=): its country by the board's own table (_IATA_CC, fids-core.js, the ISO code as the
+  // table gives it, so San Juan is PR, not US), and in the United States and Canada its state or
+  // province (_rowRegion, fids-core.js, OurAirports' region). 'CA-NS', 'US-ME', 'DO', or ''
+  // where the board's tables do not say.
+  var WHERE = /^([A-Z]{2})(?:-([A-Z]{2}))?$/;
+  function whereOf(iata) {
+    var c = up(iata), cc = '', st = '';
+    if (!/^[A-Z0-9]{3}$/.test(c)) return '';
+    try { cc = String((typeof _IATA_CC !== 'undefined' && _IATA_CC && _IATA_CC[c]) || ''); } catch (e) { cc = ''; }
+    if (!cc) { try { cc = (typeof root.airportCountry === 'function') ? String(root.airportCountry(c) || '') : ''; } catch (e1) { cc = ''; } }
+    if (!/^[A-Z]{2}$/.test(cc)) return '';
+    if (cc === 'US' || cc === 'CA') { try { st = (typeof root._rowRegion === 'function') ? String(root._rowRegion(c) || '') : ''; } catch (e2) { st = ''; } }
+    return /^[A-Z]{2}$/.test(st) ? cc + '-' + st : cc;
+  }
   // The address the scan code opens: the full list of the city in the phone app, at the card's
-  // area, with the airport of the screen as the app's own airport.
-  function qrUrl(city, area, home) {
+  // area, with the airport of the screen as the app's own airport; for a city without a list,
+  // where it is (whereOf), for its map search.
+  function qrUrl(city, area, home, where) {
     var base = APP_HOST;
     try {
       var h = String(root.location && root.location.hostname || '');
       if (h && !/(^|\.)orionconnected\.(com|ca|app)$/i.test(h)) base = String(root.location.origin || '') + '/app';
     } catch (e) {}
     return base + '?' + (home ? 'ap=' + encodeURIComponent(up(home)) + '&' : '') + 'hotels=' + encodeURIComponent(up(city))
-      + (area ? '&area=' + encodeURIComponent(area) : '');
+      + (area ? '&area=' + encodeURIComponent(area) : '') + (WHERE.test(up(where)) ? '&in=' + up(where) : '');
+  }
+  // A name without its accents and its case, to compare two names.
+  function fold(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  // The place of a map search: the city, then where it is when the scan code said (whereOf): the
+  // state or province by its two letters, as the boards print them ('London, KY'), then the
+  // country in the language of the search (the browser's own names, Intl.DisplayNames, as the
+  // app names countries), left out where the city's own name says it already (Panama City,
+  // Singapore) or the country's name begins with it (Hong Kong). 'Sydney, NS, Canada'; the city
+  // alone when nothing says where it is.
+  function searchPlace(name, where, lg) {
+    var n = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
+    var m = WHERE.exec(up(where));
+    if (!n || !m) return n;
+    var out = n, cn = '';
+    if (m[2]) out += ', ' + m[2];
+    try {
+      var BS = store();
+      if (BS && typeof BS.intl === 'function') cn = String(new Intl.DisplayNames([BS.intl(lg)], { type: 'region' }).of(m[1]) || '');
+    } catch (e) { cn = ''; }
+    var fn = fold(n), fc = fold(cn);
+    if (cn && cn.toUpperCase() !== m[1] && fn.indexOf(fc) < 0 && fc.indexOf(fn + ' ') !== 0) out += ', ' + cn;
+    return out;
+  }
+  // A URL component, every reserved character encoded (encodeURIComponent leaves ! ' ( ) *).
+  function enc(s) {
+    return encodeURIComponent(String(s == null ? '' : s)).replace(/[!'()*]/g, function (ch) {
+      return '%' + ch.charCodeAt(0).toString(16).toUpperCase();
+    });
+  }
+  // The two map searches of a city without a list, for the phone app: `search` is what the
+  // traveller would type (the app's own heading, "Hotels in {CITY}" in the language of the
+  // phone, whose Maps app speaks the same language, its city as searchPlace writes it, with
+  // where it is), `at` the point to search around
+  // ({lat, lng}, or nothing). The forms and the documentation they follow: MAPS_GOOGLE and
+  // MAPS_APPLE above. '' for a search with no words.
+  function mapLinks(search, at) {
+    var s = String(search == null ? '' : search).replace(/\s+/g, ' ').trim();
+    if (!s) return { google: '', apple: '' };
+    var ll = '', la = at && at.lat != null && at.lat !== '' ? Number(at.lat) : NaN, lo = at && at.lng != null && at.lng !== '' ? Number(at.lng) : NaN;
+    if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) ll = '&sll=' + la + ',' + lo;
+    return { google: MAPS_GOOGLE + enc(s), apple: MAPS_APPLE + enc(s) + ll };
   }
 
   // ── THE WORDS ─────────────────────────────────────────────────────────────
@@ -344,6 +483,50 @@
     return '<div class="hlc' + (L.length < 2 ? ' hlc--one' : '') + '" data-city="' + esc(city) + '">'
       + '<div class="axr-pages hlc-views">' + html + '</div></div>';
   }
+  // The picture of the city behind the card: the same checked photograph the weather card shows
+  // for it (fids-core's _wxCityPic, the day picture), only from the board's own set of pictures
+  // (/logos/cities/), never the picture service. '' where the board has none: the plain card.
+  function picOf(c) {
+    var u = '';
+    try { u = typeof root._wxCityPic === 'function' ? String(root._wxCityPic(c, false) || '') : ''; } catch (e) { u = ''; }
+    return /^\/logos\/cities\/[A-Z]{3}\.jpg$/.test(u) ? u : '';
+  }
+  // The photographer, where the licence asks for a credit: the weather card's own line.
+  function creditOf(u) {
+    try { return typeof root._wxPicCreditHtml === 'function' ? String(root._wxPicCreditHtml([u], 'hlc-find-credit') || '') : ''; } catch (e) { return ''; }
+  }
+  // The card of a city without a list: "Hotels in {CITY}", one line for each language of the
+  // board (a line that says the same as the one before it is left out), the scan code to the
+  // phone app (with where the city is, whereOf, for its map search), and the invitation in the
+  // navy foot. One view. '' when the board has no name for the city. o.home (the airport of the
+  // screen, for the app link).
+  function buildFind(city, L, o) {
+    o = o || {};
+    var BS = store(), c = up(city);
+    if (!BS || !Array.isArray(L) || !L.length || !findName(c)) return '';
+    var seen = Object.create(null), head = [];
+    L.forEach(function (lg) {
+      var nm = findName(c, lg), t = '';
+      try { t = BS.bs('hotelsInCity', lg) || ''; } catch (e) { t = ''; }
+      if (!nm || !t || t.indexOf('{CITY}') < 0) return;
+      var line = esc(t).split('{CITY}').join('<bdi>' + esc(nm) + '</bdi>');
+      if (seen[line]) return;
+      seen[line] = 1;
+      head.push('<div class="hlc-tl"><span class="hlc-fit">' + BS.half(lg, line, '', { key: 'hotelsInCity' }) + '</span></div>');
+    });
+    if (!head.length) return '';
+    var say = linesOf(L, function (lg) { return BS.bs('hotelsFindScan', lg); }, 'hotelsFindScan');
+    var pic = picOf(c), cred = pic ? creditOf(pic) : '';
+    return '<div class="hlc hlc--find' + (L.length < 2 ? ' hlc--one' : '') + '" data-city="' + esc(c) + '">'
+      + '<div class="axr-pages hlc-views">'
+      +   '<div class="axr-page hlc-view hlc-find' + (pic ? ' hlc-find--pic' : '') + ' axr-page-on" data-area="find">'
+      +     (pic ? '<div class="hlc-find-pic" aria-hidden="true" style="background-image:url(&#39;' + esc(pic) + '&#39;)"></div>' : '')
+      +     '<div class="hlc-find-head"><div class="hlc-find-title">' + head.join('') + '</div></div>'
+      +     '<div class="hlc-find-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(c, '', o.home, whereOf(c))) + '"></div>' + cred + '</div>'
+      +     '<div class="hlc-foot hlc-find-foot">' + ico('smartphone', 'hlc-find-ico') + '<div class="hlc-find-say">' + say + '</div></div>'
+      +   '</div>'
+      + '</div></div>';
+  }
 
   // One pixel of the 1680x1050 design in real pixels: the stylesheet's --hlc-px, the smaller of
   // the height and the width of the screen (the same two figures). Worked out here because the
@@ -428,18 +611,27 @@
       }
     } catch (e) {}
   }
-  // The scan codes: drawn by the board's QR library (qrcode.js) at the box's own size, navy
-  // modules on the cream of the card, with the quiet zone of the box around them.
+  // The scan codes: drawn by the board's QR library (qrcode.js) at the size they are shown (the
+  // box's width inside its padding, so the code is never scaled down after it is drawn), navy
+  // modules on the cream of the card, with the quiet zone of the box around them. Drawn again
+  // whenever that size has changed since (the large code of a city without a list takes the room
+  // the card has, which is known only once it is laid out, and changes when the faces arrive); a
+  // drawing never changes the box, so a code is drawn once a size.
   function codes(el) {
     try {
       if (typeof root.QRCode === 'undefined') return;
       Array.prototype.forEach.call(el.querySelectorAll('.hlc-qr[data-qr-url]'), function (q) {
-        var url = q.getAttribute('data-qr-url');
-        if (!url || q.getAttribute('data-qr-done') === url) return;
-        var w = Math.max(64, Math.round(q.clientWidth || 0));
+        var url = q.getAttribute('data-qr-url'), pad = 0;
+        try {
+          var cs = (typeof root.getComputedStyle === 'function') ? root.getComputedStyle(q) : null;
+          if (cs) pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+        } catch (e1) { pad = 0; }
+        var w = Math.max(64, Math.floor((q.clientWidth || 0) - pad));
+        if (!url || (q.getAttribute('data-qr-done') === url && (Number(q.getAttribute('data-qr-w')) || 0) === w)) return;
         q.innerHTML = '';
         new root.QRCode(q, { text: url, width: w, height: w, colorDark: '#14203c', colorLight: '#f5efe3', correctLevel: root.QRCode.CorrectLevel.M });
         q.setAttribute('data-qr-done', url);
+        q.setAttribute('data-qr-w', String(w));
       });
     } catch (e) {}
   }
@@ -452,8 +644,10 @@
       if (!el || !due()) return false;
       var BS = store();
       if (!BS || typeof BS.pairLangs !== 'function') return false;
-      var c = cityFor(), doc = get(c);
-      var html = build(doc, boardPair(), { pass: passNow(), home: String(root._gateIata || ''), tz: tzOf(c) });
+      var c = cityFor(), doc = c ? get(c) : null;
+      // a city with a list: its cards; any other city the board names: its one card
+      var html = c ? build(doc, boardPair(), { pass: passNow(), home: String(root._gateIata || ''), tz: tzOf(c) })
+        : buildFind(findCity(), boardPair(), { home: String(root._gateIata || '') });
       if (!html) return false;
       if (el.__hlcHtml !== html || !el.querySelector(':scope > .hlc')) {
         el.innerHTML = html;
@@ -488,6 +682,7 @@
     RULE: RULE,
     PER_CARD: PER_CARD,
     VIEW_MS: VIEW_MS,
+    FIND_MS: FIND_MS,
     FLOOR: FLOOR,
     ICON: ICON,
     dataUrl: dataUrl,
@@ -501,10 +696,16 @@
     cards: cards,
     page: page,
     cityFor: cityFor,
+    findCity: findCity,
+    findName: findName,
     due: due,
     dwellMs: dwellMs,
     qrUrl: qrUrl,
+    whereOf: whereOf,
+    searchPlace: searchPlace,
+    mapLinks: mapLinks,
     build: build,
+    buildFind: buildFind,
     unitPx: unitPx,
     floorPx: floorPx,
     fit: fit,

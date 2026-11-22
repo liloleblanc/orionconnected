@@ -1,7 +1,8 @@
 # The hotel lists (gate centre deck, and the full list in the phone app)
 
 Free guest information by area for the city a gate's flight goes to, when that city has a
-checked list (Moncton YQM, Charlottetown YYG, Halifax YHZ and Fredericton YFC so far). One slot of the centre deck shows the
+checked list (Moncton YQM, Charlottetown YYG, Halifax YHZ and Fredericton YFC so far); every other city the board
+names gets one "Hotels in {CITY}" card with a scan code to a map search (below). One slot of the centre deck shows the
 cards in turn: **Airport hotels**, **Downtown hotels**, **Nearby hotels** and **Resorts worth the
 drive**. Each card is a list and nothing else: the hotel's logo on one cream column where an
 official file reads there, its name, its street address and its telephone. Five lines a card;
@@ -16,9 +17,71 @@ slides of the same deck and are not changed by this.
 
 Code: `fids-current/js/hotel-list-card.js` (rules, cards, scan codes), `fids-current/css/hotel-list-card.css`,
 four hooks in `fids-current/js/fids-core.js` (the deck builder puts the slide after the last Accor
-page, the skip loop, the dwell, the preloader), the list view in `fids-current/app.html`, eight
+page, the skip loop, the dwell, the preloader), the list view in `fids-current/app.html`, eleven
 words in `fids-current/js/board-strings.js` (nine languages each), and a credits line for the two faces. Test: `tests/hotel-list-cards.test.js`.
 Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate.
+
+## Every other city: "Hotels in {CITY}" (v24176)
+
+Every city gets a way to find a hotel; hand-checked lists stay only where a person checked them.
+On a gate whose flight goes to a city that is not in `HotelListCard.CITIES`, the same slot of the
+deck shows one card instead: the heading **Hotels in {CITY}** (`hotelsInCity`) in the languages of
+the board, one large scan code, and under it, in the navy foot beside a phone mark, **Scan to
+search hotels on your phone** (`hotelsFindScan`). Same family as the list cards (cream paper, navy
+ink, a fine gold rule, Playfair Display and Montserrat), sized at 1680x1050 (heading 48 px, the
+code as large as the card leaves room for, 420 px at most, the invitation 26 px). No logo, no
+hotel, no price. One view, held 20 seconds (`FIND_MS`).
+
+Behind the heading and the code, the city in its own photograph: the day picture the weather card
+shows for it (`_wxCityPic` in `fids-core.js`), only from the board's own checked set
+(`/logos/cities/<CODE>.jpg`), never the picture service, so every picture is one already picked,
+licensed and recorded for the weather card (its source on the credits page). Where its licence
+asks for a credit, the photographer is named beside the code with the weather card's own line
+(`_wxPicCreditHtml`, 18 px, white). The heading turns white over a navy shade at the top of the
+picture, and the code stands on a tile of the card's own cream, its quiet zone (never white). A
+city with no picture of its own, or a board without the weather card, shows the plain cream card.
+
+Where it shows: the city is chosen as `cityFor()` chooses a list city (the city the flight goes
+to, then its stops from the last), for any code the board has a name for
+(`airportCityNameSafe_v21877`, the city tables of every board; cased as the gate writes cities,
+without the airport's own name a city with two of ours carries). It does not show when a city of
+the flight has a checked list (the list shows), on a gate with no flight, for a code with no
+name, or for the city of the screen itself. Review link: `?hotellist=YYZ&scene=hotellist` shows the
+card of a city without a list on any gate; `?hotellist=YQM` still shows the Moncton list; a code
+the board has no name for is no link (the gate shows what it shows without one).
+
+The scan code opens the phone app, `app.html?ap=<screen>&hotels=<code>&in=<where>` (`qrUrl`, no
+area). `in` is where the city is, from the board's own tables (`HotelListCard.whereOf`): its
+country (`_IATA_CC` in `fids-core.js`, the ISO code as that table gives it, so San Juan is `PR`)
+and, in the United States and Canada, its state or province (`_rowRegion`, OurAirports' region):
+`CA-NS`, `US-ME`, `DO`. For a city without a checked list the app shows a page in its own style:
+the title **Hotels in {CITY}** and big buttons, **Search in Google Maps** (`hotelsMapGoogle`) and,
+on an Apple device only (an iPhone, an iPad, a Mac), **Search in Apple Maps** (`hotelsMapApple`),
+each opening its map in a new tab, with no tracking parameter (`HotelListCard.mapLinks`). On any
+other phone Apple's link opens Apple's map on the web, which is not promised to every phone's
+browser, so an Android phone is offered Google's alone. The search is the page's own title in the
+phone's language, its city written with where it is (`HotelListCard.searchPlace`): the state or
+province by its two letters, as the boards print them, then the country in the phone's language
+(the browser's own names), left out where the city's name already says it. "Hotels in Sydney, NS,
+Canada", never the Australian Sydney; "Hôtels à Santiago, République dominicaine". Without `in`
+(a link typed by hand) the city of one of the app's own airports is written with its country.
+
+- Google: the Maps URLs search action, as documented at
+  developers.google.com/maps/documentation/urls/get-started (read 2026-11-22):
+  `https://www.google.com/maps/search/?api=1&query=<search, URL-encoded>`. `api=1` is required, no
+  API key is needed, and the search action takes no centre point: which city is meant has to be
+  in the words of the search, hence the state, province and country above.
+- Apple: the legacy Map Links form, `https://maps.apple.com/?q=<search, URL-encoded>&sll=<lat>,<lng>`
+  (`q` is the query as if typed into the Maps search field, `sll` the search location, given alone
+  or with `q`). The Map Links page (developer.apple.com/library/archive) now redirects to Apple's
+  Unified Map URLs page (developer.apple.com/documentation/mapkit/unified-map-urls, read
+  2026-11-22), which does not describe the legacy form; the `q` and `sll` text above was read only
+  from a search index's extract of the old page, not from a current Apple page. The unified page
+  documents `maps.apple.com/search?query=&center=` for iOS 18.4, macOS 15.4 and later only, so the
+  legacy form is used; it is still to be checked on an iPhone running iOS 18.4 or earlier. The point is the city's airport
+  (`js/airport-coords.js`, which the app already loads for the weather): the board's table of city
+  centres (`DOWNTOWN_COORDS`) is in `fids-core.js`, which the app does not load. The query names
+  the city; the point only tells which one (London, Ontario or London, England).
 
 ## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`, Fredericton `yfc.json`)
 

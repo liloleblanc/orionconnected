@@ -6,7 +6,7 @@
 <!-- v24145 — host-airport.js first: the desktop request below builds its
      board link with fidsBoardUrl, and the note above the title says why the
      app loads this file at all. -->
-<script src="js/host-airport.js?v=24175"></script>
+<script src="js/host-airport.js?v=24176"></script>
 <script>
 /* v24139 — A PHONE THAT ASKS ITS BROWSER FOR THE DESKTOP SITE GETS THE BOARD.
    Request desktop site on the app only reloaded the app: the browser asks
@@ -52,7 +52,7 @@
      before the app resolves its airport, hence the head. -->
 <title>Airport Companion</title>
 <!-- the two faces of the hotel lists (Playfair Display, Montserrat: SIL OFL), shared with the cards of the gates -->
-<link rel="stylesheet" href="css/hotel-list-card.css?v=24175">
+<link rel="stylesheet" href="css/hotel-list-card.css?v=24176">
 <style>
   /* v24030 — the boards' own face, Bricolage Grotesque (SIL OFL), from this
      site's own files (the boards' font.css faces), not Inter from Google */
@@ -519,6 +519,14 @@
   .hl-foot img{display:block;height:34px;width:auto;}
   .hl-foot .hl-cred{flex:1 1 100%;font-size:11.5px;font-weight:550;}
   .hl-foot .hl-cred:empty{display:none;}
+  /* v24176 — a city without a checked list (app.html?hotels=YYZ, the scan code of its card on a
+     gate): the heading above, and big buttons, a search in Google Maps and, on an Apple device,
+     one in Apple Maps */
+  .hl-find{display:flex;flex-direction:column;gap:12px;margin:18px 12px 0;}
+  .hl-map{display:flex;align-items:center;gap:12px;min-height:64px;padding:14px 18px;border-radius:16px;border:1px solid var(--line);
+    background:var(--card);box-shadow:var(--shadow);color:var(--txt);font-size:17px;font-weight:650;line-height:1.25;text-decoration:none;}
+  .hl-map .hl-ico{flex:none;width:28px;height:28px;color:#b8862f;}
+  .hl-map span{flex:1 1 auto;min-width:0;}
 
   /* ── Full-page ad ────────────────────────────────── */
   .ad-full{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
@@ -617,15 +625,15 @@
 </div>
 
 <!-- v24030 — the boards' store: the clock rule (boardTime) and their words -->
-<script src="js/board-strings.js?v=24175"></script>
-<script src="js/shared-names.js?v=24175"></script>
+<script src="js/board-strings.js?v=24176"></script>
+<script src="js/shared-names.js?v=24176"></script>
 <!-- the names of the places of the Americas that the shared names do not have (placeOf) -->
-<script src="js/earth-places.js?v=24175"></script>
-<script src="data/airline-colors.js?v=24175"></script>
-<script src="js/feed-router.js?v=24175"></script>
+<script src="js/earth-places.js?v=24176"></script>
+<script src="data/airline-colors.js?v=24176"></script>
+<script src="js/feed-router.js?v=24176"></script>
 <!-- the hotel lists: the lists of a city and their rules (season, areas), shared with the
      cards of the gates -->
-<script src="js/hotel-list-card.js?v=24175"></script>
+<script src="js/hotel-list-card.js?v=24176"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -1699,7 +1707,7 @@ function wxHtml(code){if(!WX_ON||!code)return '';const t=wxTemp(code);return '<s
 function _coords(){
   if(window.AIRPORT_COORDS)return Promise.resolve(window.AIRPORT_COORDS);
   if(!_coordsP)_coordsP=new Promise(function(ok){
-    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24175';
+    const sc=document.createElement('script');sc.src='js/airport-coords.js?v=24176';
     sc.onload=function(){ok(window.AIRPORT_COORDS||{});};sc.onerror=function(){_coordsP=null;ok({});};
     document.head.appendChild(sc);
   });
@@ -2478,7 +2486,20 @@ function closeFlight(fromHistory){
 // area, each with its logo on the cream column where an official one reads
 // there, its address, a button that calls it and one for its website. The
 // lists and their rules are js/hotel-list-card.js; the words are the store's.
-let HL_CITY='',HL_AREA='';
+// v24176 — a city WITHOUT a checked list (the scan code of its "Hotels in
+// {CITY}" card on a gate) opens a page of big buttons instead: a search in
+// Google Maps, and on an Apple device (an iPhone, an iPad, a Mac) one in
+// Apple Maps (HotelListCard.mapLinks, which names the documentation of each
+// form), for the city the app has a name for. Elsewhere Apple's link opens
+// its map on the web, which is not promised to every phone's browser, so an
+// Android phone is offered Google's alone. The search is the page's own
+// heading in the phone's language, its city with where it is (&in= of the
+// scan code, the board's tables: 'Sydney, NS, Canada', so Google, which
+// takes no point, never searches the other Sydney; HotelListCard.searchPlace);
+// Apple's is asked around the city's airport too (js/airport-coords.js, the
+// point the app has for every city: the boards' table of city centres is
+// not loaded here).
+let HL_CITY='',HL_AREA='',HL_FIND=false,HL_WHERE='';
 function hlIco(k){const s=(window.HotelListCard&&HotelListCard.ICON&&HotelListCard.ICON[k])||'';return s?'<i class="hl-ico">'+s+'</i>':'';}
 const HL_GLOBE='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>';
 // tel: digits only, a North American number with its country code
@@ -2493,6 +2514,7 @@ function renderHotels(){
   const cityName=placeOf(city).c;
   const ttl=document.getElementById('hlTtl');
   if(ttl)ttl.textContent=BS?BS.fmt('hotelsInCity',L,{CITY:cityName},true):'';
+  if(HL_FIND){body.innerHTML=hlFindHtml(city,cityName,L,HL_WHERE);return;}
   if(!doc){body.innerHTML='<div class="empty"><div class="p">'+esc(BS?BS.bs('appLoading',L):'')+'</div></div>';return;}
   const tz=(AIRPORTS[city]&&AIRPORTS[city].tz)||'';
   const cards=H.cards(doc,null,tz);
@@ -2524,10 +2546,37 @@ function renderHotels(){
   html+='<div class="hl-foot">'+marks+(osm?'<div class="hl-cred">'+esc(BS.bs('credOsmLine',L))+'</div>':'')+'</div>';
   body.innerHTML=html;
 }
-function openHotels(city,area){
+// The map searches of a city without a list: big buttons, each opening its
+// map in a new tab (the phone hands it to its Maps app); Apple's on an Apple
+// device only (an iPad asking for the desktop site says Macintosh)
+function hlFindHtml(city,cityName,L,where){
+  const BS=window.BoardStrings,H=window.HotelListCard; if(!BS||!H)return '';
+  const p=window.AIRPORT_COORDS&&AIRPORT_COORDS[city];
+  const m=H.mapLinks(BS.fmt('hotelsInCity',L,{CITY:H.searchPlace(cityName,where,L)},true),p?{lat:p[0],lng:p[1]}:null);
+  const apple=/iPhone|iPad|iPod|Macintosh/.test(String((window.navigator&&window.navigator.userAgent)||''));
+  const btn=function(u,k){return u?'<a class="hl-map" href="'+esc(u)+'" target="_blank" rel="noopener">'+hlIco('pin')+'<span>'+esc(BS.bs(k,L))+'</span></a>':'';};
+  return '<section class="hl-find">'+btn(m.google,'hotelsMapGoogle')+(apple?btn(m.apple,'hotelsMapApple'):'')+'</section>';
+}
+// A city the app has a name for, without a checked list; where it is: the
+// scan code's (&in=, 'CA-NS'), else the country of one of the app's own
+// airports (AIRPORTS r, Canada or the United States)
+function openHotelSearch(c,where){
+  const nm=placeOf(c).c;
+  if(!/^[A-Z0-9]{3}$/.test(c)||!nm||nm===c||nm==='—')return;
+  const w=String(where||'').toUpperCase(),own=AIRPORTS[c]&&/^(CA|US)$/.test(AIRPORTS[c].r)?AIRPORTS[c].r:'';
+  HL_CITY=c; HL_AREA=''; HL_FIND=true; HL_WHERE=/^[A-Z]{2}(-[A-Z]{2})?$/.test(w)?w:own;
+  const d=document.getElementById('hotels'),wasOpen=d.classList.contains('show');
+  renderHotels();
+  d.classList.add('show');d.setAttribute('aria-hidden','false');
+  if(!wasOpen){try{history.pushState({appHotels:1},'');}catch(e){}}
+  // the point Apple's search is asked around arrives with the airports' positions
+  _coords().then(function(){if(HL_CITY===c&&HL_FIND)renderHotels();});
+}
+function openHotels(city,area,where){
   const H=window.HotelListCard; if(!H)return;
-  const c=String(city||'').toUpperCase(); if(H.CITIES.indexOf(c)<0)return;
-  HL_CITY=c; HL_AREA=H.AREAS.indexOf(String(area||''))>=0?String(area):'';
+  const c=String(city||'').toUpperCase();
+  if(H.CITIES.indexOf(c)<0){openHotelSearch(c,where);return;}
+  HL_CITY=c; HL_FIND=false; HL_WHERE=''; HL_AREA=H.AREAS.indexOf(String(area||''))>=0?String(area):'';
   const d=document.getElementById('hotels'),wasOpen=d.classList.contains('show');
   renderHotels();
   d.classList.add('show');d.setAttribute('aria-hidden','false');
@@ -2540,7 +2589,7 @@ function openHotels(city,area){
 }
 function closeHotels(fromHistory){
   const d=document.getElementById('hotels'); if(!d||!d.classList.contains('show'))return;
-  d.classList.remove('show');d.setAttribute('aria-hidden','true');HL_CITY='';
+  d.classList.remove('show');d.setAttribute('aria-hidden','true');HL_CITY='';HL_FIND=false;HL_WHERE='';
   if(!fromHistory){try{if(history.state&&history.state.appHotels)history.back();}catch(e){}}
 }
 window.addEventListener('popstate',function(){closeFlight(true);closeHotels(true);});
@@ -2677,7 +2726,7 @@ let BOOT_GATE='';
   }catch(e){ap='YQM';}
   setAirport(ap||'YQM',true);
   // the scan code of a hotel card: the list of that city, at that card's area
-  try{const q=new URLSearchParams(location.search),hl=(q.get('hotels')||'').toUpperCase();if(hl)openHotels(hl,q.get('area')||'');}catch(e){}
+  try{const q=new URLSearchParams(location.search),hl=(q.get('hotels')||'').toUpperCase();if(hl)openHotels(hl,q.get('area')||'',q.get('in')||'');}catch(e){}
 })();
 // Refresh the list (every 3 min), holding the reader's place; the clock every 15 s.
 setInterval(()=>{ refresh(); },180000);

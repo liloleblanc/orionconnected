@@ -13,6 +13,11 @@ The cities that have a list are **one list**: `HotelListCard.CITIES` in
 list. The build step and `tests/hotel-list-cards.test.js` both fail when a checked file has no
 entry in the list, or an entry has no checked file.
 
+A city that is not in the list already has a way to find a hotel: its gates show one "Hotels in
+{CITY}" card whose scan code opens a Google Maps search (and, on an Apple device, an Apple Maps
+one) in the phone app, the city named with its state or province and country (v24176). Adding the city to the list replaces that card with its checked list, on the gates and
+in the app; nothing else changes.
+
 ## Adding a city
 
 1. **Find candidates.**

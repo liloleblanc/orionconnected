@@ -30,7 +30,7 @@ const CORE = read('fids-current/js/fids-core.js');
 const GIDS = read('fids-current/gids.html');
 const APP = read('fids-current/app.html');
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-const KEYS = ['hotelsAirport', 'hotelsDowntown', 'hotelsNearby', 'hotelsResorts', 'hotelShuttle', 'hotelListScan', 'hotelsInCity', 'hotelCall', 'credOsmLine'];
+const KEYS = ['hotelsAirport', 'hotelsDowntown', 'hotelsNearby', 'hotelsResorts', 'hotelShuttle', 'hotelListScan', 'hotelsInCity', 'hotelCall', 'credOsmLine', 'hotelsFindScan', 'hotelsMapGoogle', 'hotelsMapApple'];
 // the checked list of each city (every fact with its source and verified mark), kept out of the
 // site, and the slim copy the site serves, made from it by scripts/hotels/build-runtime.js
 const RT = require(path.join(ROOT, 'scripts/hotels/build-runtime.js'));
@@ -49,7 +49,8 @@ const NOV16 = day(2026, 11, 16);
 // The module reads the board through the global object: a gate is set up on
 // it for one check and taken away again.
 function onGate(g, run) {
-  const names = ['_gateIata', '_gateCurrentFlight', '_flightLegs', 'BoardStrings', 'frFirstAirport', '_gateMapCity', '_gateAccorPass', 'location'];
+  const names = ['_gateIata', '_gateCurrentFlight', '_flightLegs', 'BoardStrings', 'frFirstAirport', '_gateMapCity', '_gateAccorPass', 'location', 'airportCityNameSafe_v21877',
+    '_IATA_CC', 'airportCountry', '_rowRegion', 'QRCode', 'getComputedStyle', '_axrPageSync', '_wxCityPic', '_wxPicCreditHtml'];
   const keep = {};
   names.forEach((n) => { keep[n] = Object.getOwnPropertyDescriptor(globalThis, n); });
   try {
@@ -121,8 +122,8 @@ test('the cities are one list (HotelListCard.CITIES): the build step, the phone 
   }
   // the module names the list once
   assert.equal((SRC.match(/var CITIES = \[/g) || []).length, 1);
-  // the app asks the module which cities have a list
-  assert.match(APP, /if\(H\.CITIES\.indexOf\(c\)<0\)return;/);
+  // the app asks the module which cities have a list (any other city: its map searches)
+  assert.match(APP, /if\(H\.CITIES\.indexOf\(c\)<0\)\{openHotelSearch\(c,where\);return;\}/);
   // every checked file is a city of the list, every city of the list has its checked file and its slim copy
   const codes = (dir) => fs.readdirSync(path.join(ROOT, dir)).filter((f) => /^[a-z0-9]{3}\.json$/.test(f)).map((f) => f.slice(0, 3).toUpperCase()).sort();
   assert.deepEqual(codes('scripts/hotels/data'), H.CITIES.slice().sort());
@@ -500,7 +501,7 @@ test('one scan code a card: the whole list of the city in the phone app, at that
   assert.equal(ours, 'https://orionconnected.app/app?ap=YQM&hotels=YYG&area=downtown');
   // the app opens it: ?hotels= and &area=, a button that calls (tel:) and one for the website
   assert.match(APP, /q\.get\('hotels'\)/);
-  assert.match(APP, /function openHotels\(city,area\)/);
+  assert.match(APP, /function openHotels\(city,area,where\)/);
   assert.match(APP, /'<a class="hl-btn" href="'\+esc\(tel\)\+'">/);
   assert.match(APP, /target="_blank" rel="noopener"/);
   assert.match(APP, /<script src="js\/hotel-list-card\.js\?v=\d+"><\/script>/);
@@ -594,9 +595,10 @@ test('a light card: the logos stand on its cream, never a box behind one logo; t
   assert.match(CSS, /\.hlc-row\{ flex:0 0 20%;/);
   // a card where no line has a logo has no logo cell, and its names start at the card's edge
   assert.match(CSS, /\.hlc-list--bare \.hlc-logo\{ display:none; \}\n\.hlc-list--bare \.hlc-text\{ padding-left:var\(--hlc-pad\); \}/);
-  // the scan code: navy modules on the cream, no white box
+  // the scan code: navy modules on the cream, no white box (on the photograph of a city without
+  // a list the code stands on a tile of that same cream, its quiet zone: never white)
   assert.match(SRC, /colorDark: '#14203c', colorLight: '#f5efe3'/);
-  assert.doesNotMatch(CSS, /\.hlc-qr\{[^}]*background/);
+  assert.doesNotMatch(CSS.replace(/\.hlc-find--pic \.hlc-find-scan \.hlc-qr\{ background:var\(--hlc-cream\);/, ''), /\.hlc-qr\{[^}]*background/);
   const list = (city, area, pass) => {
     const v = views(build(city, ['en', 'fr'], { pass: pass || 0 })).find((x) => x.includes('data-area="' + area + '"'));
     const m = /<ol class="(hlc-list[^"]*)" style="--hlc-rows:(\d)">/.exec(v);
@@ -627,4 +629,409 @@ test('a light card: the logos stand on its cream, never a box behind one logo; t
   assert.deepEqual(DOCS.YQM.foot_marks.map((m) => m.name), ['Destination Moncton-Dieppe', '#ExploreNB']);
   assert.deepEqual(DOCS.YYG.foot_marks, [], 'no Charlottetown mark until one is approved');
   assert.deepEqual(DOCS.YFC.foot_marks, [], 'no Fredericton mark until one is approved');
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// EVERY OTHER CITY (v24176): a gate whose flight goes to a city without a
+// checked list shows one card in the same slot, "Hotels in {CITY}" and one
+// large scan code; the code opens the phone app, which offers a search in
+// Google Maps and one in Apple Maps. Hand-checked lists stay where a person
+// checked them.
+// ══════════════════════════════════════════════════════════════════════════
+
+// the board's own names, as its tables hold them (capitals), and the gate's
+// casing with the airport's own name where a city has two of ours
+const BOARD_NAMES = { YYZ: 'TORONTO', YUL: 'MONTREAL', YQM: 'MONCTON', YYG: 'CHARLOTTETOWN', YHZ: 'HALIFAX', LHR: 'LONDON', YYT: "ST. JOHN'S", BOS: 'BOSTON' };
+const BOARD_NAMES_FR = { YUL: 'MONTRÉAL' };
+const named = (c, lg) => (lg === 'fr' && BOARD_NAMES_FR[c]) || BOARD_NAMES[c] || '';
+const cased = (c, lg) => {
+  const n = named(c, lg);
+  if (!n) return String(c || '');
+  const t = n.toLowerCase().replace(/(^|[\s\-\/(.])([a-zà-ÿ])/g, (m, p, ch) => p + ch.toUpperCase());
+  return c === 'YYZ' ? t + ' · Pearson' : t;
+};
+const legs = (cf) => (cf && cf._stops) || [];
+const anyGate = (extra) => Object.assign({ BoardStrings: B, _gateIata: 'YHZ', _gateMapCity: cased, airportCityNameSafe_v21877: named, _flightLegs: legs }, extra || {});
+// A function of the phone app, as it is written there, to run in a sandbox
+const appFn = (name) => {
+  const i = APP.indexOf('function ' + name + '(');
+  assert.ok(i >= 0, name);
+  let d = 0;
+  for (let k = APP.indexOf('{', i); k < APP.length; k++) { if (APP[k] === '{') d++; else if (APP[k] === '}') { d--; if (!d) return APP.slice(i, k + 1); } }
+  throw new Error('unbalanced ' + name);
+};
+
+test('every other city: the gate shows its "Hotels in" card where the city the flight goes to has no checked list, and only there', () => {
+  const find = (cf, extra) => onGate(anyGate(Object.assign({ _gateCurrentFlight: cf }, extra || {})), () => H.findCity());
+  const list = (cf, extra) => onGate(anyGate(Object.assign({ _gateCurrentFlight: cf }, extra || {})), () => H.cityFor());
+  // Halifax to Toronto: no list for Toronto, its card
+  assert.equal(find({ _locIata: 'YYZ' }), 'YYZ');
+  assert.equal(list({ _locIata: 'YYZ' }), '', 'and no list');
+  // a city with a checked list: the list, never the card
+  for (const C of H.CITIES) {
+    assert.equal(find({ _locIata: C }, { _gateIata: 'YUL' }), '', C + ': its list shows instead');
+    assert.equal(list({ _locIata: C }, { _gateIata: 'YUL' }), C);
+  }
+  // a stop with a list counts for the list, as before: no card then
+  assert.equal(find({ _locIata: 'YYZ', _stops: ['YQM', 'YYZ'] }, { _gateIata: 'YUL' }), '', 'a stop with a list: the list');
+  // no flight, no card
+  assert.equal(find(null), '', 'a gate with no flight shows nothing');
+  // a code the board has no name for: no card
+  assert.equal(find({ _locIata: 'QQZ' }), '', 'no name, no card');
+  // the city the flight goes to, then its stops from the last, for any code with a name
+  assert.equal(find({ _locIata: 'QQZ', _stops: ['BOS', 'LHR', 'QQZ'] }), 'LHR', 'the last stop with a name');
+  // never the city of the screen itself
+  assert.equal(find({ _locIata: 'YHZ' }), '', 'not Halifax hotels on a Halifax gate');
+  assert.equal(find({ _locIata: 'QQZ', _stops: ['YUL', 'BOS', 'QQZ'] }, { _gateIata: 'BOS' }), 'YUL', 'a stop that is the screen’s own city is passed over');
+  // due on the gate: the card of a city without a list is due at once (nothing to load), and
+  // holds its one view long enough to take a phone out
+  const gateOf = (cf) => anyGate({ _gateCurrentFlight: cf });
+  assert.equal(onGate(gateOf({ _locIata: 'YYZ' }), () => H.due()), true);
+  assert.equal(onGate(gateOf({ _locIata: 'YYZ' }), () => H.dwellMs()), H.FIND_MS);
+  assert.equal(H.FIND_MS, 20000);
+  assert.equal(onGate(gateOf(null), () => H.due()), false, 'no flight: nothing due');
+  assert.equal(onGate(gateOf({ _locIata: 'QQZ' }), () => H.due()), false, 'no name: nothing due');
+  assert.equal(onGate(gateOf({ _locIata: 'YQM' }), () => H.due()), true, 'Moncton: the list, loaded');
+  assert.equal(onGate(gateOf({ _locIata: 'YQM' }), () => H.dwellMs()), 4 * 10000 + 4000, 'and the list keeps its own dwell');
+  // nothing to warm: no logo, no picture
+  assert.deepEqual(onGate(gateOf({ _locIata: 'YYZ' }), () => H.media()), []);
+});
+
+test('every other city: the review link shows the card of a city without a list on any gate, and a list city keeps its list', () => {
+  const rv = (q, cf) => onGate(anyGate({ _gateCurrentFlight: cf || null, location: { search: q, hostname: 'localhost', origin: 'http://localhost:8129' } }), () => ({ list: H.cityFor(), find: H.findCity(), due: H.due() }));
+  assert.deepEqual(rv('?hotellist=YYZ&scene=hotellist'), { list: '', find: 'YYZ', due: true }, 'Toronto, on a gate with no flight');
+  assert.deepEqual(rv('?hotellist=yyz&scene=hotellist', { _locIata: 'YQM' }), { list: '', find: 'YYZ', due: true }, 'the link wins over the flight');
+  assert.deepEqual(rv('?hotellist=YQM&scene=hotellist'), { list: 'YQM', find: '', due: true }, 'Moncton keeps its list');
+  assert.deepEqual(rv('?hotellist=QQZ'), { list: '', find: '', due: false }, 'a code with no name shows nothing');
+  assert.deepEqual(rv('?hotellist=toolong', { _locIata: 'YYZ' }), { list: '', find: 'YYZ', due: true }, 'a link that names no code is no link');
+  // a code the board has no name for is no link either: the gate shows what it shows without one
+  assert.deepEqual(rv('?hotellist=QQZ', { _locIata: 'YQM' }), { list: 'YQM', find: '', due: true }, 'the Moncton list of the gate, as before');
+  assert.deepEqual(rv('?hotellist=QQZ', { _locIata: 'YYZ' }), { list: '', find: 'YYZ', due: true }, 'the Toronto card of the gate');
+});
+
+test('every other city: one card, its heading in the languages of the board, one large code to the phone app, no logo, no hotel, no price', () => {
+  const html = onGate(anyGate(), () => H.buildFind('YYZ', ['fr', 'en'], { home: 'YHZ' }));
+  // one view, in the pages wrap the pager knows, shown
+  assert.equal((html.match(/class="axr-page /g) || []).length, 1);
+  assert.match(html, /^<div class="hlc hlc--find" data-city="YYZ"><div class="axr-pages hlc-views"><div class="axr-page hlc-view hlc-find axr-page-on" data-area="find">/);
+  // the heading, French first on this board, the city cased as the gate writes it and without
+  // the airport's own name (Toronto, not Toronto · Pearson)
+  const fr = B.bs('hotelsInCity', 'fr').replace('{CITY}', '<bdi>Toronto</bdi>');
+  const en = B.bs('hotelsInCity', 'en').replace('{CITY}', '<bdi>Toronto</bdi>');
+  assert.ok(html.includes('<span class="bs-h" lang="fr">' + fr + '</span>') && html.includes('<span class="bs-h" lang="en">' + en + '</span>'), 'Hôtels à Toronto, Hotels in Toronto');
+  assert.ok(html.indexOf(fr) < html.indexOf(en), 'the first language first');
+  assert.doesNotMatch(html, /Pearson/);
+  // the invitation under the code, in both languages, in the navy foot beside the phone mark
+  for (const l of ['fr', 'en']) assert.ok(html.includes(B.esc(B.bs('hotelsFindScan', l))), 'hotelsFindScan ' + l);
+  assert.match(html, /<div class="hlc-foot hlc-find-foot"><i class="hlc-ico hlc-find-ico">/);
+  // one code: the phone app, the city, the airport of the screen; no area
+  const urls = [...html.matchAll(/data-qr-url="([^"]+)"/g)].map((m) => m[1].replace(/&amp;/g, '&'));
+  assert.deepEqual(urls, ['https://orionconnected.app/app?ap=YHZ&hotels=YYZ']);
+  // where the city is, from the board's own tables, for its map search on the phone (&in=): the
+  // country as the table gives it (Puerto Rico is PR) and, in Canada and the United States, the
+  // state or province
+  const CC = { YYZ: 'CA', YQY: 'CA', SYD: 'AU', PWM: 'US', SJU: 'PR', STI: 'DO' };
+  const RG = { YYZ: 'ON', YQY: 'NS', PWM: 'ME', SYD: 'NS' };
+  const placed = (extra) => anyGate(Object.assign({ _IATA_CC: CC, _rowRegion: (c) => RG[c] || '' }, extra || {}));
+  assert.deepEqual(['YYZ', 'YQY', 'SYD', 'PWM', 'SJU', 'STI', 'QQZ', 'yyz', 'TOOLONG'].map((c) => onGate(placed(), () => H.whereOf(c))),
+    ['CA-ON', 'CA-NS', 'AU', 'US-ME', 'PR', 'DO', '', 'CA-ON', ''], 'a state only in Canada and the United States');
+  assert.equal(onGate(anyGate({ airportCountry: (c) => (c === 'SJU' ? 'US' : '') }), () => H.whereOf('SJU')), 'US', 'without the table, the board\u2019s airportCountry');
+  assert.equal(onGate(anyGate(), () => H.whereOf('YYZ')), '', 'a board without the tables: nothing');
+  const qr = onGate(placed(), () => H.buildFind('YYZ', ['fr', 'en'], { home: 'YHZ' })).match(/data-qr-url="([^"]+)"/)[1].replace(/&amp;/g, '&');
+  assert.equal(qr, 'https://orionconnected.app/app?ap=YHZ&hotels=YYZ&in=CA-ON');
+  assert.equal(H.qrUrl('YQY', '', 'YHZ', 'ca-ns'), 'https://orionconnected.app/app?ap=YHZ&hotels=YQY&in=CA-NS');
+  for (const w of ['', null, undefined, 'C', 'CAN', 'CA-N', 'CA-NS&x=1']) assert.equal(H.qrUrl('YQY', '', 'YHZ', w), 'https://orionconnected.app/app?ap=YHZ&hotels=YQY', String(w));
+  // a list city's codes carry no such part
+  assert.doesNotMatch(onGate(placed(), () => H.build(RUN.YQM, ['en'], { date: NOV16, home: 'YYZ' })), /&amp;in=/);
+  assert.equal(onGate({ location: { hostname: 'yhz.orionconnected.com', origin: 'https://yhz.orionconnected.com', search: '' } }, () => H.qrUrl('YYZ', '', 'YHZ')), 'https://orionconnected.app/app?ap=YHZ&hotels=YYZ');
+  // no logo, no hotel, no price (and, on a board without the weather card, no picture): the only
+  // drawing is the phone mark
+  assert.doesNotMatch(html, /<img|<style|data-hotel=|\$|€|£/);
+  assert.deepEqual([...html.matchAll(/<svg[\s\S]*?<\/svg>/g)].map((m) => m[0]), [H.ICON.smartphone]);
+  // a board of one language says it once; a pair whose two lines say the same says it once
+  const one = onGate(anyGate(), () => H.buildFind('YYZ', ['de'], { home: 'YHZ' }));
+  assert.match(one, /^<div class="hlc hlc--find hlc--one"/);
+  assert.equal((one.match(/class="hlc-tl"/g) || []).length, 2, 'one heading line, one invitation line');
+  // the French name where the board has one: Montréal
+  const yul = onGate(anyGate(), () => H.buildFind('YUL', ['fr', 'en'], { home: 'YHZ' }));
+  assert.ok(yul.includes('<bdi>Montréal</bdi>') && yul.includes('<bdi>Montreal</bdi>'));
+  // Arabic marked right to left, the city isolated in it; Japanese and Chinese marked
+  const ar = onGate(anyGate(), () => H.buildFind('YYZ', ['ar', 'en'], { home: 'YHZ' }));
+  assert.match(ar, /<span class="bs-h" lang="ar" dir="rtl">فنادق <bdi>Toronto<\/bdi><\/span>/);
+  assert.match(onGate(anyGate(), () => H.buildFind('YYZ', ['ja', 'zh'], { home: 'YHZ' })), /lang="ja"[^>]*><bdi>Toronto<\/bdi>のホテル/);
+  // the city is escaped (St. John's)
+  assert.ok(onGate(anyGate(), () => H.buildFind('YYT', ['en'], {})).includes('<bdi>St. John&#39;s</bdi>'));
+  // no name, no card
+  assert.equal(onGate(anyGate(), () => H.buildFind('QQZ', ['en', 'fr'], {})), '');
+  // the module writes no word of its own: the heading and the invitation are the store's
+  assert.doesNotMatch(SRC, /'Hotels in|'Scan to search|'Search in (Google|Apple)/);
+});
+
+test('every other city: the city in its own photograph behind the card, the one the weather card shows, its photographer named where the licence asks; the plain card without one', () => {
+  const credit = (urls, cls) => (urls[0] === '/logos/cities/YUL.jpg' ? '<div class="' + cls + '"><span class="pcr-who">A</span></div>' : '');
+  const asked = [];
+  const pic = (u) => anyGate({ _wxCityPic: (c, night) => { asked.push([c, night]); return u.split('{C}').join(c); }, _wxPicCreditHtml: credit });
+  const yyz = onGate(pic('/logos/cities/{C}.jpg'), () => H.buildFind('YYZ', ['fr', 'en'], { home: 'YHZ' }));
+  // the day picture of the city the card names
+  assert.deepEqual(asked[0], ['YYZ', false]);
+  assert.match(yyz, /<div class="axr-page hlc-view hlc-find hlc-find--pic axr-page-on" data-area="find"><div class="hlc-find-pic" aria-hidden="true" style="background-image:url\(&#39;\/logos\/cities\/YYZ\.jpg&#39;\)"><\/div><div class="hlc-find-head">/);
+  // a picture whose licence asks for nothing names nobody; one that does names its photographer
+  // beside the code, with the weather card's own line
+  assert.doesNotMatch(yyz, /hlc-find-credit/);
+  const yul = onGate(pic('/logos/cities/{C}.jpg'), () => H.buildFind('YUL', ['fr', 'en'], { home: 'YHZ' }));
+  assert.ok(yul.includes('"></div><div class="hlc-find-credit"><span class="pcr-who">A</span></div></div>'), 'the credit inside the code’s area');
+  // only a picture of the board's own set: never the picture service, a night picture, another
+  // site, or an address that would break out of the style
+  for (const u of ['/citypic?iata={C}&q=Toronto', '/logos/cities/{C}-night.jpg', '', 'https://x.example/logos/cities/{C}.jpg', "/logos/cities/{C}.jpg');background:red;('", '/logos/cities/../{C}.jpg']) {
+    const h = onGate(pic(u), () => H.buildFind('YYZ', ['en'], {}));
+    assert.doesNotMatch(h, /hlc-find-pic|hlc-find--pic|hlc-find-credit/, u);
+    assert.match(h, /^<div class="hlc hlc--find hlc--one"/, u);
+  }
+  // a board whose picture function fails shows the plain card
+  assert.doesNotMatch(onGate(anyGate({ _wxCityPic: () => { throw new Error('x'); } }), () => H.buildFind('YYZ', ['en'], {})), /hlc-find-pic/);
+  // the look: navy at the top for a white heading, the code on a tile of the card's own paper
+  // (its quiet zone), the photographer in white beside it; inside the section, never after the foot
+  const at = CSS.indexOf('.hlc .hlc-find--pic{');
+  assert.ok(at > CSS.indexOf('/* ── the card of a city without a list') && at < CSS.indexOf('/* ── foot ── */'));
+  assert.match(CSS, /\.hlc-find-pic\{ position:absolute; inset:0; z-index:-1; background-position:center; background-size:cover;/);
+  assert.match(CSS, /\.hlc-find--pic \.hlc-find-title\{ color:#fff;/);
+  assert.match(CSS, /\.hlc-find--pic \.hlc-find-scan \.hlc-qr\{ background:var\(--hlc-cream\);/);
+  assert.match(CSS, /\.hlc-find-credit\{ position:absolute;[^}]*font-size:calc\(18 \* var\(--hlc-px\)\);/);
+});
+
+test('every other city: the look, the family of the list cards, sized for the 1680x1050 stage', () => {
+  // inside the stylesheet's own sections, never appended after the foot
+  const at = CSS.indexOf('/* ── the card of a city without a list');
+  assert.ok(at > 0 && at < CSS.indexOf('/* ── foot ── */'), 'before the foot section');
+  // the heading in the heading face, large; the code square, as large as the card leaves room
+  // for, 420 px at most at 1680x1050; the invitation in the navy foot
+  assert.match(CSS, /\.hlc-find-title\{ font-family:var\(--hlc-serif\); font-weight:600; font-size:calc\(48 \* var\(--hlc-px\)\);/);
+  // square on both axes: the smaller of the width and the height of its area (a size container,
+  // as the Algonquin page sizes its code), so a narrow or tall slot gives a smaller square, never
+  // a squeezed one
+  assert.match(CSS, /\.hlc-find-scan\{ flex:1 1 0; min-height:0; min-width:0; container-type:size;/);
+  assert.match(CSS, /\.hlc-find-scan \.hlc-qr\{ flex:none; width:min\(calc\(420 \* var\(--hlc-px\)\), 100cqw, 100cqh\); height:min\(calc\(420 \* var\(--hlc-px\)\), 100cqw, 100cqh\);/);
+  assert.doesNotMatch(CSS, /\.hlc-find-scan \.hlc-qr\{[^}]*aspect-ratio/);
+  assert.match(CSS, /\.hlc-find-say\{ min-width:0; font-size:calc\(26 \* var\(--hlc-px\)\);/);
+  // the invitation's lines centred on one another (an Arabic line never flush left under the mark)
+  assert.match(CSS, /\.hlc-find-say\{[^}]*text-align:center; \}/);
+  // the gold rule under the heading
+  assert.match(CSS, /\.hlc-find-title::after\{ content:''; [^}]*background:var\(--hlc-rule\); \}/);
+  // the code is drawn again whenever its size has changed, so it is never drawn at one size and
+  // shown at another (run in the render test below)
+  assert.match(SRC, /\(Number\(q\.getAttribute\('data-qr-w'\)\) \|\| 0\) === w/);
+});
+
+test('every other city: the phone app offers a search in Google Maps and one in Apple Maps, each link as documented', () => {
+  // the two forms (HotelListCard.mapLinks): Google's Maps URLs search action (api=1, query),
+  // Apple's Map Links (q, and sll, the point to search around)
+  const t = H.mapLinks('Hotels in Toronto', { lat: 43.68, lng: -79.63 });
+  assert.equal(t.google, 'https://www.google.com/maps/search/?api=1&query=Hotels%20in%20Toronto');
+  assert.equal(t.apple, 'https://maps.apple.com/?q=Hotels%20in%20Toronto&sll=43.68,-79.63');
+  // the city URL-encoded: accents, an apostrophe, spaces; every reserved character
+  const m = H.mapLinks('Hôtels à Montréal', { lat: 45.47, lng: -73.74 });
+  assert.equal(m.google, 'https://www.google.com/maps/search/?api=1&query=H%C3%B4tels%20%C3%A0%20Montr%C3%A9al');
+  assert.equal(m.apple, 'https://maps.apple.com/?q=H%C3%B4tels%20%C3%A0%20Montr%C3%A9al&sll=45.47,-73.74');
+  assert.equal(H.mapLinks("Hotels in St. John's (NL) & more", null).google, 'https://www.google.com/maps/search/?api=1&query=Hotels%20in%20St.%20John%27s%20%28NL%29%20%26%20more');
+  // no point, or a bad one: the search alone
+  for (const p of [null, undefined, {}, { lat: null, lng: null }, { lat: 'x', lng: 2 }, { lat: 120, lng: 0 }]) {
+    assert.equal(H.mapLinks('Hotels in Toronto', p).apple, 'https://maps.apple.com/?q=Hotels%20in%20Toronto', JSON.stringify(p));
+  }
+  assert.deepEqual(H.mapLinks('  ', { lat: 1, lng: 2 }), { google: '', apple: '' });
+  // no key, no tracking parameter: the search and the point, nothing else
+  for (const u of [t.google, t.apple]) {
+    const q = new URL(u).searchParams;
+    assert.deepEqual([...q.keys()].sort(), u.includes('google') ? ['api', 'query'] : ['q', 'sll']);
+  }
+  // the documentation each form follows is named beside it
+  assert.match(SRC, /developers\.google\.com\/maps\/documentation\/urls\/get-started/);
+  assert.match(SRC, /developer\.apple\.com\/documentation\/mapkit\/\s*\/?\s*unified-map-urls|developer\.apple\.com\/documentation\/mapkit\/\n\s*\/\/\s*unified-map-urls/);
+  assert.match(SRC, /Map Links/);
+
+  // the city written with where it is (searchPlace), so a search with no point never finds the
+  // other Sydney: the state or province by its two letters, the country in the phone's language
+  const sp = (n, w, l) => onGate(anyGate(), () => H.searchPlace(n, w, l));
+  assert.equal(sp('Sydney', 'CA-NS', 'en'), 'Sydney, NS, Canada');
+  assert.equal(sp('Sydney', 'AU', 'en'), 'Sydney, Australia');
+  assert.equal(sp('Portland', 'US-ME', 'en'), 'Portland, ME, United States');
+  assert.equal(sp('San Juan', 'PR', 'en'), 'San Juan, Puerto Rico');
+  assert.equal(sp('Santiago', 'DO', 'fr'), 'Santiago, République dominicaine');
+  assert.equal(sp('London', 'CA-ON', 'de'), 'London, ON, Kanada');
+  assert.equal(sp('London', 'GB', 'ja'), 'London, イギリス');
+  assert.equal(sp('London', 'GB', 'ar'), 'London, المملكة المتحدة');
+  // the country left out where the city's name says it already, or the country's name begins
+  // with the city's
+  assert.equal(sp('Panama City', 'PA', 'en'), 'Panama City');
+  assert.equal(sp('Singapore', 'SG', 'en'), 'Singapore');
+  assert.equal(sp('Ciudad de México', 'MX', 'es'), 'Ciudad de México');
+  assert.equal(sp('Hong Kong', 'HK', 'en'), 'Hong Kong');
+  // the city alone where nothing (or nothing valid) says where it is
+  for (const w of ['', null, undefined, 'CAN', 'C-1', 'CA NS', 'CA-NS&x']) assert.equal(sp('Toronto', w, 'en'), 'Toronto', String(w));
+  assert.equal(sp('  ', 'CA', 'en'), '');
+  // Arabic and Japanese searches, encoded as UTF-8
+  const ar = H.mapLinks(B.fmt('hotelsInCity', 'ar', { CITY: sp('London', 'GB', 'ar') }, true), { lat: 51.47, lng: -0.45 });
+  assert.equal(ar.google, 'https://www.google.com/maps/search/?api=1&query=%D9%81%D9%86%D8%A7%D8%AF%D9%82%20London%2C%20%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9%20%D8%A7%D9%84%D9%85%D8%AA%D8%AD%D8%AF%D8%A9');
+  assert.equal(ar.apple, 'https://maps.apple.com/?q=%D9%81%D9%86%D8%A7%D8%AF%D9%82%20London%2C%20%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9%20%D8%A7%D9%84%D9%85%D8%AA%D8%AD%D8%AF%D8%A9&sll=51.47,-0.45');
+  const ja = H.mapLinks(B.fmt('hotelsInCity', 'ja', { CITY: sp('London', 'GB', 'ja') }, true), null);
+  assert.equal(ja.google, 'https://www.google.com/maps/search/?api=1&query=London%2C%20%E3%82%A4%E3%82%AE%E3%83%AA%E3%82%B9%E3%81%AE%E3%83%9B%E3%83%86%E3%83%AB');
+  assert.equal(decodeURIComponent(new URL(ja.apple).searchParams.get('q')), 'London, イギリスのホテル');
+
+  // the app's page, run as it is written: the heading in the phone's language, its city with
+  // where it is, is the search; the city's airport the point; big buttons, each opening its map
+  // in a new tab; Apple's on an Apple device only
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1';
+  const IPAD_DESKTOP = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15';
+  const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+  const ANDROID_DESKTOP = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  const page = (city, name, L, where, ua) => {
+    const ctx = { window: { BoardStrings: B, HotelListCard: H, AIRPORT_COORDS: { YYZ: [43.68, -79.63], YUL: [45.47, -73.74] }, navigator: { userAgent: ua == null ? IPHONE : ua } },
+      esc, hlIco: (k) => '<i class="hl-ico">' + H.ICON[k] + '</i>' };
+    ctx.AIRPORT_COORDS = ctx.window.AIRPORT_COORDS;
+    vm.createContext(ctx);
+    vm.runInContext(appFn('hlFindHtml') + '\nthis.out = hlFindHtml(' + [city, name, L, where].map((x) => JSON.stringify(x == null ? '' : x)).join(',') + ');', ctx);
+    return ctx.out;
+  };
+  const hrefsOf = (html) => [...html.matchAll(/<a class="hl-map" href="([^"]+)" target="_blank" rel="noopener">/g)].map((x) => x[1].replace(/&amp;/g, '&'));
+  const en = page('YYZ', 'Toronto', 'en', 'CA-ON');
+  assert.deepEqual(hrefsOf(en), ['https://www.google.com/maps/search/?api=1&query=Hotels%20in%20Toronto%2C%20ON%2C%20Canada', 'https://maps.apple.com/?q=Hotels%20in%20Toronto%2C%20ON%2C%20Canada&sll=43.68,-79.63']);
+  assert.ok(en.includes('<span>' + B.bs('hotelsMapGoogle', 'en') + '</span>') && en.includes('<span>' + B.bs('hotelsMapApple', 'en') + '</span>'));
+  assert.equal((en.match(/<svg/g) || []).length, 2, 'a pin on each button');
+  const fr = page('YUL', 'Montréal', 'fr', 'CA-QC');
+  assert.ok(fr.includes('query=H%C3%B4tels%20%C3%A0%20Montr%C3%A9al%2C%20QC%2C%20Canada"') && fr.includes('q=H%C3%B4tels%20%C3%A0%20Montr%C3%A9al%2C%20QC%2C%20Canada&amp;sll=45.47,-73.74"'), 'French: the French heading, encoded');
+  assert.ok(fr.includes(B.esc(B.bs('hotelsMapApple', 'fr'))));
+  // a city whose airport position has not arrived, and nothing to say where it is: the search alone
+  assert.ok(page('BOS', 'Boston', 'en', '').includes('href="https://maps.apple.com/?q=Hotels%20in%20Boston"'));
+  // an iPad asking for the desktop site says Macintosh: Apple's too
+  assert.equal(hrefsOf(page('YYZ', 'Toronto', 'en', 'CA-ON', IPAD_DESKTOP)).length, 2);
+  // an Android phone, or one asking for the desktop site: Google's alone
+  for (const ua of [ANDROID, ANDROID_DESKTOP, '']) {
+    const a = page('YYZ', 'Toronto', 'en', 'CA-ON', ua);
+    assert.deepEqual(hrefsOf(a), ['https://www.google.com/maps/search/?api=1&query=Hotels%20in%20Toronto%2C%20ON%2C%20Canada'], ua || 'no user agent');
+    assert.ok(!a.includes(B.bs('hotelsMapApple', 'en')));
+  }
+  // the wiring: a code without a list opens the search page, for a city the app has a name for;
+  // the airports' positions are asked for and the page drawn again when they arrive
+  assert.match(APP, /function openHotelSearch\(c,where\)\{\n  const nm=placeOf\(c\)\.c;\n  if\(!\/\^\[A-Z0-9\]\{3\}\$\/\.test\(c\)\|\|!nm\|\|nm===c\|\|nm==='—'\)return;/);
+  assert.match(APP, /_coords\(\)\.then\(function\(\)\{if\(HL_CITY===c&&HL_FIND\)renderHotels\(\);\}\);/);
+  assert.match(APP, /if\(HL_FIND\)\{body\.innerHTML=hlFindHtml\(city,cityName,L,HL_WHERE\);return;\}/);
+  for (const k of ['hotelsMapGoogle', 'hotelsMapApple']) assert.ok(APP.includes("'" + k + "'"), 'app.html uses ' + k);
+});
+
+test('every other city: the deck draws the card through render(), the code drawn at the size it is shown and again when its room changes', () => {
+  // a stand-in for the slot of the deck: the markup it is given, and a box for each code in it
+  const slot = () => {
+    const el = { html: '', boxes: [] };
+    Object.defineProperty(el, 'innerHTML', {
+      get() { return el.html; },
+      set(v) {
+        el.html = String(v);
+        el.boxes = [...el.html.matchAll(/class="hlc-qr" data-qr-url="([^"]+)"/g)].map((m) => {
+          const at = { 'data-qr-url': m[1].replace(/&amp;/g, '&') };
+          return { clientWidth: 0, innerHTML: '', getAttribute: (k) => (k in at ? at[k] : null), setAttribute: (k, x) => { at[k] = String(x); } };
+        });
+      }
+    });
+    el.querySelector = (sel) => (sel === ':scope > .hlc' && el.html ? {} : null);
+    el.querySelectorAll = (sel) => (sel === '.hlc-qr[data-qr-url]' ? el.boxes : []);
+    return el;
+  };
+  const drawn = [];
+  function QRCode(box, o) { drawn.push({ url: o.text, w: o.width, h: o.height }); }
+  QRCode.CorrectLevel = { M: 0 };
+  // the large code's padding, 14 px at 1680x1050
+  const padded = () => ({ paddingLeft: '14px', paddingRight: '14px' });
+  const g = (cf) => anyGate({ _gateCurrentFlight: cf, QRCode, getComputedStyle: padded, _IATA_CC: { YYZ: 'CA' }, _rowRegion: (c) => (c === 'YYZ' ? 'ON' : '') });
+
+  // a flight to Toronto, no list: render() draws the one card of a city without a list
+  const el = slot();
+  assert.equal(onGate(g({ _locIata: 'YYZ' }), () => H.render(el)), true);
+  assert.match(el.html, /^<div class="hlc hlc--find" data-city="YYZ">/);
+  assert.equal(el.boxes.length, 1);
+  assert.deepEqual(drawn.pop(), { url: 'https://orionconnected.app/app?ap=YHZ&hotels=YYZ&in=CA-ON', w: 64, h: 64 }, 'before it is laid out: the smallest code');
+  // laid out at 1680x1050: a box 448 px wide with 14 px of padding each side shows the code at
+  // 420 px, and it is drawn at 420 px (never drawn larger and scaled down)
+  el.boxes[0].clientWidth = 448;
+  assert.equal(onGate(g({ _locIata: 'YYZ' }), () => H.render(el)), true);
+  assert.deepEqual(drawn.pop(), { url: 'https://orionconnected.app/app?ap=YHZ&hotels=YYZ&in=CA-ON', w: 420, h: 420 });
+  // the same room is the same code (the board repaints often); a room a few pixels smaller, as
+  // when the faces arrive and the heading settles, draws it again at its new size
+  onGate(g({ _locIata: 'YYZ' }), () => H.render(el));
+  assert.equal(drawn.length, 0, 'not drawn again at the same size');
+  el.boxes[0].clientWidth = 443;
+  onGate(g({ _locIata: 'YYZ' }), () => H.render(el));
+  assert.deepEqual(drawn.pop(), { url: 'https://orionconnected.app/app?ap=YHZ&hotels=YYZ&in=CA-ON', w: 415, h: 415 });
+  el.boxes[0].clientWidth = 300.6;
+  onGate(g({ _locIata: 'YYZ' }), () => H.render(el));
+  assert.deepEqual(drawn.pop(), { url: 'https://orionconnected.app/app?ap=YHZ&hotels=YYZ&in=CA-ON', w: 272, h: 272 });
+
+  // a flight to Moncton: the same slot draws the checked list, never the find card
+  const list = slot();
+  assert.equal(onGate(g({ _locIata: 'YQM' }), () => H.render(list)), true);
+  assert.match(list.html, /^<div class="hlc( hlc--one)?" data-city="YQM">/);
+  assert.doesNotMatch(list.html, /hlc--find|&amp;in=/);
+  drawn.length = 0;
+  // no flight, or a city with no name: nothing drawn, the deck passes the slot over
+  for (const cf of [null, { _locIata: 'QQZ' }]) {
+    const none = slot();
+    assert.equal(onGate(g(cf), () => H.render(none)), false);
+    assert.equal(none.html, '');
+  }
+});
+
+test('every other city: the phone app opens the search page for a city without a list, the list for a city with one, and forgets the search when it closes', () => {
+  const shown = new Set();
+  const ctx = {
+    window: { HotelListCard: H, BoardStrings: B },
+    AIRPORTS: { YYZ: { r: 'CA' }, SJU: { r: 'INT' }, YQM: { r: 'CA' } },
+    placeOf: (c) => ({ c: ({ YYZ: 'Toronto', SJU: 'San Juan', YQM: 'Moncton', STI: 'Santiago' })[c] || c }),
+    renders: 0,
+    document: {
+      getElementById: (id) => (id === 'hotels' ? { classList: { contains: (k) => shown.has(k), add: (k) => shown.add(k), remove: (k) => shown.delete(k) }, setAttribute() {} } : null)
+    },
+    history: { state: null, pushed: 0, backs: 0, pushState(st) { this.state = st; this.pushed++; }, back() { this.state = null; this.backs++; } }
+  };
+  ctx.renderHotels = () => { ctx.renders++; };
+  ctx._coords = () => Promise.resolve({});
+  vm.createContext(ctx);
+  const decl = (APP.match(/let HL_CITY='',HL_AREA='',HL_FIND=false,HL_WHERE='';/) || [])[0];
+  assert.ok(decl, 'the page keeps where the city is beside the city');
+  vm.runInContext(decl + '\n' + appFn('openHotelSearch') + '\n' + appFn('openHotels') + '\n' + appFn('closeHotels')
+    + '\nthis.st = function () { return { city: HL_CITY, find: HL_FIND, where: HL_WHERE, area: HL_AREA }; };', ctx);
+  const st = () => Object.assign({}, ctx.st(), { open: shown.has('show') });
+  // what a closed page keeps: no city, no search (its last area is set again when it opens)
+  const closed = () => { const o = st(); delete o.area; return o; };
+
+  // the scan code of Toronto's card: the search page, where the city is as the code says
+  ctx.openHotels('yyz', '', 'ca-on');
+  assert.deepEqual(st(), { city: 'YYZ', find: true, where: 'CA-ON', area: '', open: true });
+  assert.equal(ctx.history.pushed, 1);
+  // back (popstate): closed, and the search forgotten
+  ctx.closeHotels(true);
+  assert.deepEqual(closed(), { city: '', find: false, where: '', open: false });
+  assert.equal(ctx.history.backs, 0, 'the browser has gone back already');
+  // a link that says nothing valid: one of the app's own airports keeps its country; any other
+  // city, nothing
+  ctx.openHotels('YYZ', '', 'CA-NS&x=1');
+  assert.equal(st().where, 'CA');
+  ctx.closeHotels(true);
+  ctx.openHotels('SJU', '', '');
+  assert.equal(st().where, '', 'the app files San Juan under INT, not a country');
+  ctx.closeHotels(true);
+  ctx.openHotels('STI', '', 'DO');
+  assert.deepEqual(st(), { city: 'STI', find: true, where: 'DO', area: '', open: true });
+  // Moncton from the search page: its list, and the search forgotten
+  ctx.openHotels('YQM', 'downtown', 'CA-NB');
+  assert.deepEqual(st(), { city: 'YQM', find: false, where: '', area: 'downtown', open: true });
+  assert.equal(ctx.history.pushed, 4, 'no second step in the history for a page already open');
+  // closed by its own button: the history step is taken back
+  ctx.closeHotels();
+  assert.deepEqual(closed(), { city: '', find: false, where: '', open: false });
+  assert.equal(ctx.history.backs, 1);
+  // a code the app has no name for opens nothing
+  ctx.openHotels('QQZ', '', 'CA');
+  assert.deepEqual(closed(), { city: '', find: false, where: '', open: false });
+  // the wiring: back closes the page; the scan code's in= reaches it
+  assert.match(APP, /window\.addEventListener\('popstate',function\(\)\{closeFlight\(true\);closeHotels\(true\);\}\);/);
+  assert.match(APP, /if\(hl\)openHotels\(hl,q\.get\('area'\)\|\|'',q\.get\('in'\)\|\|''\);/);
 });
