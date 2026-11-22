@@ -4,7 +4,8 @@
 // THE HOTEL LISTS (fids-current/js/hotel-list-card.js, data/hotels/*.json)
 //
 // Free guest information by area in the centre deck of a gate whose flight
-// goes to a city with a checked list (Moncton, Charlottetown): Airport,
+// goes to a city with a checked list (Moncton, Charlottetown, Halifax,
+// Fredericton): Airport,
 // Downtown, Nearby hotels and Resorts worth the drive, five lines a card, the
 // rest on the next passes, the logo on the cream of a light card, a shuttle mark only
 // where it is verified, nothing closed for the season, one scan code a card
@@ -59,7 +60,7 @@ function onGate(g, run) {
     names.forEach((n) => { try { delete globalThis[n]; } catch (e) {} if (keep[n]) Object.defineProperty(globalThis, n, keep[n]); });
   }
 }
-const CITY_NAMES = { YQM: 'Moncton', YYG: 'Charlottetown', YHZ: 'Halifax' };
+const CITY_NAMES = { YQM: 'Moncton', YYG: 'Charlottetown', YHZ: 'Halifax', YFC: 'Fredericton' };
 const gate = (extra) => Object.assign({ BoardStrings: B, _gateIata: 'YYZ', _gateMapCity: (c) => CITY_NAMES[c] || c }, extra || {});
 const build = (city, L, o) => onGate(gate(), () => H.build(RUN[city], L, Object.assign({ date: NOV16, home: 'YYZ' }, o || {})));
 const views = (html) => html.split('<div class="axr-page hlc-view').slice(1);
@@ -176,6 +177,15 @@ test('every hotel is on the card its distances give it, from the two points of i
   assert.deepEqual([DOCS.YQM.points.centre.lat, DOCS.YQM.points.centre.lng], [Number(dc[1]), Number(dc[2])]);
   const ac = /YQM:\[([\d.-]+),([\d.-]+)\]/.exec(read('fids-current/js/airport-coords.js'));
   assert.deepEqual([DOCS.YQM.points.airport.lat, DOCS.YQM.points.airport.lng], [Number(ac[1]), Number(ac[2])]);
+  // Fredericton (v24175): the airport is the board's own (airport-coords.js); YFC has no
+  // DOWNTOWN_COORDS entry and none was added (as Charlottetown), so the centre is City Hall in
+  // OpenStreetMap, and every hotel is on the same card from the terminal as from the board point
+  const fc = /YFC:\[([\d.-]+),([\d.-]+)\]/.exec(read('fids-current/js/airport-coords.js'));
+  assert.deepEqual([DOCS.YFC.points.airport.lat, DOCS.YFC.points.airport.lng], [Number(fc[1]), Number(fc[2])]);
+  assert.ok(!/'YFC':\s*\{\s*lat:/.test(CORE), 'no DOWNTOWN_COORDS.YFC');
+  assert.match(DOCS.YFC.points.centre.source, /^https:\/\/www\.openstreetmap\.org\/way\/\d+$/);
+  const terminal = { airport: DOCS.YFC.points.airport.terminal, centre: DOCS.YFC.points.centre };
+  for (const h of DOCS.YFC.hotels) assert.equal(H.areaOf(h, terminal), h.area, 'YFC ' + h.id + ' from the terminal');
   let n = 0;
   for (const doc of Object.values(DOCS)) {
     for (const h of doc.hotels) {
@@ -242,6 +252,11 @@ test('nothing closed for the season, and a hotel held back never shows', () => {
   assert.deepEqual(H.cards(DOCS.YHZ, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:4', 'downtown:19', 'nearby:15']);
   for (const d of [NOV16, day(2026, 7, 15)]) assert.ok(!ids('YHZ', d).includes('garden-south-park-inn'), 'garden-south-park-inn is held back');
   for (const on of ['hampton-halifax-dartmouth', 'hix-halifax-dartmouth']) assert.ok(ids('YHZ', NOV16).includes(on), on + ' is listed');
+  // Fredericton (v24175): 13 of 14 listed; held back, the Delta (its one official listing gives two
+  // local telephones and the Marriott page refuses automated readers: a person settles it). One
+  // airport hotel (the Days Inn at Oromocto), two downtown, ten nearby
+  assert.deepEqual(H.cards(DOCS.YFC, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:1', 'downtown:2', 'nearby:10']);
+  for (const d of [NOV16, day(2026, 7, 15)]) assert.ok(!ids('YFC', d).includes('delta-fredericton'), 'delta-fredericton is held back');
   for (const [city, id] of [['YQM', 'coastal-inn-dieppe'], ['YQM', 'thriftlodge-moncton'], ['YYG', 'dundee-arms']]) {
     assert.ok(!ids(city, NOV16).includes(id), id + ' is off the cards');
   }
@@ -267,6 +282,8 @@ test('the shuttle mark only where the shuttle is verified, and the legend only o
   // on that page repeats the Hilton Garden Inn text (Tourism Nova Scotia names a shuttle, not an allowed source)
   assert.deepEqual(DOCS.YHZ.hotels.filter((h) => h.shuttle.mark).map((h) => h.id).sort(), ['hfx-airport-hotel', 'hgi-halifax-airport', 'inn-on-the-lake']);
   for (const h of DOCS.YHZ.hotels.filter((x) => x.shuttle.mark)) assert.match(h.shuttle.source, /^https:\/\/halifaxstanfield\.ca\//, h.id);
+  // Fredericton: the airport's own page names no hotel shuttle, and no hotel page read names one
+  assert.equal(DOCS.YFC.hotels.filter((h) => h.shuttle.mark).length, 0, 'Fredericton: no verified hotel shuttle');
   const v = views(build('YQM', ['en', 'fr']));
   const airport = v.find((x) => x.includes('data-area="airport"'));
   const row = airport.split('<li ').find((x) => x.includes('data-hotel="hix-dieppe"'));
@@ -315,7 +332,8 @@ test('every logo is a file loaded through <img>: no SVG of a hotel is written in
 test('a stacked lockup whose words are small at the common height takes the whole cell, shown as it is', () => {
   const filled = [];
   for (const doc of Object.values(DOCS)) for (const h of doc.hotels) if (h.logo && h.logo.fill) filled.push(h.id);
-  assert.deepEqual(filled.sort(), ['algonquin-resort', 'comfort-hotel-bayers-lake', 'delta-beausejour', 'delta-dartmouth', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm', 'future-inns-halifax', 'halifax-tower-hotel', 'mill-river', 'rodd-crowbush', 'suites-of-euston']);
+  // Fredericton (v24175): the Delta (held back) and the Riverside Resort's stacked logo
+  assert.deepEqual(filled.sort(), ['algonquin-resort', 'comfort-hotel-bayers-lake', 'delta-beausejour', 'delta-dartmouth', 'delta-fredericton', 'delta-halifax-downtown', 'delta-prince-edward', 'fairholm', 'future-inns-halifax', 'halifax-tower-hotel', 'mill-river', 'riverside-resort', 'rodd-crowbush', 'suites-of-euston']);
   assert.match(CSS, /\n\.hlc-img--fill\{ max-height:100%; \}\n/);
   const resort = views(build('YQM', ['en', 'fr'])).find((x) => x.includes('data-area="resort"'));
   assert.match(resort, /<img class="hlc-img hlc-img--fill" alt="" decoding="async" src="\/logos\/hotels\/marriott\/the-algonquin-resort-1\.svg">/);
@@ -585,13 +603,15 @@ test('a light card: the logos stand on its cream, never a box behind one logo; t
     return { cls: m[1], rows: Number(m[2]), lines: (v.match(/class="hlc-row"/g) || []).length };
   };
   // five-line cards as they were
-  for (const [c, a] of [['YQM', 'airport'], ['YQM', 'downtown'], ['YQM', 'nearby'], ['YYG', 'airport'], ['YYG', 'downtown']]) {
+  for (const [c, a] of [['YQM', 'airport'], ['YQM', 'downtown'], ['YQM', 'nearby'], ['YYG', 'airport'], ['YYG', 'downtown'], ['YFC', 'nearby']]) {
     for (let pass = 0; pass < 3; pass++) assert.deepEqual(list(c, a, pass), { cls: 'hlc-list', rows: 5, lines: 5 }, c + ' ' + a + ' ' + pass);
   }
   // shorter cards: their lines only
   assert.deepEqual(list('YQM', 'resort'), { cls: 'hlc-list', rows: 1, lines: 1 }, 'Moncton resorts: the Algonquin');
   assert.deepEqual(list('YYG', 'nearby'), { cls: 'hlc-list', rows: 2, lines: 2 }, 'Charlottetown nearby: two lines, both with a logo');
   assert.deepEqual(list('YYG', 'resort'), { cls: 'hlc-list', rows: 3, lines: 3 }, 'Charlottetown resorts: their own logos (v24170)');
+  assert.deepEqual(list('YFC', 'airport'), { cls: 'hlc-list', rows: 1, lines: 1 }, 'Fredericton airport: the Days Inn at Oromocto');
+  assert.deepEqual(list('YFC', 'downtown'), { cls: 'hlc-list', rows: 2, lines: 2 }, 'Fredericton downtown: two lines while the Delta is held');
   // a card where no line has a logo still drops the logo cell: the same list with its logos taken off
   const noLogos = JSON.parse(JSON.stringify(RUN.YYG));
   noLogos.hotels.forEach((h) => { delete h.logo; });
@@ -606,4 +626,5 @@ test('a light card: the logos stand on its cream, never a box behind one logo; t
   assert.match(CSS, /\.hlc-foot\{[^}]*background:var\(--hlc-navy\); color:#fff; \}/);
   assert.deepEqual(DOCS.YQM.foot_marks.map((m) => m.name), ['Destination Moncton-Dieppe', '#ExploreNB']);
   assert.deepEqual(DOCS.YYG.foot_marks, [], 'no Charlottetown mark until one is approved');
+  assert.deepEqual(DOCS.YFC.foot_marks, [], 'no Fredericton mark until one is approved');
 });

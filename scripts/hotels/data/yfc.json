@@ -1,0 +1,1745 @@
+{
+ "schema": 1,
+ "iata": "YFC",
+ "city": "Fredericton / Oromocto / Hanwell",
+ "province": "NB",
+ "built": "2026-11-22",
+ "about": "Guest information for the free hotel list cards of the boards (js/hotel-list-card.js) and the full list in the phone app (app.html). Facts only: name, street address, phone, website, the logo where an official one reads on the cream column. No prices, no offers. Every field keeps the source it was read from and whether it was verified.",
+ "runtime": "fids-current/data/hotels/yfc.json is made from this file by scripts/hotels/build-runtime.js: only the hotels that are listed and only the fields the cards and the phone app read. Edit this file, then run the script; tests/hotel-list-cards.test.js holds the two to agree.",
+ "rules": {
+  "areas": "downtown = within about 2 km of the centre point; airport = within about 5 km of the airport point; resort = a destination resort (resort true) more than 30 km from both points, listed with its drive distance (no tolerance); nearby = the rest within about 30 km of either point. Each about-limit has a 10 % tolerance; downtown is tested first, then airport.",
+  "listed": "listed false = held back (the reason is given). A listed hotel is shown only while its season is open (season.year_round, or a season.open range that holds the date at the airport).",
+  "shuttle": "shuttle.mark true only where the shuttle is verified on the hotel's or the airport's own page.",
+  "logo": "logo.file is loaded through <img>, never inlined; opaque = the file has its own light ground (shown with a multiply blend on the cream column so the box does not show).",
+  "logo_fill": "logo.fill true = a stacked lockup whose words are small at the common logo height (62 px at 1680x1050): it may take the whole cell of the cream column, the width of the column and the height of its line. The file is shown as it is."
+ },
+ "points": {
+  "airport": {
+   "lat": 45.87,
+   "lng": -66.54,
+   "source": "fids-current/js/airport-coords.js (YFC)",
+   "terminal": {
+    "lat": 45.872596,
+    "lng": -66.529617,
+    "source": "https://www.openstreetmap.org/way/1276265594",
+    "what": "terminal building, 2570 Route 102, Lincoln",
+    "note": "About 0.9 km from the board point. Every hotel falls in the same area from either point (checked 2026-11-22)."
+   }
+  },
+  "centre": {
+   "lat": 45.96356,
+   "lng": -66.64315,
+   "source": "https://www.openstreetmap.org/way/35022645",
+   "what": "Fredericton City Hall, 397 Queen Street",
+   "note": "YFC has no entry in DOWNTOWN_COORDS in fids-core.js (checked on main a390449, 2026-11-22), and none was added (as Charlottetown), so the Accor search for Fredericton is unchanged. Suggested entry: 'YFC': { lat: 45.9636, lng: -66.6432, name: 'Fredericton' }."
+  }
+ },
+ "foot_marks": [],
+ "notes": {
+  "verified_definition": "verified true = read directly on 2026-11-22 on at least one official page: the hotel's own site, its brand property page, or the Fredericton Capital Region listing (frederictoncapitalregion.ca, the city's official tourism site: tourismfredericton.ca forwards there), and no official page read says otherwise. Where only one official page gives a fact, its note says so (one page is enough, as in the other files). verified false = not read (a page that answered 403), on no official page, or not settled: the note says which. The airport's own site (yfcfredericton.ca) lists no hotels. Tourism New Brunswick (tourismnewbrunswick.ca) answered 403 with a Cloudflare page: blocked, needs a person; not used. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js YFC --centre 45.96356,-66.64315) and is cited only beside an official page, or for a map point.",
+  "postal_note": "Postal codes are not shown on the cards. Every Fredericton Capital Region listing prints one in the address under its map (the map pop-up). A postal code is marked verified true only where two official pages agree: the listing and the hotel's own site or brand page (seven hotels, all agreeing). Where one official page gives it, it is marked verified false: the listing alone for the six hotels whose brand pages answered 403 (the Delta among them, held back), the own site alone for Riverside Resort (not on the listing).",
+  "shuttle_note": "No Fredericton hotel carries the shuttle mark. The airport's Ground Transportation Services page (yfcfredericton.ca, read 2026-11-22) names car rentals, taxis (Checker Cab, Trius, Loyal) and ridesharing, and no hotel shuttle; no hotel page read names one. shuttle.offered null = unknown.",
+  "season_note": "season.year_round true is the city-hotel default: the listings state no dates and no page read states a season or a closure, so season.verified is false everywhere. Riverside Resort says its pool and hot tub are closed for repair, not the hotel.",
+  "sources": [
+   "Fredericton Capital Region listings, frederictoncapitalregion.ca (the city's official tourism site; tourismfredericton.ca forwards there): the Hotels pages and each listing page read directly, three seconds apart",
+   "Fredericton International Airport, yfcfredericton.ca (frederictonairport.ca forwards there): Ground Transportation Services, Getting to and from YFC and Tourism Information pages, read directly; no hotel list",
+   "Hotels' own sites (Amsterdam Inns, Ramada Fredericton, Fredericton Inn, Riverside Resort) and the Wyndham and Best Western property pages, read directly; Marriott, IHG, Hilton, Choice and Radisson pages answered 403",
+   "Tourism New Brunswick (tourismnewbrunswick.ca): answered 403 (Cloudflare) on 2026-11-22, blocked, needs a person; not used",
+   "OpenStreetMap via the Overpass API (ODbL): credit \"© OpenStreetMap contributors\". Candidates only (scripts/hotels/find-candidates.js, 2026-11-22), the two points, and the map point of Riverside Resort"
+  ]
+ },
+ "excluded": [
+  {
+   "name": "Carriage House Inn",
+   "address": "230 University Avenue, Fredericton",
+   "kind": "bed_and_breakfast",
+   "reason": "The Fredericton Capital Region files it under B&Bs (\"traditional bed-and-breakfast\"); OpenStreetMap tourism=guest_house. Off the hotel cards unless picked.",
+   "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/bbs-inns",
+   "also": [
+    "https://www.openstreetmap.org/way/197854579"
+   ]
+  },
+  {
+   "name": "By the River B&B, Heaven Inn Devon, Norwood on the Washademoak B&B, Quartermain House B&B, Roaring 20s B&B, Strong Timbers B&B, The Red House Fredericton",
+   "kind": "bed_and_breakfast",
+   "reason": "Bed and breakfasts on the Fredericton Capital Region B&Bs & Inns page; not checked. Off the hotel cards unless picked.",
+   "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/bbs-inns"
+  },
+  {
+   "name": "Mission House B&B, Lang House Bed & Breakfast (Gagetown)",
+   "kind": "bed_and_breakfast",
+   "reason": "Not hotels (OpenStreetMap tourism=guest_house), about 43 km from the centre point; not checked. Off the hotel cards unless picked.",
+   "source": "OpenStreetMap, Overpass, 2026-11-22",
+   "also": [
+    "https://www.openstreetmap.org/way/687467724",
+    "https://www.openstreetmap.org/way/687410530"
+   ]
+  },
+  {
+   "name": "Micro Boutique Fredericton",
+   "address": "650 Waterloo Row, Fredericton",
+   "kind": "apartment_suites",
+   "reason": "Furnished apartment suites: the listing files it under Alternative Accommodations as well as Hotel and says \"Each suite features queen-sized beds, fully equipped kitchens\" and \"Most apartments also come with private balconies\"; the Hotels index (page 2) sums it up as \"Modern furnished studios, 1-Bedroom, 2-bedroom and 3-bedroom Micro Apartments\"; OpenStreetMap tourism=apartment. Off unless picked.",
+   "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/micro-boutique-fredericton",
+   "also": [
+    "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hotels?field_area_target_id=All&page=1",
+    "https://www.openstreetmap.org/node/13283006091"
+   ]
+  },
+  {
+   "name": "Silverwood Inn & Suites",
+   "address": "3136 Woodstock Road, Fredericton",
+   "phone": "(506) 458-8676",
+   "kind": "motel",
+   "reason": "Motel-like by OpenStreetMap alone (a candidate source: tourism=motel, \"Silverwood Motel\"); the listing files it as Hotel and its text calls it \"The Inn\". Kept off as motel-like, as Coastal Inn Halifax and Coastal Inn Moncton/Dieppe, until a person picks it. 9.7 km from the centre point.",
+   "source": "https://www.openstreetmap.org/way/434017798",
+   "also": [
+    "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/silverwood-inn-suites",
+    "https://www.silverwoodinn.ca/"
+   ]
+  },
+  {
+   "name": "Lincoln Inn Fredericton",
+   "address": "1214 Lincoln Road, Fredericton",
+   "kind": "motel",
+   "reason": "Motel: the listing files it as Hotel and Motel and calls it \"our Lincoln Inn Fredericton motel\"; OpenStreetMap tourism=motel. Motels stay off unless picked.",
+   "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/lincoln-inn-fredericton",
+   "also": [
+    "https://www.openstreetmap.org/way/104181099"
+   ]
+  },
+  {
+   "name": "Robin's Nest Motel",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked. 2.8 km from the airport point.",
+   "source": "https://www.openstreetmap.org/node/1279271532"
+  },
+  {
+   "name": "Fort Nashwaak Motel",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/12752962631"
+  },
+  {
+   "name": "Skyline Motel",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/node/1159797045"
+  },
+  {
+   "name": "Town & Country",
+   "address": "967 Woodstock Road, Fredericton",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/197868271"
+  },
+  {
+   "name": "Norfolk Motel",
+   "address": "815 Riverside Drive, Fredericton",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/104181288"
+  },
+  {
+   "name": "Prospect Inn",
+   "address": "1600 Woodstock Road, Fredericton",
+   "kind": "motel",
+   "reason": "Motel (OpenStreetMap tourism=motel): motels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/103406868"
+  },
+  {
+   "name": "Meow Manor Cat Motel",
+   "address": "225 Turnbull Court",
+   "kind": "not_a_hotel",
+   "reason": "Tagged tourism=motel in OpenStreetMap, but a boarding place for cats by its name and site address (meowmanorcat.com): not lodging for travellers.",
+   "source": "https://www.openstreetmap.org/node/13742987101"
+  },
+  {
+   "name": "The Lazy Farmer Hostel",
+   "address": "42 Tilley Road, Gagetown",
+   "kind": "hostel",
+   "reason": "Hostel (OpenStreetMap tourism=hostel): hostels stay off unless picked.",
+   "source": "https://www.openstreetmap.org/way/687446016"
+  },
+  {
+   "name": "Hampton (OpenStreetMap name)",
+   "address": "470 Bishop Drive, Fredericton",
+   "kind": "duplicate",
+   "reason": "Now Chateau Fredericton, Trademark Collection by Wyndham: the brand page and the listing give this street and the telephone OpenStreetMap gives for the Hampton, (506) 300-1818. Listed under that name.",
+   "source": "https://www.openstreetmap.org/way/497454154",
+   "also": [
+    "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+    "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/chateau-fredericton-wyndham"
+   ]
+  },
+  {
+   "name": "On the Pond Country Retreat",
+   "address": "20 Route 615, Jewetts Mills",
+   "kind": "gone",
+   "reason": "Its website says the retreat \"has been sold\" and the site is no longer affiliated with the property (read 2026-11-22): could not confirm it takes guests.",
+   "source": "https://onthepond.com/",
+   "also": [
+    "https://www.openstreetmap.org/node/7052497790"
+   ]
+  },
+  {
+   "name": "Crabbe Mountain Inn",
+   "address": "1200 Central Hainesville Road, Queensbury Parish",
+   "phone": "(506) 461-3701",
+   "kind": "hotel_out_of_range",
+   "reason": "About 40 km from the centre point and 52 km from the airport (listing map point): beyond 30 km, and a 12-room inn at the ski hill, not picked as a destination resort. Off unless picked.",
+   "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crabbe-mountain-inn"
+  },
+  {
+   "name": "Days Inn Oromocto (listing name), Lord Beaverbrook Hotel and Delta Fredericton (OpenStreetMap names)",
+   "kind": "duplicate",
+   "reason": "The same hotels as days-inn-oromocto, crowne-plaza-fredericton and delta-fredericton under other names.",
+   "source": "OpenStreetMap, Overpass, 2026-11-22"
+  }
+ ],
+ "unverified": [
+  "Brand pages refuse automated readers (Marriott, IHG, Hilton, Choice and Radisson answered 403 on 2026-11-22): the Hilton Garden Inn, Crowne Plaza, Holiday Inn Express, Comfort Inn and Radisson rest on the Fredericton Capital Region listing alone, and their website URLs are taken from the listing, not opened. Blocked, needs a person.",
+  "Tourism New Brunswick answered 403 (a Cloudflare page): no second tourism listing. Blocked, needs a person.",
+  "Delta Hotels Marriott Fredericton is held back: the listing gives two local telephones (457-7478 and 457-7000) and the Marriott page answered 403. A call or the Marriott page would settle it.",
+  "Comfort Inn Fredericton: the listing says Comfort Inn at 797 Prospect Street; OpenStreetMap says 797 Prospect Street West and links a Choice address ending comfort-hotel-cn241. Whether it is now a Comfort Hotel is not confirmed (the Choice page answered 403). No website shown.",
+  "Crowne Plaza Fredericton Lord Beaverbrook: the listing says 659 Queen Street, OpenStreetMap 669. The listing is used.",
+  "Riverside Resort rests on its own site alone (not on the city listing); it takes stays nightly to monthly. Listed by the rule (name, street and telephone on an official page); a person may prefer it off.",
+  "Fredericton Inn: the local telephone (506) 455-1430 is on the listing only; its own site prints only the toll-free (800) 561-8777.",
+  "Silverwood Inn & Suites is off as motel-like (OpenStreetMap motel; the listing calls it a hotel). A person may pick it.",
+  "Radisson Kingswood has no logo: the brand site answered 403; a Commons candidate is named in its logo_missing.",
+  "foot_marks is empty: no Fredericton or New Brunswick mark has been approved for the foot of the Fredericton cards (#ExploreNB is on the Moncton cards only).",
+  "independent is null on the two hotels of no chain brand (Fredericton Inn, Riverside Resort): not established. brand, group and independent are not published: the slim copy has none of them."
+ ],
+ "hotels": [
+  {
+   "id": "days-inn-oromocto",
+   "name": "Days Inn by Wyndham Oromocto Conference Centre",
+   "area": "airport",
+   "resort": false,
+   "brand": "Days Inn by Wyndham",
+   "group": "Wyndham Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "60 Brayson Boulevard",
+    "town": "Oromocto",
+    "province": "NB",
+    "postal_code": "E2V 4T9",
+    "display": "60 Brayson Boulevard, Oromocto"
+   },
+   "phone": "(506) 801-8548",
+   "website": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+   "lat": 45.842201,
+   "lng": -66.508785,
+   "distance_km": {
+    "airport": 3.9,
+    "centre": 17
+   },
+   "area_reason": "3.9 km from the airport point (limit about 5 km, 10 % tolerance); airport wins when both apply.",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/days-inn-by-wyndham.svg",
+    "opaque": false,
+    "source": "https://www.wyndhamhotels.com/content/dam/images/global/logos/di_bywynd_ca_rgb_pos.svg",
+    "origin": "official site: wyndhamhotels.com"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-oromocto"
+     ],
+     "note": "Brand property page (the hotel's own page at Wyndham): \"Days Inn by Wyndham Oromocto Conference Centre\". The listing calls it \"Days Inn Oromocto\".",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-oromocto"
+     ],
+     "note": "Brand page: \"60 Brayson Boulevard, Oromocto, NB E2V 4T9\"; the listing prints \"60 Brayson Blvd., Oromocto\".",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-oromocto"
+     ],
+     "note": "Two official pages agree: the brand page and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-oromocto"
+     ],
+     "note": "Brand page +1-506-801-8548; the listing agrees.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+     "note": "The listing links daysinnoromocto.com, which forwards to this brand page; answered 200.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-oromocto",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/219447748",
+   "notes": "3.9 km from the board's airport point (3.7 km from the terminal): the one airport hotel. OpenStreetMap names it only \"Days Inn\"."
+  },
+  {
+   "id": "hgi-fredericton",
+   "name": "Hilton Garden Inn Fredericton",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Hilton Garden Inn",
+   "group": "Hilton",
+   "independent": false,
+   "address": {
+    "street": "620 Queen Street",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3B 1C2",
+    "display": "620 Queen Street, Fredericton"
+   },
+   "phone": "(506) 999-1551",
+   "website": "https://www.hilton.com/en/hotels/yfcnwgi-hilton-garden-inn-fredericton/",
+   "lat": 45.960908,
+   "lng": -66.638201,
+   "distance_km": {
+    "airport": 12.6,
+    "centre": 0.5
+   },
+   "area_reason": "0.5 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/hilton-garden-inn.png",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/4/44/HGI-Logo-Color_HR.png",
+    "origin": "Wikimedia Commons",
+    "trim": "inset(25.6% 2.8% 25.6% 2.8%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. The Hilton page answered 403 to an automated reader (2026-11-22): blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap agrees on the number and street (a candidate only).",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Hilton page answered 403. Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "note": "One official page, read directly: the Fredericton Capital Region listing.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "note": "The listing links an old hiltongardeninn3.hilton.com address, which Hilton forwards to this hilton.com page; that page answered 403 to an automated reader (2026-11-22): not read; blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/500471592",
+   "notes": "Rests on one official listing (Fredericton Capital Region): the Hilton page answered 403. Beside the Fredericton Convention Centre (listing)."
+  },
+  {
+   "id": "crowne-plaza-fredericton",
+   "name": "Crowne Plaza Fredericton Lord Beaverbrook",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Crowne Plaza",
+   "group": "IHG Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "659 Queen Street",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3B 1C3",
+    "display": "659 Queen Street, Fredericton"
+   },
+   "phone": "(506) 455-3371",
+   "website": "https://www.ihg.com/crowneplaza/hotels/us/en/fredericton/yfcqs/hoteldetail",
+   "lat": 45.960788,
+   "lng": -66.636677,
+   "distance_km": {
+    "airport": 12.6,
+    "centre": 0.6
+   },
+   "area_reason": "0.6 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/crowne-plaza-grey.webp",
+    "opaque": false,
+    "source": "https://www.ihgplc.com/~/media/Images/I/Ihg-Plc/images/brands/brand-crowne-plaza/crowne-plaza-grey.webp",
+    "origin": "official site: ihgplc.com (IHG corporate brand page)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. The IHG page answered 403 to an automated reader (2026-11-22): blocked, needs a person. OpenStreetMap calls it \"Lord Beaverbrook Hotel\".",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap gives 669 Queen Street (a candidate only): the listing's 659 is used; a person may confirm.",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the IHG page answered 403. Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. The listing also gives the toll-free 1-866-444-1946.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "note": "The listing's link is wrapped in a mail-filter (safelinks) address; the IHG page inside it is used. IHG answered 403 to an automated reader (2026-11-22): not read; blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/34964120",
+   "notes": "Rests on one official listing (Fredericton Capital Region): the IHG page answered 403."
+  },
+  {
+   "id": "delta-fredericton",
+   "name": "Delta Hotels Marriott Fredericton",
+   "area": "downtown",
+   "resort": false,
+   "brand": "Delta Hotels",
+   "group": "Marriott International",
+   "independent": false,
+   "address": {
+    "street": "225 Woodstock Road",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3B 2H8",
+    "display": "225 Woodstock Road, Fredericton"
+   },
+   "phone": "(506) 457-7000",
+   "website": "https://www.marriott.com/en-us/hotels/yfcdf-delta-hotels-fredericton/overview/",
+   "lat": 45.96523,
+   "lng": -66.662475,
+   "distance_km": {
+    "airport": 14.2,
+    "centre": 1.5
+   },
+   "area_reason": "1.5 km from the centre point (limit about 2 km, 10 % tolerance).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/delta-hotels.svg",
+    "opaque": false,
+    "fill": true,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/72/Delta_Hotels_logo.svg",
+    "origin": "Wikimedia Commons"
+   },
+   "logo_missing": null,
+   "listed": false,
+   "not_listed_reason": "Telephone not settled: the one official page read (Fredericton Capital Region) gives two local numbers, (506) 457-7478 and (506) 457-7000, without saying which is the hotel's; the Marriott page answered 403. A call or the Marriott page would settle it (a person).",
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. Its heading reads \"Delta Hotels Marriott Fredericton\" and its text \"Delta Hotel Fredericton by Marriott\"; the Marriott page answered 403 (2026-11-22). The brand's own form of the name is not confirmed.",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "note": "One official page, read directly: the Fredericton Capital Region listing.",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Marriott page answered 403. Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "note": "The listing gives two local numbers, \"506 457 7478, 506-457-7000\", and the toll-free 1-888-236-2427, without saying which is the front desk; the Marriott page answered 403 (2026-11-22). The second is shown here only so the entry is complete: not settled, held back.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "note": "The listing links marriott.com/yfcdf, which forwards to this page; it answered 403 to an automated reader (2026-11-22): not read; blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/411224168",
+   "notes": "Downtown (1.5 km from City Hall), on the river."
+  },
+  {
+   "id": "days-inn-fredericton",
+   "name": "Days Inn by Wyndham Fredericton",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Days Inn by Wyndham",
+   "group": "Wyndham Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "958 Prospect Street",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3B 2T8",
+    "display": "958 Prospect Street, Fredericton"
+   },
+   "phone": "(506) 462-4444",
+   "website": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+   "lat": 45.94328,
+   "lng": -66.672561,
+   "distance_km": {
+    "airport": 13.1,
+    "centre": 3.2
+   },
+   "area_reason": "3.2 km from the centre point, 13.1 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/days-inn-by-wyndham.svg",
+    "opaque": false,
+    "source": "https://www.wyndhamhotels.com/content/dam/images/global/logos/di_bywynd_ca_rgb_pos.svg",
+    "origin": "official site: wyndhamhotels.com"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-fredericton-wyndham"
+     ],
+     "note": "Brand property page: \"Days Inn by Wyndham Fredericton\"; the listing \"Days Inn Fredericton by Wyndham\".",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-fredericton-wyndham"
+     ],
+     "note": "Brand page \"958 Prospect Street\"; the listing prints \"958, rue Prospect\".",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-fredericton-wyndham"
+     ],
+     "note": "Two official pages agree: the brand page and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-fredericton-wyndham"
+     ],
+     "note": "Brand page +1-506-462-4444; the listing agrees (and gives the toll-free 1-888-280-1122).",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+     "note": "The en-ca overview address the listing links forwards here; answered 200.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-fredericton-wyndham",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/100538452",
+   "notes": null
+  },
+  {
+   "id": "comfort-inn-fredericton",
+   "name": "Comfort Inn Fredericton",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Comfort Inn",
+   "group": "Choice Hotels",
+   "independent": false,
+   "address": {
+    "street": "797 Prospect Street",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3B 5Y4",
+    "display": "797 Prospect Street, Fredericton"
+   },
+   "phone": "(506) 453-0800",
+   "website": null,
+   "lat": 45.946599,
+   "lng": -66.678062,
+   "distance_km": {
+    "airport": 13.7,
+    "centre": 3.3
+   },
+   "area_reason": "3.3 km from the centre point, 13.7 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/choice-le-meridien/comfort-inn.png",
+    "opaque": false,
+    "source": "repo: fids-current/logos/hotels/choice-le-meridien/comfort-inn.png",
+    "origin": "already in the repository (same bytes as the checked copy)",
+    "trim": "inset(1.5% 19.5% 2.0% 20.5%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. Its heading reads \"Comfort Inn\", its text \"the newly renovated Comfort Inn Fredericton\". The Choice page answered 403 (2026-11-22): blocked, needs a person. The Choice address OpenStreetMap gives ends in comfort-hotel-cn241: whether the hotel is now a Comfort Hotel is not confirmed.",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap writes \"797 Prospect Street West\" (a candidate only).",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Choice page answered 403. Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap agrees (a candidate only); toll-free 1-800-228-5150 on the listing.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "note": "The listing gives no website; the Choice page OpenStreetMap links answered 403 (2026-11-22). No website shown.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/103372495",
+   "notes": "Rests on one official listing (Fredericton Capital Region): the Choice page answered 403."
+  },
+  {
+   "id": "fredericton-inn",
+   "name": "Fredericton Inn",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "1315 Regent Street",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3C 1A1",
+    "display": "1315 Regent Street, Fredericton"
+   },
+   "phone": "(506) 455-1430",
+   "website": "https://frederictoninn.nb.ca/",
+   "lat": 45.935871,
+   "lng": -66.661525,
+   "distance_km": {
+    "airport": 11.9,
+    "centre": 3.4
+   },
+   "area_reason": "3.4 km from the centre point, 11.9 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://frederictoninn.nb.ca/",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://frederictoninn.nb.ca/",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/fredericton-inn.png",
+    "opaque": false,
+    "source": "https://frederictoninn.nb.ca/wp-content/uploads/2015/02/fred-inn-logo-grayb.png",
+    "origin": "official site: frederictoninn.nb.ca (the hotel's own header logo)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://frederictoninn.nb.ca/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/fredericton-inn"
+     ],
+     "note": "Own site: \"The Fredericton Inn\"; the listing \"Fredericton Inn\" (Hotel).",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://frederictoninn.nb.ca/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/fredericton-inn"
+     ],
+     "note": "Own site \"1315 Regent St., Fredericton, NB, E3C 1A1\"; the listing prints \"1315 Regent Steet\".",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://frederictoninn.nb.ca/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/fredericton-inn"
+     ],
+     "note": "Two official pages agree: the own site and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/fredericton-inn",
+     "also": [
+      "https://frederictoninn.nb.ca/"
+     ],
+     "note": "The listing gives 506-455-1430 and the toll-free 1-800-561-8777; the own site prints only the toll-free (the same number) and a fax. The local number rests on the listing alone.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://frederictoninn.nb.ca/",
+     "note": "The address the listing links; answered 200.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/fredericton-inn",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://frederictoninn.nb.ca/",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://frederictoninn.nb.ca/",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": null,
+   "notes": "Not in OpenStreetMap as a place to stay: found on the Fredericton Capital Region hotel listing. Own site: \"Celebrating over 40 years in business\"."
+  },
+  {
+   "id": "amsterdam-inn-fredericton",
+   "name": "Amsterdam Inn & Suites Fredericton",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Amsterdam Inns (Ascend Hotel Collection)",
+   "group": "Amsterdam Inns",
+   "independent": false,
+   "address": {
+    "street": "559 Bishop Drive",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3C 2M6",
+    "display": "559 Bishop Drive, Fredericton"
+   },
+   "phone": "(506) 474-5050",
+   "website": "https://amsterdaminns.com/properties/fredericton/",
+   "lat": 45.94182,
+   "lng": -66.673187,
+   "distance_km": {
+    "airport": 13,
+    "centre": 3.4
+   },
+   "area_reason": "3.4 km from the centre point, 13.0 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://amsterdaminns.com/properties/fredericton/",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://amsterdaminns.com/properties/fredericton/",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/amsterdam-inn.svg",
+    "opaque": false,
+    "source": "https://amsterdaminns.com/wp-content/uploads/2025/12/group-8.svg",
+    "origin": "official site: amsterdaminns.com"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://amsterdaminns.com/properties/fredericton/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/quality-inn-suites-amsterdam"
+     ],
+     "note": "Own site: \"Amsterdam Inn & Suites Fredericton, an Ascend Collection\" hotel; the listing \"Amsterdam Inn & Suites by Ascend\".",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://amsterdaminns.com/properties/fredericton/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/quality-inn-suites-amsterdam"
+     ],
+     "note": "Own site: \"559 Bishop Drive, Fredericton NB, E3C 2M6\".",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://amsterdaminns.com/properties/fredericton/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/quality-inn-suites-amsterdam"
+     ],
+     "note": "Two official pages agree: the own site and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://amsterdaminns.com/properties/fredericton/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/quality-inn-suites-amsterdam"
+     ],
+     "note": "Own site \"Phone 506-474-5050\"; the listing agrees.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://amsterdaminns.com/properties/fredericton/",
+     "note": "The listing's property-detail address forwards here; answered 200.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/quality-inn-suites-amsterdam",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://amsterdaminns.com/properties/fredericton/",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://amsterdaminns.com/properties/fredericton/",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/100529545",
+   "notes": null
+  },
+  {
+   "id": "ramada-fredericton",
+   "name": "Ramada Fredericton",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Ramada by Wyndham",
+   "group": "Wyndham Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "480 Riverside Drive",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3A 8C2",
+    "display": "480 Riverside Drive, Fredericton"
+   },
+   "phone": "(506) 460-5500",
+   "website": "https://ramadafredericton.com/",
+   "lat": 45.940062,
+   "lng": -66.612571,
+   "distance_km": {
+    "airport": 9.6,
+    "centre": 3.5
+   },
+   "area_reason": "3.5 km from the centre point, 9.6 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://ramadafredericton.com/",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://ramadafredericton.com/",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/ramada-by-wyndham.png",
+    "opaque": false,
+    "source": "https://ramadafredericton.com/wp-content/uploads/2022/04/Logo-Ramada.png",
+    "origin": "official site: ramadafredericton.com (the hotel's own header logo)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://ramadafredericton.com/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/ramada-fredericton"
+     ],
+     "note": "Own site: \"Ramada Fredericton is equipped...\" (its title \"Ramada Hotel\"); the listing \"Ramada Fredericton\".",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://ramadafredericton.com/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/ramada-fredericton"
+     ],
+     "note": "Own site \"480 Riverside Dr. Fredericton, NB E3A 8C2\"; the listing \"480 Riverside Drive, Route 105\".",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://ramadafredericton.com/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/ramada-fredericton"
+     ],
+     "note": "Two official pages agree: the own site and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://ramadafredericton.com/",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/ramada-fredericton"
+     ],
+     "note": "Own site \"Tele: (506) 460-5500\"; the listing agrees.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://ramadafredericton.com/",
+     "note": "The address the listing links; answered 200.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/ramada-fredericton",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://ramadafredericton.com/",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://ramadafredericton.com/",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/103753727",
+   "notes": "On the north side of the river (Route 105)."
+  },
+  {
+   "id": "chateau-fredericton",
+   "name": "Chateau Fredericton, Trademark Collection by Wyndham",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Trademark Collection by Wyndham",
+   "group": "Wyndham Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "470 Bishop Drive",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3C 0B4",
+    "display": "470 Bishop Drive, Fredericton"
+   },
+   "phone": "(506) 300-1818",
+   "website": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+   "lat": 45.941625,
+   "lng": -66.67592,
+   "distance_km": {
+    "airport": 13.2,
+    "centre": 3.5
+   },
+   "area_reason": "3.5 km from the centre point, 13.2 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/trademark-collection-by-wyndham.svg",
+    "opaque": false,
+    "source": "https://corporate.wyndhamhotels.com/wp-content/uploads/2018/05/logo-trademark-dark.svg",
+    "origin": "chain site: corporate.wyndhamhotels.com (the brand bar)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/chateau-fredericton-wyndham"
+     ],
+     "note": "Brand property page: \"Chateau Fredericton, Trademark Collection by Wyndham\"; the listing \"Château Fredericton by Wyndham\". OpenStreetMap still has a Hampton at this address with this telephone.",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/chateau-fredericton-wyndham"
+     ],
+     "note": "Brand page \"470 Bishop Dr\"; the listing \"470 Bishop Drive\".",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/chateau-fredericton-wyndham"
+     ],
+     "note": "Two official pages agree: the brand page, \"E3C0B4\" and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/chateau-fredericton-wyndham"
+     ],
+     "note": "Brand page +1-506-300-1818; the listing agrees.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+     "note": "The overview address the listing links forwards here; answered 200.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/chateau-fredericton-wyndham",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/497454154",
+   "notes": "The OpenStreetMap entry is still the Hampton that stood here (same street, same telephone); the brand page and the listing say Chateau Fredericton."
+  },
+  {
+   "id": "bw-plus-fredericton",
+   "name": "Best Western Plus Fredericton Hotel & Suites",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Best Western Plus",
+   "group": "BWH Hotels",
+   "independent": false,
+   "address": {
+    "street": "333 Bishop Drive",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3C 2M6",
+    "display": "333 Bishop Drive, Fredericton"
+   },
+   "phone": "(506) 455-8448",
+   "website": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+   "lat": 45.945075,
+   "lng": -66.680288,
+   "distance_km": {
+    "airport": 13.7,
+    "centre": 3.5
+   },
+   "area_reason": "3.5 km from the centre point, 13.7 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/best-western-plus.png",
+    "opaque": false,
+    "source": "https://www.bestwestern.com/content/dam/best-western/brand/brand-logos/best-western-plus-horizontal-logo-rgb.png",
+    "origin": "official site: bestwestern.com brand logos",
+    "trim": "inset(16.2% 3.2% 17.8% 2.7%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/best-western-plus-fredericton-hotel-suites"
+     ],
+     "note": "Brand property page (property 64011).",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/best-western-plus-fredericton-hotel-suites"
+     ],
+     "note": "Brand page \"333 Bishop Drive, Fredericton, NB E3C 2M6\".",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": true,
+     "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/best-western-plus-fredericton-hotel-suites"
+     ],
+     "note": "Two official pages agree: the brand page and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/best-western-plus-fredericton-hotel-suites"
+     ],
+     "note": "Brand page (506) 455-8448; the listing agrees.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+     "note": "The listing links an old book.bestwestern.com address for property 64011; on a second read (2026-11-22) it forwarded to a bestwestern.com hotel-details page that answered 403 (not asked again). This property page (the same property code, 64011) answered 200 and was read directly.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/best-western-plus-fredericton-hotel-suites",
+     "also": [
+      "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011"
+     ],
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances; the brand page's point (45.944793, -66.680343) is within 40 m.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/node/412196446",
+   "notes": null
+  },
+  {
+   "id": "hix-fredericton",
+   "name": "Holiday Inn Express & Suites Fredericton",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Holiday Inn Express",
+   "group": "IHG Hotels & Resorts",
+   "independent": false,
+   "address": {
+    "street": "665 Prospect Street",
+    "town": "Fredericton",
+    "province": "NB",
+    "postal_code": "E3B 6B8",
+    "display": "665 Prospect Street, Fredericton"
+   },
+   "phone": "(506) 459-0035",
+   "website": "https://www.hiexpress.com/hotels/us/en/fredericton/yfces/hoteldetail",
+   "lat": 45.949652,
+   "lng": -66.684685,
+   "distance_km": {
+    "airport": 14.3,
+    "centre": 3.6
+   },
+   "area_reason": "3.6 km from the centre point, 14.3 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/holiday-inn-express.svg",
+    "opaque": false,
+    "source": "https://upload.wikimedia.org/wikipedia/commons/7/75/Holiday_Inn_Express_by_IHG_logo.svg",
+    "origin": "Wikimedia Commons",
+    "trim": "inset(15.2% 0.0% 15.5% 0.0%)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. Its heading reads \"Holiday Inn Express & Suites\", its text \"Holiday Inn Express & Suites Fredericton\". The IHG page answered 403 (2026-11-22): blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap agrees (a candidate only).",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the IHG page answered 403. Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap agrees (a candidate only); toll-free 1-844-373-3449 on the listing.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "note": "The listing's hiexpress.com address, without its tracking query. IHG answered 403 to an automated reader (2026-11-22): not read; blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/102882267",
+   "notes": "Rests on one official listing (Fredericton Capital Region): the IHG page answered 403."
+  },
+  {
+   "id": "radisson-kingswood",
+   "name": "Radisson Kingswood Hotel & Suites",
+   "area": "nearby",
+   "resort": false,
+   "brand": "Radisson",
+   "group": null,
+   "independent": false,
+   "address": {
+    "street": "41 Kingswood Way",
+    "town": "Hanwell",
+    "province": "NB",
+    "postal_code": "E3C 2L4",
+    "display": "41 Kingswood Way, Hanwell"
+   },
+   "phone": "(506) 206-6270",
+   "website": "https://www.radissonhotels.com/en-us/hotels/radisson-fredericton-kingswood",
+   "lat": 45.928823,
+   "lng": -66.712855,
+   "distance_km": {
+    "airport": 14.9,
+    "centre": 6.6
+   },
+   "area_reason": "6.6 km from the centre point, 14.9 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": null,
+   "logo_missing": "The brand site answered 403 (2026-11-22) and no Radisson file is in the cards' set: the name alone. A candidate exists on Wikimedia Commons (File:Radisson Hotels logo.svg, the RH circle with \"Radisson Hotels\", public domain, redrawn in Inkscape by an uploader): not used until a person confirms it is the mark this hotel shows.",
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. The Radisson page answered 403 to an automated reader (2026-11-22): blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap gives the number as \"42;41\" (a candidate only): the listing's 41 is used.",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Radisson page answered 403. Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "note": "One official page, read directly: the Fredericton Capital Region listing. OpenStreetMap agrees (a candidate only).",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "note": "The address the listing links; it answered 403 to an automated reader (2026-11-22): not read; blocked, needs a person.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "note": "Map point of the Fredericton Capital Region listing, for the straight-line area distances.",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/481680424",
+   "notes": "Rests on one official listing (Fredericton Capital Region): the Radisson page answered 403. Beside the Kingswood entertainment park, Hanwell."
+  },
+  {
+   "id": "riverside-resort",
+   "name": "Riverside Resort",
+   "area": "nearby",
+   "resort": false,
+   "brand": null,
+   "group": null,
+   "independent": null,
+   "address": {
+    "street": "35 Mactaquac Road",
+    "town": "French Village",
+    "province": "NB",
+    "postal_code": "E3E 1L2",
+    "display": "35 Mactaquac Road, French Village"
+   },
+   "phone": "(506) 363-5111",
+   "website": "https://www.riversideresort.ca/",
+   "lat": 45.943705,
+   "lng": -66.868923,
+   "distance_km": {
+    "airport": 26.7,
+    "centre": 17.6
+   },
+   "area_reason": "17.6 km from the centre point, 26.7 km from the airport (within about 30 km).",
+   "season": {
+    "year_round": true,
+    "open": null,
+    "verified": false,
+    "source": "https://www.riversideresort.ca/",
+    "note": "Year-round city hotel: no season or closure stated on the pages read; listed as current on 2026-11-22."
+   },
+   "shuttle": {
+    "mark": false,
+    "offered": null,
+    "verified": false,
+    "terms": null,
+    "source": "https://www.riversideresort.ca/",
+    "also": [
+     "https://yfcfredericton.ca/transportation/ground-transportation-services/"
+    ],
+    "evidence": "No shuttle stated on the pages read (2026-11-22). The airport's Ground Transportation Services page (yfcfredericton.ca) names car rentals, taxis and ridesharing, and no hotel shuttle.",
+    "checked": "2026-11-22"
+   },
+   "logo": {
+    "file": "/logos/hotels/list/riverside-resort.png",
+    "opaque": true,
+    "fill": true,
+    "source": "https://static.wixstatic.com/media/0c3bab_0b8458c9014e490a9c117ec5a1d15026~mv2.png",
+    "origin": "official site: riversideresort.ca (its logo, on the site image host)"
+   },
+   "logo_missing": null,
+   "listed": true,
+   "not_listed_reason": null,
+   "verified": {
+    "name": {
+     "verified": true,
+     "source": "https://www.riversideresort.ca/",
+     "note": "Own site: \"Riverside Resort\" (title \"Riverside Resort French Village\"); its logo adds \"Resort & Conference Centre\", as OpenStreetMap does.",
+     "checked": "2026-11-22"
+    },
+    "street": {
+     "verified": true,
+     "source": "https://www.riversideresort.ca/",
+     "note": "Own site \"35 Mactaquac Road, French-Village, Fredericton, NB E3E 1L2\": the town is written French Village (the hyphen of the site left out).",
+     "checked": "2026-11-22"
+    },
+    "postal_code": {
+     "verified": false,
+     "source": "https://www.riversideresort.ca/",
+     "note": "Single official source (the own site; the resort is not on the Fredericton Capital Region listing). Not shown on the cards.",
+     "checked": "2026-11-22"
+    },
+    "phone": {
+     "verified": true,
+     "source": "https://www.riversideresort.ca/",
+     "note": "Own site \"506-363-5111\"; the one official page that has it.",
+     "checked": "2026-11-22"
+    },
+    "website": {
+     "verified": true,
+     "source": "https://www.riversideresort.ca/",
+     "note": "Found by a web search (a meeting-venue directory names it), then read directly; answered 200.",
+     "checked": "2026-11-22"
+    },
+    "latlng": {
+     "verified": true,
+     "source": "https://www.openstreetmap.org/way/390920202",
+     "note": "Point of the OpenStreetMap way, for the straight-line area distances (the hotel is on no listing with a map).",
+     "checked": "2026-11-22"
+    },
+    "season": {
+     "verified": false,
+     "source": "https://www.riversideresort.ca/",
+     "checked": "2026-11-22"
+    },
+    "shuttle": {
+     "verified": false,
+     "source": "https://www.riversideresort.ca/",
+     "checked": "2026-11-22"
+    }
+   },
+   "osm": "https://www.openstreetmap.org/way/390920202",
+   "notes": "Not on the Fredericton Capital Region listing (Tourism New Brunswick blocked): every fact rests on the own site. It takes stays \"nightly to monthly\", and its pool and hot tub are closed for repair (own site, 2026-11-22). 17.6 km from City Hall, near the Mactaquac dam."
+  }
+ ]
+}

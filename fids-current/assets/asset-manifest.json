@@ -2,13 +2,13 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 3017,
+    "total": 3020,
     "by_category": {
       "ad": 21,
       "airline": 1222,
       "background": 193,
       "brand": 5,
-      "hotel": 968,
+      "hotel": 971,
       "livery": 96,
       "misc": 177,
       "symbol": 4,
@@ -25625,6 +25625,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/hotels/list/fredericton-inn.png",
+      "file": "fredericton-inn.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "fredericton inn",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
       "path": "/logos/hotels/list/future-inns.png",
       "file": "future-inns.png",
       "category": "hotel",
@@ -25942,6 +25953,28 @@
       "iata": "",
       "country": "",
       "ext": "jpg"
+    },
+    {
+      "path": "/logos/hotels/list/ramada-by-wyndham.png",
+      "file": "ramada-by-wyndham.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "ramada by wyndham",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/riverside-resort.png",
+      "file": "riverside-resort.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "riverside resort",
+      "iata": "",
+      "country": "",
+      "ext": "png"
     },
     {
       "path": "/logos/hotels/list/rodd-brudenell.svg",

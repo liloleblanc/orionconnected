@@ -1,7 +1,7 @@
 # The hotel lists (gate centre deck, and the full list in the phone app)
 
 Free guest information by area for the city a gate's flight goes to, when that city has a
-checked list (Moncton YQM, Charlottetown YYG and Halifax YHZ so far). One slot of the centre deck shows the
+checked list (Moncton YQM, Charlottetown YYG, Halifax YHZ and Fredericton YFC so far). One slot of the centre deck shows the
 cards in turn: **Airport hotels**, **Downtown hotels**, **Nearby hotels** and **Resorts worth the
 drive**. Each card is a list and nothing else: the hotel's logo on one cream column where an
 official file reads there, its name, its street address and its telephone. Five lines a card;
@@ -20,9 +20,9 @@ page, the skip loop, the dwell, the preloader), the list view in `fids-current/a
 words in `fids-current/js/board-strings.js` (nine languages each), and a credits line for the two faces. Test: `tests/hotel-list-cards.test.js`.
 Review link: `gids.html?ap=<any>&gate=<n>&hotellist=YYG&scene=hotellist` shows a city's cards on any gate.
 
-## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`)
+## The data: `scripts/hotels/data/<code>.json` (Moncton `yqm.json`, Charlottetown `yyg.json`, Halifax `yhz.json`, Fredericton `yfc.json`)
 
-One checked file a city (Moncton and Charlottetown checked on 2026-11-16, Halifax on 2026-11-21),
+One checked file a city (Moncton and Charlottetown checked on 2026-11-16, Halifax on 2026-11-21, Fredericton on 2026-11-22),
 kept out of the site. The cities are one list,
 `HotelListCard.CITIES` in `fids-current/js/hotel-list-card.js`: the build step, the phone app and
 the tests read it, and fail on a checked file whose city is not in it. The site serves a slim
@@ -45,8 +45,14 @@ the Greater Moncton airport's hotels and transport pages (cyqm.ca); Tourism PEI 
 dates of operation); Charlottetown Airport's ground-transportation page (flyyyg.com); for Halifax,
 the Discover Halifax and Tourism Nova Scotia listings (the map points come from the listings
 and the hotels' own pages) and Halifax Stanfield's Visiting Halifax page (halifaxstanfield.ca); Halifax's civic address register
-(HRM open data, Civic Addresses) to settle a street the listings disagree on;
-OpenStreetMap (positions in Moncton and Charlottetown, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
+(HRM open data, Civic Addresses) to settle a street the listings disagree on; for Fredericton,
+the Fredericton Capital Region listings (frederictoncapitalregion.ca, the city's official tourism
+site, where tourismfredericton.ca now forwards; their map points give the distances) and the
+Wyndham and Best Western property pages (the airport's site, yfcfredericton.ca, lists no hotels
+and names no hotel shuttle; Tourism New Brunswick answered 403 with a Cloudflare page and was not
+used; the Marriott, IHG, Hilton, Choice and Radisson pages answered 403, so those hotels rest on
+the city listing alone);
+OpenStreetMap (positions in Moncton and Charlottetown, and of the Riverside Resort near Fredericton, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
 OpenStreetMap roads for the drive distances to the resorts. A search index was used only for
 some brand-hotel postal codes, which are marked `verified: false` (postal codes are not shown).
 
@@ -57,6 +63,9 @@ the core is only 5-6 km from the terminal); a destination resort past 30 km goes
 card with its drive distance. Moncton's points are the board's own (`DOWNTOWN_COORDS.YQM` and
 `airport-coords.js`). Charlottetown's are the terminal and City Hall from OpenStreetMap: YYG has no
 `DOWNTOWN_COORDS` entry, and none was added, so the Accor search for Charlottetown is unchanged.
+Fredericton's airport is the board's own (`airport-coords.js`, about 0.9 km from the terminal;
+every hotel falls on the same card from either) and its centre City Hall, 397 Queen Street, from
+OpenStreetMap: YFC has no `DOWNTOWN_COORDS` entry either, and none was added.
 
 Seasons: `season.year_round`, or `season.open` ranges (month-day to month-day). The board checks
 the day at the airport each time the deck is built, so a seasonal hotel comes back by itself.
