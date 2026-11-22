@@ -1068,6 +1068,13 @@
     hotelListScan: { en: 'Scan for the full list', fr: 'Scannez pour la liste complète', es: 'Escanee para ver la lista completa', de: 'Scannen für die ganze Liste', it: 'Scansiona per l’elenco completo', pt: 'Escaneie para ver a lista completa', ja: 'スキャンで全リストを表示', zh: '扫码查看完整列表', ar: 'امسح الرمز لعرض القائمة الكاملة' },
     hotelsInCity: { en: 'Hotels in {CITY}', fr: 'Hôtels à {CITY}', es: 'Hoteles en {CITY}', de: 'Hotels im Raum {CITY}', it: 'Hotel a {CITY}', pt: 'Hotéis em {CITY}', ja: '{CITY}のホテル', zh: '{CITY}的酒店', ar: 'فنادق {CITY}' },
     hotelCall: { en: 'Call', fr: 'Appeler', es: 'Llamar', de: 'Anrufen', it: 'Chiama', pt: 'Ligar', ja: '電話する', zh: '拨打电话', ar: 'اتصال' },
+    // v24176 — a city without a checked list: its one card on a gate (hotelsInCity, a scan
+    // code, and this invitation under it), and the two map searches the phone app opens for it.
+    // The maps keep the names their makers give them in each language (Apple's Maps is Plans,
+    // Mapas, Karten, Mappe in French, Spanish and Portuguese, German, Italian).
+    hotelsFindScan: { en: 'Scan to search hotels on your phone', fr: 'Scannez pour chercher un hôtel sur votre téléphone', es: 'Escanee para buscar hoteles en su teléfono', de: 'Scannen und Hotels auf dem Handy suchen', it: 'Scansiona per cercare hotel sul telefono', pt: 'Escaneie para buscar hotéis no celular', ja: 'スキャンしてスマートフォンでホテルを検索', zh: '扫码用手机搜索酒店', ar: 'امسح الرمز للبحث عن فنادق على هاتفك' },
+    hotelsMapGoogle: { en: 'Search in Google Maps', fr: 'Rechercher dans Google Maps', es: 'Buscar en Google Maps', de: 'In Google Maps suchen', it: 'Cerca in Google Maps', pt: 'Pesquisar no Google Maps', ja: 'Google マップで検索', zh: '在 Google 地图中搜索', ar: 'البحث في خرائط Google' },
+    hotelsMapApple: { en: 'Search in Apple Maps', fr: 'Rechercher dans Plans d’Apple', es: 'Buscar en Mapas de Apple', de: 'In Apple Karten suchen', it: 'Cerca in Mappe di Apple', pt: 'Pesquisar no Mapas da Apple', ja: 'Apple マップで検索', zh: '在 Apple 地图中搜索', ar: 'البحث في خرائط Apple' },
     // ── BOARD LABELS ──────────────────────────────────────────────────────
     // Labels the boards had written as English literals or read through keys
     // no table held. The words copy the screens' own: terminal and weather
