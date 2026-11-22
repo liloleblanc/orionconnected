@@ -717,6 +717,16 @@
    "viewBox": "9.44 -0.99 925.53 162.1",
    "has_style_block": false,
    "note": "Made with: python3 scripts/hotels/typeset-name.py fids-current/fonts/montserrat/Montserrat-latin.woff2 600 \"#14203c\" <out.svg> \"PRINCE STREET\" \"SUITES\" (needs fontTools and brotli). No ornament, no colour of its own and nothing invented: only the name, so it cannot be read as the hotel’s branding."
+  },
+  "banbridge-inn.svg": {
+   "source": "https://www.banbridgeinn.com/",
+   "origin": "drawing of the inn’s own logo (Banbridge in its script over INN, with the swash), supplied 21 Nov 2026; the logo’s official home is the inn’s site",
+   "licence": "Trademark of the Banbridge Inn. The inn’s own logo, drawn in its own rose, to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 130.82 64.56",
+   "has_style_block": true,
+   "note": "One rose (#AF5F78, traced as ten near-identical shades). Generic class names (.cls-1 to .cls-10): <img> only. The drawing as supplied, with only its Adobe metadata block (XMP and C2PA provenance) taken out."
   }
  },
  "already_in_repo": [
