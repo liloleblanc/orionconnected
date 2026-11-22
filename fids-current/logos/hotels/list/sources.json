@@ -677,6 +677,16 @@
    "viewBox": "0 0 584.01 869.31",
    "has_style_block": false,
    "note": "The D, DELTA HOTELS, the rule, MARRIOTT and BEAUSÉJOUR, stacked: takes the whole cell (fill). The drawing is as supplied (only paths, no metadata block). The plain Delta Hotels mark (delta-hotels.svg) stays on the other Delta hotels."
+  },
+  "commons-inn.svg": {
+   "source": "https://commonsinn.ca/",
+   "origin": "drawing of the inn’s own header logo (COMMONS INN over five gold stars; the site sets the name in white on its dark header, with the stars as its file logo-e1705285239585.png), in dark grey #343334 with the stars in their own gold #B29873, supplied 21 Nov 2026",
+   "licence": "Trademark of the Commons Inn. The inn’s own header logo, drawn for the cream column (the lettering dark instead of white, the stars in their own gold), to name the hotel in a guest-information list.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "0 0 255.9 50.09",
+   "has_style_block": true,
+   "note": "The name in one line over five gold stars (about 5 to 1). Generic class names (.cls-1, .cls-2): <img> only. The drawing is as supplied (no metadata block). Its stars file is at commonsinn.ca/wp-content/uploads/2023/08/logo-e1705285239585.png (checked 21 Nov 2026)."
   }
  },
  "already_in_repo": [
