@@ -707,6 +707,16 @@
    "viewBox": "0 0 43 44",
    "has_style_block": true,
    "note": "Stacked (the C mark over the name): takes the whole cell (fill). Navy #00145F lettering, the C in its oranges and yellow. Generic class names (.j, .k, .l, .m): <img> only. The file as supplied, unaltered (no metadata block). Choice lists the Bayer’s Lake hotel among its Comfort properties (media.choicehotels.com, 2025), so the current brand mark is shown, not the older blue Comfort Hotel sign in the tourism photo."
+  },
+  "prince-street-suites.svg": {
+   "source": "https://www.princestreetsuites.ca/",
+   "origin": "the hotel’s name typeset for the cards, not a logo of its own: the hotel publishes no logo (its site, its booking page and the tourism listings were searched twice, 21 Nov 2026), so its name as its own site writes it is set in the card face, Montserrat SemiBold, in the card navy #14203C (PRINCE STREET over SUITES), 21 Nov 2026",
+   "licence": "The hotel’s name. Montserrat, SIL Open Font License 1.1 (fonts/montserrat/OFL.txt): the glyph outlines drawn as paths by scripts/hotels/typeset-name.py, no kerning, letterspacing only.",
+   "ground": "light",
+   "type": "svg",
+   "viewBox": "9.44 -0.99 925.53 162.1",
+   "has_style_block": false,
+   "note": "Made with: python3 scripts/hotels/typeset-name.py fids-current/fonts/montserrat/Montserrat-latin.woff2 600 \"#14203c\" <out.svg> \"PRINCE STREET\" \"SUITES\" (needs fontTools and brotli). No ornament, no colour of its own and nothing invented: only the name, so it cannot be read as the hotel’s branding."
   }
  },
  "already_in_repo": [
