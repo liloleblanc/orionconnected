@@ -23,8 +23,10 @@
    EVERY OTHER CITY (v24176): the same slot shows ONE card instead, "Hotels in {CITY}": the
    heading in the languages of the board, one large scan code, and under it the invitation to
    search on a phone. No hotel, no logo, no price: the code opens the phone app
-   (app.html?hotels=<code>), which for a city without a checked list offers a search in Google
-   Maps and one in Apple Maps (mapLinks). The city is chosen as cityFor() chooses it (the city
+   (app.html?hotels=<code>&in=<where it is>), which for a city without a checked list offers a
+   search in Google Maps, and on an Apple device one in Apple Maps (mapLinks), the city named
+   with its state or province and its country (searchPlace), so a Sydney is never the other
+   one. The city is chosen as cityFor() chooses it (the city
    the flight goes to, then its stops from the last), for any code the board has a name for
    (airportCityNameSafe_v21877, the names of every board); a code with no name, a city with a
    checked list, and a gate with no flight show no such card. Nothing anywhere else.
@@ -36,7 +38,8 @@
    first; names, addresses and telephones are data. LOGOS: through <img> only, never inlined
    (an SVG with a generic <style> class leaks it into the page). LOOK: css/hotel-list-card.css.
    REVIEW: ?hotellist=YYG shows that city on any gate (inert without it), with ?scene=hotellist;
-   ?hotellist=YYZ (a city without a list) shows its "Hotels in {CITY}" card. */
+   ?hotellist=YYZ (a city without a list) shows its "Hotels in {CITY}" card; a code the board
+   has no name for is no link (the gate shows what it shows without one). */
 (function (root, factory) {
   var api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -71,13 +74,17 @@
   //     developers.google.com/maps/documentation/urls/get-started (read 2026-11-22):
   //     https://www.google.com/maps/search/?api=1&query=<the search, URL-encoded>. api=1 is
   //     required; the search action takes no centre (query is a place, an address or a general
-  //     search such as "restaurants in Seattle WA"); no API key is needed.
-  //   Apple: the Map Links form (developer.apple.com, Map Links: q is the query as if typed into
-  //     the Maps search field; sll is the search location, latitude,longitude, given alone or
-  //     with q). Apple's Unified Map URLs page (developer.apple.com/documentation/mapkit/
-  //     unified-map-urls, read 2026-11-22; the old Map Links address now redirects there)
-  //     documents maps.apple.com/search?query=&center= for iOS 18.4, macOS 15.4 and later only,
-  //     so the Map Links form, which every iOS version reads, is used:
+  //     search such as "restaurants in Seattle WA"); no API key is needed. With no centre, a
+  //     city whose name is another city's too (Sydney, London, Santiago, Portland) is told apart
+  //     in the words of the search: where it is goes in them (searchPlace, "Sydney, NS, Canada").
+  //   Apple: the legacy Map Links form (q is the query as if typed into the Maps search field;
+  //     sll is the search location, latitude,longitude, given alone or with q). Its page
+  //     (developer.apple.com/library/archive, MapLinks) now redirects to Apple's Unified Map URLs
+  //     page (developer.apple.com/documentation/mapkit/unified-map-urls, read 2026-11-22), which
+  //     does not describe the legacy form; the q and sll text was read only from a search
+  //     index's extract of the old page. The unified page documents
+  //     maps.apple.com/search?query=&center= for iOS 18.4, macOS 15.4 and later only, so the
+  //     legacy form is used, to be checked on an iPhone running iOS 18.4 or earlier:
   //     https://maps.apple.com/?q=<the search, URL-encoded>&sll=<latitude>,<longitude>
   var MAPS_GOOGLE = 'https://www.google.com/maps/search/?api=1&query=';
   var MAPS_APPLE = 'https://maps.apple.com/?q=';
@@ -204,12 +211,13 @@
   }
 
   // ── WHERE ─────────────────────────────────────────────────────────────────
-  // The city of a review link (?hotellist=): any airport code, with a list or without one.
+  // The city of a review link (?hotellist=): a city with a list, or a code without one that the
+  // board has a name for. Any other code is no link: the gate shows what it shows without one.
   function review() {
     try {
       var q = new URLSearchParams(root.location && root.location.search || '');
       var c = up(q.get('hotellist') || '');
-      return /^[A-Z0-9]{3}$/.test(c) ? c : '';
+      return (CITIES.indexOf(c) >= 0 || findName(c)) ? c : '';
     } catch (e) { return ''; }
   }
   // The city whose hotels a gate shows: the one its flight goes to (the last stop first, then
@@ -290,16 +298,54 @@
     var n = doc ? cards(doc, null, tzOf(c)).length : 1;
     return Math.max(1, n) * VIEW_MS + 4000;
   }
+  // Where a city without a list is, for its map search on the phone (the scan code carries it,
+  // &in=): its country by the board's own table (_IATA_CC, fids-core.js, the ISO code as the
+  // table gives it, so San Juan is PR, not US), and in the United States and Canada its state or
+  // province (_rowRegion, fids-core.js, OurAirports' region). 'CA-NS', 'US-ME', 'DO', or ''
+  // where the board's tables do not say.
+  var WHERE = /^([A-Z]{2})(?:-([A-Z]{2}))?$/;
+  function whereOf(iata) {
+    var c = up(iata), cc = '', st = '';
+    if (!/^[A-Z0-9]{3}$/.test(c)) return '';
+    try { cc = String((typeof _IATA_CC !== 'undefined' && _IATA_CC && _IATA_CC[c]) || ''); } catch (e) { cc = ''; }
+    if (!cc) { try { cc = (typeof root.airportCountry === 'function') ? String(root.airportCountry(c) || '') : ''; } catch (e1) { cc = ''; } }
+    if (!/^[A-Z]{2}$/.test(cc)) return '';
+    if (cc === 'US' || cc === 'CA') { try { st = (typeof root._rowRegion === 'function') ? String(root._rowRegion(c) || '') : ''; } catch (e2) { st = ''; } }
+    return /^[A-Z]{2}$/.test(st) ? cc + '-' + st : cc;
+  }
   // The address the scan code opens: the full list of the city in the phone app, at the card's
-  // area, with the airport of the screen as the app's own airport.
-  function qrUrl(city, area, home) {
+  // area, with the airport of the screen as the app's own airport; for a city without a list,
+  // where it is (whereOf), for its map search.
+  function qrUrl(city, area, home, where) {
     var base = APP_HOST;
     try {
       var h = String(root.location && root.location.hostname || '');
       if (h && !/(^|\.)orionconnected\.(com|ca|app)$/i.test(h)) base = String(root.location.origin || '') + '/app';
     } catch (e) {}
     return base + '?' + (home ? 'ap=' + encodeURIComponent(up(home)) + '&' : '') + 'hotels=' + encodeURIComponent(up(city))
-      + (area ? '&area=' + encodeURIComponent(area) : '');
+      + (area ? '&area=' + encodeURIComponent(area) : '') + (WHERE.test(up(where)) ? '&in=' + up(where) : '');
+  }
+  // A name without its accents and its case, to compare two names.
+  function fold(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  // The place of a map search: the city, then where it is when the scan code said (whereOf): the
+  // state or province by its two letters, as the boards print them ('London, KY'), then the
+  // country in the language of the search (the browser's own names, Intl.DisplayNames, as the
+  // app names countries), left out where the city's own name says it already (Panama City,
+  // Singapore) or the country's name begins with it (Hong Kong). 'Sydney, NS, Canada'; the city
+  // alone when nothing says where it is.
+  function searchPlace(name, where, lg) {
+    var n = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
+    var m = WHERE.exec(up(where));
+    if (!n || !m) return n;
+    var out = n, cn = '';
+    if (m[2]) out += ', ' + m[2];
+    try {
+      var BS = store();
+      if (BS && typeof BS.intl === 'function') cn = String(new Intl.DisplayNames([BS.intl(lg)], { type: 'region' }).of(m[1]) || '');
+    } catch (e) { cn = ''; }
+    var fn = fold(n), fc = fold(cn);
+    if (cn && cn.toUpperCase() !== m[1] && fn.indexOf(fc) < 0 && fc.indexOf(fn + ' ') !== 0) out += ', ' + cn;
+    return out;
   }
   // A URL component, every reserved character encoded (encodeURIComponent leaves ! ' ( ) *).
   function enc(s) {
@@ -309,7 +355,8 @@
   }
   // The two map searches of a city without a list, for the phone app: `search` is what the
   // traveller would type (the app's own heading, "Hotels in {CITY}" in the language of the
-  // phone, whose Maps app speaks the same language), `at` the point to search around
+  // phone, whose Maps app speaks the same language, its city as searchPlace writes it, with
+  // where it is), `at` the point to search around
   // ({lat, lng}, or nothing). The forms and the documentation they follow: MAPS_GOOGLE and
   // MAPS_APPLE above. '' for a search with no words.
   function mapLinks(search, at) {
@@ -438,8 +485,9 @@
   }
   // The card of a city without a list: "Hotels in {CITY}", one line for each language of the
   // board (a line that says the same as the one before it is left out), the scan code to the
-  // phone app, and the invitation in the navy foot. One view. '' when the board has no name for
-  // the city. o.home (the airport of the screen, for the app link).
+  // phone app (with where the city is, whereOf, for its map search), and the invitation in the
+  // navy foot. One view. '' when the board has no name for the city. o.home (the airport of the
+  // screen, for the app link).
   function buildFind(city, L, o) {
     o = o || {};
     var BS = store(), c = up(city);
@@ -460,7 +508,7 @@
       + '<div class="axr-pages hlc-views">'
       +   '<div class="axr-page hlc-view hlc-find axr-page-on" data-area="find">'
       +     '<div class="hlc-find-head"><div class="hlc-find-title">' + head.join('') + '</div></div>'
-      +     '<div class="hlc-find-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(c, '', o.home)) + '"></div></div>'
+      +     '<div class="hlc-find-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(c, '', o.home, whereOf(c))) + '"></div></div>'
       +     '<div class="hlc-foot hlc-find-foot">' + ico('smartphone', 'hlc-find-ico') + '<div class="hlc-find-say">' + say + '</div></div>'
       +   '</div>'
       + '</div></div>';
@@ -549,17 +597,23 @@
       }
     } catch (e) {}
   }
-  // The scan codes: drawn by the board's QR library (qrcode.js) at the box's own size, navy
+  // The scan codes: drawn by the board's QR library (qrcode.js) at the size they are shown (the
+  // box's width inside its padding, so the code is never scaled down after it is drawn), navy
   // modules on the cream of the card, with the quiet zone of the box around them. Drawn again
-  // when the box has grown or shrunk by more than a few pixels since (the large code of a city
-  // without a list takes the room the card has, which is known only once it is laid out).
+  // whenever that size has changed since (the large code of a city without a list takes the room
+  // the card has, which is known only once it is laid out, and changes when the faces arrive); a
+  // drawing never changes the box, so a code is drawn once a size.
   function codes(el) {
     try {
       if (typeof root.QRCode === 'undefined') return;
       Array.prototype.forEach.call(el.querySelectorAll('.hlc-qr[data-qr-url]'), function (q) {
-        var url = q.getAttribute('data-qr-url');
-        var w = Math.max(64, Math.round(q.clientWidth || 0));
-        if (!url || (q.getAttribute('data-qr-done') === url && Math.abs(w - (Number(q.getAttribute('data-qr-w')) || 0)) < 8)) return;
+        var url = q.getAttribute('data-qr-url'), pad = 0;
+        try {
+          var cs = (typeof root.getComputedStyle === 'function') ? root.getComputedStyle(q) : null;
+          if (cs) pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+        } catch (e1) { pad = 0; }
+        var w = Math.max(64, Math.floor((q.clientWidth || 0) - pad));
+        if (!url || (q.getAttribute('data-qr-done') === url && (Number(q.getAttribute('data-qr-w')) || 0) === w)) return;
         q.innerHTML = '';
         new root.QRCode(q, { text: url, width: w, height: w, colorDark: '#14203c', colorLight: '#f5efe3', correctLevel: root.QRCode.CorrectLevel.M });
         q.setAttribute('data-qr-done', url);
@@ -633,6 +687,8 @@
     due: due,
     dwellMs: dwellMs,
     qrUrl: qrUrl,
+    whereOf: whereOf,
+    searchPlace: searchPlace,
     mapLinks: mapLinks,
     build: build,
     buildFind: buildFind,

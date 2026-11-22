@@ -149,13 +149,16 @@
 .hlc .hlc-find-title [lang="ja"], .hlc .hlc-find-title [lang|="zh"], .hlc .hlc-find-title [lang="ar"]{ font-family:var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important; }
 /* the fine gold rule under the heading */
 .hlc-find-title::after{ content:''; display:block; width:calc(140 * var(--hlc-px)); height:calc(2 * var(--hlc-px)); margin:calc(22 * var(--hlc-px)) auto 0; background:var(--hlc-rule); }
-.hlc-find-scan{ flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; padding:calc(26 * var(--hlc-px)) var(--hlc-pad); }
-/* the code takes the room the card leaves it, square, never larger than 420 px at 1680x1050 */
-.hlc-find-scan .hlc-qr{ height:min(calc(420 * var(--hlc-px)), 100%); width:auto; aspect-ratio:1 / 1; max-width:100%; padding:calc(14 * var(--hlc-px)); }
+.hlc-find-scan{ flex:1 1 0; min-height:0; min-width:0; container-type:size; display:flex; align-items:center; justify-content:center; padding:calc(26 * var(--hlc-px)) var(--hlc-pad); }
+/* the code takes the room the card leaves it, square on both axes (the smaller of the width and
+   the height of its area, as the Algonquin page sizes its code), never larger than 420 px at
+   1680x1050: a narrow or tall slot gives a smaller square, never a squeezed one */
+.hlc-find-scan .hlc-qr{ flex:none; width:min(calc(420 * var(--hlc-px)), 100cqw, 100cqh); height:min(calc(420 * var(--hlc-px)), 100cqw, 100cqh); padding:calc(14 * var(--hlc-px)); }
 .hlc-find-scan .hlc-qr img{ image-rendering:pixelated; }
 .hlc .hlc-find-foot{ justify-content:center; gap:calc(18 * var(--hlc-px)); min-height:calc(104 * var(--hlc-px)); padding:calc(16 * var(--hlc-px)) var(--hlc-pad); }
 .hlc-find-ico{ width:calc(44 * var(--hlc-px)); height:calc(44 * var(--hlc-px)); vertical-align:middle; }
-.hlc-find-say{ min-width:0; font-size:calc(26 * var(--hlc-px)); font-weight:600; line-height:1.25; text-align:start; }
+/* the lines centred on one another: an Arabic line and a Latin one sit alike under the mark */
+.hlc-find-say{ min-width:0; font-size:calc(26 * var(--hlc-px)); font-weight:600; line-height:1.25; text-align:center; }
 
 /* ── foot ── */
 .hlc-foot{ flex:0 0 auto; min-height:calc(62 * var(--hlc-px)); display:flex; align-items:center; gap:calc(22 * var(--hlc-px));

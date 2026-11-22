@@ -38,24 +38,38 @@ to, then its stops from the last), for any code the board has a name for
 without the airport's own name a city with two of ours carries). It does not show when a city of
 the flight has a checked list (the list shows), on a gate with no flight, for a code with no
 name, or for the city of the screen itself. Review link: `?hotellist=YYZ&scene=hotellist` shows the
-card of a city without a list on any gate; `?hotellist=YQM` still shows the Moncton list.
+card of a city without a list on any gate; `?hotellist=YQM` still shows the Moncton list; a code
+the board has no name for is no link (the gate shows what it shows without one).
 
-The scan code opens the phone app, `app.html?ap=<screen>&hotels=<code>` (`qrUrl`, no area). For a
-city without a checked list the app shows a page in its own style: the title **Hotels in {CITY}**
-and two big buttons, **Search in Google Maps** (`hotelsMapGoogle`) and **Search in Apple Maps**
-(`hotelsMapApple`), each opening its map in a new tab, with no tracking parameter
-(`HotelListCard.mapLinks`). The search is the page's own title in the phone's language.
+The scan code opens the phone app, `app.html?ap=<screen>&hotels=<code>&in=<where>` (`qrUrl`, no
+area). `in` is where the city is, from the board's own tables (`HotelListCard.whereOf`): its
+country (`_IATA_CC` in `fids-core.js`, the ISO code as that table gives it, so San Juan is `PR`)
+and, in the United States and Canada, its state or province (`_rowRegion`, OurAirports' region):
+`CA-NS`, `US-ME`, `DO`. For a city without a checked list the app shows a page in its own style:
+the title **Hotels in {CITY}** and big buttons, **Search in Google Maps** (`hotelsMapGoogle`) and,
+on an Apple device only (an iPhone, an iPad, a Mac), **Search in Apple Maps** (`hotelsMapApple`),
+each opening its map in a new tab, with no tracking parameter (`HotelListCard.mapLinks`). On any
+other phone Apple's link opens Apple's map on the web, which is not promised to every phone's
+browser, so an Android phone is offered Google's alone. The search is the page's own title in the
+phone's language, its city written with where it is (`HotelListCard.searchPlace`): the state or
+province by its two letters, as the boards print them, then the country in the phone's language
+(the browser's own names), left out where the city's name already says it. "Hotels in Sydney, NS,
+Canada", never the Australian Sydney; "Hôtels à Santiago, République dominicaine". Without `in`
+(a link typed by hand) the city of one of the app's own airports is written with its country.
 
 - Google: the Maps URLs search action, as documented at
   developers.google.com/maps/documentation/urls/get-started (read 2026-11-22):
   `https://www.google.com/maps/search/?api=1&query=<search, URL-encoded>`. `api=1` is required, no
-  API key is needed, and the search action takes no centre point.
-- Apple: the Map Links form, `https://maps.apple.com/?q=<search, URL-encoded>&sll=<lat>,<lng>`
+  API key is needed, and the search action takes no centre point: which city is meant has to be
+  in the words of the search, hence the state, province and country above.
+- Apple: the legacy Map Links form, `https://maps.apple.com/?q=<search, URL-encoded>&sll=<lat>,<lng>`
   (`q` is the query as if typed into the Maps search field, `sll` the search location, given alone
-  or with `q`). Apple's Unified Map URLs page (developer.apple.com/documentation/mapkit/unified-map-urls,
-  read 2026-11-22; the old Map Links address now redirects there) documents
-  `maps.apple.com/search?query=&center=` for iOS 18.4, macOS 15.4 and later only, so the Map Links
-  form, which every iOS version reads, is used. The point is the city's airport
+  or with `q`). The Map Links page (developer.apple.com/library/archive) now redirects to Apple's
+  Unified Map URLs page (developer.apple.com/documentation/mapkit/unified-map-urls, read
+  2026-11-22), which does not describe the legacy form; the `q` and `sll` text above was read only
+  from a search index's extract of the old page, not from a current Apple page. The unified page
+  documents `maps.apple.com/search?query=&center=` for iOS 18.4, macOS 15.4 and later only, so the
+  legacy form is used; it is still to be checked on an iPhone running iOS 18.4 or earlier. The point is the city's airport
   (`js/airport-coords.js`, which the app already loads for the weather): the board's table of city
   centres (`DOWNTOWN_COORDS`) is in `fids-core.js`, which the app does not load. The query names
   the city; the point only tells which one (London, Ontario or London, England).

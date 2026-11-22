@@ -14,8 +14,8 @@ list. The build step and `tests/hotel-list-cards.test.js` both fail when a check
 entry in the list, or an entry has no checked file.
 
 A city that is not in the list already has a way to find a hotel: its gates show one "Hotels in
-{CITY}" card whose scan code opens a Google Maps and an Apple Maps search in the phone app
-(v24176). Adding the city to the list replaces that card with its checked list, on the gates and
+{CITY}" card whose scan code opens a Google Maps search (and, on an Apple device, an Apple Maps
+one) in the phone app, the city named with its state or province and country (v24176). Adding the city to the list replaces that card with its checked list, on the gates and
 in the app; nothing else changes.
 
 ## Adding a city
