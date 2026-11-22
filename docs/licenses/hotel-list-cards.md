@@ -64,10 +64,12 @@ the day at the airport each time the deck is built, so a seasonal hotel comes ba
 
 `sources.json` beside the files names the official source of each (the hotel's own site, its
 chain's site, brand page or press room, the tourism body, or Wikimedia Commons; never a
-logo-download site), with its licence note. Files are unaltered. A file supplied for the cards (a
-one-colour or light-ground version of a hotel's own logo, where the hotel's own file is pale or
-white and cannot read on the cream) says so in its `origin` and still names the hotel's own file
-as its `source`. Where the hotel's or the brand's site refuses automated reads, the hotel keeps
+logo-download site), with its licence note. Files are unaltered. A one-colour or light-ground
+version of a hotel's own logo, where the hotel publishes it only pale or white and it cannot read
+on the cream, says so in its `origin` and still names the hotel's own file as its `source`: either
+supplied for the cards, or made here by switching the colour of the hotel's own white file (to the
+hotel's own dark colour where its pages show one, otherwise the card's navy), shapes unchanged and
+only after no official dark version was found. Where the hotel's or the brand's site refuses automated reads, the hotel keeps
 the name alone until a file is supplied; the refusal is not worked around. Where a file has a wide transparent margin, the card
 shows it through `object-view-box` (`logo.trim` in the data, measured from the file's own ink);
 a stacked lockup whose words are small at the common logo height (the Algonquin, Delta Hotels,

@@ -884,8 +884,14 @@
     "evidence": "No shuttle stated on the pages read (2026-11-21).",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "logo": {
+    "file": "/logos/hotels/list/barrington-hotel.svg",
+    "opaque": false,
+    "source": "https://image-tc.galaxy.tf/wisvg-e7dim8gso1xcme3hc1hsi3qm8/logo-white.svg",
+    "origin": "one-colour version of the hotel’s own logo (thebarringtonhotel.ca header, published only in white): the colour switched to the hotel’s burgundy #57251E (the header of its own booking page and its favicon) for the cream card, shapes unchanged, 21 Nov 2026",
+    "trim": "inset(40% 2.5% 40.5% 0%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -991,8 +997,13 @@
     "evidence": "No shuttle stated on the pages read (2026-11-21).",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "logo": {
+    "file": "/logos/hotels/list/prince-george-hotel.svg",
+    "opaque": false,
+    "source": "https://www.princegeorgehotel.com/images/logo-header-prince-george-hotel.svg",
+    "origin": "one-colour version of the hotel’s own header logo (published in white): the colour switched to the hotel’s own warm grey #6A615E, the colour of the same logo in its catering menu PDF (princegeorgehotel.com, October 2026), shapes unchanged, 21 Nov 2026"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -2999,7 +3010,7 @@
     "checked": "2026-11-21"
    },
    "logo": null,
-   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "logo_missing": "No logo file published: the site, its PDFs and the tourism listings carry only a cropped site icon. The name alone (searched twice, 21 Nov 2026).",
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -4017,7 +4028,7 @@
     "checked": "2026-11-21"
    },
    "logo": null,
-   "logo_missing": "Comfort Hotel is not the Comfort Inn brand of the repository file; none downloaded on 2026-11-21: the name alone.",
+   "logo_missing": "Choice Hotels lists it among its Comfort properties (media.choicehotels.com, 2025), but the only official picture of the building (the Tourism Nova Scotia listing) shows the earlier blue Comfort Hotel sign, and the hotel’s own site and choicehotels.com refuse automated reads: which Comfort mark it shows is not confirmed. The name alone until it is (searched twice, 21 Nov 2026).",
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -4113,7 +4124,7 @@
     "checked": "2026-11-21"
    },
    "logo": null,
-   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "logo_missing": "Its own site refuses automated reads (not worked around); the tourism listings carry photographs only. The name alone (searched twice, 21 Nov 2026).",
    "listed": true,
    "not_listed_reason": null,
    "verified": {
@@ -4675,8 +4686,14 @@
     "evidence": "Airport page, read 2026-11-21: \"approximately 10 kilometres from the Airport and offers a complimentary shuttle service from 5 am to midnight\". Discover Halifax: \"The complimentary shuttle and parking services\". The own home page does not mention it.",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "Independent hotel: no logo file in the repository; none downloaded on 2026-11-21: the name alone.",
+   "logo": {
+    "file": "/logos/hotels/list/inn-on-the-lake.jpg",
+    "opaque": true,
+    "source": "https://www.innonthelake.com/s/2027-brunch-menu.pdf",
+    "origin": "official site: the logo image in the inn’s own 2027 brunch menu PDF, linked from innonthelake.com/menus (the same bytes are in its catering menu PDF); the JPEG stream taken byte for byte",
+    "trim": "inset(18.3% 15.9% 10.4% 6.2%)"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {

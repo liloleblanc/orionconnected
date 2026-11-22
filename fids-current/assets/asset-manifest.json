@@ -2,13 +2,13 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 3004,
+    "total": 3012,
     "by_category": {
       "ad": 21,
       "airline": 1222,
       "background": 193,
       "brand": 5,
-      "hotel": 955,
+      "hotel": 963,
       "livery": 96,
       "misc": 177,
       "symbol": 4,
@@ -25295,6 +25295,17 @@
       "ext": "png"
     },
     {
+      "path": "/logos/hotels/list/barrington-hotel.svg",
+      "file": "barrington-hotel.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "barrington hotel",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/hotels/list/best-western-plus.png",
       "file": "best-western-plus.png",
       "category": "hotel",
@@ -25359,6 +25370,17 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/canadas-best-value-inn.png",
+      "file": "canadas-best-value-inn.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "canadas best value inn",
+      "iata": "",
+      "country": "",
+      "ext": "png"
     },
     {
       "path": "/logos/hotels/accor-pictos/car-white.svg",
@@ -25455,6 +25477,17 @@
       "subcategory": "misc",
       "group": "Hotels — misc",
       "name": "days inn by wyndham",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/delta-beausejour.svg",
+      "file": "delta-beausejour.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "delta beausejour",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -25713,6 +25746,17 @@
       "ext": "png"
     },
     {
+      "path": "/logos/hotels/list/hotel-on-pownal.png",
+      "file": "hotel-on-pownal.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "hotel on pownal",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
       "path": "/logos/hotels/list/hotel-shediac.png",
       "file": "hotel-shediac.png",
       "category": "hotel",
@@ -25733,6 +25777,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/inn-on-the-lake.jpg",
+      "file": "inn-on-the-lake.jpg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "inn on the lake",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
     },
     {
       "path": "/logos/hotels/accor-pictos/internet-white.svg",
@@ -25810,6 +25865,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/list/prince-george-hotel.svg",
+      "file": "prince-george-hotel.svg",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "prince george hotel",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/hotels/list/quality.jpg",
@@ -25900,6 +25966,17 @@
       "ext": "png"
     },
     {
+      "path": "/logos/hotels/list/st-james-gate.png",
+      "file": "st-james-gate.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "st james gate",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
       "path": "/logos/hotels/list/stanley-bridge-resort.png",
       "file": "stanley-bridge-resort.png",
       "category": "hotel",
@@ -25920,6 +25997,17 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/list/suites-of-euston.png",
+      "file": "suites-of-euston.png",
+      "category": "hotel",
+      "subcategory": "misc",
+      "group": "Hotels — misc",
+      "name": "suites of euston",
+      "iata": "",
+      "country": "",
+      "ext": "png"
     },
     {
       "path": "/logos/hotels/list/sutton-place-halifax.svg",
