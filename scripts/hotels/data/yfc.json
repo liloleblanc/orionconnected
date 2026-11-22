@@ -37,7 +37,7 @@
  "foot_marks": [],
  "notes": {
   "verified_definition": "verified true = read directly on 2026-11-22 on at least one official page: the hotel's own site, its brand property page, or the Fredericton Capital Region listing (frederictoncapitalregion.ca, the city's official tourism site: tourismfredericton.ca forwards there), and no official page read says otherwise. Where only one official page gives a fact, its note says so (one page is enough, as in the other files). verified false = not read (a page that answered 403), on no official page, or not settled: the note says which. The airport's own site (yfcfredericton.ca) lists no hotels. Tourism New Brunswick (tourismnewbrunswick.ca) answered 403 with a Cloudflare page: blocked, needs a person; not used. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js YFC --centre 45.96356,-66.64315) and is cited only beside an official page, or for a map point.",
-  "postal_note": "Postal codes are not shown on the cards. The Fredericton Capital Region listing prints none, so no postal code has two official pages: every one is marked verified false (one page) or left empty.",
+  "postal_note": "Postal codes are not shown on the cards. Every Fredericton Capital Region listing prints one in the address under its map (the map pop-up). A postal code is marked verified true only where two official pages agree: the listing and the hotel's own site or brand page (seven hotels, all agreeing). Where one official page gives it, it is marked verified false: the listing alone for the six hotels whose brand pages answered 403 (the Delta among them, held back), the own site alone for Riverside Resort (not on the listing).",
   "shuttle_note": "No Fredericton hotel carries the shuttle mark. The airport's Ground Transportation Services page (yfcfredericton.ca, read 2026-11-22) names car rentals, taxis (Checker Cab, Trius, Loyal) and ridesharing, and no hotel shuttle; no hotel page read names one. shuttle.offered null = unknown.",
   "season_note": "season.year_round true is the city-hotel default: the listings state no dates and no page read states a season or a closure, so season.verified is false everywhere. Riverside Resort says its pool and hot tub are closed for repair, not the hotel.",
   "sources": [
@@ -79,9 +79,10 @@
    "name": "Micro Boutique Fredericton",
    "address": "650 Waterloo Row, Fredericton",
    "kind": "apartment_suites",
-   "reason": "Furnished micro apartments (the listing files it under Alternative Accommodations: \"Modern furnished studios ... Micro Apartments\"; OpenStreetMap tourism=apartment). Off unless picked.",
+   "reason": "Furnished apartment suites: the listing files it under Alternative Accommodations as well as Hotel and says \"Each suite features queen-sized beds, fully equipped kitchens\" and \"Most apartments also come with private balconies\"; the Hotels index (page 2) sums it up as \"Modern furnished studios, 1-Bedroom, 2-bedroom and 3-bedroom Micro Apartments\"; OpenStreetMap tourism=apartment. Off unless picked.",
    "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/micro-boutique-fredericton",
    "also": [
+    "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hotels?field_area_target_id=All&page=1",
     "https://www.openstreetmap.org/node/13283006091"
    ]
   },
@@ -90,7 +91,7 @@
    "address": "3136 Woodstock Road, Fredericton",
    "phone": "(506) 458-8676",
    "kind": "motel",
-   "reason": "Motel (OpenStreetMap tourism=motel, \"Silverwood Motel\"); the listing files it as a hotel and its own site calls it an inn. Off as motel-like, as Coastal Inn Halifax and Coastal Inn Moncton/Dieppe. 9.7 km from the centre point.",
+   "reason": "Motel-like by OpenStreetMap alone (a candidate source: tourism=motel, \"Silverwood Motel\"); the listing files it as Hotel and its text calls it \"The Inn\". Kept off as motel-like, as Coastal Inn Halifax and Coastal Inn Moncton/Dieppe, until a person picks it. 9.7 km from the centre point.",
    "source": "https://www.openstreetmap.org/way/434017798",
    "also": [
     "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/silverwood-inn-suites",
@@ -282,9 +283,12 @@
      "checked": "2026-11-22"
     },
     "postal_code": {
-     "verified": false,
+     "verified": true,
      "source": "https://www.wyndhamhotels.com/days-inn/oromocto-new-brunswick/days-inn-and-conference-centre-oromocto",
-     "note": "Single official source (the brand page; the listing gives none). Not shown on the cards.",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-oromocto"
+     ],
+     "note": "Two official pages agree: the brand page and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -334,7 +338,7 @@
     "street": "620 Queen Street",
     "town": "Fredericton",
     "province": "NB",
-    "postal_code": "",
+    "postal_code": "E3B 1C2",
     "display": "620 Queen Street, Fredericton"
    },
    "phone": "(506) 999-1551",
@@ -390,8 +394,8 @@
     },
     "postal_code": {
      "verified": false,
-     "source": "",
-     "note": "No postal code on the official page read.",
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/hilton-garden-inn-fredericton",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Hilton page answered 403. Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -438,7 +442,7 @@
     "street": "659 Queen Street",
     "town": "Fredericton",
     "province": "NB",
-    "postal_code": "",
+    "postal_code": "E3B 1C3",
     "display": "659 Queen Street, Fredericton"
    },
    "phone": "(506) 455-3371",
@@ -493,8 +497,8 @@
     },
     "postal_code": {
      "verified": false,
-     "source": "",
-     "note": "No postal code on the official page read.",
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/crowne-plaza-lord-fredericton-beaverbrook",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the IHG page answered 403. Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -541,7 +545,7 @@
     "street": "225 Woodstock Road",
     "town": "Fredericton",
     "province": "NB",
-    "postal_code": "",
+    "postal_code": "E3B 2H8",
     "display": "225 Woodstock Road, Fredericton"
    },
    "phone": "(506) 457-7000",
@@ -597,8 +601,8 @@
     },
     "postal_code": {
      "verified": false,
-     "source": "",
-     "note": "No postal code on the official page read.",
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/delta-fredericton",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Marriott page answered 403. Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -705,9 +709,12 @@
      "checked": "2026-11-22"
     },
     "postal_code": {
-     "verified": false,
+     "verified": true,
      "source": "https://www.wyndhamhotels.com/days-inn/fredericton-new-brunswick/days-inn-fredericton",
-     "note": "Single official source (the brand page). Not shown on the cards.",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/days-inn-fredericton-wyndham"
+     ],
+     "note": "Two official pages agree: the brand page and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -757,7 +764,7 @@
     "street": "797 Prospect Street",
     "town": "Fredericton",
     "province": "NB",
-    "postal_code": "",
+    "postal_code": "E3B 5Y4",
     "display": "797 Prospect Street, Fredericton"
    },
    "phone": "(506) 453-0800",
@@ -813,8 +820,8 @@
     },
     "postal_code": {
      "verified": false,
-     "source": "",
-     "note": "No postal code on the official page read.",
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/comfort-inn",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Choice page answered 403. Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -921,9 +928,12 @@
      "checked": "2026-11-22"
     },
     "postal_code": {
-     "verified": false,
+     "verified": true,
      "source": "https://frederictoninn.nb.ca/",
-     "note": "Single official source (the own site). Not shown on the cards.",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/fredericton-inn"
+     ],
+     "note": "Two official pages agree: the own site and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -1033,9 +1043,12 @@
      "checked": "2026-11-22"
     },
     "postal_code": {
-     "verified": false,
+     "verified": true,
      "source": "https://amsterdaminns.com/properties/fredericton/",
-     "note": "Single official source (the own site). Not shown on the cards.",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/quality-inn-suites-amsterdam"
+     ],
+     "note": "Two official pages agree: the own site and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -1145,9 +1158,12 @@
      "checked": "2026-11-22"
     },
     "postal_code": {
-     "verified": false,
+     "verified": true,
      "source": "https://ramadafredericton.com/",
-     "note": "Single official source (the own site). Not shown on the cards.",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/ramada-fredericton"
+     ],
+     "note": "Two official pages agree: the own site and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -1257,9 +1273,12 @@
      "checked": "2026-11-22"
     },
     "postal_code": {
-     "verified": false,
+     "verified": true,
      "source": "https://www.wyndhamhotels.com/trademark/fredericton-new-brunswick/chateau-fredericton-trademark-collection",
-     "note": "Single official source (the brand page, \"E3C0B4\"). Not shown on the cards.",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/chateau-fredericton-wyndham"
+     ],
+     "note": "Two official pages agree: the brand page, \"E3C0B4\" and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -1370,9 +1389,12 @@
      "checked": "2026-11-22"
     },
     "postal_code": {
-     "verified": false,
+     "verified": true,
      "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
-     "note": "Single official source (the brand page). Not shown on the cards.",
+     "also": [
+      "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/best-western-plus-fredericton-hotel-suites"
+     ],
+     "note": "Two official pages agree: the brand page and the address under the map of the Fredericton Capital Region listing (its map pop-up). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -1387,7 +1409,7 @@
     "website": {
      "verified": true,
      "source": "https://www.bestwestern.com/en-us/book/hotel/fredericton/best-western-plus-fredericton-hotel-suites/64011",
-     "note": "The bestwestern.com address the listing links (property 64011) forwards here; answered 200.",
+     "note": "The listing links an old book.bestwestern.com address for property 64011; on a second read (2026-11-22) it forwarded to a bestwestern.com hotel-details page that answered 403 (not asked again). This property page (the same property code, 64011) answered 200 and was read directly.",
      "checked": "2026-11-22"
     },
     "latlng": {
@@ -1425,7 +1447,7 @@
     "street": "665 Prospect Street",
     "town": "Fredericton",
     "province": "NB",
-    "postal_code": "",
+    "postal_code": "E3B 6B8",
     "display": "665 Prospect Street, Fredericton"
    },
    "phone": "(506) 459-0035",
@@ -1481,8 +1503,8 @@
     },
     "postal_code": {
      "verified": false,
-     "source": "",
-     "note": "No postal code on the official page read.",
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/holiday-inn-express-suites",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the IHG page answered 403. Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -1529,7 +1551,7 @@
     "street": "41 Kingswood Way",
     "town": "Hanwell",
     "province": "NB",
-    "postal_code": "",
+    "postal_code": "E3C 2L4",
     "display": "41 Kingswood Way, Hanwell"
    },
    "phone": "(506) 206-6270",
@@ -1579,8 +1601,8 @@
     },
     "postal_code": {
      "verified": false,
-     "source": "",
-     "note": "No postal code on the official page read.",
+     "source": "https://www.frederictoncapitalregion.ca/plan-your-visit/accommodations/radisson-kingswood-hotel-suites",
+     "note": "Single official source: the address under the map of the Fredericton Capital Region listing (its map pop-up), read 2026-11-22; the Radisson page answered 403. Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
@@ -1684,7 +1706,7 @@
     "postal_code": {
      "verified": false,
      "source": "https://www.riversideresort.ca/",
-     "note": "Single official source (the own site). Not shown on the cards.",
+     "note": "Single official source (the own site; the resort is not on the Fredericton Capital Region listing). Not shown on the cards.",
      "checked": "2026-11-22"
     },
     "phone": {
