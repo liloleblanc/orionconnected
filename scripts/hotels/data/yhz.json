@@ -3009,8 +3009,13 @@
     "evidence": "No shuttle stated on the pages read (2026-11-21).",
     "checked": "2026-11-21"
    },
-   "logo": null,
-   "logo_missing": "No logo file published: the site, its PDFs and the tourism listings carry only a cropped site icon. The name alone (searched twice, 21 Nov 2026).",
+   "logo": {
+    "file": "/logos/hotels/list/commons-inn.svg",
+    "opaque": false,
+    "source": "https://commonsinn.ca/",
+    "origin": "drawing of the inn’s own header logo (the name over five gold stars), supplied 21 Nov 2026"
+   },
+   "logo_missing": null,
    "listed": true,
    "not_listed_reason": null,
    "verified": {
