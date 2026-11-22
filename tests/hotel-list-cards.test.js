@@ -235,13 +235,13 @@ test('nothing closed for the season, and a hotel held back never shows', () => {
   // Thriftlodge in Moncton and Dundee Arms Inn in Charlottetown, are off the cards)
   assert.deepEqual(H.cards(DOCS.YQM, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:5', 'downtown:11', 'nearby:11', 'resort:1']);
   assert.deepEqual(H.cards(DOCS.YYG, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:5', 'downtown:11', 'nearby:2', 'resort:3']);
-  // Halifax (v24170): 36 of 39 listed; held back, the Garden South Park Inn (a bed and breakfast by
-  // its listing), the Hampton Inn & Suites Dartmouth (the listings give two telephones) and the
-  // Holiday Inn Express Dartmouth (the listings give two streets)
-  assert.deepEqual(H.cards(DOCS.YHZ, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:4', 'downtown:19', 'nearby:13']);
-  for (const held of ['garden-south-park-inn', 'hampton-halifax-dartmouth', 'hix-halifax-dartmouth']) {
-    for (const d of [NOV16, day(2026, 7, 15)]) assert.ok(!ids('YHZ', d).includes(held), held + ' is held back');
-  }
+  // Halifax (v24174): 38 of 39 listed; held back, the Garden South Park Inn (a bed and breakfast by
+  // its listing). The two Dartmouth hotels held in v24170 are on: the Hampton's telephone settled by
+  // its own Hilton page, the Holiday Inn Express street by Halifax's civic address register and its
+  // own IHG page
+  assert.deepEqual(H.cards(DOCS.YHZ, NOV16).map((c) => c.area + ':' + c.hotels.length), ['airport:4', 'downtown:19', 'nearby:15']);
+  for (const d of [NOV16, day(2026, 7, 15)]) assert.ok(!ids('YHZ', d).includes('garden-south-park-inn'), 'garden-south-park-inn is held back');
+  for (const on of ['hampton-halifax-dartmouth', 'hix-halifax-dartmouth']) assert.ok(ids('YHZ', NOV16).includes(on), on + ' is listed');
   for (const [city, id] of [['YQM', 'coastal-inn-dieppe'], ['YQM', 'thriftlodge-moncton'], ['YYG', 'dundee-arms']]) {
     assert.ok(!ids(city, NOV16).includes(id), id + ' is off the cards');
   }

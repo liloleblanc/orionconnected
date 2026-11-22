@@ -44,7 +44,8 @@ Sources: the hotels' own sites and brand property pages; Destination Moncton-Die
 the Greater Moncton airport's hotels and transport pages (cyqm.ca); Tourism PEI listings (with
 dates of operation); Charlottetown Airport's ground-transportation page (flyyyg.com); for Halifax,
 the Discover Halifax and Tourism Nova Scotia listings (the map points come from the listings
-and the hotels' own pages) and Halifax Stanfield's Visiting Halifax page (halifaxstanfield.ca);
+and the hotels' own pages) and Halifax Stanfield's Visiting Halifax page (halifaxstanfield.ca); Halifax's civic address register
+(HRM open data, Civic Addresses) to settle a street the listings disagree on;
 OpenStreetMap (positions in Moncton and Charlottetown, ODbL, "© OpenStreetMap contributors"); the OSRM public router on
 OpenStreetMap roads for the drive distances to the resorts. A search index was used only for
 some brand-hotel postal codes, which are marked `verified: false` (postal codes are not shown).
