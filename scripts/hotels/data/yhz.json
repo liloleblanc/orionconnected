@@ -3421,7 +3421,7 @@
   },
   {
    "id": "hix-halifax-dartmouth",
-   "name": "Holiday Inn Express Hotel and Suites Halifax–Dartmouth",
+   "name": "Holiday Inn Express & Suites Halifax–Dartmouth",
    "area": "nearby",
    "resort": false,
    "brand": "Holiday Inn Express",
@@ -3468,26 +3468,28 @@
     "trim": "inset(15.2% 0.0% 15.5% 0.0%)"
    },
    "logo_missing": null,
-   "listed": false,
-   "not_listed_reason": "The two official listings disagree on the street (Tourism Nova Scotia: 335 John Savage Avenue; Discover Halifax: 335 John Savage Dr) and the IHG pages answer 403 to automated readers: blocked, needs a person to confirm the address.",
+   "listed": true,
+   "not_listed_reason": null,
    "verified": {
     "name": {
+     "verified": true,
+     "source": "https://www.ihg.com/holidayinnexpress/hotels/us/en/dartmouth/yhzdj/hoteldetail",
+     "also": [
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
+     ],
+     "note": "The hotel’s own IHG page (read by a person, 2026-11-22) names it Holiday Inn Express & Suites Halifax-Dartmouth; Tourism Nova Scotia prints \"Holiday Inn Express Hotel and Suites Halifax–Dartmouth\", Discover Halifax \"Holiday Inn Express + Suites Dartmouth\". The hotel’s own name is used.",
+     "checked": "2026-11-22"
+    },
+    "street": {
      "verified": true,
      "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
      "also": [
       "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
      ],
-     "note": "Discover Halifax prints \"Holiday Inn Express + Suites Dartmouth\".",
-     "checked": "2026-11-21"
-    },
-    "street": {
-     "verified": false,
-     "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
-     "also": [
-      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
-     ],
-     "note": "Sources disagree: Tourism Nova Scotia prints \"335 John Savage Avenue\", Discover Halifax \"335 John Savage Dr\" (re-read 2026-11-21). OpenStreetMap says Avenue (a candidate only). The IHG pages answered 403: blocked, needs a person.",
-     "checked": "2026-11-21"
+     "note": "The listings disagreed (Tourism Nova Scotia \"335 John Savage Avenue\", Discover Halifax \"335 John Savage Dr\"). Settled by Halifax’s own civic address register (HRM open data, Civic Addresses): civic 335, street JOHN SAVAGE, type AVE, postal B3B 0J3, Dartmouth (CIV_ID 167601, read 2026-11-22). The IHG pages refuse automated reads. The hotel’s own IHG page, read by a person on 2026-11-22, gives the same: 335 John Savage Avenue, Building 1, Dartmouth, NS B3B 0J3.",
+     "checked": "2026-11-22",
+     "settled_by": "https://services2.arcgis.com/11XBiaBYA9Ep0yNJ/arcgis/rest/services/CivicAddresses/FeatureServer/0",
+     "also_confirmed_by": "https://www.ihg.com/holidayinnexpress/hotels/us/en/dartmouth/yhzdj/hoteldetail"
     },
     "postal_code": {
      "verified": false,
@@ -3499,9 +3501,11 @@
      "verified": true,
      "source": "https://novascotia.com/listing/holiday-inn-express-hotel-and-suites-halifax-dartmouth/",
      "also": [
-      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/"
+      "https://discoverhalifaxns.com/listings/holiday-inn-express-suites-dartmouth/",
+      "https://www.ihg.com/holidayinnexpress/hotels/us/en/dartmouth/yhzdj/hoteldetail"
      ],
-     "checked": "2026-11-21"
+     "checked": "2026-11-22",
+     "note": "The hotel’s own IHG page (read by a person, 2026-11-22): front desk +1-902-4311122. Reservations 1 877 660 8550."
     },
     "website": {
      "verified": false,
@@ -3530,11 +3534,11 @@
     }
    },
    "osm": "https://www.openstreetmap.org/way/815093594",
-   "notes": "Held back until a person settles the street (Avenue or Drive)."
+   "notes": null
   },
   {
    "id": "hampton-halifax-dartmouth",
-   "name": "Hampton Inn & Suites Halifax Dartmouth",
+   "name": "Hampton Inn & Suites by Hilton Halifax – Dartmouth",
    "area": "nearby",
    "resort": false,
    "brand": "Hampton by Hilton",
@@ -3580,17 +3584,17 @@
     "origin": "Wikimedia Commons"
    },
    "logo_missing": null,
-   "listed": false,
-   "not_listed_reason": "The two official listings give different telephones (Tourism Nova Scotia (902) 406-7700, Discover Halifax (902) 406-7704) and the Hilton page answers 403 to automated readers: blocked, needs a person to confirm the number.",
+   "listed": true,
+   "not_listed_reason": null,
    "verified": {
     "name": {
      "verified": true,
-     "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
+     "source": "https://www.hilton.com/en/hotels/yhzdthx-hampton-suites-halifax-dartmouth/",
      "also": [
       "https://discoverhalifaxns.com/listings/hampton-inn-suites-dartmouth/"
      ],
-     "note": "Discover Halifax prints \"Hampton Inn & Suites Dartmouth\".",
-     "checked": "2026-11-21"
+     "note": "The hotel’s own Hilton page (read by a person, 2026-11-22) names it HAMPTON INN & SUITES BY HILTON HALIFAX - DARTMOUTH; Tourism Nova Scotia prints \"Hampton Inn & Suites Halifax Dartmouth\", Discover Halifax \"Hampton Inn & Suites Dartmouth\". The hotel’s own name is used.",
+     "checked": "2026-11-22"
     },
     "street": {
      "verified": true,
@@ -3609,13 +3613,14 @@
      "checked": "2026-11-21"
     },
     "phone": {
-     "verified": false,
+     "verified": true,
      "source": "https://novascotia.com/listing/hampton-inn-suites-halifax-dartmouth/",
      "also": [
       "https://discoverhalifaxns.com/listings/hampton-inn-suites-dartmouth/"
      ],
-     "note": "Sources disagree: Tourism Nova Scotia (902) 406-7700, Discover Halifax (902) 406-7704. Toll-free (877) 406-7701 on Tourism Nova Scotia.",
-     "checked": "2026-11-21"
+     "note": "The listings disagreed (Tourism Nova Scotia (902) 406-7700, Discover Halifax (902) 406-7704). Settled by the hotel’s own Hilton page, read by a person on 2026-11-22 (the page refuses automated reads): +1 902-406-7700, at 65 Cromarty Drive, Dartmouth, B3B 0G2. Toll-free (877) 406-7701 on Tourism Nova Scotia.",
+     "checked": "2026-11-22",
+     "settled_by": "https://www.hilton.com/en/hotels/yhzdthx-hampton-suites-halifax-dartmouth/"
     },
     "website": {
      "verified": false,
