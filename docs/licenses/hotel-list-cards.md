@@ -32,6 +32,15 @@ ink, a fine gold rule, Playfair Display and Montserrat), sized at 1680x1050 (hea
 code as large as the card leaves room for, 420 px at most, the invitation 26 px). No logo, no
 hotel, no price. One view, held 20 seconds (`FIND_MS`).
 
+Behind the heading and the code, the city in its own photograph: the day picture the weather card
+shows for it (`_wxCityPic` in `fids-core.js`), only from the board's own checked set
+(`/logos/cities/<CODE>.jpg`), never the picture service, so every picture is one already picked,
+licensed and recorded for the weather card (its source on the credits page). Where its licence
+asks for a credit, the photographer is named beside the code with the weather card's own line
+(`_wxPicCreditHtml`, 18 px, white). The heading turns white over a navy shade at the top of the
+picture, and the code stands on a tile of the card's own cream, its quiet zone (never white). A
+city with no picture of its own, or a board without the weather card, shows the plain cream card.
+
 Where it shows: the city is chosen as `cityFor()` chooses a list city (the city the flight goes
 to, then its stops from the last), for any code the board has a name for
 (`airportCityNameSafe_v21877`, the city tables of every board; cased as the gate writes cities,

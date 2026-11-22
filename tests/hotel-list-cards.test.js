@@ -50,7 +50,7 @@ const NOV16 = day(2026, 11, 16);
 // it for one check and taken away again.
 function onGate(g, run) {
   const names = ['_gateIata', '_gateCurrentFlight', '_flightLegs', 'BoardStrings', 'frFirstAirport', '_gateMapCity', '_gateAccorPass', 'location', 'airportCityNameSafe_v21877',
-    '_IATA_CC', 'airportCountry', '_rowRegion', 'QRCode', 'getComputedStyle', '_axrPageSync'];
+    '_IATA_CC', 'airportCountry', '_rowRegion', 'QRCode', 'getComputedStyle', '_axrPageSync', '_wxCityPic', '_wxPicCreditHtml'];
   const keep = {};
   names.forEach((n) => { keep[n] = Object.getOwnPropertyDescriptor(globalThis, n); });
   try {
@@ -595,9 +595,10 @@ test('a light card: the logos stand on its cream, never a box behind one logo; t
   assert.match(CSS, /\.hlc-row\{ flex:0 0 20%;/);
   // a card where no line has a logo has no logo cell, and its names start at the card's edge
   assert.match(CSS, /\.hlc-list--bare \.hlc-logo\{ display:none; \}\n\.hlc-list--bare \.hlc-text\{ padding-left:var\(--hlc-pad\); \}/);
-  // the scan code: navy modules on the cream, no white box
+  // the scan code: navy modules on the cream, no white box (on the photograph of a city without
+  // a list the code stands on a tile of that same cream, its quiet zone: never white)
   assert.match(SRC, /colorDark: '#14203c', colorLight: '#f5efe3'/);
-  assert.doesNotMatch(CSS, /\.hlc-qr\{[^}]*background/);
+  assert.doesNotMatch(CSS.replace(/\.hlc-find--pic \.hlc-find-scan \.hlc-qr\{ background:var\(--hlc-cream\);/, ''), /\.hlc-qr\{[^}]*background/);
   const list = (city, area, pass) => {
     const v = views(build(city, ['en', 'fr'], { pass: pass || 0 })).find((x) => x.includes('data-area="' + area + '"'));
     const m = /<ol class="(hlc-list[^"]*)" style="--hlc-rows:(\d)">/.exec(v);
@@ -743,7 +744,8 @@ test('every other city: one card, its heading in the languages of the board, one
   // a list city's codes carry no such part
   assert.doesNotMatch(onGate(placed(), () => H.build(RUN.YQM, ['en'], { date: NOV16, home: 'YYZ' })), /&amp;in=/);
   assert.equal(onGate({ location: { hostname: 'yhz.orionconnected.com', origin: 'https://yhz.orionconnected.com', search: '' } }, () => H.qrUrl('YYZ', '', 'YHZ')), 'https://orionconnected.app/app?ap=YHZ&hotels=YYZ');
-  // no logo, no picture, no hotel, no price: the only drawing is the phone mark
+  // no logo, no hotel, no price (and, on a board without the weather card, no picture): the only
+  // drawing is the phone mark
   assert.doesNotMatch(html, /<img|<style|data-hotel=|\$|€|£/);
   assert.deepEqual([...html.matchAll(/<svg[\s\S]*?<\/svg>/g)].map((m) => m[0]), [H.ICON.smartphone]);
   // a board of one language says it once; a pair whose two lines say the same says it once
@@ -763,6 +765,38 @@ test('every other city: one card, its heading in the languages of the board, one
   assert.equal(onGate(anyGate(), () => H.buildFind('QQZ', ['en', 'fr'], {})), '');
   // the module writes no word of its own: the heading and the invitation are the store's
   assert.doesNotMatch(SRC, /'Hotels in|'Scan to search|'Search in (Google|Apple)/);
+});
+
+test('every other city: the city in its own photograph behind the card, the one the weather card shows, its photographer named where the licence asks; the plain card without one', () => {
+  const credit = (urls, cls) => (urls[0] === '/logos/cities/YUL.jpg' ? '<div class="' + cls + '"><span class="pcr-who">A</span></div>' : '');
+  const asked = [];
+  const pic = (u) => anyGate({ _wxCityPic: (c, night) => { asked.push([c, night]); return u.split('{C}').join(c); }, _wxPicCreditHtml: credit });
+  const yyz = onGate(pic('/logos/cities/{C}.jpg'), () => H.buildFind('YYZ', ['fr', 'en'], { home: 'YHZ' }));
+  // the day picture of the city the card names
+  assert.deepEqual(asked[0], ['YYZ', false]);
+  assert.match(yyz, /<div class="axr-page hlc-view hlc-find hlc-find--pic axr-page-on" data-area="find"><div class="hlc-find-pic" aria-hidden="true" style="background-image:url\(&#39;\/logos\/cities\/YYZ\.jpg&#39;\)"><\/div><div class="hlc-find-head">/);
+  // a picture whose licence asks for nothing names nobody; one that does names its photographer
+  // beside the code, with the weather card's own line
+  assert.doesNotMatch(yyz, /hlc-find-credit/);
+  const yul = onGate(pic('/logos/cities/{C}.jpg'), () => H.buildFind('YUL', ['fr', 'en'], { home: 'YHZ' }));
+  assert.ok(yul.includes('"></div><div class="hlc-find-credit"><span class="pcr-who">A</span></div></div>'), 'the credit inside the code’s area');
+  // only a picture of the board's own set: never the picture service, a night picture, another
+  // site, or an address that would break out of the style
+  for (const u of ['/citypic?iata={C}&q=Toronto', '/logos/cities/{C}-night.jpg', '', 'https://x.example/logos/cities/{C}.jpg', "/logos/cities/{C}.jpg');background:red;('", '/logos/cities/../{C}.jpg']) {
+    const h = onGate(pic(u), () => H.buildFind('YYZ', ['en'], {}));
+    assert.doesNotMatch(h, /hlc-find-pic|hlc-find--pic|hlc-find-credit/, u);
+    assert.match(h, /^<div class="hlc hlc--find hlc--one"/, u);
+  }
+  // a board whose picture function fails shows the plain card
+  assert.doesNotMatch(onGate(anyGate({ _wxCityPic: () => { throw new Error('x'); } }), () => H.buildFind('YYZ', ['en'], {})), /hlc-find-pic/);
+  // the look: navy at the top for a white heading, the code on a tile of the card's own paper
+  // (its quiet zone), the photographer in white beside it; inside the section, never after the foot
+  const at = CSS.indexOf('.hlc .hlc-find--pic{');
+  assert.ok(at > CSS.indexOf('/* ── the card of a city without a list') && at < CSS.indexOf('/* ── foot ── */'));
+  assert.match(CSS, /\.hlc-find-pic\{ position:absolute; inset:0; z-index:-1; background-position:center; background-size:cover;/);
+  assert.match(CSS, /\.hlc-find--pic \.hlc-find-title\{ color:#fff;/);
+  assert.match(CSS, /\.hlc-find--pic \.hlc-find-scan \.hlc-qr\{ background:var\(--hlc-cream\);/);
+  assert.match(CSS, /\.hlc-find-credit\{ position:absolute;[^}]*font-size:calc\(18 \* var\(--hlc-px\)\);/);
 });
 
 test('every other city: the look, the family of the list cards, sized for the 1680x1050 stage', () => {

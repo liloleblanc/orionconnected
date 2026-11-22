@@ -483,6 +483,18 @@
     return '<div class="hlc' + (L.length < 2 ? ' hlc--one' : '') + '" data-city="' + esc(city) + '">'
       + '<div class="axr-pages hlc-views">' + html + '</div></div>';
   }
+  // The picture of the city behind the card: the same checked photograph the weather card shows
+  // for it (fids-core's _wxCityPic, the day picture), only from the board's own set of pictures
+  // (/logos/cities/), never the picture service. '' where the board has none: the plain card.
+  function picOf(c) {
+    var u = '';
+    try { u = typeof root._wxCityPic === 'function' ? String(root._wxCityPic(c, false) || '') : ''; } catch (e) { u = ''; }
+    return /^\/logos\/cities\/[A-Z]{3}\.jpg$/.test(u) ? u : '';
+  }
+  // The photographer, where the licence asks for a credit: the weather card's own line.
+  function creditOf(u) {
+    try { return typeof root._wxPicCreditHtml === 'function' ? String(root._wxPicCreditHtml([u], 'hlc-find-credit') || '') : ''; } catch (e) { return ''; }
+  }
   // The card of a city without a list: "Hotels in {CITY}", one line for each language of the
   // board (a line that says the same as the one before it is left out), the scan code to the
   // phone app (with where the city is, whereOf, for its map search), and the invitation in the
@@ -504,11 +516,13 @@
     });
     if (!head.length) return '';
     var say = linesOf(L, function (lg) { return BS.bs('hotelsFindScan', lg); }, 'hotelsFindScan');
+    var pic = picOf(c), cred = pic ? creditOf(pic) : '';
     return '<div class="hlc hlc--find' + (L.length < 2 ? ' hlc--one' : '') + '" data-city="' + esc(c) + '">'
       + '<div class="axr-pages hlc-views">'
-      +   '<div class="axr-page hlc-view hlc-find axr-page-on" data-area="find">'
+      +   '<div class="axr-page hlc-view hlc-find' + (pic ? ' hlc-find--pic' : '') + ' axr-page-on" data-area="find">'
+      +     (pic ? '<div class="hlc-find-pic" aria-hidden="true" style="background-image:url(&#39;' + esc(pic) + '&#39;)"></div>' : '')
       +     '<div class="hlc-find-head"><div class="hlc-find-title">' + head.join('') + '</div></div>'
-      +     '<div class="hlc-find-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(c, '', o.home, whereOf(c))) + '"></div></div>'
+      +     '<div class="hlc-find-scan"><div class="hlc-qr" data-qr-url="' + esc(qrUrl(c, '', o.home, whereOf(c))) + '"></div>' + cred + '</div>'
       +     '<div class="hlc-foot hlc-find-foot">' + ico('smartphone', 'hlc-find-ico') + '<div class="hlc-find-say">' + say + '</div></div>'
       +   '</div>'
       + '</div></div>';
