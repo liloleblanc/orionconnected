@@ -45,8 +45,9 @@ of the list cards, at 1680x1050:
   checked file with `verified: false` and the reason in its note, and the build step leaves it off its page.
   Toronto: downtown, the UP Express to Union, 28 minutes, every 15 (upexpress.com, read 2026-11-22); near the
   airport, none: the airport's Link train is held as a line for the whole area, since its operator's own site,
-  torontopearson.com, is blocked, and the pages that were read (Alt Hotel's own) show it reaching only Viscount
-  station, where the Alt Hotel is, not the other airport hotels. It shows per hotel instead (below);
+  torontopearson.com, is blocked, and the pages that were read (Alt Hotel's own) show it joining the terminals
+  and Viscount station, where the Alt Hotel is, and reaching none of the hotels away from the terminals and
+  Viscount. It shows per hotel instead (below);
 - how a hotel is reached from the terminals (v24178, `access` in the data), on the lines of the hotels it
   reaches: the train mark at the right of the line, then its stop of the airport's train (data, as written:
   **Viscount** for the Alt Hotel, from its own contact page) or the terminal it is joined to (the board's own
@@ -57,7 +58,8 @@ of the list cards, at 1680x1050:
   destination's terminal. On a page with such a line, one legend line beside the same mark: **Link train from
   Terminal 1** (`hotelsTrainFrom`; the line and the terminal are data, `line` and `from`). Nothing about fares
   or hours: those would need the operator's own page. A note that gives way to a long name takes its legend
-  with it when it was the last one;
+  with it when it was the last one. The phone app's full list shows the same note under the hotel's address,
+  in the phone's language, and the legend under the heading of the area;
 - on a page that shows a verified shuttle mark, the legend of the mark (`hotelShuttle`) beside a bus mark;
 - on a page with no card hotel, the place of a partner hotel in a dashed frame: **Partner hotel** and
   **Placement available** (`hotelsPartnerSlot`, `hotelsPlacement`), one line a language. It also shows on the
@@ -112,12 +114,16 @@ not read another way: each is in `excluded` with the page a person should read (
 person who reads the page records each fact with that page and the date, moves the hotel into `hotels`, and
 runs the build step; the airport page grows a line at a time, and a page only shows with three hotels.
 
-On 2026-11-23 a person read seven of them in a browser (v24178), and each fact they read keeps its page, the
-date and the method ("read by a person in a browser, 2026-11-23"), with the line they copied as its quote where
-there is one. Listed: the Sheraton Gateway, the Element and the Four Points (one building at 6257 Airport Road,
-each with its own telephone), the Hampton Inn & Suites and the Fairfield (marriott.com, hilton.com), and the
-Quality Inn (visitmississauga.ca, Mississauga's official tourism site; the place is the OpenStreetMap hotel on
-Airport Road between numbers 6257 and 6465). Shuttle marks from those brand pages for the Element, the Four
+On 2026-11-23 a person tried seven of them in a browser and read six (v24178), and each fact they read keeps
+its page, the date and the method ("read by a person in a browser, 2026-11-23"), the shuttle facts included,
+with the line they copied as its quote where there is one. Listed: the Sheraton Gateway, the Element and the
+Four Points (one building at 6257 Airport Road, each with its own telephone), the Hampton Inn & Suites and the
+Fairfield (marriott.com, hilton.com), and the Quality Inn (visitmississauga.ca, Mississauga's official tourism
+site; the place is the OpenStreetMap hotel on Airport Road between number 6257 and the OpenStreetMap point of
+the Nu Hotel, whose address, 6465, is only a lead). The Element and the Fairfield keep the names the person
+confirmed in the check; the line each copied from the same page writes Marriott's long form ("Element by
+Marriott Toronto Airport", "Fairfield by Marriott Inn & Suites Toronto Airport"), and both forms are recorded
+until a person reads the page heading. Shuttle marks from those brand pages for the Element, the Four
 Points, the Hampton and the Fairfield; none for the Quality Inn, whose shuttle is named only on the tourism
 listing (as the Hyatt Place), and none for the Sheraton Gateway, which is joined to Terminal 3 (its way there
 is its access note). The Nu Hotel's page would not open for the person either: it stays excluded. Toronto now

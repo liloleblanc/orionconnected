@@ -12,7 +12,7 @@
   "shuttle": "shuttle.mark true only where the shuttle is verified on the hotel's or the airport's own page.",
   "logo": "logo.file is loaded through <img>, never inlined; opaque = the file has its own light ground (shown with a multiply blend on the cream column so the box does not show).",
   "logo_fill": "logo.fill true = a stacked lockup whose words are small at the common logo height (62 px at 1680x1050): it may take the whole cell of the cream column, the width of the column and the height of its line. The file is shown as it is.",
-  "access": "access = how a hotel of a hub city is reached from the terminals by the airport’s own train, shown at the right of its line in place of the shuttle mark and the street: kind link (its stop of the train, data: stop) or terminal (joined to a terminal: terminal, its number); line and from (the line, and the terminal it is taken from) give the legend of the page. Only where verified on the hotel’s own page or its brand property page (a person’s reading in a browser counts, with the date); the slim copy carries only the verified ones, without their sources. It claims no fare and no hours."
+  "access": "access = how a hotel of a hub city is reached from the terminals by the airport’s own train, shown at the right of its line in place of the shuttle mark and the street: kind link (its stop of the train, data: stop) or terminal (joined to a terminal: terminal, its number, or as the airport writes it: 2E, B); line and from (the line, and the terminal it is taken from) give the legend of the page. Only where verified on the hotel’s own page or its brand property page (a person’s reading in a browser counts, with the date); the slim copy carries only the verified ones, without their sources. It claims no fare and no hours. The build step refuses a verified line for the whole area on the same line (hub.areas.<area>.transit): one train said twice."
  },
  "points": {
   "airport": {
@@ -48,7 +48,7 @@
        "evidence": "\"Take the free 24-hour Link train to travel between the hotel, the economy parking lot, and airport terminals.\""
       }
      ],
-     "note": "Held (verified false), so the build step leaves it off the airport page: the hub rule asks for each fact on the operator’s own page, and the operator of the Link train, the airport (torontopearson.com), is blocked, needs a person. Read only: Terminals 1 and 3 from the operator of the UP Express; free, 24 h and every 4 to 8 minutes from Alt Hotel’s own pages. Those pages also show the train reaching only Viscount station, where the Alt Hotel is (its last stop), not the other airport hotels: a line for the whole area would read as a free train to all of them. A person who reads the operator’s page decides whether it comes back, and whether it belongs to the area or to the Alt Hotel alone. No readable page lists the three stops in order. No general hotel-shuttle pick-up point is verified: shuttle pick-up stays per hotel. The Link train shows per hotel instead (access, v24178): on the line of the Alt Hotel (Viscount station, its own page) and of the Sheraton Gateway (Terminal 3, its brand page as read by a person), with one legend line, the Link train from Terminal 1. No fare and no hours are claimed."
+     "note": "Held (verified false), so the build step leaves it off the airport page: the hub rule asks for each fact on the operator’s own page, and the operator of the Link train, the airport (torontopearson.com), is blocked, needs a person. Read only: Terminals 1 and 3 from the operator of the UP Express; free, 24 h and every 4 to 8 minutes from Alt Hotel’s own pages. Those pages show the train joining the terminals and Viscount station, where the Alt Hotel is (its last stop), and reaching none of the hotels away from the terminals and Viscount: a line for the whole area would read as a free train to all of them. A person who reads the operator’s page decides whether it comes back, and whether it belongs to the area or to the Alt Hotel alone. No readable page lists the three stops in order. No general hotel-shuttle pick-up point is verified: shuttle pick-up stays per hotel. The Link train shows per hotel instead (access, v24178): on the line of the Alt Hotel (Viscount station, its own page) and of the Sheraton Gateway (Terminal 3, its brand page as read by a person), with one legend line, the Link train from Terminal 1. No fare and no hours are claimed."
     }
    },
    "downtown": {
@@ -80,9 +80,9 @@
  },
  "foot_marks": [],
  "notes": {
-  "verified_definition": "verified true = read directly on 2026-11-22 on at least one official page, or read by a person in a browser on 2026-11-23 on a page that refuses automated readers (method says so; seven hotels): the hotel’s own site, its brand property page (including the Accor pages all.accor.com and Four Seasons’ own press room for the hotel), or the official tourism booking listing of Destination Toronto (stay.destinationtoronto.com, see unverified), and no official page read says otherwise; the quote is the page’s own words. Where one official page alone gives a fact, the hotel’s notes say so (one page is enough, as in the other cities). verified false = not read (403, a bot wall, a JS shell or no answer), on no official page, only on a hotel group’s portfolio site (Easton’s, Manga, Silver Hotel Group: not one of the four official sources), or official pages that disagree: the note says which. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js); its positions are kept for the area distances, with its credit, and no fact rests on it alone. Each fact was checked twice: a first pass and an adversarial re-check, then a second pass on the hotels held back.",
+  "verified_definition": "verified true = read directly on 2026-11-22 on at least one official page, or read by a person in a browser on 2026-11-23 on a page that refuses automated readers (method says so; six hotels: a seventh page, the Nu Hotel’s, would not open): the hotel’s own site, its brand property page (including the Accor pages all.accor.com and Four Seasons’ own press room for the hotel), or the official tourism booking listing of Destination Toronto (stay.destinationtoronto.com, see unverified), and no official page read says otherwise; the quote is the page’s own words. Where one official page alone gives a fact, the hotel’s notes say so (one page is enough, as in the other cities). verified false = not read (403, a bot wall, a JS shell or no answer), on no official page, only on a hotel group’s portfolio site (Easton’s, Manga, Silver Hotel Group: not one of the four official sources), or official pages that disagree: the note says which. OpenStreetMap only found the hotels (scripts/hotels/find-candidates.js); its positions are kept for the area distances, with its credit, and no fact rests on it alone. Each fact was checked twice: a first pass and an adversarial re-check, then a second pass on the hotels held back.",
   "postal_note": "Postal codes are not shown on the cards. A postal code is marked verified true only where two official pages agree. Where the pages disagree (Kimpton Saint George, The Sutton Place, The Beverley) or none prints one, it is left empty or marked verified false.",
-  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the hotel’s own page says so (the airport’s own page, torontopearson.com, is blocked): Sandman Signature Toronto Airport and Mississauga (free, 24 hours); the Element, the Four Points, the Hampton Inn & Suites and the Fairfield (free; their brand property pages, read by a person in a browser on 2026-11-23); and Woodbine Hotel and Suites (PAID, \"a nominal fee\"; held, still trading?). Best Western Premier Toronto Airport Carlingview names a free 24/7 shuttle on a brand page that answered 403 (excluded, blocked). A shuttle named only on a tourism listing (Hyatt Place; the Quality Inn, on visitmississauga.ca) or a hotel group’s site (TownePlace) is not marked. The Sheraton Gateway is joined to Terminal 3: no hotel shuttle, its access note instead. The Alt Hotel uses the airport’s free Link train, not a shuttle: its access note (Viscount station); the area-wide line stays held (hub.areas.airport: its operator’s page is blocked). shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read.",
+  "shuttle_note": "shuttle.mark true = the card shows the shuttle mark, only where the hotel’s own page says so (the airport’s own page, torontopearson.com, is blocked): Sandman Signature Toronto Airport and Mississauga (free, 24 hours); the Element, the Four Points, the Hampton Inn & Suites and the Fairfield (free; their brand property pages, read by a person in a browser on 2026-11-23); and Woodbine Hotel and Suites (PAID, \"a nominal fee\"; held, still trading?). Best Western Premier Toronto Airport Carlingview names a free 24/7 shuttle on a brand page that answered 403 (excluded, blocked). A shuttle named only on a tourism listing (Hyatt Place; the Quality Inn, on visitmississauga.ca) or a hotel group’s site (TownePlace) is not marked. The Sheraton Gateway is joined to Terminal 3: no page read names a hotel shuttle of its own (offered unknown), its access note instead. The Alt Hotel uses the airport’s free Link train, not a shuttle: its access note (Viscount station); the area-wide line stays held (hub.areas.airport: its operator’s page is blocked). shuttle.offered is true / false / null (unknown), shuttle.terms what the page says to do, shuttle.evidence the words read.",
   "season_note": "season.year_round true = open all year. season.verified true only where a page says in words that the hotel is open all year: no Toronto page does. Two pages say \"all year\" of something else, kept in season.note as support only: Fairmont Royal York’s offers block (\"Available all year-round\", of an offer) and Windsor Arms’ tea rooms (\"every day of the year\"). Everywhere year_round true is the city-hotel default (verified false), recorded with the page that shows the hotel taking bookings or running round the clock and no closure (season.note quotes it), as Chateau Bedford in yhz.json. Kimpton Saint George and Four Seasons Hotel Toronto rest on the default with no such line beyond their booking buttons or opening date.",
   "sources": [
    "Hotels’ own sites and brand property pages, read directly with WebFetch on 2026-11-22 (each fact’s source names the page)",
@@ -397,7 +397,7 @@
    "id": "nu-hotel",
    "name": "Nu Hotel",
    "kind": "blocked",
-   "reason": "Blocked, needs a person: nuhoteltoronto.com (expired TLS certificate) and visitmississauga.ca (empty JS shell); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): 6465 Airport Road, Mississauga L4V 1E4, (905) 612-1119, a free 24-hour shuttle. An expired certificate on the whole site may mean it is no longer kept up. A person tried the page in a browser on 2026-11-23: it would not open there either.",
+   "reason": "Blocked, needs a person: nuhoteltoronto.com (expired TLS certificate) and visitmississauga.ca (empty JS shell); not confirmed. Leads only (OpenStreetMap or search snippets, not facts): 6465 Airport Road, Mississauga L4V 1E4, (905) 612-1119, a free 24-hour shuttle. An expired certificate on the whole site may mean it is no longer kept up. A person tried https://nuhoteltoronto.com/ in a browser on 2026-11-23: it would not open there either.",
    "source": "https://www.openstreetmap.org/node/10224698079",
    "read": "https://nuhoteltoronto.com/contact/",
    "also": [
@@ -2107,7 +2107,7 @@
   "Nearby hotels are not checked: a hub city’s pages show the airport and downtown only (excluded, kind \"nearby_not_checked\"). Destination resorts beyond 30 km are not searched.",
   "Logos: the two Accor files already in the repository (Fairmont Royal York, Novotel), and the brand files the other lists already use (Alt Hotels from yhz.json, Hyatt Place from yqm.json). No logo was downloaded for Toronto. foot_marks is empty: no Toronto or Ontario mark has been approved for the foot of the card.",
   "independent is null on the hotels of no chain brand: not established. brand, group and independent are not published: the slim copy has none of them. card, card_id and card_brand mark the two hotels of the Accor catalog (A551, 0931).",
-  "Read by a person in a browser on 2026-11-23 (the Toronto checks page): seven of the blocked or held airport hotels. Six are listed on that reading (the Sheraton Gateway, the Element, the Four Points, the Hampton Inn & Suites, the Fairfield, the Quality Inn). The Nu Hotel stays excluded: its page would not open. The Quality Inn’s shuttle rests on the tourism listing alone and is not marked."
+  "Tried by a person in a browser on 2026-11-23 (the Toronto checks page): seven of the blocked or held airport hotels, six of them read. Six are listed on that reading (the Sheraton Gateway, the Element, the Four Points, the Hampton Inn & Suites, the Fairfield, the Quality Inn). The Nu Hotel stays excluded: its page would not open. The Quality Inn’s shuttle rests on the tourism listing alone and is not marked."
  ],
  "hotels": [
   {
@@ -2143,12 +2143,13 @@
    },
    "shuttle": {
     "mark": false,
-    "offered": false,
+    "offered": null,
     "verified": false,
     "terms": null,
     "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+    "method": "read by a person in a browser, 2026-11-23",
     "also": null,
-    "evidence": "Read by a person in a browser, 2026-11-23: \"Connected to Terminal 3 accessible from Terminal 1 via Airport Link Train.\" The check first recorded a free shuttle; settled on review: not a hotel shuttle. The hotel is joined to Terminal 3, and from Terminal 1 the airport’s Link train runs there: no mark. The way there is its access note.",
+    "evidence": "Read by a person in a browser, 2026-11-23: \"Connected to Terminal 3 accessible from Terminal 1 via Airport Link Train.\" The check’s shuttle answer was \"free\", but the line copied from the page describes the terminal connection by the airport’s Link train, not a hotel shuttle, and no page read names one: offered unknown (null), no mark. The way there is its access note.",
     "checked": "2026-11-23"
    },
    "logo": null,
@@ -2202,6 +2203,7 @@
     "shuttle": {
      "verified": false,
      "source": "https://www.marriott.com/en-us/hotels/yyzgs-sheraton-gateway-hotel-in-toronto-international-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
      "checked": "2026-11-23"
     }
    },
@@ -2264,6 +2266,7 @@
     "verified": true,
     "terms": "free (as the person read the page)",
     "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+    "method": "read by a person in a browser, 2026-11-23",
     "also": null,
     "evidence": "Read by a person in a browser, 2026-11-23: \"Yes, Element by Marriott Toronto Airport has an airport shuttle to Toronto Pearson International Airport (YYZ).\" The person recorded the shuttle as free.",
     "checked": "2026-11-23"
@@ -2277,7 +2280,8 @@
      "verified": true,
      "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
      "method": "read by a person in a browser, 2026-11-23",
-     "checked": "2026-11-23"
+     "checked": "2026-11-23",
+     "note": "Two forms on the same page. \"Element Toronto Airport\" is the name the person confirmed in the check (the box was filled in ahead on the checks page from the earlier lead; the person tapped that it matches the page). The line the person copied from the same page, its shuttle answer, writes \"Element by Marriott Toronto Airport\". The board shows the confirmed form. For a person: look once at the heading of the page; the name changes only on that reading."
     },
     "street": {
      "verified": true,
@@ -2319,6 +2323,7 @@
     "shuttle": {
      "verified": true,
      "source": "https://www.marriott.com/en-us/hotels/yyzea-element-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
      "checked": "2026-11-23"
     }
    },
@@ -2362,6 +2367,7 @@
     "verified": true,
     "terms": "free (as the person read the page)",
     "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+    "method": "read by a person in a browser, 2026-11-23",
     "also": null,
     "evidence": "Read by a person in a browser, 2026-11-23: \"Yes, Four Points by Sheraton Toronto Airport has an airport shuttle to Toronto Pearson International Airport (YYZ).\" The person recorded the shuttle as free.",
     "checked": "2026-11-23"
@@ -2417,6 +2423,7 @@
     "shuttle": {
      "verified": true,
      "source": "https://www.marriott.com/en-us/hotels/yyzpa-four-points-by-sheraton-toronto-airport/overview/",
+     "method": "read by a person in a browser, 2026-11-23",
      "checked": "2026-11-23"
     }
    },
@@ -2460,6 +2467,7 @@
     "verified": false,
     "terms": "free (the tourism listing, as read by a person)",
     "source": "https://www.visitmississauga.ca/where-to-stay/",
+    "method": "read by a person in a browser, 2026-11-23",
     "also": null,
     "evidence": "Read by a person in a browser, 2026-11-23, on the tourism listing (visitmississauga.ca, Mississauga’s official tourism site): a free shuttle; no line of the page was copied. Not marked: rules.shuttle asks for the hotel’s or the airport’s own page, and a shuttle named only on a tourism listing is not marked (as the Hyatt Place). A person who reads the hotel’s Choice page can mark it.",
     "checked": "2026-11-23"
@@ -2504,7 +2512,7 @@
     "latlng": {
      "verified": false,
      "source": "https://www.openstreetmap.org/way/34749592",
-     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances only; the hotel itself is read on its official page."
+     "note": "OpenStreetMap position (© OpenStreetMap contributors), for the straight-line area distances and the identity by position (see notes) only; the hotel itself is read on the tourism listing of visitmississauga.ca, Mississauga’s official tourism site."
     },
     "season": {
      "verified": false,
@@ -2514,11 +2522,12 @@
     "shuttle": {
      "verified": false,
      "source": "https://www.visitmississauga.ca/where-to-stay/",
+     "method": "read by a person in a browser, 2026-11-23",
      "checked": "2026-11-23"
     }
    },
    "osm": "https://www.openstreetmap.org/way/34749592",
-   "notes": "Read by a person in a browser on 2026-11-23 on the listings of visitmississauga.ca, Mississauga’s official tourism site (it serves an empty shell to automated readers): name, street, town and telephone match the listing. Identity: the OpenStreetMap way named Quality Inn (brand Quality Inn, no address) stands on Airport Road 0.27 km north-west of number 6257 (the Element and Four Points) and 0.32 km south-east of the Nu Hotel lead at 6465, where number 6355 falls; the only other Quality Inn near the airport (quality-inn-2) is at 5585 Ambler Drive, 3.9 km away. The earlier lead read it as Choice property cn568, formerly a Comfort Inn (the slug of its old Choice page, comfort-inn-toronto-airport-mississauga; a search snippet, not a fact)."
+   "notes": "Read by a person in a browser on 2026-11-23 on the listings of visitmississauga.ca, Mississauga’s official tourism site (it serves an empty shell to automated readers): name, street, town and telephone match the listing. Identity: the OpenStreetMap way named Quality Inn (brand Quality Inn, no address) stands on Airport Road 0.27 km north-west of number 6257 (the Element and Four Points) and 0.32 km south-east of the OpenStreetMap point of the Nu Hotel, whose address, 6465, is itself only a lead (the Nu Hotel is excluded); number 6355 falls between the two; the only other Quality Inn near the airport (quality-inn-2, excluded) is at 5585 Ambler Drive, 5.2 km from this one (3.9 km from the airport point). The earlier lead read it as Choice property cn568, formerly a Comfort Inn (the slug of its old Choice page, comfort-inn-toronto-airport-mississauga; a search snippet, not a fact). The page the facts rest on is the site’s general where-to-stay page, as recorded in the check; the address of the hotel’s own listing there was not recorded. For a person: the hotel’s own listing address on visitmississauga.ca (or its Choice page), next time it is read."
   },
   {
    "id": "alt-hotel",
@@ -2684,6 +2693,7 @@
     "verified": true,
     "terms": "free (as the person read the page)",
     "source": "https://www.marriott.com/YYZFS",
+    "method": "read by a person in a browser, 2026-11-23",
     "also": [
      "https://mangahotels.com/hotel-properties/"
     ],
@@ -2702,7 +2712,8 @@
      "checked": "2026-11-23",
      "also": [
       "https://mangahotels.com/hotel-properties/"
-     ]
+     ],
+     "note": "Two forms on the same page. \"Fairfield Inn & Suites Toronto Airport\" is the name the person confirmed in the check (the box was filled in ahead on the checks page from the earlier lead; the person tapped that it matches the page). The line the person copied from the same page, its shuttle answer, writes \"Fairfield by Marriott Inn & Suites Toronto Airport\". The board shows the confirmed form. For a person: look once at the heading of the page; the name changes only on that reading."
     },
     "street": {
      "verified": true,
@@ -2745,6 +2756,7 @@
     "shuttle": {
      "verified": true,
      "source": "https://www.marriott.com/YYZFS",
+     "method": "read by a person in a browser, 2026-11-23",
      "checked": "2026-11-23"
     }
    },
@@ -2788,6 +2800,7 @@
     "verified": true,
     "terms": "free, 24/7 (as the page says)",
     "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+    "method": "read by a person in a browser, 2026-11-23",
     "also": null,
     "evidence": "Read by a person in a browser, 2026-11-23: \"Toronto Pearson International Airport: Available, Complimentary, 24/7 Shuttle.\" The person recorded the shuttle as free.",
     "checked": "2026-11-23"
@@ -2843,6 +2856,7 @@
     "shuttle": {
      "verified": true,
      "source": "https://www.hilton.com/en/hotels/yyzhshx-hampton-suites-toronto-airport/",
+     "method": "read by a person in a browser, 2026-11-23",
      "checked": "2026-11-23"
     }
    },

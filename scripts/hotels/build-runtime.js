@@ -61,7 +61,8 @@ function listProblems() {
 //     checked against (card_id); a hotel's access (how it is reached from the terminals by the
 //     airport's own train: a kind the pages have words for, the line and the terminal it is taken
 //     from, and its stop or its terminal) verified with its source, the date and the words read, or
-//     held (verified false) with the reason in its note
+//     held (verified false) with the reason in its note; never a verified line for a whole area on
+//     the same line as the access of its hotels
 //   any other city: no hub block, no card hotel and no access
 function hubProblems(doc) {
   const code = String(doc && doc.iata || '').toLowerCase();
@@ -98,6 +99,15 @@ function hubProblems(doc) {
     }
     if (h.access != null) out.push(...accessProblems(h.access, w + ' access'));
   }
+  // a line for the whole area and the access notes of its hotels on the same line: two lines of the
+  // page would say one train twice (the area's line is for a train that reaches all its hotels; one
+  // that reaches some of them goes on those hotels alone)
+  for (const a of CARD.HUB_AREAS) {
+    const t = hub.areas && hub.areas[a] && hub.areas[a].transit;
+    if (!t || t.verified !== true || !t.line) continue;
+    const on = (doc.hotels || []).filter((h) => h.area === a && h.listed !== false && h.access && h.access.verified === true && h.access.line === t.line);
+    if (on.length) out.push(at + ' hub.areas.' + a + '.transit: the ' + t.line + ' line is verified for the whole area, and ' + on.map((h) => h.id).join(', ') + ' show it as their access: keep one of the two');
+  }
   return out;
 }
 
@@ -108,9 +118,9 @@ function accessProblems(a, w) {
   if (!a || typeof a !== 'object') return [w + ': an object'];
   if (!Object.prototype.hasOwnProperty.call(CARD.ACCESS, a.kind)) out.push(w + '.kind ' + a.kind + ': one of ' + Object.keys(CARD.ACCESS).join(', '));
   if (!a.line || typeof a.line !== 'string') out.push(w + '.line: the line of the train (the legend)');
-  if (!/^\d+$/.test(String(a.from || ''))) out.push(w + '.from: the terminal the train is taken from (the legend)');
+  if (!CARD.TERMINAL.test(String(a.from || ''))) out.push(w + '.from: the terminal the train is taken from (the legend): a number, a number and a letter, or a letter');
   if (a.kind === 'link' && !(a.stop && typeof a.stop === 'string')) out.push(w + '.stop: a link names its stop');
-  if (a.kind === 'terminal' && !/^\d+$/.test(String(a.terminal || ''))) out.push(w + '.terminal: the number of the terminal it is joined to');
+  if (a.kind === 'terminal' && !CARD.TERMINAL.test(String(a.terminal || ''))) out.push(w + '.terminal: the number of the terminal it is joined to (or its letter)');
   if (a.verified === false) { if (!a.note) out.push(w + ': held (verified false): say why in its note'); }
   else if (a.verified !== true || !/^https?:\/\//.test(String(a.source || '')) || !a.checked || !a.quote) out.push(w + ': verified, with its source, the date and the words read (quote)');
   return out;

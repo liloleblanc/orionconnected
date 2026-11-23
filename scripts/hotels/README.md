@@ -159,7 +159,9 @@ A city with dozens of hotels near its airport and in its centre (Toronto) is add
    reading in a browser keeps `method`). It is read on the hotel's own page or its brand property page,
    claims no fare and no hours, and takes the place of the shuttle mark and the street on the hotel's
    line. Held (`verified: false`, the reason in its `note`), it is left out of the slim copy. Only a hub
-   city has it.
+   city has it. The build step refuses a verified line for the whole area on the same line as the
+   access of its hotels: the page would say one train twice. The phone app's list shows the same note
+   under the hotel's address, with the legend under the heading.
 3. **Card hotels.** A hotel that takes the gold frame has `card: true`, `card_id` (its id in the
    catalog, as on its all.accor.com page) and `card_brand` (the catalog's brand code), a logo from the
    repository or an official source (listed in `fids-current/logos/hotels/list/sources.json`), and its

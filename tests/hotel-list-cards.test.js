@@ -307,8 +307,32 @@ test('nothing closed for the season, and a hotel held back never shows', () => {
       assert.equal(h.verified[f].checked, '2026-11-23', id + ' ' + f);
     }
     assert.ok(!DOCS.YYZ.excluded.some((e) => e.id === id), id + ' is no longer excluded');
+    // the shuttle fact they read keeps who read it, and when (marked or not)
+    for (const o of [h.shuttle, h.verified.shuttle]) assert.equal(o.method, 'read by a person in a browser, 2026-11-23', id + ' shuttle: who read it, and when');
+    assert.equal(h.verified.shuttle.verified, h.shuttle.mark, id + ': a marked shuttle is verified, an unmarked one is not');
   }
-  assert.match(DOCS.YYZ.excluded.find((e) => e.id === 'nu-hotel').reason, /A person tried the page in a browser on 2026-11-23: it would not open there either\./);
+  // the Sheraton Gateway: the check's shuttle answer was free, but no page read names a hotel
+  // shuttle, nor says there is none: unknown (null), as for the Alt Hotel, and no mark
+  const SHG = DOCS.YYZ.hotels.find((x) => x.id === 'sheraton-gateway-hotel-in-toronto-international-airport');
+  assert.deepEqual([SHG.shuttle.offered, SHG.shuttle.mark, SHG.shuttle.verified], [null, false, false]);
+  assert.match(SHG.shuttle.evidence, /The check’s shuttle answer was "free"/);
+  assert.doesNotMatch(SHG.shuttle.evidence, /on review/);
+  // two names the same page also writes in Marriott's long form: the confirmed one shown, both kept
+  for (const [id, shown, long] of [['element', 'Element Toronto Airport', 'Element by Marriott Toronto Airport'],
+    ['fairfield-inn-suites-by-marriott-toronto-airport', 'Fairfield Inn & Suites Toronto Airport', 'Fairfield by Marriott Inn & Suites Toronto Airport']]) {
+    const h = DOCS.YYZ.hotels.find((x) => x.id === id);
+    assert.equal(h.name, shown, id);
+    assert.ok(h.verified.name.note.includes('"' + shown + '"') && h.verified.name.note.includes('"' + long + '"') && /For a person: look once at the heading of the page/.test(h.verified.name.note), id + ': both forms, and the look a person owes it');
+    assert.ok(h.shuttle.evidence.includes(long), id + ': the long form is the one in the copied line');
+  }
+  // six read, a seventh page would not open
+  assert.match(DOCS.YYZ.notes.verified_definition, /six hotels: a seventh page, the Nu Hotel’s, would not open/);
+  assert.match(DOCS.YYZ.excluded.find((e) => e.id === 'nu-hotel').reason, /A person tried https:\/\/nuhoteltoronto\.com\/ in a browser on 2026-11-23: it would not open there either\./);
+  // the Quality Inn: placed by position (5.2 km from the other Quality Inn), read on the tourism listing
+  const QI = DOCS.YYZ.hotels.find((x) => x.id === 'quality-inn');
+  assert.match(QI.notes, /5585 Ambler Drive, 5\.2 km from this one \(3\.9 km from the airport point\)/);
+  assert.equal(Math.round(H.km(QI, DOCS.YYZ.points.airport) * 10) / 10, QI.distance_km.airport);
+  assert.match(QI.verified.latlng.note, /read on the tourism listing of visitmississauga\.ca/);
   // the two hotels of one building (6257 Airport Road) keep telephones of their own
   const [el, fp] = ['element', 'four-points'].map((id) => DOCS.YYZ.hotels.find((x) => x.id === id));
   assert.equal(el.address.street, fp.address.street);
@@ -1541,14 +1565,123 @@ test('a hub city: how a hotel is reached from the terminals, at the right of its
   // French: Aérogare, the word of the UP Express's French page for Pearson's terminals
   assert.equal(B.bs('arrTerminal', 'fr'), 'Aérogare');
   assert.match(B.bs('hotelsTrainFrom', 'fr'), /aérogare \{N\}$/);
-  // the fitter drops a note before it cuts a name, and a legend with the last note it answers
-  assert.match(SRC, /pg\.querySelectorAll\(way \? '\.hlc-hub-row \.hlc-hub-way' : '\.hlc-hub-row \.hlc-mark'\)/);
-  assert.match(SRC, /return !mk\.closest\('\.hlc-drop'\) && \(!way \|\| mk\.getAttribute\('data-way'\) === key\);/);
+  // the fitter drops a note before it cuts a name (a note is a direct child of the name, the part
+  // that gives way), and then hides the legends left with nothing to answer (run below)
+  assert.match(SRC, /box\.querySelector\(':scope > \.hlc-hub-note, \.hlc-hub-cut'\)/);
+  assert.match(SRC, /try \{ legendsOff\(legends\); \} catch \(e5\) \{\}\n    \} catch \(e\) \{\}\n  \}/);
+  assert.ok(rowOf(air, SH).startsWith('<div class="hlc-name"><span class="hlc-fit">') && rowOf(air, SH).includes('</span><span class="hlc-hub-note hlc-hub-way"'), 'the note beside the fitted name, inside the name');
   // the look: in the ink of the names, the mark sized to the text, no ground; inside the hub section
   assert.match(CSS, /\n\.hlc-hub-way\{ color:var\(--hlc-navy\); font-weight:500; \}/);
   assert.ok(CSS.indexOf('\n.hlc-hub-way{') > CSS.indexOf('/* ── a hub city (.hlc--hub)') && CSS.indexOf('\n.hlc-hub-way{') < CSS.indexOf('/* ── foot ── */'));
+  // a terminal as an airport names it: a number, a number and a letter, or a letter; a number in the
+  // board's figures, the rest as written, as the board writes the terminal of a flight
+  assert.ok(['3', '12', '2E', 'B'].every((t) => H.TERMINAL.test(t)) && !['', 'T3', '123', '2e', '3 '].some((t) => H.TERMINAL.test(t)));
+  const t2e = JSON.parse(JSON.stringify(RUN.YYZ));
+  t2e.hotels.find((h) => h.id === SH).access.terminal = '2E';
+  assert.ok(rowOf(hubView(hubBuild(['en', 'fr'], {}, t2e), 'airport'), SH).includes(way + B.half('en', 'Terminal\u00a02E', '', { key: 'arrTerminal' })));
+  t2e.hotels.find((h) => h.id === SH).access.terminal = 'T3';
+  assert.ok(!rowOf(hubView(hubBuild(['en'], {}, t2e), 'airport'), SH).includes('hlc-hub-way'), 'a terminal it cannot read: no note');
+  // Japanese writes the terminal of the legend as the note beside it does: the word, a no-break
+  // space, the number
+  const jv = hubView(hubBuild(['ja']), 'airport'), JT = B.esc(B.bs('arrTerminal', 'ja'));
+  assert.ok(jv.includes(JT + '\u00a0' + B.num(3, 'ja')) && jv.includes(JT + '\u00a0' + B.num(1, 'ja')), 'ja: the same form in the note and the legend');
+  assert.ok(B.bs('hotelsTrainFrom', 'ja').startsWith(B.bs('arrTerminal', 'ja') + '\u00a0{N}'));
   // the module writes no word of its own
   assert.doesNotMatch(SRC, /'(Terminal|Aérogare|Viscount|Link)'/);
+});
+
+// A few elements, enough for the legends' pass of the fitter (HotelListCard.legendsOff): class
+// names, attributes, closest() and querySelectorAll() of a two-step descendant selector
+function fakeEl(cls, attrs, kids) {
+  const e = { cls: new Set(String(cls).split(' ').filter(Boolean)), attrs: attrs || {}, kids: kids || [], parent: null };
+  e.kids.forEach((k) => { k.parent = e; });
+  const is = (x, sel) => sel.split('.').filter(Boolean).every((c) => x.cls.has(c));
+  const all = (x) => x.kids.flatMap((k) => [k, ...all(k)]);
+  e.classList = { contains: (c) => e.cls.has(c), add: (c) => e.cls.add(c), remove: (c) => e.cls.delete(c) };
+  e.getAttribute = (n) => (Object.prototype.hasOwnProperty.call(e.attrs, n) ? e.attrs[n] : null);
+  e.closest = (sel) => { for (let x = e; x; x = x.parent) if (is(x, sel)) return x; return null; };
+  e.querySelectorAll = (sel) => {
+    const [up, own] = sel.split(' ');
+    return all(e).filter((x) => { if (!is(x, own)) return false; for (let p = x.parent; p; p = p.parent) { if (is(p, up)) return true; if (p === e) break; } return false; });
+  };
+  return e;
+}
+
+test('a hub city: after the fit, a legend goes with the last note it answers, and only then', () => {
+  // a page as the module draws it: the legends above the lines; on each line the name (.hlc-name,
+  // the box the fitter marks hlc-drop when its note gives way) holds the fitted name and the note
+  const page = (rows, legends) => {
+    const lg = legends.map((k) => k ? fakeEl('hlc-hub-go hlc-hub-legend hlc-hub-legend--way hlc-pairfit', { 'data-way': k }) : fakeEl('hlc-hub-go hlc-hub-legend hlc-pairfit'));
+    const lines = rows.map(([note, drop]) => fakeEl('hlc-hub-row', {}, [fakeEl('hlc-name' + (drop ? ' hlc-drop' : ''), {}, [fakeEl('hlc-fit'),
+      note === 'mark' ? fakeEl('hlc-hub-note', {}, [fakeEl('hlc-ico hlc-mark')]) : note ? fakeEl('hlc-hub-note hlc-hub-way', { 'data-way': note }) : fakeEl('hlc-hub-note')])]));
+    fakeEl('axr-page hlc-view', {}, [...lg, fakeEl('hlc-hub-rows', {}, lines)]);
+    H.legendsOff(lg);
+    return lg.map((l) => !l.classList.contains('hlc-hub-legend--off'));
+  };
+  // nothing gave way: both legends stay
+  assert.deepEqual(page([['Link|1'], ['mark'], ['Link|1'], [null]], ['Link|1', null]), [true, true]);
+  // one of the two notes of the train gave way: its legend stays for the other
+  assert.deepEqual(page([['Link|1', true], ['mark'], ['Link|1'], [null]], ['Link|1', null]), [true, true]);
+  // both gave way: the legend of the train goes, the shuttle legend stays for its mark
+  assert.deepEqual(page([['Link|1', true], ['mark'], ['Link|1', true], [null]], ['Link|1', null]), [false, true]);
+  // the shuttle mark gave way: its legend goes, the train's stays (a note of the train is no mark)
+  assert.deepEqual(page([['Link|1'], ['mark', true], ['Link|1'], [null, true]], ['Link|1', null]), [true, false]);
+  // notes from two terminals: the one from Terminal 3 gave way, its legend goes and the other stays
+  assert.deepEqual(page([['Link|1'], ['Link|3', true]], ['Link|1', 'Link|3']), [true, false]);
+  // a legend outside a page is left as it is
+  const loose = fakeEl('hlc-hub-legend hlc-hub-legend--way', { 'data-way': 'Link|1' });
+  H.legendsOff([loose]);
+  assert.ok(!loose.classList.contains('hlc-hub-legend--off'));
+});
+
+test('the phone app: the full list of a hub city shows how a hotel is reached from the terminals, as the board does, in the phone\'s language', () => {
+  const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const list = (L, doc) => {
+    if (doc) H.put('YYZ', doc);
+    try {
+      return onGate(gate(), () => {
+        const body = { innerHTML: '' };
+        const ctx = { window: { BoardStrings: B, HotelListCard: H }, HotelListCard: H, document: { getElementById: (id) => (id === 'hlBody' ? body : null) }, langRes: () => L,
+          placeOf: () => ({ c: 'Toronto' }), AIRPORTS: { YYZ: { tz: 'America/Toronto' } }, esc, HL_CITY: 'YYZ', HL_FIND: false, HL_WHERE: '' };
+        vm.createContext(ctx);
+        vm.runInContext(['hlIco', 'hlTel', 'hlHost', 'hlWeb', 'renderHotels'].map(appFn).join('\n') + '\nconst HL_GLOBE = "";\nrenderHotels();', ctx);
+        return body.innerHTML;
+      });
+    } finally { H.put('YYZ', RUN.YYZ); }
+  };
+  const SH = 'sheraton-gateway-hotel-in-toronto-international-airport';
+  const rowOf = (html, id) => html.split('<li class="hl-row">').find((r) => r.includes('<bdi translate="no">' + B.esc(RUN.YYZ.hotels.find((h) => h.id === id).name) + '</bdi>'));
+  const sec = (html, area) => html.split('<section class="hl-sec" id="hl-' + area + '">')[1].split('</section>')[0];
+  const TRAIN = '<i class="hl-ico">' + H.ICON.train + '</i>';
+  const LINK = '<bdi class="hlc-addr" translate="no">Link</bdi>';
+  for (const l of LANGS) {
+    const html = list(l), air = sec(html, 'airport');
+    // the legend of the train under the heading, once, before the shuttle legend
+    const legend = '<div class="hl-legend">' + TRAIN + '<span>' + B.esc(B.bs('hotelsTrainFrom', l)).split('{LINE}').join(LINK).split('{N}').join(B.num(1, l)) + '</span></div>';
+    assert.equal(air.split(legend).length, 2, l + ': one legend of the train');
+    assert.ok(air.indexOf(legend) < air.indexOf('<div class="hl-legend"><i class="hl-ico">' + H.ICON.shuttle), l + ': before the shuttle legend');
+    // under the address: the Alt Hotel's stop (data, as written), the Sheraton's terminal in the store's word
+    assert.ok(rowOf(air, 'alt-hotel').includes('<div class="hl-way">' + TRAIN + '<span><bdi class="hlc-addr" translate="no">Viscount</bdi></span></div>'), l + ': the stop');
+    assert.ok(rowOf(air, SH).includes('<div class="hl-way">' + TRAIN + '<span>' + B.esc(B.bs('arrTerminal', l)) + '\u00a0' + B.num(3, l) + '</span></div>'), l + ': the terminal');
+    // the address stays; no shuttle mark on those two lines; none downtown
+    assert.ok(rowOf(air, 'alt-hotel').includes('<div class="hl-addr"><bdi translate="no">6080 Viscount Road, Mississauga</bdi></div><div class="hl-way">'));
+    for (const id of ['alt-hotel', SH]) assert.ok(!rowOf(air, id).includes(H.ICON.shuttle), l + ' ' + id + ': no shuttle mark');
+    assert.ok(!sec(html, 'downtown').includes('hl-way') && !sec(html, 'downtown').includes(H.ICON.train), l + ': nothing downtown');
+  }
+  // a hotel with an access note and a shuttle mark: the way there, as on the board; and with no
+  // access note on the list, no legend of the train
+  const both = JSON.parse(JSON.stringify(RUN.YYZ));
+  both.hotels.forEach((h) => { if (h.area === 'airport') h.shuttle.mark = h.id === 'alt-hotel'; });
+  const bl = sec(list('en', both), 'airport');
+  assert.ok(rowOf(bl, 'alt-hotel').includes('hl-way') && !rowOf(bl, 'alt-hotel').includes(H.ICON.shuttle));
+  assert.ok(!bl.includes('<div class="hl-legend"><i class="hl-ico">' + H.ICON.shuttle), 'no shuttle legend for a mark the list does not show');
+  const none = JSON.parse(JSON.stringify(RUN.YYZ));
+  none.hotels.forEach((h) => { delete h.access; });
+  assert.ok(!list('en', none).includes(H.ICON.train), 'no access note, no train');
+  // every other city as it was: no access in its slim copy, so no train on the phone
+  for (const C of H.CITIES.filter((c) => !H.HUBS.includes(c))) assert.ok(!RUN[C].hotels.some((h) => h.access), C);
+  // the look: the mark in the bronze of the legend, the words in the ink of the names
+  assert.match(APP, /\.hl-way\{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13\.5px;font-weight:650;color:var\(--txt\);line-height:1\.35;\}/);
 });
 
 test('a hub city: the build step holds the checked file to the hub rules, and every other city to none of them', () => {
@@ -1626,4 +1759,14 @@ test('a hub city: the build step holds the checked file to the hub rules, and ev
   assert.doesNotMatch(read('fids-current/data/hotels/yyz.json'), /"(quote|method|checked|also|note)"/);
   // the area-wide airport train stays held
   assert.equal(DOCS.YYZ.hub.areas.airport.transit.verified, false);
+  // and if it is ever verified while hotels of the area show the same train as their access, the
+  // build step refuses it: the page would say one train twice
+  const twice = doc();
+  twice.hub.areas.airport.transit.verified = true;
+  assert.ok(RT.hubProblems(twice).some((p) => /hub\.areas\.airport\.transit: the Link line is verified for the whole area, and .*alt-hotel.* show it as their access: keep one of the two/.test(p)));
+  twice.hub.areas.airport.transit.line = 'Another';
+  assert.ok(!RT.hubProblems(twice).some((p) => /keep one of the two/.test(p)), 'another line: no clash');
+  // a terminal as the airport names it (2E, B), never anything else
+  assert.deepEqual(acc((a, b) => { b.terminal = '2E'; a.from = 'B'; }), []);
+  assert.ok(acc((a, b) => { b.terminal = 'T3'; }).some((p) => /the number of the terminal it is joined to/.test(p)));
 });

@@ -1104,8 +1104,10 @@
     // "Aérogare" in French, as the UP Express's French page writes Pearson's, "située à
     // l'aérogare 1", upexpress.com/fr/gares-up-express/gare-pearson, read 2026-11-23); and on a
     // page with such a line, this legend beside the same mark. The line ({LINE}) is data, the
-    // terminal ({N}) a figure. Nothing about fares or hours.
-    hotelsTrainFrom: { en: '{LINE} train from Terminal {N}', fr: 'Train {LINE} depuis l’aérogare {N}', es: 'Tren {LINE} desde la terminal {N}', de: '{LINE}-Zug ab Terminal {N}', it: 'Treno {LINE} dal Terminal {N}', pt: 'Trem {LINE} a partir do Terminal {N}', ja: 'ターミナル{N}から{LINE}列車', zh: '从航站楼 {N} 乘 {LINE} 列车', ar: 'قطار {LINE} من مبنى الركاب {N}' },
+    // terminal ({N}) a figure (or as the airport writes it: 2E). Japanese writes the terminal as
+    // the note beside it does, the word, a no-break space and the number. Nothing about fares or
+    // hours.
+    hotelsTrainFrom: { $ctx: 'the legend of the train mark of a hub city: the airport train line, and the terminal it is taken from', en: '{LINE} train from Terminal {N}', fr: 'Train {LINE} depuis l’aérogare {N}', es: 'Tren {LINE} desde la terminal {N}', de: '{LINE}-Zug ab Terminal {N}', it: 'Treno {LINE} dal Terminal {N}', pt: 'Trem {LINE} a partir do Terminal {N}', ja: 'ターミナル\u00A0{N}から{LINE}列車', zh: '从航站楼 {N} 乘 {LINE} 列车', ar: 'قطار {LINE} من مبنى الركاب {N}' },
     // ── BOARD LABELS ──────────────────────────────────────────────────────
     // Labels the boards had written as English literals or read through keys
     // no table held. The words copy the screens' own: terminal and weather
